@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Core LBM solver steps for a minimal D2Q9 flow simulation."""
+
 import torch
 
 from .d2q9 import C, OPPOSITE, equilibrium, macroscopic

@@ -1,3 +1,5 @@
+"""D2Q9 lattice constants and distribution helper functions."""
+
 import torch
 
 # D2Q9 lattice velocities (cx, cy), weights, and opposite-direction mapping
@@ -20,7 +22,7 @@ OPPOSITE = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
 
 
 def equilibrium(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, device: torch.device | None = None) -> torch.Tensor:
-    """Compute D2Q9 equilibrium distribution f_eq for rho and velocity fields."""
+    """Compute D2Q9 equilibrium distribution with shape ``(9, ny, nx)``."""
     if device is None:
         device = rho.device
     c = C.to(device)
@@ -32,7 +34,7 @@ def equilibrium(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, device: t
 
 
 def macroscopic(f: torch.Tensor, device: torch.device | None = None) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Recover rho, ux, uy from particle distributions."""
+    """Recover ``rho``, ``ux``, and ``uy`` from distribution ``f``."""
     if device is None:
         device = f.device
     c = C.to(device)
