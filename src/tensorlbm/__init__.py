@@ -11,8 +11,8 @@ from .d3q19 import C as C3D
 from .d3q19 import OPPOSITE as OPPOSITE3D
 from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
-from .solver import collide_bgk, stream
-from .solver3d import collide_bgk3d, stream3d
+from .solver import collide_bgk, collide_mrt, stream
+from .solver3d import collide_bgk3d, collide_mrt3d, stream3d
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
 
 __all__ = [
@@ -26,6 +26,7 @@ __all__ = [
     "make_channel_wall_mask",
     "bounce_back_cells",
     "collide_bgk",
+    "collide_mrt",
     "stream",
     "apply_simple_channel_boundaries",
     "CylinderFlowConfig",
@@ -40,6 +41,7 @@ __all__ = [
     "make_channel_wall_mask_3d",
     "bounce_back_cells_3d",
     "collide_bgk3d",
+    "collide_mrt3d",
     "stream3d",
     "apply_simple_channel_boundaries_3d",
     "SphereFlowConfig",
