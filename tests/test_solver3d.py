@@ -133,7 +133,6 @@ def test_collide_mrt3d_at_equilibrium_is_identity() -> None:
 
 def test_zou_he_inlet_3d_prescribes_velocity() -> None:
     nz, ny, nx = 6, 8, 12
-    device = torch.device("cpu")
     rho0 = torch.ones((nz, ny, nx))
     f = equilibrium3d(rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0))
     f = collide_bgk3d(f, tau=0.6)

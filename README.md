@@ -1,21 +1,20 @@
 # TensorLBM
 
-TensorLBM is a CPU-first PyTorch D2Q9 Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.
+TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.
 
-## What TensorLBM is today
-
-Current `main` provides:
+## What TensorLBM provides
 
 - A small, explicit public API in `src/tensorlbm/__init__.py`
-- Core D2Q9 primitives (`equilibrium`, `macroscopic`, lattice constants)
-- Modular solver steps (`collide_bgk`, `stream`)
-- Boundary helpers (`cylinder_mask`, `make_channel_wall_mask`, bounce-back channel boundaries)
-- A first-class cylinder-flow runner with CLI, structured outputs, metadata, and diagnostics
+- **D2Q9** and **D3Q19** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
+- **BGK** and **MRT** collision operators for both 2D and 3D
+- Boundary conditions: bounce-back, **Zou/He** inlet-velocity and outlet-pressure BCs
+- Momentum-exchange force diagnostics (drag/lift) for the 2D cylinder
+- A 2D cylinder-flow runner with CLI, Strouhal-number extraction, structured outputs, and diagnostics
+- A 3D sphere-flow runner with CLI and structured outputs
+- Batch Reynolds-number parameter scan (`examples/param_scan.py`)
 - Automated tests and CI
 
-## Engineering principles used in this step
-
-These principles guide TensorLBM toward a world-class platform:
+## Engineering principles
 
 1. **Stable API first**: keep public exports intentional and backward-compatible.
 2. **Composable solver core**: isolate lattice math, solver stepping, and boundary logic.
@@ -56,6 +55,21 @@ Useful options:
 - `--output-root`, `--run-name`, `--overwrite`: output organization
 - `--device`: `cpu` (default) or `cuda`
 
+## Run the sphere-flow example (3D)
+
+```bash
+PYTHONPATH=src python examples/sphere_flow_3d.py \
+  --nx 60 --ny 30 --nz 30 --radius 4 --n-steps 50 --output-interval 25 \
+  --run-name smoke --overwrite
+```
+
+## Batch parameter scan
+
+```bash
+PYTHONPATH=src python examples/param_scan.py \
+  --re 20 40 80 100 --nx 160 --ny 60 --n-steps 2000 --output-interval 100
+```
+
 ## Output organization
 
 Each run writes into:
@@ -65,8 +79,13 @@ outputs/
   cylinder_flow/
     <run-name>/
       run_metadata.json
+      forces.csv
       flow_step_000200.png
-      flow_step_000400.png
+      ...
+  sphere_flow/
+    <run-name>/
+      run_metadata.json
+      flow_step_000100.png
       ...
 ```
 
@@ -81,14 +100,3 @@ PYTHONPATH=src pytest -q
 ```
 
 GitHub Actions runs the same test command on every push and pull request.
-
-## Intentionally out of scope (for now)
-
-To keep this step reviewable and robust, these are deferred:
-
-- MRT/TRT and advanced boundary schemes (e.g., Zou/He)
-- quantitative validation metrics (drag/lift coefficients, Strouhal extraction)
-- large-scale performance tuning and benchmarking
-- multi-case experiment orchestration
-
-The current architecture is designed so those capabilities can be added incrementally without destabilizing the core API.

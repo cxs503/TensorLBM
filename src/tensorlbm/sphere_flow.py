@@ -71,23 +71,6 @@ class SphereFlowConfig:
         )
 
 
-@dataclass(frozen=True)
-class DiagnosticPoint3D:
-    step: int
-    mass: float
-    mass_drift: float
-    max_speed: float
-    mean_rho: float
-
-
-def _resolve_device(device_name: str) -> torch.device:
-    return resolve_device(device_name)
-
-
-def _prepare_run_dir(config: SphereFlowConfig) -> Path:
-    return prepare_run_dir(config.output_root, "sphere_flow", config.resolved_run_name(), config.overwrite)
-
-
 def _save_flow_snapshot_3d(
     run_dir: Path,
     step: int,
@@ -117,8 +100,8 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
     torch.manual_seed(config.seed)
     torch.use_deterministic_algorithms(True, warn_only=True)
 
-    device = _resolve_device(config.device)
-    run_dir = _prepare_run_dir(config)
+    device = resolve_device(config.device)
+    run_dir = prepare_run_dir(config.output_root, "sphere_flow", config.resolved_run_name(), config.overwrite)
 
     metadata: dict[str, object] = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
@@ -165,7 +148,7 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
             speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
             mass = float(rho.sum().item())
 
-            point = DiagnosticPoint3D(
+            point = DiagnosticPoint(
                 step=step,
                 mass=mass,
                 mass_drift=mass - initial_mass,
