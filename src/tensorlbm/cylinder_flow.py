@@ -218,10 +218,8 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     with forces_csv.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
         writer.writerow(["step", "cd", "cl"])
-        for s_idx, (cd_v, cl_v) in enumerate(
-            zip([d["cd"] for d in diagnostics], [d["cl"] for d in diagnostics]), start=1
-        ):
-            writer.writerow([s_idx * config.output_interval, cd_v, cl_v])
+        for d in diagnostics:
+            writer.writerow([d["step"], d["cd"], d["cl"]])
 
     metadata_path = run_dir / "run_metadata.json"
     metadata_path.write_text(f"{json.dumps(metadata, indent=2, sort_keys=True)}\n", encoding="utf-8")
