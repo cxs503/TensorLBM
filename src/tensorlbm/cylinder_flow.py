@@ -81,27 +81,22 @@ def _strouhal_number(cl_series: list[float], output_interval: int, u_in: float, 
     """Estimate Strouhal number from the dominant frequency of the lift-coefficient series.
 
     Returns *None* when the series is too short or has no clear spectral peak.
+    Uses numpy FFT (O(N log N)) rather than a manual DFT loop.
     """
-    import math
+    import numpy as np
 
     n = len(cl_series)
     if n < 16:
         return None
-    # Zero-pad to next power of two for cleaner FFT-like analysis
+    # Zero-pad to next power of two for a clean spectral estimate
     n2 = 1
     while n2 * 2 <= n:
         n2 *= 2
-    data = cl_series[:n2]
-    # Discrete Fourier transform power spectrum (skip DC bin k=0)
-    best_k = -1
-    best_power = 0.0
-    for k in range(1, n2 // 2 + 1):
-        re_part = sum(data[j] * math.cos(2 * math.pi * k * j / n2) for j in range(n2))
-        im_part = sum(data[j] * math.sin(2 * math.pi * k * j / n2) for j in range(n2))
-        power = re_part * re_part + im_part * im_part
-        if power > best_power:
-            best_power = power
-            best_k = k
+    data = np.array(cl_series[:n2], dtype=np.float64)
+    # Real FFT: rfft returns n2//2 + 1 complex bins; bin 0 is DC
+    spectrum = np.abs(np.fft.rfft(data))
+    # Ignore DC bin (index 0); find the peak among bins 1..n2//2
+    best_k = int(np.argmax(spectrum[1:])) + 1
     if best_k <= 0:
         return None
     freq_lbm = best_k / (n2 * output_interval)  # cycles per LBM step
