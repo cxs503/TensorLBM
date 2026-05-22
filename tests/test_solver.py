@@ -186,7 +186,6 @@ def test_cylinder_config_validate_tau_too_small() -> None:
 def test_zou_he_inlet_prescribes_velocity() -> None:
     """After Zou/He inlet update, macroscopic ux at x=0 must equal u_in."""
     ny, nx = 16, 20
-    device = torch.device("cpu")
     rho0 = torch.ones((ny, nx))
     ux0 = torch.zeros_like(rho0)
     uy0 = torch.zeros_like(rho0)
