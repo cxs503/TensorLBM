@@ -187,6 +187,167 @@ def apply_simple_channel_boundaries_3d(
     return f
 
 
+def zou_he_inlet_velocity_z(
+    f: torch.Tensor,
+    uz_in: float,
+    ux_in: float = 0.0,
+    uy_in: float = 0.0,
+) -> torch.Tensor:
+    """Zou/He inlet velocity BC at bottom face (z=0) for D3Q19.
+
+    Prescribes upward z-velocity *uz = uz_in* at every cell of the inlet plane.
+    Unknown populations (cz > 0, directions 5, 11, 14, 15, 18) are
+    reconstructed using the non-equilibrium bounce-back method
+    (Latt & Chopard 2008).  The local density is inferred from the
+    mass + z-momentum balance:
+
+    .. math::
+
+        \\rho = \\frac{\\sum_{c_z=0} f_k + 2 \\sum_{c_z<0} f_k}{1 - u_z}
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        uz_in: Prescribed z-velocity at the inlet (positive = upward).
+        ux_in: Prescribed x-velocity at the inlet (default 0).
+        uy_in: Prescribed y-velocity at the inlet (default 0).
+
+    Returns:
+        Updated distribution tensor (same shape).
+    """
+    device = f.device
+    # At z=0: f[q, 0, :, :] has shape (ny, nx) for each direction q.
+    # cz=0 directions: 0,1,2,3,4,7,8,9,10
+    sum_cz0 = (
+        f[0, 0] + f[1, 0] + f[2, 0] + f[3, 0] + f[4, 0]
+        + f[7, 0] + f[8, 0] + f[9, 0] + f[10, 0]
+    )  # (ny, nx)
+    # cz<0 directions: 6,12,13,16,17
+    sum_cz_neg = f[6, 0] + f[12, 0] + f[13, 0] + f[16, 0] + f[17, 0]  # (ny, nx)
+
+    rho = (sum_cz0 + 2.0 * sum_cz_neg) / (1.0 - uz_in)  # (ny, nx)
+
+    # Equilibrium at (rho, ux_in, uy_in, uz_in); use shape (1, ny, nx) for nz=1 slice
+    rho3 = rho.unsqueeze(0)  # (1, ny, nx)
+    ux3 = torch.full_like(rho3, ux_in)
+    uy3 = torch.full_like(rho3, uy_in)
+    uz3 = torch.full_like(rho3, uz_in)
+    feq = equilibrium3d(rho3, ux3, uy3, uz3, device=device)  # (19, 1, ny, nx)
+
+    f_new = f.clone()
+    opp = OPPOSITE.to(device)
+    for k in (5, 11, 14, 15, 18):  # cz > 0 directions (unknown at z=0)
+        opp_k = int(opp[k].item())
+        f_new[k, 0, :, :] = feq[k, 0] - feq[opp_k, 0] + f[opp_k, 0]
+    return f_new
+
+
+def zou_he_outlet_pressure_z(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tensor:
+    """Zou/He pressure outlet BC at top face (z=nz-1) for D3Q19.
+
+    Prescribes *rho = rho_out* at the outlet plane.  Unknown populations
+    (cz < 0, directions 6, 12, 13, 16, 17) are reconstructed with
+    non-equilibrium bounce-back.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        rho_out: Prescribed outlet density (default 1.0).
+
+    Returns:
+        Updated distribution tensor (same shape).
+    """
+    device = f.device
+    # At z=nz-1: cz>0 directions are known (streaming outward).
+    sum_cz0 = (
+        f[0, -1] + f[1, -1] + f[2, -1] + f[3, -1] + f[4, -1]
+        + f[7, -1] + f[8, -1] + f[9, -1] + f[10, -1]
+    )  # (ny, nx)
+    sum_cz_pos = f[5, -1] + f[11, -1] + f[14, -1] + f[15, -1] + f[18, -1]  # (ny, nx)
+
+    uz_out = -1.0 + (sum_cz0 + 2.0 * sum_cz_pos) / rho_out  # (ny, nx)
+
+    rho3 = torch.full_like(uz_out.unsqueeze(0), rho_out)  # (1, ny, nx)
+    ux3 = torch.zeros_like(rho3)
+    uy3 = torch.zeros_like(rho3)
+    uz3 = uz_out.unsqueeze(0)  # (1, ny, nx)
+    feq = equilibrium3d(rho3, ux3, uy3, uz3, device=device)  # (19, 1, ny, nx)
+
+    f_new = f.clone()
+    opp = OPPOSITE.to(device)
+    for k in (6, 12, 13, 16, 17):  # cz < 0 directions (unknown at z=nz-1)
+        opp_k = int(opp[k].item())
+        f_new[k, -1, :, :] = feq[k, 0] - feq[opp_k, 0] + f[opp_k, -1]
+    return f_new
+
+
+def make_tank_wall_mask_3d(
+    nz: int,
+    ny: int,
+    nx: int,
+    obstacle_mask: torch.Tensor,
+    device: torch.device,
+) -> torch.Tensor:
+    """Wall mask for a 3-D vertical water-entry tank.
+
+    Marks the four lateral faces (x = 0, x = nx−1, y = 0, y = ny−1) as
+    no-slip walls.  The bottom face (z = 0) and top face (z = nz−1) are
+    intentionally excluded; they are handled by :func:`zou_he_inlet_velocity_z`
+    and :func:`zou_he_outlet_pressure_z` respectively.
+
+    Args:
+        nz: Vertical extent (flow direction).
+        ny: Lateral extent (y direction).
+        nx: Lateral extent (x direction).
+        obstacle_mask: Boolean tensor of shape ``(nz, ny, nx)``; obstacle
+            cells are excluded from the wall mask to prevent double
+            bounce-back.
+        device: Target PyTorch device.
+
+    Returns:
+        Boolean tensor of shape ``(nz, ny, nx)``.
+    """
+    wall_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
+    wall_mask[:, :, 0] = True   # left wall  (x = 0)
+    wall_mask[:, :, -1] = True  # right wall (x = nx−1)
+    wall_mask[:, 0, :] = True   # front wall (y = 0)
+    wall_mask[:, -1, :] = True  # back wall  (y = ny−1)
+    wall_mask[obstacle_mask] = False
+    return wall_mask
+
+
+def apply_water_entry_boundaries_3d(
+    f: torch.Tensor,
+    v_entry: float,
+    wall_mask: torch.Tensor,
+    obstacle_mask: torch.Tensor,
+    rho_out: float = 1.0,
+) -> torch.Tensor:
+    """Combined boundary treatment for the sphere water-entry simulation.
+
+    Applies in order:
+
+    1. Zou/He velocity inlet at z = 0 with upward velocity uz = *v_entry*.
+    2. Zou/He pressure outlet at z = nz−1 with ρ = *rho_out*.
+    3. Bounce-back on the four lateral walls (x = 0, x = nx−1, y = 0,
+       y = ny−1).
+    4. Bounce-back on the sphere obstacle.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        v_entry: Prescribed upward z-velocity at the inlet.
+        wall_mask: Boolean lateral-wall mask of shape ``(nz, ny, nx)``.
+        obstacle_mask: Boolean sphere mask of shape ``(nz, ny, nx)``.
+        rho_out: Outlet density (default 1.0).
+
+    Returns:
+        Updated distribution tensor.
+    """
+    f = zou_he_inlet_velocity_z(f, v_entry)
+    f = zou_he_outlet_pressure_z(f, rho_out=rho_out)
+    f = bounce_back_cells_3d(f, wall_mask)
+    f = bounce_back_cells_3d(f, obstacle_mask)
+    return f
+
+
 def apply_zou_he_channel_boundaries_3d(
     f: torch.Tensor,
     u_in: float,
