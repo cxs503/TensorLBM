@@ -3,6 +3,7 @@ import torch
 from tensorlbm import (
     apply_simple_channel_boundaries_3d,
     collide_bgk3d,
+    collide_mrt3d,
     equilibrium3d,
     make_channel_wall_mask_3d,
     sphere_mask,
@@ -61,3 +62,55 @@ def test_channel_wall_mask_3d_has_walls() -> None:
     assert wall_mask[-1, :, :].all()
     # Interior cells should not be walls
     assert not wall_mask[1:-1, 1:-1, :].any()
+
+
+def test_collide_mrt3d_preserves_shape() -> None:
+    nz, ny, nx = 4, 6, 8
+    rho = torch.ones((nz, ny, nx), dtype=torch.float32)
+    ux = torch.full_like(rho, 0.05)
+    uy = torch.zeros_like(rho)
+    uz = torch.zeros_like(rho)
+    f = equilibrium3d(rho, ux, uy, uz)
+
+    f_out = collide_mrt3d(f, tau=0.6)
+    assert f_out.shape == f.shape
+    assert torch.isfinite(f_out).all()
+
+
+def test_collide_mrt3d_conserves_mass_and_momentum() -> None:
+    nz, ny, nx = 4, 6, 8
+    rho = torch.ones((nz, ny, nx), dtype=torch.float32)
+    ux = torch.full_like(rho, 0.05)
+    uy = torch.full_like(rho, 0.02)
+    uz = torch.full_like(rho, -0.01)
+    f = equilibrium3d(rho, ux, uy, uz)
+
+    f_out = collide_mrt3d(f, tau=0.7)
+
+    assert torch.allclose(f_out.sum(dim=0), f.sum(dim=0), atol=1e-5)
+
+    from tensorlbm import C3D
+    cx = C3D[:, 0].view(19, 1, 1, 1).float()
+    cy = C3D[:, 1].view(19, 1, 1, 1).float()
+    cz = C3D[:, 2].view(19, 1, 1, 1).float()
+    assert torch.allclose((f_out * cx).sum(dim=0), (f * cx).sum(dim=0), atol=1e-5)
+    assert torch.allclose((f_out * cy).sum(dim=0), (f * cy).sum(dim=0), atol=1e-5)
+    assert torch.allclose((f_out * cz).sum(dim=0), (f * cz).sum(dim=0), atol=1e-5)
+
+
+def test_collide_mrt3d_with_uniform_s_matches_bgk() -> None:
+    """MRT with all relaxation rates = 1/tau must recover BGK exactly."""
+    tau = 0.7
+    nz, ny, nx = 4, 6, 8
+    rho = torch.ones((nz, ny, nx), dtype=torch.float32)
+    ux = torch.full_like(rho, 0.04)
+    uy = torch.full_like(rho, 0.01)
+    uz = torch.zeros_like(rho)
+    f = equilibrium3d(rho, ux, uy, uz)
+
+    f_bgk = collide_bgk3d(f, tau=tau)
+
+    s_uniform = torch.full((19,), 1.0 / tau)
+    f_mrt = collide_mrt3d(f, tau=tau, s=s_uniform)
+
+    assert torch.allclose(f_bgk, f_mrt, atol=1e-5)
