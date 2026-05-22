@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -11,6 +10,7 @@ import torch
 from .boundaries3d import apply_simple_channel_boundaries_3d, make_channel_wall_mask_3d, sphere_mask
 from .d3q19 import equilibrium3d, macroscopic3d
 from .solver3d import collide_bgk3d, stream3d
+from .utils import DiagnosticPoint, prepare_run_dir, resolve_device
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -81,23 +81,11 @@ class DiagnosticPoint3D:
 
 
 def _resolve_device(device_name: str) -> torch.device:
-    if device_name == "cpu":
-        return torch.device("cpu")
-    if device_name == "cuda":
-        if not torch.cuda.is_available():
-            msg = "CUDA requested but not available"
-            raise RuntimeError(msg)
-        return torch.device("cuda")
-    msg = f"Unsupported device: {device_name}"
-    raise ValueError(msg)
+    return resolve_device(device_name)
 
 
 def _prepare_run_dir(config: SphereFlowConfig) -> Path:
-    run_dir = config.output_root / "sphere_flow" / config.resolved_run_name()
-    if config.overwrite and run_dir.exists():
-        shutil.rmtree(run_dir)
-    run_dir.mkdir(parents=True, exist_ok=False)
-    return run_dir
+    return prepare_run_dir(config.output_root, "sphere_flow", config.resolved_run_name(), config.overwrite)
 
 
 def _save_flow_snapshot_3d(
