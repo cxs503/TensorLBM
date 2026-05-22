@@ -10,12 +10,16 @@ from .boundaries import (
 )
 from .boundaries3d import (
     apply_simple_channel_boundaries_3d,
+    apply_water_entry_boundaries_3d,
     apply_zou_he_channel_boundaries_3d,
     bounce_back_cells_3d,
     make_channel_wall_mask_3d,
+    make_tank_wall_mask_3d,
     sphere_mask,
     zou_he_inlet_velocity_3d,
+    zou_he_inlet_velocity_z,
     zou_he_outlet_pressure_3d,
+    zou_he_outlet_pressure_z,
 )
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
 from .d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
@@ -32,6 +36,7 @@ from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
 from .solver import collide_bgk, collide_mrt, stream
 from .solver3d import collide_bgk3d, collide_mrt3d, stream3d
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
+from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
 from .turbulence import (
     collide_smagorinsky_bgk,
     collide_smagorinsky_bgk3d,
@@ -77,11 +82,15 @@ __all__ = [
     # 3D boundaries
     "sphere_mask",
     "make_channel_wall_mask_3d",
+    "make_tank_wall_mask_3d",
     "bounce_back_cells_3d",
     "zou_he_inlet_velocity_3d",
+    "zou_he_inlet_velocity_z",
     "zou_he_outlet_pressure_3d",
+    "zou_he_outlet_pressure_z",
     "apply_simple_channel_boundaries_3d",
     "apply_zou_he_channel_boundaries_3d",
+    "apply_water_entry_boundaries_3d",
     # 3D solvers
     "collide_bgk3d",
     "collide_mrt3d",
@@ -89,6 +98,9 @@ __all__ = [
     # 3D runner
     "SphereFlowConfig",
     "run_sphere_flow",
+    # Sphere water-entry runner
+    "SphereWaterEntryConfig",
+    "run_sphere_water_entry",
     # Ship/ocean engineering – geometry and force diagnostics
     "wigley_hull_mask",
     "compute_obstacle_forces_3d",
