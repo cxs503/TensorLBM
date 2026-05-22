@@ -20,13 +20,13 @@ def resolve_device(device_name: str) -> torch.device:
     """Resolve a device name string to a :class:`torch.device`.
 
     Args:
-        device_name: ``"cpu"`` or ``"cuda"``.
+        device_name: ``"cpu"``, ``"cuda"``, or ``"mps"``.
 
     Returns:
         The corresponding :class:`torch.device`.
 
     Raises:
-        RuntimeError: If CUDA is requested but not available.
+        RuntimeError: If CUDA or MPS is requested but not available.
         ValueError: If the device name is not recognised.
     """
     if device_name == "cpu":
@@ -36,6 +36,11 @@ def resolve_device(device_name: str) -> torch.device:
             msg = "CUDA requested but not available"
             raise RuntimeError(msg)
         return torch.device("cuda")
+    if device_name == "mps":
+        if not (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()):
+            msg = "MPS requested but not available"
+            raise RuntimeError(msg)
+        return torch.device("mps")
     msg = f"Unsupported device: {device_name}"
     raise ValueError(msg)
 
