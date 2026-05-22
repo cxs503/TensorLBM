@@ -2,17 +2,8 @@ from __future__ import annotations
 
 import torch
 
-from .d2q9 import C, OPPOSITE, equilibrium, macroscopic
-
-
-def cylinder_mask(nx: int, ny: int, cx: float, cy: float, radius: float, device: torch.device) -> torch.Tensor:
-    """Boolean mask for circular obstacle in a 2D grid."""
-    yy, xx = torch.meshgrid(
-        torch.arange(ny, device=device, dtype=torch.float32),
-        torch.arange(nx, device=device, dtype=torch.float32),
-        indexing="ij",
-    )
-    return (xx - cx) ** 2 + (yy - cy) ** 2 <= radius**2
+from .boundaries import apply_simple_channel_boundaries, bounce_back_cells, cylinder_mask, make_channel_wall_mask
+from .d2q9 import C, equilibrium, macroscopic
 
 
 def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -31,34 +22,11 @@ def stream(f: torch.Tensor) -> torch.Tensor:
     return streamed
 
 
-def bounce_back_cells(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-    """Bounce-back reflection on selected cells (obstacle/walls)."""
-    bounced = f.clone()
-    for i in range(9):
-        bounced[i, mask] = f[OPPOSITE[i], mask]
-    return bounced
-
-
-def apply_simple_channel_boundaries(
-    f: torch.Tensor,
-    u_in: float,
-    wall_mask: torch.Tensor,
-    obstacle_mask: torch.Tensor,
-) -> torch.Tensor:
-    """Minimal boundary treatment: equilibrium inlet, zero-gradient outlet, bounce-back walls/obstacle."""
-    rho, ux, uy = macroscopic(f)
-
-    # Inlet (left): reset to equilibrium with fixed velocity
-    ux[:, 0] = u_in
-    uy[:, 0] = 0.0
-    rho[:, 0] = rho[:, 1]
-    feq_in = equilibrium(rho[:, 0:1], ux[:, 0:1], uy[:, 0:1])
-    f[:, :, 0] = feq_in[:, :, 0]
-
-    # Outlet (right): simple zero-gradient copy
-    f[:, :, -1] = f[:, :, -2]
-
-    # No-slip bounce-back on walls and obstacle
-    f = bounce_back_cells(f, wall_mask)
-    f = bounce_back_cells(f, obstacle_mask)
-    return f
+__all__ = [
+    "cylinder_mask",
+    "make_channel_wall_mask",
+    "bounce_back_cells",
+    "apply_simple_channel_boundaries",
+    "collide_bgk",
+    "stream",
+]
