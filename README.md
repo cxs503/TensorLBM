@@ -53,7 +53,7 @@ Useful options:
 - `--u-in`, `--re`, `--radius`: flow and geometry parameters
 - `--n-steps`, `--output-interval`: runtime and output cadence
 - `--output-root`, `--run-name`, `--overwrite`: output organization
-- `--device`: `cpu` (default) or `cuda`
+- `--device`: `cpu` (default), `cuda`, or `mps` (Apple Silicon)
 
 ## Run the sphere-flow example (3D)
 

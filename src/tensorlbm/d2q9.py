@@ -1,3 +1,5 @@
+import functools
+
 import torch
 
 # D2Q9 lattice velocities (cx, cy), weights, and opposite-direction mapping
@@ -19,12 +21,22 @@ W = torch.tensor([4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 /
 OPPOSITE = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
 
 
+@functools.lru_cache(maxsize=None)
+def _c_on(device: torch.device) -> torch.Tensor:
+    return C.to(device)
+
+
+@functools.lru_cache(maxsize=None)
+def _w_on(device: torch.device) -> torch.Tensor:
+    return W.to(device)
+
+
 def equilibrium(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, device: torch.device | None = None) -> torch.Tensor:
     """Compute D2Q9 equilibrium distribution f_eq for rho and velocity fields."""
     if device is None:
         device = rho.device
-    c = C.to(device)
-    w = W.to(device).view(9, 1, 1)
+    c = _c_on(device)
+    w = _w_on(device).view(9, 1, 1)
 
     u_sq = ux * ux + uy * uy
     cu = c[:, 0].view(9, 1, 1) * ux + c[:, 1].view(9, 1, 1) * uy
@@ -35,7 +47,7 @@ def macroscopic(f: torch.Tensor, device: torch.device | None = None) -> tuple[to
     """Recover rho, ux, uy from particle distributions."""
     if device is None:
         device = f.device
-    c = C.to(device)
+    c = _c_on(device)
 
     rho = f.sum(dim=0)
     rho_safe = torch.clamp(rho, min=1e-12)

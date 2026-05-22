@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 import torch
 
 from .d3q19 import C, equilibrium3d, macroscopic3d
@@ -49,6 +51,7 @@ def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
 _M_D3Q19_DATA, _M_D3Q19_INV_DATA = _build_d3q19_mrt_matrices()
 
 
+@functools.lru_cache(maxsize=None)
 def _get_d3q19_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
     M = torch.tensor(_M_D3Q19_DATA, dtype=torch.float32, device=device)
     M_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=torch.float32, device=device)

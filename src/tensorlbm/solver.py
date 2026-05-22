@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 import torch
 
 from .boundaries import apply_simple_channel_boundaries, bounce_back_cells, cylinder_mask, make_channel_wall_mask
@@ -33,6 +35,7 @@ def _invert_d2q9() -> list[list[float]]:
 _M_D2Q9_INV_DATA = _invert_d2q9()
 
 
+@functools.lru_cache(maxsize=None)
 def _get_d2q9_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
     M = torch.tensor(_M_D2Q9_DATA, dtype=torch.float32, device=device)
     M_inv = torch.tensor(_M_D2Q9_INV_DATA, dtype=torch.float32, device=device)

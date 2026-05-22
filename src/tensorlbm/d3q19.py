@@ -1,3 +1,5 @@
+import functools
+
 import torch
 
 # D3Q19 lattice velocities (cx, cy, cz), weights, and opposite-direction mapping
@@ -48,6 +50,16 @@ OPPOSITE = torch.tensor(
 )
 
 
+@functools.lru_cache(maxsize=None)
+def _c_on(device: torch.device) -> torch.Tensor:
+    return C.to(device)
+
+
+@functools.lru_cache(maxsize=None)
+def _w_on(device: torch.device) -> torch.Tensor:
+    return W.to(device)
+
+
 def equilibrium3d(
     rho: torch.Tensor,
     ux: torch.Tensor,
@@ -66,8 +78,8 @@ def equilibrium3d(
     """
     if device is None:
         device = rho.device
-    c = C.to(device)
-    w = W.to(device).view(19, 1, 1, 1)
+    c = _c_on(device)
+    w = _w_on(device).view(19, 1, 1, 1)
 
     u_sq = ux * ux + uy * uy + uz * uz
     cu = (
@@ -92,7 +104,7 @@ def macroscopic3d(
     """
     if device is None:
         device = f.device
-    c = C.to(device)
+    c = _c_on(device)
 
     rho = f.sum(dim=0)
     rho_safe = torch.clamp(rho, min=1e-12)
