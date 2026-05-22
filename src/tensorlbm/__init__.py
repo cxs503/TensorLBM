@@ -23,6 +23,24 @@ from .d3q19 import C as C3D
 from .d3q19 import OPPOSITE as OPPOSITE3D
 from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
+from .dam_break import DamBreakConfig, run_dam_break
+from .multiphase import (
+    collide_sc_two_component,
+    collide_sc_single_component,
+    color_gradient_step,
+    free_energy_step,
+    init_free_energy_g,
+    psi_exp,
+    psi_linear,
+    psi_power,
+    sc_single_component_force,
+    sc_two_component_force,
+)
+from .multiphase3d import (
+    collide_sc_single_component_3d,
+    collide_sc_two_component_3d,
+    sc_two_component_force_3d,
+)
 from .obstacles import (
     compute_obstacle_forces_3d,
     compute_obstacle_moments_3d,
@@ -32,6 +50,7 @@ from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
 from .solver import collide_bgk, collide_mrt, stream
 from .solver3d import collide_bgk3d, collide_mrt3d, stream3d
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
+from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
 from .turbulence import (
     collide_smagorinsky_bgk,
     collide_smagorinsky_bgk3d,
@@ -104,6 +123,27 @@ __all__ = [
     # Ship hull flow runner
     "ShipHullFlowConfig",
     "run_ship_hull_flow",
+    # Multiphase models – D2Q9
+    "psi_linear",
+    "psi_exp",
+    "psi_power",
+    "sc_two_component_force",
+    "collide_sc_two_component",
+    "sc_single_component_force",
+    "collide_sc_single_component",
+    "color_gradient_step",
+    "free_energy_step",
+    "init_free_energy_g",
+    # Multiphase models – D3Q19
+    "sc_two_component_force_3d",
+    "collide_sc_two_component_3d",
+    "collide_sc_single_component_3d",
+    # Dam-break benchmark
+    "DamBreakConfig",
+    "run_dam_break",
+    # Sphere water-entry benchmark
+    "SphereWaterEntryConfig",
+    "run_sphere_water_entry",
     # Shared utilities
     "DiagnosticPoint",
     "resolve_device",
