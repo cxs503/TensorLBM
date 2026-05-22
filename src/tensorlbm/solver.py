@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 
 from .boundaries import apply_simple_channel_boundaries, bounce_back_cells, cylinder_mask, make_channel_wall_mask
-from .d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
+from .d2q9 import C, equilibrium, macroscopic
 
 # ---------------------------------------------------------------------------
 # D2Q9 MRT transformation matrix and its inverse (precomputed from numpy)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from .d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
+from .d2q9 import C, OPPOSITE, equilibrium, macroscopic
 
 
 def cylinder_mask(nx: int, ny: int, cx: float, cy: float, radius: float, device: torch.device) -> torch.Tensor:
@@ -27,8 +27,8 @@ def make_channel_wall_mask(ny: int, nx: int, obstacle_mask: torch.Tensor, device
 def bounce_back_cells(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """Bounce-back reflection on selected cells (obstacle/walls)."""
     bounced = f.clone()
-    for i in range(9):
-        bounced[i, mask] = f[OPPOSITE[i], mask]
+    opp = OPPOSITE.to(f.device)  # (9,)
+    bounced[:, mask] = f[opp][:, mask]
     return bounced
 
 

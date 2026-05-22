@@ -51,8 +51,8 @@ def make_channel_wall_mask_3d(
 def bounce_back_cells_3d(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """Bounce-back reflection on selected cells (obstacle/walls) for D3Q19."""
     bounced = f.clone()
-    for i in range(19):
-        bounced[i, mask] = f[OPPOSITE[i], mask]
+    opp = OPPOSITE.to(f.device)  # (19,)
+    bounced[:, mask] = f[opp][:, mask]
     return bounced
 
 
