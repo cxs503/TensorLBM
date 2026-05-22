@@ -28,6 +28,12 @@ PYTHONPATH=src python examples/cylinder_flow.py
 
 By default, the script runs on CPU and writes output images to `outputs/`.
 
+## Run tests
+
+```bash
+PYTHONPATH=src pytest -q
+```
+
 ## Output
 
 After the run, the example saves:
@@ -35,3 +41,9 @@ After the run, the example saves:
 - `outputs/cylinder_flow_final.png` (velocity magnitude + vorticity)
 
 You can adjust simulation parameters at the top of `examples/cylinder_flow.py` (grid size, Reynolds number, inlet velocity, steps, etc.).
+
+## Current scope and limitations
+
+- Scope: a lightweight D2Q9/BGK cylinder-flow example with CPU-first defaults.
+- The boundary treatment is intentionally simple (equilibrium inlet, zero-gradient outlet, bounce-back walls/obstacle).
+- This project is currently aimed at clarity and extension, not high-fidelity validation or performance benchmarking.
