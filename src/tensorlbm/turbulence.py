@@ -236,7 +236,13 @@ def collide_smagorinsky_mrt3d(
     feq_flat = feq.reshape(19, -1)  # (19, N)
     s_nu_flat = s_nu_field.reshape(-1)  # (N,)
 
-    # Build per-cell relaxation vector (19, N)
+    m = M @ f_flat               # (19, N)
+    m_eq = M @ feq_flat          # (19, N)
+    dm = m - m_eq                # (19, N)
+
+    # Build m_star using broadcasting to avoid allocating a full (19, N) s_vec.
+    # Fixed-rate modes use s_fixed[:, None] broadcast; stress modes 9-13 use
+    # the per-cell Smagorinsky rate.
     s_fixed = torch.tensor(
         [0.0, s_e, s_eps,
          0.0, s_q, 0.0, s_q, 0.0, s_q,
@@ -245,14 +251,10 @@ def collide_smagorinsky_mrt3d(
          1.0, 1.0, 1.0],
         dtype=f.dtype, device=device,
     )  # (19,)
-    # Stress modes 9–13 use the Smagorinsky-derived rate
-    stress_modes = torch.tensor([9, 10, 11, 12, 13], device=device)
-    s_vec = s_fixed.unsqueeze(1).expand(19, f_flat.shape[1]).clone()  # (19, N)
-    s_vec[stress_modes] = s_nu_flat.unsqueeze(0).expand(5, f_flat.shape[1])
-
-    m = M @ f_flat               # (19, N)
-    m_eq = M @ feq_flat          # (19, N)
-    m_star = m - s_vec * (m - m_eq)
+    m_star = m - s_fixed.unsqueeze(1) * dm  # (19, N) via broadcast
+    # Override stress modes 9-13 with the spatially varying Smagorinsky rate
+    for k in (9, 10, 11, 12, 13):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
     return (M_inv @ m_star).reshape(19, nz, ny, nx)
 
 
