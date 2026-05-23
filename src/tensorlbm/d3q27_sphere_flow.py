@@ -237,9 +237,10 @@ def run_sphere_flow_d3q27(config: SphereFlowD3Q27Config) -> Path:
             obstacle_mask=obstacle,
         )
 
-        cd = float(fx) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
-
         if step % config.output_interval == 0 or step == config.n_steps:
+            # Sync only at output intervals (avoids per-step GPU→CPU stall)
+            cd = float(fx.item()) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+
             rho, ux, uy, uz = macroscopic27(f)
             ux = ux.masked_fill(obstacle, 0.0)
             uy = uy.masked_fill(obstacle, 0.0)
@@ -269,6 +270,15 @@ def run_sphere_flow_d3q27(config: SphereFlowD3Q27Config) -> Path:
 
             # Save checkpoint at every output step
             save_checkpoint(f, step, run_dir)
+
+    metadata["diagnostics"] = diagnostics
+    metadata_path = run_dir / "run_metadata.json"
+    metadata_path.write_text(
+        f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+    logger.info("Saved metadata: %s", metadata_path)
+    return run_dir
 
     metadata["diagnostics"] = diagnostics
     metadata_path = run_dir / "run_metadata.json"

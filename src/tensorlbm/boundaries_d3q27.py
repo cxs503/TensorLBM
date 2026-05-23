@@ -27,9 +27,25 @@ import torch
 from .d3q27 import OPPOSITE as OPPOSITE27
 from .d3q27 import equilibrium27
 
+# ---------------------------------------------------------------------------
+# Module-level direction-index constants (derived from the fixed D3Q27 lattice).
+# Using Python lists avoids .item() GPU→CPU sync inside hot BC functions.
+# ---------------------------------------------------------------------------
+
+# Directions with cx > 0 (unknown at x=0 inlet) and their cx<0 opposites
+_D3Q27_INLET_DIRS: list[int] = [1, 7, 9, 11, 13, 19, 21, 23, 25]
+_D3Q27_INLET_OPP: list[int] = [2, 8, 10, 12, 14, 20, 22, 24, 26]   # OPPOSITE[inlet]
+
+# Directions with cx < 0 (unknown at x=nx-1 outlet) and their cx>0 opposites
+_D3Q27_OUTLET_DIRS: list[int] = [2, 8, 10, 12, 14, 20, 22, 24, 26]
+_D3Q27_OUTLET_OPP: list[int] = [1, 7, 9, 11, 13, 19, 21, 23, 25]   # OPPOSITE[outlet]
+
 
 def bounce_back_cells_27(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """Bounce-back reflection on selected cells for D3Q27.
+
+    Uses ``torch.where`` instead of clone + scatter to reduce the number of
+    GPU kernel launches and avoid an intermediate boolean-indexed allocation.
 
     Args:
         f: Distribution tensor of shape ``(27, nz, ny, nx)``.
@@ -38,10 +54,9 @@ def bounce_back_cells_27(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     Returns:
         Updated distribution tensor with bounce-back applied to solid cells.
     """
-    bounced = f.clone()
     opp = OPPOSITE27.to(f.device)  # (27,)
-    bounced[:, mask] = f[opp][:, mask]
-    return bounced
+    # mask.unsqueeze(0) broadcasts (1, nz, ny, nx) → (27, nz, ny, nx)
+    return torch.where(mask.unsqueeze(0), f[opp], f)
 
 
 def zou_he_inlet_velocity_27(
@@ -97,10 +112,12 @@ def zou_he_inlet_velocity_27(
     feq3 = equilibrium27(rho3, ux3, uy3, uz3, device=device)  # (27, nz, ny, 1)
 
     f_new = f.clone()
-    opp = OPPOSITE27.to(device)
-    for k in (1, 7, 9, 11, 13, 19, 21, 23, 25):  # cx > 0
-        opp_k = int(opp[k].item())
-        f_new[k, :, :, 0] = feq3[k, :, :, 0] - feq3[opp_k, :, :, 0] + f[opp_k, :, :, 0]
+    # Vectorised update: no Python loop, no .item()
+    f_new[_D3Q27_INLET_DIRS, :, :, 0] = (
+        feq3[_D3Q27_INLET_DIRS, :, :, 0]
+        - feq3[_D3Q27_INLET_OPP, :, :, 0]
+        + f[_D3Q27_INLET_OPP, :, :, 0]
+    )
     return f_new
 
 
@@ -149,10 +166,12 @@ def zou_he_outlet_pressure_27(f: torch.Tensor, rho_out: float = 1.0) -> torch.Te
     feq3 = equilibrium27(rho3, ux3, uy3, uz3, device=device)  # (27, nz, ny, 1)
 
     f_new = f.clone()
-    opp = OPPOSITE27.to(device)
-    for k in (2, 8, 10, 12, 14, 20, 22, 24, 26):  # cx < 0
-        opp_k = int(opp[k].item())
-        f_new[k, :, :, -1] = feq3[k, :, :, 0] - feq3[opp_k, :, :, 0] + f[opp_k, :, :, -1]
+    # Vectorised update: no Python loop, no .item()
+    f_new[_D3Q27_OUTLET_DIRS, :, :, -1] = (
+        feq3[_D3Q27_OUTLET_DIRS, :, :, 0]
+        - feq3[_D3Q27_OUTLET_OPP, :, :, 0]
+        + f[_D3Q27_OUTLET_OPP, :, :, -1]
+    )
     return f_new
 
 

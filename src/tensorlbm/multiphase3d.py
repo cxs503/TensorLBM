@@ -28,6 +28,9 @@ from .multiphase import psi_exp, psi_linear, psi_power  # re-export for convenie
 
 _CS2 = 1.0 / 3.0
 
+# Cache for SC neighbour-sum gather indices keyed by (nz, ny, nx, device_type, device_index)
+_sc3d_cache: dict[tuple[object, ...], tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = {}
+
 
 def _c_on_3d(device: torch.device) -> torch.Tensor:
     return C.to(device)
@@ -47,6 +50,11 @@ def _sc_neighbor_weighted_sum_3d(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute Σᵢ wᵢ ψ(x+cᵢ) cᵢ for the 3D SC interaction force.
 
+    Uses a vectorised gather (same strategy as :func:`~tensorlbm.solver3d.stream3d`)
+    instead of a Python for-loop, eliminating all GPU→CPU synchronisations and
+    reducing kernel launches to a small constant.  Index tensors are cached per
+    (shape, device) to avoid re-allocation on every call.
+
     Args:
         psi:         Scalar field of shape ``(nz, ny, nx)``.
         solid_mask:  Optional boolean mask ``(nz, ny, nx)``.  Solid/wall cells
@@ -59,28 +67,39 @@ def _sc_neighbor_weighted_sum_3d(
         psi = psi.masked_fill(solid_mask, 0.0)
 
     device = psi.device
-    c = _c_on_3d(device)
-    w = _w_on_3d(device)
+    nz, ny, nx = psi.shape[-3], psi.shape[-2], psi.shape[-1]
+    c = _c_on_3d(device)   # (19, 3)  int64
+    w = _w_on_3d(device)   # (19,)    float32
 
-    Fx = torch.zeros_like(psi)
-    Fy = torch.zeros_like(psi)
-    Fz = torch.zeros_like(psi)
-
-    for i in range(19):
-        cx_i = int(c[i, 0].item())
-        cy_i = int(c[i, 1].item())
-        cz_i = int(c[i, 2].item())
-        if cx_i == 0 and cy_i == 0 and cz_i == 0:
-            continue
-        w_i = float(w[i].item())
-        # psi shape: (nz, ny, nx) → dims: 0=z, 1=y, 2=x
-        psi_shifted = (
-            torch.roll(torch.roll(torch.roll(psi, cx_i, dims=2), cy_i, dims=1), cz_i, dims=0)
+    # Build and cache gather index tensors (one-time cost per unique shape/device)
+    cache_key = (nz, ny, nx, device.type, device.index)
+    if cache_key not in _sc3d_cache:
+        cz = c[:, 2]  # (19,)
+        cy = c[:, 1]  # (19,)
+        cx = c[:, 0]  # (19,)
+        z_src = (torch.arange(nz, device=device).unsqueeze(0) - cz.unsqueeze(1)) % nz
+        y_src = (torch.arange(ny, device=device).unsqueeze(0) - cy.unsqueeze(1)) % ny
+        x_src = (torch.arange(nx, device=device).unsqueeze(0) - cx.unsqueeze(1)) % nx
+        # shape: (19, nz/ny/nx, 1, 1) or similar for broadcasting to (19, nz, ny, nx)
+        _sc3d_cache[cache_key] = (
+            z_src.view(19, nz, 1, 1),  # (19, nz, 1, 1)
+            y_src.view(19, 1, ny, 1),  # (19, 1, ny, 1)
+            x_src.view(19, 1, 1, nx),  # (19, 1, 1, nx)
         )
-        Fx += w_i * psi_shifted * cx_i
-        Fy += w_i * psi_shifted * cy_i
-        Fz += w_i * psi_shifted * cz_i
 
+    z_idx, y_idx, x_idx = _sc3d_cache[cache_key]
+    # psi_shifts: (19, nz, ny, nx) – all shifted copies gathered in one operation
+    psi_shifts = psi[z_idx, y_idx, x_idx]   # advanced-index gather, no Python loop
+
+    # w * c components: (19, 1, 1, 1) for broadcasting over (nz, ny, nx)
+    cx_float = c[:, 0].float().view(19, 1, 1, 1)
+    cy_float = c[:, 1].float().view(19, 1, 1, 1)
+    cz_float = c[:, 2].float().view(19, 1, 1, 1)
+    w_4d = w.view(19, 1, 1, 1)
+
+    Fx = (w_4d * cx_float * psi_shifts).sum(0)   # (nz, ny, nx)
+    Fy = (w_4d * cy_float * psi_shifts).sum(0)   # (nz, ny, nx)
+    Fz = (w_4d * cz_float * psi_shifts).sum(0)   # (nz, ny, nx)
     return Fx, Fy, Fz
 
 
