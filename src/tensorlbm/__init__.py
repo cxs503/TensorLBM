@@ -89,6 +89,9 @@ from .multiphase import (
 from .multiphase3d import (
     collide_sc_single_component_3d,
     collide_sc_two_component_3d,
+    color_gradient_step_3d,
+    free_energy_step_3d,
+    init_free_energy_g_3d,
     sc_two_component_force_3d,
 )
 from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
@@ -119,6 +122,12 @@ from .turbulence import (
     collide_smagorinsky_mrt,
     collide_smagorinsky_mrt3d,
     collide_smagorinsky_mrt27,
+    collide_vreman_bgk,
+    collide_vreman_bgk3d,
+    collide_vreman_bgk27,
+    collide_wale_bgk,
+    collide_wale_bgk3d,
+    collide_wale_bgk27,
 )
 from .utils import (
     DiagnosticPoint,
@@ -210,6 +219,14 @@ __all__ = [
     "collide_smagorinsky_mrt",
     "collide_smagorinsky_bgk3d",
     "collide_smagorinsky_mrt3d",
+    # WALE turbulence
+    "collide_wale_bgk",
+    "collide_wale_bgk3d",
+    "collide_wale_bgk27",
+    # Vreman turbulence
+    "collide_vreman_bgk",
+    "collide_vreman_bgk3d",
+    "collide_vreman_bgk27",
     # Wave BC
     "airy_wave_velocity_3d",
     "zou_he_inlet_velocity_profile_3d",
@@ -232,6 +249,9 @@ __all__ = [
     "sc_two_component_force_3d",
     "collide_sc_two_component_3d",
     "collide_sc_single_component_3d",
+    "color_gradient_step_3d",
+    "init_free_energy_g_3d",
+    "free_energy_step_3d",
     # Dam-break benchmark
     "DamBreakConfig",
     "run_dam_break",

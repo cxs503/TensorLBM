@@ -245,8 +245,316 @@ __all__ = [
     "collide_sc_two_component_3d",
     # 3D SC single-component
     "collide_sc_single_component_3d",
+    # 3D Color-Gradient
+    "color_gradient_step_3d",
+    # 3D Free-Energy / Phase-Field
+    "init_free_energy_g_3d",
+    "free_energy_step_3d",
     # Re-exported pseudopotential helpers (same as 2D)
     "psi_linear",
     "psi_exp",
     "psi_power",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Model 3 – Color-Gradient (3D, D3Q19)
+# ---------------------------------------------------------------------------
+#
+# Algorithm mirrors the 2-D Latva-Kokko & Rothman (2005) CG model:
+#   1. BGK collision on the total distribution.
+#   2. Surface-tension perturbation: Δfᵢ = (A/2)|∇φ| wᵢ [(cᵢ·n̂)² − 1/3]
+#   3. Recoloring to maintain phase separation.
+#
+# The 3-D phase-field gradient is approximated by central differences in all
+# three coordinate directions.
+
+
+def _grad_phase_field_3d(
+    rho_r: torch.Tensor,
+    rho_b: torch.Tensor,
+) -> tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+]:
+    """3-D phase-field gradient and unit normal for the CG model.
+
+    For a field of shape ``(nz, ny, nx)``:
+        dim 0 ↔ z,  dim 1 ↔ y,  dim 2 ↔ x.
+
+    Returns:
+        ``(phi, mag, nhat_x, nhat_y, nhat_z)`` all of shape ``(nz, ny, nx)``.
+    """
+    n = rho_r + rho_b
+    n_safe = torch.clamp(n, min=1e-12)
+    phi = (rho_r - rho_b) / n_safe
+
+    dphi_dx = 0.5 * (torch.roll(phi, -1, dims=2) - torch.roll(phi, 1, dims=2))
+    dphi_dy = 0.5 * (torch.roll(phi, -1, dims=1) - torch.roll(phi, 1, dims=1))
+    dphi_dz = 0.5 * (torch.roll(phi, -1, dims=0) - torch.roll(phi, 1, dims=0))
+
+    mag = torch.sqrt(dphi_dx ** 2 + dphi_dy ** 2 + dphi_dz ** 2)
+    mag_safe = torch.clamp(mag, min=1e-12)
+    nhat_x = dphi_dx / mag_safe
+    nhat_y = dphi_dy / mag_safe
+    nhat_z = dphi_dz / mag_safe
+
+    return phi, mag, nhat_x, nhat_y, nhat_z
+
+
+def color_gradient_step_3d(
+    f_r: torch.Tensor,
+    f_b: torch.Tensor,
+    tau: float = 1.0,
+    A: float = 0.04,
+    beta: float = 0.7,
+    gx: float = 0.0,
+    gy: float = 0.0,
+    gz: float = 0.0,
+    solid_mask: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Color-Gradient two-phase step for D3Q19.
+
+    Performs one full 3-D CG iteration:
+      (a) BGK collision on the total distribution;
+      (b) Surface-tension perturbation proportional to |∇φ|;
+      (c) Recoloring to restore the two phases.
+
+    Args:
+        f_r:         Red (heavy) component distribution, shape ``(19, nz, ny, nx)``.
+        f_b:         Blue (light) component distribution, shape ``(19, nz, ny, nx)``.
+        tau:         Shared relaxation time (same for both components).
+        A:           Surface-tension coefficient (larger → stronger tension).
+        beta:        Recoloring parameter ∈ (0, 1].  β→1 gives sharp interfaces.
+        gx:          x body-force acceleration.
+        gy:          y body-force acceleration.
+        gz:          z body-force acceleration.
+        solid_mask:  Optional boolean mask ``(nz, ny, nx)`` of solid/wall cells.
+
+    Returns:
+        Updated ``(f_r, f_b)`` after collision + recoloring.
+    """
+    device = f_r.device
+    c = _c_on_3d(device)
+    w = _w_on_3d(device)
+
+    cx = c[:, 0].float().view(19, 1, 1, 1)
+    cy = c[:, 1].float().view(19, 1, 1, 1)
+    cz = c[:, 2].float().view(19, 1, 1, 1)
+    w_v = w.view(19, 1, 1, 1)
+
+    # --- 1. Total distribution and macroscopic quantities ---
+    f_total = f_r + f_b
+    rho_r_s = f_r.sum(dim=0)
+    rho_b_s = f_b.sum(dim=0)
+    rho = rho_r_s + rho_b_s
+    rho_safe = torch.clamp(rho, min=1e-12)
+
+    ux = (f_total * cx).sum(dim=0) / rho_safe
+    uy = (f_total * cy).sum(dim=0) / rho_safe
+    uz = (f_total * cz).sum(dim=0) / rho_safe
+
+    feq = equilibrium3d(rho, ux + tau * gx, uy + tau * gy, uz + tau * gz)
+    f_post = f_total - (f_total - feq) / tau
+
+    if solid_mask is not None:
+        f_post = torch.where(solid_mask.unsqueeze(0), f_total, f_post)
+
+    # --- 2. Surface-tension perturbation ---
+    rho_r_m = rho_r_s if solid_mask is None else rho_r_s.masked_fill(solid_mask, 0.0)
+    rho_b_m = rho_b_s if solid_mask is None else rho_b_s.masked_fill(solid_mask, 0.0)
+    _phi, mag, nhat_x, nhat_y, nhat_z = _grad_phase_field_3d(rho_r_m, rho_b_m)
+
+    ci_dot_n = (
+        cx * nhat_x.unsqueeze(0)
+        + cy * nhat_y.unsqueeze(0)
+        + cz * nhat_z.unsqueeze(0)
+    )  # (19, nz, ny, nx)
+    B_iso = 1.0 / 3.0
+    perturbation = (A / 2.0) * mag.unsqueeze(0) * w_v * (ci_dot_n ** 2 - B_iso)
+    f_post = f_post + perturbation
+
+    # --- 3. Recoloring step (Latva-Kokko & Rothman 2005) ---
+    # feq_unit: equilibrium at zero velocity with unit density → wᵢ per cell
+    feq_unit = equilibrium3d(
+        torch.ones_like(rho),
+        torch.zeros_like(ux),
+        torch.zeros_like(uy),
+        torch.zeros_like(uz),
+    )
+    recolor_amp = (
+        beta * (rho_r_s * rho_b_s / rho_safe).unsqueeze(0) * ci_dot_n * feq_unit
+    )
+
+    f_r_out = (rho_r_s / rho_safe).unsqueeze(0) * f_post + recolor_amp
+    f_b_out = (rho_b_s / rho_safe).unsqueeze(0) * f_post - recolor_amp
+
+    if solid_mask is not None:
+        mask_4d = solid_mask.unsqueeze(0)
+        f_r_out = torch.where(mask_4d, f_r, f_r_out)
+        f_b_out = torch.where(mask_4d, f_b, f_b_out)
+
+    return f_r_out, f_b_out
+
+
+# ---------------------------------------------------------------------------
+# Model 4 – Free-Energy / Phase-Field (3D, D3Q19)
+# ---------------------------------------------------------------------------
+#
+# Extends the 2-D Swift et al. formulation to three dimensions.
+# Two coupled LBM equations:
+#   f  – momentum distribution for total density ρ and velocity u.
+#   g  – order-parameter distribution that advects the phase field φ = Σᵢ gᵢ.
+#
+# Chemical potential: μ = −Aφ + Bφ³ − κ∇²φ
+# Driving force:      Fᵢ = −φ ∇μ + ρ_eff g_body   (Korteweg force)
+
+
+def _laplacian_3d(field: torch.Tensor) -> torch.Tensor:
+    """3-D Laplacian via second-order central differences (periodic).
+
+    For a field of shape ``(nz, ny, nx)``:
+        dim 0 ↔ z,  dim 1 ↔ y,  dim 2 ↔ x.
+    """
+    return (
+        torch.roll(field, 1, dims=2) + torch.roll(field, -1, dims=2)
+        + torch.roll(field, 1, dims=1) + torch.roll(field, -1, dims=1)
+        + torch.roll(field, 1, dims=0) + torch.roll(field, -1, dims=0)
+        - 6.0 * field
+    )
+
+
+def init_free_energy_g_3d(
+    phi: torch.Tensor,
+    ux: torch.Tensor | None = None,
+    uy: torch.Tensor | None = None,
+    uz: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Initialise the 3-D FE order-parameter distribution in equilibrium.
+
+    Args:
+        phi: Initial phase field, shape ``(nz, ny, nx)``.
+        ux:  Initial x-velocity (optional, defaults to zero).
+        uy:  Initial y-velocity (optional, defaults to zero).
+        uz:  Initial z-velocity (optional, defaults to zero).
+
+    Returns:
+        Equilibrium distribution g, shape ``(19, nz, ny, nx)``.
+    """
+    device = phi.device
+    c = _c_on_3d(device)
+    w = _w_on_3d(device).view(19, 1, 1, 1)
+
+    if ux is None:
+        ux = torch.zeros_like(phi)
+    if uy is None:
+        uy = torch.zeros_like(phi)
+    if uz is None:
+        uz = torch.zeros_like(phi)
+
+    cx = c[:, 0].float().view(19, 1, 1, 1)
+    cy = c[:, 1].float().view(19, 1, 1, 1)
+    cz = c[:, 2].float().view(19, 1, 1, 1)
+    cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
+    u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
+    return w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+
+
+def free_energy_step_3d(
+    f: torch.Tensor,
+    g: torch.Tensor,
+    tau_f: float = 1.0,
+    tau_g: float = 0.7,
+    A: float = 0.1,
+    B: float = 0.1,
+    kappa: float = 0.02,
+    Gamma: float = 0.5,
+    gx: float = 0.0,
+    gy: float = 0.0,
+    gz: float = 0.0,
+    rho_heavy: float | None = None,
+    rho_light: float | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Free-Energy two-phase step for D3Q19.
+
+    Two coupled LBM equations:
+      • **f**: momentum distribution for total density ρ and velocity u.
+      • **g**: order-parameter distribution that advects the phase field φ.
+
+    The Korteweg stress drives interface dynamics.  When *rho_heavy* and
+    *rho_light* are given the gravitational body force is scaled by the local
+    effective density (Boussinesq buoyancy).
+
+    Args:
+        f:          Momentum distribution, shape ``(19, nz, ny, nx)``.
+        g:          Order-parameter distribution, shape ``(19, nz, ny, nx)``;
+                    its zeroth moment is the phase field φ = Σᵢ gᵢ.
+        tau_f:      Relaxation time for momentum (ν = cs²(τ_f − ½)).
+        tau_g:      Relaxation time for phase field (M = cs²(τ_g − ½)).
+        A:          Double-well coefficient.
+        B:          Quartic coefficient.
+        kappa:      Interfacial-tension parameter (gradient penalty).
+        Gamma:      Phase-field mobility coupling.
+        gx:         x body-force acceleration.
+        gy:         y body-force acceleration.
+        gz:         z body-force acceleration.
+        rho_heavy:  Effective density for the φ=+1 phase (Boussinesq buoyancy).
+        rho_light:  Effective density for the φ=−1 phase.
+
+    Returns:
+        Updated ``(f, g)`` after one collision step.
+    """
+    device = f.device
+    c = _c_on_3d(device)
+    w = _w_on_3d(device)
+    cx = c[:, 0].float().view(19, 1, 1, 1)
+    cy = c[:, 1].float().view(19, 1, 1, 1)
+    cz = c[:, 2].float().view(19, 1, 1, 1)
+    w_v = w.view(19, 1, 1, 1)
+
+    # Macroscopic quantities
+    rho, ux, uy, uz = macroscopic3d(f)
+    phi = g.sum(dim=0)  # order parameter
+
+    # Effective density for buoyancy (Boussinesq approximation)
+    if rho_heavy is not None and rho_light is not None:
+        phi_c = phi.clamp(-1.0, 1.0)
+        rho_eff = 0.5 * ((1.0 + phi_c) * rho_heavy + (1.0 - phi_c) * rho_light)
+    else:
+        rho_eff = rho
+
+    # Chemical potential: μ = −Aφ + Bφ³ − κ∇²φ
+    mu = -A * phi + B * phi ** 3 - kappa * _laplacian_3d(phi)
+
+    # Korteweg (capillary) body force: F_cap = −φ ∇μ + ρ_eff g_body
+    grad_mu_x = 0.5 * (torch.roll(mu, -1, dims=2) - torch.roll(mu, 1, dims=2))
+    grad_mu_y = 0.5 * (torch.roll(mu, -1, dims=1) - torch.roll(mu, 1, dims=1))
+    grad_mu_z = 0.5 * (torch.roll(mu, -1, dims=0) - torch.roll(mu, 1, dims=0))
+    Fx = -phi * grad_mu_x + rho_eff * gx
+    Fy = -phi * grad_mu_y + rho_eff * gy
+    Fz = -phi * grad_mu_z + rho_eff * gz
+
+    rho_s = torch.clamp(rho, min=1e-12)
+    ux_eq = ux + tau_f * Fx / rho_s
+    uy_eq = uy + tau_f * Fy / rho_s
+    uz_eq = uz + tau_f * Fz / rho_s
+
+    # Collision for f (BGK with Korteweg + buoyancy force)
+    feq = equilibrium3d(rho, ux_eq, uy_eq, uz_eq)
+    f_out = f - (f - feq) / tau_f
+
+    # Equilibrium for g  (D=3, cs²=1/3 → diff_factor = 3|c|² − 3)
+    cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
+    u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
+    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+    c_sq = cx ** 2 + cy ** 2 + cz ** 2
+    diff_factor = c_sq / _CS2 - 3.0  # = 3|c|² − 3;  Σ_i wᵢ diff_factor = 0
+    geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
+    geq = geq_adv + geq_diff
+    g_out = g - (g - geq) / tau_g
+
+    return f_out, g_out
+

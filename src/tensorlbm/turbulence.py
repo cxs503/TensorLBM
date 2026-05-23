@@ -1,28 +1,46 @@
-"""Smagorinsky large-eddy-simulation (LES) turbulence sub-grid models.
+"""LES turbulence sub-grid models for the lattice Boltzmann method.
 
-These functions augment the standard BGK and MRT collision operators with a
-local effective relaxation time computed from the non-equilibrium stress
-magnitude following Hou *et al.* (1994) and Yu *et al.* (2006).
+Three families of LES closures are provided, covering D2Q9, D3Q19 and D3Q27
+velocity sets:
 
-The self-consistent effective relaxation time at each cell is:
+**Smagorinsky** (Hou *et al.* 1994, Yu *et al.* 2006)
+    A self-consistent effective relaxation time is computed from the Frobenius
+    norm of the non-equilibrium stress tensor.  BGK and MRT variants are
+    available.
 
-.. math::
+**WALE** – Wall-Adapting Local Eddy-viscosity (Nicoud & Ducros, 1999)
+    The eddy viscosity is derived from the traceless symmetric part of the
+    squared velocity-gradient tensor.  The WALE model reproduces the correct
+    cubic near-wall behaviour (ν_t ∝ y³) without damping functions, making it
+    more accurate than Smagorinsky for wall-bounded flows.
 
-    \\tau_{eff} = \\frac{1}{2}\\left(\\tau_0 +
-        \\sqrt{\\tau_0^2 + 18\\,C_s^2\\,\\frac{|\\Pi^{neq}|_F}{\\rho}}\\right)
+**Vreman** (Vreman, 2004)
+    An algebraic model based on the invariants of the velocity-gradient tensor.
+    Computationally cheaper than WALE and naturally produces zero eddy viscosity
+    in laminar regions and for solid-body rotation.
 
-where :math:`|\\Pi^{neq}|_F` is the Frobenius norm of the non-equilibrium
-stress tensor and :math:`C_s` is the Smagorinsky constant (typically 0.1).
+For WALE and Vreman the velocity-gradient tensor is approximated by second-order
+central finite differences of the local macroscopic velocity field (periodic
+boundaries).  The eddy viscosity is converted to an effective per-cell relaxation
+time via :math:`\\tau_{\\rm eff} = \\tau_0 + 3\\,\\nu_t`.
 
 Exported functions
 ------------------
-- :func:`collide_smagorinsky_bgk`    – D2Q9 BGK + Smagorinsky
-- :func:`collide_smagorinsky_mrt`    – D2Q9 MRT + Smagorinsky
-- :func:`collide_smagorinsky_bgk3d`  – D3Q19 BGK + Smagorinsky
-- :func:`collide_smagorinsky_mrt3d`  – D3Q19 MRT + Smagorinsky (recommended for
-  high-Reynolds ship flows)
-- :func:`collide_smagorinsky_bgk27`  – D3Q27 BGK + Smagorinsky
-- :func:`collide_smagorinsky_mrt27`  – D3Q27 MRT + Smagorinsky
+Smagorinsky
+    - :func:`collide_smagorinsky_bgk`    – D2Q9 BGK + Smagorinsky
+    - :func:`collide_smagorinsky_mrt`    – D2Q9 MRT + Smagorinsky
+    - :func:`collide_smagorinsky_bgk3d`  – D3Q19 BGK + Smagorinsky
+    - :func:`collide_smagorinsky_mrt3d`  – D3Q19 MRT + Smagorinsky
+    - :func:`collide_smagorinsky_bgk27`  – D3Q27 BGK + Smagorinsky
+    - :func:`collide_smagorinsky_mrt27`  – D3Q27 MRT + Smagorinsky
+WALE
+    - :func:`collide_wale_bgk`    – D2Q9  BGK + WALE
+    - :func:`collide_wale_bgk3d`  – D3Q19 BGK + WALE
+    - :func:`collide_wale_bgk27`  – D3Q27 BGK + WALE
+Vreman
+    - :func:`collide_vreman_bgk`    – D2Q9  BGK + Vreman
+    - :func:`collide_vreman_bgk3d`  – D3Q19 BGK + Vreman
+    - :func:`collide_vreman_bgk27`  – D3Q27 BGK + Vreman
 """
 
 from __future__ import annotations
@@ -487,11 +505,449 @@ def collide_smagorinsky_mrt27(
     return (M_inv @ m_star).reshape(27, nz, ny, nx)
 
 
+# ---------------------------------------------------------------------------
+# Velocity-gradient helpers (shared by WALE and Vreman)
+# ---------------------------------------------------------------------------
+
+def _velocity_gradients_2d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Velocity-gradient tensor for a 2-D field via central differences.
+
+    For a field of shape ``(ny, nx)``:
+        dim -1 ↔ x,  dim -2 ↔ y.
+
+    Returns:
+        ``(g11, g12, g21, g22)`` where ``g_ij = ∂u_i/∂x_j``.
+    """
+    g11 = 0.5 * (torch.roll(ux, -1, dims=-1) - torch.roll(ux, 1, dims=-1))
+    g12 = 0.5 * (torch.roll(ux, -1, dims=-2) - torch.roll(ux, 1, dims=-2))
+    g21 = 0.5 * (torch.roll(uy, -1, dims=-1) - torch.roll(uy, 1, dims=-1))
+    g22 = 0.5 * (torch.roll(uy, -1, dims=-2) - torch.roll(uy, 1, dims=-2))
+    return g11, g12, g21, g22
+
+
+def _velocity_gradients_3d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+) -> tuple[
+    torch.Tensor, torch.Tensor, torch.Tensor,
+    torch.Tensor, torch.Tensor, torch.Tensor,
+    torch.Tensor, torch.Tensor, torch.Tensor,
+]:
+    """Velocity-gradient tensor for a 3-D field via central differences.
+
+    For a field of shape ``(nz, ny, nx)``:
+        dim 0 ↔ z,  dim 1 ↔ y,  dim 2 ↔ x.
+
+    Returns:
+        ``(g11, g12, g13, g21, g22, g23, g31, g32, g33)``
+        where ``g_ij = ∂u_i/∂x_j``.
+    """
+    def _cd(u: torch.Tensor, dim: int) -> torch.Tensor:
+        return 0.5 * (torch.roll(u, -1, dims=dim) - torch.roll(u, 1, dims=dim))
+
+    g11 = _cd(ux, 2)  # ∂ux/∂x
+    g12 = _cd(ux, 1)  # ∂ux/∂y
+    g13 = _cd(ux, 0)  # ∂ux/∂z
+    g21 = _cd(uy, 2)  # ∂uy/∂x
+    g22 = _cd(uy, 1)  # ∂uy/∂y
+    g23 = _cd(uy, 0)  # ∂uy/∂z
+    g31 = _cd(uz, 2)  # ∂uz/∂x
+    g32 = _cd(uz, 1)  # ∂uz/∂y
+    g33 = _cd(uz, 0)  # ∂uz/∂z
+    return g11, g12, g13, g21, g22, g23, g31, g32, g33
+
+
+# ---------------------------------------------------------------------------
+# WALE eddy-viscosity helpers
+# ---------------------------------------------------------------------------
+
+def _wale_nu_t_2d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    C_w: float,
+) -> torch.Tensor:
+    """WALE kinematic eddy viscosity for a 2-D velocity field.
+
+    Computes the traceless symmetric part S^d of the squared velocity-gradient
+    tensor g² and returns:
+
+    .. math::
+
+        \\nu_t = C_w^2 \\, \\frac{\\|S^d\\|_F^3}{\\|S\\|_F^5 + \\|S^d\\|_F^{5/2}}
+
+    with the lattice filter width :math:`\\Delta = 1`.
+
+    Args:
+        ux: x-velocity, shape ``(ny, nx)``.
+        uy: y-velocity, shape ``(ny, nx)``.
+        C_w: WALE constant (typically 0.5).
+
+    Returns:
+        Per-cell eddy viscosity tensor, same shape as *ux*.
+    """
+    g11, g12, g21, g22 = _velocity_gradients_2d(ux, uy)
+
+    # g² = g @ g  (2×2 matrix product, element-wise per cell)
+    g2_11 = g11 * g11 + g12 * g21
+    g2_12 = g11 * g12 + g12 * g22
+    g2_21 = g21 * g11 + g22 * g21
+    g2_22 = g21 * g12 + g22 * g22
+
+    # Traceless symmetric part: S^d_ij = (g²_ij + g²_ji)/2 − δ_ij tr(g²)/D, D=2
+    tr_g2 = g2_11 + g2_22
+    Sd_11 = g2_11 - tr_g2 * 0.5
+    Sd_22 = g2_22 - tr_g2 * 0.5
+    Sd_12 = 0.5 * (g2_12 + g2_21)
+    Sd_norm2 = Sd_11 ** 2 + Sd_22 ** 2 + 2.0 * Sd_12 ** 2
+
+    # Strain-rate norm: ||S||² where S_ij = (g_ij + g_ji)/2
+    S_12 = 0.5 * (g12 + g21)
+    S_norm2 = g11 ** 2 + g22 ** 2 + 2.0 * S_12 ** 2
+
+    eps = 1e-30
+    numerator = torch.clamp(Sd_norm2, min=0.0) ** 1.5
+    denominator = (
+        torch.clamp(S_norm2, min=0.0) ** 2.5
+        + torch.clamp(Sd_norm2, min=0.0) ** 1.25
+        + eps
+    )
+    return (C_w ** 2) * numerator / denominator
+
+
+def _wale_nu_t_3d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    C_w: float,
+) -> torch.Tensor:
+    """WALE kinematic eddy viscosity for a 3-D velocity field."""
+    g11, g12, g13, g21, g22, g23, g31, g32, g33 = _velocity_gradients_3d(ux, uy, uz)
+
+    # g² = g @ g  (3×3 matrix product, element-wise per cell)
+    g2_11 = g11 * g11 + g12 * g21 + g13 * g31
+    g2_12 = g11 * g12 + g12 * g22 + g13 * g32
+    g2_13 = g11 * g13 + g12 * g23 + g13 * g33
+    g2_21 = g21 * g11 + g22 * g21 + g23 * g31
+    g2_22 = g21 * g12 + g22 * g22 + g23 * g32
+    g2_23 = g21 * g13 + g22 * g23 + g23 * g33
+    g2_31 = g31 * g11 + g32 * g21 + g33 * g31
+    g2_32 = g31 * g12 + g32 * g22 + g33 * g32
+    g2_33 = g31 * g13 + g32 * g23 + g33 * g33
+
+    # Traceless symmetric part: S^d_ij = (g²_ij + g²_ji)/2 − δ_ij tr(g²)/3
+    tr_g2 = g2_11 + g2_22 + g2_33
+    inv3 = 1.0 / 3.0
+    Sd_11 = g2_11 - tr_g2 * inv3
+    Sd_22 = g2_22 - tr_g2 * inv3
+    Sd_33 = g2_33 - tr_g2 * inv3
+    Sd_12 = 0.5 * (g2_12 + g2_21)
+    Sd_13 = 0.5 * (g2_13 + g2_31)
+    Sd_23 = 0.5 * (g2_23 + g2_32)
+    Sd_norm2 = (
+        Sd_11 ** 2 + Sd_22 ** 2 + Sd_33 ** 2
+        + 2.0 * (Sd_12 ** 2 + Sd_13 ** 2 + Sd_23 ** 2)
+    )
+
+    S_12 = 0.5 * (g12 + g21)
+    S_13 = 0.5 * (g13 + g31)
+    S_23 = 0.5 * (g23 + g32)
+    S_norm2 = (
+        g11 ** 2 + g22 ** 2 + g33 ** 2
+        + 2.0 * (S_12 ** 2 + S_13 ** 2 + S_23 ** 2)
+    )
+
+    eps = 1e-30
+    numerator = torch.clamp(Sd_norm2, min=0.0) ** 1.5
+    denominator = (
+        torch.clamp(S_norm2, min=0.0) ** 2.5
+        + torch.clamp(Sd_norm2, min=0.0) ** 1.25
+        + eps
+    )
+    return (C_w ** 2) * numerator / denominator
+
+
+# ---------------------------------------------------------------------------
+# Vreman eddy-viscosity helpers
+# ---------------------------------------------------------------------------
+
+def _vreman_nu_t_2d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    C_V: float,
+) -> torch.Tensor:
+    """Vreman kinematic eddy viscosity for a 2-D velocity field.
+
+    Reference: Vreman (2004) Phys. Fluids 16, 3670.
+
+    With :math:`\\alpha_{ij} = \\partial u_i / \\partial x_j` (lattice Δ = 1)
+    and :math:`\\beta_{ij} = \\sum_k \\alpha_{ki}\\,\\alpha_{kj}`:
+
+    .. math::
+
+        \\nu_t = C_V \\sqrt{\\frac{\\max(B_\\beta,0)}{A_\\alpha + \\epsilon}}
+
+    where :math:`A_\\alpha = \\|\\alpha\\|_F^2` and
+    :math:`B_\\beta = \\beta_{11}\\beta_{22} - \\beta_{12}^2`.
+
+    Args:
+        ux: x-velocity, shape ``(ny, nx)``.
+        uy: y-velocity, shape ``(ny, nx)``.
+        C_V: Vreman constant (typically 2.5 C_s²; default 0.025 for C_s = 0.1).
+
+    Returns:
+        Per-cell eddy viscosity tensor, same shape as *ux*.
+    """
+    g11, g12, g21, g22 = _velocity_gradients_2d(ux, uy)
+
+    # β = α^T α  (α_ij = g_ij)
+    beta_11 = g11 * g11 + g21 * g21
+    beta_22 = g12 * g12 + g22 * g22
+    beta_12 = g11 * g12 + g21 * g22
+
+    A_alpha = g11 ** 2 + g12 ** 2 + g21 ** 2 + g22 ** 2
+    B_beta = beta_11 * beta_22 - beta_12 ** 2
+
+    eps = 1e-30
+    return C_V * torch.sqrt(torch.clamp(B_beta, min=0.0) / (A_alpha + eps))
+
+
+def _vreman_nu_t_3d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    C_V: float,
+) -> torch.Tensor:
+    """Vreman kinematic eddy viscosity for a 3-D velocity field."""
+    g11, g12, g13, g21, g22, g23, g31, g32, g33 = _velocity_gradients_3d(ux, uy, uz)
+
+    # β = α^T α  (α_ij = g_ij)
+    beta_11 = g11 * g11 + g21 * g21 + g31 * g31
+    beta_22 = g12 * g12 + g22 * g22 + g32 * g32
+    beta_33 = g13 * g13 + g23 * g23 + g33 * g33
+    beta_12 = g11 * g12 + g21 * g22 + g31 * g32
+    beta_13 = g11 * g13 + g21 * g23 + g31 * g33
+    beta_23 = g12 * g13 + g22 * g23 + g32 * g33
+
+    A_alpha = (
+        g11 ** 2 + g12 ** 2 + g13 ** 2
+        + g21 ** 2 + g22 ** 2 + g23 ** 2
+        + g31 ** 2 + g32 ** 2 + g33 ** 2
+    )
+    B_beta = (
+        beta_11 * beta_22 - beta_12 ** 2
+        + beta_11 * beta_33 - beta_13 ** 2
+        + beta_22 * beta_33 - beta_23 ** 2
+    )
+
+    eps = 1e-30
+    return C_V * torch.sqrt(torch.clamp(B_beta, min=0.0) / (A_alpha + eps))
+
+
+def _nu_t_to_tau_eff(tau: float, nu_t: torch.Tensor) -> torch.Tensor:
+    """Convert per-cell turbulent eddy viscosity to effective relaxation time.
+
+    Uses the lattice relation :math:`\\nu = c_s^2(\\tau - 1/2) = (\\tau-1/2)/3`
+    so :math:`\\tau_{\\rm eff} = \\tau_0 + 3\\,\\nu_t` (clamped to stay > 0.5).
+
+    Args:
+        tau: Molecular (baseline) relaxation time :math:`\\tau_0`.
+        nu_t: Per-cell turbulent eddy viscosity tensor.
+
+    Returns:
+        Effective per-cell :math:`\\tau_{\\rm eff}` tensor, same shape as *nu_t*.
+    """
+    return torch.clamp(tau + 3.0 * nu_t, min=0.5001)
+
+
+# ---------------------------------------------------------------------------
+# WALE collision operators
+# ---------------------------------------------------------------------------
+
+def collide_wale_bgk(
+    f: torch.Tensor,
+    tau: float,
+    C_w: float = 0.5,
+) -> torch.Tensor:
+    """D2Q9 BGK collision with WALE LES sub-grid turbulence model.
+
+    The WALE model (Nicoud & Ducros, 1999) derives the eddy viscosity from the
+    traceless symmetric part of the squared velocity-gradient tensor.  Unlike
+    Smagorinsky it produces the correct cubic near-wall vanishing of ν_t without
+    any explicit damping function.
+
+    Velocity gradients are computed from the local macroscopic velocity field
+    via second-order central differences.
+
+    Args:
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_w: WALE constant (default 0.5; typical range 0.3–0.6).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy = macroscopic(f)
+    feq = equilibrium(rho, ux, uy)
+    f_neq = f - feq
+
+    nu_t = _wale_nu_t_2d(ux, uy, C_w)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
+def collide_wale_bgk3d(
+    f: torch.Tensor,
+    tau: float,
+    C_w: float = 0.5,
+) -> torch.Tensor:
+    """D3Q19 BGK collision with WALE LES sub-grid turbulence model.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_w: WALE constant (default 0.5).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    f_neq = f - feq
+
+    nu_t = _wale_nu_t_3d(ux, uy, uz, C_w)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
+def collide_wale_bgk27(
+    f: torch.Tensor,
+    tau: float,
+    C_w: float = 0.5,
+) -> torch.Tensor:
+    """D3Q27 BGK collision with WALE LES sub-grid turbulence model.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_w: WALE constant (default 0.5).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    f_neq = f - feq
+
+    nu_t = _wale_nu_t_3d(ux, uy, uz, C_w)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
+# ---------------------------------------------------------------------------
+# Vreman collision operators
+# ---------------------------------------------------------------------------
+
+def collide_vreman_bgk(
+    f: torch.Tensor,
+    tau: float,
+    C_V: float = 0.025,
+) -> torch.Tensor:
+    """D2Q9 BGK collision with Vreman LES sub-grid turbulence model.
+
+    The Vreman (2004) model computes the eddy viscosity from the invariants of
+    the velocity-gradient tensor.  It is computationally cheap and naturally
+    gives zero eddy viscosity in laminar, solid-body-rotation and
+    wall-bounded regions.
+
+    Args:
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_V: Vreman constant (default 0.025; corresponds to C_s ≈ 0.1).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy = macroscopic(f)
+    feq = equilibrium(rho, ux, uy)
+    f_neq = f - feq
+
+    nu_t = _vreman_nu_t_2d(ux, uy, C_V)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
+def collide_vreman_bgk3d(
+    f: torch.Tensor,
+    tau: float,
+    C_V: float = 0.025,
+) -> torch.Tensor:
+    """D3Q19 BGK collision with Vreman LES sub-grid turbulence model.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_V: Vreman constant (default 0.025).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    f_neq = f - feq
+
+    nu_t = _vreman_nu_t_3d(ux, uy, uz, C_V)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
+def collide_vreman_bgk27(
+    f: torch.Tensor,
+    tau: float,
+    C_V: float = 0.025,
+) -> torch.Tensor:
+    """D3Q27 BGK collision with Vreman LES sub-grid turbulence model.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_V: Vreman constant (default 0.025).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    f_neq = f - feq
+
+    nu_t = _vreman_nu_t_3d(ux, uy, uz, C_V)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
 __all__ = [
+    # Smagorinsky
     "collide_smagorinsky_bgk",
     "collide_smagorinsky_mrt",
     "collide_smagorinsky_bgk3d",
     "collide_smagorinsky_mrt3d",
     "collide_smagorinsky_bgk27",
     "collide_smagorinsky_mrt27",
+    # WALE
+    "collide_wale_bgk",
+    "collide_wale_bgk3d",
+    "collide_wale_bgk27",
+    # Vreman
+    "collide_vreman_bgk",
+    "collide_vreman_bgk3d",
+    "collide_vreman_bgk27",
 ]
