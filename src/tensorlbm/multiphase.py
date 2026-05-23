@@ -43,6 +43,9 @@ from .d2q9 import C, W, equilibrium, macroscopic
 
 _CS2 = 1.0 / 3.0  # lattice speed of sound squared
 
+# Cache for SC neighbour-sum gather indices keyed by (ny, nx, device_type, device_index)
+_sc2d_cache: dict[tuple[object, ...], tuple[torch.Tensor, torch.Tensor]] = {}
+
 
 def _c_on(device: torch.device) -> torch.Tensor:
     return C.to(device)
@@ -92,9 +95,10 @@ def _sc_neighbor_weighted_sum(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute Σᵢ wᵢ ψ(x+cᵢ) cᵢ for the SC interaction force.
 
-    Uses periodic rolls; non-periodic (wall) cells are handled by zeroing
-    the pseudopotential at solid nodes before the sum so that walls do not
-    inject spurious inter-component forces across the periodic boundaries.
+    Uses a vectorised gather (same strategy as :func:`~tensorlbm.solver.stream`)
+    instead of a Python for-loop, eliminating all GPU→CPU synchronisations and
+    reducing kernel launches to a small constant.  Index tensors are cached per
+    (shape, device) to avoid re-allocation on every call.
 
     Args:
         psi:         Scalar field of shape ``(ny, nx)``.
@@ -113,21 +117,34 @@ def _sc_neighbor_weighted_sum(
         psi = psi.masked_fill(solid_mask, 0.0)
 
     device = psi.device
-    c = _c_on(device)
-    w = _w_on(device)
+    ny, nx = psi.shape[-2], psi.shape[-1]
+    c = _c_on(device)   # (9, 2)  int64
+    w = _w_on(device)   # (9,)    float32
 
-    Fx = torch.zeros_like(psi)
-    Fy = torch.zeros_like(psi)
-    for i in range(9):
-        cx_i = int(c[i, 0].item())
-        cy_i = int(c[i, 1].item())
-        if cx_i == 0 and cy_i == 0:
-            continue  # rest direction: c=0, no contribution
-        w_i = float(w[i].item())
-        psi_shifted = torch.roll(torch.roll(psi, cx_i, dims=-1), cy_i, dims=-2)
-        Fx += w_i * psi_shifted * cx_i
-        Fy += w_i * psi_shifted * cy_i
+    # Build and cache gather index tensors (one-time cost per unique shape/device)
+    cache_key = (ny, nx, device.type, device.index)
+    if cache_key not in _sc2d_cache:
+        cy = c[:, 1]  # (9,)
+        cx = c[:, 0]  # (9,)
+        y_src = (torch.arange(ny, device=device).unsqueeze(0) - cy.unsqueeze(1)) % ny
+        x_src = (torch.arange(nx, device=device).unsqueeze(0) - cx.unsqueeze(1)) % nx
+        # y_idx: (9, ny, 1)  x_idx: (9, 1, nx)  → broadcast to (9, ny, nx)
+        _sc2d_cache[cache_key] = (
+            y_src.unsqueeze(2),  # (9, ny, 1)
+            x_src.unsqueeze(1),  # (9, 1, nx)
+        )
 
+    y_idx, x_idx = _sc2d_cache[cache_key]
+    # psi_shifts: (9, ny, nx) – all shifted copies gathered in one operation
+    psi_shifts = psi[y_idx, x_idx]   # advanced-index gather, no Python loop
+
+    # w * cx and w * cy: (9, 1, 1) for broadcasting over (ny, nx)
+    cx_float = c[:, 0].float().view(9, 1, 1)
+    cy_float = c[:, 1].float().view(9, 1, 1)
+    w_3d = w.view(9, 1, 1)
+
+    Fx = (w_3d * cx_float * psi_shifts).sum(0)   # (ny, nx)
+    Fy = (w_3d * cy_float * psi_shifts).sum(0)   # (ny, nx)
     return Fx, Fy
 
 
