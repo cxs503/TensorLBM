@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import torch
 
-from .d3q27 import C, OPPOSITE, equilibrium27, macroscopic27
+from .d3q27 import OPPOSITE, C, equilibrium27
 
 
 def bounce_back_cells_27(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -100,7 +100,7 @@ def zou_he_inlet_velocity_27(
     f_new = f.clone()
     for k in cx_pos:
         opp = int(OPPOSITE[k].item())
-        f_new[k, :, :, 0] = feq[k, :, :, 0] - feq[opp, :, :, 0] + f[opp, :, :, 0]
+        f_new[k, :, :, 0] = feq[k] - feq[opp] + f[opp, :, :, 0]
     return f_new
 
 

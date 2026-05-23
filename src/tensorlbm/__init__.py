@@ -1,3 +1,4 @@
+from ._version import __version__
 from .backward_facing_step import BackwardFacingStepConfig, run_backward_facing_step
 from .boundaries import (
     apply_simple_channel_boundaries,
@@ -29,13 +30,13 @@ from .boundaries_d3q27 import (
 from .checkpoint import load_checkpoint, save_checkpoint
 from .config_io import load_config_json, save_config_json
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
-from .d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
-from .d3q19 import C as C3D
+from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 from .d3q19 import OPPOSITE as OPPOSITE3D
+from .d3q19 import C as C3D
 from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
-from .d3q27 import C as C27
 from .d3q27 import OPPOSITE as OPPOSITE27
+from .d3q27 import C as C27
 from .d3q27 import W as W27
 from .d3q27 import (
     collide_bgk27,
@@ -84,7 +85,6 @@ from .wave_bc import (
     apply_wave_inlet_3d,
     zou_he_inlet_velocity_profile_3d,
 )
-from ._version import __version__
 
 __all__ = [
     # Version

@@ -29,7 +29,6 @@ from .d2q9 import equilibrium, macroscopic
 from .solver import collide_bgk, stream
 from .utils import DiagnosticPoint, prepare_run_dir, resolve_device
 
-
 # ---------------------------------------------------------------------------
 # Ghia et al. (1982) reference data  (Re = 100 / 400 / 1000)
 # y/L positions and u/U_lid for the vertical centreline (x=L/2)
@@ -125,12 +124,12 @@ class LidDrivenCavityConfig:
         re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
         return f"n{self.n}_re{re_label}_ulid{self.u_lid:.3f}_steps{self.n_steps}"
 
-    def save(self, path: "Path | str") -> None:
+    def save(self, path: Path | str) -> None:
         from .config_io import save_config_json
         save_config_json(self, path)
 
     @classmethod
-    def load(cls, path: "Path | str") -> "LidDrivenCavityConfig":
+    def load(cls, path: Path | str) -> LidDrivenCavityConfig:
         from .config_io import load_config_json
         return load_config_json(cls, path)
 
@@ -150,37 +149,24 @@ def _apply_lid_cavity_boundaries(
     - Top wall (y=n-1): moving lid with velocity u_lid (Zou/He BC).
     - Bottom, left, right walls (y=0, x=0, x=n-1): no-slip bounce-back.
     """
-    from .d2q9 import C, OPPOSITE, W
+    from .d2q9 import OPPOSITE
 
-    c = C.to(device)
-    w = W.to(device)
     opp = OPPOSITE.to(device)
 
     # --- Moving top lid (y = n-1): Zou/He velocity BC ---
-    # Incoming directions at top (cy < 0): 4, 7, 8
-    # Outgoing (cy > 0): 2, 5, 6  → to be recomputed
-    f6, f2, f5 = f[6, -1, :], f[2, -1, :], f[5, -1, :]
-    f3, f0, f1 = f[3, -1, :], f[0, -1, :], f[1, -1, :]
-    f7, f4, f8 = f[7, -1, :], f[4, -1, :], f[8, -1, :]
+    # Known populations at top wall (cy ≤ 0): directions 0,1,3,4,7,8 (with adjustments)
+    # Zou/He standard formulas for D2Q9 top wall moving at ux=u_lid, uy=0
+    f2, f5, f6 = f[2, -1, :], f[5, -1, :], f[6, -1, :]
+    f1, f3 = f[1, -1, :], f[3, -1, :]
 
-    rho_top = f0 + f1 + f3 + 2.0 * (f2 + f5 + f6)
+    rho_top = (
+        f[0, -1, :] + f1 + f3
+        + 2.0 * (f2 + f5 + f6)
+    )
     f_new = f.clone()
-    f_new[4, -1, :] = f2 - (2.0 / 3.0) * rho_top * 0.0  # uy=0 at lid (only ux)
-    # uy_lid = 0, ux_lid = u_lid
     f_new[4, -1, :] = f2
     f_new[7, -1, :] = f5 - 0.5 * (f1 - f3) - (1.0 / 6.0) * rho_top * u_lid
     f_new[8, -1, :] = f6 + 0.5 * (f1 - f3) - (1.0 / 6.0) * rho_top * u_lid
-
-    # Use proper Zou/He for the moving lid
-    rho_top = (
-        f_new[0, -1, :] + f_new[1, -1, :] + f_new[3, -1, :]
-        + 2.0 * (f_new[2, -1, :] + f_new[5, -1, :] + f_new[6, -1, :])
-    )
-    f_new[4, -1, :] = f_new[2, -1, :]
-    f_new[7, -1, :] = f_new[5, -1, :] - 0.5 * (f_new[1, -1, :] - f_new[3, -1, :]) \
-                      - (1.0 / 6.0) * rho_top * u_lid
-    f_new[8, -1, :] = f_new[6, -1, :] + 0.5 * (f_new[1, -1, :] - f_new[3, -1, :]) \
-                      - (1.0 / 6.0) * rho_top * u_lid
 
     # --- Static no-slip walls: bounce-back ---
     wall = torch.zeros((n, n), dtype=torch.bool, device=device)

@@ -33,7 +33,7 @@ from pathlib import Path
 
 import torch
 
-from .boundaries import bounce_back_cells, zou_he_inlet_velocity, zou_he_outlet_pressure
+from .boundaries import bounce_back_cells
 from .d2q9 import equilibrium, macroscopic
 from .solver import collide_bgk, stream
 from .utils import DiagnosticPoint, prepare_run_dir, resolve_device
@@ -111,12 +111,12 @@ class BackwardFacingStepConfig:
             f"_steps{self.n_steps}"
         )
 
-    def save(self, path: "Path | str") -> None:
+    def save(self, path: Path | str) -> None:
         from .config_io import save_config_json
         save_config_json(self, path)
 
     @classmethod
-    def load(cls, path: "Path | str") -> "BackwardFacingStepConfig":
+    def load(cls, path: Path | str) -> BackwardFacingStepConfig:
         from .config_io import load_config_json
         return load_config_json(cls, path)
 

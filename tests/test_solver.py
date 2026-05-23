@@ -18,7 +18,6 @@ from tensorlbm import (
 )
 from tensorlbm.cylinder_flow import CylinderFlowConfig, compute_vorticity
 
-
 # ---------------------------------------------------------------------------
 # Shape / basic sanity tests
 # ---------------------------------------------------------------------------
