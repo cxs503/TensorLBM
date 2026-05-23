@@ -1,4 +1,10 @@
 from ._version import __version__
+from .backward_facing_step import (
+    BackwardFacingStepConfig,
+    make_bfs_solid_mask,
+    measure_reattachment_length,
+    run_backward_facing_step,
+)
 from .boundaries import (
     apply_simple_channel_boundaries,
     apply_zou_he_channel_boundaries,
@@ -57,6 +63,16 @@ from .interpolated_bc import (
     compute_q_sphere,
 )
 from .io import save_hdf5, save_vtk, save_vtk_binary
+from .lid_driven_cavity import (
+    GHIA_RE100,
+    GHIA_RE400,
+    GHIA_RE1000,
+    LidDrivenCavityConfig,
+    compare_ghia,
+    make_cavity_wall_mask,
+    run_lid_driven_cavity,
+    zou_he_moving_lid,
+)
 from .logging_config import configure_logging, logger
 from .multiphase import (
     collide_sc_single_component,
@@ -142,6 +158,20 @@ __all__ = [
     "CylinderFlowConfig",
     "run_cylinder_flow",
     "compute_vorticity",
+    # Lid-driven cavity benchmark
+    "LidDrivenCavityConfig",
+    "run_lid_driven_cavity",
+    "zou_he_moving_lid",
+    "make_cavity_wall_mask",
+    "compare_ghia",
+    "GHIA_RE100",
+    "GHIA_RE400",
+    "GHIA_RE1000",
+    # Backward-facing step benchmark
+    "BackwardFacingStepConfig",
+    "run_backward_facing_step",
+    "make_bfs_solid_mask",
+    "measure_reattachment_length",
     # D3Q19 lattice
     "C3D",
     "W3D",
