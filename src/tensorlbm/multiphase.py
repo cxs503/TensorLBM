@@ -28,11 +28,14 @@ Swift et al. (1996) Phys. Rev. E 54 5041
 """
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import torch
 
-from .d2q9 import C, W, OPPOSITE, equilibrium, macroscopic
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+from .d2q9 import C, W, equilibrium, macroscopic
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -317,7 +320,10 @@ def collide_sc_single_component(
 # Phase field:         φ = (ρ_r − ρ_b) / (ρ_r + ρ_b)  ∈ [−1, 1]
 # Interface normal:    n̂ = ∇φ / |∇φ|  (computed via central differences)
 
-def _grad_phase_field(rho_r: torch.Tensor, rho_b: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def _grad_phase_field(
+    rho_r: torch.Tensor,
+    rho_b: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute the phase-field gradient via second-order central differences.
 
     Returns ``(phi, nx_hat, ny_hat)`` all of shape ``(ny, nx)``.
