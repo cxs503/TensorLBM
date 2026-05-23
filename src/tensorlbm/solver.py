@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from typing import Any, cast
 
 import torch
 
@@ -11,6 +12,9 @@ from .boundaries import (
     make_channel_wall_mask,
 )
 from .d2q9 import C, equilibrium, macroscopic
+
+# Cache for streaming index tensors keyed by (ny, nx, device_type, device_index)
+_stream2d_cache: dict[tuple[Any, ...], tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = {}
 
 _M_D2Q9_DATA = [
     [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
@@ -29,7 +33,7 @@ def _invert_d2q9() -> list[list[float]]:
     import numpy as np
 
     matrix = np.array(_M_D2Q9_DATA, dtype=np.float64)
-    return np.linalg.inv(matrix).tolist()
+    return cast("list[list[float]]", np.linalg.inv(matrix).tolist())
 
 
 _M_D2Q9_INV_DATA = _invert_d2q9()
@@ -110,19 +114,23 @@ def stream(f: torch.Tensor) -> torch.Tensor:
     """Vectorised streaming by gathering from shifted source indices (periodic).
 
     Replaces the per-direction ``torch.roll`` loop with a single advanced-index
-    gather, which is more GPU-friendly.
+    gather, which is more GPU-friendly. Index tensors are cached per (shape,
+    device) to avoid re-allocation on every call.
     """
     ny, nx = f.shape[1], f.shape[2]
     device = f.device
     c = C.to(device)
 
-    y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
-    x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
+    cache_key = (ny, nx, device.type, device.index)
+    if cache_key not in _stream2d_cache:
+        y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
+        x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
+        q_idx = torch.arange(9, device=device).view(9, 1, 1).expand(9, ny, nx)
+        y_idx = y_src.unsqueeze(2).expand(9, ny, nx)
+        x_idx = x_src.unsqueeze(1).expand(9, ny, nx)
+        _stream2d_cache[cache_key] = (q_idx, y_idx, x_idx)
 
-    q_idx = torch.arange(9, device=device).view(9, 1, 1).expand(9, ny, nx)
-    y_idx = y_src.unsqueeze(2).expand(9, ny, nx)
-    x_idx = x_src.unsqueeze(1).expand(9, ny, nx)
-
+    q_idx, y_idx, x_idx = _stream2d_cache[cache_key]
     return f[q_idx, y_idx, x_idx]
 
 
