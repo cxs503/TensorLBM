@@ -49,7 +49,9 @@ def _make_two_component_2d(ny: int = 20, nx: int = 24) -> tuple[torch.Tensor, to
     return equilibrium(rho1, zero, zero), equilibrium(rho2, zero, zero)
 
 
-def _make_two_component_3d(nz: int = 6, ny: int = 8, nx: int = 10) -> tuple[torch.Tensor, torch.Tensor]:
+def _make_two_component_3d(
+    nz: int = 6, ny: int = 8, nx: int = 10
+) -> tuple[torch.Tensor, torch.Tensor]:
     rho1 = torch.ones((nz, ny, nx), device=DEVICE)
     rho2 = torch.full((nz, ny, nx), 0.5, device=DEVICE)
     zero = torch.zeros((nz, ny, nx), device=DEVICE)
