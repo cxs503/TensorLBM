@@ -143,7 +143,14 @@ def main() -> None:
             print(f"  → Cd={row['cd_mean']:.4f}  Cl_rms={row['cl_rms']:.4f}  St={row['strouhal']}")
         except Exception as exc:  # noqa: BLE001
             print(f"  ERROR for Re={re}: {exc}")
-            summary_rows.append({"re": re, "cd_mean": float("nan"), "cl_rms": float("nan"), "strouhal": None})
+            summary_rows.append(
+                {
+                    "re": re,
+                    "cd_mean": float("nan"),
+                    "cl_rms": float("nan"),
+                    "strouhal": None,
+                }
+            )
 
     if summary_rows:
         _save_summary(summary_rows, args.output_root)

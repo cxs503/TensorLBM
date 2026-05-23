@@ -9,7 +9,6 @@ Covers:
 from __future__ import annotations
 
 import json
-import math
 import os
 import subprocess
 import sys
@@ -31,7 +30,6 @@ from tensorlbm import (
     zou_he_inlet_velocity_z,
     zou_he_outlet_pressure_z,
 )
-
 
 # ---------------------------------------------------------------------------
 # Zou/He z-direction boundary conditions
@@ -61,7 +59,12 @@ class TestZouHeInletVelocityZ:
         """After applying the BC, macroscopic uz at z=0 should equal uz_in."""
         nz, ny, nx = 10, 8, 12
         rho0 = torch.ones((nz, ny, nx))
-        f = equilibrium3d(rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0))
+        f = equilibrium3d(
+            rho0,
+            torch.zeros_like(rho0),
+            torch.zeros_like(rho0),
+            torch.zeros_like(rho0),
+        )
         f = collide_bgk3d(f, tau=0.6)
         f = stream3d(f)
 
@@ -181,12 +184,12 @@ class TestApplyWaterEntryBoundaries3d:
 
 class TestSphereWaterEntryConfig:
     def _default_kwargs(self) -> dict:
-        return dict(
-            nx=32, ny=32, nz=64,
-            radius=4.0, sphere_z_frac=0.5,
-            v_entry=0.05, re=100.0,
-            n_steps=10, output_interval=5,
-        )
+        return {
+            "nx": 32, "ny": 32, "nz": 64,
+            "radius": 4.0, "sphere_z_frac": 0.5,
+            "v_entry": 0.05, "re": 100.0,
+            "n_steps": 10, "output_interval": 5,
+        }
 
     def test_valid_config_does_not_raise(self) -> None:
         cfg = SphereWaterEntryConfig(**self._default_kwargs())

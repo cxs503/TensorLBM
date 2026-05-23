@@ -8,10 +8,28 @@ from pathlib import Path
 import matplotlib
 import torch
 
-from .boundaries import apply_simple_channel_boundaries, compute_obstacle_forces, cylinder_mask, make_channel_wall_mask
+from .boundaries import (
+    apply_simple_channel_boundaries,
+    compute_obstacle_forces,
+    cylinder_mask,
+    make_channel_wall_mask,
+)
 from .d2q9 import equilibrium, macroscopic
+from .logging_config import configure_logging, logger
 from .solver import collide_bgk, stream
-from .utils import DiagnosticPoint, prepare_run_dir, resolve_device
+from .utils import (
+    DiagnosticPoint,
+    get_reproducibility_metadata,
+    prepare_run_dir,
+    resolve_device,
+)
+
+try:
+    from tqdm import tqdm as _tqdm
+
+    _TQDM_AVAILABLE = True
+except ImportError:
+    _TQDM_AVAILABLE = False
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -72,12 +90,14 @@ def compute_vorticity(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     """Central-difference z-vorticity ∂uy/∂x − ∂ux/∂y (interior cells only)."""
     dux_dy = torch.zeros_like(ux)
     duy_dx = torch.zeros_like(uy)
-    dux_dy[1:-1, :] = 0.5 * (ux[2:, :] - ux[:-2, :])   # ∂ux/∂y
-    duy_dx[:, 1:-1] = 0.5 * (uy[:, 2:] - uy[:, :-2])   # ∂uy/∂x
+    dux_dy[1:-1, :] = 0.5 * (ux[2:, :] - ux[:-2, :])
+    duy_dx[:, 1:-1] = 0.5 * (uy[:, 2:] - uy[:, :-2])
     return duy_dx - dux_dy
 
 
-def _strouhal_number(cl_series: list[float], output_interval: int, u_in: float, diameter: float) -> float | None:
+def _strouhal_number(
+    cl_series: list[float], output_interval: int, u_in: float, diameter: float
+) -> float | None:
     """Estimate Strouhal number from the dominant frequency of the lift-coefficient series.
 
     Returns *None* when the series is too short or has no clear spectral peak.
@@ -88,22 +108,25 @@ def _strouhal_number(cl_series: list[float], output_interval: int, u_in: float, 
     n = len(cl_series)
     if n < 16:
         return None
-    # Zero-pad to next power of two for a clean spectral estimate
     n2 = 1
     while n2 * 2 <= n:
         n2 *= 2
     data = np.array(cl_series[:n2], dtype=np.float64)
-    # Real FFT: rfft returns n2//2 + 1 complex bins; bin 0 is DC
     spectrum = np.abs(np.fft.rfft(data))
-    # Ignore DC bin (index 0); find the peak among bins 1..n2//2
     best_k = int(np.argmax(spectrum[1:])) + 1
     if best_k <= 0:
         return None
-    freq_lbm = best_k / (n2 * output_interval)  # cycles per LBM step
+    freq_lbm = best_k / (n2 * output_interval)
     return freq_lbm * diameter / u_in
 
 
-def _save_flow_snapshot(run_dir: Path, step: int, speed: torch.Tensor, vort: torch.Tensor, obstacle: torch.Tensor) -> None:
+def _save_flow_snapshot(
+    run_dir: Path,
+    step: int,
+    speed: torch.Tensor,
+    vort: torch.Tensor,
+    obstacle: torch.Tensor,
+) -> None:
     speed_np = speed.detach().cpu().numpy()
     vort_np = vort.detach().cpu().numpy()
     obs_np = obstacle.detach().cpu().numpy()
@@ -125,17 +148,24 @@ def _save_flow_snapshot(run_dir: Path, step: int, speed: torch.Tensor, vort: tor
 
 
 def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
+    configure_logging()
     config.validate()
     torch.manual_seed(config.seed)
     torch.use_deterministic_algorithms(True, warn_only=True)
 
     device = resolve_device(config.device)
-    run_dir = prepare_run_dir(config.output_root, "cylinder_flow", config.resolved_run_name(), config.overwrite)
+    run_dir = prepare_run_dir(
+        config.output_root,
+        "cylinder_flow",
+        config.resolved_run_name(),
+        config.overwrite,
+    )
 
     metadata: dict[str, object] = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
         "derived": {"nu": config.nu, "tau": config.tau},
         "runtime": {"torch_version": torch.__version__, "device": str(device)},
+        "reproducibility": get_reproducibility_metadata(),
     }
 
     cx_obs, cy_obs = config.nx * 0.25, config.ny * 0.5
@@ -152,23 +182,35 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     diagnostics: list[dict[str, object]] = []
     cl_series: list[float] = []
 
-    # Reference quantities for non-dimensional force coefficients
     diameter = 2.0 * config.radius
-    dyn_pressure = 0.5 * 1.0 * config.u_in ** 2 * diameter  # rho_ref = 1
+    dyn_pressure = 0.5 * config.u_in**2 * diameter
 
-    print(
-        "Running D2Q9 cylinder flow "
-        f"device={device} NX={config.nx} NY={config.ny} tau={config.tau:.4f} "
-        f"steps={config.n_steps} output_interval={config.output_interval}"
+    logger.info(
+        "Running D2Q9 cylinder flow device=%s NX=%s NY=%s tau=%.4f steps=%s output_interval=%s",
+        device,
+        config.nx,
+        config.ny,
+        config.tau,
+        config.n_steps,
+        config.output_interval,
     )
-    print(f"Run directory: {run_dir}")
+    logger.info("Run directory: %s", run_dir)
 
-    for step in range(1, config.n_steps + 1):
+    step_iter = (
+        _tqdm(range(1, config.n_steps + 1), desc="Cylinder flow", unit="step")
+        if _TQDM_AVAILABLE
+        else range(1, config.n_steps + 1)
+    )
+    for step in step_iter:
         f = collide_bgk(f, tau=config.tau)
         f = stream(f)
-        # Compute drag/lift via momentum exchange BEFORE bounce-back is applied
         fx, fy = compute_obstacle_forces(f, obstacle)
-        f = apply_simple_channel_boundaries(f, u_in=config.u_in, wall_mask=wall_mask, obstacle_mask=obstacle)
+        f = apply_simple_channel_boundaries(
+            f,
+            u_in=config.u_in,
+            wall_mask=wall_mask,
+            obstacle_mask=obstacle,
+        )
 
         cd = float(fx) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
         cl = float(fy) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
@@ -190,25 +232,28 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
             )
             diag_entry: dict[str, object] = {**asdict(point), "cd": cd, "cl": cl}
             diagnostics.append(diag_entry)
-            print(
-                f"step={point.step:5d} mass={point.mass:.6f} "
-                f"drift={point.mass_drift:+.6f} mean_rho={point.mean_rho:.6f} "
-                f"max|u|={point.max_speed:.6f} Cd={cd:.4f} Cl={cl:.4f}"
+            logger.info(
+                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f Cd=%.4f Cl=%.4f",
+                point.step,
+                point.mass,
+                point.mass_drift,
+                point.mean_rho,
+                point.max_speed,
+                cd,
+                cl,
             )
 
             vort = compute_vorticity(ux, uy)
             _save_flow_snapshot(run_dir, step, speed, vort, obstacle)
 
-    # Strouhal number from second half of lift time-series (avoids transient)
     half = len(cl_series) // 2
     st = _strouhal_number(cl_series[half:], config.output_interval, config.u_in, diameter)
 
     metadata["diagnostics"] = diagnostics
     if st is not None:
         metadata["strouhal"] = st
-        print(f"Strouhal number St ≈ {st:.4f}")
+        logger.info("Strouhal number St ≈ %.4f", st)
 
-    # Save per-step force time-series as CSV for post-processing
     forces_csv = run_dir / "forces.csv"
     with forces_csv.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
@@ -217,6 +262,9 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
             writer.writerow([d["step"], d["cd"], d["cl"]])
 
     metadata_path = run_dir / "run_metadata.json"
-    metadata_path.write_text(f"{json.dumps(metadata, indent=2, sort_keys=True)}\n", encoding="utf-8")
-    print(f"Saved metadata: {metadata_path}")
+    metadata_path.write_text(
+        f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+    logger.info("Saved metadata: %s", metadata_path)
     return run_dir
