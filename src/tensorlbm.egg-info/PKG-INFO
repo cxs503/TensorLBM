@@ -1,3 +1,21 @@
+Metadata-Version: 2.4
+Name: tensorlbm
+Version: 0.1.0
+Summary: PyTorch-based Lattice Boltzmann Method solvers and utilities.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: torch
+Requires-Dist: matplotlib
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: hypothesis; extra == "dev"
+Requires-Dist: tqdm; extra == "dev"
+Requires-Dist: h5py; extra == "dev"
+Requires-Dist: pyyaml; extra == "dev"
+
 # TensorLBM
 
 TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.

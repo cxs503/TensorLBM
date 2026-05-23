@@ -2,27 +2,26 @@ from __future__ import annotations
 
 import argparse
 
-from tensorlbm import CylinderFlowConfig, run_cylinder_flow
+from tensorlbm import SphereFlowConfig, run_sphere_flow
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Run a D2Q9 cylinder-flow LBM demonstration."
-    )
-    parser.add_argument("--nx", type=int, default=320, help="Grid width")
-    parser.add_argument("--ny", type=int, default=100, help="Grid height")
+    parser = argparse.ArgumentParser(description="Run a D3Q19 sphere-flow LBM demonstration.")
+    parser.add_argument("--nx", type=int, default=120, help="Grid length (x)")
+    parser.add_argument("--ny", type=int, default=60, help="Grid height (y)")
+    parser.add_argument("--nz", type=int, default=60, help="Grid depth  (z)")
     parser.add_argument(
-        "--u-in", dest="u_in", type=float, default=0.08, help="Inlet velocity"
+        "--u-in", dest="u_in", type=float, default=0.06, help="Inlet velocity"
     )
-    parser.add_argument("--re", type=float, default=100.0, help="Target Reynolds number")
-    parser.add_argument("--radius", type=float, default=12.0, help="Cylinder radius")
+    parser.add_argument("--re", type=float, default=50.0, help="Target Reynolds number")
+    parser.add_argument("--radius", type=float, default=8.0, help="Sphere radius")
     parser.add_argument(
-        "--n-steps", dest="n_steps", type=int, default=1200, help="Simulation steps"
+        "--n-steps", dest="n_steps", type=int, default=500, help="Simulation steps"
     )
     parser.add_argument(
         "--output-interval",
         type=int,
-        default=200,
+        default=100,
         help="Diagnostic and image cadence",
     )
     parser.add_argument("--output-root", default="outputs", help="Output root directory")
@@ -43,9 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_parser().parse_args()
-    config = CylinderFlowConfig(
+    config = SphereFlowConfig(
         nx=args.nx,
         ny=args.ny,
+        nz=args.nz,
         u_in=args.u_in,
         re=args.re,
         radius=args.radius,
@@ -57,7 +57,7 @@ def main() -> None:
         device=args.device,
         overwrite=args.overwrite,
     )
-    run_cylinder_flow(config)
+    run_sphere_flow(config)
 
 
 if __name__ == "__main__":
