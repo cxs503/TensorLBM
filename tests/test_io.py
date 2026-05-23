@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from tensorlbm import save_vtk
+from tensorlbm import save_vtk, save_vtk_binary
 
 
 class TestSaveVtk2D:
@@ -62,6 +62,19 @@ class TestSaveVtk2D:
         content = path.read_text(encoding="ascii")
         assert f"POINT_DATA {ny * nx}" in content
 
+    def test_mismatched_velocity_shapes_raise(self, tmp_path: Path) -> None:
+        ux = torch.rand((8, 10))
+        uy = torch.rand((8, 9))
+        with pytest.raises(ValueError, match="ux and uy shapes must match"):
+            save_vtk(tmp_path / "out.vtk", ux, uy)
+
+    def test_mismatched_scalar_shape_raises(self, tmp_path: Path) -> None:
+        ux = torch.rand((8, 10))
+        uy = torch.rand((8, 10))
+        rho = torch.ones((8, 9))
+        with pytest.raises(ValueError, match="rho shape must match ux"):
+            save_vtk(tmp_path / "out.vtk", ux, uy, rho=rho)
+
 
 class TestSaveVtk3D:
     def test_creates_file_3d(self, tmp_path: Path) -> None:
@@ -96,6 +109,48 @@ class TestSaveVtk3D:
         path = save_vtk(tmp_path / "out3d.vtk", ux, uy, uz=uz, rho=rho)
         content = path.read_text(encoding="ascii")
         assert "SCALARS density float 1" in content
+
+    def test_mismatched_uz_shape_raises(self, tmp_path: Path) -> None:
+        ux = torch.rand((4, 6, 8))
+        uy = torch.rand((4, 6, 8))
+        uz = torch.rand((4, 6, 7))
+        with pytest.raises(ValueError, match="uz shape must match ux"):
+            save_vtk(tmp_path / "out3d.vtk", ux, uy, uz=uz)
+
+
+class TestSaveVtkBinary:
+    def test_creates_binary_vtk_file(self, tmp_path: Path) -> None:
+        ux = torch.rand((6, 8))
+        uy = torch.rand((6, 8))
+        path = save_vtk_binary(tmp_path / "out.vtk", ux, uy)
+        data = path.read_bytes()
+        assert path.exists()
+        assert b"BINARY" in data
+        assert b"VECTORS velocity float" in data
+
+    def test_dimensions_line(self, tmp_path: Path) -> None:
+        ux = torch.rand((6, 8))
+        uy = torch.rand((6, 8))
+        path = save_vtk_binary(tmp_path / "out.vtk", ux, uy)
+        content = path.read_text(encoding="ascii", errors="ignore")
+        assert "DIMENSIONS 8 6 1" in content
+        assert "POINT_DATA 48" in content
+
+    def test_3d_with_rho(self, tmp_path: Path) -> None:
+        ux = torch.rand((3, 4, 5))
+        uy = torch.rand((3, 4, 5))
+        uz = torch.rand((3, 4, 5))
+        rho = torch.ones((3, 4, 5))
+        path = save_vtk_binary(tmp_path / "out3d.vtk", ux, uy, uz=uz, rho=rho)
+        content = path.read_text(encoding="ascii", errors="ignore")
+        assert "DIMENSIONS 5 4 3" in content
+        assert "SCALARS density float 1" in content
+
+    def test_mismatched_shapes_raise(self, tmp_path: Path) -> None:
+        ux = torch.rand((6, 8))
+        uy = torch.rand((6, 7))
+        with pytest.raises(ValueError, match="ux and uy shapes must match"):
+            save_vtk_binary(tmp_path / "out.vtk", ux, uy)
 
 
 class TestSaveHdf5:
@@ -184,6 +239,14 @@ class TestSaveHdf5:
         save_hdf5(path, step=1, ux=ux, uy=uy)
         # Write again — should not raise
         save_hdf5(path, step=1, ux=ux * 2.0, uy=uy)
+
+    def test_mismatched_shapes_raise(self, tmp_path: Path) -> None:
+        from tensorlbm import save_hdf5
+
+        ux = torch.rand((8, 10))
+        uy = torch.rand((8, 9))
+        with pytest.raises(ValueError, match="ux and uy shapes must match"):
+            save_hdf5(tmp_path / "out.h5", step=0, ux=ux, uy=uy)
 
     def test_import_error_without_h5py(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
