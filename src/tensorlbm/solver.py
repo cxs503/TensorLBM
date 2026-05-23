@@ -6,6 +6,11 @@ from .boundaries import apply_simple_channel_boundaries, bounce_back_cells, cyli
 from .d2q9 import C, equilibrium, macroscopic
 
 # ---------------------------------------------------------------------------
+# Streaming index cache: keyed by (shape, device_type, device_index)
+# ---------------------------------------------------------------------------
+_stream2d_cache: dict[tuple, tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = {}
+
+# ---------------------------------------------------------------------------
 # D2Q9 MRT transformation matrix and its inverse (precomputed from numpy)
 # Reference: d'Humières et al. (2002), Phil. Trans. R. Soc. Lond. A.
 # Velocity ordering: 0:(0,0), 1:(1,0), 2:(0,1), 3:(-1,0), 4:(0,-1),
@@ -112,21 +117,25 @@ def stream(f: torch.Tensor) -> torch.Tensor:
     """Vectorised streaming by gathering from shifted source indices (periodic).
 
     Replaces the per-direction ``torch.roll`` loop with a single advanced-index
-    gather, which is more GPU-friendly.
+    gather, which is more GPU-friendly.  Index tensors are cached per (shape,
+    device) so that repeated calls within a simulation loop reuse them.
     """
     ny, nx = f.shape[1], f.shape[2]
     device = f.device
-    c = C.to(device)  # (9, 2) — columns are (cx, cy)
+    cache_key = (ny, nx, device.type, device.index)
 
-    # Source row and column for each direction (periodic wrap)
-    y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny  # (9, ny)
-    x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx  # (9, nx)
+    if cache_key not in _stream2d_cache:
+        c = C.to(device)  # (9, 2) — columns are (cx, cy)
 
-    # Expand to full (9, ny, nx) index tensors
-    q_idx = torch.arange(9, device=device).view(9, 1, 1).expand(9, ny, nx)
-    y_idx = y_src.unsqueeze(2).expand(9, ny, nx)
-    x_idx = x_src.unsqueeze(1).expand(9, ny, nx)
+        y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny  # (9, ny)
+        x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx  # (9, nx)
 
+        q_idx = torch.arange(9, device=device).view(9, 1, 1).expand(9, ny, nx)
+        y_idx = y_src.unsqueeze(2).expand(9, ny, nx)
+        x_idx = x_src.unsqueeze(1).expand(9, ny, nx)
+        _stream2d_cache[cache_key] = (q_idx, y_idx, x_idx)
+
+    q_idx, y_idx, x_idx = _stream2d_cache[cache_key]
     return f[q_idx, y_idx, x_idx]
 
 

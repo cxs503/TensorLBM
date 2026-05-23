@@ -184,6 +184,17 @@ class ShipHullFlowConfig:
             f"_steps{self.n_steps}"
         )
 
+    def save(self, path: "Path | str") -> None:
+        """Serialise this config to a JSON file."""
+        from .config_io import save_config_json
+        save_config_json(self, path)
+
+    @classmethod
+    def load(cls, path: "Path | str") -> "ShipHullFlowConfig":
+        """Load a :class:`ShipHullFlowConfig` from a JSON file."""
+        from .config_io import load_config_json
+        return load_config_json(cls, path)
+
 
 def _save_ship_snapshot(
     run_dir: Path,

@@ -30,6 +30,7 @@ from .d2q9 import C as C2D
 from .d2q9 import equilibrium, macroscopic
 from .d3q19 import C as C3D
 from .d3q19 import equilibrium3d, macroscopic3d
+from .solver import _get_d2q9_mrt_matrices
 from .solver3d import _get_d3q19_mrt_matrices
 
 
@@ -159,6 +160,65 @@ def collide_smagorinsky_bgk(
     return f - f_neq / tau_eff.unsqueeze(0)
 
 
+def collide_smagorinsky_mrt(
+    f: torch.Tensor,
+    tau: float,
+    C_s: float = 0.1,
+    s_e: float = 1.64,
+    s_eps: float = 1.54,
+    s_q: float = 1.7,
+) -> torch.Tensor:
+    """D2Q9 MRT collision with Smagorinsky LES sub-grid turbulence model.
+
+    Combines the multi-relaxation-time (MRT) collision operator with a
+    spatially varying stress relaxation rate derived from the local Smagorinsky
+    effective viscosity.  The non-hydrodynamic moments relax at the fixed rates
+    *s_e*, *s_eps*, *s_q*; only the stress modes 7 and 8 receive the local
+    Smagorinsky-derived rate ``1/τ_eff(x)``.
+
+    Args:
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_s: Smagorinsky constant (default 0.1).
+        s_e: Relaxation rate for energy moment.
+        s_eps: Relaxation rate for energy-square moment.
+        s_q: Relaxation rate for heat-flux moments.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    device = f.device
+    M, M_inv = _get_d2q9_mrt_matrices(device)
+
+    rho, ux, uy = macroscopic(f)
+    feq = equilibrium(rho, ux, uy)
+    f_neq = f - feq
+
+    pi_norm = _neq_stress_norm_2d(f_neq)
+    tau_eff = _smagorinsky_tau(tau, pi_norm, rho, C_s)  # (ny, nx)
+    s_nu_field = 1.0 / tau_eff  # (ny, nx)
+
+    ny, nx = f.shape[1], f.shape[2]
+    f_flat = f.reshape(9, -1)
+    feq_flat = feq.reshape(9, -1)
+    s_nu_flat = s_nu_field.reshape(-1)  # (N,)
+
+    # Fixed relaxation rates for non-stress moments
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, 0.0],
+        dtype=f.dtype, device=device,
+    )
+    stress_modes = torch.tensor([7, 8], device=device)
+    N = f_flat.shape[1]
+    s_vec = s_fixed.unsqueeze(1).expand(9, N).clone()  # (9, N)
+    s_vec[stress_modes] = s_nu_flat.unsqueeze(0).expand(2, N)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    m_star = m - s_vec * (m - m_eq)
+    return (M_inv @ m_star).reshape(9, ny, nx)
+
+
 def collide_smagorinsky_bgk3d(
     f: torch.Tensor,
     tau: float,
@@ -258,6 +318,7 @@ def collide_smagorinsky_mrt3d(
 
 __all__ = [
     "collide_smagorinsky_bgk",
+    "collide_smagorinsky_mrt",
     "collide_smagorinsky_bgk3d",
     "collide_smagorinsky_mrt3d",
 ]

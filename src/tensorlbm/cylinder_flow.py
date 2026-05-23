@@ -67,6 +67,17 @@ class CylinderFlowConfig:
         re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
         return f"nx{self.nx}_ny{self.ny}_re{re_label}_uin{self.u_in:.3f}_steps{self.n_steps}"
 
+    def save(self, path: "Path | str") -> None:
+        """Serialise this config to a JSON file."""
+        from .config_io import save_config_json
+        save_config_json(self, path)
+
+    @classmethod
+    def load(cls, path: "Path | str") -> "CylinderFlowConfig":
+        """Load a :class:`CylinderFlowConfig` from a JSON file."""
+        from .config_io import load_config_json
+        return load_config_json(cls, path)
+
 
 def compute_vorticity(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     """Central-difference z-vorticity ∂uy/∂x − ∂ux/∂y (interior cells only)."""
