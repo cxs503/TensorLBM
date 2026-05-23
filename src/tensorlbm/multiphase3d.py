@@ -16,9 +16,12 @@ Shan & Chen (1994) Phys. Rev. E 49 2941
 """
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import torch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from .d3q19 import C, W, equilibrium3d, macroscopic3d
 from .multiphase import psi_exp, psi_linear, psi_power  # re-export for convenience
@@ -152,7 +155,9 @@ def collide_sc_two_component_3d(
     rho1, ux1, uy1, uz1 = macroscopic3d(f1)
     rho2, ux2, uy2, uz2 = macroscopic3d(f2)
 
-    Fx1, Fy1, Fz1, Fx2, Fy2, Fz2 = sc_two_component_force_3d(rho1, rho2, G_12, gx, gy, gz, solid_mask)
+    Fx1, Fy1, Fz1, Fx2, Fy2, Fz2 = sc_two_component_force_3d(
+        rho1, rho2, G_12, gx, gy, gz, solid_mask,
+    )
 
     rho1_s = torch.clamp(rho1, min=1e-12)
     rho2_s = torch.clamp(rho2, min=1e-12)
