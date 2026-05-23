@@ -7,7 +7,7 @@ Verifies:
     - Free-Energy (FE): total density conservation
     - 3-D SC two-component: basic shape and mass conservation
     - DamBreakConfig validation
-    - SphereWaterEntryConfig validation
+    - MultiphaseWaterEntryConfig validation
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import torch
 
 from tensorlbm import (
     DamBreakConfig,
-    SphereWaterEntryConfig,
+    MultiphaseWaterEntryConfig,
     collide_sc_two_component,
     collide_sc_single_component,
     collide_sc_two_component_3d,
@@ -296,19 +296,19 @@ class TestDamBreakConfig:
             cfg.validate()
 
 
-class TestSphereWaterEntryConfig:
+class TestMultiphaseWaterEntryConfig:
     def test_valid_config(self) -> None:
-        cfg = SphereWaterEntryConfig(nx=50, ny=50, water_level=25, n_steps=2, output_interval=2)
+        cfg = MultiphaseWaterEntryConfig(nx=50, ny=50, water_level=25, n_steps=2, output_interval=2)
         cfg.validate()
 
     def test_valid_config_with_model(self) -> None:
-        cfg = SphereWaterEntryConfig(
+        cfg = MultiphaseWaterEntryConfig(
             nx=50, ny=50, water_level=25, n_steps=2, output_interval=2, model="cg",
         )
         cfg.validate()
 
     def test_invalid_mode(self) -> None:
-        cfg = SphereWaterEntryConfig.__new__(SphereWaterEntryConfig)
+        cfg = MultiphaseWaterEntryConfig.__new__(MultiphaseWaterEntryConfig)
         object.__setattr__(cfg, "mode", "4d")
         object.__setattr__(cfg, "model", "cg")
         object.__setattr__(cfg, "nx", 50)
@@ -332,7 +332,7 @@ class TestSphereWaterEntryConfig:
             cfg.validate()
 
     def test_invalid_tau(self) -> None:
-        cfg = SphereWaterEntryConfig(tau=0.3, nx=50, ny=50, water_level=25)
+        cfg = MultiphaseWaterEntryConfig(tau=0.3, nx=50, ny=50, water_level=25)
         with pytest.raises(ValueError, match="tau"):
             cfg.validate()
 
