@@ -149,7 +149,7 @@ def save_hdf5(
         Resolved output path.
     """
     try:
-        import h5py  # type: ignore[import-untyped]
+        import h5py
     except ImportError as exc:
         raise ImportError(
             "h5py is required for HDF5 output: pip install h5py"

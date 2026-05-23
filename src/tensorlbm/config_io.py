@@ -17,7 +17,7 @@ import dataclasses
 import json
 import os
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 _T = TypeVar("_T")
 
@@ -27,7 +27,7 @@ def _load_raw(path: Path) -> dict[str, Any]:
     suffix = path.suffix.lower()
     if suffix in {".yaml", ".yml"}:
         try:
-            import yaml  # type: ignore[import-untyped]
+            import yaml
         except ImportError as exc:
             raise ImportError(
                 "pyyaml is required to load YAML configs: pip install pyyaml"
@@ -37,16 +37,8 @@ def _load_raw(path: Path) -> dict[str, Any]:
         return dict(data) if data else {}
 
     if suffix == ".toml":
-        try:
-            import tomllib
-        except ImportError:
-            try:
-                import tomli as tomllib  # type: ignore[import-untyped, no-redef]
-            except ImportError as exc:
-                raise ImportError(
-                    "tomli is required to load TOML configs on Python < 3.11: "
-                    "pip install tomli"
-                ) from exc
+        import tomllib
+
         with path.open("rb") as fb:
             return tomllib.load(fb)
 
@@ -100,7 +92,7 @@ def load_config(
     raw = _apply_env_overrides(raw, env_prefix)
 
     if dataclasses.is_dataclass(config_class):
-        fields = {f.name: f for f in dataclasses.fields(config_class)}  # type: ignore[arg-type]
+        fields = {f.name: f for f in dataclasses.fields(config_class)}
         coerced: dict[str, Any] = {}
         for k, v in raw.items():
             if k in fields and isinstance(v, str):
@@ -115,9 +107,9 @@ def load_config(
                 except (ValueError, AttributeError):
                     pass
             coerced[k] = v
-        return config_class(**coerced)  # type: ignore[return-value]
+        return config_class(**coerced)
 
-    return config_class(**raw)  # type: ignore[return-value]
+    return config_class(**raw)
 
 
 def save_config_json(config: object, path: str | Path) -> Path:
@@ -136,7 +128,7 @@ def save_config_json(config: object, path: str | Path) -> Path:
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    raw = dataclasses.asdict(config)  # type: ignore[call-overload]
+    raw = dataclasses.asdict(cast("Any", config))
     # Convert Path objects to strings for JSON serialisation
     serialisable: dict[str, Any] = {}
     for k, v in raw.items():
@@ -165,7 +157,7 @@ def load_config_json(config_class: type[_T], path: str | Path) -> _T:
     raw: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
 
     if dataclasses.is_dataclass(config_class):
-        fields = {f.name: f for f in dataclasses.fields(config_class)}  # type: ignore[arg-type]
+        fields = {f.name: f for f in dataclasses.fields(config_class)}
         coerced: dict[str, Any] = {}
         for k, v in raw.items():
             if k not in fields:
@@ -177,9 +169,9 @@ def load_config_json(config_class: type[_T], path: str | Path) -> _T:
                 coerced[k] = Path(v) if v is not None else None
             else:
                 coerced[k] = v
-        return config_class(**coerced)  # type: ignore[return-value]
+        return config_class(**coerced)
 
-    return config_class(**raw)  # type: ignore[return-value]
+    return config_class(**raw)
 
 
 __all__ = ["load_config", "save_config_json", "load_config_json"]
