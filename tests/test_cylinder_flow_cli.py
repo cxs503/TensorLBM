@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 import sys
 from pathlib import Path
 
-import torch
+from tensorlbm import CylinderFlowConfig
 
 
-def _load_cylinder_flow_module():
+def _load_cylinder_flow_module() -> object:
     module_path = Path(__file__).resolve().parents[1] / "examples" / "cylinder_flow.py"
     spec = importlib.util.spec_from_file_location("cylinder_flow", module_path)
     assert spec is not None and spec.loader is not None
@@ -18,63 +17,49 @@ def _load_cylinder_flow_module():
     return module
 
 
-def test_parse_args_overrides_values():
+def test_build_parser_defaults() -> None:
     mod = _load_cylinder_flow_module()
-    cfg = mod.parse_args(
-        [
-            "--nx",
-            "128",
-            "--ny",
-            "64",
-            "--steps",
-            "25",
-            "--output-interval",
-            "10",
-            "--log-interval",
-            "5",
-            "--radius",
-            "8",
-            "--cx",
-            "20",
-            "--cy",
-            "15",
-            "--tau",
-            "0.7",
-            "--output-root",
-            "outputs_test",
-            "--run-name",
-            "my-run",
-        ]
-    )
-    assert cfg.nx == 128
-    assert cfg.ny == 64
-    assert cfg.n_steps == 25
-    assert cfg.output_interval == 10
-    assert cfg.log_interval == 5
-    assert cfg.radius == 8
-    assert cfg.cx == 20
-    assert cfg.cy == 15
-    assert cfg.tau == 0.7
-    assert cfg.output_root == "outputs_test"
-    assert cfg.run_name == "my-run"
+    parser = mod.build_parser()  # type: ignore[attr-defined]
+    args = parser.parse_args([])
+    assert args.nx == 320
+    assert args.ny == 100
+    assert args.re == 100.0
+    assert args.n_steps == 1200
+    assert args.output_interval == 200
+    assert args.device == "cpu"
 
 
-def test_make_run_dir_and_metadata_written(tmp_path: Path):
+def test_build_parser_custom_values() -> None:
     mod = _load_cylinder_flow_module()
-    cfg = mod.parse_args(["--output-root", str(tmp_path), "--run-name", "testrun"])
-    run_dir = mod.make_run_dir(cfg)
-    assert run_dir.exists()
-    assert run_dir.name == "testrun"
+    parser = mod.build_parser()  # type: ignore[attr-defined]
+    args = parser.parse_args([
+        "--nx", "128",
+        "--ny", "64",
+        "--n-steps", "25",
+        "--output-interval", "10",
+        "--radius", "8",
+        "--re", "120",
+        "--run-name", "my-run",
+        "--output-root", "outputs_test",
+    ])
+    assert args.nx == 128
+    assert args.ny == 64
+    assert args.n_steps == 25
+    assert args.output_interval == 10
+    assert args.radius == 8.0
+    assert args.re == 120.0
+    assert args.run_name == "my-run"
+    assert args.output_root == "outputs_test"
 
-    metadata_path = mod.save_run_metadata(
-        run_dir=run_dir,
-        config=cfg,
-        tau=0.62,
-        cx=10.0,
-        cy=11.0,
-        device=torch.device("cpu"),
+
+def test_cylinder_flow_config_from_defaults(tmp_path: Path) -> None:
+    cfg = CylinderFlowConfig(
+        nx=64,
+        ny=32,
+        n_steps=10,
+        output_root=tmp_path,
+        run_name="test-run",
     )
-    data = json.loads(metadata_path.read_text(encoding="utf-8"))
-    assert data["config"]["run_name"] == "testrun"
-    assert data["derived"]["tau"] == 0.62
-    assert data["runtime"]["device"] == "cpu"
+    assert cfg.tau > 0.5
+    assert cfg.resolved_run_name() == "test-run"
+    assert cfg.output_root == tmp_path
