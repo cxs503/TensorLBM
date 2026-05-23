@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -74,7 +75,7 @@ class ShipHullFlowConfig:
         if self.wave_k <= 0.0:
             return float("inf")
         g_lbm = (1.0 / 3.0) * self.wave_k
-        return self.u_in / (g_lbm * self.hull_length) ** 0.5
+        return self.u_in / math.sqrt(g_lbm * self.hull_length)
 
     def _effective_water_depth(self) -> float:
         return self.water_depth if self.water_depth > 0.0 else float(self.nz)

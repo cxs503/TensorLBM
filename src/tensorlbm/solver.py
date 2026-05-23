@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Any
+from typing import Any, cast
 
 import torch
 
@@ -33,7 +33,7 @@ def _invert_d2q9() -> list[list[float]]:
     import numpy as np
 
     matrix = np.array(_M_D2Q9_DATA, dtype=np.float64)
-    return np.linalg.inv(matrix).tolist()
+    return cast("list[list[float]]", np.linalg.inv(matrix).tolist())
 
 
 _M_D2Q9_INV_DATA = _invert_d2q9()
