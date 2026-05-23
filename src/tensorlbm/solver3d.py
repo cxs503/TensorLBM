@@ -5,6 +5,16 @@ import torch
 from .d3q19 import C, equilibrium3d, macroscopic3d
 
 # ---------------------------------------------------------------------------
+# D3Q19 MRT transformation matrix and its inverse
+# (same physics as before, see solver3d.py for full docstring)
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Streaming index cache: keyed by (nz, ny, nx, device_type, device_index)
+# ---------------------------------------------------------------------------
+_stream3d_cache: dict[tuple, tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]] = {}
+
+# ---------------------------------------------------------------------------
 # D3Q19 MRT transformation matrix (rank-19 basis).
 # Rows 0–15 follow d'Humières et al. (2002); rows 16–18 use the independent
 # cubic basis functions cx²cy, cx²cz, cy²cx that complete the 19-dimensional
@@ -137,7 +147,8 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     """Vectorised streaming step for D3Q19 (periodic boundaries).
 
     Replaces the per-direction ``torch.roll`` loop with a single advanced-index
-    gather over all 19 directions simultaneously.
+    gather over all 19 directions simultaneously.  Index tensors are cached per
+    (shape, device) to avoid recomputation inside the simulation loop.
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)``.
@@ -147,19 +158,22 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     """
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     device = f.device
-    c = C.to(device)  # (19, 3) — columns are (cx, cy, cz)
+    cache_key = (nz, ny, nx, device.type, device.index)
 
-    # Source indices for each direction (periodic wrap)
-    z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz  # (19, nz)
-    y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny  # (19, ny)
-    x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx  # (19, nx)
+    if cache_key not in _stream3d_cache:
+        c = C.to(device)  # (19, 3) — columns are (cx, cy, cz)
 
-    # Expand to full (19, nz, ny, nx) index tensors
-    q_idx = torch.arange(19, device=device).view(19, 1, 1, 1).expand(19, nz, ny, nx)
-    z_idx = z_src.view(19, nz, 1, 1).expand(19, nz, ny, nx)
-    y_idx = y_src.view(19, 1, ny, 1).expand(19, nz, ny, nx)
-    x_idx = x_src.view(19, 1, 1, nx).expand(19, nz, ny, nx)
+        z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz  # (19, nz)
+        y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny  # (19, ny)
+        x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx  # (19, nx)
 
+        q_idx = torch.arange(19, device=device).view(19, 1, 1, 1).expand(19, nz, ny, nx)
+        z_idx = z_src.view(19, nz, 1, 1).expand(19, nz, ny, nx)
+        y_idx = y_src.view(19, 1, ny, 1).expand(19, nz, ny, nx)
+        x_idx = x_src.view(19, 1, 1, nx).expand(19, nz, ny, nx)
+        _stream3d_cache[cache_key] = (q_idx, z_idx, y_idx, x_idx)
+
+    q_idx, z_idx, y_idx, x_idx = _stream3d_cache[cache_key]
     return f[q_idx, z_idx, y_idx, x_idx]
 
 

@@ -70,6 +70,17 @@ class SphereFlowConfig:
             f"_uin{self.u_in:.3f}_steps{self.n_steps}"
         )
 
+    def save(self, path: "Path | str") -> None:
+        """Serialise this config to a JSON file."""
+        from .config_io import save_config_json
+        save_config_json(self, path)
+
+    @classmethod
+    def load(cls, path: "Path | str") -> "SphereFlowConfig":
+        """Load a :class:`SphereFlowConfig` from a JSON file."""
+        from .config_io import load_config_json
+        return load_config_json(cls, path)
+
 
 def _save_flow_snapshot_3d(
     run_dir: Path,
