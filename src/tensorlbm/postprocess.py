@@ -1,9 +1,12 @@
 """Post-processing utilities for TensorLBM simulation data.
 
 Provides:
-- :func:`extract_velocity_profile`  – velocity slice at a fixed x or y position.
+- :func:`extract_velocity_profile`    – velocity slice at a fixed x or y position.
+- :func:`extract_wake_profile`        – cross-stream velocity profile at a given x-index.
+- :func:`compute_recirculation_length` – x-extent of the reverse-flow region.
 - :func:`compute_pressure_coefficient` – pressure coefficient Cp field.
-- :func:`compute_q_criterion`       – Q-criterion for 3-D vortex identification.
+- :func:`compute_q_criterion`         – Q-criterion for 3-D vortex identification.
+- :func:`compute_vorticity_3d`        – vorticity vector field for 3-D flows.
 """
 from __future__ import annotations
 
@@ -34,6 +37,78 @@ def extract_velocity_profile(
     if axis == "y":
         return ux[index, :], uy[index, :]
     raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
+
+
+def extract_wake_profile(
+    ux: torch.Tensor,
+    x_wake: int,
+) -> torch.Tensor:
+    """Extract the streamwise velocity profile at a given x-index (2-D or 3-D).
+
+    For a 2-D field ``(ny, nx)`` returns a 1-D profile of length ``ny``.
+    For a 3-D field ``(nz, ny, nx)`` returns the mid-z slice as a 1-D
+    profile of length ``ny``.
+
+    Args:
+        ux: Streamwise (x) velocity field, shape ``(ny, nx)`` or
+            ``(nz, ny, nx)``.
+        x_wake: x-index of the wake cross-section.
+
+    Returns:
+        1-D streamwise velocity profile of length ``ny``.
+    """
+    if ux.ndim == 2:
+        return ux[:, x_wake]
+    if ux.ndim == 3:
+        mid_z = ux.shape[0] // 2
+        return ux[mid_z, :, x_wake]
+    raise ValueError(f"ux must be 2-D or 3-D, got {ux.ndim}-D")
+
+
+def compute_recirculation_length(
+    ux: torch.Tensor,
+    obstacle_mask: torch.Tensor,
+) -> float:
+    """Compute the x-extent of the reverse-flow (recirculation) region.
+
+    Identifies the longest contiguous run of grid columns downstream of the
+    obstacle in which the centreline streamwise velocity ``ux`` is negative.
+
+    For 2-D inputs the centreline is the mid-y row; for 3-D inputs it is the
+    mid-z, mid-y line.
+
+    Args:
+        ux: Streamwise velocity field, shape ``(ny, nx)`` or ``(nz, ny, nx)``.
+        obstacle_mask: Boolean solid-cell mask, same shape as *ux*.
+
+    Returns:
+        Length of the recirculation zone in lattice units (0.0 if none found).
+    """
+    if ux.ndim == 2:
+        ny, nx = ux.shape
+        mid_y = ny // 2
+        centreline = ux[mid_y, :]         # (nx,)
+        obs_line = obstacle_mask[mid_y, :]
+    elif ux.ndim == 3:
+        nz, ny, nx = ux.shape
+        mid_z, mid_y = nz // 2, ny // 2
+        centreline = ux[mid_z, mid_y, :]  # (nx,)
+        obs_line = obstacle_mask[mid_z, mid_y, :]
+    else:
+        raise ValueError(f"ux must be 2-D or 3-D, got {ux.ndim}-D")
+
+    # Find the last solid column (obstacle trailing edge)
+    solid_cols = obs_line.nonzero(as_tuple=True)[0]
+    start_col = 0 if solid_cols.numel() == 0 else int(solid_cols.max().item()) + 1
+
+    # Count consecutive columns with ux < 0 starting from the trailing edge
+    recirculation_len = 0.0
+    for xi in range(start_col, nx):
+        if float(centreline[xi].item()) < 0.0:
+            recirculation_len += 1.0
+        else:
+            break
+    return recirculation_len
 
 
 def compute_pressure_coefficient(
@@ -136,8 +211,70 @@ def compute_q_criterion(
     return 0.5 * (omega_sq - s_sq)
 
 
+def compute_vorticity_3d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Compute the vorticity vector field for a 3-D flow.
+
+    Returns the three vorticity components:
+
+    .. math::
+
+        \\omega_x = \\frac{\\partial u_z}{\\partial y} - \\frac{\\partial u_y}{\\partial z}
+
+        \\omega_y = \\frac{\\partial u_x}{\\partial z} - \\frac{\\partial u_z}{\\partial x}
+
+        \\omega_z = \\frac{\\partial u_y}{\\partial x} - \\frac{\\partial u_x}{\\partial y}
+
+    Uses second-order central differences for interior cells; boundary rows
+    use first-order forward/backward differences.
+
+    Args:
+        ux: x-velocity, shape ``(nz, ny, nx)``.
+        uy: y-velocity, shape ``(nz, ny, nx)``.
+        uz: z-velocity, shape ``(nz, ny, nx)``.
+
+    Returns:
+        Tuple ``(omega_x, omega_y, omega_z)`` each of shape ``(nz, ny, nx)``.
+    """
+
+    def _grad(field: torch.Tensor, dim: int) -> torch.Tensor:
+        g = torch.zeros_like(field)
+        if dim == 0:  # d/dz
+            g[1:-1] = 0.5 * (field[2:] - field[:-2])
+            g[0] = field[1] - field[0]
+            g[-1] = field[-1] - field[-2]
+        elif dim == 1:  # d/dy
+            g[:, 1:-1] = 0.5 * (field[:, 2:] - field[:, :-2])
+            g[:, 0] = field[:, 1] - field[:, 0]
+            g[:, -1] = field[:, -1] - field[:, -2]
+        else:  # d/dx
+            g[:, :, 1:-1] = 0.5 * (field[:, :, 2:] - field[:, :, :-2])
+            g[:, :, 0] = field[:, :, 1] - field[:, :, 0]
+            g[:, :, -1] = field[:, :, -1] - field[:, :, -2]
+        return g
+
+    duz_dy = _grad(uz, 1)
+    duy_dz = _grad(uy, 0)
+    dux_dz = _grad(ux, 0)
+    duz_dx = _grad(uz, 2)
+    duy_dx = _grad(uy, 2)
+    dux_dy = _grad(ux, 1)
+
+    omega_x = duz_dy - duy_dz
+    omega_y = dux_dz - duz_dx
+    omega_z = duy_dx - dux_dy
+
+    return omega_x, omega_y, omega_z
+
+
 __all__ = [
     "extract_velocity_profile",
+    "extract_wake_profile",
+    "compute_recirculation_length",
     "compute_pressure_coefficient",
     "compute_q_criterion",
+    "compute_vorticity_3d",
 ]

@@ -13,6 +13,12 @@ Usage example::
         --nx 160 --ny 60 --n-steps 2000 --output-interval 100 \\
         --output-root outputs/scan
 
+Parallel mode (uses multiple CPU cores)::
+
+    PYTHONPATH=src python examples/param_scan.py \\
+        --re 20 40 80 100 --nx 160 --ny 60 --n-steps 2000 \\
+        --output-root outputs/scan --parallel 4
+
 """
 from __future__ import annotations
 
@@ -22,6 +28,7 @@ import json
 import math
 import statistics
 import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 # Ensure the package is importable when run directly from the repository root
@@ -43,6 +50,13 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--output-root", type=Path, default=Path("outputs"))
     p.add_argument("--device", default="cpu")
     p.add_argument("--overwrite", action="store_true")
+    p.add_argument(
+        "--parallel",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Number of parallel worker processes (default: 1 = sequential)",
+    )
     return p.parse_args()
 
 
@@ -66,6 +80,29 @@ def _summarise_run(run_dir: Path) -> dict[str, float | int | None]:
     cl_rms = math.sqrt(statistics.mean(v * v for v in cl_values)) if cl_values else float("nan")
 
     return {"re": re, "cd_mean": cd_mean, "cl_rms": cl_rms, "strouhal": strouhal}
+
+
+def _run_one(args_tuple: tuple) -> dict[str, float | int | None]:
+    """Worker function: run one Re value and return summary row."""
+    re, nx, ny, u_in, radius, n_steps, output_interval, output_root, device, overwrite = args_tuple
+    cfg = CylinderFlowConfig(
+        nx=nx,
+        ny=ny,
+        u_in=u_in,
+        re=re,
+        radius=radius,
+        n_steps=n_steps,
+        output_interval=output_interval,
+        output_root=output_root / "cylinder_flow_scan",
+        device=device,
+        overwrite=overwrite,
+    )
+    try:
+        run_dir = run_cylinder_flow(cfg)
+        return _summarise_run(run_dir)
+    except Exception as exc:  # noqa: BLE001
+        print(f"  ERROR for Re={re}: {exc}")
+        return {"re": re, "cd_mean": float("nan"), "cl_rms": float("nan"), "strouhal": None}
 
 
 def _save_summary(rows: list[dict], output_root: Path) -> Path:
@@ -120,37 +157,60 @@ def main() -> None:
     args = _parse_args()
     summary_rows: list[dict] = []
 
-    for re in args.re:
-        print(f"\n{'='*60}")
-        print(f"  Re = {re}")
-        print(f"{'='*60}")
-        cfg = CylinderFlowConfig(
-            nx=args.nx,
-            ny=args.ny,
-            u_in=args.u_in,
-            re=re,
-            radius=args.radius,
-            n_steps=args.n_steps,
-            output_interval=args.output_interval,
-            output_root=args.output_root / "cylinder_flow_scan",
-            device=args.device,
-            overwrite=args.overwrite,
+    worker_args = [
+        (
+            re,
+            args.nx,
+            args.ny,
+            args.u_in,
+            args.radius,
+            args.n_steps,
+            args.output_interval,
+            args.output_root,
+            args.device,
+            args.overwrite,
         )
-        try:
-            run_dir = run_cylinder_flow(cfg)
-            row = _summarise_run(run_dir)
+        for re in args.re
+    ]
+
+    n_workers = max(1, args.parallel)
+    if n_workers == 1:
+        # Sequential execution (original behaviour)
+        for wargs in worker_args:
+            re = wargs[0]
+            print(f"\n{'='*60}\n  Re = {re}\n{'='*60}")
+            row = _run_one(wargs)
             summary_rows.append(row)
             print(f"  → Cd={row['cd_mean']:.4f}  Cl_rms={row['cl_rms']:.4f}  St={row['strouhal']}")
-        except Exception as exc:  # noqa: BLE001
-            print(f"  ERROR for Re={re}: {exc}")
-            summary_rows.append(
-                {
-                    "re": re,
-                    "cd_mean": float("nan"),
-                    "cl_rms": float("nan"),
-                    "strouhal": None,
-                }
-            )
+    else:
+        # Parallel execution using a process pool
+        print(f"Running {len(args.re)} configurations with {n_workers} workers …")
+        futures: dict = {}
+        with ProcessPoolExecutor(max_workers=n_workers) as pool:
+            for wargs in worker_args:
+                fut = pool.submit(_run_one, wargs)
+                futures[fut] = wargs[0]
+            for fut in as_completed(futures):
+                re = futures[fut]
+                try:
+                    row = fut.result()
+                except Exception as exc:  # noqa: BLE001
+                    print(f"  ERROR for Re={re}: {exc}")
+                    row = {
+                        "re": re,
+                        "cd_mean": float("nan"),
+                        "cl_rms": float("nan"),
+                        "strouhal": None,
+                    }
+                summary_rows.append(row)
+                st = row["strouhal"]
+                print(
+                    f"  Re={re} → Cd={row['cd_mean']:.4f}  "
+                    f"Cl_rms={row['cl_rms']:.4f}  St={st}"
+                )
+
+        # Sort rows by Re for consistent output
+        summary_rows.sort(key=lambda r: float(r["re"]))  # type: ignore[arg-type]
 
     if summary_rows:
         _save_summary(summary_rows, args.output_root)

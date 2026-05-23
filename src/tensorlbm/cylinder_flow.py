@@ -14,6 +14,7 @@ from .boundaries import (
     cylinder_mask,
     make_channel_wall_mask,
 )
+from .checkpoint import load_checkpoint, save_checkpoint
 from .d2q9 import equilibrium, macroscopic
 from .logging_config import configure_logging, logger
 from .solver import collide_bgk, stream
@@ -49,10 +50,13 @@ class CylinderFlowConfig:
     seed: int = 0
     device: str = "cpu"
     overwrite: bool = False
+    resume_checkpoint: Path | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
         object.__setattr__(self, "device", self.device.lower())
+        if self.resume_checkpoint is not None:
+            object.__setattr__(self, "resume_checkpoint", Path(self.resume_checkpoint))
 
     @property
     def nu(self) -> float:
@@ -161,8 +165,13 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
         config.overwrite,
     )
 
+    ckpt_str = str(config.resume_checkpoint) if config.resume_checkpoint else None
     metadata: dict[str, object] = {
-        "config": {**asdict(config), "output_root": str(config.output_root)},
+        "config": {
+            **asdict(config),
+            "output_root": str(config.output_root),
+            "resume_checkpoint": ckpt_str,
+        },
         "derived": {"nu": config.nu, "tau": config.tau},
         "runtime": {"torch_version": torch.__version__, "device": str(device)},
         "reproducibility": get_reproducibility_metadata(),
@@ -172,13 +181,22 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     obstacle = cylinder_mask(config.nx, config.ny, cx_obs, cy_obs, config.radius, device=device)
     wall_mask = make_channel_wall_mask(config.ny, config.nx, obstacle, device=device)
 
-    rho0 = torch.ones((config.ny, config.nx), device=device)
-    ux0 = torch.full((config.ny, config.nx), config.u_in, device=device)
-    uy0 = torch.zeros((config.ny, config.nx), device=device)
-    ux0[obstacle] = 0.0
-    f = equilibrium(rho0, ux0, uy0, device=device)
+    # Resume from checkpoint or initialise fresh
+    start_step = 1
+    if config.resume_checkpoint is not None:
+        f, resume_step, _ckpt_meta = load_checkpoint(config.resume_checkpoint, device=device)
+        f = f.to(device)
+        start_step = resume_step + 1
+        logger.info("Resumed from checkpoint %s at step %d", config.resume_checkpoint, resume_step)
+    else:
+        rho0 = torch.ones((config.ny, config.nx), device=device)
+        ux0 = torch.full((config.ny, config.nx), config.u_in, device=device)
+        uy0 = torch.zeros((config.ny, config.nx), device=device)
+        ux0[obstacle] = 0.0
+        f = equilibrium(rho0, ux0, uy0, device=device)
 
-    initial_mass = float(rho0.sum().item())
+    rho0_mass = torch.ones((config.ny, config.nx), device=device)
+    initial_mass = float(rho0_mass.sum().item())
     diagnostics: list[dict[str, object]] = []
     cl_series: list[float] = []
 
@@ -196,10 +214,11 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     )
     logger.info("Run directory: %s", run_dir)
 
+    step_range = range(start_step, config.n_steps + 1)
     step_iter = (
-        _tqdm(range(1, config.n_steps + 1), desc="Cylinder flow", unit="step")
+        _tqdm(step_range, desc="Cylinder flow", unit="step")
         if _TQDM_AVAILABLE
-        else range(1, config.n_steps + 1)
+        else step_range
     )
     for step in step_iter:
         f = collide_bgk(f, tau=config.tau)
@@ -245,6 +264,9 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
 
             vort = compute_vorticity(ux, uy)
             _save_flow_snapshot(run_dir, step, speed, vort, obstacle)
+
+            # Save checkpoint at every output step
+            save_checkpoint(f, step, run_dir)
 
     half = len(cl_series) // 2
     st = _strouhal_number(cl_series[half:], config.output_interval, config.u_in, diameter)
