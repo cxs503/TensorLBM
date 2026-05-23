@@ -1,72 +1,177 @@
-"""JSON-based configuration serialisation / deserialisation helpers.
+"""Configuration file loading and environment-variable override utilities.
 
-Provides a generic :func:`save_config_json` / :func:`load_config_json` pair
-that round-trips any frozen ``@dataclass`` configuration to and from a JSON
-file without external dependencies (no PyYAML or TOML required).
+Supports loading :mod:`dataclasses`-based Config objects from YAML or TOML
+files, with optional environment-variable overrides.
 
-All runner config classes (``CylinderFlowConfig``, ``SphereFlowConfig``,
-``ShipHullFlowConfig``, ``SphereFlowD3Q27Config``) gain ``.save()`` and
-``.load()`` class-methods that delegate to these helpers.
+YAML requires ``pyyaml`` (``pip install pyyaml``).
+TOML is supported natively in Python 3.11+ via :mod:`tomllib`; for older
+Python use ``tomli`` (``pip install tomli``).
+
+Also provides :func:`save_config_json` and :func:`load_config_json` for a
+built-in, dependency-free JSON round-trip that the runner Config classes
+expose via their ``save`` / ``load`` class methods.
 """
-
 from __future__ import annotations
 
+import dataclasses
 import json
-from dataclasses import asdict
+import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, TypeVar, cast
 
-if TYPE_CHECKING:
-    from typing import Protocol
-
-    class DataclassInstance(Protocol):
-        __dataclass_fields__: dict[str, Any]
+_T = TypeVar("_T")
 
 
-def save_config_json(config: Any, path: Path | str) -> None:
-    """Serialise a frozen dataclass *config* to a JSON file at *path*.
+def _load_raw(path: Path) -> dict[str, Any]:
+    """Load a YAML or TOML file and return its contents as a plain dict."""
+    suffix = path.suffix.lower()
+    if suffix in {".yaml", ".yml"}:
+        try:
+            import yaml
+        except ImportError as exc:
+            raise ImportError(
+                "pyyaml is required to load YAML configs: pip install pyyaml"
+            ) from exc
+        with path.open(encoding="utf-8") as fh:
+            data = yaml.safe_load(fh)
+        return dict(data) if data else {}
 
-    Path objects and any ``None`` values are handled correctly.
+    if suffix == ".toml":
+        import tomllib
 
-    Args:
-        config: A frozen ``@dataclass`` instance.
-        path: Destination path (created or overwritten).
+        with path.open("rb") as fb:
+            return tomllib.load(fb)
+
+    raise ValueError(
+        f"Unsupported config file format: {suffix!r}. Use .yaml, .yml, or .toml"
+    )
+
+
+def _apply_env_overrides(data: dict[str, Any], prefix: str) -> dict[str, Any]:
+    """Override *data* keys from environment variables prefixed with *prefix*.
+
+    For example, if *prefix* = ``"TENSORLBM"`` then the environment variable
+    ``TENSORLBM_NX=128`` will set ``data["nx"] = "128"`` (as a string; type
+    coercion is handled by the dataclass constructor).
     """
-    path = Path(path)
-    raw = asdict(config)
-    # Convert Path objects to strings
-    raw = _paths_to_str(raw)
-    path.write_text(json.dumps(raw, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    result = dict(data)
+    prefix_upper = prefix.upper() + "_"
+    for key, val in os.environ.items():
+        if key.upper().startswith(prefix_upper):
+            field_name = key[len(prefix_upper) :].lower()
+            result[field_name] = val
+    return result
 
 
-def load_config_json(cls: type, path: Path | str) -> Any:
-    """Deserialise a JSON file produced by :func:`save_config_json` into *cls*.
+def load_config(
+    config_class: type[_T],
+    path: str | Path,
+    env_prefix: str = "TENSORLBM",
+) -> _T:
+    """Load a dataclass-based Config from a YAML or TOML file.
+
+    Field values present in the file override dataclass defaults.
+    Environment variables of the form ``{ENV_PREFIX}_{FIELD_NAME}`` (case-
+    insensitive) are applied last, taking highest precedence.
 
     Args:
-        cls: The dataclass class to instantiate.
-        path: Source JSON file path.
+        config_class: A :func:`dataclasses.dataclass` type to instantiate.
+        path: Path to a ``.yaml``, ``.yml``, or ``.toml`` configuration file.
+        env_prefix: Prefix for environment-variable overrides
+            (default ``"TENSORLBM"``).
 
     Returns:
-        A new ``cls`` instance with fields from the file.
+        An instance of *config_class* populated from the file and env vars.
+
+    Raises:
+        ValueError: If the file format is not supported.
+        ImportError: If the required YAML/TOML parser is not installed.
+    """
+    path = Path(path)
+    raw = _load_raw(path)
+    raw = _apply_env_overrides(raw, env_prefix)
+
+    if dataclasses.is_dataclass(config_class):
+        fields = {f.name: f for f in dataclasses.fields(config_class)}
+        coerced: dict[str, Any] = {}
+        for k, v in raw.items():
+            if k in fields and isinstance(v, str):
+                ftype = fields[k].type
+                try:
+                    if ftype in (int, "int"):
+                        v = int(v)
+                    elif ftype in (float, "float"):
+                        v = float(v)
+                    elif ftype in (bool, "bool"):
+                        v = v.lower() not in {"0", "false", "no", "off"}
+                except (ValueError, AttributeError):
+                    pass
+            coerced[k] = v
+        return config_class(**coerced)
+
+    return config_class(**raw)
+
+
+def save_config_json(config: object, path: str | Path) -> Path:
+    """Serialise a dataclass-based Config to a JSON file.
+
+    Path-type fields are serialised as strings; *None* values are written as
+    JSON ``null``.  The resulting file can be reloaded with
+    :func:`load_config_json`.
+
+    Args:
+        config: A dataclass instance to serialise.
+        path: Output path (should end with ``.json``).
+
+    Returns:
+        Resolved output path.
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    raw = dataclasses.asdict(cast("Any", config))
+    # Convert Path objects to strings for JSON serialisation
+    serialisable: dict[str, Any] = {}
+    for k, v in raw.items():
+        if isinstance(v, Path):
+            serialisable[k] = str(v)
+        else:
+            serialisable[k] = v
+    path.write_text(json.dumps(serialisable, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def load_config_json(config_class: type[_T], path: str | Path) -> _T:
+    """Load a dataclass-based Config from a JSON file written by
+    :func:`save_config_json`.
+
+    Path-type fields are reconstructed from their string representations.
+
+    Args:
+        config_class: A :func:`dataclasses.dataclass` type to instantiate.
+        path: Path to a JSON config file.
+
+    Returns:
+        An instance of *config_class* populated from the file.
     """
     path = Path(path)
     raw: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
-    return cls(**raw)
+
+    if dataclasses.is_dataclass(config_class):
+        fields = {f.name: f for f in dataclasses.fields(config_class)}
+        coerced: dict[str, Any] = {}
+        for k, v in raw.items():
+            if k not in fields:
+                continue
+            field = fields[k]
+            # Re-hydrate Path fields
+            ftype = field.type
+            if ftype in (Path, "Path") or (isinstance(ftype, str) and "Path" in ftype):
+                coerced[k] = Path(v) if v is not None else None
+            else:
+                coerced[k] = v
+        return config_class(**coerced)
+
+    return config_class(**raw)
 
 
-# ---------------------------------------------------------------------------
-# Internal helper
-# ---------------------------------------------------------------------------
-
-def _paths_to_str(obj: Any) -> Any:
-    """Recursively convert :class:`~pathlib.Path` objects to strings."""
-    if isinstance(obj, Path):
-        return str(obj)
-    if isinstance(obj, dict):
-        return {k: _paths_to_str(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_paths_to_str(v) for v in obj]
-    return obj
-
-
-__all__ = ["save_config_json", "load_config_json"]
+__all__ = ["load_config", "save_config_json", "load_config_json"]

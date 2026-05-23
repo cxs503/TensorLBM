@@ -318,7 +318,12 @@ class TestZouHeInletVelocityProfile3D:
         """After applying the BC, macroscopic ux at x=0 should match ux_in."""
         nz, ny, nx = 6, 8, 12
         rho0 = torch.ones((nz, ny, nx))
-        f = equilibrium3d(rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0))
+        f = equilibrium3d(
+            rho0,
+            torch.zeros_like(rho0),
+            torch.zeros_like(rho0),
+            torch.zeros_like(rho0),
+        )
         from tensorlbm import collide_bgk3d, stream3d
         f = collide_bgk3d(f, tau=0.6)
         f = stream3d(f)
@@ -336,7 +341,12 @@ class TestApplyWaveInlet3D:
     def test_preserves_shape_and_finite(self) -> None:
         nz, ny, nx = 8, 10, 16
         rho = torch.ones((nz, ny, nx))
-        f = equilibrium3d(rho, torch.full_like(rho, 0.05), torch.zeros_like(rho), torch.zeros_like(rho))
+        f = equilibrium3d(
+            rho,
+            torch.full_like(rho, 0.05),
+            torch.zeros_like(rho),
+            torch.zeros_like(rho),
+        )
         obstacle = torch.zeros((nz, ny, nx), dtype=torch.bool)
         wall_mask = make_channel_wall_mask_3d(nz, ny, nx, obstacle, device=torch.device("cpu"))
         f_out = apply_wave_inlet_3d(
@@ -381,11 +391,11 @@ class TestShipHullFlowConfig:
         ],
     )
     def test_validate_raises(self, overrides: dict, match: str) -> None:
-        base = dict(
-            nx=80, ny=40, nz=30,
-            hull_length=40.0, hull_beam=4.0, hull_draft=6.0,
-            u_in=0.05, re=100.0, n_steps=10, output_interval=5,
-        )
+        base = {
+            "nx": 80, "ny": 40, "nz": 30,
+            "hull_length": 40.0, "hull_beam": 4.0, "hull_draft": 6.0,
+            "u_in": 0.05, "re": 100.0, "n_steps": 10, "output_interval": 5,
+        }
         base.update(overrides)
         cfg = ShipHullFlowConfig(**base)
         with pytest.raises(ValueError, match=match):

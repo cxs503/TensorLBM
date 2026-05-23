@@ -1,8 +1,0 @@
-torch>=2.0
-matplotlib>=3.5
-
-[dev]
-pytest>=7.0
-pytest-cov
-ruff>=0.4
-mypy>=1.0

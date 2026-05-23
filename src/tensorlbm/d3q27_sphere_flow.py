@@ -1,15 +1,18 @@
-"""3D sphere channel-flow simulation using the D3Q27 lattice.
+"""3-D D3Q27 channel flow past a sphere.
 
-Provides a higher-fidelity alternative to :mod:`tensorlbm.sphere_flow`
-(D3Q19) using the 27-direction D3Q27 lattice with optional MRT or
-Smagorinsky LES collision operators.
+Provides an end-to-end simulation runner analogous to
+:mod:`tensorlbm.sphere_flow` but using the D3Q27 lattice (27 velocity
+directions) instead of D3Q19.  D3Q27 achieves 4th-order isotropy and
+can reduce numerical artefacts in flows with strong corner-region gradients.
 
-Exported symbols
-----------------
-- :class:`SphereFlowD3Q27Config` – simulation configuration
-- :func:`run_sphere_flow_d3q27`  – runner
+Key differences from the D3Q19 runner:
+
+* Collision: :func:`~tensorlbm.d3q27.collide_bgk27`
+* Streaming: :func:`~tensorlbm.d3q27.stream27`
+* Boundaries: :mod:`tensorlbm.boundaries_d3q27` (D3Q27 Zou/He and bounce-back)
+* Forces: :func:`~tensorlbm.obstacles.compute_obstacle_forces_27`
+* Mass correction: :func:`~tensorlbm.d3q27.correct_mass27`
 """
-
 from __future__ import annotations
 
 import json
@@ -22,37 +25,27 @@ import torch
 from .boundaries3d import sphere_mask
 from .boundaries_d3q27 import (
     apply_zou_he_channel_boundaries_27,
-    compute_obstacle_forces_27,
     make_channel_wall_mask_27,
 )
-from .d3q27 import (
-    collide_bgk27,
-    collide_mrt27,
-    collide_smagorinsky_bgk27,
-    collide_smagorinsky_mrt27,
-    equilibrium27,
-    macroscopic27,
-    stream27,
+from .checkpoint import load_checkpoint, save_checkpoint
+from .cylinder_flow import _maybe_compile
+from .d3q27 import collide_bgk27, equilibrium27, macroscopic27, stream27
+from .logging_config import configure_logging, logger
+from .obstacles import compute_obstacle_forces_27
+from .utils import (
+    DiagnosticPoint,
+    get_reproducibility_metadata,
+    prepare_run_dir,
+    resolve_device,
 )
-from .utils import DiagnosticPoint, prepare_run_dir, resolve_device
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
 class SphereFlowD3Q27Config:
-    """Configuration for a 3D D3Q27 sphere channel-flow simulation.
-
-    Parameters
-    ----------
-    collision : str
-        Collision operator: ``"bgk"``, ``"mrt"``, ``"smagorinsky_bgk"``,
-        or ``"smagorinsky_mrt"`` (default).
-    """
+    """Configuration for a 3-D D3Q27 channel flow past a sphere."""
 
     nx: int = 120
     ny: int = 60
@@ -60,8 +53,6 @@ class SphereFlowD3Q27Config:
     u_in: float = 0.06
     re: float = 50.0
     radius: float = 8.0
-    collision: str = "bgk"
-    smagorinsky_cs: float = 0.1
     n_steps: int = 500
     output_interval: int = 100
     output_root: Path = Path("outputs")
@@ -69,82 +60,61 @@ class SphereFlowD3Q27Config:
     seed: int = 0
     device: str = "cpu"
     overwrite: bool = False
+    resume_checkpoint: Path | None = None
+    use_compile: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
         object.__setattr__(self, "device", self.device.lower())
-        object.__setattr__(self, "collision", self.collision.lower())
+        if self.resume_checkpoint is not None:
+            object.__setattr__(self, "resume_checkpoint", Path(self.resume_checkpoint))
 
     @property
     def nu(self) -> float:
+        """Kinematic viscosity derived from Re = u_in · 2r / ν."""
         return self.u_in * 2.0 * self.radius / self.re
 
     @property
     def tau(self) -> float:
+        """BGK relaxation time τ = 3ν + 0.5."""
         return 3.0 * self.nu + 0.5
 
     def validate(self) -> None:
+        """Raise :class:`ValueError` if the configuration is invalid."""
         if self.nx < 16 or self.ny < 8 or self.nz < 8:
-            raise ValueError("nx, ny, nz must be at least 16, 8, 8")
+            msg = "nx, ny, and nz must be at least 16, 8, and 8"
+            raise ValueError(msg)
         if self.n_steps < 1:
-            raise ValueError("n_steps must be >= 1")
+            msg = "n_steps must be >= 1"
+            raise ValueError(msg)
         if self.output_interval < 1:
-            raise ValueError("output_interval must be >= 1")
+            msg = "output_interval must be >= 1"
+            raise ValueError(msg)
         if self.u_in <= 0.0 or self.re <= 0.0 or self.radius <= 0.0:
-            raise ValueError("u_in, re, and radius must be > 0")
+            msg = "u_in, re, and radius must be > 0"
+            raise ValueError(msg)
         if self.tau <= 0.5:
-            raise ValueError(f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/radius")
-        valid = {"bgk", "mrt", "smagorinsky_bgk", "smagorinsky_mrt"}
-        if self.collision not in valid:
-            raise ValueError(f"collision must be one of {valid}")
+            msg = f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/radius"
+            raise ValueError(msg)
 
     def resolved_run_name(self) -> str:
         if self.run_name:
             return self.run_name
         re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
         return (
-            f"d3q27_nx{self.nx}_ny{self.ny}_nz{self.nz}_re{re_label}"
-            f"_{self.collision}_uin{self.u_in:.3f}_steps{self.n_steps}"
+            f"nx{self.nx}_ny{self.ny}_nz{self.nz}_re{re_label}"
+            f"_uin{self.u_in:.3f}_steps{self.n_steps}"
         )
 
-    def save(self, path: Path | str) -> None:
-        from .config_io import save_config_json
-        save_config_json(self, path)
 
-    @classmethod
-    def load(cls, path: Path | str) -> SphereFlowD3Q27Config:
-        from .config_io import load_config_json
-        return load_config_json(cls, path)
-
-
-# ---------------------------------------------------------------------------
-# Collision selector
-# ---------------------------------------------------------------------------
-
-def _collide(f: torch.Tensor, config: SphereFlowD3Q27Config) -> torch.Tensor:
-    tau = config.tau
-    C_s = config.smagorinsky_cs
-    if config.collision == "bgk":
-        return collide_bgk27(f, tau)
-    if config.collision == "mrt":
-        return collide_mrt27(f, tau)
-    if config.collision == "smagorinsky_bgk":
-        return collide_smagorinsky_bgk27(f, tau, C_s)
-    # smagorinsky_mrt
-    return collide_smagorinsky_mrt27(f, tau, C_s)
-
-
-# ---------------------------------------------------------------------------
-# Snapshot helper
-# ---------------------------------------------------------------------------
-
-def _save_snapshot(
+def _save_flow_snapshot_d3q27(
     run_dir: Path,
     step: int,
     speed: torch.Tensor,
     obstacle: torch.Tensor,
     nz: int,
 ) -> None:
+    """Save speed magnitude on the mid-z slice as a PNG image."""
     mid_z = nz // 2
     speed_np = speed[mid_z].detach().cpu().numpy()
     obs_np = obstacle[mid_z].detach().cpu().float().numpy()
@@ -152,77 +122,119 @@ def _save_snapshot(
     fig, ax = plt.subplots(figsize=(8, 4), constrained_layout=True)
     im = ax.imshow(speed_np, origin="lower", cmap="viridis")
     ax.contour(obs_np, levels=[0.5], colors="white", linewidths=0.7)
-    ax.set_title(f"D3Q27 speed – mid-z (step {step})")
+    ax.set_title(f"Velocity magnitude – mid-z slice (step {step})")
     plt.colorbar(im, ax=ax, fraction=0.046)
-    fig.savefig(run_dir / f"flow_step_{step:06d}.png", dpi=140)
+
+    out = run_dir / f"flow_step_{step:06d}.png"
+    fig.savefig(out, dpi=160)
     plt.close(fig)
 
 
-# ---------------------------------------------------------------------------
-# Runner
-# ---------------------------------------------------------------------------
-
 def run_sphere_flow_d3q27(config: SphereFlowD3Q27Config) -> Path:
-    """Run a 3D D3Q27 channel flow past a sphere.
+    """Run a 3-D D3Q27 channel flow past a sphere and save results.
 
     Args:
-        config: Validated :class:`SphereFlowD3Q27Config`.
+        config: Simulation configuration.
 
     Returns:
         Path to the run output directory.
     """
+    configure_logging()
     config.validate()
     torch.manual_seed(config.seed)
     torch.use_deterministic_algorithms(True, warn_only=True)
 
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
-        config.output_root, "sphere_flow_d3q27",
-        config.resolved_run_name(), config.overwrite
+        config.output_root,
+        "sphere_flow_d3q27",
+        config.resolved_run_name(),
+        config.overwrite,
     )
+
+    ckpt_str = str(config.resume_checkpoint) if config.resume_checkpoint else None
+    metadata: dict[str, object] = {
+        "config": {
+            **asdict(config),
+            "output_root": str(config.output_root),
+            "resume_checkpoint": ckpt_str,
+        },
+        "derived": {"nu": config.nu, "tau": config.tau},
+        "runtime": {"torch_version": torch.__version__, "device": str(device)},
+        "reproducibility": get_reproducibility_metadata(),
+    }
 
     cx = config.nx * 0.25
     cy = config.ny * 0.5
     cz = config.nz * 0.5
-    obstacle = sphere_mask(config.nx, config.ny, config.nz, cx, cy, cz, config.radius, device=device)
+    obstacle = sphere_mask(
+        config.nx,
+        config.ny,
+        config.nz,
+        cx,
+        cy,
+        cz,
+        config.radius,
+        device=device,
+    )
     wall_mask = make_channel_wall_mask_27(
-        config.nz, config.ny, config.nx, obstacle, device=device
+        config.nz,
+        config.ny,
+        config.nx,
+        obstacle,
+        device=device,
     )
 
-    rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
-    ux0 = torch.full_like(rho0, config.u_in)
-    uy0 = torch.zeros_like(rho0)
-    uz0 = torch.zeros_like(rho0)
-    ux0[obstacle] = 0.0
-    f = equilibrium27(rho0, ux0, uy0, uz0, device=device)
+    # Resume from checkpoint or initialise fresh
+    start_step = 1
+    if config.resume_checkpoint is not None:
+        f, resume_step, _ckpt_meta = load_checkpoint(config.resume_checkpoint, device=device)
+        f = f.to(device)
+        start_step = resume_step + 1
+        logger.info("Resumed from checkpoint %s at step %d", config.resume_checkpoint, resume_step)
+    else:
+        rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
+        ux0 = torch.full((config.nz, config.ny, config.nx), config.u_in, device=device)
+        uy0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
+        uz0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
+        ux0[obstacle] = 0.0
+        f = equilibrium27(rho0, ux0, uy0, uz0, device=device)
 
-    initial_mass = float(rho0.sum().item())
+    rho0_mass = torch.ones((config.nz, config.ny, config.nx), device=device)
+    initial_mass = float(rho0_mass.sum().item())
+    diagnostics: list[dict[str, float | int]] = []
 
-    # Force coefficient reference
     diameter = 2.0 * config.radius
-    dyn_pressure = 0.5 * 1.0 * config.u_in ** 2 * diameter ** 2
+    ref_area = diameter
+    dyn_pressure = 0.5 * config.u_in**2 * ref_area
 
-    metadata: dict[str, object] = {
-        "config": {**asdict(config), "output_root": str(config.output_root)},
-        "derived": {"nu": config.nu, "tau": config.tau},
-        "runtime": {"torch_version": torch.__version__, "device": str(device)},
-    }
-    diagnostics: list[dict[str, object]] = []
+    # Optionally JIT-compile the hot-path kernels
+    _collide = _maybe_compile(collide_bgk27, config.use_compile)
+    _stream = _maybe_compile(stream27, config.use_compile)
 
-    print(
-        f"Running D3Q27 sphere flow  device={device}  "
-        f"NX={config.nx} NY={config.ny} NZ={config.nz}  "
-        f"tau={config.tau:.4f}  collision={config.collision}  "
-        f"steps={config.n_steps}"
+    logger.info(
+        "Running D3Q27 sphere flow device=%s NX=%s NY=%s NZ=%s tau=%.4f steps=%s "
+        "output_interval=%s compile=%s",
+        device,
+        config.nx,
+        config.ny,
+        config.nz,
+        config.tau,
+        config.n_steps,
+        config.output_interval,
+        config.use_compile,
     )
-    print(f"Run directory: {run_dir}")
+    logger.info("Run directory: %s", run_dir)
 
-    for step in range(1, config.n_steps + 1):
-        f = _collide(f, config)
-        f = stream27(f)
+    for step in range(start_step, config.n_steps + 1):
+        f = _collide(f, tau=config.tau)
+        f = _stream(f)
         fx, fy, fz = compute_obstacle_forces_27(f, obstacle)
         f = apply_zou_he_channel_boundaries_27(
-            f, u_in=config.u_in, wall_mask=wall_mask, obstacle_mask=obstacle
+            f,
+            u_in=config.u_in,
+            wall_mask=wall_mask,
+            obstacle_mask=obstacle,
         )
 
         cd = float(fx) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
@@ -242,21 +254,33 @@ def run_sphere_flow_d3q27(config: SphereFlowD3Q27Config) -> Path:
                 max_speed=float(speed.max().item()),
                 mean_rho=float(rho.mean().item()),
             )
-            diag: dict[str, object] = {**asdict(point), "cd": cd}
-            diagnostics.append(diag)
-            print(
-                f"step={step:5d}  mass={mass:.5f}  drift={mass-initial_mass:+.5f}  "
-                f"max|u|={point.max_speed:.5f}  Cd={cd:.4f}"
+            diag_entry: dict[str, float | int] = {**asdict(point), "cd": cd}
+            diagnostics.append(diag_entry)
+            logger.info(
+                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f Cd=%.4f",
+                point.step,
+                point.mass,
+                point.mass_drift,
+                point.mean_rho,
+                point.max_speed,
+                cd,
             )
-            _save_snapshot(run_dir, step, speed, obstacle, config.nz)
+            _save_flow_snapshot_d3q27(run_dir, step, speed, obstacle, config.nz)
+
+            # Save checkpoint at every output step
+            save_checkpoint(f, step, run_dir)
 
     metadata["diagnostics"] = diagnostics
     metadata_path = run_dir / "run_metadata.json"
     metadata_path.write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
     )
-    print(f"Saved metadata: {metadata_path}")
+    logger.info("Saved metadata: %s", metadata_path)
     return run_dir
 
 
-__all__ = ["SphereFlowD3Q27Config", "run_sphere_flow_d3q27"]
+__all__ = [
+    "SphereFlowD3Q27Config",
+    "run_sphere_flow_d3q27",
+]

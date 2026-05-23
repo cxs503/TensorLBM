@@ -164,7 +164,15 @@ def test_compute_vorticity_rigid_rotation() -> None:
     ],
 )
 def test_cylinder_config_validate_raises(overrides: dict, match: str) -> None:
-    base = dict(nx=64, ny=32, u_in=0.05, re=50.0, radius=6.0, n_steps=10, output_interval=5)
+    base = {
+        "nx": 64,
+        "ny": 32,
+        "u_in": 0.05,
+        "re": 50.0,
+        "radius": 6.0,
+        "n_steps": 10,
+        "output_interval": 5,
+    }
     base.update(overrides)
     cfg = CylinderFlowConfig(**base)
     with pytest.raises(ValueError, match=match):

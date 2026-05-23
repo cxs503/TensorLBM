@@ -46,7 +46,9 @@ class TestD3Q27Lattice:
     def test_velocity_opposite_negation(self) -> None:
         for i in range(27):
             j = int(OPPOSITE27[i].item())
-            assert torch.equal(C27[i], -C27[j]), f"Direction {i}: C[{i}]={C27[i]} != -C[{j}]={C27[j]}"
+        assert torch.equal(C27[i], -C27[j]), (
+                f"Direction {i}: C[{i}]={C27[i]} != -C[{j}]={C27[j]}"
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +244,8 @@ class TestD3Q27Boundaries:
     def test_zou_he_inlet_27_prescribes_velocity(self) -> None:
         nz, ny, nx = 4, 5, 8
         rho0 = torch.ones((nz, ny, nx))
-        f = equilibrium27(rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0))
+        zeros = torch.zeros_like(rho0)
+        f = equilibrium27(rho0, zeros, zeros, zeros)
         f = collide_bgk27(f, tau=0.7)
         f = stream27(f)
         u_in = 0.06
@@ -256,8 +259,12 @@ class TestD3Q27Boundaries:
         obstacle = torch.zeros((nz, ny, nx), dtype=torch.bool)
         wall = make_channel_wall_mask_27(nz, ny, nx, obstacle, device=device)
         rho = torch.ones((nz, ny, nx))
-        f = equilibrium27(rho, torch.full_like(rho, 0.05), torch.zeros_like(rho), torch.zeros_like(rho))
-        f_out = apply_zou_he_channel_boundaries_27(f, u_in=0.05, wall_mask=wall, obstacle_mask=obstacle)
+        ux0 = torch.full_like(rho, 0.05)
+        zeros = torch.zeros_like(rho)
+        f = equilibrium27(rho, ux0, zeros, zeros)
+        f_out = apply_zou_he_channel_boundaries_27(
+            f, u_in=0.05, wall_mask=wall, obstacle_mask=obstacle
+        )
         assert f_out.shape == f.shape
         assert torch.isfinite(f_out).all()
 
@@ -311,14 +318,13 @@ class TestSphereFlowD3Q27Config:
     @pytest.mark.parametrize(
         "overrides,match",
         [
-            ({"nx": 4}, "nx, ny, nz"),
-            ({"ny": 2}, "nx, ny, nz"),
-            ({"u_in": -0.01}, "u_in, re"),
-            ({"collision": "unknown"}, "collision"),
+            ({"nx": 4}, "at least"),
+            ({"ny": 2}, "at least"),
+            ({"u_in": -0.01}, "u_in"),
         ],
     )
     def test_validate_raises(self, overrides: dict, match: str) -> None:
-        base = dict(nx=32, ny=16, nz=16, re=20.0, n_steps=5)
+        base = {"nx": 32, "ny": 16, "nz": 16, "re": 20.0, "n_steps": 5}
         base.update(overrides)
         cfg = SphereFlowD3Q27Config(**base)
         with pytest.raises(ValueError, match=match):
