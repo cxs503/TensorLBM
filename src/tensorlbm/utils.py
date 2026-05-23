@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import shutil
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import torch
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -64,4 +67,48 @@ def prepare_run_dir(output_root: Path, subdir: str, run_name: str, overwrite: bo
     return run_dir
 
 
-__all__ = ["DiagnosticPoint", "resolve_device", "prepare_run_dir"]
+def get_reproducibility_metadata() -> dict[str, object]:
+    """Collect metadata for scientific reproducibility.
+
+    Returns a dict with git commit hash, Python version, and key package
+    versions. All fields degrade gracefully if unavailable.
+    """
+    import subprocess
+    import sys
+
+    meta: dict[str, object] = {
+        "python_version": sys.version,
+    }
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        if result.returncode == 0:
+            meta["git_commit"] = result.stdout.strip()
+        else:
+            meta["git_commit"] = None
+    except Exception:
+        meta["git_commit"] = None
+
+    pkg_versions: dict[str, str] = {}
+    for pkg in ("torch", "matplotlib", "numpy"):
+        try:
+            import importlib.metadata as im
+
+            pkg_versions[pkg] = im.version(pkg)
+        except Exception:
+            pkg_versions[pkg] = "unknown"
+    meta["package_versions"] = pkg_versions
+    return meta
+
+
+__all__ = [
+    "DiagnosticPoint",
+    "resolve_device",
+    "prepare_run_dir",
+    "get_reproducibility_metadata",
+]

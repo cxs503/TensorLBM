@@ -50,12 +50,12 @@ OPPOSITE = torch.tensor(
 )
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _c_on(device: torch.device) -> torch.Tensor:
     return C.to(device)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _w_on(device: torch.device) -> torch.Tensor:
     return W.to(device)
 
