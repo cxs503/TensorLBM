@@ -1,59 +1,57 @@
 from __future__ import annotations
 
+import functools
+
 import torch
 
 from .d3q19 import C, equilibrium3d, macroscopic3d
 
-# ---------------------------------------------------------------------------
-# D3Q19 MRT transformation matrix (Lallemand & Luo 2000, d'Humières basis)
-# Row order: rho, e, epsilon, jx, qx, jy, qy, jz, qz,
-#            3pxx, pixx, pww, piww, pxy, pyz, pxz, mx, my, mz
-# Velocity order matches d3q19.C (see d3q19.py for the full listing)
-# ---------------------------------------------------------------------------
-_M_D3Q19 = torch.tensor(
-    [
-        # rho
-        [ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
-        # e  (19*u2 - 30)
-        [-30,-11,-11,-11,-11,-11,-11,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8],
-        # epsilon  ((21*u4 - 53*u2 + 24)/2)
-        [ 12, -4, -4, -4, -4, -4, -4,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
-        # jx  (cx)
-        [  0,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1,  1, -1,  1, -1,  0,  0,  0,  0],
-        # qx  ((5*u2-9)*cx)
-        [  0, -4,  4,  0,  0,  0,  0,  1, -1,  1, -1,  1, -1,  1, -1,  0,  0,  0,  0],
-        # jy  (cy)
-        [  0,  0,  0,  1, -1,  0,  0,  1, -1, -1,  1,  0,  0,  0,  0,  1, -1,  1, -1],
-        # qy  ((5*u2-9)*cy)
-        [  0,  0,  0, -4,  4,  0,  0,  1, -1, -1,  1,  0,  0,  0,  0,  1, -1,  1, -1],
-        # jz  (cz)
-        [  0,  0,  0,  0,  0,  1, -1,  0,  0,  0,  0,  1, -1, -1,  1,  1, -1, -1,  1],
-        # qz  ((5*u2-9)*cz)
-        [  0,  0,  0,  0,  0, -4,  4,  0,  0,  0,  0,  1, -1, -1,  1,  1, -1, -1,  1],
-        # 3pxx  (3*cx2 - u2)
-        [  0,  2,  2, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1,  1,  1, -2, -2, -2, -2],
-        # pixx  ((3*u2-5)*(3*cx2-u2))
-        [  0, -4, -4,  2,  2,  2,  2,  1,  1,  1,  1,  1,  1,  1,  1, -2, -2, -2, -2],
-        # pww  (cy2 - cz2)
-        [  0,  0,  0,  1,  1, -1, -1,  1,  1,  1,  1, -1, -1, -1, -1,  0,  0,  0,  0],
-        # piww  ((3*u2-5)*(cy2-cz2))
-        [  0,  0,  0, -2, -2,  2,  2,  1,  1,  1,  1, -1, -1, -1, -1,  0,  0,  0,  0],
-        # pxy  (cx*cy)
-        [  0,  0,  0,  0,  0,  0,  0,  1,  1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0],
-        # pyz  (cy*cz)
-        [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1, -1, -1],
-        # pxz  (cx*cz)
-        [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1, -1, -1,  0,  0,  0,  0],
-        # mx  ((cy2-cz2)*cx)
-        [  0,  0,  0,  0,  0,  0,  0,  1, -1,  1, -1, -1,  1, -1,  1,  0,  0,  0,  0],
-        # my  ((cz2-cx2)*cy)
-        [  0,  0,  0,  0,  0,  0,  0, -1,  1,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1],
-        # mz  ((cx2-cy2)*cz)
-        [  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1, -1, -1,  1, -1,  1,  1, -1],
-    ],
-    dtype=torch.float32,
-)
-_M_INV_D3Q19 = torch.linalg.inv(_M_D3Q19)
+
+def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
+    """Compute and return (M, M_inv) as nested Python lists (float64 precision)."""
+    import numpy as np
+
+    c_np = C.numpy().astype(np.float64)
+    cx, cy, cz = c_np[:, 0], c_np[:, 1], c_np[:, 2]
+    e2 = cx**2 + cy**2 + cz**2
+    e4 = e2**2
+
+    matrix = np.array(
+        [
+            np.ones(19),
+            19.0 * e2 - 30.0,
+            (21.0 * e4 - 53.0 * e2 + 24.0) / 2.0,
+            cx,
+            cx * e2 * (5.0 * e2 - 9.0) / 2.0,
+            cy,
+            cy * e2 * (5.0 * e2 - 9.0) / 2.0,
+            cz,
+            cz * e2 * (5.0 * e2 - 9.0) / 2.0,
+            3.0 * cx**2 - e2,
+            cx**2 - cy**2,
+            cx * cy,
+            cx * cz,
+            cy * cz,
+            (3.0 * e2 - 5.0) * (3.0 * cx**2 - e2) / 2.0,
+            (3.0 * e2 - 5.0) * (cx**2 - cy**2) / 2.0,
+            cx**2 * cy,
+            cx**2 * cz,
+            cy**2 * cx,
+        ]
+    )
+    assert np.linalg.matrix_rank(matrix) == 19, "D3Q19 MRT matrix is rank-deficient"
+    matrix_inv = np.linalg.inv(matrix)
+    return matrix.tolist(), matrix_inv.tolist()
+
+
+_M_D3Q19_DATA, _M_D3Q19_INV_DATA = _build_d3q19_mrt_matrices()
+
+
+@functools.cache
+def _get_d3q19_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+    matrix = torch.tensor(_M_D3Q19_DATA, dtype=torch.float32, device=device)
+    matrix_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=torch.float32, device=device)
+    return matrix, matrix_inv
 
 
 def collide_bgk3d(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -63,77 +61,133 @@ def collide_bgk3d(f: torch.Tensor, tau: float) -> torch.Tensor:
     return f - (f - feq) / tau
 
 
-def collide_mrt3d(f: torch.Tensor, tau: float, s: torch.Tensor | None = None) -> torch.Tensor:
-    """Multiple-relaxation-time (MRT) collision step for D3Q19.
+def collide_mrt3d(
+    f: torch.Tensor,
+    tau: float,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """Multi-relaxation-time (MRT) collision step for D3Q19.
 
-    Uses the Lallemand & Luo (2000) d'Humières transformation matrix.  The
-    19 relaxation rates correspond to the moment ordering: rho, e, epsilon,
-    jx, qx, jy, qy, jz, qz, 3pxx, pixx, pww, piww, pxy, pyz, pxz, mx,
-    my, mz.  Conserved modes (rho, jx, jy, jz) are never relaxed regardless
-    of the values supplied for those positions in *s*.
+    The shear viscosity is determined by *tau* (same as BGK). Independent
+    relaxation rates for non-hydrodynamic moments improve stability at high
+    Reynolds numbers.
+
+    Moment relaxation rates (vector s, length 19):
+        0: rho      – 0 (conserved)
+        1: e        – s_e
+        2: eps      – s_eps
+        3,5,7: jx,jy,jz – 0 (conserved)
+        4,6,8: qx,qy,qz – s_q
+        9–13: stress    – 1/tau
+        14–15: Txx,Tww  – s_pi (defaults to s_e)
+        16–18: cubic    – 1 (fully relax non-physical modes)
 
     Args:
-        f:   Distribution tensor of shape ``(19, nz, ny, nx)``.
-        tau: Viscous relaxation time.  Used for the stress modes (3pxx, pww,
-             pxy, pyz, pxz) when *s* is ``None``.
-        s:   Optional length-19 tensor of per-mode relaxation rates.  When
-             ``None`` the standard defaults from Lallemand & Luo (2000) are
-             used, with stress modes set to ``1/tau``.
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Relaxation time for shear stress.
+        s_e: Relaxation rate for energy moment.
+        s_eps: Relaxation rate for energy-square moment.
+        s_q: Relaxation rate for heat-flux moments.
+        s_pi: Relaxation rate for higher-order stress moments
+              (defaults to *s_e* when *None*).
 
     Returns:
-        Post-collision distribution tensor with the same shape as *f*.
+        Updated distribution tensor of the same shape.
     """
+    if s_pi is None:
+        s_pi = s_e
     device = f.device
-    M = _M_D3Q19.to(device)
-    M_inv = _M_INV_D3Q19.to(device)
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
 
-    if s is None:
-        s_nu = 1.0 / tau
-        s = torch.tensor(
-            # rho   e     eps   jx    qx    jy    qy    jz    qz
-            [0.0,  1.19, 1.4,  0.0,  1.2,  0.0,  1.2,  0.0,  1.2,
-             # 3pxx  pixx  pww   piww  pxy   pyz   pxz   mx    my    mz
-             s_nu, 1.4,  s_nu, 1.4,  s_nu, s_nu, s_nu, 1.98, 1.98, 1.98],
-            dtype=torch.float32,
-            device=device,
-        )
-    else:
-        s = s.to(device)
-
-    rho, ux, uy, uz = macroscopic3d(f)
-    feq = equilibrium3d(rho, ux, uy, uz)
+    s_nu = 1.0 / tau
+    s_vec = torch.tensor(
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
+    )
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
-    f_flat = f.view(19, -1)
-    feq_flat = feq.view(19, -1)
+    f_flat = f.reshape(19, -1)
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    feq_flat = feq.reshape(19, -1)
 
-    m = M @ f_flat        # (19, nz*ny*nx)
-    meq = M @ feq_flat    # (19, nz*ny*nx)
-
-    m_out = m - s.unsqueeze(-1) * (m - meq)
-
-    return (M_inv @ m_out).view(19, nz, ny, nx)
+    moments = matrix @ f_flat
+    moments_eq = matrix @ feq_flat
+    moments_star = moments - s_vec.unsqueeze(1) * (moments - moments_eq)
+    return (matrix_inv @ moments_star).reshape(19, nz, ny, nx)
 
 
 def stream3d(f: torch.Tensor) -> torch.Tensor:
-    """Streaming by shifting each discrete direction for D3Q19.
+    """Vectorised streaming step for D3Q19 (periodic boundaries).
+
+    Replaces the per-direction ``torch.roll`` loop with a single advanced-index
+    gather over all 19 directions simultaneously.
 
     Args:
-        f: distribution tensor of shape (19, nz, ny, nx).
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
 
     Returns:
         Streamed tensor of the same shape.
     """
-    streamed = torch.empty_like(f)
-    for i in range(19):
-        cx, cy, cz = int(C[i, 0].item()), int(C[i, 1].item()), int(C[i, 2].item())
-        # f[i] has shape (nz, ny, nx); dims=(0,1,2) correspond to z, y, x
-        streamed[i] = torch.roll(f[i], shifts=(cz, cy, cx), dims=(0, 1, 2))
-    return streamed
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    device = f.device
+    c = C.to(device)
+
+    z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz
+    y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
+    x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
+
+    q_idx = torch.arange(19, device=device).view(19, 1, 1, 1).expand(19, nz, ny, nx)
+    z_idx = z_src.view(19, nz, 1, 1).expand(19, nz, ny, nx)
+    y_idx = y_src.view(19, 1, ny, 1).expand(19, nz, ny, nx)
+    x_idx = x_src.view(19, 1, 1, nx).expand(19, nz, ny, nx)
+
+    return f[q_idx, z_idx, y_idx, x_idx]
+
+
+def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
+    """Redistribute mass uniformly to correct global mass drift (3-D).
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        target_mass: Desired total mass.
+
+    Returns:
+        Rescaled distribution tensor.
+    """
+    current = f.sum()
+    if current.abs() < 1e-30:
+        return f
+    return f * (target_mass / current)
 
 
 __all__ = [
     "collide_bgk3d",
     "collide_mrt3d",
     "stream3d",
+    "correct_mass3d",
 ]

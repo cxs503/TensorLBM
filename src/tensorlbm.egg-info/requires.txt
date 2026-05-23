@@ -1,0 +1,12 @@
+torch
+matplotlib
+
+[dev]
+pytest
+pytest-cov
+ruff
+mypy
+hypothesis
+tqdm
+h5py
+pyyaml
