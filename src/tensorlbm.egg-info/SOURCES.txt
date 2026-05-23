@@ -11,6 +11,7 @@ src/tensorlbm/cylinder_flow.py
 src/tensorlbm/d2q9.py
 src/tensorlbm/d3q19.py
 src/tensorlbm/d3q27.py
+src/tensorlbm/d3q27_sphere_flow.py
 src/tensorlbm/dam_break.py
 src/tensorlbm/interpolated_bc.py
 src/tensorlbm/io.py
