@@ -4,25 +4,25 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-
-      - name: Install dependencies
+          python-version: "3.12"
+      - name: Install package with dev extras
         run: |
           python -m pip install --upgrade pip
-          python -m pip install torch
-          python -m pip install -r requirements.txt
-
-      - name: Run tests
-        run: pytest -q
+          pip install -e ".[dev]"
+      - name: Lint (ruff)
+        run: ruff check src tests examples benchmarks
+      - name: Type check (mypy)
+        run: mypy src/tensorlbm --ignore-missing-imports
+        continue-on-error: true
+      - name: Run tests with coverage
+        run: PYTHONPATH=src pytest -q --cov=tensorlbm --cov-report=term-missing

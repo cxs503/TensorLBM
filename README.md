@@ -1,41 +1,102 @@
 # TensorLBM
 
-TensorLBM is an early-stage, CPU-first PyTorch codebase for Lattice Boltzmann Method (LBM) research and engineering practice.
+TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.
 
-## Current scope
+## What TensorLBM provides
 
-This repository currently provides a lightweight D2Q9/BGK foundation intended to support further cylinder-flow development:
+- A small, explicit public API in `src/tensorlbm/__init__.py`
+- **D2Q9** and **D3Q19** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
+- **BGK** and **MRT** collision operators for both 2D and 3D
+- Boundary conditions: bounce-back, **Zou/He** inlet-velocity and outlet-pressure BCs
+- Momentum-exchange force diagnostics (drag/lift) for the 2D cylinder
+- A 2D cylinder-flow runner with CLI, Strouhal-number extraction, structured outputs, and diagnostics
+- A 3D sphere-flow runner with CLI and structured outputs
+- Batch Reynolds-number parameter scan (`examples/param_scan.py`)
+- Automated tests and CI
 
-- D2Q9 lattice constants and utility functions
-- Equilibrium distribution and macroscopic recovery
-- A minimal collision + streaming step
-- A small pytest suite and GitHub Actions CI smoke coverage
+## Engineering principles
+
+1. **Stable API first**: keep public exports intentional and backward-compatible.
+2. **Composable solver core**: isolate lattice math, solver stepping, and boundary logic.
+3. **Reproducible runs**: parameterized CLI + deterministic run folder layout + metadata snapshot.
+4. **Fast feedback loops**: smoke tests and CI on push/PR.
+5. **CPU-first defaults, GPU-ready shape**: default to CPU, but keep interfaces ready for device scaling.
 
 ## Installation
 
 ```bash
-python -m pip install --upgrade pip
-python -m pip install torch
-python -m pip install -r requirements.txt
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install pytest
 ```
 
-## Run the example
+## Run the cylinder-flow example
+
+Default run:
 
 ```bash
-PYTHONPATH=src python examples/minimal_d2q9.py
+PYTHONPATH=src python examples/cylinder_flow.py
 ```
 
-## Run tests
+Small smoke run:
+
+```bash
+PYTHONPATH=src python examples/cylinder_flow.py \
+  --nx 64 --ny 24 --radius 4 --n-steps 20 --output-interval 10 \
+  --run-name smoke --overwrite
+```
+
+Useful options:
+
+- `--nx`, `--ny`: grid size
+- `--u-in`, `--re`, `--radius`: flow and geometry parameters
+- `--n-steps`, `--output-interval`: runtime and output cadence
+- `--output-root`, `--run-name`, `--overwrite`: output organization
+- `--device`: `cpu` (default), `cuda`, or `mps` (Apple Silicon)
+
+## Run the sphere-flow example (3D)
+
+```bash
+PYTHONPATH=src python examples/sphere_flow_3d.py \
+  --nx 60 --ny 30 --nz 30 --radius 4 --n-steps 50 --output-interval 25 \
+  --run-name smoke --overwrite
+```
+
+## Batch parameter scan
+
+```bash
+PYTHONPATH=src python examples/param_scan.py \
+  --re 20 40 80 100 --nx 160 --ny 60 --n-steps 2000 --output-interval 100
+```
+
+## Output organization
+
+Each run writes into:
+
+```text
+outputs/
+  cylinder_flow/
+    <run-name>/
+      run_metadata.json
+      forces.csv
+      flow_step_000200.png
+      ...
+  sphere_flow/
+    <run-name>/
+      run_metadata.json
+      flow_step_000100.png
+      ...
+```
+
+`run_metadata.json` includes configuration, derived physical parameters (`nu`, `tau`), runtime info, and diagnostics history.
+
+## Tests and checks
+
+Run tests:
 
 ```bash
 PYTHONPATH=src pytest -q
 ```
 
-(When running in CI, `pytest` also works via `pyproject.toml` `pythonpath` settings.)
-
-## Current limitations
-
-- The current implementation is intentionally minimal and CPU-first.
-- Boundary-condition support is limited (simple periodic streaming and optional basic on-site bounce-back mask).
-- Cylinder-flow-specific forcing/diagnostics (drag, lift, Strouhal) are not implemented yet.
-- Advanced collision models (MRT/TRT) and validation cases are out of scope for this PR.
+GitHub Actions runs the same test command on every push and pull request.
