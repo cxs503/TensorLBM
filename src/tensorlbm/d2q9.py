@@ -41,6 +41,11 @@ def equilibrium(
     device: torch.device | None = None,
 ) -> torch.Tensor:
     """Compute D2Q9 equilibrium distribution f_eq for rho and velocity fields."""
+    if not (rho.shape == ux.shape == uy.shape):
+        raise ValueError(
+            "rho, ux, and uy shapes must match: "
+            f"rho={tuple(rho.shape)}, ux={tuple(ux.shape)}, uy={tuple(uy.shape)}"
+        )
     if device is None:
         device = rho.device
     c = _c_on(device)

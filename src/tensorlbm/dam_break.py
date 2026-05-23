@@ -170,12 +170,7 @@ def _smooth_profile(nx: int, dam_width: int, width: float, device: torch.device)
 
 
 def _init_cg(
-    ny: int,
-    nx: int,
-    dam_width: int,
-    rho_heavy: float,
-    rho_light: float,
-    device: torch.device,
+    ny: int, nx: int, dam_width: int, rho_heavy: float, rho_light: float, device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Colour-gradient initialisation: sharp red/blue split."""
     prof = _smooth_profile(nx, dam_width, 3.0, device).expand(ny, nx)
@@ -187,12 +182,7 @@ def _init_cg(
 
 
 def _init_sc(
-    ny: int,
-    nx: int,
-    dam_width: int,
-    rho_heavy: float,
-    rho_light: float,
-    device: torch.device,
+    ny: int, nx: int, dam_width: int, rho_heavy: float, rho_light: float, device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """SC two-component initialisation with smooth interface."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
@@ -204,12 +194,7 @@ def _init_sc(
 
 
 def _init_scmp(
-    ny: int,
-    nx: int,
-    dam_width: int,
-    rho_heavy: float,
-    rho_light: float,
-    device: torch.device,
+    ny: int, nx: int, dam_width: int, rho_heavy: float, rho_light: float, device: torch.device,
 ) -> torch.Tensor:
     """SCMP single-component: liquid (rho_heavy) in dam, gas (rho_light) outside."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
@@ -219,7 +204,7 @@ def _init_scmp(
 
 
 def _init_fe(
-    ny: int, nx: int, dam_width: int, device: torch.device
+    ny: int, nx: int, dam_width: int, device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy initialisation: phi=+1 in dam, phi=-1 outside."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
@@ -315,7 +300,7 @@ def run_dam_break(config: DamBreakConfig) -> Path:
             A_surface = config.G * 0.04
             # f1=red=heavy(water), f2=blue=light(air)
             f1, f2 = color_gradient_step(
-                f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=wall
+                f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=wall,
             )
             f1, f2 = stream(f1), stream(f2)
             f1 = bounce_back_cells(f1, wall)

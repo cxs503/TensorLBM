@@ -2,4 +2,4 @@ __pycache__/
 *.pyc
 outputs/
 .coverage
-*.egg-info/
+src/*.egg-info/

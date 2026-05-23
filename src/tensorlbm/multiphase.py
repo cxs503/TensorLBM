@@ -321,7 +321,8 @@ def collide_sc_single_component(
 # Interface normal:    n̂ = ∇φ / |∇φ|  (computed via central differences)
 
 def _grad_phase_field(
-    rho_r: torch.Tensor, rho_b: torch.Tensor
+    rho_r: torch.Tensor,
+    rho_b: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute the phase-field gradient via second-order central differences.
 
