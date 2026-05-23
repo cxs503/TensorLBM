@@ -1,30 +1,45 @@
 from __future__ import annotations
 
+import functools
+
 import torch
 
-from .boundaries import apply_simple_channel_boundaries, bounce_back_cells, cylinder_mask, make_channel_wall_mask
+from .boundaries import (
+    apply_simple_channel_boundaries,
+    bounce_back_cells,
+    cylinder_mask,
+    make_channel_wall_mask,
+)
 from .d2q9 import C, equilibrium, macroscopic
 
-# ---------------------------------------------------------------------------
-# D2Q9 MRT transformation matrix (d'Humières et al. 2002)
-# Row order: rho, e, epsilon, jx, qx, jy, qy, pxx, pxy
-# Velocity order matches d2q9.C: rest, +x, +y, -x, -y, +x+y, -x+y, -x-y, +x-y
-# ---------------------------------------------------------------------------
-_M_D2Q9 = torch.tensor(
-    [
-        [1,  1,  1,  1,  1,  1,  1,  1,  1],   # rho
-        [-4, -1, -1, -1, -1,  2,  2,  2,  2],  # e
-        [4,  -2, -2, -2, -2,  1,  1,  1,  1],  # epsilon
-        [0,   1,  0, -1,  0,  1, -1, -1,  1],  # jx
-        [0,  -2,  0,  2,  0,  1, -1, -1,  1],  # qx
-        [0,   0,  1,  0, -1,  1,  1, -1, -1],  # jy
-        [0,   0, -2,  0,  2,  1,  1, -1, -1],  # qy
-        [0,   1, -1,  1, -1,  0,  0,  0,  0],  # pxx
-        [0,   0,  0,  0,  0,  1, -1,  1, -1],  # pxy
-    ],
-    dtype=torch.float32,
-)
-_M_INV_D2Q9 = torch.linalg.inv(_M_D2Q9)
+_M_D2Q9_DATA = [
+    [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+    [-4.0, -1.0, -1.0, -1.0, -1.0, 2.0, 2.0, 2.0, 2.0],
+    [4.0, -2.0, -2.0, -2.0, -2.0, 1.0, 1.0, 1.0, 1.0],
+    [0.0, 1.0, 0.0, -1.0, 0.0, 1.0, -1.0, -1.0, 1.0],
+    [0.0, -2.0, 0.0, 2.0, 0.0, 1.0, -1.0, -1.0, 1.0],
+    [0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 1.0, -1.0, -1.0],
+    [0.0, 0.0, -2.0, 0.0, 2.0, 1.0, 1.0, -1.0, -1.0],
+    [0.0, 1.0, -1.0, 1.0, -1.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -1.0, 1.0, -1.0],
+]
+
+
+def _invert_d2q9() -> list[list[float]]:
+    import numpy as np
+
+    matrix = np.array(_M_D2Q9_DATA, dtype=np.float64)
+    return np.linalg.inv(matrix).tolist()
+
+
+_M_D2Q9_INV_DATA = _invert_d2q9()
+
+
+@functools.cache
+def _get_d2q9_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+    matrix = torch.tensor(_M_D2Q9_DATA, dtype=torch.float32, device=device)
+    matrix_inv = torch.tensor(_M_D2Q9_INV_DATA, dtype=torch.float32, device=device)
+    return matrix, matrix_inv
 
 
 def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -34,61 +49,101 @@ def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
     return f - (f - feq) / tau
 
 
-def collide_mrt(f: torch.Tensor, tau: float, s: torch.Tensor | None = None) -> torch.Tensor:
-    """Multiple-relaxation-time (MRT) BGK collision step for D2Q9.
+def collide_mrt(
+    f: torch.Tensor,
+    tau: float,
+    s_e: float = 1.64,
+    s_eps: float = 1.54,
+    s_q: float = 1.7,
+) -> torch.Tensor:
+    """Multi-relaxation-time (MRT) collision step for D2Q9.
 
-    Uses the d'Humières transformation matrix.  The nine relaxation rates
-    correspond to the moment ordering: rho, e, epsilon, jx, qx, jy, qy,
-    pxx, pxy.  Conserved modes (rho, jx, jy) are never relaxed regardless
-    of the values supplied for those positions in *s*.
+    The physical shear viscosity is controlled by *tau* exactly as in BGK:
+    ν = (τ − ½)/3. The extra relaxation rates *s_e*, *s_eps*, *s_q* damp
+    the non-hydrodynamic moments and can be tuned independently to improve
+    numerical stability at high Reynolds numbers.
+
+    Moment ordering (rows of M):
+        0: ρ  (conserved, s=0)
+        1: e  (energy,          s=s_e)
+        2: ε  (energy-square,   s=s_eps)
+        3: jx (conserved, s=0)
+        4: qx (heat-flux x,     s=s_q)
+        5: jy (conserved, s=0)
+        6: qy (heat-flux y,     s=s_q)
+        7: pxx (stress,         s=1/tau)
+        8: pxy (stress,         s=1/tau)
 
     Args:
-        f:   Distribution tensor of shape ``(9, ny, nx)``.
-        tau: Viscous relaxation time.  Used for the stress modes (pxx, pxy)
-             when *s* is ``None``.
-        s:   Optional length-9 tensor of per-mode relaxation rates.  When
-             ``None`` the standard defaults are used:
-             ``[0, 1.4, 1.4, 0, 1.2, 0, 1.2, 1/tau, 1/tau]``.
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        tau: Relaxation time for shear stress (τ > ½).
+        s_e: Relaxation rate for energy moment.
+        s_eps: Relaxation rate for energy-square moment.
+        s_q: Relaxation rate for heat-flux moments.
 
     Returns:
-        Post-collision distribution tensor with the same shape as *f*.
+        Updated distribution tensor of the same shape.
     """
     device = f.device
-    M = _M_D2Q9.to(device)
-    M_inv = _M_INV_D2Q9.to(device)
+    matrix, matrix_inv = _get_d2q9_mrt_matrices(device)
 
-    if s is None:
-        s_nu = 1.0 / tau
-        s = torch.tensor(
-            [0.0, 1.4, 1.4, 0.0, 1.2, 0.0, 1.2, s_nu, s_nu],
-            dtype=torch.float32,
-            device=device,
-        )
-    else:
-        s = s.to(device)
-
-    rho, ux, uy = macroscopic(f)
-    feq = equilibrium(rho, ux, uy)
+    s_nu = 1.0 / tau
+    s_vec = torch.tensor(
+        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, s_nu, s_nu],
+        dtype=f.dtype,
+        device=device,
+    )
 
     ny, nx = f.shape[1], f.shape[2]
-    f_flat = f.view(9, -1)
-    feq_flat = feq.view(9, -1)
+    f_flat = f.reshape(9, -1)
+    rho, ux, uy = macroscopic(f)
+    feq = equilibrium(rho, ux, uy)
+    feq_flat = feq.reshape(9, -1)
 
-    m = M @ f_flat        # (9, ny*nx)
-    meq = M @ feq_flat    # (9, ny*nx)
-
-    m_out = m - s.unsqueeze(-1) * (m - meq)
-
-    return (M_inv @ m_out).view(9, ny, nx)
+    moments = matrix @ f_flat
+    moments_eq = matrix @ feq_flat
+    moments_star = moments - s_vec.unsqueeze(1) * (moments - moments_eq)
+    return (matrix_inv @ moments_star).reshape(9, ny, nx)
 
 
 def stream(f: torch.Tensor) -> torch.Tensor:
-    """Streaming by shifting each discrete direction."""
-    streamed = torch.empty_like(f)
-    for i in range(9):
-        cx, cy = int(C[i, 0].item()), int(C[i, 1].item())
-        streamed[i] = torch.roll(f[i], shifts=(cy, cx), dims=(0, 1))
-    return streamed
+    """Vectorised streaming by gathering from shifted source indices (periodic).
+
+    Replaces the per-direction ``torch.roll`` loop with a single advanced-index
+    gather, which is more GPU-friendly.
+    """
+    ny, nx = f.shape[1], f.shape[2]
+    device = f.device
+    c = C.to(device)
+
+    y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
+    x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
+
+    q_idx = torch.arange(9, device=device).view(9, 1, 1).expand(9, ny, nx)
+    y_idx = y_src.unsqueeze(2).expand(9, ny, nx)
+    x_idx = x_src.unsqueeze(1).expand(9, ny, nx)
+
+    return f[q_idx, y_idx, x_idx]
+
+
+def correct_mass(f: torch.Tensor, target_mass: float) -> torch.Tensor:
+    """Redistribute mass uniformly to correct global mass drift.
+
+    Rescales the entire distribution tensor so that the sum of all
+    populations equals *target_mass*. This corrects slow mass drift
+    accumulated by inexact boundary conditions over many time steps.
+
+    Args:
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        target_mass: Desired total mass (sum of all populations).
+
+    Returns:
+        Rescaled distribution tensor of the same shape.
+    """
+    current = f.sum()
+    if current.abs() < 1e-30:
+        return f
+    return f * (target_mass / current)
 
 
 __all__ = [
@@ -99,4 +154,5 @@ __all__ = [
     "collide_bgk",
     "collide_mrt",
     "stream",
+    "correct_mass",
 ]
