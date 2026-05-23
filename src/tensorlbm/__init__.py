@@ -49,6 +49,7 @@ from .d3q27 import (
     stream27,
 )
 from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
+from .dam_break import DamBreakConfig, run_dam_break
 from .interpolated_bc import (
     bouzidi_bounce_back,
     bouzidi_bounce_back_3d,
@@ -57,6 +58,24 @@ from .interpolated_bc import (
 )
 from .io import save_hdf5, save_vtk, save_vtk_binary
 from .logging_config import configure_logging, logger
+from .multiphase import (
+    collide_sc_single_component,
+    collide_sc_two_component,
+    color_gradient_step,
+    free_energy_step,
+    init_free_energy_g,
+    psi_exp,
+    psi_linear,
+    psi_power,
+    sc_single_component_force,
+    sc_two_component_force,
+)
+from .multiphase3d import (
+    collide_sc_single_component_3d,
+    collide_sc_two_component_3d,
+    sc_two_component_force_3d,
+)
+from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
 from .obstacles import (
     compute_obstacle_forces_3d,
     compute_obstacle_forces_27,
@@ -99,11 +118,13 @@ from .wave_bc import (
 
 __all__ = [
     "__version__",
+    # D2Q9 lattice
     "C",
     "W",
     "OPPOSITE",
     "equilibrium",
     "macroscopic",
+    # 2D boundaries
     "cylinder_mask",
     "make_channel_wall_mask",
     "bounce_back_cells",
@@ -112,18 +133,22 @@ __all__ = [
     "zou_he_outlet_pressure",
     "apply_simple_channel_boundaries",
     "apply_zou_he_channel_boundaries",
+    # 2D solvers
     "collide_bgk",
     "collide_mrt",
     "stream",
     "correct_mass",
+    # 2D runner
     "CylinderFlowConfig",
     "run_cylinder_flow",
     "compute_vorticity",
+    # D3Q19 lattice
     "C3D",
     "W3D",
     "OPPOSITE3D",
     "equilibrium3d",
     "macroscopic3d",
+    # 3D boundaries
     "sphere_mask",
     "make_channel_wall_mask_3d",
     "make_tank_wall_mask_3d",
@@ -135,27 +160,55 @@ __all__ = [
     "apply_simple_channel_boundaries_3d",
     "apply_zou_he_channel_boundaries_3d",
     "apply_water_entry_boundaries_3d",
+    # 3D solvers
     "collide_bgk3d",
     "collide_mrt3d",
     "stream3d",
     "correct_mass3d",
+    # 3D runners
     "SphereFlowConfig",
     "run_sphere_flow",
+    # Single-phase sphere water entry (3D)
     "SphereWaterEntryConfig",
     "run_sphere_water_entry",
     "wigley_hull_mask",
     "compute_obstacle_forces_3d",
     "compute_obstacle_forces_27",
     "compute_obstacle_moments_3d",
+    # Turbulence
     "collide_smagorinsky_bgk",
     "collide_smagorinsky_mrt",
     "collide_smagorinsky_bgk3d",
     "collide_smagorinsky_mrt3d",
+    # Wave BC
     "airy_wave_velocity_3d",
     "zou_he_inlet_velocity_profile_3d",
     "apply_wave_inlet_3d",
+    # Marine / ship
     "ShipHullFlowConfig",
     "run_ship_hull_flow",
+    # Multiphase models – D2Q9
+    "psi_linear",
+    "psi_exp",
+    "psi_power",
+    "sc_two_component_force",
+    "collide_sc_two_component",
+    "sc_single_component_force",
+    "collide_sc_single_component",
+    "color_gradient_step",
+    "free_energy_step",
+    "init_free_energy_g",
+    # Multiphase models – D3Q19
+    "sc_two_component_force_3d",
+    "collide_sc_two_component_3d",
+    "collide_sc_single_component_3d",
+    # Dam-break benchmark
+    "DamBreakConfig",
+    "run_dam_break",
+    # Multiphase water-entry benchmark
+    "MultiphaseWaterEntryConfig",
+    "run_multiphase_water_entry",
+    # Shared utilities
     "DiagnosticPoint",
     "resolve_device",
     "prepare_run_dir",
@@ -176,6 +229,7 @@ __all__ = [
     "load_config",
     "save_config_json",
     "load_config_json",
+    # D3Q27 lattice
     "C27",
     "W27",
     "OPPOSITE27",
@@ -184,21 +238,24 @@ __all__ = [
     "collide_bgk27",
     "stream27",
     "correct_mass27",
-    "logger",
-    "configure_logging",
-    "bouzidi_bounce_back",
-    "compute_q_circle",
-    "bouzidi_bounce_back_3d",
-    "compute_q_sphere",
-    "collide_smagorinsky_mrt",
     "collide_mrt27",
     "collide_smagorinsky_bgk27",
     "collide_smagorinsky_mrt27",
+    # D3Q27 boundaries
     "bounce_back_cells_27",
     "zou_he_inlet_velocity_27",
     "zou_he_outlet_pressure_27",
     "make_channel_wall_mask_27",
     "apply_zou_he_channel_boundaries_27",
+    # D3Q27 runner
     "SphereFlowD3Q27Config",
     "run_sphere_flow_d3q27",
+    # Interpolated BC
+    "bouzidi_bounce_back",
+    "compute_q_circle",
+    "bouzidi_bounce_back_3d",
+    "compute_q_sphere",
+    # Logging
+    "logger",
+    "configure_logging",
 ]
