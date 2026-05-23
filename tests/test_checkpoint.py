@@ -95,6 +95,30 @@ class TestLoadCheckpoint:
         with pytest.raises(FileNotFoundError):
             load_checkpoint(tmp_path)
 
+    def test_missing_step_metadata_raises(self, tmp_path: Path) -> None:
+        import json
+
+        f = torch.ones((9, 4, 6))
+        self._save(tmp_path, f, step=1)
+        (tmp_path / "checkpoint_meta.json").write_text(
+            json.dumps({"label": "corrupt"}) + "\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match="missing 'step' key"):
+            load_checkpoint(tmp_path)
+
+    def test_non_integer_step_metadata_raises(self, tmp_path: Path) -> None:
+        import json
+
+        f = torch.ones((9, 4, 6))
+        self._save(tmp_path, f, step=1)
+        (tmp_path / "checkpoint_meta.json").write_text(
+            json.dumps({"step": "1"}) + "\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match="'step' must be an integer"):
+            load_checkpoint(tmp_path)
+
     def test_3d_tensor_roundtrip(self, tmp_path: Path) -> None:
         f_orig = torch.rand((19, 4, 6, 8))
         self._save(tmp_path, f_orig, step=5)
