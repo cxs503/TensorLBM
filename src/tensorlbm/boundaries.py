@@ -37,11 +37,14 @@ def make_channel_wall_mask(
 
 
 def bounce_back_cells(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-    """Bounce-back reflection on selected cells (obstacle/walls)."""
-    bounced = f.clone()
+    """Bounce-back reflection on selected cells (obstacle/walls).
+
+    Uses ``torch.where`` instead of clone + scatter to reduce the number of
+    GPU kernel launches and avoid an intermediate boolean-indexed allocation.
+    """
     opp = OPPOSITE.to(f.device)  # (9,)
-    bounced[:, mask] = f[opp][:, mask]
-    return bounced
+    # mask.unsqueeze(0) broadcasts (1, ny, nx) → (9, ny, nx)
+    return torch.where(mask.unsqueeze(0), f[opp], f)
 
 
 def zou_he_inlet_velocity(
