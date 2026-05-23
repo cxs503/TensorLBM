@@ -33,7 +33,6 @@ from .d3q19 import equilibrium3d, macroscopic3d
 from .solver import _get_d2q9_mrt_matrices
 from .solver3d import _get_d3q19_mrt_matrices
 
-
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------

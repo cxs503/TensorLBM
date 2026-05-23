@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import csv
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import matplotlib
@@ -184,13 +184,13 @@ class ShipHullFlowConfig:
             f"_steps{self.n_steps}"
         )
 
-    def save(self, path: "Path | str") -> None:
+    def save(self, path: Path | str) -> None:
         """Serialise this config to a JSON file."""
         from .config_io import save_config_json
         save_config_json(self, path)
 
     @classmethod
-    def load(cls, path: "Path | str") -> "ShipHullFlowConfig":
+    def load(cls, path: Path | str) -> ShipHullFlowConfig:
         """Load a :class:`ShipHullFlowConfig` from a JSON file."""
         from .config_io import load_config_json
         return load_config_json(cls, path)

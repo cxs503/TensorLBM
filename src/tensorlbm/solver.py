@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import torch
 
-from .boundaries import apply_simple_channel_boundaries, bounce_back_cells, cylinder_mask, make_channel_wall_mask
+from .boundaries import (
+    apply_simple_channel_boundaries,
+    bounce_back_cells,
+    cylinder_mask,
+    make_channel_wall_mask,
+)
 from .d2q9 import C, equilibrium, macroscopic
 
 # ---------------------------------------------------------------------------

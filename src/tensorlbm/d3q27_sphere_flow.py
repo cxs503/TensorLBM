@@ -19,7 +19,7 @@ from pathlib import Path
 import matplotlib
 import torch
 
-from .boundaries3d import make_channel_wall_mask_3d, sphere_mask
+from .boundaries3d import sphere_mask
 from .boundaries_d3q27 import (
     apply_zou_he_channel_boundaries_27,
     compute_obstacle_forces_27,
@@ -30,7 +30,6 @@ from .d3q27 import (
     collide_mrt27,
     collide_smagorinsky_bgk27,
     collide_smagorinsky_mrt27,
-    correct_mass27,
     equilibrium27,
     macroscopic27,
     stream27,
@@ -39,7 +38,6 @@ from .utils import DiagnosticPoint, prepare_run_dir, resolve_device
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -109,12 +107,12 @@ class SphereFlowD3Q27Config:
             f"_{self.collision}_uin{self.u_in:.3f}_steps{self.n_steps}"
         )
 
-    def save(self, path: "Path | str") -> None:
+    def save(self, path: Path | str) -> None:
         from .config_io import save_config_json
         save_config_json(self, path)
 
     @classmethod
-    def load(cls, path: "Path | str") -> "SphereFlowD3Q27Config":
+    def load(cls, path: Path | str) -> SphereFlowD3Q27Config:
         from .config_io import load_config_json
         return load_config_json(cls, path)
 

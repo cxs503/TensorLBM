@@ -27,13 +27,11 @@ from tensorlbm import (
     macroscopic,
     macroscopic3d,
     make_channel_wall_mask_3d,
-    stream,
     stream3d,
     wigley_hull_mask,
     zou_he_inlet_velocity_profile_3d,
 )
 from tensorlbm.ship_flow import ShipHullFlowConfig
-
 
 # ---------------------------------------------------------------------------
 # Wigley hull mask

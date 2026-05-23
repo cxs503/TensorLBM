@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from .d2q9 import C, OPPOSITE, equilibrium, macroscopic
+from .d2q9 import OPPOSITE, C, equilibrium, macroscopic
 
 
 def cylinder_mask(nx: int, ny: int, cx: float, cy: float, radius: float, device: torch.device) -> torch.Tensor:
