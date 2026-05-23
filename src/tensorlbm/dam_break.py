@@ -50,9 +50,9 @@ import torch
 from .boundaries import bounce_back_cells
 from .d2q9 import equilibrium, macroscopic
 from .multiphase import (
-    color_gradient_step,
-    collide_sc_two_component,
     collide_sc_single_component,
+    collide_sc_two_component,
+    color_gradient_step,
     free_energy_step,
     init_free_energy_g,
     psi_exp,
@@ -169,7 +169,14 @@ def _smooth_profile(nx: int, dam_width: int, width: float, device: torch.device)
     return 0.5 * (1.0 - torch.tanh((x - dam_width) / width)).unsqueeze(0)
 
 
-def _init_cg(ny, nx, dam_width, rho_heavy, rho_light, device):
+def _init_cg(
+    ny: int,
+    nx: int,
+    dam_width: int,
+    rho_heavy: float,
+    rho_light: float,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Colour-gradient initialisation: sharp red/blue split."""
     prof = _smooth_profile(nx, dam_width, 3.0, device).expand(ny, nx)
     frac = 0.05  # minority fraction
@@ -179,7 +186,14 @@ def _init_cg(ny, nx, dam_width, rho_heavy, rho_light, device):
     return equilibrium(rho_r, zero, zero), equilibrium(rho_b, zero, zero)
 
 
-def _init_sc(ny, nx, dam_width, rho_heavy, rho_light, device):
+def _init_sc(
+    ny: int,
+    nx: int,
+    dam_width: int,
+    rho_heavy: float,
+    rho_light: float,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """SC two-component initialisation with smooth interface."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
     frac = 0.15  # minority fraction (larger = more stable for SC)
@@ -189,7 +203,14 @@ def _init_sc(ny, nx, dam_width, rho_heavy, rho_light, device):
     return equilibrium(rho1, zero, zero), equilibrium(rho2, zero, zero)
 
 
-def _init_scmp(ny, nx, dam_width, rho_heavy, rho_light, device):
+def _init_scmp(
+    ny: int,
+    nx: int,
+    dam_width: int,
+    rho_heavy: float,
+    rho_light: float,
+    device: torch.device,
+) -> torch.Tensor:
     """SCMP single-component: liquid (rho_heavy) in dam, gas (rho_light) outside."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
     rho0 = rho_heavy * prof + rho_light * (1.0 - prof)
@@ -197,7 +218,12 @@ def _init_scmp(ny, nx, dam_width, rho_heavy, rho_light, device):
     return equilibrium(rho0, zero, zero)
 
 
-def _init_fe(ny, nx, dam_width, device):
+def _init_fe(
+    ny: int,
+    nx: int,
+    dam_width: int,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy initialisation: phi=+1 in dam, phi=-1 outside."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
     phi = 2.0 * prof - 1.0  # +1 in dam, -1 outside
@@ -291,7 +317,9 @@ def run_dam_break(config: DamBreakConfig) -> Path:
         if config.model == "cg":
             A_surface = config.G * 0.04
             # f1=red=heavy(water), f2=blue=light(air)
-            f1, f2 = color_gradient_step(f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=wall)
+            f1, f2 = color_gradient_step(
+                f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=wall
+            )
             f1, f2 = stream(f1), stream(f2)
             f1 = bounce_back_cells(f1, wall)
             f2 = bounce_back_cells(f2, wall)
