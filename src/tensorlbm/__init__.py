@@ -37,6 +37,7 @@ from .boundaries_d3q27 import (
 )
 from .checkpoint import load_checkpoint, save_checkpoint
 from .config_io import load_config, load_config_json, save_config_json
+from .constants import D2Q9
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
 from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 from .d3q19 import OPPOSITE as OPPOSITE3D
@@ -108,6 +109,7 @@ from .postprocess import (
 )
 from .protocols import BoundaryCondition, CollisionOperator
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
+from .simulation import LBMSimulation
 from .solver import collide_bgk, collide_mrt, correct_mass, stream
 from .solver3d import collide_bgk3d, collide_mrt3d, correct_mass3d, stream3d
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
@@ -131,8 +133,6 @@ from .wave_bc import (
     apply_wave_inlet_3d,
     zou_he_inlet_velocity_profile_3d,
 )
-from .constants import D2Q9
-from .simulation import LBMSimulation
 
 __all__ = [
     "__version__",

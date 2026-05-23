@@ -10,6 +10,10 @@ class LBMSimulation:
     """Minimal D2Q9 BGK simulation on a 2D periodic domain."""
 
     def __init__(self, nx: int = 64, ny: int = 32, tau: float = 0.6, device: str = "cpu") -> None:
+        if nx <= 0 or ny <= 0:
+            raise ValueError(f"nx and ny must be positive integers (got nx={nx}, ny={ny})")
+        if tau <= 0:
+            raise ValueError(f"tau must be positive (got tau={tau})")
         self.nx = nx
         self.ny = ny
         self.tau = tau
