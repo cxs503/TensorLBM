@@ -1,3 +1,18 @@
+"""3-D D3Q27 channel flow past a sphere.
+
+Provides an end-to-end simulation runner analogous to
+:mod:`tensorlbm.sphere_flow` but using the D3Q27 lattice (27 velocity
+directions) instead of D3Q19.  D3Q27 achieves 4th-order isotropy and
+can reduce numerical artefacts in flows with strong corner-region gradients.
+
+Key differences from the D3Q19 runner:
+
+* Collision: :func:`~tensorlbm.d3q27.collide_bgk27`
+* Streaming: :func:`~tensorlbm.d3q27.stream27`
+* Boundaries: :mod:`tensorlbm.boundaries_d3q27` (D3Q27 Zou/He and bounce-back)
+* Forces: :func:`~tensorlbm.obstacles.compute_obstacle_forces_27`
+* Mass correction: :func:`~tensorlbm.d3q27.correct_mass27`
+"""
 from __future__ import annotations
 
 import json
@@ -7,13 +22,16 @@ from pathlib import Path
 import matplotlib
 import torch
 
-from .boundaries3d import apply_simple_channel_boundaries_3d, make_channel_wall_mask_3d, sphere_mask
+from .boundaries3d import sphere_mask
+from .boundaries_d3q27 import (
+    apply_zou_he_channel_boundaries_27,
+    make_channel_wall_mask_27,
+)
 from .checkpoint import load_checkpoint, save_checkpoint
-from .config_io import load_config_json, save_config_json
 from .cylinder_flow import _maybe_compile
-from .d3q19 import equilibrium3d, macroscopic3d
+from .d3q27 import collide_bgk27, equilibrium27, macroscopic27, stream27
 from .logging_config import configure_logging, logger
-from .solver3d import collide_bgk3d, stream3d
+from .obstacles import compute_obstacle_forces_27
 from .utils import (
     DiagnosticPoint,
     get_reproducibility_metadata,
@@ -26,7 +44,9 @@ import matplotlib.pyplot as plt
 
 
 @dataclass(frozen=True)
-class SphereFlowConfig:
+class SphereFlowD3Q27Config:
+    """Configuration for a 3-D D3Q27 channel flow past a sphere."""
+
     nx: int = 120
     ny: int = 60
     nz: int = 60
@@ -51,13 +71,16 @@ class SphereFlowConfig:
 
     @property
     def nu(self) -> float:
+        """Kinematic viscosity derived from Re = u_in · 2r / ν."""
         return self.u_in * 2.0 * self.radius / self.re
 
     @property
     def tau(self) -> float:
+        """BGK relaxation time τ = 3ν + 0.5."""
         return 3.0 * self.nu + 0.5
 
     def validate(self) -> None:
+        """Raise :class:`ValueError` if the configuration is invalid."""
         if self.nx < 16 or self.ny < 8 or self.nz < 8:
             msg = "nx, ny, and nz must be at least 16, 8, and 8"
             raise ValueError(msg)
@@ -83,31 +106,8 @@ class SphereFlowConfig:
             f"_uin{self.u_in:.3f}_steps{self.n_steps}"
         )
 
-    def save(self, path: str | Path) -> Path:
-        """Save this config to a JSON file.
 
-        Args:
-            path: Output file path (should end with ``.json``).
-
-        Returns:
-            Resolved path to the written file.
-        """
-        return save_config_json(self, path)
-
-    @classmethod
-    def load(cls, path: str | Path) -> SphereFlowConfig:
-        """Load a :class:`SphereFlowConfig` from a JSON file.
-
-        Args:
-            path: Path to a JSON file written by :meth:`save`.
-
-        Returns:
-            Reconstructed :class:`SphereFlowConfig` instance.
-        """
-        return load_config_json(cls, path)
-
-
-def _save_flow_snapshot_3d(
+def _save_flow_snapshot_d3q27(
     run_dir: Path,
     step: int,
     speed: torch.Tensor,
@@ -130,8 +130,15 @@ def _save_flow_snapshot_3d(
     plt.close(fig)
 
 
-def run_sphere_flow(config: SphereFlowConfig) -> Path:
-    """Run a 3D D3Q19 channel flow past a sphere and save results."""
+def run_sphere_flow_d3q27(config: SphereFlowD3Q27Config) -> Path:
+    """Run a 3-D D3Q27 channel flow past a sphere and save results.
+
+    Args:
+        config: Simulation configuration.
+
+    Returns:
+        Path to the run output directory.
+    """
     configure_logging()
     config.validate()
     torch.manual_seed(config.seed)
@@ -140,7 +147,7 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
         config.output_root,
-        "sphere_flow",
+        "sphere_flow_d3q27",
         config.resolved_run_name(),
         config.overwrite,
     )
@@ -170,7 +177,7 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
         config.radius,
         device=device,
     )
-    wall_mask = make_channel_wall_mask_3d(
+    wall_mask = make_channel_wall_mask_27(
         config.nz,
         config.ny,
         config.nx,
@@ -191,18 +198,22 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
         uy0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
         uz0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
         ux0[obstacle] = 0.0
-        f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
+        f = equilibrium27(rho0, ux0, uy0, uz0, device=device)
 
     rho0_mass = torch.ones((config.nz, config.ny, config.nx), device=device)
     initial_mass = float(rho0_mass.sum().item())
     diagnostics: list[dict[str, float | int]] = []
 
+    diameter = 2.0 * config.radius
+    ref_area = diameter
+    dyn_pressure = 0.5 * config.u_in**2 * ref_area
+
     # Optionally JIT-compile the hot-path kernels
-    _collide = _maybe_compile(collide_bgk3d, config.use_compile)
-    _stream = _maybe_compile(stream3d, config.use_compile)
+    _collide = _maybe_compile(collide_bgk27, config.use_compile)
+    _stream = _maybe_compile(stream27, config.use_compile)
 
     logger.info(
-        "Running D3Q19 sphere flow device=%s NX=%s NY=%s NZ=%s tau=%.4f steps=%s "
+        "Running D3Q27 sphere flow device=%s NX=%s NY=%s NZ=%s tau=%.4f steps=%s "
         "output_interval=%s compile=%s",
         device,
         config.nx,
@@ -218,15 +229,18 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
     for step in range(start_step, config.n_steps + 1):
         f = _collide(f, tau=config.tau)
         f = _stream(f)
-        f = apply_simple_channel_boundaries_3d(
+        fx, fy, fz = compute_obstacle_forces_27(f, obstacle)
+        f = apply_zou_he_channel_boundaries_27(
             f,
             u_in=config.u_in,
             wall_mask=wall_mask,
             obstacle_mask=obstacle,
         )
 
+        cd = float(fx) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+
         if step % config.output_interval == 0 or step == config.n_steps:
-            rho, ux, uy, uz = macroscopic3d(f)
+            rho, ux, uy, uz = macroscopic27(f)
             ux = ux.masked_fill(obstacle, 0.0)
             uy = uy.masked_fill(obstacle, 0.0)
             uz = uz.masked_fill(obstacle, 0.0)
@@ -240,16 +254,18 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
                 max_speed=float(speed.max().item()),
                 mean_rho=float(rho.mean().item()),
             )
-            diagnostics.append(asdict(point))
+            diag_entry: dict[str, float | int] = {**asdict(point), "cd": cd}
+            diagnostics.append(diag_entry)
             logger.info(
-                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f",
+                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f Cd=%.4f",
                 point.step,
                 point.mass,
                 point.mass_drift,
                 point.mean_rho,
                 point.max_speed,
+                cd,
             )
-            _save_flow_snapshot_3d(run_dir, step, speed, obstacle, config.nz)
+            _save_flow_snapshot_d3q27(run_dir, step, speed, obstacle, config.nz)
 
             # Save checkpoint at every output step
             save_checkpoint(f, step, run_dir)
@@ -262,3 +278,9 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
     )
     logger.info("Saved metadata: %s", metadata_path)
     return run_dir
+
+
+__all__ = [
+    "SphereFlowD3Q27Config",
+    "run_sphere_flow_d3q27",
+]

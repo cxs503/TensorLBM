@@ -16,8 +16,15 @@ Lattice weights (Qian, 1992):
 from __future__ import annotations
 
 import functools
+from typing import Any
 
 import torch
+
+# Cache for streaming index tensors keyed by (nz, ny, nx, device_type, device_index)
+_stream27_cache: dict[
+    tuple[Any, ...],
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+] = {}
 
 _C_DATA = [
     [0, 0, 0],
@@ -342,8 +349,31 @@ def collide_mrt27(
     return (matrix_inv @ moments_star).reshape(27, nz, ny, nx)
 
 
+def correct_mass27(f: torch.Tensor, target_mass: float) -> torch.Tensor:
+    """Redistribute mass uniformly to correct global mass drift (D3Q27).
+
+    Rescales the entire distribution tensor so that the sum of all
+    populations equals *target_mass*. This corrects slow mass drift
+    accumulated by inexact boundary conditions over many time steps.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        target_mass: Desired total mass (sum of all populations).
+
+    Returns:
+        Rescaled distribution tensor of the same shape.
+    """
+    current = f.sum()
+    if current.abs() < 1e-30:
+        return f
+    return f * (target_mass / current)
+
+
 def stream27(f: torch.Tensor) -> torch.Tensor:
     """Periodic gather streaming for D3Q27.
+
+    Index tensors are cached per (shape, device) to avoid re-allocation on
+    every call.
 
     Args:
         f: Distribution tensor of shape ``(27, nz, ny, nx)``.
@@ -355,15 +385,18 @@ def stream27(f: torch.Tensor) -> torch.Tensor:
     device = f.device
     c = _c_on(device)
 
-    z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz
-    y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
-    x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
+    cache_key = (nz, ny, nx, device.type, device.index)
+    if cache_key not in _stream27_cache:
+        z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz
+        y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
+        x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
+        q_idx = torch.arange(27, device=device).view(27, 1, 1, 1).expand(27, nz, ny, nx)
+        z_idx = z_src.unsqueeze(2).unsqueeze(3).expand(27, nz, ny, nx)
+        y_idx = y_src.unsqueeze(1).unsqueeze(3).expand(27, nz, ny, nx)
+        x_idx = x_src.unsqueeze(1).unsqueeze(2).expand(27, nz, ny, nx)
+        _stream27_cache[cache_key] = (q_idx, z_idx, y_idx, x_idx)
 
-    q_idx = torch.arange(27, device=device).view(27, 1, 1, 1).expand(27, nz, ny, nx)
-    z_idx = z_src.unsqueeze(2).unsqueeze(3).expand(27, nz, ny, nx)
-    y_idx = y_src.unsqueeze(1).unsqueeze(3).expand(27, nz, ny, nx)
-    x_idx = x_src.unsqueeze(1).unsqueeze(2).expand(27, nz, ny, nx)
-
+    q_idx, z_idx, y_idx, x_idx = _stream27_cache[cache_key]
     return f[q_idx, z_idx, y_idx, x_idx]
 
 
@@ -376,5 +409,6 @@ __all__ = [
     "collide_bgk27",
     "collide_mrt27",
     "stream27",
+    "correct_mass27",
     "_get_d3q27_mrt_matrices",
 ]

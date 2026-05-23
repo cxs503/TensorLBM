@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
 from tensorlbm import load_config
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from tensorlbm.config_io import save_config_json
 
 
 @dataclasses.dataclass
@@ -205,3 +203,76 @@ class TestNonDataclass:
         cfg = load_config(_PlainConfig, p)
         assert cfg.nx == 48
         assert cfg.ny == 24
+
+
+# ---------------------------------------------------------------------------
+# Phase 6: JSON config round-trip tests
+# ---------------------------------------------------------------------------
+
+class TestSaveLoadConfigJson:
+    def test_cylinder_flow_config_round_trip(self, tmp_path: Path) -> None:
+        """CylinderFlowConfig can be saved and loaded without data loss."""
+        from tensorlbm import CylinderFlowConfig
+
+        cfg = CylinderFlowConfig(nx=64, ny=24, re=200.0, n_steps=50, run_name="test_run")
+        path = tmp_path / "cylinder.json"
+        saved = cfg.save(path)
+        assert saved.exists()
+
+        loaded = CylinderFlowConfig.load(path)
+        assert loaded.nx == cfg.nx
+        assert loaded.ny == cfg.ny
+        assert loaded.re == pytest.approx(cfg.re)
+        assert loaded.n_steps == cfg.n_steps
+        assert loaded.run_name == cfg.run_name
+
+    def test_sphere_flow_config_round_trip(self, tmp_path: Path) -> None:
+        """SphereFlowConfig can be saved and loaded without data loss."""
+        from tensorlbm import SphereFlowConfig
+
+        cfg = SphereFlowConfig(nx=40, ny=20, nz=20, re=100.0, n_steps=10)
+        path = tmp_path / "sphere.json"
+        saved = cfg.save(path)
+        assert saved.exists()
+
+        loaded = SphereFlowConfig.load(path)
+        assert loaded.nx == cfg.nx
+        assert loaded.nz == cfg.nz
+        assert loaded.re == pytest.approx(cfg.re)
+
+    def test_ship_hull_flow_config_round_trip(self, tmp_path: Path) -> None:
+        """ShipHullFlowConfig can be saved and loaded without data loss."""
+        from tensorlbm import ShipHullFlowConfig
+
+        cfg = ShipHullFlowConfig(nx=80, ny=30, nz=20, re=150.0, n_steps=5)
+        path = tmp_path / "ship.json"
+        saved = cfg.save(path)
+        assert saved.exists()
+
+        loaded = ShipHullFlowConfig.load(path)
+        assert loaded.nx == cfg.nx
+        assert loaded.re == pytest.approx(cfg.re)
+        assert loaded.hull_length == cfg.hull_length
+
+    def test_save_config_json_creates_valid_json(self, tmp_path: Path) -> None:
+        """save_config_json writes valid JSON parseable by json.loads."""
+        import json as _json
+
+        from tensorlbm import CylinderFlowConfig
+
+        cfg = CylinderFlowConfig(nx=32, ny=12)
+        path = tmp_path / "cfg.json"
+        save_config_json(cfg, path)
+        data = _json.loads(path.read_text(encoding="utf-8"))
+        assert data["nx"] == 32
+        assert data["ny"] == 12
+
+    def test_load_config_json_restores_path_field(self, tmp_path: Path) -> None:
+        """Path fields in the config are re-hydrated as Path objects."""
+        from tensorlbm import CylinderFlowConfig
+
+        cfg = CylinderFlowConfig(output_root=tmp_path / "out")
+        path = tmp_path / "cfg.json"
+        cfg.save(path)
+        loaded = CylinderFlowConfig.load(path)
+        assert isinstance(loaded.output_root, Path)
