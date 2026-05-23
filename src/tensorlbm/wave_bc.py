@@ -36,7 +36,7 @@ import math
 import torch
 
 from .boundaries3d import bounce_back_cells_3d
-from .d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
+from .d3q19 import OPPOSITE, equilibrium3d
 
 
 def airy_wave_velocity_3d(

@@ -17,21 +17,29 @@ C = torch.tensor(
     ],
     dtype=torch.int64,
 )
-W = torch.tensor([4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36], dtype=torch.float32)
+W = torch.tensor(
+    [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36],
+    dtype=torch.float32,
+)
 OPPOSITE = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _c_on(device: torch.device) -> torch.Tensor:
     return C.to(device)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _w_on(device: torch.device) -> torch.Tensor:
     return W.to(device)
 
 
-def equilibrium(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, device: torch.device | None = None) -> torch.Tensor:
+def equilibrium(
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    device: torch.device | None = None,
+) -> torch.Tensor:
     """Compute D2Q9 equilibrium distribution f_eq for rho and velocity fields."""
     if device is None:
         device = rho.device
@@ -43,7 +51,10 @@ def equilibrium(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, device: t
     return w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
 
 
-def macroscopic(f: torch.Tensor, device: torch.device | None = None) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def macroscopic(
+    f: torch.Tensor,
+    device: torch.device | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Recover rho, ux, uy from particle distributions."""
     if device is None:
         device = f.device

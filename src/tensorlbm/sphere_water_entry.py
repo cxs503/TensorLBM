@@ -1,94 +1,100 @@
-"""Multiphase sphere/cylinder water-entry benchmark.
+"""3-D sphere water-entry simulation.
 
-Implements two variants of the classic sphere-water-entry problem:
+Simulates a sphere descending into a pool of water at constant speed.
+In the reference frame of the sphere the water flows upward (z-direction)
+at the entry velocity *v_entry*, enabling a fixed-geometry D3Q19 LBM
+simulation with standard bounce-back boundary conditions.
 
-* **2-D (default)** – A circular cylinder falling through a two-phase domain.
-* **3-D** – A spherical body (Shan-Chen two-component, 3-D).
-
-Supported multiphase models (2-D only):
-
-* ``"cg"``   – Color-Gradient (default, most stable, recommended)
-* ``"sc"``   – Shan-Chen two-component
-
-Physical setup
+Physical model
 --------------
-Domain:
-    Closed box with bounce-back walls on all sides.
-Initial condition:
-    Heavy fluid (water) fills the lower portion ``y < water_level``.
-    Light fluid (air) fills the upper portion.
-Sphere/cylinder:
-    Rigid bounce-back obstacle, initially centred above the water surface.
-Gravity:
-    Acts in the −y (2-D) or −z (3-D) direction.
+* D3Q19 BGK collision (or BGK + Smagorinsky LES when *smagorinsky_cs* > 0).
+* Velocity inlet at the bottom face (z = 0): water flows upward at *v_entry*
+  with a smooth linear ramp-up over the first *n_ramp* steps.
+* Pressure outlet at the top face (z = nz − 1): prescribes ρ = 1.
+* No-slip bounce-back on the four lateral walls (±x, ±y faces).
+* No-slip bounce-back on the sphere surface.
 
-Diagnostics
+Key outputs
 -----------
-The impact force on the sphere is computed at every diagnostic step via the
-momentum-exchange method (Ladd 1994) and written to ``forces.csv``.
-Snapshots of the density field are saved every ``output_interval`` steps.
+* ``forces.csv``           – per-step drag force *Fz* and drag coefficient
+  *Cd* time-series.
+* ``flow_step_XXXXXX.png`` – side-view (xz-plane) speed and vertical-velocity
+  snapshots.
+* ``force_history.png``    – *Fz* and *Cd* vs simulation step.
+* ``run_metadata.json``    – configuration, derived parameters, and
+  diagnostic summary.
+
+Physical interpretation
+-----------------------
+In the sphere's reference frame the hydrodynamic drag force in the
+z-direction (*Fz*, computed with Ladd's 1994 momentum-exchange method) equals
+the resistance the water exerts on the descending sphere. The drag
+coefficient is:
+
+.. math::
+
+    C_d = \\frac{F_z}{\\tfrac{1}{2} \\rho U^2 \\pi r^2}
+
+where *U* is the current entry velocity and *r* is the sphere radius.
 
 References
 ----------
-Worthington (1908) "A Study of Splashes"
-Truscott, Epps & Belden (2014) Annu. Rev. Fluid Mech. 46 355
+* Ladd, A. J. C. (1994). J. Fluid Mech. 271, 285–309.
+* Schlichting, H., & Gersten, K. (2017). Boundary-Layer Theory (10th ed.).
 """
 from __future__ import annotations
 
 import csv
 import json
+import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal
 
 import matplotlib
 import torch
 
-from .boundaries import bounce_back_cells
-from .boundaries3d import bounce_back_cells_3d
-from .d2q9 import C as C2, equilibrium, macroscopic
-from .d3q19 import C as C3, equilibrium3d, macroscopic3d
-from .multiphase import (
-    color_gradient_step,
-    collide_sc_two_component,
+from .boundaries3d import apply_water_entry_boundaries_3d, make_tank_wall_mask_3d, sphere_mask
+from .d3q19 import equilibrium3d, macroscopic3d
+from .logging_config import configure_logging, logger
+from .obstacles import compute_obstacle_forces_3d
+from .solver3d import collide_bgk3d, stream3d
+from .turbulence import collide_smagorinsky_bgk3d
+from .utils import (
+    DiagnosticPoint,
+    get_reproducibility_metadata,
+    prepare_run_dir,
+    resolve_device,
 )
-from .multiphase3d import collide_sc_two_component_3d
-from .solver import stream
-from .solver3d import stream3d
-from .utils import prepare_run_dir, resolve_device
+
+try:
+    from tqdm import tqdm as _tqdm
+
+    _TQDM_AVAILABLE = True
+except ImportError:
+    _TQDM_AVAILABLE = False
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-WaterEntryMode = Literal["2d", "3d"]
-WaterEntryModel2D = Literal["cg", "sc"]
-
 
 @dataclass(frozen=True)
 class SphereWaterEntryConfig:
-    """Configuration for the sphere/cylinder water-entry benchmark."""
+    """Configuration for a 3-D sphere water-entry LBM simulation."""
 
-    mode: WaterEntryMode = "2d"
-    model: WaterEntryModel2D = "cg"
-    nx: int = 200
-    ny: int = 160
-    nz: int = 80   # only used in 3-D mode
-    radius: float = 12.0
-    water_level: int = 80
-    clearance: int = 4
-    rho_water: float = 0.8
-    rho_air: float = 0.4
-    G: float = 0.9
-    tau: float = 1.0
-    g: float = 5e-5
-    n_steps: int = 3000
-    output_interval: int = 300
+    nx: int = 48
+    ny: int = 48
+    nz: int = 96
+    radius: float = 6.0
+    sphere_z_frac: float = 0.5
+    v_entry: float = 0.05
+    re: float = 100.0
+    n_ramp: int = 50
+    smagorinsky_cs: float = 0.0
+    n_steps: int = 1000
+    output_interval: int = 100
     output_root: Path = Path("outputs")
     run_name: str | None = None
+    seed: int = 0
     device: str = "cpu"
     overwrite: bool = False
 
@@ -96,323 +102,270 @@ class SphereWaterEntryConfig:
         object.__setattr__(self, "output_root", Path(self.output_root))
         object.__setattr__(self, "device", self.device.lower())
 
+    @property
+    def nu(self) -> float:
+        """Kinematic viscosity from Re = v_entry · 2r / ν."""
+        return self.v_entry * 2.0 * self.radius / self.re
+
+    @property
+    def tau(self) -> float:
+        """BGK relaxation time."""
+        return 3.0 * self.nu + 0.5
+
     def validate(self) -> None:
-        if self.mode not in ("2d", "3d"):
-            msg = f"mode must be '2d' or '3d', got {self.mode!r}"
-            raise ValueError(msg)
-        if self.nx < 16 or self.ny < 16:
-            msg = "nx and ny must be >= 16"
-            raise ValueError(msg)
-        if self.radius <= 0:
-            msg = "radius must be > 0"
-            raise ValueError(msg)
+        """Raise :class:`ValueError` if the configuration is invalid."""
+        if self.nx < 16 or self.ny < 16 or self.nz < 16:
+            raise ValueError("nx, ny, and nz must be at least 16")
+        if self.n_steps < 1:
+            raise ValueError("n_steps must be >= 1")
+        if self.output_interval < 1:
+            raise ValueError("output_interval must be >= 1")
+        if self.v_entry <= 0.0 or self.re <= 0.0 or self.radius <= 0.0:
+            raise ValueError("v_entry, re, and radius must be > 0")
         if self.tau <= 0.5:
-            msg = f"tau={self.tau} must be > 0.5"
-            raise ValueError(msg)
-        if self.water_level <= 0 or self.water_level >= self.ny:
-            msg = "water_level must be in (0, ny)"
-            raise ValueError(msg)
+            raise ValueError(
+                f"Invalid tau={self.tau:.4f}; increase re or reduce v_entry/radius"
+            )
+        if not (0.0 < self.sphere_z_frac < 1.0):
+            raise ValueError("sphere_z_frac must be in (0, 1)")
+        if 2.0 * self.radius >= min(self.nx, self.ny):
+            raise ValueError("sphere diameter must be less than min(nx, ny)")
+        cz = self.nz * self.sphere_z_frac
+        if cz - self.radius < 2 or cz + self.radius > self.nz - 3:
+            raise ValueError(
+                "sphere must fit inside the domain with at least 2 cells "
+                "clearance from the z=0 inlet and z=nz-1 outlet"
+            )
 
     def resolved_run_name(self) -> str:
         if self.run_name:
             return self.run_name
+        re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
         return (
-            f"water_entry_{self.mode}_nx{self.nx}_ny{self.ny}"
-            f"_r{self.radius:.0f}_G{self.G:.2f}_g{self.g:.0e}_steps{self.n_steps}"
+            f"nx{self.nx}_ny{self.ny}_nz{self.nz}_re{re_label}"
+            f"_v{self.v_entry:.3f}_r{self.radius:.1f}_steps{self.n_steps}"
         )
 
-    @property
-    def sphere_center_2d(self) -> tuple[float, float]:
-        return float(self.nx // 2), float(self.water_level + int(self.clearance) + int(self.radius) + 1)
 
-    @property
-    def sphere_center_3d(self) -> tuple[float, float, float]:
-        cx = float(self.nx // 2)
-        cy = float(self.ny // 2)
-        cz = float(self.water_level + int(self.clearance) + int(self.radius) + 1)
-        return cx, cy, cz
+def _save_water_entry_snapshot(
+    run_dir: Path,
+    step: int,
+    speed: torch.Tensor,
+    uz: torch.Tensor,
+    obstacle: torch.Tensor,
+    ny: int,
+) -> None:
+    """Save speed and vertical-velocity side-view (xz-plane) snapshots."""
+    mid_y = ny // 2
+    speed_np = speed[:, mid_y, :].detach().cpu().numpy()
+    uz_np = uz[:, mid_y, :].detach().cpu().numpy()
+    obs_np = obstacle[:, mid_y, :].detach().cpu().float().numpy()
 
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
 
-# ---------------------------------------------------------------------------
-# 2-D geometry helpers
-# ---------------------------------------------------------------------------
+    im0 = axes[0].imshow(speed_np, origin="lower", cmap="viridis")
+    axes[0].contour(obs_np, levels=[0.5], colors="white", linewidths=0.8)
+    axes[0].set_title(f"Speed |u| – xz side view (step {step})")
+    axes[0].set_xlabel("x")
+    axes[0].set_ylabel("z  (↑ = upward / flow direction)")
+    plt.colorbar(im0, ax=axes[0], fraction=0.046)
 
-def _circle_mask(ny, nx, cx, cy, r, device):
-    yy, xx = torch.meshgrid(
-        torch.arange(ny, device=device, dtype=torch.float32),
-        torch.arange(nx, device=device, dtype=torch.float32),
-        indexing="ij",
-    )
-    return (xx - cx) ** 2 + (yy - cy) ** 2 <= r ** 2
+    vmax = float(abs(uz_np).max()) or 1e-6
+    im1 = axes[1].imshow(uz_np, origin="lower", cmap="RdBu_r", vmin=-vmax, vmax=vmax)
+    axes[1].contour(obs_np, levels=[0.5], colors="black", linewidths=0.8)
+    axes[1].set_title(f"Vertical velocity uz – xz side view (step {step})")
+    axes[1].set_xlabel("x")
+    axes[1].set_ylabel("z  (↑ = upward / flow direction)")
+    plt.colorbar(im1, ax=axes[1], fraction=0.046)
 
-
-def _wall_mask_2d(ny, nx, device):
-    mask = torch.zeros((ny, nx), dtype=torch.bool, device=device)
-    mask[0, :] = mask[-1, :] = mask[:, 0] = mask[:, -1] = True
-    return mask
-
-
-# ---------------------------------------------------------------------------
-# 2-D initialisation helpers
-# ---------------------------------------------------------------------------
-
-def _smooth_profile_y(ny, nx, water_level, width, device):
-    """tanh profile: 1.0 in water (y < water_level), 0.0 in air."""
-    y = torch.arange(ny, dtype=torch.float32, device=device)
-    prof = 0.5 * (1.0 - torch.tanh((y - water_level) / width))
-    return prof.view(ny, 1).expand(ny, nx)
-
-
-def _init_two_phase_cg_2d(ny, nx, water_level, rho_water, rho_air, obstacle, device):
-    """CG initialisation: smooth tanh water/air split with 5% minority fraction."""
-    prof = _smooth_profile_y(ny, nx, water_level, 3.0, device)
-    frac = 0.05
-    rho_r = rho_water * prof + rho_water * frac * (1.0 - prof)
-    rho_b = rho_air * frac * prof + rho_air * (1.0 - prof)
-    rho_r[obstacle] = 0.0
-    rho_b[obstacle] = 0.0
-    zero = torch.zeros((ny, nx), device=device)
-    return equilibrium(rho_r, zero, zero), equilibrium(rho_b, zero, zero)
-
-
-def _init_two_phase_sc_2d(ny, nx, water_level, rho_water, rho_air, obstacle, device):
-    """SC two-component initialisation with smooth interface."""
-    prof = _smooth_profile_y(ny, nx, water_level, 4.0, device)
-    frac = 0.15
-    rho2 = rho_water * prof + rho_water * frac * (1.0 - prof)
-    rho1 = rho_air * frac * prof + rho_air * (1.0 - prof)
-    rho1[obstacle] = 0.0
-    rho2[obstacle] = 0.0
-    zero = torch.zeros((ny, nx), device=device)
-    return equilibrium(rho1, zero, zero), equilibrium(rho2, zero, zero)
-
-
-# ---------------------------------------------------------------------------
-# 3-D geometry helpers
-# ---------------------------------------------------------------------------
-
-def _sphere_mask_3d(nz, ny, nx, cx, cy, cz, r, device):
-    zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=device, dtype=torch.float32),
-        torch.arange(ny, device=device, dtype=torch.float32),
-        torch.arange(nx, device=device, dtype=torch.float32),
-        indexing="ij",
-    )
-    return (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2 <= r ** 2
-
-
-def _wall_mask_3d(nz, ny, nx, device):
-    mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    mask[0] = mask[-1] = True
-    mask[:, 0] = mask[:, -1] = True
-    mask[:, :, 0] = mask[:, :, -1] = True
-    return mask
-
-
-def _init_two_phase_3d(nz, ny, nx, water_level, rho_water, rho_air, obstacle, device):
-    z = torch.arange(nz, dtype=torch.float32, device=device)
-    prof = 0.5 * (1.0 - torch.tanh((z - water_level) / 3.0)).view(nz, 1, 1).expand(nz, ny, nx)
-    frac = 0.05
-    rho2 = rho_water * prof + rho_water * frac * (1.0 - prof)
-    rho1 = rho_air * frac * prof + rho_air * (1.0 - prof)
-    rho1[obstacle] = 0.0
-    rho2[obstacle] = 0.0
-    zero = torch.zeros((nz, ny, nx), device=device)
-    f1 = equilibrium3d(rho1, zero, zero, zero)
-    f2 = equilibrium3d(rho2, zero, zero, zero)
-    return f1, f2
-
-
-# ---------------------------------------------------------------------------
-# Force diagnostics
-# ---------------------------------------------------------------------------
-
-def _momentum_exchange_2d(f1, f2, solid):
-    """Ladd momentum-exchange impact force on a 2-D solid obstacle."""
-    device = f1.device
-    f_total = f1 + f2
-    c = C2.to(device)
-    cx = c[:, 0].float().view(9, 1, 1)
-    cy = c[:, 1].float().view(9, 1, 1)
-    mask = solid.unsqueeze(0)
-    f_sol = f_total * mask
-    fx = 2.0 * float((cx * f_sol).sum().item())
-    fy = 2.0 * float((cy * f_sol).sum().item())
-    return fx, fy
-
-
-def _momentum_exchange_3d(f1, f2, solid):
-    device = f1.device
-    f_total = f1 + f2
-    c = C3.to(device)
-    cx = c[:, 0].float().view(19, 1, 1, 1)
-    cy = c[:, 1].float().view(19, 1, 1, 1)
-    cz = c[:, 2].float().view(19, 1, 1, 1)
-    mask = solid.unsqueeze(0)
-    f_sol = f_total * mask
-    fx = 2.0 * float((cx * f_sol).sum().item())
-    fy = 2.0 * float((cy * f_sol).sum().item())
-    fz = 2.0 * float((cz * f_sol).sum().item())
-    return fx, fy, fz
-
-
-# ---------------------------------------------------------------------------
-# Snapshot
-# ---------------------------------------------------------------------------
-
-def _save_snapshot_2d(run_dir, step, rho_water, rho_air, obstacle):
-    phi = (rho_water / (rho_water + rho_air + 1e-12)).detach().cpu().numpy()
-    obs_np = obstacle.detach().cpu().float().numpy()
-    fig, ax = plt.subplots(figsize=(8, 6), constrained_layout=True)
-    im = ax.imshow(phi, origin="lower", cmap="Blues", vmin=0, vmax=1)
-    ax.contour(obs_np, levels=[0.5], colors="red", linewidths=1.5)
-    plt.colorbar(im, ax=ax, fraction=0.03, label="Water phase fraction φ")
-    ax.set_title(f"Water entry – step {step:d}")
-    out = run_dir / f"snapshot_{step:06d}.png"
-    fig.savefig(out, dpi=120)
+    fig.savefig(run_dir / f"flow_step_{step:06d}.png", dpi=140)
     plt.close(fig)
 
 
-# ---------------------------------------------------------------------------
-# Main runner
-# ---------------------------------------------------------------------------
+def _save_force_plot(run_dir: Path, force_history: list[tuple[int, float, float, float]]) -> None:
+    """Save drag force Fz and drag coefficient Cd vs simulation step."""
+    steps = [r[0] for r in force_history]
+    fz_vals = [r[2] for r in force_history]
+    cd_vals = [r[3] for r in force_history]
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4), constrained_layout=True)
+
+    axes[0].plot(steps, fz_vals, linewidth=1.2)
+    axes[0].set_xlabel("Simulation step")
+    axes[0].set_ylabel("Fz (drag force, lattice units)")
+    axes[0].set_title("Drag force vs step")
+    axes[0].grid(True, alpha=0.3)
+
+    valid = [(s, c) for s, c in zip(steps, cd_vals, strict=False) if not math.isnan(c)]
+    if valid:
+        vs, vc = zip(*valid, strict=False)
+        axes[1].plot(vs, vc, linewidth=1.2)
+        axes[1].set_xlabel("Simulation step")
+        axes[1].set_ylabel("Cd (drag coefficient)")
+        axes[1].set_title("Drag coefficient vs step")
+        axes[1].grid(True, alpha=0.3)
+
+    fig.savefig(run_dir / "force_history.png", dpi=120)
+    plt.close(fig)
+
 
 def run_sphere_water_entry(config: SphereWaterEntryConfig) -> Path:
-    """Run the sphere/cylinder water-entry benchmark.
-
-    Args:
-        config: Simulation configuration.
-
-    Returns:
-        Path of the output directory.
-    """
+    """Run the sphere water-entry simulation and save all results."""
+    configure_logging()
     config.validate()
+    torch.manual_seed(config.seed)
+    torch.use_deterministic_algorithms(True, warn_only=True)
+
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
-        config.output_root, "sphere_water_entry",
-        config.resolved_run_name(), config.overwrite,
+        config.output_root,
+        "sphere_water_entry",
+        config.resolved_run_name(),
+        config.overwrite,
     )
 
-    print(
-        f"Running sphere water entry ({config.mode}, {config.model.upper()})  "
-        f"device={device}  NX={config.nx}  NY={config.ny}"
-        + (f"  NZ={config.nz}" if config.mode == "3d" else "")
-        + f"  radius={config.radius}  G={config.G}  g={config.g:.1e}  steps={config.n_steps}"
+    metadata: dict[str, object] = {
+        "config": {**asdict(config), "output_root": str(config.output_root)},
+        "derived": {"nu": config.nu, "tau": config.tau},
+        "runtime": {"torch_version": torch.__version__, "device": str(device)},
+        "reproducibility": get_reproducibility_metadata(),
+    }
+
+    cx = config.nx * 0.5
+    cy = config.ny * 0.5
+    cz = config.nz * config.sphere_z_frac
+
+    obstacle = sphere_mask(
+        config.nx,
+        config.ny,
+        config.nz,
+        cx,
+        cy,
+        cz,
+        config.radius,
+        device=device,
     )
-    print(f"Run directory: {run_dir}")
+    wall_mask = make_tank_wall_mask_3d(config.nz, config.ny, config.nx, obstacle, device=device)
 
-    force_series: list[dict[str, object]] = []
+    rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
+    ux0 = torch.zeros_like(rho0)
+    uy0 = torch.zeros_like(rho0)
+    uz0 = torch.zeros_like(rho0)
+    f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
 
-    if config.mode == "2d":
-        ny, nx = config.ny, config.nx
-        cx, cy = config.sphere_center_2d
-        wall = _wall_mask_2d(ny, nx, device)
-        sphere = _circle_mask(ny, nx, cx, cy, config.radius, device)
-        solid = wall | sphere
+    initial_mass = float(rho0[~obstacle].sum().item())
+    ref_area = math.pi * config.radius**2
+    use_smagorinsky = config.smagorinsky_cs > 0.0
 
-        if config.model == "cg":
-            f1, f2 = _init_two_phase_cg_2d(ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device)
-        else:  # sc
-            f1, f2 = _init_two_phase_sc_2d(ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device)
+    logger.info(
+        "Running D3Q19 sphere water-entry simulation device=%s NX=%s NY=%s NZ=%s radius=%s "
+        "sphere_z_frac=%s cz=%.1f v_entry=%s Re=%.1f tau=%.4f n_ramp=%s Cs=%s steps=%s "
+        "output_interval=%s",
+        device,
+        config.nx,
+        config.ny,
+        config.nz,
+        config.radius,
+        config.sphere_z_frac,
+        cz,
+        config.v_entry,
+        config.re,
+        config.tau,
+        config.n_ramp,
+        config.smagorinsky_cs,
+        config.n_steps,
+        config.output_interval,
+    )
+    logger.info("Run directory: %s", run_dir)
 
-        gy = -config.g
+    diagnostics: list[dict[str, object]] = []
+    force_history: list[tuple[int, float, float, float]] = []
 
-        for step in range(1, config.n_steps + 1):
-            if config.model == "cg":
-                A_surface = config.G * 0.04
-                # f1=red=heavy(water), f2=blue=light(air)
-                f1, f2 = color_gradient_step(f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=solid)
-            else:  # sc
-                f1, f2 = collide_sc_two_component(
-                    f1, f2, G_12=config.G, tau1=config.tau, tau2=config.tau,
-                    gy=gy, solid_mask=solid,
-                )
+    step_iter = (
+        _tqdm(range(1, config.n_steps + 1), desc="Sphere water entry", unit="step")
+        if _TQDM_AVAILABLE
+        else range(1, config.n_steps + 1)
+    )
+    for step in step_iter:
+        v_actual = (
+            config.v_entry * min(step / config.n_ramp, 1.0)
+            if config.n_ramp > 0
+            else config.v_entry
+        )
 
-            f1 = stream(f1)
-            f2 = stream(f2)
+        if use_smagorinsky:
+            f = collide_smagorinsky_bgk3d(f, tau=config.tau, C_s=config.smagorinsky_cs)
+        else:
+            f = collide_bgk3d(f, tau=config.tau)
 
-            if step % config.output_interval == 0 or step == config.n_steps:
-                fx_s, fy_s = _momentum_exchange_2d(f1, f2, sphere)
+        f = stream3d(f)
+        _, _, fz = compute_obstacle_forces_3d(f, obstacle)
 
-            f1 = bounce_back_cells(f1, solid)
-            f2 = bounce_back_cells(f2, solid)
+        f = apply_water_entry_boundaries_3d(
+            f,
+            v_entry=v_actual,
+            wall_mask=wall_mask,
+            obstacle_mask=obstacle,
+        )
 
-            if step % config.output_interval == 0 or step == config.n_steps:
-                if config.model == "cg":
-                    rho_w = f1.sum(dim=0)  # RED = water = heavy
-                    rho_a = f2.sum(dim=0)  # BLUE = air = light
-                else:
-                    rho_w = f2.sum(dim=0)  # component 2 = water
-                    rho_a = f1.sum(dim=0)  # component 1 = air
-                entry: dict[str, object] = {
-                    "step": step,
-                    "fx": round(fx_s, 8),
-                    "fy": round(fy_s, 8),
-                    "mean_rho_water": round(float(rho_w[~solid].mean().item()), 6),
-                }
-                force_series.append(entry)
-                print(
-                    f"step={step:5d}  Fx={fx_s:.4e}  Fy={fy_s:.4e}  "
-                    f"mean_ρ_water={entry['mean_rho_water']:.4f}"
-                )
-                _save_snapshot_2d(run_dir, step, rho_w, rho_a, sphere)
+        dyn_q = 0.5 * v_actual**2 * ref_area
+        cd = float(fz) / dyn_q if dyn_q > 1e-14 else float("nan")
+        force_history.append((step, v_actual, float(fz), cd))
 
-    else:
-        # ---- 3-D simulation (SC two-component) ----
-        nz, ny, nx = config.nz, config.ny, config.nx
-        cx, cy, cz = config.sphere_center_3d
-        wall = _wall_mask_3d(nz, ny, nx, device)
-        sphere = _sphere_mask_3d(nz, ny, nx, cx, cy, cz, config.radius, device)
-        solid = wall | sphere
+        if step % config.output_interval == 0 or step == config.n_steps:
+            rho, ux, uy, uz = macroscopic3d(f)
+            ux = ux.masked_fill(obstacle, 0.0)
+            uy = uy.masked_fill(obstacle, 0.0)
+            uz = uz.masked_fill(obstacle, 0.0)
+            speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
+            mass = float(rho[~obstacle].sum().item())
 
-        f1, f2 = _init_two_phase_3d(nz, ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device)
-        gz = -config.g
-
-        for step in range(1, config.n_steps + 1):
-            f1, f2 = collide_sc_two_component_3d(
-                f1, f2, G_12=config.G, tau1=config.tau, tau2=config.tau,
-                gz=gz, solid_mask=solid,
+            point = DiagnosticPoint(
+                step=step,
+                mass=mass,
+                mass_drift=mass - initial_mass,
+                max_speed=float(speed.max().item()),
+                mean_rho=float(rho[~obstacle].mean().item()),
             )
-            f1 = stream3d(f1)
-            f2 = stream3d(f2)
+            diag_entry: dict[str, object] = {
+                **asdict(point),
+                "v_entry_actual": v_actual,
+                "fz": float(fz),
+                "cd": cd,
+            }
+            diagnostics.append(diag_entry)
+            logger.info(
+                "step=%5d mass=%.5f drift=%+.5f max|u|=%.5f v=%.5f Fz=%.5f Cd=%s",
+                point.step,
+                point.mass,
+                point.mass_drift,
+                point.max_speed,
+                v_actual,
+                float(fz),
+                "nan" if math.isnan(cd) else f"{cd:.4f}",
+            )
+            _save_water_entry_snapshot(run_dir, step, speed, uz, obstacle, config.ny)
 
-            if step % config.output_interval == 0 or step == config.n_steps:
-                fx_s, fy_s, fz_s = _momentum_exchange_3d(f1, f2, sphere)
-
-            f1 = bounce_back_cells_3d(f1, solid)
-            f2 = bounce_back_cells_3d(f2, solid)
-
-            if step % config.output_interval == 0 or step == config.n_steps:
-                entry = {
-                    "step": step,
-                    "fx": round(fx_s, 8),
-                    "fy": round(fy_s, 8),
-                    "fz": round(fz_s, 8),
-                }
-                force_series.append(entry)
-                print(f"step={step:5d}  Fx={fx_s:.4e}  Fy={fy_s:.4e}  Fz={fz_s:.4e}")
-
-    # ----- write outputs -----
     forces_csv = run_dir / "forces.csv"
     with forces_csv.open("w", newline="", encoding="utf-8") as fh:
-        if force_series:
-            writer = csv.DictWriter(fh, fieldnames=list(force_series[0].keys()))
-            writer.writeheader()
-            writer.writerows(force_series)
+        writer = csv.writer(fh)
+        writer.writerow(["step", "v_entry_actual", "fz", "cd"])
+        for row in force_history:
+            writer.writerow(row)
 
-    metadata = {
-        "config": {**asdict(config), "output_root": str(config.output_root)},
-        "forces": force_series,
-        "note": (
-            "Impact force computed via Ladd momentum-exchange method. "
-            "Fy (2-D) / Fz (3-D) is the vertical force on the sphere."
-        ),
-    }
-    (run_dir / "run_metadata.json").write_text(
-        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    _save_force_plot(run_dir, force_history)
+
+    metadata["diagnostics"] = diagnostics
+    metadata_path = run_dir / "run_metadata.json"
+    metadata_path.write_text(
+        f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
     )
-    print(f"Saved metadata → {run_dir / 'run_metadata.json'}")
+    logger.info("Saved metadata: %s", metadata_path)
     return run_dir
 
 
-__all__ = ["SphereWaterEntryConfig", "run_sphere_water_entry"]
+__all__ = [
+    "SphereWaterEntryConfig",
+    "run_sphere_water_entry",
+]

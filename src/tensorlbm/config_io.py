@@ -1,0 +1,118 @@
+"""Configuration file loading and environment-variable override utilities.
+
+Supports loading :mod:`dataclasses`-based Config objects from YAML or TOML
+files, with optional environment-variable overrides.
+
+YAML requires ``pyyaml`` (``pip install pyyaml``).
+TOML is supported natively in Python 3.11+ via :mod:`tomllib`; for older
+Python use ``tomli`` (``pip install tomli``).
+"""
+from __future__ import annotations
+
+import dataclasses
+import os
+from pathlib import Path
+from typing import Any, TypeVar
+
+_T = TypeVar("_T")
+
+
+def _load_raw(path: Path) -> dict[str, Any]:
+    """Load a YAML or TOML file and return its contents as a plain dict."""
+    suffix = path.suffix.lower()
+    if suffix in {".yaml", ".yml"}:
+        try:
+            import yaml  # type: ignore[import-untyped]
+        except ImportError as exc:
+            raise ImportError(
+                "pyyaml is required to load YAML configs: pip install pyyaml"
+            ) from exc
+        with path.open(encoding="utf-8") as fh:
+            data = yaml.safe_load(fh)
+        return dict(data) if data else {}
+
+    if suffix == ".toml":
+        try:
+            import tomllib
+        except ImportError:
+            try:
+                import tomli as tomllib  # type: ignore[import-untyped, no-redef]
+            except ImportError as exc:
+                raise ImportError(
+                    "tomli is required to load TOML configs on Python < 3.11: "
+                    "pip install tomli"
+                ) from exc
+        with path.open("rb") as fb:
+            return tomllib.load(fb)
+
+    raise ValueError(
+        f"Unsupported config file format: {suffix!r}. Use .yaml, .yml, or .toml"
+    )
+
+
+def _apply_env_overrides(data: dict[str, Any], prefix: str) -> dict[str, Any]:
+    """Override *data* keys from environment variables prefixed with *prefix*.
+
+    For example, if *prefix* = ``"TENSORLBM"`` then the environment variable
+    ``TENSORLBM_NX=128`` will set ``data["nx"] = "128"`` (as a string; type
+    coercion is handled by the dataclass constructor).
+    """
+    result = dict(data)
+    prefix_upper = prefix.upper() + "_"
+    for key, val in os.environ.items():
+        if key.upper().startswith(prefix_upper):
+            field_name = key[len(prefix_upper) :].lower()
+            result[field_name] = val
+    return result
+
+
+def load_config(
+    config_class: type[_T],
+    path: str | Path,
+    env_prefix: str = "TENSORLBM",
+) -> _T:
+    """Load a dataclass-based Config from a YAML or TOML file.
+
+    Field values present in the file override dataclass defaults.
+    Environment variables of the form ``{ENV_PREFIX}_{FIELD_NAME}`` (case-
+    insensitive) are applied last, taking highest precedence.
+
+    Args:
+        config_class: A :func:`dataclasses.dataclass` type to instantiate.
+        path: Path to a ``.yaml``, ``.yml``, or ``.toml`` configuration file.
+        env_prefix: Prefix for environment-variable overrides
+            (default ``"TENSORLBM"``).
+
+    Returns:
+        An instance of *config_class* populated from the file and env vars.
+
+    Raises:
+        ValueError: If the file format is not supported.
+        ImportError: If the required YAML/TOML parser is not installed.
+    """
+    path = Path(path)
+    raw = _load_raw(path)
+    raw = _apply_env_overrides(raw, env_prefix)
+
+    if dataclasses.is_dataclass(config_class):
+        fields = {f.name: f for f in dataclasses.fields(config_class)}  # type: ignore[arg-type]
+        coerced: dict[str, Any] = {}
+        for k, v in raw.items():
+            if k in fields and isinstance(v, str):
+                ftype = fields[k].type
+                try:
+                    if ftype in (int, "int"):
+                        v = int(v)
+                    elif ftype in (float, "float"):
+                        v = float(v)
+                    elif ftype in (bool, "bool"):
+                        v = v.lower() not in {"0", "false", "no", "off"}
+                except (ValueError, AttributeError):
+                    pass
+            coerced[k] = v
+        return config_class(**coerced)  # type: ignore[return-value]
+
+    return config_class(**raw)  # type: ignore[return-value]
+
+
+__all__ = ["load_config"]
