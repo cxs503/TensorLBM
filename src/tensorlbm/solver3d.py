@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import functools
+from typing import Any
 
 import torch
 
 from .d3q19 import C, equilibrium3d, macroscopic3d
 
+# Cache for streaming index tensors keyed by (nz, ny, nx, device_type, device_index)
+_stream3d_cache: dict[
+    tuple[Any, ...],
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+] = {}
 
 def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
     """Compute and return (M, M_inv) as nested Python lists (float64 precision)."""
@@ -145,7 +151,8 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     """Vectorised streaming step for D3Q19 (periodic boundaries).
 
     Replaces the per-direction ``torch.roll`` loop with a single advanced-index
-    gather over all 19 directions simultaneously.
+    gather over all 19 directions simultaneously. Index tensors are cached per
+    (shape, device) to avoid re-allocation on every call.
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)``.
@@ -157,15 +164,18 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     device = f.device
     c = C.to(device)
 
-    z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz
-    y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
-    x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
+    cache_key = (nz, ny, nx, device.type, device.index)
+    if cache_key not in _stream3d_cache:
+        z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz
+        y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
+        x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
+        q_idx = torch.arange(19, device=device).view(19, 1, 1, 1).expand(19, nz, ny, nx)
+        z_idx = z_src.view(19, nz, 1, 1).expand(19, nz, ny, nx)
+        y_idx = y_src.view(19, 1, ny, 1).expand(19, nz, ny, nx)
+        x_idx = x_src.view(19, 1, 1, nx).expand(19, nz, ny, nx)
+        _stream3d_cache[cache_key] = (q_idx, z_idx, y_idx, x_idx)
 
-    q_idx = torch.arange(19, device=device).view(19, 1, 1, 1).expand(19, nz, ny, nx)
-    z_idx = z_src.view(19, nz, 1, 1).expand(19, nz, ny, nx)
-    y_idx = y_src.view(19, 1, ny, 1).expand(19, nz, ny, nx)
-    x_idx = x_src.view(19, 1, 1, nx).expand(19, nz, ny, nx)
-
+    q_idx, z_idx, y_idx, x_idx = _stream3d_cache[cache_key]
     return f[q_idx, z_idx, y_idx, x_idx]
 
 

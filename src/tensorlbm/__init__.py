@@ -30,7 +30,7 @@ from .boundaries_d3q27 import (
     zou_he_outlet_pressure_27,
 )
 from .checkpoint import load_checkpoint, save_checkpoint
-from .config_io import load_config
+from .config_io import load_config, load_config_json, save_config_json
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
 from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 from .d3q19 import OPPOSITE as OPPOSITE3D
@@ -40,9 +40,22 @@ from .d3q19 import equilibrium3d, macroscopic3d
 from .d3q27 import OPPOSITE as OPPOSITE27
 from .d3q27 import C as C27
 from .d3q27 import W as W27
-from .d3q27 import collide_bgk27, collide_mrt27, equilibrium27, macroscopic27, stream27
+from .d3q27 import (
+    collide_bgk27,
+    collide_mrt27,
+    correct_mass27,
+    equilibrium27,
+    macroscopic27,
+    stream27,
+)
+from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
 from .dam_break import DamBreakConfig, run_dam_break
-from .interpolated_bc import bouzidi_bounce_back, compute_q_circle
+from .interpolated_bc import (
+    bouzidi_bounce_back,
+    bouzidi_bounce_back_3d,
+    compute_q_circle,
+    compute_q_sphere,
+)
 from .io import save_hdf5, save_vtk, save_vtk_binary
 from .logging_config import configure_logging, logger
 from .multiphase import (
@@ -65,6 +78,7 @@ from .multiphase3d import (
 from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
 from .obstacles import (
     compute_obstacle_forces_3d,
+    compute_obstacle_forces_27,
     compute_obstacle_moments_3d,
     wigley_hull_mask,
 )
@@ -159,6 +173,7 @@ __all__ = [
     "run_sphere_water_entry",
     "wigley_hull_mask",
     "compute_obstacle_forces_3d",
+    "compute_obstacle_forces_27",
     "compute_obstacle_moments_3d",
     # Turbulence
     "collide_smagorinsky_bgk",
@@ -212,6 +227,8 @@ __all__ = [
     "CollisionOperator",
     "BoundaryCondition",
     "load_config",
+    "save_config_json",
+    "load_config_json",
     # D3Q27 lattice
     "C27",
     "W27",
@@ -220,6 +237,7 @@ __all__ = [
     "macroscopic27",
     "collide_bgk27",
     "stream27",
+    "correct_mass27",
     "collide_mrt27",
     "collide_smagorinsky_bgk27",
     "collide_smagorinsky_mrt27",
@@ -229,9 +247,14 @@ __all__ = [
     "zou_he_outlet_pressure_27",
     "make_channel_wall_mask_27",
     "apply_zou_he_channel_boundaries_27",
+    # D3Q27 runner
+    "SphereFlowD3Q27Config",
+    "run_sphere_flow_d3q27",
     # Interpolated BC
     "bouzidi_bounce_back",
     "compute_q_circle",
+    "bouzidi_bounce_back_3d",
+    "compute_q_sphere",
     # Logging
     "logger",
     "configure_logging",
