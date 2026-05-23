@@ -4,9 +4,13 @@ import csv
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import matplotlib
 import torch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from .boundaries import (
     apply_simple_channel_boundaries,
@@ -15,6 +19,7 @@ from .boundaries import (
     make_channel_wall_mask,
 )
 from .checkpoint import load_checkpoint, save_checkpoint
+from .config_io import load_config_json, save_config_json
 from .d2q9 import equilibrium, macroscopic
 from .logging_config import configure_logging, logger
 from .solver import collide_bgk, stream
@@ -36,6 +41,30 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
+def _maybe_compile(fn: Callable[..., Any], use_compile: bool) -> Callable[..., Any]:
+    """Optionally wrap *fn* with ``torch.compile``.
+
+    Falls back gracefully when ``torch.compile`` is unavailable (PyTorch <
+    2.0) or when *use_compile* is ``False``.
+
+    Args:
+        fn: Callable to (optionally) compile.
+        use_compile: Whether to attempt compilation.
+
+    Returns:
+        Either the compiled or the original callable.
+    """
+    if not use_compile:
+        return fn
+    try:
+        return torch.compile(fn)
+    except AttributeError:
+        logger.warning(
+            "torch.compile not available (requires PyTorch >= 2.0); running in eager mode"
+        )
+        return fn
+
+
 @dataclass(frozen=True)
 class CylinderFlowConfig:
     nx: int = 320
@@ -51,6 +80,7 @@ class CylinderFlowConfig:
     device: str = "cpu"
     overwrite: bool = False
     resume_checkpoint: Path | None = None
+    use_compile: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -88,6 +118,29 @@ class CylinderFlowConfig:
             return self.run_name
         re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
         return f"nx{self.nx}_ny{self.ny}_re{re_label}_uin{self.u_in:.3f}_steps{self.n_steps}"
+
+    def save(self, path: str | Path) -> Path:
+        """Save this config to a JSON file.
+
+        Args:
+            path: Output file path (should end with ``.json``).
+
+        Returns:
+            Resolved path to the written file.
+        """
+        return save_config_json(self, path)
+
+    @classmethod
+    def load(cls, path: str | Path) -> CylinderFlowConfig:
+        """Load a :class:`CylinderFlowConfig` from a JSON file.
+
+        Args:
+            path: Path to a JSON file written by :meth:`save`.
+
+        Returns:
+            Reconstructed :class:`CylinderFlowConfig` instance.
+        """
+        return load_config_json(cls, path)
 
 
 def compute_vorticity(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
@@ -203,14 +256,20 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     diameter = 2.0 * config.radius
     dyn_pressure = 0.5 * config.u_in**2 * diameter
 
+    # Optionally JIT-compile the hot-path kernels
+    _collide = _maybe_compile(collide_bgk, config.use_compile)
+    _stream = _maybe_compile(stream, config.use_compile)
+
     logger.info(
-        "Running D2Q9 cylinder flow device=%s NX=%s NY=%s tau=%.4f steps=%s output_interval=%s",
+        "Running D2Q9 cylinder flow device=%s NX=%s NY=%s tau=%.4f "
+        "steps=%s output_interval=%s compile=%s",
         device,
         config.nx,
         config.ny,
         config.tau,
         config.n_steps,
         config.output_interval,
+        config.use_compile,
     )
     logger.info("Run directory: %s", run_dir)
 
@@ -221,8 +280,8 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
         else step_range
     )
     for step in step_iter:
-        f = collide_bgk(f, tau=config.tau)
-        f = stream(f)
+        f = _collide(f, tau=config.tau)
+        f = _stream(f)
         fx, fy = compute_obstacle_forces(f, obstacle)
         f = apply_simple_channel_boundaries(
             f,

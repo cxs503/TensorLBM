@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -15,6 +16,7 @@ import matplotlib
 import torch
 
 from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
+from .config_io import load_config_json, save_config_json
 from .d3q19 import equilibrium3d, macroscopic3d
 from .logging_config import configure_logging, logger
 from .obstacles import compute_obstacle_forces_3d, compute_obstacle_moments_3d, wigley_hull_mask
@@ -73,7 +75,7 @@ class ShipHullFlowConfig:
         if self.wave_k <= 0.0:
             return float("inf")
         g_lbm = (1.0 / 3.0) * self.wave_k
-        return self.u_in / (g_lbm * self.hull_length) ** 0.5
+        return self.u_in / math.sqrt(g_lbm * self.hull_length)
 
     def _effective_water_depth(self) -> float:
         return self.water_depth if self.water_depth > 0.0 else float(self.nz)
@@ -110,6 +112,29 @@ class ShipHullFlowConfig:
             f"_B{int(self.hull_beam)}_T{int(self.hull_draft)}"
             f"_steps{self.n_steps}"
         )
+
+    def save(self, path: str | Path) -> Path:
+        """Save this config to a JSON file.
+
+        Args:
+            path: Output file path (should end with ``.json``).
+
+        Returns:
+            Resolved path to the written file.
+        """
+        return save_config_json(self, path)
+
+    @classmethod
+    def load(cls, path: str | Path) -> ShipHullFlowConfig:
+        """Load a :class:`ShipHullFlowConfig` from a JSON file.
+
+        Args:
+            path: Path to a JSON file written by :meth:`save`.
+
+        Returns:
+            Reconstructed :class:`ShipHullFlowConfig` instance.
+        """
+        return load_config_json(cls, path)
 
 
 def _save_ship_snapshot(

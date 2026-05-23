@@ -107,3 +107,67 @@ def test_d3q27_c_symmetry() -> None:
     c_list = [tuple(row.tolist()) for row in C27]
     for cx, cy, cz in c_list:
         assert (-cx, -cy, -cz) in c_list, f"Missing opposite of ({cx},{cy},{cz})"
+
+
+# ---------------------------------------------------------------------------
+# D3Q27 collision + streaming invariant property tests
+# ---------------------------------------------------------------------------
+
+def test_d3q27_bgk_conserves_mass() -> None:
+    """D3Q27 BGK must conserve total mass."""
+    from tensorlbm.d3q27 import collide_bgk27
+
+    nz, ny, nx = 4, 6, 8
+    rho = torch.rand((nz, ny, nx)) + 0.5
+    ux = torch.rand_like(rho) * 0.04
+    uy = torch.rand_like(rho) * 0.03
+    uz = torch.rand_like(rho) * 0.02
+    f = equilibrium27(rho, ux, uy, uz)
+    f_new = collide_bgk27(f, tau=0.7)
+    rho_new, _, _, _ = macroscopic27(f_new)
+    assert torch.allclose(rho_new, rho, atol=1e-5)
+
+
+def test_d3q27_bgk_conserves_momentum() -> None:
+    """D3Q27 BGK must conserve momentum."""
+    from tensorlbm.d3q27 import collide_bgk27
+
+    nz, ny, nx = 4, 6, 8
+    rho = torch.rand((nz, ny, nx)) + 0.5
+    ux = torch.rand_like(rho) * 0.04
+    uy = torch.rand_like(rho) * 0.03
+    uz = torch.rand_like(rho) * 0.02
+    f = equilibrium27(rho, ux, uy, uz)
+    f_new = collide_bgk27(f, tau=0.7)
+    _, ux_new, uy_new, uz_new = macroscopic27(f_new)
+    assert torch.allclose(ux_new, ux, atol=1e-5)
+    assert torch.allclose(uy_new, uy, atol=1e-5)
+    assert torch.allclose(uz_new, uz, atol=1e-5)
+
+
+def test_d3q27_stream_conserves_total_mass() -> None:
+    """D3Q27 periodic streaming must conserve total mass."""
+    from tensorlbm.d3q27 import stream27
+
+    nz, ny, nx = 4, 6, 8
+    rho = torch.rand((nz, ny, nx)) + 0.5
+    ux = torch.rand_like(rho) * 0.04
+    uy = torch.rand_like(rho) * 0.03
+    uz = torch.rand_like(rho) * 0.02
+    f = equilibrium27(rho, ux, uy, uz)
+    total_before = f.sum()
+    f_after = stream27(f)
+    total_after = f_after.sum()
+    assert abs(float(total_before.item()) - float(total_after.item())) < 1e-4
+
+
+def test_correct_mass27_rescales_correctly() -> None:
+    """correct_mass27 must produce the exact requested total mass."""
+    from tensorlbm import correct_mass27
+
+    nz, ny, nx = 4, 6, 8
+    rho = torch.ones((nz, ny, nx))
+    f = equilibrium27(rho, torch.zeros_like(rho), torch.zeros_like(rho), torch.zeros_like(rho))
+    target = float(f.sum().item()) * 1.05
+    f_corr = correct_mass27(f, target)
+    assert abs(float(f_corr.sum().item()) - target) < 1e-4

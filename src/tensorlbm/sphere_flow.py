@@ -9,6 +9,8 @@ import torch
 
 from .boundaries3d import apply_simple_channel_boundaries_3d, make_channel_wall_mask_3d, sphere_mask
 from .checkpoint import load_checkpoint, save_checkpoint
+from .config_io import load_config_json, save_config_json
+from .cylinder_flow import _maybe_compile
 from .d3q19 import equilibrium3d, macroscopic3d
 from .logging_config import configure_logging, logger
 from .solver3d import collide_bgk3d, stream3d
@@ -39,6 +41,7 @@ class SphereFlowConfig:
     device: str = "cpu"
     overwrite: bool = False
     resume_checkpoint: Path | None = None
+    use_compile: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -79,6 +82,29 @@ class SphereFlowConfig:
             f"nx{self.nx}_ny{self.ny}_nz{self.nz}_re{re_label}"
             f"_uin{self.u_in:.3f}_steps{self.n_steps}"
         )
+
+    def save(self, path: str | Path) -> Path:
+        """Save this config to a JSON file.
+
+        Args:
+            path: Output file path (should end with ``.json``).
+
+        Returns:
+            Resolved path to the written file.
+        """
+        return save_config_json(self, path)
+
+    @classmethod
+    def load(cls, path: str | Path) -> SphereFlowConfig:
+        """Load a :class:`SphereFlowConfig` from a JSON file.
+
+        Args:
+            path: Path to a JSON file written by :meth:`save`.
+
+        Returns:
+            Reconstructed :class:`SphereFlowConfig` instance.
+        """
+        return load_config_json(cls, path)
 
 
 def _save_flow_snapshot_3d(
@@ -171,9 +197,13 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
     initial_mass = float(rho0_mass.sum().item())
     diagnostics: list[dict[str, float | int]] = []
 
+    # Optionally JIT-compile the hot-path kernels
+    _collide = _maybe_compile(collide_bgk3d, config.use_compile)
+    _stream = _maybe_compile(stream3d, config.use_compile)
+
     logger.info(
         "Running D3Q19 sphere flow device=%s NX=%s NY=%s NZ=%s tau=%.4f steps=%s "
-        "output_interval=%s",
+        "output_interval=%s compile=%s",
         device,
         config.nx,
         config.ny,
@@ -181,12 +211,13 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
         config.tau,
         config.n_steps,
         config.output_interval,
+        config.use_compile,
     )
     logger.info("Run directory: %s", run_dir)
 
     for step in range(start_step, config.n_steps + 1):
-        f = collide_bgk3d(f, tau=config.tau)
-        f = stream3d(f)
+        f = _collide(f, tau=config.tau)
+        f = _stream(f)
         f = apply_simple_channel_boundaries_3d(
             f,
             u_in=config.u_in,
