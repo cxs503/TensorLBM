@@ -46,8 +46,8 @@ from .interpolated_bc import bouzidi_bounce_back, compute_q_circle
 from .io import save_hdf5, save_vtk, save_vtk_binary
 from .logging_config import configure_logging, logger
 from .multiphase import (
-    collide_sc_two_component,
     collide_sc_single_component,
+    collide_sc_two_component,
     color_gradient_step,
     free_energy_step,
     init_free_energy_g,

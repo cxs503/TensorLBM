@@ -17,10 +17,12 @@ import torch
 from tensorlbm import (
     DamBreakConfig,
     MultiphaseWaterEntryConfig,
-    collide_sc_two_component,
     collide_sc_single_component,
+    collide_sc_two_component,
     collide_sc_two_component_3d,
     color_gradient_step,
+    equilibrium,
+    equilibrium3d,
     free_energy_step,
     init_free_energy_g,
     psi_exp,
@@ -28,8 +30,6 @@ from tensorlbm import (
     psi_power,
     sc_two_component_force,
     sc_two_component_force_3d,
-    equilibrium,
-    equilibrium3d,
     stream,
     stream3d,
 )
@@ -49,7 +49,9 @@ def _make_two_component_2d(ny: int = 20, nx: int = 24) -> tuple[torch.Tensor, to
     return equilibrium(rho1, zero, zero), equilibrium(rho2, zero, zero)
 
 
-def _make_two_component_3d(nz: int = 6, ny: int = 8, nx: int = 10) -> tuple[torch.Tensor, torch.Tensor]:
+def _make_two_component_3d(
+    nz: int = 6, ny: int = 8, nx: int = 10
+) -> tuple[torch.Tensor, torch.Tensor]:
     rho1 = torch.ones((nz, ny, nx), device=DEVICE)
     rho2 = torch.full((nz, ny, nx), 0.5, device=DEVICE)
     zero = torch.zeros((nz, ny, nx), device=DEVICE)
