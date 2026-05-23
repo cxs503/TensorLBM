@@ -18,6 +18,28 @@ if TYPE_CHECKING:
     import torch
 
 
+def _validate_field_shapes(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor | None = None,
+    rho: torch.Tensor | None = None,
+    vorticity: torch.Tensor | None = None,
+) -> None:
+    """Validate that all exported fields share a supported spatial shape."""
+    if ux.ndim not in (2, 3):
+        raise ValueError(f"ux must be a 2-D or 3-D tensor, got shape {tuple(ux.shape)}")
+    if uy.shape != ux.shape:
+        raise ValueError(f"ux and uy shapes must match: {tuple(ux.shape)} != {tuple(uy.shape)}")
+    if uz is not None and uz.shape != ux.shape:
+        raise ValueError(f"uz shape must match ux: {tuple(uz.shape)} != {tuple(ux.shape)}")
+    if rho is not None and rho.shape != ux.shape:
+        raise ValueError(f"rho shape must match ux: {tuple(rho.shape)} != {tuple(ux.shape)}")
+    if vorticity is not None and vorticity.shape != ux.shape:
+        raise ValueError(
+            f"vorticity shape must match ux: {tuple(vorticity.shape)} != {tuple(ux.shape)}"
+        )
+
+
 def save_vtk(
     path: str | Path,
     ux: torch.Tensor,
@@ -44,6 +66,7 @@ def save_vtk(
         Resolved output path.
     """
     path = Path(path)
+    _validate_field_shapes(ux, uy, uz, rho, vorticity)
     is_3d = ux.ndim == 3
 
     if is_3d:
@@ -73,13 +96,13 @@ def save_vtk(
         vel_v = _to_flat(uy)
         vel_w = _to_flat(uz)
         lines.append("VECTORS velocity float")
-        for u, v, w in zip(vel_u, vel_v, vel_w, strict=False):
+        for u, v, w in zip(vel_u, vel_v, vel_w, strict=True):
             lines.append(f"{u:.6g} {v:.6g} {w:.6g}")
     else:
         ux_f = _to_flat(ux)
         uy_f = _to_flat(uy)
         lines.append("VECTORS velocity float")
-        for u, v in zip(ux_f, uy_f, strict=False):
+        for u, v in zip(ux_f, uy_f, strict=True):
             lines.append(f"{u:.6g} {v:.6g} 0.0")
 
     if rho is not None:
@@ -126,13 +149,14 @@ def save_hdf5(
         Resolved output path.
     """
     try:
-        import h5py  # type: ignore[import-untyped]
+        import h5py
     except ImportError as exc:
         raise ImportError(
             "h5py is required for HDF5 output: pip install h5py"
         ) from exc
 
     path = Path(path)
+    _validate_field_shapes(ux, uy, uz, rho)
 
     def _np(t: torch.Tensor) -> object:
         return t.detach().cpu().float().numpy()
@@ -182,6 +206,7 @@ def save_vtk_binary(
     import numpy as np
 
     path = Path(path)
+    _validate_field_shapes(ux, uy, uz, rho, vorticity)
     is_3d = ux.ndim == 3
 
     if is_3d:

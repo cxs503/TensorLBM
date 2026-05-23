@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 
 import torch
 
@@ -79,8 +80,18 @@ def load_checkpoint(
         map_location=device or torch.device("cpu"),
         weights_only=True,
     )
-    meta: dict[str, object] = json.loads(meta_path.read_text(encoding="utf-8"))
-    step = int(meta["step"])
+    loaded_meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    if not isinstance(loaded_meta, dict) or not all(
+        isinstance(key, str) for key in loaded_meta
+    ):
+        raise ValueError(f"Checkpoint metadata must be a JSON object with string keys: {meta_path}")
+    meta = cast("dict[str, object]", loaded_meta)
+    if "step" not in meta:
+        raise ValueError(f"Checkpoint metadata missing 'step' key: {meta_path}")
+    step_value = meta["step"]
+    if not isinstance(step_value, int) or isinstance(step_value, bool):
+        raise ValueError(f"Checkpoint metadata 'step' must be an integer: {meta_path}")
+    step = step_value
     return f, step, meta
 
 
