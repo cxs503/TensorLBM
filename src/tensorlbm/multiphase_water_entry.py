@@ -125,9 +125,8 @@ class MultiphaseWaterEntryConfig:
 
     @property
     def sphere_center_2d(self) -> tuple[float, float]:
-        return (
-            float(self.nx // 2),
-            float(self.water_level + int(self.clearance) + int(self.radius) + 1),
+        return float(self.nx // 2), float(
+            self.water_level + int(self.clearance) + int(self.radius) + 1,
         )
 
     @property
@@ -143,12 +142,7 @@ class MultiphaseWaterEntryConfig:
 # ---------------------------------------------------------------------------
 
 def _circle_mask(
-    ny: int,
-    nx: int,
-    cx: float,
-    cy: float,
-    r: float,
-    device: torch.device,
+    ny: int, nx: int, cx: float, cy: float, r: float, device: torch.device,
 ) -> torch.Tensor:
     yy, xx = torch.meshgrid(
         torch.arange(ny, device=device, dtype=torch.float32),
@@ -169,11 +163,7 @@ def _wall_mask_2d(ny: int, nx: int, device: torch.device) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 
 def _smooth_profile_y(
-    ny: int,
-    nx: int,
-    water_level: float,
-    width: float,
-    device: torch.device,
+    ny: int, nx: int, water_level: float, width: float, device: torch.device,
 ) -> torch.Tensor:
     """tanh profile: 1.0 in water (y < water_level), 0.0 in air."""
     y = torch.arange(ny, dtype=torch.float32, device=device)
@@ -226,14 +216,9 @@ def _init_two_phase_sc_2d(
 # ---------------------------------------------------------------------------
 
 def _sphere_mask_3d(
-    nz: int,
-    ny: int,
-    nx: int,
-    cx: float,
-    cy: float,
-    cz: float,
-    r: float,
-    device: torch.device,
+    nz: int, ny: int, nx: int,
+    cx: float, cy: float, cz: float,
+    r: float, device: torch.device,
 ) -> torch.Tensor:
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
@@ -280,9 +265,7 @@ def _init_two_phase_3d(
 # ---------------------------------------------------------------------------
 
 def _momentum_exchange_2d(
-    f1: torch.Tensor,
-    f2: torch.Tensor,
-    solid: torch.Tensor,
+    f1: torch.Tensor, f2: torch.Tensor, solid: torch.Tensor,
 ) -> tuple[float, float]:
     """Ladd momentum-exchange impact force on a 2-D solid obstacle."""
     device = f1.device
@@ -298,9 +281,7 @@ def _momentum_exchange_2d(
 
 
 def _momentum_exchange_3d(
-    f1: torch.Tensor,
-    f2: torch.Tensor,
-    solid: torch.Tensor,
+    f1: torch.Tensor, f2: torch.Tensor, solid: torch.Tensor,
 ) -> tuple[float, float, float]:
     device = f1.device
     f_total = f1 + f2
@@ -378,11 +359,11 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
 
         if config.model == "cg":
             f1, f2 = _init_two_phase_cg_2d(
-                ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device
+                ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device,
             )
         else:  # sc
             f1, f2 = _init_two_phase_sc_2d(
-                ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device
+                ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device,
             )
 
         gy = -config.g
@@ -392,7 +373,7 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
                 A_surface = config.G * 0.04
                 # f1=red=heavy(water), f2=blue=light(air)
                 f1, f2 = color_gradient_step(
-                    f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=solid
+                    f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=solid,
                 )
             else:  # sc
                 f1, f2 = collide_sc_two_component(
@@ -438,7 +419,7 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
         solid = wall | sphere
 
         f1, f2 = _init_two_phase_3d(
-            nz, ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device
+            nz, ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device,
         )
         gz = -config.g
 

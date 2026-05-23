@@ -76,6 +76,12 @@ def equilibrium3d(
     Returns:
         Tensor of shape (19, nz, ny, nx).
     """
+    if not (rho.shape == ux.shape == uy.shape == uz.shape):
+        raise ValueError(
+            "rho, ux, uy, and uz shapes must match: "
+            f"rho={tuple(rho.shape)}, ux={tuple(ux.shape)}, "
+            f"uy={tuple(uy.shape)}, uz={tuple(uz.shape)}"
+        )
     if device is None:
         device = rho.device
     c = _c_on(device)
