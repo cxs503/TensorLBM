@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from tensorlbm import equilibrium, macroscopic
@@ -32,3 +33,11 @@ def test_equilibrium_roundtrip_nonzero_velocity() -> None:
 def test_equilibrium_weights_sum_to_one() -> None:
     from tensorlbm import W
     assert abs(float(W.sum().item()) - 1.0) < 1e-6
+
+
+def test_equilibrium_shape_mismatch_raises() -> None:
+    rho = torch.ones((6, 8), dtype=torch.float32)
+    ux = torch.zeros((6, 7), dtype=torch.float32)
+    uy = torch.zeros_like(rho)
+    with pytest.raises(ValueError, match="shapes must match"):
+        equilibrium(rho, ux, uy)
