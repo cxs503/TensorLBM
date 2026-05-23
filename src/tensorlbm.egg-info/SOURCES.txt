@@ -4,6 +4,7 @@ src/tensorlbm/__init__.py
 src/tensorlbm/_version.py
 src/tensorlbm/boundaries.py
 src/tensorlbm/boundaries3d.py
+src/tensorlbm/boundaries_d3q27.py
 src/tensorlbm/checkpoint.py
 src/tensorlbm/config_io.py
 src/tensorlbm/cylinder_flow.py
@@ -38,6 +39,7 @@ tests/test_interpolated_bc.py
 tests/test_io.py
 tests/test_marine.py
 tests/test_misc.py
+tests/test_phase4.py
 tests/test_postprocess.py
 tests/test_properties.py
 tests/test_solver.py
