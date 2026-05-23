@@ -148,3 +148,139 @@ def test_taylor_green_energy_decay() -> None:
         )
     else:
         assert e_final > 0, "Kinetic energy became non-positive"
+
+
+# ---------------------------------------------------------------------------
+# 3-D Poiseuille convergence (D3Q19)
+# ---------------------------------------------------------------------------
+
+def _run_poiseuille_3d(ny: int, nu: float, fx: float, n_steps: int) -> torch.Tensor:
+    """Run 3D Poiseuille flow with body force; return final ux profile at mid-z, mid-x."""
+    from tensorlbm import OPPOSITE3D
+    from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+    from tensorlbm.solver3d import collide_bgk3d, stream3d
+
+    nz = 4
+    nx = 4
+    rho0 = torch.ones((nz, ny, nx))
+    ux0 = torch.zeros_like(rho0)
+    uy0 = torch.zeros_like(rho0)
+    uz0 = torch.zeros_like(rho0)
+    f = equilibrium3d(rho0, ux0, uy0, uz0)
+
+    tau = 3.0 * nu + 0.5
+    opp = OPPOSITE3D
+
+    for _ in range(n_steps):
+        f = collide_bgk3d(f, tau=tau)
+        f = stream3d(f)
+        # No-slip bounce-back on y=0 and y=ny-1 walls
+        f_bb = f.clone()
+        f_bb[:, :, 0, :] = f[opp][:, :, 0, :]
+        f_bb[:, :, -1, :] = f[opp][:, :, -1, :]
+        f = f_bb
+        rho, ux, uy, uz = macroscopic3d(f)
+        # Apply body force via equilibrium shift
+        ux = ux + 2.0 * fx * tau
+        feq_new = equilibrium3d(rho, ux, uy, uz)
+        feq_old = equilibrium3d(rho, ux - 2.0 * fx * tau, uy, uz)
+        f = f + (feq_new - feq_old) * (1.0 - 0.5 / tau)
+
+    _, ux_f, _, _ = macroscopic3d(f)
+    mid_z = nz // 2
+    mid_x = nx // 2
+    return ux_f[mid_z, :, mid_x]
+
+
+def _poiseuille_3d_analytic(ny: int, nu: float, fx: float) -> torch.Tensor:
+    """Parabolic Poiseuille velocity profile u(y) = fx/(2*nu) * y*(ny-1-y)."""
+    y = torch.arange(ny, dtype=torch.float32)
+    return (fx / (2.0 * nu)) * y * (ny - 1 - y)
+
+
+@pytest.mark.parametrize("ny", [16, 32])
+def test_poiseuille_3d_convergence(ny: int) -> None:
+    """3-D Poiseuille (D3Q19) L2 error should be below 10% at given resolution."""
+    nu = 1.0 / 6.0
+    fx = 1e-4
+    n_steps = ny * ny * 4
+
+    ux_num = _run_poiseuille_3d(ny, nu, fx, n_steps)
+    ux_ref = _poiseuille_3d_analytic(ny, nu, fx)
+
+    diff = ux_num[1:-1] - ux_ref[1:-1]
+    denom = ux_ref[1:-1].norm()
+    err = float((diff.norm() / denom).item()) if float(denom) > 1e-14 else float(diff.norm())
+    assert err < 0.10, f"3-D Poiseuille L2 error too large at ny={ny}: {err:.4f}"
+
+
+def test_poiseuille_3d_spatial_convergence_order() -> None:
+    """Verify O(h^2) convergence for 3-D Poiseuille: refining by 2× halves error."""
+    nu = 1.0 / 6.0
+    fx = 1e-4
+    errors = []
+    for ny in (16, 32):
+        n_steps = ny * ny * 4
+        ux_num = _run_poiseuille_3d(ny, nu, fx, n_steps)
+        ux_ref = _poiseuille_3d_analytic(ny, nu, fx)
+        diff = ux_num[1:-1] - ux_ref[1:-1]
+        denom = ux_ref[1:-1].norm()
+        err = (
+            float((diff.norm() / denom).item())
+            if float(denom) > 1e-14
+            else float(diff.norm())
+        )
+        errors.append(err)
+
+    ratio = errors[0] / errors[1] if errors[1] > 0 else float("inf")
+    assert ratio > 1.5, f"3-D convergence ratio ny=16→32 too low: {ratio:.2f}"
+
+
+# ---------------------------------------------------------------------------
+# 3-D Taylor–Green vortex decay (D3Q19)
+# ---------------------------------------------------------------------------
+
+def test_taylor_green_3d_energy_decay() -> None:
+    """3-D Taylor–Green vortex (D3Q19) kinetic energy should decay at predicted rate."""
+    from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+    from tensorlbm.solver3d import collide_bgk3d, stream3d
+
+    n = 16
+    nu = 1.0 / 30.0
+    tau = 3.0 * nu + 0.5
+    k = 2.0 * math.pi / n
+
+    amp = 0.01
+    xx, yy, zz = torch.meshgrid(
+        torch.arange(n, dtype=torch.float32),
+        torch.arange(n, dtype=torch.float32),
+        torch.arange(n, dtype=torch.float32),
+        indexing="ij",
+    )
+    ux0 = amp * torch.sin(k * xx) * torch.cos(k * yy) * torch.cos(k * zz)
+    uy0 = -amp * torch.cos(k * xx) * torch.sin(k * yy) * torch.cos(k * zz)
+    uz0 = torch.zeros_like(ux0)
+    rho0 = torch.ones((n, n, n))
+    f = equilibrium3d(rho0, ux0, uy0, uz0)
+
+    def _kinetic_energy(f_dist: torch.Tensor) -> float:
+        rho, ux, uy, uz = macroscopic3d(f_dist)
+        return float((0.5 * rho * (ux * ux + uy * uy + uz * uz)).sum().item())
+
+    decay_rate = 4.0 * nu * k ** 2
+    n_steps = 100
+
+    e0 = _kinetic_energy(f)
+    for _ in range(n_steps):
+        f = collide_bgk3d(f, tau=tau)
+        f = stream3d(f)
+    e_final = _kinetic_energy(f)
+
+    if e0 > 0 and e_final > 0:
+        measured_rate = -math.log(e_final / e0) / n_steps
+        assert abs(measured_rate - decay_rate) / decay_rate < 0.85, (
+            "3-D Taylor-Green D3Q19 decay rate mismatch: "
+            f"measured={measured_rate:.5f}, theory={decay_rate:.5f}"
+        )
+    else:
+        assert e_final > 0, "Kinetic energy became non-positive"

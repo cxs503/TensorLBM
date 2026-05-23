@@ -2,8 +2,9 @@
 
 Provides:
 - :func:`wigley_hull_mask` – Wigley parabolic hull voxelisation (classic ITTC benchmark).
-- :func:`compute_obstacle_forces_3d` – 3-D momentum-exchange drag/lift/side force.
+- :func:`compute_obstacle_forces_3d` – 3-D momentum-exchange drag/lift/side force (D3Q19).
 - :func:`compute_obstacle_moments_3d` – Roll/pitch/yaw moments about a reference point.
+- :func:`compute_obstacle_forces_27` – 3-D momentum-exchange drag/lift/side force (D3Q27).
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ from __future__ import annotations
 import torch
 
 from .d3q19 import C
+from .d3q27 import C as C27
 
 
 def wigley_hull_mask(
@@ -196,8 +198,51 @@ def compute_obstacle_moments_3d(
     return mx, my, mz
 
 
+def compute_obstacle_forces_27(
+    f: torch.Tensor,
+    obstacle_mask: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Momentum-exchange drag, lift, and side forces on a stationary 3-D obstacle (D3Q27).
+
+    Implements the Ladd (1994) momentum-exchange method extended to D3Q27.
+    This function **must be called after streaming but before bounce-back** is
+    applied to the obstacle cells.
+
+    At each solid node the post-stream population carries momentum that will
+    be reversed by the subsequent bounce-back.  The net force on the solid in
+    direction α is:
+
+    .. math::
+
+        F_\\alpha = 2 \\sum_{x_s \\in solid} \\sum_i c_{i\\alpha} f_i(x_s)
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)`` *after* streaming.
+        obstacle_mask: Boolean tensor of shape ``(nz, ny, nx)`` marking solid cells.
+
+    Returns:
+        Tuple ``(fx, fy, fz)`` — scalar tensors for the x (drag along inlet
+        flow), y (lateral/side force), and z (lift/vertical force) components.
+    """
+    device = f.device
+    c = C27.to(device).float()  # (27, 3)
+
+    cx = c[:, 0].view(27, 1, 1, 1)
+    cy = c[:, 1].view(27, 1, 1, 1)
+    cz = c[:, 2].view(27, 1, 1, 1)
+
+    mask_4d = obstacle_mask.unsqueeze(0)  # (1, nz, ny, nx)
+    f_solid = f * mask_4d
+
+    fx = 2.0 * (cx * f_solid).sum()
+    fy = 2.0 * (cy * f_solid).sum()
+    fz = 2.0 * (cz * f_solid).sum()
+    return fx, fy, fz
+
+
 __all__ = [
     "wigley_hull_mask",
     "compute_obstacle_forces_3d",
     "compute_obstacle_moments_3d",
+    "compute_obstacle_forces_27",
 ]
