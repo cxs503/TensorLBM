@@ -1,10 +1,12 @@
 """Scientific I/O helpers for TensorLBM simulation data.
 
 Provides:
-- :func:`save_vtk`  – Legacy ASCII VTK rectilinear grid for ParaView / VisIt.
-- :func:`save_hdf5` – HDF5 file via h5py for large-scale post-processing.
+- :func:`save_vtk`        – Legacy ASCII VTK structured-points file.
+- :func:`save_vtk_binary` – Binary little-endian VTK structured-points file.
+- :func:`save_hdf5`       – HDF5 file via h5py for large-scale post-processing.
 
-VTK export does not require any additional package beyond the standard library;
+ASCII VTK export does not require any additional package beyond the standard
+library; binary VTK uses the :mod:`struct` module (also stdlib).
 HDF5 export requires ``h5py`` (``pip install h5py``).
 """
 from __future__ import annotations
@@ -151,4 +153,91 @@ def save_hdf5(
     return path
 
 
-__all__ = ["save_vtk", "save_hdf5"]
+def save_vtk_binary(
+    path: str | Path,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor | None = None,
+    rho: torch.Tensor | None = None,
+    vorticity: torch.Tensor | None = None,
+) -> Path:
+    """Write a binary (little-endian) legacy VTK structured-points file.
+
+    Produces smaller files and faster I/O than the ASCII :func:`save_vtk`
+    variant, suitable for large 3-D grids.  All fields are written as
+    ``float`` (32-bit IEEE 754, big-endian as required by the VTK legacy
+    format).
+
+    Args:
+        path: Output file path (should end with ``.vtk``).
+        ux: x-velocity field.
+        uy: y-velocity field.
+        uz: z-velocity field (3-D only; *None* for 2-D).
+        rho: Density field (optional).
+        vorticity: Vorticity scalar field (optional).
+
+    Returns:
+        Resolved output path.
+    """
+    import numpy as np
+
+    path = Path(path)
+    is_3d = ux.ndim == 3
+
+    if is_3d:
+        nz, ny, nx = ux.shape
+    else:
+        ny, nx = ux.shape
+        nz = 1
+
+    n_points = nx * ny * nz
+
+    def _to_np(t: torch.Tensor) -> np.ndarray:
+        return t.detach().cpu().float().numpy().flatten()
+
+    # VTK legacy format requires big-endian binary data
+    header_lines = [
+        "# vtk DataFile Version 3.0\n",
+        "TensorLBM binary output\n",
+        "BINARY\n",
+        "DATASET STRUCTURED_POINTS\n",
+        f"DIMENSIONS {nx} {ny} {nz}\n",
+        "ORIGIN 0 0 0\n",
+        "SPACING 1 1 1\n",
+        f"POINT_DATA {n_points}\n",
+    ]
+
+    with path.open("wb") as fh:
+        for line in header_lines:
+            fh.write(line.encode("ascii"))
+
+        if uz is not None:
+            fh.write(b"VECTORS velocity float\n")
+            vel_data = np.column_stack(
+                [_to_np(ux), _to_np(uy), _to_np(uz)]
+            ).flatten().astype(">f4")
+        else:
+            fh.write(b"VECTORS velocity float\n")
+            zeros = np.zeros(n_points, dtype=np.float32)
+            vel_data = np.column_stack(
+                [_to_np(ux), _to_np(uy), zeros]
+            ).flatten().astype(">f4")
+        fh.write(vel_data.tobytes())
+        fh.write(b"\n")
+
+        if rho is not None:
+            fh.write(b"SCALARS density float 1\n")
+            fh.write(b"LOOKUP_TABLE default\n")
+            fh.write(_to_np(rho).astype(">f4").tobytes())
+            fh.write(b"\n")
+
+        if vorticity is not None:
+            fh.write(b"SCALARS vorticity float 1\n")
+            fh.write(b"LOOKUP_TABLE default\n")
+            fh.write(_to_np(vorticity).astype(">f4").tobytes())
+            fh.write(b"\n")
+
+    return path
+
+
+__all__ = ["save_vtk", "save_vtk_binary", "save_hdf5"]

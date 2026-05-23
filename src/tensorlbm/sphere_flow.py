@@ -8,6 +8,7 @@ import matplotlib
 import torch
 
 from .boundaries3d import apply_simple_channel_boundaries_3d, make_channel_wall_mask_3d, sphere_mask
+from .checkpoint import load_checkpoint, save_checkpoint
 from .d3q19 import equilibrium3d, macroscopic3d
 from .logging_config import configure_logging, logger
 from .solver3d import collide_bgk3d, stream3d
@@ -37,10 +38,13 @@ class SphereFlowConfig:
     seed: int = 0
     device: str = "cpu"
     overwrite: bool = False
+    resume_checkpoint: Path | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
         object.__setattr__(self, "device", self.device.lower())
+        if self.resume_checkpoint is not None:
+            object.__setattr__(self, "resume_checkpoint", Path(self.resume_checkpoint))
 
     @property
     def nu(self) -> float:
@@ -115,8 +119,13 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
         config.overwrite,
     )
 
+    ckpt_str = str(config.resume_checkpoint) if config.resume_checkpoint else None
     metadata: dict[str, object] = {
-        "config": {**asdict(config), "output_root": str(config.output_root)},
+        "config": {
+            **asdict(config),
+            "output_root": str(config.output_root),
+            "resume_checkpoint": ckpt_str,
+        },
         "derived": {"nu": config.nu, "tau": config.tau},
         "runtime": {"torch_version": torch.__version__, "device": str(device)},
         "reproducibility": get_reproducibility_metadata(),
@@ -143,14 +152,23 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
         device=device,
     )
 
-    rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
-    ux0 = torch.full((config.nz, config.ny, config.nx), config.u_in, device=device)
-    uy0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
-    uz0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
-    ux0[obstacle] = 0.0
-    f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
+    # Resume from checkpoint or initialise fresh
+    start_step = 1
+    if config.resume_checkpoint is not None:
+        f, resume_step, _ckpt_meta = load_checkpoint(config.resume_checkpoint, device=device)
+        f = f.to(device)
+        start_step = resume_step + 1
+        logger.info("Resumed from checkpoint %s at step %d", config.resume_checkpoint, resume_step)
+    else:
+        rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
+        ux0 = torch.full((config.nz, config.ny, config.nx), config.u_in, device=device)
+        uy0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
+        uz0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
+        ux0[obstacle] = 0.0
+        f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
 
-    initial_mass = float(rho0.sum().item())
+    rho0_mass = torch.ones((config.nz, config.ny, config.nx), device=device)
+    initial_mass = float(rho0_mass.sum().item())
     diagnostics: list[dict[str, float | int]] = []
 
     logger.info(
@@ -166,7 +184,7 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
     )
     logger.info("Run directory: %s", run_dir)
 
-    for step in range(1, config.n_steps + 1):
+    for step in range(start_step, config.n_steps + 1):
         f = collide_bgk3d(f, tau=config.tau)
         f = stream3d(f)
         f = apply_simple_channel_boundaries_3d(
@@ -201,6 +219,9 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
                 point.max_speed,
             )
             _save_flow_snapshot_3d(run_dir, step, speed, obstacle, config.nz)
+
+            # Save checkpoint at every output step
+            save_checkpoint(f, step, run_dir)
 
     metadata["diagnostics"] = diagnostics
     metadata_path = run_dir / "run_metadata.json"

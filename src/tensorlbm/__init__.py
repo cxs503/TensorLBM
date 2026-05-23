@@ -22,6 +22,13 @@ from .boundaries3d import (
     zou_he_outlet_pressure_3d,
     zou_he_outlet_pressure_z,
 )
+from .boundaries_d3q27 import (
+    apply_zou_he_channel_boundaries_27,
+    bounce_back_cells_27,
+    make_channel_wall_mask_27,
+    zou_he_inlet_velocity_27,
+    zou_he_outlet_pressure_27,
+)
 from .checkpoint import load_checkpoint, save_checkpoint
 from .config_io import load_config
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
@@ -33,14 +40,18 @@ from .d3q19 import equilibrium3d, macroscopic3d
 from .d3q27 import OPPOSITE as OPPOSITE27
 from .d3q27 import C as C27
 from .d3q27 import W as W27
-from .d3q27 import collide_bgk27, equilibrium27, macroscopic27, stream27
-from .io import save_hdf5, save_vtk
+from .d3q27 import collide_bgk27, collide_mrt27, equilibrium27, macroscopic27, stream27
+from .interpolated_bc import bouzidi_bounce_back, compute_q_circle
+from .io import save_hdf5, save_vtk, save_vtk_binary
 from .logging_config import configure_logging, logger
 from .obstacles import compute_obstacle_forces_3d, compute_obstacle_moments_3d, wigley_hull_mask
 from .postprocess import (
     compute_pressure_coefficient,
     compute_q_criterion,
+    compute_recirculation_length,
+    compute_vorticity_3d,
     extract_velocity_profile,
+    extract_wake_profile,
 )
 from .protocols import BoundaryCondition, CollisionOperator
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
@@ -51,7 +62,10 @@ from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
 from .turbulence import (
     collide_smagorinsky_bgk,
     collide_smagorinsky_bgk3d,
+    collide_smagorinsky_bgk27,
+    collide_smagorinsky_mrt,
     collide_smagorinsky_mrt3d,
+    collide_smagorinsky_mrt27,
 )
 from .utils import (
     DiagnosticPoint,
@@ -115,6 +129,7 @@ __all__ = [
     "compute_obstacle_forces_3d",
     "compute_obstacle_moments_3d",
     "collide_smagorinsky_bgk",
+    "collide_smagorinsky_mrt",
     "collide_smagorinsky_bgk3d",
     "collide_smagorinsky_mrt3d",
     "airy_wave_velocity_3d",
@@ -129,10 +144,14 @@ __all__ = [
     "save_checkpoint",
     "load_checkpoint",
     "save_vtk",
+    "save_vtk_binary",
     "save_hdf5",
     "extract_velocity_profile",
+    "extract_wake_profile",
+    "compute_recirculation_length",
     "compute_pressure_coefficient",
     "compute_q_criterion",
+    "compute_vorticity_3d",
     "CollisionOperator",
     "BoundaryCondition",
     "load_config",
@@ -145,4 +164,15 @@ __all__ = [
     "stream27",
     "logger",
     "configure_logging",
+    "bouzidi_bounce_back",
+    "compute_q_circle",
+    "collide_smagorinsky_mrt",
+    "collide_mrt27",
+    "collide_smagorinsky_bgk27",
+    "collide_smagorinsky_mrt27",
+    "bounce_back_cells_27",
+    "zou_he_inlet_velocity_27",
+    "zou_he_outlet_pressure_27",
+    "make_channel_wall_mask_27",
+    "apply_zou_he_channel_boundaries_27",
 ]
