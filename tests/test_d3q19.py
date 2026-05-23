@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from tensorlbm import equilibrium3d, macroscopic3d
@@ -48,3 +49,12 @@ def test_equilibrium3d_nonzero_velocity_roundtrip() -> None:
     assert torch.allclose(ux_out, ux, atol=1e-5)
     assert torch.allclose(uy_out, uy, atol=1e-5)
     assert torch.allclose(uz_out, uz, atol=1e-5)
+
+
+def test_equilibrium3d_shape_mismatch_raises() -> None:
+    rho = torch.ones((4, 6, 8), dtype=torch.float32)
+    ux = torch.zeros_like(rho)
+    uy = torch.zeros((4, 6, 7), dtype=torch.float32)
+    uz = torch.zeros_like(rho)
+    with pytest.raises(ValueError, match="shapes must match"):
+        equilibrium3d(rho, ux, uy, uz)

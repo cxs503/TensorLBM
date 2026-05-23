@@ -1,7 +1,14 @@
+"""3-D Wigley ship hull flow simulation for ship and ocean engineering.
+
+This module provides a self-contained, parameterised runner for a Lattice
+Boltzmann simulation of viscous flow past a Wigley parabolic ship hull in a
+rectangular channel.
+"""
 from __future__ import annotations
 
 import csv
 import json
+import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -9,15 +16,18 @@ import matplotlib
 import torch
 
 from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
+from .config_io import load_config_json, save_config_json
 from .d3q19 import equilibrium3d, macroscopic3d
-from .obstacles import (
-    compute_obstacle_forces_3d,
-    compute_obstacle_moments_3d,
-    wigley_hull_mask,
+from .logging_config import configure_logging, logger
+from .obstacles import compute_obstacle_forces_3d, compute_obstacle_moments_3d, wigley_hull_mask
+from .turbulence import collide_smagorinsky_mrt3d
+from .utils import (
+    DiagnosticPoint,
+    get_reproducibility_metadata,
+    prepare_run_dir,
+    resolve_device,
 )
-from .solver3d import collide_bgk3d, stream3d
-from .turbulence import collide_smagorinsky_bgk3d
-from .utils import DiagnosticPoint, prepare_run_dir, resolve_device
+from .wave_bc import apply_wave_inlet_3d
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -25,43 +35,21 @@ import matplotlib.pyplot as plt
 
 @dataclass(frozen=True)
 class ShipHullFlowConfig:
-    """Configuration for a 3D Wigley hull channel-flow simulation.
+    """Configuration for a 3-D Wigley hull channel-flow simulation."""
 
-    All quantities are expressed in lattice units unless noted.
-
-    The ship is centred at (ix_center, iy_center = ny//2) and placed with its
-    keel at iz_keel (default nz//4).  The channel walls enclose the domain on
-    all four cross-section faces (±y, ±z) and the inlet/outlet are the x=0
-    and x=nx−1 planes.
-
-    Attributes:
-        nx: Streamwise grid points.
-        ny: Transverse (crossflow) grid points.
-        nz: Vertical grid points.
-        u_in: Inlet x-velocity (lattice units).
-        re: Reynolds number  Re = u_in · length_lbm / ν.
-        length_lbm: Ship length in lattice units.
-        beam_lbm: Maximum beam (breadth) in lattice units.
-        draft_lbm: Draft (keel-to-waterline depth) in lattice units.
-        C_s: Smagorinsky constant  (0 → pure BGK; typical 0.1–0.18).
-        n_steps: Total simulation steps.
-        output_interval: Steps between diagnostics and PNG output.
-        output_root: Root directory for outputs.
-        run_name: Optional identifier for the run directory.
-        seed: Random seed for initialisation.
-        device: ``"cpu"`` or ``"cuda"``.
-        overwrite: Remove existing run directory when ``True``.
-    """
-
-    nx: int = 200
+    nx: int = 160
     ny: int = 60
-    nz: int = 60
+    nz: int = 40
     u_in: float = 0.05
-    re: float = 500.0
-    length_lbm: int = 80
-    beam_lbm: int = 12
-    draft_lbm: int = 10
-    C_s: float = 0.1
+    re: float = 200.0
+    hull_length: float = 80.0
+    hull_beam: float = 8.0
+    hull_draft: float = 12.0
+    smagorinsky_cs: float = 0.1
+    wave_amp: float = 0.0
+    wave_period: float = 200.0
+    wave_k: float = 0.05
+    water_depth: float = 0.0
     n_steps: int = 2000
     output_interval: int = 200
     output_root: Path = Path("outputs")
@@ -76,192 +64,236 @@ class ShipHullFlowConfig:
 
     @property
     def nu(self) -> float:
-        """Kinematic viscosity derived from Re."""
-        return self.u_in * self.length_lbm / self.re
+        return self.u_in * self.hull_length / self.re
 
     @property
     def tau(self) -> float:
-        """BGK relaxation time derived from ν."""
         return 3.0 * self.nu + 0.5
 
+    @property
+    def froude(self) -> float:
+        if self.wave_k <= 0.0:
+            return float("inf")
+        g_lbm = (1.0 / 3.0) * self.wave_k
+        return self.u_in / math.sqrt(g_lbm * self.hull_length)
+
+    def _effective_water_depth(self) -> float:
+        return self.water_depth if self.water_depth > 0.0 else float(self.nz)
+
     def validate(self) -> None:
-        if self.nx < 32 or self.ny < 16 or self.nz < 16:
-            raise ValueError("nx ≥ 32, ny ≥ 16, nz ≥ 16 required")
+        if self.nx < 16 or self.ny < 8 or self.nz < 8:
+            raise ValueError("nx, ny, and nz must be at least 16, 8, and 8")
         if self.n_steps < 1:
             raise ValueError("n_steps must be >= 1")
         if self.output_interval < 1:
             raise ValueError("output_interval must be >= 1")
         if self.u_in <= 0.0 or self.re <= 0.0:
             raise ValueError("u_in and re must be > 0")
+        if self.hull_length <= 0.0 or self.hull_beam <= 0.0 or self.hull_draft <= 0.0:
+            raise ValueError("hull_length, hull_beam, and hull_draft must be > 0")
         if self.tau <= 0.5:
             raise ValueError(
-                f"tau={self.tau:.4f} ≤ 0.5; increase re or reduce u_in/length_lbm"
+                f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/hull_length"
             )
-        if self.length_lbm >= self.nx - 20:
-            raise ValueError("length_lbm too large for grid nx (need nx > length_lbm + 20)")
-        if self.beam_lbm >= self.ny - 4:
-            raise ValueError("beam_lbm too large for grid ny (need ny > beam_lbm + 4)")
-        if self.draft_lbm >= self.nz - 4:
-            raise ValueError("draft_lbm too large for grid nz (need nz > draft_lbm + 4)")
+        if self.hull_length >= self.nx:
+            raise ValueError("hull_length must be less than nx")
+        if self.hull_beam >= self.ny:
+            raise ValueError("hull_beam must be less than ny")
+        if self.hull_draft >= self.nz:
+            raise ValueError("hull_draft must be less than nz")
 
     def resolved_run_name(self) -> str:
         if self.run_name:
             return self.run_name
         re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
         return (
-            f"wigley_nx{self.nx}_ny{self.ny}_nz{self.nz}"
-            f"_re{re_label}_uin{self.u_in:.3f}_steps{self.n_steps}"
+            f"nx{self.nx}_ny{self.ny}_nz{self.nz}_re{re_label}"
+            f"_uin{self.u_in:.3f}_L{int(self.hull_length)}"
+            f"_B{int(self.hull_beam)}_T{int(self.hull_draft)}"
+            f"_steps{self.n_steps}"
         )
+
+    def save(self, path: str | Path) -> Path:
+        """Save this config to a JSON file.
+
+        Args:
+            path: Output file path (should end with ``.json``).
+
+        Returns:
+            Resolved path to the written file.
+        """
+        return save_config_json(self, path)
+
+    @classmethod
+    def load(cls, path: str | Path) -> ShipHullFlowConfig:
+        """Load a :class:`ShipHullFlowConfig` from a JSON file.
+
+        Args:
+            path: Path to a JSON file written by :meth:`save`.
+
+        Returns:
+            Reconstructed :class:`ShipHullFlowConfig` instance.
+        """
+        return load_config_json(cls, path)
 
 
 def _save_ship_snapshot(
     run_dir: Path,
     step: int,
     speed: torch.Tensor,
-    hull: torch.Tensor,
+    obstacle: torch.Tensor,
     nz: int,
     ny: int,
 ) -> None:
-    """Save speed magnitude on the mid-z and mid-y slices as a PNG."""
+    """Save speed-magnitude slices (mid-z and mid-y) as PNG images."""
     mid_z = nz // 2
     mid_y = ny // 2
 
-    speed_np = speed.detach().cpu().numpy()
-    hull_mid_z = hull[mid_z].detach().cpu().float().numpy()
-    hull_mid_y = hull[:, mid_y, :].detach().cpu().float().numpy()
+    speed_np_z = speed[mid_z].detach().cpu().numpy()
+    speed_np_y = speed[:, mid_y, :].detach().cpu().numpy()
+    obs_z = obstacle[mid_z].detach().cpu().float().numpy()
+    obs_y = obstacle[:, mid_y, :].detach().cpu().float().numpy()
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 4), constrained_layout=True)
-
-    im0 = axes[0].imshow(speed_np[mid_z], origin="lower", cmap="viridis")
-    axes[0].contour(hull_mid_z, levels=[0.5], colors="white", linewidths=0.8)
+    im0 = axes[0].imshow(speed_np_z, origin="lower", cmap="viridis")
+    axes[0].contour(obs_z, levels=[0.5], colors="white", linewidths=0.8)
     axes[0].set_title(f"Speed – mid-z slice (step {step})")
-    axes[0].set_xlabel("x")
-    axes[0].set_ylabel("y")
+    axes[0].set_xlabel("x (longitudinal)")
+    axes[0].set_ylabel("y (transverse)")
     plt.colorbar(im0, ax=axes[0], fraction=0.046)
 
-    im1 = axes[1].imshow(speed_np[:, mid_y, :], origin="lower", cmap="viridis")
-    axes[1].contour(hull_mid_y, levels=[0.5], colors="white", linewidths=0.8)
+    im1 = axes[1].imshow(speed_np_y, origin="lower", cmap="viridis")
+    axes[1].contour(obs_y, levels=[0.5], colors="white", linewidths=0.8)
     axes[1].set_title(f"Speed – mid-y slice (step {step})")
-    axes[1].set_xlabel("x")
-    axes[1].set_ylabel("z")
+    axes[1].set_xlabel("x (longitudinal)")
+    axes[1].set_ylabel("z (vertical)")
     plt.colorbar(im1, ax=axes[1], fraction=0.046)
 
-    fig.savefig(run_dir / f"flow_step_{step:06d}.png", dpi=120)
+    fig.savefig(run_dir / f"flow_step_{step:06d}.png", dpi=140)
     plt.close(fig)
 
 
 def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
-    """Run a 3D Wigley hull channel-flow simulation with Smagorinsky LES.
+    """Run a 3-D Wigley hull channel-flow simulation and save results."""
+    from .solver3d import stream3d
 
-    Pipeline per time step:
-
-    1. Collision – Smagorinsky-BGK (or pure BGK when ``C_s = 0``).
-    2. Streaming.
-    3. Momentum-exchange force/moment measurement **before** bounce-back.
-    4. Boundary conditions – Zou/He inlet + pressure outlet + bounce-back on
-       walls and hull.
-
-    Outputs written to ``<output_root>/ship_hull_flow/<run_name>/``:
-
-    * ``run_metadata.json`` – config, derived quantities, diagnostics history.
-    * ``forces.csv`` – per-output-step drag, lift and moment time series.
-    * ``flow_step_XXXXXX.png`` – speed snapshots on mid-y and mid-z slices.
-
-    Args:
-        config: Simulation configuration.
-
-    Returns:
-        Path to the output directory.
-    """
+    configure_logging()
     config.validate()
     torch.manual_seed(config.seed)
     torch.use_deterministic_algorithms(True, warn_only=True)
 
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
-        config.output_root, "ship_hull_flow", config.resolved_run_name(), config.overwrite
+        config.output_root,
+        "ship_hull_flow",
+        config.resolved_run_name(),
+        config.overwrite,
     )
 
     metadata: dict[str, object] = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
-        "derived": {"nu": config.nu, "tau": config.tau},
+        "derived": {"nu": config.nu, "tau": config.tau, "froude": config.froude},
         "runtime": {"torch_version": torch.__version__, "device": str(device)},
+        "reproducibility": get_reproducibility_metadata(),
     }
 
-    # ---- geometry ----
-    ix_center = config.nx // 3
-    iy_center = config.ny // 2
-    iz_keel = config.nz // 4
-    iz_waterline = iz_keel + config.draft_lbm
+    cx_hull = config.nx * 0.35
+    cy_hull = config.ny * 0.5
+    cz_keel = config.nz * 0.1
+    effective_depth = config._effective_water_depth()
 
-    hull = wigley_hull_mask(
-        config.nx, config.ny, config.nz,
-        ix_center, iy_center, iz_keel,
-        config.length_lbm, config.beam_lbm, config.draft_lbm,
+    obstacle = wigley_hull_mask(
+        config.nx,
+        config.ny,
+        config.nz,
+        cx=cx_hull,
+        cy=cy_hull,
+        cz_keel=cz_keel,
+        length=config.hull_length,
+        beam=config.hull_beam,
+        draft=config.hull_draft,
         device=device,
     )
-    wall_mask = make_channel_wall_mask_3d(config.nz, config.ny, config.nx, hull, device=device)
+    wall_mask = make_channel_wall_mask_3d(config.nz, config.ny, config.nx, obstacle, device=device)
 
-    hull_cells = int(hull.sum().item())
-    print(f"Wigley hull: {hull_cells} solid cells "
-          f"(L={config.length_lbm} B={config.beam_lbm} T={config.draft_lbm})")
-    print(f"  ix_center={ix_center}  iy_center={iy_center}  "
-          f"iz_keel={iz_keel}  iz_waterline={iz_waterline}")
-
-    # ---- initialisation ----
     rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
     ux0 = torch.full_like(rho0, config.u_in)
     uy0 = torch.zeros_like(rho0)
     uz0 = torch.zeros_like(rho0)
-    ux0[hull] = 0.0
+    ux0[obstacle] = 0.0
     f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
 
     initial_mass = float(rho0.sum().item())
-    diagnostics: list[dict[str, object]] = []
+    ref_area = config.hull_length * config.hull_draft
+    dyn_pressure = 0.5 * config.u_in**2 * ref_area
 
-    # Reference quantities for non-dimensional force coefficients
-    dyn_pressure = 0.5 * config.u_in**2 * float(config.length_lbm) * float(config.beam_lbm)
-    cx_ref = float(ix_center)
-    cy_ref = float(iy_center)
-    cz_ref = float(iz_waterline)
-
-    print(
-        f"Running Wigley hull flow  "
-        f"device={device}  NX={config.nx}×NY={config.ny}×NZ={config.nz}  "
-        f"Re={config.re}  τ={config.tau:.4f}  C_s={config.C_s}  "
-        f"steps={config.n_steps}  output_interval={config.output_interval}"
+    logger.info(
+        "Running D3Q19 Wigley hull flow device=%s NX=%s NY=%s NZ=%s tau=%.4f Re=%.1f "
+        "Fr=%.4f hull L=%s B=%s T=%s wave_amp=%s Cs=%s steps=%s output_interval=%s",
+        device,
+        config.nx,
+        config.ny,
+        config.nz,
+        config.tau,
+        config.re,
+        config.froude,
+        config.hull_length,
+        config.hull_beam,
+        config.hull_draft,
+        config.wave_amp,
+        config.smagorinsky_cs,
+        config.n_steps,
+        config.output_interval,
     )
-    print(f"Run directory: {run_dir}")
+    logger.info("Run directory: %s", run_dir)
+
+    diagnostics: list[dict[str, object]] = []
+    use_waves = config.wave_amp > 0.0
 
     for step in range(1, config.n_steps + 1):
-        # Collision
-        if config.C_s > 0.0:
-            f = collide_smagorinsky_bgk3d(f, tau_0=config.tau, C_s=config.C_s)
-        else:
-            f = collide_bgk3d(f, tau=config.tau)
-
-        # Streaming
+        f = collide_smagorinsky_mrt3d(f, tau=config.tau, C_s=config.smagorinsky_cs)
         f = stream3d(f)
 
-        # Momentum-exchange forces/moments BEFORE bounce-back
-        fx, fy, fz = compute_obstacle_forces_3d(f, hull)
-        Mx, My, Mz = compute_obstacle_moments_3d(f, hull, cx_ref, cy_ref, cz_ref)
-
-        # Boundary conditions (Zou/He inlet + pressure outlet + bounce-back)
-        f = apply_zou_he_channel_boundaries_3d(
-            f, u_in=config.u_in, wall_mask=wall_mask, obstacle_mask=hull
+        fx, fy, fz = compute_obstacle_forces_3d(f, obstacle)
+        mx, my, mz = compute_obstacle_moments_3d(
+            f,
+            obstacle,
+            cx_hull,
+            cy_hull,
+            cz_keel + config.hull_draft * 0.5,
         )
 
-        # Non-dimensional coefficients
+        if use_waves:
+            f = apply_wave_inlet_3d(
+                f,
+                step=step,
+                wall_mask=wall_mask,
+                obstacle_mask=obstacle,
+                u_mean=config.u_in,
+                wave_amp=config.wave_amp,
+                wave_period=config.wave_period,
+                wave_k=config.wave_k,
+                water_depth=effective_depth,
+                z_bed=cz_keel,
+            )
+        else:
+            f = apply_zou_he_channel_boundaries_3d(
+                f,
+                u_in=config.u_in,
+                wall_mask=wall_mask,
+                obstacle_mask=obstacle,
+            )
+
         cd = float(fx) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+        cs_coef = float(fy) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
         cl = float(fz) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
 
         if step % config.output_interval == 0 or step == config.n_steps:
             rho, ux, uy, uz = macroscopic3d(f)
-            ux = ux.masked_fill(hull, 0.0)
-            uy = uy.masked_fill(hull, 0.0)
-            uz = uz.masked_fill(hull, 0.0)
-            speed = torch.sqrt(ux**2 + uy**2 + uz**2)
+            ux = ux.masked_fill(obstacle, 0.0)
+            uy = uy.masked_fill(obstacle, 0.0)
+            uz = uz.masked_fill(obstacle, 0.0)
+            speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
             mass = float(rho.sum().item())
 
             point = DiagnosticPoint(
@@ -274,33 +306,38 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
             diag_entry: dict[str, object] = {
                 **asdict(point),
                 "cd": cd,
+                "cs": cs_coef,
                 "cl": cl,
-                "Mx": float(Mx),
-                "My": float(My),
-                "Mz": float(Mz),
+                "mx": float(mx),
+                "my": float(my),
+                "mz": float(mz),
             }
             diagnostics.append(diag_entry)
-            print(
-                f"step={point.step:5d}  mass={point.mass:.4f}  "
-                f"drift={point.mass_drift:+.4f}  max|u|={point.max_speed:.5f}  "
-                f"Cd={cd:.4f}  Cl={cl:.4f}  "
-                f"Mx={float(Mx):.3f}  My={float(My):.3f}  Mz={float(Mz):.3f}"
+            logger.info(
+                "step=%5d mass=%.5f drift=%+.5f max|u|=%.5f Cd=%.4f Cs=%.4f Cl=%.4f My=%.3f",
+                point.step,
+                point.mass,
+                point.mass_drift,
+                point.max_speed,
+                cd,
+                cs_coef,
+                cl,
+                float(my),
             )
+            _save_ship_snapshot(run_dir, step, speed, obstacle, config.nz, config.ny)
 
-            _save_ship_snapshot(run_dir, step, speed, hull, config.nz, config.ny)
-
-    # ---- save forces CSV ----
     forces_csv = run_dir / "forces.csv"
     with forces_csv.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
-        writer.writerow(["step", "cd", "cl", "Mx", "My", "Mz"])
+        writer.writerow(["step", "cd", "cs", "cl", "mx", "my", "mz"])
         for d in diagnostics:
-            writer.writerow([d["step"], d["cd"], d["cl"], d["Mx"], d["My"], d["Mz"]])
+            writer.writerow([d["step"], d["cd"], d["cs"], d["cl"], d["mx"], d["my"], d["mz"]])
 
     metadata["diagnostics"] = diagnostics
     metadata_path = run_dir / "run_metadata.json"
     metadata_path.write_text(
-        f"{json.dumps(metadata, indent=2, sort_keys=True)}\n", encoding="utf-8"
+        f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
     )
-    print(f"Saved metadata: {metadata_path}")
+    logger.info("Saved metadata: %s", metadata_path)
     return run_dir

@@ -43,7 +43,12 @@ def test_channel_boundaries_3d_returns_valid_tensor() -> None:
     uz = torch.zeros_like(rho)
     f = equilibrium3d(rho, ux, uy, uz)
 
-    out = apply_simple_channel_boundaries_3d(f, u_in=0.05, wall_mask=wall_mask, obstacle_mask=obstacle)
+    out = apply_simple_channel_boundaries_3d(
+        f,
+        u_in=0.05,
+        wall_mask=wall_mask,
+        obstacle_mask=obstacle,
+    )
     assert out.shape == f.shape
     assert torch.isfinite(out).all()
 
@@ -153,7 +158,12 @@ def test_zou_he_channel_3d_returns_valid_tensor() -> None:
 
     rho = torch.ones((nz, ny, nx), dtype=torch.float32)
     f = equilibrium3d(rho, torch.zeros_like(rho), torch.zeros_like(rho), torch.zeros_like(rho))
-    out = apply_zou_he_channel_boundaries_3d(f, u_in=0.05, wall_mask=wall_mask, obstacle_mask=obstacle)
+    out = apply_zou_he_channel_boundaries_3d(
+        f,
+        u_in=0.05,
+        wall_mask=wall_mask,
+        obstacle_mask=obstacle,
+    )
     assert out.shape == f.shape
     assert torch.isfinite(out).all()
 
@@ -174,7 +184,16 @@ def test_zou_he_channel_3d_returns_valid_tensor() -> None:
     ],
 )
 def test_sphere_config_validate_raises(overrides: dict, match: str) -> None:
-    base = dict(nx=32, ny=16, nz=16, u_in=0.05, re=50.0, radius=4.0, n_steps=10, output_interval=5)
+    base = {
+        "nx": 32,
+        "ny": 16,
+        "nz": 16,
+        "u_in": 0.05,
+        "re": 50.0,
+        "radius": 4.0,
+        "n_steps": 10,
+        "output_interval": 5,
+    }
     base.update(overrides)
     cfg = SphereFlowConfig(**base)
     with pytest.raises(ValueError, match=match):

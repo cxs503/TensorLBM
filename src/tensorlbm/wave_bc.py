@@ -1,251 +1,212 @@
+"""Airy linear-wave inlet boundary conditions for ocean engineering simulations.
+
+Implements the Airy (linear, small-amplitude) wave theory to prescribe
+time-varying velocity profiles at the inlet face of a 3-D LBM domain,
+allowing simulation of regular ocean waves interacting with ship hulls and
+offshore structures.
+
+The horizontal velocity at the inlet (*x* = 0) at depth *z* and time-step *t*
+is derived from Airy wave theory for finite water depth *H*:
+
+.. math::
+
+    u_x(z, t) = U_0 + U_w \\cos(\\omega t)
+                \\frac{\\cosh(k (z - z_{bed}))}{\\cosh(k H)}
+
+.. math::
+
+    u_z(z, t) = -U_w \\sin(\\omega t)
+                \\frac{\\sinh(k (z - z_{bed}))}{\\sinh(k H)}
+
+where :math:`\\omega = 2\\pi / T_w`, :math:`k = 2\\pi / \\lambda`,
+:math:`U_0` is the mean current, and :math:`U_w` is the horizontal velocity
+amplitude at the free surface.
+
+Exported functions
+------------------
+- :func:`airy_wave_velocity_3d`         – velocity profile tensor for one step
+- :func:`zou_he_inlet_velocity_profile_3d` – Zou/He inlet with a 2-D velocity field
+- :func:`apply_wave_inlet_3d`           – full-step wave inlet + wall BC helper
+"""
+
 from __future__ import annotations
 
 import math
 
 import torch
 
+from .boundaries3d import bounce_back_cells_3d
 from .d3q19 import OPPOSITE, equilibrium3d
 
 
 def airy_wave_velocity_3d(
-    t: float,
-    amplitude: float,
-    wavelength: float,
-    depth: float,
-    iz_still_water: int,
     nz: int,
     ny: int,
+    step: int,
+    u_mean: float,
+    wave_amp: float,
+    wave_period: float,
+    wave_k: float,
+    water_depth: float,
+    z_bed: float,
     device: torch.device,
-    g: float = 1.0 / 3.0,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Compute Airy (linear) wave horizontal and vertical velocity profiles.
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Compute Airy wave velocity components at the inlet plane for one time step.
 
-    The wave propagates in the +x direction.  Profiles are evaluated at
-    x = 0 (the inlet plane) for time *t*.
-
-    Airy theory (finite depth h):
-
-        u_x(z, t) = A · ω · cosh(k · (z_phys + h)) / sinh(k·h) · cos(−ω·t)
-        u_z(z, t) = A · ω · sinh(k · (z_phys + h)) / sinh(k·h) · sin(−ω·t)
-
-    Dispersion relation: ω² = g · k · tanh(k·h).
-
-    Velocity is set to zero for grid rows above the still-water level
-    (``iz > iz_still_water``).
+    Returns the prescribed inlet velocity field (ux, uy, uz) of shape
+    ``(nz, ny)`` that encodes the depth-dependent horizontal and vertical wave
+    kinematics per Airy linear wave theory.
 
     Args:
-        t: Current simulation time in LBM steps.
-        amplitude: Wave amplitude *A* in lattice units.
-        wavelength: Wavelength λ in lattice units.
-        depth: Water depth *h* in lattice units (distance from tank bottom to
-            still-water surface).
-        iz_still_water: z-index of the still-water surface.
-        nz: Number of grid points in the z-direction.
-        ny: Number of grid points in the y-direction.
-        device: Target torch device.
-        g: Gravitational acceleration in LBM units
-            (default c_s² = 1/3, the lattice speed of sound squared).
+        nz: Number of vertical lattice cells.
+        ny: Number of lateral lattice cells.
+        step: Current simulation time step (used as time *t* in LBM units).
+        u_mean: Mean current x-velocity (always positive, in lattice units).
+        wave_amp: Horizontal velocity amplitude at the free surface in lattice
+                  units (i.e. *U_w = A · ω* where *A* is wave height / 2).
+                  Should be small (≪ speed of sound cs ≈ 0.577).
+        wave_period: Wave period in LBM time steps.
+        wave_k: Wave number k = 2π / λ (in units of 1 / lattice spacing).
+        water_depth: Water depth *H* in lattice units.
+        z_bed: z-index of the sea bed (bottom of the water column).
+        device: Target PyTorch device.
 
     Returns:
-        Tuple ``(ux_profile, uz_profile)`` each of shape ``(nz, ny)``.
-        Values are zero for rows above ``iz_still_water``.
+        Tuple ``(ux, uy, uz)`` each of shape ``(nz, ny)``.
+        *uy* is zero (no lateral wave component at a normally-incident inlet).
     """
-    k = 2.0 * math.pi / wavelength
-    kh = k * depth
-    omega = math.sqrt(g * k * math.tanh(kh))
-    phase = -omega * t
+    omega = 2.0 * math.pi / wave_period
+    phase = omega * step  # ωt at x=0
 
-    zz = torch.arange(nz, device=device, dtype=torch.float32)
+    z_coords = torch.arange(nz, device=device, dtype=torch.float32)
+    depth_from_bed = z_coords - z_bed  # (nz,)
 
-    # Physical z measured upward from still-water level (≤0 below surface)
-    z_phys = zz - float(iz_still_water)
-    below = z_phys <= 0.0
+    kH = wave_k * water_depth
+    sinh_kH = math.sinh(kH) if kH > 1e-8 else 1e-8
+    cosh_kH = math.cosh(kH)
 
-    # z_phys + h: depth below still-water measured from tank bottom; ∈ [0, h]
-    z_depth = (z_phys + depth).clamp(min=0.0)
+    # Horizontal velocity depth profile: cosh(k*(z-z_bed)) / cosh(k*H)
+    cosh_z = torch.cosh(wave_k * depth_from_bed.clamp(min=0.0))  # (nz,)
+    ux_profile = wave_amp * math.cos(phase) * cosh_z / cosh_kH  # (nz,)
 
-    sinh_kh = math.sinh(kh)
-    if abs(sinh_kh) < 1e-15:
-        sinh_kh = 1e-15
+    # Vertical velocity depth profile: -sinh(k*(z-z_bed)) / sinh(k*H)
+    sinh_z = torch.sinh(wave_k * depth_from_bed.clamp(min=0.0))  # (nz,)
+    uz_profile = -wave_amp * math.sin(phase) * sinh_z / sinh_kH  # (nz,)
 
-    ux_z = torch.where(
-        below,
-        amplitude * omega * torch.cosh(k * z_depth) / sinh_kh * math.cos(phase),
-        torch.zeros_like(zz),
-    )
-    uz_z = torch.where(
-        below,
-        amplitude * omega * torch.sinh(k * z_depth) / sinh_kh * math.sin(phase),
-        torch.zeros_like(zz),
-    )
+    # Expand to (nz, ny)
+    ux = (ux_profile.unsqueeze(1).expand(nz, ny) + u_mean)
+    uy = torch.zeros(nz, ny, device=device, dtype=torch.float32)
+    uz = uz_profile.unsqueeze(1).expand(nz, ny)
 
-    # Broadcast to (nz, ny)
-    ux_profile = ux_z.unsqueeze(1).expand(nz, ny).contiguous()
-    uz_profile = uz_z.unsqueeze(1).expand(nz, ny).contiguous()
-    return ux_profile, uz_profile
+    return ux, uy, uz
 
 
 def zou_he_inlet_velocity_profile_3d(
     f: torch.Tensor,
-    ux_profile: torch.Tensor,
-    uy_profile: torch.Tensor,
-    uz_profile: torch.Tensor,
+    ux_in: torch.Tensor,
+    uy_in: torch.Tensor,
+    uz_in: torch.Tensor,
 ) -> torch.Tensor:
-    """Zou/He inlet velocity BC at x = 0 with a spatially varying profile.
+    """Zou/He inlet velocity BC at x=0 with a non-uniform 2-D velocity field.
 
-    Generalises :func:`~tensorlbm.zou_he_inlet_velocity_3d` to support
-    non-uniform inlet profiles (e.g. boundary-layer or wave velocity
-    profiles).  Uses the non-equilibrium bounce-back reconstruction
-    (Latt & Chopard 2008).
+    This is a generalisation of :func:`zou_he_inlet_velocity_3d` that accepts
+    spatially varying velocity tensors instead of scalar values.  It uses the
+    non-equilibrium bounce-back (NEBB) method (Latt & Chopard 2008):
+
+    .. math::
+
+        f_k = f_k^{eq}(\\rho, \\mathbf{u}_{in}) - f_{\\bar{k}}^{eq}(\\rho,
+              \\mathbf{u}_{in}) + f_{\\bar{k}}
+
+    for every incoming direction *k* (cx > 0).
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)``.
-        ux_profile: x-velocity profile of shape ``(nz, ny)``.
-        uy_profile: y-velocity profile of shape ``(nz, ny)``.
-        uz_profile: z-velocity profile of shape ``(nz, ny)``.
+        ux_in: Prescribed x-velocity field of shape ``(nz, ny)`` at the inlet.
+        uy_in: Prescribed y-velocity field of shape ``(nz, ny)`` at the inlet.
+        uz_in: Prescribed z-velocity field of shape ``(nz, ny)`` at the inlet.
 
     Returns:
-        Updated distribution tensor (same shape).
+        Updated distribution tensor of the same shape.
     """
     device = f.device
-    opp = OPPOSITE.to(device)
 
-    # ---- density from Zou/He x-momentum balance at inlet (x=0) ----
-    # Populations with cx=0: directions 0,3,4,5,6,15,16,17,18
-    # Populations with cx=-1 (known after streaming): directions 2,8,10,12,14
+    # Sum of cx=0 directions and cx<0 directions at x=0
     sum_cx0 = (
         f[0, :, :, 0] + f[3, :, :, 0] + f[4, :, :, 0]
         + f[5, :, :, 0] + f[6, :, :, 0]
-        + f[15, :, :, 0] + f[16, :, :, 0] + f[17, :, :, 0] + f[18, :, :, 0]
-    )  # (nz, ny)
-    sum_cx_neg = (
-        f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0]
-        + f[12, :, :, 0] + f[14, :, :, 0]
-    )  # (nz, ny)
-    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - ux_profile)  # (nz, ny)
+        + f[15, :, :, 0] + f[16, :, :, 0]
+        + f[17, :, :, 0] + f[18, :, :, 0]
+    )
+    sum_cx_neg = f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0] + f[12, :, :, 0] + f[14, :, :, 0]
 
-    # ---- compute equilibrium at the inlet as a (19, nz, ny, 1) column ----
-    # Unsqueeze to add a dummy x-dimension so equilibrium3d returns 4D output.
-    rho_col = rho.unsqueeze(-1)            # (nz, ny, 1)
-    ux_col = ux_profile.unsqueeze(-1)      # (nz, ny, 1)
-    uy_col = uy_profile.unsqueeze(-1)      # (nz, ny, 1)
-    uz_col = uz_profile.unsqueeze(-1)      # (nz, ny, 1)
-    feq_col = equilibrium3d(rho_col, ux_col, uy_col, uz_col, device=device)
-    # feq_col shape: (19, nz, ny, 1)
+    # Infer density from mass balance
+    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - ux_in)
 
-    # ---- non-equilibrium bounce-back for cx>0 directions ----
-    # Incoming directions (cx>0): 1,7,9,11,13
+    # Equilibrium at the inlet
+    feq = equilibrium3d(rho, ux_in, uy_in, uz_in, device=device)  # (19, nz, ny)
+
     f_new = f.clone()
-    for k in (1, 7, 9, 11, 13):
-        k_opp = int(opp[k].item())
-        f_new[k, :, :, 0] = (
-            feq_col[k, :, :, 0] - feq_col[k_opp, :, :, 0] + f[k_opp, :, :, 0]
-        )
+    opp = OPPOSITE.to(device)
+    for k in (1, 7, 9, 11, 13):  # directions with cx > 0
+        opp_k = int(opp[k].item())
+        f_new[k, :, :, 0] = feq[k] - feq[opp_k] + f[opp_k, :, :, 0]
     return f_new
-
-
-def apply_sponge_layer_3d(
-    f: torch.Tensor,
-    rho_target: torch.Tensor,
-    ux_target: torch.Tensor,
-    uy_target: torch.Tensor,
-    uz_target: torch.Tensor,
-    ix_start: int,
-    sigma_max: float = 0.3,
-    power: int = 2,
-) -> torch.Tensor:
-    """Apply an outlet sponge (damping) layer to suppress wave reflection.
-
-    Within the sponge region x ∈ [``ix_start``, nx−1] the distributions are
-    relaxed towards a target equilibrium:
-
-        f ← f − σ(x) · (f − f_eq(ρ_t, **u**_t))
-
-    The damping coefficient grows polynomially from zero:
-
-        σ(x) = σ_max · ((x − ix_start) / (nx − 1 − ix_start))^power
-
-    Cells at x < ``ix_start`` are not modified.
-
-    Args:
-        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
-        rho_target: Target density of shape ``(nz, ny, nx)`` (broadcastable).
-        ux_target: Target x-velocity of shape ``(nz, ny, nx)`` (broadcastable).
-        uy_target: Target y-velocity of shape ``(nz, ny, nx)`` (broadcastable).
-        uz_target: Target z-velocity of shape ``(nz, ny, nx)`` (broadcastable).
-        ix_start: First x-index of the sponge region.
-        sigma_max: Maximum damping coefficient at the outlet (default 0.3).
-        power: Polynomial exponent for σ growth (default 2).
-
-    Returns:
-        Updated distribution tensor (same shape).
-    """
-    device = f.device
-    nx = f.shape[3]
-    sponge_len = float(nx - 1 - ix_start)
-    if sponge_len <= 0.0:
-        return f
-
-    feq_target = equilibrium3d(rho_target, ux_target, uy_target, uz_target, device=device)
-
-    x_idx = torch.arange(nx, device=device, dtype=torch.float32)
-    sigma = torch.where(
-        x_idx >= float(ix_start),
-        sigma_max * ((x_idx - float(ix_start)) / sponge_len) ** power,
-        torch.zeros_like(x_idx),
-    ).view(1, 1, 1, nx)
-
-    return f - sigma * (f - feq_target)
 
 
 def apply_wave_inlet_3d(
     f: torch.Tensor,
-    t: float,
-    amplitude: float,
-    wavelength: float,
-    depth: float,
-    iz_still_water: int,
-    mean_ux: float = 0.0,
+    step: int,
+    wall_mask: torch.Tensor,
+    obstacle_mask: torch.Tensor,
+    u_mean: float,
+    wave_amp: float,
+    wave_period: float,
+    wave_k: float,
+    water_depth: float,
+    z_bed: float,
+    rho_out: float = 1.0,
 ) -> torch.Tensor:
-    """Apply an Airy wave + mean current velocity BC at the inlet (x = 0).
+    """Apply Airy-wave inlet + pressure outlet + bounce-back in one call.
 
-    Combines Airy wave orbital velocities with an optional mean current and
-    applies the result as a spatially varying Zou/He inlet profile BC
-    (:func:`zou_he_inlet_velocity_profile_3d`).
+    Combines :func:`airy_wave_velocity_3d` and
+    :func:`zou_he_inlet_velocity_profile_3d` to prescribe a regular wave
+    velocity profile at the inlet, applies a pressure (Zou/He) outlet at
+    the right face, and applies bounce-back to walls and the obstacle.
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)``.
-        t: Current simulation time in LBM steps.
-        amplitude: Wave amplitude in lattice units.
-        wavelength: Wavelength in lattice units.
-        depth: Water depth in lattice units.
-        iz_still_water: z-index of the still-water surface.
-        mean_ux: Mean inflow x-velocity (e.g. ship advance speed) in LBM units.
+        step: Current simulation time step.
+        wall_mask: Boolean wall mask of shape ``(nz, ny, nx)``.
+        obstacle_mask: Boolean obstacle mask of shape ``(nz, ny, nx)``.
+        u_mean: Mean current x-velocity.
+        wave_amp: Horizontal velocity amplitude at the free surface.
+        wave_period: Wave period in LBM time steps.
+        wave_k: Wave number in units of 1/lattice spacing.
+        water_depth: Water depth in lattice units.
+        z_bed: z-index of the sea bed.
+        rho_out: Prescribed density at the outlet (default 1.0).
 
     Returns:
-        Updated distribution tensor (same shape).
+        Updated distribution tensor of the same shape.
     """
-    device = f.device
-    nz, ny = f.shape[1], f.shape[2]
+    from .boundaries3d import zou_he_outlet_pressure_3d  # local import avoids circular
 
-    ux_wave, uz_wave = airy_wave_velocity_3d(
-        t=t,
-        amplitude=amplitude,
-        wavelength=wavelength,
-        depth=depth,
-        iz_still_water=iz_still_water,
-        nz=nz,
-        ny=ny,
-        device=device,
+    nz, ny = f.shape[1], f.shape[2]
+    device = f.device
+
+    ux_in, uy_in, uz_in = airy_wave_velocity_3d(
+        nz, ny, step, u_mean, wave_amp, wave_period, wave_k, water_depth, z_bed, device
     )
-    ux_profile = ux_wave + mean_ux
-    uy_profile = torch.zeros(nz, ny, device=device, dtype=f.dtype)
-    return zou_he_inlet_velocity_profile_3d(f, ux_profile, uy_profile, uz_wave)
+    f = zou_he_inlet_velocity_profile_3d(f, ux_in, uy_in, uz_in)
+    f = zou_he_outlet_pressure_3d(f, rho_out=rho_out)
+    f = bounce_back_cells_3d(f, wall_mask)
+    f = bounce_back_cells_3d(f, obstacle_mask)
+    return f
 
 
 __all__ = [
     "airy_wave_velocity_3d",
     "zou_he_inlet_velocity_profile_3d",
-    "apply_sponge_layer_3d",
     "apply_wave_inlet_3d",
 ]
