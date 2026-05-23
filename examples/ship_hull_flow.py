@@ -85,13 +85,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Simulation control
-    parser.add_argument("--n-steps", dest="n_steps", type=int, default=2000, help="Simulation steps")
-    parser.add_argument("--output-interval", dest="output_interval", type=int, default=200,
-                        help="Diagnostic and image cadence")
-    parser.add_argument("--output-root", dest="output_root", default="outputs",
-                        help="Output root directory")
-    parser.add_argument("--run-name", dest="run_name", default=None,
-                        help="Override deterministic run folder name")
+    parser.add_argument(
+        "--n-steps", dest="n_steps", type=int, default=2000, help="Simulation steps"
+    )
+    parser.add_argument(
+        "--output-interval",
+        dest="output_interval",
+        type=int,
+        default=200,
+        help="Diagnostic and image cadence",
+    )
+    parser.add_argument(
+        "--output-root", dest="output_root", default="outputs", help="Output root directory"
+    )
+    parser.add_argument(
+        "--run-name",
+        dest="run_name",
+        default=None,
+        help="Override deterministic run folder name",
+    )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu",
                         help="Execution device")

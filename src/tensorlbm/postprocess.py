@@ -1,108 +1,147 @@
-"""Post-processing utilities for LBM flow fields.
+"""Post-processing utilities for TensorLBM simulation data.
 
 Provides:
-- :func:`compute_vorticity_3d`        – 3D vorticity vector field (ωx, ωy, ωz)
-- :func:`extract_wake_profile`        – streamwise velocity profile behind obstacle
-- :func:`compute_recirculation_length` – reattachment length from ux sign change
-- :func:`compute_q_criterion`          – Q-criterion vortex identification (3D)
-- :func:`compute_pressure`             – pressure from EOS p = cs² · ρ
+- :func:`extract_velocity_profile`    – velocity slice at a fixed x or y position.
+- :func:`extract_wake_profile`        – cross-stream velocity profile at a given x-index.
+- :func:`compute_recirculation_length` – x-extent of the reverse-flow region.
+- :func:`compute_pressure_coefficient` – pressure coefficient Cp field.
+- :func:`compute_q_criterion`         – Q-criterion for 3-D vortex identification.
+- :func:`compute_vorticity_3d`        – vorticity vector field for 3-D flows.
 """
-
 from __future__ import annotations
 
 import torch
 
 
-def compute_vorticity_3d(
+def extract_velocity_profile(
     ux: torch.Tensor,
     uy: torch.Tensor,
-    uz: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Compute the 3D vorticity vector field using central differences.
-
-    ``ω = ∇ × u = (∂uz/∂y − ∂uy/∂z, ∂ux/∂z − ∂uz/∂x, ∂uy/∂x − ∂ux/∂y)``
-
-    Only interior cells have meaningful values; boundary cells are set to 0.
+    axis: str = "x",
+    index: int = 0,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Extract a 1-D velocity profile by slicing the 2-D velocity fields.
 
     Args:
-        ux, uy, uz: Velocity components of shape ``(nz, ny, nx)``.
+        ux: x-velocity field, shape ``(ny, nx)``.
+        uy: y-velocity field, shape ``(ny, nx)``.
+        axis: ``"x"`` to slice at a constant *x* (returns a profile along y),
+              ``"y"`` to slice at a constant *y* (returns a profile along x).
+        index: Grid index along the chosen axis.
 
     Returns:
-        Tuple ``(wx, wy, wz)`` each of shape ``(nz, ny, nx)``.
+        Tuple ``(ux_profile, uy_profile)`` — 1-D tensors of length ``ny``
+        (when *axis* = ``"x"``) or ``nx`` (when *axis* = ``"y"``).
     """
-    wx = torch.zeros_like(ux)
-    wy = torch.zeros_like(uy)
-    wz = torch.zeros_like(uz)
-
-    # wx = ∂uz/∂y − ∂uy/∂z
-    wx[:, 1:-1, :] += 0.5 * (uz[:, 2:, :] - uz[:, :-2, :])   # ∂uz/∂y
-    wx[1:-1, :, :] -= 0.5 * (uy[2:, :, :] - uy[:-2, :, :])   # ∂uy/∂z
-
-    # wy = ∂ux/∂z − ∂uz/∂x
-    wy[1:-1, :, :] += 0.5 * (ux[2:, :, :] - ux[:-2, :, :])   # ∂ux/∂z
-    wy[:, :, 1:-1] -= 0.5 * (uz[:, :, 2:] - uz[:, :, :-2])   # ∂uz/∂x
-
-    # wz = ∂uy/∂x − ∂ux/∂y
-    wz[:, :, 1:-1] += 0.5 * (uy[:, :, 2:] - uy[:, :, :-2])   # ∂uy/∂x
-    wz[:, 1:-1, :] -= 0.5 * (ux[:, 2:, :] - ux[:, :-2, :])   # ∂ux/∂y
-
-    return wx, wy, wz
+    if axis == "x":
+        return ux[:, index], uy[:, index]
+    if axis == "y":
+        return ux[index, :], uy[index, :]
+    raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
 
 
 def extract_wake_profile(
     ux: torch.Tensor,
-    x_probe: int,
+    x_wake: int,
 ) -> torch.Tensor:
-    """Extract the streamwise velocity profile at a given x-index.
+    """Extract the streamwise velocity profile at a given x-index (2-D or 3-D).
 
-    For a 2D field ``(ny, nx)`` returns a 1D profile; for a 3D field
-    ``(nz, ny, nx)`` returns the mid-z slice profile ``(ny,)``.
+    For a 2-D field ``(ny, nx)`` returns a 1-D profile of length ``ny``.
+    For a 3-D field ``(nz, ny, nx)`` returns the mid-z slice as a 1-D
+    profile of length ``ny``.
 
     Args:
-        ux: Streamwise velocity field of shape ``(ny, nx)`` or ``(nz, ny, nx)``.
-        x_probe: x-index of the probe plane.
+        ux: Streamwise (x) velocity field, shape ``(ny, nx)`` or
+            ``(nz, ny, nx)``.
+        x_wake: x-index of the wake cross-section.
 
     Returns:
-        1D tensor of shape ``(ny,)``.
+        1-D streamwise velocity profile of length ``ny``.
     """
     if ux.ndim == 2:
-        return ux[:, x_probe]
-    # 3D: take mid-z slice
-    mid_z = ux.shape[0] // 2
-    return ux[mid_z, :, x_probe]
+        return ux[:, x_wake]
+    if ux.ndim == 3:
+        mid_z = ux.shape[0] // 2
+        return ux[mid_z, :, x_wake]
+    raise ValueError(f"ux must be 2-D or 3-D, got {ux.ndim}-D")
 
 
 def compute_recirculation_length(
     ux: torch.Tensor,
-    x_start: int,
-    y_mid: int | None = None,
+    obstacle_mask: torch.Tensor,
 ) -> float:
-    """Estimate the recirculation (reattachment) length from ux sign change.
+    """Compute the x-extent of the reverse-flow (recirculation) region.
 
-    Scans the row at *y_mid* (default: grid midpoint) from *x_start* and
-    returns the x-distance to the first cell where ux becomes positive again.
-    Returns ``0.0`` if no recirculation region is found.
+    Identifies the longest contiguous run of grid columns downstream of the
+    obstacle in which the centreline streamwise velocity ``ux`` is negative.
+
+    For 2-D inputs the centreline is the mid-y row; for 3-D inputs it is the
+    mid-z, mid-y line.
 
     Args:
-        ux: Streamwise velocity of shape ``(ny, nx)`` or ``(nz, ny, nx)``.
-        x_start: x-index to begin scanning (e.g. just behind the obstacle).
-        y_mid: y-index of the scan row (default: ny//2).
+        ux: Streamwise velocity field, shape ``(ny, nx)`` or ``(nz, ny, nx)``.
+        obstacle_mask: Boolean solid-cell mask, same shape as *ux*.
 
     Returns:
-        Number of lattice cells from *x_start* to reattachment.
+        Length of the recirculation zone in lattice units (0.0 if none found).
     """
-    if ux.ndim == 3:
-        ux = ux[ux.shape[0] // 2]  # mid-z slice → (ny, nx)
-    ny, nx = ux.shape
-    if y_mid is None:
-        y_mid = ny // 2
-    row = ux[y_mid, x_start:]  # (nx - x_start,)
-    neg_mask = (row < 0.0)
-    if not neg_mask.any():
-        return 0.0
-    # Find last negative cell
-    neg_indices = neg_mask.nonzero(as_tuple=False).squeeze(1)
-    return float(neg_indices[-1].item()) + 1.0
+    if ux.ndim == 2:
+        ny, nx = ux.shape
+        mid_y = ny // 2
+        centreline = ux[mid_y, :]         # (nx,)
+        obs_line = obstacle_mask[mid_y, :]
+    elif ux.ndim == 3:
+        nz, ny, nx = ux.shape
+        mid_z, mid_y = nz // 2, ny // 2
+        centreline = ux[mid_z, mid_y, :]  # (nx,)
+        obs_line = obstacle_mask[mid_z, mid_y, :]
+    else:
+        raise ValueError(f"ux must be 2-D or 3-D, got {ux.ndim}-D")
+
+    # Find the last solid column (obstacle trailing edge)
+    solid_cols = obs_line.nonzero(as_tuple=True)[0]
+    start_col = 0 if solid_cols.numel() == 0 else int(solid_cols.max().item()) + 1
+
+    # Count consecutive columns with ux < 0 starting from the trailing edge
+    recirculation_len = 0.0
+    for xi in range(start_col, nx):
+        if float(centreline[xi].item()) < 0.0:
+            recirculation_len += 1.0
+        else:
+            break
+    return recirculation_len
+
+
+def compute_pressure_coefficient(
+    rho: torch.Tensor,
+    u_in: float,
+    rho_ref: float = 1.0,
+    cs2: float = 1.0 / 3.0,
+) -> torch.Tensor:
+    """Compute the pressure coefficient field Cp.
+
+    In LBM the equation of state is :math:`p = c_s^2 \\rho`, so the pressure
+    fluctuation relative to the reference state is:
+
+    .. math::
+
+        C_p = \\frac{p - p_{ref}}{\\tfrac{1}{2} \\rho_{ref} U^2}
+            = \\frac{c_s^2 (\\rho - \\rho_{ref})}{\\tfrac{1}{2} \\rho_{ref} U^2}
+
+    Args:
+        rho: Density field of shape ``(ny, nx)`` or ``(nz, ny, nx)``.
+        u_in: Reference inlet velocity :math:`U`.
+        rho_ref: Reference density (default 1.0).
+        cs2: Lattice speed of sound squared (default 1/3).
+
+    Returns:
+        Cp field of the same shape as *rho*.
+    """
+    dyn_pressure = 0.5 * rho_ref * u_in**2
+    if dyn_pressure == 0.0:
+        return torch.zeros_like(rho)
+    p = cs2 * rho
+    p_ref = cs2 * rho_ref
+    return (p - p_ref) / dyn_pressure
 
 
 def compute_q_criterion(
@@ -110,79 +149,132 @@ def compute_q_criterion(
     uy: torch.Tensor,
     uz: torch.Tensor,
 ) -> torch.Tensor:
-    """Q-criterion vortex identification scalar field.
+    """Compute the Q-criterion for 3-D vortex identification.
 
-    ``Q = 0.5 · (|Ω|² − |S|²)``
-    where Ω is the antisymmetric part (rotation rate tensor) and S is the
-    symmetric part (strain-rate tensor) of the velocity gradient.
-    Positive Q indicates vortex regions.
+    The Q-criterion is defined as:
 
-    Interior cells only; boundary cells are set to 0.
+    .. math::
 
-    Args:
-        ux, uy, uz: Velocity components of shape ``(nz, ny, nx)``.
+        Q = \\tfrac{1}{2}\\left(\\|\\boldsymbol{\\Omega}\\|_F^2
+            - \\|\\mathbf{S}\\|_F^2\\right)
 
-    Returns:
-        Tensor of shape ``(nz, ny, nx)``.
-    """
-    nz, ny, nx = ux.shape
-    Q = torch.zeros_like(ux)
+    where :math:`\\boldsymbol{\\Omega}` is the antisymmetric (rotation) part
+    and :math:`\\mathbf{S}` is the symmetric (strain-rate) part of the
+    velocity gradient tensor. Vortex cores are regions where *Q* > 0.
 
-    # Velocity gradient components (central differences on interior)
-    def _ddx(v: torch.Tensor) -> torch.Tensor:
-        g = torch.zeros_like(v)
-        g[:, :, 1:-1] = 0.5 * (v[:, :, 2:] - v[:, :, :-2])
-        return g
-
-    def _ddy(v: torch.Tensor) -> torch.Tensor:
-        g = torch.zeros_like(v)
-        g[:, 1:-1, :] = 0.5 * (v[:, 2:, :] - v[:, :-2, :])
-        return g
-
-    def _ddz(v: torch.Tensor) -> torch.Tensor:
-        g = torch.zeros_like(v)
-        g[1:-1, :, :] = 0.5 * (v[2:, :, :] - v[:-2, :, :])
-        return g
-
-    dudx, dudy, dudz = _ddx(ux), _ddy(ux), _ddz(ux)
-    dvdx, dvdy, dvdz = _ddx(uy), _ddy(uy), _ddz(uy)
-    dwdx, dwdy, dwdz = _ddx(uz), _ddy(uz), _ddz(uz)
-
-    # Strain-rate tensor S (symmetric part)
-    Sxx, Syy, Szz = dudx, dvdy, dwdz
-    Sxy = 0.5 * (dudy + dvdx)
-    Sxz = 0.5 * (dudz + dwdx)
-    Syz = 0.5 * (dvdz + dwdy)
-
-    # Rotation-rate tensor Ω (antisymmetric part)
-    Wxy = 0.5 * (dudy - dvdx)
-    Wxz = 0.5 * (dudz - dwdx)
-    Wyz = 0.5 * (dvdz - dwdy)
-
-    S2 = Sxx ** 2 + Syy ** 2 + Szz ** 2 + 2.0 * (Sxy ** 2 + Sxz ** 2 + Syz ** 2)
-    W2 = 2.0 * (Wxy ** 2 + Wxz ** 2 + Wyz ** 2)
-
-    Q = 0.5 * (W2 - S2)
-    return Q
-
-
-def compute_pressure(rho: torch.Tensor, cs2: float = 1.0 / 3.0) -> torch.Tensor:
-    """Pressure from the LBM equation of state: ``p = cs² · ρ``.
+    Uses second-order central differences for interior cells; boundary rows
+    use forward/backward differences.
 
     Args:
-        rho: Density field of any shape.
-        cs2: Speed-of-sound squared (default 1/3 for standard LBM).
+        ux: x-velocity, shape ``(nz, ny, nx)``.
+        uy: y-velocity, shape ``(nz, ny, nx)``.
+        uz: z-velocity, shape ``(nz, ny, nx)``.
 
     Returns:
-        Pressure tensor of the same shape as *rho*.
+        Q-criterion field of shape ``(nz, ny, nx)``.
     """
-    return cs2 * rho
+
+    def _grad(field: torch.Tensor, dim: int) -> torch.Tensor:
+        """Central-difference gradient along *dim* with edge padding."""
+        g = torch.zeros_like(field)
+        if dim == 0:
+            g[1:-1] = 0.5 * (field[2:] - field[:-2])
+            g[0] = field[1] - field[0]
+            g[-1] = field[-1] - field[-2]
+        elif dim == 1:
+            g[:, 1:-1] = 0.5 * (field[:, 2:] - field[:, :-2])
+            g[:, 0] = field[:, 1] - field[:, 0]
+            g[:, -1] = field[:, -1] - field[:, -2]
+        else:
+            g[:, :, 1:-1] = 0.5 * (field[:, :, 2:] - field[:, :, :-2])
+            g[:, :, 0] = field[:, :, 1] - field[:, :, 0]
+            g[:, :, -1] = field[:, :, -1] - field[:, :, -2]
+        return g
+
+    dudx, dudy, dudz = _grad(ux, 2), _grad(ux, 1), _grad(ux, 0)
+    dvdx, dvdy, dvdz = _grad(uy, 2), _grad(uy, 1), _grad(uy, 0)
+    dwdx, dwdy, dwdz = _grad(uz, 2), _grad(uz, 1), _grad(uz, 0)
+
+    s_xx = dudx
+    s_yy = dvdy
+    s_zz = dwdz
+    s_xy = 0.5 * (dudy + dvdx)
+    s_xz = 0.5 * (dudz + dwdx)
+    s_yz = 0.5 * (dvdz + dwdy)
+    s_sq = s_xx**2 + s_yy**2 + s_zz**2 + 2.0 * (s_xy**2 + s_xz**2 + s_yz**2)
+
+    w_xy = 0.5 * (dudy - dvdx)
+    w_xz = 0.5 * (dudz - dwdx)
+    w_yz = 0.5 * (dvdz - dwdy)
+    omega_sq = 2.0 * (w_xy**2 + w_xz**2 + w_yz**2)
+
+    return 0.5 * (omega_sq - s_sq)
+
+
+def compute_vorticity_3d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Compute the vorticity vector field for a 3-D flow.
+
+    Returns the three vorticity components:
+
+    .. math::
+
+        \\omega_x = \\frac{\\partial u_z}{\\partial y} - \\frac{\\partial u_y}{\\partial z}
+
+        \\omega_y = \\frac{\\partial u_x}{\\partial z} - \\frac{\\partial u_z}{\\partial x}
+
+        \\omega_z = \\frac{\\partial u_y}{\\partial x} - \\frac{\\partial u_x}{\\partial y}
+
+    Uses second-order central differences for interior cells; boundary rows
+    use first-order forward/backward differences.
+
+    Args:
+        ux: x-velocity, shape ``(nz, ny, nx)``.
+        uy: y-velocity, shape ``(nz, ny, nx)``.
+        uz: z-velocity, shape ``(nz, ny, nx)``.
+
+    Returns:
+        Tuple ``(omega_x, omega_y, omega_z)`` each of shape ``(nz, ny, nx)``.
+    """
+
+    def _grad(field: torch.Tensor, dim: int) -> torch.Tensor:
+        g = torch.zeros_like(field)
+        if dim == 0:  # d/dz
+            g[1:-1] = 0.5 * (field[2:] - field[:-2])
+            g[0] = field[1] - field[0]
+            g[-1] = field[-1] - field[-2]
+        elif dim == 1:  # d/dy
+            g[:, 1:-1] = 0.5 * (field[:, 2:] - field[:, :-2])
+            g[:, 0] = field[:, 1] - field[:, 0]
+            g[:, -1] = field[:, -1] - field[:, -2]
+        else:  # d/dx
+            g[:, :, 1:-1] = 0.5 * (field[:, :, 2:] - field[:, :, :-2])
+            g[:, :, 0] = field[:, :, 1] - field[:, :, 0]
+            g[:, :, -1] = field[:, :, -1] - field[:, :, -2]
+        return g
+
+    duz_dy = _grad(uz, 1)
+    duy_dz = _grad(uy, 0)
+    dux_dz = _grad(ux, 0)
+    duz_dx = _grad(uz, 2)
+    duy_dx = _grad(uy, 2)
+    dux_dy = _grad(ux, 1)
+
+    omega_x = duz_dy - duy_dz
+    omega_y = dux_dz - duz_dx
+    omega_z = duy_dx - dux_dy
+
+    return omega_x, omega_y, omega_z
 
 
 __all__ = [
-    "compute_vorticity_3d",
+    "extract_velocity_profile",
     "extract_wake_profile",
     "compute_recirculation_length",
+    "compute_pressure_coefficient",
     "compute_q_criterion",
-    "compute_pressure",
+    "compute_vorticity_3d",
 ]
