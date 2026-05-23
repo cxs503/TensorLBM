@@ -32,7 +32,6 @@ from .d3q19 import C as C3D
 from .d3q19 import equilibrium3d, macroscopic3d
 from .solver3d import _get_d3q19_mrt_matrices
 
-
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------

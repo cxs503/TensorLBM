@@ -2,10 +2,17 @@ from __future__ import annotations
 
 import torch
 
-from .d2q9 import C, OPPOSITE, equilibrium, macroscopic
+from .d2q9 import OPPOSITE, C, equilibrium, macroscopic
 
 
-def cylinder_mask(nx: int, ny: int, cx: float, cy: float, radius: float, device: torch.device) -> torch.Tensor:
+def cylinder_mask(
+    nx: int,
+    ny: int,
+    cx: float,
+    cy: float,
+    radius: float,
+    device: torch.device,
+) -> torch.Tensor:
     """Boolean mask for circular obstacle in a 2D grid."""
     yy, xx = torch.meshgrid(
         torch.arange(ny, device=device, dtype=torch.float32),
@@ -15,7 +22,12 @@ def cylinder_mask(nx: int, ny: int, cx: float, cy: float, radius: float, device:
     return (xx - cx) ** 2 + (yy - cy) ** 2 <= radius**2
 
 
-def make_channel_wall_mask(ny: int, nx: int, obstacle_mask: torch.Tensor, device: torch.device) -> torch.Tensor:
+def make_channel_wall_mask(
+    ny: int,
+    nx: int,
+    obstacle_mask: torch.Tensor,
+    device: torch.device,
+) -> torch.Tensor:
     """Top/bottom wall mask excluding obstacle cells."""
     wall_mask = torch.zeros((ny, nx), dtype=torch.bool, device=device)
     wall_mask[0, :] = True
@@ -89,7 +101,10 @@ def zou_he_outlet_pressure(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tenso
     return f_new
 
 
-def compute_obstacle_forces(f: torch.Tensor, obstacle_mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+def compute_obstacle_forces(
+    f: torch.Tensor,
+    obstacle_mask: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Momentum-exchange drag and lift forces on a stationary obstacle.
 
     This implements the Ladd momentum-exchange method (1994).  The function
@@ -129,7 +144,11 @@ def apply_simple_channel_boundaries(
     wall_mask: torch.Tensor,
     obstacle_mask: torch.Tensor,
 ) -> torch.Tensor:
-    """Minimal boundary treatment: equilibrium inlet, zero-gradient outlet, bounce-back walls/obstacle."""
+    """Minimal boundary treatment.
+
+    Applies equilibrium inlet, zero-gradient outlet, and bounce-back on walls
+    and obstacle cells.
+    """
     rho, ux, uy = macroscopic(f)
 
     ux[:, 0] = u_in
