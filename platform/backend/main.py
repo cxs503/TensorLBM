@@ -15,7 +15,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from . import job_manager  # noqa: E402
-from .routers import benchmarks, jobs, postprocess, preprocess, solver  # noqa: E402
+from .routers import benchmarks, cad, jobs, postprocess, preprocess, solver  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # App
@@ -43,6 +43,7 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
+app.include_router(cad.router, prefix="/api/cad", tags=["CAD"])
 app.include_router(preprocess.router, prefix="/api/preprocess", tags=["Pre-processing"])
 app.include_router(solver.router, prefix="/api/solve", tags=["Solver"])
 app.include_router(postprocess.router, prefix="/api/postprocess", tags=["Post-processing"])

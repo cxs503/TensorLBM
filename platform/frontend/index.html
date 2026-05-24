@@ -173,6 +173,7 @@
   <span class="brand me-4"><i class="bi bi-water"></i> TensorLBM Platform</span>
   <nav class="d-flex gap-1">
     <a href="#" class="active" onclick="showTab('dashboard',this)"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="#" onclick="showTab('cad',this)"><i class="bi bi-rulers"></i> CAD</a>
     <a href="#" onclick="showTab('preprocess',this)"><i class="bi bi-grid-3x3"></i> Pre-processing</a>
     <a href="#" onclick="showTab('solve',this)"><i class="bi bi-play-circle"></i> Solve</a>
     <a href="#" onclick="showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> Post-process</a>
@@ -233,6 +234,166 @@
         </div>
       </div>
     </div>
+
+    <!-- ================================================================ -->
+    <!-- CAD MODELLING -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-cad">
+      <h4 class="mb-3"><i class="bi bi-rulers"></i> Ship Hull CAD Modelling</h4>
+
+      <div class="row g-3">
+
+        <!-- Hull type & parameters -->
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-box"></i> Hull Parameters</div>
+            <div class="card-body config-form">
+              <label>Hull Type</label>
+              <select class="form-select form-select-sm mb-3" id="cad-hull-type" onchange="onCADHullTypeChange()">
+                <option value="wigley">Wigley Parabolic (Cb≈0.444)</option>
+                <option value="series60" selected>Series 60 (Cb=0.60)</option>
+                <option value="kcs">KCS Approximation (Cb≈0.651)</option>
+              </select>
+              <div id="cad-hull-desc" class="form-text mb-3 text-info small"></div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label>Length L (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="cad-length" value="100" min="10" />
+                </div>
+                <div class="col-6">
+                  <label>Beam B (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="cad-beam" value="16" min="2" />
+                </div>
+                <div class="col-6">
+                  <label>Draft T (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="cad-draft" value="8" min="1" />
+                </div>
+                <div class="col-6">
+                  <label>Body-plan stations</label>
+                  <input type="number" class="form-control form-control-sm" id="cad-stations" value="11" min="3" max="41" />
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary btn-sm flex-fill" onclick="cadGeneratePreview()">
+                  <i class="bi bi-eye"></i> Preview
+                </button>
+                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="cadDownloadSTL()">
+                  <i class="bi bi-download"></i> Export STL
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hull Form Coefficients -->
+          <div class="card mt-3">
+            <div class="card-header"><i class="bi bi-table"></i> Hull Form Coefficients</div>
+            <div class="card-body small" id="cad-stats">
+              <p class="text-muted">Click <em>Preview</em> to compute coefficients.</p>
+            </div>
+          </div>
+
+          <!-- Physical → LBM parameters -->
+          <div class="card mt-3">
+            <div class="card-header"><i class="bi bi-calculator"></i> Ship → LBM Parameters</div>
+            <div class="card-body config-form">
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label>Ship length (m)</label>
+                  <input type="number" class="form-control form-control-sm" id="cad-phys-L" value="100" min="1" />
+                </div>
+                <div class="col-6">
+                  <label>Speed (m/s)</label>
+                  <input type="number" class="form-control form-control-sm" id="cad-phys-U" value="5.0" step="0.1" min="0.01" />
+                </div>
+                <div class="col-6">
+                  <label>ν (m²/s)</label>
+                  <input type="number" class="form-control form-control-sm" id="cad-phys-nu" value="1.139e-6" step="1e-7" />
+                </div>
+                <div class="col-6">
+                  <label>Froude target (0=off)</label>
+                  <input type="number" class="form-control form-control-sm" id="cad-froude" value="0" step="0.01" min="0" />
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-primary w-100" onclick="cadComputeLBM()">
+                <i class="bi bi-calculator"></i> Compute
+              </button>
+              <div id="cad-lbm-result" class="mt-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview area -->
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header d-flex align-items-center">
+              <i class="bi bi-image me-2"></i> Hull Preview
+              <span class="ms-auto text-muted small" id="cad-preview-caption"></span>
+            </div>
+            <div class="card-body text-center" id="cad-preview-area">
+              <p class="text-muted py-5">Select hull type and parameters, then click <strong>Preview</strong>.</p>
+            </div>
+          </div>
+
+          <!-- 3D Voxel Mask -->
+          <div class="card mt-3">
+            <div class="card-header"><i class="bi bi-box-seam"></i> 3-D Voxel Mask</div>
+            <div class="card-body config-form">
+              <p class="small text-muted mb-2">Generate the 3-D LBM obstacle mask for the CAD hull.</p>
+              <div class="row g-2 mb-2">
+                <div class="col-4"><label>nx</label><input type="number" class="form-control form-control-sm" id="cad-nx" value="160" min="20" /></div>
+                <div class="col-4"><label>ny</label><input type="number" class="form-control form-control-sm" id="cad-ny" value="60" min="10" /></div>
+                <div class="col-4"><label>nz</label><input type="number" class="form-control form-control-sm" id="cad-nz" value="40" min="10" /></div>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="cadGenerateMask()">
+                  <i class="bi bi-grid-3x3-gap"></i> Generate Mask
+                </button>
+              </div>
+              <div id="cad-mask-result" class="mt-2"></div>
+            </div>
+          </div>
+
+          <!-- Launch Solver -->
+          <div class="card mt-3 border-primary">
+            <div class="card-header bg-primary text-white">
+              <i class="bi bi-play-circle me-2"></i> Launch LBM Solver (CAD → Fluid → Post-process)
+            </div>
+            <div class="card-body config-form">
+              <p class="small text-muted mb-2">
+                Directly submit a 3-D ship-hull LBM simulation from the current CAD hull.
+                The hull mask is passed to the solver; results appear in <strong>Post-process</strong>.
+              </p>
+              <div class="row g-2 mb-2">
+                <div class="col-4"><label>nx</label><input type="number" class="form-control form-control-sm" id="cad-sol-nx" value="160" min="20" /></div>
+                <div class="col-4"><label>ny</label><input type="number" class="form-control form-control-sm" id="cad-sol-ny" value="60" min="10" /></div>
+                <div class="col-4"><label>nz</label><input type="number" class="form-control form-control-sm" id="cad-sol-nz" value="40" min="10" /></div>
+                <div class="col-4"><label>Hull length (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-length" value="80" min="10" /></div>
+                <div class="col-4"><label>Hull beam (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-beam" value="8" min="1" /></div>
+                <div class="col-4"><label>Hull draft (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-draft" value="12" min="1" /></div>
+                <div class="col-4"><label>Inlet velocity</label><input type="number" class="form-control form-control-sm" id="cad-sol-uin" value="0.05" step="0.01" min="0.001" /></div>
+                <div class="col-4"><label>Reynolds number</label><input type="number" class="form-control form-control-sm" id="cad-sol-re" value="200" min="1" /></div>
+                <div class="col-4"><label>Smagorinsky Cs</label><input type="number" class="form-control form-control-sm" id="cad-sol-cs" value="0.1" step="0.01" min="0" /></div>
+                <div class="col-4"><label>Time steps</label><input type="number" class="form-control form-control-sm" id="cad-sol-steps" value="2000" min="1" /></div>
+                <div class="col-4"><label>Output interval</label><input type="number" class="form-control form-control-sm" id="cad-sol-interval" value="200" min="1" /></div>
+                <div class="col-4">
+                  <label>Device</label>
+                  <select class="form-select form-select-sm" id="cad-sol-device">
+                    <option value="cpu">cpu</option>
+                  </select>
+                </div>
+              </div>
+              <button class="btn btn-primary" id="cad-launch-btn" onclick="cadLaunchSolver()">
+                <i class="bi bi-play-fill"></i> Submit Solver Job
+              </button>
+              <div id="cad-launch-result" class="mt-2"></div>
+            </div>
+          </div>
+
+        </div><!-- /col-lg-8 -->
+      </div><!-- /row -->
+    </div><!-- /panel-cad -->
 
     <!-- ================================================================ -->
     <!-- PRE-PROCESSING -->
@@ -740,7 +901,7 @@ function selectJob(id) {
   const sel = document.getElementById('pp-job-select');
   if (sel) sel.value = id;
   refreshPP();
-  showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[3]);
+  showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[4]);
 }
 
 async function clearAllJobs() {
@@ -765,6 +926,174 @@ function showTab(name, el) {
   if (el) el.classList.add('active');
   return false;
 }
+
+// ============================================================
+// CAD Modelling
+// ============================================================
+
+const CAD_HULL_DESCS = {
+  wigley: 'Classic ITTC parabolic hull. Analytical Cb = 4/9 ≈ 0.444. Used as a standard validation benchmark in naval hydrodynamics.',
+  series60: 'DTMB Series 60 (Cb=0.60) polynomial approximation. Representative of a standard merchant vessel. Widely used for resistance and wave-making studies.',
+  kcs: 'KRISO Container Ship approximation (Cb≈0.651). Modern container ship hull form with blunt bow and full midship section.',
+};
+
+function onCADHullTypeChange() {
+  const ht = document.getElementById('cad-hull-type').value;
+  document.getElementById('cad-hull-desc').textContent = CAD_HULL_DESCS[ht] || '';
+}
+
+async function cadGeneratePreview() {
+  const hull_type = document.getElementById('cad-hull-type').value;
+  const length = +document.getElementById('cad-length').value;
+  const beam = +document.getElementById('cad-beam').value;
+  const draft = +document.getElementById('cad-draft').value;
+  const n_stations = +document.getElementById('cad-stations').value;
+  const area = document.getElementById('cad-preview-area');
+  const caption = document.getElementById('cad-preview-caption');
+  area.innerHTML = '<div class="py-5"><span class="spinner-border"></span> Generating hull preview…</div>';
+  caption.textContent = '';
+  try {
+    const r = await api('POST', '/api/cad/preview', { hull_type, length, beam, draft, n_stations });
+    area.innerHTML = `<img src="${r.image}" class="result-img" style="max-width:100%" />`;
+    caption.textContent = `${hull_type.toUpperCase()}  L=${length}  B=${beam}  T=${draft}`;
+    // Render stats
+    const s = r.stats;
+    document.getElementById('cad-stats').innerHTML = `
+      <table class="table table-sm table-bordered mb-0">
+        <tr><th>Hull</th><td>${escHtml(s.label)}</td></tr>
+        <tr><th>C<sub>b</sub></th><td><strong>${s.Cb}</strong></td></tr>
+        <tr><th>C<sub>wp</sub></th><td>${s.Cwp}</td></tr>
+        <tr><th>C<sub>m</sub></th><td>${s.Cm}</td></tr>
+        <tr><th>C<sub>p</sub></th><td>${s.Cp}</td></tr>
+        <tr><th>L/B</th><td>${s['L/B']}</td></tr>
+        <tr><th>B/T</th><td>${s['B/T']}</td></tr>
+        <tr><th>Displacement (lu³)</th><td>${s.displacement_lu3}</td></tr>
+      </table>`;
+    // Sync solver hull params
+    document.getElementById('cad-sol-length').value = length;
+    document.getElementById('cad-sol-beam').value = beam;
+    document.getElementById('cad-sol-draft').value = draft;
+  } catch(e) {
+    area.innerHTML = `<div class="alert alert-danger">${e.message}</div>`;
+  }
+}
+
+async function cadGenerateMask() {
+  const hull_type = document.getElementById('cad-hull-type').value;
+  const nx = +document.getElementById('cad-nx').value;
+  const ny = +document.getElementById('cad-ny').value;
+  const nz = +document.getElementById('cad-nz').value;
+  const length = +document.getElementById('cad-length').value;
+  const beam = +document.getElementById('cad-beam').value;
+  const draft = +document.getElementById('cad-draft').value;
+  const el = document.getElementById('cad-mask-result');
+  el.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Computing…';
+  try {
+    const r = await api('POST', '/api/cad/hull-mask', { hull_type, nx, ny, nz, length, beam, draft });
+    const s = r.stats;
+    el.innerHTML = `
+      <img src="${r.image}" class="result-img mb-2" style="max-width:100%" />
+      <table class="table table-sm table-bordered mb-0 small">
+        <tr><th>Cb (numerical)</th><td><strong>${s.Cb_numerical}</strong></td></tr>
+        <tr><th>Solid cells</th><td>${s.solid_cells}</td></tr>
+        <tr><th>Fluid cells</th><td>${s.fluid_cells}</td></tr>
+        <tr><th>Grid</th><td>${s.nx}×${s.ny}×${s.nz}</td></tr>
+      </table>`;
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`;
+  }
+}
+
+async function cadComputeLBM() {
+  const body = {
+    length_m: +document.getElementById('cad-phys-L').value,
+    speed_ms: +document.getElementById('cad-phys-U').value,
+    nu_m2s: +document.getElementById('cad-phys-nu').value,
+    lbm_length: +document.getElementById('cad-length').value,
+    lbm_speed: 0.05,
+    froude_target: +document.getElementById('cad-froude').value || null,
+  };
+  const el = document.getElementById('cad-lbm-result');
+  try {
+    const r = await api('POST', '/api/cad/lbm-parameters', body);
+    const stableHtml = r.stable
+      ? '<span class="badge bg-success">Stable</span>'
+      : '<span class="badge bg-danger">Unstable</span>';
+    el.innerHTML = `
+      <table class="table table-sm table-bordered mb-0 small">
+        <tr><th>Re</th><td>${r.re_physical}</td></tr>
+        <tr><th>Fr</th><td>${r.froude_number}</td></tr>
+        <tr><th>dx (m)</th><td>${r.dx_m}</td></tr>
+        <tr><th>dt (s)</th><td>${r.dt_s}</td></tr>
+        <tr><th>τ</th><td>${r.lbm_tau} ${stableHtml}</td></tr>
+        <tr><th>Ma</th><td>${r.mach_number}</td></tr>
+      </table>`;
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`;
+  }
+}
+
+async function cadLaunchSolver() {
+  const body = {
+    hull_type: document.getElementById('cad-hull-type').value,
+    nx: +document.getElementById('cad-sol-nx').value,
+    ny: +document.getElementById('cad-sol-ny').value,
+    nz: +document.getElementById('cad-sol-nz').value,
+    hull_length: +document.getElementById('cad-sol-length').value,
+    hull_beam: +document.getElementById('cad-sol-beam').value,
+    hull_draft: +document.getElementById('cad-sol-draft').value,
+    u_in: +document.getElementById('cad-sol-uin').value,
+    re: +document.getElementById('cad-sol-re').value,
+    smagorinsky_cs: +document.getElementById('cad-sol-cs').value,
+    wave_amp: 0,
+    wave_period: 200,
+    n_steps: +document.getElementById('cad-sol-steps').value,
+    output_interval: +document.getElementById('cad-sol-interval').value,
+    device: document.getElementById('cad-sol-device').value,
+    seed: 0,
+  };
+  const btn = document.getElementById('cad-launch-btn');
+  const el = document.getElementById('cad-launch-result');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Submitting…';
+  try {
+    const r = await api('POST', '/api/cad/send-to-solver', body);
+    showToast(`CAD solver job submitted: ${r.job_id}`, 'success');
+    el.innerHTML = `<div class="alert alert-success small">Job ID: <code>${r.job_id}</code></div>`;
+    showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[4]);
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`;
+    showToast(`Error: ${e.message}`, 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-play-fill"></i> Submit Solver Job';
+  }
+}
+
+async function cadDownloadSTL() {
+  const hull_type = document.getElementById('cad-hull-type').value;
+  const length = +document.getElementById('cad-length').value;
+  const beam = +document.getElementById('cad-beam').value;
+  const draft = +document.getElementById('cad-draft').value;
+  try {
+    const resp = await fetch(API + '/api/cad/export-stl', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hull_type, length, beam, draft, n_long: 60, n_vert: 30 }),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${hull_type}_hull.stl`; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    showToast(`STL export failed: ${e.message}`, 'danger');
+  }
+}
+
+// Initialise CAD hull description on page load
+document.addEventListener('DOMContentLoaded', () => { onCADHullTypeChange(); });
 
 // ============================================================
 // Pre-processing
@@ -1080,7 +1409,7 @@ async function submitJob() {
   try {
     const r = await api('POST', currentSchema.endpoint, body);
     showToast(`Job submitted: ${r.job_id}`, 'success');
-    showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[3]);
+    showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[4]);
   } catch(e) {
     showToast(`Error: ${e.message}`, 'danger');
   } finally {
