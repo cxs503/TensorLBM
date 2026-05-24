@@ -110,6 +110,13 @@ from .postprocess import (
     extract_velocity_profile,
     extract_wake_profile,
 )
+from .preprocess_geo import (
+    compute_q_generic_3d,
+    poly_to_mask_2d,
+    random_porosity_mask_2d,
+    random_porosity_mask_3d,
+    voxelize_stl_3d,
+)
 from .protocols import BoundaryCondition, CollisionOperator
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
 from .simulation import LBMSimulation
@@ -131,6 +138,7 @@ from .turbulence import (
     collide_wale_bgk3d,
     collide_wale_bgk27,
 )
+from .unit_converter import LBMUnitConverter
 from .utils import (
     DiagnosticPoint,
     get_reproducibility_metadata,
@@ -313,4 +321,12 @@ __all__ = [
     # Minimal D2Q9 scaffold
     "D2Q9",
     "LBMSimulation",
+    # Pre-processing geometry
+    "poly_to_mask_2d",
+    "voxelize_stl_3d",
+    "random_porosity_mask_2d",
+    "random_porosity_mask_3d",
+    "compute_q_generic_3d",
+    # Unit converter
+    "LBMUnitConverter",
 ]
