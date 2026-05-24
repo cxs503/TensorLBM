@@ -178,6 +178,12 @@ from .preprocess_geo import (
     voxelize_stl_3d,
 )
 from .protocols import BoundaryCondition, CollisionOperator
+from .rotating_cylinder import (
+    RotatingCylinderConfig,
+    moving_wall_bounce_back,
+    rotating_wall_velocity,
+    run_rotating_cylinder,
+)
 from .ship_cad import (  # noqa: I001
     ShipHullType,
     export_hull_stl,
@@ -203,8 +209,15 @@ from .sloshing_tank import (
     make_sloshing_wall_mask,
     run_sloshing_tank,
 )
-from .solver import collide_bgk, collide_mrt, collide_trt, correct_mass, stream
-from .solver3d import collide_bgk3d, collide_mrt3d, collide_trt3d, correct_mass3d, stream3d
+from .solver import collide_bgk, collide_mrt, collide_rlbm, collide_trt, correct_mass, stream
+from .solver3d import (
+    collide_bgk3d,
+    collide_mrt3d,
+    collide_rlbm3d,
+    collide_trt3d,
+    correct_mass3d,
+    stream3d,
+)
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
 from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
 from .thermal import (
@@ -285,6 +298,7 @@ __all__ = [
     # 2D solvers
     "collide_bgk",
     "collide_mrt",
+    "collide_rlbm",
     "collide_trt",
     "stream",
     "correct_mass",
@@ -292,6 +306,11 @@ __all__ = [
     "CylinderFlowConfig",
     "run_cylinder_flow",
     "compute_vorticity",
+    # Rotating cylinder (Magnus effect)
+    "RotatingCylinderConfig",
+    "run_rotating_cylinder",
+    "rotating_wall_velocity",
+    "moving_wall_bounce_back",
     # Lid-driven cavity benchmark
     "LidDrivenCavityConfig",
     "run_lid_driven_cavity",
@@ -342,6 +361,7 @@ __all__ = [
     # 3D solvers
     "collide_bgk3d",
     "collide_mrt3d",
+    "collide_rlbm3d",
     "collide_trt3d",
     "stream3d",
     "correct_mass3d",
