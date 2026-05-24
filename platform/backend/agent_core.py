@@ -617,7 +617,7 @@ def _extract_job_id(text: str, history_actions: list[dict]) -> str | None:
     )
     if m:
         return m.group(1)
-    m = re.search(r"job[_\s-]*id\s*[=:]?\s*([0-9a-fA-F-]{6,})", text)
+    m = re.search(r"job[_\s-]?id[\s=:]{1,3}([0-9a-fA-F-]{6,})", text)
     if m:
         return m.group(1)
     # Fall back to last submitted job in this conversation
