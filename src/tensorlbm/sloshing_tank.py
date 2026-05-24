@@ -155,8 +155,11 @@ def _init_two_phase_cg(
 
 
 def _measure_left_wall_elevation(rho_water: torch.Tensor, rho_air: torch.Tensor) -> float:
-    total = torch.clamp(rho_water[:, 0] + rho_air[:, 0], min=1e-12)
-    water_fraction = rho_water[:, 0] / total
+    # Read column 1 (first interior fluid cell) rather than column 0 (solid wall
+    # bounce-back cell, which carries no meaningful density information).
+    col = 1 if rho_water.shape[1] > 2 else 0  # noqa: SIM210
+    total = torch.clamp(rho_water[:, col] + rho_air[:, col], min=1e-12)
+    water_fraction = rho_water[:, col] / total
     for y in range(water_fraction.shape[0] - 1, -1, -1):
         if float(water_fraction[y].item()) > 0.5:
             return float(y)

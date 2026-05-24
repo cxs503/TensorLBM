@@ -2,6 +2,11 @@
 
 TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.
 
+## Documentation / 文档
+
+- **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
+  Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
+
 ## What TensorLBM provides
 
 - A small, explicit public API in `src/tensorlbm/__init__.py`
