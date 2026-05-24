@@ -337,7 +337,9 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
         for fy_t in fy_steps
     ]
     half = len(cl_series) // 2
-    st = _strouhal_number(cl_series[half:], config.output_interval, config.u_in, diameter)
+    # cl_series is sampled every step (sample spacing = 1 step), not every
+    # output_interval.  Pass spacing=1 so the frequency axis is in cycles/step.
+    st = _strouhal_number(cl_series[half:], 1, config.u_in, diameter)
 
     metadata["diagnostics"] = diagnostics
     if st is not None:
