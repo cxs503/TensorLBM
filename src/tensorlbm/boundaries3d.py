@@ -4,6 +4,27 @@ import torch
 
 from .d3q19 import OPPOSITE, equilibrium3d, macroscopic3d
 
+# ---------------------------------------------------------------------------
+# Module-level direction-index constants (derived from the fixed D3Q19 lattice).
+# Using Python lists here avoids .item() GPU→CPU sync inside hot BC functions.
+# ---------------------------------------------------------------------------
+
+# Directions with cx > 0 (unknown at x=0 inlet) and their cx<0 opposites
+_D3Q19_INLET_DIRS: list[int] = [1, 7, 9, 11, 13]
+_D3Q19_INLET_OPP: list[int] = [2, 8, 10, 12, 14]   # OPPOSITE[inlet_dirs]
+
+# Directions with cx < 0 (unknown at x=nx-1 outlet) and their cx>0 opposites
+_D3Q19_OUTLET_DIRS: list[int] = [2, 8, 10, 12, 14]
+_D3Q19_OUTLET_OPP: list[int] = [1, 7, 9, 11, 13]   # OPPOSITE[outlet_dirs]
+
+# Directions with cz > 0 (unknown at z=0 bottom inlet) and their cz<0 opposites
+_D3Q19_ZINLET_DIRS: list[int] = [5, 11, 14, 15, 18]
+_D3Q19_ZINLET_OPP: list[int] = [6, 12, 13, 16, 17]  # OPPOSITE[z-inlet_dirs]
+
+# Directions with cz < 0 (unknown at z=nz-1 top outlet) and their cz>0 opposites
+_D3Q19_ZOUTLET_DIRS: list[int] = [6, 12, 13, 16, 17]
+_D3Q19_ZOUTLET_OPP: list[int] = [5, 11, 14, 15, 18]  # OPPOSITE[z-outlet_dirs]
+
 
 def sphere_mask(
     nx: int,
@@ -49,11 +70,14 @@ def make_channel_wall_mask_3d(
 
 
 def bounce_back_cells_3d(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-    """Bounce-back reflection on selected cells (obstacle/walls) for D3Q19."""
-    bounced = f.clone()
+    """Bounce-back reflection on selected cells (obstacle/walls) for D3Q19.
+
+    Uses ``torch.where`` instead of clone + scatter to reduce the number of
+    GPU kernel launches and avoid an intermediate boolean-indexed allocation.
+    """
     opp = OPPOSITE.to(f.device)  # (19,)
-    bounced[:, mask] = f[opp][:, mask]
-    return bounced
+    # mask.unsqueeze(0) broadcasts (1, nz, ny, nx) → (19, nz, ny, nx)
+    return torch.where(mask.unsqueeze(0), f[opp], f)
 
 
 def zou_he_inlet_velocity_3d(
@@ -84,26 +108,34 @@ def zou_he_inlet_velocity_3d(
     # Their opposites (cx < 0, known):
     #   2:(-1,0,0), 8:(-1,-1,0), 10:(-1,1,0), 12:(-1,0,-1), 14:(-1,0,1)
     #
-    # Step 1: Determine rho from mass + x-momentum balance
+    # Step 1: Determine rho from mass + x-momentum balance at x=0 only
     sum_cx0 = (
-        f[0] + f[3] + f[4] + f[5] + f[6]
-        + f[15] + f[16] + f[17] + f[18]
-    )  # all directions with cx=0
-    sum_cx_neg = f[2] + f[8] + f[10] + f[12] + f[14]  # directions with cx=-1
-    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_in)
+        f[0, :, :, 0] + f[3, :, :, 0] + f[4, :, :, 0]
+        + f[5, :, :, 0] + f[6, :, :, 0]
+        + f[15, :, :, 0] + f[16, :, :, 0] + f[17, :, :, 0] + f[18, :, :, 0]
+    )  # cx=0 directions at x=0  → shape (nz, ny)
+    sum_cx_neg = (
+        f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0]
+        + f[12, :, :, 0] + f[14, :, :, 0]
+    )  # cx<0 directions at x=0 → shape (nz, ny)
+    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_in)  # (nz, ny)
 
-    # Step 2: Compute equilibrium at (rho, u_in, uy_in, uz_in)
-    ux_field = torch.full_like(rho, u_in)
-    uy_field = torch.full_like(rho, uy_in)
-    uz_field = torch.full_like(rho, uz_in)
-    feq = equilibrium3d(rho, ux_field, uy_field, uz_field, device=device)
+    # Step 2: Compute equilibrium at (rho, u_in, uy_in, uz_in) for the inlet plane only.
+    # Unsqueeze to (nz, ny, 1) so equilibrium3d produces (19, nz, ny, 1).
+    rho3 = rho.unsqueeze(-1)               # (nz, ny, 1)
+    ux_field = torch.full_like(rho3, u_in)
+    uy_field = torch.full_like(rho3, uy_in)
+    uz_field = torch.full_like(rho3, uz_in)
+    feq = equilibrium3d(rho3, ux_field, uy_field, uz_field, device=device)  # (19, nz, ny, 1)
 
-    # Step 3: Non-equilibrium bounce-back for each cx>0 direction k:
-    #   f[k] = feq[k] - feq[OPPOSITE[k]] + f[OPPOSITE[k]]
+    # Step 3: Non-equilibrium bounce-back (vectorised, no Python loop, no .item())
+    #   f[k, :, :, 0] = feq[k, :, :, 0] - feq[opp_k, :, :, 0] + f[opp_k, :, :, 0]
     f_new = f.clone()
-    for k in (1, 7, 9, 11, 13):
-        opp = int(OPPOSITE[k].item())
-        f_new[k, :, :, 0] = feq[k, :, :, 0] - feq[opp, :, :, 0] + f[opp, :, :, 0]
+    f_new[_D3Q19_INLET_DIRS, :, :, 0] = (
+        feq[_D3Q19_INLET_DIRS, :, :, 0]
+        - feq[_D3Q19_INLET_OPP, :, :, 0]
+        + f[_D3Q19_INLET_OPP, :, :, 0]
+    )
     return f_new
 
 
@@ -139,12 +171,22 @@ def zou_he_outlet_pressure_3d(f: torch.Tensor, rho_out: float = 1.0) -> torch.Te
     ux_field = ux_out                                       # (nz, ny)
     uy_field = torch.zeros_like(rho_field)
     uz_field = torch.zeros_like(rho_field)
-    feq = equilibrium3d(rho_field, ux_field, uy_field, uz_field, device=device)  # (19, nz, ny)
+    # Unsqueeze to (nz, ny, 1) so equilibrium3d produces (19, nz, ny, 1)
+    feq = equilibrium3d(
+        rho_field.unsqueeze(-1),
+        ux_field.unsqueeze(-1),
+        uy_field.unsqueeze(-1),
+        uz_field.unsqueeze(-1),
+        device=device,
+    )  # (19, nz, ny, 1)
 
+    # Vectorised update: no Python loop, no .item()
     f_new = f.clone()
-    for k in (2, 8, 10, 12, 14):
-        opp = int(OPPOSITE[k].item())
-        f_new[k, :, :, -1] = feq[k] - feq[opp] + f[opp, :, :, -1]
+    f_new[_D3Q19_OUTLET_DIRS, :, :, -1] = (
+        feq[_D3Q19_OUTLET_DIRS, :, :, 0]
+        - feq[_D3Q19_OUTLET_OPP, :, :, 0]
+        + f[_D3Q19_OUTLET_OPP, :, :, -1]
+    )
     return f_new
 
 
@@ -226,18 +268,20 @@ def zou_he_inlet_velocity_z(
 
     rho = (sum_cz0 + 2.0 * sum_cz_neg) / (1.0 - uz_in)  # (ny, nx)
 
-    # Equilibrium at (rho, ux_in, uy_in, uz_in); use shape (1, ny, nx) for nz=1 slice
+    # Equilibrium at (rho, ux_in, uy_in, uz_in); shape (1, ny, nx) for the z=0 slice
     rho3 = rho.unsqueeze(0)  # (1, ny, nx)
     ux3 = torch.full_like(rho3, ux_in)
     uy3 = torch.full_like(rho3, uy_in)
     uz3 = torch.full_like(rho3, uz_in)
     feq = equilibrium3d(rho3, ux3, uy3, uz3, device=device)  # (19, 1, ny, nx)
 
+    # Vectorised update: no Python loop, no .item()
     f_new = f.clone()
-    opp = OPPOSITE.to(device)
-    for k in (5, 11, 14, 15, 18):  # cz > 0 directions (unknown at z=0)
-        opp_k = int(opp[k].item())
-        f_new[k, 0, :, :] = feq[k, 0] - feq[opp_k, 0] + f[opp_k, 0]
+    f_new[_D3Q19_ZINLET_DIRS, 0, :, :] = (
+        feq[_D3Q19_ZINLET_DIRS, 0]
+        - feq[_D3Q19_ZINLET_OPP, 0]
+        + f[_D3Q19_ZINLET_OPP, 0]
+    )
     return f_new
 
 
@@ -271,11 +315,13 @@ def zou_he_outlet_pressure_z(f: torch.Tensor, rho_out: float = 1.0) -> torch.Ten
     uz3 = uz_out.unsqueeze(0)  # (1, ny, nx)
     feq = equilibrium3d(rho3, ux3, uy3, uz3, device=device)  # (19, 1, ny, nx)
 
+    # Vectorised update: no Python loop, no .item()
     f_new = f.clone()
-    opp = OPPOSITE.to(device)
-    for k in (6, 12, 13, 16, 17):  # cz < 0 directions (unknown at z=nz-1)
-        opp_k = int(opp[k].item())
-        f_new[k, -1, :, :] = feq[k, 0] - feq[opp_k, 0] + f[opp_k, -1]
+    f_new[_D3Q19_ZOUTLET_DIRS, -1, :, :] = (
+        feq[_D3Q19_ZOUTLET_DIRS, 0]
+        - feq[_D3Q19_ZOUTLET_OPP, 0]
+        + f[_D3Q19_ZOUTLET_OPP, -1]
+    )
     return f_new
 
 

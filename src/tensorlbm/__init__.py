@@ -37,6 +37,7 @@ from .boundaries_d3q27 import (
 )
 from .checkpoint import load_checkpoint, save_checkpoint
 from .config_io import load_config, load_config_json, save_config_json
+from .constants import D2Q9
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
 from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 from .d3q19 import OPPOSITE as OPPOSITE3D
@@ -89,6 +90,9 @@ from .multiphase import (
 from .multiphase3d import (
     collide_sc_single_component_3d,
     collide_sc_two_component_3d,
+    color_gradient_step_3d,
+    free_energy_step_3d,
+    init_free_energy_g_3d,
     sc_two_component_force_3d,
 )
 from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
@@ -104,6 +108,19 @@ from .pipeline_flow import (
     measure_strouhal,
     run_pipeline_flow,
 )
+from .porous_media import (
+    CapillaryInvasionConfig,
+    LaplaceTestConfig,
+    PorousDrainageConfig,
+    TwoPhasePoiseuilleConfig,
+    apply_wall_wettability_sc,
+    make_random_cylinder_medium,
+    make_tube_array_medium,
+    run_capillary_invasion,
+    run_laplace_test,
+    run_porous_drainage,
+    run_two_phase_poiseuille,
+)
 from .postprocess import (
     compute_pressure_coefficient,
     compute_q_criterion,
@@ -112,8 +129,16 @@ from .postprocess import (
     extract_velocity_profile,
     extract_wake_profile,
 )
+from .preprocess_geo import (
+    compute_q_generic_3d,
+    poly_to_mask_2d,
+    random_porosity_mask_2d,
+    random_porosity_mask_3d,
+    voxelize_stl_3d,
+)
 from .protocols import BoundaryCondition, CollisionOperator
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
+from .simulation import LBMSimulation
 from .sloshing_tank import (
     SloshingTankConfig,
     faltinsen_natural_frequency,
@@ -131,6 +156,12 @@ from .turbulence import (
     collide_smagorinsky_mrt,
     collide_smagorinsky_mrt3d,
     collide_smagorinsky_mrt27,
+    collide_vreman_bgk,
+    collide_vreman_bgk3d,
+    collide_vreman_bgk27,
+    collide_wale_bgk,
+    collide_wale_bgk3d,
+    collide_wale_bgk27,
 )
 from .turbulent_channel import (
     TurbulentChannelConfig,
@@ -138,6 +169,7 @@ from .turbulent_channel import (
     run_turbulent_channel,
     viscous_sublayer_velocity,
 )
+from .unit_converter import LBMUnitConverter
 from .utils import (
     DiagnosticPoint,
     get_reproducibility_metadata,
@@ -243,6 +275,14 @@ __all__ = [
     "collide_smagorinsky_mrt",
     "collide_smagorinsky_bgk3d",
     "collide_smagorinsky_mrt3d",
+    # WALE turbulence
+    "collide_wale_bgk",
+    "collide_wale_bgk3d",
+    "collide_wale_bgk27",
+    # Vreman turbulence
+    "collide_vreman_bgk",
+    "collide_vreman_bgk3d",
+    "collide_vreman_bgk27",
     # Wave BC
     "airy_wave_velocity_3d",
     "zou_he_inlet_velocity_profile_3d",
@@ -265,12 +305,27 @@ __all__ = [
     "sc_two_component_force_3d",
     "collide_sc_two_component_3d",
     "collide_sc_single_component_3d",
+    "color_gradient_step_3d",
+    "init_free_energy_g_3d",
+    "free_energy_step_3d",
     # Dam-break benchmark
     "DamBreakConfig",
     "run_dam_break",
     # Multiphase water-entry benchmark
     "MultiphaseWaterEntryConfig",
     "run_multiphase_water_entry",
+    # Porous-media gas-water displacement benchmarks
+    "make_random_cylinder_medium",
+    "make_tube_array_medium",
+    "apply_wall_wettability_sc",
+    "LaplaceTestConfig",
+    "run_laplace_test",
+    "CapillaryInvasionConfig",
+    "run_capillary_invasion",
+    "TwoPhasePoiseuilleConfig",
+    "run_two_phase_poiseuille",
+    "PorousDrainageConfig",
+    "run_porous_drainage",
     # Shared utilities
     "DiagnosticPoint",
     "resolve_device",
@@ -321,4 +376,15 @@ __all__ = [
     # Logging
     "logger",
     "configure_logging",
+    # Minimal D2Q9 scaffold
+    "D2Q9",
+    "LBMSimulation",
+    # Pre-processing geometry
+    "poly_to_mask_2d",
+    "voxelize_stl_3d",
+    "random_porosity_mask_2d",
+    "random_porosity_mask_3d",
+    "compute_q_generic_3d",
+    # Unit converter
+    "LBMUnitConverter",
 ]

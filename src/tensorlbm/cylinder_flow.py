@@ -251,7 +251,8 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     rho0_mass = torch.ones((config.ny, config.nx), device=device)
     initial_mass = float(rho0_mass.sum().item())
     diagnostics: list[dict[str, object]] = []
-    cl_series: list[float] = []
+    # Accumulate fy as GPU tensors; defer .item() to post-loop to avoid per-step sync
+    fy_steps: list[torch.Tensor] = []
 
     diameter = 2.0 * config.radius
     dyn_pressure = 0.5 * config.u_in**2 * diameter
@@ -290,11 +291,14 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
             obstacle_mask=obstacle,
         )
 
-        cd = float(fx) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
-        cl = float(fy) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
-        cl_series.append(cl)
+        # Store fy as a GPU scalar tensor – no .item() sync on every step
+        fy_steps.append(fy.detach())
 
         if step % config.output_interval == 0 or step == config.n_steps:
+            # Sync only at output intervals (much less frequent)
+            cd = float(fx.item()) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+            cl = float(fy.item()) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+
             rho, ux, uy = macroscopic(f)
             ux = ux.masked_fill(obstacle, 0.0)
             uy = uy.masked_fill(obstacle, 0.0)
@@ -327,6 +331,11 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
             # Save checkpoint at every output step
             save_checkpoint(f, step, run_dir)
 
+    # Batch-convert all stored fy values post-loop for Strouhal number computation
+    cl_series = [
+        float(fy_t.item()) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+        for fy_t in fy_steps
+    ]
     half = len(cl_series) // 2
     st = _strouhal_number(cl_series[half:], config.output_interval, config.u_in, diameter)
 

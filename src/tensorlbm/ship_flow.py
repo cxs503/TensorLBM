@@ -284,11 +284,12 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
                 obstacle_mask=obstacle,
             )
 
-        cd = float(fx) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
-        cs_coef = float(fy) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
-        cl = float(fz) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
-
         if step % config.output_interval == 0 or step == config.n_steps:
+            # Sync only at output intervals (avoids per-step GPU→CPU stall)
+            cd = float(fx.item()) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+            cs_coef = float(fy.item()) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+            cl = float(fz.item()) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+
             rho, ux, uy, uz = macroscopic3d(f)
             ux = ux.masked_fill(obstacle, 0.0)
             uy = uy.masked_fill(obstacle, 0.0)
@@ -308,9 +309,9 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
                 "cd": cd,
                 "cs": cs_coef,
                 "cl": cl,
-                "mx": float(mx),
-                "my": float(my),
-                "mz": float(mz),
+                "mx": float(mx.item()),
+                "my": float(my.item()),
+                "mz": float(mz.item()),
             }
             diagnostics.append(diag_entry)
             logger.info(
@@ -322,7 +323,7 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
                 cd,
                 cs_coef,
                 cl,
-                float(my),
+                float(my.item()),
             )
             _save_ship_snapshot(run_dir, step, speed, obstacle, config.nz, config.ny)
 
