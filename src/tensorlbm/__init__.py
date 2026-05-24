@@ -95,6 +95,16 @@ from .multiphase3d import (
     init_free_energy_g_3d,
     sc_two_component_force_3d,
 )
+from .multiphase_benchmarks import (
+    MultiphaseBenchmarkSuiteConfig,
+    SpinodaleConfig,
+    StaticDropletConfig,
+    TwoPhaseChannelCompareConfig,
+    run_multiphase_benchmark_suite,
+    run_spinodal_decomposition,
+    run_static_droplet,
+    run_two_phase_channel_compare,
+)
 from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
 from .obstacles import (
     compute_obstacle_forces_3d,
@@ -308,6 +318,15 @@ __all__ = [
     "color_gradient_step_3d",
     "init_free_energy_g_3d",
     "free_energy_step_3d",
+    # Multiphase benchmark suite
+    "StaticDropletConfig",
+    "run_static_droplet",
+    "SpinodaleConfig",
+    "run_spinodal_decomposition",
+    "TwoPhaseChannelCompareConfig",
+    "run_two_phase_channel_compare",
+    "MultiphaseBenchmarkSuiteConfig",
+    "run_multiphase_benchmark_suite",
     # Dam-break benchmark
     "DamBreakConfig",
     "run_dam_break",
