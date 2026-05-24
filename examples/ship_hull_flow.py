@@ -1,4 +1,4 @@
-"""CLI entry-point for the 3-D Wigley ship hull flow simulation.
+"""CLI entry-point for the 3-D ship CAD-to-flow workflow.
 
 Usage examples
 --------------
@@ -34,13 +34,20 @@ from tensorlbm.ship_flow import ShipHullFlowConfig, run_ship_hull_flow
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run a D3Q19 Wigley hull channel-flow LBM simulation."
+        description="Run a D3Q19 ship-hull CAD + channel-flow LBM simulation."
     )
 
     # Grid
     parser.add_argument("--nx", type=int, default=160, help="Grid length (x, longitudinal)")
     parser.add_argument("--ny", type=int, default=60, help="Grid width (y, transverse)")
     parser.add_argument("--nz", type=int, default=40, help="Grid height (z, vertical)")
+    parser.add_argument(
+        "--hull-type",
+        dest="hull_type",
+        choices=["wigley", "series60", "kcs"],
+        default="wigley",
+        help="Parametric hull family",
+    )
 
     # Flow
     parser.add_argument("--u-in", dest="u_in", type=float, default=0.05, help="Inlet velocity")
@@ -107,6 +114,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu",
                         help="Execution device")
+    parser.add_argument(
+        "--export-stl",
+        action="store_true",
+        help="Also export the CAD hull as ASCII STL",
+    )
     parser.add_argument("--overwrite", action="store_true",
                         help="Replace output directory if it already exists")
     return parser
@@ -118,6 +130,7 @@ def main() -> None:
         nx=args.nx,
         ny=args.ny,
         nz=args.nz,
+        hull_type=args.hull_type,
         u_in=args.u_in,
         re=args.re,
         hull_length=args.hull_length,
@@ -134,6 +147,7 @@ def main() -> None:
         run_name=args.run_name,
         seed=args.seed,
         device=args.device,
+        export_stl=args.export_stl,
         overwrite=args.overwrite,
     )
     run_ship_hull_flow(config)
