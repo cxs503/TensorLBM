@@ -169,6 +169,23 @@ from .preprocess_geo import (
     voxelize_stl_3d,
 )
 from .protocols import BoundaryCondition, CollisionOperator
+from .ship_cad import (  # noqa: I001
+    ShipHullType,
+    export_hull_stl,
+    generate_hull_body_plan,
+    generate_hull_previews,
+    generate_hull_sideprofile,
+    generate_hull_waterplane,
+    hull_block_coefficient,
+    hull_statistics,
+    kcs_hull_mask,
+    series60_hull_mask,
+    ship_lbm_parameters,
+    theoretical_block_coefficient,
+)
+from .ship_cad import (
+    build_hull_mask as build_ship_hull_mask,
+)
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
 from .simulation import LBMSimulation
 from .sloshing_tank import (
@@ -333,6 +350,20 @@ __all__ = [
     # Marine / ship
     "ShipHullFlowConfig",
     "run_ship_hull_flow",
+    # Ship CAD module
+    "ShipHullType",
+    "series60_hull_mask",
+    "kcs_hull_mask",
+    "hull_block_coefficient",
+    "hull_statistics",
+    "theoretical_block_coefficient",
+    "generate_hull_body_plan",
+    "generate_hull_waterplane",
+    "generate_hull_sideprofile",
+    "generate_hull_previews",
+    "export_hull_stl",
+    "build_ship_hull_mask",
+    "ship_lbm_parameters",
     # Multiphase models – D2Q9
     "psi_linear",
     "psi_exp",
