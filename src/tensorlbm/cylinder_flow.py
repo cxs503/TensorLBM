@@ -22,7 +22,7 @@ from .checkpoint import load_checkpoint, save_checkpoint
 from .config_io import load_config_json, save_config_json
 from .d2q9 import equilibrium, macroscopic
 from .logging_config import configure_logging, logger
-from .solver import collide_bgk, stream
+from .solver import collide_bgk, correct_mass, stream
 from .utils import (
     DiagnosticPoint,
     get_reproducibility_metadata,
@@ -293,6 +293,10 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
 
         # Store fy as a GPU scalar tensor – no .item() sync on every step
         fy_steps.append(fy.detach())
+
+        # Correct mass drift every output_interval steps
+        if step % config.output_interval == 0:
+            f = correct_mass(f, initial_mass)
 
         if step % config.output_interval == 0 or step == config.n_steps:
             # Sync only at output intervals (much less frequent)
