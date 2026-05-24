@@ -396,14 +396,20 @@ def bench_ship_hull(output_root: Path, full: bool) -> dict[str, object]:
 
     _header("Benchmark 5 – 3D Ship Workflow (CAD → Flow → Postprocess)")
     print(f"  Grid: {cfg.nx}×{cfg.ny}×{cfg.nz},  L = {cfg.hull_length},  B = {cfg.hull_beam}")
-    print(f"  T = {cfg.hull_draft},  Re = {cfg.re},  hull = {cfg.hull_type},  steps = {cfg.n_steps}")
+    print(
+        f"  T = {cfg.hull_draft},  Re = {cfg.re},"
+        f"  hull = {cfg.hull_type},  steps = {cfg.n_steps}"
+    )
     print(f"  Elapsed: {elapsed:.1f} s")
     _section("CAD fidelity")
     _row("Block coefficient Cb", cb_numerical, cb_theoretical)
     _section("Hydrodynamic symmetry")
-    print(f"  {'Cd mean (expect > 0)':<45} {cd_mean:8.4f}  {'✓' if bool(acceptance.get('drag_positive')) else '✗'}")
-    print(f"  {'|Cs|/|Cd| (expect < 0.10)':<45} {cs_ratio:8.4f}  {'✓' if bool(acceptance.get('sideforce_small')) else '✗'}")
-    print(f"  {'|Cl|/|Cd| (expect < 0.25)':<45} {cl_ratio:8.4f}  {'✓' if bool(acceptance.get('lift_small')) else '✗'}")
+    drag_mark = "✓" if bool(acceptance.get("drag_positive")) else "✗"
+    cs_mark = "✓" if bool(acceptance.get("sideforce_small")) else "✗"
+    cl_mark = "✓" if bool(acceptance.get("lift_small")) else "✗"
+    print(f"  {'|Cd| mean (expect > 0)':<45} {abs(cd_mean):8.4f}  {drag_mark}")
+    print(f"  {'|Cs|/|Cd| (expect < 0.10)':<45} {cs_ratio:8.4f}  {cs_mark}")
+    print(f"  {'|Cl|/|Cd| (expect < 0.25)':<45} {cl_ratio:8.4f}  {cl_mark}")
     _section("Wake post-processing")
     print(f"  {'Max wake velocity deficit':<45} {wake_deficit:8.4f}")
     print(

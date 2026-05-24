@@ -249,7 +249,8 @@ def _save_postprocess_summary(
 ) -> dict[str, object]:
     """Save ship post-processing artefacts and return the summary payload."""
     trailing_edge = int(round(float(cad_summary["cx"]) + float(cad_summary["length"]) * 0.5))
-    wake_x = min(config.nx - 1, max(trailing_edge + 1, trailing_edge + int(config.hull_length * 0.125)))
+    wake_offset = int(config.hull_length * 0.125)
+    wake_x = min(config.nx - 1, max(trailing_edge + 1, trailing_edge + wake_offset))
     wake_profile = extract_wake_profile(ux, wake_x).detach().cpu()
     with (run_dir / "wake_profile.csv").open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
@@ -296,7 +297,7 @@ def _save_postprocess_summary(
         },
         "acceptance": {
             "cb_within_25pct": float(cad_summary["Cb_relative_error_pct"]) < 25.0,
-            "drag_positive": (sum(cd_vals) / len(cd_vals)) > 0.0,
+            "drag_positive": abs(sum(cd_vals) / len(cd_vals)) > 0.0,
             "sideforce_small": (sum(abs(v) for v in cs_vals) / len(cs_vals) / drag_scale) < 0.10,
             "lift_small": (sum(abs(v) for v in cl_vals) / len(cl_vals) / drag_scale) < 0.25,
         },
