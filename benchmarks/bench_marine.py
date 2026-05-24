@@ -13,7 +13,7 @@ Benchmarks
 3. **Near-bed pipeline flow (Re = 200, e/D = 0.5)** – Strouhal number vs
    Bearman & Zdravkovich (1978).
 4. **Turbulent channel (Re_τ = 100)** – log-law velocity profile comparison.
-5. **3-D Wigley hull flow (Re = 200)** – resistance coefficient and symmetry check.
+5. **3-D ship workflow (Re = 200)** – CAD block coefficient, force symmetry, and wake analysis.
 
 Usage::
 
@@ -60,8 +60,9 @@ REF_PIPELINE_ST = 0.183  # Strouhal number at e/D = 0.5
 LOG_LAW_KAPPA = 0.41
 LOG_LAW_B = 5.2
 
-# Wigley hull: physical checks only (no single canonical Cd at Re=200 in LBM channel)
-# See bench_ship_hull() docstring for details.
+# Ship hull workflow: analytical Cb is used for CAD comparison; hydrodynamic
+# checks use force symmetry and wake metrics because no single canonical Cd is
+# available at Re = 200 in the confined LBM channel.
 
 
 # ---------------------------------------------------------------------------
@@ -353,14 +354,7 @@ def bench_turbulent_channel(output_root: Path, full: bool) -> dict[str, object]:
 # ---------------------------------------------------------------------------
 
 def bench_ship_hull(output_root: Path, full: bool) -> dict[str, object]:
-    """Run 3D Wigley hull flow and report resistance coefficient and symmetry check.
-
-    No single canonical Cd value is available for the Wigley hull at Re=200 in
-    a confined LBM channel, so instead two physical consistency checks are used:
-      * Cd > 0  (drag in the flow direction is always positive)
-      * |Cl| < Cd  (vertical lift is small relative to drag by symmetry)
-    Full production-quality results require longer runs for statistical convergence.
-    """
+    """Run the ship CAD→simulation→postprocess workflow and report quantitative checks."""
     from tensorlbm import ShipHullFlowConfig, run_ship_hull_flow
 
     if full:
@@ -387,37 +381,55 @@ def bench_ship_hull(output_root: Path, full: bool) -> dict[str, object]:
     elapsed = time.perf_counter() - t0
 
     meta = json.loads((run_dir / "run_metadata.json").read_text())
-    diag = meta.get("diagnostics", [])
-    cd_values = [d["cd"] for d in diag if isinstance(d.get("cd"), float) and math.isfinite(d["cd"])]
-    cd_mean = sum(cd_values[-5:]) / len(cd_values[-5:]) if len(cd_values) >= 5 else (
-        sum(cd_values) / len(cd_values) if cd_values else float("nan")
-    )
-    cl_values = [d["cl"] for d in diag if isinstance(d.get("cl"), float) and math.isfinite(d["cl"])]
-    cl_mean = sum(cl_values) / len(cl_values) if cl_values else float("nan")
+    cad = meta.get("cad", {})
+    post = meta.get("postprocess", {})
+    forces = post.get("forces", {})
+    wake = post.get("wake", {})
+    acceptance = post.get("acceptance", {})
+    cb_theoretical = float(cad.get("Cb_theoretical") or cad.get("Cb") or 0.0)
+    cb_numerical = float(cad.get("Cb_numerical") or 0.0)
+    cb_error_pct = float(cad.get("Cb_relative_error_pct") or 0.0)
+    cd_mean = float(forces.get("cd_mean") or 0.0)
+    cs_ratio = float(forces.get("cs_abs_ratio_to_cd") or 0.0)
+    cl_ratio = float(forces.get("cl_abs_ratio_to_cd") or 0.0)
+    wake_deficit = float(wake.get("velocity_deficit_max") or 0.0)
 
-    _header("Benchmark 5 – 3D Wigley Hull Flow (Re = 200, Smagorinsky MRT)")
+    _header("Benchmark 5 – 3D Ship Workflow (CAD → Flow → Postprocess)")
     print(f"  Grid: {cfg.nx}×{cfg.ny}×{cfg.nz},  L = {cfg.hull_length},  B = {cfg.hull_beam}")
-    print(f"  T = {cfg.hull_draft},  Re = {cfg.re},  steps = {cfg.n_steps}")
+    print(
+        f"  T = {cfg.hull_draft},  Re = {cfg.re},"
+        f"  hull = {cfg.hull_type},  steps = {cfg.n_steps}"
+    )
     print(f"  Elapsed: {elapsed:.1f} s")
-    _section("Resistance coefficients (physical consistency checks)")
-    drag_positive = float(cd_mean) > 0.0
-    lift_small = abs(float(cl_mean)) < abs(float(cd_mean))
-    cd_mark = "✓" if drag_positive else "✗"
-    cl_mark = "✓" if lift_small else "✗"
-    print(f"  {'Cd (longitudinal drag, expect > 0)':<45} {cd_mean:8.4f}  {cd_mark}")
-    print(f"  {'Cl (vertical lift, expect |Cl| < |Cd|)':<45} {cl_mean:8.4f}  {cl_mark}")
-    print("\n  Note: no single canonical Cd is available for the Wigley hull at Re=200.")
-    print("  Physical checks: Cd > 0 (positive drag) and |Cl| << |Cd| (top-bottom symmetry).")
-    print("  Reference: Wigley (1926) hull parametrization;")
-    print("             Michell (1898) thin-ship wave-resistance theory.")
+    _section("CAD fidelity")
+    _row("Block coefficient Cb", cb_numerical, cb_theoretical)
+    _section("Hydrodynamic symmetry")
+    drag_mark = "✓" if bool(acceptance.get("drag_positive")) else "✗"
+    cs_mark = "✓" if bool(acceptance.get("sideforce_small")) else "✗"
+    cl_mark = "✓" if bool(acceptance.get("lift_small")) else "✗"
+    print(f"  {'|Cd| mean (expect > 0)':<45} {abs(cd_mean):8.4f}  {drag_mark}")
+    print(f"  {'|Cs|/|Cd| (expect < 0.10)':<45} {cs_ratio:8.4f}  {cs_mark}")
+    print(f"  {'|Cl|/|Cd| (expect < 0.25)':<45} {cl_ratio:8.4f}  {cl_mark}")
+    _section("Wake post-processing")
+    print(f"  {'Max wake velocity deficit':<45} {wake_deficit:8.4f}")
+    print(
+        f"  {'Recirculation length (lu)':<45}"
+        f" {float(wake.get('recirculation_length_lu') or 0.0):8.4f}"
+    )
+    print("\n  References: Wigley (1926) hull parametrization; Michell (1898) thin-ship theory.")
 
-    consistency_ok = drag_positive and lift_small
+    consistency_ok = bool(acceptance.get("workflow_ok", False))
     return {
         "name": "wigley_hull_re200",
+        "cb_sim": cb_numerical,
+        "cb_ref": cb_theoretical,
+        "cb_error_pct": cb_error_pct,
         "cd_sim": float(cd_mean),
-        "cl_sim": float(cl_mean),
-        "drag_positive": drag_positive,
-        "lift_small": lift_small,
+        "cs_ratio": cs_ratio,
+        "cl_ratio": cl_ratio,
+        "drag_positive": bool(acceptance.get("drag_positive")),
+        "lift_small": bool(acceptance.get("lift_small")),
+        "sideforce_small": bool(acceptance.get("sideforce_small")),
         "consistency_ok": consistency_ok,
         "elapsed_s": elapsed,
         "run_dir": str(run_dir),
@@ -475,11 +487,13 @@ def _print_summary(results: list[dict[str, object]]) -> None:
             else:
                 print(f"  {'Turbulent channel Re_τ=100':<40} {'RMS log-law err':<20} {'N/A':>8}")
         elif name == "wigley_hull_re200":
-            cd_s = float(r["cd_sim"])
+            cb_s = float(r["cb_sim"])
+            cb_r = float(r["cb_ref"])
+            err = abs(cb_s - cb_r) / cb_r * 100.0
             checks = "✓" if bool(r.get("consistency_ok", False)) else "✗"
             print(
-                f"  {'Wigley hull Re=200':<40} {'Cd>0 & |Cl|<Cd':<20}"
-                f" {cd_s:8.4f} {'(checks)':>8} {'':>7}  {checks}"
+                f"  {'Wigley hull Re=200':<40} {'Cb error + symmetry':<20}"
+                f" {cb_s:8.4f} {cb_r:8.4f} {err:7.2f}%  {checks}"
             )
 
     print()

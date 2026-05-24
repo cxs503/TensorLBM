@@ -19,7 +19,16 @@ from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_
 from .config_io import load_config_json, save_config_json
 from .d3q19 import equilibrium3d, macroscopic3d
 from .logging_config import configure_logging, logger
-from .obstacles import compute_obstacle_forces_3d, compute_obstacle_moments_3d, wigley_hull_mask
+from .obstacles import compute_obstacle_forces_3d, compute_obstacle_moments_3d
+from .postprocess import (
+    compute_pressure_coefficient,
+    compute_q_criterion,
+    compute_recirculation_length,
+    compute_velocity_magnitude,
+    compute_vorticity_3d,
+    extract_wake_profile,
+)
+from .ship_cad import ShipHullType, build_hull_mask, export_hull_stl, generate_hull_previews
 from .turbulence import collide_smagorinsky_mrt3d
 from .utils import (
     DiagnosticPoint,
@@ -35,11 +44,12 @@ import matplotlib.pyplot as plt
 
 @dataclass(frozen=True)
 class ShipHullFlowConfig:
-    """Configuration for a 3-D Wigley hull channel-flow simulation."""
+    """Configuration for a 3-D parametric ship-hull channel-flow simulation."""
 
     nx: int = 160
     ny: int = 60
     nz: int = 40
+    hull_type: str = ShipHullType.WIGLEY.value
     u_in: float = 0.05
     re: float = 200.0
     hull_length: float = 80.0
@@ -56,11 +66,13 @@ class ShipHullFlowConfig:
     run_name: str | None = None
     seed: int = 0
     device: str = "cpu"
+    export_stl: bool = False
     overwrite: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
         object.__setattr__(self, "device", self.device.lower())
+        object.__setattr__(self, "hull_type", ShipHullType(self.hull_type).value)
 
     @property
     def nu(self) -> float:
@@ -81,6 +93,7 @@ class ShipHullFlowConfig:
         return self.water_depth if self.water_depth > 0.0 else float(self.nz)
 
     def validate(self) -> None:
+        ShipHullType(self.hull_type)
         if self.nx < 16 or self.ny < 8 or self.nz < 8:
             raise ValueError("nx, ny, and nz must be at least 16, 8, and 8")
         if self.n_steps < 1:
@@ -107,7 +120,7 @@ class ShipHullFlowConfig:
             return self.run_name
         re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
         return (
-            f"nx{self.nx}_ny{self.ny}_nz{self.nz}_re{re_label}"
+            f"{self.hull_type}_nx{self.nx}_ny{self.ny}_nz{self.nz}_re{re_label}"
             f"_uin{self.u_in:.3f}_L{int(self.hull_length)}"
             f"_B{int(self.hull_beam)}_T{int(self.hull_draft)}"
             f"_steps{self.n_steps}"
@@ -173,8 +186,133 @@ def _save_ship_snapshot(
     plt.close(fig)
 
 
+def _save_cad_artifacts(run_dir: Path, config: ShipHullFlowConfig) -> dict[str, object]:
+    """Save CAD artefacts for the selected hull and return CAD summary data."""
+    hull_type = ShipHullType(config.hull_type)
+    _, hull_stats = build_hull_mask(
+        hull_type=hull_type,
+        nx=config.nx,
+        ny=config.ny,
+        nz=config.nz,
+        cx=config.nx * 0.35,
+        cy=config.ny * 0.5,
+        cz_keel=config.nz * 0.1,
+        length=config.hull_length,
+        beam=config.hull_beam,
+        draft=config.hull_draft,
+        device=config.device,
+    )
+    cb_theoretical = float(hull_stats["Cb"])
+    cb_numerical = float(hull_stats["Cb_numerical"])
+    cb_error_pct = abs(cb_numerical - cb_theoretical) / max(abs(cb_theoretical), 1e-12) * 100.0
+    cad_summary: dict[str, object] = {
+        **hull_stats,
+        "Cb_theoretical": cb_theoretical,
+        "Cb_relative_error_pct": cb_error_pct,
+    }
+
+    fig = generate_hull_previews(
+        hull_type,
+        length=config.hull_length,
+        beam=config.hull_beam,
+        draft=config.hull_draft,
+    )
+    fig.savefig(run_dir / "cad_preview.png", dpi=140)
+    plt.close(fig)
+
+    if config.export_stl:
+        export_hull_stl(
+            hull_type,
+            length=config.hull_length,
+            beam=config.hull_beam,
+            draft=config.hull_draft,
+            output_path=run_dir / "hull.stl",
+        )
+
+    (run_dir / "cad_summary.json").write_text(
+        f"{json.dumps(cad_summary, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+    return cad_summary
+
+
+def _save_postprocess_summary(
+    run_dir: Path,
+    config: ShipHullFlowConfig,
+    diagnostics: list[dict[str, object]],
+    obstacle: torch.Tensor,
+    cad_summary: dict[str, object],
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+) -> dict[str, object]:
+    """Save ship post-processing artefacts and return the summary payload."""
+    trailing_edge = int(round(float(cad_summary["cx"]) + float(cad_summary["length"]) * 0.5))
+    wake_offset = int(config.hull_length * 0.125)
+    wake_x = min(config.nx - 1, max(trailing_edge + 1, trailing_edge + wake_offset))
+    wake_profile = extract_wake_profile(ux, wake_x).detach().cpu()
+    with (run_dir / "wake_profile.csv").open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["y_index", "ux"])
+        for y_idx, value in enumerate(wake_profile.tolist()):
+            writer.writerow([y_idx, value])
+
+    recent = diagnostics[-min(5, len(diagnostics)) :]
+    cd_vals = [float(d["cd"]) for d in recent]
+    cs_vals = [float(d["cs"]) for d in recent]
+    cl_vals = [float(d["cl"]) for d in recent]
+    drag_scale = max(abs(sum(cd_vals) / len(cd_vals)), 1e-12)
+
+    cp = compute_pressure_coefficient(rho, config.u_in)
+    fluid_cp = cp.masked_select(~obstacle)
+    omega_x, omega_y, omega_z = compute_vorticity_3d(ux, uy, uz)
+    omega_mag = compute_velocity_magnitude(omega_x, omega_y, omega_z)
+    q_field = compute_q_criterion(ux, uy, uz)
+    fluid_q = q_field.masked_select(~obstacle)
+
+    summary: dict[str, object] = {
+        "forces": {
+            "samples_used": len(recent),
+            "cd_mean": sum(cd_vals) / len(cd_vals),
+            "cs_mean": sum(cs_vals) / len(cs_vals),
+            "cl_mean": sum(cl_vals) / len(cl_vals),
+            "cs_abs_ratio_to_cd": sum(abs(v) for v in cs_vals) / len(cs_vals) / drag_scale,
+            "cl_abs_ratio_to_cd": sum(abs(v) for v in cl_vals) / len(cl_vals) / drag_scale,
+        },
+        "wake": {
+            "x_index": wake_x,
+            "ux_min": float(wake_profile.min().item()),
+            "ux_mean": float(wake_profile.mean().item()),
+            "velocity_deficit_max": config.u_in - float(wake_profile.min().item()),
+            "recirculation_length_lu": compute_recirculation_length(ux, obstacle),
+        },
+        "pressure": {
+            "cp_min": float(fluid_cp.min().item()),
+            "cp_max": float(fluid_cp.max().item()),
+        },
+        "vorticity": {
+            "omega_max": float(omega_mag.max().item()),
+            "q_positive_fraction": float((fluid_q > 0.0).float().mean().item()),
+        },
+        "acceptance": {
+            "cb_within_25pct": float(cad_summary["Cb_relative_error_pct"]) < 25.0,
+            "drag_positive": abs(sum(cd_vals) / len(cd_vals)) > 0.0,
+            "sideforce_small": (sum(abs(v) for v in cs_vals) / len(cs_vals) / drag_scale) < 0.10,
+            "lift_small": (sum(abs(v) for v in cl_vals) / len(cl_vals) / drag_scale) < 0.25,
+        },
+    }
+    summary["acceptance"]["workflow_ok"] = all(summary["acceptance"].values())
+
+    (run_dir / "postprocess_summary.json").write_text(
+        f"{json.dumps(summary, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+    return summary
+
+
 def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
-    """Run a 3-D Wigley hull channel-flow simulation and save results."""
+    """Run a 3-D ship-hull CAD + channel-flow simulation and save results."""
     from .solver3d import stream3d
 
     configure_logging()
@@ -189,12 +327,14 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
         config.resolved_run_name(),
         config.overwrite,
     )
+    cad_summary = _save_cad_artifacts(run_dir, config)
 
     metadata: dict[str, object] = {
         "config": {**asdict(config), "output_root": str(config.output_root)},
         "derived": {"nu": config.nu, "tau": config.tau, "froude": config.froude},
         "runtime": {"torch_version": torch.__version__, "device": str(device)},
         "reproducibility": get_reproducibility_metadata(),
+        "cad": cad_summary,
     }
 
     cx_hull = config.nx * 0.35
@@ -202,17 +342,18 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
     cz_keel = config.nz * 0.1
     effective_depth = config._effective_water_depth()
 
-    obstacle = wigley_hull_mask(
-        config.nx,
-        config.ny,
-        config.nz,
+    obstacle, _ = build_hull_mask(
+        hull_type=config.hull_type,
+        nx=config.nx,
+        ny=config.ny,
+        nz=config.nz,
         cx=cx_hull,
         cy=cy_hull,
         cz_keel=cz_keel,
         length=config.hull_length,
         beam=config.hull_beam,
         draft=config.hull_draft,
-        device=device,
+        device=str(device),
     )
     wall_mask = make_channel_wall_mask_3d(config.nz, config.ny, config.nx, obstacle, device=device)
 
@@ -249,6 +390,10 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
 
     diagnostics: list[dict[str, object]] = []
     use_waves = config.wave_amp > 0.0
+    final_rho: torch.Tensor | None = None
+    final_ux: torch.Tensor | None = None
+    final_uy: torch.Tensor | None = None
+    final_uz: torch.Tensor | None = None
 
     for step in range(1, config.n_steps + 1):
         f = collide_smagorinsky_mrt3d(f, tau=config.tau, C_s=config.smagorinsky_cs)
@@ -294,8 +439,9 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
             ux = ux.masked_fill(obstacle, 0.0)
             uy = uy.masked_fill(obstacle, 0.0)
             uz = uz.masked_fill(obstacle, 0.0)
-            speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
+            speed = compute_velocity_magnitude(ux, uy, uz)
             mass = float(rho.sum().item())
+            final_rho, final_ux, final_uy, final_uz = rho, ux, uy, uz
 
             point = DiagnosticPoint(
                 step=step,
@@ -335,6 +481,19 @@ def run_ship_hull_flow(config: ShipHullFlowConfig) -> Path:
             writer.writerow([d["step"], d["cd"], d["cs"], d["cl"], d["mx"], d["my"], d["mz"]])
 
     metadata["diagnostics"] = diagnostics
+    if final_rho is None or final_ux is None or final_uy is None or final_uz is None:
+        raise RuntimeError("Ship run completed without any diagnostic output")
+    metadata["postprocess"] = _save_postprocess_summary(
+        run_dir,
+        config,
+        diagnostics,
+        obstacle,
+        cad_summary,
+        final_rho,
+        final_ux,
+        final_uy,
+        final_uz,
+    )
     metadata_path = run_dir / "run_metadata.json"
     metadata_path.write_text(
         f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",

@@ -68,6 +68,21 @@ PYTHONPATH=src python examples/sphere_flow_3d.py \
   --run-name smoke --overwrite
 ```
 
+## Run the ship CAD-to-flow workflow
+
+```bash
+PYTHONPATH=src python examples/ship_hull_flow.py \
+  --hull-type wigley \
+  --nx 80 --ny 40 --nz 30 \
+  --hull-length 40 --hull-beam 6 --hull-draft 8 \
+  --re 200 --n-steps 2000 --output-interval 200 \
+  --export-stl --run-name ship_workflow --overwrite
+```
+
+This workflow now writes CAD artefacts (`cad_preview.png`, optional `hull.stl`),
+solver outputs (`run_metadata.json`, `forces.csv`, `flow_step_*.png`), and
+post-processing files (`postprocess_summary.json`, `wake_profile.csv`).
+
 ## Batch parameter scan
 
 ```bash
@@ -114,7 +129,7 @@ GitHub Actions runs the same test command on every push and pull request.
 | Sloshing tank | Natural frequency ω₁ | Faltinsen formula | Faltinsen (1978) | < 2% |
 | Near-bed pipeline | Strouhal St (Re=200, e/D=0.5) | measured | Bearman & Zdravkovich (1978) | — |
 | Turbulent channel | Log-law slope κ (Re_τ=100) | ≈ 0.41 | 0.41 (von Kármán) | < 5% |
-| Wigley hull | Drag Cd (Re=200) | Cd > 0 | positive (as expected) | — |
+| Wigley ship workflow | Cb error + symmetry checks (Re=200) | Cb error < 25%, \|Cd\| > 0, \|Cs\|/\|Cd\| < 0.1, \|Cl\|/\|Cd\| < 0.25 | analytical Cb + symmetry | pass |
 | Lid-driven cavity | u-centreline (Re=100,400,1000) | matched | Ghia et al. (1982) | < 1% |
 
 Run the full benchmark suite:
@@ -127,4 +142,3 @@ PYTHONPATH=src python benchmarks/bench_multiphase.py
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, coding conventions, and how to add a new solver or benchmark.
-
