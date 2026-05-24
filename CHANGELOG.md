@@ -30,12 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Thermal LBM** (`thermal.py`): double-distribution-function model (D2Q9 momentum + D2Q5 temperature), equilibrium, BGK collision, streaming, macroscopic recovery, and Boussinesq buoyancy force.
 - `CONTRIBUTING.md` with coding conventions, PR workflow, and guides for adding new solvers and benchmarks.
 - Quantitative validation summary table in `README.md`.
+- Ship CAD-to-flow workflow outputs for `run_ship_hull_flow`: CAD preview/statistics, optional STL export, wake-profile CSV, and post-processing summary JSON with symmetry and wake metrics.
 
 ### Changed
 - Example runners now emit structured log messages instead of raw `print()` output.
 - Runner metadata now includes reproducibility information.
 - CI installs from the package metadata (`pip install -e ".[dev]"`), runs mypy, and reports test coverage.
 - Runtime requirements now include `tqdm` for optional progress reporting.
+- Ship-hull CLI and marine benchmark now exercise the full ship workflow from CAD modelling through LBM solve and quantitative post-processing checks.
 
 ## [0.1.0] - Initial release
 
