@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import base64
+import json
 import mimetypes
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from .. import job_manager
@@ -16,6 +17,47 @@ router = APIRouter()
 async def list_jobs() -> list[dict]:
     """Return all jobs sorted newest-first."""
     return job_manager.list_jobs()
+
+
+@router.get("/compare")
+async def compare_jobs(
+    ids: list[str] = Query(  # noqa: B008  (FastAPI dependency-injection idiom)
+        ..., description="Job IDs to compare (repeat the parameter)"
+    ),
+) -> dict:
+    """Return side-by-side metadata for a small set of jobs.
+
+    Each entry contains the job descriptor plus, when available, the parsed
+    ``run_metadata.json`` written by the solver. Unknown job IDs are reported
+    in the ``missing`` field. This endpoint powers the frontend "Compare runs"
+    panel and is also useful for scripted post-processing.
+    """
+    if not ids:
+        raise HTTPException(status_code=400, detail="Provide at least one job id")
+    if len(ids) > 10:
+        raise HTTPException(status_code=400, detail="Compare at most 10 jobs at once")
+
+    results: list[dict] = []
+    missing: list[str] = []
+    for jid in ids:
+        job = job_manager.get_job(jid)
+        if job is None:
+            missing.append(jid)
+            continue
+        meta: dict = {}
+        candidates = list(job.output_dir.rglob("run_metadata.json"))
+        if candidates:
+            try:
+                meta = json.loads(candidates[0].read_text())
+            except (OSError, json.JSONDecodeError):
+                meta = {}
+        results.append(
+            {
+                "job": job.to_dict(),
+                "metadata": meta,
+            }
+        )
+    return {"jobs": results, "missing": missing}
 
 
 @router.get("/{job_id}")
@@ -119,7 +161,6 @@ async def get_metadata(job_id: str) -> dict:
     if job is None:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
 
-    import json
     candidates = list(job.output_dir.rglob("run_metadata.json"))
     if not candidates:
         return {"job_id": job_id, "metadata": {}}
