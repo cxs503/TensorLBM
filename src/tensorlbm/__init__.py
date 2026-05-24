@@ -102,6 +102,12 @@ from .obstacles import (
     compute_obstacle_moments_3d,
     wigley_hull_mask,
 )
+from .pipeline_flow import (
+    PipelineFlowConfig,
+    make_pipeline_wall_mask,
+    measure_strouhal,
+    run_pipeline_flow,
+)
 from .porous_media import (
     CapillaryInvasionConfig,
     LaplaceTestConfig,
@@ -133,6 +139,12 @@ from .preprocess_geo import (
 from .protocols import BoundaryCondition, CollisionOperator
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
 from .simulation import LBMSimulation
+from .sloshing_tank import (
+    SloshingTankConfig,
+    faltinsen_natural_frequency,
+    make_sloshing_wall_mask,
+    run_sloshing_tank,
+)
 from .solver import collide_bgk, collide_mrt, correct_mass, stream
 from .solver3d import collide_bgk3d, collide_mrt3d, correct_mass3d, stream3d
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
@@ -150,6 +162,12 @@ from .turbulence import (
     collide_wale_bgk,
     collide_wale_bgk3d,
     collide_wale_bgk27,
+)
+from .turbulent_channel import (
+    TurbulentChannelConfig,
+    log_law_velocity,
+    run_turbulent_channel,
+    viscous_sublayer_velocity,
 )
 from .unit_converter import LBMUnitConverter
 from .utils import (
@@ -204,6 +222,21 @@ __all__ = [
     "run_backward_facing_step",
     "make_bfs_solid_mask",
     "measure_reattachment_length",
+    # Near-bed pipeline flow benchmark
+    "PipelineFlowConfig",
+    "run_pipeline_flow",
+    "make_pipeline_wall_mask",
+    "measure_strouhal",
+    # Sloshing tank benchmark
+    "SloshingTankConfig",
+    "run_sloshing_tank",
+    "make_sloshing_wall_mask",
+    "faltinsen_natural_frequency",
+    # Turbulent channel flow benchmark
+    "TurbulentChannelConfig",
+    "run_turbulent_channel",
+    "log_law_velocity",
+    "viscous_sublayer_velocity",
     # D3Q19 lattice
     "C3D",
     "W3D",
