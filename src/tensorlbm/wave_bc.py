@@ -205,8 +205,153 @@ def apply_wave_inlet_3d(
     return f
 
 
+def jonswap_spectrum(
+    omega: torch.Tensor,
+    omega_p: float,
+    alpha_pm: float = 0.0081,
+    gamma: float = 3.3,
+    g: float = 9.81,
+) -> torch.Tensor:
+    """Evaluate the JONSWAP wave spectrum.
+
+    Args:
+        omega: Angular-frequency samples.
+        omega_p: Peak angular frequency.
+        alpha_pm: Pierson-Moskowitz coefficient.
+        gamma: Peak-enhancement factor.
+        g: Gravitational acceleration used by the caller.
+
+    Returns:
+        JONSWAP spectral density evaluated at ``omega``.
+    """
+    omega_safe = torch.clamp(omega, min=1e-12)
+    sigma = torch.where(omega <= omega_p, 0.07, 0.09)
+    r = torch.exp(-0.5 * ((omega_safe - omega_p) / (sigma * omega_p)) ** 2)
+    spectrum = (
+        alpha_pm
+        * g**2
+        / omega_safe**5
+        * torch.exp(-1.25 * (omega_p / omega_safe) ** 4)
+        * gamma**r
+    )
+    return torch.where(omega > 0.0, spectrum, torch.zeros_like(spectrum))
+
+
+def jonswap_wave_velocity_3d(
+    nz: int,
+    ny: int,
+    step: int,
+    omega_components: torch.Tensor,
+    amplitude_components: torch.Tensor,
+    phase_components: torch.Tensor,
+    k_components: torch.Tensor,
+    water_depth: float,
+    z_bed: float,
+    u_mean: float,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Superpose Airy-wave components into a JONSWAP inlet profile.
+
+    Args:
+        nz: Number of z-cells.
+        ny: Number of y-cells.
+        step: Current time step.
+        omega_components: Angular frequencies with shape ``(N,)``.
+        amplitude_components: Velocity amplitudes with shape ``(N,)``.
+        phase_components: Phase offsets with shape ``(N,)``.
+        k_components: Wave numbers with shape ``(N,)``.
+        water_depth: Water depth.
+        z_bed: Bed elevation.
+        u_mean: Mean x-velocity offset.
+        device: Target device.
+
+    Returns:
+        Tuple ``(ux, uy, uz)`` of shape ``(nz, ny)``.
+    """
+    z_coords = torch.arange(nz, device=device, dtype=torch.float32)
+    depth_from_bed = (z_coords - z_bed).clamp(min=0.0)
+    ux_profile = torch.zeros(nz, device=device, dtype=torch.float32)
+    uz_profile = torch.zeros(nz, device=device, dtype=torch.float32)
+
+    for omega_i, amp_i, phase_i, k_i in zip(
+        omega_components, amplitude_components, phase_components, k_components, strict=True
+    ):
+        phase = omega_i * step + phase_i
+        kH = torch.clamp(k_i * water_depth, min=1e-8)
+        ux_profile = ux_profile + amp_i * torch.cos(phase) * torch.cosh(
+            k_i * depth_from_bed
+        ) / torch.cosh(kH)
+        uz_profile = uz_profile - amp_i * torch.sin(phase) * torch.sinh(
+            k_i * depth_from_bed
+        ) / torch.sinh(kH)
+
+    ux = ux_profile.unsqueeze(1).expand(nz, ny) + u_mean
+    uy = torch.zeros((nz, ny), device=device, dtype=torch.float32)
+    uz = uz_profile.unsqueeze(1).expand(nz, ny)
+    return ux, uy, uz
+
+
+def apply_jonswap_inlet_3d(
+    f: torch.Tensor,
+    step: int,
+    wall_mask: torch.Tensor,
+    obstacle_mask: torch.Tensor,
+    omega_components: torch.Tensor,
+    amplitude_components: torch.Tensor,
+    phase_components: torch.Tensor,
+    k_components: torch.Tensor,
+    water_depth: float,
+    z_bed: float,
+    u_mean: float,
+    rho_out: float = 1.0,
+) -> torch.Tensor:
+    """Apply a JONSWAP inlet, pressure outlet, and bounce-back update.
+
+    Args:
+        f: D3Q19 distribution tensor of shape ``(19, nz, ny, nx)``.
+        step: Current simulation step.
+        wall_mask: Wall mask of shape ``(nz, ny, nx)``.
+        obstacle_mask: Obstacle mask of shape ``(nz, ny, nx)``.
+        omega_components: Angular frequencies with shape ``(N,)``.
+        amplitude_components: Velocity amplitudes with shape ``(N,)``.
+        phase_components: Phase offsets with shape ``(N,)``.
+        k_components: Wave numbers with shape ``(N,)``.
+        water_depth: Water depth.
+        z_bed: Bed elevation.
+        u_mean: Mean x-velocity.
+        rho_out: Outlet density.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    from .boundaries3d import zou_he_outlet_pressure_3d
+
+    nz, ny = f.shape[1], f.shape[2]
+    ux_in, uy_in, uz_in = jonswap_wave_velocity_3d(
+        nz=nz,
+        ny=ny,
+        step=step,
+        omega_components=omega_components.to(f.device),
+        amplitude_components=amplitude_components.to(f.device),
+        phase_components=phase_components.to(f.device),
+        k_components=k_components.to(f.device),
+        water_depth=water_depth,
+        z_bed=z_bed,
+        u_mean=u_mean,
+        device=f.device,
+    )
+    f = zou_he_inlet_velocity_profile_3d(f, ux_in, uy_in, uz_in)
+    f = zou_he_outlet_pressure_3d(f, rho_out=rho_out)
+    f = bounce_back_cells_3d(f, wall_mask)
+    f = bounce_back_cells_3d(f, obstacle_mask)
+    return f
+
+
 __all__ = [
     "airy_wave_velocity_3d",
     "zou_he_inlet_velocity_profile_3d",
     "apply_wave_inlet_3d",
+    "jonswap_spectrum",
+    "jonswap_wave_velocity_3d",
+    "apply_jonswap_inlet_3d",
 ]

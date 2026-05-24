@@ -31,6 +31,7 @@ __all__ = [
     "random_porosity_mask_2d",
     "random_porosity_mask_3d",
     "compute_q_generic_3d",
+    "poly_to_mask_and_q_2d",
 ]
 
 # ---------------------------------------------------------------------------
@@ -188,6 +189,66 @@ def _voxelize_triangles(  # noqa: PLR0912
         solid[:, iy, ix] = counts % 2 == 1
 
     return solid
+
+
+def poly_to_mask_and_q_2d(
+    vertices: list[tuple[float, float]],
+    ny: int,
+    nx: int,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Rasterize a polygon and compute D2Q9 Bouzidi ``q`` factors.
+
+    Args:
+        vertices: Ordered polygon vertices in lattice units.
+        ny: Number of y-cells.
+        nx: Number of x-cells.
+        device: Target device.
+
+    Returns:
+        Tuple ``(mask, q_field)`` with shapes ``(ny, nx)`` and ``(9, ny, nx)``.
+    """
+    from .d2q9 import C as _C2D
+
+    mask = poly_to_mask_2d(vertices, ny=ny, nx=nx, device=device)
+    q_field = np.full((9, ny, nx), 0.5, dtype=np.float32)
+    verts = np.asarray(vertices, dtype=np.float64)
+    dirs = _C2D.cpu().numpy()
+    mask_np = mask.cpu().numpy()
+
+    for iy in range(ny):
+        for ix in range(nx):
+            if mask_np[iy, ix]:
+                continue
+            px = ix + 0.5
+            py = iy + 0.5
+            for q, (cx, cy) in enumerate(dirs):
+                if cx == 0 and cy == 0:
+                    continue
+                nx_nb = ix + int(cx)
+                ny_nb = iy + int(cy)
+                if not (0 <= nx_nb < nx and 0 <= ny_nb < ny and mask_np[ny_nb, nx_nb]):
+                    continue
+
+                t_min = np.inf
+                for i in range(len(verts)):
+                    x0, y0 = verts[i]
+                    x1, y1 = verts[(i + 1) % len(verts)]
+                    ex = x1 - x0
+                    ey = y1 - y0
+                    denom = cx * ey - cy * ex
+                    if abs(denom) < 1e-12:
+                        continue
+                    dx = x0 - px
+                    dy = y0 - py
+                    t = (dx * ey - dy * ex) / denom
+                    u = (dx * cy - dy * cx) / denom
+                    if 0.0 < t <= 1.0 and 0.0 <= u <= 1.0:
+                        t_min = min(t_min, t)
+                if np.isfinite(t_min):
+                    q_field[q, iy, ix] = float(np.clip(t_min, 0.0, 1.0))
+
+    return mask, torch.from_numpy(q_field).to(device)
 
 
 # ---------------------------------------------------------------------------
