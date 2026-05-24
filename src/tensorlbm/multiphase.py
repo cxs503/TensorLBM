@@ -340,12 +340,13 @@ def collide_sc_single_component(
 def _grad_phase_field(
     rho_r: torch.Tensor,
     rho_b: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute the phase-field gradient via second-order central differences.
 
-    Returns ``(phi, nx_hat, ny_hat)`` all of shape ``(ny, nx)``.
+    Returns ``(phi, nx_hat, ny_hat, mag)`` all of shape ``(ny, nx)``.
     The gradient is computed with periodic wrapping (boundaries are handled
-    externally by bounce-back).
+    externally by bounce-back).  ``mag`` is returned so callers can reuse it
+    without recomputing the four :func:`torch.roll` operations.
     """
     n = rho_r + rho_b
     n_safe = torch.clamp(n, min=1e-12)
@@ -360,7 +361,7 @@ def _grad_phase_field(
     nx_hat = dphi_dx / mag_safe
     ny_hat = dphi_dy / mag_safe
 
-    return phi, nx_hat, ny_hat
+    return phi, nx_hat, ny_hat, mag
 
 
 def color_gradient_step(
@@ -426,14 +427,11 @@ def color_gradient_step(
         f_post = torch.where(solid_mask.unsqueeze(0), f_total, f_post)
 
     # --- 3. Surface-tension perturbation ---
-    # Use masked densities to prevent spurious gradients at solid boundaries
+    # Use masked densities to prevent spurious gradients at solid boundaries.
+    # _grad_phase_field now returns mag directly, avoiding 4 extra torch.roll calls.
     rho_r_safe = rho_r if solid_mask is None else rho_r.masked_fill(solid_mask, 0.0)
     rho_b_safe = rho_b if solid_mask is None else rho_b.masked_fill(solid_mask, 0.0)
-    phi, nhat_x, nhat_y = _grad_phase_field(rho_r_safe, rho_b_safe)
-    mag = torch.sqrt(
-        (0.5 * (torch.roll(phi, -1, dims=-1) - torch.roll(phi, 1, dims=-1))) ** 2
-        + (0.5 * (torch.roll(phi, -1, dims=-2) - torch.roll(phi, 1, dims=-2))) ** 2
-    )
+    _phi, nhat_x, nhat_y, mag = _grad_phase_field(rho_r_safe, rho_b_safe)
 
     # Perturbation: Δfᵢ = (A/2)|∇φ| wᵢ [(cᵢ·n̂)² − Bᵢ]
     # with Bᵢ = 1/3 for D2Q9 (isotropic contribution)
@@ -444,9 +442,10 @@ def color_gradient_step(
     f_post = f_post + perturbation
 
     # --- 4. Recoloring step (Latva-Kokko & Rothman 2005) ---
-    feq_unit = equilibrium(torch.ones_like(rho), torch.zeros_like(ux), torch.zeros_like(uy))
+    # feq at zero velocity with unit density equals wᵢ, so reuse w_view directly
+    # instead of allocating new tensors via equilibrium(ones, zeros, zeros).
     cos_theta = ci_dot_n
-    recolor_amp = beta * (rho_r * rho_b / rho_s).unsqueeze(0) * cos_theta * feq_unit
+    recolor_amp = beta * (rho_r * rho_b / rho_s).unsqueeze(0) * cos_theta * w_view
 
     f_r_out = (rho_r / rho_s).unsqueeze(0) * f_post + recolor_amp
     f_b_out = (rho_b / rho_s).unsqueeze(0) * f_post - recolor_amp
