@@ -102,6 +102,19 @@ from .obstacles import (
     compute_obstacle_moments_3d,
     wigley_hull_mask,
 )
+from .porous_media import (
+    CapillaryInvasionConfig,
+    LaplaceTestConfig,
+    PorousDrainageConfig,
+    TwoPhasePoiseuilleConfig,
+    apply_wall_wettability_sc,
+    make_random_cylinder_medium,
+    make_tube_array_medium,
+    run_capillary_invasion,
+    run_laplace_test,
+    run_porous_drainage,
+    run_two_phase_poiseuille,
+)
 from .postprocess import (
     compute_pressure_coefficient,
     compute_q_criterion,
@@ -268,6 +281,18 @@ __all__ = [
     # Multiphase water-entry benchmark
     "MultiphaseWaterEntryConfig",
     "run_multiphase_water_entry",
+    # Porous-media gas-water displacement benchmarks
+    "make_random_cylinder_medium",
+    "make_tube_array_medium",
+    "apply_wall_wettability_sc",
+    "LaplaceTestConfig",
+    "run_laplace_test",
+    "CapillaryInvasionConfig",
+    "run_capillary_invasion",
+    "TwoPhasePoiseuilleConfig",
+    "run_two_phase_poiseuille",
+    "PorousDrainageConfig",
+    "run_porous_drainage",
     # Shared utilities
     "DiagnosticPoint",
     "resolve_device",
