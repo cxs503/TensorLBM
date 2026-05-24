@@ -101,6 +101,17 @@ async def websocket_endpoint(ws: WebSocket) -> None:
 # Platform status
 # ---------------------------------------------------------------------------
 
+@app.get("/api/health", tags=["Platform"])
+async def health() -> dict:
+    """Lightweight liveness/readiness probe used by external monitors.
+
+    Returns a minimal JSON payload that does not depend on Torch or the job
+    manager and can therefore be served reliably even during startup or when
+    the system is under heavy load.
+    """
+    return {"status": "ok", "service": "tensorlbm-platform"}
+
+
 @app.get("/api/status", tags=["Platform"])
 async def platform_status() -> dict:
     try:

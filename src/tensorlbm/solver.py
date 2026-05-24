@@ -112,6 +112,64 @@ def collide_mrt(
     return (matrix_inv @ moments_star).reshape(9, ny, nx)
 
 
+def collide_rlbm(f: torch.Tensor, tau: float) -> torch.Tensor:
+    """Regularized BGK (RLBM) collision step for D2Q9.
+
+    The non-equilibrium part of *f* is projected onto the second-order Hermite
+    polynomial subspace before the BGK relaxation. This filters out the
+    higher-order ghost (non-hydrodynamic) modes and significantly improves
+    stability at low viscosity (τ → 0.5) without altering the recovered
+    Navier–Stokes physics. See Latt & Chopard, *Math. Comput. Simul.* (2006).
+
+    Reconstruction:
+
+    .. math::
+        \\Pi^{\\mathrm{neq}}_{\\alpha\\beta} =
+            \\sum_i c_{i\\alpha} c_{i\\beta}\\,(f_i - f^{\\mathrm{eq}}_i)
+
+    .. math::
+        f^{\\mathrm{neq,reg}}_i =
+            \\frac{w_i}{2 c_s^4}\\,
+            (c_{i\\alpha} c_{i\\beta} - c_s^2 \\delta_{\\alpha\\beta})\\,
+            \\Pi^{\\mathrm{neq}}_{\\alpha\\beta}
+
+    Args:
+        f:   Distribution tensor of shape ``(9, ny, nx)``.
+        tau: Relaxation time (τ > 0.5). Kinematic viscosity ν = (τ − ½)/3.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    from .d2q9 import _c_on, _w_on  # noqa: PLC0415
+
+    device = f.device
+    c = _c_on(device).to(f.dtype)
+    w = _w_on(device).to(f.dtype)
+
+    rho, ux, uy = macroscopic(f)
+    feq = equilibrium(rho, ux, uy)
+    fneq = f - feq
+
+    cx = c[:, 0].view(9, 1, 1)
+    cy = c[:, 1].view(9, 1, 1)
+
+    # Second-order non-equilibrium moments Π_αβ = Σ_i c_iα c_iβ fneq_i
+    pi_xx = (cx * cx * fneq).sum(dim=0)
+    pi_yy = (cy * cy * fneq).sum(dim=0)
+    pi_xy = (cx * cy * fneq).sum(dim=0)
+
+    # Regularized non-equilibrium part using Hermite projection.
+    # H_iαβ = c_iα c_iβ − c_s^2 δ_αβ; c_s^2 = 1/3, 1/(2 c_s^4) = 9/2
+    cs2 = 1.0 / 3.0
+    h_xx = cx * cx - cs2
+    h_yy = cy * cy - cs2
+    h_xy = cx * cy  # symmetric, contributes twice via αβ + βα
+    w_view = w.view(9, 1, 1)
+    fneq_reg = (9.0 / 2.0) * w_view * (h_xx * pi_xx + h_yy * pi_yy + 2.0 * h_xy * pi_xy)
+
+    return feq + (1.0 - 1.0 / tau) * fneq_reg
+
+
 def stream(f: torch.Tensor) -> torch.Tensor:
     """Vectorised streaming by gathering from shifted source indices (periodic).
 
@@ -211,6 +269,7 @@ __all__ = [
     "apply_simple_channel_boundaries",
     "collide_bgk",
     "collide_mrt",
+    "collide_rlbm",
     "collide_trt",
     "stream",
     "correct_mass",
