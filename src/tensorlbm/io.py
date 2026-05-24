@@ -265,4 +265,124 @@ def save_vtk_binary(
     return path
 
 
-__all__ = ["save_vtk", "save_vtk_binary", "save_hdf5"]
+def save_xdmf(
+    h5_path: str | Path,
+    xdmf_path: str | Path,
+    step: int,
+    ux_shape: tuple[int, ...],
+    has_uz: bool = False,
+    has_rho: bool = False,
+) -> Path:
+    """Write an XDMF metadata file for an existing TensorLBM HDF5 output.
+
+    Args:
+        h5_path: Path to the HDF5 file.
+        xdmf_path: Output XDMF path.
+        step: Simulation step number.
+        ux_shape: Spatial shape of ``ux``.
+        has_uz: Whether a ``uz`` dataset exists.
+        has_rho: Whether a ``rho`` dataset exists.
+
+    Returns:
+        Resolved output XDMF path.
+    """
+    h5_path = Path(h5_path)
+    xdmf_path = Path(xdmf_path)
+    group = f"step_{step:06d}"
+    h5_name = h5_path.name
+
+    if len(ux_shape) == 3:
+        nz, ny, nx = ux_shape
+        topology_type = "3DCoRectMesh"
+        dimensions = f"{nz} {ny} {nx}"
+        geometry_type = "ORIGIN_DXDYDZ"
+        geom_dims = 3
+        vector_dim = 3 if has_uz else 2
+        join_args = "$0, $1, $2" if has_uz else "$0, $1"
+        velocity_items = [
+            (
+                f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
+                f"Precision=\"4\" Format=\"HDF\">\n"
+                f"            {h5_name}:/{group}/ux\n"
+                f"          </DataItem>"
+            ),
+            (
+                f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
+                f"Precision=\"4\" Format=\"HDF\">\n"
+                f"            {h5_name}:/{group}/uy\n"
+                f"          </DataItem>"
+            ),
+        ]
+        if has_uz:
+            velocity_items.append(
+
+                    f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
+                    f"Precision=\"4\" Format=\"HDF\">\n"
+                    f"            {h5_name}:/{group}/uz\n"
+                    f"          </DataItem>"
+
+            )
+    elif len(ux_shape) == 2:
+        ny, nx = ux_shape
+        topology_type = "2DCoRectMesh"
+        dimensions = f"{ny} {nx}"
+        geometry_type = "ORIGIN_DXDY"
+        geom_dims = 2
+        vector_dim = 2
+        join_args = "$0, $1"
+        velocity_items = [
+            (
+                f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
+                f"Precision=\"4\" Format=\"HDF\">\n"
+                f"            {h5_name}:/{group}/ux\n"
+                f"          </DataItem>"
+            ),
+            (
+                f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
+                f"Precision=\"4\" Format=\"HDF\">\n"
+                f"            {h5_name}:/{group}/uy\n"
+                f"          </DataItem>"
+            ),
+        ]
+    else:
+        raise ValueError(f"ux_shape must have length 2 or 3, got {ux_shape}")
+
+    rho_block = ""
+    if has_rho:
+        rho_block = f'''
+      <Attribute Name="rho" AttributeType="Scalar" Center="Node">
+        <DataItem Dimensions="{dimensions}" NumberType="Float" Precision="4" Format="HDF">
+          {h5_name}:/{group}/rho
+        </DataItem>
+      </Attribute>'''
+
+    zeros = " ".join(["0.0"] * geom_dims)
+    ones = " ".join(["1.0"] * geom_dims)
+    xml = f'''<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="2.0">
+  <Domain>
+    <Grid Name="{group}" GridType="Uniform">
+      <Topology TopologyType="{topology_type}" Dimensions="{dimensions}"/>
+      <Geometry GeometryType="{geometry_type}">
+        <DataItem Format="XML" Dimensions="{geom_dims}">{zeros}</DataItem>
+        <DataItem Format="XML" Dimensions="{geom_dims}">{ones}</DataItem>
+      </Geometry>
+      <Attribute Name="velocity" AttributeType="Vector" Center="Node">
+        <DataItem
+            ItemType="Function"
+            Dimensions="{dimensions} {vector_dim}"
+            Function="JOIN({join_args})"
+        >
+{chr(10).join(velocity_items)}
+        </DataItem>
+      </Attribute>{rho_block}
+    </Grid>
+  </Domain>
+</Xdmf>
+'''
+    xdmf_path.write_text(xml, encoding="utf-8")
+    return xdmf_path.resolve()
+
+
+__all__ = ["save_vtk", "save_vtk_binary", "save_hdf5", "save_xdmf"]

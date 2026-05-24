@@ -57,13 +57,18 @@ from .d3q27 import (
 )
 from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
 from .dam_break import DamBreakConfig, run_dam_break
+from .hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface
 from .ibm import (
     ibm_apply_body_force_2d,
+    ibm_apply_body_force_3d,
     ibm_delta_4pt,
     ibm_delta_hat,
     ibm_direct_forcing,
+    ibm_direct_forcing_3d,
     ibm_force_spread,
+    ibm_force_spread_3d,
     ibm_velocity_interpolate,
+    ibm_velocity_interpolate_3d,
 )
 from .interpolated_bc import (
     bouzidi_bounce_back,
@@ -71,7 +76,7 @@ from .interpolated_bc import (
     compute_q_circle,
     compute_q_sphere,
 )
-from .io import save_hdf5, save_vtk, save_vtk_binary
+from .io import save_hdf5, save_vtk, save_vtk_binary, save_xdmf
 from .lid_driven_cavity import (
     GHIA_RE100,
     GHIA_RE400,
@@ -147,6 +152,8 @@ from .porous_media3d import (
 )
 from .postprocess import (
     RunningStats,
+    compute_added_mass_2d,
+    compute_added_mass_3d,
     compute_divergence,
     compute_drag_lift_coefficients,
     compute_enstrophy_2d,
@@ -155,6 +162,7 @@ from .postprocess import (
     compute_pressure_coefficient,
     compute_q_criterion,
     compute_recirculation_length,
+    compute_strouhal_fft,
     compute_velocity_magnitude,
     compute_vorticity_2d,
     compute_vorticity_3d,
@@ -164,6 +172,7 @@ from .postprocess import (
 from .preprocess_geo import (
     compute_q_generic_3d,
     poly_to_mask_2d,
+    poly_to_mask_and_q_2d,
     random_porosity_mask_2d,
     random_porosity_mask_3d,
     voxelize_stl_3d,
@@ -207,7 +216,20 @@ from .thermal import (
     macroscopic_thermal,
     stream_thermal,
 )
+from .thermal3d import (
+    C_D3Q7,
+    W_D3Q7,
+    ThermalCavity3DConfig,
+    apply_buoyancy_force_3d,
+    collide_thermal_bgk_3d,
+    equilibrium_thermal_3d,
+    macroscopic_thermal_3d,
+    run_thermal_cavity_3d,
+    stream_thermal_3d,
+)
 from .turbulence import (
+    collide_dynamic_smagorinsky_bgk,
+    collide_dynamic_smagorinsky_bgk3d,
     collide_smagorinsky_bgk,
     collide_smagorinsky_bgk3d,
     collide_smagorinsky_bgk27,
@@ -236,7 +258,10 @@ from .utils import (
 )
 from .wave_bc import (
     airy_wave_velocity_3d,
+    apply_jonswap_inlet_3d,
     apply_wave_inlet_3d,
+    jonswap_spectrum,
+    jonswap_wave_velocity_3d,
     zou_he_inlet_velocity_profile_3d,
 )
 
@@ -431,6 +456,7 @@ __all__ = [
     "save_vtk",
     "save_vtk_binary",
     "save_hdf5",
+    "save_xdmf",
     "extract_velocity_profile",
     "extract_wake_profile",
     "compute_recirculation_length",
@@ -444,6 +470,9 @@ __all__ = [
     "compute_enstrophy_2d",
     "compute_divergence",
     "compute_drag_lift_coefficients",
+    "compute_strouhal_fft",
+    "compute_added_mass_2d",
+    "compute_added_mass_3d",
     "RunningStats",
     "CollisionOperator",
     "BoundaryCondition",
@@ -485,6 +514,7 @@ __all__ = [
     "LBMSimulation",
     # Pre-processing geometry
     "poly_to_mask_2d",
+    "poly_to_mask_and_q_2d",
     "voxelize_stl_3d",
     "random_porosity_mask_2d",
     "random_porosity_mask_3d",
@@ -499,4 +529,28 @@ __all__ = [
     "stream_thermal",
     "macroscopic_thermal",
     "apply_buoyancy_force",
+    "C_D3Q7",
+    "W_D3Q7",
+    "ThermalCavity3DConfig",
+    "equilibrium_thermal_3d",
+    "collide_thermal_bgk_3d",
+    "stream_thermal_3d",
+    "macroscopic_thermal_3d",
+    "apply_buoyancy_force_3d",
+    "run_thermal_cavity_3d",
+    # IBM 3D
+    "ibm_velocity_interpolate_3d",
+    "ibm_force_spread_3d",
+    "ibm_direct_forcing_3d",
+    "ibm_apply_body_force_3d",
+    # Dynamic Smagorinsky
+    "collide_dynamic_smagorinsky_bgk",
+    "collide_dynamic_smagorinsky_bgk3d",
+    # Wave BC additions
+    "jonswap_spectrum",
+    "jonswap_wave_velocity_3d",
+    "apply_jonswap_inlet_3d",
+    # Free-surface hull benchmark
+    "HullFreeSurfaceConfig",
+    "run_hull_free_surface",
 ]
