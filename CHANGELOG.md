@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-05-24
 
 ### Added
 - Modern Python packaging via `pyproject.toml` with editable-install and dev extras support.
@@ -15,20 +15,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scientific VTK and HDF5 output helpers.
 - Post-processing utilities for velocity profiles, pressure coefficient, and Q-criterion.
 - Protocol-based extension interfaces for custom collision operators and boundary conditions.
-- YAML/TOML configuration loading with environment-variable overrides.
+- YAML/TOML configuration loading with environment-variable overrides; new `load_config_yaml` convenience function.
 - Reproducibility metadata capture including git commit, Python version, and package versions.
-- Mass-correction helpers for 2-D and 3-D solvers.
+- Mass-correction helpers for 2-D and 3-D solvers; automatic mass correction every `output_interval` steps in cylinder-flow and sphere-flow runners.
 - Bouzidi interpolated bounce-back support for curved 2-D boundaries.
-- Full D3Q27 lattice implementation with BGK collision and streaming helpers.
+- Full D3Q27 lattice implementation with BGK/MRT collision and streaming helpers.
 - Verification tests for Poiseuille flow and Taylor-Green vortex decay.
 - Property-based tests for collision invariants and D3Q27 lattice properties.
 - MLUPS benchmark scripts for 2-D and 3-D kernels.
-- Progress bars for selected long-running example runners.
+- Progress bars (tqdm) for cylinder-flow, sphere-flow, and turbulent-channel runners.
+- **Two-relaxation-time (TRT) collision** (`collide_trt`, `collide_trt3d`) for D2Q9 and D3Q19, with the Ginzburg magic-parameter default (Λ = 3/16) that eliminates Poiseuille wall-placement errors.
+- **3D porous-media module** (`porous_media3d.py`): `make_random_sphere_medium`, `make_tube_array_medium_3d`, `PorousDrainageConfig3D`, `run_porous_drainage_3d`.
+- **Immersed Boundary Method** (`ibm.py`): direct-forcing IBM with 2-point hat and 4-point cosine delta kernels, velocity interpolation, force spreading, and Guo body-force application.
+- **Thermal LBM** (`thermal.py`): double-distribution-function model (D2Q9 momentum + D2Q5 temperature), equilibrium, BGK collision, streaming, macroscopic recovery, and Boussinesq buoyancy force.
+- `CONTRIBUTING.md` with coding conventions, PR workflow, and guides for adding new solvers and benchmarks.
+- Quantitative validation summary table in `README.md`.
 
 ### Changed
 - Example runners now emit structured log messages instead of raw `print()` output.
 - Runner metadata now includes reproducibility information.
-- CI installs from the package metadata, runs mypy, and reports test coverage.
+- CI installs from the package metadata (`pip install -e ".[dev]"`), runs mypy, and reports test coverage.
 - Runtime requirements now include `tqdm` for optional progress reporting.
 
 ## [0.1.0] - Initial release

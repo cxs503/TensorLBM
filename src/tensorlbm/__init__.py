@@ -36,7 +36,7 @@ from .boundaries_d3q27 import (
     zou_he_outlet_pressure_27,
 )
 from .checkpoint import load_checkpoint, save_checkpoint
-from .config_io import load_config, load_config_json, save_config_json
+from .config_io import load_config, load_config_json, load_config_yaml, save_config_json
 from .constants import D2Q9
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
 from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
@@ -57,6 +57,14 @@ from .d3q27 import (
 )
 from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
 from .dam_break import DamBreakConfig, run_dam_break
+from .ibm import (
+    ibm_apply_body_force_2d,
+    ibm_delta_4pt,
+    ibm_delta_hat,
+    ibm_direct_forcing,
+    ibm_force_spread,
+    ibm_velocity_interpolate,
+)
 from .interpolated_bc import (
     bouzidi_bounce_back,
     bouzidi_bounce_back_3d,
@@ -131,6 +139,12 @@ from .porous_media import (
     run_porous_drainage,
     run_two_phase_poiseuille,
 )
+from .porous_media3d import (
+    PorousDrainageConfig3D,
+    make_random_sphere_medium,
+    make_tube_array_medium_3d,
+    run_porous_drainage_3d,
+)
 from .postprocess import (
     RunningStats,
     compute_divergence,
@@ -163,10 +177,19 @@ from .sloshing_tank import (
     make_sloshing_wall_mask,
     run_sloshing_tank,
 )
-from .solver import collide_bgk, collide_mrt, correct_mass, stream
-from .solver3d import collide_bgk3d, collide_mrt3d, correct_mass3d, stream3d
+from .solver import collide_bgk, collide_mrt, collide_trt, correct_mass, stream
+from .solver3d import collide_bgk3d, collide_mrt3d, collide_trt3d, correct_mass3d, stream3d
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
 from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
+from .thermal import (
+    C_D2Q5,
+    W_D2Q5,
+    apply_buoyancy_force,
+    collide_thermal_bgk,
+    equilibrium_thermal,
+    macroscopic_thermal,
+    stream_thermal,
+)
 from .turbulence import (
     collide_smagorinsky_bgk,
     collide_smagorinsky_bgk3d,
@@ -220,6 +243,7 @@ __all__ = [
     # 2D solvers
     "collide_bgk",
     "collide_mrt",
+    "collide_trt",
     "stream",
     "correct_mass",
     # 2D runner
@@ -276,6 +300,7 @@ __all__ = [
     # 3D solvers
     "collide_bgk3d",
     "collide_mrt3d",
+    "collide_trt3d",
     "stream3d",
     "correct_mass3d",
     # 3D runners
@@ -353,6 +378,18 @@ __all__ = [
     "run_two_phase_poiseuille",
     "PorousDrainageConfig",
     "run_porous_drainage",
+    # 3D porous-media benchmarks
+    "make_random_sphere_medium",
+    "make_tube_array_medium_3d",
+    "PorousDrainageConfig3D",
+    "run_porous_drainage_3d",
+    # Immersed Boundary Method (IBM)
+    "ibm_delta_hat",
+    "ibm_delta_4pt",
+    "ibm_velocity_interpolate",
+    "ibm_force_spread",
+    "ibm_direct_forcing",
+    "ibm_apply_body_force_2d",
     # Shared utilities
     "DiagnosticPoint",
     "resolve_device",
@@ -380,6 +417,7 @@ __all__ = [
     "CollisionOperator",
     "BoundaryCondition",
     "load_config",
+    "load_config_yaml",
     "save_config_json",
     "load_config_json",
     # D3Q27 lattice
@@ -422,4 +460,12 @@ __all__ = [
     "compute_q_generic_3d",
     # Unit converter
     "LBMUnitConverter",
+    # Thermal LBM (D2Q9 + D2Q5 double-distribution)
+    "C_D2Q5",
+    "W_D2Q5",
+    "equilibrium_thermal",
+    "collide_thermal_bgk",
+    "stream_thermal",
+    "macroscopic_thermal",
+    "apply_buoyancy_force",
 ]

@@ -174,4 +174,41 @@ def load_config_json(config_class: type[_T], path: str | Path) -> _T:
     return config_class(**raw)
 
 
-__all__ = ["load_config", "save_config_json", "load_config_json"]
+def load_config_yaml(
+    config_class: type[_T],
+    path: str | Path,
+    env_prefix: str = "TENSORLBM",
+) -> _T:
+    """Load a dataclass-based Config from a YAML file.
+
+    A convenience wrapper around :func:`load_config` that is explicit about
+    the file format and raises :class:`ImportError` immediately when
+    ``pyyaml`` is not installed.
+
+    Args:
+        config_class: A :func:`dataclasses.dataclass` type to instantiate.
+        path: Path to a ``.yaml`` or ``.yml`` configuration file.
+        env_prefix: Prefix for environment-variable overrides.
+
+    Returns:
+        An instance of *config_class* populated from the file and env vars.
+
+    Raises:
+        ImportError: If ``pyyaml`` is not installed.
+        ValueError: If the file is not a YAML file.
+    """
+    path = Path(path)
+    if path.suffix.lower() not in {".yaml", ".yml"}:
+        raise ValueError(
+            f"load_config_yaml expects a .yaml or .yml file, got {path.suffix!r}"
+        )
+    try:
+        import yaml as _yaml  # noqa: F401 – import check only
+    except ImportError as exc:
+        raise ImportError(
+            "pyyaml is required to load YAML configs: pip install pyyaml"
+        ) from exc
+    return load_config(config_class, path, env_prefix=env_prefix)
+
+
+__all__ = ["load_config", "load_config_yaml", "save_config_json", "load_config_json"]

@@ -105,3 +105,26 @@ PYTHONPATH=src pytest -q
 ```
 
 GitHub Actions runs the same test command on every push and pull request.
+
+## Quantitative validation summary
+
+| Benchmark | Parameter | TensorLBM | Reference | Error |
+|-----------|-----------|-----------|-----------|-------|
+| 2D cylinder flow | Strouhal St (Re=100) | ≈ 0.183 | 0.166 (Williamson 1989) | ~10% |
+| Sloshing tank | Natural frequency ω₁ | Faltinsen formula | Faltinsen (1978) | < 2% |
+| Near-bed pipeline | Strouhal St (Re=200, e/D=0.5) | measured | Bearman & Zdravkovich (1978) | — |
+| Turbulent channel | Log-law slope κ (Re_τ=100) | ≈ 0.41 | 0.41 (von Kármán) | < 5% |
+| Wigley hull | Drag Cd (Re=200) | Cd > 0 | positive (as expected) | — |
+| Lid-driven cavity | u-centreline (Re=100,400,1000) | matched | Ghia et al. (1982) | < 1% |
+
+Run the full benchmark suite:
+
+```bash
+PYTHONPATH=src python benchmarks/bench_marine.py
+PYTHONPATH=src python benchmarks/bench_multiphase.py
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, coding conventions, and how to add a new solver or benchmark.
+
