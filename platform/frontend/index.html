@@ -178,6 +178,7 @@
     <a href="#" onclick="showTab('solve',this)"><i class="bi bi-play-circle"></i> Solve</a>
     <a href="#" onclick="showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> Post-process</a>
     <a href="#" onclick="showTab('benchmarks',this)"><i class="bi bi-trophy"></i> Benchmarks</a>
+    <a href="#" onclick="showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> Compare</a>
   </nav>
   <span class="ms-auto small" id="ws-status"><span class="dot dot-queued"></span> Connecting…</span>
 </div>
@@ -741,6 +742,36 @@
       </div>
     </div><!-- /benchmarks -->
 
+    <!-- ================================================================ -->
+    <!-- COMPARE RUNS -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-compare">
+      <h4 class="mb-3"><i class="bi bi-arrow-left-right"></i> Compare runs</h4>
+      <div class="card mb-3">
+        <div class="card-body small">
+          <p class="mb-2">Select 2–10 completed jobs and view their derived parameters and diagnostics side by side.</p>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-9">
+              <label class="form-label mb-1">Jobs</label>
+              <div id="compare-job-checkboxes" class="border rounded p-2"
+                   style="max-height:220px;overflow-y:auto;background:#fafbfc">
+                <span class="text-muted">Loading…</span>
+              </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+              <button class="btn btn-primary btn-sm flex-grow-1" onclick="runCompare()">
+                <i class="bi bi-arrow-left-right"></i> Compare
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="refreshCompareJobList()">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="compare-result"></div>
+    </div><!-- /compare -->
+
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
 
@@ -924,7 +955,102 @@ function showTab(name, el) {
   document.getElementById(`panel-${name}`).classList.add('active');
   document.querySelectorAll('.top-navbar nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
+  if (name === 'compare') refreshCompareJobList();
   return false;
+}
+
+// ============================================================
+// Compare runs
+// ============================================================
+function refreshCompareJobList() {
+  const box = document.getElementById('compare-job-checkboxes');
+  if (!box) return;
+  const jobs = Object.values(jobsMap)
+    .filter(j => j.status === 'completed')
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  if (!jobs.length) {
+    box.innerHTML = '<span class="text-muted small">No completed jobs yet.</span>';
+    return;
+  }
+  box.innerHTML = jobs.map(j => `
+    <div class="form-check small">
+      <input class="form-check-input compare-job-cb" type="checkbox" value="${j.job_id}" id="cmp-${j.job_id}">
+      <label class="form-check-label" for="cmp-${j.job_id}">
+        <span class="dot dot-${j.status}"></span>
+        ${escHtml(j.name)} <span class="text-muted">(${j.job_id.slice(0, 8)}…)</span>
+      </label>
+    </div>`).join('');
+}
+
+async function runCompare() {
+  const ids = Array.from(document.querySelectorAll('.compare-job-cb:checked')).map(cb => cb.value);
+  const result = document.getElementById('compare-result');
+  if (ids.length < 2) {
+    result.innerHTML = '<div class="alert alert-warning">Select at least 2 jobs to compare.</div>';
+    return;
+  }
+  if (ids.length > 10) {
+    result.innerHTML = '<div class="alert alert-warning">Select at most 10 jobs.</div>';
+    return;
+  }
+  result.innerHTML = '<div class="text-muted small">Loading…</div>';
+  try {
+    const qs = ids.map(id => `ids=${encodeURIComponent(id)}`).join('&');
+    const r = await fetch(`/api/jobs/compare?${qs}`).then(x => x.json());
+    if (!r.jobs || !r.jobs.length) {
+      result.innerHTML = '<div class="alert alert-warning">No data returned.</div>';
+      return;
+    }
+    // Collect all metadata keys from "derived" + top-level numeric fields
+    const rows = [];
+    rows.push(['Job', ...r.jobs.map(e => `<code>${e.job.job_id.slice(0, 8)}</code>`)]);
+    rows.push(['Name', ...r.jobs.map(e => escHtml(e.job.name))]);
+    rows.push(['Type', ...r.jobs.map(e => escHtml(e.job.job_type))]);
+    rows.push(['Status', ...r.jobs.map(e => `<span class="badge bg-secondary">${e.job.status}</span>`)]);
+    // Union of derived keys
+    const derivedKeys = new Set();
+    r.jobs.forEach(e => Object.keys(e.metadata.derived || {}).forEach(k => derivedKeys.add(k)));
+    Array.from(derivedKeys).sort().forEach(k => {
+      rows.push([
+        `<i>derived.${k}</i>`,
+        ...r.jobs.map(e => {
+          const v = (e.metadata.derived || {})[k];
+          return v === undefined ? '<span class="text-muted">—</span>'
+                                 : (typeof v === 'number' ? v.toExponential(4) : escHtml(String(v)));
+        }),
+      ]);
+    });
+    // Scalar top-level metadata keys (numbers / strings)
+    const scalarKeys = new Set();
+    r.jobs.forEach(e => Object.entries(e.metadata).forEach(([k, v]) => {
+      if (typeof v === 'number' || typeof v === 'string') scalarKeys.add(k);
+    }));
+    Array.from(scalarKeys).sort().forEach(k => {
+      rows.push([
+        k,
+        ...r.jobs.map(e => {
+          const v = e.metadata[k];
+          if (v === undefined) return '<span class="text-muted">—</span>';
+          return typeof v === 'number' ? (Math.abs(v) < 1e-3 || Math.abs(v) >= 1e4
+                                          ? v.toExponential(4) : v.toFixed(6))
+                                       : escHtml(String(v));
+        }),
+      ]);
+    });
+
+    const thead = `<thead><tr><th>Field</th>${r.jobs.map((_, i) =>
+      `<th>Run ${i + 1}</th>`).join('')}</tr></thead>`;
+    const tbody = rows.map(row =>
+      `<tr><th class="small">${row[0]}</th>${row.slice(1).map(c =>
+        `<td class="small">${c}</td>`).join('')}</tr>`).join('');
+    let html = `<div class="table-responsive"><table class="table table-sm table-hover">${thead}<tbody>${tbody}</tbody></table></div>`;
+    if (r.missing && r.missing.length) {
+      html += `<div class="alert alert-warning small mt-2">Missing jobs: ${r.missing.join(', ')}</div>`;
+    }
+    result.innerHTML = html;
+  } catch (e) {
+    result.innerHTML = `<div class="alert alert-danger small">Error: ${escHtml(String(e))}</div>`;
+  }
 }
 
 // ============================================================
