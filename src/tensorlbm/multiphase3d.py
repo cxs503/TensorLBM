@@ -397,15 +397,10 @@ def color_gradient_step_3d(
     f_post = f_post + perturbation
 
     # --- 3. Recoloring step (Latva-Kokko & Rothman 2005) ---
-    # feq_unit: equilibrium at zero velocity with unit density → wᵢ per cell
-    feq_unit = equilibrium3d(
-        torch.ones_like(rho),
-        torch.zeros_like(ux),
-        torch.zeros_like(uy),
-        torch.zeros_like(uz),
-    )
+    # feq at zero velocity with unit density equals wᵢ, so reuse w_v directly
+    # instead of allocating new tensors via equilibrium3d(ones, zeros, zeros, zeros).
     recolor_amp = (
-        beta * (rho_r_s * rho_b_s / rho_safe).unsqueeze(0) * ci_dot_n * feq_unit
+        beta * (rho_r_s * rho_b_s / rho_safe).unsqueeze(0) * ci_dot_n * w_v
     )
 
     f_r_out = (rho_r_s / rho_safe).unsqueeze(0) * f_post + recolor_amp
