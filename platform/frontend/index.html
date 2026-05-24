@@ -164,6 +164,65 @@
     #lightbox.show { display: flex; }
     #lightbox img { max-width: 90vw; max-height: 90vh; border-radius: .4rem; }
     #lightbox-close { position: absolute; top: 1rem; right: 1.5rem; color: #fff; font-size: 2rem; cursor: pointer; }
+
+    /* AI Agent chat panel */
+    .agent-layout { display: flex; flex-direction: column; height: calc(100vh - var(--nav-height) - 3rem); }
+    .agent-messages {
+      flex: 1; overflow-y: auto;
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: .5rem;
+      padding: 1rem;
+      margin-bottom: .75rem;
+    }
+    .agent-msg { margin-bottom: 1rem; display: flex; gap: .6rem; }
+    .agent-msg .bubble {
+      max-width: 80%;
+      padding: .6rem .9rem;
+      border-radius: .65rem;
+      font-size: .92rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .agent-msg.user { justify-content: flex-end; }
+    .agent-msg.user .bubble { background: #0d6efd; color: #fff; border-bottom-right-radius: .15rem; }
+    .agent-msg.assistant .bubble { background: #f1f3f5; color: #212529; border-bottom-left-radius: .15rem; }
+    .agent-msg .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #e9ecef; color: #495057;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 1rem;
+    }
+    .agent-msg.user .avatar { background: #0d6efd; color: #fff; order: 2; }
+    .agent-action {
+      margin-top: .4rem;
+      font-size: .8rem;
+      background: #fff;
+      border: 1px dashed #adb5bd;
+      border-radius: .35rem;
+      padding: .35rem .5rem;
+      font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+      color: #495057;
+    }
+    .agent-suggestions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+    .agent-suggestions button {
+      font-size: .8rem;
+      padding: .25rem .55rem;
+      border: 1px solid #ced4da;
+      background: #fff;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .agent-suggestions button:hover { background: #e7f1ff; border-color: #0d6efd; }
+    .agent-input-row { display: flex; gap: .5rem; }
+    .agent-input-row input { flex: 1; }
+    .agent-info-bar {
+      font-size: .8rem; color: #6c757d;
+      margin-bottom: .5rem;
+    }
+    .agent-typing { font-style: italic; color: #6c757d; font-size: .85rem; }
   </style>
 </head>
 <body>
@@ -179,6 +238,7 @@
     <a href="#" onclick="showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> Post-process</a>
     <a href="#" onclick="showTab('benchmarks',this)"><i class="bi bi-trophy"></i> Benchmarks</a>
     <a href="#" onclick="showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> Compare</a>
+    <a href="#" onclick="showTab('agent',this)"><i class="bi bi-robot"></i> AI Agent</a>
   </nav>
   <span class="ms-auto small" id="ws-status"><span class="dot dot-queued"></span> Connecting…</span>
 </div>
@@ -772,6 +832,46 @@
       <div id="compare-result"></div>
     </div><!-- /compare -->
 
+    <!-- ================================================================ -->
+    <!-- AI AGENT -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-agent">
+      <h4 class="mb-2"><i class="bi bi-robot"></i> AI Agent <small class="text-muted">– 对话式建模 → 计算 → 分析</small></h4>
+      <div class="agent-info-bar" id="agent-info-bar">
+        Loading agent info…
+      </div>
+      <div class="agent-layout">
+        <div class="agent-messages" id="agent-messages">
+          <div class="agent-msg assistant">
+            <div class="avatar"><i class="bi bi-robot"></i></div>
+            <div>
+              <div class="bubble">👋 你好！我是 TensorLBM 智能助手。我可以帮你完成"建模 → 求解 → 分析可视化"的全流程：
+- 请告诉我你想做的算例，例如：<em>「跑一个 Re=200 的圆柱绕流，nx=200，迭代步数=2000」</em>
+- 也可以查询任务状态、分析结果、提取速度剖面等。
+- Hi! I am the TensorLBM agent. Tell me a scenario (cylinder flow, dam break, ship hull, …) and I will submit it for you.</div>
+              <div class="agent-suggestions">
+                <button onclick="agentSend('Help – what can you do?')">Help</button>
+                <button onclick="agentSend('Run a cylinder flow at Re=100 nx=120 n_steps=400')">Cylinder Re=100</button>
+                <button onclick="agentSend('做一个方腔算例 Re=400 nx=64 步数=2000')">方腔 Re=400</button>
+                <button onclick="agentSend('Show recent jobs')">List recent jobs</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="agent-input-row">
+          <input id="agent-input" type="text" class="form-control"
+                 placeholder="例如：用圆柱绕流做一个 Re=200 的算例，步数=2000 / Run a dam break …"
+                 onkeydown="if(event.key==='Enter'){agentSubmit();}" />
+          <button class="btn btn-primary" onclick="agentSubmit()" id="agent-send-btn">
+            <i class="bi bi-send"></i> Send
+          </button>
+          <button class="btn btn-outline-secondary" onclick="agentClear()" title="Clear conversation">
+            <i class="bi bi-eraser"></i>
+          </button>
+        </div>
+      </div>
+    </div><!-- /agent -->
+
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
 
@@ -802,6 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
   connectWS();
   loadStatus();
   loadJobs();
+  loadAgentInfo();
   onSimTypeChange();
   setInterval(loadStatus, 15000);
   // Populate device selects after status loaded
@@ -956,6 +1057,12 @@ function showTab(name, el) {
   document.querySelectorAll('.top-navbar nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
   if (name === 'compare') refreshCompareJobList();
+  if (name === 'agent') {
+    setTimeout(() => {
+      const el = document.getElementById('agent-input');
+      if (el) el.focus();
+    }, 50);
+  }
   return false;
 }
 
@@ -1724,6 +1831,123 @@ async function runBenchmark(bench) {
   } catch(e) {
     showToast(`Error: ${e.message}`, 'danger');
   }
+}
+
+// ============================================================
+// AI Agent (LLM-driven chat)
+// ============================================================
+let agentHistory = [];   // [{role, content, actions?}]
+let agentBusy = false;
+
+async function loadAgentInfo() {
+  try {
+    const info = await api('GET', '/api/agent/info');
+    const el = document.getElementById('agent-info-bar');
+    if (info.llm_enabled) {
+      el.innerHTML = `<i class="bi bi-stars"></i> LLM enabled: <code>${escHtml(info.llm_model)}</code> · ${info.tools_count} tools`;
+    } else {
+      el.innerHTML = `<i class="bi bi-cpu"></i> Offline mode (${escHtml(info.fallback)}) · ${info.tools_count} tools. Set <code>TENSORLBM_LLM_API_KEY</code> to enable a remote LLM.`;
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function agentAddMessage(role, content, actions, suggestions) {
+  const wrap = document.getElementById('agent-messages');
+  const div = document.createElement('div');
+  div.className = 'agent-msg ' + role;
+  const icon = role === 'user' ? 'bi-person-fill' : 'bi-robot';
+  let actionsHtml = '';
+  if (actions && actions.length) {
+    actionsHtml = actions.map(a => {
+      const args = Object.entries(a.args || {})
+        .map(([k,v]) => `${k}=${JSON.stringify(v)}`).join(', ');
+      const jobId = a.result && a.result.job_id ? a.result.job_id : null;
+      const jobLine = jobId
+        ? ` → <a href="#" onclick="selectJob('${jobId}');return false;">view job ${jobId.substring(0,8)}…</a>`
+        : '';
+      return `<div class="agent-action"><i class="bi bi-tools"></i> <strong>${escHtml(a.tool)}</strong>(${escHtml(args)})${jobLine}</div>`;
+    }).join('');
+  }
+  let sugHtml = '';
+  if (suggestions && suggestions.length) {
+    sugHtml = '<div class="agent-suggestions">' +
+      suggestions.map(s =>
+        `<button onclick="agentSend(${JSON.stringify(s).replace(/"/g,'&quot;')})">${escHtml(s)}</button>`
+      ).join('') + '</div>';
+  }
+  div.innerHTML = `
+    <div class="avatar"><i class="bi ${icon}"></i></div>
+    <div>
+      <div class="bubble">${escHtml(content)}</div>
+      ${actionsHtml}
+      ${sugHtml}
+    </div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function agentAddTyping() {
+  const wrap = document.getElementById('agent-messages');
+  const div = document.createElement('div');
+  div.id = 'agent-typing-row';
+  div.className = 'agent-msg assistant';
+  div.innerHTML = `
+    <div class="avatar"><i class="bi bi-robot"></i></div>
+    <div><div class="bubble agent-typing"><span class="spinner-border spinner-border-sm"></span> Thinking…</div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function agentRemoveTyping() {
+  const el = document.getElementById('agent-typing-row');
+  if (el) el.remove();
+}
+
+async function agentSubmit() {
+  const input = document.getElementById('agent-input');
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = '';
+  await agentSend(message);
+}
+
+async function agentSend(message) {
+  if (agentBusy) return;
+  agentBusy = true;
+  document.getElementById('agent-send-btn').disabled = true;
+  agentAddMessage('user', message, null, null);
+  agentHistory.push({role: 'user', content: message});
+  agentAddTyping();
+  try {
+    const resp = await api('POST', '/api/agent/chat', {
+      message, history: agentHistory.slice(0, -1),
+    });
+    agentRemoveTyping();
+    agentAddMessage('assistant', resp.reply, resp.actions, resp.suggestions);
+    agentHistory.push({
+      role: 'assistant',
+      content: resp.reply,
+      actions: resp.actions || [],
+    });
+    // Refresh job sidebar if anything was submitted
+    if ((resp.actions || []).some(a => a.tool && a.tool.startsWith('submit_'))) {
+      loadJobs();
+    }
+  } catch (e) {
+    agentRemoveTyping();
+    agentAddMessage('assistant', '⚠️ Error: ' + e.message, null, null);
+  } finally {
+    agentBusy = false;
+    document.getElementById('agent-send-btn').disabled = false;
+    document.getElementById('agent-input').focus();
+  }
+}
+
+function agentClear() {
+  agentHistory = [];
+  const wrap = document.getElementById('agent-messages');
+  // Keep only the first welcome message
+  while (wrap.children.length > 1) wrap.removeChild(wrap.lastChild);
 }
 
 // ============================================================
