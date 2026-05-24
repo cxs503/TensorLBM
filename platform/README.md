@@ -14,7 +14,9 @@ platform/
 │       ├── preprocess.py  Geometry generation & unit conversion
 │       ├── solver.py      All simulation endpoints
 │       ├── postprocess.py Result analysis & metadata
-│       └── benchmarks.py  Validation benchmark suites
+│       ├── benchmarks.py  Validation benchmark suites
+│       └── agent.py       Conversational LLM agent (chat / capabilities)
+├── backend/agent_core.py  Agent tool registry + intent parser
 └── frontend/
     └── index.html     Single-page app (Bootstrap 5, vanilla JS)
 ```
@@ -82,6 +84,43 @@ All simulation types are submitted as background jobs and monitored in real time
 | Lid-driven cavity – Ghia | Ghia et al. (1982) Re=100/400/1000 |
 | MLUPS performance | D2Q9 BGK throughput |
 | Porous media | Laplace + capillary invasion |
+
+### AI Agent (LLM-powered)
+A conversational assistant that drives the full pipeline (modelling → solver
+→ post-processing) from natural language, in Chinese or English. Exposed
+under `/api/agent/*` and accessible via the **AI Agent** tab in the UI.
+
+* `POST /api/agent/chat` — `{message, history}` → `{reply, actions,
+  suggestions, used_llm, intent}`
+* `GET  /api/agent/capabilities` — list of registered tools/scenarios
+* `GET  /api/agent/info` — runtime info (LLM enabled? which model?)
+
+Example prompts:
+
+```
+Run a cylinder flow at Re=200 with nx=200, n_steps=2000
+用圆柱绕流做一个 Re=120 的算例，步数=2000
+做一个方腔算例 Re=400
+Analyze job <id> and extract a velocity profile
+```
+
+The agent works **offline by default** through a rule-based intent
+parser that recognises every solver scenario plus job-management
+intents (status, list, analyze, velocity profile). To switch to a
+remote LLM for richer free-form replies, set:
+
+```bash
+export TENSORLBM_LLM_API_KEY=sk-…
+export TENSORLBM_LLM_BASE_URL=https://api.openai.com/v1   # optional
+export TENSORLBM_LLM_MODEL=gpt-4o-mini                    # optional
+```
+
+Any OpenAI-compatible Chat-Completions endpoint works (OpenAI,
+Azure OpenAI proxy, vLLM, DeepSeek, Moonshot, etc.). The LLM only
+generates the *natural-language reply* – all platform actions still go
+through the typed, length-capped tool layer, so a hallucinated 10000×10000
+grid cannot escape the safety clamps (`MAX_GRID_2D=1024`, `MAX_GRID_3D=256`,
+`MAX_STEPS=200_000`).
 
 ---
 
