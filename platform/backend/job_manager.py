@@ -48,6 +48,7 @@ class Job:
         self.output_dir: Path = Path(f"/tmp/tensorlbm_platform/{job_id}")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.logs: list[str] = []
+        self.diagnostics: list[dict[str, Any]] = []
         self.result: dict[str, Any] = {}
 
     def to_dict(self) -> dict[str, Any]:
@@ -63,6 +64,7 @@ class Job:
             "error": self.error,
             "output_dir": str(self.output_dir),
             "logs": self.logs[-200:],
+            "diagnostics": self.diagnostics[-50:],
             "result": self.result,
         }
 
@@ -123,11 +125,25 @@ def _notify(job: Job) -> None:
         _event_loop.call_soon_threadsafe(_notify_queue.put_nowait, job.to_dict())
 
 
+def _is_cancelled(job_id: str) -> bool:
+    """Return whether a job has been marked as cancelled."""
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        return job is not None and job.status == JobStatus.CANCELLED
+
+
 def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
     """Execute *fn* in the current thread, updating *job* status."""
     ident = threading.current_thread().ident
     with _thread_job_map_lock:
         _thread_job_map[ident] = job.job_id  # type: ignore[index]
+
+    if _is_cancelled(job.job_id):
+        job.completed_at = datetime.now(UTC).isoformat()
+        _notify(job)
+        with _thread_job_map_lock:
+            _thread_job_map.pop(ident, None)  # type: ignore[arg-type]
+        return
 
     job.status = JobStatus.RUNNING
     job.started_at = datetime.now(UTC).isoformat()
@@ -135,8 +151,9 @@ def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
 
     try:
         result = fn(job)
-        job.status = JobStatus.COMPLETED
-        job.result = result or {}
+        if job.status != JobStatus.CANCELLED:
+            job.status = JobStatus.COMPLETED
+            job.result = result or {}
     except Exception:
         job.status = JobStatus.FAILED
         job.error = traceback.format_exc()
@@ -198,3 +215,42 @@ def delete_job(job_id: str) -> bool:
             del _jobs[job_id]
             return True
         return False
+
+
+def cancel_job(job_id: str) -> bool:
+    """Request cancellation of a queued or running job.
+
+    Sets the job status to CANCELLED if the job is in QUEUED or RUNNING state.
+    Note: this does not interrupt a running thread (LBM steps are not
+    interruptible), but marks the job for cleanup and prevents queued jobs
+    from starting.
+
+    Returns:
+        True if the job was found and its status changed, False otherwise.
+    """
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if job is None:
+            return False
+        if job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+            job.status = JobStatus.CANCELLED
+            job.completed_at = datetime.now(UTC).isoformat()
+            _notify(job)
+            return True
+        return False
+
+
+def push_diagnostic(job_id: str, data: dict[str, Any]) -> None:
+    """Push a per-step diagnostic update for a running job.
+
+    Broadcasting is done via the existing _notify mechanism so all
+    WebSocket subscribers receive live updates.
+    """
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+    if job is None:
+        return
+    job.diagnostics.append(data)
+    if len(job.diagnostics) > 1000:
+        job.diagnostics = job.diagnostics[-1000:]
+    _notify(job)

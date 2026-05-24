@@ -642,6 +642,100 @@ class RunningStats:
         self._m2 = None
 
 
+def compute_strouhal_fft(
+    fy_signal: torch.Tensor,
+    sample_rate: float = 1.0,
+    u_ref: float = 1.0,
+    length_ref: float = 1.0,
+) -> float:
+    """Estimate the Strouhal number from a force signal using the FFT.
+
+    Args:
+        fy_signal: Force-history tensor of shape ``(N,)``.
+        sample_rate: Samples per time unit.
+        u_ref: Reference velocity.
+        length_ref: Reference length.
+
+    Returns:
+        Estimated Strouhal number.
+    """
+    if fy_signal.numel() < 4 or u_ref == 0.0:
+        return 0.0
+    start = fy_signal.numel() // 4
+    signal = fy_signal[start:].float()
+    signal = signal - signal.mean()
+    window = torch.hann_window(signal.numel(), device=signal.device, dtype=signal.dtype)
+    spectrum = torch.fft.rfft(signal * window)
+    amplitude = spectrum.abs()
+    if amplitude.numel() <= 1:
+        return 0.0
+    peak_index = int(torch.argmax(amplitude[1:]).item()) + 1
+    freq = torch.fft.rfftfreq(signal.numel(), d=1.0 / sample_rate, device=signal.device)[peak_index]
+    return float((freq * length_ref / u_ref).item())
+
+
+def compute_added_mass_2d(
+    fx_history: torch.Tensor,
+    fy_history: torch.Tensor,
+    motion_history: torch.Tensor,
+    omega: float,
+    rho_ref: float = 1.0,
+    area: float = 1.0,
+) -> tuple[float, float]:
+    """Estimate 2D added mass and damping from forced-oscillation data.
+
+    Args:
+        fx_history: In-line force history.
+        fy_history: Cross-flow force history.
+        motion_history: Prescribed displacement history.
+        omega: Oscillation angular frequency.
+        rho_ref: Reference density for optional normalization.
+        area: Reference area for optional normalization.
+
+    Returns:
+        Tuple ``(added_mass, damping_coeff)``.
+    """
+    del fy_history
+    x = motion_history.float()
+    xdot = torch.gradient(x, spacing=1.0)[0]
+    design = torch.stack([-omega**2 * x, -omega * xdot], dim=1)
+    solution = torch.linalg.lstsq(design, fx_history.float().unsqueeze(1)).solution.squeeze(1)
+    scale = rho_ref * area if rho_ref * area != 0.0 else 1.0
+    return float(solution[0].item() / scale), float(solution[1].item() / scale)
+
+
+def compute_added_mass_3d(
+    fx_history: torch.Tensor,
+    fy_history: torch.Tensor,
+    fz_history: torch.Tensor,
+    motion_x_history: torch.Tensor,
+    omega: float,
+    rho_ref: float = 1.0,
+    volume: float = 1.0,
+) -> tuple[float, float]:
+    """Estimate 3D added mass and damping from forced-oscillation data.
+
+    Args:
+        fx_history: In-line force history.
+        fy_history: Lateral force history.
+        fz_history: Vertical force history.
+        motion_x_history: Prescribed x-displacement history.
+        omega: Oscillation angular frequency.
+        rho_ref: Reference density for optional normalization.
+        volume: Reference volume for optional normalization.
+
+    Returns:
+        Tuple ``(added_mass_x, damping_x)``.
+    """
+    del fy_history, fz_history
+    x = motion_x_history.float()
+    xdot = torch.gradient(x, spacing=1.0)[0]
+    design = torch.stack([-omega**2 * x, -omega * xdot], dim=1)
+    solution = torch.linalg.lstsq(design, fx_history.float().unsqueeze(1)).solution.squeeze(1)
+    scale = rho_ref * volume if rho_ref * volume != 0.0 else 1.0
+    return float(solution[0].item() / scale), float(solution[1].item() / scale)
+
+
 __all__ = [
     "extract_velocity_profile",
     "extract_wake_profile",
@@ -657,4 +751,7 @@ __all__ = [
     "compute_divergence",
     "compute_drag_lift_coefficients",
     "RunningStats",
+    "compute_strouhal_fft",
+    "compute_added_mass_2d",
+    "compute_added_mass_3d",
 ]
