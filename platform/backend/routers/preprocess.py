@@ -30,11 +30,12 @@ async def polygon_mask(req: PolygonMaskRequest) -> dict:
     """Convert a polygon (list of [x,y] vertices in *pixel* coordinates)
     to a 2-D boolean obstacle mask.  Returns a base64-encoded PNG preview."""
     try:
-        import numpy as np  # noqa: I001
+        import torch
         from tensorlbm import poly_to_mask_2d
 
-        verts = np.array(req.vertices, dtype=np.float32)
-        mask = poly_to_mask_2d(req.ny, req.nx, verts)  # bool ndarray (ny, nx)
+        verts = [tuple(v) for v in req.vertices]
+        mask_t = poly_to_mask_2d(verts, req.ny, req.nx, torch.device("cpu"))
+        mask = mask_t.cpu().numpy()
         img_b64 = _mask_to_b64(mask)
         ones = int(mask.sum())
         return {
@@ -56,21 +57,24 @@ class RandomPorosityRequest(BaseModel):
     nx: int = 128
     ny: int = 128
     porosity: float = 0.4
-    corr_length: float = 5.0
+    sigma: float = 0.0  # smoothing length (0 → uncorrelated)
     seed: int = 0
 
 
 @router.post("/random-porosity-2d")
 async def random_porosity_2d(req: RandomPorosityRequest) -> dict:
     try:
+        import torch
         from tensorlbm import random_porosity_mask_2d
 
-        mask = random_porosity_mask_2d(
+        mask_t = random_porosity_mask_2d(
             req.ny, req.nx,
             porosity=req.porosity,
-            corr_length=req.corr_length,
+            device=torch.device("cpu"),
             seed=req.seed,
+            sigma=req.sigma,
         )
+        mask = mask_t.cpu().numpy()
         actual_porosity = float(1.0 - mask.mean())
         img_b64 = _mask_to_b64(mask)
         return {
@@ -100,6 +104,7 @@ async def voxelize_stl(
         import tempfile
         from pathlib import Path
 
+        import torch
         from tensorlbm import voxelize_stl_3d
 
         content = await file.read()
@@ -107,10 +112,10 @@ async def voxelize_stl(
             tmp.write(content)
             tmp_path = Path(tmp.name)
 
-        mask = voxelize_stl_3d(str(tmp_path), nz, ny, nx)
+        mask = voxelize_stl_3d(str(tmp_path), nx, ny, nz, torch.device("cpu"))
         tmp_path.unlink(missing_ok=True)
 
-        solid = int(mask.sum())
+        solid = int(mask.sum().item())
         total = nx * ny * nz
         return {
             "nx": nx, "ny": ny, "nz": nz,
@@ -141,24 +146,23 @@ async def convert_units(req: UnitConvertRequest) -> dict:
     try:
         from tensorlbm import LBMUnitConverter
 
-        conv = LBMUnitConverter(
-            phys_length=req.phys_length_m,
-            phys_velocity=req.phys_velocity_ms,
-            phys_nu=req.phys_nu_m2s,
-            lbm_length=req.lbm_length,
-            lbm_velocity=req.lbm_velocity,
-        )
         re = req.phys_velocity_ms * req.phys_length_m / req.phys_nu_m2s
-        lbm_nu = conv.lbm_nu
-        tau = 3.0 * lbm_nu + 0.5
+        conv = LBMUnitConverter(
+            re=re,
+            l_phys=req.phys_length_m,
+            u_phys=req.phys_velocity_ms,
+            nu_phys=req.phys_nu_m2s,
+            nx=int(req.lbm_length),
+            u_lb=req.lbm_velocity,
+        )
         return {
             "reynolds_number": round(re, 4),
-            "lbm_nu": round(lbm_nu, 6),
-            "lbm_tau": round(tau, 6),
+            "lbm_nu": round(conv.nu_lb, 6),
+            "lbm_tau": round(conv.tau, 6),
             "dx_m": round(conv.dx, 6),
             "dt_s": round(conv.dt, 10),
-            "mach_number": round(req.lbm_velocity / (1.0 / 3.0 ** 0.5), 4),
-            "stable": tau > 0.5,
+            "mach_number": round(conv.ma, 4),
+            "stable": bool(conv.tau > 0.5),
             "note": "tau > 0.5 is required for BGK stability",
         }
     except Exception as exc:
@@ -170,14 +174,22 @@ async def convert_units(req: UnitConvertRequest) -> dict:
 # ---------------------------------------------------------------------------
 
 def _mask_to_b64(mask: object) -> str:
-    """Render a boolean mask as a base64-encoded PNG data URL."""
+    """Render a boolean mask as a base64-encoded PNG data URL.
+
+    Accepts either a numpy array or a torch tensor.
+    """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import numpy as np
 
+    # Support torch tensors transparently
+    if hasattr(mask, "cpu") and hasattr(mask, "numpy"):
+        mask = mask.cpu().numpy()  # type: ignore[union-attr]
+
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.imshow(mask.astype(np.uint8) * 255, cmap="gray_r", origin="lower", vmin=0, vmax=255)
+    ax.imshow(np.asarray(mask).astype(np.uint8) * 255, cmap="gray_r",
+              origin="lower", vmin=0, vmax=255)
     ax.set_title("Obstacle mask (black = solid)")
     ax.axis("off")
     buf = io.BytesIO()
