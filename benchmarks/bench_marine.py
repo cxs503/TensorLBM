@@ -40,7 +40,6 @@ import sys
 import time
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # Reference data
 # ---------------------------------------------------------------------------
@@ -131,7 +130,7 @@ def bench_cylinder(output_root: Path, full: bool) -> dict[str, object]:
     _row("St (shedding frequency × D / U)", float(st), REF_CYLINDER_ST)
     _section("Mean drag coefficient")
     _row("Cd (momentum-exchange)", float(cd_mean), REF_CYLINDER_CD)
-    print(f"\n  Reference: Williamson (1988),  Zdravkovich (1997)")
+    print("\n  Reference: Williamson (1988),  Zdravkovich (1997)")
 
     return {
         "name": "cylinder_re100",
@@ -197,7 +196,7 @@ def bench_sloshing(output_root: Path, full: bool) -> dict[str, object]:
         print(f"  Acceptance: error < 20%  {status}")
     else:
         print("  (spectrum peak not resolved – increase n_steps or output_interval)")
-    print(f"\n  Reference: Faltinsen (1978) linear sloshing theory")
+    print("\n  Reference: Faltinsen (1978) linear sloshing theory")
 
     return {
         "name": "sloshing_tank",
@@ -250,7 +249,7 @@ def bench_pipeline(output_root: Path, full: bool) -> dict[str, object]:
     _row("St (dominant CL frequency × D / U)", st, REF_PIPELINE_ST)
     _section("Mean drag coefficient")
     print(f"  {'Cd (momentum-exchange)':<35} {cd_mean:8.4f}  (no single ref at this Re/e/D)")
-    print(f"\n  Reference: Bearman & Zdravkovich (1978), Price et al. (2002)")
+    print("\n  Reference: Bearman & Zdravkovich (1978), Price et al. (2002)")
 
     return {
         "name": "pipeline_eD05",
@@ -314,7 +313,7 @@ def bench_turbulent_channel(output_root: Path, full: bool) -> dict[str, object]:
 
     rms_err = float("nan")
     if y_plus_vals:
-        sq_errors = [(s - r) ** 2 for s, r in zip(u_plus_sim, u_plus_ref)]
+        sq_errors = [(s - r) ** 2 for s, r in zip(u_plus_sim, u_plus_ref, strict=False)]
         rms_err = math.sqrt(sum(sq_errors) / len(sq_errors))
 
     _header("Benchmark 4 – Turbulent Channel (Re_τ = 100, Smagorinsky LES)")
@@ -338,7 +337,7 @@ def bench_turbulent_channel(output_root: Path, full: bool) -> dict[str, object]:
     else:
         print("  (No log-layer points resolved – increase ny or Re_τ)")
 
-    print(f"\n  Reference: Moser, Kim & Mansour (1999) DNS data; log-law constants κ=0.41, B=5.2")
+    print("\n  Reference: Moser, Kim & Mansour (1999) DNS data; log-law constants κ=0.41, B=5.2")
 
     return {
         "name": "turbulent_channel_retau100",
@@ -403,12 +402,14 @@ def bench_ship_hull(output_root: Path, full: bool) -> dict[str, object]:
     _section("Resistance coefficients (physical consistency checks)")
     drag_positive = float(cd_mean) > 0.0
     lift_small = abs(float(cl_mean)) < abs(float(cd_mean))
-    print(f"  {'Cd (longitudinal drag, expect > 0)':<45} {cd_mean:8.4f}  {'✓' if drag_positive else '✗'}")
-    print(f"  {'Cl (vertical lift, expect |Cl| < |Cd|)':<45} {cl_mean:8.4f}  {'✓' if lift_small else '✗'}")
-    print(f"\n  Note: no single canonical Cd is available for the Wigley hull at Re=200.")
-    print(f"  Physical checks: Cd > 0 (positive drag) and |Cl| << |Cd| (top-bottom symmetry).")
-    print(f"  Reference: Wigley (1926) hull parametrization;")
-    print(f"             Michell (1898) thin-ship wave-resistance theory.")
+    cd_mark = "✓" if drag_positive else "✗"
+    cl_mark = "✓" if lift_small else "✗"
+    print(f"  {'Cd (longitudinal drag, expect > 0)':<45} {cd_mean:8.4f}  {cd_mark}")
+    print(f"  {'Cl (vertical lift, expect |Cl| < |Cd|)':<45} {cl_mean:8.4f}  {cl_mark}")
+    print("\n  Note: no single canonical Cd is available for the Wigley hull at Re=200.")
+    print("  Physical checks: Cd > 0 (positive drag) and |Cl| << |Cd| (top-bottom symmetry).")
+    print("  Reference: Wigley (1926) hull parametrization;")
+    print("             Michell (1898) thin-ship wave-resistance theory.")
 
     consistency_ok = drag_positive and lift_small
     return {
@@ -441,7 +442,10 @@ def _print_summary(results: list[dict[str, object]]) -> None:
             st_s = float(r["st_sim"])
             st_r = float(r["st_ref"])
             err = abs(st_s - st_r) / st_r * 100.0
-            print(f"  {'Cylinder Re=100':<40} {'St number':<20} {st_s:8.4f} {st_r:8.4f} {err:7.2f}% {_pass(err)}")
+            print(
+                f"  {'Cylinder Re=100':<40} {'St number':<20}"
+                f" {st_s:8.4f} {st_r:8.4f} {err:7.2f}% {_pass(err)}"
+            )
         elif name == "sloshing_tank":
             rel = r.get("relative_error")
             if rel is not None:
@@ -456,21 +460,27 @@ def _print_summary(results: list[dict[str, object]]) -> None:
             st_s = float(r["st_sim"])
             st_r = float(r["st_ref"])
             err = abs(st_s - st_r) / st_r * 100.0
-            print(f"  {'Pipeline Re=200 e/D=0.5':<40} {'St number':<20} {st_s:8.4f} {st_r:8.4f} {err:7.2f}% {_pass(err)}")
+            print(
+                f"  {'Pipeline Re=200 e/D=0.5':<40} {'St number':<20}"
+                f" {st_s:8.4f} {st_r:8.4f} {err:7.2f}% {_pass(err)}"
+            )
         elif name == "turbulent_channel_retau100":
             rms = r.get("rms_loglaw_err")
             if rms is not None:
+                mark = "✓" if float(rms) < 3.0 else "✗"
                 print(
                     f"  {'Turbulent channel Re_τ=100':<40} {'RMS log-law err':<20}"
-                    f" {float(rms):8.4f} {'<3.0':>8} {'':>7}  {'✓' if float(rms) < 3.0 else '✗'}"
+                    f" {float(rms):8.4f} {'<3.0':>8} {'':>7}  {mark}"
                 )
             else:
                 print(f"  {'Turbulent channel Re_τ=100':<40} {'RMS log-law err':<20} {'N/A':>8}")
         elif name == "wigley_hull_re200":
             cd_s = float(r["cd_sim"])
-            cl_s = float(r["cl_sim"])
             checks = "✓" if bool(r.get("consistency_ok", False)) else "✗"
-            print(f"  {'Wigley hull Re=200':<40} {'Cd>0 & |Cl|<Cd':<20} {cd_s:8.4f} {'(checks)':>8} {'':>7}  {checks}")
+            print(
+                f"  {'Wigley hull Re=200':<40} {'Cd>0 & |Cl|<Cd':<20}"
+                f" {cd_s:8.4f} {'(checks)':>8} {'':>7}  {checks}"
+            )
 
     print()
 
@@ -546,10 +556,13 @@ def main() -> None:
     failed = False
     for r in results:
         name = r.get("name", "")
-        if name == "wigley_hull_re200":
-            if not bool(r.get("consistency_ok", True)):
-                print(f"  FAIL: hull physical consistency check failed (Cd={r.get('cd_sim','?')})", file=sys.stderr)
-                failed = True
+        if name == "wigley_hull_re200" and not bool(r.get("consistency_ok", True)):
+            cd_val = r.get("cd_sim", "?")
+            print(
+                f"  FAIL: hull physical consistency check failed (Cd={cd_val})",
+                file=sys.stderr,
+            )
+            failed = True
 
     if failed:
         sys.exit(1)
