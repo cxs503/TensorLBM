@@ -129,7 +129,7 @@ GitHub Actions runs the same test command on every push and pull request.
 | Sloshing tank | Natural frequency ω₁ | Faltinsen formula | Faltinsen (1978) | < 2% |
 | Near-bed pipeline | Strouhal St (Re=200, e/D=0.5) | measured | Bearman & Zdravkovich (1978) | — |
 | Turbulent channel | Log-law slope κ (Re_τ=100) | ≈ 0.41 | 0.41 (von Kármán) | < 5% |
-| Wigley ship workflow | Cb error + symmetry checks (Re=200) | Cb error < 25%, Cd > 0, \|Cs\|/\|Cd\| < 0.1, \|Cl\|/\|Cd\| < 0.25 | analytical Cb + symmetry | pass |
+| Wigley ship workflow | Cb error + symmetry checks (Re=200) | Cb error < 25%, \|Cd\| > 0, \|Cs\|/\|Cd\| < 0.1, \|Cl\|/\|Cd\| < 0.25 | analytical Cb + symmetry | pass |
 | Lid-driven cavity | u-centreline (Re=100,400,1000) | matched | Ghia et al. (1982) | < 1% |
 
 Run the full benchmark suite:
