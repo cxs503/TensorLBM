@@ -120,9 +120,21 @@ _log_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s %(messa
 # ---------------------------------------------------------------------------
 
 def _notify(job: Job) -> None:
-    """Thread-safe notification to the asyncio WebSocket broadcaster."""
-    if _event_loop is not None and _notify_queue is not None:
+    """Thread-safe notification to the asyncio WebSocket broadcaster.
+
+    Silently ignores cases where the bound event loop has already been
+    closed (e.g. between TestClient invocations) so background worker
+    threads never raise.
+    """
+    if _event_loop is None or _notify_queue is None:
+        return
+    try:
+        if _event_loop.is_closed():
+            return
         _event_loop.call_soon_threadsafe(_notify_queue.put_nowait, job.to_dict())
+    except RuntimeError:
+        # Loop closed concurrently – treat as best-effort.
+        return
 
 
 def _is_cancelled(job_id: str) -> bool:

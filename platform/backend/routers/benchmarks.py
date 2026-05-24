@@ -144,11 +144,37 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
             run_multiphase_benchmark_suite,
         )
 
-        cfg = MultiphaseBenchmarkSuiteConfig(
-            fast=params.fast,
-            device=params.device,
-            output_root=job.output_dir,
-        )
+        if params.fast:
+            # Build reduced sub-configs for a quick smoke / CI run.
+            from tensorlbm import (  # noqa: I001
+                SpinodaleConfig,
+                StaticDropletConfig,
+                TwoPhaseChannelCompareConfig,
+            )
+
+            droplet = StaticDropletConfig(
+                nx=40, ny=40, radii=(8.0,), n_steps=200, output_interval=100,
+            )
+            spinodal = SpinodaleConfig(
+                nx=32, ny=32, n_steps=200, output_interval=100,
+            )
+            poiseuille = TwoPhaseChannelCompareConfig()
+            # Some installations may have different field names; use only
+            # the safe top-level overrides.
+            cfg = MultiphaseBenchmarkSuiteConfig(
+                droplet=droplet,
+                spinodal=spinodal,
+                poiseuille=poiseuille,
+                device=params.device,
+                output_root=job.output_dir,
+                overwrite=True,
+            )
+        else:
+            cfg = MultiphaseBenchmarkSuiteConfig(
+                device=params.device,
+                output_root=job.output_dir,
+                overwrite=True,
+            )
         result = run_multiphase_benchmark_suite(cfg)
         return {"summary": str(result)}
 
