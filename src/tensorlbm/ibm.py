@@ -51,6 +51,10 @@ __all__ = [
     "ibm_force_spread",
     "ibm_direct_forcing",
     "ibm_apply_body_force_2d",
+    "ibm_velocity_interpolate_3d",
+    "ibm_force_spread_3d",
+    "ibm_direct_forcing_3d",
+    "ibm_apply_body_force_3d",
 ]
 
 
@@ -309,4 +313,224 @@ def ibm_apply_body_force_2d(
     w_view = w.view(9, 1, 1)
 
     forcing = w_view * 3.0 * (cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0))
+    return f + forcing
+
+
+def ibm_velocity_interpolate_3d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    marker_x: torch.Tensor,
+    marker_y: torch.Tensor,
+    marker_z: torch.Tensor,
+    kernel: str = "hat",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Interpolate a 3D Eulerian velocity field onto Lagrangian markers.
+
+    Args:
+        ux: x-velocity field of shape ``(nz, ny, nx)``.
+        uy: y-velocity field of shape ``(nz, ny, nx)``.
+        uz: z-velocity field of shape ``(nz, ny, nx)``.
+        marker_x: Marker x-coordinates of shape ``(N,)``.
+        marker_y: Marker y-coordinates of shape ``(N,)``.
+        marker_z: Marker z-coordinates of shape ``(N,)``.
+        kernel: Delta kernel name, ``"hat"`` or ``"4pt"``.
+
+    Returns:
+        Tuple of interpolated marker velocities ``(u_mx, u_my, u_mz)``.
+    """
+    nz, ny, nx = ux.shape
+    device = ux.device
+    n_markers = marker_x.shape[0]
+
+    delta_fn = ibm_delta_hat if kernel == "hat" else ibm_delta_4pt
+    support = 2 if kernel == "hat" else 4
+    half_s = support // 2
+
+    u_mx = torch.zeros(n_markers, dtype=ux.dtype, device=device)
+    u_my = torch.zeros(n_markers, dtype=uy.dtype, device=device)
+    u_mz = torch.zeros(n_markers, dtype=uz.dtype, device=device)
+
+    for k in range(n_markers):
+        xk = float(marker_x[k].item())
+        yk = float(marker_y[k].item())
+        zk = float(marker_z[k].item())
+
+        ix0 = math.floor(xk) - half_s + 1
+        iy0 = math.floor(yk) - half_s + 1
+        iz0 = math.floor(zk) - half_s + 1
+
+        for di in range(support):
+            ix = (ix0 + di) % nx
+            rx = torch.tensor(ix0 + di - xk, dtype=ux.dtype, device=device)
+            wx = delta_fn(rx)
+            for dj in range(support):
+                iy = (iy0 + dj) % ny
+                ry = torch.tensor(iy0 + dj - yk, dtype=uy.dtype, device=device)
+                wy = delta_fn(ry)
+                for dk in range(support):
+                    iz = (iz0 + dk) % nz
+                    rz = torch.tensor(iz0 + dk - zk, dtype=uz.dtype, device=device)
+                    wz = delta_fn(rz)
+                    weight = wx * wy * wz
+                    u_mx[k] += weight * ux[iz, iy, ix]
+                    u_my[k] += weight * uy[iz, iy, ix]
+                    u_mz[k] += weight * uz[iz, iy, ix]
+
+    return u_mx, u_my, u_mz
+
+
+def ibm_force_spread_3d(
+    marker_fx: torch.Tensor,
+    marker_fy: torch.Tensor,
+    marker_fz: torch.Tensor,
+    marker_x: torch.Tensor,
+    marker_y: torch.Tensor,
+    marker_z: torch.Tensor,
+    nz: int,
+    ny: int,
+    nx: int,
+    kernel: str = "hat",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Spread 3D Lagrangian marker forces onto the Eulerian grid.
+
+    Args:
+        marker_fx: Marker x-forces of shape ``(N,)``.
+        marker_fy: Marker y-forces of shape ``(N,)``.
+        marker_fz: Marker z-forces of shape ``(N,)``.
+        marker_x: Marker x-coordinates of shape ``(N,)``.
+        marker_y: Marker y-coordinates of shape ``(N,)``.
+        marker_z: Marker z-coordinates of shape ``(N,)``.
+        nz: Number of z-cells.
+        ny: Number of y-cells.
+        nx: Number of x-cells.
+        kernel: Delta kernel name, ``"hat"`` or ``"4pt"``.
+
+    Returns:
+        Tuple ``(fx_grid, fy_grid, fz_grid)`` of shape ``(nz, ny, nx)``.
+    """
+    device = marker_fx.device
+    n_markers = marker_x.shape[0]
+
+    delta_fn = ibm_delta_hat if kernel == "hat" else ibm_delta_4pt
+    support = 2 if kernel == "hat" else 4
+    half_s = support // 2
+
+    fx_grid = torch.zeros((nz, ny, nx), dtype=marker_fx.dtype, device=device)
+    fy_grid = torch.zeros((nz, ny, nx), dtype=marker_fy.dtype, device=device)
+    fz_grid = torch.zeros((nz, ny, nx), dtype=marker_fz.dtype, device=device)
+
+    for k in range(n_markers):
+        xk = float(marker_x[k].item())
+        yk = float(marker_y[k].item())
+        zk = float(marker_z[k].item())
+        fxk = marker_fx[k]
+        fyk = marker_fy[k]
+        fzk = marker_fz[k]
+
+        ix0 = math.floor(xk) - half_s + 1
+        iy0 = math.floor(yk) - half_s + 1
+        iz0 = math.floor(zk) - half_s + 1
+
+        for di in range(support):
+            ix = (ix0 + di) % nx
+            rx = torch.tensor(ix0 + di - xk, dtype=marker_fx.dtype, device=device)
+            wx = delta_fn(rx)
+            for dj in range(support):
+                iy = (iy0 + dj) % ny
+                ry = torch.tensor(iy0 + dj - yk, dtype=marker_fy.dtype, device=device)
+                wy = delta_fn(ry)
+                for dk in range(support):
+                    iz = (iz0 + dk) % nz
+                    rz = torch.tensor(iz0 + dk - zk, dtype=marker_fz.dtype, device=device)
+                    wz = delta_fn(rz)
+                    weight = wx * wy * wz
+                    fx_grid[iz, iy, ix] += weight * fxk
+                    fy_grid[iz, iy, ix] += weight * fyk
+                    fz_grid[iz, iy, ix] += weight * fzk
+
+    return fx_grid, fy_grid, fz_grid
+
+
+def ibm_direct_forcing_3d(
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    marker_x: torch.Tensor,
+    marker_y: torch.Tensor,
+    marker_z: torch.Tensor,
+    u_target_x: torch.Tensor,
+    u_target_y: torch.Tensor,
+    u_target_z: torch.Tensor,
+    kernel: str = "hat",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Compute the 3D direct-forcing IBM body force field.
+
+    Args:
+        ux: x-velocity field of shape ``(nz, ny, nx)``.
+        uy: y-velocity field of shape ``(nz, ny, nx)``.
+        uz: z-velocity field of shape ``(nz, ny, nx)``.
+        marker_x: Marker x-coordinates of shape ``(N,)``.
+        marker_y: Marker y-coordinates of shape ``(N,)``.
+        marker_z: Marker z-coordinates of shape ``(N,)``.
+        u_target_x: Target marker x-velocity of shape ``(N,)``.
+        u_target_y: Target marker y-velocity of shape ``(N,)``.
+        u_target_z: Target marker z-velocity of shape ``(N,)``.
+        kernel: Delta kernel name, ``"hat"`` or ``"4pt"``.
+
+    Returns:
+        Tuple ``(fx_grid, fy_grid, fz_grid)`` of shape ``(nz, ny, nx)``.
+    """
+    nz, ny, nx = ux.shape
+    u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
+        ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel
+    )
+    marker_fx = u_target_x - u_mx
+    marker_fy = u_target_y - u_my
+    marker_fz = u_target_z - u_mz
+    return ibm_force_spread_3d(
+        marker_fx,
+        marker_fy,
+        marker_fz,
+        marker_x,
+        marker_y,
+        marker_z,
+        nz,
+        ny,
+        nx,
+        kernel=kernel,
+    )
+
+
+def ibm_apply_body_force_3d(
+    f: torch.Tensor,
+    fx_grid: torch.Tensor,
+    fy_grid: torch.Tensor,
+    fz_grid: torch.Tensor,
+) -> torch.Tensor:
+    """Apply a 3D Guo body-force correction to a D3Q19 distribution.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        fx_grid: Eulerian x-force field of shape ``(nz, ny, nx)``.
+        fy_grid: Eulerian y-force field of shape ``(nz, ny, nx)``.
+        fz_grid: Eulerian z-force field of shape ``(nz, ny, nx)``.
+
+    Returns:
+        Updated D3Q19 distribution tensor of the same shape.
+    """
+    from .d3q19 import C as C_D3Q19
+    from .d3q19 import W as W_D3Q19
+
+    device = f.device
+    c = C_D3Q19.to(device).float()
+    w = W_D3Q19.to(device).float()
+
+    cx = c[:, 0].view(19, 1, 1, 1)
+    cy = c[:, 1].view(19, 1, 1, 1)
+    cz = c[:, 2].view(19, 1, 1, 1)
+    w_view = w.view(19, 1, 1, 1)
+    forcing = w_view * 3.0 * (
+        cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0) + cz * fz_grid.unsqueeze(0)
+    )
     return f + forcing

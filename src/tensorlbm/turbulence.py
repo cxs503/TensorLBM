@@ -46,6 +46,7 @@ Vreman
 from __future__ import annotations
 
 import torch
+import torch.nn.functional as F
 
 from .d2q9 import C as C2D
 from .d2q9 import equilibrium, macroscopic
@@ -934,6 +935,236 @@ def collide_vreman_bgk27(
     return f - f_neq / tau_eff.unsqueeze(0)
 
 
+def _box_filter_2d(field: torch.Tensor, width: int = 2) -> torch.Tensor:
+    """Apply a size-preserving 2D box filter using average pooling.
+
+    Args:
+        field: Field of shape ``(ny, nx)``.
+        width: Filter width.
+
+    Returns:
+        Filtered field of shape ``(ny, nx)``.
+    """
+    pad_left = width // 2
+    pad_right = width - 1 - pad_left
+    padded = F.pad(
+        field.unsqueeze(0).unsqueeze(0),
+        (pad_left, pad_right, pad_left, pad_right),
+        mode="replicate",
+    )
+    return F.avg_pool2d(padded, kernel_size=width, stride=1)[0, 0]
+
+
+def _box_filter_3d(field: torch.Tensor, width: int = 2) -> torch.Tensor:
+    """Apply a size-preserving 3D box filter using average pooling.
+
+    Args:
+        field: Field of shape ``(nz, ny, nx)``.
+        width: Filter width.
+
+    Returns:
+        Filtered field of shape ``(nz, ny, nx)``.
+    """
+    pad_left = width // 2
+    pad_right = width - 1 - pad_left
+    padded = F.pad(
+        field.unsqueeze(0).unsqueeze(0),
+        (pad_left, pad_right, pad_left, pad_right, pad_left, pad_right),
+        mode="replicate",
+    )
+    return F.avg_pool3d(padded, kernel_size=width, stride=1)[0, 0]
+
+
+def _strain_from_fneq_2d(
+    f_neq: torch.Tensor,
+    rho: torch.Tensor,
+    tau: float,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Estimate the 2D strain-rate tensor from non-equilibrium stresses."""
+    c = C2D.to(f_neq.device).float()
+    cx = c[:, 0].view(9, 1, 1)
+    cy = c[:, 1].view(9, 1, 1)
+    pi_xx = (cx * cx * f_neq).sum(dim=0)
+    pi_yy = (cy * cy * f_neq).sum(dim=0)
+    pi_xy = (cx * cy * f_neq).sum(dim=0)
+    denom = torch.clamp(2.0 * rho * tau * (1.0 / 3.0), min=1e-12)
+    return -pi_xx / denom, -pi_xy / denom, -pi_yy / denom
+
+
+def _strain_from_fneq_3d(
+    f_neq: torch.Tensor,
+    rho: torch.Tensor,
+    tau: float,
+) -> tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+]:
+    """Estimate the 3D strain-rate tensor from non-equilibrium stresses."""
+    c = C3D.to(f_neq.device).float()
+    cx = c[:, 0].view(19, 1, 1, 1)
+    cy = c[:, 1].view(19, 1, 1, 1)
+    cz = c[:, 2].view(19, 1, 1, 1)
+    pi_xx = (cx * cx * f_neq).sum(dim=0)
+    pi_yy = (cy * cy * f_neq).sum(dim=0)
+    pi_zz = (cz * cz * f_neq).sum(dim=0)
+    pi_xy = (cx * cy * f_neq).sum(dim=0)
+    pi_xz = (cx * cz * f_neq).sum(dim=0)
+    pi_yz = (cy * cz * f_neq).sum(dim=0)
+    denom = torch.clamp(2.0 * rho * tau * (1.0 / 3.0), min=1e-12)
+    return (
+        -pi_xx / denom,
+        -pi_xy / denom,
+        -pi_xz / denom,
+        -pi_yy / denom,
+        -pi_yz / denom,
+        -pi_zz / denom,
+    )
+
+
+def _strain_magnitude_2d(
+    s_xx: torch.Tensor,
+    s_xy: torch.Tensor,
+    s_yy: torch.Tensor,
+) -> torch.Tensor:
+    """Return ``|S|`` for a 2D symmetric strain tensor."""
+    return torch.sqrt(torch.clamp(2.0 * (s_xx**2 + s_yy**2 + 2.0 * s_xy**2), min=0.0))
+
+
+def _strain_magnitude_3d(
+    s_xx: torch.Tensor,
+    s_xy: torch.Tensor,
+    s_xz: torch.Tensor,
+    s_yy: torch.Tensor,
+    s_yz: torch.Tensor,
+    s_zz: torch.Tensor,
+) -> torch.Tensor:
+    """Return ``|S|`` for a 3D symmetric strain tensor."""
+    return torch.sqrt(
+        torch.clamp(
+            2.0 * (s_xx**2 + s_yy**2 + s_zz**2 + 2.0 * (s_xy**2 + s_xz**2 + s_yz**2)),
+            min=0.0,
+        )
+    )
+
+
+def collide_dynamic_smagorinsky_bgk(
+    f: torch.Tensor,
+    tau: float,
+    filter_width: int = 2,
+    lambda_clip: float = 0.0,
+) -> torch.Tensor:
+    """D2Q9 BGK collision with a dynamic Smagorinsky closure.
+
+    Args:
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        tau: Molecular relaxation time.
+        filter_width: Test-filter width.
+        lambda_clip: Minimum allowed value for ``C_s^2``.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy = macroscopic(f)
+    feq = equilibrium(rho, ux, uy)
+    f_neq = f - feq
+    s_xx, s_xy, s_yy = _strain_from_fneq_2d(f_neq, rho, tau)
+    s_mag = _strain_magnitude_2d(s_xx, s_xy, s_yy)
+
+    uxf = _box_filter_2d(ux, width=filter_width)
+    uyf = _box_filter_2d(uy, width=filter_width)
+    g11, g12, g21, g22 = _velocity_gradients_2d(uxf, uyf)
+    s_tilde_xx = g11
+    s_tilde_yy = g22
+    s_tilde_xy = 0.5 * (g12 + g21)
+    s_tilde_mag = _strain_magnitude_2d(s_tilde_xx, s_tilde_xy, s_tilde_yy)
+
+    l_xx = _box_filter_2d(ux * ux, width=filter_width) - uxf * uxf
+    l_xy = _box_filter_2d(ux * uy, width=filter_width) - uxf * uyf
+    l_yy = _box_filter_2d(uy * uy, width=filter_width) - uyf * uyf
+
+    m_xx = 2.0 * (4.0 * s_tilde_mag * s_tilde_xx - s_mag * s_xx)
+    m_xy = 2.0 * (4.0 * s_tilde_mag * s_tilde_xy - s_mag * s_xy)
+    m_yy = 2.0 * (4.0 * s_tilde_mag * s_tilde_yy - s_mag * s_yy)
+
+    num = (l_xx * m_xx + 2.0 * l_xy * m_xy + l_yy * m_yy).mean()
+    den = (m_xx**2 + 2.0 * m_xy**2 + m_yy**2).mean()
+    cs2 = torch.clamp(num / torch.clamp(den, min=1e-12), min=lambda_clip, max=0.1)
+    cs = float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())
+
+    nu = (tau - 0.5) / 3.0
+    nu_t = (cs**2) * s_mag
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001)
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
+def collide_dynamic_smagorinsky_bgk3d(
+    f: torch.Tensor,
+    tau: float,
+    filter_width: int = 2,
+    lambda_clip: float = 0.0,
+) -> torch.Tensor:
+    """D3Q19 BGK collision with a dynamic Smagorinsky closure.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Molecular relaxation time.
+        filter_width: Test-filter width.
+        lambda_clip: Minimum allowed value for ``C_s^2``.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    f_neq = f - feq
+    s_xx, s_xy, s_xz, s_yy, s_yz, s_zz = _strain_from_fneq_3d(f_neq, rho, tau)
+    s_mag = _strain_magnitude_3d(s_xx, s_xy, s_xz, s_yy, s_yz, s_zz)
+
+    uxf = _box_filter_3d(ux, width=filter_width)
+    uyf = _box_filter_3d(uy, width=filter_width)
+    uzf = _box_filter_3d(uz, width=filter_width)
+    g11, g12, g13, g21, g22, g23, g31, g32, g33 = _velocity_gradients_3d(uxf, uyf, uzf)
+    s_tilde_xx = g11
+    s_tilde_yy = g22
+    s_tilde_zz = g33
+    s_tilde_xy = 0.5 * (g12 + g21)
+    s_tilde_xz = 0.5 * (g13 + g31)
+    s_tilde_yz = 0.5 * (g23 + g32)
+    s_tilde_mag = _strain_magnitude_3d(
+        s_tilde_xx, s_tilde_xy, s_tilde_xz, s_tilde_yy, s_tilde_yz, s_tilde_zz
+    )
+
+    l_xx = _box_filter_3d(ux * ux, width=filter_width) - uxf * uxf
+    l_xy = _box_filter_3d(ux * uy, width=filter_width) - uxf * uyf
+    l_xz = _box_filter_3d(ux * uz, width=filter_width) - uxf * uzf
+    l_yy = _box_filter_3d(uy * uy, width=filter_width) - uyf * uyf
+    l_yz = _box_filter_3d(uy * uz, width=filter_width) - uyf * uzf
+    l_zz = _box_filter_3d(uz * uz, width=filter_width) - uzf * uzf
+
+    m_xx = 2.0 * (4.0 * s_tilde_mag * s_tilde_xx - s_mag * s_xx)
+    m_xy = 2.0 * (4.0 * s_tilde_mag * s_tilde_xy - s_mag * s_xy)
+    m_xz = 2.0 * (4.0 * s_tilde_mag * s_tilde_xz - s_mag * s_xz)
+    m_yy = 2.0 * (4.0 * s_tilde_mag * s_tilde_yy - s_mag * s_yy)
+    m_yz = 2.0 * (4.0 * s_tilde_mag * s_tilde_yz - s_mag * s_yz)
+    m_zz = 2.0 * (4.0 * s_tilde_mag * s_tilde_zz - s_mag * s_zz)
+
+    num = (l_xx * m_xx + l_yy * m_yy + l_zz * m_zz).mean()
+    num = num + 2.0 * (l_xy * m_xy + l_xz * m_xz + l_yz * m_yz).mean()
+    den = (m_xx**2 + m_yy**2 + m_zz**2).mean()
+    den = den + 2.0 * (m_xy**2 + m_xz**2 + m_yz**2).mean()
+    cs2 = torch.clamp(num / torch.clamp(den, min=1e-12), min=lambda_clip, max=0.1)
+    cs = float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())
+
+    nu = (tau - 0.5) / 3.0
+    nu_t = (cs**2) * s_mag
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001)
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
 __all__ = [
     # Smagorinsky
     "collide_smagorinsky_bgk",
@@ -942,6 +1173,8 @@ __all__ = [
     "collide_smagorinsky_mrt3d",
     "collide_smagorinsky_bgk27",
     "collide_smagorinsky_mrt27",
+    "collide_dynamic_smagorinsky_bgk",
+    "collide_dynamic_smagorinsky_bgk3d",
     # WALE
     "collide_wale_bgk",
     "collide_wale_bgk3d",
