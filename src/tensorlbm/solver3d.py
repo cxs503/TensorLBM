@@ -234,9 +234,67 @@ def collide_trt3d(
     return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
 
 
+def collide_rlbm3d(f: torch.Tensor, tau: float) -> torch.Tensor:
+    """Regularized BGK (RLBM) collision step for D3Q19.
+
+    Projects the non-equilibrium distribution onto the second-order Hermite
+    polynomial subspace before BGK relaxation, filtering out higher-order
+    ghost modes for improved stability at low viscosity (τ → 0.5).
+    See Latt & Chopard, *Math. Comput. Simul.* (2006).
+
+    Args:
+        f:   Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Relaxation time (τ > 0.5). Kinematic viscosity ν = (τ − ½)/3.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    from .d3q19 import _c_on, _w_on  # noqa: PLC0415
+
+    device = f.device
+    c = _c_on(device).to(f.dtype)
+    w = _w_on(device).to(f.dtype)
+
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    fneq = f - feq
+
+    cx = c[:, 0].view(19, 1, 1, 1)
+    cy = c[:, 1].view(19, 1, 1, 1)
+    cz = c[:, 2].view(19, 1, 1, 1)
+
+    # Second-order non-equilibrium moments Π_αβ
+    pi_xx = (cx * cx * fneq).sum(dim=0)
+    pi_yy = (cy * cy * fneq).sum(dim=0)
+    pi_zz = (cz * cz * fneq).sum(dim=0)
+    pi_xy = (cx * cy * fneq).sum(dim=0)
+    pi_xz = (cx * cz * fneq).sum(dim=0)
+    pi_yz = (cy * cz * fneq).sum(dim=0)
+
+    cs2 = 1.0 / 3.0
+    h_xx = cx * cx - cs2
+    h_yy = cy * cy - cs2
+    h_zz = cz * cz - cs2
+    h_xy = cx * cy
+    h_xz = cx * cz
+    h_yz = cy * cz
+    w_view = w.view(19, 1, 1, 1)
+    fneq_reg = (9.0 / 2.0) * w_view * (
+        h_xx * pi_xx
+        + h_yy * pi_yy
+        + h_zz * pi_zz
+        + 2.0 * h_xy * pi_xy
+        + 2.0 * h_xz * pi_xz
+        + 2.0 * h_yz * pi_yz
+    )
+
+    return feq + (1.0 - 1.0 / tau) * fneq_reg
+
+
 __all__ = [
     "collide_bgk3d",
     "collide_mrt3d",
+    "collide_rlbm3d",
     "collide_trt3d",
     "stream3d",
     "correct_mass3d",

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-24
+
+### Added
+- **Regularized BGK (RLBM)** collision operator for D2Q9 (`collide_rlbm`) and D3Q19 (`collide_rlbm3d`)
+  following Latt & Chopard (2006). Projects the non-equilibrium populations onto the second-order
+  Hermite polynomial subspace, filtering out ghost (non-hydrodynamic) modes and improving stability
+  at low viscosity (τ → 0.5).
+- **Rotating-cylinder (Magnus effect) runner** (`rotating_cylinder.py`):
+  `RotatingCylinderConfig`, `run_rotating_cylinder`, plus the underlying helpers
+  `rotating_wall_velocity` and `moving_wall_bounce_back` (Ladd 1994 moving-wall BC for D2Q9).
+  CLI script `examples/rotating_cylinder.py` exposes a `--spin-ratio` parameter (α = ω R / u∞).
+- **MLUPS benchmark extension**: `benchmarks/bench_mlups.py` now accepts `--collisions {bgk,mrt,trt,rlbm,all}`
+  and compares throughput of all four collision operators on D2Q9 and D3Q19 grids.
+- **Platform `/api/health` endpoint** — lightweight liveness probe independent of Torch / job state.
+- **Platform `/api/jobs/compare` endpoint** — side-by-side metadata comparison for up to 10 completed
+  jobs, plus a corresponding *Compare* tab in the frontend SPA.
+
 ## [0.2.0] - 2026-05-24
 
 ### Added
