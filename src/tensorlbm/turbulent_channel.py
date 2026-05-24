@@ -29,6 +29,13 @@ from .utils import (
     resolve_device,
 )
 
+try:
+    from tqdm import tqdm as _tqdm
+
+    _TQDM_AVAILABLE = True
+except ImportError:
+    _TQDM_AVAILABLE = False
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -214,7 +221,13 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
     )
     logger.info("Run directory: %s", run_dir)
 
-    for step in range(1, config.n_steps + 1):
+    step_range = range(1, config.n_steps + 1)
+    step_iter = (
+        _tqdm(step_range, desc="Turbulent channel", unit="step")
+        if _TQDM_AVAILABLE
+        else step_range
+    )
+    for step in step_iter:
         f = collide_smagorinsky_bgk(
             f,
             tau=config.tau,

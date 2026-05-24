@@ -13,13 +13,20 @@ from .config_io import load_config_json, save_config_json
 from .cylinder_flow import _maybe_compile
 from .d3q19 import equilibrium3d, macroscopic3d
 from .logging_config import configure_logging, logger
-from .solver3d import collide_bgk3d, stream3d
+from .solver3d import collide_bgk3d, correct_mass3d, stream3d
 from .utils import (
     DiagnosticPoint,
     get_reproducibility_metadata,
     prepare_run_dir,
     resolve_device,
 )
+
+try:
+    from tqdm import tqdm as _tqdm
+
+    _TQDM_AVAILABLE = True
+except ImportError:
+    _TQDM_AVAILABLE = False
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -215,7 +222,13 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
     )
     logger.info("Run directory: %s", run_dir)
 
-    for step in range(start_step, config.n_steps + 1):
+    step_range = range(start_step, config.n_steps + 1)
+    step_iter = (
+        _tqdm(step_range, desc="Sphere flow", unit="step")
+        if _TQDM_AVAILABLE
+        else step_range
+    )
+    for step in step_iter:
         f = _collide(f, tau=config.tau)
         f = _stream(f)
         f = apply_simple_channel_boundaries_3d(
@@ -224,6 +237,10 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
             wall_mask=wall_mask,
             obstacle_mask=obstacle,
         )
+
+        # Correct mass drift every output_interval steps
+        if step % config.output_interval == 0:
+            f = correct_mass3d(f, initial_mass)
 
         if step % config.output_interval == 0 or step == config.n_steps:
             rho, ux, uy, uz = macroscopic3d(f)

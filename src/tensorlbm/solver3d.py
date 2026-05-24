@@ -5,6 +5,7 @@ from typing import Any
 
 import torch
 
+from .d3q19 import OPPOSITE as _OPPOSITE_3D
 from .d3q19 import C, equilibrium3d, macroscopic3d
 
 # Cache for streaming index tensors keyed by (nz, ny, nx, device_type, device_index)
@@ -194,10 +195,49 @@ def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
         return f
     return f * (target_mass / current)
 
+def collide_trt3d(
+    f: torch.Tensor,
+    tau_plus: float,
+    lambda_trt: float = 3.0 / 16.0,
+) -> torch.Tensor:
+    """Two-relaxation-time (TRT) collision step for D3Q19.
+
+    Uses two independent relaxation rates: *τ₊* controls the symmetric part
+    (sets viscosity ν = (τ₊ − ½) / 3) and *τ₋* controls the anti-symmetric
+    part (derived from the magic parameter Λ). Setting Λ = 3/16 eliminates
+    wall-placement errors in Poiseuille flow (Ginzburg 2008).
+
+    Reference
+    ---------
+    Ginzburg, I. (2008). Two-relaxation-time lattice Boltzmann scheme.
+    *Commun. Comput. Phys.* 3(2), 427–478.
+
+    Args:
+        f:           Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau_plus:    Symmetric relaxation time (τ₊ > 0.5).
+        lambda_trt:  Magic parameter Λ (default 3/16).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+
+    tau_minus = 0.5 + lambda_trt / (tau_plus - 0.5)
+
+    opp = _OPPOSITE_3D.to(f.device)
+    f_plus = 0.5 * (f + f[opp])
+    f_minus = 0.5 * (f - f[opp])
+    feq_plus = 0.5 * (feq + feq[opp])
+    feq_minus = 0.5 * (feq - feq[opp])
+
+    return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
+
 
 __all__ = [
     "collide_bgk3d",
     "collide_mrt3d",
+    "collide_trt3d",
     "stream3d",
     "correct_mass3d",
 ]

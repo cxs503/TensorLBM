@@ -13,6 +13,8 @@ from .boundaries import (
 )
 from .d2q9 import C, equilibrium, macroscopic
 
+OPPOSITE_2D = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
+
 # Cache for streaming index tensors keyed by (ny, nx, device_type, device_index)
 _stream2d_cache: dict[tuple[Any, ...], tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = {}
 
@@ -154,6 +156,54 @@ def correct_mass(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     return f * (target_mass / current)
 
 
+def collide_trt(
+    f: torch.Tensor,
+    tau_plus: float,
+    lambda_trt: float = 3.0 / 16.0,
+) -> torch.Tensor:
+    """Two-relaxation-time (TRT) collision step for D2Q9.
+
+    The TRT model uses two independent relaxation rates:
+
+    - *τ₊* (``tau_plus``) controls the symmetric part of the distribution
+      and sets the kinematic viscosity: ν = (τ₊ − ½) / 3.
+    - *τ₋* (anti-symmetric) is derived from the "magic" parameter Λ:
+      τ₋ = ½ + Λ / (τ₊ − ½).  The magic number Λ = 3/16 eliminates wall
+      placement errors in Poiseuille flow (Ginzburg 2008).
+
+    Compared to BGK, TRT significantly improves accuracy for porous-media and
+    wall-bounded flows at low viscosity by independently damping the
+    anti-symmetric non-equilibrium moments.
+
+    Reference
+    ---------
+    Ginzburg, I. (2008). Two-relaxation-time lattice Boltzmann scheme:
+    About parametrization, velocity, pressure and mixed boundary conditions.
+    *Commun. Comput. Phys.* 3(2), 427–478.
+
+    Args:
+        f:           Distribution tensor of shape ``(9, ny, nx)``.
+        tau_plus:    Symmetric relaxation time (τ₊ > 0.5).
+        lambda_trt:  Magic parameter Λ (default 3/16 eliminates Poiseuille
+                     wall error).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy = macroscopic(f)
+    feq = equilibrium(rho, ux, uy)
+
+    tau_minus = 0.5 + lambda_trt / (tau_plus - 0.5)
+
+    opp = OPPOSITE_2D.to(f.device)
+    f_plus = 0.5 * (f + f[opp])
+    f_minus = 0.5 * (f - f[opp])
+    feq_plus = 0.5 * (feq + feq[opp])
+    feq_minus = 0.5 * (feq - feq[opp])
+
+    return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
+
+
 __all__ = [
     "cylinder_mask",
     "make_channel_wall_mask",
@@ -161,6 +211,7 @@ __all__ = [
     "apply_simple_channel_boundaries",
     "collide_bgk",
     "collide_mrt",
+    "collide_trt",
     "stream",
     "correct_mass",
 ]

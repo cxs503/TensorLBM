@@ -245,7 +245,7 @@ class TestTwoPhaseChannelCompareConfig:
                 # L2 error might be large after only 5 steps but must be a
                 # finite non-negative float (not NaN)
                 l2 = float(mres["l2_error_rel"])
-                assert not (l2 != l2), f"L2 error is NaN for model {model}"
+                assert l2 == l2, f"L2 error is NaN for model {model}"
                 assert len(mres["velocity_profile"]) == 20
 
     def test_viscosity_ratio(self) -> None:
