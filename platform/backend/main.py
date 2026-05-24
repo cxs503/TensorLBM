@@ -15,7 +15,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from . import job_manager  # noqa: E402
-from .routers import benchmarks, cad, jobs, postprocess, preprocess, solver  # noqa: E402
+from .routers import agent, benchmarks, cad, jobs, postprocess, preprocess, solver  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # App
@@ -48,6 +48,7 @@ app.include_router(preprocess.router, prefix="/api/preprocess", tags=["Pre-proce
 app.include_router(solver.router, prefix="/api/solve", tags=["Solver"])
 app.include_router(postprocess.router, prefix="/api/postprocess", tags=["Post-processing"])
 app.include_router(benchmarks.router, prefix="/api/benchmarks", tags=["Benchmarks"])
+app.include_router(agent.router, prefix="/api/agent", tags=["LLM Agent"])
 
 # ---------------------------------------------------------------------------
 # WebSocket
