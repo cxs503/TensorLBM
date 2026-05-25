@@ -552,6 +552,346 @@ def velocity_profile(
 
 
 # ---------------------------------------------------------------------------
+# AI turbulence tools (HPC + AI demonstration)
+# ---------------------------------------------------------------------------
+
+# Default work directory for AI artefacts.  Mirrors job_manager's tmp layout
+# so users can clean it up the same way.
+_AI_WORKROOT = "/tmp/tensorlbm_platform/ai"
+
+
+def _ai_workdir(name: str) -> str:
+    import uuid as _uuid
+    sub = f"{name}_{_uuid.uuid4().hex[:8]}"
+    p = f"{_AI_WORKROOT}/{sub}"
+    from pathlib import Path as _Path
+    _Path(p).mkdir(parents=True, exist_ok=True)
+    return p
+
+
+@tool(
+    name="ai_generate_dataset",
+    description=(
+        "Run a small LES smoke simulation and extract a training dataset for "
+        "the AI eddy-viscosity model. Saves a .pt dataset and records it in "
+        "the platform SQLite database."
+    ),
+    parameters={
+        "nx": "int (16–256), grid width, default 48",
+        "ny": "int (16–256), grid height, default 48",
+        "tau": "float, baseline relaxation time, default 0.8",
+        "c_s": "float, Smagorinsky constant used for labels, default 0.1",
+        "data_steps": "int, LBM steps in the data run, default 40",
+        "sample_every": "int, snapshot cadence, default 10",
+        "seed": "int, default 0",
+        "device": "str, default 'cpu'",
+    },
+)
+def ai_generate_dataset(
+    nx: int = 48,
+    ny: int = 48,
+    tau: float = 0.8,
+    c_s: float = 0.1,
+    data_steps: int = 40,
+    sample_every: int = 10,
+    seed: int = 0,
+    device: str = "cpu",
+) -> dict:
+    nx = _clip(nx, 16, 256)
+    ny = _clip(ny, 16, 256)
+    data_steps = _clip(data_steps, 1, 2000)
+    sample_every = _clip(sample_every, 1, data_steps)
+
+    work = _ai_workdir("dataset")
+
+    def _run(job: _jm_types.Job) -> dict:
+        from pathlib import Path as _Path
+
+        import torch
+
+        from tensorlbm import (
+            EddyViscosityDataset,
+            LBMDatabase,
+            equilibrium,
+            extract_les_samples_2d,
+            macroscopic,
+            save_dataset_pt,
+        )
+        from tensorlbm.solver import stream
+        from tensorlbm.turbulence import collide_smagorinsky_bgk
+
+        device_t = torch.device(device)
+        torch.manual_seed(int(seed))
+        ys = torch.arange(ny, device=device_t).float()
+        xs = torch.arange(nx, device=device_t).float()
+        yy, xx = torch.meshgrid(ys, xs, indexing="ij")
+        kx = 2.0 * torch.pi / max(nx, 1)
+        ky = 2.0 * torch.pi / max(ny, 1)
+        ux = 0.05 + 0.02 * torch.sin(2.0 * kx * xx) * torch.cos(ky * yy)
+        uy = 0.02 * torch.cos(kx * xx) * torch.sin(2.0 * ky * yy)
+        f = equilibrium(torch.ones_like(ux), ux, uy)
+        feats_list, target_list = [], []
+        for step in range(int(data_steps)):
+            f = collide_smagorinsky_bgk(f, tau=float(tau), C_s=float(c_s))
+            f = stream(f)
+            if (step + 1) % int(sample_every) == 0:
+                _rho, ux_s, uy_s = macroscopic(f)
+                fts, tgs = extract_les_samples_2d(ux_s, uy_s, c_s=float(c_s))
+                feats_list.append(fts)
+                target_list.append(tgs)
+        if not feats_list:
+            _rho, ux_s, uy_s = macroscopic(f)
+            fts, tgs = extract_les_samples_2d(ux_s, uy_s, c_s=float(c_s))
+            feats_list.append(fts)
+            target_list.append(tgs)
+        ds = EddyViscosityDataset(
+            features=torch.cat(feats_list),
+            targets=torch.cat(target_list),
+            c_s=float(c_s),
+            description=f"agent dataset {nx}x{ny} τ={tau} C_s={c_s}",
+        )
+        ds_path = _Path(work) / "dataset.pt"
+        save_dataset_pt(ds, ds_path)
+
+        db_path = _Path(_AI_WORKROOT) / "platform.db"
+        db = LBMDatabase.open(db_path)
+        try:
+            run_id = db.insert_run(
+                name=f"ai_dataset_{nx}x{ny}",
+                run_type="ai_dataset_generation",
+                config={"nx": nx, "ny": ny, "tau": tau, "c_s": c_s,
+                        "data_steps": data_steps, "sample_every": sample_every,
+                        "device": device, "seed": seed},
+                output_dir=work,
+            )
+            dataset_id = db.insert_dataset(
+                name=f"ai_dataset_{nx}x{ny}",
+                path=str(ds_path),
+                n_samples=len(ds),
+                run_id=run_id,
+                metadata={"c_s": float(c_s), "n_snapshots": len(feats_list)},
+            )
+        finally:
+            db.close()
+        return {
+            "work_dir": work,
+            "dataset_path": str(ds_path),
+            "db_path": str(db_path),
+            "run_id": run_id,
+            "dataset_id": dataset_id,
+            "n_samples": len(ds),
+        }
+
+    cfg = {"nx": nx, "ny": ny, "tau": tau, "c_s": c_s,
+           "data_steps": data_steps, "sample_every": sample_every,
+           "device": device, "seed": seed}
+    return _submit(f"AI Dataset {nx}x{ny}", "ai_dataset", cfg, _run)
+
+
+@tool(
+    name="ai_train_turbulence_model",
+    description=(
+        "Train the MLP eddy-viscosity AI turbulence model on a previously "
+        "generated dataset (by dataset_id or path) and register the result "
+        "in the platform database."
+    ),
+    parameters={
+        "dataset_id": "int (optional) dataset id from ai_generate_dataset",
+        "dataset_path": "str (optional) explicit .pt path; overrides id",
+        "epochs": "int (1–500), default 20",
+        "batch_size": "int, default 4096",
+        "learning_rate": "float, default 1e-3",
+        "hidden_features": "int, default 16",
+        "n_hidden_layers": "int, default 2",
+        "seed": "int, default 0",
+    },
+)
+def ai_train_turbulence_model(
+    dataset_id: int | None = None,
+    dataset_path: str | None = None,
+    epochs: int = 20,
+    batch_size: int = 4096,
+    learning_rate: float = 1e-3,
+    hidden_features: int = 16,
+    n_hidden_layers: int = 2,
+    seed: int = 0,
+) -> dict:
+    epochs = _clip(epochs, 1, 500)
+
+    work = _ai_workdir("model")
+
+    def _run(job: _jm_types.Job) -> dict:
+        from pathlib import Path as _Path
+
+        from tensorlbm import (
+            LBMDatabase,
+            TrainConfig,
+            train_eddy_viscosity_model,
+        )
+
+        db_path = _Path(_AI_WORKROOT) / "platform.db"
+        db = LBMDatabase.open(db_path)
+        try:
+            path = dataset_path
+            ds_id = dataset_id
+            if path is None:
+                if ds_id is None:
+                    datasets = db.list_datasets(limit=1)
+                    if not datasets:
+                        return {"error": "No dataset available. Run "
+                                "ai_generate_dataset first."}
+                    ds_id = int(datasets[0]["id"])
+                    path = datasets[0]["path"]
+                else:
+                    rows = [d for d in db.list_datasets(limit=1000)
+                            if int(d["id"]) == int(ds_id)]
+                    if not rows:
+                        return {"error": f"Dataset id={ds_id} not found"}
+                    path = rows[0]["path"]
+            cfg = TrainConfig(
+                epochs=int(epochs),
+                batch_size=int(batch_size),
+                learning_rate=float(learning_rate),
+                hidden_features=int(hidden_features),
+                n_hidden_layers=int(n_hidden_layers),
+                seed=int(seed),
+            )
+            model_path = _Path(work) / "model.pt"
+            meta = train_eddy_viscosity_model(path, model_path, cfg)
+            model_id = db.insert_model(
+                name=f"ai_eddy_viscosity_mlp_e{epochs}",
+                path=str(model_path),
+                arch=meta["arch"],
+                dataset_id=ds_id,
+                metrics={
+                    "final_train_mse": meta["final_train_mse"],
+                    "final_val_mse": meta["final_val_mse"],
+                    "final_val_r2": meta["final_val_r2"],
+                },
+            )
+        finally:
+            db.close()
+        return {
+            "work_dir": work,
+            "model_path": str(model_path),
+            "model_id": model_id,
+            "dataset_id": ds_id,
+            "final_train_mse": meta["final_train_mse"],
+            "final_val_mse": meta["final_val_mse"],
+            "final_val_r2": meta["final_val_r2"],
+            "epochs": int(epochs),
+        }
+
+    cfg = {
+        "dataset_id": dataset_id, "dataset_path": dataset_path,
+        "epochs": epochs, "batch_size": batch_size,
+        "learning_rate": learning_rate,
+        "hidden_features": hidden_features,
+        "n_hidden_layers": n_hidden_layers, "seed": seed,
+    }
+    return _submit(
+        f"AI Train (epochs={epochs})", "ai_train", cfg, _run,
+    )
+
+
+@tool(
+    name="ai_list_models",
+    description="List the AI turbulence models stored in the platform database.",
+    parameters={"limit": "int, default 10"},
+)
+def ai_list_models(limit: int = 10) -> dict:
+    from pathlib import Path as _Path
+
+    from tensorlbm import LBMDatabase
+    db_path = _Path(_AI_WORKROOT) / "platform.db"
+    if not db_path.exists():
+        return {"count": 0, "models": []}
+    db = LBMDatabase.open(db_path)
+    try:
+        models = db.list_models(limit=_clip(limit, 1, 100))
+        datasets = db.list_datasets(limit=100)
+        runs = db.list_runs(limit=100)
+    finally:
+        db.close()
+    return {
+        "count": len(models), "models": models,
+        "datasets": datasets, "runs": runs,
+    }
+
+
+@tool(
+    name="ai_run_pipeline",
+    description=(
+        "Run the full HPC + AI demonstration end-to-end in one call: "
+        "modelling → solving → dataset extraction → SQLite storage → "
+        "AI turbulence-model training → AI-LES validation run."
+    ),
+    parameters={
+        "nx": "int, default 48", "ny": "int, default 48",
+        "tau": "float, default 0.8", "c_s": "float, default 0.1",
+        "data_steps": "int, default 40", "sample_every": "int, default 10",
+        "val_steps": "int, default 20",
+        "epochs": "int, default 20", "batch_size": "int, default 4096",
+        "learning_rate": "float, default 1e-3",
+        "seed": "int, default 0", "device": "str, default 'cpu'",
+    },
+)
+def ai_run_pipeline(
+    nx: int = 48,
+    ny: int = 48,
+    tau: float = 0.8,
+    c_s: float = 0.1,
+    data_steps: int = 40,
+    sample_every: int = 10,
+    val_steps: int = 20,
+    epochs: int = 20,
+    batch_size: int = 4096,
+    learning_rate: float = 1e-3,
+    seed: int = 0,
+    device: str = "cpu",
+) -> dict:
+    nx = _clip(nx, 16, 256)
+    ny = _clip(ny, 16, 256)
+    data_steps = _clip(data_steps, 1, 2000)
+    sample_every = _clip(sample_every, 1, data_steps)
+    val_steps = _clip(val_steps, 1, 2000)
+    epochs = _clip(epochs, 1, 500)
+
+    work = _ai_workdir("pipeline")
+
+    def _run(job: _jm_types.Job) -> dict:
+        from tensorlbm import TrainConfig, run_ai_les_pipeline
+
+        res = run_ai_les_pipeline(
+            work,
+            nx=nx, ny=ny, tau=float(tau), c_s=float(c_s),
+            data_steps=int(data_steps),
+            sample_every=int(sample_every),
+            val_steps=int(val_steps),
+            train_config=TrainConfig(
+                epochs=int(epochs),
+                batch_size=int(batch_size),
+                learning_rate=float(learning_rate),
+                seed=int(seed),
+                device=str(device),
+            ),
+            seed=int(seed),
+            device=str(device),
+            run_name="agent_ai_pipeline",
+        )
+        return res.to_dict()
+
+    cfg = {
+        "nx": nx, "ny": ny, "tau": tau, "c_s": c_s,
+        "data_steps": data_steps, "sample_every": sample_every,
+        "val_steps": val_steps, "epochs": epochs,
+        "batch_size": batch_size, "learning_rate": learning_rate,
+        "seed": seed, "device": device,
+    }
+    return _submit("AI Pipeline (end-to-end)", "ai_pipeline", cfg, _run)
+
+
+# ---------------------------------------------------------------------------
 # Rule-based intent parser
 # ---------------------------------------------------------------------------
 
@@ -586,6 +926,25 @@ _INTENT_PROFILE = [
 ]
 _INTENT_HELP = [
     "help", "what can you do", "capabilities", "帮助", "能做什么", "支持哪些",
+]
+
+# AI turbulence intent keywords -------------------------------------------
+_INTENT_AI_PIPELINE = [
+    "ai pipeline", "ai turbulence pipeline", "end-to-end ai", "ai 流水线",
+    "ai 闭环", "ai 全流程", "ai 端到端", "ai 演示", "湍流闭环",
+    "ai 湍流", "ai-les", "ai les", "湍流 ai", "ai turbulence demo",
+]
+_INTENT_AI_TRAIN = [
+    "train ai", "train turbulence", "train model", "train the model",
+    "训练模型", "训练 ai", "训练湍流", "训练神经网络",
+]
+_INTENT_AI_DATA = [
+    "generate dataset", "build dataset", "make dataset", "extract dataset",
+    "生成数据集", "构建数据集", "提取数据集", "生成训练数据",
+]
+_INTENT_AI_LIST_MODELS = [
+    "list models", "list ai models", "show models", "模型列表", "查看模型",
+    "ai 模型列表", "已训练模型",
 ]
 
 
@@ -647,6 +1006,38 @@ def _parse_intent(text: str, history_actions: list[dict]) -> dict:
     # 1. Help / capabilities ------------------------------------------------
     if any(k in low for k in _INTENT_HELP):
         return {"tool": "_help", "args": {}, "reason": "help request"}
+
+    # 1b. AI turbulence intents (must precede generic 'list jobs' so that
+    #     "list ai models" is correctly routed).
+    if any(k in low for k in _INTENT_AI_LIST_MODELS):
+        return {"tool": "ai_list_models", "args": {}, "reason": "list AI models"}
+    if any(k in low for k in _INTENT_AI_PIPELINE):
+        args: dict[str, Any] = {}
+        ep = _extract_int(text, ["epochs", "epoch", "迭代轮数", "训练轮数"])
+        if ep is not None:
+            args["epochs"] = ep
+        return {"tool": "ai_run_pipeline", "args": args,
+                "reason": "AI end-to-end pipeline"}
+    if any(k in low for k in _INTENT_AI_TRAIN):
+        args = {}
+        ep = _extract_int(text, ["epochs", "epoch", "训练轮数", "轮数"])
+        if ep is not None:
+            args["epochs"] = ep
+        ds_id = _extract_int(text, ["dataset_id", "dataset id", "数据集 id"])
+        if ds_id is not None:
+            args["dataset_id"] = ds_id
+        return {"tool": "ai_train_turbulence_model", "args": args,
+                "reason": "train AI turbulence model"}
+    if any(k in low for k in _INTENT_AI_DATA):
+        args = {}
+        nx = _extract_int(text, ["nx", "网格宽"])
+        ny = _extract_int(text, ["ny", "网格高"])
+        if nx is not None:
+            args["nx"] = nx
+        if ny is not None:
+            args["ny"] = ny
+        return {"tool": "ai_generate_dataset", "args": args,
+                "reason": "generate AI training dataset"}
 
     # 2. List jobs ----------------------------------------------------------
     if any(k in low for k in _INTENT_LIST):
@@ -851,6 +1242,21 @@ def _format_action_summary(tool_name: str, result: dict) -> str:
             f"job `{result['job_id']}` at step {result['step']} "
             f"({n} sample points, position={result['position']:.2f})."
         )
+    if tool_name == "ai_list_models":
+        models = result.get("models", [])
+        if not models:
+            return ("No AI turbulence models stored yet. Run "
+                    "`ai_generate_dataset` then `ai_train_turbulence_model`, "
+                    "or just say *Run the AI turbulence pipeline*.")
+        lines = [f"📚 {len(models)} AI turbulence model(s) stored:"]
+        for m in models[:10]:
+            metrics = m.get("metrics", {}) or {}
+            lines.append(
+                f"  • #{m['id']} {m['name']} — train MSE "
+                f"{metrics.get('final_train_mse', 'n/a')} / val R² "
+                f"{metrics.get('final_val_r2', 'n/a')} → `{m['path']}`",
+            )
+        return "\n".join(lines)
     return f"{tool_name} → {json.dumps(result)[:200]}"
 
 
@@ -863,12 +1269,19 @@ def _help_text() -> str:
         "  • **Solving** – I submit the job to the platform's job manager; "
         "you'll see it appear in the sidebar and progress over WebSocket.\n"
         "  • **Analysis** – I can list/inspect running jobs, summarise "
-        "completed runs, and extract velocity profiles from checkpoints.\n\n"
+        "completed runs, and extract velocity profiles from checkpoints.\n"
+        "  • **HPC + AI** – generate an LES training dataset, write it to "
+        "the platform SQLite database, train an AI eddy-viscosity model, "
+        "and run a validation LBM job that uses the trained model as the "
+        "sub-grid closure.\n\n"
         "Try saying things like:\n"
         "  • *Run a cylinder flow at Re=200 with 2000 steps*\n"
         "  • *用顶盖驱动方腔做一个 Re=400 的算例*\n"
         "  • *Show the status of the latest job*\n"
-        "  • *Analyze job <id> and give me a velocity profile*"
+        "  • *Analyze job <id> and give me a velocity profile*\n"
+        "  • *Run the AI turbulence pipeline end-to-end*  /  *跑一遍 AI 湍流闭环*\n"
+        "  • *Generate dataset nx=64 ny=64*  /  *训练模型 epochs=30*\n"
+        "  • *List AI models*  /  *查看 AI 模型列表*"
     )
 
 
