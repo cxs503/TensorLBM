@@ -24,6 +24,44 @@
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
+  /**
+   * Safe rich-text renderer for i18n values that contain a very limited set of
+   * inline HTML tags: <strong>, <em>, <code>.
+   * Builds DOM nodes programmatically – never uses innerHTML with tainted data.
+   * Unrecognised tags are rendered as plain text.
+   * @param {HTMLElement} el  Target element whose content will be replaced.
+   * @param {string} html     Translated string with optional inline markup.
+   */
+  function renderSafeHtml(el, html) {
+    // Tokenise: split on the small set of allowed open/close tags.
+    var ALLOWED = { strong: 1, em: 1, code: 1 };
+    var tokens = html.split(/(<\/?(?:strong|em|code)>)/i);
+    var fragment = document.createDocumentFragment();
+    var stack = [fragment]; // stack of parent nodes
+    for (var i = 0; i < tokens.length; i++) {
+      var tok = tokens[i];
+      if (!tok) continue;
+      var openMatch = tok.match(/^<(strong|em|code)>$/i);
+      var closeMatch = tok.match(/^<\/(strong|em|code)>$/i);
+      if (openMatch) {
+        // Use a whitelist map so createElement never receives tainted input.
+        var TAG_MAP = { strong: 'strong', em: 'em', code: 'code' };
+        var tagName = TAG_MAP[openMatch[1].toLowerCase()];
+        if (!tagName) { stack[stack.length - 1].appendChild(document.createTextNode(tok)); continue; }
+        var child = document.createElement(tagName);
+        stack[stack.length - 1].appendChild(child);
+        stack.push(child);
+      } else if (closeMatch && stack.length > 1) {
+        stack.pop();
+      } else {
+        stack[stack.length - 1].appendChild(document.createTextNode(tok));
+      }
+    }
+    // Replace children of el with the fragment.
+    while (el.firstChild) { el.removeChild(el.firstChild); }
+    el.appendChild(fragment);
+  }
+
   /** Detect preferred language: localStorage → browser navigator → fallback. */
   function detect() {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -47,10 +85,10 @@
       const v = t(el.getAttribute('data-i18n'));
       if (v !== el.getAttribute('data-i18n')) el.textContent = v;
     });
-    // Inner HTML (for keys that contain markup like <strong>, <em>, <code>)
+    // Inner HTML (for keys that contain inline markup like <strong>, <em>, <code>)
     document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
-      const v = t(el.getAttribute('data-i18n-html'));
-      if (v !== el.getAttribute('data-i18n-html')) el.innerHTML = v;
+      var v = t(el.getAttribute('data-i18n-html'));
+      if (v !== el.getAttribute('data-i18n-html')) renderSafeHtml(el, v);
     });
     // Placeholder attribute
     document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
