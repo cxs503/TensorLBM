@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TensorLBM Platform</title>
+  <!-- i18n engine must be loaded before any inline scripts use t() -->
+  <script src="/static/js/i18n.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <style>
@@ -223,24 +225,45 @@
       margin-bottom: .5rem;
     }
     .agent-typing { font-style: italic; color: #6c757d; font-size: .85rem; }
+
+    /* Language switcher */
+    .lang-switcher { display: flex; align-items: center; gap: .25rem; }
+    .lang-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.4);
+      color: rgba(255,255,255,.8);
+      border-radius: .3rem;
+      padding: .15rem .45rem;
+      font-size: .8rem;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .lang-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
+    .lang-btn.active-lang { background: rgba(255,255,255,.22); color: #fff; border-color: rgba(255,255,255,.7); font-weight: 600; }
   </style>
 </head>
 <body>
 
 <!-- Navbar -->
 <div class="top-navbar">
-  <span class="brand me-4"><i class="bi bi-water"></i> TensorLBM Platform</span>
+  <span class="brand me-4"><i class="bi bi-water"></i> <span data-i18n="nav.brand">TensorLBM Platform</span></span>
   <nav class="d-flex gap-1">
-    <a href="#" class="active" onclick="showTab('dashboard',this)"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a href="#" onclick="showTab('cad',this)"><i class="bi bi-rulers"></i> CAD</a>
-    <a href="#" onclick="showTab('preprocess',this)"><i class="bi bi-grid-3x3"></i> Pre-processing</a>
-    <a href="#" onclick="showTab('solve',this)"><i class="bi bi-play-circle"></i> Solve</a>
-    <a href="#" onclick="showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> Post-process</a>
-    <a href="#" onclick="showTab('benchmarks',this)"><i class="bi bi-trophy"></i> Benchmarks</a>
-    <a href="#" onclick="showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> Compare</a>
-    <a href="#" onclick="showTab('agent',this)"><i class="bi bi-robot"></i> AI Agent</a>
+    <a href="#" class="active" onclick="showTab('dashboard',this)"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+    <a href="#" onclick="showTab('cad',this)"><i class="bi bi-rulers"></i> <span data-i18n="nav.cad">CAD</span></a>
+    <a href="#" onclick="showTab('preprocess',this)"><i class="bi bi-grid-3x3"></i> <span data-i18n="nav.preprocess">Pre-processing</span></a>
+    <a href="#" onclick="showTab('solve',this)"><i class="bi bi-play-circle"></i> <span data-i18n="nav.solve">Solve</span></a>
+    <a href="#" onclick="showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
+    <a href="#" onclick="showTab('benchmarks',this)"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
+    <a href="#" onclick="showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
+    <a href="#" onclick="showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
   </nav>
-  <span class="ms-auto small" id="ws-status"><span class="dot dot-queued"></span> Connecting…</span>
+  <span class="ms-auto d-flex align-items-center gap-3">
+    <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
+    <div class="lang-switcher">
+      <button class="lang-btn" data-lang="en" onclick="i18n.switch('en')" title="English">EN</button>
+      <button class="lang-btn" data-lang="zh" onclick="i18n.switch('zh')" title="中文">中文</button>
+    </div>
+  </span>
 </div>
 
 <!-- Main layout -->
@@ -248,13 +271,13 @@
   <!-- Jobs sidebar -->
   <div class="jobs-sidebar">
     <div class="sidebar-header">
-      <i class="bi bi-list-task"></i> Jobs
-      <button class="btn btn-sm btn-outline-danger ms-auto" onclick="clearAllJobs()" title="Clear completed/failed jobs">
+      <i class="bi bi-list-task"></i> <span data-i18n="sidebar.title">Jobs</span>
+      <button class="btn btn-sm btn-outline-danger ms-auto" onclick="clearAllJobs()" data-i18n-title="sidebar.clear_title" title="Clear completed/failed jobs">
         <i class="bi bi-trash"></i>
       </button>
     </div>
     <div class="jobs-list" id="jobs-list">
-      <div class="text-center text-muted py-4 small" id="no-jobs-msg">No jobs yet.</div>
+      <div class="text-center text-muted py-4 small" id="no-jobs-msg" data-i18n="sidebar.no_jobs">No jobs yet.</div>
     </div>
   </div>
 
@@ -265,30 +288,30 @@
     <!-- DASHBOARD -->
     <!-- ================================================================ -->
     <div class="tab-panel active" id="panel-dashboard">
-      <h4 class="mb-3"><i class="bi bi-speedometer2"></i> Dashboard</h4>
+      <h4 class="mb-3"><i class="bi bi-speedometer2"></i> <span data-i18n="dashboard.title">Dashboard</span></h4>
       <div class="row g-3 mb-4" id="stat-row">
-        <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-primary" id="stat-total">—</div><div class="stat-label">Total Jobs</div></div></div>
-        <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-warning" id="stat-running">—</div><div class="stat-label">Running</div></div></div>
-        <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-success" id="stat-completed">—</div><div class="stat-label">Completed</div></div></div>
-        <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-danger" id="stat-failed">—</div><div class="stat-label">Failed</div></div></div>
+        <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-primary" id="stat-total">—</div><div class="stat-label" data-i18n="stat.total">Total Jobs</div></div></div>
+        <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-warning" id="stat-running">—</div><div class="stat-label" data-i18n="stat.running">Running</div></div></div>
+        <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-success" id="stat-completed">—</div><div class="stat-label" data-i18n="stat.completed">Completed</div></div></div>
+        <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-danger" id="stat-failed">—</div><div class="stat-label" data-i18n="stat.failed">Failed</div></div></div>
       </div>
       <div class="row g-3">
         <div class="col-md-6">
           <div class="card">
-            <div class="card-header"><i class="bi bi-cpu"></i> Platform Status</div>
-            <div class="card-body small" id="platform-status">Loading…</div>
+            <div class="card-header"><i class="bi bi-cpu"></i> <span data-i18n="dashboard.platform_status">Platform Status</span></div>
+            <div class="card-body small" id="platform-status" data-i18n="dashboard.loading">Loading…</div>
           </div>
         </div>
         <div class="col-md-6">
           <div class="card">
-            <div class="card-header"><i class="bi bi-info-circle"></i> Quick Start</div>
+            <div class="card-header"><i class="bi bi-info-circle"></i> <span data-i18n="dashboard.quick_start">Quick Start</span></div>
             <div class="card-body small">
               <ol>
-                <li>Go to <strong>Pre-processing</strong> to generate geometry masks or convert physical units to LBM units.</li>
-                <li>Go to <strong>Solve</strong>, pick a simulation type, configure parameters, and click <em>Submit Job</em>.</li>
-                <li>Monitor progress in the <strong>Jobs</strong> sidebar (left).</li>
-                <li>Once complete, go to <strong>Post-process</strong> to view snapshots, plots, and metadata.</li>
-                <li>Use <strong>Benchmarks</strong> to run validation suites against published reference data.</li>
+                <li data-i18n-html="dashboard.qs1">Go to <strong>Pre-processing</strong> to generate geometry masks or convert physical units to LBM units.</li>
+                <li data-i18n-html="dashboard.qs2">Go to <strong>Solve</strong>, pick a simulation type, configure parameters, and click <em>Submit Job</em>.</li>
+                <li data-i18n-html="dashboard.qs3">Monitor progress in the <strong>Jobs</strong> sidebar (left).</li>
+                <li data-i18n-html="dashboard.qs4">Once complete, go to <strong>Post-process</strong> to view snapshots, plots, and metadata.</li>
+                <li data-i18n-html="dashboard.qs5">Use <strong>Benchmarks</strong> to run validation suites against published reference data.</li>
               </ol>
             </div>
           </div>
@@ -300,16 +323,16 @@
     <!-- CAD MODELLING -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-cad">
-      <h4 class="mb-3"><i class="bi bi-rulers"></i> Ship Hull CAD Modelling</h4>
+      <h4 class="mb-3"><i class="bi bi-rulers"></i> <span data-i18n="cad.title">Ship Hull CAD Modelling</span></h4>
 
       <div class="row g-3">
 
         <!-- Hull type & parameters -->
         <div class="col-lg-4">
           <div class="card">
-            <div class="card-header"><i class="bi bi-box"></i> Hull Parameters</div>
+            <div class="card-header"><i class="bi bi-box"></i> <span data-i18n="cad.hull_params">Hull Parameters</span></div>
             <div class="card-body config-form">
-              <label>Hull Type</label>
+              <label data-i18n="cad.hull_type">Hull Type</label>
               <select class="form-select form-select-sm mb-3" id="cad-hull-type" onchange="onCADHullTypeChange()">
                 <option value="wigley">Wigley Parabolic (Cb≈0.444)</option>
                 <option value="series60" selected>Series 60 (Cb=0.60)</option>
@@ -319,29 +342,29 @@
 
               <div class="row g-2 mb-2">
                 <div class="col-6">
-                  <label>Length L (lu)</label>
+                  <label data-i18n="cad.length">Length L (lu)</label>
                   <input type="number" class="form-control form-control-sm" id="cad-length" value="100" min="10" />
                 </div>
                 <div class="col-6">
-                  <label>Beam B (lu)</label>
+                  <label data-i18n="cad.beam">Beam B (lu)</label>
                   <input type="number" class="form-control form-control-sm" id="cad-beam" value="16" min="2" />
                 </div>
                 <div class="col-6">
-                  <label>Draft T (lu)</label>
+                  <label data-i18n="cad.draft">Draft T (lu)</label>
                   <input type="number" class="form-control form-control-sm" id="cad-draft" value="8" min="1" />
                 </div>
                 <div class="col-6">
-                  <label>Body-plan stations</label>
+                  <label data-i18n="cad.stations">Body-plan stations</label>
                   <input type="number" class="form-control form-control-sm" id="cad-stations" value="11" min="3" max="41" />
                 </div>
               </div>
 
               <div class="d-flex gap-2 mt-3">
                 <button class="btn btn-primary btn-sm flex-fill" onclick="cadGeneratePreview()">
-                  <i class="bi bi-eye"></i> Preview
+                  <i class="bi bi-eye"></i> <span data-i18n="cad.preview_btn">Preview</span>
                 </button>
                 <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="cadDownloadSTL()">
-                  <i class="bi bi-download"></i> Export STL
+                  <i class="bi bi-download"></i> <span data-i18n="cad.export_stl">Export STL</span>
                 </button>
               </div>
             </div>
@@ -349,36 +372,36 @@
 
           <!-- Hull Form Coefficients -->
           <div class="card mt-3">
-            <div class="card-header"><i class="bi bi-table"></i> Hull Form Coefficients</div>
+            <div class="card-header"><i class="bi bi-table"></i> <span data-i18n="cad.hull_coeff">Hull Form Coefficients</span></div>
             <div class="card-body small" id="cad-stats">
-              <p class="text-muted">Click <em>Preview</em> to compute coefficients.</p>
+              <p class="text-muted" data-i18n-html="cad.coeff_hint">Click <em>Preview</em> to compute coefficients.</p>
             </div>
           </div>
 
           <!-- Physical → LBM parameters -->
           <div class="card mt-3">
-            <div class="card-header"><i class="bi bi-calculator"></i> Ship → LBM Parameters</div>
+            <div class="card-header"><i class="bi bi-calculator"></i> <span data-i18n="cad.lbm_params">Ship → LBM Parameters</span></div>
             <div class="card-body config-form">
               <div class="row g-2 mb-2">
                 <div class="col-6">
-                  <label>Ship length (m)</label>
+                  <label data-i18n="cad.phys_length">Ship length (m)</label>
                   <input type="number" class="form-control form-control-sm" id="cad-phys-L" value="100" min="1" />
                 </div>
                 <div class="col-6">
-                  <label>Speed (m/s)</label>
+                  <label data-i18n="cad.speed">Speed (m/s)</label>
                   <input type="number" class="form-control form-control-sm" id="cad-phys-U" value="5.0" step="0.1" min="0.01" />
                 </div>
                 <div class="col-6">
-                  <label>ν (m²/s)</label>
+                  <label data-i18n="cad.nu">ν (m²/s)</label>
                   <input type="number" class="form-control form-control-sm" id="cad-phys-nu" value="1.139e-6" step="1e-7" />
                 </div>
                 <div class="col-6">
-                  <label>Froude target (0=off)</label>
+                  <label data-i18n="cad.froude">Froude target (0=off)</label>
                   <input type="number" class="form-control form-control-sm" id="cad-froude" value="0" step="0.01" min="0" />
                 </div>
               </div>
               <button class="btn btn-sm btn-outline-primary w-100" onclick="cadComputeLBM()">
-                <i class="bi bi-calculator"></i> Compute
+                <i class="bi bi-calculator"></i> <span data-i18n="cad.compute_btn">Compute</span>
               </button>
               <div id="cad-lbm-result" class="mt-2"></div>
             </div>
@@ -389,19 +412,19 @@
         <div class="col-lg-8">
           <div class="card">
             <div class="card-header d-flex align-items-center">
-              <i class="bi bi-image me-2"></i> Hull Preview
+              <i class="bi bi-image me-2"></i> <span data-i18n="cad.hull_preview">Hull Preview</span>
               <span class="ms-auto text-muted small" id="cad-preview-caption"></span>
             </div>
             <div class="card-body text-center" id="cad-preview-area">
-              <p class="text-muted py-5">Select hull type and parameters, then click <strong>Preview</strong>.</p>
+              <p class="text-muted py-5" data-i18n-html="cad.preview_hint">Select hull type and parameters, then click <strong>Preview</strong>.</p>
             </div>
           </div>
 
           <!-- 3D Voxel Mask -->
           <div class="card mt-3">
-            <div class="card-header"><i class="bi bi-box-seam"></i> 3-D Voxel Mask</div>
+            <div class="card-header"><i class="bi bi-box-seam"></i> <span data-i18n="cad.voxel_mask">3-D Voxel Mask</span></div>
             <div class="card-body config-form">
-              <p class="small text-muted mb-2">Generate the 3-D LBM obstacle mask for the CAD hull.</p>
+              <p class="small text-muted mb-2" data-i18n="cad.voxel_desc">Generate the 3-D LBM obstacle mask for the CAD hull.</p>
               <div class="row g-2 mb-2">
                 <div class="col-4"><label>nx</label><input type="number" class="form-control form-control-sm" id="cad-nx" value="160" min="20" /></div>
                 <div class="col-4"><label>ny</label><input type="number" class="form-control form-control-sm" id="cad-ny" value="60" min="10" /></div>
@@ -409,7 +432,7 @@
               </div>
               <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-outline-primary" onclick="cadGenerateMask()">
-                  <i class="bi bi-grid-3x3-gap"></i> Generate Mask
+                  <i class="bi bi-grid-3x3-gap"></i> <span data-i18n="cad.generate_mask">Generate Mask</span>
                 </button>
               </div>
               <div id="cad-mask-result" class="mt-2"></div>
@@ -419,10 +442,10 @@
           <!-- Launch Solver -->
           <div class="card mt-3 border-primary">
             <div class="card-header bg-primary text-white">
-              <i class="bi bi-play-circle me-2"></i> Launch LBM Solver (CAD → Fluid → Post-process)
+              <i class="bi bi-play-circle me-2"></i> <span data-i18n="cad.launch_title">Launch LBM Solver (CAD → Fluid → Post-process)</span>
             </div>
             <div class="card-body config-form">
-              <p class="small text-muted mb-2">
+              <p class="small text-muted mb-2" data-i18n-html="cad.launch_desc">
                 Directly submit a 3-D ship-hull LBM simulation from the current CAD hull.
                 The hull mask is passed to the solver; results appear in <strong>Post-process</strong>.
               </p>
@@ -430,23 +453,23 @@
                 <div class="col-4"><label>nx</label><input type="number" class="form-control form-control-sm" id="cad-sol-nx" value="160" min="20" /></div>
                 <div class="col-4"><label>ny</label><input type="number" class="form-control form-control-sm" id="cad-sol-ny" value="60" min="10" /></div>
                 <div class="col-4"><label>nz</label><input type="number" class="form-control form-control-sm" id="cad-sol-nz" value="40" min="10" /></div>
-                <div class="col-4"><label>Hull length (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-length" value="80" min="10" /></div>
-                <div class="col-4"><label>Hull beam (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-beam" value="8" min="1" /></div>
-                <div class="col-4"><label>Hull draft (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-draft" value="12" min="1" /></div>
-                <div class="col-4"><label>Inlet velocity</label><input type="number" class="form-control form-control-sm" id="cad-sol-uin" value="0.05" step="0.01" min="0.001" /></div>
-                <div class="col-4"><label>Reynolds number</label><input type="number" class="form-control form-control-sm" id="cad-sol-re" value="200" min="1" /></div>
-                <div class="col-4"><label>Smagorinsky Cs</label><input type="number" class="form-control form-control-sm" id="cad-sol-cs" value="0.1" step="0.01" min="0" /></div>
-                <div class="col-4"><label>Time steps</label><input type="number" class="form-control form-control-sm" id="cad-sol-steps" value="2000" min="1" /></div>
-                <div class="col-4"><label>Output interval</label><input type="number" class="form-control form-control-sm" id="cad-sol-interval" value="200" min="1" /></div>
+                <div class="col-4"><label data-i18n="cad.sol_length">Hull length (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-length" value="80" min="10" /></div>
+                <div class="col-4"><label data-i18n="cad.sol_beam">Hull beam (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-beam" value="8" min="1" /></div>
+                <div class="col-4"><label data-i18n="cad.sol_draft">Hull draft (lu)</label><input type="number" class="form-control form-control-sm" id="cad-sol-draft" value="12" min="1" /></div>
+                <div class="col-4"><label data-i18n="field.u_in">Inlet velocity</label><input type="number" class="form-control form-control-sm" id="cad-sol-uin" value="0.05" step="0.01" min="0.001" /></div>
+                <div class="col-4"><label data-i18n="field.re">Reynolds number</label><input type="number" class="form-control form-control-sm" id="cad-sol-re" value="200" min="1" /></div>
+                <div class="col-4"><label data-i18n="field.smagorinsky_cs">Smagorinsky Cs</label><input type="number" class="form-control form-control-sm" id="cad-sol-cs" value="0.1" step="0.01" min="0" /></div>
+                <div class="col-4"><label data-i18n="field.n_steps">Time steps</label><input type="number" class="form-control form-control-sm" id="cad-sol-steps" value="2000" min="1" /></div>
+                <div class="col-4"><label data-i18n="field.output_interval">Output interval</label><input type="number" class="form-control form-control-sm" id="cad-sol-interval" value="200" min="1" /></div>
                 <div class="col-4">
-                  <label>Device</label>
+                  <label data-i18n="field.device">Device</label>
                   <select class="form-select form-select-sm" id="cad-sol-device">
                     <option value="cpu">cpu</option>
                   </select>
                 </div>
               </div>
               <button class="btn btn-primary" id="cad-launch-btn" onclick="cadLaunchSolver()">
-                <i class="bi bi-play-fill"></i> Submit Solver Job
+                <i class="bi bi-play-fill"></i> <span data-i18n="cad.submit_solver">Submit Solver Job</span>
               </button>
               <div id="cad-launch-result" class="mt-2"></div>
             </div>
@@ -460,32 +483,32 @@
     <!-- PRE-PROCESSING -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-preprocess">
-      <h4 class="mb-3"><i class="bi bi-grid-3x3"></i> Pre-processing</h4>
+      <h4 class="mb-3"><i class="bi bi-grid-3x3"></i> <span data-i18n="preprocess.title">Pre-processing</span></h4>
       <div class="row g-3">
 
         <!-- Polygon mask -->
         <div class="col-lg-6">
           <div class="card h-100">
-            <div class="card-header">Polygon → Obstacle Mask (2D)</div>
+            <div class="card-header" data-i18n="preprocess.poly_title">Polygon → Obstacle Mask (2D)</div>
             <div class="card-body config-form">
               <div class="row g-2 mb-2">
                 <div class="col-6">
-                  <label>Grid width (nx)</label>
+                  <label data-i18n="preprocess.grid_width">Grid width (nx)</label>
                   <input type="number" class="form-control" id="poly-nx" value="200" min="10" />
                 </div>
                 <div class="col-6">
-                  <label>Grid height (ny)</label>
+                  <label data-i18n="preprocess.grid_height">Grid height (ny)</label>
                   <input type="number" class="form-control" id="poly-ny" value="100" min="10" />
                 </div>
               </div>
-              <label>Vertices (one [x,y] per line, pixel coords)</label>
+              <label data-i18n="preprocess.vertices_label">Vertices (one [x,y] per line, pixel coords)</label>
               <textarea class="form-control font-monospace" id="poly-vertices" rows="6" style="font-size:.8rem">40, 20
 160, 20
 160, 80
 40, 80</textarea>
-              <div class="form-text">Enter integer pixel coordinates, one pair per line.</div>
+              <div class="form-text" data-i18n="preprocess.vertices_hint">Enter integer pixel coordinates, one pair per line.</div>
               <button class="btn btn-primary mt-3" onclick="runPolygonMask()">
-                <i class="bi bi-play-fill"></i> Generate Mask
+                <i class="bi bi-play-fill"></i> <span data-i18n="preprocess.gen_mask">Generate Mask</span>
               </button>
               <div id="poly-result" class="mt-3"></div>
             </div>
@@ -495,17 +518,17 @@
         <!-- Random porosity -->
         <div class="col-lg-6">
           <div class="card h-100">
-            <div class="card-header">Random Porosity Mask (2D)</div>
+            <div class="card-header" data-i18n="preprocess.poro_title">Random Porosity Mask (2D)</div>
             <div class="card-body config-form">
               <div class="row g-2 mb-2">
                 <div class="col-6"><label>nx</label><input type="number" class="form-control" id="poro-nx" value="128" min="16" /></div>
                 <div class="col-6"><label>ny</label><input type="number" class="form-control" id="poro-ny" value="128" min="16" /></div>
-                <div class="col-6"><label>Porosity (0–1)</label><input type="number" class="form-control" id="poro-phi" value="0.4" step="0.05" min="0.1" max="0.95" /></div>
-                <div class="col-6"><label>Correlation length</label><input type="number" class="form-control" id="poro-corr" value="5.0" step="0.5" min="1" /></div>
-                <div class="col-6"><label>Seed</label><input type="number" class="form-control" id="poro-seed" value="0" min="0" /></div>
+                <div class="col-6"><label data-i18n="preprocess.porosity">Porosity (0–1)</label><input type="number" class="form-control" id="poro-phi" value="0.4" step="0.05" min="0.1" max="0.95" /></div>
+                <div class="col-6"><label data-i18n="preprocess.corr_length">Correlation length</label><input type="number" class="form-control" id="poro-corr" value="5.0" step="0.5" min="1" /></div>
+                <div class="col-6"><label data-i18n="preprocess.seed">Seed</label><input type="number" class="form-control" id="poro-seed" value="0" min="0" /></div>
               </div>
               <button class="btn btn-primary mt-2" onclick="runRandomPorosity()">
-                <i class="bi bi-play-fill"></i> Generate Mask
+                <i class="bi bi-play-fill"></i> <span data-i18n="preprocess.gen_mask">Generate Mask</span>
               </button>
               <div id="poro-result" class="mt-3"></div>
             </div>
@@ -515,16 +538,16 @@
         <!-- Unit converter -->
         <div class="col-12">
           <div class="card">
-            <div class="card-header">LBM Unit Converter</div>
+            <div class="card-header" data-i18n="preprocess.uc_title">LBM Unit Converter</div>
             <div class="card-body config-form">
               <div class="row g-2">
-                <div class="col-md-2"><label>Char. length L [m]</label><input type="number" class="form-control" id="uc-L" value="1.0" step="0.1" /></div>
-                <div class="col-md-2"><label>Char. velocity U [m/s]</label><input type="number" class="form-control" id="uc-U" value="1.0" step="0.1" /></div>
-                <div class="col-md-2"><label>Kinematic ν [m²/s]</label><input type="number" class="form-control" id="uc-nu" value="1e-6" step="1e-7" /></div>
-                <div class="col-md-2"><label>LBM length (cells)</label><input type="number" class="form-control" id="uc-lbm-L" value="100" min="1" /></div>
-                <div class="col-md-2"><label>LBM velocity (lu)</label><input type="number" class="form-control" id="uc-lbm-U" value="0.1" step="0.01" min="0.001" /></div>
+                <div class="col-md-2"><label data-i18n="preprocess.uc_length">Char. length L [m]</label><input type="number" class="form-control" id="uc-L" value="1.0" step="0.1" /></div>
+                <div class="col-md-2"><label data-i18n="preprocess.uc_velocity">Char. velocity U [m/s]</label><input type="number" class="form-control" id="uc-U" value="1.0" step="0.1" /></div>
+                <div class="col-md-2"><label data-i18n="preprocess.uc_nu">Kinematic ν [m²/s]</label><input type="number" class="form-control" id="uc-nu" value="1e-6" step="1e-7" /></div>
+                <div class="col-md-2"><label data-i18n="preprocess.uc_lbm_length">LBM length (cells)</label><input type="number" class="form-control" id="uc-lbm-L" value="100" min="1" /></div>
+                <div class="col-md-2"><label data-i18n="preprocess.uc_lbm_vel">LBM velocity (lu)</label><input type="number" class="form-control" id="uc-lbm-U" value="0.1" step="0.01" min="0.001" /></div>
                 <div class="col-md-2 d-flex align-items-end">
-                  <button class="btn btn-primary w-100" onclick="runUnitConvert()"><i class="bi bi-calculator"></i> Convert</button>
+                  <button class="btn btn-primary w-100" onclick="runUnitConvert()"><i class="bi bi-calculator"></i> <span data-i18n="preprocess.convert_btn">Convert</span></button>
                 </div>
               </div>
               <div id="uc-result" class="mt-3"></div>
@@ -539,26 +562,26 @@
     <!-- SOLVE -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-solve">
-      <h4 class="mb-3"><i class="bi bi-play-circle"></i> Solver</h4>
+      <h4 class="mb-3"><i class="bi bi-play-circle"></i> <span data-i18n="solve.title">Solver</span></h4>
       <div class="row g-3">
         <div class="col-md-4 col-lg-3">
           <div class="card">
-            <div class="card-header">Simulation Type</div>
+            <div class="card-header" data-i18n="solve.sim_type">Simulation Type</div>
             <div class="card-body">
               <select class="form-select" id="sim-type" onchange="onSimTypeChange()">
-                <optgroup label="2D Single-phase">
+                <optgroup id="optgroup-2d-single" label="2D Single-phase">
                   <option value="cylinder_flow">Cylinder Flow (2D)</option>
                   <option value="lid_driven_cavity">Lid-Driven Cavity (2D)</option>
                   <option value="backward_facing_step">Backward-Facing Step (2D)</option>
                   <option value="turbulent_channel">Turbulent Channel LES (2D)</option>
                   <option value="pipeline_flow">Pipeline Flow (2D)</option>
                 </optgroup>
-                <optgroup label="2D Multiphase">
+                <optgroup id="optgroup-2d-multi" label="2D Multiphase">
                   <option value="dam_break">Dam Break (2D)</option>
                   <option value="sloshing_tank">Sloshing Tank (2D)</option>
                   <option value="porous_drainage">Porous Drainage (2D)</option>
                 </optgroup>
-                <optgroup label="3D">
+                <optgroup id="optgroup-3d" label="3D">
                   <option value="sphere_flow">Sphere Flow (3D D3Q19)</option>
                   <option value="ship_hull">Ship Hull – Wigley (3D)</option>
                 </optgroup>
@@ -570,12 +593,12 @@
         <div class="col-md-8 col-lg-9">
           <div class="card">
             <div class="card-header d-flex align-items-center">
-              <span id="sim-form-title">Configuration</span>
+              <span id="sim-form-title" data-i18n="solve.config_title">Configuration</span>
               <button class="btn btn-sm btn-outline-secondary ms-auto me-2" onclick="resetDefaults()">
-                <i class="bi bi-arrow-counterclockwise"></i> Defaults
+                <i class="bi bi-arrow-counterclockwise"></i> <span data-i18n="solve.defaults_btn">Defaults</span>
               </button>
               <button class="btn btn-primary" id="submit-btn" onclick="submitJob()">
-                <i class="bi bi-play-fill"></i> Submit Job
+                <i class="bi bi-play-fill"></i> <span data-i18n="solve.submit_btn">Submit Job</span>
               </button>
             </div>
             <div class="card-body config-form">
@@ -590,47 +613,47 @@
     <!-- POST-PROCESSING -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-postprocess">
-      <h4 class="mb-3"><i class="bi bi-bar-chart-line"></i> Post-processing</h4>
+      <h4 class="mb-3"><i class="bi bi-bar-chart-line"></i> <span data-i18n="postprocess.title">Post-processing</span></h4>
       <div class="row g-3 mb-3">
         <div class="col-md-5">
           <div class="card">
-            <div class="card-header">Select Job</div>
+            <div class="card-header" data-i18n="postprocess.select_job">Select Job</div>
             <div class="card-body">
               <select class="form-select" id="pp-job-select" onchange="onPPJobSelect()">
-                <option value="">— select a completed job —</option>
+                <option value="" data-i18n="postprocess.select_hint">— select a completed job —</option>
               </select>
             </div>
           </div>
         </div>
         <div class="col-md-7">
           <div class="card" id="pp-meta-card">
-            <div class="card-header">Summary</div>
-            <div class="card-body small" id="pp-summary">Select a job to view results.</div>
+            <div class="card-header" data-i18n="postprocess.summary">Summary</div>
+            <div class="card-body small" id="pp-summary" data-i18n="postprocess.summary_hint">Select a job to view results.</div>
           </div>
         </div>
       </div>
 
       <!-- Tabs within post-process -->
       <ul class="nav nav-tabs mb-3" id="pp-tabs">
-        <li class="nav-item"><a class="nav-link active" href="#" onclick="showPPTab('snapshots',this)"><i class="bi bi-images"></i> Snapshots</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> Logs</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> Files</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> Metadata</a></li>
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="showPPTab('snapshots',this)"><i class="bi bi-images"></i> <span data-i18n="postprocess.tab_snapshots">Snapshots</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs">Logs</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> <span data-i18n="postprocess.tab_files">Files</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> <span data-i18n="postprocess.tab_metadata">Metadata</span></a></li>
       </ul>
 
       <div id="pp-snapshots" class="pp-tab-panel">
         <div id="snapshots-grid" class="row g-2">
-          <div class="col-12 text-muted small">No job selected.</div>
+          <div class="col-12 text-muted small" data-i18n="postprocess.no_job">No job selected.</div>
         </div>
       </div>
       <div id="pp-logs" class="pp-tab-panel" style="display:none">
-        <div class="log-box" id="pp-log-box">Select a job to view logs.</div>
+        <div class="log-box" id="pp-log-box" data-i18n="postprocess.no_job_logs">Select a job to view logs.</div>
       </div>
       <div id="pp-files" class="pp-tab-panel" style="display:none">
         <div id="files-table"></div>
       </div>
       <div id="pp-metadata" class="pp-tab-panel" style="display:none">
-        <pre id="pp-metadata-box" class="bg-light p-3 border rounded small" style="max-height:500px;overflow:auto">Select a job to view metadata.</pre>
+        <pre id="pp-metadata-box" class="bg-light p-3 border rounded small" style="max-height:500px;overflow:auto" data-i18n="postprocess.no_job_meta">Select a job to view metadata.</pre>
       </div>
     </div>
 
@@ -638,34 +661,34 @@
     <!-- BENCHMARKS -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-benchmarks">
-      <h4 class="mb-3"><i class="bi bi-trophy"></i> Benchmarks</h4>
+      <h4 class="mb-3"><i class="bi bi-trophy"></i> <span data-i18n="bench.title">Benchmarks</span></h4>
       <div class="row g-3">
 
         <!-- Marine -->
         <div class="col-md-6">
           <div class="card bench-card" id="bench-card-marine">
             <div class="card-header d-flex align-items-center">
-              <i class="bi bi-water me-2"></i> Marine &amp; Ocean Engineering
-              <span class="ms-auto badge bg-secondary" id="bench-status-marine">idle</span>
+              <i class="bi bi-water me-2"></i> <span data-i18n="bench.marine">Marine &amp; Ocean Engineering</span>
+              <span class="ms-auto badge bg-secondary" id="bench-status-marine" data-i18n="bench.idle">idle</span>
             </div>
             <div class="card-body small">
-              <p>Cylinder flow (St/Cd), sloshing tank (Faltinsen), near-bed pipeline (St), turbulent channel (log-law), Wigley hull (Cd).</p>
+              <p data-i18n="bench.marine_desc">Cylinder flow (St/Cd), sloshing tank (Faltinsen), near-bed pipeline (St), turbulent channel (log-law), Wigley hull (Cd).</p>
               <div class="row g-2 mb-2">
                 <div class="col-4">
-                  <label class="form-label mb-1">Mode</label>
+                  <label class="form-label mb-1" data-i18n="bench.mode">Mode</label>
                   <select class="form-select form-select-sm" id="bench-marine-fast">
-                    <option value="true">Fast (quick)</option>
-                    <option value="false">Full</option>
+                    <option value="true" data-i18n="bench.fast">Fast (quick)</option>
+                    <option value="false" data-i18n="bench.full">Full</option>
                   </select>
                 </div>
                 <div class="col-4">
-                  <label class="form-label mb-1">Device</label>
+                  <label class="form-label mb-1" data-i18n="bench.device">Device</label>
                   <select class="form-select form-select-sm" id="bench-marine-device">
                     <option value="cpu">cpu</option>
                   </select>
                 </div>
                 <div class="col-4 d-flex align-items-end">
-                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('marine')"><i class="bi bi-play-fill"></i> Run</button>
+                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('marine')"><i class="bi bi-play-fill"></i> <span data-i18n="bench.run_btn">Run</span></button>
                 </div>
               </div>
               <div id="bench-result-marine"></div>
@@ -677,27 +700,27 @@
         <div class="col-md-6">
           <div class="card bench-card" id="bench-card-multiphase">
             <div class="card-header d-flex align-items-center">
-              <i class="bi bi-droplet-half me-2"></i> Multiphase LBM
-              <span class="ms-auto badge bg-secondary" id="bench-status-multiphase">idle</span>
+              <i class="bi bi-droplet-half me-2"></i> <span data-i18n="bench.multiphase">Multiphase LBM</span>
+              <span class="ms-auto badge bg-secondary" id="bench-status-multiphase" data-i18n="bench.idle">idle</span>
             </div>
             <div class="card-body small">
-              <p>Static droplet (Laplace), spinodal decomposition, two-phase Poiseuille comparison (SCMC + CG).</p>
+              <p data-i18n="bench.multiphase_desc">Static droplet (Laplace), spinodal decomposition, two-phase Poiseuille comparison (SCMC + CG).</p>
               <div class="row g-2 mb-2">
                 <div class="col-4">
-                  <label class="form-label mb-1">Mode</label>
+                  <label class="form-label mb-1" data-i18n="bench.mode">Mode</label>
                   <select class="form-select form-select-sm" id="bench-multiphase-fast">
-                    <option value="true">Fast</option>
-                    <option value="false">Full</option>
+                    <option value="true" data-i18n="bench.fast">Fast</option>
+                    <option value="false" data-i18n="bench.full">Full</option>
                   </select>
                 </div>
                 <div class="col-4">
-                  <label class="form-label mb-1">Device</label>
+                  <label class="form-label mb-1" data-i18n="bench.device">Device</label>
                   <select class="form-select form-select-sm" id="bench-multiphase-device">
                     <option value="cpu">cpu</option>
                   </select>
                 </div>
                 <div class="col-4 d-flex align-items-end">
-                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('multiphase')"><i class="bi bi-play-fill"></i> Run</button>
+                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('multiphase')"><i class="bi bi-play-fill"></i> <span data-i18n="bench.run_btn">Run</span></button>
                 </div>
               </div>
               <div id="bench-result-multiphase"></div>
@@ -709,18 +732,18 @@
         <div class="col-md-6">
           <div class="card bench-card" id="bench-card-ghia">
             <div class="card-header d-flex align-items-center">
-              <i class="bi bi-grid me-2"></i> Lid-Driven Cavity – Ghia Comparison
-              <span class="ms-auto badge bg-secondary" id="bench-status-ghia">idle</span>
+              <i class="bi bi-grid me-2"></i> <span data-i18n="bench.ghia">Lid-Driven Cavity – Ghia Comparison</span>
+              <span class="ms-auto badge bg-secondary" id="bench-status-ghia" data-i18n="bench.idle">idle</span>
             </div>
             <div class="card-body small">
-              <p>Compare centreline velocity profiles against Ghia et al. (1982) reference data at Re = 100 / 400 / 1000.</p>
+              <p data-i18n="bench.ghia_desc">Compare centreline velocity profiles against Ghia et al. (1982) reference data at Re = 100 / 400 / 1000.</p>
               <div class="row g-2 mb-2">
                 <div class="col-3">
-                  <label class="form-label mb-1">nx</label>
+                  <label class="form-label mb-1" data-i18n="bench.nx">nx</label>
                   <input type="number" class="form-control form-control-sm" id="bench-ghia-nx" value="64" min="16" />
                 </div>
                 <div class="col-3">
-                  <label class="form-label mb-1">Re</label>
+                  <label class="form-label mb-1" data-i18n="bench.re">Re</label>
                   <select class="form-select form-select-sm" id="bench-ghia-re">
                     <option value="100">100</option>
                     <option value="400">400</option>
@@ -728,11 +751,11 @@
                   </select>
                 </div>
                 <div class="col-3">
-                  <label class="form-label mb-1">Steps</label>
+                  <label class="form-label mb-1" data-i18n="bench.steps">Steps</label>
                   <input type="number" class="form-control form-control-sm" id="bench-ghia-steps" value="5000" min="100" />
                 </div>
                 <div class="col-3 d-flex align-items-end">
-                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('ghia')"><i class="bi bi-play-fill"></i> Run</button>
+                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('ghia')"><i class="bi bi-play-fill"></i> <span data-i18n="bench.run_btn">Run</span></button>
                 </div>
               </div>
               <div id="bench-result-ghia"></div>
@@ -744,22 +767,22 @@
         <div class="col-md-6">
           <div class="card bench-card" id="bench-card-mlups">
             <div class="card-header d-flex align-items-center">
-              <i class="bi bi-lightning-charge me-2"></i> MLUPS Performance
-              <span class="ms-auto badge bg-secondary" id="bench-status-mlups">idle</span>
+              <i class="bi bi-lightning-charge me-2"></i> <span data-i18n="bench.mlups">MLUPS Performance</span>
+              <span class="ms-auto badge bg-secondary" id="bench-status-mlups" data-i18n="bench.idle">idle</span>
             </div>
             <div class="card-body small">
-              <p>D2Q9 BGK throughput in Million Lattice Updates Per Second (MLUPS) at multiple grid sizes.</p>
+              <p data-i18n="bench.mlups_desc">D2Q9 BGK throughput in Million Lattice Updates Per Second (MLUPS) at multiple grid sizes.</p>
               <div class="row g-2 mb-2">
                 <div class="col-6">
-                  <label class="form-label mb-1">Grid sizes (comma-sep)</label>
+                  <label class="form-label mb-1" data-i18n="bench.grid_sizes">Grid sizes (comma-sep)</label>
                   <input type="text" class="form-control form-control-sm" id="bench-mlups-sizes" value="128,256,512" />
                 </div>
                 <div class="col-3">
-                  <label class="form-label mb-1">Steps</label>
+                  <label class="form-label mb-1" data-i18n="bench.steps">Steps</label>
                   <input type="number" class="form-control form-control-sm" id="bench-mlups-steps" value="200" min="10" />
                 </div>
                 <div class="col-3 d-flex align-items-end">
-                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('mlups')"><i class="bi bi-play-fill"></i> Run</button>
+                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('mlups')"><i class="bi bi-play-fill"></i> <span data-i18n="bench.run_btn">Run</span></button>
                 </div>
               </div>
               <div id="bench-result-mlups"></div>
@@ -771,27 +794,27 @@
         <div class="col-md-6">
           <div class="card bench-card" id="bench-card-porous">
             <div class="card-header d-flex align-items-center">
-              <i class="bi bi-hexagon me-2"></i> Porous Media
-              <span class="ms-auto badge bg-secondary" id="bench-status-porous">idle</span>
+              <i class="bi bi-hexagon me-2"></i> <span data-i18n="bench.porous">Porous Media</span>
+              <span class="ms-auto badge bg-secondary" id="bench-status-porous" data-i18n="bench.idle">idle</span>
             </div>
             <div class="card-body small">
-              <p>Laplace pressure test and capillary invasion benchmarks for porous media multiphase flow.</p>
+              <p data-i18n="bench.porous_desc">Laplace pressure test and capillary invasion benchmarks for porous media multiphase flow.</p>
               <div class="row g-2 mb-2">
                 <div class="col-5">
-                  <label class="form-label mb-1">Mode</label>
+                  <label class="form-label mb-1" data-i18n="bench.mode">Mode</label>
                   <select class="form-select form-select-sm" id="bench-porous-fast">
-                    <option value="true">Fast</option>
-                    <option value="false">Full</option>
+                    <option value="true" data-i18n="bench.fast">Fast</option>
+                    <option value="false" data-i18n="bench.full">Full</option>
                   </select>
                 </div>
                 <div class="col-4">
-                  <label class="form-label mb-1">Device</label>
+                  <label class="form-label mb-1" data-i18n="bench.device">Device</label>
                   <select class="form-select form-select-sm" id="bench-porous-device">
                     <option value="cpu">cpu</option>
                   </select>
                 </div>
                 <div class="col-3 d-flex align-items-end">
-                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('porous')"><i class="bi bi-play-fill"></i> Run</button>
+                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('porous')"><i class="bi bi-play-fill"></i> <span data-i18n="bench.run_btn">Run</span></button>
                 </div>
               </div>
               <div id="bench-result-porous"></div>
@@ -806,21 +829,21 @@
     <!-- COMPARE RUNS -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-compare">
-      <h4 class="mb-3"><i class="bi bi-arrow-left-right"></i> Compare runs</h4>
+      <h4 class="mb-3"><i class="bi bi-arrow-left-right"></i> <span data-i18n="compare.title">Compare runs</span></h4>
       <div class="card mb-3">
         <div class="card-body small">
-          <p class="mb-2">Select 2–10 completed jobs and view their derived parameters and diagnostics side by side.</p>
+          <p class="mb-2" data-i18n="compare.desc">Select 2–10 completed jobs and view their derived parameters and diagnostics side by side.</p>
           <div class="row g-2 align-items-end">
             <div class="col-md-9">
-              <label class="form-label mb-1">Jobs</label>
+              <label class="form-label mb-1" data-i18n="compare.jobs_label">Jobs</label>
               <div id="compare-job-checkboxes" class="border rounded p-2"
                    style="max-height:220px;overflow-y:auto;background:#fafbfc">
-                <span class="text-muted">Loading…</span>
+                <span class="text-muted" data-i18n="compare.loading">Loading…</span>
               </div>
             </div>
             <div class="col-md-3 d-flex gap-2">
               <button class="btn btn-primary btn-sm flex-grow-1" onclick="runCompare()">
-                <i class="bi bi-arrow-left-right"></i> Compare
+                <i class="bi bi-arrow-left-right"></i> <span data-i18n="compare.compare_btn">Compare</span>
               </button>
               <button class="btn btn-outline-secondary btn-sm" onclick="refreshCompareJobList()">
                 <i class="bi bi-arrow-clockwise"></i>
@@ -836,8 +859,8 @@
     <!-- AI AGENT -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-agent">
-      <h4 class="mb-2"><i class="bi bi-robot"></i> AI Agent <small class="text-muted">– 对话式建模 → 计算 → 分析</small></h4>
-      <div class="agent-info-bar" id="agent-info-bar">
+      <h4 class="mb-2"><i class="bi bi-robot"></i> <span data-i18n="agent.title">AI Agent</span> <small class="text-muted" data-i18n="agent.subtitle">– Conversational modelling → compute → analysis</small></h4>
+      <div class="agent-info-bar" id="agent-info-bar" data-i18n="agent.loading_info">
         Loading agent info…
       </div>
       <div class="agent-layout">
@@ -845,7 +868,7 @@
           <div class="agent-msg assistant">
             <div class="avatar"><i class="bi bi-robot"></i></div>
             <div>
-              <div class="bubble">👋 你好！我是 TensorLBM 智能助手。我可以帮你完成"建模 → 求解 → 分析可视化"的全流程：
+              <div class="bubble" id="agent-welcome-bubble">👋 你好！我是 TensorLBM 智能助手。我可以帮你完成"建模 → 求解 → 分析可视化"的全流程：
 - 请告诉我你想做的算例，例如：<em>「跑一个 Re=200 的圆柱绕流，nx=200，迭代步数=2000」</em>
 - 也可以查询任务状态、分析结果、提取速度剖面等。
 - Hi! I am the TensorLBM agent. Tell me a scenario (cylinder flow, dam break, ship hull, …) and I will submit it for you.</div>
@@ -861,11 +884,12 @@
         <div class="agent-input-row">
           <input id="agent-input" type="text" class="form-control"
                  placeholder="例如：用圆柱绕流做一个 Re=200 的算例，步数=2000 / Run a dam break …"
+                 data-i18n-placeholder="agent.input_placeholder"
                  onkeydown="if(event.key==='Enter'){agentSubmit();}" />
           <button class="btn btn-primary" onclick="agentSubmit()" id="agent-send-btn">
-            <i class="bi bi-send"></i> Send
+            <i class="bi bi-send"></i> <span data-i18n="agent.send_btn">Send</span>
           </button>
-          <button class="btn btn-outline-secondary" onclick="agentClear()" title="Clear conversation">
+          <button class="btn btn-outline-secondary" onclick="agentClear()" data-i18n-title="agent.clear_title" title="Clear conversation">
             <i class="bi bi-eraser"></i>
           </button>
         </div>
@@ -899,13 +923,15 @@ let benchJobMap = {};   // bench_type → job_id
 // Initialisation
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  connectWS();
-  loadStatus();
-  loadJobs();
-  loadAgentInfo();
-  onSimTypeChange();
-  setInterval(loadStatus, 15000);
-  // Populate device selects after status loaded
+  i18n.init().then(() => {
+    connectWS();
+    loadStatus();
+    loadJobs();
+    loadAgentInfo();
+    onSimTypeChange();
+    setInterval(loadStatus, 15000);
+    onCADHullTypeChange();
+  });
 });
 
 // ============================================================
@@ -916,11 +942,11 @@ function connectWS() {
   ws = new WebSocket(`${proto}//${location.host}/ws`);
   ws.onopen = () => {
     document.getElementById('ws-status').innerHTML =
-      '<span class="dot dot-completed"></span> Connected';
+      '<span class="dot dot-completed"></span> ' + t('ws.connected');
   };
   ws.onclose = () => {
     document.getElementById('ws-status').innerHTML =
-      '<span class="dot dot-failed"></span> Disconnected';
+      '<span class="dot dot-failed"></span> ' + t('ws.disconnected');
     setTimeout(connectWS, 3000);
   };
   ws.onmessage = (ev) => {
@@ -964,12 +990,12 @@ async function loadStatus() {
     const el = document.getElementById('platform-status');
     const cudaInfo = s.cuda_available
       ? `<span class="text-success"><i class="bi bi-gpu-card"></i> ${s.gpu_count} GPU(s): ${s.gpu_names.join(', ')}</span>`
-      : `<span class="text-muted"><i class="bi bi-cpu"></i> CPU only (no CUDA)</span>`;
+      : `<span class="text-muted"><i class="bi bi-cpu"></i> ${t('dashboard.cpu_only')}</span>`;
     el.innerHTML = `
       <table class="table table-sm mb-0">
-        <tr><th>Version</th><td>${s.version}</td></tr>
-        <tr><th>CUDA</th><td>${cudaInfo}</td></tr>
-        <tr><th>Available devices</th><td>${s.devices.join(', ')}</td></tr>
+        <tr><th>${t('dashboard.version')}</th><td>${s.version}</td></tr>
+        <tr><th>${t('dashboard.cuda')}</th><td>${cudaInfo}</td></tr>
+        <tr><th>${t('dashboard.available_devices')}</th><td>${s.devices.join(', ')}</td></tr>
       </table>`;
     // Populate device dropdowns
     const devSelects = document.querySelectorAll('select[id$="-device"]');
@@ -1009,7 +1035,7 @@ function renderJobsSidebar() {
   const list = document.getElementById('jobs-list');
   const jobs = Object.values(jobsMap).sort((a,b) => b.created_at.localeCompare(a.created_at));
   if (!jobs.length) {
-    list.innerHTML = '<div class="text-center text-muted py-4 small" id="no-jobs-msg">No jobs yet.</div>';
+    list.innerHTML = `<div class="text-center text-muted py-4 small" id="no-jobs-msg">${t('sidebar.no_jobs')}</div>`;
     return;
   }
   list.innerHTML = jobs.map(j => {
@@ -1076,7 +1102,7 @@ function refreshCompareJobList() {
     .filter(j => j.status === 'completed')
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
   if (!jobs.length) {
-    box.innerHTML = '<span class="text-muted small">No completed jobs yet.</span>';
+    box.innerHTML = `<span class="text-muted small">${t('compare.no_completed')}</span>`;
     return;
   }
   box.innerHTML = jobs.map(j => `
@@ -1093,27 +1119,27 @@ async function runCompare() {
   const ids = Array.from(document.querySelectorAll('.compare-job-cb:checked')).map(cb => cb.value);
   const result = document.getElementById('compare-result');
   if (ids.length < 2) {
-    result.innerHTML = '<div class="alert alert-warning">Select at least 2 jobs to compare.</div>';
+    result.innerHTML = `<div class="alert alert-warning">${t('compare.min_jobs')}</div>`;
     return;
   }
   if (ids.length > 10) {
-    result.innerHTML = '<div class="alert alert-warning">Select at most 10 jobs.</div>';
+    result.innerHTML = `<div class="alert alert-warning">${t('compare.max_jobs')}</div>`;
     return;
   }
-  result.innerHTML = '<div class="text-muted small">Loading…</div>';
+  result.innerHTML = `<div class="text-muted small">${t('compare.loading')}</div>`;
   try {
     const qs = ids.map(id => `ids=${encodeURIComponent(id)}`).join('&');
     const r = await fetch(`/api/jobs/compare?${qs}`).then(x => x.json());
     if (!r.jobs || !r.jobs.length) {
-      result.innerHTML = '<div class="alert alert-warning">No data returned.</div>';
+      result.innerHTML = `<div class="alert alert-warning">${t('compare.no_data')}</div>`;
       return;
     }
     // Collect all metadata keys from "derived" + top-level numeric fields
     const rows = [];
-    rows.push(['Job', ...r.jobs.map(e => `<code>${e.job.job_id.slice(0, 8)}</code>`)]);
-    rows.push(['Name', ...r.jobs.map(e => escHtml(e.job.name))]);
-    rows.push(['Type', ...r.jobs.map(e => escHtml(e.job.job_type))]);
-    rows.push(['Status', ...r.jobs.map(e => `<span class="badge bg-secondary">${e.job.status}</span>`)]);
+    rows.push([t('compare.field_col'), ...r.jobs.map((_, i) => `${t('compare.run_col')} ${i + 1}`)]);
+    rows.push([t('postprocess.name'), ...r.jobs.map(e => escHtml(e.job.name))]);
+    rows.push([t('postprocess.type'), ...r.jobs.map(e => escHtml(e.job.job_type))]);
+    rows.push([t('postprocess.status'), ...r.jobs.map(e => `<span class="badge bg-secondary">${e.job.status}</span>`)]);
     // Union of derived keys
     const derivedKeys = new Set();
     r.jobs.forEach(e => Object.keys(e.metadata.derived || {}).forEach(k => derivedKeys.add(k)));
@@ -1145,18 +1171,18 @@ async function runCompare() {
       ]);
     });
 
-    const thead = `<thead><tr><th>Field</th>${r.jobs.map((_, i) =>
-      `<th>Run ${i + 1}</th>`).join('')}</tr></thead>`;
-    const tbody = rows.map(row =>
+    const thead = `<thead><tr><th>${rows[0][0]}</th>${r.jobs.map((_, i) =>
+      `<th>${t('compare.run_col')} ${i + 1}</th>`).join('')}</tr></thead>`;
+    const tbody = rows.slice(1).map(row =>
       `<tr><th class="small">${row[0]}</th>${row.slice(1).map(c =>
         `<td class="small">${c}</td>`).join('')}</tr>`).join('');
     let html = `<div class="table-responsive"><table class="table table-sm table-hover">${thead}<tbody>${tbody}</tbody></table></div>`;
     if (r.missing && r.missing.length) {
-      html += `<div class="alert alert-warning small mt-2">Missing jobs: ${r.missing.join(', ')}</div>`;
+      html += `<div class="alert alert-warning small mt-2">${t('compare.missing_jobs')} ${r.missing.join(', ')}</div>`;
     }
     result.innerHTML = html;
   } catch (e) {
-    result.innerHTML = `<div class="alert alert-danger small">Error: ${escHtml(String(e))}</div>`;
+    result.innerHTML = `<div class="alert alert-danger small">${t('common.error')} ${escHtml(String(e))}</div>`;
   }
 }
 
@@ -1165,14 +1191,15 @@ async function runCompare() {
 // ============================================================
 
 const CAD_HULL_DESCS = {
-  wigley: 'Classic ITTC parabolic hull. Analytical Cb = 4/9 ≈ 0.444. Used as a standard validation benchmark in naval hydrodynamics.',
-  series60: 'DTMB Series 60 (Cb=0.60) polynomial approximation. Representative of a standard merchant vessel. Widely used for resistance and wave-making studies.',
-  kcs: 'KRISO Container Ship approximation (Cb≈0.651). Modern container ship hull form with blunt bow and full midship section.',
+  wigley: 'wigley_desc',
+  series60: 'series60_desc',
+  kcs: 'kcs_desc',
 };
 
 function onCADHullTypeChange() {
   const ht = document.getElementById('cad-hull-type').value;
-  document.getElementById('cad-hull-desc').textContent = CAD_HULL_DESCS[ht] || '';
+  const key = 'cad.' + (CAD_HULL_DESCS[ht] || '');
+  document.getElementById('cad-hull-desc').textContent = key ? t(key) : '';
 }
 
 async function cadGeneratePreview() {
@@ -1183,7 +1210,7 @@ async function cadGeneratePreview() {
   const n_stations = +document.getElementById('cad-stations').value;
   const area = document.getElementById('cad-preview-area');
   const caption = document.getElementById('cad-preview-caption');
-  area.innerHTML = '<div class="py-5"><span class="spinner-border"></span> Generating hull preview…</div>';
+  area.innerHTML = `<div class="py-5"><span class="spinner-border"></span> ${t('cad.generating')}</div>`;
   caption.textContent = '';
   try {
     const r = await api('POST', '/api/cad/preview', { hull_type, length, beam, draft, n_stations });
@@ -1193,7 +1220,7 @@ async function cadGeneratePreview() {
     const s = r.stats;
     document.getElementById('cad-stats').innerHTML = `
       <table class="table table-sm table-bordered mb-0">
-        <tr><th>Hull</th><td>${escHtml(s.label)}</td></tr>
+        <tr><th>${t('cad.hull_stat_label')}</th><td>${escHtml(s.label)}</td></tr>
         <tr><th>C<sub>b</sub></th><td><strong>${s.Cb}</strong></td></tr>
         <tr><th>C<sub>wp</sub></th><td>${s.Cwp}</td></tr>
         <tr><th>C<sub>m</sub></th><td>${s.Cm}</td></tr>
@@ -1220,17 +1247,17 @@ async function cadGenerateMask() {
   const beam = +document.getElementById('cad-beam').value;
   const draft = +document.getElementById('cad-draft').value;
   const el = document.getElementById('cad-mask-result');
-  el.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Computing…';
+  el.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${t('cad.computing')}`;
   try {
     const r = await api('POST', '/api/cad/hull-mask', { hull_type, nx, ny, nz, length, beam, draft });
     const s = r.stats;
     el.innerHTML = `
       <img src="${r.image}" class="result-img mb-2" style="max-width:100%" />
       <table class="table table-sm table-bordered mb-0 small">
-        <tr><th>Cb (numerical)</th><td><strong>${s.Cb_numerical}</strong></td></tr>
-        <tr><th>Solid cells</th><td>${s.solid_cells}</td></tr>
-        <tr><th>Fluid cells</th><td>${s.fluid_cells}</td></tr>
-        <tr><th>Grid</th><td>${s.nx}×${s.ny}×${s.nz}</td></tr>
+        <tr><th>${t('cad.cb_num')}</th><td><strong>${s.Cb_numerical}</strong></td></tr>
+        <tr><th>${t('cad.solid_cells')}</th><td>${s.solid_cells}</td></tr>
+        <tr><th>${t('cad.fluid_cells')}</th><td>${s.fluid_cells}</td></tr>
+        <tr><th>${t('cad.grid')}</th><td>${s.nx}×${s.ny}×${s.nz}</td></tr>
       </table>`;
   } catch(e) {
     el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`;
@@ -1250,8 +1277,8 @@ async function cadComputeLBM() {
   try {
     const r = await api('POST', '/api/cad/lbm-parameters', body);
     const stableHtml = r.stable
-      ? '<span class="badge bg-success">Stable</span>'
-      : '<span class="badge bg-danger">Unstable</span>';
+      ? `<span class="badge bg-success">${t('cad.stable')}</span>`
+      : `<span class="badge bg-danger">${t('cad.unstable')}</span>`;
     el.innerHTML = `
       <table class="table table-sm table-bordered mb-0 small">
         <tr><th>Re</th><td>${r.re_physical}</td></tr>
@@ -1288,18 +1315,18 @@ async function cadLaunchSolver() {
   const btn = document.getElementById('cad-launch-btn');
   const el = document.getElementById('cad-launch-result');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Submitting…';
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> ${t('cad.submitting')}`;
   try {
     const r = await api('POST', '/api/cad/send-to-solver', body);
-    showToast(`CAD solver job submitted: ${r.job_id}`, 'success');
+    showToast(`${t('cad.job_submitted')} ${r.job_id}`, 'success');
     el.innerHTML = `<div class="alert alert-success small">Job ID: <code>${r.job_id}</code></div>`;
     showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[4]);
   } catch(e) {
     el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`;
-    showToast(`Error: ${e.message}`, 'danger');
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-play-fill"></i> Submit Solver Job';
+    btn.innerHTML = `<i class="bi bi-play-fill"></i> ${t('cad.submit_solver')}`;
   }
 }
 
@@ -1325,9 +1352,6 @@ async function cadDownloadSTL() {
   }
 }
 
-// Initialise CAD hull description on page load
-document.addEventListener('DOMContentLoaded', () => { onCADHullTypeChange(); });
-
 // ============================================================
 // Pre-processing
 // ============================================================
@@ -1337,12 +1361,12 @@ async function runPolygonMask() {
   const lines = document.getElementById('poly-vertices').value.trim().split('\n');
   const vertices = lines.map(l => l.split(',').map(Number));
   const el = document.getElementById('poly-result');
-  el.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Generating…';
+  el.innerHTML = `<div class="spinner-border spinner-border-sm"></div> ${t('preprocess.generating')}`;
   try {
     const r = await api('POST', '/api/preprocess/polygon-mask', { nx, ny, vertices });
     el.innerHTML = `
       <img src="${r.image}" class="result-img mb-2" />
-      <p class="small mb-0">Obstacle cells: <strong>${r.obstacle_cells}</strong> &nbsp; Fluid cells: <strong>${r.fluid_cells}</strong></p>`;
+      <p class="small mb-0">${t('preprocess.obstacle_cells')}: <strong>${r.obstacle_cells}</strong> &nbsp; ${t('preprocess.fluid_cells')}: <strong>${r.fluid_cells}</strong></p>`;
   } catch(e) { el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`; }
 }
 
@@ -1353,12 +1377,12 @@ async function runRandomPorosity() {
   const corr_length = +document.getElementById('poro-corr').value;
   const seed = +document.getElementById('poro-seed').value;
   const el = document.getElementById('poro-result');
-  el.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Generating…';
+  el.innerHTML = `<div class="spinner-border spinner-border-sm"></div> ${t('preprocess.generating')}`;
   try {
     const r = await api('POST', '/api/preprocess/random-porosity-2d', {nx, ny, porosity, corr_length, seed});
     el.innerHTML = `
       <img src="${r.image}" class="result-img mb-2" />
-      <p class="small mb-0">Requested porosity: ${r.requested_porosity} &nbsp; Actual: <strong>${r.actual_porosity}</strong></p>`;
+      <p class="small mb-0">${t('preprocess.req_porosity')}: ${r.requested_porosity} &nbsp; ${t('preprocess.actual_porosity')}: <strong>${r.actual_porosity}</strong></p>`;
   } catch(e) { el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`; }
 }
 
@@ -1374,17 +1398,17 @@ async function runUnitConvert() {
   try {
     const r = await api('POST', '/api/preprocess/units', body);
     const stableHtml = r.stable
-      ? '<span class="badge bg-success">Stable (τ > 0.5)</span>'
-      : '<span class="badge bg-danger">Unstable (τ ≤ 0.5)</span>';
+      ? `<span class="badge bg-success">${t('preprocess.stable_label')}</span>`
+      : `<span class="badge bg-danger">${t('preprocess.unstable_label')}</span>`;
     el.innerHTML = `
       <div class="table-responsive">
         <table class="table table-sm table-bordered mb-0 small">
-          <tr><th>Reynolds number</th><td>${r.reynolds_number}</td></tr>
-          <tr><th>LBM viscosity ν</th><td>${r.lbm_nu}</td></tr>
-          <tr><th>BGK relaxation τ</th><td>${r.lbm_tau} &nbsp; ${stableHtml}</td></tr>
-          <tr><th>dx [m]</th><td>${r.dx_m}</td></tr>
-          <tr><th>dt [s]</th><td>${r.dt_s}</td></tr>
-          <tr><th>Mach number</th><td>${r.mach_number}</td></tr>
+          <tr><th>${t('preprocess.reynolds')}</th><td>${r.reynolds_number}</td></tr>
+          <tr><th>${t('preprocess.lbm_nu')}</th><td>${r.lbm_nu}</td></tr>
+          <tr><th>${t('preprocess.lbm_tau')}</th><td>${r.lbm_tau} &nbsp; ${stableHtml}</td></tr>
+          <tr><th>${t('preprocess.dx')}</th><td>${r.dx_m}</td></tr>
+          <tr><th>${t('preprocess.dt')}</th><td>${r.dt_s}</td></tr>
+          <tr><th>${t('preprocess.mach')}</th><td>${r.mach_number}</td></tr>
         </table>
       </div>`;
   } catch(e) { el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`; }
@@ -1571,8 +1595,27 @@ function onSimTypeChange() {
   const type = document.getElementById('sim-type').value;
   currentSchema = SIM_TYPES[type];
   if (!currentSchema) return;
-  document.getElementById('sim-form-title').textContent = currentSchema.label;
-  document.getElementById('sim-description').textContent = currentSchema.desc;
+  const label = t('sim.' + type + '.label') !== ('sim.' + type + '.label')
+    ? t('sim.' + type + '.label')
+    : currentSchema.label;
+  const desc = t('sim.' + type + '.desc') !== ('sim.' + type + '.desc')
+    ? t('sim.' + type + '.desc')
+    : currentSchema.desc;
+  document.getElementById('sim-form-title').textContent = label;
+  document.getElementById('sim-description').textContent = desc;
+  // Also translate optgroup labels
+  const og2ds = document.getElementById('optgroup-2d-single');
+  if (og2ds) og2ds.label = t('solve.group_2d_single');
+  const og2dm = document.getElementById('optgroup-2d-multi');
+  if (og2dm) og2dm.label = t('solve.group_2d_multi');
+  const og3d = document.getElementById('optgroup-3d');
+  if (og3d) og3d.label = t('solve.group_3d');
+  // Translate option labels
+  document.querySelectorAll('#sim-type option').forEach(opt => {
+    const simKey = 'sim.' + opt.value + '.label';
+    const translated = t(simKey);
+    if (translated !== simKey) opt.textContent = translated;
+  });
   renderConfigForm(currentSchema.fields);
 }
 
@@ -1592,21 +1635,24 @@ function renderConfigForm(fields) {
 }
 
 function renderField(f, devices) {
+  const labelText = t('field.' + f.name) !== ('field.' + f.name)
+    ? t('field.' + f.name)
+    : f.label;
   if (f.type === 'device') {
     const opts = devices.map(d => `<option value="${d}">${d}</option>`).join('');
-    return `<div><label class="form-label">${f.label}</label>
+    return `<div><label class="form-label">${escHtml(labelText)}</label>
       <select class="form-select form-select-sm" id="field-${f.name}">${opts}</select></div>`;
   }
   if (f.type === 'select') {
     const opts = f.options.map(o => `<option value="${o}"${o===f.default?' selected':''}>${o}</option>`).join('');
-    return `<div><label class="form-label">${f.label}</label>
+    return `<div><label class="form-label">${escHtml(labelText)}</label>
       <select class="form-select form-select-sm" id="field-${f.name}">${opts}</select></div>`;
   }
   const extra = [];
   if (f.min !== undefined) extra.push(`min="${f.min}"`);
   if (f.max !== undefined) extra.push(`max="${f.max}"`);
   if (f.step !== undefined) extra.push(`step="${f.step}"`);
-  return `<div><label class="form-label">${f.label}</label>
+  return `<div><label class="form-label">${escHtml(labelText)}</label>
     <input type="number" class="form-control form-control-sm" id="field-${f.name}"
       value="${f.default}" ${extra.join(' ')} /></div>`;
 }
@@ -1638,16 +1684,16 @@ async function submitJob() {
   }
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Submitting…';
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> ${t('solve.submit_btn_loading')}`;
   try {
     const r = await api('POST', currentSchema.endpoint, body);
-    showToast(`Job submitted: ${r.job_id}`, 'success');
+    showToast(`${t('solve.job_submitted')} ${r.job_id}`, 'success');
     showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[4]);
   } catch(e) {
-    showToast(`Error: ${e.message}`, 'danger');
+    showToast(`${t('solve.error')} ${e.message}`, 'danger');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-play-fill"></i> Submit Job';
+    btn.innerHTML = `<i class="bi bi-play-fill"></i> ${t('solve.submit_btn')}`;
   }
 }
 
@@ -1659,7 +1705,7 @@ function updatePPJobSelect() {
   if (!sel) return;
   const cur = sel.value;
   const jobs = Object.values(jobsMap).sort((a,b) => b.created_at.localeCompare(a.created_at));
-  sel.innerHTML = '<option value="">— select a completed job —</option>' +
+  sel.innerHTML = `<option value="">${t('postprocess.select_hint')}</option>` +
     jobs.filter(j => j.status === 'completed' || j.status === 'failed')
         .map(j => `<option value="${j.job_id}"${j.job_id===cur?' selected':''}>${escHtml(j.name)} (${j.job_id})</option>`)
         .join('');
@@ -1682,13 +1728,13 @@ async function refreshPP() {
     const dur = sum.duration_s !== null ? `${sum.duration_s}s` : '—';
     document.getElementById('pp-summary').innerHTML = `
       <table class="table table-sm mb-0">
-        <tr><th>Job ID</th><td>${sum.job_id}</td></tr>
-        <tr><th>Name</th><td>${escHtml(sum.job_name)}</td></tr>
-        <tr><th>Type</th><td>${sum.job_type}</td></tr>
-        <tr><th>Status</th><td><span class="dot dot-${sum.status}"></span> ${sum.status}</td></tr>
-        <tr><th>Duration</th><td>${dur}</td></tr>
-        <tr><th>PNG snapshots</th><td>${sum.png_files}</td></tr>
-        <tr><th>CSV files</th><td>${sum.csv_files}</td></tr>
+        <tr><th>${t('postprocess.job_id')}</th><td>${sum.job_id}</td></tr>
+        <tr><th>${t('postprocess.name')}</th><td>${escHtml(sum.job_name)}</td></tr>
+        <tr><th>${t('postprocess.type')}</th><td>${sum.job_type}</td></tr>
+        <tr><th>${t('postprocess.status')}</th><td><span class="dot dot-${sum.status}"></span> ${sum.status}</td></tr>
+        <tr><th>${t('postprocess.duration')}</th><td>${dur}</td></tr>
+        <tr><th>${t('postprocess.png_snapshots')}</th><td>${sum.png_files}</td></tr>
+        <tr><th>${t('postprocess.csv_files')}</th><td>${sum.csv_files}</td></tr>
       </table>`;
   } catch(e) { document.getElementById('pp-summary').textContent = e.message; }
 
@@ -1714,11 +1760,11 @@ function showPPTab(name, el) {
 
 async function loadSnapshots() {
   const grid = document.getElementById('snapshots-grid');
-  grid.innerHTML = '<div class="col-12"><span class="spinner-border spinner-border-sm"></span> Loading…</div>';
+  grid.innerHTML = `<div class="col-12"><span class="spinner-border spinner-border-sm"></span> ${t('postprocess.loading')}</div>`;
   try {
     const r = await api('GET', `/api/jobs/${ppSelectedJobId}/images`);
     if (!r.images.length) {
-      grid.innerHTML = '<div class="col-12 text-muted small">No PNG snapshots found.</div>';
+      grid.innerHTML = `<div class="col-12 text-muted small">${t('postprocess.no_snapshots')}</div>`;
       return;
     }
     // Load images lazily – show placeholders, load on click
@@ -1737,17 +1783,17 @@ async function loadSnapshots() {
 function loadLogs() {
   const box = document.getElementById('pp-log-box');
   const job = jobsMap[ppSelectedJobId];
-  if (!job) { box.textContent = 'Job not found'; return; }
-  box.textContent = job.logs.length ? job.logs.join('\n') : '(no log output)';
+  if (!job) { box.textContent = t('postprocess.job_not_found'); return; }
+  box.textContent = job.logs.length ? job.logs.join('\n') : t('postprocess.no_log');
   box.scrollTop = box.scrollHeight;
 }
 
 async function loadFiles() {
   const el = document.getElementById('files-table');
-  el.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading…';
+  el.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${t('postprocess.loading')}`;
   try {
     const r = await api('GET', `/api/jobs/${ppSelectedJobId}/files`);
-    if (!r.files.length) { el.innerHTML = '<p class="text-muted small">No output files.</p>'; return; }
+    if (!r.files.length) { el.innerHTML = `<p class="text-muted small">${t('postprocess.no_files')}</p>`; return; }
     const rows = r.files.map(f => `<tr>
       <td class="font-monospace small">${escHtml(f.path)}</td>
       <td class="small text-muted">${(f.size/1024).toFixed(1)} KB</td>
@@ -1757,7 +1803,7 @@ async function loadFiles() {
       </a></td>
     </tr>`).join('');
     el.innerHTML = `<table class="table table-sm table-hover">
-      <thead><tr><th>File</th><th>Size</th><th>MIME</th><th></th></tr></thead>
+      <thead><tr><th>${t('postprocess.file_col')}</th><th>${t('postprocess.size_col')}</th><th>${t('postprocess.mime_col')}</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table>`;
   } catch(e) { el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`; }
 }
@@ -1827,9 +1873,9 @@ async function runBenchmark(bench) {
   try {
     const r = await api('POST', endpoint, body);
     benchJobMap[bench] = r.job_id;
-    showToast(`${bench} benchmark submitted (${r.job_id})`, 'success');
+    showToast(`${t('bench.submitted')} (${r.job_id})`, 'success');
   } catch(e) {
-    showToast(`Error: ${e.message}`, 'danger');
+    showToast(`${t('solve.error')} ${e.message}`, 'danger');
   }
 }
 
@@ -1844,9 +1890,9 @@ async function loadAgentInfo() {
     const info = await api('GET', '/api/agent/info');
     const el = document.getElementById('agent-info-bar');
     if (info.llm_enabled) {
-      el.innerHTML = `<i class="bi bi-stars"></i> LLM enabled: <code>${escHtml(info.llm_model)}</code> · ${info.tools_count} tools`;
+      el.innerHTML = `<i class="bi bi-stars"></i> ${t('agent.llm_enabled')} <code>${escHtml(info.llm_model)}</code> · ${info.tools_count} ${t('agent.tools')}`;
     } else {
-      el.innerHTML = `<i class="bi bi-cpu"></i> Offline mode (${escHtml(info.fallback)}) · ${info.tools_count} tools. Set <code>TENSORLBM_LLM_API_KEY</code> to enable a remote LLM.`;
+      el.innerHTML = `<i class="bi bi-cpu"></i> ${t('agent.offline')} (${escHtml(info.fallback)}) · ${info.tools_count} ${t('agent.tools')}. ${t('agent.offline_hint')}`;
     }
   } catch (e) { /* ignore */ }
 }
@@ -1893,7 +1939,7 @@ function agentAddTyping() {
   div.className = 'agent-msg assistant';
   div.innerHTML = `
     <div class="avatar"><i class="bi bi-robot"></i></div>
-    <div><div class="bubble agent-typing"><span class="spinner-border spinner-border-sm"></span> Thinking…</div></div>`;
+    <div><div class="bubble agent-typing"><span class="spinner-border spinner-border-sm"></span> ${t('agent.thinking')}</div></div>`;
   wrap.appendChild(div);
   wrap.scrollTop = wrap.scrollHeight;
 }

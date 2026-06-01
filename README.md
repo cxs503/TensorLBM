@@ -1,5 +1,7 @@
 # TensorLBM
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.
 
 ## Documentation / 文档
