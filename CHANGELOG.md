@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **i18n / Chinese localisation**: The deployable web platform (`platform/`) now supports both
+  **English** and **Simplified Chinese (简体中文)** with real-time in-browser switching.
+  - Language switcher (`EN | 中文`) added to the global navigation bar.
+  - Language preference is persisted to `localStorage` (`tensorlbm_lang`); first visit
+    auto-detects from `navigator.language`.
+  - Lightweight pure-frontend JSON dictionary approach:
+    `platform/frontend/static/i18n/en.json`, `zh.json`, `platform/frontend/static/js/i18n.js`.
+  - Terminology glossary at `platform/i18n/GLOSSARY.md`.
+  - CI-friendly key-parity validator: `python platform/i18n/check_keys.py`.
+  - New test module `platform/tests/test_i18n.py` covering JSON validity, key parity, and static file serving.
+  - Added `README.zh-CN.md` (Simplified Chinese README) with mutual language links.
+
 ## [0.3.0] - 2026-05-24
 
 ### Added
