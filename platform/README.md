@@ -23,6 +23,8 @@ platform/
 
 ## Quick Start
 
+Canonical developer setup and checks are documented in `../docs/development_workflow.md`.
+
 ### 1. Install dependencies
 
 ```bash
@@ -78,7 +80,7 @@ All simulation types are submitted as background jobs and monitored in real time
 | Ship hull – Wigley | 3D D3Q19 | Smagorinsky MRT | `ShipHullFlowConfig` |
 
 ### Post-processing
-- View all PNG snapshots from a completed job (lightbox zoom)
+- View all PNG step images from a completed job (lightbox zoom)
 - Download CSV / VTK / HDF5 output files
 - Read `run_metadata.json` directly in the browser
 - Full job log viewer

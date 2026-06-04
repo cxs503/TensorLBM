@@ -314,9 +314,12 @@ from .turbulent_channel import (
 from .unit_converter import LBMUnitConverter
 from .utils import (
     DiagnosticPoint,
+    flow_step_image_path,
     get_reproducibility_metadata,
+    legacy_snapshot_image_path,
     prepare_run_dir,
     resolve_device,
+    write_legacy_snapshot_alias,
 )
 from .wave_bc import (
     airy_wave_velocity_3d,
@@ -537,6 +540,9 @@ __all__ = [
     "resolve_device",
     "prepare_run_dir",
     "get_reproducibility_metadata",
+    "flow_step_image_path",
+    "legacy_snapshot_image_path",
+    "write_legacy_snapshot_alias",
     "save_checkpoint",
     "load_checkpoint",
     "save_vtk",
