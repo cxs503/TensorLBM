@@ -33,7 +33,7 @@ class SuboffResistanceBenchmarkConfig:
     lbm_steps: int = 60
     lbm_warmup_steps: int = 20
     lbm_sample_interval: int = 5
-    max_length_lu: float = 96.0
+    max_length_lu: float = 80.0
     geometry: SuboffConfig = field(default_factory=SuboffConfig)
 
     def __post_init__(self) -> None:
