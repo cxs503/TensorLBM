@@ -17,6 +17,7 @@ from .ai import (
     predict_nu_t_2d,
     predict_tau_eff_2d,
     reconstruct_flow_field,
+    run_ai_dns_pipeline,
     run_ai_les_pipeline,
     save_dataset_pt,
     save_flow_transformer_model,
@@ -264,6 +265,10 @@ from .suboff_cad import (
     suboff_radius_profile,
     suboff_statistics,
 )
+from .suboff_resistance import (
+    SuboffResistanceBenchmarkConfig,
+    run_suboff_resistance_benchmark,
+)
 from .thermal import (
     C_D2Q5,
     W_D2Q5,
@@ -462,6 +467,8 @@ __all__ = [
     "suboff_statistics",
     "generate_suboff_previews",
     "export_suboff_stl",
+    "SuboffResistanceBenchmarkConfig",
+    "run_suboff_resistance_benchmark",
     "CADGeometryEngine",
     "TriangleMesh",
     "create_parametric_hull_mesh",
@@ -648,6 +655,7 @@ __all__ = [
     "predict_nu_t_2d",
     "predict_tau_eff_2d",
     "collide_ai_les_bgk",
+    "run_ai_dns_pipeline",
     "run_ai_les_pipeline",
     # Transformer-based self-supervised flow model
     "FlowTransformerArch",

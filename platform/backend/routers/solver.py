@@ -5,14 +5,106 @@ corresponding tensorlbm simulation function in a background thread.
 """
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from .. import job_manager
 
 router = APIRouter()
+
+TurbulenceModel = Literal["none", "smagorinsky_les", "dynamic_smagorinsky_les"]
+MultiphaseModel = Literal["none", "sc", "scmp", "cg", "fe"]
+FlowType = Literal["single_phase", "multiphase", "free_surface"]
+BoundaryCondition = Literal["standard_bounce_back", "zou_he", "periodic"]
+NumericalScheme = Literal["bgk", "trt", "mrt"]
+
+
+class PhysicsSelection(BaseModel):
+    flow_type: FlowType = "single_phase"
+    turbulence_model: TurbulenceModel = "none"
+    turbulence_params: dict[str, float] = Field(default_factory=dict)
+    multiphase_model: MultiphaseModel = "none"
+    multiphase_params: dict[str, float] = Field(default_factory=dict)
+    boundary_condition: BoundaryCondition = "standard_bounce_back"
+    numerical_scheme: NumericalScheme = "bgk"
+    preset: str | None = None
+
+
+_PHYSICS_DEFAULTS: dict[str, dict[str, Any]] = {
+    "cylinder_flow": {"flow_type": "single_phase"},
+    "lid_driven_cavity": {"flow_type": "single_phase"},
+    "backward_facing_step": {"flow_type": "single_phase"},
+    "turbulent_channel": {
+        "flow_type": "single_phase",
+        "turbulence_model": "smagorinsky_les",
+        "turbulence_params": {"smagorinsky_cs": 0.1},
+    },
+    "pipeline_flow": {"flow_type": "single_phase"},
+    "dam_break": {"flow_type": "multiphase", "multiphase_model": "cg"},
+    "sloshing_tank": {"flow_type": "multiphase", "multiphase_model": "cg"},
+    "sphere_flow": {"flow_type": "single_phase"},
+    "ship_hull": {
+        "flow_type": "free_surface",
+        "turbulence_model": "smagorinsky_les",
+        "turbulence_params": {"smagorinsky_cs": 0.1},
+    },
+    "porous_drainage": {"flow_type": "multiphase", "multiphase_model": "cg"},
+}
+
+_CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
+    "cylinder_flow": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "lid_driven_cavity": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none"],
+        "multiphase_models": ["none"],
+    },
+    "backward_facing_step": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "turbulent_channel": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les", "dynamic_smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "pipeline_flow": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "dam_break": {
+        "flow_types": ["multiphase", "free_surface"],
+        "turbulence_models": ["none"],
+        "multiphase_models": ["sc", "scmp", "cg", "fe"],
+    },
+    "sloshing_tank": {
+        "flow_types": ["multiphase", "free_surface"],
+        "turbulence_models": ["none"],
+        "multiphase_models": ["cg"],
+    },
+    "sphere_flow": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "ship_hull": {
+        "flow_types": ["single_phase", "free_surface"],
+        "turbulence_models": ["none", "smagorinsky_les", "dynamic_smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "porous_drainage": {
+        "flow_types": ["multiphase"],
+        "turbulence_models": ["none"],
+        "multiphase_models": ["sc", "cg"],
+    },
+}
 
 # ---------------------------------------------------------------------------
 # Helper
@@ -25,6 +117,68 @@ def _overwrite_output_root(config_dict: dict, job: job_manager.Job) -> dict:
     d["overwrite"] = True
     d.pop("run_name", None)
     return d
+
+
+def _merge_physics(job_type: str, physics: PhysicsSelection | None) -> PhysicsSelection:
+    defaults = _PHYSICS_DEFAULTS[job_type]
+    merged = dict(defaults)
+    merged["turbulence_params"] = dict(defaults.get("turbulence_params", {}))
+    merged["multiphase_params"] = dict(defaults.get("multiphase_params", {}))
+    if physics is not None:
+        p = physics.model_dump(exclude_none=True)
+        merged.update(
+            {
+                k: v
+                for k, v in p.items()
+                if k not in ("turbulence_params", "multiphase_params")
+            }
+        )
+        merged["turbulence_params"].update(p.get("turbulence_params", {}))
+        merged["multiphase_params"].update(p.get("multiphase_params", {}))
+    return PhysicsSelection(**merged)
+
+
+def _validate_physics(job_type: str, physics: PhysicsSelection) -> None:
+    caps = _CAPABILITY_MATRIX[job_type]
+    if physics.flow_type not in caps["flow_types"]:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Flow type '{physics.flow_type}' is not supported by {job_type}",
+        )
+    if physics.turbulence_model not in caps["turbulence_models"]:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Turbulence model '{physics.turbulence_model}' is not supported by {job_type}",
+        )
+    if physics.multiphase_model not in caps["multiphase_models"]:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Multiphase model '{physics.multiphase_model}' is not supported by {job_type}",
+        )
+
+
+def _prepare_solver_configs(
+    job_type: str, params: BaseModel
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    run_config = params.model_dump(exclude={"physics"})
+    physics = _merge_physics(job_type, getattr(params, "physics", None))
+    if "model" in run_config and physics.multiphase_model == "none":
+        physics.multiphase_model = str(run_config["model"])
+    _validate_physics(job_type, physics)
+
+    if "model" in run_config and physics.multiphase_model != "none":
+        run_config["model"] = physics.multiphase_model
+    if "smagorinsky_cs" in run_config:
+        if physics.turbulence_model == "none":
+            run_config["smagorinsky_cs"] = 0.0
+        else:
+            cs = physics.turbulence_params.get("smagorinsky_cs")
+            if cs is not None:
+                run_config["smagorinsky_cs"] = float(cs)
+
+    submit_config = dict(run_config)
+    submit_config["physics"] = physics.model_dump()
+    return run_config, submit_config
 
 
 # ---------------------------------------------------------------------------
@@ -41,16 +195,19 @@ class CylinderFlowParams(BaseModel):
     output_interval: int = Field(200, ge=1, description="Output every N steps")
     device: str = Field("cpu", description="Torch device (cpu / cuda:0 …)")
     seed: int = 0
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/cylinder-flow")
 async def start_cylinder_flow(params: CylinderFlowParams) -> dict:
     """Start a 2D cylinder flow simulation."""
+    run_config, submit_config = _prepare_solver_configs("cylinder_flow", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import CylinderFlowConfig, run_cylinder_flow
 
         cfg = CylinderFlowConfig(
-            **_overwrite_output_root(params.model_dump(), job),
+            **_overwrite_output_root(run_config, job),
         )
         run_dir = run_cylinder_flow(cfg)
         return {"run_dir": str(run_dir)}
@@ -58,7 +215,7 @@ async def start_cylinder_flow(params: CylinderFlowParams) -> dict:
     job_id = job_manager.submit(
         name=f"Cylinder Flow Re={params.re}",
         job_type="cylinder_flow",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Cylinder flow job submitted"}
@@ -76,15 +233,18 @@ class LidDrivenCavityParams(BaseModel):
     output_interval: int = Field(2000, ge=1)
     device: str = "cpu"
     seed: int = 0
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/lid-driven-cavity")
 async def start_lid_driven_cavity(params: LidDrivenCavityParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("lid_driven_cavity", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import LidDrivenCavityConfig, run_lid_driven_cavity
 
         cfg = LidDrivenCavityConfig(
-            **_overwrite_output_root(params.model_dump(), job),
+            **_overwrite_output_root(run_config, job),
         )
         run_dir = run_lid_driven_cavity(cfg)
         return {"run_dir": str(run_dir)}
@@ -92,7 +252,7 @@ async def start_lid_driven_cavity(params: LidDrivenCavityParams) -> dict:
     job_id = job_manager.submit(
         name=f"Lid-Driven Cavity Re={params.re}",
         job_type="lid_driven_cavity",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Lid-driven cavity job submitted"}
@@ -113,15 +273,18 @@ class BackwardFacingStepParams(BaseModel):
     output_interval: int = Field(5000, ge=1)
     device: str = "cpu"
     seed: int = 0
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/backward-facing-step")
 async def start_bfs(params: BackwardFacingStepParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("backward_facing_step", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import BackwardFacingStepConfig, run_backward_facing_step
 
         cfg = BackwardFacingStepConfig(
-            **_overwrite_output_root(params.model_dump(), job),
+            **_overwrite_output_root(run_config, job),
         )
         run_dir = run_backward_facing_step(cfg)
         return {"run_dir": str(run_dir)}
@@ -129,7 +292,7 @@ async def start_bfs(params: BackwardFacingStepParams) -> dict:
     job_id = job_manager.submit(
         name=f"Backward-Facing Step Re={params.re}",
         job_type="backward_facing_step",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Backward-facing step job submitted"}
@@ -150,15 +313,18 @@ class TurbulentChannelParams(BaseModel):
     output_interval: int = Field(5000, ge=1)
     device: str = "cpu"
     seed: int = 0
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/turbulent-channel")
 async def start_turbulent_channel(params: TurbulentChannelParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("turbulent_channel", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import TurbulentChannelConfig, run_turbulent_channel
 
         cfg = TurbulentChannelConfig(
-            **_overwrite_output_root(params.model_dump(), job),
+            **_overwrite_output_root(run_config, job),
         )
         run_dir = run_turbulent_channel(cfg)
         return {"run_dir": str(run_dir)}
@@ -166,7 +332,7 @@ async def start_turbulent_channel(params: TurbulentChannelParams) -> dict:
     job_id = job_manager.submit(
         name=f"Turbulent Channel Re_τ={params.re_tau}",
         job_type="turbulent_channel",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Turbulent channel job submitted"}
@@ -187,15 +353,18 @@ class PipelineFlowParams(BaseModel):
     output_interval: int = Field(5000, ge=1)
     device: str = "cpu"
     seed: int = 0
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/pipeline-flow")
 async def start_pipeline_flow(params: PipelineFlowParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("pipeline_flow", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import PipelineFlowConfig, run_pipeline_flow
 
         cfg = PipelineFlowConfig(
-            **_overwrite_output_root(params.model_dump(), job),
+            **_overwrite_output_root(run_config, job),
         )
         run_dir = run_pipeline_flow(cfg)
         return {"run_dir": str(run_dir)}
@@ -203,7 +372,7 @@ async def start_pipeline_flow(params: PipelineFlowParams) -> dict:
     job_id = job_manager.submit(
         name=f"Pipeline Flow Re={params.re} e/D={params.gap_ratio}",
         job_type="pipeline_flow",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Pipeline flow job submitted"}
@@ -226,15 +395,18 @@ class DamBreakParams(BaseModel):
     n_steps: int = Field(4000, ge=1)
     output_interval: int = Field(400, ge=1)
     device: str = "cpu"
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/dam-break")
 async def start_dam_break(params: DamBreakParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("dam_break", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import DamBreakConfig, run_dam_break
 
         cfg = DamBreakConfig(
-            **_overwrite_output_root(params.model_dump(), job),
+            **_overwrite_output_root(run_config, job),
         )
         run_dir = run_dam_break(cfg)
         return {"run_dir": str(run_dir)}
@@ -242,7 +414,7 @@ async def start_dam_break(params: DamBreakParams) -> dict:
     job_id = job_manager.submit(
         name=f"Dam Break [{params.model.upper()}]",
         job_type="dam_break",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Dam break job submitted"}
@@ -266,15 +438,18 @@ class SloshingTankParams(BaseModel):
     n_steps: int = Field(6000, ge=1)
     output_interval: int = Field(600, ge=1)
     device: str = "cpu"
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/sloshing-tank")
 async def start_sloshing_tank(params: SloshingTankParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("sloshing_tank", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import SloshingTankConfig, run_sloshing_tank
 
         cfg = SloshingTankConfig(
-            **_overwrite_output_root(params.model_dump(), job),
+            **_overwrite_output_root(run_config, job),
         )
         run_dir = run_sloshing_tank(cfg)
         return {"run_dir": str(run_dir)}
@@ -282,7 +457,7 @@ async def start_sloshing_tank(params: SloshingTankParams) -> dict:
     job_id = job_manager.submit(
         name="Sloshing Tank",
         job_type="sloshing_tank",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Sloshing tank job submitted"}
@@ -303,15 +478,18 @@ class SphereFlowParams(BaseModel):
     output_interval: int = Field(100, ge=1)
     device: str = "cpu"
     seed: int = 0
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/sphere-flow")
 async def start_sphere_flow(params: SphereFlowParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("sphere_flow", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import SphereFlowConfig, run_sphere_flow
 
         cfg = SphereFlowConfig(
-            **_overwrite_output_root(params.model_dump(), job),
+            **_overwrite_output_root(run_config, job),
         )
         run_dir = run_sphere_flow(cfg)
         return {"run_dir": str(run_dir)}
@@ -319,7 +497,7 @@ async def start_sphere_flow(params: SphereFlowParams) -> dict:
     job_id = job_manager.submit(
         name=f"Sphere Flow Re={params.re} (3D)",
         job_type="sphere_flow",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Sphere flow job submitted"}
@@ -345,14 +523,17 @@ class ShipHullFlowParams(BaseModel):
     output_interval: int = Field(200, ge=1)
     device: str = "cpu"
     seed: int = 0
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/ship-hull")
 async def start_ship_hull(params: ShipHullFlowParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("ship_hull", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import ShipHullFlowConfig, run_ship_hull_flow
 
-        p = params.model_dump()
+        p = dict(run_config)
         # wave_k and water_depth are required by the config but not in params
         p.setdefault("wave_k", 0.05)
         p.setdefault("water_depth", 0.0)
@@ -365,7 +546,7 @@ async def start_ship_hull(params: ShipHullFlowParams) -> dict:
     job_id = job_manager.submit(
         name=f"Ship Hull (Wigley) Re={params.re}",
         job_type="ship_hull",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Ship hull flow job submitted"}
@@ -385,23 +566,26 @@ class PorousDrainageParams(BaseModel):
     output_interval: int = Field(1000, ge=1)
     device: str = "cpu"
     seed: int = 0
+    physics: PhysicsSelection | None = None
 
 
 @router.post("/porous-drainage")
 async def start_porous_drainage(params: PorousDrainageParams) -> dict:
+    run_config, submit_config = _prepare_solver_configs("porous_drainage", params)
+
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import PorousDrainageConfig, run_porous_drainage
 
         cfg = PorousDrainageConfig(
-            nx=params.nx,
-            ny=params.ny,
-            medium=params.medium,
-            model=params.model,
-            porosity=params.porosity,
-            n_steps=params.n_steps,
-            output_interval=params.output_interval,
-            device=params.device,
-            seed=params.seed,
+            nx=run_config["nx"],
+            ny=run_config["ny"],
+            medium=run_config["medium"],
+            model=run_config["model"],
+            porosity=run_config["porosity"],
+            n_steps=run_config["n_steps"],
+            output_interval=run_config["output_interval"],
+            device=run_config["device"],
+            seed=run_config["seed"],
             output_root=job.output_dir,
             overwrite=True,
         )
@@ -411,7 +595,7 @@ async def start_porous_drainage(params: PorousDrainageParams) -> dict:
     job_id = job_manager.submit(
         name=f"Porous Drainage [{params.medium}]",
         job_type="porous_drainage",
-        config=params.model_dump(),
+        config=submit_config,
         fn=_run,
     )
     return {"job_id": job_id, "message": "Porous drainage job submitted"}

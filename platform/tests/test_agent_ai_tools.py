@@ -57,6 +57,14 @@ def test_intent_pipeline_routes_chinese():
     assert intent["tool"] == "ai_run_pipeline"
 
 
+def test_intent_pipeline_dns_mode():
+    from backend import agent_core as ac  # type: ignore[import-not-found]
+    intent = ac._parse_intent("run ai turbulence pipeline with dns data dns_scale=3", [])
+    assert intent["tool"] == "ai_run_pipeline"
+    assert intent["args"].get("data_source") == "dns"
+    assert intent["args"].get("dns_scale") == 3
+
+
 def test_ai_list_models_empty_db(client, tmp_path, monkeypatch):
     """When no AI runs exist yet, ai_list_models replies gracefully."""
     from backend import agent_core as ac  # type: ignore[import-not-found]

@@ -633,6 +633,51 @@
               </button>
             </div>
             <div class="card-body config-form">
+              <div class="border rounded p-2 mb-3 bg-light" id="physics-layer">
+                <div class="d-flex align-items-center mb-2">
+                  <strong data-i18n="solve.physics_layer">Physical Model Layer</strong>
+                  <span class="small text-muted ms-2" data-i18n="solve.physics_layer_hint">Choose turbulence/multiphase/numerics before submitting.</span>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-md-5">
+                    <label class="form-label" data-i18n="solve.preset">Preset template</label>
+                    <select class="form-select form-select-sm" id="physics-preset"></select>
+                  </div>
+                  <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-sm btn-outline-secondary w-100" onclick="applyPhysicsPreset()" data-i18n="solve.apply_preset">Apply</button>
+                  </div>
+                  <div class="col-md-5">
+                    <label class="form-label" data-i18n="solve.flow_type">Flow type</label>
+                    <select class="form-select form-select-sm" id="physics-flow-type"></select>
+                  </div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-md-4">
+                    <label class="form-label" data-i18n="solve.turbulence_model">Turbulence model</label>
+                    <select class="form-select form-select-sm" id="physics-turbulence"></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" data-i18n="solve.multiphase_model">Multiphase model</label>
+                    <select class="form-select form-select-sm" id="physics-multiphase"></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label" data-i18n="solve.boundary_condition">Boundary condition</label>
+                    <select class="form-select form-select-sm" id="physics-bc"></select>
+                  </div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-md-4">
+                    <label class="form-label" data-i18n="solve.numerical_scheme">Numerical scheme</label>
+                    <select class="form-select form-select-sm" id="physics-scheme"></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Smagorinsky C<sub>s</sub></label>
+                    <input type="number" class="form-control form-control-sm" id="physics-cs" value="0.1" step="0.01" min="0" />
+                  </div>
+                </div>
+                <div class="small" id="physics-compat-msg"></div>
+                <div class="small text-muted mt-1" id="physics-range-hint"></div>
+              </div>
               <div id="sim-form"></div>
             </div>
           </div>
@@ -775,7 +820,7 @@
               <span class="ms-auto badge bg-secondary" id="bench-status-marine" data-i18n="bench.idle">idle</span>
             </div>
             <div class="card-body small">
-              <p data-i18n="bench.marine_desc">Cylinder flow (St/Cd), sloshing tank (Faltinsen), near-bed pipeline (St), turbulent channel (log-law), Wigley hull (Cd).</p>
+              <p data-i18n="bench.marine_desc">Cylinder flow (St/Cd), sloshing tank (Faltinsen), near-bed pipeline (St), turbulent channel (log-law), Wigley hull (Cd), SUBOFF resistance (&lt;3% error).</p>
               <div class="row g-2 mb-2">
                 <div class="col-4">
                   <label class="form-label mb-1" data-i18n="bench.mode">Mode</label>
@@ -1081,6 +1126,7 @@ let benchJobMap = {};   // bench_type → job_id
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   i18n.init().then(() => {
+    initPhysicsLayer();
     connectWS();
     loadStatus();
     loadJobs();
@@ -1203,7 +1249,12 @@ function renderJobsSidebar() {
     return `<div class="job-card${selectedJobId===j.job_id?' selected':''}" onclick="selectJob('${j.job_id}')">
       <div class="job-name">${dot}${escHtml(j.name)}</div>
       <div class="job-meta">${j.job_id}${dur}</div>
-      <span class="badge bg-${badgeCls} status-badge">${j.status}</span>
+      <div class="d-flex align-items-center justify-content-between mt-1">
+        <span class="badge bg-${badgeCls} status-badge">${j.status}</span>
+        <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="reuseJobConfig(event,'${j.job_id}')" title="${t('solve.reuse_run')}">
+          <i class="bi bi-arrow-repeat"></i>
+        </button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -1217,6 +1268,36 @@ function selectJob(id) {
   if (sel) sel.value = id;
   refreshPP();
   showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[4]);
+}
+
+function reuseJobConfig(ev, id) {
+  ev.stopPropagation();
+  const job = jobsMap[id];
+  if (!job || !SIM_TYPES[job.job_type]) {
+    showToast(t('solve.reuse_not_supported'), 'warning');
+    return;
+  }
+  const simSel = document.getElementById('sim-type');
+  simSel.value = job.job_type;
+  onSimTypeChange();
+  const cfg = job.config || {};
+  const physics = cfg.physics || {};
+  if (physics.flow_type) document.getElementById('physics-flow-type').value = physics.flow_type;
+  if (physics.turbulence_model) document.getElementById('physics-turbulence').value = physics.turbulence_model;
+  if (physics.multiphase_model) document.getElementById('physics-multiphase').value = physics.multiphase_model;
+  if (physics.boundary_condition) document.getElementById('physics-bc').value = physics.boundary_condition;
+  if (physics.numerical_scheme) document.getElementById('physics-scheme').value = physics.numerical_scheme;
+  const cs = physics.turbulence_params && physics.turbulence_params.smagorinsky_cs;
+  if (cs !== undefined) document.getElementById('physics-cs').value = cs;
+  applyCapabilityDefaults();
+  currentSchema.fields.forEach(f => {
+    if (cfg[f.name] === undefined) return;
+    const el = document.getElementById(`field-${f.name}`);
+    if (!el) return;
+    el.value = cfg[f.name];
+  });
+  showTab('solve', document.querySelectorAll('.top-navbar nav a')[3]);
+  showToast(`${t('solve.reuse_loaded')} ${id}`, 'success');
 }
 
 async function clearAllJobs() {
@@ -1898,10 +1979,111 @@ const SIM_TYPES = {
   },
 };
 
+const MODEL_CAPABILITIES = {
+  cylinder_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','trt'] },
+  lid_driven_cavity: { flow_types:['single_phase'], turbulence:['none'], multiphase:['none'], schemes:['bgk','trt'] },
+  backward_facing_step: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','trt'] },
+  turbulent_channel: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les','dynamic_smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
+  pipeline_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','trt'] },
+  dam_break: { flow_types:['multiphase','free_surface'], turbulence:['none'], multiphase:['sc','scmp','cg','fe'], schemes:['bgk'] },
+  sloshing_tank: { flow_types:['multiphase','free_surface'], turbulence:['none'], multiphase:['cg'], schemes:['bgk'] },
+  sphere_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
+  ship_hull: { flow_types:['single_phase','free_surface'], turbulence:['none','smagorinsky_les','dynamic_smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
+  porous_drainage: { flow_types:['multiphase'], turbulence:['none'], multiphase:['sc','cg'], schemes:['bgk'] },
+};
+
+const MODEL_PRESETS = {
+  default: { flow_type:'single_phase', turbulence_model:'none', multiphase_model:'none', boundary_condition:'standard_bounce_back', numerical_scheme:'bgk', smagorinsky_cs:0.1 },
+  pipeline_engineering: { flow_type:'single_phase', turbulence_model:'smagorinsky_les', multiphase_model:'none', boundary_condition:'zou_he', numerical_scheme:'trt', smagorinsky_cs:0.12 },
+  free_surface: { flow_type:'free_surface', turbulence_model:'none', multiphase_model:'cg', boundary_condition:'standard_bounce_back', numerical_scheme:'bgk', smagorinsky_cs:0.1 },
+  cavitation_like: { flow_type:'multiphase', turbulence_model:'none', multiphase_model:'fe', boundary_condition:'zou_he', numerical_scheme:'bgk', smagorinsky_cs:0.1 },
+};
+
 let currentSchema = null;
+
+function initPhysicsLayer() {
+  const selectOptions = (id, vals, labels) => {
+    const el = document.getElementById(id);
+    el.innerHTML = vals.map(v => `<option value="${v}">${escHtml(labels[v] || v)}</option>`).join('');
+  };
+  selectOptions('physics-flow-type', ['single_phase','multiphase','free_surface'], {
+    single_phase: t('solve.flow_single'),
+    multiphase: t('solve.flow_multi'),
+    free_surface: t('solve.flow_free_surface'),
+  });
+  selectOptions('physics-turbulence', ['none','smagorinsky_les','dynamic_smagorinsky_les'], {
+    none: t('solve.turb_none'),
+    smagorinsky_les: t('solve.turb_smag'),
+    dynamic_smagorinsky_les: t('solve.turb_dyn_smag'),
+  });
+  selectOptions('physics-multiphase', ['none','sc','scmp','cg','fe'], {
+    none: t('solve.multi_none'),
+    sc: 'Shan-Chen (SC)',
+    scmp: 'Shan-Chen Multi (SCMP)',
+    cg: 'Color-Gradient (CG)',
+    fe: 'Free-Energy (FE)',
+  });
+  selectOptions('physics-bc', ['standard_bounce_back','zou_he','periodic'], {
+    standard_bounce_back: t('solve.bc_bounce_back'),
+    zou_he: t('solve.bc_zou_he'),
+    periodic: t('solve.bc_periodic'),
+  });
+  selectOptions('physics-scheme', ['bgk','trt','mrt'], {bgk:'BGK',trt:'TRT',mrt:'MRT'});
+  const preset = document.getElementById('physics-preset');
+  const pkeys = Object.keys(MODEL_PRESETS);
+  preset.innerHTML = pkeys.map(k => `<option value="${k}">${escHtml(t('solve.preset_' + k))}</option>`).join('');
+}
+
+function applyPhysicsPreset() {
+  const key = document.getElementById('physics-preset').value;
+  const p = MODEL_PRESETS[key];
+  if (!p) return;
+  document.getElementById('physics-flow-type').value = p.flow_type;
+  document.getElementById('physics-turbulence').value = p.turbulence_model;
+  document.getElementById('physics-multiphase').value = p.multiphase_model;
+  document.getElementById('physics-bc').value = p.boundary_condition;
+  document.getElementById('physics-scheme').value = p.numerical_scheme;
+  document.getElementById('physics-cs').value = p.smagorinsky_cs;
+  applyCapabilityDefaults();
+}
+
+function applyCapabilityDefaults() {
+  const type = document.getElementById('sim-type').value;
+  const c = MODEL_CAPABILITIES[type];
+  if (!c) return;
+  const applyAllowed = (id, allowed) => {
+    const el = document.getElementById(id);
+    const options = Array.from(el.options);
+    options.forEach(o => { o.disabled = !allowed.includes(o.value); });
+    if (!allowed.includes(el.value)) el.value = allowed[0];
+  };
+  applyAllowed('physics-flow-type', c.flow_types);
+  applyAllowed('physics-turbulence', c.turbulence);
+  applyAllowed('physics-multiphase', c.multiphase);
+  applyAllowed('physics-scheme', c.schemes);
+  const msg = document.getElementById('physics-compat-msg');
+  msg.className = 'small text-muted';
+  msg.textContent = `${t('solve.capability')}: ${c.flow_types.join('/')} | ${t('solve.turbulence_model')}: ${c.turbulence.join('/')} | ${t('solve.multiphase_model')}: ${c.multiphase.join('/')}`;
+  const hint = document.getElementById('physics-range-hint');
+  hint.textContent = currentSchema && currentSchema.hint ? currentSchema.hint : t('solve.range_hint_default');
+}
+
+function buildPhysicsPayload() {
+  return {
+    flow_type: document.getElementById('physics-flow-type').value,
+    turbulence_model: document.getElementById('physics-turbulence').value,
+    turbulence_params: { smagorinsky_cs: parseFloat(document.getElementById('physics-cs').value || '0') },
+    multiphase_model: document.getElementById('physics-multiphase').value,
+    multiphase_params: {},
+    boundary_condition: document.getElementById('physics-bc').value,
+    numerical_scheme: document.getElementById('physics-scheme').value,
+    preset: document.getElementById('physics-preset').value,
+  };
+}
 
 function onSimTypeChange() {
   const type = document.getElementById('sim-type').value;
+  initPhysicsLayer();
   currentSchema = SIM_TYPES[type];
   if (!currentSchema) return;
   const label = t('sim.' + type + '.label') !== ('sim.' + type + '.label')
@@ -1926,6 +2108,7 @@ function onSimTypeChange() {
     if (translated !== simKey) opt.textContent = translated;
   });
   renderConfigForm(currentSchema.fields);
+  applyCapabilityDefaults();
 }
 
 function renderConfigForm(fields) {
@@ -1974,6 +2157,8 @@ function getAvailableDevices() {
 
 function resetDefaults() {
   if (!currentSchema) return;
+  document.getElementById('physics-preset').value = 'default';
+  applyPhysicsPreset();
   currentSchema.fields.forEach(f => {
     const el = document.getElementById(`field-${f.name}`);
     if (!el) return;
@@ -1984,6 +2169,7 @@ function resetDefaults() {
 
 async function submitJob() {
   if (!currentSchema) return;
+  applyCapabilityDefaults();
   const body = {};
   for (const f of currentSchema.fields) {
     const el = document.getElementById(`field-${f.name}`);
@@ -1991,6 +2177,7 @@ async function submitJob() {
     if (f.type === 'select' || f.type === 'device') body[f.name] = el.value;
     else body[f.name] = parseFloat(el.value);
   }
+  body.physics = buildPhysicsPayload();
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> ${t('solve.submit_btn_loading')}`;
@@ -2421,7 +2608,7 @@ async function runBenchmark(bench) {
   if (bench === 'marine') {
     const fast = document.getElementById('bench-marine-fast').value === 'true';
     const device = document.getElementById('bench-marine-device').value;
-    body = { fast, device, cases: ['cylinder','sloshing','pipeline','turbulent_channel','wigley'] };
+    body = { fast, device, cases: ['cylinder','sloshing','pipeline','turbulent_channel','wigley','suboff'] };
     endpoint = '/api/benchmarks/marine';
   } else if (bench === 'multiphase') {
     const fast = document.getElementById('bench-multiphase-fast').value === 'true';
