@@ -258,6 +258,7 @@
     <a href="#" onclick="showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
     <a href="#" onclick="showTab('benchmarks',this)"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
     <a href="#" onclick="showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
+    <a href="#" onclick="showTab('ai-flow',this)"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
     <a href="#" onclick="showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
   </nav>
   <span class="ms-auto d-flex align-items-center gap-3">
@@ -958,6 +959,62 @@
     </div><!-- /compare -->
 
     <!-- ================================================================ -->
+    <!-- AI FLOW TRANSFORMER -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-ai-flow">
+      <h4 class="mb-3"><i class="bi bi-cpu"></i> <span data-i18n="ai_flow.title">AI Flow Transformer</span></h4>
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><span data-i18n="ai_flow.train_title">Self-supervised training</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="ai_flow.nx">nx</label>
+              <input id="aiflow-nx" type="number" class="form-control form-control-sm mb-2" value="48" min="16" max="256" />
+              <label data-i18n="ai_flow.ny">ny</label>
+              <input id="aiflow-ny" type="number" class="form-control form-control-sm mb-2" value="48" min="16" max="256" />
+              <label data-i18n="ai_flow.epochs">Epochs</label>
+              <input id="aiflow-epochs" type="number" class="form-control form-control-sm mb-2" value="20" min="1" max="500" />
+              <label data-i18n="ai_flow.mask_ratio">Mask ratio</label>
+              <input id="aiflow-mask" type="number" class="form-control form-control-sm mb-3" value="0.15" step="0.01" min="0.01" max="0.9" />
+              <button class="btn btn-primary btn-sm w-100" onclick="aiFlowTrain()"><i class="bi bi-play-circle"></i> <span data-i18n="ai_flow.train_btn">Train</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><span data-i18n="ai_flow.infer_title">Deployment inference</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="ai_flow.model_id">Model ID (optional)</label>
+              <input id="aiflow-model-id" type="number" class="form-control form-control-sm mb-2" placeholder="e.g. 1" />
+              <label data-i18n="ai_flow.model_path">Model path (optional)</label>
+              <input id="aiflow-model-path" type="text" class="form-control form-control-sm mb-2" placeholder="/tmp/.../flow_transformer.pt" />
+              <label data-i18n="ai_flow.seed">Seed</label>
+              <input id="aiflow-seed" type="number" class="form-control form-control-sm mb-3" value="0" />
+              <button class="btn btn-success btn-sm w-100" onclick="aiFlowInfer()"><i class="bi bi-lightning"></i> <span data-i18n="ai_flow.infer_btn">Run inference</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span data-i18n="ai_flow.models_title">Transformer models</span>
+              <button class="btn btn-outline-secondary btn-sm" onclick="aiFlowListModels()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body small" id="aiflow-models-box">
+              <span class="text-muted" data-i18n="common.loading">Loading…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt-3">
+        <div class="card-header"><span data-i18n="ai_flow.result_title">Result</span></div>
+        <div class="card-body">
+          <pre id="aiflow-result" class="small mb-0" style="white-space:pre-wrap;max-height:260px;overflow:auto">-</pre>
+        </div>
+      </div>
+    </div><!-- /ai-flow -->
+
+    <!-- ================================================================ -->
     <!-- AI AGENT -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-agent">
@@ -1185,6 +1242,7 @@ function showTab(name, el) {
   document.querySelectorAll('.top-navbar nav a').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
   if (name === 'compare') refreshCompareJobList();
+  if (name === 'ai-flow') aiFlowListModels();
   if (name === 'agent') {
     setTimeout(() => {
       const el = document.getElementById('agent-input');
@@ -2395,6 +2453,73 @@ async function runBenchmark(bench) {
     showToast(`${t('bench.submitted')} (${r.job_id})`, 'success');
   } catch(e) {
     showToast(`${t('solve.error')} ${e.message}`, 'danger');
+  }
+}
+
+// ============================================================
+// AI Flow Transformer
+// ============================================================
+function aiFlowSetResult(obj) {
+  const el = document.getElementById('aiflow-result');
+  if (!el) return;
+  el.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2);
+}
+
+async function aiFlowListModels() {
+  const box = document.getElementById('aiflow-models-box');
+  if (!box) return;
+  box.innerHTML = `<span class=\"text-muted\">${t('common.loading')}</span>`;
+  try {
+    const r = await api('GET', '/api/ai/transformer/models');
+    if (!r.models || !r.models.length) {
+      box.innerHTML = `<span class=\"text-muted\">${t('ai_flow.no_models')}</span>`;
+      return;
+    }
+    box.innerHTML = r.models.map(m => {
+      const loss = m.metrics && m.metrics.final_val_loss !== undefined
+        ? `val=${Number(m.metrics.final_val_loss).toExponential(3)}`
+        : '';
+      return `<div class=\"mb-2\"><strong>#${m.id}</strong> ${escHtml(m.name)}<br><span class=\"text-muted\">${loss} · ${escHtml(m.path)}</span></div>`;
+    }).join('');
+  } catch (e) {
+    box.innerHTML = `<span class=\"text-danger\">${escHtml(e.message)}</span>`;
+  }
+}
+
+async function aiFlowTrain() {
+  const nx = Number(document.getElementById('aiflow-nx').value || 48);
+  const ny = Number(document.getElementById('aiflow-ny').value || 48);
+  const epochs = Number(document.getElementById('aiflow-epochs').value || 20);
+  const mask_ratio = Number(document.getElementById('aiflow-mask').value || 0.15);
+  aiFlowSetResult(t('common.computing'));
+  try {
+    const r = await api('POST', '/api/ai/transformer/train', { nx, ny, epochs, mask_ratio });
+    aiFlowSetResult(r);
+    aiFlowListModels();
+    showToast(t('ai_flow.train_done'), 'success');
+  } catch (e) {
+    aiFlowSetResult(`Error: ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+async function aiFlowInfer() {
+  const modelIdRaw = document.getElementById('aiflow-model-id').value.trim();
+  const modelPath = document.getElementById('aiflow-model-path').value.trim();
+  const seed = Number(document.getElementById('aiflow-seed').value || 0);
+  const nx = Number(document.getElementById('aiflow-nx').value || 48);
+  const ny = Number(document.getElementById('aiflow-ny').value || 48);
+  const body = { nx, ny, seed };
+  if (modelIdRaw) body.model_id = Number(modelIdRaw);
+  if (modelPath) body.model_path = modelPath;
+  aiFlowSetResult(t('common.computing'));
+  try {
+    const r = await api('POST', '/api/ai/transformer/infer', body);
+    aiFlowSetResult(r);
+    showToast(t('ai_flow.infer_done'), 'success');
+  } catch (e) {
+    aiFlowSetResult(`Error: ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
   }
 }
 

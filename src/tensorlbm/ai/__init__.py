@@ -35,6 +35,16 @@ from .dataset import (
 from .inference import collide_ai_les_bgk, predict_nu_t_2d, predict_tau_eff_2d
 from .model import EddyViscosityMLP, load_model, save_model
 from .pipeline import AIPipelineResult, run_ai_les_pipeline
+from .transformer import (
+    FlowFieldTransformer,
+    FlowTransformerArch,
+    FlowTransformerTrainConfig,
+    build_flow_token_batch,
+    load_flow_transformer_model,
+    reconstruct_flow_field,
+    save_flow_transformer_model,
+    train_flow_transformer_self_supervised,
+)
 from .train import TrainConfig, train_eddy_viscosity_model
 
 __all__ = [
@@ -68,4 +78,13 @@ __all__ = [
     # pipeline
     "AIPipelineResult",
     "run_ai_les_pipeline",
+    # transformer self-supervised learning
+    "FlowTransformerArch",
+    "FlowTransformerTrainConfig",
+    "FlowFieldTransformer",
+    "build_flow_token_batch",
+    "train_flow_transformer_self_supervised",
+    "save_flow_transformer_model",
+    "load_flow_transformer_model",
+    "reconstruct_flow_field",
 ]
