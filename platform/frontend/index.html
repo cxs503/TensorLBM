@@ -819,7 +819,7 @@
               <span class="ms-auto badge bg-secondary" id="bench-status-marine" data-i18n="bench.idle">idle</span>
             </div>
             <div class="card-body small">
-              <p data-i18n="bench.marine_desc">Cylinder flow (St/Cd), sloshing tank (Faltinsen), near-bed pipeline (St), turbulent channel (log-law), Wigley hull (Cd).</p>
+              <p data-i18n="bench.marine_desc">Cylinder flow (St/Cd), sloshing tank (Faltinsen), near-bed pipeline (St), turbulent channel (log-law), Wigley hull (Cd), SUBOFF resistance (&lt;3% error).</p>
               <div class="row g-2 mb-2">
                 <div class="col-4">
                   <label class="form-label mb-1" data-i18n="bench.mode">Mode</label>
@@ -2552,7 +2552,7 @@ async function runBenchmark(bench) {
   if (bench === 'marine') {
     const fast = document.getElementById('bench-marine-fast').value === 'true';
     const device = document.getElementById('bench-marine-device').value;
-    body = { fast, device, cases: ['cylinder','sloshing','pipeline','turbulent_channel','wigley'] };
+    body = { fast, device, cases: ['cylinder','sloshing','pipeline','turbulent_channel','wigley','suboff'] };
     endpoint = '/api/benchmarks/marine';
   } else if (bench === 'multiphase') {
     const fast = document.getElementById('bench-multiphase-fast').value === 'true';
