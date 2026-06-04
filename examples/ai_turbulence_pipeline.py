@@ -28,6 +28,9 @@ def main() -> None:
     parser.add_argument("--data-steps", type=int, default=60)
     parser.add_argument("--sample-every", type=int, default=10)
     parser.add_argument("--val-steps", type=int, default=40)
+    parser.add_argument("--data-source", choices=("les", "dns"), default="les")
+    parser.add_argument("--dns-scale", type=int, default=2)
+    parser.add_argument("--dns-warmup-steps", type=int, default=20)
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=2048)
     parser.add_argument("--learning-rate", type=float, default=2e-3)
@@ -50,6 +53,9 @@ def main() -> None:
         ),
         seed=args.seed,
         device=args.device,
+        data_source=args.data_source,
+        dns_scale=args.dns_scale,
+        dns_warmup_steps=args.dns_warmup_steps,
     )
     summary = {
         "work_dir": str(result.work_dir),
@@ -59,6 +65,8 @@ def main() -> None:
         "ids": {"run": result.run_id, "dataset": result.dataset_id,
                 "model": result.model_id},
         "n_samples": result.n_samples,
+        "data_source": result.data_source,
+        "n_snapshots": result.n_snapshots,
         "training": {
             "final_train_mse": result.training["final_train_mse"],
             "final_val_mse": result.training["final_val_mse"],

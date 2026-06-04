@@ -11,6 +11,7 @@ from .ai import (
     load_model,
     predict_nu_t_2d,
     predict_tau_eff_2d,
+    run_ai_dns_pipeline,
     run_ai_les_pipeline,
     save_dataset_pt,
     save_model,
@@ -638,5 +639,6 @@ __all__ = [
     "predict_nu_t_2d",
     "predict_tau_eff_2d",
     "collide_ai_les_bgk",
+    "run_ai_dns_pipeline",
     "run_ai_les_pipeline",
 ]
