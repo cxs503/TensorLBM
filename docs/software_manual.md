@@ -16,6 +16,7 @@
    - [4.3 近床管道流动 / Near-Bed Pipeline Flow](#43-近床管道流动--near-bed-pipeline-flow)
    - [4.4 湍流槽道 / Turbulent Channel Flow](#44-湍流槽道--turbulent-channel-flow)
    - [4.5 船舶全流程案例 / 3D Ship CAD-to-Flow Workflow](#45-船舶全流程案例--3d-ship-cad-to-flow-workflow)
+   - [4.6 SUBOFF 全附件阻力基准 / SUBOFF Full-Appendage Resistance Benchmark](#46-suboff-全附件阻力基准--suboff-full-appendage-resistance-benchmark)
 5. [定量比较汇总 / Quantitative Comparison Summary](#5-定量比较汇总--quantitative-comparison-summary)
 6. [运行基准测试 / Running the Benchmark Suite](#6-运行基准测试--running-the-benchmark-suite)
 7. [公共 API 参考 / Public API Reference](#7-公共-api-参考--public-api-reference)
@@ -433,6 +434,61 @@ PYTHONPATH=src python examples/ship_hull_flow.py \
 
 ---
 
+### 4.6 SUBOFF 全附件阻力基准 / SUBOFF Full-Appendage Resistance Benchmark
+
+#### 物理背景 / Physical Background
+
+SUBOFF（DARPA SUBOFF）是潜艇阻力、尾流与附体影响研究中的经典基准体型。TensorLBM 当前提供 **AFF-8 全附件模型** 的体素化几何、D3Q19 通道绕流求解，以及基于 **ITTC-1957 摩擦阻力公式 + Richardson 外推** 的网格收敛误差评估。
+
+SUBOFF (DARPA SUBOFF) is a canonical benchmark geometry for submarine resistance and appendage-effect studies. TensorLBM currently supports the **AFF-8 full-appendage variant** with voxelised geometry, D3Q19 channel-flow solution, and a convergence check based on the **ITTC-1957 friction line plus Richardson extrapolation**.
+
+#### 关键参数 / Key Parameters
+
+| 参数 | 说明 | 完整模式推荐值 |
+|------|------|----------------|
+| `hull_type` | 潜艇模型变体 | `full` |
+| `length_m` | 物理艇长 | 4.356 m |
+| `speed_ms` | 来流速度 | 2.5 m/s |
+| `base_length_lu` | 初始艇长格点数 | 64 |
+| `max_iterations` | 迭代细化次数 | 4 |
+| `target_error_pct` | 收敛目标 | 3.0 % |
+| `lbm_steps` | 每级格网推进步数 | 60 |
+
+#### 精度判据 / Accuracy Criterion
+
+完整模式以最后一次 Richardson 外推误差为验收标准：
+
+$$\varepsilon = \frac{|C_D - C_{D,\text{richardson}}|}{|C_{D,\text{richardson}}|} \times 100\%$$
+
+当 `final_error_pct <= 3.0` 时，记为通过（`target_met = true`）。
+
+#### 运行命令 / Run Commands
+
+```bash
+# 完整精度 CLI 基准
+PYTHONPATH=src python benchmarks/bench_marine.py --cases suboff --full
+
+# 仅导出结构化结果
+PYTHONPATH=src python benchmarks/bench_marine.py --cases suboff --full \
+  --report outputs/suboff_full/results.json
+```
+
+#### 输出解读 / Output Interpretation
+
+- `reference.cd_analytical`：ITTC-1957 理论摩擦阻力参考值
+- `reference.cd_richardson`：由相邻细化层估计的收敛参考值
+- `simulated.cd`：最终格网上的 LBM 阻力系数
+- `iterations[*].grid`：每次细化对应的 `nx × ny × nz`
+- `iterations[*].error_pct`：当前层相对于 Richardson 外推值的误差
+
+#### 平台使用说明 / Platform Usage
+
+平台侧完整操作步骤、API 请求示例与结果判读请参见：
+
+- [`docs/suboff_platform_manual.md`](suboff_platform_manual.md)
+
+---
+
 ## 5. 定量比较汇总 / Quantitative Comparison Summary
 
 下表汇总了各算例的关键定量对比结果：
@@ -445,6 +501,7 @@ PYTHONPATH=src python examples/ship_hull_flow.py \
 | 3 | 近床管道 Re=200 e/D=0.5 | 400×160 (full) | 30 000 | St 数 | ~0.175 | 0.183 | ~4.4 % | ✓ |
 | 4 | 湍流槽道 Re_τ=100 | 256×64 (full) | 50 000 | RMS 对数律误差 | < 3.0 w.u. | 0 | < 3 w.u. | ✓ |
 | 5 | 船舶全流程案例 Re=200 | 80×40×30 | 2 000 | `C_b` 误差 + 对称性 | `C_b≈0.46–0.48` | 4/9, 力比值阈值 | `C_b` 误差 < 25%，对称性通过 | ✓ |
+| 6 | SUBOFF 全附件阻力 | 115×52×52 → 230×104×104 → 288×130×130 (full) | 60 / level | `C_D` 收敛误差 | < 3.0 % | Richardson 外推 | ≤ 3.0 % | ✓ |
 
 > 所有 "Full 模式" 结果基于理论预测或已发表 LBM 参考数据；快速模式结果来自本软件实际运行。
 
@@ -472,9 +529,9 @@ PYTHONPATH=src python benchmarks/bench_marine.py \
   --report outputs/marine_bench/results.json
 ```
 
-运行时间约 4–5 分钟（CPU），输出所有五个算例的定量对比。
+运行时间取决于硬件与设备选择，默认输出海洋基准套件中的全部案例（含 SUBOFF 与几何一致性检查）。
 
-Approximately 4–5 minutes on a modern CPU for all five benchmarks.
+The default run covers the full marine benchmark suite, including SUBOFF and geometry-consistency checks.
 
 ### 6.2 选择性运行 / Selective Run
 
@@ -482,6 +539,10 @@ Approximately 4–5 minutes on a modern CPU for all five benchmarks.
 # 仅运行圆柱和液舱算例 / Run only cylinder and sloshing
 PYTHONPATH=src python benchmarks/bench_marine.py \
   --cases cylinder sloshing --output-root /tmp/bench
+
+# 仅运行 SUBOFF 全附件阻力基准 / Run only the SUBOFF full-appendage benchmark
+PYTHONPATH=src python benchmarks/bench_marine.py \
+  --cases suboff --full --output-root outputs/suboff_full
 ```
 
 ### 6.3 完整精度模式 / Full Accuracy Mode
