@@ -34,6 +34,7 @@ from tensorlbm.ship_cad import (
     kcs_hull_mask,
     series60_hull_mask,
     ship_lbm_parameters,
+    ship_resistance_estimate,
     theoretical_block_coefficient,
 )
 
@@ -316,6 +317,33 @@ def test_ship_lbm_parameters_re_scaling() -> None:
     p1 = ship_lbm_parameters(100.0, 5.0)
     p2 = ship_lbm_parameters(200.0, 5.0)
     assert abs(p2["re_physical"] / p1["re_physical"] - 2.0) < 1e-6
+
+
+def test_ship_resistance_estimate_outputs() -> None:
+    est = ship_resistance_estimate(
+        hull_type="series60",
+        length_m=120.0,
+        beam_m=20.0,
+        draft_m=10.0,
+        speed_ms=8.0,
+        residual_ratio=0.2,
+    )
+    assert est["hull_type"] == "series60"
+    assert est["reynolds"] > 1e8
+    assert est["cf_ittc57"] > 0.0
+    assert est["total_resistance_n"] > est["friction_resistance_n"] > 0.0
+
+
+def test_ship_resistance_estimate_rejects_invalid_residual_ratio() -> None:
+    with pytest.raises(ValueError, match="residual_ratio"):
+        ship_resistance_estimate(
+            hull_type="wigley",
+            length_m=100.0,
+            beam_m=16.0,
+            draft_m=8.0,
+            speed_ms=5.0,
+            residual_ratio=1.2,
+        )
 
 
 # ---------------------------------------------------------------------------

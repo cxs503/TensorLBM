@@ -223,6 +223,7 @@ from .ship_cad import (  # noqa: I001
     kcs_hull_mask,
     series60_hull_mask,
     ship_lbm_parameters,
+    ship_resistance_estimate,
     theoretical_block_coefficient,
 )
 from .ship_cad import (
@@ -461,6 +462,7 @@ __all__ = [
     "export_hull_stl",
     "build_ship_hull_mask",
     "ship_lbm_parameters",
+    "ship_resistance_estimate",
     # SUBOFF submarine CAD module
     "SuboffHullType",
     "SuboffConfig",
