@@ -20,6 +20,7 @@ from tensorlbm import (
     load_model,
     macroscopic,
     predict_nu_t_2d,
+    run_ai_dns_pipeline,
     run_ai_les_pipeline,
     save_dataset_pt,
     save_model,
@@ -267,3 +268,41 @@ def test_run_ai_les_pipeline_smoke(tmp_path: Path) -> None:
         assert len(db.list_models()) >= 1
     finally:
         db.close()
+
+
+def test_run_ai_les_pipeline_dns_source_smoke(tmp_path: Path) -> None:
+    res = run_ai_les_pipeline(
+        tmp_path / "dns",
+        nx=20,
+        ny=20,
+        data_steps=8,
+        sample_every=4,
+        val_steps=4,
+        dns_scale=2,
+        dns_warmup_steps=2,
+        data_source="dns",
+        train_config=TrainConfig(epochs=3, batch_size=256, learning_rate=5e-3),
+        seed=0,
+    )
+    assert res.data_source == "dns"
+    assert res.n_snapshots >= 1
+    assert res.n_samples > 0
+    assert res.validation["stable"] is True
+
+
+def test_run_ai_dns_pipeline_wrapper_smoke(tmp_path: Path) -> None:
+    res = run_ai_dns_pipeline(
+        tmp_path / "dns_wrapper",
+        nx=20,
+        ny=20,
+        data_steps=8,
+        sample_every=4,
+        val_steps=4,
+        dns_scale=2,
+        dns_warmup_steps=2,
+        train_config=TrainConfig(epochs=3, batch_size=256, learning_rate=5e-3),
+        seed=0,
+    )
+    assert isinstance(res, AIPipelineResult)
+    assert res.data_source == "dns"
+    assert res.model_path.exists()
