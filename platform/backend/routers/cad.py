@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 import tempfile
 from pathlib import Path
 from typing import Literal
@@ -376,8 +377,9 @@ async def cad3d_create_model(req: CAD3DCreateRequest) -> dict:
             suffix = ".stl" if req.source_type == "stl" else ".step"
             root = Path(tempfile.gettempdir()) / "tensorlbm_platform" / "cad3d_uploads"
             root.mkdir(parents=True, exist_ok=True)
-            name = req.filename or f"cad3d_import{suffix}"
-            target = root / name
+            fd, tmp_name = tempfile.mkstemp(prefix="cad3d_import_", suffix=suffix, dir=root)
+            os.close(fd)
+            target = Path(tmp_name)
             target.write_bytes(base64.b64decode(req.file_b64))
             payload = {"file_path": str(target)}
 

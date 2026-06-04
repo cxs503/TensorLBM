@@ -1,8 +1,13 @@
 """Tests for the 3-D CAD API endpoints."""
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 
-def _create_model(client) -> str:
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+
+
+def _create_model(client: TestClient) -> str:
     req = {
         "source_type": "parametric",
         "hull_type": "series60",
@@ -17,7 +22,7 @@ def _create_model(client) -> str:
     return r.json()["model_id"]
 
 
-def test_cad3d_create_and_get_stats(client):
+def test_cad3d_create_and_get_stats(client: TestClient) -> None:
     model_id = _create_model(client)
     r = client.get(f"/api/cad/3d/models/{model_id}/stats")
     assert r.status_code == 200, r.text
@@ -26,7 +31,7 @@ def test_cad3d_create_and_get_stats(client):
     assert mesh["face_count"] > 0
 
 
-def test_cad3d_mesh_and_update(client):
+def test_cad3d_mesh_and_update(client: TestClient) -> None:
     model_id = _create_model(client)
     r0 = client.get(f"/api/cad/3d/models/{model_id}/mesh")
     assert r0.status_code == 200
@@ -49,7 +54,7 @@ def test_cad3d_mesh_and_update(client):
     assert v1 != v0
 
 
-def test_cad3d_export_and_versions(client):
+def test_cad3d_export_and_versions(client: TestClient) -> None:
     model_id = _create_model(client)
     rv = client.get(f"/api/cad/3d/models/{model_id}/versions")
     assert rv.status_code == 200
@@ -61,7 +66,7 @@ def test_cad3d_export_and_versions(client):
     assert rexp.headers["content-type"].startswith("model/gltf+json")
 
 
-def test_cad3d_lbm_bridge(client):
+def test_cad3d_lbm_bridge(client: TestClient) -> None:
     model_id = _create_model(client)
     r = client.post(
         f"/api/cad/3d/models/{model_id}/lbm-mask",
