@@ -20,8 +20,10 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 class MarineBenchmarkParams(BaseModel):
-    cases: list[Literal["cylinder", "sloshing", "pipeline", "turbulent_channel", "wigley"]] = Field(
-        default=["cylinder", "sloshing", "pipeline", "turbulent_channel", "wigley"],
+    cases: list[
+        Literal["cylinder", "sloshing", "pipeline", "turbulent_channel", "wigley", "suboff"]
+    ] = Field(
+        default=["cylinder", "sloshing", "pipeline", "turbulent_channel", "wigley", "suboff"],
         description="Which benchmark cases to run",
     )
     fast: bool = Field(True, description="Use reduced step counts for quick validation")
@@ -113,6 +115,17 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
             )
             run_ship_hull_flow(cfg5)
             results["wigley"] = "ok"
+
+        if "suboff" in params.cases:
+            from tensorlbm import SuboffResistanceBenchmarkConfig, run_suboff_resistance_benchmark
+
+            cfg6 = SuboffResistanceBenchmarkConfig(
+                hull_type="full",
+                max_iterations=3 if params.fast else 4,
+                target_error_pct=3.0,
+                device=params.device,
+            )
+            results["suboff"] = run_suboff_resistance_benchmark(cfg6)
 
         return results
 

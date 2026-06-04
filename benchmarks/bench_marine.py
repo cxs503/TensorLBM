@@ -14,6 +14,7 @@ Benchmarks
    Bearman & Zdravkovich (1978).
 4. **Turbulent channel (Re_τ = 100)** – log-law velocity profile comparison.
 5. **3-D ship workflow (Re = 200)** – CAD block coefficient, force symmetry, and wake analysis.
+6. **SUBOFF resistance** – ITTC-1957 friction-drag coefficient with voxel refinement.
 
 Usage::
 
@@ -440,6 +441,33 @@ def bench_ship_hull(output_root: Path, full: bool) -> dict[str, object]:
 # Summary table
 # ---------------------------------------------------------------------------
 
+def bench_suboff_resistance(output_root: Path, full: bool) -> dict[str, object]:
+    """Run SUBOFF drag benchmark and iteratively refine until error target is met."""
+    from tensorlbm import SuboffResistanceBenchmarkConfig, run_suboff_resistance_benchmark
+
+    cfg = SuboffResistanceBenchmarkConfig(
+        hull_type="full",
+        base_length_lu=64.0 if full else 48.0,
+        max_iterations=4 if full else 2,
+        target_error_pct=3.0,
+    )
+    result = run_suboff_resistance_benchmark(cfg)
+    final_error = float(result["final_error_pct"])
+
+    _header("Benchmark 6 – SUBOFF Resistance (ITTC-1957 + Voxel Refinement)")
+    print(f"  Hull type: {result['hull_type']}  Re = {float(result['reynolds']):.3e}")
+    print(f"  Iterations: {len(result['iterations'])}  target: {result['target_error_pct']}%")
+    print(
+        f"  {'Cd error vs reference':<45} {final_error:8.4f}%"
+        f"  {'✓' if bool(result['target_met']) else '✗'}"
+    )
+    print(
+        f"  {'Cd (sim / ref)':<45} {float(result['simulated']['cd']):8.4f}"
+        f" / {float(result['reference']['cd_richardson'] or result['reference']['cd_analytical']):8.4f}"
+    )
+    return result
+
+
 def _print_summary(results: list[dict[str, object]]) -> None:
     _header("Benchmark Summary")
     print(f"  {'Case':<40} {'Key metric':<20} {'Sim':>8} {'Ref':>8} {'Err%':>7} {'Pass'}")
@@ -495,6 +523,13 @@ def _print_summary(results: list[dict[str, object]]) -> None:
                 f"  {'Wigley hull Re=200':<40} {'Cb error + symmetry':<20}"
                 f" {cb_s:8.4f} {cb_r:8.4f} {err:7.2f}%  {checks}"
             )
+        elif name == "suboff_resistance":
+            err = float(r.get("final_error_pct") or 0.0)
+            mark = "✓" if bool(r.get("target_met", False)) else "✗"
+            print(
+                f"  {'SUBOFF full appendage':<40} {'Cd error vs ref':<20}"
+                f" {err:8.4f} {'<3.0%':>8} {'':>7}  {mark}"
+            )
 
     print()
 
@@ -517,7 +552,7 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--cases", nargs="+",
-        choices=["cylinder", "sloshing", "pipeline", "channel", "hull", "all"],
+        choices=["cylinder", "sloshing", "pipeline", "channel", "hull", "suboff", "all"],
         default=["all"],
         help="Which benchmarks to run (default: all)",
     )
@@ -555,6 +590,9 @@ def main() -> None:
     if run_all or "hull" in cases:
         results.append(bench_ship_hull(output_root, args.full))
 
+    if run_all or "suboff" in cases:
+        results.append(bench_suboff_resistance(output_root, args.full))
+
     _print_summary(results)
 
     if args.report:
@@ -574,6 +612,13 @@ def main() -> None:
             cd_val = r.get("cd_sim", "?")
             print(
                 f"  FAIL: hull physical consistency check failed (Cd={cd_val})",
+                file=sys.stderr,
+            )
+            failed = True
+        if name == "suboff_resistance" and not bool(r.get("target_met", False)):
+            err = r.get("final_error_pct", "?")
+            print(
+                f"  FAIL: SUBOFF resistance error target not met (error={err}%)",
                 file=sys.stderr,
             )
             failed = True
