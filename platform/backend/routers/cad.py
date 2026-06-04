@@ -64,6 +64,17 @@ class LBMParametersRequest(BaseModel):
     )
 
 
+class ResistanceEstimateRequest(BaseModel):
+    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
+    length_m: float = Field(100.0, gt=0, description="Ship length [m]")
+    beam_m: float = Field(16.0, gt=0, description="Ship beam [m]")
+    draft_m: float = Field(8.0, gt=0, description="Ship draft [m]")
+    speed_ms: float = Field(5.0, gt=0, description="Ship speed [m/s]")
+    nu_m2s: float = Field(1.139e-6, gt=0, description="Kinematic viscosity [m²/s]")
+    rho_kgm3: float = Field(1025.0, gt=0, description="Fluid density [kg/m³]")
+    residual_ratio: float = Field(0.18, ge=0.0, le=1.0, description="Residual/friction ratio")
+
+
 class HullSolverRequest(BaseModel):
     """Launch a ship-hull LBM solver job from CAD parameters."""
 
@@ -263,6 +274,26 @@ async def lbm_parameters(req: LBMParametersRequest) -> dict:
             froude_target=req.froude_target,
         )
         return result
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/resistance-estimate")
+async def resistance_estimate(req: ResistanceEstimateRequest) -> dict:
+    """Estimate calm-water ship resistance for quick design screening."""
+    try:
+        from tensorlbm.ship_cad import ship_resistance_estimate
+
+        return ship_resistance_estimate(
+            hull_type=req.hull_type,
+            length_m=req.length_m,
+            beam_m=req.beam_m,
+            draft_m=req.draft_m,
+            speed_ms=req.speed_ms,
+            nu_m2s=req.nu_m2s,
+            rho_kgm3=req.rho_kgm3,
+            residual_ratio=req.residual_ratio,
+        )
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
