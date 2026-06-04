@@ -22,8 +22,8 @@ from .ai import (
     save_flow_transformer_model,
     save_model,
     strain_rate_tensor_2d,
-    train_flow_transformer_self_supervised,
     train_eddy_viscosity_model,
+    train_flow_transformer_self_supervised,
 )
 from .backward_facing_step import (
     BackwardFacingStepConfig,
@@ -212,7 +212,6 @@ from .rotating_cylinder import (
 )
 from .ship_cad import (  # noqa: I001
     ShipHullType,
-    build_hull_mask as build_ship_hull_mask,
     export_hull_stl,
     generate_hull_body_plan,
     generate_hull_previews,
@@ -224,6 +223,9 @@ from .ship_cad import (  # noqa: I001
     series60_hull_mask,
     ship_lbm_parameters,
     theoretical_block_coefficient,
+)
+from .ship_cad import (
+    build_hull_mask as build_ship_hull_mask,
 )
 from .ship_cad3d import (
     CADGeometryEngine,

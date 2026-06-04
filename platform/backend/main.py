@@ -16,7 +16,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from . import job_manager  # noqa: E402
-from .routers import (
+from .routers import (  # noqa: E402
     agent,
     ai_transformer,
     benchmarks,
@@ -25,7 +25,7 @@ from .routers import (
     postprocess,
     preprocess,
     solver,
-)  # noqa: E402
+)
 
 # ---------------------------------------------------------------------------
 # App

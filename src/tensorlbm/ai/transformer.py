@@ -6,10 +6,12 @@ later deployed for inference/reconstruction diagnostics.
 """
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 from torch import nn, optim
 
@@ -128,27 +130,39 @@ def save_flow_transformer_model(
     model: FlowFieldTransformer,
     path: str | Path,
 ) -> Path:
-    """Persist model weights and architecture to a single ``.pt`` file."""
+    """Persist model weights and architecture using a non-pickle format."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        {
-            "state_dict": model.state_dict(),
-            "arch": asdict(model.arch),
-            "format_version": 1,
-            "family": "flow_transformer_ssl",
-        },
-        p,
-    )
+    state = model.state_dict()
+    arrays = {name: tensor.detach().cpu().numpy() for name, tensor in state.items()}
+    with p.open("wb") as fh:
+        np.savez_compressed(fh, **arrays)
+    meta = {
+        "arch": asdict(model.arch),
+        "format_version": 1,
+        "family": "flow_transformer_ssl",
+    }
+    p.with_suffix(p.suffix + ".json").write_text(json.dumps(meta, indent=2))
     return p
 
 
 def load_flow_transformer_model(path: str | Path) -> FlowFieldTransformer:
     """Load a saved transformer model."""
-    blob = torch.load(Path(path), map_location="cpu", weights_only=False)
-    arch = FlowTransformerArch(**blob.get("arch", {}))
+    p = Path(path)
+    meta_path = p.with_suffix(p.suffix + ".json")
+    if not meta_path.exists():
+        raise ValueError(f"Metadata file not found: {meta_path}")
+    meta = json.loads(meta_path.read_text())
+    arch = FlowTransformerArch(**meta.get("arch", {}))
     model = FlowFieldTransformer(arch)
-    model.load_state_dict(blob["state_dict"])
+    with p.open("rb") as fh:
+        arrays = np.load(fh, allow_pickle=False)
+        current = model.state_dict()
+        loaded = {
+            name: torch.from_numpy(arrays[name]).to(dtype=current[name].dtype)
+            for name in current
+        }
+    model.load_state_dict(loaded)
     model.eval()
     return model
 
@@ -197,10 +211,7 @@ def train_flow_transformer_self_supervised(
 
             optimizer.zero_grad()
             pred = model(x_masked)
-            if bool(mask.any()):
-                loss = loss_fn(pred[mask], xb[mask])
-            else:
-                loss = loss_fn(pred, xb)
+            loss = loss_fn(pred[mask], xb[mask]) if bool(mask.any()) else loss_fn(pred, xb)
             loss.backward()
             optimizer.step()
             running_loss += float(loss.detach())
