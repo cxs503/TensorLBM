@@ -25,9 +25,11 @@ from .multiphase import color_gradient_step
 from .solver import stream
 from .utils import (
     DiagnosticPoint,
+    flow_step_image_path,
     get_reproducibility_metadata,
     prepare_run_dir,
     resolve_device,
+    write_legacy_snapshot_alias,
 )
 
 matplotlib.use("Agg")
@@ -181,7 +183,8 @@ def _save_snapshot(
     ax.set_title(f"Sloshing tank phase fraction – step {step}")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    fig.savefig(run_dir / f"snapshot_{step:06d}.png", dpi=140)
+    fig.savefig(flow_step_image_path(run_dir, step), dpi=140)
+    write_legacy_snapshot_alias(run_dir, step)
     plt.close(fig)
 
 

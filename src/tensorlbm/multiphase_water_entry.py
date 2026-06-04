@@ -57,7 +57,12 @@ from .multiphase import (
 from .multiphase3d import collide_sc_two_component_3d
 from .solver import stream
 from .solver3d import stream3d
-from .utils import prepare_run_dir, resolve_device
+from .utils import (
+    flow_step_image_path,
+    prepare_run_dir,
+    resolve_device,
+    write_legacy_snapshot_alias,
+)
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -315,8 +320,9 @@ def _save_snapshot_2d(
     ax.contour(obs_np, levels=[0.5], colors="red", linewidths=1.5)
     plt.colorbar(im, ax=ax, fraction=0.03, label="Water phase fraction φ")
     ax.set_title(f"Water entry – step {step:d}")
-    out = run_dir / f"snapshot_{step:06d}.png"
+    out = flow_step_image_path(run_dir, step)
     fig.savefig(out, dpi=120)
+    write_legacy_snapshot_alias(run_dir, step)
     plt.close(fig)
 
 

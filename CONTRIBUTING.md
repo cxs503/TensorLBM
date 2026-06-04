@@ -16,6 +16,8 @@ Thank you for your interest in contributing!  This document describes the projec
 
 ## 1. Development Setup
 
+Canonical workflow: see `docs/development_workflow.md`.
+
 ```bash
 # Clone the repository
 git clone https://github.com/cxs503/TensorLBM.git
@@ -27,6 +29,7 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 
 # Install in editable mode with all dev dependencies
 pip install -e ".[dev]"
+pip install -r platform/requirements.txt
 ```
 
 Minimum requirements: **Python ≥ 3.11**, **PyTorch ≥ 2.0**.
@@ -71,6 +74,7 @@ Minimum requirements: **Python ≥ 3.11**, **PyTorch ≥ 2.0**.
 | Solid mask | `*_mask` | `wall_mask`, `obstacle_mask` |
 | Config dataclass | `*Config` | `CylinderFlowConfig` |
 | Runner function | `run_*` | `run_cylinder_flow` |
+| Canonical step image | `flow_step_XXXXXX.png` | `flow_step_000500.png` |
 
 ---
 

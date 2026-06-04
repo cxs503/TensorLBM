@@ -29,9 +29,11 @@ from .logging_config import configure_logging, logger
 from .solver import collide_bgk, stream
 from .utils import (
     DiagnosticPoint,
+    flow_step_image_path,
     get_reproducibility_metadata,
     prepare_run_dir,
     resolve_device,
+    write_legacy_snapshot_alias,
 )
 
 matplotlib.use("Agg")
@@ -180,7 +182,8 @@ def _save_snapshot(
     ax.set_title(f"Pipeline flow velocity magnitude – step {step}")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    fig.savefig(run_dir / f"snapshot_{step:06d}.png", dpi=140)
+    fig.savefig(flow_step_image_path(run_dir, step), dpi=140)
+    write_legacy_snapshot_alias(run_dir, step)
     plt.close(fig)
 
 
