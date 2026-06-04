@@ -6,7 +6,12 @@ from dataclasses import dataclass, field
 
 import torch
 
+from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
+from .d3q19 import equilibrium3d
+from .obstacles import compute_obstacle_forces_3d
+from .solver3d import collide_bgk3d, stream3d
 from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask, suboff_statistics
+from .utils import resolve_device
 
 
 @dataclass(frozen=True)
@@ -23,6 +28,12 @@ class SuboffResistanceBenchmarkConfig:
     max_iterations: int = 3
     target_error_pct: float = 3.0
     device: str = "cpu"
+    lbm_u_in: float = 0.06
+    lbm_tau: float = 0.58
+    lbm_steps: int = 60
+    lbm_warmup_steps: int = 20
+    lbm_sample_interval: int = 5
+    max_length_lu: float = 96.0
     geometry: SuboffConfig = field(default_factory=SuboffConfig)
 
     def __post_init__(self) -> None:
@@ -39,6 +50,18 @@ class SuboffResistanceBenchmarkConfig:
             raise ValueError("max_iterations must be >= 1")
         if self.target_error_pct <= 0.0:
             raise ValueError("target_error_pct must be > 0")
+        if not (0.0 < self.lbm_u_in < 0.15):
+            raise ValueError("lbm_u_in must be in (0, 0.15)")
+        if self.lbm_tau <= 0.5:
+            raise ValueError("lbm_tau must be > 0.5")
+        if self.lbm_steps < 10:
+            raise ValueError("lbm_steps must be >= 10")
+        if self.lbm_warmup_steps < 0:
+            raise ValueError("lbm_warmup_steps must be >= 0")
+        if self.lbm_sample_interval < 1:
+            raise ValueError("lbm_sample_interval must be >= 1")
+        if self.max_length_lu < 20.0:
+            raise ValueError("max_length_lu must be >= 20")
 
     @property
     def resolved_radius_m(self) -> float:
@@ -81,6 +104,62 @@ def _voxel_wetted_area(mask: torch.Tensor, dx: float) -> float:
     return float(area_faces.item()) * dx * dx
 
 
+def _run_suboff_lbm_drag(
+    *,
+    config: SuboffResistanceBenchmarkConfig,
+    hull_type: SuboffHullType,
+    nx: int,
+    ny: int,
+    nz: int,
+    length_lu: float,
+    radius_lu: float,
+) -> tuple[float, float]:
+    device = resolve_device(config.device)
+    mask, _stats = build_suboff_mask(
+        hull_type=hull_type,
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        length=length_lu,
+        radius=radius_lu,
+        config=config.geometry,
+        device=str(device),
+    )
+    wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=device)
+
+    rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
+    ux0 = torch.full_like(rho0, config.lbm_u_in)
+    uy0 = torch.zeros_like(rho0)
+    uz0 = torch.zeros_like(rho0)
+    ux0[mask] = 0.0
+    f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
+
+    ref_area_lu = math.pi * radius_lu**2
+    dyn_pressure_lu = 0.5 * config.lbm_u_in**2 * max(ref_area_lu, 1e-12)
+    drag_samples: list[float] = []
+
+    for step in range(1, config.lbm_steps + 1):
+        f = collide_bgk3d(f, tau=config.lbm_tau)
+        f = stream3d(f)
+        fx, _, _ = compute_obstacle_forces_3d(f, mask)
+        f = apply_zou_he_channel_boundaries_3d(
+            f,
+            u_in=config.lbm_u_in,
+            wall_mask=wall_mask,
+            obstacle_mask=mask,
+        )
+        if step > config.lbm_warmup_steps and (
+            step % config.lbm_sample_interval == 0 or step == config.lbm_steps
+        ):
+            drag_samples.append(float(fx.item()))
+
+    if not drag_samples:
+        drag_samples.append(0.0)
+    fx_lu = float(sum(drag_samples) / len(drag_samples))
+    cd = abs(fx_lu) / dyn_pressure_lu
+    return cd, fx_lu
+
+
 def run_suboff_resistance_benchmark(
     config: SuboffResistanceBenchmarkConfig,
 ) -> dict[str, object]:
@@ -111,7 +190,7 @@ def run_suboff_resistance_benchmark(
 
     for k in range(1, config.max_iterations + 1):
         scale = 2.0 ** float(k - 1)
-        length_lu = config.base_length_lu * scale
+        length_lu = min(config.base_length_lu * scale, config.max_length_lu)
         radius_lu = (radius_m / config.length_m) * length_lu
         nx = max(int(round(length_lu * 1.8)), int(round(length_lu + 12)))
         ny = max(int(round(radius_lu * 8.0)), 24)
@@ -130,7 +209,15 @@ def run_suboff_resistance_benchmark(
 
         dx = config.length_m / length_lu
         wetted_voxel = _voxel_wetted_area(mask, dx)
-        cd_sim = cf * form_factor * wetted_voxel / max(ref_area, 1e-12)
+        cd_sim, fx_lu = _run_suboff_lbm_drag(
+            config=config,
+            hull_type=hull_type,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            length_lu=length_lu,
+            radius_lu=radius_lu,
+        )
         resistance_sim_n = 0.5 * config.rho_kgm3 * config.speed_ms**2 * ref_area * cd_sim
         error_pct: float | None = None
         if prev_cd is not None:
@@ -154,6 +241,12 @@ def run_suboff_resistance_benchmark(
                 "wetted_area_m2": wetted_voxel,
                 "cd": cd_sim,
                 "resistance_n": resistance_sim_n,
+                "drag_lu": fx_lu,
+                "lbm": {
+                    "u_in": config.lbm_u_in,
+                    "tau": config.lbm_tau,
+                    "steps": config.lbm_steps,
+                },
                 "cd_richardson": richardson_cd if prev_cd is not None else None,
                 "error_pct": error_pct,
             }
