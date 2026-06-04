@@ -117,6 +117,7 @@ PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 | 三视图预览 | `POST /api/cad/preview` |
 | 3D 体素掩膜 + Cb | `POST /api/cad/hull-mask` |
 | 由物理量算 LBM 参数 | `POST /api/cad/lbm-parameters` |
+| 快速阻力估算（ITTC57+剩余阻力） | `POST /api/cad/resistance-estimate` |
 | 直接送求解器 | `POST /api/cad/send-to-solver` |
 | 导出 STL | `POST /api/cad/export-stl` |
 
