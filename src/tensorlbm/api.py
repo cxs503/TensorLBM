@@ -16,9 +16,9 @@ from .boundaries import (
     zou_he_inlet_velocity,
     zou_he_outlet_pressure,
 )
-from .d2q9 import C, OPPOSITE, W, equilibrium, macroscopic
-from .d3q19 import C as C3D
+from .d2q9 import OPPOSITE, C, W, equilibrium, macroscopic
 from .d3q19 import OPPOSITE as OPPOSITE3D
+from .d3q19 import C as C3D
 from .d3q19 import W as W3D
 from .d3q19 import equilibrium3d, macroscopic3d
 from .solver import collide_bgk, collide_mrt, collide_rlbm, collide_trt, correct_mass, stream
