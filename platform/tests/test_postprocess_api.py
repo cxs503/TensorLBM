@@ -93,3 +93,50 @@ def test_csv_endpoint_real_file(client, waiter):
     assert r.status_code == 200
     data = r.json()
     assert "columns" in data and "data" in data
+
+
+def test_checkpoints_unknown_job(client):
+    r = client.get("/api/postprocess/checkpoints/unknown_job_id")
+    assert r.status_code == 404
+
+
+def test_checkpoints_for_completed_job(client, waiter):
+    job_id = _run_cylinder_job(client, waiter)
+    r = client.get(f"/api/postprocess/checkpoints/{job_id}")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["job_id"] == job_id
+    assert isinstance(data["checkpoints"], list)
+
+
+def test_field_data_unknown_job(client):
+    r = client.get("/api/postprocess/field-data/unknown_job_id")
+    assert r.status_code == 404
+
+
+def test_field_data_velocity_magnitude(client, waiter):
+    job_id = _run_cylinder_job(client, waiter)
+    r = client.get(f"/api/postprocess/field-data/{job_id}?field=velocity_magnitude")
+    # If no checkpoints exist the endpoint returns 422; if checkpoints exist it returns 200.
+    assert r.status_code in (200, 422), r.text
+    if r.status_code == 200:
+        data = r.json()
+        assert data["field"] == "velocity_magnitude"
+        assert data["nx"] > 0 and data["ny"] > 0
+        assert len(data["data"]) == data["nx"] * data["ny"]
+        assert len(data["ux"]) == data["nx"] * data["ny"]
+        assert len(data["uy"]) == data["nx"] * data["ny"]
+        assert data["field_min"] <= data["field_max"]
+
+
+def test_field_data_all_fields(client, waiter):
+    job_id = _run_cylinder_job(client, waiter)
+    for field in ("velocity_magnitude", "vorticity", "density", "pressure_coeff", "ux", "uy"):
+        r = client.get(f"/api/postprocess/field-data/{job_id}?field={field}")
+        assert r.status_code in (200, 422), f"field={field} returned {r.status_code}: {r.text}"
+
+
+def test_field_data_bad_field(client, waiter):
+    job_id = _run_cylinder_job(client, waiter)
+    r = client.get(f"/api/postprocess/field-data/{job_id}?field=unknown_field")
+    assert r.status_code in (400, 422)
