@@ -255,6 +255,10 @@ from .suboff_cad import (
     suboff_radius_profile,
     suboff_statistics,
 )
+from .suboff_resistance import (
+    SuboffResistanceBenchmarkConfig,
+    run_suboff_resistance_benchmark,
+)
 from .thermal import (
     C_D2Q5,
     W_D2Q5,
@@ -453,6 +457,8 @@ __all__ = [
     "suboff_statistics",
     "generate_suboff_previews",
     "export_suboff_stl",
+    "SuboffResistanceBenchmarkConfig",
+    "run_suboff_resistance_benchmark",
     "CADGeometryEngine",
     "TriangleMesh",
     "create_parametric_hull_mesh",

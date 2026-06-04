@@ -319,7 +319,7 @@
   "bench": {
     "title": "Benchmarks",
     "marine": "Marine & Ocean Engineering",
-    "marine_desc": "Cylinder flow (St/Cd), sloshing tank (Faltinsen), near-bed pipeline (St), turbulent channel (log-law), Wigley hull (Cd).",
+    "marine_desc": "Cylinder flow (St/Cd), sloshing tank (Faltinsen), near-bed pipeline (St), turbulent channel (log-law), Wigley hull (Cd), SUBOFF resistance (<3% error).",
     "multiphase": "Multiphase LBM",
     "multiphase_desc": "Static droplet (Laplace), spinodal decomposition, two-phase Poiseuille comparison (SCMC + CG).",
     "ghia": "Lid-Driven Cavity \u2013 Ghia Comparison",
