@@ -60,6 +60,24 @@ def test_lbm_parameters(client):
     assert data["re_physical"] > 1e8
 
 
+def test_resistance_estimate(client):
+    req = {
+        "hull_type": "series60",
+        "length_m": 120.0,
+        "beam_m": 20.0,
+        "draft_m": 10.0,
+        "speed_ms": 8.0,
+        "residual_ratio": 0.2,
+    }
+    r = client.post("/api/cad/resistance-estimate", json=req)
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["hull_type"] == "series60"
+    assert data["reynolds"] > 1e8
+    assert data["cf_ittc57"] > 0.0
+    assert data["total_resistance_n"] > data["friction_resistance_n"] > 0.0
+
+
 def test_export_stl(client):
     req = {
         "hull_type": "wigley",

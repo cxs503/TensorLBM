@@ -46,6 +46,7 @@ __all__ = [
     "generate_hull_sideprofile",
     "generate_hull_previews",
     "export_hull_stl",
+    "ship_resistance_estimate",
 ]
 
 
@@ -739,4 +740,60 @@ def ship_lbm_parameters(
         "stable": bool(tau > 0.5),
         "lbm_length_cells": lbm_length,
         "lbm_speed_lu": lbm_speed,
+    }
+
+
+def ship_resistance_estimate(
+    hull_type: ShipHullType | str,
+    length_m: float,
+    beam_m: float,
+    draft_m: float,
+    speed_ms: float,
+    nu_m2s: float = 1.139e-6,
+    rho_kgm3: float = 1025.0,
+    residual_ratio: float = 0.18,
+) -> dict:
+    """Estimate calm-water resistance for a parametric hull.
+
+    Uses ITTC-1957 friction line + a configurable residual-resistance ratio.
+    This is intended for rapid pre-screening in early-stage design.
+    """
+    if isinstance(hull_type, str):
+        hull_type = ShipHullType(hull_type)
+    if length_m <= 0.0 or beam_m <= 0.0 or draft_m <= 0.0:
+        raise ValueError("length_m, beam_m, and draft_m must be > 0")
+    if speed_ms <= 0.0:
+        raise ValueError("speed_ms must be > 0")
+    if nu_m2s <= 0.0:
+        raise ValueError("nu_m2s must be > 0")
+    if rho_kgm3 <= 0.0:
+        raise ValueError("rho_kgm3 must be > 0")
+    if not (0.0 <= residual_ratio <= 1.0):
+        raise ValueError("residual_ratio must be in [0, 1]")
+
+    cb = theoretical_block_coefficient(hull_type)
+    re = speed_ms * length_m / nu_m2s
+    if re <= 100.0:
+        raise ValueError("reynolds number too low for ITTC-1957 formula")
+
+    cf = 0.075 / (math.log10(re) - 2.0) ** 2
+    # Compact wetted-surface approximation for merchant-ship like hulls.
+    wetted_area_m2 = length_m * (2.0 * draft_m + beam_m) * math.sqrt(max(cb, 1e-12))
+    dynamic = 0.5 * rho_kgm3 * speed_ms**2
+    friction_n = dynamic * wetted_area_m2 * cf
+    residual_n = friction_n * residual_ratio
+    total_n = friction_n + residual_n
+    ct = cf * (1.0 + residual_ratio)
+
+    return {
+        "hull_type": hull_type.value,
+        "cb": round(cb, 4),
+        "reynolds": re,
+        "cf_ittc57": cf,
+        "ct_estimated": ct,
+        "wetted_area_m2": wetted_area_m2,
+        "friction_resistance_n": friction_n,
+        "residual_resistance_n": residual_n,
+        "total_resistance_n": total_n,
+        "residual_ratio": residual_ratio,
     }
