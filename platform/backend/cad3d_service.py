@@ -49,8 +49,19 @@ class CAD3DService:
         units: str = "lu",
     ) -> CAD3DModel:
         model_id = make_model_id()
-        model = CAD3DModel(model_id=model_id, source_type=source_type, payload=payload.copy(), units=units)
-        model.versions.append(CAD3DVersion(version=1, source_type=source_type, payload=payload.copy()))
+        model = CAD3DModel(
+            model_id=model_id,
+            source_type=source_type,
+            payload=payload.copy(),
+            units=units,
+        )
+        model.versions.append(
+            CAD3DVersion(
+                version=1,
+                source_type=source_type,
+                payload=payload.copy(),
+            )
+        )
         self._models[model_id] = model
         return model
 
@@ -141,7 +152,15 @@ class CAD3DService:
         target.write_bytes(content)
         return target, mime
 
-    def build_lbm_mask(self, model_id: str, *, nx: int, ny: int, nz: int, device: str = "cpu") -> dict[str, object]:
+    def build_lbm_mask(
+        self,
+        model_id: str,
+        *,
+        nx: int,
+        ny: int,
+        nz: int,
+        device: str = "cpu",
+    ) -> dict[str, object]:
         model = self.get_model(model_id)
         if model.source_type != "parametric":
             raise ValueError("LBM mask bridge currently supports parametric hull models only")

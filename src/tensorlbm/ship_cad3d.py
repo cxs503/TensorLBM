@@ -13,7 +13,7 @@ import json
 import struct
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 import numpy as np
@@ -21,7 +21,7 @@ import numpy as np
 from .ship_cad import ShipHullType
 
 
-class CADGeometryEngine(str, Enum):
+class CADGeometryEngine(StrEnum):
     """Geometry backends exposed by the CAD service."""
 
     NATIVE = "native"
@@ -323,7 +323,11 @@ def export_mesh_step(mesh: TriangleMesh, output_path: str | Path) -> Path:
     mesh.validate()
     pts = [tuple(float(v) for v in row) for row in mesh.vertices]
     faces = [tuple(int(i) for i in row) for row in mesh.faces]
-    shell = cq.Shell.makeShell([cq.Face.makeFromWires(cq.Wire.makePolygon([pts[i] for i in f] + [pts[f[0]]])) for f in faces])
+    face_objs = []
+    for f in faces:
+        poly = cq.Wire.makePolygon([pts[i] for i in f] + [pts[f[0]]])
+        face_objs.append(cq.Face.makeFromWires(poly))
+    shell = cq.Shell.makeShell(face_objs)
     solid = cq.Solid.makeSolid(shell)
     p = Path(output_path).resolve()
     p.parent.mkdir(parents=True, exist_ok=True)
