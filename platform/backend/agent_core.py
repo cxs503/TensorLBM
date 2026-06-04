@@ -831,6 +831,9 @@ def ai_list_models(limit: int = 10) -> dict:
         "tau": "float, default 0.8", "c_s": "float, default 0.1",
         "data_steps": "int, default 40", "sample_every": "int, default 10",
         "val_steps": "int, default 20",
+        "data_source": "str, 'les' or 'dns', default 'les'",
+        "dns_scale": "int, fine/coarse ratio when data_source='dns', default 2",
+        "dns_warmup_steps": "int, default 20",
         "epochs": "int, default 20", "batch_size": "int, default 4096",
         "learning_rate": "float, default 1e-3",
         "seed": "int, default 0", "device": "str, default 'cpu'",
@@ -844,6 +847,9 @@ def ai_run_pipeline(
     data_steps: int = 40,
     sample_every: int = 10,
     val_steps: int = 20,
+    data_source: str = "les",
+    dns_scale: int = 2,
+    dns_warmup_steps: int = 20,
     epochs: int = 20,
     batch_size: int = 4096,
     learning_rate: float = 1e-3,
@@ -856,6 +862,9 @@ def ai_run_pipeline(
     sample_every = _clip(sample_every, 1, data_steps)
     val_steps = _clip(val_steps, 1, 2000)
     epochs = _clip(epochs, 1, 500)
+    data_source = "dns" if str(data_source).strip().lower() == "dns" else "les"
+    dns_scale = _clip(dns_scale, 1, 8)
+    dns_warmup_steps = _clip(dns_warmup_steps, 0, 5000)
 
     work = _ai_workdir("pipeline")
 
@@ -878,13 +887,18 @@ def ai_run_pipeline(
             seed=int(seed),
             device=str(device),
             run_name="agent_ai_pipeline",
+            data_source=data_source,
+            dns_scale=int(dns_scale),
+            dns_warmup_steps=int(dns_warmup_steps),
         )
         return res.to_dict()
 
     cfg = {
         "nx": nx, "ny": ny, "tau": tau, "c_s": c_s,
         "data_steps": data_steps, "sample_every": sample_every,
-        "val_steps": val_steps, "epochs": epochs,
+        "val_steps": val_steps, "data_source": data_source,
+        "dns_scale": dns_scale, "dns_warmup_steps": dns_warmup_steps,
+        "epochs": epochs,
         "batch_size": batch_size, "learning_rate": learning_rate,
         "seed": seed, "device": device,
     }
@@ -933,6 +947,7 @@ _INTENT_AI_PIPELINE = [
     "ai pipeline", "ai turbulence pipeline", "end-to-end ai", "ai 流水线",
     "ai 闭环", "ai 全流程", "ai 端到端", "ai 演示", "湍流闭环",
     "ai 湍流", "ai-les", "ai les", "湍流 ai", "ai turbulence demo",
+    "dns ai", "dns 湍流",
 ]
 _INTENT_AI_TRAIN = [
     "train ai", "train turbulence", "train model", "train the model",
@@ -1016,6 +1031,11 @@ def _parse_intent(text: str, history_actions: list[dict]) -> dict:
         ep = _extract_int(text, ["epochs", "epoch", "迭代轮数", "训练轮数"])
         if ep is not None:
             args["epochs"] = ep
+        if "dns" in low or "高保真" in text:
+            args["data_source"] = "dns"
+            ds = _extract_int(text, ["dns_scale", "dns scale", "dns 比例"])
+            if ds is not None:
+                args["dns_scale"] = ds
         return {"tool": "ai_run_pipeline", "args": args,
                 "reason": "AI end-to-end pipeline"}
     if any(k in low for k in _INTENT_AI_TRAIN):
