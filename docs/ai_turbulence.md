@@ -58,12 +58,28 @@ result = run_ai_les_pipeline(
 print(result.to_dict())
 ```
 
+For DNS-driven data generation in the same closed loop, switch to:
+
+```python
+from tensorlbm import run_ai_dns_pipeline, TrainConfig
+
+result = run_ai_dns_pipeline(
+    work_dir="/tmp/ai_dns_demo",
+    nx=64, ny=64, dns_scale=2,
+    data_steps=60, sample_every=10, val_steps=40,
+    train_config=TrainConfig(epochs=30, batch_size=2048),
+)
+```
+
 The call:
 
 1. Initialises a small periodic 2-D field with non-trivial low-wavenumber
    structure.
-2. Runs `data_steps` LES steps using `collide_smagorinsky_bgk`, sampling
-   the velocity field every `sample_every` steps.
+2. Runs `data_steps` steps to generate training snapshots:
+   - `data_source="les"`: LES run with `collide_smagorinsky_bgk`.
+   - `data_source="dns"` / `run_ai_dns_pipeline`: higher-resolution BGK
+     reference run, then block-averaged to the training grid.
+   Snapshots are sampled every `sample_every` steps.
 3. Builds an `EddyViscosityDataset` from those snapshots and writes it
    to `dataset.pt`.
 4. Records the run, dataset and model in the SQLite database at
