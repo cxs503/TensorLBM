@@ -85,7 +85,15 @@
     "series60_desc": "DTMB Series 60 (Cb=0.60) polynomial approximation. Representative of a standard merchant vessel. Widely used for resistance and wave-making studies.",
     "kcs_desc": "KRISO Container Ship approximation (Cb\u22480.651). Modern container ship hull form with blunt bow and full midship section.",
     "wave_amp": "Wave amplitude (0=none)",
-    "job_submitted": "CAD solver job submitted:"
+    "job_submitted": "CAD solver job submitted:",
+    "model3d_title": "3D Hull Model (three.js)",
+    "model3d_build": "Build 3D Model",
+    "model3d_wireframe": "Wireframe",
+    "model3d_toggle": "Show/Hide Hull",
+    "model3d_clip": "Section Clip",
+    "model3d_vertices": "Vertices",
+    "model3d_faces": "Faces",
+    "model3d_build_first": "Build a 3D model first."
   },
   "preprocess": {
     "title": "Pre-processing",
