@@ -204,6 +204,7 @@ from .rotating_cylinder import (
 )
 from .ship_cad import (  # noqa: I001
     ShipHullType,
+    build_hull_mask as build_ship_hull_mask,
     export_hull_stl,
     generate_hull_body_plan,
     generate_hull_previews,
@@ -224,9 +225,6 @@ from .ship_cad3d import (
     export_mesh_stl_ascii,
     import_mesh_stl,
 )
-from .ship_cad import (
-    build_hull_mask as build_ship_hull_mask,
-)
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
 from .simulation import LBMSimulation
 from .sloshing_tank import (
@@ -246,6 +244,16 @@ from .solver3d import (
 )
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
 from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
+from .suboff_cad import (
+    SuboffConfig,
+    SuboffHullType,
+    build_suboff_mask,
+    export_suboff_stl,
+    generate_suboff_previews,
+    suboff_hull_mask,
+    suboff_radius_profile,
+    suboff_statistics,
+)
 from .thermal import (
     C_D2Q5,
     W_D2Q5,
@@ -435,6 +443,15 @@ __all__ = [
     "export_hull_stl",
     "build_ship_hull_mask",
     "ship_lbm_parameters",
+    # SUBOFF submarine CAD module
+    "SuboffHullType",
+    "SuboffConfig",
+    "suboff_radius_profile",
+    "suboff_hull_mask",
+    "build_suboff_mask",
+    "suboff_statistics",
+    "generate_suboff_previews",
+    "export_suboff_stl",
     "CADGeometryEngine",
     "TriangleMesh",
     "create_parametric_hull_mesh",

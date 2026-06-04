@@ -39,7 +39,6 @@ class HullPreviewRequest(BaseModel):
     draft: float = Field(8.0, gt=0, description="Hull draft (lattice units)")
     n_stations: int = Field(11, ge=3, le=41, description="Number of body-plan stations")
 
-
 class HullMaskRequest(BaseModel):
     hull_type: Literal["wigley", "series60", "kcs"] = "series60"
     nx: int = Field(160, ge=20, description="Grid x-size")
@@ -126,6 +125,36 @@ class CAD3DMaskBridgeRequest(BaseModel):
     ny: int = Field(60, ge=10)
     nz: int = Field(40, ge=10)
     device: str = "cpu"
+
+
+class SuboffPreviewRequest(BaseModel):
+    hull_type: Literal["bare_hull", "with_sail", "full"] = "bare_hull"
+    length: float = Field(100.0, gt=0, description="Hull length (lattice units)")
+    radius: float = Field(0.0, ge=0, description="Max radius (lu); 0 = auto from L/D≈8.57")
+    bow_fraction: float = Field(0.233, gt=0, lt=0.9)
+    stern_fraction: float = Field(0.252, gt=0, lt=0.9)
+    stern_exponent: float = Field(2.0, gt=0, le=8.0)
+
+
+class SuboffMaskRequest(BaseModel):
+    hull_type: Literal["bare_hull", "with_sail", "full"] = "bare_hull"
+    nx: int = Field(200, ge=20)
+    ny: int = Field(80, ge=10)
+    nz: int = Field(80, ge=10)
+    length: float = Field(120.0, gt=0)
+    radius: float = Field(0.0, ge=0, description="Max radius; 0 = auto")
+    cx: float | None = Field(None, description="Axial midpoint (default: nx/2)")
+    cy: float | None = Field(None, description="Lateral axis (default: ny/2)")
+    cz: float | None = Field(None, description="Vertical axis (default: nz/2)")
+    device: str = "cpu"
+
+
+class SuboffSTLRequest(BaseModel):
+    hull_type: Literal["bare_hull", "with_sail", "full"] = "bare_hull"
+    length: float = Field(100.0, gt=0)
+    radius: float = Field(0.0, ge=0, description="Max radius; 0 = auto")
+    n_axial: int = Field(80, ge=8, le=400)
+    n_circ: int = Field(60, ge=8, le=200)
 
 
 # ---------------------------------------------------------------------------
@@ -352,6 +381,162 @@ async def list_hull_types() -> dict:
                     "Modern container ship hull form. Cb ≈ 0.651."
                 ),
                 "Cb": 0.651,
+            },
+        ]
+    }
+
+
+# ---------------------------------------------------------------------------
+# SUBOFF submarine endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.post("/suboff/preview")
+async def suboff_preview(req: SuboffPreviewRequest) -> dict:
+    """Generate a multi-view SUBOFF submarine preview figure.
+
+    Returns a base64-encoded PNG plus hull form statistics.
+    """
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        from tensorlbm.suboff_cad import (
+            SuboffConfig,
+            SuboffHullType,
+            generate_suboff_previews,
+            suboff_statistics,
+        )
+
+        config = SuboffConfig(
+            bow_fraction=req.bow_fraction,
+            stern_fraction=req.stern_fraction,
+            stern_exponent=req.stern_exponent,
+        )
+        ht = SuboffHullType(req.hull_type)
+        radius = req.radius if req.radius > 0 else None
+
+        fig = generate_suboff_previews(ht, length=req.length, radius=radius, config=config)
+
+        import io as _io
+        buf = _io.BytesIO()
+        fig.savefig(buf, format="png", dpi=110, bbox_inches="tight")
+        plt.close(fig)
+        buf.seek(0)
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.read()).decode()
+
+        r_val = (req.radius if req.radius > 0 else config.r_over_l * req.length)
+        stats = suboff_statistics(ht, req.length, r_val, config)
+        return {"image": img_b64, "stats": stats}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/suboff/hull-mask")
+async def suboff_hull_mask_endpoint(req: SuboffMaskRequest) -> dict:
+    """Build a 3-D SUBOFF voxel mask and return statistics + top-view preview."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        from tensorlbm.suboff_cad import SuboffHullType, build_suboff_mask
+
+        mask, stats = build_suboff_mask(
+            hull_type=req.hull_type,
+            nx=req.nx,
+            ny=req.ny,
+            nz=req.nz,
+            cx=req.cx,
+            cy=req.cy,
+            cz=req.cz,
+            length=req.length,
+            radius=req.radius if req.radius > 0 else None,
+            device=req.device,
+        )
+
+        top_view = mask.any(dim=0).cpu().numpy().astype(np.uint8) * 255
+        fig, ax = plt.subplots(figsize=(7, 3))
+        ax.imshow(top_view, cmap="Blues", origin="lower", vmin=0, vmax=255)
+        ax.set_title(
+            f"SUBOFF {SuboffHullType(req.hull_type).value.upper()} – top view "
+            f"(L/D={stats['L_D_ratio']:.2f})"
+        )
+        ax.axis("off")
+        import io as _io
+        buf = _io.BytesIO()
+        fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+        plt.close(fig)
+        buf.seek(0)
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.read()).decode()
+
+        return {"image": img_b64, "stats": stats}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/suboff/export-stl")
+async def suboff_export_stl(req: SuboffSTLRequest) -> Response:
+    """Generate and download an ASCII STL for the requested SUBOFF variant."""
+    try:
+        import tempfile as _tempfile
+
+        from tensorlbm.suboff_cad import export_suboff_stl
+
+        radius = req.radius if req.radius > 0 else None
+        with _tempfile.TemporaryDirectory() as td:
+            stl_path = export_suboff_stl(
+                hull_type=req.hull_type,
+                length=req.length,
+                radius=radius,
+                n_axial=req.n_axial,
+                n_circ=req.n_circ,
+                output_path=Path(td) / "suboff.stl",
+            )
+            content = stl_path.read_bytes()
+
+        return Response(
+            content=content,
+            media_type="model/stl",
+            headers={
+                "Content-Disposition": f'attachment; filename="suboff_{req.hull_type}.stl"'
+            },
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/suboff/model-types")
+async def list_suboff_model_types() -> dict:
+    """Return the list of supported SUBOFF model variants."""
+    return {
+        "model_types": [
+            {
+                "value": "bare_hull",
+                "label": "SUBOFF Bare Hull (AFF-1)",
+                "description": (
+                    "Axisymmetric body of revolution only. "
+                    "Ellipsoidal bow, cylindrical parallel midbody, polynomial stern. "
+                    "L/D ≈ 8.57."
+                ),
+            },
+            {
+                "value": "with_sail",
+                "label": "SUBOFF + Conning Tower (AFF-3)",
+                "description": (
+                    "Bare hull plus a conning-tower sail (fairwater). "
+                    "Suitable for studying sail-induced vortex shedding."
+                ),
+            },
+            {
+                "value": "full",
+                "label": "SUBOFF Full Appendage (AFF-8)",
+                "description": (
+                    "Bare hull, conning-tower sail, and four cruciform stern "
+                    "control-surface fins. Full-configuration drag benchmark."
+                ),
             },
         ]
     }
