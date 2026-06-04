@@ -4,27 +4,30 @@ Modules covered:
 - unit_converter.LBMUnitConverter  – l_phys/u_phys/nu_phys validation errors and tau > 2.0 warning
 - config_io                        – load_config_yaml (fully uncovered), load_config_json
                                      skip-unknown-key and non-dataclass branches, coercion failure
-- ai/model._activation             – relu / gelu / invalid-name branches + wrong feature-count forward
+- ai/model._activation             – relu / gelu / invalid-name branches
+                                     + wrong feature-count forward
 - ai/dataset                       – strain_rate_tensor_2d shape error, extract_les_samples_2d mask
-                                     mismatch, extract_les_samples_2d_multi empty, split bad fraction
-- ai/train                         – _r2_score zero-variance, load dataset from Path, too-small dataset
+                                     mismatch, extract_les_samples_2d_multi empty,
+                                     split bad fraction
+- ai/train                         – _r2_score zero-variance, load dataset from Path,
+                                     too-small dataset
 - ai/database                      – get_model_record missing ID, _rows_to_dicts malformed JSON
 - ai/pipeline                      – AIPipelineResult.to_dict, no-snapshot fallback in smoke test
-- multiphase3d                     – collide_sc_single_component_3d (entire function + solid_mask branch)
+- multiphase3d                     – collide_sc_single_component_3d
+                                     (entire function + solid_mask branch)
 """
 from __future__ import annotations
 
 import dataclasses
 import json
 import sqlite3
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 import torch
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
@@ -139,6 +142,7 @@ class TestLoadConfigYamlWrapper:
     ) -> None:
         """Simulate pyyaml being absent to cover the ImportError branch."""
         import sys
+
         from tensorlbm.config_io import load_config_yaml
 
         p = tmp_path / "cfg.yaml"
@@ -213,22 +217,25 @@ class TestLoadConfigJsonAdditionalBranches:
 
 class TestActivationBranches:
     def test_relu_activation_creates_relu_module(self) -> None:
-        from tensorlbm.ai.model import _activation
         import torch.nn as nn
+
+        from tensorlbm.ai.model import _activation
 
         act = _activation("relu")
         assert isinstance(act, nn.ReLU)
 
     def test_gelu_activation_creates_gelu_module(self) -> None:
-        from tensorlbm.ai.model import _activation
         import torch.nn as nn
+
+        from tensorlbm.ai.model import _activation
 
         act = _activation("gelu")
         assert isinstance(act, nn.GELU)
 
     def test_case_insensitive(self) -> None:
-        from tensorlbm.ai.model import _activation
         import torch.nn as nn
+
+        from tensorlbm.ai.model import _activation
 
         assert isinstance(_activation("ReLU"), nn.ReLU)
         assert isinstance(_activation("GELU"), nn.GELU)
@@ -318,15 +325,11 @@ class TestEddyViscosityDatasetSplit:
         assert len(train_ds) + len(val_ds) == 100
 
     def test_split_invalid_fraction_raises(self) -> None:
-        from tensorlbm.ai.dataset import EddyViscosityDataset
-
         ds = self._make_dataset(50)
         with pytest.raises(ValueError, match="val_fraction"):
             ds.split(val_fraction=0.0)
 
     def test_split_fraction_above_one_raises(self) -> None:
-        from tensorlbm.ai.dataset import EddyViscosityDataset
-
         ds = self._make_dataset(50)
         with pytest.raises(ValueError, match="val_fraction"):
             ds.split(val_fraction=1.0)
