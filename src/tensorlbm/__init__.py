@@ -216,6 +216,14 @@ from .ship_cad import (  # noqa: I001
     ship_lbm_parameters,
     theoretical_block_coefficient,
 )
+from .ship_cad3d import (
+    CADGeometryEngine,
+    TriangleMesh,
+    create_parametric_hull_mesh,
+    export_mesh_gltf,
+    export_mesh_stl_ascii,
+    import_mesh_stl,
+)
 from .ship_cad import (
     build_hull_mask as build_ship_hull_mask,
 )
@@ -427,6 +435,12 @@ __all__ = [
     "export_hull_stl",
     "build_ship_hull_mask",
     "ship_lbm_parameters",
+    "CADGeometryEngine",
+    "TriangleMesh",
+    "create_parametric_hull_mesh",
+    "import_mesh_stl",
+    "export_mesh_stl_ascii",
+    "export_mesh_gltf",
     # Multiphase models – D2Q9
     "psi_linear",
     "psi_exp",

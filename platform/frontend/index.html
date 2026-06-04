@@ -6,6 +6,8 @@
   <title>TensorLBM Platform</title>
   <!-- i18n engine must be loaded before any inline scripts use t() -->
   <script src="/static/js/i18n.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/OrbitControls.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <style>
@@ -124,6 +126,7 @@
     /* Result images */
     .result-img { max-width: 100%; border-radius: .4rem; border: 1px solid #dee2e6; }
     .img-thumb { max-height: 220px; object-fit: contain; cursor: zoom-in; }
+    .cad3d-canvas { width: 100%; height: 420px; background: #111827; border-radius: .4rem; border: 1px solid #334155; }
 
     /* Benchmark cards */
     .bench-card { border-left: 4px solid #0d6efd; }
@@ -417,6 +420,33 @@
             </div>
             <div class="card-body text-center" id="cad-preview-area">
               <p class="text-muted py-5" data-i18n-html="cad.preview_hint">Select hull type and parameters, then click <strong>Preview</strong>.</p>
+            </div>
+          </div>
+
+          <div class="card mt-3">
+            <div class="card-header d-flex align-items-center">
+              <i class="bi bi-badge-3d me-2"></i> <span data-i18n="cad.model3d_title">3D Hull Model (three.js)</span>
+              <span class="ms-auto small text-muted" id="cad3d-model-id"></span>
+            </div>
+            <div class="card-body config-form">
+              <div class="d-flex flex-wrap gap-2 mb-2">
+                <button class="btn btn-sm btn-primary" onclick="cad3dCreateOrUpdate()">
+                  <i class="bi bi-box"></i> <span data-i18n="cad.model3d_build">Build 3D Model</span>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="cad3dToggleWireframe()">
+                  <i class="bi bi-grid-3x3"></i> <span data-i18n="cad.model3d_wireframe">Wireframe</span>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="cad3dToggleHull()">
+                  <i class="bi bi-eye"></i> <span data-i18n="cad.model3d_toggle">Show/Hide Hull</span>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="cad3dToggleClip()">
+                  <i class="bi bi-scissors"></i> <span data-i18n="cad.model3d_clip">Section Clip</span>
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="cad3dExport('gltf')">glTF</button>
+                <button class="btn btn-sm btn-outline-success" onclick="cad3dExport('stl')">STL</button>
+              </div>
+              <div id="cad3d-canvas" class="cad3d-canvas"></div>
+              <div class="small mt-2" id="cad3d-stats"></div>
             </div>
           </div>
 
@@ -1200,6 +1230,157 @@ function onCADHullTypeChange() {
   const ht = document.getElementById('cad-hull-type').value;
   const key = 'cad.' + (CAD_HULL_DESCS[ht] || '');
   document.getElementById('cad-hull-desc').textContent = key ? t(key) : '';
+}
+
+const cad3dState = {
+  modelId: null,
+  scene: null,
+  camera: null,
+  renderer: null,
+  controls: null,
+  mesh: null,
+  clipOn: false,
+  wireframe: false,
+  raf: 0,
+};
+
+function cad3dEnsureViewer() {
+  const host = document.getElementById('cad3d-canvas');
+  if (!host || cad3dState.renderer) return;
+  const w = host.clientWidth || 640;
+  const h = host.clientHeight || 420;
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x111827);
+  const camera = new THREE.PerspectiveCamera(45, w / h, 0.01, 5000);
+  camera.position.set(160, 100, 200);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(w, h);
+  host.innerHTML = '';
+  host.appendChild(renderer.domElement);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const key = new THREE.DirectionalLight(0xffffff, 0.8);
+  key.position.set(2, 3, 1);
+  scene.add(key);
+  scene.add(new THREE.GridHelper(400, 24, 0x334155, 0x1f2937));
+  cad3dState.scene = scene;
+  cad3dState.camera = camera;
+  cad3dState.renderer = renderer;
+  cad3dState.controls = controls;
+  const loop = () => {
+    cad3dState.controls.update();
+    cad3dState.renderer.render(cad3dState.scene, cad3dState.camera);
+    cad3dState.raf = requestAnimationFrame(loop);
+  };
+  loop();
+}
+
+async function cad3dCreateOrUpdate() {
+  cad3dEnsureViewer();
+  const body = {
+    source_type: 'parametric',
+    units: 'lu',
+    hull_type: document.getElementById('cad-hull-type').value,
+    length: +document.getElementById('cad-length').value,
+    beam: +document.getElementById('cad-beam').value,
+    draft: +document.getElementById('cad-draft').value,
+    n_long: 80,
+    n_vert: 40,
+  };
+  const isUpdate = !!cad3dState.modelId;
+  const path = isUpdate ? `/api/cad/3d/models/${cad3dState.modelId}` : '/api/cad/3d/models';
+  const method = isUpdate ? 'PUT' : 'POST';
+  try {
+    const r = await api(method, path, body);
+    cad3dState.modelId = r.model_id || cad3dState.modelId;
+    document.getElementById('cad3d-model-id').textContent = cad3dState.modelId ? `ID: ${cad3dState.modelId}` : '';
+    await cad3dLoadMesh();
+  } catch (e) {
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+async function cad3dLoadMesh() {
+  if (!cad3dState.modelId) return;
+  const r = await api('GET', `/api/cad/3d/models/${cad3dState.modelId}/mesh`);
+  const verts = r.vertices;
+  const faces = r.faces;
+  const pos = new Float32Array(faces.length * 9);
+  let p = 0;
+  for (const f of faces) {
+    for (const idx of f) {
+      const v = verts[idx];
+      pos[p++] = v[0];
+      pos[p++] = v[1];
+      pos[p++] = v[2];
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geometry.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x4f8ef7,
+    side: THREE.DoubleSide,
+    wireframe: cad3dState.wireframe,
+    clippingPlanes: [new THREE.Plane(new THREE.Vector3(1, 0, 0), 0)],
+    clipShadows: true,
+  });
+  if (cad3dState.mesh) cad3dState.scene.remove(cad3dState.mesh);
+  const mesh = new THREE.Mesh(geometry, mat);
+  cad3dState.mesh = mesh;
+  cad3dState.scene.add(mesh);
+  geometry.computeBoundingBox();
+  const bb = geometry.boundingBox;
+  const center = new THREE.Vector3();
+  bb.getCenter(center);
+  const size = new THREE.Vector3();
+  bb.getSize(size);
+  cad3dState.controls.target.copy(center);
+  cad3dState.camera.position.set(center.x + size.x * 1.4, center.y + size.y * 1.4, center.z + size.z * 1.2 + 10);
+  document.getElementById('cad3d-stats').innerHTML =
+    `${t('cad.model3d_vertices')}: <strong>${r.stats.vertex_count}</strong>, ${t('cad.model3d_faces')}: <strong>${r.stats.face_count}</strong>`;
+}
+
+function cad3dToggleWireframe() {
+  cad3dState.wireframe = !cad3dState.wireframe;
+  if (cad3dState.mesh) cad3dState.mesh.material.wireframe = cad3dState.wireframe;
+}
+
+function cad3dToggleHull() {
+  if (cad3dState.mesh) cad3dState.mesh.visible = !cad3dState.mesh.visible;
+}
+
+function cad3dToggleClip() {
+  cad3dState.clipOn = !cad3dState.clipOn;
+  if (cad3dState.renderer) cad3dState.renderer.localClippingEnabled = cad3dState.clipOn;
+  if (cad3dState.mesh) {
+    const m = cad3dState.mesh.material;
+    m.clippingPlanes = cad3dState.clipOn ? [new THREE.Plane(new THREE.Vector3(1, 0, 0), 0)] : [];
+  }
+}
+
+async function cad3dExport(fmt) {
+  if (!cad3dState.modelId) {
+    showToast(t('cad.model3d_build_first'), 'warning');
+    return;
+  }
+  const resp = await fetch(API + `/api/cad/3d/models/${cad3dState.modelId}/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fmt }),
+  });
+  if (!resp.ok) {
+    showToast(`Export failed: ${await resp.text()}`, 'danger');
+    return;
+  }
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${cad3dState.modelId}.${fmt === 'gltf' ? 'gltf' : fmt}`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function cadGeneratePreview() {
