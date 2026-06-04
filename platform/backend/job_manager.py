@@ -114,6 +114,12 @@ class _JobLogHandler(logging.Handler):
 _log_handler = _JobLogHandler()
 _log_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)-8s %(message)s"))
 
+# Attach the handler at import time so log routing works even when
+# set_event_loop() has not been called (e.g. in unit tests or CLI usage).
+_tl_logger = logging.getLogger("tensorlbm")
+if _log_handler not in _tl_logger.handlers:
+    _tl_logger.addHandler(_log_handler)
+
 
 # ---------------------------------------------------------------------------
 # Internal helpers
