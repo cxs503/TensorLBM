@@ -666,6 +666,7 @@
       <!-- Tabs within post-process -->
       <ul class="nav nav-tabs mb-3" id="pp-tabs">
         <li class="nav-item"><a class="nav-link active" href="#" onclick="showPPTab('snapshots',this)"><i class="bi bi-images"></i> <span data-i18n="postprocess.tab_snapshots">Snapshots</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('viewer',this)"><i class="bi bi-grid-1x2"></i> <span data-i18n="postprocess.tab_viewer">Field Viewer</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs">Logs</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> <span data-i18n="postprocess.tab_files">Files</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> <span data-i18n="postprocess.tab_metadata">Metadata</span></a></li>
@@ -674,6 +675,77 @@
       <div id="pp-snapshots" class="pp-tab-panel">
         <div id="snapshots-grid" class="row g-2">
           <div class="col-12 text-muted small" data-i18n="postprocess.no_job">No job selected.</div>
+        </div>
+      </div>
+
+      <!-- ---- Field Viewer Tab ---- -->
+      <div id="pp-viewer" class="pp-tab-panel" style="display:none">
+        <div class="row g-3 mb-3">
+          <!-- Controls -->
+          <div class="col-lg-3">
+            <div class="card h-100">
+              <div class="card-header small fw-semibold"><i class="bi bi-sliders"></i> Controls</div>
+              <div class="card-body small">
+                <div class="mb-2">
+                  <label class="form-label mb-1" data-i18n="postprocess.viewer_field">Field</label>
+                  <select class="form-select form-select-sm" id="fv-field">
+                    <option value="velocity_magnitude" data-i18n="postprocess.field_velocity_magnitude">Velocity magnitude</option>
+                    <option value="vorticity" data-i18n="postprocess.field_vorticity">Vorticity</option>
+                    <option value="density" data-i18n="postprocess.field_density">Density</option>
+                    <option value="pressure_coeff" data-i18n="postprocess.field_pressure_coeff">Pressure coeff. Cp</option>
+                    <option value="ux" data-i18n="postprocess.field_ux">x-velocity</option>
+                    <option value="uy" data-i18n="postprocess.field_uy">y-velocity</option>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label mb-1" data-i18n="postprocess.viewer_colormap">Colormap</label>
+                  <select class="form-select form-select-sm" id="fv-colormap">
+                    <option value="viridis">Viridis</option>
+                    <option value="plasma">Plasma</option>
+                    <option value="hot">Hot</option>
+                    <option value="cool">Cool</option>
+                    <option value="rdbu">RdBu (diverging)</option>
+                    <option value="bwr">BWR (diverging)</option>
+                  </select>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label mb-1" data-i18n="postprocess.viewer_checkpoint">Checkpoint</label>
+                  <select class="form-select form-select-sm" id="fv-checkpoint">
+                    <option value="latest">latest</option>
+                  </select>
+                </div>
+                <div class="mb-2 form-check">
+                  <input class="form-check-input" type="checkbox" id="fv-arrows" checked>
+                  <label class="form-check-label" for="fv-arrows" data-i18n="postprocess.viewer_arrows">Velocity vectors</label>
+                </div>
+                <div class="mb-3 form-check">
+                  <input class="form-check-input" type="checkbox" id="fv-streamlines">
+                  <label class="form-check-label" for="fv-streamlines" data-i18n="postprocess.viewer_streamlines">Streamlines</label>
+                </div>
+                <button class="btn btn-primary btn-sm w-100" id="fv-render-btn" onclick="renderFieldViewer()">
+                  <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.viewer_render">Render</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Canvas + legend -->
+          <div class="col-lg-9">
+            <div class="card">
+              <div class="card-header small d-flex align-items-center gap-2">
+                <span id="fv-title" class="fw-semibold">Field Viewer</span>
+                <span class="text-muted ms-auto" id="fv-stats"></span>
+              </div>
+              <div class="card-body p-2 text-center" id="fv-canvas-wrap">
+                <p class="text-muted small mt-3" id="fv-hint" data-i18n="postprocess.viewer_hint">
+                  Select a field and checkpoint, then click Render.
+                </p>
+                <canvas id="fv-canvas" style="display:none;max-width:100%;border:1px solid #dee2e6;cursor:crosshair"></canvas>
+                <canvas id="fv-legend" width="30" height="256" style="display:none;vertical-align:top;margin-left:6px;border:1px solid #dee2e6"></canvas>
+              </div>
+              <!-- Tooltip -->
+              <div id="fv-tooltip" style="position:fixed;display:none;background:rgba(0,0,0,.75);color:#fff;padding:3px 7px;border-radius:4px;font-size:.75rem;pointer-events:none;z-index:9999"></div>
+            </div>
+          </div>
         </div>
       </div>
       <div id="pp-logs" class="pp-tab-panel" style="display:none">
@@ -1923,6 +1995,7 @@ async function refreshPP() {
   else if (ppCurrentTab === 'logs') loadLogs();
   else if (ppCurrentTab === 'files') loadFiles();
   else if (ppCurrentTab === 'metadata') loadMetadata();
+  else if (ppCurrentTab === 'viewer') await loadViewerCheckpoints();
 }
 
 function showPPTab(name, el) {
@@ -1931,11 +2004,12 @@ function showPPTab(name, el) {
   el.classList.add('active');
   document.querySelectorAll('.pp-tab-panel').forEach(p => p.style.display = 'none');
   document.getElementById(`pp-${name}`).style.display = '';
-  if (!ppSelectedJobId) return;
+  if (!ppSelectedJobId) return false;
   if (name === 'snapshots') loadSnapshots();
   else if (name === 'logs') loadLogs();
   else if (name === 'files') loadFiles();
   else if (name === 'metadata') loadMetadata();
+  else if (name === 'viewer') loadViewerCheckpoints();
   return false;
 }
 
@@ -1995,6 +2069,270 @@ async function loadMetadata() {
     const r = await api('GET', `/api/jobs/${ppSelectedJobId}/metadata`);
     box.textContent = JSON.stringify(r.metadata, null, 2);
   } catch(e) { box.textContent = e.message; }
+}
+
+// ============================================================
+// Field Viewer (ParaView-style interactive post-processing)
+// ============================================================
+
+// State for the currently rendered field dataset
+let _fvData = null;
+
+async function loadViewerCheckpoints() {
+  if (!ppSelectedJobId) return;
+  const sel = document.getElementById('fv-checkpoint');
+  if (!sel) return;
+  try {
+    const r = await api('GET', `/api/postprocess/checkpoints/${ppSelectedJobId}`);
+    sel.innerHTML = '<option value="latest">latest</option>' +
+      r.checkpoints.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+    if (r.checkpoints.length === 0) {
+      document.getElementById('fv-hint').textContent = t('postprocess.viewer_no_ckpt');
+    } else {
+      document.getElementById('fv-hint').textContent = t('postprocess.viewer_hint');
+    }
+  } catch(e) { /* silently ignore – may not be a 2D job */ }
+}
+
+async function renderFieldViewer() {
+  if (!ppSelectedJobId) return;
+  const btn = document.getElementById('fv-render-btn');
+  const hint = document.getElementById('fv-hint');
+  btn.disabled = true;
+  hint.textContent = t('postprocess.loading');
+  try {
+    const field = document.getElementById('fv-field').value;
+    const ckpt  = document.getElementById('fv-checkpoint').value;
+    const r = await api('GET',
+      `/api/postprocess/field-data/${ppSelectedJobId}?field=${field}&checkpoint=${encodeURIComponent(ckpt)}`
+    );
+    _fvData = r;
+    _fvDrawCanvas(r);
+    document.getElementById('fv-hint').style.display = 'none';
+  } catch(e) {
+    hint.style.display = '';
+    hint.textContent = '⚠ ' + e.message;
+  } finally { btn.disabled = false; }
+}
+
+// ---- Colormaps (256-entry RGB lookup tables) ----
+const _CMAPS = {
+  viridis: _buildCmap([
+    [0.267,0.005,0.329],[0.283,0.141,0.459],[0.254,0.265,0.530],
+    [0.207,0.372,0.553],[0.164,0.471,0.558],[0.128,0.566,0.551],
+    [0.135,0.659,0.517],[0.267,0.749,0.441],[0.478,0.821,0.318],
+    [0.741,0.873,0.150],[0.993,0.906,0.144]
+  ]),
+  plasma: _buildCmap([
+    [0.050,0.030,0.528],[0.296,0.008,0.624],[0.494,0.013,0.657],
+    [0.665,0.064,0.628],[0.807,0.163,0.548],[0.912,0.286,0.426],
+    [0.973,0.421,0.303],[0.996,0.564,0.188],[0.981,0.716,0.147],
+    [0.937,0.875,0.287],[0.940,0.975,0.131]
+  ]),
+  hot: _buildCmap([
+    [0,0,0],[0.333,0,0],[0.667,0,0],[1,0,0],
+    [1,0.333,0],[1,0.667,0],[1,1,0],[1,1,0.5],[1,1,1]
+  ]),
+  cool: _buildCmap([
+    [0,1,1],[0.125,0.875,1],[0.25,0.75,1],[0.375,0.625,1],
+    [0.5,0.5,1],[0.625,0.375,1],[0.75,0.25,1],[0.875,0.125,1],[1,0,1]
+  ]),
+  rdbu: _buildCmap([
+    [0.647,0.082,0.094],[0.839,0.376,0.302],[0.957,0.647,0.510],
+    [0.992,0.859,0.780],[0.969,0.969,0.969],[0.820,0.898,0.941],
+    [0.573,0.773,0.871],[0.263,0.576,0.765],[0.129,0.400,0.675]
+  ]),
+  bwr: _buildCmap([
+    [0,0,1],[0.5,0.5,1],[1,1,1],[1,0.5,0.5],[1,0,0]
+  ]),
+};
+
+function _buildCmap(stops) {
+  const lut = new Uint8ClampedArray(256 * 3);
+  const N = stops.length - 1;
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255;
+    const s = t * N;
+    const lo = Math.floor(s), hi = Math.min(lo + 1, N);
+    const f = s - lo;
+    const [r0,g0,b0] = stops[lo];
+    const [r1,g1,b1] = stops[hi];
+    lut[i*3]   = Math.round((r0 + f*(r1-r0)) * 255);
+    lut[i*3+1] = Math.round((g0 + f*(g1-g0)) * 255);
+    lut[i*3+2] = Math.round((b0 + f*(b1-b0)) * 255);
+  }
+  return lut;
+}
+
+function _cmapColor(lut, t) {
+  const i = Math.max(0, Math.min(255, Math.round(t * 255)));
+  return [lut[i*3], lut[i*3+1], lut[i*3+2]];
+}
+
+function _fvDrawCanvas(r) {
+  const cmapName = document.getElementById('fv-colormap').value;
+  const lut = _CMAPS[cmapName] || _CMAPS.viridis;
+  const showArrows = document.getElementById('fv-arrows').checked;
+  const showStreamlines = document.getElementById('fv-streamlines').checked;
+
+  const nx = r.nx, ny = r.ny;
+  const fmin = r.field_min, fmax = r.field_max;
+  const range = fmax - fmin || 1;
+
+  // Canvas size – scale up to fill ~700px wide at most
+  const SCALE = Math.max(1, Math.min(6, Math.floor(700 / nx)));
+  const cw = nx * SCALE, ch = ny * SCALE;
+
+  const canvas = document.getElementById('fv-canvas');
+  canvas.width = cw; canvas.height = ch;
+  canvas.style.display = 'inline-block';
+  const ctx = canvas.getContext('2d');
+
+  // Draw heatmap pixel-by-pixel
+  const img = ctx.createImageData(cw, ch);
+  const pix = img.data;
+  for (let row = 0; row < ny; row++) {
+    for (let col = 0; col < nx; col++) {
+      const v = r.data[row * nx + col];
+      const t = (v - fmin) / range;
+      const [rv, gv, bv] = _cmapColor(lut, t);
+      for (let sy = 0; sy < SCALE; sy++) {
+        for (let sx = 0; sx < SCALE; sx++) {
+          const px = ((row * SCALE + sy) * cw + col * SCALE + sx) * 4;
+          pix[px]   = rv;
+          pix[px+1] = gv;
+          pix[px+2] = bv;
+          pix[px+3] = 255;
+        }
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
+  // Draw velocity vector arrows
+  if (showArrows && r.ux && r.uy) {
+    const STEP = Math.max(4, Math.round(Math.max(nx, ny) / 18));
+    const maxU = Math.sqrt(
+      r.ux.reduce((m, v) => Math.max(m, Math.abs(v)), 0) ** 2 +
+      r.uy.reduce((m, v) => Math.max(m, Math.abs(v)), 0) ** 2
+    ) || 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 1;
+    for (let row = STEP; row < ny - STEP/2; row += STEP) {
+      for (let col = STEP; col < nx - STEP/2; col += STEP) {
+        const idx = row * nx + col;
+        const ux = r.ux[idx], uy = r.uy[idx];
+        const mag = Math.sqrt(ux*ux + uy*uy);
+        if (mag < 1e-10) continue;
+        const norm = mag / maxU;
+        const len = norm * STEP * SCALE * 0.85;
+        const cx0 = (col + 0.5) * SCALE;
+        const cy0 = (row + 0.5) * SCALE;
+        const dx = (ux / mag) * len;
+        const dy = (uy / mag) * len;
+        _drawArrow(ctx, cx0 - dx/2, cy0 - dy/2, cx0 + dx/2, cy0 + dy/2);
+      }
+    }
+  }
+
+  // Draw streamlines (Euler integration)
+  if (showStreamlines && r.ux && r.uy) {
+    ctx.strokeStyle = 'rgba(0,255,200,0.7)';
+    ctx.lineWidth = 1.2;
+    const SEEDS = 14;
+    const DT = 0.5;
+    const MAXSTEP = 400;
+    for (let si = 0; si < SEEDS; si++) {
+      for (let sj = 0; sj < SEEDS; sj++) {
+        let px = (si + 0.5) / SEEDS * nx;
+        let py = (sj + 0.5) / SEEDS * ny;
+        ctx.beginPath();
+        ctx.moveTo(px * SCALE, py * SCALE);
+        for (let step = 0; step < MAXSTEP; step++) {
+          const ix = Math.floor(px), iy = Math.floor(py);
+          if (ix < 0 || ix >= nx || iy < 0 || iy >= ny) break;
+          const idx = iy * nx + ix;
+          const ux = r.ux[idx], uy = r.uy[idx];
+          const mag = Math.sqrt(ux*ux + uy*uy);
+          if (mag < 1e-12) break;
+          px += (ux / mag) * DT;
+          py += (uy / mag) * DT;
+          ctx.lineTo(px * SCALE, py * SCALE);
+        }
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Draw color legend
+  _drawLegend(lut, fmin, fmax);
+
+  // Stats
+  document.getElementById('fv-stats').textContent =
+    `${t('postprocess.viewer_step')}: ${r.step}  |  ` +
+    `${t('postprocess.viewer_grid')}: ${r.nx_orig}×${r.ny_orig}  |  ` +
+    `${t('postprocess.viewer_min')}: ${fmin.toExponential(3)}  ` +
+    `${t('postprocess.viewer_max')}: ${fmax.toExponential(3)}`;
+
+  const fieldLabel = t(`postprocess.field_${r.field}`) || r.field;
+  document.getElementById('fv-title').textContent = `${fieldLabel} (${cmapName})`;
+
+  // Hover tooltip
+  canvas.onmousemove = function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const col = Math.floor((e.clientX - rect.left) / SCALE);
+    const row = Math.floor((e.clientY - rect.top)  / SCALE);
+    if (col < 0 || col >= nx || row < 0 || row >= ny) return;
+    const v = r.data[row * nx + col];
+    const tip = document.getElementById('fv-tooltip');
+    tip.style.display = 'block';
+    tip.style.left = (e.clientX + 12) + 'px';
+    tip.style.top  = (e.clientY - 24) + 'px';
+    tip.textContent = `(${col}, ${row})  ${v.toExponential(4)}`;
+  };
+  canvas.onmouseleave = () => {
+    document.getElementById('fv-tooltip').style.display = 'none';
+  };
+}
+
+function _drawArrow(ctx, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len < 1) return;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  // Arrowhead
+  const hw = Math.min(len * 0.35, 4);
+  const angle = Math.atan2(dy, dx);
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hw * Math.cos(angle - 0.45), y2 - hw * Math.sin(angle - 0.45));
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hw * Math.cos(angle + 0.45), y2 - hw * Math.sin(angle + 0.45));
+  ctx.stroke();
+}
+
+function _drawLegend(lut, vmin, vmax) {
+  const legend = document.getElementById('fv-legend');
+  legend.style.display = 'inline-block';
+  const lctx = legend.getContext('2d');
+  const H = legend.height;
+  for (let i = 0; i < H; i++) {
+    const t = 1 - i / (H - 1);
+    const [r, g, b] = _cmapColor(lut, t);
+    lctx.fillStyle = `rgb(${r},${g},${b})`;
+    lctx.fillRect(0, i, 30, 1);
+  }
+  // Tick labels – draw on canvas as text
+  lctx.fillStyle = '#333';
+  lctx.font = '9px sans-serif';
+  const ticks = [0, 0.25, 0.5, 0.75, 1.0];
+  ticks.forEach(frac => {
+    const y = Math.round((1 - frac) * (H - 1));
+    const v = vmin + frac * (vmax - vmin);
+    lctx.fillStyle = '#333';
+    lctx.fillRect(0, y, 30, 1);
+  });
 }
 
 // ============================================================
