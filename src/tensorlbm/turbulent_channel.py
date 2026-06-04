@@ -24,9 +24,11 @@ from .solver import stream
 from .turbulence import collide_smagorinsky_bgk
 from .utils import (
     DiagnosticPoint,
+    flow_step_image_path,
     get_reproducibility_metadata,
     prepare_run_dir,
     resolve_device,
+    write_legacy_snapshot_alias,
 )
 
 try:
@@ -167,7 +169,8 @@ def _save_snapshot(run_dir: Path, ux_mean: torch.Tensor, step: int) -> None:
     ax.set_title(f"Turbulent channel mean streamwise velocity – step {step}")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    fig.savefig(run_dir / f"snapshot_{step:06d}.png", dpi=140)
+    fig.savefig(flow_step_image_path(run_dir, step), dpi=140)
+    write_legacy_snapshot_alias(run_dir, step)
     plt.close(fig)
 
 

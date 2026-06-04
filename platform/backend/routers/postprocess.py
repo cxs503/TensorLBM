@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from .. import job_manager
+from ..file_patterns import list_step_images
 
 router = APIRouter()
 
@@ -123,7 +124,7 @@ async def snapshot_analysis(job_id: str) -> dict:
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    snapshots = sorted(job.output_dir.rglob("snapshot_*.png"))
+    snapshots = list_step_images(job.output_dir)
     result = []
     for p in snapshots:
         result.append({

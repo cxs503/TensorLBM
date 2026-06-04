@@ -9,6 +9,8 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 - **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
   Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
 - **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
+- **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
+- **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
 
 ## What TensorLBM provides
 
@@ -35,8 +37,8 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-pip install pytest
+pip install -e ".[dev]"
+pip install -r platform/requirements.txt
 ```
 
 ## Run the cylinder-flow example
@@ -123,6 +125,11 @@ PYTHONPATH=src pytest -q
 ```
 
 GitHub Actions runs the same test command on every push and pull request.
+
+## API layering
+
+- Stable compatibility-oriented API: `tensorlbm.api`
+- Fast-evolving API surface: `tensorlbm.experimental`
 
 ## Quantitative validation summary
 

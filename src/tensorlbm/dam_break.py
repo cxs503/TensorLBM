@@ -30,7 +30,7 @@ Outputs
 -------
 * ``run_metadata.json`` – simulation config + diagnostics
 * ``front_position.csv`` – step, t*, X* per interval
-* ``snapshot_XXXXXX.png`` – density field snapshots
+* ``flow_step_XXXXXX.png`` – density field snapshots
 
 References
 ----------
@@ -58,7 +58,12 @@ from .multiphase import (
     psi_exp,
 )
 from .solver import stream
-from .utils import prepare_run_dir, resolve_device
+from .utils import (
+    flow_step_image_path,
+    prepare_run_dir,
+    resolve_device,
+    write_legacy_snapshot_alias,
+)
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -240,8 +245,9 @@ def _save_snapshot(
     ax.set_title(f"Dam break ({model.upper()}) – step {step:d}")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    out = run_dir / f"snapshot_{step:06d}.png"
+    out = flow_step_image_path(run_dir, step)
     fig.savefig(out, dpi=120)
+    write_legacy_snapshot_alias(run_dir, step)
     plt.close(fig)
 
 

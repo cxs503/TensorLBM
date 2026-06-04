@@ -21,7 +21,9 @@ jobs:
           pip install -e ".[dev]"
       - name: Lint (ruff)
         run: ruff check src tests examples benchmarks
-      - name: Type check (mypy)
+      - name: Type check (mypy core gate)
+        run: mypy src/tensorlbm/d2q9.py src/tensorlbm/d3q19.py src/tensorlbm/solver.py src/tensorlbm/utils.py --ignore-missing-imports
+      - name: Type check (mypy full advisory)
         run: mypy src/tensorlbm --ignore-missing-imports
         continue-on-error: true
       - name: Run tests with coverage

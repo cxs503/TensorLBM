@@ -76,7 +76,12 @@ from .multiphase import (
     color_gradient_step,
 )
 from .solver import stream
-from .utils import prepare_run_dir, resolve_device
+from .utils import (
+    flow_step_image_path,
+    prepare_run_dir,
+    resolve_device,
+    write_legacy_snapshot_alias,
+)
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -1155,8 +1160,9 @@ def _save_saturation_snapshot(
     ax.set_title(f"Porous drainage ({model.upper()}) – step {step:d}")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    out = run_dir / f"snapshot_{step:06d}.png"
+    out = flow_step_image_path(run_dir, step)
     fig.savefig(out, dpi=100)
+    write_legacy_snapshot_alias(run_dir, step)
     plt.close(fig)
 
 

@@ -36,6 +36,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from .file_patterns import list_step_images
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -483,9 +485,7 @@ def analyze_job(job_id: str) -> dict:
             meta = {}
     png_count = len(list(out_dir.rglob("*.png")))
     csv_count = len(list(out_dir.rglob("*.csv")))
-    snapshots = sorted(
-        str(p.relative_to(out_dir)) for p in out_dir.rglob("snapshot_*.png")
-    )
+    snapshots = [str(path.relative_to(out_dir)) for path in list_step_images(out_dir)]
     return {
         "job_id": job_id,
         "name": job.name,

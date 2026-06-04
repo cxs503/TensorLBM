@@ -27,7 +27,7 @@ Outputs
 -------
 * ``run_metadata.json``  – config + diagnostics + Ghia comparison error
 * ``ghia_comparison.csv`` – centreline profiles and Ghia reference values
-* ``snapshot_XXXXXX.png`` – velocity-magnitude snapshots every
+* ``flow_step_XXXXXX.png`` – velocity-magnitude snapshots every
   ``output_interval`` steps
 """
 from __future__ import annotations
@@ -48,9 +48,11 @@ from .logging_config import configure_logging, logger
 from .solver import collide_bgk, stream
 from .utils import (
     DiagnosticPoint,
+    flow_step_image_path,
     get_reproducibility_metadata,
     prepare_run_dir,
     resolve_device,
+    write_legacy_snapshot_alias,
 )
 
 matplotlib.use("Agg")
@@ -384,8 +386,9 @@ def _save_cavity_snapshot(
     axes[1].set_title(f"Vorticity (step {step})")
     plt.colorbar(im1, ax=axes[1], fraction=0.046)
 
-    out = run_dir / f"snapshot_{step:06d}.png"
+    out = flow_step_image_path(run_dir, step)
     fig.savefig(out, dpi=120)
+    write_legacy_snapshot_alias(run_dir, step)
     plt.close(fig)
 
 
