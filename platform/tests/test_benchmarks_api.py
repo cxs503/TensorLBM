@@ -28,6 +28,23 @@ def test_marine_benchmark_single_case(client, waiter):
     assert final["result"].get("cylinder") == "ok"
 
 
+def test_marine_benchmark_suboff_case(client, waiter):
+    """Run SUBOFF resistance case and verify the <3% target is met."""
+    r = client.post(
+        "/api/benchmarks/marine",
+        json={"cases": ["suboff"], "fast": True, "device": "cpu"},
+    )
+    assert r.status_code == 200
+    job_id = r.json()["job_id"]
+    final = waiter(job_id, timeout=180.0)
+    assert final["status"] == "completed", final.get("error")
+    suboff = final["result"].get("suboff")
+    assert isinstance(suboff, dict)
+    assert suboff["name"] == "suboff_resistance"
+    assert suboff["target_met"] is True
+    assert float(suboff["final_error_pct"]) <= 3.0
+
+
 def test_multiphase_benchmark(client, waiter):
     r = client.post(
         "/api/benchmarks/multiphase",
