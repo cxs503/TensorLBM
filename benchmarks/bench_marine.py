@@ -457,14 +457,12 @@ def bench_suboff_resistance(output_root: Path, full: bool) -> dict[str, object]:
     _header("Benchmark 6 – SUBOFF Resistance (ITTC-1957 + Voxel Refinement)")
     print(f"  Hull type: {result['hull_type']}  Re = {float(result['reynolds']):.3e}")
     print(f"  Iterations: {len(result['iterations'])}  target: {result['target_error_pct']}%")
+    cd_ref = float(result["reference"]["cd_richardson"] or result["reference"]["cd_analytical"])
     print(
         f"  {'Cd error vs reference':<45} {final_error:8.4f}%"
         f"  {'✓' if bool(result['target_met']) else '✗'}"
     )
-    print(
-        f"  {'Cd (sim / ref)':<45} {float(result['simulated']['cd']):8.4f}"
-        f" / {float(result['reference']['cd_richardson'] or result['reference']['cd_analytical']):8.4f}"
-    )
+    print(f"  {'Cd (sim / ref)':<45} {float(result['simulated']['cd']):8.4f} / {cd_ref:8.4f}")
     return result
 
 
