@@ -7,6 +7,7 @@ TensorLBM 是一个以 CPU 为首要目标的 PyTorch 格子玻尔兹曼方法 (
 ## 文档
 
 - **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
+- **[SUBOFF 平台使用说明书](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的命令行 / 平台运行流程、精度判据与结果解读。
 - **[HPC + AI：AI 湍流模型](docs/ai_turbulence.md)** – 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范。
 
 ## TensorLBM 提供的功能

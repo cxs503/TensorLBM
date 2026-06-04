@@ -88,11 +88,13 @@ All simulation types are submitted as background jobs and monitored in real time
 ### Benchmarks
 | Suite | Reference |
 |---|---|
-| Marine (5 cases) | Williamson (1988), Faltinsen (1978), Bearman & Zdravkovich (1978), Moser et al. (1999) |
+| Marine (7 cases) | Williamson (1988), Faltinsen (1978), Bearman & Zdravkovich (1978), Moser et al. (1999), ITTC-1957, SUBOFF geometry checks |
 | Multiphase (3 cases) | Young–Laplace, Shan & Chen (1993), Pan et al. (2004) |
 | Lid-driven cavity – Ghia | Ghia et al. (1982) Re=100/400/1000 |
 | MLUPS performance | D2Q9 BGK throughput |
 | Porous media | Laplace + capillary invasion |
+
+For the full SUBOFF appendage workflow and benchmark interpretation, see `../docs/suboff_platform_manual.md`.
 
 ### AI Agent (LLM-powered)
 A conversational assistant that drives the full pipeline (modelling → solver
