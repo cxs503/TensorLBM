@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _STEP_RE = re.compile(r"^(flow_step|snapshot)_(\d{6})\.png$")
 
@@ -27,4 +30,3 @@ def list_step_images(output_dir: Path) -> list[Path]:
         if prefix == "flow_step" and current.name.startswith("snapshot_"):
             by_step[step] = path
     return [by_step[s] for s in sorted(by_step)]
-
