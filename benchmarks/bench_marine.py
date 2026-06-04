@@ -15,6 +15,7 @@ Benchmarks
 4. **Turbulent channel (Re_τ = 100)** – log-law velocity profile comparison.
 5. **3-D ship workflow (Re = 200)** – CAD block coefficient, force symmetry, and wake analysis.
 6. **SUBOFF resistance** – ITTC-1957 friction-drag coefficient with voxel refinement.
+7. **Marine geometry library** – consistency checks for multi-hull CAD generators.
 
 Usage::
 
@@ -466,6 +467,97 @@ def bench_suboff_resistance(output_root: Path, full: bool) -> dict[str, object]:
     return result
 
 
+def bench_marine_geometry_library(output_root: Path, full: bool) -> dict[str, object]:
+    """Check ship/suboff CAD generators and coefficient consistency."""
+    from tensorlbm import (
+        ShipHullType,
+        SuboffHullType,
+        build_ship_hull_mask,
+        build_suboff_mask,
+    )
+
+    # output_root kept for a uniform benchmark signature.
+    _ = output_root
+    nx, ny, nz = (128, 64, 48) if full else (80, 40, 30)
+    ship_results: list[dict[str, object]] = []
+    for hull_type in (ShipHullType.WIGLEY, ShipHullType.SERIES60, ShipHullType.KCS):
+        _mask, stats = build_ship_hull_mask(
+            hull_type=hull_type,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            length=nx * 0.5,
+            beam=ny * 0.22,
+            draft=nz * 0.25,
+            device="cpu",
+        )
+        cb_sim = float(stats["Cb_numerical"])
+        cb_ref = float(stats["Cb"])
+        cb_err = abs(cb_sim - cb_ref) / (abs(cb_ref) + 1e-12) * 100.0
+        ship_results.append({
+            "hull_type": hull_type.value,
+            "cb_sim": cb_sim,
+            "cb_ref": cb_ref,
+            "cb_error_pct": cb_err,
+            "pass": cb_err < 18.0,
+        })
+
+    suboff_results: list[dict[str, object]] = []
+    solid_cells: list[int] = []
+    for hull_type in (
+        SuboffHullType.BARE_HULL,
+        SuboffHullType.WITH_SAIL,
+        SuboffHullType.FULL,
+    ):
+        _mask, stats = build_suboff_mask(
+            hull_type=hull_type,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            length=nx * 0.6,
+            device="cpu",
+        )
+        solid = int(stats["solid_cells"])
+        solid_cells.append(solid)
+        suboff_results.append({
+            "hull_type": hull_type.value,
+            "solid_cells": solid,
+            "l_d_ratio": float(stats["L_D_ratio"]),
+        })
+
+    ship_ok = all(bool(item["pass"]) for item in ship_results)
+    suboff_ok = solid_cells == sorted(solid_cells) and len(set(solid_cells)) == len(solid_cells)
+    all_ok = ship_ok and suboff_ok
+
+    _header("Benchmark 7 – Marine Geometry Library (Ship + SUBOFF)")
+    print(f"  Grid: {nx}×{ny}×{nz}")
+    _section("Ship hull block-coefficient consistency")
+    for item in ship_results:
+        _row(
+            f"{item['hull_type']} Cb",
+            float(item["cb_sim"]),
+            float(item["cb_ref"]),
+        )
+    _section("SUBOFF variant volume ordering")
+    print(
+        f"  {'Solid-cell monotonicity (bare < sail < full)':<45}"
+        f" {'✓' if suboff_ok else '✗'}"
+    )
+    print(
+        f"  {'Solid cells [bare, sail, full]':<45}"
+        f" {solid_cells[0]}, {solid_cells[1]}, {solid_cells[2]}"
+    )
+
+    return {
+        "name": "marine_geometry_library",
+        "ship": ship_results,
+        "suboff": suboff_results,
+        "ship_ok": ship_ok,
+        "suboff_ok": suboff_ok,
+        "all_ok": all_ok,
+    }
+
+
 def _print_summary(results: list[dict[str, object]]) -> None:
     _header("Benchmark Summary")
     print(f"  {'Case':<40} {'Key metric':<20} {'Sim':>8} {'Ref':>8} {'Err%':>7} {'Pass'}")
@@ -528,6 +620,12 @@ def _print_summary(results: list[dict[str, object]]) -> None:
                 f"  {'SUBOFF full appendage':<40} {'Cd error vs ref':<20}"
                 f" {err:8.4f} {'<3.0%':>8} {'':>7}  {mark}"
             )
+        elif name == "marine_geometry_library":
+            mark = "✓" if bool(r.get("all_ok", False)) else "✗"
+            print(
+                f"  {'Marine geometry library':<40} {'CAD consistency':<20}"
+                f" {str(r.get('ship_ok')):>8} {str(r.get('suboff_ok')):>8} {'':>7}  {mark}"
+            )
 
     print()
 
@@ -550,7 +648,16 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--cases", nargs="+",
-        choices=["cylinder", "sloshing", "pipeline", "channel", "hull", "suboff", "all"],
+        choices=[
+            "cylinder",
+            "sloshing",
+            "pipeline",
+            "channel",
+            "hull",
+            "suboff",
+            "geometry",
+            "all",
+        ],
         default=["all"],
         help="Which benchmarks to run (default: all)",
     )
@@ -591,6 +698,9 @@ def main() -> None:
     if run_all or "suboff" in cases:
         results.append(bench_suboff_resistance(output_root, args.full))
 
+    if run_all or "geometry" in cases:
+        results.append(bench_marine_geometry_library(output_root, args.full))
+
     _print_summary(results)
 
     if args.report:
@@ -619,6 +729,9 @@ def main() -> None:
                 f"  FAIL: SUBOFF resistance error target not met (error={err}%)",
                 file=sys.stderr,
             )
+            failed = True
+        if name == "marine_geometry_library" and not bool(r.get("all_ok", False)):
+            print("  FAIL: marine geometry library consistency check failed", file=sys.stderr)
             failed = True
 
     if failed:
