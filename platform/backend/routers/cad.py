@@ -13,6 +13,9 @@ from __future__ import annotations
 
 import base64
 import io
+import os
+import tempfile
+from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -20,6 +23,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from .. import job_manager
+from ..cad3d_service import cad3d_service
 
 router = APIRouter()
 
@@ -89,6 +93,39 @@ class HullSTLRequest(BaseModel):
     draft: float = Field(8.0, gt=0)
     n_long: int = Field(60, ge=4, le=200)
     n_vert: int = Field(30, ge=4, le=100)
+
+
+class CAD3DCreateRequest(BaseModel):
+    source_type: Literal["parametric", "stl", "step"] = "parametric"
+    units: str = "lu"
+    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
+    length: float = Field(100.0, gt=0)
+    beam: float = Field(16.0, gt=0)
+    draft: float = Field(8.0, gt=0)
+    n_long: int = Field(80, ge=4, le=400)
+    n_vert: int = Field(40, ge=4, le=200)
+    file_b64: str | None = None
+    filename: str | None = None
+
+
+class CAD3DUpdateRequest(BaseModel):
+    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
+    length: float = Field(100.0, gt=0)
+    beam: float = Field(16.0, gt=0)
+    draft: float = Field(8.0, gt=0)
+    n_long: int = Field(80, ge=4, le=400)
+    n_vert: int = Field(40, ge=4, le=200)
+
+
+class CAD3DExportRequest(BaseModel):
+    fmt: Literal["gltf", "stl", "step"] = "gltf"
+
+
+class CAD3DMaskBridgeRequest(BaseModel):
+    nx: int = Field(160, ge=20)
+    ny: int = Field(60, ge=10)
+    nz: int = Field(40, ge=10)
+    device: str = "cpu"
 
 
 # ---------------------------------------------------------------------------
@@ -210,110 +247,42 @@ async def send_to_solver(req: HullSolverRequest) -> dict:
     the appropriate hull mask and runs the 3-D LBM solver.
     """
     try:
-        if req.hull_type == "wigley":
-            # Use the existing Wigley runner
-            def _run_wigley(job: job_manager.Job) -> dict:
-                from tensorlbm import ShipHullFlowConfig, run_ship_hull_flow
+        req_snapshot = req.model_copy()
 
-                cfg = ShipHullFlowConfig(
-                    nx=req.nx,
-                    ny=req.ny,
-                    nz=req.nz,
-                    u_in=req.u_in,
-                    re=req.re,
-                    hull_length=req.hull_length,
-                    hull_beam=req.hull_beam,
-                    hull_draft=req.hull_draft,
-                    smagorinsky_cs=req.smagorinsky_cs,
-                    wave_amp=req.wave_amp,
-                    wave_period=req.wave_period,
-                    wave_k=0.05,
-                    water_depth=0.0,
-                    n_steps=req.n_steps,
-                    output_interval=req.output_interval,
-                    output_root=job.output_dir,
-                    overwrite=True,
-                    device=req.device,
-                    seed=req.seed,
-                )
-                run_dir = run_ship_hull_flow(cfg)
-                return {"run_dir": str(run_dir)}
+        def _run_ship(job: job_manager.Job) -> dict:
+            from tensorlbm import ShipHullFlowConfig, run_ship_hull_flow
 
-            job_id = job_manager.submit(
-                name=f"CAD→Solver: Wigley Re={req.re}",
-                job_type="ship_hull",
-                config=req.model_dump(),
-                fn=_run_wigley,
+            cfg = ShipHullFlowConfig(
+                hull_type=req_snapshot.hull_type,
+                nx=req_snapshot.nx,
+                ny=req_snapshot.ny,
+                nz=req_snapshot.nz,
+                u_in=req_snapshot.u_in,
+                re=req_snapshot.re,
+                hull_length=req_snapshot.hull_length,
+                hull_beam=req_snapshot.hull_beam,
+                hull_draft=req_snapshot.hull_draft,
+                smagorinsky_cs=req_snapshot.smagorinsky_cs,
+                wave_amp=req_snapshot.wave_amp,
+                wave_period=req_snapshot.wave_period,
+                wave_k=0.05,
+                water_depth=0.0,
+                n_steps=req_snapshot.n_steps,
+                output_interval=req_snapshot.output_interval,
+                output_root=job.output_dir,
+                overwrite=True,
+                device=req_snapshot.device,
+                seed=req_snapshot.seed,
             )
-        else:
-            # Series 60 / KCS: inject custom hull mask into the ship flow runner
-            req_snapshot = req.model_copy()
+            run_dir = run_ship_hull_flow(cfg)
+            return {"run_dir": str(run_dir)}
 
-            def _run_custom(job: job_manager.Job) -> dict:
-                import torch  # noqa: I001, TC002
-                import tensorlbm.obstacles as _obs
-                from tensorlbm.ship_cad import build_hull_mask
-                from tensorlbm.ship_flow import ShipHullFlowConfig, run_ship_hull_flow
-
-                nx, ny, nz = req_snapshot.nx, req_snapshot.ny, req_snapshot.nz
-                L = req_snapshot.hull_length
-                B = req_snapshot.hull_beam
-                T = req_snapshot.hull_draft
-                cx = nx / 2.0
-                cy = ny / 2.0
-                cz_keel = nz / 4.0
-
-                hull_mask_tensor, _stats = build_hull_mask(
-                    hull_type=req_snapshot.hull_type,
-                    nx=nx, ny=ny, nz=nz,
-                    cx=cx, cy=cy, cz_keel=cz_keel,
-                    length=L, beam=B, draft=T,
-                    device=req_snapshot.device,
-                )
-
-                # Build a Wigley config with matching dims; we override the mask
-                # inside run_ship_hull_flow by monkey-patching wigley_hull_mask
-                _orig = _obs.wigley_hull_mask
-
-                def _patched_mask(*_args: object, **_kwargs: object) -> torch.Tensor:
-                    return hull_mask_tensor
-
-                _obs.wigley_hull_mask = _patched_mask  # type: ignore[assignment]
-                try:
-                    cfg = ShipHullFlowConfig(
-                        nx=nx, ny=ny, nz=nz,
-                        u_in=req_snapshot.u_in,
-                        re=req_snapshot.re,
-                        hull_length=L,
-                        hull_beam=B,
-                        hull_draft=T,
-                        smagorinsky_cs=req_snapshot.smagorinsky_cs,
-                        wave_amp=req_snapshot.wave_amp,
-                        wave_period=req_snapshot.wave_period,
-                        wave_k=0.05,
-                        water_depth=0.0,
-                        n_steps=req_snapshot.n_steps,
-                        output_interval=req_snapshot.output_interval,
-                        output_root=job.output_dir,
-                        overwrite=True,
-                        device=req_snapshot.device,
-                        seed=req_snapshot.seed,
-                    )
-                    run_dir = run_ship_hull_flow(cfg)
-                finally:
-                    _obs.wigley_hull_mask = _orig  # type: ignore[assignment]
-
-                return {"run_dir": str(run_dir)}
-
-            job_id = job_manager.submit(
-                name=(
-                    f"CAD→Solver: {req.hull_type.upper()} Re={req.re}"
-                ),
-                job_type="ship_hull",
-                config=req.model_dump(),
-                fn=_run_custom,
-            )
-
+        job_id = job_manager.submit(
+            name=f"CAD→Solver: {req.hull_type.upper()} Re={req.re}",
+            job_type="ship_hull",
+            config=req.model_dump(),
+            fn=_run_ship,
+        )
         return {"job_id": job_id, "message": "Ship hull CAD job submitted"}
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -386,3 +355,162 @@ async def list_hull_types() -> dict:
             },
         ]
     }
+
+
+@router.post("/3d/models")
+async def cad3d_create_model(req: CAD3DCreateRequest) -> dict:
+    """Create a 3-D CAD model (parametric/STL/STEP)."""
+    try:
+        payload: dict[str, object]
+        if req.source_type == "parametric":
+            payload = {
+                "hull_type": req.hull_type,
+                "length": req.length,
+                "beam": req.beam,
+                "draft": req.draft,
+                "n_long": req.n_long,
+                "n_vert": req.n_vert,
+            }
+        else:
+            if not req.file_b64:
+                raise ValueError("file_b64 required for stl/step model import")
+            suffix = ".stl" if req.source_type == "stl" else ".step"
+            root = Path(tempfile.gettempdir()) / "tensorlbm_platform" / "cad3d_uploads"
+            root.mkdir(parents=True, exist_ok=True)
+            fd, tmp_name = tempfile.mkstemp(prefix="cad3d_import_", suffix=suffix, dir=root)
+            os.close(fd)
+            target = Path(tmp_name)
+            target.write_bytes(base64.b64decode(req.file_b64))
+            payload = {"file_path": str(target)}
+
+        model = cad3d_service.create_model(
+            source_type=req.source_type,
+            payload=payload,
+            units=req.units,
+        )
+        stats = cad3d_service.model_stats(model.model_id)
+        return {"model_id": model.model_id, "stats": stats}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.put("/3d/models/{model_id}")
+async def cad3d_update_model(model_id: str, req: CAD3DUpdateRequest) -> dict:
+    """Update parametric 3-D CAD model parameters and append a new version."""
+    try:
+        model = cad3d_service.get_model(model_id)
+        if model.source_type != "parametric":
+            raise ValueError("only parametric models support direct parameter updates")
+        payload = {
+            "hull_type": req.hull_type,
+            "length": req.length,
+            "beam": req.beam,
+            "draft": req.draft,
+            "n_long": req.n_long,
+            "n_vert": req.n_vert,
+        }
+        cad3d_service.update_model(model_id, payload)
+        return {"model_id": model_id, "stats": cad3d_service.model_stats(model_id)}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/3d/models/{model_id}")
+async def cad3d_get_model(model_id: str) -> dict:
+    """Get a 3-D CAD model summary."""
+    try:
+        model = cad3d_service.get_model(model_id)
+        return {
+            "model_id": model.model_id,
+            "source_type": model.source_type,
+            "units": model.units,
+            "payload": model.payload,
+            "version_count": len(model.versions),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/3d/models/{model_id}/stats")
+async def cad3d_get_stats(model_id: str) -> dict:
+    """Get mesh statistics for a CAD model."""
+    try:
+        return cad3d_service.model_stats(model_id)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/3d/models/{model_id}/mesh")
+async def cad3d_get_mesh(model_id: str) -> dict:
+    """Get mesh vertices/faces for frontend rendering."""
+    try:
+        mesh = cad3d_service.model_mesh(model_id)
+        return {
+            "model_id": model_id,
+            "vertices": mesh.vertices.tolist(),
+            "faces": mesh.faces.tolist(),
+            "stats": mesh.stats(),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/3d/models/{model_id}/versions")
+async def cad3d_get_versions(model_id: str) -> dict:
+    """List model versions for restore/reproducibility."""
+    try:
+        model = cad3d_service.get_model(model_id)
+        return {
+            "model_id": model.model_id,
+            "versions": [
+                {
+                    "version": v.version,
+                    "source_type": v.source_type,
+                    "payload": v.payload,
+                }
+                for v in model.versions
+            ],
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/3d/models/{model_id}/versions/{version}/restore")
+async def cad3d_restore_version(model_id: str, version: int) -> dict:
+    """Restore a previous model version as a new head version."""
+    try:
+        model = cad3d_service.restore_version(model_id, version)
+        return {"model_id": model.model_id, "version_count": len(model.versions)}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/3d/models/{model_id}/export")
+async def cad3d_export(model_id: str, req: CAD3DExportRequest) -> Response:
+    """Export a CAD model as glTF/STL/STEP."""
+    try:
+        out, mime = cad3d_service.export_model(model_id, req.fmt)
+        content = out.read_bytes()
+        ext = "gltf" if req.fmt == "gltf" else req.fmt
+        return Response(
+            content=content,
+            media_type=mime,
+            headers={"Content-Disposition": f'attachment; filename="{model_id}.{ext}"'},
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/3d/models/{model_id}/lbm-mask")
+async def cad3d_build_lbm_mask(model_id: str, req: CAD3DMaskBridgeRequest) -> dict:
+    """Build LBM mask from CAD model through stable bridge interface."""
+    try:
+        return cad3d_service.build_lbm_mask(
+            model_id,
+            nx=req.nx,
+            ny=req.ny,
+            nz=req.nz,
+            device=req.device,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

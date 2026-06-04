@@ -54,6 +54,13 @@ Navigate to **http://localhost:8000**
 - **STL voxelisation** – upload an STL file and convert to a 3D voxel mask
 - **LBM Unit Converter** – convert physical (SI) quantities to LBM lattice units; reports Re, τ, dx, dt
 
+### CAD (3D Modelling MVP)
+- Parametric 3D hull generation (Wigley / Series60 / KCS)
+- Browser-side interactive three.js view (orbit/zoom, wireframe, clipping)
+- 3D export: glTF + STL (STEP when CadQuery/OpenCascade is available)
+- Versioned CAD models via `/api/cad/3d/models/*`
+- CAD→LBM bridge endpoint: `/api/cad/3d/models/{id}/lbm-mask`
+
 ### Solver
 All simulation types are submitted as background jobs and monitored in real time via WebSocket.
 
