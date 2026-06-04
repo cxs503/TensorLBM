@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Marine benchmark suite now includes a **marine geometry library** case that validates
+  ship hull families (Wigley/Series60/KCS) against analytical block coefficients and
+  checks SUBOFF variant topology ordering (bare hull < sail < full appendage volume).
 - **i18n / Chinese localisation**: The deployable web platform (`platform/`) now supports both
   **English** and **Simplified Chinese (简体中文)** with real-time in-browser switching.
   - Language switcher (`EN | 中文`) added to the global navigation bar.
