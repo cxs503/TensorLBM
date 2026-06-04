@@ -15,6 +15,10 @@ def test_suboff_resistance_benchmark_reaches_target() -> None:
     assert out["target_met"] is True
     assert float(out["final_error_pct"]) <= 3.0
     assert len(out["iterations"]) >= 1
+    for it in out["iterations"]:
+        assert "drag_lu" in it
+        assert "lbm" in it
+        assert float(it["lbm"]["tau"]) > 0.5
 
 
 def test_suboff_resistance_iteration_error_drops() -> None:
