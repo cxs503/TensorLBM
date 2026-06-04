@@ -21,9 +21,25 @@ router = APIRouter()
 
 class MarineBenchmarkParams(BaseModel):
     cases: list[
-        Literal["cylinder", "sloshing", "pipeline", "turbulent_channel", "wigley", "suboff"]
+        Literal[
+            "cylinder",
+            "sloshing",
+            "pipeline",
+            "turbulent_channel",
+            "wigley",
+            "suboff",
+            "geometry_library",
+        ]
     ] = Field(
-        default=["cylinder", "sloshing", "pipeline", "turbulent_channel", "wigley", "suboff"],
+        default=[
+            "cylinder",
+            "sloshing",
+            "pipeline",
+            "turbulent_channel",
+            "wigley",
+            "suboff",
+            "geometry_library",
+        ],
         description="Which benchmark cases to run",
     )
     fast: bool = Field(True, description="Use reduced step counts for quick validation")
@@ -126,6 +142,78 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
                 device=params.device,
             )
             results["suboff"] = run_suboff_resistance_benchmark(cfg6)
+
+        if "geometry_library" in params.cases:
+            from tensorlbm import (
+                ShipHullType,
+                SuboffHullType,
+                build_ship_hull_mask,
+                build_suboff_mask,
+            )
+
+            nx, ny, nz = (128, 64, 48) if not params.fast else (80, 40, 30)
+            ship_entries: list[dict[str, object]] = []
+            for hull_type in (ShipHullType.WIGLEY, ShipHullType.SERIES60, ShipHullType.KCS):
+                _mask, stats = build_ship_hull_mask(
+                    hull_type=hull_type,
+                    nx=nx,
+                    ny=ny,
+                    nz=nz,
+                    length=nx * 0.5,
+                    beam=ny * 0.22,
+                    draft=nz * 0.25,
+                    device=params.device,
+                )
+                cb_sim = float(stats["Cb_numerical"])
+                cb_ref = float(stats["Cb"])
+                cb_err = abs(cb_sim - cb_ref) / (abs(cb_ref) + 1e-12) * 100.0
+                ship_entries.append({
+                    "hull_type": hull_type.value,
+                    "cb_sim": cb_sim,
+                    "cb_ref": cb_ref,
+                    "cb_error_pct": cb_err,
+                    "pass": cb_err < 35.0,
+                })
+
+            suboff_entries: list[dict[str, object]] = []
+            solid_cells: list[int] = []
+            for hull_type in (
+                SuboffHullType.BARE_HULL,
+                SuboffHullType.WITH_SAIL,
+                SuboffHullType.FULL,
+            ):
+                _mask, stats = build_suboff_mask(
+                    hull_type=hull_type,
+                    nx=nx,
+                    ny=ny,
+                    nz=nz,
+                    length=nx * 0.6,
+                    device=params.device,
+                )
+                solid = int(stats["solid_cells"])
+                solid_cells.append(solid)
+                suboff_entries.append({
+                    "hull_type": hull_type.value,
+                    "solid_cells": solid,
+                    "l_d_ratio": float(stats["L_D_ratio"]),
+                })
+
+            cb_sim_values = [float(item["cb_sim"]) for item in ship_entries]
+            cb_order_ok = cb_sim_values[0] < cb_sim_values[1] < cb_sim_values[2]
+            ship_ok = all(bool(item["pass"]) for item in ship_entries) and cb_order_ok
+            suboff_ok = (
+                solid_cells == sorted(solid_cells)
+                and len(set(solid_cells)) == len(solid_cells)
+            )
+            results["geometry_library"] = {
+                "name": "marine_geometry_library",
+                "ship": ship_entries,
+                "suboff": suboff_entries,
+                "ship_ok": ship_ok,
+                "cb_order_ok": cb_order_ok,
+                "suboff_ok": suboff_ok,
+                "all_ok": ship_ok and suboff_ok,
+            }
 
         return results
 

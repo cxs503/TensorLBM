@@ -45,6 +45,25 @@ def test_marine_benchmark_suboff_case(client, waiter):
     assert float(suboff["final_error_pct"]) <= 3.0
 
 
+def test_marine_benchmark_geometry_library_case(client, waiter):
+    """Run CAD-library consistency case and verify all checks pass."""
+    r = client.post(
+        "/api/benchmarks/marine",
+        json={"cases": ["geometry_library"], "fast": True, "device": "cpu"},
+    )
+    assert r.status_code == 200
+    job_id = r.json()["job_id"]
+    final = waiter(job_id, timeout=180.0)
+    assert final["status"] == "completed", final.get("error")
+    geometry = final["result"].get("geometry_library")
+    assert isinstance(geometry, dict)
+    assert geometry["name"] == "marine_geometry_library"
+    assert geometry["ship_ok"] is True
+    assert geometry["cb_order_ok"] is True
+    assert geometry["suboff_ok"] is True
+    assert geometry["all_ok"] is True
+
+
 def test_multiphase_benchmark(client, waiter):
     r = client.post(
         "/api/benchmarks/multiphase",
