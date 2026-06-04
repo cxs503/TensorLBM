@@ -51,7 +51,7 @@ Outputs
 -------
 * ``run_metadata.json``  – config + diagnostics + reattachment length
 * ``reattachment.csv``   – step, max|u|, reattachment length per interval
-* ``snapshot_XXXXXX.png`` – velocity-magnitude snapshots
+* ``flow_step_XXXXXX.png`` – velocity-magnitude snapshots
 
 References
 ----------
@@ -81,9 +81,11 @@ from .logging_config import configure_logging, logger
 from .solver import collide_bgk, stream
 from .utils import (
     DiagnosticPoint,
+    flow_step_image_path,
     get_reproducibility_metadata,
     prepare_run_dir,
     resolve_device,
+    write_legacy_snapshot_alias,
 )
 
 matplotlib.use("Agg")
@@ -341,8 +343,9 @@ def _save_bfs_snapshot(
     ax.set_title(f"BFS ux (step {step})")
     plt.colorbar(im, ax=ax, fraction=0.02, label="ux")
 
-    out = run_dir / f"snapshot_{step:06d}.png"
+    out = flow_step_image_path(run_dir, step)
     fig.savefig(out, dpi=120)
+    write_legacy_snapshot_alias(run_dir, step)
     plt.close(fig)
 
 

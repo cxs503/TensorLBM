@@ -2,13 +2,9 @@ from __future__ import annotations
 
 import shutil
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import torch
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
 
 @dataclass(frozen=True)
 class DiagnosticPoint:
@@ -106,9 +102,35 @@ def get_reproducibility_metadata() -> dict[str, object]:
     return meta
 
 
+def flow_step_image_path(run_dir: Path, step: int) -> Path:
+    """Return canonical flow snapshot image path for a simulation step."""
+    return run_dir / f"flow_step_{step:06d}.png"
+
+
+def legacy_snapshot_image_path(run_dir: Path, step: int) -> Path:
+    """Return legacy snapshot image path for backward compatibility."""
+    return run_dir / f"snapshot_{step:06d}.png"
+
+
+def write_legacy_snapshot_alias(run_dir: Path, step: int) -> Path:
+    """Create legacy ``snapshot_*`` alias from canonical ``flow_step_*`` image.
+
+    If the canonical file does not exist or alias already exists, this is a
+    no-op. The alias keeps existing tools/scripts compatible during migration.
+    """
+    canonical = flow_step_image_path(run_dir, step)
+    legacy = legacy_snapshot_image_path(run_dir, step)
+    if canonical.exists() and not legacy.exists():
+        shutil.copy2(canonical, legacy)
+    return legacy
+
+
 __all__ = [
     "DiagnosticPoint",
     "resolve_device",
     "prepare_run_dir",
     "get_reproducibility_metadata",
+    "flow_step_image_path",
+    "legacy_snapshot_image_path",
+    "write_legacy_snapshot_alias",
 ]
