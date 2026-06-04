@@ -8,6 +8,7 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 
 - **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
   Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
+- **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
 - **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
 - **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
 - **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
