@@ -3,20 +3,28 @@ from .ai import (
     AIPipelineResult,
     EddyViscosityDataset,
     EddyViscosityMLP,
+    FlowFieldTransformer,
+    FlowTransformerArch,
+    FlowTransformerTrainConfig,
     LBMDatabase,
     TrainConfig,
+    build_flow_token_batch,
     collide_ai_les_bgk,
     extract_les_samples_2d,
     load_dataset_pt,
+    load_flow_transformer_model,
     load_model,
     predict_nu_t_2d,
     predict_tau_eff_2d,
+    reconstruct_flow_field,
     run_ai_dns_pipeline,
     run_ai_les_pipeline,
     save_dataset_pt,
+    save_flow_transformer_model,
     save_model,
     strain_rate_tensor_2d,
     train_eddy_viscosity_model,
+    train_flow_transformer_self_supervised,
 )
 from .backward_facing_step import (
     BackwardFacingStepConfig,
@@ -205,7 +213,6 @@ from .rotating_cylinder import (
 )
 from .ship_cad import (  # noqa: I001
     ShipHullType,
-    build_hull_mask as build_ship_hull_mask,
     export_hull_stl,
     generate_hull_body_plan,
     generate_hull_previews,
@@ -217,6 +224,9 @@ from .ship_cad import (  # noqa: I001
     series60_hull_mask,
     ship_lbm_parameters,
     theoretical_block_coefficient,
+)
+from .ship_cad import (
+    build_hull_mask as build_ship_hull_mask,
 )
 from .ship_cad3d import (
     CADGeometryEngine,
@@ -647,4 +657,13 @@ __all__ = [
     "collide_ai_les_bgk",
     "run_ai_dns_pipeline",
     "run_ai_les_pipeline",
+    # Transformer-based self-supervised flow model
+    "FlowTransformerArch",
+    "FlowTransformerTrainConfig",
+    "FlowFieldTransformer",
+    "build_flow_token_batch",
+    "train_flow_transformer_self_supervised",
+    "save_flow_transformer_model",
+    "load_flow_transformer_model",
+    "reconstruct_flow_field",
 ]

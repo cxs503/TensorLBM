@@ -35,6 +35,7 @@ filtered DNS) only requires changing
 | `tensorlbm.ai.dataset` | Extract `(S_xx, S_yy, S_xy) → ν_t` samples from LBM velocity fields; save/load `.pt`. |
 | `tensorlbm.ai.database` | SQLite layer with `runs`, `datasets`, `models` tables (`LBMDatabase`). |
 | `tensorlbm.ai.model` | `EddyViscosityMLP` – a tiny MLP with a Softplus head (ν_t ≥ 0). |
+| `tensorlbm.ai.transformer` | `FlowFieldTransformer` – masked-token self-supervised transformer trained directly on flow-field snapshots. |
 | `tensorlbm.ai.train` | Adam + MSE training loop, returns history and saves the model. |
 | `tensorlbm.ai.inference` | `predict_nu_t_2d`, `predict_tau_eff_2d`, `collide_ai_les_bgk` (drop-in for `collide_smagorinsky_bgk`). |
 | `tensorlbm.ai.pipeline` | `run_ai_les_pipeline` – end-to-end orchestrator. |
@@ -120,6 +121,20 @@ Or in one shot:
 > 跑一遍 AI 湍流闭环
 ✅ Submitted **AI Pipeline (end-to-end)** (job_id ...)
 ```
+
+## Transformer self-supervised flow training
+
+For unlabeled flow-field data, the platform now also provides dedicated REST
+endpoints:
+
+* `POST /api/ai/transformer/train` – generate flow snapshots and train a
+  masked-reconstruction transformer.
+* `GET /api/ai/transformer/models` – list trained transformer models.
+* `POST /api/ai/transformer/infer` – load a trained model and run deployed
+  inference diagnostics on a flow field.
+
+The platform frontend includes an **AI Flow** panel for this workflow
+(training + deployment inference + model list).
 
 ## Replacing the LES closure
 

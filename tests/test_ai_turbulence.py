@@ -11,21 +11,27 @@ from tensorlbm import (
     AIPipelineResult,
     EddyViscosityDataset,
     EddyViscosityMLP,
+    FlowTransformerArch,
+    FlowTransformerTrainConfig,
     LBMDatabase,
     TrainConfig,
+    build_flow_token_batch,
     collide_ai_les_bgk,
     equilibrium,
     extract_les_samples_2d,
     load_dataset_pt,
+    load_flow_transformer_model,
     load_model,
     macroscopic,
     predict_nu_t_2d,
+    reconstruct_flow_field,
     run_ai_dns_pipeline,
     run_ai_les_pipeline,
     save_dataset_pt,
     save_model,
     strain_rate_tensor_2d,
     train_eddy_viscosity_model,
+    train_flow_transformer_self_supervised,
 )
 
 # ---------------------------------------------------------------------------
@@ -268,6 +274,46 @@ def test_run_ai_les_pipeline_smoke(tmp_path: Path) -> None:
         assert len(db.list_models()) >= 1
     finally:
         db.close()
+
+
+def test_flow_transformer_ssl_train_and_infer(tmp_path: Path) -> None:
+    snapshots = [_make_synthetic_velocity(12, 10) for _ in range(4)]
+    batch, grid = build_flow_token_batch(snapshots)
+    assert batch.shape[0] == 4
+    assert grid == (10, 12)
+
+    out = tmp_path / "flow_transformer.pt"
+    meta = train_flow_transformer_self_supervised(
+        snapshots=snapshots,
+        out_path=out,
+        arch=FlowTransformerArch(
+            d_model=16,
+            n_heads=2,
+            n_layers=1,
+            ffn_dim=32,
+            max_tokens=2048,
+        ),
+        config=FlowTransformerTrainConfig(
+            epochs=3,
+            batch_size=2,
+            mask_ratio=0.2,
+            learning_rate=2e-3,
+            seed=0,
+        ),
+    )
+    assert Path(meta["path"]).exists()
+    assert meta["family"] == "flow_transformer_ssl"
+    assert len(meta["history"]) == 3
+    assert meta["final_train_loss"] >= 0.0
+    assert meta["final_val_loss"] >= 0.0
+
+    model = load_flow_transformer_model(out)
+    ux, uy = _make_synthetic_velocity(12, 10)
+    pred = reconstruct_flow_field(model, ux, uy)
+    assert pred["mse"] >= 0.0
+    assert pred["max_abs_error"] >= 0.0
+    assert pred["ux_reconstructed"].shape == ux.shape
+    assert pred["uy_reconstructed"].shape == uy.shape
 
 
 def test_run_ai_les_pipeline_dns_source_smoke(tmp_path: Path) -> None:
