@@ -59,6 +59,7 @@ def test_marine_benchmark_geometry_library_case(client, waiter):
     assert isinstance(geometry, dict)
     assert geometry["name"] == "marine_geometry_library"
     assert geometry["ship_ok"] is True
+    assert geometry["cb_order_ok"] is True
     assert geometry["suboff_ok"] is True
     assert geometry["all_ok"] is True
 

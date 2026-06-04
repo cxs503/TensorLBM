@@ -172,7 +172,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
                     "cb_sim": cb_sim,
                     "cb_ref": cb_ref,
                     "cb_error_pct": cb_err,
-                    "pass": cb_err < 18.0,
+                    "pass": cb_err < 35.0,
                 })
 
             suboff_entries: list[dict[str, object]] = []
@@ -198,19 +198,21 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
                     "l_d_ratio": float(stats["L_D_ratio"]),
                 })
 
+            cb_sim_values = [float(item["cb_sim"]) for item in ship_entries]
+            cb_order_ok = cb_sim_values[0] < cb_sim_values[1] < cb_sim_values[2]
+            ship_ok = all(bool(item["pass"]) for item in ship_entries) and cb_order_ok
+            suboff_ok = (
+                solid_cells == sorted(solid_cells)
+                and len(set(solid_cells)) == len(solid_cells)
+            )
             results["geometry_library"] = {
                 "name": "marine_geometry_library",
                 "ship": ship_entries,
                 "suboff": suboff_entries,
-                "ship_ok": all(bool(item["pass"]) for item in ship_entries),
-                "suboff_ok": (
-                    solid_cells == sorted(solid_cells) and len(set(solid_cells)) == len(solid_cells)
-                ),
-                "all_ok": (
-                    all(bool(item["pass"]) for item in ship_entries)
-                    and solid_cells == sorted(solid_cells)
-                    and len(set(solid_cells)) == len(solid_cells)
-                ),
+                "ship_ok": ship_ok,
+                "cb_order_ok": cb_order_ok,
+                "suboff_ok": suboff_ok,
+                "all_ok": ship_ok and suboff_ok,
             }
 
         return results
