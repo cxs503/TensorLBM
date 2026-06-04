@@ -174,3 +174,41 @@ def test_solver_failure_marks_job_failed(client, waiter):
     final = waiter(job_id, timeout=60.0)
     assert final["status"] == "failed"
     assert final["error"]
+
+
+def test_solver_rejects_incompatible_model_combo(client):
+    """Single-phase cases must reject explicit multiphase model selections."""
+    r = client.post(
+        "/api/solve/cylinder-flow",
+        json={
+            "nx": 60, "ny": 24, "u_in": 0.05, "re": 50.0,
+            "radius": 4.0, "n_steps": 10, "output_interval": 5,
+            "physics": {"multiphase_model": "cg"},
+        },
+    )
+    assert r.status_code == 422
+    assert "Multiphase model" in r.text
+
+
+def test_solver_persists_physics_snapshot_in_job_config(client):
+    """Submitted jobs should include normalized physical-model snapshot."""
+    r = client.post(
+        "/api/solve/lid-driven-cavity",
+        json={
+            "nx": 16, "u_lid": 0.1, "re": 50.0,
+            "n_steps": 5, "output_interval": 5,
+            "physics": {
+                "flow_type": "single_phase",
+                "turbulence_model": "none",
+                "multiphase_model": "none",
+                "boundary_condition": "periodic",
+                "numerical_scheme": "trt",
+                "preset": "default",
+            },
+        },
+    )
+    assert r.status_code == 200, r.text
+    job = client.get(f"/api/jobs/{r.json()['job_id']}").json()
+    assert "physics" in job["config"]
+    assert job["config"]["physics"]["boundary_condition"] == "periodic"
+    assert job["config"]["physics"]["numerical_scheme"] == "trt"
