@@ -29,8 +29,8 @@ from tensorlbm import (
     save_dataset_pt,
     save_model,
     strain_rate_tensor_2d,
-    train_flow_transformer_self_supervised,
     train_eddy_viscosity_model,
+    train_flow_transformer_self_supervised,
 )
 
 # ---------------------------------------------------------------------------

@@ -35,7 +35,6 @@ class TransformerTrainRequest(BaseModel):
 
 class TransformerInferRequest(BaseModel):
     model_id: int | None = None
-    model_path: str | None = None
     ux: list[list[float]] | None = None
     uy: list[list[float]] | None = None
     nx: int = Field(48, ge=8, le=256)
@@ -81,15 +80,7 @@ def _generate_snapshots(
     return out
 
 
-def _resolve_model_path(model_id: int | None, model_path: str | None) -> Path:
-    if model_path:
-        p = Path(model_path)
-        if not p.exists():
-            raise HTTPException(status_code=404, detail="model_path not found")
-        return p
-    if model_id is None:
-        raise HTTPException(status_code=422, detail="Provide model_id or model_path")
-
+def _resolve_model_path(model_id: int | None) -> Path:
     from tensorlbm import LBMDatabase
 
     db_path = _AI_ROOT / "platform.db"
@@ -97,7 +88,18 @@ def _resolve_model_path(model_id: int | None, model_path: str | None) -> Path:
         raise HTTPException(status_code=404, detail="AI model database not found")
     db = LBMDatabase.open(db_path)
     try:
-        row = db.get_model_record(int(model_id))
+        if model_id is None:
+            models = db.list_models(limit=100)
+            rows = [
+                m for m in models
+                if isinstance(m.get("arch"), dict)
+                and m["arch"].get("model_family") == "flow_transformer_ssl"
+            ]
+            if not rows:
+                raise HTTPException(status_code=404, detail="No transformer model found")
+            row = rows[0]
+        else:
+            row = db.get_model_record(int(model_id))
     finally:
         db.close()
     if row is None:
@@ -105,6 +107,8 @@ def _resolve_model_path(model_id: int | None, model_path: str | None) -> Path:
     p = Path(row["path"])
     if not p.exists():
         raise HTTPException(status_code=404, detail=f"model file missing: {p}")
+    if _AI_ROOT.resolve() not in p.resolve().parents:
+        raise HTTPException(status_code=422, detail="Resolved model path is outside AI workspace")
     return p
 
 
@@ -221,7 +225,7 @@ async def list_transformer_models(limit: int = 20) -> dict:
 async def infer_transformer(req: TransformerInferRequest) -> dict:
     from tensorlbm import load_flow_transformer_model, reconstruct_flow_field
 
-    path = _resolve_model_path(req.model_id, req.model_path)
+    path = _resolve_model_path(req.model_id)
 
     if req.ux is not None and req.uy is not None:
         ux = torch.tensor(req.ux, dtype=torch.float32)

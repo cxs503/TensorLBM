@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
-def test_transformer_train_list_infer(client):
+def test_transformer_train_list_infer(client: TestClient) -> None:
     train_req = {
         "nx": 16,
         "ny": 16,
@@ -31,7 +35,7 @@ def test_transformer_train_list_infer(client):
 
     ir = client.post(
         "/api/ai/transformer/infer",
-        json={"model_path": train["model_path"], "nx": 16, "ny": 16, "seed": 1},
+        json={"model_id": train["model_id"], "nx": 16, "ny": 16, "seed": 1},
     )
     assert ir.status_code == 200, ir.text
     infer = ir.json()

@@ -986,8 +986,6 @@
             <div class="card-body config-form">
               <label data-i18n="ai_flow.model_id">Model ID (optional)</label>
               <input id="aiflow-model-id" type="number" class="form-control form-control-sm mb-2" placeholder="e.g. 1" />
-              <label data-i18n="ai_flow.model_path">Model path (optional)</label>
-              <input id="aiflow-model-path" type="text" class="form-control form-control-sm mb-2" placeholder="/tmp/.../flow_transformer.pt" />
               <label data-i18n="ai_flow.seed">Seed</label>
               <input id="aiflow-seed" type="number" class="form-control form-control-sm mb-3" value="0" />
               <button class="btn btn-success btn-sm w-100" onclick="aiFlowInfer()"><i class="bi bi-lightning"></i> <span data-i18n="ai_flow.infer_btn">Run inference</span></button>
@@ -2505,13 +2503,11 @@ async function aiFlowTrain() {
 
 async function aiFlowInfer() {
   const modelIdRaw = document.getElementById('aiflow-model-id').value.trim();
-  const modelPath = document.getElementById('aiflow-model-path').value.trim();
   const seed = Number(document.getElementById('aiflow-seed').value || 0);
   const nx = Number(document.getElementById('aiflow-nx').value || 48);
   const ny = Number(document.getElementById('aiflow-ny').value || 48);
   const body = { nx, ny, seed };
   if (modelIdRaw) body.model_id = Number(modelIdRaw);
-  if (modelPath) body.model_path = modelPath;
   aiFlowSetResult(t('common.computing'));
   try {
     const r = await api('POST', '/api/ai/transformer/infer', body);
