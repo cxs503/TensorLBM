@@ -449,7 +449,7 @@ def bench_suboff_resistance(output_root: Path, full: bool) -> dict[str, object]:
     cfg = SuboffResistanceBenchmarkConfig(
         hull_type="full",
         base_length_lu=64.0 if full else 48.0,
-        max_iterations=4 if full else 2,
+        max_iterations=4 if full else 3,
         target_error_pct=3.0,
     )
     result = run_suboff_resistance_benchmark(cfg)
