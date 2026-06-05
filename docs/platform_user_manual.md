@@ -167,6 +167,8 @@ PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 | 列出 | `GET /api/jobs/` |
 | 详情 | `GET /api/jobs/{id}` |
 | 删除 | `DELETE /api/jobs/{id}` |
+| 取消 | `POST /api/jobs/{id}/cancel` |
+| 清理历史作业 | `POST /api/jobs/cleanup` |
 | 日志 | `GET /api/jobs/{id}/logs` |
 | 文件清单 | `GET /api/jobs/{id}/files` |
 | 文件下载 | `GET /api/jobs/{id}/files/{path}` |
@@ -209,6 +211,10 @@ TENSORLBM_MAX_WORKERS=16 bash start.sh
 ```
 
 * `/api/status` 字段 `devices` 列出当前可用设备。
+* 可选环境变量：
+  * `TENSORLBM_CORS_ALLOW_ORIGINS`：CORS 白名单（默认 `*`）。
+  * `TENSORLBM_OUTPUT_ROOT`：作业输出根目录（默认 `/tmp/tensorlbm_platform`）。
+  * `TENSORLBM_MAX_UPLOAD_MB`：STL 上传上限（默认 50MB）。
 
 ---
 

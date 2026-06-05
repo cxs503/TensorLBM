@@ -30,7 +30,7 @@ def test_polygon_mask_invalid_payload(client):
 
 
 def test_random_porosity_2d(client):
-    req = {"nx": 32, "ny": 32, "porosity": 0.4, "corr_length": 4.0, "seed": 1234}
+    req = {"nx": 32, "ny": 32, "porosity": 0.4, "sigma": 4.0, "seed": 1234}
     r = client.post("/api/preprocess/random-porosity-2d", json=req)
     assert r.status_code == 200, r.text
     data = r.json()
@@ -72,6 +72,16 @@ def test_voxelize_stl(client):
         data = r.json()
         assert data["nx"] == 16
         assert data["solid_cells"] + data["fluid_cells"] == 16 ** 3
+
+
+def test_voxelize_stl_rejects_non_stl_extension(client):
+    files = {"file": ("triangle.txt", io.BytesIO(_minimal_binary_stl()), "text/plain")}
+    r = client.post(
+        "/api/preprocess/voxelize-stl",
+        files=files,
+        params={"nx": 16, "ny": 16, "nz": 16},
+    )
+    assert r.status_code == 422
 
 
 def test_unit_converter(client):
