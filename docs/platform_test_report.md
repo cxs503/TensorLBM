@@ -145,3 +145,15 @@ CI 默认不运行慢速用例，以避免 OOM 与超时。
 ## 7. 结论 / Conclusion
 
 平台 45 个功能端点全部纳入测试套件覆盖：快速套件 33 个用例全部通过，且发现并修复了 7 处既有缺陷。慢速求解器 / 基准用例在 `PLATFORM_SLOW_TESTS=1` 下亦可在本地完整通过。整体平台在修复后可正常承载完整的预处理 → 仿真 → 后处理工作流。
+
+---
+
+## 8. 后续增量改进状态 / Incremental Improvement Status
+
+后续改进已补充以下能力并对应新增测试：
+
+1. `main.py` 使用 `lifespan` 管理启动/关闭，替代弃用的 `on_event("startup")`。
+2. 作业目录支持环境变量 `TENSORLBM_OUTPUT_ROOT`，便于生产部署隔离。
+3. 新增作业控制接口：`POST /api/jobs/{id}/cancel` 与 `POST /api/jobs/cleanup`。
+4. `voxelize-stl` 增加上传体积限制（`TENSORLBM_MAX_UPLOAD_MB`）与明确报错。
+5. 新增 API 契约/Schema 回归测试与 solver physics 组合约束测试。

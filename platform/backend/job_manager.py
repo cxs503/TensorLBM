@@ -5,7 +5,10 @@ to all connected WebSocket clients via an asyncio notification queue.
 """
 from __future__ import annotations
 
+import contextlib
 import logging
+import os
+import shutil
 import threading
 import traceback
 import uuid
@@ -45,11 +48,12 @@ class Job:
         self.started_at: str | None = None
         self.completed_at: str | None = None
         self.error: str | None = None
-        self.output_dir: Path = Path(f"/tmp/tensorlbm_platform/{job_id}")
+        self.output_dir: Path = output_root() / job_id
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.logs: list[str] = []
         self.diagnostics: list[dict[str, Any]] = []
         self.result: dict[str, Any] = {}
+        self.cancel_requested: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -66,7 +70,12 @@ class Job:
             "logs": self.logs[-200:],
             "diagnostics": self.diagnostics[-50:],
             "result": self.result,
+            "cancel_requested": self.cancel_requested,
         }
+
+
+class JobCancelledError(RuntimeError):
+    """Raised by cooperative workers when a job cancellation is requested."""
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +91,10 @@ _thread_job_map_lock = threading.Lock()
 
 # Thread pool for running simulations
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="tensorlbm-job")
+
+_DEFAULT_OUTPUT_ROOT = "/tmp/tensorlbm_platform"
+_OUTPUT_ROOT = Path(os.environ.get("TENSORLBM_OUTPUT_ROOT", _DEFAULT_OUTPUT_ROOT)).resolve()
+_OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
 # Asyncio event loop + notification queue (set by main.py on startup)
 _event_loop: asyncio.AbstractEventLoop | None = None
@@ -147,7 +160,9 @@ def _is_cancelled(job_id: str) -> bool:
     """Return whether a job has been marked as cancelled."""
     with _jobs_lock:
         job = _jobs.get(job_id)
-        return job is not None and job.status == JobStatus.CANCELLED
+        return job is not None and (
+            job.status == JobStatus.CANCELLED or job.cancel_requested
+        )
 
 
 def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
@@ -172,6 +187,9 @@ def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
         if job.status != JobStatus.CANCELLED:
             job.status = JobStatus.COMPLETED
             job.result = result or {}
+    except JobCancelledError:
+        job.status = JobStatus.CANCELLED
+        job.error = "Job cancelled by user request."
     except Exception:
         job.status = JobStatus.FAILED
         job.error = traceback.format_exc()
@@ -199,6 +217,11 @@ def set_event_loop(
     tl_logger = logging.getLogger("tensorlbm")
     if _log_handler not in tl_logger.handlers:
         tl_logger.addHandler(_log_handler)
+
+
+def output_root() -> Path:
+    """Return the configured root directory for platform job outputs."""
+    return _OUTPUT_ROOT
 
 
 def submit(
@@ -229,10 +252,14 @@ def list_jobs() -> list[dict[str, Any]]:
 
 def delete_job(job_id: str) -> bool:
     with _jobs_lock:
-        if job_id in _jobs:
-            del _jobs[job_id]
-            return True
-        return False
+        job = _jobs.get(job_id)
+        if job is None:
+            return False
+        if job.status == JobStatus.RUNNING:
+            return False
+        del _jobs[job_id]
+    shutil.rmtree(job.output_dir, ignore_errors=True)
+    return True
 
 
 def cancel_job(job_id: str) -> bool:
@@ -251,6 +278,7 @@ def cancel_job(job_id: str) -> bool:
         if job is None:
             return False
         if job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
+            job.cancel_requested = True
             job.status = JobStatus.CANCELLED
             job.completed_at = datetime.now(UTC).isoformat()
             _notify(job)
@@ -272,3 +300,79 @@ def push_diagnostic(job_id: str, data: dict[str, Any]) -> None:
     if len(job.diagnostics) > 1000:
         job.diagnostics = job.diagnostics[-1000:]
     _notify(job)
+
+
+def raise_if_cancelled(job_id: str) -> None:
+    """Raise :class:`JobCancelledError` when a cancellation has been requested."""
+    if _is_cancelled(job_id):
+        raise JobCancelledError(f"Job {job_id} has been cancelled")
+
+
+def cleanup_jobs(
+    *,
+    retention_seconds: int | None = None,
+    max_completed: int | None = None,
+    max_total_bytes: int | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Cleanup completed/failed/cancelled jobs by retention and storage policies."""
+    now = datetime.now(UTC)
+
+    def _job_size(path: Path) -> int:
+        total = 0
+        for p in path.rglob("*"):
+            if p.is_file():
+                with contextlib.suppress(OSError):
+                    total += p.stat().st_size
+        return total
+
+    with _jobs_lock:
+        snapshot = list(_jobs.values())
+
+    managed = [
+        j for j in snapshot
+        if j.status in {JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED}
+    ]
+    managed.sort(key=lambda j: j.completed_at or j.created_at)
+    sizes = {j.job_id: _job_size(j.output_dir) for j in managed}
+
+    to_delete: set[str] = set()
+    if retention_seconds is not None and retention_seconds >= 0:
+        for j in managed:
+            t = j.completed_at or j.created_at
+            age = (now - datetime.fromisoformat(t)).total_seconds()
+            if age > retention_seconds:
+                to_delete.add(j.job_id)
+
+    if max_completed is not None and max_completed >= 0 and len(managed) > max_completed:
+        overflow = len(managed) - max_completed
+        for j in managed[:overflow]:
+            to_delete.add(j.job_id)
+
+    if max_total_bytes is not None and max_total_bytes >= 0:
+        total = sum(sizes.values())
+        if total > max_total_bytes:
+            for j in managed:
+                if total <= max_total_bytes:
+                    break
+                if j.job_id in to_delete:
+                    total -= sizes.get(j.job_id, 0)
+                    continue
+                to_delete.add(j.job_id)
+                total -= sizes.get(j.job_id, 0)
+
+    reclaimed = sum(sizes.get(jid, 0) for jid in to_delete)
+    deleted: list[str] = []
+    if not dry_run:
+        for jid in sorted(to_delete):
+            if delete_job(jid):
+                deleted.append(jid)
+
+    return {
+        "dry_run": dry_run,
+        "candidates": sorted(to_delete),
+        "deleted": deleted if not dry_run else [],
+        "reclaimed_bytes": reclaimed,
+        "managed_jobs": len(managed),
+        "output_root": str(output_root()),
+    }
