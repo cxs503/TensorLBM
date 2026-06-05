@@ -5,9 +5,9 @@ import asyncio
 import contextlib
 import os
 import sys
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,11 +30,15 @@ from .routers import (  # noqa: E402
     solver,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
 
 _ws_broadcast_task: asyncio.Task[None] | None = None
+_notify_queue: asyncio.Queue[dict] | None = None  # type: ignore[type-arg]
 
 
 def _cors_origins() -> list[str]:
@@ -47,10 +51,11 @@ def _cors_origins() -> list[str]:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    global _ws_broadcast_task
+    global _notify_queue, _ws_broadcast_task
     loop = asyncio.get_running_loop()
+    _notify_queue = asyncio.Queue()
     job_manager.set_event_loop(loop, _notify_queue)  # type: ignore[arg-type]
-    _ws_broadcast_task = asyncio.create_task(_ws_broadcaster())
+    _ws_broadcast_task = asyncio.create_task(_ws_broadcaster(_notify_queue))
     try:
         yield
     finally:
@@ -59,6 +64,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             with contextlib.suppress(asyncio.CancelledError):
                 await _ws_broadcast_task
             _ws_broadcast_task = None
+        _notify_queue = None
 
 
 app = FastAPI(
@@ -97,14 +103,13 @@ app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transforme
 # ---------------------------------------------------------------------------
 
 _ws_connections: set[WebSocket] = set()
-_notify_queue: asyncio.Queue[dict] = asyncio.Queue()  # type: ignore[type-arg]
 
 
-async def _ws_broadcaster() -> None:
+async def _ws_broadcaster(queue: asyncio.Queue[dict]) -> None:  # type: ignore[type-arg]
     """Forward job status changes from the queue to all WebSocket clients."""
     while True:
         try:
-            msg = await _notify_queue.get()
+            msg = await queue.get()
         except asyncio.CancelledError:
             break
 

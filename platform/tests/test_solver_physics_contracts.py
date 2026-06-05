@@ -29,7 +29,10 @@ import pytest
                 "water_level": 12,
                 "n_steps": 5,
                 "output_interval": 5,
-                "physics": {"turbulence_model": "smagorinsky_les"},
+                "physics": {
+                    "flow_type": "multiphase",
+                    "turbulence_model": "smagorinsky_les",
+                },
             },
             "Turbulence model",
         ),
@@ -41,7 +44,7 @@ import pytest
                 "porosity": 0.5,
                 "n_steps": 5,
                 "output_interval": 5,
-                "physics": {"multiphase_model": "fe"},
+                "physics": {"flow_type": "multiphase", "multiphase_model": "fe"},
             },
             "Multiphase model",
         ),
@@ -69,4 +72,3 @@ def test_solver_accepts_supported_dynamic_les_combo(client):
         },
     )
     assert r.status_code == 200, r.text
-

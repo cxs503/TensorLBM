@@ -5,13 +5,16 @@ import base64
 import json
 import logging
 import mimetypes
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from .. import job_manager
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 router = APIRouter()
 logger = logging.getLogger("tensorlbm.platform.audit")
