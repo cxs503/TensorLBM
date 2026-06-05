@@ -383,8 +383,12 @@ def color_gradient_step_3d(
         f_post = torch.where(solid_mask.unsqueeze(0), f_total, f_post)
 
     # --- 2. Surface-tension perturbation ---
-    rho_r_m = rho_r_s if solid_mask is None else rho_r_s.masked_fill(solid_mask, 0.0)
-    rho_b_m = rho_b_s if solid_mask is None else rho_b_s.masked_fill(solid_mask, 0.0)
+    # Keep original densities at solid cells.  The solid_mask already prevents
+    # collision at solid cells (line 383), so solid-cell distributions stay at
+    # their initialized values.  Letting the gradient see these values keeps
+    # the phase-field smooth across the boundary.
+    rho_r_m = rho_r_s
+    rho_b_m = rho_b_s
     _phi, mag, nhat_x, nhat_y, nhat_z = _grad_phase_field_3d(rho_r_m, rho_b_m)
 
     ci_dot_n = (
