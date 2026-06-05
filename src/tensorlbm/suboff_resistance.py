@@ -9,8 +9,9 @@ import torch
 from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
 from .d3q19 import equilibrium3d
 from .obstacles import compute_obstacle_forces_3d
-from .solver3d import collide_bgk3d, stream3d
+from .solver3d import stream3d
 from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask, suboff_statistics
+from .turbulence import collide_smagorinsky_mrt3d
 from .utils import resolve_device
 
 
@@ -33,6 +34,7 @@ class SuboffResistanceBenchmarkConfig:
     lbm_steps: int = 60
     lbm_warmup_steps: int = 20
     lbm_sample_interval: int = 5
+    smagorinsky_cs: float = 0.1
     max_length_lu: float = 80.0
     geometry: SuboffConfig = field(default_factory=SuboffConfig)
 
@@ -139,7 +141,7 @@ def _run_suboff_lbm_drag(
     drag_samples: list[float] = []
 
     for step in range(1, config.lbm_steps + 1):
-        f = collide_bgk3d(f, tau=config.lbm_tau)
+        f = collide_smagorinsky_mrt3d(f, tau=config.lbm_tau, C_s=config.smagorinsky_cs)
         f = stream3d(f)
         fx, _, _ = compute_obstacle_forces_3d(f, mask)
         f = apply_zou_he_channel_boundaries_3d(
