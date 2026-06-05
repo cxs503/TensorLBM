@@ -96,6 +96,42 @@ def test_delete_job(client, waiter):
     assert r.status_code == 404
 
 
+def test_cancel_running_job(client, waiter):
+    r = client.post(
+        "/api/solve/cylinder-flow",
+        json={
+            "nx": 64,
+            "ny": 24,
+            "u_in": 0.05,
+            "re": 50.0,
+            "radius": 4.0,
+            "n_steps": 200,
+            "output_interval": 100,
+        },
+    )
+    assert r.status_code == 200, r.text
+    job_id = r.json()["job_id"]
+    cancel_r = client.post(f"/api/jobs/{job_id}/cancel")
+    assert cancel_r.status_code in (200, 409), cancel_r.text
+    final = waiter(job_id, timeout=120.0)
+    assert final["status"] in {"cancelled", "completed"}
+
+
+def test_cleanup_endpoint_dry_run(client, waiter):
+    j1 = _submit_tiny_job(client)
+    j2 = _submit_tiny_job(client)
+    waiter(j1)
+    waiter(j2)
+    r = client.post(
+        "/api/jobs/cleanup",
+        json={"max_completed_jobs": 1, "dry_run": True},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["dry_run"] is True
+    assert "candidates" in body
+
+
 def test_path_traversal_blocked(client, waiter):
     """The file download endpoint must reject ``..``-style escapes.
 

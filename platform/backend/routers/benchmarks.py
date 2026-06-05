@@ -55,6 +55,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
         output_root = job.output_dir
 
         if "cylinder" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
             from tensorlbm import CylinderFlowConfig, run_cylinder_flow
 
             cfg = CylinderFlowConfig(
@@ -70,6 +71,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
             results["cylinder"] = "ok"
 
         if "sloshing" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
             from tensorlbm import SloshingTankConfig, run_sloshing_tank
 
             cfg2 = SloshingTankConfig(
@@ -86,6 +88,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
             results["sloshing"] = "ok"
 
         if "pipeline" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
             from tensorlbm import PipelineFlowConfig, run_pipeline_flow
 
             cfg3 = PipelineFlowConfig(
@@ -101,6 +104,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
             results["pipeline"] = "ok"
 
         if "turbulent_channel" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
             from tensorlbm import TurbulentChannelConfig, run_turbulent_channel
 
             cfg4 = TurbulentChannelConfig(
@@ -117,6 +121,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
             results["turbulent_channel"] = "ok"
 
         if "wigley" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
             from tensorlbm import ShipHullFlowConfig, run_ship_hull_flow
 
             cfg5 = ShipHullFlowConfig(
@@ -133,6 +138,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
             results["wigley"] = "ok"
 
         if "suboff" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
             from tensorlbm import SuboffResistanceBenchmarkConfig, run_suboff_resistance_benchmark
 
             cfg6 = SuboffResistanceBenchmarkConfig(
@@ -144,6 +150,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
             results["suboff"] = run_suboff_resistance_benchmark(cfg6)
 
         if "geometry_library" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
             from tensorlbm import (
                 ShipHullType,
                 SuboffHullType,
@@ -240,6 +247,7 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
     """Run the multiphase LBM benchmark suite (static droplet, spinodal, Poiseuille)."""
 
     def _run(job: job_manager.Job) -> dict:
+        job_manager.raise_if_cancelled(job.job_id)
         from tensorlbm import (
             MultiphaseBenchmarkSuiteConfig,
             run_multiphase_benchmark_suite,
@@ -304,6 +312,7 @@ async def run_ghia(params: GhiaBenchmarkParams) -> dict:
     """Run lid-driven cavity and compare against Ghia et al. (1982) reference."""
 
     def _run(job: job_manager.Job) -> dict:
+        job_manager.raise_if_cancelled(job.job_id)
         from tensorlbm import (
             GHIA_RE100,
             GHIA_RE400,
@@ -372,6 +381,7 @@ async def run_mlups(params: MLUPSParams) -> dict:
         device = torch.device(params.device)
         results: list[dict] = []
         for size in params.sizes:
+            job_manager.raise_if_cancelled(job.job_id)
             ny, nx = size, size
             rho = torch.ones((ny, nx), dtype=torch.float32, device=device)
             u = torch.zeros((ny, nx, 2), dtype=torch.float32, device=device)
@@ -437,6 +447,7 @@ async def run_porous(params: PorousBenchmarkParams) -> dict:
     """Run porous media drainage and capillary invasion benchmarks."""
 
     def _run(job: job_manager.Job) -> dict:
+        job_manager.raise_if_cancelled(job.job_id)
         results: dict[str, object] = {}
 
         from tensorlbm import LaplaceTestConfig, run_laplace_test
@@ -456,6 +467,7 @@ async def run_porous(params: PorousBenchmarkParams) -> dict:
             device=params.device,
             output_root=job.output_dir / "capillary",
         )
+        job_manager.raise_if_cancelled(job.job_id)
         run_capillary_invasion(cap_cfg)
         results["capillary_invasion"] = "ok"
 
