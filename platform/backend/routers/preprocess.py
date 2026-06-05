@@ -7,12 +7,15 @@ from __future__ import annotations
 
 import base64
 import io
+import os
 from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 router = APIRouter()
+_MAX_UPLOAD_MB = max(1, int(os.environ.get("TENSORLBM_MAX_UPLOAD_MB", "50")))
+_MAX_UPLOAD_BYTES = _MAX_UPLOAD_MB * 1024 * 1024
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +110,10 @@ async def voxelize_stl(
         import torch
         from tensorlbm import voxelize_stl_3d
 
-        content = await file.read()
+        if not (file.filename or "").lower().endswith(".stl"):
+            raise HTTPException(status_code=422, detail="Only .stl uploads are supported")
+
+        content = await _read_upload_limited(file, _MAX_UPLOAD_BYTES)
         with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as tmp:
             tmp.write(content)
             tmp_path = Path(tmp.name)
@@ -123,6 +129,10 @@ async def voxelize_stl(
             "fluid_cells": total - solid,
             "solid_fraction": round(solid / total, 4),
         }
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -197,3 +207,20 @@ def _mask_to_b64(mask: object) -> str:
     plt.close(fig)
     buf.seek(0)
     return "data:image/png;base64," + base64.b64encode(buf.read()).decode()
+
+
+async def _read_upload_limited(file: UploadFile, max_bytes: int) -> bytes:
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise ValueError(
+                f"Upload exceeds limit ({_MAX_UPLOAD_MB} MB). "
+                "Set TENSORLBM_MAX_UPLOAD_MB to adjust."
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)

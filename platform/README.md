@@ -42,6 +42,17 @@ bash start.sh
 PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+Optional runtime controls:
+
+```bash
+# Comma-separated CORS allow-list ("*" by default)
+export TENSORLBM_CORS_ALLOW_ORIGINS="http://localhost:8000,https://your-domain"
+# Job output root (default: /tmp/tensorlbm_platform)
+export TENSORLBM_OUTPUT_ROOT=/var/lib/tensorlbm/jobs
+# STL upload cap in MB (default: 50)
+export TENSORLBM_MAX_UPLOAD_MB=100
+```
+
 ### 3. Open the browser
 
 Navigate to **http://localhost:8000**
@@ -159,6 +170,8 @@ Key endpoints:
 | `GET` | `/api/jobs/` | List all jobs |
 | `GET` | `/api/jobs/{id}` | Job detail |
 | `DELETE` | `/api/jobs/{id}` | Remove job |
+| `POST` | `/api/jobs/{id}/cancel` | Request cancellation |
+| `POST` | `/api/jobs/cleanup` | Cleanup completed jobs by policy |
 | `GET` | `/api/jobs/{id}/logs` | Log lines |
 | `GET` | `/api/jobs/{id}/files` | List output files |
 | `GET` | `/api/jobs/{id}/files/{path}` | Download file |

@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,9 +30,42 @@ from .routers import (  # noqa: E402
     solver,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
+
+_ws_broadcast_task: asyncio.Task[None] | None = None
+_notify_queue: asyncio.Queue[dict] | None = None  # type: ignore[type-arg]
+
+
+def _cors_origins() -> list[str]:
+    raw = os.environ.get("TENSORLBM_CORS_ALLOW_ORIGINS", "*").strip()
+    if raw == "*":
+        return ["*"]
+    vals = [v.strip() for v in raw.split(",")]
+    return [v for v in vals if v]
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    global _notify_queue, _ws_broadcast_task
+    loop = asyncio.get_running_loop()
+    _notify_queue = asyncio.Queue()
+    job_manager.set_event_loop(loop, _notify_queue)  # type: ignore[arg-type]
+    _ws_broadcast_task = asyncio.create_task(_ws_broadcaster(_notify_queue))
+    try:
+        yield
+    finally:
+        if _ws_broadcast_task is not None:
+            _ws_broadcast_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await _ws_broadcast_task
+            _ws_broadcast_task = None
+        _notify_queue = None
+
 
 app = FastAPI(
     title="TensorLBM Platform",
@@ -38,11 +74,12 @@ app = FastAPI(
         "Browser/Server platform for Lattice Boltzmann Method simulations. "
         "Integrates pre-processing, solving, post-processing and benchmarks."
     ),
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -65,36 +102,35 @@ app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transforme
 # WebSocket
 # ---------------------------------------------------------------------------
 
-_ws_connections: list[WebSocket] = []
-_notify_queue: asyncio.Queue[dict] = asyncio.Queue()  # type: ignore[type-arg]
+_ws_connections: set[WebSocket] = set()
 
 
-@app.on_event("startup")
-async def _startup() -> None:
-    loop = asyncio.get_event_loop()
-    job_manager.set_event_loop(loop, _notify_queue)  # type: ignore[arg-type]
-    asyncio.create_task(_ws_broadcaster())
-
-
-async def _ws_broadcaster() -> None:
+async def _ws_broadcaster(queue: asyncio.Queue[dict]) -> None:  # type: ignore[type-arg]
     """Forward job status changes from the queue to all WebSocket clients."""
     while True:
-        msg = await _notify_queue.get()
-        dead: list[WebSocket] = []
-        for ws in list(_ws_connections):
+        try:
+            msg = await queue.get()
+        except asyncio.CancelledError:
+            break
+
+        dead: set[WebSocket] = set()
+        for ws in tuple(_ws_connections):
             try:
                 await ws.send_json({"type": "job_update", "job": msg})
+            except (WebSocketDisconnect, RuntimeError):
+                dead.add(ws)
             except Exception:
-                dead.append(ws)
+                dead.add(ws)
         for ws in dead:
-            if ws in _ws_connections:
-                _ws_connections.remove(ws)
+            with contextlib.suppress(Exception):
+                await ws.close()
+            _ws_connections.discard(ws)
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
     await ws.accept()
-    _ws_connections.append(ws)
+    _ws_connections.add(ws)
     # Send full job list on first connect so the client can initialise its UI
     with contextlib.suppress(Exception):
         await ws.send_json({"type": "init", "jobs": job_manager.list_jobs()})
@@ -105,8 +141,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     except WebSocketDisconnect:
         pass
     finally:
-        if ws in _ws_connections:
-            _ws_connections.remove(ws)
+        _ws_connections.discard(ws)
 
 
 # ---------------------------------------------------------------------------
