@@ -270,6 +270,16 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
     y_plus = fluid_rows * (config.u_tau / config.nu)
     u_plus = ux_mean[1:-1, :].mean(dim=-1) / config.u_tau
 
+    # Compute log-law RMS error (30 < y+ < 0.8*Re_tau)
+    log_region = (y_plus > 30) & (y_plus < 0.8 * config.re_tau)
+    if log_region.any():
+        y_plus_log = y_plus[log_region]
+        u_plus_log = u_plus[log_region]
+        u_plus_ref = torch.tensor([_reference_velocity(float(y)) for y in y_plus_log], device=device)
+        rms_error = float(torch.sqrt(torch.mean((u_plus_log - u_plus_ref) ** 2)).item())
+        metadata["log_law_rms_error"] = rms_error
+        logger.info("Log-law RMS error (30 < y+ < 0.8*Re_tau): %.4f", rms_error)
+
     with (run_dir / "velocity_profile.csv").open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
         writer.writerow(["y", "y_plus", "u_plus", "u_plus_loglaw"])
