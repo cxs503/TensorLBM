@@ -81,6 +81,10 @@ class CylinderFlowConfig:
     overwrite: bool = False
     resume_checkpoint: Path | None = None
     use_compile: bool = False
+    collision: str = "bgk"
+    mrt_s_e: float = 1.64
+    mrt_s_eps: float = 1.54
+    mrt_s_q: float = 1.7
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -258,7 +262,16 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     dyn_pressure = 0.5 * config.u_in**2 * diameter
 
     # Optionally JIT-compile the hot-path kernels
-    _collide = _maybe_compile(collide_bgk, config.use_compile)
+    # Select collision operator: use f, tau=... form (tau captured in lambda)
+    if config.collision == "mrt":
+        from tensorlbm.solver import collide_mrt
+        tau = config.tau
+        _collide_raw = lambda f: collide_mrt(f, tau, config.mrt_s_e, config.mrt_s_eps, config.mrt_s_q)
+    else:
+        tau = config.tau
+        _collide_raw = lambda f: collide_bgk(f, tau)
+    
+    _collide = _maybe_compile(_collide_raw, config.use_compile)
     _stream = _maybe_compile(stream, config.use_compile)
 
     logger.info(
@@ -281,7 +294,7 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
         else step_range
     )
     for step in step_iter:
-        f = _collide(f, tau=config.tau)
+        f = _collide(f)
         f = _stream(f)
         fx, fy = compute_obstacle_forces(f, obstacle)
         f = apply_simple_channel_boundaries(

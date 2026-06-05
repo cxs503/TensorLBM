@@ -205,13 +205,20 @@ def _init_two_phase_sc_2d(
     obstacle: torch.Tensor,
     device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """SC two-component initialisation with smooth interface."""
+    """SC two-component initialisation with smooth interface.
+
+    CRITICAL for SCMC stability:
+    1. Total density rho1+rho2 must be uniform.
+    2. Sphere cells get LOCAL phase densities (not zeroed).
+    3. solid_mask in collision must include the sphere.
+    """
     prof = _smooth_profile_y(ny, nx, water_level, 4.0, device)
-    frac = 0.15
-    rho2 = rho_water * prof + rho_water * frac * (1.0 - prof)
-    rho1 = rho_air * frac * prof + rho_air * (1.0 - prof)
-    rho1[obstacle] = 0.0
-    rho2[obstacle] = 0.0
+    # Component 2 = water (heavy), varies with profile
+    rho2 = rho_water * prof + rho_air * (1.0 - prof)
+    # Component 1 = air (light).  Uniform total density.
+    rho_tot = rho_water + rho_air
+    rho1 = rho_tot - rho2
+    # NO zeroing at obstacle — let solid_mask handle it in collision
     zero = torch.zeros((ny, nx), device=device)
     return equilibrium(rho1, zero, zero), equilibrium(rho2, zero, zero)
 
@@ -252,13 +259,19 @@ def _init_two_phase_3d(
     obstacle: torch.Tensor,
     device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """SC two-component 3D initialisation.
+
+    Same stability rules as 2D: constant total density, local phase densities
+    at obstacle (not zeroed), solid_mask handles sphere in collision.
+    """
     z = torch.arange(nz, dtype=torch.float32, device=device)
     prof = 0.5 * (1.0 - torch.tanh((z - water_level) / 3.0)).view(nz, 1, 1).expand(nz, ny, nx)
-    frac = 0.05
-    rho2 = rho_water * prof + rho_water * frac * (1.0 - prof)
-    rho1 = rho_air * frac * prof + rho_air * (1.0 - prof)
-    rho1[obstacle] = 0.0
-    rho2[obstacle] = 0.0
+    # Component 2 = water (heavy)
+    rho2 = rho_water * prof + rho_air * (1.0 - prof)
+    # Component 1 = air.  Uniform total density.
+    rho_tot = rho_water + rho_air
+    rho1 = rho_tot - rho2
+    # NO zeroing at obstacle
     zero = torch.zeros((nz, ny, nx), device=device)
     f1 = equilibrium3d(rho1, zero, zero, zero)
     f2 = equilibrium3d(rho2, zero, zero, zero)
