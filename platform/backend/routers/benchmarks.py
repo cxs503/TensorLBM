@@ -256,7 +256,9 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
         if params.fast:
             # Build reduced sub-configs for a quick smoke / CI run.
             from tensorlbm import (  # noqa: I001
+                Spinodal3DConfig,
                 SpinodaleConfig,
+                StaticDroplet3DConfig,
                 StaticDropletConfig,
                 TwoPhaseChannelCompareConfig,
             )
@@ -267,6 +269,12 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
             spinodal = SpinodaleConfig(
                 nx=32, ny=32, n_steps=200, output_interval=100,
             )
+            droplet_3d = StaticDroplet3DConfig(
+                nx=20, ny=20, nz=20, radii=(4.0,), n_steps=100, output_interval=100,
+            )
+            spinodal_3d = Spinodal3DConfig(
+                nx=20, ny=20, nz=20, n_steps=120, output_interval=120,
+            )
             poiseuille = TwoPhaseChannelCompareConfig()
             # Some installations may have different field names; use only
             # the safe top-level overrides.
@@ -274,6 +282,8 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
                 droplet=droplet,
                 spinodal=spinodal,
                 poiseuille=poiseuille,
+                droplet_3d=droplet_3d,
+                spinodal_3d=spinodal_3d,
                 device=params.device,
                 output_root=job.output_dir,
                 overwrite=True,
