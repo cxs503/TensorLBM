@@ -457,8 +457,16 @@ def orchestration_kpis() -> dict[str, Any]:
     failed = [r for r in rows if r["status"] == JobStatus.FAILED]
     cancelled = [r for r in rows if r["status"] == JobStatus.CANCELLED]
     running = [r for r in rows if r["status"] == JobStatus.RUNNING]
-    queue_waits = [float(r["queue_wait_seconds"]) for r in rows if r["queue_wait_seconds"] is not None]
-    run_times = [float(r["run_duration_seconds"]) for r in rows if r["run_duration_seconds"] is not None]
+    queue_waits = [
+        float(r["queue_wait_seconds"])
+        for r in rows
+        if r["queue_wait_seconds"] is not None
+    ]
+    run_times = [
+        float(r["run_duration_seconds"])
+        for r in rows
+        if r["run_duration_seconds"] is not None
+    ]
     retries = [int(r.get("retry_attempt", 0)) for r in rows]
     resources: dict[str, int] = {}
     for row in rows:

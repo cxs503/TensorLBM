@@ -1,7 +1,7 @@
 """Tests for orchestration and AI governance APIs."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from _pytest.monkeypatch import MonkeyPatch
@@ -18,13 +18,14 @@ def test_orchestration_templates(client: TestClient) -> None:
 
 
 def test_orchestration_submit_cylinder_template(
-    client: TestClient, monkeypatch: MonkeyPatch,
+    client: TestClient,
+    monkeypatch: MonkeyPatch,
 ) -> None:
     from backend.routers import solver
 
-    calls: list[dict] = []
+    calls: list[dict[str, Any]] = []
 
-    def _fake_submit(*, name: str, job_type: str, config: dict, fn: object) -> str:
+    def _fake_submit(*, name: str, job_type: str, config: dict[str, Any], fn: object) -> str:
         calls.append({"name": name, "job_type": job_type, "config": config, "fn": fn})
         return f"job-{len(calls)}"
 
@@ -34,7 +35,6 @@ def test_orchestration_submit_cylinder_template(
         "template_id": "cylinder_re_sweep",
         "base_config": {"nx": 80, "ny": 30, "n_steps": 10, "output_interval": 5},
         "sweep": [{"name": "re", "values": [60.0, 80.0]}],
-        "orchestration": {"max_retries": 1, "resource_label": "cuda:0"},
     }
     r = client.post("/api/orchestration/experiments/submit", json=payload)
     assert r.status_code == 200, r.text
