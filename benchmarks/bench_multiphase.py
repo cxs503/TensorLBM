@@ -1,8 +1,9 @@
 """Multiphase LBM model benchmark suite runner.
 
-Runs the full TensorLBM multiphase benchmark suite across three canonical
-tests — Laplace pressure, spinodal decomposition, and two-phase Poiseuille —
-and prints a quantitative comparison report.
+Runs the full TensorLBM multiphase benchmark suite across four canonical
+tests — Laplace pressure, spinodal decomposition, free-energy droplet
+relaxation, and two-phase Poiseuille — and prints a quantitative comparison
+report.
 
 Usage::
 
@@ -22,6 +23,7 @@ import argparse
 from pathlib import Path
 
 from tensorlbm.multiphase_benchmarks import (
+    FreeEnergyDropletConfig,
     MultiphaseBenchmarkSuiteConfig,
     Spinodal3DConfig,
     SpinodaleConfig,
@@ -51,6 +53,14 @@ def _fast_config(output: Path, device: str, overwrite: bool) -> MultiphaseBenchm
             noise_amp=0.05,
             n_steps=500,
             output_interval=500,
+        ),
+        free_energy=FreeEnergyDropletConfig(
+            nx=40,
+            ny=40,
+            radius=8.0,
+            interface_width=2.0,
+            n_steps=200,
+            output_interval=100,
         ),
         droplet_3d=StaticDroplet3DConfig(
             nx=20,
@@ -103,6 +113,14 @@ def _full_config(output: Path, device: str, overwrite: bool) -> MultiphaseBenchm
             noise_amp=0.05,
             n_steps=3000,
             output_interval=500,
+        ),
+        free_energy=FreeEnergyDropletConfig(
+            nx=80,
+            ny=80,
+            radius=16.0,
+            interface_width=2.5,
+            n_steps=1200,
+            output_interval=300,
         ),
         droplet_3d=StaticDroplet3DConfig(
             nx=40,

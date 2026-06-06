@@ -16,12 +16,14 @@ import pytest
 import torch
 
 from tensorlbm.multiphase_benchmarks import (
+    FreeEnergyDropletConfig,
     MultiphaseBenchmarkSuiteConfig,
     Spinodal3DConfig,
     SpinodaleConfig,
     StaticDroplet3DConfig,
     StaticDropletConfig,
     TwoPhaseChannelCompareConfig,
+    run_free_energy_droplet,
     run_multiphase_benchmark_suite,
     run_spinodal_decomposition,
     run_spinodal_decomposition_3d,
@@ -188,6 +190,51 @@ class TestSpinodaleConfig:
 
 
 # ---------------------------------------------------------------------------
+# FreeEnergyDropletConfig
+# ---------------------------------------------------------------------------
+
+
+class TestFreeEnergyDropletConfig:
+    def test_valid_config(self) -> None:
+        cfg = FreeEnergyDropletConfig(nx=40, ny=40, radius=8.0, n_steps=2, output_interval=2)
+        cfg.validate()
+
+    def test_invalid_small_domain(self) -> None:
+        cfg = FreeEnergyDropletConfig(nx=20, ny=40, radius=6.0)
+        with pytest.raises(ValueError, match="nx and ny"):
+            cfg.validate()
+
+    def test_invalid_radius(self) -> None:
+        cfg = FreeEnergyDropletConfig(nx=40, ny=40, radius=30.0)
+        with pytest.raises(ValueError, match="radius"):
+            cfg.validate()
+
+    def test_smoke_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = FreeEnergyDropletConfig(
+                nx=32,
+                ny=32,
+                radius=6.0,
+                n_steps=5,
+                output_interval=5,
+                output_root=Path(tmpdir),
+                overwrite=True,
+                device=DEVICE,
+            )
+            result = run_free_energy_droplet(cfg)
+
+        assert "relative_phase_mass_drift" in result
+        assert "relative_radius_drift" in result
+        assert "max_spurious_u" in result
+        assert "bounded_phase_field" in result
+        assert "diagnostics" in result
+        assert math.isfinite(float(result["relative_phase_mass_drift"]))
+        assert math.isfinite(float(result["relative_radius_drift"]))
+        assert math.isfinite(float(result["max_spurious_u"]))
+        assert isinstance(result["bounded_phase_field"], bool)
+
+
+# ---------------------------------------------------------------------------
 # StaticDroplet3DConfig / Spinodal3DConfig
 # ---------------------------------------------------------------------------
 
@@ -318,6 +365,7 @@ class TestMultiphaseBenchmarkSuiteConfig:
         cfg = MultiphaseBenchmarkSuiteConfig()
         assert isinstance(cfg.droplet, StaticDropletConfig)
         assert isinstance(cfg.spinodal, SpinodaleConfig)
+        assert isinstance(cfg.free_energy, FreeEnergyDropletConfig)
         assert isinstance(cfg.poiseuille, TwoPhaseChannelCompareConfig)
         assert cfg.droplet_3d is None
         assert cfg.spinodal_3d is None
@@ -336,6 +384,9 @@ class TestMultiphaseBenchmarkSuiteConfig:
                 ),
                 spinodal=SpinodaleConfig(
                     nx=16, ny=16, n_steps=5, output_interval=5,
+                ),
+                free_energy=FreeEnergyDropletConfig(
+                    nx=32, ny=32, radius=6.0, n_steps=5, output_interval=5,
                 ),
                 poiseuille=TwoPhaseChannelCompareConfig(
                     nx=4, ny=20, n_steps=5, output_interval=5,
@@ -357,12 +408,14 @@ class TestMultiphaseBenchmarkSuiteConfig:
             benchmarks = report["benchmarks"]
             assert "static_droplet" in benchmarks  # type: ignore[operator]
             assert "spinodal_decomposition" in benchmarks  # type: ignore[operator]
+            assert "free_energy_droplet" in benchmarks  # type: ignore[operator]
             assert "two_phase_poiseuille" in benchmarks  # type: ignore[operator]
             assert "static_droplet_3d" in benchmarks  # type: ignore[operator]
             assert "spinodal_decomposition_3d" in benchmarks  # type: ignore[operator]
             analysis = report["analysis"]
             assert "surface_tension" in analysis  # type: ignore[operator]
             assert "spinodal" in analysis  # type: ignore[operator]
+            assert "free_energy" in analysis  # type: ignore[operator]
             assert "poiseuille" in analysis  # type: ignore[operator]
             assert "three_d" in analysis  # type: ignore[operator]
             assert "summary" in analysis  # type: ignore[operator]
