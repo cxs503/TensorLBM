@@ -17,11 +17,15 @@ import torch
 
 from tensorlbm.multiphase_benchmarks import (
     MultiphaseBenchmarkSuiteConfig,
+    Spinodal3DConfig,
     SpinodaleConfig,
+    StaticDroplet3DConfig,
     StaticDropletConfig,
     TwoPhaseChannelCompareConfig,
     run_multiphase_benchmark_suite,
+    run_spinodal_decomposition_3d,
     run_spinodal_decomposition,
+    run_static_droplet_3d,
     run_static_droplet,
     run_two_phase_channel_compare,
 )
@@ -184,6 +188,54 @@ class TestSpinodaleConfig:
 
 
 # ---------------------------------------------------------------------------
+# StaticDroplet3DConfig / Spinodal3DConfig
+# ---------------------------------------------------------------------------
+
+
+class TestStaticDroplet3DConfig:
+    def test_valid_config(self) -> None:
+        cfg = StaticDroplet3DConfig(nx=20, ny=20, nz=20, radii=(4.0,), n_steps=2, output_interval=2)
+        cfg.validate()
+
+    def test_invalid_small_domain(self) -> None:
+        cfg = StaticDroplet3DConfig(nx=10, ny=20, nz=20, radii=(3.0,))
+        with pytest.raises(ValueError, match="nx, ny and nz"):
+            cfg.validate()
+
+    def test_smoke_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = StaticDroplet3DConfig(
+                nx=20, ny=20, nz=20, radii=(4.0,),
+                n_steps=3, output_interval=3,
+                output_root=Path(tmpdir), overwrite=True, device=DEVICE,
+            )
+            result = run_static_droplet_3d(cfg)
+        assert "scmc" in result["results"]  # type: ignore[index]
+        assert "cg" in result["results"]  # type: ignore[index]
+
+
+class TestSpinodal3DConfig:
+    def test_valid_config(self) -> None:
+        cfg = Spinodal3DConfig(nx=16, ny=16, nz=16, n_steps=2, output_interval=2)
+        cfg.validate()
+
+    def test_invalid_small_domain(self) -> None:
+        cfg = Spinodal3DConfig(nx=8, ny=16, nz=16)
+        with pytest.raises(ValueError, match="nx, ny and nz"):
+            cfg.validate()
+
+    def test_smoke_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = Spinodal3DConfig(
+                nx=16, ny=16, nz=16, n_steps=3, output_interval=3,
+                output_root=Path(tmpdir), overwrite=True, device=DEVICE,
+            )
+            result = run_spinodal_decomposition_3d(cfg)
+        assert "density_ratio" in result
+        assert float(result["rho_liquid"]) >= float(result["rho_gas"])
+
+
+# ---------------------------------------------------------------------------
 # TwoPhaseChannelCompareConfig
 # ---------------------------------------------------------------------------
 
@@ -267,6 +319,8 @@ class TestMultiphaseBenchmarkSuiteConfig:
         assert isinstance(cfg.droplet, StaticDropletConfig)
         assert isinstance(cfg.spinodal, SpinodaleConfig)
         assert isinstance(cfg.poiseuille, TwoPhaseChannelCompareConfig)
+        assert cfg.droplet_3d is None
+        assert cfg.spinodal_3d is None
 
     def test_output_root_path_conversion(self) -> None:
         cfg = MultiphaseBenchmarkSuiteConfig(output_root="my_outputs")  # type: ignore[arg-type]
@@ -286,6 +340,12 @@ class TestMultiphaseBenchmarkSuiteConfig:
                 poiseuille=TwoPhaseChannelCompareConfig(
                     nx=4, ny=20, n_steps=5, output_interval=5,
                 ),
+                droplet_3d=StaticDroplet3DConfig(
+                    nx=20, ny=20, nz=20, radii=(4.0,), n_steps=3, output_interval=3,
+                ),
+                spinodal_3d=Spinodal3DConfig(
+                    nx=16, ny=16, nz=16, n_steps=3, output_interval=3,
+                ),
                 output_root=Path(tmpdir),
                 device=DEVICE,
                 overwrite=True,
@@ -298,10 +358,13 @@ class TestMultiphaseBenchmarkSuiteConfig:
             assert "static_droplet" in benchmarks  # type: ignore[operator]
             assert "spinodal_decomposition" in benchmarks  # type: ignore[operator]
             assert "two_phase_poiseuille" in benchmarks  # type: ignore[operator]
+            assert "static_droplet_3d" in benchmarks  # type: ignore[operator]
+            assert "spinodal_decomposition_3d" in benchmarks  # type: ignore[operator]
             analysis = report["analysis"]
             assert "surface_tension" in analysis  # type: ignore[operator]
             assert "spinodal" in analysis  # type: ignore[operator]
             assert "poiseuille" in analysis  # type: ignore[operator]
+            assert "three_d" in analysis  # type: ignore[operator]
             assert "summary" in analysis  # type: ignore[operator]
             # Report file should exist (check inside with block before tmpdir cleanup)
             report_path = Path(tmpdir) / "multiphase_suite_report.json"

@@ -1,4 +1,4 @@
-"""Multiphase LBM model benchmark suite for D2Q9.
+"""Multiphase LBM model benchmark suite for D2Q9 and D3Q19.
 
 Provides three canonical benchmarks that cover all four multiphase models:
 
@@ -54,13 +54,20 @@ import torch
 
 from .boundaries import bounce_back_cells
 from .d2q9 import equilibrium, macroscopic
+from .d3q19 import equilibrium3d, macroscopic3d
 from .multiphase import (
     collide_sc_single_component,
     collide_sc_two_component,
     color_gradient_step,
     psi_exp,
 )
+from .multiphase3d import (
+    collide_sc_single_component_3d,
+    collide_sc_two_component_3d,
+    color_gradient_step_3d,
+)
 from .solver import stream
+from .solver3d import stream3d
 from .utils import prepare_run_dir, resolve_device
 
 matplotlib.use("Agg")
@@ -82,6 +89,18 @@ def _circular_mask(ny: int, nx: int, r: float, device: torch.device) -> torch.Te
     yy, xx = torch.meshgrid(ys, xs, indexing="ij")
     cy, cx = ny / 2.0, nx / 2.0
     return ((xx - cx) ** 2 + (yy - cy) ** 2) <= r ** 2
+
+
+def _spherical_mask(
+    nz: int, ny: int, nx: int, r: float, device: torch.device,
+) -> torch.Tensor:
+    """Boolean mask: *True* inside a centred sphere of radius *r*."""
+    zs = torch.arange(nz, dtype=torch.float32, device=device)
+    ys = torch.arange(ny, dtype=torch.float32, device=device)
+    xs = torch.arange(nx, dtype=torch.float32, device=device)
+    zz, yy, xx = torch.meshgrid(zs, ys, xs, indexing="ij")
+    cz, cy, cx = nz / 2.0, ny / 2.0, nx / 2.0
+    return ((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2) <= r ** 2
 
 
 def _measure_pressure_jump(
@@ -109,6 +128,27 @@ def _measure_pressure_jump(
     return p_in, p_out, dp
 
 
+def _measure_pressure_jump_3d(
+    f_total: torch.Tensor,
+    r: float,
+) -> tuple[float, float, float]:
+    """Return ``(p_inside, p_outside, delta_p)`` from total density in 3-D."""
+    rho = f_total.sum(dim=0)  # (nz, ny, nx)
+    nz, ny, nx = rho.shape
+    zs = torch.arange(nz, dtype=torch.float32, device=rho.device)
+    ys = torch.arange(ny, dtype=torch.float32, device=rho.device)
+    xs = torch.arange(nx, dtype=torch.float32, device=rho.device)
+    zz, yy, xx = torch.meshgrid(zs, ys, xs, indexing="ij")
+    cz, cy, cx = nz / 2.0, ny / 2.0, nx / 2.0
+    r_field = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2)
+    inside = r_field <= r * 0.5
+    outside = r_field >= r * 1.5
+    p_in = float((_CS2 * rho[inside]).mean().item()) if inside.any() else float("nan")
+    p_out = float((_CS2 * rho[outside]).mean().item()) if outside.any() else float("nan")
+    dp = p_in - p_out
+    return p_in, p_out, dp
+
+
 def _max_velocity(f_total: torch.Tensor) -> float:
     """Return the maximum fluid velocity ``|u|`` for any lattice node."""
     rho = f_total.sum(dim=0).clamp(min=1e-12)  # (ny, nx)
@@ -120,6 +160,20 @@ def _max_velocity(f_total: torch.Tensor) -> float:
     ux = (f_total * cx).sum(0) / rho
     uy = (f_total * cy).sum(0) / rho
     return float(torch.sqrt(ux ** 2 + uy ** 2).max().item())
+
+
+def _max_velocity_3d(f_total: torch.Tensor) -> float:
+    """Return the maximum fluid velocity ``|u|`` for any 3-D lattice node."""
+    rho = f_total.sum(dim=0).clamp(min=1e-12)  # (nz, ny, nx)
+    from .d3q19 import C as C3  # noqa: PLC0415
+    c_dev = C3.to(f_total.device).float()
+    cx = c_dev[:, 0].view(19, 1, 1, 1)
+    cy = c_dev[:, 1].view(19, 1, 1, 1)
+    cz = c_dev[:, 2].view(19, 1, 1, 1)
+    ux = (f_total * cx).sum(0) / rho
+    uy = (f_total * cy).sum(0) / rho
+    uz = (f_total * cz).sum(0) / rho
+    return float(torch.sqrt(ux ** 2 + uy ** 2 + uz ** 2).max().item())
 
 
 # ---------------------------------------------------------------------------
@@ -611,7 +665,309 @@ def _plot_spinodal(
 
 
 # ---------------------------------------------------------------------------
-# Benchmark 3 – Two-Phase Poiseuille: SCMC vs CG
+# Benchmark 3 – 3D multiphase extensions (D3Q19)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class StaticDroplet3DConfig:
+    """Configuration for 3D static-droplet (Laplace) benchmark."""
+
+    nx: int = 40
+    ny: int = 40
+    nz: int = 40
+    radii: tuple[float, ...] = (8.0, 12.0)
+    n_steps: int = 1200
+    output_interval: int = 400
+    # SCMC
+    scmc_G12: float = 0.9
+    scmc_tau: float = 1.0
+    scmc_rho_heavy: float = 0.7
+    scmc_rho_light: float = 0.3
+    # CG
+    cg_A: float = 0.04
+    cg_beta: float = 0.7
+    cg_tau: float = 1.0
+    cg_rho_heavy: float = 0.65
+    cg_rho_light: float = 0.05
+    output_root: Path = Path("outputs")
+    run_name: str | None = None
+    device: str = "cpu"
+    overwrite: bool = False
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_root", Path(self.output_root))
+        object.__setattr__(self, "device", self.device.lower())
+
+    def validate(self) -> None:
+        if self.nx < 20 or self.ny < 20 or self.nz < 20:
+            msg = "nx, ny and nz must be ≥ 20"
+            raise ValueError(msg)
+        if not self.radii:
+            msg = "radii must be non-empty"
+            raise ValueError(msg)
+        limit = min(self.nx, self.ny, self.nz) / 2 - 4
+        if any(r <= 0 or r >= limit for r in self.radii):
+            msg = "each radius must be positive and well inside the 3D domain"
+            raise ValueError(msg)
+        if self.scmc_tau <= 0.5 or self.cg_tau <= 0.5:
+            msg = "tau must be > 0.5"
+            raise ValueError(msg)
+        if self.scmc_rho_heavy <= self.scmc_rho_light:
+            msg = "scmc_rho_heavy must exceed scmc_rho_light"
+            raise ValueError(msg)
+        if self.cg_rho_heavy <= self.cg_rho_light:
+            msg = "cg_rho_heavy must exceed cg_rho_light"
+            raise ValueError(msg)
+        if self.scmc_G12 <= 0:
+            msg = "scmc_G12 must be > 0 for SC phase separation"
+            raise ValueError(msg)
+
+    def resolved_run_name(self) -> str:
+        if self.run_name:
+            return self.run_name
+        return (
+            f"static_droplet_3d_n{self.nx}x{self.ny}x{self.nz}"
+            f"_steps{self.n_steps}"
+        )
+
+
+def _run_scmc_droplet_3d(
+    r: float,
+    config: StaticDroplet3DConfig,
+    device: torch.device,
+) -> dict[str, object]:
+    nz, ny, nx = config.nz, config.ny, config.nx
+    inside = _spherical_mask(nz, ny, nx, r, device)
+    zero = torch.zeros((nz, ny, nx), device=device)
+    rho1 = torch.where(
+        inside, torch.full_like(zero, config.scmc_rho_heavy), zero + config.scmc_rho_light
+    )
+    rho2 = torch.where(
+        inside, torch.full_like(zero, config.scmc_rho_light), zero + config.scmc_rho_heavy
+    )
+    f1 = equilibrium3d(rho1, zero, zero, zero)
+    f2 = equilibrium3d(rho2, zero, zero, zero)
+
+    for _ in range(config.n_steps):
+        f1, f2 = collide_sc_two_component_3d(
+            f1, f2, G_12=config.scmc_G12, tau1=config.scmc_tau, tau2=config.scmc_tau,
+        )
+        f1 = stream3d(f1)
+        f2 = stream3d(f2)
+
+    f_total = f1 + f2
+    p_in, p_out, dp = _measure_pressure_jump_3d(f_total, r)
+    max_u = _max_velocity_3d(f_total)
+    sigma_eff = dp * r
+    return {
+        "r": r,
+        "p_inside": round(p_in, 8),
+        "p_outside": round(p_out, 8),
+        "delta_p": round(dp, 8),
+        "sigma_eff": round(sigma_eff, 6),
+        "max_spurious_u": round(max_u, 8),
+    }
+
+
+def _run_cg_droplet_3d(
+    r: float,
+    config: StaticDroplet3DConfig,
+    device: torch.device,
+) -> dict[str, object]:
+    nz, ny, nx = config.nz, config.ny, config.nx
+    inside = _spherical_mask(nz, ny, nx, r, device)
+    zero = torch.zeros((nz, ny, nx), device=device)
+    rho_r = torch.where(
+        inside, torch.full_like(zero, config.cg_rho_heavy), zero + config.cg_rho_light
+    )
+    rho_b = torch.where(
+        inside, torch.full_like(zero, config.cg_rho_light), zero + config.cg_rho_heavy
+    )
+    f_r = equilibrium3d(rho_r, zero, zero, zero)
+    f_b = equilibrium3d(rho_b, zero, zero, zero)
+
+    for _ in range(config.n_steps):
+        f_r, f_b = color_gradient_step_3d(
+            f_r, f_b, tau=config.cg_tau, A=config.cg_A, beta=config.cg_beta,
+        )
+        f_r = stream3d(f_r)
+        f_b = stream3d(f_b)
+
+    f_total = f_r + f_b
+    p_in, p_out, dp = _measure_pressure_jump_3d(f_total, r)
+    max_u = _max_velocity_3d(f_total)
+    sigma_eff = dp * r
+    return {
+        "r": r,
+        "p_inside": round(p_in, 8),
+        "p_outside": round(p_out, 8),
+        "delta_p": round(dp, 8),
+        "sigma_eff": round(sigma_eff, 6),
+        "max_spurious_u": round(max_u, 8),
+    }
+
+
+def run_static_droplet_3d(config: StaticDroplet3DConfig) -> dict[str, object]:
+    """Run 3-D static-droplet benchmark for SCMC and CG models."""
+    config.validate()
+    device = resolve_device(config.device)
+    run_dir = prepare_run_dir(
+        config.output_root, "static_droplet_3d", config.resolved_run_name(), config.overwrite,
+    )
+    results: dict[str, object] = {}
+
+    for model_name in ("scmc", "cg"):
+        print(f"\n--- 3D Static Droplet: {model_name.upper()} ---")
+        per_r: list[dict[str, object]] = []
+        for r in config.radii:
+            print(f"  R={r:.0f}  steps={config.n_steps}")
+            if model_name == "scmc":
+                row = _run_scmc_droplet_3d(r, config, device)
+            else:
+                row = _run_cg_droplet_3d(r, config, device)
+            print(
+                f"    ΔP={row['delta_p']:.6f}  σ_eff={row['sigma_eff']:.4f}"
+                f"  max_u={row['max_spurious_u']:.3e}"
+            )
+            per_r.append(row)
+
+        sigma_fit = _fit_surface_tension(
+            [float(d["r"]) for d in per_r],  # type: ignore[arg-type]
+            [float(d["delta_p"]) for d in per_r],  # type: ignore[arg-type]
+        )
+        mean_u = sum(float(d["max_spurious_u"]) for d in per_r) / len(per_r)  # type: ignore[arg-type, misc]
+        results[model_name] = {
+            "per_radius": per_r,
+            "sigma_eff_fit": round(sigma_fit, 8),
+            "mean_max_spurious_u": round(mean_u, 8),
+        }
+
+    metadata: dict[str, object] = {
+        "benchmark": "static_droplet_3d",
+        "config": {**asdict(config), "output_root": str(config.output_root)},
+        "results": results,
+        "note": "3D spherical Laplace benchmark on D3Q19 for SCMC/CG.",
+    }
+    (run_dir / "static_droplet_3d.json").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(f"\nSaved → {run_dir / 'static_droplet_3d.json'}")
+    return metadata
+
+
+@dataclass(frozen=True)
+class Spinodal3DConfig:
+    """Configuration for 3D spinodal decomposition benchmark (SCMP)."""
+
+    nx: int = 40
+    ny: int = 40
+    nz: int = 40
+    G: float = -4.0
+    tau: float = 1.0
+    rho0: float = 0.7
+    noise_amp: float = 0.05
+    n_steps: int = 1200
+    output_interval: int = 300
+    seed: int = 42
+    output_root: Path = Path("outputs")
+    run_name: str | None = None
+    device: str = "cpu"
+    overwrite: bool = False
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_root", Path(self.output_root))
+        object.__setattr__(self, "device", self.device.lower())
+
+    def validate(self) -> None:
+        if self.nx < 12 or self.ny < 12 or self.nz < 12:
+            msg = "nx, ny and nz must be ≥ 12"
+            raise ValueError(msg)
+        if self.G >= 0:
+            msg = "G must be < 0 for SCMP phase separation (attractive interaction)"
+            raise ValueError(msg)
+        if self.tau <= 0.5:
+            msg = "tau must be > 0.5"
+            raise ValueError(msg)
+        if self.rho0 <= 0:
+            msg = "rho0 must be positive"
+            raise ValueError(msg)
+
+    def resolved_run_name(self) -> str:
+        if self.run_name:
+            return self.run_name
+        return (
+            f"spinodal_3d_G{self.G:.1f}_rho{self.rho0:.2f}"
+            f"_n{self.nx}x{self.ny}x{self.nz}_steps{self.n_steps}"
+        )
+
+
+def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]:
+    """Run 3-D spinodal decomposition (SCMP) benchmark on D3Q19."""
+    config.validate()
+    device = resolve_device(config.device)
+    run_dir = prepare_run_dir(
+        config.output_root, "spinodal_3d", config.resolved_run_name(), config.overwrite,
+    )
+
+    torch.manual_seed(config.seed)
+    rho0 = torch.full((config.nz, config.ny, config.nx), config.rho0, device=device)
+    noise = (
+        torch.rand((config.nz, config.ny, config.nx), device=device) - 0.5
+    ) * 2.0 * config.noise_amp
+    rho = (rho0 + noise).clamp(min=0.01)
+    zero = torch.zeros((config.nz, config.ny, config.nx), device=device)
+    f = equilibrium3d(rho, zero, zero, zero)
+    diagnostics: list[dict[str, object]] = []
+
+    for step in range(1, config.n_steps + 1):
+        f = collide_sc_single_component_3d(
+            f, G=config.G, tau=config.tau, psi_fn=psi_exp,
+        )
+        f = stream3d(f)
+        if step % config.output_interval == 0 or step == config.n_steps:
+            rho_cur, _, _, _ = macroscopic3d(f)
+            rho_max = float(rho_cur.max().item())
+            rho_min = float(rho_cur.min().item())
+            rho_std = float(rho_cur.std().item())
+            diagnostics.append(
+                {
+                    "step": step,
+                    "rho_max": round(rho_max, 6),
+                    "rho_min": round(rho_min, 6),
+                    "rho_std": round(rho_std, 6),
+                    "density_ratio": round(rho_max / max(rho_min, 1e-12), 4),
+                }
+            )
+
+    rho_final, _, _, _ = macroscopic3d(f)
+    rho_liquid = float(rho_final.max().item())
+    rho_gas = float(rho_final.min().item())
+    density_ratio = rho_liquid / max(rho_gas, 1e-12)
+    phase_separated = density_ratio > 2.0
+
+    metadata: dict[str, object] = {
+        "benchmark": "spinodal_decomposition_3d",
+        "config": {**asdict(config), "output_root": str(config.output_root)},
+        "rho_liquid": round(rho_liquid, 6),
+        "rho_gas": round(rho_gas, 6),
+        "density_ratio": round(density_ratio, 4),
+        "phase_separated": phase_separated,
+        "diagnostics": diagnostics,
+        "note": "3D SCMP spinodal decomposition benchmark on D3Q19.",
+    }
+    (run_dir / "spinodal_3d.json").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(
+        f"\nSaved → {run_dir / 'spinodal_3d.json'}"
+        f"  (ρ_l={rho_liquid:.4f}, ρ_g={rho_gas:.4f}, ratio={density_ratio:.2f})"
+    )
+    return metadata
+
+
+# ---------------------------------------------------------------------------
+# Benchmark 4 – Two-Phase Poiseuille: SCMC vs CG
 # ---------------------------------------------------------------------------
 
 
@@ -969,6 +1325,8 @@ def _generate_analysis(
     droplet: dict[str, object],
     spinodal: dict[str, object],
     poiseuille: dict[str, object],
+    droplet3d: dict[str, object] | None = None,
+    spinodal3d: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """Generate a concise quantitative analysis of all benchmark results."""
     from typing import cast  # noqa: PLC0415
@@ -1012,6 +1370,18 @@ def _generate_analysis(
         "better_accuracy": "cg" if cg_err < scmc_err else "scmc",
     }
 
+    if droplet3d is not None and spinodal3d is not None:
+        d3_res = cast("dict[str, dict[str, object]]", droplet3d.get("results", {}))
+        sigma3d_scmc = float(d3_res.get("scmc", {}).get("sigma_eff_fit", float("nan")))  # type: ignore[arg-type]
+        sigma3d_cg = float(d3_res.get("cg", {}).get("sigma_eff_fit", float("nan")))  # type: ignore[arg-type]
+        ratio3d = float(spinodal3d.get("density_ratio", 0.0))  # type: ignore[arg-type]
+        analysis["three_d"] = {
+            "scmc_sigma_eff": round(sigma3d_scmc, 6),
+            "cg_sigma_eff": round(sigma3d_cg, 6),
+            "spinodal_density_ratio": round(ratio3d, 3),
+            "spinodal_phase_separated": bool(spinodal3d.get("phase_separated", False)),
+        }
+
     # Spinodal G value for the summary
     spinodal_cfg = cast("dict[str, object]", spinodal.get("config", {}))
     g_val = spinodal_cfg.get("G", "N/A")
@@ -1044,6 +1414,15 @@ def _generate_analysis(
         "  SCMP: single-component phase separation (liquid/gas EOS), density ratio from G.",
         "  FE  : thermodynamically consistent, conserved order parameter, tunable σ and ξ.",
     ]
+    if droplet3d is not None and spinodal3d is not None:
+        summary_lines.extend(
+            [
+                "",
+                "4. 3D multiphase benchmarks (D3Q19):",
+                f"   3D Laplace σ_eff — SCMC: {sigma3d_scmc:.4f}, CG: {sigma3d_cg:.4f}",
+                f"   3D spinodal density ratio ρ_l/ρ_g = {ratio3d:.2f}",
+            ]
+        )
     analysis["summary"] = "\n".join(summary_lines)
     return analysis
 
@@ -1067,6 +1446,8 @@ class MultiphaseBenchmarkSuiteConfig:
     droplet: StaticDropletConfig = field(default_factory=StaticDropletConfig)
     spinodal: SpinodaleConfig = field(default_factory=SpinodaleConfig)
     poiseuille: TwoPhaseChannelCompareConfig = field(default_factory=TwoPhaseChannelCompareConfig)
+    droplet_3d: StaticDroplet3DConfig | None = None
+    spinodal_3d: Spinodal3DConfig | None = None
     output_root: Path = Path("outputs")
     device: str = "cpu"
     overwrite: bool = False
@@ -1123,6 +1504,22 @@ def run_multiphase_benchmark_suite(
         device=config.device,
         overwrite=config.overwrite,
     )
+    droplet_3d_cfg: StaticDroplet3DConfig | None = None
+    if config.droplet_3d is not None:
+        droplet_3d_cfg = _patch(  # type: ignore[assignment]
+            config.droplet_3d,
+            output_root=output_root,
+            device=config.device,
+            overwrite=config.overwrite,
+        )
+    spinodal_3d_cfg: Spinodal3DConfig | None = None
+    if config.spinodal_3d is not None:
+        spinodal_3d_cfg = _patch(  # type: ignore[assignment]
+            config.spinodal_3d,
+            output_root=output_root,
+            device=config.device,
+            overwrite=config.overwrite,
+        )
 
     print("=" * 60)
     print("TensorLBM Multiphase Model Benchmark Suite")
@@ -1137,8 +1534,19 @@ def run_multiphase_benchmark_suite(
     print("\n[3/3] Two-Phase Poiseuille (SCMC vs CG)")
     poiseuille_result = run_two_phase_channel_compare(poiseuille_cfg)
 
+    droplet_3d_result: dict[str, object] | None = None
+    spinodal_3d_result: dict[str, object] | None = None
+    if droplet_3d_cfg is not None:
+        print("\n[4/5] 3D Static Droplet (Laplace pressure + spurious currents)")
+        droplet_3d_result = run_static_droplet_3d(droplet_3d_cfg)
+    if spinodal_3d_cfg is not None:
+        print("\n[5/5] 3D Spinodal Decomposition (SCMP)")
+        spinodal_3d_result = run_spinodal_decomposition_3d(spinodal_3d_cfg)
+
     # Analysis
-    analysis = _generate_analysis(droplet_result, spinodal_result, poiseuille_result)
+    analysis = _generate_analysis(
+        droplet_result, spinodal_result, poiseuille_result, droplet_3d_result, spinodal_3d_result,
+    )
     print("\n" + str(analysis["summary"]))
 
     report: dict[str, object] = {
@@ -1149,6 +1557,10 @@ def run_multiphase_benchmark_suite(
         },
         "analysis": analysis,
     }
+    if droplet_3d_result is not None:
+        report["benchmarks"]["static_droplet_3d"] = droplet_3d_result  # type: ignore[index]
+    if spinodal_3d_result is not None:
+        report["benchmarks"]["spinodal_decomposition_3d"] = spinodal_3d_result  # type: ignore[index]
 
     report_path = output_root / "multiphase_suite_report.json"
     report_path.write_text(
@@ -1169,7 +1581,12 @@ __all__ = [
     # Benchmark 2: spinodal decomposition
     "SpinodaleConfig",
     "run_spinodal_decomposition",
-    # Benchmark 3: two-phase Poiseuille comparison
+    # Benchmark 3: 3D static droplet + spinodal
+    "StaticDroplet3DConfig",
+    "run_static_droplet_3d",
+    "Spinodal3DConfig",
+    "run_spinodal_decomposition_3d",
+    # Benchmark 4: two-phase Poiseuille comparison
     "TwoPhaseChannelCompareConfig",
     "run_two_phase_channel_compare",
     # Suite runner

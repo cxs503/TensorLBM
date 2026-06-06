@@ -151,11 +151,15 @@ from .multiphase3d import (
 )
 from .multiphase_benchmarks import (
     MultiphaseBenchmarkSuiteConfig,
+    Spinodal3DConfig,
     SpinodaleConfig,
+    StaticDroplet3DConfig,
     StaticDropletConfig,
     TwoPhaseChannelCompareConfig,
     run_multiphase_benchmark_suite,
+    run_spinodal_decomposition_3d,
     run_spinodal_decomposition,
+    run_static_droplet_3d,
     run_static_droplet,
     run_two_phase_channel_compare,
 )
@@ -533,8 +537,12 @@ __all__ = [
     # Multiphase benchmark suite
     "StaticDropletConfig",
     "run_static_droplet",
+    "StaticDroplet3DConfig",
+    "run_static_droplet_3d",
     "SpinodaleConfig",
     "run_spinodal_decomposition",
+    "Spinodal3DConfig",
+    "run_spinodal_decomposition_3d",
     "TwoPhaseChannelCompareConfig",
     "run_two_phase_channel_compare",
     "MultiphaseBenchmarkSuiteConfig",
