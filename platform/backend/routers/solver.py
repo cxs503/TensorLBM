@@ -6,6 +6,7 @@ corresponding tensorlbm simulation function in a background thread.
 from __future__ import annotations
 
 from typing import Any, Literal
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -198,6 +199,21 @@ class CylinderFlowParams(BaseModel):
     physics: PhysicsSelection | None = None
 
 
+class CylinderFlowScanParams(BaseModel):
+    nx: int = Field(320, ge=20, description="Grid width")
+    ny: int = Field(100, ge=10, description="Grid height")
+    u_in: float = Field(0.08, gt=0, description="Inlet velocity (lattice units)")
+    re_values: list[float] = Field(
+        ..., min_length=2, max_length=20, description="Reynolds-number sweep values"
+    )
+    radius: float = Field(12.0, gt=0, description="Cylinder radius (cells)")
+    n_steps: int = Field(1200, ge=1, description="Total time steps")
+    output_interval: int = Field(200, ge=1, description="Output every N steps")
+    device: str = Field("cpu", description="Torch device (cpu / cuda:0 …)")
+    seed: int = 0
+    physics: PhysicsSelection | None = None
+
+
 @router.post("/cylinder-flow")
 async def start_cylinder_flow(params: CylinderFlowParams) -> dict:
     """Start a 2D cylinder flow simulation."""
@@ -219,6 +235,63 @@ async def start_cylinder_flow(params: CylinderFlowParams) -> dict:
         fn=_run,
     )
     return {"job_id": job_id, "message": "Cylinder flow job submitted"}
+
+
+@router.post("/cylinder-flow/scan")
+async def start_cylinder_flow_scan(params: CylinderFlowScanParams) -> dict:
+    """Submit multiple cylinder-flow jobs for Reynolds-number sweep."""
+    scan_group = uuid4().hex[:12]
+    job_ids: list[str] = []
+    values = [float(v) for v in params.re_values]
+    total = len(values)
+
+    for idx, re_value in enumerate(values, start=1):
+        single_params = CylinderFlowParams(
+            nx=params.nx,
+            ny=params.ny,
+            u_in=params.u_in,
+            re=re_value,
+            radius=params.radius,
+            n_steps=params.n_steps,
+            output_interval=params.output_interval,
+            device=params.device,
+            seed=params.seed,
+            physics=params.physics,
+        )
+        run_config, submit_config = _prepare_solver_configs("cylinder_flow", single_params)
+
+        def _run(job: job_manager.Job, rc: dict[str, Any] = run_config) -> dict:
+            from tensorlbm import CylinderFlowConfig, run_cylinder_flow
+
+            cfg = CylinderFlowConfig(
+                **_overwrite_output_root(rc, job),
+            )
+            run_dir = run_cylinder_flow(cfg)
+            return {"run_dir": str(run_dir)}
+
+        submit_cfg = dict(submit_config)
+        submit_cfg["scan"] = {
+            "group": scan_group,
+            "parameter": "re",
+            "index": idx,
+            "total": total,
+            "value": re_value,
+        }
+        job_id = job_manager.submit(
+            name=f"Cylinder Flow Scan [{idx}/{total}] Re={re_value}",
+            job_type="cylinder_flow",
+            config=submit_cfg,
+            fn=_run,
+        )
+        job_ids.append(job_id)
+
+    return {
+        "message": "Cylinder flow parameter scan jobs submitted",
+        "scan_group": scan_group,
+        "parameter": "re",
+        "values": values,
+        "job_ids": job_ids,
+    }
 
 
 # ---------------------------------------------------------------------------
