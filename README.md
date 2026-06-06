@@ -150,6 +150,7 @@ Run the full benchmark suite:
 ```bash
 PYTHONPATH=src python benchmarks/bench_marine.py
 PYTHONPATH=src python benchmarks/bench_multiphase.py
+PYTHONPATH=src python benchmarks/bench_dam_break.py --fast
 ```
 
 `bench_multiphase.py` 现已包含 2D + 3D 多相基准，覆盖静液滴、SCMP 自旋分相、Free-Energy 相场液滴松弛，以及 D3Q19 三维静液滴 / 三维自旋分相。
