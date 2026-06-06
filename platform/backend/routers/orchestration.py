@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from itertools import product
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -129,8 +128,16 @@ async def orchestration_kpis() -> dict[str, Any]:
 
     throughput_jobs_per_hour: float | None = None
     if completed:
-        created_times = [datetime.fromisoformat(r["created_at"]) for r in completed if r.get("created_at")]
-        completed_times = [datetime.fromisoformat(r["completed_at"]) for r in completed if r.get("completed_at")]
+        created_times = [
+            datetime.fromisoformat(r["created_at"])
+            for r in completed
+            if r.get("created_at")
+        ]
+        completed_times = [
+            datetime.fromisoformat(r["completed_at"])
+            for r in completed
+            if r.get("completed_at")
+        ]
         if created_times and completed_times:
             elapsed = (max(completed_times) - min(created_times)).total_seconds()
             if elapsed > 0:
