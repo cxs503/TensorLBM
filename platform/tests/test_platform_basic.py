@@ -52,6 +52,8 @@ def test_openapi(client):
         "/api/solve/cylinder-flow/scan",
         "/api/benchmarks/accuracy",
         "/api/benchmarks/mlups",
+        "/api/orchestration/templates",
+        "/api/ai/governance/confidence-gate",
     ]
     for p in expected:
         assert p in paths, f"OpenAPI missing route {p}"

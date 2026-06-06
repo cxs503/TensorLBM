@@ -21,10 +21,12 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 from . import job_manager  # noqa: E402
 from .routers import (  # noqa: E402
     agent,
+    ai_governance,
     ai_transformer,
     benchmarks,
     cad,
     jobs,
+    orchestration,
     postprocess,
     preprocess,
     solver,
@@ -97,6 +99,8 @@ app.include_router(postprocess.router, prefix="/api/postprocess", tags=["Post-pr
 app.include_router(benchmarks.router, prefix="/api/benchmarks", tags=["Benchmarks"])
 app.include_router(agent.router, prefix="/api/agent", tags=["LLM Agent"])
 app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transformer"])
+app.include_router(ai_governance.router, prefix="/api/ai/governance", tags=["AI Governance"])
+app.include_router(orchestration.router, prefix="/api/orchestration", tags=["Orchestration"])
 
 # ---------------------------------------------------------------------------
 # WebSocket
