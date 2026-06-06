@@ -786,8 +786,12 @@ def run_free_energy_droplet(config: FreeEnergyDropletConfig) -> dict[str, object
             _rho, ux, uy = macroscopic(f)
             phase_mass = float(phi.sum().item())
             equiv_radius = _equivalent_radius_from_phi(phi)
-            rel_mass_drift = abs(phase_mass - initial_phase_mass) / max(abs(initial_phase_mass), 1e-12)
-            rel_radius_drift = abs(equiv_radius - initial_equiv_radius) / max(initial_equiv_radius, 1e-12)
+            rel_mass_drift = abs(phase_mass - initial_phase_mass) / max(
+                abs(initial_phase_mass), 1e-12,
+            )
+            rel_radius_drift = abs(equiv_radius - initial_equiv_radius) / max(
+                initial_equiv_radius, 1e-12,
+            )
             max_velocity = float(torch.sqrt(ux ** 2 + uy ** 2).max().item())
             phi_min = float(phi.min().item())
             phi_max = float(phi.max().item())
@@ -814,8 +818,12 @@ def run_free_energy_droplet(config: FreeEnergyDropletConfig) -> dict[str, object
     _rho, ux, uy = macroscopic(f)
     final_phase_mass = float(final_phi.sum().item())
     final_equiv_radius = _equivalent_radius_from_phi(final_phi)
-    relative_phase_mass_drift = abs(final_phase_mass - initial_phase_mass) / max(abs(initial_phase_mass), 1e-12)
-    relative_radius_drift = abs(final_equiv_radius - initial_equiv_radius) / max(initial_equiv_radius, 1e-12)
+    relative_phase_mass_drift = abs(final_phase_mass - initial_phase_mass) / max(
+        abs(initial_phase_mass), 1e-12,
+    )
+    relative_radius_drift = abs(final_equiv_radius - initial_equiv_radius) / max(
+        initial_equiv_radius, 1e-12,
+    )
     max_spurious_u = float(torch.sqrt(ux ** 2 + uy ** 2).max().item())
     final_phi_min = float(final_phi.min().item())
     final_phi_max = float(final_phi.max().item())
