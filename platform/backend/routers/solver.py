@@ -5,8 +5,8 @@ corresponding tensorlbm simulation function in a background thread.
 """
 from __future__ import annotations
 
-from uuid import uuid4
 from typing import Any, Literal
+from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field

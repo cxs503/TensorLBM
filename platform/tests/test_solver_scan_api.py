@@ -1,13 +1,23 @@
 """Tests for cylinder-flow parameter-scan solver endpoint."""
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 
-def test_cylinder_flow_scan_submits_multiple_jobs(client, monkeypatch):
+if TYPE_CHECKING:
+    from _pytest.monkeypatch import MonkeyPatch
+    from fastapi.testclient import TestClient
+
+
+def test_cylinder_flow_scan_submits_multiple_jobs(
+    client: TestClient, monkeypatch: MonkeyPatch
+) -> None:
     from backend.routers import solver
 
-    calls: list[dict] = []
+    calls: list[dict[str, object]] = []
 
-    def _fake_submit(*, name, job_type, config, fn):  # noqa: ANN001
+    def _fake_submit(
+        *, name: str, job_type: str, config: dict[str, object], fn: object
+    ) -> str:
         calls.append({"name": name, "job_type": job_type, "config": config, "fn": fn})
         return f"job-{len(calls)}"
 
@@ -36,7 +46,7 @@ def test_cylinder_flow_scan_submits_multiple_jobs(client, monkeypatch):
     assert all(c["config"]["physics"]["turbulence_model"] == "smagorinsky_les" for c in calls)
 
 
-def test_cylinder_flow_scan_requires_at_least_two_values(client):
+def test_cylinder_flow_scan_requires_at_least_two_values(client: TestClient) -> None:
     r = client.post(
         "/api/solve/cylinder-flow/scan",
         json={
