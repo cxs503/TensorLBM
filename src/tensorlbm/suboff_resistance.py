@@ -6,12 +6,16 @@ from dataclasses import dataclass, field
 
 import torch
 
+from .adaptive_refinement import (
+    AdaptationSchedule,
+    AdaptiveSolver3D,
+    nonequilibrium_indicator_3d,
+)
 from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
-from .d3q19 import equilibrium3d
+from .d3q19 import equilibrium3d, macroscopic3d
 from .obstacles import compute_obstacle_forces_3d
 from .solver3d import stream3d
 from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask, suboff_statistics
-from .surface_refinement import SurfaceRefinementSolver
 from .turbulence import collide_smagorinsky_mrt3d
 from .utils import resolve_device
 
@@ -41,6 +45,10 @@ class SuboffResistanceBenchmarkConfig:
     adaptive_l1_pad: int = 4
     adaptive_l2_margin: int = 1
     adaptive_l2_pad: int = 2
+    adaptive_interval: int = 5
+    adaptive_refine_threshold: float = 1.0e-4
+    adaptive_coarsen_threshold: float = 1.0e-6
+    adaptive_max_patches: int = 8
     geometry: SuboffConfig = field(default_factory=SuboffConfig)
 
     def __post_init__(self) -> None:
@@ -75,6 +83,18 @@ class SuboffResistanceBenchmarkConfig:
             raise ValueError("adaptive_l2_margin must be >= 0")
         if self.adaptive_l2_pad < 0:
             raise ValueError("adaptive_l2_pad must be >= 0")
+        if self.adaptive_interval < 1:
+            raise ValueError("adaptive_interval must be >= 1")
+        if self.adaptive_refine_threshold <= 0.0:
+            raise ValueError("adaptive_refine_threshold must be > 0")
+        if self.adaptive_coarsen_threshold <= 0.0:
+            raise ValueError("adaptive_coarsen_threshold must be > 0")
+        if self.adaptive_coarsen_threshold >= self.adaptive_refine_threshold:
+            raise ValueError(
+                "adaptive_coarsen_threshold must be < adaptive_refine_threshold"
+            )
+        if self.adaptive_max_patches < 1:
+            raise ValueError("adaptive_max_patches must be >= 1")
 
     @property
     def resolved_radius_m(self) -> float:
@@ -152,55 +172,47 @@ def _run_suboff_lbm_drag(
     drag_samples: list[float] = []
     coarse_cells = int(nx * ny * nz)
 
+    adaptive_solver: AdaptiveSolver3D | None = None
+    adaptive_cells: list[float] = []
     if config.use_adaptive_mesh:
-        amr_solver = SurfaceRefinementSolver.from_mask(
-            mask,
-            wall_mask,
+        adaptive_solver = AdaptiveSolver3D(
             f,
-            L1_pad=config.adaptive_l1_pad,
-            L2_margin=config.adaptive_l2_margin,
-            L2_pad=config.adaptive_l2_pad,
+            schedule=AdaptationSchedule(
+                interval=config.adaptive_interval,
+                warmup=config.lbm_warmup_steps,
+                max_patches=config.adaptive_max_patches,
+                refine_threshold=config.adaptive_refine_threshold,
+                coarsen_threshold=config.adaptive_coarsen_threshold,
+            ),
+            mask=mask,
         )
 
-        def _boundary(level) -> None:
-            level.f = apply_zou_he_channel_boundaries_3d(
-                level.f,
-                u_in=config.lbm_u_in,
-                wall_mask=level.wall_mask,
-                obstacle_mask=level.mask,
-            )
+    for step in range(1, config.lbm_steps + 1):
+        f = collide_smagorinsky_mrt3d(f, tau=config.lbm_tau, C_s=config.smagorinsky_cs)
+        f = stream3d(f)
+        fx, _, _ = compute_obstacle_forces_3d(f, mask)
+        f = apply_zou_he_channel_boundaries_3d(
+            f,
+            u_in=config.lbm_u_in,
+            wall_mask=wall_mask,
+            obstacle_mask=mask,
+        )
+        if adaptive_solver is not None:
+            adaptive_solver.coarse_f = f
+            if adaptive_solver.should_adapt(step):
+                rho, ux, uy, uz = macroscopic3d(f)
+                indicator = nonequilibrium_indicator_3d(f, rho, ux, uy, uz)
+                adaptive_solver.adapt(indicator)
+            adaptive_cells.append(float(adaptive_solver.total_cells))
+        if step > config.lbm_warmup_steps and (
+            step % config.lbm_sample_interval == 0 or step == config.lbm_steps
+        ):
+            drag_samples.append(float(fx.item()))
 
-        for step in range(1, config.lbm_steps + 1):
-            amr_solver.step(
-                lambda x: collide_smagorinsky_mrt3d(
-                    x, tau=config.lbm_tau, C_s=config.smagorinsky_cs
-                ),
-                stream3d,
-                _boundary,
-            )
-            fx, _, _ = compute_obstacle_forces_3d(amr_solver.levels[0].f, mask)
-            if step > config.lbm_warmup_steps and (
-                step % config.lbm_sample_interval == 0 or step == config.lbm_steps
-            ):
-                drag_samples.append(float(fx.item()))
-
-        active_cells = int(amr_solver.total_cells)
-        finest_uniform_cells = int(coarse_cells * 64)
+    if adaptive_cells:
+        active_cells = int(round(sum(adaptive_cells) / len(adaptive_cells)))
+        finest_uniform_cells = int(coarse_cells * 9)
     else:
-        for step in range(1, config.lbm_steps + 1):
-            f = collide_smagorinsky_mrt3d(f, tau=config.lbm_tau, C_s=config.smagorinsky_cs)
-            f = stream3d(f)
-            fx, _, _ = compute_obstacle_forces_3d(f, mask)
-            f = apply_zou_he_channel_boundaries_3d(
-                f,
-                u_in=config.lbm_u_in,
-                wall_mask=wall_mask,
-                obstacle_mask=mask,
-            )
-            if step > config.lbm_warmup_steps and (
-                step % config.lbm_sample_interval == 0 or step == config.lbm_steps
-            ):
-                drag_samples.append(float(fx.item()))
         active_cells = coarse_cells
         finest_uniform_cells = coarse_cells
 
