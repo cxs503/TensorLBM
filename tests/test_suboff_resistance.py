@@ -44,3 +44,23 @@ def test_suboff_resistance_iteration_error_drops() -> None:
     errs = [float(i["error_pct"]) for i in out["iterations"] if i["error_pct"] is not None]
     assert errs
     assert min(errs) <= 3.0
+
+
+def test_suboff_resistance_adaptive_mesh_quantitative_metrics() -> None:
+    cfg = SuboffResistanceBenchmarkConfig(
+        hull_type="full",
+        base_length_lu=40.0,
+        max_iterations=2,
+        target_error_pct=5.0,
+        lbm_steps=30,
+        lbm_warmup_steps=10,
+        use_adaptive_mesh=True,
+    )
+    out = run_suboff_resistance_benchmark(cfg)
+    mesh = out["adaptive_mesh"]
+    assert mesh["enabled"] is True
+    assert float(mesh["active_cells_mean"]) > 0.0
+    assert float(mesh["finest_uniform_cells_mean"]) > float(mesh["active_cells_mean"])
+    assert float(mesh["cell_saving_pct_mean"]) > 0.0
+    for it in out["iterations"]:
+        assert bool(it["mesh"]["adaptive"]) is True
