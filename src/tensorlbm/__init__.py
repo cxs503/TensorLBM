@@ -1,4 +1,18 @@
 from ._version import __version__
+from .adaptive_refinement import (
+    AdaptationSchedule,
+    AdaptiveSolver2D,
+    AdaptiveSolver3D,
+    AMRPatch2D,
+    AMRPatch3D,
+    gradient_indicator_2d,
+    gradient_indicator_3d,
+    mark_cells_for_refinement,
+    nonequilibrium_indicator_2d,
+    nonequilibrium_indicator_3d,
+    vorticity_indicator_2d,
+    vorticity_indicator_3d,
+)
 from .ai import (
     AIPipelineResult,
     EddyViscosityDataset,
@@ -338,6 +352,19 @@ from .wave_bc import (
 
 __all__ = [
     "__version__",
+    # Adaptive mesh refinement (AMR)
+    "AdaptationSchedule",
+    "AMRPatch2D",
+    "AMRPatch3D",
+    "AdaptiveSolver2D",
+    "AdaptiveSolver3D",
+    "nonequilibrium_indicator_2d",
+    "vorticity_indicator_2d",
+    "gradient_indicator_2d",
+    "nonequilibrium_indicator_3d",
+    "vorticity_indicator_3d",
+    "gradient_indicator_3d",
+    "mark_cells_for_refinement",
     # D2Q9 lattice
     "C",
     "W",
