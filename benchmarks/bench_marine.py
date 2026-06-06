@@ -451,6 +451,7 @@ def bench_suboff_resistance(output_root: Path, full: bool) -> dict[str, object]:
         base_length_lu=64.0 if full else 48.0,
         max_iterations=4 if full else 3,
         target_error_pct=3.0,
+        use_adaptive_mesh=True,
     )
     result = run_suboff_resistance_benchmark(cfg)
     final_error = float(result["final_error_pct"])
@@ -464,6 +465,12 @@ def bench_suboff_resistance(output_root: Path, full: bool) -> dict[str, object]:
         f"  {'✓' if bool(result['target_met']) else '✗'}"
     )
     print(f"  {'Cd (sim / ref)':<45} {float(result['simulated']['cd']):8.4f} / {cd_ref:8.4f}")
+    mesh = result.get("adaptive_mesh", {})
+    if isinstance(mesh, dict) and bool(mesh.get("enabled", False)):
+        print(
+            f"  {'AMR cell saving vs full 4x uniform':<45}"
+            f" {float(mesh.get('cell_saving_pct_mean', 0.0)):8.2f}%"
+        )
     return result
 
 
