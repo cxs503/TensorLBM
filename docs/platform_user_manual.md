@@ -155,7 +155,7 @@ PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 `POST /api/benchmarks/{type}`：
 
 * `marine`：可选 `cases=["cylinder","sloshing","pipeline","turbulent_channel","wigley"]`；`fast=True` 用减小算例。
-* `multiphase`：静液滴 (Laplace) + 自旋分相 + 双相 Poiseuille；`fast=True` 用小网格。
+* `multiphase`：静液滴 (Laplace) + 自旋分相 + Free-Energy 相场液滴松弛 + 双相 Poiseuille；`fast=True` 用小网格。
 * `ghia`：与 Ghia (1982) Re=100/400/1000 对比顶盖驱动方腔。
 * `mlups`：D2Q9 BGK 性能基准。
 * `porous`：Laplace 多孔 + 毛细侵入。
