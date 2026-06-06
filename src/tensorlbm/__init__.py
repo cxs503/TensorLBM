@@ -146,6 +146,11 @@ from .multiphase_benchmarks import (
     run_two_phase_channel_compare,
 )
 from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
+from .non_newtonian import (
+    apparent_viscosity_power_law,
+    collide_power_law_bgk,
+    strain_rate_magnitude_2d,
+)
 from .obstacles import (
     compute_obstacle_forces_3d,
     compute_obstacle_forces_27,
@@ -615,6 +620,10 @@ __all__ = [
     "compute_q_generic_3d",
     # Unit converter
     "LBMUnitConverter",
+    # Non-Newtonian (power-law) rheology
+    "strain_rate_magnitude_2d",
+    "apparent_viscosity_power_law",
+    "collide_power_law_bgk",
     # Thermal LBM (D2Q9 + D2Q5 double-distribution)
     "C_D2Q5",
     "W_D2Q5",
