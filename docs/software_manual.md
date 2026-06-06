@@ -39,6 +39,7 @@ TensorLBM is a PyTorch-based Lattice Boltzmann Method (LBM) simulation platform 
 | **D2Q9 格子** | 2D 九速度模型，含 BGK/MRT 碰撞算子 |
 | **D3Q19/D3Q27 格子** | 3D 十九/二十七速度模型 |
 | **多相流模型** | Shan-Chen（单/双组分）、颜色梯度（Color-Gradient）、自由能相场 |
+| **非牛顿流变** | 幂律（Power-law）表观黏度与空间变 τ BGK 碰撞 |
 | **湍流模型** | Smagorinsky、WALE、Vreman LES 模型 |
 | **边界条件** | 反弹（Bounce-Back）、Zou-He 进口速度/出口压力 BC |
 | **船舶与海洋工程** | Wigley 船体、近床管道、液舱晃动、湍流槽道 |
