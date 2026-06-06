@@ -75,6 +75,20 @@ def test_multiphase_benchmark(client, waiter):
     assert final["status"] == "completed", final.get("error")
 
 
+def test_accuracy_benchmark_single_case(client, waiter):
+    r = client.post(
+        "/api/benchmarks/accuracy",
+        json={"cases": ["rotating_cylinder"], "fast": True, "device": "cpu"},
+    )
+    assert r.status_code == 200
+    job_id = r.json()["job_id"]
+    final = waiter(job_id, timeout=900.0)
+    assert final["status"] == "completed", final.get("error")
+    rot = final["result"].get("rotating_cylinder")
+    assert isinstance(rot, list)
+    assert len(rot) == 2
+
+
 def test_ghia_benchmark(client, waiter):
     r = client.post(
         "/api/benchmarks/ghia",

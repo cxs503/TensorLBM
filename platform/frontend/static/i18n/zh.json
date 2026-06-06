@@ -329,9 +329,11 @@
   "bench": {
     "title": "基准测试",
     "marine": "船海工程",
-    "marine_desc": "圆柱绕流（St/Cd）、摇涡筒（Faltinsen）、海底管道（St）、湍流通道（对数律）、Wigley 船型（Cd）、SUBOFF 阻力（误差<3%）。",
+    "marine_desc": "圆柱绕流（St/Cd）、摇涡筒（Faltinsen）、海底管道（St）、湍流通道（对数律）、Wigley 船型（Cd）、SUBOFF 阻力（误差<3%）与几何库一致性校核。",
     "multiphase": "多相 LBM",
     "multiphase_desc": "静态液滴（Laplace）、旋节分解、两相 Poiseuille 对比（SCMC + CG）。",
+    "accuracy": "单相精度基准套件",
+    "accuracy_desc": "包含盖驱方腔（Ghia）、后向台阶（Armaly）与旋转圆柱（Mittal）三类定量精度验证。",
     "ghia": "盖驱方腔 – Ghia 对比",
     "ghia_desc": "将中线速度剩与 Ghia et al.（1982） Re = 100/400/1000 参考数据对比。",
     "mlups": "MLUPS 性能测试",
