@@ -152,6 +152,8 @@ PYTHONPATH=src python benchmarks/bench_marine.py
 PYTHONPATH=src python benchmarks/bench_multiphase.py
 ```
 
+`bench_multiphase.py` 现已包含 2D + 3D 多相基准（含 D3Q19 三维静液滴与三维自旋分相）。
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow, coding conventions, and how to add a new solver or benchmark.
