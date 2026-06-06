@@ -949,6 +949,38 @@
           </div>
         </div>
 
+        <!-- Accuracy -->
+        <div class="col-md-6">
+          <div class="card bench-card" id="bench-card-accuracy">
+            <div class="card-header d-flex align-items-center">
+              <i class="bi bi-bullseye me-2"></i> <span data-i18n="bench.accuracy">Single-phase Accuracy Suite</span>
+              <span class="ms-auto badge bg-secondary" id="bench-status-accuracy" data-i18n="bench.idle">idle</span>
+            </div>
+            <div class="card-body small">
+              <p data-i18n="bench.accuracy_desc">Lid-driven cavity (Ghia), backward-facing step (Armaly), and rotating cylinder (Mittal) quantitative validation.</p>
+              <div class="row g-2 mb-2">
+                <div class="col-5">
+                  <label class="form-label mb-1" data-i18n="bench.mode">Mode</label>
+                  <select class="form-select form-select-sm" id="bench-accuracy-fast">
+                    <option value="true" data-i18n="bench.fast">Fast</option>
+                    <option value="false" data-i18n="bench.full">Full</option>
+                  </select>
+                </div>
+                <div class="col-4">
+                  <label class="form-label mb-1" data-i18n="bench.device">Device</label>
+                  <select class="form-select form-select-sm" id="bench-accuracy-device">
+                    <option value="cpu">cpu</option>
+                  </select>
+                </div>
+                <div class="col-3 d-flex align-items-end">
+                  <button class="btn btn-primary btn-sm w-100" onclick="runBenchmark('accuracy')"><i class="bi bi-play-fill"></i> <span data-i18n="bench.run_btn">Run</span></button>
+                </div>
+              </div>
+              <div id="bench-result-accuracy"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- MLUPS -->
         <div class="col-md-6">
           <div class="card bench-card" id="bench-card-mlups">
@@ -2756,13 +2788,18 @@ async function runBenchmark(bench) {
   if (bench === 'marine') {
     const fast = document.getElementById('bench-marine-fast').value === 'true';
     const device = document.getElementById('bench-marine-device').value;
-    body = { fast, device, cases: ['cylinder','sloshing','pipeline','turbulent_channel','wigley','suboff'] };
+    body = { fast, device, cases: ['cylinder','sloshing','pipeline','turbulent_channel','wigley','suboff','geometry_library'] };
     endpoint = '/api/benchmarks/marine';
   } else if (bench === 'multiphase') {
     const fast = document.getElementById('bench-multiphase-fast').value === 'true';
     const device = document.getElementById('bench-multiphase-device').value;
     body = { fast, device };
     endpoint = '/api/benchmarks/multiphase';
+  } else if (bench === 'accuracy') {
+    const fast = document.getElementById('bench-accuracy-fast').value === 'true';
+    const device = document.getElementById('bench-accuracy-device').value;
+    body = { fast, device, cases: ['cavity', 'bfs', 'rotating_cylinder'] };
+    endpoint = '/api/benchmarks/accuracy';
   } else if (bench === 'ghia') {
     const nx = +document.getElementById('bench-ghia-nx').value;
     const re = +document.getElementById('bench-ghia-re').value;

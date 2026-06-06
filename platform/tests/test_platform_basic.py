@@ -50,6 +50,7 @@ def test_openapi(client):
         "/api/cad/hull-types",
         "/api/solve/cylinder-flow",
         "/api/solve/cylinder-flow/scan",
+        "/api/benchmarks/accuracy",
         "/api/benchmarks/mlups",
     ]
     for p in expected:
