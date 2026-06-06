@@ -199,6 +199,7 @@ class AIPipelineResult:
     n_samples: int
     data_source: str = "les"
     n_snapshots: int = 0
+    training_time_s: float = 0.0
     training: dict[str, Any] = field(default_factory=dict)
     validation: dict[str, Any] = field(default_factory=dict)
 
@@ -362,6 +363,7 @@ def run_ai_les_pipeline(
         n_samples=len(dataset),
         data_source=source,
         n_snapshots=len(snapshots),
+        training_time_s=float(training.get("training_time_s", 0.0)),
         training=training,
         validation=validation,
     )
