@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import pickle
 from pathlib import Path
 
 import pytest
@@ -168,6 +169,34 @@ def test_model_save_load_roundtrip(tmp_path: Path) -> None:
     assert torch.allclose(y_before, y_after, atol=1e-7)
 
 
+def test_train_eddy_viscosity_model_early_stops_when_loss_plateaus(tmp_path: Path) -> None:
+    ux, uy = _make_synthetic_velocity(20, 20)
+    feats, target = extract_les_samples_2d(ux, uy)
+    ds = EddyViscosityDataset(features=feats, targets=target)
+    meta = train_eddy_viscosity_model(
+        ds,
+        tmp_path / "early-stop.pt",
+        TrainConfig(epochs=5, batch_size=128, learning_rate=0.0, patience=0, seed=0),
+    )
+    assert meta["stopped_early"] is True
+    assert len(meta["history"]) == 2
+
+
+def test_train_eddy_viscosity_model_records_scheduler_and_mae(tmp_path: Path) -> None:
+    ux, uy = _make_synthetic_velocity(20, 20)
+    feats, target = extract_les_samples_2d(ux, uy)
+    ds = EddyViscosityDataset(features=feats, targets=target)
+    meta = train_eddy_viscosity_model(
+        ds,
+        tmp_path / "sched.pt",
+        TrainConfig(epochs=4, batch_size=128, learning_rate=1e-3, lr_scheduler="cosine", seed=0),
+    )
+    lrs = [row["lr"] for row in meta["history"]]
+    assert len(lrs) == 4
+    assert min(lrs) < max(lrs)
+    assert meta["final_val_mae"] >= 0.0
+
+
 def test_train_eddy_viscosity_model_converges(tmp_path: Path) -> None:
     # Generate a dataset from a smooth synthetic field; the algebraic
     # Smagorinsky label is a smooth function of the inputs, so even a
@@ -306,6 +335,7 @@ def test_flow_transformer_ssl_train_and_infer(tmp_path: Path) -> None:
     assert len(meta["history"]) == 3
     assert meta["final_train_loss"] >= 0.0
     assert meta["final_val_loss"] >= 0.0
+    assert all(isinstance(row["epoch"], int) for row in meta["history"])
 
     model = load_flow_transformer_model(out)
     ux, uy = _make_synthetic_velocity(12, 10)
@@ -314,6 +344,63 @@ def test_flow_transformer_ssl_train_and_infer(tmp_path: Path) -> None:
     assert pred["max_abs_error"] >= 0.0
     assert pred["ux_reconstructed"].shape == ux.shape
     assert pred["uy_reconstructed"].shape == uy.shape
+
+
+def test_flow_transformer_single_snapshot_and_schedules(tmp_path: Path) -> None:
+    out = tmp_path / "flow_transformer_single.pt"
+    meta = train_flow_transformer_self_supervised(
+        snapshots=[_make_synthetic_velocity(12, 10)],
+        out_path=out,
+        arch=FlowTransformerArch(d_model=16, n_heads=2, n_layers=1, ffn_dim=32, max_tokens=2048),
+        config=FlowTransformerTrainConfig(
+            epochs=4,
+            batch_size=1,
+            learning_rate=1e-3,
+            lr_scheduler="cosine",
+            mask_ratio=0.3,
+            mask_ratio_schedule="linear",
+            mask_ratio_start=0.1,
+            seed=0,
+        ),
+    )
+    assert meta["n_snapshots"] == 1
+    assert meta["final_val_loss"] == pytest.approx(meta["final_train_loss"])
+    assert meta["history"][0]["mask_ratio"] < meta["history"][-1]["mask_ratio"]
+    assert meta["history"][0]["lr"] > meta["history"][-1]["lr"]
+
+
+def test_safe_loading_rejects_malicious_model_pickle(tmp_path: Path) -> None:
+    target = tmp_path / "malicious-model.txt"
+
+    class _Evil:
+        def __reduce__(self):
+            return (exec, (f"from pathlib import Path; Path({str(target)!r}).write_text('boom')",))
+
+    payload = tmp_path / "bad-model.pt"
+    torch.save(_Evil(), payload)
+    payload.with_suffix(payload.suffix + ".json").write_text(
+        json.dumps({"arch": {"in_features": 3}, "format_version": 2}),
+    )
+    with pytest.raises((pickle.UnpicklingError, RuntimeError, ValueError)):
+        load_model(payload)
+    assert not target.exists()
+
+
+def test_safe_loading_rejects_malicious_dataset_pickle(tmp_path: Path) -> None:
+    target = tmp_path / "malicious-dataset.txt"
+
+    class _Evil:
+        def __reduce__(self):
+            return (exec, (f"from pathlib import Path; Path({str(target)!r}).write_text('boom')",))
+
+    payload = tmp_path / "bad-dataset.pt"
+    torch.save(_Evil(), payload)
+    payload.with_suffix(payload.suffix + ".json").write_text(
+        json.dumps({"c_s": 0.1, "description": "bad", "format_version": 2}),
+    )
+    with pytest.raises((pickle.UnpicklingError, RuntimeError, ValueError)):
+        load_dataset_pt(payload)
+    assert not target.exists()
 
 
 def test_run_ai_les_pipeline_dns_source_smoke(tmp_path: Path) -> None:

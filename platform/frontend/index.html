@@ -1123,6 +1123,7 @@
         <div class="card-header"><span data-i18n="ai_flow.result_title">Result</span></div>
         <div class="card-body">
           <pre id="aiflow-result" class="small mb-0" style="white-space:pre-wrap;max-height:260px;overflow:auto">-</pre>
+          <canvas id="aiflow-history-chart" class="w-100 mt-3" height="180"></canvas>
         </div>
       </div>
     </div><!-- /ai-flow -->
@@ -1319,6 +1320,7 @@ function connectWS() {
       updateStats();
       updateBenchStatus(j);
       if (ppSelectedJobId === j.job_id) refreshPP();
+      if (aiFlowActiveJobId === j.job_id || j.job_type === 'ai_transformer_train') aiFlowHandleJob(j);
     }
   };
   // Ping to keep alive
@@ -2829,10 +2831,112 @@ async function runBenchmark(bench) {
 // ============================================================
 // AI Flow Transformer
 // ============================================================
+let aiFlowActiveJobId = null;
+let aiFlowPollToken = 0;
+
 function aiFlowSetResult(obj) {
   const el = document.getElementById('aiflow-result');
   if (!el) return;
   el.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2);
+}
+
+function aiFlowRenderHistory(history) {
+  const canvas = document.getElementById('aiflow-history-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const width = Math.max(360, Math.floor(canvas.getBoundingClientRect().width || 360));
+  const height = Number(canvas.getAttribute('height') || 180);
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
+  ctx.clearRect(0, 0, width, height);
+  const rows = Array.isArray(history) ? history.filter(h => h && Number.isFinite(Number(h.train_loss))) : [];
+  if (!rows.length) {
+    ctx.fillStyle = '#6c757d';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('No training history', 12, 24);
+    return;
+  }
+  const values = rows.flatMap(row => [Number(row.train_loss), Number(row.val_loss)]).filter(Number.isFinite);
+  let yMin = Math.min(...values);
+  let yMax = Math.max(...values);
+  if (Math.abs(yMax - yMin) < 1e-12) {
+    yMin -= 1;
+    yMax += 1;
+  }
+  const pad = { left: 38, right: 12, top: 12, bottom: 24 };
+  const xScale = (idx) => {
+    if (rows.length === 1) return (width - pad.left - pad.right) / 2 + pad.left;
+    return pad.left + (idx / (rows.length - 1)) * (width - pad.left - pad.right);
+  };
+  const yScale = (value) => pad.top + ((yMax - value) / (yMax - yMin)) * (height - pad.top - pad.bottom);
+  ctx.strokeStyle = '#ced4da';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, height - pad.bottom);
+  ctx.lineTo(width - pad.right, height - pad.bottom);
+  ctx.stroke();
+  const drawSeries = (key, color) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    rows.forEach((row, idx) => {
+      const x = xScale(idx);
+      const y = yScale(Number(row[key]));
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  };
+  drawSeries('train_loss', '#0d6efd');
+  drawSeries('val_loss', '#dc3545');
+  ctx.fillStyle = '#495057';
+  ctx.font = '11px sans-serif';
+  ctx.fillText(`epochs: ${rows.length}`, pad.left, height - 6);
+  ctx.fillStyle = '#0d6efd';
+  ctx.fillText('train', width - 84, 16);
+  ctx.fillStyle = '#dc3545';
+  ctx.fillText('val', width - 40, 16);
+}
+
+function aiFlowHandleJob(job) {
+  if (!job) return;
+  const history = Array.isArray(job.diagnostics) && job.diagnostics.length
+    ? job.diagnostics.filter(d => d.kind === 'ai_transformer_epoch')
+    : ((job.result && job.result.history) || []);
+  aiFlowRenderHistory(history);
+  aiFlowSetResult({
+    job_id: job.job_id,
+    status: job.status,
+    error: job.error,
+    epochs_reported: history.length,
+    result: job.result || null,
+  });
+}
+
+async function aiFlowPollJob(jobId) {
+  const token = ++aiFlowPollToken;
+  while (token === aiFlowPollToken && aiFlowActiveJobId === jobId) {
+    try {
+      const job = await api('GET', `/api/ai/transformer/train/${jobId}`);
+      aiFlowHandleJob(job);
+      if (['completed', 'failed', 'cancelled'].includes(job.status)) {
+        if (job.status === 'completed') {
+          await aiFlowListModels();
+          showToast(t('ai_flow.train_done'), 'success');
+        } else {
+          showToast(`${t('common.error')} ${job.error || job.status}`, 'danger');
+        }
+        break;
+      }
+    } catch (e) {
+      aiFlowSetResult(`Error: ${e.message}`);
+      showToast(`${t('common.error')} ${e.message}`, 'danger');
+      break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
 }
 
 async function aiFlowListModels() {
@@ -2862,11 +2966,13 @@ async function aiFlowTrain() {
   const epochs = Number(document.getElementById('aiflow-epochs').value || 20);
   const mask_ratio = Number(document.getElementById('aiflow-mask').value || 0.15);
   aiFlowSetResult(t('common.computing'));
+  aiFlowRenderHistory([]);
   try {
     const r = await api('POST', '/api/ai/transformer/train', { nx, ny, epochs, mask_ratio });
+    aiFlowActiveJobId = r.job_id;
     aiFlowSetResult(r);
-    aiFlowListModels();
-    showToast(t('ai_flow.train_done'), 'success');
+    showToast(t('ai_flow.train_queued') || 'Training queued', 'info');
+    aiFlowPollJob(r.job_id);
   } catch (e) {
     aiFlowSetResult(`Error: ${e.message}`);
     showToast(`${t('common.error')} ${e.message}`, 'danger');

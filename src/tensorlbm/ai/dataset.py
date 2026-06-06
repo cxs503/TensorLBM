@@ -21,6 +21,7 @@ cylinder interior) can be excluded via the optional ``mask`` argument.
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -185,28 +186,38 @@ class EddyViscosityDataset:
 
 
 def save_dataset_pt(dataset: EddyViscosityDataset, path: str | Path) -> Path:
-    """Serialize the dataset to a ``.pt`` file."""
+    """Serialize the dataset to a tensor-only ``.pt`` file plus JSON metadata."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        {
-            "features": dataset.features,
-            "targets": dataset.targets,
-            "c_s": float(dataset.c_s),
-            "description": dataset.description,
-            "format_version": 1,
-        },
-        p,
-    )
+    torch.save({"features": dataset.features, "targets": dataset.targets}, p)
+    meta = {
+        "c_s": float(dataset.c_s),
+        "description": dataset.description,
+        "format_version": 2,
+    }
+    p.with_suffix(p.suffix + ".json").write_text(json.dumps(meta, indent=2))
     return p
 
 
 def load_dataset_pt(path: str | Path) -> EddyViscosityDataset:
     """Load a previously saved ``EddyViscosityDataset``."""
-    blob = torch.load(Path(path), map_location="cpu", weights_only=False)
+    p = Path(path)
+    blob = torch.load(p, map_location="cpu", weights_only=True)
+    meta_path = p.with_suffix(p.suffix + ".json")
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text())
+    elif isinstance(blob, dict):
+        meta = {
+            "c_s": blob.get("c_s", 0.1),
+            "description": blob.get("description", ""),
+        }
+    else:
+        meta = {}
+    if not isinstance(blob, dict) or "features" not in blob or "targets" not in blob:
+        raise ValueError(f"Unsupported dataset payload in {p}")
     return EddyViscosityDataset(
         features=blob["features"],
         targets=blob["targets"],
-        c_s=float(blob.get("c_s", 0.1)),
-        description=str(blob.get("description", "")),
+        c_s=float(meta.get("c_s", 0.1)),
+        description=str(meta.get("description", "")),
     )

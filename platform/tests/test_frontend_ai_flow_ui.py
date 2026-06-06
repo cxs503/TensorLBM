@@ -15,3 +15,5 @@ def test_index_contains_ai_flow_ui(client: TestClient) -> None:
     assert "aiFlowTrain" in html
     assert "aiFlowInfer" in html
     assert "aiFlowListModels" in html
+    assert "aiFlowPollJob" in html
+    assert "aiflow-history-chart" in html
