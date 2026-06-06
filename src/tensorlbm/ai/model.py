@@ -47,6 +47,14 @@ class EddyViscosityMLP(nn.Module):
     def __init__(self, arch: ModelArch | None = None) -> None:
         super().__init__()
         self.arch = arch or ModelArch()
+        self.register_buffer(
+            "feature_mean",
+            torch.zeros(self.arch.in_features, dtype=torch.float32),
+        )
+        self.register_buffer(
+            "feature_std",
+            torch.ones(self.arch.in_features, dtype=torch.float32),
+        )
         layers: list[nn.Module] = []
         in_dim = self.arch.in_features
         for _ in range(self.arch.n_hidden_layers):
@@ -58,13 +66,29 @@ class EddyViscosityMLP(nn.Module):
         layers.append(nn.Softplus(beta=10.0))
         self.net = nn.Sequential(*layers)
 
+    def set_feature_stats(self, mean: torch.Tensor, std: torch.Tensor) -> None:
+        """Persist feature-normalization statistics on the model."""
+        if mean.shape != (self.arch.in_features,) or std.shape != (self.arch.in_features,):
+            raise ValueError(
+                "Normalization stats must have shape "
+                f"({self.arch.in_features},), got {tuple(mean.shape)} and {tuple(std.shape)}",
+            )
+        self.feature_mean.copy_(
+            mean.detach().to(device=self.feature_mean.device, dtype=torch.float32),
+        )
+        self.feature_std.copy_(
+            std.detach().clamp_min(1e-6).to(device=self.feature_std.device, dtype=torch.float32),
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D401
         if x.shape[-1] != self.arch.in_features:
             raise ValueError(
                 f"Expected input with {self.arch.in_features} features, "
                 f"got tensor of shape {tuple(x.shape)}",
             )
-        return self.net(x)
+        mean = self.feature_mean.to(device=x.device, dtype=x.dtype)
+        std = self.feature_std.to(device=x.device, dtype=x.dtype)
+        return self.net((x - mean) / std)
 
 
 # ---------------------------------------------------------------------------
@@ -72,29 +96,41 @@ class EddyViscosityMLP(nn.Module):
 # ---------------------------------------------------------------------------
 
 def save_model(model: EddyViscosityMLP, path: str | Path) -> Path:
-    """Serialize a model and its architecture to a single ``.pt`` file."""
+    """Serialize a model to a tensor-only ``.pt`` file plus JSON metadata."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(
-        {
-            "state_dict": model.state_dict(),
-            "arch": asdict(model.arch),
-            "format_version": 1,
-        },
-        p,
-    )
+    torch.save(model.state_dict(), p)
     # Companion JSON for tooling that doesn't want to load a torch blob.
+    meta = {
+        "arch": asdict(model.arch),
+        "normalization": {
+            "feature_mean": model.feature_mean.detach().cpu().tolist(),
+            "feature_std": model.feature_std.detach().cpu().tolist(),
+        },
+        "format_version": 2,
+    }
     meta_path = p.with_suffix(p.suffix + ".json")
-    meta_path.write_text(json.dumps({"arch": asdict(model.arch)}, indent=2))
+    meta_path.write_text(json.dumps(meta, indent=2))
     return p
 
 
 def load_model(path: str | Path) -> EddyViscosityMLP:
     """Inverse of :func:`save_model`."""
-    blob = torch.load(Path(path), map_location="cpu", weights_only=False)
-    arch_dict = blob.get("arch") or {}
+    p = Path(path)
+    blob = torch.load(p, map_location="cpu", weights_only=True)
+    meta_path = p.with_suffix(p.suffix + ".json")
+    if meta_path.exists():
+        meta = json.loads(meta_path.read_text())
+        arch_dict = meta.get("arch") or {}
+    elif isinstance(blob, dict) and "arch" in blob:
+        arch_dict = blob.get("arch") or {}
+    else:
+        arch_dict = {}
     arch = ModelArch(**arch_dict) if arch_dict else ModelArch()
     model = EddyViscosityMLP(arch)
-    model.load_state_dict(blob["state_dict"])
+    state_dict = blob["state_dict"] if isinstance(blob, dict) and "state_dict" in blob else blob
+    if not isinstance(state_dict, dict):
+        raise ValueError(f"Unsupported model payload in {p}")
+    model.load_state_dict(state_dict)
     model.eval()
     return model
