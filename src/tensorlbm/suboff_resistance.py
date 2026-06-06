@@ -6,8 +6,13 @@ from dataclasses import dataclass, field
 
 import torch
 
+from .adaptive_refinement import (
+    AdaptationSchedule,
+    AdaptiveSolver3D,
+    nonequilibrium_indicator_3d,
+)
 from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
-from .d3q19 import equilibrium3d
+from .d3q19 import equilibrium3d, macroscopic3d
 from .obstacles import compute_obstacle_forces_3d
 from .solver3d import stream3d
 from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask, suboff_statistics
@@ -36,6 +41,14 @@ class SuboffResistanceBenchmarkConfig:
     lbm_sample_interval: int = 5
     smagorinsky_cs: float = 0.1
     max_length_lu: float = 80.0
+    use_adaptive_mesh: bool = False
+    adaptive_l1_pad: int = 4
+    adaptive_l2_margin: int = 1
+    adaptive_l2_pad: int = 2
+    adaptive_interval: int = 5
+    adaptive_refine_threshold: float = 1.0e-4
+    adaptive_coarsen_threshold: float = 1.0e-6
+    adaptive_max_patches: int = 8
     geometry: SuboffConfig = field(default_factory=SuboffConfig)
 
     def __post_init__(self) -> None:
@@ -64,6 +77,24 @@ class SuboffResistanceBenchmarkConfig:
             raise ValueError("lbm_sample_interval must be >= 1")
         if self.max_length_lu < 20.0:
             raise ValueError("max_length_lu must be >= 20")
+        if self.adaptive_l1_pad < 0:
+            raise ValueError("adaptive_l1_pad must be >= 0")
+        if self.adaptive_l2_margin < 0:
+            raise ValueError("adaptive_l2_margin must be >= 0")
+        if self.adaptive_l2_pad < 0:
+            raise ValueError("adaptive_l2_pad must be >= 0")
+        if self.adaptive_interval < 1:
+            raise ValueError("adaptive_interval must be >= 1")
+        if self.adaptive_refine_threshold <= 0.0:
+            raise ValueError("adaptive_refine_threshold must be > 0")
+        if self.adaptive_coarsen_threshold <= 0.0:
+            raise ValueError("adaptive_coarsen_threshold must be > 0")
+        if self.adaptive_coarsen_threshold >= self.adaptive_refine_threshold:
+            raise ValueError(
+                "adaptive_coarsen_threshold must be < adaptive_refine_threshold"
+            )
+        if self.adaptive_max_patches < 1:
+            raise ValueError("adaptive_max_patches must be >= 1")
 
     @property
     def resolved_radius_m(self) -> float:
@@ -115,7 +146,7 @@ def _run_suboff_lbm_drag(
     nz: int,
     length_lu: float,
     radius_lu: float,
-) -> tuple[float, float]:
+) -> tuple[float, float, dict[str, object]]:
     device = resolve_device(config.device)
     mask, _stats = build_suboff_mask(
         hull_type=hull_type,
@@ -139,6 +170,22 @@ def _run_suboff_lbm_drag(
     ref_area_lu = math.pi * radius_lu**2
     dyn_pressure_lu = 0.5 * config.lbm_u_in**2 * max(ref_area_lu, 1e-12)
     drag_samples: list[float] = []
+    coarse_cells = int(nx * ny * nz)
+
+    adaptive_solver: AdaptiveSolver3D | None = None
+    adaptive_cells: list[float] = []
+    if config.use_adaptive_mesh:
+        adaptive_solver = AdaptiveSolver3D(
+            f,
+            schedule=AdaptationSchedule(
+                interval=config.adaptive_interval,
+                warmup=config.lbm_warmup_steps,
+                max_patches=config.adaptive_max_patches,
+                refine_threshold=config.adaptive_refine_threshold,
+                coarsen_threshold=config.adaptive_coarsen_threshold,
+            ),
+            mask=mask,
+        )
 
     for step in range(1, config.lbm_steps + 1):
         f = collide_smagorinsky_mrt3d(f, tau=config.lbm_tau, C_s=config.smagorinsky_cs)
@@ -150,16 +197,39 @@ def _run_suboff_lbm_drag(
             wall_mask=wall_mask,
             obstacle_mask=mask,
         )
+        if adaptive_solver is not None:
+            adaptive_solver.coarse_f = f
+            if adaptive_solver.should_adapt(step):
+                rho, ux, uy, uz = macroscopic3d(f)
+                indicator = nonequilibrium_indicator_3d(f, rho, ux, uy, uz)
+                adaptive_solver.adapt(indicator)
+            adaptive_cells.append(float(adaptive_solver.total_cells))
         if step > config.lbm_warmup_steps and (
             step % config.lbm_sample_interval == 0 or step == config.lbm_steps
         ):
             drag_samples.append(float(fx.item()))
 
+    if adaptive_cells:
+        active_cells = int(round(sum(adaptive_cells) / len(adaptive_cells)))
+        finest_uniform_cells = int(coarse_cells * 9)
+    else:
+        active_cells = coarse_cells
+        finest_uniform_cells = coarse_cells
+
     if not drag_samples:
         drag_samples.append(0.0)
     fx_lu = float(sum(drag_samples) / len(drag_samples))
     cd = abs(fx_lu) / dyn_pressure_lu
-    return cd, fx_lu
+    mesh_stats = {
+        "adaptive": bool(config.use_adaptive_mesh),
+        "coarse_cells": coarse_cells,
+        "active_cells": active_cells,
+        "finest_uniform_cells": finest_uniform_cells,
+        "cell_saving_pct": (
+            (1.0 - float(active_cells) / max(float(finest_uniform_cells), 1.0)) * 100.0
+        ),
+    }
+    return cd, fx_lu, mesh_stats
 
 
 def run_suboff_resistance_benchmark(
@@ -211,7 +281,7 @@ def run_suboff_resistance_benchmark(
 
         dx = config.length_m / length_lu
         wetted_voxel = _voxel_wetted_area(mask, dx)
-        cd_sim, fx_lu = _run_suboff_lbm_drag(
+        cd_sim, fx_lu, mesh_stats = _run_suboff_lbm_drag(
             config=config,
             hull_type=hull_type,
             nx=nx,
@@ -249,6 +319,7 @@ def run_suboff_resistance_benchmark(
                     "tau": config.lbm_tau,
                     "steps": config.lbm_steps,
                 },
+                "mesh": mesh_stats,
                 "cd_richardson": richardson_cd if prev_cd is not None else None,
                 "error_pct": error_pct,
             }
@@ -274,6 +345,21 @@ def run_suboff_resistance_benchmark(
         "simulated": {
             "cd": best_cd,
             "resistance_n": best_resistance_n,
+        },
+        "adaptive_mesh": {
+            "enabled": bool(config.use_adaptive_mesh),
+            "active_cells_mean": (
+                float(sum(float(i["mesh"]["active_cells"]) for i in iterations))
+                / max(float(len(iterations)), 1.0)
+            ),
+            "finest_uniform_cells_mean": (
+                float(sum(float(i["mesh"]["finest_uniform_cells"]) for i in iterations))
+                / max(float(len(iterations)), 1.0)
+            ),
+            "cell_saving_pct_mean": (
+                float(sum(float(i["mesh"]["cell_saving_pct"]) for i in iterations))
+                / max(float(len(iterations)), 1.0)
+            ),
         },
         "iterations": iterations,
     }
