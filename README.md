@@ -18,6 +18,7 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 - A small, explicit public API in `src/tensorlbm/__init__.py`
 - **D2Q9** and **D3Q19** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
 - **BGK** and **MRT** collision operators for both 2D and 3D
+- Non-Newtonian **power-law BGK** rheology utilities (shear-rate, apparent viscosity, variable-τ collision)
 - Boundary conditions: bounce-back, **Zou/He** inlet-velocity and outlet-pressure BCs
 - Momentum-exchange force diagnostics (drag/lift) for the 2D cylinder
 - A 2D cylinder-flow runner with CLI, Strouhal-number extraction, structured outputs, and diagnostics

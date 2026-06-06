@@ -15,6 +15,7 @@ TensorLBM 是一个以 CPU 为首要目标的 PyTorch 格子玻尔兹曼方法 (
 - `src/tensorlbm/__init__.py` 中精简、明确的公开 API
 - **D2Q9** 和 **D3Q19** 格子原语（平衡态、宏观量、格子常数）
 - **BGK**、**MRT**、**TRT**、**正则化 BGK** 碰撞算子（支持二维和三维）
+- **非牛顿幂律 BGK**：提供剪切率估计、表观黏度计算与空间变 τ 碰撞
 - **大涡模拟（LES）**：Smagorinsky、动态 Smagorinsky（Germano 标识）
 - **多相流模型**（D2Q9 & D3Q19）：Shan-Chen 单/双组分、Color-Gradient、自由能/Phase-Field
 - **浸入边界法（IBM）**：二维和三维直接力施加
