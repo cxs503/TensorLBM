@@ -490,3 +490,146 @@ async def run_porous(params: PorousBenchmarkParams) -> dict:
         fn=_run,
     )
     return {"job_id": job_id, "message": "Porous media benchmark submitted"}
+
+
+# ---------------------------------------------------------------------------
+# Single-phase accuracy benchmark suite
+# ---------------------------------------------------------------------------
+
+class AccuracyBenchmarkParams(BaseModel):
+    cases: list[
+        Literal["cavity", "bfs", "rotating_cylinder"]
+    ] = Field(
+        default=["cavity", "bfs", "rotating_cylinder"],
+        description="Which accuracy benchmark cases to run",
+    )
+    fast: bool = Field(True, description="Use reduced step counts for quick validation")
+    device: str = "cpu"
+
+
+@router.post("/accuracy")
+async def run_accuracy(params: AccuracyBenchmarkParams) -> dict:
+    """Run the single-phase accuracy benchmark suite.
+
+    Covers lid-driven cavity (Ghia 1982), backward-facing step (Armaly 1983),
+    and rotating cylinder / Magnus effect (Mittal & Kumar 2003).
+    """
+
+    def _run(job: job_manager.Job) -> dict:
+        results: dict[str, object] = {}
+        output_root = job.output_dir
+
+        if "cavity" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
+            from tensorlbm import LidDrivenCavityConfig, run_lid_driven_cavity
+
+            nx = 64 if params.fast else 128
+            re_cases = [
+                (100, 8000 if params.fast else 30000),
+                (400, 10000 if params.fast else 40000),
+                (1000, 12000 if params.fast else 50000),
+            ]
+            cavity_results = []
+            for re_int, n_steps in re_cases:
+                job_manager.raise_if_cancelled(job.job_id)
+                cfg = LidDrivenCavityConfig(
+                    nx=nx,
+                    re=float(re_int),
+                    n_steps=n_steps,
+                    output_interval=max(n_steps // 4, 1),
+                    device=params.device,
+                    output_root=output_root / "cavity" / f"re{re_int}",
+                    run_name=f"cavity_re{re_int}",
+                    overwrite=True,
+                )
+                run_dir = run_lid_driven_cavity(cfg)
+
+                import json as _json
+                meta = _json.loads((run_dir / "run_metadata.json").read_text())
+                ghia_errors = meta.get("ghia_errors") or {}
+                cavity_results.append({
+                    "re": re_int,
+                    "rmse_u": ghia_errors.get("rmse_u"),
+                    "rmse_v": ghia_errors.get("rmse_v"),
+                })
+            results["cavity"] = cavity_results
+
+        if "bfs" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
+            from tensorlbm import BackwardFacingStepConfig, run_backward_facing_step
+
+            nx, ny, step_h, x_step = (
+                (240, 60, 30, 60) if params.fast else (400, 80, 40, 80)
+            )
+            bfs_results = []
+            for re_int, n_steps in [(100, 15000 if params.fast else 40000),
+                                    (200, 15000 if params.fast else 40000)]:
+                job_manager.raise_if_cancelled(job.job_id)
+                cfg = BackwardFacingStepConfig(
+                    nx=nx,
+                    ny=ny,
+                    step_h=step_h,
+                    x_step=x_step,
+                    u_in=0.05,
+                    re=float(re_int),
+                    n_steps=n_steps,
+                    output_interval=max(n_steps // 4, 1),
+                    device=params.device,
+                    output_root=output_root / "bfs" / f"re{re_int}",
+                    run_name=f"bfs_re{re_int}",
+                    overwrite=True,
+                )
+                run_dir = run_backward_facing_step(cfg)
+
+                import json as _json
+                meta = _json.loads((run_dir / "run_metadata.json").read_text())
+                bfs_results.append({
+                    "re": re_int,
+                    "xr_star": meta.get("final_reattachment_xr_star"),
+                })
+            results["bfs"] = bfs_results
+
+        if "rotating_cylinder" in params.cases:
+            job_manager.raise_if_cancelled(job.job_id)
+            from tensorlbm import RotatingCylinderConfig, run_rotating_cylinder
+
+            nx, ny, radius, n_steps = (
+                (240, 80, 10.0, 6000) if params.fast else (400, 120, 15.0, 12000)
+            )
+            rot_results = []
+            for alpha in (1.0, 2.0):
+                job_manager.raise_if_cancelled(job.job_id)
+                cfg = RotatingCylinderConfig(
+                    nx=nx,
+                    ny=ny,
+                    u_in=0.05,
+                    re=200.0,
+                    radius=radius,
+                    spin_ratio=alpha,
+                    n_steps=n_steps,
+                    output_interval=max(n_steps // 6, 1),
+                    device=params.device,
+                    output_root=output_root / "rotating_cylinder" / f"alpha{alpha:g}",
+                    run_name=f"rotating_re200_alpha{alpha:g}",
+                    overwrite=True,
+                )
+                run_dir = run_rotating_cylinder(cfg)
+
+                import json as _json
+                meta = _json.loads((run_dir / "run_metadata.json").read_text())
+                rot_results.append({
+                    "spin_ratio": alpha,
+                    "cl_mean": meta.get("cl_mean"),
+                    "cd_mean": meta.get("cd_mean"),
+                })
+            results["rotating_cylinder"] = rot_results
+
+        return results
+
+    job_id = job_manager.submit(
+        name=f"Accuracy Benchmarks ({'fast' if params.fast else 'full'})",
+        job_type="benchmark_accuracy",
+        config=params.model_dump(),
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Accuracy benchmark submitted"}
