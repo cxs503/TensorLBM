@@ -146,6 +146,23 @@ through the typed, length-capped tool layer, so a hallucinated 10000×10000
 grid cannot escape the safety clamps (`MAX_GRID_2D=1024`, `MAX_GRID_3D=256`,
 `MAX_STEPS=200_000`).
 
+### HPC Orchestration + AI Governance (new)
+
+The platform now exposes baseline orchestration and governance APIs for the
+HPC+AI demonstration upgrade:
+
+* `GET /api/orchestration/templates` — staged experiment templates (A/B/C).
+* `POST /api/orchestration/experiments/submit` — submit a template run
+  (currently implemented: `cylinder_re_sweep`).
+* `GET /api/orchestration/kpis` — aggregate queue wait, retries, runtime,
+  throughput, resource distribution and estimated cost from platform jobs.
+* `GET /api/ai/governance/registry-summary` — summarize AI model registry
+  quality statistics.
+* `POST /api/ai/governance/confidence-gate` — uncertainty/error-based decision
+  gate (`accept_ai` vs `fallback_hpc_high_fidelity`).
+* `POST /api/ai/governance/active-learning/prioritize` — rank candidate samples
+  for HPC re-simulation and incremental retraining.
+
 ---
 
 ## GPU Cluster Usage
