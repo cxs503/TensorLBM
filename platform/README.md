@@ -76,6 +76,8 @@ Navigate to **http://localhost:8000**
 
 ### Solver
 All simulation types are submitted as background jobs and monitored in real time via WebSocket.
+The platform also supports batch Reynolds-number sweeps for cylinder flow via
+`POST /api/solve/cylinder-flow/scan` (submit 2–20 `re_values` in one request).
 
 | Simulation | Dim | Model | Config class |
 |---|---|---|---|
