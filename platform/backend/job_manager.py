@@ -39,6 +39,7 @@ class Job:
     """Represents a single simulation or benchmark job."""
 
     def __init__(self, job_id: str, name: str, job_type: str, config: dict[str, Any]) -> None:
+        orch = config.get("orchestration") if isinstance(config, dict) else {}
         self.job_id = job_id
         self.name = name
         self.job_type = job_type
@@ -54,6 +55,26 @@ class Job:
         self.diagnostics: list[dict[str, Any]] = []
         self.result: dict[str, Any] = {}
         self.cancel_requested: bool = False
+        self.scheduler_profile: str = _SCHEDULER_PROFILE
+        self.queue_wait_seconds: float | None = None
+        self.run_duration_seconds: float | None = None
+        self.total_duration_seconds: float | None = None
+        self.io_bytes: int = 0
+        self.retry_attempt: int = 0
+        self.max_retries: int = max(0, int((orch or {}).get("max_retries", 0)))
+        self.resume_from: str | None = (
+            str((orch or {}).get("resume_from"))
+            if (orch or {}).get("resume_from") is not None
+            else None
+        )
+        self.assigned_resource: str = str(
+            (orch or {}).get("resource_label") or config.get("device") or "cpu",
+        )
+        self.cost_rate_per_second: float = max(
+            0.0,
+            float((orch or {}).get("cost_rate_per_second", 0.0)),
+        )
+        self.estimated_cost: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -71,6 +92,16 @@ class Job:
             "diagnostics": self.diagnostics[-50:],
             "result": self.result,
             "cancel_requested": self.cancel_requested,
+            "scheduler_profile": self.scheduler_profile,
+            "queue_wait_seconds": self.queue_wait_seconds,
+            "run_duration_seconds": self.run_duration_seconds,
+            "total_duration_seconds": self.total_duration_seconds,
+            "io_bytes": self.io_bytes,
+            "retry_attempt": self.retry_attempt,
+            "max_retries": self.max_retries,
+            "resume_from": self.resume_from,
+            "assigned_resource": self.assigned_resource,
+            "estimated_cost": self.estimated_cost,
         }
 
 
@@ -90,7 +121,12 @@ _thread_job_map: dict[int, str] = {}
 _thread_job_map_lock = threading.Lock()
 
 # Thread pool for running simulations
-_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="tensorlbm-job")
+_MAX_WORKERS = max(1, int(os.environ.get("TENSORLBM_MAX_WORKERS", "4")))
+_SCHEDULER_PROFILE = (
+    os.environ.get("TENSORLBM_SCHEDULER_PROFILE", "single_node_threadpool").strip()
+    or "single_node_threadpool"
+)
+_executor = ThreadPoolExecutor(max_workers=_MAX_WORKERS, thread_name_prefix="tensorlbm-job")
 
 _DEFAULT_OUTPUT_ROOT = "/tmp/tensorlbm_platform"
 _OUTPUT_ROOT = Path(os.environ.get("TENSORLBM_OUTPUT_ROOT", _DEFAULT_OUTPUT_ROOT)).resolve()
@@ -165,6 +201,15 @@ def _is_cancelled(job_id: str) -> bool:
         )
 
 
+def _job_size(path: Path) -> int:
+    total = 0
+    for p in path.rglob("*"):
+        if p.is_file():
+            with contextlib.suppress(OSError):
+                total += p.stat().st_size
+    return total
+
+
 def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
     """Execute *fn* in the current thread, updating *job* status."""
     ident = threading.current_thread().ident
@@ -178,26 +223,49 @@ def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
             _thread_job_map.pop(ident, None)  # type: ignore[arg-type]
         return
 
+    created_ts = datetime.fromisoformat(job.created_at)
+    started_ts = datetime.now(UTC)
     job.status = JobStatus.RUNNING
-    job.started_at = datetime.now(UTC).isoformat()
+    job.started_at = started_ts.isoformat()
+    job.queue_wait_seconds = max(0.0, (started_ts - created_ts).total_seconds())
     _notify(job)
 
     try:
-        result = fn(job)
-        if job.status != JobStatus.CANCELLED:
-            job.status = JobStatus.COMPLETED
-            job.result = result or {}
-    except JobCancelledError:
-        job.status = JobStatus.CANCELLED
-        job.error = "Job cancelled by user request."
-    except Exception:
-        job.status = JobStatus.FAILED
-        job.error = traceback.format_exc()
-        job.logs.append(job.error)
+        attempt = 0
+        while True:
+            job.retry_attempt = attempt
+            try:
+                result = fn(job)
+                if job.status != JobStatus.CANCELLED:
+                    job.status = JobStatus.COMPLETED
+                    job.result = result or {}
+                break
+            except JobCancelledError:
+                job.status = JobStatus.CANCELLED
+                job.error = "Job cancelled by user request."
+                break
+            except Exception:
+                job.error = traceback.format_exc()
+                job.logs.append(job.error)
+                if attempt >= job.max_retries or job.cancel_requested:
+                    job.status = JobStatus.FAILED
+                    break
+                attempt += 1
+                job.logs.append(
+                    f"Retrying job attempt={attempt}/{job.max_retries} after failure.",
+                )
+                _notify(job)
     finally:
         with _thread_job_map_lock:
             _thread_job_map.pop(ident, None)  # type: ignore[arg-type]
-        job.completed_at = datetime.now(UTC).isoformat()
+        completed_ts = datetime.now(UTC)
+        job.completed_at = completed_ts.isoformat()
+        runtime = max(0.0, (completed_ts - started_ts).total_seconds())
+        job.run_duration_seconds = runtime
+        job.total_duration_seconds = max(0.0, (completed_ts - created_ts).total_seconds())
+        job.io_bytes = _job_size(job.output_dir)
+        if job.cost_rate_per_second > 0:
+            job.estimated_cost = round(runtime * job.cost_rate_per_second, 6)
         _notify(job)
 
 
@@ -318,14 +386,6 @@ def cleanup_jobs(
     """Cleanup completed/failed/cancelled jobs by retention and storage policies."""
     now = datetime.now(UTC)
 
-    def _job_size(path: Path) -> int:
-        total = 0
-        for p in path.rglob("*"):
-            if p.is_file():
-                with contextlib.suppress(OSError):
-                    total += p.stat().st_size
-        return total
-
     with _jobs_lock:
         snapshot = list(_jobs.values())
 
@@ -375,4 +435,52 @@ def cleanup_jobs(
         "reclaimed_bytes": reclaimed,
         "managed_jobs": len(managed),
         "output_root": str(output_root()),
+    }
+
+
+def max_workers() -> int:
+    """Return configured worker count for the local scheduler."""
+    return _MAX_WORKERS
+
+
+def scheduler_profile() -> str:
+    """Return configured scheduler profile string."""
+    return _SCHEDULER_PROFILE
+
+
+def orchestration_kpis() -> dict[str, Any]:
+    """Aggregate orchestration-level KPIs from in-process jobs."""
+    with _jobs_lock:
+        rows = [j.to_dict() for j in _jobs.values()]
+    total = len(rows)
+    completed = [r for r in rows if r["status"] == JobStatus.COMPLETED]
+    failed = [r for r in rows if r["status"] == JobStatus.FAILED]
+    cancelled = [r for r in rows if r["status"] == JobStatus.CANCELLED]
+    running = [r for r in rows if r["status"] == JobStatus.RUNNING]
+    queue_waits = [float(r["queue_wait_seconds"]) for r in rows if r["queue_wait_seconds"] is not None]
+    run_times = [float(r["run_duration_seconds"]) for r in rows if r["run_duration_seconds"] is not None]
+    retries = [int(r.get("retry_attempt", 0)) for r in rows]
+    resources: dict[str, int] = {}
+    for row in rows:
+        key = str(row.get("assigned_resource") or "cpu")
+        resources[key] = resources.get(key, 0) + 1
+
+    terminal = len(completed) + len(failed) + len(cancelled)
+    return {
+        "scheduler_profile": scheduler_profile(),
+        "max_workers": max_workers(),
+        "jobs_total": total,
+        "jobs_running": len(running),
+        "jobs_completed": len(completed),
+        "jobs_failed": len(failed),
+        "jobs_cancelled": len(cancelled),
+        "success_rate": (len(completed) / terminal) if terminal else None,
+        "avg_queue_wait_seconds": (sum(queue_waits) / len(queue_waits)) if queue_waits else None,
+        "avg_run_duration_seconds": (sum(run_times) / len(run_times)) if run_times else None,
+        "avg_retries": (sum(retries) / len(retries)) if retries else 0.0,
+        "io_bytes_total": int(sum(int(r.get("io_bytes", 0) or 0) for r in rows)),
+        "estimated_cost_total": float(
+            sum(float(r.get("estimated_cost", 0.0) or 0.0) for r in rows),
+        ),
+        "resources": resources,
     }
