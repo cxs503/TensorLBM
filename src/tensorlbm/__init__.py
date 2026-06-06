@@ -157,10 +157,10 @@ from .multiphase_benchmarks import (
     StaticDropletConfig,
     TwoPhaseChannelCompareConfig,
     run_multiphase_benchmark_suite,
-    run_spinodal_decomposition_3d,
     run_spinodal_decomposition,
-    run_static_droplet_3d,
+    run_spinodal_decomposition_3d,
     run_static_droplet,
+    run_static_droplet_3d,
     run_two_phase_channel_compare,
 )
 from .multiphase_water_entry import MultiphaseWaterEntryConfig, run_multiphase_water_entry
