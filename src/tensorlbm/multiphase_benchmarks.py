@@ -1,6 +1,6 @@
 """Multiphase LBM model benchmark suite for D2Q9 and D3Q19.
 
-Provides three canonical benchmarks that cover all four multiphase models:
+Provides four canonical benchmarks that cover all four multiphase models:
 
 1. **Static Droplet / Laplace Pressure Test** (:class:`StaticDropletConfig` /
    :func:`run_static_droplet`):
@@ -20,7 +20,14 @@ Provides three canonical benchmarks that cover all four multiphase models:
    extrema and reports the steady-state coexistence densities
    ``(ρ_liquid, ρ_gas)`` and density ratio.
 
-3. **Two-Phase Poiseuille Comparison** (:class:`TwoPhaseChannelCompareConfig` /
+3. **Free-Energy Droplet Relaxation** (:class:`FreeEnergyDropletConfig` /
+   :func:`run_free_energy_droplet`):
+   A phase-field droplet is initialized in a periodic domain and evolved with
+   the free-energy binary-fluid model.  The benchmark tracks conserved
+   order-parameter mass drift, equivalent droplet-radius drift, phase-field
+   boundedness, and the maximum spurious current during relaxation.
+
+4. **Two-Phase Poiseuille Comparison** (:class:`TwoPhaseChannelCompareConfig` /
    :func:`run_two_phase_channel_compare`):
    Two immiscible fluids fill the lower (phase 1) and upper (phase 2) halves of
    a 2-D channel driven by a body force.  The benchmark runs both SCMC (with
@@ -30,7 +37,7 @@ Provides three canonical benchmarks that cover all four multiphase models:
 
 Suite runner
 ------------
-:func:`run_multiphase_benchmark_suite` executes all three benchmarks in
+:func:`run_multiphase_benchmark_suite` executes all four benchmarks in
 sequence and returns a structured comparison report including summary
 statistics and a brief analysis.
 
@@ -45,6 +52,7 @@ Pan, Hilpert & Miller (2004) Phys. Rev. E 70 026702
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -59,6 +67,8 @@ from .multiphase import (
     collide_sc_single_component,
     collide_sc_two_component,
     color_gradient_step,
+    free_energy_step,
+    init_free_energy_g,
     psi_exp,
 )
 from .multiphase3d import (
@@ -665,7 +675,218 @@ def _plot_spinodal(
 
 
 # ---------------------------------------------------------------------------
-# Benchmark 3 – 3D multiphase extensions (D3Q19)
+# Benchmark 3 – Free-Energy droplet relaxation
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FreeEnergyDropletConfig:
+    """Configuration for the free-energy phase-field droplet benchmark."""
+
+    nx: int = 60
+    ny: int = 60
+    radius: float = 12.0
+    interface_width: float = 2.0
+    n_steps: int = 1500
+    output_interval: int = 300
+    tau_f: float = 1.0
+    tau_g: float = 0.8
+    A: float = 0.04
+    B: float = 0.04
+    kappa: float = 0.03
+    Gamma: float = 0.5
+    output_root: Path = Path("outputs")
+    run_name: str | None = None
+    device: str = "cpu"
+    overwrite: bool = False
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_root", Path(self.output_root))
+        object.__setattr__(self, "device", self.device.lower())
+
+    def validate(self) -> None:
+        if self.nx < 24 or self.ny < 24:
+            msg = "nx and ny must be ≥ 24"
+            raise ValueError(msg)
+        if self.radius <= 0 or self.radius >= min(self.nx, self.ny) / 2 - 4:
+            msg = "radius must be positive and well inside the domain"
+            raise ValueError(msg)
+        if self.interface_width <= 0:
+            msg = "interface_width must be > 0"
+            raise ValueError(msg)
+        if self.n_steps < 1:
+            msg = "n_steps must be ≥ 1"
+            raise ValueError(msg)
+        if self.output_interval < 1:
+            msg = "output_interval must be ≥ 1"
+            raise ValueError(msg)
+        if self.tau_f <= 0.5 or self.tau_g <= 0.5:
+            msg = "tau_f and tau_g must be > 0.5"
+            raise ValueError(msg)
+        if self.B <= 0 or self.kappa <= 0 or self.Gamma <= 0:
+            msg = "B, kappa and Gamma must be > 0"
+            raise ValueError(msg)
+
+    def resolved_run_name(self) -> str:
+        if self.run_name:
+            return self.run_name
+        return f"free_energy_droplet_n{self.nx}x{self.ny}_steps{self.n_steps}"
+
+
+def _equivalent_radius_from_phi(phi: torch.Tensor) -> float:
+    """Return the equivalent circular radius inferred from the phase field."""
+    alpha = ((phi.clamp(-1.0, 1.0) + 1.0) * 0.5).clamp(0.0, 1.0)
+    area = float(alpha.sum().item())
+    return math.sqrt(area / math.pi)
+
+
+def run_free_energy_droplet(config: FreeEnergyDropletConfig) -> dict[str, object]:
+    """Run the free-energy droplet relaxation benchmark."""
+    config.validate()
+    device = resolve_device(config.device)
+    run_dir = prepare_run_dir(
+        config.output_root,
+        "free_energy_droplet",
+        config.resolved_run_name(),
+        config.overwrite,
+    )
+
+    ny, nx = config.ny, config.nx
+    ys = torch.arange(ny, dtype=torch.float32, device=device)
+    xs = torch.arange(nx, dtype=torch.float32, device=device)
+    yy, xx = torch.meshgrid(ys, xs, indexing="ij")
+    cy, cx = ny / 2.0, nx / 2.0
+    distance = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
+    phi0 = torch.tanh((config.radius - distance) / config.interface_width)
+    rho0 = torch.ones((ny, nx), dtype=torch.float32, device=device)
+    zero = torch.zeros_like(rho0)
+    f = equilibrium(rho0, zero, zero)
+    g = init_free_energy_g(phi0, zero, zero)
+
+    initial_phase_mass = float(phi0.sum().item())
+    initial_equiv_radius = _equivalent_radius_from_phi(phi0)
+
+    diagnostics: list[dict[str, object]] = []
+    for step in range(1, config.n_steps + 1):
+        f, g = free_energy_step(
+            f,
+            g,
+            tau_f=config.tau_f,
+            tau_g=config.tau_g,
+            A=config.A,
+            B=config.B,
+            kappa=config.kappa,
+            Gamma=config.Gamma,
+        )
+        f = stream(f)
+        g = stream(g)
+
+        if step % config.output_interval == 0 or step == config.n_steps:
+            phi = g.sum(dim=0)
+            _rho, ux, uy = macroscopic(f)
+            phase_mass = float(phi.sum().item())
+            equiv_radius = _equivalent_radius_from_phi(phi)
+            rel_mass_drift = abs(phase_mass - initial_phase_mass) / max(abs(initial_phase_mass), 1e-12)
+            rel_radius_drift = abs(equiv_radius - initial_equiv_radius) / max(initial_equiv_radius, 1e-12)
+            max_velocity = float(torch.sqrt(ux ** 2 + uy ** 2).max().item())
+            phi_min = float(phi.min().item())
+            phi_max = float(phi.max().item())
+            max_overshoot = max(phi_max - 1.0, -1.0 - phi_min, 0.0)
+            diag = {
+                "step": step,
+                "phase_mass": round(phase_mass, 6),
+                "relative_mass_drift": round(rel_mass_drift, 8),
+                "equivalent_radius": round(equiv_radius, 6),
+                "relative_radius_drift": round(rel_radius_drift, 8),
+                "max_velocity": round(max_velocity, 8),
+                "phi_min": round(phi_min, 6),
+                "phi_max": round(phi_max, 6),
+                "max_phase_overshoot": round(max_overshoot, 8),
+            }
+            diagnostics.append(diag)
+            print(
+                f"  step={step:5d}  mass_drift={rel_mass_drift:.2e}"
+                f"  radius_drift={rel_radius_drift:.2e}  max_u={max_velocity:.2e}"
+                f"  overshoot={max_overshoot:.2e}"
+            )
+
+    final_phi = g.sum(dim=0)
+    _rho, ux, uy = macroscopic(f)
+    final_phase_mass = float(final_phi.sum().item())
+    final_equiv_radius = _equivalent_radius_from_phi(final_phi)
+    relative_phase_mass_drift = abs(final_phase_mass - initial_phase_mass) / max(abs(initial_phase_mass), 1e-12)
+    relative_radius_drift = abs(final_equiv_radius - initial_equiv_radius) / max(initial_equiv_radius, 1e-12)
+    max_spurious_u = float(torch.sqrt(ux ** 2 + uy ** 2).max().item())
+    final_phi_min = float(final_phi.min().item())
+    final_phi_max = float(final_phi.max().item())
+    max_phase_overshoot = max(final_phi_max - 1.0, -1.0 - final_phi_min, 0.0)
+
+    metadata: dict[str, object] = {
+        "benchmark": "free_energy_droplet",
+        "config": {**asdict(config), "output_root": str(config.output_root)},
+        "initial_phase_mass": round(initial_phase_mass, 6),
+        "final_phase_mass": round(final_phase_mass, 6),
+        "relative_phase_mass_drift": round(relative_phase_mass_drift, 8),
+        "initial_equivalent_radius": round(initial_equiv_radius, 6),
+        "final_equivalent_radius": round(final_equiv_radius, 6),
+        "relative_radius_drift": round(relative_radius_drift, 8),
+        "max_spurious_u": round(max_spurious_u, 8),
+        "phi_min": round(final_phi_min, 6),
+        "phi_max": round(final_phi_max, 6),
+        "max_phase_overshoot": round(max_phase_overshoot, 8),
+        "bounded_phase_field": max_phase_overshoot <= 5e-2,
+        "diagnostics": diagnostics,
+        "note": (
+            "Free-energy / phase-field droplet relaxation benchmark. "
+            "Tracks conserved order-parameter drift, equivalent-radius drift, "
+            "phase-field boundedness, and spurious currents."
+        ),
+    }
+    (run_dir / "free_energy_droplet.json").write_text(
+        json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        f"\nSaved → {run_dir / 'free_energy_droplet.json'}"
+        f"  (mass_drift={relative_phase_mass_drift:.2e},"
+        f" radius_drift={relative_radius_drift:.2e}, max_u={max_spurious_u:.2e})"
+    )
+
+    _plot_free_energy_droplet(diagnostics, run_dir)
+    return metadata
+
+
+def _plot_free_energy_droplet(
+    diagnostics: list[dict[str, object]],
+    run_dir: Path,
+) -> None:
+    """Save phase-field conservation diagnostics for the FE droplet benchmark."""
+    steps = [int(d["step"]) for d in diagnostics]  # type: ignore[call-overload]
+    mass_drift = [float(d["relative_mass_drift"]) for d in diagnostics]  # type: ignore[arg-type]
+    radius_drift = [float(d["relative_radius_drift"]) for d in diagnostics]  # type: ignore[arg-type]
+    max_velocity = [float(d["max_velocity"]) for d in diagnostics]  # type: ignore[arg-type]
+
+    fig, axes = plt.subplots(3, 1, figsize=(6, 8), sharex=True)
+    axes[0].plot(steps, mass_drift, marker="o")
+    axes[0].set_ylabel("Rel. mass drift")
+    axes[0].grid(True, alpha=0.3)
+
+    axes[1].plot(steps, radius_drift, marker="o", color="tab:orange")
+    axes[1].set_ylabel("Rel. radius drift")
+    axes[1].grid(True, alpha=0.3)
+
+    axes[2].plot(steps, max_velocity, marker="o", color="tab:green")
+    axes[2].set_xlabel("Time step")
+    axes[2].set_ylabel("Max |u|")
+    axes[2].grid(True, alpha=0.3)
+
+    fig.suptitle("Free-energy droplet relaxation diagnostics")
+    fig.savefig(run_dir / "free_energy_diagnostics.png", dpi=120, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Benchmark 4 – 3D multiphase extensions (D3Q19)
 # ---------------------------------------------------------------------------
 
 
@@ -1324,6 +1545,7 @@ def _plot_poiseuille(results: dict[str, object], run_dir: Path) -> None:
 def _generate_analysis(
     droplet: dict[str, object],
     spinodal: dict[str, object],
+    free_energy: dict[str, object],
     poiseuille: dict[str, object],
     droplet3d: dict[str, object] | None = None,
     spinodal3d: dict[str, object] | None = None,
@@ -1358,6 +1580,22 @@ def _generate_analysis(
         "phase_separated": bool(spinodal.get("phase_separated", False)),
     }
 
+    analysis["free_energy"] = {
+        "relative_phase_mass_drift": round(
+            float(free_energy.get("relative_phase_mass_drift", float("nan"))), 8,  # type: ignore[arg-type]
+        ),
+        "relative_radius_drift": round(
+            float(free_energy.get("relative_radius_drift", float("nan"))), 8,  # type: ignore[arg-type]
+        ),
+        "max_spurious_u": round(
+            float(free_energy.get("max_spurious_u", float("nan"))), 8,  # type: ignore[arg-type]
+        ),
+        "max_phase_overshoot": round(
+            float(free_energy.get("max_phase_overshoot", float("nan"))), 8,  # type: ignore[arg-type]
+        ),
+        "bounded_phase_field": bool(free_energy.get("bounded_phase_field", False)),
+    }
+
     # Poiseuille
     pois_res = cast("dict[str, dict[str, object]]", poiseuille.get("results", {}))
     scmc_err = float(pois_res.get("scmc", {}).get("l2_error_rel", float("nan")))  # type: ignore[arg-type]
@@ -1385,6 +1623,10 @@ def _generate_analysis(
     # Spinodal G value for the summary
     spinodal_cfg = cast("dict[str, object]", spinodal.get("config", {}))
     g_val = spinodal_cfg.get("G", "N/A")
+    fe_mass_drift = float(free_energy.get("relative_phase_mass_drift", float("nan")))  # type: ignore[arg-type]
+    fe_radius_drift = float(free_energy.get("relative_radius_drift", float("nan")))  # type: ignore[arg-type]
+    fe_max_u = float(free_energy.get("max_spurious_u", float("nan")))  # type: ignore[arg-type]
+    fe_bounded = bool(free_energy.get("bounded_phase_field", False))
 
     # Narrative summary
     summary_lines = [
@@ -1402,7 +1644,13 @@ def _generate_analysis(
         f"   Density ratio ρ_l/ρ_g = {ratio:.2f}",
         f"   Phase separation achieved: {bool(spinodal.get('phase_separated', False))}",
         "",
-        "3. Two-Phase Poiseuille (channel flow with body force):",
+        "3. Free-Energy droplet relaxation (phase-field benchmark):",
+        f"   Relative phase-mass drift: {fe_mass_drift:.2e}",
+        f"   Relative radius drift:     {fe_radius_drift:.2e}",
+        f"   Max spurious current:      {fe_max_u:.2e}",
+        f"   Phase field bounded:       {fe_bounded}",
+        "",
+        "4. Two-Phase Poiseuille (channel flow with body force):",
         f"   SCMC viscosity ratio ν_heavy/ν_light = {scmc_visc_ratio:.2f}",
         f"   SCMC L2 error vs analytical: {scmc_err:.4f}",
         "   CG  viscosity ratio = 1 (shared τ)",
@@ -1418,7 +1666,7 @@ def _generate_analysis(
         summary_lines.extend(
             [
                 "",
-                "4. 3D multiphase benchmarks (D3Q19):",
+                "5. 3D multiphase benchmarks (D3Q19):",
                 f"   3D Laplace σ_eff — SCMC: {sigma3d_scmc:.4f}, CG: {sigma3d_cg:.4f}",
                 f"   3D spinodal density ratio ρ_l/ρ_g = {ratio3d:.2f}",
             ]
@@ -1431,12 +1679,13 @@ def _generate_analysis(
 class MultiphaseBenchmarkSuiteConfig:
     """Top-level configuration for the full multiphase benchmark suite.
 
-    Bundles the three individual benchmark configs and shared I/O settings.
+    Bundles the individual benchmark configs and shared I/O settings.
 
     Attributes
     ----------
     droplet:    Config for the static-droplet / Laplace benchmark.
     spinodal:   Config for the spinodal decomposition benchmark.
+    free_energy: Config for the phase-field droplet benchmark.
     poiseuille: Config for the two-phase Poiseuille comparison.
     output_root: Root directory for all output files.
     device:     PyTorch device string.
@@ -1445,6 +1694,7 @@ class MultiphaseBenchmarkSuiteConfig:
 
     droplet: StaticDropletConfig = field(default_factory=StaticDropletConfig)
     spinodal: SpinodaleConfig = field(default_factory=SpinodaleConfig)
+    free_energy: FreeEnergyDropletConfig = field(default_factory=FreeEnergyDropletConfig)
     poiseuille: TwoPhaseChannelCompareConfig = field(default_factory=TwoPhaseChannelCompareConfig)
     droplet_3d: StaticDroplet3DConfig | None = None
     spinodal_3d: Spinodal3DConfig | None = None
@@ -1461,9 +1711,10 @@ def run_multiphase_benchmark_suite(
 ) -> dict[str, object]:
     """Run the full multiphase LBM benchmark suite.
 
-    Executes all three benchmarks (static droplet, spinodal decomposition,
-    two-phase Poiseuille) in sequence and assembles a comprehensive comparison
-    report with quantitative metrics and a brief narrative analysis.
+    Executes the canonical 2-D benchmarks (static droplet, spinodal
+    decomposition, free-energy droplet, two-phase Poiseuille) in sequence and
+    assembles a comprehensive comparison report with quantitative metrics and a
+    brief narrative analysis.
 
     The report is saved as ``multiphase_suite_report.json`` under *output_root*.
 
@@ -1471,7 +1722,7 @@ def run_multiphase_benchmark_suite(
         config: Suite configuration.  If ``None``, sensible defaults are used.
 
     Returns:
-        Nested dictionary containing the raw results of all three benchmarks
+        Nested dictionary containing the raw results of all benchmark cases
         and a top-level ``analysis`` section with summary statistics.
     """
     if config is None:
@@ -1494,6 +1745,12 @@ def run_multiphase_benchmark_suite(
     )
     spinodal_cfg: SpinodaleConfig = _patch(  # type: ignore[assignment]
         config.spinodal,
+        output_root=output_root,
+        device=config.device,
+        overwrite=config.overwrite,
+    )
+    free_energy_cfg: FreeEnergyDropletConfig = _patch(  # type: ignore[assignment]
+        config.free_energy,
         output_root=output_root,
         device=config.device,
         overwrite=config.overwrite,
@@ -1525,13 +1782,16 @@ def run_multiphase_benchmark_suite(
     print("TensorLBM Multiphase Model Benchmark Suite")
     print("=" * 60)
 
-    print("\n[1/3] Static Droplet (Laplace pressure + spurious currents)")
+    print("\n[1/4] Static Droplet (Laplace pressure + spurious currents)")
     droplet_result = run_static_droplet(droplet_cfg)
 
-    print("\n[2/3] Spinodal Decomposition (SCMP)")
+    print("\n[2/4] Spinodal Decomposition (SCMP)")
     spinodal_result = run_spinodal_decomposition(spinodal_cfg)
 
-    print("\n[3/3] Two-Phase Poiseuille (SCMC vs CG)")
+    print("\n[3/4] Free-Energy droplet relaxation")
+    free_energy_result = run_free_energy_droplet(free_energy_cfg)
+
+    print("\n[4/4] Two-Phase Poiseuille (SCMC vs CG)")
     poiseuille_result = run_two_phase_channel_compare(poiseuille_cfg)
 
     droplet_3d_result: dict[str, object] | None = None
@@ -1545,7 +1805,12 @@ def run_multiphase_benchmark_suite(
 
     # Analysis
     analysis = _generate_analysis(
-        droplet_result, spinodal_result, poiseuille_result, droplet_3d_result, spinodal_3d_result,
+        droplet_result,
+        spinodal_result,
+        free_energy_result,
+        poiseuille_result,
+        droplet_3d_result,
+        spinodal_3d_result,
     )
     print("\n" + str(analysis["summary"]))
 
@@ -1553,6 +1818,7 @@ def run_multiphase_benchmark_suite(
         "benchmarks": {
             "static_droplet": droplet_result,
             "spinodal_decomposition": spinodal_result,
+            "free_energy_droplet": free_energy_result,
             "two_phase_poiseuille": poiseuille_result,
         },
         "analysis": analysis,
@@ -1581,12 +1847,15 @@ __all__ = [
     # Benchmark 2: spinodal decomposition
     "SpinodaleConfig",
     "run_spinodal_decomposition",
-    # Benchmark 3: 3D static droplet + spinodal
+    # Benchmark 3: free-energy droplet relaxation
+    "FreeEnergyDropletConfig",
+    "run_free_energy_droplet",
+    # Benchmark 4: 3D static droplet + spinodal
     "StaticDroplet3DConfig",
     "run_static_droplet_3d",
     "Spinodal3DConfig",
     "run_spinodal_decomposition_3d",
-    # Benchmark 4: two-phase Poiseuille comparison
+    # Benchmark 5: two-phase Poiseuille comparison
     "TwoPhaseChannelCompareConfig",
     "run_two_phase_channel_compare",
     # Suite runner

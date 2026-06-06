@@ -244,7 +244,7 @@ class MultiphaseBenchmarkParams(BaseModel):
 
 @router.post("/multiphase")
 async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
-    """Run the multiphase LBM benchmark suite (static droplet, spinodal, Poiseuille)."""
+    """Run the multiphase LBM benchmark suite including phase-field droplet tests."""
 
     def _run(job: job_manager.Job) -> dict:
         job_manager.raise_if_cancelled(job.job_id)
@@ -256,6 +256,7 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
         if params.fast:
             # Build reduced sub-configs for a quick smoke / CI run.
             from tensorlbm import (  # noqa: I001
+                FreeEnergyDropletConfig,
                 Spinodal3DConfig,
                 SpinodaleConfig,
                 StaticDroplet3DConfig,
@@ -269,6 +270,9 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
             spinodal = SpinodaleConfig(
                 nx=32, ny=32, n_steps=200, output_interval=100,
             )
+            free_energy = FreeEnergyDropletConfig(
+                nx=40, ny=40, radius=8.0, n_steps=200, output_interval=100,
+            )
             droplet_3d = StaticDroplet3DConfig(
                 nx=20, ny=20, nz=20, radii=(4.0,), n_steps=100, output_interval=100,
             )
@@ -281,6 +285,7 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
             cfg = MultiphaseBenchmarkSuiteConfig(
                 droplet=droplet,
                 spinodal=spinodal,
+                free_energy=free_energy,
                 poiseuille=poiseuille,
                 droplet_3d=droplet_3d,
                 spinodal_3d=spinodal_3d,

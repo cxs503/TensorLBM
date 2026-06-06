@@ -150,12 +150,14 @@ from .multiphase3d import (
     sc_two_component_force_3d,
 )
 from .multiphase_benchmarks import (
+    FreeEnergyDropletConfig,
     MultiphaseBenchmarkSuiteConfig,
     Spinodal3DConfig,
     SpinodaleConfig,
     StaticDroplet3DConfig,
     StaticDropletConfig,
     TwoPhaseChannelCompareConfig,
+    run_free_energy_droplet,
     run_multiphase_benchmark_suite,
     run_spinodal_decomposition,
     run_spinodal_decomposition_3d,
@@ -537,6 +539,8 @@ __all__ = [
     # Multiphase benchmark suite
     "StaticDropletConfig",
     "run_static_droplet",
+    "FreeEnergyDropletConfig",
+    "run_free_energy_droplet",
     "StaticDroplet3DConfig",
     "run_static_droplet_3d",
     "SpinodaleConfig",
