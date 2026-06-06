@@ -59,6 +59,9 @@ def test_collide_power_law_bgk_identity_at_equilibrium() -> None:
         ({"consistency_index": 0.1, "flow_index": 0.0}, "flow_index"),
     ],
 )
-def test_apparent_viscosity_power_law_invalid_params(kwargs: dict[str, float], message: str) -> None:
+def test_apparent_viscosity_power_law_invalid_params(
+    kwargs: dict[str, float],
+    message: str,
+) -> None:
     with pytest.raises(ValueError, match=message):
         _ = apparent_viscosity_power_law(torch.tensor([1.0]), **kwargs)
