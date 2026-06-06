@@ -67,6 +67,32 @@
       font-size: .9rem;
       display: flex; align-items: center; gap: .5rem;
     }
+    .sidebar-tools {
+      padding: .6rem .75rem;
+      border-bottom: 1px solid #e9ecef;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      gap: .4rem;
+    }
+    .sidebar-tools .form-control,
+    .sidebar-tools .form-select {
+      font-size: .8rem;
+      padding-top: .25rem;
+      padding-bottom: .25rem;
+    }
+    .sidebar-tools .shortcut-hint {
+      font-size: .72rem;
+      color: #6c757d;
+    }
+    .jobs-count {
+      font-size: .72rem;
+      border: 1px solid #ced4da;
+      padding: .05rem .45rem;
+      border-radius: 999px;
+      color: #495057;
+      background: #fff;
+    }
     .jobs-list {
       flex: 1;
       overflow-y: auto;
@@ -251,15 +277,15 @@
 <div class="top-navbar">
   <span class="brand me-4"><i class="bi bi-water"></i> <span data-i18n="nav.brand">TensorLBM Platform</span></span>
   <nav class="d-flex gap-1">
-    <a href="#" class="active" onclick="showTab('dashboard',this)"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
-    <a href="#" onclick="showTab('cad',this)"><i class="bi bi-rulers"></i> <span data-i18n="nav.cad">CAD</span></a>
-    <a href="#" onclick="showTab('preprocess',this)"><i class="bi bi-grid-3x3"></i> <span data-i18n="nav.preprocess">Pre-processing</span></a>
-    <a href="#" onclick="showTab('solve',this)"><i class="bi bi-play-circle"></i> <span data-i18n="nav.solve">Solve</span></a>
-    <a href="#" onclick="showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
-    <a href="#" onclick="showTab('benchmarks',this)"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
-    <a href="#" onclick="showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
-    <a href="#" onclick="showTab('ai-flow',this)"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
-    <a href="#" onclick="showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
+    <a href="#" data-tab="dashboard" class="active" onclick="return showTab('dashboard',this)"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+    <a href="#" data-tab="cad" onclick="return showTab('cad',this)"><i class="bi bi-rulers"></i> <span data-i18n="nav.cad">CAD</span></a>
+    <a href="#" data-tab="preprocess" onclick="return showTab('preprocess',this)"><i class="bi bi-grid-3x3"></i> <span data-i18n="nav.preprocess">Pre-processing</span></a>
+    <a href="#" data-tab="solve" onclick="return showTab('solve',this)"><i class="bi bi-play-circle"></i> <span data-i18n="nav.solve">Solve</span></a>
+    <a href="#" data-tab="postprocess" onclick="return showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
+    <a href="#" data-tab="benchmarks" onclick="return showTab('benchmarks',this)"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
+    <a href="#" data-tab="compare" onclick="return showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
+    <a href="#" data-tab="ai-flow" onclick="return showTab('ai-flow',this)"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
+    <a href="#" data-tab="agent" onclick="return showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
   </nav>
   <span class="ms-auto d-flex align-items-center gap-3">
     <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
@@ -276,9 +302,21 @@
   <div class="jobs-sidebar">
     <div class="sidebar-header">
       <i class="bi bi-list-task"></i> <span data-i18n="sidebar.title">Jobs</span>
-      <button class="btn btn-sm btn-outline-danger ms-auto" onclick="clearAllJobs()" data-i18n-title="sidebar.clear_title" title="Clear completed/failed jobs">
+      <span class="jobs-count ms-auto" id="jobs-count">0</span>
+      <button class="btn btn-sm btn-outline-danger" onclick="clearAllJobs()" data-i18n-title="sidebar.clear_title" title="Clear completed/failed jobs">
         <i class="bi bi-trash"></i>
       </button>
+    </div>
+    <div class="sidebar-tools">
+      <input class="form-control form-control-sm" id="jobs-search" data-i18n-placeholder="sidebar.search_placeholder" placeholder="Search job name / id" oninput="onJobsFilterChanged()" />
+      <select class="form-select form-select-sm" id="jobs-status-filter" onchange="onJobsFilterChanged()">
+        <option value="all" data-i18n="sidebar.filter_all">All status</option>
+        <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
+        <option value="running" data-i18n="sidebar.filter_running">Running</option>
+        <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
+        <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
+      </select>
+      <div class="shortcut-hint" data-i18n="sidebar.shortcut_hint">Shortcuts: Alt+1..9 switch modules, Ctrl/⌘+K search jobs.</div>
     </div>
     <div class="jobs-list" id="jobs-list">
       <div class="text-center text-muted py-4 small" id="no-jobs-msg" data-i18n="sidebar.no_jobs">No jobs yet.</div>
@@ -1121,12 +1159,23 @@ let selectedJobId = null;
 let ppSelectedJobId = null;
 let ppCurrentTab = 'snapshots';
 let benchJobMap = {};   // bench_type → job_id
+const UI_STORAGE_KEY = 'tensorlbm_ui_state_v1';
+const TAB_SEQUENCE = ['dashboard', 'cad', 'preprocess', 'solve', 'postprocess', 'benchmarks', 'compare', 'ai-flow', 'agent'];
+const uiState = {
+  activeTab: 'dashboard',
+  jobsSearch: '',
+  jobsStatus: 'all',
+  selectedJobId: null,
+};
 
 // ============================================================
 // Initialisation
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   i18n.init().then(() => {
+    loadUIState();
+    initUIStateControls();
+    bindKeyboardShortcuts();
     initPhysicsLayer();
     connectWS();
     loadStatus();
@@ -1135,8 +1184,78 @@ document.addEventListener('DOMContentLoaded', () => {
     onSimTypeChange();
     setInterval(loadStatus, 15000);
     onCADHullTypeChange();
+    showTab(uiState.activeTab, null);
   });
 });
+
+function loadUIState() {
+  try {
+    const raw = localStorage.getItem(UI_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      uiState.activeTab = TAB_SEQUENCE.includes(parsed.activeTab) ? parsed.activeTab : uiState.activeTab;
+      uiState.jobsSearch = typeof parsed.jobsSearch === 'string' ? parsed.jobsSearch : uiState.jobsSearch;
+      uiState.jobsStatus = ['all', 'queued', 'running', 'completed', 'failed'].includes(parsed.jobsStatus)
+        ? parsed.jobsStatus
+        : uiState.jobsStatus;
+      uiState.selectedJobId = typeof parsed.selectedJobId === 'string' ? parsed.selectedJobId : null;
+    }
+  } catch (_) {}
+}
+
+function saveUIState() {
+  try {
+    localStorage.setItem(UI_STORAGE_KEY, JSON.stringify(uiState));
+  } catch (_) {}
+}
+
+function initUIStateControls() {
+  const search = document.getElementById('jobs-search');
+  const status = document.getElementById('jobs-status-filter');
+  if (search) search.value = uiState.jobsSearch;
+  if (status) status.value = uiState.jobsStatus;
+  if (uiState.selectedJobId) selectedJobId = uiState.selectedJobId;
+}
+
+function onJobsFilterChanged() {
+  const search = document.getElementById('jobs-search');
+  const status = document.getElementById('jobs-status-filter');
+  uiState.jobsSearch = (search ? search.value : '').trim();
+  uiState.jobsStatus = status ? status.value : 'all';
+  saveUIState();
+  renderJobsSidebar();
+}
+
+function bindKeyboardShortcuts() {
+  document.addEventListener('keydown', (ev) => {
+    const tag = (ev.target && ev.target.tagName || '').toLowerCase();
+    const inInput = ['input', 'textarea', 'select'].includes(tag) || (ev.target && ev.target.isContentEditable);
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') {
+      ev.preventDefault();
+      const input = document.getElementById('jobs-search');
+      if (input) {
+        input.focus();
+        input.select();
+      }
+      return;
+    }
+    if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && /^[1-9]$/.test(ev.key)) {
+      const idx = Number(ev.key) - 1;
+      const tab = TAB_SEQUENCE[idx];
+      if (!tab) return;
+      const nav = document.querySelector(`.top-navbar nav a[data-tab="${tab}"]`);
+      showTab(tab, nav || null);
+      ev.preventDefault();
+      return;
+    }
+    if (!inInput && ev.key === '/') {
+      ev.preventDefault();
+      const input = document.getElementById('jobs-search');
+      if (input) input.focus();
+    }
+  });
+}
 
 // ============================================================
 // WebSocket
@@ -1237,11 +1356,26 @@ function updateStats(s) {
 // ============================================================
 function renderJobsSidebar() {
   const list = document.getElementById('jobs-list');
-  const jobs = Object.values(jobsMap).sort((a,b) => b.created_at.localeCompare(a.created_at));
-  if (!jobs.length) {
+  const allJobs = Object.values(jobsMap).sort((a,b) => b.created_at.localeCompare(a.created_at));
+  const countEl = document.getElementById('jobs-count');
+  if (countEl) countEl.textContent = String(allJobs.length);
+  if (!allJobs.length) {
     list.innerHTML = `<div class="text-center text-muted py-4 small" id="no-jobs-msg">${t('sidebar.no_jobs')}</div>`;
     return;
   }
+  const query = (uiState.jobsSearch || '').toLowerCase();
+  const jobs = allJobs.filter(j => {
+    if (uiState.jobsStatus !== 'all' && j.status !== uiState.jobsStatus) return false;
+    if (!query) return true;
+    const name = String(j.name || '').toLowerCase();
+    const id = String(j.job_id || '').toLowerCase();
+    return name.includes(query) || id.includes(query);
+  });
+  if (!jobs.length) {
+    list.innerHTML = `<div class="text-center text-muted py-4 small">${t('sidebar.no_jobs_filtered')}</div>`;
+    return;
+  }
+  if (selectedJobId && !jobsMap[selectedJobId]) selectedJobId = null;
   list.innerHTML = jobs.map(j => {
     const dot = `<span class="dot dot-${j.status}" style="margin-right:4px"></span>`;
     const badgeCls = {queued:'secondary',running:'warning',completed:'success',failed:'danger',cancelled:'dark'}[j.status]||'secondary';
@@ -1262,6 +1396,8 @@ function renderJobsSidebar() {
 
 function selectJob(id) {
   selectedJobId = id;
+  uiState.selectedJobId = id;
+  saveUIState();
   renderJobsSidebar();
   // Also update post-process if on that tab
   ppSelectedJobId = id;
@@ -1305,9 +1441,16 @@ async function clearAllJobs() {
   const ids = Object.values(jobsMap)
     .filter(j => j.status !== 'running')
     .map(j => j.job_id);
+  if (!ids.length) return;
+  if (!window.confirm(t('sidebar.clear_confirm'))) return;
   for (const id of ids) {
     try { await api('DELETE', `/api/jobs/${id}`); delete jobsMap[id]; } catch(e) {}
   }
+  if (selectedJobId && !jobsMap[selectedJobId]) {
+    selectedJobId = null;
+    uiState.selectedJobId = null;
+  }
+  saveUIState();
   renderJobsSidebar();
   updatePPJobSelect();
   updateStats();
@@ -1317,10 +1460,14 @@ async function clearAllJobs() {
 // Tab navigation
 // ============================================================
 function showTab(name, el) {
+  if (!TAB_SEQUENCE.includes(name)) name = 'dashboard';
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`panel-${name}`).classList.add('active');
   document.querySelectorAll('.top-navbar nav a').forEach(a => a.classList.remove('active'));
-  if (el) el.classList.add('active');
+  const activeEl = el || document.querySelector(`.top-navbar nav a[data-tab="${name}"]`);
+  if (activeEl) activeEl.classList.add('active');
+  uiState.activeTab = name;
+  saveUIState();
   if (name === 'compare') refreshCompareJobList();
   if (name === 'ai-flow') aiFlowListModels();
   if (name === 'agent') {
