@@ -20,7 +20,16 @@
   "sidebar": {
     "title": "Jobs",
     "clear_title": "Clear completed/failed jobs",
-    "no_jobs": "No jobs yet."
+    "no_jobs": "No jobs yet.",
+    "search_placeholder": "Search job name / id",
+    "filter_all": "All status",
+    "filter_queued": "Queued",
+    "filter_running": "Running",
+    "filter_completed": "Completed",
+    "filter_failed": "Failed",
+    "shortcut_hint": "Shortcuts: Alt+1..9 switch modules, Ctrl/⌘+K search jobs.",
+    "no_jobs_filtered": "No jobs match the current filter.",
+    "clear_confirm": "Clear all non-running jobs? This action cannot be undone."
   },
   "stat": {
     "total": "Total Jobs",

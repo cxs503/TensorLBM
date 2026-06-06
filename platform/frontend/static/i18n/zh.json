@@ -20,7 +20,16 @@
   "sidebar": {
     "title": "任务列表",
     "clear_title": "清除已完成/失败任务",
-    "no_jobs": "暂无任务。"
+    "no_jobs": "暂无任务。",
+    "search_placeholder": "搜索任务名称 / ID",
+    "filter_all": "全部状态",
+    "filter_queued": "排队中",
+    "filter_running": "运行中",
+    "filter_completed": "已完成",
+    "filter_failed": "失败",
+    "shortcut_hint": "快捷键：Alt+1..9 切换模块，Ctrl/⌘+K 搜索任务。",
+    "no_jobs_filtered": "当前筛选条件下无任务。",
+    "clear_confirm": "确认清除所有非运行任务？该操作不可撤销。"
   },
   "stat": {
     "total": "总任务数",
