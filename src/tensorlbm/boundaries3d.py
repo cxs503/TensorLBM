@@ -69,6 +69,46 @@ def make_channel_wall_mask_3d(
     return wall_mask
 
 
+# ---------------------------------------------------------------------------
+# D3Q19 mirror tables for FreeSlip boundary (specular reflection)
+# ---------------------------------------------------------------------------
+# For each direction i, MIRROR_X[i] gives the direction with (cx→-cx, cy, cz).
+# Similarly for MIRROR_Y (cx, -cy, cz) and MIRROR_Z (cx, cy, -cz).
+#
+# Computed from the D3Q19 stencil:
+#   dir  0: ( 0, 0, 0) → mx: 0, my: 0, mz: 0
+#   dir  1: ( 1, 0, 0) → mx: 2, my: 1, mz: 1
+#   dir  2: (-1, 0, 0) → mx: 1, my: 2, mz: 2
+#   dir  3: ( 0, 1, 0) → mx: 3, my: 4, mz: 3
+#   dir  4: ( 0,-1, 0) → mx: 4, my: 3, mz: 4
+#   dir  5: ( 0, 0, 1) → mx: 5, my: 5, mz: 6
+#   dir  6: ( 0, 0,-1) → mx: 6, my: 6, mz: 5
+#   dir  7: ( 1, 1, 0) → mx:10, my: 9, mz: 7
+#   dir  8: (-1,-1, 0) → mx: 9, my: 7, mz: 8
+#   dir  9: ( 1,-1, 0) → mx: 8, my:10, mz: 9
+#   dir 10: (-1, 1, 0) → mx: 7, my: 8, mz:10
+#   dir 11: ( 1, 0, 1) → mx:14, my:11, mz:13
+#   dir 12: (-1, 0,-1) → mx:13, my:12, mz:14
+#   dir 13: ( 1, 0,-1) → mx:12, my:13, mz:11
+#   dir 14: (-1, 0, 1) → mx:11, my:14, mz:12
+#   dir 15: ( 0, 1, 1) → mx:15, my:18, mz:17
+#   dir 16: ( 0,-1,-1) → mx:16, my:17, mz:18
+#   dir 17: ( 0, 1,-1) → mx:17, my:16, mz:15
+#   dir 18: ( 0,-1, 1) → mx:18, my:15, mz:16
+_D3Q19_MIRROR_X = torch.tensor(
+    [0, 2, 1, 3, 4, 5, 6, 10, 9, 8, 7, 14, 13, 12, 11, 15, 16, 17, 18],
+    dtype=torch.int64,
+)
+_D3Q19_MIRROR_Y = torch.tensor(
+    [0, 1, 2, 4, 3, 5, 6, 9, 10, 7, 8, 11, 12, 13, 14, 18, 17, 16, 15],
+    dtype=torch.int64,
+)
+_D3Q19_MIRROR_Z = torch.tensor(
+    [0, 1, 2, 3, 4, 6, 5, 7, 8, 9, 10, 13, 14, 11, 12, 17, 18, 15, 16],
+    dtype=torch.int64,
+)
+
+
 def bounce_back_cells_3d(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """Bounce-back reflection on selected cells (obstacle/walls) for D3Q19.
 
@@ -78,6 +118,76 @@ def bounce_back_cells_3d(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     opp = OPPOSITE.to(f.device)  # (19,)
     # mask.unsqueeze(0) broadcasts (1, nz, ny, nx) → (19, nz, ny, nx)
     return torch.where(mask.unsqueeze(0), f[opp], f)
+
+
+def free_slip_cells_3d(
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    axis: int = 0,
+) -> torch.Tensor:
+    """Specular (free-slip) reflection for D3Q19 walls.
+
+    Unlike bounce-back which reverses ALL velocity components (no-slip),
+    free-slip only reverses the wall-normal component, preserving tangential
+    momentum.  This is the standard approach used by waLBerla's FreeSlip
+    boundary (``lbm::FreeSlip``) for dam-break walls.
+
+    Implemented via pre-computed mirror tables:
+      - ``axis=0`` (x-wall): mirror_x — flip cx, keep cy, cz
+      - ``axis=1`` (y-wall): mirror_y — flip cy, keep cx, cz
+      - ``axis=2`` (z-wall): mirror_z — flip cz, keep cx, cy
+
+    Args:
+        f:     Distribution tensor, shape ``(19, nz, ny, nx)``.
+        mask:  Boolean mask ``(nz, ny, nx)`` of wall cells.
+        axis:  Which coordinate axis is wall-normal (0=x, 1=y, 2=z).
+
+    Returns:
+        Updated distribution tensor with specular reflection at wall cells.
+
+    References
+    ----------
+    waLBerla ``src/lbm/boundary/FreeSlip.h`` (specular reflection pattern).
+    """
+    _mirrors = {0: _D3Q19_MIRROR_X, 1: _D3Q19_MIRROR_Y, 2: _D3Q19_MIRROR_Z}
+    mirror = _mirrors[axis].to(f.device)  # (19,)
+    return torch.where(mask.unsqueeze(0), f[mirror], f)
+
+
+def free_slip_y_walls_3d(
+    f: torch.Tensor,
+    wall_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Convenience wrapper: FreeSlip on y-faces (top and bottom).
+
+    Uses ``free_slip_cells_3d(f, wall_mask, axis=1)``.  This is the
+    recommended boundary for dam-break top/bottom walls per waLBerla's
+    ``DamBreakRectangular.prm`` (all walls FreeSlip).
+
+    Args:
+        f:          Distribution tensor, shape ``(19, nz, ny, nx)``.
+        wall_mask:  Boolean mask ``(nz, ny, nx)`` — ``True`` at wall cells.
+
+    Returns:
+        Updated distribution tensor.
+    """
+    return free_slip_cells_3d(f, wall_mask, axis=1)
+
+
+def free_slip_x_walls_3d(
+    f: torch.Tensor,
+    wall_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Convenience wrapper: FreeSlip on x-faces (left and right)."""
+    return free_slip_cells_3d(f, wall_mask, axis=0)
+
+
+def free_slip_z_walls_3d(
+    f: torch.Tensor,
+    wall_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Convenience wrapper: FreeSlip on z-faces (front and back)."""
+    return free_slip_cells_3d(f, wall_mask, axis=2)
 
 
 def zou_he_inlet_velocity_3d(
@@ -130,7 +240,7 @@ def zou_he_inlet_velocity_3d(
 
     # Step 3: Non-equilibrium bounce-back (vectorised, no Python loop, no .item())
     #   f[k, :, :, 0] = feq[k, :, :, 0] - feq[opp_k, :, :, 0] + f[opp_k, :, :, 0]
-    f_new = f.clone()
+    f_new = f
     f_new[_D3Q19_INLET_DIRS, :, :, 0] = (
         feq[_D3Q19_INLET_DIRS, :, :, 0]
         - feq[_D3Q19_INLET_OPP, :, :, 0]
@@ -181,7 +291,7 @@ def zou_he_outlet_pressure_3d(f: torch.Tensor, rho_out: float = 1.0) -> torch.Te
     )  # (19, nz, ny, 1)
 
     # Vectorised update: no Python loop, no .item()
-    f_new = f.clone()
+    f_new = f
     f_new[_D3Q19_OUTLET_DIRS, :, :, -1] = (
         feq[_D3Q19_OUTLET_DIRS, :, :, 0]
         - feq[_D3Q19_OUTLET_OPP, :, :, 0]
@@ -276,7 +386,7 @@ def zou_he_inlet_velocity_z(
     feq = equilibrium3d(rho3, ux3, uy3, uz3, device=device)  # (19, 1, ny, nx)
 
     # Vectorised update: no Python loop, no .item()
-    f_new = f.clone()
+    f_new = f
     f_new[_D3Q19_ZINLET_DIRS, 0, :, :] = (
         feq[_D3Q19_ZINLET_DIRS, 0]
         - feq[_D3Q19_ZINLET_OPP, 0]
@@ -316,7 +426,7 @@ def zou_he_outlet_pressure_z(f: torch.Tensor, rho_out: float = 1.0) -> torch.Ten
     feq = equilibrium3d(rho3, ux3, uy3, uz3, device=device)  # (19, 1, ny, nx)
 
     # Vectorised update: no Python loop, no .item()
-    f_new = f.clone()
+    f_new = f
     f_new[_D3Q19_ZOUTLET_DIRS, -1, :, :] = (
         feq[_D3Q19_ZOUTLET_DIRS, 0]
         - feq[_D3Q19_ZOUTLET_OPP, 0]

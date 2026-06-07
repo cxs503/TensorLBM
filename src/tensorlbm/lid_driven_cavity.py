@@ -45,7 +45,7 @@ from .config_io import load_config_json, save_config_json
 from .cylinder_flow import _maybe_compile
 from .d2q9 import equilibrium, macroscopic
 from .logging_config import configure_logging, logger
-from .solver import collide_bgk, stream
+from .solver import collide_bgk, collide_mrt, stream
 from .utils import (
     DiagnosticPoint,
     flow_step_image_path,
@@ -244,20 +244,25 @@ class LidDrivenCavityConfig:
 # ---------------------------------------------------------------------------
 
 
-def make_cavity_wall_mask(ny: int, nx: int, device: torch.device) -> torch.Tensor:
-    """Create a Boolean mask for all four cavity walls (including corners).
+def make_cavity_wall_mask(
+    ny: int, nx: int, device: torch.device, include_top: bool = True,
+) -> torch.Tensor:
+    """Create a Boolean mask for cavity walls.
 
     Args:
         ny: Number of rows.
         nx: Number of columns.
         device: Target device.
+        include_top: If False, the top wall (lid) is excluded from the
+            mask so that it is handled by Zou/He BC alone.
 
     Returns:
         Boolean tensor of shape ``(ny, nx)`` with wall cells set to ``True``.
     """
     mask = torch.zeros((ny, nx), dtype=torch.bool, device=device)
     mask[0, :] = True   # bottom wall
-    mask[-1, :] = True  # top wall (lid row)
+    if include_top:
+        mask[-1, :] = True  # top wall (lid row)
     mask[:, 0] = True   # left wall
     mask[:, -1] = True  # right wall
     return mask
@@ -291,20 +296,20 @@ def zou_he_moving_lid(f: torch.Tensor, u_lid: float) -> torch.Tensor:
     Returns:
         Updated distribution tensor (same shape).
     """
-    # Interior cells of the top row only (exclude corners)
-    f0 = f[0, -1, 1:-1]
-    f1 = f[1, -1, 1:-1]
-    f2 = f[2, -1, 1:-1]
-    f3 = f[3, -1, 1:-1]
-    f5 = f[5, -1, 1:-1]
-    f6 = f[6, -1, 1:-1]
+    # All cells of the top row (including corners)
+    f0 = f[0, -1, :]
+    f1 = f[1, -1, :]
+    f2 = f[2, -1, :]
+    f3 = f[3, -1, :]
+    f5 = f[5, -1, :]
+    f6 = f[6, -1, :]
 
     rho = f0 + f1 + 2.0 * f2 + f3 + 2.0 * f5 + 2.0 * f6
 
     f_new = f.clone()
-    f_new[4, -1, 1:-1] = f2
-    f_new[7, -1, 1:-1] = f5 + 0.5 * (f1 - f3) - 0.5 * rho * u_lid
-    f_new[8, -1, 1:-1] = f6 - 0.5 * (f1 - f3) + 0.5 * rho * u_lid
+    f_new[4, -1, :] = f2
+    f_new[7, -1, :] = f5 + 0.5 * (f1 - f3) - 0.5 * rho * u_lid
+    f_new[8, -1, :] = f6 - 0.5 * (f1 - f3) + 0.5 * rho * u_lid
     return f_new
 
 
@@ -435,9 +440,10 @@ def run_lid_driven_cavity(config: LidDrivenCavityConfig) -> Path:
     # Top row already at rest; lid starts moving at step 1
     f = equilibrium(rho0, ux0, uy0, device=device)
 
-    wall_mask = make_cavity_wall_mask(ny, nx, device)
+    wall_mask = make_cavity_wall_mask(ny, nx, device, include_top=False)
 
-    _collide = _maybe_compile(collide_bgk, config.use_compile)
+    _collide_base = collide_mrt if config.tau < 0.60 else collide_bgk
+    _collide = _maybe_compile(_collide_base, config.use_compile)
     _stream = _maybe_compile(stream, config.use_compile)
 
     logger.info(
