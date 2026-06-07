@@ -24,7 +24,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 from .d3q19 import C, W, equilibrium3d, macroscopic3d
-from .multiphase import psi_exp, psi_linear, psi_power  # re-export for convenience
+from .multiphase import psi_exp, psi_linear, psi_power, psi_carnahan_starling, psi_peng_robinson  # re-export for convenience
+from .solver3d import _get_d3q19_mrt_matrices
+from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
 
 _CS2 = 1.0 / 3.0
 
@@ -154,6 +156,7 @@ def collide_sc_two_component_3d(
     gy: float = 0.0,
     gz: float = 0.0,
     solid_mask: torch.Tensor | None = None,
+    use_guo: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen two-component BGK collision step for D3Q19.
 
@@ -167,10 +170,16 @@ def collide_sc_two_component_3d(
         gy:          y body-force acceleration.
         gz:          z body-force acceleration.
         solid_mask:  Optional boolean mask ``(nz, ny, nx)`` of solid/wall cells.
+        use_guo:     If True, use Guo (2002) second-order forcing instead of
+                     the velocity-shift.  Guo forcing adds a correction term
+                     Δfᵢ = (1 − 1/(2τ))·wᵢ·[(cᵢ−u)/cs² + (cᵢ·u)·cᵢ/cs⁴]·F
+                     which improves stability at high-density gradients and
+                     is the standard in waLBerla (``lbm::force_model::GuoField``).
 
     Returns:
         Updated ``(f1, f2)`` after BGK collision.
     """
+    device = f1.device
     rho1, ux1, uy1, uz1 = macroscopic3d(f1)
     rho2, ux2, uy2, uz2 = macroscopic3d(f2)
 
@@ -181,21 +190,29 @@ def collide_sc_two_component_3d(
     rho1_s = torch.clamp(rho1, min=1e-12)
     rho2_s = torch.clamp(rho2, min=1e-12)
 
-    feq1 = equilibrium3d(
-        rho1,
-        ux1 + tau1 * Fx1 / rho1_s,
-        uy1 + tau1 * Fy1 / rho1_s,
-        uz1 + tau1 * Fz1 / rho1_s,
-    )
-    feq2 = equilibrium3d(
-        rho2,
-        ux2 + tau2 * Fx2 / rho2_s,
-        uy2 + tau2 * Fy2 / rho2_s,
-        uz2 + tau2 * Fz2 / rho2_s,
-    )
-
-    f1_out = f1 - (f1 - feq1) / tau1
-    f2_out = f2 - (f2 - feq2) / tau2
+    if use_guo:
+        # --- Guo forcing (second-order, waLBerla pattern) ---
+        f1_out, f2_out = _bgk_collision_guo_3d(
+            f1, f2, rho1, rho2, ux1, uy1, uz1, ux2, uy2, uz2,
+            Fx1, Fy1, Fz1, Fx2, Fy2, Fz2,
+            tau1, tau2, device,
+        )
+    else:
+        # --- Velocity-shift (first-order, original TensorLBM) ---
+        feq1 = equilibrium3d(
+            rho1,
+            ux1 + tau1 * Fx1 / rho1_s,
+            uy1 + tau1 * Fy1 / rho1_s,
+            uz1 + tau1 * Fz1 / rho1_s,
+        )
+        feq2 = equilibrium3d(
+            rho2,
+            ux2 + tau2 * Fx2 / rho2_s,
+            uy2 + tau2 * Fy2 / rho2_s,
+            uz2 + tau2 * Fz2 / rho2_s,
+        )
+        f1_out = f1 - (f1 - feq1) / tau1
+        f2_out = f2 - (f2 - feq2) / tau2
 
     # Solid cells skip collision.
     if solid_mask is not None:
@@ -204,6 +221,80 @@ def collide_sc_two_component_3d(
         f2_out = torch.where(mask_4d, f2, f2_out)
 
     return f1_out, f2_out
+
+
+def _bgk_collision_guo_3d(
+    f1: torch.Tensor,
+    f2: torch.Tensor,
+    rho1: torch.Tensor,
+    rho2: torch.Tensor,
+    ux1: torch.Tensor,
+    uy1: torch.Tensor,
+    uz1: torch.Tensor,
+    ux2: torch.Tensor,
+    uy2: torch.Tensor,
+    uz2: torch.Tensor,
+    Fx1: torch.Tensor,
+    Fy1: torch.Tensor,
+    Fz1: torch.Tensor,
+    Fx2: torch.Tensor,
+    Fy2: torch.Tensor,
+    Fz2: torch.Tensor,
+    tau1: float,
+    tau2: float,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """BGK collision with Guo (2002) second-order forcing for SC two-component.
+
+    The Guo forcing formula:
+        Δfᵢ = (1 − 1/(2τ)) · wᵢ · [(cᵢ − u)/cs² + (cᵢ·u)·cᵢ/cs⁴] · F
+
+    This is applied as a post-collision correction to reduce spurious
+    currents in multiphase flows — the standard approach used by
+    waLBerla (``lbm::force_model::GuoField``).
+
+    References
+    ----------
+    Guo, Zheng & Shi (2002) Phys. Rev. E 65, 046308
+    """
+    cs2 = 1.0 / 3.0
+    cs4 = cs2 * cs2
+    w = _w_on_3d(device).view(19, 1, 1, 1)  # (19, 1, 1, 1)
+    c = _c_on_3d(device)
+    cx = c[:, 0].float().view(19, 1, 1, 1)
+    cy = c[:, 1].float().view(19, 1, 1, 1)
+    cz = c[:, 2].float().view(19, 1, 1, 1)
+
+    # Velocity-shift equilibrium for BGK step
+    feq1 = equilibrium3d(
+        rho1,
+        ux1 + tau1 * Fx1 / torch.clamp(rho1, min=1e-12),
+        uy1 + tau1 * Fy1 / torch.clamp(rho1, min=1e-12),
+        uz1 + tau1 * Fz1 / torch.clamp(rho1, min=1e-12),
+    )
+    feq2 = equilibrium3d(
+        rho2,
+        ux2 + tau2 * Fx2 / torch.clamp(rho2, min=1e-12),
+        uy2 + tau2 * Fy2 / torch.clamp(rho2, min=1e-12),
+        uz2 + tau2 * Fz2 / torch.clamp(rho2, min=1e-12),
+    )
+
+    f1_post = f1 - (f1 - feq1) / tau1
+    f2_post = f2 - (f2 - feq2) / tau2
+
+    # Guo correction term for component 1
+    cu1 = cx * ux1.unsqueeze(0) + cy * uy1.unsqueeze(0) + cz * uz1.unsqueeze(0)
+    term_a1 = (cx - ux1.unsqueeze(0)) * Fx1.unsqueeze(0) + (cy - uy1.unsqueeze(0)) * Fy1.unsqueeze(0) + (cz - uz1.unsqueeze(0)) * Fz1.unsqueeze(0)
+    term_b1 = cu1 * (cx * Fx1.unsqueeze(0) + cy * Fy1.unsqueeze(0) + cz * Fz1.unsqueeze(0))
+    delta_f1 = (1.0 - 1.0 / (2.0 * tau1)) * w * (term_a1 / cs2 + term_b1 / cs4)
+
+    # Guo correction term for component 2
+    cu2 = cx * ux2.unsqueeze(0) + cy * uy2.unsqueeze(0) + cz * uz2.unsqueeze(0)
+    term_a2 = (cx - ux2.unsqueeze(0)) * Fx2.unsqueeze(0) + (cy - uy2.unsqueeze(0)) * Fy2.unsqueeze(0) + (cz - uz2.unsqueeze(0)) * Fz2.unsqueeze(0)
+    term_b2 = cu2 * (cx * Fx2.unsqueeze(0) + cy * Fy2.unsqueeze(0) + cz * Fz2.unsqueeze(0))
+    delta_f2 = (1.0 - 1.0 / (2.0 * tau2)) * w * (term_a2 / cs2 + term_b2 / cs4)
+
+    return f1_post + delta_f1, f2_post + delta_f2
 
 
 # ---------------------------------------------------------------------------
@@ -273,6 +364,12 @@ __all__ = [
     "psi_linear",
     "psi_exp",
     "psi_power",
+    "psi_carnahan_starling",
+    "psi_peng_robinson",
+    # MRT + Smagorinsky multiphase collision
+    "collide_cg_mrt_3d",
+    "collide_sc_mrt_3d",
+    "init_hydrostatic_pressure_3d",
 ]
 
 
@@ -576,3 +673,243 @@ def free_energy_step_3d(
 
     return f_out, g_out
 
+# ---------------------------------------------------------------------------
+# MRT + Smagorinsky multiphase collision operators
+# ---------------------------------------------------------------------------
+
+
+def _mrt_collision_field(
+    f, feq, matrix, matrix_inv,
+    s_e, s_eps, s_q, s_pi, s_nu_field,
+    nz, ny, nx, device,
+):
+    """MRT collision with spatially-varying stress relaxation (Smagorinsky)."""
+    f_flat = f.reshape(19, -1)
+    feq_flat = feq.reshape(19, -1)
+    s_nu_flat = s_nu_field.reshape(-1)
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q,
+         1.0, 1.0, 1.0, 1.0, 1.0, s_pi, s_pi, 1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )
+    m = matrix @ f_flat
+    m_eq = matrix @ feq_flat
+    dm = m - m_eq
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in range(9, 14):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (matrix_inv @ m_star).reshape(19, nz, ny, nx)
+
+
+def _mrt_collision_uniform(
+    f, feq, matrix, matrix_inv,
+    s_e, s_eps, s_q, s_pi, s_nu,
+    nz, ny, nx, device,
+):
+    """MRT collision with uniform relaxation rates (no Smagorinsky)."""
+    f_flat = f.reshape(19, -1)
+    feq_flat = feq.reshape(19, -1)
+    s_vec = torch.tensor(
+        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q,
+         s_nu, s_nu, s_nu, s_nu, s_nu, s_pi, s_pi, 1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )
+    m = matrix @ f_flat
+    m_eq = matrix @ feq_flat
+    m_star = m - s_vec.unsqueeze(1) * (m - m_eq)
+    return (matrix_inv @ m_star).reshape(19, nz, ny, nx)
+
+
+def _guo_correction_3d(ux, uy, uz, Fx, Fy, Fz, s_nu_field, device):
+    """Guo forcing correction for a single component (3D)."""
+    cs2 = 1.0 / 3.0
+    cs4 = cs2 * cs2
+    w_v = _w_on_3d(device).view(19, 1, 1, 1)
+    c = _c_on_3d(device)
+    cx = c[:, 0].float().view(19, 1, 1, 1)
+    cy = c[:, 1].float().view(19, 1, 1, 1)
+    cz = c[:, 2].float().view(19, 1, 1, 1)
+    cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
+    term_a = ((cx - ux.unsqueeze(0)) * Fx.unsqueeze(0)
+              + (cy - uy.unsqueeze(0)) * Fy.unsqueeze(0)
+              + (cz - uz.unsqueeze(0)) * Fz.unsqueeze(0))
+    term_b = cu * (cx * Fx.unsqueeze(0) + cy * Fy.unsqueeze(0) + cz * Fz.unsqueeze(0))
+    return (1.0 - 0.5 * s_nu_field.unsqueeze(0)) * w_v * (term_a / cs2 + term_b / cs4)
+
+
+def collide_cg_mrt_3d(
+    f_r, f_b,
+    tau=1.0, A=0.04, beta=0.7,
+    gx=0.0, gy=0.0, gz=0.0,
+    solid_mask=None,
+    s_e=1.19, s_eps=1.4, s_q=1.2,
+    s_pi=None, C_s=0.0, use_guo=False,
+):
+    """Color-Gradient step with MRT collision + optional Smagorinsky LES.
+
+    When ``C_s > 0``: Smagorinsky sub-grid model (waLBerla default 0.1).
+    When ``C_s = 0``: pure MRT (OpenLB pattern, more stable than BGK).
+    When ``use_guo=True``: Guo second-order forcing (waLBerla GuoField).
+
+    References
+    ----------
+    waLBerla ``DamBreakRectangular.prm`` (SmagorinskyConstant=0.1)
+    OpenLB ``rayleighTaylor3d.cpp`` (MRT for multiphase)
+    """
+    device = f_r.device
+    w_v = _w_on_3d(device).view(19, 1, 1, 1)
+    c = _c_on_3d(device)
+    cx = c[:, 0].float().view(19, 1, 1, 1)
+    cy = c[:, 1].float().view(19, 1, 1, 1)
+    cz = c[:, 2].float().view(19, 1, 1, 1)
+
+    f_total = f_r + f_b
+    rho_r_s = f_r.sum(dim=0)
+    rho_b_s = f_b.sum(dim=0)
+    rho = rho_r_s + rho_b_s
+    rho_safe = rho.clamp(min=1e-12)
+    nz, ny, nx = f_total.shape[1], f_total.shape[2], f_total.shape[3]
+
+    ux = (f_total * cx).sum(dim=0) / rho_safe
+    uy = (f_total * cy).sum(dim=0) / rho_safe
+    uz = (f_total * cz).sum(dim=0) / rho_safe
+    if s_pi is None:
+        s_pi = s_e
+
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+
+    if C_s > 0.0:
+        feq = equilibrium3d(rho, ux, uy, uz)
+        tau_eff = _smagorinsky_tau(tau, _neq_stress_norm_3d(f_total - feq), rho, C_s)
+        s_nu_f = 1.0 / tau_eff
+        f_post = _mrt_collision_field(
+            f_total, feq, matrix, matrix_inv,
+            s_e, s_eps, s_q, s_pi, s_nu_f, nz, ny, nx, device,
+        )
+        if use_guo:
+            f_post += _guo_correction_3d(
+                ux, uy, uz, rho * gx, rho * gy, rho * gz, s_nu_f, device,
+            )
+    else:
+        feq = equilibrium3d(rho, ux + tau * gx, uy + tau * gy, uz + tau * gz)
+        f_post = _mrt_collision_uniform(
+            f_total, feq, matrix, matrix_inv,
+            s_e, s_eps, s_q, s_pi, 1.0 / tau, nz, ny, nx, device,
+        )
+
+    if solid_mask is not None:
+        f_post = torch.where(solid_mask.unsqueeze(0), f_total, f_post)
+
+    # Surface-tension perturbation
+    _phi, mag, nhat_x, nhat_y, nhat_z = _grad_phase_field_3d(rho_r_s, rho_b_s)
+    ci_dot_n = cx * nhat_x.unsqueeze(0) + cy * nhat_y.unsqueeze(0) + cz * nhat_z.unsqueeze(0)
+    f_post += (A / 2.0) * mag.unsqueeze(0) * w_v * (ci_dot_n ** 2 - 1.0 / 3.0)
+
+    # Recoloring
+    amp = beta * (rho_r_s * rho_b_s / rho_safe).unsqueeze(0) * ci_dot_n * w_v
+    f_r_out = (rho_r_s / rho_safe).unsqueeze(0) * f_post + amp
+    f_b_out = (rho_b_s / rho_safe).unsqueeze(0) * f_post - amp
+    if solid_mask is not None:
+        m4 = solid_mask.unsqueeze(0)
+        f_r_out = torch.where(m4, f_r, f_r_out)
+        f_b_out = torch.where(m4, f_b, f_b_out)
+    return f_r_out, f_b_out
+
+
+def collide_sc_mrt_3d(
+    f1, f2,
+    G_12=0.9, tau=1.0,
+    gx=0.0, gy=0.0, gz=0.0,
+    solid_mask=None,
+    s_e=1.19, s_eps=1.4, s_q=1.2,
+    s_pi=None, C_s=0.0, use_guo=False,
+):
+    """Shan-Chen two-component MRT collision + optional Smagorinsky LES.
+
+    MRT independently relaxes non-hydrodynamic moments, improving stability
+    for SC multiphase at density ratios > 3:1 (OpenLB pattern).
+    """
+    device = f1.device
+    rho1, ux1, uy1, uz1 = macroscopic3d(f1)
+    rho2, ux2, uy2, uz2 = macroscopic3d(f2)
+
+    Fx1, Fy1, Fz1, Fx2, Fy2, Fz2 = sc_two_component_force_3d(
+        rho1, rho2, G_12, gx, gy, gz, solid_mask,
+    )
+
+    rho1_s = rho1.clamp(min=1e-12)
+    rho2_s = rho2.clamp(min=1e-12)
+    nz, ny, nx = f1.shape[1], f1.shape[2], f1.shape[3]
+    if s_pi is None:
+        s_pi = s_e
+
+    matrix, matrix_inv = _get_d3q19_mrt_matrices(device)
+
+    if C_s > 0.0:
+        feq1 = equilibrium3d(rho1, ux1, uy1, uz1)
+        tau_eff1 = _smagorinsky_tau(tau, _neq_stress_norm_3d(f1 - feq1), rho1, C_s)
+        feq2 = equilibrium3d(rho2, ux2, uy2, uz2)
+        tau_eff2 = _smagorinsky_tau(tau, _neq_stress_norm_3d(f2 - feq2), rho2, C_s)
+        s_nu1 = 1.0 / tau_eff1
+        s_nu2 = 1.0 / tau_eff2
+        f1_out = _mrt_collision_field(
+            f1, feq1, matrix, matrix_inv,
+            s_e, s_eps, s_q, s_pi, s_nu1, nz, ny, nx, device,
+        )
+        f2_out = _mrt_collision_field(
+            f2, feq2, matrix, matrix_inv,
+            s_e, s_eps, s_q, s_pi, s_nu2, nz, ny, nx, device,
+        )
+        if use_guo:
+            f1_out += _guo_correction_3d(ux1, uy1, uz1, Fx1, Fy1, Fz1, s_nu1, device)
+            f2_out += _guo_correction_3d(ux2, uy2, uz2, Fx2, Fy2, Fz2, s_nu2, device)
+    else:
+        s_nu = 1.0 / tau
+        feq1 = equilibrium3d(
+            rho1, ux1 + tau * Fx1 / rho1_s,
+            uy1 + tau * Fy1 / rho1_s,
+            uz1 + tau * Fz1 / rho1_s,
+        )
+        feq2 = equilibrium3d(
+            rho2, ux2 + tau * Fx2 / rho2_s,
+            uy2 + tau * Fy2 / rho2_s,
+            uz2 + tau * Fz2 / rho2_s,
+        )
+        f1_out = _mrt_collision_uniform(
+            f1, feq1, matrix, matrix_inv,
+            s_e, s_eps, s_q, s_pi, s_nu, nz, ny, nx, device,
+        )
+        f2_out = _mrt_collision_uniform(
+            f2, feq2, matrix, matrix_inv,
+            s_e, s_eps, s_q, s_pi, s_nu, nz, ny, nx, device,
+        )
+
+    if solid_mask is not None:
+        m4 = solid_mask.unsqueeze(0)
+        f1_out = torch.where(m4, f1, f1_out)
+        f2_out = torch.where(m4, f2, f2_out)
+    return f1_out, f2_out
+
+
+# ---------------------------------------------------------------------------
+# Hydrostatic pressure initialisation (waLBerla dam break pattern)
+# ---------------------------------------------------------------------------
+
+
+def init_hydrostatic_pressure_3d(f, solid_mask, gy, water_height):
+    """Initialise hydrostatic pressure gradient for dam-break IC.
+
+    Mirrors waLBerla's ``initHydrostaticPressure`` in DamBreakRectangular.
+    Sets rho(y) = rho0*(1+|gy|*(h-y)/cs²) in fluid, then recomputes f_eq.
+    """
+    device = f.device
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    ys = torch.arange(ny, dtype=torch.float32, device=device).view(1, ny, 1)
+    rho0 = macroscopic3d(f)[0].mean()
+    cs2 = 1.0 / 3.0
+    hydro = rho0 * (1.0 + abs(gy) * (water_height - ys) / cs2)
+    hydro = hydro.clamp(min=rho0 * 0.5, max=rho0 * 2.0)
+    fluid = ~solid_mask
+    rho_hydro = torch.where(fluid, hydro.expand(nz, ny, nx), macroscopic3d(f)[0])
+    zero = torch.zeros((nz, ny, nx), device=device)
+    return torch.where(solid_mask.unsqueeze(0), f, equilibrium3d(rho_hydro, zero, zero, zero))

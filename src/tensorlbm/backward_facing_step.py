@@ -78,7 +78,7 @@ from .config_io import load_config_json, save_config_json
 from .cylinder_flow import _maybe_compile
 from .d2q9 import equilibrium, macroscopic
 from .logging_config import configure_logging, logger
-from .solver import collide_bgk, stream
+from .solver import collide_bgk, collide_mrt, stream
 from .utils import (
     DiagnosticPoint,
     flow_step_image_path,
@@ -396,7 +396,8 @@ def run_backward_facing_step(config: BackwardFacingStepConfig) -> Path:
     uy0 = torch.zeros((ny, nx), device=device)
     f = equilibrium(rho0, ux0, uy0, device=device)
 
-    _collide = _maybe_compile(collide_bgk, config.use_compile)
+    _collide_base = collide_mrt if config.tau < 0.60 else collide_bgk
+    _collide = _maybe_compile(_collide_base, config.use_compile)
     _stream = _maybe_compile(stream, config.use_compile)
 
     logger.info(

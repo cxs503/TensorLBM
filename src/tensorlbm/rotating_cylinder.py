@@ -34,7 +34,7 @@ from .boundaries import (
 from .config_io import load_config_json, save_config_json
 from .d2q9 import C, W, equilibrium, macroscopic
 from .logging_config import configure_logging, logger
-from .solver import collide_bgk, correct_mass, stream
+from .solver import collide_bgk, collide_mrt, correct_mass, stream
 from .utils import (
     get_reproducibility_metadata,
     prepare_run_dir,
@@ -239,8 +239,10 @@ def run_rotating_cylinder(config: RotatingCylinderConfig) -> Path:
         config.n_steps,
     )
 
+    _collide_fn = collide_mrt if config.tau < 0.60 else collide_bgk
+
     for step in range(1, config.n_steps + 1):
-        f = collide_bgk(f, tau=config.tau)
+        f = _collide_fn(f, tau=config.tau)
         f = stream(f)
         fx, fy = compute_obstacle_forces(f, obstacle)
         # Standard channel BC for inlet/outlet/walls (without obstacle), then
