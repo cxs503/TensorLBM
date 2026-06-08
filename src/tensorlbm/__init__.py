@@ -236,6 +236,39 @@ from .rotating_cylinder import (
     rotating_wall_velocity,
     run_rotating_cylinder,
 )
+from .propeller_cad import (
+    PropellerGeometryConfig,
+    build_propeller_mask,
+    propeller_statistics,
+    KP505_PRESET,
+    GENERIC_PRESET,
+)
+from .propeller_benchmark import (
+    PropellerBenchmarkConfig,
+    moving_wall_bounce_back_3d,
+    rotating_wall_velocity_3d,
+    run_propeller_benchmark,
+)
+from .actuator_disk import (
+    ActuatorDiskConfig,
+    apply_actuator_disk,
+    run_actuator_disk_benchmark,
+)
+from .airfoil_benchmark import (
+    AirfoilConfig,
+    naca4_surface,
+    build_airfoil_mask,
+    run_airfoil_benchmark,
+    reference_cl_cd,
+)
+from .propeller_ibm import (
+    IBMPropellerConfig,
+    run_ibm_propeller_benchmark,
+)
+from .rans_ke import (
+    KESolver,
+    collide_rans_ke,
+)
 from .ship_cad import (  # noqa: I001
     ShipHullType,
     export_hull_stl,
@@ -281,6 +314,13 @@ from .solver3d import (
 )
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
 from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
+from .ellipsoid_benchmark import (
+    EllipsoidConfig,
+    build_ellipsoid_mask,
+    ellipsoid_statistics,
+    reference_ellipsoid_cd,
+    run_ellipsoid_benchmark,
+)
 from .suboff_cad import (
     SuboffConfig,
     SuboffHullType,
@@ -463,6 +503,13 @@ __all__ = [
     "SphereWaterEntryConfig",
     "run_sphere_water_entry",
     "wigley_hull_mask",
+    # Ellipsoid benchmark (prolate spheroid)
+    "EllipsoidConfig",
+    "build_ellipsoid_mask",
+    "ellipsoid_statistics",
+    "reference_ellipsoid_cd",
+    "run_ellipsoid_benchmark",
+    # Obstacle forces
     "compute_obstacle_forces_3d",
     "compute_obstacle_forces_27",
     "compute_obstacle_moments_3d",
@@ -512,6 +559,16 @@ __all__ = [
     "export_suboff_stl",
     "SuboffResistanceBenchmarkConfig",
     "run_suboff_resistance_benchmark",
+    # Propeller benchmark
+    "PropellerGeometryConfig",
+    "build_propeller_mask",
+    "propeller_statistics",
+    "KP505_PRESET",
+    "GENERIC_PRESET",
+    "PropellerBenchmarkConfig",
+    "moving_wall_bounce_back_3d",
+    "rotating_wall_velocity_3d",
+    "run_propeller_benchmark",
     "CADGeometryEngine",
     "TriangleMesh",
     "create_parametric_hull_mesh",
