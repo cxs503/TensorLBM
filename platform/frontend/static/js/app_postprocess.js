@@ -17,6 +17,12 @@ function onPPJobSelect() {
   refreshPP();
 }
 
+function buildJobFileUrl(jobId, filePath) {
+  const safeJobId = String(jobId).replace(/[^a-zA-Z0-9_-]/g, '');
+  const safePath = encodeURIComponent(String(filePath)).replace(/%2F/g, '/');
+  return `/api/jobs/${safeJobId}/files/${safePath}`;
+}
+
 async function refreshPP() {
   if (!ppSelectedJobId) return;
   const job = jobsMap[ppSelectedJobId];
@@ -69,16 +75,34 @@ async function loadSnapshots() {
       grid.innerHTML = `<div class="col-12 text-muted small">${t('postprocess.no_snapshots')}</div>`;
       return;
     }
-    // Load images lazily – show placeholders, load on click
-    grid.innerHTML = r.images.map(img => `
-      <div class="col-sm-6 col-md-4">
-        <div class="card p-1">
-          <img src="/api/jobs/${ppSelectedJobId}/files/${img}" class="result-img img-thumb"
-               loading="lazy" alt="${img}"
-               onclick="openLightbox(this.src)" />
-          <div class="small text-muted p-1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${img}</div>
-        </div>
-      </div>`).join('');
+    // Build snapshot cards with DOM APIs to avoid HTML injection risks.
+    grid.innerHTML = '';
+    for (const img of r.images) {
+      const outer = document.createElement('div');
+      outer.className = 'col-sm-6 col-md-4';
+
+      const card = document.createElement('div');
+      card.className = 'card p-1';
+
+      const image = document.createElement('img');
+      image.src = buildJobFileUrl(ppSelectedJobId, img);
+      image.className = 'result-img img-thumb';
+      image.loading = 'lazy';
+      image.alt = String(img);
+      image.onclick = () => openLightbox(image.src);
+
+      const label = document.createElement('div');
+      label.className = 'small text-muted p-1';
+      label.style.whiteSpace = 'nowrap';
+      label.style.overflow = 'hidden';
+      label.style.textOverflow = 'ellipsis';
+      label.textContent = String(img);
+
+      card.appendChild(image);
+      card.appendChild(label);
+      outer.appendChild(card);
+      grid.appendChild(outer);
+    }
   } catch(e) { grid.innerHTML = `<div class="col-12 alert alert-danger small">${e.message}</div>`; }
 }
 
@@ -96,17 +120,53 @@ async function loadFiles() {
   try {
     const r = await api('GET', `/api/jobs/${ppSelectedJobId}/files`);
     if (!r.files.length) { el.innerHTML = `<p class="text-muted small">${t('postprocess.no_files')}</p>`; return; }
-    const rows = r.files.map(f => `<tr>
-      <td class="font-monospace small">${escHtml(f.path)}</td>
-      <td class="small text-muted">${(f.size/1024).toFixed(1)} KB</td>
-      <td class="small">${f.mime}</td>
-      <td><a class="btn btn-sm btn-outline-primary py-0" href="/api/jobs/${ppSelectedJobId}/files/${f.path}" download>
-        <i class="bi bi-download"></i>
-      </a></td>
-    </tr>`).join('');
-    el.innerHTML = `<table class="table table-sm table-hover">
-      <thead><tr><th>${t('postprocess.file_col')}</th><th>${t('postprocess.size_col')}</th><th>${t('postprocess.mime_col')}</th><th></th></tr></thead>
-      <tbody>${rows}</tbody></table>`;
+    const table = document.createElement('table');
+    table.className = 'table table-sm table-hover';
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    for (const text of [t('postprocess.file_col'), t('postprocess.size_col'), t('postprocess.mime_col'), '']) {
+      const th = document.createElement('th');
+      th.textContent = text;
+      headRow.appendChild(th);
+    }
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    for (const f of r.files) {
+      const tr = document.createElement('tr');
+
+      const tdPath = document.createElement('td');
+      tdPath.className = 'font-monospace small';
+      tdPath.textContent = String(f.path);
+      tr.appendChild(tdPath);
+
+      const tdSize = document.createElement('td');
+      tdSize.className = 'small text-muted';
+      tdSize.textContent = `${(f.size / 1024).toFixed(1)} KB`;
+      tr.appendChild(tdSize);
+
+      const tdMime = document.createElement('td');
+      tdMime.className = 'small';
+      tdMime.textContent = String(f.mime);
+      tr.appendChild(tdMime);
+
+      const tdAction = document.createElement('td');
+      const link = document.createElement('a');
+      link.className = 'btn btn-sm btn-outline-primary py-0';
+      link.href = buildJobFileUrl(ppSelectedJobId, f.path);
+      link.setAttribute('download', '');
+      const icon = document.createElement('i');
+      icon.className = 'bi bi-download';
+      link.appendChild(icon);
+      tdAction.appendChild(link);
+      tr.appendChild(tdAction);
+
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    el.innerHTML = '';
+    el.appendChild(table);
   } catch(e) { el.innerHTML = `<div class="alert alert-danger small">${e.message}</div>`; }
 }
 
