@@ -275,12 +275,17 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     # Select collision operator: use f, tau=... form (tau captured in lambda)
     if config.collision == "mrt":
         from tensorlbm.solver import collide_mrt
+
         tau = config.tau
-        _collide_raw = lambda f: collide_mrt(f, tau, config.mrt_s_e, config.mrt_s_eps, config.mrt_s_q)
+
+        def _collide_raw(f: torch.Tensor) -> torch.Tensor:
+            return collide_mrt(f, tau, config.mrt_s_e, config.mrt_s_eps, config.mrt_s_q)
     else:
         tau = config.tau
-        _collide_raw = lambda f: collide_bgk(f, tau)
-    
+
+        def _collide_raw(f: torch.Tensor) -> torch.Tensor:
+            return collide_bgk(f, tau)
+
     _collide = _maybe_compile(_collide_raw, config.use_compile)
     _stream = _maybe_compile(stream, config.use_compile)
 
