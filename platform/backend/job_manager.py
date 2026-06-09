@@ -273,6 +273,27 @@ def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
 # Public API
 # ---------------------------------------------------------------------------
 
+
+def configure_backends(
+    *,
+    jobs: dict[str, Job] | None = None,
+    lock: threading.Lock | None = None,
+    executor: ThreadPoolExecutor | None = None,
+) -> None:
+    """Override in-process storage/scheduler backends for extension/testing.
+
+    This is an intentionally thin abstraction seam so future distributed
+    schedulers or persistent stores can be integrated without changing the
+    public submit/get/list/cancel API.
+    """
+    global _jobs, _jobs_lock, _executor
+    if jobs is not None:
+        _jobs = jobs
+    if lock is not None:
+        _jobs_lock = lock
+    if executor is not None:
+        _executor = executor
+
 def set_event_loop(
     loop: asyncio.AbstractEventLoop,
     queue: asyncio.Queue[dict[str, Any]],  # type: ignore[type-arg]

@@ -132,6 +132,7 @@ GitHub Actions runs the same test command on every push and pull request.
 
 - Stable compatibility-oriented API: `tensorlbm.api`
 - Fast-evolving API surface: `tensorlbm.experimental`
+- Grouped domain namespaces for new code: `tensorlbm.lattice_models`, `tensorlbm.physics`, `tensorlbm.cad`
 
 ## Quantitative validation summary
 
