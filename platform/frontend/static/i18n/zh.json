@@ -10,7 +10,8 @@
     "benchmarks": "基准测试",
     "compare": "对比",
     "agent": "AI 智能体",
-    "ai_flow": "AI 流场"
+    "ai_flow": "AI 流场",
+    "orchestration": "编排治理"
   },
   "ws": {
     "connecting": "连接中…",
@@ -27,7 +28,7 @@
     "filter_running": "运行中",
     "filter_completed": "已完成",
     "filter_failed": "失败",
-    "shortcut_hint": "快捷键：Alt+1..9 切换模块，Ctrl/⌘+K 搜索任务。",
+    "shortcut_hint": "快捷键：Alt+1..0 切换模块，Ctrl/⌘+K 搜索任务。",
     "no_jobs_filtered": "当前筛选条件下无任务。",
     "clear_confirm": "确认清除所有非运行任务？该操作不可撤销。"
   },
@@ -416,5 +417,36 @@
     "train_done": "Transformer 训练完成",
     "infer_done": "推理完成",
     "no_models": "暂无 Transformer 模型。"
+  },
+  "orch": {
+    "title": "HPC 编排 + AI 治理",
+    "templates_title": "实验模板",
+    "template_id": "模板",
+    "re_values": "Re 扫描值（逗号分隔）",
+    "nx": "nx",
+    "ny": "ny",
+    "n_steps": "步数 n_steps",
+    "output_interval": "输出间隔 output_interval",
+    "submit_btn": "提交模板实验",
+    "submit_result": "提交结果",
+    "kpis_title": "编排 KPI",
+    "gate_title": "置信度闸门",
+    "prediction": "预测值",
+    "baseline": "基线值",
+    "uncertainty": "不确定度",
+    "max_rel_err": "最大相对误差",
+    "max_uncertainty": "最大不确定度",
+    "gate_btn": "评估闸门",
+    "gate_result": "闸门结果",
+    "al_title": "主动学习优先级",
+    "top_k": "top_k",
+    "candidates": "候选样本 JSON",
+    "al_btn": "优先级排序",
+    "al_result": "排序结果",
+    "staged": "分阶段待实现",
+    "submitted": "模板实验已提交",
+    "accepted": "接受 AI 结果",
+    "fallback": "回退 HPC 高保真",
+    "selected": "已选择样本："
   }
 }
