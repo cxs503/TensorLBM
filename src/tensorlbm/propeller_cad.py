@@ -202,10 +202,7 @@ def wageningen_b_series(
     KT = max(_b_poly(_KT_COEFFS, J_f, PD, EAR, Z_i), 0.0)
     KQ = max(_b_poly(_KQ_COEFFS, J_f, PD, EAR, Z_i), 1e-12)
 
-    if J_f > 0.0 and KQ > 0.0:
-        eta_0 = J_f * KT / (2.0 * math.pi * KQ)
-    else:
-        eta_0 = 0.0
+    eta_0 = J_f * KT / (2.0 * math.pi * KQ) if J_f > 0.0 and KQ > 0.0 else 0.0
 
     result: dict = {
         "J": J_f,
@@ -382,7 +379,7 @@ def plot_b_series_curves(
     *,
     J_range: tuple[float, float] = (0.01, 1.4),
     n_points: int = 100,
-) -> "matplotlib.figure.Figure":
+) -> matplotlib.figure.Figure:
     """Plot KT, 10·KQ and η₀ vs J for a Wageningen B-series propeller.
 
     Parameters

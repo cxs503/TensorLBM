@@ -12,6 +12,7 @@ browser-based platform can:
 from __future__ import annotations
 
 import base64
+import contextlib
 import io
 import os
 import tempfile
@@ -773,7 +774,7 @@ class OffshoreSTLRequest(BaseModel):
     column_height: float | None = None
 
 
-def _offshore_kwargs(req) -> dict:
+def _offshore_kwargs(req: object) -> dict:
     """Extract non-None geometry overrides from an offshore request model."""
     fields = [
         "diameter", "leg_diameter", "foot_spread", "head_spread",
@@ -790,6 +791,7 @@ async def offshore_preview(req: OffshorePreviewRequest) -> dict:
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
+
         from tensorlbm.offshore_cad import generate_offshore_previews
         kwargs = _offshore_kwargs(req)
         fig = generate_offshore_previews(
@@ -843,10 +845,8 @@ async def offshore_export_stl(req: OffshoreSTLRequest) -> Response:
             req.struct_type, tmp_path, req.nx, req.ny, req.nz, **kwargs
         )
         content = Path(tmp_path).read_bytes()
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_path)
-        except OSError:
-            pass
         return Response(
             content=content,
             media_type="model/stl",
@@ -861,7 +861,7 @@ async def offshore_export_stl(req: OffshoreSTLRequest) -> Response:
 @router.get("/offshore/structure-types")
 async def list_offshore_structure_types() -> dict:
     """List available offshore structure types."""
-    from tensorlbm.offshore_cad import OffshoreStructureType, _STRUCTURE_LABELS
+    from tensorlbm.offshore_cad import _STRUCTURE_LABELS, OffshoreStructureType
     return {
         "structure_types": [
             {"value": t.value, "label": _STRUCTURE_LABELS[t]}
@@ -927,7 +927,8 @@ async def propeller_curves(req: PropellerCurveRequest) -> dict:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import numpy as np
-        from tensorlbm.propeller_cad import wageningen_b_series, plot_b_series_curves
+
+        from tensorlbm.propeller_cad import plot_b_series_curves, wageningen_b_series
         fig = plot_b_series_curves(
             req.P_D, req.Ae_A0, req.Z,
             J_range=(req.J_min, req.J_max),
