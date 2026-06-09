@@ -291,6 +291,23 @@ from .suboff_cad import (
     suboff_radius_profile,
     suboff_statistics,
 )
+from .offshore_cad import (
+    OffshoreStructureType,
+    monopile_mask,
+    jacket_mask,
+    spar_mask,
+    semi_sub_mask,
+    build_offshore_mask,
+    offshore_statistics,
+    generate_offshore_previews,
+    export_offshore_stl,
+)
+from .propeller_cad import (
+    wageningen_b_series,
+    optimal_advance_ratio,
+    propeller_design,
+    propeller_disk_mask,
+)
 from .suboff_resistance import (
     SuboffResistanceBenchmarkConfig,
     run_suboff_resistance_benchmark,
@@ -512,6 +529,21 @@ __all__ = [
     "export_suboff_stl",
     "SuboffResistanceBenchmarkConfig",
     "run_suboff_resistance_benchmark",
+    # Offshore structures CAD module
+    "OffshoreStructureType",
+    "monopile_mask",
+    "jacket_mask",
+    "spar_mask",
+    "semi_sub_mask",
+    "build_offshore_mask",
+    "offshore_statistics",
+    "generate_offshore_previews",
+    "export_offshore_stl",
+    # Propeller performance (Wageningen B-series)
+    "wageningen_b_series",
+    "optimal_advance_ratio",
+    "propeller_design",
+    "propeller_disk_mask",
     "CADGeometryEngine",
     "TriangleMesh",
     "create_parametric_hull_mesh",

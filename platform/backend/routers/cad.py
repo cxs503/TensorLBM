@@ -12,6 +12,7 @@ browser-based platform can:
 from __future__ import annotations
 
 import base64
+import contextlib
 import io
 import os
 import tempfile
@@ -727,6 +728,239 @@ async def cad3d_build_lbm_mask(model_id: str, req: CAD3DMaskBridgeRequest) -> di
             ny=req.ny,
             nz=req.nz,
             device=req.device,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ===========================================================================
+# Offshore structure endpoints
+# ===========================================================================
+
+
+class OffshorePreviewRequest(BaseModel):
+    struct_type: Literal["monopile", "jacket", "spar", "semi_sub"] = "monopile"
+    nx: int = Field(80, ge=20)
+    ny: int = Field(80, ge=20)
+    nz: int = Field(80, ge=20)
+    diameter: float | None = Field(None, gt=0)
+    leg_diameter: float | None = Field(None, gt=0)
+    foot_spread: float | None = Field(None, gt=0)
+    head_spread: float | None = Field(None, gt=0)
+    hull_diameter: float | None = Field(None, gt=0)
+    keel_diameter: float | None = Field(None, gt=0)
+    column_diameter: float | None = Field(None, gt=0)
+    pontoon_length: float | None = Field(None, gt=0)
+    pontoon_width: float | None = Field(None, gt=0)
+    pontoon_height: float | None = Field(None, gt=0)
+    column_height: float | None = Field(None, gt=0)
+
+
+class OffshoreSTLRequest(BaseModel):
+    struct_type: Literal["monopile", "jacket", "spar", "semi_sub"] = "monopile"
+    nx: int = Field(40, ge=10)
+    ny: int = Field(40, ge=10)
+    nz: int = Field(40, ge=10)
+    diameter: float | None = None
+    leg_diameter: float | None = None
+    foot_spread: float | None = None
+    head_spread: float | None = None
+    hull_diameter: float | None = None
+    keel_diameter: float | None = None
+    column_diameter: float | None = None
+    pontoon_length: float | None = None
+    pontoon_width: float | None = None
+    pontoon_height: float | None = None
+    column_height: float | None = None
+
+
+def _offshore_kwargs(req: object) -> dict:
+    """Extract non-None geometry overrides from an offshore request model."""
+    fields = [
+        "diameter", "leg_diameter", "foot_spread", "head_spread",
+        "hull_diameter", "keel_diameter", "column_diameter",
+        "pontoon_length", "pontoon_width", "pontoon_height", "column_height",
+    ]
+    return {k: getattr(req, k) for k in fields if getattr(req, k, None) is not None}
+
+
+@router.post("/offshore/preview")
+async def offshore_preview(req: OffshorePreviewRequest) -> dict:
+    """Generate top/side/front projection previews for an offshore structure."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        from tensorlbm.offshore_cad import generate_offshore_previews
+        kwargs = _offshore_kwargs(req)
+        fig = generate_offshore_previews(
+            req.struct_type, nx=req.nx, ny=req.ny, nz=req.nz, **kwargs
+        )
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=90, bbox_inches="tight")
+        plt.close(fig)
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        return {"image": img_b64, "struct_type": req.struct_type}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/offshore/hull-mask")
+async def offshore_hull_mask(req: OffshorePreviewRequest) -> dict:
+    """Build a 3-D LBM voxel mask for an offshore structure."""
+    try:
+        from tensorlbm.offshore_cad import build_offshore_mask
+        kwargs = _offshore_kwargs(req)
+        result = build_offshore_mask(
+            req.struct_type, req.nx, req.ny, req.nz, device="cpu", **kwargs
+        )
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        mask_np = result["mask"].cpu().numpy()
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+        ax.imshow(mask_np.max(axis=2).T, origin="lower", aspect="equal", cmap="Blues")
+        ax.set_title(f"{req.struct_type} – top view")
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=90, bbox_inches="tight")
+        plt.close(fig)
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        return {"image": img_b64, "stats": result["stats"]}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/offshore/export-stl")
+async def offshore_export_stl(req: OffshoreSTLRequest) -> Response:
+    """Export an offshore structure as ASCII STL."""
+    try:
+        from tensorlbm.offshore_cad import OffshoreStructureType, export_offshore_stl
+        # Validate struct_type against the allowed enum before using in path
+        safe_type = OffshoreStructureType(req.struct_type).value
+        kwargs = _offshore_kwargs(req)
+        with tempfile.NamedTemporaryFile(
+            suffix=f"_{safe_type}.stl", delete=False
+        ) as tmp:
+            tmp_path = tmp.name
+        export_offshore_stl(
+            safe_type, tmp_path, req.nx, req.ny, req.nz, **kwargs
+        )
+        content = Path(tmp_path).read_bytes()
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_path)
+        return Response(
+            content=content,
+            media_type="model/stl",
+            headers={
+                "Content-Disposition": f'attachment; filename="{safe_type}.stl"'
+            },
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/offshore/structure-types")
+async def list_offshore_structure_types() -> dict:
+    """List available offshore structure types."""
+    from tensorlbm.offshore_cad import _STRUCTURE_LABELS, OffshoreStructureType
+    return {
+        "structure_types": [
+            {"value": t.value, "label": _STRUCTURE_LABELS[t]}
+            for t in OffshoreStructureType
+        ]
+    }
+
+
+# ===========================================================================
+# Propeller performance endpoints (Wageningen B-series)
+# ===========================================================================
+
+
+class PropellerOpenWaterRequest(BaseModel):
+    J: float = Field(0.7, ge=0.0, le=1.5, description="Advance ratio")
+    P_D: float = Field(1.0, ge=0.5, le=1.4, description="Pitch ratio P/D")
+    Ae_A0: float = Field(0.6, ge=0.3, le=1.05, description="Blade area ratio Ae/A0")
+    Z: int = Field(4, ge=2, le=7, description="Number of blades")
+    n_rps: float | None = Field(None, gt=0, description="Shaft speed [rev/s]")
+    D_m: float | None = Field(None, gt=0, description="Propeller diameter [m]")
+    rho: float = Field(1025.0, gt=0, description="Water density [kg/m³]")
+
+
+class PropellerCurveRequest(BaseModel):
+    P_D: float = Field(1.0, ge=0.5, le=1.4)
+    Ae_A0: float = Field(0.6, ge=0.3, le=1.05)
+    Z: int = Field(4, ge=2, le=7)
+    J_min: float = Field(0.01, ge=0.0, le=0.5)
+    J_max: float = Field(1.35, ge=0.5, le=1.5)
+    n_points: int = Field(60, ge=10, le=200)
+
+
+class PropellerDesignRequest(BaseModel):
+    thrust_n: float = Field(500_000.0, gt=0, description="Required thrust [N]")
+    Va_ms: float = Field(6.0, gt=0, description="Advance speed [m/s]")
+    P_D: float = Field(1.0, ge=0.5, le=1.4)
+    Ae_A0: float = Field(0.6, ge=0.3, le=1.05)
+    Z: int = Field(4, ge=2, le=7)
+    n_rps: float = Field(2.0, gt=0, description="Shaft speed [rev/s]")
+    rho: float = Field(1025.0, gt=0)
+
+
+@router.post("/propeller/open-water")
+async def propeller_open_water(req: PropellerOpenWaterRequest) -> dict:
+    """Compute Wageningen B-series open-water coefficients at a single advance ratio."""
+    try:
+        from tensorlbm.propeller_cad import wageningen_b_series
+        return wageningen_b_series(
+            req.J, req.P_D, req.Ae_A0, req.Z,
+            rho=req.rho,
+            n=req.n_rps,
+            D=req.D_m,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/propeller/curves")
+async def propeller_curves(req: PropellerCurveRequest) -> dict:
+    """Return open-water diagram (image + data) over a J sweep."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        from tensorlbm.propeller_cad import plot_b_series_curves, wageningen_b_series
+        fig = plot_b_series_curves(
+            req.P_D, req.Ae_A0, req.Z,
+            J_range=(req.J_min, req.J_max),
+            n_points=req.n_points,
+        )
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=90, bbox_inches="tight")
+        plt.close(fig)
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        J_arr = np.linspace(req.J_min, req.J_max, req.n_points)
+        rows = [
+            {
+                "J": round(float(Jv), 4),
+                **wageningen_b_series(float(Jv), req.P_D, req.Ae_A0, req.Z),
+            }
+            for Jv in J_arr
+        ]
+        return {"image": img_b64, "data": rows}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/propeller/design")
+async def propeller_design_endpoint(req: PropellerDesignRequest) -> dict:
+    """Size a propeller for a required thrust at a given advance speed."""
+    try:
+        from tensorlbm.propeller_cad import propeller_design
+        return propeller_design(
+            req.thrust_n, req.Va_ms, req.P_D, req.Ae_A0, req.Z, req.n_rps,
+            rho=req.rho,
         )
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
