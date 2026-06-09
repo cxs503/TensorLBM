@@ -25,6 +25,7 @@ from .logging_config import configure_logging, logger
 from .solver import collide_bgk, correct_mass, stream
 from .utils import (
     DiagnosticPoint,
+    configure_cpu_threads,
     get_reproducibility_metadata,
     prepare_run_dir,
     resolve_device,
@@ -78,6 +79,7 @@ class CylinderFlowConfig:
     run_name: str | None = None
     seed: int = 0
     device: str = "cpu"
+    num_threads: int | None = None
     overwrite: bool = False
     resume_checkpoint: Path | None = None
     use_compile: bool = False
@@ -112,6 +114,9 @@ class CylinderFlowConfig:
             raise ValueError(msg)
         if self.u_in <= 0.0 or self.re <= 0.0 or self.radius <= 0.0:
             msg = "u_in, re, and radius must be > 0"
+            raise ValueError(msg)
+        if self.num_threads is not None and self.num_threads < 1:
+            msg = "num_threads must be >= 1"
             raise ValueError(msg)
         if self.tau <= 0.5:
             msg = f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/radius"
@@ -215,6 +220,7 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     torch.use_deterministic_algorithms(True, warn_only=True)
 
     device = resolve_device(config.device)
+    applied_num_threads = configure_cpu_threads(device, config.num_threads)
     run_dir = prepare_run_dir(
         config.output_root,
         "cylinder_flow",
@@ -230,7 +236,11 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
             "resume_checkpoint": ckpt_str,
         },
         "derived": {"nu": config.nu, "tau": config.tau},
-        "runtime": {"torch_version": torch.__version__, "device": str(device)},
+        "runtime": {
+            "torch_version": torch.__version__,
+            "device": str(device),
+            "num_threads": applied_num_threads,
+        },
         "reproducibility": get_reproducibility_metadata(),
     }
 
@@ -276,7 +286,7 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
 
     logger.info(
         "Running D2Q9 cylinder flow device=%s NX=%s NY=%s tau=%.4f "
-        "steps=%s output_interval=%s compile=%s",
+        "steps=%s output_interval=%s compile=%s num_threads=%s",
         device,
         config.nx,
         config.ny,
@@ -284,6 +294,7 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
         config.n_steps,
         config.output_interval,
         config.use_compile,
+        applied_num_threads,
     )
     logger.info("Run directory: %s", run_dir)
 
