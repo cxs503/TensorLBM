@@ -357,6 +357,7 @@ from .turbulent_channel import (
 from .unit_converter import LBMUnitConverter
 from .utils import (
     DiagnosticPoint,
+    configure_cpu_threads,
     flow_step_image_path,
     get_reproducibility_metadata,
     legacy_snapshot_image_path,
@@ -615,6 +616,7 @@ __all__ = [
     "ibm_apply_body_force_2d",
     # Shared utilities
     "DiagnosticPoint",
+    "configure_cpu_threads",
     "resolve_device",
     "prepare_run_dir",
     "get_reproducibility_metadata",
