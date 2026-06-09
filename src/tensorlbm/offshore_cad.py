@@ -110,7 +110,6 @@ def _cylinder_mask(
     incline_x, incline_y : horizontal offset per unit height (taper in x/y).
     """
     nx, ny, nz = grid.shape
-    nz_f = float(nz)
     z_mid = 0.5 * (z_bot + z_top)
 
     for iz in range(int(math.floor(z_bot)), min(int(math.ceil(z_top)) + 1, nz)):
@@ -233,8 +232,7 @@ def jacket_mask(
     if h <= 0.0:
         raise ValueError("z_top must be greater than z_bot")
 
-    # Four corners at mid-height
-    z_mid = 0.5 * (z_bot + z_top)
+    # Four corners
     foot_h = foot_spread / 2.0
     head_h = head_spread / 2.0
     # Average centroid spread at mid-height
@@ -438,7 +436,13 @@ _DEFAULT_PARAMS: dict[OffshoreStructureType, dict] = {
 }
 
 
-def _auto_params(struct_type: OffshoreStructureType, nx: int, ny: int, nz: int, **kwargs) -> dict:
+def _auto_params(
+    struct_type: OffshoreStructureType,
+    nx: int,
+    ny: int,
+    nz: int,
+    **kwargs: object,
+) -> dict:
     """Fill in sensible default dimensions scaled to grid size."""
     ref = min(nx, ny, nz)
     if struct_type == OffshoreStructureType.MONOPILE:
@@ -476,7 +480,7 @@ def build_offshore_mask(
     nz: int,
     *,
     device: str = "cpu",
-    **kwargs,
+    **kwargs: object,
 ) -> dict:
     """Build a 3-D LBM obstacle mask for an offshore structure.
 
@@ -542,10 +546,7 @@ def offshore_statistics(
     """
     if isinstance(struct_type, str):
         struct_type = OffshoreStructureType(struct_type)
-    if isinstance(mask, torch.Tensor):
-        arr = mask.cpu().numpy()
-    else:
-        arr = np.asarray(mask)
+    arr = mask.cpu().numpy() if isinstance(mask, torch.Tensor) else np.asarray(mask)
 
     solid = int(arr.sum())
     total = int(arr.size)
@@ -570,8 +571,8 @@ def generate_offshore_previews(
     nx: int = 80,
     ny: int = 80,
     nz: int = 80,
-    **kwargs,
-) -> "matplotlib.figure.Figure":
+    **kwargs: object,
+) -> matplotlib.figure.Figure:
     """Render top-view, side-view, and front-view projections.
 
     Returns a matplotlib Figure with three subplots showing XY, XZ and YZ
@@ -644,7 +645,7 @@ def export_offshore_stl(
     nx: int = 60,
     ny: int = 60,
     nz: int = 60,
-    **kwargs,
+    **kwargs: object,
 ) -> Path:
     """Export an offshore structure as an ASCII STL voxel surface mesh.
 
@@ -665,16 +666,6 @@ def export_offshore_stl(
     result = build_offshore_mask(struct_type, nx, ny, nz, **kwargs)
     mask_np = result["mask"].cpu().numpy().astype(np.int8)
 
-    # Face enumeration: for each solid voxel, emit exposed faces.
-    normals = [
-        ((-1, 0, 0), (0, -1, 1), (0, 0, 1), "x-"),
-        ((1, 0, 0), (0, 0, 1), (0, 1, 1), "x+"),
-        ((0, -1, 0), (0, 0, 1), (1, 0, 1), "y-"),
-        ((0, 1, 0), (1, 0, 1), (0, 0, 1), "y+"),
-        ((0, 0, -1), (0, 1, 0), (1, 1, 0), "z-"),
-        ((0, 0, 1), (1, 0, 1), (0, 1, 1), "z+"),
-    ]
-
     lines: list[str] = [f"solid {struct_type.value}"]
     padded = np.pad(mask_np, 1, constant_values=0)
 
@@ -691,24 +682,42 @@ def export_offshore_stl(
                     _write_stl_facet(lines, (-1, 0, 0), (x, y, z), (x, y + 1, z + 1), (x, y, z + 1))
                 # +X face
                 if not padded[ix + 2, iy + 1, iz + 1]:
-                    _write_stl_facet(lines, (1, 0, 0), (x + 1, y, z), (x + 1, y + 1, z + 1), (x + 1, y + 1, z))
-                    _write_stl_facet(lines, (1, 0, 0), (x + 1, y, z), (x + 1, y, z + 1), (x + 1, y + 1, z + 1))
+                    _write_stl_facet(
+                        lines, (1, 0, 0),
+                        (x + 1, y, z), (x + 1, y + 1, z + 1), (x + 1, y + 1, z),
+                    )
+                    _write_stl_facet(
+                        lines, (1, 0, 0),
+                        (x + 1, y, z), (x + 1, y, z + 1), (x + 1, y + 1, z + 1),
+                    )
                 # -Y face
                 if not padded[ix + 1, iy, iz + 1]:
                     _write_stl_facet(lines, (0, -1, 0), (x, y, z), (x + 1, y, z), (x + 1, y, z + 1))
                     _write_stl_facet(lines, (0, -1, 0), (x, y, z), (x + 1, y, z + 1), (x, y, z + 1))
                 # +Y face
                 if not padded[ix + 1, iy + 2, iz + 1]:
-                    _write_stl_facet(lines, (0, 1, 0), (x, y + 1, z), (x + 1, y + 1, z + 1), (x + 1, y + 1, z))
-                    _write_stl_facet(lines, (0, 1, 0), (x, y + 1, z), (x, y + 1, z + 1), (x + 1, y + 1, z + 1))
+                    _write_stl_facet(
+                        lines, (0, 1, 0),
+                        (x, y + 1, z), (x + 1, y + 1, z + 1), (x + 1, y + 1, z),
+                    )
+                    _write_stl_facet(
+                        lines, (0, 1, 0),
+                        (x, y + 1, z), (x, y + 1, z + 1), (x + 1, y + 1, z + 1),
+                    )
                 # -Z face
                 if not padded[ix + 1, iy + 1, iz]:
                     _write_stl_facet(lines, (0, 0, -1), (x, y, z), (x + 1, y + 1, z), (x + 1, y, z))
                     _write_stl_facet(lines, (0, 0, -1), (x, y, z), (x, y + 1, z), (x + 1, y + 1, z))
                 # +Z face
                 if not padded[ix + 1, iy + 1, iz + 2]:
-                    _write_stl_facet(lines, (0, 0, 1), (x, y, z + 1), (x + 1, y, z + 1), (x + 1, y + 1, z + 1))
-                    _write_stl_facet(lines, (0, 0, 1), (x, y, z + 1), (x + 1, y + 1, z + 1), (x, y + 1, z + 1))
+                    _write_stl_facet(
+                        lines, (0, 0, 1),
+                        (x, y, z + 1), (x + 1, y, z + 1), (x + 1, y + 1, z + 1),
+                    )
+                    _write_stl_facet(
+                        lines, (0, 0, 1),
+                        (x, y, z + 1), (x + 1, y + 1, z + 1), (x, y + 1, z + 1),
+                    )
 
     lines.append(f"endsolid {struct_type.value}")
 
