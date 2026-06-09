@@ -9,6 +9,7 @@ browser-based platform can:
 4. Launch a solver job directly from CAD parameters (CAD → solver shortcut).
 5. Export a hull STL file.
 """
+# ruff: noqa: TC001
 from __future__ import annotations
 
 import base64
@@ -17,11 +18,12 @@ import io
 import os
 import tempfile
 from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
+
 from .. import job_manager
 from ..cad3d_service import cad3d_service
-from ..services.cad import figure_to_png_data_url
 from ..schemas.cad import (
     CAD3DCreateRequest,
     CAD3DExportRequest,
@@ -42,6 +44,7 @@ from ..schemas.cad import (
     SuboffPreviewRequest,
     SuboffSTLRequest,
 )
+from ..services.cad import figure_to_png_data_url
 
 router = APIRouter()
 
@@ -610,6 +613,14 @@ async def cad3d_build_lbm_mask(model_id: str, req: CAD3DMaskBridgeRequest) -> di
 # ===========================================================================
 
 
+def _offshore_kwargs(req: object) -> dict:
+    """Extract non-None geometry overrides from an offshore request model."""
+    fields = [
+        "diameter", "leg_diameter", "foot_spread", "head_spread",
+        "hull_diameter", "keel_diameter", "column_diameter",
+        "pontoon_length", "pontoon_width", "pontoon_height", "column_height",
+    ]
+    return {k: getattr(req, k) for k in fields if getattr(req, k, None) is not None}
 
 
 @router.post("/offshore/preview")

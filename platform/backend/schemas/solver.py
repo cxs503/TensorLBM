@@ -1,4 +1,5 @@
 """Pydantic schema models shared by solver routers."""
+
 from __future__ import annotations
 
 from typing import Literal
@@ -6,11 +7,14 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 TurbulenceModel = Literal["none", "smagorinsky_les", "dynamic_smagorinsky_les"]
-MultiphaseModel = Literal["none", "sc", "scmp", "cg", "fe"]
-FlowType = Literal["single_phase", "multiphase", "free_surface"]
-BoundaryCondition = Literal["standard_bounce_back", "zou_he", "periodic"]
-NumericalScheme = Literal["bgk", "trt", "mrt"]
 
+MultiphaseModel = Literal["none", "sc", "scmp", "cg", "fe"]
+
+FlowType = Literal["single_phase", "multiphase", "free_surface"]
+
+BoundaryCondition = Literal["standard_bounce_back", "zou_he", "periodic"]
+
+NumericalScheme = Literal["bgk", "trt", "mrt"]
 
 class PhysicsSelection(BaseModel):
     flow_type: FlowType = "single_phase"
@@ -27,21 +31,6 @@ class CylinderFlowParams(BaseModel):
     ny: int = Field(100, ge=10, description="Grid height")
     u_in: float = Field(0.08, gt=0, description="Inlet velocity (lattice units)")
     re: float = Field(100.0, gt=0, description="Reynolds number")
-    radius: float = Field(12.0, gt=0, description="Cylinder radius (cells)")
-    n_steps: int = Field(1200, ge=1, description="Total time steps")
-    output_interval: int = Field(200, ge=1, description="Output every N steps")
-    device: str = Field("cpu", description="Torch device (cpu / cuda:0 …)")
-    seed: int = 0
-    physics: PhysicsSelection | None = None
-
-
-class CylinderFlowScanParams(BaseModel):
-    nx: int = Field(320, ge=20, description="Grid width")
-    ny: int = Field(100, ge=10, description="Grid height")
-    u_in: float = Field(0.08, gt=0, description="Inlet velocity (lattice units)")
-    re_values: list[float] = Field(
-        ..., min_length=2, max_length=20, description="Reynolds-number sweep values"
-    )
     radius: float = Field(12.0, gt=0, description="Cylinder radius (cells)")
     n_steps: int = Field(1200, ge=1, description="Total time steps")
     output_interval: int = Field(200, ge=1, description="Output every N steps")

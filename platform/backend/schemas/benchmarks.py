@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+
 class MarineBenchmarkParams(BaseModel):
     cases: list[
         Literal[

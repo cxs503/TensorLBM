@@ -3,15 +3,17 @@
 Each endpoint runs a tensorlbm benchmark suite in the background via the
 job manager and returns a job_id for status polling.
 """
+# ruff: noqa: TC001
 from __future__ import annotations
 
 from fastapi import APIRouter
+
 from .. import job_manager
 from ..schemas.benchmarks import (
     AccuracyBenchmarkParams,
     GhiaBenchmarkParams,
-    MLUPSParams,
     MarineBenchmarkParams,
+    MLUPSParams,
     MultiphaseBenchmarkParams,
     PorousBenchmarkParams,
 )

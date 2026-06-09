@@ -3,12 +3,14 @@
 Each endpoint accepts a Pydantic config model, creates a Job, and runs the
 corresponding tensorlbm simulation function in a background thread.
 """
+# ruff: noqa: TC001
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter
+
 from .. import job_manager
 from ..schemas.solver import (
     BackwardFacingStepParams,
@@ -16,7 +18,6 @@ from ..schemas.solver import (
     CylinderFlowScanParams,
     DamBreakParams,
     LidDrivenCavityParams,
-    PhysicsSelection,
     PipelineFlowParams,
     PorousDrainageParams,
     ShipHullFlowParams,
