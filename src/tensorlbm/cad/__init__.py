@@ -20,7 +20,6 @@ from ..propeller_cad import (
 )
 from ..ship_cad import (
     ShipHullType,
-    build_hull_mask as build_ship_hull_mask,
     export_hull_stl,
     generate_hull_body_plan,
     generate_hull_previews,
@@ -32,6 +31,9 @@ from ..ship_cad import (
     series60_hull_mask,
     ship_lbm_parameters,
     theoretical_block_coefficient,
+)
+from ..ship_cad import (
+    build_hull_mask as build_ship_hull_mask,
 )
 from ..suboff_cad import (
     SuboffConfig,

@@ -3,10 +3,16 @@ from __future__ import annotations
 
 import base64
 import io
-from typing import Any
+from typing import Protocol
 
 
-def figure_to_png_data_url(fig: Any, *, dpi: int = 100) -> str:
+class FigureLike(Protocol):
+    """Protocol for matplotlib-like figures used by CAD rendering endpoints."""
+
+    def savefig(self, *args: object, **kwargs: object) -> object: ...
+
+
+def figure_to_png_data_url(fig: FigureLike, *, dpi: int = 100) -> str:
     """Serialize a matplotlib figure into a PNG data URL."""
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")

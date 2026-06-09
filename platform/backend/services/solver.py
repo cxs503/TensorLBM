@@ -1,13 +1,14 @@
 """Service-layer helpers for solver endpoint configuration handling."""
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import HTTPException
-from pydantic import BaseModel
 
-from .. import job_manager
 from ..schemas.solver import PhysicsSelection
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 _PHYSICS_DEFAULTS: dict[str, dict[str, Any]] = {
     "cylinder_flow": {"flow_type": "single_phase"},
@@ -84,7 +85,7 @@ _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
 }
 
 
-def overwrite_output_root(config_dict: dict, job: job_manager.Job) -> dict:
+def overwrite_output_root(config_dict: dict, job: object) -> dict:
     """Replace output_root with the job's dedicated temp directory."""
     d = dict(config_dict)
     d["output_root"] = str(job.output_dir)
