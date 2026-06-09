@@ -380,6 +380,8 @@
                 <option value="wigley">Wigley Parabolic (Cb≈0.444)</option>
                 <option value="series60" selected>Series 60 (Cb=0.60)</option>
                 <option value="kcs">KCS Approximation (Cb≈0.651)</option>
+                <option value="kvlcc2">KVLCC2 Tanker (Cb≈0.810)</option>
+                <option value="npl">NPL High-Speed (Cb≈0.397)</option>
               </select>
               <div id="cad-hull-desc" class="form-text mb-3 text-info small"></div>
 
@@ -547,6 +549,239 @@
 
         </div><!-- /col-lg-8 -->
       </div><!-- /row -->
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- SUBOFF Submarine Panel                                            -->
+      <!-- ---------------------------------------------------------------- -->
+      <h5 class="mt-4 mb-3"><i class="bi bi-tsunami"></i> <span data-i18n="cad.suboff_title">SUBOFF Submarine CAD Modelling</span></h5>
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-box"></i> <span data-i18n="cad.suboff_title">Submarine Parameters</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="cad.suboff_model_type">Model Variant</label>
+              <select class="form-select form-select-sm mb-3" id="suboff-model-type">
+                <option value="bare_hull">Bare Hull (AFF-1)</option>
+                <option value="with_sail">With Sail (AFF-3)</option>
+                <option value="full">Full Appendages (AFF-8)</option>
+              </select>
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label data-i18n="cad.suboff_length">Hull Length L (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="suboff-length" value="160" min="20" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="cad.suboff_radius">Max Radius R (lu, 0=auto)</label>
+                  <input type="number" class="form-control form-control-sm" id="suboff-radius" value="0" min="0" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="cad.suboff_bow_frac">Bow Fraction</label>
+                  <input type="number" class="form-control form-control-sm" id="suboff-bow-frac" value="0.2" step="0.01" min="0.05" max="0.4" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="cad.suboff_stern_frac">Stern Fraction</label>
+                  <input type="number" class="form-control form-control-sm" id="suboff-stern-frac" value="0.2" step="0.01" min="0.05" max="0.4" />
+                </div>
+              </div>
+              <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary btn-sm flex-fill" onclick="suboffPreview()">
+                  <i class="bi bi-eye"></i> <span data-i18n="cad.suboff_preview_btn">Preview Submarine</span>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="suboffExportSTL()">
+                  <i class="bi bi-download"></i> <span data-i18n="cad.suboff_export_stl">Export STL</span>
+                </button>
+              </div>
+              <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="suboffGenerateMask()">
+                <i class="bi bi-grid-3x3-gap"></i> <span data-i18n="cad.suboff_generate_mask">Generate Voxel Mask</span>
+              </button>
+            </div>
+          </div>
+          <div class="card mt-3">
+            <div class="card-header"><i class="bi bi-table"></i> <span data-i18n="cad.suboff_stats_title">Submarine Form Statistics</span></div>
+            <div class="card-body small" id="suboff-stats">
+              <p class="text-muted" data-i18n="cad.coeff_hint">Click Preview to compute statistics.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-image me-2"></i> <span data-i18n="cad.suboff_title">Submarine Preview</span></div>
+            <div class="card-body text-center" id="suboff-preview-area">
+              <p class="text-muted py-5" data-i18n="cad.suboff_preview_btn">Click Preview Submarine to generate.</p>
+            </div>
+          </div>
+          <div id="suboff-mask-result" class="mt-3"></div>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- Offshore Structures Panel                                         -->
+      <!-- ---------------------------------------------------------------- -->
+      <h5 class="mt-4 mb-3"><i class="bi bi-wind"></i> <span data-i18n="offshore.title">Offshore Structure CAD</span></h5>
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-box"></i> <span data-i18n="offshore.struct_type">Structure Type</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="offshore.struct_type">Structure Type</label>
+              <select class="form-select form-select-sm mb-2" id="offshore-struct-type" onchange="onOffshoreTypeChange()">
+                <option value="monopile">Monopile</option>
+                <option value="jacket">Jacket</option>
+                <option value="spar">Spar Buoy</option>
+                <option value="semi_sub">Semi-Submersible</option>
+              </select>
+              <div id="offshore-struct-desc" class="form-text text-info small mb-3"></div>
+
+              <div class="row g-2 mb-2" id="offshore-monopile-params">
+                <div class="col-6">
+                  <label data-i18n="offshore.diameter">Diameter (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="offshore-diameter" value="12" min="2" />
+                </div>
+              </div>
+              <div class="row g-2 mb-2 d-none" id="offshore-jacket-params">
+                <div class="col-6">
+                  <label data-i18n="offshore.leg_diameter">Leg Diam. (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="offshore-leg-diameter" value="4" min="1" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="offshore.foot_spread">Foot Spread (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="offshore-foot-spread" value="40" min="4" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="offshore.head_spread">Head Spread (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="offshore-head-spread" value="20" min="4" />
+                </div>
+              </div>
+              <div class="row g-2 mb-2 d-none" id="offshore-spar-params">
+                <div class="col-6">
+                  <label data-i18n="offshore.hull_diameter">Hull Diam. (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="offshore-hull-diameter" value="12" min="2" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="offshore.keel_diameter">Keel Diam. (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="offshore-keel-diameter" value="20" min="2" />
+                </div>
+              </div>
+              <div class="row g-2 mb-2 d-none" id="offshore-semisub-params">
+                <div class="col-6">
+                  <label data-i18n="offshore.column_diameter">Column Diam. (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="offshore-column-diameter" value="10" min="2" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="offshore.pontoon_length">Pontoon L (lu)</label>
+                  <input type="number" class="form-control form-control-sm" id="offshore-pontoon-length" value="50" min="10" />
+                </div>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-4"><label>nx</label><input type="number" class="form-control form-control-sm" id="offshore-nx" value="80" min="20" /></div>
+                <div class="col-4"><label>ny</label><input type="number" class="form-control form-control-sm" id="offshore-ny" value="80" min="20" /></div>
+                <div class="col-4"><label>nz</label><input type="number" class="form-control form-control-sm" id="offshore-nz" value="80" min="20" /></div>
+              </div>
+              <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary btn-sm flex-fill" onclick="offshorePreview()">
+                  <i class="bi bi-eye"></i> <span data-i18n="offshore.preview_btn">Preview</span>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="offshoreExportSTL()">
+                  <i class="bi bi-download"></i> <span data-i18n="offshore.export_stl">Export STL</span>
+                </button>
+              </div>
+              <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="offshoreGenerateMask()">
+                <i class="bi bi-grid-3x3-gap"></i> <span data-i18n="offshore.generate_mask">Generate Voxel Mask</span>
+              </button>
+            </div>
+          </div>
+          <div class="card mt-3">
+            <div class="card-header"><i class="bi bi-table"></i> <span data-i18n="offshore.stats_title">Structure Statistics</span></div>
+            <div class="card-body small" id="offshore-stats">
+              <p class="text-muted" data-i18n="cad.coeff_hint">Click Preview to compute statistics.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-image me-2"></i> <span data-i18n="offshore.title">Offshore Structure Preview</span></div>
+            <div class="card-body text-center" id="offshore-preview-area">
+              <p class="text-muted py-5" data-i18n="offshore.preview_btn">Click Preview to generate.</p>
+            </div>
+          </div>
+          <div id="offshore-mask-result" class="mt-3"></div>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- Wageningen B-Series Propeller Performance Panel                  -->
+      <!-- ---------------------------------------------------------------- -->
+      <h5 class="mt-4 mb-3"><i class="bi bi-gear-wide-connected"></i> <span data-i18n="propeller.title">Wageningen B-Series Propeller</span></h5>
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-sliders"></i> <span data-i18n="propeller.blade_params">Blade Parameters</span></div>
+            <div class="card-body config-form">
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label data-i18n="propeller.J">Advance Ratio J</label>
+                  <input type="number" class="form-control form-control-sm" id="prop-J" value="0.7" step="0.05" min="0" max="1.5" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="propeller.P_D">Pitch Ratio P/D</label>
+                  <input type="number" class="form-control form-control-sm" id="prop-PD" value="1.0" step="0.05" min="0.5" max="1.4" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="propeller.Ae_A0">Blade Area Ratio Aₑ/A₀</label>
+                  <input type="number" class="form-control form-control-sm" id="prop-EAR" value="0.6" step="0.05" min="0.3" max="1.05" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="propeller.Z">Blades Z</label>
+                  <input type="number" class="form-control form-control-sm" id="prop-Z" value="4" min="2" max="7" />
+                </div>
+              </div>
+              <div class="d-flex gap-2 mt-2">
+                <button class="btn btn-primary btn-sm flex-fill" onclick="propComputeOpenWater()">
+                  <i class="bi bi-calculator"></i> <span data-i18n="propeller.compute_btn">Compute</span>
+                </button>
+                <button class="btn btn-outline-primary btn-sm flex-fill" onclick="propPlotCurves()">
+                  <i class="bi bi-graph-up"></i> <span data-i18n="propeller.curves_btn">Plot Curves</span>
+                </button>
+              </div>
+              <div id="prop-ow-result" class="mt-3 small"></div>
+            </div>
+          </div>
+
+          <div class="card mt-3">
+            <div class="card-header"><i class="bi bi-rulers"></i> <span data-i18n="propeller.design_title">Propeller Sizing</span></div>
+            <div class="card-body config-form">
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label data-i18n="propeller.thrust_n">Thrust (N)</label>
+                  <input type="number" class="form-control form-control-sm" id="prop-thrust" value="500000" min="1" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="propeller.Va_ms">Va (m/s)</label>
+                  <input type="number" class="form-control form-control-sm" id="prop-va" value="6.0" step="0.5" min="0.1" />
+                </div>
+                <div class="col-6">
+                  <label data-i18n="propeller.n_rps">n (rev/s)</label>
+                  <input type="number" class="form-control form-control-sm" id="prop-nrps" value="2.0" step="0.1" min="0.1" />
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-success w-100" onclick="propDesign()">
+                <i class="bi bi-magic"></i> <span data-i18n="propeller.design_btn">Design Propeller</span>
+              </button>
+              <div id="prop-design-result" class="mt-3 small"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-graph-up me-2"></i> <span data-i18n="propeller.title">Open-Water Diagram</span></div>
+            <div class="card-body text-center" id="prop-curves-area">
+              <p class="text-muted py-5" data-i18n-html="propeller.hint">Select parameters and click <strong>Plot Curves</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /panel-cad -->
 
     <!-- ================================================================ -->
@@ -1713,6 +1948,8 @@ const CAD_HULL_DESCS = {
   wigley: 'wigley_desc',
   series60: 'series60_desc',
   kcs: 'kcs_desc',
+  kvlcc2: 'kvlcc2_desc',
+  npl: 'npl_desc',
 };
 
 function onCADHullTypeChange() {
@@ -2019,6 +2256,269 @@ async function cadDownloadSTL() {
     URL.revokeObjectURL(url);
   } catch(e) {
     showToast(`STL export failed: ${e.message}`, 'danger');
+  }
+}
+
+// ============================================================
+// SUBOFF Submarine CAD
+// ============================================================
+async function suboffPreview() {
+  const area = document.getElementById('suboff-preview-area');
+  area.innerHTML = `<p class="text-muted py-4">${t('cad.generating')}</p>`;
+  const body = {
+    hull_type: document.getElementById('suboff-model-type').value,
+    length: +document.getElementById('suboff-length').value,
+    radius: +document.getElementById('suboff-radius').value,
+    bow_frac: +document.getElementById('suboff-bow-frac').value,
+    stern_frac: +document.getElementById('suboff-stern-frac').value,
+  };
+  try {
+    const resp = await fetch(API + '/api/cad/suboff/preview', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    area.innerHTML = `<img src="${data.image}" class="img-fluid" alt="suboff preview"/>`;
+    if (data.stats) {
+      const stats = data.stats;
+      document.getElementById('suboff-stats').innerHTML =
+        `<dl class="row mb-0 small">
+           <dt class="col-6" data-i18n="cad.suboff_l_d">L/D</dt><dd class="col-6">${(stats.l_d||0).toFixed(3)}</dd>
+           <dt class="col-6" data-i18n="cad.suboff_cp">Cp</dt><dd class="col-6">${(stats.Cp||0).toFixed(4)}</dd>
+           <dt class="col-6" data-i18n="cad.suboff_disp">Vol</dt><dd class="col-6">${(stats.volume||0).toFixed(1)} lu³</dd>
+           <dt class="col-6" data-i18n="cad.suboff_wetted">Wetted</dt><dd class="col-6">${(stats.wetted_area||0).toFixed(1)} lu²</dd>
+         </dl>`;
+    }
+  } catch(e) {
+    area.innerHTML = `<p class="text-danger">${e.message}</p>`;
+  }
+}
+
+async function suboffExportSTL() {
+  const body = {
+    hull_type: document.getElementById('suboff-model-type').value,
+    length: +document.getElementById('suboff-length').value,
+    radius: +document.getElementById('suboff-radius').value,
+  };
+  try {
+    const resp = await fetch(API + '/api/cad/suboff/export-stl', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'suboff.stl'; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    showToast(`STL export failed: ${e.message}`, 'danger');
+  }
+}
+
+async function suboffGenerateMask() {
+  const res = document.getElementById('suboff-mask-result');
+  res.innerHTML = `<p class="text-muted">${t('cad.generating')}</p>`;
+  const body = {
+    hull_type: document.getElementById('suboff-model-type').value,
+    length: +document.getElementById('suboff-length').value,
+    radius: +document.getElementById('suboff-radius').value,
+    nx: 80, ny: 30, nz: 30,
+  };
+  try {
+    const resp = await fetch(API + '/api/cad/suboff/hull-mask', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    res.innerHTML = `<img src="${data.image}" class="img-fluid mt-2" alt="mask"/>`;
+  } catch(e) {
+    res.innerHTML = `<p class="text-danger">${e.message}</p>`;
+  }
+}
+
+// ============================================================
+// Offshore Structure CAD
+// ============================================================
+const OFFSHORE_DESCS = {
+  monopile: 'monopile_desc',
+  jacket: 'jacket_desc',
+  spar: 'spar_desc',
+  semi_sub: 'semi_sub_desc',
+};
+
+function onOffshoreTypeChange() {
+  const st = document.getElementById('offshore-struct-type').value;
+  const key = 'offshore.' + (OFFSHORE_DESCS[st] || '');
+  document.getElementById('offshore-struct-desc').textContent = t(key);
+  ['monopile', 'jacket', 'spar', 'semisub'].forEach(k => {
+    document.getElementById(`offshore-${k}-params`).classList.add('d-none');
+  });
+  const map = { monopile: 'monopile', jacket: 'jacket', spar: 'spar', semi_sub: 'semisub' };
+  const el = document.getElementById(`offshore-${map[st]}-params`);
+  if (el) el.classList.remove('d-none');
+}
+
+function _offshoreBody() {
+  const st = document.getElementById('offshore-struct-type').value;
+  const body = {
+    struct_type: st,
+    nx: +document.getElementById('offshore-nx').value,
+    ny: +document.getElementById('offshore-ny').value,
+    nz: +document.getElementById('offshore-nz').value,
+  };
+  if (st === 'monopile') body.diameter = +document.getElementById('offshore-diameter').value;
+  if (st === 'jacket') {
+    body.leg_diameter = +document.getElementById('offshore-leg-diameter').value;
+    body.foot_spread = +document.getElementById('offshore-foot-spread').value;
+    body.head_spread = +document.getElementById('offshore-head-spread').value;
+  }
+  if (st === 'spar') {
+    body.hull_diameter = +document.getElementById('offshore-hull-diameter').value;
+    body.keel_diameter = +document.getElementById('offshore-keel-diameter').value;
+  }
+  if (st === 'semi_sub') {
+    body.column_diameter = +document.getElementById('offshore-column-diameter').value;
+    body.pontoon_length = +document.getElementById('offshore-pontoon-length').value;
+  }
+  return body;
+}
+
+async function offshorePreview() {
+  const area = document.getElementById('offshore-preview-area');
+  area.innerHTML = `<p class="text-muted py-4">${t('offshore.generating')}</p>`;
+  try {
+    const resp = await fetch(API + '/api/cad/offshore/preview', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_offshoreBody()),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    area.innerHTML = `<img src="${data.image}" class="img-fluid" alt="offshore preview"/>`;
+  } catch(e) {
+    area.innerHTML = `<p class="text-danger">${e.message}</p>`;
+  }
+}
+
+async function offshoreGenerateMask() {
+  const res = document.getElementById('offshore-mask-result');
+  res.innerHTML = `<p class="text-muted">${t('offshore.generating')}</p>`;
+  try {
+    const resp = await fetch(API + '/api/cad/offshore/hull-mask', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_offshoreBody()),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    res.innerHTML = `<img src="${data.image}" class="img-fluid mt-2" alt="mask"/>`;
+    if (data.stats) {
+      const s = data.stats;
+      document.getElementById('offshore-stats').innerHTML =
+        `<dl class="row mb-0 small">
+           <dt class="col-6" data-i18n="offshore.solid_cells">Solid</dt><dd class="col-6">${s.solid_cells}</dd>
+           <dt class="col-6" data-i18n="offshore.fluid_cells">Fluid</dt><dd class="col-6">${s.fluid_cells}</dd>
+           <dt class="col-6" data-i18n="offshore.grid">Grid</dt><dd class="col-6">${s.nx}×${s.ny}×${s.nz}</dd>
+         </dl>`;
+    }
+  } catch(e) {
+    res.innerHTML = `<p class="text-danger">${e.message}</p>`;
+  }
+}
+
+async function offshoreExportSTL() {
+  try {
+    const resp = await fetch(API + '/api/cad/offshore/export-stl', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_offshoreBody()),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const blob = await resp.blob();
+    const st = document.getElementById('offshore-struct-type').value;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${st}.stl`; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    showToast(`STL export failed: ${e.message}`, 'danger');
+  }
+}
+
+// ============================================================
+// Wageningen B-Series Propeller
+// ============================================================
+async function propComputeOpenWater() {
+  const res = document.getElementById('prop-ow-result');
+  res.innerHTML = `<span class="text-muted">${t('propeller.generating')}</span>`;
+  const body = {
+    J: +document.getElementById('prop-J').value,
+    P_D: +document.getElementById('prop-PD').value,
+    Ae_A0: +document.getElementById('prop-EAR').value,
+    Z: +document.getElementById('prop-Z').value,
+  };
+  try {
+    const resp = await fetch(API + '/api/cad/propeller/open-water', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const d = await resp.json();
+    res.innerHTML =
+      `<dl class="row mb-0">
+         <dt class="col-6" data-i18n="propeller.KT">KT</dt><dd class="col-6">${d.KT.toFixed(4)}</dd>
+         <dt class="col-6" data-i18n="propeller.KQ">KQ</dt><dd class="col-6">${d.KQ.toFixed(5)}</dd>
+         <dt class="col-6" data-i18n="propeller.eta">η₀</dt><dd class="col-6">${d.eta_0.toFixed(4)}</dd>
+       </dl>`;
+  } catch(e) {
+    res.innerHTML = `<span class="text-danger">${e.message}</span>`;
+  }
+}
+
+async function propPlotCurves() {
+  const area = document.getElementById('prop-curves-area');
+  area.innerHTML = `<p class="text-muted py-4">${t('propeller.generating')}</p>`;
+  const body = {
+    P_D: +document.getElementById('prop-PD').value,
+    Ae_A0: +document.getElementById('prop-EAR').value,
+    Z: +document.getElementById('prop-Z').value,
+    J_min: 0.01, J_max: 1.35, n_points: 60,
+  };
+  try {
+    const resp = await fetch(API + '/api/cad/propeller/curves', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const d = await resp.json();
+    area.innerHTML = `<img src="${d.image}" class="img-fluid" alt="open-water diagram"/>`;
+  } catch(e) {
+    area.innerHTML = `<p class="text-danger">${e.message}</p>`;
+  }
+}
+
+async function propDesign() {
+  const res = document.getElementById('prop-design-result');
+  res.innerHTML = `<span class="text-muted">${t('propeller.generating')}</span>`;
+  const body = {
+    thrust_n: +document.getElementById('prop-thrust').value,
+    Va_ms: +document.getElementById('prop-va').value,
+    P_D: +document.getElementById('prop-PD').value,
+    Ae_A0: +document.getElementById('prop-EAR').value,
+    Z: +document.getElementById('prop-Z').value,
+    n_rps: +document.getElementById('prop-nrps').value,
+  };
+  try {
+    const resp = await fetch(API + '/api/cad/propeller/design', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const d = await resp.json();
+    const rows = Object.entries(d).map(([k,v]) =>
+      `<dt class="col-7">${k}</dt><dd class="col-5">${typeof v==='number'?v.toFixed(4):v}</dd>`
+    ).join('');
+    res.innerHTML = `<dl class="row mb-0">${rows}</dl>`;
+  } catch(e) {
+    res.innerHTML = `<span class="text-danger">${e.message}</span>`;
   }
 }
 

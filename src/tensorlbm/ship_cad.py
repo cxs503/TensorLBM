@@ -61,6 +61,8 @@ class ShipHullType(str, Enum):  # noqa: UP042
     WIGLEY = "wigley"
     SERIES60 = "series60"
     KCS = "kcs"
+    KVLCC2 = "kvlcc2"
+    NPL = "npl"
 
 
 # ---------------------------------------------------------------------------
@@ -106,16 +108,60 @@ def _kcs_half_beam(xi: np.ndarray, zeta: np.ndarray) -> np.ndarray:
     return np.where(in_hull, np.clip(hb, 0.0, 1.0), 0.0)
 
 
+def _kvlcc2_half_beam(xi: np.ndarray, zeta: np.ndarray) -> np.ndarray:
+    """KVLCC2 (KRISO Very Large Crude Carrier 2) superellipse approximation.
+
+    The KVLCC2 is a standard CFD benchmark VLCC tanker (L=320m, Cb≈0.810).
+    This approximation uses a superellipse cross-section inspired by
+    SiggyF/jax-vessels generate_hull.py.  The very full bow is captured by
+    the low bilateral exponents, and the U-shaped midship section by the
+    high vertical exponent.
+
+    Half-beam = (B/2) * sin(acos(|ξ|))^p_lon * ζ^p_vert
+    with p_lon = 0.28, p_vert = 0.14 for a block coefficient near 0.81.
+    """
+    in_hull = (np.abs(xi) <= 1.0) & (zeta >= 0.0) & (zeta <= 1.0)
+    zeta_c = np.clip(zeta, 0.0, 1.0)
+    xi_c = np.clip(np.abs(xi), 0.0, 1.0)
+    # Superellipse longitude: very blunt ends
+    lon = np.where(xi_c < 1.0, (1.0 - xi_c ** 2) ** 0.28, 0.0)
+    # Nearly-U vertical section (small vert exponent = very flat keel)
+    vert = np.where(zeta_c > 0.0, zeta_c ** 0.14, 0.0)
+    hb = lon * vert
+    return np.where(in_hull, np.clip(hb, 0.0, 1.0), 0.0)
+
+
+def _npl_half_beam(xi: np.ndarray, zeta: np.ndarray) -> np.ndarray:
+    """NPL (National Physical Laboratory) high-speed displacement hull.
+
+    The NPL series (Bailey 1976) is a standard benchmark for high-speed
+    displacement craft (fast ferries, naval vessels).  Cb ≈ 0.397.
+    The hull is characterised by a very fine entry, V-shaped sections,
+    and a raked stern — typical of fast round-bilge monohulls.
+
+    Half-beam = (B/2) * (1 − ξ²)^0.65 * ζ^0.55
+    """
+    in_hull = (np.abs(xi) <= 1.0) & (zeta >= 0.0) & (zeta <= 1.0)
+    zeta_c = np.clip(zeta, 0.0, 1.0)
+    xi_c = np.clip(xi, -1.0, 1.0)
+    hb = (1.0 - xi_c**2) ** 0.65 * zeta_c**0.55
+    return np.where(in_hull, np.clip(hb, 0.0, 1.0), 0.0)
+
+
 _HALF_BEAM_FN = {
     ShipHullType.WIGLEY: _wigley_half_beam,
     ShipHullType.SERIES60: _series60_half_beam,
     ShipHullType.KCS: _kcs_half_beam,
+    ShipHullType.KVLCC2: _kvlcc2_half_beam,
+    ShipHullType.NPL: _npl_half_beam,
 }
 
 _HULL_LABELS = {
     ShipHullType.WIGLEY: "Wigley Parabolic (Cb≈0.444)",
     ShipHullType.SERIES60: "Series 60 Cb=0.60",
     ShipHullType.KCS: "KCS Approximation (Cb≈0.651)",
+    ShipHullType.KVLCC2: "KVLCC2 VLCC Tanker (Cb≈0.810)",
+    ShipHullType.NPL: "NPL High-Speed Hull (Cb≈0.397)",
 }
 
 
@@ -560,6 +606,8 @@ def theoretical_block_coefficient(hull_type: ShipHullType | str) -> float:
         ShipHullType.WIGLEY: 4.0 / 9.0,
         ShipHullType.SERIES60: 0.600,
         ShipHullType.KCS: 0.651,
+        ShipHullType.KVLCC2: 0.810,
+        ShipHullType.NPL: 0.397,
     }
     return mapping[hull_type]
 
