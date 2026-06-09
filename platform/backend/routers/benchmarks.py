@@ -459,7 +459,7 @@ class PorousBenchmarkParams(BaseModel):
 
 @router.post("/porous")
 async def run_porous(params: PorousBenchmarkParams) -> dict:
-    """Run porous media drainage and capillary invasion benchmarks."""
+    """Run porous-media gas-water displacement benchmark cases."""
 
     def _run(job: job_manager.Job) -> dict:
         job_manager.raise_if_cancelled(job.job_id)
@@ -468,9 +468,14 @@ async def run_porous(params: PorousBenchmarkParams) -> dict:
         from tensorlbm import LaplaceTestConfig, run_laplace_test
 
         laplace_cfg = LaplaceTestConfig(
-            fast=params.fast,
+            nx=60 if params.fast else 100,
+            ny=60 if params.fast else 100,
+            bubble_radius=10.0 if params.fast else 20.0,
+            n_steps=400 if params.fast else 5000,
+            output_interval=200 if params.fast else 1000,
             device=params.device,
             output_root=job.output_dir / "laplace",
+            overwrite=True,
         )
         run_laplace_test(laplace_cfg)
         results["laplace"] = "ok"
@@ -478,13 +483,38 @@ async def run_porous(params: PorousBenchmarkParams) -> dict:
         from tensorlbm import CapillaryInvasionConfig, run_capillary_invasion
 
         cap_cfg = CapillaryInvasionConfig(
-            fast=params.fast,
+            nx=120 if params.fast else 200,
+            ny=24 if params.fast else 30,
+            tube_width=14 if params.fast else 20,
+            n_steps=600 if params.fast else 4000,
+            output_interval=200 if params.fast else 500,
             device=params.device,
             output_root=job.output_dir / "capillary",
+            overwrite=True,
         )
         job_manager.raise_if_cancelled(job.job_id)
         run_capillary_invasion(cap_cfg)
         results["capillary_invasion"] = "ok"
+
+        from tensorlbm import PorousDrainageConfig, run_porous_drainage
+
+        drainage_cfg = PorousDrainageConfig(
+            nx=80 if params.fast else 220,
+            ny=36 if params.fast else 80,
+            geometry="random_cylinders",
+            n_cylinders=8 if params.fast else 15,
+            r_min=3.0 if params.fast else 4.0,
+            r_max=5.0 if params.fast else 8.0,
+            model="sc",
+            n_steps=800 if params.fast else 4000,
+            output_interval=200 if params.fast else 800,
+            device=params.device,
+            output_root=job.output_dir / "drainage",
+            overwrite=True,
+        )
+        job_manager.raise_if_cancelled(job.job_id)
+        run_porous_drainage(drainage_cfg)
+        results["gas_water_drainage"] = "ok"
 
         return results
 

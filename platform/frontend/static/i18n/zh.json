@@ -342,7 +342,7 @@
     "mlups": "MLUPS 性能测试",
     "mlups_desc": "多种网格尺寸下 D2Q9 BGK 吸吐量（百万格子更新/秒）。",
     "porous": "孔隙媒质",
-    "porous_desc": "Laplace 压力测试与孔隙媒质多相流滞退基准。",
+    "porous_desc": "Laplace 压力测试、毛细侵入与多孔介质气水驱替基准。",
     "mode": "模式",
     "device": "设备",
     "run_btn": "运行",
