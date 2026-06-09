@@ -285,6 +285,7 @@
     <a href="#" data-tab="benchmarks" onclick="return showTab('benchmarks',this)"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
     <a href="#" data-tab="compare" onclick="return showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
     <a href="#" data-tab="ai-flow" onclick="return showTab('ai-flow',this)"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
+    <a href="#" data-tab="orchestration" onclick="return showTab('orchestration',this)"><i class="bi bi-diagram-3"></i> <span data-i18n="nav.orchestration">Orchestration</span></a>
     <a href="#" data-tab="agent" onclick="return showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
   </nav>
   <span class="ms-auto d-flex align-items-center gap-3">
@@ -1129,6 +1130,99 @@
     </div><!-- /ai-flow -->
 
     <!-- ================================================================ -->
+    <!-- ORCHESTRATION + GOVERNANCE -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-orchestration">
+      <h4 class="mb-3"><i class="bi bi-diagram-3"></i> <span data-i18n="orch.title">HPC Orchestration + AI Governance</span></h4>
+      <div class="row g-3">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span data-i18n="orch.templates_title">Experiment templates</span>
+              <button class="btn btn-outline-secondary btn-sm" onclick="orchLoadTemplates()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body config-form">
+              <label data-i18n="orch.template_id">Template</label>
+              <select id="orch-template" class="form-select form-select-sm mb-2"></select>
+              <label data-i18n="orch.re_values">Re sweep values (comma)</label>
+              <input id="orch-re-values" class="form-control form-control-sm mb-2" value="80,100,120" />
+              <label data-i18n="orch.nx">nx</label>
+              <input id="orch-nx" type="number" class="form-control form-control-sm mb-2" value="160" min="16" max="1024" />
+              <label data-i18n="orch.ny">ny</label>
+              <input id="orch-ny" type="number" class="form-control form-control-sm mb-2" value="60" min="16" max="1024" />
+              <label data-i18n="orch.n_steps">n_steps</label>
+              <input id="orch-steps" type="number" class="form-control form-control-sm mb-2" value="1200" min="10" max="200000" />
+              <label data-i18n="orch.output_interval">output_interval</label>
+              <input id="orch-output-interval" type="number" class="form-control form-control-sm mb-3" value="200" min="1" max="50000" />
+              <button class="btn btn-primary btn-sm w-100" onclick="orchSubmitExperiment()"><i class="bi bi-play-circle"></i> <span data-i18n="orch.submit_btn">Submit template run</span></button>
+            </div>
+          </div>
+          <div class="card mt-3">
+            <div class="card-header"><span data-i18n="orch.submit_result">Submit result</span></div>
+            <div class="card-body">
+              <pre id="orch-submit-result" class="small mb-0" style="white-space:pre-wrap;max-height:220px;overflow:auto">-</pre>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span data-i18n="orch.kpis_title">Orchestration KPIs</span>
+              <button class="btn btn-outline-secondary btn-sm" onclick="orchLoadKpis()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body">
+              <pre id="orch-kpi-result" class="small mb-0" style="white-space:pre-wrap;max-height:220px;overflow:auto">-</pre>
+            </div>
+          </div>
+          <div class="card mt-3">
+            <div class="card-header"><span data-i18n="orch.gate_title">Confidence gate</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="orch.prediction">Prediction</label>
+              <input id="orch-prediction" type="number" class="form-control form-control-sm mb-2" value="1.05" step="0.0001" />
+              <label data-i18n="orch.baseline">Baseline</label>
+              <input id="orch-baseline" type="number" class="form-control form-control-sm mb-2" value="1.0" step="0.0001" />
+              <label data-i18n="orch.uncertainty">Uncertainty</label>
+              <input id="orch-uncertainty" type="number" class="form-control form-control-sm mb-2" value="0.05" min="0" step="0.0001" />
+              <label data-i18n="orch.max_rel_err">Max relative error</label>
+              <input id="orch-max-rel-err" type="number" class="form-control form-control-sm mb-2" value="0.15" min="0.0001" step="0.0001" />
+              <label data-i18n="orch.max_uncertainty">Max uncertainty</label>
+              <input id="orch-max-uncertainty" type="number" class="form-control form-control-sm mb-3" value="0.2" min="0" step="0.0001" />
+              <button class="btn btn-success btn-sm w-100" onclick="orchRunConfidenceGate()"><i class="bi bi-shield-check"></i> <span data-i18n="orch.gate_btn">Evaluate gate</span></button>
+            </div>
+          </div>
+          <div class="card mt-3">
+            <div class="card-header"><span data-i18n="orch.gate_result">Gate result</span></div>
+            <div class="card-body">
+              <pre id="orch-gate-result" class="small mb-0" style="white-space:pre-wrap;max-height:200px;overflow:auto">-</pre>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><span data-i18n="orch.al_title">Active learning prioritization</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="orch.top_k">top_k</label>
+              <input id="orch-top-k" type="number" class="form-control form-control-sm mb-2" value="3" min="1" max="200" />
+              <label data-i18n="orch.candidates">Candidates JSON</label>
+              <textarea id="orch-candidates" class="form-control form-control-sm mb-3" rows="8">[
+  {"sample_id":"case-a","uncertainty":0.90,"novelty":0.10,"impact":0.10},
+  {"sample_id":"case-b","uncertainty":0.30,"novelty":0.90,"impact":0.20},
+  {"sample_id":"case-c","uncertainty":0.70,"novelty":0.40,"impact":0.80}
+]</textarea>
+              <button class="btn btn-primary btn-sm w-100" onclick="orchRunActiveLearning()"><i class="bi bi-sort-down-alt"></i> <span data-i18n="orch.al_btn">Prioritize</span></button>
+            </div>
+          </div>
+          <div class="card mt-3">
+            <div class="card-header"><span data-i18n="orch.al_result">Prioritization result</span></div>
+            <div class="card-body">
+              <pre id="orch-al-result" class="small mb-0" style="white-space:pre-wrap;max-height:280px;overflow:auto">-</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /orchestration -->
+
+    <!-- ================================================================ -->
     <!-- AI AGENT -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-agent">
@@ -1193,7 +1287,7 @@ let ppSelectedJobId = null;
 let ppCurrentTab = 'snapshots';
 let benchJobMap = {};   // bench_type → job_id
 const UI_STORAGE_KEY = 'tensorlbm_ui_state_v1';
-const TAB_SEQUENCE = ['dashboard', 'cad', 'preprocess', 'solve', 'postprocess', 'benchmarks', 'compare', 'ai-flow', 'agent'];
+const TAB_SEQUENCE = ['dashboard', 'cad', 'preprocess', 'solve', 'postprocess', 'benchmarks', 'compare', 'ai-flow', 'orchestration', 'agent'];
 const uiState = {
   activeTab: 'dashboard',
   jobsSearch: '',
@@ -1273,8 +1367,8 @@ function bindKeyboardShortcuts() {
       }
       return;
     }
-    if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && /^[1-9]$/.test(ev.key)) {
-      const idx = Number(ev.key) - 1;
+    if (ev.altKey && !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && /^[0-9]$/.test(ev.key)) {
+      const idx = ev.key === '0' ? 9 : Number(ev.key) - 1;
       const tab = TAB_SEQUENCE[idx];
       if (!tab) return;
       const nav = document.querySelector(`.top-navbar nav a[data-tab="${tab}"]`);
@@ -1504,6 +1598,10 @@ function showTab(name, el) {
   saveUIState();
   if (name === 'compare') refreshCompareJobList();
   if (name === 'ai-flow') aiFlowListModels();
+  if (name === 'orchestration') {
+    orchLoadTemplates();
+    orchLoadKpis();
+  }
   if (name === 'agent') {
     setTimeout(() => {
       const el = document.getElementById('agent-input');
@@ -2993,6 +3091,110 @@ async function aiFlowInfer() {
     showToast(t('ai_flow.infer_done'), 'success');
   } catch (e) {
     aiFlowSetResult(`Error: ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+// ============================================================
+// Orchestration + AI governance
+// ============================================================
+function orchSetResult(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+}
+
+function orchParseReValues(raw) {
+  return raw.split(',')
+    .map(v => Number(v.trim()))
+    .filter(v => Number.isFinite(v) && v > 0);
+}
+
+async function orchLoadTemplates() {
+  const sel = document.getElementById('orch-template');
+  if (!sel) return;
+  sel.innerHTML = `<option>${t('common.loading')}</option>`;
+  try {
+    const r = await api('GET', '/api/orchestration/templates');
+    const templates = Array.isArray(r.templates) ? r.templates : [];
+    if (!templates.length) {
+      sel.innerHTML = '';
+      return;
+    }
+    sel.innerHTML = templates.map(tp => {
+      const staged = tp.implemented ? '' : ` (${t('orch.staged')})`;
+      return `<option value="${escHtml(tp.template_id)}">${escHtml(tp.title || tp.template_id)}${staged}</option>`;
+    }).join('');
+    const active = templates.find(tp => tp.implemented) || templates[0];
+    if (active) sel.value = active.template_id;
+  } catch (e) {
+    sel.innerHTML = '';
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+async function orchSubmitExperiment() {
+  const template_id = document.getElementById('orch-template')?.value || '';
+  const re_values = orchParseReValues(document.getElementById('orch-re-values')?.value || '');
+  const base_config = {
+    nx: Number(document.getElementById('orch-nx')?.value || 160),
+    ny: Number(document.getElementById('orch-ny')?.value || 60),
+    n_steps: Number(document.getElementById('orch-steps')?.value || 1200),
+    output_interval: Number(document.getElementById('orch-output-interval')?.value || 200),
+  };
+  const body = { template_id, base_config };
+  if (re_values.length) body.sweep = [{ name: 're', values: re_values }];
+  orchSetResult('orch-submit-result', t('common.submitting'));
+  try {
+    const r = await api('POST', '/api/orchestration/experiments/submit', body);
+    orchSetResult('orch-submit-result', r);
+    showToast(`${t('orch.submitted')} (${r.submitted})`, 'success');
+  } catch (e) {
+    orchSetResult('orch-submit-result', `Error: ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+async function orchLoadKpis() {
+  orchSetResult('orch-kpi-result', t('common.loading'));
+  try {
+    const r = await api('GET', '/api/orchestration/kpis');
+    orchSetResult('orch-kpi-result', r);
+  } catch (e) {
+    orchSetResult('orch-kpi-result', `Error: ${e.message}`);
+  }
+}
+
+async function orchRunConfidenceGate() {
+  const body = {
+    prediction: Number(document.getElementById('orch-prediction')?.value || 0),
+    baseline: Number(document.getElementById('orch-baseline')?.value || 1),
+    uncertainty: Number(document.getElementById('orch-uncertainty')?.value || 0),
+    max_relative_error: Number(document.getElementById('orch-max-rel-err')?.value || 0.15),
+    max_uncertainty: Number(document.getElementById('orch-max-uncertainty')?.value || 0.2),
+  };
+  orchSetResult('orch-gate-result', t('common.computing'));
+  try {
+    const r = await api('POST', '/api/ai/governance/confidence-gate', body);
+    orchSetResult('orch-gate-result', r);
+    showToast(r.accepted ? t('orch.accepted') : t('orch.fallback'), r.accepted ? 'success' : 'warning');
+  } catch (e) {
+    orchSetResult('orch-gate-result', `Error: ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+async function orchRunActiveLearning() {
+  const top_k = Number(document.getElementById('orch-top-k')?.value || 3);
+  const raw = document.getElementById('orch-candidates')?.value || '[]';
+  orchSetResult('orch-al-result', t('common.computing'));
+  try {
+    const candidates = JSON.parse(raw);
+    const r = await api('POST', '/api/ai/governance/active-learning/prioritize', { top_k, candidates });
+    orchSetResult('orch-al-result', r);
+    showToast(`${t('orch.selected')} ${r.count}`, 'success');
+  } catch (e) {
+    orchSetResult('orch-al-result', `Error: ${e.message}`);
     showToast(`${t('common.error')} ${e.message}`, 'danger');
   }
 }
