@@ -342,7 +342,7 @@
     "mlups": "MLUPS Performance",
     "mlups_desc": "D2Q9 BGK throughput in Million Lattice Updates Per Second (MLUPS) at multiple grid sizes.",
     "porous": "Porous Media",
-    "porous_desc": "Laplace pressure test and capillary invasion benchmarks for porous media multiphase flow.",
+    "porous_desc": "Laplace pressure, capillary invasion, and gas-water drainage benchmarks for porous-media multiphase flow.",
     "mode": "Mode",
     "device": "Device",
     "run_btn": "Run",
