@@ -835,14 +835,16 @@ async def offshore_hull_mask(req: OffshorePreviewRequest) -> dict:
 async def offshore_export_stl(req: OffshoreSTLRequest) -> Response:
     """Export an offshore structure as ASCII STL."""
     try:
-        from tensorlbm.offshore_cad import export_offshore_stl
+        from tensorlbm.offshore_cad import OffshoreStructureType, export_offshore_stl
+        # Validate struct_type against the allowed enum before using in path
+        safe_type = OffshoreStructureType(req.struct_type).value
         kwargs = _offshore_kwargs(req)
         with tempfile.NamedTemporaryFile(
-            suffix=f"_{req.struct_type}.stl", delete=False
+            suffix=f"_{safe_type}.stl", delete=False
         ) as tmp:
             tmp_path = tmp.name
         export_offshore_stl(
-            req.struct_type, tmp_path, req.nx, req.ny, req.nz, **kwargs
+            safe_type, tmp_path, req.nx, req.ny, req.nz, **kwargs
         )
         content = Path(tmp_path).read_bytes()
         with contextlib.suppress(OSError):
@@ -851,7 +853,7 @@ async def offshore_export_stl(req: OffshoreSTLRequest) -> Response:
             content=content,
             media_type="model/stl",
             headers={
-                "Content-Disposition": f'attachment; filename="{req.struct_type}.stl"'
+                "Content-Disposition": f'attachment; filename="{safe_type}.stl"'
             },
         )
     except Exception as exc:
