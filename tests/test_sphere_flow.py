@@ -35,9 +35,10 @@ class TestSphereFlowConfig:
         assert cfg.resume_checkpoint == tmp_path
 
     def test_derived_properties(self) -> None:
-        cfg = SphereFlowConfig(u_in=0.06, radius=8.0, re=50.0)
+        cfg = SphereFlowConfig(u_in=0.06, radius=8.0, re=50.0, num_threads=2)
         assert cfg.nu == pytest.approx(0.06 * 2 * 8.0 / 50.0)
         assert cfg.tau == pytest.approx(3.0 * cfg.nu + 0.5)
+        assert cfg.num_threads == 2
 
     def test_resolved_run_name_default_integer_re(self) -> None:
         cfg = SphereFlowConfig(nx=40, ny=20, nz=20, re=50.0, u_in=0.06, n_steps=10)
@@ -90,6 +91,7 @@ class TestRunSphereFlow:
         assert meta_path.exists()
         metadata = json.loads(meta_path.read_text(encoding="utf-8"))
         assert metadata["config"]["n_steps"] == 4
+        assert "num_threads" in metadata["runtime"]
         assert metadata["derived"]["nu"] == pytest.approx(cfg.nu)
         assert metadata["derived"]["tau"] == pytest.approx(cfg.tau)
         assert "diagnostics" in metadata

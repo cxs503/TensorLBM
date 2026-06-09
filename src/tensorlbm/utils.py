@@ -19,6 +19,33 @@ class DiagnosticPoint:
     mean_rho: float
 
 
+def configure_cpu_threads(device: torch.device | str, num_threads: int | None = None) -> int:
+    """Configure PyTorch CPU intra-op threads for CPU execution.
+
+    Args:
+        device: Execution device. Non-CPU devices leave the global thread
+            setting unchanged.
+        num_threads: Requested CPU thread count. ``None`` keeps the current
+            PyTorch setting.
+
+    Returns:
+        Effective PyTorch intra-op thread count after configuration.
+
+    Raises:
+        ValueError: If *num_threads* is provided but is less than 1.
+    """
+    if num_threads is not None and num_threads < 1:
+        msg = "num_threads must be >= 1"
+        raise ValueError(msg)
+
+    resolved = device if isinstance(device, torch.device) else torch.device(device)
+    current = torch.get_num_threads()
+    if resolved.type == "cpu" and num_threads is not None and current != num_threads:
+        torch.set_num_threads(num_threads)
+        current = torch.get_num_threads()
+    return current
+
+
 def resolve_device(device_name: str) -> torch.device:
     """Resolve a device name string to a :class:`torch.device`.
 
@@ -131,6 +158,7 @@ def write_legacy_snapshot_alias(run_dir: Path, step: int) -> Path:
 
 __all__ = [
     "DiagnosticPoint",
+    "configure_cpu_threads",
     "resolve_device",
     "prepare_run_dir",
     "get_reproducibility_metadata",

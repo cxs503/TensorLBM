@@ -1,4 +1,4 @@
-"""Tests for utils.py: resolve_device, prepare_run_dir, get_reproducibility_metadata."""
+"""Tests for utils.py: device helpers, run dirs, and reproducibility metadata."""
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -6,7 +6,13 @@ from typing import TYPE_CHECKING
 import pytest
 import torch
 
-from tensorlbm import DiagnosticPoint, get_reproducibility_metadata, prepare_run_dir, resolve_device
+from tensorlbm import (
+    DiagnosticPoint,
+    configure_cpu_threads,
+    get_reproducibility_metadata,
+    prepare_run_dir,
+    resolve_device,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -37,6 +43,20 @@ class TestResolveDevice:
     def test_returns_torch_device_type(self) -> None:
         device = resolve_device("cpu")
         assert isinstance(device, torch.device)
+
+
+class TestConfigureCpuThreads:
+    def test_cpu_with_none_keeps_current_value(self) -> None:
+        current = torch.get_num_threads()
+        assert configure_cpu_threads("cpu", None) == current
+
+    def test_non_cpu_device_is_noop(self) -> None:
+        current = torch.get_num_threads()
+        assert configure_cpu_threads("cuda:0", 2) == current
+
+    def test_invalid_thread_count_raises(self) -> None:
+        with pytest.raises(ValueError, match="num_threads"):
+            configure_cpu_threads("cpu", 0)
 
 
 class TestPrepareRunDir:

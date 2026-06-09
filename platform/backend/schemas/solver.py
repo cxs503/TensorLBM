@@ -35,6 +35,7 @@ class CylinderFlowParams(BaseModel):
     n_steps: int = Field(1200, ge=1, description="Total time steps")
     output_interval: int = Field(200, ge=1, description="Output every N steps")
     device: str = Field("cpu", description="Torch device (cpu / cuda:0 …)")
+    num_threads: int | None = Field(None, ge=1, description="CPU thread count for PyTorch")
     seed: int = 0
     physics: PhysicsSelection | None = None
 
@@ -142,6 +143,7 @@ class SphereFlowParams(BaseModel):
     n_steps: int = Field(500, ge=1)
     output_interval: int = Field(100, ge=1)
     device: str = "cpu"
+    num_threads: int | None = Field(None, ge=1, description="CPU thread count for PyTorch")
     seed: int = 0
     physics: PhysicsSelection | None = None
 
