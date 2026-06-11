@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 
 router = APIRouter()
 
-CKPT_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "checkpoints" / "suboff"
+CKPT_DIR = Path(__file__).resolve().parent.parent.parent.parent / "checkpoints" / "suboff"
 CKPT_DIR.mkdir(parents=True, exist_ok=True)
 
 _training_jobs: dict[str, dict] = {}
