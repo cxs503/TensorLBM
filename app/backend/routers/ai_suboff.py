@@ -57,39 +57,64 @@ def pointwise_rel_loss(x: torch.Tensor, y: torch.Tensor, p: int = 2) -> torch.Te
 
 def _load_npy_snapshots(data_dir: str) -> torch.Tensor | None:
     """Load multi-channel NPY snapshot data from {data_dir}/p,ux,uy,uz.
+    If data_dir contains Re_* subdirectories, loads all and merges.
     Returns [num_snaps, total_points, 4] tensor or None if not found.
     Channels are normalized to [-1, 1] range."""
-    channels = ("p", "ux", "uy", "uz")
-    result: list[torch.Tensor] | None = None
-    for ci, ch in enumerate(channels):
-        d = os.path.join(data_dir, ch)
-        if not os.path.isdir(d):
+    import glob
+
+    def _load_one_dir(d: str) -> torch.Tensor | None:
+        channels = ("p", "ux", "uy", "uz")
+        result: list[torch.Tensor] | None = None
+        for ci, ch in enumerate(channels):
+            cd = os.path.join(d, ch)
+            if not os.path.isdir(cd):
+                return None
+            files = sorted(
+                [f for f in os.listdir(cd) if f.endswith(".npy")],
+                key=lambda x: int(x.rsplit(".", 1)[0]),
+            )
+            if not files:
+                return None
+            stacked: list[np.ndarray] = []
+            for fn in files:
+                arr = np.load(os.path.join(cd, fn)).astype(np.float32)
+                stacked.append(arr.flatten())
+            t = torch.as_tensor(np.stack(stacked), dtype=torch.float32).unsqueeze(-1)
+            if result is None:
+                result = [t]
+            else:
+                result.append(t)
+        if result is None or len(result) != 4:
             return None
-        files = sorted(
-            [f for f in os.listdir(d) if f.endswith(".npy")],
-            key=lambda x: int(x.rsplit(".", 1)[0]),
-        )
-        if not files:
-            return None
-        stacked: list[np.ndarray] = []
-        for fn in files:
-            arr = np.load(os.path.join(d, fn)).astype(np.float32)
-            stacked.append(arr.flatten())
-        t = torch.as_tensor(np.stack(stacked), dtype=torch.float32).unsqueeze(-1)
-        if result is None:
-            result = [t]
-        else:
-            result.append(t)
-    if result is None or len(result) != 4:
+        return torch.cat(result, dim=-1)
+
+    # Try direct first, then multi-Re
+    data = _load_one_dir(data_dir)
+    if data is not None:
+        for ci in range(4):
+            ch_data = data[..., ci]
+            ch_min = ch_data.min(); ch_max = ch_data.max()
+            if ch_max - ch_min > 1e-12:
+                data[..., ci] = 2.0 * (ch_data - ch_min) / (ch_max - ch_min) - 1.0
+        return data
+
+    # Try Re_* subdirectories
+    re_dirs = sorted(glob.glob(os.path.join(data_dir, "Re_*")))
+    if not re_dirs:
         return None
-    data = torch.cat(result, dim=-1)  # [num_snaps, total_points, 4]
-    # Per-channel min-max normalization to [-1, 1]
+    all_snaps: list[torch.Tensor] = []
+    for rd in re_dirs:
+        d = _load_one_dir(rd)
+        if d is not None:
+            all_snaps.append(d)
+    if not all_snaps:
+        return None
+    data = torch.cat(all_snaps, dim=0)
     for ci in range(4):
         ch_data = data[..., ci]
-        ch_min = ch_data.min()
-        ch_max = ch_data.max()
+        ch_min = ch_data.min(); ch_max = ch_data.max()
         if ch_max - ch_min > 1e-12:
-            data[..., ci] = 2.0 * (data[..., ci] - ch_min) / (ch_max - ch_min) - 1.0
+            data[..., ci] = 2.0 * (ch_data - ch_min) / (ch_max - ch_min) - 1.0
     return data
 
 
@@ -104,8 +129,6 @@ def train_suboff(req: SuboffTrainRequest):
 
     def worker():
         try:
-            from tensorlbm.ai.suboff_coord import coord_ori27
-
             device = torch.device(req.device)
             enc, dec = build_model(device)
             opt = torch.optim.AdamW(list(enc.parameters()) + list(dec.parameters()), lr=req.lr, weight_decay=1e-4)
@@ -114,30 +137,34 @@ def train_suboff(req: SuboffTrainRequest):
                 pct_start=0.1, anneal_strategy="cos",
             )
 
-            # Try loading real NPY data
+            # Load real data
             real_data: torch.Tensor | None = None
             if req.data_dir:
                 real_data = _load_npy_snapshots(req.data_dir)
                 if real_data is not None:
                     print(f"[train] Loaded {real_data.shape[0]} snapshots, {real_data.shape[1]} points each from {req.data_dir}")
-                else:
-                    print(f"[train] data_dir={req.data_dir} not found, using synthetic data")
 
-            coords_raw = torch.tensor(coord_ori27(), dtype=torch.float32)[:req.n_points]
+            # Load coordinates (prefer exported coords.npy)
+            coords_path = os.path.join(req.data_dir, "coords.npy") if req.data_dir else None
+            if coords_path and os.path.exists(coords_path):
+                coords_raw = torch.tensor(np.load(coords_path), dtype=torch.float32)[:req.n_points]
+            else:
+                from tensorlbm.ai.suboff_coord import coord_ori27
+                coords_raw = torch.tensor(coord_ori27(), dtype=torch.float32)[:req.n_points]
             pos = coords_raw.to(device)
 
             enc.train(); dec.train()
             best_loss = 1e10
 
+            # Fixed contiguous point indices for stable position mapping
+            n_pts = min(req.n_points, real_data.shape[1] if real_data is not None else req.n_points)
+
             for epoch in range(1, req.epochs + 1):
                 if real_data is not None:
-                    # Autoencoder: input IS the real flow field, target is reconstruction
+                    # Take fixed contiguous segment (different snap per epoch)
                     snap = real_data[torch.randint(0, real_data.shape[0], (1,)).item()]
-                    total_pts = snap.shape[0]
-                    idxs = torch.randint(0, total_pts, (req.n_points,))
-                    target_snap = snap[idxs].unsqueeze(0).unsqueeze(0).to(device)  # [1, 1, N, 4]
-                    x = target_snap
-                    target = target_snap
+                    x = snap[:n_pts].unsqueeze(0).unsqueeze(0).to(device)  # [1, 1, N, 4]
+                    target = x
                 else:
                     # Synthetic: noisy zeros
                     noise = 0.05 * torch.randn(1, 1, req.n_points, 4, device=device)
