@@ -236,7 +236,6 @@ def _get_model():
     global _model_cache
     if _model_cache is not None:
         return _model_cache
-    from tensorlbm.ai.suboff_coord import coord_ori27
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     enc, dec = build_model(device)
     ckpts = sorted(CKPT_DIR.glob("*.ckpt"), key=lambda p: p.stat().st_mtime, reverse=True)
@@ -245,7 +244,7 @@ def _get_model():
         enc.load_state_dict(ckpt.get("encoder", {}), strict=False)
         dec.load_state_dict(ckpt.get("decoder", {}), strict=False)
     enc.eval(); dec.eval()
-    _model_cache = (enc, dec, device, coord_ori27)
+    _model_cache = (enc, dec, device, None)
     return _model_cache
 
 
@@ -259,13 +258,23 @@ def suboff_status():
     return {"checkpoints": len(ckpts), "latest": ckpts[0].name if ckpts else None, "model_loaded": _model_cache is not None}
 
 
+def _get_coords(data_dir: str | None, n_points: int) -> torch.Tensor:
+    """Get position coordinates — prefer coords.npy, fallback to coord_ori27."""
+    if data_dir:
+        cp = os.path.join(data_dir, "coords.npy")
+        if os.path.exists(cp):
+            return torch.tensor(np.load(cp), dtype=torch.float32)[:n_points]
+    from tensorlbm.ai.suboff_coord import coord_ori27
+    return torch.tensor(coord_ori27(), dtype=torch.float32)[:n_points]
+
+
 @router.post("/predict")
 def suboff_predict(req: SuboffPredictRequest):
     try:
-        enc, dec, device, coord_fn = _get_model()
-        coords = torch.tensor(coord_fn(), dtype=torch.float32, device=device)[:req.n_points]
+        enc, dec, device, _ = _get_model()
+        coords = _get_coords(None, req.n_points).to(device)
         pos = coords.unsqueeze(0)
-        x = torch.cat([torch.zeros(1, 1, req.n_points, 1, device=device), pos.unsqueeze(1)], dim=-1)
+        x = torch.zeros(1, 1, req.n_points, 4, device=device)
         t0 = time.perf_counter()
         with torch.no_grad():
             z = enc(x, pos)
@@ -427,7 +436,7 @@ def suboff_error_analysis(req: SuboffErrorRequest):
             dec.load_state_dict(ckpt.get("decoder", {}), strict=False)
 
         enc.eval(); dec.eval()
-        coords = torch.tensor(coord_ori27(), dtype=torch.float32, device=device)[:req.n_points]
+        coords = _get_coords(req.data_dir, req.n_points).to(device)
         pos = coords.unsqueeze(0)
 
         all_errors: list[dict] = []
