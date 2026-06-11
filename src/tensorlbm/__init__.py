@@ -236,6 +236,11 @@ from .rotating_cylinder import (
     rotating_wall_velocity,
     run_rotating_cylinder,
 )
+try:
+    from .cpu_threads import configure_cpu_threads
+except ImportError:
+    configure_cpu_threads = None
+
 from .propeller_cad import (
     PropellerGeometryConfig,
     build_propeller_mask,
@@ -564,6 +569,7 @@ __all__ = [
     "build_propeller_mask",
     "propeller_statistics",
     "KP505_PRESET",
+    "configure_cpu_threads",
     "GENERIC_PRESET",
     "PropellerBenchmarkConfig",
     "moving_wall_bounce_back_3d",
