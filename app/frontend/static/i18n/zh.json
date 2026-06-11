@@ -11,7 +11,8 @@
     "compare": "对比",
     "agent": "AI 智能体",
     "ai_flow": "AI 流场",
-    "orchestration": "编排治理"
+    "orchestration": "编排治理",
+    "suboff": "SUBOFF"
   },
   "ws": {
     "connecting": "连接中…",
@@ -501,5 +502,18 @@
     "power_result": "轴功率 (W)",
     "hint": "选择参数后点击<strong>计算敞水性能</strong>。",
     "generating": "计算中…"
+  },
+  "suboff": {
+    "title": "SUBOFF 替代模型",
+    "data": "数据",
+    "scan": "扫描",
+    "training": "训练",
+    "train": "预训练",
+    "finetune": "微调",
+    "inference": "推理",
+    "predict": "预测",
+    "error_analysis": "误差分析",
+    "run_error": "运行分析",
+    "results": "结果"
   }
 }

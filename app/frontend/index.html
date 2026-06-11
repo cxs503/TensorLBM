@@ -287,6 +287,7 @@
     <a href="#" data-tab="ai-flow" onclick="return showTab('ai-flow',this)"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
     <a href="#" data-tab="orchestration" onclick="return showTab('orchestration',this)"><i class="bi bi-diagram-3"></i> <span data-i18n="nav.orchestration">Orchestration</span></a>
     <a href="#" data-tab="agent" onclick="return showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
+    <a href="#" data-tab="suboff" onclick="return showTab('suboff',this)"><i class="bi bi-submarine"></i> <span data-i18n="nav.suboff">SUBOFF</span></a>
   </nav>
   <span class="ms-auto d-flex align-items-center gap-3">
     <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
@@ -1498,6 +1499,81 @@
       </div>
     </div><!-- /agent -->
 
+    <!-- ====== SUBOFF ====== -->
+    <div class="tab-panel" id="panel-suboff">
+      <h4 class="mb-3"><i class="bi bi-submarine"></i> <span data-i18n="suboff.title">SUBOFF Surrogate Model</span></h4>
+
+      <div class="row g-3">
+        <!-- Left: control panels -->
+        <div class="col-lg-5">
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-database"></i> <span data-i18n="suboff.data">Data</span></div>
+            <div class="card-body">
+              <div class="mb-2"><input class="form-control form-control-sm" id="suboff-data-dir" placeholder="/tmp/suboff_snapshots" value="/tmp/suboff_train_data"></div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="suboffScanData()"><span data-i18n="suboff.scan">Scan</span></button>
+              </div>
+              <div id="suboff-data-info" class="mt-2 small text-muted"></div>
+            </div>
+          </div>
+
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-lightning-charge"></i> <span data-i18n="suboff.training">Training</span></div>
+            <div class="card-body">
+              <div class="row g-2 mb-2">
+                <div class="col-6"><label class="form-label small mb-0">Epochs</label><input class="form-control form-control-sm" id="suboff-epochs" value="50" type="number" min="1" max="5000"></div>
+                <div class="col-6"><label class="form-label small mb-0">LR</label><input class="form-control form-control-sm" id="suboff-lr" value="0.0001" step="0.00001"></div>
+                <div class="col-6"><label class="form-label small mb-0">Points</label><input class="form-control form-control-sm" id="suboff-npoints" value="2000" type="number" min="100" max="50000"></div>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-primary" onclick="suboffStartTrain()"><span data-i18n="suboff.train">Train</span></button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="suboffStartFinetune()"><span data-i18n="suboff.finetune">Finetune</span></button>
+              </div>
+              <div id="suboff-train-status" class="mt-2 small"></div>
+            </div>
+          </div>
+
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-cpu"></i> <span data-i18n="suboff.inference">Inference</span></div>
+            <div class="card-body">
+              <div class="mb-2"><label class="form-label small mb-0">N Points</label><input class="form-control form-control-sm" id="suboff-infer-points" value="2000" type="number"></div>
+              <button class="btn btn-sm btn-success" onclick="suboffPredict()"><span data-i18n="suboff.predict">Predict</span></button>
+              <div id="suboff-predict-result" class="mt-2 small"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-graph-up"></i> <span data-i18n="suboff.error_analysis">Error Analysis</span></div>
+            <div class="card-body">
+              <button class="btn btn-sm btn-warning" onclick="suboffRunError()"><span data-i18n="suboff.run_error">Run Analysis</span></button>
+              <div id="suboff-error-result" class="mt-2 small"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: status + results -->
+        <div class="col-lg-7">
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-info-circle"></i> Status</div>
+            <div class="card-body" id="suboff-status-panel">
+              <span class="text-muted small">Loading…</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-table"></i> <span data-i18n="suboff.results">Results</span></div>
+            <div class="card-body p-2">
+              <div class="table-responsive" style="max-height:400px;overflow-y:auto">
+                <table class="table table-sm table-hover mb-0" id="suboff-results-table">
+                  <thead class="table-light"><tr><th>#</th><th>Status</th><th>Epoch</th><th>Loss</th><th>Best</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /suboff -->
+
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
 
@@ -1515,6 +1591,7 @@
 <script src="/static/js/app_solver.js"></script>
 <script src="/static/js/app_postprocess.js"></script>
 <script src="/static/js/app_ai.js"></script>
+<script src="/static/js/app_suboff.js"></script>
 <!-- aiFlowPollJob -->
 <script src="/static/js/app_lightbox.js"></script>
 </body>
