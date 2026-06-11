@@ -1,11 +1,13 @@
 """
-SUBOFF 预训练 API — 3D Encoder-Decoder 训练端点
+SUBOFF API — 3D Encoder-Decoder 训练/推理端点
 """
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn as nn
 from fastapi import APIRouter, HTTPException
@@ -23,9 +25,12 @@ class SuboffTrainRequest(BaseModel):
     epochs: int = Field(50, ge=1, le=5000, description="训练轮数")
     batch_size: int = Field(8, ge=1, le=64)
     lr: float = Field(6e-4, gt=0, le=1e-1, description="学习率")
-    n_points: int = Field(2000, ge=100, le=50000, description="每样本坐标点数")
+    n_points: int = Field(2000, ge=100, le=50000, description="每样本采样点数")
+    data_dir: str | None = Field(None, description="NPY 数据目录 ({dir}/p/{idx}.npy, ...)")
     device: str = Field("cuda" if torch.cuda.is_available() else "cpu")
 
+
+# ── model / loss ──
 
 def build_model(device: torch.device):
     from tensorlbm.ai.nn.encoder_module import IrregSTEncoder2D
@@ -48,6 +53,39 @@ def pointwise_rel_loss(x: torch.Tensor, y: torch.Tensor, p: int = 2) -> torch.Te
     return (diff / y_norm).sum(dim=-1).mean()
 
 
+# ── NPY data loading ──
+
+def _load_npy_snapshots(data_dir: str) -> torch.Tensor | None:
+    """Load multi-channel NPY snapshot data from {data_dir}/p,ux,uy,uz.
+    Returns [num_snaps, total_points, 4] tensor or None if not found."""
+    channels = ("p", "ux", "uy", "uz")
+    result: list[torch.Tensor] | None = None
+    for ci, ch in enumerate(channels):
+        d = os.path.join(data_dir, ch)
+        if not os.path.isdir(d):
+            return None
+        files = sorted(
+            [f for f in os.listdir(d) if f.endswith(".npy")],
+            key=lambda x: int(x.rsplit(".", 1)[0]),
+        )
+        if not files:
+            return None
+        stacked: list[np.ndarray] = []
+        for fn in files:
+            arr = np.load(os.path.join(d, fn)).astype(np.float32)
+            stacked.append(arr.flatten())
+        t = torch.as_tensor(np.stack(stacked), dtype=torch.float32).unsqueeze(-1)
+        if result is None:
+            result = [t]
+        else:
+            result.append(t)
+    if result is None or len(result) != 4:
+        return None
+    return torch.cat(result, dim=-1)  # [num_snaps, total_points, 4]
+
+
+# ── training ──
+
 @router.post("/train")
 def train_suboff(req: SuboffTrainRequest):
     import threading
@@ -67,7 +105,15 @@ def train_suboff(req: SuboffTrainRequest):
                 pct_start=0.1, anneal_strategy="cos",
             )
 
-            # 合成数据（真实训练需 NPY 文件）
+            # Try loading real NPY data
+            real_data: torch.Tensor | None = None
+            if req.data_dir:
+                real_data = _load_npy_snapshots(req.data_dir)
+                if real_data is not None:
+                    print(f"[train] Loaded {real_data.shape[0]} snapshots, {real_data.shape[1]} points each from {req.data_dir}")
+                else:
+                    print(f"[train] data_dir={req.data_dir} not found, using synthetic data")
+
             coords_raw = torch.tensor(coord_ori27(), dtype=torch.float32)[:req.n_points]
             pos = coords_raw.to(device)
 
@@ -75,11 +121,19 @@ def train_suboff(req: SuboffTrainRequest):
             best_loss = 1e10
 
             for epoch in range(1, req.epochs + 1):
-                # 合成输入：添加噪声模拟流场变化
-                noise = 0.05 * torch.randn(1, 1, req.n_points, 4, device=device)
-                x = torch.cat([torch.zeros(1, 1, req.n_points, 1, device=device), pos.unsqueeze(0).unsqueeze(0)], dim=-1)
-                x = x + noise
-                target = x.clone()
+                if real_data is not None:
+                    # Random sample from real data
+                    snap = real_data[torch.randint(0, real_data.shape[0], (1,)).item()]
+                    total_pts = snap.shape[0]
+                    idxs = torch.randint(0, total_pts, (req.n_points,))
+                    target_snap = snap[idxs].unsqueeze(0).unsqueeze(0).to(device)  # [1, 1, N, 4]
+                    x = torch.cat([torch.zeros(1, 1, req.n_points, 1, device=device), pos.unsqueeze(0).unsqueeze(0)], dim=-1)
+                    target = target_snap
+                else:
+                    # Synthetic: noisy zeros
+                    noise = 0.05 * torch.randn(1, 1, req.n_points, 4, device=device)
+                    x = torch.cat([torch.zeros(1, 1, req.n_points, 1, device=device), pos.unsqueeze(0).unsqueeze(0)], dim=-1)
+                    target = x + noise
 
                 opt.zero_grad()
                 with torch.autocast(device_type=device.type, enabled=(device.type == "cuda")):
@@ -93,21 +147,20 @@ def train_suboff(req: SuboffTrainRequest):
                 scheduler.step()
 
                 loss_val = float(loss.item())
-                if not (loss_val==loss_val): loss_val=999.0  # sanitize NaN
+                if not (loss_val == loss_val): loss_val = 999.0
                 _training_jobs[job_id] = {"status": "training", "epoch": epoch, "total": req.epochs, "loss": loss_val}
 
                 if loss_val < best_loss:
                     best_loss = loss_val
-                    ckpt_path = CKPT_DIR / f"suboff_best.ckpt"
                     torch.save({
                         "encoder": enc.state_dict(), "decoder": dec.state_dict(),
                         "config": {"model_dim": 144, "n_heads": 1, "n_layers": 4},
                         "epoch": epoch, "loss": loss_val,
-                    }, str(ckpt_path))
+                    }, str(CKPT_DIR / "suboff_best.ckpt"))
 
-                if epoch % 10 == 0:
-                    ckpt_path = CKPT_DIR / f"suboff_epoch{epoch}.ckpt"
-                    torch.save({"encoder": enc.state_dict(), "decoder": dec.state_dict()}, str(ckpt_path))
+                if epoch % 50 == 0:
+                    torch.save({"encoder": enc.state_dict(), "decoder": dec.state_dict()},
+                               str(CKPT_DIR / f"suboff_epoch{epoch}.ckpt"))
 
             _training_jobs[job_id]["status"] = "completed"
             _training_jobs[job_id]["best_loss"] = best_loss
@@ -125,8 +178,11 @@ def train_status(job_id: str):
     if job_id not in _training_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     j = _training_jobs[job_id]
-    return {"job_id": job_id, "status": j.get("status","?"), "epoch": j.get("epoch",0),
-            "total": j.get("total",0), "loss": j.get("loss"), "best_loss": float(j.get("best_loss",0)) if j.get("best_loss")==j.get("best_loss") else 0.0}
+    return {
+        "job_id": job_id, "status": j.get("status", "?"), "epoch": j.get("epoch", 0),
+        "total": j.get("total", 0), "loss": j.get("loss"),
+        "best_loss": float(j.get("best_loss", 0)) if j.get("best_loss") == j.get("best_loss") else 0.0,
+    }
 
 
 @router.get("/train")
@@ -134,7 +190,7 @@ def list_training():
     return {"jobs": list(_training_jobs.keys())[-10:]}
 
 
-# ---- Inference ----
+# ── inference ──
 
 _model_cache: tuple | None = None
 
@@ -180,12 +236,31 @@ def suboff_predict(req: SuboffPredictRequest):
         elapsed = (time.perf_counter() - t0) * 1000
         p = pred.cpu().numpy()[0]
         return {
-            "status": "ok", "shape": list(pred.shape),
+            "status": "ok", "shape": list(pred.shape), "channels": ["pressure", "vx", "vy", "vz"],
             "stats": {
-                "vx": {"min": float(p[:,1].min()), "max": float(p[:,1].max()), "mean": float(p[:,1].mean())},
-                "vy": {"min": float(p[:,2].min()), "max": float(p[:,2].max()), "mean": float(p[:,2].mean())},
+                "vx": {"min": float(p[:, 1].min()), "max": float(p[:, 1].max()), "mean": float(p[:, 1].mean())},
+                "vy": {"min": float(p[:, 2].min()), "max": float(p[:, 2].max()), "mean": float(p[:, 2].mean())},
             },
             "time_ms": round(elapsed, 1), "device": str(device),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── data scan ──
+
+@router.get("/data")
+def list_data(data_dir: str | None = None):
+    """List available NPY snapshot directories."""
+    if data_dir is None:
+        data_dir = str(CKPT_DIR.parent.parent / "suboff_snapshots")
+    p = Path(data_dir)
+    if not p.exists():
+        return {"data_dir": data_dir, "exists": False}
+    result = {}
+    for ch in ("p", "ux", "uy", "uz"):
+        chd = p / ch
+        if chd.is_dir():
+            files = sorted([f.name for f in chd.glob("*.npy")], key=lambda x: int(x.rsplit(".", 1)[0]))
+            result[ch] = len(files)
+    return {"data_dir": data_dir, "channels": result, "total_snapshots": min(result.values()) if result else 0}
