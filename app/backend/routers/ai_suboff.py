@@ -110,12 +110,12 @@ def _load_npy_snapshots(data_dir: str) -> torch.Tensor | None:
     if not all_snaps:
         return None
     data = torch.cat(all_snaps, dim=0)
-    # Per-channel z-score normalization (stable for training)
+    # Per-channel min-max normalization to [0, 1] (stable for MSE training)
     for ci in range(4):
         ch_data = data[..., ci]
-        ch_mean = ch_data.mean(); ch_std = ch_data.std()
-        if ch_std > 1e-12:
-            data[..., ci] = (ch_data - ch_mean) / ch_std
+        ch_min = ch_data.min(); ch_max = ch_data.max()
+        if ch_max - ch_min > 1e-12:
+            data[..., ci] = (ch_data - ch_min) / (ch_max - ch_min)
     return data
 
 
@@ -175,7 +175,7 @@ def train_suboff(req: SuboffTrainRequest):
                 opt.zero_grad()
                 z = enc(x, pos.unsqueeze(0))
                 pred = dec(z, pos.unsqueeze(0), pos.unsqueeze(0))
-                loss = pointwise_rel_loss(pred, target)
+                loss = nn.functional.mse_loss(pred, target)
 
                 loss.backward()
                 nn.utils.clip_grad_norm_(list(enc.parameters()) + list(dec.parameters()), 0.1)
@@ -370,7 +370,7 @@ def finetune_suboff(req: SuboffFinetuneRequest):
                 with torch.autocast(device_type=device.type, enabled=(device.type == "cuda")):
                     z = enc(x, pos.unsqueeze(0))
                     pred = dec(z, pos.unsqueeze(0), pos.unsqueeze(0))
-                    loss = pointwise_rel_loss(pred, x)
+                    loss = nn.functional.mse_loss(pred, x)
                 loss.backward()
                 nn.utils.clip_grad_norm_(list(enc.parameters()) + list(dec.parameters()), 0.5)
                 opt.step()
