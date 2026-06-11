@@ -34,6 +34,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--device", choices=["cpu", "cuda"], default="cpu", help="Execution device"
     )
     parser.add_argument(
+        "--num-threads",
+        dest="num_threads",
+        type=int,
+        default=None,
+        help="PyTorch CPU thread count (CPU runs only)",
+    )
+    parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Replace output directory if it already exists",
@@ -55,6 +62,7 @@ def main() -> None:
         run_name=args.run_name,
         seed=args.seed,
         device=args.device,
+        num_threads=args.num_threads,
         overwrite=args.overwrite,
     )
     run_cylinder_flow(config)

@@ -3,14 +3,21 @@
 Each endpoint runs a tensorlbm benchmark suite in the background via the
 job manager and returns a job_id for status polling.
 """
+# ruff: noqa: TC001
 from __future__ import annotations
 
-from typing import Literal
-
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
 
 from .. import job_manager
+from ..schemas.benchmarks import (
+    AccuracyBenchmarkParams,
+    GhiaBenchmarkParams,
+    MarineBenchmarkParams,
+    MLUPSParams,
+    MultiphaseBenchmarkParams,
+    PorousBenchmarkParams,
+)
+from ..services.benchmarks import submit_benchmark
 
 router = APIRouter()
 
@@ -19,31 +26,6 @@ router = APIRouter()
 # Marine benchmark suite
 # ---------------------------------------------------------------------------
 
-class MarineBenchmarkParams(BaseModel):
-    cases: list[
-        Literal[
-            "cylinder",
-            "sloshing",
-            "pipeline",
-            "turbulent_channel",
-            "wigley",
-            "suboff",
-            "geometry_library",
-        ]
-    ] = Field(
-        default=[
-            "cylinder",
-            "sloshing",
-            "pipeline",
-            "turbulent_channel",
-            "wigley",
-            "suboff",
-            "geometry_library",
-        ],
-        description="Which benchmark cases to run",
-    )
-    fast: bool = Field(True, description="Use reduced step counts for quick validation")
-    device: str = "cpu"
 
 
 @router.post("/marine")
@@ -224,22 +206,19 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
 
         return results
 
-    job_id = job_manager.submit(
+    return submit_benchmark(
         name=f"Marine Benchmarks ({'fast' if params.fast else 'full'})",
         job_type="benchmark_marine",
-        config=params.model_dump(),
-        fn=_run,
+        params=params,
+        runner=_run,
+        message="Marine benchmark submitted",
     )
-    return {"job_id": job_id, "message": "Marine benchmark submitted"}
 
 
 # ---------------------------------------------------------------------------
 # Multiphase benchmark suite
 # ---------------------------------------------------------------------------
 
-class MultiphaseBenchmarkParams(BaseModel):
-    fast: bool = True
-    device: str = "cpu"
 
 
 @router.post("/multiphase")
@@ -302,24 +281,19 @@ async def run_multiphase(params: MultiphaseBenchmarkParams) -> dict:
         result = run_multiphase_benchmark_suite(cfg)
         return {"summary": str(result)}
 
-    job_id = job_manager.submit(
+    return submit_benchmark(
         name=f"Multiphase Benchmarks ({'fast' if params.fast else 'full'})",
         job_type="benchmark_multiphase",
-        config=params.model_dump(),
-        fn=_run,
+        params=params,
+        runner=_run,
+        message="Multiphase benchmark submitted",
     )
-    return {"job_id": job_id, "message": "Multiphase benchmark submitted"}
 
 
 # ---------------------------------------------------------------------------
 # Lid-driven cavity – Ghia comparison
 # ---------------------------------------------------------------------------
 
-class GhiaBenchmarkParams(BaseModel):
-    nx: int = Field(64, ge=16, description="Grid size (square)")
-    re: Literal[100, 400, 1000] = 100
-    n_steps: int = Field(5000, ge=1)
-    device: str = "cpu"
 
 
 @router.post("/ghia")
@@ -360,26 +334,19 @@ async def run_ghia(params: GhiaBenchmarkParams) -> dict:
             return {"re": params.re, "ghia_error": err}
         return {"re": params.re, "ghia_error": None}
 
-    job_id = job_manager.submit(
+    return submit_benchmark(
         name=f"Ghia Benchmark Re={params.re}",
         job_type="benchmark_ghia",
-        config=params.model_dump(),
-        fn=_run,
+        params=params,
+        runner=_run,
+        message="Ghia comparison benchmark submitted",
     )
-    return {"job_id": job_id, "message": "Ghia comparison benchmark submitted"}
 
 
 # ---------------------------------------------------------------------------
 # MLUPS performance benchmark
 # ---------------------------------------------------------------------------
 
-class MLUPSParams(BaseModel):
-    sizes: list[int] = Field(
-        default=[128, 256, 512],
-        description="Grid sizes to benchmark (nx = ny = size)",
-    )
-    steps: int = Field(100, ge=10, description="Steps per size")
-    device: str = "cpu"
 
 
 @router.post("/mlups")
@@ -439,27 +406,24 @@ async def run_mlups(params: MLUPSParams) -> dict:
         )
         return {"results": results}
 
-    job_id = job_manager.submit(
+    return submit_benchmark(
         name=f"MLUPS Benchmark ({params.device})",
         job_type="benchmark_mlups",
-        config=params.model_dump(),
-        fn=_run,
+        params=params,
+        runner=_run,
+        message="MLUPS benchmark submitted",
     )
-    return {"job_id": job_id, "message": "MLUPS benchmark submitted"}
 
 
 # ---------------------------------------------------------------------------
 # Porous media benchmarks
 # ---------------------------------------------------------------------------
 
-class PorousBenchmarkParams(BaseModel):
-    fast: bool = True
-    device: str = "cpu"
 
 
 @router.post("/porous")
 async def run_porous(params: PorousBenchmarkParams) -> dict:
-    """Run porous media drainage and capillary invasion benchmarks."""
+    """Run porous-media gas-water displacement benchmark cases."""
 
     def _run(job: job_manager.Job) -> dict:
         job_manager.raise_if_cancelled(job.job_id)
@@ -468,9 +432,14 @@ async def run_porous(params: PorousBenchmarkParams) -> dict:
         from tensorlbm import LaplaceTestConfig, run_laplace_test
 
         laplace_cfg = LaplaceTestConfig(
-            fast=params.fast,
+            nx=60 if params.fast else 100,
+            ny=60 if params.fast else 100,
+            bubble_radius=10.0 if params.fast else 20.0,
+            n_steps=400 if params.fast else 5000,
+            output_interval=200 if params.fast else 1000,
             device=params.device,
             output_root=job.output_dir / "laplace",
+            overwrite=True,
         )
         run_laplace_test(laplace_cfg)
         results["laplace"] = "ok"
@@ -478,38 +447,54 @@ async def run_porous(params: PorousBenchmarkParams) -> dict:
         from tensorlbm import CapillaryInvasionConfig, run_capillary_invasion
 
         cap_cfg = CapillaryInvasionConfig(
-            fast=params.fast,
+            nx=120 if params.fast else 200,
+            ny=24 if params.fast else 30,
+            tube_width=14 if params.fast else 20,
+            n_steps=600 if params.fast else 4000,
+            output_interval=200 if params.fast else 500,
             device=params.device,
             output_root=job.output_dir / "capillary",
+            overwrite=True,
         )
         job_manager.raise_if_cancelled(job.job_id)
         run_capillary_invasion(cap_cfg)
         results["capillary_invasion"] = "ok"
 
+        from tensorlbm import PorousDrainageConfig, run_porous_drainage
+
+        drainage_cfg = PorousDrainageConfig(
+            nx=80 if params.fast else 220,
+            ny=36 if params.fast else 80,
+            geometry="random_cylinders",
+            n_cylinders=8 if params.fast else 15,
+            r_min=3.0 if params.fast else 4.0,
+            r_max=5.0 if params.fast else 8.0,
+            model="sc",
+            n_steps=800 if params.fast else 4000,
+            output_interval=200 if params.fast else 800,
+            device=params.device,
+            output_root=job.output_dir / "drainage",
+            overwrite=True,
+        )
+        job_manager.raise_if_cancelled(job.job_id)
+        run_porous_drainage(drainage_cfg)
+        results["gas_water_drainage"] = "ok"
+
         return results
 
-    job_id = job_manager.submit(
+    return submit_benchmark(
         name=f"Porous Media Benchmarks ({'fast' if params.fast else 'full'})",
         job_type="benchmark_porous",
-        config=params.model_dump(),
-        fn=_run,
+        params=params,
+        runner=_run,
+        message="Porous media benchmark submitted",
     )
-    return {"job_id": job_id, "message": "Porous media benchmark submitted"}
 
 
 # ---------------------------------------------------------------------------
 # Single-phase accuracy benchmark suite
 # ---------------------------------------------------------------------------
 
-class AccuracyBenchmarkParams(BaseModel):
-    cases: list[
-        Literal["cavity", "bfs", "rotating_cylinder"]
-    ] = Field(
-        default=["cavity", "bfs", "rotating_cylinder"],
-        description="Which accuracy benchmark cases to run",
-    )
-    fast: bool = Field(True, description="Use reduced step counts for quick validation")
-    device: str = "cpu"
 
 
 @router.post("/accuracy")
@@ -631,10 +616,10 @@ async def run_accuracy(params: AccuracyBenchmarkParams) -> dict:
 
         return results
 
-    job_id = job_manager.submit(
+    return submit_benchmark(
         name=f"Accuracy Benchmarks ({'fast' if params.fast else 'full'})",
         job_type="benchmark_accuracy",
-        config=params.model_dump(),
-        fn=_run,
+        params=params,
+        runner=_run,
+        message="Accuracy benchmark submitted",
     )
-    return {"job_id": job_id, "message": "Accuracy benchmark submitted"}

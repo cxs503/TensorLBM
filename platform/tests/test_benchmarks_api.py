@@ -126,3 +126,6 @@ def test_porous_benchmark(client, waiter):
     job_id = r.json()["job_id"]
     final = waiter(job_id, timeout=600.0)
     assert final["status"] == "completed", final.get("error")
+    assert final["result"]["laplace"] == "ok"
+    assert final["result"]["capillary_invasion"] == "ok"
+    assert final["result"]["gas_water_drainage"] == "ok"

@@ -31,6 +31,8 @@ def test_cylinder_flow_cli_smoke(tmp_path: Path) -> None:
         str(output_root),
         "--run-name",
         "smoke",
+        "--num-threads",
+        "1",
     ]
     subprocess.run(cmd, check=True, env=env, cwd=str(repo_root))
 
@@ -40,6 +42,7 @@ def test_cylinder_flow_cli_smoke(tmp_path: Path) -> None:
 
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     assert metadata["config"]["n_steps"] == 8
+    assert metadata["runtime"]["num_threads"] == 1
     assert metadata["diagnostics"]
     assert (run_dir / "flow_step_000008.png").exists()
 

@@ -1,56 +1,137 @@
-"""Tests for propeller CAD geometry module."""
+"""Tests for the propeller_cad module (Wageningen B-series)."""
 from __future__ import annotations
 
-import torch
-from tensorlbm.propeller_cad import (
-    PropellerGeometryConfig,
-    build_propeller_mask,
-    propeller_statistics,
-    KP505_PRESET,
-    GENERIC_PRESET,
-)
+import pytest
+
+# ---------------------------------------------------------------------------
+# B-series open-water values
+# ---------------------------------------------------------------------------
+
+def test_kt_positive_at_zero_advance():
+    from tensorlbm.propeller_cad import wageningen_b_series
+
+    r = wageningen_b_series(0.0, 1.0, 0.6, 4)
+    assert r["KT"] > 0.0, "KT must be positive at J=0"
 
 
-def test_propeller_config() -> None:
-    cfg = KP505_PRESET
-    assert cfg.n_blades == 5
-    assert cfg.diameter == 48.0
-    assert cfg.hub_radius > 0
-    assert cfg.hub_radius < cfg.radius
+def test_kt_decreases_with_J():
+    from tensorlbm.propeller_cad import wageningen_b_series
+
+    kts = [wageningen_b_series(J, 1.0, 0.6, 4)["KT"] for J in [0.0, 0.3, 0.6, 0.9]]
+    assert all(kts[i] > kts[i + 1] for i in range(len(kts) - 1)), "KT must decrease with J"
 
 
-def test_build_propeller_mask_small() -> None:
-    cfg = PropellerGeometryConfig(n_blades=4, diameter=32.0)
-    mask = build_propeller_mask(nx=60, ny=30, nz=30, cx=21, cy=15, cz=15, config=cfg)
-    assert mask.shape == (30, 30, 60)
-    solid = mask.sum().item()
-    assert solid > 500, f"Only {solid} solid cells"
-    assert solid < 5000, f"Too many solid cells: {solid}"
+def test_efficiency_zero_at_J_zero():
+    from tensorlbm.propeller_cad import wageningen_b_series
+
+    r = wageningen_b_series(0.0, 1.0, 0.6, 4)
+    assert r["eta_0"] == pytest.approx(0.0)
 
 
-def test_propeller_statistics() -> None:
-    cfg = KP505_PRESET
-    mask = build_propeller_mask(nx=80, ny=40, nz=40, cx=28, cy=20, cz=20, config=cfg)
-    stats = propeller_statistics(cfg, mask)
-    assert stats["solid_cells"] > 0
-    assert stats["solid_fraction"] > 0.001
-    assert stats["estimated_wetted_area"] > 100
+def test_efficiency_peak_reasonable():
+    """Peak efficiency for B4-60 at P/D=1.0 should be in [0.55, 0.80]."""
+    import numpy as np
+
+    from tensorlbm.propeller_cad import wageningen_b_series
+
+    etas = [
+        wageningen_b_series(float(J), 1.0, 0.6, 4)["eta_0"]
+        for J in np.linspace(0.01, 1.2, 50)
+    ]
+    peak = max(etas)
+    assert 0.55 < peak < 0.80, f"Peak efficiency {peak:.3f} outside expected range"
 
 
-def test_masks_at_different_angles() -> None:
-    """Ensure different rotation angles produce valid masks."""
-    cfg = GENERIC_PRESET
-    mask0 = build_propeller_mask(nx=60, ny=30, nz=30, cx=21, cy=15, cz=15, config=cfg, angle_deg=0.0)
-    mask45 = build_propeller_mask(nx=60, ny=30, nz=30, cx=21, cy=15, cz=15, config=cfg, angle_deg=45.0)
-    s0 = mask0.sum().item()
-    s45 = mask45.sum().item()
-    # Should be roughly similar (same geometry, rotated)
-    assert abs(s0 - s45) / max(s0, 1) < 0.3
+def test_kq_positive():
+    from tensorlbm.propeller_cad import wageningen_b_series
+
+    r = wageningen_b_series(0.7, 1.0, 0.6, 4)
+    assert r["KQ"] > 0.0
 
 
-__all__ = [
-    "test_propeller_config",
-    "test_build_propeller_mask_small",
-    "test_propeller_statistics",
-    "test_masks_at_different_angles",
-]
+def test_more_blades_increases_kt():
+    """More blades → higher KT at same J (for same P/D and Ae/A0)."""
+    from tensorlbm.propeller_cad import wageningen_b_series
+
+    kt3 = wageningen_b_series(0.5, 1.0, 0.6, 3)["KT"]
+    kt5 = wageningen_b_series(0.5, 1.0, 0.6, 5)["KT"]
+    assert kt5 > kt3, "More blades should give higher KT"
+
+
+def test_higher_P_D_increases_KT():
+    from tensorlbm.propeller_cad import wageningen_b_series
+
+    kt_low = wageningen_b_series(0.5, 0.8, 0.6, 4)["KT"]
+    kt_high = wageningen_b_series(0.5, 1.2, 0.6, 4)["KT"]
+    assert kt_high > kt_low
+
+
+def test_dimensional_output():
+    from tensorlbm.propeller_cad import wageningen_b_series
+
+    r = wageningen_b_series(0.7, 1.0, 0.6, 4, n=2.0, D=5.0, rho=1025.0)
+    assert "T_N" in r
+    assert "Q_Nm" in r
+    assert "P_kW" in r
+    assert r["T_N"] > 0.0
+
+
+# ---------------------------------------------------------------------------
+# optimal_advance_ratio
+# ---------------------------------------------------------------------------
+
+def test_optimal_advance_ratio():
+    from tensorlbm.propeller_cad import optimal_advance_ratio
+
+    result = optimal_advance_ratio(1.0, 0.6, 4)
+    assert "J_opt" in result
+    assert "eta_max" in result
+    assert 0.4 < result["J_opt"] < 1.2
+    assert 0.5 < result["eta_max"] < 0.85
+
+
+# ---------------------------------------------------------------------------
+# propeller_design
+# ---------------------------------------------------------------------------
+
+def test_propeller_design_diameter_positive():
+    from tensorlbm.propeller_cad import propeller_design
+
+    result = propeller_design(500_000, 6.0, 1.0, 0.6, 4, 2.0)
+    assert result["D_m"] > 0.0
+
+
+def test_propeller_design_power_positive():
+    from tensorlbm.propeller_cad import propeller_design
+
+    result = propeller_design(500_000, 6.0, 1.0, 0.6, 4, 2.0)
+    assert result["P_kW"] > 0.0
+
+
+# ---------------------------------------------------------------------------
+# propeller_disk_mask
+# ---------------------------------------------------------------------------
+
+def test_disk_mask_shape():
+    from tensorlbm.propeller_cad import propeller_disk_mask
+
+    mask = propeller_disk_mask(60, 60, 10, diameter_lu=20.0)
+    assert mask.shape == (60, 60, 10)
+    assert mask.sum() > 0
+
+
+# ---------------------------------------------------------------------------
+# plot_b_series_curves
+# ---------------------------------------------------------------------------
+
+def test_plot_returns_figure():
+    pytest.importorskip("matplotlib")
+    import matplotlib.figure as mfig
+
+    from tensorlbm.propeller_cad import plot_b_series_curves
+
+    fig = plot_b_series_curves(1.0, 0.6, 4)
+    assert isinstance(fig, mfig.Figure)
+    import matplotlib.pyplot as plt
+    plt.close(fig)
+
