@@ -57,7 +57,8 @@ def pointwise_rel_loss(x: torch.Tensor, y: torch.Tensor, p: int = 2) -> torch.Te
 
 def _load_npy_snapshots(data_dir: str) -> torch.Tensor | None:
     """Load multi-channel NPY snapshot data from {data_dir}/p,ux,uy,uz.
-    Returns [num_snaps, total_points, 4] tensor or None if not found."""
+    Returns [num_snaps, total_points, 4] tensor or None if not found.
+    Channels are normalized to [-1, 1] range."""
     channels = ("p", "ux", "uy", "uz")
     result: list[torch.Tensor] | None = None
     for ci, ch in enumerate(channels):
@@ -81,7 +82,15 @@ def _load_npy_snapshots(data_dir: str) -> torch.Tensor | None:
             result.append(t)
     if result is None or len(result) != 4:
         return None
-    return torch.cat(result, dim=-1)  # [num_snaps, total_points, 4]
+    data = torch.cat(result, dim=-1)  # [num_snaps, total_points, 4]
+    # Per-channel min-max normalization to [-1, 1]
+    for ci in range(4):
+        ch_data = data[..., ci]
+        ch_min = ch_data.min()
+        ch_max = ch_data.max()
+        if ch_max - ch_min > 1e-12:
+            data[..., ci] = 2.0 * (data[..., ci] - ch_min) / (ch_max - ch_min) - 1.0
+    return data
 
 
 # ── training ──
@@ -122,12 +131,12 @@ def train_suboff(req: SuboffTrainRequest):
 
             for epoch in range(1, req.epochs + 1):
                 if real_data is not None:
-                    # Random sample from real data
+                    # Autoencoder: input IS the real flow field, target is reconstruction
                     snap = real_data[torch.randint(0, real_data.shape[0], (1,)).item()]
                     total_pts = snap.shape[0]
                     idxs = torch.randint(0, total_pts, (req.n_points,))
                     target_snap = snap[idxs].unsqueeze(0).unsqueeze(0).to(device)  # [1, 1, N, 4]
-                    x = torch.cat([torch.zeros(1, 1, req.n_points, 1, device=device), pos.unsqueeze(0).unsqueeze(0)], dim=-1)
+                    x = target_snap
                     target = target_snap
                 else:
                     # Synthetic: noisy zeros
