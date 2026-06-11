@@ -9,6 +9,8 @@ platform/
 ├── backend/           FastAPI REST + WebSocket backend
 │   ├── main.py        App entry point; WebSocket broadcaster
 │   ├── job_manager.py Thread-safe job queue (ThreadPoolExecutor)
+│   ├── schemas/       Router request/response Pydantic models
+│   ├── services/      Shared service-layer helpers for routers
 │   └── routers/
 │       ├── jobs.py        Job CRUD + file serving
 │       ├── preprocess.py  Geometry generation & unit conversion
@@ -18,7 +20,8 @@ platform/
 │       └── agent.py       Conversational LLM agent (chat / capabilities)
 ├── backend/agent_core.py  Agent tool registry + intent parser
 └── frontend/
-    └── index.html     Single-page app (Bootstrap 5, vanilla JS)
+    ├── index.html     Single-page app shell (Bootstrap 5)
+    └── static/js/     Domain-split frontend logic modules
 ```
 
 ## Quick Start

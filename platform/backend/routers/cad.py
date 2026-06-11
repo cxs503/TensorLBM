@@ -9,21 +9,42 @@ browser-based platform can:
 4. Launch a solver job directly from CAD parameters (CAD → solver shortcut).
 5. Export a hull STL file.
 """
+# ruff: noqa: TC001
 from __future__ import annotations
 
 import base64
+import contextlib
 import io
 import os
 import tempfile
 from pathlib import Path
-from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
 
 from .. import job_manager
 from ..cad3d_service import cad3d_service
+from ..schemas.cad import (
+    CAD3DCreateRequest,
+    CAD3DExportRequest,
+    CAD3DMaskBridgeRequest,
+    CAD3DUpdateRequest,
+    HullMaskRequest,
+    HullPreviewRequest,
+    HullSolverRequest,
+    HullSTLRequest,
+    LBMParametersRequest,
+    OffshorePreviewRequest,
+    OffshoreSTLRequest,
+    PropellerCurveRequest,
+    PropellerDesignRequest,
+    PropellerOpenWaterRequest,
+    ResistanceEstimateRequest,
+    SuboffMaskRequest,
+    SuboffPreviewRequest,
+    SuboffSTLRequest,
+)
+from ..services.cad import figure_to_png_data_url
 
 router = APIRouter()
 
@@ -32,145 +53,6 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 
-class HullPreviewRequest(BaseModel):
-    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
-    length: float = Field(100.0, gt=0, description="Hull length (lattice units)")
-    beam: float = Field(16.0, gt=0, description="Hull beam (lattice units)")
-    draft: float = Field(8.0, gt=0, description="Hull draft (lattice units)")
-    n_stations: int = Field(11, ge=3, le=41, description="Number of body-plan stations")
-
-class HullMaskRequest(BaseModel):
-    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
-    nx: int = Field(160, ge=20, description="Grid x-size")
-    ny: int = Field(60, ge=10, description="Grid y-size")
-    nz: int = Field(40, ge=10, description="Grid z-size")
-    length: float = Field(80.0, gt=0)
-    beam: float = Field(8.0, gt=0)
-    draft: float = Field(12.0, gt=0)
-    cx: float | None = Field(None, description="Midship x (default: nx/2)")
-    cy: float | None = Field(None, description="Centreline y (default: ny/2)")
-    cz_keel: float | None = Field(None, description="Keel z (default: nz/4)")
-    device: str = "cpu"
-
-
-class LBMParametersRequest(BaseModel):
-    length_m: float = Field(100.0, gt=0, description="Ship length [m]")
-    speed_ms: float = Field(5.0, gt=0, description="Ship speed [m/s]")
-    nu_m2s: float = Field(1.139e-6, gt=0, description="Kinematic viscosity [m²/s]")
-    lbm_length: float = Field(100.0, gt=0, description="LBM hull length (cells)")
-    lbm_speed: float = Field(0.05, gt=0, description="LBM inlet velocity (lu/step)")
-    froude_target: float | None = Field(
-        None, ge=0, description="Target Froude number (overrides speed_ms)"
-    )
-
-
-class ResistanceEstimateRequest(BaseModel):
-    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
-    length_m: float = Field(100.0, gt=0, description="Ship length [m]")
-    beam_m: float = Field(16.0, gt=0, description="Ship beam [m]")
-    draft_m: float = Field(8.0, gt=0, description="Ship draft [m]")
-    speed_ms: float = Field(5.0, gt=0, description="Ship speed [m/s]")
-    nu_m2s: float = Field(1.139e-6, gt=0, description="Kinematic viscosity [m²/s]")
-    rho_kgm3: float = Field(1025.0, gt=0, description="Fluid density [kg/m³]")
-    residual_ratio: float = Field(0.18, ge=0.0, le=1.0, description="Residual/friction ratio")
-
-
-class HullSolverRequest(BaseModel):
-    """Launch a ship-hull LBM solver job from CAD parameters."""
-
-    hull_type: Literal["wigley", "series60", "kcs"] = "wigley"
-    nx: int = Field(160, ge=20)
-    ny: int = Field(60, ge=10)
-    nz: int = Field(40, ge=10)
-    hull_length: float = Field(80.0, gt=0)
-    hull_beam: float = Field(8.0, gt=0)
-    hull_draft: float = Field(12.0, gt=0)
-    u_in: float = Field(0.05, gt=0)
-    re: float = Field(200.0, gt=0)
-    smagorinsky_cs: float = Field(0.1, ge=0)
-    wave_amp: float = Field(0.0, ge=0)
-    wave_period: float = Field(200.0, gt=0)
-    n_steps: int = Field(2000, ge=1)
-    output_interval: int = Field(200, ge=1)
-    device: str = "cpu"
-    seed: int = 0
-
-
-class HullSTLRequest(BaseModel):
-    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
-    length: float = Field(100.0, gt=0)
-    beam: float = Field(16.0, gt=0)
-    draft: float = Field(8.0, gt=0)
-    n_long: int = Field(60, ge=4, le=200)
-    n_vert: int = Field(30, ge=4, le=100)
-
-
-class CAD3DCreateRequest(BaseModel):
-    source_type: Literal["parametric", "stl", "step"] = "parametric"
-    units: str = "lu"
-    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
-    length: float = Field(100.0, gt=0)
-    beam: float = Field(16.0, gt=0)
-    draft: float = Field(8.0, gt=0)
-    n_long: int = Field(80, ge=4, le=400)
-    n_vert: int = Field(40, ge=4, le=200)
-    file_b64: str | None = None
-    filename: str | None = None
-
-
-class CAD3DUpdateRequest(BaseModel):
-    hull_type: Literal["wigley", "series60", "kcs"] = "series60"
-    length: float = Field(100.0, gt=0)
-    beam: float = Field(16.0, gt=0)
-    draft: float = Field(8.0, gt=0)
-    n_long: int = Field(80, ge=4, le=400)
-    n_vert: int = Field(40, ge=4, le=200)
-
-
-class CAD3DExportRequest(BaseModel):
-    fmt: Literal["gltf", "stl", "step"] = "gltf"
-
-
-class CAD3DMaskBridgeRequest(BaseModel):
-    nx: int = Field(160, ge=20)
-    ny: int = Field(60, ge=10)
-    nz: int = Field(40, ge=10)
-    device: str = "cpu"
-
-
-class SuboffPreviewRequest(BaseModel):
-    hull_type: Literal["bare_hull", "with_sail", "full"] = "bare_hull"
-    length: float = Field(100.0, gt=0, description="Hull length (lattice units)")
-    radius: float = Field(0.0, ge=0, description="Max radius (lu); 0 = auto from L/D≈8.57")
-    bow_fraction: float = Field(0.233, gt=0, lt=0.9)
-    stern_fraction: float = Field(0.252, gt=0, lt=0.9)
-    stern_exponent: float = Field(2.0, gt=0, le=8.0)
-
-
-class SuboffMaskRequest(BaseModel):
-    hull_type: Literal["bare_hull", "with_sail", "full"] = "bare_hull"
-    nx: int = Field(200, ge=20)
-    ny: int = Field(80, ge=10)
-    nz: int = Field(80, ge=10)
-    length: float = Field(120.0, gt=0)
-    radius: float = Field(0.0, ge=0, description="Max radius; 0 = auto")
-    cx: float | None = Field(None, description="Axial midpoint (default: nx/2)")
-    cy: float | None = Field(None, description="Lateral axis (default: ny/2)")
-    cz: float | None = Field(None, description="Vertical axis (default: nz/2)")
-    device: str = "cpu"
-
-
-class SuboffSTLRequest(BaseModel):
-    hull_type: Literal["bare_hull", "with_sail", "full"] = "bare_hull"
-    length: float = Field(100.0, gt=0)
-    radius: float = Field(0.0, ge=0, description="Max radius; 0 = auto")
-    n_axial: int = Field(80, ge=8, le=400)
-    n_circ: int = Field(60, ge=8, le=200)
-
-
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
 
 
 @router.post("/preview")
@@ -198,12 +80,9 @@ async def hull_preview(req: HullPreviewRequest) -> dict:
             n_stations=req.n_stations,
         )
 
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=110, bbox_inches="tight")
+        img_b64 = figure_to_png_data_url(fig, dpi=110)
         import matplotlib.pyplot as plt
         plt.close(fig)
-        buf.seek(0)
-        img_b64 = "data:image/png;base64," + base64.b64encode(buf.read()).decode()
 
         stats = hull_statistics(ht, req.length, req.beam, req.draft)
         return {"image": img_b64, "stats": stats}
@@ -248,11 +127,8 @@ async def hull_mask(req: HullMaskRequest) -> dict:
             f"(Cb={stats['Cb_numerical']:.3f})"
         )
         ax.axis("off")
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+        img_b64 = figure_to_png_data_url(fig, dpi=100)
         plt.close(fig)
-        buf.seek(0)
-        img_b64 = "data:image/png;base64," + base64.b64encode(buf.read()).decode()
 
         return {"image": img_b64, "stats": stats}
     except Exception as exc:
@@ -727,6 +603,176 @@ async def cad3d_build_lbm_mask(model_id: str, req: CAD3DMaskBridgeRequest) -> di
             ny=req.ny,
             nz=req.nz,
             device=req.device,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ===========================================================================
+# Offshore structure endpoints
+# ===========================================================================
+
+
+def _offshore_kwargs(req: object) -> dict:
+    """Extract non-None geometry overrides from an offshore request model."""
+    fields = [
+        "diameter", "leg_diameter", "foot_spread", "head_spread",
+        "hull_diameter", "keel_diameter", "column_diameter",
+        "pontoon_length", "pontoon_width", "pontoon_height", "column_height",
+    ]
+    return {k: getattr(req, k) for k in fields if getattr(req, k, None) is not None}
+
+
+@router.post("/offshore/preview")
+async def offshore_preview(req: OffshorePreviewRequest) -> dict:
+    """Generate top/side/front projection previews for an offshore structure."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        from tensorlbm.offshore_cad import generate_offshore_previews
+        kwargs = _offshore_kwargs(req)
+        fig = generate_offshore_previews(
+            req.struct_type, nx=req.nx, ny=req.ny, nz=req.nz, **kwargs
+        )
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=90, bbox_inches="tight")
+        plt.close(fig)
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        return {"image": img_b64, "struct_type": req.struct_type}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/offshore/hull-mask")
+async def offshore_hull_mask(req: OffshorePreviewRequest) -> dict:
+    """Build a 3-D LBM voxel mask for an offshore structure."""
+    try:
+        from tensorlbm.offshore_cad import build_offshore_mask
+        kwargs = _offshore_kwargs(req)
+        result = build_offshore_mask(
+            req.struct_type, req.nx, req.ny, req.nz, device="cpu", **kwargs
+        )
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        mask_np = result["mask"].cpu().numpy()
+        fig, ax = plt.subplots(1, 1, figsize=(5, 4))
+        ax.imshow(mask_np.max(axis=2).T, origin="lower", aspect="equal", cmap="Blues")
+        ax.set_title(f"{req.struct_type} – top view")
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=90, bbox_inches="tight")
+        plt.close(fig)
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        return {"image": img_b64, "stats": result["stats"]}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/offshore/export-stl")
+async def offshore_export_stl(req: OffshoreSTLRequest) -> Response:
+    """Export an offshore structure as ASCII STL."""
+    try:
+        from tensorlbm.offshore_cad import OffshoreStructureType, export_offshore_stl
+        # Validate struct_type against the allowed enum before using in path
+        safe_type = OffshoreStructureType(req.struct_type).value
+        kwargs = _offshore_kwargs(req)
+        with tempfile.NamedTemporaryFile(
+            suffix=f"_{safe_type}.stl", delete=False
+        ) as tmp:
+            tmp_path = tmp.name
+        export_offshore_stl(
+            safe_type, tmp_path, req.nx, req.ny, req.nz, **kwargs
+        )
+        content = Path(tmp_path).read_bytes()
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_path)
+        return Response(
+            content=content,
+            media_type="model/stl",
+            headers={
+                "Content-Disposition": f'attachment; filename="{safe_type}.stl"'
+            },
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/offshore/structure-types")
+async def list_offshore_structure_types() -> dict:
+    """List available offshore structure types."""
+    from tensorlbm.offshore_cad import _STRUCTURE_LABELS, OffshoreStructureType
+    return {
+        "structure_types": [
+            {"value": t.value, "label": _STRUCTURE_LABELS[t]}
+            for t in OffshoreStructureType
+        ]
+    }
+
+
+# ===========================================================================
+# Propeller performance endpoints (Wageningen B-series)
+# ===========================================================================
+
+
+
+
+@router.post("/propeller/open-water")
+async def propeller_open_water(req: PropellerOpenWaterRequest) -> dict:
+    """Compute Wageningen B-series open-water coefficients at a single advance ratio."""
+    try:
+        from tensorlbm.propeller_cad import wageningen_b_series
+        return wageningen_b_series(
+            req.J, req.P_D, req.Ae_A0, req.Z,
+            rho=req.rho,
+            n=req.n_rps,
+            D=req.D_m,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/propeller/curves")
+async def propeller_curves(req: PropellerCurveRequest) -> dict:
+    """Return open-water diagram (image + data) over a J sweep."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import numpy as np
+
+        from tensorlbm.propeller_cad import plot_b_series_curves, wageningen_b_series
+        fig = plot_b_series_curves(
+            req.P_D, req.Ae_A0, req.Z,
+            J_range=(req.J_min, req.J_max),
+            n_points=req.n_points,
+        )
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=90, bbox_inches="tight")
+        plt.close(fig)
+        img_b64 = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        J_arr = np.linspace(req.J_min, req.J_max, req.n_points)
+        rows = [
+            {
+                "J": round(float(Jv), 4),
+                **wageningen_b_series(float(Jv), req.P_D, req.Ae_A0, req.Z),
+            }
+            for Jv in J_arr
+        ]
+        return {"image": img_b64, "data": rows}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/propeller/design")
+async def propeller_design_endpoint(req: PropellerDesignRequest) -> dict:
+    """Size a propeller for a required thrust at a given advance speed."""
+    try:
+        from tensorlbm.propeller_cad import propeller_design
+        return propeller_design(
+            req.thrust_n, req.Va_ms, req.P_D, req.Ae_A0, req.Z, req.n_rps,
+            rho=req.rho,
         )
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

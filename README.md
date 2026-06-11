@@ -66,6 +66,7 @@ Useful options:
 - `--n-steps`, `--output-interval`: runtime and output cadence
 - `--output-root`, `--run-name`, `--overwrite`: output organization
 - `--device`: `cpu` (default), `cuda`, or `mps` (Apple Silicon)
+- `--num-threads`: PyTorch CPU thread count for multicore runs on `cpu`
 
 ## Run the sphere-flow example (3D)
 
@@ -132,6 +133,7 @@ GitHub Actions runs the same test command on every push and pull request.
 
 - Stable compatibility-oriented API: `tensorlbm.api`
 - Fast-evolving API surface: `tensorlbm.experimental`
+- Grouped domain namespaces for new code: `tensorlbm.lattice_models`, `tensorlbm.physics`, `tensorlbm.cad`
 
 ## Quantitative validation summary
 
