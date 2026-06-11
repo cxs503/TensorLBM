@@ -236,11 +236,7 @@ from .rotating_cylinder import (
     rotating_wall_velocity,
     run_rotating_cylinder,
 )
-try:
-    from .cpu_threads import configure_cpu_threads
-except ImportError:
-    configure_cpu_threads = None
-
+from .utils import configure_cpu_threads
 from .propeller_cad import (
     PropellerGeometryConfig,
     build_propeller_mask,
@@ -568,6 +564,7 @@ __all__ = [
     "PropellerGeometryConfig",
     "build_propeller_mask",
     "propeller_statistics",
+    "configure_cpu_threads",
     "KP505_PRESET",
     "configure_cpu_threads",
     "GENERIC_PRESET",
