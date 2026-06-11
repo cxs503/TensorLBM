@@ -54,6 +54,13 @@ class SuboffResistanceBenchmarkConfig:
     adaptive_coarsen_threshold: float = 1.0e-6
     adaptive_max_patches: int = 8
     geometry: SuboffConfig = field(default_factory=SuboffConfig)
+    # --- snapshot export (for ML training data) ---
+    save_snapshots: bool = False
+    snapshot_dir: str = "./suboff_snapshots"
+    snapshot_start_step: int = 0
+    snapshot_end_step: int = 0
+    snapshot_interval: int = 1
+    snapshot_crop_size: int = 100
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "hull_type", SuboffHullType(self.hull_type).value)
@@ -187,6 +194,42 @@ def _voxel_wetted_area(mask: torch.Tensor, dx: float) -> float:
     return float(area_faces.item()) * dx * dx
 
 
+def _crop_central_region(tensor: torch.Tensor, crop_size: int) -> torch.Tensor:
+    """Crop the central [crop_size]*3 region of a [nz, ny, nx] tensor."""
+    _, ny, nx = tensor.shape[-3:]
+    if crop_size >= min(ny, nx):
+        return tensor
+    z = tensor.shape[0] if tensor.ndim == 3 else 1
+    sy = (ny - crop_size) // 2
+    sx = (nx - crop_size) // 2
+    sz = (max(z, crop_size) - crop_size) // 2
+    if tensor.ndim == 3:
+        return tensor[sz:sz + crop_size, sy:sy + crop_size, sx:sx + crop_size]
+    return tensor[:, sy:sy + crop_size, sx:sx + crop_size]
+
+
+def _export_snapshot(
+    f: torch.Tensor,
+    step: int,
+    config: SuboffResistanceBenchmarkConfig,
+) -> None:
+    """Export a single flow-field snapshot as 4 NPY files (p, ux, uy, uz)."""
+    import os
+    import numpy as np
+    base = config.snapshot_dir
+    dirs = (f"{base}/p", f"{base}/ux", f"{base}/uy", f"{base}/uz")
+    rho, ux, uy, uz = macroscopic3d(f)
+    rho_c = _crop_central_region(rho, config.snapshot_crop_size)
+    ux_c = _crop_central_region(ux, config.snapshot_crop_size)
+    uy_c = _crop_central_region(uy, config.snapshot_crop_size)
+    uz_c = _crop_central_region(uz, config.snapshot_crop_size)
+    idx = (step - config.snapshot_start_step) // config.snapshot_interval
+    for arr, d in [(rho_c, dirs[0]), (ux_c, dirs[1]),
+                    (uy_c, dirs[2]), (uz_c, dirs[3])]:
+        os.makedirs(d, exist_ok=True)
+        np.save(os.path.join(d, f"{idx}.npy"), arr.cpu().numpy().astype(np.float32))
+
+
 def _run_suboff_lbm_drag(
     *,
     config: SuboffResistanceBenchmarkConfig,
@@ -264,6 +307,9 @@ def _run_suboff_lbm_drag(
             f = apply_zou_he_channel_boundaries_3d(f, u_in=config.lbm_u_in, wall_mask=wall_mask, obstacle_mask=torch.zeros_like(mask))
         else:
             f = apply_zou_he_channel_boundaries_3d(f, u_in=config.lbm_u_in, wall_mask=wall_mask, obstacle_mask=mask)
+        # --- snapshot export ---
+        if config.save_snapshots and step >= config.snapshot_start_step and step <= config.snapshot_end_step and (step - config.snapshot_start_step) % config.snapshot_interval == 0:
+            _export_snapshot(f, step, config)
         if adaptive_solver is not None:
             adaptive_solver.coarse_f = f
             if adaptive_solver.should_adapt(step):
