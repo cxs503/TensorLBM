@@ -412,7 +412,7 @@ def suboff_error_analysis(req: SuboffErrorRequest):
             with torch.no_grad():
                 z = enc(x, pos)
                 pred = dec(z, pos, pos)
-            true = x.cpu().numpy()[0]
+            true = x.cpu().numpy()[0, 0]  # [N, 4]
             pred_np = pred.cpu().numpy()[0]
 
             # Per-channel errors
