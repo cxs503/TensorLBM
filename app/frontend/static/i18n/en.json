@@ -11,6 +11,7 @@
     "compare": "Compare",
     "ai_flow": "AI Flow",
     "orchestration": "Orchestration",
+    "suboff": "SUBOFF",
     "agent": "AI Agent"
   },
   "ws": {
@@ -501,5 +502,18 @@
     "power_result": "Shaft Power (W)",
     "hint": "Select parameters and click <strong>Compute Open-Water</strong>.",
     "generating": "Computing…"
+  },
+  "suboff": {
+    "title": "SUBOFF Surrogate Model",
+    "data": "Data",
+    "scan": "Scan",
+    "training": "Training",
+    "train": "Train",
+    "finetune": "Finetune",
+    "inference": "Inference",
+    "predict": "Predict",
+    "error_analysis": "Error Analysis",
+    "run_error": "Run Analysis",
+    "results": "Results"
   }
 }
