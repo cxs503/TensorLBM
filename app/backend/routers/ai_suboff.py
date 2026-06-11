@@ -273,3 +273,175 @@ def list_data(data_dir: str | None = None):
             files = sorted([f.name for f in chd.glob("*.npy")], key=lambda x: int(x.rsplit(".", 1)[0]))
             result[ch] = len(files)
     return {"data_dir": data_dir, "channels": result, "total_snapshots": min(result.values()) if result else 0}
+
+
+# ── fine-tuning ──
+
+class SuboffFinetuneRequest(BaseModel):
+    epochs: int = Field(30, ge=1, le=5000)
+    lr: float = Field(1e-5, gt=0, le=1e-3, description="微调学习率（应低于预训练）")
+    n_points: int = Field(2000, ge=100, le=50000)
+    data_dir: str = Field(..., description="微调数据目录（不同 Re 工况）")
+    checkpoint: str | None = Field(None, description="预训练 checkpoint 路径，默认用最新")
+    device: str = Field("cuda" if torch.cuda.is_available() else "cpu")
+
+
+@router.post("/finetune")
+def finetune_suboff(req: SuboffFinetuneRequest):
+    import threading
+
+    job_id = f"suboff_ft_{int(time.time())}"
+    _training_jobs[job_id] = {"status": "preparing", "epoch": 0, "total": req.epochs, "loss": None}
+
+    def worker():
+        try:
+            from tensorlbm.ai.suboff_coord import coord_ori27
+
+            device = torch.device(req.device)
+            enc, dec = build_model(device)
+
+            # Load pre-trained checkpoint
+            ckpt_path = req.checkpoint
+            if ckpt_path is None:
+                ckpts = sorted(CKPT_DIR.glob("*.ckpt"), key=lambda p: p.stat().st_mtime, reverse=True)
+                ckpt_path = str(ckpts[0]) if ckpts else None
+            if ckpt_path and os.path.exists(ckpt_path):
+                ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+                enc.load_state_dict(ckpt.get("encoder", {}), strict=False)
+                dec.load_state_dict(ckpt.get("decoder", {}), strict=False)
+                _training_jobs[job_id]["pretrained_loss"] = ckpt.get("loss", "?")
+            else:
+                _training_jobs[job_id]["status"] = "failed"
+                _training_jobs[job_id]["error"] = "No pre-trained checkpoint found"
+                return
+
+            # Load fine-tuning data
+            real_data = _load_npy_snapshots(req.data_dir)
+            if real_data is None:
+                _training_jobs[job_id]["status"] = "failed"
+                _training_jobs[job_id]["error"] = f"No data at {req.data_dir}"
+                return
+
+            opt = torch.optim.AdamW(list(enc.parameters()) + list(dec.parameters()), lr=req.lr)
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                opt, max_lr=req.lr, total_steps=req.epochs,
+                pct_start=0.1, anneal_strategy="cos",
+            )
+
+            coords_raw = torch.tensor(coord_ori27(), dtype=torch.float32)[:req.n_points]
+            pos = coords_raw.to(device)
+            enc.train(); dec.train()
+            best_loss = 1e10
+
+            for epoch in range(1, req.epochs + 1):
+                snap = real_data[torch.randint(0, real_data.shape[0], (1,)).item()]
+                idxs = torch.randint(0, snap.shape[0], (req.n_points,))
+                x = snap[idxs].unsqueeze(0).unsqueeze(0).to(device)
+
+                opt.zero_grad()
+                with torch.autocast(device_type=device.type, enabled=(device.type == "cuda")):
+                    z = enc(x, pos.unsqueeze(0))
+                    pred = dec(z, pos.unsqueeze(0), pos.unsqueeze(0))
+                    loss = pointwise_rel_loss(pred, x)
+                loss.backward()
+                nn.utils.clip_grad_norm_(list(enc.parameters()) + list(dec.parameters()), 0.5)
+                opt.step()
+                scheduler.step()
+
+                loss_val = float(loss.item())
+                if not (loss_val == loss_val): loss_val = 999.0
+                _training_jobs[job_id] = {"status": "finetuning", "epoch": epoch, "total": req.epochs, "loss": loss_val}
+
+                if loss_val < best_loss:
+                    best_loss = loss_val
+                    torch.save({
+                        "encoder": enc.state_dict(), "decoder": dec.state_dict(),
+                        "config": {"model_dim": 144, "n_heads": 1, "n_layers": 4},
+                        "epoch": epoch, "loss": loss_val, "finetuned": True,
+                    }, str(CKPT_DIR / "suboff_finetuned.ckpt"))
+
+            _training_jobs[job_id]["status"] = "completed"
+            _training_jobs[job_id]["best_loss"] = best_loss
+
+        except Exception as e:
+            _training_jobs[job_id] = {"status": "failed", "error": str(e)}
+            import traceback; traceback.print_exc()
+
+    threading.Thread(target=worker, daemon=True).start()
+    return {"job_id": job_id, "status": "started", "epochs": req.epochs}
+
+
+# ── error analysis ──
+
+class SuboffErrorRequest(BaseModel):
+    data_dir: str = Field(..., description="测试数据目录（NPY 快照）")
+    n_points: int = Field(5000, ge=100, le=50000, description="评估采样点数")
+    device: str = Field("cuda" if torch.cuda.is_available() else "cpu")
+
+
+@router.post("/error")
+def suboff_error_analysis(req: SuboffErrorRequest):
+    try:
+        # Load test data
+        test_data = _load_npy_snapshots(req.data_dir)
+        if test_data is None:
+            raise HTTPException(status_code=400, detail=f"No data at {req.data_dir}")
+
+        from tensorlbm.ai.suboff_coord import coord_ori27
+        device = torch.device(req.device)
+        enc, dec = build_model(device)
+
+        # Load best checkpoint
+        ckpts = sorted(CKPT_DIR.glob("*.ckpt"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if ckpts:
+            ckpt = torch.load(str(ckpts[0]), map_location=device, weights_only=False)
+            enc.load_state_dict(ckpt.get("encoder", {}), strict=False)
+            dec.load_state_dict(ckpt.get("decoder", {}), strict=False)
+
+        enc.eval(); dec.eval()
+        coords = torch.tensor(coord_ori27(), dtype=torch.float32, device=device)[:req.n_points]
+        pos = coords.unsqueeze(0)
+
+        all_errors: list[dict] = []
+        t0 = time.perf_counter()
+
+        for snap_idx in range(test_data.shape[0]):
+            snap = test_data[snap_idx].to(device)
+            idxs = torch.arange(min(req.n_points, snap.shape[0]), device=device)
+            x = snap[idxs].unsqueeze(0).unsqueeze(0)
+            with torch.no_grad():
+                z = enc(x, pos)
+                pred = dec(z, pos, pos)
+            true = x.cpu().numpy()[0]
+            pred_np = pred.cpu().numpy()[0]
+
+            # Per-channel errors
+            ch_names = ["pressure", "vx", "vy", "vz"]
+            ch_errs = {}
+            for ci, cn in enumerate(ch_names):
+                t_ch = true[:, ci]
+                p_ch = pred_np[:, ci]
+                mae = float(np.abs(t_ch - p_ch).mean())
+                rmse = float(np.sqrt(((t_ch - p_ch) ** 2).mean()))
+                rel_l2 = float(np.linalg.norm(t_ch - p_ch) / (np.linalg.norm(t_ch) + 1e-10))
+                ch_errs[cn] = {"mae": round(mae, 6), "rmse": round(rmse, 6), "rel_l2": round(rel_l2, 6)}
+
+            all_errors.append({"snapshot": snap_idx, "channels": ch_errs})
+
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+
+        # Summary
+        summary = {}
+        for cn in ["pressure", "vx", "vy", "vz"]:
+            vals = [e["channels"][cn]["rel_l2"] for e in all_errors]
+            summary[cn] = {"rel_l2_mean": round(float(np.mean(vals)), 6), "rel_l2_max": round(float(np.max(vals)), 6)}
+
+        return {
+            "status": "ok", "n_snapshots": test_data.shape[0],
+            "n_points": req.n_points, "time_ms": round(elapsed_ms, 1),
+            "checkpoint": ckpts[0].name if ckpts else None,
+            "summary": summary, "per_snapshot": all_errors,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
