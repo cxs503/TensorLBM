@@ -177,17 +177,6 @@ from .obstacles import (
     compute_obstacle_moments_3d,
     wigley_hull_mask,
 )
-from .offshore_cad import (
-    OffshoreStructureType,
-    build_offshore_mask,
-    export_offshore_stl,
-    generate_offshore_previews,
-    jacket_mask,
-    monopile_mask,
-    offshore_statistics,
-    semi_sub_mask,
-    spar_mask,
-)
 from .pipeline_flow import (
     PipelineFlowConfig,
     make_pipeline_wall_mask,
@@ -240,18 +229,45 @@ from .preprocess_geo import (
     random_porosity_mask_3d,
     voxelize_stl_3d,
 )
-from .propeller_cad import (
-    optimal_advance_ratio,
-    propeller_design,
-    propeller_disk_mask,
-    wageningen_b_series,
-)
 from .protocols import BoundaryCondition, CollisionOperator
 from .rotating_cylinder import (
     RotatingCylinderConfig,
     moving_wall_bounce_back,
     rotating_wall_velocity,
     run_rotating_cylinder,
+)
+from .propeller_cad import (
+    PropellerGeometryConfig,
+    build_propeller_mask,
+    propeller_statistics,
+    KP505_PRESET,
+    GENERIC_PRESET,
+)
+from .propeller_benchmark import (
+    PropellerBenchmarkConfig,
+    moving_wall_bounce_back_3d,
+    rotating_wall_velocity_3d,
+    run_propeller_benchmark,
+)
+from .actuator_disk import (
+    ActuatorDiskConfig,
+    apply_actuator_disk,
+    run_actuator_disk_benchmark,
+)
+from .airfoil_benchmark import (
+    AirfoilConfig,
+    naca4_surface,
+    build_airfoil_mask,
+    run_airfoil_benchmark,
+    reference_cl_cd,
+)
+from .propeller_ibm import (
+    IBMPropellerConfig,
+    run_ibm_propeller_benchmark,
+)
+from .rans_ke import (
+    KESolver,
+    collide_rans_ke,
 )
 from .ship_cad import (  # noqa: I001
     ShipHullType,
@@ -298,6 +314,13 @@ from .solver3d import (
 )
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
 from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
+from .ellipsoid_benchmark import (
+    EllipsoidConfig,
+    build_ellipsoid_mask,
+    ellipsoid_statistics,
+    reference_ellipsoid_cd,
+    run_ellipsoid_benchmark,
+)
 from .suboff_cad import (
     SuboffConfig,
     SuboffHullType,
@@ -357,7 +380,6 @@ from .turbulent_channel import (
 from .unit_converter import LBMUnitConverter
 from .utils import (
     DiagnosticPoint,
-    configure_cpu_threads,
     flow_step_image_path,
     get_reproducibility_metadata,
     legacy_snapshot_image_path,
@@ -481,6 +503,13 @@ __all__ = [
     "SphereWaterEntryConfig",
     "run_sphere_water_entry",
     "wigley_hull_mask",
+    # Ellipsoid benchmark (prolate spheroid)
+    "EllipsoidConfig",
+    "build_ellipsoid_mask",
+    "ellipsoid_statistics",
+    "reference_ellipsoid_cd",
+    "run_ellipsoid_benchmark",
+    # Obstacle forces
     "compute_obstacle_forces_3d",
     "compute_obstacle_forces_27",
     "compute_obstacle_moments_3d",
@@ -530,21 +559,16 @@ __all__ = [
     "export_suboff_stl",
     "SuboffResistanceBenchmarkConfig",
     "run_suboff_resistance_benchmark",
-    # Offshore structures CAD module
-    "OffshoreStructureType",
-    "monopile_mask",
-    "jacket_mask",
-    "spar_mask",
-    "semi_sub_mask",
-    "build_offshore_mask",
-    "offshore_statistics",
-    "generate_offshore_previews",
-    "export_offshore_stl",
-    # Propeller performance (Wageningen B-series)
-    "wageningen_b_series",
-    "optimal_advance_ratio",
-    "propeller_design",
-    "propeller_disk_mask",
+    # Propeller benchmark
+    "PropellerGeometryConfig",
+    "build_propeller_mask",
+    "propeller_statistics",
+    "KP505_PRESET",
+    "GENERIC_PRESET",
+    "PropellerBenchmarkConfig",
+    "moving_wall_bounce_back_3d",
+    "rotating_wall_velocity_3d",
+    "run_propeller_benchmark",
     "CADGeometryEngine",
     "TriangleMesh",
     "create_parametric_hull_mesh",
@@ -616,7 +640,6 @@ __all__ = [
     "ibm_apply_body_force_2d",
     # Shared utilities
     "DiagnosticPoint",
-    "configure_cpu_threads",
     "resolve_device",
     "prepare_run_dir",
     "get_reproducibility_metadata",

@@ -1,424 +1,345 @@
-"""Wageningen B-series propeller performance module for TensorLBM.
+"""Parametric propeller CAD module for TensorLBM.
 
-Implements the Wageningen B-series open-water propeller performance model
-based on the polynomial regression of Oosterveld & van Oossanen (1975).
-Also provides a simple propeller disk actuator mask for LBM simulations.
+Generates voxelised propeller geometry suitable for LBM simulations.
+Supports hub + N blades with configurable chord, pitch, skew, rake,
+and thickness distributions.
 
-Polynomial form (Rn = 2×10⁶):
-    KT = Σ C · J^s · (P/D)^t · (Ae/A0)^u · Z^v
-    KQ = Σ C · J^s · (P/D)^t · (Ae/A0)^u · Z^v
+The geometry is built by voxelising the propeller directly on the
+target grid using analytical distance-to-surface computations,
+avoiding expensive surface point generation.
 
-References
-----------
-Oosterveld, M.W.C. and van Oossanen, P. (1975). "Further computer-analyzed
-data of the Wageningen B-screw series." *International Shipbuilding
-Progress*, 22 (251), 3–14.
-
-Bernitsas, M.M., Ray, D., Kinley, P. (1981). "KT, KQ and Efficiency Curves
-for the Wageningen B-Series Propellers." University of Michigan Report 237.
-
-Carlton, J. (2007). *Marine Propellers and Propulsion*. 2nd ed. Table 6.6.
+Reference data
+--------------
+Fujisawa, J. et al. (2000), "Measurements of the Local Flow Field around
+a Ship Propeller", J. Soc. Naval Architects of Japan, Vol. 188.
+SIMMAN 2008/2014 Workshop — KCS hull + KP505 propeller open-water data.
 
 Public API
 ----------
-- :func:`wageningen_b_series`   – compute KT, KQ, η₀ from J, P/D, Ae/A0, Z.
-- :func:`optimal_advance_ratio` – J at maximum efficiency for given P/D.
-- :func:`propeller_design`      – size a propeller for given thrust/speed.
-- :func:`propeller_disk_mask`   – circular disk obstacle mask for LBM.
-- :func:`plot_b_series_curves`  – open-water diagram (KT, 10KQ, η₀ vs J).
+- :class:`PropellerGeometryConfig` – parametric geometry configuration.
+- :func:`build_propeller_mask` – 3-D boolean mask (hub + blades).
+- :func:`propeller_statistics` – geometry statistics dictionary.
 """
+
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
-import numpy as np
+import torch
 
-if TYPE_CHECKING:
-    import matplotlib.figure
 
 __all__ = [
-    "wageningen_b_series",
-    "optimal_advance_ratio",
-    "propeller_design",
-    "propeller_disk_mask",
-    "plot_b_series_curves",
+    "PropellerGeometryConfig",
+    "build_propeller_mask",
+    "propeller_statistics",
+    "KP505_PRESET",
+    "GENERIC_PRESET",
 ]
 
 
 # ---------------------------------------------------------------------------
-# Wageningen B-series polynomial coefficients (Oosterveld & van Oossanen 1975,
-# digitisation from Carlton 2007 / Bernitsas 1981, verified against published
-# open-water diagrams for B4-40, B4-70, B5-60).
-# Each row: (C, s_J, s_PD, s_EAR, s_Z)
-# KT = Σ C · J^s_J · (P/D)^s_PD · (Ae/A0)^s_EAR · Z^s_Z
+# Configuration
 # ---------------------------------------------------------------------------
 
-_KT_COEFFS = np.array([
-    ( 0.00880496, 0, 0, 0, 0),
-    (-0.204554,   1, 0, 0, 0),
-    ( 0.166351,   0, 1, 0, 0),
-    ( 0.158114,   0, 2, 0, 0),
-    (-0.147581,   2, 0, 1, 0),
-    (-0.481497,   1, 1, 1, 0),
-    ( 0.415437,   0, 2, 1, 0),
-    ( 0.0144043,  0, 0, 0, 1),
-    (-0.0530054,  2, 0, 0, 1),
-    ( 0.0143481,  0, 1, 0, 1),
-    ( 0.0606826,  1, 1, 0, 1),
-    (-0.0125894,  0, 0, 1, 1),
-    ( 0.0109689,  1, 0, 1, 1),
-    (-0.133698,   0, 3, 0, 0),
-    ( 0.00638407, 0, 6, 0, 0),
-    (-0.00132718, 2, 6, 0, 0),
-    ( 0.168496,   3, 0, 1, 0),
-    (-0.0507214,  0, 0, 2, 0),
-    ( 0.0854559,  2, 0, 2, 0),
-    (-0.0504475,  3, 0, 2, 0),
-    ( 0.010465,   1, 6, 2, 0),
-    (-0.00648272, 2, 6, 2, 0),
-    (-0.00841728, 0, 3, 0, 1),
-    ( 0.0168424,  1, 3, 0, 1),
-    (-0.00102296, 3, 3, 0, 1),
-    (-0.0317791,  0, 3, 1, 1),
-    ( 0.018604,   1, 0, 2, 1),
-    (-0.00410798, 0, 2, 2, 1),
-    (-0.000606848, 0, 0, 0, 2),
-    (-0.0049819,  1, 0, 0, 2),
-    ( 0.0025983,  2, 0, 0, 2),
-    (-0.000560528, 3, 0, 0, 2),
-    (-0.00163652, 1, 2, 0, 2),
-    (-0.000328787, 1, 6, 0, 2),
-    ( 0.000116502, 2, 6, 0, 2),
-    ( 0.000690904, 0, 0, 1, 2),
-    ( 0.00421749, 0, 3, 1, 2),
-    ( 0.0000565229, 3, 6, 1, 2),
-    (-0.00146564, 0, 3, 2, 2),
-], dtype=np.float64)
+@dataclass
+class PropellerGeometryConfig:
+    """Parametric propeller geometry configuration.
 
-_KQ_COEFFS = np.array([
-    ( 0.00379368,   0, 0, 0, 0),
-    ( 0.00886523,   2, 0, 0, 0),
-    (-0.032241,     1, 1, 0, 0),
-    ( 0.00344778,   0, 2, 0, 0),
-    (-0.0408811,    0, 1, 1, 0),
-    (-0.108009,     1, 1, 1, 0),
-    (-0.0885381,    2, 1, 1, 0),
-    ( 0.188561,     0, 2, 1, 0),
-    (-0.00370871,   1, 0, 0, 1),
-    ( 0.00513696,   0, 1, 0, 1),
-    ( 0.0209449,    1, 1, 0, 1),
-    ( 0.00474319,   2, 1, 0, 1),
-    (-0.00723408,   2, 0, 1, 1),
-    ( 0.00438388,   1, 1, 1, 1),
-    (-0.0269403,    0, 2, 1, 1),
-    ( 0.0558082,    3, 0, 1, 0),
-    ( 0.0161886,    0, 3, 1, 0),
-    ( 0.00318086,   1, 3, 1, 0),
-    ( 0.015896,     0, 0, 2, 0),
-    ( 0.0471729,    1, 0, 2, 0),
-    ( 0.0196283,    3, 0, 2, 0),
-    (-0.0502782,    0, 1, 2, 0),
-    (-0.030055,     3, 1, 2, 0),
-    ( 0.0417122,    2, 2, 2, 0),
-    (-0.0397722,    0, 3, 2, 0),
-    (-0.00350024,   0, 6, 2, 0),
-    (-0.0106854,    3, 0, 0, 1),
-    ( 0.00110903,   3, 3, 0, 1),
-    (-0.000313912,  0, 6, 0, 1),
-    ( 0.0035985,    3, 0, 1, 1),
-    (-0.00142121,   0, 6, 1, 1),
-    (-0.00383637,   1, 0, 2, 1),
-    ( 0.0126803,    0, 2, 2, 1),
-    (-0.00318278,   2, 3, 2, 1),
-    ( 0.00334268,   0, 6, 2, 1),
-    (-0.00183491,   1, 1, 0, 2),
-    ( 0.000112451,  3, 2, 0, 2),
-    (-0.0000297228, 3, 6, 0, 2),
-    ( 0.000269551,  1, 0, 1, 2),
-    ( 0.00083265,   2, 0, 1, 2),
-    ( 0.00155334,   0, 2, 1, 2),
-    ( 0.000302683,  0, 6, 1, 2),
-    (-0.0001843,    0, 0, 2, 2),
-    (-0.000425399,  0, 3, 2, 2),
-    ( 0.0000869243, 3, 3, 2, 2),
-    (-0.000465899,  0, 6, 2, 2),
-    ( 0.0000554194, 1, 6, 2, 2),
-], dtype=np.float64)
-
-
-def _b_poly(coeffs: np.ndarray, J: float, P_D: float, Ae_A0: float, Z: int) -> float:
-    """Evaluate the B-series polynomial for a single operating point."""
-    C = coeffs[:, 0]
-    s = coeffs[:, 1]
-    t = coeffs[:, 2]
-    u = coeffs[:, 3]
-    v = coeffs[:, 4]
-    return float(np.sum(C * (J ** s) * (P_D ** t) * (Ae_A0 ** u) * (float(Z) ** v)))
-
-
-def wageningen_b_series(
-    J: float,
-    P_D: float,
-    Ae_A0: float,
-    Z: int,
-    *,
-    rho: float = 1025.0,
-    n: float | None = None,
-    D: float | None = None,
-) -> dict:
-    """Compute open-water performance of a Wageningen B-series propeller.
-
-    Uses the polynomial regression of Oosterveld & van Oossanen (1975) at
-    Reynolds number Rn = 2×10⁶ (full-scale correction per Lerbs not applied).
+    All length parameters are in lattice units unless stated otherwise.
+    The propeller rotates about the x-axis (flow direction).
 
     Parameters
     ----------
-    J     : Advance ratio J = Va / (n·D).  Typical range: 0.0 – 1.5.
-    P_D   : Pitch ratio P/D.  Typical range: 0.5 – 1.4.
-    Ae_A0 : Expanded blade area ratio.  Typical range: 0.30 – 1.05.
-    Z     : Number of blades.  Integer 2 – 7.
-    rho   : Water density [kg/m³] (for dimensional outputs; default 1025).
-    n     : Rotational speed [rev/s] (required for dimensional forces).
-    D     : Propeller diameter [m] (required for dimensional forces).
-
-    Returns
-    -------
-    dict with keys:
-
-    - ``J``, ``P_D``, ``Ae_A0``, ``Z`` : inputs
-    - ``KT``    : thrust coefficient
-    - ``KQ``    : torque coefficient
-    - ``eta_0`` : open-water efficiency J·KT / (2π·KQ)
-    - ``T_N``   : thrust [N] if ``n`` and ``D`` are provided
-    - ``Q_Nm``  : torque [N·m] if ``n`` and ``D`` are provided
-    - ``P_kW``  : delivered power [kW] if ``n`` and ``D`` are provided
+    n_blades : int
+        Number of blades (3–7).
+    diameter : float
+        Propeller diameter [lu].
+    hub_diameter_ratio : float
+        Hub diameter / propeller diameter. Typically 0.16–0.20.
+    hub_length_ratio : float
+        Hub axial length / diameter. Typically 0.3–0.5.
+    pitch_ratio_07 : float
+        Face pitch / diameter at r/R = 0.7. Typically 0.7–1.4.
+    blade_area_ratio : float
+        Expanded area ratio A_E/A_0. Typically 0.3–0.8.
+    skew_deg : float
+        Maximum blade skew angle [degrees]. Typically 0–30.
+    rake_ratio : float
+        Rake / diameter. Typically 0.0–0.05.
+    max_thickness_ratio : float
+        Maximum blade thickness / chord at r/R = 0.7.
     """
-    J_f  = float(J)
-    PD   = float(P_D)
-    EAR  = float(Ae_A0)
-    Z_i  = int(Z)
 
-    KT = max(_b_poly(_KT_COEFFS, J_f, PD, EAR, Z_i), 0.0)
-    KQ = max(_b_poly(_KQ_COEFFS, J_f, PD, EAR, Z_i), 1e-12)
+    n_blades: int = 5
+    diameter: float = 48.0
+    hub_diameter_ratio: float = 0.18
+    hub_length_ratio: float = 0.5
+    pitch_ratio_07: float = 0.95
+    blade_area_ratio: float = 0.65
+    skew_deg: float = 0.0
+    rake_ratio: float = 0.0
+    max_thickness_ratio: float = 0.06
 
-    eta_0 = J_f * KT / (2.0 * math.pi * KQ) if J_f > 0.0 and KQ > 0.0 else 0.0
+    def __post_init__(self) -> None:
+        if self.n_blades < 2:
+            raise ValueError("n_blades must be >= 2")
+        if self.diameter <= 0:
+            raise ValueError("diameter must be > 0")
+        if not (0.05 <= self.hub_diameter_ratio <= 0.40):
+            raise ValueError("hub_diameter_ratio must be in [0.05, 0.40]")
+        if self.hub_length_ratio <= 0:
+            raise ValueError("hub_length_ratio must be > 0")
 
-    result: dict = {
-        "J": J_f,
-        "P_D": PD,
-        "Ae_A0": EAR,
-        "Z": Z_i,
-        "KT": round(KT, 6),
-        "KQ": round(KQ, 6),
-        "eta_0": round(eta_0, 4),
-    }
+    @property
+    def radius(self) -> float:
+        return self.diameter / 2.0
 
-    if n is not None and D is not None:
-        n_f = float(n)
-        D_f = float(D)
-        T_N  = float(rho) * n_f**2 * D_f**4 * KT
-        Q_Nm = float(rho) * n_f**2 * D_f**5 * KQ
-        P_kW = 2.0 * math.pi * n_f * Q_Nm / 1000.0
-        result["T_N"]  = round(T_N,  2)
-        result["Q_Nm"] = round(Q_Nm, 4)
-        result["P_kW"] = round(P_kW, 4)
+    @property
+    def hub_radius(self) -> float:
+        return self.radius * self.hub_diameter_ratio
 
-    return result
+    @property
+    def hub_length(self) -> float:
+        return self.diameter * self.hub_length_ratio
+
+    @property
+    def mean_chord(self) -> float:
+        """Mean chord length from expanded area ratio."""
+        return (math.pi * self.diameter / 2.0 * self.blade_area_ratio) / self.n_blades
 
 
-def optimal_advance_ratio(
-    P_D: float,
-    Ae_A0: float,
-    Z: int,
-    *,
-    J_range: tuple[float, float] = (0.01, 1.4),
-    n_points: int = 200,
-) -> dict:
-    """Find the advance ratio J that maximises open-water efficiency η₀.
+# Preset configurations
+KP505_PRESET = PropellerGeometryConfig(
+    n_blades=5,
+    diameter=48.0,
+    hub_diameter_ratio=0.18,
+    hub_length_ratio=0.45,
+    pitch_ratio_07=0.95,
+    blade_area_ratio=0.65,
+    skew_deg=0.0,
+    rake_ratio=0.0,
+    max_thickness_ratio=0.06,
+)
 
-    Parameters
-    ----------
-    P_D, Ae_A0, Z : Propeller parameters.
-    J_range   : Search range for J.
-    n_points  : Number of evaluation points.
+GENERIC_PRESET = PropellerGeometryConfig(
+    n_blades=4,
+    diameter=40.0,
+    hub_diameter_ratio=0.18,
+    hub_length_ratio=0.4,
+    pitch_ratio_07=1.0,
+    blade_area_ratio=0.55,
+    skew_deg=0.0,
+    rake_ratio=0.0,
+    max_thickness_ratio=0.05,
+)
 
-    Returns
-    -------
-    dict with keys: J_opt, eta_max, KT_at_Jopt, KQ_at_Jopt.
+
+# ---------------------------------------------------------------------------
+# Radial distribution helpers (normalised to [0, 1])
+# ---------------------------------------------------------------------------
+
+def _chord_frac(r_frac: torch.Tensor, hub_frac: float) -> torch.Tensor:
+    """Elliptic chord distribution c(r)/c_max vs r/R."""
+    x_norm = (r_frac - 0.7) / 0.8
+    val = 1.0 - x_norm**2
+    val = torch.clamp(val, min=0.0)
+    return torch.sqrt(val)
+
+
+def _thickness_frac(r_frac: torch.Tensor) -> torch.Tensor:
+    """Relative thickness t(r)/t_max, parabolic distribution."""
+    return 4.0 * r_frac * (1.0 - r_frac)
+
+
+def _skew_angle(r_frac: torch.Tensor, skew_deg: float) -> torch.Tensor:
+    """Skew angle in radians as function of radius."""
+    return torch.deg2rad(torch.tensor(skew_deg, dtype=r_frac.dtype)) * r_frac
+
+
+def _naca4_half_thickness(xc_norm: torch.Tensor) -> torch.Tensor:
+    r"""NACA 4-digit half-thickness profile y_t/c (normalised).
+
+    .. math::
+        y_t/c = (t/c) · 5 · (0.2969√x − 0.1260x − 0.3516x² + 0.2843x³ − 0.1015x⁴)
     """
-    J_arr = np.linspace(J_range[0], J_range[1], n_points)
-    best_eta = -1.0
-    best_J   = float(J_arr[0])
-    for J_val in J_arr:
-        res = wageningen_b_series(float(J_val), P_D, Ae_A0, Z)
-        if res["eta_0"] > best_eta:
-            best_eta = res["eta_0"]
-            best_J   = float(J_val)
-    best_res = wageningen_b_series(best_J, P_D, Ae_A0, Z)
-    return {
-        "J_opt":     round(best_J, 4),
-        "eta_max":   round(best_eta, 4),
-        "KT_at_Jopt": best_res["KT"],
-        "KQ_at_Jopt": best_res["KQ"],
-        "P_D":   P_D,
-        "Ae_A0": Ae_A0,
-        "Z":     Z,
-    }
+    x = torch.clamp(xc_norm, 0.0, 1.0)
+    shape = (
+        0.2969 * torch.sqrt(x)
+        - 0.1260 * x
+        - 0.3516 * x**2
+        + 0.2843 * x**3
+        - 0.1015 * x**4
+    )
+    return 5.0 * shape
 
 
-def propeller_design(
-    thrust_n: float,
-    Va_ms: float,
-    P_D: float,
-    Ae_A0: float,
-    Z: int,
-    n_rps: float,
-    *,
-    rho: float = 1025.0,
-) -> dict:
-    """Size a propeller for a given required thrust and advance speed.
+# ---------------------------------------------------------------------------
+# Voxelisation
+# ---------------------------------------------------------------------------
 
-    Given required thrust, advance speed, and propeller geometry (P/D,
-    Ae/A0, Z), finds the diameter delivering the required thrust at the
-    given shaft speed and reports the full performance point.
-
-    Parameters
-    ----------
-    thrust_n  : Required thrust [N].
-    Va_ms     : Advance speed [m/s] (ship speed × (1 − wake fraction)).
-    P_D       : Design pitch ratio.
-    Ae_A0     : Blade area ratio.
-    Z         : Number of blades.
-    n_rps     : Shaft speed [rev/s].
-    rho       : Water density [kg/m³].
-
-    Returns
-    -------
-    dict with J, KT, KQ, eta_0, D_m, T_N, Q_Nm, P_kW.
-    """
-    opt   = optimal_advance_ratio(P_D, Ae_A0, Z)
-    J_des = opt["J_opt"]
-    KT_des = opt["KT_at_Jopt"]
-
-    D_m = Va_ms / (n_rps * J_des) if (n_rps * J_des) > 0.0 else 1.0
-
-    T_actual = rho * n_rps**2 * D_m**4 * KT_des
-    if T_actual > 0.0:
-        D_m = D_m * (thrust_n / T_actual) ** 0.25
-        J_actual = Va_ms / (n_rps * D_m) if (n_rps * D_m) > 0.0 else J_des
-        res = wageningen_b_series(J_actual, P_D, Ae_A0, Z, rho=rho, n=n_rps, D=D_m)
-    else:
-        res = wageningen_b_series(J_des, P_D, Ae_A0, Z, rho=rho, n=n_rps, D=D_m)
-
-    res["D_m"]              = round(D_m, 4)
-    res["thrust_required_N"] = thrust_n
-    return res
-
-
-def propeller_disk_mask(
+def build_propeller_mask(
     nx: int,
     ny: int,
     nz: int,
-    diameter_lu: float,
-    thickness_lu: float = 2.0,
-    *,
-    cx: float | None = None,
-    cy: float | None = None,
-    z_centre: float | None = None,
-    axis: str = "z",
-) -> np.ndarray:
-    """Generate a thin circular disk obstacle mask for an LBM actuator disc.
+    cx: float,
+    cy: float,
+    cz: float,
+    angle_deg: float = 0.0,
+    config: PropellerGeometryConfig | None = None,
+    device: str | torch.device = "cpu",
+) -> torch.Tensor:
+    """Build a 3-D boolean mask for propeller hub and blades.
 
-    This approximates a propeller as a thin permeable disc for body-force
-    actuator-disc LBM simulations.
+    Uses analytic distance computations — no polygon loops.
 
     Parameters
     ----------
-    nx, ny, nz    : Grid dimensions.
-    diameter_lu   : Disc diameter (lattice units).
-    thickness_lu  : Disc thickness (lattice units, default 2).
-    cx, cy        : Disc centre in x-y plane (default: grid centre).
-    z_centre      : Disc centre along z-axis (default: nz/2).
-    axis          : Normal axis of the disc: ``"x"``, ``"y"``, or ``"z"``.
+    nx, ny, nz : int
+        Grid dimensions.  nx is the axial (flow) direction.
+    cx, cy, cz : float
+        Propeller centre in lattice coordinates.
+    angle_deg : float
+        Initial rotation angle of first blade [degrees].
+    config : PropellerGeometryConfig, optional
+        Uses ``KP505_PRESET`` by default.
+    device : str or torch.device
+        Target device.
 
     Returns
     -------
-    Boolean numpy array of shape (nx, ny, nz).
+    mask : torch.Tensor of bool, shape (nz, ny, nx)
     """
-    cx       = float(cx)       if cx       is not None else nx / 2.0
-    cy       = float(cy)       if cy       is not None else ny / 2.0
-    z_centre = float(z_centre) if z_centre is not None else nz / 2.0
-    r = diameter_lu / 2.0
-    t = thickness_lu / 2.0
+    if config is None:
+        config = KP505_PRESET
 
-    x_idx = np.arange(nx, dtype=np.float32)
-    y_idx = np.arange(ny, dtype=np.float32)
-    z_idx = np.arange(nz, dtype=np.float32)
-    xx, yy, zz = np.meshgrid(x_idx, y_idx, z_idx, indexing="ij")
+    R = config.radius
+    R_hub = config.hub_radius
+    L_hub = config.hub_length
 
-    if axis == "z":
-        in_circle = (xx - cx) ** 2 + (yy - cy) ** 2 <= r ** 2
-        in_thick  = np.abs(zz - z_centre) <= t
-    elif axis == "x":
-        in_circle = (yy - cy) ** 2 + (zz - z_centre) ** 2 <= r ** 2
-        in_thick  = np.abs(xx - cx) <= t
-    elif axis == "y":
-        in_circle = (xx - cx) ** 2 + (zz - z_centre) ** 2 <= r ** 2
-        in_thick  = np.abs(yy - cy) <= t
-    else:
-        raise ValueError(f"axis must be 'x', 'y' or 'z'; got {axis!r}")
-
-    return in_circle & in_thick
-
-
-def plot_b_series_curves(
-    P_D: float,
-    Ae_A0: float,
-    Z: int,
-    *,
-    J_range: tuple[float, float] = (0.01, 1.4),
-    n_points: int = 100,
-) -> matplotlib.figure.Figure:
-    """Plot KT, 10·KQ and η₀ vs J for a Wageningen B-series propeller.
-
-    Parameters
-    ----------
-    P_D, Ae_A0, Z : Propeller parameters.
-    J_range   : Advance ratio range.
-    n_points  : Number of evaluation points.
-
-    Returns
-    -------
-    matplotlib Figure.
-    """
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    J_arr  = np.linspace(J_range[0], J_range[1], n_points)
-    KT_arr  = []
-    KQ10_arr = []
-    eta_arr  = []
-    for J_val in J_arr:
-        res = wageningen_b_series(float(J_val), P_D, Ae_A0, Z)
-        KT_arr.append(res["KT"])
-        KQ10_arr.append(res["KQ"] * 10.0)
-        eta_arr.append(res["eta_0"])
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(J_arr, KT_arr,   "b-",  lw=2, label="KT")
-    ax.plot(J_arr, KQ10_arr, "g--", lw=2, label="10KQ")
-    ax.plot(J_arr, eta_arr,  "r-.", lw=2, label="η₀")
-
-    ax.set_xlabel("Advance ratio J")
-    ax.set_ylabel("Coefficient")
-    ax.set_title(
-        f"Wageningen B{Z}-series  P/D={P_D:.2f}  Ae/A0={Ae_A0:.2f}  Z={Z}"
+    # Build meshgrid in (nz, ny, nx) order (LBM convention)
+    yy, zz, xx = torch.meshgrid(
+        torch.arange(ny, device=device, dtype=torch.float32),
+        torch.arange(nz, device=device, dtype=torch.float32),
+        torch.arange(nx, device=device, dtype=torch.float32),
+        indexing="ij",
     )
-    ax.legend()
-    ax.grid(True, alpha=0.4)
-    ax.set_xlim(J_range)
-    ax.set_ylim(0.0, 1.0)
-    fig.tight_layout()
-    return fig
+
+    # Centred coordinates
+    dx = xx - cx
+    dy = yy - cy
+    dz = zz - cz
+
+    # Radial and azimuthal coordinates
+    r = torch.sqrt(dy**2 + dz**2)  # (ny, nz, nx)
+    r_frac = r / R
+    theta = torch.atan2(dz, dy)  # azimuth angle, (ny, nz, nx)
+
+    # --- Hub mask ---
+    hub_mask = (r <= R_hub) & (torch.abs(dx) <= L_hub / 2.0)
+    blade_mask = torch.zeros_like(hub_mask)
+
+    # --- Blade mask ---
+    # Only consider cells in blade annulus
+    blade_annulus = (r_frac >= config.hub_diameter_ratio * 0.95) & (r_frac <= 0.995)
+    if blade_annulus.any():
+        r_ann = r[blade_annulus]
+        r_frac_ann = r_frac[blade_annulus]
+        dx_ann = dx[blade_annulus]
+        theta_ann = theta[blade_annulus]
+
+        # Chord and thickness at each radius
+        chord_frac_mid = _chord_frac(r_frac_ann, config.hub_diameter_ratio)
+        chord = chord_frac_mid * config.mean_chord  # chord length at each radius
+        t_frac = _thickness_frac(r_frac_ann)
+        t_max_local = config.max_thickness_ratio * chord  # max half-thickness at each radius
+
+        # Pitch: advance per radian
+        pitch_per_rad = config.pitch_ratio_07 * config.diameter / (2.0 * math.pi)
+
+        # Skew
+        skew = _skew_angle(r_frac_ann, config.skew_deg)
+
+        # Rake
+        rake = config.rake_ratio * config.diameter * r_frac_ann
+
+        # Blade centreline azimuth
+        first_blade_theta = math.radians(angle_deg)
+
+        # half-chord: widen by 1 lu for voxel visibility
+        half_chord = chord / 2.0 + 1.0
+
+        for k in range(config.n_blades):
+            blade_theta = first_blade_theta + 2.0 * math.pi * k / config.n_blades
+
+            # Azimuthal offset from blade centreline
+            dtheta = theta_ann - (blade_theta + skew)
+            dtheta = torch.atan2(torch.sin(dtheta), torch.cos(dtheta))
+
+            # Arc length at this radius
+            arc_dist = r_ann * dtheta.abs()
+
+            # Axial position of blade pitch surface: x = rake + θ * P/(2π)
+            x0_blade = rake + dtheta * pitch_per_rad
+
+            # Chordwise coordinate (0 = centre, 1 = LE/TE)
+            chordwise_pos = arc_dist / half_chord.clamp(min=1e-6)
+
+            # NACA thickness shape, clamped to [0,1]
+            thickness_frac_local = _naca4_half_thickness(
+                chordwise_pos.clamp(0.0, 1.0)
+            )
+            # Scale by max thickness AND ensure minimum 2 lu for voxel capture
+            local_half_thickness = torch.maximum(
+                t_max_local * thickness_frac_local,
+                torch.tensor(2.0, device=r_ann.device, dtype=r_ann.dtype),
+            )
+
+            cell_inside = (
+                (arc_dist < half_chord)
+                & (torch.abs(dx_ann - x0_blade) < local_half_thickness)
+            )
+
+            # Also include cells within 1 lu of the blade (for thin sections)
+            # Use a simpler check: combined distance
+            cell_mask_i = torch.zeros_like(blade_mask, dtype=torch.bool)
+            cell_mask_i[blade_annulus] = cell_inside
+            blade_mask = blade_mask | cell_mask_i
+
+    # --- Combined mask ---
+    mask = hub_mask | blade_mask
+
+    # Permute from (ny, nz, nx) to (nz, ny, nx) for LBM convention
+    mask = mask.permute(1, 0, 2).contiguous()
+
+    return mask
+
+
+# ---------------------------------------------------------------------------
+# Statistics
+# ---------------------------------------------------------------------------
+
+def propeller_statistics(
+    config: PropellerGeometryConfig,
+    mask: torch.Tensor,
+) -> dict[str, object]:
+    """Compute geometric statistics for a propeller mask."""
+    nz, ny, nx = mask.shape
+    total_cells = nx * ny * nz
+    solid_cells = int(mask.sum().item())
+    solid_fraction = solid_cells / total_cells
+
+    disk_area = math.pi * (config.radius**2)
+    blade_planform = config.blade_area_ratio * disk_area
+    hub_area = 2.0 * math.pi * config.hub_radius * config.hub_length
+    blade_wetted = 2.0 * blade_planform * config.n_blades
+    estimated_wetted = hub_area + blade_wetted
+
+    return {
+        "n_cells": total_cells,
+        "solid_cells": solid_cells,
+        "solid_fraction": solid_fraction,
+        "disk_area_cells": disk_area,
+        "projected_area_cells": blade_planform,
+        "estimated_wetted_area": estimated_wetted,
+    }
