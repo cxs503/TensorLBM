@@ -110,11 +110,12 @@ def _load_npy_snapshots(data_dir: str) -> torch.Tensor | None:
     if not all_snaps:
         return None
     data = torch.cat(all_snaps, dim=0)
+    # Per-channel z-score normalization (stable for training)
     for ci in range(4):
         ch_data = data[..., ci]
-        ch_min = ch_data.min(); ch_max = ch_data.max()
-        if ch_max - ch_min > 1e-12:
-            data[..., ci] = 2.0 * (ch_data - ch_min) / (ch_max - ch_min) - 1.0
+        ch_mean = ch_data.mean(); ch_std = ch_data.std()
+        if ch_std > 1e-12:
+            data[..., ci] = (ch_data - ch_mean) / ch_std
     return data
 
 
@@ -131,7 +132,7 @@ def train_suboff(req: SuboffTrainRequest):
         try:
             device = torch.device(req.device)
             enc, dec = build_model(device)
-            opt = torch.optim.AdamW(list(enc.parameters()) + list(dec.parameters()), lr=req.lr, weight_decay=1e-4)
+            opt = torch.optim.Adam(list(enc.parameters()) + list(dec.parameters()), lr=req.lr)
             scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 opt, max_lr=req.lr, total_steps=req.epochs,
                 pct_start=0.1, anneal_strategy="cos",
@@ -172,13 +173,12 @@ def train_suboff(req: SuboffTrainRequest):
                     target = x + noise
 
                 opt.zero_grad()
-                with torch.autocast(device_type=device.type, enabled=(device.type == "cuda")):
-                    z = enc(x, pos.unsqueeze(0))
-                    pred = dec(z, pos.unsqueeze(0), pos.unsqueeze(0))
-                    loss = pointwise_rel_loss(pred, target)
+                z = enc(x, pos.unsqueeze(0))
+                pred = dec(z, pos.unsqueeze(0), pos.unsqueeze(0))
+                loss = pointwise_rel_loss(pred, target)
 
                 loss.backward()
-                nn.utils.clip_grad_norm_(list(enc.parameters()) + list(dec.parameters()), 1.0)
+                nn.utils.clip_grad_norm_(list(enc.parameters()) + list(dec.parameters()), 0.1)
                 opt.step()
                 scheduler.step()
 
@@ -218,6 +218,7 @@ def train_status(job_id: str):
         "job_id": job_id, "status": j.get("status", "?"), "epoch": j.get("epoch", 0),
         "total": j.get("total", 0), "loss": j.get("loss"),
         "best_loss": float(j.get("best_loss", 0)) if j.get("best_loss") == j.get("best_loss") else 0.0,
+        "error": j.get("error"),
     }
 
 
