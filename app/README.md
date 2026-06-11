@@ -5,7 +5,7 @@ A Browser/Server (B/S) web platform that integrates all TensorLBM simulation cap
 ## Architecture
 
 ```
-platform/
+app/
 ├── backend/           FastAPI REST + WebSocket backend
 │   ├── main.py        App entry point; WebSocket broadcaster
 │   ├── job_manager.py Thread-safe job queue (ThreadPoolExecutor)
@@ -33,13 +33,13 @@ Canonical developer setup and checks are documented in `../docs/development_work
 ```bash
 # From repository root
 pip install -e ".[dev]"
-pip install -r platform/requirements.txt
+pip install -r app/requirements.txt
 ```
 
 ### 2. Launch the server
 
 ```bash
-cd platform
+cd app
 bash start.sh
 # Or directly:
 PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
@@ -211,10 +211,10 @@ Key endpoints:
 
 ```bash
 # Run with auto-reload
-cd platform
+cd app
 PYTHONPATH=../src uvicorn backend.main:app --reload --reload-dir backend
 
 # Check formatting
 cd ..
-ruff check platform/backend
+ruff check app/backend
 ```
