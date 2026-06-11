@@ -89,3 +89,13 @@ __all__ = [
     "load_flow_transformer_model",
     "reconstruct_flow_field",
 ]
+
+# SUBOFF 3D surrogate modules
+from tensorlbm.ai.nn import encoder_module, decoder_module, attention_module
+from tensorlbm.ai.suboff_coord import coord_ori27, coord_ori28, coord_ori28_addition
+from tensorlbm.ai.suboff_dataset import (
+    CylinderDatasetMultiRe14,
+    read_multi_re_cylinder_data27,
+    read_multi_re_cylinder_data28,
+    read_multi_re_cylinder_data28_addition,
+)
