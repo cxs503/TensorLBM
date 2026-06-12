@@ -519,3 +519,100 @@ def suboff_error_analysis(req: SuboffErrorRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── visualization ──
+
+@router.get("/viz")
+def suboff_visualization(
+    data_dir: str = "/tmp/suboff_600x150",
+    snap_idx: int = 0,
+    n_points: int = 50000,
+    slice_axis: str = "z",
+    slice_idx: int | None = None,
+):
+    """Generate flow field slice images (true vs predicted) as base64 PNGs."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from io import BytesIO
+        import base64
+
+        test_data = _load_npy_snapshots(data_dir)
+        if test_data is None:
+            raise HTTPException(status_code=400, detail=f"No data at {data_dir}")
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        enc, dec = build_model(device)
+        ckpts = sorted(CKPT_DIR.glob("*.ckpt"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if ckpts:
+            ckpt = torch.load(str(ckpts[0]), map_location=device, weights_only=False)
+            enc.load_state_dict(ckpt.get("encoder", {}), strict=False)
+            dec.load_state_dict(ckpt.get("decoder", {}), strict=False)
+
+        enc.eval(); dec.eval()
+        coords = _get_coords(data_dir, n_points).to(device)
+        pos = coords.unsqueeze(0)
+
+        snap_idx = snap_idx % test_data.shape[0]
+        true_full = test_data[snap_idx]
+
+        # Determine crop size from first NPY file
+        import glob as _glob
+        re_dirs = sorted(_glob.glob(f"{data_dir}/Re_*"))
+        src = re_dirs[0] if re_dirs else data_dir
+        sample_file = sorted(_glob.glob(f"{src}/p/*.npy"))[0]
+        C = np.load(sample_file).shape[0]
+
+        if slice_idx is None:
+            slice_idx = C // 2
+        slice_idx = max(0, min(slice_idx, C - 1))
+
+        N_crop = C * C * C
+        true_3d = true_full[:N_crop, :].reshape(C, C, C, 4).cpu().numpy()  # [Z,Y,X,4]
+
+        x = true_full[:n_points].unsqueeze(0).unsqueeze(0).to(device)
+        with torch.no_grad():
+            z = enc(x, pos)
+            pred_out = dec(z, pos, pos)
+        if n_points >= N_crop:
+            pred_3d = pred_out.cpu().numpy()[0][:N_crop, :].reshape(C, C, C, 4)
+        else:
+            pred_3d = None
+
+        ch_names = ["pressure", "vx", "vy", "vz"]
+        axis_map = {"z": (0, "XY"), "y": (1, "XZ"), "x": (2, "YZ")}
+        ax_dim, plane_name = axis_map.get(slice_axis, axis_map["z"])
+
+        images = {}
+        for ci, cn in enumerate(ch_names):
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+            true_slice = np.take(true_3d[:, :, :, ci], slice_idx, axis=ax_dim)
+            im1 = ax1.imshow(true_slice.T, origin="lower", cmap="jet", aspect="auto")
+            ax1.set_title(f"True {cn} ({plane_name} slice {slice_idx})")
+            plt.colorbar(im1, ax=ax1, fraction=0.046)
+
+            if pred_3d is not None:
+                pred_slice = np.take(pred_3d[:, :, :, ci], slice_idx, axis=ax_dim)
+                diff = pred_slice - true_slice
+                im2 = ax2.imshow(diff.T, origin="lower", cmap="RdBu_r", aspect="auto")
+                ax2.set_title(f"Error {cn}")
+                plt.colorbar(im2, ax=ax2, fraction=0.046)
+            else:
+                ax2.text(0.5, 0.5, "need more pts", ha="center", va="center")
+
+            buf = BytesIO()
+            plt.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+            plt.close()
+            images[cn] = base64.b64encode(buf.getvalue()).decode()
+
+        return {
+            "status": "ok", "snapshot": snap_idx,
+            "slice_axis": slice_axis, "slice_idx": slice_idx,
+            "grid_size": C, "checkpoint": ckpts[0].name if ckpts else None,
+            "images": images,
+        }
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
