@@ -297,19 +297,39 @@ def suboff_predict(req: SuboffPredictRequest):
 
 @router.get("/data")
 def list_data(data_dir: str | None = None):
-    """List available NPY snapshot directories."""
+    """List available NPY snapshot directories (including Re_* subdirectories)."""
     if data_dir is None:
         data_dir = str(CKPT_DIR.parent.parent / "suboff_snapshots")
     p = Path(data_dir)
     if not p.exists():
         return {"data_dir": data_dir, "exists": False}
-    result = {}
-    for ch in ("p", "ux", "uy", "uz"):
-        chd = p / ch
-        if chd.is_dir():
-            files = sorted([f.name for f in chd.glob("*.npy")], key=lambda x: int(x.rsplit(".", 1)[0]))
-            result[ch] = len(files)
-    return {"data_dir": data_dir, "channels": result, "total_snapshots": min(result.values()) if result else 0}
+
+    def _count_snaps(d: Path) -> dict | None:
+        result = {}
+        for ch in ("p", "ux", "uy", "uz"):
+            chd = d / ch
+            if chd.is_dir():
+                files = sorted([f.name for f in chd.glob("*.npy")], key=lambda x: int(x.rsplit(".", 1)[0]))
+                result[ch] = len(files)
+        return result if result else None
+
+    # Check if this is a multi-Re directory
+    re_dirs = sorted([d for d in p.iterdir() if d.is_dir() and d.name.startswith("Re_")])
+    if re_dirs:
+        total = 0
+        per_re = {}
+        for rd in re_dirs:
+            cnt = _count_snaps(rd)
+            if cnt:
+                n = min(cnt.values())
+                per_re[rd.name] = n
+                total += n
+        return {"data_dir": data_dir, "multi_re": True, "re_groups": len(re_dirs),
+                "per_re": per_re, "total_snapshots": total}
+
+    # Single directory
+    cnt = _count_snaps(p)
+    return {"data_dir": data_dir, "channels": cnt, "total_snapshots": min(cnt.values()) if cnt else 0}
 
 
 # ── fine-tuning ──

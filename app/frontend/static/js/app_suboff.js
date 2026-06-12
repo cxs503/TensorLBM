@@ -31,8 +31,16 @@ async function suboffScanData() {
   try {
     const d = await _suboffFetch(`${SUBOFF_API}/data?data_dir=${encodeURIComponent(dir)}`);
     if (!d.exists) { info.innerHTML = `<span class="text-danger">Not found: ${dir}</span>`; return; }
-    info.innerHTML = `<span class="text-success">${d.total_snapshots} snapshots</span>
-      p:${d.channels.p||0} ux:${d.channels.ux||0} uy:${d.channels.uy||0} uz:${d.channels.uz||0}`;
+    if (d.multi_re) {
+      let html = `<span class="text-success">${d.total_snapshots} snapshots (${d.re_groups} Re groups)</span><br>`;
+      for (const [re, n] of Object.entries(d.per_re)) {
+        html += `<span class="text-muted small">${re}: ${n}</span> `;
+      }
+      info.innerHTML = html;
+    } else {
+      info.innerHTML = `<span class="text-success">${d.total_snapshots} snapshots</span>
+        p:${d.channels?.p||0} ux:${d.channels?.ux||0} uy:${d.channels?.uy||0} uz:${d.channels?.uz||0}`;
+    }
   } catch (e) { info.innerHTML = `<span class="text-danger">${e.message}</span>`; }
 }
 
