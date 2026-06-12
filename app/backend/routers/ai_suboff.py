@@ -274,18 +274,51 @@ def suboff_predict(req: SuboffPredictRequest):
         enc, dec, device, _ = _get_model()
         coords = _get_coords(None, req.n_points).to(device)
         pos = coords.unsqueeze(0)
-        x = torch.zeros(1, 1, req.n_points, 4, device=device)
+
+        # Load a multi-channel snapshot for reconstruction demo
+        import glob as _glob
+        _dirs = ["/tmp/suboff_600x150", "/tmp/suboff_demo", "/tmp/suboff_train_data"]
+        x = None
+        for d in _dirs:
+            re_dirs = sorted(_glob.glob(f"{d}/Re_*"))
+            srcs = re_dirs if re_dirs else [d]
+            for src in srcs:
+                if not os.path.isdir(f"{src}/p"): continue
+                files = sorted([f for f in os.listdir(f"{src}/p") if f.endswith(".npy")],
+                               key=lambda f: int(f.rsplit(".", 1)[0]))
+                if not files: continue
+                # Load first snapshot, first N points
+                p_arr = np.load(os.path.join(src, "p", files[0])).flatten()[:req.n_points]
+                ux_arr = np.load(os.path.join(src, "ux", files[0])).flatten()[:req.n_points]
+                uy_arr = np.load(os.path.join(src, "uy", files[0])).flatten()[:req.n_points]
+                uz_arr = np.load(os.path.join(src, "uz", files[0])).flatten()[:req.n_points]
+                data = torch.tensor(np.stack([p_arr, ux_arr, uy_arr, uz_arr], axis=1),
+                                    dtype=torch.float32, device=device)
+                # Normalize
+                for ci in range(4):
+                    ch_d = data[:, ci]
+                    data[:, ci] = (ch_d - ch_d.min()) / (ch_d.max() - ch_d.min() + 1e-10)
+                x = data.unsqueeze(0).unsqueeze(0)  # [1,1,N,4]
+                break
+            if x is not None: break
+        if x is None:
+            raise HTTPException(status_code=400, detail="No snapshot data found")
         t0 = time.perf_counter()
         with torch.no_grad():
             z = enc(x, pos)
             pred = dec(z, pos, pos)
         elapsed = (time.perf_counter() - t0) * 1000
         p = pred.cpu().numpy()[0]
+        t = x.cpu().numpy()[0, 0]
         return {
             "status": "ok", "shape": list(pred.shape), "channels": ["pressure", "vx", "vy", "vz"],
             "stats": {
                 "vx": {"min": float(p[:, 1].min()), "max": float(p[:, 1].max()), "mean": float(p[:, 1].mean())},
                 "vy": {"min": float(p[:, 2].min()), "max": float(p[:, 2].max()), "mean": float(p[:, 2].mean())},
+            },
+            "recon_error": {
+                "vx_rel_l2": float(np.linalg.norm(p[:,1]-t[:,1])/(np.linalg.norm(t[:,1])+1e-10)),
+                "vy_rel_l2": float(np.linalg.norm(p[:,2]-t[:,2])/(np.linalg.norm(t[:,2])+1e-10)),
             },
             "time_ms": round(elapsed, 1), "device": str(device),
         }
