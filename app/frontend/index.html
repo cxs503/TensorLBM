@@ -1549,6 +1549,22 @@
               <div id="suboff-error-result" class="mt-2 small"></div>
             </div>
           </div>
+
+          <div class="card mt-3">
+            <div class="card-header fw-semibold"><i class="bi bi-eye"></i> Visualization</div>
+            <div class="card-body">
+              <div class="row g-2 mb-2">
+                <div class="col-4"><label class="form-label small mb-0">Axis</label>
+                  <select class="form-select form-select-sm" id="suboff-viz-axis"><option>z</option><option>y</option><option>x</option></select></div>
+                <div class="col-4"><label class="form-label small mb-0">Slice</label>
+                  <input class="form-control form-control-sm" id="suboff-viz-slice" value="50" type="number" min="0" max="99"></div>
+                <div class="col-4"><label class="form-label small mb-0">Snap</label>
+                  <input class="form-control form-control-sm" id="suboff-viz-snap" value="0" type="number" min="0"></div>
+              </div>
+              <button class="btn btn-sm btn-info" onclick="suboffViz()">Show Slice</button>
+              <div id="suboff-viz-result" class="mt-2"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Right: status + results -->

@@ -161,3 +161,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 });
+
+// ── Visualization ──
+async function suboffViz() {
+  const result = document.getElementById("suboff-viz-result");
+  result.textContent = "Generating…";
+  const params = new URLSearchParams({
+    data_dir: document.getElementById("suboff-data-dir").value,
+    snap_idx: document.getElementById("suboff-viz-snap").value,
+    n_points: 50000,
+    slice_axis: document.getElementById("suboff-viz-axis").value,
+    slice_idx: document.getElementById("suboff-viz-slice").value,
+  });
+  try {
+    const d = await _suboffFetch(`${SUBOFF_API}/viz?${params}`);
+    let html = `<span class="text-muted small">Snapshot ${d.snapshot}, ${d.slice_axis}=${d.slice_idx}, ${d.grid_size}³</span><br>`;
+    for (const [ch, b64] of Object.entries(d.images)) {
+      html += `<div class="mb-2"><strong>${ch}</strong><br><img src="data:image/png;base64,${b64}" style="max-width:100%;border:1px solid #ddd;border-radius:4px"></div>`;
+    }
+    result.innerHTML = html;
+  } catch (e) {
+    result.innerHTML = `<span class="text-danger">${e.message}</span>`;
+  }
+}
