@@ -275,32 +275,16 @@ def suboff_predict(req: SuboffPredictRequest):
         coords = _get_coords(None, req.n_points).to(device)
         pos = coords.unsqueeze(0)
 
-        # Load a multi-channel snapshot for reconstruction demo
+        # Load globally-normalized snapshot for correct reconstruction
         import glob as _glob
         _dirs = ["/tmp/suboff_600x150", "/tmp/suboff_demo", "/tmp/suboff_train_data"]
         x = None
         for d in _dirs:
-            re_dirs = sorted(_glob.glob(f"{d}/Re_*"))
-            srcs = re_dirs if re_dirs else [d]
-            for src in srcs:
-                if not os.path.isdir(f"{src}/p"): continue
-                files = sorted([f for f in os.listdir(f"{src}/p") if f.endswith(".npy")],
-                               key=lambda f: int(f.rsplit(".", 1)[0]))
-                if not files: continue
-                # Load first snapshot, first N points
-                p_arr = np.load(os.path.join(src, "p", files[0])).flatten()[:req.n_points]
-                ux_arr = np.load(os.path.join(src, "ux", files[0])).flatten()[:req.n_points]
-                uy_arr = np.load(os.path.join(src, "uy", files[0])).flatten()[:req.n_points]
-                uz_arr = np.load(os.path.join(src, "uz", files[0])).flatten()[:req.n_points]
-                data = torch.tensor(np.stack([p_arr, ux_arr, uy_arr, uz_arr], axis=1),
-                                    dtype=torch.float32, device=device)
-                # Normalize
-                for ci in range(4):
-                    ch_d = data[:, ci]
-                    data[:, ci] = (ch_d - ch_d.min()) / (ch_d.max() - ch_d.min() + 1e-10)
-                x = data.unsqueeze(0).unsqueeze(0)  # [1,1,N,4]
+            if not os.path.isdir(d): continue
+            data = _load_npy_snapshots(d)
+            if data is not None:
+                x = data[0, :req.n_points].unsqueeze(0).unsqueeze(0).to(device)  # [1,1,N,4]
                 break
-            if x is not None: break
         if x is None:
             raise HTTPException(status_code=400, detail="No snapshot data found")
         t0 = time.perf_counter()
