@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
     "torch",
     "matplotlib",
+    "einops",
 ]
 
 [project.optional-dependencies]
