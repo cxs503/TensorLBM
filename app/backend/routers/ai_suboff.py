@@ -268,22 +268,27 @@ def _get_coords(data_dir: str | None, n_points: int) -> torch.Tensor:
     return torch.tensor(coord_ori27(), dtype=torch.float32)[:n_points]
 
 
+def _resolved_point_count(n_points: int, coords: torch.Tensor, available_points: int) -> int:
+    return min(int(n_points), int(coords.shape[0]), int(available_points))
+
+
 @router.post("/predict")
 def suboff_predict(req: SuboffPredictRequest):
     try:
         enc, dec, device, _ = _get_model()
-        coords = _get_coords(None, req.n_points).to(device)
-        pos = coords.unsqueeze(0)
 
         # Load globally-normalized snapshot for correct reconstruction
-        import glob as _glob
         _dirs = ["/tmp/suboff_600x150", "/tmp/suboff_demo", "/tmp/suboff_train_data"]
         x = None
         for d in _dirs:
-            if not os.path.isdir(d): continue
+            if not os.path.isdir(d):
+                continue
             data = _load_npy_snapshots(d)
             if data is not None:
-                x = data[0, :req.n_points].unsqueeze(0).unsqueeze(0).to(device)  # [1,1,N,4]
+                coords = _get_coords(d, req.n_points)
+                n_points = _resolved_point_count(req.n_points, coords, data.shape[1])
+                pos = coords[:n_points].to(device).unsqueeze(0)
+                x = data[0, :n_points].unsqueeze(0).unsqueeze(0).to(device)  # [1,1,N,4]
                 break
         if x is None:
             raise HTTPException(status_code=400, detail="No snapshot data found")
@@ -461,7 +466,6 @@ def suboff_error_analysis(req: SuboffErrorRequest):
         if test_data is None:
             raise HTTPException(status_code=400, detail=f"No data at {req.data_dir}")
 
-        from tensorlbm.ai.suboff_coord import coord_ori27
         device = torch.device(req.device)
         enc, dec = build_model(device)
 
@@ -473,15 +477,16 @@ def suboff_error_analysis(req: SuboffErrorRequest):
             dec.load_state_dict(ckpt.get("decoder", {}), strict=False)
 
         enc.eval(); dec.eval()
-        coords = _get_coords(req.data_dir, req.n_points).to(device)
-        pos = coords.unsqueeze(0)
+        coords = _get_coords(req.data_dir, req.n_points)
+        n_points = _resolved_point_count(req.n_points, coords, test_data.shape[1])
+        pos = coords[:n_points].to(device).unsqueeze(0)
 
         all_errors: list[dict] = []
         t0 = time.perf_counter()
 
         for snap_idx in range(test_data.shape[0]):
             snap = test_data[snap_idx].to(device)
-            idxs = torch.arange(min(req.n_points, snap.shape[0]), device=device)
+            idxs = torch.arange(n_points, device=device)
             x = snap[idxs].unsqueeze(0).unsqueeze(0)
             with torch.no_grad():
                 z = enc(x, pos)
@@ -512,7 +517,7 @@ def suboff_error_analysis(req: SuboffErrorRequest):
 
         return {
             "status": "ok", "n_snapshots": test_data.shape[0],
-            "n_points": req.n_points, "time_ms": round(elapsed_ms, 1),
+            "n_points": n_points, "time_ms": round(elapsed_ms, 1),
             "checkpoint": ckpts[0].name if ckpts else None,
             "summary": summary, "per_snapshot": all_errors,
         }
