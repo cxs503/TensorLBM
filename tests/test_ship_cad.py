@@ -193,6 +193,24 @@ def test_hull_statistics_keys(hull_type: ShipHullType) -> None:
         assert key in stats, f"Missing key: {key}"
 
 
+@pytest.mark.parametrize("hull_type", list(ShipHullType))
+def test_hull_statistics_coefficients_physical_range(hull_type: ShipHullType) -> None:
+    """Hull form coefficients Cwp, Cm, and Cp must all lie in (0, 1]."""
+    stats = hull_statistics(hull_type, length=100.0, beam=16.0, draft=8.0)
+    for key in ("Cwp", "Cm", "Cp"):
+        assert 0.0 < stats[key] <= 1.0, (
+            f"{hull_type.value}: {key}={stats[key]} is outside the physical range (0, 1]"
+        )
+
+
+def test_hull_statistics_wigley_analytical() -> None:
+    """Wigley Cwp = Cm = Cp = 2/3 (analytical result)."""
+    stats = hull_statistics(ShipHullType.WIGLEY, length=100.0, beam=16.0, draft=8.0)
+    assert abs(stats["Cwp"] - 2.0 / 3.0) < 1e-3, f"Cwp={stats['Cwp']}"
+    assert abs(stats["Cm"] - 2.0 / 3.0) < 1e-3, f"Cm={stats['Cm']}"
+    assert abs(stats["Cp"] - 2.0 / 3.0) < 1e-3, f"Cp={stats['Cp']}"
+
+
 def test_hull_statistics_lb_bt() -> None:
     """L/B and B/T ratios must match the input dimensions."""
     s = hull_statistics(ShipHullType.SERIES60, length=120.0, beam=20.0, draft=8.0)
