@@ -7,7 +7,7 @@ def test_list_hull_types(client):
     assert r.status_code == 200
     types = r.json()["hull_types"]
     values = {t["value"] for t in types}
-    assert values == {"wigley", "series60", "kcs"}
+    assert values == {"wigley", "series60", "kcs", "kvlcc2", "npl"}
 
 
 def test_hull_preview(client):
@@ -26,6 +26,9 @@ def test_hull_preview(client):
     # Wigley analytical Cb = 4/9 ≈ 0.444
     assert 0.30 <= stats["Cb"] <= 0.55
     assert stats["hull_type"] == "wigley"
+    # All hull form coefficients must be physically valid (in [0, 1])
+    for key in ("Cwp", "Cm", "Cp"):
+        assert 0.0 < stats[key] <= 1.0, f"{key}={stats[key]} outside (0, 1]"
 
 
 def test_hull_mask_small(client):
