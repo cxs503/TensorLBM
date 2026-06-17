@@ -637,17 +637,23 @@ def hull_statistics(
         hull_type = ShipHullType(hull_type)
 
     cb = theoretical_block_coefficient(hull_type)
-    # Approximate waterplane coefficient Cwp via numerical integration
+    # Waterplane coefficient Cwp = Awp / (L * B).
+    # In normalised coords xi ∈ [-1, 1] (half-span = 1) and hb ∈ [0, 1] (half-beam):
+    #   Awp (both sides) = 2 * (B/2) * (L/2) * integral(hb_norm, xi, -1, 1)
+    #   L * B = 2*(L/2) * 2*(B/2)
+    #   => Cwp = integral(hb_norm, xi, -1, 1) / 2
     xi_arr, hb_arr = generate_hull_waterplane(hull_type, n_points=500)
-    awp = 2.0 * np.trapezoid(hb_arr, xi_arr)  # normalised area (in [-1,1] × [-1,1])
-    cwp = awp / 2.0  # 2 because xi spans 2 units
+    cwp = float(np.trapezoid(hb_arr, xi_arr)) / 2.0
 
-    # Midship section at ξ=0
+    # Midship section coefficient Cm = Am / (B * T).
+    # In normalised coords hb ∈ [0, 1] (half-beam) and z ∈ [0, 1]:
+    #   Am (both sides) = 2 * (B/2) * T * integral(hb_norm, z, 0, 1)
+    #   B * T = 2*(B/2) * T
+    #   => Cm = integral(hb_norm, z, 0, 1)
     z_arr = np.linspace(0.0, 1.0, 500)
     fn = _HALF_BEAM_FN[hull_type]
     hb_mid = fn(np.zeros_like(z_arr), z_arr)
-    am_norm = 2.0 * np.trapezoid(hb_mid, z_arr)  # normalised midship area
-    cm = am_norm  # normalised to B*T rectangle
+    cm = float(np.trapezoid(hb_mid, z_arr))
 
     cp = cb / cm if cm > 1e-6 else float("nan")
 

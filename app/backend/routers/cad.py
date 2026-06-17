@@ -289,6 +289,25 @@ async def list_hull_types() -> dict:
                 ),
                 "Cb": 0.651,
             },
+            {
+                "value": "kvlcc2",
+                "label": "KVLCC2 Tanker (Cb≈0.810)",
+                "description": (
+                    "KRISO Very Large Crude Carrier 2. "
+                    "Standard CFD benchmark VLCC tanker with U-shaped midship sections. "
+                    "Cb ≈ 0.810."
+                ),
+                "Cb": 0.810,
+            },
+            {
+                "value": "npl",
+                "label": "NPL High-Speed (Cb≈0.397)",
+                "description": (
+                    "National Physical Laboratory high-speed displacement hull "
+                    "(Bailey 1976 series). Fine V-sections, raked stern. Cb ≈ 0.397."
+                ),
+                "Cb": 0.397,
+            },
         ]
     }
 
