@@ -1607,8 +1607,10 @@
             <div class="card-body config-form">
               <label data-i18n="orch.template_id">Template</label>
               <select id="orch-template" class="form-select form-select-sm mb-2"></select>
-              <label data-i18n="orch.re_values">Re sweep values (comma)</label>
-              <input id="orch-re-values" class="form-control form-control-sm mb-2" value="80,100,120" />
+              <label data-i18n="orch.sweep_json">Sweep JSON</label>
+              <textarea id="orch-sweep" class="form-control form-control-sm mb-2" rows="4">[
+  {"name":"re","values":[80,100,120]}
+]</textarea>
               <label data-i18n="orch.nx">nx</label>
               <input id="orch-nx" type="number" class="form-control form-control-sm mb-2" value="160" min="16" max="1024" />
               <label data-i18n="orch.ny">ny</label>

@@ -62,6 +62,7 @@ class Job:
         self.io_bytes: int = 0
         self.retry_attempt: int = 0
         self.max_retries: int = max(0, int((orch or {}).get("max_retries", 0)))
+        self.failure_category: str | None = None
         self.resume_from: str | None = (
             str((orch or {}).get("resume_from"))
             if (orch or {}).get("resume_from") is not None
@@ -99,6 +100,7 @@ class Job:
             "io_bytes": self.io_bytes,
             "retry_attempt": self.retry_attempt,
             "max_retries": self.max_retries,
+            "failure_category": self.failure_category,
             "resume_from": self.resume_from,
             "assigned_resource": self.assigned_resource,
             "estimated_cost": self.estimated_cost,
@@ -210,6 +212,41 @@ def _job_size(path: Path) -> int:
     return total
 
 
+def _classify_failure(error_text: str | None) -> str | None:
+    """Classify a failed job into a coarse root-cause bucket."""
+    if not error_text:
+        return None
+    lower = error_text.lower()
+    if "cancelled" in lower:
+        return "cancelled"
+    if (
+        "out of memory" in lower
+        or "cuda out of memory" in lower
+        or "oom" in lower
+        or "memoryerror" in lower
+    ):
+        return "resource"
+    if (
+        "cuda" in lower
+        or "device" in lower
+        or "cudnn" in lower
+        or "mps" in lower
+    ):
+        return "device"
+    if (
+        "permission denied" in lower
+        or "no such file" in lower
+        or "filenotfounderror" in lower
+        or "is a directory" in lower
+    ):
+        return "filesystem"
+    if "timeout" in lower or "timed out" in lower:
+        return "timeout"
+    if "validationerror" in lower or "valueerror" in lower or "typeerror" in lower:
+        return "validation"
+    return "runtime"
+
+
 def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
     """Execute *fn* in the current thread, updating *job* status."""
     ident = threading.current_thread().ident
@@ -239,14 +276,17 @@ def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
                 if job.status != JobStatus.CANCELLED:
                     job.status = JobStatus.COMPLETED
                     job.result = result or {}
+                    job.failure_category = None
                 break
             except JobCancelledError:
                 job.status = JobStatus.CANCELLED
                 job.error = "Job cancelled by user request."
+                job.failure_category = "cancelled"
                 break
             except Exception:
                 job.error = traceback.format_exc()
                 job.logs.append(job.error)
+                job.failure_category = _classify_failure(job.error)
                 if attempt >= job.max_retries or job.cancel_requested:
                     job.status = JobStatus.FAILED
                     break
@@ -490,9 +530,13 @@ def orchestration_kpis() -> dict[str, Any]:
     ]
     retries = [int(r.get("retry_attempt", 0)) for r in rows]
     resources: dict[str, int] = {}
+    failure_categories: dict[str, int] = {}
     for row in rows:
         key = str(row.get("assigned_resource") or "cpu")
         resources[key] = resources.get(key, 0) + 1
+        if row.get("failure_category"):
+            failure_key = str(row["failure_category"])
+            failure_categories[failure_key] = failure_categories.get(failure_key, 0) + 1
 
     terminal = len(completed) + len(failed) + len(cancelled)
     return {
@@ -512,4 +556,5 @@ def orchestration_kpis() -> dict[str, Any]:
             sum(float(r.get("estimated_cost", 0.0) or 0.0) for r in rows),
         ),
         "resources": resources,
+        "failure_categories": failure_categories,
     }

@@ -474,6 +474,7 @@
     "templates_title": "实验模板",
     "template_id": "模板",
     "re_values": "Re 扫描值（逗号分隔）",
+    "sweep_json": "扫描变量 JSON",
     "nx": "nx",
     "ny": "ny",
     "n_steps": "步数 n_steps",

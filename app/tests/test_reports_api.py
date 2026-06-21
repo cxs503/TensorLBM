@@ -43,12 +43,20 @@ class TestReportsAPI:
         assert "force_rows" in data
         assert "image_count" in data
         assert "report_url" in data
+        assert "engineering_kpis" in data
         assert data["report_url"] == f"/api/reports/{jid}"
 
     def test_report_html_has_sections(self, client):
         jid = self._make_fake_job(client)
         html = client.get(f"/api/reports/{jid}").text
-        for section in ("Summary", "Convergence", "Force Coefficients", "Result Images", "Configuration"):
+        for section in (
+            "Summary",
+            "Engineering KPIs",
+            "Convergence",
+            "Force Coefficients",
+            "Result Images",
+            "Configuration",
+        ):
             assert section in html, f"Missing section: {section}"
 
 
