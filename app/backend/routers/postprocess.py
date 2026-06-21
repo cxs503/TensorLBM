@@ -44,11 +44,11 @@ async def velocity_profile(req: VelocityProfileRequest) -> dict:
         from tensorlbm import load_checkpoint, macroscopic
 
         # Find the latest checkpoint in the job's output tree
-        ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+        ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
         if not ckpts:
             raise ValueError("No checkpoint files found in job output")
 
-        f, step = load_checkpoint(ckpts[-1])
+        f, step, _meta = load_checkpoint(ckpts[-1].parent)
         _rho, ux, uy = macroscopic(f)
 
         ny, nx = ux.shape
@@ -234,18 +234,19 @@ async def field_data(
 
         # ---- locate checkpoint ------------------------------------------------
         if checkpoint == "latest":
-            ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+            ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
             if not ckpts:
                 raise ValueError("No checkpoint files found in job output")
-            ckpt_path = ckpts[-1]
+            ckpt_path = ckpts[-1].parent
         else:
-            ckpt_path = (job.output_dir / checkpoint).resolve()
-            if not str(ckpt_path).startswith(str(job.output_dir.resolve())):
+            candidate = (job.output_dir / checkpoint).resolve()
+            if not str(candidate).startswith(str(job.output_dir.resolve())):
                 raise HTTPException(status_code=403, detail="Forbidden")
-            if not ckpt_path.exists():
+            ckpt_path = candidate.parent if candidate.suffix == ".pt" else candidate
+            if not (ckpt_path / "checkpoint_f.pt").exists():
                 raise HTTPException(status_code=404, detail="Checkpoint not found")
 
-        f_tensor, step = load_checkpoint(ckpt_path)
+        f_tensor, step, _meta = load_checkpoint(ckpt_path)
 
         # Only 2-D (D2Q9) supported for the interactive viewer
         if f_tensor.ndim != 3:
@@ -423,7 +424,7 @@ async def probe_history(req: ProbeHistoryRequest) -> dict:
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+    ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
     if not ckpts:
         raise HTTPException(status_code=404, detail="No checkpoints found for this job")
 
@@ -440,8 +441,8 @@ async def probe_history(req: ProbeHistoryRequest) -> dict:
             for _ in range(n_probes)
         ]
 
-        for ckpt_path in ckpts:
-            f_tensor, step = load_checkpoint(ckpt_path)
+        for ckpt_pt in ckpts:
+            f_tensor, step, _meta = load_checkpoint(ckpt_pt.parent)
             if f_tensor.ndim != 3:
                 continue  # skip 3-D checkpoints (not yet supported)
 
@@ -516,7 +517,7 @@ async def time_average(
             detail="Job must be completed to compute time averages",
         )
 
-    ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+    ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
     if not ckpts:
         raise HTTPException(status_code=404, detail="No checkpoints found")
 
@@ -534,8 +535,8 @@ async def time_average(
         n = 0
         ny_orig = nx_orig = 0
 
-        for ckpt_path in ckpts:
-            f_tensor, _ = load_checkpoint(ckpt_path)
+        for ckpt_pt in ckpts:
+            f_tensor, _, _meta = load_checkpoint(ckpt_pt.parent)
             if f_tensor.ndim != 3:
                 continue  # skip 3-D
 
@@ -700,7 +701,10 @@ async def export_results(
             rho, ux, uy = macroscopic(f_tensor)
             uz = None
 
-        stem = f"{job_id}_step{step:06d}"
+        # Sanitise job_id so user-controlled URL segments cannot escape the
+        # temporary directory via path-traversal sequences (e.g. "../../..").
+        safe_id = Path(job_id).name
+        stem = f"{safe_id}_step{step:06d}"
 
         # ---- write export files to a temporary directory ----------------------
         with tempfile.TemporaryDirectory() as tmp_dir:
