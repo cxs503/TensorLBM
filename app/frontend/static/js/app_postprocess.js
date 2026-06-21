@@ -64,6 +64,7 @@ function showPPTab(name, el) {
   else if (name === 'metadata') loadMetadata();
   else if (name === 'viewer') loadViewerCheckpoints();
   else if (name === 'probes') _initProbeTab();
+  else if (name === 'export') loadExportCheckpoints();
   return false;
 }
 
@@ -622,3 +623,52 @@ function _renderTimeAvgCanvas() {
 }
 
 // ============================================================
+// Export Tab
+// ============================================================
+
+async function loadExportCheckpoints() {
+  if (!ppSelectedJobId) return;
+  const sel = document.getElementById('exp-checkpoint');
+  if (!sel) return;
+  try {
+    const r = await api('GET', `/api/postprocess/checkpoints/${ppSelectedJobId}`);
+    sel.innerHTML = '<option value="latest">latest</option>' +
+      r.checkpoints.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+  } catch(e) { /* silently ignore */ }
+}
+
+async function downloadExport() {
+  if (!ppSelectedJobId) return;
+  const btn = document.getElementById('exp-btn');
+  const status = document.getElementById('exp-status');
+  const fmt = document.getElementById('exp-format').value;
+  const ckpt = document.getElementById('exp-checkpoint').value;
+
+  btn.disabled = true;
+  status.textContent = t('postprocess.loading');
+
+  try {
+    const url = `/api/postprocess/export/${encodeURIComponent(ppSelectedJobId)}?format=${encodeURIComponent(fmt)}&checkpoint=${encodeURIComponent(ckpt)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const msg = await resp.text();
+      throw new Error(`${resp.status}: ${msg}`);
+    }
+    const blob = await resp.blob();
+    const disposition = resp.headers.get('Content-Disposition') || '';
+    let filename = `tensorlbm_export_${fmt}.zip`;
+    const m = disposition.match(/filename="([^"]+)"/);
+    if (m) filename = m[1];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    status.textContent = `✓ ${filename}`;
+  } catch(e) {
+    status.textContent = `⚠ ${e.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}

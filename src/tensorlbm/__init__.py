@@ -117,7 +117,7 @@ from .interpolated_bc import (
     compute_q_circle,
     compute_q_sphere,
 )
-from .io import save_hdf5, save_vtk, save_vtk_binary, save_xdmf
+from .io import save_hdf5, save_vtk, save_vtk_binary, save_vts, save_xdmf
 from .lid_driven_cavity import (
     GHIA_RE100,
     GHIA_RE400,
@@ -653,6 +653,7 @@ __all__ = [
     "load_checkpoint",
     "save_vtk",
     "save_vtk_binary",
+    "save_vts",
     "save_hdf5",
     "save_xdmf",
     "extract_velocity_profile",
