@@ -385,4 +385,126 @@ def save_xdmf(
     return xdmf_path.resolve()
 
 
-__all__ = ["save_vtk", "save_vtk_binary", "save_hdf5", "save_xdmf"]
+def save_vts(
+    path: str | Path,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor | None = None,
+    rho: torch.Tensor | None = None,
+    vorticity: torch.Tensor | None = None,
+) -> Path:
+    """Write a VTK XML StructuredGrid (``.vts``) file.
+
+    This is the modern VTK XML format preferred by ParaView, VisIt, and
+    other VTK-aware tools.  Data arrays are stored as inline Base64-encoded
+    little-endian ``float32`` binary, which gives a good balance between file
+    size and compatibility.
+
+    Supports 2-D (ny × nx) and 3-D (nz × ny × nx) fields.  All tensors must
+    share the same spatial shape.
+
+    Args:
+        path:       Output file path (should end with ``.vts``).
+        ux:         x-velocity field.
+        uy:         y-velocity field.
+        uz:         z-velocity field (3-D only; *None* for 2-D; set to zeros).
+        rho:        Density field (optional scalar).
+        vorticity:  Vorticity scalar field (optional; e.g. z-component).
+
+    Returns:
+        Resolved output path.
+    """
+    import base64
+    import struct
+
+    import numpy as np
+
+    path = Path(path)
+    _validate_field_shapes(ux, uy, uz, rho, vorticity)
+    is_3d = ux.ndim == 3
+
+    if is_3d:
+        nz, ny, nx = ux.shape  # type: ignore[misc]
+    else:
+        ny, nx = ux.shape  # type: ignore[misc]
+        nz = 1
+
+    def _flat(t: torch.Tensor) -> np.ndarray:
+        return t.detach().cpu().float().numpy().flatten(order="C")
+
+    def _b64(arr: np.ndarray) -> str:
+        """VTK inline binary: 4-byte LE uint32 length prefix + float32 data, Base64-encoded."""
+        raw = arr.astype(np.float32).tobytes()
+        return base64.b64encode(struct.pack("<I", len(raw)) + raw).decode("ascii")
+
+    # --- 3-component coordinates for every grid point ---
+    if is_3d:
+        kk, jj, ii = np.meshgrid(
+            np.arange(nz, dtype=np.float32),
+            np.arange(ny, dtype=np.float32),
+            np.arange(nx, dtype=np.float32),
+            indexing="ij",
+        )
+    else:
+        jj, ii = np.meshgrid(
+            np.arange(ny, dtype=np.float32),
+            np.arange(nx, dtype=np.float32),
+            indexing="ij",
+        )
+        kk = np.zeros((ny, nx), dtype=np.float32)
+
+    pts = np.column_stack([ii.flatten(), jj.flatten(), kk.flatten()]).astype(np.float32)
+    pts_b64 = _b64(pts.flatten())
+
+    # --- velocity vector (always 3-component) ---
+    ux_np = _flat(ux)
+    uy_np = _flat(uy)
+    uz_np = _flat(uz) if uz is not None else np.zeros_like(ux_np)
+    vel = np.column_stack([ux_np, uy_np, uz_np]).astype(np.float32)
+    vel_b64 = _b64(vel.flatten())
+
+    extent = f"0 {nx - 1} 0 {ny - 1} 0 {nz - 1}"
+
+    lines = [
+        '<?xml version="1.0"?>',
+        '<VTKFile type="StructuredGrid" version="0.1" byte_order="LittleEndian"',
+        '         compressor="">',
+        f'  <StructuredGrid WholeExtent="{extent}">',
+        f'    <Piece Extent="{extent}">',
+        "      <Points>",
+        '        <DataArray type="Float32" NumberOfComponents="3" format="binary">',
+        f"          {pts_b64}",
+        "        </DataArray>",
+        "      </Points>",
+        "      <PointData>",
+        '        <DataArray type="Float32" Name="velocity" NumberOfComponents="3" format="binary">',
+        f"          {vel_b64}",
+        "        </DataArray>",
+    ]
+
+    if rho is not None:
+        lines += [
+            '        <DataArray type="Float32" Name="density" format="binary">',
+            f"          {_b64(_flat(rho))}",
+            "        </DataArray>",
+        ]
+
+    if vorticity is not None:
+        lines += [
+            '        <DataArray type="Float32" Name="vorticity" format="binary">',
+            f"          {_b64(_flat(vorticity))}",
+            "        </DataArray>",
+        ]
+
+    lines += [
+        "      </PointData>",
+        "    </Piece>",
+        "  </StructuredGrid>",
+        "</VTKFile>",
+    ]
+
+    path.write_text("\n".join(lines) + "\n", encoding="ascii")
+    return path
+
+
+__all__ = ["save_vtk", "save_vtk_binary", "save_hdf5", "save_vts", "save_xdmf"]
