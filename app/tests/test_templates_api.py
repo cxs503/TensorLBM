@@ -1,4 +1,4 @@
-"""Tests for the PowerFlow Engineering Templates API."""
+"""Tests for the TensorLBM Engineering Templates API."""
 from __future__ import annotations
 
 import pytest

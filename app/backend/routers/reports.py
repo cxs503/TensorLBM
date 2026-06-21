@@ -1,4 +1,4 @@
-"""Report generation endpoints for the PowerFlow platform.
+"""Report generation endpoints for the TensorLBM platform.
 
 Generates structured HTML engineering reports from completed simulation jobs.
 The report bundles job metadata, configuration, convergence history,
@@ -162,7 +162,7 @@ def _build_html_report(job: job_manager.Job) -> str:
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>PowerFlow LBM – Report: {job.name}</title>
+<title>TensorLBM – Report: {job.name}</title>
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
 <style>
@@ -189,7 +189,7 @@ def _build_html_report(job: job_manager.Job) -> str:
 </head>
 <body>
 <div class="report-header">
-  <h1>&#x1F30A; PowerFlow LBM &mdash; Engineering Report</h1>
+  <h1>&#x1F30A; TensorLBM &mdash; Engineering Report</h1>
   <div class="sub">
     <strong>Job:</strong> {job.name} &nbsp;|&nbsp;
     <strong>ID:</strong> <code style="color:#aef">{job.job_id}</code> &nbsp;|&nbsp;

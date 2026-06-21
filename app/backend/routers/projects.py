@@ -1,7 +1,7 @@
-"""Project and simulation-case management for the PowerFlow platform.
+"""Project and simulation-case management for the TensorLBM platform.
 
 Provides a project → case hierarchy that mirrors the workflow-centric
-organisation used by commercial CFD tools (PowerFLOW / XFlow).
+organisation used by engineering simulation platforms.
 
 Storage is an in-process SQLite database (via the stdlib ``sqlite3`` module)
 so no extra dependencies are needed.  The database is persisted in the
@@ -22,6 +22,23 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 router = APIRouter()
+
+# ---------------------------------------------------------------------------
+# Workflow stage definitions
+# ---------------------------------------------------------------------------
+
+# Ordered workflow stages mirroring professional LBM simulation platforms:
+#   Draft → Setup → Meshed → Solved → Post-processed
+WORKFLOW_STAGES = ["draft", "setup", "meshed", "solved", "post_processed"]
+
+
+def _next_stage(current: str) -> str | None:
+    """Return the next workflow stage after *current*, or None if already final."""
+    try:
+        idx = WORKFLOW_STAGES.index(current)
+    except ValueError:
+        return None
+    return WORKFLOW_STAGES[idx + 1] if idx + 1 < len(WORKFLOW_STAGES) else None
 
 # ---------------------------------------------------------------------------
 # Database helpers
@@ -53,19 +70,26 @@ def _init_schema(conn: sqlite3.Connection) -> None:
         );
 
         CREATE TABLE IF NOT EXISTS cases (
-            id          TEXT PRIMARY KEY,
-            project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-            name        TEXT NOT NULL,
-            description TEXT NOT NULL DEFAULT '',
-            scenario    TEXT NOT NULL DEFAULT 'custom',
-            status      TEXT NOT NULL DEFAULT 'draft',
-            config      TEXT NOT NULL DEFAULT '{}',
-            job_id      TEXT,
-            created_at  TEXT NOT NULL,
-            updated_at  TEXT NOT NULL
+            id              TEXT PRIMARY KEY,
+            project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            name            TEXT NOT NULL,
+            description     TEXT NOT NULL DEFAULT '',
+            scenario        TEXT NOT NULL DEFAULT 'custom',
+            status          TEXT NOT NULL DEFAULT 'draft',
+            workflow_stage  TEXT NOT NULL DEFAULT 'draft',
+            config          TEXT NOT NULL DEFAULT '{}',
+            job_id          TEXT,
+            created_at      TEXT NOT NULL,
+            updated_at      TEXT NOT NULL
         );
         """
     )
+    # Migrate existing databases that lack the workflow_stage column
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(cases)")}
+    if "workflow_stage" not in cols:
+        conn.execute(
+            "ALTER TABLE cases ADD COLUMN workflow_stage TEXT NOT NULL DEFAULT 'draft'"
+        )
     conn.commit()
 
 
@@ -103,6 +127,7 @@ class CaseCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
     description: str = Field("", max_length=1000)
     scenario: str = Field("custom", max_length=80)
+    workflow_stage: str = Field("draft", max_length=40)
     config: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -111,6 +136,7 @@ class CaseUpdate(BaseModel):
     description: str | None = Field(None, max_length=1000)
     scenario: str | None = Field(None, max_length=80)
     status: str | None = Field(None, max_length=40)
+    workflow_stage: str | None = Field(None, max_length=40)
     config: dict[str, Any] | None = None
     job_id: str | None = None
 
@@ -226,13 +252,16 @@ async def list_cases(project_id: str) -> list[dict]:
 @router.post("/{project_id}/cases", status_code=201)
 async def create_case(project_id: str, body: CaseCreate) -> dict:
     """Create a simulation case inside a project."""
+    stage = body.workflow_stage if body.workflow_stage in WORKFLOW_STAGES else "draft"
     now = datetime.now(UTC).isoformat()
     cid = uuid.uuid4().hex
     with _get_conn() as conn:
         if conn.execute("SELECT id FROM projects WHERE id=?", (project_id,)).fetchone() is None:
             raise HTTPException(status_code=404, detail="Project not found")
         conn.execute(
-            "INSERT INTO cases VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO cases"
+            " (id, project_id, name, description, scenario, status, workflow_stage, config, job_id, created_at, updated_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (
                 cid,
                 project_id,
@@ -240,6 +269,7 @@ async def create_case(project_id: str, body: CaseCreate) -> dict:
                 body.description,
                 body.scenario,
                 "draft",
+                stage,
                 json.dumps(body.config),
                 None,
                 now,
@@ -281,18 +311,28 @@ async def update_case(project_id: str, case_id: str, body: CaseUpdate) -> dict:
             d["scenario"] = body.scenario
         if body.status is not None:
             d["status"] = body.status
+        if body.workflow_stage is not None:
+            if body.workflow_stage not in WORKFLOW_STAGES:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Invalid workflow_stage '{body.workflow_stage}'. "
+                           f"Must be one of: {WORKFLOW_STAGES}",
+                )
+            d["workflow_stage"] = body.workflow_stage
         if body.config is not None:
             d["config"] = body.config
         if body.job_id is not None:
             d["job_id"] = body.job_id
         d["updated_at"] = datetime.now(UTC).isoformat()
         conn.execute(
-            "UPDATE cases SET name=?, description=?, scenario=?, status=?, config=?, job_id=?, updated_at=? WHERE id=?",
+            "UPDATE cases SET name=?, description=?, scenario=?, status=?,"
+            " workflow_stage=?, config=?, job_id=?, updated_at=? WHERE id=?",
             (
                 d["name"],
                 d["description"],
                 d["scenario"],
                 d["status"],
+                d.get("workflow_stage", "draft"),
                 json.dumps(d["config"]),
                 d.get("job_id"),
                 d["updated_at"],
@@ -315,3 +355,69 @@ async def delete_case(project_id: str, case_id: str) -> None:
             raise HTTPException(status_code=404, detail="Case not found")
         conn.execute("DELETE FROM cases WHERE id=?", (case_id,))
         conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Workflow stage advancement
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{project_id}/cases/{case_id}/advance-workflow")
+async def advance_workflow(project_id: str, case_id: str) -> dict:
+    """Advance the case workflow to the next stage.
+
+    Stages in order: ``draft`` → ``setup`` → ``meshed`` → ``solved`` → ``post_processed``.
+
+    Returns the updated case dict.  Raises 409 if already at the final stage.
+    """
+    with _get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM cases WHERE id=? AND project_id=?", (case_id, project_id)
+        ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Case not found")
+        d = _row_to_dict(row)
+        current = d.get("workflow_stage", "draft")
+        nxt = _next_stage(current)
+        if nxt is None:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Case is already at the final workflow stage ('{current}')",
+            )
+        now = datetime.now(UTC).isoformat()
+        conn.execute(
+            "UPDATE cases SET workflow_stage=?, updated_at=? WHERE id=?",
+            (nxt, now, case_id),
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM cases WHERE id=?", (case_id,)).fetchone()
+    return _row_to_dict(row)
+
+
+# ---------------------------------------------------------------------------
+# Workflow summary (for dashboard)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/workflow-summary")
+async def workflow_summary() -> dict:
+    """Return a count of cases at each workflow stage across all projects.
+
+    Useful for the dashboard to show an at-a-glance pipeline view.
+    """
+    with _get_conn() as conn:
+        rows = conn.execute(
+            "SELECT workflow_stage, COUNT(*) as cnt FROM cases GROUP BY workflow_stage"
+        ).fetchall()
+
+    counts: dict[str, int] = {s: 0 for s in WORKFLOW_STAGES}
+    for row in rows:
+        stage = row["workflow_stage"] if row["workflow_stage"] in WORKFLOW_STAGES else "draft"
+        counts[stage] = counts.get(stage, 0) + row["cnt"]
+
+    total = sum(counts.values())
+    return {
+        "stages": WORKFLOW_STAGES,
+        "counts": counts,
+        "total_cases": total,
+    }

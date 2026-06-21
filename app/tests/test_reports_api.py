@@ -1,4 +1,4 @@
-"""Tests for the PowerFlow Reports API and Convergence endpoint."""
+"""Tests for the TensorLBM Reports API and Convergence endpoint."""
 from __future__ import annotations
 
 import pytest
@@ -29,7 +29,7 @@ class TestReportsAPI:
         assert r.status_code == 200
         assert "text/html" in r.headers.get("content-type", "")
         html = r.text
-        assert "PowerFlow LBM" in html
+        assert "TensorLBM" in html
         assert jid in html
 
     def test_report_summary_schema(self, client):

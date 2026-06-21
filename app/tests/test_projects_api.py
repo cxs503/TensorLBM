@@ -1,4 +1,4 @@
-"""Tests for the PowerFlow Project/Case management API."""
+"""Tests for the TensorLBM Project/Case management API."""
 from __future__ import annotations
 
 import pytest

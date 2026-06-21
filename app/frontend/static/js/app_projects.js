@@ -1,5 +1,5 @@
 /**
- * app_projects.js – PowerFlow Project/Case Management Panel
+ * app_projects.js – TensorLBM Project/Case Management Panel
  *
  * Provides the full project → case management workflow:
  *   - List / create / delete projects
@@ -166,7 +166,13 @@ function _caseCard(c) {
   const statusColors = {
     draft: "secondary", running: "warning", completed: "success", failed: "danger"
   };
+  const stageColors = {
+    draft: "light text-dark", setup: "info text-dark", meshed: "primary",
+    solved: "success", post_processed: "dark"
+  };
   const col = statusColors[c.status] || "secondary";
+  const stageLabel = t(`projects.stage_${c.workflow_stage}`) || c.workflow_stage || "draft";
+  const stageCls = stageColors[c.workflow_stage] || "light text-dark";
   return `
 <div class="card mb-2">
   <div class="card-body py-2 px-3">
@@ -174,9 +180,14 @@ function _caseCard(c) {
       <div>
         <strong>${_esc(c.name)}</strong>
         <span class="badge bg-${col} ms-1 status-badge">${_esc(c.status)}</span>
+        <span class="badge bg-${stageCls} ms-1">${_esc(stageLabel)}</span>
         <span class="text-muted ms-1 small">${_esc(c.scenario)}</span>
       </div>
       <div class="d-flex gap-1">
+        <button class="btn btn-sm btn-outline-secondary" onclick="projectsAdvanceStage('${_esc(c.id)}')"
+          title="${t('projects.advance_workflow')}">
+          <i class="bi bi-arrow-right-circle"></i>
+        </button>
         ${c.job_id
           ? `<button class="btn btn-sm btn-outline-primary" onclick="projectsViewJob('${_esc(c.job_id)}')" title="View Job"><i class="bi bi-eye"></i></button>`
           : ""}
@@ -243,6 +254,28 @@ function projectsViewJob(jobId) {
   // Select job in sidebar if possible
   if (typeof selectJob === "function") selectJob(jobId);
   showTab("postprocess", document.querySelector('[data-tab="postprocess"]'));
+}
+
+/* =========================================================================
+   Workflow stage advancement
+   ========================================================================= */
+
+/** Advance a case to the next workflow stage. */
+async function projectsAdvanceStage(caseId) {
+  if (!_pf_active_project) return;
+  try {
+    const resp = await fetch(
+      `/api/projects/${_pf_active_project.id}/cases/${caseId}/advance-workflow`,
+      { method: "POST" }
+    );
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      throw new Error(data.detail || await resp.text());
+    }
+    await _loadCases(_pf_active_project.id);
+  } catch (e) {
+    alert(e.message);
+  }
 }
 
 /* =========================================================================

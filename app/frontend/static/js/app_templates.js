@@ -1,8 +1,8 @@
 /**
- * app_templates.js – PowerFlow Engineering Templates Panel
+ * app_templates.js – TensorLBM Engineering Templates Panel
  *
  * Renders the catalogue of pre-configured engineering simulation templates
- * (analogous to the scenario wizard in PowerFLOW / XFlow).
+ * (scenario wizard for guided simulation setup).
  * Selecting a template pre-fills the Solve panel form and navigates there.
  */
 "use strict";

@@ -138,8 +138,114 @@ async def voxelize_stl(
 
 
 # ---------------------------------------------------------------------------
-# Unit conversion
+# Fluid material database
 # ---------------------------------------------------------------------------
+
+# Common engineering fluids at standard / reference conditions.
+# Properties at ~20 °C (293.15 K) unless otherwise noted.
+_FLUID_DB: list[dict] = [
+    {
+        "id": "water_20c",
+        "name": "Water (20 °C)",
+        "name_zh": "水（20 °C）",
+        "category": "liquid",
+        "density_kg_m3": 998.2,
+        "dynamic_viscosity_pa_s": 1.002e-3,
+        "kinematic_viscosity_m2_s": 1.004e-6,
+        "surface_tension_n_m": 0.0728,
+        "bulk_modulus_pa": 2.18e9,
+        "ref_temp_c": 20.0,
+        "notes": "Fresh water, standard reference (ISO 5167)",
+    },
+    {
+        "id": "seawater_20c",
+        "name": "Seawater (20 °C, 35 ppt)",
+        "name_zh": "海水（20 °C，盐度 35 ppt）",
+        "category": "liquid",
+        "density_kg_m3": 1025.0,
+        "dynamic_viscosity_pa_s": 1.08e-3,
+        "kinematic_viscosity_m2_s": 1.054e-6,
+        "surface_tension_n_m": 0.0725,
+        "bulk_modulus_pa": 2.34e9,
+        "ref_temp_c": 20.0,
+        "notes": "ITTC standard seawater (2011)",
+    },
+    {
+        "id": "air_20c",
+        "name": "Air (20 °C, 1 atm)",
+        "name_zh": "空气（20 °C，1 atm）",
+        "category": "gas",
+        "density_kg_m3": 1.204,
+        "dynamic_viscosity_pa_s": 1.825e-5,
+        "kinematic_viscosity_m2_s": 1.516e-5,
+        "surface_tension_n_m": None,
+        "bulk_modulus_pa": 1.42e5,
+        "ref_temp_c": 20.0,
+        "notes": "Dry air at sea level (NIST)",
+    },
+    {
+        "id": "oil_hydraulic",
+        "name": "Hydraulic Oil (ISO VG 46)",
+        "name_zh": "液压油（ISO VG 46）",
+        "category": "liquid",
+        "density_kg_m3": 875.0,
+        "dynamic_viscosity_pa_s": 0.046,
+        "kinematic_viscosity_m2_s": 5.26e-5,
+        "surface_tension_n_m": 0.032,
+        "bulk_modulus_pa": 1.6e9,
+        "ref_temp_c": 40.0,
+        "notes": "Typical ISO VG 46 mineral oil at 40 °C",
+    },
+    {
+        "id": "glycerin_25c",
+        "name": "Glycerin (25 °C)",
+        "name_zh": "甘油（25 °C）",
+        "category": "liquid",
+        "density_kg_m3": 1261.0,
+        "dynamic_viscosity_pa_s": 0.934,
+        "kinematic_viscosity_m2_s": 7.41e-4,
+        "surface_tension_n_m": 0.0634,
+        "bulk_modulus_pa": 4.35e9,
+        "ref_temp_c": 25.0,
+        "notes": "Pure glycerin; often used in multiphase benchmark studies",
+    },
+    {
+        "id": "mercury_25c",
+        "name": "Mercury (25 °C)",
+        "name_zh": "汞（25 °C）",
+        "category": "liquid",
+        "density_kg_m3": 13534.0,
+        "dynamic_viscosity_pa_s": 1.526e-3,
+        "kinematic_viscosity_m2_s": 1.13e-7,
+        "surface_tension_n_m": 0.485,
+        "bulk_modulus_pa": 2.85e10,
+        "ref_temp_c": 25.0,
+        "notes": "Liquid mercury; high surface tension / density ratio",
+    },
+]
+
+
+@router.get("/materials")
+async def list_materials(category: str | None = None) -> dict:
+    """Return the built-in fluid material database.
+
+    Optional ``category`` filter: ``liquid`` or ``gas``.
+    """
+    fluids = _FLUID_DB
+    if category is not None:
+        fluids = [f for f in fluids if f["category"] == category]
+    return {"count": len(fluids), "materials": fluids}
+
+
+@router.get("/materials/{material_id}")
+async def get_material(material_id: str) -> dict:
+    """Return properties of a single material by ID."""
+    for f in _FLUID_DB:
+        if f["id"] == material_id:
+            return f
+    raise HTTPException(status_code=404, detail=f"Material '{material_id}' not found")
+
+
 
 class UnitConvertRequest(BaseModel):
     # Physical quantities
