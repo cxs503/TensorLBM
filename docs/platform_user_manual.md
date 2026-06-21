@@ -3,7 +3,7 @@
 **版本 / Version:** 1.0.0  
 **适用对象 / Audience:** 平台终端用户（科研人员、工程师、教学使用者）
 
-> 本手册描述位于 `platform/` 目录下的 **B/S Web 平台**。  
+> 本手册描述位于 `app/` 目录下的 **B/S Web 平台**。  
 > 若需 TensorLBM 库本身（Python API、LBM 算法、船舶基准等）请参阅
 > [`docs/software_manual.md`](software_manual.md)。
 
@@ -53,13 +53,13 @@ TensorLBM 平台是一个把 TensorLBM 全部仿真能力封装为可交互 Web 
 ```bash
 # 在仓库根目录
 pip install -e ".[dev]"            # 安装 tensorlbm 库（含 torch, matplotlib …）
-pip install -r platform/requirements.txt   # fastapi, uvicorn, python-multipart, aiofiles
+pip install -r app/requirements.txt   # fastapi, uvicorn, python-multipart, aiofiles
 ```
 
 ### 2.3 启动后端 / Start the backend
 
 ```bash
-cd platform
+cd app
 bash start.sh
 # 等价于：
 PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
@@ -91,7 +91,7 @@ PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
                         CPU / cuda:N
 ```
 
-* 作业目录：`/tmp/tensorlbm_platform/{job_id}`，包含 `run_metadata.json`、PNG 快照、CSV 时间序列、HDF5/VTK 等。
+* 作业目录默认由环境变量 `TENSORLBM_OUTPUT_ROOT` 控制（未设置时为 `/tmp/tensorlbm_platform/{job_id}`），包含 `run_metadata.json`、PNG 快照、CSV 时间序列、HDF5/VTK 等。
 * `ThreadPoolExecutor` 大小由环境变量 `TENSORLBM_MAX_WORKERS` 控制（默认 4）。
 
 ---
@@ -159,6 +159,12 @@ PYTHONPATH=../src uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 * `ghia`：与 Ghia (1982) Re=100/400/1000 对比顶盖驱动方腔。
 * `mlups`：D2Q9 BGK 性能基准。
 * `porous`：Laplace 多孔 + 毛细侵入。
+* `accuracy`：单相精度套件（方腔/BFS/旋转圆柱）。
+
+工业可用性（P0）新增接口：
+
+* `GET /api/benchmarks/accuracy/baselines`：查看精度门禁基线配置（`ci_fast` / `engineering_full`）。
+* `GET /api/benchmarks/accuracy/report/{job_id}`：对已完成 accuracy 作业生成结构化回归报告与门禁结论。
 
 ### 4.6 作业管理 / Job Management
 
@@ -274,6 +280,6 @@ curl http://localhost:8000/api/postprocess/summary/ab12cd34
 ---
 
 > 进一步阅读：
-> * [`platform/tests/README.md`](../platform/tests/README.md) — 平台测试套件与运行方法  
+> * [`app/tests/README.md`](../app/tests/README.md) — 平台测试套件与运行方法  
 > * [`docs/platform_test_report.md`](platform_test_report.md) — 测试报告（含缺陷修复清单）  
 > * [`docs/software_manual.md`](software_manual.md) — TensorLBM 库（Python API、船舶基准）
