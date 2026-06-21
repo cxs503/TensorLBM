@@ -209,6 +209,23 @@ class TestParametricStudy:
         assert len(data["job_ids"]) == 3
         assert len(data["study_group"]) == 12
 
+    def test_submit_multi_variable_study(self, client):
+        body = {
+            "solver_type": "cylinder_flow",
+            "base_config": self._BASE_CONFIG,
+            "variables": [
+                {"name": "re", "values": [50.0, 100.0]},
+                {"name": "u_in", "values": [0.05, 0.08]},
+            ],
+        }
+        r = client.post("/api/solve/parametric-study", json=body)
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["job_count"] == 4
+        assert len(data["job_ids"]) == 4
+        assert len(data["design_points"]) == 4
+        assert [v["name"] for v in data["variables"]] == ["re", "u_in"]
+
     def test_invalid_solver_type(self, client):
         body = {
             "solver_type": "unknown_solver",
@@ -235,6 +252,18 @@ class TestParametricStudy:
             "base_config": self._BASE_CONFIG,
             "parameter": "re",
             "values": [100.0],  # only 1, minimum is 2
+        }
+        r = client.post("/api/solve/parametric-study", json=body)
+        assert r.status_code == 422
+
+    def test_too_many_combinations(self, client):
+        body = {
+            "solver_type": "cylinder_flow",
+            "base_config": self._BASE_CONFIG,
+            "variables": [
+                {"name": "re", "values": [50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0]},
+                {"name": "u_in", "values": [0.05, 0.06, 0.07, 0.08, 0.09, 0.10]},
+            ],
         }
         r = client.post("/api/solve/parametric-study", json=body)
         assert r.status_code == 422

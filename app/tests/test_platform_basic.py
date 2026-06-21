@@ -53,6 +53,7 @@ def test_openapi(client):
         "/api/benchmarks/accuracy",
         "/api/benchmarks/mlups",
         "/api/orchestration/templates",
+        "/api/orchestration/studies/{study_group}/summary",
         "/api/ai/governance/confidence-gate",
     ]
     for p in expected:

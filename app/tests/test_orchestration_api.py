@@ -45,12 +45,83 @@ def test_orchestration_submit_cylinder_template(
     assert all(c["job_type"] == "cylinder_flow" for c in calls)
 
 
+def test_orchestration_submit_multifactor_template(
+    client: TestClient,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    from backend.routers import solver
+
+    calls: list[dict[str, Any]] = []
+
+    def _fake_submit(*, name: str, job_type: str, config: dict[str, Any], fn: object) -> str:
+        calls.append({"name": name, "job_type": job_type, "config": config, "fn": fn})
+        return f"job-{len(calls)}"
+
+    monkeypatch.setattr(solver.job_manager, "submit", _fake_submit)
+
+    payload = {
+        "template_id": "cylinder_multi_factor_doe",
+        "base_config": {"nx": 80, "ny": 30, "n_steps": 10, "output_interval": 5},
+        "sweep": [
+            {"name": "re", "values": [60.0, 80.0]},
+            {"name": "u_in", "values": [0.05, 0.08]},
+        ],
+        "objective": {"metric": "mean_cd_last", "goal": "minimize"},
+    }
+    r = client.post("/api/orchestration/experiments/submit", json=payload)
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["submitted"] == 4
+    assert data["job_count"] == 4
+    assert len(data["job_ids"]) == 4
+    assert len(calls) == 4
+    assert data["objective"]["metric"] == "mean_cd_last"
+
+
 def test_orchestration_kpis(client: TestClient) -> None:
     r = client.get("/api/orchestration/kpis")
     assert r.status_code == 200
     data = r.json()
     assert "max_workers" in data
     assert "parallel_efficiency" in data
+
+
+def test_orchestration_study_summary(client: TestClient, job_manager, waiter) -> None:
+    def _writer(job: object, cd: float, re_value: float) -> dict[str, bool]:
+        job.output_dir.joinpath("forces.csv").write_text(
+            f"step,Cd,Cl\n0,{cd},0.0\n1,{cd},0.0\n",
+        )
+        job.diagnostics.extend([{"step": 0, "Cd": cd}, {"step": 1, "Cd": cd}])
+        return {"ok": True, "re": re_value}
+
+    shared = {
+        "group": "study-summary-1",
+        "variables": [{"name": "re", "values": [80.0, 100.0]}],
+        "objective": {"metric": "mean_cd_last", "goal": "minimize"},
+        "constraints": [{"metric": "steady_state_score", "operator": ">=", "value": 0.5}],
+    }
+    job1 = job_manager.submit(
+        name="study-a",
+        job_type="cylinder_flow",
+        config={"study": {**shared, "design_point": {"re": 80.0}}},
+        fn=lambda job: _writer(job, 1.2, 80.0),
+    )
+    job2 = job_manager.submit(
+        name="study-b",
+        job_type="cylinder_flow",
+        config={"study": {**shared, "design_point": {"re": 100.0}}},
+        fn=lambda job: _writer(job, 0.8, 100.0),
+    )
+    waiter(job1, timeout=10.0)
+    waiter(job2, timeout=10.0)
+
+    r = client.get("/api/orchestration/studies/study-summary-1/summary")
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["job_count"] == 2
+    assert data["eligible_jobs"] == 2
+    assert data["best_job"]["job_id"] == job2
+    assert data["best_job"]["design_point"]["re"] == 100.0
 
 
 def test_ai_confidence_gate(client: TestClient) -> None:
