@@ -243,10 +243,23 @@ function orchSetResult(id, value) {
   el.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
-function orchParseReValues(raw) {
-  return raw.split(',')
+function orchParseSweep(raw) {
+  const text = (raw || '').trim();
+  if (!text) return [];
+  if (text.startsWith('[')) {
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) throw new Error('Sweep JSON must be an array');
+    return parsed.map(item => ({
+      name: String(item.name || '').trim(),
+      values: Array.isArray(item.values)
+        ? item.values.map(v => Number(v)).filter(v => Number.isFinite(v))
+        : [],
+    })).filter(item => item.name && item.values.length);
+  }
+  const reValues = text.split(',')
     .map(v => Number(v.trim()))
     .filter(v => Number.isFinite(v) && v > 0);
+  return reValues.length ? [{ name: 're', values: reValues }] : [];
 }
 
 async function orchLoadTemplates() {
@@ -274,7 +287,7 @@ async function orchLoadTemplates() {
 
 async function orchSubmitExperiment() {
   const template_id = document.getElementById('orch-template')?.value || '';
-  const re_values = orchParseReValues(document.getElementById('orch-re-values')?.value || '');
+  let sweep = [];
   const base_config = {
     nx: Number(document.getElementById('orch-nx')?.value || 160),
     ny: Number(document.getElementById('orch-ny')?.value || 60),
@@ -282,7 +295,14 @@ async function orchSubmitExperiment() {
     output_interval: Number(document.getElementById('orch-output-interval')?.value || 200),
   };
   const body = { template_id, base_config };
-  if (re_values.length) body.sweep = [{ name: 're', values: re_values }];
+  try {
+    sweep = orchParseSweep(document.getElementById('orch-sweep')?.value || '');
+  } catch (e) {
+    orchSetResult('orch-submit-result', `Error: ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+    return;
+  }
+  if (sweep.length) body.sweep = sweep;
   orchSetResult('orch-submit-result', t('common.submitting'));
   try {
     const r = await api('POST', '/api/orchestration/experiments/submit', body);

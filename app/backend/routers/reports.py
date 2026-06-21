@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -73,6 +74,87 @@ def _list_images(job: job_manager.Job) -> list[Path]:
     return sorted(job.output_dir.rglob("*.png"))[:20]  # cap at 20 images
 
 
+def _numeric_series(rows: list[dict[str, Any]], keys: tuple[str, ...]) -> list[float]:
+    vals: list[float] = []
+    for row in rows:
+        for key in keys:
+            val = row.get(key)
+            if isinstance(val, (int, float)):
+                vals.append(float(val))
+                break
+    return vals
+
+
+def _tail_stats(values: list[float], window: int = 20) -> tuple[float | None, float | None]:
+    if not values:
+        return None, None
+    tail = values[-min(window, len(values)) :]
+    mean = sum(tail) / len(tail)
+    if len(tail) == 1:
+        return mean, 0.0
+    var = sum((v - mean) ** 2 for v in tail) / len(tail)
+    return mean, math.sqrt(var)
+
+
+def _steady_state_score(*series: list[float]) -> float | None:
+    rel_stds: list[float] = []
+    for values in series:
+        mean, std = _tail_stats(values)
+        if mean is None or std is None or abs(mean) < 1e-12:
+            continue
+        rel_stds.append(std / abs(mean))
+    if not rel_stds:
+        return None
+    worst = max(rel_stds)
+    return max(0.0, 1.0 - min(1.0, worst * 10.0))
+
+
+def compute_engineering_kpis(job: job_manager.Job) -> dict[str, Any]:
+    """Compute reusable engineering KPIs from diagnostics and force history."""
+    forces = _load_forces_csv(job)
+    diag = job.diagnostics
+
+    cd_values = _numeric_series(forces, ("Cd", "cd", "drag"))
+    cl_values = _numeric_series(forces, ("Cl", "cl", "lift"))
+    if not cd_values:
+        cd_values = _numeric_series(diag, ("Cd", "cd", "drag"))
+    if not cl_values:
+        cl_values = _numeric_series(diag, ("Cl", "cl", "lift"))
+
+    mean_cd, std_cd = _tail_stats(cd_values)
+    mean_cl, std_cl = _tail_stats(cl_values)
+    steady_score = _steady_state_score(cd_values, cl_values)
+
+    latest_step = None
+    for row in reversed(diag):
+        step = row.get("step") or row.get("t") or row.get("iter")
+        if isinstance(step, (int, float)):
+            latest_step = int(step)
+            break
+
+    return {
+        "diagnostic_snapshots": len(diag),
+        "force_rows": len(forces),
+        "image_count": len(_list_images(job)),
+        "runtime_seconds": job.run_duration_seconds,
+        "latest_step": latest_step,
+        "mean_cd_last": mean_cd,
+        "std_cd_last": std_cd,
+        "mean_cl_last": mean_cl,
+        "std_cl_last": std_cl,
+        "steady_state_score": steady_score,
+        "steady_state_detected": (
+            steady_score is not None and steady_score >= 0.7
+        ),
+    }
+
+
+def _format_cell(value: Any) -> str:
+    if isinstance(value, float):
+        return f"{value:.5g}"
+    return str(value)
+
+
 # ---------------------------------------------------------------------------
 # Report builder
 # ---------------------------------------------------------------------------
@@ -83,6 +165,7 @@ def _build_html_report(job: job_manager.Job) -> str:
     meta = _load_metadata(job)
     forces = _load_forces_csv(job)
     images = _list_images(job)
+    kpis = compute_engineering_kpis(job)
 
     # ---- convergence table data ----------------------------------------
     diag = job.diagnostics  # list of dicts with step, Cd, Cl, etc.
@@ -138,7 +221,7 @@ def _build_html_report(job: job_manager.Job) -> str:
         rows_html = ""
         for row in forces[-20:]:  # last 20 rows
             rows_html += "<tr>" + "".join(
-                f'<td>{row[k]:.5g if isinstance(row[k], float) else row[k]}</td>'
+                f"<td>{_format_cell(row[k])}</td>"
                 for k in keys
             ) + "</tr>"
         forces_table = (
@@ -151,6 +234,23 @@ def _build_html_report(job: job_manager.Job) -> str:
     # ---- metadata section -----------------------------------------------
     config_json = json.dumps(job.config, indent=2)
     result_json = json.dumps(job.result, indent=2)
+    kpi_rows = [
+        ("Latest step", kpis["latest_step"]),
+        ("Runtime (s)", kpis["runtime_seconds"]),
+        ("Mean Cd (tail)", kpis["mean_cd_last"]),
+        ("Std Cd (tail)", kpis["std_cd_last"]),
+        ("Mean Cl (tail)", kpis["mean_cl_last"]),
+        ("Std Cl (tail)", kpis["std_cl_last"]),
+        ("Steady-state score", kpis["steady_state_score"]),
+        ("Steady-state detected", kpis["steady_state_detected"]),
+    ]
+    kpi_table = "".join(
+        "<tr>"
+        f"<th>{label}</th>"
+        f"<td>{'—' if value is None else _format_cell(value)}</td>"
+        "</tr>"
+        for label, value in kpi_rows
+    )
 
     now_str = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     status_color = {
@@ -210,6 +310,16 @@ def _build_html_report(job: job_manager.Job) -> str:
       <div class="col-md-4"><strong>Completed:</strong> {job.completed_at or '—'}</div>
     </div>
     {'<div class="alert alert-danger mt-2"><strong>Error:</strong> ' + job.error + '</div>' if job.error else ''}
+  </div>
+
+  <!-- Engineering KPIs -->
+  <div class="section">
+    <h5>&#129516; Engineering KPIs</h5>
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered mb-0">
+        <tbody>{kpi_table}</tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Convergence -->
@@ -285,6 +395,7 @@ async def get_report_summary(job_id: str) -> dict:
     meta = _load_metadata(job)
     image_count = len(_list_images(job))
     diag = job.diagnostics
+    kpis = compute_engineering_kpis(job)
     return {
         "job_id": job.job_id,
         "name": job.name,
@@ -299,4 +410,5 @@ async def get_report_summary(job_id: str) -> dict:
         "image_count": image_count,
         "run_metadata_available": bool(meta),
         "report_url": f"/api/reports/{job_id}",
+        "engineering_kpis": kpis,
     }

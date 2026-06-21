@@ -442,6 +442,7 @@
     "templates_title": "Experiment templates",
     "template_id": "Template",
     "re_values": "Re sweep values (comma)",
+    "sweep_json": "Sweep JSON",
     "nx": "nx",
     "ny": "ny",
     "n_steps": "n_steps",

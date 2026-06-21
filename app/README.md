@@ -156,9 +156,12 @@ HPC+AI demonstration upgrade:
 
 * `GET /api/orchestration/templates` — staged experiment templates (A/B/C).
 * `POST /api/orchestration/experiments/submit` — submit a template run
-  (currently implemented: `cylinder_re_sweep`).
+  (currently implemented: `cylinder_re_sweep`, `cylinder_multi_factor_doe`).
 * `GET /api/orchestration/kpis` — aggregate queue wait, retries, runtime,
   throughput, resource distribution and estimated cost from platform jobs.
+* `GET /api/orchestration/studies/{study_group}/summary` — aggregate DOE jobs,
+  evaluate optional study constraints/objectives and rank the best completed
+  design point.
 * `GET /api/ai/governance/registry-summary` — summarize AI model registry
   quality statistics.
 * `POST /api/ai/governance/confidence-gate` — uncertainty/error-based decision
@@ -202,6 +205,7 @@ Key endpoints:
 | `POST` | `/api/preprocess/random-porosity-2d` | Random porosity |
 | `POST` | `/api/preprocess/units` | Unit conversion |
 | `POST` | `/api/solve/{type}` | Submit simulation |
+| `POST` | `/api/solve/parametric-study` | Single/multi-variable DOE sweep |
 | `POST` | `/api/benchmarks/{type}` | Run benchmark |
 | `WS` | `/ws` | Real-time job updates |
 
