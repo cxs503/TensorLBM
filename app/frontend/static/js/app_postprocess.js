@@ -63,6 +63,7 @@ function showPPTab(name, el) {
   else if (name === 'files') loadFiles();
   else if (name === 'metadata') loadMetadata();
   else if (name === 'viewer') loadViewerCheckpoints();
+  else if (name === 'probes') _initProbeTab();
   return false;
 }
 
@@ -440,6 +441,184 @@ function _drawLegend(lut, vmin, vmax) {
     lctx.fillStyle = '#333';
     lctx.fillRect(0, y, 30, 1);
   });
+}
+
+// ============================================================
+// Probe Monitor
+// ============================================================
+let _probeRows = [];
+
+function _initProbeTab() {
+  if (_probeRows.length === 0) addProbeRow();
+}
+
+function addProbeRow() {
+  const id = Date.now();
+  _probeRows.push({ id });
+  _renderProbeList();
+}
+
+function _renderProbeList() {
+  const el = document.getElementById('probe-list');
+  if (!el) return;
+  el.innerHTML = _probeRows.map((pr, i) => `
+    <div class="d-flex gap-1 mb-1 align-items-center" id="probe-row-${pr.id}">
+      <input type="number" class="form-control form-control-sm" id="probe-x-${pr.id}"
+        placeholder="${t('postprocess.probe_x')}" value="${(0.25 + i * 0.25).toFixed(2)}" step="0.05" min="0" max="1" style="width:80px"/>
+      <input type="number" class="form-control form-control-sm" id="probe-y-${pr.id}"
+        placeholder="${t('postprocess.probe_y')}" value="0.50" step="0.05" min="0" max="1" style="width:80px"/>
+      <input type="text" class="form-control form-control-sm" id="probe-lbl-${pr.id}"
+        placeholder="${t('postprocess.probe_label')}" value="P${i + 1}" style="width:70px"/>
+      <button class="btn btn-outline-danger btn-sm py-0" onclick="_removeProbeRow(${pr.id})">
+        <i class="bi bi-trash3"></i>
+      </button>
+    </div>`).join('');
+}
+
+function _removeProbeRow(id) {
+  _probeRows = _probeRows.filter(r => r.id !== id);
+  _renderProbeList();
+}
+
+async function runProbeHistory() {
+  if (!ppSelectedJobId) { alert('Select a job first.'); return; }
+  const probes = _probeRows.map(pr => ({
+    x_frac: +document.getElementById(`probe-x-${pr.id}`).value,
+    y_frac: +document.getElementById(`probe-y-${pr.id}`).value,
+    label: document.getElementById(`probe-lbl-${pr.id}`).value || `P${pr.id}`,
+  }));
+  if (!probes.length) { alert('Add at least one probe.'); return; }
+  const hint = document.getElementById('probe-chart-hint');
+  hint.textContent = 'Loading…';
+  try {
+    const r = await api('POST', '/api/postprocess/probe-history', { job_id: ppSelectedJobId, probes });
+    _renderProbeChart(r);
+    hint.textContent = `${r.checkpoint_count} checkpoints loaded.`;
+  } catch(e) { hint.textContent = 'Error: ' + e.message; }
+}
+
+function _renderProbeChart(r) {
+  const canvas = document.getElementById('probe-chart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.parentElement.clientWidth || 640;
+  canvas.width = W; canvas.height = 280;
+  ctx.clearRect(0, 0, W, 280);
+
+  const colors = ['#0d6efd','#198754','#dc3545','#ffc107','#6f42c1','#0dcaf0','#fd7e14'];
+  const probeData = r.probes;
+  if (!probeData || !probeData.length || !probeData[0].step.length) {
+    ctx.fillStyle = '#6c757d'; ctx.font = '14px sans-serif';
+    ctx.fillText('No data (job may need checkpoints enabled)', 40, 140);
+    return;
+  }
+
+  const allSteps = probeData[0].step;
+  const allSpeeds = probeData.flatMap(p => p.speed);
+  const yMin = Math.min(...allSpeeds), yMax = Math.max(...allSpeeds) || 1;
+  const pad = { t: 20, r: 20, b: 40, l: 55 };
+  const W2 = W - pad.l - pad.r, H2 = 280 - pad.t - pad.b;
+  const xScale = s => pad.l + (s - allSteps[0]) / (allSteps[allSteps.length-1] - allSteps[0] + 1) * W2;
+  const yScale = v => pad.t + (1 - (v - yMin) / (yMax - yMin + 1e-12)) * H2;
+
+  // Axes
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+  ctx.strokeRect(pad.l, pad.t, W2, H2);
+  ctx.fillStyle = '#333'; ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('step', pad.l + W2 / 2, 280 - 5);
+  ctx.save(); ctx.translate(12, pad.t + H2 / 2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('speed |u|', 0, 0); ctx.restore();
+
+  // Lines
+  probeData.forEach((p, pi) => {
+    ctx.strokeStyle = colors[pi % colors.length];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    p.step.forEach((s, i) => {
+      const x = xScale(s), y = yScale(p.speed[i]);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // Legend label
+    ctx.fillStyle = colors[pi % colors.length];
+    ctx.textAlign = 'left';
+    ctx.fillText(p.label, pad.l + 5 + pi * 80, pad.t + 15);
+  });
+}
+
+// ============================================================
+// Time-Averaged Field Statistics
+// ============================================================
+let _taData = null;
+
+async function runTimeAverage() {
+  if (!ppSelectedJobId) { alert('Select a job first.'); return; }
+  const field = document.getElementById('ta-field').value;
+  const taHint = document.getElementById('ta-hint');
+  const taInfo = document.getElementById('ta-info');
+  taHint.textContent = 'Computing…';
+  taInfo.innerHTML = '';
+  try {
+    const r = await api('GET', `/api/postprocess/time-average/${ppSelectedJobId}?field=${field}`);
+    _taData = r;
+    taInfo.innerHTML = `
+      <div class="small text-muted">
+        <strong>${t('postprocess.timeavg_snapshots')}:</strong> ${r.n_snapshots}<br>
+        <strong>min:</strong> ${r.field_min.toExponential(3)} &nbsp;
+        <strong>max:</strong> ${r.field_max.toExponential(3)}<br>
+        <strong>RMS max:</strong> ${r.rms_max.toExponential(3)}
+      </div>`;
+    taHint.textContent = '';
+    _renderTimeAvgCanvas();
+  } catch(e) { taHint.textContent = 'Error: ' + e.message; }
+}
+
+function _renderTimeAvgCanvas() {
+  if (!_taData) return;
+  const show = document.getElementById('ta-show').value;
+  const r = _taData;
+  const data = show === 'rms' ? r.rms : r.mean;
+  const vmin = show === 'rms' ? 0 : r.field_min;
+  const vmax = show === 'rms' ? r.rms_max : r.field_max;
+
+  const canvas = document.getElementById('ta-canvas');
+  canvas.width = r.nx; canvas.height = r.ny;
+  canvas.style.display = 'inline-block';
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(r.nx, r.ny);
+
+  const lut = _buildCmap([
+    [0, [68,1,84]], [0.25, [59,82,139]], [0.5, [33,145,140]],
+    [0.75, [94,201,98]], [1, [253,231,37]]
+  ]);
+
+  for (let iy = 0; iy < r.ny; iy++) {
+    for (let ix = 0; ix < r.nx; ix++) {
+      const v = data[(r.ny - 1 - iy) * r.nx + ix];
+      const frac = (vmax > vmin) ? Math.max(0, Math.min(1, (v - vmin) / (vmax - vmin))) : 0;
+      const [cr, cg, cb] = _cmapColor(lut, frac);
+      const idx = (iy * r.nx + ix) * 4;
+      img.data[idx] = cr; img.data[idx+1] = cg; img.data[idx+2] = cb; img.data[idx+3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
+  const title = document.getElementById('ta-title');
+  title.textContent = `${show === 'rms' ? 'RMS' : 'Mean'} ${r.field} (${r.n_snapshots} snapshots)`;
+  document.getElementById('ta-stats').textContent = `${r.nx}×${r.ny}`;
+
+  const taLeg = document.getElementById('ta-legend');
+  if (taLeg) {
+    taLeg.style.display = 'inline-block';
+    const lctx = taLeg.getContext('2d');
+    const H = taLeg.height;
+    for (let i = 0; i < H; i++) {
+      const frac = 1 - i / (H - 1);
+      const [cr, cg, cb] = _cmapColor(lut, frac);
+      lctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+      lctx.fillRect(0, i, 30, 1);
+    }
+  }
 }
 
 // ============================================================

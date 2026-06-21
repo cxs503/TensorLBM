@@ -497,3 +497,79 @@ async function validateSolverParams() {
 }
 
 // ============================================================
+// Y+ Wall-Distance Calculator
+// ============================================================
+async function runYPlus() {
+  const body = {
+    re: +document.getElementById('yp-re').value,
+    u_ms: +document.getElementById('yp-u').value,
+    l_m: +document.getElementById('yp-l').value,
+    nu_m2s: +document.getElementById('yp-nu').value,
+    target_yplus: +document.getElementById('yp-yplus').value,
+    n_cells: +document.getElementById('yp-ncells').value,
+    geometry: document.getElementById('yp-geom').value,
+  };
+  const el = document.getElementById('yp-result');
+  el.innerHTML = '<span class="text-muted small">Computing…</span>';
+  try {
+    const r = await api('POST', '/api/preprocess/yplus', body);
+    const dyLbm = r.delta_y_lbm;
+    const dyBadge = dyLbm < 0.5
+      ? `<span class="badge bg-warning text-dark">Δy_LBM = ${dyLbm} — increase grid resolution</span>`
+      : dyLbm > 5
+        ? `<span class="badge bg-info text-dark">Δy_LBM = ${dyLbm} — wall-modelled resolution</span>`
+        : `<span class="badge bg-success">Δy_LBM = ${dyLbm} — wall-resolved</span>`;
+    el.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-1 small">
+          <tr><th>${t('preprocess.yplus_result_dy')}</th><td>${r.delta_y_m.toExponential(3)}</td></tr>
+          <tr><th>${t('preprocess.yplus_result_dy_lbm')}</th><td>${dyBadge}</td></tr>
+          <tr><th>${t('preprocess.yplus_result_utau')}</th><td>${r.u_tau_ms.toExponential(3)}</td></tr>
+          <tr><th>${t('preprocess.yplus_result_cf')}</th><td>${r.c_f.toExponential(4)}</td></tr>
+          <tr><th>${t('preprocess.yplus_result_bl')}</th><td>${r.bl_thickness_m.toExponential(3)}</td></tr>
+          <tr><th>${t('preprocess.yplus_result_cells_bl')}</th><td>${r.cells_inside_bl}</td></tr>
+        </table>
+        <p class="text-muted small mb-0"><em>Cf model:</em> ${escHtml(r.cf_model)}</p>
+        ${r.note ? `<p class="text-muted small mb-0">${escHtml(r.note)}</p>` : ''}
+      </div>`;
+  } catch(e) { el.innerHTML = `<div class="alert alert-danger small">${escHtml(e.message)}</div>`; }
+}
+
+// ============================================================
+// Parametric Sensitivity Study
+// ============================================================
+async function submitParametricStudy() {
+  const el = document.getElementById('study-result');
+  const solver_type = document.getElementById('study-solver').value;
+  const parameter = document.getElementById('study-param').value;
+  const rawValues = document.getElementById('study-values').value;
+  const rawConfig = document.getElementById('study-base-config').value;
+
+  let values, base_config;
+  try {
+    values = rawValues.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+    if (values.length < 2) throw new Error('Provide at least 2 comma-separated values');
+    if (values.length > 20) throw new Error('Maximum 20 values allowed');
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-danger small">${escHtml(e.message)}</div>`; return;
+  }
+  try {
+    base_config = JSON.parse(rawConfig);
+  } catch(e) {
+    el.innerHTML = `<div class="alert alert-danger small">Invalid JSON in base config: ${escHtml(e.message)}</div>`; return;
+  }
+
+  el.innerHTML = `<div class="spinner-border spinner-border-sm"></div> Submitting ${values.length} jobs…`;
+  try {
+    const r = await api('POST', '/api/solve/parametric-study', { solver_type, base_config, parameter, values });
+    el.innerHTML = `
+      <div class="alert alert-success py-1 small mb-1">
+        <i class="bi bi-check-circle-fill"></i> Study submitted: <strong>${r.job_ids.length} jobs</strong>
+        — group <code>${r.study_group}</code><br>
+        Parameter: <strong>${r.parameter}</strong> = [${r.values.join(', ')}]
+      </div>
+      <p class="small text-muted mb-0">Job IDs: ${r.job_ids.map(id => `<code>${id.slice(0,8)}…</code>`).join(', ')}</p>`;
+  } catch(e) { el.innerHTML = `<div class="alert alert-danger small">${escHtml(e.message)}</div>`; }
+}
+
+// ============================================================

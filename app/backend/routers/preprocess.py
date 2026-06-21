@@ -34,6 +34,7 @@ async def polygon_mask(req: PolygonMaskRequest) -> dict:
     to a 2-D boolean obstacle mask.  Returns a base64-encoded PNG preview."""
     try:
         import torch
+
         from tensorlbm import poly_to_mask_2d
 
         verts = [tuple(v) for v in req.vertices]
@@ -68,6 +69,7 @@ class RandomPorosityRequest(BaseModel):
 async def random_porosity_2d(req: RandomPorosityRequest) -> dict:
     try:
         import torch
+
         from tensorlbm import random_porosity_mask_2d
 
         mask_t = random_porosity_mask_2d(
@@ -108,6 +110,7 @@ async def voxelize_stl(
         from pathlib import Path
 
         import torch
+
         from tensorlbm import voxelize_stl_3d
 
         if not (file.filename or "").lower().endswith(".stl"):
@@ -245,6 +248,95 @@ async def get_material(material_id: str) -> dict:
             return f
     raise HTTPException(status_code=404, detail=f"Material '{material_id}' not found")
 
+
+
+# ---------------------------------------------------------------------------
+# Y+ wall distance calculator
+# ---------------------------------------------------------------------------
+
+# Geometry-specific skin-friction correlations (flat-plate turbulent BL)
+_CF_MODELS = {
+    "flat_plate": "Schlichting turbulent flat plate: Cf = 0.0576·Re^(-0.2)",
+    "cylinder":   "Achenbach (1968) approximation: Cf = 0.079·Re^(-0.25) (pipe Blasius form)",
+    "channel":    "Blasius pipe/channel: Cf = 0.079·Re^(-0.25)",
+}
+
+
+class YPlusRequest(BaseModel):
+    re: float = 1e5                    # Reynolds number (= U·L / ν)
+    u_ms: float = 1.0                  # freestream / bulk velocity [m/s]
+    l_m: float = 1.0                   # characteristic length [m]
+    nu_m2s: float = 1e-5              # kinematic viscosity [m²/s]
+    target_yplus: float = 1.0         # desired y+ at first cell centre
+    n_cells: int = 100                 # number of cells along L (for dx)
+    geometry: str = "flat_plate"      # flat_plate | cylinder | channel
+
+
+@router.post("/yplus")
+async def yplus_calculator(req: YPlusRequest) -> dict:
+    """Estimate the required first-cell height Δy to hit a target y⁺.
+
+    Uses skin-friction correlations to compute the wall friction velocity
+    u_τ, then solves Δy = y⁺ · ν / u_τ.  Also reports the equivalent
+    LBM lattice-unit cell height given the user's resolution (n_cells).
+
+    Geometry options and their Cf correlations
+    ------------------------------------------
+    * ``flat_plate`` – Schlichting turbulent flat plate: ``Cf = 0.0576·Re^(-0.2)``
+    * ``cylinder``   – Blasius / Achenbach form:         ``Cf = 0.079·Re^(-0.25)``
+    * ``channel``    – Same Blasius form as cylinder
+    """
+    import math
+
+    re = req.re
+    geom = req.geometry.lower()
+    if geom not in _CF_MODELS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown geometry '{req.geometry}'. Choose: {list(_CF_MODELS)}",
+        )
+
+    # ---- skin-friction coefficient ----------------------------------------
+    if geom == "flat_plate":
+        c_f = 0.0576 * re ** (-0.2)
+    else:  # cylinder / channel → Blasius
+        c_f = 0.079 * re ** (-0.25)
+
+    # ---- friction velocity u_τ = U · sqrt(Cf/2) ---------------------------
+    u_tau = req.u_ms * math.sqrt(c_f / 2.0)
+    if u_tau <= 0:
+        raise HTTPException(status_code=422, detail="Friction velocity is zero or negative.")
+
+    # ---- first-cell height in physical units --------------------------------
+    delta_y_m = req.target_yplus * req.nu_m2s / u_tau
+
+    # ---- convert to LBM lattice units (dx = L/N_cells) --------------------
+    dx_m = req.l_m / max(req.n_cells, 1)
+    delta_y_lbm = delta_y_m / dx_m
+
+    # ---- recommended minimum cells across BL --------------------------------
+    # Viscous sub-layer ends at y+ ≈ 5, recommend ≥5 cells inside y+<5
+    bl_thickness_m = 0.37 * req.l_m * re ** (-0.2)  # Prandtl 1/5 law
+    n_cells_bl = max(1, int(bl_thickness_m / delta_y_m))
+
+    return {
+        "reynolds_number": round(re, 4),
+        "geometry": geom,
+        "c_f": round(c_f, 6),
+        "u_tau_ms": round(u_tau, 6),
+        "target_yplus": req.target_yplus,
+        "delta_y_m": delta_y_m,
+        "delta_y_lbm": round(delta_y_lbm, 4),
+        "dx_m": round(dx_m, 8),
+        "n_cells_along_L": req.n_cells,
+        "bl_thickness_m": round(bl_thickness_m, 6),
+        "cells_inside_bl": n_cells_bl,
+        "cf_model": _CF_MODELS[geom],
+        "note": (
+            "delta_y_lbm < 0.5 means sub-cell resolution – increase n_cells or "
+            "accept y+ > 1.  Values delta_y_lbm ≈ 1–2 are typical for wall-resolved LES."
+        ),
+    }
 
 
 class UnitConvertRequest(BaseModel):
