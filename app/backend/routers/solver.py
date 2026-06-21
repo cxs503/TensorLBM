@@ -6,10 +6,11 @@ corresponding tensorlbm simulation function in a background thread.
 # ruff: noqa: TC001
 from __future__ import annotations
 
+from itertools import product
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from .. import job_manager
@@ -404,11 +405,39 @@ _ALLOWED_PARAMS = frozenset(
         "re", "u_in", "u_lid", "n_steps", "nx", "ny",
         "radius", "step_height", "output_interval",
         "viscosity_ratio", "density_ratio", "sigma",
-        "pipe_diameter", "u_max",
+        "pipe_diameter", "u_max", "gap_ratio", "re_tau",
+        "smagorinsky_cs", "averaging_start", "dam_width",
+        "g", "water_level", "forcing_amp", "forcing_omega",
+        "porosity", "hull_length", "hull_beam", "hull_draft",
+        "wave_amp",
     }
 )
 
-_MAX_STUDY_JOBS = 20  # safety cap
+_MAX_STUDY_JOBS = 40  # safety cap
+
+
+class SweepVariable(BaseModel):
+    name: str = Field(..., min_length=1, description="Parameter name to vary")
+    values: list[float] = Field(..., min_length=1, max_length=_MAX_STUDY_JOBS)
+
+
+class StudyObjective(BaseModel):
+    metric: str = Field(..., min_length=1, description="Metric key for ranking")
+    goal: str = Field(
+        "minimize",
+        pattern="^(minimize|maximize)$",
+        description="Optimization direction",
+    )
+
+
+class StudyConstraint(BaseModel):
+    metric: str = Field(..., min_length=1, description="Metric key to constrain")
+    operator: str = Field(
+        ...,
+        pattern="^(<=|>=|<|>|==)$",
+        description="Comparison operator",
+    )
+    value: float = Field(..., description="Constraint threshold")
 
 
 class ParametricStudyRequest(BaseModel):
@@ -432,8 +461,65 @@ class ParametricStudyRequest(BaseModel):
     """
     solver_type: str = Field(..., description="Solver type key")
     base_config: dict[str, Any] = Field(..., description="Base configuration dict")
-    parameter: str = Field(..., description="Parameter name to vary")
-    values: list[float] = Field(..., min_length=2, max_length=_MAX_STUDY_JOBS)
+    parameter: str | None = Field(None, description="Single parameter name to vary")
+    values: list[float] | None = Field(
+        None,
+        min_length=2,
+        max_length=_MAX_STUDY_JOBS,
+    )
+    variables: list[SweepVariable] = Field(
+        default_factory=list,
+        description="Optional multi-variable design-of-experiments sweep",
+    )
+    objective: StudyObjective | None = Field(
+        None,
+        description="Optional ranking objective for later aggregation",
+    )
+    constraints: list[StudyConstraint] = Field(
+        default_factory=list,
+        description="Optional feasibility constraints for later aggregation",
+    )
+
+
+def _normalized_study_variables(req: ParametricStudyRequest) -> list[SweepVariable]:
+    if req.variables and (req.parameter is not None or req.values is not None):
+        raise HTTPException(
+            status_code=422,
+            detail="Use either parameter/values or variables, not both",
+        )
+    if req.variables:
+        variables = req.variables
+    elif req.parameter is not None and req.values is not None:
+        variables = [SweepVariable(name=req.parameter, values=req.values)]
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="Provide either parameter/values or variables for the study",
+        )
+
+    names_seen: set[str] = set()
+    for var in variables:
+        name = var.name.lower()
+        if name in names_seen:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Duplicate study variable '{var.name}'",
+            )
+        names_seen.add(name)
+        if name not in _ALLOWED_PARAMS:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Parameter '{var.name}' is not allowed in parametric studies. "
+                    f"Allowed parameters: {sorted(_ALLOWED_PARAMS)}"
+                ),
+            )
+        if len(var.values) < 2:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Variable '{var.name}' must provide at least 2 values",
+            )
+    return [SweepVariable(name=var.name.lower(), values=var.values) for var in variables]
 
 
 @router.post("/parametric-study")
@@ -445,8 +531,7 @@ async def parametric_study(req: ParametricStudyRequest) -> dict:
     UUID that clients can use to retrieve and compare results.
     """
     if req.solver_type not in _SOLVER_MAP:
-        from fastapi import HTTPException as _HTTPException
-        raise _HTTPException(
+        raise HTTPException(
             status_code=422,
             detail=(
                 f"Unknown solver_type '{req.solver_type}'. "
@@ -454,34 +539,50 @@ async def parametric_study(req: ParametricStudyRequest) -> dict:
             ),
         )
 
-    param = req.parameter.lower()
-    if param not in _ALLOWED_PARAMS:
-        from fastapi import HTTPException as _HTTPException
-        raise _HTTPException(
+    variables = _normalized_study_variables(req)
+    counts = [len(var.values) for var in variables]
+    total = 1
+    for count in counts:
+        total *= count
+    if total > _MAX_STUDY_JOBS:
+        raise HTTPException(
             status_code=422,
             detail=(
-                f"Parameter '{req.parameter}' is not allowed in parametric studies. "
-                f"Allowed parameters: {sorted(_ALLOWED_PARAMS)}"
+                f"Study expands to {total} jobs which exceeds the limit "
+                f"of {_MAX_STUDY_JOBS}"
             ),
         )
 
     cfg_cls_name, runner_name = _SOLVER_MAP[req.solver_type]
     study_group = uuid4().hex[:12]
     job_ids: list[str] = []
-    total = len(req.values)
+    design_points: list[dict[str, float]] = []
+    variable_values = [var.values for var in variables]
+    objective = req.objective.model_dump() if req.objective is not None else None
+    constraints = [c.model_dump() for c in req.constraints]
 
-    for idx, val in enumerate(req.values, start=1):
+    for idx, combo in enumerate(product(*variable_values), start=1):
         job_cfg = dict(req.base_config)
-        job_cfg[param] = val
+        design_point = {
+            variables[pos].name: float(combo[pos])
+            for pos in range(len(variables))
+        }
+        design_points.append(design_point)
+        job_cfg.update(design_point)
 
         # Build submit config (copy with study metadata)
         submit_cfg = dict(job_cfg)
         submit_cfg["study"] = {
             "group": study_group,
-            "parameter": param,
+            "variables": [
+                {"name": var.name, "values": [float(v) for v in var.values]}
+                for var in variables
+            ],
             "index": idx,
             "total": total,
-            "value": val,
+            "design_point": design_point,
+            "objective": objective,
+            "constraints": constraints,
         }
 
         # Capture loop variables for the closure
@@ -503,21 +604,34 @@ async def parametric_study(req: ParametricStudyRequest) -> dict:
             return {"run_dir": str(run_dir)}
 
         job_id = job_manager.submit(
-            name=f"{req.solver_type} study [{idx}/{total}] {param}={val}",
+            name=(
+                f"{req.solver_type} study [{idx}/{total}] "
+                + ", ".join(f"{k}={v}" for k, v in design_point.items())
+            ),
             job_type=req.solver_type,
             config=submit_cfg,
             fn=_run,
         )
         job_ids.append(job_id)
 
-    return {
+    response = {
         "message": "Parametric study submitted",
         "study_group": study_group,
         "solver_type": req.solver_type,
-        "parameter": param,
-        "values": req.values,
+        "variables": [
+            {"name": var.name, "values": [float(v) for v in var.values]}
+            for var in variables
+        ],
+        "objective": objective,
+        "constraints": constraints,
+        "job_count": total,
+        "design_points": design_points,
         "job_ids": job_ids,
     }
+    if len(variables) == 1:
+        response["parameter"] = variables[0].name
+        response["values"] = [float(v) for v in variables[0].values]
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -593,11 +707,14 @@ async def validate_params(req: ValidateParamsRequest) -> dict:
             warnings.append("n_steps < 100 – result may not be physically meaningful.")
 
     # ---- Output interval checks --------------------------------------------
-    if req.n_steps is not None and req.output_interval is not None:
-        if req.output_interval > req.n_steps:
-            warnings.append(
-                "output_interval > n_steps – no snapshot will be saved."
-            )
+    if (
+        req.n_steps is not None
+        and req.output_interval is not None
+        and req.output_interval > req.n_steps
+    ):
+        warnings.append(
+            "output_interval > n_steps – no snapshot will be saved."
+        )
 
     # ---- LBM stability checks (u_in / Re → tau / Ma) ----------------------
     u = req.u_in or req.u_lid
@@ -634,4 +751,3 @@ async def validate_params(req: ValidateParamsRequest) -> dict:
         "warnings": warnings,
         "info": info,
     }
-

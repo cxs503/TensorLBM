@@ -59,3 +59,23 @@ def test_orchestration_kpis(
     assert kpi["max_workers"] >= 1
     assert "scheduler_profile" in kpi
     assert kpi["jobs_total"] >= 1
+
+
+def test_failure_category_rollup(
+    job_manager: JobManagerProtocol,
+    waiter: Callable[..., dict[str, object]],
+) -> None:
+    def _oom(_job: object) -> dict[str, bool]:
+        raise RuntimeError("CUDA out of memory")
+
+    job_id = job_manager.submit(
+        name="oom",
+        job_type="unit_test",
+        config={},
+        fn=_oom,
+    )
+    final = waiter(job_id, timeout=10.0)
+    assert final["status"] == "failed"
+    assert final["failure_category"] == "resource"
+    kpi = job_manager.orchestration_kpis()
+    assert kpi["failure_categories"]["resource"] >= 1
