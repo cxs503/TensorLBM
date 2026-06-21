@@ -1,7 +1,7 @@
 {
-  "title": "PowerFlow LBM Platform",
+  "title": "TensorLBM Platform",
   "nav": {
-    "brand": "PowerFlow LBM",
+    "brand": "TensorLBM",
     "dashboard": "Dashboard",
     "cad": "CAD",
     "preprocess": "Pre-processing",
@@ -160,7 +160,11 @@
     "lbm_tau": "BGK relaxation τ",
     "dx": "dx [m]",
     "dt": "dt [s]",
-    "mach": "Mach number"
+    "mach": "Mach number",
+    "materials": "Material Database",
+    "material_select": "Select Fluid",
+    "material_density": "Density (kg/m³)",
+    "material_viscosity": "Kinematic Viscosity (m²/s)"
   },
   "solve": {
     "title": "Solver",
@@ -201,7 +205,11 @@
     "preset_cavitation_like": "Cavitation-like",
     "reuse_run": "Reuse this run config",
     "reuse_loaded": "Reused configuration from job",
-    "reuse_not_supported": "This job type cannot be reused in Solver."
+    "reuse_not_supported": "This job type cannot be reused in Solver.",
+    "validate": "Validate Parameters",
+    "validation_ok": "Parameters valid",
+    "validation_errors": "Validation errors",
+    "validation_warnings": "Warnings"
   },
   "sim": {
     "cylinder_flow": {
@@ -545,7 +553,16 @@
     "job_id": "Job ID",
     "updated": "Updated",
     "created": "Created",
-    "back": "← Projects"
+    "back": "← Projects",
+    "subtitle": "Manage simulation projects and cases in a workflow-centric project hierarchy.",
+    "workflow_stage": "Workflow Stage",
+    "stage_draft": "Draft",
+    "stage_setup": "Setup",
+    "stage_meshed": "Meshed",
+    "stage_solved": "Solved",
+    "stage_post_processed": "Post-processed",
+    "advance_workflow": "Advance Stage",
+    "workflow_summary": "Workflow Pipeline"
   },
   "templates": {
     "title": "Engineering Templates",

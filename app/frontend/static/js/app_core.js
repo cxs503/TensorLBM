@@ -177,6 +177,10 @@ async function loadStatus() {
       sel.innerHTML = s.devices.map(d => `<option value="${d}"${d===cur?' selected':''}>${d}</option>`).join('');
     });
     updateStats(s);
+    // Render workflow pipeline from embedded summary
+    if (s.workflow_summary && s.workflow_summary.stages) {
+      renderWorkflowPipeline(s.workflow_summary);
+    }
   } catch(e) { /* ignore */ }
 }
 
@@ -323,6 +327,9 @@ function showTab(name, el) {
   if (name === 'projects') {
     if (typeof projectsInit === 'function') projectsInit();
   }
+  if (name === 'preprocess') {
+    loadMaterials();
+  }
   if (name === 'templates') {
     if (typeof templatesInit === 'function') templatesInit();
   }
@@ -441,6 +448,100 @@ async function runCompare() {
     result.innerHTML = html;
   } catch (e) {
     result.innerHTML = `<div class="alert alert-danger small">${t('common.error')} ${escHtml(String(e))}</div>`;
+  }
+}
+
+// ============================================================
+// Workflow pipeline dashboard widget
+// ============================================================
+
+function renderWorkflowPipeline(wf) {
+  const el = document.getElementById('wf-pipeline');
+  if (!el || !wf) return;
+  const stageIcons = {
+    draft: 'bi-file-earmark',
+    setup: 'bi-sliders',
+    meshed: 'bi-grid-3x3',
+    solved: 'bi-activity',
+    post_processed: 'bi-bar-chart-line',
+  };
+  const stageCols = {
+    draft: 'secondary',
+    setup: 'info',
+    meshed: 'primary',
+    solved: 'success',
+    post_processed: 'dark',
+  };
+  const parts = (wf.stages || []).map((stage, i) => {
+    const cnt = (wf.counts || {})[stage] || 0;
+    const icon = stageIcons[stage] || 'bi-circle';
+    const col = stageCols[stage] || 'secondary';
+    const label = t(`projects.stage_${stage}`) || stage;
+    const arrow = i < (wf.stages.length - 1) ? '<i class="bi bi-arrow-right text-muted mx-1"></i>' : '';
+    return `<div class="d-inline-flex align-items-center gap-1">
+      <span class="badge bg-${col} fs-6 px-2 py-1"><i class="bi ${icon}"></i> ${escHtml(label)} <strong>${cnt}</strong></span>
+    </div>${arrow}`;
+  });
+  el.innerHTML = parts.join('') +
+    `<span class="text-muted small ms-3">${t('stat.total') || 'Total'}: <strong>${wf.total_cases || 0}</strong></span>`;
+}
+
+// ============================================================
+// Fluid material database
+// ============================================================
+
+async function loadMaterials() {
+  const tableEl = document.getElementById('material-table');
+  if (!tableEl) return;
+  const filterEl = document.getElementById('material-filter');
+  const category = filterEl ? filterEl.value : '';
+  tableEl.innerHTML = '<span class="text-muted">Loading…</span>';
+  try {
+    const url = '/api/preprocess/materials' + (category ? `?category=${encodeURIComponent(category)}` : '');
+    const r = await api('GET', url);
+    if (!r.materials || !r.materials.length) {
+      tableEl.innerHTML = '<span class="text-muted">No materials found.</span>';
+      return;
+    }
+    const rows = r.materials.map(m => `
+<tr>
+  <td><strong>${escHtml(m.name)}</strong>${m.notes ? `<div class="text-muted" style="font-size:.75rem">${escHtml(m.notes)}</div>` : ''}</td>
+  <td class="text-center">${escHtml(m.category)}</td>
+  <td class="text-end">${m.density_kg_m3}</td>
+  <td class="text-end">${m.kinematic_viscosity_m2_s !== null ? m.kinematic_viscosity_m2_s.toExponential(3) : '—'}</td>
+  <td class="text-end">${m.dynamic_viscosity_pa_s !== null ? m.dynamic_viscosity_pa_s.toExponential(3) : '—'}</td>
+  <td class="text-end">${m.surface_tension_n_m !== null ? m.surface_tension_n_m : '—'}</td>
+  <td class="text-end">${m.ref_temp_c} °C</td>
+  <td>
+    <button class="btn btn-xs btn-outline-secondary" style="font-size:.72rem;padding:.1rem .4rem"
+      onclick="materialFillUnitConverter(${m.kinematic_viscosity_m2_s})">→ UC</button>
+  </td>
+</tr>`).join('');
+    tableEl.innerHTML = `<div class="table-responsive">
+<table class="table table-sm table-hover">
+<thead class="table-light"><tr>
+  <th data-i18n="common.name">Name</th>
+  <th>Category</th>
+  <th class="text-end"><span data-i18n="preprocess.material_density">Density</span></th>
+  <th class="text-end">ν (m²/s)</th>
+  <th class="text-end">μ (Pa·s)</th>
+  <th class="text-end">σ (N/m)</th>
+  <th class="text-end">T ref</th>
+  <th></th>
+</tr></thead><tbody>${rows}</tbody>
+</table></div>`;
+    i18n.apply(tableEl);
+  } catch(e) {
+    tableEl.innerHTML = `<div class="alert alert-danger small">${escHtml(String(e.message))}</div>`;
+  }
+}
+
+/** Fill the Unit Converter ν field from a material selection. */
+function materialFillUnitConverter(nu) {
+  const el = document.getElementById('uc-nu');
+  if (el && nu != null) {
+    el.value = nu;
+    showTab('preprocess', document.querySelector('[data-tab="preprocess"]'));
   }
 }
 
