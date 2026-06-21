@@ -384,6 +384,143 @@ async def start_porous_drainage(params: PorousDrainageParams) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Parametric sensitivity study (generalized parameter sweep)
+# ---------------------------------------------------------------------------
+
+# Allowed solver types and their corresponding config/runner pairs
+_SOLVER_MAP: dict[str, tuple[str, str]] = {
+    "cylinder_flow":       ("CylinderFlowConfig", "run_cylinder_flow"),
+    "lid_driven_cavity":   ("LidDrivenCavityConfig", "run_lid_driven_cavity"),
+    "backward_facing_step": ("BackwardFacingStepConfig", "run_backward_facing_step"),
+    "turbulent_channel":   ("TurbulentChannelConfig", "run_turbulent_channel"),
+    "pipeline_flow":       ("PipelineFlowConfig", "run_pipeline_flow"),
+    "dam_break":           ("DamBreakConfig", "run_dam_break"),
+    "sloshing_tank":       ("SloshingTankConfig", "run_sloshing_tank"),
+}
+
+# Numeric parameters that are allowed to be varied in a parametric study
+_ALLOWED_PARAMS = frozenset(
+    {
+        "re", "u_in", "u_lid", "n_steps", "nx", "ny",
+        "radius", "step_height", "output_interval",
+        "viscosity_ratio", "density_ratio", "sigma",
+        "pipe_diameter", "u_max",
+    }
+)
+
+_MAX_STUDY_JOBS = 20  # safety cap
+
+
+class ParametricStudyRequest(BaseModel):
+    """Submit a batch of jobs varying a single solver parameter.
+
+    Mirrors the *sensitivity study* / *design sweep* feature in PowerFlow and
+    XFlow: given a base configuration, vary one numeric parameter across a list
+    of values and submit a job for each combination.  All jobs share a common
+    ``study_group`` tag in their configs for later aggregation.
+
+    Parameters
+    ----------
+    solver_type:
+        One of the supported solver keys (e.g. ``cylinder_flow``).
+    base_config:
+        Base solver configuration dict (same fields as the solver endpoint).
+    parameter:
+        Name of the parameter to vary (must be an allowed numeric field).
+    values:
+        List of numeric values to sweep (2–20 entries).
+    """
+    solver_type: str = Field(..., description="Solver type key")
+    base_config: dict[str, Any] = Field(..., description="Base configuration dict")
+    parameter: str = Field(..., description="Parameter name to vary")
+    values: list[float] = Field(..., min_length=2, max_length=_MAX_STUDY_JOBS)
+
+
+@router.post("/parametric-study")
+async def parametric_study(req: ParametricStudyRequest) -> dict:
+    """Submit a parametric sensitivity study (batch sweep over a single parameter).
+
+    Creates one job per value in ``values`` by merging the varied parameter
+    into ``base_config``.  All jobs are tagged with a shared ``study_group``
+    UUID that clients can use to retrieve and compare results.
+    """
+    if req.solver_type not in _SOLVER_MAP:
+        from fastapi import HTTPException as _HTTPException
+        raise _HTTPException(
+            status_code=422,
+            detail=(
+                f"Unknown solver_type '{req.solver_type}'. "
+                f"Supported: {sorted(_SOLVER_MAP)}"
+            ),
+        )
+
+    param = req.parameter.lower()
+    if param not in _ALLOWED_PARAMS:
+        from fastapi import HTTPException as _HTTPException
+        raise _HTTPException(
+            status_code=422,
+            detail=(
+                f"Parameter '{req.parameter}' is not allowed in parametric studies. "
+                f"Allowed parameters: {sorted(_ALLOWED_PARAMS)}"
+            ),
+        )
+
+    cfg_cls_name, runner_name = _SOLVER_MAP[req.solver_type]
+    study_group = uuid4().hex[:12]
+    job_ids: list[str] = []
+    total = len(req.values)
+
+    for idx, val in enumerate(req.values, start=1):
+        job_cfg = dict(req.base_config)
+        job_cfg[param] = val
+
+        # Build submit config (copy with study metadata)
+        submit_cfg = dict(job_cfg)
+        submit_cfg["study"] = {
+            "group": study_group,
+            "parameter": param,
+            "index": idx,
+            "total": total,
+            "value": val,
+        }
+
+        # Capture loop variables for the closure
+        run_cfg = dict(job_cfg)
+        _cfg_cls_name = cfg_cls_name
+        _runner_name = runner_name
+
+        def _run(
+            job: job_manager.Job,
+            rc: dict[str, Any] = run_cfg,
+            cn: str = _cfg_cls_name,
+            rn: str = _runner_name,
+        ) -> dict:
+            import tensorlbm as _tlbm
+            cfg_cls = getattr(_tlbm, cn)
+            runner = getattr(_tlbm, rn)
+            cfg = cfg_cls(**overwrite_output_root(rc, job))
+            run_dir = runner(cfg)
+            return {"run_dir": str(run_dir)}
+
+        job_id = job_manager.submit(
+            name=f"{req.solver_type} study [{idx}/{total}] {param}={val}",
+            job_type=req.solver_type,
+            config=submit_cfg,
+            fn=_run,
+        )
+        job_ids.append(job_id)
+
+    return {
+        "message": "Parametric study submitted",
+        "study_group": study_group,
+        "solver_type": req.solver_type,
+        "parameter": param,
+        "values": req.values,
+        "job_ids": job_ids,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Parameter validation endpoint
 # ---------------------------------------------------------------------------
 

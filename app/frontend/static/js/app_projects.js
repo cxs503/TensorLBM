@@ -188,6 +188,10 @@ function _caseCard(c) {
           title="${t('projects.advance_workflow')}">
           <i class="bi bi-arrow-right-circle"></i>
         </button>
+        <button class="btn btn-sm btn-outline-info" onclick="projectsCloneCase('${_esc(c.id)}')"
+          title="${t('projects.clone_case')}">
+          <i class="bi bi-copy"></i>
+        </button>
         ${c.job_id
           ? `<button class="btn btn-sm btn-outline-primary" onclick="projectsViewJob('${_esc(c.job_id)}')" title="View Job"><i class="bi bi-eye"></i></button>`
           : ""}
@@ -275,6 +279,63 @@ async function projectsAdvanceStage(caseId) {
     await _loadCases(_pf_active_project.id);
   } catch (e) {
     alert(e.message);
+  }
+}
+
+/* =========================================================================
+   Clone Case
+   ========================================================================= */
+
+let _pf_clone_case_id = null;
+
+function projectsCloneCase(caseId) {
+  _pf_clone_case_id = caseId;
+  const panel = document.getElementById('pf-clone-panel');
+  if (panel) {
+    panel.style.display = '';
+    const nameEl = document.getElementById('pf-clone-name');
+    if (nameEl) nameEl.value = '';
+    const overEl = document.getElementById('pf-clone-overrides');
+    if (overEl) overEl.value = '';
+    const msgEl = document.getElementById('pf-clone-msg');
+    if (msgEl) msgEl.style.display = 'none';
+  }
+}
+
+function projectsCancelClone() {
+  _pf_clone_case_id = null;
+  const panel = document.getElementById('pf-clone-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+async function projectsDoClone() {
+  if (!_pf_active_project || !_pf_clone_case_id) return;
+  const name = (document.getElementById('pf-clone-name').value || '').trim() || undefined;
+  const rawOverrides = (document.getElementById('pf-clone-overrides').value || '').trim();
+  let config_overrides = {};
+  if (rawOverrides) {
+    try { config_overrides = JSON.parse(rawOverrides); }
+    catch(e) {
+      _showPfMsg('pf-clone-msg', 'Invalid JSON in config overrides: ' + e.message, 'danger'); return;
+    }
+  }
+  const body = { config_overrides };
+  if (name) body.name = name;
+  try {
+    const resp = await fetch(
+      `/api/projects/${_pf_active_project.id}/cases/${_pf_clone_case_id}/clone`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    );
+    if (!resp.ok) {
+      const d = await resp.json().catch(() => ({}));
+      throw new Error(d.detail || await resp.text());
+    }
+    const newCase = await resp.json();
+    _showPfMsg('pf-clone-msg', `Cloned as "${newCase.name}"`, 'success');
+    projectsCancelClone();
+    await _loadCases(_pf_active_project.id);
+  } catch(e) {
+    _showPfMsg('pf-clone-msg', e.message, 'danger');
   }
 }
 

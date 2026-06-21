@@ -894,6 +894,55 @@
           </div>
         </div>
 
+        <!-- Y+ Wall-Distance Calculator -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-rulers"></i> <span data-i18n="preprocess.yplus_title">Y⁺ Wall-Distance Calculator</span></div>
+            <div class="card-body config-form">
+              <div class="row g-2 mb-2">
+                <div class="col-md-2">
+                  <label data-i18n="preprocess.yplus_re">Reynolds number Re</label>
+                  <input type="number" class="form-control" id="yp-re" value="1e5" step="1000" min="100" />
+                </div>
+                <div class="col-md-2">
+                  <label data-i18n="preprocess.yplus_u">Velocity U [m/s]</label>
+                  <input type="number" class="form-control" id="yp-u" value="10.0" step="1" min="0.001" />
+                </div>
+                <div class="col-md-2">
+                  <label data-i18n="preprocess.yplus_l">Length L [m]</label>
+                  <input type="number" class="form-control" id="yp-l" value="1.0" step="0.1" min="0.001" />
+                </div>
+                <div class="col-md-2">
+                  <label data-i18n="preprocess.yplus_nu">Kinematic ν [m²/s]</label>
+                  <input type="number" class="form-control" id="yp-nu" value="1e-5" step="1e-6" min="1e-8" />
+                </div>
+                <div class="col-md-1">
+                  <label data-i18n="preprocess.yplus_target">Target y⁺</label>
+                  <input type="number" class="form-control" id="yp-yplus" value="1.0" step="0.5" min="0.1" max="100" />
+                </div>
+                <div class="col-md-1">
+                  <label data-i18n="preprocess.yplus_ncells">Grid cells</label>
+                  <input type="number" class="form-control" id="yp-ncells" value="200" step="10" min="10" />
+                </div>
+                <div class="col-md-1">
+                  <label data-i18n="preprocess.yplus_geom">Geometry</label>
+                  <select class="form-select" id="yp-geom">
+                    <option value="flat_plate">Flat plate</option>
+                    <option value="channel">Channel</option>
+                    <option value="cylinder">Cylinder</option>
+                  </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                  <button class="btn btn-primary w-100" onclick="runYPlus()">
+                    <i class="bi bi-calculator"></i> <span data-i18n="preprocess.yplus_compute">Compute y⁺</span>
+                  </button>
+                </div>
+              </div>
+              <div id="yp-result" class="mt-3"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -997,6 +1046,63 @@
           </div>
         </div>
       </div>
+
+      <!-- Parametric Sensitivity Study -->
+      <div class="row g-3 mt-1">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header d-flex align-items-center">
+              <i class="bi bi-graph-up me-2"></i>
+              <strong data-i18n="solve.study_title">Parametric Sensitivity Study</strong>
+              <span class="ms-2 badge bg-info text-dark small" data-i18n="solve.study_hint">Submits one job per value</span>
+            </div>
+            <div class="card-body config-form">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                  <label data-i18n="solve.study_solver">Solver type</label>
+                  <select class="form-select form-select-sm" id="study-solver">
+                    <option value="cylinder_flow">cylinder_flow</option>
+                    <option value="lid_driven_cavity">lid_driven_cavity</option>
+                    <option value="backward_facing_step">backward_facing_step</option>
+                    <option value="turbulent_channel">turbulent_channel</option>
+                    <option value="pipeline_flow">pipeline_flow</option>
+                    <option value="dam_break">dam_break</option>
+                    <option value="sloshing_tank">sloshing_tank</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label data-i18n="solve.study_param">Parameter</label>
+                  <select class="form-select form-select-sm" id="study-param">
+                    <option value="re">re</option>
+                    <option value="u_in">u_in</option>
+                    <option value="u_lid">u_lid</option>
+                    <option value="nx">nx</option>
+                    <option value="ny">ny</option>
+                    <option value="n_steps">n_steps</option>
+                    <option value="radius">radius</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label data-i18n="solve.study_values">Values (comma-separated)</label>
+                  <input type="text" class="form-control form-control-sm" id="study-values" value="50, 100, 200, 400" placeholder="e.g. 50,100,200" />
+                </div>
+                <div class="col-md-3">
+                  <label data-i18n="solve.study_base_config">Base config (JSON)</label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="study-base-config"
+                    value='{"nx":200,"ny":80,"u_in":0.08,"re":100,"n_steps":3000,"output_interval":500,"device":"cpu"}'
+                    style="font-size:.75rem" />
+                </div>
+                <div class="col-md-1">
+                  <button class="btn btn-primary btn-sm w-100" onclick="submitParametricStudy()">
+                    <i class="bi bi-play-fill"></i> <span data-i18n="solve.study_submit">Submit</span>
+                  </button>
+                </div>
+              </div>
+              <div id="study-result" class="mt-3 small"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ================================================================ -->
@@ -1027,6 +1133,8 @@
       <ul class="nav nav-tabs mb-3" id="pp-tabs">
         <li class="nav-item"><a class="nav-link active" href="#" onclick="showPPTab('snapshots',this)"><i class="bi bi-images"></i> <span data-i18n="postprocess.tab_snapshots">Snapshots</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('viewer',this)"><i class="bi bi-grid-1x2"></i> <span data-i18n="postprocess.tab_viewer">Field Viewer</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('probes',this)"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes">Probe Monitor</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('timeavg',this)"><i class="bi bi-clock-history"></i> <span data-i18n="postprocess.tab_timeavg">Time Average</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs">Logs</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> <span data-i18n="postprocess.tab_files">Files</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> <span data-i18n="postprocess.tab_metadata">Metadata</span></a></li>
@@ -1108,6 +1216,86 @@
           </div>
         </div>
       </div>
+      </div>
+
+      <!-- ---- Probe Monitor Tab ---- -->
+      <div id="pp-probes" class="pp-tab-panel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes">Probe Monitor</span></div>
+              <div class="card-body small">
+                <p class="text-muted" data-i18n="postprocess.probe_hint">Add probe locations then click Extract History.</p>
+                <div id="probe-list" class="mb-2"></div>
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="addProbeRow()">
+                  <i class="bi bi-plus-circle"></i> <span data-i18n="postprocess.probe_add">Add Probe</span>
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="runProbeHistory()">
+                  <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.probe_run">Extract History</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-header small fw-semibold">Time History</div>
+              <div class="card-body p-2">
+                <canvas id="probe-chart" style="width:100%;max-height:360px"></canvas>
+                <p class="text-muted small mt-2" id="probe-chart-hint">No data yet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- Time Average Tab ---- -->
+      <div id="pp-timeavg" class="pp-tab-panel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-3">
+            <div class="card h-100">
+              <div class="card-header small fw-semibold"><i class="bi bi-clock-history"></i> <span data-i18n="postprocess.tab_timeavg">Time Average</span></div>
+              <div class="card-body small">
+                <p class="text-muted" data-i18n="postprocess.timeavg_hint">Computes mean and RMS fields from all checkpoints.</p>
+                <div class="mb-2">
+                  <label class="form-label mb-1" data-i18n="postprocess.timeavg_field">Field</label>
+                  <select class="form-select form-select-sm" id="ta-field">
+                    <option value="velocity_magnitude">Velocity magnitude</option>
+                    <option value="vorticity">Vorticity</option>
+                    <option value="ux">x-velocity</option>
+                    <option value="uy">y-velocity</option>
+                    <option value="density">Density</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label mb-1" data-i18n="postprocess.timeavg_show">Show</label>
+                  <select class="form-select form-select-sm" id="ta-show">
+                    <option value="mean" data-i18n="postprocess.timeavg_mean">Mean</option>
+                    <option value="rms" data-i18n="postprocess.timeavg_rms">RMS</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary btn-sm w-100" onclick="runTimeAverage()">
+                  <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.timeavg_compute">Compute Time Average</span>
+                </button>
+                <div class="mt-3" id="ta-info"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-9">
+            <div class="card">
+              <div class="card-header small d-flex align-items-center gap-2">
+                <span id="ta-title" class="fw-semibold">Time-Averaged Field</span>
+                <span class="text-muted ms-auto" id="ta-stats"></span>
+              </div>
+              <div class="card-body p-2 text-center">
+                <p class="text-muted small mt-3" id="ta-hint">Select a field and click Compute Time Average.</p>
+                <canvas id="ta-canvas" style="display:none;max-width:100%;border:1px solid #dee2e6"></canvas>
+                <canvas id="ta-legend" width="30" height="256" style="display:none;vertical-align:top;margin-left:6px;border:1px solid #dee2e6"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="pp-logs" class="pp-tab-panel" style="display:none">
         <div class="log-box" id="pp-log-box" data-i18n="postprocess.no_job_logs">Select a job to view logs.</div>
       </div>
@@ -1738,6 +1926,34 @@
             <div id="pf-cases-list">
               <div class="text-muted small p-3" data-i18n="projects.no_cases">No cases yet.</div>
             </div>
+          </div>
+        </div>
+
+        <!-- Clone Case inline panel -->
+        <div id="pf-clone-panel" class="card mt-3" style="display:none">
+          <div class="card-header fw-semibold"><i class="bi bi-copy"></i> <span data-i18n="projects.clone_case">Clone Case</span></div>
+          <div class="card-body config-form">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label mb-1" data-i18n="projects.clone_name">New case name</label>
+                <input class="form-control form-control-sm" id="pf-clone-name" placeholder="Clone of …">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1" data-i18n="projects.clone_overrides">Config overrides (JSON, optional)</label>
+                <input class="form-control form-control-sm font-monospace" id="pf-clone-overrides" placeholder='{"re": 200}' style="font-size:.75rem">
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-primary btn-sm w-100" onclick="projectsDoClone()">
+                  <i class="bi bi-copy"></i> <span data-i18n="projects.clone_btn">Clone</span>
+                </button>
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-outline-secondary btn-sm w-100" onclick="projectsCancelClone()">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            </div>
+            <div id="pf-clone-msg" class="alert py-1 small mt-2" style="display:none"></div>
           </div>
         </div>
       </div><!-- /case-pane -->

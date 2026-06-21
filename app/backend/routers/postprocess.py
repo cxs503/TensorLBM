@@ -391,6 +391,224 @@ async def convergence_data(job_id: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Probe-point time-history monitor
+# ---------------------------------------------------------------------------
+
+class ProbePoint(BaseModel):
+    x_frac: float   # fractional x position in [0, 1]
+    y_frac: float   # fractional y position in [0, 1]
+    label: str = ""
+
+
+class ProbeHistoryRequest(BaseModel):
+    job_id: str
+    probes: list[ProbePoint]
+
+
+@router.post("/probe-history")
+async def probe_history(req: ProbeHistoryRequest) -> dict:
+    """Extract time history of (ux, uy, |u|, ρ) at user-defined probe locations.
+
+    Each probe is specified as a fractional (x_frac, y_frac) position in the
+    domain [0,1]×[0,1].  The endpoint loads every checkpoint in the job output
+    directory and samples the nearest grid cell at each probe location, returning
+    a time series suitable for plotting temporal evolution at monitoring points.
+
+    This mirrors the *probe points* feature found in PowerFlow / XFlow.
+    """
+    job = job_manager.get_job(req.job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+    if not ckpts:
+        raise HTTPException(status_code=404, detail="No checkpoints found for this job")
+
+    try:
+        import math
+
+        from tensorlbm import load_checkpoint, macroscopic
+
+        # Initialise per-probe time series lists
+        probes = req.probes
+        n_probes = len(probes)
+        series: list[dict[str, list[float]]] = [
+            {"step": [], "ux": [], "uy": [], "speed": [], "rho": []}
+            for _ in range(n_probes)
+        ]
+
+        for ckpt_path in ckpts:
+            f_tensor, step = load_checkpoint(ckpt_path)
+            if f_tensor.ndim != 3:
+                continue  # skip 3-D checkpoints (not yet supported)
+
+            rho, ux, uy = macroscopic(f_tensor)
+            ny, nx = ux.shape
+
+            for pi, probe in enumerate(probes):
+                ix = int(max(0, min(nx - 1, round(probe.x_frac * (nx - 1)))))
+                iy = int(max(0, min(ny - 1, round(probe.y_frac * (ny - 1)))))
+                ux_val = float(ux[iy, ix].item())
+                uy_val = float(uy[iy, ix].item())
+                speed = math.sqrt(ux_val**2 + uy_val**2)
+                rho_val = float(rho[iy, ix].item())
+                series[pi]["step"].append(step)
+                series[pi]["ux"].append(ux_val)
+                series[pi]["uy"].append(uy_val)
+                series[pi]["speed"].append(speed)
+                series[pi]["rho"].append(rho_val)
+
+        probe_results = []
+        for pi, probe in enumerate(probes):
+            probe_results.append({
+                "label": probe.label or f"P{pi + 1}",
+                "x_frac": probe.x_frac,
+                "y_frac": probe.y_frac,
+                **series[pi],
+            })
+
+        return {
+            "job_id": req.job_id,
+            "checkpoint_count": len(ckpts),
+            "probe_count": n_probes,
+            "probes": probe_results,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Time-averaged field statistics
+# ---------------------------------------------------------------------------
+
+_MAX_CELLS_AVG = 150  # same cap as field viewer
+
+
+@router.get("/time-average/{job_id}")
+async def time_average(
+    job_id: str,
+    field: str = Query(
+        "velocity_magnitude",
+        description="Field to average: velocity_magnitude | vorticity | ux | uy | density",
+    ),
+) -> dict:
+    """Compute time-averaged mean and RMS fields from all 2-D checkpoints.
+
+    Loads every checkpoint in the job output and accumulates a running mean and
+    a running mean-square so that the RMS fluctuation can be derived without
+    storing all snapshots in memory.
+
+    Returns the same JSON structure as ``/field-data`` but with an additional
+    ``rms`` list and ``n_snapshots`` count.  Useful for turbulent statistics –
+    analogous to the *time-average post-processing* capability in XFlow.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(
+            status_code=409,
+            detail="Job must be completed to compute time averages",
+        )
+
+    ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+    if not ckpts:
+        raise HTTPException(status_code=404, detail="No checkpoints found")
+
+    try:
+        import torch
+
+        from tensorlbm import load_checkpoint, macroscopic
+        from tensorlbm.postprocess import (
+            compute_velocity_magnitude,
+            compute_vorticity_2d,
+        )
+
+        mean_acc: torch.Tensor | None = None
+        sq_acc: torch.Tensor | None = None
+        n = 0
+        ny_orig = nx_orig = 0
+
+        for ckpt_path in ckpts:
+            f_tensor, _ = load_checkpoint(ckpt_path)
+            if f_tensor.ndim != 3:
+                continue  # skip 3-D
+
+            rho, ux, uy = macroscopic(f_tensor)
+
+            if field == "velocity_magnitude":
+                arr2d = compute_velocity_magnitude(ux, uy)
+            elif field == "vorticity":
+                arr2d = compute_vorticity_2d(ux, uy)
+            elif field == "ux":
+                arr2d = ux
+            elif field == "uy":
+                arr2d = uy
+            elif field == "density":
+                arr2d = rho
+            else:
+                raise HTTPException(status_code=400, detail=f"Unknown field '{field}'")
+
+            arr2d = arr2d.float()
+            ny_orig, nx_orig = arr2d.shape
+
+            if mean_acc is None:
+                mean_acc = torch.zeros_like(arr2d)
+                sq_acc = torch.zeros_like(arr2d)
+
+            mean_acc = mean_acc + arr2d
+            sq_acc = sq_acc + arr2d * arr2d
+            n += 1
+
+        if mean_acc is None or n == 0:
+            raise HTTPException(status_code=422, detail="No 2-D checkpoints could be loaded")
+
+        mean_field = mean_acc / n
+        rms_field = torch.sqrt(torch.clamp(sq_acc / n - mean_field * mean_field, min=0.0))
+
+        # Downsample for JSON transfer
+        def _ds(t: torch.Tensor) -> torch.Tensor:
+            if ny_orig <= _MAX_CELLS_AVG and nx_orig <= _MAX_CELLS_AVG:
+                return t
+            scale = max(ny_orig / _MAX_CELLS_AVG, nx_orig / _MAX_CELLS_AVG)
+            new_ny = max(1, int(ny_orig / scale))
+            new_nx = max(1, int(nx_orig / scale))
+            ky = max(1, ny_orig // new_ny)
+            kx = max(1, nx_orig // new_nx)
+            t4d = t.unsqueeze(0).unsqueeze(0)
+            if ky > 1 or kx > 1:
+                t4d = torch.nn.functional.avg_pool2d(
+                    t4d, kernel_size=(ky, kx), stride=(ky, kx), padding=0
+                )
+            return t4d.squeeze(0).squeeze(0)
+
+        mean_ds = _ds(mean_field)
+        rms_ds = _ds(rms_field)
+        ny_ds, nx_ds = mean_ds.shape
+
+        return {
+            "job_id": job_id,
+            "field": field,
+            "n_snapshots": n,
+            "nx": nx_ds,
+            "ny": ny_ds,
+            "nx_orig": nx_orig,
+            "ny_orig": ny_orig,
+            "field_min": float(mean_ds.min().item()),
+            "field_max": float(mean_ds.max().item()),
+            "rms_max": float(rms_ds.max().item()),
+            "mean": mean_ds.cpu().reshape(-1).tolist(),
+            "rms": rms_ds.cpu().reshape(-1).tolist(),
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
