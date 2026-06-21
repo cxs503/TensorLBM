@@ -6,10 +6,13 @@ including interactive field-viewer data (heatmaps, vectors, streamlines).
 from __future__ import annotations
 
 import csv as csv_mod
+import io
 import json
+import zipfile
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from .. import job_manager
@@ -41,11 +44,11 @@ async def velocity_profile(req: VelocityProfileRequest) -> dict:
         from tensorlbm import load_checkpoint, macroscopic
 
         # Find the latest checkpoint in the job's output tree
-        ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+        ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
         if not ckpts:
             raise ValueError("No checkpoint files found in job output")
 
-        f, step = load_checkpoint(ckpts[-1])
+        f, step, _meta = load_checkpoint(ckpts[-1].parent)
         _rho, ux, uy = macroscopic(f)
 
         ny, nx = ux.shape
@@ -231,18 +234,19 @@ async def field_data(
 
         # ---- locate checkpoint ------------------------------------------------
         if checkpoint == "latest":
-            ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+            ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
             if not ckpts:
                 raise ValueError("No checkpoint files found in job output")
-            ckpt_path = ckpts[-1]
+            ckpt_path = ckpts[-1].parent
         else:
-            ckpt_path = (job.output_dir / checkpoint).resolve()
-            if not str(ckpt_path).startswith(str(job.output_dir.resolve())):
+            candidate = (job.output_dir / checkpoint).resolve()
+            if not str(candidate).startswith(str(job.output_dir.resolve())):
                 raise HTTPException(status_code=403, detail="Forbidden")
-            if not ckpt_path.exists():
+            ckpt_path = candidate.parent if candidate.suffix == ".pt" else candidate
+            if not (ckpt_path / "checkpoint_f.pt").exists():
                 raise HTTPException(status_code=404, detail="Checkpoint not found")
 
-        f_tensor, step = load_checkpoint(ckpt_path)
+        f_tensor, step, _meta = load_checkpoint(ckpt_path)
 
         # Only 2-D (D2Q9) supported for the interactive viewer
         if f_tensor.ndim != 3:
@@ -420,7 +424,7 @@ async def probe_history(req: ProbeHistoryRequest) -> dict:
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+    ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
     if not ckpts:
         raise HTTPException(status_code=404, detail="No checkpoints found for this job")
 
@@ -437,8 +441,8 @@ async def probe_history(req: ProbeHistoryRequest) -> dict:
             for _ in range(n_probes)
         ]
 
-        for ckpt_path in ckpts:
-            f_tensor, step = load_checkpoint(ckpt_path)
+        for ckpt_pt in ckpts:
+            f_tensor, step, _meta = load_checkpoint(ckpt_pt.parent)
             if f_tensor.ndim != 3:
                 continue  # skip 3-D checkpoints (not yet supported)
 
@@ -513,7 +517,7 @@ async def time_average(
             detail="Job must be completed to compute time averages",
         )
 
-    ckpts = sorted(job.output_dir.rglob("checkpoint_*.pt"), key=lambda p: p.stem)
+    ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
     if not ckpts:
         raise HTTPException(status_code=404, detail="No checkpoints found")
 
@@ -531,8 +535,8 @@ async def time_average(
         n = 0
         ny_orig = nx_orig = 0
 
-        for ckpt_path in ckpts:
-            f_tensor, _ = load_checkpoint(ckpt_path)
+        for ckpt_pt in ckpts:
+            f_tensor, _, _meta = load_checkpoint(ckpt_pt.parent)
             if f_tensor.ndim != 3:
                 continue  # skip 3-D
 
@@ -608,9 +612,199 @@ async def time_average(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+
 # ---------------------------------------------------------------------------
-# Helpers
+# Result export (VTK / VTS / HDF5 / CSV) – industrial post-processing
 # ---------------------------------------------------------------------------
+
+_VALID_EXPORT_FORMATS: set[str] = {"vtk", "vts", "hdf5", "csv"}
+
+
+@router.get("/export/{job_id}")
+async def export_results(
+    job_id: str,
+    format: str = Query(  # noqa: A002
+        "vts",
+        description=(
+            "Export format: "
+            "``vts`` (VTK XML StructuredGrid, ParaView-native), "
+            "``vtk`` (legacy ASCII VTK), "
+            "``hdf5`` (HDF5 + XDMF, requires h5py), "
+            "``csv`` (flat comma-separated text)"
+        ),
+    ),
+    checkpoint: str = Query(
+        "latest",
+        description="Relative checkpoint path inside job output dir, or ``latest``.",
+    ),
+) -> StreamingResponse:
+    """Export the latest (or a specific) checkpoint to an industrial format.
+
+    Returns a downloadable file wrapped in a ZIP archive so the browser can
+    save it directly.  Supported formats:
+
+    * **vts** – VTK XML StructuredGrid with Base64 inline binary.  Open
+      directly in ParaView or VisIt.
+    * **vtk** – Legacy ASCII VTK STRUCTURED_POINTS.  Compatible with older
+      VTK-based tools.
+    * **hdf5** – HDF5 dataset + companion XDMF sidecar file (both packaged in
+      the ZIP).  Requires ``h5py`` to be installed on the server.
+    * **csv** – Flat CSV with columns ``i,j,k,ux,uy,uz,rho`` (3-D) or
+      ``i,j,ux,uy,rho`` (2-D).  Useful for post-processing in Python/MATLAB.
+    """
+    fmt = format.lower()
+    if fmt not in _VALID_EXPORT_FORMATS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown format '{format}'. Choose from: {sorted(_VALID_EXPORT_FORMATS)}",
+        )
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    try:
+        import tempfile
+        from pathlib import Path
+
+        from tensorlbm import load_checkpoint, macroscopic, macroscopic3d
+        from tensorlbm.io import save_hdf5, save_vtk, save_vts, save_xdmf
+
+        # ---- locate checkpoint directory --------------------------------------
+        # save_checkpoint writes two files: checkpoint_f.pt + checkpoint_meta.json
+        # into a run directory.  load_checkpoint expects that *directory* path.
+        if checkpoint == "latest":
+            ckpt_files = sorted(
+                job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime
+            )
+            if not ckpt_files:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No checkpoint files found for this job",
+                )
+            ckpt_dir = ckpt_files[-1].parent
+        else:
+            # caller may pass either the .pt file path or the directory path
+            candidate = (job.output_dir / checkpoint).resolve()
+            if not str(candidate).startswith(str(job.output_dir.resolve())):
+                raise HTTPException(status_code=403, detail="Forbidden")
+            ckpt_dir = candidate.parent if candidate.suffix == ".pt" else candidate
+            if not (ckpt_dir / "checkpoint_f.pt").exists():
+                raise HTTPException(status_code=404, detail="Checkpoint not found")
+
+        f_tensor, step, _meta = load_checkpoint(ckpt_dir)
+        is_3d = f_tensor.ndim == 4  # (Q, nz, ny, nx) for 3-D
+
+        if is_3d:
+            rho, ux, uy, uz = macroscopic3d(f_tensor)
+        else:
+            rho, ux, uy = macroscopic(f_tensor)
+            uz = None
+
+        # Sanitise job_id so user-controlled URL segments cannot escape the
+        # temporary directory via path-traversal sequences (e.g. "../../..").
+        safe_id = Path(job_id).name
+        stem = f"{safe_id}_step{step:06d}"
+
+        # ---- write export files to a temporary directory ----------------------
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = Path(tmp_dir)
+            export_files: list[Path] = []
+
+            if fmt == "vts":
+                out = tmp / f"{stem}.vts"
+                save_vts(out, ux, uy, uz, rho=rho)
+                export_files = [out]
+
+            elif fmt == "vtk":
+                out = tmp / f"{stem}.vtk"
+                save_vtk(out, ux, uy, uz, rho=rho)
+                export_files = [out]
+
+            elif fmt == "hdf5":
+                h5_path = tmp / f"{stem}.h5"
+                xdmf_path = tmp / f"{stem}.xdmf"
+                save_hdf5(h5_path, step, ux, uy, uz, rho=rho)
+                save_xdmf(
+                    h5_path, xdmf_path, step,
+                    ux.shape, has_uz=(uz is not None), has_rho=True,
+                )
+                export_files = [h5_path, xdmf_path]
+
+            elif fmt == "csv":
+                out = tmp / f"{stem}.csv"
+                _write_csv(out, ux, uy, uz, rho)
+                export_files = [out]
+
+            # ---- package into an in-memory ZIP --------------------------------
+            zip_buf = io.BytesIO()
+            with zipfile.ZipFile(zip_buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+                for p in export_files:
+                    zf.write(p, arcname=p.name)
+            zip_bytes = zip_buf.getvalue()
+
+        zip_name = f"tensorlbm_{stem}_{fmt}.zip"
+        return StreamingResponse(
+            io.BytesIO(zip_bytes),
+            media_type="application/zip",
+            headers={"Content-Disposition": f'attachment; filename="{zip_name}"'},
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def _write_csv(
+    path: object,
+    ux: object,
+    uy: object,
+    uz: object,
+    rho: object,
+) -> None:
+    """Write field data to a CSV file."""
+    from pathlib import Path as _Path
+
+    path = _Path(path)  # type: ignore[arg-type]
+
+    ux_np = ux.detach().cpu().float().numpy()  # type: ignore[union-attr]
+    uy_np = uy.detach().cpu().float().numpy()  # type: ignore[union-attr]
+    rho_np = rho.detach().cpu().float().numpy() if rho is not None else None  # type: ignore[union-attr]
+
+    is_3d = ux_np.ndim == 3  # type: ignore[union-attr]
+
+    if is_3d:
+        nz, ny, nx = ux_np.shape  # type: ignore[union-attr]
+        uz_np = uz.detach().cpu().float().numpy()  # type: ignore[union-attr]
+        with path.open("w", newline="", encoding="utf-8") as fh:
+            fh.write("i,j,k,ux,uy,uz,rho\n")
+            for k in range(nz):
+                for j in range(ny):
+                    for i in range(nx):
+                        rho_val = float(rho_np[k, j, i]) if rho_np is not None else 1.0  # type: ignore[index]
+                        fh.write(
+                            f"{i},{j},{k},"
+                            f"{ux_np[k, j, i]:.8g},"  # type: ignore[index]
+                            f"{uy_np[k, j, i]:.8g},"  # type: ignore[index]
+                            f"{uz_np[k, j, i]:.8g},"  # type: ignore[index]
+                            f"{rho_val:.8g}\n"
+                        )
+    else:
+        ny, nx = ux_np.shape  # type: ignore[union-attr]
+        with path.open("w", newline="", encoding="utf-8") as fh:
+            fh.write("i,j,ux,uy,rho\n")
+            for j in range(ny):
+                for i in range(nx):
+                    rho_val = float(rho_np[j, i]) if rho_np is not None else 1.0  # type: ignore[index]
+                    fh.write(
+                        f"{i},{j},"
+                        f"{ux_np[j, i]:.8g},"  # type: ignore[index]
+                        f"{uy_np[j, i]:.8g},"  # type: ignore[index]
+                        f"{rho_val:.8g}\n"
+                    )
+
+
 
 def _duration(job: job_manager.Job) -> float | None:
     from datetime import datetime

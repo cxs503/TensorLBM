@@ -376,7 +376,16 @@
     "timeavg_snapshots": "Snapshots used",
     "timeavg_show": "Show",
     "timeavg_mean": "Mean",
-    "timeavg_rms": "RMS"
+    "timeavg_rms": "RMS",
+    "tab_export": "Export",
+    "export_format": "Export format",
+    "export_checkpoint": "Checkpoint",
+    "export_btn": "Download",
+    "export_hint": "Download checkpoint data as a zip archive for use in ParaView, VisIt, MATLAB or Python.",
+    "export_format_vts": "VTS (VTK XML – ParaView)",
+    "export_format_vtk": "VTK (Legacy ASCII)",
+    "export_format_hdf5": "HDF5 + XDMF",
+    "export_format_csv": "CSV (flat text)"
   },
   "bench": {
     "title": "Benchmarks",
