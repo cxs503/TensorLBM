@@ -164,7 +164,22 @@
     "materials": "材料数据库",
     "material_select": "选择流体",
     "material_density": "密度 (kg/m³)",
-    "material_viscosity": "运动粘度 (m²/s)"
+    "material_viscosity": "运动粘度 (m²/s)",
+    "yplus_title": "Y⁺ 壁面距离计算器",
+    "yplus_re": "雷诺数 Re",
+    "yplus_u": "速度 U [m/s]",
+    "yplus_l": "特征长度 L [m]",
+    "yplus_nu": "运动黏度 ν [m²/s]",
+    "yplus_target": "目标 y⁺",
+    "yplus_ncells": "L 方向格子数",
+    "yplus_geom": "几何类型",
+    "yplus_compute": "计算 y⁺",
+    "yplus_result_dy": "Δy 第一层格子高度 [m]",
+    "yplus_result_dy_lbm": "Δy（LBM 格子单位）",
+    "yplus_result_utau": "摩擦速度 uτ [m/s]",
+    "yplus_result_cf": "摩擦系数 Cf",
+    "yplus_result_bl": "边界层厚度 [m]",
+    "yplus_result_cells_bl": "边界层内格子数"
   },
   "solve": {
     "title": "求解器",
@@ -209,7 +224,14 @@
     "validate": "参数校验",
     "validation_ok": "参数合法",
     "validation_errors": "校验错误",
-    "validation_warnings": "警告"
+    "validation_warnings": "警告",
+    "study_title": "参数敏感性研究",
+    "study_solver": "求解器类型",
+    "study_param": "变化参数",
+    "study_values": "参数值（逗号分隔）",
+    "study_base_config": "基础配置（JSON）",
+    "study_submit": "提交参数研究",
+    "study_hint": "每个参数值提交一个算例。可变化 Re、nx、u_in 等。"
   },
   "sim": {
     "cylinder_flow": {
@@ -339,7 +361,22 @@
     "field_density": "密度",
     "field_pressure_coeff": "压力系数",
     "field_ux": "x速度",
-    "field_uy": "y速度"
+    "field_uy": "y速度",
+    "tab_probes": "探针监测",
+    "tab_timeavg": "时间平均",
+    "probe_add": "添加探针",
+    "probe_run": "提取时间历程",
+    "probe_x": "x（0–1）",
+    "probe_y": "y（0–1）",
+    "probe_label": "标签",
+    "probe_hint": "添加探针位置后点击提取时间历程。",
+    "timeavg_field": "物理量",
+    "timeavg_compute": "计算时间平均",
+    "timeavg_hint": "基于所有检查点计算均值和 RMS 场。",
+    "timeavg_snapshots": "使用快照数",
+    "timeavg_show": "显示",
+    "timeavg_mean": "均值",
+    "timeavg_rms": "RMS"
   },
   "bench": {
     "title": "基准测试",
@@ -562,7 +599,11 @@
     "stage_solved": "求解完成",
     "stage_post_processed": "后处理完成",
     "advance_workflow": "推进阶段",
-    "workflow_summary": "工作流流水线"
+    "workflow_summary": "工作流流水线",
+    "clone_case": "克隆工况",
+    "clone_name": "新工况名称",
+    "clone_overrides": "配置覆盖（JSON）",
+    "clone_btn": "克隆"
   },
   "templates": {
     "title": "工程场景模板",
