@@ -327,6 +327,70 @@ async def field_data(
 
 
 # ---------------------------------------------------------------------------
+# Convergence monitor – real-time force / residual history
+# ---------------------------------------------------------------------------
+
+
+@router.get("/convergence/{job_id}")
+async def convergence_data(job_id: str) -> dict:
+    """Return convergence history for a job (force coefficients vs time step).
+
+    The response contains per-step scalar diagnostics (Cd, Cl, drag, lift,
+    density residual, …) extracted from the job's ``diagnostics`` list and,
+    if present, from ``forces.csv``.  The frontend can poll this endpoint to
+    render live convergence plots.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Use in-memory diagnostics (available even while running)
+    diag = list(job.diagnostics)
+
+    # Also try to read forces.csv for completed jobs (richer data)
+    forces_rows: list[dict[str, Any]] = []
+    csv_path = next(job.output_dir.rglob("forces.csv"), None)
+    if csv_path:
+        try:
+            import csv as _csv
+            with csv_path.open() as fh:
+                reader = _csv.DictReader(fh)
+                for row in reader:
+                    parsed: dict[str, Any] = {}
+                    for k, v in row.items():
+                        try:
+                            parsed[k] = float(v)
+                        except (ValueError, TypeError):
+                            parsed[k] = v
+                    forces_rows.append(parsed)
+        except Exception:
+            pass
+
+    # Determine available series from diagnostics
+    series: dict[str, list[Any]] = {}
+    steps: list[int] = []
+    for entry in diag:
+        step = entry.get("step") or entry.get("t") or entry.get("iter")
+        if step is not None:
+            steps.append(int(step))
+        for k, v in entry.items():
+            if k in ("step", "t", "iter"):
+                continue
+            if isinstance(v, (int, float)):
+                series.setdefault(k, []).append(v)
+
+    return {
+        "job_id": job_id,
+        "job_status": job.status.value,
+        "diagnostic_count": len(diag),
+        "steps": steps,
+        "series": series,
+        "forces_rows": forces_rows[-100:],  # last 100 rows to cap payload
+        "has_forces_csv": bool(forces_rows),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 

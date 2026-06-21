@@ -1,7 +1,7 @@
 {
-  "title": "TensorLBM 平台",
+  "title": "PowerFlow LBM 平台",
   "nav": {
-    "brand": "TensorLBM 平台",
+    "brand": "PowerFlow LBM",
     "dashboard": "仪表盘",
     "cad": "CAD 廻型",
     "preprocess": "前处理",
@@ -12,7 +12,10 @@
     "agent": "AI 智能体",
     "ai_flow": "AI 流场",
     "orchestration": "编排治理",
-    "suboff": "SUBOFF"
+    "suboff": "SUBOFF",
+    "projects": "项目管理",
+    "templates": "场景模板",
+    "reports": "报告"
   },
   "ws": {
     "connecting": "连接中…",
@@ -515,5 +518,71 @@
     "error_analysis": "误差分析",
     "run_error": "运行分析",
     "results": "结果"
+  },
+  "projects": {
+    "title": "项目管理",
+    "new_project": "新建项目",
+    "no_projects": "暂无项目，创建您的第一个项目以开始仿真工作流。",
+    "project_name": "项目名称",
+    "description": "描述",
+    "owner": "负责人",
+    "tags": "标签（逗号分隔）",
+    "create": "创建项目",
+    "delete": "删除",
+    "delete_confirm": "删除此项目及其所有算例？此操作不可撤销。",
+    "cases": "算例",
+    "new_case": "新建算例",
+    "case_name": "算例名称",
+    "scenario": "场景类型",
+    "create_case": "创建算例",
+    "no_cases": "此项目暂无算例。",
+    "open": "打开",
+    "status_draft": "草稿",
+    "status_running": "计算中",
+    "status_completed": "完成",
+    "status_failed": "失败",
+    "link_job": "关联任务",
+    "job_id": "任务 ID",
+    "updated": "更新时间",
+    "created": "创建时间",
+    "back": "← 返回项目列表"
+  },
+  "templates": {
+    "title": "工程场景模板",
+    "subtitle": "预置工程仿真场景向导",
+    "all": "全部",
+    "use_template": "使用模板",
+    "difficulty": "难度",
+    "beginner": "入门",
+    "intermediate": "中级",
+    "advanced": "高级",
+    "references": "参考文献",
+    "default_config": "默认配置",
+    "solver_type": "求解器类型",
+    "loading": "加载模板中…"
+  },
+  "reports": {
+    "title": "仿真报告",
+    "subtitle": "工程报告生成",
+    "generate": "生成报告",
+    "view": "查看报告",
+    "summary": "摘要",
+    "convergence": "收敛历程",
+    "forces": "力系数",
+    "images": "结果图像",
+    "config": "配置参数",
+    "log": "求解日志",
+    "no_job": "请选择一个已完成的任务以生成报告。",
+    "downloading": "生成报告中…",
+    "open_html": "打开 HTML 报告"
+  },
+  "convergence": {
+    "title": "收敛监控",
+    "no_data": "暂无收敛数据。",
+    "steps": "时间步",
+    "drag": "阻力系数 Cd",
+    "lift": "升力系数 Cl",
+    "density_residual": "密度残差",
+    "poll_interval": "运行中每 2 秒轮询"
   }
 }
