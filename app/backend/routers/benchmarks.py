@@ -6,7 +6,9 @@ job manager and returns a job_id for status polling.
 # ruff: noqa: TC001
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from fastapi import APIRouter
+from fastapi import HTTPException
 
 from .. import job_manager
 from ..schemas.benchmarks import (
@@ -20,6 +22,193 @@ from ..schemas.benchmarks import (
 from ..services.benchmarks import submit_benchmark
 
 router = APIRouter()
+
+
+_ACCURACY_BASELINE_LIBRARY: dict[str, dict[str, object]] = {
+    "ci_fast": {
+        "description": "Fast CI baseline gate for smoke-grade regression checks.",
+        "cases": {
+            "cavity": {
+                "rmse_u_max": 0.18,
+                "rmse_v_max": 0.20,
+            },
+            "bfs": {
+                "xr_star_min": 3.5,
+                "xr_star_max": 8.5,
+            },
+            "rotating_cylinder": {
+                "cl_mean_min": 0.02,
+            },
+        },
+    },
+    "engineering_full": {
+        "description": "Stricter engineering baseline for release-grade validation.",
+        "cases": {
+            "cavity": {
+                "rmse_u_max": 0.12,
+                "rmse_v_max": 0.14,
+            },
+            "bfs": {
+                "xr_star_min": 4.0,
+                "xr_star_max": 8.0,
+            },
+            "rotating_cylinder": {
+                "cl_mean_min": 0.05,
+            },
+        },
+    },
+}
+
+
+def _to_float(value: object) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _summarize_case(case_name: str, passed: int, total: int) -> dict[str, object]:
+    return {
+        "case": case_name,
+        "passed": passed,
+        "total": total,
+        "pass_rate": 1.0 if total == 0 else round(passed / total, 4),
+    }
+
+
+def _evaluate_accuracy_gate(
+    *,
+    result: dict[str, object],
+    profile: str,
+) -> dict[str, object]:
+    gate = _ACCURACY_BASELINE_LIBRARY.get(profile)
+    if gate is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Unknown baseline profile '{profile}'. "
+                f"Available: {sorted(_ACCURACY_BASELINE_LIBRARY)}"
+            ),
+        )
+
+    cases = gate.get("cases", {})
+    if not isinstance(cases, dict):
+        raise HTTPException(status_code=500, detail="Invalid baseline library format")
+
+    checks_passed = 0
+    checks_total = 0
+    case_summaries: list[dict[str, object]] = []
+    case_details: dict[str, object] = {}
+
+    # 1) Cavity RMSE thresholds
+    cavity_rows = result.get("cavity")
+    cavity_gate = cases.get("cavity", {})
+    if isinstance(cavity_rows, list) and isinstance(cavity_gate, dict):
+        rmse_u_max = _to_float(cavity_gate.get("rmse_u_max"))
+        rmse_v_max = _to_float(cavity_gate.get("rmse_v_max"))
+        passed = 0
+        total = 0
+        row_details = []
+        for row in cavity_rows:
+            if not isinstance(row, dict):
+                continue
+            rmse_u = _to_float(row.get("rmse_u"))
+            rmse_v = _to_float(row.get("rmse_v"))
+            if rmse_u is None or rmse_v is None or rmse_u_max is None or rmse_v_max is None:
+                continue
+            ok = rmse_u <= rmse_u_max and rmse_v <= rmse_v_max
+            total += 1
+            checks_total += 1
+            if ok:
+                passed += 1
+                checks_passed += 1
+            row_details.append(
+                {
+                    "re": row.get("re"),
+                    "rmse_u": rmse_u,
+                    "rmse_v": rmse_v,
+                    "rmse_u_max": rmse_u_max,
+                    "rmse_v_max": rmse_v_max,
+                    "pass": ok,
+                }
+            )
+        case_summaries.append(_summarize_case("cavity", passed, total))
+        case_details["cavity"] = row_details
+
+    # 2) BFS reattachment window
+    bfs_rows = result.get("bfs")
+    bfs_gate = cases.get("bfs", {})
+    if isinstance(bfs_rows, list) and isinstance(bfs_gate, dict):
+        xr_min = _to_float(bfs_gate.get("xr_star_min"))
+        xr_max = _to_float(bfs_gate.get("xr_star_max"))
+        passed = 0
+        total = 0
+        row_details = []
+        for row in bfs_rows:
+            if not isinstance(row, dict):
+                continue
+            xr_star = _to_float(row.get("xr_star"))
+            if xr_star is None or xr_min is None or xr_max is None:
+                continue
+            ok = xr_min <= xr_star <= xr_max
+            total += 1
+            checks_total += 1
+            if ok:
+                passed += 1
+                checks_passed += 1
+            row_details.append(
+                {
+                    "re": row.get("re"),
+                    "xr_star": xr_star,
+                    "xr_star_min": xr_min,
+                    "xr_star_max": xr_max,
+                    "pass": ok,
+                }
+            )
+        case_summaries.append(_summarize_case("bfs", passed, total))
+        case_details["bfs"] = row_details
+
+    # 3) Rotating-cylinder lift lower bound
+    rot_rows = result.get("rotating_cylinder")
+    rot_gate = cases.get("rotating_cylinder", {})
+    if isinstance(rot_rows, list) and isinstance(rot_gate, dict):
+        cl_min = _to_float(rot_gate.get("cl_mean_min"))
+        passed = 0
+        total = 0
+        row_details = []
+        for row in rot_rows:
+            if not isinstance(row, dict):
+                continue
+            cl_mean = _to_float(row.get("cl_mean"))
+            if cl_mean is None or cl_min is None:
+                continue
+            ok = cl_mean >= cl_min
+            total += 1
+            checks_total += 1
+            if ok:
+                passed += 1
+                checks_passed += 1
+            row_details.append(
+                {
+                    "spin_ratio": row.get("spin_ratio"),
+                    "cl_mean": cl_mean,
+                    "cl_mean_min": cl_min,
+                    "pass": ok,
+                }
+            )
+        case_summaries.append(_summarize_case("rotating_cylinder", passed, total))
+        case_details["rotating_cylinder"] = row_details
+
+    pass_rate = 1.0 if checks_total == 0 else round(checks_passed / checks_total, 4)
+    return {
+        "profile": profile,
+        "description": gate.get("description", ""),
+        "checks_passed": checks_passed,
+        "checks_total": checks_total,
+        "pass_rate": pass_rate,
+        "gate_passed": checks_total > 0 and checks_passed == checks_total,
+        "case_summaries": case_summaries,
+        "case_details": case_details,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -614,6 +803,11 @@ async def run_accuracy(params: AccuracyBenchmarkParams) -> dict:
                 })
             results["rotating_cylinder"] = rot_results
 
+        gate_profile = "ci_fast" if params.fast else "engineering_full"
+        results["accuracy_gate"] = _evaluate_accuracy_gate(
+            result=results,
+            profile=gate_profile,
+        )
         return results
 
     return submit_benchmark(
@@ -623,3 +817,46 @@ async def run_accuracy(params: AccuracyBenchmarkParams) -> dict:
         runner=_run,
         message="Accuracy benchmark submitted",
     )
+
+
+@router.get("/accuracy/baselines")
+async def list_accuracy_baselines() -> dict[str, object]:
+    """Return available industrial baseline profiles for accuracy gate checks."""
+    return {
+        "profiles": _ACCURACY_BASELINE_LIBRARY,
+        "default_fast_profile": "ci_fast",
+        "default_full_profile": "engineering_full",
+    }
+
+
+@router.get("/accuracy/report/{job_id}")
+async def accuracy_regression_report(job_id: str, profile: str | None = None) -> dict[str, object]:
+    """Generate a structured regression report from a completed accuracy benchmark."""
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.job_type != "benchmark_accuracy":
+        raise HTTPException(status_code=422, detail="Job is not an accuracy benchmark")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job is not completed yet")
+    if not isinstance(job.result, dict):
+        raise HTTPException(status_code=422, detail="Accuracy result payload is missing")
+
+    selected_profile = profile or ("ci_fast" if bool(job.config.get("fast", True)) else "engineering_full")
+    gate = _evaluate_accuracy_gate(result=job.result, profile=selected_profile)
+    generated_at = datetime.now(timezone.utc).isoformat()
+
+    return {
+        "report_type": "accuracy_regression",
+        "job_id": job_id,
+        "generated_at": generated_at,
+        "status": job.status.value,
+        "runtime_seconds": job.run_duration_seconds,
+        "profile": selected_profile,
+        "gate": gate,
+        "result_overview": {
+            "cases_present": sorted(
+                key for key in ("cavity", "bfs", "rotating_cylinder") if key in job.result
+            ),
+        },
+    }
