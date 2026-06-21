@@ -10,13 +10,15 @@ import base64
 import json
 import math
 from datetime import UTC, datetime
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 
 from .. import job_manager
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 router = APIRouter()
 
@@ -52,7 +54,7 @@ def _load_forces_csv(job: job_manager.Job) -> list[dict[str, Any]]:
     return rows
 
 
-def _try_float(val: str) -> Any:
+def _try_float(val: str | None) -> float | str | None:
     try:
         return float(val)
     except (ValueError, TypeError):
@@ -149,7 +151,7 @@ def compute_engineering_kpis(job: job_manager.Job) -> dict[str, Any]:
     }
 
 
-def _format_cell(value: Any) -> str:
+def _format_cell(value: object) -> str:
     if isinstance(value, float):
         return f"{value:.5g}"
     return str(value)
@@ -162,7 +164,6 @@ def _format_cell(value: Any) -> str:
 
 def _build_html_report(job: job_manager.Job) -> str:
     """Build a self-contained HTML engineering report for a job."""
-    meta = _load_metadata(job)
     forces = _load_forces_csv(job)
     images = _list_images(job)
     kpis = compute_engineering_kpis(job)
@@ -189,7 +190,8 @@ def _build_html_report(job: job_manager.Job) -> str:
         return (
             f'<svg width="{width}" height="{height}" style="display:block">'
             f'<polyline points="{polyline}" fill="none" stroke="{color}" stroke-width="2"/>'
-            f'<text x="20" y="{height-4}" font-size="10" fill="#666">{label} min={mn:.4g} max={mx:.4g}</text>'
+            f'<text x="20" y="{height-4}" font-size="10" fill="#666">'
+            f"{label} min={mn:.4g} max={mx:.4g}</text>"
             f"</svg>"
         )
 
@@ -205,14 +207,21 @@ def _build_html_report(job: job_manager.Job) -> str:
             uri = _img_to_data_uri(img_path)
             img_html_parts.append(
                 f'<div style="display:inline-block;margin:4px">'
-                f'<img src="{uri}" style="max-width:300px;max-height:220px;border-radius:4px;border:1px solid #dee2e6" '
+                f'<img src="{uri}" '
+                f'style="max-width:300px;max-height:220px;'
+                f'border-radius:4px;border:1px solid #dee2e6" '
                 f'title="{img_path.name}"/>'
-                f'<div style="font-size:11px;color:#666;text-align:center">{img_path.name}</div>'
+                f'<div style="font-size:11px;color:#666;text-align:center">'
+                f"{img_path.name}</div>"
                 f"</div>"
             )
         except Exception:
             pass
-    images_html = "\n".join(img_html_parts) if img_html_parts else "<p><em>No images available.</em></p>"
+    images_html = (
+        "\n".join(img_html_parts)
+        if img_html_parts
+        else "<p><em>No images available.</em></p>"
+    )
 
     # ---- forces table ---------------------------------------------------
     if forces:
@@ -250,6 +259,13 @@ def _build_html_report(job: job_manager.Job) -> str:
         f"<td>{'—' if value is None else _format_cell(value)}</td>"
         "</tr>"
         for label, value in kpi_rows
+    )
+    error_html = (
+        '<div class="alert alert-danger mt-2"><strong>Error:</strong> '
+        + job.error
+        + "</div>"
+        if job.error
+        else ""
     )
 
     now_str = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
@@ -309,7 +325,7 @@ def _build_html_report(job: job_manager.Job) -> str:
       <div class="col-md-4"><strong>Started:</strong> {job.started_at or '—'}</div>
       <div class="col-md-4"><strong>Completed:</strong> {job.completed_at or '—'}</div>
     </div>
-    {'<div class="alert alert-danger mt-2"><strong>Error:</strong> ' + job.error + '</div>' if job.error else ''}
+    {error_html}
   </div>
 
   <!-- Engineering KPIs -->
