@@ -30,7 +30,10 @@ from .routers import (
     orchestration,
     postprocess,
     preprocess,
+    projects,
+    reports,
     solver,
+    templates,
 )
 
 if TYPE_CHECKING:
@@ -71,11 +74,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="TensorLBM Platform",
+    title="PowerFlow LBM Platform",
     version="1.0.0",
     description=(
-        "Browser/Server platform for Lattice Boltzmann Method simulations. "
-        "Integrates pre-processing, solving, post-processing and benchmarks."
+        "PowerFlow – a PowerFLOW/XFlow-style Lattice Boltzmann Method engineering "
+        "simulation platform.  Integrates project management, engineering templates, "
+        "pre-processing, solving, post-processing, convergence monitoring, "
+        "report generation, and benchmarks."
     ),
     lifespan=lifespan,
 )
@@ -103,6 +108,9 @@ app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transforme
 app.include_router(ai_governance.router, prefix="/api/ai/governance", tags=["AI Governance"])
 app.include_router(ai_suboff.router, prefix="/api/ai/suboff", tags=["SUBOFF AI"])
 app.include_router(orchestration.router, prefix="/api/orchestration", tags=["Orchestration"])
+app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
+app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
+app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 
 # ---------------------------------------------------------------------------
 # WebSocket
@@ -187,6 +195,7 @@ async def platform_status() -> dict:
     all_jobs = jm.list_jobs()
     return {
         "version": "1.0.0",
+        "platform": "PowerFlow LBM",
         "cuda_available": cuda_ok,
         "gpu_count": n_gpus,
         "gpu_names": gpu_names,

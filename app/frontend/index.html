@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TensorLBM Platform</title>
+  <title>PowerFlow LBM Platform</title>
   <!-- i18n engine must be loaded before any inline scripts use t() -->
   <script src="/static/js/i18n.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
@@ -275,13 +275,16 @@
 
 <!-- Navbar -->
 <div class="top-navbar">
-  <span class="brand me-4"><i class="bi bi-water"></i> <span data-i18n="nav.brand">TensorLBM Platform</span></span>
+  <span class="brand me-4"><i class="bi bi-water"></i> <span data-i18n="nav.brand">PowerFlow LBM</span></span>
   <nav class="d-flex gap-1">
     <a href="#" data-tab="dashboard" class="active" onclick="return showTab('dashboard',this)"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+    <a href="#" data-tab="projects" onclick="return showTab('projects',this)"><i class="bi bi-folder2-open"></i> <span data-i18n="nav.projects">Projects</span></a>
+    <a href="#" data-tab="templates" onclick="return showTab('templates',this)"><i class="bi bi-collection"></i> <span data-i18n="nav.templates">Templates</span></a>
     <a href="#" data-tab="cad" onclick="return showTab('cad',this)"><i class="bi bi-rulers"></i> <span data-i18n="nav.cad">CAD</span></a>
     <a href="#" data-tab="preprocess" onclick="return showTab('preprocess',this)"><i class="bi bi-grid-3x3"></i> <span data-i18n="nav.preprocess">Pre-processing</span></a>
     <a href="#" data-tab="solve" onclick="return showTab('solve',this)"><i class="bi bi-play-circle"></i> <span data-i18n="nav.solve">Solve</span></a>
     <a href="#" data-tab="postprocess" onclick="return showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
+    <a href="#" data-tab="reports" onclick="return showTab('reports',this)"><i class="bi bi-file-earmark-text"></i> <span data-i18n="nav.reports">Reports</span></a>
     <a href="#" data-tab="benchmarks" onclick="return showTab('benchmarks',this)"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
     <a href="#" data-tab="compare" onclick="return showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
     <a href="#" data-tab="ai-flow" onclick="return showTab('ai-flow',this)"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
@@ -869,6 +872,8 @@
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-solve">
       <h4 class="mb-3"><i class="bi bi-play-circle"></i> <span data-i18n="solve.title">Solver</span></h4>
+      <!-- Template notification bar -->
+      <div id="solve-template-msg" class="alert alert-success alert-sm py-1 small mb-2" style="display:none"></div>
       <div class="row g-3">
         <div class="col-md-4 col-lg-3">
           <div class="card">
@@ -1590,6 +1595,191 @@
       </div>
     </div><!-- /suboff -->
 
+    <!-- ================================================================ -->
+    <!-- PROJECTS                                                         -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-projects">
+      <h4 class="mb-1"><i class="bi bi-folder2-open"></i> <span data-i18n="projects.title">Projects</span></h4>
+      <p class="text-muted small mb-3" data-i18n="projects.subtitle">Manage simulation projects and cases in a PowerFLOW-style project hierarchy.</p>
+
+      <!-- Project list pane -->
+      <div id="pf-project-list-pane">
+        <div class="row g-3">
+          <!-- New project form -->
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header fw-semibold"><i class="bi bi-plus-circle"></i> <span data-i18n="projects.new_project">New Project</span></div>
+              <div class="card-body config-form">
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.project_name">Project Name</label>
+                  <input class="form-control form-control-sm" id="pf-new-project-name" placeholder="My Simulation Project">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.description">Description</label>
+                  <textarea class="form-control form-control-sm" id="pf-new-project-desc" rows="2" placeholder="Brief description…"></textarea>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.owner">Owner</label>
+                  <input class="form-control form-control-sm" id="pf-new-project-owner" placeholder="engineer@company.com">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.tags">Tags</label>
+                  <input class="form-control form-control-sm" id="pf-new-project-tags" placeholder="marine, resistance, 3d">
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="projectsCreate()">
+                  <i class="bi bi-plus"></i> <span data-i18n="projects.create">Create Project</span>
+                </button>
+                <div id="pf-project-msg" class="alert py-1 small mt-2" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Projects list -->
+          <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0" data-i18n="projects.title">Projects</h6>
+              <button class="btn btn-sm btn-outline-secondary" onclick="projectsLoad()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div id="pf-projects-list">
+              <div class="text-muted small p-3" data-i18n="projects.no_projects">No projects yet.</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /project-list-pane -->
+
+      <!-- Case pane (shown when a project is open) -->
+      <div id="pf-case-pane" style="display:none">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <button class="btn btn-sm btn-outline-secondary" onclick="projectsBack()">
+            <i class="bi bi-arrow-left"></i> <span data-i18n="projects.back">← Projects</span>
+          </button>
+          <h5 class="mb-0" id="pf-case-project-title"></h5>
+        </div>
+        <div class="row g-3">
+          <!-- New case form -->
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header fw-semibold"><i class="bi bi-plus-circle"></i> <span data-i18n="projects.new_case">New Case</span></div>
+              <div class="card-body config-form">
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.case_name">Case Name</label>
+                  <input class="form-control form-control-sm" id="pf-new-case-name" placeholder="Re100 cylinder">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.description">Description</label>
+                  <textarea class="form-control form-control-sm" id="pf-new-case-desc" rows="2"></textarea>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.scenario">Scenario</label>
+                  <select class="form-select form-select-sm" id="pf-new-case-scenario">
+                    <option value="custom">Custom</option>
+                    <option value="cylinder_flow">Cylinder Flow</option>
+                    <option value="lid_driven_cavity">Lid-Driven Cavity</option>
+                    <option value="ship_hull_flow">Ship Hull Flow</option>
+                    <option value="dam_break">Dam Break</option>
+                    <option value="sloshing_tank">Sloshing Tank</option>
+                    <option value="turbulent_channel">Turbulent Channel</option>
+                    <option value="backward_facing_step">Backward-Facing Step</option>
+                    <option value="porous_drainage">Porous Drainage</option>
+                    <option value="pipeline_flow">Pipeline Flow</option>
+                    <option value="sphere_flow">Sphere Flow (3D)</option>
+                  </select>
+                </div>
+                <button class="btn btn-sm btn-primary" onclick="projectsCreateCase()">
+                  <i class="bi bi-plus"></i> <span data-i18n="projects.create_case">Create Case</span>
+                </button>
+                <div id="pf-case-msg" class="alert py-1 small mt-2" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cases list -->
+          <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0" data-i18n="projects.cases">Cases</h6>
+              <button class="btn btn-sm btn-outline-secondary" onclick="_loadCases(_pf_active_project && _pf_active_project.id)">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+            <div id="pf-cases-list">
+              <div class="text-muted small p-3" data-i18n="projects.no_cases">No cases yet.</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /case-pane -->
+    </div><!-- /projects -->
+
+    <!-- ================================================================ -->
+    <!-- TEMPLATES                                                        -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-templates">
+      <h4 class="mb-1"><i class="bi bi-collection"></i> <span data-i18n="templates.title">Engineering Templates</span></h4>
+      <p class="text-muted small mb-3" data-i18n="templates.subtitle">Pre-configured engineering scenario wizards – select a template to pre-fill the Solve panel.</p>
+
+      <!-- Category filter -->
+      <div class="d-flex gap-2 mb-3 flex-wrap" id="pf-template-cats">
+        <button class="btn btn-sm btn-primary pf-cat-btn active" data-cat="all" onclick="templatesFilterCategory('all')" data-i18n="templates.all">All</button>
+        <button class="btn btn-sm btn-outline-secondary pf-cat-btn" data-cat="external_flow" onclick="templatesFilterCategory('external_flow')">External Flow</button>
+        <button class="btn btn-sm btn-outline-secondary pf-cat-btn" data-cat="internal_flow" onclick="templatesFilterCategory('internal_flow')">Internal Flow</button>
+        <button class="btn btn-sm btn-outline-secondary pf-cat-btn" data-cat="multiphase" onclick="templatesFilterCategory('multiphase')">Multiphase</button>
+        <button class="btn btn-sm btn-outline-secondary pf-cat-btn" data-cat="ocean_engineering" onclick="templatesFilterCategory('ocean_engineering')">Ocean Engineering</button>
+      </div>
+
+      <div id="pf-templates-container">
+        <div class="text-muted small p-3" data-i18n="templates.loading">Loading templates…</div>
+      </div>
+    </div><!-- /templates -->
+
+    <!-- ================================================================ -->
+    <!-- REPORTS + CONVERGENCE                                            -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-reports">
+      <h4 class="mb-1"><i class="bi bi-file-earmark-text"></i> <span data-i18n="reports.title">Reports</span></h4>
+      <p class="text-muted small mb-3" data-i18n="reports.subtitle">Engineering report generation and convergence monitoring for simulation jobs.</p>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Job ID</label>
+          <div class="input-group input-group-sm">
+            <input class="form-control" id="reports-job-id" placeholder="Enter job ID or click a job in the sidebar">
+            <button class="btn btn-primary" onclick="reportsTabInit(document.getElementById('reports-job-id').value.trim())">
+              <i class="bi bi-arrow-right"></i> Load
+            </button>
+          </div>
+          <div class="form-text" data-i18n="reports.no_job">Select a completed job to generate a report.</div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Convergence charts -->
+        <div class="col-lg-7">
+          <div class="card">
+            <div class="card-header fw-semibold">
+              <i class="bi bi-graph-up"></i> <span data-i18n="convergence.title">Convergence Monitor</span>
+              <span class="ms-2 badge bg-secondary small" id="cvg-job-status"></span>
+            </div>
+            <div class="card-body p-2">
+              <div id="cvg-charts">
+                <div class="text-muted small p-2" data-i18n="convergence.no_data">No convergence data available yet.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report summary + link -->
+        <div class="col-lg-5">
+          <div class="card">
+            <div class="card-header fw-semibold">
+              <i class="bi bi-file-earmark-check"></i> <span data-i18n="reports.summary">Report Summary</span>
+            </div>
+            <div class="card-body p-2" id="report-summary">
+              <div class="text-muted small p-2" data-i18n="reports.no_job">Select a job to view its report.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /reports -->
+
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
 
@@ -1610,5 +1800,8 @@
 <script src="/static/js/app_suboff.js"></script>
 <!-- aiFlowPollJob -->
 <script src="/static/js/app_lightbox.js"></script>
+<script src="/static/js/app_projects.js"></script>
+<script src="/static/js/app_templates.js"></script>
+<script src="/static/js/app_convergence.js"></script>
 </body>
 </html>
