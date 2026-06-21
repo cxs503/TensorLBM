@@ -1135,6 +1135,7 @@
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('viewer',this)"><i class="bi bi-grid-1x2"></i> <span data-i18n="postprocess.tab_viewer">Field Viewer</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('probes',this)"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes">Probe Monitor</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('timeavg',this)"><i class="bi bi-clock-history"></i> <span data-i18n="postprocess.tab_timeavg">Time Average</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('export',this)"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs">Logs</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> <span data-i18n="postprocess.tab_files">Files</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> <span data-i18n="postprocess.tab_metadata">Metadata</span></a></li>
@@ -1290,6 +1291,56 @@
                 <p class="text-muted small mt-3" id="ta-hint">Select a field and click Compute Time Average.</p>
                 <canvas id="ta-canvas" style="display:none;max-width:100%;border:1px solid #dee2e6"></canvas>
                 <canvas id="ta-legend" width="30" height="256" style="display:none;vertical-align:top;margin-left:6px;border:1px solid #dee2e6"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- Export Tab ---- -->
+      <div id="pp-export" class="pp-tab-panel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-5">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></div>
+              <div class="card-body small">
+                <p class="text-muted" data-i18n="postprocess.export_hint">Download checkpoint data as a zip archive for use in ParaView, VisIt, MATLAB or Python.</p>
+                <div class="mb-2">
+                  <label class="form-label mb-1" data-i18n="postprocess.export_format">Export format</label>
+                  <select class="form-select form-select-sm" id="exp-format">
+                    <option value="vts" data-i18n="postprocess.export_format_vts">VTS (VTK XML – ParaView)</option>
+                    <option value="vtk" data-i18n="postprocess.export_format_vtk">VTK (Legacy ASCII)</option>
+                    <option value="hdf5" data-i18n="postprocess.export_format_hdf5">HDF5 + XDMF</option>
+                    <option value="csv" data-i18n="postprocess.export_format_csv">CSV (flat text)</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label mb-1" data-i18n="postprocess.export_checkpoint">Checkpoint</label>
+                  <select class="form-select form-select-sm" id="exp-checkpoint">
+                    <option value="latest">latest</option>
+                  </select>
+                </div>
+                <button class="btn btn-success btn-sm w-100" id="exp-btn" onclick="downloadExport()">
+                  <i class="bi bi-download"></i> <span data-i18n="postprocess.export_btn">Download</span>
+                </button>
+                <div class="mt-3 small text-muted" id="exp-status"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="card h-100">
+              <div class="card-header small fw-semibold"><i class="bi bi-info-circle"></i> Format guide</div>
+              <div class="card-body small text-muted">
+                <dl class="mb-0">
+                  <dt>VTS (VTK XML)</dt>
+                  <dd>Open in <strong>ParaView</strong> or VisIt. Base64 inline binary. Best for 2-D and 3-D fields.</dd>
+                  <dt>VTK (Legacy)</dt>
+                  <dd>ASCII structured-points format. Compatible with older VTK tools and Python <code>pyvista</code>.</dd>
+                  <dt>HDF5 + XDMF</dt>
+                  <dd>Requires <code>h5py</code> on the server. Open the <code>.xdmf</code> file in ParaView to auto-load field data.</dd>
+                  <dt>CSV</dt>
+                  <dd>Flat text with columns <code>i,j,ux,uy,rho</code> (2-D) or <code>i,j,k,ux,uy,uz,rho</code> (3-D). Read with <code>pandas.read_csv()</code>.</dd>
+                </dl>
               </div>
             </div>
           </div>

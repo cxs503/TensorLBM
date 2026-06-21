@@ -376,7 +376,16 @@
     "timeavg_snapshots": "使用快照数",
     "timeavg_show": "显示",
     "timeavg_mean": "均值",
-    "timeavg_rms": "RMS"
+    "timeavg_rms": "RMS",
+    "tab_export": "导出",
+    "export_format": "导出格式",
+    "export_checkpoint": "检查点",
+    "export_btn": "下载",
+    "export_hint": "将检查点数据打包为 zip 文件，可直接在 ParaView、VisIt、MATLAB 或 Python 中使用。",
+    "export_format_vts": "VTS（VTK XML，ParaView 原生）",
+    "export_format_vtk": "VTK（旧版 ASCII）",
+    "export_format_hdf5": "HDF5 + XDMF",
+    "export_format_csv": "CSV（纯文本）"
   },
   "bench": {
     "title": "基准测试",

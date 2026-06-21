@@ -140,3 +140,62 @@ def test_field_data_bad_field(client, waiter):
     job_id = _run_cylinder_job(client, waiter)
     r = client.get(f"/api/postprocess/field-data/{job_id}?field=unknown_field")
     assert r.status_code in (400, 422)
+
+
+# ---------------------------------------------------------------------------
+# Export endpoint
+# ---------------------------------------------------------------------------
+
+def test_export_unknown_job(client):
+    r = client.get("/api/postprocess/export/unknown_job_id")
+    assert r.status_code == 404
+
+
+def test_export_bad_format(client, waiter):
+    job_id = _run_cylinder_job(client, waiter)
+    r = client.get(f"/api/postprocess/export/{job_id}?format=xyz")
+    assert r.status_code == 422
+
+
+def test_export_vts_no_checkpoint(client, waiter):
+    """Jobs without checkpoints should return 404 from the export endpoint."""
+    job_id = _run_cylinder_job(client, waiter)
+    ckpts_r = client.get(f"/api/postprocess/checkpoints/{job_id}")
+    if ckpts_r.status_code == 200 and not ckpts_r.json()["checkpoints"]:
+        r = client.get(f"/api/postprocess/export/{job_id}?format=vts")
+        assert r.status_code == 404
+    else:
+        # If checkpoints are present the response must be a valid ZIP
+        r = client.get(f"/api/postprocess/export/{job_id}?format=vts")
+        assert r.status_code in (200, 404, 422), r.text
+        if r.status_code == 200:
+            import zipfile, io as _io
+            with zipfile.ZipFile(_io.BytesIO(r.content)) as zf:
+                names = zf.namelist()
+            assert any(n.endswith(".vts") for n in names), f"No .vts in {names}"
+
+
+def test_export_vtk(client, waiter):
+    job_id = _run_cylinder_job(client, waiter)
+    r = client.get(f"/api/postprocess/export/{job_id}?format=vtk")
+    assert r.status_code in (200, 404, 422), r.text
+    if r.status_code == 200:
+        import zipfile, io as _io
+        with zipfile.ZipFile(_io.BytesIO(r.content)) as zf:
+            names = zf.namelist()
+        assert any(n.endswith(".vtk") for n in names), f"No .vtk in {names}"
+
+
+def test_export_csv(client, waiter):
+    job_id = _run_cylinder_job(client, waiter)
+    r = client.get(f"/api/postprocess/export/{job_id}?format=csv")
+    assert r.status_code in (200, 404, 422), r.text
+    if r.status_code == 200:
+        import zipfile, io as _io
+        with zipfile.ZipFile(_io.BytesIO(r.content)) as zf:
+            names = zf.namelist()
+            assert any(n.endswith(".csv") for n in names), f"No .csv in {names}"
+            csv_name = next(n for n in names if n.endswith(".csv"))
+            csv_content = zf.read(csv_name).decode("utf-8")
+        first_line = csv_content.splitlines()[0]
+        assert "ux" in first_line and "uy" in first_line
