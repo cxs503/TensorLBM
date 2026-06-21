@@ -110,6 +110,10 @@ The platform also supports batch Reynolds-number sweeps for cylinder flow via
 | MLUPS performance | D2Q9 BGK throughput |
 | Porous media | Laplace + capillary invasion |
 
+New P0 industrial-readiness APIs for single-phase accuracy:
+- `GET /api/benchmarks/accuracy/baselines` – baseline profile library (`ci_fast`, `engineering_full`)
+- `GET /api/benchmarks/accuracy/report/{job_id}` – structured regression + gate report for completed accuracy jobs
+
 For the full SUBOFF appendage workflow and benchmark interpretation, see `../docs/suboff_platform_manual.md`.
 
 ### AI Agent (LLM-powered)
@@ -207,6 +211,8 @@ Key endpoints:
 | `POST` | `/api/solve/{type}` | Submit simulation |
 | `POST` | `/api/solve/parametric-study` | Single/multi-variable DOE sweep |
 | `POST` | `/api/benchmarks/{type}` | Run benchmark |
+| `GET` | `/api/benchmarks/accuracy/baselines` | List industrial baseline profiles |
+| `GET` | `/api/benchmarks/accuracy/report/{job_id}` | Generate regression gate report |
 | `WS` | `/ws` | Real-time job updates |
 
 ---
