@@ -1,7 +1,7 @@
-"""Engineering simulation templates for the PowerFlow platform.
+"""Engineering simulation templates for the TensorLBM platform.
 
 Provides pre-configured scenario templates that mirror the workflow-centric
-approach of commercial LBM tools (PowerFLOW / XFlow):
+approach of professional LBM simulation tools:
 
   - External aerodynamics
   - Ship/marine resistance

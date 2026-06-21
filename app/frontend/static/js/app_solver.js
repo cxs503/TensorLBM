@@ -449,3 +449,51 @@ async function submitJob() {
 }
 
 // ============================================================
+// Parameter validation
+// ============================================================
+
+/**
+ * Collect current form values and POST to /api/solve/validate.
+ * Shows a summary alert below the config form header.
+ */
+async function validateSolverParams() {
+  if (!currentSchema) return;
+  const body = { solver_type: currentSchema.endpoint.split('/').pop() };
+  for (const f of currentSchema.fields) {
+    const el = document.getElementById(`field-${f.name}`);
+    if (!el) continue;
+    const numNames = ['nx','ny','nz','re','u_in','u_lid','n_steps','output_interval'];
+    if (numNames.includes(f.name)) {
+      const v = parseFloat(el.value);
+      if (!isNaN(v)) body[f.name] = v;
+    }
+  }
+  const btn = document.getElementById('validate-btn');
+  btn.disabled = true;
+  const resultEl = document.getElementById('validate-result');
+  resultEl.style.display = '';
+  resultEl.innerHTML = '<span class="text-muted small">Validating…</span>';
+  try {
+    const r = await api('POST', '/api/solve/validate', body);
+    let html = '';
+    if (r.valid) {
+      html += `<div class="alert alert-success py-1 small mb-1"><i class="bi bi-check-circle-fill"></i> ${t('solve.validation_ok')}</div>`;
+    }
+    if (r.errors && r.errors.length) {
+      html += `<div class="alert alert-danger py-1 small mb-1"><strong>${t('solve.validation_errors')}:</strong><ul class="mb-0 ps-3">${r.errors.map(e => `<li>${escHtml(e)}</li>`).join('')}</ul></div>`;
+    }
+    if (r.warnings && r.warnings.length) {
+      html += `<div class="alert alert-warning py-1 small mb-1"><strong>${t('solve.validation_warnings')}:</strong><ul class="mb-0 ps-3">${r.warnings.map(w => `<li>${escHtml(w)}</li>`).join('')}</ul></div>`;
+    }
+    if (r.info && r.info.length) {
+      html += `<div class="text-muted small">${r.info.map(i => `<span class="me-3"><i class="bi bi-info-circle"></i> ${escHtml(i)}</span>`).join('')}</div>`;
+    }
+    resultEl.innerHTML = html || '<span class="text-muted small">—</span>';
+  } catch(e) {
+    resultEl.innerHTML = `<div class="alert alert-danger py-1 small">${escHtml(String(e.message))}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ============================================================

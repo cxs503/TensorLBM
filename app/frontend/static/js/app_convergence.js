@@ -1,5 +1,5 @@
 /**
- * app_convergence.js – PowerFlow Convergence Monitor & Report Panel
+ * app_convergence.js – TensorLBM Convergence Monitor & Report Panel
  *
  * Real-time convergence monitoring (force coefficients, residuals) and
  * engineering report generation for completed jobs.

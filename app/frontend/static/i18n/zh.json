@@ -1,7 +1,7 @@
 {
-  "title": "PowerFlow LBM 平台",
+  "title": "TensorLBM 平台",
   "nav": {
-    "brand": "PowerFlow LBM",
+    "brand": "TensorLBM",
     "dashboard": "仪表盘",
     "cad": "CAD 廻型",
     "preprocess": "前处理",
@@ -160,7 +160,11 @@
     "lbm_tau": "BGK 弛山时间 τ",
     "dx": "dx [m]",
     "dt": "dt [s]",
-    "mach": "马赫数"
+    "mach": "马赫数",
+    "materials": "材料数据库",
+    "material_select": "选择流体",
+    "material_density": "密度 (kg/m³)",
+    "material_viscosity": "运动粘度 (m²/s)"
   },
   "solve": {
     "title": "求解器",
@@ -201,7 +205,11 @@
     "preset_cavitation_like": "空化类似",
     "reuse_run": "复用此运行配置",
     "reuse_loaded": "已从任务复用配置",
-    "reuse_not_supported": "该任务类型不支持在求解器中复用。"
+    "reuse_not_supported": "该任务类型不支持在求解器中复用。",
+    "validate": "参数校验",
+    "validation_ok": "参数合法",
+    "validation_errors": "校验错误",
+    "validation_warnings": "警告"
   },
   "sim": {
     "cylinder_flow": {
@@ -545,7 +553,16 @@
     "job_id": "任务 ID",
     "updated": "更新时间",
     "created": "创建时间",
-    "back": "← 返回项目列表"
+    "back": "← 返回项目列表",
+    "subtitle": "以工作流为中心管理仿真项目与算例层级。",
+    "workflow_stage": "工作流阶段",
+    "stage_draft": "草稿",
+    "stage_setup": "配置",
+    "stage_meshed": "网格完成",
+    "stage_solved": "求解完成",
+    "stage_post_processed": "后处理完成",
+    "advance_workflow": "推进阶段",
+    "workflow_summary": "工作流流水线"
   },
   "templates": {
     "title": "工程场景模板",
