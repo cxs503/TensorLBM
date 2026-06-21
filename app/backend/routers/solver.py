@@ -707,11 +707,14 @@ async def validate_params(req: ValidateParamsRequest) -> dict:
             warnings.append("n_steps < 100 – result may not be physically meaningful.")
 
     # ---- Output interval checks --------------------------------------------
-    if req.n_steps is not None and req.output_interval is not None:
-        if req.output_interval > req.n_steps:
-            warnings.append(
-                "output_interval > n_steps – no snapshot will be saved."
-            )
+    if (
+        req.n_steps is not None
+        and req.output_interval is not None
+        and req.output_interval > req.n_steps
+    ):
+        warnings.append(
+            "output_interval > n_steps – no snapshot will be saved."
+        )
 
     # ---- LBM stability checks (u_in / Re → tau / Ma) ----------------------
     u = req.u_in or req.u_lid
