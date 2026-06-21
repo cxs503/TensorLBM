@@ -358,6 +358,62 @@ async def delete_case(project_id: str, case_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Case clone
+# ---------------------------------------------------------------------------
+
+class CaseCloneRequest(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=120)
+    config_overrides: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post("/{project_id}/cases/{case_id}/clone", status_code=201)
+async def clone_case(project_id: str, case_id: str, body: CaseCloneRequest) -> dict:
+    """Clone an existing simulation case within the same project.
+
+    Creates a new case that inherits all settings from the source case.
+    Optional ``name`` overrides the generated name (defaults to
+    ``"<source name> (copy)"``).  Optional ``config_overrides`` are merged
+    into the cloned case config, allowing rapid sensitivity studies by
+    varying a single parameter.
+
+    This mirrors the *case clone / duplicate* workflow in PowerFlow / XFlow.
+    """
+    with _get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM cases WHERE id=? AND project_id=?", (case_id, project_id)
+        ).fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Source case not found")
+        src = _row_to_dict(row)
+
+        now = datetime.now(UTC).isoformat()
+        new_id = uuid.uuid4().hex
+        new_name = body.name or f"{src['name']} (copy)"
+        new_config = dict(src.get("config") or {})
+        new_config.update(body.config_overrides)
+
+        conn.execute(
+            "INSERT INTO cases VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                new_id,
+                project_id,
+                new_name,
+                src.get("description", ""),
+                src.get("scenario", "custom"),
+                "draft",
+                "draft",
+                json.dumps(new_config),
+                None,   # job_id – new case has no job yet
+                now,
+                now,
+            ),
+        )
+        conn.commit()
+        new_row = conn.execute("SELECT * FROM cases WHERE id=?", (new_id,)).fetchone()
+    return _row_to_dict(new_row)
+
+
+# ---------------------------------------------------------------------------
 # Workflow stage advancement
 # ---------------------------------------------------------------------------
 

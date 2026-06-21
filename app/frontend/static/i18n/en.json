@@ -164,7 +164,22 @@
     "materials": "Material Database",
     "material_select": "Select Fluid",
     "material_density": "Density (kg/m³)",
-    "material_viscosity": "Kinematic Viscosity (m²/s)"
+    "material_viscosity": "Kinematic Viscosity (m²/s)",
+    "yplus_title": "Y⁺ Wall-Distance Calculator",
+    "yplus_re": "Reynolds number Re",
+    "yplus_u": "Velocity U [m/s]",
+    "yplus_l": "Length L [m]",
+    "yplus_nu": "Kinematic ν [m²/s]",
+    "yplus_target": "Target y⁺",
+    "yplus_ncells": "Grid cells along L",
+    "yplus_geom": "Geometry type",
+    "yplus_compute": "Compute y⁺",
+    "yplus_result_dy": "Δy first cell [m]",
+    "yplus_result_dy_lbm": "Δy in LBM lattice units",
+    "yplus_result_utau": "Friction velocity uτ [m/s]",
+    "yplus_result_cf": "Skin-friction coeff. Cf",
+    "yplus_result_bl": "Boundary layer thickness [m]",
+    "yplus_result_cells_bl": "Cells inside BL"
   },
   "solve": {
     "title": "Solver",
@@ -209,7 +224,14 @@
     "validate": "Validate Parameters",
     "validation_ok": "Parameters valid",
     "validation_errors": "Validation errors",
-    "validation_warnings": "Warnings"
+    "validation_warnings": "Warnings",
+    "study_title": "Parametric Sensitivity Study",
+    "study_solver": "Solver type",
+    "study_param": "Parameter to vary",
+    "study_values": "Values (comma-separated)",
+    "study_base_config": "Base config (JSON)",
+    "study_submit": "Submit Study",
+    "study_hint": "Submits one job per value. Vary Re, nx, u_in, etc."
   },
   "sim": {
     "cylinder_flow": {
@@ -339,7 +361,22 @@
     "field_density": "Density",
     "field_pressure_coeff": "Pressure coeff. Cp",
     "field_ux": "x-velocity",
-    "field_uy": "y-velocity"
+    "field_uy": "y-velocity",
+    "tab_probes": "Probe Monitor",
+    "tab_timeavg": "Time Average",
+    "probe_add": "Add Probe",
+    "probe_run": "Extract History",
+    "probe_x": "x (0–1)",
+    "probe_y": "y (0–1)",
+    "probe_label": "Label",
+    "probe_hint": "Add probe locations then click Extract History.",
+    "timeavg_field": "Field",
+    "timeavg_compute": "Compute Time Average",
+    "timeavg_hint": "Computes mean and RMS fields from all checkpoints.",
+    "timeavg_snapshots": "Snapshots used",
+    "timeavg_show": "Show",
+    "timeavg_mean": "Mean",
+    "timeavg_rms": "RMS"
   },
   "bench": {
     "title": "Benchmarks",
@@ -562,7 +599,11 @@
     "stage_solved": "Solved",
     "stage_post_processed": "Post-processed",
     "advance_workflow": "Advance Stage",
-    "workflow_summary": "Workflow Pipeline"
+    "workflow_summary": "Workflow Pipeline",
+    "clone_case": "Clone Case",
+    "clone_name": "New case name",
+    "clone_overrides": "Config overrides (JSON)",
+    "clone_btn": "Clone"
   },
   "templates": {
     "title": "Engineering Templates",
