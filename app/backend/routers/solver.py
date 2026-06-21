@@ -10,6 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
 from .. import job_manager
 from ..schemas.solver import (
@@ -380,3 +381,120 @@ async def start_porous_drainage(params: PorousDrainageParams) -> dict:
         fn=_run,
     )
     return {"job_id": job_id, "message": "Porous drainage job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# Parameter validation endpoint
+# ---------------------------------------------------------------------------
+
+# Grid size safety limits (same as job_manager guards)
+_MAX_GRID_2D = 1024
+_MAX_GRID_3D = 256
+_MAX_STEPS = 200_000
+
+# Minimum tau for BGK/TRT stability
+_TAU_MIN = 0.51
+_MA_MAX = 0.3  # Mach number limit for compressibility errors
+
+
+class ValidateParamsRequest(BaseModel):
+    """Generic parameter validation request.
+
+    Pass any subset of solver configuration fields; the validator will
+    check what it can without requiring all fields to be present.
+    """
+    solver_type: str = Field(..., description="Solver type key, e.g. 'cylinder_flow'")
+    # Grid
+    nx: int | None = Field(None, ge=1)
+    ny: int | None = Field(None, ge=1)
+    nz: int | None = Field(None, ge=1)
+    # Physics
+    re: float | None = Field(None, gt=0)
+    u_in: float | None = Field(None, gt=0)
+    u_lid: float | None = Field(None, gt=0)
+    # Time
+    n_steps: int | None = Field(None, ge=1)
+    output_interval: int | None = Field(None, ge=1)
+
+
+@router.post("/validate")
+async def validate_params(req: ValidateParamsRequest) -> dict:
+    """Validate simulation parameters before submission.
+
+    Returns a list of warnings and errors.  An empty ``errors`` list means
+    the parameters passed all checks.  ``warnings`` are non-blocking advisories.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    info: list[str] = []
+
+    # ---- Grid checks -------------------------------------------------------
+    is_3d = req.nz is not None
+    if req.nx is not None and req.ny is not None:
+        if is_3d and req.nz is not None:
+            if req.nx > _MAX_GRID_3D or req.ny > _MAX_GRID_3D or req.nz > _MAX_GRID_3D:
+                errors.append(
+                    f"3D grid dimensions must not exceed {_MAX_GRID_3D} per axis "
+                    f"(got {req.nx}×{req.ny}×{req.nz})."
+                )
+        else:
+            if req.nx > _MAX_GRID_2D or req.ny > _MAX_GRID_2D:
+                errors.append(
+                    f"2D grid dimensions must not exceed {_MAX_GRID_2D} per axis "
+                    f"(got {req.nx}×{req.ny})."
+                )
+        if req.nx < 10 or req.ny < 10:
+            warnings.append("Very small grid; numerical accuracy may be poor.")
+
+    # ---- Step count checks -------------------------------------------------
+    if req.n_steps is not None:
+        if req.n_steps > _MAX_STEPS:
+            errors.append(
+                f"n_steps={req.n_steps} exceeds platform limit of {_MAX_STEPS}."
+            )
+        if req.n_steps < 100:
+            warnings.append("n_steps < 100 – result may not be physically meaningful.")
+
+    # ---- Output interval checks --------------------------------------------
+    if req.n_steps is not None and req.output_interval is not None:
+        if req.output_interval > req.n_steps:
+            warnings.append(
+                "output_interval > n_steps – no snapshot will be saved."
+            )
+
+    # ---- LBM stability checks (u_in / Re → tau / Ma) ----------------------
+    u = req.u_in or req.u_lid
+    if u is not None and req.re is not None and req.nx is not None:
+        # Derive lattice viscosity and tau
+        nu_lb = u * req.nx / req.re
+        tau = 3.0 * nu_lb + 0.5
+        ma = u / (1.0 / 3.0 ** 0.5)  # cs = 1/√3
+
+        info.append(f"Estimated τ = {tau:.4f}, Ma = {ma:.4f}, ν_lb = {nu_lb:.6f}")
+
+        if tau < _TAU_MIN:
+            errors.append(
+                f"Estimated τ={tau:.4f} < {_TAU_MIN}: BGK scheme will be unstable. "
+                "Reduce Re, increase nx, or lower u_in."
+            )
+        elif tau < 0.6:
+            warnings.append(
+                f"τ={tau:.4f} is close to the stability limit (0.51). "
+                "Consider using TRT or MRT collision."
+            )
+
+        if ma > _MA_MAX:
+            warnings.append(
+                f"Mach number Ma={ma:.4f} > {_MA_MAX}: significant compressibility "
+                "errors expected in incompressible flow. Lower u_in."
+            )
+
+    valid = len(errors) == 0
+    return {
+        "valid": valid,
+        "solver_type": req.solver_type,
+        "errors": errors,
+        "warnings": warnings,
+        "info": info,
+    }
+

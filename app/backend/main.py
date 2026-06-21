@@ -74,10 +74,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="PowerFlow LBM Platform",
+    title="TensorLBM Platform",
     version="1.0.0",
     description=(
-        "PowerFlow – a PowerFLOW/XFlow-style Lattice Boltzmann Method engineering "
+        "TensorLBM – a workflow-centric Lattice Boltzmann Method engineering "
         "simulation platform.  Integrates project management, engineering templates, "
         "pre-processing, solving, post-processing, convergence monitoring, "
         "report generation, and benchmarks."
@@ -191,11 +191,18 @@ async def platform_status() -> dict:
         devices = ["cpu"]
 
     from . import job_manager as jm
+    from .routers.projects import workflow_summary as _wf_summary
 
     all_jobs = jm.list_jobs()
+
+    try:
+        wf = await _wf_summary()
+    except Exception:
+        wf = {}
+
     return {
         "version": "1.0.0",
-        "platform": "PowerFlow LBM",
+        "platform": "TensorLBM",
         "cuda_available": cuda_ok,
         "gpu_count": n_gpus,
         "gpu_names": gpu_names,
@@ -204,6 +211,7 @@ async def platform_status() -> dict:
         "running_jobs": sum(1 for j in all_jobs if j["status"] == "running"),
         "completed_jobs": sum(1 for j in all_jobs if j["status"] == "completed"),
         "failed_jobs": sum(1 for j in all_jobs if j["status"] == "failed"),
+        "workflow_summary": wf,
     }
 
 
