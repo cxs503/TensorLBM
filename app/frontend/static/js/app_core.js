@@ -9,7 +9,7 @@ let ppSelectedJobId = null;
 let ppCurrentTab = 'snapshots';
 let benchJobMap = {};   // bench_type → job_id
 const UI_STORAGE_KEY = 'tensorlbm_ui_state_v1';
-const TAB_SEQUENCE = ['dashboard', 'cad', 'preprocess', 'solve', 'postprocess', 'benchmarks', 'compare', 'ai-flow', 'orchestration', 'agent'];
+const TAB_SEQUENCE = ['dashboard', 'projects', 'templates', 'cad', 'preprocess', 'solve', 'postprocess', 'reports', 'benchmarks', 'compare', 'ai-flow', 'orchestration', 'agent', 'suboff'];
 const uiState = {
   activeTab: 'dashboard',
   jobsSearch: '',
@@ -320,6 +320,23 @@ function showTab(name, el) {
   saveUIState();
   if (name === 'compare') refreshCompareJobList();
   if (name === 'ai-flow') aiFlowListModels();
+  if (name === 'projects') {
+    if (typeof projectsInit === 'function') projectsInit();
+  }
+  if (name === 'templates') {
+    if (typeof templatesInit === 'function') templatesInit();
+  }
+  if (name === 'reports') {
+    // Pre-fill the reports job-id field from the currently selected job
+    const jobIdInput = document.getElementById('reports-job-id');
+    if (jobIdInput && selectedJobId && !jobIdInput.value) {
+      jobIdInput.value = selectedJobId;
+    }
+    if (typeof reportsTabInit === 'function') {
+      const jid = (jobIdInput && jobIdInput.value.trim()) || selectedJobId;
+      reportsTabInit(jid || null);
+    }
+  }
   if (name === 'orchestration') {
     orchLoadTemplates();
     orchLoadKpis();

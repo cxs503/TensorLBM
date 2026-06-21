@@ -1,7 +1,7 @@
 {
-  "title": "TensorLBM Platform",
+  "title": "PowerFlow LBM Platform",
   "nav": {
-    "brand": "TensorLBM Platform",
+    "brand": "PowerFlow LBM",
     "dashboard": "Dashboard",
     "cad": "CAD",
     "preprocess": "Pre-processing",
@@ -12,7 +12,10 @@
     "ai_flow": "AI Flow",
     "orchestration": "Orchestration",
     "suboff": "SUBOFF",
-    "agent": "AI Agent"
+    "agent": "AI Agent",
+    "projects": "Projects",
+    "templates": "Templates",
+    "reports": "Reports"
   },
   "ws": {
     "connecting": "Connecting…",
@@ -515,5 +518,71 @@
     "error_analysis": "Error Analysis",
     "run_error": "Run Analysis",
     "results": "Results"
+  },
+  "projects": {
+    "title": "Projects",
+    "new_project": "New Project",
+    "no_projects": "No projects yet. Create your first project to get started.",
+    "project_name": "Project Name",
+    "description": "Description",
+    "owner": "Owner",
+    "tags": "Tags (comma-separated)",
+    "create": "Create Project",
+    "delete": "Delete",
+    "delete_confirm": "Delete this project and all its cases? This cannot be undone.",
+    "cases": "Cases",
+    "new_case": "New Case",
+    "case_name": "Case Name",
+    "scenario": "Scenario Type",
+    "create_case": "Create Case",
+    "no_cases": "No cases in this project yet.",
+    "open": "Open",
+    "status_draft": "Draft",
+    "status_running": "Running",
+    "status_completed": "Completed",
+    "status_failed": "Failed",
+    "link_job": "Link to Job",
+    "job_id": "Job ID",
+    "updated": "Updated",
+    "created": "Created",
+    "back": "← Projects"
+  },
+  "templates": {
+    "title": "Engineering Templates",
+    "subtitle": "Pre-configured engineering scenario wizards",
+    "all": "All",
+    "use_template": "Use Template",
+    "difficulty": "Difficulty",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "references": "References",
+    "default_config": "Default Configuration",
+    "solver_type": "Solver Type",
+    "loading": "Loading templates…"
+  },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Engineering report generation",
+    "generate": "Generate Report",
+    "view": "View Report",
+    "summary": "Summary",
+    "convergence": "Convergence",
+    "forces": "Force Coefficients",
+    "images": "Result Images",
+    "config": "Configuration",
+    "log": "Solver Log",
+    "no_job": "Select a completed job to generate a report.",
+    "downloading": "Generating report…",
+    "open_html": "Open HTML Report"
+  },
+  "convergence": {
+    "title": "Convergence Monitor",
+    "no_data": "No convergence data available yet.",
+    "steps": "Time Steps",
+    "drag": "Drag Cd",
+    "lift": "Lift Cl",
+    "density_residual": "Density Residual",
+    "poll_interval": "Poll every 2 s while running"
   }
 }
