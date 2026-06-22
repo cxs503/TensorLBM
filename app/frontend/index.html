@@ -277,27 +277,27 @@
 <div class="top-navbar">
   <span class="brand me-4"><i class="bi bi-water"></i> <span data-i18n="nav.brand">TensorLBM</span></span>
   <nav class="d-flex gap-1">
-    <a href="#" data-tab="dashboard" class="active" onclick="return showTab('dashboard',this)"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
-    <a href="#" data-tab="projects" onclick="return showTab('projects',this)"><i class="bi bi-folder2-open"></i> <span data-i18n="nav.projects">Projects</span></a>
-    <a href="#" data-tab="templates" onclick="return showTab('templates',this)"><i class="bi bi-collection"></i> <span data-i18n="nav.templates">Templates</span></a>
-    <a href="#" data-tab="cad" onclick="return showTab('cad',this)"><i class="bi bi-rulers"></i> <span data-i18n="nav.cad">CAD</span></a>
-    <a href="#" data-tab="preprocess" onclick="return showTab('preprocess',this)"><i class="bi bi-grid-3x3"></i> <span data-i18n="nav.preprocess">Pre-processing</span></a>
-    <a href="#" data-tab="solve" onclick="return showTab('solve',this)"><i class="bi bi-play-circle"></i> <span data-i18n="nav.solve">Solve</span></a>
-    <a href="#" data-tab="postprocess" onclick="return showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
-    <a href="#" data-tab="reports" onclick="return showTab('reports',this)"><i class="bi bi-file-earmark-text"></i> <span data-i18n="nav.reports">Reports</span></a>
-    <a href="#" data-tab="benchmarks" onclick="return showTab('benchmarks',this)"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
-    <a href="#" data-tab="compare" onclick="return showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
-    <a href="#" data-tab="ai-flow" onclick="return showTab('ai-flow',this)"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
-    <a href="#" data-tab="orchestration" onclick="return showTab('orchestration',this)"><i class="bi bi-diagram-3"></i> <span data-i18n="nav.orchestration">Orchestration</span></a>
-    <a href="#" data-tab="agent" onclick="return showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
-    <a href="#" data-tab="suboff" onclick="return showTab('suboff',this)"><i class="bi bi-submarine"></i> <span data-i18n="nav.suboff">SUBOFF</span></a>
-    <a href="#" data-tab="geo3d" onclick="return showTab('geo3d',this)"><i class="bi bi-box"></i> <span data-i18n="nav.geo3d">3D Preview</span></a>
+    <a href="#" data-tab="dashboard" class="active"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+    <a href="#" data-tab="projects"><i class="bi bi-folder2-open"></i> <span data-i18n="nav.projects">Projects</span></a>
+    <a href="#" data-tab="templates"><i class="bi bi-collection"></i> <span data-i18n="nav.templates">Templates</span></a>
+    <a href="#" data-tab="cad"><i class="bi bi-rulers"></i> <span data-i18n="nav.cad">CAD</span></a>
+    <a href="#" data-tab="preprocess"><i class="bi bi-grid-3x3"></i> <span data-i18n="nav.preprocess">Pre-processing</span></a>
+    <a href="#" data-tab="solve"><i class="bi bi-play-circle"></i> <span data-i18n="nav.solve">Solve</span></a>
+    <a href="#" data-tab="postprocess"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
+    <a href="#" data-tab="reports"><i class="bi bi-file-earmark-text"></i> <span data-i18n="nav.reports">Reports</span></a>
+    <a href="#" data-tab="benchmarks"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
+    <a href="#" data-tab="compare"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
+    <a href="#" data-tab="ai-flow"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
+    <a href="#" data-tab="orchestration"><i class="bi bi-diagram-3"></i> <span data-i18n="nav.orchestration">Orchestration</span></a>
+    <a href="#" data-tab="agent"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
+    <a href="#" data-tab="suboff"><i class="bi bi-submarine"></i> <span data-i18n="nav.suboff">SUBOFF</span></a>
+    <a href="#" data-tab="geo3d"><i class="bi bi-box"></i> <span data-i18n="nav.geo3d">3D Preview</span></a>
   </nav>
   <span class="ms-auto d-flex align-items-center gap-3">
     <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
     <div class="lang-switcher">
-      <button class="lang-btn" data-lang="en" onclick="i18n.switch('en')" title="English">EN</button>
-      <button class="lang-btn" data-lang="zh" onclick="i18n.switch('zh')" title="中文">中文</button>
+      <button class="lang-btn" data-lang="en" title="English">EN</button>
+      <button class="lang-btn" data-lang="zh" title="中文">中文</button>
     </div>
   </span>
 </div>
@@ -2236,7 +2236,7 @@
                   <label class="form-label" data-i18n="projects.tags">Tags</label>
                   <input class="form-control form-control-sm" id="pf-new-project-tags" placeholder="marine, resistance, 3d">
                 </div>
-                <button class="btn btn-sm btn-primary" onclick="projectsCreate()">
+                <button class="btn btn-sm btn-primary" data-pf-action="create-project">
                   <i class="bi bi-plus"></i> <span data-i18n="projects.create">Create Project</span>
                 </button>
                 <div id="pf-project-msg" class="alert py-1 small mt-2" style="display:none"></div>
@@ -2248,7 +2248,7 @@
           <div class="col-lg-8">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <h6 class="mb-0" data-i18n="projects.title">Projects</h6>
-              <button class="btn btn-sm btn-outline-secondary" onclick="projectsLoad()"><i class="bi bi-arrow-clockwise"></i></button>
+              <button class="btn btn-sm btn-outline-secondary" data-pf-action="refresh-projects"><i class="bi bi-arrow-clockwise"></i></button>
             </div>
             <div id="pf-projects-list">
               <div class="text-muted small p-3" data-i18n="projects.no_projects">No projects yet.</div>
@@ -2260,7 +2260,7 @@
       <!-- Case pane (shown when a project is open) -->
       <div id="pf-case-pane" style="display:none">
         <div class="d-flex align-items-center gap-2 mb-3">
-          <button class="btn btn-sm btn-outline-secondary" onclick="projectsBack()">
+          <button class="btn btn-sm btn-outline-secondary" data-pf-action="back-to-projects">
             <i class="bi bi-arrow-left"></i> <span data-i18n="projects.back">← Projects</span>
           </button>
           <h5 class="mb-0" id="pf-case-project-title"></h5>
@@ -2295,7 +2295,7 @@
                     <option value="sphere_flow">Sphere Flow (3D)</option>
                   </select>
                 </div>
-                <button class="btn btn-sm btn-primary" onclick="projectsCreateCase()">
+                <button class="btn btn-sm btn-primary" data-pf-action="create-case">
                   <i class="bi bi-plus"></i> <span data-i18n="projects.create_case">Create Case</span>
                 </button>
                 <div id="pf-case-msg" class="alert py-1 small mt-2" style="display:none"></div>
@@ -2307,7 +2307,7 @@
           <div class="col-lg-8">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <h6 class="mb-0" data-i18n="projects.cases">Cases</h6>
-              <button class="btn btn-sm btn-outline-secondary" onclick="_loadCases(_pf_active_project && _pf_active_project.id)">
+              <button class="btn btn-sm btn-outline-secondary" data-pf-action="refresh-cases">
                 <i class="bi bi-arrow-clockwise"></i>
               </button>
             </div>
@@ -2331,12 +2331,12 @@
                 <input class="form-control form-control-sm font-monospace" id="pf-clone-overrides" placeholder='{"re": 200}' style="font-size:.75rem">
               </div>
               <div class="col-md-1">
-                <button class="btn btn-primary btn-sm w-100" onclick="projectsDoClone()">
+                <button class="btn btn-primary btn-sm w-100" data-pf-action="do-clone">
                   <i class="bi bi-copy"></i> <span data-i18n="projects.clone_btn">Clone</span>
                 </button>
               </div>
               <div class="col-md-1">
-                <button class="btn btn-outline-secondary btn-sm w-100" onclick="projectsCancelClone()">
+                <button class="btn btn-outline-secondary btn-sm w-100" data-pf-action="cancel-clone">
                   <i class="bi bi-x"></i>
                 </button>
               </div>
