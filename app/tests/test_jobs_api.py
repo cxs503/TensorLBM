@@ -13,10 +13,45 @@ def _submit_tiny_job(client) -> str:
     return r.json()["job_id"]
 
 
-def test_list_jobs_returns_array(client):
+def test_list_jobs_returns_envelope(client):
     r = client.get("/api/jobs/")
     assert r.status_code == 200
-    assert isinstance(r.json(), list)
+    body = r.json()
+    assert isinstance(body, dict)
+    assert "jobs" in body
+    assert "total" in body
+    assert isinstance(body["jobs"], list)
+
+
+def test_list_jobs_pagination(client, waiter):
+    """limit and offset must slice the returned jobs list."""
+    # Submit a few tiny jobs so there is something to paginate.
+    for _ in range(3):
+        _submit_tiny_job(client)
+
+    r = client.get("/api/jobs/", params={"limit": 2, "offset": 0})
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body["jobs"]) <= 2
+    assert body["total"] >= len(body["jobs"])
+    assert body["limit"] == 2
+    assert body["offset"] == 0
+
+
+def test_list_jobs_status_filter(client, waiter):
+    """status query param must filter results."""
+    job_id = _submit_tiny_job(client)
+    waiter(job_id)
+
+    r = client.get("/api/jobs/", params={"status": "completed"})
+    assert r.status_code == 200
+    body = r.json()
+    assert all(j["status"] == "completed" for j in body["jobs"])
+
+    r2 = client.get("/api/jobs/", params={"status": "queued"})
+    assert r2.status_code == 200
+    # No jobs should be in queued state after waiter returns
+    assert all(j["status"] == "queued" for j in r2.json()["jobs"])
 
 
 def test_get_unknown_job_404(client):

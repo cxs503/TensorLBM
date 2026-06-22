@@ -472,7 +472,7 @@ async function validateSolverParams() {
   btn.disabled = true;
   const resultEl = document.getElementById('validate-result');
   resultEl.style.display = '';
-  resultEl.innerHTML = '<span class="text-muted small">Validating…</span>';
+  resultEl.innerHTML = `<span class="text-muted small">${t('solve.validating')}</span>`;
   try {
     const r = await api('POST', '/api/solve/validate', body);
     let html = '';
@@ -548,18 +548,18 @@ async function submitParametricStudy() {
   let values, base_config;
   try {
     values = rawValues.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
-    if (values.length < 2) throw new Error('Provide at least 2 comma-separated values');
-    if (values.length > 20) throw new Error('Maximum 20 values allowed');
+    if (values.length < 2) throw new Error(t('solve.scan_min_values'));
+    if (values.length > 20) throw new Error(t('solve.scan_max_values'));
   } catch(e) {
     el.innerHTML = `<div class="alert alert-danger small">${escHtml(e.message)}</div>`; return;
   }
   try {
     base_config = JSON.parse(rawConfig);
   } catch(e) {
-    el.innerHTML = `<div class="alert alert-danger small">Invalid JSON in base config: ${escHtml(e.message)}</div>`; return;
+    el.innerHTML = `<div class="alert alert-danger small">${t('solve.scan_invalid_json')}: ${escHtml(e.message)}</div>`; return;
   }
 
-  el.innerHTML = `<div class="spinner-border spinner-border-sm"></div> Submitting ${values.length} jobs…`;
+  el.innerHTML = `<div class="spinner-border spinner-border-sm"></div> ${t('solve.scan_submitting').replace('{n}', values.length)}`;
   try {
     const r = await api('POST', '/api/solve/parametric-study', { solver_type, base_config, parameter, values });
     el.innerHTML = `

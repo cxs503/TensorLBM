@@ -186,7 +186,8 @@ async function loadStatus() {
 
 async function loadJobs() {
   try {
-    const jobs = await api('GET', '/api/jobs/');
+    const r = await api('GET', '/api/jobs/');
+    const jobs = Array.isArray(r) ? r : (r.jobs || []);
     jobs.forEach(j => { jobsMap[j.job_id] = j; });
     renderJobsSidebar();
     updatePPJobSelect();
@@ -495,12 +496,12 @@ async function loadMaterials() {
   if (!tableEl) return;
   const filterEl = document.getElementById('material-filter');
   const category = filterEl ? filterEl.value : '';
-  tableEl.innerHTML = '<span class="text-muted">Loading…</span>';
+  tableEl.innerHTML = `<span class="text-muted">${t('common.loading')}</span>`;
   try {
     const url = '/api/preprocess/materials' + (category ? `?category=${encodeURIComponent(category)}` : '');
     const r = await api('GET', url);
     if (!r.materials || !r.materials.length) {
-      tableEl.innerHTML = '<span class="text-muted">No materials found.</span>';
+      tableEl.innerHTML = `<span class="text-muted">${t('preprocess.no_materials')}</span>`;
       return;
     }
     const rows = r.materials.map(m => `

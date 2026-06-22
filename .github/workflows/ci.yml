@@ -26,5 +26,7 @@ jobs:
       - name: Type check (mypy full advisory)
         run: mypy src/tensorlbm --ignore-missing-imports
         continue-on-error: true
+      - name: Check docs-implementation consistency
+        run: python scripts/check_platform_docs_consistency.py
       - name: Run tests with coverage
         run: PYTHONPATH=src pytest -q --cov=tensorlbm --cov-report=term-missing

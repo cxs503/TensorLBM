@@ -9,20 +9,20 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 # Ensure tensorlbm src is importable when running from platform/ directory
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-from . import job_manager  # noqa: E402
-from .routers import (
-    ai_suboff,  # noqa: E402
+from . import job_manager, security  # noqa: E402
+from .routers import (  # noqa: E402
     agent,
     ai_governance,
+    ai_suboff,  # noqa: E402
     ai_transformer,
     benchmarks,
     cad,
@@ -37,7 +37,7 @@ from .routers import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Awaitable, Callable
 
 # ---------------------------------------------------------------------------
 # App
@@ -92,6 +92,48 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Security middleware
+# ---------------------------------------------------------------------------
+
+@app.middleware("http")
+async def auth_and_audit_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    if not request.url.path.startswith("/api/"):
+        return await call_next(request)
+
+    started = asyncio.get_running_loop().time()
+    try:
+        ctx = security.authorize_request(request)
+    except security.AuthorizationError as exc:
+        response = JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        security.audit_request(
+            request,
+            None,
+            response.status_code,
+            asyncio.get_running_loop().time() - started,
+        )
+        return response
+
+    request.state.auth_context = ctx
+    try:
+        response = await call_next(request)
+    except Exception:
+        security.audit_request(request, ctx, 500, asyncio.get_running_loop().time() - started)
+        raise
+
+    security.audit_request(
+        request,
+        ctx,
+        response.status_code,
+        asyncio.get_running_loop().time() - started,
+    )
+    return response
+
 
 # ---------------------------------------------------------------------------
 # Routers
@@ -203,6 +245,8 @@ async def platform_status() -> dict:
     return {
         "version": "1.0.0",
         "platform": "TensorLBM",
+        "scheduler_backend": jm.scheduler_backend(),
+        "scheduler_profile": jm.scheduler_profile(),
         "cuda_available": cuda_ok,
         "gpu_count": n_gpus,
         "gpu_names": gpu_names,
