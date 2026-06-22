@@ -16,7 +16,16 @@
     "projects": "项目管理",
     "templates": "场景模板",
     "reports": "报告",
-    "geo3d": "3D预览"
+    "geo3d": "3D预览",
+    "projects_group": "项目",
+    "cad_group": "几何体",
+    "cad_hull": "船体",
+    "cad_suboff": "潜艇 (SUBOFF)",
+    "cad_offshore": "海洋结构",
+    "cad_propeller": "螺旋桨",
+    "sim_group": "仿真",
+    "results_group": "结果",
+    "ai_group": "AI / 高级"
   },
   "ws": {
     "connecting": "连接中…",
@@ -35,7 +44,16 @@
     "filter_failed": "失败",
     "shortcut_hint": "快捷键：Alt+1..0 切换模块，Ctrl/⌘+K 搜索任务。",
     "no_jobs_filtered": "当前筛选条件下无任务。",
-    "clear_confirm": "确认清除所有非运行任务？该操作不可撤销。"
+    "clear_confirm": "确认清除所有非运行任务？该操作不可撤销。",
+    "wf_mode": "工作流",
+    "jobs_mode": "任务",
+    "wf_title": "工作流",
+    "other_title": "其他",
+    "step_geo": "几何体",
+    "step_preproc": "前处理",
+    "step_solve": "求解",
+    "step_post": "后处理",
+    "step_reports": "报告"
   },
   "stat": {
     "total": "总任务数",
@@ -464,7 +482,19 @@
     "studycompare_load": "加载",
     "studycompare_no_group": "请输入研究组名称。",
     "studycompare_not_found": "未找到该研究组的任何任务。",
-    "studycompare_metric_summary": "指标汇总"
+    "studycompare_metric_summary": "指标汇总",
+    "tab_results": "结果",
+    "tab_fieldview": "流场视图",
+    "tab_probes_analysis": "探针与分析",
+    "tab_export": "导出",
+    "tab_logs_files": "日志与文件"
+  },
+  "settings": {
+    "title": "设置",
+    "language": "语言",
+    "notifications": "通知",
+    "hpc": "HPC 默认配置",
+    "autostop": "自动停止默认配置"
   },
   "bench": {
     "title": "基准测试",
