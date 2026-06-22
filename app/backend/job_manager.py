@@ -13,7 +13,7 @@ import threading
 import traceback
 import uuid
 from collections.abc import Callable  # noqa: TC003
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
@@ -56,6 +56,7 @@ class Job:
         self.result: dict[str, Any] = {}
         self.cancel_requested: bool = False
         self.scheduler_profile: str = _SCHEDULER_PROFILE
+        self.scheduler_backend: str = _SCHEDULER_BACKEND
         self.queue_wait_seconds: float | None = None
         self.run_duration_seconds: float | None = None
         self.total_duration_seconds: float | None = None
@@ -94,6 +95,7 @@ class Job:
             "result": self.result,
             "cancel_requested": self.cancel_requested,
             "scheduler_profile": self.scheduler_profile,
+            "scheduler_backend": self.scheduler_backend,
             "queue_wait_seconds": self.queue_wait_seconds,
             "run_duration_seconds": self.run_duration_seconds,
             "total_duration_seconds": self.total_duration_seconds,
@@ -117,6 +119,8 @@ class JobCancelledError(RuntimeError):
 
 _jobs: dict[str, Job] = {}
 _jobs_lock = threading.Lock()
+_job_futures: dict[str, Future[None]] = {}
+_job_futures_lock = threading.Lock()
 
 # Map thread ident → job_id so the log handler knows which job to attach to
 _thread_job_map: dict[int, str] = {}
@@ -124,6 +128,10 @@ _thread_job_map_lock = threading.Lock()
 
 # Thread pool for running simulations
 _MAX_WORKERS = max(1, int(os.environ.get("TENSORLBM_MAX_WORKERS", "4")))
+_SCHEDULER_BACKEND = (
+    os.environ.get("TENSORLBM_SCHEDULER_BACKEND", "local_threadpool").strip()
+    or "local_threadpool"
+)
 _SCHEDULER_PROFILE = (
     os.environ.get("TENSORLBM_SCHEDULER_PROFILE", "single_node_threadpool").strip()
     or "single_node_threadpool"
@@ -296,6 +304,8 @@ def _run_job(job: Job, fn: Callable[[Job], dict[str, Any] | None]) -> None:
                 )
                 _notify(job)
     finally:
+        with _job_futures_lock:
+            _job_futures.pop(job.job_id, None)
         with _thread_job_map_lock:
             _thread_job_map.pop(ident, None)  # type: ignore[arg-type]
         completed_ts = datetime.now(UTC)
@@ -365,7 +375,9 @@ def submit(
     with _jobs_lock:
         _jobs[job_id] = job
     _notify(job)
-    _executor.submit(_run_job, job, fn)
+    fut = _executor.submit(_run_job, job, fn)
+    with _job_futures_lock:
+        _job_futures[job_id] = fut
     return job_id
 
 
@@ -394,10 +406,10 @@ def delete_job(job_id: str) -> bool:
 def cancel_job(job_id: str) -> bool:
     """Request cancellation of a queued or running job.
 
-    Sets the job status to CANCELLED if the job is in QUEUED or RUNNING state.
-    Note: this does not interrupt a running thread (LBM steps are not
-    interruptible), but marks the job for cleanup and prevents queued jobs
-    from starting.
+    For queued jobs, attempts a hard-cancel via ``Future.cancel()``; if the
+    future has not started, status is set to ``CANCELLED`` immediately.
+    Running jobs are marked ``cancel_requested=True`` and rely on cooperative
+    checks (`raise_if_cancelled`) inside solver loops.
 
     Returns:
         True if the job was found and its status changed, False otherwise.
@@ -406,13 +418,26 @@ def cancel_job(job_id: str) -> bool:
         job = _jobs.get(job_id)
         if job is None:
             return False
-        if job.status in (JobStatus.QUEUED, JobStatus.RUNNING):
-            job.cancel_requested = True
+        if job.status not in (JobStatus.QUEUED, JobStatus.RUNNING):
+            return False
+        job.cancel_requested = True
+
+    hard_cancelled = False
+    with _job_futures_lock:
+        fut = _job_futures.get(job_id)
+        if fut is not None:
+            hard_cancelled = fut.cancel()
+
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if job is None:
+            return False
+        if hard_cancelled:
             job.status = JobStatus.CANCELLED
             job.completed_at = datetime.now(UTC).isoformat()
-            _notify(job)
-            return True
-        return False
+            job.failure_category = "cancelled"
+        _notify(job)
+        return True
 
 
 def push_diagnostic(job_id: str, data: dict[str, Any]) -> None:
@@ -509,6 +534,11 @@ def scheduler_profile() -> str:
     return _SCHEDULER_PROFILE
 
 
+def scheduler_backend() -> str:
+    """Return configured scheduler backend string."""
+    return _SCHEDULER_BACKEND
+
+
 def orchestration_kpis() -> dict[str, Any]:
     """Aggregate orchestration-level KPIs from in-process jobs."""
     with _jobs_lock:
@@ -540,6 +570,7 @@ def orchestration_kpis() -> dict[str, Any]:
 
     terminal = len(completed) + len(failed) + len(cancelled)
     return {
+        "scheduler_backend": scheduler_backend(),
         "scheduler_profile": scheduler_profile(),
         "max_workers": max_workers(),
         "jobs_total": total,

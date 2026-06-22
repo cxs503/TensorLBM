@@ -28,9 +28,26 @@ class CleanupJobsRequest(BaseModel):
 
 
 @router.get("/")
-async def list_jobs() -> list[dict]:
-    """Return all jobs sorted newest-first."""
-    return job_manager.list_jobs()
+async def list_jobs(
+    status: str | None = Query(None, description="Filter by status (queued/running/completed/failed/cancelled)"),  # noqa: B008
+    limit: int = Query(0, ge=0, description="Max jobs to return (0 = all)"),  # noqa: B008
+    offset: int = Query(0, ge=0, description="Number of jobs to skip"),  # noqa: B008
+) -> dict:
+    """Return jobs sorted newest-first with optional status filter and pagination.
+
+    When ``limit=0`` (the default) all matching jobs are returned so existing
+    callers are unaffected.  The response envelope includes a ``total`` count
+    of matching jobs before pagination so clients can build pagination controls.
+    """
+    jobs = job_manager.list_jobs()
+    if status:
+        jobs = [j for j in jobs if j.get("status") == status]
+    total = len(jobs)
+    if offset:
+        jobs = jobs[offset:]
+    if limit:
+        jobs = jobs[:limit]
+    return {"jobs": jobs, "total": total, "offset": offset, "limit": limit}
 
 
 @router.get("/compare")
@@ -98,7 +115,14 @@ async def cancel_job(job_id: str) -> dict:
         )
     if not job_manager.cancel_job(job_id):
         raise HTTPException(status_code=409, detail=f"Job {job_id} cannot be cancelled")
-    return {"job_id": job_id, "status": "cancelled"}
+    updated = job_manager.get_job(job_id)
+    if updated is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    return {
+        "job_id": job_id,
+        "status": updated.status.value,
+        "cancel_requested": bool(updated.cancel_requested),
+    }
 
 
 @router.post("/cleanup")
