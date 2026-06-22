@@ -237,7 +237,13 @@
     "scan_min_values": "请至少提供2个逗号分隔的值",
     "scan_max_values": "最多允许20个值",
     "scan_submitting": "正在提交 {n} 个任务…",
-    "scan_invalid_json": "基础配置中的JSON无效"
+    "scan_invalid_json": "基础配置中的JSON无效",
+    "preflight_btn": "飞前检查",
+    "preflight_running": "正在运行飞前检查…",
+    "preflight_title": "飞前检查",
+    "preflight_mem": "预估内存",
+    "preflight_steps": "建议 n_steps",
+    "preflight_recs": "建议"
   },
   "sim": {
     "cylinder_flow": {
@@ -279,6 +285,22 @@
     "ship_hull": {
       "label": "船体 – Wigley（3D）",
       "desc": "3D Wigley 船型阻力仿真，输出 Cd 及船型对称性。"
+    },
+    "sphere_flow_d3q27": {
+      "label": "三维绕球流动（D3Q27）",
+      "desc": "D3Q27（27速度，四阶各向同性）三维绕球通道流，相比D3Q19角区精度更高。"
+    },
+    "thermal_cavity_3d": {
+      "label": "三维热对流方腔（Boussinesq）",
+      "desc": "差分加热立方腔。D3Q19速度 + D3Q7温度 Boussinesq 耦合，输出Nusselt数。"
+    },
+    "porous_drainage_3d": {
+      "label": "三维多孔介质排水（Shan-Chen）",
+      "desc": "气体注入水饱和三维多孔介质。跟踪随时间变化的气体饱和度。"
+    },
+    "hull_free_surface": {
+      "label": "船体自由液面（彩色梯度）",
+      "desc": "三维船体兴波阻力仿真。彩色梯度双相LBM，输出阻力及自由液面高度。"
     }
   },
   "field": {
@@ -391,7 +413,14 @@
     "export_format_vts": "VTS（VTK XML，ParaView 原生）",
     "export_format_vtk": "VTK（旧版 ASCII）",
     "export_format_hdf5": "HDF5 + XDMF",
-    "export_format_csv": "CSV（纯文本）"
+    "export_format_csv": "CSV（纯文本）",
+    "tab_studycompare": "工况对比",
+    "studycompare_title": "多工况对比分析",
+    "studycompare_group_label": "研究组名称",
+    "studycompare_load": "加载",
+    "studycompare_no_group": "请输入研究组名称。",
+    "studycompare_not_found": "未找到该研究组的任何任务。",
+    "studycompare_metric_summary": "指标汇总"
   },
   "bench": {
     "title": "基准测试",

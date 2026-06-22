@@ -232,6 +232,73 @@ const SIM_TYPES = {
       {name:'seed', label:'Seed', type:'number', default:0, min:0},
     ],
   },
+  // ---- Advanced 3-D solvers (newly exposed) ----
+  sphere_flow_d3q27: {
+    label: 'Sphere Flow 3D – D3Q27 (27-vel)',
+    desc: 'D3Q27 lattice (4th-order isotropy) flow past a sphere. Higher accuracy than D3Q19 in corner regions.',
+    endpoint: '/api/solve/sphere-flow-d3q27',
+    fields: [
+      {name:'nx', label:'nx', type:'number', default:120, min:16},
+      {name:'ny', label:'ny', type:'number', default:60, min:8},
+      {name:'nz', label:'nz', type:'number', default:60, min:8},
+      {name:'u_in', label:'Inlet velocity', type:'number', default:0.06, step:0.01},
+      {name:'re', label:'Reynolds number', type:'number', default:50, min:1},
+      {name:'radius', label:'Sphere radius (cells)', type:'number', default:8, min:1},
+      {name:'n_steps', label:'Time steps', type:'number', default:500, min:1},
+      {name:'output_interval', label:'Output interval', type:'number', default:100, min:1},
+      {name:'device', label:'Device', type:'device'},
+      {name:'seed', label:'Seed', type:'number', default:0, min:0},
+    ],
+  },
+  thermal_cavity_3d: {
+    label: '3D Thermal Cavity (Boussinesq)',
+    desc: 'Differentially heated cube – D3Q19 velocity + D3Q7 temperature Boussinesq coupling. Reports Nusselt number.',
+    endpoint: '/api/solve/thermal-cavity-3d',
+    fields: [
+      {name:'nx', label:'nx', type:'number', default:32, min:8},
+      {name:'ny', label:'ny', type:'number', default:32, min:8},
+      {name:'nz', label:'nz', type:'number', default:32, min:8},
+      {name:'ra', label:'Rayleigh number (Ra)', type:'number', default:10000, min:1},
+      {name:'pr', label:'Prandtl number (Pr)', type:'number', default:0.71, step:0.01, min:0.01},
+      {name:'n_steps', label:'Time steps', type:'number', default:500, min:1},
+      {name:'device', label:'Device', type:'device'},
+    ],
+  },
+  porous_drainage_3d: {
+    label: '3D Porous Drainage (Shan-Chen)',
+    desc: 'Two-phase gas injection into a water-saturated 3D porous medium. Tracks gas saturation.',
+    endpoint: '/api/solve/porous-drainage-3d',
+    fields: [
+      {name:'nx', label:'nx', type:'number', default:24, min:8},
+      {name:'ny', label:'ny', type:'number', default:24, min:8},
+      {name:'nz', label:'nz (depth)', type:'number', default:40, min:10},
+      {name:'medium', label:'Medium type', type:'select', default:'random_spheres', options:['random_spheres','tube_array']},
+      {name:'n_spheres', label:'No. of spheres', type:'number', default:8, min:1},
+      {name:'G_12', label:'SC coupling G_12', type:'number', default:0.9, step:0.05, min:0.1},
+      {name:'u_inlet', label:'Gas inlet velocity', type:'number', default:0.005, step:0.001, min:0.001},
+      {name:'n_steps', label:'Time steps', type:'number', default:2000, min:1},
+      {name:'output_interval', label:'Output interval', type:'number', default:500, min:1},
+      {name:'device', label:'Device', type:'device'},
+      {name:'seed', label:'Seed', type:'number', default:42, min:0},
+    ],
+  },
+  hull_free_surface: {
+    label: 'Hull Free-Surface (Color-Gradient)',
+    desc: '3D ship-hull wave-making resistance. Color-Gradient two-phase LBM. Reports drag force.',
+    endpoint: '/api/solve/hull-free-surface',
+    fields: [
+      {name:'nx', label:'nx (streamwise)', type:'number', default:80, min:20},
+      {name:'ny', label:'ny (lateral)', type:'number', default:32, min:10},
+      {name:'nz', label:'nz (vertical)', type:'number', default:32, min:10},
+      {name:'hull_type', label:'Hull type', type:'select', default:'wigley', options:['wigley','series60','kcs']},
+      {name:'fill_fraction', label:'Water fill fraction', type:'number', default:0.5, step:0.05, min:0.1, max:0.9},
+      {name:'re', label:'Reynolds number', type:'number', default:100, min:1},
+      {name:'u_in', label:'Inlet velocity (water)', type:'number', default:0.05, step:0.01},
+      {name:'n_steps', label:'Time steps', type:'number', default:200, min:1},
+      {name:'output_interval', label:'Output interval', type:'number', default:50, min:1},
+      {name:'device', label:'Device', type:'device'},
+    ],
+  },
 };
 
 const MODEL_CAPABILITIES = {
@@ -245,6 +312,10 @@ const MODEL_CAPABILITIES = {
   sphere_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
   ship_hull: { flow_types:['single_phase','free_surface'], turbulence:['none','smagorinsky_les','dynamic_smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
   porous_drainage: { flow_types:['multiphase'], turbulence:['none'], multiphase:['sc','cg'], schemes:['bgk'] },
+  sphere_flow_d3q27: { flow_types:['single_phase'], turbulence:['none'], multiphase:['none'], schemes:['d3q27_bgk'] },
+  thermal_cavity_3d: { flow_types:['thermal'], turbulence:['none'], multiphase:['none'], schemes:['bgk','boussinesq'] },
+  porous_drainage_3d: { flow_types:['multiphase'], turbulence:['none'], multiphase:['sc'], schemes:['bgk'] },
+  hull_free_surface: { flow_types:['multiphase','free_surface'], turbulence:['none'], multiphase:['cg'], schemes:['bgk'] },
 };
 
 const MODEL_PRESETS = {
@@ -493,6 +564,63 @@ async function validateSolverParams() {
     resultEl.innerHTML = `<div class="alert alert-danger py-1 small">${escHtml(String(e.message))}</div>`;
   } finally {
     btn.disabled = false;
+  }
+}
+
+// ============================================================
+// Pre-flight Engineering Validation Wizard
+// ============================================================
+/**
+ * Collect current solver form values and POST to /api/preprocess/preflight.
+ * Renders a structured checklist of pass/warning/fail checks plus
+ * memory & n_steps recommendations in the validate-result panel.
+ */
+async function runPreflight() {
+  if (!currentSchema) return;
+  const solverKey = Object.keys(SIM_TYPES).find(k => SIM_TYPES[k] === currentSchema) || '';
+  const body = { solver_type: solverKey };
+  const numericFields = ['nx','ny','nz','re','u_in','u_lid','radius','n_steps','output_interval'];
+  for (const f of currentSchema.fields) {
+    const el = document.getElementById(`field-${f.name}`);
+    if (!el) continue;
+    if (numericFields.includes(f.name)) {
+      const v = parseFloat(el.value);
+      if (!isNaN(v)) body[f.name] = v;
+    }
+  }
+
+  const btn = document.getElementById('preflight-btn');
+  if (btn) btn.disabled = true;
+  const resultEl = document.getElementById('validate-result');
+  resultEl.style.display = '';
+  resultEl.innerHTML = `<span class="text-muted small">${t('solve.preflight_running') || 'Running pre-flight checks…'}</span>`;
+
+  try {
+    const r = await api('POST', '/api/preprocess/preflight', body);
+    const statusIcon = {ok:'check-circle-fill text-success', warning:'exclamation-triangle-fill text-warning', error:'x-circle-fill text-danger'};
+    let html = '<div class="small">';
+    html += `<strong>${t('solve.preflight_title') || 'Pre-flight Checks'}</strong>`;
+    html += '<ul class="list-unstyled mt-1 mb-1">';
+    for (const c of (r.checks || [])) {
+      const ic = statusIcon[c.status] || 'info-circle';
+      html += `<li><i class="bi bi-${ic} me-1"></i><strong>${escHtml(c.name.replace(/_/g,' '))}</strong>: ${escHtml(c.message)}</li>`;
+    }
+    html += '</ul>';
+    if (r.memory_mb != null) {
+      html += `<div class="text-muted"><i class="bi bi-memory me-1"></i>${t('solve.preflight_mem') || 'Est. memory'}: <strong>${r.memory_mb.toFixed(1)} MB</strong></div>`;
+    }
+    if (r.suggested_n_steps != null) {
+      html += `<div class="text-info"><i class="bi bi-clock me-1"></i>${t('solve.preflight_steps') || 'Suggested n_steps'}: <strong>${r.suggested_n_steps}</strong></div>`;
+    }
+    if (r.recommendations && r.recommendations.length) {
+      html += `<div class="mt-1"><strong>${t('solve.preflight_recs') || 'Recommendations'}:</strong><ul class="mb-0 ps-3">${r.recommendations.map(rec => `<li>${escHtml(rec)}</li>`).join('')}</ul></div>`;
+    }
+    html += '</div>';
+    resultEl.innerHTML = html;
+  } catch(e) {
+    resultEl.innerHTML = `<div class="alert alert-danger py-1 small">${escHtml(String(e.message))}</div>`;
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 

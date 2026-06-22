@@ -286,6 +286,103 @@ _TEMPLATES: list[dict[str, Any]] = [
         },
         "references": ["Bearman & Zdravkovich (1978) J. Fluid Mech."],
     },
+    # ------------------------------------------------------------------
+    # Advanced 3-D templates
+    # ------------------------------------------------------------------
+    {
+        "id": "sphere_flow_d3q27",
+        "category": "external_flow",
+        "title": "3-D Sphere Flow (D3Q27)",
+        "title_zh": "三维绕球流动（D3Q27）",
+        "icon": "bi-circle",
+        "description": (
+            "3-D channel flow past a sphere using the D3Q27 lattice (27-velocity, "
+            "4th-order isotropy). Validates Cd and wake structure against "
+            "Johnson & Patel (1999) and Tomboulides (2000) DNS data."
+        ),
+        "description_zh": (
+            "使用 D3Q27（27速度，四阶各向同性）格子的三维绕球通道流。"
+            "与 Johnson & Patel (1999) 及 Tomboulides (2000) DNS 数据对比验证 Cd 和尾迹结构。"
+        ),
+        "difficulty": "advanced",
+        "solver_type": "sphere_flow_d3q27",
+        "default_config": {
+            "nx": 120, "ny": 60, "nz": 60,
+            "u_in": 0.06, "re": 50.0, "radius": 8.0,
+            "n_steps": 1000, "output_interval": 200,
+            "device": "cpu",
+        },
+        "parameter_hints": {
+            "re": "Reynolds number Re = u_in·2r/ν. Re < 300 for steady wake.",
+            "radius": "Sphere radius in lattice units. Keep > 6 for accuracy.",
+        },
+        "references": [
+            "Johnson & Patel (1999) J. Fluid Mech.",
+            "Tomboulides & Orszag (2000) J. Fluid Mech.",
+        ],
+    },
+    {
+        "id": "thermal_cavity_3d",
+        "category": "internal_flow",
+        "title": "3-D Differentially Heated Cavity",
+        "title_zh": "三维差分加热方腔",
+        "icon": "bi-thermometer-half",
+        "description": (
+            "3-D differentially heated square cavity benchmark (hot/cold vertical walls). "
+            "Couples D3Q19 velocity with D3Q7 temperature solver via Boussinesq. "
+            "Validated Nusselt numbers against De Vahl Davis (1983) data."
+        ),
+        "description_zh": (
+            "三维差分加热方腔对流基准（冷热垂直壁）。"
+            "D3Q19 流速 + D3Q7 温度 Boussinesq 耦合。"
+            "与 De Vahl Davis（1983）Nusselt 数据对标。"
+        ),
+        "difficulty": "intermediate",
+        "solver_type": "thermal_cavity_3d",
+        "default_config": {
+            "nx": 32, "ny": 32, "nz": 32,
+            "ra": 1e4, "pr": 0.71,
+            "n_steps": 500, "device": "cpu",
+        },
+        "parameter_hints": {
+            "ra": "Rayleigh number Ra = gβΔT·L³/(να). 10³–10⁶ range well-validated.",
+            "pr": "Prandtl number. Air ≈ 0.71, water ≈ 7.",
+        },
+        "references": ["De Vahl Davis (1983) Int. J. Num. Methods Fluids"],
+    },
+    {
+        "id": "hull_free_surface",
+        "category": "ocean_engineering",
+        "title": "Hull Free-Surface Wave Resistance",
+        "title_zh": "船体自由液面波浪阻力",
+        "icon": "bi-water",
+        "description": (
+            "3-D two-phase Color-Gradient LBM simulation of a ship hull (Wigley / "
+            "Series-60 / KCS) moving through calm water. Reports wave-making "
+            "resistance (drag) and free-surface elevation."
+        ),
+        "description_zh": (
+            "基于彩色梯度双相 LBM 的三维船体（Wigley / Series-60 / KCS）"
+            "在静水中的波浪阻力仿真。输出兴波阻力（Cd）和自由液面高度。"
+        ),
+        "difficulty": "advanced",
+        "solver_type": "hull_free_surface",
+        "default_config": {
+            "nx": 80, "ny": 32, "nz": 32,
+            "hull_type": "wigley", "fill_fraction": 0.5,
+            "re": 100.0, "u_in": 0.05,
+            "n_steps": 200, "output_interval": 50,
+            "device": "cpu",
+        },
+        "parameter_hints": {
+            "hull_type": "'wigley' (parabolic), 'series60' (transom), or 'kcs' (container ship).",
+            "fill_fraction": "Fraction of nz cells filled with water (undisturbed).",
+        },
+        "references": [
+            "Hochbaum & Vogt (2002) Proc. 24th ONR Symp.",
+            "Kim et al. (2001) J. Ship Res.",
+        ],
+    },
 ]
 
 # Build lookup dict

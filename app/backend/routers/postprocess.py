@@ -1273,3 +1273,97 @@ async def acoustics_analysis(req: AcousticsRequest) -> dict:
         raise
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Study-group multi-case comparison
+# ---------------------------------------------------------------------------
+
+_KNOWN_SCALAR_METRICS = {
+    "drag_coefficient", "cd", "lift_coefficient", "cl", "strouhal", "st",
+    "nusselt", "nu", "final_saturation", "drag", "lift", "side_force",
+    "porosity", "permeability", "re",
+}
+
+
+def _extract_scalar_metrics(result: dict[str, Any]) -> dict[str, float]:
+    """Pull scalar float metrics from a job result dict."""
+    out: dict[str, float] = {}
+    for k, v in result.items():
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            out[k] = float(v)
+        elif isinstance(v, list) and v and isinstance(v[0], (int, float)):
+            # Summarise time-series as last value
+            out[k + "_final"] = float(v[-1])
+            out[k + "_mean"] = float(sum(v) / len(v))
+    return out
+
+
+@router.get("/study-compare/{study_group}")
+async def study_compare(study_group: str) -> dict:
+    """Aggregate and compare all completed jobs belonging to *study_group*.
+
+    Every job whose ``config.study.group`` equals *study_group* is included.
+    Parametric study jobs store their design-point values in
+    ``config.study.design_point``.
+
+    Returns a table of jobs (sorted by creation time) with their
+    design points, statuses, and extracted scalar metrics, plus a
+    cross-case metric-range summary and a best-value index for each metric.
+
+    This endpoint enables the study-group comparison dashboard in the
+    frontend without duplicating job data.
+    """
+    jobs = job_manager.list_jobs()
+
+    rows: list[dict[str, Any]] = []
+    for jd in jobs:
+        cfg = jd.get("config") or {}
+        study_meta = cfg.get("study") if isinstance(cfg, dict) else None
+        if not isinstance(study_meta, dict):
+            continue
+        if study_meta.get("group") != study_group:
+            continue
+        result = jd.get("result") or {}
+        metrics = _extract_scalar_metrics(result) if isinstance(result, dict) else {}
+        rows.append({
+            "job_id": jd["job_id"],
+            "name": jd.get("name", ""),
+            "status": jd.get("status", ""),
+            "created_at": jd.get("created_at", ""),
+            "design_point": study_meta.get("design_point", {}),
+            "metrics": metrics,
+        })
+
+    if not rows:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No jobs found for study group '{study_group}'.",
+        )
+
+    # Build per-metric statistics across completed rows
+    completed = [r for r in rows if r["status"] == "completed"]
+    metric_summary: dict[str, dict[str, float | int]] = {}
+    if completed:
+        all_keys: set[str] = set()
+        for r in completed:
+            all_keys.update(r["metrics"].keys())
+        for mk in sorted(all_keys):
+            vals = [r["metrics"][mk] for r in completed if mk in r["metrics"]]
+            if not vals:
+                continue
+            best_idx = int(min(range(len(vals)), key=lambda i: vals[i]))
+            metric_summary[mk] = {
+                "min": min(vals),
+                "max": max(vals),
+                "mean": sum(vals) / len(vals),
+                "best_job_id": completed[best_idx]["job_id"],
+            }
+
+    return {
+        "study_group": study_group,
+        "n_total": len(rows),
+        "n_completed": len(completed),
+        "jobs": rows,
+        "metric_summary": metric_summary,
+    }
