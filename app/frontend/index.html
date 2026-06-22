@@ -373,6 +373,156 @@
             </div>
           </div>
         </div>
+        <div class="row g-3 mt-1">
+          <div class="col-xl-7">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-activity"></i> <span data-i18n="dashboard.ops_title">Workflow Operations</span></span>
+                <button class="btn btn-outline-secondary btn-sm" onclick="dashboardRefreshSelectedJobOps()">
+                  <i class="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
+              <div class="card-body config-form small">
+                <div id="dashboard-selected-job" class="small text-muted mb-3" data-i18n="dashboard.no_job_selected">Select a job from the left sidebar to monitor workflow operations.</div>
+                <div class="row g-3">
+                  <div class="col-lg-6">
+                    <div class="border rounded p-2 h-100">
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong data-i18n="dashboard.live_metrics_title">Live Metrics</strong>
+                        <div class="form-check form-switch small mb-0">
+                          <input class="form-check-input" type="checkbox" id="dashboard-live-auto" onchange="dashboardToggleLiveMetricsAuto()">
+                          <label class="form-check-label" for="dashboard-live-auto" data-i18n="dashboard.auto_refresh">Auto refresh</label>
+                        </div>
+                      </div>
+                      <div class="d-flex gap-2 mb-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="dashboardLoadLiveMetrics()"><i class="bi bi-activity"></i> <span data-i18n="dashboard.live_metrics_btn">Load metrics</span></button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="dashboardResetLiveMetrics()"><i class="bi bi-arrow-counterclockwise"></i> <span data-i18n="dashboard.reset_btn">Reset</span></button>
+                      </div>
+                      <div id="dashboard-live-summary" class="small text-muted mb-2">-</div>
+                      <pre id="dashboard-live-metrics-result" class="small mb-0" style="white-space:pre-wrap;max-height:220px;overflow:auto">-</pre>
+                    </div>
+                  </div>
+                  <div class="col-lg-6">
+                    <div class="border rounded p-2 h-100">
+                      <strong class="d-block mb-2" data-i18n="dashboard.auto_stop_title">Auto-stop Control</strong>
+                      <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="dashboard-auto-stop-enabled" checked>
+                        <label class="form-check-label" for="dashboard-auto-stop-enabled" data-i18n="dashboard.auto_stop_enabled">Enable convergence auto-stop</label>
+                      </div>
+                      <div class="row g-2 mb-2">
+                        <div class="col-6">
+                          <label data-i18n="dashboard.auto_stop_key">Residual key</label>
+                          <input id="dashboard-auto-stop-key" class="form-control form-control-sm" value="residual" />
+                        </div>
+                        <div class="col-6">
+                          <label data-i18n="dashboard.auto_stop_tol">Rel. tolerance</label>
+                          <input id="dashboard-auto-stop-tol" type="number" class="form-control form-control-sm" value="0.0001" step="0.0001" min="0.000001" max="1" />
+                        </div>
+                        <div class="col-6">
+                          <label data-i18n="dashboard.auto_stop_patience">Patience</label>
+                          <input id="dashboard-auto-stop-patience" type="number" class="form-control form-control-sm" value="5" min="1" max="1000" />
+                        </div>
+                        <div class="col-6">
+                          <label data-i18n="dashboard.auto_stop_min_steps">Min steps</label>
+                          <input id="dashboard-auto-stop-min-steps" type="number" class="form-control form-control-sm" value="20" min="1" max="1000000" />
+                        </div>
+                      </div>
+                      <button class="btn btn-sm btn-outline-success w-100 mb-2" onclick="dashboardApplyAutoStop()"><i class="bi bi-stop-circle"></i> <span data-i18n="dashboard.auto_stop_apply">Apply auto-stop</span></button>
+                      <pre id="dashboard-auto-stop-result" class="small mb-0" style="white-space:pre-wrap;max-height:132px;overflow:auto">-</pre>
+                    </div>
+                  </div>
+                </div>
+                <div class="border rounded p-2 mt-3">
+                  <strong class="d-block mb-2" data-i18n="dashboard.hpc_title">HPC Submission</strong>
+                  <div class="row g-2 mb-2">
+                    <div class="col-md-4">
+                      <label data-i18n="dashboard.hpc_partition">Partition / queue</label>
+                      <input id="dashboard-hpc-partition" class="form-control form-control-sm" placeholder="gpu" />
+                    </div>
+                    <div class="col-md-2">
+                      <label data-i18n="dashboard.hpc_nodes">Nodes</label>
+                      <input id="dashboard-hpc-nodes" type="number" class="form-control form-control-sm" value="1" min="1" max="512" />
+                    </div>
+                    <div class="col-md-2">
+                      <label data-i18n="dashboard.hpc_cpus">CPUs</label>
+                      <input id="dashboard-hpc-cpus" type="number" class="form-control form-control-sm" value="4" min="1" max="256" />
+                    </div>
+                    <div class="col-md-2">
+                      <label data-i18n="dashboard.hpc_mem">Memory</label>
+                      <input id="dashboard-hpc-mem" class="form-control form-control-sm" value="8G" />
+                    </div>
+                    <div class="col-md-2">
+                      <label data-i18n="dashboard.hpc_walltime">Walltime</label>
+                      <input id="dashboard-hpc-walltime" class="form-control form-control-sm" value="02:00:00" />
+                    </div>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary mb-2" onclick="dashboardSubmitHpc()"><i class="bi bi-cloud-upload"></i> <span data-i18n="dashboard.hpc_submit">Submit to HPC</span></button>
+                  <pre id="dashboard-hpc-result" class="small mb-0" style="white-space:pre-wrap;max-height:140px;overflow:auto">-</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-5">
+            <div class="card mb-3">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar3"></i> <span data-i18n="dashboard.timeline_title">Job Timeline</span></span>
+                <button class="btn btn-outline-secondary btn-sm" onclick="dashboardLoadTimeline()"><i class="bi bi-arrow-clockwise"></i></button>
+              </div>
+              <div class="card-body small">
+                <div class="d-flex gap-2 mb-2">
+                  <select id="dashboard-timeline-status" class="form-select form-select-sm" onchange="dashboardLoadTimeline()">
+                    <option value="" data-i18n="dashboard.timeline_all">All jobs</option>
+                    <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
+                    <option value="running" data-i18n="sidebar.filter_running">Running</option>
+                    <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
+                    <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
+                  </select>
+                  <input id="dashboard-timeline-limit" type="number" class="form-control form-control-sm" value="8" min="1" max="50" onchange="dashboardLoadTimeline()" />
+                </div>
+                <div id="dashboard-timeline-table" class="table-responsive small text-muted" data-i18n="dashboard.loading">Loading…</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-bell"></i> <span data-i18n="dashboard.notify_title">Notifications</span></span>
+                <button class="btn btn-outline-secondary btn-sm" onclick="dashboardLoadNotifications()"><i class="bi bi-arrow-clockwise"></i></button>
+              </div>
+              <div class="card-body config-form small">
+                <label data-i18n="dashboard.notify_webhook">Webhook URL</label>
+                <input id="dashboard-notify-webhook" class="form-control form-control-sm mb-2" placeholder="https://example.com/webhook" />
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="dashboard-notify-complete" checked>
+                      <label class="form-check-label" for="dashboard-notify-complete" data-i18n="dashboard.notify_complete">Notify on complete</label>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="dashboard-notify-failure" checked>
+                      <label class="form-check-label" for="dashboard-notify-failure" data-i18n="dashboard.notify_failure">Notify on failure</label>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="dashboard-notify-cancel" >
+                      <label class="form-check-label" for="dashboard-notify-cancel" data-i18n="dashboard.notify_cancel">Notify on cancel</label>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <label data-i18n="dashboard.notify_timeout">Timeout [s]</label>
+                    <input id="dashboard-notify-timeout" type="number" class="form-control form-control-sm" value="10" min="1" max="120" />
+                  </div>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-primary flex-fill" onclick="dashboardSaveNotifications()"><i class="bi bi-save"></i> <span data-i18n="dashboard.notify_save">Save settings</span></button>
+                  <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="dashboardTestWebhook()"><i class="bi bi-send-check"></i> <span data-i18n="dashboard.notify_test">Test webhook</span></button>
+                </div>
+                <pre id="dashboard-notify-result" class="small mt-2 mb-0" style="white-space:pre-wrap;max-height:140px;overflow:auto">-</pre>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1788,6 +1938,62 @@
             <div class="card-header"><span data-i18n="orch.al_result">Prioritization result</span></div>
             <div class="card-body">
               <pre id="orch-al-result" class="small mb-0" style="white-space:pre-wrap;max-height:280px;overflow:auto">-</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header"><span data-i18n="orch.study_title">Study analytics</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="orch.study_group">Study group</label>
+              <input id="orch-study-group" class="form-control form-control-sm mb-2" placeholder="study_group" />
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-primary flex-fill" onclick="orchLoadStudySummary()"><i class="bi bi-kanban"></i> <span data-i18n="orch.study_summary_btn">Load summary</span></button>
+                <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="orchLoadSobol()"><i class="bi bi-bar-chart-steps"></i> <span data-i18n="orch.sobol_btn">Run Sobol</span></button>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-8">
+                  <label data-i18n="orch.output_metric">Output metric</label>
+                  <input id="orch-sobol-metric" class="form-control form-control-sm" value="cd_mean" />
+                </div>
+                <div class="col-4">
+                  <label data-i18n="orch.bootstrap">Bootstrap</label>
+                  <input id="orch-sobol-bootstrap" type="number" class="form-control form-control-sm" value="100" min="10" max="1000" />
+                </div>
+              </div>
+              <pre id="orch-study-result" class="small mb-0" style="white-space:pre-wrap;max-height:300px;overflow:auto">-</pre>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header"><span data-i18n="orch.bayes_title">Bayesian optimization</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="orch.bayes_parameters">Parameter bounds JSON</label>
+              <textarea id="orch-bayes-parameters" class="form-control form-control-sm mb-2" rows="5">{
+  "re": [80, 160],
+  "u_in": [0.04, 0.12]
+}</textarea>
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label data-i18n="orch.bayes_objective">Objective</label>
+                  <input id="orch-bayes-objective" class="form-control form-control-sm" value="drag" />
+                </div>
+                <div class="col-3">
+                  <label data-i18n="orch.bayes_iterations">Iterations</label>
+                  <input id="orch-bayes-iterations" type="number" class="form-control form-control-sm" value="6" min="1" max="100" />
+                </div>
+                <div class="col-3">
+                  <label data-i18n="orch.bayes_kappa">Kappa</label>
+                  <input id="orch-bayes-kappa" type="number" class="form-control form-control-sm" value="2.576" step="0.001" min="0.001" />
+                </div>
+              </div>
+              <label data-i18n="orch.bayes_observations">Initial observations JSON</label>
+              <textarea id="orch-bayes-observations" class="form-control form-control-sm mb-3" rows="4">[]</textarea>
+              <button class="btn btn-sm btn-outline-success w-100 mb-2" onclick="orchRunBayesianOpt()"><i class="bi bi-stars"></i> <span data-i18n="orch.bayes_btn">Suggest design points</span></button>
+              <pre id="orch-bayes-result" class="small mb-0" style="white-space:pre-wrap;max-height:240px;overflow:auto">-</pre>
             </div>
           </div>
         </div>

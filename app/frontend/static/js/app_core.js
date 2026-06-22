@@ -8,6 +8,9 @@ let selectedJobId = null;
 let ppSelectedJobId = null;
 let ppCurrentTab = 'snapshots';
 let benchJobMap = {};   // bench_type → job_id
+let dashboardLiveMetricsTimer = null;
+let dashboardLiveMetricsSinceStep = 0;
+let dashboardLiveMetricsCache = [];
 const UI_STORAGE_KEY = 'tensorlbm_ui_state_v1';
 const TAB_SEQUENCE = ['dashboard', 'projects', 'templates', 'cad', 'preprocess', 'solve', 'postprocess', 'reports', 'benchmarks', 'compare', 'ai-flow', 'orchestration', 'agent', 'suboff'];
 const uiState = {
@@ -126,12 +129,14 @@ function connectWS() {
     if (msg.type === 'init') {
       msg.jobs.forEach(j => { jobsMap[j.job_id] = j; });
       renderJobsSidebar();
+      dashboardRenderSelectedJob();
       updatePPJobSelect();
       updateStats();
     } else if (msg.type === 'job_update') {
       const j = msg.job;
       jobsMap[j.job_id] = j;
       renderJobsSidebar();
+      dashboardRenderSelectedJob();
       updatePPJobSelect();
       updateStats();
       updateBenchStatus(j);
@@ -190,6 +195,7 @@ async function loadJobs() {
     const jobs = Array.isArray(r) ? r : (r.jobs || []);
     jobs.forEach(j => { jobsMap[j.job_id] = j; });
     renderJobsSidebar();
+    dashboardRenderSelectedJob();
     updatePPJobSelect();
     updateStats();
   } catch(e) { /* ignore */ }
@@ -204,6 +210,255 @@ function updateStats(s) {
   document.getElementById('stat-running').textContent = s ? s.running_jobs : jobs.filter(j=>j.status==='running').length;
   document.getElementById('stat-completed').textContent = s ? s.completed_jobs : jobs.filter(j=>j.status==='completed').length;
   document.getElementById('stat-failed').textContent = s ? s.failed_jobs : jobs.filter(j=>j.status==='failed').length;
+}
+
+// ============================================================
+// Dashboard workflow operations
+// ============================================================
+function dashboardSetText(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+}
+
+function dashboardGetSelectedJob() {
+  return selectedJobId ? jobsMap[selectedJobId] || null : null;
+}
+
+function dashboardRenderSelectedJob() {
+  const el = document.getElementById('dashboard-selected-job');
+  if (!el) return;
+  const job = dashboardGetSelectedJob();
+  if (!job) {
+    el.textContent = t('dashboard.no_job_selected');
+    return;
+  }
+  el.innerHTML = `<strong>${escHtml(job.name || job.job_id)}</strong> · <code>${escHtml(job.job_id)}</code> · ${escHtml(job.status || 'unknown')}`;
+}
+
+function dashboardChooseJob(id) {
+  selectedJobId = id;
+  uiState.selectedJobId = id;
+  saveUIState();
+  renderJobsSidebar();
+  dashboardRefreshSelectedJobOps();
+}
+
+function dashboardResetLiveMetrics() {
+  dashboardLiveMetricsSinceStep = 0;
+  dashboardLiveMetricsCache = [];
+  dashboardSetText('dashboard-live-summary', '-');
+  dashboardSetText('dashboard-live-metrics-result', '-');
+}
+
+function dashboardToggleLiveMetricsAuto() {
+  if (dashboardLiveMetricsTimer) {
+    clearInterval(dashboardLiveMetricsTimer);
+    dashboardLiveMetricsTimer = null;
+  }
+  if (document.getElementById('dashboard-live-auto')?.checked) {
+    dashboardLiveMetricsTimer = setInterval(() => {
+      dashboardLoadLiveMetrics();
+    }, 10000);
+  }
+}
+
+async function dashboardLoadLiveMetrics() {
+  const job = dashboardGetSelectedJob();
+  if (!job) {
+    dashboardResetLiveMetrics();
+    return;
+  }
+  dashboardSetText('dashboard-live-summary', t('common.loading'));
+  try {
+    const r = await api(
+      'GET',
+      `/api/jobs/${encodeURIComponent(job.job_id)}/live-metrics?since_step=${dashboardLiveMetricsSinceStep}&limit=50`,
+    );
+    const incoming = Array.isArray(r.diagnostics) ? r.diagnostics : [];
+    if (incoming.length) {
+      dashboardLiveMetricsCache = dashboardLiveMetricsCache.concat(incoming).slice(-100);
+      dashboardLiveMetricsSinceStep = Math.max(
+        dashboardLiveMetricsSinceStep,
+        ...incoming.map(item => Number(item.step || 0)),
+      );
+    }
+    const latest = dashboardLiveMetricsCache[dashboardLiveMetricsCache.length - 1] || null;
+    const summary = latest
+      ? `${t('dashboard.live_metrics_records')}: ${r.total_diagnostics} · ${t('dashboard.live_metrics_latest_step')}: ${latest.step ?? '-'} · ${t('dashboard.live_metrics_status')}: ${r.status}`
+      : `${t('dashboard.live_metrics_empty')} (${r.status})`;
+    dashboardSetText('dashboard-live-summary', summary);
+    dashboardSetText('dashboard-live-metrics-result', dashboardLiveMetricsCache.length ? dashboardLiveMetricsCache : []);
+  } catch (e) {
+    dashboardSetText('dashboard-live-summary', `${t('common.error')} ${e.message}`);
+    dashboardSetText('dashboard-live-metrics-result', `${t('common.error')} ${e.message}`);
+  }
+}
+
+async function dashboardApplyAutoStop() {
+  const job = dashboardGetSelectedJob();
+  if (!job) {
+    showToast(t('dashboard.no_job_selected'), 'warning');
+    return;
+  }
+  const body = {
+    enabled: !!document.getElementById('dashboard-auto-stop-enabled')?.checked,
+    residual_key: document.getElementById('dashboard-auto-stop-key')?.value || 'residual',
+    rel_tol: Number(document.getElementById('dashboard-auto-stop-tol')?.value || 1e-4),
+    patience: Number(document.getElementById('dashboard-auto-stop-patience')?.value || 5),
+    min_steps: Number(document.getElementById('dashboard-auto-stop-min-steps')?.value || 20),
+  };
+  dashboardSetText('dashboard-auto-stop-result', t('common.submitting'));
+  try {
+    const r = await api('PATCH', `/api/jobs/${encodeURIComponent(job.job_id)}/auto-stop-config`, body);
+    dashboardSetText('dashboard-auto-stop-result', r);
+    showToast(t('dashboard.auto_stop_applied'), 'success');
+  } catch (e) {
+    dashboardSetText('dashboard-auto-stop-result', `${t('common.error')} ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+async function dashboardSubmitHpc() {
+  const job = dashboardGetSelectedJob();
+  if (!job) {
+    showToast(t('dashboard.no_job_selected'), 'warning');
+    return;
+  }
+  const body = {
+    partition: document.getElementById('dashboard-hpc-partition')?.value || null,
+    nodes: Number(document.getElementById('dashboard-hpc-nodes')?.value || 1),
+    cpus: Number(document.getElementById('dashboard-hpc-cpus')?.value || 4),
+    mem: document.getElementById('dashboard-hpc-mem')?.value || null,
+    walltime: document.getElementById('dashboard-hpc-walltime')?.value || null,
+  };
+  dashboardSetText('dashboard-hpc-result', t('common.submitting'));
+  try {
+    const r = await api('POST', `/api/jobs/${encodeURIComponent(job.job_id)}/submit-hpc`, body);
+    dashboardSetText('dashboard-hpc-result', r);
+    showToast(t('dashboard.hpc_submitted'), 'success');
+  } catch (e) {
+    dashboardSetText('dashboard-hpc-result', `${t('common.error')} ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+async function dashboardLoadTimeline() {
+  const box = document.getElementById('dashboard-timeline-table');
+  if (!box) return;
+  const status = document.getElementById('dashboard-timeline-status')?.value || '';
+  const limit = Number(document.getElementById('dashboard-timeline-limit')?.value || 8);
+  box.innerHTML = `<span class="text-muted">${t('common.loading')}</span>`;
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (status) params.set('status', status);
+  try {
+    const r = await api('GET', `/api/jobs/timeline?${params.toString()}`);
+    const rows = Array.isArray(r.timeline) ? r.timeline : [];
+    if (!rows.length) {
+      box.innerHTML = `<span class="text-muted">${t('dashboard.timeline_empty')}</span>`;
+      return;
+    }
+    box.innerHTML = `
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th>${t('dashboard.timeline_job')}</th>
+            <th>${t('dashboard.timeline_status_col')}</th>
+            <th>${t('dashboard.timeline_queue')}</th>
+            <th>${t('dashboard.timeline_duration')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(row => `
+            <tr>
+              <td>
+                <button class="btn btn-link btn-sm p-0 text-start" onclick="dashboardChooseJob('${escHtml(row.job_id)}')">${escHtml(row.name || row.job_id)}</button>
+                <div class="text-muted" style="font-size:.72rem">${escHtml(row.job_type || '')}</div>
+              </td>
+              <td>${escHtml(row.status || '-')}</td>
+              <td>${row.queue_wait_s == null ? '—' : `${Number(row.queue_wait_s).toFixed(1)}s`}</td>
+              <td>${row.duration_s == null ? '—' : `${Number(row.duration_s).toFixed(1)}s`}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  } catch (e) {
+    box.innerHTML = `<span class="text-danger">${escHtml(e.message)}</span>`;
+  }
+}
+
+async function dashboardLoadNotifications() {
+  try {
+    const r = await api('GET', '/api/notifications/settings');
+    const webhookEl = document.getElementById('dashboard-notify-webhook');
+    if (webhookEl) webhookEl.value = r.webhook_url || '';
+    const completeEl = document.getElementById('dashboard-notify-complete');
+    if (completeEl) completeEl.checked = !!r.notify_on_complete;
+    const failureEl = document.getElementById('dashboard-notify-failure');
+    if (failureEl) failureEl.checked = !!r.notify_on_failure;
+    const cancelEl = document.getElementById('dashboard-notify-cancel');
+    if (cancelEl) cancelEl.checked = !!r.notify_on_cancel;
+    const timeoutEl = document.getElementById('dashboard-notify-timeout');
+    if (timeoutEl) timeoutEl.value = String(r.timeout_s || 10);
+    dashboardSetText('dashboard-notify-result', '-');
+  } catch (e) {
+    dashboardSetText('dashboard-notify-result', `${t('common.error')} ${e.message}`);
+  }
+}
+
+function dashboardNotificationBody() {
+  return {
+    webhook_url: document.getElementById('dashboard-notify-webhook')?.value || '',
+    notify_on_complete: !!document.getElementById('dashboard-notify-complete')?.checked,
+    notify_on_failure: !!document.getElementById('dashboard-notify-failure')?.checked,
+    notify_on_cancel: !!document.getElementById('dashboard-notify-cancel')?.checked,
+    timeout_s: Number(document.getElementById('dashboard-notify-timeout')?.value || 10),
+  };
+}
+
+async function dashboardSaveNotifications() {
+  dashboardSetText('dashboard-notify-result', t('common.submitting'));
+  try {
+    const r = await api('POST', '/api/notifications/settings', dashboardNotificationBody());
+    dashboardSetText('dashboard-notify-result', r);
+    showToast(t('dashboard.notify_saved'), 'success');
+  } catch (e) {
+    dashboardSetText('dashboard-notify-result', `${t('common.error')} ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
+async function dashboardTestWebhook() {
+  const url = document.getElementById('dashboard-notify-webhook')?.value || '';
+  if (!url) {
+    showToast(t('dashboard.notify_webhook_required'), 'warning');
+    return;
+  }
+  dashboardSetText('dashboard-notify-result', t('common.submitting'));
+  try {
+    const r = await api('POST', '/api/notifications/webhook-test', { url });
+    dashboardSetText('dashboard-notify-result', r);
+  } catch (e) {
+    dashboardSetText('dashboard-notify-result', `${t('common.error')} ${e.message}`);
+  }
+}
+
+async function dashboardRefreshSelectedJobOps() {
+  dashboardRenderSelectedJob();
+  if (!dashboardGetSelectedJob()) {
+    dashboardResetLiveMetrics();
+    dashboardSetText('dashboard-auto-stop-result', '-');
+    dashboardSetText('dashboard-hpc-result', '-');
+    return;
+  }
+  await dashboardLoadLiveMetrics();
+}
+
+function dashboardInit() {
+  dashboardRenderSelectedJob();
+  dashboardLoadTimeline();
+  dashboardLoadNotifications();
+  dashboardToggleLiveMetricsAuto();
 }
 
 // ============================================================
@@ -254,11 +509,15 @@ function selectJob(id) {
   uiState.selectedJobId = id;
   saveUIState();
   renderJobsSidebar();
+  dashboardRenderSelectedJob();
   // Also update post-process if on that tab
   ppSelectedJobId = id;
   const sel = document.getElementById('pp-job-select');
   if (sel) sel.value = id;
   refreshPP();
+  if (document.getElementById('panel-dashboard')?.classList.contains('active')) {
+    dashboardRefreshSelectedJobOps();
+  }
   showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[4]);
 }
 
@@ -307,6 +566,7 @@ async function clearAllJobs() {
   }
   saveUIState();
   renderJobsSidebar();
+  dashboardRenderSelectedJob();
   updatePPJobSelect();
   updateStats();
 }
@@ -323,6 +583,11 @@ function showTab(name, el) {
   if (activeEl) activeEl.classList.add('active');
   uiState.activeTab = name;
   saveUIState();
+  if (name !== 'dashboard' && dashboardLiveMetricsTimer) {
+    clearInterval(dashboardLiveMetricsTimer);
+    dashboardLiveMetricsTimer = null;
+  }
+  if (name === 'dashboard') dashboardInit();
   if (name === 'compare') refreshCompareJobList();
   if (name === 'ai-flow') aiFlowListModels();
   if (name === 'projects') {
