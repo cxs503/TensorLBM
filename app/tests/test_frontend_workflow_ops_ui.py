@@ -21,3 +21,12 @@ def test_index_contains_workflow_ops_ui(client: TestClient) -> None:
     assert "dashboardSubmitHpc" in html
     assert "dashboardLoadTimeline" in html
     assert "dashboardSaveNotifications" in html
+    assert "cumulant_cylinder_flow" in html
+    assert "sliding_mesh_rotor" in html
+    assert "passive_scalar_transport" in html
+    assert "cavitation_flow" in html
+    assert "oscillating_airfoil" in html
+    assert "conjugate_ht" in html
+    assert "pp-advanced" in html
+    assert "loadUnifiedMonitor" in html
+    assert "runAdvancedEndpoint" in html
