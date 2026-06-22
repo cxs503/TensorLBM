@@ -35,11 +35,13 @@ interface is needed beyond the mask-gated collision replacement.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import matplotlib
 import torch
+import torch.nn.functional as F
 
 from .boundaries3d import (
     apply_simple_channel_boundaries_3d,
@@ -51,6 +53,7 @@ from .cylinder_flow import _maybe_compile
 from .d3q19 import C, W, equilibrium3d, macroscopic3d
 from .logging_config import configure_logging, logger
 from .solver3d import correct_mass3d, stream3d
+from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask
 from .utils import (
     DiagnosticPoint,
     configure_cpu_threads,
@@ -569,6 +572,370 @@ def run_dg_lbm_sphere_flow(config: DGLBMConfig) -> Path:
             save_checkpoint(f, step, run_dir)
 
     metadata["diagnostics"] = diagnostics
+    metadata_path = run_dir / "run_metadata.json"
+    metadata_path.write_text(
+        f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+    logger.info("Saved metadata: %s", metadata_path)
+    return run_dir
+
+# ---------------------------------------------------------------------------
+# SUBOFF DG-LBM hybrid – configuration
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class DGLBMSuboffConfig:
+    """Configuration for the DG-LBM hybrid SUBOFF submarine-flow simulation.
+
+    The SUBOFF hull occupies the near-wall DG zone; the LBM exterior uses
+    standard D3Q19 BGK collision.  The hull axis runs along the x-direction.
+
+    Attributes:
+        nx, ny, nz: Grid dimensions.
+        u_in: Inlet velocity (lattice units).
+        re: Reynolds number based on hull length.
+        hull_length: SUBOFF hull length (lattice units).
+        hull_type: SUBOFF model variant (``"bare_hull"``, ``"with_sail"``,
+            ``"full"``).
+        dg_band: Thickness of the DG near-wall zone (lattice units).
+            Cells within ``dg_band`` lattice cells of the hull surface use
+            DG-enhanced collision.
+        n_steps: Total number of time steps.
+        output_interval: Steps between output snapshots / checkpoints.
+        output_root: Root directory for output artefacts.
+        run_name: Optional run name.  Auto-generated when *None*.
+        seed: Random seed.
+        device: PyTorch device string (``"cpu"`` or ``"cuda"``).
+        num_threads: CPU thread count; *None* uses PyTorch default.
+        overwrite: If *True*, overwrite an existing run directory.
+        resume_checkpoint: Path to a previous run directory to resume from.
+        use_compile: If *True*, JIT-compile hot-path kernels with
+            ``torch.compile``.
+        dg_order: Polynomial order for DG reconstruction (currently 1).
+    """
+
+    nx: int = 200
+    ny: int = 80
+    nz: int = 80
+    u_in: float = 0.06
+    re: float = 200.0
+    hull_length: float = 120.0
+    hull_type: str = SuboffHullType.BARE_HULL.value
+    dg_band: float = 4.0
+    n_steps: int = 500
+    output_interval: int = 100
+    output_root: Path = Path("outputs")
+    run_name: str | None = None
+    seed: int = 0
+    device: str = "cpu"
+    num_threads: int | None = None
+    overwrite: bool = False
+    resume_checkpoint: Path | None = None
+    use_compile: bool = False
+    dg_order: int = 1
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_root", Path(self.output_root))
+        object.__setattr__(self, "device", self.device.lower())
+        object.__setattr__(self, "hull_type", SuboffHullType(self.hull_type).value)
+        if self.resume_checkpoint is not None:
+            object.__setattr__(self, "resume_checkpoint", Path(self.resume_checkpoint))
+
+    # ------------------------------------------------------------------
+    # Derived physics (characteristic length = hull_length)
+    # ------------------------------------------------------------------
+
+    @property
+    def nu(self) -> float:
+        """Kinematic viscosity (lattice units)."""
+        return self.u_in * self.hull_length / self.re
+
+    @property
+    def tau(self) -> float:
+        """BGK relaxation time."""
+        return 3.0 * self.nu + 0.5
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
+    def validate(self) -> None:
+        if self.nx < 16 or self.ny < 8 or self.nz < 8:
+            raise ValueError("nx, ny, nz must be at least 16, 8, 8")
+        if self.n_steps < 1:
+            raise ValueError("n_steps must be >= 1")
+        if self.output_interval < 1:
+            raise ValueError("output_interval must be >= 1")
+        if self.u_in <= 0.0 or self.re <= 0.0 or self.hull_length <= 0.0:
+            raise ValueError("u_in, re, and hull_length must be > 0")
+        if self.dg_band <= 0.0:
+            raise ValueError("dg_band must be > 0")
+        if self.tau <= 0.5:
+            raise ValueError(
+                f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/hull_length"
+            )
+        if self.dg_order != 1:
+            raise ValueError("Only dg_order=1 (linear DG) is currently supported")
+        if self.num_threads is not None and self.num_threads < 1:
+            raise ValueError("num_threads must be >= 1")
+
+    # ------------------------------------------------------------------
+    # Run name
+    # ------------------------------------------------------------------
+
+    def resolved_run_name(self) -> str:
+        if self.run_name:
+            return self.run_name
+        re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
+        return (
+            f"nx{self.nx}_ny{self.ny}_nz{self.nz}"
+            f"_re{re_label}_uin{self.u_in:.3f}"
+            f"_{self.hull_type}_dg{self.dg_band:.1f}_steps{self.n_steps}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# SUBOFF DG zone construction
+# ---------------------------------------------------------------------------
+
+
+def build_dg_hull_band_mask(
+    solid_mask: torch.Tensor,
+    dg_band: float,
+) -> torch.Tensor:
+    """Boolean mask for the DG near-wall band around a hull solid mask.
+
+    Dilates *solid_mask* by ``ceil(dg_band)`` lattice cells using a
+    3-D max-pool (equivalent to a Chebyshev-ball dilation) and returns
+    the shell that is inside the dilated region but outside the solid.
+
+    Args:
+        solid_mask: Boolean tensor of shape ``(nz, ny, nx)`` marking solid
+            cells.
+        dg_band: Near-wall zone half-thickness in lattice units.
+
+    Returns:
+        Boolean tensor of shape ``(nz, ny, nx)``; *True* for cells in the
+        DG near-wall band (not solid, within ``dg_band`` of the hull).
+    """
+    k = max(1, int(math.ceil(dg_band)))
+    s = solid_mask.float().unsqueeze(0).unsqueeze(0)   # (1, 1, nz, ny, nx)
+    dilated = F.max_pool3d(s, kernel_size=2 * k + 1, stride=1, padding=k)
+    dilated_mask = dilated.squeeze(0).squeeze(0) > 0.5
+    return dilated_mask & ~solid_mask
+
+
+# ---------------------------------------------------------------------------
+# SUBOFF visualisation helper
+# ---------------------------------------------------------------------------
+
+
+def _save_dg_lbm_suboff_snapshot(
+    run_dir: Path,
+    step: int,
+    speed: torch.Tensor,
+    obstacle: torch.Tensor,
+    dg_mask: torch.Tensor,
+    nz: int,
+) -> None:
+    """Save speed magnitude on the mid-z slice with DG zone and hull overlay."""
+    mid_z = nz // 2
+    speed_np = speed[mid_z].detach().cpu().numpy()
+    obs_np = obstacle[mid_z].detach().cpu().float().numpy()
+    dg_np = dg_mask[mid_z].detach().cpu().float().numpy()
+
+    fig, ax = plt.subplots(figsize=(12, 4), constrained_layout=True)
+    im = ax.imshow(speed_np, origin="lower", cmap="viridis")
+    ax.contour(obs_np, levels=[0.5], colors="white", linewidths=1.0, linestyles="-")
+    ax.contour(dg_np, levels=[0.5], colors="cyan", linewidths=0.6, linestyles="--")
+    ax.set_title(f"DG-LBM SUBOFF velocity magnitude – mid-z slice (step {step})")
+    plt.colorbar(im, ax=ax, fraction=0.046)
+
+    out = run_dir / f"flow_step_{step:06d}.png"
+    fig.savefig(out, dpi=160)
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# SUBOFF DG-LBM main runner
+# ---------------------------------------------------------------------------
+
+
+def run_dg_lbm_suboff_flow(config: DGLBMSuboffConfig) -> Path:
+    """Run the DG-LBM hybrid SUBOFF submarine-flow simulation.
+
+    The near-wall zone (cells within ``dg_band`` of the hull surface) uses
+    the DG-enhanced collision operator; the exterior uses standard BGK.
+
+    This function reuses the same :func:`collide_dg_lbm`, :func:`stream3d`,
+    and boundary-condition machinery as :func:`run_dg_lbm_sphere_flow`.  The
+    only difference is the geometry: the solid mask and DG shell are built
+    from the SUBOFF hull profile via :func:`build_suboff_mask` and
+    :func:`build_dg_hull_band_mask`.
+
+    Args:
+        config: Simulation configuration.
+
+    Returns:
+        Path to the run output directory.
+    """
+    configure_logging()
+    config.validate()
+    torch.manual_seed(config.seed)
+    torch.use_deterministic_algorithms(True, warn_only=True)
+
+    device = resolve_device(config.device)
+    applied_num_threads = configure_cpu_threads(device, config.num_threads)
+    run_dir = prepare_run_dir(
+        config.output_root,
+        "dg_lbm_suboff",
+        config.resolved_run_name(),
+        config.overwrite,
+    )
+
+    ckpt_str = str(config.resume_checkpoint) if config.resume_checkpoint else None
+    metadata: dict = {
+        "config": {
+            **asdict(config),
+            "output_root": str(config.output_root),
+            "resume_checkpoint": ckpt_str,
+        },
+        "derived": {
+            "nu": config.nu,
+            "tau": config.tau,
+        },
+        "runtime": {
+            "torch_version": torch.__version__,
+            "device": str(device),
+            "num_threads": applied_num_threads,
+        },
+        "reproducibility": get_reproducibility_metadata(),
+    }
+
+    # ----------------------------------------------------------------
+    # Geometry: SUBOFF hull obstacle + DG near-wall band + channel walls
+    # ----------------------------------------------------------------
+    # Hull centred at (nx*0.35, ny/2, nz/2): 35 % from inlet gives ~1.65 L
+    # of downstream wake for the default nx=200, hull_length=120.
+    cx = config.nx * 0.35
+    cy = config.ny * 0.5
+    cz = config.nz * 0.5
+
+    obstacle, hull_stats = build_suboff_mask(
+        hull_type=config.hull_type,
+        nx=config.nx,
+        ny=config.ny,
+        nz=config.nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=config.hull_length,
+        device=config.device,
+    )
+    obstacle = obstacle.to(device)
+
+    dg_mask = build_dg_hull_band_mask(obstacle, config.dg_band)
+    wall_mask = make_channel_wall_mask_3d(
+        config.nz, config.ny, config.nx, obstacle, device=device
+    )
+
+    # ----------------------------------------------------------------
+    # Initialise or resume
+    # ----------------------------------------------------------------
+    start_step = 1
+    if config.resume_checkpoint is not None:
+        f, resume_step, _ckpt_meta = load_checkpoint(config.resume_checkpoint, device=device)
+        f = f.to(device)
+        start_step = resume_step + 1
+        logger.info(
+            "Resumed from checkpoint %s at step %d",
+            config.resume_checkpoint, resume_step,
+        )
+    else:
+        rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
+        ux0 = torch.full((config.nz, config.ny, config.nx), config.u_in, device=device)
+        uy0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
+        uz0 = torch.zeros((config.nz, config.ny, config.nx), device=device)
+        ux0[obstacle] = 0.0
+        f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
+
+    rho0_mass = torch.ones((config.nz, config.ny, config.nx), device=device)
+    initial_mass = float(rho0_mass.sum().item())
+    diagnostics: list[dict] = []
+
+    _stream = _maybe_compile(stream3d, config.use_compile)
+
+    dg_cells = int(dg_mask.sum().item())
+    lbm_cells = int((~obstacle & ~dg_mask).sum().item())
+    hull_cells = int(obstacle.sum().item())
+
+    logger.info(
+        "DG-LBM SUBOFF: device=%s NX=%s NY=%s NZ=%s tau=%.4f "
+        "steps=%s output_interval=%s hull_type=%s dg_band=%.1f",
+        device, config.nx, config.ny, config.nz, config.tau,
+        config.n_steps, config.output_interval, config.hull_type, config.dg_band,
+    )
+    logger.info(
+        "Zone breakdown: hull=%d cells  DG band=%d cells  LBM exterior=%d cells",
+        hull_cells, dg_cells, lbm_cells,
+    )
+    logger.info("Hull stats: %s", hull_stats)
+    logger.info("Run directory: %s", run_dir)
+
+    step_range = range(start_step, config.n_steps + 1)
+    step_iter = (
+        _tqdm(step_range, desc="DG-LBM SUBOFF", unit="step")
+        if _TQDM_AVAILABLE
+        else step_range
+    )
+
+    for step in step_iter:
+        # Hybrid collision: DG near wall, BGK elsewhere
+        f = collide_dg_lbm(f, tau=config.tau, dg_mask=dg_mask)
+
+        # Standard streaming
+        f = _stream(f)
+
+        # Boundary conditions (walls + hull bounce-back + inlet/outlet)
+        f = apply_simple_channel_boundaries_3d(
+            f,
+            u_in=config.u_in,
+            wall_mask=wall_mask,
+            obstacle_mask=obstacle,
+        )
+
+        # Periodic mass correction
+        if step % config.output_interval == 0:
+            f = correct_mass3d(f, initial_mass)
+
+        if step % config.output_interval == 0 or step == config.n_steps:
+            rho, ux, uy, uz = macroscopic3d(f)
+            ux = ux.masked_fill(obstacle, 0.0)
+            uy = uy.masked_fill(obstacle, 0.0)
+            uz = uz.masked_fill(obstacle, 0.0)
+            speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
+            mass = float(rho.sum().item())
+
+            point = DiagnosticPoint(
+                step=step,
+                mass=mass,
+                mass_drift=mass - initial_mass,
+                max_speed=float(speed.max().item()),
+                mean_rho=float(rho.mean().item()),
+            )
+            diagnostics.append(asdict(point))
+            logger.info(
+                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f",
+                point.step, point.mass, point.mass_drift,
+                point.mean_rho, point.max_speed,
+            )
+            _save_dg_lbm_suboff_snapshot(run_dir, step, speed, obstacle, dg_mask, config.nz)
+            save_checkpoint(f, step, run_dir)
+
+    metadata["diagnostics"] = diagnostics
+    metadata["hull_stats"] = hull_stats
     metadata_path = run_dir / "run_metadata.json"
     metadata_path.write_text(
         f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
