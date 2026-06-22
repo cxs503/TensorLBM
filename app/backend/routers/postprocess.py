@@ -5,6 +5,7 @@ including interactive field-viewer data (heatmaps, vectors, streamlines).
 """
 from __future__ import annotations
 
+import contextlib
 import csv as csv_mod
 import io
 import json
@@ -1618,7 +1619,6 @@ async def inlet_profile_preview(req: InletProfileRequest) -> dict:
     * ``blasius``   – flat-plate boundary-layer (Blasius) profile.
     * ``womersley`` – oscillatory Womersley pulsatile profile.
     """
-    import torch  # noqa: PLC0415
 
     from tensorlbm.inlet_profiles import (  # noqa: PLC0415
         blasius_profile,
@@ -1724,8 +1724,12 @@ class DFSEMPreviewRequest(BaseModel):
     uu: float = Field(default=1e-4, gt=0.0, description="Target <u'u'> Reynolds stress")
     vv: float = Field(default=1e-4, gt=0.0, description="Target <v'v'> Reynolds stress")
     ww: float = Field(default=1e-4, gt=0.0, description="Target <w'w'> Reynolds stress")
-    length_scale: float = Field(default=5.0, gt=0.0, description="Eddy length scale (lattice units)")
-    n_eddies: int = Field(default=200, ge=10, le=2000, description="Number of synthetic eddies (DFSEM only)")
+    length_scale: float = Field(
+        default=5.0, gt=0.0, description="Eddy length scale (lattice units)"
+    )
+    n_eddies: int = Field(
+        default=200, ge=10, le=2000, description="Number of synthetic eddies (DFSEM only)"
+    )
     method: str = Field(default="dfsem", description="'dfsem' or 'digital_filter'")
     seed: int = 42
 
@@ -1817,7 +1821,6 @@ async def sponge_preview(req: SpongePreviewRequest) -> dict:
     the absorbing-layer implementation in commercial LBM solvers.
     """
     try:
-        import torch
 
         from tensorlbm.sponge_bc import sponge_profile
 
@@ -1853,9 +1856,15 @@ async def sponge_preview(req: SpongePreviewRequest) -> dict:
 
 class RoughnessPreviewRequest(BaseModel):
     u_tau: float = Field(default=0.01, gt=0.0, description="Friction velocity (lattice units)")
-    nu: float = Field(default=1.0 / 600.0, gt=0.0, description="Kinematic viscosity (lattice units)")
-    ks: float = Field(default=0.5, ge=0.0, description="Equivalent sand-grain roughness height (lattice units)")
-    n_points: int = Field(default=100, ge=10, le=500, description="Number of ks+ evaluation points")
+    nu: float = Field(
+        default=1.0 / 600.0, gt=0.0, description="Kinematic viscosity (lattice units)"
+    )
+    ks: float = Field(
+        default=0.5, ge=0.0, description="Equivalent sand-grain roughness height (lattice units)"
+    )
+    n_points: int = Field(
+        default=100, ge=10, le=500, description="Number of ks+ evaluation points"
+    )
 
 
 @router.post("/roughness-preview")
@@ -1872,7 +1881,7 @@ async def roughness_preview(req: RoughnessPreviewRequest) -> dict:
     try:
         import torch
 
-        from tensorlbm.roughness import KAPPA, B_SMOOTH, roughness_b_correction
+        from tensorlbm.roughness import B_SMOOTH, KAPPA, roughness_b_correction
 
         # Sweep ks+ from 0.1 to 500 to show the full correction curve
         ks_plus_vals = torch.linspace(0.1, 500.0, req.n_points)
@@ -1911,3 +1920,554 @@ async def roughness_preview(req: RoughnessPreviewRequest) -> dict:
         }
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Force decomposition: pressure + viscous (new industrial feature)
+# ---------------------------------------------------------------------------
+
+@router.get("/force-decomposition/{job_id}")
+async def force_decomposition(
+    job_id: str,
+    rho_ref: float = Query(default=1.0, gt=0.0),  # noqa: B008
+    u_ref: float = Query(default=0.1, gt=0.0),  # noqa: B008
+    area_ref: float = Query(default=1.0, gt=0.0),  # noqa: B008
+) -> dict:
+    """Decompose aerodynamic force into pressure and viscous components.
+
+    Returns total Cd/Cl plus the pressure-drag and viscous-drag split,
+    matching the force-decomposition report in PowerFlow and XFlow.
+
+    Query params:
+        rho_ref:  Reference density for Cd/Cl (default 1.0).
+        u_ref:    Reference velocity (default 0.1).
+        area_ref: Reference area/chord (default 1.0).
+    """
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.checkpoint import load_checkpoint  # noqa: PLC0415
+    from tensorlbm.d2q9 import macroscopic  # noqa: PLC0415
+    from tensorlbm.surface_integrals import surface_force_decomposed_2d  # noqa: PLC0415
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job not completed yet")
+
+    ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"))
+    if not ckpts:
+        raise HTTPException(status_code=404, detail="No checkpoint found")
+
+    f, step, meta = load_checkpoint(ckpts[-1].parent)
+    if f.ndim != 3:
+        raise HTTPException(status_code=422, detail="Force decomposition requires a 2-D job")
+
+    rho, ux, uy = macroscopic(f)
+    speed = torch.sqrt(ux * ux + uy * uy)
+    mask = speed < 1e-6
+
+    tau = float(meta.get("tau", 0.6)) if isinstance(meta, dict) else 0.6
+    result = surface_force_decomposed_2d(
+        f, rho, ux, uy, mask, tau, rho_ref, u_ref, area_ref,
+    )
+    result["job_id"] = job_id
+    result["step"] = step
+    result["tau"] = tau
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Wall shear stress distribution (new industrial feature)
+# ---------------------------------------------------------------------------
+
+@router.get("/wall-shear-stress/{job_id}")
+async def wall_shear_stress(
+    job_id: str,
+    normalise: bool = Query(default=True),  # noqa: B008
+    rho_ref: float = Query(default=1.0, gt=0.0),  # noqa: B008
+    u_ref: float = Query(default=0.1, gt=0.0),  # noqa: B008
+) -> dict:
+    """Compute the wall shear stress (WSS) distribution for a completed job.
+
+    Returns the 2-D WSS map and summary statistics (max, mean).  When
+    ``normalise=true`` (default) also returns the skin-friction coefficient
+    Cf = τ_w / (½ρU²) map.  Matches the WSS post-processing in XFlow.
+    """
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.checkpoint import load_checkpoint  # noqa: PLC0415
+    from tensorlbm.d2q9 import macroscopic  # noqa: PLC0415
+    from tensorlbm.wall_shear import wss_map_2d  # noqa: PLC0415
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job not completed yet")
+
+    ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"))
+    if not ckpts:
+        raise HTTPException(status_code=404, detail="No checkpoint found")
+
+    f, step, meta = load_checkpoint(ckpts[-1].parent)
+    if f.ndim != 3:
+        raise HTTPException(status_code=422, detail="WSS requires a 2-D job")
+
+    rho, ux, uy = macroscopic(f)
+    speed = torch.sqrt(ux * ux + uy * uy)
+    mask = speed < 1e-6
+    tau = float(meta.get("tau", 0.6)) if isinstance(meta, dict) else 0.6
+
+    result = wss_map_2d(f, rho, ux, uy, tau, mask,
+                        normalise=normalise, rho_ref=rho_ref, u_ref=u_ref)
+    result["job_id"] = job_id
+    result["step"] = step
+    result["tau"] = tau
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Vortex identification criteria (new industrial feature)
+# ---------------------------------------------------------------------------
+
+@router.get("/vortex-criterion/{job_id}")
+async def vortex_criterion(
+    job_id: str,
+    criteria: str = Query(default="q,omega", description="Comma-separated: q,lambda2,omega"),  # noqa: B008
+) -> dict:
+    """Compute vortex identification criterion fields for a completed job.
+
+    Supported criteria (comma-separated in ``criteria`` param):
+    * ``q``      – Q-criterion (Hunt et al. 1988): positive = vortex core.
+    * ``lambda2``– λ₂-criterion (Jeong & Hussain 1995): negative = vortex core.
+    * ``omega``  – Ω-criterion (Liu et al. 2016): Ω > 0.52 = vortex core.
+
+    Returns scalar fields as nested float lists, suitable for
+    colourmap visualisation in the browser.
+    """
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.checkpoint import load_checkpoint  # noqa: PLC0415
+    from tensorlbm.d2q9 import macroscopic  # noqa: PLC0415
+    from tensorlbm.vortex_identification import vortex_fields_2d, vortex_fields_3d  # noqa: PLC0415
+
+    valid_criteria = {"q", "lambda2", "omega"}
+    requested = [c.strip().lower() for c in criteria.split(",") if c.strip()]
+    unknown = set(requested) - valid_criteria
+    if unknown:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown criteria: {unknown}. Choose from: q, lambda2, omega.",
+        )
+    if not requested:
+        raise HTTPException(status_code=422, detail="At least one criterion must be specified.")
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job not completed yet")
+
+    ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"))
+    if not ckpts:
+        raise HTTPException(status_code=404, detail="No checkpoint found")
+
+    f, step, _meta = load_checkpoint(ckpts[-1].parent)
+    is_3d = f.ndim == 4
+
+    if is_3d:
+        from tensorlbm.d3q19 import macroscopic as mac3d  # noqa: PLC0415
+        rho, ux, uy, uz = mac3d(f)
+        speed = torch.sqrt(ux ** 2 + uy ** 2 + uz ** 2)
+        mask = speed < 1e-6
+        fields = vortex_fields_3d(ux, uy, uz, mask=mask, criteria=requested)
+    else:
+        rho, ux, uy = macroscopic(f)
+        speed = torch.sqrt(ux ** 2 + uy ** 2)
+        mask = speed < 1e-6
+        fields = vortex_fields_2d(ux, uy, mask=mask)
+        # Filter to requested criteria
+        fields = {k: v for k, v in fields.items() if k in requested}
+
+    shape_info = list(f.shape[1:]) if is_3d else list(f.shape[1:])
+    return {
+        "job_id": job_id,
+        "step": step,
+        "dim": "3d" if is_3d else "2d",
+        "shape": shape_info,
+        "criteria": requested,
+        **fields,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Animation export (new industrial feature)
+# ---------------------------------------------------------------------------
+
+@router.get("/animation/{job_id}")
+async def export_animation(
+    job_id: str,
+    fps: int = Query(default=10, ge=1, le=60),  # noqa: B008
+    fmt: str = Query(default="gif", description="'gif' or 'mp4'"),  # noqa: B008
+    max_frames: int = Query(default=200, ge=10, le=500),  # noqa: B008
+) -> StreamingResponse:
+    """Export a flow-field animation (GIF or MP4) from job snapshot images.
+
+    Discovers all ``step_XXXXXX.png`` images in the job output directory,
+    assembles them into an animation, and streams the file to the client.
+
+    Query params:
+        fps:        Frames per second (1–60, default 10).
+        fmt:        Output format: ``gif`` (default) or ``mp4`` (requires ffmpeg).
+        max_frames: Maximum number of frames to include (default 200).
+    """
+    from tensorlbm.animation_export import create_animation  # noqa: PLC0415
+
+    if fmt not in ("gif", "mp4"):
+        raise HTTPException(status_code=422, detail="fmt must be 'gif' or 'mp4'")
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job not completed yet")
+
+    tmp_dir = job.output_dir / "_animation_cache"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        anim_path = create_animation(
+            job.output_dir,
+            output_dir=tmp_dir,
+            fps=fps,
+            fmt=fmt,  # type: ignore[arg-type]
+            max_frames=max_frames,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    media_type = "video/mp4" if fmt == "mp4" else "image/gif"
+    from fastapi.responses import FileResponse  # noqa: PLC0415
+    return FileResponse(
+        str(anim_path),
+        media_type=media_type,
+        filename=f"job_{job_id}_animation.{fmt}",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Heat flux mapping for conjugate-HT jobs (new industrial feature)
+# ---------------------------------------------------------------------------
+
+@router.get("/heat-flux/{job_id}")
+async def heat_flux_map(
+    job_id: str,
+    alpha: float = Query(default=1.0, gt=0.0, description="Thermal diffusivity (lattice units)"),  # noqa: B008
+) -> dict:
+    """Extract heat flux density distribution from a thermal/conjugate-HT job.
+
+    Computes q'' = -k ∇T at each fluid cell using finite differences on
+    the temperature field.  Returns the heat-flux magnitude map and summary
+    statistics, matching the heat-flux post-processing in XFlow and PowerFlow.
+
+    Query params:
+        alpha: Thermal diffusivity used in the simulation (default 1.0).
+    """
+    import torch  # noqa: PLC0415
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job not completed yet")
+
+    # Look for temperature field CSV or checkpoint
+    temp_csv = list(job.output_dir.rglob("temperature*.csv"))
+    if not temp_csv:
+        # Try to load from checkpoint metadata
+        ckpts = sorted(job.output_dir.rglob("checkpoint_f.pt"))
+        if not ckpts:
+            raise HTTPException(status_code=404, detail="No temperature data found in job output")
+        # For thermal jobs, temperature is in checkpoint metadata
+        from tensorlbm.checkpoint import load_checkpoint  # noqa: PLC0415
+        f, step, meta = load_checkpoint(ckpts[-1].parent)
+        if not isinstance(meta, dict) or "temperature" not in meta:
+            raise HTTPException(
+                status_code=422,
+                detail="Heat flux extraction requires a thermal/conjugate-HT job",
+            )
+        T = torch.tensor(meta["temperature"], dtype=torch.float32)
+    else:
+        import csv as _csv  # noqa: PLC0415
+        with temp_csv[0].open() as fh:
+            rows = list(_csv.reader(fh))
+        step = 0
+        data = [[float(x) for x in row] for row in rows[1:] if len(row) > 1]
+        if not data:
+            raise HTTPException(status_code=404, detail="Temperature CSV is empty")
+        T = torch.tensor(data, dtype=torch.float32)
+
+    if T.ndim != 2:
+        raise HTTPException(
+            status_code=422, detail="Heat flux only supported for 2-D thermal fields"
+        )
+
+    # Compute heat flux via central differences: q''_x = -k dT/dx, q''_y = -k dT/dy
+    dT_dx = torch.zeros_like(T)
+    dT_dy = torch.zeros_like(T)
+    dT_dx[:, 1:-1] = (T[:, 2:] - T[:, :-2]) / 2.0
+    dT_dy[1:-1, :] = (T[2:, :] - T[:-2, :]) / 2.0
+
+    # k = rho * c_p * alpha (in LBM: rho~1, c_p~1, so k ~ alpha)
+    k = alpha
+    qx = -k * dT_dx
+    qy = -k * dT_dy
+    q_mag = torch.sqrt(qx ** 2 + qy ** 2)
+
+    return {
+        "job_id": job_id,
+        "step": step,
+        "alpha": alpha,
+        "heat_flux_x": qx.cpu().tolist(),
+        "heat_flux_y": qy.cpu().tolist(),
+        "heat_flux_magnitude": q_mag.cpu().tolist(),
+        "q_max": float(q_mag.max().item()),
+        "q_mean": float(q_mag.mean().item()),
+        "T_max": float(T.max().item()),
+        "T_min": float(T.min().item()),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Acoustic spectrum analysis (PSD + OASPL) (new industrial feature)
+# ---------------------------------------------------------------------------
+
+@router.get("/acoustics-spectrum/{job_id}")
+async def acoustics_spectrum(
+    job_id: str,
+    fs: float = Query(default=1.0, gt=0.0, description="Sampling frequency (1/Δt, lattice units)"),  # noqa: B008
+    window: str = Query(default="hann", description="FFT window: hann, hamming, blackman"),  # noqa: B008
+    nperseg: int = Query(default=256, ge=32, le=4096, description="Welch segment length"),  # noqa: B008
+    p_ref: float = Query(default=2e-5, gt=0.0, description="Reference pressure (Pa or l.u.)"),  # noqa: B008
+) -> dict:
+    """Compute acoustic power spectral density (PSD) and OASPL from an FWH job.
+
+    Reads the time-history pressure signal from the FWH acoustics output,
+    computes Welch PSD, 1/3-octave band levels, and overall SPL (OASPL).
+    Matches the acoustic post-processing in XFlow and PowerFlow.
+
+    Query params:
+        fs:      Sampling frequency (cycles per step, default 1.0).
+        window:  Spectral window function (default 'hann').
+        nperseg: Segment length for Welch estimate (default 256).
+        p_ref:   Reference pressure for dB conversion (default 2e-5).
+    """
+    import numpy as np  # noqa: PLC0415
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job not completed yet")
+
+    # Load acoustic time-history from FWH output CSV
+    acoustic_csvs = (
+        list(job.output_dir.rglob("*acoustic*.csv"))
+        + list(job.output_dir.rglob("*fwh*.csv"))
+    )
+    if not acoustic_csvs:
+        raise HTTPException(
+            status_code=404,
+            detail="No acoustic time-history CSV found. Run an FWH acoustics job first.",
+        )
+
+    import csv as _csv  # noqa: PLC0415
+    p_signal: list[float] = []
+    with acoustic_csvs[0].open() as fh:
+        reader = _csv.DictReader(fh)
+        for row in reader:
+            for key in ("p_prime", "pressure", "p", "spl"):
+                if key in row:
+                    with contextlib.suppress(ValueError):
+                        p_signal.append(float(row[key]))
+                    break
+
+    if len(p_signal) < 16:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Acoustic time series too short ({len(p_signal)} samples). Need ≥ 16.",
+        )
+
+    p_arr = np.array(p_signal, dtype=np.float64)
+
+    try:
+        from scipy.signal import welch  # noqa: PLC0415
+        freqs, psd = welch(p_arr, fs=fs, window=window, nperseg=min(nperseg, len(p_arr) // 2))
+    except ImportError:
+        # Fallback: simple FFT
+        fft_vals = np.fft.rfft(p_arr)
+        psd = (np.abs(fft_vals) ** 2) / (len(p_arr) * fs)
+        freqs = np.fft.rfftfreq(len(p_arr), d=1.0 / fs)
+
+    # SPL spectrum (dB re p_ref)
+    spl = 10.0 * np.log10(psd / (p_ref ** 2) + 1e-30)
+
+    # OASPL (overall)
+    p_rms = float(np.sqrt(np.mean(p_arr ** 2)))
+    oaspl_db = 20.0 * np.log10(p_rms / p_ref + 1e-30)
+
+    # 1/3-octave band levels
+    third_oct_centers = [
+        16, 20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315,
+        400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000,
+    ]
+    third_oct_spl: list[dict] = []
+    for fc in third_oct_centers:
+        f_lo = fc / 2.0 ** (1.0 / 6.0)
+        f_hi = fc * 2.0 ** (1.0 / 6.0)
+        band = (freqs >= f_lo) & (freqs <= f_hi)
+        if band.any():
+            p_band_rms = float(np.sqrt(np.trapz(psd[band], freqs[band])))
+            spl_band = 20.0 * np.log10(p_band_rms / p_ref + 1e-30)
+            third_oct_spl.append({"fc_hz": fc, "spl_db": round(spl_band, 2)})
+
+    return {
+        "job_id": job_id,
+        "n_samples": len(p_signal),
+        "sampling_frequency": fs,
+        "window": window,
+        "frequencies": freqs.tolist(),
+        "psd": psd.tolist(),
+        "spl_db": spl.tolist(),
+        "oaspl_db": round(oaspl_db, 2),
+        "p_rms": p_rms,
+        "third_octave_bands": third_oct_spl,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Multi-case overlay chart (new industrial feature)
+# ---------------------------------------------------------------------------
+
+class MultiCaseChartRequest(BaseModel):
+    job_ids: list[str] = Field(..., min_length=2, max_length=20)
+    metric: str = Field(
+        default="cd",
+        description="Metric to compare: 'cd', 'cl', 'convergence', or any run_metadata key.",
+    )
+    labels: list[str] | None = Field(
+        default=None, description="Custom legend labels (one per job)."
+    )
+    x_label: str = Field(default="Step")
+    y_label: str | None = None
+
+
+@router.post("/multi-case-chart")
+async def multi_case_chart(req: MultiCaseChartRequest) -> StreamingResponse:
+    """Generate a multi-case overlay comparison chart as a PNG image.
+
+    Reads the convergence / force history from each specified job and
+    overlays them on a single matplotlib figure, matching the multi-case
+    comparison report in PowerFlow.
+
+    Returns a PNG image stream.
+    """
+    import io as _io  # noqa: PLC0415
+    import json as _json  # noqa: PLC0415
+
+    import matplotlib  # noqa: PLC0415
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt  # noqa: PLC0415
+    from fastapi.responses import StreamingResponse  # noqa: PLC0415
+
+    labels = req.labels or req.job_ids
+    if len(labels) != len(req.job_ids):
+        raise HTTPException(status_code=422, detail="labels length must match job_ids length")
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    plotted = 0
+
+    for job_id, label in zip(req.job_ids, labels, strict=False):
+        job = job_manager.get_job(job_id)
+        if job is None:
+            continue
+
+        meta_file = job.output_dir / "run_metadata.json"
+        if not meta_file.exists():
+            # Search in subdirs
+            candidates = list(job.output_dir.rglob("run_metadata.json"))
+            meta_file = candidates[0] if candidates else None
+
+        if meta_file is None:
+            continue
+
+        meta = _json.loads(meta_file.read_text())
+        metric = req.metric.lower()
+
+        # Extract x, y series
+        steps_key = "steps"
+        if metric == "convergence":
+            y_key: str | None = "drag_history"
+        elif metric in ("cd", "drag"):
+            y_key = next(
+                (k for k in ("cd_history", "force_history", "drag_history") if k in meta), None
+            )
+        elif metric in ("cl", "lift"):
+            y_key = "cl_history" if "cl_history" in meta else None
+        else:
+            y_key = metric
+
+        xs = meta.get(steps_key) or meta.get("step") or []
+        ys_raw = meta.get(y_key) if y_key else None
+
+        if ys_raw is None:
+            # Try result dict from job
+            ys_raw = job.result.get(y_key) or job.result.get(metric)
+
+        if isinstance(ys_raw, list) and len(ys_raw) > 0:
+            if isinstance(ys_raw[0], dict):
+                ys = [v.get(metric, v.get("cd", 0.0)) for v in ys_raw]
+                if not xs:
+                    xs = [v.get("step", i) for i, v in enumerate(ys_raw)]
+            else:
+                ys = ys_raw
+        else:
+            continue
+
+        if not xs:
+            xs = list(range(len(ys)))
+        if len(xs) > len(ys):
+            xs = xs[:len(ys)]
+        elif len(ys) > len(xs):
+            ys = ys[:len(xs)]
+
+        ax.plot(xs, ys, label=label)
+        plotted += 1
+
+    if plotted == 0:
+        raise HTTPException(
+            status_code=422,
+            detail="No plottable data found for the specified jobs and metric.",
+        )
+
+    y_label = req.y_label or req.metric.upper()
+    ax.set_xlabel(req.x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(f"Multi-case comparison: {req.metric}")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    buf = _io.BytesIO()
+    fig.savefig(buf, format="png", dpi=150)
+    plt.close(fig)
+    buf.seek(0)
+
+    return StreamingResponse(
+        buf,
+        media_type="image/png",
+        headers={"Content-Disposition": "inline; filename=multi_case_chart.png"},
+    )

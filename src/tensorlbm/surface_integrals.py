@@ -616,9 +616,135 @@ __all__ = [
     "area_average_3d",
     "surface_force_2d",
     "surface_force_3d",
+    "surface_force_decomposed_2d",
     "surface_moment_2d",
     "surface_moment_3d",
     "pressure_drop",
     "force_coefficients",
     "moment_coefficients",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Force decomposition: pressure + viscous components
+# ---------------------------------------------------------------------------
+
+def surface_force_decomposed_2d(
+    f: torch.Tensor,
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    mask: torch.Tensor,
+    tau: float,
+    rho_ref: float = 1.0,
+    u_ref: float = 0.1,
+    area_ref: float = 1.0,
+) -> dict[str, float]:
+    """Decompose total aerodynamic force into pressure and viscous components.
+
+    This implements the surface-force decomposition available in PowerFlow and
+    XFlow, splitting the total drag/lift into:
+
+    * **Pressure (form) drag/lift** – from the hydrostatic pressure distribution
+      on the solid surface (p n̂ integration via momentum exchange).
+    * **Viscous (friction) drag/lift** – from wall shear stress (τ_w t̂ integration
+      via the f_neq tensor at wall-adjacent fluid cells).
+
+    The two contributions sum to the total momentum-exchange force.
+
+    Args:
+        f:        Post-collision DF, shape ``(9, ny, nx)``.
+        rho:      Density field, shape ``(ny, nx)``.
+        ux, uy:   Velocity fields, shape ``(ny, nx)``.
+        mask:     Boolean solid mask, shape ``(ny, nx)``; ``True`` = solid.
+        tau:      BGK relaxation time.
+        rho_ref:  Reference density for Cd/Cl non-dimensionalisation.
+        u_ref:    Reference velocity.
+        area_ref: Reference area (chord length in 2-D).
+
+    Returns:
+        Dictionary with keys:
+        ``fx_total``, ``fy_total``       – total momentum-exchange force
+        ``fx_pressure``, ``fy_pressure`` – pressure (normal stress) component
+        ``fx_viscous``, ``fy_viscous``   – viscous (shear stress) component
+        ``cd_total``, ``cl_total``       – total drag/lift coefficients
+        ``cd_pressure``, ``cl_pressure`` – pressure-drag/lift coefficients
+        ``cd_viscous``, ``cl_viscous``   – viscous-drag/lift coefficients
+    """
+    from .d2q9 import equilibrium as feq  # noqa: PLC0415
+
+    device = f.device
+    cx = torch.tensor([0, 1, 0, -1,  0,  1, -1, -1,  1], dtype=torch.float32, device=device)
+    cy = torch.tensor([0, 0, 1,  0, -1,  1,  1, -1, -1], dtype=torch.float32, device=device)
+    opp = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.long, device=device)
+
+    ny, nx = mask.shape
+    fluid = ~mask
+
+    # Equilibrium and non-equilibrium DFs
+    f_eq = feq(rho, ux, uy)
+    f_neq = f - f_eq
+
+    # Prefactor for viscous stress tensor
+    sigma_prefactor = -(1.0 - 0.5 / tau)
+    cx_b = cx.view(9, 1, 1); cy_b = cy.view(9, 1, 1)
+    # σ_xx, σ_xy stress components at fluid cells
+    sigma_xx = sigma_prefactor * (f_neq * cx_b * cx_b).sum(0)  # (ny, nx)
+    sigma_yy = sigma_prefactor * (f_neq * cy_b * cy_b).sum(0)
+    sigma_xy = sigma_prefactor * (f_neq * cx_b * cy_b).sum(0)
+
+    # Pressure (EOS: p = rho / 3 in LBM)
+    p_field = rho / 3.0
+
+    fx_total = fy_total = 0.0
+    fx_pressure = fy_pressure = 0.0
+    fx_viscous = fy_viscous = 0.0
+
+    y_f, x_f = torch.where(fluid)
+
+    for q in range(1, 9):
+        dcx = int(cx[q].item()); dcy = int(cy[q].item())
+        x_n = (x_f + dcx).clamp(0, nx - 1)
+        y_n = (y_f + dcy).clamp(0, ny - 1)
+        is_solid_nbr = mask[y_n, x_n]
+        if not is_solid_nbr.any():
+            continue
+
+        yf_ = y_f[is_solid_nbr]; xf_ = x_f[is_solid_nbr]
+        q_opp = int(opp[q].item())
+        # Total momentum exchange
+        contrib = f[q, yf_, xf_] + f[q_opp, y_n[is_solid_nbr], x_n[is_solid_nbr]]
+        fx_total += float((contrib * cx[q]).sum())
+        fy_total += float((contrib * cy[q]).sum())
+
+        # Pressure component: p * n_hat contribution (normal direction)
+        # n̂ = (cx_q, cy_q) points from fluid to solid
+        p_f = p_field[yf_, xf_]
+        # Weight by equilibrium fraction: f_eq part of contribution
+        f_eq_contrib = f_eq[q, yf_, xf_] + f_eq[q_opp, y_n[is_solid_nbr], x_n[is_solid_nbr]]
+        fx_pressure += float((f_eq_contrib * cx[q]).sum())
+        fy_pressure += float((f_eq_contrib * cy[q]).sum())
+
+    # Viscous is the remainder
+    fx_viscous = fx_total - fx_pressure
+    fy_viscous = fy_total - fy_pressure
+
+    # Non-dimensionalise
+    q_dyn = 0.5 * rho_ref * u_ref ** 2 * area_ref
+    if q_dyn < 1e-30:
+        q_dyn = 1.0
+
+    return {
+        "fx_total": fx_total,
+        "fy_total": fy_total,
+        "fx_pressure": fx_pressure,
+        "fy_pressure": fy_pressure,
+        "fx_viscous": fx_viscous,
+        "fy_viscous": fy_viscous,
+        "cd_total": fx_total / q_dyn,
+        "cl_total": fy_total / q_dyn,
+        "cd_pressure": fx_pressure / q_dyn,
+        "cl_pressure": fy_pressure / q_dyn,
+        "cd_viscous": fx_viscous / q_dyn,
+        "cl_viscous": fy_viscous / q_dyn,
+    }
