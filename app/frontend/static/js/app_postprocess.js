@@ -65,6 +65,7 @@ function showPPTab(name, el) {
   else if (name === 'viewer') loadViewerCheckpoints();
   else if (name === 'probes') _initProbeTab();
   else if (name === 'export') loadExportCheckpoints();
+  else if (name === 'advanced') loadUnifiedMonitor();
   return false;
 }
 
@@ -495,7 +496,12 @@ async function runProbeHistory() {
     const r = await api('POST', '/api/postprocess/probe-history', { job_id: ppSelectedJobId, probes });
     _renderProbeChart(r);
     hint.textContent = `${r.checkpoint_count} checkpoints loaded.`;
-  } catch(e) { hint.textContent = t('common.error') + ' ' + e.message; }(r) {
+  } catch(e) {
+    hint.textContent = t('common.error') + ' ' + e.message;
+  }
+}
+
+function _renderProbeChart(r) {
   const canvas = document.getElementById('probe-chart');
   const ctx = canvas.getContext('2d');
   const W = canvas.parentElement.clientWidth || 640;
@@ -568,7 +574,12 @@ async function runTimeAverage() {
       </div>`;
     taHint.textContent = '';
     _renderTimeAvgCanvas();
-  } catch(e) { taHint.textContent = t('common.error') + ' ' + e.message; } {
+  } catch(e) {
+    taHint.textContent = t('common.error') + ' ' + e.message;
+  }
+}
+
+function _renderTimeAvgCanvas() {
   if (!_taData) return;
   const show = document.getElementById('ta-show').value;
   const r = _taData;
@@ -734,6 +745,191 @@ async function loadStudyCompare() {
       el.innerHTML = `<div class="alert alert-info small py-1">${t('postprocess.studycompare_not_found') || 'No jobs found for this study group.'}</div>`;
     } else {
       el.innerHTML = `<div class="alert alert-danger small py-1">${escHtml(String(e.message))}</div>`;
+    }
+  }
+
+  // ============================================================
+  // Advanced analytics + unified monitor
+  // ============================================================
+  function _ppAdvancedSet(value) {
+    const el = document.getElementById('pp-advanced-result');
+    if (!el) return;
+    el.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  }
+
+  function _ppMonitorSummarySet(value) {
+    const el = document.getElementById('pp-monitor-summary');
+    if (!el) return;
+    el.textContent = value;
+  }
+
+  function _ppSelectedJobRequired() {
+    if (!ppSelectedJobId) {
+      throw new Error('Select a job first.');
+    }
+    return ppSelectedJobId;
+  }
+
+  async function loadUnifiedMonitor() {
+    let jobId;
+    try {
+      jobId = _ppSelectedJobRequired();
+    } catch (e) {
+      _ppMonitorSummarySet(e.message);
+      _ppAdvancedSet(e.message);
+      return;
+    }
+    _ppMonitorSummarySet('Loading monitor data…');
+    _ppAdvancedSet('Loading monitor data…');
+    try {
+      const [live, conv, meta] = await Promise.all([
+        api('GET', `/api/jobs/${encodeURIComponent(jobId)}/live-metrics?since_step=0&limit=100`),
+        api('GET', `/api/postprocess/convergence/${encodeURIComponent(jobId)}`),
+        api('GET', `/api/jobs/${encodeURIComponent(jobId)}/metadata`),
+      ]);
+      const metadata = meta && meta.metadata ? meta.metadata : {};
+      const forceHistory = Array.isArray(metadata.force_history) ? metadata.force_history : [];
+      _ppMonitorSummarySet(
+        `status=${live.status || '-'} · diagnostics=${live.total_diagnostics || 0} · convergence_series=${Object.keys(conv.series || {}).length} · force_history=${forceHistory.length}`,
+      );
+      _ppAdvancedSet({
+        live_metrics: live,
+        convergence: conv,
+        force_history_tail: forceHistory.slice(-30),
+      });
+    } catch (e) {
+      _ppMonitorSummarySet(`Error: ${e.message}`);
+      _ppAdvancedSet(`Error: ${e.message}`);
+    }
+  }
+
+  async function runAdvancedEndpoint() {
+    let jobId;
+    try {
+      jobId = _ppSelectedJobRequired();
+    } catch (e) {
+      _ppAdvancedSet(e.message);
+      return;
+    }
+    const mode = document.getElementById('pp-adv-endpoint')?.value || 'force';
+    _ppAdvancedSet(`Running ${mode}…`);
+    try {
+      let result;
+      if (mode === 'force') {
+        result = await api('GET', `/api/postprocess/force-decomposition/${encodeURIComponent(jobId)}`);
+      } else if (mode === 'wss') {
+        result = await api('GET', `/api/postprocess/wall-shear-stress/${encodeURIComponent(jobId)}`);
+      } else if (mode === 'vortex') {
+        result = await api('GET', `/api/postprocess/vortex-criterion/${encodeURIComponent(jobId)}?criteria=q,lambda2,omega`);
+      } else if (mode === 'heat') {
+        result = await api('GET', `/api/postprocess/heat-flux/${encodeURIComponent(jobId)}?alpha=1.0`);
+      } else if (mode === 'acoustic') {
+        result = await api('GET', `/api/postprocess/acoustics-spectrum/${encodeURIComponent(jobId)}?fs=1.0&window=hann&nperseg=256`);
+      } else if (mode === 'turbulence') {
+        result = await api('GET', `/api/postprocess/turbulence-stats/${encodeURIComponent(jobId)}?is_3d=false&max_checkpoints=50`);
+      } else if (mode === 'animation') {
+        const url = `/api/postprocess/animation/${encodeURIComponent(jobId)}?fmt=gif&fps=10&max_frames=120`;
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          const txt = await resp.text();
+          throw new Error(`${resp.status}: ${txt}`);
+        }
+        const blob = await resp.blob();
+        result = { message: 'Animation generated', mime: blob.type, size_bytes: blob.size, download_url: url };
+      } else {
+        throw new Error(`Unsupported endpoint mode: ${mode}`);
+      }
+      _ppAdvancedSet(result);
+    } catch (e) {
+      _ppAdvancedSet(`Error: ${e.message}`);
+    }
+  }
+
+  async function runStreamlinesQuick() {
+    let jobId;
+    try {
+      jobId = _ppSelectedJobRequired();
+    } catch (e) {
+      _ppAdvancedSet(e.message);
+      return;
+    }
+    _ppAdvancedSet('Running streamlines quick preview…');
+    try {
+      const body = { job_id: jobId, n_seeds_x: 6, n_seeds_y: 6, step_size: 0.5, max_steps: 300 };
+      const r = await api('POST', '/api/postprocess/streamlines', body);
+      _ppAdvancedSet(r);
+    } catch (e) {
+      _ppAdvancedSet(`Error: ${e.message}`);
+    }
+  }
+
+  async function runSurfaceIntegralsQuick() {
+    let jobId;
+    try {
+      jobId = _ppSelectedJobRequired();
+    } catch (e) {
+      _ppAdvancedSet(e.message);
+      return;
+    }
+    _ppAdvancedSet('Running surface integral quick preview…');
+    try {
+      const body = { job_id: jobId, integral_type: 'surface_force', rho_ref: 1.0, u_ref: 0.1, area_ref: 1.0 };
+      const r = await api('POST', '/api/postprocess/surface-integrals', body);
+      _ppAdvancedSet(r);
+    } catch (e) {
+      _ppAdvancedSet(`Error: ${e.message}`);
+    }
+  }
+
+  async function runInletProfilePreviewQuick() {
+    _ppAdvancedSet('Running inlet profile preview…');
+    try {
+      const r = await api('POST', '/api/postprocess/inlet-profile', {
+        profile_type: 'log_law',
+        n: 64,
+        u_ref: 0.1,
+        re_tau: 200,
+        nu: 1 / 600,
+      });
+      _ppAdvancedSet(r);
+    } catch (e) {
+      _ppAdvancedSet(`Error: ${e.message}`);
+    }
+  }
+
+  async function runDfsemPreviewQuick() {
+    _ppAdvancedSet('Running DFSEM preview…');
+    try {
+      const r = await api('POST', '/api/postprocess/dfsem-preview', {
+        ny: 64, nz: 1, u_mean: 0.1, uu: 1e-4, vv: 1e-4, ww: 1e-4, method: 'dfsem',
+      });
+      _ppAdvancedSet(r);
+    } catch (e) {
+      _ppAdvancedSet(`Error: ${e.message}`);
+    }
+  }
+
+  async function runSpongePreviewQuick() {
+    _ppAdvancedSet('Running sponge preview…');
+    try {
+      const r = await api('POST', '/api/postprocess/sponge-preview', {
+        nx: 200, x0: 150, x1: 199, amplitude: 0.5, exponent: 3.0,
+      });
+      _ppAdvancedSet(r);
+    } catch (e) {
+      _ppAdvancedSet(`Error: ${e.message}`);
+    }
+  }
+
+  async function runRoughnessPreviewQuick() {
+    _ppAdvancedSet('Running roughness preview…');
+    try {
+      const r = await api('POST', '/api/postprocess/roughness-preview', {
+        u_tau: 0.01, nu: 1 / 600, ks: 0.5, n_points: 100,
+      });
+      _ppAdvancedSet(r);
+    } catch (e) {
+      _ppAdvancedSet(`Error: ${e.message}`);
     }
   }
 }
