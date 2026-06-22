@@ -1101,3 +1101,138 @@ async def start_hull_free_surface(params: HullFreeSurfaceParams) -> dict:
         fn=_run,
     )
     return {"job_id": job_id, "message": "Hull free-surface job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# Cumulant LBM – high-Re cylinder flow
+# ---------------------------------------------------------------------------
+
+class CumulantCylinderParams(BaseModel):
+    """Parameters for the cumulant-LBM cylinder flow solver.
+
+    The cumulant collision operator provides superior stability at high
+    Reynolds numbers (Re > 1000) compared to BGK/MRT, making it suitable for
+    turbulent bluff-body flows where traditional LBM can become unstable.
+    """
+    nx: int = Field(default=200, ge=20, le=1024)
+    ny: int = Field(default=100, ge=20, le=512)
+    re: float = Field(default=500.0, gt=0.0)
+    u_in: float = Field(default=0.05, gt=0.0, le=0.2)
+    radius: float = Field(default=10.0, gt=0.0)
+    n_steps: int = Field(default=2000, ge=100, le=100_000)
+    output_interval: int = Field(default=500, ge=10)
+    device: str = "cpu"
+    omega_b: float = Field(default=1.0, gt=0.0, le=2.0)
+    omega_3: float = Field(default=1.0, gt=0.0, le=2.0)
+    omega_4: float = Field(default=1.0, gt=0.0, le=2.0)
+
+
+@router.post("/cumulant-cylinder-flow")
+async def start_cumulant_cylinder_flow(params: CumulantCylinderParams) -> dict:
+    """Start a 2-D cylinder flow simulation using the cumulant LBM collision.
+
+    The cumulant LBM (Geier *et al.* 2015) provides Galilean-invariant
+    4th-order accuracy and is significantly more stable than BGK or MRT at
+    high Reynolds numbers.  This solver is recommended for Re > 500 where
+    standard BGK becomes numerically unstable.
+
+    Returns a ``job_id`` for monitoring via ``/api/jobs/{job_id}``.
+    """
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        import json  # noqa: PLC0415
+
+        import torch  # noqa: PLC0415
+        from tensorlbm.checkpoint import save_checkpoint  # noqa: PLC0415
+        from tensorlbm.cumulant import collide_cumulant_d2q9  # noqa: PLC0415
+        from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: PLC0415
+        from tensorlbm.solver import (  # noqa: PLC0415
+            bounce_back_cells,
+            cylinder_mask,
+            stream,
+        )
+
+        device = torch.device(cfg_dict["device"])
+        nx, ny = cfg_dict["nx"], cfg_dict["ny"]
+        re = cfg_dict["re"]
+        u_in = cfg_dict["u_in"]
+        radius = cfg_dict["radius"]
+        n_steps = cfg_dict["n_steps"]
+        output_interval = cfg_dict["output_interval"]
+        omega_b = cfg_dict["omega_b"]
+        omega_3 = cfg_dict["omega_3"]
+        omega_4 = cfg_dict["omega_4"]
+
+        nu = u_in * 2.0 * radius / re
+        tau = 3.0 * nu + 0.5
+
+        cx, cy = nx // 4, ny // 2
+        mask = cylinder_mask(ny, nx, cx, cy, radius).to(device)
+
+        # Initialise with uniform flow
+        rho0 = torch.ones(ny, nx, device=device)
+        ux0 = torch.full((ny, nx), u_in, device=device)
+        uy0 = torch.zeros(ny, nx, device=device)
+        f = equilibrium(rho0, ux0, uy0)
+
+        run_dir = job.output_dir
+        force_history: list[dict] = []
+        cd_history: list[float] = []
+
+        for step in range(1, n_steps + 1):
+            f = collide_cumulant_d2q9(f, tau, omega_b=omega_b, omega_3=omega_3, omega_4=omega_4)
+            f = stream(f)
+            f = bounce_back_cells(f, mask)
+
+            # Inlet: zou-he velocity BC (left wall)
+            rho_in = (f[0, :, 0] + f[2, :, 0] + f[4, :, 0]
+                      + 2.0 * (f[3, :, 0] + f[7, :, 0] + f[6, :, 0])) / (1.0 - u_in)
+            f[1, :, 0] = f[3, :, 0] + (2.0 / 3.0) * rho_in * u_in
+            f[5, :, 0] = f[7, :, 0] - 0.5 * (f[2, :, 0] - f[4, :, 0]) + (1.0 / 6.0) * rho_in * u_in
+            f[8, :, 0] = f[6, :, 0] + 0.5 * (f[2, :, 0] - f[4, :, 0]) + (1.0 / 6.0) * rho_in * u_in
+            # Outlet: open (copy from second-to-last column)
+            f[:, :, -1] = f[:, :, -2]
+
+            if step % output_interval == 0:
+                rho, ux, uy = macroscopic(f)
+                ckpt_dir = run_dir / f"step_{step:06d}"
+                save_checkpoint(f.cpu(), step, {"tau": tau, "re": re}, ckpt_dir)
+
+                # Momentum-exchange drag force
+                from tensorlbm.surface_integrals import surface_force_2d, force_coefficients  # noqa: PLC0415
+                forces = surface_force_2d(f, mask)
+                coeffs = force_coefficients(
+                    forces["fx"], forces["fy"], None,
+                    rho_ref=1.0, u_ref=u_in, area_ref=2.0 * radius,
+                )
+                cd = coeffs["cd"]
+                cd_history.append(cd)
+                force_history.append({"step": step, "cd": cd, "cl": coeffs["cl"]})
+
+                job_manager.push_diagnostic(job.job_id, {
+                    "step": step,
+                    "cd": cd,
+                    "tau": tau,
+                    "re": re,
+                })
+
+        meta = {
+            "type": "cumulant_cylinder_flow",
+            "nx": nx, "ny": ny, "re": re, "tau": tau,
+            "u_in": u_in, "radius": radius,
+            "n_steps": n_steps,
+            "cd_mean": float(sum(cd_history) / len(cd_history)) if cd_history else 0.0,
+            "cd_final": cd_history[-1] if cd_history else 0.0,
+            "force_history": force_history,
+        }
+        (run_dir / "run_metadata.json").write_text(json.dumps(meta, indent=2))
+        return meta
+
+    job_id = job_manager.submit(
+        name=f"Cumulant Cylinder Flow Re={params.re}",
+        job_type="cumulant_cylinder_flow",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Cumulant cylinder-flow job submitted"}
