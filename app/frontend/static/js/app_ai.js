@@ -358,6 +358,67 @@ async function orchRunActiveLearning() {
   }
 }
 
+async function orchLoadStudySummary() {
+  const group = (document.getElementById('orch-study-group')?.value || '').trim();
+  if (!group) {
+    orchSetResult('orch-study-result', `Error: ${t('orch.study_group_required')}`);
+    return;
+  }
+  orchSetResult('orch-study-result', t('common.loading'));
+  try {
+    const r = await api('GET', `/api/orchestration/studies/${encodeURIComponent(group)}/summary`);
+    orchSetResult('orch-study-result', r);
+  } catch (e) {
+    orchSetResult('orch-study-result', `Error: ${e.message}`);
+  }
+}
+
+async function orchLoadSobol() {
+  const group = (document.getElementById('orch-study-group')?.value || '').trim();
+  const metric = (document.getElementById('orch-sobol-metric')?.value || 'cd_mean').trim();
+  const bootstrap = Number(document.getElementById('orch-sobol-bootstrap')?.value || 100);
+  if (!group) {
+    orchSetResult('orch-study-result', `Error: ${t('orch.study_group_required')}`);
+    return;
+  }
+  orchSetResult('orch-study-result', t('common.computing'));
+  try {
+    const params = new URLSearchParams({
+      output_metric: metric,
+      n_bootstrap: String(bootstrap),
+    });
+    const r = await api('GET', `/api/orchestration/studies/${encodeURIComponent(group)}/sobol?${params.toString()}`);
+    orchSetResult('orch-study-result', r);
+  } catch (e) {
+    orchSetResult('orch-study-result', `Error: ${e.message}`);
+  }
+}
+
+async function orchRunBayesianOpt() {
+  orchSetResult('orch-bayes-result', t('common.computing'));
+  try {
+    const group = (document.getElementById('orch-study-group')?.value || '').trim();
+    const parameters = JSON.parse(document.getElementById('orch-bayes-parameters')?.value || '{}');
+    const initial_observations = JSON.parse(
+      document.getElementById('orch-bayes-observations')?.value || '[]',
+    );
+    const body = {
+      parameters,
+      objective: (document.getElementById('orch-bayes-objective')?.value || 'drag').trim(),
+      n_iterations: Number(document.getElementById('orch-bayes-iterations')?.value || 6),
+      kappa: Number(document.getElementById('orch-bayes-kappa')?.value || 2.576),
+      initial_observations,
+    };
+    if (group) body.study_group = group;
+    const r = await api('POST', '/api/orchestration/bayesian-opt', body);
+    orchSetResult('orch-bayes-result', r);
+    showToast(t('orch.bayes_done'), 'success');
+  } catch (e) {
+    orchSetResult('orch-bayes-result', `Error: ${e.message}`);
+    showToast(`${t('common.error')} ${e.message}`, 'danger');
+  }
+}
+
 // ============================================================
 // AI Agent (LLM-driven chat)
 // ============================================================
