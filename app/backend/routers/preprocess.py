@@ -141,6 +141,81 @@ async def voxelize_stl(
 
 
 # ---------------------------------------------------------------------------
+# STL geometry repair (P2.1)
+# ---------------------------------------------------------------------------
+
+@router.post("/repair-stl")
+async def repair_stl(
+    file: Annotated[UploadFile, File()],
+    fix_normals: bool = True,
+    fill_holes: bool = True,
+    remove_degenerate: bool = True,
+    merge_tolerance: float = 1e-7,
+) -> dict:
+    """Upload an STL file, repair geometry issues, and return a diagnostic report.
+
+    Performs:
+    - Duplicate vertex merging (within *merge_tolerance*)
+    - Degenerate face removal (zero-area triangles)
+    - Normal orientation consistency fix
+    - Boundary edge (hole) filling
+
+    Returns a JSON report with face counts and quality metrics, plus a
+    base64-encoded repaired STL if the geometry was successfully repaired.
+    """
+    import tempfile
+    from pathlib import Path
+
+    if not (file.filename or "").lower().endswith(".stl"):
+        raise HTTPException(status_code=422, detail="Only .stl uploads are supported")
+
+    try:
+        content = await _read_upload_limited(file, _MAX_UPLOAD_BYTES)
+        with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as tmp_in:
+            tmp_in.write(content)
+            tmp_in_path = Path(tmp_in.name)
+
+        with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as tmp_out:
+            tmp_out_path = Path(tmp_out.name)
+
+        from tensorlbm.preprocess_geo import repair_stl as _repair_stl
+
+        report = _repair_stl(
+            tmp_in_path,
+            fix_normals=fix_normals,
+            fill_holes=fill_holes,
+            remove_degenerate=remove_degenerate,
+            merge_vertices=merge_tolerance,
+            output_path=tmp_out_path,
+        )
+
+        # Encode repaired STL as base64 for download
+        repaired_b64: str | None = None
+        if tmp_out_path.exists() and tmp_out_path.stat().st_size > 0:
+            repaired_b64 = base64.b64encode(tmp_out_path.read_bytes()).decode()
+
+        tmp_in_path.unlink(missing_ok=True)
+        tmp_out_path.unlink(missing_ok=True)
+
+        return {
+            "original_faces": report["original_faces"],
+            "repaired_faces": report["repaired_faces"],
+            "degenerate_removed": report["degenerate_removed"],
+            "holes_filled": report["holes_filled"],
+            "normals_fixed": report["normals_fixed"],
+            "is_watertight": report["is_watertight"],
+            "repaired_stl_b64": repaired_b64,
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
 # Fluid material database
 # ---------------------------------------------------------------------------
 

@@ -528,3 +528,168 @@ def apply_zou_he_channel_boundaries_3d(
     f = bounce_back_cells_3d(f, wall_mask)
     f = bounce_back_cells_3d(f, obstacle_mask)
     return f
+
+
+
+# ---------------------------------------------------------------------------
+# P1.3 New boundary conditions — 3-D (D3Q19)
+# ---------------------------------------------------------------------------
+
+def porous_jump_3d(
+    f: torch.Tensor,
+    jump_slice: int,
+    alpha: float,
+    beta: float,
+    thickness: float = 1.0,
+    axis: str = "x",
+) -> torch.Tensor:
+    """Porous jump boundary condition (3-D, D3Q19 / Ergun equation).
+
+    Args:
+        f:         Distribution tensor (19, nz, ny, nx).
+        jump_slice: Slice index along *axis* where the porous interface sits.
+        alpha:     Viscous resistance [1/lu²].
+        beta:      Inertial resistance [1/lu].
+        thickness: Porous medium thickness in lattice units.
+        axis:      Flow-normal axis ``'x'``, ``'y'``, or ``'z'``.
+
+    Returns:
+        Updated distribution tensor.
+    """
+    from .d3q19 import equilibrium3d, macroscopic3d
+
+    rho, ux, uy, uz = macroscopic3d(f)
+
+    axis_map = {"x": (ux, -1), "y": (uy, -2), "z": (uz, -3)}
+    if axis not in axis_map:
+        raise ValueError(f"axis must be 'x', 'y', or 'z', got {axis!r}")
+    u_normal, dim = axis_map[axis]
+
+    # Extract velocity at the interface slice
+    if axis == "x":
+        u_face = u_normal[:, :, jump_slice]  # (nz, ny)
+        rho_face = rho[:, :, jump_slice]
+        ux_f = ux[:, :, jump_slice]
+        uy_f = uy[:, :, jump_slice]
+        uz_f = uz[:, :, jump_slice]
+    elif axis == "y":
+        u_face = u_normal[:, jump_slice, :]
+        rho_face = rho[:, jump_slice, :]
+        ux_f = ux[:, jump_slice, :]
+        uy_f = uy[:, jump_slice, :]
+        uz_f = uz[:, jump_slice, :]
+    else:
+        u_face = u_normal[jump_slice, :, :]
+        rho_face = rho[jump_slice, :, :]
+        ux_f = ux[jump_slice, :, :]
+        uy_f = uy[jump_slice, :, :]
+        uz_f = uz[jump_slice, :, :]
+
+    delta_rho = -(alpha * u_face + beta * u_face.abs() * u_face) * thickness
+    rho_down = (rho_face + delta_rho).clamp(min=1e-6)
+
+    f_new = f.clone()
+    if axis == "x" and jump_slice + 1 < f.shape[3]:
+        fe = equilibrium3d(rho_down, ux_f, uy_f, uz_f)
+        f_new[:, :, :, jump_slice + 1] = fe
+    elif axis == "y" and jump_slice + 1 < f.shape[2]:
+        fe = equilibrium3d(rho_down, ux_f, uy_f, uz_f)
+        f_new[:, :, jump_slice + 1, :] = fe
+    elif axis == "z" and jump_slice + 1 < f.shape[1]:
+        fe = equilibrium3d(rho_down, ux_f, uy_f, uz_f)
+        f_new[:, jump_slice + 1, :, :] = fe
+    return f_new
+
+
+def fan_model_3d(
+    f: torch.Tensor,
+    fan_slice: int,
+    pressure_rise_fn: object,
+    axis: str = "x",
+) -> torch.Tensor:
+    """Simplified fan / actuator-plane boundary condition (3-D, D3Q19).
+
+    Args:
+        f:               Distribution tensor (19, nz, ny, nx).
+        fan_slice:       Slice index along *axis* for the fan plane.
+        pressure_rise_fn: Callable ``(Q: float) -> float`` giving ΔP.
+        axis:            ``'x'``, ``'y'``, or ``'z'``.
+
+    Returns:
+        Updated distribution tensor.
+    """
+    from .d3q19 import equilibrium3d, macroscopic3d
+
+    rho, ux, uy, uz = macroscopic3d(f)
+
+    if axis == "x":
+        u_col = ux[:, :, fan_slice]
+        rho_face = rho[:, :, fan_slice]
+        ux_f = ux[:, :, fan_slice]
+        uy_f = uy[:, :, fan_slice]
+        uz_f = uz[:, :, fan_slice]
+    elif axis == "y":
+        u_col = uy[:, fan_slice, :]
+        rho_face = rho[:, fan_slice, :]
+        ux_f = ux[:, fan_slice, :]
+        uy_f = uy[:, fan_slice, :]
+        uz_f = uz[:, fan_slice, :]
+    else:
+        u_col = uz[fan_slice, :, :]
+        rho_face = rho[fan_slice, :, :]
+        ux_f = ux[fan_slice, :, :]
+        uy_f = uy[fan_slice, :, :]
+        uz_f = uz[fan_slice, :, :]
+
+    flow_rate = float(u_col.sum().item())
+    try:
+        delta_p = float(pressure_rise_fn(flow_rate))  # type: ignore[operator]
+    except Exception:
+        delta_p = 0.0
+
+    rho_down = (rho_face + delta_p).clamp(min=1e-6)
+    f_new = f.clone()
+    if axis == "x" and fan_slice + 1 < f.shape[3]:
+        f_new[:, :, :, fan_slice + 1] = equilibrium3d(rho_down, ux_f, uy_f, uz_f)
+    elif axis == "y" and fan_slice + 1 < f.shape[2]:
+        f_new[:, :, fan_slice + 1, :] = equilibrium3d(rho_down, ux_f, uy_f, uz_f)
+    elif axis == "z" and fan_slice + 1 < f.shape[1]:
+        f_new[:, fan_slice + 1, :, :] = equilibrium3d(rho_down, ux_f, uy_f, uz_f)
+    return f_new
+
+
+def nscbc_outlet_3d(
+    f: torch.Tensor,
+    rho_target: float = 1.0,
+    sigma: float = 0.25,
+    c_s: float = 1.0 / 3.0 ** 0.5,
+) -> torch.Tensor:
+    """Non-Reflecting (NSCBC) outlet boundary condition (3-D, D3Q19).
+
+    Applies soft pressure relaxation at the x = nx−1 outlet plane to
+    suppress spurious acoustic reflections.
+
+    Args:
+        f:          Distribution tensor (19, nz, ny, nx).
+        rho_target: Target outlet density (default 1.0).
+        sigma:      Relaxation factor [0, 1].  0 = fully non-reflecting.
+        c_s:        Lattice speed of sound.
+
+    Returns:
+        Updated distribution tensor.
+    """
+    from .d3q19 import equilibrium3d, macroscopic3d
+
+    rho, ux, uy, uz = macroscopic3d(f)
+
+    rho_out = rho[:, :, -1]
+    ux_out  = ux[:, :, -1]
+    uy_out  = uy[:, :, -1]
+    uz_out  = uz[:, :, -1]
+
+    L1 = sigma * c_s * (rho_out - rho_target)
+    rho_corrected = (rho_out - L1).clamp(min=1e-6)
+
+    f_new = f.clone()
+    f_new[:, :, :, -1] = equilibrium3d(rho_corrected, ux_out, uy_out, uz_out)
+    return f_new
