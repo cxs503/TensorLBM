@@ -418,6 +418,44 @@ from .wave_bc import (
     jonswap_wave_velocity_3d,
     zou_he_inlet_velocity_profile_3d,
 )
+from .cumulant import (
+    collide_cumulant_d2q9,
+    collide_cumulant_d3q27,
+)
+from .streamlines import (
+    Streamline,
+    trace_streamlines_2d,
+    trace_streamlines_3d,
+    seed_points_uniform_2d,
+    seed_points_line_2d,
+    seed_points_uniform_3d,
+    seed_points_line_3d,
+    compute_residence_time_2d,
+    streamlines_to_dict,
+)
+from .surface_integrals import (
+    mass_flow_rate_2d,
+    mass_flow_rate_3d,
+    area_average_2d,
+    area_average_3d,
+    surface_force_2d,
+    surface_force_3d,
+    surface_moment_2d,
+    surface_moment_3d,
+    pressure_drop,
+    force_coefficients,
+    moment_coefficients,
+)
+from .inlet_profiles import (
+    log_law_profile,
+    power_law_profile,
+    parabolic_profile,
+    blasius_profile,
+    womersley_profile,
+    synthetic_turbulence_2d,
+    apply_inlet_profile_2d,
+    apply_inlet_profile_3d,
+)
 
 __all__ = [
     "__version__",
@@ -824,4 +862,38 @@ __all__ = [
     "save_flow_transformer_model",
     "load_flow_transformer_model",
     "reconstruct_flow_field",
+    # Cumulant LBM
+    "collide_cumulant_d2q9",
+    "collide_cumulant_d3q27",
+    # Streamline / pathline tracing
+    "Streamline",
+    "trace_streamlines_2d",
+    "trace_streamlines_3d",
+    "seed_points_uniform_2d",
+    "seed_points_line_2d",
+    "seed_points_uniform_3d",
+    "seed_points_line_3d",
+    "compute_residence_time_2d",
+    "streamlines_to_dict",
+    # Surface & volume integrals
+    "mass_flow_rate_2d",
+    "mass_flow_rate_3d",
+    "area_average_2d",
+    "area_average_3d",
+    "surface_force_2d",
+    "surface_force_3d",
+    "surface_moment_2d",
+    "surface_moment_3d",
+    "pressure_drop",
+    "force_coefficients",
+    "moment_coefficients",
+    # Turbulent inlet profiles
+    "log_law_profile",
+    "power_law_profile",
+    "parabolic_profile",
+    "blasius_profile",
+    "womersley_profile",
+    "synthetic_turbulence_2d",
+    "apply_inlet_profile_2d",
+    "apply_inlet_profile_3d",
 ]

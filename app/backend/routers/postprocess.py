@@ -1367,3 +1367,304 @@ async def study_compare(study_group: str) -> dict:
         "jobs": rows,
         "metric_summary": metric_summary,
     }
+
+
+# ---------------------------------------------------------------------------
+# Streamline tracing
+# ---------------------------------------------------------------------------
+
+class StreamlineRequest(BaseModel):
+    job_id: str
+    n_seeds_x: int = Field(default=8, ge=1, le=64)
+    n_seeds_y: int = Field(default=8, ge=1, le=64)
+    step_size: float = Field(default=0.5, gt=0.0, le=10.0)
+    max_steps: int = Field(default=500, ge=10, le=5000)
+    bidirectional: bool = False
+    seed_x_range: list[float] | None = None  # [x_min, x_max] in lattice units
+    seed_y_range: list[float] | None = None  # [y_min, y_max] in lattice units
+    include_velocity_magnitude: bool = True
+
+
+@router.post("/streamlines")
+async def compute_streamlines(req: StreamlineRequest) -> dict:
+    """Compute 2-D streamlines from the latest checkpoint of a completed job.
+
+    Seeds are placed on a uniform grid over the specified region (or the full
+    domain if no range is given).  Each streamline is integrated using RK4
+    until it leaves the domain, enters a solid cell, or reaches *max_steps*.
+
+    Returns a JSON object with ``n_lines`` and a ``lines`` list; each entry
+    has ``points`` (list of [x, y] pairs), optional ``scalars`` (velocity
+    magnitude per point), ``length`` (arc-length), and ``steps``.
+    """
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.checkpoint import load_checkpoint  # noqa: PLC0415
+    from tensorlbm.d2q9 import macroscopic  # noqa: PLC0415
+    from tensorlbm.streamlines import (  # noqa: PLC0415
+        seed_points_uniform_2d,
+        streamlines_to_dict,
+        trace_streamlines_2d,
+    )
+
+    job = job_manager.get_job(req.job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job is not completed")
+
+    ckpt_files = sorted(job.output_dir.rglob("checkpoint_f.pt"))
+    if not ckpt_files:
+        raise HTTPException(status_code=404, detail="No checkpoint found")
+
+    f_tensor, step, _meta = load_checkpoint(ckpt_files[-1].parent)
+    if f_tensor.ndim != 3:
+        raise HTTPException(status_code=422, detail="Streamlines only supported for 2-D jobs")
+
+    _rho, ux, uy = macroscopic(f_tensor)
+    ny, nx = ux.shape
+
+    x_range = tuple(req.seed_x_range) if req.seed_x_range and len(req.seed_x_range) == 2 else None
+    y_range = tuple(req.seed_y_range) if req.seed_y_range and len(req.seed_y_range) == 2 else None
+
+    seeds = seed_points_uniform_2d(nx, ny, req.n_seeds_x, req.n_seeds_y, x_range, y_range)
+
+    scalar_field = None
+    if req.include_velocity_magnitude:
+        scalar_field = torch.sqrt(ux * ux + uy * uy)
+
+    lines = trace_streamlines_2d(
+        ux, uy, seeds,
+        step_size=req.step_size,
+        max_steps=req.max_steps,
+        bidirectional=req.bidirectional,
+        scalar_field=scalar_field,
+    )
+
+    result = streamlines_to_dict(lines)
+    result["job_id"] = req.job_id
+    result["step"] = step
+    result["domain"] = {"nx": nx, "ny": ny}
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Surface integrals
+# ---------------------------------------------------------------------------
+
+class SurfaceIntegralRequest(BaseModel):
+    job_id: str
+    integral_type: str = Field(
+        default="mass_flow",
+        description=(
+            "Type of integral: 'mass_flow', 'area_average', 'pressure_drop', "
+            "'surface_force', 'surface_moment'."
+        ),
+    )
+    x_plane: int | None = None           # for mass_flow / pressure_drop
+    x_plane2: int | None = None          # second plane for pressure_drop
+    x_range: list[int] | None = None     # [x0, x1] for area_average
+    y_range: list[int] | None = None
+    pivot_x: float = 0.0                 # for surface_moment
+    pivot_y: float = 0.0
+    rho_ref: float = Field(default=1.0, gt=0.0)
+    u_ref: float = Field(default=0.1, gt=0.0)
+    area_ref: float = Field(default=1.0, gt=0.0)
+
+
+@router.post("/surface-integrals")
+async def surface_integrals(req: SurfaceIntegralRequest) -> dict:
+    """Compute surface and volume integrals from a completed 2-D job.
+
+    Supported *integral_type* values:
+
+    * ``mass_flow`` – volume/mass flow rate at a cross-section x-plane.
+    * ``area_average`` – area-averaged velocity magnitude over a sub-region.
+    * ``pressure_drop`` – pressure drop between two x-planes.
+    * ``surface_force`` – total hydrodynamic force on solid obstacles.
+    * ``surface_moment`` – moment about a pivot from surface forces.
+
+    Returns the computed quantities in lattice units along with
+    non-dimensionalised coefficients where applicable.
+    """
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.checkpoint import load_checkpoint  # noqa: PLC0415
+    from tensorlbm.d2q9 import macroscopic  # noqa: PLC0415
+    from tensorlbm.surface_integrals import (  # noqa: PLC0415
+        area_average_2d,
+        force_coefficients,
+        mass_flow_rate_2d,
+        pressure_drop,
+        surface_force_2d,
+        surface_moment_2d,
+    )
+
+    job = job_manager.get_job(req.job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(status_code=409, detail="Job is not completed")
+
+    ckpt_files = sorted(job.output_dir.rglob("checkpoint_f.pt"))
+    if not ckpt_files:
+        raise HTTPException(status_code=404, detail="No checkpoint found")
+
+    f_tensor, step, _meta = load_checkpoint(ckpt_files[-1].parent)
+    if f_tensor.ndim != 3:
+        raise HTTPException(status_code=422, detail="Surface integrals only supported for 2-D jobs")
+
+    rho, ux, uy = macroscopic(f_tensor)
+    ny, nx = ux.shape
+
+    itype = req.integral_type.lower()
+
+    if itype == "mass_flow":
+        x_plane = req.x_plane if req.x_plane is not None else nx // 2
+        yr = (req.y_range[0], req.y_range[1]) if req.y_range and len(req.y_range) == 2 else None
+        result = mass_flow_rate_2d(ux, rho, x_plane, yr)
+        result["integral_type"] = "mass_flow"
+        result["x_plane"] = x_plane
+        result["step"] = step
+
+    elif itype == "area_average":
+        speed = torch.sqrt(ux * ux + uy * uy)
+        xr = (req.x_range[0], req.x_range[1]) if req.x_range and len(req.x_range) == 2 else None
+        yr = (req.y_range[0], req.y_range[1]) if req.y_range and len(req.y_range) == 2 else None
+        result = area_average_2d(speed, xr, yr)
+        result["integral_type"] = "area_average"
+        result["field"] = "velocity_magnitude"
+        result["step"] = step
+
+    elif itype == "pressure_drop":
+        x_up = req.x_plane if req.x_plane is not None else nx // 4
+        x_dn = req.x_plane2 if req.x_plane2 is not None else 3 * nx // 4
+        result = pressure_drop(rho, x_up, x_dn)
+        result["integral_type"] = "pressure_drop"
+        result["x_upstream"] = x_up
+        result["x_downstream"] = x_dn
+        result["step"] = step
+
+    elif itype == "surface_force":
+        # Build solid mask from the job config if available; fall back to
+        # detecting near-stagnant cells as a proxy for solid nodes.
+        speed = torch.sqrt(ux * ux + uy * uy)
+        mask = speed < 1e-6
+        forces = surface_force_2d(f_tensor, mask, req.rho_ref)
+        coeffs = force_coefficients(
+            forces["fx"], forces["fy"], None,
+            req.rho_ref, req.u_ref, req.area_ref,
+        )
+        result = {**forces, **coeffs}
+        result["integral_type"] = "surface_force"
+        result["step"] = step
+
+    elif itype == "surface_moment":
+        speed = torch.sqrt(ux * ux + uy * uy)
+        mask = speed < 1e-6
+        moments = surface_moment_2d(f_tensor, mask, req.pivot_x, req.pivot_y)
+        result = {**moments}
+        result["integral_type"] = "surface_moment"
+        result["pivot"] = [req.pivot_x, req.pivot_y]
+        result["step"] = step
+
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Unknown integral_type '{req.integral_type}'. "
+                "Choose from: mass_flow, area_average, pressure_drop, "
+                "surface_force, surface_moment."
+            ),
+        )
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Inlet-profile preview
+# ---------------------------------------------------------------------------
+
+class InletProfileRequest(BaseModel):
+    profile_type: str = Field(
+        default="log_law",
+        description="'log_law', 'power_law', 'parabolic', 'blasius', 'womersley'.",
+    )
+    n: int = Field(default=64, ge=4, le=1024)
+    u_ref: float = Field(default=0.1, gt=0.0)
+    re_tau: float = Field(default=200.0, gt=0.0)
+    nu: float = Field(default=1.0 / 600.0, gt=0.0)
+    exponent: float = Field(default=7.0, gt=0.0)
+    womersley_number: float = Field(default=5.0, gt=0.0)
+    phase: float = 0.0
+    turbulence_intensity: float = Field(default=0.05, ge=0.0, le=1.0)
+    add_synthetic_turbulence: bool = False
+    seed: int = 42
+
+
+@router.post("/inlet-profile")
+async def inlet_profile_preview(req: InletProfileRequest) -> dict:
+    """Generate a turbulent or laminar inlet velocity profile for preview.
+
+    Returns the velocity profile as a list of ``(y, ux)`` pairs in lattice
+    units.  The profile can be used to validate inlet conditions before
+    starting a simulation.
+
+    Supported *profile_type* values:
+
+    * ``log_law``   – log-law turbulent channel profile.
+    * ``power_law`` – 1/n power-law profile.
+    * ``parabolic`` – Hagen–Poiseuille laminar profile.
+    * ``blasius``   – flat-plate boundary-layer (Blasius) profile.
+    * ``womersley`` – oscillatory Womersley pulsatile profile.
+    """
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.inlet_profiles import (  # noqa: PLC0415
+        blasius_profile,
+        log_law_profile,
+        parabolic_profile,
+        power_law_profile,
+        synthetic_turbulence_2d,
+        womersley_profile,
+    )
+
+    ptype = req.profile_type.lower()
+
+    if ptype == "log_law":
+        profile = log_law_profile(req.n, req.u_ref, req.re_tau, req.nu)
+    elif ptype == "power_law":
+        profile = power_law_profile(req.n, req.u_ref, req.exponent)
+    elif ptype == "parabolic":
+        profile = parabolic_profile(req.n, req.u_ref)
+    elif ptype == "blasius":
+        profile = blasius_profile(req.n, req.u_ref)
+    elif ptype == "womersley":
+        profile = womersley_profile(req.n, req.u_ref, req.womersley_number, req.phase)
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Unknown profile_type '{req.profile_type}'. "
+                "Choose from: log_law, power_law, parabolic, blasius, womersley."
+            ),
+        )
+
+    if req.add_synthetic_turbulence:
+        profile = synthetic_turbulence_2d(
+            profile, req.turbulence_intensity, seed=req.seed,
+        )
+
+    y_coords = [(i + 0.5) for i in range(req.n)]
+    profile_list = profile.tolist()
+
+    return {
+        "profile_type": req.profile_type,
+        "n": req.n,
+        "u_ref": req.u_ref,
+        "u_bulk": float(profile.mean()),
+        "u_max": float(profile.max()),
+        "profile": [
+            {"y": y, "ux": u} for y, u in zip(y_coords, profile_list, strict=False)
+        ],
+    }
