@@ -635,6 +635,145 @@ async def parametric_study(req: ParametricStudyRequest) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Conjugate Heat Transfer (CHT) endpoint
+# ---------------------------------------------------------------------------
+
+class ConjugateHTParams(BaseModel):
+    """Parameters for a 2-D conjugate heat transfer simulation."""
+
+    nx: int = Field(64, ge=10, le=512, description="Grid width.")
+    ny: int = Field(64, ge=10, le=512, description="Grid height.")
+    solid_x_start: int = Field(
+        20, ge=0, description="Left edge of the solid block (lattice units)."
+    )
+    solid_x_end: int = Field(
+        44, ge=0, description="Right edge of the solid block (lattice units)."
+    )
+    solid_y_start: int = Field(
+        20, ge=0, description="Bottom edge of the solid block (lattice units)."
+    )
+    solid_y_end: int = Field(
+        44, ge=0, description="Top edge of the solid block (lattice units)."
+    )
+    tau_f: float = Field(0.6, ge=0.51, le=2.0, description="Fluid relaxation time.")
+    kappa_f: float = Field(1.0 / 6.0, gt=0.0, description="Fluid thermal diffusivity.")
+    alpha_s: float = Field(
+        1.0 / 20.0, gt=0.0, le=0.24,
+        description="Solid thermal diffusivity (must satisfy Fo < 0.25 for stability).",
+    )
+    k_ratio: float = Field(5.0, gt=0.0, description="Conductivity ratio k_s / k_f.")
+    T_hot: float = Field(1.0, description="Hot boundary temperature.")
+    T_cold: float = Field(0.0, description="Cold boundary temperature.")
+    Q_source: float = Field(0.0, description="Volumetric heat source in solid (lattice units).")
+    beta: float = Field(2.0e-3, ge=0.0, description="Thermal expansion coefficient (Boussinesq).")
+    gravity: float = Field(2.0e-5, ge=0.0, description="Gravity (lattice units, y-direction).")
+    n_steps: int = Field(500, ge=10, le=20000, description="Number of simulation steps.")
+    output_interval: int = Field(100, ge=1, description="Steps between checkpoint saves.")
+    device: str = Field("cpu", description="Compute device ('cpu' or 'cuda:0').")
+
+
+@router.post("/conjugate-ht")
+async def start_conjugate_ht(params: ConjugateHTParams) -> dict:
+    """Submit a 2-D conjugate heat transfer (fluid–solid coupling) simulation.
+
+    Sets up a channel with an embedded solid block.  The fluid carries heat via
+    natural convection (Boussinesq buoyancy) while the solid block conducts
+    heat internally.  Temperature and heat-flux continuity are enforced at the
+    fluid–solid interface via the harmonic-mean conductivity approach.
+
+    Use the standard ``/api/jobs/{job_id}`` endpoints to poll status and
+    ``/api/postprocess/field-data/{job_id}`` to visualise results.
+    """
+    def _run(job: job_manager.Job) -> dict:
+        from pathlib import Path as _Path
+
+        import torch
+
+        from tensorlbm.checkpoint import save_checkpoint
+        from tensorlbm.conjugate_ht import CHTConfig, CHTState, run_conjugate_ht_2d
+        from tensorlbm.d2q9 import equilibrium
+        from tensorlbm.thermal import equilibrium_thermal
+
+        device = torch.device(params.device)
+        nx, ny = params.nx, params.ny
+
+        # ---- build solid mask -----------------------------------------------
+        mask_solid = torch.zeros(ny, nx, dtype=torch.bool, device=device)
+        x0 = max(0, min(params.solid_x_start, nx - 1))
+        x1 = max(0, min(params.solid_x_end, nx - 1))
+        y0 = max(0, min(params.solid_y_start, ny - 1))
+        y1 = max(0, min(params.solid_y_end, ny - 1))
+        mask_solid[y0:y1, x0:x1] = True
+
+        # ---- initialise distributions ----------------------------------------
+        rho0 = torch.ones(ny, nx, device=device)
+        ux0 = torch.zeros(ny, nx, device=device)
+        uy0 = torch.zeros(ny, nx, device=device)
+        T0 = torch.full((ny, nx), float(params.T_cold), device=device)
+        # Hot wall on the left
+        T0[:, 0] = params.T_hot
+
+        f = equilibrium(rho0, ux0, uy0, device=device)
+        g = equilibrium_thermal(T0, ux0, uy0)
+        T_s = T0.clone()
+
+        state = CHTState(f=f, g=g, T_s=T_s, mask_solid=mask_solid)
+
+        cfg = CHTConfig(
+            tau_f=params.tau_f,
+            kappa_f=params.kappa_f,
+            alpha_s=params.alpha_s,
+            k_ratio=params.k_ratio,
+            T_hot=params.T_hot,
+            T_cold=params.T_cold,
+            Q_source=params.Q_source,
+            beta=params.beta,
+            gravity=params.gravity,
+            n_steps=params.n_steps,
+            output_interval=params.output_interval,
+        )
+
+        output_dir = _Path(job.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        checkpoints_saved: list[int] = []
+
+        def _save(st: CHTState) -> None:
+            ckpt_dir = output_dir / f"step_{st.step:06d}"
+            save_checkpoint(st.f, st.step, {"type": "conjugate_ht", "step": st.step}, ckpt_dir)
+            checkpoints_saved.append(st.step)
+
+        final_state = run_conjugate_ht_2d(state, cfg, callback=_save)
+
+        # ---- compute final diagnostics ---------------------------------------
+        from tensorlbm.thermal import macroscopic_thermal
+        T_fluid_final = macroscopic_thermal(final_state.g)
+        T_solid_final = final_state.T_s
+
+        # Nusselt number estimate: Nu = q_w L / (k_f ΔT)
+        # q_w ≈ mean heat flux at left wall = -(T[1] - T[0]) / dx
+        dt_dx = (T_fluid_final[:, 1] - T_fluid_final[:, 0])
+        q_wall = -dt_dx.mean().item()
+        delta_T = float(params.T_hot - params.T_cold)
+        nu_number = abs(q_wall) * nx / max(delta_T, 1e-6) if delta_T > 0 else 0.0
+
+        return {
+            "run_dir": str(output_dir),
+            "checkpoints": checkpoints_saved,
+            "nusselt_estimate": round(nu_number, 3),
+            "T_fluid_max": round(float(T_fluid_final.max().item()), 4),
+            "T_solid_max": round(float(T_solid_final.max().item()), 4),
+        }
+
+    job_id = job_manager.submit(
+        name=f"Conjugate HT {params.nx}×{params.ny} k_ratio={params.k_ratio}",
+        job_type="conjugate_ht",
+        config=params.model_dump(),
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Conjugate heat transfer job submitted"}
+
+
+# ---------------------------------------------------------------------------
 # Parameter validation endpoint
 # ---------------------------------------------------------------------------
 
