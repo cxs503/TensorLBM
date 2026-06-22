@@ -31,9 +31,7 @@ async function projectsLoad() {
   if (!listEl) return;
   listEl.innerHTML = `<div class="text-muted small p-3" data-i18n="projects.loading">Loading…</div>`;
   try {
-    const resp = await fetch("/api/projects/");
-    if (!resp.ok) throw new Error(await resp.text());
-    _pf_projects = await resp.json();
+    _pf_projects = await api("GET", "/api/projects/");
     _renderProjectsList();
   } catch (e) {
     listEl.innerHTML = `<div class="alert alert-danger small p-2">${e.message}</div>`;
@@ -99,12 +97,7 @@ async function projectsCreate() {
   const tags = tagsRaw ? tagsRaw.split(",").map(s => s.trim()).filter(Boolean) : [];
   const body = { name, description: desc, owner, tags };
   try {
-    const resp = await fetch("/api/projects/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!resp.ok) throw new Error(await resp.text());
+    await api("POST", "/api/projects/", body);
     document.getElementById("pf-new-project-name").value = "";
     document.getElementById("pf-new-project-desc").value = "";
     document.getElementById("pf-new-project-owner").value = "";
@@ -119,8 +112,7 @@ async function projectsCreate() {
 async function projectsDeleteProject(projectId) {
   if (!confirm(t("projects.delete_confirm"))) return;
   try {
-    const resp = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
-    if (!resp.ok && resp.status !== 204) throw new Error(await resp.text());
+    await apiResponse("DELETE", `/api/projects/${projectId}`);
     await projectsLoad();
   } catch (e) {
     alert(e.message);
@@ -149,9 +141,7 @@ async function _loadCases(projectId) {
   if (!listEl) return;
   listEl.innerHTML = `<div class="text-muted small p-3">Loading…</div>`;
   try {
-    const resp = await fetch(`/api/projects/${projectId}/cases`);
-    if (!resp.ok) throw new Error(await resp.text());
-    const cases = await resp.json();
+    const cases = await api("GET", `/api/projects/${projectId}/cases`);
     _pf_cases = cases;
     if (!cases.length) {
       listEl.innerHTML = `<div class="text-muted small p-3">${t("projects.no_cases")}</div>`;
@@ -231,12 +221,7 @@ async function projectsCreateCase() {
 
   const body = { name, description: desc, scenario, config: {} };
   try {
-    const resp = await fetch(`/api/projects/${_pf_active_project.id}/cases`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!resp.ok) throw new Error(await resp.text());
+    await api("POST", `/api/projects/${_pf_active_project.id}/cases`, body);
     document.getElementById("pf-new-case-name").value = "";
     document.getElementById("pf-new-case-desc").value = "";
     _showPfMsg("pf-case-msg", "Case created.", "success");
@@ -250,10 +235,7 @@ async function projectsDeleteCase(caseId) {
   if (!_pf_active_project) return;
   if (!confirm(t("projects.delete_confirm"))) return;
   try {
-    const resp = await fetch(`/api/projects/${_pf_active_project.id}/cases/${caseId}`, {
-      method: "DELETE"
-    });
-    if (!resp.ok && resp.status !== 204) throw new Error(await resp.text());
+    await apiResponse("DELETE", `/api/projects/${_pf_active_project.id}/cases/${caseId}`);
     await _loadCases(_pf_active_project.id);
   } catch (e) {
     alert(e.message);
@@ -297,14 +279,7 @@ function projectsLoadCaseToSolve(caseId) {
 async function projectsAdvanceStage(caseId) {
   if (!_pf_active_project) return;
   try {
-    const resp = await fetch(
-      `/api/projects/${_pf_active_project.id}/cases/${caseId}/advance-workflow`,
-      { method: "POST" }
-    );
-    if (!resp.ok) {
-      const data = await resp.json().catch(() => ({}));
-      throw new Error(data.detail || await resp.text());
-    }
+    await api("POST", `/api/projects/${_pf_active_project.id}/cases/${caseId}/advance-workflow`);
     await _loadCases(_pf_active_project.id);
   } catch (e) {
     alert(e.message);
@@ -351,15 +326,7 @@ async function projectsDoClone() {
   const body = { config_overrides };
   if (name) body.name = name;
   try {
-    const resp = await fetch(
-      `/api/projects/${_pf_active_project.id}/cases/${_pf_clone_case_id}/clone`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-    );
-    if (!resp.ok) {
-      const d = await resp.json().catch(() => ({}));
-      throw new Error(d.detail || await resp.text());
-    }
-    const newCase = await resp.json();
+    const newCase = await api("POST", `/api/projects/${_pf_active_project.id}/cases/${_pf_clone_case_id}/clone`, body);
     _showPfMsg('pf-clone-msg', `Cloned as "${newCase.name}"`, 'success');
     projectsCancelClone();
     await _loadCases(_pf_active_project.id);
