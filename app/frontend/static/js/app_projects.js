@@ -15,6 +15,7 @@ let _pf_projects = [];          // loaded project list
 let _pf_active_project = null;  // currently open project object
 let _pf_active_case = null;     // currently viewed case object
 let _pf_cases = [];             // cases for active project
+let _pf_events_bound = false;
 
 /* =========================================================================
    Public entry points called by index.html
@@ -22,7 +23,86 @@ let _pf_cases = [];             // cases for active project
 
 /** Refresh projects list and render. Called when Projects tab becomes active. */
 async function projectsInit() {
+  bindProjectsEvents();
   await projectsLoad();
+}
+
+function bindProjectsEvents() {
+  if (_pf_events_bound) return;
+  const panel = document.getElementById("panel-projects");
+  if (!panel) return;
+  _pf_events_bound = true;
+
+  panel.addEventListener("click", (event) => {
+    const actionEl = event.target && event.target.closest
+      ? event.target.closest("[data-pf-action]")
+      : null;
+    if (!actionEl || !panel.contains(actionEl)) return;
+    const action = actionEl.dataset.pfAction;
+    const projectId = actionEl.dataset.pfProjectId || "";
+    const caseId = actionEl.dataset.pfCaseId || "";
+    const jobId = actionEl.dataset.pfJobId || "";
+    switch (action) {
+      case "create-project":
+        projectsCreate();
+        break;
+      case "refresh-projects":
+        projectsLoad();
+        break;
+      case "open-project":
+        projectsOpenProject(projectId);
+        break;
+      case "delete-project":
+        event.stopPropagation();
+        projectsDeleteProject(projectId);
+        break;
+      case "back-to-projects":
+        projectsBack();
+        break;
+      case "create-case":
+        projectsCreateCase();
+        break;
+      case "refresh-cases":
+        if (_pf_active_project) _loadCases(_pf_active_project.id);
+        break;
+      case "advance-case":
+        projectsAdvanceStage(caseId);
+        break;
+      case "clone-case":
+        projectsCloneCase(caseId);
+        break;
+      case "load-case":
+        projectsLoadCaseToSolve(caseId);
+        break;
+      case "view-job":
+        projectsViewJob(jobId);
+        break;
+      case "view-report":
+        projectsViewReport(jobId);
+        break;
+      case "delete-case":
+        projectsDeleteCase(caseId);
+        break;
+      case "do-clone":
+        projectsDoClone();
+        break;
+      case "cancel-clone":
+        projectsCancelClone();
+        break;
+      default:
+        break;
+    }
+  });
+
+  panel.addEventListener("keydown", (event) => {
+    const card = event.target && event.target.closest
+      ? event.target.closest('.pf-project-card[data-pf-action="open-project"]')
+      : null;
+    if (!card || !panel.contains(card)) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    projectsOpenProject(card.dataset.pfProjectId || "");
+  });
 }
 
 /** Load all projects from backend and render the list. */
@@ -63,7 +143,8 @@ function _projectCard(proj) {
     .map(tag => `<span class="badge bg-secondary me-1">${_esc(tag)}</span>`).join("");
   const caseCount = ""; // we don't load case count in list view
   return `
-<div class="card mb-2 pf-project-card" style="cursor:pointer" onclick="projectsOpenProject('${_esc(proj.id)}')">
+<div class="card mb-2 pf-project-card" style="cursor:pointer" role="button" tabindex="0"
+  data-pf-action="open-project" data-pf-project-id="${_esc(proj.id)}">
   <div class="card-body py-2 px-3">
     <div class="d-flex justify-content-between align-items-center">
       <div>
@@ -71,7 +152,8 @@ function _projectCard(proj) {
         ${proj.owner ? `<span class="text-muted ms-2 small">${_esc(proj.owner)}</span>` : ""}
       </div>
       <div class="d-flex gap-1">
-        <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();projectsDeleteProject('${_esc(proj.id)}')" title="${t("projects.delete")}">
+        <button class="btn btn-sm btn-outline-danger" data-pf-action="delete-project"
+          data-pf-project-id="${_esc(proj.id)}" title="${t("projects.delete")}">
           <i class="bi bi-trash"></i>
         </button>
       </div>
@@ -176,23 +258,29 @@ function _caseCard(c) {
         <span class="text-muted ms-1 small">${_esc(c.scenario)}</span>
       </div>
       <div class="d-flex gap-1">
-        <button class="btn btn-sm btn-outline-secondary" onclick="projectsAdvanceStage('${_esc(c.id)}')"
+        <button class="btn btn-sm btn-outline-secondary" data-pf-action="advance-case"
+          data-pf-case-id="${_esc(c.id)}"
           title="${t('projects.advance_workflow')}">
           <i class="bi bi-arrow-right-circle"></i>
         </button>
-        <button class="btn btn-sm btn-outline-info" onclick="projectsCloneCase('${_esc(c.id)}')"
+        <button class="btn btn-sm btn-outline-info" data-pf-action="clone-case"
+          data-pf-case-id="${_esc(c.id)}"
           title="${t('projects.clone_case')}">
           <i class="bi bi-copy"></i>
         </button>
-        <button class="btn btn-sm btn-outline-primary" onclick="projectsLoadCaseToSolve('${_esc(c.id)}')"
+        <button class="btn btn-sm btn-outline-primary" data-pf-action="load-case"
+          data-pf-case-id="${_esc(c.id)}"
           title="Open in Solver">
           <i class="bi bi-sliders"></i>
         </button>
         ${c.job_id ? `
-          <button class="btn btn-sm btn-outline-primary" onclick="projectsViewJob('${_esc(c.job_id)}')" title="View Job"><i class="bi bi-eye"></i></button>
-          <button class="btn btn-sm btn-outline-secondary" onclick="projectsViewReport('${_esc(c.job_id)}')" title="Open Report"><i class="bi bi-file-earmark-text"></i></button>
+          <button class="btn btn-sm btn-outline-primary" data-pf-action="view-job"
+            data-pf-job-id="${_esc(c.job_id)}" title="View Job"><i class="bi bi-eye"></i></button>
+          <button class="btn btn-sm btn-outline-secondary" data-pf-action="view-report"
+            data-pf-job-id="${_esc(c.job_id)}" title="Open Report"><i class="bi bi-file-earmark-text"></i></button>
         ` : ""}
-        <button class="btn btn-sm btn-outline-danger" onclick="projectsDeleteCase('${_esc(c.id)}')" title="${t("projects.delete")}">
+        <button class="btn btn-sm btn-outline-danger" data-pf-action="delete-case"
+          data-pf-case-id="${_esc(c.id)}" title="${t("projects.delete")}">
           <i class="bi bi-trash"></i>
         </button>
       </div>
