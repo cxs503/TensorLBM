@@ -29,6 +29,22 @@ _PHYSICS_DEFAULTS: dict[str, dict[str, Any]] = {
         "turbulence_params": {"smagorinsky_cs": 0.1},
     },
     "porous_drainage": {"flow_type": "multiphase", "multiphase_model": "cg"},
+    "rotating_cylinder": {
+        "flow_type": "single_phase",
+        "turbulence_model": "smagorinsky_les",
+        "turbulence_params": {"smagorinsky_cs": 0.1},
+    },
+    "actuator_disk": {
+        "flow_type": "single_phase",
+        "turbulence_model": "smagorinsky_les",
+        "turbulence_params": {"smagorinsky_cs": 0.1},
+    },
+    "propeller_open_water": {"flow_type": "single_phase"},
+    "ibm_propeller": {
+        "flow_type": "single_phase",
+        "turbulence_model": "smagorinsky_les",
+        "turbulence_params": {"smagorinsky_cs": 0.1},
+    },
 }
 
 _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
@@ -81,6 +97,26 @@ _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
         "flow_types": ["multiphase"],
         "turbulence_models": ["none"],
         "multiphase_models": ["sc", "cg"],
+    },
+    "rotating_cylinder": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "actuator_disk": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "propeller_open_water": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les"],
+        "multiphase_models": ["none"],
+    },
+    "ibm_propeller": {
+        "flow_types": ["single_phase"],
+        "turbulence_models": ["none", "smagorinsky_les"],
+        "multiphase_models": ["none"],
     },
 }
 

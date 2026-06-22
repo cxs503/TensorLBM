@@ -89,11 +89,15 @@ The platform also supports batch Reynolds-number sweeps for cylinder flow via
 | Backward-facing step | 2D | BGK | `BackwardFacingStepConfig` |
 | Turbulent channel (LES) | 2D | Smagorinsky BGK | `TurbulentChannelConfig` |
 | Near-bed pipeline flow | 2D | BGK | `PipelineFlowConfig` |
+| Rotating cylinder (Magnus) | 2D | BGK/MRT | `RotatingCylinderConfig` |
 | Dam break | 2D | SC/CG/FE/SCMP | `DamBreakConfig` |
 | Sloshing tank | 2D | Color-Gradient | `SloshingTankConfig` |
 | Porous drainage | 2D | SC/CG | `PorousDrainageConfig` |
 | Sphere flow | 3D D3Q19 | BGK | `SphereFlowConfig` |
 | Ship hull – Wigley | 3D D3Q19 | Smagorinsky MRT | `ShipHullFlowConfig` |
+| Actuator disk propulsor | 3D | Smagorinsky MRT | `ActuatorDiskConfig` |
+| Propeller open-water | 3D | Smagorinsky MRT | `PropellerBenchmarkConfig` |
+| IBM propeller | 3D | Smagorinsky MRT + IBM | `IBMPropellerConfig` |
 
 ### Post-processing
 - View all PNG step images from a completed job (lightbox zoom)
@@ -211,6 +215,7 @@ Key endpoints:
 | `POST` | `/api/solve/{type}` | Submit simulation |
 | `POST` | `/api/solve/parametric-study` | Single/multi-variable DOE sweep |
 | `POST` | `/api/benchmarks/{type}` | Run benchmark |
+| `GET` | `/api/reports/compare/kpis` | Compare engineering KPI summaries across jobs |
 | `GET` | `/api/benchmarks/accuracy/baselines` | List industrial baseline profiles |
 | `GET` | `/api/benchmarks/accuracy/report/{job_id}` | Generate regression gate report |
 | `WS` | `/ws` | Real-time job updates |
