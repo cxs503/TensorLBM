@@ -29,7 +29,9 @@ class CleanupJobsRequest(BaseModel):
 
 @router.get("/")
 async def list_jobs(
-    status: str | None = Query(None, description="Filter by status (queued/running/completed/failed/cancelled)"),  # noqa: B008
+    status: str | None = Query(  # noqa: B008
+        None, description="Filter by status (queued/running/completed/failed/cancelled)"
+    ),
     limit: int = Query(0, ge=0, description="Max jobs to return (0 = all)"),  # noqa: B008
     offset: int = Query(0, ge=0, description="Number of jobs to skip"),  # noqa: B008
 ) -> dict:
@@ -136,6 +138,56 @@ async def cleanup_jobs(req: CleanupJobsRequest) -> dict:
         dry_run=req.dry_run,
     )
     return result
+
+
+@router.get("/timeline")
+async def job_timeline(
+    limit: int = Query(default=50, ge=1, le=500),  # noqa: B008
+    status: str | None = Query(default=None),  # noqa: B008
+) -> dict:
+    """Return job timeline data for Gantt-chart rendering.
+
+    Each entry contains ``job_id``, ``name``, ``status``, ``created_at``,
+    ``started_at``, ``completed_at``, and ``duration_s`` so the front-end
+    can draw a Gantt diagram.  Jobs are returned newest-first.
+
+    Query params:
+        limit:  Maximum number of jobs to return (default 50).
+        status: Optional status filter (queued/running/completed/failed).
+    """
+    all_jobs = job_manager.list_jobs()
+    if status:
+        all_jobs = [j for j in all_jobs if j.get("status") == status]
+
+    # Sort newest first
+    all_jobs.sort(key=lambda j: j.get("created_at", ""), reverse=True)
+    page = all_jobs[:limit]
+
+    entries = []
+    for j in page:
+        created = j.get("created_at")
+        started = j.get("started_at")
+        completed = j.get("completed_at")
+        duration_s = j.get("total_duration_seconds")
+        entries.append({
+            "job_id": j.get("job_id"),
+            "name": j.get("name"),
+            "job_type": j.get("job_type"),
+            "status": j.get("status"),
+            "created_at": created,
+            "started_at": started,
+            "completed_at": completed,
+            "duration_s": duration_s,
+            "queue_wait_s": j.get("queue_wait_seconds"),
+            "priority": j.get("priority", 5),
+            "assigned_resource": j.get("assigned_resource"),
+        })
+
+    return {
+        "total": len(all_jobs),
+        "returned": len(entries),
+        "timeline": entries,
+    }
 
 
 @router.get("/{job_id}")
@@ -300,3 +352,62 @@ def _safe_job_path(root: Path, rel_path: str) -> Path | None:
     if not str(target).startswith(str(root.resolve())):
         return None
     return target
+
+
+# ---------------------------------------------------------------------------
+# HPC cluster job submission (new industrial feature)
+# ---------------------------------------------------------------------------
+
+class HPCSubmitRequest(BaseModel):
+    solver_cmd: str | None = Field(
+        default=None,
+        description="Shell command to run on the cluster.  Defaults to a no-op echo.",
+    )
+    partition: str | None = Field(default=None, description="Cluster partition/queue.")
+    nodes: int | None = Field(default=None, ge=1, le=512)
+    cpus: int | None = Field(default=None, ge=1, le=256)
+    mem: str | None = Field(default=None, description="Memory per node, e.g. '8G'.")
+    walltime: str | None = Field(default=None, description="Walltime limit, e.g. '02:00:00'.")
+    extra_slurm_directives: list[str] | None = Field(
+        default=None, description="Extra #SBATCH directives (SLURM only)."
+    )
+
+
+@router.post("/{job_id}/submit-hpc")
+async def submit_job_to_hpc(job_id: str, req: HPCSubmitRequest) -> dict:
+    """Submit a previously created platform job to an HPC cluster.
+
+    Dispatches the job to the HPC scheduler configured via
+    ``TENSORLBM_HPC_MODE`` (slurm | pbs).  Returns the cluster job ID so
+    the user can track progress via native scheduler commands.
+
+    Requires ``TENSORLBM_HPC_MODE=slurm`` or ``=pbs`` to be set; returns 400
+    if HPC mode is ``none`` (default local execution).
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    try:
+        from ..services.hpc_scheduler import submit_hpc_job  # noqa: PLC0415
+        result = submit_hpc_job(
+            job_id=job_id,
+            output_dir=str(job.output_dir),
+            solver_cmd=req.solver_cmd,
+            partition=req.partition,
+            nodes=req.nodes,
+            cpus=req.cpus,
+            mem=req.mem,
+            walltime=req.walltime,
+            extra_slurm_directives=req.extra_slurm_directives,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    logger.info("HPC submission: job=%s hpc_id=%s", job_id, result.get("hpc_job_id"))
+    return {"job_id": job_id, **result}
+
+
+

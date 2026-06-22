@@ -1183,7 +1183,9 @@ class HullFreeSurfaceParams(BaseModel):
         "wigley",
         description="Hull geometry: 'wigley', 'series60', or 'kcs'.",
     )
-    fill_fraction: float = Field(0.5, ge=0.1, le=0.9, description="Initial water fill (fraction of nz).")
+    fill_fraction: float = Field(
+        0.5, ge=0.1, le=0.9, description="Initial water fill (fraction of nz)."
+    )
     re: float = Field(100.0, gt=0.0, description="Reynolds number for relaxation-time derivation.")
     u_in: float = Field(0.05, gt=0.0, le=0.3, description="Inlet velocity in water region (lu).")
     n_steps: int = Field(200, ge=1, le=20_000, description="Total time steps.")
@@ -1267,6 +1269,7 @@ async def start_cumulant_cylinder_flow(params: CumulantCylinderParams) -> dict:
         import json  # noqa: PLC0415
 
         import torch  # noqa: PLC0415
+
         from tensorlbm.checkpoint import save_checkpoint  # noqa: PLC0415
         from tensorlbm.cumulant import collide_cumulant_d2q9  # noqa: PLC0415
         from tensorlbm.d2q9 import equilibrium, macroscopic  # noqa: PLC0415
@@ -1323,7 +1326,10 @@ async def start_cumulant_cylinder_flow(params: CumulantCylinderParams) -> dict:
                 save_checkpoint(f.cpu(), step, {"tau": tau, "re": re}, ckpt_dir)
 
                 # Momentum-exchange drag force
-                from tensorlbm.surface_integrals import surface_force_2d, force_coefficients  # noqa: PLC0415
+                from tensorlbm.surface_integrals import (  # noqa: PLC0415
+                    force_coefficients,
+                    surface_force_2d,
+                )
                 forces = surface_force_2d(f, mask)
                 coeffs = force_coefficients(
                     forces["fx"], forces["fy"], None,
@@ -1359,3 +1365,282 @@ async def start_cumulant_cylinder_flow(params: CumulantCylinderParams) -> dict:
         fn=_run,
     )
     return {"job_id": job_id, "message": "Cumulant cylinder-flow job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# Sliding-mesh rotor (new industrial feature)
+# ---------------------------------------------------------------------------
+
+class SlidingMeshRotorParams(BaseModel):
+    nx: int = Field(default=256, ge=64, le=512)
+    ny: int = Field(default=256, ge=64, le=512)
+    u_tip: float = Field(default=0.05, gt=0.0, le=0.3)
+    re: float = Field(default=200.0, gt=0.0)
+    rotor_radius: float = Field(default=0.35, gt=0.05, le=0.48)
+    blade_radius: float = Field(default=0.20, gt=0.02, le=0.35)
+    n_blades: int = Field(default=4, ge=2, le=8)
+    n_steps: int = Field(default=2000, ge=1, le=50000)
+    output_interval: int = Field(default=400, ge=1)
+    device: str = Field(default="cpu")
+    priority: int = Field(default=5, ge=1, le=10)
+
+
+@router.post("/sliding-mesh-rotor")
+async def start_sliding_mesh_rotor(params: SlidingMeshRotorParams) -> dict:
+    """Start a 2-D sliding-mesh rotor-stator cavity simulation.
+
+    Models a rotating inner zone with rotor blades inside a fixed stator
+    cavity.  Distribution functions are exchanged across the sliding interface
+    using bilinear interpolation and a moving-wall equilibrium BC, analogous
+    to the rotating-domain feature in PowerFlow and XFlow.
+    """
+
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm.sliding_mesh import (  # noqa: PLC0415
+            SlidingMeshConfig,
+            run_sliding_mesh_rotor,
+        )
+
+        run_dir = overwrite_output_root(job.output_dir)
+        cfg = SlidingMeshConfig(
+            nx=params.nx, ny=params.ny,
+            u_tip=params.u_tip, re=params.re,
+            rotor_radius=params.rotor_radius,
+            blade_radius=params.blade_radius,
+            n_blades=params.n_blades,
+            n_steps=params.n_steps,
+            output_interval=params.output_interval,
+            output_root=run_dir.parent,
+            run_name=run_dir.name,
+            device=params.device,
+            overwrite=True,
+        )
+        result_dir = run_sliding_mesh_rotor(cfg)
+        meta_file = result_dir / "run_metadata.json"
+        if meta_file.exists():
+            import json as _j  # noqa: PLC0415
+            return _j.loads(meta_file.read_text())
+        return {"run_dir": str(result_dir)}
+
+    job_id = job_manager.submit(
+        name=f"Sliding Mesh Rotor Re={params.re}",
+        job_type="sliding_mesh_rotor",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Sliding-mesh rotor job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# Passive scalar transport (new industrial feature)
+# ---------------------------------------------------------------------------
+
+class PassiveScalarTransportParams(BaseModel):
+    nx: int = Field(default=256, ge=32, le=1024)
+    ny: int = Field(default=128, ge=32, le=512)
+    u_in: float = Field(default=0.05, gt=0.0, le=0.3)
+    re: float = Field(default=100.0, gt=0.0)
+    diffusivity: float = Field(default=0.01, gt=0.0, le=0.5)
+    src_cx: float = Field(default=0.15, ge=0.0, le=1.0)
+    src_cy: float = Field(default=0.5, ge=0.0, le=1.0)
+    src_radius: float = Field(default=0.04, gt=0.0, le=0.25)
+    cyl_cx: float = Field(default=0.25, ge=0.0, le=1.0)
+    cyl_cy: float = Field(default=0.5, ge=0.0, le=1.0)
+    cyl_radius: float = Field(default=0.06, gt=0.0, le=0.25)
+    n_steps: int = Field(default=3000, ge=1, le=50000)
+    output_interval: int = Field(default=500, ge=1)
+    device: str = Field(default="cpu")
+    priority: int = Field(default=5, ge=1, le=10)
+
+
+@router.post("/passive-scalar-transport")
+async def start_passive_scalar_transport(params: PassiveScalarTransportParams) -> dict:
+    """Start a 2-D passive scalar (pollutant/tracer) transport simulation.
+
+    Couples a D2Q9 BGK flow solver with a D2Q5 advection–diffusion scalar
+    solver.  Models dispersion of a scalar quantity (concentration, CO2,
+    temperature-as-tracer) past a cylindrical obstacle.  Corresponds to the
+    species/passive-scalar module in XFlow.
+    """
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm.passive_scalar import (  # noqa: PLC0415
+            PassiveScalarConfig,
+            run_passive_scalar_transport,
+        )
+
+        run_dir = overwrite_output_root(job.output_dir)
+        cfg = PassiveScalarConfig(
+            nx=params.nx, ny=params.ny,
+            u_in=params.u_in, re=params.re,
+            diffusivity=params.diffusivity,
+            src_cx=params.src_cx, src_cy=params.src_cy,
+            src_radius=params.src_radius,
+            cyl_cx=params.cyl_cx, cyl_cy=params.cyl_cy,
+            cyl_radius=params.cyl_radius,
+            n_steps=params.n_steps,
+            output_interval=params.output_interval,
+            output_root=run_dir.parent,
+            run_name=run_dir.name,
+            device=params.device,
+            overwrite=True,
+        )
+        result_dir = run_passive_scalar_transport(cfg)
+        meta_file = result_dir / "run_metadata.json"
+        if meta_file.exists():
+            import json as _j  # noqa: PLC0415
+            return _j.loads(meta_file.read_text())
+        return {"run_dir": str(result_dir)}
+
+    job_id = job_manager.submit(
+        name=f"Passive Scalar Transport Re={params.re} D={params.diffusivity}",
+        job_type="passive_scalar_transport",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Passive scalar transport job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# Cavitation flow (new industrial feature)
+# ---------------------------------------------------------------------------
+
+class CavitationFlowParams(BaseModel):
+    nx: int = Field(default=256, ge=64, le=1024)
+    ny: int = Field(default=128, ge=32, le=512)
+    G: float = Field(default=-5.5, ge=-8.0, le=-3.0, description="Shan-Chen coupling constant")
+    rho_init: float = Field(default=1.5, gt=0.0)
+    throat_x: float = Field(default=0.35, ge=0.1, le=0.9)
+    throat_height: float = Field(default=0.3, gt=0.05, le=0.9)
+    u_in: float = Field(default=0.04, gt=0.0, le=0.2)
+    re: float = Field(default=500.0, gt=0.0)
+    n_steps: int = Field(default=5000, ge=1, le=100000)
+    output_interval: int = Field(default=500, ge=1)
+    device: str = Field(default="cpu")
+    priority: int = Field(default=5, ge=1, le=10)
+
+
+@router.post("/cavitation-flow")
+async def start_cavitation_flow(params: CavitationFlowParams) -> dict:
+    """Start a 2-D nozzle cavitation simulation using the Schnerr–Sauer model.
+
+    Combines Shan–Chen single-component multiphase LBM with the Schnerr–Sauer
+    mass-transfer model to simulate vapour-bubble nucleation in the low-pressure
+    region downstream of a converging–diverging nozzle throat.  Analogous to
+    the cavitation module in XFlow.
+    """
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm.cavitation import CavitationConfig, run_cavitation_flow  # noqa: PLC0415
+
+        run_dir = overwrite_output_root(job.output_dir)
+        cfg = CavitationConfig(
+            nx=params.nx, ny=params.ny,
+            G=params.G, rho_init=params.rho_init,
+            throat_x=params.throat_x,
+            throat_height=params.throat_height,
+            u_in=params.u_in, re=params.re,
+            n_steps=params.n_steps,
+            output_interval=params.output_interval,
+            output_root=run_dir.parent,
+            run_name=run_dir.name,
+            device=params.device,
+            overwrite=True,
+        )
+        result_dir = run_cavitation_flow(cfg)
+        meta_file = result_dir / "run_metadata.json"
+        if meta_file.exists():
+            import json as _j  # noqa: PLC0415
+            return _j.loads(meta_file.read_text())
+        return {"run_dir": str(result_dir)}
+
+    job_id = job_manager.submit(
+        name=f"Cavitation Flow Re={params.re} G={params.G}",
+        job_type="cavitation_flow",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Cavitation flow job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# Oscillating airfoil / moving boundary (new industrial feature)
+# ---------------------------------------------------------------------------
+
+class OscillatingAirfoilParams(BaseModel):
+    nx: int = Field(default=512, ge=128, le=1024)
+    ny: int = Field(default=256, ge=64, le=512)
+    u_in: float = Field(default=0.05, gt=0.0, le=0.2)
+    re: float = Field(default=500.0, gt=0.0)
+    chord: float = Field(default=60.0, gt=10.0, le=200.0)
+    n_markers: int = Field(default=120, ge=20, le=500)
+    A_h_frac: float = Field(default=0.25, ge=0.0, le=1.0, description="Plunge amplitude / chord")
+    A_alpha_deg: float = Field(default=15.0, ge=0.0, le=45.0, description="Pitch amplitude (deg)")
+    f_red: float = Field(
+        default=0.0015, gt=0.0, le=0.02, description="Reduced frequency (cycles/step)"
+    )
+    phase_shift_deg: float = Field(default=90.0, ge=0.0, le=360.0)
+    geom: str = Field(default="airfoil", description="'airfoil' or 'cylinder'")
+    n_steps: int = Field(default=4000, ge=1, le=50000)
+    output_interval: int = Field(default=500, ge=1)
+    device: str = Field(default="cpu")
+    priority: int = Field(default=5, ge=1, le=10)
+
+
+@router.post("/oscillating-airfoil")
+async def start_oscillating_airfoil(params: OscillatingAirfoilParams) -> dict:
+    """Start an oscillating airfoil (pitch + plunge) simulation with moving IBM.
+
+    Simulates the classical Theodorsen pitch-plunge benchmark using the
+    immersed-boundary method with time-varying Lagrangian markers.  At each
+    step the airfoil position is updated according to a sinusoidal pitch-plunge
+    kinematic law.  Corresponds to the ALE/moving-boundary capability in
+    PowerFlow and XFlow.
+    """
+    if params.geom not in ("airfoil", "cylinder"):
+        from fastapi import HTTPException as _HTTPException  # noqa: PLC0415
+        raise _HTTPException(status_code=422, detail="geom must be 'airfoil' or 'cylinder'")
+
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm.moving_boundary import (  # noqa: PLC0415
+            MovingBoundaryConfig,
+            run_oscillating_airfoil,
+        )
+
+        run_dir = overwrite_output_root(job.output_dir)
+        cfg = MovingBoundaryConfig(
+            nx=params.nx, ny=params.ny,
+            u_in=params.u_in, re=params.re,
+            chord=params.chord, n_markers=params.n_markers,
+            A_h_frac=params.A_h_frac,
+            A_alpha_deg=params.A_alpha_deg,
+            f_red=params.f_red,
+            phase_shift_deg=params.phase_shift_deg,
+            geom=params.geom,
+            n_steps=params.n_steps,
+            output_interval=params.output_interval,
+            output_root=run_dir.parent,
+            run_name=run_dir.name,
+            device=params.device,
+            overwrite=True,
+        )
+        result_dir = run_oscillating_airfoil(cfg)
+        meta_file = result_dir / "run_metadata.json"
+        if meta_file.exists():
+            import json as _j  # noqa: PLC0415
+            return _j.loads(meta_file.read_text())
+        return {"run_dir": str(result_dir)}
+
+    job_id = job_manager.submit(
+        name=f"Oscillating {params.geom.capitalize()} Re={params.re}",
+        job_type="oscillating_airfoil",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Oscillating airfoil job submitted"}
