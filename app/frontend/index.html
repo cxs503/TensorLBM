@@ -974,6 +974,10 @@
                 <optgroup id="optgroup-3d" label="3D">
                   <option value="sphere_flow">Sphere Flow (3D D3Q19)</option>
                   <option value="ship_hull">Ship Hull – Wigley (3D)</option>
+                  <option value="sphere_flow_d3q27">Sphere Flow 3D – D3Q27</option>
+                  <option value="thermal_cavity_3d">3D Thermal Cavity (Boussinesq)</option>
+                  <option value="porous_drainage_3d">3D Porous Drainage (Shan-Chen)</option>
+                  <option value="hull_free_surface">Hull Free-Surface (Color-Gradient)</option>
                 </optgroup>
               </select>
               <div id="sim-description" class="form-text mt-2"></div>
@@ -989,6 +993,9 @@
               </button>
               <button class="btn btn-sm btn-outline-info me-2" id="validate-btn" onclick="validateSolverParams()">
                 <i class="bi bi-check2-circle"></i> <span data-i18n="solve.validate">Validate</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary me-2" id="preflight-btn" onclick="runPreflight()">
+                <i class="bi bi-clipboard2-check"></i> <span data-i18n="solve.preflight_btn">Pre-flight</span>
               </button>
               <button class="btn btn-primary" id="submit-btn" onclick="submitJob()">
                 <i class="bi bi-play-fill"></i> <span data-i18n="solve.submit_btn">Submit Job</span>
@@ -1139,6 +1146,7 @@
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs">Logs</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> <span data-i18n="postprocess.tab_files">Files</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> <span data-i18n="postprocess.tab_metadata">Metadata</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('studycompare',this)"><i class="bi bi-bar-chart-steps"></i> <span data-i18n="postprocess.tab_studycompare">Study Compare</span></a></li>
       </ul>
 
       <div id="pp-snapshots" class="pp-tab-panel">
@@ -1356,6 +1364,33 @@
       <div id="pp-metadata" class="pp-tab-panel" style="display:none">
         <pre id="pp-metadata-box" class="bg-light p-3 border rounded small" style="max-height:500px;overflow:auto" data-i18n="postprocess.no_job_meta">Select a job to view metadata.</pre>
       </div>
+
+      <!-- Study-Group Compare (new) -->
+      <div id="pp-studycompare" class="pp-tab-panel" style="display:none">
+        <div class="card">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i class="bi bi-bar-chart-steps me-1"></i>
+            <span data-i18n="postprocess.studycompare_title">Study-Group Comparison</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2 mb-3 align-items-end">
+              <div class="col-sm-6 col-md-4">
+                <label class="form-label small mb-1" data-i18n="postprocess.studycompare_group_label">Study Group Name</label>
+                <input type="text" class="form-control form-control-sm" id="study-compare-group"
+                       placeholder="e.g. re_sweep_2025" />
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-sm btn-primary" onclick="loadStudyCompare()">
+                  <i class="bi bi-arrow-repeat"></i>
+                  <span data-i18n="postprocess.studycompare_load">Load</span>
+                </button>
+              </div>
+            </div>
+            <div id="study-compare-result"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ================================================================ -->

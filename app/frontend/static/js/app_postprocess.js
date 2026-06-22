@@ -666,3 +666,74 @@ async function downloadExport() {
     btn.disabled = false;
   }
 }
+
+// ============================================================
+// Study-Group Compare
+// ============================================================
+/**
+ * Fetch GET /api/postprocess/study-compare/{group} and render a
+ * comparison table + metric summary in the Study Compare tab.
+ */
+async function loadStudyCompare() {
+  const group = (document.getElementById('study-compare-group') || {}).value || '';
+  const el = document.getElementById('study-compare-result');
+  if (!el) return;
+  if (!group.trim()) {
+    el.innerHTML = `<div class="alert alert-warning small py-1">${t('postprocess.studycompare_no_group') || 'Please enter a study group name.'}</div>`;
+    return;
+  }
+  el.innerHTML = `<span class="text-muted small">${t('postprocess.loading') || 'Loading…'}</span>`;
+  try {
+    const r = await api('GET', `/api/postprocess/study-compare/${encodeURIComponent(group.trim())}`);
+    let html = `<div class="small text-muted mb-2">${r.n_total} job(s) total, ${r.n_completed} completed.</div>`;
+
+    // Jobs table
+    if (r.jobs && r.jobs.length) {
+      const allMetricKeys = [...new Set(r.jobs.flatMap(j => Object.keys(j.metrics || {})))].sort();
+      html += '<div class="table-responsive"><table class="table table-sm table-bordered align-middle small">';
+      html += '<thead class="table-light"><tr><th>Job ID</th><th>Name</th><th>Status</th>';
+      for (const dpKey of Object.keys(r.jobs[0].design_point || {})) {
+        html += `<th>${escHtml(dpKey)}</th>`;
+      }
+      for (const mk of allMetricKeys) html += `<th>${escHtml(mk)}</th>`;
+      html += '</tr></thead><tbody>';
+      for (const row of r.jobs) {
+        const statusBadge = row.status === 'completed'
+          ? `<span class="badge bg-success">${escHtml(row.status)}</span>`
+          : row.status === 'failed'
+            ? `<span class="badge bg-danger">${escHtml(row.status)}</span>`
+            : `<span class="badge bg-secondary">${escHtml(row.status)}</span>`;
+        html += `<tr><td class="font-monospace">${escHtml(row.job_id.slice(-8))}</td><td>${escHtml(row.name)}</td><td>${statusBadge}</td>`;
+        for (const dpKey of Object.keys(r.jobs[0].design_point || {})) {
+          html += `<td>${escHtml(String(row.design_point[dpKey] ?? '—'))}</td>`;
+        }
+        for (const mk of allMetricKeys) {
+          const v = row.metrics[mk];
+          const isBest = r.metric_summary[mk] && r.metric_summary[mk].best_job_id === row.job_id;
+          html += `<td${isBest ? ' class="fw-bold text-success"' : ''}>${v != null ? v.toFixed(4) : '—'}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+    }
+
+    // Metric summary
+    if (r.metric_summary && Object.keys(r.metric_summary).length) {
+      html += '<div class="mt-3"><strong>' + (t('postprocess.studycompare_metric_summary') || 'Metric Summary') + '</strong></div>';
+      html += '<div class="table-responsive"><table class="table table-sm table-bordered small mt-1">';
+      html += '<thead class="table-light"><tr><th>Metric</th><th>Min</th><th>Max</th><th>Mean</th><th>Best Job</th></tr></thead><tbody>';
+      for (const [mk, s] of Object.entries(r.metric_summary)) {
+        html += `<tr><td>${escHtml(mk)}</td><td>${s.min.toFixed(4)}</td><td>${s.max.toFixed(4)}</td><td>${s.mean.toFixed(4)}</td><td class="font-monospace">${escHtml(String(s.best_job_id).slice(-8))}</td></tr>`;
+      }
+      html += '</tbody></table></div>';
+    }
+
+    el.innerHTML = html;
+  } catch(e) {
+    if (e.status === 404) {
+      el.innerHTML = `<div class="alert alert-info small py-1">${t('postprocess.studycompare_not_found') || 'No jobs found for this study group.'}</div>`;
+    } else {
+      el.innerHTML = `<div class="alert alert-danger small py-1">${escHtml(String(e.message))}</div>`;
+    }
+  }
+}
