@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Rate limiting**: opt-in per-IP sliding-window rate limiter in `app/backend/security.py`.
+  Enabled by setting `TENSORLBM_RATE_LIMIT_REQUESTS=<N>` (requests per window, default 0 =
+  disabled) and `TENSORLBM_RATE_LIMIT_WINDOW_S=<seconds>` (default 60).  Returns HTTP 429
+  when the limit is exceeded.  Respects `X-Forwarded-For` for deployments behind a proxy.
+  Rate limiting is enforced inside `authorize_request`, so it applies to all auth modes.
+- **Job-list pagination**: `GET /api/jobs/` now accepts optional `limit`, `offset`, and
+  `status` query parameters and returns a JSON envelope
+  `{jobs: […], total: N, offset: K, limit: L}` instead of a bare array.  Clients that do not
+  send these parameters receive the full list (backward-compatible default `limit=0`).
+- **i18n completeness**: 6 new translation keys added to `en.json` / `zh.json`:
+  `solve.validating`, `solve.scan_min_values`, `solve.scan_max_values`,
+  `solve.scan_submitting`, `solve.scan_invalid_json`, `preprocess.no_materials`.
+  Several hardcoded English strings in `app_solver.js`, `app_postprocess.js`, and
+  `app_core.js` were replaced with `t()` calls so they now appear in Chinese when the
+  language switcher is set to 中文.
+
+### Added
 - Marine benchmark suite now includes a **marine geometry library** case that validates
   ship hull families (Wigley/Series60/KCS) against analytical block coefficients and
   checks SUBOFF variant topology ordering (bare hull < sail < full appendage volume).

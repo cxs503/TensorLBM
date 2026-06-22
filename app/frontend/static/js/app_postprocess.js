@@ -490,15 +490,12 @@ async function runProbeHistory() {
   }));
   if (!probes.length) { alert('Add at least one probe.'); return; }
   const hint = document.getElementById('probe-chart-hint');
-  hint.textContent = 'Loading…';
+  hint.textContent = t('common.loading');
   try {
     const r = await api('POST', '/api/postprocess/probe-history', { job_id: ppSelectedJobId, probes });
     _renderProbeChart(r);
     hint.textContent = `${r.checkpoint_count} checkpoints loaded.`;
-  } catch(e) { hint.textContent = 'Error: ' + e.message; }
-}
-
-function _renderProbeChart(r) {
+  } catch(e) { hint.textContent = t('common.error') + ' ' + e.message; }(r) {
   const canvas = document.getElementById('probe-chart');
   const ctx = canvas.getContext('2d');
   const W = canvas.parentElement.clientWidth || 640;
@@ -557,7 +554,7 @@ async function runTimeAverage() {
   const field = document.getElementById('ta-field').value;
   const taHint = document.getElementById('ta-hint');
   const taInfo = document.getElementById('ta-info');
-  taHint.textContent = 'Computing…';
+  taHint.textContent = t('common.computing');
   taInfo.innerHTML = '';
   try {
     const r = await api('GET', `/api/postprocess/time-average/${ppSelectedJobId}?field=${field}`);
@@ -571,10 +568,7 @@ async function runTimeAverage() {
       </div>`;
     taHint.textContent = '';
     _renderTimeAvgCanvas();
-  } catch(e) { taHint.textContent = 'Error: ' + e.message; }
-}
-
-function _renderTimeAvgCanvas() {
+  } catch(e) { taHint.textContent = t('common.error') + ' ' + e.message; } {
   if (!_taData) return;
   const show = document.getElementById('ta-show').value;
   const r = _taData;

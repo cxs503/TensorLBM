@@ -179,7 +179,8 @@
     "yplus_result_utau": "Friction velocity uτ [m/s]",
     "yplus_result_cf": "Skin-friction coeff. Cf",
     "yplus_result_bl": "Boundary layer thickness [m]",
-    "yplus_result_cells_bl": "Cells inside BL"
+    "yplus_result_cells_bl": "Cells inside BL",
+    "no_materials": "No materials found."
   },
   "solve": {
     "title": "Solver",
@@ -231,7 +232,12 @@
     "study_values": "Values (comma-separated)",
     "study_base_config": "Base config (JSON)",
     "study_submit": "Submit Study",
-    "study_hint": "Submits one job per value. Vary Re, nx, u_in, etc."
+    "study_hint": "Submits one job per value. Vary Re, nx, u_in, etc.",
+    "validating": "Validating…",
+    "scan_min_values": "Provide at least 2 comma-separated values",
+    "scan_max_values": "Maximum 20 values allowed",
+    "scan_submitting": "Submitting {n} jobs…",
+    "scan_invalid_json": "Invalid JSON in base config"
   },
   "sim": {
     "cylinder_flow": {
