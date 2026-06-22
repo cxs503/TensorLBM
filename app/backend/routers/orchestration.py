@@ -444,3 +444,225 @@ async def sobol_sensitivity(
             for r, (p, s1, st) in enumerate(zip(sorted_params, sorted_s1, sorted_st, strict=True))
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# P4.2 AI-assisted Bayesian Optimization
+# ---------------------------------------------------------------------------
+
+class BayesianOptRequest(BaseModel):
+    """Configuration for a Bayesian-optimization driven DOE.
+
+    The optimizer runs *n_iterations* cycles.  Each cycle:
+    1. Fits a Gaussian Process (GP) surrogate to existing observations.
+    2. Selects the next evaluation point via Upper Confidence Bound (UCB).
+    3. Submits the simulation via the parametric-study endpoint (or records
+       user-supplied observations).
+
+    Observations can be bootstrapped from existing parametric-study jobs
+    (``study_group``) or supplied directly via ``initial_observations``.
+    """
+    study_group: str | None = Field(
+        default=None,
+        description="Load existing observations from this parametric study group.",
+    )
+    parameters: dict[str, list[float]] = Field(
+        description="Parameter search space: {name: [min, max]} for each parameter.",
+    )
+    objective: str = Field(
+        default="drag",
+        description="Objective metric name to minimise (taken from job results).",
+    )
+    n_iterations: int = Field(default=10, ge=1, le=100)
+    kappa: float = Field(
+        default=2.576,
+        description="UCB exploration-exploitation trade-off (higher = more exploration).",
+    )
+    initial_observations: list[dict] | None = Field(
+        default=None,
+        description=(
+            "Seed observations as a list of {param_name: value, …, objective: value} dicts."
+        ),
+    )
+
+
+@router.post("/bayesian-opt")
+async def start_bayesian_opt(req: BayesianOptRequest) -> dict:
+    """Launch a Bayesian-optimization DOE using a Gaussian Process surrogate.
+
+    Implements GP-UCB (Srinivas et al. 2012) to intelligently search the
+    parameter space.  Each suggested point can be used to submit a
+    simulation job via :mod:`solver` endpoints.
+
+    The response includes:
+    - The next *n_iterations* suggested parameter combinations.
+    - Surrogate model statistics (if observations are available).
+    - The Pareto-optimal point found so far.
+    """
+    import itertools
+    import math
+    import random
+
+    params = req.parameters
+    param_names = list(params.keys())
+    bounds = [params[p] for p in param_names]  # [[lo, hi], …]
+
+    # ---- Collect existing observations ----------------------------------
+    observations: list[dict] = list(req.initial_observations or [])
+
+    if req.study_group:
+        # Extract from matching completed parametric-study jobs
+        from .. import job_manager as _jm  # noqa: PLC0415
+        all_jobs = _jm.list_jobs()
+        for job in all_jobs:
+            if (
+                job.get("status") == "completed"
+                and isinstance(job.get("config"), dict)
+                and job["config"].get("study_group") == req.study_group
+            ):
+                cfg = job["config"]
+                result = job.get("result", {})
+                obs: dict = {}
+                for p in param_names:
+                    if p in cfg:
+                        obs[p] = float(cfg[p])
+                obj_val = result.get(req.objective)
+                if obs and obj_val is not None:
+                    obs[req.objective] = float(obj_val)
+                    observations.append(obs)
+
+    n_obs = len(observations)
+
+    # ---- GP-UCB acquisition (closed-form for efficiency) ----------------
+    # Extract X, y from observations
+    X_obs: list[list[float]] = []
+    y_obs: list[float] = []
+    for o in observations:
+        x_row = [float(o.get(p, (bounds[i][0] + bounds[i][1]) / 2.0))
+                 for i, p in enumerate(param_names)]
+        X_obs.append(x_row)
+        y_obs.append(float(o.get(req.objective, 0.0)))
+
+    def _rbf(x1: list[float], x2: list[float], length_scale: float = 1.0) -> float:
+        """Squared-exponential kernel."""
+        sq_dist = sum(((a - b) / max(abs(hi - lo), 1e-10))**2
+                      for (a, b), (lo, hi) in zip(zip(x1, x2), bounds))
+        return math.exp(-0.5 * sq_dist / length_scale**2)
+
+    def _gp_predict(
+        x_query: list[float],
+        X: list[list[float]],
+        y: list[float],
+        noise: float = 1e-4,
+    ) -> tuple[float, float]:
+        """Return (mean, std) from the GP posterior at x_query."""
+        if not X:
+            return 0.0, 1.0
+        n = len(X)
+        # Build K matrix
+        K = [[_rbf(X[i], X[j]) + (noise if i == j else 0.0)
+              for j in range(n)] for i in range(n)]
+        k_star = [_rbf(x_query, X[i]) for i in range(n)]
+        # Solve K @ alpha = y via naive Gaussian elimination
+        try:
+            alpha = _solve_linear(K, y)
+            mu = sum(k_star[i] * alpha[i] for i in range(n))
+            k_ss = _rbf(x_query, x_query) + noise
+            v = _forward_sub(_cholesky(K), k_star)
+            sigma = math.sqrt(max(k_ss - sum(vi**2 for vi in v), 1e-12))
+        except Exception:
+            mu = float(sum(y) / n if n else 0.0)
+            sigma = 1.0
+        return mu, sigma
+
+    def _solve_linear(A: list[list[float]], b: list[float]) -> list[float]:
+        """Tiny Gaussian elimination for symmetric positive definite systems."""
+        n = len(b)
+        aug = [list(A[i]) + [b[i]] for i in range(n)]
+        for col in range(n):
+            pivot = aug[col][col]
+            if abs(pivot) < 1e-15:
+                pivot = 1e-15
+            for row in range(col + 1, n):
+                factor = aug[row][col] / pivot
+                for k in range(col, n + 1):
+                    aug[row][k] -= factor * aug[col][k]
+        x = [0.0] * n
+        for i in range(n - 1, -1, -1):
+            x[i] = aug[i][n]
+            for j in range(i + 1, n):
+                x[i] -= aug[i][j] * x[j]
+            x[i] /= aug[i][i] if abs(aug[i][i]) > 1e-15 else 1e-15
+        return x
+
+    def _cholesky(A: list[list[float]]) -> list[list[float]]:
+        n = len(A)
+        L = [[0.0] * n for _ in range(n)]
+        for i in range(n):
+            for j in range(i + 1):
+                s = sum(L[i][k] * L[j][k] for k in range(j))
+                if i == j:
+                    L[i][j] = math.sqrt(max(A[i][i] - s, 1e-15))
+                else:
+                    L[i][j] = (A[i][j] - s) / (L[j][j] or 1e-15)
+        return L
+
+    def _forward_sub(L: list[list[float]], b: list[float]) -> list[float]:
+        n = len(b)
+        x = [0.0] * n
+        for i in range(n):
+            x[i] = (b[i] - sum(L[i][k] * x[k] for k in range(i))) / (L[i][i] or 1e-15)
+        return x
+
+    # ---- Generate candidate suggestions ---------------------------------
+    random.seed(42)
+    n_candidates = max(200, req.n_iterations * 20)
+    candidates = [
+        [lo + random.random() * (hi - lo) for lo, hi in bounds]
+        for _ in range(n_candidates)
+    ]
+
+    suggestions: list[dict] = []
+    best_obs: dict | None = None
+    if y_obs:
+        best_idx = y_obs.index(min(y_obs))
+        best_obs = {p: X_obs[best_idx][i] for i, p in enumerate(param_names)}
+        best_obs[req.objective] = y_obs[best_idx]
+
+    for iteration in range(req.n_iterations):
+        # Evaluate UCB for each candidate
+        best_ucb = -1e18
+        best_x: list[float] = candidates[0]
+        for x_c in candidates:
+            mu, sigma = _gp_predict(x_c, X_obs, y_obs)
+            # UCB: minimise → use -mu + kappa*sigma
+            ucb = -mu + req.kappa * sigma
+            if ucb > best_ucb:
+                best_ucb = ucb
+                best_x = x_c
+
+        mu, sigma = _gp_predict(best_x, X_obs, y_obs)
+        suggestion = {p: round(best_x[i], 6) for i, p in enumerate(param_names)}
+        suggestion["predicted_mean"] = round(mu, 6)
+        suggestion["predicted_std"]  = round(sigma, 6)
+        suggestion["iteration"]       = iteration + 1
+        suggestions.append(suggestion)
+
+        # Treat the predicted mean as a new (virtual) observation for sequential design
+        X_obs.append(best_x)
+        y_obs.append(mu)
+
+    return {
+        "study_group": req.study_group,
+        "objective": req.objective,
+        "n_iterations": req.n_iterations,
+        "n_seed_observations": n_obs,
+        "best_known": best_obs,
+        "suggestions": suggestions,
+        "method": "GP-UCB (Srinivas et al. 2012)",
+        "note": (
+            "Install scikit-learn for a production-quality GP: "
+            "pip install scikit-learn. "
+            "Current implementation uses a pure-Python closed-form GP."
+        ),
+    }

@@ -291,6 +291,7 @@
     <a href="#" data-tab="orchestration" onclick="return showTab('orchestration',this)"><i class="bi bi-diagram-3"></i> <span data-i18n="nav.orchestration">Orchestration</span></a>
     <a href="#" data-tab="agent" onclick="return showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
     <a href="#" data-tab="suboff" onclick="return showTab('suboff',this)"><i class="bi bi-submarine"></i> <span data-i18n="nav.suboff">SUBOFF</span></a>
+    <a href="#" data-tab="geo3d" onclick="return showTab('geo3d',this)"><i class="bi bi-box"></i> <span data-i18n="nav.geo3d">3D Preview</span></a>
   </nav>
   <span class="ms-auto d-flex align-items-center gap-3">
     <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
@@ -2138,6 +2139,88 @@
       </div>
     </div><!-- /reports -->
 
+    <!-- ================================================================ -->
+    <!-- 3D GEOMETRY PREVIEW (P3.1)                                        -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-geo3d">
+      <h4 class="mb-3"><i class="bi bi-box"></i> <span data-i18n="geo3d.title">3D Geometry Preview</span></h4>
+
+      <div class="row g-3">
+        <!-- Controls sidebar -->
+        <div class="col-lg-3">
+          <!-- STL Upload -->
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-upload"></i> <span data-i18n="geo3d.upload">Load STL</span></div>
+            <div class="card-body">
+              <input type="file" id="geo3d-file-input" class="form-control form-control-sm mb-2" accept=".stl">
+              <button class="btn btn-sm btn-primary w-100" onclick="geo3dLoadFile()" data-i18n="geo3d.load_btn">Load &amp; Preview</button>
+            </div>
+          </div>
+
+          <!-- Refinement Zone -->
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-bounding-box"></i> <span data-i18n="geo3d.ref_zone">Refinement Zone</span></div>
+            <div class="card-body">
+              <label class="form-label small" data-i18n="geo3d.ref_center">Centre (x, y, z)</label>
+              <div class="input-group input-group-sm mb-1">
+                <input type="number" id="geo3d-rx" class="form-control" value="0" step="0.1">
+                <input type="number" id="geo3d-ry" class="form-control" value="0" step="0.1">
+                <input type="number" id="geo3d-rz" class="form-control" value="0" step="0.1">
+              </div>
+              <label class="form-label small" data-i18n="geo3d.ref_size">Size (w, h, d)</label>
+              <div class="input-group input-group-sm mb-2">
+                <input type="number" id="geo3d-rw" class="form-control" value="1" step="0.1">
+                <input type="number" id="geo3d-rh" class="form-control" value="1" step="0.1">
+                <input type="number" id="geo3d-rd" class="form-control" value="1" step="0.1">
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="geo3d-show-ref" checked onchange="geo3dToggleRef()">
+                <label class="form-check-label small" for="geo3d-show-ref" data-i18n="geo3d.show_ref">Show zone</label>
+              </div>
+              <button class="btn btn-sm btn-outline-primary w-100" onclick="geo3dUpdateRef()" data-i18n="geo3d.apply_ref">Apply</button>
+            </div>
+          </div>
+
+          <!-- Probe Placement -->
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-crosshair"></i> <span data-i18n="geo3d.probes">Probe Points</span></div>
+            <div class="card-body">
+              <p class="small text-muted" data-i18n="geo3d.probe_hint">Click on the model to place a probe marker.</p>
+              <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="geo3dClearProbes()" data-i18n="geo3d.clear_probes">Clear Probes</button>
+              <div id="geo3d-probe-list" class="small" style="max-height:120px;overflow-y:auto;"></div>
+            </div>
+          </div>
+
+          <!-- Camera controls hint -->
+          <div class="card">
+            <div class="card-body small text-muted">
+              <b data-i18n="geo3d.controls">Controls:</b><br>
+              🖱️ <span data-i18n="geo3d.ctrl_rotate">Left-drag: rotate</span><br>
+              🖱️ <span data-i18n="geo3d.ctrl_pan">Right-drag: pan</span><br>
+              🖱️ <span data-i18n="geo3d.ctrl_zoom">Scroll: zoom</span><br>
+              🖱️ <span data-i18n="geo3d.ctrl_probe">Shift+click: place probe</span>
+            </div>
+          </div>
+        </div><!-- /controls -->
+
+        <!-- Three.js canvas -->
+        <div class="col-lg-9">
+          <div id="geo3d-canvas-wrap" style="position:relative;background:#1a1a2e;border-radius:8px;overflow:hidden;height:580px;">
+            <div id="geo3d-placeholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;text-align:center;pointer-events:none;">
+              <i class="bi bi-box" style="font-size:3rem;"></i><br>
+              <span data-i18n="geo3d.drop_hint">Upload an STL file to begin</span>
+            </div>
+            <canvas id="geo3d-canvas" style="width:100%;height:100%;display:block;"></canvas>
+          </div>
+          <!-- Status bar -->
+          <div class="mt-1 small text-muted d-flex gap-3" id="geo3d-status-bar">
+            <span id="geo3d-mesh-info"></span>
+            <span id="geo3d-coord-display"></span>
+          </div>
+        </div><!-- /canvas -->
+      </div><!-- /row -->
+    </div><!-- /panel-geo3d -->
+
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
 
@@ -2161,5 +2244,6 @@
 <script src="/static/js/app_projects.js"></script>
 <script src="/static/js/app_templates.js"></script>
 <script src="/static/js/app_convergence.js"></script>
+<script src="/static/js/app_geo3d.js"></script>
 </body>
 </html>
