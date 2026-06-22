@@ -34,6 +34,7 @@ from .routers import (  # noqa: E402
     projects,
     reports,
     solver,
+    suboff,
     templates,
 )
 
@@ -150,6 +151,7 @@ app.include_router(agent.router, prefix="/api/agent", tags=["LLM Agent"])
 app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transformer"])
 app.include_router(ai_governance.router, prefix="/api/ai/governance", tags=["AI Governance"])
 app.include_router(ai_suboff.router, prefix="/api/ai/suboff", tags=["SUBOFF AI"])
+app.include_router(suboff.router, prefix="/api/suboff", tags=["SUBOFF Physics"])
 app.include_router(orchestration.router, prefix="/api/orchestration", tags=["Orchestration"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
