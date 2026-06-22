@@ -12,7 +12,39 @@ let dashboardLiveMetricsTimer = null;
 let dashboardLiveMetricsSinceStep = 0;
 let dashboardLiveMetricsCache = [];
 const UI_STORAGE_KEY = 'tensorlbm_ui_state_v1';
-const TAB_SEQUENCE = ['dashboard', 'projects', 'templates', 'cad', 'preprocess', 'solve', 'postprocess', 'reports', 'benchmarks', 'compare', 'ai-flow', 'orchestration', 'agent', 'suboff'];
+const TAB_SEQUENCE = [
+  'dashboard', 'projects', 'templates', 'cad', 'preprocess', 'solve',
+  'postprocess', 'reports', 'benchmarks', 'compare', 'ai-flow',
+  'orchestration', 'agent', 'suboff', 'geo3d',
+];
+const TAB_ENTER_HANDLERS = {
+  dashboard: () => dashboardInit(),
+  compare: () => refreshCompareJobList(),
+  'ai-flow': () => aiFlowListModels(),
+  projects: () => { if (typeof projectsInit === 'function') projectsInit(); },
+  preprocess: () => loadMaterials(),
+  templates: () => { if (typeof templatesInit === 'function') templatesInit(); },
+  reports: () => {
+    const jobIdInput = document.getElementById('reports-job-id');
+    if (jobIdInput && selectedJobId && !jobIdInput.value) {
+      jobIdInput.value = selectedJobId;
+    }
+    if (typeof reportsTabInit === 'function') {
+      const jid = (jobIdInput && jobIdInput.value.trim()) || selectedJobId;
+      reportsTabInit(jid || null);
+    }
+  },
+  orchestration: () => {
+    orchLoadTemplates();
+    orchLoadKpis();
+  },
+  agent: () => {
+    setTimeout(() => {
+      const el = document.getElementById('agent-input');
+      if (el) el.focus();
+    }, 50);
+  },
+};
 const uiState = {
   activeTab: 'dashboard',
   jobsSearch: '',
@@ -27,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
   i18n.init().then(() => {
     loadUIState();
     initUIStateControls();
+    bindTopNavEvents();
     bindKeyboardShortcuts();
     initPhysicsLayer();
     connectWS();
@@ -38,6 +71,27 @@ document.addEventListener('DOMContentLoaded', () => {
     onCADHullTypeChange();
     showTab(uiState.activeTab, null);
   });
+
+  function bindTopNavEvents() {
+    const nav = document.querySelector('.top-navbar nav');
+    if (nav && nav.dataset.bound !== '1') {
+      nav.dataset.bound = '1';
+      nav.addEventListener('click', (ev) => {
+        const link = ev.target && ev.target.closest('a[data-tab]');
+        if (!link) return;
+        ev.preventDefault();
+        showTab(link.dataset.tab, link);
+      });
+    }
+    document.querySelectorAll('.lang-btn[data-lang]').forEach((btn) => {
+      if (btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        i18n.switch(btn.dataset.lang);
+      });
+    });
+  }
 });
 
 function loadUIState() {
@@ -151,15 +205,36 @@ function connectWS() {
 // ============================================================
 // REST helpers
 // ============================================================
-async function api(method, path, body) {
+async function apiRequest(method, path, body, mode = 'json') {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (body !== undefined) opts.body = JSON.stringify(body);
   const r = await fetch(API + path, opts);
   if (!r.ok) {
-    const txt = await r.text();
-    throw new Error(`${r.status}: ${txt}`);
+    let details = '';
+    const contentType = (r.headers.get('content-type') || '').toLowerCase();
+    if (contentType.includes('application/json')) {
+      const err = await r.json().catch(() => null);
+      if (err && typeof err === 'object') {
+        details = String(err.detail || err.message || JSON.stringify(err));
+      }
+    }
+    if (!details) {
+      details = await r.text();
+    }
+    throw new Error(`${r.status}: ${details || r.statusText}`);
   }
+  if (mode === 'response') return r;
+  if (mode === 'text') return r.text();
+  if (r.status === 204) return null;
   return r.json();
+}
+
+async function api(method, path, body) {
+  return apiRequest(method, path, body, 'json');
+}
+
+async function apiResponse(method, path, body) {
+  return apiRequest(method, path, body, 'response');
 }
 
 async function loadStatus() {
@@ -587,39 +662,8 @@ function showTab(name, el) {
     clearInterval(dashboardLiveMetricsTimer);
     dashboardLiveMetricsTimer = null;
   }
-  if (name === 'dashboard') dashboardInit();
-  if (name === 'compare') refreshCompareJobList();
-  if (name === 'ai-flow') aiFlowListModels();
-  if (name === 'projects') {
-    if (typeof projectsInit === 'function') projectsInit();
-  }
-  if (name === 'preprocess') {
-    loadMaterials();
-  }
-  if (name === 'templates') {
-    if (typeof templatesInit === 'function') templatesInit();
-  }
-  if (name === 'reports') {
-    // Pre-fill the reports job-id field from the currently selected job
-    const jobIdInput = document.getElementById('reports-job-id');
-    if (jobIdInput && selectedJobId && !jobIdInput.value) {
-      jobIdInput.value = selectedJobId;
-    }
-    if (typeof reportsTabInit === 'function') {
-      const jid = (jobIdInput && jobIdInput.value.trim()) || selectedJobId;
-      reportsTabInit(jid || null);
-    }
-  }
-  if (name === 'orchestration') {
-    orchLoadTemplates();
-    orchLoadKpis();
-  }
-  if (name === 'agent') {
-    setTimeout(() => {
-      const el = document.getElementById('agent-input');
-      if (el) el.focus();
-    }, 50);
-  }
+  const onEnter = TAB_ENTER_HANDLERS[name];
+  if (typeof onEnter === 'function') onEnter();
   return false;
 }
 
@@ -660,10 +704,7 @@ async function runCompare() {
   result.innerHTML = `<div class="text-muted small">${t('compare.loading')}</div>`;
   try {
     const qs = ids.map(id => `ids=${encodeURIComponent(id)}`).join('&');
-    const r = await fetch(`/api/reports/compare/kpis?${qs}`).then(async x => {
-      if (!x.ok) throw new Error(await x.text());
-      return x.json();
-    });
+    const r = await api('GET', `/api/reports/compare/kpis?${qs}`);
     if (!r.rows || !r.rows.length) {
       result.innerHTML = `<div class="alert alert-warning">${t('compare.no_data')}</div>`;
       return;
