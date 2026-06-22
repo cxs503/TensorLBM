@@ -1,9 +1,12 @@
-"""Opt-in API authentication, RBAC and audit helpers."""
+"""Opt-in API authentication, RBAC, rate-limiting and audit helpers."""
 from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass
+import threading
+import time
+from collections import deque
+from dataclasses import dataclass, field
 from fnmatch import fnmatch
 from typing import TYPE_CHECKING
 
@@ -47,6 +50,64 @@ class AccessRule:
     method: str
     pattern: str
     min_role: str
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _RateLimitBucket:
+    hits: deque[float] = field(default_factory=deque)
+    lock: threading.Lock = field(default_factory=threading.Lock)
+
+
+_rl_buckets: dict[str, _RateLimitBucket] = {}
+_rl_buckets_lock = threading.Lock()
+
+
+def _rl_config() -> tuple[int, float]:
+    """Return (max_requests, window_seconds); (0, …) means disabled."""
+    max_req = int(os.environ.get("TENSORLBM_RATE_LIMIT_REQUESTS", "0") or "0")
+    window = float(os.environ.get("TENSORLBM_RATE_LIMIT_WINDOW_S", "60") or "60")
+    return max(0, max_req), max(1.0, window)
+
+
+def _client_key(request: Request) -> str:
+    """Return a string key that identifies the caller for rate-limiting."""
+    # Honour X-Forwarded-For when behind a trusted proxy.
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    client = request.client
+    return client.host if client else "unknown"
+
+
+def check_rate_limit(request: Request) -> None:
+    """Raise :class:`AuthorizationError` (429) if the caller has exceeded the
+    configured request rate.  Does nothing when rate-limiting is disabled
+    (``TENSORLBM_RATE_LIMIT_REQUESTS=0``, the default).
+    """
+    max_req, window = _rl_config()
+    if max_req <= 0:
+        return
+
+    key = _client_key(request)
+    now = time.monotonic()
+    cutoff = now - window
+
+    with _rl_buckets_lock:
+        if key not in _rl_buckets:
+            _rl_buckets[key] = _RateLimitBucket()
+        bucket = _rl_buckets[key]
+
+    with bucket.lock:
+        # Evict timestamps outside the current window.
+        while bucket.hits and bucket.hits[0] <= cutoff:
+            bucket.hits.popleft()
+        if len(bucket.hits) >= max_req:
+            raise AuthorizationError(429, "Too Many Requests")
+        bucket.hits.append(now)
 
 
 def _auth_mode() -> str:
@@ -109,6 +170,7 @@ def authorize_request(request: Request) -> AuthContext:
         return AuthContext(user="public", role="viewer", auth_mode=mode)
 
     if mode == "disabled":
+        check_rate_limit(request)
         return AuthContext(user="anonymous", role="admin", auth_mode=mode)
 
     header_name = os.environ.get("TENSORLBM_AUTH_HEADER", "X-API-Key").strip() or "X-API-Key"
@@ -119,6 +181,7 @@ def authorize_request(request: Request) -> AuthContext:
     ctx = token_map[token]
     if not _has_role(ctx.role, required):
         raise AuthorizationError(403, "Forbidden")
+    check_rate_limit(request)
     return ctx
 
 

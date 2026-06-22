@@ -179,7 +179,8 @@
     "yplus_result_utau": "摩擦速度 uτ [m/s]",
     "yplus_result_cf": "摩擦系数 Cf",
     "yplus_result_bl": "边界层厚度 [m]",
-    "yplus_result_cells_bl": "边界层内格子数"
+    "yplus_result_cells_bl": "边界层内格子数",
+    "no_materials": "未找到材料。"
   },
   "solve": {
     "title": "求解器",
@@ -231,7 +232,12 @@
     "study_values": "参数值（逗号分隔）",
     "study_base_config": "基础配置（JSON）",
     "study_submit": "提交参数研究",
-    "study_hint": "每个参数值提交一个算例。可变化 Re、nx、u_in 等。"
+    "study_hint": "每个参数值提交一个算例。可变化 Re、nx、u_in 等。",
+    "validating": "验证中…",
+    "scan_min_values": "请至少提供2个逗号分隔的值",
+    "scan_max_values": "最多允许20个值",
+    "scan_submitting": "正在提交 {n} 个任务…",
+    "scan_invalid_json": "基础配置中的JSON无效"
   },
   "sim": {
     "cylinder_flow": {
