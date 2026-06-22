@@ -14,6 +14,7 @@
 let _pf_projects = [];          // loaded project list
 let _pf_active_project = null;  // currently open project object
 let _pf_active_case = null;     // currently viewed case object
+let _pf_cases = [];             // cases for active project
 
 /* =========================================================================
    Public entry points called by index.html
@@ -151,6 +152,7 @@ async function _loadCases(projectId) {
     const resp = await fetch(`/api/projects/${projectId}/cases`);
     if (!resp.ok) throw new Error(await resp.text());
     const cases = await resp.json();
+    _pf_cases = cases;
     if (!cases.length) {
       listEl.innerHTML = `<div class="text-muted small p-3">${t("projects.no_cases")}</div>`;
       return;
@@ -192,9 +194,14 @@ function _caseCard(c) {
           title="${t('projects.clone_case')}">
           <i class="bi bi-copy"></i>
         </button>
-        ${c.job_id
-          ? `<button class="btn btn-sm btn-outline-primary" onclick="projectsViewJob('${_esc(c.job_id)}')" title="View Job"><i class="bi bi-eye"></i></button>`
-          : ""}
+        <button class="btn btn-sm btn-outline-primary" onclick="projectsLoadCaseToSolve('${_esc(c.id)}')"
+          title="Open in Solver">
+          <i class="bi bi-sliders"></i>
+        </button>
+        ${c.job_id ? `
+          <button class="btn btn-sm btn-outline-primary" onclick="projectsViewJob('${_esc(c.job_id)}')" title="View Job"><i class="bi bi-eye"></i></button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="projectsViewReport('${_esc(c.job_id)}')" title="Open Report"><i class="bi bi-file-earmark-text"></i></button>
+        ` : ""}
         <button class="btn btn-sm btn-outline-danger" onclick="projectsDeleteCase('${_esc(c.id)}')" title="${t("projects.delete")}">
           <i class="bi bi-trash"></i>
         </button>
@@ -258,6 +265,28 @@ function projectsViewJob(jobId) {
   // Select job in sidebar if possible
   if (typeof selectJob === "function") selectJob(jobId);
   showTab("postprocess", document.querySelector('[data-tab="postprocess"]'));
+}
+
+function projectsViewReport(jobId) {
+  const input = document.getElementById("reports-job-id");
+  if (input) input.value = jobId;
+  const link = document.querySelector('[data-tab="reports"]');
+  showTab("reports", link || null);
+}
+
+function projectsLoadCaseToSolve(caseId) {
+  const projectCase = _pf_cases.find(c => c.id === caseId);
+  if (!projectCase || typeof loadSolveConfiguration !== "function") return;
+  const scenario = String(projectCase.scenario || "").replace(/-([a-z])/g, (_, c) => `_${c}`);
+  const solverType = scenario === "ship_hull_flow" ? "ship_hull" : scenario;
+  if (!loadSolveConfiguration(solverType, projectCase.config || {}, {
+    message: `✓ Case loaded: "${projectCase.name}"`,
+  })) {
+    alert(`Unsupported solver scenario: ${projectCase.scenario}`);
+    return;
+  }
+  const solveLink = document.querySelector('[data-tab="solve"]');
+  showTab("solve", solveLink || null);
 }
 
 /* =========================================================================

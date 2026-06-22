@@ -395,49 +395,35 @@ async function runCompare() {
   result.innerHTML = `<div class="text-muted small">${t('compare.loading')}</div>`;
   try {
     const qs = ids.map(id => `ids=${encodeURIComponent(id)}`).join('&');
-    const r = await fetch(`/api/jobs/compare?${qs}`).then(x => x.json());
-    if (!r.jobs || !r.jobs.length) {
+    const r = await fetch(`/api/reports/compare/kpis?${qs}`).then(async x => {
+      if (!x.ok) throw new Error(await x.text());
+      return x.json();
+    });
+    if (!r.rows || !r.rows.length) {
       result.innerHTML = `<div class="alert alert-warning">${t('compare.no_data')}</div>`;
       return;
     }
-    // Collect all metadata keys from "derived" + top-level numeric fields
     const rows = [];
-    rows.push([t('compare.field_col'), ...r.jobs.map((_, i) => `${t('compare.run_col')} ${i + 1}`)]);
-    rows.push([t('postprocess.name'), ...r.jobs.map(e => escHtml(e.job.name))]);
-    rows.push([t('postprocess.type'), ...r.jobs.map(e => escHtml(e.job.job_type))]);
-    rows.push([t('postprocess.status'), ...r.jobs.map(e => `<span class="badge bg-secondary">${e.job.status}</span>`)]);
-    // Union of derived keys
-    const derivedKeys = new Set();
-    r.jobs.forEach(e => Object.keys(e.metadata.derived || {}).forEach(k => derivedKeys.add(k)));
-    Array.from(derivedKeys).sort().forEach(k => {
+    rows.push([t('compare.field_col'), ...r.rows.map((_, i) => `${t('compare.run_col')} ${i + 1}`)]);
+    rows.push([t('postprocess.name'), ...r.rows.map(e => escHtml(e.name))]);
+    rows.push([t('postprocess.type'), ...r.rows.map(e => escHtml(e.job_type))]);
+    rows.push([t('postprocess.status'), ...r.rows.map(e => `<span class="badge bg-secondary">${escHtml(e.status)}</span>`)]);
+    rows.push(['Report', ...r.rows.map(e => `<a class="btn btn-sm btn-outline-primary py-0" href="${escHtml(e.report_url)}" target="_blank">HTML</a>`)]);
+    const metricKeys = new Set();
+    r.rows.forEach(e => Object.keys(e.compare_metrics || {}).forEach(k => metricKeys.add(k)));
+    Array.from(metricKeys).sort().forEach(k => {
       rows.push([
-        `<i>derived.${k}</i>`,
-        ...r.jobs.map(e => {
-          const v = (e.metadata.derived || {})[k];
+        `<i>${escHtml(k)}</i>`,
+        ...r.rows.map(e => {
+          const v = (e.compare_metrics || {})[k];
+          const isBest = r.metric_summary[k] && r.metric_summary[k].best_job_id === e.job_id;
           return v === undefined ? '<span class="text-muted">—</span>'
-                                 : (typeof v === 'number' ? v.toExponential(4) : escHtml(String(v)));
-        }),
-      ]);
-    });
-    // Scalar top-level metadata keys (numbers / strings)
-    const scalarKeys = new Set();
-    r.jobs.forEach(e => Object.entries(e.metadata).forEach(([k, v]) => {
-      if (typeof v === 'number' || typeof v === 'string') scalarKeys.add(k);
-    }));
-    Array.from(scalarKeys).sort().forEach(k => {
-      rows.push([
-        k,
-        ...r.jobs.map(e => {
-          const v = e.metadata[k];
-          if (v === undefined) return '<span class="text-muted">—</span>';
-          return typeof v === 'number' ? (Math.abs(v) < 1e-3 || Math.abs(v) >= 1e4
-                                          ? v.toExponential(4) : v.toFixed(6))
-                                       : escHtml(String(v));
+                                 : `<span${isBest ? ' class="fw-bold text-success"' : ''}>${Math.abs(v) < 1e-3 || Math.abs(v) >= 1e4 ? v.toExponential(4) : v.toFixed(6)}</span>`;
         }),
       ]);
     });
 
-    const thead = `<thead><tr><th>${rows[0][0]}</th>${r.jobs.map((_, i) =>
+    const thead = `<thead><tr><th>${rows[0][0]}</th>${r.rows.map((_, i) =>
       `<th>${t('compare.run_col')} ${i + 1}</th>`).join('')}</tr></thead>`;
     const tbody = rows.slice(1).map(row =>
       `<tr><th class="small">${row[0]}</th>${row.slice(1).map(c =>
@@ -445,6 +431,14 @@ async function runCompare() {
     let html = `<div class="table-responsive"><table class="table table-sm table-hover">${thead}<tbody>${tbody}</tbody></table></div>`;
     if (r.missing && r.missing.length) {
       html += `<div class="alert alert-warning small mt-2">${t('compare.missing_jobs')} ${r.missing.join(', ')}</div>`;
+    }
+    if (r.metric_summary && Object.keys(r.metric_summary).length) {
+      html += '<div class="table-responsive mt-3"><table class="table table-sm table-bordered small">';
+      html += '<thead><tr><th>Metric</th><th>Min</th><th>Max</th><th>Mean</th><th>Best Job</th></tr></thead><tbody>';
+      Object.entries(r.metric_summary).forEach(([key, stats]) => {
+        html += `<tr><td>${escHtml(key)}</td><td>${stats.min.toFixed(6)}</td><td>${stats.max.toFixed(6)}</td><td>${stats.mean.toFixed(6)}</td><td class="font-monospace">${escHtml(String(stats.best_job_id).slice(-8))}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
     }
     result.innerHTML = html;
   } catch (e) {

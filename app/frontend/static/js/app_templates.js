@@ -126,47 +126,14 @@ async function templatesUse(templateId) {
 function _applyTemplateToSolvePanel(tmpl) {
   const cfg = tmpl.default_config || {};
   const solverType = tmpl.solver_type || "";
-
-  // Select the matching solver type in the Solve tab
-  const solverSelect = document.getElementById("sim-type");
-  if (solverSelect) {
-    // Try to find matching option value
-    const opts = Array.from(solverSelect.options);
-    const match = opts.find(o =>
-      o.value === solverType ||
-      o.value.replace(/_/g, "-") === solverType.replace(/_/g, "-") ||
-      solverType.startsWith(o.value.split("_")[0])
-    );
-    if (match) {
-      solverSelect.value = match.value;
-      // Trigger change event if the solver panel listens for it
-      solverSelect.dispatchEvent(new Event("change"));
-    }
-  }
-
-  // Pre-fill common numeric fields by input id convention
-  const fieldMap = {
-    "nx": "sim-nx", "ny": "sim-ny", "nz": "sim-nz",
-    "re": "sim-re", "u_in": "sim-u-in", "radius": "sim-radius",
-    "n_steps": "sim-n-steps", "output_interval": "sim-output-interval",
-    "device": "sim-device",
-  };
-  for (const [cfgKey, inputId] of Object.entries(fieldMap)) {
-    if (cfg[cfgKey] !== undefined) {
-      const el = document.getElementById(inputId);
-      if (el) el.value = cfg[cfgKey];
-    }
-  }
+  const resolvedSolverType = solverType === "ship_hull_flow" ? "ship_hull" : solverType;
 
   // Show a brief notification in the solve panel
-  const msgEl = document.getElementById("solve-template-msg");
-  if (msgEl) {
-    const isZh = typeof i18n !== "undefined" && i18n.currentLang && i18n.currentLang() === "zh";
-    const title = isZh && tmpl.title_zh ? tmpl.title_zh : tmpl.title;
-    msgEl.textContent = `✓ Template loaded: "${title}"`;
-    msgEl.style.display = "";
-    setTimeout(() => { msgEl.style.display = "none"; }, 4000);
-  }
+  const isZh = typeof i18n !== "undefined" && i18n.currentLang && i18n.currentLang() === "zh";
+  const title = isZh && tmpl.title_zh ? tmpl.title_zh : tmpl.title;
+  loadSolveConfiguration(resolvedSolverType, cfg, {
+    message: `✓ Template loaded: "${title}"`,
+  });
 }
 
 /* =========================================================================
