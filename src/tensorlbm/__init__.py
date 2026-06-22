@@ -117,7 +117,29 @@ from .interpolated_bc import (
     compute_q_circle,
     compute_q_sphere,
 )
+from .acoustics import (
+    AcousticObserver,
+    FWHResult,
+    FWHSurface,
+    compute_fwh_far_field,
+    compute_fwh_result,
+    compute_spl_spectrum,
+    extract_surface_pressure,
+    oaspl,
+)
+from .conjugate_ht import (
+    CHTConfig,
+    CHTState,
+    apply_cht_interface,
+    cht_solid_diffusion_step,
+    run_conjugate_ht_2d,
+)
 from .io import save_hdf5, save_vtk, save_vtk_binary, save_vts, save_xdmf
+from .vtk_export import (
+    export_checkpoint_vtk,
+    export_vtk_2d,
+    export_vtk_3d,
+)
 from .lid_driven_cavity import (
     GHIA_RE100,
     GHIA_RE400,
@@ -656,6 +678,25 @@ __all__ = [
     "save_vts",
     "save_hdf5",
     "save_xdmf",
+    # VTK export (new)
+    "export_vtk_2d",
+    "export_vtk_3d",
+    "export_checkpoint_vtk",
+    # Aeroacoustics FWH (new)
+    "AcousticObserver",
+    "FWHSurface",
+    "FWHResult",
+    "compute_fwh_far_field",
+    "compute_fwh_result",
+    "compute_spl_spectrum",
+    "extract_surface_pressure",
+    "oaspl",
+    # Conjugate heat transfer (new)
+    "CHTConfig",
+    "CHTState",
+    "cht_solid_diffusion_step",
+    "apply_cht_interface",
+    "run_conjugate_ht_2d",
     "extract_velocity_profile",
     "extract_wake_profile",
     "compute_recirculation_length",

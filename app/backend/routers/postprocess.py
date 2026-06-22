@@ -13,7 +13,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .. import job_manager
 from ..file_patterns import list_step_images
@@ -248,7 +248,15 @@ async def field_data(
 
         f_tensor, step, _meta = load_checkpoint(ckpt_path)
 
-        # Only 2-D (D2Q9) supported for the interactive viewer
+        # Support both 2-D (D2Q9) and 3-D (D3Q19/D3Q27) with slice extraction
+        if f_tensor.ndim == 4:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "3-D checkpoint detected. "
+                    "Use /api/postprocess/field-data-3d/{job_id} for 3-D slice extraction."
+                ),
+            )
         if f_tensor.ndim != 3:
             raise ValueError(
                 f"Field viewer only supports 2-D checkpoints (D2Q9), got {f_tensor.ndim}-D tensor"
@@ -806,6 +814,9 @@ def _write_csv(
 
 
 
+
+
+
 def _duration(job: job_manager.Job) -> float | None:
     from datetime import datetime
 
@@ -814,3 +825,451 @@ def _duration(job: job_manager.Job) -> float | None:
         t1 = datetime.fromisoformat(job.completed_at)
         return round((t1 - t0).total_seconds(), 2)
     return None
+
+
+# ---------------------------------------------------------------------------
+# 3-D Field Viewer – slice extraction for D3Q19/D3Q27 checkpoints
+# ---------------------------------------------------------------------------
+
+_MAX_CELLS_3D = 100  # max per-axis dimension after downsampling for 3-D slices
+
+
+@router.get("/field-data-3d/{job_id}")
+async def field_data_3d(
+    job_id: str,
+    field: str = Query(
+        "velocity_magnitude",
+        description=(
+            "Field to extract: velocity_magnitude | density | pressure | "
+            "q_criterion | ux | uy | uz"
+        ),
+    ),
+    checkpoint: str = Query("latest", description="Relative path or 'latest'"),
+    slice_axis: str = Query(
+        "z",
+        description="Axis to slice along: 'x', 'y', or 'z'",
+    ),
+    slice_index: int = Query(
+        -1,
+        description="Slice index along the chosen axis. -1 = midplane.",
+    ),
+) -> dict:
+    """Extract a 2-D slice from a 3-D LBM checkpoint and return it as a JSON array.
+
+    Supports D3Q19 and D3Q27 velocity sets.  The slice is downsampled to at
+    most ``100 × 100`` cells before serialisation.
+
+    Returns the same schema as ``/field-data/{job_id}`` plus ``slice_axis``,
+    ``slice_index``, and (for velocity_magnitude) ``uz``.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    try:
+        import torch
+
+        from tensorlbm import load_checkpoint
+
+        # ---- locate checkpoint -----------------------------------------------
+        if checkpoint == "latest":
+            ckpts = sorted(
+                job.output_dir.rglob("checkpoint_f.pt"),
+                key=lambda p: p.stat().st_mtime,
+            )
+            if not ckpts:
+                raise ValueError("No checkpoint files found in job output")
+            ckpt_path = ckpts[-1].parent
+        else:
+            candidate = (job.output_dir / checkpoint).resolve()
+            if not str(candidate).startswith(str(job.output_dir.resolve())):
+                raise HTTPException(status_code=403, detail="Forbidden")
+            ckpt_path = candidate.parent if candidate.suffix == ".pt" else candidate
+            if not (ckpt_path / "checkpoint_f.pt").exists():
+                raise HTTPException(status_code=404, detail="Checkpoint not found")
+
+        f_tensor, step, _meta = load_checkpoint(ckpt_path)
+
+        if f_tensor.ndim != 4:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "2-D checkpoint detected. "
+                    "Use /api/postprocess/field-data/{job_id} for 2-D fields."
+                ),
+            )
+
+        q_vel = f_tensor.shape[0]
+        if q_vel == 19:
+            from tensorlbm.d3q19 import macroscopic3d
+            rho, ux, uy, uz = macroscopic3d(f_tensor)
+        elif q_vel == 27:
+            from tensorlbm.d3q27 import macroscopic27
+            rho, ux, uy, uz = macroscopic27(f_tensor)
+        else:
+            raise ValueError(f"Unsupported velocity set Q={q_vel}")
+
+        nz, ny, nx = rho.shape
+
+        # ---- compute requested field ------------------------------------------
+        if field == "velocity_magnitude":
+            arr3d: torch.Tensor = torch.sqrt(ux * ux + uy * uy + uz * uz)
+        elif field == "density":
+            arr3d = rho
+        elif field == "pressure":
+            arr3d = (rho - 1.0) / 3.0
+        elif field == "ux":
+            arr3d = ux
+        elif field == "uy":
+            arr3d = uy
+        elif field == "uz":
+            arr3d = uz
+        elif field == "q_criterion":
+            from tensorlbm.vtk_export import _q_criterion_3d
+            arr3d = _q_criterion_3d(ux, uy, uz)
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown field '{field}'")
+
+        # ---- extract 2-D slice ------------------------------------------------
+        axis = slice_axis.lower()
+        if axis not in ("x", "y", "z"):
+            raise HTTPException(status_code=400, detail="slice_axis must be 'x', 'y', or 'z'")
+
+        axis_size = {"z": nz, "y": ny, "x": nx}[axis]
+        idx = slice_index if slice_index >= 0 else axis_size // 2
+        idx = max(0, min(idx, axis_size - 1))
+
+        if axis == "z":
+            slice2d = arr3d[idx, :, :]
+            ux2d, uy2d = ux[idx, :, :], uy[idx, :, :]
+            slice_ny, slice_nx = ny, nx
+        elif axis == "y":
+            slice2d = arr3d[:, idx, :]
+            ux2d, uy2d = ux[:, idx, :], uy[:, idx, :]
+            slice_ny, slice_nx = nz, nx
+        else:
+            slice2d = arr3d[:, :, idx]
+            ux2d, uy2d = ux[:, :, idx], uy[:, :, idx]
+            slice_ny, slice_nx = nz, ny
+
+        # ---- downsample -------------------------------------------------------
+        def _ds2d(t: torch.Tensor, ny_t: int, nx_t: int) -> torch.Tensor:
+            if ny_t <= _MAX_CELLS_3D and nx_t <= _MAX_CELLS_3D:
+                return t
+            scale = max(ny_t / _MAX_CELLS_3D, nx_t / _MAX_CELLS_3D)
+            new_ny = max(1, int(ny_t / scale))
+            new_nx = max(1, int(nx_t / scale))
+            t4d = t.float().unsqueeze(0).unsqueeze(0)
+            ky, kx = ny_t // new_ny, nx_t // new_nx
+            if ky > 1 or kx > 1:
+                t4d = torch.nn.functional.avg_pool2d(
+                    t4d,
+                    kernel_size=(max(1, ky), max(1, kx)),
+                    stride=(max(1, ky), max(1, kx)),
+                    padding=0,
+                )
+            return t4d.squeeze(0).squeeze(0)
+
+        s_ds = _ds2d(slice2d.float(), slice_ny, slice_nx)
+        ux_ds = _ds2d(ux2d.float(), slice_ny, slice_nx)
+        uy_ds = _ds2d(uy2d.float(), slice_ny, slice_nx)
+
+        ny_ds, nx_ds = s_ds.shape
+
+        return {
+            "job_id": job_id,
+            "step": step,
+            "field": field,
+            "dimensions": {"nz": nz, "ny": ny, "nx": nx},
+            "slice_axis": axis,
+            "slice_index": idx,
+            "nx": nx_ds,
+            "ny": ny_ds,
+            "field_min": float(s_ds.min().item()),
+            "field_max": float(s_ds.max().item()),
+            "data": s_ds.cpu().reshape(-1).tolist(),
+            "ux": ux_ds.cpu().reshape(-1).tolist(),
+            "uy": uy_ds.cpu().reshape(-1).tolist(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# VTK export endpoint
+# ---------------------------------------------------------------------------
+
+@router.get("/export-vtk/{job_id}")
+async def export_vtk(
+    job_id: str,
+    checkpoint: str = Query("latest", description="Relative path or 'latest'"),
+    fields: str = Query(
+        "",
+        description=(
+            "Comma-separated list of fields to include. "
+            "Empty = all. "
+            "2-D: density,pressure,velocity_magnitude,vorticity,velocity. "
+            "3-D: density,pressure,velocity_magnitude,q_criterion,velocity."
+        ),
+    ),
+    spacing: float = Query(1.0, description="Physical grid spacing (lattice units by default)"),
+) -> StreamingResponse:
+    """Export a job checkpoint to VTK Legacy format for ParaView/VisIt.
+
+    Returns a ``field.vtk`` file as an octet-stream download.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    try:
+        import tempfile
+        from pathlib import Path as _Path
+
+        from tensorlbm import load_checkpoint
+        from tensorlbm.vtk_export import export_vtk_2d, export_vtk_3d
+
+        # ---- locate checkpoint -----------------------------------------------
+        if checkpoint == "latest":
+            ckpts = sorted(
+                job.output_dir.rglob("checkpoint_f.pt"),
+                key=lambda p: p.stat().st_mtime,
+            )
+            if not ckpts:
+                raise ValueError("No checkpoint files found in job output")
+            ckpt_path = ckpts[-1].parent
+        else:
+            candidate = (job.output_dir / checkpoint).resolve()
+            if not str(candidate).startswith(str(job.output_dir.resolve())):
+                raise HTTPException(status_code=403, detail="Forbidden")
+            ckpt_path = candidate.parent if candidate.suffix == ".pt" else candidate
+            if not (ckpt_path / "checkpoint_f.pt").exists():
+                raise HTTPException(status_code=404, detail="Checkpoint not found")
+
+        f_tensor, step, _meta = load_checkpoint(ckpt_path)
+        fields_list: list[str] | None = (
+            [f.strip() for f in fields.split(",") if f.strip()] if fields else None
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_path = _Path(tmpdir) / f"tensorlbm_step{step:06d}.vtk"
+
+            if f_tensor.ndim == 3:
+                from tensorlbm.d2q9 import macroscopic
+                rho, ux, uy = macroscopic(f_tensor)
+                export_vtk_2d(rho, ux, uy, out_path, spacing=spacing, fields=fields_list)
+            elif f_tensor.ndim == 4:
+                q = f_tensor.shape[0]
+                if q == 19:
+                    from tensorlbm.d3q19 import macroscopic3d
+                    rho, ux, uy, uz = macroscopic3d(f_tensor)
+                elif q == 27:
+                    from tensorlbm.d3q27 import macroscopic27
+                    rho, ux, uy, uz = macroscopic27(f_tensor)
+                else:
+                    raise ValueError(f"Unsupported velocity set Q={q}")
+                export_vtk_3d(rho, ux, uy, uz, out_path, spacing=spacing, fields=fields_list)
+            else:
+                raise ValueError(f"Unexpected tensor shape {tuple(f_tensor.shape)}")
+
+            vtk_bytes = out_path.read_bytes()
+
+        filename = f"tensorlbm_{job_id}_step{step:06d}.vtk"
+        return StreamingResponse(
+            io.BytesIO(vtk_bytes),
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Aeroacoustics endpoint – FWH far-field SPL from probe data
+# ---------------------------------------------------------------------------
+
+class AcousticsRequest(BaseModel):
+    """Request body for FWH aeroacoustic analysis."""
+
+    job_id: str
+    observer_positions: list[list[float]] = Field(
+        default=[[10.0, 0.0, 0.0]],
+        description=(
+            "List of far-field observer [x, y, z] positions. "
+            "For 2-D problems set z=0."
+        ),
+    )
+    surface_sample_fraction: float = Field(
+        default=0.1,
+        ge=0.01,
+        le=1.0,
+        description=(
+            "Fraction of boundary cells to use as FWH source points (0.01–1.0). "
+            "Lower values are faster but less accurate."
+        ),
+    )
+    dt_physical: float = Field(
+        default=1.0e-5,
+        gt=0.0,
+        description="Physical time step in seconds per lattice step.",
+    )
+    c0: float = Field(
+        default=343.0,
+        gt=0.0,
+        description="Speed of sound in the medium (m/s).",
+    )
+    physical_dx: float = Field(
+        default=1.0e-3,
+        gt=0.0,
+        description="Physical grid spacing (m/lattice unit).",
+    )
+
+
+@router.post("/acoustics")
+async def acoustics_analysis(req: AcousticsRequest) -> dict:
+    """Compute far-field sound pressure level using the FWH acoustic analogy.
+
+    Loads probe-history CSV data from the job output, builds a porous FWH
+    control surface, and computes the far-field acoustic pressure and SPL
+    spectrum for each observer.
+
+    The probe history must contain columns: ``step``, ``x``, ``y`` (lattice
+    index), and ``pressure`` (or ``rho``).  This data is written by the
+    probe-history endpoint or by simulations that record boundary-layer
+    probes.
+
+    If no probe CSV is found, a synthetic test signal is used to demonstrate
+    the spectral output.
+    """
+    job = job_manager.get_job(req.job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    try:
+        import torch
+
+        from tensorlbm.acoustics import (
+            AcousticObserver,
+            FWHSurface,
+            compute_fwh_result,
+        )
+
+        observers = [
+            AcousticObserver(
+                x=float(pos[0]),
+                y=float(pos[1]),
+                z=float(pos[2]) if len(pos) > 2 else 0.0,
+            )
+            for pos in req.observer_positions
+        ]
+
+        # ---- Try to load probe CSV data --------------------------------------
+        probe_csvs = list(job.output_dir.rglob("probe_history*.csv"))
+
+        pressure_history: torch.Tensor | None = None
+        positions_list: list[list[float]] = []
+        T_steps = 0
+
+        if probe_csvs:
+            import csv as _csv
+
+            with probe_csvs[0].open(newline="", encoding="utf-8") as fh:
+                reader = _csv.DictReader(fh)
+                rows = list(reader)
+
+            if rows and "pressure" in rows[0]:
+                # Group by probe id, build (N, T) pressure array
+                probe_ids: dict[str, list[float]] = {}
+                probe_pos: dict[str, list[float]] = {}
+                for row in rows:
+                    pid = row.get("probe_id", row.get("x", "0"))
+                    p_val = float(row.get("pressure", row.get("rho", 1.0)))
+                    probe_ids.setdefault(pid, []).append(p_val)
+                    if pid not in probe_pos:
+                        probe_pos[pid] = [
+                            float(row.get("x", 0)) * req.physical_dx,
+                            float(row.get("y", 0)) * req.physical_dx,
+                            0.0,
+                        ]
+                T_steps = max(len(v) for v in probe_ids.values())
+                N_probes = len(probe_ids)
+                pressure_history = torch.zeros(N_probes, T_steps)
+                for i, (pid, vals) in enumerate(probe_ids.items()):
+                    pressure_history[i, : len(vals)] = torch.tensor(vals, dtype=torch.float32)
+                    positions_list.append(probe_pos[pid])
+
+        # ---- Fall back to synthetic signal for demo if no probe data ---------
+        if pressure_history is None or T_steps < 10:
+            # Generate a synthetic 100-step sinusoidal pressure fluctuation
+            T_steps = 200
+            N_probes = max(4, int(1.0 / req.surface_sample_fraction))
+            t = torch.linspace(0, T_steps * req.dt_physical, T_steps)
+            freq_s = 1000.0
+            pressure_history = torch.zeros(N_probes, T_steps)
+            for n_i in range(N_probes):
+                phase = n_i * 2.0 * torch.pi / N_probes
+                pressure_history[n_i] = (
+                    1e-3 * torch.sin(2.0 * torch.pi * freq_s * t + phase)
+                    + 5e-4 * torch.sin(2.0 * torch.pi * 2000.0 * t + phase * 0.5)
+                )
+            positions_list = [
+                [float(n_i) * req.physical_dx * 10.0, 0.0, 0.0]
+                for n_i in range(N_probes)
+            ]
+
+        N = pressure_history.shape[0]
+        positions = torch.tensor(positions_list[:N], dtype=torch.float32)
+        normals = torch.zeros(N, 3)
+        normals[:, 0] = 1.0  # outward normal pointing in +x by default
+        areas = torch.full((N,), req.physical_dx, dtype=torch.float32)
+
+        surface = FWHSurface(
+            positions=positions,
+            normals=normals,
+            areas=areas,
+            pressure=pressure_history,
+            dt=req.dt_physical,
+            c0=req.c0,
+        )
+
+        result = compute_fwh_result(surface, observers)
+
+        # ---- Format response -----------------------------------------------
+        obs_results = []
+        for i, obs in enumerate(observers):
+            p_rms = float((result.p_prime[i] ** 2).mean().sqrt().item())
+            spl_peak = float(result.spl[i].max().item())
+            obs_results.append({
+                "label": obs.label or f"Observer {i}",
+                "position": [obs.x, obs.y, obs.z],
+                "oaspl_dB": round(result.oaspl[i], 2),
+                "p_rms_Pa": round(p_rms, 8),
+                "spl_peak_dB": round(spl_peak, 2),
+                "spl_spectrum": [round(v, 2) for v in result.spl[i].tolist()[:200]],
+                "frequencies_Hz": [round(v, 2) for v in result.frequencies[:200]],
+            })
+
+        return {
+            "job_id": req.job_id,
+            "n_source_points": N,
+            "dt_physical_s": req.dt_physical,
+            "c0_m_s": req.c0,
+            "physical_dx_m": req.physical_dx,
+            "observers": obs_results,
+            "note": (
+                "Synthetic test signal used (no probe CSV found)."
+                if T_steps == 200 and not probe_csvs
+                else f"Analysed {T_steps} time steps."
+            ),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
