@@ -53,7 +53,9 @@
     "step_preproc": "前处理",
     "step_solve": "求解",
     "step_post": "后处理",
-    "step_reports": "报告"
+    "step_reports": "报告",
+    "job_done": "任务完成",
+    "job_failed": "任务失败"
   },
   "stat": {
     "total": "总任务数",
@@ -486,8 +488,14 @@
     "tab_results": "结果",
     "tab_fieldview": "流场视图",
     "tab_probes_analysis": "探针与分析",
-    "tab_export": "导出",
-    "tab_logs_files": "日志与文件"
+    "tab_logs_files": "日志与文件",
+    "tab_abcompare": "A/B 对比",
+    "abcompare_title": "A/B 快照对比",
+    "abcompare_job_a": "任务 A",
+    "abcompare_job_b": "任务 B",
+    "abcompare_run": "开始对比",
+    "abcompare_select_both": "请同时选择任务 A 和任务 B。",
+    "abcompare_no_image": "无图像"
   },
   "settings": {
     "title": "设置",
@@ -566,7 +574,9 @@
     "run": "运行",
     "nx": "nx",
     "ny": "ny",
-    "nz": "nz"
+    "nz": "nz",
+    "shortcuts_title": "键盘快捷键",
+    "close": "关闭"
   },
   "ai_flow": {
     "title": "AI 流场 Transformer",
@@ -795,5 +805,14 @@
     "ctrl_zoom": "滚轮: 缩放",
     "ctrl_probe": "Shift+单击: 放置探针",
     "drop_hint": "上传 STL 文件以开始预览"
+  },
+  "shortcuts": {
+    "show_shortcuts": "显示快捷键参考",
+    "focus_search": "聚焦任务搜索框",
+    "focus_search_slash": "聚焦任务搜索框（备用）",
+    "switch_tab": "切换到模块 1–9",
+    "last_tab": "切换到模块 10",
+    "close_modal": "关闭对话框 / 灯箱",
+    "hint": "随时按 ? 重新打开"
   }
 }

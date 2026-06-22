@@ -511,6 +511,9 @@
     <button class="nav-icon-btn" data-bs-toggle="offcanvas" data-bs-target="#settings-offcanvas" title="Settings">
       <i class="bi bi-gear-fill"></i>
     </button>
+    <button class="nav-icon-btn" data-bs-toggle="modal" data-bs-target="#shortcuts-modal" title="Keyboard shortcuts (?)">
+      <i class="bi bi-keyboard"></i>
+    </button>
   </span>
 </div>
 
@@ -1552,6 +1555,7 @@
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('probes',this);return false;"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes_analysis">Probes &amp; Analysis</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('export',this);return false;"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('logs',this);return false;"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs_files">Logs &amp; Files</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('abcompare',this);return false;"><i class="bi bi-layout-split"></i> <span data-i18n="postprocess.tab_abcompare">A/B Compare</span></a></li>
       </ul>
 
       <!-- ─── Results merged panel ─── -->
@@ -1885,6 +1889,29 @@
         <div id="files-table"></div>
       </div>
       </div><!-- /pp-merged-logs -->
+
+      <!-- ─── A/B Compare merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-abcompare">
+        <div class="card mb-3">
+          <div class="card-header small fw-semibold"><i class="bi bi-layout-split"></i> <span data-i18n="postprocess.abcompare_title">A/B Snapshot Compare</span></div>
+          <div class="card-body">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold" data-i18n="postprocess.abcompare_job_a">Job A</label>
+                <select class="form-select form-select-sm" id="ab-job-a"></select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold" data-i18n="postprocess.abcompare_job_b">Job B</label>
+                <select class="form-select form-select-sm" id="ab-job-b"></select>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="abCompareLoad()">
+              <i class="bi bi-arrow-left-right me-1"></i><span data-i18n="postprocess.abcompare_run">Compare</span>
+            </button>
+          </div>
+        </div>
+        <div id="ab-compare-grid" class="row g-3"></div>
+      </div><!-- /pp-merged-abcompare -->
 
     </div>
 
@@ -2772,6 +2799,34 @@
 <div id="lightbox" onclick="closeLightbox()">
   <span id="lightbox-close">&times;</span>
   <img id="lightbox-img" src="" alt="snapshot" />
+</div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div class="modal fade" id="shortcuts-modal" tabindex="-1" aria-labelledby="shortcuts-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title fw-semibold" id="shortcuts-modal-label"><i class="bi bi-keyboard me-2"></i><span data-i18n="common.shortcuts_title">Keyboard Shortcuts</span></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body small p-0">
+        <table class="table table-sm table-hover mb-0">
+          <tbody>
+            <tr><td class="ps-3"><kbd>?</kbd></td><td data-i18n="shortcuts.show_shortcuts">Show this shortcuts reference</td></tr>
+            <tr><td class="ps-3"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>K</kbd></td><td data-i18n="shortcuts.focus_search">Focus job search</td></tr>
+            <tr><td class="ps-3"><kbd>/</kbd></td><td data-i18n="shortcuts.focus_search_slash">Focus job search (alternative)</td></tr>
+            <tr><td class="ps-3"><kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td data-i18n="shortcuts.switch_tab">Switch to module 1–9</td></tr>
+            <tr><td class="ps-3"><kbd>Alt</kbd> + <kbd>0</kbd></td><td data-i18n="shortcuts.last_tab">Switch to module 10</td></tr>
+            <tr><td class="ps-3"><kbd>Esc</kbd></td><td data-i18n="shortcuts.close_modal">Close modal / lightbox</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer py-2">
+        <small class="text-muted me-auto" data-i18n="shortcuts.hint">Press <kbd>?</kbd> anytime to reopen</small>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal" data-i18n="common.close">Close</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Settings Offcanvas -->
