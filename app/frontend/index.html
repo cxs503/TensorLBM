@@ -961,6 +961,7 @@
               <select class="form-select" id="sim-type" onchange="onSimTypeChange()">
                 <optgroup id="optgroup-2d-single" label="2D Single-phase">
                   <option value="cylinder_flow">Cylinder Flow (2D)</option>
+                  <option value="rotating_cylinder">Rotating Cylinder (2D)</option>
                   <option value="lid_driven_cavity">Lid-Driven Cavity (2D)</option>
                   <option value="backward_facing_step">Backward-Facing Step (2D)</option>
                   <option value="turbulent_channel">Turbulent Channel LES (2D)</option>
@@ -978,6 +979,9 @@
                   <option value="thermal_cavity_3d">3D Thermal Cavity (Boussinesq)</option>
                   <option value="porous_drainage_3d">3D Porous Drainage (Shan-Chen)</option>
                   <option value="hull_free_surface">Hull Free-Surface (Color-Gradient)</option>
+                  <option value="actuator_disk">Actuator Disk Propulsor (3D)</option>
+                  <option value="propeller_open_water">Propeller Open-Water (3D)</option>
+                  <option value="ibm_propeller">IBM Propeller (3D)</option>
                 </optgroup>
               </select>
               <div id="sim-description" class="form-text mt-2"></div>
@@ -1069,12 +1073,22 @@
                   <label data-i18n="solve.study_solver">Solver type</label>
                   <select class="form-select form-select-sm" id="study-solver">
                     <option value="cylinder_flow">cylinder_flow</option>
+                    <option value="rotating_cylinder">rotating_cylinder</option>
                     <option value="lid_driven_cavity">lid_driven_cavity</option>
                     <option value="backward_facing_step">backward_facing_step</option>
                     <option value="turbulent_channel">turbulent_channel</option>
                     <option value="pipeline_flow">pipeline_flow</option>
                     <option value="dam_break">dam_break</option>
                     <option value="sloshing_tank">sloshing_tank</option>
+                    <option value="sphere_flow">sphere_flow</option>
+                    <option value="porous_drainage">porous_drainage</option>
+                    <option value="actuator_disk">actuator_disk</option>
+                    <option value="propeller_open_water">propeller_open_water</option>
+                    <option value="ibm_propeller">ibm_propeller</option>
+                    <option value="sphere_flow_d3q27">sphere_flow_d3q27</option>
+                    <option value="thermal_cavity_3d">thermal_cavity_3d</option>
+                    <option value="porous_drainage_3d">porous_drainage_3d</option>
+                    <option value="hull_free_surface">hull_free_surface</option>
                   </select>
                 </div>
                 <div class="col-md-2">
@@ -1087,6 +1101,12 @@
                     <option value="ny">ny</option>
                     <option value="n_steps">n_steps</option>
                     <option value="radius">radius</option>
+                    <option value="spin_ratio">spin_ratio</option>
+                    <option value="tau">tau</option>
+                    <option value="rpm">rpm</option>
+                    <option value="rpm_lu">rpm_lu</option>
+                    <option value="diameter">diameter</option>
+                    <option value="hub_diameter_ratio">hub_diameter_ratio</option>
                   </select>
                 </div>
                 <div class="col-md-3">
@@ -1600,7 +1620,7 @@
       <h4 class="mb-3"><i class="bi bi-arrow-left-right"></i> <span data-i18n="compare.title">Compare runs</span></h4>
       <div class="card mb-3">
         <div class="card-body small">
-          <p class="mb-2" data-i18n="compare.desc">Select 2–10 completed jobs and view their derived parameters and diagnostics side by side.</p>
+          <p class="mb-2" data-i18n="compare.desc">Select 2–10 completed jobs and compare engineering KPIs, report links, and derived diagnostics side by side.</p>
           <div class="row g-2 align-items-end">
             <div class="col-md-9">
               <label class="form-label mb-1" data-i18n="compare.jobs_label">Jobs</label>

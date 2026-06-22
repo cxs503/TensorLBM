@@ -7,6 +7,7 @@ corresponding tensorlbm simulation function in a background thread.
 from __future__ import annotations
 
 from itertools import product
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -15,13 +16,17 @@ from pydantic import BaseModel, Field
 
 from .. import job_manager
 from ..schemas.solver import (
+    ActuatorDiskParams,
     BackwardFacingStepParams,
     CylinderFlowParams,
     CylinderFlowScanParams,
     DamBreakParams,
+    IBMPropellerParams,
     LidDrivenCavityParams,
     PipelineFlowParams,
     PorousDrainageParams,
+    PropellerBenchmarkParams,
+    RotatingCylinderParams,
     ShipHullFlowParams,
     SloshingTankParams,
     SphereFlowParams,
@@ -30,6 +35,17 @@ from ..schemas.solver import (
 from ..services.solver import overwrite_output_root, prepare_solver_configs
 
 router = APIRouter()
+
+
+def _normalize_solver_result(result: object, job: job_manager.Job) -> dict[str, Any]:
+    """Normalize solver return values into a job result payload."""
+    if isinstance(result, dict):
+        return result
+    if result is None:
+        return {"run_dir": str(job.output_dir)}
+    if isinstance(result, (str, Path)) or hasattr(result, "__fspath__"):
+        return {"run_dir": str(result)}
+    return {"result": result}
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +132,32 @@ async def start_cylinder_flow_scan(params: CylinderFlowScanParams) -> dict:
         "values": values,
         "job_ids": job_ids,
     }
+
+
+# ---------------------------------------------------------------------------
+# 1b. Rotating Cylinder (2D Magnus effect)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/rotating-cylinder")
+async def start_rotating_cylinder(params: RotatingCylinderParams) -> dict:
+    """Start a 2D rotating-cylinder Magnus-effect simulation."""
+    run_config, submit_config = prepare_solver_configs("rotating_cylinder", params)
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm import RotatingCylinderConfig, run_rotating_cylinder
+
+        cfg = RotatingCylinderConfig(**overwrite_output_root(run_config, job))
+        result = run_rotating_cylinder(cfg)
+        return _normalize_solver_result(result, job)
+
+    job_id = job_manager.submit(
+        name=f"Rotating Cylinder Re={params.re} α={params.spin_ratio}",
+        job_type="rotating_cylinder",
+        config=submit_config,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Rotating cylinder job submitted"}
 
 
 # ---------------------------------------------------------------------------
@@ -385,20 +427,97 @@ async def start_porous_drainage(params: PorousDrainageParams) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# 10b. Rotating machinery / propulsion workflows
+# ---------------------------------------------------------------------------
+
+
+@router.post("/actuator-disk")
+async def start_actuator_disk(params: ActuatorDiskParams) -> dict:
+    """Submit an actuator-disk propulsor benchmark sweep."""
+    run_config, submit_config = prepare_solver_configs("actuator_disk", params)
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm import ActuatorDiskConfig, run_actuator_disk_benchmark
+
+        cfg = ActuatorDiskConfig(**overwrite_output_root(run_config, job))
+        result = run_actuator_disk_benchmark(cfg)
+        return _normalize_solver_result(result, job)
+
+    job_id = job_manager.submit(
+        name=f"Actuator Disk D={params.diameter} rpm={params.rpm_lu}",
+        job_type="actuator_disk",
+        config=submit_config,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Actuator-disk benchmark submitted"}
+
+
+@router.post("/propeller-open-water")
+async def start_propeller_open_water(params: PropellerBenchmarkParams) -> dict:
+    """Submit a propeller open-water benchmark sweep."""
+    run_config, submit_config = prepare_solver_configs("propeller_open_water", params)
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm import PropellerBenchmarkConfig, run_propeller_benchmark
+
+        cfg = PropellerBenchmarkConfig(**overwrite_output_root(run_config, job))
+        result = run_propeller_benchmark(cfg)
+        return _normalize_solver_result(result, job)
+
+    job_id = job_manager.submit(
+        name=f"Propeller OWT rpm={params.rpm}",
+        job_type="propeller_open_water",
+        config=submit_config,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Propeller open-water benchmark submitted"}
+
+
+@router.post("/ibm-propeller")
+async def start_ibm_propeller(params: IBMPropellerParams) -> dict:
+    """Submit an immersed-boundary propeller benchmark sweep."""
+    run_config, submit_config = prepare_solver_configs("ibm_propeller", params)
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm import IBMPropellerConfig, run_ibm_propeller_benchmark
+
+        cfg = IBMPropellerConfig(**overwrite_output_root(run_config, job))
+        result = run_ibm_propeller_benchmark(cfg)
+        return _normalize_solver_result(result, job)
+
+    job_id = job_manager.submit(
+        name=f"IBM Propeller rpm={params.rpm}",
+        job_type="ibm_propeller",
+        config=submit_config,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "IBM propeller benchmark submitted"}
+
+
+# ---------------------------------------------------------------------------
 # Parametric sensitivity study (generalized parameter sweep)
 # ---------------------------------------------------------------------------
 
 # Allowed solver types and their corresponding config/runner pairs
 _SOLVER_MAP: dict[str, tuple[str, str]] = {
     "cylinder_flow":       ("CylinderFlowConfig", "run_cylinder_flow"),
+    "rotating_cylinder":   ("RotatingCylinderConfig", "run_rotating_cylinder"),
     "lid_driven_cavity":   ("LidDrivenCavityConfig", "run_lid_driven_cavity"),
     "backward_facing_step": ("BackwardFacingStepConfig", "run_backward_facing_step"),
     "turbulent_channel":   ("TurbulentChannelConfig", "run_turbulent_channel"),
     "pipeline_flow":       ("PipelineFlowConfig", "run_pipeline_flow"),
     "dam_break":           ("DamBreakConfig", "run_dam_break"),
     "sloshing_tank":       ("SloshingTankConfig", "run_sloshing_tank"),
+    "sphere_flow":         ("SphereFlowConfig", "run_sphere_flow"),
+    "porous_drainage":     ("PorousDrainageConfig", "run_porous_drainage"),
+    "actuator_disk":       ("ActuatorDiskConfig", "run_actuator_disk_benchmark"),
+    "propeller_open_water": ("PropellerBenchmarkConfig", "run_propeller_benchmark"),
+    "ibm_propeller":       ("IBMPropellerConfig", "run_ibm_propeller_benchmark"),
     # Advanced 3-D solvers
     "sphere_flow_d3q27":   ("SphereFlowD3Q27Config", "run_sphere_flow_d3q27"),
+    "thermal_cavity_3d":   ("ThermalCavity3DConfig", "run_thermal_cavity_3d"),
+    "porous_drainage_3d":  ("PorousDrainageConfig3D", "run_porous_drainage_3d"),
+    "hull_free_surface":   ("HullFreeSurfaceConfig", "run_hull_free_surface"),
 }
 
 # Numeric parameters that are allowed to be varied in a parametric study
@@ -411,7 +530,11 @@ _ALLOWED_PARAMS = frozenset(
         "smagorinsky_cs", "averaging_start", "dam_width",
         "g", "water_level", "forcing_amp", "forcing_omega",
         "porosity", "hull_length", "hull_beam", "hull_draft",
-        "wave_amp",
+        "wave_amp", "spin_ratio", "diameter", "hub_diameter_ratio",
+        "rpm_lu", "rpm", "tau", "warmup_steps", "n_revolutions",
+        "marker_spacing", "ibm_dt_substeps", "ra", "pr",
+        "fill_fraction", "u_inlet", "n_spheres", "g_12",
+        "model_diameter_m", "model_speed_ms", "model_rho_kgm3",
     }
 )
 
@@ -602,8 +725,8 @@ async def parametric_study(req: ParametricStudyRequest) -> dict:
             cfg_cls = getattr(_tlbm, cn)
             runner = getattr(_tlbm, rn)
             cfg = cfg_cls(**overwrite_output_root(rc, job))
-            run_dir = runner(cfg)
-            return {"run_dir": str(run_dir)}
+            result = runner(cfg)
+            return _normalize_solver_result(result, job)
 
         job_id = job_manager.submit(
             name=(

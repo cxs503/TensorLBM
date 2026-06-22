@@ -1,8 +1,6 @@
 """Tests for the TensorLBM Reports API and Convergence endpoint."""
 from __future__ import annotations
 
-import pytest
-
 
 class TestReportsAPI:
     def _make_fake_job(self, client):
@@ -58,6 +56,27 @@ class TestReportsAPI:
             "Configuration",
         ):
             assert section in html, f"Missing section: {section}"
+
+    def test_compare_kpis_schema(self, client):
+        jid1 = self._make_fake_job(client)
+        jid2 = self._make_fake_job(client)
+        r = client.get("/api/reports/compare/kpis", params=[("ids", jid1), ("ids", jid2)])
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["count"] == 2
+        assert len(data["rows"]) == 2
+        assert all("compare_metrics" in row for row in data["rows"])
+
+    def test_compare_kpis_missing_jobs(self, client):
+        jid = self._make_fake_job(client)
+        r = client.get(
+            "/api/reports/compare/kpis",
+            params=[("ids", jid), ("ids", "missing-job-id")],
+        )
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["count"] == 1
+        assert data["missing"] == ["missing-job-id"]
 
 
 class TestConvergenceAPI:
