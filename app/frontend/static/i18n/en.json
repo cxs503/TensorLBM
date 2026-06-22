@@ -16,7 +16,16 @@
     "projects": "Projects",
     "templates": "Templates",
     "reports": "Reports",
-    "geo3d": "3D Preview"
+    "geo3d": "3D Preview",
+    "projects_group": "Projects",
+    "cad_group": "Geometry",
+    "cad_hull": "Ship Hull",
+    "cad_suboff": "Submarine (SUBOFF)",
+    "cad_offshore": "Offshore Structure",
+    "cad_propeller": "Propeller",
+    "sim_group": "Simulation",
+    "results_group": "Results",
+    "ai_group": "AI / Advanced"
   },
   "ws": {
     "connecting": "Connecting…",
@@ -35,7 +44,16 @@
     "filter_failed": "Failed",
     "shortcut_hint": "Shortcuts: Alt+1..0 switch modules, Ctrl/⌘+K search jobs.",
     "no_jobs_filtered": "No jobs match the current filter.",
-    "clear_confirm": "Clear all non-running jobs? This action cannot be undone."
+    "clear_confirm": "Clear all non-running jobs? This action cannot be undone.",
+    "wf_mode": "Workflow",
+    "jobs_mode": "Jobs",
+    "wf_title": "Workflow",
+    "other_title": "Other",
+    "step_geo": "Geometry",
+    "step_preproc": "Pre-process",
+    "step_solve": "Solve",
+    "step_post": "Post-process",
+    "step_reports": "Reports"
   },
   "stat": {
     "total": "Total Jobs",
@@ -464,7 +482,19 @@
     "studycompare_load": "Load",
     "studycompare_no_group": "Please enter a study group name.",
     "studycompare_not_found": "No jobs found for this study group.",
-    "studycompare_metric_summary": "Metric Summary"
+    "studycompare_metric_summary": "Metric Summary",
+    "tab_results": "Results",
+    "tab_fieldview": "Field View",
+    "tab_probes_analysis": "Probes & Analysis",
+    "tab_export": "Export",
+    "tab_logs_files": "Logs & Files"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "notifications": "Notifications",
+    "hpc": "HPC Defaults",
+    "autostop": "Auto-stop Defaults"
   },
   "bench": {
     "title": "Benchmarks",
