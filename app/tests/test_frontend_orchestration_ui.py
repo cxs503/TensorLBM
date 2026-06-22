@@ -17,3 +17,6 @@ def test_index_contains_orchestration_ui(client: TestClient) -> None:
     assert "orchLoadKpis" in html
     assert "orchRunConfidenceGate" in html
     assert "orchRunActiveLearning" in html
+    assert "orchLoadStudySummary" in html
+    assert "orchLoadSobol" in html
+    assert "orchRunBayesianOpt" in html
