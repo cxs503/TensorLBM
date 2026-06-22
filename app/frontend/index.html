@@ -255,6 +255,53 @@
     }
     .agent-typing { font-style: italic; color: #6c757d; font-size: .85rem; }
 
+    /* ── NEW NAV STYLES ───────────────────────────── */
+    .nav-top-link {
+      color: rgba(255,255,255,.8);
+      text-decoration: none;
+      padding: .4rem .9rem;
+      border-radius: .4rem;
+      font-size: .92rem;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .nav-top-link:hover,
+    .nav-top-link.active { background: rgba(255,255,255,.18); color: #fff; }
+
+    .nav-top-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,.8);
+      padding: .4rem .9rem;
+      border-radius: .4rem;
+      font-size: .92rem;
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .nav-top-btn:hover,
+    .nav-top-btn.active,
+    .nav-top-btn.show { background: rgba(255,255,255,.18); color: #fff; }
+    .nav-top-btn::after { border-color: rgba(255,255,255,.6) transparent transparent; }
+
+    .nav-icon-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.35);
+      color: rgba(255,255,255,.8);
+      border-radius: .35rem;
+      padding: .3rem .55rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .nav-icon-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
+
+    .navbar-module-title {
+      font-size: .8rem;
+      letter-spacing: .3px;
+      opacity: .7;
+    }
+
     /* Language switcher */
     .lang-switcher { display: flex; align-items: center; gap: .25rem; }
     .lang-btn {
@@ -269,6 +316,120 @@
     }
     .lang-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
     .lang-btn.active-lang { background: rgba(255,255,255,.22); color: #fff; border-color: rgba(255,255,255,.7); font-weight: 600; }
+
+    /* ── PHASE COLOURS ────────────────────────────── */
+    :root {
+      --phase-geo:     #0891b2; /* teal   – geometry */
+      --phase-preproc: #d97706; /* amber  – pre-process */
+      --phase-solve:   #16a34a; /* green  – solve */
+      --phase-post:    #7c3aed; /* purple – post-process */
+      --phase-ai:      #0e7490; /* cyan   – ai/advanced */
+    }
+
+    /* ── WORKFLOW STEPPER ─────────────────────────── */
+    .wf-stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+      padding-bottom: .25rem;
+    }
+    .wf-step {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .35rem .9rem;
+      border-radius: .4rem;
+      font-size: .82rem;
+      font-weight: 500;
+      color: #adb5bd;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s, color .15s;
+    }
+    .wf-step:hover { background: #e9ecef; color: #495057; }
+    .wf-step.wf-active { background: #e7f1ff; color: #0d6efd; font-weight: 600; }
+    .wf-step.wf-done { color: #198754; }
+    .wf-step .wf-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 700;
+      background: #dee2e6; color: #6c757d;
+      flex-shrink: 0;
+    }
+    .wf-step.wf-active .wf-num { background: #0d6efd; color: #fff; }
+    .wf-step.wf-done .wf-num { background: #198754; color: #fff; }
+    .wf-sep { color: #ced4da; font-size: .9rem; padding: 0 .1rem; flex-shrink: 0; }
+
+    /* ── SIDEBAR DUAL MODE ────────────────────────── */
+    .sidebar-mode-bar {
+      display: flex;
+      border-bottom: 1px solid #dee2e6;
+      background: #f8f9fa;
+    }
+    .sidebar-mode-btn {
+      flex: 1;
+      padding: .4rem .5rem;
+      border: none;
+      background: transparent;
+      font-size: .78rem;
+      font-weight: 500;
+      color: #6c757d;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      display: flex; align-items: center; justify-content: center; gap: .3rem;
+    }
+    .sidebar-mode-btn.active { background: #fff; color: #0d6efd; border-bottom: 2px solid #0d6efd; }
+    .sidebar-collapse-btn {
+      padding: .4rem .6rem;
+      border: none; border-left: 1px solid #dee2e6;
+      background: transparent;
+      color: #6c757d; font-size: .85rem;
+      cursor: pointer;
+    }
+    .sidebar-collapse-btn:hover { background: #e9ecef; }
+
+    /* Collapsed sidebar (icon strip) */
+    .jobs-sidebar.collapsed {
+      width: 48px !important;
+      min-width: 48px !important;
+    }
+    .jobs-sidebar.collapsed .sidebar-hide-when-collapsed { display: none !important; }
+    .jobs-sidebar.collapsed .sidebar-mode-bar { flex-direction: column; }
+    .jobs-sidebar.collapsed .sidebar-mode-btn { font-size: 1rem; padding: .55rem 0; }
+    .jobs-sidebar.collapsed .sidebar-collapse-btn { border-left: none; border-top: 1px solid #dee2e6; }
+
+    /* Workflow tree */
+    .wf-tree { padding: .5rem; }
+    .wf-tree-step {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .5rem .7rem;
+      border-radius: .4rem;
+      font-size: .85rem;
+      cursor: pointer;
+      color: #495057;
+      transition: background .15s;
+      margin-bottom: .2rem;
+      text-decoration: none;
+    }
+    .wf-tree-step:hover { background: #f0f7ff; color: #0d6efd; }
+    .wf-tree-step.active { background: #e7f1ff; color: #0d6efd; font-weight: 600; }
+    .wf-tree-step .phase-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── CAD SUB-TABS ─────────────────────────────── */
+    .cad-sub-panel { display: none; }
+    .cad-sub-panel.active { display: block; }
+
+    /* ── PP MERGED TABS ───────────────────────────── */
+    .pp-merged-panel { display: none; }
+    .pp-merged-panel.active { display: block; }
+
+    /* ── SETTINGS OFFCANVAS ───────────────────────── */
+    #settings-offcanvas .offcanvas-header { background: #1a3a5c; color: #fff; }
+    #settings-offcanvas .offcanvas-header .btn-close { filter: invert(1); }
   </style>
 </head>
 <body>
@@ -276,56 +437,167 @@
 <!-- Navbar -->
 <div class="top-navbar">
   <span class="brand me-4"><i class="bi bi-water"></i> <span data-i18n="nav.brand">TensorLBM</span></span>
-  <nav class="d-flex gap-1">
-    <a href="#" data-tab="dashboard" class="active"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
-    <a href="#" data-tab="projects"><i class="bi bi-folder2-open"></i> <span data-i18n="nav.projects">Projects</span></a>
-    <a href="#" data-tab="templates"><i class="bi bi-collection"></i> <span data-i18n="nav.templates">Templates</span></a>
-    <a href="#" data-tab="cad"><i class="bi bi-rulers"></i> <span data-i18n="nav.cad">CAD</span></a>
-    <a href="#" data-tab="preprocess"><i class="bi bi-grid-3x3"></i> <span data-i18n="nav.preprocess">Pre-processing</span></a>
-    <a href="#" data-tab="solve"><i class="bi bi-play-circle"></i> <span data-i18n="nav.solve">Solve</span></a>
-    <a href="#" data-tab="postprocess"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
-    <a href="#" data-tab="reports"><i class="bi bi-file-earmark-text"></i> <span data-i18n="nav.reports">Reports</span></a>
-    <a href="#" data-tab="benchmarks"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
-    <a href="#" data-tab="compare"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
-    <a href="#" data-tab="ai-flow"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
-    <a href="#" data-tab="orchestration"><i class="bi bi-diagram-3"></i> <span data-i18n="nav.orchestration">Orchestration</span></a>
-    <a href="#" data-tab="agent"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
-    <a href="#" data-tab="suboff"><i class="bi bi-submarine"></i> <span data-i18n="nav.suboff">SUBOFF</span></a>
-    <a href="#" data-tab="geo3d"><i class="bi bi-box"></i> <span data-i18n="nav.geo3d">3D Preview</span></a>
-  </nav>
-  <span class="ms-auto d-flex align-items-center gap-3">
-    <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
-    <div class="lang-switcher">
-      <button class="lang-btn" data-lang="en" title="English">EN</button>
-      <button class="lang-btn" data-lang="zh" title="中文">中文</button>
+  <nav class="d-flex gap-1 align-items-center" id="top-nav">
+    <!-- Dashboard (direct) -->
+    <a href="#" class="nav-top-link active" data-tab="dashboard"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+
+    <!-- Projects dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-projects">
+        <i class="bi bi-folder2-open"></i> <span data-i18n="nav.projects_group">Projects</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="projects"><i class="bi bi-folder2-open me-2"></i><span data-i18n="nav.projects">Project Manager</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="templates"><i class="bi bi-collection me-2"></i><span data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
     </div>
+
+    <!-- Geometry / CAD dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-cad">
+        <i class="bi bi-rulers"></i> <span data-i18n="nav.cad_group">Geometry</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="cad" data-cad-sub="hull"><i class="bi bi-water me-2"></i><span data-i18n="nav.cad_hull">Ship Hull</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="cad" data-cad-sub="suboff"><i class="bi bi-tsunami me-2"></i><span data-i18n="nav.cad_suboff">Submarine (SUBOFF)</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="cad" data-cad-sub="offshore"><i class="bi bi-wind me-2"></i><span data-i18n="nav.cad_offshore">Offshore Structure</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="cad" data-cad-sub="propeller"><i class="bi bi-gear-wide-connected me-2"></i><span data-i18n="nav.cad_propeller">Propeller</span></a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#" data-tab="geo3d"><i class="bi bi-box me-2"></i><span data-i18n="nav.geo3d">3D Preview</span></a></li>
+      </ul>
+    </div>
+
+    <!-- Simulation dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-sim">
+        <i class="bi bi-play-circle"></i> <span data-i18n="nav.sim_group">Simulation</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="preprocess"><i class="bi bi-grid-3x3 me-2"></i><span data-i18n="nav.preprocess">Pre-processing</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="solve"><i class="bi bi-play-circle me-2"></i><span data-i18n="nav.solve">Solver</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="benchmarks"><i class="bi bi-trophy me-2"></i><span data-i18n="nav.benchmarks">Benchmarks</span></a></li>
+      </ul>
+    </div>
+
+    <!-- Results dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-results">
+        <i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.results_group">Results</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="postprocess"><i class="bi bi-bar-chart-line me-2"></i><span data-i18n="nav.postprocess">Post-process</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="reports"><i class="bi bi-file-earmark-text me-2"></i><span data-i18n="nav.reports">Reports</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="compare"><i class="bi bi-arrow-left-right me-2"></i><span data-i18n="nav.compare">Compare</span></a></li>
+      </ul>
+    </div>
+
+    <!-- AI / Advanced dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-ai">
+        <i class="bi bi-cpu"></i> <span data-i18n="nav.ai_group">AI / Advanced</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="ai-flow"><i class="bi bi-cpu me-2"></i><span data-i18n="nav.ai_flow">AI Flow</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="orchestration"><i class="bi bi-diagram-3 me-2"></i><span data-i18n="nav.orchestration">Orchestration</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="agent"><i class="bi bi-robot me-2"></i><span data-i18n="nav.agent">AI Agent</span></a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#" data-tab="suboff"><i class="bi bi-submarine me-2"></i><span data-i18n="nav.suboff">SUBOFF Surrogate</span></a></li>
+      </ul>
+    </div>
+  </nav>
+  <span class="ms-auto d-flex align-items-center gap-2">
+    <span class="navbar-module-title small text-white-50" id="navbar-module-title"></span>
+    <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
+    <button class="nav-icon-btn" data-bs-toggle="offcanvas" data-bs-target="#settings-offcanvas" title="Settings">
+      <i class="bi bi-gear-fill"></i>
+    </button>
   </span>
 </div>
 
 <!-- Main layout -->
 <div class="main-layout">
-  <!-- Jobs sidebar -->
-  <div class="jobs-sidebar">
-    <div class="sidebar-header">
-      <i class="bi bi-list-task"></i> <span data-i18n="sidebar.title">Jobs</span>
-      <span class="jobs-count ms-auto" id="jobs-count">0</span>
-      <button class="btn btn-sm btn-outline-danger" onclick="clearAllJobs()" data-i18n-title="sidebar.clear_title" title="Clear completed/failed jobs">
-        <i class="bi bi-trash"></i>
+  <!-- Left panel: Workflow tree / Jobs monitor -->
+  <div class="jobs-sidebar" id="jobs-sidebar">
+    <!-- Mode bar -->
+    <div class="sidebar-mode-bar">
+      <button class="sidebar-mode-btn active" id="sidebar-btn-workflow" onclick="sidebarSetMode('workflow')" title="Workflow">
+        <i class="bi bi-diagram-3"></i> <span class="sidebar-hide-when-collapsed" data-i18n="sidebar.wf_mode">Workflow</span>
+      </button>
+      <button class="sidebar-mode-btn" id="sidebar-btn-jobs" onclick="sidebarSetMode('jobs')" title="Jobs">
+        <i class="bi bi-list-task"></i> <span class="sidebar-hide-when-collapsed" data-i18n="sidebar.jobs_mode">Jobs</span>
+      </button>
+      <button class="sidebar-collapse-btn" onclick="sidebarToggleCollapse()" id="sidebar-collapse-btn" title="Collapse">
+        <i class="bi bi-chevron-left" id="sidebar-collapse-icon"></i>
       </button>
     </div>
-    <div class="sidebar-tools">
-      <input class="form-control form-control-sm" id="jobs-search" data-i18n-placeholder="sidebar.search_placeholder" placeholder="Search job name / id" oninput="onJobsFilterChanged()" />
-      <select class="form-select form-select-sm" id="jobs-status-filter" onchange="onJobsFilterChanged()">
-        <option value="all" data-i18n="sidebar.filter_all">All status</option>
-        <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
-        <option value="running" data-i18n="sidebar.filter_running">Running</option>
-        <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
-        <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
-      </select>
-      <div class="shortcut-hint" data-i18n="sidebar.shortcut_hint">Shortcuts: Alt+1..9 switch modules, Ctrl/⌘+K search jobs.</div>
+
+    <!-- Workflow tree pane -->
+    <div id="sidebar-workflow-pane" class="flex-1 overflow-auto wf-tree">
+      <div class="small text-muted fw-semibold px-1 mb-2 sidebar-hide-when-collapsed" data-i18n="sidebar.wf_title">Workflow</div>
+      <a class="wf-tree-step" href="#" data-tab="cad" onclick="showTab('cad');return false;">
+        <span class="phase-dot" style="background:var(--phase-geo)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">1</span><span data-i18n="sidebar.step_geo">Geometry</span></span>
+        <i class="bi bi-rulers sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="preprocess" onclick="showTab('preprocess');return false;">
+        <span class="phase-dot" style="background:var(--phase-preproc)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">2</span><span data-i18n="sidebar.step_preproc">Pre-process</span></span>
+        <i class="bi bi-grid-3x3 sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="solve" onclick="showTab('solve');return false;">
+        <span class="phase-dot" style="background:var(--phase-solve)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">3</span><span data-i18n="sidebar.step_solve">Solve</span></span>
+        <i class="bi bi-play-circle sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="postprocess" onclick="showTab('postprocess');return false;">
+        <span class="phase-dot" style="background:var(--phase-post)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">4</span><span data-i18n="sidebar.step_post">Post-process</span></span>
+        <i class="bi bi-bar-chart-line sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="reports" onclick="showTab('reports');return false;">
+        <span class="phase-dot" style="background:var(--phase-post)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">5</span><span data-i18n="sidebar.step_reports">Reports</span></span>
+        <i class="bi bi-file-earmark-text sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <hr class="my-2">
+      <div class="small text-muted fw-semibold px-1 mb-2 sidebar-hide-when-collapsed" data-i18n="sidebar.other_title">Other</div>
+      <a class="wf-tree-step" href="#" data-tab="projects" onclick="showTab('projects');return false;">
+        <span class="phase-dot" style="background:#6c757d"></span>
+        <span class="sidebar-hide-when-collapsed"><span data-i18n="nav.projects">Projects</span></span>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="benchmarks" onclick="showTab('benchmarks');return false;">
+        <span class="phase-dot" style="background:#6c757d"></span>
+        <span class="sidebar-hide-when-collapsed"><span data-i18n="nav.benchmarks">Benchmarks</span></span>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="compare" onclick="showTab('compare');return false;">
+        <span class="phase-dot" style="background:#6c757d"></span>
+        <span class="sidebar-hide-when-collapsed"><span data-i18n="nav.compare">Compare</span></span>
+      </a>
     </div>
-    <div class="jobs-list" id="jobs-list">
-      <div class="text-center text-muted py-4 small" id="no-jobs-msg" data-i18n="sidebar.no_jobs">No jobs yet.</div>
+
+    <!-- Jobs monitor pane -->
+    <div id="sidebar-jobs-pane" style="display:none" class="d-flex flex-column flex-1 overflow-hidden">
+      <div class="sidebar-header sidebar-hide-when-collapsed">
+        <i class="bi bi-list-task"></i> <span data-i18n="sidebar.title">Jobs</span>
+        <span class="jobs-count ms-auto" id="jobs-count">0</span>
+        <button class="btn btn-sm btn-outline-danger" onclick="clearAllJobs()" data-i18n-title="sidebar.clear_title" title="Clear completed/failed jobs">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+      <div class="sidebar-tools sidebar-hide-when-collapsed">
+        <input class="form-control form-control-sm" id="jobs-search" data-i18n-placeholder="sidebar.search_placeholder" placeholder="Search job name / id" oninput="onJobsFilterChanged()" />
+        <select class="form-select form-select-sm" id="jobs-status-filter" onchange="onJobsFilterChanged()">
+          <option value="all" data-i18n="sidebar.filter_all">All status</option>
+          <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
+          <option value="running" data-i18n="sidebar.filter_running">Running</option>
+          <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
+          <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
+        </select>
+        <div class="shortcut-hint" data-i18n="sidebar.shortcut_hint">Shortcuts: Alt+1..9 switch modules, Ctrl/⌘+K search jobs.</div>
+      </div>
+      <div class="jobs-list" id="jobs-list">
+        <div class="text-center text-muted py-4 small" id="no-jobs-msg" data-i18n="sidebar.no_jobs">No jobs yet.</div>
+      </div>
     </div>
   </div>
 
@@ -373,157 +645,52 @@
             </div>
           </div>
         </div>
-        <div class="row g-3 mt-1">
-          <div class="col-xl-7">
-            <div class="card">
-              <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-activity"></i> <span data-i18n="dashboard.ops_title">Workflow Operations</span></span>
-                <button class="btn btn-outline-secondary btn-sm" onclick="dashboardRefreshSelectedJobOps()">
-                  <i class="bi bi-arrow-clockwise"></i>
-                </button>
+      <!-- Recent activity timeline -->
+      <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-calendar3"></i> <span data-i18n="dashboard.timeline_title">Job Timeline</span></span>
+              <button class="btn btn-outline-secondary btn-sm" onclick="dashboardLoadTimeline()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body small">
+              <div class="d-flex gap-2 mb-2">
+                <select id="dashboard-timeline-status" class="form-select form-select-sm" onchange="dashboardLoadTimeline()">
+                  <option value="" data-i18n="dashboard.timeline_all">All jobs</option>
+                  <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
+                  <option value="running" data-i18n="sidebar.filter_running">Running</option>
+                  <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
+                  <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
+                </select>
+                <input id="dashboard-timeline-limit" type="number" class="form-control form-control-sm" value="8" min="1" max="50" onchange="dashboardLoadTimeline()" />
               </div>
-              <div class="card-body config-form small">
-                <div id="dashboard-selected-job" class="small text-muted mb-3" data-i18n="dashboard.no_job_selected">Select a job from the left sidebar to monitor workflow operations.</div>
-                <div class="row g-3">
-                  <div class="col-lg-6">
-                    <div class="border rounded p-2 h-100">
-                      <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong data-i18n="dashboard.live_metrics_title">Live Metrics</strong>
-                        <div class="form-check form-switch small mb-0">
-                          <input class="form-check-input" type="checkbox" id="dashboard-live-auto" onchange="dashboardToggleLiveMetricsAuto()">
-                          <label class="form-check-label" for="dashboard-live-auto" data-i18n="dashboard.auto_refresh">Auto refresh</label>
-                        </div>
-                      </div>
-                      <div class="d-flex gap-2 mb-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="dashboardLoadLiveMetrics()"><i class="bi bi-activity"></i> <span data-i18n="dashboard.live_metrics_btn">Load metrics</span></button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="dashboardResetLiveMetrics()"><i class="bi bi-arrow-counterclockwise"></i> <span data-i18n="dashboard.reset_btn">Reset</span></button>
-                      </div>
-                      <div id="dashboard-live-summary" class="small text-muted mb-2">-</div>
-                      <pre id="dashboard-live-metrics-result" class="small mb-0" style="white-space:pre-wrap;max-height:220px;overflow:auto">-</pre>
-                    </div>
-                  </div>
-                  <div class="col-lg-6">
-                    <div class="border rounded p-2 h-100">
-                      <strong class="d-block mb-2" data-i18n="dashboard.auto_stop_title">Auto-stop Control</strong>
-                      <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="dashboard-auto-stop-enabled" checked>
-                        <label class="form-check-label" for="dashboard-auto-stop-enabled" data-i18n="dashboard.auto_stop_enabled">Enable convergence auto-stop</label>
-                      </div>
-                      <div class="row g-2 mb-2">
-                        <div class="col-6">
-                          <label data-i18n="dashboard.auto_stop_key">Residual key</label>
-                          <input id="dashboard-auto-stop-key" class="form-control form-control-sm" value="residual" />
-                        </div>
-                        <div class="col-6">
-                          <label data-i18n="dashboard.auto_stop_tol">Rel. tolerance</label>
-                          <input id="dashboard-auto-stop-tol" type="number" class="form-control form-control-sm" value="0.0001" step="0.0001" min="0.000001" max="1" />
-                        </div>
-                        <div class="col-6">
-                          <label data-i18n="dashboard.auto_stop_patience">Patience</label>
-                          <input id="dashboard-auto-stop-patience" type="number" class="form-control form-control-sm" value="5" min="1" max="1000" />
-                        </div>
-                        <div class="col-6">
-                          <label data-i18n="dashboard.auto_stop_min_steps">Min steps</label>
-                          <input id="dashboard-auto-stop-min-steps" type="number" class="form-control form-control-sm" value="20" min="1" max="1000000" />
-                        </div>
-                      </div>
-                      <button class="btn btn-sm btn-outline-success w-100 mb-2" onclick="dashboardApplyAutoStop()"><i class="bi bi-stop-circle"></i> <span data-i18n="dashboard.auto_stop_apply">Apply auto-stop</span></button>
-                      <pre id="dashboard-auto-stop-result" class="small mb-0" style="white-space:pre-wrap;max-height:132px;overflow:auto">-</pre>
-                    </div>
-                  </div>
-                </div>
-                <div class="border rounded p-2 mt-3">
-                  <strong class="d-block mb-2" data-i18n="dashboard.hpc_title">HPC Submission</strong>
-                  <div class="row g-2 mb-2">
-                    <div class="col-md-4">
-                      <label data-i18n="dashboard.hpc_partition">Partition / queue</label>
-                      <input id="dashboard-hpc-partition" class="form-control form-control-sm" placeholder="gpu" />
-                    </div>
-                    <div class="col-md-2">
-                      <label data-i18n="dashboard.hpc_nodes">Nodes</label>
-                      <input id="dashboard-hpc-nodes" type="number" class="form-control form-control-sm" value="1" min="1" max="512" />
-                    </div>
-                    <div class="col-md-2">
-                      <label data-i18n="dashboard.hpc_cpus">CPUs</label>
-                      <input id="dashboard-hpc-cpus" type="number" class="form-control form-control-sm" value="4" min="1" max="256" />
-                    </div>
-                    <div class="col-md-2">
-                      <label data-i18n="dashboard.hpc_mem">Memory</label>
-                      <input id="dashboard-hpc-mem" class="form-control form-control-sm" value="8G" />
-                    </div>
-                    <div class="col-md-2">
-                      <label data-i18n="dashboard.hpc_walltime">Walltime</label>
-                      <input id="dashboard-hpc-walltime" class="form-control form-control-sm" value="02:00:00" />
-                    </div>
-                  </div>
-                  <button class="btn btn-sm btn-outline-primary mb-2" onclick="dashboardSubmitHpc()"><i class="bi bi-cloud-upload"></i> <span data-i18n="dashboard.hpc_submit">Submit to HPC</span></button>
-                  <pre id="dashboard-hpc-result" class="small mb-0" style="white-space:pre-wrap;max-height:140px;overflow:auto">-</pre>
-                </div>
-              </div>
+              <div id="dashboard-timeline-table" class="table-responsive small text-muted" data-i18n="dashboard.loading">Loading…</div>
             </div>
           </div>
-          <div class="col-xl-5">
-            <div class="card mb-3">
-              <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-calendar3"></i> <span data-i18n="dashboard.timeline_title">Job Timeline</span></span>
-                <button class="btn btn-outline-secondary btn-sm" onclick="dashboardLoadTimeline()"><i class="bi bi-arrow-clockwise"></i></button>
-              </div>
-              <div class="card-body small">
-                <div class="d-flex gap-2 mb-2">
-                  <select id="dashboard-timeline-status" class="form-select form-select-sm" onchange="dashboardLoadTimeline()">
-                    <option value="" data-i18n="dashboard.timeline_all">All jobs</option>
-                    <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
-                    <option value="running" data-i18n="sidebar.filter_running">Running</option>
-                    <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
-                    <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
-                  </select>
-                  <input id="dashboard-timeline-limit" type="number" class="form-control form-control-sm" value="8" min="1" max="50" onchange="dashboardLoadTimeline()" />
-                </div>
-                <div id="dashboard-timeline-table" class="table-responsive small text-muted" data-i18n="dashboard.loading">Loading…</div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-activity"></i> <span data-i18n="dashboard.live_metrics_title">Live Metrics</span>
+              <div class="form-check form-switch d-inline-flex ms-3 mb-0">
+                <input class="form-check-input" type="checkbox" id="dashboard-live-auto" onchange="dashboardToggleLiveMetricsAuto()">
+                <label class="form-check-label small" for="dashboard-live-auto" data-i18n="dashboard.auto_refresh">Auto</label>
               </div>
             </div>
-            <div class="card">
-              <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-bell"></i> <span data-i18n="dashboard.notify_title">Notifications</span></span>
-                <button class="btn btn-outline-secondary btn-sm" onclick="dashboardLoadNotifications()"><i class="bi bi-arrow-clockwise"></i></button>
+            <div class="card-body small">
+              <div class="small text-muted mb-2" id="dashboard-selected-job" data-i18n="dashboard.no_job_selected">Select a job from the sidebar.</div>
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="dashboardLoadLiveMetrics()"><i class="bi bi-activity"></i> <span data-i18n="dashboard.live_metrics_btn">Load</span></button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="dashboardResetLiveMetrics()"><i class="bi bi-arrow-counterclockwise"></i></button>
               </div>
-              <div class="card-body config-form small">
-                <label data-i18n="dashboard.notify_webhook">Webhook URL</label>
-                <input id="dashboard-notify-webhook" class="form-control form-control-sm mb-2" placeholder="https://example.com/webhook" />
-                <div class="row g-2 mb-2">
-                  <div class="col-6">
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="dashboard-notify-complete" checked>
-                      <label class="form-check-label" for="dashboard-notify-complete" data-i18n="dashboard.notify_complete">Notify on complete</label>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="dashboard-notify-failure" checked>
-                      <label class="form-check-label" for="dashboard-notify-failure" data-i18n="dashboard.notify_failure">Notify on failure</label>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="dashboard-notify-cancel" >
-                      <label class="form-check-label" for="dashboard-notify-cancel" data-i18n="dashboard.notify_cancel">Notify on cancel</label>
-                    </div>
-                  </div>
-                  <div class="col-6">
-                    <label data-i18n="dashboard.notify_timeout">Timeout [s]</label>
-                    <input id="dashboard-notify-timeout" type="number" class="form-control form-control-sm" value="10" min="1" max="120" />
-                  </div>
-                </div>
-                <div class="d-flex gap-2">
-                  <button class="btn btn-sm btn-outline-primary flex-fill" onclick="dashboardSaveNotifications()"><i class="bi bi-save"></i> <span data-i18n="dashboard.notify_save">Save settings</span></button>
-                  <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="dashboardTestWebhook()"><i class="bi bi-send-check"></i> <span data-i18n="dashboard.notify_test">Test webhook</span></button>
-                </div>
-                <pre id="dashboard-notify-result" class="small mt-2 mb-0" style="white-space:pre-wrap;max-height:140px;overflow:auto">-</pre>
-              </div>
+              <div id="dashboard-live-summary" class="small text-muted mb-1">-</div>
+              <pre id="dashboard-live-metrics-result" class="small mb-0" style="white-space:pre-wrap;max-height:160px;overflow:auto">-</pre>
+              <!-- hidden placeholder so JS reference remains valid -->
+              <div id="dashboard-notify-result" style="display:none"></div>
             </div>
           </div>
         </div>
       </div>
+    </div>
     </div>
 
     <!-- ================================================================ -->
@@ -532,6 +699,28 @@
     <div class="tab-panel" id="panel-cad">
       <h4 class="mb-3"><i class="bi bi-rulers"></i> <span data-i18n="cad.title">Ship Hull CAD Modelling</span></h4>
 
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step wf-active" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
+      <!-- CAD sub-tabs -->
+      <ul class="nav nav-tabs mb-3" id="cad-tabs">
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="showCadSub('hull',this);return false;" data-cad-sub="hull"><i class="bi bi-water me-1"></i><span data-i18n="nav.cad_hull">Ship Hull</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showCadSub('suboff',this);return false;" data-cad-sub="suboff"><i class="bi bi-tsunami me-1"></i><span data-i18n="nav.cad_suboff">Submarine</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showCadSub('offshore',this);return false;" data-cad-sub="offshore"><i class="bi bi-wind me-1"></i><span data-i18n="offshore.title">Offshore</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showCadSub('propeller',this);return false;" data-cad-sub="propeller"><i class="bi bi-gear-wide-connected me-1"></i><span data-i18n="propeller.title">Propeller</span></a></li>
+      </ul>
+
+      <div class="cad-sub-panel active" id="cad-sub-hull">
       <div class="row g-3">
 
         <!-- Hull type & parameters -->
@@ -713,11 +902,9 @@
 
         </div><!-- /col-lg-8 -->
       </div><!-- /row -->
+      </div><!-- /cad-sub-hull -->
 
-      <!-- ---------------------------------------------------------------- -->
-      <!-- SUBOFF Submarine Panel                                            -->
-      <!-- ---------------------------------------------------------------- -->
-      <h5 class="mt-4 mb-3"><i class="bi bi-tsunami"></i> <span data-i18n="cad.suboff_title">SUBOFF Submarine CAD Modelling</span></h5>
+      <div class="cad-sub-panel" id="cad-sub-suboff">
       <div class="row g-3">
         <div class="col-lg-4">
           <div class="card">
@@ -777,11 +964,9 @@
           <div id="suboff-mask-result" class="mt-3"></div>
         </div>
       </div>
+      </div><!-- /cad-sub-suboff -->
 
-      <!-- ---------------------------------------------------------------- -->
-      <!-- Offshore Structures Panel                                         -->
-      <!-- ---------------------------------------------------------------- -->
-      <h5 class="mt-4 mb-3"><i class="bi bi-wind"></i> <span data-i18n="offshore.title">Offshore Structure CAD</span></h5>
+      <div class="cad-sub-panel" id="cad-sub-offshore">
       <div class="row g-3">
         <div class="col-lg-4">
           <div class="card">
@@ -871,11 +1056,9 @@
           <div id="offshore-mask-result" class="mt-3"></div>
         </div>
       </div>
+      </div><!-- /cad-sub-offshore -->
 
-      <!-- ---------------------------------------------------------------- -->
-      <!-- Wageningen B-Series Propeller Performance Panel                  -->
-      <!-- ---------------------------------------------------------------- -->
-      <h5 class="mt-4 mb-3"><i class="bi bi-gear-wide-connected"></i> <span data-i18n="propeller.title">Wageningen B-Series Propeller</span></h5>
+      <div class="cad-sub-panel" id="cad-sub-propeller">
       <div class="row g-3">
         <div class="col-lg-4">
           <div class="card">
@@ -945,6 +1128,7 @@
           </div>
         </div>
       </div>
+      </div><!-- /cad-sub-propeller -->
 
     </div><!-- /panel-cad -->
 
@@ -953,6 +1137,20 @@
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-preprocess">
       <h4 class="mb-3"><i class="bi bi-grid-3x3"></i> <span data-i18n="preprocess.title">Pre-processing</span></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step wf-active" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
       <div class="row g-3">
 
         <!-- Polygon mask -->
@@ -1102,6 +1300,20 @@
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-solve">
       <h4 class="mb-3"><i class="bi bi-play-circle"></i> <span data-i18n="solve.title">Solver</span></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step wf-active" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
       <!-- Template notification bar -->
       <div id="solve-template-msg" class="alert alert-success alert-sm py-1 small mb-2" style="display:none"></div>
       <div class="row g-3">
@@ -1300,6 +1512,20 @@
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-postprocess">
       <h4 class="mb-3"><i class="bi bi-bar-chart-line"></i> <span data-i18n="postprocess.title">Post-processing</span></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step wf-active" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
       <div class="row g-3 mb-3">
         <div class="col-md-5">
           <div class="card">
@@ -1321,26 +1547,63 @@
 
       <!-- Tabs within post-process -->
       <ul class="nav nav-tabs mb-3" id="pp-tabs">
-        <li class="nav-item"><a class="nav-link active" href="#" onclick="showPPTab('snapshots',this)"><i class="bi bi-images"></i> <span data-i18n="postprocess.tab_snapshots">Snapshots</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('viewer',this)"><i class="bi bi-grid-1x2"></i> <span data-i18n="postprocess.tab_viewer">Field Viewer</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('probes',this)"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes">Probe Monitor</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('timeavg',this)"><i class="bi bi-clock-history"></i> <span data-i18n="postprocess.tab_timeavg">Time Average</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('export',this)"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs">Logs</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> <span data-i18n="postprocess.tab_files">Files</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> <span data-i18n="postprocess.tab_metadata">Metadata</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('advanced',this)"><i class="bi bi-activity"></i> <span>Advanced Analytics</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('studycompare',this)"><i class="bi bi-bar-chart-steps"></i> <span data-i18n="postprocess.tab_studycompare">Study Compare</span></a></li>
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="showPPMergedTab('results',this);return false;"><i class="bi bi-images"></i> <span data-i18n="postprocess.tab_results">Results</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('fieldview',this);return false;"><i class="bi bi-grid-1x2"></i> <span data-i18n="postprocess.tab_fieldview">Field View</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('probes',this);return false;"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes_analysis">Probes &amp; Analysis</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('export',this);return false;"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('logs',this);return false;"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs_files">Logs &amp; Files</span></a></li>
       </ul>
 
+      <!-- ─── Results merged panel ─── -->
+      <div class="pp-merged-panel active" id="pp-merged-results">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('snapshots',this,'pp-merged-results')">Snapshots</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('metadata',this,'pp-merged-results')">Metadata</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('studycompare',this,'pp-merged-results')">Study Compare</button>
+        </div>
       <div id="pp-snapshots" class="pp-tab-panel">
         <div id="snapshots-grid" class="row g-2">
           <div class="col-12 text-muted small" data-i18n="postprocess.no_job">No job selected.</div>
         </div>
       </div>
+      <div id="pp-metadata" class="pp-tab-panel" style="display:none">
+        <pre id="pp-metadata-box" class="bg-light p-3 border rounded small" style="max-height:500px;overflow:auto" data-i18n="postprocess.no_job_meta">Select a job to view metadata.</pre>
+      </div>
+      <!-- Study-Group Compare -->
+      <div id="pp-studycompare" class="pp-tab-panel" style="display:none">
+        <div class="card">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i class="bi bi-bar-chart-steps me-1"></i>
+            <span data-i18n="postprocess.studycompare_title">Study-Group Comparison</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2 mb-3 align-items-end">
+              <div class="col-sm-6 col-md-4">
+                <label class="form-label small mb-1" data-i18n="postprocess.studycompare_group_label">Study Group Name</label>
+                <input type="text" class="form-control form-control-sm" id="study-compare-group"
+                       placeholder="e.g. re_sweep_2025" />
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-sm btn-primary" onclick="loadStudyCompare()">
+                  <i class="bi bi-arrow-repeat"></i>
+                  <span data-i18n="postprocess.studycompare_load">Load</span>
+                </button>
+              </div>
+            </div>
+            <div id="study-compare-result"></div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /pp-merged-results -->
 
+      <!-- ─── Field View merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-fieldview">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('viewer',this,'pp-merged-fieldview')">Field Viewer</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('timeavg',this,'pp-merged-fieldview')">Time Average</button>
+        </div>
       <!-- ---- Field Viewer Tab ---- -->
-      <div id="pp-viewer" class="pp-tab-panel" style="display:none">
+      <div id="pp-viewer" class="pp-tab-panel">
         <div class="row g-3 mb-3">
           <!-- Controls -->
           <div class="col-lg-3">
@@ -1409,37 +1672,6 @@
           </div>
         </div>
       </div>
-      </div>
-
-      <!-- ---- Probe Monitor Tab ---- -->
-      <div id="pp-probes" class="pp-tab-panel" style="display:none">
-        <div class="row g-3">
-          <div class="col-lg-4">
-            <div class="card">
-              <div class="card-header small fw-semibold"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes">Probe Monitor</span></div>
-              <div class="card-body small">
-                <p class="text-muted" data-i18n="postprocess.probe_hint">Add probe locations then click Extract History.</p>
-                <div id="probe-list" class="mb-2"></div>
-                <button class="btn btn-outline-secondary btn-sm me-2" onclick="addProbeRow()">
-                  <i class="bi bi-plus-circle"></i> <span data-i18n="postprocess.probe_add">Add Probe</span>
-                </button>
-                <button class="btn btn-primary btn-sm" onclick="runProbeHistory()">
-                  <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.probe_run">Extract History</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-8">
-            <div class="card">
-              <div class="card-header small fw-semibold">Time History</div>
-              <div class="card-body p-2">
-                <canvas id="probe-chart" style="width:100%;max-height:360px"></canvas>
-                <p class="text-muted small mt-2" id="probe-chart-hint">No data yet.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- ---- Time Average Tab ---- -->
       <div id="pp-timeavg" class="pp-tab-panel" style="display:none">
@@ -1488,65 +1720,42 @@
           </div>
         </div>
       </div>
+      </div><!-- /pp-merged-fieldview -->
 
-      <!-- ---- Export Tab ---- -->
-      <div id="pp-export" class="pp-tab-panel" style="display:none">
+      <!-- ─── Probes & Analysis merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-probes">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('probes',this,'pp-merged-probes')">Probe Monitor</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('advanced',this,'pp-merged-probes')">Advanced Analytics</button>
+        </div>
+      <!-- ---- Probe Monitor Tab ---- -->
+      <div id="pp-probes" class="pp-tab-panel">
         <div class="row g-3">
-          <div class="col-lg-5">
+          <div class="col-lg-4">
             <div class="card">
-              <div class="card-header small fw-semibold"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></div>
+              <div class="card-header small fw-semibold"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes">Probe Monitor</span></div>
               <div class="card-body small">
-                <p class="text-muted" data-i18n="postprocess.export_hint">Download checkpoint data as a zip archive for use in ParaView, VisIt, MATLAB or Python.</p>
-                <div class="mb-2">
-                  <label class="form-label mb-1" data-i18n="postprocess.export_format">Export format</label>
-                  <select class="form-select form-select-sm" id="exp-format">
-                    <option value="vts" data-i18n="postprocess.export_format_vts">VTS (VTK XML – ParaView)</option>
-                    <option value="vtk" data-i18n="postprocess.export_format_vtk">VTK (Legacy ASCII)</option>
-                    <option value="hdf5" data-i18n="postprocess.export_format_hdf5">HDF5 + XDMF</option>
-                    <option value="csv" data-i18n="postprocess.export_format_csv">CSV (flat text)</option>
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label mb-1" data-i18n="postprocess.export_checkpoint">Checkpoint</label>
-                  <select class="form-select form-select-sm" id="exp-checkpoint">
-                    <option value="latest">latest</option>
-                  </select>
-                </div>
-                <button class="btn btn-success btn-sm w-100" id="exp-btn" onclick="downloadExport()">
-                  <i class="bi bi-download"></i> <span data-i18n="postprocess.export_btn">Download</span>
+                <p class="text-muted" data-i18n="postprocess.probe_hint">Add probe locations then click Extract History.</p>
+                <div id="probe-list" class="mb-2"></div>
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="addProbeRow()">
+                  <i class="bi bi-plus-circle"></i> <span data-i18n="postprocess.probe_add">Add Probe</span>
                 </button>
-                <div class="mt-3 small text-muted" id="exp-status"></div>
+                <button class="btn btn-primary btn-sm" onclick="runProbeHistory()">
+                  <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.probe_run">Extract History</span>
+                </button>
               </div>
             </div>
           </div>
-          <div class="col-lg-7">
-            <div class="card h-100">
-              <div class="card-header small fw-semibold"><i class="bi bi-info-circle"></i> Format guide</div>
-              <div class="card-body small text-muted">
-                <dl class="mb-0">
-                  <dt>VTS (VTK XML)</dt>
-                  <dd>Open in <strong>ParaView</strong> or VisIt. Base64 inline binary. Best for 2-D and 3-D fields.</dd>
-                  <dt>VTK (Legacy)</dt>
-                  <dd>ASCII structured-points format. Compatible with older VTK tools and Python <code>pyvista</code>.</dd>
-                  <dt>HDF5 + XDMF</dt>
-                  <dd>Requires <code>h5py</code> on the server. Open the <code>.xdmf</code> file in ParaView to auto-load field data.</dd>
-                  <dt>CSV</dt>
-                  <dd>Flat text with columns <code>i,j,ux,uy,rho</code> (2-D) or <code>i,j,k,ux,uy,uz,rho</code> (3-D). Read with <code>pandas.read_csv()</code>.</dd>
-                </dl>
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-header small fw-semibold">Time History</div>
+              <div class="card-body p-2">
+                <canvas id="probe-chart" style="width:100%;max-height:360px"></canvas>
+                <p class="text-muted small mt-2" id="probe-chart-hint">No data yet.</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div id="pp-logs" class="pp-tab-panel" style="display:none">
-        <div class="log-box" id="pp-log-box" data-i18n="postprocess.no_job_logs">Select a job to view logs.</div>
-      </div>
-      <div id="pp-files" class="pp-tab-panel" style="display:none">
-        <div id="files-table"></div>
-      </div>
-      <div id="pp-metadata" class="pp-tab-panel" style="display:none">
-        <pre id="pp-metadata-box" class="bg-light p-3 border rounded small" style="max-height:500px;overflow:auto" data-i18n="postprocess.no_job_meta">Select a job to view metadata.</pre>
       </div>
 
       <div id="pp-advanced" class="pp-tab-panel" style="display:none">
@@ -1608,32 +1817,74 @@
           </div>
         </div>
       </div>
+      </div><!-- /pp-merged-probes -->
 
-      <!-- Study-Group Compare (new) -->
-      <div id="pp-studycompare" class="pp-tab-panel" style="display:none">
-        <div class="card">
-          <div class="card-header d-flex align-items-center gap-2">
-            <i class="bi bi-bar-chart-steps me-1"></i>
-            <span data-i18n="postprocess.studycompare_title">Study-Group Comparison</span>
-          </div>
-          <div class="card-body">
-            <div class="row g-2 mb-3 align-items-end">
-              <div class="col-sm-6 col-md-4">
-                <label class="form-label small mb-1" data-i18n="postprocess.studycompare_group_label">Study Group Name</label>
-                <input type="text" class="form-control form-control-sm" id="study-compare-group"
-                       placeholder="e.g. re_sweep_2025" />
-              </div>
-              <div class="col-auto">
-                <button class="btn btn-sm btn-primary" onclick="loadStudyCompare()">
-                  <i class="bi bi-arrow-repeat"></i>
-                  <span data-i18n="postprocess.studycompare_load">Load</span>
+      <!-- ─── Export merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-export">
+      <!-- ---- Export Tab ---- -->
+      <div id="pp-export" class="pp-tab-panel">
+        <div class="row g-3">
+          <div class="col-lg-5">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></div>
+              <div class="card-body small">
+                <p class="text-muted" data-i18n="postprocess.export_hint">Download checkpoint data as a zip archive for use in ParaView, VisIt, MATLAB or Python.</p>
+                <div class="mb-2">
+                  <label class="form-label mb-1" data-i18n="postprocess.export_format">Export format</label>
+                  <select class="form-select form-select-sm" id="exp-format">
+                    <option value="vts" data-i18n="postprocess.export_format_vts">VTS (VTK XML – ParaView)</option>
+                    <option value="vtk" data-i18n="postprocess.export_format_vtk">VTK (Legacy ASCII)</option>
+                    <option value="hdf5" data-i18n="postprocess.export_format_hdf5">HDF5 + XDMF</option>
+                    <option value="csv" data-i18n="postprocess.export_format_csv">CSV (flat text)</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label mb-1" data-i18n="postprocess.export_checkpoint">Checkpoint</label>
+                  <select class="form-select form-select-sm" id="exp-checkpoint">
+                    <option value="latest">latest</option>
+                  </select>
+                </div>
+                <button class="btn btn-success btn-sm w-100" id="exp-btn" onclick="downloadExport()">
+                  <i class="bi bi-download"></i> <span data-i18n="postprocess.export_btn">Download</span>
                 </button>
+                <div class="mt-3 small text-muted" id="exp-status"></div>
               </div>
             </div>
-            <div id="study-compare-result"></div>
+          </div>
+          <div class="col-lg-7">
+            <div class="card h-100">
+              <div class="card-header small fw-semibold"><i class="bi bi-info-circle"></i> Format guide</div>
+              <div class="card-body small text-muted">
+                <dl class="mb-0">
+                  <dt>VTS (VTK XML)</dt>
+                  <dd>Open in <strong>ParaView</strong> or VisIt. Base64 inline binary. Best for 2-D and 3-D fields.</dd>
+                  <dt>VTK (Legacy)</dt>
+                  <dd>ASCII structured-points format. Compatible with older VTK tools and Python <code>pyvista</code>.</dd>
+                  <dt>HDF5 + XDMF</dt>
+                  <dd>Requires <code>h5py</code> on the server. Open the <code>.xdmf</code> file in ParaView to auto-load field data.</dd>
+                  <dt>CSV</dt>
+                  <dd>Flat text with columns <code>i,j,ux,uy,rho</code> (2-D) or <code>i,j,k,ux,uy,uz,rho</code> (3-D). Read with <code>pandas.read_csv()</code>.</dd>
+                </dl>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+      </div><!-- /pp-merged-export -->
+
+      <!-- ─── Logs & Files merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-logs">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('logs',this,'pp-merged-logs')">Logs</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('files',this,'pp-merged-logs')">Files</button>
+        </div>
+      <div id="pp-logs" class="pp-tab-panel">
+        <div class="log-box" id="pp-log-box" data-i18n="postprocess.no_job_logs">Select a job to view logs.</div>
+      </div>
+      <div id="pp-files" class="pp-tab-panel" style="display:none">
+        <div id="files-table"></div>
+      </div>
+      </div><!-- /pp-merged-logs -->
 
     </div>
 
@@ -2373,6 +2624,20 @@
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-reports">
       <h4 class="mb-1"><i class="bi bi-file-earmark-text"></i> <span data-i18n="reports.title">Reports</span></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step wf-active" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
       <p class="text-muted small mb-3" data-i18n="reports.subtitle">Engineering report generation and convergence monitoring for simulation jobs.</p>
 
       <div class="row g-3 mb-3">
@@ -2507,6 +2772,102 @@
 <div id="lightbox" onclick="closeLightbox()">
   <span id="lightbox-close">&times;</span>
   <img id="lightbox-img" src="" alt="snapshot" />
+</div>
+
+<!-- Settings Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="settings-offcanvas" aria-labelledby="settings-offcanvas-label" style="width:360px">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="settings-offcanvas-label"><i class="bi bi-gear-fill me-2"></i> <span data-i18n="settings.title">Settings</span></h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <!-- Language -->
+    <h6 class="fw-semibold mb-2" data-i18n="settings.language">Language</h6>
+    <div class="lang-switcher mb-4">
+      <button class="lang-btn" data-lang="en" title="English">EN</button>
+      <button class="lang-btn" data-lang="zh" title="中文">中文</button>
+    </div>
+
+    <!-- Webhook / Notifications -->
+    <h6 class="fw-semibold mb-2" data-i18n="settings.notifications">Notifications</h6>
+    <div class="mb-2">
+      <label class="form-label small" data-i18n="dashboard.notify_webhook">Webhook URL</label>
+      <input id="dashboard-notify-webhook" class="form-control form-control-sm" placeholder="https://example.com/webhook" />
+    </div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="dashboard-notify-complete" checked>
+          <label class="form-check-label small" for="dashboard-notify-complete" data-i18n="dashboard.notify_complete">On complete</label>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="dashboard-notify-failure" checked>
+          <label class="form-check-label small" for="dashboard-notify-failure" data-i18n="dashboard.notify_failure">On failure</label>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-2 mb-4">
+      <button class="btn btn-sm btn-outline-primary flex-fill" onclick="dashboardSaveNotifications()"><i class="bi bi-save"></i> <span data-i18n="dashboard.notify_save">Save</span></button>
+      <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="dashboardTestWebhook()"><i class="bi bi-send-check"></i> <span data-i18n="dashboard.notify_test">Test</span></button>
+    </div>
+    <div id="settings-notify-result" class="small mb-3"></div>
+
+    <!-- HPC -->
+    <h6 class="fw-semibold mb-2" data-i18n="settings.hpc">HPC Defaults</h6>
+    <div class="row g-2 mb-4">
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.hpc_partition">Partition</label>
+        <input id="dashboard-hpc-partition" class="form-control form-control-sm" placeholder="gpu" />
+      </div>
+      <div class="col-3">
+        <label class="form-label small" data-i18n="dashboard.hpc_nodes">Nodes</label>
+        <input id="dashboard-hpc-nodes" type="number" class="form-control form-control-sm" value="1" min="1" />
+      </div>
+      <div class="col-3">
+        <label class="form-label small" data-i18n="dashboard.hpc_cpus">CPUs</label>
+        <input id="dashboard-hpc-cpus" type="number" class="form-control form-control-sm" value="4" min="1" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.hpc_mem">Memory</label>
+        <input id="dashboard-hpc-mem" class="form-control form-control-sm" value="8G" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.hpc_walltime">Walltime</label>
+        <input id="dashboard-hpc-walltime" class="form-control form-control-sm" value="02:00:00" />
+      </div>
+    </div>
+    <button class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="dashboardSubmitHpc()"><i class="bi bi-cloud-upload"></i> <span data-i18n="dashboard.hpc_submit">Submit to HPC</span></button>
+    <pre id="dashboard-hpc-result" class="small mt-1 mb-4" style="white-space:pre-wrap;max-height:100px;overflow:auto">-</pre>
+
+    <!-- Auto-stop defaults -->
+    <h6 class="fw-semibold mb-2" data-i18n="settings.autostop">Auto-stop Defaults</h6>
+    <div class="form-check form-switch mb-2">
+      <input class="form-check-input" type="checkbox" id="dashboard-auto-stop-enabled" checked>
+      <label class="form-check-label small" for="dashboard-auto-stop-enabled" data-i18n="dashboard.auto_stop_enabled">Enable convergence auto-stop</label>
+    </div>
+    <div class="row g-2 mb-3">
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.auto_stop_key">Residual key</label>
+        <input id="dashboard-auto-stop-key" class="form-control form-control-sm" value="residual" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.auto_stop_tol">Rel. tolerance</label>
+        <input id="dashboard-auto-stop-tol" type="number" class="form-control form-control-sm" value="0.0001" step="0.0001" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.auto_stop_patience">Patience</label>
+        <input id="dashboard-auto-stop-patience" type="number" class="form-control form-control-sm" value="5" min="1" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.auto_stop_min_steps">Min steps</label>
+        <input id="dashboard-auto-stop-min-steps" type="number" class="form-control form-control-sm" value="20" min="1" />
+      </div>
+    </div>
+    <button class="btn btn-sm btn-outline-success w-100 mb-1" onclick="dashboardApplyAutoStop()"><i class="bi bi-stop-circle"></i> <span data-i18n="dashboard.auto_stop_apply">Apply auto-stop</span></button>
+    <pre id="dashboard-auto-stop-result" class="small mt-1" style="white-space:pre-wrap;max-height:80px;overflow:auto">-</pre>
+  </div>
 </div>
 
 <!-- Bootstrap JS -->

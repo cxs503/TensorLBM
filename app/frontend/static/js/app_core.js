@@ -73,23 +73,85 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function bindTopNavEvents() {
-    const nav = document.querySelector('.top-navbar nav');
-    if (nav && nav.dataset.bound !== '1') {
-      nav.dataset.bound = '1';
-      nav.addEventListener('click', (ev) => {
-        const link = ev.target && ev.target.closest('a[data-tab]');
+    const navbar = document.querySelector('.top-navbar');
+    if (navbar && navbar.dataset.bound !== '1') {
+      navbar.dataset.bound = '1';
+      navbar.addEventListener('click', (ev) => {
+        const link = ev.target && ev.target.closest('[data-tab]');
         if (!link) return;
+        const tab = link.dataset.tab;
+        const cadSub = link.dataset.cadSub;
         ev.preventDefault();
-        showTab(link.dataset.tab, link);
+        showTab(tab, null);
+        if (cadSub) showCadSub(cadSub, null);
+        updateNavActiveState(tab);
+        // close any open Bootstrap dropdown
+        const openDropdown = navbar.querySelector('.dropdown-menu.show');
+        if (openDropdown) {
+          const toggle = openDropdown.closest('.dropdown').querySelector('[data-bs-toggle="dropdown"]');
+          if (toggle) {
+            const dd = typeof bootstrap !== 'undefined' && bootstrap.Dropdown && bootstrap.Dropdown.getInstance(toggle);
+            if (dd) dd.hide();
+          }
+        }
+      });
+      // language buttons in navbar
+      navbar.addEventListener('click', (ev) => {
+        const btn = ev.target && ev.target.closest('.lang-btn');
+        if (!btn) return;
+        const lang = btn.dataset.lang;
+        if (lang) i18n.setLang ? i18n.setLang(lang) : i18n.switch(lang);
       });
     }
-    document.querySelectorAll('.lang-btn[data-lang]').forEach((btn) => {
-      if (btn.dataset.bound === '1') return;
-      btn.dataset.bound = '1';
-      btn.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        i18n.switch(btn.dataset.lang);
+    // Also bind offcanvas lang buttons
+    const offcanvas = document.getElementById('settings-offcanvas');
+    if (offcanvas && offcanvas.dataset.langBound !== '1') {
+      offcanvas.dataset.langBound = '1';
+      offcanvas.addEventListener('click', (ev) => {
+        const btn = ev.target && ev.target.closest('.lang-btn');
+        if (!btn) return;
+        const lang = btn.dataset.lang;
+        if (lang) i18n.setLang ? i18n.setLang(lang) : i18n.switch(lang);
       });
+    }
+  }
+
+  function updateNavActiveState(activeTab) {
+    const groupMap = {
+      dashboard: 'dashboard',
+      projects: 'projects', templates: 'projects',
+      cad: 'cad', geo3d: 'cad',
+      preprocess: 'sim', solve: 'sim', benchmarks: 'sim',
+      postprocess: 'results', reports: 'results', compare: 'results',
+      'ai-flow': 'ai', orchestration: 'ai', agent: 'ai', suboff: 'ai',
+    };
+    const group = groupMap[activeTab] || '';
+    document.querySelectorAll('.nav-top-link, .nav-top-btn').forEach(el => el.classList.remove('active'));
+    const direct = document.querySelector(`.nav-top-link[data-tab="${activeTab}"]`);
+    if (direct) direct.classList.add('active');
+    const groupBtns = {
+      projects: 'nav-drop-projects',
+      cad: 'nav-drop-cad',
+      sim: 'nav-drop-sim',
+      results: 'nav-drop-results',
+      ai: 'nav-drop-ai',
+    };
+    if (groupBtns[group]) {
+      const btn = document.getElementById(groupBtns[group]);
+      if (btn) btn.classList.add('active');
+    }
+    const moduleNames = {
+      dashboard: '', projects: 'Projects', templates: 'Templates',
+      cad: 'Geometry / CAD', geo3d: '3D Preview',
+      preprocess: 'Pre-processing', solve: 'Solver', benchmarks: 'Benchmarks',
+      postprocess: 'Post-process', reports: 'Reports', compare: 'Compare Runs',
+      'ai-flow': 'AI Flow', orchestration: 'Orchestration', agent: 'AI Agent',
+      suboff: 'SUBOFF Surrogate',
+    };
+    const titleEl = document.getElementById('navbar-module-title');
+    if (titleEl) titleEl.textContent = moduleNames[activeTab] ? '— ' + moduleNames[activeTab] : '';
+    document.querySelectorAll('.wf-tree-step').forEach(el => {
+      el.classList.toggle('active', el.dataset.tab === activeTab);
     });
   }
 });
@@ -150,8 +212,7 @@ function bindKeyboardShortcuts() {
       const idx = ev.key === '0' ? 9 : Number(ev.key) - 1;
       const tab = TAB_SEQUENCE[idx];
       if (!tab) return;
-      const nav = document.querySelector(`.top-navbar nav a[data-tab="${tab}"]`);
-      showTab(tab, nav || null);
+      showTab(tab, null);
       ev.preventDefault();
       return;
     }
@@ -593,7 +654,7 @@ function selectJob(id) {
   if (document.getElementById('panel-dashboard')?.classList.contains('active')) {
     dashboardRefreshSelectedJobOps();
   }
-  showTab('postprocess', document.querySelectorAll('.top-navbar nav a')[4]);
+  showTab('postprocess', null);
 }
 
 function reuseJobConfig(ev, id) {
@@ -622,7 +683,7 @@ function reuseJobConfig(ev, id) {
     if (!el) return;
     el.value = cfg[f.name];
   });
-  showTab('solve', document.querySelectorAll('.top-navbar nav a')[3]);
+  showTab('solve', null);
   showToast(`${t('solve.reuse_loaded')} ${id}`, 'success');
 }
 
@@ -653,9 +714,8 @@ function showTab(name, el) {
   if (!TAB_SEQUENCE.includes(name)) name = 'dashboard';
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById(`panel-${name}`).classList.add('active');
-  document.querySelectorAll('.top-navbar nav a').forEach(a => a.classList.remove('active'));
-  const activeEl = el || document.querySelector(`.top-navbar nav a[data-tab="${name}"]`);
-  if (activeEl) activeEl.classList.add('active');
+  // Update nav active state via new function
+  updateNavActiveState(name);
   uiState.activeTab = name;
   saveUIState();
   if (name !== 'dashboard' && dashboardLiveMetricsTimer) {
@@ -788,8 +848,104 @@ function renderWorkflowPipeline(wf) {
 }
 
 // ============================================================
-// Fluid material database
+
 // ============================================================
+// New UI functions: sidebar, CAD sub-tabs, PP merged tabs
+// ============================================================
+
+function sidebarSetMode(mode) {
+  const wfPane = document.getElementById('sidebar-workflow-pane');
+  const jobsPane = document.getElementById('sidebar-jobs-pane');
+  const btnWf = document.getElementById('sidebar-btn-workflow');
+  const btnJobs = document.getElementById('sidebar-btn-jobs');
+  if (!wfPane || !jobsPane) return;
+  const isWf = mode === 'workflow';
+  wfPane.style.display = isWf ? '' : 'none';
+  jobsPane.style.display = isWf ? 'none' : '';
+  if (btnWf) btnWf.classList.toggle('active', isWf);
+  if (btnJobs) btnJobs.classList.toggle('active', !isWf);
+}
+
+function sidebarToggleCollapse() {
+  const sidebar = document.getElementById('jobs-sidebar');
+  const icon = document.getElementById('sidebar-collapse-icon');
+  if (!sidebar) return;
+  const collapsed = sidebar.classList.toggle('collapsed');
+  if (icon) {
+    icon.className = collapsed ? 'bi bi-chevron-right' : 'bi bi-chevron-left';
+  }
+}
+
+function showCadSub(sub, clickedLink) {
+  document.querySelectorAll('.cad-sub-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById(`cad-sub-${sub}`);
+  if (panel) panel.classList.add('active');
+  const tabs = document.querySelectorAll('#cad-tabs .nav-link');
+  tabs.forEach(a => a.classList.remove('active'));
+  if (clickedLink) {
+    clickedLink.classList.add('active');
+  } else {
+    const found = document.querySelector(`#cad-tabs .nav-link[data-cad-sub="${sub}"]`);
+    if (found) found.classList.add('active');
+  }
+}
+
+// PP_TAB_TO_MERGED maps old single-tab IDs to their merged container
+const PP_TAB_TO_MERGED = {
+  snapshots: 'results',
+  metadata: 'results',
+  studycompare: 'results',
+  viewer: 'fieldview',
+  timeavg: 'fieldview',
+  probes: 'probes',
+  advanced: 'probes',
+  export: 'export',
+  logs: 'logs',
+  files: 'logs',
+};
+
+function showPPMergedTab(tabName, clickedLink) {
+  document.querySelectorAll('.pp-merged-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById(`pp-merged-${tabName}`);
+  if (panel) panel.classList.add('active');
+  const navLinks = document.querySelectorAll('#pp-tabs .nav-link');
+  navLinks.forEach(a => a.classList.remove('active'));
+  if (clickedLink) {
+    clickedLink.classList.add('active');
+  }
+}
+
+function showPPSub(sub, btn, parentMergedId) {
+  const parent = document.getElementById(`pp-merged-${parentMergedId}`);
+  if (parent) {
+    parent.querySelectorAll('.pp-tab-panel').forEach(p => { p.style.display = 'none'; });
+    const target = document.getElementById(`pp-${sub}`);
+    if (target) target.style.display = '';
+  }
+  if (btn) {
+    const btnGroup = btn.closest('.pp-sub-btns');
+    if (btnGroup) btnGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+}
+
+/** Backward compat: called by app_postprocess.js with old single-tab IDs */
+function showPPTab(tabId, clickedEl) {
+  const mergedName = PP_TAB_TO_MERGED[tabId] || 'results';
+  const mergedPanel = document.getElementById(`pp-merged-${mergedName}`);
+  if (!mergedPanel) return;
+  showPPMergedTab(mergedName, null);
+  // activate the correct merged-tab nav link
+  document.querySelectorAll('#pp-tabs .nav-link').forEach(a => {
+    if (a.getAttribute('onclick') && a.getAttribute('onclick').includes(`'${mergedName}'`)) {
+      a.classList.add('active');
+    }
+  });
+  // show the specific sub-panel inside the merged panel
+  mergedPanel.querySelectorAll('.pp-tab-panel').forEach(p => { p.style.display = 'none'; });
+  const target = document.getElementById(`pp-${tabId}`);
+  if (target) target.style.display = '';
+}
 
 async function loadMaterials() {
   const tableEl = document.getElementById('material-table');
@@ -842,7 +998,7 @@ function materialFillUnitConverter(nu) {
   const el = document.getElementById('uc-nu');
   if (el && nu != null) {
     el.value = nu;
-    showTab('preprocess', document.querySelector('[data-tab="preprocess"]'));
+    showTab('preprocess', null);
   }
 }
 
