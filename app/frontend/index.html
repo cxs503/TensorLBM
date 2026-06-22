@@ -1113,10 +1113,16 @@
                 <optgroup id="optgroup-2d-single" label="2D Single-phase">
                   <option value="cylinder_flow">Cylinder Flow (2D)</option>
                   <option value="rotating_cylinder">Rotating Cylinder (2D)</option>
+                  <option value="cumulant_cylinder_flow">Cumulant Cylinder Flow (2D)</option>
                   <option value="lid_driven_cavity">Lid-Driven Cavity (2D)</option>
                   <option value="backward_facing_step">Backward-Facing Step (2D)</option>
                   <option value="turbulent_channel">Turbulent Channel LES (2D)</option>
                   <option value="pipeline_flow">Pipeline Flow (2D)</option>
+                  <option value="sliding_mesh_rotor">Sliding Mesh Rotor (2D)</option>
+                  <option value="passive_scalar_transport">Passive Scalar Transport (2D)</option>
+                  <option value="cavitation_flow">Cavitation Flow (2D)</option>
+                  <option value="oscillating_airfoil">Oscillating Airfoil (2D)</option>
+                  <option value="conjugate_ht">Conjugate Heat Transfer (2D)</option>
                 </optgroup>
                 <optgroup id="optgroup-2d-multi" label="2D Multiphase">
                   <option value="dam_break">Dam Break (2D)</option>
@@ -1240,6 +1246,12 @@
                     <option value="thermal_cavity_3d">thermal_cavity_3d</option>
                     <option value="porous_drainage_3d">porous_drainage_3d</option>
                     <option value="hull_free_surface">hull_free_surface</option>
+                    <option value="cumulant_cylinder_flow">cumulant_cylinder_flow</option>
+                    <option value="sliding_mesh_rotor">sliding_mesh_rotor</option>
+                    <option value="passive_scalar_transport">passive_scalar_transport</option>
+                    <option value="cavitation_flow">cavitation_flow</option>
+                    <option value="oscillating_airfoil">oscillating_airfoil</option>
+                    <option value="conjugate_ht">conjugate_ht</option>
                   </select>
                 </div>
                 <div class="col-md-2">
@@ -1317,6 +1329,7 @@
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs">Logs</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> <span data-i18n="postprocess.tab_files">Files</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> <span data-i18n="postprocess.tab_metadata">Metadata</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('advanced',this)"><i class="bi bi-activity"></i> <span>Advanced Analytics</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('studycompare',this)"><i class="bi bi-bar-chart-steps"></i> <span data-i18n="postprocess.tab_studycompare">Study Compare</span></a></li>
       </ul>
 
@@ -1534,6 +1547,66 @@
       </div>
       <div id="pp-metadata" class="pp-tab-panel" style="display:none">
         <pre id="pp-metadata-box" class="bg-light p-3 border rounded small" style="max-height:500px;overflow:auto" data-i18n="postprocess.no_job_meta">Select a job to view metadata.</pre>
+      </div>
+
+      <div id="pp-advanced" class="pp-tab-panel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-speedometer2"></i> Unified Monitor</div>
+              <div class="card-body small">
+                <button class="btn btn-sm btn-primary w-100 mb-2" onclick="loadUnifiedMonitor()">
+                  <i class="bi bi-arrow-repeat"></i> Refresh Monitor
+                </button>
+                <div id="pp-monitor-summary" class="small text-muted">Select job then refresh.</div>
+              </div>
+            </div>
+            <div class="card mt-3">
+              <div class="card-header small fw-semibold"><i class="bi bi-magic"></i> Analysis Tools</div>
+              <div class="card-body small">
+                <label class="form-label mb-1">Job Analysis API</label>
+                <select id="pp-adv-endpoint" class="form-select form-select-sm mb-2">
+                  <option value="force">Force decomposition</option>
+                  <option value="wss">Wall shear stress</option>
+                  <option value="vortex">Vortex criterion</option>
+                  <option value="heat">Heat flux</option>
+                  <option value="acoustic">Acoustics spectrum</option>
+                  <option value="turbulence">Turbulence statistics</option>
+                  <option value="animation">Animation (GIF metadata/file)</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="runAdvancedEndpoint()">
+                  Run selected job analysis
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runStreamlinesQuick()">
+                  Run streamlines (quick)
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runSurfaceIntegralsQuick()">
+                  Run surface integrals (quick)
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runInletProfilePreviewQuick()">
+                  Run inlet-profile preview
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runDfsemPreviewQuick()">
+                  Run DFSEM preview
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runSpongePreviewQuick()">
+                  Run sponge preview
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="runRoughnessPreviewQuick()">
+                  Run roughness preview
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-code-square"></i> Advanced Result</div>
+              <div class="card-body">
+                <pre id="pp-advanced-result" class="small mb-0" style="white-space:pre-wrap;max-height:540px;overflow:auto">-</pre>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Study-Group Compare (new) -->
