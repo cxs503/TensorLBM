@@ -10,9 +10,9 @@ import base64
 import json
 import math
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 from .. import job_manager
@@ -149,6 +149,44 @@ def compute_engineering_kpis(job: job_manager.Job) -> dict[str, Any]:
             steady_score is not None and steady_score >= 0.7
         ),
     }
+
+
+def _report_summary_payload(job: job_manager.Job) -> dict[str, Any]:
+    """Return a structured summary shared by single-job and compare endpoints."""
+    forces = _load_forces_csv(job)
+    meta = _load_metadata(job)
+    image_count = len(_list_images(job))
+    diag = job.diagnostics
+    kpis = compute_engineering_kpis(job)
+    return {
+        "job_id": job.job_id,
+        "name": job.name,
+        "job_type": job.job_type,
+        "status": job.status.value,
+        "created_at": job.created_at,
+        "started_at": job.started_at,
+        "completed_at": job.completed_at,
+        "error": job.error,
+        "diagnostic_steps": len(diag),
+        "force_rows": len(forces),
+        "image_count": image_count,
+        "run_metadata_available": bool(meta),
+        "report_url": f"/api/reports/{job.job_id}",
+        "engineering_kpis": kpis,
+    }
+
+
+def _flatten_compare_metrics(summary: dict[str, Any]) -> dict[str, float]:
+    """Flatten numeric report-summary metrics for comparison tables."""
+    out: dict[str, float] = {}
+    for key in ("diagnostic_steps", "force_rows", "image_count"):
+        value = summary.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            out[key] = float(value)
+    for key, value in (summary.get("engineering_kpis") or {}).items():
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            out[key] = float(value)
+    return out
 
 
 def _format_cell(value: object) -> str:
@@ -407,24 +445,53 @@ async def get_report_summary(job_id: str) -> dict:
     job = job_manager.get_job(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
-    forces = _load_forces_csv(job)
-    meta = _load_metadata(job)
-    image_count = len(_list_images(job))
-    diag = job.diagnostics
-    kpis = compute_engineering_kpis(job)
+    return _report_summary_payload(job)
+
+
+@router.get("/compare/kpis")
+async def compare_reports(
+    ids: Annotated[list[str], Query(min_length=2, max_length=10)],
+) -> dict[str, Any]:
+    """Compare report summaries and engineering KPIs for multiple jobs."""
+    rows: list[dict[str, Any]] = []
+    missing: list[str] = []
+    for job_id in ids:
+        job = job_manager.get_job(job_id)
+        if job is None:
+            missing.append(job_id)
+            continue
+        summary = _report_summary_payload(job)
+        rows.append({
+            **summary,
+            "compare_metrics": _flatten_compare_metrics(summary),
+        })
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="No matching jobs found")
+
+    metric_summary: dict[str, dict[str, float | str]] = {}
+    metric_keys = sorted({k for row in rows for k in row["compare_metrics"]})
+    for key in metric_keys:
+        vals = [
+            (row["job_id"], float(row["compare_metrics"][key]))
+            for row in rows
+            if key in row["compare_metrics"]
+        ]
+        if not vals:
+            continue
+        best_job_id, best_value = min(vals, key=lambda item: item[1])
+        only_vals = [value for _, value in vals]
+        metric_summary[key] = {
+            "min": min(only_vals),
+            "max": max(only_vals),
+            "mean": sum(only_vals) / len(only_vals),
+            "best_job_id": best_job_id,
+            "best_value": best_value,
+        }
+
     return {
-        "job_id": job.job_id,
-        "name": job.name,
-        "job_type": job.job_type,
-        "status": job.status.value,
-        "created_at": job.created_at,
-        "started_at": job.started_at,
-        "completed_at": job.completed_at,
-        "error": job.error,
-        "diagnostic_steps": len(diag),
-        "force_rows": len(forces),
-        "image_count": image_count,
-        "run_metadata_available": bool(meta),
-        "report_url": f"/api/reports/{job_id}",
-        "engineering_kpis": kpis,
+        "count": len(rows),
+        "rows": rows,
+        "missing": missing,
+        "metric_summary": metric_summary,
     }

@@ -79,6 +79,23 @@ const SIM_TYPES = {
       {name:'seed', label:'Seed', type:'number', default:0, min:0},
     ],
   },
+  rotating_cylinder: {
+    label: 'Rotating Cylinder (2D)',
+    desc: 'Magnus-effect cylinder with prescribed spin ratio. Useful for rotating-body wake and lift studies.',
+    endpoint: '/api/solve/rotating-cylinder',
+    fields: [
+      {name:'nx', label:'Grid width (nx)', type:'number', default:320, min:16},
+      {name:'ny', label:'Grid height (ny)', type:'number', default:100, min:8},
+      {name:'u_in', label:'Inlet velocity', type:'number', default:0.08, step:0.01, min:0.001},
+      {name:'re', label:'Reynolds number', type:'number', default:100, min:1},
+      {name:'radius', label:'Cylinder radius (cells)', type:'number', default:12, min:1},
+      {name:'spin_ratio', label:'Spin ratio α', type:'number', default:1.0, step:0.1, min:0},
+      {name:'n_steps', label:'Time steps', type:'number', default:1200, min:1},
+      {name:'output_interval', label:'Output interval', type:'number', default:200, min:1},
+      {name:'device', label:'Device', type:'device'},
+      {name:'seed', label:'Seed', type:'number', default:0, min:0},
+    ],
+  },
   lid_driven_cavity: {
     label: 'Lid-Driven Cavity (2D)',
     desc: 'Square cavity driven by a sliding top wall. Compare against Ghia et al. (1982).',
@@ -299,10 +316,72 @@ const SIM_TYPES = {
       {name:'device', label:'Device', type:'device'},
     ],
   },
+  actuator_disk: {
+    label: 'Actuator Disk Propulsor (3D)',
+    desc: 'Body-force propulsor sweep using actuator-disk thrust and swirl loading for rapid propulsion studies.',
+    endpoint: '/api/solve/actuator-disk',
+    fields: [
+      {name:'diameter', label:'Disk diameter (cells)', type:'number', default:48, min:4},
+      {name:'hub_diameter_ratio', label:'Hub diameter ratio', type:'number', default:0.18, step:0.01, min:0, max:0.95},
+      {name:'rpm_lu', label:'RPM (lattice units)', type:'number', default:0.0012, step:0.0001, min:0.000001},
+      {name:'inflow_velocities', label:'Inflow velocities', type:'text', default:'0.02,0.04,0.06', csvNumbers:true},
+      {name:'nx', label:'nx', type:'number', default:200, min:40},
+      {name:'ny', label:'ny', type:'number', default:100, min:20},
+      {name:'nz', label:'nz', type:'number', default:100, min:20},
+      {name:'tau', label:'Relaxation time τ', type:'number', default:0.58, step:0.01, min:0.51},
+      {name:'smagorinsky_cs', label:'Smagorinsky C_s', type:'number', default:0.1, step:0.01, min:0},
+      {name:'n_steps', label:'Time steps', type:'number', default:5000, min:1},
+      {name:'warmup_steps', label:'Warmup steps', type:'number', default:1000, min:0},
+      {name:'device', label:'Device', type:'device'},
+      {name:'seed', label:'Seed', type:'number', default:0, min:0},
+    ],
+  },
+  propeller_open_water: {
+    label: 'Propeller Open-Water (3D)',
+    desc: 'Moving-wall open-water propeller benchmark sweep for KT/KQ/η curves across multiple inflow speeds.',
+    endpoint: '/api/solve/propeller-open-water',
+    fields: [
+      {name:'inflow_velocities', label:'Inflow velocities', type:'text', default:'0.005,0.01,0.015', csvNumbers:true},
+      {name:'rpm', label:'RPM (lattice units)', type:'number', default:0.000005, step:0.000001, min:0.0000001},
+      {name:'nx', label:'nx', type:'number', default:200, min:40},
+      {name:'ny', label:'ny', type:'number', default:100, min:20},
+      {name:'nz', label:'nz', type:'number', default:100, min:20},
+      {name:'tau', label:'Relaxation time τ', type:'number', default:0.8, step:0.01, min:0.51},
+      {name:'smagorinsky_cs', label:'Smagorinsky C_s', type:'number', default:0.0, step:0.01, min:0},
+      {name:'n_revolutions', label:'Revolutions sampled', type:'number', default:3, min:1},
+      {name:'warmup_steps', label:'Warmup steps', type:'number', default:200, min:0},
+      {name:'model_diameter_m', label:'Model diameter (m)', type:'number', default:0.25, step:0.01, min:0.001},
+      {name:'model_speed_ms', label:'Model speed (m/s)', type:'number', default:2.5, step:0.1, min:0.001},
+      {name:'model_rho_kgm3', label:'Fluid density (kg/m³)', type:'number', default:1000, step:1, min:1},
+      {name:'device', label:'Device', type:'device'},
+      {name:'seed', label:'Seed', type:'number', default:0, min:0},
+    ],
+  },
+  ibm_propeller: {
+    label: 'IBM Propeller (3D)',
+    desc: 'Immersed-boundary propeller benchmark with rotating markers for higher-fidelity blade loading studies.',
+    endpoint: '/api/solve/ibm-propeller',
+    fields: [
+      {name:'inflow_velocities', label:'Inflow velocities', type:'text', default:'0.005,0.01,0.015', csvNumbers:true},
+      {name:'rpm', label:'RPM (lattice units)', type:'number', default:0.00001, step:0.000001, min:0.0000001},
+      {name:'nx', label:'nx', type:'number', default:120, min:40},
+      {name:'ny', label:'ny', type:'number', default:60, min:20},
+      {name:'nz', label:'nz', type:'number', default:60, min:20},
+      {name:'tau', label:'Relaxation time τ', type:'number', default:0.58, step:0.01, min:0.51},
+      {name:'smagorinsky_cs', label:'Smagorinsky C_s', type:'number', default:0.1, step:0.01, min:0},
+      {name:'n_revolutions', label:'Revolutions sampled', type:'number', default:1, min:1},
+      {name:'warmup_steps', label:'Warmup steps', type:'number', default:200, min:0},
+      {name:'marker_spacing', label:'Marker spacing', type:'number', default:1.5, step:0.1, min:0.1},
+      {name:'ibm_dt_substeps', label:'IBM substeps', type:'number', default:1, min:1},
+      {name:'device', label:'Device', type:'device'},
+      {name:'seed', label:'Seed', type:'number', default:0, min:0},
+    ],
+  },
 };
 
 const MODEL_CAPABILITIES = {
   cylinder_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','trt'] },
+  rotating_cylinder: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','mrt'] },
   lid_driven_cavity: { flow_types:['single_phase'], turbulence:['none'], multiphase:['none'], schemes:['bgk','trt'] },
   backward_facing_step: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','trt'] },
   turbulent_channel: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les','dynamic_smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
@@ -316,6 +395,9 @@ const MODEL_CAPABILITIES = {
   thermal_cavity_3d: { flow_types:['thermal'], turbulence:['none'], multiphase:['none'], schemes:['bgk','boussinesq'] },
   porous_drainage_3d: { flow_types:['multiphase'], turbulence:['none'], multiphase:['sc'], schemes:['bgk'] },
   hull_free_surface: { flow_types:['multiphase','free_surface'], turbulence:['none'], multiphase:['cg'], schemes:['bgk'] },
+  actuator_disk: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['mrt'] },
+  propeller_open_water: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['mrt'] },
+  ibm_propeller: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['mrt'] },
 };
 
 const MODEL_PRESETS = {
@@ -466,6 +548,11 @@ function renderField(f, devices) {
     return `<div><label class="form-label">${escHtml(labelText)}</label>
       <select class="form-select form-select-sm" id="field-${f.name}">${opts}</select></div>`;
   }
+  if (f.type === 'text') {
+    return `<div><label class="form-label">${escHtml(labelText)}</label>
+      <input type="text" class="form-control form-control-sm" id="field-${f.name}"
+        value="${escHtml(f.default || '')}" /></div>`;
+  }
   const extra = [];
   if (f.min !== undefined) extra.push(`min="${f.min}"`);
   if (f.max !== undefined) extra.push(`max="${f.max}"`);
@@ -493,6 +580,43 @@ function resetDefaults() {
   });
 }
 
+function parseSolverFieldValue(field, el) {
+  if (field.type === 'select' || field.type === 'device') return el.value;
+  if (field.type === 'text') {
+    if (field.csvNumbers) {
+      return String(el.value || '')
+        .split(',')
+        .map(v => parseFloat(v.trim()))
+        .filter(v => !Number.isNaN(v));
+    }
+    return el.value;
+  }
+  return parseFloat(el.value);
+}
+
+function loadSolveConfiguration(solverType, config, options = {}) {
+  const solverSelect = document.getElementById('sim-type');
+  if (!solverSelect || !SIM_TYPES[solverType]) return false;
+  solverSelect.value = solverType;
+  onSimTypeChange();
+  const cfg = config || {};
+  currentSchema.fields.forEach(f => {
+    const el = document.getElementById(`field-${f.name}`);
+    if (!el || cfg[f.name] === undefined || cfg[f.name] === null) return;
+    if (Array.isArray(cfg[f.name])) el.value = cfg[f.name].join(',');
+    else el.value = cfg[f.name];
+  });
+  if (options.message) {
+    const msgEl = document.getElementById('solve-template-msg');
+    if (msgEl) {
+      msgEl.textContent = options.message;
+      msgEl.style.display = '';
+      setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
+    }
+  }
+  return true;
+}
+
 async function submitJob() {
   if (!currentSchema) return;
   applyCapabilityDefaults();
@@ -500,8 +624,7 @@ async function submitJob() {
   for (const f of currentSchema.fields) {
     const el = document.getElementById(`field-${f.name}`);
     if (!el) continue;
-    if (f.type === 'select' || f.type === 'device') body[f.name] = el.value;
-    else body[f.name] = parseFloat(el.value);
+    body[f.name] = parseSolverFieldValue(f, el);
   }
   body.physics = buildPhysicsPayload();
   const btn = document.getElementById('submit-btn');
