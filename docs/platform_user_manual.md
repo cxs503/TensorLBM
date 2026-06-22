@@ -275,7 +275,7 @@ curl http://localhost:8000/api/postprocess/summary/ab12cd34
 * **CORS** 当前为 `*`（开发模式），生产部署请收紧到固定域名。
 * **文件下载** 端点对 `..` 已做 realpath 守卫，但仍建议在反向代理层再做一道路径校验。
 * **作业目录** 默认 `/tmp/tensorlbm_platform/`，公共多用户主机需替换为受 ACL 保护的目录。
-* **STL 上传** 大小未限制；建议在反代层设置 `client_max_body_size`。
+* **STL 上传** 已由后端限制（环境变量 `TENSORLBM_MAX_UPLOAD_MB`，默认 50MB）；生产环境仍建议在反代层设置 `client_max_body_size` 进行双层保护。
 
 ---
 
