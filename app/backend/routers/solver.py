@@ -397,6 +397,8 @@ _SOLVER_MAP: dict[str, tuple[str, str]] = {
     "pipeline_flow":       ("PipelineFlowConfig", "run_pipeline_flow"),
     "dam_break":           ("DamBreakConfig", "run_dam_break"),
     "sloshing_tank":       ("SloshingTankConfig", "run_sloshing_tank"),
+    # Advanced 3-D solvers
+    "sphere_flow_d3q27":   ("SphereFlowD3Q27Config", "run_sphere_flow_d3q27"),
 }
 
 # Numeric parameters that are allowed to be varied in a parametric study
@@ -890,3 +892,212 @@ async def validate_params(req: ValidateParamsRequest) -> dict:
         "warnings": warnings,
         "info": info,
     }
+
+
+# ---------------------------------------------------------------------------
+# 11. Sphere Flow 3D (D3Q27) – higher-order isotropy
+# ---------------------------------------------------------------------------
+
+class SphereFlowD3Q27Params(BaseModel):
+    """Parameters for a 3-D D3Q27 channel flow past a sphere."""
+    nx: int = Field(120, ge=16, le=256, description="Grid length.")
+    ny: int = Field(60, ge=8, le=256, description="Grid height.")
+    nz: int = Field(60, ge=8, le=256, description="Grid width.")
+    u_in: float = Field(0.06, gt=0.0, le=0.3, description="Inlet velocity (lattice units).")
+    re: float = Field(50.0, gt=0.0, description="Reynolds number Re = u_in·2r/ν.")
+    radius: float = Field(8.0, gt=0.0, description="Sphere radius (lattice units).")
+    n_steps: int = Field(500, ge=1, le=200_000, description="Total time steps.")
+    output_interval: int = Field(100, ge=1, description="Steps between PNG snapshots.")
+    device: str = Field("cpu", description="Compute device ('cpu', 'cuda:0', …).")
+    seed: int = Field(0, ge=0, description="Random seed.")
+
+
+@router.post("/sphere-flow-d3q27")
+async def start_sphere_flow_d3q27(params: SphereFlowD3Q27Params) -> dict:
+    """Submit a 3-D D3Q27 channel flow past a sphere.
+
+    Uses the 27-velocity D3Q27 lattice which achieves 4th-order isotropy,
+    reducing numerical artefacts in corner regions relative to D3Q19.
+    Results are comparable to the D3Q19 sphere-flow endpoint but with
+    improved accuracy at the cost of ~40% higher memory.
+    """
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm import SphereFlowD3Q27Config, run_sphere_flow_d3q27
+
+        c = dict(cfg_dict)
+        c["output_root"] = str(job.output_dir)
+        c["overwrite"] = True
+        cfg = SphereFlowD3Q27Config(**c)
+        run_dir = run_sphere_flow_d3q27(cfg)
+        return {"run_dir": str(run_dir)}
+
+    job_id = job_manager.submit(
+        name=f"Sphere Flow D3Q27 Re={params.re} (3D)",
+        job_type="sphere_flow_d3q27",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Sphere flow D3Q27 job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# 12. 3D Thermal Cavity (differentially heated cavity benchmark)
+# ---------------------------------------------------------------------------
+
+class ThermalCavity3DParams(BaseModel):
+    """Parameters for a 3-D differentially heated cavity benchmark."""
+    nx: int = Field(32, ge=8, le=128, description="Grid nodes in x.")
+    ny: int = Field(32, ge=8, le=128, description="Grid nodes in y.")
+    nz: int = Field(32, ge=8, le=128, description="Grid nodes in z.")
+    ra: float = Field(1e4, gt=0.0, description="Rayleigh number Ra = gβΔT L³/(να).")
+    pr: float = Field(0.71, gt=0.0, description="Prandtl number Pr = ν/α.")
+    n_steps: int = Field(500, ge=1, le=20_000, description="Total time steps.")
+    device: str = Field("cpu", description="Compute device ('cpu', 'cuda:0', …).")
+
+
+@router.post("/thermal-cavity-3d")
+async def start_thermal_cavity_3d(params: ThermalCavity3DParams) -> dict:
+    """Submit a 3-D differentially heated cavity simulation.
+
+    Couples a D3Q19 velocity solver with a D3Q7 temperature solver via the
+    Boussinesq approximation.  Outputs the hot-wall Nusselt number.
+
+    This endpoint exposes the ``run_thermal_cavity_3d`` function from
+    ``tensorlbm.thermal3d`` and adds it to the job-management lifecycle.
+    """
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm.thermal3d import ThermalCavity3DConfig, run_thermal_cavity_3d
+
+        cfg = ThermalCavity3DConfig(**cfg_dict)
+        result = run_thermal_cavity_3d(cfg)
+        # Write a minimal metadata file so postprocess endpoints can inspect it
+        import json
+        (job.output_dir / "run_metadata.json").write_text(
+            json.dumps({"type": "thermal_cavity_3d", **result}, indent=2)
+        )
+        return result
+
+    job_id = job_manager.submit(
+        name=f"Thermal Cavity 3D Ra={params.ra:.2g} {params.nx}×{params.ny}×{params.nz}",
+        job_type="thermal_cavity_3d",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "3D thermal cavity job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# 13. 3D Porous Drainage (Shan-Chen multiphase in 3-D porous medium)
+# ---------------------------------------------------------------------------
+
+class PorousDrainage3DParams(BaseModel):
+    """Parameters for the 3-D porous-media drainage benchmark."""
+    nz: int = Field(40, ge=10, le=128, description="Domain depth (injection direction).")
+    ny: int = Field(24, ge=8, le=128, description="Domain height.")
+    nx: int = Field(24, ge=8, le=128, description="Domain width.")
+    medium: str = Field(
+        "random_spheres",
+        description="Pore geometry: 'random_spheres' or 'tube_array'.",
+    )
+    n_spheres: int = Field(8, ge=1, le=50, description="Target sphere count (random_spheres).")
+    r_min: float = Field(2.0, gt=0.0, description="Minimum sphere radius (lu).")
+    r_max: float = Field(4.0, gt=0.0, description="Maximum sphere radius (lu).")
+    G_12: float = Field(0.9, gt=0.0, description="Shan-Chen coupling constant.")
+    tau_water: float = Field(1.0, ge=0.51, description="Water-phase relaxation time.")
+    tau_gas: float = Field(1.0, ge=0.51, description="Gas-phase relaxation time.")
+    rho_water: float = Field(0.7, gt=0.0, description="Initial water density.")
+    rho_gas: float = Field(0.3, gt=0.0, description="Initial gas density.")
+    u_inlet: float = Field(0.005, gt=0.0, description="Gas inlet velocity (lu).")
+    n_steps: int = Field(2000, ge=1, le=50_000, description="Total time steps.")
+    output_interval: int = Field(500, ge=1, description="Steps between saturation snapshots.")
+    device: str = Field("cpu", description="Compute device.")
+    seed: int = Field(42, ge=0, description="Random seed for geometry generation.")
+
+
+@router.post("/porous-drainage-3d")
+async def start_porous_drainage_3d(params: PorousDrainage3DParams) -> dict:
+    """Submit a 3-D two-phase porous-media drainage simulation.
+
+    Gas (non-wetting phase) is injected from z=0 into a water-saturated 3-D
+    random-sphere or tube-array porous medium.  Tracks gas saturation over time
+    via the D3Q19 Shan-Chen two-component model.
+    """
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm.porous_media3d import PorousDrainageConfig3D, run_porous_drainage_3d
+
+        c = dict(cfg_dict)
+        c["output_root"] = str(job.output_dir)
+        c["overwrite"] = True
+        cfg = PorousDrainageConfig3D(**c)
+        result = run_porous_drainage_3d(cfg)
+        return result
+
+    job_id = job_manager.submit(
+        name=f"3D Porous Drainage [{params.medium}] nz={params.nz}",
+        job_type="porous_drainage_3d",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "3D porous drainage job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# 14. Hull Free Surface (Color-Gradient multiphase with Wigley hull)
+# ---------------------------------------------------------------------------
+
+class HullFreeSurfaceParams(BaseModel):
+    """Parameters for the hull free-surface benchmark."""
+    nx: int = Field(80, ge=20, le=256, description="Streamwise grid cells.")
+    ny: int = Field(32, ge=10, le=128, description="Lateral grid cells.")
+    nz: int = Field(32, ge=10, le=128, description="Vertical grid cells.")
+    hull_type: str = Field(
+        "wigley",
+        description="Hull geometry: 'wigley', 'series60', or 'kcs'.",
+    )
+    fill_fraction: float = Field(0.5, ge=0.1, le=0.9, description="Initial water fill (fraction of nz).")
+    re: float = Field(100.0, gt=0.0, description="Reynolds number for relaxation-time derivation.")
+    u_in: float = Field(0.05, gt=0.0, le=0.3, description="Inlet velocity in water region (lu).")
+    n_steps: int = Field(200, ge=1, le=20_000, description="Total time steps.")
+    output_interval: int = Field(50, ge=1, description="Steps between force samples.")
+    device: str = Field("cpu", description="Compute device.")
+
+
+@router.post("/hull-free-surface")
+async def start_hull_free_surface(params: HullFreeSurfaceParams) -> dict:
+    """Submit a hull free-surface simulation.
+
+    Couples the 3-D Color-Gradient two-phase LBM model with a parametric
+    ship hull (Wigley / Series-60 / KCS) via bounce-back walls to simulate
+    wave-making resistance.  Reports drag, lift, and side forces sampled at
+    ``output_interval`` steps.
+    """
+    cfg_dict = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm.hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface
+
+        cfg = HullFreeSurfaceConfig(**cfg_dict)
+        result = run_hull_free_surface(cfg)
+        import json
+        (job.output_dir / "run_metadata.json").write_text(
+            json.dumps({"type": "hull_free_surface", **{
+                k: (v if not hasattr(v, "tolist") else v.tolist())
+                for k, v in result.items()
+            }}, indent=2)
+        )
+        return {k: (v if isinstance(v, (int, float, str, list, dict)) else str(v))
+                for k, v in result.items()}
+
+    job_id = job_manager.submit(
+        name=f"Hull Free Surface [{params.hull_type}] Re={params.re}",
+        job_type="hull_free_surface",
+        config=cfg_dict,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "Hull free-surface job submitted"}

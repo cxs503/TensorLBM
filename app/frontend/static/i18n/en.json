@@ -237,7 +237,13 @@
     "scan_min_values": "Provide at least 2 comma-separated values",
     "scan_max_values": "Maximum 20 values allowed",
     "scan_submitting": "Submitting {n} jobs…",
-    "scan_invalid_json": "Invalid JSON in base config"
+    "scan_invalid_json": "Invalid JSON in base config",
+    "preflight_btn": "Pre-flight",
+    "preflight_running": "Running pre-flight checks…",
+    "preflight_title": "Pre-flight Checks",
+    "preflight_mem": "Est. memory",
+    "preflight_steps": "Suggested n_steps",
+    "preflight_recs": "Recommendations"
   },
   "sim": {
     "cylinder_flow": {
@@ -279,6 +285,22 @@
     "ship_hull": {
       "label": "Ship Hull – Wigley (3D)",
       "desc": "3D Wigley hull resistance. Reports Cd and hull symmetry."
+    },
+    "sphere_flow_d3q27": {
+      "label": "Sphere Flow 3D – D3Q27",
+      "desc": "D3Q27 lattice (27-velocity, 4th-order isotropy) channel flow past a sphere. Higher accuracy than D3Q19."
+    },
+    "thermal_cavity_3d": {
+      "label": "3D Thermal Cavity (Boussinesq)",
+      "desc": "Differentially heated cube. D3Q19 velocity + D3Q7 temperature Boussinesq coupling. Reports Nusselt number."
+    },
+    "porous_drainage_3d": {
+      "label": "3D Porous Drainage (Shan-Chen)",
+      "desc": "Two-phase gas injection into a water-saturated 3D porous medium. Tracks gas saturation over time."
+    },
+    "hull_free_surface": {
+      "label": "Hull Free-Surface (Color-Gradient)",
+      "desc": "3D ship-hull wave-making resistance. Color-Gradient two-phase LBM. Reports drag force and free-surface elevation."
     }
   },
   "field": {
@@ -391,7 +413,14 @@
     "export_format_vts": "VTS (VTK XML – ParaView)",
     "export_format_vtk": "VTK (Legacy ASCII)",
     "export_format_hdf5": "HDF5 + XDMF",
-    "export_format_csv": "CSV (flat text)"
+    "export_format_csv": "CSV (flat text)",
+    "tab_studycompare": "Study Compare",
+    "studycompare_title": "Study-Group Comparison",
+    "studycompare_group_label": "Study Group Name",
+    "studycompare_load": "Load",
+    "studycompare_no_group": "Please enter a study group name.",
+    "studycompare_not_found": "No jobs found for this study group.",
+    "studycompare_metric_summary": "Metric Summary"
   },
   "bench": {
     "title": "Benchmarks",

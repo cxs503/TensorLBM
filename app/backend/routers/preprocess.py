@@ -378,6 +378,303 @@ async def convert_units(req: UnitConvertRequest) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Pre-flight engineering validation wizard
+# ---------------------------------------------------------------------------
+
+_PREFLIGHT_TAU_MIN = 0.51
+_PREFLIGHT_MA_MAX = 0.30
+_BYTES_PER_FLOAT = 4
+
+# Velocities per cell for each lattice type (upper bound)
+_VELOCITIES_PER_CELL = {
+    "d2q9": 9,
+    "d2q5": 5,
+    "d3q19": 19,
+    "d3q27": 27,
+}
+
+# Minimum n_steps heuristic: Re × domain_length / u_in  (∝ flow-through times)
+_MIN_FLOW_THROUGH_TIMES = 5
+
+
+class PreflightRequest(BaseModel):
+    """Input for the pre-flight validation wizard.
+
+    Most fields are optional; only the checks for which all required
+    inputs are present will be executed.
+    """
+    solver_type: str = "cylinder_flow"
+    # Grid dimensions (lu = lattice units)
+    nx: int | None = None
+    ny: int | None = None
+    nz: int | None = None
+    # Physics (lattice units)
+    re: float | None = None
+    u_in: float | None = None
+    u_lid: float | None = None
+    radius: float | None = None       # characteristic length for Re (2D/3D sphere)
+    n_steps: int | None = None
+    output_interval: int | None = None
+    # Physical-units input for y+ estimation (optional)
+    phys_length_m: float | None = None   # characteristic length [m]
+    phys_velocity_ms: float | None = None
+    phys_nu_m2s: float | None = None
+    target_yplus: float | None = None    # desired y+; default 1.0 for wall-resolved
+
+    model_config = {"extra": "allow"}
+
+
+class PreflightCheck(BaseModel):
+    name: str
+    status: str  # "ok" | "warning" | "error"
+    message: str
+
+
+class PreflightResponse(BaseModel):
+    solver_type: str
+    checks: list[PreflightCheck]
+    recommendations: list[str]
+    memory_mb: float | None
+    suggested_n_steps: int | None
+    suggested_output_interval: int | None
+    yplus_first_cell_m: float | None
+
+
+@router.post("/preflight", response_model=PreflightResponse)
+async def preflight(req: PreflightRequest) -> PreflightResponse:
+    """Run the pre-flight engineering validation wizard.
+
+    Performs a sequence of checks on the submitted solver parameters and
+    returns a structured checklist, recommendations, and simple resource
+    estimates — without actually submitting a job.
+
+    Checks performed (when sufficient inputs are provided):
+    - **tau**: BGK relaxation time stability (τ > 0.51).
+    - **Mach**: lattice Mach number Ma < 0.30.
+    - **Grid size**: maximum dimension vs. platform limits.
+    - **n_steps / output_interval**: consistency and step-count adequacy.
+    - **Memory estimate**: grid × velocities × float32.
+    - **y+ first cell**: estimates near-wall cell height for wall resolution.
+    """
+    checks: list[PreflightCheck] = []
+    recommendations: list[str] = []
+
+    is_3d = req.nz is not None
+    _MAX_GRID_2D = 1024
+    _MAX_GRID_3D = 256
+
+    # ---- Grid checks -------------------------------------------------------
+    if req.nx is not None and req.ny is not None:
+        max_g = _MAX_GRID_3D if is_3d else _MAX_GRID_2D
+        dims = (req.nx, req.ny, req.nz) if is_3d else (req.nx, req.ny)
+        over = any(d > max_g for d in dims if d is not None)  # type: ignore[operator]
+        if over:
+            checks.append(PreflightCheck(
+                name="grid_size",
+                status="error",
+                message=f"Grid dimension exceeds platform limit of {max_g} for "
+                        f"{'3D' if is_3d else '2D'} simulations.",
+            ))
+        elif req.nx < 10 or req.ny < 10 or (is_3d and (req.nz or 0) < 10):
+            checks.append(PreflightCheck(
+                name="grid_size",
+                status="warning",
+                message="Very small grid (<10 cells on a side); accuracy may be poor.",
+            ))
+        else:
+            checks.append(PreflightCheck(
+                name="grid_size",
+                status="ok",
+                message=f"Grid {'×'.join(str(d) for d in dims if d is not None)} is within limits.",
+            ))
+
+    # ---- Stability (tau, Ma) -----------------------------------------------
+    u = req.u_in or req.u_lid
+    char_len = req.radius * 2.0 if req.radius else (req.nx or None)
+    tau: float | None = None
+    ma: float | None = None
+    if u is not None and req.re is not None and char_len is not None:
+        nu_lb = u * char_len / req.re
+        tau = 3.0 * nu_lb + 0.5
+        cs = 1.0 / (3.0 ** 0.5)
+        ma = u / cs
+
+        if tau < _PREFLIGHT_TAU_MIN:
+            checks.append(PreflightCheck(
+                name="tau_stability",
+                status="error",
+                message=(
+                    f"τ = {tau:.4f} < {_PREFLIGHT_TAU_MIN}: BGK will diverge. "
+                    "Reduce u_in / Re, increase characteristic length, or increase nx."
+                ),
+            ))
+        elif tau < 0.60:
+            checks.append(PreflightCheck(
+                name="tau_stability",
+                status="warning",
+                message=f"τ = {tau:.4f} is close to the stability limit. Consider TRT/MRT.",
+            ))
+        else:
+            checks.append(PreflightCheck(
+                name="tau_stability",
+                status="ok",
+                message=f"τ = {tau:.4f} — stable.",
+            ))
+
+        if ma > _PREFLIGHT_MA_MAX:
+            checks.append(PreflightCheck(
+                name="mach_number",
+                status="warning",
+                message=(
+                    f"Ma = {ma:.4f} > {_PREFLIGHT_MA_MAX}: noticeable compressibility error. "
+                    "Lower u_in for better incompressible accuracy."
+                ),
+            ))
+        else:
+            checks.append(PreflightCheck(
+                name="mach_number",
+                status="ok",
+                message=f"Ma = {ma:.4f} — within incompressible limit.",
+            ))
+
+    # ---- n_steps adequacy -------------------------------------------------
+    suggested_n_steps: int | None = None
+    if req.n_steps is not None:
+        if req.n_steps > 200_000:
+            checks.append(PreflightCheck(
+                name="n_steps",
+                status="error",
+                message=f"n_steps={req.n_steps} exceeds platform limit of 200 000.",
+            ))
+        elif req.n_steps < 100:
+            checks.append(PreflightCheck(
+                name="n_steps",
+                status="warning",
+                message="n_steps < 100 — result unlikely to be physically meaningful.",
+            ))
+        else:
+            checks.append(PreflightCheck(
+                name="n_steps",
+                status="ok",
+                message=f"n_steps = {req.n_steps}.",
+            ))
+    elif u is not None and req.re is not None and char_len is not None:
+        flow_through = max(20, int(char_len / u) if u > 0 else 1000)
+        suggested_n_steps = min(200_000, _MIN_FLOW_THROUGH_TIMES * flow_through)
+        recommendations.append(
+            f"Suggested n_steps ≈ {suggested_n_steps} "
+            f"({_MIN_FLOW_THROUGH_TIMES} flow-through times at Re={req.re:.0f})."
+        )
+
+    # ---- output_interval consistency --------------------------------------
+    suggested_output_interval: int | None = None
+    if req.output_interval is not None and req.n_steps is not None:
+        if req.output_interval > req.n_steps:
+            checks.append(PreflightCheck(
+                name="output_interval",
+                status="warning",
+                message="output_interval > n_steps — no checkpoint will be written.",
+            ))
+        else:
+            n_snaps = req.n_steps // req.output_interval
+            checks.append(PreflightCheck(
+                name="output_interval",
+                status="ok",
+                message=f"output_interval = {req.output_interval} → {n_snaps} snapshots.",
+            ))
+    elif suggested_n_steps:
+        suggested_output_interval = max(1, suggested_n_steps // 20)
+        recommendations.append(
+            f"Suggested output_interval ≈ {suggested_output_interval} (≈20 snapshots total)."
+        )
+
+    # ---- Memory estimate --------------------------------------------------
+    memory_mb: float | None = None
+    if req.nx is not None and req.ny is not None:
+        lattice_key = "d3q27" if "d3q27" in req.solver_type else ("d3q19" if is_3d else "d2q9")
+        vpn = _VELOCITIES_PER_CELL.get(lattice_key, 9)
+        nz_ = req.nz if is_3d else 1
+        total_cells = req.nx * req.ny * nz_
+        # f arrays (2× double buffer) + moments + mask
+        n_arrays = vpn * 2 + 4
+        memory_mb = total_cells * n_arrays * _BYTES_PER_FLOAT / (1024 ** 2)
+        if memory_mb > 8192:
+            checks.append(PreflightCheck(
+                name="memory",
+                status="warning",
+                message=f"Estimated memory ≈ {memory_mb:.1f} MB — may exceed typical device RAM.",
+            ))
+        else:
+            checks.append(PreflightCheck(
+                name="memory",
+                status="ok",
+                message=f"Estimated memory ≈ {memory_mb:.1f} MB.",
+            ))
+
+    # ---- y+ first-cell estimate -------------------------------------------
+    yplus_first_cell_m: float | None = None
+    if (
+        req.phys_length_m is not None
+        and req.phys_velocity_ms is not None
+        and req.phys_nu_m2s is not None
+    ):
+        import math
+        re_phys = req.phys_velocity_ms * req.phys_length_m / req.phys_nu_m2s
+        # Schlichting flat-plate friction-coefficient approximation
+        cf = 0.026 / (re_phys ** (1.0 / 7.0))
+        tau_w = 0.5 * cf * req.phys_velocity_ms ** 2  # /ρ (ρ=1)
+        u_tau = math.sqrt(tau_w)
+        target_yp = req.target_yplus if req.target_yplus is not None else 1.0
+        y1 = target_yp * req.phys_nu_m2s / u_tau
+        yplus_first_cell_m = y1
+        if req.nx is not None and req.phys_length_m > 0:
+            dx_phys = req.phys_length_m / req.nx
+            actual_yp = u_tau * dx_phys / req.phys_nu_m2s
+            if actual_yp > 5.0:
+                checks.append(PreflightCheck(
+                    name="yplus",
+                    status="warning",
+                    message=(
+                        f"Wall y+ ≈ {actual_yp:.1f} with current grid. "
+                        f"For y+ ≤ {target_yp:.1f} use first cell height {y1*1000:.4f} mm."
+                    ),
+                ))
+            else:
+                checks.append(PreflightCheck(
+                    name="yplus",
+                    status="ok",
+                    message=f"Wall y+ ≈ {actual_yp:.1f}.",
+                ))
+        else:
+            recommendations.append(
+                f"Required first-cell height for y+={target_yp:.1f}: {y1*1000:.4f} mm "
+                f"(Re={re_phys:.2e})."
+            )
+
+    # ---- General recommendations ------------------------------------------
+    if tau is not None and tau < 0.65 and not any(c.status == "error" for c in checks):
+        recommendations.append(
+            "Consider switching to TRT collision (magic parameter Λ=3/16) "
+            "to improve stability near the limit."
+        )
+    if ma is not None and ma > 0.15:
+        recommendations.append(
+            "Lattice Mach number is moderate. Halving u_in and doubling nx "
+            "improves incompressible accuracy with similar Re."
+        )
+
+    return PreflightResponse(
+        solver_type=req.solver_type,
+        checks=checks,
+        recommendations=recommendations,
+        memory_mb=round(memory_mb, 2) if memory_mb is not None else None,
+        suggested_n_steps=suggested_n_steps,
+        suggested_output_interval=suggested_output_interval,
+        yplus_first_cell_m=round(yplus_first_cell_m, 8) if yplus_first_cell_m is not None else None,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
