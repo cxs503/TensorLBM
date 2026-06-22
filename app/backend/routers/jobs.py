@@ -243,6 +243,58 @@ async def get_metadata(job_id: str) -> dict:
     return {"job_id": job_id, "metadata": json.loads(candidates[0].read_text())}
 
 
+# ---------------------------------------------------------------------------
+# Live metrics – per-step diagnostics pushed during a running job
+# ---------------------------------------------------------------------------
+
+@router.get("/{job_id}/live-metrics")
+async def live_metrics(
+    job_id: str,
+    since_step: int = Query(0, ge=0, description="Return only diagnostics with step > since_step"),
+    limit: int = Query(200, ge=1, le=1000, description="Maximum number of records to return"),
+) -> dict:
+    """Return live per-step diagnostic data for a running or completed job.
+
+    Solvers that support diagnostics (e.g. cumulant cylinder flow, parametric
+    study) push force coefficients and other KPIs at each output interval via
+    ``job_manager.push_diagnostic``.  This endpoint exposes that data for
+    real-time convergence monitoring in the UI — equivalent to the residual
+    and force-history plots in PowerFlow's in-situ monitor.
+
+    Args:
+        job_id: The job to query.
+        since_step: Only return records whose ``step`` field is strictly
+            greater than this value.  Use the last ``step`` from a previous
+            poll to fetch only new records (incremental polling).
+        limit: Maximum number of records per response.
+
+    Returns:
+        ``{"job_id": ..., "status": ..., "diagnostics": [...], "has_more": bool}``
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+    diags = job.diagnostics  # list of dicts with at least a "step" key
+
+    # Filter by since_step
+    if since_step > 0:
+        diags = [d for d in diags if d.get("step", 0) > since_step]
+
+    # Apply limit (return most recent `limit` entries)
+    has_more = len(diags) > limit
+    if has_more:
+        diags = diags[-limit:]
+
+    return {
+        "job_id": job_id,
+        "status": job.status.value,
+        "total_diagnostics": len(job.diagnostics),
+        "diagnostics": diags,
+        "has_more": has_more,
+    }
+
+
 def _safe_job_path(root: Path, rel_path: str) -> Path | None:
     target = (root / rel_path).resolve()
     if not str(target).startswith(str(root.resolve())):

@@ -1668,3 +1668,246 @@ async def inlet_profile_preview(req: InletProfileRequest) -> dict:
             {"y": y, "ux": u} for y, u in zip(y_coords, profile_list, strict=False)
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# Turbulence statistics from completed job checkpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/turbulence-stats/{job_id}")
+async def turbulence_stats(
+    job_id: str,
+    is_3d: bool = Query(False, description="Set true for 3D jobs (D3Q19/D3Q27)"),
+    max_checkpoints: int = Query(50, ge=1, le=200, description="Max checkpoints to process"),
+) -> dict:
+    """Compute turbulence statistics from a completed job's checkpoint history.
+
+    Iterates through up to *max_checkpoints* saved checkpoint files and
+    accumulates:
+
+    * Time-averaged velocity fields ``<U>``, ``<V>``, ``<W>``
+    * Reynolds normal stresses ``<u'u'>``, ``<v'v'>``, ``<w'w'>``
+    * Reynolds shear stress ``<u'v'>``
+    * Turbulence kinetic energy ``k``
+    * Turbulence intensity ``Tu`` (%)
+    * Higher-order moments: skewness and flatness of streamwise fluctuations
+
+    Equivalent to the turbulence statistics dashboards in PowerFlow and XFlow.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value not in ("completed", "failed"):
+        raise HTTPException(status_code=409, detail="Job has not completed yet")
+
+    try:
+        from tensorlbm.turbulence_stats import turbulence_stats_from_checkpoints
+
+        stats = turbulence_stats_from_checkpoints(
+            job.output_dir,
+            is_3d=is_3d,
+            max_checkpoints=max_checkpoints,
+        )
+        return {"job_id": job_id, **stats}
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# DFSEM / Digital-Filter inlet preview
+# ---------------------------------------------------------------------------
+
+class DFSEMPreviewRequest(BaseModel):
+    ny: int = Field(default=64, ge=4, le=512)
+    nz: int = Field(default=1, ge=1, le=512)
+    u_mean: float = Field(default=0.1, gt=0.0)
+    uu: float = Field(default=1e-4, gt=0.0, description="Target <u'u'> Reynolds stress")
+    vv: float = Field(default=1e-4, gt=0.0, description="Target <v'v'> Reynolds stress")
+    ww: float = Field(default=1e-4, gt=0.0, description="Target <w'w'> Reynolds stress")
+    length_scale: float = Field(default=5.0, gt=0.0, description="Eddy length scale (lattice units)")
+    n_eddies: int = Field(default=200, ge=10, le=2000, description="Number of synthetic eddies (DFSEM only)")
+    method: str = Field(default="dfsem", description="'dfsem' or 'digital_filter'")
+    seed: int = 42
+
+
+@router.post("/dfsem-preview")
+async def dfsem_preview(req: DFSEMPreviewRequest) -> dict:
+    """Generate a preview snapshot of synthetic turbulent inflow fluctuations.
+
+    Returns the u- and v-fluctuation profiles for the first sample of either
+    the **DFSEM** (Divergence-Free Synthetic Eddy Method) or the **Digital
+    Filter Method** inlet generator.
+
+    This endpoint mirrors the inflow turbulence preview in PowerFlow's
+    boundary-condition setup dialog.
+    """
+    try:
+        import torch
+
+        from tensorlbm.synthetic_inflow import DFSEMInlet, DigitalFilterInlet
+
+        device = torch.device("cpu")
+        u_mean_t = torch.full((req.ny, max(req.nz, 1)), req.u_mean)
+
+        if req.method.lower() == "digital_filter":
+            gen = DigitalFilterInlet(
+                ny=req.ny, nz=req.nz,
+                uu=req.uu, vv=req.vv, ww=req.ww,
+                length_scale=req.length_scale,
+                device=device,
+                seed=req.seed,
+            )
+        else:
+            gen = DFSEMInlet(  # type: ignore[assignment]
+                ny=req.ny, nz=req.nz,
+                u_mean=u_mean_t,
+                uu=req.uu, vv=req.vv, ww=req.ww,
+                length_scale=req.length_scale,
+                n_eddies=req.n_eddies,
+                device=device,
+                seed=req.seed,
+            )
+
+        u_f, v_f, w_f = gen.sample()
+
+        u_rms = float(u_f.std().item())
+        v_rms = float(v_f.std().item())
+        tu = u_rms / req.u_mean * 100.0
+
+        # Return mid-z slice of fluctuation profiles
+        iz = max(req.nz, 1) // 2
+        y_coords = list(range(req.ny))
+
+        return {
+            "method": req.method,
+            "ny": req.ny, "nz": req.nz,
+            "u_rms": u_rms, "v_rms": v_rms,
+            "tu_percent": tu,
+            "target_uu": req.uu,
+            "target_vv": req.vv,
+            "u_fluct_profile": u_f[:, iz].tolist(),
+            "v_fluct_profile": v_f[:, iz].tolist(),
+            "y_coords": y_coords,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Sponge-layer preview
+# ---------------------------------------------------------------------------
+
+class SpongePreviewRequest(BaseModel):
+    nx: int = Field(default=200, ge=10, le=2048)
+    x0: int = Field(default=150, ge=0, description="Sponge zone start index")
+    x1: int = Field(default=199, ge=0, description="Sponge zone end index")
+    amplitude: float = Field(default=0.5, gt=0.0, le=2.0)
+    exponent: float = Field(default=3.0, gt=0.0, le=10.0)
+
+
+@router.post("/sponge-preview")
+async def sponge_preview(req: SpongePreviewRequest) -> dict:
+    """Preview the sponge/absorbing-layer strength profile along the x-axis.
+
+    Returns a list of ``(x, alpha)`` pairs showing the damping coefficient
+    profile that would be applied at the outlet boundary.  Use this to
+    tune the sponge zone length and amplitude before running a simulation.
+
+    The sponge BC prevents acoustic reflections from the outlet, matching
+    the absorbing-layer implementation in commercial LBM solvers.
+    """
+    try:
+        import torch
+
+        from tensorlbm.sponge_bc import sponge_profile
+
+        profile = sponge_profile(
+            nx=req.nx,
+            x0=req.x0,
+            x1=min(req.x1, req.nx - 1),
+            amplitude=req.amplitude,
+            exponent=req.exponent,
+        )
+
+        x_coords = list(range(req.nx))
+        alpha_vals = profile.tolist()
+
+        return {
+            "nx": req.nx,
+            "x0": req.x0,
+            "x1": req.x1,
+            "amplitude": req.amplitude,
+            "exponent": req.exponent,
+            "sponge_width": req.x1 - req.x0,
+            "profile": [
+                {"x": x, "alpha": a} for x, a in zip(x_coords, alpha_vals, strict=False)
+            ],
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Wall-roughness Y+ and slip-velocity preview
+# ---------------------------------------------------------------------------
+
+class RoughnessPreviewRequest(BaseModel):
+    u_tau: float = Field(default=0.01, gt=0.0, description="Friction velocity (lattice units)")
+    nu: float = Field(default=1.0 / 600.0, gt=0.0, description="Kinematic viscosity (lattice units)")
+    ks: float = Field(default=0.5, ge=0.0, description="Equivalent sand-grain roughness height (lattice units)")
+    n_points: int = Field(default=100, ge=10, le=500, description="Number of ks+ evaluation points")
+
+
+@router.post("/roughness-preview")
+async def roughness_preview(req: RoughnessPreviewRequest) -> dict:
+    """Preview the wall-roughness correction to the log-law additive constant.
+
+    Returns the roughness regime classification and ΔB correction curve as
+    a function of dimensionless roughness height *ks+* = *ks* × *u_tau* / *ν*.
+
+    This endpoint mirrors the roughness parameter setup in PowerFlow's
+    wall treatment dialog and allows engineers to assess the impact of
+    surface roughness before running a full simulation.
+    """
+    try:
+        import torch
+
+        from tensorlbm.roughness import KAPPA, B_SMOOTH, roughness_b_correction
+
+        # Sweep ks+ from 0.1 to 500 to show the full correction curve
+        ks_plus_vals = torch.linspace(0.1, 500.0, req.n_points)
+        delta_b = roughness_b_correction(ks_plus_vals)
+        b_eff = B_SMOOTH - delta_b
+
+        # Classify current operating point
+        ks_plus_current = req.ks * req.u_tau / req.nu
+        if ks_plus_current < 2.25:
+            regime = "hydraulically_smooth"
+        elif ks_plus_current > 90.0:
+            regime = "fully_rough"
+        else:
+            regime = "transitional"
+
+        delta_b_current = float(roughness_b_correction(
+            torch.tensor([ks_plus_current])
+        ).item())
+
+        return {
+            "ks_plus_current": float(ks_plus_current),
+            "regime": regime,
+            "delta_b_current": delta_b_current,
+            "b_eff_current": B_SMOOTH - delta_b_current,
+            "kappa": KAPPA,
+            "b_smooth": B_SMOOTH,
+            "curve": [
+                {"ks_plus": float(k), "delta_b": float(db), "b_eff": float(be)}
+                for k, db, be in zip(
+                    ks_plus_vals.tolist(),
+                    delta_b.tolist(),
+                    b_eff.tolist(),
+                    strict=False,
+                )
+            ],
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
