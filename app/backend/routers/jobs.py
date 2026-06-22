@@ -98,7 +98,14 @@ async def cancel_job(job_id: str) -> dict:
         )
     if not job_manager.cancel_job(job_id):
         raise HTTPException(status_code=409, detail=f"Job {job_id} cannot be cancelled")
-    return {"job_id": job_id, "status": "cancelled"}
+    updated = job_manager.get_job(job_id)
+    if updated is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    return {
+        "job_id": job_id,
+        "status": updated.status.value,
+        "cancel_requested": bool(updated.cancel_requested),
+    }
 
 
 @router.post("/cleanup")

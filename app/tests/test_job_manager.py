@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 
 def _make_job(job_manager, name: str = "unit-test"):
@@ -40,8 +42,8 @@ def test_failed_job_records_traceback(job_manager, waiter):
     assert "RuntimeError" in (final["error"] or "")
 
 
-def test_cancel_queued_job(job_manager):
-    """A long-running job should be cancellable; status flips to CANCELLED."""
+def test_cancel_job_sets_cancel_requested(job_manager):
+    """Running jobs should record cancellation intent for cooperative stop."""
 
     def _slow(job):
         # Cooperative check is not implemented in LBM kernels, but the test
@@ -51,17 +53,40 @@ def test_cancel_queued_job(job_manager):
         return {"done": True}
 
     job_id = job_manager.submit(name="slow", job_type="unit_test", config={}, fn=_slow)
-    # Give the executor a moment to start the job
     time.sleep(0.05)
     assert job_manager.cancel_job(job_id) is True
 
     final = job_manager.get_job(job_id)
     assert final is not None
-    status = final.status.value if hasattr(final.status, "value") else final.status
-    assert status == "cancelled"
+    assert final.cancel_requested is True
 
-    # Cancelling an already-cancelled job is a no-op (returns False)
-    assert job_manager.cancel_job(job_id) is False
+
+def test_cancel_queued_job_hard_cancels(job_manager):
+    """Queued jobs should be hard-cancelled when future cancellation succeeds."""
+    old_executor = job_manager._executor  # noqa: SLF001
+    job_manager.configure_backends(executor=ThreadPoolExecutor(max_workers=1))
+    evt = threading.Event()
+
+    def _blocker(job):
+        evt.wait(timeout=0.6)
+        return {"blocked": True}
+
+    try:
+        jid1 = job_manager.submit(name="blocker-1", job_type="unit_test", config={}, fn=_blocker)
+        jid2 = job_manager.submit(name="queued", job_type="unit_test", config={}, fn=_blocker)
+        time.sleep(0.05)
+        assert job_manager.cancel_job(jid2) is True
+        j2 = job_manager.get_job(jid2)
+        assert j2 is not None
+        assert j2.status.value == "cancelled"
+        assert j2.cancel_requested is True
+    finally:
+        evt.set()
+        time.sleep(0.1)
+        j1 = job_manager.get_job(jid1) if "jid1" in locals() else None
+        if j1 is not None and j1.status.value in {"running", "queued"}:
+            job_manager.cancel_job(jid1)
+        job_manager.configure_backends(executor=old_executor)
 
 
 def test_push_diagnostic_keeps_recent_entries(job_manager):
