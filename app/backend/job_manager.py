@@ -35,6 +35,10 @@ class JobStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class JobCancelledError(RuntimeError):
+    """Raised inside a job function to request cooperative cancellation."""
+
+
 class Job:
     """Represents a single simulation or benchmark job."""
 
@@ -82,6 +86,8 @@ class Job:
         self.priority: int = max(1, min(10, int(
             (orch or {}).get("priority") or config.get("priority") or 5  # type: ignore[index]
         )))
+        self.auto_stop_config: AutoStopConfig | None = None
+        self.convergence_status: str = "monitoring"  # monitoring | converged | diverged
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -112,11 +118,80 @@ class Job:
             "assigned_resource": self.assigned_resource,
             "estimated_cost": self.estimated_cost,
             "priority": self.priority,
+            "auto_stop_config": self.auto_stop_config,
+            "convergence_status": self.convergence_status,
         }
 
 
-class JobCancelledError(RuntimeError):
-    """Raised by cooperative workers when a job cancellation is requested."""
+class AutoStopConfig:
+    """Configuration for automatic convergence-based job stopping.
+
+    A job is considered converged when the residual (reported via
+    :func:`push_diagnostic`) changes by less than *rel_tol* relative to the
+    previous measurement for at least *patience* consecutive checks.
+
+    Attributes:
+        enabled:     Whether auto-stop is active (default True).
+        residual_key: Key in the diagnostic dict to monitor (default
+                      ``"residual"``).
+        rel_tol:     Relative change threshold below which the flow is
+                     deemed converged (default 1e-4).
+        patience:    Number of consecutive converged checks before stopping
+                     (default 5).
+        min_steps:   Minimum number of diagnostics to collect before any
+                     convergence check (default 20).
+    """
+
+    def __init__(
+        self,
+        *,
+        enabled: bool = True,
+        residual_key: str = "residual",
+        rel_tol: float = 1e-4,
+        patience: int = 5,
+        min_steps: int = 20,
+    ) -> None:
+        self.enabled = enabled
+        self.residual_key = residual_key
+        self.rel_tol = rel_tol
+        self.patience = patience
+        self.min_steps = min_steps
+        self._consecutive: int = 0
+        self._last_value: float | None = None
+
+    def check(self, value: float) -> bool:
+        """Return True if the job should stop (converged).
+
+        Args:
+            value: Current residual value.
+
+        Returns:
+            True when convergence criterion is met and auto-stop fires.
+        """
+        if not self.enabled:
+            return False
+        if self._last_value is None:
+            self._last_value = value
+            return False
+        denom = max(abs(self._last_value), 1e-20)
+        rel_change = abs(value - self._last_value) / denom
+        self._last_value = value
+        if rel_change < self.rel_tol:
+            self._consecutive += 1
+        else:
+            self._consecutive = 0
+        return self._consecutive >= self.patience
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "residual_key": self.residual_key,
+            "rel_tol": self.rel_tol,
+            "patience": self.patience,
+            "min_steps": self.min_steps,
+            "consecutive": self._consecutive,
+            "last_value": self._last_value,
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -451,6 +526,9 @@ def push_diagnostic(job_id: str, data: dict[str, Any]) -> None:
 
     Broadcasting is done via the existing _notify mechanism so all
     WebSocket subscribers receive live updates.
+
+    Also checks the job's auto-stop configuration and requests cancellation
+    when the convergence criterion is satisfied.
     """
     with _jobs_lock:
         job = _jobs.get(job_id)
@@ -459,7 +537,43 @@ def push_diagnostic(job_id: str, data: dict[str, Any]) -> None:
     job.diagnostics.append(data)
     if len(job.diagnostics) > 1000:
         job.diagnostics = job.diagnostics[-1000:]
+
+    # Auto-stop convergence check
+    cfg = job.auto_stop_config
+    if (
+        cfg is not None
+        and cfg.enabled
+        and job.status == JobStatus.RUNNING
+        and len(job.diagnostics) >= cfg.min_steps
+        and cfg.residual_key in data
+    ):
+        value = float(data[cfg.residual_key])
+        if cfg.check(value):
+            job.convergence_status = "converged"
+            job.logs.append(
+                f"[auto-stop] Convergence detected: {cfg.residual_key}={value:.4e} "
+                f"(rel_tol={cfg.rel_tol}, patience={cfg.patience}). Stopping job."
+            )
+            job.cancel_requested = True
+
     _notify(job)
+
+
+def set_auto_stop_config(job_id: str, config: AutoStopConfig) -> bool:
+    """Attach an auto-stop convergence configuration to a job.
+
+    Can be called at any time (before or during execution).
+
+    Returns:
+        True if the job was found, False otherwise.
+    """
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+    if job is None:
+        return False
+    job.auto_stop_config = config
+    _notify(job)
+    return True
 
 
 def raise_if_cancelled(job_id: str) -> None:

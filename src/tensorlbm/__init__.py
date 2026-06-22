@@ -5,9 +5,12 @@ from .adaptive_refinement import (
     AdaptiveSolver3D,
     AMRPatch2D,
     AMRPatch3D,
+    boundary_layer_indicator_2d,
+    boundary_layer_indicator_3d,
     gradient_indicator_2d,
     gradient_indicator_3d,
     mark_cells_for_refinement,
+    MAX_VR_LEVELS,
     nonequilibrium_indicator_2d,
     nonequilibrium_indicator_3d,
     vorticity_indicator_2d,
@@ -483,6 +486,14 @@ from .turbulence_stats import (
     compute_turbulence_length_scale,
     turbulence_stats_from_checkpoints,
 )
+from .multi_gpu import (
+    DomainDecomposition,
+    MultiGPUSolver2D,
+    MultiGPUSolver3D,
+    halo_exchange_2d,
+    halo_exchange_3d,
+    auto_decompose,
+)
 
 __all__ = [
     "__version__",
@@ -946,4 +957,11 @@ __all__ = [
     "compute_turbulence_intensity",
     "compute_turbulence_length_scale",
     "turbulence_stats_from_checkpoints",
+    # Multi-GPU domain decomposition
+    "DomainDecomposition",
+    "MultiGPUSolver2D",
+    "MultiGPUSolver3D",
+    "halo_exchange_2d",
+    "halo_exchange_3d",
+    "auto_decompose",
 ]

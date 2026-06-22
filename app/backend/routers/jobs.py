@@ -411,3 +411,55 @@ async def submit_job_to_hpc(job_id: str, req: HPCSubmitRequest) -> dict:
 
 
 
+
+
+# ---------------------------------------------------------------------------
+# P3.2 Auto-convergence control
+# ---------------------------------------------------------------------------
+
+class AutoStopConfigRequest(BaseModel):
+    """Request body for configuring automatic convergence-based job stopping."""
+    enabled: bool = True
+    residual_key: str = "residual"
+    rel_tol: float = Field(default=1e-4, gt=0.0, le=1.0)
+    patience: int = Field(default=5, ge=1)
+    min_steps: int = Field(default=20, ge=1)
+
+
+@router.patch("/{job_id}/auto-stop-config")
+async def set_auto_stop_config(job_id: str, req: AutoStopConfigRequest) -> dict:
+    """Configure automatic convergence-based stopping for a running or queued job.
+
+    Once configured the job manager monitors the ``residual_key`` field of
+    every diagnostic pushed via :func:`push_diagnostic`.  When the relative
+    change in the residual falls below *rel_tol* for *patience* consecutive
+    checks (and at least *min_steps* diagnostics have been collected), the
+    job is automatically stopped and marked as converged.
+
+    Args:
+        job_id: Target job ID.
+        req:    Auto-stop configuration.
+
+    Returns:
+        Acknowledgement with the applied configuration.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    cfg = job_manager.AutoStopConfig(
+        enabled=req.enabled,
+        residual_key=req.residual_key,
+        rel_tol=req.rel_tol,
+        patience=req.patience,
+        min_steps=req.min_steps,
+    )
+    ok = job_manager.set_auto_stop_config(job_id, cfg)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return {
+        "job_id": job_id,
+        "message": "Auto-stop configuration applied",
+        "config": cfg.to_dict(),
+    }

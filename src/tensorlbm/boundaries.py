@@ -193,3 +193,163 @@ def apply_zou_he_channel_boundaries(
     f = bounce_back_cells(f, wall_mask)
     f = bounce_back_cells(f, obstacle_mask)
     return f
+
+
+# ---------------------------------------------------------------------------
+# P1.3 New boundary conditions — 2-D (D2Q9)
+# ---------------------------------------------------------------------------
+
+def porous_jump_2d(
+    f: torch.Tensor,
+    jump_col: int,
+    face_area: float,
+    alpha: float,
+    beta: float,
+    thickness: float = 1.0,
+) -> torch.Tensor:
+    """Porous jump boundary condition based on the Ergun equation (2-D, D2Q9).
+
+    Models a thin porous interface (e.g. a filter, screen, or perforated plate)
+    as a pressure drop:
+
+        ΔP = −(μ·α·u + ρ·β·u²) · thickness
+
+    where α (viscous resistance, [1/lu²]) and β (inertial resistance, [1/lu])
+    are Ergun coefficients for the medium.  The density jump across the
+    interface column is applied by adjusting populations on the downstream side.
+
+    Args:
+        f:          Distribution tensor (9, ny, nx).
+        jump_col:   Column index of the porous interface (0-based).
+        face_area:  Cross-sectional area of the interface in y-direction
+                    (number of fluid rows), used for averaging.
+        alpha:      Viscous resistance coefficient [1/lu²].
+        beta:       Inertial resistance coefficient [1/lu].
+        thickness:  Porous medium thickness in lattice units (default 1.0).
+
+    Returns:
+        Updated distribution tensor.
+    """
+    from .d2q9 import equilibrium, macroscopic
+
+    if jump_col < 1 or jump_col >= f.shape[2] - 1:
+        return f
+
+    rho, ux, uy = macroscopic(f)
+
+    # Velocity at the interface column (upstream face)
+    u_face = ux[:, jump_col]  # (ny,)
+
+    # Pressure drop from Ergun equation
+    # ΔP = -(α·μ·u + β·ρ·u²) · L,  μ = ν = (tau-0.5)/3 ≈ lu
+    delta_rho = -(alpha * u_face + beta * u_face.abs() * u_face) * thickness
+    delta_rho = delta_rho.clamp(min=-rho[:, jump_col] * 0.5)
+
+    # Apply density correction on the downstream side
+    f_new = f.clone()
+    rho_up   = rho[:, jump_col]
+    rho_down = (rho_up + delta_rho).clamp(min=1e-6)
+    ux_face  = u_face
+    uy_face  = uy[:, jump_col]
+
+    f_eq_down = equilibrium(rho_down, ux_face, uy_face)
+    f_new[:, :, jump_col + 1] = f_eq_down[:, :, 0]
+    return f_new
+
+
+def fan_model_2d(
+    f: torch.Tensor,
+    fan_col: int,
+    pressure_rise_fn: object,
+) -> torch.Tensor:
+    """Simplified fan / axial-flow boundary condition (2-D, D2Q9).
+
+    Models a fan or blower as a thin actuator plane that adds a prescribed
+    pressure rise ΔP = f(Q) where Q is the local volume flow rate.
+
+    Args:
+        f:               Distribution tensor (9, ny, nx).
+        fan_col:         Column index of the fan plane (0-based).
+        pressure_rise_fn: Callable ``(flow_rate: float) -> float`` returning
+                         the pressure rise in lattice units.  Typical form:
+                         ``lambda q: p_max * (1 - q / q_max)``.
+
+    Returns:
+        Updated distribution tensor.
+    """
+    from .d2q9 import equilibrium, macroscopic
+
+    if fan_col < 1 or fan_col >= f.shape[2] - 1:
+        return f
+
+    rho, ux, uy = macroscopic(f)
+    ny = f.shape[1]
+
+    # Volume flow rate at fan column: Q = sum(ux * dy)
+    u_col = ux[:, fan_col]
+    flow_rate = float(u_col.sum().item())
+
+    # Pressure rise from fan curve
+    try:
+        delta_p = float(pressure_rise_fn(flow_rate))  # type: ignore[operator]
+    except Exception:
+        delta_p = 0.0
+
+    # Distribute pressure rise as density increment on downstream side
+    delta_rho = delta_p  # in LBM units, P = ρ·cs² → ΔP = Δρ/3
+
+    f_new = f.clone()
+    rho_down = (rho[:, fan_col] + delta_rho).clamp(min=1e-6)
+    f_eq_down = equilibrium(rho_down, ux[:, fan_col], uy[:, fan_col])
+    f_new[:, :, fan_col + 1] = f_eq_down[:, :, 0]
+    return f_new
+
+
+def nscbc_outlet_2d(
+    f: torch.Tensor,
+    rho_target: float = 1.0,
+    sigma: float = 0.25,
+    c_s: float = 1.0 / 3.0 ** 0.5,
+) -> torch.Tensor:
+    """Non-Reflecting (Characteristic Wave) outlet boundary condition (D2Q9).
+
+    Based on the Navier–Stokes Characteristic Boundary Conditions (NSCBC)
+    method (Poinsot & Lele 1992 / Thompson 1987).  Attenuates spurious
+    acoustic reflections by controlling the amplitude of incoming
+    characteristic waves at the outlet plane (x = nx−1).
+
+    The target pressure (density) *rho_target* is enforced softly via a
+    relaxation coefficient σ:
+
+        L1 = σ · c_s · (ρ − ρ_target)   (incoming acoustic wave amplitude)
+
+    Args:
+        f:          Distribution tensor (9, ny, nx).
+        rho_target: Target outlet density (default 1.0).
+        sigma:      Relaxation factor in [0, 1].  0 = fully non-reflecting,
+                    1 = hard pressure fix.  Typical: 0.1–0.5.
+        c_s:        Speed of sound in lattice units (default 1/√3).
+
+    Returns:
+        Updated distribution tensor.
+    """
+    from .d2q9 import equilibrium, macroscopic
+
+    rho, ux, uy = macroscopic(f)
+
+    # Characteristic wave amplitude correction at right boundary
+    rho_out = rho[:, -1]
+    ux_out  = ux[:, -1]
+    uy_out  = uy[:, -1]
+
+    # Incoming wave amplitude L1 (pressure-relaxation)
+    L1 = sigma * c_s * (rho_out - rho_target)
+
+    # Apply correction: adjust ρ at outlet without changing velocity
+    rho_corrected = (rho_out - L1).clamp(min=1e-6)
+
+    f_new = f.clone()
+    f_eq_out = equilibrium(rho_corrected, ux_out, uy_out)
+    # Update only the outlet column
+    f_new[:, :, -1] = f_eq_out[:, :, 0]
+    return f_new
