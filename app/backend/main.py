@@ -162,6 +162,10 @@ app.include_router(notifications.router, prefix="/api/notifications", tags=["Not
 
 _ws_connections: set[WebSocket] = set()
 
+# Per-job field-stream WebSocket connections: job_id → set of WebSocket
+_field_stream_connections: dict[str, set[WebSocket]] = {}
+_field_stream_lock = asyncio.Lock() if False else None  # initialised lazily
+
 
 async def _ws_broadcaster(queue: asyncio.Queue[dict]) -> None:  # type: ignore[type-arg]
     """Forward job status changes from the queue to all WebSocket clients."""
@@ -200,6 +204,97 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         pass
     finally:
         _ws_connections.discard(ws)
+
+
+@app.websocket("/ws/field-stream/{job_id}")
+async def field_stream_endpoint(ws: WebSocket, job_id: str) -> None:
+    """WebSocket endpoint for real-time 2-D field slice streaming (P3.3).
+
+    The client connects to ``/ws/field-stream/{job_id}`` and receives JSON
+    messages of the form::
+
+        {
+            "type": "field_slice",
+            "job_id": "...",
+            "step": 1234,
+            "field": "pressure" | "velocity_x" | ...,
+            "data": [[...], [...], ...],   // 2-D list of float32 values
+            "shape": [ny, nx]
+        }
+
+    Solver workers push field slices by calling
+    :func:`push_field_slice` from ``job_manager``.
+    """
+    await ws.accept()
+    if job_id not in _field_stream_connections:
+        _field_stream_connections[job_id] = set()
+    _field_stream_connections[job_id].add(ws)
+    try:
+        while True:
+            await ws.receive_text()  # keep alive / ping
+    except WebSocketDisconnect:
+        pass
+    finally:
+        with contextlib.suppress(KeyError):
+            _field_stream_connections.get(job_id, set()).discard(ws)
+
+
+async def _broadcast_field_slice(job_id: str, payload: dict) -> None:
+    """Internal helper: broadcast a field slice to all subscribers."""
+    subs = _field_stream_connections.get(job_id, set())
+    if not subs:
+        return
+    dead: set[WebSocket] = set()
+    for ws in tuple(subs):
+        try:
+            await ws.send_json(payload)
+        except (WebSocketDisconnect, RuntimeError):
+            dead.add(ws)
+        except Exception:
+            dead.add(ws)
+    for ws in dead:
+        with contextlib.suppress(Exception):
+            await ws.close()
+        subs.discard(ws)
+
+
+@app.post("/api/jobs/{job_id}/field-slice", tags=["Jobs"])
+async def push_field_slice_http(
+    job_id: str,
+    step: int,
+    field: str,
+    data: list[list[float]],
+) -> dict:
+    """Push a 2-D field slice from a running solver to WebSocket subscribers.
+
+    Solver code calls this endpoint (or the equivalent Python helper) every
+    N steps to stream live field data to the browser.
+
+    Args:
+        job_id: Job ID.
+        step:   Current simulation step.
+        field:  Field name (``"pressure"``, ``"velocity_x"``, etc.).
+        data:   2-D array (list of rows) of float values.
+
+    Returns:
+        Number of WebSocket subscribers that received the slice.
+    """
+    if not job_manager.get_job(job_id):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    ny = len(data)
+    nx = len(data[0]) if ny > 0 else 0
+    payload = {
+        "type": "field_slice",
+        "job_id": job_id,
+        "step": step,
+        "field": field,
+        "data": data,
+        "shape": [ny, nx],
+    }
+    await _broadcast_field_slice(job_id, payload)
+    return {"subscribers": len(_field_stream_connections.get(job_id, set()))}
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,8 @@
     "suboff": "SUBOFF",
     "projects": "项目管理",
     "templates": "场景模板",
-    "reports": "报告"
+    "reports": "报告",
+    "geo3d": "3D预览"
   },
   "ws": {
     "connecting": "连接中…",
@@ -687,5 +688,24 @@
     "lift": "升力系数 Cl",
     "density_residual": "密度残差",
     "poll_interval": "运行中每 2 秒轮询"
+  },
+  "geo3d": {
+    "title": "3D 几何预览",
+    "upload": "加载 STL",
+    "load_btn": "加载并预览",
+    "ref_zone": "细化区域",
+    "ref_center": "中心坐标 (x, y, z)",
+    "ref_size": "尺寸 (宽, 高, 深)",
+    "show_ref": "显示区域",
+    "apply_ref": "应用",
+    "probes": "探针点",
+    "probe_hint": "在模型上单击以放置探针标记。",
+    "clear_probes": "清除探针",
+    "controls": "操作说明:",
+    "ctrl_rotate": "左键拖拽: 旋转",
+    "ctrl_pan": "右键拖拽: 平移",
+    "ctrl_zoom": "滚轮: 缩放",
+    "ctrl_probe": "Shift+单击: 放置探针",
+    "drop_hint": "上传 STL 文件以开始预览"
   }
 }

@@ -15,7 +15,8 @@
     "agent": "AI Agent",
     "projects": "Projects",
     "templates": "Templates",
-    "reports": "Reports"
+    "reports": "Reports",
+    "geo3d": "3D Preview"
   },
   "ws": {
     "connecting": "Connecting…",
@@ -687,5 +688,24 @@
     "lift": "Lift Cl",
     "density_residual": "Density Residual",
     "poll_interval": "Poll every 2 s while running"
+  },
+  "geo3d": {
+    "title": "3D Geometry Preview",
+    "upload": "Load STL",
+    "load_btn": "Load & Preview",
+    "ref_zone": "Refinement Zone",
+    "ref_center": "Centre (x, y, z)",
+    "ref_size": "Size (w, h, d)",
+    "show_ref": "Show zone",
+    "apply_ref": "Apply",
+    "probes": "Probe Points",
+    "probe_hint": "Click on the model to place a probe marker.",
+    "clear_probes": "Clear Probes",
+    "controls": "Controls:",
+    "ctrl_rotate": "Left-drag: rotate",
+    "ctrl_pan": "Right-drag: pan",
+    "ctrl_zoom": "Scroll: zoom",
+    "ctrl_probe": "Shift+click: place probe",
+    "drop_hint": "Upload an STL file to begin"
   }
 }

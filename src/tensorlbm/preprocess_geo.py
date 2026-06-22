@@ -32,6 +32,8 @@ __all__ = [
     "random_porosity_mask_3d",
     "compute_q_generic_3d",
     "poly_to_mask_and_q_2d",
+    "repair_stl",
+    "build_near_wall_refinement_mask",
 ]
 
 # ---------------------------------------------------------------------------
@@ -582,3 +584,311 @@ def _check_boundary_warning(obstacle_mask: torch.Tensor) -> None:
             "Add ghost/padding cells around the obstacle if this matters.",
             stacklevel=3,
         )
+
+
+# ---------------------------------------------------------------------------
+# P2.1 STL geometry repair
+# ---------------------------------------------------------------------------
+
+def repair_stl(
+    path: str | Path,
+    *,
+    fix_normals: bool = True,
+    fill_holes: bool = True,
+    remove_degenerate: bool = True,
+    merge_vertices: float = 1e-7,
+    output_path: str | Path | None = None,
+) -> dict:
+    """Repair an STL file and return a diagnostic report.
+
+    Performs the following repairs in order:
+
+    1. **Merge duplicate vertices** within tolerance *merge_vertices*.
+    2. **Remove degenerate faces** (zero area or collinear vertices).
+    3. **Fix normal orientation** — makes all normals consistently outward-
+       facing using winding-order consistency propagation.
+    4. **Fill holes** — detects boundary (open) edges and fills them with
+       fan triangulation from the hole centroid.
+
+    Uses the *trimesh* library when available for high-quality operations;
+    falls back to pure-NumPy implementations for portability.
+
+    Args:
+        path:              Path to input STL file.
+        fix_normals:       Whether to enforce consistent winding order.
+        fill_holes:        Whether to fill detected boundary edges.
+        remove_degenerate: Whether to remove degenerate triangles.
+        merge_vertices:    Vertex merge tolerance in model units.
+        output_path:       If given, save the repaired mesh to this path.
+
+    Returns:
+        dict with keys:
+            ``original_faces``, ``repaired_faces``, ``degenerate_removed``,
+            ``holes_filled``, ``normals_fixed``, ``is_watertight``,
+            ``output_path``.
+    """
+    path = Path(path)
+    verts = _parse_stl(path)  # (n_tri, 3, 3) float32
+
+    n_orig = len(verts)
+    report: dict = {
+        "original_faces": n_orig,
+        "repaired_faces": n_orig,
+        "degenerate_removed": 0,
+        "holes_filled": 0,
+        "normals_fixed": False,
+        "is_watertight": False,
+        "output_path": None,
+    }
+
+    # --- Try trimesh for best results ------------------------------------
+    try:
+        import trimesh  # type: ignore[import]
+        mesh = trimesh.load_mesh(str(path))
+        if not isinstance(mesh, trimesh.Trimesh):
+            mesh = trimesh.util.concatenate(mesh.geometry.values())
+
+        orig_count = len(mesh.faces)
+
+        # Merge vertices
+        mesh.merge_vertices(merge_tex=False, digits_vertex=int(-math.log10(merge_vertices)))
+
+        if remove_degenerate:
+            mask = ~trimesh.triangles.degenerate(mesh.triangles)
+            mesh.update_faces(mask)
+            report["degenerate_removed"] = orig_count - len(mesh.faces)
+
+        if fix_normals:
+            trimesh.repair.fix_normals(mesh, multibody=True)
+            report["normals_fixed"] = True
+
+        if fill_holes:
+            n_before = len(mesh.faces)
+            trimesh.repair.fill_holes(mesh)
+            report["holes_filled"] = len(mesh.faces) - n_before
+
+        report["is_watertight"] = bool(mesh.is_watertight)
+        report["repaired_faces"] = len(mesh.faces)
+
+        if output_path is not None:
+            mesh.export(str(output_path))
+            report["output_path"] = str(output_path)
+
+        return report
+
+    except ImportError:
+        pass  # Fall back to pure NumPy
+
+    # --- Pure-NumPy fallback ---------------------------------------------
+    # Step 1: Flatten to unique vertices using rounding
+    flat = verts.reshape(-1, 3)  # (n_tri*3, 3)
+    scale = 1.0 / merge_vertices
+    rounded = np.round(flat * scale).astype(np.int64)
+    _, inv = np.unique(rounded, axis=0, return_inverse=True)
+    face_indices = inv.reshape(-1, 3)  # (n_tri, 3) vertex indices
+    unique_verts = flat[np.unique(inv, return_index=True)[1]]
+
+    # Step 2: Remove degenerate faces (duplicate vertex indices)
+    keep = np.array([len(set(f)) == 3 for f in face_indices])
+    n_degen = int((~keep).sum())
+    face_indices = face_indices[keep]
+    report["degenerate_removed"] = n_degen
+
+    # Step 3: Fix normals by winding-order propagation (BFS)
+    if fix_normals and len(face_indices) > 0:
+        # Build edge-to-face adjacency
+        n_f = len(face_indices)
+        edge_map: dict[tuple, list[int]] = {}
+        for fi, tri in enumerate(face_indices):
+            for k in range(3):
+                e = tuple(sorted([int(tri[k]), int(tri[(k + 1) % 3])]))
+                edge_map.setdefault(e, []).append(fi)
+
+        flipped = np.zeros(n_f, dtype=bool)
+        visited = np.zeros(n_f, dtype=bool)
+        stack = [0]
+        visited[0] = True
+        while stack:
+            fi = stack.pop()
+            for k in range(3):
+                e = tuple(sorted([int(face_indices[fi, k]),
+                                  int(face_indices[fi, (k + 1) % 3])]))
+                for fj in edge_map.get(e, []):
+                    if fj == fi or visited[fj]:
+                        continue
+                    visited[fj] = True
+                    # Check if shared edge has opposite winding (consistent)
+                    # If both faces share the edge in the same order, flip one
+                    ei_order = [int(face_indices[fi, k]), int(face_indices[fi, (k + 1) % 3])]
+                    for kk in range(3):
+                        ej = [int(face_indices[fj, kk]), int(face_indices[fj, (kk + 1) % 3])]
+                        if sorted(ei_order) == sorted(ej):
+                            if ei_order == ej:  # same direction → inconsistent
+                                face_indices[fj] = face_indices[fj, ::-1]
+                                flipped[fj] = True
+                            break
+                    stack.append(fj)
+        report["normals_fixed"] = True
+
+    # Step 4: Hole detection (boundary edges appear only once)
+    if fill_holes and len(face_indices) > 0:
+        edge_count: dict[tuple, int] = {}
+        for tri in face_indices:
+            for k in range(3):
+                e = tuple(sorted([int(tri[k]), int(tri[(k + 1) % 3])]))
+                edge_count[e] = edge_count.get(e, 0) + 1
+        boundary_edges = [e for e, cnt in edge_count.items() if cnt == 1]
+
+        # Simple fan-fill: for each connected boundary loop, add fan triangles
+        if boundary_edges:
+            # Build boundary loops
+            adj: dict[int, list[int]] = {}
+            for a, b in boundary_edges:
+                adj.setdefault(a, []).append(b)
+                adj.setdefault(b, []).append(a)
+
+            n_holes = 0
+            visited_v = set()
+            new_faces = []
+            for start in list(adj.keys()):
+                if start in visited_v:
+                    continue
+                loop = [start]
+                visited_v.add(start)
+                cur = start
+                while True:
+                    nxt = next(
+                        (v for v in adj.get(cur, []) if v not in visited_v), None
+                    )
+                    if nxt is None:
+                        break
+                    loop.append(nxt)
+                    visited_v.add(nxt)
+                    cur = nxt
+                if len(loop) >= 3:
+                    centroid_v = unique_verts[loop].mean(axis=0)
+                    unique_verts = np.vstack([unique_verts, centroid_v])
+                    c_idx = len(unique_verts) - 1
+                    for i in range(len(loop)):
+                        new_faces.append([loop[i], loop[(i + 1) % len(loop)], c_idx])
+                    n_holes += 1
+
+            if new_faces:
+                face_indices = np.vstack([face_indices, np.array(new_faces)])
+            report["holes_filled"] = n_holes
+
+    report["repaired_faces"] = len(face_indices)
+
+    # Check if all edges are shared by exactly 2 faces (watertight)
+    if len(face_indices) > 0:
+        ec: dict[tuple, int] = {}
+        for tri in face_indices:
+            for k in range(3):
+                e = tuple(sorted([int(tri[k]), int(tri[(k + 1) % 3])]))
+                ec[e] = ec.get(e, 0) + 1
+        report["is_watertight"] = all(v == 2 for v in ec.values())
+
+    # Write output STL if requested
+    if output_path is not None:
+        _write_stl_binary(Path(output_path), unique_verts, face_indices)
+        report["output_path"] = str(output_path)
+
+    return report
+
+
+def _write_stl_binary(path: Path, verts: np.ndarray, faces: np.ndarray) -> None:
+    """Write a binary STL from vertex + face-index arrays."""
+    dt = np.dtype([
+        ("normal", np.float32, (3,)),
+        ("v0", np.float32, (3,)),
+        ("v1", np.float32, (3,)),
+        ("v2", np.float32, (3,)),
+        ("attr", np.uint16),
+    ])
+    n_tri = len(faces)
+    records = np.zeros(n_tri, dtype=dt)
+    v0 = verts[faces[:, 0]].astype(np.float32)
+    v1 = verts[faces[:, 1]].astype(np.float32)
+    v2 = verts[faces[:, 2]].astype(np.float32)
+    e1 = v1 - v0
+    e2 = v2 - v0
+    normals = np.cross(e1, e2)
+    norms = np.linalg.norm(normals, axis=1, keepdims=True)
+    normals /= np.where(norms > 0, norms, 1.0)
+    records["normal"] = normals
+    records["v0"] = v0
+    records["v1"] = v1
+    records["v2"] = v2
+    with open(path, "wb") as fh:
+        fh.write(b"\x00" * 80)  # 80-byte header
+        fh.write(np.uint32(n_tri).tobytes())
+        fh.write(records.tobytes())
+
+
+# ---------------------------------------------------------------------------
+# P2.2 Boundary-layer mesh auto-generation
+# ---------------------------------------------------------------------------
+
+def build_near_wall_refinement_mask(
+    mask: np.ndarray | torch.Tensor,
+    *,
+    yplus: float,
+    re: float,
+    char_length_lu: float,
+    nu_lu: float,
+    n_bl_layers: int = 3,
+    growth_ratio: float = 1.2,
+) -> torch.Tensor:
+    """Auto-generate a near-wall cell refinement mask from Y+ specification.
+
+    Computes the required first-cell height for the target Y+ value and
+    then marks cells within the estimated boundary-layer thickness for
+    refinement.  Multiple concentric refinement shells (``n_bl_layers``)
+    are generated with exponential growth towards the free-stream.
+
+    Args:
+        mask:            Boolean solid mask, shape ``(ny, nx)`` or
+                         ``(nz, ny, nx)``.  ``True`` = solid.
+        yplus:           Target wall Y+ for the first cell.
+        re:              Reynolds number.
+        char_length_lu:  Characteristic length in lattice units.
+        nu_lu:           Kinematic viscosity in lattice units.
+        n_bl_layers:     Number of near-wall refinement layers.
+        growth_ratio:    Layer thickness growth ratio (default 1.2).
+
+    Returns:
+        Integer tensor of same shape as *mask*.  Value k (0..n_bl_layers)
+        indicates the refinement level — 0 means no refinement, 1 = finest
+        near-wall layer.  Can be used directly as a VR-level map.
+    """
+    if isinstance(mask, np.ndarray):
+        mask = torch.from_numpy(mask.astype(np.bool_))
+
+    device = mask.device
+
+    # Friction velocity estimate: u_tau = U_inf * sqrt(Cf/2)
+    # Schlichting flat plate: Cf ≈ 0.026 / Re^(1/7)
+    cf = 0.026 / (re ** (1.0 / 7.0))
+    # U_inf in LU: Re = U_inf * L / nu → U_inf = Re * nu / L
+    u_inf = re * nu_lu / char_length_lu
+    u_tau = u_inf * (cf / 2.0) ** 0.5
+
+    # First cell height y1 = yplus * nu / u_tau  (in lattice units)
+    y1 = yplus * nu_lu / max(u_tau, 1e-12)
+
+    # Build concentric distance shells
+    from .adaptive_refinement import boundary_layer_indicator_2d, boundary_layer_indicator_3d
+
+    refinement = torch.zeros_like(mask, dtype=torch.long)
+    thickness = y1
+    for layer in range(n_bl_layers, 0, -1):
+        # Compute BL indicator for current thickness
+        if mask.ndim == 2:
+            ind = boundary_layer_indicator_2d(mask, re=re, bl_thickness_cells=thickness)
+        else:
+            ind = boundary_layer_indicator_3d(mask, re=re, bl_thickness_cells=thickness)
+        # Mark cells in this shell (overwrite with decreasing level outward)
+        refinement[ind > 0] = layer
+        thickness *= growth_ratio
+
+    return refinement
