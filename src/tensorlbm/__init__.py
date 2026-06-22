@@ -456,6 +456,33 @@ from .inlet_profiles import (
     apply_inlet_profile_2d,
     apply_inlet_profile_3d,
 )
+from .synthetic_inflow import (
+    DFSEMInlet,
+    DigitalFilterInlet,
+    apply_dfsem_inlet_2d,
+    apply_dfsem_inlet_3d,
+)
+from .roughness import (
+    roughness_b_correction,
+    compute_rough_wall_slip_velocity,
+    apply_rough_wall_bounce_back,
+)
+from .sponge_bc import (
+    sponge_profile,
+    apply_viscous_sponge_2d,
+    apply_viscous_sponge_3d,
+    apply_target_sponge_2d,
+    apply_target_sponge_3d,
+    build_mean_equilibrium_2d,
+    build_mean_equilibrium_3d,
+)
+from .turbulence_stats import (
+    TurbulenceStatsAccumulator,
+    compute_reynolds_stresses,
+    compute_turbulence_intensity,
+    compute_turbulence_length_scale,
+    turbulence_stats_from_checkpoints,
+)
 
 __all__ = [
     "__version__",
@@ -896,4 +923,27 @@ __all__ = [
     "synthetic_turbulence_2d",
     "apply_inlet_profile_2d",
     "apply_inlet_profile_3d",
+    # Synthetic turbulent inflow (DFSEM + Digital Filter Method)
+    "DFSEMInlet",
+    "DigitalFilterInlet",
+    "apply_dfsem_inlet_2d",
+    "apply_dfsem_inlet_3d",
+    # Wall roughness BC (equivalent sand-grain)
+    "roughness_b_correction",
+    "compute_rough_wall_slip_velocity",
+    "apply_rough_wall_bounce_back",
+    # Sponge / absorbing-layer outlet BC
+    "sponge_profile",
+    "apply_viscous_sponge_2d",
+    "apply_viscous_sponge_3d",
+    "apply_target_sponge_2d",
+    "apply_target_sponge_3d",
+    "build_mean_equilibrium_2d",
+    "build_mean_equilibrium_3d",
+    # Turbulence statistics (Reynolds stresses, TKE, Tu)
+    "TurbulenceStatsAccumulator",
+    "compute_reynolds_stresses",
+    "compute_turbulence_intensity",
+    "compute_turbulence_length_scale",
+    "turbulence_stats_from_checkpoints",
 ]
