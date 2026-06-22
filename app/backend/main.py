@@ -27,6 +27,7 @@ from .routers import (  # noqa: E402
     benchmarks,
     cad,
     jobs,
+    notifications,
     orchestration,
     postprocess,
     preprocess,
@@ -153,6 +154,7 @@ app.include_router(orchestration.router, prefix="/api/orchestration", tags=["Orc
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
 # ---------------------------------------------------------------------------
 # WebSocket

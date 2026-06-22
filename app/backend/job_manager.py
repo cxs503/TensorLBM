@@ -77,6 +77,11 @@ class Job:
             float((orch or {}).get("cost_rate_per_second", 0.0)),
         )
         self.estimated_cost: float = 0.0
+        # Priority: 1 (lowest) – 10 (highest). Higher-priority jobs are
+        # submitted first when multiple jobs are queued simultaneously.
+        self.priority: int = max(1, min(10, int(
+            (orch or {}).get("priority") or config.get("priority") or 5  # type: ignore[index]
+        )))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -106,6 +111,7 @@ class Job:
             "resume_from": self.resume_from,
             "assigned_resource": self.assigned_resource,
             "estimated_cost": self.estimated_cost,
+            "priority": self.priority,
         }
 
 
