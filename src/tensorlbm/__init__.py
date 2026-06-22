@@ -340,6 +340,13 @@ from .solver3d import (
 )
 from .sphere_flow import SphereFlowConfig, run_sphere_flow
 from .sphere_water_entry import SphereWaterEntryConfig, run_sphere_water_entry
+from .dg_lbm import (
+    DGLBMConfig,
+    build_dg_shell_mask,
+    collide_dg_lbm,
+    dg_compute_velocity_gradients,
+    run_dg_lbm_sphere_flow,
+)
 from .ellipsoid_benchmark import (
     EllipsoidConfig,
     build_ellipsoid_mask,
