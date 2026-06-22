@@ -53,7 +53,9 @@
     "step_preproc": "Pre-process",
     "step_solve": "Solve",
     "step_post": "Post-process",
-    "step_reports": "Reports"
+    "step_reports": "Reports",
+    "job_done": "Job completed",
+    "job_failed": "Job failed"
   },
   "stat": {
     "total": "Total Jobs",
@@ -486,8 +488,14 @@
     "tab_results": "Results",
     "tab_fieldview": "Field View",
     "tab_probes_analysis": "Probes & Analysis",
-    "tab_export": "Export",
-    "tab_logs_files": "Logs & Files"
+    "tab_logs_files": "Logs & Files",
+    "tab_abcompare": "A/B Compare",
+    "abcompare_title": "A/B Snapshot Compare",
+    "abcompare_job_a": "Job A",
+    "abcompare_job_b": "Job B",
+    "abcompare_run": "Compare",
+    "abcompare_select_both": "Please select both Job A and Job B.",
+    "abcompare_no_image": "No image"
   },
   "settings": {
     "title": "Settings",
@@ -632,7 +640,9 @@
     "run": "Run",
     "nx": "nx",
     "ny": "ny",
-    "nz": "nz"
+    "nz": "nz",
+    "shortcuts_title": "Keyboard Shortcuts",
+    "close": "Close"
   },
   "offshore": {
     "title": "Offshore Structure CAD",
@@ -795,5 +805,14 @@
     "ctrl_zoom": "Scroll: zoom",
     "ctrl_probe": "Shift+click: place probe",
     "drop_hint": "Upload an STL file to begin"
+  },
+  "shortcuts": {
+    "show_shortcuts": "Show this shortcuts reference",
+    "focus_search": "Focus job search",
+    "focus_search_slash": "Focus job search (alternative)",
+    "switch_tab": "Switch to module 1–9",
+    "last_tab": "Switch to module 10",
+    "close_modal": "Close modal / lightbox",
+    "hint": "Press ? anytime to reopen"
   }
 }

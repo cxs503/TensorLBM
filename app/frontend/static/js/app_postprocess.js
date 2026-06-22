@@ -933,3 +933,73 @@ async function loadStudyCompare() {
     }
   }
 }
+
+// ============================================================
+// A/B Snapshot Comparison
+// ============================================================
+function abComparePopulateSelects() {
+  const jobsA = document.getElementById('ab-job-a');
+  const jobsB = document.getElementById('ab-job-b');
+  if (!jobsA || !jobsB) return;
+  const completed = Object.values(jobsMap)
+    .filter(j => j.status === 'completed' || j.status === 'failed')
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const opts = `<option value="">${t('postprocess.select_hint')}</option>` +
+    completed.map(j => `<option value="${escHtml(j.job_id)}">${escHtml(j.name)} (${escHtml(j.job_id)})</option>`).join('');
+  jobsA.innerHTML = opts;
+  jobsB.innerHTML = opts;
+}
+
+async function abCompareLoad() {
+  const idA = document.getElementById('ab-job-a').value;
+  const idB = document.getElementById('ab-job-b').value;
+  const grid = document.getElementById('ab-compare-grid');
+  if (!idA || !idB) {
+    grid.innerHTML = `<div class="col-12"><div class="alert alert-warning small">${t('postprocess.abcompare_select_both')}</div></div>`;
+    return;
+  }
+  grid.innerHTML = `<div class="col-12 text-center py-3"><span class="spinner-border spinner-border-sm"></span> ${t('postprocess.loading')}</div>`;
+  try {
+    const [rA, rB] = await Promise.all([
+      api('GET', `/api/jobs/${idA}/images`),
+      api('GET', `/api/jobs/${idB}/images`),
+    ]);
+    const nameA = escHtml((jobsMap[idA] || {}).name || idA);
+    const nameB = escHtml((jobsMap[idB] || {}).name || idB);
+    const allKeys = [...new Set([...rA.images, ...rB.images])].sort();
+    if (!allKeys.length) {
+      grid.innerHTML = `<div class="col-12 text-muted small">${t('postprocess.no_snapshots')}</div>`;
+      return;
+    }
+    grid.innerHTML = '';
+    for (const key of allKeys) {
+      const hasA = rA.images.includes(key);
+      const hasB = rB.images.includes(key);
+      const col = document.createElement('div');
+      col.className = 'col-12 col-lg-6';
+      col.innerHTML = `
+        <div class="card mb-3">
+          <div class="card-header small fw-semibold py-1">${escHtml(key)}</div>
+          <div class="card-body p-2">
+            <div class="row g-1">
+              <div class="col-6">
+                <div class="small text-muted text-center mb-1">${nameA}</div>
+                ${hasA
+                  ? `<img src="${buildJobFileUrl(idA, key)}" class="result-img img-thumb w-100" style="cursor:zoom-in" onclick="openLightbox(this.src)" loading="lazy" alt="${escHtml(key)}" />`
+                  : `<div class="bg-light border rounded text-center text-muted small py-4">${t('postprocess.abcompare_no_image')}</div>`}
+              </div>
+              <div class="col-6">
+                <div class="small text-muted text-center mb-1">${nameB}</div>
+                ${hasB
+                  ? `<img src="${buildJobFileUrl(idB, key)}" class="result-img img-thumb w-100" style="cursor:zoom-in" onclick="openLightbox(this.src)" loading="lazy" alt="${escHtml(key)}" />`
+                  : `<div class="bg-light border rounded text-center text-muted small py-4">${t('postprocess.abcompare_no_image')}</div>`}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      grid.appendChild(col);
+    }
+  } catch (e) {
+    grid.innerHTML = `<div class="col-12"><div class="alert alert-danger small">${escHtml(e.message)}</div></div>`;
+  }
+}

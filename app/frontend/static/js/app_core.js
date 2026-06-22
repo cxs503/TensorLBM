@@ -221,6 +221,13 @@ function bindKeyboardShortcuts() {
       const input = document.getElementById('jobs-search');
       if (input) input.focus();
     }
+    if (!inInput && ev.key === '?') {
+      ev.preventDefault();
+      const el = document.getElementById('shortcuts-modal');
+      if (el && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(el).toggle();
+      }
+    }
   });
 }
 
@@ -249,7 +256,16 @@ function connectWS() {
       updateStats();
     } else if (msg.type === 'job_update') {
       const j = msg.job;
+      const prev = jobsMap[j.job_id];
       jobsMap[j.job_id] = j;
+      // Toast on terminal status transitions
+      if (prev && prev.status !== j.status) {
+        if (j.status === 'completed') {
+          showToast(`✓ ${t('sidebar.job_done')}: ${escHtml(j.name)}`, 'success');
+        } else if (j.status === 'failed') {
+          showToast(`✗ ${t('sidebar.job_failed')}: ${escHtml(j.name)}`, 'danger');
+        }
+      }
       renderJobsSidebar();
       dashboardRenderSelectedJob();
       updatePPJobSelect();
@@ -627,9 +643,39 @@ function renderJobsSidebar() {
     const badgeCls = {queued:'secondary',running:'warning',completed:'success',failed:'danger',cancelled:'dark'}[j.status]||'secondary';
     const dur = j.started_at && j.completed_at
       ? ` · ${((new Date(j.completed_at)-new Date(j.started_at))/1000).toFixed(1)}s` : '';
+
+    // Progress bar + ETA + steps/sec for running jobs
+    let progressHtml = '';
+    if (j.status === 'running') {
+      const nSteps = j.config && (j.config.n_steps || j.config.steps);
+      const diags = j.diagnostics || [];
+      const lastDiag = diags.length ? diags[diags.length - 1] : null;
+      const stepsDone = lastDiag ? (lastDiag.step || 0) : 0;
+      const elapsedS = j.started_at ? (Date.now() - new Date(j.started_at).getTime()) / 1000 : 0;
+
+      if (nSteps && stepsDone > 0) {
+        const pct = Math.min(100, (stepsDone / nSteps) * 100).toFixed(1);
+        const stepsPerSec = elapsedS > 1 ? (stepsDone / elapsedS).toFixed(1) : '…';
+        const etaSec = elapsedS > 1 && stepsDone > 0
+          ? Math.max(0, ((nSteps - stepsDone) / (stepsDone / elapsedS))).toFixed(0)
+          : null;
+        const etaStr = etaSec !== null ? `ETA ${etaSec}s` : '';
+        progressHtml = `
+          <div class="mt-1">
+            <div class="progress" style="height:4px" title="${pct}%">
+              <div class="progress-bar bg-warning" style="width:${pct}%"></div>
+            </div>
+            <div class="job-meta mt-1">${stepsPerSec} steps/s ${etaStr ? '· ' + etaStr : ''}</div>
+          </div>`;
+      } else if (nSteps) {
+        progressHtml = `<div class="progress mt-1" style="height:4px"><div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" style="width:100%"></div></div>`;
+      }
+    }
+
     return `<div class="job-card${selectedJobId===j.job_id?' selected':''}" onclick="selectJob('${j.job_id}')">
       <div class="job-name">${dot}${escHtml(j.name)}</div>
       <div class="job-meta">${j.job_id}${dur}</div>
+      ${progressHtml}
       <div class="d-flex align-items-center justify-content-between mt-1">
         <span class="badge bg-${badgeCls} status-badge">${j.status}</span>
         <button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="reuseJobConfig(event,'${j.job_id}')" title="${t('solve.reuse_run')}">
@@ -913,6 +959,7 @@ function showPPMergedTab(tabName, clickedLink) {
   if (clickedLink) {
     clickedLink.classList.add('active');
   }
+  if (tabName === 'abcompare') abComparePopulateSelects();
 }
 
 function showPPSub(sub, btn, parentMergedId) {
