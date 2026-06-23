@@ -176,6 +176,8 @@ HPC+AI demonstration upgrade:
   `external_aero_e2e_pilot`).
 * `GET /api/orchestration/kpis` — aggregate queue wait, retries, runtime,
   throughput, resource distribution and estimated cost from platform jobs.
+* `GET /api/orchestration/hpc-dashboard` — aggregate HPC backend/partition/state,
+  queue wait and cluster-cost rollups for submitted jobs.
 * `GET /api/orchestration/studies/{study_group}/summary` — aggregate DOE jobs,
   evaluate optional study constraints/objectives and rank the best completed
   design point.
@@ -183,10 +185,22 @@ HPC+AI demonstration upgrade:
   P0/P1/P2 优先级评估。
 * `GET /api/orchestration/regression-dashboard` — version-accuracy-cost 三维
   基线与门禁统计看板数据。
+* `POST /api/orchestration/release-gates/evaluate` — versioned release gate
+  evaluation with block/approve decision and optional baseline promotion.
+* `GET /api/orchestration/release-gates/history` — persisted release gate
+  decisions.
+* `GET /api/orchestration/release-gates/baselines` — current release-gate
+  baseline policies by profile.
 * `GET /api/ai/governance/registry-summary` — summarize AI model registry
   quality statistics.
+* `GET /api/ai/governance/policies` — list scenario/model adaptive governance
+  policies.
+* `POST /api/ai/governance/policies` — upsert scenario/model adaptive
+  thresholds (error/uncertainty/CI/drift/human-review).
 * `POST /api/ai/governance/confidence-gate` — uncertainty/error-based decision
   gate (`accept_ai` vs `fallback_hpc_high_fidelity`).
+* `POST /api/ai/governance/drift-monitor` — evaluate distribution drift and
+  trigger recalibration/HPC backfill recommendations.
 * `POST /api/ai/governance/active-learning/prioritize` — rank candidate samples
   for HPC re-simulation and incremental retraining.
 

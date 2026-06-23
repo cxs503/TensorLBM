@@ -314,6 +314,13 @@ class TestHPCSchedulerService:
         assert "#PBS -q debug" in script
         assert "echo hello" in script
 
+    def test_default_solver_cmd_is_not_placeholder(self):
+        from app.backend.services.hpc_scheduler import _default_solver_cmd
+
+        cmd = _default_solver_cmd("abc123", "/tmp/test_output")
+        assert "run_metadata.json" in cmd
+        assert "TensorLBM HPC execution started" in cmd
+
 
 # ===========================================================================
 # 10. Job priority field

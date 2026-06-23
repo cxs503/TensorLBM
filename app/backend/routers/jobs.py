@@ -5,6 +5,7 @@ import base64
 import json
 import logging
 import mimetypes
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, HTTPException, Query
@@ -12,6 +13,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from .. import job_manager
+from ..services import hpc_scheduler
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -361,7 +363,10 @@ def _safe_job_path(root: Path, rel_path: str) -> Path | None:
 class HPCSubmitRequest(BaseModel):
     solver_cmd: str | None = Field(
         default=None,
-        description="Shell command to run on the cluster.  Defaults to a no-op echo.",
+        description=(
+            "Shell command to run on the cluster. Defaults to "
+            "TensorLBM artifact-aware execution command."
+        ),
     )
     partition: str | None = Field(default=None, description="Cluster partition/queue.")
     nodes: int | None = Field(default=None, ge=1, le=512)
@@ -389,8 +394,7 @@ async def submit_job_to_hpc(job_id: str, req: HPCSubmitRequest) -> dict:
         raise HTTPException(status_code=404, detail="Job not found")
 
     try:
-        from ..services.hpc_scheduler import submit_hpc_job  # noqa: PLC0415
-        result = submit_hpc_job(
+        result = hpc_scheduler.submit_hpc_job(
             job_id=job_id,
             output_dir=str(job.output_dir),
             solver_cmd=req.solver_cmd,
@@ -405,6 +409,24 @@ async def submit_job_to_hpc(job_id: str, req: HPCSubmitRequest) -> dict:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if isinstance(job.config, dict):
+        hpc_info = dict(job.config.get("hpc_info") or {})
+        hpc_info.update({
+            "backend": result.get("backend"),
+            "hpc_job_id": result.get("hpc_job_id"),
+            "submitted_at": datetime.now(UTC).isoformat(),
+            "status": result.get("status", "submitted"),
+            "solver_cmd": result.get("solver_cmd"),
+            "script_path": result.get("script_path"),
+            "partition": result.get("partition") or result.get("queue"),
+            "nodes": result.get("nodes"),
+            "cpus": result.get("cpus"),
+            "mem": result.get("mem"),
+            "walltime": result.get("walltime"),
+            "retry_count": int(hpc_info.get("retry_count", 0)),
+        })
+        job.config["hpc_info"] = hpc_info
 
     logger.info("HPC submission: job=%s hpc_id=%s", job_id, result.get("hpc_job_id"))
     return {"job_id": job_id, **result}
@@ -498,14 +520,31 @@ async def get_hpc_status(job_id: str) -> dict:
 
     if hpc_backend == "slurm" and hpc_job_id:
         try:
-            from ..services.hpc_scheduler import query_slurm_status  # noqa: PLC0415
-            slurm_result = query_slurm_status(hpc_job_id)
+            slurm_result = hpc_scheduler.query_slurm_status(hpc_job_id)
             cluster_state = slurm_result.get("state", "unknown")
             cluster_elapsed = slurm_result.get("elapsed", "n/a")
+            elapsed_seconds = hpc_scheduler.parse_elapsed_to_seconds(cluster_elapsed)
         except Exception:  # noqa: BLE001
             cluster_state = "query_error"
+            elapsed_seconds = None
     elif hpc_backend == "pbs" and hpc_job_id:
         cluster_state = "pbs_query_not_implemented"
+        elapsed_seconds = None
+    else:
+        elapsed_seconds = None
+
+    if isinstance(job.config, dict):
+        hpc_info = dict(job.config.get("hpc_info") or {})
+        hpc_info["last_polled_at"] = datetime.now(UTC).isoformat()
+        hpc_info["cluster_state"] = cluster_state
+        hpc_info["cluster_elapsed"] = cluster_elapsed
+        if elapsed_seconds is not None:
+            hpc_info["cluster_elapsed_seconds"] = elapsed_seconds
+            cost_rate = float(job.cost_rate_per_second or 0.0)
+            hpc_info["estimated_cluster_cost"] = round(elapsed_seconds * cost_rate, 6)
+        job.config["hpc_info"] = hpc_info
+    else:
+        hpc_info = {}
 
     return {
         "job_id": job_id,
@@ -514,6 +553,14 @@ async def get_hpc_status(job_id: str) -> dict:
         "hpc_job_id": hpc_job_id or None,
         "cluster_state": cluster_state,
         "cluster_elapsed": cluster_elapsed,
+        "cluster_elapsed_seconds": elapsed_seconds,
+        "estimated_cluster_cost": hpc_info.get("estimated_cluster_cost"),
+        "retry_hint": (
+            "invoke POST /api/jobs/{job_id}/retry then /submit-hpc "
+            "when cluster_state is failed/cancelled"
+            if str(cluster_state).lower() in {"failed", "cancelled", "timeout", "node_fail"}
+            else None
+        ),
         "hpc_info": hpc_info,
     }
 
@@ -554,7 +601,11 @@ async def retry_job(job_id: str) -> dict:
 
     # Clear HPC metadata so the job can be re-dispatched cleanly
     if isinstance(job.config, dict):
-        job.config.pop("hpc_info", None)
+        hpc_info = dict(job.config.get("hpc_info") or {})
+        hpc_info["retry_count"] = int(hpc_info.get("retry_count", 0)) + 1
+        hpc_info["last_retry_at"] = datetime.now(UTC).isoformat()
+        hpc_info["status"] = "retry_queued"
+        job.config["hpc_info"] = hpc_info
 
     ok = job_manager.retry_job(job_id)
     if not ok:

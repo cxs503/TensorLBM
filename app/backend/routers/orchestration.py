@@ -13,6 +13,8 @@ from . import benchmarks as benchmarks_router
 from . import reports, solver
 
 router = APIRouter()
+_RELEASE_GATE_HISTORY: list[dict[str, Any]] = []
+_RELEASE_BASELINES: dict[str, dict[str, Any]] = {}
 
 
 class SweepVariable(BaseModel):
@@ -905,6 +907,179 @@ async def engineering_regression_dashboard() -> dict[str, Any]:
             "max_runtime_seconds": max(runtimes) if runtimes else None,
             "orchestration_kpis": await orchestration_kpis(),
         },
+    }
+
+
+@router.get("/hpc-dashboard")
+async def hpc_dashboard() -> dict[str, Any]:
+    """Aggregate HPC queue/state/cost metrics for orchestration operations."""
+    rows = job_manager.list_jobs()
+    jobs = [job_manager.get_job(str(row["job_id"])) for row in rows]
+    jobs = [job for job in jobs if job is not None]
+    hpc_jobs = [
+        job for job in jobs
+        if isinstance(job.config, dict) and isinstance(job.config.get("hpc_info"), dict)
+    ]
+
+    backend_counts: dict[str, int] = {}
+    partition_counts: dict[str, int] = {}
+    cluster_state_counts: dict[str, int] = {}
+    retry_total = 0
+    elapsed_seconds: list[float] = []
+    queue_waits: list[float] = []
+    estimated_cluster_cost_total = 0.0
+    for job in hpc_jobs:
+        hpc_info = job.config.get("hpc_info") or {}
+        backend = str(hpc_info.get("backend") or "unknown")
+        backend_counts[backend] = backend_counts.get(backend, 0) + 1
+        partition = str(hpc_info.get("partition") or "default")
+        partition_counts[partition] = partition_counts.get(partition, 0) + 1
+        state = str(hpc_info.get("cluster_state") or "unknown")
+        cluster_state_counts[state] = cluster_state_counts.get(state, 0) + 1
+        retry_total += int(hpc_info.get("retry_count", 0) or 0)
+        if isinstance(job.queue_wait_seconds, (int, float)):
+            queue_waits.append(float(job.queue_wait_seconds))
+        sec = hpc_info.get("cluster_elapsed_seconds")
+        if isinstance(sec, (int, float)):
+            elapsed_seconds.append(float(sec))
+        cost = hpc_info.get("estimated_cluster_cost")
+        if isinstance(cost, (int, float)):
+            estimated_cluster_cost_total += float(cost)
+        elif isinstance(sec, (int, float)):
+            estimated_cluster_cost_total += float(sec) * float(job.cost_rate_per_second or 0.0)
+
+    return {
+        "count": len(hpc_jobs),
+        "generated_at": datetime.now(UTC).isoformat(),
+        "backends": backend_counts,
+        "partitions": partition_counts,
+        "cluster_states": cluster_state_counts,
+        "avg_queue_wait_seconds": (sum(queue_waits) / len(queue_waits)) if queue_waits else None,
+        "avg_cluster_elapsed_seconds": (
+            (sum(elapsed_seconds) / len(elapsed_seconds))
+            if elapsed_seconds else None
+        ),
+        "estimated_cluster_cost_total": round(estimated_cluster_cost_total, 6),
+        "retry_total": retry_total,
+    }
+
+
+class ReleaseGateEvaluateRequest(BaseModel):
+    version: str = Field(..., min_length=1, max_length=128)
+    baseline_profile: str = Field(default="engineering_full", min_length=1, max_length=64)
+    study_group: str | None = None
+    min_acceptance_pass_rate: float = Field(default=0.8, ge=0.0, le=1.0)
+    max_avg_runtime_seconds: float | None = Field(default=None, gt=0.0)
+    max_estimated_cost_total: float | None = Field(default=None, ge=0.0)
+    require_completed_jobs: int = Field(default=1, ge=1, le=10000)
+    block_on_failed_jobs: bool = True
+    promote_as_baseline: bool = False
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+@router.post("/release-gates/evaluate")
+async def evaluate_release_gate(req: ReleaseGateEvaluateRequest) -> dict[str, Any]:
+    """Evaluate versioned release gate and optionally persist baseline policy."""
+    rows = job_manager.list_jobs()
+    jobs: list[job_manager.Job] = []
+    for row in rows:
+        job = job_manager.get_job(str(row["job_id"]))
+        if job is None:
+            continue
+        if req.study_group:
+            study = job.config.get("study", {}) if isinstance(job.config, dict) else {}
+            if study.get("group") != req.study_group:
+                continue
+        jobs.append(job)
+
+    completed_jobs = [job for job in jobs if job.status.value == "completed"]
+    failed_jobs = [job for job in jobs if job.status.value == "failed"]
+
+    runtimes = [
+        float(job.run_duration_seconds)
+        for job in completed_jobs
+        if isinstance(job.run_duration_seconds, (int, float))
+    ]
+    cost_total = float(sum(float(job.estimated_cost or 0.0) for job in jobs))
+
+    gate_eval = 0
+    gate_pass = 0
+    for job in completed_jobs:
+        study = job.config.get("study", {}) if isinstance(job.config, dict) else {}
+        scenario = str(study.get("gate_scenario") or "")
+        if scenario in benchmarks_router._ENGINEERING_ACCEPTANCE_GATES:
+            with contextlib.suppress(HTTPException):
+                result = benchmarks_router._check_acceptance_gate(
+                    scenario,
+                    job.result if isinstance(job.result, dict) else {},
+                )
+                gate_eval += 1
+                if result.get("passed"):
+                    gate_pass += 1
+    pass_rate = (gate_pass / gate_eval) if gate_eval > 0 else 1.0
+    avg_runtime = (sum(runtimes) / len(runtimes)) if runtimes else None
+
+    checks = {
+        "completed_jobs": len(completed_jobs) >= req.require_completed_jobs,
+        "acceptance_pass_rate": pass_rate >= req.min_acceptance_pass_rate,
+        "avg_runtime_seconds": (
+            True
+            if req.max_avg_runtime_seconds is None
+            else (avg_runtime is not None and avg_runtime <= req.max_avg_runtime_seconds)
+        ),
+        "estimated_cost_total": (
+            True
+            if req.max_estimated_cost_total is None
+            else cost_total <= req.max_estimated_cost_total
+        ),
+        "failed_jobs": (not req.block_on_failed_jobs) or len(failed_jobs) == 0,
+    }
+    blocked = not all(checks.values())
+    decision = "blocked" if blocked else "approved"
+    summary = {
+        "version": req.version,
+        "baseline_profile": req.baseline_profile,
+        "study_group": req.study_group,
+        "decision": decision,
+        "blocked": blocked,
+        "checks": checks,
+        "metrics": {
+            "jobs_total": len(jobs),
+            "jobs_completed": len(completed_jobs),
+            "jobs_failed": len(failed_jobs),
+            "gate_evaluated": gate_eval,
+            "gate_passed": gate_pass,
+            "acceptance_pass_rate": pass_rate,
+            "avg_runtime_seconds": avg_runtime,
+            "estimated_cost_total": round(cost_total, 6),
+        },
+        "policy": req.model_dump(),
+        "generated_at": datetime.now(UTC).isoformat(),
+        "notes": req.notes,
+    }
+    _RELEASE_GATE_HISTORY.append(summary)
+    if req.promote_as_baseline:
+        _RELEASE_BASELINES[req.baseline_profile] = {
+            "version": req.version,
+            "policy": req.model_dump(),
+            "updated_at": datetime.now(UTC).isoformat(),
+        }
+    return summary
+
+
+@router.get("/release-gates/history")
+async def release_gate_history(limit: int = Query(default=50, ge=1, le=1000)) -> dict[str, Any]:  # noqa: B008
+    """Return persisted release gate evaluation history."""
+    rows = _RELEASE_GATE_HISTORY[-limit:]
+    return {"count": len(rows), "records": list(reversed(rows))}
+
+
+@router.get("/release-gates/baselines")
+async def release_gate_baselines() -> dict[str, Any]:
+    """Return in-memory versioned baseline policies."""
+    return {
+        "count": len(_RELEASE_BASELINES),
+        "profiles": _RELEASE_BASELINES,
     }
 
 
