@@ -34,6 +34,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--device", choices=["cpu", "cuda"], default="cpu", help="Execution device"
     )
     parser.add_argument(
+        "--backend",
+        choices=["torch", "paddle", "mindspore"],
+        default="torch",
+        help="LBM compute backend",
+    )
+    parser.add_argument(
         "--num-threads",
         dest="num_threads",
         type=int,
@@ -68,6 +74,7 @@ def main() -> None:
         run_name=args.run_name,
         seed=args.seed,
         device=args.device,
+        backend=args.backend,
         num_threads=args.num_threads,
         overwrite=args.overwrite,
         resume_checkpoint=args.resume_checkpoint,

@@ -31,6 +31,7 @@ def test_cylinder_flow_scan_submits_multiple_jobs(
         "radius": 4.0,
         "n_steps": 10,
         "output_interval": 5,
+        "backend": "paddle",
         "physics": {"turbulence_model": "smagorinsky_les"},
     }
     r = client.post("/api/solve/cylinder-flow/scan", json=payload)
@@ -44,6 +45,7 @@ def test_cylinder_flow_scan_submits_multiple_jobs(
     assert all(c["config"]["scan"]["group"] == data["scan_group"] for c in calls)
     assert [c["config"]["scan"]["value"] for c in calls] == payload["re_values"]
     assert all(c["config"]["physics"]["turbulence_model"] == "smagorinsky_les" for c in calls)
+    assert all(c["config"]["backend"] == "paddle" for c in calls)
 
 
 def test_cylinder_flow_scan_requires_at_least_two_values(client: TestClient) -> None:
