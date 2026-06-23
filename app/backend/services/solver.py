@@ -52,71 +52,85 @@ _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": ["synthetic_inflow", "sponge_layer", "turbulence_statistics"],
     },
     "lid_driven_cavity": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
     "backward_facing_step": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
     "turbulent_channel": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les", "dynamic_smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": ["rough_wall", "turbulence_statistics"],
     },
     "pipeline_flow": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
     "dam_break": {
         "flow_types": ["multiphase", "free_surface"],
         "turbulence_models": ["none"],
         "multiphase_models": ["sc", "scmp", "cg", "fe"],
+        "enhancements": [],
     },
     "sloshing_tank": {
         "flow_types": ["multiphase", "free_surface"],
         "turbulence_models": ["none"],
         "multiphase_models": ["cg"],
+        "enhancements": [],
     },
     "sphere_flow": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
     "ship_hull": {
         "flow_types": ["single_phase", "free_surface"],
         "turbulence_models": ["none", "smagorinsky_les", "dynamic_smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
     "porous_drainage": {
         "flow_types": ["multiphase"],
         "turbulence_models": ["none"],
         "multiphase_models": ["sc", "cg"],
+        "enhancements": [],
     },
     "rotating_cylinder": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
     "actuator_disk": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
     "propeller_open_water": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
     "ibm_propeller": {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
+        "enhancements": [],
     },
 }
 
@@ -166,6 +180,23 @@ def validate_physics(job_type: str, physics: PhysicsSelection) -> None:
             status_code=422,
             detail=f"Multiphase model '{physics.multiphase_model}' is not supported by {job_type}",
         )
+    enhancements = {
+        "synthetic_inflow": physics.synthetic_inflow,
+        "sponge_layer": physics.sponge_layer,
+        "rough_wall": physics.rough_wall,
+        "turbulence_statistics": physics.turbulence_statistics,
+    }
+    unsupported = [
+        name
+        for name, cfg in enhancements.items()
+        if cfg is not None and cfg.enabled and name not in caps.get("enhancements", [])
+    ]
+    if unsupported:
+        names = ", ".join(sorted(unsupported))
+        raise HTTPException(
+            status_code=422,
+            detail=f"Enhancement '{names}' is not supported by {job_type}",
+        )
 
 
 def prepare_solver_configs(
@@ -188,5 +219,5 @@ def prepare_solver_configs(
                 run_config["smagorinsky_cs"] = float(cs)
 
     submit_config = dict(run_config)
-    submit_config["physics"] = physics.model_dump()
+    submit_config["physics"] = physics.model_dump(exclude_none=True)
     return run_config, submit_config

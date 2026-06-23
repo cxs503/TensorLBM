@@ -22,6 +22,20 @@ import pytest
             "Flow type",
         ),
         (
+            "/api/solve/cylinder-flow",
+            {
+                "nx": 60,
+                "ny": 24,
+                "u_in": 0.05,
+                "re": 50.0,
+                "radius": 4.0,
+                "n_steps": 5,
+                "output_interval": 5,
+                "physics": {"rough_wall": {"enabled": True, "ks": 0.4}},
+            },
+            "Enhancement",
+        ),
+        (
             "/api/solve/sloshing-tank",
             {
                 "nx": 40,
@@ -69,6 +83,27 @@ def test_solver_accepts_supported_dynamic_les_combo(client):
             "averaging_start": 0,
             "output_interval": 5,
             "physics": {"turbulence_model": "dynamic_smagorinsky_les"},
+        },
+    )
+    assert r.status_code == 200, r.text
+
+
+def test_solver_accepts_supported_integrated_closure_combo(client):
+    r = client.post(
+        "/api/solve/cylinder-flow",
+        json={
+            "nx": 48,
+            "ny": 20,
+            "u_in": 0.05,
+            "re": 50.0,
+            "radius": 4.0,
+            "n_steps": 5,
+            "output_interval": 5,
+            "physics": {
+                "synthetic_inflow": {"enabled": True, "method": "digital_filter"},
+                "sponge_layer": {"enabled": True},
+                "turbulence_statistics": {"enabled": True, "start_step": 0, "sample_every": 1},
+            },
         },
     )
     assert r.status_code == 200, r.text

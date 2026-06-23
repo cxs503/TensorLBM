@@ -14,15 +14,18 @@ if TYPE_CHECKING:
 
 from .boundaries import (
     apply_simple_channel_boundaries,
+    bounce_back_cells,
     compute_obstacle_forces,
     cylinder_mask,
     make_channel_wall_mask,
+    zou_he_inlet_velocity,
 )
 from .checkpoint import load_checkpoint, save_checkpoint
 from .config_io import load_config_json, save_config_json
 from .d2q9 import equilibrium, macroscopic
 from .logging_config import configure_logging, logger
 from .solver import collide_bgk, correct_mass, stream
+from .turbulence_stats import TurbulenceStatsAccumulator, compute_turbulence_intensity
 from .utils import (
     DiagnosticPoint,
     configure_cpu_threads,
@@ -213,7 +216,40 @@ def _save_flow_snapshot(
     plt.close(fig)
 
 
-def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
+def _summarize_turbulence_stats(
+    stats: TurbulenceStatsAccumulator,
+    *,
+    u_ref: float,
+) -> dict[str, object]:
+    tu = compute_turbulence_intensity(stats.tke, u_ref=max(u_ref, 1e-12))
+    return {
+        "n_samples": stats.count,
+        "domain_mean_u": float(stats.mean_u.mean().item()),
+        "domain_mean_v": float(stats.mean_v.mean().item()),
+        "uu_mean": float(stats.uu.mean().item()),
+        "vv_mean": float(stats.vv.mean().item()),
+        "uv_mean": float(stats.uv.mean().item()),
+        "tke_mean": float(stats.tke.mean().item()),
+        "tu_percent_mean": float(tu.mean().item()),
+        "wall_normal_profile": {
+            "mean_u": stats.mean_u.mean(dim=1).cpu().tolist(),
+            "uu": stats.uu.mean(dim=1).cpu().tolist(),
+            "vv": stats.vv.mean(dim=1).cpu().tolist(),
+            "uv": stats.uv.mean(dim=1).cpu().tolist(),
+            "tke": stats.tke.mean(dim=1).cpu().tolist(),
+            "tu_percent": tu.mean(dim=1).cpu().tolist(),
+        },
+    }
+
+
+def run_cylinder_flow(
+    config: CylinderFlowConfig,
+    *,
+    synthetic_inflow: dict[str, object] | None = None,
+    sponge_layer: dict[str, object] | None = None,
+    turbulence_statistics: dict[str, object] | None = None,
+    diagnostic_callback: Callable[[dict[str, object]], None] | None = None,
+) -> Path:
     configure_logging()
     config.validate()
     torch.manual_seed(config.seed)
@@ -242,6 +278,11 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
             "num_threads": applied_num_threads,
         },
         "reproducibility": get_reproducibility_metadata(),
+        "engineering_closure": {
+            "synthetic_inflow": synthetic_inflow or {"enabled": False},
+            "sponge_layer": sponge_layer or {"enabled": False},
+            "turbulence_statistics": turbulence_statistics or {"enabled": False},
+        },
     }
 
     cx_obs, cy_obs = config.nx * 0.25, config.ny * 0.5
@@ -267,6 +308,62 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     diagnostics: list[dict[str, object]] = []
     # Accumulate fy as GPU tensors; defer .item() to post-loop to avoid per-step sync
     fy_steps: list[torch.Tensor] = []
+    inlet_rms_history: list[float] = []
+    sponge_profile_1d: torch.Tensor | None = None
+    turbulence_acc: TurbulenceStatsAccumulator | None = None
+    turbulence_start_step = 0
+    turbulence_sample_every = 1
+
+    if synthetic_inflow and bool(synthetic_inflow.get("enabled", False)):
+        from .synthetic_inflow import DFSEMInlet, DigitalFilterInlet
+
+        u_mean = torch.full((config.ny, 1), config.u_in, device=device)
+        inflow_kwargs = {
+            "ny": config.ny,
+            "nz": 1,
+            "uu": float(synthetic_inflow.get("uu", 1e-4)),
+            "vv": float(synthetic_inflow.get("vv", 1e-4)),
+            "ww": float(synthetic_inflow.get("ww", 1e-4)),
+            "uv": float(synthetic_inflow.get("uv", 0.0)),
+            "uw": float(synthetic_inflow.get("uw", 0.0)),
+            "vw": float(synthetic_inflow.get("vw", 0.0)),
+            "length_scale": float(synthetic_inflow.get("length_scale", 5.0)),
+            "device": device,
+            "seed": int(config.seed + int(synthetic_inflow.get("seed_offset", 101))),
+        }
+        if str(synthetic_inflow.get("method", "dfsem")).lower() == "digital_filter":
+            inflow_generator = DigitalFilterInlet(**inflow_kwargs)
+        else:
+            inflow_generator = DFSEMInlet(
+                u_mean=u_mean,
+                n_eddies=int(synthetic_inflow.get("n_eddies", 200)),
+                **inflow_kwargs,
+            )
+    else:
+        inflow_generator = None
+
+    if sponge_layer and bool(sponge_layer.get("enabled", False)):
+        from .sponge_bc import sponge_profile
+
+        sponge_start = int(float(sponge_layer.get("start_fraction", 0.8)) * max(config.nx - 1, 1))
+        sponge_profile_1d = sponge_profile(
+            nx=config.nx,
+            x0=min(max(0, sponge_start), config.nx - 1),
+            x1=config.nx - 1,
+            amplitude=float(sponge_layer.get("amplitude", 0.35)),
+            exponent=float(sponge_layer.get("exponent", 3.0)),
+            device=device,
+        )
+        metadata["engineering_closure"]["sponge_layer"] = {
+            **(sponge_layer or {}),
+            "x0": sponge_start,
+            "x1": config.nx - 1,
+        }
+
+    if turbulence_statistics and bool(turbulence_statistics.get("enabled", False)):
+        turbulence_acc = TurbulenceStatsAccumulator()
+        turbulence_start_step = int(turbulence_statistics.get("start_step", 0))
+        turbulence_sample_every = int(turbulence_statistics.get("sample_every", 1))
 
     diameter = 2.0 * config.radius
     dyn_pressure = 0.5 * config.u_in**2 * diameter
@@ -312,13 +409,36 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     for step in step_iter:
         f = _collide(f)
         f = _stream(f)
+        if sponge_profile_1d is not None:
+            from .sponge_bc import apply_viscous_sponge_2d
+
+            rho_s, ux_s, uy_s = macroscopic(f)
+            f = apply_viscous_sponge_2d(f, rho_s, ux_s, uy_s, tau, sponge_profile_1d)
         fx, fy = compute_obstacle_forces(f, obstacle)
-        f = apply_simple_channel_boundaries(
-            f,
-            u_in=config.u_in,
-            wall_mask=wall_mask,
-            obstacle_mask=obstacle,
-        )
+        if inflow_generator is not None:
+            _u_fluct, _v_fluct, _ = inflow_generator.sample()
+            inlet_u = torch.clamp(
+                config.u_in + _u_fluct[:, 0],
+                min=max(config.u_in * 0.25, 1e-5),
+                max=config.u_in * 2.0,
+            )
+            inlet_v = torch.clamp(
+                _v_fluct[:, 0],
+                min=-0.5 * config.u_in,
+                max=0.5 * config.u_in,
+            )
+            inlet_rms_history.append(float((_u_fluct[:, 0].std()).item()))
+            f = zou_he_inlet_velocity(f, inlet_u, inlet_v)
+            f[:, :, -1] = f[:, :, -2]
+            f = bounce_back_cells(f, wall_mask)
+            f = bounce_back_cells(f, obstacle)
+        else:
+            f = apply_simple_channel_boundaries(
+                f,
+                u_in=config.u_in,
+                wall_mask=wall_mask,
+                obstacle_mask=obstacle,
+            )
 
         # Store fy as a GPU scalar tensor – no .item() sync on every step
         fy_steps.append(fy.detach())
@@ -337,6 +457,12 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
             uy = uy.masked_fill(obstacle, 0.0)
             speed = torch.sqrt(ux * ux + uy * uy)
             mass = float(rho.sum().item())
+            if (
+                turbulence_acc is not None
+                and step >= turbulence_start_step
+                and (step - turbulence_start_step) % turbulence_sample_every == 0
+            ):
+                turbulence_acc.update(ux, uy)
 
             point = DiagnosticPoint(
                 step=step,
@@ -347,6 +473,10 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
             )
             diag_entry: dict[str, object] = {**asdict(point), "cd": cd, "cl": cl}
             diagnostics.append(diag_entry)
+            if turbulence_acc is not None and turbulence_acc.count > 0:
+                diag_entry["tke_mean"] = float(turbulence_acc.tke.mean().item())
+            if inlet_rms_history:
+                diag_entry["inlet_rms_u"] = inlet_rms_history[-1]
             logger.info(
                 "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f Cd=%.4f Cl=%.4f",
                 point.step,
@@ -360,6 +490,8 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
 
             vort = compute_vorticity(ux, uy)
             _save_flow_snapshot(run_dir, step, speed, vort, obstacle)
+            if diagnostic_callback is not None:
+                diagnostic_callback(diag_entry)
 
             # Save checkpoint at every output step
             save_checkpoint(f, step, run_dir)
@@ -378,6 +510,21 @@ def run_cylinder_flow(config: CylinderFlowConfig) -> Path:
     if st is not None:
         metadata["strouhal"] = st
         logger.info("Strouhal number St ≈ %.4f", st)
+    if inlet_rms_history:
+        metadata["engineering_closure"]["synthetic_inflow_runtime"] = {
+            "mean_u_rms": sum(inlet_rms_history) / len(inlet_rms_history),
+            "last_u_rms": inlet_rms_history[-1],
+        }
+    if sponge_profile_1d is not None:
+        metadata["engineering_closure"]["sponge_layer_runtime"] = {
+            "max_strength": float(sponge_profile_1d.max().item()),
+            "mean_strength": float(sponge_profile_1d.mean().item()),
+        }
+    if turbulence_acc is not None and turbulence_acc.count > 0:
+        metadata["engineering_closure"]["turbulence_statistics_runtime"] = _summarize_turbulence_stats(
+            turbulence_acc,
+            u_ref=config.u_in,
+        )
 
     forces_csv = run_dir / "forces.csv"
     with forces_csv.open("w", newline="", encoding="utf-8") as fh:
