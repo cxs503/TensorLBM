@@ -853,9 +853,24 @@
               <span class="ms-auto small text-muted" id="cad3d-model-id"></span>
             </div>
             <div class="card-body config-form">
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label class="form-label form-label-sm" for="cad3d-source-type" data-i18n="cad.model3d_source">3D Model Source</label>
+                  <select class="form-select form-select-sm" id="cad3d-source-type" onchange="cad3dOnSourceTypeChange()">
+                    <option value="parametric" selected data-i18n="cad.model3d_source_parametric">Parametric Hull</option>
+                    <option value="stl" data-i18n="cad.model3d_source_stl">Import STL</option>
+                    <option value="step" data-i18n="cad.model3d_source_step">Import STEP</option>
+                  </select>
+                </div>
+                <div class="col-md-8" id="cad3d-file-wrap" style="display:none;">
+                  <label class="form-label form-label-sm" for="cad3d-file-input" data-i18n="cad.model3d_file">3D Model File</label>
+                  <input type="file" class="form-control form-control-sm" id="cad3d-file-input" accept=".stl,.step,.stp">
+                </div>
+              </div>
+              <div class="small text-muted mb-2" id="cad3d-source-help" data-i18n="cad.model3d_source_help_parametric">Build a 3D hull model from the current hull parameters.</div>
               <div class="d-flex flex-wrap gap-2 mb-2">
                 <button class="btn btn-sm btn-primary" onclick="cad3dCreateOrUpdate()">
-                  <i class="bi bi-box"></i> <span data-i18n="cad.model3d_build">Build 3D Model</span>
+                  <i class="bi bi-box"></i> <span id="cad3d-build-label" data-i18n="cad.model3d_build">Build 3D Model</span>
                 </button>
                 <button class="btn btn-sm btn-outline-secondary" onclick="cad3dToggleWireframe()">
                   <i class="bi bi-grid-3x3"></i> <span data-i18n="cad.model3d_wireframe">Wireframe</span>

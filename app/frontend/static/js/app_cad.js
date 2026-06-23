@@ -17,6 +17,7 @@ function onCADHullTypeChange() {
 
 const cad3dState = {
   modelId: null,
+  sourceType: 'parametric',
   scene: null,
   camera: null,
   renderer: null,
@@ -26,6 +27,39 @@ const cad3dState = {
   wireframe: false,
   raf: 0,
 };
+
+function cad3dOnSourceTypeChange() {
+  const source = document.getElementById('cad3d-source-type')?.value || 'parametric';
+  const fileWrap = document.getElementById('cad3d-file-wrap');
+  const fileInput = document.getElementById('cad3d-file-input');
+  const help = document.getElementById('cad3d-source-help');
+  const buildLabel = document.getElementById('cad3d-build-label');
+  const isImport = source === 'stl' || source === 'step';
+  if (fileWrap) fileWrap.style.display = isImport ? '' : 'none';
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.accept = source === 'step' ? '.step,.stp' : '.stl,.step,.stp';
+  }
+  if (help) {
+    help.textContent = isImport ? t('cad.model3d_source_help_import') : t('cad.model3d_source_help_parametric');
+  }
+  if (buildLabel) {
+    buildLabel.textContent = isImport ? t('cad.model3d_import') : t('cad.model3d_build');
+  }
+}
+
+function cad3dReadFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error || new Error('file read failed'));
+    reader.readAsDataURL(file);
+  });
+}
 
 function cad3dEnsureViewer() {
   const host = document.getElementById('cad3d-canvas');
@@ -61,8 +95,9 @@ function cad3dEnsureViewer() {
 
 async function cad3dCreateOrUpdate() {
   cad3dEnsureViewer();
+  const sourceType = document.getElementById('cad3d-source-type')?.value || 'parametric';
   const body = {
-    source_type: 'parametric',
+    source_type: sourceType,
     units: 'lu',
     hull_type: document.getElementById('cad-hull-type').value,
     length: +document.getElementById('cad-length').value,
@@ -71,12 +106,23 @@ async function cad3dCreateOrUpdate() {
     n_long: 80,
     n_vert: 40,
   };
-  const isUpdate = !!cad3dState.modelId;
+  if (sourceType === 'stl' || sourceType === 'step') {
+    const fileInput = document.getElementById('cad3d-file-input');
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    if (!file) {
+      showToast(t('cad.model3d_file_required'), 'warning');
+      return;
+    }
+    body.file_b64 = await cad3dReadFileAsBase64(file);
+    body.filename = file.name;
+  }
+  const isUpdate = !!cad3dState.modelId && sourceType === 'parametric' && cad3dState.sourceType === 'parametric';
   const path = isUpdate ? `/api/cad/3d/models/${cad3dState.modelId}` : '/api/cad/3d/models';
   const method = isUpdate ? 'PUT' : 'POST';
   try {
     const r = await api(method, path, body);
     cad3dState.modelId = r.model_id || cad3dState.modelId;
+    cad3dState.sourceType = sourceType;
     document.getElementById('cad3d-model-id').textContent = cad3dState.modelId ? `ID: ${cad3dState.modelId}` : '';
     await cad3dLoadMesh();
   } catch (e) {
@@ -165,6 +211,8 @@ async function cad3dExport(fmt) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+cad3dOnSourceTypeChange();
 
 async function cadGeneratePreview() {
   const hull_type = document.getElementById('cad-hull-type').value;
