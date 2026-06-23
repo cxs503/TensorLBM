@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-TurbulenceModel = Literal["none", "smagorinsky_les", "dynamic_smagorinsky_les"]
+TurbulenceModel = Literal["none", "smagorinsky_les", "dynamic_smagorinsky_les", "komega_sst"]
 
 MultiphaseModel = Literal["none", "sc", "scmp", "cg", "fe"]
 

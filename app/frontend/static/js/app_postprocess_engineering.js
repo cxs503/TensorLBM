@@ -211,3 +211,214 @@ if (document.readyState === 'loading') {
 } else {
   initEngineeringFeatureTabs();
 }
+
+const isoViewerState = {
+  renderer: null,
+  scene: null,
+  camera: null,
+  controls: null,
+  mesh: null,
+  resizeBound: false,
+  animating: false,
+};
+
+function ensureIsoViewer() {
+  if (isoViewerState.renderer) return isoViewerState;
+  const canvas = _engineerSafeEl('iso-canvas');
+  const container = _engineerSafeEl('iso-canvas-container');
+  if (!canvas || !container || typeof THREE === 'undefined') {
+    throw new Error('Three.js viewer is unavailable.');
+  }
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: true,
+  });
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a1a2e);
+
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 5000);
+  camera.position.set(2.5, 2.0, 2.5);
+
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+  const dir = new THREE.DirectionalLight(0xffffff, 1.4);
+  dir.position.set(3, 4, 5);
+  scene.add(dir);
+
+  isoViewerState.renderer = renderer;
+  isoViewerState.scene = scene;
+  isoViewerState.camera = camera;
+  isoViewerState.controls = controls;
+
+  resizeIsoViewer();
+  if (!isoViewerState.resizeBound) {
+    isoViewerState.resizeBound = true;
+    window.addEventListener('resize', resizeIsoViewer);
+  }
+  if (!isoViewerState.animating) {
+    isoViewerState.animating = true;
+    const renderLoop = () => {
+      if (!isoViewerState.renderer) return;
+      requestAnimationFrame(renderLoop);
+      isoViewerState.controls.update();
+      isoViewerState.renderer.render(isoViewerState.scene, isoViewerState.camera);
+    };
+    renderLoop();
+  }
+  return isoViewerState;
+}
+
+function resizeIsoViewer() {
+  const container = _engineerSafeEl('iso-canvas-container');
+  if (!container || !isoViewerState.renderer || !isoViewerState.camera) return;
+  const width = Math.max(container.clientWidth || 1, 1);
+  const height = Math.max(container.clientHeight || 1, 1);
+  isoViewerState.renderer.setSize(width, height, false);
+  isoViewerState.camera.aspect = width / height;
+  isoViewerState.camera.updateProjectionMatrix();
+}
+
+function setIsoPlaceholder(message) {
+  const el = _engineerSafeEl('iso-placeholder');
+  if (!el) return;
+  el.style.display = '';
+  el.innerHTML = `<i class="bi bi-box me-2"></i>${escHtml(message)}`;
+}
+
+function hideIsoPlaceholder() {
+  const el = _engineerSafeEl('iso-placeholder');
+  if (el) el.style.display = 'none';
+}
+
+function clearIsoMesh() {
+  if (!isoViewerState.scene || !isoViewerState.mesh) return;
+  isoViewerState.scene.remove(isoViewerState.mesh);
+  if (isoViewerState.mesh.geometry) isoViewerState.mesh.geometry.dispose();
+  if (isoViewerState.mesh.material) isoViewerState.mesh.material.dispose();
+  isoViewerState.mesh = null;
+}
+
+function mapIsoField(field) {
+  return {
+    velocity_magnitude: 'speed',
+    pressure: 'rho',
+    vorticity: 'q_criterion',
+  }[field] || field;
+}
+
+function normaliseIsoValues(vertices, values) {
+  if (Array.isArray(values) && values.length === vertices.length) return values.map((v) => Number(v) || 0);
+  if (!vertices.length) return [];
+  return vertices.map((vertex) => Number(vertex[2]) || 0);
+}
+
+function buildIsoGeometry(vertices, faces, values) {
+  const geometry = new THREE.BufferGeometry();
+  const positions = [];
+  const colors = [];
+  const scalarValues = normaliseIsoValues(vertices, values);
+  const minVal = scalarValues.length ? Math.min(...scalarValues) : 0;
+  const maxVal = scalarValues.length ? Math.max(...scalarValues) : 1;
+  const span = Math.max(maxVal - minVal, 1e-9);
+  const cold = new THREE.Color(0x2266cc);
+  const hot = new THREE.Color(0xcc2222);
+
+  faces.forEach((face) => {
+    face.forEach((idx) => {
+      const vertex = vertices[idx] || [0, 0, 0];
+      positions.push(Number(vertex[0]) || 0, Number(vertex[1]) || 0, Number(vertex[2]) || 0);
+      const value = scalarValues[idx] ?? 0;
+      const blend = Math.min(Math.max((value - minVal) / span, 0), 1);
+      const color = cold.clone().lerp(hot, blend);
+      colors.push(color.r, color.g, color.b);
+    });
+  });
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function fitIsoCamera(mesh) {
+  if (!isoViewerState.camera || !isoViewerState.controls) return;
+  const box = new THREE.Box3().setFromObject(mesh);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z, 1);
+  const distance = maxDim * 2.2;
+  isoViewerState.camera.position.set(center.x + distance, center.y + distance * 0.7, center.z + distance);
+  isoViewerState.camera.near = 0.01;
+  isoViewerState.camera.far = Math.max(distance * 20, 100);
+  isoViewerState.camera.updateProjectionMatrix();
+  isoViewerState.controls.target.copy(center);
+  isoViewerState.controls.update();
+}
+
+async function loadIsosurface() {
+  const jobInput = _engineerSafeEl('iso-job-id');
+  const fieldInput = _engineerSafeEl('iso-field');
+  const valueInput = _engineerSafeEl('iso-value');
+  const infoEl = _engineerSafeEl('iso-info');
+  if (!jobInput || !fieldInput || !valueInput || !infoEl) return;
+
+  if (!jobInput.value.trim()) {
+    const selected = _engineerSelectedJobId();
+    if (selected) jobInput.value = selected;
+  }
+  const jobId = jobInput.value.trim();
+  if (!jobId) {
+    setIsoPlaceholder(t('postprocess.iso_placeholder'));
+    infoEl.textContent = t('postprocess.select_hint') || 'Select a completed job.';
+    return;
+  }
+
+  const field = fieldInput.value;
+  const isoValue = parseFloat(valueInput.value || '0');
+  infoEl.textContent = t('postprocess.loading') || 'Loading…';
+  setIsoPlaceholder(t('postprocess.iso_loading'));
+
+  try {
+    ensureIsoViewer();
+    resizeIsoViewer();
+    const apiField = mapIsoField(field);
+    const data = await api(
+      'GET',
+      `/api/postprocess/isosurface/${encodeURIComponent(jobId)}?field=${encodeURIComponent(apiField)}&iso_value=${encodeURIComponent(isoValue)}&slice_axis=3d&max_segments=50000`,
+    );
+    const vertices = Array.isArray(data.vertices) ? data.vertices : [];
+    const faces = Array.isArray(data.faces) ? data.faces : (Array.isArray(data.triangles) ? data.triangles : []);
+    if (!vertices.length || !faces.length) {
+      clearIsoMesh();
+      setIsoPlaceholder(data.note || t('postprocess.iso_placeholder'));
+      infoEl.textContent = data.note || t('postprocess.iso_no_data');
+      return;
+    }
+
+    clearIsoMesh();
+    const geometry = buildIsoGeometry(vertices, faces, data.values || []);
+    const material = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      metalness: 0.1,
+      roughness: 0.55,
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    isoViewerState.scene.add(mesh);
+    isoViewerState.mesh = mesh;
+    fitIsoCamera(mesh);
+    hideIsoPlaceholder();
+    infoEl.textContent = `${t('postprocess.iso_vertices')}: ${vertices.length} · ${t('postprocess.iso_faces')}: ${faces.length}`;
+  } catch (e) {
+    clearIsoMesh();
+    const msg = String(e.message || e);
+    setIsoPlaceholder(msg);
+    infoEl.textContent = `${t('postprocess.engineering_status_error') || 'Error'}: ${msg}`;
+  }
+}
