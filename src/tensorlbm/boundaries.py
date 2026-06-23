@@ -122,6 +122,43 @@ def zou_he_outlet_pressure(f: torch.Tensor, rho_out: float = 1.0) -> torch.Tenso
     return f_new
 
 
+def stabilize_outlet_backflow(
+    f: torch.Tensor,
+    *,
+    max_backflow_speed: float = 0.0,
+    solid_mask_col: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Clamp excessive outlet backflow by rebuilding outlet equilibrium states.
+
+    Args:
+        f: Distribution tensor of shape ``(9, ny, nx)``.
+        max_backflow_speed: Most-negative allowed outlet x-velocity.
+            ``0.0`` means no backflow is allowed.
+        solid_mask_col: Optional boolean mask for outlet rows that should not
+            be modified (e.g. walls/obstacle cells touching the outlet).
+
+    Returns:
+        Updated distribution tensor.
+    """
+    rho, ux, uy = macroscopic(f)
+    ux_out = ux[:, -1]
+    needs_fix = ux_out < -float(max_backflow_speed)
+    if solid_mask_col is not None:
+        needs_fix = needs_fix & (~solid_mask_col.to(device=f.device))
+    if not bool(needs_fix.any().item()):
+        return f
+
+    ux_clamped = torch.clamp(ux_out, min=-float(max_backflow_speed))
+    feq_out = equilibrium(
+        rho[:, -1].unsqueeze(1),
+        ux_clamped.unsqueeze(1),
+        uy[:, -1].unsqueeze(1),
+    )
+    f_new = f.clone()
+    f_new[:, needs_fix, -1] = feq_out[:, needs_fix, 0]
+    return f_new
+
+
 def compute_obstacle_forces(
     f: torch.Tensor,
     obstacle_mask: torch.Tensor,

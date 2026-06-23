@@ -44,6 +44,18 @@ class Job:
 
     def __init__(self, job_id: str, name: str, job_type: str, config: dict[str, Any]) -> None:
         orch = config.get("orchestration") if isinstance(config, dict) else {}
+        restart = config.get("restart") if isinstance(config, dict) else {}
+        restart_ref = None
+        if isinstance(restart, dict):
+            restart_ref = (
+                restart.get("resume_from_job_id")
+                or restart.get("resume_checkpoint")
+            )
+        resume_ref = (
+            (orch or {}).get("resume_from")
+            or restart_ref
+            or config.get("resume_checkpoint")
+        )
         self.job_id = job_id
         self.name = name
         self.job_type = job_type
@@ -68,11 +80,7 @@ class Job:
         self.retry_attempt: int = 0
         self.max_retries: int = max(0, int((orch or {}).get("max_retries", 0)))
         self.failure_category: str | None = None
-        self.resume_from: str | None = (
-            str((orch or {}).get("resume_from"))
-            if (orch or {}).get("resume_from") is not None
-            else None
-        )
+        self.resume_from: str | None = str(resume_ref) if resume_ref is not None else None
         self.assigned_resource: str = str(
             (orch or {}).get("resource_label") or config.get("device") or "cpu",
         )

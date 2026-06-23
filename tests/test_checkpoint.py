@@ -51,6 +51,8 @@ class TestSaveCheckpoint:
         save_checkpoint(f, step=42, run_dir=tmp_path)
         meta = json.loads((tmp_path / "checkpoint_meta.json").read_text(encoding="utf-8"))
         assert meta["step"] == 42
+        assert meta["format_version"] == 1
+        assert meta["tensor_shape"] == [9, 4, 6]
 
 
 class TestLoadCheckpoint:
@@ -131,3 +133,15 @@ class TestLoadCheckpoint:
         self._save(tmp_path, f, step=1)
         f_loaded, _, _ = load_checkpoint(tmp_path, device=torch.device("cpu"))
         assert f_loaded.device.type == "cpu"
+
+    def test_incompatible_expected_shape_raises(self, tmp_path: Path) -> None:
+        f = torch.ones((9, 4, 6))
+        self._save(tmp_path, f, step=1)
+        with pytest.raises(ValueError, match="incompatible with current run shape"):
+            load_checkpoint(tmp_path, expected_shape=(19, 4, 6))
+
+    def test_incompatible_expected_lattice_raises(self, tmp_path: Path) -> None:
+        f = torch.ones((9, 4, 6))
+        self._save(tmp_path, f, step=1)
+        with pytest.raises(ValueError, match="incompatible with current lattice model"):
+            load_checkpoint(tmp_path, expected_lattice_directions=19)

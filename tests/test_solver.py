@@ -16,6 +16,7 @@ from tensorlbm import (
     stream,
     zou_he_inlet_velocity,
 )
+from tensorlbm.boundaries import stabilize_outlet_backflow
 from tensorlbm.cylinder_flow import CylinderFlowConfig, compute_vorticity
 
 # ---------------------------------------------------------------------------
@@ -220,6 +221,19 @@ def test_zou_he_channel_returns_valid_tensor() -> None:
     out = apply_zou_he_channel_boundaries(f, u_in=0.05, wall_mask=wall_mask, obstacle_mask=obstacle)
     assert out.shape == f.shape
     assert torch.isfinite(out).all()
+
+
+def test_stabilize_outlet_backflow_clamps_negative_ux() -> None:
+    ny, nx = 10, 14
+    rho = torch.ones((ny, nx), dtype=torch.float32)
+    ux = torch.zeros_like(rho)
+    uy = torch.zeros_like(rho)
+    ux[:, -1] = -0.2
+    f = equilibrium(rho, ux, uy)
+
+    out = stabilize_outlet_backflow(f, max_backflow_speed=0.0)
+    _, ux_out, _ = macroscopic(out)
+    assert torch.all(ux_out[:, -1] >= -1e-6)
 
 
 # ---------------------------------------------------------------------------
