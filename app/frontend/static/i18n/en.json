@@ -523,7 +523,20 @@
     "isosurface_value": "Iso-value",
     "isosurface_extract": "Extract",
     "isosurface_segments": "Segments",
-    "isosurface_triangles": "Triangles"
+    "isosurface_triangles": "Triangles",
+    "isosurface_axis": "Mode / Slice axis",
+    "tab_engineering": "Engineering Analysis",
+    "engineering_title": "Engineering Analysis",
+    "engineering_help": "Advanced analysis tools to close engineering verification gaps.",
+    "engineering_status_ready": "Ready",
+    "engineering_status_running": "Running…",
+    "engineering_status_done": "Done",
+    "engineering_status_error": "Error",
+    "probe_spectrum_use_job": "Use job probe data",
+    "probe_spectrum_column": "CSV column name",
+    "pod_use_job": "Use job snapshots",
+    "pod_return_coefficients": "Return coefficients",
+    "engineering_report_summary": "Engineering Report Summary"
   },
   "settings": {
     "title": "Settings",

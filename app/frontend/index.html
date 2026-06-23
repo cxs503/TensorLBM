@@ -1556,6 +1556,7 @@
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('export',this);return false;"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('logs',this);return false;"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs_files">Logs &amp; Files</span></a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('abcompare',this);return false;"><i class="bi bi-layout-split"></i> <span data-i18n="postprocess.tab_abcompare">A/B Compare</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('engineering',this);return false;"><i class="bi bi-cpu"></i> <span data-i18n="postprocess.tab_engineering">Engineering Analysis</span></a></li>
       </ul>
 
       <!-- ─── Results merged panel ─── -->
@@ -1595,6 +1596,8 @@
               </div>
             </div>
             <div id="study-compare-result"></div>
+            <!-- Engineering summary report (populated by app_postprocess_engineering.js) -->
+            <div id="study-report" class="mt-3"></div>
           </div>
         </div>
       </div>
@@ -1912,6 +1915,180 @@
         </div>
         <div id="ab-compare-grid" class="row g-3"></div>
       </div><!-- /pp-merged-abcompare -->
+
+      <!-- ─── Engineering Analysis merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-engineering">
+        <div class="alert alert-secondary py-2 small mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          <span data-i18n="postprocess.engineering_help">Advanced analysis tools to close engineering verification gaps.</span>
+        </div>
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('eng-spectrum',this,'pp-merged-engineering')"><i class="bi bi-activity me-1"></i><span data-i18n="postprocess.probe_spectrum_title">Spectral Analysis (FFT)</span></button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('eng-pod',this,'pp-merged-engineering')"><i class="bi bi-layers me-1"></i><span data-i18n="postprocess.pod_title">POD Modal Decomposition</span></button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('eng-iso',this,'pp-merged-engineering')"><i class="bi bi-box me-1"></i><span data-i18n="postprocess.isosurface_title">Iso-Surface / Iso-Contour</span></button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('eng-study',this,'pp-merged-engineering')"><i class="bi bi-bar-chart-steps me-1"></i><span data-i18n="postprocess.studycompare_title">Study-Group Comparison</span></button>
+        </div>
+
+        <!-- Spectral Analysis (FFT) -->
+        <div id="pp-eng-spectrum" class="pp-tab-panel">
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-activity"></i> <span data-i18n="postprocess.probe_spectrum_title">Spectral Analysis (FFT)</span> <span id="probe-spectrum-status" class="ms-2 badge bg-secondary"></span></div>
+                <div class="card-body small">
+                  <div class="mb-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="probe-spectrum-use-job" checked>
+                    <label class="form-check-label" for="probe-spectrum-use-job" data-i18n="postprocess.probe_spectrum_use_job">Use job probe data</label>
+                  </div>
+                  <div class="mb-2" id="probe-spectrum-signal-wrap">
+                    <label class="form-label mb-1" data-i18n="postprocess.probe_spectrum_signal">Signal (comma-separated values)</label>
+                    <textarea class="form-control form-control-sm font-monospace" id="probe-spectrum-signal" rows="3" placeholder="e.g. 0.1, 0.3, 0.2, ..."></textarea>
+                  </div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <label class="form-label mb-1" data-i18n="postprocess.probe_spectrum_dt">Time step Δt</label>
+                      <input type="number" class="form-control form-control-sm" id="probe-spectrum-dt" value="0.01" step="0.001" min="0.0001">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label mb-1" data-i18n="postprocess.probe_spectrum_column">CSV column</label>
+                      <input type="text" class="form-control form-control-sm" id="probe-spectrum-column" value="cd" placeholder="cd">
+                    </div>
+                  </div>
+                  <button class="btn btn-primary btn-sm w-100" id="probe-spectrum-run">
+                    <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.probe_spectrum_run">Compute Spectrum</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-8">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-bar-chart-line"></i> Result</div>
+                <div class="card-body" id="probe-spectrum-output">
+                  <p class="text-muted small">Select a job and click Compute Spectrum.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- POD Modal Decomposition -->
+        <div id="pp-eng-pod" class="pp-tab-panel" style="display:none">
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-layers"></i> <span data-i18n="postprocess.pod_title">POD Modal Decomposition</span> <span id="pod-status" class="ms-2 badge bg-secondary"></span></div>
+                <div class="card-body small">
+                  <div class="mb-2">
+                    <label class="form-label mb-1" data-i18n="postprocess.pod_field">Field</label>
+                    <select class="form-select form-select-sm" id="pod-field">
+                      <option value="ux">x-velocity (ux)</option>
+                      <option value="uy">y-velocity (uy)</option>
+                      <option value="velocity_magnitude">Velocity magnitude</option>
+                      <option value="vorticity">Vorticity</option>
+                      <option value="density">Density</option>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label mb-1" data-i18n="postprocess.pod_n_modes">Modes to retain</label>
+                    <input type="number" class="form-control form-control-sm" id="pod-n-modes" value="10" min="1" max="200">
+                  </div>
+                  <div class="mb-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="pod-return-coefficients" checked>
+                    <label class="form-check-label" for="pod-return-coefficients" data-i18n="postprocess.pod_return_coefficients">Return coefficients</label>
+                  </div>
+                  <button class="btn btn-primary btn-sm w-100" id="pod-run">
+                    <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.pod_run">Compute POD</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-8">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-graph-up"></i> Result</div>
+                <div class="card-body" id="pod-output">
+                  <p class="text-muted small">Select a job and click Compute POD.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Iso-Surface / Iso-Contour -->
+        <div id="pp-eng-iso" class="pp-tab-panel" style="display:none">
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-box"></i> <span data-i18n="postprocess.isosurface_title">Iso-Surface / Iso-Contour</span> <span id="isosurface-status" class="ms-2 badge bg-secondary"></span></div>
+                <div class="card-body small">
+                  <div class="mb-2">
+                    <label class="form-label mb-1" data-i18n="postprocess.isosurface_field">Scalar field</label>
+                    <select class="form-select form-select-sm" id="isosurface-field">
+                      <option value="q_criterion">Q-criterion</option>
+                      <option value="vorticity">Vorticity</option>
+                      <option value="velocity_magnitude">Velocity magnitude</option>
+                      <option value="density">Density</option>
+                      <option value="ux">x-velocity (ux)</option>
+                      <option value="uy">y-velocity (uy)</option>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label mb-1" data-i18n="postprocess.isosurface_value">Iso-value</label>
+                    <input type="number" class="form-control form-control-sm" id="isosurface-value" value="0.0" step="0.01">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label mb-1" data-i18n="postprocess.isosurface_axis">Mode / Slice axis</label>
+                    <select class="form-select form-select-sm" id="isosurface-axis">
+                      <option value="z">2D iso-contour (z-slice)</option>
+                      <option value="3d">3D iso-surface</option>
+                      <option value="x">x-slice</option>
+                      <option value="y">y-slice</option>
+                    </select>
+                  </div>
+                  <button class="btn btn-primary btn-sm w-100" id="isosurface-extract">
+                    <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.isosurface_extract">Extract</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-8">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-grid-3x3-gap"></i> Result</div>
+                <div class="card-body" id="isosurface-output">
+                  <p class="text-muted small">Select a job and click Extract.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Study-Group Report Aggregation -->
+        <div id="pp-eng-study" class="pp-tab-panel" style="display:none">
+          <div class="card">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-bar-chart-steps me-1"></i>
+              <span data-i18n="postprocess.engineering_title">Engineering Analysis</span> &mdash;
+              <span data-i18n="postprocess.studycompare_title">Study-Group Comparison</span>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-3 align-items-end">
+                <div class="col-sm-6 col-md-4">
+                  <label class="form-label small mb-1" data-i18n="postprocess.studycompare_group_label">Study Group Name</label>
+                  <input type="text" class="form-control form-control-sm" id="eng-study-compare-group"
+                         placeholder="e.g. re_sweep_2025" />
+                </div>
+                <div class="col-auto">
+                  <button class="btn btn-sm btn-primary" id="studycompare-load">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span data-i18n="postprocess.studycompare_load">Load</span>
+                  </button>
+                </div>
+              </div>
+              <div id="eng-study-report"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /pp-merged-engineering -->
 
     </div>
 
@@ -2932,6 +3109,7 @@
 <script src="/static/js/app_cad.js"></script>
 <script src="/static/js/app_solver.js"></script>
 <script src="/static/js/app_postprocess.js"></script>
+<script src="/static/js/app_postprocess_engineering.js"></script>
 <script src="/static/js/app_ai.js"></script>
 <script src="/static/js/app_suboff.js"></script>
 <!-- aiFlowPollJob -->
