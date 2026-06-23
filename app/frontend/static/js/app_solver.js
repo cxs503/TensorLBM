@@ -504,16 +504,16 @@ const SIM_TYPES = {
 };
 
 const MODEL_CAPABILITIES = {
-  cylinder_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','trt'] },
-  rotating_cylinder: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','mrt'] },
+  cylinder_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les','komega_sst'], multiphase:['none'], schemes:['bgk','trt'] },
+  rotating_cylinder: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les','komega_sst'], multiphase:['none'], schemes:['bgk','mrt'] },
   lid_driven_cavity: { flow_types:['single_phase'], turbulence:['none'], multiphase:['none'], schemes:['bgk','trt'] },
-  backward_facing_step: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','trt'] },
-  turbulent_channel: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les','dynamic_smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
-  pipeline_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk','trt'] },
+  backward_facing_step: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les','komega_sst'], multiphase:['none'], schemes:['bgk','trt'] },
+  turbulent_channel: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les','dynamic_smagorinsky_les','komega_sst'], multiphase:['none'], schemes:['bgk'] },
+  pipeline_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les','komega_sst'], multiphase:['none'], schemes:['bgk','trt'] },
   dam_break: { flow_types:['multiphase','free_surface'], turbulence:['none'], multiphase:['sc','scmp','cg','fe'], schemes:['bgk'] },
   sloshing_tank: { flow_types:['multiphase','free_surface'], turbulence:['none'], multiphase:['cg'], schemes:['bgk'] },
   sphere_flow: { flow_types:['single_phase'], turbulence:['none','smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
-  ship_hull: { flow_types:['single_phase','free_surface'], turbulence:['none','smagorinsky_les','dynamic_smagorinsky_les'], multiphase:['none'], schemes:['bgk'] },
+  ship_hull: { flow_types:['single_phase','free_surface'], turbulence:['none','smagorinsky_les','dynamic_smagorinsky_les','komega_sst'], multiphase:['none'], schemes:['bgk'] },
   porous_drainage: { flow_types:['multiphase'], turbulence:['none'], multiphase:['sc','cg'], schemes:['bgk'] },
   sphere_flow_d3q27: { flow_types:['single_phase'], turbulence:['none'], multiphase:['none'], schemes:['d3q27_bgk'] },
   thermal_cavity_3d: { flow_types:['thermal'], turbulence:['none'], multiphase:['none'], schemes:['bgk','boussinesq'] },
@@ -559,10 +559,11 @@ function initPhysicsLayer() {
     free_surface: t('solve.flow_free_surface'),
     thermal: 'Thermal',
   });
-  selectOptions('physics-turbulence', ['none','smagorinsky_les','dynamic_smagorinsky_les'], {
+  selectOptions('physics-turbulence', ['none','smagorinsky_les','dynamic_smagorinsky_les','komega_sst'], {
     none: t('solve.turb_none'),
     smagorinsky_les: t('solve.turb_smag'),
     dynamic_smagorinsky_les: t('solve.turb_dyn_smag'),
+    komega_sst: t('solve.turb_komega_sst'),
   });
   selectOptions('physics-multiphase', ['none','sc','scmp','cg','fe'], {
     none: t('solve.multi_none'),
