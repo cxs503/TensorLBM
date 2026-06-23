@@ -96,6 +96,8 @@ class Job:
         )))
         self.auto_stop_config: AutoStopConfig | None = None
         self.convergence_status: str = "monitoring"  # monitoring | converged | diverged
+        # Stored callable for manual retry (not serialised to to_dict)
+        self._fn: Callable[[Job], dict[str, Any] | None] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -461,6 +463,7 @@ def submit(
     """Create a job and schedule it on the thread pool. Returns job_id."""
     job_id = str(uuid.uuid4())[:8]
     job = Job(job_id, name, job_type, config)
+    job._fn = fn
     with _jobs_lock:
         _jobs[job_id] = job
     _notify(job)
@@ -527,6 +530,47 @@ def cancel_job(job_id: str) -> bool:
             job.failure_category = "cancelled"
         _notify(job)
         return True
+
+
+def retry_job(job_id: str) -> bool:
+    """Manually re-queue a failed or cancelled job for another execution attempt.
+
+    Resets the job to QUEUED status and resubmits the original callable to
+    the thread pool.  Requires that the job stored its callable reference
+    (set automatically by :func:`submit`).
+
+    Returns:
+        True if the job was found and re-queued, False otherwise.
+    """
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if job is None:
+            return False
+        if job.status not in (JobStatus.FAILED, JobStatus.CANCELLED):
+            return False
+        fn = job._fn
+        if fn is None:
+            return False
+
+        # Reset job state for re-execution
+        job.status = JobStatus.QUEUED
+        job.error = None
+        job.result = {}
+        job.logs = []
+        job.diagnostics = []
+        job.cancel_requested = False
+        job.started_at = None
+        job.completed_at = None
+        job.run_duration_seconds = None
+        job.total_duration_seconds = None
+        job.queue_wait_seconds = None
+        job.convergence_status = "monitoring"
+
+    _notify(job)
+    fut = _executor.submit(_run_job, job, fn)
+    with _job_futures_lock:
+        _job_futures[job_id] = fut
+    return True
 
 
 def push_diagnostic(job_id: str, data: dict[str, Any]) -> None:

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import contextlib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -70,15 +70,73 @@ def _templates() -> list[dict[str, Any]]:
             "template_id": "suboff_surrogate_cycle",
             "stage": "B",
             "title": "SUBOFF surrogate + HPC correction",
-            "implemented": False,
-            "description": "AI pre-screen + HPC correction workflow scaffold",
+            "implemented": True,
+            "solver_type": "suboff",
+            "description": (
+                "Two-phase workflow: fast low-resolution pre-screen across hull variants "
+                "and speed points, followed by HPC-corrected high-fidelity jobs for the "
+                "best candidate(s).  Mirrors the AI/surrogate + CFD correction loop in "
+                "PowerFlow and XFlow."
+            ),
+            "default_config": {
+                # Phase-1 pre-screen settings (fast, low-res)
+                "hull_variants": ["bare_hull", "with_sail"],
+                "speed_values_ms": [1.5, 2.5, 3.5],
+                "length_m": 4.356,
+                "nu_m2s": 1.0e-6,
+                "rho_kgm3": 1000.0,
+                # Fast surrogate settings
+                "base_length_lu": 24.0,
+                "lbm_steps": 100,
+                "lbm_warmup_steps": 20,
+                "max_iterations": 1,
+                "use_rans_ke": False,
+                "use_wall_model": False,
+                "device": "cpu",
+                # Phase-2 HPC-correction overrides
+                "hf_base_length_lu": 48.0,
+                "hf_lbm_steps": 400,
+                "hf_lbm_warmup_steps": 100,
+                "hf_max_iterations": 3,
+                "hf_use_rans_ke": True,
+                "hf_use_wall_model": True,
+                # How many top candidates to escalate to phase 2
+                "hf_top_k": 1,
+            },
         },
         {
             "template_id": "ship_pareto_screening",
             "stage": "C",
             "title": "Ship CAD Pareto screening",
-            "implemented": False,
-            "description": "CAD parameter sweep + surrogate ranking + high-fidelity review",
+            "implemented": True,
+            "solver_type": "ship_hull",
+            "description": (
+                "CAD parameter sweep across hull variants and Reynolds numbers to map "
+                "the resistance Pareto front, followed by high-fidelity review of the "
+                "Pareto-optimal designs.  Mirrors PowerFlow/XFlow geometry-variation "
+                "screening workflows."
+            ),
+            "default_config": {
+                # Hull variants to sweep (HullFreeSurfaceParams.hull_type)
+                "hull_variants": ["wigley", "series60", "kcs"],
+                # Re values to sweep
+                "re_values": [100.0, 200.0, 400.0],
+                # Base mesh/solver settings (HullFreeSurfaceParams fields)
+                "nx": 80,
+                "ny": 32,
+                "nz": 32,
+                "fill_fraction": 0.5,
+                "u_in": 0.05,
+                "n_steps": 200,
+                "output_interval": 50,
+                "device": "cpu",
+                # Pareto objectives (keys from job result dict)
+                "pareto_objectives": ["drag_force"],
+                # How many Pareto-front designs to escalate to high-fidelity review
+                "hf_top_k": 2,
+                # High-fidelity step count override
+                "hf_n_steps": 400,
+            },
         },
     ]
 
@@ -110,6 +168,18 @@ async def submit_experiment(req: TemplateRunRequest) -> dict[str, Any]:
     cfg = dict(tpl.get("default_config", {}))
     cfg.update(req.base_config)
 
+    # ------------------------------------------------------------------
+    # Template-specific dispatch
+    # ------------------------------------------------------------------
+    if req.template_id == "suboff_surrogate_cycle":
+        return await _submit_suboff_surrogate_cycle(req, tpl, cfg)
+
+    if req.template_id == "ship_pareto_screening":
+        return await _submit_ship_pareto_screening(req, tpl, cfg)
+
+    # ------------------------------------------------------------------
+    # Generic cylinder-flow templates (cylinder_re_sweep / multi_factor_doe)
+    # ------------------------------------------------------------------
     if req.sweep:
         study_req = solver.ParametricStudyRequest(
             solver_type=str(tpl.get("solver_type") or "cylinder_flow"),
@@ -140,6 +210,369 @@ async def submit_experiment(req: TemplateRunRequest) -> dict[str, Any]:
     }
     response.update(resp)
     return response
+
+
+# ---------------------------------------------------------------------------
+# SUBOFF surrogate-cycle implementation
+# ---------------------------------------------------------------------------
+
+async def _submit_suboff_surrogate_cycle(
+    req: TemplateRunRequest,
+    tpl: dict[str, Any],
+    cfg: dict[str, Any],
+) -> dict[str, Any]:
+    """Phase-1 fast pre-screen for SUBOFF surrogate-cycle template.
+
+    Submits one low-resolution SUBOFF job per (hull_variant × speed) combination.
+    Each job is tagged with ``workflow_phase: pre_screen`` so the study-summary
+    endpoint can aggregate and rank them.  The top-k candidates can then be
+    escalated to HPC-corrected high-fidelity jobs via the
+    ``POST /api/orchestration/suboff-surrogate/escalate`` endpoint.
+    """
+    from . import suboff as suboff_router  # noqa: PLC0415
+
+    hull_variants: list[str] = list(cfg.get("hull_variants") or ["bare_hull"])
+    speed_values: list[float] = [float(v) for v in (cfg.get("speed_values_ms") or [2.5])]
+
+    study_group = f"suboff_surrogate_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    job_ids: list[str] = []
+
+    for hull in hull_variants:
+        for speed in speed_values:
+            params = suboff_router.SuboffSolveParams(
+                hull_type=hull,
+                length_m=float(cfg.get("length_m", 4.356)),
+                speed_ms=speed,
+                nu_m2s=float(cfg.get("nu_m2s", 1.0e-6)),
+                rho_kgm3=float(cfg.get("rho_kgm3", 1000.0)),
+                base_length_lu=float(cfg.get("base_length_lu", 24.0)),
+                lbm_steps=int(cfg.get("lbm_steps", 100)),
+                lbm_warmup_steps=int(cfg.get("lbm_warmup_steps", 20)),
+                max_iterations=int(cfg.get("max_iterations", 1)),
+                use_rans_ke=bool(cfg.get("use_rans_ke", False)),
+                use_wall_model=bool(cfg.get("use_wall_model", False)),
+                device=str(cfg.get("device", "cpu")),
+                save_snapshots=False,
+            )
+            resp = await suboff_router.solve_suboff(params)
+            job_id = resp["job_id"]
+            job_ids.append(job_id)
+
+            # Tag the job for study aggregation
+            job = job_manager.get_job(job_id)
+            if job is not None:
+                job.config["study"] = {
+                    "group": study_group,
+                    "template_id": req.template_id,
+                    "workflow_phase": "pre_screen",
+                    "design_point": {"hull_type": hull, "speed_ms": speed},
+                    "hf_config": {
+                        "hull_type": hull,
+                        "speed_ms": speed,
+                        "length_m": float(cfg.get("length_m", 4.356)),
+                        "nu_m2s": float(cfg.get("nu_m2s", 1.0e-6)),
+                        "rho_kgm3": float(cfg.get("rho_kgm3", 1000.0)),
+                        "base_length_lu": float(cfg.get("hf_base_length_lu", 48.0)),
+                        "lbm_steps": int(cfg.get("hf_lbm_steps", 400)),
+                        "lbm_warmup_steps": int(cfg.get("hf_lbm_warmup_steps", 100)),
+                        "max_iterations": int(cfg.get("hf_max_iterations", 3)),
+                        "use_rans_ke": bool(cfg.get("hf_use_rans_ke", True)),
+                        "use_wall_model": bool(cfg.get("hf_use_wall_model", True)),
+                        "device": str(cfg.get("device", "cpu")),
+                    },
+                    "hf_top_k": int(cfg.get("hf_top_k", 1)),
+                }
+                if req.orchestration:
+                    job.config.setdefault("orchestration", {}).update(req.orchestration)
+
+    return {
+        "template_id": req.template_id,
+        "stage": tpl.get("stage"),
+        "workflow": "suboff_surrogate_cycle",
+        "phase": "pre_screen",
+        "study_group": study_group,
+        "submitted": len(job_ids),
+        "job_ids": job_ids,
+        "design_matrix": [
+            {"hull_type": h, "speed_ms": s}
+            for h in hull_variants
+            for s in speed_values
+        ],
+        "next_step": (
+            f"Poll GET /api/orchestration/studies/{study_group}/summary to rank "
+            "pre-screen results, then POST /api/orchestration/suboff-surrogate/escalate "
+            "with the study_group to launch HPC-corrected high-fidelity jobs."
+        ),
+    }
+
+
+@router.post("/suboff-surrogate/escalate")
+async def escalate_suboff_hf(study_group: str = Query(...)) -> dict[str, Any]:
+    """Escalate the top-k SUBOFF pre-screen candidates to high-fidelity HPC jobs.
+
+    Reads the completed pre-screen study (identified by *study_group*), ranks
+    candidates by total resistance coefficient (``ct``), and submits
+    high-fidelity LBM jobs with the correction settings stored in each job's
+    ``hf_config`` metadata.  Returns the new HF job IDs and the escalated
+    design points.
+    """
+    from . import suboff as suboff_router  # noqa: PLC0415
+
+    # Collect pre-screen jobs for this study group
+    pre_screen_jobs: list[job_manager.Job] = []
+    for row in job_manager.list_jobs():
+        cfg_row = row.get("config")
+        study = cfg_row.get("study") if isinstance(cfg_row, dict) else None
+        if (
+            isinstance(study, dict)
+            and study.get("group") == study_group
+            and study.get("workflow_phase") == "pre_screen"
+        ):
+            job = job_manager.get_job(str(row["job_id"]))
+            if job is not None and job.status.value == "completed":
+                pre_screen_jobs.append(job)
+
+    if not pre_screen_jobs:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No completed pre-screen jobs found for study_group='{study_group}'",
+        )
+
+    # Rank by total resistance coefficient (lower is better)
+    def _ct(job: job_manager.Job) -> float:
+        ct = job.result.get("ct") or job.result.get("total_resistance_coefficient")
+        return float(ct) if isinstance(ct, (int, float)) else 1e18
+
+    ranked = sorted(pre_screen_jobs, key=_ct)
+    top_k = int(ranked[0].config.get("study", {}).get("hf_top_k", 1))
+    top_candidates = ranked[:max(1, top_k)]
+
+    hf_study_group = f"{study_group}_hf"
+    hf_job_ids: list[str] = []
+    escalated: list[dict[str, Any]] = []
+
+    for job in top_candidates:
+        study_meta = job.config.get("study", {})
+        hf_cfg = dict(study_meta.get("hf_config") or {})
+        if not hf_cfg:
+            continue
+
+        params = suboff_router.SuboffSolveParams(
+            hull_type=str(hf_cfg.get("hull_type", "bare_hull")),
+            length_m=float(hf_cfg.get("length_m", 4.356)),
+            speed_ms=float(hf_cfg.get("speed_ms", 2.5)),
+            nu_m2s=float(hf_cfg.get("nu_m2s", 1.0e-6)),
+            rho_kgm3=float(hf_cfg.get("rho_kgm3", 1000.0)),
+            base_length_lu=float(hf_cfg.get("base_length_lu", 48.0)),
+            lbm_steps=int(hf_cfg.get("lbm_steps", 400)),
+            lbm_warmup_steps=int(hf_cfg.get("lbm_warmup_steps", 100)),
+            max_iterations=int(hf_cfg.get("max_iterations", 3)),
+            use_rans_ke=bool(hf_cfg.get("use_rans_ke", True)),
+            use_wall_model=bool(hf_cfg.get("use_wall_model", True)),
+            device=str(hf_cfg.get("device", "cpu")),
+            save_snapshots=False,
+        )
+        resp = await suboff_router.solve_suboff(params)
+        hf_job_id = resp["job_id"]
+        hf_job_ids.append(hf_job_id)
+
+        hf_job = job_manager.get_job(hf_job_id)
+        if hf_job is not None:
+            hf_job.config["study"] = {
+                "group": hf_study_group,
+                "template_id": "suboff_surrogate_cycle",
+                "workflow_phase": "hf_correction",
+                "pre_screen_job_id": job.job_id,
+                "design_point": study_meta.get("design_point", {}),
+            }
+
+        escalated.append({
+            "pre_screen_job_id": job.job_id,
+            "hf_job_id": hf_job_id,
+            "design_point": study_meta.get("design_point", {}),
+            "pre_screen_ct": _ct(job),
+        })
+
+    return {
+        "study_group": study_group,
+        "hf_study_group": hf_study_group,
+        "escalated": len(hf_job_ids),
+        "hf_job_ids": hf_job_ids,
+        "candidates": escalated,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Ship Pareto screening implementation
+# ---------------------------------------------------------------------------
+
+async def _submit_ship_pareto_screening(
+    req: TemplateRunRequest,
+    tpl: dict[str, Any],
+    cfg: dict[str, Any],
+) -> dict[str, Any]:
+    """Phase-1 CAD parameter sweep for ship Pareto screening template.
+
+    Submits one hull-free-surface solver job per (hull_variant × re)
+    combination.  Jobs are tagged with ``workflow_phase: screening``.  After
+    all jobs complete, call ``POST /api/orchestration/ship-pareto/escalate``
+    with the study_group to launch high-fidelity jobs for the Pareto-optimal
+    designs.
+    """
+    hull_variants: list[str] = list(cfg.get("hull_variants") or ["wigley"])
+    re_values: list[float] = [float(v) for v in (cfg.get("re_values") or [200.0])]
+
+    study_group = f"ship_pareto_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    job_ids: list[str] = []
+
+    base_cfg = {
+        "nx": int(cfg.get("nx", 80)),
+        "ny": int(cfg.get("ny", 32)),
+        "nz": int(cfg.get("nz", 32)),
+        "fill_fraction": float(cfg.get("fill_fraction", 0.5)),
+        "u_in": float(cfg.get("u_in", 0.05)),
+        "n_steps": int(cfg.get("n_steps", 200)),
+        "output_interval": int(cfg.get("output_interval", 50)),
+        "device": str(cfg.get("device", "cpu")),
+    }
+
+    for hull in hull_variants:
+        for re in re_values:
+            hull_cfg = dict(base_cfg)
+            hull_cfg["hull_type"] = hull
+            hull_cfg["re"] = re
+
+            params = solver.HullFreeSurfaceParams(**hull_cfg)
+            resp = await solver.start_hull_free_surface(params)
+            job_id = resp["job_id"]
+            job_ids.append(job_id)
+
+            job = job_manager.get_job(job_id)
+            if job is not None:
+                job.config["study"] = {
+                    "group": study_group,
+                    "template_id": req.template_id,
+                    "workflow_phase": "screening",
+                    "design_point": {"hull_type": hull, "re": re},
+                    "pareto_objectives": list(
+                        cfg.get("pareto_objectives") or ["drag_force"]
+                    ),
+                    "hf_n_steps": int(cfg.get("hf_n_steps", 400)),
+                    "hf_top_k": int(cfg.get("hf_top_k", 2)),
+                }
+                if req.orchestration:
+                    job.config.setdefault("orchestration", {}).update(req.orchestration)
+
+    return {
+        "template_id": req.template_id,
+        "stage": tpl.get("stage"),
+        "workflow": "ship_pareto_screening",
+        "phase": "screening",
+        "study_group": study_group,
+        "submitted": len(job_ids),
+        "job_ids": job_ids,
+        "design_matrix": [
+            {"hull_type": h, "re": r}
+            for h in hull_variants
+            for r in re_values
+        ],
+        "next_step": (
+            f"Poll GET /api/orchestration/studies/{study_group}/summary to inspect "
+            "screening results, then POST /api/orchestration/ship-pareto/escalate "
+            "with the study_group to launch high-fidelity Pareto-review jobs."
+        ),
+    }
+
+
+@router.post("/ship-pareto/escalate")
+async def escalate_ship_pareto_hf(study_group: str = Query(...)) -> dict[str, Any]:
+    """Escalate Pareto-optimal ship designs to high-fidelity review jobs.
+
+    Reads the completed screening study, ranks designs by drag force (primary
+    resistance objective), and submits high-fidelity hull-free-surface jobs
+    with increased step counts for the top-k designs.
+    """
+    # Collect completed screening jobs for this study group
+    screening_jobs: list[job_manager.Job] = []
+    for row in job_manager.list_jobs():
+        cfg_row = row.get("config")
+        study = cfg_row.get("study") if isinstance(cfg_row, dict) else None
+        if (
+            isinstance(study, dict)
+            and study.get("group") == study_group
+            and study.get("workflow_phase") == "screening"
+        ):
+            job = job_manager.get_job(str(row["job_id"]))
+            if job is not None and job.status.value == "completed":
+                screening_jobs.append(job)
+
+    if not screening_jobs:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No completed screening jobs found for study_group='{study_group}'",
+        )
+
+    def _drag(job: job_manager.Job) -> float:
+        d = job.result.get("drag_force") or job.result.get("total_resistance")
+        return float(d) if isinstance(d, (int, float)) else 1e18
+
+    ranked = sorted(screening_jobs, key=_drag)
+    study_meta_0 = ranked[0].config.get("study", {})
+    top_k = int(study_meta_0.get("hf_top_k", 2))
+    hf_n_steps = int(study_meta_0.get("hf_n_steps", 400))
+    pareto_candidates = ranked[:max(1, top_k)]
+
+    hf_study_group = f"{study_group}_hf"
+    hf_job_ids: list[str] = []
+    escalated: list[dict[str, Any]] = []
+
+    for job in pareto_candidates:
+        study_meta = job.config.get("study", {})
+        design = dict(study_meta.get("design_point") or {})
+
+        # Rebuild HullFreeSurfaceParams from original job config with HF overrides
+        orig_cfg = {k: v for k, v in job.config.items() if k != "study"}
+        orig_cfg["n_steps"] = hf_n_steps
+        orig_cfg["hull_type"] = design.get("hull_type", orig_cfg.get("hull_type", "wigley"))
+        orig_cfg["re"] = float(design.get("re", orig_cfg.get("re", 100.0)))
+
+        try:
+            params = solver.HullFreeSurfaceParams(**orig_cfg)
+        except Exception:
+            params = solver.HullFreeSurfaceParams(
+                hull_type=str(orig_cfg.get("hull_type", "wigley")),
+                re=float(orig_cfg.get("re", 100.0)),
+                n_steps=hf_n_steps,
+            )
+
+        resp = await solver.start_hull_free_surface(params)
+        hf_job_id = resp["job_id"]
+        hf_job_ids.append(hf_job_id)
+
+        hf_job = job_manager.get_job(hf_job_id)
+        if hf_job is not None:
+            hf_job.config["study"] = {
+                "group": hf_study_group,
+                "template_id": "ship_pareto_screening",
+                "workflow_phase": "hf_review",
+                "screening_job_id": job.job_id,
+                "design_point": design,
+            }
+
+        escalated.append({
+            "screening_job_id": job.job_id,
+            "hf_job_id": hf_job_id,
+            "design_point": design,
+            "screening_drag": _drag(job),
+        })
+
+    return {
+        "study_group": study_group,
+        "hf_study_group": hf_study_group,
+        "escalated": len(hf_job_ids),
+        "hf_job_ids": hf_job_ids,
+        "candidates": escalated,
+    }
 
 
 @router.get("/kpis")
