@@ -21,7 +21,6 @@ import torch
 
 import tensorlbm.backends as B
 
-
 # ---------------------------------------------------------------------------
 # Registry tests
 # ---------------------------------------------------------------------------
@@ -288,21 +287,35 @@ def test_train_eddy_viscosity_model_explicit_backend_switches_temporarily(monkey
         targets=torch.rand(8, 1),
         c_s=0.1,
     )
-    result = train_eddy_viscosity_model(ds, tmp_path / "model.npz", TrainConfig(epochs=1), backend="paddle")
+    result = train_eddy_viscosity_model(
+        ds,
+        tmp_path / "model.npz",
+        TrainConfig(epochs=1),
+        backend="paddle",
+    )
     assert seen == ["paddle"]
     assert result["backend"] == "paddle"
     assert B.get_backend() == "torch"
 
 
 def test_train_flow_transformer_explicit_backend_switches_temporarily(monkeypatch, tmp_path):
-    from tensorlbm import FlowTransformerArch, FlowTransformerTrainConfig, train_flow_transformer_self_supervised
+    from tensorlbm import (
+        FlowTransformerArch,
+        FlowTransformerTrainConfig,
+        train_flow_transformer_self_supervised,
+    )
     from tensorlbm.ai import transformer as transformer_mod
 
     seen: list[str] = []
 
     def fake_train(*args, **kwargs):
         seen.append(B.get_backend())
-        return {"backend": B.get_backend(), "history": [], "final_train_loss": 0.0, "final_val_loss": 0.0}
+        return {
+            "backend": B.get_backend(),
+            "history": [],
+            "final_train_loss": 0.0,
+            "final_val_loss": 0.0,
+        }
 
     monkeypatch.setattr(transformer_mod, "_train_flow_transformer_backend", fake_train)
     B.set_backend("torch")
@@ -348,7 +361,11 @@ def test_load_flow_transformer_model_uses_metadata_backend(monkeypatch, tmp_path
     with path.open("wb") as fh:
         np.savez_compressed(fh, weight=np.array([1.0], dtype=np.float32))
     path.with_suffix(path.suffix + ".json").write_text(
-        '{"arch": {"in_features": 2, "d_model": 8, "n_heads": 2, "n_layers": 1, "ffn_dim": 16, "dropout": 0.0, "max_tokens": 32}, "backend": "paddle"}'
+
+            '{"arch": {"in_features": 2, "d_model": 8, "n_heads": 2, '
+            '"n_layers": 1, "ffn_dim": 16, "dropout": 0.0, '
+            '"max_tokens": 32}, "backend": "paddle"}'
+
     )
 
     B.set_backend("torch")

@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from fastapi.testclient import TestClient
 
 
@@ -37,7 +36,7 @@ def _train_and_wait(client, waiter, extra: dict | None = None, *, timeout: float
 
 def test_default_backend_is_torch(
     client: TestClient,
-    waiter: Callable[[str, float], dict],
+    waiter,
 ) -> None:
     """Omitting ``backend`` should default to 'torch' in the result."""
     job = _train_and_wait(client, waiter)
@@ -48,7 +47,7 @@ def test_default_backend_is_torch(
 
 def test_explicit_torch_backend(
     client: TestClient,
-    waiter: Callable[[str, float], dict],
+    waiter,
 ) -> None:
     """Explicitly passing backend='torch' should succeed and echo the value."""
     job = _train_and_wait(client, waiter, extra={"backend": "torch"})
@@ -100,7 +99,7 @@ def test_backend_field_appears_in_queued_response(client: TestClient) -> None:
 
 def test_infer_response_reports_backend(
     client: TestClient,
-    waiter: Callable[[str, float], dict],
+    waiter,
 ) -> None:
     job = _train_and_wait(client, waiter, extra={"backend": "torch"})
     model_id = job["result"]["model_id"]

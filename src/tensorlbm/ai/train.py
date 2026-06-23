@@ -16,7 +16,6 @@ import copy
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import torch
@@ -50,7 +49,7 @@ class TrainConfig:
 # Helpers – backend-agnostic
 # ---------------------------------------------------------------------------
 
-def _to_numpy(x) -> np.ndarray:
+def _to_numpy(x: object) -> np.ndarray:
     """Convert any tensor / array to a numpy array."""
     if isinstance(x, np.ndarray):
         return x
@@ -69,7 +68,7 @@ def _split_numpy(
     targets: np.ndarray,
     val_fraction: float,
     seed: int,
-):
+) -> tuple[tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]:
     n = len(features)
     n_val = max(1, int(round(n * val_fraction)))
     rng = np.random.RandomState(int(seed))
@@ -86,12 +85,16 @@ def _r2_score_np(y_pred: np.ndarray, y_true: np.ndarray) -> float:
     return float(1.0 - np.mean((y_pred - y_true) ** 2) / v)
 
 
-def _iter_minibatches_np(n: int, batch_size: int, rng: np.random.RandomState):
+def _iter_minibatches_np(
+    n: int,
+    batch_size: int,
+    rng: np.random.RandomState,
+) -> list[np.ndarray]:
     perm = rng.permutation(n)
     return [perm[i: i + batch_size] for i in range(0, n, batch_size)]
 
 
-def _build_scheduler_ops(ops, optimizer, cfg: TrainConfig):
+def _build_scheduler_ops(ops: object, optimizer: object, cfg: TrainConfig) -> object | None:
     name = str(cfg.lr_scheduler).strip().lower()
     if name == "none":
         return None
@@ -146,7 +149,7 @@ def _train_with_backend(
     out_path: Path,
     cfg: TrainConfig,
     backend_name: str,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Backend-agnostic training loop.  Returns the same metadata dict as the
     torch-specific implementation."""
     ops = get_ops()  # ops module for the active backend
@@ -302,7 +305,7 @@ def train_eddy_viscosity_model(
     config: TrainConfig | None = None,
     *,
     backend: str | None = None,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Train an :class:`EddyViscosityMLP` and persist it to *out_path*.
 
     Args:

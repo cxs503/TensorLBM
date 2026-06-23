@@ -15,7 +15,7 @@ import json
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 import torch
@@ -25,6 +25,12 @@ from ..backends import get_backend, get_ops, using_backend
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+
+class _BackendModel(Protocol):
+    training: bool
+
+    def __call__(self, x: object) -> object: ...
 
 
 @dataclass(frozen=True)
@@ -170,7 +176,7 @@ def save_flow_transformer_model(
     return p
 
 
-def _to_numpy(x) -> np.ndarray:
+def _to_numpy(x: object) -> np.ndarray:
     if isinstance(x, np.ndarray):
         return x
     if hasattr(x, "detach"):
@@ -185,7 +191,11 @@ def _to_numpy(x) -> np.ndarray:
     return np.asarray(x)
 
 
-def load_flow_transformer_model(path: str | Path, *, backend: str | None = None) -> Any:
+def load_flow_transformer_model(
+    path: str | Path,
+    *,
+    backend: str | None = None,
+) -> _BackendModel:
     """Load a saved transformer model."""
     p = Path(path)
     meta_path = p.with_suffix(p.suffix + ".json")
@@ -221,7 +231,7 @@ def load_flow_transformer_model(path: str | Path, *, backend: str | None = None)
                 arrays = np.load(fh, allow_pickle=False)
                 ops.load_state_dict_numpy(model, {name: arrays[name] for name in arrays.files})
             ops.eval_mode(model)
-    setattr(model, "tensorlbm_backend", backend_name)
+    model.tensorlbm_backend = backend_name
     return model
 
 
@@ -266,7 +276,7 @@ def train_flow_transformer_self_supervised(
     progress_callback: Callable[[dict[str, float]], None] | None = None,
     *,
     backend: str | None = None,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Train a masked-reconstruction transformer on unlabeled flow fields.
 
     Args:
@@ -437,8 +447,8 @@ def _train_flow_transformer_backend(
     cfg: FlowTransformerTrainConfig,
     out_path: Path,
     backend_name: str,
-    progress_callback,
-) -> dict[str, Any]:
+    progress_callback: Callable[[dict[str, float]], None] | None,
+) -> dict[str, object]:
     """Backend-agnostic transformer training loop."""
     ops = get_ops()
 
@@ -472,7 +482,6 @@ def _train_flow_transformer_backend(
         train_np = val_np = batch_np
 
     # Convert to backend tensors
-    train_x = ops.to_device(ops.tensor(train_np), cfg.device)
     val_x   = ops.to_device(ops.tensor(val_np), cfg.device)
 
     # Build model
@@ -521,21 +530,32 @@ def _train_flow_transformer_backend(
             # Apply mask token and run forward + loss
             x_masked = model.apply_mask_token(xb, mask_bool)
 
-            def _step_loss():
-                pred = model(x_masked)
-                if ops.any_true(mask_bool):
-                    # only compute loss on masked tokens
-                    pred_flat = ops.reshape(pred, [-1, int(arch.in_features)])
-                    xb_flat   = ops.reshape(xb,   [-1, int(arch.in_features)])
-                    mask_flat = ops.reshape(mask_bool, [-1])
-                    p = ops.index_select(pred_flat, 0, ops.tensor(
-                        np.where(mask_np.ravel())[0].astype(np.int32), device=cfg.device))
-                    t = ops.index_select(xb_flat, 0, ops.tensor(
-                        np.where(mask_np.ravel())[0].astype(np.int32), device=cfg.device))
-                    return loss_fn(p, t)
-                return loss_fn(pred, xb)
+            masked_idx_np = np.where(mask_np.ravel())[0].astype(np.int32)
 
-            batch_loss = ops.train_step(model, lambda a, b: _step_loss(), optimizer, xb, xb, cfg.gradient_clip_norm)
+            def _masked_loss(
+                pred: object,
+                target: object,
+                *,
+                mask_bool: object = mask_bool,
+                masked_idx_np: np.ndarray = masked_idx_np,
+            ) -> object:
+                if ops.any_true(mask_bool):
+                    pred_flat = ops.reshape(pred, [-1, int(arch.in_features)])
+                    target_flat = ops.reshape(target, [-1, int(arch.in_features)])
+                    masked_idx = ops.tensor(masked_idx_np, device=cfg.device)
+                    p = ops.index_select(pred_flat, 0, masked_idx)
+                    t = ops.index_select(target_flat, 0, masked_idx)
+                    return loss_fn(p, t)
+                return loss_fn(pred, target)
+
+            batch_loss = ops.train_step(
+                model,
+                _masked_loss,
+                optimizer,
+                x_masked,
+                xb,
+                cfg.gradient_clip_norm,
+            )
             running_loss += float(batch_loss)
             n_batches += 1
 
@@ -595,7 +615,11 @@ def _train_flow_transformer_backend(
     out_path.with_suffix(out_path.suffix + ".json").write_text(json.dumps(meta, indent=2))
 
     elapsed = time.perf_counter() - t0
-    final = history[best_epoch] if history else {"train_loss": float("nan"), "val_loss": float("nan")}
+    final = (
+        history[best_epoch]
+        if history
+        else {"train_loss": float("nan"), "val_loss": float("nan")}
+    )
     return {
         "path": str(out_path),
         "family": "flow_transformer_ssl",
@@ -615,10 +639,10 @@ def _train_flow_transformer_backend(
 
 
 def reconstruct_flow_field(
-    model: Any,
+    model: _BackendModel,
     ux: torch.Tensor,
     uy: torch.Tensor,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Run deployed inference and return reconstructed fields + diagnostics."""
     ux_np = _to_numpy(ux).astype(np.float32, copy=False)
     uy_np = _to_numpy(uy).astype(np.float32, copy=False)
