@@ -463,3 +463,167 @@ async def set_auto_stop_config(job_id: str, req: AutoStopConfigRequest) -> dict:
         "message": "Auto-stop configuration applied",
         "config": cfg.to_dict(),
     }
+
+
+# ---------------------------------------------------------------------------
+# P2: HPC production lifecycle – status polling, manual retry, result archive
+# ---------------------------------------------------------------------------
+
+@router.get("/{job_id}/hpc-status")
+async def get_hpc_status(job_id: str) -> dict:
+    """Poll the HPC cluster status for a job submitted via ``submit-hpc``.
+
+    Reads the ``hpc_info`` metadata stored on the job (set when the job was
+    dispatched to SLURM or PBS) and queries the scheduler for the current
+    cluster-side state.  If the job was not submitted to an HPC backend this
+    endpoint returns the local platform status instead.
+
+    Returns a unified status dict with fields:
+    ``platform_status``, ``hpc_backend``, ``hpc_job_id``, ``cluster_state``,
+    ``cluster_elapsed``.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    hpc_info: dict = {}
+    if isinstance(job.config, dict):
+        hpc_info = dict(job.config.get("hpc_info") or {})
+
+    hpc_backend = str(hpc_info.get("backend") or "none")
+    hpc_job_id = str(hpc_info.get("hpc_job_id") or "")
+
+    cluster_state = "n/a"
+    cluster_elapsed = "n/a"
+
+    if hpc_backend == "slurm" and hpc_job_id:
+        try:
+            from ..services.hpc_scheduler import query_slurm_status  # noqa: PLC0415
+            slurm_result = query_slurm_status(hpc_job_id)
+            cluster_state = slurm_result.get("state", "unknown")
+            cluster_elapsed = slurm_result.get("elapsed", "n/a")
+        except Exception as exc:  # noqa: BLE001
+            cluster_state = f"query_error: {exc}"
+    elif hpc_backend == "pbs" and hpc_job_id:
+        cluster_state = "pbs_query_not_implemented"
+
+    return {
+        "job_id": job_id,
+        "platform_status": job.status.value,
+        "hpc_backend": hpc_backend,
+        "hpc_job_id": hpc_job_id or None,
+        "cluster_state": cluster_state,
+        "cluster_elapsed": cluster_elapsed,
+        "hpc_info": hpc_info,
+    }
+
+
+@router.post("/{job_id}/retry")
+async def retry_job(job_id: str) -> dict:
+    """Manually re-queue a failed job for another execution attempt.
+
+    This endpoint is the HPC production complement to the automatic
+    retry logic built into the job runner.  It can be used to re-submit
+    a job that failed due to a transient cluster fault (node crash,
+    out-of-memory, network issue) without having to reconstruct the
+    original request.
+
+    The job is reset to *queued* status and submitted to the platform
+    thread pool.  Any previous HPC submission metadata is cleared so
+    the job can be re-dispatched to the cluster via ``submit-hpc`` if
+    desired.
+
+    Constraints:
+        - Only ``failed`` or ``cancelled`` jobs can be retried.
+        - The original job config and function are re-used unchanged.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status.value not in ("failed", "cancelled"):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Job cannot be retried in status '{job.status.value}'. "
+                "Only 'failed' or 'cancelled' jobs can be retried."
+            ),
+        )
+
+    previous_status = job.status.value
+
+    # Clear HPC metadata so the job can be re-dispatched cleanly
+    if isinstance(job.config, dict):
+        job.config.pop("hpc_info", None)
+
+    ok = job_manager.retry_job(job_id)
+    if not ok:
+        raise HTTPException(
+            status_code=409,
+            detail="Retry failed – job may no longer be in a retryable state",
+        )
+
+    return {
+        "job_id": job_id,
+        "message": "Job re-queued for retry",
+        "previous_status": previous_status,
+    }
+
+
+@router.post("/{job_id}/archive")
+async def archive_job(job_id: str) -> dict:
+    """Package a completed job's output directory into a ZIP archive.
+
+    Creates a ``<job_id>.zip`` archive inside the job's output directory,
+    containing all files produced by the simulation run (field snapshots,
+    metadata, logs, images).  The archive path is returned so it can be
+    downloaded or transferred to remote storage.
+
+    This endpoint supports the HPC production workflow pattern where results
+    are archived to network storage after the job completes on the cluster.
+
+    The job must be in ``completed`` or ``failed`` status.
+    """
+    import shutil  # noqa: PLC0415
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status.value not in ("completed", "failed"):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Job cannot be archived in status '{job.status.value}'. "
+                "Only 'completed' or 'failed' jobs can be archived."
+            ),
+        )
+
+    output_dir = job.output_dir
+    if not output_dir.exists():
+        raise HTTPException(status_code=404, detail="Job output directory not found")
+
+    archive_path = output_dir.parent / f"{job_id}.zip"
+    try:
+        shutil.make_archive(
+            base_name=str(output_dir.parent / job_id),
+            format="zip",
+            root_dir=str(output_dir.parent),
+            base_dir=job_id,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create archive: {exc}",
+        ) from exc
+
+    archive_size = archive_path.stat().st_size if archive_path.exists() else 0
+
+    logger.info("Job archived: job=%s archive=%s size=%d", job_id, archive_path, archive_size)
+
+    return {
+        "job_id": job_id,
+        "archive_path": str(archive_path),
+        "archive_size_bytes": archive_size,
+        "message": "Job output archived successfully",
+    }
