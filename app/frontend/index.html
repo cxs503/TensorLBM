@@ -2041,48 +2041,31 @@
 
         <!-- Iso-Surface / Iso-Contour -->
         <div id="pp-eng-iso" class="pp-tab-panel" style="display:none">
-          <div class="row g-3">
-            <div class="col-lg-4">
-              <div class="card h-100">
-                <div class="card-header small fw-semibold"><i class="bi bi-box"></i> <span data-i18n="postprocess.isosurface_title">Iso-Surface / Iso-Contour</span> <span id="isosurface-status" class="ms-2 badge bg-secondary"></span></div>
-                <div class="card-body small">
-                  <div class="mb-2">
-                    <label class="form-label mb-1" data-i18n="postprocess.isosurface_field">Scalar field</label>
-                    <select class="form-select form-select-sm" id="isosurface-field">
-                      <option value="q_criterion">Q-criterion</option>
-                      <option value="vorticity">Vorticity</option>
-                      <option value="velocity_magnitude">Velocity magnitude</option>
-                      <option value="density">Density</option>
-                      <option value="ux">x-velocity (ux)</option>
-                      <option value="uy">y-velocity (uy)</option>
-                    </select>
-                  </div>
-                  <div class="mb-2">
-                    <label class="form-label mb-1" data-i18n="postprocess.isosurface_value">Iso-value</label>
-                    <input type="number" class="form-control form-control-sm" id="isosurface-value" value="0.0" step="0.01">
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label mb-1" data-i18n="postprocess.isosurface_axis">Mode / Slice axis</label>
-                    <select class="form-select form-select-sm" id="isosurface-axis">
-                      <option value="z">2D iso-contour (z-slice)</option>
-                      <option value="3d">3D iso-surface</option>
-                      <option value="x">x-slice</option>
-                      <option value="y">y-slice</option>
-                    </select>
-                  </div>
-                  <button class="btn btn-primary btn-sm w-100" id="isosurface-extract">
-                    <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.isosurface_extract">Extract</span>
-                  </button>
-                </div>
-              </div>
+          <div class="card">
+            <div class="card-header small fw-semibold">
+              <i class="bi bi-box"></i> <span data-i18n="postprocess.isosurface_title">Iso-Surface / Iso-Contour</span>
             </div>
-            <div class="col-lg-8">
-              <div class="card h-100">
-                <div class="card-header small fw-semibold"><i class="bi bi-grid-3x3-gap"></i> Result</div>
-                <div class="card-body" id="isosurface-output">
-                  <p class="text-muted small">Select a job and click Extract.</p>
+            <div class="card-body small">
+              <div class="mb-2 d-flex gap-2 align-items-center flex-wrap">
+                <label class="small fw-semibold mb-0" for="iso-job-id" data-i18n="postprocess.iso_job_id">Job ID:</label>
+                <input type="text" id="iso-job-id" class="form-control form-control-sm" style="width:220px" placeholder="job id">
+                <label class="small fw-semibold mb-0" for="iso-field" data-i18n="postprocess.isosurface_field">Field:</label>
+                <select id="iso-field" class="form-select form-select-sm" style="width:140px">
+                  <option value="velocity_magnitude" data-i18n="postprocess.field_velocity_magnitude">Velocity Mag</option>
+                  <option value="pressure" data-i18n="postprocess.field_pressure">Pressure</option>
+                  <option value="vorticity" data-i18n="postprocess.field_vorticity">Vorticity</option>
+                </select>
+                <label class="small fw-semibold mb-0" for="iso-value" data-i18n="postprocess.isosurface_value">Isovalue:</label>
+                <input type="number" id="iso-value" class="form-control form-control-sm" style="width:90px" value="0.05" step="0.01">
+                <button class="btn btn-sm btn-primary" onclick="loadIsosurface()"><i class="bi bi-box me-1"></i><span data-i18n="postprocess.iso_render">Render</span></button>
+              </div>
+              <div id="iso-canvas-container" style="width:100%;height:400px;background:#1a1a2e;border-radius:6px;position:relative;">
+                <canvas id="iso-canvas" style="width:100%;height:100%"></canvas>
+                <div id="iso-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#666;font-size:0.85rem;">
+                  <i class="bi bi-box me-2"></i><span data-i18n="postprocess.iso_placeholder">Enter job ID and click Render</span>
                 </div>
               </div>
+              <div id="iso-info" class="small text-muted mt-1"></div>
             </div>
           </div>
         </div>
