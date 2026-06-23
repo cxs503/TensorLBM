@@ -96,3 +96,62 @@ def test_export_stl(client):
     # ASCII STL files start with 'solid' or are valid binary STL
     body = r.content
     assert len(body) > 100
+
+
+# ── SUBOFF mesh3d endpoint ──────────────────────────────────────────────────
+
+class TestSuboffMesh3D:
+    """Tests for POST /api/cad/suboff/mesh3d."""
+
+    def _req(self, hull_type="bare_hull", length=80.0, n_axial=20, n_circ=16):
+        return {
+            "hull_type": hull_type,
+            "length": length,
+            "radius": 0.0,
+            "bow_fraction": 0.233,
+            "stern_fraction": 0.252,
+            "stern_exponent": 2.0,
+            "n_axial": n_axial,
+            "n_circ": n_circ,
+        }
+
+    def test_bare_hull_returns_positions(self, client):
+        r = client.post("/api/cad/suboff/mesh3d", json=self._req("bare_hull"))
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["hull_type"] == "bare_hull"
+        n_tri = data["n_triangles"]
+        assert n_tri > 0
+        assert len(data["positions"]) == n_tri * 9
+
+    def test_with_sail_has_more_triangles(self, client):
+        bare = client.post("/api/cad/suboff/mesh3d", json=self._req("bare_hull")).json()
+        sail = client.post("/api/cad/suboff/mesh3d", json=self._req("with_sail")).json()
+        assert sail["n_triangles"] > bare["n_triangles"], (
+            "with_sail should have more triangles than bare_hull (sail box adds 12)"
+        )
+
+    def test_full_has_most_triangles(self, client):
+        sail = client.post("/api/cad/suboff/mesh3d", json=self._req("with_sail")).json()
+        full = client.post("/api/cad/suboff/mesh3d", json=self._req("full")).json()
+        assert full["n_triangles"] > sail["n_triangles"], (
+            "full should have more triangles than with_sail (4 fin boxes add 48)"
+        )
+
+    def test_positions_are_floats(self, client):
+        data = client.post("/api/cad/suboff/mesh3d", json=self._req("full")).json()
+        pos = data["positions"]
+        assert all(isinstance(v, (int, float)) for v in pos[:30]), (
+            "All position values should be numeric"
+        )
+
+    def test_hull_type_echoed(self, client):
+        for ht in ("bare_hull", "with_sail", "full"):
+            data = client.post("/api/cad/suboff/mesh3d", json=self._req(ht)).json()
+            assert data["hull_type"] == ht
+
+    def test_invalid_hull_type_422(self, client):
+        req = self._req()
+        req["hull_type"] = "unknown_type"
+        r = client.post("/api/cad/suboff/mesh3d", json=req)
+        assert r.status_code == 422

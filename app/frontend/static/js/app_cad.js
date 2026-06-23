@@ -367,16 +367,174 @@ async function cadDownloadSTL() {
 // ============================================================
 // SUBOFF Submarine CAD
 // ============================================================
+
+// ── Three.js state for SUBOFF 3D viewer ──────────────────────────────────────
+const suboff3dState = {
+  renderer: null,
+  scene: null,
+  camera: null,
+  controls: null,
+  hullMesh: null,
+  wireframe: false,
+  raf: 0,
+};
+
+function suboff3dEnsureViewer() {
+  const host = document.getElementById('suboff-3d-canvas');
+  if (!host || suboff3dState.renderer) return;
+  const w = host.clientWidth  || 640;
+  const h = host.clientHeight || 420;
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x111827);
+  const camera = new THREE.PerspectiveCamera(45, w / h, 0.01, 5000);
+  camera.position.set(0, -180, 60);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(w, h);
+  host.innerHTML = '';
+  host.appendChild(renderer.domElement);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 0.85);
+  key.position.set(0.5, -1, 1);
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0x8899cc, 0.3);
+  fill.position.set(-1, 1, -0.5);
+  scene.add(fill);
+  scene.add(new THREE.GridHelper(400, 20, 0x334155, 0x1f2937));
+  suboff3dState.scene    = scene;
+  suboff3dState.camera   = camera;
+  suboff3dState.renderer = renderer;
+  suboff3dState.controls = controls;
+  const loop = () => {
+    suboff3dState.controls.update();
+    suboff3dState.renderer.render(suboff3dState.scene, suboff3dState.camera);
+    suboff3dState.raf = requestAnimationFrame(loop);
+  };
+  loop();
+  // Resize observer
+  new ResizeObserver(() => {
+    const nw = host.clientWidth;
+    const nh = host.clientHeight;
+    if (!nw || !nh) return;
+    suboff3dState.camera.aspect = nw / nh;
+    suboff3dState.camera.updateProjectionMatrix();
+    suboff3dState.renderer.setSize(nw, nh);
+  }).observe(host);
+}
+
+async function suboff3dLoadMesh(hullType, length, radius, bowFrac, sternFrac) {
+  suboff3dEnsureViewer();
+  const infoEl = document.getElementById('suboff-3d-info');
+  if (infoEl) infoEl.textContent = t('cad.suboff_3d_loading');
+  const body = {
+    hull_type: hullType,
+    length,
+    radius,
+    bow_fraction: bowFrac,
+    stern_fraction: sternFrac,
+  };
+  try {
+    const resp = await fetch(API + '/api/cad/suboff/mesh3d', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+
+    // Remove old mesh
+    if (suboff3dState.hullMesh) {
+      suboff3dState.scene.remove(suboff3dState.hullMesh);
+      suboff3dState.hullMesh.geometry.dispose();
+      suboff3dState.hullMesh.material.dispose();
+      suboff3dState.hullMesh = null;
+    }
+
+    const pos = new Float32Array(data.positions);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.computeVertexNormals();
+
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x3d7abf,
+      roughness: 0.45,
+      metalness: 0.25,
+      side: THREE.DoubleSide,
+      wireframe: suboff3dState.wireframe,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    suboff3dState.hullMesh = mesh;
+    suboff3dState.scene.add(mesh);
+
+    // Frame camera on bounding box centre
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox;
+    const centre = new THREE.Vector3();
+    bb.getCenter(centre);
+    const size = new THREE.Vector3();
+    bb.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    suboff3dState.controls.target.copy(centre);
+    suboff3dState.camera.position.set(
+      centre.x,
+      centre.y - maxDim * 1.4,
+      centre.z + maxDim * 0.6
+    );
+    suboff3dState.controls.update();
+
+    if (infoEl) {
+      infoEl.textContent = `${data.hull_type}  |  ${t('cad.model3d_faces')}: ${data.n_triangles.toLocaleString()}`;
+    }
+  } catch (e) {
+    if (infoEl) infoEl.innerHTML = `<span class="text-danger">${e.message}</span>`;
+  }
+}
+
+function suboff3dToggleWireframe() {
+  suboff3dState.wireframe = !suboff3dState.wireframe;
+  if (suboff3dState.hullMesh) {
+    suboff3dState.hullMesh.material.wireframe = suboff3dState.wireframe;
+  }
+}
+
+function suboff3dResetCamera() {
+  if (!suboff3dState.hullMesh || !suboff3dState.hullMesh.geometry.boundingBox) return;
+  const geo = suboff3dState.hullMesh.geometry;
+  const bb  = geo.boundingBox;
+  const centre = new THREE.Vector3();
+  bb.getCenter(centre);
+  const size = new THREE.Vector3();
+  bb.getSize(size);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  suboff3dState.controls.target.copy(centre);
+  suboff3dState.camera.position.set(
+    centre.x,
+    centre.y - maxDim * 1.4,
+    centre.z + maxDim * 0.6
+  );
+  suboff3dState.controls.update();
+}
+
 async function suboffPreview() {
   const area = document.getElementById('suboff-preview-area');
   area.innerHTML = `<p class="text-muted py-4">${t('cad.generating')}</p>`;
+  const hullType  = document.getElementById('suboff-model-type').value;
+  const length    = +document.getElementById('suboff-length').value;
+  const radius    = +document.getElementById('suboff-radius').value;
+  const bowFrac   = +document.getElementById('suboff-bow-frac').value;
+  const sternFrac = +document.getElementById('suboff-stern-frac').value;
   const body = {
-    hull_type: document.getElementById('suboff-model-type').value,
-    length: +document.getElementById('suboff-length').value,
-    radius: +document.getElementById('suboff-radius').value,
-    bow_frac: +document.getElementById('suboff-bow-frac').value,
-    stern_frac: +document.getElementById('suboff-stern-frac').value,
+    hull_type: hullType,
+    length,
+    radius,
+    bow_frac: bowFrac,
+    stern_frac: sternFrac,
   };
+  // Fire 3D viewer load in parallel
+  suboff3dLoadMesh(hullType, length, radius, bowFrac, sternFrac);
   try {
     const resp = await fetch(API + '/api/cad/suboff/preview', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -399,6 +557,7 @@ async function suboffPreview() {
     area.innerHTML = `<p class="text-danger">${e.message}</p>`;
   }
 }
+
 
 async function suboffExportSTL() {
   const body = {

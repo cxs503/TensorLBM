@@ -53,6 +53,7 @@ __all__ = [
     "suboff_statistics",
     "generate_suboff_previews",
     "export_suboff_stl",
+    "suboff_mesh_data",
 ]
 
 
@@ -785,80 +786,7 @@ def export_suboff_stl(
     output_path = Path(output_path).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    triangles: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
-
-    # ---- Hull surface of revolution ----
-    xi_arr = np.linspace(0.0, 1.0, n_axial)
-    r_arr = suboff_radius_profile(xi_arr, config) * radius
-    theta_arr = np.linspace(0.0, 2 * math.pi, n_circ, endpoint=False)
-
-    # Vertex grid: shape (n_axial, n_circ)
-    X = xi_arr[:, None] * length * np.ones((1, n_circ))
-    Y = r_arr[:, None] * np.cos(theta_arr[None, :])
-    Z = r_arr[:, None] * np.sin(theta_arr[None, :])
-
-    for i in range(n_axial - 1):
-        for j in range(n_circ):
-            j_next = (j + 1) % n_circ
-            p00 = np.array([X[i, j],     Y[i, j],     Z[i, j]])
-            p10 = np.array([X[i + 1, j], Y[i + 1, j], Z[i + 1, j]])
-            p01 = np.array([X[i, j_next],   Y[i, j_next],   Z[i, j_next]])
-            p11 = np.array([X[i + 1, j_next], Y[i + 1, j_next], Z[i + 1, j_next]])
-            triangles.append((p00, p10, p11))
-            triangles.append((p00, p11, p01))
-
-    # Bow cap (fan triangles from bow-tip to first ring)
-    bow_tip = np.array([0.0, 0.0, 0.0])
-    for j in range(n_circ):
-        j_next = (j + 1) % n_circ
-        triangles.append((bow_tip, np.array([X[0, j], Y[0, j], Z[0, j]]),
-                           np.array([X[0, j_next], Y[0, j_next], Z[0, j_next]])))
-
-    # Stern cap
-    stern_tip = np.array([length, 0.0, 0.0])
-    for j in range(n_circ):
-        j_next = (j + 1) % n_circ
-        triangles.append((stern_tip, np.array([X[-1, j_next], Y[-1, j_next], Z[-1, j_next]]),
-                           np.array([X[-1, j], Y[-1, j], Z[-1, j]])))
-
-    # ---- Sail (conning tower) ----
-    if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
-        sail_xc = config.sail_x_frac * length
-        sail_x0 = sail_xc - config.sail_length_frac * length / 2.0
-        sail_x1 = sail_xc + config.sail_length_frac * length / 2.0
-        sail_hw = config.sail_halfwidth_frac * length
-        # bottom of sail = top of hull (approximated at sail axial centre)
-        r_at_sail = float(suboff_radius_profile(np.array([config.sail_x_frac]), config)[0]) * radius
-        sail_z0 = r_at_sail
-        sail_z1 = r_at_sail + config.sail_height_frac * length
-        _box_triangles(triangles, sail_x0, sail_x1, -sail_hw, sail_hw, sail_z0, sail_z1)
-
-    # ---- Cruciform fins ----
-    if hull_type == SuboffHullType.FULL:
-        fin_xc = config.fin_x_frac * length
-        fin_x0 = fin_xc - config.fin_length_frac * length / 2.0
-        fin_x1 = fin_xc + config.fin_length_frac * length / 2.0
-        fin_span = config.fin_span_frac * length
-        fin_ht = config.fin_thickness_frac * length
-        r_at_fin = float(suboff_radius_profile(np.array([config.fin_x_frac]), config)[0]) * radius
-
-        # Top fin (z+)
-        _box_triangles(triangles, fin_x0, fin_x1,
-                       -fin_ht / 2, fin_ht / 2,
-                       r_at_fin, r_at_fin + fin_span)
-        # Bottom fin (z-)
-        _box_triangles(triangles, fin_x0, fin_x1,
-                       -fin_ht / 2, fin_ht / 2,
-                       -(r_at_fin + fin_span), -r_at_fin)
-        # Port fin (y+, lying in y-x plane)
-        # Re-use _box_triangles with y as the "z" dimension
-        _box_triangles_yz(triangles, fin_x0, fin_x1,
-                          r_at_fin, r_at_fin + fin_span,
-                          -fin_ht / 2, fin_ht / 2)
-        # Starboard fin (y-)
-        _box_triangles_yz(triangles, fin_x0, fin_x1,
-                          -(r_at_fin + fin_span), -r_at_fin,
-                          -fin_ht / 2, fin_ht / 2)
+    triangles = _build_suboff_triangles(hull_type, length, radius, n_axial, n_circ, config)
 
     # ---- Write STL ----
     def _normal(v0: np.ndarray, v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
@@ -923,3 +851,166 @@ def _box_triangles_yz(
 ) -> None:
     """Alias of ``_box_triangles`` for fins oriented in the y-direction."""
     _box_triangles(tris, x0, x1, y0, y1, z0, z1)
+
+
+# ---------------------------------------------------------------------------
+# Shared triangle builder (used by both STL export and mesh3d)
+# ---------------------------------------------------------------------------
+
+
+def _build_suboff_triangles(
+    hull_type: SuboffHullType,
+    length: float,
+    radius: float,
+    n_axial: int,
+    n_circ: int,
+    config: SuboffConfig,
+) -> list:
+    """Build the complete list of triangles for a SUBOFF model.
+
+    Returns a list of ``(v0, v1, v2)`` tuples where each vertex is a
+    1-D numpy array of shape ``(3,)``.  This list is consumed by both
+    :func:`export_suboff_stl` and :func:`suboff_mesh_data`.
+    """
+    triangles: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
+
+    # ---- Hull surface of revolution ----
+    xi_arr = np.linspace(0.0, 1.0, n_axial)
+    r_arr = suboff_radius_profile(xi_arr, config) * radius
+    theta_arr = np.linspace(0.0, 2 * math.pi, n_circ, endpoint=False)
+
+    X = xi_arr[:, None] * length * np.ones((1, n_circ))
+    Y = r_arr[:, None] * np.cos(theta_arr[None, :])
+    Z = r_arr[:, None] * np.sin(theta_arr[None, :])
+
+    for i in range(n_axial - 1):
+        for j in range(n_circ):
+            j_next = (j + 1) % n_circ
+            p00 = np.array([X[i, j],         Y[i, j],         Z[i, j]])
+            p10 = np.array([X[i + 1, j],     Y[i + 1, j],     Z[i + 1, j]])
+            p01 = np.array([X[i, j_next],     Y[i, j_next],     Z[i, j_next]])
+            p11 = np.array([X[i + 1, j_next], Y[i + 1, j_next], Z[i + 1, j_next]])
+            triangles.append((p00, p10, p11))
+            triangles.append((p00, p11, p01))
+
+    # Bow cap
+    bow_tip = np.array([0.0, 0.0, 0.0])
+    for j in range(n_circ):
+        j_next = (j + 1) % n_circ
+        triangles.append((bow_tip,
+                           np.array([X[0, j],      Y[0, j],      Z[0, j]]),
+                           np.array([X[0, j_next], Y[0, j_next], Z[0, j_next]])))
+
+    # Stern cap
+    stern_tip = np.array([length, 0.0, 0.0])
+    for j in range(n_circ):
+        j_next = (j + 1) % n_circ
+        triangles.append((stern_tip,
+                           np.array([X[-1, j_next], Y[-1, j_next], Z[-1, j_next]]),
+                           np.array([X[-1, j],      Y[-1, j],      Z[-1, j]])))
+
+    # ---- Sail (conning tower) ----
+    if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
+        sail_xc = config.sail_x_frac * length
+        sail_x0 = sail_xc - config.sail_length_frac * length / 2.0
+        sail_x1 = sail_xc + config.sail_length_frac * length / 2.0
+        sail_hw = config.sail_halfwidth_frac * length
+        r_at_sail = float(suboff_radius_profile(np.array([config.sail_x_frac]), config)[0]) * radius
+        sail_z0 = r_at_sail
+        sail_z1 = r_at_sail + config.sail_height_frac * length
+        _box_triangles(triangles, sail_x0, sail_x1, -sail_hw, sail_hw, sail_z0, sail_z1)
+
+    # ---- Cruciform fins ----
+    if hull_type == SuboffHullType.FULL:
+        fin_xc = config.fin_x_frac * length
+        fin_x0 = fin_xc - config.fin_length_frac * length / 2.0
+        fin_x1 = fin_xc + config.fin_length_frac * length / 2.0
+        fin_span = config.fin_span_frac * length
+        fin_ht = config.fin_thickness_frac * length
+        r_at_fin = float(suboff_radius_profile(np.array([config.fin_x_frac]), config)[0]) * radius
+        _box_triangles(triangles, fin_x0, fin_x1,
+                       -fin_ht / 2, fin_ht / 2,
+                       r_at_fin, r_at_fin + fin_span)
+        _box_triangles(triangles, fin_x0, fin_x1,
+                       -fin_ht / 2, fin_ht / 2,
+                       -(r_at_fin + fin_span), -r_at_fin)
+        _box_triangles_yz(triangles, fin_x0, fin_x1,
+                          r_at_fin, r_at_fin + fin_span,
+                          -fin_ht / 2, fin_ht / 2)
+        _box_triangles_yz(triangles, fin_x0, fin_x1,
+                          -(r_at_fin + fin_span), -r_at_fin,
+                          -fin_ht / 2, fin_ht / 2)
+
+    return triangles
+
+
+# ---------------------------------------------------------------------------
+# Three.js mesh data export
+# ---------------------------------------------------------------------------
+
+
+def suboff_mesh_data(
+    hull_type: SuboffHullType | str = SuboffHullType.BARE_HULL,
+    length: float = 100.0,
+    radius: float | None = None,
+    n_axial: int = 60,
+    n_circ: int = 48,
+    config: SuboffConfig | None = None,
+) -> dict:
+    """Return SUBOFF mesh data as a dict suitable for Three.js rendering.
+
+    The returned dictionary contains:
+
+    ``positions``
+        A flat Python list of ``float`` values representing triangle vertex
+        positions in interleaved XYZ order: ``[x0,y0,z0, x1,y1,z1, x2,y2,z2,
+        x3,y3,z3, …]``.  Each consecutive group of 9 values is one triangle.
+        This maps directly to a Three.js ``Float32Array`` / ``BufferGeometry``
+        ``position`` attribute (non-indexed).
+
+    ``n_triangles``
+        Total number of triangles.
+
+    ``hull_type``
+        The hull variant string (``"bare_hull"``, ``"with_sail"``, ``"full"``).
+
+    Parameters
+    ----------
+    hull_type :
+        SUBOFF model variant.
+    length :
+        Hull length in lattice units.
+    radius :
+        Maximum hull radius.  Auto-derived from ``config.r_over_l * length``
+        when *None*.
+    n_axial :
+        Axial resolution of the surface-of-revolution tessellation.
+    n_circ :
+        Circumferential resolution.
+    config :
+        Parametric geometry overrides.
+
+    Returns
+    -------
+    dict
+        ``{"positions": [...], "n_triangles": int, "hull_type": str}``
+    """
+    if isinstance(hull_type, str):
+        hull_type = SuboffHullType(hull_type)
+    if config is None:
+        config = SuboffConfig()
+    if radius is None:
+        radius = config.r_over_l * length
+
+    triangles = _build_suboff_triangles(hull_type, length, radius, n_axial, n_circ, config)
+
+    positions: list[float] = []
+    for v0, v1, v2 in triangles:
+        for v in (v0, v1, v2):
+            positions.extend([float(v[0]), float(v[1]), float(v[2])])
+
+    return {
+        "positions": positions,
+        "n_triangles": len(triangles),
+        "hull_type": hull_type.value,
+    }
