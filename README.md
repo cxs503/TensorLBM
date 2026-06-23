@@ -65,6 +65,7 @@ Useful options:
 - `--u-in`, `--re`, `--radius`: flow and geometry parameters
 - `--n-steps`, `--output-interval`: runtime and output cadence
 - `--output-root`, `--run-name`, `--overwrite`: output organization
+- `--resume-checkpoint`: resume from an existing checkpoint directory
 - `--device`: `cpu` (default), `cuda`, or `mps` (Apple Silicon)
 - `--num-threads`: PyTorch CPU thread count for multicore runs on `cpu`
 
@@ -118,6 +119,13 @@ outputs/
 ```
 
 `run_metadata.json` includes configuration, derived physical parameters (`nu`, `tau`), runtime info, and diagnostics history.
+
+### Restart / resume runs
+
+- CLI: pass `--resume-checkpoint <run_dir>` (directory containing `checkpoint_f.pt` and `checkpoint_meta.json`).
+- Platform API (`/api/solve/cylinder-flow` and `/api/solve/sphere-flow`):
+  - `resume_checkpoint`: explicit checkpoint directory path, or
+  - `resume_from_job_id`: resume from the latest checkpoint of an existing job.
 
 ## Tests and checks
 

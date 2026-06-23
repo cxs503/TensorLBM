@@ -197,11 +197,27 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
 
     # Resume from checkpoint or initialise fresh
     start_step = 1
+    restart_info: dict[str, object] = {"resumed": False}
     if config.resume_checkpoint is not None:
-        f, resume_step, _ckpt_meta = load_checkpoint(config.resume_checkpoint, device=device)
+        f, resume_step, ckpt_meta = load_checkpoint(
+            config.resume_checkpoint,
+            device=device,
+            expected_shape=(19, config.nz, config.ny, config.nx),
+            expected_lattice_directions=19,
+        )
+        if resume_step >= config.n_steps:
+            raise ValueError(
+                f"resume checkpoint step {resume_step} is not less than n_steps={config.n_steps}"
+            )
         f = f.to(device)
         start_step = resume_step + 1
         logger.info("Resumed from checkpoint %s at step %d", config.resume_checkpoint, resume_step)
+        restart_info = {
+            "resumed": True,
+            "source_checkpoint": str(config.resume_checkpoint),
+            "source_step": resume_step,
+            "checkpoint_format_version": ckpt_meta.get("format_version"),
+        }
     else:
         rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
         ux0 = torch.full((config.nz, config.ny, config.nx), config.u_in, device=device)
@@ -283,6 +299,7 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
             save_checkpoint(f, step, run_dir)
 
     metadata["diagnostics"] = diagnostics
+    metadata["restart"] = restart_info
     metadata_path = run_dir / "run_metadata.json"
     metadata_path.write_text(
         f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
