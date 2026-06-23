@@ -16,6 +16,40 @@ BoundaryCondition = Literal["standard_bounce_back", "zou_he", "periodic"]
 
 NumericalScheme = Literal["bgk", "trt", "mrt"]
 
+
+class SyntheticInflowSettings(BaseModel):
+    enabled: bool = False
+    method: Literal["dfsem", "digital_filter"] = "dfsem"
+    uu: float = Field(1e-4, gt=0.0)
+    vv: float = Field(1e-4, gt=0.0)
+    ww: float = Field(1e-4, gt=0.0)
+    uv: float = 0.0
+    uw: float = 0.0
+    vw: float = 0.0
+    length_scale: float = Field(5.0, gt=0.0)
+    n_eddies: int = Field(200, ge=10, le=4000)
+    seed_offset: int = 101
+
+
+class SpongeLayerSettings(BaseModel):
+    enabled: bool = False
+    start_fraction: float = Field(0.8, ge=0.5, lt=1.0)
+    amplitude: float = Field(0.35, gt=0.0, le=1.5)
+    exponent: float = Field(3.0, gt=0.0, le=10.0)
+
+
+class RoughWallSettings(BaseModel):
+    enabled: bool = False
+    ks: float = Field(0.5, ge=0.0)
+    reference_u_tau: float | None = Field(None, gt=0.0)
+    damping_limit: float = Field(0.75, gt=0.0, le=0.95)
+
+
+class TurbulenceStatisticsSettings(BaseModel):
+    enabled: bool = False
+    start_step: int = Field(0, ge=0)
+    sample_every: int = Field(1, ge=1, le=1000)
+
 class PhysicsSelection(BaseModel):
     flow_type: FlowType = "single_phase"
     turbulence_model: TurbulenceModel = "none"
@@ -25,6 +59,10 @@ class PhysicsSelection(BaseModel):
     boundary_condition: BoundaryCondition = "standard_bounce_back"
     numerical_scheme: NumericalScheme = "bgk"
     preset: str | None = None
+    synthetic_inflow: SyntheticInflowSettings | None = None
+    sponge_layer: SpongeLayerSettings | None = None
+    rough_wall: RoughWallSettings | None = None
+    turbulence_statistics: TurbulenceStatisticsSettings | None = None
 
 class CylinderFlowParams(BaseModel):
     nx: int = Field(320, ge=20, description="Grid width")

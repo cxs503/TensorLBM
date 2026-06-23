@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import json
 import math
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -20,8 +21,10 @@ from .boundaries import bounce_back_cells, make_channel_wall_mask
 from .config_io import load_config_json, save_config_json
 from .d2q9 import C, W, equilibrium, macroscopic
 from .logging_config import configure_logging, logger
+from .roughness import apply_rough_wall_damping_2d
 from .solver import stream
 from .turbulence import collide_smagorinsky_bgk
+from .turbulence_stats import TurbulenceStatsAccumulator, compute_turbulence_intensity
 from .utils import (
     DiagnosticPoint,
     flow_step_image_path,
@@ -174,7 +177,39 @@ def _save_snapshot(run_dir: Path, ux_mean: torch.Tensor, step: int) -> None:
     plt.close(fig)
 
 
-def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
+def _summarize_turbulence_stats(
+    stats: TurbulenceStatsAccumulator,
+    *,
+    u_ref: float,
+) -> dict[str, object]:
+    tu = compute_turbulence_intensity(stats.tke, u_ref=max(u_ref, 1e-12))
+    return {
+        "n_samples": stats.count,
+        "domain_mean_u": float(stats.mean_u.mean().item()),
+        "domain_mean_v": float(stats.mean_v.mean().item()),
+        "uu_mean": float(stats.uu.mean().item()),
+        "vv_mean": float(stats.vv.mean().item()),
+        "uv_mean": float(stats.uv.mean().item()),
+        "tke_mean": float(stats.tke.mean().item()),
+        "tu_percent_mean": float(tu.mean().item()),
+        "wall_profile": {
+            "mean_u": stats.mean_u.mean(dim=-1).cpu().tolist(),
+            "uu": stats.uu.mean(dim=-1).cpu().tolist(),
+            "vv": stats.vv.mean(dim=-1).cpu().tolist(),
+            "uv": stats.uv.mean(dim=-1).cpu().tolist(),
+            "tke": stats.tke.mean(dim=-1).cpu().tolist(),
+            "tu_percent": tu.mean(dim=-1).cpu().tolist(),
+        },
+    }
+
+
+def run_turbulent_channel(
+    config: TurbulentChannelConfig,
+    *,
+    rough_wall: dict[str, object] | None = None,
+    turbulence_statistics: dict[str, object] | None = None,
+    diagnostic_callback: Callable[[dict[str, object]], None] | None = None,
+) -> Path:
     """Run the turbulent-channel LES benchmark."""
     configure_logging()
     config.validate()
@@ -201,6 +236,10 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
         },
         "runtime": {"torch_version": torch.__version__, "device": str(device)},
         "reproducibility": get_reproducibility_metadata(),
+        "engineering_closure": {
+            "rough_wall": rough_wall or {"enabled": False},
+            "turbulence_statistics": turbulence_statistics or {"enabled": False},
+        },
     }
 
     rho0 = torch.ones((config.ny, config.nx), device=device)
@@ -213,6 +252,15 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
     sample_count = 0
     diagnostics: list[dict[str, object]] = []
     initial_mass = float(rho0.sum().item())
+    roughness_damping_history: list[float] = []
+    turbulence_acc: TurbulenceStatsAccumulator | None = None
+    turbulence_start_step = config.averaging_start
+    turbulence_sample_every = 1
+
+    if turbulence_statistics and bool(turbulence_statistics.get("enabled", False)):
+        turbulence_acc = TurbulenceStatsAccumulator()
+        turbulence_start_step = int(turbulence_statistics.get("start_step", config.averaging_start))
+        turbulence_sample_every = int(turbulence_statistics.get("sample_every", 1))
 
     logger.info(
         "Running turbulent channel device=%s NX=%s NY=%s Re_tau=%.1f u_tau=%.4f",
@@ -239,6 +287,19 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
         f = stream(f)
         f = _apply_body_force_2d(f, config.body_force)
         f = bounce_back_cells(f, wall_mask)
+        if rough_wall and bool(rough_wall.get("enabled", False)):
+            f, mean_damping = apply_rough_wall_damping_2d(
+                f,
+                config.nu,
+                float(rough_wall.get("ks", 0.5)),
+                reference_u_tau=(
+                    float(rough_wall["reference_u_tau"])
+                    if rough_wall.get("reference_u_tau") is not None
+                    else None
+                ),
+                damping_limit=float(rough_wall.get("damping_limit", 0.75)),
+            )
+            roughness_damping_history.append(mean_damping)
 
         rho, ux, uy = macroscopic(f)
         ux = ux.masked_fill(wall_mask, 0.0)
@@ -246,6 +307,12 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
         if step >= config.averaging_start:
             ux_sum += ux
             sample_count += 1
+        if (
+            turbulence_acc is not None
+            and step >= turbulence_start_step
+            and (step - turbulence_start_step) % turbulence_sample_every == 0
+        ):
+            turbulence_acc.update(ux, uy)
 
         if step % config.output_interval == 0 or step == config.n_steps:
             speed = torch.sqrt(ux * ux + uy * uy)
@@ -257,6 +324,10 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
                 mean_rho=float(rho.mean().item()),
             )
             diagnostics.append(asdict(point))
+            if roughness_damping_history:
+                diagnostics[-1]["roughness_damping_mean"] = roughness_damping_history[-1]
+            if turbulence_acc is not None and turbulence_acc.count > 0:
+                diagnostics[-1]["tke_mean"] = float(turbulence_acc.tke.mean().item())
             logger.info(
                 "step=%6d max|u|=%.6f mass_drift=%+.6f samples=%d",
                 step,
@@ -264,6 +335,8 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
                 point.mass_drift,
                 sample_count,
             )
+            if diagnostic_callback is not None:
+                diagnostic_callback(diagnostics[-1])
 
     ux_mean = ux_sum / max(sample_count, 1)
     fluid_rows = torch.arange(1, config.ny - 1, dtype=torch.float32, device=device)
@@ -293,6 +366,16 @@ def run_turbulent_channel(config: TurbulentChannelConfig) -> Path:
 
     metadata["diagnostics"] = diagnostics
     metadata["averaging_samples"] = sample_count
+    if roughness_damping_history:
+        metadata["engineering_closure"]["rough_wall_runtime"] = {
+            "mean_damping": sum(roughness_damping_history) / len(roughness_damping_history),
+            "last_damping": roughness_damping_history[-1],
+        }
+    if turbulence_acc is not None and turbulence_acc.count > 0:
+        metadata["engineering_closure"]["turbulence_statistics_runtime"] = _summarize_turbulence_stats(
+            turbulence_acc,
+            u_ref=config.u_tau,
+        )
     meta_path = run_dir / "run_metadata.json"
     meta_path.write_text(
         json.dumps(metadata, indent=2, sort_keys=True) + "\n",
