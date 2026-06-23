@@ -1947,3 +1947,179 @@ async def design_of_experiments(req: DoERequest) -> dict:
             for v in doe_variables
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# 6-DOF rigid-body dynamics
+# ---------------------------------------------------------------------------
+
+class SixDOFBodyParams(BaseModel):
+    mass: float = Field(1000.0, gt=0, description="Body mass [kg]")
+    ixx: float = Field(500.0, gt=0, description="Roll inertia [kg·m²]")
+    iyy: float = Field(2000.0, gt=0, description="Pitch inertia [kg·m²]")
+    izz: float = Field(2000.0, gt=0, description="Yaw inertia [kg·m²]")
+    ixy: float = 0.0
+    ixz: float = 0.0
+    iyz: float = 0.0
+    gravity_x: float = 0.0
+    gravity_y: float = Field(-9.81, description="Gravity y-component [m/s²]")
+    gravity_z: float = 0.0
+    fix_surge: bool = False
+    fix_sway: bool = False
+    fix_heave: bool = False
+    fix_roll: bool = False
+    fix_pitch: bool = False
+    fix_yaw: bool = False
+
+
+class SixDOFRequest(BaseModel):
+    body: SixDOFBodyParams = Field(default_factory=SixDOFBodyParams)
+    dt: float = Field(0.01, gt=0, le=1.0, description="Time step [s]")
+    n_steps: int = Field(200, ge=1, le=10000, description="Number of time steps")
+    pos_init: list[float] = Field(default=[0.0, 0.0, 0.0])
+    vel_init: list[float] = Field(default=[0.0, 0.0, 0.0])
+    omega_init: list[float] = Field(default=[0.0, 0.0, 0.0])
+    # Sinusoidal forcing for demo
+    force_amplitude: float = Field(1000.0, description="Sinusoidal fluid force amplitude [N]")
+    force_frequency: float = Field(0.5, gt=0, description="Forcing frequency [Hz]")
+    # Descriptive label
+    scenario: str = "vessel_motion"
+
+
+@router.post("/sixdof")
+async def sixdof_simulation(req: SixDOFRequest) -> dict:
+    """Run a 6-DOF rigid-body dynamics simulation.
+
+    Couples Newton-Euler equations of motion with prescribed or computed
+    fluid forces.  Supports all six degrees of freedom with optional
+    DOF constraints (e.g., heave+pitch+roll only for a ship in waves).
+
+    This mirrors the **rigid-body 6-DOF** capability in XFlow.
+    """
+    from tensorlbm.sixdof import (
+        SixDOFBody,
+        SixDOFConfig,
+        FluidForcesMoments,
+        run_sixdof_simulation,
+    )
+    import math as _math
+
+    body = SixDOFBody(
+        mass=req.body.mass,
+        ixx=req.body.ixx,
+        iyy=req.body.iyy,
+        izz=req.body.izz,
+        ixy=req.body.ixy,
+        ixz=req.body.ixz,
+        iyz=req.body.iyz,
+        gravity=(req.body.gravity_x, req.body.gravity_y, req.body.gravity_z),
+        fix_surge=req.body.fix_surge,
+        fix_sway=req.body.fix_sway,
+        fix_heave=req.body.fix_heave,
+        fix_roll=req.body.fix_roll,
+        fix_pitch=req.body.fix_pitch,
+        fix_yaw=req.body.fix_yaw,
+    )
+
+    cfg = SixDOFConfig(
+        body=body,
+        dt=req.dt,
+        n_steps=req.n_steps,
+        pos_init=tuple(req.pos_init[:3]) if len(req.pos_init) >= 3 else (0.0, 0.0, 0.0),  # type: ignore[arg-type]
+        vel_init=tuple(req.vel_init[:3]) if len(req.vel_init) >= 3 else (0.0, 0.0, 0.0),  # type: ignore[arg-type]
+        omega_init=tuple(req.omega_init[:3]) if len(req.omega_init) >= 3 else (0.0, 0.0, 0.0),  # type: ignore[arg-type]
+    )
+
+    A = req.force_amplitude
+    f_hz = req.force_frequency
+
+    def fluid_fn(t, pos, vel, quat, omega):
+        return FluidForcesMoments(
+            fx=A * _math.sin(2 * _math.pi * f_hz * t),
+            fy=0.0,
+            fz=0.0,
+            mx=A * 0.05 * _math.cos(2 * _math.pi * f_hz * t),
+            my=0.0,
+            mz=0.0,
+        )
+
+    result = run_sixdof_simulation(cfg, fluid_forces_fn=fluid_fn)
+
+    # Return time-series (downsample if many steps)
+    stride = max(1, len(result.history) // 200)
+    history_out = [
+        {
+            "t": s.time,
+            "pos": s.pos,
+            "vel": s.vel,
+            "euler_deg": s.euler_deg,
+        }
+        for s in result.history[::stride]
+    ]
+
+    return {
+        "scenario": req.scenario,
+        "n_steps": cfg.n_steps,
+        "dt": cfg.dt,
+        "max_displacement_m": result.max_displacement,
+        "max_velocity_m_s": result.max_velocity,
+        "max_roll_deg": result.max_roll_deg,
+        "max_pitch_deg": result.max_pitch_deg,
+        "history": history_out,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Topology optimisation
+# ---------------------------------------------------------------------------
+
+class TopOptRequest(BaseModel):
+    nx: int = Field(60, ge=10, le=200, description="Grid width")
+    ny: int = Field(30, ge=10, le=100, description="Grid height")
+    vf_target: float = Field(0.4, ge=0.1, le=0.9, description="Volume fraction target")
+    n_iter: int = Field(40, ge=1, le=200, description="Optimisation iterations")
+    re: float = Field(100.0, gt=0, le=1000.0, description="Reynolds number")
+    objective: str = Field("pressure_drop", pattern="^(pressure_drop|flow_uniformity)$")
+    r_min: float = Field(2.0, ge=1.0, le=8.0, description="Density filter radius [cells]")
+    alpha_max: float = Field(2.5e4, gt=0, description="Brinkman penalisation coefficient")
+
+
+@router.post("/topology-opt")
+async def topology_optimisation(req: TopOptRequest) -> dict:
+    """Run density-based topology optimisation for an LBM flow problem.
+
+    Uses SIMP Brinkman penalisation with adjoint sensitivity and
+    optimality criteria (OC) updates to find the optimal solid/fluid
+    layout that minimises pressure drop or maximises flow uniformity.
+
+    This provides shape/topology optimisation capability analogous to
+    PowerFlow design sensitivity and Tosca Fluid.
+    """
+    from tensorlbm.topology_opt import TopOptConfig, run_topology_optimisation
+
+    cfg = TopOptConfig(
+        nx=req.nx,
+        ny=req.ny,
+        vf_target=req.vf_target,
+        n_iter=req.n_iter,
+        re=req.re,
+        objective=req.objective,
+        r_min=req.r_min,
+        alpha_max=req.alpha_max,
+    )
+
+    result = run_topology_optimisation(cfg)
+
+    return {
+        "nx": req.nx,
+        "ny": req.ny,
+        "objective": req.objective,
+        "vf_target": req.vf_target,
+        "converged": result.converged,
+        "n_iterations": result.n_iterations,
+        "final_objective": result.final_objective,
+        "final_volume_fraction": result.final_volume_fraction,
+        "density": result.density,
+        "objective_history": result.objective_history,
+        "volume_fraction_history": result.volume_fraction_history,
+    }

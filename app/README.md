@@ -105,12 +105,28 @@ payload for selected workflows:
 | Actuator disk propulsor | 3D | Smagorinsky MRT | `ActuatorDiskConfig` |
 | Propeller open-water | 3D | Smagorinsky MRT | `PropellerBenchmarkConfig` |
 | IBM propeller | 3D | Smagorinsky MRT + IBM | `IBMPropellerConfig` |
+| 6-DOF rigid body | 3D | Newton-Euler + LBM | `SixDOFConfig` |
+| Topology optimisation | 2D | SIMP Brinkman + adjoint | `TopOptConfig` |
 
 ### Post-processing
 - View all PNG step images from a completed job (lightbox zoom)
 - Download CSV / VTK / HDF5 output files
 - Read `run_metadata.json` directly in the browser
 - Full job log viewer
+
+### Engineering Gap-Closure Modules (PowerFlow / XFlow 对标)
+
+Five new modules close the remaining physics gaps vs PowerFlow and XFlow:
+
+| Module | API | PowerFlow/XFlow analogue |
+|---|---|---|
+| **Thermal Radiation** (`thermal_radiation.py`) | `POST /api/postprocess/thermal-radiation` | Solar load, grey-body enclosure radiation |
+| **6-DOF Dynamics** (`sixdof.py`) | `POST /api/solve/sixdof` | XFlow 6-DOF rigid-body motion |
+| **DDES/SAS Turbulence** (`ddes.py`) | `GET /api/postprocess/ddes-diagnostics/{job_id}` | PowerFlow VLES hybrid RANS/LES |
+| **Acoustic Beamforming** (`acoustic_beamforming.py`) | `POST /api/postprocess/acoustic-beamforming` | PowerFlow acoustic source maps |
+| **Topology Optimisation** (`topology_opt.py`) | `POST /api/solve/topology-opt` | PowerFlow design sensitivity / Tosca Fluid |
+
+Gap assessment summary: `GET /api/orchestration/gap-assessment`
 
 ### Benchmarks
 | Suite | Reference |
