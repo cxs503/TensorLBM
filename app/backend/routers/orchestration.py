@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import contextlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from .. import job_manager
+from . import benchmarks as benchmarks_router
 from . import reports, solver
 
 router = APIRouter()
@@ -138,6 +139,31 @@ def _templates() -> list[dict[str, Any]]:
                 "hf_n_steps": 400,
             },
         },
+        {
+            "template_id": "external_aero_e2e_pilot",
+            "stage": "A",
+            "title": "External aerodynamics E2E pilot",
+            "implemented": True,
+            "solver_type": "cylinder_flow",
+            "description": (
+                "One-click pilot for external-aero optimization closure: "
+                "parametric Re sweep, KPI ranking, and acceptance-gate readiness."
+            ),
+            "default_config": {
+                "nx": 192,
+                "ny": 72,
+                "u_in": 0.08,
+                "radius": 6.0,
+                "n_steps": 1600,
+                "output_interval": 200,
+                "device": "cpu",
+                "seed": 0,
+                "re_values": [80.0, 120.0, 160.0],
+                "gate_scenario": "external_aerodynamics",
+                "objective_metric": "mean_cd_last",
+                "objective_goal": "minimize",
+            },
+        },
     ]
 
 
@@ -176,6 +202,9 @@ async def submit_experiment(req: TemplateRunRequest) -> dict[str, Any]:
 
     if req.template_id == "ship_pareto_screening":
         return await _submit_ship_pareto_screening(req, tpl, cfg)
+
+    if req.template_id == "external_aero_e2e_pilot":
+        return await _submit_external_aero_e2e_pilot(req, tpl, cfg)
 
     # ------------------------------------------------------------------
     # Generic cylinder-flow templates (cylinder_re_sweep / multi_factor_doe)
@@ -234,7 +263,7 @@ async def _submit_suboff_surrogate_cycle(
     hull_variants: list[str] = list(cfg.get("hull_variants") or ["bare_hull"])
     speed_values: list[float] = [float(v) for v in (cfg.get("speed_values_ms") or [2.5])]
 
-    study_group = f"suboff_surrogate_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    study_group = f"suboff_surrogate_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
     job_ids: list[str] = []
 
     for hull in hull_variants:
@@ -422,7 +451,7 @@ async def _submit_ship_pareto_screening(
     hull_variants: list[str] = list(cfg.get("hull_variants") or ["wigley"])
     re_values: list[float] = [float(v) for v in (cfg.get("re_values") or [200.0])]
 
-    study_group = f"ship_pareto_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    study_group = f"ship_pareto_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
     job_ids: list[str] = []
 
     base_cfg = {
@@ -575,6 +604,84 @@ async def escalate_ship_pareto_hf(study_group: str = Query(...)) -> dict[str, An
     }
 
 
+async def _submit_external_aero_e2e_pilot(
+    req: TemplateRunRequest,
+    tpl: dict[str, Any],
+    cfg: dict[str, Any],
+) -> dict[str, Any]:
+    """Submit the external-aero optimization closure pilot."""
+    re_values = [float(v) for v in (cfg.get("re_values") or [80.0, 120.0, 160.0])]
+    study_group = f"external_aero_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
+    gate_scenario = str(cfg.get("gate_scenario") or "external_aerodynamics")
+    objective = req.objective or solver.StudyObjective(
+        metric=str(cfg.get("objective_metric") or "mean_cd_last"),
+        goal=str(cfg.get("objective_goal") or "minimize"),
+    )
+
+    base_cfg = {
+        "nx": int(cfg.get("nx", 192)),
+        "ny": int(cfg.get("ny", 72)),
+        "u_in": float(cfg.get("u_in", 0.08)),
+        "radius": float(cfg.get("radius", 6.0)),
+        "n_steps": int(cfg.get("n_steps", 1600)),
+        "output_interval": int(cfg.get("output_interval", 200)),
+        "device": str(cfg.get("device", "cpu")),
+        "seed": int(cfg.get("seed", 0)),
+    }
+
+    variables = req.sweep or [SweepVariable(name="re", values=re_values)]
+    study_req = solver.ParametricStudyRequest(
+        solver_type="cylinder_flow",
+        base_config=base_cfg,
+        variables=[
+            solver.SweepVariable(name=item.name, values=item.values)
+            for item in variables
+        ],
+        objective=objective,
+        constraints=req.constraints,
+    )
+    resp = await solver.parametric_study(study_req)
+
+    for job_id in resp["job_ids"]:
+        job = job_manager.get_job(job_id)
+        if job is None:
+            continue
+        job.config["study"] = {
+            "group": study_group,
+            "template_id": req.template_id,
+            "workflow_phase": "pilot_e2e",
+            "gate_scenario": gate_scenario,
+            "variables": [
+                {"name": item.name, "values": list(item.values)}
+                for item in variables
+            ],
+            "objective": objective.model_dump(),
+            "constraints": [item.model_dump() for item in req.constraints],
+            "design_point": (job.config.get("study") or {}).get("design_point", {}),
+        }
+        if req.orchestration:
+            job.config.setdefault("orchestration", {}).update(req.orchestration)
+
+    return {
+        "template_id": req.template_id,
+        "stage": tpl.get("stage"),
+        "workflow": "external_aero_e2e_pilot",
+        "phase": "pilot",
+        "study_group": study_group,
+        "submitted": len(resp["job_ids"]),
+        "job_ids": resp["job_ids"],
+        "job_count": resp.get("job_count", len(resp["job_ids"])),
+        "design_matrix": resp.get("design_matrix", []),
+        "objective": objective.model_dump(),
+        "gate_scenario": gate_scenario,
+        "next_step": (
+            f"Poll GET /api/orchestration/studies/{study_group}/summary for ranked results, "
+            f"then evaluate acceptance with POST "
+            f"/api/benchmarks/acceptance-gates/{gate_scenario}/check-job/{{job_id}}."
+        ),
+    }
+
+
 @router.get("/kpis")
 async def orchestration_kpis() -> dict[str, Any]:
     """Return orchestration KPIs aggregated from submitted jobs."""
@@ -603,6 +710,202 @@ async def orchestration_kpis() -> dict[str, Any]:
     workers = max(1, int(kpi.get("max_workers", 1)))
     kpi["parallel_efficiency"] = min(1.0, float(kpi.get("jobs_running", 0)) / workers)
     return kpi
+
+
+@router.get("/gap-assessment")
+async def powerflow_gap_assessment() -> dict[str, Any]:
+    """Return a PowerFLOW/XFlow-oriented gap matrix with priority grading."""
+    categories = [
+        {
+            "id": "engineering_accuracy",
+            "title": "工程精度与可信度",
+            "priority": "P0",
+            "status": "partial",
+            "current_assets": [
+                "/api/benchmarks/acceptance-gates",
+                "/api/benchmarks/accuracy/baselines",
+                "/api/benchmarks/accuracy/report/{job_id}",
+            ],
+            "gaps": [
+                "缺少行业全覆盖长期回归看板",
+                "发布前版本-精度-成本三维门禁尚未统一",
+            ],
+        },
+        {
+            "id": "preprocess_automation",
+            "title": "网格/几何前处理自动化",
+            "priority": "P1",
+            "status": "partial",
+            "current_assets": [
+                "/api/preprocess/preflight",
+                "/api/cad/3d/models/*",
+            ],
+            "gaps": [
+                "自动网格质量评估深度不足",
+                "局部加密与一键修复建议缺少统一决策逻辑",
+            ],
+        },
+        {
+            "id": "multiphysics_depth",
+            "title": "多物理场耦合深度",
+            "priority": "P1",
+            "status": "partial",
+            "current_assets": [
+                "/api/postprocess/fsi",
+                "/api/postprocess/particles/track",
+                "/api/solve/conjugate-ht",
+            ],
+            "gaps": [
+                "跨场耦合一致性校验仍需增强",
+            ],
+        },
+        {
+            "id": "hpc_scheduling",
+            "title": "高性能计算与调度",
+            "priority": "P1",
+            "status": "partial",
+            "current_assets": [
+                "/api/orchestration/kpis",
+                "/api/jobs/{id}/hpc-status",
+                "/api/jobs/{id}/retry",
+            ],
+            "gaps": [
+                "多节点队列策略和成本优化策略可视化不足",
+            ],
+        },
+        {
+            "id": "report_automation",
+            "title": "结果分析与报告自动化",
+            "priority": "P1",
+            "status": "partial",
+            "current_assets": [
+                "/api/reports/{job_id}",
+                "/api/reports/compare/kpis",
+            ],
+            "gaps": [
+                "标准化报告模板与异常解释链路仍需扩展",
+            ],
+        },
+        {
+            "id": "optimization_closure",
+            "title": "设计优化与智能化工作流",
+            "priority": "P0",
+            "status": "partial",
+            "current_assets": [
+                "/api/solve/parametric-study",
+                "/api/orchestration/experiments/submit",
+                "/api/orchestration/studies/{study_group}/summary",
+            ],
+            "gaps": [
+                "代理模型-高保真回填-收敛判停仍需更强闭环自动化",
+            ],
+        },
+        {
+            "id": "platform_operations",
+            "title": "平台工程化与可运维性",
+            "priority": "P2",
+            "status": "partial",
+            "current_assets": [
+                "/api/notifications",
+                "/api/jobs/cleanup",
+            ],
+            "gaps": [
+                "生产级权限/审计/SLA体系仍需完善",
+            ],
+        },
+        {
+            "id": "ux_templates",
+            "title": "用户体验与行业模板",
+            "priority": "P1",
+            "status": "partial",
+            "current_assets": [
+                "/api/templates",
+                "/api/orchestration/templates",
+            ],
+            "gaps": [
+                "向导式行业模板的一键闭环体验可继续增强",
+            ],
+        },
+    ]
+
+    return {
+        "benchmarked_against": ["PowerFLOW", "XFlow"],
+        "count": len(categories),
+        "categories": categories,
+        "immediate_actions": [
+            "制定 PowerFLOW/XFlow 对标功能清单并分级 P0/P1/P2",
+            "建立工程验收门禁与自动回归看板",
+            "推进外流场高价值场景端到端优化闭环试点",
+        ],
+    }
+
+
+@router.get("/regression-dashboard")
+async def engineering_regression_dashboard() -> dict[str, Any]:
+    """Return a compact version-accuracy-cost dashboard payload."""
+    rows = job_manager.list_jobs()
+    completed_jobs = [
+        job_manager.get_job(str(row["job_id"]))
+        for row in rows
+        if row.get("status") == "completed"
+    ]
+    completed_jobs = [job for job in completed_jobs if job is not None]
+
+    runtimes = [
+        float(job.run_duration_seconds)
+        for job in completed_jobs
+        if isinstance(job.run_duration_seconds, (int, float))
+    ]
+    by_type: dict[str, int] = {}
+    gate_rollup: dict[str, dict[str, float | int | None]] = {}
+    for job in completed_jobs:
+        by_type[job.job_type] = by_type.get(job.job_type, 0) + 1
+        study = job.config.get("study", {}) if isinstance(job.config, dict) else {}
+        scenario = str(study.get("gate_scenario") or "")
+        if scenario in benchmarks_router._ENGINEERING_ACCEPTANCE_GATES:
+            with contextlib.suppress(HTTPException):
+                result = benchmarks_router._check_acceptance_gate(
+                    scenario,
+                    job.result if isinstance(job.result, dict) else {},
+                )
+                row = gate_rollup.setdefault(
+                    scenario,
+                    {"evaluated": 0, "passed": 0, "failed": 0, "pass_rate": None},
+                )
+                row["evaluated"] = int(row["evaluated"]) + 1
+                if result.get("passed"):
+                    row["passed"] = int(row["passed"]) + 1
+                else:
+                    row["failed"] = int(row["failed"]) + 1
+
+    for row in gate_rollup.values():
+        evaluated = int(row["evaluated"])
+        row["pass_rate"] = (float(row["passed"]) / evaluated) if evaluated > 0 else None
+
+    return {
+        "axis": ["version", "accuracy", "cost"],
+        "generated_at": datetime.now(UTC).isoformat(),
+        "version": {
+            "platform": "TensorLBM",
+            "jobs_total": len(rows),
+            "jobs_completed": len(completed_jobs),
+            "job_types": by_type,
+        },
+        "accuracy": {
+            "accuracy_baseline_profiles": sorted(
+                benchmarks_router._ACCURACY_BASELINE_LIBRARY.keys(),
+            ),
+            "acceptance_gate_scenarios": sorted(
+                benchmarks_router._ENGINEERING_ACCEPTANCE_GATES.keys(),
+            ),
+            "gate_rollup": gate_rollup,
+        },
+        "cost": {
+            "avg_runtime_seconds": (sum(runtimes) / len(runtimes)) if runtimes else None,
+            "max_runtime_seconds": max(runtimes) if runtimes else None,
+            "orchestration_kpis": await orchestration_kpis(),
+        },
+    }
 
 
 def _constraint_passes(metrics: dict[str, Any], constraint: dict[str, Any]) -> bool:

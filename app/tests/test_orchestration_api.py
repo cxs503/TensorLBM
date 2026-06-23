@@ -15,6 +15,7 @@ def test_orchestration_templates(client: TestClient) -> None:
     assert data["count"] >= 3
     ids = {t["template_id"] for t in data["templates"]}
     assert "cylinder_re_sweep" in ids
+    assert "external_aero_e2e_pilot" in ids
 
 
 def test_orchestration_submit_cylinder_template(
@@ -122,6 +123,72 @@ def test_orchestration_study_summary(client: TestClient, job_manager, waiter) ->
     assert data["eligible_jobs"] == 2
     assert data["best_job"]["job_id"] == job2
     assert data["best_job"]["design_point"]["re"] == 100.0
+
+
+def test_orchestration_submit_external_aero_pilot(
+    client: TestClient,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    from backend.routers import solver
+
+    async def _fake_parametric_study(_req: object) -> dict[str, object]:
+        return {
+            "study_group": "fake-group",
+            "job_count": 2,
+            "job_ids": ["pilot-job-1", "pilot-job-2"],
+            "design_matrix": [{"re": 80.0}, {"re": 120.0}],
+        }
+
+    monkeypatch.setattr(solver, "parametric_study", _fake_parametric_study)
+
+    r = client.post(
+        "/api/orchestration/experiments/submit",
+        json={"template_id": "external_aero_e2e_pilot"},
+    )
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["template_id"] == "external_aero_e2e_pilot"
+    assert data["submitted"] == 2
+    assert data["gate_scenario"] == "external_aerodynamics"
+    assert data["workflow"] == "external_aero_e2e_pilot"
+    assert "next_step" in data
+
+
+def test_orchestration_gap_assessment(client: TestClient) -> None:
+    r = client.get("/api/orchestration/gap-assessment")
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["benchmarked_against"] == ["PowerFLOW", "XFlow"]
+    assert data["count"] >= 8
+    assert len(data["immediate_actions"]) == 3
+    assert any(row["priority"] == "P0" for row in data["categories"])
+
+
+def test_orchestration_regression_dashboard(client: TestClient, job_manager, waiter) -> None:
+    def _runner(_job: object) -> dict[str, float]:
+        return {
+            "cd_error_max": 2.0,
+            "cl_error_max": 1.0,
+            "yplus_max": 80.0,
+            "convergence_max": 5e-5,
+        }
+
+    job_id = job_manager.submit(
+        name="external-aero-gate-case",
+        job_type="cylinder_flow",
+        config={"study": {"gate_scenario": "external_aerodynamics"}},
+        fn=_runner,
+    )
+    waiter(job_id, timeout=10.0)
+
+    r = client.get("/api/orchestration/regression-dashboard")
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["axis"] == ["version", "accuracy", "cost"]
+    assert "external_aerodynamics" in data["accuracy"]["gate_rollup"]
+    rollup = data["accuracy"]["gate_rollup"]["external_aerodynamics"]
+    assert rollup["evaluated"] >= 1
+    assert rollup["pass_rate"] is not None
 
 
 def test_ai_confidence_gate(client: TestClient) -> None:
