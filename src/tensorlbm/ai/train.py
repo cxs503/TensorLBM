@@ -22,7 +22,7 @@ import numpy as np
 import torch
 from torch import nn, optim
 
-from ..backends import get_backend, get_ops
+from ..backends import get_backend, get_ops, using_backend
 from .dataset import EddyViscosityDataset, load_dataset_pt
 from .model import EddyViscosityMLP, ModelArch, save_model
 
@@ -331,122 +331,122 @@ def train_eddy_viscosity_model(
     targets_np  = _to_numpy(dataset.targets)
     out_path = Path(out_path)
 
-    # ------------------------------------------------------------------
-    # PyTorch path: keep existing behaviour exactly (uses .pt format)
-    # ------------------------------------------------------------------
-    if backend_name == "torch":
-        device = torch.device(cfg.device)
-        train_ds, val_ds = dataset.split(cfg.val_fraction, seed=cfg.seed)
-        x_train = train_ds.features.to(device)
-        y_train = train_ds.targets.to(device)
-        x_val   = val_ds.features.to(device)
-        y_val   = val_ds.targets.to(device)
+    with using_backend(backend_name):
+        # ------------------------------------------------------------------
+        # PyTorch path: keep existing behaviour exactly (uses .pt format)
+        # ------------------------------------------------------------------
+        if backend_name == "torch":
+            device = torch.device(cfg.device)
+            train_ds, val_ds = dataset.split(cfg.val_fraction, seed=cfg.seed)
+            x_train = train_ds.features.to(device)
+            y_train = train_ds.targets.to(device)
+            x_val   = val_ds.features.to(device)
+            y_val   = val_ds.targets.to(device)
 
-        torch.manual_seed(int(cfg.seed))
-        arch = ModelArch(
-            in_features=int(x_train.shape[-1]),
-            hidden_features=int(cfg.hidden_features),
-            n_hidden_layers=int(cfg.n_hidden_layers),
-            activation=str(cfg.activation),
-        )
-        model = EddyViscosityMLP(arch).to(device)
-        feature_mean = x_train.mean(dim=0)
-        feature_std  = x_train.std(dim=0, unbiased=False).clamp_min(1e-6)
-        model.set_feature_stats(feature_mean, feature_std)
-        optimizer = optim.Adam(model.parameters(), lr=float(cfg.learning_rate))
-        loss_fn   = nn.MSELoss()
-        scheduler = _build_scheduler(optimizer, int(cfg.epochs), str(cfg.lr_scheduler))
+            torch.manual_seed(int(cfg.seed))
+            arch = ModelArch(
+                in_features=int(x_train.shape[-1]),
+                hidden_features=int(cfg.hidden_features),
+                n_hidden_layers=int(cfg.n_hidden_layers),
+                activation=str(cfg.activation),
+            )
+            model = EddyViscosityMLP(arch).to(device)
+            feature_mean = x_train.mean(dim=0)
+            feature_std  = x_train.std(dim=0, unbiased=False).clamp_min(1e-6)
+            model.set_feature_stats(feature_mean, feature_std)
+            optimizer = optim.Adam(model.parameters(), lr=float(cfg.learning_rate))
+            loss_fn   = nn.MSELoss()
+            scheduler = _build_scheduler(optimizer, int(cfg.epochs), str(cfg.lr_scheduler))
 
-        generator = torch.Generator(device="cpu").manual_seed(int(cfg.seed))
-        history: list[dict[str, float]] = []
-        n_train    = x_train.shape[0]
-        batch_size = max(1, min(int(cfg.batch_size), n_train))
-        best_state = copy.deepcopy(model.state_dict())
-        best_epoch = 0
-        best_val_mse = float("inf")
-        epochs_without_improve = 0
-        t0 = time.perf_counter()
+            generator = torch.Generator(device="cpu").manual_seed(int(cfg.seed))
+            history: list[dict[str, float]] = []
+            n_train    = x_train.shape[0]
+            batch_size = max(1, min(int(cfg.batch_size), n_train))
+            best_state = copy.deepcopy(model.state_dict())
+            best_epoch = 0
+            best_val_mse = float("inf")
+            epochs_without_improve = 0
+            t0 = time.perf_counter()
 
-        for epoch in range(int(cfg.epochs)):
-            model.train()
-            epoch_loss = 0.0
-            epoch_abs_error = 0.0
-            n_samples = 0
-            for idx in _iter_minibatches(n_train, batch_size, generator):
-                xb = x_train.index_select(0, idx)
-                yb = y_train.index_select(0, idx)
-                optimizer.zero_grad()
-                pred = model(xb)
-                loss = loss_fn(pred, yb)
-                loss.backward()
-                if cfg.gradient_clip_norm is not None:
-                    torch.nn.utils.clip_grad_norm_(
-                        model.parameters(), max_norm=float(cfg.gradient_clip_norm),
-                    )
-                optimizer.step()
-                epoch_loss += float(loss.detach()) * xb.shape[0]
-                epoch_abs_error += float(torch.abs(pred.detach() - yb).sum())
-                n_samples += xb.shape[0]
-            train_mse = epoch_loss / max(1, n_samples)
-            train_mae = epoch_abs_error / max(1, n_samples)
+            for epoch in range(int(cfg.epochs)):
+                model.train()
+                epoch_loss = 0.0
+                epoch_abs_error = 0.0
+                n_samples = 0
+                for idx in _iter_minibatches(n_train, batch_size, generator):
+                    xb = x_train.index_select(0, idx)
+                    yb = y_train.index_select(0, idx)
+                    optimizer.zero_grad()
+                    pred = model(xb)
+                    loss = loss_fn(pred, yb)
+                    loss.backward()
+                    if cfg.gradient_clip_norm is not None:
+                        torch.nn.utils.clip_grad_norm_(
+                            model.parameters(), max_norm=float(cfg.gradient_clip_norm),
+                        )
+                    optimizer.step()
+                    epoch_loss += float(loss.detach()) * xb.shape[0]
+                    epoch_abs_error += float(torch.abs(pred.detach() - yb).sum())
+                    n_samples += xb.shape[0]
+                train_mse = epoch_loss / max(1, n_samples)
+                train_mae = epoch_abs_error / max(1, n_samples)
 
-            model.eval()
-            with torch.no_grad():
-                val_pred = model(x_val)
-                val_mse = float(loss_fn(val_pred, y_val).detach())
-                val_mae = float(torch.mean(torch.abs(val_pred - y_val)).detach())
-                val_r2  = _r2_score(val_pred, y_val)
-            current_lr = float(optimizer.param_groups[0]["lr"])
-            met = {
-                "epoch": int(epoch),
-                "train_mse": float(train_mse),
-                "train_mae": float(train_mae),
-                "val_mse": float(val_mse),
-                "val_mae": float(val_mae),
-                "val_r2": float(val_r2),
-                "lr": float(current_lr),
+                model.eval()
+                with torch.no_grad():
+                    val_pred = model(x_val)
+                    val_mse = float(loss_fn(val_pred, y_val).detach())
+                    val_mae = float(torch.mean(torch.abs(val_pred - y_val)).detach())
+                    val_r2  = _r2_score(val_pred, y_val)
+                current_lr = float(optimizer.param_groups[0]["lr"])
+                met = {
+                    "epoch": int(epoch),
+                    "train_mse": float(train_mse),
+                    "train_mae": float(train_mae),
+                    "val_mse": float(val_mse),
+                    "val_mae": float(val_mae),
+                    "val_r2": float(val_r2),
+                    "lr": float(current_lr),
+                }
+                history.append(met)
+                if val_mse < (best_val_mse - 1e-12):
+                    best_val_mse = val_mse
+                    best_epoch = int(epoch)
+                    best_state = copy.deepcopy(model.state_dict())
+                    epochs_without_improve = 0
+                else:
+                    epochs_without_improve += 1
+                if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                    scheduler.step(val_mse)
+                elif scheduler is not None:
+                    scheduler.step()
+                if cfg.patience is not None and epochs_without_improve > int(cfg.patience):
+                    break
+
+            model.load_state_dict(best_state)
+            out_path = Path(out_path)
+            save_model(model, out_path)
+
+            elapsed = time.perf_counter() - t0
+            final = history[best_epoch] if history else {"train_mse": float("nan")}
+            return {
+                "path": str(out_path),
+                "arch": asdict(arch),
+                "config": asdict(cfg),
+                "backend": "torch",
+                "n_samples_train": int(n_train),
+                "n_samples_val": int(x_val.shape[0]),
+                "history": history,
+                "final_train_mse": float(final.get("train_mse", float("nan"))),
+                "final_train_mae": float(final.get("train_mae", float("nan"))),
+                "final_val_mse": float(final.get("val_mse", float("nan"))),
+                "final_val_mae": float(final.get("val_mae", float("nan"))),
+                "final_val_r2": float(final.get("val_r2", float("nan"))),
+                "best_epoch": int(best_epoch),
+                "stopped_early": bool(len(history) < int(cfg.epochs)),
+                "training_time_s": float(elapsed),
             }
-            history.append(met)
-            if val_mse < (best_val_mse - 1e-12):
-                best_val_mse = val_mse
-                best_epoch = int(epoch)
-                best_state = copy.deepcopy(model.state_dict())
-                epochs_without_improve = 0
-            else:
-                epochs_without_improve += 1
-            if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
-                scheduler.step(val_mse)
-            elif scheduler is not None:
-                scheduler.step()
-            if cfg.patience is not None and epochs_without_improve > int(cfg.patience):
-                break
 
-        model.load_state_dict(best_state)
-        out_path = Path(out_path)
-        save_model(model, out_path)
-
-        elapsed = time.perf_counter() - t0
-        final = history[best_epoch] if history else {"train_mse": float("nan")}
-        return {
-            "path": str(out_path),
-            "arch": asdict(arch),
-            "config": asdict(cfg),
-            "backend": "torch",
-            "n_samples_train": int(n_train),
-            "n_samples_val": int(x_val.shape[0]),
-            "history": history,
-            "final_train_mse": float(final.get("train_mse", float("nan"))),
-            "final_train_mae": float(final.get("train_mae", float("nan"))),
-            "final_val_mse": float(final.get("val_mse", float("nan"))),
-            "final_val_mae": float(final.get("val_mae", float("nan"))),
-            "final_val_r2": float(final.get("val_r2", float("nan"))),
-            "best_epoch": int(best_epoch),
-            "stopped_early": bool(len(history) < int(cfg.epochs)),
-            "training_time_s": float(elapsed),
-        }
-
-    # ------------------------------------------------------------------
-    # PaddlePaddle / MindSpore path
-    # ------------------------------------------------------------------
-    return _train_with_backend(features_np, targets_np, out_path, cfg, backend_name)
-
+        # ------------------------------------------------------------------
+        # PaddlePaddle / MindSpore path
+        # ------------------------------------------------------------------
+        return _train_with_backend(features_np, targets_np, out_path, cfg, backend_name)

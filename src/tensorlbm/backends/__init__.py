@@ -33,6 +33,7 @@ to all three.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 import os
 from typing import Literal, Any
 
@@ -97,9 +98,23 @@ def get_ops():
     return _mod
 
 
+@contextmanager
+def using_backend(name: str | None):
+    """Temporarily switch the active backend within a context."""
+    previous = get_backend()
+    if name is not None:
+        set_backend(name)
+    try:
+        yield get_ops()
+    finally:
+        if get_backend() != previous:
+            set_backend(previous)
+
+
 __all__ = [
     "BackendName",
     "get_backend",
     "set_backend",
     "get_ops",
+    "using_backend",
 ]
