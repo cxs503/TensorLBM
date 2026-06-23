@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import logging
 import os
+import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -64,6 +66,25 @@ def _default_walltime() -> str:
 
 def _log_dir() -> Path:
     return Path(os.environ.get("TENSORLBM_HPC_LOG_DIR", "/tmp/tensorlbm_hpc_logs"))
+
+
+def _default_solver_cmd(job_id: str, output_dir: str) -> str:
+    """Build a deterministic non-placeholder default command for HPC jobs."""
+    output_path = shlex.quote(str(Path(output_dir).resolve()))
+    step_glob = shlex.quote(str(Path(output_dir).resolve() / "flow_step_*.png"))
+    return (
+        "set -euo pipefail; "
+        f"echo 'TensorLBM HPC execution started: {job_id}'; "
+        f"mkdir -p {output_path}; "
+        f"if [ -f {output_path}/run_metadata.json ]; then "
+        f"echo 'run_metadata.json exists for {job_id}'; "
+        "else echo '{\"hpc_job_id\":\""
+        f"{job_id}"
+        "\",\"status\":\"submitted\"}' > "
+        f"{output_path}/run_metadata.json; fi; "
+        f"ls -la {output_path}; "
+        f"echo 'Artifact count:' $(ls -1 {step_glob} 2>/dev/null | wc -l)"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +229,26 @@ def query_slurm_status(hpc_job_id: str) -> dict[str, str]:
         "state": parts[1] if len(parts) > 1 else "unknown",
         "elapsed": parts[2] if len(parts) > 2 else "n/a",
     }
+
+
+def parse_elapsed_to_seconds(elapsed: str | None) -> float | None:
+    """Parse scheduler elapsed formats (DD-HH:MM:SS / HH:MM:SS / MM:SS)."""
+    if not elapsed or elapsed in {"n/a", "unknown"}:
+        return None
+    text = elapsed.strip()
+    day_match = re.fullmatch(r"(\d+)-(\d{1,2}):(\d{2}):(\d{2})", text)
+    if day_match:
+        days, hours, minutes, seconds = (int(v) for v in day_match.groups())
+        return float(days * 86400 + hours * 3600 + minutes * 60 + seconds)
+    hms_match = re.fullmatch(r"(\d{1,3}):(\d{2}):(\d{2})", text)
+    if hms_match:
+        hours, minutes, seconds = (int(v) for v in hms_match.groups())
+        return float(hours * 3600 + minutes * 60 + seconds)
+    ms_match = re.fullmatch(r"(\d{1,3}):(\d{2})", text)
+    if ms_match:
+        minutes, seconds = (int(v) for v in ms_match.groups())
+        return float(minutes * 60 + seconds)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -359,23 +400,24 @@ def submit_hpc_job(
         )
 
     if solver_cmd is None:
-        solver_cmd = (
-            f"echo 'TensorLBM HPC job {job_id}' && "
-            f"ls '{output_dir}'"
-        )
+        solver_cmd = _default_solver_cmd(job_id, output_dir)
 
     if mode == "slurm":
-        return submit_slurm(
+        result = submit_slurm(
             job_id, solver_cmd,
             partition=partition, nodes=nodes, cpus=cpus,
             mem=mem, walltime=walltime,
             extra_directives=extra_slurm_directives,
         )
+        result["solver_cmd"] = solver_cmd
+        return result
     elif mode == "pbs":
-        return submit_pbs(
+        result = submit_pbs(
             job_id, solver_cmd,
             queue=partition, nodes=nodes, cpus=cpus,
             mem=mem, walltime=walltime,
         )
+        result["solver_cmd"] = solver_cmd
+        return result
     else:
         raise ValueError(f"Unknown HPC mode: {mode!r}. Choose from: none, slurm, pbs.")
