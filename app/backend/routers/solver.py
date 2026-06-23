@@ -1657,3 +1657,198 @@ async def start_oscillating_airfoil(params: OscillatingAirfoilParams) -> dict:
         fn=_run,
     )
     return {"job_id": job_id, "message": "Oscillating airfoil job submitted"}
+
+
+# ---------------------------------------------------------------------------
+# Design of Experiments (DoE) sweep
+# ---------------------------------------------------------------------------
+
+_DOE_MAX_RUNS = 200
+
+
+class DoEVariableRequest(BaseModel):
+    """A single DoE variable definition."""
+
+    name: str = Field(..., min_length=1, description="Solver config key to vary.")
+    low: float = Field(..., description="Lower bound of the variable range.")
+    high: float = Field(..., description="Upper bound of the variable range.")
+    levels: list[float] | None = Field(
+        default=None,
+        description="Optional discrete levels (overrides low/high).",
+    )
+
+
+class DoERequest(BaseModel):
+    """Submit a Design of Experiments (DoE) parameter sweep.
+
+    Generates a structured or space-filling sample plan over the supplied
+    variable ranges, then submits one solver job per design point.  Matches
+    the DoE/RSM study capability in PowerFlow and XFlow.
+
+    Parameters
+    ----------
+    solver_type:
+        One of the supported solver keys (e.g. ``cylinder_flow``).
+    base_config:
+        Fixed solver configuration (fields not varied in the DoE).
+    variables:
+        Variable definitions – each specifies a parameter name and its
+        continuous [low, high] range or discrete *levels*.
+    method:
+        Sampling strategy: ``"latin_hypercube"`` (default), ``"sobol"``,
+        ``"full_factorial"``, or ``"central_composite"``.
+    n_samples:
+        Number of design points (ignored for factorial/CCD methods).
+    seed:
+        Random seed for reproducibility of LHS and Sobol plans.
+    face_centred:
+        CCD option – use face-centred (alpha=1) design instead of
+        circumscribed.
+    n_centre:
+        Number of centre-point replicates for CCD.
+    """
+
+    solver_type: str = Field(..., description="Solver type key.")
+    base_config: dict[str, Any] = Field(..., description="Fixed base configuration.")
+    variables: list[DoEVariableRequest] = Field(
+        ...,
+        min_length=1,
+        description="Variable definitions.",
+    )
+    method: str = Field(
+        default="latin_hypercube",
+        pattern="^(latin_hypercube|sobol|full_factorial|central_composite)$",
+    )
+    n_samples: int = Field(
+        default=10,
+        ge=2,
+        le=_DOE_MAX_RUNS,
+        description="Number of design points for LHS/Sobol.",
+    )
+    seed: int = Field(default=0, description="Random seed.")
+    face_centred: bool = Field(
+        default=False,
+        description="CCD: face-centred vs circumscribed.",
+    )
+    n_centre: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+        description="CCD: number of centre replicates.",
+    )
+
+
+@router.post("/doe")
+async def design_of_experiments(req: DoERequest) -> dict:
+    """Submit a Design of Experiments parameter sweep.
+
+    Generates a DoE sample plan (LHS, Sobol, full factorial, or CCD) over
+    the specified variable ranges, then submits one job per design point.
+    All jobs share a common ``doe_group`` tag for later aggregation and
+    response-surface modelling.
+
+    This mirrors the DoE / parameter study capability in PowerFlow and XFlow,
+    providing structured exploration of the simulation design space without
+    manual enumeration of parameter combinations.
+    """
+    if req.solver_type not in _SOLVER_MAP:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Unknown solver_type '{req.solver_type}'. "
+                f"Supported: {sorted(_SOLVER_MAP)}"
+            ),
+        )
+
+    from tensorlbm.doe import DoEVariable, generate_doe  # noqa: PLC0415
+
+    doe_variables = [
+        DoEVariable(
+            name=v.name,
+            low=v.low,
+            high=v.high,
+            levels=v.levels,
+        )
+        for v in req.variables
+    ]
+
+    try:
+        plan = generate_doe(
+            doe_variables,
+            method=req.method,  # type: ignore[arg-type]
+            n_samples=req.n_samples,
+            seed=req.seed,
+            face_centred=req.face_centred,
+            n_centre=req.n_centre,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    if plan.n_runs > _DOE_MAX_RUNS:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"DoE expands to {plan.n_runs} runs which exceeds the limit "
+                f"of {_DOE_MAX_RUNS}."
+            ),
+        )
+
+    cfg_cls_name, runner_name = _SOLVER_MAP[req.solver_type]
+    doe_group = uuid4().hex[:12]
+    job_ids: list[str] = []
+
+    for run_idx, design_point in enumerate(plan.design_matrix, start=1):
+        job_cfg = dict(req.base_config)
+        job_cfg.update(design_point)
+        doe_meta = {
+            "group": doe_group,
+            "method": req.method,
+            "index": run_idx,
+            "total": plan.n_runs,
+            "variables": [{"name": v.name, "low": v.low, "high": v.high} for v in doe_variables],
+            "design_point": design_point,
+        }
+        submit_cfg = dict(job_cfg)
+        submit_cfg["doe"] = doe_meta
+
+        _run_cfg = dict(job_cfg)
+        _cfg_cls_name = cfg_cls_name
+        _runner_name = runner_name
+
+        def _run(
+            job: job_manager.Job,
+            rc: dict[str, Any] = _run_cfg,
+            cn: str = _cfg_cls_name,
+            rn: str = _runner_name,
+        ) -> dict:
+            import tensorlbm as _tlbm  # noqa: PLC0415
+
+            cfg_cls = getattr(_tlbm, cn)
+            runner = getattr(_tlbm, rn)
+            cfg = cfg_cls(**overwrite_output_root(rc, job))
+            result = runner(cfg)
+            return _normalize_solver_result(result, job)
+
+        point_label = ", ".join(f"{k}={v:.3g}" for k, v in design_point.items())
+        job_id = job_manager.submit(
+            name=(
+                f"{req.solver_type} DoE [{run_idx}/{plan.n_runs}] {point_label}"
+            ),
+            job_type=req.solver_type,
+            config=submit_cfg,
+            fn=_run,
+        )
+        job_ids.append(job_id)
+
+    return {
+        "doe_group": doe_group,
+        "method": req.method,
+        "n_runs": plan.n_runs,
+        "solver_type": req.solver_type,
+        "job_ids": job_ids,
+        "design_matrix": plan.design_matrix,
+        "variables": [
+            {"name": v.name, "low": v.low, "high": v.high}
+            for v in doe_variables
+        ],
+    }

@@ -307,7 +307,18 @@
     "preflight_title": "Pre-flight Checks",
     "preflight_mem": "Est. memory",
     "preflight_steps": "Suggested n_steps",
-    "preflight_recs": "Recommendations"
+    "preflight_recs": "Recommendations",
+    "doe_title": "Design of Experiments (DoE)",
+    "doe_method": "Sampling method",
+    "doe_method_lhs": "Latin Hypercube Sampling",
+    "doe_method_sobol": "Sobol Sequence",
+    "doe_method_ff": "Full Factorial",
+    "doe_method_ccd": "Central Composite Design",
+    "doe_n_samples": "Number of samples",
+    "doe_variables": "Variables (JSON array)",
+    "doe_submit": "Submit DoE Study",
+    "doe_hint": "Generates a space-filling plan and submits one job per design point.",
+    "doe_submitting": "Submitting {n} DoE runs…"
   },
   "sim": {
     "cylinder_flow": {
@@ -495,7 +506,24 @@
     "abcompare_job_b": "Job B",
     "abcompare_run": "Compare",
     "abcompare_select_both": "Please select both Job A and Job B.",
-    "abcompare_no_image": "No image"
+    "abcompare_no_image": "No image",
+    "probe_spectrum_title": "Spectral Analysis (FFT)",
+    "probe_spectrum_signal": "Signal (comma-separated values)",
+    "probe_spectrum_dt": "Time step Δt",
+    "probe_spectrum_run": "Compute Spectrum",
+    "probe_spectrum_peaks": "Dominant Peaks",
+    "probe_spectrum_strouhal": "Strouhal Number",
+    "pod_title": "POD Modal Decomposition",
+    "pod_field": "Field",
+    "pod_n_modes": "Modes to retain",
+    "pod_run": "Compute POD",
+    "pod_energy": "Cumulative energy",
+    "isosurface_title": "Iso-Surface / Iso-Contour",
+    "isosurface_field": "Scalar field",
+    "isosurface_value": "Iso-value",
+    "isosurface_extract": "Extract",
+    "isosurface_segments": "Segments",
+    "isosurface_triangles": "Triangles"
   },
   "settings": {
     "title": "Settings",

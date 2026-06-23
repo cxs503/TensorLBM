@@ -2471,3 +2471,395 @@ async def multi_case_chart(req: MultiCaseChartRequest) -> StreamingResponse:
         media_type="image/png",
         headers={"Content-Disposition": "inline; filename=multi_case_chart.png"},
     )
+
+
+# ---------------------------------------------------------------------------
+# Spectral analysis of probe signals
+# ---------------------------------------------------------------------------
+
+class ProbeSpectrumRequest(BaseModel):
+    """Request body for probe-signal spectral analysis."""
+
+    job_id: str | None = Field(
+        default=None,
+        description="Completed job to load probe history from. "
+                    "If omitted, *signal* must be provided.",
+    )
+    signal: list[float] | None = Field(
+        default=None,
+        description="Explicit time-series values (e.g. Cd, pressure). "
+                    "Used when job_id is not provided.",
+    )
+    dt: float = Field(
+        default=1.0,
+        gt=0.0,
+        description="Time step between samples (LBM or physical units).",
+    )
+    column: str = Field(
+        default="cd",
+        description="Column name to read from probe CSV (e.g. 'cd', 'pressure').",
+    )
+    n_segment: int | None = Field(
+        default=None,
+        gt=0,
+        description="Welch segment length (defaults to N/4 rounded to power of 2).",
+    )
+    overlap: float = Field(
+        default=0.5,
+        ge=0.0,
+        lt=1.0,
+        description="Fractional segment overlap for Welch averaging.",
+    )
+    n_peaks: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Number of dominant spectral peaks to return.",
+    )
+    diameter: float | None = Field(
+        default=None,
+        gt=0.0,
+        description="Characteristic length D for Strouhal number St = f·D/U.",
+    )
+    u_ref: float | None = Field(
+        default=None,
+        gt=0.0,
+        description="Reference velocity U for Strouhal number.",
+    )
+
+
+@router.post("/probe-spectrum")
+async def probe_spectrum(req: ProbeSpectrumRequest) -> dict:
+    """Compute the power spectral density of a probe time-history signal.
+
+    Applies Welch's averaged-periodogram method with Hanning windowing to
+    return the one-sided PSD, dominant frequency peaks, and (optionally)
+    the Strouhal number — matching the spectral post-processing capability
+    of PowerFlow and XFlow.
+
+    Either *job_id* (loads the first ``forces.csv`` or ``convergence.csv``
+    from the job output directory) or an explicit *signal* list must be
+    supplied.
+    """
+    import csv as _csv  # noqa: PLC0415
+
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.probe_spectrum import compute_probe_spectrum  # noqa: PLC0415
+
+    signal: list[float] | None = req.signal
+
+    if signal is None:
+        if req.job_id is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Provide either job_id or signal.",
+            )
+        job = job_manager.get_job(req.job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        # Search for CSV files containing the requested column
+        csv_files = list(job.output_dir.rglob("forces*.csv"))
+        csv_files += list(job.output_dir.rglob("convergence*.csv"))
+        csv_files += list(job.output_dir.rglob("probe*.csv"))
+
+        for csv_path in csv_files:
+            try:
+                with csv_path.open(newline="", encoding="utf-8") as fh:
+                    reader = _csv.DictReader(fh)
+                    rows = list(reader)
+                if rows and req.column in rows[0]:
+                    signal = [float(r[req.column]) for r in rows if r[req.column]]
+                    break
+            except Exception:
+                continue
+
+        if not signal:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No probe data with column '{req.column}' found for job.",
+            )
+
+    if len(signal) < 4:
+        raise HTTPException(
+            status_code=422,
+            detail="Signal must contain at least 4 samples.",
+        )
+
+    result = compute_probe_spectrum(
+        signal,
+        dt=req.dt,
+        n_segment=req.n_segment,
+        overlap=req.overlap,
+        n_peaks=req.n_peaks,
+        diameter=req.diameter,
+        u_ref=req.u_ref,
+    )
+
+    return {
+        "frequencies": result.frequencies,
+        "psd": result.psd,
+        "peak_frequencies": result.peak_frequencies,
+        "peak_psd": result.peak_psd,
+        "f_nyquist": result.f_nyquist,
+        "n_samples": result.n_samples,
+        "dt": result.dt,
+        "signal_rms": result.signal_rms,
+        "strouhal": result.strouhal,
+    }
+
+
+# ---------------------------------------------------------------------------
+# POD modal decomposition
+# ---------------------------------------------------------------------------
+
+class PODRequest(BaseModel):
+    """Request body for POD decomposition."""
+
+    job_id: str | None = Field(
+        default=None,
+        description="Completed job to load snapshots from.",
+    )
+    snapshots: list[list[list[float]]] | None = Field(
+        default=None,
+        description="Explicit snapshot list: list of 2-D fields, each [[...], ...].",
+    )
+    n_modes: int = Field(
+        default=10,
+        ge=1,
+        le=50,
+        description="Number of POD modes to retain.",
+    )
+    field_name: str = Field(
+        default="ux",
+        description="Velocity/scalar field to decompose ('ux', 'uy', 'rho').",
+    )
+    return_coefficients: bool = Field(
+        default=True,
+        description="Whether to compute and return temporal coefficients.",
+    )
+
+
+@router.post("/pod")
+async def pod_decomposition(req: PODRequest) -> dict:
+    """Perform Proper Orthogonal Decomposition (POD) on simulation snapshots.
+
+    Uses the method of snapshots (Sirovich, 1987) via SVD to extract
+    the dominant coherent flow structures.  Returns singular values, energy
+    fractions, mode shapes, and temporal coefficients — equivalent to the
+    POD/spectral post-processing available in PowerFlow/XFlow.
+
+    Either *job_id* (loads velocity snapshots from checkpoint files) or
+    an explicit *snapshots* list must be provided.
+    """
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.pod import compute_pod  # noqa: PLC0415
+
+    snap_tensors: list[Any] = []
+
+    if req.snapshots is not None:
+        if len(req.snapshots) < 2:
+            raise HTTPException(
+                status_code=422,
+                detail="At least 2 snapshots are required for POD.",
+            )
+        snap_tensors = [
+            torch.tensor(s, dtype=torch.float32)
+            for s in req.snapshots
+        ]
+    elif req.job_id is not None:
+        job = job_manager.get_job(req.job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        # Load snapshots from checkpoint files
+        ckpt_dirs = sorted(job.output_dir.rglob("checkpoint_f.pt"))
+        if not ckpt_dirs:
+            raise HTTPException(
+                status_code=404,
+                detail="No checkpoint snapshots found for this job.",
+            )
+
+        from tensorlbm.checkpoint import load_checkpoint  # noqa: PLC0415
+
+        for ckpt_file in ckpt_dirs[:50]:  # cap at 50 snapshots
+            try:
+                f, _step, meta = load_checkpoint(ckpt_file.parent)
+                rho, ux, uy = None, None, None
+                from tensorlbm.d2q9 import macroscopic  # noqa: PLC0415
+
+                rho, ux, uy = macroscopic(f)
+                field_map = {"rho": rho, "ux": ux, "uy": uy}
+                snap = field_map.get(req.field_name, ux)
+                if snap is not None:
+                    snap_tensors.append(snap.float())
+            except Exception:
+                continue
+
+        if len(snap_tensors) < 2:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Found only {len(snap_tensors)} valid snapshots (need ≥ 2).",
+            )
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="Provide either job_id or snapshots.",
+        )
+
+    result = compute_pod(
+        snap_tensors,
+        n_modes=req.n_modes,
+        return_coefficients=req.return_coefficients,
+    )
+
+    # Truncate mode data to avoid huge responses (return first mode shape only as preview)
+    mode_preview = result.modes[0].tolist() if result.n_modes > 0 else []
+
+    return {
+        "n_modes": result.n_modes,
+        "n_snapshots": result.n_snapshots,
+        "spatial_shape": result.spatial_shape,
+        "singular_values": result.singular_values,
+        "energy_fraction": result.energy_fraction,
+        "cumulative_energy": result.cumulative_energy,
+        "temporal_coefficients": result.temporal_coefficients
+        if req.return_coefficients
+        else [],
+        "mode_0_preview": mode_preview,
+        "field_name": req.field_name,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Iso-surface / iso-contour extraction
+# ---------------------------------------------------------------------------
+
+@router.get("/isosurface/{job_id}")
+async def extract_isosurface(
+    job_id: str,
+    field: str = Query(default="q_criterion", description="Scalar field name."),
+    iso_value: float = Query(default=0.0, description="Iso-value for surface extraction."),
+    slice_axis: str = Query(
+        default="z",
+        description="'z' for 2-D iso-contour (marching squares), "
+                    "'3d' for 3-D iso-surface (marching cubes).",
+    ),
+    max_segments: int = Query(default=50_000, ge=1, le=500_000),
+) -> dict:
+    """Extract an iso-surface or iso-contour from a completed simulation job.
+
+    For 2-D fields (slice_axis='z') applies marching squares to return a list
+    of line segments.  For 3-D fields (slice_axis='3d') applies a centroid
+    marching cubes to return vertices and triangles.
+
+    This matches the iso-surface extraction feature available in PowerFlow
+    and XFlow for visualising Q-criterion vortex tubes, pressure shells, and
+    species concentration surfaces.
+    """
+    if slice_axis not in ("z", "3d"):
+        raise HTTPException(
+            status_code=422,
+            detail="slice_axis must be 'z' (2-D contour) or '3d' (3-D surface).",
+        )
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    import torch  # noqa: PLC0415
+
+    from tensorlbm.isosurface import (  # noqa: PLC0415
+        marching_cubes_simple,
+        marching_squares,
+    )
+
+    # Try to load field data from checkpoint
+    ckpt_dirs = sorted(job.output_dir.rglob("checkpoint_f.pt"))
+    field_tensor: torch.Tensor | None = None
+
+    if ckpt_dirs:
+        try:
+            from tensorlbm.checkpoint import load_checkpoint  # noqa: PLC0415
+
+            f, _step, _meta = load_checkpoint(ckpt_dirs[-1].parent)
+
+            from tensorlbm.d2q9 import macroscopic  # noqa: PLC0415
+
+            rho, ux, uy = macroscopic(f)
+
+            if field == "q_criterion":
+                from tensorlbm.vortex_identification import q_criterion_2d  # noqa: PLC0415
+
+                field_tensor = q_criterion_2d(ux, uy)
+            elif field == "rho":
+                field_tensor = rho
+            elif field == "ux":
+                field_tensor = ux
+            elif field == "uy":
+                field_tensor = uy
+            elif field == "speed":
+                field_tensor = (ux ** 2 + uy ** 2).sqrt()
+            else:
+                field_tensor = ux  # fallback
+        except Exception:
+            pass
+
+    if field_tensor is None:
+        # Return an empty result with metadata
+        if slice_axis == "z":
+            return {
+                "segments": [],
+                "n_segments": 0,
+                "iso_value": iso_value,
+                "field": field,
+                "mode": "2d",
+                "note": "No field data available",
+            }
+        else:
+            return {
+                "vertices": [],
+                "triangles": [],
+                "n_triangles": 0,
+                "iso_value": iso_value,
+                "field": field,
+                "mode": "3d",
+                "note": "No field data available",
+            }
+
+    if slice_axis == "z":
+        contour = marching_squares(
+            field_tensor,
+            iso_value=iso_value,
+            field_name=field,
+            max_segments=max_segments,
+        )
+        return {
+            "segments": contour.segments,
+            "n_segments": contour.n_segments,
+            "iso_value": iso_value,
+            "field": field,
+            "mode": "2d",
+        }
+    else:
+        if field_tensor.dim() == 2:
+            field_3d = field_tensor.unsqueeze(0)  # add singleton z-dimension
+        else:
+            field_3d = field_tensor
+
+        surface = marching_cubes_simple(
+            field_3d,
+            iso_value=iso_value,
+            field_name=field,
+            max_vertices=max_segments,
+        )
+        return {
+            "vertices": surface.vertices,
+            "triangles": surface.triangles,
+            "n_triangles": surface.n_triangles,
+            "iso_value": iso_value,
+            "field": field,
+            "mode": "3d",
+        }
