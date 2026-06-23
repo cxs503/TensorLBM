@@ -1106,5 +1106,12 @@
     "result_n_iter": "Iterations Used",
     "result_objective": "Final Objective",
     "result_vf": "Final Volume Fraction"
+  },
+  "ai": {
+    "backend_label": "Compute Backend",
+    "backend_torch": "PyTorch (default)",
+    "backend_paddle": "PaddlePaddle",
+    "backend_mindspore": "MindSpore",
+    "backend_note": "Select the deep-learning framework used for AI training/inference."
   }
 }

@@ -3,6 +3,10 @@
 This module provides a compact masked-reconstruction transformer that learns
 from unlabeled ``(u_x, u_y)`` flow fields.  The trained model can be saved and
 later deployed for inference/reconstruction diagnostics.
+
+Pass ``backend="paddle"`` or ``backend="mindspore"`` to
+:func:`train_flow_transformer_self_supervised` to use a non-PyTorch framework.
+Set ``TENSORLBM_BACKEND`` in the environment for a process-wide default.
 """
 from __future__ import annotations
 
@@ -16,6 +20,8 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 from torch import nn, optim
+
+from ..backends import get_backend, get_ops
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -223,10 +229,44 @@ def train_flow_transformer_self_supervised(
     arch: FlowTransformerArch | None = None,
     config: FlowTransformerTrainConfig | None = None,
     progress_callback: Callable[[dict[str, float]], None] | None = None,
+    *,
+    backend: str | None = None,
 ) -> dict[str, Any]:
-    """Train a masked-reconstruction transformer on unlabeled flow fields."""
+    """Train a masked-reconstruction transformer on unlabeled flow fields.
+
+    Args:
+        snapshots: List of ``(ux, uy)`` velocity snapshot pairs (torch.Tensor).
+        out_path: Where to save the trained model (weights + JSON metadata).
+        arch: Architecture hyper-parameters.
+        config: Training hyper-parameters.
+        progress_callback: Optional per-epoch callback ``(metrics_dict) -> None``.
+        backend: Computation backend.  Defaults to ``TENSORLBM_BACKEND``
+            env var (``"torch"`` if unset).  Valid: ``"torch"``, ``"paddle"``,
+            ``"mindspore"``.
+
+    Returns:
+        Metadata dict with paths, history, and the ``backend`` key.
+    """
+    backend_name = backend or get_backend()
     cfg = config or FlowTransformerTrainConfig()
     arch = arch or FlowTransformerArch()
+
+    # Convert snapshots to numpy regardless of backend so the same code path
+    # builds the token batch for all backends.
+    snapshots_np = [
+        (
+            ux.detach().cpu().numpy() if hasattr(ux, "detach") else np.array(ux),
+            uy.detach().cpu().numpy() if hasattr(uy, "detach") else np.array(uy),
+        )
+        for ux, uy in snapshots
+    ]
+
+    if backend_name != "torch":
+        return _train_flow_transformer_backend(
+            snapshots_np, arch, cfg, Path(out_path), backend_name, progress_callback
+        )
+
+    # ---- original torch path ------------------------------------------------
     batch, grid = build_flow_token_batch(snapshots)
     if batch.shape[1] > int(arch.max_tokens):
         raise ValueError(
@@ -338,12 +378,200 @@ def train_flow_transformer_self_supervised(
         "family": "flow_transformer_ssl",
         "arch": asdict(arch),
         "config": asdict(cfg),
+        "backend": "torch",
         "n_snapshots": int(batch.shape[0]),
         "n_tokens": int(batch.shape[1]),
         "grid": [int(grid[0]), int(grid[1])],
         "history": history,
         "final_train_loss": float(final["train_loss"]),
         "final_val_loss": float(final["val_loss"]),
+        "best_epoch": int(best_epoch),
+        "stopped_early": bool(len(history) < int(cfg.epochs)),
+        "training_time_s": float(elapsed),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Backend-agnostic transformer training (PaddlePaddle / MindSpore)
+# ---------------------------------------------------------------------------
+
+def _train_flow_transformer_backend(
+    snapshots_np: list[tuple[np.ndarray, np.ndarray]],
+    arch: FlowTransformerArch,
+    cfg: FlowTransformerTrainConfig,
+    out_path: Path,
+    backend_name: str,
+    progress_callback,
+) -> dict[str, Any]:
+    """Backend-agnostic transformer training loop."""
+    ops = get_ops()
+
+    # Build token batch from numpy snapshots
+    if not snapshots_np:
+        raise ValueError("At least one snapshot is required")
+    ny, nx = snapshots_np[0][0].shape
+    n_tokens = ny * nx
+    if n_tokens > int(arch.max_tokens):
+        raise ValueError(f"Grid token count {n_tokens} exceeds max_tokens={arch.max_tokens}")
+
+    # Stack all snapshots: (N, T, 2) as numpy
+    batch_np = np.stack(
+        [np.stack([ux.ravel(), uy.ravel()], axis=-1) for ux, uy in snapshots_np],
+        axis=0,
+    ).astype(np.float32)  # (N, T, 2)
+    grid = (ny, nx)
+    n_snap = len(batch_np)
+
+    # Split train / val
+    has_val_split = n_snap >= 2
+    if has_val_split:
+        n_val = max(1, int(round(n_snap * cfg.val_fraction)))
+        rng = np.random.RandomState(int(cfg.seed))
+        perm = rng.permutation(n_snap)
+        idx_val   = perm[:n_val]
+        idx_train = perm[n_val:] if n_val < n_snap else perm[:1]
+        train_np  = batch_np[idx_train]
+        val_np    = batch_np[idx_val]
+    else:
+        train_np = val_np = batch_np
+
+    # Convert to backend tensors
+    train_x = ops.to_device(ops.tensor(train_np), cfg.device)
+    val_x   = ops.to_device(ops.tensor(val_np), cfg.device)
+
+    # Build model
+    ops.manual_seed(cfg.seed)
+    model = ops.build_flow_transformer(
+        int(arch.in_features), int(arch.d_model), int(arch.n_heads),
+        int(arch.n_layers), int(arch.ffn_dim), float(arch.dropout),
+        int(arch.max_tokens), device=cfg.device,
+    )
+    loss_fn   = ops.mse_loss_fn()
+    optimizer = ops.adam_optimizer(model, cfg.learning_rate)
+    scheduler = None
+    sch_name  = str(cfg.lr_scheduler).strip().lower()
+    if sch_name == "cosine":
+        scheduler = ops.cosine_lr_scheduler(optimizer, int(cfg.epochs))
+    elif sch_name == "plateau":
+        scheduler = ops.plateau_lr_scheduler(optimizer)
+
+    rng2 = np.random.RandomState(int(cfg.seed))
+    n_train_snap = int(train_np.shape[0])
+    bs = max(1, min(int(cfg.batch_size), n_train_snap))
+    history: list[dict[str, float]] = []
+    best_state_np: dict[str, np.ndarray] = {}
+    best_epoch = 0
+    best_val_loss = float("inf")
+    epochs_without_improve = 0
+    t0 = time.perf_counter()
+
+    for epoch in range(int(cfg.epochs)):
+        # Scheduled mask ratio
+        mask_ratio = float(_scheduled_mask_ratio(cfg, epoch))
+        ops.train_mode(model)
+        perm_ep = rng2.permutation(n_train_snap)
+        running_loss = 0.0
+        n_batches = 0
+        for i in range(0, n_train_snap, bs):
+            idx = perm_ep[i: i + bs]
+            xb_np = train_np[idx]  # (B, T, 2)
+            xb = ops.to_device(ops.tensor(xb_np), cfg.device)
+            # Build boolean mask
+            mask_np = rng2.random(xb_np.shape[:2]) < mask_ratio  # (B, T)
+            mask = ops.to_device(ops.tensor(mask_np.astype(np.float32)), cfg.device)
+            # Boolean mask for backend
+            mask_bool = mask > 0.5
+
+            # Apply mask token and run forward + loss
+            x_masked = model.apply_mask_token(xb, mask_bool)
+
+            def _step_loss():
+                pred = model(x_masked)
+                if ops.any_true(mask_bool):
+                    # only compute loss on masked tokens
+                    pred_flat = ops.reshape(pred, [-1, int(arch.in_features)])
+                    xb_flat   = ops.reshape(xb,   [-1, int(arch.in_features)])
+                    mask_flat = ops.reshape(mask_bool, [-1])
+                    p = ops.index_select(pred_flat, 0, ops.tensor(
+                        np.where(mask_np.ravel())[0].astype(np.int32), device=cfg.device))
+                    t = ops.index_select(xb_flat, 0, ops.tensor(
+                        np.where(mask_np.ravel())[0].astype(np.int32), device=cfg.device))
+                    return loss_fn(p, t)
+                return loss_fn(pred, xb)
+
+            batch_loss = ops.train_step(model, lambda a, b: _step_loss(), optimizer, xb, xb, cfg.gradient_clip_norm)
+            running_loss += float(batch_loss)
+            n_batches += 1
+
+        train_loss = running_loss / max(1, n_batches)
+        ops.eval_mode(model)
+        with ops.no_grad():
+            # val loss
+            mask_val_np = rng2.random(val_np.shape[:2]) < mask_ratio
+            mask_val_bool_np = mask_val_np.astype(np.float32)
+            val_mask_t = ops.to_device(ops.tensor(mask_val_bool_np), cfg.device)
+            val_mask_bool = val_mask_t > 0.5
+            val_in = model.apply_mask_token(val_x, val_mask_bool)
+            val_pred = model(val_in)
+            if ops.any_true(val_mask_bool):
+                vp = ops.reshape(val_pred, [-1, int(arch.in_features)])
+                vt = ops.reshape(val_x,    [-1, int(arch.in_features)])
+                vp2 = ops.index_select(vp, 0, ops.tensor(
+                    np.where(mask_val_np.ravel())[0].astype(np.int32), device=cfg.device))
+                vt2 = ops.index_select(vt, 0, ops.tensor(
+                    np.where(mask_val_np.ravel())[0].astype(np.int32), device=cfg.device))
+                val_loss = float(ops.float_scalar(loss_fn(vp2, vt2)))
+            else:
+                val_loss = float(ops.float_scalar(loss_fn(val_pred, val_x)))
+
+        current_lr = ops.get_lr(optimizer)
+        metrics: dict[str, float] = {
+            "epoch": float(epoch),
+            "train_loss": float(train_loss),
+            "val_loss": float(val_loss),
+            "lr": float(current_lr),
+            "mask_ratio": float(mask_ratio),
+        }
+        history.append(metrics)
+        if progress_callback is not None:
+            progress_callback(dict(metrics))
+        if val_loss < (best_val_loss - 1e-12):
+            best_val_loss = val_loss
+            best_epoch = int(epoch)
+            best_state_np = ops.get_state_dict_numpy(model)
+            epochs_without_improve = 0
+        else:
+            epochs_without_improve += 1
+        if scheduler is not None:
+            ops.scheduler_step(scheduler, val_loss if ops.is_plateau_scheduler(scheduler) else None)
+        if cfg.patience is not None and epochs_without_improve > int(cfg.patience):
+            break
+
+    ops.load_state_dict_numpy(model, best_state_np)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(str(out_path), **best_state_np)
+    meta = {
+        "arch": asdict(arch),
+        "format_version": 2,
+        "family": "flow_transformer_ssl",
+        "backend": backend_name,
+    }
+    out_path.with_suffix(out_path.suffix + ".json").write_text(json.dumps(meta, indent=2))
+
+    elapsed = time.perf_counter() - t0
+    final = history[best_epoch] if history else {"train_loss": float("nan"), "val_loss": float("nan")}
+    return {
+        "path": str(out_path),
+        "family": "flow_transformer_ssl",
+        "arch": asdict(arch),
+        "config": asdict(cfg),
+        "backend": backend_name,
+        "n_snapshots": n_snap,
+        "n_tokens": n_tokens,
+        "grid": [int(grid[0]), int(grid[1])],
+        "history": history,
+        "final_train_loss": float(final.get("train_loss", float("nan"))),
+        "final_val_loss": float(final.get("val_loss", float("nan"))),
         "best_epoch": int(best_epoch),
         "stopped_early": bool(len(history) < int(cfg.epochs)),
         "training_time_s": float(elapsed),
