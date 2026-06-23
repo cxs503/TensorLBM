@@ -41,6 +41,7 @@ from ..schemas.cad import (
     PropellerOpenWaterRequest,
     ResistanceEstimateRequest,
     SuboffMaskRequest,
+    SuboffMesh3DRequest,
     SuboffPreviewRequest,
     SuboffSTLRequest,
 )
@@ -466,6 +467,38 @@ async def list_suboff_model_types() -> dict:
             },
         ]
     }
+
+
+@router.post("/suboff/mesh3d")
+async def suboff_mesh3d(req: SuboffMesh3DRequest) -> dict:
+    """Return SUBOFF triangle mesh data for Three.js interactive rendering.
+
+    The response contains a flat ``positions`` list (interleaved XYZ floats,
+    9 values per triangle) that maps directly to a Three.js
+    ``BufferGeometry`` non-indexed ``position`` attribute.  All three model
+    variants are supported, including the full-appendage AFF-8 configuration
+    with conning-tower sail and cruciform stern fins.
+    """
+    try:
+        from tensorlbm.suboff_cad import SuboffConfig, SuboffHullType, suboff_mesh_data
+
+        radius = req.radius if req.radius > 0 else None
+        config = SuboffConfig(
+            bow_fraction=req.bow_fraction,
+            stern_fraction=req.stern_fraction,
+            stern_exponent=req.stern_exponent,
+        )
+        data = suboff_mesh_data(
+            hull_type=SuboffHullType(req.hull_type),
+            length=req.length,
+            radius=radius,
+            n_axial=req.n_axial,
+            n_circ=req.n_circ,
+            config=config,
+        )
+        return data
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/3d/models")
