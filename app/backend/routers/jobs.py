@@ -502,8 +502,8 @@ async def get_hpc_status(job_id: str) -> dict:
             slurm_result = query_slurm_status(hpc_job_id)
             cluster_state = slurm_result.get("state", "unknown")
             cluster_elapsed = slurm_result.get("elapsed", "n/a")
-        except Exception as exc:  # noqa: BLE001
-            cluster_state = f"query_error: {exc}"
+        except Exception:  # noqa: BLE001
+            cluster_state = "query_error"
     elif hpc_backend == "pbs" and hpc_job_id:
         cluster_state = "pbs_query_not_implemented"
 
