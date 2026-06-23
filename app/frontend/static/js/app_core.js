@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     onSimTypeChange();
     setInterval(loadStatus, 15000);
     onCADHullTypeChange();
+    updateWorkflowStepper(uiState.activeTab);
     showTab(uiState.activeTab, null);
   });
 
@@ -762,6 +763,7 @@ function showTab(name, el) {
   document.getElementById(`panel-${name}`).classList.add('active');
   // Update nav active state via new function
   updateNavActiveState(name);
+  updateWorkflowStepper(name);
   uiState.activeTab = name;
   saveUIState();
   if (name !== 'dashboard' && dashboardLiveMetricsTimer) {
@@ -771,6 +773,20 @@ function showTab(name, el) {
   const onEnter = TAB_ENTER_HANDLERS[name];
   if (typeof onEnter === 'function') onEnter();
   return false;
+}
+
+function updateWorkflowStepper(tab) {
+  const stepMap = {
+    cad: 'geo',
+    geo3d: 'geo',
+    preprocess: 'preprocess',
+    solve: 'solve',
+    postprocess: 'postprocess',
+  };
+  const active = stepMap[tab];
+  document.querySelectorAll('#workflow-stepper .step-item').forEach((el) => {
+    el.classList.toggle('active', el.dataset.step === active);
+  });
 }
 
 // ============================================================
