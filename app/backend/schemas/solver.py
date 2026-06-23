@@ -15,6 +15,7 @@ FlowType = Literal["single_phase", "multiphase", "free_surface"]
 BoundaryCondition = Literal["standard_bounce_back", "zou_he", "periodic"]
 
 NumericalScheme = Literal["bgk", "trt", "mrt"]
+SolverBackend = Literal["torch", "paddle", "mindspore"]
 
 
 class SyntheticInflowSettings(BaseModel):
@@ -83,7 +84,8 @@ class CylinderFlowParams(BaseModel):
     radius: float = Field(12.0, gt=0, description="Cylinder radius (cells)")
     n_steps: int = Field(1200, ge=1, description="Total time steps")
     output_interval: int = Field(200, ge=1, description="Output every N steps")
-    device: str = Field("cpu", description="Torch device (cpu / cuda:0 …)")
+    device: str = Field("cpu", description="Compute device (cpu / cuda:0 …)")
+    backend: SolverBackend = Field("torch", description="LBM compute backend")
     num_threads: int | None = Field(None, ge=1, description="CPU thread count for PyTorch")
     seed: int = 0
     resume_checkpoint: str | None = Field(
@@ -106,7 +108,8 @@ class CylinderFlowScanParams(BaseModel):
     radius: float = Field(12.0, gt=0, description="Cylinder radius (cells)")
     n_steps: int = Field(1200, ge=1, description="Total time steps")
     output_interval: int = Field(200, ge=1, description="Output every N steps")
-    device: str = Field("cpu", description="Torch device (cpu / cuda:0 …)")
+    device: str = Field("cpu", description="Compute device (cpu / cuda:0 …)")
+    backend: SolverBackend = Field("torch", description="LBM compute backend")
     seed: int = 0
     physics: PhysicsSelection | None = None
 

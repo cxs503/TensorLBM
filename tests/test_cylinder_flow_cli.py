@@ -27,6 +27,7 @@ def test_build_parser_defaults() -> None:
     assert args.n_steps == 1200
     assert args.output_interval == 200
     assert args.device == "cpu"
+    assert args.backend == "torch"
     assert args.num_threads is None
     assert args.resume_checkpoint is None
 
@@ -43,6 +44,7 @@ def test_build_parser_custom_values() -> None:
         "--re", "120",
         "--run-name", "my-run",
         "--output-root", "outputs_test",
+        "--backend", "mindspore",
         "--num-threads", "2",
         "--resume-checkpoint", "/tmp/ckpt",
     ])
@@ -54,6 +56,7 @@ def test_build_parser_custom_values() -> None:
     assert args.re == 120.0
     assert args.run_name == "my-run"
     assert args.output_root == "outputs_test"
+    assert args.backend == "mindspore"
     assert args.num_threads == 2
     assert args.resume_checkpoint == "/tmp/ckpt"
 
