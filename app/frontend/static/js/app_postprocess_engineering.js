@@ -166,8 +166,10 @@ async function runIsoSurfaceExtraction() {
 }
 
 async function loadStudyReport() {
-  const groupEl = _engineerSafeEl('study-compare-group');
-  const reportEl = _engineerSafeEl('study-report');
+  // Support both the engineering panel (eng-study-compare-group / eng-study-report)
+  // and the legacy study-compare sub-panel (study-compare-group / study-report).
+  const groupEl = _engineerSafeEl('eng-study-compare-group') || _engineerSafeEl('study-compare-group');
+  const reportEl = _engineerSafeEl('eng-study-report') || _engineerSafeEl('study-report');
   if (!reportEl || !groupEl || !groupEl.value.trim()) return;
   reportEl.innerHTML = `<span class="text-muted small">${t('postprocess.loading') || 'Loading…'}</span>`;
   try {
