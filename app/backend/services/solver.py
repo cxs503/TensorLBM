@@ -52,7 +52,12 @@ _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
         "flow_types": ["single_phase"],
         "turbulence_models": ["none", "smagorinsky_les"],
         "multiphase_models": ["none"],
-        "enhancements": ["synthetic_inflow", "sponge_layer", "turbulence_statistics"],
+        "enhancements": [
+            "synthetic_inflow",
+            "sponge_layer",
+            "outlet_control",
+            "turbulence_statistics",
+        ],
     },
     "lid_driven_cavity": {
         "flow_types": ["single_phase"],
@@ -183,6 +188,7 @@ def validate_physics(job_type: str, physics: PhysicsSelection) -> None:
     enhancements = {
         "synthetic_inflow": physics.synthetic_inflow,
         "sponge_layer": physics.sponge_layer,
+        "outlet_control": physics.outlet_control,
         "rough_wall": physics.rough_wall,
         "turbulence_statistics": physics.turbulence_statistics,
     }

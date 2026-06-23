@@ -18,7 +18,10 @@ from .boundaries import (
     compute_obstacle_forces,
     cylinder_mask,
     make_channel_wall_mask,
+    nscbc_outlet_2d,
+    stabilize_outlet_backflow,
     zou_he_inlet_velocity,
+    zou_he_outlet_pressure,
 )
 from .checkpoint import load_checkpoint, save_checkpoint
 from .config_io import load_config_json, save_config_json
@@ -247,6 +250,7 @@ def run_cylinder_flow(
     *,
     synthetic_inflow: dict[str, object] | None = None,
     sponge_layer: dict[str, object] | None = None,
+    outlet_control: dict[str, object] | None = None,
     turbulence_statistics: dict[str, object] | None = None,
     diagnostic_callback: Callable[[dict[str, object]], None] | None = None,
 ) -> Path:
@@ -281,6 +285,7 @@ def run_cylinder_flow(
         "engineering_closure": {
             "synthetic_inflow": synthetic_inflow or {"enabled": False},
             "sponge_layer": sponge_layer or {"enabled": False},
+            "outlet_control": outlet_control or {"enabled": False},
             "turbulence_statistics": turbulence_statistics or {"enabled": False},
         },
     }
@@ -291,11 +296,27 @@ def run_cylinder_flow(
 
     # Resume from checkpoint or initialise fresh
     start_step = 1
+    restart_info: dict[str, object] = {"resumed": False}
     if config.resume_checkpoint is not None:
-        f, resume_step, _ckpt_meta = load_checkpoint(config.resume_checkpoint, device=device)
+        f, resume_step, ckpt_meta = load_checkpoint(
+            config.resume_checkpoint,
+            device=device,
+            expected_shape=(9, config.ny, config.nx),
+            expected_lattice_directions=9,
+        )
+        if resume_step >= config.n_steps:
+            raise ValueError(
+                f"resume checkpoint step {resume_step} is not less than n_steps={config.n_steps}"
+            )
         f = f.to(device)
         start_step = resume_step + 1
         logger.info("Resumed from checkpoint %s at step %d", config.resume_checkpoint, resume_step)
+        restart_info = {
+            "resumed": True,
+            "source_checkpoint": str(config.resume_checkpoint),
+            "source_step": resume_step,
+            "checkpoint_format_version": ckpt_meta.get("format_version"),
+        }
     else:
         rho0 = torch.ones((config.ny, config.nx), device=device)
         ux0 = torch.full((config.ny, config.nx), config.u_in, device=device)
@@ -310,6 +331,11 @@ def run_cylinder_flow(
     fy_steps: list[torch.Tensor] = []
     inlet_rms_history: list[float] = []
     sponge_profile_1d: torch.Tensor | None = None
+    outlet_mode = "copy"
+    outlet_sigma = 0.25
+    outlet_rho_target = 1.0
+    backflow_stabilization = False
+    max_backflow_speed = 0.0
     turbulence_acc: TurbulenceStatsAccumulator | None = None
     turbulence_start_step = 0
     turbulence_sample_every = 1
@@ -358,6 +384,21 @@ def run_cylinder_flow(
             **(sponge_layer or {}),
             "x0": sponge_start,
             "x1": config.nx - 1,
+        }
+
+    if outlet_control and bool(outlet_control.get("enabled", False)):
+        outlet_mode = str(outlet_control.get("mode", "nscbc")).lower()
+        outlet_sigma = float(outlet_control.get("nscbc_sigma", 0.25))
+        outlet_rho_target = float(outlet_control.get("rho_target", 1.0))
+        backflow_stabilization = bool(outlet_control.get("backflow_stabilization", True))
+        max_backflow_speed = float(outlet_control.get("max_backflow_speed", 0.0))
+        metadata["engineering_closure"]["outlet_control"] = {
+            **(outlet_control or {}),
+            "mode": outlet_mode,
+            "nscbc_sigma": outlet_sigma,
+            "rho_target": outlet_rho_target,
+            "backflow_stabilization": backflow_stabilization,
+            "max_backflow_speed": max_backflow_speed,
         }
 
     if turbulence_statistics and bool(turbulence_statistics.get("enabled", False)):
@@ -433,12 +474,32 @@ def run_cylinder_flow(
             f = bounce_back_cells(f, wall_mask)
             f = bounce_back_cells(f, obstacle)
         else:
-            f = apply_simple_channel_boundaries(
-                f,
-                u_in=config.u_in,
-                wall_mask=wall_mask,
-                obstacle_mask=obstacle,
-            )
+            if outlet_mode == "copy":
+                f = apply_simple_channel_boundaries(
+                    f,
+                    u_in=config.u_in,
+                    wall_mask=wall_mask,
+                    obstacle_mask=obstacle,
+                )
+            else:
+                f = zou_he_inlet_velocity(f, config.u_in)
+                if outlet_mode == "zou_he":
+                    f = zou_he_outlet_pressure(f, rho_out=outlet_rho_target)
+                elif outlet_mode == "nscbc":
+                    f = nscbc_outlet_2d(f, rho_target=outlet_rho_target, sigma=outlet_sigma)
+                else:
+                    raise ValueError(
+                        f"Unsupported outlet_control mode '{outlet_mode}'. "
+                        "Expected one of: copy, zou_he, nscbc."
+                    )
+                if backflow_stabilization:
+                    f = stabilize_outlet_backflow(
+                        f,
+                        max_backflow_speed=max_backflow_speed,
+                        solid_mask_col=(wall_mask[:, -1] | obstacle[:, -1]),
+                    )
+                f = bounce_back_cells(f, wall_mask)
+                f = bounce_back_cells(f, obstacle)
 
         # Store fy as a GPU scalar tensor – no .item() sync on every step
         fy_steps.append(fy.detach())
@@ -507,6 +568,7 @@ def run_cylinder_flow(
     st = _strouhal_number(cl_series[half:], 1, config.u_in, diameter)
 
     metadata["diagnostics"] = diagnostics
+    metadata["restart"] = restart_info
     if st is not None:
         metadata["strouhal"] = st
         logger.info("Strouhal number St ≈ %.4f", st)

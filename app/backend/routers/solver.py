@@ -48,6 +48,68 @@ def _normalize_solver_result(result: object, job: job_manager.Job) -> dict[str, 
     return {"result": result}
 
 
+def _latest_checkpoint_dir_for_job(job_id: str) -> Path:
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+    candidates = sorted(
+        job.output_dir.rglob("checkpoint_f.pt"),
+        key=lambda p: p.stat().st_mtime,
+    )
+    if not candidates:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Job {job_id} has no checkpoint to resume from",
+        )
+    return candidates[-1].parent
+
+
+def _resolve_restart_checkpoint(
+    *,
+    resume_checkpoint: str | None,
+    resume_from_job_id: str | None,
+) -> tuple[str | None, dict[str, object] | None]:
+    if resume_checkpoint and resume_from_job_id:
+        raise HTTPException(
+            status_code=422,
+            detail="Provide either resume_checkpoint or resume_from_job_id, not both",
+        )
+    if resume_from_job_id:
+        ckpt_dir = _latest_checkpoint_dir_for_job(resume_from_job_id)
+        return str(ckpt_dir), {
+            "enabled": True,
+            "resume_from_job_id": resume_from_job_id,
+            "resume_checkpoint": str(ckpt_dir),
+        }
+    if resume_checkpoint:
+        return resume_checkpoint, {
+            "enabled": True,
+            "resume_checkpoint": resume_checkpoint,
+        }
+    return None, None
+
+
+def _validate_restart_checkpoint(
+    checkpoint_dir: str,
+    *,
+    expected_shape: tuple[int, ...],
+    expected_lattice_directions: int,
+) -> None:
+    from tensorlbm import load_checkpoint  # noqa: PLC0415
+
+    try:
+        load_checkpoint(
+            Path(checkpoint_dir),
+            expected_shape=expected_shape,
+            expected_lattice_directions=expected_lattice_directions,
+        )
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid or incompatible restart checkpoint '{checkpoint_dir}': {exc}",
+        ) from exc
+
+
 # ---------------------------------------------------------------------------
 # 1. Cylinder Flow (2D)
 # ---------------------------------------------------------------------------
@@ -58,7 +120,23 @@ def _normalize_solver_result(result: object, job: job_manager.Job) -> dict[str, 
 async def start_cylinder_flow(params: CylinderFlowParams) -> dict:
     """Start a 2D cylinder flow simulation."""
     run_config, submit_config = prepare_solver_configs("cylinder_flow", params)
+    run_config.pop("resume_from_job_id", None)
+    submit_config.pop("resume_from_job_id", None)
     physics_config = submit_config.get("physics", {})
+    resume_checkpoint, restart_info = _resolve_restart_checkpoint(
+        resume_checkpoint=params.resume_checkpoint,
+        resume_from_job_id=params.resume_from_job_id,
+    )
+    if resume_checkpoint:
+        _validate_restart_checkpoint(
+            resume_checkpoint,
+            expected_shape=(9, params.ny, params.nx),
+            expected_lattice_directions=9,
+        )
+        run_config["resume_checkpoint"] = resume_checkpoint
+        submit_config["resume_checkpoint"] = resume_checkpoint
+    if restart_info is not None:
+        submit_config["restart"] = restart_info
 
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import CylinderFlowConfig, run_cylinder_flow
@@ -70,6 +148,7 @@ async def start_cylinder_flow(params: CylinderFlowParams) -> dict:
             cfg,
             synthetic_inflow=physics_config.get("synthetic_inflow"),
             sponge_layer=physics_config.get("sponge_layer"),
+            outlet_control=physics_config.get("outlet_control"),
             turbulence_statistics=physics_config.get("turbulence_statistics"),
             diagnostic_callback=lambda data: job_manager.push_diagnostic(job.job_id, data),
         )
@@ -350,6 +429,22 @@ async def start_sloshing_tank(params: SloshingTankParams) -> dict:
 @router.post("/sphere-flow")
 async def start_sphere_flow(params: SphereFlowParams) -> dict:
     run_config, submit_config = prepare_solver_configs("sphere_flow", params)
+    run_config.pop("resume_from_job_id", None)
+    submit_config.pop("resume_from_job_id", None)
+    resume_checkpoint, restart_info = _resolve_restart_checkpoint(
+        resume_checkpoint=params.resume_checkpoint,
+        resume_from_job_id=params.resume_from_job_id,
+    )
+    if resume_checkpoint:
+        _validate_restart_checkpoint(
+            resume_checkpoint,
+            expected_shape=(19, params.nz, params.ny, params.nx),
+            expected_lattice_directions=19,
+        )
+        run_config["resume_checkpoint"] = resume_checkpoint
+        submit_config["resume_checkpoint"] = resume_checkpoint
+    if restart_info is not None:
+        submit_config["restart"] = restart_info
 
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import SphereFlowConfig, run_sphere_flow

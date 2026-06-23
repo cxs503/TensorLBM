@@ -45,6 +45,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Replace output directory if it already exists",
     )
+    parser.add_argument(
+        "--resume-checkpoint",
+        dest="resume_checkpoint",
+        default=None,
+        help="Path to checkpoint directory to resume from",
+    )
     return parser
 
 
@@ -64,6 +70,7 @@ def main() -> None:
         device=args.device,
         num_threads=args.num_threads,
         overwrite=args.overwrite,
+        resume_checkpoint=args.resume_checkpoint,
     )
     run_cylinder_flow(config)
 
