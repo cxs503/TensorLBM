@@ -521,9 +521,11 @@ def run_cylinder_flow(
             "mean_strength": float(sponge_profile_1d.mean().item()),
         }
     if turbulence_acc is not None and turbulence_acc.count > 0:
-        metadata["engineering_closure"]["turbulence_statistics_runtime"] = _summarize_turbulence_stats(
-            turbulence_acc,
-            u_ref=config.u_in,
+        metadata["engineering_closure"]["turbulence_statistics_runtime"] = (
+            _summarize_turbulence_stats(
+                turbulence_acc,
+                u_ref=config.u_in,
+            )
         )
 
     forces_csv = run_dir / "forces.csv"

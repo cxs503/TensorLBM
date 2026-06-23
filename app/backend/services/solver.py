@@ -150,7 +150,7 @@ def merge_physics(job_type: str, physics: PhysicsSelection | None) -> PhysicsSel
     merged["turbulence_params"] = dict(defaults.get("turbulence_params", {}))
     merged["multiphase_params"] = dict(defaults.get("multiphase_params", {}))
     if physics is not None:
-        p = physics.model_dump(exclude_none=True)
+        p = physics.model_dump(exclude_none=True, exclude_unset=True)
         merged.update(
             {
                 k: v
