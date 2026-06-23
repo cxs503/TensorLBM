@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import torch
 from fastapi import APIRouter, HTTPException
@@ -26,7 +26,7 @@ class TransformerTrainRequest(BaseModel):
     sample_every: int = Field(10, ge=1, le=2000)
     seed: int = 0
     device: str = "cpu"
-    backend: str = "torch"
+    backend: Literal["torch", "paddle", "mindspore"] = "torch"
     epochs: int = Field(20, ge=1, le=500)
     batch_size: int = Field(8, ge=1, le=512)
     learning_rate: float = 1e-3
@@ -330,6 +330,7 @@ async def infer_transformer(req: TransformerInferRequest) -> dict:
     return {
         "ok": True,
         "model_path": str(path),
+        "backend": getattr(model, "tensorlbm_backend", "torch"),
         "grid": [int(ux.shape[0]), int(ux.shape[1])],
         "mse": pred["mse"],
         "max_abs_error": pred["max_abs_error"],

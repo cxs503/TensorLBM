@@ -34,7 +34,11 @@ to all three.
 from __future__ import annotations
 
 import os
-from typing import Literal, Any
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 BackendName = Literal["torch", "paddle", "mindspore"]
 _VALID: frozenset[str] = frozenset({"torch", "paddle", "mindspore"})
@@ -44,7 +48,7 @@ _current_backend: BackendName = os.environ.get(  # type: ignore[assignment]
 )
 
 # Cache of imported backend modules so we don't re-import on every call.
-_backend_cache: dict[str, Any] = {}
+_backend_cache: dict[str, object] = {}
 
 
 def get_backend() -> BackendName:
@@ -69,7 +73,7 @@ def set_backend(name: str) -> None:
     _current_backend = name  # type: ignore[assignment]
 
 
-def get_ops():
+def get_ops() -> object:
     """Return the tensor/NN operations module for the active backend.
 
     The returned module is cached after the first import so repeated
@@ -97,9 +101,23 @@ def get_ops():
     return _mod
 
 
+@contextmanager
+def using_backend(name: str | None) -> Iterator[object]:
+    """Temporarily switch the active backend within a context."""
+    previous = get_backend()
+    if name is not None:
+        set_backend(name)
+    try:
+        yield get_ops()
+    finally:
+        if get_backend() != previous:
+            set_backend(previous)
+
+
 __all__ = [
     "BackendName",
     "get_backend",
     "set_backend",
     "get_ops",
+    "using_backend",
 ]

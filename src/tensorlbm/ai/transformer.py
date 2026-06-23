@@ -15,16 +15,22 @@ import json
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 import torch
 from torch import nn, optim
 
-from ..backends import get_backend, get_ops
+from ..backends import get_backend, get_ops, using_backend
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+
+class _BackendModel(Protocol):
+    training: bool
+
+    def __call__(self, x: object) -> object: ...
 
 
 @dataclass(frozen=True)
@@ -164,12 +170,32 @@ def save_flow_transformer_model(
         "arch": asdict(model.arch),
         "format_version": 1,
         "family": "flow_transformer_ssl",
+        "backend": "torch",
     }
     p.with_suffix(p.suffix + ".json").write_text(json.dumps(meta, indent=2))
     return p
 
 
-def load_flow_transformer_model(path: str | Path) -> FlowFieldTransformer:
+def _to_numpy(x: object) -> np.ndarray:
+    if isinstance(x, np.ndarray):
+        return x
+    if hasattr(x, "detach"):
+        try:
+            return x.detach().cpu().numpy()
+        except Exception:
+            pass
+    if hasattr(x, "asnumpy"):
+        return x.asnumpy()
+    if hasattr(x, "numpy"):
+        return x.numpy()
+    return np.asarray(x)
+
+
+def load_flow_transformer_model(
+    path: str | Path,
+    *,
+    backend: str | None = None,
+) -> _BackendModel:
     """Load a saved transformer model."""
     p = Path(path)
     meta_path = p.with_suffix(p.suffix + ".json")
@@ -177,16 +203,35 @@ def load_flow_transformer_model(path: str | Path) -> FlowFieldTransformer:
         raise ValueError(f"Metadata file not found: {meta_path}")
     meta = json.loads(meta_path.read_text())
     arch = FlowTransformerArch(**meta.get("arch", {}))
-    model = FlowFieldTransformer(arch)
-    with p.open("rb") as fh:
-        arrays = np.load(fh, allow_pickle=False)
-        current = model.state_dict()
-        loaded = {
-            name: torch.from_numpy(arrays[name]).to(dtype=current[name].dtype)
-            for name in current
-        }
-    model.load_state_dict(loaded)
-    model.eval()
+    backend_name = backend or meta.get("backend") or "torch"
+    with using_backend(backend_name):
+        if backend_name == "torch":
+            model = FlowFieldTransformer(arch)
+            with p.open("rb") as fh:
+                arrays = np.load(fh, allow_pickle=False)
+                current = model.state_dict()
+                loaded = {
+                    name: torch.from_numpy(arrays[name]).to(dtype=current[name].dtype)
+                    for name in current
+                }
+            model.load_state_dict(loaded)
+            model.eval()
+        else:
+            ops = get_ops()
+            model = ops.build_flow_transformer(
+                int(arch.in_features),
+                int(arch.d_model),
+                int(arch.n_heads),
+                int(arch.n_layers),
+                int(arch.ffn_dim),
+                float(arch.dropout),
+                int(arch.max_tokens),
+            )
+            with p.open("rb") as fh:
+                arrays = np.load(fh, allow_pickle=False)
+                ops.load_state_dict_numpy(model, {name: arrays[name] for name in arrays.files})
+            ops.eval_mode(model)
+    model.tensorlbm_backend = backend_name
     return model
 
 
@@ -231,7 +276,7 @@ def train_flow_transformer_self_supervised(
     progress_callback: Callable[[dict[str, float]], None] | None = None,
     *,
     backend: str | None = None,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Train a masked-reconstruction transformer on unlabeled flow fields.
 
     Args:
@@ -261,134 +306,135 @@ def train_flow_transformer_self_supervised(
         for ux, uy in snapshots
     ]
 
-    if backend_name != "torch":
-        return _train_flow_transformer_backend(
-            snapshots_np, arch, cfg, Path(out_path), backend_name, progress_callback
-        )
+    with using_backend(backend_name):
+        if backend_name != "torch":
+            return _train_flow_transformer_backend(
+                snapshots_np, arch, cfg, Path(out_path), backend_name, progress_callback
+            )
 
-    # ---- original torch path ------------------------------------------------
-    batch, grid = build_flow_token_batch(snapshots)
-    if batch.shape[1] > int(arch.max_tokens):
-        raise ValueError(
-            f"Grid token count {batch.shape[1]} exceeds max_tokens={arch.max_tokens}",
-        )
+        # ---- original torch path ------------------------------------------------
+        batch, grid = build_flow_token_batch(snapshots)
+        if batch.shape[1] > int(arch.max_tokens):
+            raise ValueError(
+                f"Grid token count {batch.shape[1]} exceeds max_tokens={arch.max_tokens}",
+            )
 
-    device = torch.device(cfg.device)
-    model = FlowFieldTransformer(arch).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=float(cfg.learning_rate))
-    loss_fn = nn.MSELoss()
-    scheduler = _build_scheduler(optimizer, int(cfg.epochs), str(cfg.lr_scheduler))
+        device = torch.device(cfg.device)
+        model = FlowFieldTransformer(arch).to(device)
+        optimizer = optim.Adam(model.parameters(), lr=float(cfg.learning_rate))
+        loss_fn = nn.MSELoss()
+        scheduler = _build_scheduler(optimizer, int(cfg.epochs), str(cfg.lr_scheduler))
 
-    has_val_split = int(batch.shape[0]) >= 2
-    if has_val_split:
-        train_x, val_x = _split_train_val(batch, cfg.val_fraction, cfg.seed)
-    else:
-        train_x = batch
-        val_x = batch
+        has_val_split = int(batch.shape[0]) >= 2
+        if has_val_split:
+            train_x, val_x = _split_train_val(batch, cfg.val_fraction, cfg.seed)
+        else:
+            train_x = batch
+            val_x = batch
 
-    train_x = train_x.to(device)
-    val_x = val_x.to(device)
-    g = torch.Generator(device="cpu").manual_seed(int(cfg.seed))
-    history: list[dict[str, float]] = []
-    best_state = copy.deepcopy(model.state_dict())
-    best_epoch = 0
-    best_val_loss = float("inf")
-    epochs_without_improve = 0
-    t0 = time.perf_counter()
+        train_x = train_x.to(device)
+        val_x = val_x.to(device)
+        g = torch.Generator(device="cpu").manual_seed(int(cfg.seed))
+        history: list[dict[str, float]] = []
+        best_state = copy.deepcopy(model.state_dict())
+        best_epoch = 0
+        best_val_loss = float("inf")
+        epochs_without_improve = 0
+        t0 = time.perf_counter()
 
-    for epoch in range(int(cfg.epochs)):
-        model.train()
-        perm = torch.randperm(train_x.shape[0], generator=g)
-        running_loss = 0.0
-        n_batches = 0
-        bs = max(1, min(int(cfg.batch_size), int(train_x.shape[0])))
-        mask_ratio = _scheduled_mask_ratio(cfg, epoch)
-        for i in range(0, int(train_x.shape[0]), bs):
-            idx = perm[i : i + bs]
-            xb = train_x.index_select(0, idx)
-            mask = torch.rand(
-                xb.shape[0], xb.shape[1],
-                device=device,
-            ) < float(mask_ratio)
-            x_masked = model.apply_mask_token(xb, mask)
-
-            optimizer.zero_grad()
-            pred = model(x_masked)
-            loss = loss_fn(pred[mask], xb[mask]) if bool(mask.any()) else loss_fn(pred, xb)
-            loss.backward()
-            if cfg.gradient_clip_norm is not None:
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(),
-                    max_norm=float(cfg.gradient_clip_norm),
-                )
-            optimizer.step()
-            running_loss += float(loss.detach())
-            n_batches += 1
-
-        model.eval()
-        train_loss = float(running_loss / max(1, n_batches))
-        with torch.no_grad():
-            if has_val_split:
-                val_mask = torch.rand(
-                    val_x.shape[0], val_x.shape[1],
+        for epoch in range(int(cfg.epochs)):
+            model.train()
+            perm = torch.randperm(train_x.shape[0], generator=g)
+            running_loss = 0.0
+            n_batches = 0
+            bs = max(1, min(int(cfg.batch_size), int(train_x.shape[0])))
+            mask_ratio = _scheduled_mask_ratio(cfg, epoch)
+            for i in range(0, int(train_x.shape[0]), bs):
+                idx = perm[i : i + bs]
+                xb = train_x.index_select(0, idx)
+                mask = torch.rand(
+                    xb.shape[0], xb.shape[1],
                     device=device,
                 ) < float(mask_ratio)
-                val_in = model.apply_mask_token(val_x, val_mask)
-                val_pred = model(val_in)
-                if bool(val_mask.any()):
-                    val_loss = float(loss_fn(val_pred[val_mask], val_x[val_mask]).detach())
+                x_masked = model.apply_mask_token(xb, mask)
+
+                optimizer.zero_grad()
+                pred = model(x_masked)
+                loss = loss_fn(pred[mask], xb[mask]) if bool(mask.any()) else loss_fn(pred, xb)
+                loss.backward()
+                if cfg.gradient_clip_norm is not None:
+                    torch.nn.utils.clip_grad_norm_(
+                        model.parameters(),
+                        max_norm=float(cfg.gradient_clip_norm),
+                    )
+                optimizer.step()
+                running_loss += float(loss.detach())
+                n_batches += 1
+
+            model.eval()
+            train_loss = float(running_loss / max(1, n_batches))
+            with torch.no_grad():
+                if has_val_split:
+                    val_mask = torch.rand(
+                        val_x.shape[0], val_x.shape[1],
+                        device=device,
+                    ) < float(mask_ratio)
+                    val_in = model.apply_mask_token(val_x, val_mask)
+                    val_pred = model(val_in)
+                    if bool(val_mask.any()):
+                        val_loss = float(loss_fn(val_pred[val_mask], val_x[val_mask]).detach())
+                    else:
+                        val_loss = float(loss_fn(val_pred, val_x).detach())
                 else:
-                    val_loss = float(loss_fn(val_pred, val_x).detach())
+                    val_loss = train_loss
+
+            current_lr = float(optimizer.param_groups[0]["lr"])
+            metrics = {
+                "epoch": int(epoch),
+                "train_loss": float(train_loss),
+                "val_loss": float(val_loss),
+                "lr": float(current_lr),
+                "mask_ratio": float(mask_ratio),
+            }
+            history.append(metrics)
+            if progress_callback is not None:
+                progress_callback(dict(metrics))
+            improved = val_loss < (best_val_loss - 1e-12)
+            if improved:
+                best_val_loss = float(val_loss)
+                best_epoch = int(epoch)
+                best_state = copy.deepcopy(model.state_dict())
+                epochs_without_improve = 0
             else:
-                val_loss = train_loss
+                epochs_without_improve += 1
+            if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler.step(val_loss)
+            elif scheduler is not None:
+                scheduler.step()
+            if cfg.patience is not None and epochs_without_improve > int(cfg.patience):
+                break
 
-        current_lr = float(optimizer.param_groups[0]["lr"])
-        metrics = {
-            "epoch": int(epoch),
-            "train_loss": float(train_loss),
-            "val_loss": float(val_loss),
-            "lr": float(current_lr),
-            "mask_ratio": float(mask_ratio),
+        model.load_state_dict(best_state)
+        out = Path(out_path)
+        save_flow_transformer_model(model, out)
+        elapsed = time.perf_counter() - t0
+        final = history[best_epoch]
+        return {
+            "path": str(out),
+            "family": "flow_transformer_ssl",
+            "arch": asdict(arch),
+            "config": asdict(cfg),
+            "backend": "torch",
+            "n_snapshots": int(batch.shape[0]),
+            "n_tokens": int(batch.shape[1]),
+            "grid": [int(grid[0]), int(grid[1])],
+            "history": history,
+            "final_train_loss": float(final["train_loss"]),
+            "final_val_loss": float(final["val_loss"]),
+            "best_epoch": int(best_epoch),
+            "stopped_early": bool(len(history) < int(cfg.epochs)),
+            "training_time_s": float(elapsed),
         }
-        history.append(metrics)
-        if progress_callback is not None:
-            progress_callback(dict(metrics))
-        improved = val_loss < (best_val_loss - 1e-12)
-        if improved:
-            best_val_loss = float(val_loss)
-            best_epoch = int(epoch)
-            best_state = copy.deepcopy(model.state_dict())
-            epochs_without_improve = 0
-        else:
-            epochs_without_improve += 1
-        if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
-            scheduler.step(val_loss)
-        elif scheduler is not None:
-            scheduler.step()
-        if cfg.patience is not None and epochs_without_improve > int(cfg.patience):
-            break
-
-    model.load_state_dict(best_state)
-    out = Path(out_path)
-    save_flow_transformer_model(model, out)
-    elapsed = time.perf_counter() - t0
-    final = history[best_epoch]
-    return {
-        "path": str(out),
-        "family": "flow_transformer_ssl",
-        "arch": asdict(arch),
-        "config": asdict(cfg),
-        "backend": "torch",
-        "n_snapshots": int(batch.shape[0]),
-        "n_tokens": int(batch.shape[1]),
-        "grid": [int(grid[0]), int(grid[1])],
-        "history": history,
-        "final_train_loss": float(final["train_loss"]),
-        "final_val_loss": float(final["val_loss"]),
-        "best_epoch": int(best_epoch),
-        "stopped_early": bool(len(history) < int(cfg.epochs)),
-        "training_time_s": float(elapsed),
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -401,8 +447,8 @@ def _train_flow_transformer_backend(
     cfg: FlowTransformerTrainConfig,
     out_path: Path,
     backend_name: str,
-    progress_callback,
-) -> dict[str, Any]:
+    progress_callback: Callable[[dict[str, float]], None] | None,
+) -> dict[str, object]:
     """Backend-agnostic transformer training loop."""
     ops = get_ops()
 
@@ -436,7 +482,6 @@ def _train_flow_transformer_backend(
         train_np = val_np = batch_np
 
     # Convert to backend tensors
-    train_x = ops.to_device(ops.tensor(train_np), cfg.device)
     val_x   = ops.to_device(ops.tensor(val_np), cfg.device)
 
     # Build model
@@ -485,21 +530,32 @@ def _train_flow_transformer_backend(
             # Apply mask token and run forward + loss
             x_masked = model.apply_mask_token(xb, mask_bool)
 
-            def _step_loss():
-                pred = model(x_masked)
-                if ops.any_true(mask_bool):
-                    # only compute loss on masked tokens
-                    pred_flat = ops.reshape(pred, [-1, int(arch.in_features)])
-                    xb_flat   = ops.reshape(xb,   [-1, int(arch.in_features)])
-                    mask_flat = ops.reshape(mask_bool, [-1])
-                    p = ops.index_select(pred_flat, 0, ops.tensor(
-                        np.where(mask_np.ravel())[0].astype(np.int32), device=cfg.device))
-                    t = ops.index_select(xb_flat, 0, ops.tensor(
-                        np.where(mask_np.ravel())[0].astype(np.int32), device=cfg.device))
-                    return loss_fn(p, t)
-                return loss_fn(pred, xb)
+            masked_idx_np = np.where(mask_np.ravel())[0].astype(np.int32)
 
-            batch_loss = ops.train_step(model, lambda a, b: _step_loss(), optimizer, xb, xb, cfg.gradient_clip_norm)
+            def _masked_loss(
+                pred: object,
+                target: object,
+                *,
+                mask_bool: object = mask_bool,
+                masked_idx_np: np.ndarray = masked_idx_np,
+            ) -> object:
+                if ops.any_true(mask_bool):
+                    pred_flat = ops.reshape(pred, [-1, int(arch.in_features)])
+                    target_flat = ops.reshape(target, [-1, int(arch.in_features)])
+                    masked_idx = ops.tensor(masked_idx_np, device=cfg.device)
+                    p = ops.index_select(pred_flat, 0, masked_idx)
+                    t = ops.index_select(target_flat, 0, masked_idx)
+                    return loss_fn(p, t)
+                return loss_fn(pred, target)
+
+            batch_loss = ops.train_step(
+                model,
+                _masked_loss,
+                optimizer,
+                x_masked,
+                xb,
+                cfg.gradient_clip_norm,
+            )
             running_loss += float(batch_loss)
             n_batches += 1
 
@@ -559,7 +615,11 @@ def _train_flow_transformer_backend(
     out_path.with_suffix(out_path.suffix + ".json").write_text(json.dumps(meta, indent=2))
 
     elapsed = time.perf_counter() - t0
-    final = history[best_epoch] if history else {"train_loss": float("nan"), "val_loss": float("nan")}
+    final = (
+        history[best_epoch]
+        if history
+        else {"train_loss": float("nan"), "val_loss": float("nan")}
+    )
     return {
         "path": str(out_path),
         "family": "flow_transformer_ssl",
@@ -579,27 +639,34 @@ def _train_flow_transformer_backend(
 
 
 def reconstruct_flow_field(
-    model: FlowFieldTransformer,
+    model: _BackendModel,
     ux: torch.Tensor,
     uy: torch.Tensor,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Run deployed inference and return reconstructed fields + diagnostics."""
-    tokens = flow_snapshot_to_tokens(ux, uy)
-    ny, nx = ux.shape
-    x = tokens.unsqueeze(0)
-    was_training = model.training
-    model.eval()
-    with torch.no_grad():
-        pred = model(x).squeeze(0)
-    if was_training:
-        model.train()
+    ux_np = _to_numpy(ux).astype(np.float32, copy=False)
+    uy_np = _to_numpy(uy).astype(np.float32, copy=False)
+    if ux_np.ndim != 2 or uy_np.ndim != 2 or ux_np.shape != uy_np.shape:
+        raise ValueError("ux and uy must be same-shape 2-D arrays")
+    ny, nx = ux_np.shape
+    tokens_np = np.stack([ux_np, uy_np], axis=-1).reshape(-1, 2)
+    backend_name = getattr(model, "tensorlbm_backend", None) or get_backend()
+    with using_backend(backend_name):
+        ops = get_ops()
+        x = ops.unsqueeze(ops.tensor(tokens_np), 0)
+        was_training = ops.is_training(model)
+        ops.eval_mode(model)
+        with ops.no_grad():
+            pred_np = _to_numpy(model(x))[0]
+        if was_training:
+            ops.train_mode(model)
 
-    ux_rec = pred[:, 0].reshape(ny, nx)
-    uy_rec = pred[:, 1].reshape(ny, nx)
-    err = pred - tokens
+    ux_rec = pred_np[:, 0].reshape(ny, nx)
+    uy_rec = pred_np[:, 1].reshape(ny, nx)
+    err = pred_np - tokens_np
     return {
         "ux_reconstructed": ux_rec,
         "uy_reconstructed": uy_rec,
-        "mse": float(torch.mean(err * err)),
-        "max_abs_error": float(torch.max(torch.abs(err))),
+        "mse": float(np.mean(err * err)),
+        "max_abs_error": float(np.max(np.abs(err))),
     }
