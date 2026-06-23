@@ -2863,3 +2863,410 @@ async def extract_isosurface(
             "field": field,
             "mode": "3d",
         }
+
+
+# ===========================================================================
+# FSI – Fluid-Structure Interaction load extraction
+# ===========================================================================
+
+class FSIStructuralProps(BaseModel):
+    youngs_modulus: float = Field(2.1e11, gt=0, description="Young's modulus [Pa]")
+    poisson_ratio: float = Field(0.3, ge=0.0, lt=0.5)
+    density: float = Field(7850.0, gt=0, description="Material density [kg/m³]")
+    thickness: float = Field(0.01, gt=0, description="Section thickness [m]")
+    length: float = Field(1.0, gt=0, description="Beam/plate span [m]")
+    width: float = Field(0.1, gt=0, description="Cross-section width [m]")
+    damping_ratio: float = Field(0.02, ge=0.0, le=0.5)
+    yield_stress: float = Field(2.5e8, gt=0, description="Yield stress [Pa]")
+
+
+class FSILoadsRequest(BaseModel):
+    coupling: str = Field("one_way", pattern="^(one_way|two_way)$")
+    flow_speed: float = Field(1.0, gt=0, description="Reference inflow speed [m/s]")
+    characteristic_length: float = Field(0.1, gt=0, description="Body diameter/chord [m]")
+    dx_phys: float = Field(1e-3, gt=0, description="Physical grid spacing [m]")
+    strouhal: float = Field(0.2, gt=0, le=1.0)
+    structural_props: FSIStructuralProps = Field(default_factory=FSIStructuralProps)
+
+
+@router.post("/fsi-loads/{job_id}")
+async def compute_fsi_loads(job_id: str, req: FSILoadsRequest) -> dict:
+    """Extract FSI loads and compute structural response for a completed job."""
+    import torch
+    from tensorlbm.fsi import (
+        StructuralProperties,
+        extract_fsi_loads,
+        compute_structural_response,
+    )
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id!r} not found")
+    if job.status not in ("completed", "running"):
+        raise HTTPException(status_code=400, detail="Job must be completed or running")
+
+    # Load latest checkpoint
+    candidates = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No checkpoint found for this job")
+    ckpt = torch.load(candidates[-1], map_location="cpu", weights_only=False)
+
+    f = ckpt.get("f")
+    if f is None or f.dim() < 3:
+        raise HTTPException(status_code=422, detail="Checkpoint missing population tensor 'f'")
+
+    # Derive macroscopic fields (D2Q9 layout: axis 0 = directions)
+    rho = f.sum(dim=0)
+    # D2Q9 velocities
+    e = torch.tensor([
+        [0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[-1,-1],[1,-1]
+    ], dtype=torch.float32)
+    ux = (f * e[:, 0].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    uy = (f * e[:, 1].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+
+    obstacle_mask = ckpt.get("obstacle_mask", torch.zeros_like(rho, dtype=torch.bool))
+
+    sp = req.structural_props
+    props = StructuralProperties(
+        youngs_modulus=sp.youngs_modulus,
+        poisson_ratio=sp.poisson_ratio,
+        density=sp.density,
+        thickness=sp.thickness,
+        length=sp.length,
+        width=sp.width,
+        damping_ratio=sp.damping_ratio,
+    )
+
+    loads = extract_fsi_loads(
+        rho, ux, uy, obstacle_mask,
+        dx_phys=req.dx_phys,
+        u_ref=req.flow_speed,
+    )
+    response = compute_structural_response(
+        loads,
+        props,
+        flow_speed=req.flow_speed,
+        characteristic_length=req.characteristic_length,
+        strouhal=req.strouhal,
+        yield_stress=sp.yield_stress,
+        coupling=req.coupling,  # type: ignore[arg-type]
+    )
+
+    return {
+        "job_id": job_id,
+        "loads": {
+            "fx_N": loads.fx,
+            "fy_N": loads.fy,
+            "mz_Nm": loads.mz,
+            "n_surface_cells": len(loads.pressure),
+        },
+        "response": {
+            "max_deflection_m": response.max_deflection,
+            "max_stress_Pa": response.max_stress,
+            "natural_frequency_hz": response.natural_frequency_hz,
+            "reduced_velocity": response.reduced_velocity,
+            "safety_factor": response.safety_factor,
+            "viv_risk": response.viv_risk,
+            "coupling": response.coupling,
+            "iterations": response.iterations,
+        },
+        "assessment": (
+            "FAIL: structural failure (SF < 1)" if response.safety_factor < 1.0 else
+            "WARNING: VIV lock-in risk detected" if response.viv_risk else
+            "CAUTION: low safety factor" if response.safety_factor < 2.0 else
+            "PASS"
+        ),
+    }
+
+
+# ===========================================================================
+# Lagrangian Particle Tracking
+# ===========================================================================
+
+class ParticleInjectRequest(BaseModel):
+    job_id: str
+    injection_x: list[float] = Field(..., min_length=1, max_length=500)
+    injection_y: list[float] = Field(..., min_length=1, max_length=500)
+    n_steps: int = Field(2000, ge=10, le=50000)
+    dt: float = Field(0.5, gt=0, le=10.0)
+    stokes_number: float = Field(0.0, ge=0.0, le=100.0)
+    record_every: int = Field(10, ge=1, le=1000)
+    dx_phys: float = Field(1e-3, gt=0)
+
+
+@router.post("/particle-inject")
+async def inject_particles(req: ParticleInjectRequest) -> dict:
+    """Inject Lagrangian particles and compute trajectories through the flow field."""
+    import torch
+    from tensorlbm.particle_tracker import track_particles, build_deposition_map
+
+    if len(req.injection_x) != len(req.injection_y):
+        raise HTTPException(status_code=422, detail="injection_x and injection_y must have the same length")
+
+    job = job_manager.get_job(req.job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {req.job_id!r} not found")
+
+    candidates = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No checkpoint found for this job")
+    ckpt = torch.load(candidates[-1], map_location="cpu", weights_only=False)
+
+    f = ckpt.get("f")
+    if f is None or f.dim() < 3:
+        raise HTTPException(status_code=422, detail="Checkpoint missing population tensor 'f'")
+
+    rho = f.sum(dim=0)
+    e = torch.tensor([[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[-1,-1],[1,-1]], dtype=torch.float32)
+    ux = (f * e[:, 0].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    uy = (f * e[:, 1].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    obstacle_mask = ckpt.get("obstacle_mask", torch.zeros_like(rho, dtype=torch.bool))
+
+    tracks = track_particles(
+        ux, uy, obstacle_mask,
+        injection_x=req.injection_x,
+        injection_y=req.injection_y,
+        n_steps=req.n_steps,
+        dt=req.dt,
+        stokes_number=req.stokes_number,
+        record_every=req.record_every,
+        dx_phys=req.dx_phys,
+    )
+
+    dep_map = build_deposition_map(tracks, int(ux.shape[1]), int(ux.shape[0]), req.dx_phys)
+
+    return {
+        "job_id": req.job_id,
+        "n_particles": len(tracks),
+        "deposition_summary": dep_map,
+        "tracks": [
+            {
+                "pid": t.pid,
+                "status": t.status,
+                "age_steps": t.age_steps,
+                "trajectory_x": t.trajectory_x,
+                "trajectory_y": t.trajectory_y,
+                "deposit_x": t.deposit_x,
+                "deposit_y": t.deposit_y,
+            }
+            for t in tracks
+        ],
+    }
+
+
+@router.get("/particle-tracks/{job_id}")
+async def get_particle_tracks(
+    job_id: str,
+    n_particles: int = Query(20, ge=1, le=200),
+    n_steps: int = Query(1000, ge=10, le=20000),
+    stokes_number: float = Query(0.0, ge=0.0, le=100.0),
+    seed: int = Query(42, ge=0),
+) -> dict:
+    """Auto-generate particle injection seeds and return tracks (convenience endpoint)."""
+    import torch
+    from tensorlbm.particle_tracker import track_particles, build_deposition_map
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id!r} not found")
+
+    candidates = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No checkpoint found for this job")
+    ckpt = torch.load(candidates[-1], map_location="cpu", weights_only=False)
+
+    f = ckpt.get("f")
+    if f is None or f.dim() < 3:
+        raise HTTPException(status_code=422, detail="Checkpoint missing population tensor 'f'")
+
+    rho = f.sum(dim=0)
+    e = torch.tensor([[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[-1,-1],[1,-1]], dtype=torch.float32)
+    ux = (f * e[:, 0].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    uy = (f * e[:, 1].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    obstacle_mask = ckpt.get("obstacle_mask", torch.zeros_like(rho, dtype=torch.bool))
+
+    ny, nx = ux.shape
+    torch.manual_seed(seed)
+    # Inject near left edge, distributed vertically (avoiding solid cells)
+    inj_x = [float(torch.randint(1, max(2, nx // 10), (1,)).item())] * n_particles
+    inj_y = [float(i * ny / n_particles + 0.5) for i in range(n_particles)]
+
+    tracks = track_particles(
+        ux, uy, obstacle_mask,
+        injection_x=inj_x,
+        injection_y=inj_y,
+        n_steps=n_steps,
+        stokes_number=stokes_number,
+        record_every=max(1, n_steps // 100),
+    )
+
+    dep_map = build_deposition_map(tracks, nx, ny)
+
+    return {
+        "job_id": job_id,
+        "n_particles": len(tracks),
+        "deposition_summary": dep_map,
+        "tracks": [
+            {
+                "pid": t.pid,
+                "status": t.status,
+                "age_steps": t.age_steps,
+                "trajectory_x": t.trajectory_x[:50],   # truncate for response size
+                "trajectory_y": t.trajectory_y[:50],
+                "deposit_x": t.deposit_x,
+                "deposit_y": t.deposit_y,
+            }
+            for t in tracks
+        ],
+    }
+
+
+# ===========================================================================
+# Wind Comfort Assessment
+# ===========================================================================
+
+class WindSensorInput(BaseModel):
+    label: str
+    x: float
+    y: float
+    z: float = 1.5
+    mean_speed: float = Field(..., ge=0.0, description="Mean wind speed [m/s]")
+    turbulence_intensity: float = Field(0.1, ge=0.0, le=1.0)
+    weibull_k: float = Field(2.0, gt=0.0, le=10.0)
+    weibull_c: float | None = None
+
+
+class WindComfortRequest(BaseModel):
+    sensors: list[WindSensorInput] = Field(..., min_length=1, max_length=200)
+    gust_factor: float = Field(3.5, ge=1.0, le=10.0)
+    comfort_threshold_class: str = Field("C", pattern="^(A|B|C|D|E)$")
+    reference_code: str = Field("both", pattern="^(lawson|nen8100|both)$")
+
+
+@router.post("/wind-comfort")
+async def assess_wind_comfort(req: WindComfortRequest) -> dict:
+    """Assess pedestrian wind comfort using Lawson LDDC and NEN 8100 criteria."""
+    from tensorlbm.wind_comfort import (
+        WindSensorPoint,
+        assess_wind_comfort as _assess,
+        wind_comfort_summary,
+    )
+
+    sensors = [
+        WindSensorPoint(
+            label=s.label,
+            x=s.x,
+            y=s.y,
+            z=s.z,
+            mean_speed=s.mean_speed,
+            turbulence_intensity=s.turbulence_intensity,
+            weibull_k=s.weibull_k,
+            weibull_c=s.weibull_c,
+        )
+        for s in req.sensors
+    ]
+
+    results = _assess(
+        sensors,
+        gust_factor=req.gust_factor,
+        comfort_threshold_class=req.comfort_threshold_class,  # type: ignore[arg-type]
+        reference_code=req.reference_code,  # type: ignore[arg-type]
+    )
+
+    return wind_comfort_summary(results)
+
+
+# ===========================================================================
+# Adjoint Sensitivity Analysis
+# ===========================================================================
+
+class AdjointSensitivityRequest(BaseModel):
+    objective: str = Field("drag", pattern="^(drag|lift|pressure_loss|mixing_uniformity)$")
+    perturbation_scale: float = Field(1e-3, gt=0, le=1.0)
+    finite_diff_check: bool = False
+
+
+@router.post("/adjoint-sensitivity/{job_id}")
+async def compute_adjoint_sensitivity(job_id: str, req: AdjointSensitivityRequest) -> dict:
+    """Compute shape sensitivity gradients via discrete adjoint for a completed job."""
+    import torch
+    from tensorlbm.adjoint import adjoint_sensitivity
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id!r} not found")
+
+    candidates = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No checkpoint found for this job")
+    ckpt = torch.load(candidates[-1], map_location="cpu", weights_only=False)
+
+    f = ckpt.get("f")
+    if f is None or f.dim() < 3:
+        raise HTTPException(status_code=422, detail="Checkpoint missing population tensor 'f'")
+
+    rho = f.sum(dim=0)
+    e = torch.tensor([[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[-1,-1],[1,-1]], dtype=torch.float32)
+    ux = (f * e[:, 0].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    uy = (f * e[:, 1].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    obstacle_mask = ckpt.get("obstacle_mask", torch.zeros_like(rho, dtype=torch.bool))
+
+    result = adjoint_sensitivity(
+        rho, ux, uy, obstacle_mask,
+        objective=req.objective,  # type: ignore[arg-type]
+        perturbation_scale=req.perturbation_scale,
+        finite_diff_check=req.finite_diff_check,
+    )
+    result["job_id"] = job_id
+    return result
+
+
+# ===========================================================================
+# CGNS Export
+# ===========================================================================
+
+@router.get("/export-cgns/{job_id}")
+async def export_cgns(
+    job_id: str,
+    reference_velocity: float = Query(1.0, gt=0),
+    reference_density: float = Query(1.0, gt=0),
+    dx_phys: float = Query(1e-3, gt=0),
+    include_vorticity: bool = Query(True),
+) -> dict:
+    """Export LBM field data to CGNS/HDF5 format (or NumPy fallback)."""
+    import torch
+    from tensorlbm.cgns_export import export_cgns as _export, CGNSExportConfig
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id!r} not found")
+    if job.status != "completed":
+        raise HTTPException(status_code=400, detail="Job must be completed before CGNS export")
+
+    candidates = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No checkpoint found for this job")
+    ckpt = torch.load(candidates[-1], map_location="cpu", weights_only=False)
+
+    f = ckpt.get("f")
+    if f is None or f.dim() < 3:
+        raise HTTPException(status_code=422, detail="Checkpoint missing population tensor 'f'")
+
+    rho = f.sum(dim=0)
+    e = torch.tensor([[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[-1,-1],[1,-1]], dtype=torch.float32)
+    ux = (f * e[:, 0].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    uy = (f * e[:, 1].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+
+    cfg = CGNSExportConfig(
+        base_name=f"TensorLBM_{job_id[:8]}",
+        zone_name="FlowZone",
+        reference_density=reference_density,
+        reference_velocity=reference_velocity,
+        dx_phys=dx_phys,
+        include_vorticity=include_vorticity,
+    )
+
+    out_path = job.output_dir / "cgns_export"
+    result = _export(rho, ux, uy, out_path, cfg)
+    result["job_id"] = job_id
+    return result
