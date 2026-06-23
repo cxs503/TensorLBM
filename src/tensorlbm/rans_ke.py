@@ -653,6 +653,122 @@ class SASolver:
         return dx**2 + dy**2 + dz**2
 
 
+# k-omega SST model constants (Menter 1994)
+_SST_BETA_STAR = 0.09
+_SST_BETA1 = 0.075
+_SST_BETA2 = 0.0828
+_SST_SIGMA_K1 = 0.85
+_SST_SIGMA_K2 = 1.0
+_SST_SIGMA_W1 = 0.5
+_SST_SIGMA_W2 = 0.856
+_SST_ALPHA1 = 5.0 / 9.0
+_SST_ALPHA2 = 0.44
+_SST_A1 = 0.31
+
+
+class KOmegaSSTSolver:
+    """k-omega SST two-equation RANS model for LBM (Menter 1994).
+
+    Blends k-ω (inner layer) and k-ε (outer layer) via a blending function F1.
+    Superior to k-ε for adverse pressure gradients and separated flows.
+    """
+
+    def __init__(self, mask: torch.Tensor, nu_lbm: float, dx: float = 1.0):
+        self.mask = mask
+        self.nu = nu_lbm
+        self.dx = dx
+        shape = mask.shape
+        dev = mask.device
+        self.k = torch.full(shape, 1e-6, dtype=torch.float32, device=dev)
+        self.omega = torch.full(shape, 1.0, dtype=torch.float32, device=dev)
+        self.nu_t = torch.zeros(shape, dtype=torch.float32, device=dev)
+
+    def _compute_strain_rate(self, ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
+        """Compute |S| = sqrt(2 S_ij S_ij) from velocity gradients."""
+        if ux.ndim == 3:
+            dudx = torch.gradient(ux, dim=2)[0] / self.dx
+            dudy = torch.gradient(ux, dim=1)[0] / self.dx
+            dvdx = torch.gradient(uy, dim=2)[0] / self.dx
+            dvdy = torch.gradient(uy, dim=1)[0] / self.dx
+        else:
+            dudx = torch.gradient(ux, dim=1)[0] / self.dx
+            dudy = torch.gradient(ux, dim=0)[0] / self.dx
+            dvdx = torch.gradient(uy, dim=1)[0] / self.dx
+            dvdy = torch.gradient(uy, dim=0)[0] / self.dx
+        return torch.sqrt(2.0 * (dudx**2 + dvdy**2 + 0.5 * (dudy + dvdx)**2) + 1e-20)
+
+    def _blending_function(self, wall_dist: torch.Tensor) -> torch.Tensor:
+        """Compute SST blending function F1 (inner=1, outer=0)."""
+        sqrt_k = torch.sqrt(torch.clamp(self.k, min=0.0) + 1e-20)
+        d = torch.clamp(wall_dist, min=1e-10)
+        grad_k_x = torch.gradient(self.k, dim=-1)[0]
+        grad_k_y = torch.gradient(self.k, dim=-2)[0]
+        grad_w_x = torch.gradient(self.omega, dim=-1)[0]
+        grad_w_y = torch.gradient(self.omega, dim=-2)[0]
+        cross_diff = grad_k_x * grad_w_x + grad_k_y * grad_w_y
+        cd_kw = torch.clamp(
+            2.0 * _SST_SIGMA_W2 / (self.omega + 1e-20) * cross_diff,
+            min=1e-10,
+        )
+        arg1 = torch.min(
+            torch.max(
+                sqrt_k / (_SST_BETA_STAR * self.omega * d + 1e-20),
+                500.0 * self.nu / (self.omega * d**2 + 1e-20),
+            ),
+            4.0 * _SST_SIGMA_W2 * self.k / (cd_kw * d**2 + 1e-20),
+        )
+        return torch.tanh(arg1**4)
+
+    def step(
+        self,
+        ux: torch.Tensor,
+        uy: torch.Tensor,
+        wall_dist: torch.Tensor | None = None,
+    ) -> None:
+        """Advance k and omega by one LBM time step and update nu_t."""
+        if wall_dist is None:
+            wall_dist = torch.ones_like(self.k) * 10.0
+        d = torch.clamp(wall_dist, min=1e-10)
+
+        s_mag = self._compute_strain_rate(ux, uy)
+        f1 = self._blending_function(d)
+
+        alpha = f1 * _SST_ALPHA1 + (1.0 - f1) * _SST_ALPHA2
+        beta = f1 * _SST_BETA1 + (1.0 - f1) * _SST_BETA2
+
+        p_k = torch.clamp(
+            self.nu_t * s_mag**2,
+            max=10.0 * _SST_BETA_STAR * self.k * self.omega,
+        )
+        d_k = p_k - _SST_BETA_STAR * self.k * self.omega
+        self.k = torch.clamp(self.k + d_k, min=1e-12)
+
+        d_omega = alpha * s_mag**2 - beta * self.omega**2
+        self.omega = torch.clamp(self.omega + d_omega, min=1e-10)
+
+        f2_arg = torch.max(
+            2.0 * torch.sqrt(self.k + 1e-20) / (_SST_BETA_STAR * self.omega * d + 1e-20),
+            500.0 * self.nu / (self.omega * d**2 + 1e-20),
+        )
+        f2 = torch.tanh(f2_arg**2)
+        limiter = torch.max(_SST_A1 * self.omega, s_mag * f2)
+        self.nu_t = _SST_A1 * self.k / torch.clamp(limiter, min=1e-12)
+
+        if self.mask is not None:
+            fluid = ~self.mask
+            self.k[~fluid] = 1e-12
+            self.omega[~fluid] = 1e-10
+            self.nu_t[~fluid] = 0.0
+
+    def get_nu_eff(self) -> torch.Tensor:
+        """Return effective kinematic viscosity nu + nu_t."""
+        return self.nu + self.nu_t
+
+    def get_tau_eff(self) -> torch.Tensor:
+        """Return effective LBM relaxation time from nu_eff."""
+        return 0.5 + 3.0 * self.get_nu_eff()
+
+
 def collide_rans_sa(
     f: torch.Tensor,
     tau: float,
@@ -683,11 +799,55 @@ def collide_rans_sa(
     return collide_smagorinsky_mrt3d(f, tau=tau_eff, C_s=0.0)
 
 
+def komega_sst_collision_d2q9(
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    sst_solver: "KOmegaSSTSolver",
+    *,
+    wall_dist: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """D2Q9 BGK collision with k-omega SST RANS eddy viscosity.
+
+    Uses the per-cell effective relaxation time from the SST solver's
+    current nu_t field. Call ``sst_solver.step(ux, uy)`` before this
+    function each time step.
+
+    Args:
+        f:          Distribution function tensor ``(9, ny, nx)``.
+        mask:       Solid mask ``(ny, nx)``.
+        sst_solver: Initialised :class:`KOmegaSSTSolver` instance.
+        wall_dist:  Optional wall-distance field ``(ny, nx)`` for F2.
+
+    Returns:
+        Post-collision distribution function, same shape as ``f``.
+    """
+    from .d2q9 import C_X, C_Y, W  # noqa: PLC0415
+
+    rho = f.sum(dim=0)
+    ux = (f * C_X.view(9, 1, 1)).sum(dim=0) / rho.clamp(min=1e-10)
+    uy = (f * C_Y.view(9, 1, 1)).sum(dim=0) / rho.clamp(min=1e-10)
+
+    sst_solver.step(ux, uy, wall_dist=wall_dist)
+    tau = sst_solver.get_tau_eff()
+
+    cu = C_X.view(9, 1, 1) * ux + C_Y.view(9, 1, 1) * uy
+    feq = rho * W.view(9, 1, 1) * (
+        1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * (ux**2 + uy**2)
+    )
+    f_new = f - (f - feq) / tau
+
+    if mask is not None:
+        f_new[:, mask] = f[:, mask]
+    return f_new
+
+
 __all__ = [
     "KESolver",
     "collide_rans_ke",
     "SASolver",
     "collide_rans_sa",
+    "KOmegaSSTSolver",
+    "komega_sst_collision_d2q9",
     "C_MU",
     "C_E1",
     "C_E2",

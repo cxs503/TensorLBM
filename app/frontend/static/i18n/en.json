@@ -273,6 +273,7 @@
     "turb_none": "None",
     "turb_smag": "Smagorinsky LES",
     "turb_dyn_smag": "Dynamic Smagorinsky LES",
+    "turb_komega_sst": "k-ω SST (Menter)",
     "yplus_advisor_title": "Wall Resolution Advisor",
     "yplus_advisor_geometry": "Geometry",
     "yplus_advisor_compute": "Compute Y⁺ Advice",
