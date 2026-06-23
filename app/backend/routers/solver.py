@@ -181,6 +181,7 @@ async def start_cylinder_flow_scan(params: CylinderFlowScanParams) -> dict:
             n_steps=params.n_steps,
             output_interval=params.output_interval,
             device=params.device,
+            backend=params.backend,
             seed=params.seed,
             physics=params.physics,
         )

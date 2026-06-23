@@ -212,6 +212,10 @@ def contiguous(t):
     return t.contiguous() if hasattr(t, "contiguous") else t
 
 
+def roll(t, shifts, dims):
+    return _paddle().roll(t, shifts=shifts, axis=dims)
+
+
 def to_numpy(t) -> np.ndarray:
     return t.numpy()
 

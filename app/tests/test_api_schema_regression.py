@@ -34,3 +34,4 @@ def test_openapi_solver_cylinder_has_physics_field(client: TestClient) -> None:
     req_name = req_ref.rsplit("/", maxsplit=1)[-1]
     props = schema["components"]["schemas"][req_name]["properties"]
     assert "physics" in props
+    assert "backend" in props
