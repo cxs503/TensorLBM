@@ -58,6 +58,7 @@ def _normalize_solver_result(result: object, job: job_manager.Job) -> dict[str, 
 async def start_cylinder_flow(params: CylinderFlowParams) -> dict:
     """Start a 2D cylinder flow simulation."""
     run_config, submit_config = prepare_solver_configs("cylinder_flow", params)
+    physics_config = submit_config.get("physics", {})
 
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import CylinderFlowConfig, run_cylinder_flow
@@ -65,7 +66,13 @@ async def start_cylinder_flow(params: CylinderFlowParams) -> dict:
         cfg = CylinderFlowConfig(
             **overwrite_output_root(run_config, job),
         )
-        run_dir = run_cylinder_flow(cfg)
+        run_dir = run_cylinder_flow(
+            cfg,
+            synthetic_inflow=physics_config.get("synthetic_inflow"),
+            sponge_layer=physics_config.get("sponge_layer"),
+            turbulence_statistics=physics_config.get("turbulence_statistics"),
+            diagnostic_callback=lambda data: job_manager.push_diagnostic(job.job_id, data),
+        )
         return {"run_dir": str(run_dir)}
 
     job_id = job_manager.submit(
@@ -225,6 +232,7 @@ async def start_bfs(params: BackwardFacingStepParams) -> dict:
 @router.post("/turbulent-channel")
 async def start_turbulent_channel(params: TurbulentChannelParams) -> dict:
     run_config, submit_config = prepare_solver_configs("turbulent_channel", params)
+    physics_config = submit_config.get("physics", {})
 
     def _run(job: job_manager.Job) -> dict:
         from tensorlbm import TurbulentChannelConfig, run_turbulent_channel
@@ -232,7 +240,12 @@ async def start_turbulent_channel(params: TurbulentChannelParams) -> dict:
         cfg = TurbulentChannelConfig(
             **overwrite_output_root(run_config, job),
         )
-        run_dir = run_turbulent_channel(cfg)
+        run_dir = run_turbulent_channel(
+            cfg,
+            rough_wall=physics_config.get("rough_wall"),
+            turbulence_statistics=physics_config.get("turbulence_statistics"),
+            diagnostic_callback=lambda data: job_manager.push_diagnostic(job.job_id, data),
+        )
         return {"run_dir": str(run_dir)}
 
     job_id = job_manager.submit(

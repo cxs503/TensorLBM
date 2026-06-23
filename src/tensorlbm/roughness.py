@@ -100,7 +100,6 @@ def compute_rough_wall_slip_velocity(
         Tuple ``(ux_slip, uy_slip, uz_slip)`` — slip velocity components
         at wall-adjacent cells, zero elsewhere.
     """
-    device = ux.device
     ux_s = torch.zeros_like(ux)
     uy_s = torch.zeros_like(uy)
     uz_s = torch.zeros_like(uz)
@@ -174,6 +173,59 @@ def compute_rough_wall_slip_velocity(
     return ux_out, uy_out, uz_out
 
 
+def apply_rough_wall_damping_2d(
+    f: torch.Tensor,
+    nu: float,
+    ks: float,
+    *,
+    reference_u_tau: float | None = None,
+    damping_limit: float = 0.75,
+) -> tuple[torch.Tensor, float]:
+    """Apply a 2-D rough-wall damping model on the first fluid rows.
+
+    The method blends the first fluid row adjacent to the top/bottom walls
+    towards a no-slip equilibrium state with a strength derived from the
+    equivalent sand-grain roughness correction. This provides an inexpensive
+    roughness-aware closure for D2Q9 channel-type runs.
+
+    Returns:
+        Tuple of ``(updated_distribution, mean_damping_strength)``.
+    """
+    from .d2q9 import equilibrium, macroscopic
+
+    if ks <= 0.0 or nu <= 0.0 or f.shape[1] < 3:
+        return f, 0.0
+
+    rho, ux, uy = macroscopic(f)
+    f_out = f.clone()
+    mean_damping: list[float] = []
+    rows = sorted({1, f.shape[1] - 2})
+
+    for row in rows:
+        speed = torch.sqrt(ux[row, :] ** 2 + uy[row, :] ** 2).clamp(min=1e-12)
+        if reference_u_tau is None:
+            u_tau = torch.sqrt(torch.clamp(nu * speed / 0.5, min=1e-12))
+        else:
+            u_tau = torch.full_like(speed, reference_u_tau)
+        ks_plus = ks * u_tau / max(nu, 1e-12)
+        delta_b = roughness_b_correction(ks_plus.clamp(min=1e-12))
+        damping = (delta_b / (B_SMOOTH + delta_b + 1e-12)).clamp(
+            min=0.0,
+            max=damping_limit,
+        )
+        rho_row = rho[row : row + 1, :]
+        zeros = torch.zeros_like(rho_row)
+        f_target = equilibrium(rho_row, zeros, zeros)
+        beta = damping.view(1, 1, -1)
+        f_out[:, row : row + 1, :] = (
+            (1.0 - beta) * f_out[:, row : row + 1, :]
+            + beta * f_target
+        )
+        mean_damping.append(float(damping.mean().item()))
+
+    return f_out, sum(mean_damping) / max(len(mean_damping), 1)
+
+
 def apply_rough_wall_bounce_back(
     f: torch.Tensor,
     mask: torch.Tensor,
@@ -207,5 +259,6 @@ def apply_rough_wall_bounce_back(
 __all__ = [
     "roughness_b_correction",
     "compute_rough_wall_slip_velocity",
+    "apply_rough_wall_damping_2d",
     "apply_rough_wall_bounce_back",
 ]

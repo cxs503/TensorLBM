@@ -49,8 +49,8 @@ def bounce_back_cells(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
 
 def zou_he_inlet_velocity(
     f: torch.Tensor,
-    u_in: float,
-    uy_in: float = 0.0,
+    u_in: float | torch.Tensor,
+    uy_in: float | torch.Tensor = 0.0,
 ) -> torch.Tensor:
     """Zou/He inlet velocity boundary condition at the left column (x=0).
 
@@ -71,13 +71,31 @@ def zou_he_inlet_velocity(
     # Populations pointing into the domain (cx > 0): directions 1, 5, 8
     # Populations pointing out of the domain (cx < 0): directions 3, 6, 7
     # Tangential populations (cx = 0): 0, 2, 4
+    def _as_inlet_profile(value: float | torch.Tensor, ref: torch.Tensor) -> torch.Tensor:
+        if isinstance(value, torch.Tensor):
+            profile = value.to(device=ref.device, dtype=ref.dtype)
+            if profile.ndim == 0:
+                return torch.full_like(ref, float(profile.item()))
+            if profile.ndim == 2 and profile.shape[1] == 1:
+                profile = profile[:, 0]
+            if profile.shape != ref.shape:
+                msg = (
+                    f"Inlet profile must have shape {tuple(ref.shape)}, "
+                    f"got {tuple(profile.shape)}"
+                )
+                raise ValueError(msg)
+            return profile
+        return torch.full_like(ref, float(value))
+
     f0, f2, f3, f4, f6, f7 = f[0, :, 0], f[2, :, 0], f[3, :, 0], f[4, :, 0], f[6, :, 0], f[7, :, 0]
-    rho = (f0 + f2 + f4 + 2.0 * (f3 + f6 + f7)) / (1.0 - u_in)
+    u_col = _as_inlet_profile(u_in, f0)
+    uy_col = _as_inlet_profile(uy_in, f0)
+    rho = (f0 + f2 + f4 + 2.0 * (f3 + f6 + f7)) / (1.0 - u_col)
 
     f_new = f.clone()
-    f_new[1, :, 0] = f3 + (2.0 / 3.0) * rho * u_in
-    f_new[5, :, 0] = f7 - 0.5 * (f2 - f4) + (1.0 / 6.0) * rho * u_in + 0.5 * rho * uy_in
-    f_new[8, :, 0] = f6 + 0.5 * (f2 - f4) + (1.0 / 6.0) * rho * u_in - 0.5 * rho * uy_in
+    f_new[1, :, 0] = f3 + (2.0 / 3.0) * rho * u_col
+    f_new[5, :, 0] = f7 - 0.5 * (f2 - f4) + (1.0 / 6.0) * rho * u_col + 0.5 * rho * uy_col
+    f_new[8, :, 0] = f6 + 0.5 * (f2 - f4) + (1.0 / 6.0) * rho * u_col - 0.5 * rho * uy_col
     return f_new
 
 
@@ -283,8 +301,6 @@ def fan_model_2d(
         return f
 
     rho, ux, uy = macroscopic(f)
-    ny = f.shape[1]
-
     # Volume flow rate at fan column: Q = sum(ux * dy)
     u_col = ux[:, fan_col]
     flow_rate = float(u_col.sum().item())
