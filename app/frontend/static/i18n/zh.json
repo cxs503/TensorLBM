@@ -1106,5 +1106,12 @@
     "result_n_iter": "使用迭代次数",
     "result_objective": "最终目标值",
     "result_vf": "最终体积分数"
+  },
+  "ai": {
+    "backend_label": "计算后端",
+    "backend_torch": "PyTorch（默认）",
+    "backend_paddle": "PaddlePaddle",
+    "backend_mindspore": "MindSpore",
+    "backend_note": "选择用于 AI 训练/推理的深度学习框架。"
   }
 }

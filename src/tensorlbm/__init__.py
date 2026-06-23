@@ -1,4 +1,5 @@
 from ._version import __version__
+from .backends import get_backend, set_backend
 from .adaptive_refinement import (
     AdaptationSchedule,
     AdaptiveSolver2D,
@@ -885,6 +886,9 @@ __all__ = [
     # Free-surface hull benchmark
     "HullFreeSurfaceConfig",
     "run_hull_free_surface",
+    # Multi-backend dispatch
+    "get_backend",
+    "set_backend",
     # AI turbulence (HPC + AI demo)
     "EddyViscosityDataset",
     "EddyViscosityMLP",
