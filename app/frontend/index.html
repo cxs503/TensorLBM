@@ -44,9 +44,25 @@
 
     /* Layout */
     .main-layout {
-      margin-top: var(--nav-height);
       display: flex;
-      height: calc(100vh - var(--nav-height));
+      height: calc(100vh - var(--nav-height) - 32px);
+    }
+    .workflow-stepper {
+      margin-top: var(--nav-height);
+    }
+    .step-item {
+      padding: 2px 8px;
+      border-radius: 3px;
+      color: #666;
+    }
+    .step-item.active {
+      background: #0d6efd;
+      color: #fff;
+      font-weight: 600;
+    }
+    .step-arrow {
+      color: #aaa;
+      padding: 0 2px;
     }
 
     /* Jobs sidebar */
@@ -515,6 +531,16 @@
       <i class="bi bi-keyboard"></i>
     </button>
   </span>
+</div>
+
+<div id="workflow-stepper" class="workflow-stepper d-none d-md-flex align-items-center px-3 py-1 border-bottom bg-light" style="gap:0;font-size:0.78rem;min-height:32px;">
+  <span class="step-item" data-step="geo">① <span data-i18n="sidebar.step_geo">Geometry</span></span>
+  <span class="step-arrow">›</span>
+  <span class="step-item" data-step="preprocess">② <span data-i18n="sidebar.step_preproc">Pre-process</span></span>
+  <span class="step-arrow">›</span>
+  <span class="step-item" data-step="solve">③ <span data-i18n="sidebar.step_solve">Solve</span></span>
+  <span class="step-arrow">›</span>
+  <span class="step-item" data-step="postprocess">④ <span data-i18n="sidebar.step_post">Post-process</span></span>
 </div>
 
 <!-- Main layout -->
