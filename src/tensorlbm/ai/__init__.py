@@ -8,11 +8,27 @@ Implements the end-to-end pipeline
           → neural-network turbulence-model training
           → AI-enhanced LBM collision (LES closure)
 
-All components are CPU-friendly, depend only on ``torch`` and the Python
-standard library (``sqlite3``), and are exposed both as ordinary Python
+All components are CPU-friendly and are exposed both as ordinary Python
 APIs and as platform agent tools.
+
+Multi-backend support
+---------------------
+Set the active computation framework before importing (or at any point
+before training / inference):
+
+    import tensorlbm.backends as B
+    B.set_backend("paddle")    # or "mindspore"
+
+Or via environment variable::
+
+    TENSORLBM_BACKEND=paddle python my_script.py
+
+The LBM solver core still runs on PyTorch; only the AI sub-package uses
+the multi-backend dispatch.
 """
 from __future__ import annotations
+
+from ..backends import get_backend, set_backend  # re-export for convenience
 
 from .database import (
     LBMDatabase,
@@ -48,6 +64,9 @@ from .transformer import (
 )
 
 __all__ = [
+    # backends
+    "get_backend",
+    "set_backend",
     # dataset
     "EddyViscosityDataset",
     "extract_les_samples_2d",

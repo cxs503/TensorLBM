@@ -26,6 +26,7 @@ class TransformerTrainRequest(BaseModel):
     sample_every: int = Field(10, ge=1, le=2000)
     seed: int = 0
     device: str = "cpu"
+    backend: str = "torch"
     epochs: int = Field(20, ge=1, le=500)
     batch_size: int = Field(8, ge=1, le=512)
     learning_rate: float = 1e-3
@@ -205,6 +206,7 @@ def _run_transformer_training(
             arch=arch,
             config=cfg,
             progress_callback=_progress,
+            backend=req.backend,
         )
     except Exception as exc:  # noqa: BLE001
         raise ValueError(str(exc)) from exc
@@ -236,6 +238,7 @@ def _run_transformer_training(
         "model_id": model_id,
         "run_id": run_id,
         "model_path": str(model_path),
+        "backend": train_meta.get("backend", "torch"),
         "n_snapshots": len(snapshots),
         "grid": [req.ny, req.nx],
         "final_train_loss": train_meta["final_train_loss"],
