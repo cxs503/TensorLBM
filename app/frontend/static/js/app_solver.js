@@ -538,6 +538,15 @@ const MODEL_PRESETS = {
 };
 
 let currentSchema = null;
+const YPLUS_ADVISOR_TYPES = new Set([
+  'cylinder_flow',
+  'rotating_cylinder',
+  'backward_facing_step',
+  'turbulent_channel',
+  'pipeline_flow',
+  'ship_hull',
+]);
+let yPlusAdvisorTimer = null;
 
 function initPhysicsLayer() {
   const selectOptions = (id, vals, labels) => {
@@ -663,6 +672,170 @@ function renderConfigForm(fields) {
     </div>`);
   }
   form.innerHTML = rows.join('');
+  const simType = document.getElementById('sim-type')?.value || '';
+  injectYPlusAdvisor(simType);
+}
+
+function getYPlusAdvisorFieldValue(primaryName, fallbackName = null) {
+  const primary = document.getElementById(`field-${primaryName}`);
+  const fallback = fallbackName ? document.getElementById(`field-${fallbackName}`) : null;
+  const el = primary || fallback;
+  return el ? parseFloat(el.value) : NaN;
+}
+
+function formatYPlusAdvisorText(key, replacements = {}) {
+  let text = t(key);
+  Object.entries(replacements).forEach(([name, value]) => {
+    text = text.replace(`{${name}}`, value);
+  });
+  return text;
+}
+
+function injectYPlusAdvisor(simType) {
+  const form = document.getElementById('sim-form');
+  if (!form) return;
+  const existing = document.getElementById('yplus-advisor');
+  if (existing) existing.remove();
+  if (!YPLUS_ADVISOR_TYPES.has(simType)) return;
+
+  form.insertAdjacentHTML('beforeend', `
+    <div id="yplus-advisor" class="card border-info mt-3">
+      <div class="card-header bg-info-subtle py-2">
+        <button
+          class="btn btn-link btn-sm text-decoration-none text-dark fw-semibold p-0"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#yplus-advisor-body"
+          aria-expanded="true"
+          aria-controls="yplus-advisor-body"
+        >
+          🔍 ${escHtml(t('solve.yplus_advisor_title'))}
+        </button>
+      </div>
+      <div id="yplus-advisor-body" class="collapse show">
+        <div class="card-body py-2">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label small">${escHtml(t('field.re'))}</label>
+              <input id="yplus-advisor-re" type="number" class="form-control form-control-sm" readonly />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">${escHtml(t('field.u_in'))}</label>
+              <input id="yplus-advisor-uin" type="number" class="form-control form-control-sm" readonly />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">${escHtml(t('solve.yplus_advisor_geometry'))}</label>
+              <select id="yplus-advisor-geometry" class="form-select form-select-sm">
+                <option value="flat_plate">${escHtml(t('solve.yplus_geom_flat_plate'))}</option>
+                <option value="cylinder">${escHtml(t('solve.yplus_geom_cylinder'))}</option>
+                <option value="channel">${escHtml(t('solve.yplus_geom_channel'))}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button id="yplus-advisor-btn" type="button" class="btn btn-sm btn-outline-info w-100">
+                ${escHtml(t('solve.yplus_advisor_compute'))}
+              </button>
+            </div>
+          </div>
+          <div class="mt-2">
+            <span id="yplus-advisor-badge" class="badge bg-secondary-subtle text-secondary-emphasis">
+              ${escHtml(t('solve.yplus_advisor_pending'))}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  const button = document.getElementById('yplus-advisor-btn');
+  if (button) {
+    button.addEventListener('click', () => { void computeYPlusAdvisor(false); });
+  }
+  const geometry = document.getElementById('yplus-advisor-geometry');
+  if (geometry) {
+    geometry.addEventListener('change', () => { void computeYPlusAdvisor(false); });
+  }
+  monitorReForYPlus(simType);
+  void computeYPlusAdvisor(true);
+}
+
+function monitorReForYPlus(simType) {
+  if (!YPLUS_ADVISOR_TYPES.has(simType)) return;
+  const fields = [
+    document.getElementById('field-re'),
+    document.getElementById('field-re_tau'),
+    document.getElementById('field-nx'),
+    document.getElementById('field-u_in'),
+    document.getElementById('field-u_tau'),
+  ].filter(Boolean);
+  fields.forEach((el) => {
+    if (el.dataset.yplusBound === '1') return;
+    el.dataset.yplusBound = '1';
+    el.addEventListener('input', () => {
+      syncYPlusAdvisorMirrors();
+      if (yPlusAdvisorTimer) window.clearTimeout(yPlusAdvisorTimer);
+      yPlusAdvisorTimer = window.setTimeout(() => { void computeYPlusAdvisor(true); }, 800);
+    });
+  });
+  syncYPlusAdvisorMirrors();
+}
+
+function syncYPlusAdvisorMirrors() {
+  const reEl = document.getElementById('yplus-advisor-re');
+  const uEl = document.getElementById('yplus-advisor-uin');
+  if (!reEl || !uEl) return;
+  const re = getYPlusAdvisorFieldValue('re', 're_tau');
+  const uIn = getYPlusAdvisorFieldValue('u_in', 'u_tau');
+  reEl.value = Number.isFinite(re) ? String(re) : '';
+  uEl.value = Number.isFinite(uIn) ? String(uIn) : '';
+}
+
+async function computeYPlusAdvisor(autoTriggered = false) {
+  const panel = document.getElementById('yplus-advisor');
+  const badge = document.getElementById('yplus-advisor-badge');
+  const geom = document.getElementById('yplus-advisor-geometry');
+  if (!panel || !badge || !geom) return;
+
+  syncYPlusAdvisorMirrors();
+  const re = getYPlusAdvisorFieldValue('re', 're_tau');
+  const uIn = getYPlusAdvisorFieldValue('u_in', 'u_tau');
+  const nx = getYPlusAdvisorFieldValue('nx');
+  if (!Number.isFinite(re) || !Number.isFinite(uIn) || !Number.isFinite(nx) || re <= 0 || uIn <= 0 || nx <= 0) {
+    badge.className = 'badge bg-secondary-subtle text-secondary-emphasis';
+    badge.textContent = t('solve.yplus_advisor_pending');
+    return;
+  }
+
+  if (autoTriggered) {
+    badge.className = 'badge bg-secondary-subtle text-secondary-emphasis';
+    badge.textContent = t('solve.yplus_advisor_loading');
+  }
+
+  try {
+    const result = await api('POST', '/api/preprocess/yplus', {
+      re,
+      u_ms: uIn,
+      l_m: 1.0,
+      nu_m2s: 1e-6,
+      target_yplus: 1.0,
+      n_cells: Math.max(1, Math.round(nx)),
+      geometry: geom.value,
+    });
+    const dy = Number(result.delta_y_lbm || 0);
+    if (dy > 5.0) {
+      badge.className = 'badge bg-info-subtle text-info-emphasis';
+      badge.textContent = `ℹ️ ${formatYPlusAdvisorText('solve.yplus_advisor_wall_modeled')} (Δy_LBM ≈ ${dy.toFixed(2)})`;
+    } else if (dy < 0.5) {
+      const factor = Math.max(1.1, 1.0 / Math.max(dy, 1e-6));
+      badge.className = 'badge bg-warning text-dark';
+      badge.textContent = `⚠️ ${formatYPlusAdvisorText('solve.yplus_advisor_under_resolved', { factor: factor.toFixed(1) })}`;
+    } else {
+      badge.className = 'badge bg-success';
+      badge.textContent = `✅ ${formatYPlusAdvisorText('solve.yplus_advisor_wall_resolved', { dy: dy.toFixed(2) })}`;
+    }
+  } catch (e) {
+    badge.className = 'badge bg-danger';
+    badge.textContent = `${t('solve.error')} ${e.message}`;
+  }
 }
 
 function renderField(f, devices) {
@@ -709,6 +882,8 @@ function resetDefaults() {
     if (f.type === 'select') el.value = f.default;
     else if (f.type !== 'device') el.value = f.default;
   });
+  syncYPlusAdvisorMirrors();
+  void computeYPlusAdvisor(true);
 }
 
 function parseSolverFieldValue(field, el) {
@@ -745,6 +920,8 @@ function loadSolveConfiguration(solverType, config, options = {}) {
       setTimeout(() => { msgEl.style.display = 'none'; }, 4000);
     }
   }
+  syncYPlusAdvisorMirrors();
+  void computeYPlusAdvisor(true);
   return true;
 }
 
