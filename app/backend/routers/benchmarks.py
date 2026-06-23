@@ -59,6 +59,129 @@ _ACCURACY_BASELINE_LIBRARY: dict[str, dict[str, object]] = {
     },
 }
 
+# ---------------------------------------------------------------------------
+# Per-scenario engineering acceptance gate library
+# ---------------------------------------------------------------------------
+# Each entry defines the acceptance criteria (thresholds) that a completed
+# simulation job must satisfy before it can be signed off for engineering
+# delivery.  Keys map to result fields returned by the respective solver.
+#
+# Gate keys and semantics:
+#   yplus_max         – maximum y⁺ must not exceed this value
+#   yplus_min         – minimum y⁺ (wall-resolved mesh check)
+#   cd_error_max      – drag coefficient absolute error vs reference (%)
+#   ct_error_max      – total resistance coefficient error vs reference (%)
+#   cl_error_max      – lift coefficient error vs reference (%)
+#   convergence_max   – final residual must be below this value
+#   re_tau_error_max  – friction Reynolds number error vs reference (%)
+#   wave_rmse_max     – wave-elevation RMSE normalised by wave amplitude
+#   yplus_target      – ideal y⁺ for wall-resolved LES (advisory)
+# ---------------------------------------------------------------------------
+_ENGINEERING_ACCEPTANCE_GATES: dict[str, dict[str, object]] = {
+    "marine_resistance": {
+        "description": (
+            "Engineering acceptance gate for ship resistance (Wigley / Series-60 / KCS).  "
+            "Aligned with ITTC 2017 procedures for CFD resistance prediction."
+        ),
+        "scenario": "ship hull resistance",
+        "reference_standard": "ITTC 2017 Resistance Uncertainty Analysis",
+        "thresholds": {
+            "yplus_max": 50.0,          # wall-normal resolution (wall-function regime)
+            "yplus_min": 0.5,           # over-resolved flag
+            "cd_error_max": 5.0,        # % vs ITTC friction line (Cf component)
+            "ct_error_max": 3.0,        # % vs experimental Ct (total resistance)
+            "convergence_max": 1.0e-4,  # dimensionless residual
+            "wave_rmse_max": 0.15,      # RMSE / wave amplitude
+        },
+    },
+    "suboff_resistance": {
+        "description": (
+            "Engineering acceptance gate for DARPA SUBOFF submarine resistance.  "
+            "Thresholds derived from DTMB model-test benchmark data (AFF-1/3/8)."
+        ),
+        "scenario": "submarine resistance",
+        "reference_standard": "Groves et al. (1989) DTMB-87/051",
+        "thresholds": {
+            "yplus_max": 30.0,          # higher near-wall resolution required for subs
+            "yplus_min": 0.3,
+            "ct_error_max": 3.0,        # % vs DTMB experimental Ct
+            "cd_error_max": 3.0,        # % drag error (pressure + friction)
+            "convergence_max": 5.0e-5,  # tighter convergence for certification
+        },
+    },
+    "turbulent_channel": {
+        "description": (
+            "Engineering acceptance gate for turbulent channel flow (DNS/LES validation).  "
+            "Thresholds based on Moser, Kim & Mansour (1999) DNS data at Reτ = 180 / 590."
+        ),
+        "scenario": "turbulent channel flow",
+        "reference_standard": "Moser, Kim & Mansour (1999) PoF",
+        "thresholds": {
+            "yplus_target": 1.0,        # advisory: wall-resolved LES target
+            "yplus_max": 5.0,           # hard limit for wall-resolved cases
+            "re_tau_error_max": 5.0,    # % vs DNS Reτ
+            "u_bulk_error_max": 2.0,    # % vs DNS bulk velocity
+            "convergence_max": 1.0e-4,
+        },
+    },
+    "cylinder_vortex_shedding": {
+        "description": (
+            "Engineering acceptance gate for 2-D cylinder vortex shedding (Re = 100–300).  "
+            "Validated against Williamson (1988) Strouhal number data."
+        ),
+        "scenario": "2D cylinder external flow",
+        "reference_standard": "Williamson (1988) JFM",
+        "thresholds": {
+            "cd_error_max": 5.0,        # % vs Zdravkovich (1997) mean Cd
+            "strouhal_error_max": 3.0,  # % vs Williamson St data
+            "cl_rms_min": 0.1,          # minimum RMS lift for shedding detection
+            "convergence_max": 1.0e-4,
+        },
+    },
+    "rotating_machinery": {
+        "description": (
+            "Engineering acceptance gate for open-water propeller / rotating machinery.  "
+            "Thresholds aligned with ITTC propeller open-water test procedures."
+        ),
+        "scenario": "propeller open-water / rotor",
+        "reference_standard": "ITTC Recommended Procedure 7.5-02-03-02.1",
+        "thresholds": {
+            "kt_error_max": 4.0,        # % thrust coefficient error vs experiment
+            "kq_error_max": 5.0,        # % torque coefficient error vs experiment
+            "eta_0_error_max": 4.0,     # % open-water efficiency error
+            "convergence_max": 1.0e-4,
+        },
+    },
+    "external_aerodynamics": {
+        "description": (
+            "Engineering acceptance gate for external aerodynamics / hydrodynamics "
+            "(3-D bluff bodies, Ahmed body, NACA profiles).  "
+            "Thresholds aligned with typical industrial CFD validation tolerance."
+        ),
+        "scenario": "3D external aerodynamics",
+        "reference_standard": "AIAA CFD Validation Practices (2023)",
+        "thresholds": {
+            "cd_error_max": 5.0,        # % drag coefficient error
+            "cl_error_max": 5.0,        # % lift coefficient error
+            "yplus_max": 100.0,         # wall-function regime
+            "convergence_max": 1.0e-4,
+        },
+    },
+    "thermal_convection": {
+        "description": (
+            "Engineering acceptance gate for conjugate heat transfer / thermal convection.  "
+            "Thresholds derived from de Vahl Davis (1983) lid-driven cavity benchmark."
+        ),
+        "scenario": "conjugate heat transfer / thermal cavity",
+        "reference_standard": "de Vahl Davis (1983) IJNMF",
+        "thresholds": {
+            "nu_avg_error_max": 3.0,    # % average Nusselt number error
+            "t_max_error_max": 2.0,     # % maximum temperature error
+            "convergence_max": 1.0e-4,
+        },
+    },
+}
+
 
 def _to_float(value: object) -> float | None:
     if isinstance(value, (int, float)):
@@ -860,3 +983,157 @@ async def accuracy_regression_report(job_id: str, profile: str | None = None) ->
             ),
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Engineering acceptance gate endpoints
+# ---------------------------------------------------------------------------
+
+def _check_acceptance_gate(
+    scenario: str,
+    metrics: dict[str, object],
+) -> dict[str, object]:
+    """Evaluate *metrics* against the acceptance gate for *scenario*.
+
+    Returns a structured result with per-threshold pass/fail details and an
+    overall ``passed`` boolean.
+    """
+    gate = _ENGINEERING_ACCEPTANCE_GATES.get(scenario)
+    if gate is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Unknown acceptance gate scenario '{scenario}'. "
+                f"Available: {sorted(_ENGINEERING_ACCEPTANCE_GATES)}"
+            ),
+        )
+
+    thresholds = gate.get("thresholds", {})
+    if not isinstance(thresholds, dict):
+        raise HTTPException(status_code=500, detail="Invalid gate threshold format")
+
+    checks: list[dict[str, object]] = []
+    all_passed = True
+
+    for key, limit in thresholds.items():
+        # Convention: keys ending in _max are upper-bound checks,
+        # _min are lower-bound, _target are advisory (always pass).
+        if key.endswith("_target"):
+            checks.append({
+                "key": key,
+                "threshold": limit,
+                "value": metrics.get(key),
+                "result": "advisory",
+                "passed": True,
+            })
+            continue
+
+        value = metrics.get(key)
+        v_float = _to_float(value)
+        limit_float = _to_float(limit)
+
+        if v_float is None or limit_float is None:
+            checks.append({
+                "key": key,
+                "threshold": limit,
+                "value": value,
+                "result": "missing",
+                "passed": False,
+            })
+            all_passed = False
+            continue
+
+        if key.endswith("_max"):
+            passed = v_float <= limit_float
+        elif key.endswith("_min"):
+            passed = v_float >= limit_float
+        else:
+            # Exact equality gates (rare) – treat as max
+            passed = v_float <= limit_float
+
+        if not passed:
+            all_passed = False
+
+        checks.append({
+            "key": key,
+            "threshold": limit_float,
+            "value": round(v_float, 6),
+            "result": "pass" if passed else "fail",
+            "passed": passed,
+        })
+
+    return {
+        "scenario": scenario,
+        "description": gate.get("description"),
+        "reference_standard": gate.get("reference_standard"),
+        "passed": all_passed,
+        "checks": checks,
+        "checks_passed": sum(1 for c in checks if c.get("passed")),
+        "checks_total": len(checks),
+    }
+
+
+@router.get("/acceptance-gates")
+async def list_acceptance_gates() -> dict[str, object]:
+    """Return the full engineering acceptance gate library.
+
+    Each scenario defines the per-metric thresholds that a completed
+    simulation result must satisfy for engineering sign-off.  Thresholds
+    are aligned with published benchmark standards (ITTC, DNS databases, etc.).
+    """
+    return {
+        "count": len(_ENGINEERING_ACCEPTANCE_GATES),
+        "scenarios": list(_ENGINEERING_ACCEPTANCE_GATES.keys()),
+        "gates": _ENGINEERING_ACCEPTANCE_GATES,
+    }
+
+
+@router.post("/acceptance-gates/{scenario}/check")
+async def check_acceptance_gate(
+    scenario: str,
+    metrics: dict[str, object],
+) -> dict[str, object]:
+    """Evaluate a metrics dictionary against the named scenario acceptance gate.
+
+    Post a flat dictionary of metric key→value pairs (e.g. from a completed
+    solver job result) and receive a structured pass/fail report for each
+    threshold defined by the *scenario* gate.
+
+    Example request body::
+
+        {
+            "ct_error": 2.1,
+            "yplus_max": 25.0,
+            "convergence": 3e-5
+        }
+    """
+    return _check_acceptance_gate(scenario, metrics)
+
+
+@router.post("/acceptance-gates/{scenario}/check-job/{job_id}")
+async def check_job_acceptance_gate(
+    scenario: str,
+    job_id: str,
+) -> dict[str, object]:
+    """Evaluate a completed job's result against the named scenario acceptance gate.
+
+    Reads the job result dictionary and applies the per-scenario thresholds.
+    The job must be in ``completed`` status.
+    """
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status.value != "completed":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Job is not completed (current status: {job.status.value})",
+        )
+
+    metrics: dict[str, object] = dict(job.result) if isinstance(job.result, dict) else {}
+
+    result = _check_acceptance_gate(scenario, metrics)
+    result["job_id"] = job_id
+    result["job_type"] = job.job_type
+    result["completed_at"] = job.completed_at
+    result["runtime_seconds"] = job.run_duration_seconds
+    return result
