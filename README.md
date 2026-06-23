@@ -65,6 +65,7 @@ Useful options:
 - `--u-in`, `--re`, `--radius`: flow and geometry parameters
 - `--n-steps`, `--output-interval`: runtime and output cadence
 - `--output-root`, `--run-name`, `--overwrite`: output organization
+- `--backend`: `torch` (default), `paddle`, or `mindspore`
 - `--resume-checkpoint`: resume from an existing checkpoint directory
 - `--device`: `cpu` (default), `cuda`, or `mps` (Apple Silicon)
 - `--num-threads`: PyTorch CPU thread count for multicore runs on `cpu`

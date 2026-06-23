@@ -171,6 +171,10 @@ def contiguous(t: torch.Tensor) -> torch.Tensor:
     return t.contiguous()
 
 
+def roll(t: torch.Tensor, shifts, dims) -> torch.Tensor:
+    return torch.roll(t, shifts=shifts, dims=dims)
+
+
 def to_numpy(t: torch.Tensor) -> np.ndarray:
     return t.detach().cpu().numpy()
 

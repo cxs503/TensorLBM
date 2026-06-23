@@ -7,10 +7,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import matplotlib
+import numpy as np
 import torch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+from .backends import get_ops, using_backend
 
 from .boundaries import (
     apply_simple_channel_boundaries,
@@ -46,6 +49,27 @@ except ImportError:
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+_VALID_BACKENDS = frozenset({"torch", "paddle", "mindspore"})
+_D2Q9_C = np.array(
+    [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+        [0, -1],
+        [1, 1],
+        [-1, 1],
+        [-1, -1],
+        [1, -1],
+    ],
+    dtype=np.int64,
+)
+_D2Q9_W = np.array(
+    [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36],
+    dtype=np.float32,
+)
+_D2Q9_OPPOSITE = [0, 3, 4, 1, 2, 7, 8, 5, 6]
 
 
 def _maybe_compile(fn: Callable[..., Any], use_compile: bool) -> Callable[..., Any]:
@@ -85,6 +109,7 @@ class CylinderFlowConfig:
     run_name: str | None = None
     seed: int = 0
     device: str = "cpu"
+    backend: str = "torch"
     num_threads: int | None = None
     overwrite: bool = False
     resume_checkpoint: Path | None = None
@@ -97,6 +122,7 @@ class CylinderFlowConfig:
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
         object.__setattr__(self, "device", self.device.lower())
+        object.__setattr__(self, "backend", self.backend.lower())
         if self.resume_checkpoint is not None:
             object.__setattr__(self, "resume_checkpoint", Path(self.resume_checkpoint))
 
@@ -120,6 +146,9 @@ class CylinderFlowConfig:
             raise ValueError(msg)
         if self.u_in <= 0.0 or self.re <= 0.0 or self.radius <= 0.0:
             msg = "u_in, re, and radius must be > 0"
+            raise ValueError(msg)
+        if self.backend not in _VALID_BACKENDS:
+            msg = f"Unsupported backend: {self.backend}"
             raise ValueError(msg)
         if self.num_threads is not None and self.num_threads < 1:
             msg = "num_threads must be >= 1"
@@ -167,6 +196,362 @@ def compute_vorticity(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     return duy_dx - dux_dy
 
 
+def _to_numpy(x: object) -> np.ndarray:
+    if isinstance(x, np.ndarray):
+        return x
+    if hasattr(x, "detach"):
+        try:
+            return x.detach().cpu().numpy()
+        except Exception:
+            pass
+    if hasattr(x, "asnumpy"):
+        return x.asnumpy()
+    if hasattr(x, "numpy"):
+        return x.numpy()
+    return np.asarray(x)
+
+
+def _compute_vorticity_np(ux: np.ndarray, uy: np.ndarray) -> np.ndarray:
+    dux_dy = np.zeros_like(ux)
+    duy_dx = np.zeros_like(uy)
+    dux_dy[1:-1, :] = 0.5 * (ux[2:, :] - ux[:-2, :])
+    duy_dx[:, 1:-1] = 0.5 * (uy[:, 2:] - uy[:, :-2])
+    return duy_dx - dux_dy
+
+
+def _backend_cylinder_mask(
+    ops: object,
+    nx: int,
+    ny: int,
+    cx: float,
+    cy: float,
+    radius: float,
+    *,
+    device: str,
+):
+    yy, xx = ops.meshgrid(
+        ops.arange(ny, dtype=ops.float32_dtype(), device=device),
+        ops.arange(nx, dtype=ops.float32_dtype(), device=device),
+        indexing="ij",
+    )
+    return (xx - cx) ** 2 + (yy - cy) ** 2 <= radius**2
+
+
+def _backend_make_channel_wall_mask(
+    ops: object,
+    ny: int,
+    nx: int,
+    obstacle_mask,
+    *,
+    device: str,
+):
+    yy, _ = ops.meshgrid(
+        ops.arange(ny, dtype=ops.float32_dtype(), device=device),
+        ops.arange(nx, dtype=ops.float32_dtype(), device=device),
+        indexing="ij",
+    )
+    return ((yy == 0.0) | (yy == float(ny - 1))) & (~obstacle_mask)
+
+
+def _backend_equilibrium(ops: object, rho, ux, uy, *, device: str):
+    weights = ops.reshape(ops.tensor(_D2Q9_W, device=device), (9, 1, 1))
+    c = ops.tensor(_D2Q9_C.astype(np.float32), device=device)
+    cx = ops.reshape(c[:, 0], (9, 1, 1))
+    cy = ops.reshape(c[:, 1], (9, 1, 1))
+    u_sq = ux * ux + uy * uy
+    cu = cx * ux + cy * uy
+    return weights * ops.unsqueeze(rho, 0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * ops.unsqueeze(u_sq, 0))
+
+
+def _backend_macroscopic(ops: object, f, *, device: str):
+    c = ops.tensor(_D2Q9_C.astype(np.float32), device=device)
+    cx = ops.reshape(c[:, 0], (9, 1, 1))
+    cy = ops.reshape(c[:, 1], (9, 1, 1))
+    rho = ops.sum_val(f, dim=0)
+    rho_safe = ops.clamp_min(rho, 1e-12)
+    ux = ops.sum_val(f * cx, dim=0) / rho_safe
+    uy = ops.sum_val(f * cy, dim=0) / rho_safe
+    return rho, ux, uy
+
+
+def _backend_collide_bgk(ops: object, f, tau: float, *, device: str):
+    rho, ux, uy = _backend_macroscopic(ops, f, device=device)
+    feq = _backend_equilibrium(ops, rho, ux, uy, device=device)
+    return f - (f - feq) / tau
+
+
+def _backend_stream(ops: object, f):
+    shifted = [
+        ops.roll(f[i], shifts=(int(_D2Q9_C[i, 1]), int(_D2Q9_C[i, 0])), dims=(0, 1))
+        for i in range(9)
+    ]
+    return ops.stack(shifted, dim=0)
+
+
+def _backend_bounce_back_cells(ops: object, f, mask):
+    bounced = ops.stack([f[i] for i in _D2Q9_OPPOSITE], dim=0)
+    return ops.where(ops.unsqueeze(mask, 0), bounced, f)
+
+
+def _backend_apply_simple_channel_boundaries(
+    ops: object,
+    f,
+    *,
+    u_in: float,
+    wall_mask,
+    obstacle_mask,
+    device: str,
+):
+    rho, _, _ = _backend_macroscopic(ops, f, device=device)
+    f_new = ops.clone(f)
+    u_col = ops.ones((rho.shape[0], 1), device=device) * float(u_in)
+    uy_col = ops.zeros((rho.shape[0], 1), device=device)
+    feq_in = _backend_equilibrium(ops, rho[:, 1:2], u_col, uy_col, device=device)
+    f_new[:, :, 0] = feq_in[:, :, 0]
+    f_new[:, :, -1] = f_new[:, :, -2]
+    f_new = _backend_bounce_back_cells(ops, f_new, wall_mask)
+    f_new = _backend_bounce_back_cells(ops, f_new, obstacle_mask)
+    return f_new
+
+
+def _backend_compute_obstacle_forces(ops: object, f, obstacle_mask, *, device: str):
+    c = ops.tensor(_D2Q9_C.astype(np.float32), device=device)
+    cx = ops.reshape(c[:, 0], (9, 1, 1))
+    cy = ops.reshape(c[:, 1], (9, 1, 1))
+    f_solid = f * ops.unsqueeze(obstacle_mask, 0)
+    fx = 2.0 * ops.sum_val(cx * f_solid)
+    fy = 2.0 * ops.sum_val(cy * f_solid)
+    return fx, fy
+
+
+def _backend_correct_mass(ops: object, f, target_mass: float):
+    current = ops.sum_val(f)
+    current_scalar = ops.float_scalar(current)
+    if abs(current_scalar) < 1e-30:
+        return f
+    return f * (target_mass / current_scalar)
+
+
+def _non_torch_feature_enabled(settings: dict[str, object] | None) -> bool:
+    return bool(settings and settings.get("enabled", False))
+
+
+def _run_cylinder_flow_backend(
+    config: CylinderFlowConfig,
+    *,
+    synthetic_inflow: dict[str, object] | None = None,
+    sponge_layer: dict[str, object] | None = None,
+    outlet_control: dict[str, object] | None = None,
+    turbulence_statistics: dict[str, object] | None = None,
+    diagnostic_callback: Callable[[dict[str, object]], None] | None = None,
+) -> Path:
+    configure_logging()
+    if config.use_compile:
+        raise ValueError("use_compile is only supported on the torch backend")
+    if config.collision != "bgk":
+        raise ValueError("Only bgk collision is currently supported on non-torch cylinder-flow backends")
+    unsupported = {
+        "synthetic_inflow": synthetic_inflow,
+        "sponge_layer": sponge_layer,
+        "outlet_control": outlet_control,
+        "turbulence_statistics": turbulence_statistics,
+    }
+    enabled = [name for name, settings in unsupported.items() if _non_torch_feature_enabled(settings)]
+    if enabled:
+        names = ", ".join(sorted(enabled))
+        raise ValueError(f"{names} are currently only supported on the torch backend")
+    if config.device == "mps":
+        raise ValueError("mps device is only supported on the torch backend")
+
+    ops = get_ops()
+    device = config.device
+    run_dir = prepare_run_dir(
+        config.output_root,
+        "cylinder_flow",
+        config.resolved_run_name(),
+        config.overwrite,
+    )
+
+    ckpt_str = str(config.resume_checkpoint) if config.resume_checkpoint else None
+    metadata: dict[str, object] = {
+        "config": {
+            **asdict(config),
+            "output_root": str(config.output_root),
+            "resume_checkpoint": ckpt_str,
+        },
+        "derived": {"nu": config.nu, "tau": config.tau},
+        "runtime": {
+            "torch_version": torch.__version__,
+            "backend": config.backend,
+            "device": device,
+            "num_threads": config.num_threads,
+        },
+        "reproducibility": get_reproducibility_metadata(),
+        "engineering_closure": {
+            "synthetic_inflow": {"enabled": False},
+            "sponge_layer": {"enabled": False},
+            "outlet_control": {"enabled": False},
+            "turbulence_statistics": {"enabled": False},
+        },
+    }
+
+    cx_obs, cy_obs = config.nx * 0.25, config.ny * 0.5
+    obstacle = _backend_cylinder_mask(
+        ops,
+        config.nx,
+        config.ny,
+        cx_obs,
+        cy_obs,
+        config.radius,
+        device=device,
+    )
+    wall_mask = _backend_make_channel_wall_mask(
+        ops,
+        config.ny,
+        config.nx,
+        obstacle,
+        device=device,
+    )
+
+    start_step = 1
+    restart_info: dict[str, object] = {"resumed": False}
+    if config.resume_checkpoint is not None:
+        f_torch, resume_step, ckpt_meta = load_checkpoint(
+            config.resume_checkpoint,
+            expected_shape=(9, config.ny, config.nx),
+            expected_lattice_directions=9,
+        )
+        if resume_step >= config.n_steps:
+            raise ValueError(
+                f"resume checkpoint step {resume_step} is not less than n_steps={config.n_steps}"
+            )
+        f = ops.to_device(ops.tensor(f_torch.detach().cpu().numpy()), device)
+        start_step = resume_step + 1
+        restart_info = {
+            "resumed": True,
+            "source_checkpoint": str(config.resume_checkpoint),
+            "source_step": resume_step,
+            "checkpoint_format_version": ckpt_meta.get("format_version"),
+        }
+    else:
+        rho0 = ops.ones((config.ny, config.nx), device=device)
+        ux0 = ops.ones((config.ny, config.nx), device=device) * config.u_in
+        ux0 = ops.where(obstacle, ops.zeros((config.ny, config.nx), device=device), ux0)
+        uy0 = ops.zeros((config.ny, config.nx), device=device)
+        f = _backend_equilibrium(ops, rho0, ux0, uy0, device=device)
+
+    initial_mass = float(config.nx * config.ny)
+    diagnostics: list[dict[str, object]] = []
+    fy_steps: list[object] = []
+    diameter = 2.0 * config.radius
+    dyn_pressure = 0.5 * config.u_in**2 * diameter
+
+    logger.info(
+        "Running D2Q9 cylinder flow backend=%s device=%s NX=%s NY=%s tau=%.4f steps=%s output_interval=%s",
+        config.backend,
+        device,
+        config.nx,
+        config.ny,
+        config.tau,
+        config.n_steps,
+        config.output_interval,
+    )
+    logger.info("Run directory: %s", run_dir)
+
+    step_range = range(start_step, config.n_steps + 1)
+    step_iter = (
+        _tqdm(step_range, desc="Cylinder flow", unit="step")
+        if _TQDM_AVAILABLE
+        else step_range
+    )
+    for step in step_iter:
+        f = _backend_collide_bgk(ops, f, config.tau, device=device)
+        f = _backend_stream(ops, f)
+        fx, fy = _backend_compute_obstacle_forces(ops, f, obstacle, device=device)
+        f = _backend_apply_simple_channel_boundaries(
+            ops,
+            f,
+            u_in=config.u_in,
+            wall_mask=wall_mask,
+            obstacle_mask=obstacle,
+            device=device,
+        )
+        fy_steps.append(ops.detach(fy))
+
+        if step % config.output_interval == 0:
+            f = _backend_correct_mass(ops, f, initial_mass)
+
+        if step % config.output_interval == 0 or step == config.n_steps:
+            cd = ops.float_scalar(fx) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+            cl = ops.float_scalar(fy) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+
+            rho, ux, uy = _backend_macroscopic(ops, f, device=device)
+            zeros = ops.zeros((config.ny, config.nx), device=device)
+            ux = ops.where(obstacle, zeros, ux)
+            uy = ops.where(obstacle, zeros, uy)
+            speed = ops.sqrt(ux * ux + uy * uy)
+            mass = ops.float_scalar(ops.sum_val(rho))
+
+            point = DiagnosticPoint(
+                step=step,
+                mass=mass,
+                mass_drift=mass - initial_mass,
+                max_speed=ops.float_scalar(ops.max_val(speed)),
+                mean_rho=ops.float_scalar(ops.mean(rho)),
+            )
+            diag_entry: dict[str, object] = {**asdict(point), "cd": cd, "cl": cl}
+            diagnostics.append(diag_entry)
+            logger.info(
+                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f Cd=%.4f Cl=%.4f",
+                point.step,
+                point.mass,
+                point.mass_drift,
+                point.mean_rho,
+                point.max_speed,
+                cd,
+                cl,
+            )
+
+            _save_flow_snapshot(
+                run_dir,
+                step,
+                speed,
+                _compute_vorticity_np(_to_numpy(ux), _to_numpy(uy)),
+                obstacle,
+            )
+            if diagnostic_callback is not None:
+                diagnostic_callback(diag_entry)
+            save_checkpoint(torch.from_numpy(_to_numpy(f)).to(dtype=torch.float32), step, run_dir)
+
+    cl_series = [
+        ops.float_scalar(fy_t) / dyn_pressure if dyn_pressure != 0.0 else float("nan")
+        for fy_t in fy_steps
+    ]
+    half = len(cl_series) // 2
+    st = _strouhal_number(cl_series[half:], 1, config.u_in, diameter)
+
+    metadata["diagnostics"] = diagnostics
+    metadata["restart"] = restart_info
+    if st is not None:
+        metadata["strouhal"] = st
+        logger.info("Strouhal number St ≈ %.4f", st)
+
+    forces_csv = run_dir / "forces.csv"
+    with forces_csv.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["step", "cd", "cl"])
+        for d in diagnostics:
+            writer.writerow([d["step"], d["cd"], d["cl"]])
+
+    metadata_path = run_dir / "run_metadata.json"
+    metadata_path.write_text(
+        f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
+        encoding="utf-8",
+    )
+    logger.info("Saved metadata: %s", metadata_path)
+    return run_dir
+
+
 def _strouhal_number(
     cl_series: list[float], output_interval: int, u_in: float, diameter: float
 ) -> float | None:
@@ -195,13 +580,13 @@ def _strouhal_number(
 def _save_flow_snapshot(
     run_dir: Path,
     step: int,
-    speed: torch.Tensor,
-    vort: torch.Tensor,
-    obstacle: torch.Tensor,
+    speed: object,
+    vort: object,
+    obstacle: object,
 ) -> None:
-    speed_np = speed.detach().cpu().numpy()
-    vort_np = vort.detach().cpu().numpy()
-    obs_np = obstacle.detach().cpu().numpy()
+    speed_np = _to_numpy(speed)
+    vort_np = _to_numpy(vort)
+    obs_np = _to_numpy(obstacle)
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4), constrained_layout=True)
     im0 = axes[0].imshow(speed_np, origin="lower", cmap="viridis")
@@ -254,8 +639,19 @@ def run_cylinder_flow(
     turbulence_statistics: dict[str, object] | None = None,
     diagnostic_callback: Callable[[dict[str, object]], None] | None = None,
 ) -> Path:
-    configure_logging()
     config.validate()
+    with using_backend(config.backend):
+        if config.backend != "torch":
+            return _run_cylinder_flow_backend(
+                config,
+                synthetic_inflow=synthetic_inflow,
+                sponge_layer=sponge_layer,
+                outlet_control=outlet_control,
+                turbulence_statistics=turbulence_statistics,
+                diagnostic_callback=diagnostic_callback,
+            )
+    configure_logging()
+    configure_logging()
     torch.manual_seed(config.seed)
     torch.use_deterministic_algorithms(True, warn_only=True)
 
@@ -278,6 +674,7 @@ def run_cylinder_flow(
         "derived": {"nu": config.nu, "tau": config.tau},
         "runtime": {
             "torch_version": torch.__version__,
+            "backend": config.backend,
             "device": str(device),
             "num_threads": applied_num_threads,
         },

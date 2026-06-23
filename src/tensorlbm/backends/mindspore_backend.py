@@ -209,6 +209,10 @@ def contiguous(t):
     return t
 
 
+def roll(t, shifts, dims):
+    return _ms().ops.roll(t, shifts=shifts, dims=dims)
+
+
 def to_numpy(t) -> np.ndarray:
     return t.asnumpy()
 
