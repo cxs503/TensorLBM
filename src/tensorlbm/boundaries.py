@@ -79,7 +79,10 @@ def zou_he_inlet_velocity(
             if profile.ndim == 2 and profile.shape[1] == 1:
                 profile = profile[:, 0]
             if profile.shape != ref.shape:
-                msg = f"Inlet profile must have shape {tuple(ref.shape)}, got {tuple(profile.shape)}"
+                msg = (
+                    f"Inlet profile must have shape {tuple(ref.shape)}, "
+                    f"got {tuple(profile.shape)}"
+                )
                 raise ValueError(msg)
             return profile
         return torch.full_like(ref, float(value))
@@ -298,8 +301,6 @@ def fan_model_2d(
         return f
 
     rho, ux, uy = macroscopic(f)
-    ny = f.shape[1]
-
     # Volume flow rate at fan column: Q = sum(ux * dy)
     u_col = ux[:, fan_col]
     flow_rate = float(u_col.sum().item())

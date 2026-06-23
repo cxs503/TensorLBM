@@ -10,12 +10,15 @@ from __future__ import annotations
 import csv
 import json
 import math
-from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import matplotlib
 import torch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from .boundaries import bounce_back_cells, make_channel_wall_mask
 from .config_io import load_config_json, save_config_json
@@ -348,7 +351,10 @@ def run_turbulent_channel(
     if log_region.any():
         y_plus_log = y_plus[log_region]
         u_plus_log = u_plus[log_region]
-        u_plus_ref = torch.tensor([_reference_velocity(float(y)) for y in y_plus_log], device=device)
+        u_plus_ref = torch.tensor(
+            [_reference_velocity(float(y)) for y in y_plus_log],
+            device=device,
+        )
         rms_error = float(torch.sqrt(torch.mean((u_plus_log - u_plus_ref) ** 2)).item())
         metadata["log_law_rms_error"] = rms_error
         logger.info("Log-law RMS error (30 < y+ < 0.8*Re_tau): %.4f", rms_error)
@@ -368,13 +374,17 @@ def run_turbulent_channel(
     metadata["averaging_samples"] = sample_count
     if roughness_damping_history:
         metadata["engineering_closure"]["rough_wall_runtime"] = {
-            "mean_damping": sum(roughness_damping_history) / len(roughness_damping_history),
+            "mean_damping": (
+                sum(roughness_damping_history) / len(roughness_damping_history)
+            ),
             "last_damping": roughness_damping_history[-1],
         }
     if turbulence_acc is not None and turbulence_acc.count > 0:
-        metadata["engineering_closure"]["turbulence_statistics_runtime"] = _summarize_turbulence_stats(
-            turbulence_acc,
-            u_ref=config.u_tau,
+        metadata["engineering_closure"]["turbulence_statistics_runtime"] = (
+            _summarize_turbulence_stats(
+                turbulence_acc,
+                u_ref=config.u_tau,
+            )
         )
     meta_path = run_dir / "run_metadata.json"
     meta_path.write_text(

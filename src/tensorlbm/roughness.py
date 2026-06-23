@@ -100,7 +100,6 @@ def compute_rough_wall_slip_velocity(
         Tuple ``(ux_slip, uy_slip, uz_slip)`` — slip velocity components
         at wall-adjacent cells, zero elsewhere.
     """
-    device = ux.device
     ux_s = torch.zeros_like(ux)
     uy_s = torch.zeros_like(uy)
     uz_s = torch.zeros_like(uz)
