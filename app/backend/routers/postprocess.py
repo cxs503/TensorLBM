@@ -3225,6 +3225,253 @@ async def compute_adjoint_sensitivity(job_id: str, req: AdjointSensitivityReques
 # CGNS Export
 # ===========================================================================
 
+class _SurfaceRadiation(BaseModel):
+    temperature_K: float = 300.0
+    emissivity: float = 0.9
+    solar_absorptance: float = 0.5
+    area_m2: float = 1.0
+
+
+class ThermalRadiationRequest(BaseModel):
+    surfaces: list[_SurfaceRadiation] = Field(default_factory=list)
+    solar_enabled: bool = False
+    solar_irradiance: float = Field(1000.0, ge=0)
+    solar_direction: list[float] = Field(default=[0.0, -1.0, 0.0])
+
+
+@router.post("/thermal-radiation")
+async def thermal_radiation(req: ThermalRadiationRequest) -> dict:
+    """Compute net radiation heat fluxes for a grey-body enclosure.
+
+    Mirrors the solar-load and radiation heat-transfer capability in
+    PowerFlow and XFlow.  Each surface is described by its temperature,
+    emissivity, solar absorptance, and area.
+
+    This is a **standalone post-processing** step; supply surface data
+    directly rather than referencing a job.
+    """
+    from tensorlbm.thermal_radiation import (
+        RadiationEnclosureConfig,
+        SolarSettings,
+        SurfaceRadiationProps,
+        run_radiation_step,
+    )
+    import torch
+
+    surf_list = list(req.surfaces)
+
+    # Parse surface list
+    surf_props = [
+        SurfaceRadiationProps(
+            emissivity=s.emissivity,
+            solar_absorptance=s.solar_absorptance,
+            temperature=s.temperature_K,
+            area=s.area_m2,
+        )
+        for s in surf_list
+    ]
+
+    if not surf_props:
+        # Demo: simple two-surface hot/cold enclosure
+        surf_props = [
+            SurfaceRadiationProps(temperature=400.0, emissivity=0.9, area=1.0),
+            SurfaceRadiationProps(temperature=300.0, emissivity=0.85, area=1.0),
+        ]
+
+    direction = (req.solar_direction or [0.0, -1.0, 0.0])[:3]
+    solar = SolarSettings(
+        enabled=req.solar_enabled,
+        irradiance=req.solar_irradiance,
+        direction=(direction[0], direction[1], direction[2]),
+    )
+
+    # Build surface normals for solar calculation
+    n = len(surf_props)
+    normals = torch.zeros(n, 3, dtype=torch.float64)
+    normals[:, 1] = 1.0   # default upward normals
+
+    cfg = RadiationEnclosureConfig(surfaces=surf_props, solar=solar)
+    result = run_radiation_step(cfg, surface_normals=normals)
+    return result
+
+
+
+@router.get("/ddes-diagnostics/{job_id}")
+async def ddes_diagnostics(
+    job_id: str,
+    mode: str = Query("ddes", pattern="^(ddes|sas|les)$"),
+    nu_molecular: float = Query(1e-4, gt=0),
+) -> dict:
+    """Compute DDES/SAS hybrid turbulence diagnostics for a completed job.
+
+    Returns the effective eddy viscosity field, RANS-shielded fraction,
+    and LES-active fraction – analogous to PowerFlow VLES diagnostic maps.
+    """
+    from tensorlbm.ddes import DDESConfig, run_ddes_diagnostics
+    import torch
+
+    job = job_manager.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {job_id!r} not found")
+    if job.status != "completed":
+        raise HTTPException(status_code=400, detail="Job must be completed")
+
+    candidates = sorted(job.output_dir.rglob("checkpoint_f.pt"), key=lambda p: p.stat().st_mtime)
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No checkpoint found")
+    ckpt = torch.load(candidates[-1], map_location="cpu", weights_only=False)
+
+    f = ckpt.get("f")
+    if f is None or f.dim() < 3:
+        raise HTTPException(status_code=422, detail="Checkpoint missing 'f' tensor")
+
+    rho = f.sum(dim=0)
+    e = torch.tensor([[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1],[-1,-1],[1,-1]], dtype=torch.float32)
+    ux = (f * e[:, 0].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+    uy = (f * e[:, 1].view(-1, 1, 1)).sum(dim=0) / (rho + 1e-12)
+
+    ny, nx = ux.shape
+    # Approximate wall-distance field (distance from nearest boundary)
+    yy = torch.arange(ny, dtype=torch.float32).unsqueeze(1).expand(ny, nx)
+    d_wall = torch.minimum(yy, (ny - 1) - yy).clamp(min=0.5)
+    d_wall_norm = d_wall / float(ny)
+
+    cfg = DDESConfig(mode=mode, nu_molecular=nu_molecular, dx=1.0 / nx)
+    result = run_ddes_diagnostics(ux.float(), uy.float(), d_wall_norm, cfg)
+
+    return {
+        "job_id": job_id,
+        "mode": mode,
+        "grid_shape": [ny, nx],
+        "nu_t_mean": result.nu_t_mean,
+        "nu_t_max": result.nu_t_max,
+        "shield_fraction": result.shield_fraction,
+        "rans_fraction": result.rans_fraction,
+        "les_fraction": result.les_fraction,
+    }
+
+
+class AcousticBeamformingRequest(BaseModel):
+    job_id: str
+    mic_positions: list[list[float]] = Field(default_factory=list)
+    scan_x: list[float] = Field(default=[-1.0, 1.0, 16.0])
+    scan_y: list[float] = Field(default=[-0.5, 0.5, 12.0])
+    f_min: float = Field(100.0, ge=0)
+    f_max: float = Field(5000.0, ge=1)
+    method: str = Field("das", pattern="^(das|clean_sc|damas)$")
+    n_iter_clean: int = Field(10, ge=1, le=200)
+
+
+@router.post("/acoustic-beamforming")
+async def acoustic_beamforming(req: AcousticBeamformingRequest) -> dict:
+    """Acoustic beamforming / noise source identification from probe signals.
+
+    Locates noise sources using Delay-and-Sum or CLEAN-SC on microphone-array
+    pressure data extracted from the completed simulation job.
+    Mirrors PowerFlow's acoustic-maps post-processing.
+    """
+    from tensorlbm.acoustic_beamforming import (
+        BeamformingConfig,
+        MicrophoneArray,
+        run_acoustic_beamforming,
+    )
+    import torch
+
+    job = job_manager.get_job(req.job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job {req.job_id!r} not found")
+    if job.status != "completed":
+        raise HTTPException(status_code=400, detail="Job must be completed")
+
+    mic_positions = req.mic_positions
+
+    # Load probe history CSV for pressure signals
+    probe_files = sorted(job.output_dir.rglob("probe*.csv"))
+    if not probe_files:
+        # Synthetic demo signals: Gaussian noise with a tonal peak
+        import math
+        n_mics = max(len(mic_positions), 4)
+        Nt = 2048
+        dt = 2e-4
+        t = torch.linspace(0, Nt * dt, Nt, dtype=torch.float64)
+        f_tone = 500.0
+        signals = (
+            0.01 * torch.randn(n_mics, Nt, dtype=torch.float64)
+            + 0.1 * torch.sin(2 * math.pi * f_tone * t).unsqueeze(0)
+        )
+    else:
+        import csv as _csv
+        signal_list = []
+        n_probe = len(mic_positions) if mic_positions else 8
+        for pf in probe_files[:n_probe]:
+            with open(pf) as csvfile:
+                reader = _csv.DictReader(csvfile)
+                rows = list(reader)
+            try:
+                p_col = [r.get("p", r.get("pressure", 0.0)) for r in rows]
+                signal_list.append(torch.tensor([float(v) for v in p_col], dtype=torch.float64))
+            except Exception:
+                signal_list.append(torch.zeros(512, dtype=torch.float64))
+        if not signal_list:
+            signal_list = [torch.zeros(512, dtype=torch.float64)]
+        max_len = max(s.shape[0] for s in signal_list)
+        signals = torch.zeros(len(signal_list), max_len, dtype=torch.float64)
+        for i, s in enumerate(signal_list):
+            signals[i, :s.shape[0]] = s
+
+    n_mics = signals.shape[0]
+    if mic_positions:
+        pos_list = mic_positions[:n_mics]
+        while len(pos_list) < n_mics:
+            pos_list.append([0.0, float(len(pos_list)), 0.0])
+        positions = torch.tensor(pos_list[:n_mics], dtype=torch.float64)
+    else:
+        import math as _m
+        positions = torch.stack([
+            torch.tensor([
+                0.5 * _m.cos(i * 2 * _m.pi / n_mics),
+                0.5,
+                0.5 * _m.sin(i * 2 * _m.pi / n_mics),
+            ], dtype=torch.float64)
+            for i in range(n_mics)
+        ])
+
+    # Pad to 3-D positions
+    if positions.shape[1] == 2:
+        positions = torch.cat([positions, torch.zeros(n_mics, 1, dtype=torch.float64)], dim=1)
+
+    array = MicrophoneArray(positions=positions, signals=signals, dt=2e-4)
+
+    scan_x_raw = req.scan_x
+    scan_y_raw = req.scan_y
+    scan_x_cfg = (float(scan_x_raw[0]), float(scan_x_raw[1]), int(scan_x_raw[2])) if len(scan_x_raw) >= 3 else (-1.0, 1.0, 16)  # type: ignore[assignment]
+    scan_y_cfg = (float(scan_y_raw[0]), float(scan_y_raw[1]), int(scan_y_raw[2])) if len(scan_y_raw) >= 3 else (-0.5, 0.5, 12)  # type: ignore[assignment]
+
+    cfg = BeamformingConfig(
+        scan_x=scan_x_cfg,
+        scan_y=scan_y_cfg,
+        f_min=req.f_min,
+        f_max=req.f_max,
+        method=req.method,
+        n_iter_clean=req.n_iter_clean,
+    )
+
+    result = run_acoustic_beamforming(array, cfg)
+
+    return {
+        "job_id": req.job_id,
+        "method": result.method,
+        "peak_x": result.peak_x,
+        "peak_y": result.peak_y,
+        "peak_spl_db": result.peak_spl_db,
+        "dynamic_range_db": result.dynamic_range_db,
+        "dominant_frequency_hz": result.dominant_frequency_hz,
+        "source_map_db": result.source_map,
+        "x_grid": result.x_grid,
+        "y_grid": result.y_grid,
+    }
+
+
 @router.get("/export-cgns/{job_id}")
 async def export_cgns(
     job_id: str,
