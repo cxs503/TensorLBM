@@ -82,6 +82,13 @@ All simulation types are submitted as background jobs and monitored in real time
 The platform also supports batch Reynolds-number sweeps for cylinder flow via
 `POST /api/solve/cylinder-flow/scan` (submit 2–20 `re_values` in one request).
 
+Integrated P0 closure support is now available through the solver `physics`
+payload for selected workflows:
+
+- `cylinder_flow`: synthetic inflow, sponge outlet, in-run turbulence-statistics reporting
+- `turbulent_channel`: rough-wall damping, in-run turbulence-statistics reporting
+- both workflows now push live diagnostic metrics to `/api/jobs/{job_id}/live-metrics`
+
 | Simulation | Dim | Model | Config class |
 |---|---|---|---|
 | Cylinder flow | 2D | BGK | `CylinderFlowConfig` |
