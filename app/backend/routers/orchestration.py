@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import contextlib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -263,7 +263,7 @@ async def _submit_suboff_surrogate_cycle(
     hull_variants: list[str] = list(cfg.get("hull_variants") or ["bare_hull"])
     speed_values: list[float] = [float(v) for v in (cfg.get("speed_values_ms") or [2.5])]
 
-    study_group = f"suboff_surrogate_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    study_group = f"suboff_surrogate_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
     job_ids: list[str] = []
 
     for hull in hull_variants:
@@ -451,7 +451,7 @@ async def _submit_ship_pareto_screening(
     hull_variants: list[str] = list(cfg.get("hull_variants") or ["wigley"])
     re_values: list[float] = [float(v) for v in (cfg.get("re_values") or [200.0])]
 
-    study_group = f"ship_pareto_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    study_group = f"ship_pareto_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
     job_ids: list[str] = []
 
     base_cfg = {
@@ -611,7 +611,7 @@ async def _submit_external_aero_e2e_pilot(
 ) -> dict[str, Any]:
     """Submit the external-aero optimization closure pilot."""
     re_values = [float(v) for v in (cfg.get("re_values") or [80.0, 120.0, 160.0])]
-    study_group = f"external_aero_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    study_group = f"external_aero_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
     gate_scenario = str(cfg.get("gate_scenario") or "external_aerodynamics")
     objective = req.objective or solver.StudyObjective(
         metric=str(cfg.get("objective_metric") or "mean_cd_last"),
@@ -884,7 +884,7 @@ async def engineering_regression_dashboard() -> dict[str, Any]:
 
     return {
         "axis": ["version", "accuracy", "cost"],
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "version": {
             "platform": "TensorLBM",
             "jobs_total": len(rows),
