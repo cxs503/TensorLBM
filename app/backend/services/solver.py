@@ -50,7 +50,7 @@ _PHYSICS_DEFAULTS: dict[str, dict[str, Any]] = {
 _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
     "cylinder_flow": {
         "flow_types": ["single_phase"],
-        "turbulence_models": ["none", "smagorinsky_les"],
+        "turbulence_models": ["none", "smagorinsky_les", "komega_sst"],
         "multiphase_models": ["none"],
         "enhancements": [
             "synthetic_inflow",
@@ -67,19 +67,19 @@ _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
     },
     "backward_facing_step": {
         "flow_types": ["single_phase"],
-        "turbulence_models": ["none", "smagorinsky_les"],
+        "turbulence_models": ["none", "smagorinsky_les", "komega_sst"],
         "multiphase_models": ["none"],
         "enhancements": [],
     },
     "turbulent_channel": {
         "flow_types": ["single_phase"],
-        "turbulence_models": ["none", "smagorinsky_les", "dynamic_smagorinsky_les"],
+        "turbulence_models": ["none", "smagorinsky_les", "dynamic_smagorinsky_les", "komega_sst"],
         "multiphase_models": ["none"],
         "enhancements": ["rough_wall", "turbulence_statistics"],
     },
     "pipeline_flow": {
         "flow_types": ["single_phase"],
-        "turbulence_models": ["none", "smagorinsky_les"],
+        "turbulence_models": ["none", "smagorinsky_les", "komega_sst"],
         "multiphase_models": ["none"],
         "enhancements": [],
     },
@@ -103,7 +103,7 @@ _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
     },
     "ship_hull": {
         "flow_types": ["single_phase", "free_surface"],
-        "turbulence_models": ["none", "smagorinsky_les", "dynamic_smagorinsky_les"],
+        "turbulence_models": ["none", "smagorinsky_les", "dynamic_smagorinsky_les", "komega_sst"],
         "multiphase_models": ["none"],
         "enhancements": [],
     },
@@ -115,7 +115,7 @@ _CAPABILITY_MATRIX: dict[str, dict[str, list[str]]] = {
     },
     "rotating_cylinder": {
         "flow_types": ["single_phase"],
-        "turbulence_models": ["none", "smagorinsky_les"],
+        "turbulence_models": ["none", "smagorinsky_les", "komega_sst"],
         "multiphase_models": ["none"],
         "enhancements": [],
     },

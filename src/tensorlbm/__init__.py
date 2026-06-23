@@ -293,7 +293,9 @@ from .propeller_ibm import (
 )
 from .rans_ke import (
     KESolver,
+    KOmegaSSTSolver,
     collide_rans_ke,
+    komega_sst_collision_d2q9,
 )
 from .ship_cad import (  # noqa: I001
     ShipHullType,
