@@ -131,6 +131,16 @@ class SuboffSTLRequest(BaseModel):
     n_axial: int = Field(80, ge=8, le=400)
     n_circ: int = Field(60, ge=8, le=200)
 
+class SuboffMesh3DRequest(BaseModel):
+    hull_type: Literal["bare_hull", "with_sail", "full"] = "bare_hull"
+    length: float = Field(100.0, gt=0, description="Hull length (lattice units)")
+    radius: float = Field(0.0, ge=0, description="Max radius (lu); 0 = auto from L/D≈8.57")
+    bow_fraction: float = Field(0.233, gt=0, lt=0.9)
+    stern_fraction: float = Field(0.252, gt=0, lt=0.9)
+    stern_exponent: float = Field(2.0, gt=0, le=8.0)
+    n_axial: int = Field(60, ge=8, le=400, description="Axial tessellation resolution")
+    n_circ: int = Field(48, ge=8, le=200, description="Circumferential tessellation resolution")
+
 class OffshorePreviewRequest(BaseModel):
     struct_type: Literal["monopile", "jacket", "spar", "semi_sub"] = "monopile"
     nx: int = Field(80, ge=20)

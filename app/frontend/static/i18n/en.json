@@ -199,6 +199,11 @@
     "suboff_bare_hull_desc": "Axisymmetric bare hull (AFF-1). Ellipsoidal bow, cylindrical midbody, polynomial stern taper. L/D ≈ 8.57.",
     "suboff_with_sail_desc": "Bare hull plus conning-tower sail (AFF-3). Suitable for sail-induced vortex and wake studies.",
     "suboff_full_desc": "Full appendage configuration (AFF-8). Hull, sail, and four cruciform stern fins. Full-configuration drag benchmark.",
+    "suboff_3d_title": "3D Interactive View",
+    "suboff_3d_wireframe": "Wireframe",
+    "suboff_3d_reset_cam": "Reset Camera",
+    "suboff_3d_loading": "Building 3D model…",
+    "suboff_3d_hint": "Click Preview Submarine to load 3D view.",
     "kvlcc2_desc": "KVLCC2 Tanker (Cb≈0.81). Double-body superellipse form. Benchmark hull for RANS and LBM viscous resistance studies (MOERI 2001).",
     "npl_desc": "NPL High-Speed Series (Cb≈0.397). Slender V-section hull derived from Bailey (1976) round-bilge planing hull dataset."
   },
