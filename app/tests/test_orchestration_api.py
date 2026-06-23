@@ -191,6 +191,71 @@ def test_orchestration_regression_dashboard(client: TestClient, job_manager, wai
     assert rollup["pass_rate"] is not None
 
 
+def test_orchestration_hpc_dashboard(client: TestClient, job_manager, waiter) -> None:
+    def _runner(job: object) -> dict[str, bool]:
+        job.config.setdefault("hpc_info", {}).update({
+            "backend": "slurm",
+            "partition": "gpu",
+            "cluster_state": "RUNNING",
+            "cluster_elapsed_seconds": 120.0,
+            "estimated_cluster_cost": 0.6,
+            "retry_count": 1,
+        })
+        return {"ok": True}
+
+    job_id = job_manager.submit(
+        name="hpc-dash-case",
+        job_type="cylinder_flow",
+        config={"orchestration": {"cost_rate_per_second": 0.005}},
+        fn=_runner,
+    )
+    waiter(job_id, timeout=10.0)
+
+    r = client.get("/api/orchestration/hpc-dashboard")
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["count"] >= 1
+    assert data["backends"].get("slurm", 0) >= 1
+    assert data["estimated_cluster_cost_total"] >= 0.6
+
+
+def test_release_gate_block_and_history(client: TestClient, job_manager, waiter) -> None:
+    def _failing_runner(_job: object) -> dict[str, float]:
+        return {"cd_error_max": 99.0}
+
+    job_id = job_manager.submit(
+        name="release-gate-fail",
+        job_type="cylinder_flow",
+        config={"study": {"group": "release-study", "gate_scenario": "external_aerodynamics"}},
+        fn=_failing_runner,
+    )
+    waiter(job_id, timeout=10.0)
+
+    r = client.post(
+        "/api/orchestration/release-gates/evaluate",
+        json={
+            "version": "v1.2.3",
+            "study_group": "release-study",
+            "require_completed_jobs": 1,
+            "min_acceptance_pass_rate": 1.0,
+            "max_avg_runtime_seconds": 1e-6,
+            "promote_as_baseline": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["blocked"] is True
+    assert data["decision"] == "blocked"
+
+    hist = client.get("/api/orchestration/release-gates/history")
+    assert hist.status_code == 200, hist.text
+    assert hist.json()["count"] >= 1
+
+    baselines = client.get("/api/orchestration/release-gates/baselines")
+    assert baselines.status_code == 200, baselines.text
+    assert "engineering_full" in baselines.json()["profiles"]
+
+
 def test_ai_confidence_gate(client: TestClient) -> None:
     r = client.post(
         "/api/ai/governance/confidence-gate",
@@ -224,3 +289,55 @@ def test_ai_active_learning_prioritize(client: TestClient) -> None:
     data = r.json()
     assert data["count"] == 2
     assert data["selected"][0]["score"] >= data["selected"][1]["score"]
+
+
+def test_ai_policy_adaptive_confidence_and_drift(client: TestClient) -> None:
+    p = client.post(
+        "/api/ai/governance/policies",
+        json={
+            "scenario": "external_aero",
+            "model_id": "m1",
+            "max_relative_error": 0.05,
+            "max_uncertainty": 0.08,
+            "max_ci_half_width": 0.03,
+            "drift_threshold": 0.1,
+            "require_human_review_error": 0.09,
+            "require_human_review_uncertainty": 0.12,
+        },
+    )
+    assert p.status_code == 200, p.text
+
+    gate = client.post(
+        "/api/ai/governance/confidence-gate",
+        json={
+            "scenario": "external_aero",
+            "model_id": "m1",
+            "prediction": 1.2,
+            "baseline": 1.0,
+            "uncertainty": 0.13,
+            "ci_half_width": 0.01,
+            "max_relative_error": 0.2,
+            "max_uncertainty": 0.2,
+        },
+    )
+    assert gate.status_code == 200, gate.text
+    gate_data = gate.json()
+    assert gate_data["human_review_required"] is True
+    assert gate_data["recommended_action"] == "manual_review_required"
+    assert gate_data["thresholds"]["max_relative_error"] == 0.05
+
+    drift = client.post(
+        "/api/ai/governance/drift-monitor",
+        json={
+            "scenario": "external_aero",
+            "model_id": "m1",
+            "baseline_mean": 1.0,
+            "current_mean": 1.3,
+            "baseline_std": 0.05,
+            "current_std": 0.08,
+            "sample_count": 32,
+        },
+    )
+    assert drift.status_code == 200, drift.text
+    drift_data = drift.json()
+    assert drift_data["drifted"] is True
