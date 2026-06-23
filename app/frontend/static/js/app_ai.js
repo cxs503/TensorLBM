@@ -202,10 +202,12 @@ async function aiFlowTrain() {
   const ny = Number(document.getElementById('aiflow-ny').value || 48);
   const epochs = Number(document.getElementById('aiflow-epochs').value || 20);
   const mask_ratio = Number(document.getElementById('aiflow-mask').value || 0.15);
+  const backendEl = document.getElementById('aiflow-backend');
+  const backend = backendEl ? backendEl.value : 'torch';
   aiFlowSetResult(t('common.computing'));
   aiFlowRenderHistory([]);
   try {
-    const r = await api('POST', '/api/ai/transformer/train', { nx, ny, epochs, mask_ratio });
+    const r = await api('POST', '/api/ai/transformer/train', { nx, ny, epochs, mask_ratio, backend });
     aiFlowActiveJobId = r.job_id;
     aiFlowSetResult(r);
     showToast(t('ai_flow.train_queued') || 'Training queued', 'info');
