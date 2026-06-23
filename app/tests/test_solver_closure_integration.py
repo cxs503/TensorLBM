@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import torch
+
 
 def test_cylinder_flow_integrates_closure_features(client, waiter):
     r = client.post(
@@ -98,3 +100,106 @@ def test_turbulent_channel_integrates_roughness_and_stats(client, waiter):
     diagnostics = live.json()["diagnostics"]
     assert diagnostics
     assert "tke_mean" in diagnostics[-1]
+
+
+def test_cylinder_flow_restart_from_job_checkpoint(client, waiter):
+    first = client.post(
+        "/api/solve/cylinder-flow",
+        json={
+            "nx": 48,
+            "ny": 20,
+            "u_in": 0.05,
+            "re": 50.0,
+            "radius": 4.0,
+            "n_steps": 6,
+            "output_interval": 3,
+        },
+    )
+    assert first.status_code == 200, first.text
+    first_id = first.json()["job_id"]
+    done1 = waiter(first_id, timeout=60)
+    assert done1["status"] == "completed"
+
+    second = client.post(
+        "/api/solve/cylinder-flow",
+        json={
+            "nx": 48,
+            "ny": 20,
+            "u_in": 0.05,
+            "re": 50.0,
+            "radius": 4.0,
+            "n_steps": 9,
+            "output_interval": 3,
+            "resume_from_job_id": first_id,
+        },
+    )
+    assert second.status_code == 200, second.text
+    second_id = second.json()["job_id"]
+    done2 = waiter(second_id, timeout=60)
+    assert done2["status"] == "completed"
+    assert done2["resume_from"] == first_id
+
+    meta = client.get(f"/api/jobs/{second_id}/metadata")
+    assert meta.status_code == 200, meta.text
+    restart = meta.json()["metadata"]["restart"]
+    assert restart["resumed"] is True
+    assert restart["source_step"] == 6
+
+
+def test_cylinder_flow_rejects_incompatible_restart_checkpoint(client, tmp_path):
+    from tensorlbm import save_checkpoint
+
+    ckpt_dir = tmp_path / "bad_ckpt"
+    f3d = torch.ones((19, 4, 4, 4), dtype=torch.float32)
+    save_checkpoint(f3d, step=3, run_dir=ckpt_dir)
+
+    resp = client.post(
+        "/api/solve/cylinder-flow",
+        json={
+            "nx": 48,
+            "ny": 20,
+            "u_in": 0.05,
+            "re": 50.0,
+            "radius": 4.0,
+            "n_steps": 9,
+            "output_interval": 3,
+            "resume_checkpoint": str(ckpt_dir),
+        },
+    )
+    assert resp.status_code == 422
+    assert "incompatible restart checkpoint" in resp.text
+
+
+def test_cylinder_flow_outlet_control_metadata(client, waiter):
+    r = client.post(
+        "/api/solve/cylinder-flow",
+        json={
+            "nx": 48,
+            "ny": 20,
+            "u_in": 0.05,
+            "re": 50.0,
+            "radius": 4.0,
+            "n_steps": 6,
+            "output_interval": 3,
+            "physics": {
+                "outlet_control": {
+                    "enabled": True,
+                    "mode": "nscbc",
+                    "rho_target": 1.0,
+                    "nscbc_sigma": 0.2,
+                    "backflow_stabilization": True,
+                    "max_backflow_speed": 0.0,
+                },
+            },
+        },
+    )
+    assert r.status_code == 200, r.text
+    job_id = r.json()["job_id"]
+    done = waiter(job_id, timeout=60)
+    assert done["status"] == "completed"
+
+    meta = client.get(f"/api/jobs/{job_id}/metadata")
+    assert meta.status_code == 200, meta.text
+    outlet = meta.json()["metadata"]["engineering_closure"]["outlet_control"]
+    assert outlet["enabled"] is True
+    assert outlet["mode"] == "nscbc"

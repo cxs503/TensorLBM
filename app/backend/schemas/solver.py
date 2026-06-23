@@ -50,6 +50,16 @@ class TurbulenceStatisticsSettings(BaseModel):
     start_step: int = Field(0, ge=0)
     sample_every: int = Field(1, ge=1, le=1000)
 
+
+class OutletControlSettings(BaseModel):
+    enabled: bool = False
+    mode: Literal["copy", "zou_he", "nscbc"] = "nscbc"
+    rho_target: float = Field(1.0, gt=0.0)
+    nscbc_sigma: float = Field(0.25, ge=0.0, le=1.0)
+    backflow_stabilization: bool = True
+    max_backflow_speed: float = Field(0.0, ge=0.0, le=1.0)
+
+
 class PhysicsSelection(BaseModel):
     flow_type: FlowType = "single_phase"
     turbulence_model: TurbulenceModel = "none"
@@ -61,6 +71,7 @@ class PhysicsSelection(BaseModel):
     preset: str | None = None
     synthetic_inflow: SyntheticInflowSettings | None = None
     sponge_layer: SpongeLayerSettings | None = None
+    outlet_control: OutletControlSettings | None = None
     rough_wall: RoughWallSettings | None = None
     turbulence_statistics: TurbulenceStatisticsSettings | None = None
 
@@ -75,6 +86,14 @@ class CylinderFlowParams(BaseModel):
     device: str = Field("cpu", description="Torch device (cpu / cuda:0 …)")
     num_threads: int | None = Field(None, ge=1, description="CPU thread count for PyTorch")
     seed: int = 0
+    resume_checkpoint: str | None = Field(
+        None,
+        description="Path to checkpoint directory containing checkpoint_f.pt/meta for restart",
+    )
+    resume_from_job_id: str | None = Field(
+        None,
+        description="Use latest checkpoint from an existing completed job",
+    )
     physics: PhysicsSelection | None = None
 
 class CylinderFlowScanParams(BaseModel):
@@ -183,6 +202,14 @@ class SphereFlowParams(BaseModel):
     device: str = "cpu"
     num_threads: int | None = Field(None, ge=1, description="CPU thread count for PyTorch")
     seed: int = 0
+    resume_checkpoint: str | None = Field(
+        None,
+        description="Path to checkpoint directory containing checkpoint_f.pt/meta for restart",
+    )
+    resume_from_job_id: str | None = Field(
+        None,
+        description="Use latest checkpoint from an existing completed job",
+    )
     physics: PhysicsSelection | None = None
 
 class ShipHullFlowParams(BaseModel):

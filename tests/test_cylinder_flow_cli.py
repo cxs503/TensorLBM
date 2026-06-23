@@ -28,6 +28,7 @@ def test_build_parser_defaults() -> None:
     assert args.output_interval == 200
     assert args.device == "cpu"
     assert args.num_threads is None
+    assert args.resume_checkpoint is None
 
 
 def test_build_parser_custom_values() -> None:
@@ -43,6 +44,7 @@ def test_build_parser_custom_values() -> None:
         "--run-name", "my-run",
         "--output-root", "outputs_test",
         "--num-threads", "2",
+        "--resume-checkpoint", "/tmp/ckpt",
     ])
     assert args.nx == 128
     assert args.ny == 64
@@ -53,6 +55,7 @@ def test_build_parser_custom_values() -> None:
     assert args.run_name == "my-run"
     assert args.output_root == "outputs_test"
     assert args.num_threads == 2
+    assert args.resume_checkpoint == "/tmp/ckpt"
 
 
 def test_cylinder_flow_config_from_defaults(tmp_path: Path) -> None:
