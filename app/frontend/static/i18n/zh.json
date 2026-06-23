@@ -307,7 +307,18 @@
     "preflight_title": "飞前检查",
     "preflight_mem": "预估内存",
     "preflight_steps": "建议 n_steps",
-    "preflight_recs": "建议"
+    "preflight_recs": "建议",
+    "doe_title": "试验设计 (DoE)",
+    "doe_method": "采样方法",
+    "doe_method_lhs": "拉丁超立方采样",
+    "doe_method_sobol": "Sobol 序列",
+    "doe_method_ff": "全因子设计",
+    "doe_method_ccd": "中心复合设计",
+    "doe_n_samples": "样本数量",
+    "doe_variables": "变量定义（JSON 数组）",
+    "doe_submit": "提交 DoE 研究",
+    "doe_hint": "生成空间填充采样计划，每个设计点提交一个仿真任务。",
+    "doe_submitting": "正在提交 {n} 个 DoE 运行…"
   },
   "sim": {
     "cylinder_flow": {
@@ -495,7 +506,24 @@
     "abcompare_job_b": "任务 B",
     "abcompare_run": "开始对比",
     "abcompare_select_both": "请同时选择任务 A 和任务 B。",
-    "abcompare_no_image": "无图像"
+    "abcompare_no_image": "无图像",
+    "probe_spectrum_title": "频谱分析 (FFT)",
+    "probe_spectrum_signal": "信号（逗号分隔值）",
+    "probe_spectrum_dt": "时间步长 Δt",
+    "probe_spectrum_run": "计算频谱",
+    "probe_spectrum_peaks": "主要峰值频率",
+    "probe_spectrum_strouhal": "斯特劳哈尔数",
+    "pod_title": "POD 模态分解",
+    "pod_field": "场变量",
+    "pod_n_modes": "保留模态数",
+    "pod_run": "计算 POD",
+    "pod_energy": "累积能量",
+    "isosurface_title": "等值面 / 等值线提取",
+    "isosurface_field": "标量场",
+    "isosurface_value": "等值",
+    "isosurface_extract": "提取",
+    "isosurface_segments": "线段数",
+    "isosurface_triangles": "三角形数"
   },
   "settings": {
     "title": "设置",
