@@ -1,6 +1,7 @@
 """Tests for the 3-D CAD API endpoints."""
 from __future__ import annotations
 
+import base64
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -76,3 +77,32 @@ def test_cad3d_lbm_bridge(client: TestClient) -> None:
     data = r.json()
     assert data["solid_cells"] > 0
     assert "stats" in data
+
+
+def test_cad3d_import_stl_model(client: TestClient) -> None:
+    stl = """solid tri
+facet normal 0 0 1
+  outer loop
+    vertex 0 0 0
+    vertex 1 0 0
+    vertex 0 1 0
+  endloop
+endfacet
+endsolid tri
+"""
+    req = {
+        "source_type": "stl",
+        "units": "m",
+        "file_b64": base64.b64encode(stl.encode("utf-8")).decode("ascii"),
+        "filename": "tri.stl",
+    }
+    r = client.post("/api/cad/3d/models", json=req)
+    assert r.status_code == 200, r.text
+    model_id = r.json()["model_id"]
+
+    stats = client.get(f"/api/cad/3d/models/{model_id}/stats")
+    assert stats.status_code == 200, stats.text
+    mesh = stats.json()["mesh"]
+    assert mesh["units"] == "m"
+    assert mesh["vertex_count"] == 3
+    assert mesh["face_count"] == 1

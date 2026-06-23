@@ -12,6 +12,9 @@ def test_index_contains_cad3d_ui(client: TestClient) -> None:
     assert r.status_code == 200
     html = r.text
     assert "id=\"cad3d-canvas\"" in html
+    assert "id=\"cad3d-source-type\"" in html
+    assert "id=\"cad3d-file-input\"" in html
     assert "cad3dCreateOrUpdate" in html
+    assert "cad3dOnSourceTypeChange" in html
     assert "cad3dToggleWireframe" in html
     assert "cad3dToggleClip" in html
