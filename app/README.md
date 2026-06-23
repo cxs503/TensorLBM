@@ -171,12 +171,18 @@ HPC+AI demonstration upgrade:
 
 * `GET /api/orchestration/templates` — staged experiment templates (A/B/C).
 * `POST /api/orchestration/experiments/submit` — submit a template run
-  (currently implemented: `cylinder_re_sweep`, `cylinder_multi_factor_doe`).
+  (currently implemented: `cylinder_re_sweep`, `cylinder_multi_factor_doe`,
+  `suboff_surrogate_cycle`, `ship_pareto_screening`,
+  `external_aero_e2e_pilot`).
 * `GET /api/orchestration/kpis` — aggregate queue wait, retries, runtime,
   throughput, resource distribution and estimated cost from platform jobs.
 * `GET /api/orchestration/studies/{study_group}/summary` — aggregate DOE jobs,
   evaluate optional study constraints/objectives and rank the best completed
   design point.
+* `GET /api/orchestration/gap-assessment` — PowerFLOW/XFlow对标差距清单与
+  P0/P1/P2 优先级评估。
+* `GET /api/orchestration/regression-dashboard` — version-accuracy-cost 三维
+  基线与门禁统计看板数据。
 * `GET /api/ai/governance/registry-summary` — summarize AI model registry
   quality statistics.
 * `POST /api/ai/governance/confidence-gate` — uncertainty/error-based decision
