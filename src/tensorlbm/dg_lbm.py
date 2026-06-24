@@ -1,16 +1,25 @@
 """Discontinuous-Galerkin / Lattice-Boltzmann (DG-LBM) hybrid solver.
 
-Strategy
---------
-* **LBM exterior** – cells with distance r > ``dg_radius`` from the sphere
-  centre use the standard D3Q19 BGK collision and streaming.
-* **DG near-wall zone** – cells within the shell
-  ``sphere_radius < r ≤ dg_radius`` use a compact-stencil DG collision that
-  replaces the BGK non-equilibrium part with the first-order Chapman–Enskog
-  correction computed from an explicitly reconstructed strain-rate tensor.
+Two solvers live here:
 
-DG collision details
-~~~~~~~~~~~~~~~~~~~~
+* **Real nodal-DG hybrid** (``use_real_dg=True``) — the genuine DG-LBM.  A DG
+  band (``build_dg_hull_band_mask``) encloses the obstacle; its inner faces
+  bounce-back off the solid and its outer faces couple to the exterior D3Q19 LBM
+  via :func:`tensorlbm.dg_band.hybrid_step` (method-of-lines band with
+  τ_dg = τ_lbm − ½, exterior collide + stream + DG-trace write-back).  The DG
+  advection is a real dimension-by-dimension nodal-DG operator (P1 Lobatto,
+  upwind flux, SSP-RK3) — see :mod:`tensorlbm.dg_advection` and
+  :mod:`tensorlbm.dg_band`.  This is the recommended path.
+
+* **Legacy gradient-correction** (``use_real_dg=False``, the default for
+  backward compatibility) — the original near-wall scheme.  The DG zone replaces
+  the BGK non-equilibrium part with the first-order Chapman–Enskog correction
+  computed from a finite-difference strain-rate tensor (NOT a true DG
+  discretisation; it has no polynomial basis / numerical flux / RK step).  Kept
+  for reproducibility of older runs.
+
+Legacy gradient-correction details
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 In the near-wall zone the distribution is written as
 
     f_i = f_i^eq + f_i^(1)
@@ -20,13 +29,10 @@ where the non-equilibrium correction is
     f_i^(1) = -2 τ w_i ρ (c_iα c_iβ - δ_αβ / 3) S_αβ
 
 and S_αβ = (∂u_α/∂x_β + ∂u_β/∂x_α) / 2 is the strain-rate tensor computed
-from second-order central differences of the macroscopic velocity field.  This
-is exactly the Chapman–Enskog leading-order result; using explicit gradient
-computation rather than the BGK approximation (f – f_eq) ≈ f^(1) gives
-improved accuracy on coarser grids near curved surfaces.
+from second-order central differences of the macroscopic velocity field.
 
-Coupling
-~~~~~~~~
+Coupling (legacy)
+~~~~~~~~~~~~~~~~~
 After the DG-enhanced collision the distributions in the near-wall zone are
 updated in-place.  The standard ``stream3d`` step and boundary conditions are
 applied globally in the usual way, so no special treatment at the DG–LBM
@@ -50,7 +56,13 @@ from .boundaries3d import (
 )
 from .checkpoint import load_checkpoint, save_checkpoint
 from .cylinder_flow import _maybe_compile
-from .d3q19 import C, W, equilibrium3d, macroscopic3d
+from .d3q19 import C, OPPOSITE, W, equilibrium3d, macroscopic3d
+from .dg_advection import equilibrium_dg, get_ops
+from .dg_band import build_band_topology, hybrid_step
+from .physics import collide_smagorinsky_bgk3d, collide_dynamic_smagorinsky_bgk3d, collide_mrt3d, collide_smagorinsky_mrt3d
+from .wall_model import apply_wall_model_bounce_back
+from .boundaries3d import free_slip_y_walls_3d, free_slip_z_walls_3d
+from .obstacles import compute_obstacle_forces_3d
 from .logging_config import configure_logging, logger
 from .solver3d import correct_mass3d, stream3d
 from .suboff_cad import SuboffHullType, build_suboff_mask
@@ -127,7 +139,15 @@ class DGLBMConfig:
     overwrite: bool = False
     resume_checkpoint: Path | None = None
     use_compile: bool = False
-    dg_order: int = 1
+    dg_order: int = 4  # Gradient accuracy order (2 or 4); legacy (ignored by real DG)
+    smagorinsky_cs: float = 0.0  # Smagorinsky LES (>0 enables)
+    dynamic_smag: bool = False  # Dynamic Smagorinsky (auto Cs)
+    use_mrt: bool = False  # MRT collision (more stable at low tau)
+    use_wall_model: bool = False  # Log-law wall function
+    free_slip_walls: bool = False  # Free-slip domain boundaries
+    use_real_dg: bool = False  # If True, use the genuine nodal-DG hybrid solver
+    dg_degree: int = 1  # DG polynomial degree for the real solver (locked to 1)
+    dg_substeps: int = 16  # RK sub-steps; low τ_dg (fine grid/high Re) ⇒ stiffer, raise this
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -173,8 +193,8 @@ class DGLBMConfig:
             raise ValueError(
                 f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/radius"
             )
-        if self.dg_order != 1:
-            raise ValueError("Only dg_order=1 (linear DG) is currently supported")
+        if self.dg_order not in (1,2,4):
+            raise ValueError("Only dg_order=1,2,4 (linear DG) is currently supported")
         if self.num_threads is not None and self.num_threads < 1:
             raise ValueError("num_threads must be >= 1")
 
@@ -244,6 +264,7 @@ def dg_compute_velocity_gradients(
     ux: torch.Tensor,
     uy: torch.Tensor,
     uz: torch.Tensor,
+    order: int = 2,
 ) -> tuple[
     torch.Tensor, torch.Tensor, torch.Tensor,
     torch.Tensor, torch.Tensor, torch.Tensor,
@@ -266,18 +287,33 @@ def dg_compute_velocity_gradients(
             duy_dx, duy_dy, duy_dz,
             duz_dx, duz_dy, duz_dz
     """
-    # Central differences with unit lattice spacing (Δx = 1)
-    dux_dx = (torch.roll(ux, -1, 2) - torch.roll(ux, 1, 2)) * 0.5
-    dux_dy = (torch.roll(ux, -1, 1) - torch.roll(ux, 1, 1)) * 0.5
-    dux_dz = (torch.roll(ux, -1, 0) - torch.roll(ux, 1, 0)) * 0.5
+    # Central differences (2nd or 4th order)
+    if order >= 4:
+        # 4th-order central difference: (-f2 + 8f1 - 8f-1 + f-2) / 12
+        dux_dx = (-torch.roll(ux, -2, 2) + 8*torch.roll(ux, -1, 2) - 8*torch.roll(ux, 1, 2) + torch.roll(ux, 2, 2)) / 12.0
+        dux_dy = (-torch.roll(ux, -2, 1) + 8*torch.roll(ux, -1, 1) - 8*torch.roll(ux, 1, 1) + torch.roll(ux, 2, 1)) / 12.0
+        dux_dz = (-torch.roll(ux, -2, 0) + 8*torch.roll(ux, -1, 0) - 8*torch.roll(ux, 1, 0) + torch.roll(ux, 2, 0)) / 12.0
 
-    duy_dx = (torch.roll(uy, -1, 2) - torch.roll(uy, 1, 2)) * 0.5
-    duy_dy = (torch.roll(uy, -1, 1) - torch.roll(uy, 1, 1)) * 0.5
-    duy_dz = (torch.roll(uy, -1, 0) - torch.roll(uy, 1, 0)) * 0.5
+        duy_dx = (-torch.roll(uy, -2, 2) + 8*torch.roll(uy, -1, 2) - 8*torch.roll(uy, 1, 2) + torch.roll(uy, 2, 2)) / 12.0
+        duy_dy = (-torch.roll(uy, -2, 1) + 8*torch.roll(uy, -1, 1) - 8*torch.roll(uy, 1, 1) + torch.roll(uy, 2, 1)) / 12.0
+        duy_dz = (-torch.roll(uy, -2, 0) + 8*torch.roll(uy, -1, 0) - 8*torch.roll(uy, 1, 0) + torch.roll(uy, 2, 0)) / 12.0
 
-    duz_dx = (torch.roll(uz, -1, 2) - torch.roll(uz, 1, 2)) * 0.5
-    duz_dy = (torch.roll(uz, -1, 1) - torch.roll(uz, 1, 1)) * 0.5
-    duz_dz = (torch.roll(uz, -1, 0) - torch.roll(uz, 1, 0)) * 0.5
+        duz_dx = (-torch.roll(uz, -2, 2) + 8*torch.roll(uz, -1, 2) - 8*torch.roll(uz, 1, 2) + torch.roll(uz, 2, 2)) / 12.0
+        duz_dy = (-torch.roll(uz, -2, 1) + 8*torch.roll(uz, -1, 1) - 8*torch.roll(uz, 1, 1) + torch.roll(uz, 2, 1)) / 12.0
+        duz_dz = (-torch.roll(uz, -2, 0) + 8*torch.roll(uz, -1, 0) - 8*torch.roll(uz, 1, 0) + torch.roll(uz, 2, 0)) / 12.0
+    else:
+        # 2nd-order central difference
+        dux_dx = (torch.roll(ux, -1, 2) - torch.roll(ux, 1, 2)) * 0.5
+        dux_dy = (torch.roll(ux, -1, 1) - torch.roll(ux, 1, 1)) * 0.5
+        dux_dz = (torch.roll(ux, -1, 0) - torch.roll(ux, 1, 0)) * 0.5
+
+        duy_dx = (torch.roll(uy, -1, 2) - torch.roll(uy, 1, 2)) * 0.5
+        duy_dy = (torch.roll(uy, -1, 1) - torch.roll(uy, 1, 1)) * 0.5
+        duy_dz = (torch.roll(uy, -1, 0) - torch.roll(uy, 1, 0)) * 0.5
+
+        duz_dx = (torch.roll(uz, -1, 2) - torch.roll(uz, 1, 2)) * 0.5
+        duz_dy = (torch.roll(uz, -1, 1) - torch.roll(uz, 1, 1)) * 0.5
+        duz_dz = (torch.roll(uz, -1, 0) - torch.roll(uz, 1, 0)) * 0.5
 
     return (
         dux_dx, dux_dy, dux_dz,
@@ -340,7 +376,7 @@ def collide_dg_lbm(
         dux_dx, dux_dy, dux_dz,
         duy_dx, duy_dy, duy_dz,
         duz_dx, duz_dy, duz_dz,
-    ) = dg_compute_velocity_gradients(ux, uy, uz)
+    ) = dg_compute_velocity_gradients(ux, uy, uz, order=4)
 
     # Strain-rate tensor components
     sxx = dux_dx
@@ -545,11 +581,13 @@ def run_dg_lbm_sphere_flow(config: DGLBMConfig) -> Path:
     )
 
     for step in step_iter:
-        # Hybrid collision: DG near wall, BGK elsewhere
-        f = collide_dg_lbm(f, tau=config.tau, dg_mask=dg_mask)
 
         # Standard streaming
         f = _stream(f)
+
+        # Momentum-exchange force on hull
+        fx, fy, fz = compute_obstacle_forces_3d(f, obstacle)
+        drag_lu = fx.item()
 
         # Boundary conditions (walls + obstacle bounce-back + inlet/outlet)
         f = apply_simple_channel_boundaries_3d(
@@ -580,9 +618,9 @@ def run_dg_lbm_sphere_flow(config: DGLBMConfig) -> Path:
             )
             diagnostics.append(asdict(point))
             logger.info(
-                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f",
+                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f drag=%.4f",
                 point.step, point.mass, point.mass_drift,
-                point.mean_rho, point.max_speed,
+                point.mean_rho, point.max_speed, drag_lu,
             )
             _save_dg_lbm_snapshot(run_dir, step, speed, obstacle, dg_mask, config.nz)
             save_checkpoint(f, step, run_dir)
@@ -651,7 +689,15 @@ class DGLBMSuboffConfig:
     overwrite: bool = False
     resume_checkpoint: Path | None = None
     use_compile: bool = False
-    dg_order: int = 1
+    dg_order: int = 4  # Gradient accuracy order (2 or 4); legacy (ignored by real DG)
+    smagorinsky_cs: float = 0.0  # Smagorinsky LES (>0 enables)
+    dynamic_smag: bool = False  # Dynamic Smagorinsky (auto Cs)
+    use_mrt: bool = False  # MRT collision (more stable at low tau)
+    use_wall_model: bool = False  # Log-law wall function
+    free_slip_walls: bool = False  # Free-slip domain boundaries
+    use_real_dg: bool = False  # If True, use the genuine nodal-DG hybrid solver
+    dg_degree: int = 1  # DG polynomial degree for the real solver (locked to 1)
+    dg_substeps: int = 16  # RK sub-steps; low τ_dg (fine grid/high Re) ⇒ stiffer, raise this
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -693,8 +739,8 @@ class DGLBMSuboffConfig:
             raise ValueError(
                 f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/hull_length"
             )
-        if self.dg_order != 1:
-            raise ValueError("Only dg_order=1 (linear DG) is currently supported")
+        if self.dg_order not in (1,2,4):
+            raise ValueError("Only dg_order=1,2,4 (linear DG) is currently supported")
         if self.num_threads is not None and self.num_threads < 1:
             raise ValueError("num_threads must be >= 1")
 
@@ -776,6 +822,115 @@ def _save_dg_lbm_suboff_snapshot(
 
 
 # ---------------------------------------------------------------------------
+# SUBOFF DG-LBM — REAL nodal-DG hybrid solver (use_real_dg=True)
+# ---------------------------------------------------------------------------
+
+
+def _run_suboff_real_dg(config: DGLBMSuboffConfig) -> Path:
+    """Genuine nodal-DG hybrid solver for the SUBOFF hull.
+
+    A DG band (``build_dg_hull_band_mask``) encloses the hull: its inner faces
+    bounce-back off the solid, its outer faces couple to the exterior D3Q19 LBM
+    via :func:`tensorlbm.dg_band.hybrid_step` (method-of-lines band with
+    τ_dg = τ_lbm − ½, exterior collide + stream + DG-trace write-back).  This is
+    real DG-LBM — contrast with the legacy gradient-correction path taken when
+    ``use_real_dg`` is False.
+    """
+    configure_logging()
+    config.validate()
+    torch.manual_seed(config.seed)
+    torch.use_deterministic_algorithms(True, warn_only=True)
+
+    device = resolve_device(config.device)
+    applied_num_threads = configure_cpu_threads(device, config.num_threads)
+    run_dir = prepare_run_dir(
+        config.output_root, "dg_lbm_suboff", config.resolved_run_name(), config.overwrite
+    )
+    ftype = torch.float32
+
+    # ---- Geometry ----
+    cx, cy, cz = config.nx * 0.35, config.ny * 0.5, config.nz * 0.5
+    obstacle, hull_stats = build_suboff_mask(
+        hull_type=config.hull_type, nx=config.nx, ny=config.ny, nz=config.nz,
+        cx=cx, cy=cy, cz=cz, length=config.hull_length, device=config.device,
+    )
+    obstacle = obstacle.to(device)
+    band_mask = build_dg_hull_band_mask(obstacle, config.dg_band)
+    topo = build_band_topology(band_mask, solid_mask=obstacle, periodic=False).to(device)
+    wall_mask = make_channel_wall_mask_3d(config.nz, config.ny, config.nx, obstacle, device=device)
+
+    # ---- Initial field ----
+    rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
+    ux0 = torch.full((config.nz, config.ny, config.nx), config.u_in, device=device)
+    uy0 = torch.zeros_like(ux0)
+    uz0 = torch.zeros_like(ux0)
+    ux0[obstacle] = 0.0
+    f_lbm = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
+    cb = topo.band_coords
+    f_dg = f_lbm[:, cb[:, 0], cb[:, 1], cb[:, 2]]
+    nn = config.dg_degree + 1
+    f_dg = f_dg.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(-1, -1, nn, nn, nn).contiguous()
+
+    ops = get_ops(degree=config.dg_degree, dx=1.0, dtype=ftype, device=device)
+    C_d = C.to(ftype).to(device)
+    W_d = W.to(ftype).to(device)
+    opp = OPPOSITE.to(device)
+
+    initial_mass = float(torch.ones_like(rho0).sum().item())
+    diagnostics: list[dict] = []
+    dg_cells = int(band_mask.sum().item())
+    logger.info(
+        "Real DG-LBM SUBOFF: device=%s NX=%s NY=%s NZ=%s tau=%.4f τ_dg=%.4f "
+        "dg_degree=%d substeps=%d band_cells=%d hull_cells=%d",
+        device, config.nx, config.ny, config.nz, config.tau, config.tau - 0.5,
+        config.dg_degree, config.dg_substeps, dg_cells, int(obstacle.sum().item()),
+    )
+    logger.info("Run directory: %s", run_dir)
+
+    for step in range(1, config.n_steps + 1):
+        f_lbm, f_dg = hybrid_step(
+            f_lbm, f_dg, C_d, W_d, ops, topo, tau_lbm=config.tau,
+            dt=1.0, n_substeps=config.dg_substeps, opposite=opp,
+        )
+        f_lbm = apply_simple_channel_boundaries_3d(f_lbm, config.u_in, wall_mask, obstacle)
+        if step % config.output_interval == 0:
+            f_lbm = correct_mass3d(f_lbm, initial_mass)
+
+        if step % config.output_interval == 0 or step == config.n_steps:
+            rho, ux, uy, uz = macroscopic3d(f_lbm)
+            ux = ux.masked_fill(obstacle, 0.0); uy = uy.masked_fill(obstacle, 0.0); uz = uz.masked_fill(obstacle, 0.0)
+            speed = torch.sqrt(ux * ux + uy * uy + uz * uz)
+            mass = float(rho.sum().item())
+            fx, _fy, _fz = compute_obstacle_forces_3d(f_lbm, obstacle)
+            drag_lu = float(fx.item())
+            point = DiagnosticPoint(
+                step=step, mass=mass, mass_drift=mass - initial_mass,
+                max_speed=float(speed.max().item()), mean_rho=float(rho.mean().item()),
+            )
+            diagnostics.append(asdict(point))
+            logger.info(
+                "step=%5d mass=%.6f drift=%+.6f max|u|=%.6f drag=%.4f",
+                step, point.mass, point.mass_drift, point.max_speed, drag_lu,
+            )
+            _save_dg_lbm_suboff_snapshot(run_dir, step, speed, obstacle, band_mask, config.nz)
+            save_checkpoint(f_lbm, step, run_dir)
+
+    metadata = {
+        "solver": "real_nodal_dg_hybrid",
+        "config": {**asdict(config), "output_root": str(config.output_root)},
+        "derived": {"nu": config.nu, "tau": config.tau, "tau_dg": config.tau - 0.5},
+        "runtime": {"device": str(device), "num_threads": applied_num_threads},
+        "hull_stats": hull_stats,
+        "drag_force_lu": drag_lu,
+        "diagnostics": diagnostics,
+    }
+    mpath = run_dir / "run_metadata.json"
+    mpath.write_text(f"{json.dumps(metadata, indent=2, sort_keys=True)}\n", encoding="utf-8")
+    logger.info("Saved metadata: %s", mpath)
+    return run_dir
+
+
+# ---------------------------------------------------------------------------
 # SUBOFF DG-LBM main runner
 # ---------------------------------------------------------------------------
 
@@ -800,6 +955,8 @@ def run_dg_lbm_suboff_flow(config: DGLBMSuboffConfig) -> Path:
     """
     configure_logging()
     config.validate()
+    if config.use_real_dg:
+        return _run_suboff_real_dg(config)
     torch.manual_seed(config.seed)
     torch.use_deterministic_algorithms(True, warn_only=True)
 
@@ -925,19 +1082,57 @@ def run_dg_lbm_suboff_flow(config: DGLBMSuboffConfig) -> Path:
     )
 
     for step in step_iter:
-        # Hybrid collision: DG near wall, BGK elsewhere
+        # Hybrid collision with optional LES
         f = collide_dg_lbm(f, tau=config.tau, dg_mask=dg_mask)
+        if config.use_mrt and config.dynamic_smag:
+            f_smag = collide_smagorinsky_mrt3d(f, tau=config.tau, C_s=0.15)
+        elif config.use_mrt:
+            f_smag = collide_mrt3d(f, tau=config.tau)
+        elif config.dynamic_smag:
+            f_smag = collide_dynamic_smagorinsky_bgk3d(f, tau=config.tau)
+            f = torch.where(dg_mask.unsqueeze(0), f, f_smag)
+        elif config.smagorinsky_cs > 0:
+            f_smag = collide_smagorinsky_bgk3d(f, tau=config.tau, C_s=config.smagorinsky_cs)
+            f = torch.where(dg_mask.unsqueeze(0), f, f_smag)
 
         # Standard streaming
         f = _stream(f)
 
-        # Boundary conditions (walls + hull bounce-back + inlet/outlet)
-        f = apply_simple_channel_boundaries_3d(
-            f,
-            u_in=config.u_in,
-            wall_mask=wall_mask,
-            obstacle_mask=obstacle,
-        )
+        # Momentum-exchange force on hull
+        fx, fy, fz = compute_obstacle_forces_3d(f, obstacle)
+        drag_lu = fx.item()
+
+        # Boundary conditions
+        if config.free_slip_walls:
+            # Free-slip on domain boundaries (no blockage)
+            y_wall = torch.zeros(1, config.ny, 1, dtype=torch.bool, device=device)
+            y_wall[0, 0, 0] = True
+            y_wall[0, -1, 0] = True
+            y_wall_full = y_wall.expand(config.nz, config.ny, config.nx)
+            z_wall = torch.zeros(config.ny, 1, 1, dtype=torch.bool, device=device)
+            z_wall[0, 0, 0] = True
+            z_wall[-1, 0, 0] = True
+            z_wall_full = z_wall.permute(1, 0, 2).expand(config.nz, config.ny, config.nx)
+            f = free_slip_y_walls_3d(f, y_wall_full)
+            f = free_slip_z_walls_3d(f, z_wall_full)
+            # Hull bounce-back only (use zero wall_mask for channel)
+            f = apply_simple_channel_boundaries_3d(
+                f, u_in=config.u_in, wall_mask=torch.zeros_like(obstacle),
+                obstacle_mask=obstacle
+            )
+        elif config.use_wall_model:
+            _, ux, uy, uz = macroscopic3d(f)
+            nu = (config.tau - 0.5) / 3.0
+            f = apply_wall_model_bounce_back(f, obstacle, ux, uy, uz, nu)
+            f = apply_simple_channel_boundaries_3d(
+                f, u_in=config.u_in, wall_mask=wall_mask,
+                obstacle_mask=torch.zeros_like(obstacle)
+            )
+        else:
+            f = apply_simple_channel_boundaries_3d(
+                f, u_in=config.u_in, wall_mask=wall_mask,
+                obstacle_mask=obstacle
+            )
 
         # Periodic mass correction
         if step % config.output_interval == 0:
@@ -960,7 +1155,7 @@ def run_dg_lbm_suboff_flow(config: DGLBMSuboffConfig) -> Path:
             )
             diagnostics.append(asdict(point))
             logger.info(
-                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f",
+                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f drag=%.4f",
                 point.step, point.mass, point.mass_drift,
                 point.mean_rho, point.max_speed,
             )
@@ -970,6 +1165,7 @@ def run_dg_lbm_suboff_flow(config: DGLBMSuboffConfig) -> Path:
     metadata["diagnostics"] = diagnostics
     metadata["restart"] = restart_info
     metadata["hull_stats"] = hull_stats
+    metadata["drag_force_lu"] = float(drag_lu)
     metadata_path = run_dir / "run_metadata.json"
     metadata_path.write_text(
         f"{json.dumps(metadata, indent=2, sort_keys=True)}\n",
