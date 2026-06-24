@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Real DG-LBM solver** (`tensorlbm.dg_advection`, `tensorlbm.dg_band`): a genuine
+  nodal Discontinuous-Galerkin Lattice Boltzmann hybrid.  Dimension-by-dimension
+  P1-Lobatto DG advection (upwind flux, SSP-RK3, sub-cycled) with method-of-lines
+  BGK collision, a packed DG-band topology, DG↔LBM P0 interface coupling
+  (conservative face-trace write-back), and half-way bounce-back at solid walls.
+  Validated: MMS O(Δx²)/O(Δx³) convergence, mass/momentum conservation, recovery of
+  the DVBE shear viscosity, and stable end-to-end obstacle flow (2-D cylinder,
+  3-D sphere, 3-D SUBOFF hull).  Enable on the SUBOFF runner with
+  `DGLBMSuboffConfig(use_real_dg=True)` (the legacy gradient-correction path
+  remains the default for backward compatibility).  Standalone runners:
+  `examples/dg_lbm_cylinder_hybrid.py`, `examples/dg_lbm_sphere_hybrid.py`.
+  Key tuned constants: 3-D RK sub-steps ≥ 16 (stiffer at low τ_dg); the band uses
+  τ_dg = τ_lbm − ½ to match the exterior LBM viscosity.
+
+### Added
 - **Rate limiting**: opt-in per-IP sliding-window rate limiter in `app/backend/security.py`.
   Enabled by setting `TENSORLBM_RATE_LIMIT_REQUESTS=<N>` (requests per window, default 0 =
   disabled) and `TENSORLBM_RATE_LIMIT_WINDOW_S=<seconds>` (default 60).  Returns HTTP 429
