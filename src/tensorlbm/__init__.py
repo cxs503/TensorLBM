@@ -353,6 +353,28 @@ from .dg_lbm import (
     run_dg_lbm_sphere_flow,
     run_dg_lbm_suboff_flow,
 )
+from .dg_advection import (
+    collide_bgk_dg,
+    dg_advect,
+    dg_lbm_rhs,
+    dg_lbm_step,
+    dg_rhs,
+    equilibrium_dg,
+    get_ops,
+    lobatto_nodes,
+    macroscopic_dg,
+    nodal_from_mean,
+)
+from .dg_band import (
+    BandTopology,
+    build_band_topology,
+    dg_advect_band,
+    dg_lbm_step_band,
+    dg_rhs_band,
+    hybrid_advect,
+    hybrid_step,
+    write_back_exports,
+)
 from .ellipsoid_benchmark import (
     EllipsoidConfig,
     build_ellipsoid_mask,
