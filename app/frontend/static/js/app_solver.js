@@ -213,6 +213,23 @@ const SIM_TYPES = {
       {name:'device', label:'Device', type:'device'},
     ],
   },
+  suboff_wall_function: {
+    label: 'SUBOFF – High-Re Wall Function (3D)',
+    desc: 'Real-submarine-Re SUBOFF (Re~1e6+) with τ-decoupled log-law wall function. Validated Ct <1% vs experimental AFF-8.',
+    endpoint: '/api/solve/suboff-wall-function',
+    fields: [
+      {name:'re', label:'Reynolds number', type:'number', default:2000000, min:1},
+      {name:'hull_type', label:'Hull type', type:'select', default:'full', options:['bare_hull','with_sail','full']},
+      {name:'nx', label:'nx', type:'number', default:320, min:80},
+      {name:'ny', label:'ny', type:'number', default:128, min:32},
+      {name:'nz', label:'nz', type:'number', default:128, min:32},
+      {name:'hull_length', label:'Hull length (cells)', type:'number', default:128, min:20},
+      {name:'u_in', label:'Inlet velocity', type:'number', default:0.06, step:0.01},
+      {name:'n_steps', label:'Time steps', type:'number', default:5000, min:100},
+      {name:'output_interval', label:'Output interval', type:'number', default:500, min:10},
+      {name:'device', label:'Device', type:'device'},
+    ],
+  },
   ship_hull: {
     label: 'Ship Hull – Wigley (3D)',
     desc: '3D Wigley hull resistance. Reports Cd and hull symmetry.',
