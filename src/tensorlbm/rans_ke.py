@@ -182,7 +182,11 @@ class KESolver:
         if self._k is None or self._eps is None:
             raise RuntimeError("k-ε not initialized")
         nu_t = C_MU * self._k**2 / self._eps.clamp(min=self.eps_min)
-        nu_t = torch.clamp(nu_t, min=0.0, max=min(self.nu_t_max, self.nu * 10.0))
+        # Cap only at the stability ceiling (nu_t_max).  The previous
+        # `min(nu_t_max, self.nu*10)` clamped ν_t to 10× the LAMINAR viscosity,
+        # which at high Re (ν_lam→0) forced ν_t→0 and prevented the model from
+        # ever generating eddy viscosity — the turbulence model never engaged.
+        nu_t = torch.clamp(nu_t, min=0.0, max=self.nu_t_max)
         nu_t = torch.nan_to_num(nu_t, nan=0.0, posinf=0.0, neginf=0.0)
         if mask is not None:
             nu_t[mask] = 0.0
