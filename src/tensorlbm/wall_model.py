@@ -215,6 +215,7 @@ def wall_function_3d(
     solid: torch.Tensor,
     nu: float,
     y_val: float = 0.5,
+    wall_law: str = "log",
 ) -> tuple[torch.Tensor, float, float]:
     """Log-law wall function applied as a Guo body force (decoupled from τ).
 
@@ -237,6 +238,9 @@ def wall_function_3d(
             off-wall cell sits deep in the log-law region (y+ ≫ 30).
         y_val: distance from the near-wall cell centre to the wall (default
             0.5 = half a lattice cell).
+        wall_law: ``"log"`` (standard log-law, y+>30) or ``"reichardt"``
+            (Reichardt unified law, valid for all y+ — more accurate when the
+            first off-wall cell sits in the buffer layer, y+~5-30).
 
     Returns:
         ``(f_with_force, drag_friction_x, drag_pressure_x)``.  Total drag =
@@ -252,19 +256,32 @@ def wall_function_3d(
 
     rho, ux, uy, uz = macroscopic3d(f)
     u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
-    # log-law solve for u_tau (Newton): u = u_tau·(ln(y+)/κ + B), y+ = y·u_tau/ν
-    u_tau = torch.sqrt(nu * u_mag / y_val).clamp(min=1e-12)
-    y_plus = y_val * u_tau / nu
-    turb = (y_plus > 11.6) & near
-    if bool(turb.any()):
-        ut = u_tau[turb].clone()
-        um = u_mag[turb]
-        for _ in range(8):
-            lyp = torch.log(y_val * ut / nu)
-            fv = ut * (lyp / _KAPPA + _B_LOG) - um
-            fp = (lyp / _KAPPA + _B_LOG) + 1.0 / _KAPPA
-            ut = (ut - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
-        u_tau[turb] = ut
+
+    if wall_law == "reichardt":
+        # Reichardt unified wall law (1951): valid for all y+ (viscous +
+        # buffer + log-law).  Fixed-point iterate u_tau = u/u+(y+).
+        ut = torch.sqrt(nu * u_mag / y_val).clamp(min=1e-12)
+        for _ in range(12):
+            yp = (y_val * ut / nu).clamp(min=1e-6)
+            up = (1.0 / _KAPPA) * torch.log1p(_KAPPA * yp) + 7.8 * (
+                1.0 - torch.exp(-yp / 11.0) - (yp / 11.0) * torch.exp(-yp / 3.0)
+            )
+            ut = (u_mag / up.clamp(min=1e-6)).clamp(min=1e-12)
+        u_tau = torch.where(near, ut, torch.zeros_like(ut))
+    else:
+        # log-law solve for u_tau (Newton): u = u_tau·(ln(y+)/κ + B), y+ = y·u_tau/ν
+        u_tau = torch.sqrt(nu * u_mag / y_val).clamp(min=1e-12)
+        y_plus = y_val * u_tau / nu
+        turb = (y_plus > 11.6) & near
+        if bool(turb.any()):
+            ut = u_tau[turb].clone()
+            um = u_mag[turb]
+            for _ in range(8):
+                lyp = torch.log(y_val * ut / nu)
+                fv = ut * (lyp / _KAPPA + _B_LOG) - um
+                fp = (lyp / _KAPPA + _B_LOG) + 1.0 / _KAPPA
+                ut = (ut - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
+            u_tau[turb] = ut
     tau_w = u_tau * u_tau                                  # wall shear (per area)
 
     # Body force on near-wall cells: F = -(τ_w / dy)·û (decelerate tangential flow)
