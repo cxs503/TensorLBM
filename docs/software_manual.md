@@ -1,6 +1,6 @@
 # TensorLBM 软件说明书 / Software Manual
 
-**版本 / Version:** 0.1.0  
+**版本 / Version:** 0.3.0+  
 **适用范围 / Scope:** 船舶与海洋工程 Benchmark 测试及仿真 / Ship & Ocean Engineering Benchmarks
 
 ---
@@ -20,6 +20,19 @@
 5. [定量比较汇总 / Quantitative Comparison Summary](#5-定量比较汇总--quantitative-comparison-summary)
 6. [运行基准测试 / Running the Benchmark Suite](#6-运行基准测试--running-the-benchmark-suite)
 7. [公共 API 参考 / Public API Reference](#7-公共-api-参考--public-api-reference)
+   - [7.1 格子原语](#71-格子原语--lattice-primitives)
+   - [7.2 碰撞算子](#72-碰撞算子--collision-operators)
+   - [7.3 边界条件](#73-边界条件--boundary-conditions)
+   - [7.4 船舶与海洋工程模块](#74-船舶与海洋工程模块--marine-modules)
+   - [7.5 多相流](#75-多相流--multiphase-flow)
+   - [7.6 后处理](#76-后处理--postprocessing)
+   - [7.7 单位换算](#77-单位换算--unit-conversion)
+   - [7.8 自适应网格细化 (AMR)](#78-自适应网格细化--adaptive-mesh-refinement-amr)
+   - [7.9 DG-LBM 混合求解器](#79-dg-lbm-混合求解器--dg-lbm-hybrid-solver)
+   - [7.10 AI 湍流模型](#710-ai-湍流模型--ai-turbulence-models)
+   - [7.11 共轭传热 (CHT)](#711-共轭传热--conjugate-heat-transfer)
+   - [7.12 气动声学 (FWH)](#712-气动声学--aeroacoustics-fwh)
+   - [7.13 多 GPU 域分解](#713-多-gpu-域分解--multi-gpu-domain-decomposition)
 8. [输出文件说明 / Output File Description](#8-输出文件说明--output-file-description)
 9. [已知限制 / Known Limitations](#9-已知限制--known-limitations)
 10. [参考文献 / References](#10-参考文献--references)
@@ -36,14 +49,24 @@ TensorLBM is a PyTorch-based Lattice Boltzmann Method (LBM) simulation platform 
 
 | 功能 | 说明 |
 |------|------|
-| **D2Q9 格子** | 2D 九速度模型，含 BGK/MRT 碰撞算子 |
-| **D3Q19/D3Q27 格子** | 3D 十九/二十七速度模型 |
+| **D2Q9 / D3Q19 / D3Q27 格子** | 2D 九速度、3D 十九/二十七速度模型 |
+| **碰撞算子** | BGK、MRT、TRT、RLBM（正则化）、Cumulant（累积量） |
+| **自适应网格细化（AMR）** | D2Q9/D3Q19 动态 Patch，最多 5 级细化，Filippova–Hänel 界面交换 |
+| **DG-LBM 混合求解器** | P1-Lobatto 节点型间断 Galerkin LBM，SSP-RK3，DG↔LBM 界面耦合 |
 | **多相流模型** | Shan-Chen（单/双组分）、颜色梯度（Color-Gradient）、自由能相场 |
 | **非牛顿流变** | 幂律（Power-law）表观黏度与空间变 τ BGK 碰撞 |
-| **湍流模型** | Smagorinsky、WALE、Vreman LES 模型 |
-| **边界条件** | 反弹（Bounce-Back）、Zou-He 进口速度/出口压力 BC |
-| **船舶与海洋工程** | Wigley 船体、近床管道、液舱晃动、湍流槽道 |
-| **结构化输出** | JSON 元数据、CSV 诊断、PNG 可视化、HDF5/VTK 导出 |
+| **LES 湍流模型** | Smagorinsky、动态 Smagorinsky（Germano）、WALE、Vreman |
+| **RANS 湍流模型** | k-ε、k-ω SST |
+| **AI 湍流模型** | MLP 涡粘模型、Transformer 自监督流场模型、AI 嵌入 LBM 碰撞 |
+| **共轭传热（CHT）** | 流体–固体导热耦合与界面边界条件 |
+| **气动声学（FWH）** | Ffowcs Williams–Hawkings 远场求解器、SPL 频谱、OASPL |
+| **边界条件** | 反弹、Zou-He 进口速度/出口压力 BC、Bouzidi 插值反弹、移动壁、海绵层、粗糙壁面 |
+| **湍流进口剖面** | 对数律、幂律、Blasius、Womersley、DFSEM、数字滤波法 |
+| **流线追踪** | 2D/3D 流线积分、播种点、驻留时间 |
+| **面积分** | 质量流量、表面力/力矩、力/力矩系数、压降 |
+| **多 GPU** | DomainDecomposition、MultiGPUSolver2D/3D、halo 交换 |
+| **船舶与海洋工程** | Wigley 船体、近床管道、液舱晃动、湍流槽道、SUBOFF 潜艇 |
+| **结构化输出** | JSON 元数据、CSV 诊断、PNG 可视化、HDF5/VTK/XDMF 导出 |
 | **可重复性** | 确定性算法、随机种子、配置存档 |
 
 ### 格子 Boltzmann 方法简介 / LBM Overview
@@ -101,15 +124,35 @@ TensorLBM/
 ├── src/tensorlbm/
 │   ├── d2q9.py               # D2Q9 格子原语（平衡态、宏观量、格子常数）
 │   ├── d3q19.py              # D3Q19 格子原语
-│   ├── d3q27.py              # D3Q27 格子原语
-│   ├── solver.py             # D2Q9 BGK/MRT 碰撞与迁移
-│   ├── solver3d.py           # D3Q19 BGK/MRT 碰撞与迁移
-│   ├── boundaries.py         # 2D 边界条件（Bounce-Back、Zou-He）
-│   ├── boundaries3d.py       # 3D 边界条件
-│   ├── turbulence.py         # LES 湍流模型（Smagorinsky/WALE/Vreman）
+│   ├── d3q27.py              # D3Q27 格子原语（含 BGK/MRT/Smagorinsky）
+│   ├── solver.py             # D2Q9 BGK/MRT/TRT/RLBM/Cumulant 碰撞与迁移
+│   ├── solver3d.py           # D3Q19 BGK/MRT/TRT/RLBM 碰撞与迁移
+│   ├── adaptive_refinement.py # 自适应网格细化（AMR），最多 5 级
+│   ├── dg_advection.py       # P1-Lobatto 节点型 DG 算子（SSP-RK3）
+│   ├── dg_band.py            # DG Band 拓扑与 DG↔LBM 界面耦合
+│   ├── dg_lbm.py             # DG-LBM 混合求解器（SUBOFF/球体/圆柱）
+│   ├── boundaries.py         # 2D 边界条件（Bounce-Back、Zou-He、移动壁）
+│   ├── boundaries3d.py       # 3D 边界条件（含远场、海绵层）
+│   ├── boundaries_d3q27.py   # D3Q27 边界条件
+│   ├── turbulence.py         # LES（Smagorinsky/动态/WALE/Vreman）
+│   ├── rans_ke.py            # RANS k-ε 与 k-ω SST 求解器
 │   ├── multiphase.py         # D2Q9 多相流（SC/CG/自由能）
 │   ├── multiphase3d.py       # D3Q19 多相流
-│   ├── wave_bc.py            # Airy 波浪边界条件（3D）
+│   ├── thermal.py            # D2Q9+D2Q5 热流（双分布函数）
+│   ├── thermal3d.py          # D3Q19+D3Q7 三维热流
+│   ├── conjugate_ht.py       # 共轭传热（CHT）流固耦合
+│   ├── acoustics.py          # FWH 气动声学（远场、SPL 频谱）
+│   ├── ibm.py                # 浸入边界法（IBM），2D
+│   ├── ibm3d.py              # 浸入边界法（IBM），3D
+│   ├── wave_bc.py            # Airy 波浪 / JONSWAP 边界条件（3D）
+│   ├── roughness.py          # 粗糙壁面（等效砂粒）边界条件
+│   ├── sponge_bc.py          # 海绵/吸收层出口边界条件
+│   ├── inlet_profiles.py     # 湍流进口剖面（对数律/幂律/Blasius/Womersley）
+│   ├── synthetic_inflow.py   # 合成湍流进口（DFSEM、数字滤波法）
+│   ├── turbulence_stats.py   # 湍流统计（Reynolds 应力、TKE、Tu）
+│   ├── streamlines.py        # 2D/3D 流线追踪
+│   ├── surface_integrals.py  # 表面/体积积分（质量流量、力/力矩系数）
+│   ├── multi_gpu.py          # 多 GPU 域分解与 halo 交换
 │   ├── obstacles.py          # Wigley 船体掩模、力/力矩计算
 │   ├── cylinder_flow.py      # 2D 绕圆柱流动算例
 │   ├── ship_flow.py          # 3D Wigley 船体绕流算例
@@ -117,19 +160,46 @@ TensorLBM/
 │   ├── pipeline_flow.py      # 近床管道流动算例
 │   ├── turbulent_channel.py  # 体力驱动湍流槽道算例
 │   ├── porous_media.py       # 多孔介质（Laplace/毛细管/排水）算例
+│   ├── porous_media3d.py     # 三维多孔介质排水算例
+│   ├── airfoil_benchmark.py  # NACA 4 位数翼型基准
+│   ├── ellipsoid_benchmark.py # 椭球体阻力基准
+│   ├── propeller_cad.py      # 螺旋桨几何（KP-505 / 通用）
+│   ├── propeller_benchmark.py # 螺旋桨旋转 MRF 基准
+│   ├── propeller_ibm.py      # IBM 螺旋桨基准
+│   ├── actuator_disk.py      # 盘式促动器（简化螺旋桨）
+│   ├── backward_facing_step.py # 后台阶再附长度基准
+│   ├── ai/                   # AI 湍流子包
+│   │   ├── model.py          # MLP 涡粘模型
+│   │   ├── transformer.py    # Transformer 自监督流场模型
+│   │   ├── train.py          # 模型训练工具
+│   │   ├── inference.py      # 模型推断与 AI 嵌入 LBM 碰撞
+│   │   ├── database.py       # LBMDatabase（SQLite 流场数据库）
+│   │   └── pipeline.py       # DNS→LES 端到端 AI 管道
 │   ├── unit_converter.py     # LBM ↔ 物理单位换算
 │   ├── preprocess_geo.py     # 几何预处理（STL 体素化、多边形掩模）
-│   ├── postprocess.py        # 后处理（涡量、Q 准则、压力系数）
+│   ├── postprocess.py        # 后处理（涡量、Q 准则、λ₂ 准则、压力系数）
 │   ├── checkpoint.py         # 检查点保存/加载
-│   ├── config_io.py          # JSON 配置序列化
+│   ├── config_io.py          # JSON/YAML 配置序列化
+│   ├── backends/             # 多后端分发（torch/paddle/mindspore）
 │   └── __init__.py           # 公共 API 入口
-├── examples/                 # 命令行运行脚本
-├── tests/                    # pytest 测试套件
+├── app/                      # 可部署 B/S 平台（双语 Web UI）
+│   ├── backend/              # FastAPI 后端（REST API + 任务调度）
+│   ├── frontend/             # 前端 SPA（HTML/JS + i18n）
+│   ├── i18n/                 # 翻译词典（en.json/zh.json）+ 校验脚本
+│   └── start.sh              # 平台启动脚本
+├── examples/                 # 命令行运行脚本（30+ 算例）
+├── tests/                    # pytest 测试套件（80+ 测试模块）
 ├── benchmarks/               # 性能与精度基准测试
-│   ├── bench_mlups.py        # MLUPS 吞吐量测试
-│   └── bench_marine.py       # 船舶与海洋工程基准测试（本文档重点）
+│   ├── bench_mlups.py        # MLUPS 吞吐量测试（BGK/MRT/TRT/RLBM）
+│   ├── bench_marine.py       # 船舶与海洋工程基准测试
+│   ├── bench_multiphase.py   # 多相流基准（2D + 3D）
+│   └── bench_dam_break.py    # 溃坝基准
 └── docs/
-    └── software_manual.md    # 本说明书
+    ├── software_manual.md    # 本说明书
+    ├── suboff_platform_manual.md
+    ├── ai_turbulence.md
+    ├── development_workflow.md
+    └── observability.md
 ```
 
 ### 3.1 数据流 / Data Flow
@@ -502,7 +572,10 @@ PYTHONPATH=src python benchmarks/bench_marine.py --cases suboff --full \
 | 3 | 近床管道 Re=200 e/D=0.5 | 400×160 (full) | 30 000 | St 数 | ~0.175 | 0.183 | ~4.4 % | ✓ |
 | 4 | 湍流槽道 Re_τ=100 | 256×64 (full) | 50 000 | RMS 对数律误差 | < 3.0 w.u. | 0 | < 3 w.u. | ✓ |
 | 5 | 船舶全流程案例 Re=200 | 80×40×30 | 2 000 | `C_b` 误差 + 对称性 | `C_b≈0.46–0.48` | 4/9, 力比值阈值 | `C_b` 误差 < 25%，对称性通过 | ✓ |
-| 6 | SUBOFF 全附件阻力 | 115×52×52 → 230×104×104 → 288×130×130 (full) | 60 / level | `C_D` 收敛误差 | < 3.0 % | Richardson 外推 | ≤ 3.0 % | ✓ |
+| 6 | SUBOFF 全附件阻力 | 115×52×52 → 288×130×130 (full) | 60 / level | `C_D` 收敛误差 | < 3.0 % | Richardson 外推 | ≤ 3.0 % | ✓ |
+| 7 | 顶盖驱动方腔流 Re=100/400/1000 | — | — | u 中线速度剖面 | 匹配 | Ghia 等 (1982) | < 1 % | ✓ |
+| 8 | DG-LBM MMS 收敛 | P1 单元 | — | 空间精度阶 | O(Δx²)–O(Δx³) | 制造精确解 | — | ✓ |
+| 9 | 翼型 C_L/C_D（NACA 4 位数）| — | — | 升/阻力系数 | 在参考带内 | XFOIL/面元法 | — | ✓ |
 
 > 所有 "Full 模式" 结果基于理论预测或已发表 LBM 参考数据；快速模式结果来自本软件实际运行。
 
@@ -598,7 +671,7 @@ rho, ux, uy = macroscopic(f)
 ### 7.2 碰撞算子 / Collision Operators
 
 ```python
-from tensorlbm import collide_bgk, collide_mrt
+from tensorlbm import collide_bgk, collide_mrt, collide_trt, collide_rlbm
 
 # BGK（单松弛时间）
 f = collide_bgk(f, tau=0.6)
@@ -606,13 +679,29 @@ f = collide_bgk(f, tau=0.6)
 # MRT（多松弛时间）
 f = collide_mrt(f, tau=0.6)
 
+# TRT（双松弛时间，Ginzburg magic Λ=3/16）
+f = collide_trt(f, tau=0.6)
+
+# RLBM（正则化 BGK，滤除非流体学模式）
+f = collide_rlbm(f, tau=0.6)
+
+# Cumulant LBM（D2Q9 或 D3Q27）
+from tensorlbm import collide_cumulant_d2q9, collide_cumulant_d3q27
+f = collide_cumulant_d2q9(f, tau=0.6)
+f27 = collide_cumulant_d3q27(f27, tau=0.6)
+
 # Smagorinsky LES
 from tensorlbm import collide_smagorinsky_bgk
 f = collide_smagorinsky_bgk(f, tau=0.6, C_s=0.1)
 
-# WALE LES
-from tensorlbm import collide_wale_bgk
+# WALE / Vreman LES
+from tensorlbm import collide_wale_bgk, collide_vreman_bgk
 f = collide_wale_bgk(f, tau=0.6)
+f = collide_vreman_bgk(f, tau=0.6)
+
+# 动态 Smagorinsky（Germano 标识）
+from tensorlbm import collide_dynamic_smagorinsky_bgk
+f = collide_dynamic_smagorinsky_bgk(f, tau=0.6)
 ```
 
 ### 7.3 边界条件 / Boundary Conditions
@@ -682,7 +771,11 @@ from tensorlbm import (
     compute_vorticity,
     compute_pressure_coefficient,
     compute_q_criterion,
+    compute_lambda2_criterion,
     extract_velocity_profile,
+    trace_streamlines_2d,
+    surface_force_2d,
+    force_coefficients,
 )
 
 # 涡量（2D）
@@ -691,11 +784,24 @@ vort = compute_vorticity(ux, uy)
 # Q 准则（湍流可视化）
 Q = compute_q_criterion(ux, uy, uz)  # 3D
 
+# λ₂ 准则（旋涡识别）
+lam2 = compute_lambda2_criterion(ux, uy, uz)
+
 # 提取中线速度剖面
 y, u_profile = extract_velocity_profile(ux, x_idx=nx // 2)
 
 # 压力系数
 cp = compute_pressure_coefficient(rho, rho_ref=1.0, u_ref=0.08)
+
+# 流线追踪（2D）
+from tensorlbm import seed_points_uniform_2d, streamlines_to_dict
+seeds = seed_points_uniform_2d(nx, ny, n=50)
+lines = trace_streamlines_2d(ux, uy, seeds, max_steps=500)
+data = streamlines_to_dict(lines)
+
+# 表面力与力系数
+fx, fy = surface_force_2d(f, obstacle_mask)
+cd, cl = force_coefficients(fx, fy, rho_ref=1.0, u_ref=0.08, area=2*radius)
 ```
 
 ### 7.7 单位换算 / Unit Conversion
@@ -712,6 +818,100 @@ print(f"dx = {conv.dx:.3f} m")
 print(f"dt = {conv.dt:.5e} s")
 print(f"nu_lbm = {conv.nu_lbm:.5e}")
 print(f"tau = {conv.tau:.4f}")
+```
+
+### 7.8 自适应网格细化 / Adaptive Mesh Refinement (AMR)
+
+```python
+from tensorlbm import (
+    AdaptiveSolver2D, AdaptationSchedule,
+    nonequilibrium_indicator_2d, mark_cells_for_refinement,
+)
+from tensorlbm import macroscopic
+
+schedule = AdaptationSchedule(adapt_every=500, max_levels=3)
+solver = AdaptiveSolver2D(f_coarse, schedule=schedule)
+
+for step in range(n_steps):
+    solver.step(collide_fn, stream_fn, boundary_fn)
+    if solver.should_adapt(step):
+        rho, ux, uy = macroscopic(solver.coarse_f)
+        indicator = nonequilibrium_indicator_2d(solver.coarse_f, rho, ux, uy)
+        solver.adapt(indicator)
+```
+
+### 7.9 DG-LBM 混合求解器 / DG-LBM Hybrid Solver
+
+```python
+from tensorlbm import DGLBMConfig, run_dg_lbm_sphere_flow
+from tensorlbm import DGLBMSuboffConfig, run_dg_lbm_suboff_flow
+
+# 3D 球体绕流（DG 加速）
+cfg = DGLBMConfig(nx=60, ny=30, nz=30, radius=4, n_steps=500)
+run_dg_lbm_sphere_flow(cfg)
+
+# SUBOFF 潜艇（启用真实 DG 格式）
+suboff_cfg = DGLBMSuboffConfig(use_real_dg=True, n_steps=200)
+run_dg_lbm_suboff_flow(suboff_cfg)
+```
+
+### 7.10 AI 湍流模型 / AI Turbulence Models
+
+```python
+from tensorlbm import (
+    run_ai_dns_pipeline, run_ai_les_pipeline,
+    collide_ai_les_bgk, predict_nu_t_2d,
+    FlowFieldTransformer, FlowTransformerArch,
+)
+
+# 端到端 DNS → 数据库 → 训练 → AI-LBM 管道
+result = run_ai_dns_pipeline(nx=128, ny=64, n_steps=5000)
+
+# 将训练好的模型嵌入 LBM 碰撞
+nu_t = predict_nu_t_2d(model, f, tau_base=0.6)
+f = collide_ai_les_bgk(f, tau_base=0.6, nu_t=nu_t)
+```
+
+### 7.11 共轭传热 / Conjugate Heat Transfer
+
+```python
+from tensorlbm import CHTConfig, run_conjugate_ht_2d
+
+cfg = CHTConfig(
+    nx=128, ny=64,
+    tau_fluid=0.7, alpha_solid=0.1,
+    n_steps=10000,
+)
+result = run_conjugate_ht_2d(cfg)
+```
+
+### 7.12 气动声学 / Aeroacoustics (FWH)
+
+```python
+from tensorlbm import (
+    FWHSurface, compute_fwh_far_field,
+    compute_spl_spectrum, oaspl,
+)
+
+# 定义 FWH 积分面并计算远场声压
+surface = FWHSurface(observer_distance=10.0, n_points=128)
+result = compute_fwh_far_field(surface, p_history, u_history, dt=1.0)
+spl = compute_spl_spectrum(result.p_far, dt=1.0)
+oa = oaspl(spl.frequencies, spl.levels)
+print(f"OASPL = {oa:.1f} dB")
+```
+
+### 7.13 多 GPU 域分解 / Multi-GPU Domain Decomposition
+
+```python
+from tensorlbm import MultiGPUSolver2D, auto_decompose
+
+devices = ["cuda:0", "cuda:1", "cuda:2", "cuda:3"]
+decomp = auto_decompose(nx=1024, ny=512, n_devices=len(devices))
+solver = MultiGPUSolver2D(f_global, decomp, devices=devices)
+
+for step in range(n_steps):
+    solver.step(collide_fn, stream_fn, boundary_fn)
 ```
 
 ---
@@ -766,13 +966,19 @@ print(f"tau = {conv.tau:.4f}")
 
 1. **可压缩性误差 / Compressibility Error**：LBM 在弱可压缩近似下工作，要求 Ma = u/c_s < 0.3（其中 c_s = 1/√3）。对于快速流动（u_in > 0.1），应降低格子速度。
 
-2. **高雷诺数不稳定性 / High-Re Instability**：当 τ < 0.55 时易出现数值振荡。建议使用 MRT 或 Smagorinsky LES 来提高 Re 上限。
+2. **高雷诺数不稳定性 / High-Re Instability**：当 τ < 0.55 时易出现数值振荡。建议使用 MRT、RLBM、Cumulant 或 Smagorinsky LES 来提高 Re 上限。
 
-3. **三维计算成本 / 3D Computational Cost**：D3Q19 在 160×60×40 格子上每步约需 35 ms（CPU）。大型三维算例建议使用 GPU 加速或 `torch.compile`。
+3. **三维计算成本 / 3D Computational Cost**：D3Q19 在 160×60×40 格子上每步约需 35 ms（CPU）。大型三维算例建议使用 GPU 加速、`torch.compile` 或多 GPU 域分解（`MultiGPUSolver3D`）。
 
 4. **CG 多相流参数敏感性 / CG Multiphase Parameter Sensitivity**：颜色梯度模型的 τ、G、ρ_water/ρ_air 等参数对界面稳定性有较强影响。建议在目标参数范围内进行专项验证。
 
 5. **湍流 LES 近壁精度 / LES Near-Wall Accuracy**：粗网格下 Smagorinsky 模型在 y⁺ < 5 区域过度预测粘性耗散，可改用 WALE 模型改善近壁精度。
+
+6. **DG-LBM 刚性 / DG-LBM Stiffness**：三维 DG-LBM 在低 τ_dg（< 0.6）时要求 RK 子步数 ≥ 16 以保持稳定，计算成本随子步数线性增长。
+
+7. **AMR 内存占用 / AMR Memory**：每增加一个细化级别，精细 Patch 的内存占用约为粗网格的 2^d 倍（d = 维数）。建议在运行前估算峰值内存。
+
+8. **多 GPU halo 通信 / Multi-GPU Halo Communication**：halo 交换通过 PyTorch 张量复制实现，适合 NVLink 或高带宽互联；跨主机通信需额外配置分布式后端。
 
 ---
 
@@ -801,6 +1007,16 @@ print(f"tau = {conv.tau:.4f}")
 11. **Ginzburg, I. & d'Humières, D. (2003)**. Multireflection boundary conditions for lattice Boltzmann models. *Physical Review E*, 68(6), 066614.
 
 12. **Zou, Q. & He, X. (1997)**. On pressure and velocity boundary conditions for the lattice Boltzmann BGK model. *Physics of Fluids*, 9(6), 1591–1598.
+
+13. **Latt, J. & Chopard, B. (2006)**. Lattice Boltzmann method with regularized non-equilibrium distribution functions. *Mathematics and Computers in Simulation*, 72(2–6), 165–168.
+
+14. **Geier, M., Greiner, A. & Korvink, J.G. (2006)**. Cascaded digital lattice Boltzmann automata for high Reynolds number flow. *Physical Review E*, 73(6), 066705.
+
+15. **Ghia, U., Ghia, K.N. & Shin, C.T. (1982)**. High-Re solutions for incompressible flow using the Navier-Stokes equations and a multigrid method. *Journal of Computational Physics*, 48(3), 387–411.
+
+16. **Lagrava, D., Malaspinas, O., Latt, J. & Chopard, B. (2012)**. Advances in multi-domain lattice Boltzmann grid refinement. *Journal of Computational Physics*, 231(14), 4808–4822.
+
+17. **Filippova, O. & Hänel, D. (1998)**. Grid refinement for lattice-BGK models. *Journal of Computational Physics*, 147(1), 219–228.
 
 ---
 
