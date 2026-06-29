@@ -196,6 +196,30 @@ def compute_obstacle_forces(
     return fx, fy
 
 
+def far_field_bc_2d(
+    f: torch.Tensor,
+    u_in: float,
+    obstacle_mask: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """2-D free-stream (Dirichlet) far-field boundary condition.
+
+    Imposes equilibrium free-stream on the inlet and both lateral faces
+    (top/bottom), zero-gradient outlet.  Removes blockage (no wall
+    acceleration) so the body sees effectively unbounded flow.  The 3-D
+    analogue is :func:`tensorlbm.boundaries3d.far_field_bc_3d`.
+    """
+    rho1 = torch.ones((f.shape[1], f.shape[2]), dtype=f.dtype, device=f.device)
+    feq = equilibrium(rho1, torch.full_like(rho1, u_in), torch.zeros_like(rho1))
+    f = f.clone()
+    f[:, :, 0] = feq[:, :, 0]       # inlet (free stream)
+    f[:, :, -1] = f[:, :, -2]       # outlet (zero gradient)
+    f[:, 0, :] = feq[:, 0, :]       # bottom lateral
+    f[:, -1, :] = feq[:, -1, :]     # top lateral
+    if obstacle_mask is not None:
+        f = bounce_back_cells(f, obstacle_mask)
+    return f
+
+
 def apply_simple_channel_boundaries(
     f: torch.Tensor,
     u_in: float,
