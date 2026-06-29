@@ -452,6 +452,72 @@ def write_back_exports(
     return flb.reshape(Q, *shape)
 
 
+def project_band_to_lbm(f_lbm: torch.Tensor, f_dg: torch.Tensor, topo: BandTopology) -> torch.Tensor:
+    """Write each band cell's P0 (nodal mean) into the LBM field at its grid cell.
+
+    The band cells are "holes" in *f_lbm* (the band evolves *f_dg*).  Projecting
+    the cell-mean back into *f_lbm* makes the field a consistent full-grid P0
+    representation — so an obstacle *inside* the band is surrounded by real
+    values and the standard momentum-exchange force / bounce-back on the solid
+    read meaningful populations instead of holes.  (The band keeps its
+    high-order polynomial in *f_dg*; this only fills the P0 view.)
+    """
+    node_axes = tuple(range(2, f_dg.ndim))
+    mean = f_dg.mean(dim=node_axes)                       # (Q, n_band)
+    cb = topo.band_coords
+    idx = tuple(cb[:, k] for k in range(topo.ndim))       # (z,y,x) or (y,x)
+    f_lbm = f_lbm.clone()
+    f_lbm[(slice(None),) + idx] = mean
+    return f_lbm
+
+
+def compute_dg_solid_force(
+    f_dg: torch.Tensor,
+    topo: BandTopology,
+    velocities: torch.Tensor,
+    ops: _Ops,
+) -> torch.Tensor:
+    """Momentum-exchange force on the solid at the DG band's solid faces.
+
+    Half-way bounce-back at each solid face (``nbr_type == 2``) reflects the
+    outflow population *i* (``c_i·n̂ > 0``) into ``OPPOSITE[i]``.  The momentum
+    transferred to the solid along axis α is the Ladd exchange
+
+        F_α = Σ_{solid faces} Σ_{i: c_i·n̂>0} 2 · c_{i,α} · f_i(x_f)
+
+    where *x_f* is the fluid (band) cell adjacent to the wall — for a P1
+    element its centre value is the cell-mean over all nodal DOFs.  (Using the
+    cell-mean, not the wall-face node, avoids DG polynomial overshoot inflating
+    the near-wall populations.)  Returns the force vector on the solid
+    ``(F_x, F_y, F_z)``.
+    """
+    ndim = topo.ndim
+    n_dims = f_dg.ndim
+    node_axes = tuple(range(2, n_dims))                    # all nodal axes of f_dg
+    cell_mean = f_dg.mean(dim=node_axes)                   # (Q, n_band) centre value
+    force = torch.zeros(ndim, dtype=f_dg.dtype, device=f_dg.device)
+
+    for g in range(ndim):                                  # grid axis (0=z..ndim-1=x)
+        v = ndim - 1 - g                                   # velocity column along axis g
+        for sgn, type_arr in (
+            (+1, topo.nbr_type_plus[g]),
+            (-1, topo.nbr_type_minus[g]),
+        ):
+            solid = type_arr == 2                          # (n_band,)
+            if not bool(solid.any()):
+                continue
+            outflow = (velocities[:, v].to(f_dg.dtype) * sgn) > 0   # (Q,)
+            if not bool(outflow.any()):
+                continue
+            b_idx = torch.nonzero(solid, as_tuple=False).squeeze(-1)
+            q_idx = torch.nonzero(outflow, as_tuple=False).squeeze(-1)
+            cm = cell_mean.index_select(0, q_idx).index_select(1, b_idx)  # (Qo, Nb)
+            per_vel = cm.sum(dim=1)                        # (Qo,) sum over solid band cells
+            c_alpha = velocities[q_idx].to(f_dg.dtype)     # (Qo, ndim)
+            force += 2.0 * (c_alpha * per_vel.unsqueeze(1)).sum(dim=0)
+    return force
+
+
 def hybrid_advect(
     f_lbm: torch.Tensor,
     f_dg: torch.Tensor,

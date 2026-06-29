@@ -182,7 +182,11 @@ class KESolver:
         if self._k is None or self._eps is None:
             raise RuntimeError("k-ε not initialized")
         nu_t = C_MU * self._k**2 / self._eps.clamp(min=self.eps_min)
-        nu_t = torch.clamp(nu_t, min=0.0, max=min(self.nu_t_max, self.nu * 10.0))
+        # Cap only at the stability ceiling (nu_t_max).  The previous
+        # `min(nu_t_max, self.nu*10)` clamped ν_t to 10× the LAMINAR viscosity,
+        # which at high Re (ν_lam→0) forced ν_t→0 and prevented the model from
+        # ever generating eddy viscosity — the turbulence model never engaged.
+        nu_t = torch.clamp(nu_t, min=0.0, max=self.nu_t_max)
         nu_t = torch.nan_to_num(nu_t, nan=0.0, posinf=0.0, neginf=0.0)
         if mask is not None:
             nu_t[mask] = 0.0
@@ -383,29 +387,49 @@ def collide_rans_ke(
     f : torch.Tensor
         Post-collision distributions.
     """
-    from .d3q19 import macroscopic3d
-    from .turbulence import collide_smagorinsky_mrt3d
+    from .d3q19 import equilibrium3d, macroscopic3d
+    from .turbulence import _get_d3q19_mrt_matrices
 
     if mask is not None:
         mask_3d = mask.bool()
     else:
         mask_3d = None
 
-    # Compute velocity field for k-ε
-    _, ux, uy, uz = macroscopic3d(f)
+    # Velocity field for k-ε
+    rho, ux, uy, uz = macroscopic3d(f)
 
-    # Update k-ε and get ν_t
+    # Update k-ε and get the PER-CELL eddy viscosity field nu_t (nz, ny, nx).
     nu_t = ke_solver.step(ux, uy, uz, mask_3d)
 
-    # Effective relaxation time
+    # Per-cell effective relaxation time: τ_eff(x) = 3·(ν_lam + ν_t(x)) + ½.
+    # (The previous implementation averaged nu_t over the whole domain — a scalar
+    #  that the far-field ν_t≈0 diluted to ~ν_lam, so the model never engaged.)
     nu_lam = (tau - 0.5) / 3.0
-    nu_eff = nu_lam + nu_t.mean().item()  # scalar average for MRT
-    tau_eff = min(max(3.0 * nu_eff + 0.5, 0.501), 2.0)
+    tau_eff = (3.0 * (nu_lam + nu_t) + 0.5).clamp(0.501, 3.0)
+    s_nu_field = 1.0 / tau_eff                       # per-cell stress relaxation rate
 
-    # Collision with effective tau
-    f = collide_smagorinsky_mrt3d(f, tau=tau_eff, C_s=0.0)
-
-    return f
+    # MRT collision with the spatially varying stress rate (mirror of
+    # collide_smagorinsky_mrt3d, but with ν_t from k-ε instead of Smagorinsky).
+    device = f.device
+    M, M_inv = _get_d3q19_mrt_matrices(device)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)
+    feq_flat = feq.reshape(19, -1)
+    s_nu_flat = s_nu_field.reshape(-1)
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+    s_e, s_eps, s_q, s_pi = 1.19, 1.4, 1.2, 1.19
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q, 0, 0, 0, 0, 0,
+         s_pi, s_pi, 1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in (9, 10, 11, 12, 13):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(19, nz, ny, nx)
 
 
 # ============================================================================

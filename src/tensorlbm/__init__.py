@@ -65,6 +65,7 @@ from .boundaries3d import (
     apply_water_entry_boundaries_3d,
     apply_zou_he_channel_boundaries_3d,
     bounce_back_cells_3d,
+    far_field_bc_3d,
     make_channel_wall_mask_3d,
     make_tank_wall_mask_3d,
     sphere_mask,
@@ -73,6 +74,7 @@ from .boundaries3d import (
     zou_he_outlet_pressure_3d,
     zou_he_outlet_pressure_z,
 )
+from .wall_model import wall_function_3d
 from .boundaries_d3q27 import (
     apply_zou_he_channel_boundaries_27,
     bounce_back_cells_27,

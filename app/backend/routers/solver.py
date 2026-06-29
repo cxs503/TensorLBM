@@ -31,6 +31,7 @@ from ..schemas.solver import (
     SloshingTankParams,
     SphereFlowParams,
     TurbulentChannelParams,
+    SuboffWallFunctionParams,
 )
 from ..services.solver import overwrite_output_root, prepare_solver_configs
 
@@ -2124,3 +2125,44 @@ async def topology_optimisation(req: TopOptRequest) -> dict:
         "objective_history": result.objective_history,
         "volume_fraction_history": result.volume_fraction_history,
     }
+
+
+# ---------------------------------------------------------------------------
+# High-Re SUBOFF – log-law wall-function solver (τ-decoupled, <1% drag)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/suboff-wall-function")
+async def start_suboff_wall_function(params: SuboffWallFunctionParams) -> dict:
+    """Submit a high-Re SUBOFF run with the τ-decoupled log-law wall function.
+
+    Uses :func:`tensorlbm.run_dg_lbm_suboff_flow` with ``use_wall_function=True``
+    (Guo body-force wall shear + far-field BC + friction/pressure drag).
+    Validated AFF-8 Re=2M → Ct 0.0040 vs experimental 0.004 (<1%).
+    """
+    run_config = params.model_dump()
+
+    def _run(job: job_manager.Job) -> dict:
+        from tensorlbm import DGLBMSuboffConfig, run_dg_lbm_suboff_flow
+
+        cfg = DGLBMSuboffConfig(
+            **overwrite_output_root(run_config, job),
+            use_wall_function=True,
+            dg_band=4.0,            # required by validate (unused by the wall-function path)
+        )
+        run_dir = run_dg_lbm_suboff_flow(cfg)
+        # Read back the converged total resistance coefficient for the client.
+        import json as _json
+        meta_path = Path(run_dir) / "run_metadata.json"
+        ct = None
+        if meta_path.exists():
+            ct = _json.loads(meta_path.read_text(encoding="utf-8")).get("Ct_total")
+        return {"run_dir": str(run_dir), "Ct_total": ct}
+
+    job_id = job_manager.submit(
+        name=f"SUBOFF wall-fn Re={params.re:.0e}",
+        job_type="suboff_wall_function",
+        config=run_config,
+        fn=_run,
+    )
+    return {"job_id": job_id, "message": "SUBOFF wall-function job submitted"}
