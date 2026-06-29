@@ -175,12 +175,36 @@ def run(hull_type="wigley", nx=200, ny=80, nz=80, re=1000, u_in=0.05,
             cp = (sum(pres)/max(len(pres),1))/dyn_p_S if pres else 0.0
             _, ux, uy, uz = macroscopic3d(f_r + f_b)
             ms = float(torch.sqrt(ux*ux+uy*uy+uz*uz).max().item())
-            print(f"  step={step:5d}  Cf={cf:.4f} Cp={cp:.4f} Ct={cf+cp:.4f}  max|u|={ms:.4f}  "
+
+            # CV momentum integral (water region only): drag from far-field data,
+            # avoids CG phase-density contamination near the hull.
+            rho_water = f_r.sum(dim=0)  # water density
+            # CV box around the hull, in the water region
+            x0 = int(0.2 * nx); x1 = int(0.65 * nx)
+            y0 = 2; y1 = ny - 3
+            z0 = 1; z1 = fill_height - 1
+            # Inlet face (x=x0): momentum flux in
+            M_in = (rho_water[z0:z1+1, y0:y1+1, x0] * ux[z0:z1+1, y0:y1+1, x0]**2).sum().item()
+            # Outlet face (x=x1): momentum flux out
+            M_out = (rho_water[z0:z1+1, y0:y1+1, x1] * ux[z0:z1+1, y0:y1+1, x1]**2).sum().item()
+            # Lateral y faces: ux*uy cross-flux
+            M_y0 = (rho_water[z0:z1+1, y0, x0:x1+1] * ux[z0:z1+1, y0, x0:x1+1] * uy[z0:z1+1, y0, x0:x1+1]).sum().item()
+            M_y1 = (rho_water[z0:z1+1, y1, x0:x1+1] * ux[z0:z1+1, y1, x0:x1+1] * uy[z0:z1+1, y1, x0:x1+1]).sum().item()
+            # z faces
+            M_z0 = (rho_water[z0, y0:y1+1, x0:x1+1] * ux[z0, y0:y1+1, x0:x1+1] * uz[z0, y0:y1+1, x0:x1+1]).sum().item()
+            M_z1 = (rho_water[z1, y0:y1+1, x0:x1+1] * ux[z1, y0:y1+1, x0:x1+1] * uz[z1, y0:y1+1, x0:x1+1]).sum().item()
+            # Drag = momentum deficit = M_in - M_out - lateral fluxes
+            cv_drag = M_in - M_out + M_y0 - M_y1 + M_z0 - M_z1
+            cv_ct = cv_drag / dyn_p_S
+
+            print(f"  step={step:5d}  Cf={cf:.5f} Cp={cp:.5f} Ct_surface={cf+cp:.5f}  "
+                  f"Ct_CV={cv_ct:.5f}  max|u|={ms:.4f}  "
                   f"{'UNSTABLE' if (not math.isfinite(ms) or ms > 0.5) else ''}")
 
     cf = (sum(fric)/max(len(fric),1))/dyn_p_S if fric else 0.0
     cp = (sum(pres)/max(len(pres),1))/dyn_p_S if pres else 0.0
-    print(f"\nFinal: Cf={cf:.4f}  Cp={cp:.4f}  Ct={cf+cp:.4f}")
+    print(f"\nFinal: Cf(surface)={cf:.5f}  Cp(surface)={cp:.5f}  Ct(surface)={cf+cp:.5f}")
+    print(f"  Use Ct_CV for reliable total drag (friction+pressure+wave).")
     return {"Cf": cf, "Cp": cp, "Ct": cf + cp}
 
 
