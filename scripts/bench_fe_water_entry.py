@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import torch
+import torch_sdaa
 
 from tensorlbm.boundaries import bounce_back_cells
 from tensorlbm.d2q9 import C as C2
@@ -191,7 +192,7 @@ def run_fe_water_entry(config: FEWaterEntryConfig):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    parser.add_argument("--device", default="sdaa" if torch.sdaa.is_available() else "cpu")
     parser.add_argument("--kappa", type=float, default=0.02)
     parser.add_argument("--n-steps", type=int, default=3000)
     parser.add_argument("--run-name", default=None, help="Single run name (skips kappa sweep)")

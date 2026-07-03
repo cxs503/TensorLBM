@@ -422,6 +422,7 @@ async def run_marine(params: MarineBenchmarkParams) -> dict:
                 nx=80 if params.fast else 160,
                 ny=30 if params.fast else 60,
                 nz=20 if params.fast else 40,
+                hull_length=60,
                 n_steps=200 if params.fast else 2000,
                 output_interval=50 if params.fast else 200,
                 device=params.device,
@@ -671,6 +672,7 @@ async def run_mlups(params: MLUPSParams) -> dict:
         import torch
 
         from tensorlbm import collide_bgk, equilibrium, macroscopic, stream
+        from tensorlbm.utils import synchronize_device
 
         device = torch.device(params.device)
         results: list[dict] = []
@@ -688,8 +690,7 @@ async def run_mlups(params: MLUPSParams) -> dict:
                 feq = equilibrium(rho2, torch.stack([ux2, uy2], dim=-1))
                 f = collide_bgk(f, feq, tau)
                 f = stream(f)
-            if device.type == "cuda":
-                torch.cuda.synchronize(device)
+            synchronize_device(device)
 
             t0 = time.perf_counter()
             for _ in range(params.steps):
@@ -697,8 +698,7 @@ async def run_mlups(params: MLUPSParams) -> dict:
                 feq = equilibrium(rho2, torch.stack([ux2, uy2], dim=-1))
                 f = collide_bgk(f, feq, tau)
                 f = stream(f)
-            if device.type == "cuda":
-                torch.cuda.synchronize(device)
+            synchronize_device(device)
             elapsed = time.perf_counter() - t0
 
             mlups = (nx * ny * params.steps) / elapsed / 1e6

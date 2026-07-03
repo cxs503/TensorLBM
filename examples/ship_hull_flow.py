@@ -112,7 +112,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Override deterministic run folder name",
     )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
-    parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu",
+    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu",
                         help="Execution device")
     parser.add_argument(
         "--export-stl",

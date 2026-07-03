@@ -18,14 +18,19 @@ from fastapi.staticfiles import StaticFiles
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-from . import job_manager, security  # noqa: E402
-from .routers import (  # noqa: E402
+from . import job_manager  # noqa: E402
+from .middleware import install_production_middleware  # noqa: E402
+from .routers import (
     agent,
     ai_governance,
     ai_suboff,  # noqa: E402
     ai_transformer,
     benchmarks,
     cad,
+    cylinder_bench,
+    cylinder_compare,
+    cylinder_device_sim,
+    cylinder_interactive,
     jobs,
     notifications,
     orchestration,
@@ -33,10 +38,15 @@ from .routers import (  # noqa: E402
     preprocess,
     projects,
     reports,
+    simulations,
     solver,
     suboff,
     templates,
+    xflow_projects,
+    xflow_streaming,
 )
+from .services.xflow_streaming import hub as streaming_hub  # noqa: E402
+from .routers import simulations as _sim_mod  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
@@ -63,6 +73,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     loop = asyncio.get_running_loop()
     _notify_queue = asyncio.Queue()
     job_manager.set_event_loop(loop, _notify_queue)  # type: ignore[arg-type]
+    streaming_hub.attach(_sim_mod._jobs)
     _ws_broadcast_task = asyncio.create_task(_ws_broadcaster(_notify_queue))
     try:
         yield
@@ -95,47 +106,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# ---------------------------------------------------------------------------
-# Security middleware
-# ---------------------------------------------------------------------------
-
-@app.middleware("http")
-async def auth_and_audit_middleware(
-    request: Request,
-    call_next: Callable[[Request], Awaitable[Response]],
-) -> Response:
-    if not request.url.path.startswith("/api/"):
-        return await call_next(request)
-
-    started = asyncio.get_running_loop().time()
-    try:
-        ctx = security.authorize_request(request)
-    except security.AuthorizationError as exc:
-        response = JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-        security.audit_request(
-            request,
-            None,
-            response.status_code,
-            asyncio.get_running_loop().time() - started,
-        )
-        return response
-
-    request.state.auth_context = ctx
-    try:
-        response = await call_next(request)
-    except Exception:
-        security.audit_request(request, ctx, 500, asyncio.get_running_loop().time() - started)
-        raise
-
-    security.audit_request(
-        request,
-        ctx,
-        response.status_code,
-        asyncio.get_running_loop().time() - started,
-    )
-    return response
-
+# Production middleware: auth, rate-limit, gzip, metrics
+install_production_middleware(app)
 
 # ---------------------------------------------------------------------------
 # Routers
@@ -152,11 +124,17 @@ app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transforme
 app.include_router(ai_governance.router, prefix="/api/ai/governance", tags=["AI Governance"])
 app.include_router(ai_suboff.router, prefix="/api/ai/suboff", tags=["SUBOFF AI"])
 app.include_router(suboff.router, prefix="/api/suboff", tags=["SUBOFF Physics"])
+app.include_router(cylinder_interactive.router, prefix="/api/cylinder-interactive", tags=["Cylinder Interactive"])
+app.include_router(cylinder_bench.router, prefix="/api/cylinder-bench", tags=["Cylinder Benchmark"])
+app.include_router(cylinder_compare.router, prefix="/api/cylinder-compare", tags=["Cylinder Compare"])
+app.include_router(simulations.router, tags=["Simulations"])
 app.include_router(orchestration.router, prefix="/api/orchestration", tags=["Orchestration"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(xflow_streaming.router, prefix="/api/stream", tags=["XFlow Streaming"])
+app.include_router(xflow_projects.router, prefix="/api/projects", tags=["XFlow Projects"])
 
 # ---------------------------------------------------------------------------
 # WebSocket
@@ -318,14 +296,23 @@ async def health() -> dict:
 async def platform_status() -> dict:
     try:
         import torch
+        import torch_sdaa
 
+        sdaa_ok = torch.sdaa.is_available()
+        n_sdaas = torch.sdaa.device_count() if sdaa_ok else 0
+        sdaa_names = (
+            [torch.sdaa.get_device_name(i) for i in range(n_sdaas)] if sdaa_ok else []
+        )
         cuda_ok = torch.cuda.is_available()
         n_gpus = torch.cuda.device_count() if cuda_ok else 0
         gpu_names = (
             [torch.cuda.get_device_name(i) for i in range(n_gpus)] if cuda_ok else []
         )
-        devices = ["cpu"] + [f"cuda:{i}" for i in range(n_gpus)]
+        devices = ["cpu"] + [f"sdaa:{i}" for i in range(n_sdaas)] + [f"cuda:{i}" for i in range(n_gpus)]
     except Exception:
+        sdaa_ok = False
+        n_sdaas = 0
+        sdaa_names = []
         cuda_ok = False
         n_gpus = 0
         gpu_names = []
@@ -346,6 +333,9 @@ async def platform_status() -> dict:
         "platform": "TensorLBM",
         "scheduler_backend": jm.scheduler_backend(),
         "scheduler_profile": jm.scheduler_profile(),
+        "sdaa_available": sdaa_ok,
+        "sdaa_count": n_sdaas,
+        "sdaa_names": sdaa_names,
         "cuda_available": cuda_ok,
         "gpu_count": n_gpus,
         "gpu_names": gpu_names,

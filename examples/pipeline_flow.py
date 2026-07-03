@@ -43,7 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument(
         "--device",
-        choices=["cpu", "cuda", "mps"],
+        choices=["cpu", "sdaa", "cuda", "mps"],
         default="cpu",
         help="Execution device",
     )

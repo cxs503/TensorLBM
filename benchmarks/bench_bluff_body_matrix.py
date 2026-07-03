@@ -287,7 +287,7 @@ _COMBOS_2D = [
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Bluff-body cross-test matrix")
-    parser.add_argument("--device", default="cpu", help="cpu or cuda")
+    parser.add_argument("--device", default="cpu", help="cpu or sdaa or cuda")
     parser.add_argument("--fast", action="store_true",
                         help="Fast mode: minimal grid and steps for smoke test")
     parser.add_argument("--cases", nargs="+",

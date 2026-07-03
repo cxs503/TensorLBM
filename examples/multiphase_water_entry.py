@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-interval", type=int, default=300)
     parser.add_argument("--output-root", default="outputs")
     parser.add_argument("--run-name", default=None)
-    parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
+    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
     parser.add_argument("--overwrite", action="store_true")
     return parser
 

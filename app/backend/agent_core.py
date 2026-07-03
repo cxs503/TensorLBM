@@ -1109,8 +1109,8 @@ def _parse_intent(text: str, history_actions: list[dict]) -> dict:
     if ny is not None and scenario != "lid_driven_cavity":
         args["ny"] = ny
     device = None
-    if re.search(r"\bgpu\b|cuda|显卡", low):
-        device = "cuda:0"
+    if re.search(r"\bgpu\b|cuda|显卡|sdaa|太初", low):
+        device = "sdaa:0"
     elif re.search(r"\bcpu\b", low):
         device = "cpu"
     if device:

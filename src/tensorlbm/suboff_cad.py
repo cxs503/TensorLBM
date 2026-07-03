@@ -493,12 +493,12 @@ def suboff_statistics(
     xi_int = np.linspace(0.0, 1.0, 2000)
     r_norm = suboff_radius_profile(xi_int, config)
     # V = pi * R_max^2 * L * integral of rho^2 dxi over [0,1]
-    vol_bare = math.pi * radius**2 * length * float(np.trapezoid(r_norm**2, xi_int))
+    vol_bare = math.pi * radius**2 * length * float(np.trapz(r_norm**2, xi_int))
 
     # Wetted area of bare hull (surface of revolution)
     # A = 2*pi * R_max * L * integral of rho * sqrt(1 + (d rho/d xi * L/R)^2) dxi
     # Simplified without the derivative correction:
-    circ_integral = float(np.trapezoid(r_norm, xi_int))
+    circ_integral = float(np.trapz(r_norm, xi_int))
     wetted_bare = 2.0 * math.pi * radius * length * circ_integral
 
     # Prismatic coefficient (Cp = V / (A_max * L))
