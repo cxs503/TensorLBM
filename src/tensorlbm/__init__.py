@@ -532,6 +532,21 @@ from .multi_gpu import (
     auto_decompose,
 )
 
+from .general_sim import (
+    BoundaryCondition,
+    BoundaryType,
+    CollisionModel,
+    GeneralSimConfig,
+    GeneralSimEngine,
+    GeometryConfig,
+    GeometrySource,
+    LatticeModel,
+    OutputConfig,
+    OutputFormat,
+    PhysicsConfig,
+    SolverConfig,
+)
+
 __all__ = [
     "__version__",
     # Adaptive mesh refinement (AMR)

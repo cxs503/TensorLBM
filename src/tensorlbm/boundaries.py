@@ -184,8 +184,8 @@ def compute_obstacle_forces(
     """
     device = f.device
     c = C.to(device)
-    cx = c[:, 0].view(9, 1, 1).float()  # (9, 1, 1)
-    cy = c[:, 1].view(9, 1, 1).float()
+    cx = c[:, 0].view(9, 1, 1).to(f.dtype)  # (9, 1, 1)
+    cy = c[:, 1].view(9, 1, 1).to(f.dtype)
 
     # Broadcast obstacle mask over velocity directions
     mask_3d = obstacle_mask.unsqueeze(0)  # (1, ny, nx)
@@ -229,7 +229,8 @@ def apply_simple_channel_boundaries(
     """Minimal boundary treatment.
 
     Applies equilibrium inlet, zero-gradient outlet, and bounce-back on walls
-    and obstacle cells.
+    and obstacle cells.  Merges wall + obstacle masks into a single bounce-back
+    call to reduce kernel launches.
     """
     rho, ux, uy = macroscopic(f)
 
@@ -241,8 +242,9 @@ def apply_simple_channel_boundaries(
 
     f[:, :, -1] = f[:, :, -2]
 
-    f = bounce_back_cells(f, wall_mask)
-    f = bounce_back_cells(f, obstacle_mask)
+    # Merge wall + obstacle into single bounce-back (one kernel launch instead of two)
+    combined_mask = wall_mask | obstacle_mask
+    f = bounce_back_cells(f, combined_mask)
     return f
 
 

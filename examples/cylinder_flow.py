@@ -40,12 +40,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="LBM compute backend",
     )
     parser.add_argument(
-        "--backend",
-        choices=["torch", "paddle", "mindspore"],
-        default="torch",
-        help="LBM compute backend",
-    )
-    parser.add_argument(
         "--num-threads",
         dest="num_threads",
         type=int,

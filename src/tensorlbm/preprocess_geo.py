@@ -319,6 +319,7 @@ def voxelize_stl_3d(
     nz: int,
     device: torch.device,
     padding: float = 0.05,
+    bbox_override: tuple[float, float, float, float, float, float] | None = None,
 ) -> torch.Tensor:
     """Import an STL file and voxelise it into a 3-D boolean solid mask.
 
@@ -341,6 +342,10 @@ def voxelize_stl_3d(
         padding: Fractional padding applied to each side of the mesh AABB.
             E.g. ``0.05`` extends the grid by 5 % of the AABB extent on
             every side, ensuring the mesh is fully contained.
+        bbox_override: Optional custom bounding box (x_min, x_max, y_min,
+            y_max, z_min, z_max) in the same units as the STL file.
+            When provided, *padding* is ignored and the grid spans exactly
+            this box.
 
     Returns:
         Boolean tensor of shape ``(nz, ny, nx)`` — True where solid.
@@ -366,19 +371,22 @@ def voxelize_stl_3d(
     if triangles.shape[0] == 0:
         raise ValueError(f"No triangles found in STL file: {path}")
 
-    # Compute AABB with padding
+    # Compute AABB with padding (or use override)
     all_verts = triangles.reshape(-1, 3).astype(np.float64)
-    lo = all_verts.min(axis=0)
-    hi = all_verts.max(axis=0)
-    span = hi - lo
-    span = np.where(span < 1e-12, 1.0, span)  # avoid degenerate dimensions
+    if bbox_override is not None:
+        x_min, x_max, y_min, y_max, z_min, z_max = bbox_override
+    else:
+        lo = all_verts.min(axis=0)
+        hi = all_verts.max(axis=0)
+        span = hi - lo
+        span = np.where(span < 1e-12, 1.0, span)  # avoid degenerate dimensions
 
-    x_min = lo[0] - padding * span[0]
-    y_min = lo[1] - padding * span[1]
-    z_min = lo[2] - padding * span[2]
-    x_max = hi[0] + padding * span[0]
-    y_max = hi[1] + padding * span[1]
-    z_max = hi[2] + padding * span[2]
+        x_min = lo[0] - padding * span[0]
+        y_min = lo[1] - padding * span[1]
+        z_min = lo[2] - padding * span[2]
+        x_max = hi[0] + padding * span[0]
+        y_max = hi[1] + padding * span[1]
+        z_max = hi[2] + padding * span[2]
 
     solid_np = _voxelize_triangles(
         triangles.astype(np.float64), nx, ny, nz, x_min, y_min, z_min, x_max, y_max, z_max

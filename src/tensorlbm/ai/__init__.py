@@ -118,3 +118,46 @@ from tensorlbm.ai.suboff_dataset import (
     read_multi_re_cylinder_data28,
     read_multi_re_cylinder_data28_addition,
 )
+# SUBOFF reconstruction — training, fine-tuning, inference, utilities
+from .suboff_utils import (
+    build_suboff_model,
+    default_suboff_device,
+    ensure_dir,
+    get_suboff_coords,
+    load_checkpoint,
+    pointwise_rel_loss,
+    save_checkpoint,
+)
+from .suboff_train import (
+    SuboffFinetuneConfig,
+    SuboffTrainConfig,
+    finetune_suboff,
+    train_suboff,
+)
+from .suboff_inference import (
+    SuboffErrorConfig,
+    SuboffPredictConfig,
+    error_analysis_suboff,
+    predict_suboff,
+)
+
+__all__ += [
+    # SUBOFF reconstruction — utilities
+    "build_suboff_model",
+    "default_suboff_device",
+    "ensure_dir",
+    "get_suboff_coords",
+    "load_checkpoint",
+    "pointwise_rel_loss",
+    "save_checkpoint",
+    # SUBOFF reconstruction — training
+    "SuboffTrainConfig",
+    "train_suboff",
+    "SuboffFinetuneConfig",
+    "finetune_suboff",
+    # SUBOFF reconstruction — inference
+    "SuboffPredictConfig",
+    "predict_suboff",
+    "SuboffErrorConfig",
+    "error_analysis_suboff",
+]

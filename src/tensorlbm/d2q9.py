@@ -49,10 +49,10 @@ def equilibrium(
     if device is None:
         device = rho.device
     c = _c_on(device)
-    w = _w_on(device).view(9, 1, 1)
+    w = _w_on(device).to(rho.dtype).view(9, 1, 1)
 
     u_sq = ux * ux + uy * uy
-    cu = c[:, 0].view(9, 1, 1) * ux + c[:, 1].view(9, 1, 1) * uy
+    cu = c[:, 0].view(9, 1, 1).to(rho.dtype) * ux + c[:, 1].view(9, 1, 1).to(rho.dtype) * uy
     return w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
 
 
