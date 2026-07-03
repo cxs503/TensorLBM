@@ -166,7 +166,7 @@ def test_solver_failure_marks_job_failed(client, waiter):
         json={
             "nx": 60, "ny": 24, "u_in": 0.05, "re": 50.0,
             "radius": 4.0, "n_steps": 10, "output_interval": 5,
-            "device": "cuda:0",
+            "device": "sdaa:0",
         },
     )
     assert r.status_code == 200

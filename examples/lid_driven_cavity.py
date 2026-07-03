@@ -34,7 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-name", default=None,
                         help="Override deterministic run folder name")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
+    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
     parser.add_argument("--overwrite", action="store_true",
                         help="Replace output directory if it already exists")
     return parser

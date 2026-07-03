@@ -159,7 +159,7 @@ def main() -> None:
         description="TensorLBM multiphase model benchmark suite"
     )
     parser.add_argument(
-        "--device", default="cpu", choices=["cpu", "cuda", "mps"],
+        "--device", default="cpu", choices=["cpu", "sdaa", "cuda", "mps"],
         help="PyTorch device (default: cpu)",
     )
     parser.add_argument(

@@ -643,7 +643,7 @@ def hull_statistics(
     #   L * B = 2*(L/2) * 2*(B/2)
     #   => Cwp = integral(hb_norm, xi, -1, 1) / 2
     xi_arr, hb_arr = generate_hull_waterplane(hull_type, n_points=500)
-    cwp = float(np.trapezoid(hb_arr, xi_arr)) / 2.0
+    cwp = float(np.trapz(hb_arr, xi_arr)) / 2.0
 
     # Midship section coefficient Cm = Am / (B * T).
     # In normalised coords hb ∈ [0, 1] (half-beam) and z ∈ [0, 1]:
@@ -653,7 +653,7 @@ def hull_statistics(
     z_arr = np.linspace(0.0, 1.0, 500)
     fn = _HALF_BEAM_FN[hull_type]
     hb_mid = fn(np.zeros_like(z_arr), z_arr)
-    cm = float(np.trapezoid(hb_mid, z_arr))
+    cm = float(np.trapz(hb_mid, z_arr))
 
     cp = cb / cm if cm > 1e-6 else float("nan")
 

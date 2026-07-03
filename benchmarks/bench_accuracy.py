@@ -403,7 +403,7 @@ def main() -> None:
     parser.add_argument(
         "--device",
         default="cpu",
-        choices=["cpu", "cuda"],
+        choices=["cpu", "sdaa", "cuda"],
         help="Compute device (default: cpu)",
     )
     args = parser.parse_args()

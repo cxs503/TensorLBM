@@ -31,7 +31,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument(
-        "--device", choices=["cpu", "cuda"], default="cpu", help="Execution device"
+        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
+    )
+    parser.add_argument(
+        "--backend",
+        choices=["torch", "paddle", "mindspore"],
+        default="torch",
+        help="LBM compute backend",
     )
     parser.add_argument(
         "--backend",

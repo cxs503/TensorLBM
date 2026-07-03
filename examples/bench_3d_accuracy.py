@@ -37,7 +37,7 @@ def result(label, sim, ref, unit=""):
 header("1. Cylinder Re=100 (800×200, 40K steps, GPU)")
 cfg = CylinderFlowConfig(nx=800, ny=200, radius=20.0, u_in=0.08, re=100.0,
     n_steps=40000, output_interval=2000,
-    output_root=OUTPUT, run_name="cylinder_fine", overwrite=True, device="cuda")
+    output_root=OUTPUT, run_name="cylinder_fine", overwrite=True, device="sdaa")
 t0 = time.perf_counter()
 run_dir = run_cylinder_flow(cfg)
 t1 = time.perf_counter() - t0
@@ -56,7 +56,7 @@ r1b = result("Cd mean", cd, REF["cylinder_cd"])
 header("2. BFS Re=100 (400×80, 30K steps, GPU)")
 cfg = BackwardFacingStepConfig(nx=400, ny=80, step_h=40, re=100.0, u_in=0.05,
     n_steps=30000, output_interval=2000,
-    output_root=OUTPUT, run_name="bfs_fine", overwrite=True, device="cuda")
+    output_root=OUTPUT, run_name="bfs_fine", overwrite=True, device="sdaa")
 t0 = time.perf_counter()
 run_dir = run_backward_facing_step(cfg)
 t1 = time.perf_counter() - t0
@@ -71,7 +71,7 @@ r2 = result("Reattach L/H", reattach, REF["bfs_reattach"])
 header("3. Pipeline e/D=0.5 Re=200 (400×160, 30K steps, GPU)")
 cfg = PipelineFlowConfig(nx=400, ny=160, diameter=20.0, gap_ratio=0.5,
     u_in=0.05, re=200.0, n_steps=30000, output_interval=2000,
-    output_root=OUTPUT, run_name="pipeline_fine", overwrite=True, device="cuda")
+    output_root=OUTPUT, run_name="pipeline_fine", overwrite=True, device="sdaa")
 t0 = time.perf_counter()
 run_dir = run_pipeline_flow(cfg)
 t1 = time.perf_counter() - t0
@@ -86,7 +86,7 @@ r3 = result("Strouhal", st_pipe, REF["pipeline_st"])
 header("4. Turbulent Channel Re_τ=100 (256×128, 80K steps, GPU)")
 cfg = TurbulentChannelConfig(nx=256, ny=128, re_tau=100.0,
     n_steps=80000, output_interval=5000,
-    output_root=OUTPUT, run_name="channel_fine", overwrite=True, device="cuda")
+    output_root=OUTPUT, run_name="channel_fine", overwrite=True, device="sdaa")
 t0 = time.perf_counter()
 run_dir = run_turbulent_channel(cfg)
 t1 = time.perf_counter() - t0
@@ -103,7 +103,7 @@ for re_val, cd_ref, label in [(50,1.57,"Re=50"),(100,1.09,"Re=100"),(200,0.77,"R
     header(f"5. 3D Sphere {label} (120×60×60, 1000 steps, GPU)")
     cfg = SphereFlowConfig(nx=120, ny=60, nz=60, radius=8.0, u_in=0.06, re=re_val,
         n_steps=1000, output_interval=200,
-        output_root=OUTPUT, run_name=f"sphere_re{re_val}", overwrite=True, device="cuda")
+        output_root=OUTPUT, run_name=f"sphere_re{re_val}", overwrite=True, device="sdaa")
     t0 = time.perf_counter()
     run_dir = run_sphere_flow(cfg)
     t1 = time.perf_counter() - t0

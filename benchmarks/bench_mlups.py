@@ -3,7 +3,7 @@
 Measures raw throughput of core LBM kernels on the available device.
 Run with::
 
-    PYTHONPATH=src python benchmarks/bench_mlups.py [--device cpu|cuda|mps] [--compile]
+    PYTHONPATH=src python benchmarks/bench_mlups.py [--device cpu|sdaa|cuda|mps] [--compile]
     PYTHONPATH=src python benchmarks/bench_mlups.py --collisions all
 
 Results are printed to stdout in a structured table.
@@ -15,6 +15,7 @@ import time
 from typing import TYPE_CHECKING
 
 import torch
+import torch_sdaa
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -30,7 +31,7 @@ from tensorlbm import (
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q27 import collide_bgk27, equilibrium27, stream27
 from tensorlbm.solver3d import collide_bgk3d, collide_mrt3d, collide_rlbm3d, collide_trt3d, stream3d
-from tensorlbm.utils import resolve_device
+from tensorlbm.utils import resolve_device, synchronize_device
 
 # Map of collision-name → (2D kernel, 3D kernel, kwargs)
 _COLLISIONS_2D: dict[str, Callable] = {
@@ -73,14 +74,12 @@ def _mlups_2d(
     for _ in range(n_warmup):
         f = _collide(f, tau)
         f = _stream(f)
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    synchronize_device(device)
     t0 = time.perf_counter()
     for _ in range(n_measure):
         f = _collide(f, tau)
         f = _stream(f)
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    synchronize_device(device)
     elapsed = time.perf_counter() - t0
     return (n_measure * ny * nx) / (elapsed * 1e6)
 
@@ -109,14 +108,12 @@ def _mlups_3d(
     for _ in range(n_warmup):
         f = _collide(f, tau)
         f = _stream(f)
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    synchronize_device(device)
     t0 = time.perf_counter()
     for _ in range(n_measure):
         f = _collide(f, tau)
         f = _stream(f)
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    synchronize_device(device)
     elapsed = time.perf_counter() - t0
     return (n_measure * nz * ny * nx) / (elapsed * 1e6)
 
@@ -144,21 +141,19 @@ def _mlups_d3q27(
     for _ in range(n_warmup):
         f = _collide(f, tau)
         f = _stream(f)
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    synchronize_device(device)
     t0 = time.perf_counter()
     for _ in range(n_measure):
         f = _collide(f, tau)
         f = _stream(f)
-    if device.type == "cuda":
-        torch.cuda.synchronize()
+    synchronize_device(device)
     elapsed = time.perf_counter() - t0
     return (n_measure * nz * ny * nx) / (elapsed * 1e6)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="TensorLBM MLUPS benchmark")
-    parser.add_argument("--device", default="cpu", choices=["cpu", "cuda", "mps"])
+    parser.add_argument("--device", default="cpu", choices=["cpu", "sdaa", "cuda", "mps"])
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--steps", type=int, default=100)
     parser.add_argument(
