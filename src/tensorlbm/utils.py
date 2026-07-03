@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import torch
+import torch_sdaa
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -46,31 +47,67 @@ def configure_cpu_threads(device: torch.device | str, num_threads: int | None = 
     return current
 
 
+def is_sdaa_available() -> bool:
+    """Return whether the SDAA backend is available."""
+    try:
+        return bool(torch.sdaa.is_available())
+    except Exception:
+        return False
+
+
+
+def default_device_name() -> str:
+    """Return the preferred accelerator device name for this host."""
+    if is_sdaa_available():
+        return "sdaa"
+    if torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
+
+
+
+def synchronize_device(device: torch.device | str) -> None:
+    """Synchronize the active accelerator stream for timing-critical code."""
+    resolved = device if isinstance(device, torch.device) else torch.device(device)
+    if resolved.type == "sdaa":
+        torch.sdaa.synchronize()
+    elif resolved.type == "cuda":
+        torch.cuda.synchronize(resolved)
+
+
+
 def resolve_device(device_name: str) -> torch.device:
     """Resolve a device name string to a :class:`torch.device`.
 
     Args:
-        device_name: ``"cpu"``, ``"cuda"``, or ``"mps"``.
+        device_name: ``"cpu"``, ``"sdaa"``, ``"sdaa:0"``, ``"cuda"``, ``"cuda:1"``, or ``"mps"``.
 
     Returns:
         The corresponding :class:`torch.device`.
 
     Raises:
-        RuntimeError: If CUDA or MPS is requested but not available.
+        RuntimeError: If an accelerator is requested but not available.
         ValueError: If the device name is not recognised.
     """
     if device_name == "cpu":
         return torch.device("cpu")
-    if device_name == "cuda":
+    parts = device_name.split(":")
+    base = parts[0]
+    if base == "sdaa":
+        if not is_sdaa_available():
+            msg = "SDAA requested but not available"
+            raise RuntimeError(msg)
+        return torch.device(device_name)
+    if base == "cuda":
         if not torch.cuda.is_available():
             msg = "CUDA requested but not available"
             raise RuntimeError(msg)
-        return torch.device("cuda")
-    if device_name == "mps":
+        return torch.device(device_name)
+    if base == "mps":
         if not (hasattr(torch.backends, "mps") and torch.backends.mps.is_available()):
             msg = "MPS requested but not available"
             raise RuntimeError(msg)
-        return torch.device("mps")
+        return torch.device(device_name)
     msg = f"Unsupported device: {device_name}"
     raise ValueError(msg)
 
