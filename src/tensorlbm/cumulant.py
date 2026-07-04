@@ -235,6 +235,7 @@ def collide_cumulant_d3q27(
     omega_b: float = 1.0,
     omega_odd: float = 1.0,
     omega_even: float = 1.0,
+    C_s: float = 0.0,
 ) -> torch.Tensor:
     """Cumulant LBM collision step for the D3Q27 lattice.
 
@@ -252,12 +253,12 @@ def collide_cumulant_d3q27(
         omega_b:    Bulk viscosity rate (default 1.0).
         omega_odd:  Rate for odd-order ghost modes (default 1.0).
         omega_even: Rate for even-order ghost modes ≥ 4 (default 1.0).
+        C_s:        Smagorinsky constant (0 = no LES, 0.1 = typical).
 
     Returns:
         Post-collision distribution tensor, shape ``(27, nz, ny, nx)``.
     """
     device = f.device
-    omega = 1.0 / tau
     cs2 = 1.0 / 3.0
 
     # ---- Macroscopic fields -------------------------------------------
@@ -283,6 +284,17 @@ def collide_cumulant_d3q27(
     pi_xy = (cx * cy * fneq).sum(0)
     pi_xz = (cx * cz * fneq).sum(0)
     pi_yz = (cy * cz * fneq).sum(0)
+
+    # ---- Relaxation rate: scalar or per-cell Smagorinsky LES ----------
+    if C_s > 0.0:
+        # Smagorinsky: tau_eff = 0.5*(tau + sqrt(tau² + 18*C_s²*|Π|/ρ))
+        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2
+                   + 2.0*(pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
+        rho_safe = rho.clamp(min=1e-12)
+        tau_eff = 0.5 * (tau + torch.sqrt(tau * tau + 18.0 * C_s * C_s * pi_norm / rho_safe))
+        omega = 1.0 / tau_eff  # per-cell tensor
+    else:
+        omega = 1.0 / tau  # scalar
 
     # Bulk mode: trace of stress tensor
     trace = pi_xx + pi_yy + pi_zz
