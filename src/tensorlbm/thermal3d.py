@@ -92,7 +92,7 @@ def equilibrium_thermal_3d(
     cy = c[:, 1].view(7, 1, 1, 1).float()
     cz = c[:, 2].view(7, 1, 1, 1).float()
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
-    return w * T.unsqueeze(0) * (1.0 + 3.0 * cu)
+    return w * T.unsqueeze(0) * (1.0 + 4.0 * cu)
 
 
 def collide_thermal_bgk_3d(
@@ -181,7 +181,7 @@ def apply_buoyancy_force_3d(
     """
     c, w = _d3q19_constants(f.device)
     rho, _, _, _ = macroscopic3d(f)
-    F_y = rho * beta * (T - T_ref) * g_y
+    F_y = -rho * beta * (T - T_ref) * g_y
     cy = c[:, 1].view(19, 1, 1, 1)
     w_view = w.view(19, 1, 1, 1)
     return f + w_view * 3.0 * cy * F_y.unsqueeze(0)
