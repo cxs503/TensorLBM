@@ -149,11 +149,11 @@ def collide_mrt3d(
 
 
 def stream3d(f: torch.Tensor) -> torch.Tensor:
-    """Vectorised streaming step for D3Q19 (periodic boundaries).
+    """Streaming step for D3Q19 using torch.roll (memory-optimized).
 
-    Replaces the per-direction ``torch.roll`` loop with a single advanced-index
-    gather over all 19 directions simultaneously. Index tensors are cached per
-    (shape, device) to avoid re-allocation on every call.
+    Uses torch.roll per direction instead of cached index tensors.
+    Eliminates 4×[19,N] int64 index tensors (~6GB for 10M cells),
+    trading a small speed cost for massive memory savings.
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)``.
@@ -161,23 +161,35 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     Returns:
         Streamed tensor of the same shape.
     """
-    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
-    device = f.device
-    c = C.to(device)
-
-    cache_key = (nz, ny, nx, device.type, device.index)
-    if cache_key not in _stream3d_cache:
-        z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz
-        y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
-        x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
-        q_idx = torch.arange(19, device=device).view(19, 1, 1, 1).expand(19, nz, ny, nx)
-        z_idx = z_src.view(19, nz, 1, 1).expand(19, nz, ny, nx)
-        y_idx = y_src.view(19, 1, ny, 1).expand(19, nz, ny, nx)
-        x_idx = x_src.view(19, 1, 1, nx).expand(19, nz, ny, nx)
-        _stream3d_cache[cache_key] = (q_idx, z_idx, y_idx, x_idx)
-
-    q_idx, z_idx, y_idx, x_idx = _stream3d_cache[cache_key]
-    return f[q_idx, z_idx, y_idx, x_idx]
+    # D3Q19 velocity vectors: (cx, cy, cz) per direction
+    # Pull scheme: out[q](x) = f[q](x - c_q) → shift by +c_q
+    shifts = [
+        (0, 0, 0),       # 0: rest
+        (1, 0, 0),       # 1: +x
+        (-1, 0, 0),      # 2: -x
+        (0, 1, 0),       # 3: +y
+        (0, -1, 0),      # 4: -y
+        (0, 0, 1),       # 5: +z
+        (0, 0, -1),      # 6: -z
+        (1, 1, 0),       # 7: +x+y
+        (-1, -1, 0),     # 8: -x-y  (was -x+y — bug: must match C)
+        (1, -1, 0),      # 9: +x-y
+        (-1, 1, 0),      # 10: -x+y (was -x-y — bug: must match C)
+        (1, 0, 1),       # 11: +x+z
+        (-1, 0, -1),     # 12: -x-z (was -x+z — bug: must match C)
+        (1, 0, -1),      # 13: +x-z
+        (-1, 0, 1),      # 14: -x+z (was -x-z — bug: must match C)
+        (0, 1, 1),       # 15: +y+z
+        (0, -1, -1),     # 16: -y-z (was -y+z — bug: must match C)
+        (0, 1, -1),      # 17: +y-z
+        (0, -1, 1),      # 18: -y+z (was -y-z — bug: must match C)
+    ]
+    # dims: (z, y, x) → roll dims = (3, 2, 1) for (x, y, z)
+    out = torch.empty_like(f)
+    for q in range(19):
+        sx, sy, sz = shifts[q]
+        out[q] = torch.roll(f[q], shifts=(sz, sy, sx), dims=(0, 1, 2))
+    return out
 
 
 def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
