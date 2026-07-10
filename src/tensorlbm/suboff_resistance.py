@@ -194,6 +194,40 @@ def _voxel_wetted_area(mask: torch.Tensor, dx: float) -> float:
     return float(area_faces.item()) * dx * dx
 
 
+def voxel_wetted_area_x_slab(
+    mask: torch.Tensor,
+    dx: float,
+    *,
+    has_left_neighbor: bool,
+    has_right_neighbor: bool,
+) -> float:
+    """Return wetted area of an x-decomposed physical slab.
+
+    Interior rank cuts are communication interfaces, not exposed solid faces.
+    Only a slab touching a physical x-domain boundary contributes that end
+    face, making the summed area partition invariant.
+    """
+    if mask.dtype != torch.bool:
+        mask = mask.bool()
+    if mask.ndim != 3:
+        raise ValueError("mask must be a 3D tensor")
+
+    m = mask
+    area_faces = torch.tensor(0, dtype=torch.int64, device=m.device)
+    if not has_left_neighbor:
+        area_faces += m[:, :, 0].sum()
+    if not has_right_neighbor:
+        area_faces += m[:, :, -1].sum()
+    area_faces += m[:, 0, :].sum()
+    area_faces += m[:, -1, :].sum()
+    area_faces += m[0, :, :].sum()
+    area_faces += m[-1, :, :].sum()
+    area_faces += (m[:, :, 1:] != m[:, :, :-1]).sum()
+    area_faces += (m[:, 1:, :] != m[:, :-1, :]).sum()
+    area_faces += (m[1:, :, :] != m[:-1, :, :]).sum()
+    return float(area_faces.item()) * dx * dx
+
+
 def _crop_central_region(tensor: torch.Tensor, crop_size: int) -> torch.Tensor:
     """Crop the central [crop_size]*3 region of a [nz, ny, nx] tensor."""
     _, ny, nx = tensor.shape[-3:]

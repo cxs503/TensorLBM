@@ -38,13 +38,42 @@ _SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
-from tensorlbm.d3q19 import W, equilibrium3d, macroscopic3d  # noqa: E402
-from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
+from tensorlbm.d3q19 import C, W  # noqa: E402
+from tensorlbm.solver3d import stream3d  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
 # Single simulation
 # --------------------------------------------------------------------------- #
+
+def _collide_linear_acoustic_bgk(g: torch.Tensor, tau: float) -> torch.Tensor:
+    """Collide the population perturbation about ``rho=1, u=0``.
+
+    The full isothermal equilibrium contains products of density and velocity
+    (and ``u**2``).  Those are second-order finite-amplitude terms, so using it
+    in a superposition benchmark introduces a real O(delta_rho**2) departure
+    from the *linear acoustic* equations.  For acoustic perturbations the
+    appropriate equilibrium is instead
+
+        g_eq,q = w_q [rho' + 3 c_q . j],
+
+    where ``rho' = rho - 1`` and ``j = rho*u``.  It retains the conserved
+    density and momentum moments while making collision exactly linear.
+    """
+    rho_prime = g.sum(dim=0)
+    c = C.to(g.device)
+    w = W.to(g.device).view(19, 1, 1, 1)
+    jx = (g * c[:, 0].view(19, 1, 1, 1)).sum(dim=0)
+    jy = (g * c[:, 1].view(19, 1, 1, 1)).sum(dim=0)
+    jz = (g * c[:, 2].view(19, 1, 1, 1)).sum(dim=0)
+    cj = (
+        c[:, 0].view(19, 1, 1, 1) * jx
+        + c[:, 1].view(19, 1, 1, 1) * jy
+        + c[:, 2].view(19, 1, 1, 1) * jz
+    )
+    geq = w * (rho_prime.unsqueeze(0) + 3.0 * cj)
+    return g - (g - geq) / tau
+
 
 def _run_simulation(
     nx: int,
@@ -74,14 +103,14 @@ def _run_simulation(
     src_a = (cx - 30, cy)
     src_b = (cx + 30, cy)
 
-    # --- Initialise field at equilibrium (ρ=1, u=0) -------------------------
-    rho0 = torch.ones((nz, ny, nx), device=dev)
-    u0 = torch.zeros_like(rho0)
-    f = equilibrium3d(rho0, u0, u0.clone(), u0.clone(), device=dev)
+    # Evolve g = f - w rather than f itself.  This is algebraically identical
+    # to the linearised acoustic LBM, but avoids repeatedly subtracting the
+    # O(1) background density from O(delta_rho) acoustic signals in fp32.
+    g = torch.zeros((19, nz, ny, nx), device=dev)
 
     w_dev = W.to(dev)  # shape (19,)
 
-    # --- Sponge layer (sin² damping toward TARGET equilibrium) --------------
+    # --- Sponge layer (sin² damping of the perturbation toward zero) --------
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=dev),
         torch.arange(ny, device=dev),
@@ -96,8 +125,6 @@ def _run_simulation(
         torch.sin(math.pi * dist_edge / (2.0 * sponge_width)) ** 2,
         torch.ones_like(dist_edge, device=dev),
     )
-    feq_target = equilibrium3d(rho0, u0, u0.clone(), u0.clone(), device=dev)
-
     margin = 3  # fixed-equilibrium boundary rows
 
     n_mon = len(monitor_pts)
@@ -105,42 +132,42 @@ def _run_simulation(
 
     for step in range(1, steps + 1):
         # 1) Collision
-        f = collide_bgk3d(f, tau)
+        g = _collide_linear_acoustic_bgk(g, tau)
 
         # 2) Streaming
-        f = stream3d(f)
+        g = stream3d(g)
 
         # 3) Soft density source (additive — linear, preserves velocity)
-        #    Adding w·δρ to f increases ρ by δρ at the source point.
+        #    Adding w·δρ to g increases rho' by δρ at the source point.
         if use_a:
             delta_val_a = delta_rho * math.sin(omega * step)
-            f[:, 0, src_a[1], src_a[0]] += w_dev * delta_val_a
+            g[:, 0, src_a[1], src_a[0]] += w_dev * delta_val_a
         if use_b:
             delta_val_b = delta_rho * math.sin(omega * step + math.pi / 2.0)
-            f[:, 0, src_b[1], src_b[0]] += w_dev * delta_val_b
+            g[:, 0, src_b[1], src_b[0]] += w_dev * delta_val_b
 
-        # 4) Far-field BC: fixed equilibrium at all four edges
-        f[:, :, 0:margin, :] = feq_target[:, :, 0:margin, :]
-        f[:, :, -margin:, :] = feq_target[:, :, -margin:, :]
-        f[:, :, :, 0:margin] = feq_target[:, :, :, 0:margin]
-        f[:, :, :, -margin:] = feq_target[:, :, :, -margin:]
+        # 4) Far-field BC: zero perturbation at all four edges
+        g[:, :, 0:margin, :] = 0.0
+        g[:, :, -margin:, :] = 0.0
+        g[:, :, :, 0:margin] = 0.0
+        g[:, :, :, -margin:] = 0.0
 
         # 5) Macroscopic
-        rho, ux, uy, uz = macroscopic3d(f)
+        rho_prime = g.sum(dim=0)
 
         # 6) Record pressure at monitors (before sponge — interior unaffected)
         for i, (mx, my) in enumerate(monitor_pts):
-            p_ts[i].append(float((rho[0, my, mx] - 1.0) * cs2))
+            p_ts[i].append(float(rho_prime[0, my, mx] * cs2))
 
-        # 7) Sponge layer: blend toward TARGET equilibrium (absorbs wave)
-        f = feq_target + (f - feq_target) * damping
+        # 7) Sponge layer: damp perturbation toward zero (absorbs wave)
+        g = g * damping
 
         # 8) Logging
         if step % log_every == 0 or step == steps:
             pvals = [p_ts[i][-1] for i in range(n_mon)]
             print(
                 f"  {log_label} step {step:6d}  "
-                f"drho_max={float((rho - rho0).abs().max()):.6f}  "
+                f"drho_max={float(rho_prime.abs().max()):.6f}  "
                 + "  ".join(f"p{i}={v:+.6f}" for i, v in enumerate(pvals)),
                 flush=True,
             )
