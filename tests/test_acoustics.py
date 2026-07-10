@@ -102,10 +102,38 @@ def test_compute_fwh_far_field_nonzero():
     from tensorlbm.acoustics import AcousticObserver, compute_fwh_far_field
 
     surf = _make_surface(N=8, T=100)
-    observers = [AcousticObserver(x=10.0, y=0.0)]
+    # Keep propagation delay inside the recorded window.  A 10 m observer at
+    # dt=1e-4 s lies 291 samples away and cannot receive a causal signal here.
+    observers = [AcousticObserver(x=0.1, y=0.0)]
     p_prime, _ = compute_fwh_far_field(surf, observers)
     # Should have some non-zero values for a sinusoidal source
     assert p_prime.abs().max().item() > 0.0
+
+
+def test_compute_fwh_far_field_is_causal_for_delayed_source():
+    """A nonzero initial source sample must not appear before propagation."""
+    from tensorlbm.acoustics import AcousticObserver, FWHSurface, compute_fwh_far_field
+
+    # Observer is ten samples away.  The old negative-index clamp incorrectly
+    # filled samples 0..9 with p(t=0) for a nonzero source.
+    pressure = torch.ones(1, 20)
+    surface = FWHSurface(
+        positions=torch.tensor([[0.0, 0.0, 0.0]]),
+        normals=torch.tensor([[1.0, 0.0, 0.0]]),
+        areas=torch.tensor([1.0]), pressure=pressure, dt=1.0, c0=1.0,
+    )
+    p_prime, _ = compute_fwh_far_field(surface, [AcousticObserver(x=10.0, y=0.0)])
+    assert torch.count_nonzero(p_prime[:, :10]).item() == 0
+    assert p_prime[0, 10].abs().item() > 0.0
+
+
+def test_compute_fwh_far_field_preserves_input_dtype():
+    from tensorlbm.acoustics import AcousticObserver, compute_fwh_far_field
+
+    surface = _make_surface(N=4, T=20)
+    surface.pressure = surface.pressure.double()
+    p_prime, _ = compute_fwh_far_field(surface, [AcousticObserver(x=10.0, y=0.0)])
+    assert p_prime.dtype == torch.float64
 
 
 # ---------------------------------------------------------------------------
