@@ -77,6 +77,15 @@ def run_te_noise(nx=500, ny=300, nz=1, tau=0.55,
         plate_y0 = ny // 2 - 10
     if plate_y1 is None:
         plate_y1 = ny // 2 + 10
+    # Keep the plate and all probes inside caller-provided reduced grids too.
+    if not (0 <= plate_x0 < plate_x1 < nx - 11):
+        raise ValueError(
+            "grid is too short for the configured plate and near-wake probe; "
+            f"need nx >= {plate_x1 + 12}, got {nx}"
+        )
+    if not (0 <= plate_y0 < plate_y1 < ny):
+        raise ValueError("plate must lie strictly inside the y extent")
+
     dev = torch.device(device)
     cs = CS
     nu = (tau - 0.5) / 3.0
@@ -106,6 +115,14 @@ def run_te_noise(nx=500, ny=300, nz=1, tau=0.55,
 
     # Sponge (target equilibrium)
     sw = 50
+    # The decay comparison is only meaningful when all microphones lie outside
+    # the absorbing layer.  A reduced ny=160 case put r=70 at y=150, where the
+    # top sponge deliberately zeros the signal and fabricated a decay failure.
+    if te_y + max(far_r) > ny - sw - 1:
+        raise ValueError(
+            "grid is too short for far-field microphones outside the top sponge; "
+            f"need ny >= {te_y + max(far_r) + sw + 1}, got {ny}"
+        )
     xx = torch.arange(nx, device=dev)
     yy = torch.arange(ny, device=dev)
     dist_r = (nx - 1 - xx).float()
