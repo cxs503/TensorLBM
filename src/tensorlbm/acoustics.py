@@ -189,9 +189,19 @@ def compute_fwh_far_field(
         ``(n_observers, T)`` and *time* is a list of physical times.
     """
     n_src = surface.positions.shape[0]
+    if surface.pressure.ndim != 2 or surface.pressure.shape[0] != n_src:
+        raise ValueError("pressure must have shape (N, T) matching positions")
+    if surface.positions.shape != (n_src, 3) or surface.normals.shape != (n_src, 3):
+        raise ValueError("positions and normals must each have shape (N, 3)")
+    if surface.areas.shape != (n_src,):
+        raise ValueError("areas must have shape (N,)")
     _, T = surface.pressure.shape
+    if T < 2:
+        raise ValueError("at least two pressure samples are required")
     dt = surface.dt
     c0 = surface.c0
+    if dt <= 0.0 or c0 <= 0.0:
+        raise ValueError("dt and c0 must both be positive")
 
     # Time derivative of surface pressure via central differences
     p = surface.pressure  # (N, T)
@@ -204,10 +214,11 @@ def compute_fwh_far_field(
     nrm = surface.normals    # (N, 3)
     area = surface.areas     # (N,)
 
-    p_prime_all = torch.zeros(len(observers), T)
+    p_prime_all = p.new_zeros((len(observers), T))
+    src_idx = torch.arange(n_src, device=p.device)
 
     for obs_idx, obs in enumerate(observers):
-        obs_pos = torch.tensor([obs.x, obs.y, obs.z], dtype=torch.float32)
+        obs_pos = torch.tensor([obs.x, obs.y, obs.z], dtype=pos.dtype, device=pos.device)
 
         # Vector from source points to observer
         r_vec = obs_pos.unsqueeze(0) - pos          # (N, 3)
@@ -217,20 +228,25 @@ def compute_fwh_far_field(
         # Directivity: r̂ · n̂
         cos_theta = (r_hat * nrm).sum(dim=-1)        # (N,)
 
-        p_obs = torch.zeros(T)
+        p_obs = p.new_zeros(T)
+        delay_samples = (r_dist / (c0 * dt)).round().long()
 
         for t_idx in range(T):
-            # Retarded time index for each source point
-            delay_samples = (r_dist / (c0 * dt)).round().long()
-            tau_indices = (t_idx - delay_samples).clamp(0, T - 1)
+            # No contribution exists before the propagation delay.  Clamping
+            # a negative retarded index to zero copied p(t=0) into the
+            # pre-arrival signal and violated causality for a nonzero source.
+            valid = t_idx >= delay_samples
+            if not bool(valid.any()):
+                continue
+            tau_indices = t_idx - delay_samples[valid]
 
             # Far-field (1/r) term
-            dp_tau = dp_dt[torch.arange(n_src), tau_indices]   # (N,)
-            far_field = (dp_tau / r_dist) * cos_theta * area    # (N,)
+            dp_tau = dp_dt[src_idx[valid], tau_indices]
+            far_field = (dp_tau / r_dist[valid]) * cos_theta[valid] * area[valid]
 
             # Near-field (1/r²) term
-            p_tau = p[torch.arange(n_src), tau_indices]         # (N,)
-            near_field = (p_tau / (r_dist * r_dist)) * cos_theta * area  # (N,)
+            p_tau = p[src_idx[valid], tau_indices]
+            near_field = (p_tau / (r_dist[valid] * r_dist[valid])) * cos_theta[valid] * area[valid]
 
             p_obs[t_idx] = (far_field.sum() / (_TWO_PI * 2.0 * c0)
                             + near_field.sum() / (_TWO_PI * 2.0))
