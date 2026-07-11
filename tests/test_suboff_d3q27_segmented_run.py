@@ -35,6 +35,7 @@ def _manifest(tmp_path: Path) -> dict[str, object]:
     return {
         "schema": "suboff-d3q27-segmented-run-v1",
         "checkpoint_metadata": _metadata(),
+        "expected_ranks": [0],
         "far_field": {
             "required_transient_steps": 60,
             "transient_steps_satisfy_outlet_convection": True,
