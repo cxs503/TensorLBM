@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "description": "Evaluate already-completed FSI formal-validation artifacts; this manifest never launches a benchmark.",
+  "cases": {
+    "flag_flapping": {
+      "run_dir": "flag_flapping",
+      "required_artifacts": [
+        "run_status.json",
+        "flag_flapping_data.csv",
+        "flag_flapping_timeseries.png",
+        "flag_flapping_vorticity.png",
+        "flag_flapping_spectrum.png"
+      ],
+      "physics": {
+        "report": "fsi_kpi_regression.json",
+        "case": "flag_flapping"
+      }
+    },
+    "turek_hron": {
+      "run_dir": "turek_hron",
+      "required_artifacts": [
+        "run_status.json",
+        "turek_hron_fsi2_data.csv",
+        "turek_hron_timeseries.png",
+        "turek_hron_vorticity.png",
+        "turek_hron_spectra.png"
+      ],
+      "physics": {
+        "report": "fsi_kpi_regression.json",
+        "case": "turek_hron"
+      }
+    }
+  }
+}
