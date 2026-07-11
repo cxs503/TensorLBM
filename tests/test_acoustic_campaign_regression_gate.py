@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
+import json
 from pathlib import Path
 
 from tensorlbm.regression_gate import evaluate_acoustic_campaign_gate
@@ -77,7 +79,7 @@ def test_checked_in_campaign_spec_reports_rossiter_eight_of_eight_and_tail_edge_
     root = Path(__file__).parents[1] / "validation_logs" / "acoustic_sdaa_campaign_20260710T141500Z"
     spec = Path(__file__).parents[1] / "configs" / "acoustic_sdaa_campaign_20260710T141500Z_gate.json"
 
-    report = evaluate_acoustic_campaign_gate(root, __import__("json").loads(spec.read_text(encoding="utf-8")))
+    report = evaluate_acoustic_campaign_gate(root, json.loads(spec.read_text(encoding="utf-8")))
 
     assert report["pass"] is True
     assert report["summary"] == {
@@ -85,3 +87,18 @@ def test_checked_in_campaign_spec_reports_rossiter_eight_of_eight_and_tail_edge_
         "tail_edge": {"passed": 3, "total": 8},
     }
     assert report["recommended_tail_edge_default"] == "te_u011"
+
+
+def test_cli_dispatches_acoustic_status_manifest(tmp_path, monkeypatch):
+    script = Path(__file__).parents[1] / "scripts" / "evaluate_benchmark_gate.py"
+    spec = importlib.util.spec_from_file_location("evaluate_benchmark_gate", script)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    manifest = tmp_path / "manifest.json"
+    report = tmp_path / "report.json"
+    manifest.write_text(json.dumps(_spec()), encoding="utf-8")
+    _write_campaign(tmp_path)
+    monkeypatch.setattr("sys.argv", [str(script), "--artifacts", str(tmp_path), "--manifest", str(manifest), "--report", str(report)])
+    assert module.main() == 0
+    assert json.loads(report.read_text(encoding="utf-8"))["pass"] is True
