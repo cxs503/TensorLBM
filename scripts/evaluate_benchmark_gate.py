@@ -6,7 +6,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from tensorlbm.regression_gate import evaluate_regression_gate, write_regression_manifest
+from tensorlbm.regression_gate import (
+    evaluate_acoustic_campaign_gate,
+    evaluate_regression_gate,
+    write_regression_manifest,
+)
 
 
 def main() -> int:
@@ -17,9 +21,14 @@ def main() -> int:
     args = parser.parse_args()
 
     payload: Any = json.loads(args.manifest.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict) or not isinstance(payload.get("cases"), dict):
-        parser.error("manifest must be a JSON object with a 'cases' object")
-    report = evaluate_regression_gate(args.artifacts, payload["cases"])
+    if not isinstance(payload, dict):
+        parser.error("manifest must be a JSON object")
+    if "status_file" in payload:
+        report = evaluate_acoustic_campaign_gate(args.artifacts, payload)
+    elif isinstance(payload.get("cases"), dict):
+        report = evaluate_regression_gate(args.artifacts, payload["cases"])
+    else:
+        parser.error("manifest must define generic 'cases' or acoustic 'status_file' + 'cases'")
     write_regression_manifest(args.report, report)
     print(json.dumps(report, indent=2, sort_keys=True, allow_nan=False))
     return 0 if report["pass"] else 1
