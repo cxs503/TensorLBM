@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "cases": {
+    "flag_flapping": {
+      "csv": "flag_flapping/flag_flapping_data.csv",
+      "minimum_samples": 5000,
+      "minimum_amplitude": 1.0,
+      "minimum_wake_signal": 0.0001
+    },
+    "turek_hron": {
+      "csv": "turek_hron/turek_hron_fsi2_data.csv",
+      "minimum_samples": 5000,
+      "amplitude_range": [0.02, 0.06],
+      "maximum_frequency_mismatch": 0.5
+    }
+  }
+}
