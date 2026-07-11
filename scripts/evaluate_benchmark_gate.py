@@ -2,15 +2,27 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 from typing import Any
 
-from tensorlbm.regression_gate import (
-    evaluate_acoustic_campaign_gate,
-    evaluate_regression_gate,
-    write_regression_manifest,
-)
+
+def _load_gate_module():
+    """Load the standalone gate without importing the optional AI package tree."""
+    module_path = Path(__file__).parents[1] / "src" / "tensorlbm" / "regression_gate.py"
+    spec = importlib.util.spec_from_file_location("tensorlbm_regression_gate", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load regression gate from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_GATE = _load_gate_module()
+evaluate_acoustic_campaign_gate = _GATE.evaluate_acoustic_campaign_gate
+evaluate_regression_gate = _GATE.evaluate_regression_gate
+write_regression_manifest = _GATE.write_regression_manifest
 
 
 def main() -> int:
