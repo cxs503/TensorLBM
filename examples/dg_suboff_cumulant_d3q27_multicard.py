@@ -11,6 +11,7 @@ from __future__ import annotations
 import math, time, argparse, os, torch
 import torch.distributed as dist
 from tensorlbm.d3q27 import C as C27
+from tensorlbm.suboff_farfield import build_suboff_far_field_metadata
 
 KAPPA = 0.41
 B_CONST = 5.0
@@ -38,6 +39,18 @@ def validate_suboff_voxel_resolution(hull_length: float) -> None:
             "Increase --hull to at least 206 while scaling the domain, or "
             "treat this run as a qualitative coarse-grid diagnostic."
         )
+
+
+def suboff_far_field_plan(*, nx, ny, nz, hull_length, u_in, transient_steps=None):
+    """Return reporting-only physical-domain/outlet observability metadata.
+
+    This mirrors the geometry placement below and does not modify solver state
+    or any boundary-condition implementation.
+    """
+    return build_suboff_far_field_metadata(
+        nx=nx, ny=ny, nz=nz, hull_length=hull_length, u_in=u_in,
+        hull_center_x=float(nx) * 0.35, transient_steps=transient_steps,
+    )
 
 
 # Keep streaming direction order exactly aligned with d3q27.C.  The old
@@ -384,8 +397,14 @@ if __name__ == "__main__":
     p.add_argument("--checkpoint", default=None, help="directory for rank-owned restart checkpoints")
     p.add_argument("--checkpoint-every", type=int, default=None)
     p.add_argument("--resume", default=None, help="checkpoint directory to resume")
+    p.add_argument("--report-far-field-plan", action="store_true",
+                   help="print physical-domain/outlet planning metadata and exit")
     a = p.parse_args()
-    run_multicard(nx=a.nx, ny=a.ny, nz=a.nz, n_steps=a.steps, warmup=a.warmup,
-                  hull_length=a.hull, re=a.re, u_in=a.u_in, y_val=a.y_val,
-                  checkpoint_path=a.checkpoint, checkpoint_every=a.checkpoint_every,
-                  resume_path=a.resume)
+    if a.report_far_field_plan:
+        print(suboff_far_field_plan(nx=a.nx, ny=a.ny, nz=a.nz, hull_length=a.hull,
+                                    u_in=a.u_in, transient_steps=a.steps))
+    else:
+        run_multicard(nx=a.nx, ny=a.ny, nz=a.nz, n_steps=a.steps, warmup=a.warmup,
+                      hull_length=a.hull, re=a.re, u_in=a.u_in, y_val=a.y_val,
+                      checkpoint_path=a.checkpoint, checkpoint_every=a.checkpoint_every,
+                      resume_path=a.resume)
