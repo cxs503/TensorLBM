@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "campaign": "acoustic_sdaa_campaign_20260710T141500Z",
+  "status_file": "status.csv",
+  "expected_summary": {
+    "rossiter": {"passed": 8, "total": 8},
+    "tail_edge": {"passed": 3, "total": 8}
+  },
+  "recommended_tail_edge_default": "te_u011",
+  "cases": {
+    "te_u011": {
+      "log": "12_te_u011.log",
+      "required_metrics": ["主峰: f=0\\.000469\\s+St=0\\.0852", "误差: 14\\.8%", "衰减指数: α=-0\\.498"],
+      "physics_pass": "(?m)^  PASS — 翼型尾缘自噪声基准测试$"
+    },
+    "te_tau054": {
+      "log": "13_te_tau054.log",
+      "required_metrics": ["主峰: f=0\\.000441\\s+St=0\\.0882", "误差: 11\\.8%", "衰减指数: α=-0\\.339"],
+      "physics_pass": "(?m)^  PASS — 翼型尾缘自噪声基准测试$"
+    },
+    "te_tau057_u095": {
+      "log": "14_te_tau057_u095.log",
+      "required_metrics": ["主峰: f=0\\.000417\\s+St=0\\.0877", "误差: 12\\.3%", "衰减指数: α=-0\\.599"],
+      "physics_pass": "(?m)^  PASS — 翼型尾缘自噪声基准测试$"
+    },
+    "rossiter_base": {"log": "16_rossiter_base.log", "required_metrics": ["最佳匹配: 模态 2", "误差       = 2\\.5%"], "physics_pass": "(?m)^  状态            : ✓ PASS$"},
+    "rossiter_tau056": {"log": "17_rossiter_tau056.log", "required_metrics": ["最佳匹配: 模态 2", "误差       = 6\\.2%"], "physics_pass": "(?m)^  状态            : ✓ PASS$"},
+    "rossiter_tau058": {"log": "18_rossiter_tau058.log", "required_metrics": ["最佳匹配: 模态 2", "误差       = 9\\.8%"], "physics_pass": "(?m)^  状态            : ✓ PASS$"},
+    "rossiter_u009": {"log": "19_rossiter_u009.log", "required_metrics": ["最佳匹配: 模态 2", "误差       = 5\\.9%"], "physics_pass": "(?m)^  状态            : ✓ PASS$"},
+    "rossiter_u011": {"log": "20_rossiter_u011.log", "required_metrics": ["最佳匹配: 模态 3", "误差       = 13\\.2%"], "physics_pass": "(?m)^  状态            : ✓ PASS$"},
+    "rossiter_tau054": {"log": "21_rossiter_tau054.log", "required_metrics": ["最佳匹配: 模态 3", "误差       = 17\\.1%"], "physics_pass": "(?m)^  状态            : ✓ PASS$"},
+    "rossiter_tau057_u095": {"log": "22_rossiter_tau057_u095.log", "required_metrics": ["最佳匹配: 模态 2", "误差       = 12\\.7%"], "physics_pass": "(?m)^  状态            : ✓ PASS$"},
+    "rossiter_tau060_u105": {"log": "23_rossiter_tau060_u105.log", "required_metrics": ["最佳匹配: 模态 2", "误差       = 0\\.8%"], "physics_pass": "(?m)^  状态            : ✓ PASS$"}
+  }
+}
