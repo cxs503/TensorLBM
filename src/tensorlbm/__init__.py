@@ -17,33 +17,7 @@ from .adaptive_refinement import (
     vorticity_indicator_2d,
     vorticity_indicator_3d,
 )
-from .ai import (
-    AIPipelineResult,
-    EddyViscosityDataset,
-    EddyViscosityMLP,
-    FlowFieldTransformer,
-    FlowTransformerArch,
-    FlowTransformerTrainConfig,
-    LBMDatabase,
-    TrainConfig,
-    build_flow_token_batch,
-    collide_ai_les_bgk,
-    extract_les_samples_2d,
-    load_dataset_pt,
-    load_flow_transformer_model,
-    load_model,
-    predict_nu_t_2d,
-    predict_tau_eff_2d,
-    reconstruct_flow_field,
-    run_ai_dns_pipeline,
-    run_ai_les_pipeline,
-    save_dataset_pt,
-    save_flow_transformer_model,
-    save_model,
-    strain_rate_tensor_2d,
-    train_eddy_viscosity_model,
-    train_flow_transformer_self_supervised,
-)
+
 from .backward_facing_step import (
     BackwardFacingStepConfig,
     make_bfs_solid_mask,
@@ -327,6 +301,12 @@ from .ship_cad3d import (
     import_mesh_stl,
 )
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
+from .marine_resistance import (
+    MARINE_RESISTANCE_ARTIFACT_KIND,
+    MARINE_RESISTANCE_SCHEMA_VERSION,
+    MarineResistanceResult,
+    write_marine_resistance_result,
+)
 from .simulation import LBMSimulation
 from .sloshing_tank import (
     SloshingTankConfig,
@@ -684,6 +664,10 @@ __all__ = [
     # Marine / ship
     "ShipHullFlowConfig",
     "run_ship_hull_flow",
+    "MARINE_RESISTANCE_ARTIFACT_KIND",
+    "MARINE_RESISTANCE_SCHEMA_VERSION",
+    "MarineResistanceResult",
+    "write_marine_resistance_result",
     # Ship CAD module
     "ShipHullType",
     "series60_hull_mask",
