@@ -32,6 +32,7 @@ from .routers import (
     cylinder_device_sim,
     cylinder_interactive,
     jobs,
+    marine,
     notifications,
     orchestration,
     postprocess,
@@ -135,6 +136,7 @@ app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(xflow_streaming.router, prefix="/api/stream", tags=["XFlow Streaming"])
 app.include_router(xflow_projects.router, prefix="/api/projects", tags=["XFlow Projects"])
+app.include_router(marine.router, prefix="/api/marine", tags=["Marine Engineering"])
 
 # ---------------------------------------------------------------------------
 # WebSocket
