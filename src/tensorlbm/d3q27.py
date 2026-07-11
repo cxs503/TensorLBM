@@ -79,6 +79,57 @@ def _build_opposite() -> torch.Tensor:
 OPPOSITE = _build_opposite()
 
 
+def moving_wall_linkwise_me_force_torque(
+    outgoing: torch.Tensor,
+    directions: torch.Tensor,
+    weights: torch.Tensor,
+    wall_velocity: torch.Tensor,
+    positions: torch.Tensor,
+    origin: tuple[float, float, float] | torch.Tensor = (0.0, 0.0, 0.0),
+    density: torch.Tensor | float = 1.0,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Return D3Q27 moving-wall link momentum-exchange force and torque.
+
+    Each row describes one fluid--solid link, with ``directions`` pointing
+    from the fluid cell into the solid.  The returned force is the force on
+    the solid.  This is a diagnostic-only primitive: it does not mutate any
+    population or participate in collision/streaming.
+
+    The reflected population follows the same moving-wall correction used by
+    link bounce-back, ``f_r = f_o - 2 rho w (c . u_w) / cs^2``, with
+    ``cs^2 = 1/3``.  The link force is ``-(f_o + f_r) c``.  Consequently a
+    stationary wall recovers conventional stationary momentum exchange.
+    """
+    if outgoing.ndim != 1:
+        raise ValueError("outgoing must have shape (n_links,)")
+    n_links = outgoing.shape[0]
+    for name, value in {
+        "directions": directions,
+        "wall_velocity": wall_velocity,
+        "positions": positions,
+    }.items():
+        if value.shape != (n_links, 3):
+            raise ValueError(f"{name} must have shape (n_links, 3)")
+    if weights.shape != (n_links,):
+        raise ValueError("weights must have shape (n_links,)")
+
+    directions = directions.to(device=outgoing.device, dtype=outgoing.dtype)
+    wall_velocity = wall_velocity.to(device=outgoing.device, dtype=outgoing.dtype)
+    positions = positions.to(device=outgoing.device, dtype=outgoing.dtype)
+    weights = weights.to(device=outgoing.device, dtype=outgoing.dtype)
+    rho = torch.as_tensor(density, device=outgoing.device, dtype=outgoing.dtype)
+    rho = torch.broadcast_to(rho, (n_links,))
+    correction = 6.0 * rho * weights * (directions * wall_velocity).sum(dim=1)
+    reflected = outgoing - correction
+    link_force = -(outgoing + reflected).unsqueeze(1) * directions
+    force = link_force.sum(dim=0)
+    origin_tensor = torch.as_tensor(origin, device=outgoing.device, dtype=outgoing.dtype)
+    if origin_tensor.shape != (3,):
+        raise ValueError("origin must have shape (3,)")
+    torque = torch.cross(positions - origin_tensor, link_force, dim=1).sum(dim=0)
+    return reflected, link_force, force, torque
+
+
 @functools.cache
 def _c_on(device: torch.device) -> torch.Tensor:
     return C.to(device)
