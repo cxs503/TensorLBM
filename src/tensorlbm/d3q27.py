@@ -105,6 +105,91 @@ class PropellerLoadReport:
     max_mach: float
 
 
+@dataclass(frozen=True)
+class ControlVolumeMomentumReport27:
+    """Distribution-momentum balance for a D3Q27 control-volume diagnostic.
+
+    ``distribution_momentum_change`` is the population momentum after minus
+    before the sampled update. ``force_on_fluid`` is the accumulated linkwise
+    moving-wall ME load for the same update, while ``residual`` is their
+    difference. In a closed or periodic volume containing every reflected
+    population and no body force, the residual is exact to roundoff. For an
+    open volume it also contains unreported face fluxes; for a volume with
+    collision/forcing it contains their momentum source. It therefore bounds
+    the unaccounted contribution rather than validating a boundary treatment.
+    """
+
+    distribution_momentum_change: torch.Tensor
+    force_on_fluid: torch.Tensor
+    force_on_wall: torch.Tensor
+    residual: torch.Tensor
+    residual_norm: float
+    max_mach: float
+
+    def within_tolerance(self, *, atol: float = 1e-10, rtol: float = 1e-8) -> bool:
+        """Whether the unresolved control-volume contribution is bounded."""
+        if atol < 0.0 or rtol < 0.0:
+            raise ValueError("atol and rtol must be nonnegative")
+        reference = float(torch.linalg.vector_norm(self.force_on_fluid).item())
+        return self.residual_norm <= atol + rtol * reference
+
+
+def control_volume_momentum_balance27(
+    populations_before: torch.Tensor,
+    populations_after: torch.Tensor,
+    force_on_fluid: torch.Tensor,
+    *,
+    max_lattice_speed: float,
+    low_mach_limit: float = 0.1,
+) -> ControlVolumeMomentumReport27:
+    """Compare D3Q27 distribution momentum change with linkwise wall ME.
+
+    This is diagnostic-only and never evolves populations. Inputs may have
+    shape ``(27, ...)``; all spatial/control-volume dimensions are summed.
+    Exact equality is meaningful only when the selected volume is closed or
+    periodic and the before/after states bracket only link reflection. Open
+    boundaries, collision, or forcing supply additional momentum and must be
+    accounted for separately; their net effect is exposed as ``residual``.
+    The low-Mach gate prevents presenting a compressible update as an
+    incompressible propeller consistency result.
+    """
+    if populations_before.shape != populations_after.shape or populations_before.ndim < 1:
+        raise ValueError("populations_before and populations_after must have identical shape (27, ...)")
+    if populations_before.shape[0] != 27:
+        raise ValueError("population direction dimension must have length 27")
+    if force_on_fluid.shape != (3,):
+        raise ValueError("force_on_fluid must have shape (3,)")
+    if not math.isfinite(max_lattice_speed) or max_lattice_speed < 0.0:
+        raise ValueError("max_lattice_speed must be finite and nonnegative")
+    if not math.isfinite(low_mach_limit) or low_mach_limit <= 0.0:
+        raise ValueError("low_mach_limit must be finite and positive")
+    if not (torch.isfinite(populations_before).all() and torch.isfinite(populations_after).all()
+            and torch.isfinite(force_on_fluid).all()):
+        raise ValueError("populations and force_on_fluid must be finite")
+
+    max_mach = max_lattice_speed * math.sqrt(3.0)
+    if max_mach >= low_mach_limit:
+        raise ValueError(
+            f"invalid low-Mach control-volume diagnostic: max Mach {max_mach:.6g} >= "
+            f"limit {low_mach_limit:.6g}"
+        )
+    directions = C.to(device=populations_before.device, dtype=populations_before.dtype)
+    delta_populations = populations_after - populations_before
+    distribution_momentum_change = (
+        directions * delta_populations.reshape(27, -1).sum(dim=1, keepdim=True)
+    ).sum(dim=0)
+    force = force_on_fluid.to(device=populations_before.device, dtype=populations_before.dtype)
+    residual = distribution_momentum_change - force
+    return ControlVolumeMomentumReport27(
+        distribution_momentum_change=distribution_momentum_change,
+        force_on_fluid=force,
+        force_on_wall=-force,
+        residual=residual,
+        residual_norm=float(torch.linalg.vector_norm(residual).item()),
+        max_mach=max_mach,
+    )
+
+
 def report_propeller_linkwise_loads(
     force_on_fluid: torch.Tensor,
     torque_on_fluid: torch.Tensor,
@@ -569,6 +654,11 @@ __all__ = [
     "C",
     "W",
     "OPPOSITE",
+    "PropellerLoadReport",
+    "ControlVolumeMomentumReport27",
+    "moving_wall_linkwise_me_force_torque",
+    "control_volume_momentum_balance27",
+    "report_propeller_linkwise_loads",
     "equilibrium27",
     "macroscopic27",
     "collide_bgk27",
