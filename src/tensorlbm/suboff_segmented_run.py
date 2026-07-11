@@ -90,11 +90,13 @@ def _checkpoint_directory(root: Path, reference: object) -> Path:
 
 
 def _validate_checkpoint(directory: Path, *, expected_step: int,
-                         campaign_metadata: Mapping[str, Any]) -> None:
+                         campaign_metadata: Mapping[str, Any], expected_ranks: tuple[int, ...]) -> None:
     world_size = _integer(campaign_metadata.get("world_size"), "checkpoint_metadata.world_size", minimum=1)
+    if expected_ranks != tuple(range(world_size)):
+        raise ValueError("expected_ranks must exactly cover checkpoint_metadata.world_size ranks")
     if campaign_metadata.get("format") != _CHECKPOINT_FORMAT:
         raise ValueError("unsupported checkpoint metadata format")
-    for rank in range(world_size):
+    for rank in expected_ranks:
         checkpoint_file = directory / f"rank{rank:04d}.pt"
         if not checkpoint_file.is_file():
             raise ValueError(f"missing checkpoint rank file: {checkpoint_file.name}")
@@ -106,7 +108,9 @@ def _validate_checkpoint(directory: Path, *, expected_step: int,
         missing = _REQUIRED_CHECKPOINT_FIELDS - payload_map.keys()
         if missing:
             raise ValueError(f"checkpoint continuation metadata missing: {sorted(missing)}")
-        if payload_map["metadata"] != dict(campaign_metadata):
+        expected_metadata = dict(campaign_metadata)
+        expected_metadata["rank"] = rank
+        if payload_map["metadata"] != expected_metadata:
             raise ValueError(f"checkpoint metadata mismatch: {checkpoint_file.name}")
         if _integer(payload_map["step"], f"checkpoint {checkpoint_file.name} step") != expected_step:
             raise ValueError(f"checkpoint step mismatch: {checkpoint_file.name}")
@@ -137,6 +141,13 @@ def evaluate_suboff_segmented_run(manifest: Mapping[str, object], *, root: str |
     if data.get("schema") != _MANIFEST_SCHEMA:
         raise ValueError("unsupported segmented-run manifest schema")
     campaign_metadata = _mapping(data.get("checkpoint_metadata"), "checkpoint_metadata")
+    expected_ranks_raw = data.get("expected_ranks")
+    if not isinstance(expected_ranks_raw, list):
+        raise ValueError("manifest requires expected_ranks")
+    expected_ranks = tuple(
+        _integer(rank, f"expected_ranks[{index}]")
+        for index, rank in enumerate(expected_ranks_raw)
+    )
     far_field = _mapping(data.get("far_field"), "far_field")
     required_transient = _integer(far_field.get("required_transient_steps"), "far_field.required_transient_steps")
     if far_field.get("transient_steps_satisfy_outlet_convection") is not True:
@@ -160,7 +171,8 @@ def evaluate_suboff_segmented_run(manifest: Mapping[str, object], *, root: str |
         if start != previous_end or end <= start:
             raise ValueError("segment step ranges must be continuous, ordered, and non-empty")
         _validate_checkpoint(_checkpoint_directory(root_path, segment.get("checkpoint")),
-                             expected_step=end, campaign_metadata=campaign_metadata)
+                             expected_step=end, campaign_metadata=campaign_metadata,
+                             expected_ranks=expected_ranks)
         previous_end = end
 
     blocks = data.get("blocks")
