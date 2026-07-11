@@ -16,6 +16,8 @@ Lattice weights (Qian, 1992):
 from __future__ import annotations
 
 import functools
+import math
+from dataclasses import dataclass
 from typing import Any
 
 import torch
@@ -79,6 +81,114 @@ def _build_opposite() -> torch.Tensor:
 OPPOSITE = _build_opposite()
 
 
+@dataclass(frozen=True)
+class PropellerLoadReport:
+    """Nondimensional moving-wall propeller loads in lattice units.
+
+    ``force_on_fluid`` and ``torque_on_fluid`` are linkwise momentum-exchange
+    totals.  ``force_on_wall`` and ``torque_on_wall`` are their Newton-third-law
+    reactions. ``thrust`` is positive along ``axis``; ``shaft_torque`` is the
+    positive torque supplied by the shaft to maintain positive rotation.
+    This is a consistency report, not a blade-resolved open-water result.
+    """
+
+    force_on_fluid: torch.Tensor
+    torque_on_fluid: torch.Tensor
+    force_on_wall: torch.Tensor
+    torque_on_wall: torch.Tensor
+    thrust: float
+    shaft_torque: float
+    advance_ratio: float
+    kt: float
+    kq: float
+    eta_o: float
+    max_mach: float
+
+
+def report_propeller_linkwise_loads(
+    force_on_fluid: torch.Tensor,
+    torque_on_fluid: torch.Tensor,
+    *,
+    advance_speed: float,
+    rotation_rate: float,
+    diameter: float,
+    density: float = 1.0,
+    axis: tuple[float, float, float] | torch.Tensor = (1.0, 0.0, 0.0),
+    max_lattice_speed: float | None = None,
+    low_mach_limit: float = 0.1,
+) -> PropellerLoadReport:
+    """Report signed ``J``, ``K_T``, ``K_Q``, and ideal propulsive efficiency.
+
+    ``rotation_rate`` is revolutions per lattice time step and its sign defines
+    the positive shaft-rotation direction.  The supplied linkwise totals must
+    be **loads on the fluid**, as returned by
+    :func:`moving_wall_linkwise_me_force_torque`.  The helper first forms the
+    wall reaction, then uses ``T = F_wall . axis`` and
+    ``Q = -sign(n) * M_wall . axis``.  Thus a propeller transferring positive
+    axial momentum and angular momentum to the fluid has positive ``KT`` and
+    ``KQ``.
+
+    The incompressible LBM interpretation is rejected unless the supplied (or
+    conservative ``max(|U_A|, pi*D*|n|)``) lattice speed is strictly below
+    ``low_mach_limit * c_s``, where ``c_s=1/sqrt(3)``.  This diagnostic does
+    not establish blade-resolved or validated open-water performance.
+    """
+    if force_on_fluid.shape != (3,) or torque_on_fluid.shape != (3,):
+        raise ValueError("force_on_fluid and torque_on_fluid must each have shape (3,)")
+    values = (advance_speed, rotation_rate, diameter, density, low_mach_limit)
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError("reference quantities must be finite")
+    if rotation_rate == 0.0 or diameter <= 0.0 or density <= 0.0:
+        raise ValueError("rotation_rate must be nonzero and diameter/density must be positive")
+    if low_mach_limit <= 0.0:
+        raise ValueError("low_mach_limit must be positive")
+    if not torch.isfinite(force_on_fluid).all() or not torch.isfinite(torque_on_fluid).all():
+        raise ValueError("linkwise force and torque must be finite")
+
+    axis_tensor = torch.as_tensor(axis, device=force_on_fluid.device, dtype=force_on_fluid.dtype)
+    if axis_tensor.shape != (3,) or not torch.isfinite(axis_tensor).all():
+        raise ValueError("axis must be a finite vector with shape (3,)")
+    axis_norm = float(torch.linalg.vector_norm(axis_tensor).item())
+    if axis_norm == 0.0:
+        raise ValueError("axis must be nonzero")
+    axis_unit = axis_tensor / axis_norm
+
+    conservative_speed = max(abs(advance_speed), math.pi * diameter * abs(rotation_rate))
+    speed = conservative_speed if max_lattice_speed is None else max_lattice_speed
+    if not math.isfinite(speed) or speed < 0.0:
+        raise ValueError("max_lattice_speed must be finite and nonnegative")
+    max_mach = speed * math.sqrt(3.0)
+    if max_mach >= low_mach_limit:
+        raise ValueError(
+            f"invalid low-Mach report: max Mach {max_mach:.6g} >= limit {low_mach_limit:.6g}"
+        )
+
+    force_on_wall = -force_on_fluid
+    torque_on_wall = -torque_on_fluid
+    thrust = float(torch.dot(force_on_wall, axis_unit).item())
+    rotation_sign = math.copysign(1.0, rotation_rate)
+    shaft_torque = float((-rotation_sign * torch.dot(torque_on_wall, axis_unit)).item())
+    denominator_t = density * rotation_rate * rotation_rate * diameter**4
+    denominator_q = density * rotation_rate * rotation_rate * diameter**5
+    kt = thrust / denominator_t
+    kq = shaft_torque / denominator_q
+    advance_ratio = advance_speed / (abs(rotation_rate) * diameter)
+    eta_o = advance_ratio * kt / (2.0 * math.pi * kq) if kq != 0.0 else float("nan")
+    return PropellerLoadReport(
+        force_on_fluid=force_on_fluid,
+        torque_on_fluid=torque_on_fluid,
+        force_on_wall=force_on_wall,
+        torque_on_wall=torque_on_wall,
+        thrust=thrust,
+        shaft_torque=shaft_torque,
+        advance_ratio=advance_ratio,
+        kt=kt,
+        kq=kq,
+        eta_o=eta_o,
+        max_mach=max_mach,
+    )
+
+
 def moving_wall_linkwise_me_force_torque(
     outgoing: torch.Tensor,
     directions: torch.Tensor,
@@ -91,14 +201,18 @@ def moving_wall_linkwise_me_force_torque(
     """Return D3Q27 moving-wall link momentum-exchange force and torque.
 
     Each row describes one fluid--solid link, with ``directions`` pointing
-    from the fluid cell into the solid.  The returned force is the force on
-    the solid.  This is a diagnostic-only primitive: it does not mutate any
-    population or participate in collision/streaming.
+    from the fluid cell into the solid.  ``link_force``, ``force``, and
+    ``torque`` are the momentum and angular-momentum transfer **to the
+    fluid**.  The equal-and-opposite load on the wall is ``-force`` and
+    ``-torque`` about the same origin.  This is a diagnostic-only primitive:
+    it does not mutate any population or participate in collision/streaming.
 
     The reflected population follows the same moving-wall correction used by
     link bounce-back, ``f_r = f_o - 2 rho w (c . u_w) / cs^2``, with
-    ``cs^2 = 1/3``.  The link force is ``-(f_o + f_r) c``.  Consequently a
-    stationary wall recovers conventional stationary momentum exchange.
+    ``cs^2 = 1/3``.  The link force is ``-(f_o + f_r) c``, i.e. the change in
+    fluid momentum as an incident population along ``c`` is reflected along
+    ``-c``.  Consequently a stationary wall recovers conventional stationary
+    momentum exchange.
     """
     if outgoing.ndim != 1:
         raise ValueError("outgoing must have shape (n_links,)")
