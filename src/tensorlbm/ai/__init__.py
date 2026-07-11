@@ -119,15 +119,23 @@ from tensorlbm.ai.suboff_dataset import (
     read_multi_re_cylinder_data28_addition,
 )
 # SUBOFF reconstruction — training, fine-tuning, inference, utilities
-from .suboff_utils import (
-    build_suboff_model,
-    default_suboff_device,
-    ensure_dir,
-    get_suboff_coords,
-    load_checkpoint,
-    pointwise_rel_loss,
-    save_checkpoint,
-)
+try:
+    from .suboff_utils import (
+        build_suboff_model,
+        default_suboff_device,
+        ensure_dir,
+        get_suboff_coords,
+        load_checkpoint,
+        pointwise_rel_loss,
+        save_checkpoint,
+    )
+except ModuleNotFoundError as exc:
+    if exc.name != "tensorlbm.ai.suboff_utils":
+        raise
+    raise ImportError(
+        "tensorlbm.ai requires the optional SUBOFF dependency "
+        "tensorlbm.ai.suboff_utils, which is not installed."
+    ) from exc
 from .suboff_train import (
     SuboffFinetuneConfig,
     SuboffTrainConfig,
