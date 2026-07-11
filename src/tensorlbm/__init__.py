@@ -301,12 +301,6 @@ from .ship_cad3d import (
     import_mesh_stl,
 )
 from .ship_flow import ShipHullFlowConfig, run_ship_hull_flow
-from .marine_resistance import (
-    MARINE_RESISTANCE_ARTIFACT_KIND,
-    MARINE_RESISTANCE_SCHEMA_VERSION,
-    MarineResistanceResult,
-    write_marine_resistance_result,
-)
 from .simulation import LBMSimulation
 from .sloshing_tank import (
     SloshingTankConfig,
@@ -664,10 +658,6 @@ __all__ = [
     # Marine / ship
     "ShipHullFlowConfig",
     "run_ship_hull_flow",
-    "MARINE_RESISTANCE_ARTIFACT_KIND",
-    "MARINE_RESISTANCE_SCHEMA_VERSION",
-    "MarineResistanceResult",
-    "write_marine_resistance_result",
     # Ship CAD module
     "ShipHullType",
     "series60_hull_mask",
