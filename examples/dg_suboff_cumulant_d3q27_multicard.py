@@ -102,6 +102,8 @@ def apply_halfway_bounce_back_27(streamed, postcollision, solid):
 
 def halo_exchange(f_local, rank, world_size):
     if world_size == 1:
+        f_local[:, :, :, 0:1] = f_local[:, :, :, -2:-1]
+        f_local[:, :, :, -1:] = f_local[:, :, :, 1:2]
         return
     left_interior = f_local[:, :, :, 1:2].contiguous()
     right_interior = f_local[:, :, :, -2:-1].contiguous()
@@ -120,14 +122,72 @@ def halo_exchange(f_local, rank, world_size):
     f_local[:, :, :, 0:1] = left_halo
     f_local[:, :, :, -1:] = right_halo
 
+
+_CHECKPOINT_FORMAT = "suboff-d3q27-cumulant-xslab-v1"
+
+
+def suboff_checkpoint_metadata(*, nx, ny, nz, hull_length, re, u_in, y_val,
+                               world_size, rank):
+    if nx % world_size:
+        raise ValueError("checkpoint decomposition requires nx divisible by world_size")
+    return {"format": _CHECKPOINT_FORMAT, "nx": int(nx), "ny": int(ny), "nz": int(nz),
+            "hull_length": float(hull_length), "re": float(re), "u_in": float(u_in),
+            "y_val": float(y_val), "world_size": int(world_size), "rank": int(rank),
+            "nx_local": int(nx // world_size), "q": 27}
+
+
+def _checkpoint_file(path, rank):
+    return os.path.join(os.fspath(path), f"rank{rank:04d}.pt")
+
+
+def save_suboff_checkpoint(path, *, f, step, metadata, target_mass, mass_cadence,
+                           friction_sum, pressure_sum, drag_samples, rank):
+    """Atomically persist owned populations and time-averaging continuation state."""
+    os.makedirs(os.fspath(path), exist_ok=True)
+    payload = {"metadata": dict(metadata), "step": int(step),
+               "owned_populations": f[:, :, :, 1:-1].detach().cpu().clone(),
+               "target_mass": float(target_mass.item()), "mass_cadence": int(mass_cadence),
+               "friction_sum": float(friction_sum), "pressure_sum": float(pressure_sum),
+               "drag_samples": int(drag_samples)}
+    filename = _checkpoint_file(path, rank)
+    temporary = filename + ".tmp"
+    torch.save(payload, temporary)
+    os.replace(temporary, filename)
+
+
+def load_suboff_checkpoint(path, *, metadata, shape, rank, world_size, device):
+    """Load rank-owned cells and regenerate communication ghosts."""
+    payload = torch.load(_checkpoint_file(path, rank), map_location="cpu", weights_only=True)
+    if payload.get("metadata") != dict(metadata):
+        raise ValueError("incompatible SUBOFF checkpoint metadata")
+    owned = payload.get("owned_populations")
+    expected_owned_shape = (shape[0], shape[1], shape[2], shape[3] - 2)
+    if not isinstance(owned, torch.Tensor) or tuple(owned.shape) != expected_owned_shape:
+        raise ValueError("incompatible SUBOFF checkpoint owned-population shape")
+    required = ("step", "target_mass", "mass_cadence", "friction_sum", "pressure_sum", "drag_samples")
+    if any(key not in payload for key in required):
+        raise ValueError("incompatible SUBOFF checkpoint continuation state")
+    f = torch.empty(shape, dtype=owned.dtype, device=device)
+    f[:, :, :, 1:-1] = owned.to(device=device)
+    halo_exchange(f, rank, world_size)
+    state = {key: payload[key] for key in required}
+    state["target_mass"] = torch.tensor(state["target_mass"], dtype=f.dtype, device=device)
+    return f, state
+
 def run_multicard(nx=384, ny=160, nz=160, n_steps=1000, warmup=300,
-                  re=2e6, hull_length=160.0, u_in=0.06, y_val=0.5):
+                  re=2e6, hull_length=160.0, u_in=0.06, y_val=0.5,
+                  checkpoint_path=None, checkpoint_every=None, resume_path=None):
     validate_suboff_voxel_resolution(hull_length)
     rank, world_size, device = _setup()
     is_main = rank == 0
     assert nx % world_size == 0
     nx_local = nx // world_size
     nx_halo = nx_local + 2
+    checkpoint_metadata = suboff_checkpoint_metadata(
+        nx=nx, ny=ny, nz=nz, hull_length=hull_length, re=re, u_in=u_in,
+        y_val=y_val, world_size=world_size, rank=rank)
+    if checkpoint_every is not None and checkpoint_every <= 0:
+        raise ValueError("checkpoint_every must be positive")
     nu_lat = u_in * hull_length / re
     tau = 3.0 * nu_lat + 0.5
 
@@ -235,11 +295,25 @@ def run_multicard(nx=384, ny=160, nz=160, n_steps=1000, warmup=300,
         f[:, :, 0, :] = feq[:, :, 0, :]; f[:, :, -1, :] = feq[:, :, -1, :]
         return f
 
-    fric_list = []; pres_list = []
+    fric_sum = 0.0; pres_sum = 0.0; drag_samples = 0
+    start_step = 0
+    mass_cadence = 100
+    if resume_path:
+        f, state = load_suboff_checkpoint(resume_path, metadata=checkpoint_metadata,
+                                          shape=f.shape, rank=rank, world_size=world_size,
+                                          device=device)
+        start_step = state["step"]
+        target_mass = state["target_mass"]
+        mass_cadence = state["mass_cadence"]
+        fric_sum = state["friction_sum"]
+        pres_sum = state["pressure_sum"]
+        drag_samples = state["drag_samples"]
+        if start_step > n_steps:
+            raise ValueError("checkpoint step exceeds requested n_steps")
     t0 = time.time(); t_step_total = 0.0
     total_cells = nx * ny * nz
 
-    for step in range(1, n_steps + 1):
+    for step in range(start_step + 1, n_steps + 1):
         ts = time.time()
         f = collide_cumulant_d3q27(f, tau=tau)
         # Exchange post-collision populations before streaming.  Receiving
@@ -251,7 +325,7 @@ def run_multicard(nx=384, ny=160, nz=160, n_steps=1000, warmup=300,
         f = apply_halfway_bounce_back_27(f, f_postcollision, solid)
         f, df_local, dp_local = wall_fn_27(f, nu_lat, y_val=y_val)
         f = far_field_27(f, u_in=u_in)
-        if step % 100 == 0:
+        if step % mass_cadence == 0:
             interior_mass = f[:, :, :, 1:-1].sum()
             if world_size > 1:
                 dist.all_reduce(interior_mass, op=dist.ReduceOp.SUM)
@@ -263,20 +337,28 @@ def run_multicard(nx=384, ny=160, nz=160, n_steps=1000, warmup=300,
             drag_tensor = torch.tensor([df_local, dp_local], device=device, dtype=torch.float32)
             if world_size > 1:
                 dist.all_reduce(drag_tensor, op=dist.ReduceOp.SUM)
-            fric_list.append(float(drag_tensor[0].item()))
-            pres_list.append(float(drag_tensor[1].item()))
+            fric_sum += float(drag_tensor[0].item())
+            pres_sum += float(drag_tensor[1].item())
+            drag_samples += 1
 
+        if checkpoint_path and checkpoint_every and step % checkpoint_every == 0:
+            save_suboff_checkpoint(checkpoint_path, f=f, step=step,
+                                   metadata=checkpoint_metadata, target_mass=target_mass,
+                                   mass_cadence=mass_cadence, friction_sum=fric_sum,
+                                   pressure_sum=pres_sum, drag_samples=drag_samples, rank=rank)
         if step % 100 == 0 or step == n_steps:
-            cf = sum(fric_list)/max(len(fric_list),1)/dyn_p_S
-            cp = sum(pres_list)/max(len(pres_list),1)/dyn_p_S
-            avg = t_step_total/step; mlups = total_cells/avg/1e6
+            cf = fric_sum/max(drag_samples,1)/dyn_p_S
+            cp = pres_sum/max(drag_samples,1)/dyn_p_S
+            completed = max(step - start_step, 1)
+            avg = t_step_total/completed; mlups = total_cells/avg/1e6
             if is_main:
                 print(f"  step {step:4d}: Ct_f={cf:.4f} Ct_p={cp:.4f} Ct={cf+cp:.4f} "
                       f"{avg*1000:.0f}ms/step {mlups:.1f}MLUPS", flush=True)
 
-    cf = sum(fric_list)/max(len(fric_list),1)/dyn_p_S
-    cp = sum(pres_list)/max(len(pres_list),1)/dyn_p_S
-    total = time.time()-t0; avg = t_step_total/n_steps; mlups = total_cells/avg/1e6
+    cf = fric_sum/max(drag_samples,1)/dyn_p_S
+    cp = pres_sum/max(drag_samples,1)/dyn_p_S
+    total = time.time()-t0; completed = max(n_steps - start_step, 1)
+    avg = t_step_total/completed; mlups = total_cells/avg/1e6
 
     if is_main:
         print(f"\n{'='*60}")
@@ -299,6 +381,11 @@ if __name__ == "__main__":
     p.add_argument("--re", type=float, default=2e6)
     p.add_argument("--u-in", type=float, default=0.06)
     p.add_argument("--y-val", type=float, default=0.5)
+    p.add_argument("--checkpoint", default=None, help="directory for rank-owned restart checkpoints")
+    p.add_argument("--checkpoint-every", type=int, default=None)
+    p.add_argument("--resume", default=None, help="checkpoint directory to resume")
     a = p.parse_args()
     run_multicard(nx=a.nx, ny=a.ny, nz=a.nz, n_steps=a.steps, warmup=a.warmup,
-                  hull_length=a.hull, re=a.re, u_in=a.u_in, y_val=a.y_val)
+                  hull_length=a.hull, re=a.re, u_in=a.u_in, y_val=a.y_val,
+                  checkpoint_path=a.checkpoint, checkpoint_every=a.checkpoint_every,
+                  resume_path=a.resume)
