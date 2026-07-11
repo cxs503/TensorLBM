@@ -7,13 +7,13 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "examples"))
 from benchmark_gallium_pf import (  # noqa: E402
     conservative_phase_field_update,
+    interface_stefan_phase_source,
     phase_field_update_with_energy_closure,
     phase_increment_to_temperature,
-    stefan_phase_source,
 )
 
 
-def test_stefan_source_survives_conservative_pf_update_and_preserves_enthalpy():
+def test_interface_stefan_source_survives_conservative_pf_update_and_preserves_enthalpy():
     """PF sharpening may redistribute phase, but must not cancel Stefan melting.
 
     With insulated faces and zero flow, the only global liquid-volume change is
@@ -21,14 +21,14 @@ def test_stefan_source_survives_conservative_pf_update_and_preserves_enthalpy():
     discrete sensible-plus-latent enthalpy unchanged.
     """
     phi = -torch.ones((1, 9, 11), dtype=torch.float64)
-    phi[:, :, 0] = 1.0  # imposed hot-wall liquid, excluded from source
+    phi[:, :, :2] = 1.0  # liquid band gives an interior Stefan face
     temperature = torch.full_like(phi, 0.35)
     temperature[:, :, 0] = 1.0
     cp, latent_heat, melting_temperature = 1.0, 8.0, 0.15
 
-    delta_phi, latent_temperature_increment = stefan_phase_source(
+    delta_phi, latent_temperature_increment = interface_stefan_phase_source(
         phi, temperature, cp=cp, latent_heat=latent_heat,
-        melting_temperature=melting_temperature, rate=1.0,
+        melting_temperature=melting_temperature, thermal_diffusivity=0.1,
     )
     phi_after_source = phi + delta_phi
     phi_after_pf = conservative_phase_field_update(
