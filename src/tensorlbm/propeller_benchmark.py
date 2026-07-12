@@ -260,6 +260,7 @@ def _run_single_speed(
 
     fx_samples: list[float] = []
     mx_samples: list[float] = []
+    me_samples: list[dict[str, float | int]] = []
     t_start = time.perf_counter()
 
     for step in range(1, n_total + 1):
@@ -274,8 +275,15 @@ def _run_single_speed(
         f = moving_wall_bounce_back_3d(f, mask, ux_w, uy_w, uz_w)
 
         if step > config.warmup_steps:
-            fx_samples.append(float(fx.item()))
-            mx_samples.append(float(mx.item()))
+            fx_value = float(fx.item())
+            mx_value = float(mx.item())
+            fx_samples.append(fx_value)
+            mx_samples.append(mx_value)
+            me_samples.append({
+                "step": step,
+                "fx_me_lu": fx_value,
+                "mx_me_lu": mx_value,
+            })
 
         if step % 2000 == 0 or step == n_total:
             elapsed = time.perf_counter() - t_start
@@ -306,6 +314,7 @@ def _run_single_speed(
         "kt_phys": kt_phys, "kq_phys": kq_phys, "n_phys_rps": n_phys_rps,
         "re_d": re_d, "steps": n_total,
         "sampling_steps": len(fx_samples),
+        "me_samples": me_samples,
         "geometry": geo_stats,
         "runtime_s": time.perf_counter() - t_start,
     }
