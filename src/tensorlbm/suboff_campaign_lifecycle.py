@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping
@@ -23,11 +24,20 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _atomic_json(path: Path, value: Mapping[str, object]) -> None:
+def _temporary_path(path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    os.replace(temporary, path)
+    descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.tmp-", dir=path.parent)
+    os.close(descriptor)
+    return Path(temporary)
+
+
+def _atomic_json(path: Path, value: Mapping[str, object]) -> None:
+    temporary = _temporary_path(path)
+    try:
+        temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _segments(manifest: Mapping[str, object]) -> list[dict[str, object]]:
@@ -49,13 +59,16 @@ def _segments(manifest: Mapping[str, object]) -> list[dict[str, object]]:
 
 
 def _write_progress(path: Path, segments: list[dict[str, object]]) -> None:
-    temporary = path.with_name(f".{path.name}.tmp")
-    with temporary.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=("end_step", "checkpoint", "checkpoint_set_complete"))
-        writer.writeheader()
-        for segment in segments:
-            writer.writerow({**segment, "checkpoint_set_complete": "true"})
-    os.replace(temporary, path)
+    temporary = _temporary_path(path)
+    try:
+        with temporary.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=("end_step", "checkpoint", "checkpoint_set_complete"))
+            writer.writeheader()
+            for segment in segments:
+                writer.writerow({**segment, "checkpoint_set_complete": "true"})
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def materialize_suboff_campaign_lifecycle(
