@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import csv
 import json
+import threading
 from pathlib import Path
+
+import tensorlbm.suboff_campaign_lifecycle as lifecycle
 
 import pytest
 
@@ -73,3 +76,43 @@ def test_restartable_lifecycle_is_idempotent_and_rewrites_same_evidence(tmp_path
 
     assert first == second
     assert (output / "progress.csv").read_text(encoding="utf-8") == first_progress
+
+
+def test_two_callers_never_share_a_temporary_artifact_name(tmp_path, monkeypatch):
+    checkpoint_root = tmp_path / "checkpoints"
+    manifest = _short_completed_campaign(checkpoint_root)
+    output = tmp_path / "campaign-artifacts"
+    original_replace = lifecycle.os.replace
+    progress_temporaries: list[Path] = []
+    barrier = threading.Barrier(2)
+
+    def synchronized_replace(source, destination):
+        source_path = Path(source)
+        if Path(destination).name == "progress.csv":
+            progress_temporaries.append(source_path)
+            barrier.wait(timeout=5)
+        return original_replace(source, destination)
+
+    monkeypatch.setattr(lifecycle.os, "replace", synchronized_replace)
+    errors: list[Exception] = []
+
+    def materialize() -> None:
+        try:
+            materialize_suboff_campaign_lifecycle(
+                manifest, checkpoint_root=checkpoint_root, artifact_root=output,
+            )
+        except Exception as exc:  # pragma: no cover - asserted below
+            errors.append(exc)
+
+    callers = [threading.Thread(target=materialize) for _ in range(2)]
+    for caller in callers:
+        caller.start()
+    for caller in callers:
+        caller.join(timeout=10)
+
+    assert not any(caller.is_alive() for caller in callers)
+    assert not errors
+    assert len(progress_temporaries) == 2
+    assert progress_temporaries[0] != progress_temporaries[1]
+    assert _load_json(output / "run_status.json")["status"] == "completed"
+    assert not list(output.glob(".*.tmp*"))
