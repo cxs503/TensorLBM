@@ -1,0 +1,39 @@
+{
+  "authoritative_base": "789f5db08cf679a4cdbb2de1eefd5e184d838f8b",
+  "approved_source_commit": "2a6cc519cf4b10f82a580df1c7e9da59a5323a1e",
+  "feature_candidate_commit": "37be725f7786d10faabb2b7e92bb0e704cd12956",
+  "candidate_branch": "wt/publish-prop-rawme-main",
+  "replay_commits_oldest_to_newest": [
+    "9e49bdf35388c19049e77b6ef84d8737b86efc1f fix: persist propeller ME samples without KP505 validation claim",
+    "37be725f7786d10faabb2b7e92bb0e704cd12956 fix: persist raw propeller ME samples"
+  ],
+  "scope_files": [
+    "benchmarks/bench_propeller.py",
+    "src/tensorlbm/propeller_benchmark.py",
+    "tests/test_propeller_benchmark.py"
+  ],
+  "tests": [
+    {
+      "command": "python -m pytest --collect-only -q tests/test_propeller_benchmark.py",
+      "result": "2 collected"
+    },
+    {
+      "command": "python -m pytest -q tests/test_propeller_benchmark.py tests/test_propeller_cad.py tests/test_propeller_improved_bfl_startup.py tests/test_d3q27_propeller_load_report.py",
+      "result": "11 passed"
+    },
+    {
+      "command": "python -m compileall -q src/tensorlbm/propeller_benchmark.py benchmarks/bench_propeller.py tests/test_propeller_benchmark.py",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check 789f5db..HEAD",
+      "result": "passed"
+    }
+  ],
+  "decisions": [
+    "Direct cherry-pick conflicted because the current main base diverged and lacked the source commit test path.",
+    "Replayed only raw post-warmup momentum-exchange sample persistence and KP505 informational-only wording.",
+    "Added the missing focused test path; no phase aggregation or high-Mach physics from the source branch was replayed.",
+    "No push performed."
+  ]
+}
