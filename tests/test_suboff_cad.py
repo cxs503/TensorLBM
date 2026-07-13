@@ -204,6 +204,18 @@ def test_build_suboff_mask_auto_radius() -> None:
 # ---------------------------------------------------------------------------
 
 
+def test_suboff_statistics_supports_numpy_without_legacy_trapz(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Statistics integration must work with NumPy 2.x, which removed trapz."""
+    monkeypatch.delattr(np, "trapz", raising=False)
+
+    stats = suboff_statistics("bare_hull", 100.0, 10.0)
+
+    assert stats["displacement_lu3"] > 0.0
+    assert stats["wetted_area_lu2"] > 0.0
+
+
 @pytest.mark.parametrize("hull_type", list(SuboffHullType))
 def test_suboff_statistics_keys(hull_type: SuboffHullType) -> None:
     stats = suboff_statistics(hull_type, LENGTH, RADIUS)
