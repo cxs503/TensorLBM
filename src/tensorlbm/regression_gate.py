@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any
 
 _TERMINAL_SUCCESS = {"PASSED", "COMPLETED"}
+MARINE_RESISTANCE_ARTIFACT_KIND = "marine_resistance_kpi"
+MARINE_RESISTANCE_ARTIFACT_SCHEMA_VERSION = 1
 
 
 def _read_csv_rows(path: Path) -> list[dict[str, str]]:
@@ -218,6 +220,134 @@ def _physics_result(
     passed = result.get("pass") is True
     finite = _is_finite_json(result.get("metrics", {}))
     return {"pass": passed and finite, "reported_pass": passed, "finite_metrics": finite, "result": result}
+
+
+def _finite_number(value: Any) -> bool:
+    """Return true only for a finite JSON number (not a boolean)."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
+
+
+def _marine_failure_row(name: str, errors: list[str]) -> dict[str, Any]:
+    return {
+        "case": name, "errors": errors,
+        "completion": {"pass": False}, "preflight": {"pass": False},
+        "numerics": {"pass": False}, "conservation": {"pass": False},
+        "resistance": {"pass": False}, "physics": {"pass": False}, "pass": False,
+    }
+
+
+def evaluate_marine_resistance_gate(artifacts_root: str | Path, cases: dict[str, Any]) -> dict[str, Any]:
+    """Fail closed on versioned marine-resistance KPI artifacts only.
+
+    Unlike the generic run-status gate, this refuses arbitrary JSON and requires
+    independent completion, preflight, numerical, conservation, resistance,
+    and physics evidence.  A finite resistance value or completed process alone
+    can therefore never be promoted to a physics pass.
+    """
+    root = Path(artifacts_root).resolve()
+    if not isinstance(cases, dict) or not cases:
+        return {"schema_version": 1, "gate": "marine_resistance", "artifacts_root": str(root),
+                "cases": [], "pass": False, "errors": ["cases must be a non-empty object"]}
+    report_cases: list[dict[str, Any]] = []
+    for name, spec in cases.items():
+        errors: list[str] = []
+        if not isinstance(name, str) or not isinstance(spec, dict):
+            errors.append("case name and specification must be objects")
+            report_cases.append(_marine_failure_row(str(name), errors))
+            continue
+        artifact_name = spec.get("artifact")
+        limits = {key: spec.get(key) for key in (
+            "max_relative_error_pct", "max_mass_relative_drift", "max_momentum_relative_drift")}
+        if not isinstance(artifact_name, str):
+            errors.append("artifact must be a relative path")
+        for limit_name, limit in limits.items():
+            if not _finite_number(limit) or float(limit) < 0.0:
+                errors.append(f"{limit_name} must be a finite number >= 0")
+        required_checks = spec.get("required_preflight_checks", [])
+        if not isinstance(required_checks, list) or not all(isinstance(item, str) and item for item in required_checks):
+            errors.append("required_preflight_checks must be a list of non-empty strings")
+        if errors:
+            report_cases.append(_marine_failure_row(name, errors))
+            continue
+        try:
+            artifact_path = _within_root(root, artifact_name)
+            artifact = _read_json(artifact_path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            errors.append(f"marine artifact unavailable: {exc}")
+            report_cases.append(_marine_failure_row(name, errors))
+            continue
+        if artifact.get("kind") != MARINE_RESISTANCE_ARTIFACT_KIND:
+            errors.append("artifact kind is not marine_resistance_kpi")
+        if artifact.get("schema_version") != MARINE_RESISTANCE_ARTIFACT_SCHEMA_VERSION:
+            errors.append("unsupported marine resistance artifact schema_version")
+        if artifact.get("case") != name:
+            errors.append("artifact case does not match gate case")
+        if errors:
+            report_cases.append(_marine_failure_row(name, errors))
+            continue
+
+        completion = artifact.get("completion") if isinstance(artifact.get("completion"), dict) else {}
+        requested, completed = completion.get("requested_steps"), completion.get("completed_steps")
+        completion_ok = (completion.get("state") in _TERMINAL_SUCCESS
+                         and isinstance(requested, int) and not isinstance(requested, bool) and requested >= 0
+                         and isinstance(completed, int) and not isinstance(completed, bool) and completed == requested)
+        preflight = artifact.get("preflight") if isinstance(artifact.get("preflight"), dict) else {}
+        checks = preflight.get("checks")
+        missing_checks = [item for item in required_checks if not isinstance(checks, dict)
+                          or not isinstance(checks.get(item), dict) or checks[item].get("pass") is not True]
+        if isinstance(checks, dict):
+            all_checks_pass = bool(checks) and all(
+                isinstance(check, dict) and check.get("pass") is True for check in checks.values()
+            )
+        else:
+            all_checks_pass = False
+        preflight_ok = preflight.get("pass") is True and all_checks_pass and not missing_checks
+        numerics = artifact.get("numerics")
+        numerics_ok = isinstance(numerics, dict) and numerics.get("pass") is True and _is_finite_json(numerics)
+        conservation = artifact.get("conservation") if isinstance(artifact.get("conservation"), dict) else {}
+        mass_drift, momentum_drift = conservation.get("mass_relative_drift"), conservation.get("momentum_relative_drift")
+        conservation_ok = (conservation.get("pass") is True and _finite_number(mass_drift) and _finite_number(momentum_drift)
+                           and abs(float(mass_drift)) <= float(limits["max_mass_relative_drift"])
+                           and abs(float(momentum_drift)) <= float(limits["max_momentum_relative_drift"]))
+        resistance = artifact.get("resistance") if isinstance(artifact.get("resistance"), dict) else {}
+        coefficient, reference, reported_error_pct = (resistance.get("coefficient"), resistance.get("reference_coefficient"),
+                                                      resistance.get("relative_error_pct"))
+        computed_error_pct = None
+        coefficients_ok = (_finite_number(coefficient) and float(coefficient) > 0.0
+                           and _finite_number(reference) and float(reference) > 0.0)
+        if coefficients_ok:
+            computed_error_pct = abs(float(coefficient) - float(reference)) / float(reference) * 100.0
+        reported_error_ok = _finite_number(reported_error_pct) and float(reported_error_pct) >= 0.0
+        error_matches_coefficients = (computed_error_pct is not None and reported_error_ok
+                                      and math.isclose(float(reported_error_pct), computed_error_pct,
+                                                       rel_tol=1.0e-9, abs_tol=0.0))
+        if reported_error_ok and computed_error_pct is not None and not error_matches_coefficients:
+            errors.append("resistance relative_error_pct contradicts coefficients")
+        resistance_ok = (resistance.get("pass") is True and coefficients_ok and reported_error_ok
+                         and error_matches_coefficients and computed_error_pct is not None
+                         and computed_error_pct <= float(limits["max_relative_error_pct"]))
+        physics = artifact.get("physics") if isinstance(artifact.get("physics"), dict) else {}
+        physics_ok = physics.get("pass") is True and resistance_ok and conservation_ok
+        row = {
+            "case": name, "artifact": str(artifact_path.relative_to(root)), "errors": errors,
+            "completion": {"pass": completion_ok, "state": completion.get("state"), "requested_steps": requested, "completed_steps": completed},
+            "preflight": {"pass": preflight_ok, "missing_or_failed_checks": missing_checks},
+            "numerics": {"pass": numerics_ok},
+            "conservation": {"pass": conservation_ok, "mass_relative_drift": mass_drift, "momentum_relative_drift": momentum_drift},
+            "resistance": {
+                "pass": resistance_ok,
+                "coefficient": coefficient,
+                "reference_coefficient": reference,
+                "relative_error_pct": computed_error_pct,
+                "reported_relative_error_pct": reported_error_pct,
+            },
+            "physics": {"pass": physics_ok, "reported_pass": physics.get("pass")},
+        }
+        row["pass"] = all(bool(row[section]["pass"]) for section in
+                          ("completion", "preflight", "numerics", "conservation", "resistance", "physics"))
+        report_cases.append(row)
+    return {"schema_version": 1, "gate": "marine_resistance", "artifacts_root": str(root),
+            "cases": report_cases, "pass": bool(report_cases) and all(row["pass"] for row in report_cases)}
 
 
 def evaluate_regression_gate(artifacts_root: str | Path, cases: dict[str, Any]) -> dict[str, Any]:
