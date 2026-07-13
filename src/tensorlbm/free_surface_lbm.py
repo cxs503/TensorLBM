@@ -1,30 +1,67 @@
-"""Free-surface LBM (D3Q19) — fill=density mapping, torch.compile-ready.
+"""Free-surface LBM (D3Q19) — full Körner model with mass tracking.
 
-Optimizations:
-- Functional flag updates (torch.where instead of in-place, compatible with torch.compile)
-- Pre-computed macroscopic velocity passed to _init_new (avoids redundant macroscopic3d)
-- Fused collision + force (single equilibrium step)
-- Batched neighbor-propagation via torch.stack
+Implements the complete Körner et al. (2005) free-surface LBM:
+  - Cell types: GAS / INTERFACE / LIQUID / SOLID
+  - Mass tracking: independent mass variable (mass ≠ rho)
+  - Mass redistribution: excess mass distributed to interface neighbors
+  - Interface gas pressure: anti-bounce-back at interface cells
+  - Neighbor flags: prevents isolated cells
 
-Core principle (Körner et al. 2005 / waLBerla):
-  fill = rho_local / rho_liquid
-
-References: Körner et al. (2005), waLBerla free_surface/
+References: Körner et al. (2005), waLBerla free_surface/, Maarten-vd-Sande/lbm
 """
 
 from __future__ import annotations
 
 import torch
 
-from .d3q19 import C, equilibrium3d, macroscopic3d
+from .d3q19 import C, W, equilibrium3d, macroscopic3d
 from .boundaries3d import bounce_back_cells_3d, free_slip_cells_3d
 from .solver3d import stream3d as _stream3d
 from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
 
 GAS = 0; LIQUID = 1; INTERFACE = 2; SOLID = 3
 
-# Pre-compute shift specs for neighbor propagation (3 axes × 2 dirs = 6 shifts)
-_SHIFT_SPECS = [(a, s) for a in [0, 1, 2] for s in [-1, 1]]
+# D3Q19 velocity vectors and weights
+_C = C  # (19, 3)
+_W = W
+KAPPA = 0.41
+B_CONST = 5.0
+_SHIFT_SPECS = [(a, s) for a in [0, 1, 2] for s in [-1, 1]]  # 6 neighbor shifts
+
+# Opposite direction indices for D3Q19
+_OPP = torch.tensor([0,2,1,4,3,6,5,8,7,10,9,12,11,14,13,16,15,18,17])
+_C19_SHIFTS = [(int(C[q, 0]), int(C[q, 1]), int(C[q, 2])) for q in range(19)]
+
+
+def _stream19_roll(f):
+    """D3Q19 streaming via torch.roll (pull scheme, shifts from C for ordering consistency)."""
+    out = torch.empty_like(f)
+    for q in range(19):
+        sx, sy, sz = _C19_SHIFTS[q]
+        out[q] = torch.roll(f[q], shifts=(sz, sy, sx), dims=(0, 1, 2))
+    return out
+
+
+def _assert_no_direct_liquid_gas_links(flags):
+    """Reject states where a D3Q19 liquid link reaches GAS without INTERFACE.
+
+    Körner free-surface boundaries are represented by INTERFACE cells.  A
+    direct LIQUID/GAS streaming link has neither ABB reconstruction nor an
+    interface mass ledger, so it is an invalid solver state rather than a
+    wall-like boundary condition.
+    """
+    liquid = flags == LIQUID
+    gas_source = torch.stack([
+        flags.roll((sz, sy, sx), dims=(0, 1, 2)) == GAS
+        for sx, sy, sz in _C19_SHIFTS[1:]
+    ])
+    direct = liquid.unsqueeze(0) & gas_source
+    if bool(direct.any()):
+        count = int(direct.sum().item())
+        raise ValueError(
+            f"found {count} direct LIQUID-GAS D3Q19 link(s); "
+            "insert INTERFACE cells between LIQUID and GAS"
+        )
 
 
 # ===========================================================================
@@ -32,11 +69,7 @@ _SHIFT_SPECS = [(a, s) for a in [0, 1, 2] for s in [-1, 1]]
 # ===========================================================================
 
 def init_fill_rectangular(nz, ny, nx, column_width, column_height, device):
-    """Initialize fill field for rectangular liquid column (dam-break IC).
-
-    Returns ``(fill, solid_mask)`` where solid_mask has walls on all 6 faces
-    and fill has values in [0,1] with the liquid column at the origin corner.
-    """
+    """Initialize fill field for rectangular liquid column (dam-break IC)."""
     fill = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
     solid = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
     solid[:, 0, :] = True; solid[:, -1, :] = True
@@ -52,136 +85,446 @@ def init_fill_rectangular(nz, ny, nx, column_width, column_height, device):
 
 
 def init_flags_from_fill(fill, solid_mask):
-    """Set per-cell flags from fill level and solid mask.
+    """Set flags from fill and create the required D3Q19 interface envelope.
 
-    Returns int8 tensor with GAS=0, LIQUID=1, INTERFACE=2, SOLID=3.
+    A zero-fill GAS cell directly linked to LIQUID has no Körner boundary
+    reconstruction.  Such cells begin as empty INTERFACE cells so every
+    D3Q19 liquid/gas link is represented by the interface model.
     """
     flags = torch.full_like(fill, GAS, dtype=torch.int8)
     flags[fill >= 1.0] = LIQUID
     flags[(fill > 0) & (fill < 1)] = INTERFACE
+    liquid = flags == LIQUID
+    liquid_neighbor = torch.stack([
+        liquid.roll((sz, sy, sx), dims=(0, 1, 2))
+        for sx, sy, sz in _C19_SHIFTS[1:]
+    ]).any(dim=0)
+    flags[(flags == GAS) & liquid_neighbor & ~solid_mask] = INTERFACE
     flags[solid_mask] = SOLID
     return flags
 
 
+def init_mass_from_fill(fill, flags, rho_liquid=1.0):
+    """Initialize mass field: mass = fill * rho_liquid for liquid/interface, 0 for gas."""
+    mass = torch.zeros_like(fill)
+    mass[flags == LIQUID] = rho_liquid
+    mass[flags == INTERFACE] = fill[flags == INTERFACE] * rho_liquid
+    return mass
+
+
+def total_liquid_inventory(f, fill, flags, rho_liquid=1.0):
+    """Return liquid inventory with bulk density in LIQUID and fill mass at INTERFACE.
+
+    This diagnostic deliberately does not use the independent ``mass`` field
+    for LIQUID cells: their physically represented amount is the LBM density
+    ``sum_q f_q``.  Interface cells instead contribute their bounded liquid
+    fill ``rho_liquid * fill``.  GAS and SOLID cells contribute nothing.
+    """
+    rho = f.sum(dim=0)
+    return (
+        torch.where(flags == LIQUID, rho, torch.zeros_like(rho)).sum()
+        + torch.where(flags == INTERFACE, fill * rho_liquid, torch.zeros_like(fill)).sum()
+    )
+
+
 # ===========================================================================
-# Helper: init new cells (accepts pre-computed velocity to avoid redundant
-# macroscopic3d calls — called up to 3× per step)
+# Helper: init new cells with neighbor-averaged velocity
 # ===========================================================================
 
 def _init_new(f, flags, mask, rho_init, device, ux=None, uy=None, uz=None):
     """Init newly converted cells with neighbor-averaged velocity.
 
-    Args:
-        ux, uy, uz: Optional pre-computed macroscopic velocity.
-                    If None, computed from f via macroscopic3d.
+    Vectorized — no .any() sync (multicard-safe under TCCL).
+    torch.where handles empty mask as no-op.
     """
-    if not mask.any():
-        return f
-
     if ux is None or uy is None or uz is None:
         _, ux, uy, uz = macroscopic3d(f)
-
     active = (flags == LIQUID) | (flags == INTERFACE)
-
-    # Batched: pre-compute all 6 shifted active masks and velocities
     sl_stack = torch.stack([active.roll(s, dims=a) for a, s in _SHIFT_SPECS])
     ux_stack = torch.stack([ux.roll(s, dims=a) for a, s in _SHIFT_SPECS])
     uy_stack = torch.stack([uy.roll(s, dims=a) for a, s in _SHIFT_SPECS])
     uz_stack = torch.stack([uz.roll(s, dims=a) for a, s in _SHIFT_SPECS])
     sl_f = sl_stack.float()
-
     uxa = (ux_stack * sl_f).sum(dim=0)
     uya = (uy_stack * sl_f).sum(dim=0)
     uza = (uz_stack * sl_f).sum(dim=0)
     cnt = sl_f.sum(dim=0).clamp(min=1)
-
     rho_f = torch.full_like(ux, float(rho_init))
     feq = equilibrium3d(rho_f, uxa / cnt, uya / cnt, uza / cnt)
     return torch.where(mask.unsqueeze(0), feq, f)
 
 
 # ===========================================================================
-# Core timestep — torch.compile-compatible (functional flag updates)
+# Interface normal computation (for mass redistribution)
+# ===========================================================================
+
+def _compute_interface_normal(flags, mass, rho):
+    """Compute interface normal n = -∇fill / |∇fill| (points from liquid to gas)."""
+    fill = mass / rho.clamp(min=1e-6)
+    # Gradient via central difference
+    grad_x = 0.5 * (fill.roll(-1, dims=2) - fill.roll(1, dims=2))
+    grad_y = 0.5 * (fill.roll(-1, dims=1) - fill.roll(1, dims=1))
+    grad_z = 0.5 * (fill.roll(-1, dims=0) - fill.roll(1, dims=0))
+    mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
+    return -grad_x / mag, -grad_y / mag, -grad_z / mag
+
+
+# ===========================================================================
+# Core timestep — full Körner model
 # ===========================================================================
 
 def free_surface_step(
-    f, fill, flags, solid_mask,
+    f, fill, flags, solid_mask, mass=None,
     tau=1.0, gx=0.0, gy=0.0, gz=0.0,
     rho_liquid=1.0, rho_gas=1.0,
     surface_tension=0.0, C_s=0.0,
     free_slip_y=False, y_wall_mask=None,
     bubble_pressure=None,
+    collision='bgk',
+    wall_function=False, near_mask=None, y_val=0.5,
+    wf_force_coef=None,
+    mass_ledger=None,
+    freeze_topology=False,
 ):
-    """One free-surface LBM timestep (torch.compile-compatible).
+    """One free-surface LBM timestep (full Körner model).
 
-    All flag/field updates use functional torch.where instead of in-place
-    mutation, enabling CUDAGraphs capture under torch.compile.
+    Added vs simplified version:
+      - Mass tracking (independent mass variable)
+      - Mass redistribution during cell conversion
+      - Interface gas pressure (anti-bounce-back)
+      - Neighbor flags (prevents isolated cells)
     """
     device = f.device
+    _assert_no_direct_liquid_gas_links(flags)
+    c_dev = _C.to(device).float()
     non_gas = ~(flags == GAS)
 
-    # ---- 1. Macroscopic + collision (fused) ----
+    # Initialize mass if not provided
+    if mass is None:
+        mass = init_mass_from_fill(fill, flags, rho_liquid)
+    if mass_ledger is not None:
+        mass_ledger['start'] = float(mass.sum())
+        mass_ledger['interface_start'] = float(mass[flags == INTERFACE].sum())
+        mass_ledger['liquid_start'] = float(mass[flags == LIQUID].sum())
+        mass_ledger['gas_start'] = float(mass[flags == GAS].sum())
+        mass_ledger['fill_mass_start'] = float((fill * rho_liquid).sum())
+
+    # ---- 1. Macroscopic + collision ----
     rho, ux, uy, uz = macroscopic3d(f)
-    rho_s = rho.clamp(min=rho_gas * 0.01, max=rho_liquid * 3.0)
+    rho_s = rho.clamp(min=1e-6, max=rho_liquid * 3.0)
     ux_eq = (ux + tau * gx).clamp(-0.5, 0.5)
     uy_eq = (uy + tau * gy).clamp(-0.5, 0.5)
     uz_eq = (uz + tau * gz).clamp(-0.5, 0.5)
+    feq = equilibrium3d(rho_s, ux_eq, uy_eq, uz_eq)
 
-    if C_s > 0:
-        feq = equilibrium3d(rho_s, ux_eq, uy_eq, uz_eq)
-        tau_eff = _smagorinsky_tau(tau, _neq_stress_norm_3d(f - feq), rho_s, C_s)
-        f = f - (f - feq) / tau_eff.unsqueeze(0)
+    # For advanced operators: set gas cells to small equilibrium (prevent NaN)
+    if collision != 'bgk':
+        feq_gas = equilibrium3d(torch.full_like(rho_s, rho_gas),
+                                torch.zeros_like(rho_s), torch.zeros_like(rho_s), torch.zeros_like(rho_s))
+        f_collide = torch.where(non_gas.unsqueeze(0), f, feq_gas)
     else:
-        feq = equilibrium3d(rho_s, ux_eq, uy_eq, uz_eq)
-        f = f - (f - feq) / tau
+        f_collide = f
 
+    if collision == 'kbc':
+        from .advanced_collision_d3q19 import collide_kbc_d3q19
+        f = collide_kbc_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
+    elif collision == 'cascaded':
+        from .advanced_collision_d3q19 import collide_cascaded_d3q19
+        f = collide_cascaded_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
+    elif collision == 'cumulant':
+        from .advanced_collision_d3q19 import collide_cumulant_d3q19
+        f = collide_cumulant_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
+    elif collision == 'mrt':
+        from .solver3d import collide_mrt3d
+        f = collide_mrt3d(f_collide, tau)
+    else:  # bgk
+        if C_s > 0:
+            tau_eff = _smagorinsky_tau(tau, _neq_stress_norm_3d(f_collide - feq), rho_s, C_s)
+            f = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
+        else:
+            f = f_collide - (f_collide - feq) / tau
+
+    # Guo gravity force (only when gravity is non-zero)
+    if gx != 0.0 or gy != 0.0 or gz != 0.0:
+        cs2 = 1.0 / 3.0
+        cx = c_dev[:, 0].view(19, 1, 1, 1)
+        cy = c_dev[:, 1].view(19, 1, 1, 1)
+        cz = c_dev[:, 2].view(19, 1, 1, 1)
+        w_dev = _W.to(device).float().view(19, 1, 1, 1)
+        ng = non_gas.float()
+        Fx = rho_liquid * gx * ng
+        Fy = rho_liquid * gy * ng
+        Fz = rho_liquid * gz * ng
+        cu_force = cx * Fx.unsqueeze(0) + cy * Fy.unsqueeze(0) + cz * Fz.unsqueeze(0)
+        f = f + (1.0 - 0.5/tau) * w_dev * cu_force / cs2
+
+    # Surface tension force (curvature correction, standard Körner)
+    if surface_tension > 0:
+        cx = c_dev[:, 0].view(19, 1, 1, 1)
+        cy = c_dev[:, 1].view(19, 1, 1, 1)
+        cz = c_dev[:, 2].view(19, 1, 1, 1)
+        w_dev = _W.to(device).float().view(19, 1, 1, 1)
+        cs2 = 1.0 / 3.0
+        fill_field = mass / rho_s.clamp(min=1e-6)
+        grad_x = 0.5 * (fill_field.roll(-1, dims=2) - fill_field.roll(1, dims=2))
+        grad_y = 0.5 * (fill_field.roll(-1, dims=1) - fill_field.roll(1, dims=1))
+        grad_z = 0.5 * (fill_field.roll(-1, dims=0) - fill_field.roll(1, dims=0))
+        mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
+        nx, ny, nz = -grad_x/mag, -grad_y/mag, -grad_z/mag
+        kappa = 0.5 * ((nx.roll(-1, dims=2) - nx.roll(1, dims=2)) +
+                       (ny.roll(-1, dims=1) - ny.roll(1, dims=1)) +
+                       (nz.roll(-1, dims=0) - nz.roll(1, dims=0)))
+        Fx_st = surface_tension * kappa * grad_x
+        Fy_st = surface_tension * kappa * grad_y
+        Fz_st = surface_tension * kappa * grad_z
+        cu_st = cx * Fx_st.unsqueeze(0) + cy * Fy_st.unsqueeze(0) + cz * Fz_st.unsqueeze(0)
+        f = f + (1.0 - 0.5/tau) * w_dev * cu_st / cs2
+
+    # Clamp f to non-negative (numerical stability, prevents negative rho → NaN)
     f = f.clamp(min=0.0, max=rho_liquid * 3.0)
-    f = torch.where(non_gas.unsqueeze(0), f, torch.zeros_like(f))
+
+    # Remove NaN for non-BGK
+    if collision != 'bgk':
+        f = torch.nan_to_num(f, nan=0.0, posinf=0.0, neginf=0.0)
+
+    # Preserve post-collision outgoing populations for anti-bounce-back (ABB).
+    # For a missing pull population q at x, Körner ABB uses the *local*
+    # outgoing f_bar(q)^*(x), not the population streamed into x in bar(q).
+    f_post = torch.where(non_gas.unsqueeze(0), f, torch.zeros_like(f))
+    f = f_post
 
     # ---- 2. Stream ----
-    f = _stream3d(f)
+    # ---- 2. Stream ----
+    f = _stream19_roll(f)
+
+    # ---- 2b. Zero gas cells AFTER streaming (prevent mass leak into gas) ----
+    gas_mask_pre = (flags == GAS)
+    f = torch.where(gas_mask_pre.unsqueeze(0), torch.zeros_like(f), f)
+
+    # ---- 2c. Anti-bounce-back for interface cells (gas pressure) ----
+    # Standard Körner: interface cells get f[q] = f[opp[q]] from gas directions
+    # Vectorized: batch all 19 directions, reuse neighbor_flags in mass exchange
+    # (no .any() sync — multicard-safe under TCCL; torch.where handles empty mask)
+    iface_abb = (flags == INTERFACE)
+    # _stream19_roll is a pull stream: population q at x originated at
+    # x-c[q].  Interface link classification must use that source cell.
+    neighbor_flags = torch.stack([
+        flags.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
+        for sx, sy, sz in _C19_SHIFTS
+    ])  # (19, nz, ny, nx)
+    need_abb = iface_abb.unsqueeze(0) & (neighbor_flags == GAS)
+    # Standard Körner ABB (pressure boundary) for a missing pull population:
+    # f_q(x,t+dt) = f_q^eq(rho_g,u_g) + f_barq^eq(rho_g,u_g)
+    #                 - f_barq^*(x,t).  With u_g=u_interface this fixes p_g.
+    # The implementation has no separate gas velocity field, so use the local
+    # interface velocity from the pre-collision macroscopics.
+    rho_g_field = torch.full_like(rho, float(rho_gas))
+    f_eq_gas = equilibrium3d(rho_g_field, ux, uy, uz)
+    f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_post[_OPP.to(device)]
+    if mass_ledger is not None:
+        # This is a population (not tracked-liquid-mass) change.  Keeping it
+        # separate makes a gas-pressure boundary source distinguishable from
+        # the subsequent liquid/interface mass stencil.
+        mass_ledger['abb_population_delta'] = float(
+            torch.where(need_abb, f_abb - f, torch.zeros_like(f)).sum()
+        )
+        mass_ledger['abb_population_abs_delta'] = float(
+            torch.where(need_abb, (f_abb - f).abs(), torch.zeros_like(f)).sum()
+        )
+    f = torch.where(need_abb, f_abb, f)
 
     # ---- 3. Wall BCs ----
     f = bounce_back_cells_3d(f, solid_mask)
     if free_slip_y and y_wall_mask is not None:
         f = free_slip_cells_3d(f, y_wall_mask, axis=1)
 
-    # ---- 4. Update fill = rho / rho_liquid ----
-    rho_new = f.sum(dim=0)
-    fill = torch.where(~solid_mask, (rho_new / rho_liquid).clamp(0.0, 1.0), fill)
+    # ---- 3b. Wall function (optional, for hull resistance) ----
+    # Vectorized Newton iteration (no bool(turb.any()) sync — multicard-safe
+    # under TCCL). Apply Newton to ALL cells, then select with torch.where.
+    df = torch.tensor(0.0, device=device, dtype=f.dtype)
+    if wall_function and near_mask is not None:
+        rho_wf, ux_wf, uy_wf, uz_wf = macroscopic3d(f)
+        u_mag = torch.sqrt(ux_wf**2 + uy_wf**2 + uz_wf**2).clamp(min=1e-12)
+        nu_lat = (tau - 0.5) / 3.0
+        u_tau = torch.sqrt(nu_lat * u_mag / y_val).clamp(min=1e-12)
+        y_plus = y_val * u_tau / nu_lat
+        turb = (y_plus > 11.6) & near_mask
+        # Vectorized Newton: apply to ALL cells, then select with torch.where
+        ut = u_tau.clone(); um = u_mag
+        for _ in range(8):
+            lyp = torch.log(y_val * ut / nu_lat)
+            fv = ut * (lyp / KAPPA + B_CONST) - um
+            fp = (lyp / KAPPA + B_CONST) + 1.0 / KAPPA
+            ut = (ut - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
+        u_tau = torch.where(turb, ut, u_tau)
+        tau_w = u_tau * u_tau
+        inv_umag = 1.0 / u_mag
+        coef = -(tau_w / y_val) * near_mask.to(f.dtype)
+        fx = coef * (ux_wf * inv_umag)
+        fy = coef * (uy_wf * inv_umag)
+        fz = coef * (uz_wf * inv_umag)
+        cx = c_dev[:, 0].view(19, 1, 1, 1)
+        cy = c_dev[:, 1].view(19, 1, 1, 1)
+        cz = c_dev[:, 2].view(19, 1, 1, 1)
+        w_dev = _W.to(device).float().view(19, 1, 1, 1)
+        cs2 = 1.0 / 3.0
+        cu_force = cx * fx + cy * fy + cz * fz
+        # Wall-function forcing: decoupled from tau when wf_force_coef is set
+        # (at high Re, tau≈0.5 → standard Guo factor (1-0.5/tau)≈0, so the
+        # wall force is never applied and the flow never decelerates).
+        wf_coef = wf_force_coef if wf_force_coef is not None else (1.0 - 0.5/tau)
+        forcing = wf_coef * w_dev * cu_force / cs2
+        f = f + forcing
+        f = f.clamp(min=0.0, max=rho_liquid * 3.0)  # prevent inf from wall function forcing
+        df = (tau_w * near_mask.to(f.dtype)).sum()
 
-    # ---- 5. Cell conversion (functional, no in-place mutation) ----
+    # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
+    # (no .any() sync — multicard-safe under TCCL; torch.where handles empty masks)
+    rho_new = f.sum(dim=0)
+    iface_mask = (flags == INTERFACE)
+    # neighbor_flags always computed in anti-bounce-back above (no None check)
+    # For pull link q at x, the opposing outgoing population belongs to x
+    # itself: f_bar(q)^*(x).  Sampling it at x-c_q mixes two different links.
+    f_opp_nb = f_post[_OPP.to(device)]  # (19, nz, ny, nx)
+    iface_19 = iface_mask.unsqueeze(0)
+    from_liq = iface_19 & (neighbor_flags == LIQUID)
+    from_gas = iface_19 & (neighbor_flags == GAS)
+    from_iface = iface_19 & (neighbor_flags == INTERFACE)
+    mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
+    mass_delta_interface = torch.where(
+        from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f)
+    )
+    mass_delta = (
+        mass_delta_liquid +
+        # Gas is a pressure boundary, not a liquid-mass reservoir.  Adding
+        # its reconstructed population here spuriously creates tracked liquid
+        # mass in a quiescent closed column.
+        torch.zeros_like(f) + mass_delta_interface
+    ).sum(0)
+    mass = torch.where(~solid_mask, mass + mass_delta, mass)
+    fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
+    if mass_ledger is not None:
+        mass_ledger['exchange'] = float(mass.sum())
+        mass_ledger['exchange_liquid_delta'] = float(mass_delta_liquid.sum())
+        mass_ledger['exchange_interface_delta'] = float(mass_delta_interface.sum())
+        mass_ledger['exchange_gas_delta'] = 0.0
+        mass_ledger['fill_mass_after_exchange'] = float((fill * rho_liquid).sum())
+
+    # Diagnostic mode: retain the post-stream/post-ABB populations and the
+    # exchange result, but deliberately forbid flag conversion, redistribution
+    # and halo propagation.  This isolates one mixed L/I/G topology update.
+    if freeze_topology:
+        if mass_ledger is not None:
+            frozen_total = float(mass.sum())
+            mass_ledger['redistribution'] = frozen_total
+            mass_ledger['clamp'] = frozen_total
+            mass_ledger['conversion'] = frozen_total
+            mass_ledger['isolation'] = frozen_total
+            mass_ledger['boundary'] = frozen_total
+            mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
+        return f, fill, flags, mass, df
+
+    # ---- 5. Cell conversion (fill-based, like original) ----
     gas_mask = (flags == GAS)
     interface_mask = (flags == INTERFACE)
     liquid_mask = (flags == LIQUID)
 
-    # Gas → Interface
+    # Gas → Interface (received mass from streaming)
     to_iface = gas_mask & (fill > 0.01) & (~solid_mask)
-    if to_iface.any():
-        f = _init_new(f, flags, to_iface, rho_gas, device, ux, uy, uz)
-        flags = torch.where(to_iface, torch.full_like(flags, INTERFACE), flags)
+    # (no .any() sync — _init_new uses torch.where for empty mask)
+    f = _init_new(f, flags, to_iface, rho_gas, device, ux, uy, uz)
+    flags = torch.where(to_iface, torch.full_like(flags, INTERFACE), flags)
 
-    # Interface → Liquid: fill >= 0.999
     to_liq = interface_mask & (fill >= 0.999) & (~solid_mask)
-    if to_liq.any():
-        flags = torch.where(to_liq, torch.full_like(flags, LIQUID), flags)
-        fill = torch.where(to_liq, torch.ones_like(fill), fill)
-
-    # Interface/Liquid → Gas: fill ≈ 0
     to_gas = (interface_mask | liquid_mask) & (fill <= 0.01) & (~solid_mask)
-    if to_gas.any():
-        flags = torch.where(to_gas, torch.full_like(flags, GAS), flags)
-        fill = torch.where(to_gas, torch.zeros_like(fill), fill)
-        f = torch.where(to_gas.unsqueeze(0), torch.zeros_like(f), f)
+
+    # ---- 5a. Körner mass redistribution (excess → interface neighbors) ----
+    # Excess mass at converting cells (vectorized, no bool sync)
+    excess = (torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass)) +
+              torch.where(to_gas, mass, torch.zeros_like(mass)))
+    # Existing interface cells receive first.  If a converting interface has
+    # none, promote its adjacent gas halo to receivers in this same step; a
+    # conversion must never silently discard excess merely because topology
+    # propagation runs later in the step.
+    recv_iface = interface_mask & ~to_liq & ~to_gas
+    # Only positive overflow needs a newly promoted gas receiver.  An emptying
+    # interface retains the established interface-only redistribution path.
+    adjacent_converting = torch.stack([
+        to_liq.roll(s, dims=a) for a, s in _SHIFT_SPECS
+    ]).any(dim=0)
+    recv_new = gas_mask & adjacent_converting & ~solid_mask
+    recv_mask = recv_iface | recv_new
+    # Count receiving cells per donor (6 face directions).
+    shifted_recv = torch.stack([recv_mask.roll(s, dims=a) for a, s in _SHIFT_SPECS])
+    n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
+    # Excess per receiving neighbor
+    excess_per_nb = excess / n_recv
+    # Distribute: sum contributions from all 6 neighbor directions into receiving cells
+    for a, s in _SHIFT_SPECS:
+        mass = mass + excess_per_nb.roll(-s, dims=a) * recv_mask
+    if mass_ledger is not None:
+        mass_ledger['redistribution'] = float(mass.sum())
+    # Clamp mass to valid range
+    mass = mass.clamp(0.0, rho_liquid)
+    if mass_ledger is not None:
+        mass_ledger['clamp'] = float(mass.sum())
+
+    # Apply cell conversion (mass assignment AFTER redistribution)
+    # (no .any() sync — torch.where handles empty masks)
+    flags = torch.where(to_liq, torch.full_like(flags, LIQUID), flags)
+    fill = torch.where(to_liq, torch.ones_like(fill), fill)
+    mass = torch.where(to_liq, torch.full_like(mass, rho_liquid), mass)
+
+    flags = torch.where(to_gas, torch.full_like(flags, GAS), flags)
+    fill = torch.where(to_gas, torch.zeros_like(fill), fill)
+    mass = torch.where(to_gas, torch.zeros_like(mass), mass)
+    f = torch.where(to_gas.unsqueeze(0), torch.zeros_like(f), f)
+    if mass_ledger is not None:
+        mass_ledger['conversion'] = float(mass.sum())
 
     # Neighbor propagation: gas next to liquid/interface → interface
     shifted_flags = torch.stack([flags.roll(s, dims=a) for a, s in _SHIFT_SPECS])
     is_neighbor = ((shifted_flags == LIQUID) | (shifted_flags == INTERFACE)).any(dim=0)
-    to_i = gas_mask & is_neighbor & (~solid_mask)
-    if to_i.any():
-        f = _init_new(f, flags, to_i, rho_gas, device, ux, uy, uz)
-        flags = torch.where(to_i, torch.full_like(flags, INTERFACE), flags)
-        fill = torch.where(to_i, torch.full_like(fill, 0.01), fill)
+    to_i = (gas_mask & is_neighbor & (~solid_mask)) | recv_new
+    # (no .any() sync — _init_new uses torch.where for empty mask)
+    f = _init_new(f, flags, to_i, rho_gas, device, ux, uy, uz)
+    flags = torch.where(to_i, torch.full_like(flags, INTERFACE), flags)
+    # A topology-only GAS -> INTERFACE transition has no physical donor.
+    # Its mass must remain zero until the mass-exchange stencil transfers it.
+    # Seeding it with 0.01*rho_liquid injected mass at every new gas halo.
+    fill = torch.where(to_i & ~recv_new, torch.zeros_like(fill), fill)
+    mass = torch.where(to_i & ~recv_new, torch.zeros_like(mass), mass)
+
+    # Isolated interface removal (prevents floating interface cells)
+    interface_mask = (flags == INTERFACE)
+    has_neighbor = ((shifted_flags == LIQUID) | (shifted_flags == INTERFACE)).any(dim=0)
+    isolated = interface_mask & ~has_neighbor & (~solid_mask)
+    # (no .any() sync — torch.where handles empty masks)
+    flags = torch.where(isolated, torch.full_like(flags, GAS), flags)
+    fill = torch.where(isolated, torch.zeros_like(fill), fill)
+    mass = torch.where(isolated, torch.zeros_like(mass), mass)
+    f = torch.where(isolated.unsqueeze(0), torch.zeros_like(f), f)
+    if mass_ledger is not None:
+        mass_ledger['isolation'] = float(mass.sum())
 
     flags = torch.where(solid_mask, torch.full_like(flags, SOLID), flags)
-    return f, fill, flags
+    if mass_ledger is not None:
+        mass_ledger['boundary'] = float(mass.sum())
+        mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
+
+    return f, fill, flags, mass, df
+
+
+def _redistribute_mass(mass, flags, mex, nx, ny, nz, c, device):
+    """Redistribute excess mass to interface neighbors (vectorized)."""
+    # Simple: distribute excess mass equally to interface neighbors
+    interface_mask = (flags == INTERFACE)
+    # Count interface neighbors per cell (6 directions)
+    shifted_iface = torch.stack([interface_mask.roll(s, dims=a) for a, s in _SHIFT_SPECS])
+    n_iface_neighbors = shifted_iface.sum(dim=0).clamp(min=1)
+    # Excess mass to distribute (per neighbor)
+    excess_per_neighbor = mex / n_iface_neighbors
+    # Add to neighbors (sum from all 6 directions)
+    for a, s in _SHIFT_SPECS:
+        mass = mass + excess_per_neighbor.roll(-s, dims=a) * interface_mask.roll(-s, dims=a)
+    return mass
