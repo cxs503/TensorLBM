@@ -21,6 +21,7 @@ def _load_gate_module():
 
 _GATE = _load_gate_module()
 evaluate_acoustic_campaign_gate = _GATE.evaluate_acoustic_campaign_gate
+evaluate_marine_resistance_gate = _GATE.evaluate_marine_resistance_gate
 evaluate_regression_gate = _GATE.evaluate_regression_gate
 write_regression_manifest = _GATE.write_regression_manifest
 
@@ -37,10 +38,12 @@ def main() -> int:
         parser.error("manifest must be a JSON object")
     if "status_file" in payload:
         report = evaluate_acoustic_campaign_gate(args.artifacts, payload)
+    elif payload.get("gate") == "marine_resistance" and isinstance(payload.get("cases"), dict):
+        report = evaluate_marine_resistance_gate(args.artifacts, payload["cases"])
     elif isinstance(payload.get("cases"), dict):
         report = evaluate_regression_gate(args.artifacts, payload["cases"])
     else:
-        parser.error("manifest must define generic 'cases' or acoustic 'status_file' + 'cases'")
+        parser.error("manifest must define marine/generic 'cases' or acoustic 'status_file' + 'cases'")
     write_regression_manifest(args.report, report)
     print(json.dumps(report, indent=2, sort_keys=True, allow_nan=False))
     return 0 if report["pass"] else 1
