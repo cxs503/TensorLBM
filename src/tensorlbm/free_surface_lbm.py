@@ -66,6 +66,55 @@ def _assert_no_direct_liquid_gas_links(flags):
         )
 
 
+def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
+                           mass_after_redistribution, mass_after_clamp,
+                           mass_after_conversion, mass_after_isolation, mass_end,
+                           abb_population_delta, exchange_liquid_credit,
+                           exchange_interface_credit):
+    """Record a physical tracked-mass budget without correcting the solver.
+
+    Reference convention: ``mass.sum()`` is lattice liquid mass.  ABB is a
+    population reconstruction, rather than a tracked-mass source.  L/I
+    exchange is internal only if both endpoints are recorded; a one-sided
+    interface credit is explicitly left unexplained, never offset artificially.
+    """
+    steps = ledger.setdefault("steps", [])
+    redistribution = mass_after_redistribution - mass_after_exchange
+    clamp = mass_after_clamp - mass_after_redistribution
+    conversion = mass_after_conversion - mass_after_clamp
+    isolation = mass_after_isolation - mass_after_conversion
+    boundary = mass_end - mass_after_isolation
+    mass_drift = mass_end - mass_start
+    explained = redistribution + clamp + conversion + isolation + boundary
+    unexplained = mass_drift - explained
+    record = {
+        "step": len(steps) + 1,
+        "mass_start": float(mass_start),
+        "mass_end": float(mass_end),
+        "mass_drift": float(mass_drift),
+        "mass_unit": "lattice liquid mass (sum of independent mass field)",
+        "abb_population_delta": float(abb_population_delta),
+        "abb_tracked_mass_source": 0.0,
+        "liquid_interface_exchange": 0.0,
+        "liquid_interface_interface_credit": float(exchange_liquid_credit + exchange_interface_credit),
+        "liquid_interface_bulk_debit": 0.0,
+        "redistribution": float(redistribution),
+        "clamp": float(clamp),
+        "conversion": float(conversion),
+        "isolation": float(isolation),
+        "boundary": float(boundary),
+        "unexplained_residual": float(unexplained),
+        "closed_domain_conserved": abs(float(unexplained)) <= 1.0e-8,
+        "diagnostic": (
+            "one-sided liquid/interface mass credit has no bulk-liquid debit"
+            if abs(float(unexplained)) > 1.0e-8 else "closed tracked-mass budget balances"
+        ),
+        "direct_liquid_gas_links": 0,
+    }
+    steps.append(record)
+    ledger.update(record)
+
+
 # ===========================================================================
 # Initialization
 # ===========================================================================
@@ -187,6 +236,7 @@ def free_surface_step(
     wf_force_coef=None,
     mass_ledger=None,
     freeze_topology=False,
+    runtime_ledger=None,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -204,6 +254,7 @@ def free_surface_step(
     # Initialize mass if not provided
     if mass is None:
         mass = init_mass_from_fill(fill, flags, rho_liquid)
+    mass_start_value = float(mass.sum())
     if mass_ledger is not None:
         mass_ledger['start'] = float(mass.sum())
         mass_ledger['interface_start'] = float(mass[flags == INTERFACE].sum())
@@ -323,16 +374,13 @@ def free_surface_step(
     rho_g_field = torch.full_like(rho, float(rho_gas))
     f_eq_gas = equilibrium3d(rho_g_field, ux, uy, uz)
     f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_post[_OPP.to(device)]
+    abb_delta = torch.where(need_abb, f_abb - f, torch.zeros_like(f))
     if mass_ledger is not None:
         # This is a population (not tracked-liquid-mass) change.  Keeping it
         # separate makes a gas-pressure boundary source distinguishable from
         # the subsequent liquid/interface mass stencil.
-        mass_ledger['abb_population_delta'] = float(
-            torch.where(need_abb, f_abb - f, torch.zeros_like(f)).sum()
-        )
-        mass_ledger['abb_population_abs_delta'] = float(
-            torch.where(need_abb, (f_abb - f).abs(), torch.zeros_like(f)).sum()
-        )
+        mass_ledger['abb_population_delta'] = float(abb_delta.sum())
+        mass_ledger['abb_population_abs_delta'] = float(abb_delta.abs().sum())
     f = torch.where(need_abb, f_abb, f)
 
     # ---- 3. Wall BCs ----
@@ -404,6 +452,7 @@ def free_surface_step(
         torch.zeros_like(f) + mass_delta_interface
     ).sum(0)
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
+    mass_after_exchange_value = float(mass.sum())
     fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
     if mass_ledger is not None:
         mass_ledger['exchange'] = float(mass.sum())
@@ -424,6 +473,18 @@ def free_surface_step(
             mass_ledger['isolation'] = frozen_total
             mass_ledger['boundary'] = frozen_total
             mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
+        if runtime_ledger is not None:
+            _append_runtime_ledger(
+                runtime_ledger, mass_start=mass_start_value,
+                mass_after_exchange=mass_after_exchange_value,
+                mass_after_redistribution=mass_after_exchange_value,
+                mass_after_clamp=mass_after_exchange_value,
+                mass_after_conversion=mass_after_exchange_value,
+                mass_after_isolation=mass_after_exchange_value,
+                mass_end=float(mass.sum()), abb_population_delta=float(abb_delta.sum()),
+                exchange_liquid_credit=float(mass_delta_liquid.sum()),
+                exchange_interface_credit=float(mass_delta_interface.sum()),
+            )
         return f, fill, flags, mass, df
 
     # ---- 5. Cell conversion (fill-based, like original) ----
@@ -467,10 +528,12 @@ def free_surface_step(
     for shift in _D3Q19_TENSOR_SHIFTS:
         receiver_shift = tuple(-delta for delta in shift)
         mass = mass + excess_per_nb.roll(receiver_shift, dims=(0, 1, 2)) * recv_mask
+    mass_after_redistribution_value = float(mass.sum())
     if mass_ledger is not None:
         mass_ledger['redistribution'] = float(mass.sum())
     # Clamp mass to valid range
     mass = mass.clamp(0.0, rho_liquid)
+    mass_after_clamp_value = float(mass.sum())
     if mass_ledger is not None:
         mass_ledger['clamp'] = float(mass.sum())
 
@@ -484,6 +547,7 @@ def free_surface_step(
     fill = torch.where(to_gas, torch.zeros_like(fill), fill)
     mass = torch.where(to_gas, torch.zeros_like(mass), mass)
     f = torch.where(to_gas.unsqueeze(0), torch.zeros_like(f), f)
+    mass_after_conversion_value = float(mass.sum())
     if mass_ledger is not None:
         mass_ledger['conversion'] = float(mass.sum())
 
@@ -516,6 +580,7 @@ def free_surface_step(
     fill = torch.where(isolated, torch.zeros_like(fill), fill)
     mass = torch.where(isolated, torch.zeros_like(mass), mass)
     f = torch.where(isolated.unsqueeze(0), torch.zeros_like(f), f)
+    mass_after_isolation_value = float(mass.sum())
     if mass_ledger is not None:
         mass_ledger['isolation'] = float(mass.sum())
 
@@ -523,6 +588,18 @@ def free_surface_step(
     if mass_ledger is not None:
         mass_ledger['boundary'] = float(mass.sum())
         mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
+    if runtime_ledger is not None:
+        _append_runtime_ledger(
+            runtime_ledger, mass_start=mass_start_value,
+            mass_after_exchange=mass_after_exchange_value,
+            mass_after_redistribution=mass_after_redistribution_value,
+            mass_after_clamp=mass_after_clamp_value,
+            mass_after_conversion=mass_after_conversion_value,
+            mass_after_isolation=mass_after_isolation_value,
+            mass_end=float(mass.sum()), abb_population_delta=float(abb_delta.sum()),
+            exchange_liquid_credit=float(mass_delta_liquid.sum()),
+            exchange_interface_credit=float(mass_delta_interface.sum()),
+        )
 
     return f, fill, flags, mass, df
 

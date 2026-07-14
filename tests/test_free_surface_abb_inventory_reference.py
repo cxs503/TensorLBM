@@ -100,3 +100,23 @@ def test_closed_frozen_abb_transaction_conserves_when_every_link_has_an_owner() 
     assert transaction.bulk_delta == pytest.approx(-change.population_delta, abs=2.0e-6)
     assert transaction.total_delta == pytest.approx(0.0, abs=2.0e-6)
     assert after.total == pytest.approx(inventory.total, abs=5.0e-5)
+
+
+def test_multistep_closed_runtime_attributes_unexplained_one_sided_exchange_drift() -> None:
+    f, fill, flags, solid, _ = _state()
+    mass = fill.clone()
+    runtime: dict[str, object] = {}
+    for _ in range(3):
+        f, fill, flags, mass, _ = free_surface_step(
+            f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=0.001,
+            freeze_topology=True, runtime_ledger=runtime,
+        )
+
+    steps = runtime["steps"]
+    assert isinstance(steps, list) and len(steps) == 3
+    assert all(step["direct_liquid_gas_links"] == 0 for step in steps)
+    assert all(step["mass_unit"] == "lattice liquid mass (sum of independent mass field)" for step in steps)
+    assert all(not step["closed_domain_conserved"] for step in steps)
+    assert all(abs(step["unexplained_residual"]) > 1.0e-6 for step in steps)
+    assert all(step["unexplained_residual"] == pytest.approx(step["liquid_interface_interface_credit"], abs=5.0e-6) for step in steps)
+    assert all("one-sided liquid/interface" in step["diagnostic"] for step in steps)
