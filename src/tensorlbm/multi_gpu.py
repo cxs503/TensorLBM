@@ -385,11 +385,13 @@ def auto_decompose(
 # ---------------------------------------------------------------------------
 
 class D3Q19GlooTransport:
-    """One-rank-per-x-slab D3Q19 transport for an initialized two-rank Gloo PG.
+    """One-rank-per-x-slab D3Q19 transport for an initialized Gloo PG.
 
     ``step`` has production ordering: collision on owned cells, transport of
-    all 19 post-collision boundary populations, ghost validation, then pull
-    streaming.  Each rank stores only its owned slab and ghosts.
+    all 19 post-collision boundary populations with the two adjacent ranks,
+    ghost validation, then pull streaming.  The rank topology is a periodic
+    x-ring, so rank zero and rank ``world_size - 1`` are also neighbours.
+    Each rank stores only its owned slab and two ghost planes.
     """
 
     def __init__(self) -> None:
@@ -397,9 +399,12 @@ class D3Q19GlooTransport:
             raise RuntimeError("D3Q19GlooTransport requires an initialized torch.distributed group")
         if dist.get_backend() != "gloo":
             raise RuntimeError("D3Q19GlooTransport requires the Gloo backend")
-        if dist.get_world_size() != 2:
-            raise RuntimeError("D3Q19GlooTransport requires exactly two ranks")
+        if dist.get_world_size() < 2:
+            raise RuntimeError("D3Q19GlooTransport requires at least two ranks")
         self.rank = dist.get_rank()
+        self.world_size = dist.get_world_size()
+        self.left_rank = (self.rank - 1) % self.world_size
+        self.right_rank = (self.rank + 1) % self.world_size
 
     @staticmethod
     def _check_owned(f_owned: torch.Tensor) -> None:
@@ -413,38 +418,54 @@ class D3Q19GlooTransport:
     def exchange_ghosts(self, f_owned: torch.Tensor) -> torch.Tensor:
         """Transport all populations' owned boundary planes and pad ghosts."""
         self._check_owned(f_owned)
-        boundary = torch.stack((f_owned[..., -1], f_owned[..., 0]), dim=-1).contiguous()
-        peer = torch.empty_like(boundary)
-        # Every rank sends just its two boundary planes.  Unlike all_gather,
-        # this stays valid when the owned slab widths differ (for example 4/5).
-        peer_rank = 1 - self.rank
-        send_request = dist.isend(boundary, dst=peer_rank)
-        receive_request = dist.irecv(peer, src=peer_rank)
-        assert send_request is not None and receive_request is not None
-        send_request.wait()
-        receive_request.wait()
+        # Send the left/right owned planes to their actual neighbours.  This
+        # point-to-point ring is independent of slab width and deliberately
+        # does not route through all ranks or a process-local list copy.
+        left_owned = f_owned[..., 0].contiguous()
+        right_owned = f_owned[..., -1].contiguous()
+        left_ghost = torch.empty_like(left_owned)
+        right_ghost = torch.empty_like(right_owned)
+        requests = [
+            dist.isend(left_owned, dst=self.left_rank, tag=101),
+            dist.isend(right_owned, dst=self.right_rank, tag=102),
+            dist.irecv(left_ghost, src=self.left_rank, tag=102),
+            dist.irecv(right_ghost, src=self.right_rank, tag=101),
+        ]
+        for request in requests:
+            assert request is not None
+            request.wait()
         padded = torch.empty((*f_owned.shape[:-1], f_owned.shape[-1] + 2), dtype=f_owned.dtype)
-        padded[..., 0] = peer[..., 0]
+        padded[..., 0] = left_ghost
         padded[..., 1:-1] = f_owned
-        padded[..., -1] = peer[..., 1]
-        self.validate_ghosts(padded, peer)
+        padded[..., -1] = right_ghost
+        self.validate_ghosts(padded, (left_ghost, right_ghost))
         return padded
 
-    def validate_ghosts(self, padded: torch.Tensor, peer: torch.Tensor | None = None) -> None:
+    def validate_ghosts(
+        self,
+        padded: torch.Tensor,
+        peer: tuple[torch.Tensor, torch.Tensor] | None = None,
+    ) -> None:
         """Fail closed when either ghost differs from peer-owned data."""
         if padded.ndim != 4 or padded.shape[0] != 19 or padded.shape[-1] < 3:
             raise ValueError("padded distributions must have shape (19, nz, ny, nx_local + 2)")
         if peer is None:
             owned = padded[..., 1:-1]
-            boundary = torch.stack((owned[..., -1], owned[..., 0]), dim=-1).contiguous()
-            peer = torch.empty_like(boundary)
-            peer_rank = 1 - self.rank
-            send_request = dist.isend(boundary, dst=peer_rank)
-            receive_request = dist.irecv(peer, src=peer_rank)
-            assert send_request is not None and receive_request is not None
-            send_request.wait()
-            receive_request.wait()
-        if not torch.equal(padded[..., 0], peer[..., 0]) or not torch.equal(padded[..., -1], peer[..., 1]):
+            left_owned = owned[..., 0].contiguous()
+            right_owned = owned[..., -1].contiguous()
+            left_ghost = torch.empty_like(left_owned)
+            right_ghost = torch.empty_like(right_owned)
+            requests = [
+                dist.isend(left_owned, dst=self.left_rank, tag=101),
+                dist.isend(right_owned, dst=self.right_rank, tag=102),
+                dist.irecv(left_ghost, src=self.left_rank, tag=102),
+                dist.irecv(right_ghost, src=self.right_rank, tag=101),
+            ]
+            for request in requests:
+                assert request is not None
+                request.wait()
+            peer = (left_ghost, right_ghost)
+        if not torch.equal(padded[..., 0], peer[0]) or not torch.equal(padded[..., -1], peer[1]):
             raise RuntimeError("D3Q19 Gloo ghost validation failed")
 
     def gather_owned(self, f_owned: torch.Tensor) -> torch.Tensor:
@@ -456,13 +477,13 @@ class D3Q19GlooTransport:
         """
         self._check_owned(f_owned)
         width = torch.tensor([f_owned.shape[-1]], dtype=torch.int64)
-        widths = [torch.empty_like(width) for _ in range(2)]
+        widths = [torch.empty_like(width) for _ in range(self.world_size)]
         dist.all_gather(widths, width)
         owned_widths = [int(item.item()) for item in widths]
         max_width = max(owned_widths)
         packed = torch.zeros((*f_owned.shape[:-1], max_width), dtype=f_owned.dtype)
         packed[..., :f_owned.shape[-1]] = f_owned
-        gathered = [torch.empty_like(packed) for _ in range(2)]
+        gathered = [torch.empty_like(packed) for _ in range(self.world_size)]
         dist.all_gather(gathered, packed)
         full = torch.cat(
             [gathered[rank][..., :rank_width] for rank, rank_width in enumerate(owned_widths)],
