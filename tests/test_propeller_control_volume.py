@@ -65,8 +65,49 @@ def test_control_volume_budget_reports_every_term_and_sign_convention() -> None:
     assert report["same_operator_action_reaction_residual_x_mean"] == pytest.approx(0.0)
     assert report["same_operator_action_reaction_abs_residual_x_max"] == pytest.approx(0.0)
     assert report["same_operator_action_reaction_relative_residual_max"] == pytest.approx(0.0)
+    torque_report = report["same_operator_torque_action_reaction"]
+    assert torque_report == {
+        "status": "withheld",
+        "reason": "missing_same_operator_torque_fields",
+        "sample_count": 2,
+        "missing_fields": ["wall_fluid_torque_impulse_x", "wall_reaction_torque_x"],
+        "required_fields": ["wall_fluid_torque_impulse_x", "wall_reaction_torque_x"],
+    }
     assert report["me_vs_cv_comparison_status"] == "noncomparable"
     assert report["sign_convention"]["positive_x"] == "positive streamwise (+x) momentum"
+
+
+def test_control_volume_torque_diagnostic_is_withheld_for_mixed_samples() -> None:
+    """Torque is comparable only when every sample carries both operator terms."""
+    common = {
+        "fluid_momentum_delta_x": 1.0,
+        "wall_me_load_x": 0.9,
+        "open_face_momentum_flux_x": 0.2,
+        "collision_momentum_contribution_x": 0.1,
+        "streaming_momentum_contribution_x": 0.0,
+        "fixed_channel_wall_momentum_contribution_x": 0.0,
+        "moving_mask_reset_momentum_contribution_x": 0.3,
+        "wall_momentum_contribution_x": 0.4,
+        "wall_reaction_x": -0.4,
+        "budget_residual_x": 0.0,
+        "open_faces_available": True,
+    }
+    report = _summarize_control_volume_cross_check([
+        common | {
+            "wall_fluid_torque_impulse_x": 2.0,
+            "wall_reaction_torque_x": -2.0,
+        },
+        common,
+    ])
+
+    assert report["status"] == "comparable"
+    assert report["same_operator_torque_action_reaction"] == {
+        "status": "withheld",
+        "reason": "missing_same_operator_torque_fields",
+        "sample_count": 2,
+        "missing_fields": ["wall_fluid_torque_impulse_x", "wall_reaction_torque_x"],
+        "required_fields": ["wall_fluid_torque_impulse_x", "wall_reaction_torque_x"],
+    }
 
 
 def test_control_volume_budget_is_withheld_when_open_faces_are_unavailable() -> None:

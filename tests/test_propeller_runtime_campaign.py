@@ -56,6 +56,21 @@ def test_actual_dynamic_geometry_multi_j_campaign_writes_windowed_samples(tmp_pa
             sample["wall_momentum_contribution_x"] + sample["wall_reaction_x"] == pytest.approx(0.0, abs=5e-6)
             for sample in result["samples"]
         )
+        # The same moving-wall population delta must also provide a torque
+        # action/reaction pair about the propeller axis for every sample.
+        assert all("wall_fluid_torque_impulse_x" in sample for sample in result["samples"])
+        assert all("wall_reaction_torque_x" in sample for sample in result["samples"])
+        assert all(sample["wall_torque_action_reaction_signed_residual_norm"] == pytest.approx(0.0, abs=5e-6) for sample in result["samples"])
+        assert all(sample["wall_torque_action_reaction_absolute_residual_norm"] == pytest.approx(0.0, abs=5e-6) for sample in result["samples"])
+        assert all(sample["wall_torque_action_reaction_relative_residual"] < 1e-5 for sample in result["samples"])
+        assert all(
+            sample["wall_fluid_torque_impulse_x"] + sample["wall_reaction_torque_x"] == pytest.approx(0.0, abs=5e-6)
+            for sample in result["samples"]
+        )
+        torque_check = result["control_volume_cross_check"]["same_operator_torque_action_reaction"]
+        assert torque_check["status"] == "comparable"
+        assert torque_check["sample_count"] == 32
+        assert torque_check["absolute_residual_x_max"] == pytest.approx(0.0, abs=5e-6)
 
     run_dir = tmp_path / "propeller_owt" / "dynamic-multi-j"
     assert (run_dir / "run_metadata.json").is_file()

@@ -154,6 +154,9 @@ class MovingWallReaction3D:
     action_reaction_signed_residual_norm: float
     action_reaction_absolute_residual_norm: float
     action_reaction_relative_residual: float
+    torque_action_reaction_signed_residual_norm: float
+    torque_action_reaction_absolute_residual_norm: float
+    torque_action_reaction_relative_residual: float
 
 
 def rotating_wall_velocity_3d(
@@ -248,6 +251,10 @@ def moving_wall_bounce_back_3d_with_reaction(
     signed_norm = float(torch.linalg.vector_norm(residual).item())
     absolute_norm = float(torch.linalg.vector_norm(residual.abs()).item())
     relative = absolute_norm / max(float(torch.linalg.vector_norm(fluid_impulse).item()), 1e-30)
+    torque_residual = fluid_torque + body_torque
+    torque_signed_norm = float(torch.linalg.vector_norm(torque_residual).item())
+    torque_absolute_norm = float(torch.linalg.vector_norm(torque_residual.abs()).item())
+    torque_relative = torque_absolute_norm / max(float(torch.linalg.vector_norm(fluid_torque).item()), 1e-30)
     return after, MovingWallReaction3D(
         fluid_impulse=fluid_impulse,
         fluid_torque_impulse=fluid_torque,
@@ -256,6 +263,9 @@ def moving_wall_bounce_back_3d_with_reaction(
         action_reaction_signed_residual_norm=signed_norm,
         action_reaction_absolute_residual_norm=absolute_norm,
         action_reaction_relative_residual=relative,
+        torque_action_reaction_signed_residual_norm=torque_signed_norm,
+        torque_action_reaction_absolute_residual_norm=torque_absolute_norm,
+        torque_action_reaction_relative_residual=torque_relative,
     )
 
 
@@ -393,6 +403,48 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
         absolute / max(abs(float(sample["wall_momentum_contribution_x"])), 1e-30)
         for absolute, sample in zip(ar_absolute, samples)
     ]
+    torque_fields = (
+        "wall_fluid_torque_impulse_x",
+        "wall_reaction_torque_x",
+    )
+    missing_torque_fields = sorted({
+        field for sample in samples for field in torque_fields if field not in sample
+    })
+    if missing_torque_fields:
+        # Historical force-only samples predate same-operator torque output.
+        # Do not infer torque from force or substitute zero: that would turn an
+        # unavailable diagnostic into a fabricated action/reaction result.
+        torque_action_reaction: dict[str, object] = {
+            "status": "withheld",
+            "reason": "missing_same_operator_torque_fields",
+            "sample_count": len(samples),
+            "missing_fields": missing_torque_fields,
+            "required_fields": list(torque_fields),
+        }
+    else:
+        torque_ar_residuals = [
+            float(sample["wall_fluid_torque_impulse_x"]) + float(sample["wall_reaction_torque_x"])
+            for sample in samples
+        ]
+        torque_ar_absolute = [abs(value) for value in torque_ar_residuals]
+        torque_ar_relative = [
+            absolute / max(abs(float(sample["wall_fluid_torque_impulse_x"])), 1e-30)
+            for absolute, sample in zip(torque_ar_absolute, samples)
+        ]
+        torque_action_reaction = {
+            "status": "comparable",
+            "sample_count": len(samples),
+            "fluid_torque_impulse_x_mean": mean("wall_fluid_torque_impulse_x"),
+            "body_reaction_torque_x_mean": mean("wall_reaction_torque_x"),
+            "signed_residual_x_mean": sum(torque_ar_residuals) / len(torque_ar_residuals),
+            "absolute_residual_x_mean": sum(torque_ar_absolute) / len(torque_ar_absolute),
+            "absolute_residual_x_max": max(torque_ar_absolute),
+            "relative_residual_x_max": max(torque_ar_relative),
+            "definition": (
+                "fluid torque impulse and body reaction torque are emitted by "
+                "the same moving_wall_bounce_back_3d update about the propeller axis"
+            ),
+        }
     return {
         "available": True,
         "status": "comparable",
@@ -412,6 +464,7 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
         "same_operator_action_reaction_abs_residual_x_mean": sum(ar_absolute) / len(ar_absolute),
         "same_operator_action_reaction_abs_residual_x_max": max(ar_absolute),
         "same_operator_action_reaction_relative_residual_max": max(ar_relative),
+        "same_operator_torque_action_reaction": torque_action_reaction,
         "budget_residual_x_mean": mean("budget_residual_x"),
         "me_vs_cv_comparison_status": "noncomparable",
         "me_vs_cv_comparison_reason": (
@@ -577,9 +630,14 @@ def _run_single_speed(
                 "wall_momentum_contribution_x": float(moving_wall_delta.item()),
                 "wall_reaction_x": float(wall_reaction.body_reaction[0].item()),
                 "wall_fluid_impulse_x": float(wall_reaction.fluid_impulse[0].item()),
+                "wall_fluid_torque_impulse_x": float(wall_reaction.fluid_torque_impulse[0].item()),
+                "wall_reaction_torque_x": float(wall_reaction.body_reaction_torque[0].item()),
                 "wall_action_reaction_signed_residual_norm": float(wall_cv_reaction_residual.item()),
                 "wall_action_reaction_absolute_residual_norm": float(wall_cv_reaction_abs.item()),
                 "wall_action_reaction_relative_residual": float(wall_cv_reaction_relative.item()),
+                "wall_torque_action_reaction_signed_residual_norm": wall_reaction.torque_action_reaction_signed_residual_norm,
+                "wall_torque_action_reaction_absolute_residual_norm": wall_reaction.torque_action_reaction_absolute_residual_norm,
+                "wall_torque_action_reaction_relative_residual": wall_reaction.torque_action_reaction_relative_residual,
                 "wall_me_load_x": fx_value,
                 "budget_residual_x": float(budget_residual.item()),
                 "open_faces_available": True,
