@@ -36,6 +36,7 @@ from .free_surface_lbm import (
     free_surface_step,
     init_fill_rectangular,
     init_flags_from_fill,
+    init_mass_from_fill,
     LIQUID, INTERFACE, GAS,
 )
 from .multiphase3d import (
@@ -378,6 +379,9 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             device=device,
         )
         flags = init_flags_from_fill(fill, y_wall_mask)
+        # Independent Körner mass ledger: initialize once and preserve the
+        # returned state rather than reconstructing it from fill each step.
+        mass = init_mass_from_fill(fill, flags, config.rho_heavy)
         active = (flags == LIQUID) | (flags == INTERFACE)
         zero_f = torch.zeros((nz, ny, nx), device=device)
         f_water = equilibrium3d(
@@ -422,6 +426,7 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
 
     diagnostics: list[dict[str, object]] = []
     front_series: list[tuple[int, float, float]] = []
+    fs_handoff: list[dict[str, object]] = []
     gy = -config.gravity
 
     for step in range(1, config.n_steps + 1):
@@ -477,9 +482,10 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             rho_light = f_air.sum(dim=0)
 
         elif config.model == "fs":
-            # Free-surface LBM step
-            f_water, fill, flags = free_surface_step(
+            # Free-surface LBM step.  All five solver states are passed on.
+            f_water, fill, flags, mass, df = free_surface_step(
                 f_water, fill, flags, solid,
+                mass=mass,
                 tau=config.tau,
                 gy=gy,
                 rho_liquid=config.rho_heavy, rho_gas=config.rho_light,
@@ -487,6 +493,15 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
                 C_s=config.C_s if config.collision == "mrt_smag" else 0.0,
                 free_slip_y=config.free_slip_y, y_wall_mask=y_wall,
             )
+            fs_handoff.append({
+                "step": step,
+                "f_shape": list(f_water.shape),
+                "fill_shape": list(fill.shape),
+                "flags_shape": list(flags.shape),
+                "mass_shape": list(mass.shape),
+                "df": float(df.item()),
+                "mass_is_independent": True,
+            })
             rho_heavy = f_water.sum(dim=0)
             rho_light = torch.zeros_like(rho_heavy)  # gas has no density field
 
@@ -550,6 +565,7 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             {"step": s, "t_star": ts, "x_star": xs, "mean_rho": mr}
             for s, ts, xs, mr in front_series
         ],
+        **({"fs_handoff": fs_handoff} if config.model == "fs" else {}),
     }
 
     meta_path = run_dir / "run_metadata.json"
