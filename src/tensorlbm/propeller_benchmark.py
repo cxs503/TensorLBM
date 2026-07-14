@@ -69,7 +69,10 @@ class PropellerBenchmarkConfig:
     tau: float = 0.8
     smagorinsky_cs: float = 0.0
     n_revolutions: int = 3
+    sampling_steps: int | None = None
     warmup_steps: int = 200
+    sample_window_steps: int = 200
+    window_convergence_rel_tol: float = 0.02
     device: str = "cpu"
     output_root: Path = Path("outputs")
     run_name: str | None = None
@@ -94,8 +97,14 @@ class PropellerBenchmarkConfig:
             raise ValueError("tau must be > 0.5")
         if self.n_revolutions < 1:
             raise ValueError("n_revolutions must be >= 1")
+        if self.sampling_steps is not None and self.sampling_steps < 1:
+            raise ValueError("sampling_steps must be >= 1 when specified")
         if self.warmup_steps < 0:
             raise ValueError("warmup_steps must be >= 0")
+        if self.sample_window_steps < 1:
+            raise ValueError("sample_window_steps must be >= 1")
+        if not math.isfinite(self.window_convergence_rel_tol) or self.window_convergence_rel_tol <= 0:
+            raise ValueError("window_convergence_rel_tol must be finite and > 0")
         if not self.inflow_velocities:
             raise ValueError("inflow_velocities must not be empty")
 
@@ -225,6 +234,82 @@ def _convert_to_physical_kt_kq(
     return kt_lu * inv_n2, kq_lu * inv_n2, n_phys_rps
 
 
+def _relative_change(previous: float, current: float) -> float:
+    """Return a bounded denominator relative change for window diagnostics."""
+    return abs(current - previous) / max(abs(current), 1e-30)
+
+
+def _summarize_windows(
+    samples: list[dict[str, float | int]], *, window_steps: int,
+    transient_discard_steps: int, convergence_rel_tol: float,
+) -> dict[str, object]:
+    """Summarize complete post-discard windows against a strict KT/KQ criterion."""
+    retained = [sample for sample in samples if int(sample["step"]) > transient_discard_steps]
+    complete_count = len(retained) // window_steps
+    windows: list[dict[str, float | int]] = []
+    for index in range(complete_count):
+        chunk = retained[index * window_steps:(index + 1) * window_steps]
+        windows.append({
+            "index": index,
+            "step_start": int(chunk[0]["step"]),
+            "step_end": int(chunk[-1]["step"]),
+            "n_samples": len(chunk),
+            "j_mean": sum(float(s["j"]) for s in chunk) / len(chunk),
+            "kt_mean": sum(float(s["kt"]) for s in chunk) / len(chunk),
+            "kq_mean": sum(float(s["kq"]) for s in chunk) / len(chunk),
+        })
+    if len(windows) < 2:
+        convergence: dict[str, object] = {
+            "available": False,
+            "window_converged": False,
+            "reason": "fewer_than_two_complete_windows",
+            "kt_rel_tol": convergence_rel_tol,
+            "kq_rel_tol": convergence_rel_tol,
+        }
+    else:
+        previous, current = windows[-2], windows[-1]
+        kt_delta = _relative_change(float(previous["kt_mean"]), float(current["kt_mean"]))
+        kq_delta = _relative_change(float(previous["kq_mean"]), float(current["kq_mean"]))
+        convergence = {
+            "available": True,
+            "window_converged": kt_delta < convergence_rel_tol and kq_delta < convergence_rel_tol,
+            "kt_last_window_rel_change": kt_delta,
+            "kq_last_window_rel_change": kq_delta,
+            "kt_rel_tol": convergence_rel_tol,
+            "kq_rel_tol": convergence_rel_tol,
+        }
+    return {
+        "window_steps": window_steps,
+        "transient_discard_steps": transient_discard_steps,
+        "discarded_transient_samples": len(samples) - len(retained),
+        "dropped_incomplete_tail_samples": len(retained) - complete_count * window_steps,
+        "windows": windows,
+        "convergence": convergence,
+    }
+
+
+def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]]) -> dict[str, object]:
+    """Compare wall-update global momentum change against raw ME wall load.
+
+    This is an in-run accounting diagnostic, not a closed-volume validation:
+    channel faces, collision, and moving-mask population reset are outside this
+    local wall-update comparison.
+    """
+    if not samples:
+        return {"available": False, "reason": "no_post_warmup_samples"}
+    delta = sum(float(sample["distribution_momentum_delta_x"]) for sample in samples) / len(samples)
+    wall_load = sum(float(sample["fx_me_lu"]) for sample in samples) / len(samples)
+    return {
+        "available": True,
+        "method": "global_momentum_delta",
+        "sample_count": len(samples),
+        "distribution_momentum_delta_x_mean": delta,
+        "me_force_x_mean": wall_load,
+        "residual_x_mean": delta + wall_load,
+        "interpretation": "wall-update-only; open-face/collision/reset terms are excluded",
+    }
+
+
 # ============================================================================
 # Single-speed simulation
 # ============================================================================
@@ -242,28 +327,36 @@ def _run_single_speed(
     cy = ny // 2
     cz = nz // 2
 
-    mask = build_propeller_mask(
+    # Re-voxelize at each physical azimuth.  The solver advances these masks;
+    # this is deliberately not a static-mask surrogate campaign.
+    previous_mask = build_propeller_mask(
         nx=nx, ny=ny, nz=nz, cx=cx, cy=cy, cz=cz,
         angle_deg=0.0, config=geo, device=str(device),
     )
-    wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=device)
-    ux_w, uy_w, uz_w = rotating_wall_velocity_3d(mask, cx, cy, cz, config.omega)
 
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
     ux0 = torch.full_like(rho0, u_in)
-    ux0[mask] = 0.0
+    ux0[previous_mask] = 0.0
     f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=device)
 
     steps_per_rev = max(1, int(1.0 / max(config.rpm, 1e-10)))
-    n_sampling = config.n_revolutions * steps_per_rev
+    n_sampling = config.sampling_steps if config.sampling_steps is not None else config.n_revolutions * steps_per_rev
     n_total = config.warmup_steps + n_sampling
 
     fx_samples: list[float] = []
     mx_samples: list[float] = []
     me_samples: list[dict[str, float | int]] = []
+    campaign_samples: list[dict[str, float | int]] = []
     t_start = time.perf_counter()
 
     for step in range(1, n_total + 1):
+        azimuth_deg = math.degrees((step * config.omega) % (2.0 * math.pi))
+        mask = build_propeller_mask(
+            nx=nx, ny=ny, nz=nz, cx=cx, cy=cy, cz=cz,
+            angle_deg=azimuth_deg, config=geo, device=str(device),
+        )
+        wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=device)
+        ux_w, uy_w, uz_w = rotating_wall_velocity_3d(mask, cx, cy, cz, config.omega)
         f = collide_smagorinsky_mrt3d(f, tau=config.tau, C_s=config.smagorinsky_cs)
         f = stream3d(f)
         fx, _, _ = compute_obstacle_forces_3d(f, mask)
@@ -272,17 +365,44 @@ def _run_single_speed(
             f, u_in=u_in, wall_mask=wall_mask,
             obstacle_mask=torch.zeros_like(mask),
         )
+        momentum_before_wall = (f[1] - f[2]).sum()
         f = moving_wall_bounce_back_3d(f, mask, ux_w, uy_w, uz_w)
+        momentum_after_wall = (f[1] - f[2]).sum()
+
+        # Cells released by the moving solid receive a finite equilibrium state.
+        # This population reset is explicitly excluded from the wall-update CV
+        # comparison recorded below.
+        released = previous_mask & ~mask
+        if bool(released.any()):
+            equilibrium = equilibrium3d(
+                torch.ones_like(rho0), torch.full_like(rho0, u_in),
+                torch.zeros_like(rho0), torch.zeros_like(rho0), device=device,
+            )
+            f[:, released] = equilibrium[:, released]
+        previous_mask = mask
 
         if step > config.warmup_steps:
             fx_value = float(fx.item())
             mx_value = float(mx.item())
+            kt_sample, kq_sample, j_sample, _ = _compute_kt_kq(
+                fx_value, mx_value, u_in=u_in, rpm=config.rpm, diameter=D,
+            )
             fx_samples.append(fx_value)
             mx_samples.append(mx_value)
             me_samples.append({
                 "step": step,
                 "fx_me_lu": fx_value,
                 "mx_me_lu": mx_value,
+            })
+            campaign_samples.append({
+                "step": step,
+                "azimuth_deg": azimuth_deg,
+                "j": j_sample,
+                "kt": kt_sample,
+                "kq": kq_sample,
+                "fx_me_lu": fx_value,
+                "mx_me_lu": mx_value,
+                "distribution_momentum_delta_x": float((momentum_after_wall - momentum_before_wall).item()),
             })
 
         if step % 2000 == 0 or step == n_total:
@@ -302,7 +422,14 @@ def _run_single_speed(
         rho_phys=config.model_rho_kgm3,
     )
 
-    geo_stats = propeller_statistics(geo, mask)
+    geo_stats = propeller_statistics(geo, previous_mask)
+    window_report = _summarize_windows(
+        campaign_samples,
+        window_steps=config.sample_window_steps,
+        transient_discard_steps=0,
+        convergence_rel_tol=config.window_convergence_rel_tol,
+    )
+    control_volume_cross_check = _summarize_control_volume_cross_check(campaign_samples)
     re_d = config.rpm * D * D / config.nu
 
     return {
@@ -314,7 +441,12 @@ def _run_single_speed(
         "kt_phys": kt_phys, "kq_phys": kq_phys, "n_phys_rps": n_phys_rps,
         "re_d": re_d, "steps": n_total,
         "sampling_steps": len(fx_samples),
+        "transient_discard_steps": config.warmup_steps,
+        "dynamic_geometry": True,
+        "samples": campaign_samples,
         "me_samples": me_samples,
+        "window_report": window_report,
+        "control_volume_cross_check": control_volume_cross_check,
         "geometry": geo_stats,
         "runtime_s": time.perf_counter() - t_start,
     }
@@ -384,6 +516,22 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
     kt_p_vals = [float(r.get("kt_phys", 0)) for r in results]  # type: ignore[arg-type]
     j_vals = [float(r["j_actual"]) for r in results]  # type: ignore[arg-type]
     eta_vals = [float(r["eta_o"]) for r in results]  # type: ignore[arg-type]
+    per_j_window_status: list[dict[str, object]] = []
+    for result in results:
+        window_report = result["window_report"]
+        assert isinstance(window_report, dict)
+        convergence = window_report["convergence"]
+        assert isinstance(convergence, dict)
+        per_j_window_status.append({
+            "j_actual": float(result["j_actual"]),
+            "complete_window_count": len(window_report["windows"]),
+            "convergence": convergence,
+        })
+    campaign_converged = all(
+        bool(status["convergence"].get("window_converged", False))
+        for status in per_j_window_status
+        if isinstance(status["convergence"], dict)
+    ) and len(per_j_window_status) == len(results)
 
     summary = {
         "name": "propeller_open_water",
@@ -397,10 +545,17 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
             "tau": config.tau, "cs": config.smagorinsky_cs,
             "rpm": config.rpm, "nu_lattice": config.nu,
             "n_revolutions": config.n_revolutions,
+            "sample_window_steps": config.sample_window_steps,
+            "window_convergence_rel_tol": config.window_convergence_rel_tol,
             "model_diameter_m": config.model_diameter_m,
             "model_speed_ms": config.model_speed_ms,
         },
         "results": results,
+        "campaign": {
+            "n_j_cases": len(results),
+            "status": "converged" if campaign_converged else "not_converged",
+            "per_j_window_status": per_j_window_status,
+        },
         "summary": {
             "j_range": [min(j_vals), max(j_vals)],
             "kt_phys_range": [min(kt_p_vals), max(kt_p_vals)],
