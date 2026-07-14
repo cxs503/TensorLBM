@@ -42,11 +42,11 @@ def build_marine_resistance_artifact(
         "evidence": {"observation": dict(observation), "provenance": dict(provenance),
                      "reference": dict(reference)},
         "completion": dict(completion) if isinstance(completion, Mapping) else {"state": "WITHHELD"},
-        # Preflight and numerical evidence are copied only from the bound runtime
-        # observation; conservation/physics remain deliberately withheld below.
+        # Validation facts are copied only from the bound runtime observation.
+        # Physics is deliberately never promoted by artifact construction.
         "preflight": dict(observation.get("preflight", {})),
         "numerics": dict(observation.get("numerics", {})), 
-        "conservation": {"status": "withheld", "pass": False},
+        "conservation": dict(observation.get("conservation", {})),
         "resistance": {"status": "measured_not_validated", "pass": False, "coefficient": float(coefficient),
                        "reference_coefficient": ref, "relative_error_pct": error},
         "physics": {"status": "withheld", "pass": False},
