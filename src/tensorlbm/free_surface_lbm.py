@@ -97,6 +97,13 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
         "mass_start": float(mass_start),
         "mass_end": float(mass_end),
         "mass_drift": float(mass_drift),
+        # Short aliases are intentionally stable campaign-facing budget names.
+        "drift": float(mass_drift),
+        "mass_after_exchange": float(mass_after_exchange),
+        "mass_after_redistribution": float(mass_after_redistribution),
+        "mass_after_clamp": float(mass_after_clamp),
+        "mass_after_conversion": float(mass_after_conversion),
+        "mass_after_isolation": float(mass_after_isolation),
         "mass_unit": "lattice liquid mass (sum of independent mass field)",
         "abb_population_delta": float(abb_population_delta),
         "abb_tracked_mass_source": 0.0,
@@ -112,7 +119,9 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
         "isolation": float(isolation),
         "boundary": float(boundary),
         "unexplained_residual": float(unexplained),
-        # Runtime fields are float32; a paired sum may retain reduction-order
+        "unexplained": float(unexplained),
+        "paired_residual": float(paired_net),
+        "paired": bool(paired_liquid_interface_debit),
         # roundoff even though every link has an equal/opposite counterpart.
         "closed_domain_conserved": abs(float(unexplained)) <= 1.0e-6,
         "diagnostic": (
@@ -121,6 +130,7 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
             else "tracked-mass ledger balances; not a physical/PV closure claim"
         ),
         "direct_liquid_gas_links": 0,
+        "directLG": 0,
     }
     steps.append(record)
     ledger.update(record)
