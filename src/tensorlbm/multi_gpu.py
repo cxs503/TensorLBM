@@ -43,6 +43,7 @@ simulations." *Comput. Phys. Commun.* 134(3).
 """
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import dataclass, field
 from typing import Callable
@@ -414,6 +415,74 @@ class D3Q19GlooTransport:
             raise ValueError("each rank must own at least one x cell")
         if f_owned.device.type != "cpu":
             raise ValueError("D3Q19GlooTransport is CPU-only")
+
+    @staticmethod
+    def _checkpoint_digest(f_owned: torch.Tensor, rank: int, world_size: int, step: int) -> str:
+        """Return a SHA-256 digest bound to the checkpoint identity and state."""
+        digest = hashlib.sha256()
+        digest.update(b"tensorlbm-d3q19-gloo-checkpoint-v1\0")
+        digest.update(f"{rank}:{world_size}:{step}:{tuple(f_owned.shape)}:{f_owned.dtype}".encode("ascii"))
+        digest.update(f_owned.detach().contiguous().numpy().tobytes())
+        return digest.hexdigest()
+
+    def save_checkpoint(self, checkpoint_dir: os.PathLike[str] | str, f_owned: torch.Tensor, *, step: int) -> None:
+        """Save verified rank-local owned state for a later same-world restart.
+
+        All ranks must call this with the same directory.  This is not a
+        crash-safe or concurrent checkpoint protocol.
+        """
+        self._check_owned(f_owned)
+        if not isinstance(step, int) or isinstance(step, bool) or step < 0:
+            raise ValueError("checkpoint step must be a non-negative integer")
+        checkpoint_dir = os.fspath(checkpoint_dir)
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        owned = f_owned.detach().contiguous().clone()
+        payload = {
+            "format": "tensorlbm.d3q19.gloo.rank-local.v1",
+            "rank": self.rank,
+            "world_size": self.world_size,
+            "step": step,
+            "owned": owned,
+            "digest": self._checkpoint_digest(owned, self.rank, self.world_size, step),
+        }
+        target = os.path.join(checkpoint_dir, f"rank-{self.rank}.pt")
+        temporary = target + ".tmp"
+        torch.save(payload, temporary)
+        os.replace(temporary, target)
+        dist.barrier()
+
+    def load_checkpoint(self, checkpoint_dir: os.PathLike[str] | str) -> tuple[torch.Tensor, int]:
+        """Load this rank's state, rejecting absence, identity errors, and tampering."""
+        target = os.path.join(os.fspath(checkpoint_dir), f"rank-{self.rank}.pt")
+        if not os.path.isfile(target):
+            raise RuntimeError(f"D3Q19 checkpoint missing rank-local file: {target}")
+        try:
+            payload = torch.load(target, map_location="cpu", weights_only=True)
+        except Exception as exc:
+            raise RuntimeError(f"D3Q19 checkpoint cannot be decoded: {target}") from exc
+        expected_keys = {"format", "rank", "world_size", "step", "owned", "digest"}
+        if not isinstance(payload, dict) or set(payload) != expected_keys:
+            raise RuntimeError("D3Q19 checkpoint has an invalid payload schema")
+        owned = payload["owned"]
+        if (
+            payload["format"] != "tensorlbm.d3q19.gloo.rank-local.v1"
+            or payload["rank"] != self.rank
+            or payload["world_size"] != self.world_size
+            or not isinstance(payload["step"], int)
+            or isinstance(payload["step"], bool)
+            or payload["step"] < 0
+            or not isinstance(payload["digest"], str)
+            or not isinstance(owned, torch.Tensor)
+        ):
+            raise RuntimeError("D3Q19 checkpoint identity or metadata validation failed")
+        try:
+            self._check_owned(owned)
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("D3Q19 checkpoint owned state validation failed") from exc
+        if self._checkpoint_digest(owned, self.rank, self.world_size, payload["step"]) != payload["digest"]:
+            raise RuntimeError("D3Q19 checkpoint digest validation failed")
+        dist.barrier()
+        return owned, payload["step"]
 
     def exchange_ghosts(self, f_owned: torch.Tensor) -> torch.Tensor:
         """Transport all populations' owned boundary planes and pad ghosts."""
