@@ -39,9 +39,13 @@ def test_actual_dynamic_geometry_multi_j_campaign_writes_windowed_samples(tmp_pa
         assert result["transient_discard_steps"] == 2
         assert result["window_report"]["discarded_transient_samples"] == 0
         assert result["window_report"]["convergence"]["available"] is True
-        assert result["control_volume_cross_check"]["method"] == "global_momentum_delta"
+        assert result["control_volume_cross_check"]["method"] == "discrete_full_control_volume_momentum_budget"
         assert result["control_volume_cross_check"]["available"] is True
+        assert result["control_volume_cross_check"]["status"] == "noncomparable"
+        assert result["control_volume_cross_check"]["me_vs_cv_comparison_status"] == "noncomparable"
         assert result["control_volume_cross_check"]["sample_count"] == 32
+        assert all(sample["open_faces_available"] is True for sample in result["samples"])
+        assert all("budget_residual_x" in sample for sample in result["samples"])
 
     run_dir = tmp_path / "propeller_owt" / "dynamic-multi-j"
     assert (run_dir / "run_metadata.json").is_file()

@@ -31,7 +31,7 @@ from .boundaries3d import (
     bounce_back_cells_3d,
     make_channel_wall_mask_3d,
 )
-from .d3q19 import W, equilibrium3d
+from .d3q19 import C, W, equilibrium3d
 from .obstacles import compute_obstacle_forces_3d, compute_obstacle_moments_3d
 from .propeller_cad import (
     KP505_PRESET,
@@ -288,25 +288,74 @@ def _summarize_windows(
     }
 
 
-def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]]) -> dict[str, object]:
-    """Compare wall-update global momentum change against raw ME wall load.
+def _d3q19_momentum_x(
+    distributions: torch.Tensor, region: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Return CV x momentum as ``Σ_i C[i, 0] f_i`` over all 19 directions."""
+    if distributions.shape[0] != 19:
+        raise ValueError("D3Q19 distributions must have 19 population directions")
+    cx = C[:, 0].to(device=distributions.device, dtype=distributions.dtype)
+    density = (cx.view(19, 1, 1, 1) * distributions).sum(dim=0)
+    return density.sum() if region is None else density[region].sum()
 
-    This is an in-run accounting diagnostic, not a closed-volume validation:
-    channel faces, collision, and moving-mask population reset are outside this
-    local wall-update comparison.
+
+def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]]) -> dict[str, object]:
+    """Summarize sampled discrete streamwise CV momentum terms.
+
+    CV contributions use positive-x as fluid momentum gained.  In contrast,
+    ``wall_me_load_x`` is a static momentum-exchange (ME) body load sampled
+    before ``moving_wall_bounce_back_3d``.  It is therefore operator- and
+    time-level-mismatched with the moving-wall CV term (which includes the
+    moving-wall correction).  The reported ME-vs-CV nonclosure is diagnostic
+    only: it is explicitly non-comparable, never a closure/pass assertion.
     """
     if not samples:
-        return {"available": False, "reason": "no_post_warmup_samples"}
-    delta = sum(float(sample["distribution_momentum_delta_x"]) for sample in samples) / len(samples)
-    wall_load = sum(float(sample["fx_me_lu"]) for sample in samples) / len(samples)
+        return {"available": False, "status": "withheld", "reason": "no_post_warmup_samples"}
+    if not all(bool(sample.get("open_faces_available", False)) for sample in samples):
+        return {
+            "available": False,
+            "status": "withheld",
+            "reason": "open_face_momentum_flux_unavailable",
+            "sample_count": len(samples),
+        }
+
+    def mean(name: str) -> float:
+        return sum(float(sample[name]) for sample in samples) / len(samples)
+
+    wall_cv = mean("wall_momentum_contribution_x")
+    wall_me = mean("wall_me_load_x")
     return {
         "available": True,
-        "method": "global_momentum_delta",
+        "status": "noncomparable",
+        "method": "discrete_full_control_volume_momentum_budget",
         "sample_count": len(samples),
-        "distribution_momentum_delta_x_mean": delta,
-        "me_force_x_mean": wall_load,
-        "residual_x_mean": delta + wall_load,
-        "interpretation": "wall-update-only; open-face/collision/reset terms are excluded",
+        "fluid_momentum_delta_x_mean": mean("fluid_momentum_delta_x"),
+        "collision_momentum_contribution_x_mean": mean("collision_momentum_contribution_x"),
+        "streaming_momentum_contribution_x_mean": mean("streaming_momentum_contribution_x"),
+        "open_face_momentum_flux_x_mean": mean("open_face_momentum_flux_x"),
+        "fixed_channel_wall_momentum_contribution_x_mean": mean("fixed_channel_wall_momentum_contribution_x"),
+        "moving_mask_reset_momentum_contribution_x_mean": mean("moving_mask_reset_momentum_contribution_x"),
+        "wall_momentum_contribution_x_mean": wall_cv,
+        "wall_me_load_x_mean": wall_me,
+        "budget_residual_x_mean": mean("budget_residual_x"),
+        "me_vs_cv_comparison_status": "noncomparable",
+        "me_vs_cv_comparison_reason": (
+            "wall_me_load_x is sampled before moving_wall_bounce_back_3d using "
+            "the static ME operator; wall_momentum_contribution_x is the later "
+            "moving-wall operator delta including its correction"
+        ),
+        "me_vs_cv_wall_nonclosure_x_mean": wall_cv + wall_me,
+        "me_vs_cv_wall_nonclosure_abs_x_mean": abs(wall_cv + wall_me),
+        # Normalize against the magnitude of the reported ME body load.  This
+        # is a size diagnostic only, not a criterion, because the operators
+        # above are deliberately marked non-comparable.
+        "me_vs_cv_wall_nonclosure_rel": abs(wall_cv + wall_me) / max(abs(wall_me), 1e-30),
+        "sign_convention": {
+            "positive_x": "positive streamwise (+x) momentum",
+            "cv_terms": "positive values add momentum to the fluid distributions in the CV",
+            "wall_me_load_x": "positive values are momentum-exchange force on the propeller body",
+            "residual": "fluid_delta - sum(all sampled CV contributions)",
+        },
     }
 
 
@@ -357,28 +406,52 @@ def _run_single_speed(
         )
         wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=device)
         ux_w, uy_w, uz_w = rotating_wall_velocity_3d(mask, cx, cy, cz, config.omega)
+        # Account for every operator in the actual order used by this campaign.
+        # Positive terms below mean +x momentum added to the fluid CV.
+        momentum_start = _d3q19_momentum_x(f)
         f = collide_smagorinsky_mrt3d(f, tau=config.tau, C_s=config.smagorinsky_cs)
+        momentum_after_collision = _d3q19_momentum_x(f)
         f = stream3d(f)
+        momentum_after_streaming = _d3q19_momentum_x(f)
         fx, _, _ = compute_obstacle_forces_3d(f, mask)
         mx, _, _ = compute_obstacle_moments_3d(f, mask, cx, cy, cz)
+
+        # The channel routine combines x-open-face reconstruction and the four
+        # fixed transverse bounce-back walls.  Sample the disjoint interior of
+        # the x faces; retain the complementary update as its own fixed-wall
+        # contribution, including edge/corner treatment.
+        f_before_boundary = f.clone()
+        open_face_mask = torch.zeros_like(mask)
+        open_face_mask[1:-1, 1:-1, 0] = True
+        open_face_mask[1:-1, 1:-1, -1] = True
         f = apply_zou_he_channel_boundaries_3d(
             f, u_in=u_in, wall_mask=wall_mask,
             obstacle_mask=torch.zeros_like(mask),
         )
-        momentum_before_wall = (f[1] - f[2]).sum()
-        f = moving_wall_bounce_back_3d(f, mask, ux_w, uy_w, uz_w)
-        momentum_after_wall = (f[1] - f[2]).sum()
+        momentum_after_boundary = _d3q19_momentum_x(f)
+        open_face_delta = (
+            _d3q19_momentum_x(f, open_face_mask)
+            - _d3q19_momentum_x(f_before_boundary, open_face_mask)
+        )
+        fixed_channel_wall_delta = (
+            momentum_after_boundary - momentum_after_streaming - open_face_delta
+        )
 
-        # Cells released by the moving solid receive a finite equilibrium state.
-        # This population reset is explicitly excluded from the wall-update CV
-        # comparison recorded below.
+        momentum_before_wall = momentum_after_boundary
+        f = moving_wall_bounce_back_3d(f, mask, ux_w, uy_w, uz_w)
+        momentum_after_wall = _d3q19_momentum_x(f)
+
+        # Cells released by the moving solid receive a finite equilibrium state;
+        # its momentum change is an explicit CV term, not an omitted remainder.
         released = previous_mask & ~mask
+        momentum_before_reset = momentum_after_wall
         if bool(released.any()):
             equilibrium = equilibrium3d(
                 torch.ones_like(rho0), torch.full_like(rho0, u_in),
                 torch.zeros_like(rho0), torch.zeros_like(rho0), device=device,
             )
             f[:, released] = equilibrium[:, released]
+        momentum_after_reset = _d3q19_momentum_x(f)
         previous_mask = mask
 
         if step > config.warmup_steps:
@@ -394,6 +467,13 @@ def _run_single_speed(
                 "fx_me_lu": fx_value,
                 "mx_me_lu": mx_value,
             })
+            collision_delta = momentum_after_collision - momentum_start
+            streaming_delta = momentum_after_streaming - momentum_after_collision
+            moving_wall_delta = momentum_after_wall - momentum_before_wall
+            reset_delta = momentum_after_reset - momentum_before_reset
+            fluid_delta = momentum_after_reset - momentum_start
+            budget_sum = collision_delta + streaming_delta + open_face_delta + fixed_channel_wall_delta + moving_wall_delta + reset_delta
+            budget_residual = fluid_delta - budget_sum
             campaign_samples.append({
                 "step": step,
                 "azimuth_deg": azimuth_deg,
@@ -402,7 +482,16 @@ def _run_single_speed(
                 "kq": kq_sample,
                 "fx_me_lu": fx_value,
                 "mx_me_lu": mx_value,
-                "distribution_momentum_delta_x": float((momentum_after_wall - momentum_before_wall).item()),
+                "fluid_momentum_delta_x": float(fluid_delta.item()),
+                "collision_momentum_contribution_x": float(collision_delta.item()),
+                "streaming_momentum_contribution_x": float(streaming_delta.item()),
+                "open_face_momentum_flux_x": float(open_face_delta.item()),
+                "fixed_channel_wall_momentum_contribution_x": float(fixed_channel_wall_delta.item()),
+                "moving_mask_reset_momentum_contribution_x": float(reset_delta.item()),
+                "wall_momentum_contribution_x": float(moving_wall_delta.item()),
+                "wall_me_load_x": fx_value,
+                "budget_residual_x": float(budget_residual.item()),
+                "open_faces_available": True,
             })
 
         if step % 2000 == 0 or step == n_total:
