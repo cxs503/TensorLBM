@@ -5,7 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from tensorlbm.propeller_benchmark import PropellerBenchmarkConfig, run_propeller_benchmark
+from tensorlbm.propeller_benchmark import (
+    PropellerBenchmarkConfig,
+    run_propeller_benchmark,
+    run_propeller_resolution_sensitivity,
+)
 from tensorlbm.propeller_cad import PropellerGeometryConfig
 
 
@@ -75,3 +79,105 @@ def test_actual_dynamic_geometry_multi_j_campaign_writes_windowed_samples(tmp_pa
     run_dir = tmp_path / "propeller_owt" / "dynamic-multi-j"
     assert (run_dir / "run_metadata.json").is_file()
     assert (run_dir / "open_water.csv").is_file()
+
+
+def test_actual_two_level_low_mach_re_matched_resolution_campaign(tmp_path: Path) -> None:
+    """CPU campaign: only resolution changes; two full-revolution windows per level."""
+    coarse = PropellerBenchmarkConfig(
+        geometry=PropellerGeometryConfig(n_blades=3, diameter=0.1),
+        inflow_velocities=(0.0005,), rpm=0.005,
+        nx=40, ny=20, nz=20, tau=0.8, warmup_steps=0, sampling_steps=None,
+        n_revolutions=2, sample_window_steps=200, device="cpu", output_root=tmp_path,
+        run_name="sensitivity-coarse",
+    )
+    # This is a distinct computational level (larger domain) while retaining
+    # the exact moving-boundary history: D, rpm, nu, steps/rev and each window
+    # are identical. Thus J, Re_D, tip Ma and angular sampling all match.
+    fine = PropellerBenchmarkConfig(
+        geometry=PropellerGeometryConfig(n_blades=3, diameter=0.1),
+        inflow_velocities=(0.0005,), rpm=0.005,
+        nx=48, ny=24, nz=24, tau=0.8, warmup_steps=0, sampling_steps=None,
+        n_revolutions=2, sample_window_steps=200, device="cpu", output_root=tmp_path,
+        run_name="sensitivity-fine",
+    )
+
+    evidence = run_propeller_resolution_sensitivity((coarse, fine), level_names=("coarse", "fine"))
+
+    assert evidence["status"] == "not_converged"  # do not relax the window criterion
+    basis = evidence["comparison_basis"]
+    assert basis["low_mach_matched"] is True
+    assert basis["advance_ratios_matched"] is True
+    assert basis["re_d_matched"] is True
+    assert basis["temporal_angular_contract"]["levels"][0]["complete_windows"] == 2
+    assert basis["temporal_angular_contract"]["levels"][1]["complete_windows"] == 2
+    assert [level["steps_per_revolution"] for level in basis["temporal_angular_contract"]["levels"]] == [200, 200]
+    assert [level["angular_increment_degrees"] for level in basis["temporal_angular_contract"]["levels"]] == [1.8, 1.8]
+    assert len(evidence["levels"]) == 2
+    assert len(evidence["changes_from_baseline"]) == 1
+    for level in evidence["levels"]:
+        assert level["n_j_cases"] == 1
+        assert level["per_j_window_status"][0]["complete_window_count"] == 2
+        assert level["per_j_window_status"][0]["convergence"]["window_converged"] is False
+
+
+def test_resolution_sensitivity_rejects_mixed_re_time_and_low_mach_contracts(tmp_path: Path) -> None:
+    base = PropellerBenchmarkConfig(
+        geometry=PropellerGeometryConfig(n_blades=3, diameter=0.1),
+        inflow_velocities=(0.0005,), rpm=0.005, nx=40, ny=20, nz=20,
+        tau=0.8, warmup_steps=0, sampling_steps=None, n_revolutions=2,
+        sample_window_steps=200, device="cpu", output_root=tmp_path,
+    )
+    cases = (
+        ("matched Re_D", PropellerBenchmarkConfig(**{**base.__dict__, "tau": 0.81})),
+        # This was the formerly accepted candidate: J, Re_D, and tip Ma all
+        # match, but 200 versus 240 rotor updates/revolution means 1.8 versus
+        # 1.5 degrees/update. It must fail before a campaign starts.
+        ("steps_per_revolution", PropellerBenchmarkConfig(
+            **{**base.__dict__, "geometry": PropellerGeometryConfig(n_blades=3, diameter=0.12),
+               "rpm": 1.0 / 240.0, "tau": 0.86, "sample_window_steps": 240}
+        )),
+        ("complete revolutions", PropellerBenchmarkConfig(**{**base.__dict__, "n_revolutions": 3})),
+        # Every window is a whole rotation, but 600 sampling updates produce
+        # only 1.5 windows of 400 updates; the trailing rotation cannot vanish.
+        ("total sampling steps", PropellerBenchmarkConfig(
+            **{**base.__dict__, "n_revolutions": 3, "sample_window_steps": 400}
+        )),
+        ("low-Mach gate", PropellerBenchmarkConfig(**{**base.__dict__, "rpm": 0.01, "inflow_velocities": (0.001,), "tau": 1.1, "sample_window_steps": 100})),
+    )
+    for message, invalid in cases:
+        with pytest.raises(ValueError, match=message):
+            run_propeller_resolution_sensitivity((base, invalid))
+
+
+def test_resolution_sensitivity_rejects_rounded_rpm_angular_claim_before_run(tmp_path: Path) -> None:
+    """The actual solver phase is step * 360*rpm, not 360/round(1/rpm)."""
+    base = PropellerBenchmarkConfig(
+        geometry=PropellerGeometryConfig(n_blades=3, diameter=0.1),
+        inflow_velocities=(0.0005,), rpm=0.005, nx=40, ny=20, nz=20,
+        tau=0.8, warmup_steps=0, sampling_steps=None, n_revolutions=2,
+        sample_window_steps=200, device="cpu", output_root=tmp_path,
+    )
+    rounded_candidate = PropellerBenchmarkConfig(
+        **{**base.__dict__, "rpm": 1.0 / 200.4}
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"actual angular increment .* disagrees with claimed",
+    ):
+        run_propeller_resolution_sensitivity((base, rounded_candidate))
+
+
+def test_resolution_sensitivity_requires_whole_rotation_windows(tmp_path: Path) -> None:
+    base = PropellerBenchmarkConfig(
+        geometry=PropellerGeometryConfig(n_blades=3, diameter=0.1),
+        inflow_velocities=(0.0005,), rpm=0.005, nx=40, ny=20, nz=20,
+        tau=0.8, warmup_steps=0, sampling_steps=None, n_revolutions=2,
+        sample_window_steps=200, device="cpu", output_root=tmp_path,
+    )
+    partial_window = PropellerBenchmarkConfig(
+        **{**base.__dict__, "sample_window_steps": 100}
+    )
+
+    with pytest.raises(ValueError, match="sample_window_steps.*exact whole number of rotations"):
+        run_propeller_resolution_sensitivity((base, partial_window))

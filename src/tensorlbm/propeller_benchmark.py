@@ -48,6 +48,12 @@ from .utils import (
 )
 
 
+# The moving-wall implementation is qualified only below this value.  Equal
+# Mach numbers above it are not low-Mach comparison evidence.
+LOW_MACH_TIP_GATE = 0.004
+_SENSITIVITY_MATCH_TOL = 1.0e-12
+
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -115,6 +121,29 @@ class PropellerBenchmarkConfig:
     @property
     def omega(self) -> float:
         return 2.0 * math.pi * self.rpm
+
+    @property
+    def steps_per_revolution(self) -> int:
+        """Nearest integer update count; exactness is checked for sensitivity.
+
+        The solver advances azimuth by ``2*pi*rpm`` per update. Consequently,
+        this rounded diagnostic describes a full revolution only when ``rpm``
+        is exactly its reciprocal; the sensitivity contract verifies that.
+        """
+        return max(1, round(1.0 / max(self.rpm, 1e-10)))
+
+    @property
+    def angular_increment_degrees(self) -> float:
+        """Physical azimuth increment actually used by each solver update."""
+        return 360.0 * self.rpm
+
+    @property
+    def tip_ma(self) -> float:
+        return self.omega * self.geometry.radius / 0.577
+
+    @property
+    def re_d(self) -> float:
+        return self.rpm * self.geometry.diameter**2 / self.nu
 
     @property
     def resolved_run_name(self) -> str:
@@ -489,6 +518,236 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
     }
 
 
+def _max_sample_field(
+    results: list[dict[str, object]], field: str,
+) -> float:
+    """Return a finite maximum across actual post-warmup campaign samples."""
+    values = [
+        abs(float(sample[field]))
+        for result in results
+        for sample in result["samples"]  # type: ignore[index]
+    ]
+    return max(values) if values else float("nan")
+
+
+def _resolution_level_summary(name: str, summary: dict[str, object]) -> dict[str, object]:
+    """Keep repeatability evidence tied to actual executed per-J samples."""
+    results = summary["results"]
+    assert isinstance(results, list)
+    campaign = summary["campaign"]
+    assert isinstance(campaign, dict)
+    config = summary["config"]
+    assert isinstance(config, dict)
+    return {
+        "name": name,
+        "n_j_cases": campaign["n_j_cases"],
+        "campaign_status": campaign["status"],
+        "per_j_window_status": campaign["per_j_window_status"],
+        "tip_ma": config["tip_ma"],
+        "re_d": config["re_d"],
+        "temporal_angular_resolution": config["temporal_angular_resolution"],
+        "resolution": {
+            "diameter_lu": config["diameter_lu"],
+            "nx": config["nx"], "ny": config["ny"], "nz": config["nz"],
+        },
+        "action_reaction_residual": {
+            "force_absolute_max": _max_sample_field(
+                results, "wall_action_reaction_absolute_residual_norm",
+            ),
+            "torque_absolute_max": _max_sample_field(
+                results, "wall_torque_action_reaction_absolute_residual_norm",
+            ),
+            "force_relative_max": _max_sample_field(
+                results, "wall_action_reaction_relative_residual",
+            ),
+            "torque_relative_max": _max_sample_field(
+                results, "wall_torque_action_reaction_relative_residual",
+            ),
+        },
+    }
+
+
+def _require_resolution_sensitivity_contract(
+    configs: tuple[PropellerBenchmarkConfig, ...],
+) -> dict[str, object]:
+    """Reject non-grid changes before executing an expensive comparison."""
+    def exact_steps_per_revolution(config: PropellerBenchmarkConfig) -> int:
+        """Return a true integer period, never a rounded angular surrogate."""
+        steps = config.steps_per_revolution
+        actual_increment = config.angular_increment_degrees
+        claimed_increment = 360.0 / steps
+        if not math.isclose(
+            config.rpm, 1.0 / steps,
+            rel_tol=_SENSITIVITY_MATCH_TOL, abs_tol=_SENSITIVITY_MATCH_TOL,
+        ):
+            raise ValueError(
+                "resolution sensitivity rpm must be the reciprocal of an integer "
+                "steps_per_revolution: actual angular increment "
+                f"{actual_increment:.17g} deg/update disagrees with claimed "
+                f"{claimed_increment:.17g} deg/update (rpm={config.rpm:.17g}, "
+                f"nearest steps_per_revolution={steps})"
+            )
+        return steps
+
+    def require_complete_rotation_schedule(
+        config: PropellerBenchmarkConfig, steps: int,
+    ) -> None:
+        if config.sampling_steps is not None:
+            raise ValueError("resolution sensitivity requires sampling_steps=None; derive samples from complete revolutions")
+        # This campaign policy uses whole rotations for each temporal interval.
+        if config.sample_window_steps % steps:
+            raise ValueError(
+                "resolution sensitivity requires sample_window_steps to contain "
+                "an exact whole number of rotations"
+            )
+        if config.warmup_steps % steps:
+            raise ValueError(
+                "resolution sensitivity requires warmup_steps to contain an "
+                "exact whole number of rotations"
+            )
+        total_sampling_steps = config.n_revolutions * steps
+        if total_sampling_steps % config.sample_window_steps:
+            raise ValueError(
+                "resolution sensitivity requires total sampling steps "
+                "(n_revolutions * steps_per_revolution) to divide exactly "
+                "into complete sample windows"
+            )
+
+    baseline = configs[0]
+    baseline.validate()
+    baseline_steps = exact_steps_per_revolution(baseline)
+    require_complete_rotation_schedule(baseline, baseline_steps)
+    base_j = tuple(v / (baseline.rpm * baseline.geometry.diameter) for v in baseline.inflow_velocities)
+    base_window_revs = baseline.sample_window_steps / baseline_steps
+    base_warmup_revs = baseline.warmup_steps / baseline_steps
+    levels: list[dict[str, object]] = []
+    for index, config in enumerate(configs):
+        config.validate()
+        steps = exact_steps_per_revolution(config)
+        require_complete_rotation_schedule(config, steps)
+        j_values = tuple(v / (config.rpm * config.geometry.diameter) for v in config.inflow_velocities)
+        same = lambda a, b: math.isclose(a, b, rel_tol=_SENSITIVITY_MATCH_TOL, abs_tol=_SENSITIVITY_MATCH_TOL)
+        if len(j_values) != len(base_j) or not all(same(a, b) for a, b in zip(j_values, base_j)):
+            raise ValueError("resolution sensitivity requires matched advance ratios J")
+        if not same(config.re_d, baseline.re_d):
+            raise ValueError("resolution sensitivity requires matched Re_D; adjust nu/tau safely before comparing grids")
+        if config.tip_ma > LOW_MACH_TIP_GATE:
+            raise ValueError(f"resolution sensitivity withheld: tip Mach exceeds low-Mach gate {LOW_MACH_TIP_GATE}")
+        if not same(config.tip_ma, baseline.tip_ma):
+            raise ValueError("resolution sensitivity requires matched tip Mach")
+        # The moving geometry advances once per lattice update.  Dimensionless
+        # flow matches alone cannot make two different rotor update histories
+        # comparable, so enforce both explicit angular/temporal invariants.
+        if steps != baseline_steps:
+            raise ValueError(
+                "resolution sensitivity requires matched steps_per_revolution "
+                "and angular_increment_degrees"
+            )
+        angular_increment = config.angular_increment_degrees
+        baseline_angular_increment = baseline.angular_increment_degrees
+        if not same(angular_increment, baseline_angular_increment):
+            raise ValueError(
+                "resolution sensitivity requires matched angular_increment_degrees"
+            )
+        if config.n_revolutions != baseline.n_revolutions:
+            raise ValueError("resolution sensitivity requires the same sampled number of complete revolutions")
+        window_revs = config.sample_window_steps / steps
+        warmup_revs = config.warmup_steps / steps
+        if not same(window_revs, base_window_revs):
+            raise ValueError("resolution sensitivity requires matched complete-window duration in revolutions")
+        if not same(warmup_revs, base_warmup_revs):
+            raise ValueError("resolution sensitivity requires matched warmup duration in revolutions")
+        levels.append({
+            "level_index": index, "advance_ratios": list(j_values), "tip_ma": config.tip_ma,
+            "re_d": config.re_d, "steps_per_revolution": steps,
+            "angular_increment_degrees": config.angular_increment_degrees,
+            "sampled_revolutions": config.n_revolutions, "warmup_revolutions": warmup_revs,
+            "window_revolutions": window_revs,
+            "complete_windows": config.n_revolutions / window_revs,
+        })
+    return {"low_mach_gate": LOW_MACH_TIP_GATE, "levels": levels}
+
+
+def run_propeller_resolution_sensitivity(
+    configs: tuple[PropellerBenchmarkConfig, ...], *, level_names: tuple[str, ...] | None = None,
+) -> dict[str, object]:
+    """Execute a multi-resolution, multi-J repeatability campaign.
+
+    Each level is independently run by :func:`run_propeller_benchmark`; no
+    coefficient is interpolated or synthesized. The evidence reports final-
+    window status and same-operator force/torque action-reaction residuals for
+    every level, plus changes at matching J relative to the first level.
+    """
+    if len(configs) < 2:
+        raise ValueError("resolution sensitivity requires at least two levels")
+    if level_names is None:
+        level_names = tuple(f"level_{index}" for index in range(len(configs)))
+    if len(level_names) != len(configs) or len(set(level_names)) != len(level_names):
+        raise ValueError("level_names must be unique and match configs")
+    contract = _require_resolution_sensitivity_contract(configs)
+
+    summaries = [run_propeller_benchmark(config) for config in configs]
+    levels = [
+        _resolution_level_summary(name, summary)
+        for name, summary in zip(level_names, summaries)
+    ]
+    baseline_results = summaries[0]["results"]
+    assert isinstance(baseline_results, list)
+    changes_from_baseline: list[dict[str, object]] = []
+    matched_j = True
+    for level_name, summary in zip(level_names[1:], summaries[1:]):
+        results = summary["results"]
+        assert isinstance(results, list)
+        if len(results) != len(baseline_results):
+            matched_j = False
+            continue
+        for baseline, current in zip(baseline_results, results):
+            baseline_j = float(baseline["j_actual"])
+            current_j = float(current["j_actual"])
+            if not math.isclose(current_j, baseline_j, rel_tol=1e-12, abs_tol=1e-12):
+                matched_j = False
+                continue
+            changes_from_baseline.append({
+                "level": level_name,
+                "j_actual": current_j,
+                "kt_relative_change": _relative_change(float(baseline["kt"]), float(current["kt"])),
+                "kq_relative_change": _relative_change(float(baseline["kq"]), float(current["kq"])),
+                "eta_o_relative_change": _relative_change(float(baseline["eta_o"]), float(current["eta_o"])),
+            })
+    tip_machs = [float(level["tip_ma"]) for level in levels]
+    low_mach_matched = all(tip_ma <= LOW_MACH_TIP_GATE for tip_ma in tip_machs) and all(
+        math.isclose(tip_ma, tip_machs[0], rel_tol=1e-12, abs_tol=1e-12)
+        for tip_ma in tip_machs[1:]
+    )
+    all_window_converged = all(
+        bool(status["convergence"].get("window_converged", False))
+        for level in levels
+        for status in level["per_j_window_status"]  # type: ignore[index]
+    )
+    evidence = {
+        "name": "propeller_open_water_resolution_sensitivity",
+        "status": "converged" if all_window_converged else "not_converged",
+        "comparison_basis": {
+            "baseline_level": level_names[0],
+            "advance_ratios_matched": matched_j,
+            "low_mach_matched": low_mach_matched,
+            "low_mach_gate": LOW_MACH_TIP_GATE,
+            "tip_ma_by_level": dict(zip(level_names, tip_machs)),
+            "re_d_matched": True,
+            "temporal_angular_contract": contract,
+            "coefficient_change_definition": "abs(current - baseline) / max(abs(current), 1e-30)",
+        },
+        "levels": levels,
+        "changes_from_baseline": changes_from_baseline,
+    }
+    output_root = configs[0].output_root
+    evidence_path = output_root / "propeller_owt" / "resolution_sensitivity.json"
+    evidence["artifact"] = str(evidence_path)
+    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    evidence_path.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+    return evidence
+
+
 # ============================================================================
 # Single-speed simulation
 # ============================================================================
@@ -518,7 +777,7 @@ def _run_single_speed(
     ux0[previous_mask] = 0.0
     f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=device)
 
-    steps_per_rev = max(1, int(1.0 / max(config.rpm, 1e-10)))
+    steps_per_rev = config.steps_per_revolution
     n_sampling = config.sampling_steps if config.sampling_steps is not None else config.n_revolutions * steps_per_rev
     n_total = config.warmup_steps + n_sampling
 
@@ -700,7 +959,7 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
     torch.manual_seed(config.seed)
     device = resolve_device(config.device)
 
-    tip_ma = config.omega * config.geometry.radius / 0.577
+    tip_ma = config.tip_ma
     print(f"Propeller Open-Water Benchmark (fixed-RPM variable-inflow)")
     print(f"  Device:     {device}     Blades: {config.geometry.n_blades}")
     print(f"  Diameter:   {config.geometry.diameter} lu   "
@@ -782,7 +1041,23 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
             "nx": config.nx, "ny": config.ny, "nz": config.nz,
             "tau": config.tau, "cs": config.smagorinsky_cs,
             "rpm": config.rpm, "nu_lattice": config.nu,
+            "re_d": config.re_d,
             "n_revolutions": config.n_revolutions,
+            "temporal_angular_resolution": {
+                "steps_per_revolution": config.steps_per_revolution,
+                "angular_increment_degrees": config.angular_increment_degrees,
+                "sampling_steps_requested": config.sampling_steps,
+                "sampling_steps_executed": (
+                    config.sampling_steps if config.sampling_steps is not None
+                    else config.n_revolutions * config.steps_per_revolution
+                ),
+                "sampled_revolutions_executed": (
+                    (config.sampling_steps * config.rpm)
+                    if config.sampling_steps is not None else float(config.n_revolutions)
+                ),
+                "warmup_revolutions": config.warmup_steps * config.rpm,
+                "window_revolutions": config.sample_window_steps * config.rpm,
+            },
             "sample_window_steps": config.sample_window_steps,
             "window_convergence_rel_tol": config.window_convergence_rel_tol,
             "model_diameter_m": config.model_diameter_m,
@@ -835,5 +1110,6 @@ __all__ = [
     "rotating_wall_velocity_3d",
     "moving_wall_bounce_back_3d",
     "moving_wall_bounce_back_3d_with_reaction",
+    "run_propeller_resolution_sensitivity",
     "run_propeller_benchmark",
 ]
