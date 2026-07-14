@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import hashlib
 import json
+import argparse
 from dataclasses import dataclass, field
 
 import torch
@@ -580,7 +581,10 @@ def run_suboff_resistance_benchmark(
             }
         )
         prev_cd = cd_sim
-        if error_pct is not None and error_pct <= config.target_error_pct:
+        # A spatial convergence assertion needs three independently executed
+        # grids: coarse/fine differences alone have no observed order or trend.
+        if (k >= 3 and error_pct is not None
+                and error_pct <= config.target_error_pct):
             break
 
     return {
@@ -710,19 +714,37 @@ def run_suboff_resistance_runtime(
                      and runtime_evidence.get("all_populations_finite") is True
                      and runtime_evidence.get("all_densities_finite") is True
                      and float(density_min) > 0.0 and float(density_min) <= float(density_max))
-    coefficient_change_pct: float | None = None
-    if len(refinement_levels) >= 2:
-        coarse = refinement_levels[-2].get("coefficient")
-        fine = refinement_levels[-1].get("coefficient")
-        if (isinstance(coarse, (int, float)) and not isinstance(coarse, bool)
-                and isinstance(fine, (int, float)) and not isinstance(fine, bool)
-                and math.isfinite(float(coarse)) and math.isfinite(float(fine))):
-            coefficient_change_pct = abs(float(fine) - float(coarse)) / max(abs(float(fine)), 1.0e-30) * 100.0
+    coefficient_changes_pct: list[float] = []
+    coefficients: list[float] = []
+    for level in refinement_levels:
+        value = level.get("coefficient")
+        if (isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(float(value))):
+            coefficients.append(float(value))
+        else:
+            coefficients = []
+            break
+    if len(coefficients) == len(refinement_levels):
+        for coarse, fine in zip(coefficients, coefficients[1:]):
+            coefficient_changes_pct.append(
+                abs(fine - coarse) / max(abs(fine), 1.0e-30) * 100.0
+            )
+    coefficient_change_pct = coefficient_changes_pct[-1] if coefficient_changes_pct else None
+    observed_order: float | None = None
+    if len(coefficients) >= 3:
+        coarse_delta = abs(coefficients[-2] - coefficients[-3])
+        fine_delta = abs(coefficients[-1] - coefficients[-2])
+        if coarse_delta > 0.0 and fine_delta > 0.0:
+            observed_order = math.log(coarse_delta / fine_delta) / math.log(2.0)
+    monotonic: bool | None = None
+    if len(coefficients) >= 3:
+        deltas = [right - left for left, right in zip(coefficients, coefficients[1:])]
+        monotonic = all(delta >= 0.0 for delta in deltas) or all(delta <= 0.0 for delta in deltas)
     levels_complete_finite = all(
         level["completion"]["pass"] is True and level["finite"]["pass"] is True
         for level in refinement_levels
     )
-    convergence_pass = (len(refinement_levels) >= 2 and levels_complete_finite
+    convergence_pass = (len(refinement_levels) >= 3 and levels_complete_finite
                         and coefficient_change_pct is not None and math.isfinite(coefficient_change_pct)
                         and coefficient_change_pct <= config.numerics_max_coefficient_change_pct)
     numerics_pass = final_level_numerics_pass and convergence_pass
@@ -761,6 +783,24 @@ def run_suboff_resistance_runtime(
         and float(max_relative_mass_drift) <= config.conservation_max_relative_mass_drift
         and float(max_relative_momentum_drift) <= config.conservation_max_relative_momentum_drift
     )
+    mass_pass = (conservation_is_numeric
+                 and float(max_relative_mass_drift) <= config.conservation_max_relative_mass_drift)
+    momentum_pass = (conservation_is_numeric
+                     and float(max_relative_momentum_drift) <= config.conservation_max_relative_momentum_drift)
+    mass_normalized = (float(max_relative_mass_drift) / max(config.conservation_max_relative_mass_drift, 1.0e-30)
+                       if conservation_is_numeric else None)
+    momentum_normalized = (float(max_relative_momentum_drift) / max(config.conservation_max_relative_momentum_drift, 1.0e-30)
+                           if conservation_is_numeric else None)
+    if mass_normalized is None or momentum_normalized is None:
+        dominant_channel, attribution_reason = "withheld", "non_finite_conservation_observation"
+    elif math.isclose(mass_normalized, momentum_normalized, rel_tol=1.0e-12, abs_tol=0.0):
+        dominant_channel, attribution_reason = "balanced", "equal_normalized_bound_utilization"
+    elif mass_normalized > momentum_normalized:
+        dominant_channel = "mass"
+        attribution_reason = "mass_bound_exceeded" if not mass_pass else "mass_is_larger_normalized_drift"
+    else:
+        dominant_channel = "momentum"
+        attribution_reason = "momentum_bound_exceeded" if not momentum_pass else "momentum_is_larger_normalized_drift"
     return {
         "schema": "suboff-resistance-runtime-observation-v1",
         "case": "suboff_runtime",
@@ -784,13 +824,17 @@ def run_suboff_resistance_runtime(
                      "all_populations_finite": runtime_evidence["all_populations_finite"],
                      "all_densities_finite": runtime_evidence["all_densities_finite"],
                      "density_min": float(density_min), "density_max": float(density_max),
-                     "refinement_kind": "grid", "required_levels": 2,
+                     "refinement_kind": "grid", "required_levels": 3,
                      "refinement_levels": refinement_levels,
                      "coefficient_change_pct": coefficient_change_pct,
+                     "coefficient_changes_pct": coefficient_changes_pct,
+                     "observed_order": observed_order,
+                     "monotonicity": {"status": "measured", "pass": monotonic,
+                                      "coefficient_sequence": coefficients},
                      "convergence": {
-                         "pass": convergence_pass,
-                         "criterion": "two_or_more_complete_finite_grid_levels_and_coefficient_change_pct_at_or_below_limit",
-                         "coefficient_change_pct_limit": config.numerics_max_coefficient_change_pct,
+                        "pass": convergence_pass,
+                        "criterion": "three_or_more_complete_finite_grid_levels_and_final_coefficient_change_pct_at_or_below_limit",
+                        "coefficient_change_pct_limit": config.numerics_max_coefficient_change_pct,
                          "observed_levels": len(refinement_levels),
                          "levels_complete_finite": levels_complete_finite,
                      }},
@@ -809,7 +853,42 @@ def run_suboff_resistance_runtime(
             "sampled_step_count": sampled_step_count,
             "max_relative_mass_drift_limit": config.conservation_max_relative_mass_drift,
             "max_relative_momentum_drift_limit": config.conservation_max_relative_momentum_drift,
+            "source_attribution": {
+                "status": "measured" if conservation_is_numeric else "withheld",
+                "dominant_channel": dominant_channel,
+                "reason": attribution_reason,
+                "mass": {"max_relative_drift": float(max_relative_mass_drift) if conservation_is_numeric else None,
+                         "limit": config.conservation_max_relative_mass_drift, "pass": mass_pass,
+                         "normalized_bound_utilization": mass_normalized},
+                "momentum": {"max_relative_drift": float(max_relative_momentum_drift) if conservation_is_numeric else None,
+                             "limit": config.conservation_max_relative_momentum_drift, "pass": momentum_pass,
+                             "normalized_bound_utilization": momentum_normalized},
+            },
         },
         "physics": {"status": "withheld", "pass": False,
                     "reason": "no_independent_physics_validation"},
     }
+
+
+def main() -> int:
+    """Run a small, real three-grid SUBOFF diagnostic and print its evidence."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--base-length-lu", type=float, default=20.0)
+    parser.add_argument("--max-length-lu", type=float, default=80.0)
+    parser.add_argument("--steps", type=int, default=10)
+    parser.add_argument("--warmup-steps", type=int, default=0)
+    parser.add_argument("--sample-interval", type=int, default=2)
+    parser.add_argument("--device", default="cpu")
+    args = parser.parse_args()
+    config = SuboffResistanceBenchmarkConfig(
+        base_length_lu=args.base_length_lu, max_length_lu=args.max_length_lu,
+        max_iterations=3, lbm_steps=args.steps, lbm_warmup_steps=args.warmup_steps,
+        lbm_sample_interval=args.sample_interval, device=args.device,
+    )
+    print(json.dumps(run_suboff_resistance_runtime(config), indent=2, sort_keys=True,
+                     allow_nan=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
