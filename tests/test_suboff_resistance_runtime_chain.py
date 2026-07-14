@@ -33,13 +33,33 @@ def test_real_runner_measures_hash_bound_mass_conservation_and_does_not_promote_
     assert conservation["max_relative_mass_drift_limit"] == pytest.approx(1.0e-12)
     assert observation["physics"]["pass"] is False
 
-    provenance = build_marine_run_provenance(observation, runner=observation["runner"])
-    reference = build_marine_reference_manifest(case="suboff_runtime", coefficient=0.004, source="test reference")
-    artifact = build_marine_resistance_artifact(observation, provenance, reference)
-    evidence = cast(dict[str, Any], artifact["evidence"])
-    binding = cast(dict[str, Any], artifact["binding"])
-    assert evidence["observation"]["conservation"] == conservation
-    assert binding["observation_sha256"]
+
+def test_real_runner_records_two_hash_bound_grid_levels_and_fail_closed_convergence():
+    config = suboff.SuboffResistanceBenchmarkConfig(
+        base_length_lu=20.0, max_length_lu=40.0, max_iterations=2,
+        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
+        target_error_pct=0.01,
+    )
+
+    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(config))
+
+    numerics = cast(dict[str, Any], observation["numerics"])
+    levels = cast(list[dict[str, Any]], numerics["refinement_levels"])
+    assert numerics["status"] == "measured"
+    assert numerics["refinement_kind"] == "grid"
+    assert numerics["required_levels"] == 2
+    assert len(levels) == 2
+    assert levels[0]["grid"] != levels[1]["grid"]
+    assert all(level["evidence_sha256"] for level in levels)
+    assert all(level["completion"]["completed_steps"] == 10 for level in levels)
+    assert all(level["finite"]["pass"] is True for level in levels)
+    assert isinstance(numerics["coefficient_change_pct"], float)
+    # Completion/finite checks and the measured change determine convergence;
+    # the campaign remains overall false because conservation is independently
+    # measured and fails its configured bound.
+    assert numerics["convergence"]["pass"] is True
+    assert numerics["pass"] is True
+    assert observation["conservation"]["pass"] is False
 
 
 def test_real_runner_observation_binds_to_withheld_canonical_artifact(monkeypatch):
@@ -72,7 +92,9 @@ def test_real_runner_observation_binds_to_withheld_canonical_artifact(monkeypatc
     assert artifact["preflight"]["checks"]["config"]["pass"] is True
     assert artifact["preflight"]["checks"]["domain"]["pass"] is True
     assert artifact["preflight"]["checks"]["mach"]["pass"] is True
-    assert artifact["numerics"]["pass"] is True
+    # A one-level mocked runner lacks refinement evidence and therefore cannot
+    # be upgraded to a numerical PASS.
+    assert artifact["numerics"]["pass"] is False
     assert artifact["numerics"]["finite_population_checks"] == 10
     assert artifact["numerics"]["finite_density_checks"] == 10
     assert artifact["conservation"]["pass"] is False
@@ -119,5 +141,5 @@ def test_gate_cli_reports_withheld_evidence_as_failure(tmp_path, monkeypatch):
     assert report["pass"] is False
     assert report["cases"][0]["completion"]["pass"] is True
     assert report["cases"][0]["preflight"]["pass"] is True
-    assert report["cases"][0]["numerics"]["pass"] is True
+    assert report["cases"][0]["numerics"]["pass"] is False
     assert report["cases"][0]["physics"]["pass"] is False

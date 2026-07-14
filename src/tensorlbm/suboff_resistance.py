@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import math
+import hashlib
+import json
 from dataclasses import dataclass, field
 
 import torch
@@ -35,6 +37,7 @@ class SuboffResistanceBenchmarkConfig:
     base_length_lu: float = 48.0
     max_iterations: int = 3
     target_error_pct: float = 3.0
+    numerics_max_coefficient_change_pct: float = 3.0
     device: str = "cpu"
     lbm_u_in: float = 0.06
     lbm_tau: float = 0.58
@@ -78,6 +81,9 @@ class SuboffResistanceBenchmarkConfig:
             raise ValueError("max_iterations must be >= 1")
         if self.target_error_pct <= 0.0:
             raise ValueError("target_error_pct must be > 0")
+        if (not math.isfinite(self.numerics_max_coefficient_change_pct)
+                or self.numerics_max_coefficient_change_pct <= 0.0):
+            raise ValueError("numerics_max_coefficient_change_pct must be finite and > 0")
         if not (0.0 < self.lbm_u_in < 0.15):
             raise ValueError("lbm_u_in must be in (0, 0.15)")
         if self.lbm_tau <= 0.5:
@@ -615,6 +621,44 @@ def run_suboff_resistance_benchmark(
     }
 
 
+def _refinement_level_observation(iteration: dict[str, object], index: int) -> dict[str, object]:
+    """Canonical per-level solver evidence, suitable for hash binding."""
+    runtime = iteration.get("runtime_evidence")
+    grid = iteration.get("grid")
+    if not isinstance(runtime, dict) or not isinstance(grid, dict):
+        raise RuntimeError("SUBOFF refinement level has no runtime/grid evidence")
+    required = ("requested_steps", "completed_steps", "finite_population_checks",
+                "finite_density_checks", "density_min", "density_max")
+    values = {name: runtime.get(name) for name in required}
+    numeric = all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                  and math.isfinite(float(value)) for value in values.values())
+    finite_pass = (numeric
+                   and values["completed_steps"] == values["requested_steps"]
+                   and values["finite_population_checks"] == values["completed_steps"]
+                   and values["finite_density_checks"] == values["completed_steps"]
+                   and runtime.get("all_populations_finite") is True
+                   and runtime.get("all_densities_finite") is True
+                   and float(values["density_min"]) > 0.0
+                   and float(values["density_min"]) <= float(values["density_max"]))
+    coefficient = iteration.get("cd")
+    record: dict[str, object] = {
+        "level": index + 1,
+        "grid": dict(grid),
+        "cell_size_m": iteration.get("cell_size_m"),
+        "coefficient": coefficient,
+        "completion": {"requested_steps": values["requested_steps"],
+                       "completed_steps": values["completed_steps"],
+                       "pass": numeric and values["completed_steps"] == values["requested_steps"]},
+        "finite": {"pass": finite_pass,
+                   "population_checks": values["finite_population_checks"],
+                   "density_checks": values["finite_density_checks"],
+                   "density_min": values["density_min"], "density_max": values["density_max"]},
+    }
+    canonical = json.dumps(record, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    record["evidence_sha256"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return record
+
+
 def run_suboff_resistance_runtime(
     config: SuboffResistanceBenchmarkConfig,
 ) -> dict[str, object]:
@@ -628,8 +672,13 @@ def run_suboff_resistance_runtime(
     simulated = result.get("simulated")
     iterations = result.get("iterations")
     coefficient = simulated.get("cd") if isinstance(simulated, dict) else None
-    final_iteration = iterations[-1] if isinstance(iterations, list) and iterations and isinstance(iterations[-1], dict) else None
-    runtime_evidence = final_iteration.get("runtime_evidence") if isinstance(final_iteration, dict) else None
+    if not isinstance(iterations, list) or not iterations or not all(isinstance(item, dict) for item in iterations):
+        raise RuntimeError("SUBOFF runner returned no iteration evidence")
+    typed_iterations = [item for item in iterations if isinstance(item, dict)]
+    refinement_levels = [_refinement_level_observation(item, index)
+                         for index, item in enumerate(typed_iterations)]
+    final_iteration = typed_iterations[-1]
+    runtime_evidence = final_iteration.get("runtime_evidence")
     if not isinstance(runtime_evidence, dict):
         raise RuntimeError("SUBOFF runner returned no runtime numerical evidence")
     if (not isinstance(coefficient, (int, float)) or isinstance(coefficient, bool)
@@ -655,12 +704,28 @@ def run_suboff_resistance_runtime(
     numerical_fields = (requested_steps, completed_steps, population_checks, density_checks, density_min, density_max)
     evidence_is_numeric = all(isinstance(value, (int, float)) and not isinstance(value, bool)
                               and math.isfinite(float(value)) for value in numerical_fields)
-    numerics_pass = (evidence_is_numeric and requested_steps == config.lbm_steps
+    final_level_numerics_pass = (evidence_is_numeric and requested_steps == config.lbm_steps
                      and completed_steps == requested_steps and population_checks == completed_steps
                      and density_checks == completed_steps
                      and runtime_evidence.get("all_populations_finite") is True
                      and runtime_evidence.get("all_densities_finite") is True
                      and float(density_min) > 0.0 and float(density_min) <= float(density_max))
+    coefficient_change_pct: float | None = None
+    if len(refinement_levels) >= 2:
+        coarse = refinement_levels[-2].get("coefficient")
+        fine = refinement_levels[-1].get("coefficient")
+        if (isinstance(coarse, (int, float)) and not isinstance(coarse, bool)
+                and isinstance(fine, (int, float)) and not isinstance(fine, bool)
+                and math.isfinite(float(coarse)) and math.isfinite(float(fine))):
+            coefficient_change_pct = abs(float(fine) - float(coarse)) / max(abs(float(fine)), 1.0e-30) * 100.0
+    levels_complete_finite = all(
+        level["completion"]["pass"] is True and level["finite"]["pass"] is True
+        for level in refinement_levels
+    )
+    convergence_pass = (len(refinement_levels) >= 2 and levels_complete_finite
+                        and coefficient_change_pct is not None and math.isfinite(coefficient_change_pct)
+                        and coefficient_change_pct <= config.numerics_max_coefficient_change_pct)
+    numerics_pass = final_level_numerics_pass and convergence_pass
     domain_pass = (isinstance(grid, dict) and all(isinstance(grid.get(axis), int) and grid[axis] > 0
                   for axis in ("nx", "ny", "nz")))
     lattice_mach = config.lbm_u_in / math.sqrt(1.0 / 3.0)
@@ -670,7 +735,7 @@ def run_suboff_resistance_runtime(
         "domain": {"pass": domain_pass, "grid": grid},
         "mach": {"pass": mach_pass, "lattice_mach": lattice_mach, "limit": 0.25},
     }
-    if not numerics_pass:
+    if not final_level_numerics_pass:
         raise RuntimeError("SUBOFF runner returned invalid runtime numerical evidence")
     if not domain_pass or not mach_pass:
         raise RuntimeError("SUBOFF runner failed runtime preflight")
@@ -718,7 +783,17 @@ def run_suboff_resistance_runtime(
                      "finite_population_checks": int(population_checks), "finite_density_checks": int(density_checks),
                      "all_populations_finite": runtime_evidence["all_populations_finite"],
                      "all_densities_finite": runtime_evidence["all_densities_finite"],
-                     "density_min": float(density_min), "density_max": float(density_max)},
+                     "density_min": float(density_min), "density_max": float(density_max),
+                     "refinement_kind": "grid", "required_levels": 2,
+                     "refinement_levels": refinement_levels,
+                     "coefficient_change_pct": coefficient_change_pct,
+                     "convergence": {
+                         "pass": convergence_pass,
+                         "criterion": "two_or_more_complete_finite_grid_levels_and_coefficient_change_pct_at_or_below_limit",
+                         "coefficient_change_pct_limit": config.numerics_max_coefficient_change_pct,
+                         "observed_levels": len(refinement_levels),
+                         "levels_complete_finite": levels_complete_finite,
+                     }},
         "conservation": {
             "status": "measured",
             "pass": conservation_pass,
