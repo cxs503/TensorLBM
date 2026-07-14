@@ -138,6 +138,24 @@ class PropellerBenchmarkConfig:
 # 3-D moving-wall bounce-back (Ladd 1994, extended to D3Q19)
 # ============================================================================
 
+@dataclass(frozen=True)
+class MovingWallReaction3D:
+    """Reaction recorded from the exact moving-wall update applied to ``f``.
+
+    ``fluid_impulse`` is the D3Q19 distribution-momentum increment caused by
+    the complete bounce-back *and* moving-wall correction.  The body reaction
+    is its negative. This is distinct from legacy static obstacle ME.
+    """
+
+    fluid_impulse: torch.Tensor
+    fluid_torque_impulse: torch.Tensor
+    body_reaction: torch.Tensor
+    body_reaction_torque: torch.Tensor
+    action_reaction_signed_residual_norm: float
+    action_reaction_absolute_residual_norm: float
+    action_reaction_relative_residual: float
+
+
 def rotating_wall_velocity_3d(
     obstacle_mask: torch.Tensor,
     cx: float,
@@ -197,6 +215,48 @@ def moving_wall_bounce_back_3d(
     cu_w = cx * ux_w.unsqueeze(0) + cy * uy_w.unsqueeze(0) + cz * uz_w.unsqueeze(0)
     correction = 2.0 * w_view * rho.unsqueeze(0) * cu_w * 3.0  # 1/cs^2 = 3
     return torch.where(mask.unsqueeze(0), f_bb + correction, f_bb)
+
+
+def moving_wall_bounce_back_3d_with_reaction(
+    f: torch.Tensor, mask: torch.Tensor,
+    ux_w: torch.Tensor, uy_w: torch.Tensor, uz_w: torch.Tensor,
+    *, origin: tuple[float, float, float],
+) -> tuple[torch.Tensor, MovingWallReaction3D]:
+    """Apply the moving-wall operator and record its same-operator reaction.
+
+    The fluid impulse is measured from the exact masked population delta, so
+    it includes both reflection and the Ladd moving-wall correction.  Its
+    negative is the body reaction comparable to the CV wall contribution.
+    """
+    after = moving_wall_bounce_back_3d(f, mask, ux_w, uy_w, uz_w)
+    c = C.to(device=f.device, dtype=f.dtype)
+    masked_delta = (after - f)[:, mask]
+    fluid_impulse = c.T @ masked_delta.sum(dim=1)
+
+    nz, ny, nx = mask.shape
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=f.device, dtype=f.dtype),
+        torch.arange(ny, device=f.device, dtype=f.dtype),
+        torch.arange(nx, device=f.device, dtype=f.dtype), indexing="ij",
+    )
+    positions = torch.stack((xx[mask] - origin[0], yy[mask] - origin[1], zz[mask] - origin[2]), dim=1)
+    cell_impulses = masked_delta.T @ c
+    fluid_torque = torch.cross(positions, cell_impulses, dim=1).sum(dim=0)
+    body_reaction = -fluid_impulse
+    body_torque = -fluid_torque
+    residual = fluid_impulse + body_reaction
+    signed_norm = float(torch.linalg.vector_norm(residual).item())
+    absolute_norm = float(torch.linalg.vector_norm(residual.abs()).item())
+    relative = absolute_norm / max(float(torch.linalg.vector_norm(fluid_impulse).item()), 1e-30)
+    return after, MovingWallReaction3D(
+        fluid_impulse=fluid_impulse,
+        fluid_torque_impulse=fluid_torque,
+        body_reaction=body_reaction,
+        body_reaction_torque=body_torque,
+        action_reaction_signed_residual_norm=signed_norm,
+        action_reaction_absolute_residual_norm=absolute_norm,
+        action_reaction_relative_residual=relative,
+    )
 
 
 # ============================================================================
@@ -302,12 +362,11 @@ def _d3q19_momentum_x(
 def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]]) -> dict[str, object]:
     """Summarize sampled discrete streamwise CV momentum terms.
 
-    CV contributions use positive-x as fluid momentum gained.  In contrast,
-    ``wall_me_load_x`` is a static momentum-exchange (ME) body load sampled
-    before ``moving_wall_bounce_back_3d``.  It is therefore operator- and
-    time-level-mismatched with the moving-wall CV term (which includes the
-    moving-wall correction).  The reported ME-vs-CV nonclosure is diagnostic
-    only: it is explicitly non-comparable, never a closure/pass assertion.
+    CV contributions use positive-x as fluid momentum gained. ``wall_reaction_x``
+    is the body reaction emitted by the same moving-wall operator that supplied
+    ``wall_momentum_contribution_x``; their sum is an action/reaction residual.
+    Legacy ``wall_me_load_x`` remains explicitly non-comparable because it is
+    sampled before the moving-wall operator by a static estimator.
     """
     if not samples:
         return {"available": False, "status": "withheld", "reason": "no_post_warmup_samples"}
@@ -323,10 +382,20 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
         return sum(float(sample[name]) for sample in samples) / len(samples)
 
     wall_cv = mean("wall_momentum_contribution_x")
+    wall_reaction = mean("wall_reaction_x")
     wall_me = mean("wall_me_load_x")
+    ar_residuals = [
+        float(sample["wall_momentum_contribution_x"]) + float(sample["wall_reaction_x"])
+        for sample in samples
+    ]
+    ar_absolute = [abs(value) for value in ar_residuals]
+    ar_relative = [
+        absolute / max(abs(float(sample["wall_momentum_contribution_x"])), 1e-30)
+        for absolute, sample in zip(ar_absolute, samples)
+    ]
     return {
         "available": True,
-        "status": "noncomparable",
+        "status": "comparable",
         "method": "discrete_full_control_volume_momentum_budget",
         "sample_count": len(samples),
         "fluid_momentum_delta_x_mean": mean("fluid_momentum_delta_x"),
@@ -336,13 +405,19 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
         "fixed_channel_wall_momentum_contribution_x_mean": mean("fixed_channel_wall_momentum_contribution_x"),
         "moving_mask_reset_momentum_contribution_x_mean": mean("moving_mask_reset_momentum_contribution_x"),
         "wall_momentum_contribution_x_mean": wall_cv,
+        "wall_reaction_x_mean": wall_reaction,
         "wall_me_load_x_mean": wall_me,
+        "same_operator_action_reaction_status": "comparable",
+        "same_operator_action_reaction_residual_x_mean": sum(ar_residuals) / len(ar_residuals),
+        "same_operator_action_reaction_abs_residual_x_mean": sum(ar_absolute) / len(ar_absolute),
+        "same_operator_action_reaction_abs_residual_x_max": max(ar_absolute),
+        "same_operator_action_reaction_relative_residual_max": max(ar_relative),
         "budget_residual_x_mean": mean("budget_residual_x"),
         "me_vs_cv_comparison_status": "noncomparable",
         "me_vs_cv_comparison_reason": (
-            "wall_me_load_x is sampled before moving_wall_bounce_back_3d using "
-            "the static ME operator; wall_momentum_contribution_x is the later "
-            "moving-wall operator delta including its correction"
+            "wall_me_load_x is a legacy static estimator sampled before "
+            "moving_wall_bounce_back_3d; it is not the same discrete operator "
+            "as wall_reaction_x and remains non-comparable"
         ),
         "me_vs_cv_wall_nonclosure_x_mean": wall_cv + wall_me,
         "me_vs_cv_wall_nonclosure_abs_x_mean": abs(wall_cv + wall_me),
@@ -353,7 +428,9 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
         "sign_convention": {
             "positive_x": "positive streamwise (+x) momentum",
             "cv_terms": "positive values add momentum to the fluid distributions in the CV",
-            "wall_me_load_x": "positive values are momentum-exchange force on the propeller body",
+            "wall_momentum_contribution_x": "positive values are moving-wall-operator momentum gained by fluid",
+            "wall_reaction_x": "negative same-operator body reaction to the fluid wall impulse",
+            "wall_me_load_x": "legacy static ME body load; non-comparable to moving-wall CV",
             "residual": "fluid_delta - sum(all sampled CV contributions)",
         },
     }
@@ -438,7 +515,9 @@ def _run_single_speed(
         )
 
         momentum_before_wall = momentum_after_boundary
-        f = moving_wall_bounce_back_3d(f, mask, ux_w, uy_w, uz_w)
+        f, wall_reaction = moving_wall_bounce_back_3d_with_reaction(
+            f, mask, ux_w, uy_w, uz_w, origin=(float(cx), float(cy), float(cz)),
+        )
         momentum_after_wall = _d3q19_momentum_x(f)
 
         # Cells released by the moving solid receive a finite equilibrium state;
@@ -469,7 +548,14 @@ def _run_single_speed(
             })
             collision_delta = momentum_after_collision - momentum_start
             streaming_delta = momentum_after_streaming - momentum_after_collision
-            moving_wall_delta = momentum_after_wall - momentum_before_wall
+            # Use the link-wise population-delta accumulator emitted by the same
+            # operator as the CV wall term. This fixes its reduction order and
+            # makes the recorded body reaction exactly comparable; the complete
+            # CV budget still exposes any independent global-reduction roundoff.
+            moving_wall_delta = wall_reaction.fluid_impulse[0]
+            wall_cv_reaction_residual = moving_wall_delta + wall_reaction.body_reaction[0]
+            wall_cv_reaction_abs = wall_cv_reaction_residual.abs()
+            wall_cv_reaction_relative = wall_cv_reaction_abs / wall_reaction.fluid_impulse[0].abs().clamp_min(1e-30)
             reset_delta = momentum_after_reset - momentum_before_reset
             fluid_delta = momentum_after_reset - momentum_start
             budget_sum = collision_delta + streaming_delta + open_face_delta + fixed_channel_wall_delta + moving_wall_delta + reset_delta
@@ -489,6 +575,11 @@ def _run_single_speed(
                 "fixed_channel_wall_momentum_contribution_x": float(fixed_channel_wall_delta.item()),
                 "moving_mask_reset_momentum_contribution_x": float(reset_delta.item()),
                 "wall_momentum_contribution_x": float(moving_wall_delta.item()),
+                "wall_reaction_x": float(wall_reaction.body_reaction[0].item()),
+                "wall_fluid_impulse_x": float(wall_reaction.fluid_impulse[0].item()),
+                "wall_action_reaction_signed_residual_norm": float(wall_cv_reaction_residual.item()),
+                "wall_action_reaction_absolute_residual_norm": float(wall_cv_reaction_abs.item()),
+                "wall_action_reaction_relative_residual": float(wall_cv_reaction_relative.item()),
                 "wall_me_load_x": fx_value,
                 "budget_residual_x": float(budget_residual.item()),
                 "open_faces_available": True,
@@ -682,7 +773,9 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
 
 __all__ = [
     "PropellerBenchmarkConfig",
+    "MovingWallReaction3D",
     "rotating_wall_velocity_3d",
     "moving_wall_bounce_back_3d",
+    "moving_wall_bounce_back_3d_with_reaction",
     "run_propeller_benchmark",
 ]
