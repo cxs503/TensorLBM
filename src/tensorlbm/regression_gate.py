@@ -393,7 +393,10 @@ def evaluate_marine_resistance_gate(artifacts_root: str | Path, cases: dict[str,
         numerics = facts.get("numerics")
         numerics_ok = isinstance(numerics, dict) and numerics.get("pass") is True and _is_finite_json(numerics)
         conservation = facts.get("conservation") if isinstance(facts.get("conservation"), dict) else {}
-        mass_drift, momentum_drift = conservation.get("mass_relative_drift"), conservation.get("momentum_relative_drift")
+        # Runtime v2 observations record the maximum drift measured across all
+        # samples.  Retain v1 names only for legacy artifacts.
+        mass_drift = conservation.get("max_relative_mass_drift", conservation.get("mass_relative_drift"))
+        momentum_drift = conservation.get("max_relative_momentum_drift", conservation.get("momentum_relative_drift"))
         conservation_ok = (conservation.get("pass") is True and _finite_number(mass_drift) and _finite_number(momentum_drift)
                            and abs(float(mass_drift)) <= float(limits["max_mass_relative_drift"])
                            and abs(float(momentum_drift)) <= float(limits["max_momentum_relative_drift"]))

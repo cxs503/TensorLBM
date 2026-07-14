@@ -41,6 +41,8 @@ class SuboffResistanceBenchmarkConfig:
     lbm_steps: int = 60
     lbm_warmup_steps: int = 20
     lbm_sample_interval: int = 5
+    conservation_max_relative_mass_drift: float = 1.0e-3
+    conservation_max_relative_momentum_drift: float = 1.0e-3
     smagorinsky_cs: float = 0.1
     max_length_lu: float = 80.0
     use_adaptive_mesh: bool = False
@@ -86,6 +88,12 @@ class SuboffResistanceBenchmarkConfig:
             raise ValueError("lbm_warmup_steps must be >= 0")
         if self.lbm_sample_interval < 1:
             raise ValueError("lbm_sample_interval must be >= 1")
+        if (not math.isfinite(self.conservation_max_relative_mass_drift)
+                or self.conservation_max_relative_mass_drift < 0.0):
+            raise ValueError("conservation_max_relative_mass_drift must be finite and >= 0")
+        if (not math.isfinite(self.conservation_max_relative_momentum_drift)
+                or self.conservation_max_relative_momentum_drift < 0.0):
+            raise ValueError("conservation_max_relative_momentum_drift must be finite and >= 0")
         if self.max_length_lu < 20.0:
             raise ValueError("max_length_lu must be >= 20")
         if self.adaptive_l1_pad < 0:
@@ -314,6 +322,23 @@ def _run_suboff_lbm_drag(
     all_densities_finite = True
     density_min = float("inf")
     density_max = float("-inf")
+    # Conservation is sampled from the actual population state, including the
+    # initialized lattice state before any update.  This is observational data,
+    # not an inference from a finite drag coefficient.
+    initial_mass = float(f.sum().item())
+    initial_rho, initial_ux, initial_uy, initial_uz = macroscopic3d(f)
+    initial_momentum = torch.stack(tuple(
+        (initial_rho * velocity).sum()
+        for velocity in (initial_ux, initial_uy, initial_uz)
+    ))
+    initial_momentum_norm = float(torch.linalg.vector_norm(initial_momentum).item())
+    final_mass = initial_mass
+    final_momentum_norm = initial_momentum_norm
+    max_abs_mass_drift = 0.0
+    max_relative_mass_drift = 0.0
+    max_abs_momentum_drift = 0.0
+    max_relative_momentum_drift = 0.0
+    mass_sample_count = 1
     coarse_cells = int(nx * ny * nz)
 
     adaptive_solver: AdaptiveSolver3D | None = None
@@ -355,13 +380,32 @@ def _run_suboff_lbm_drag(
         populations_finite = bool(torch.isfinite(f).all().item())
         finite_population_checks += 1
         all_populations_finite = all_populations_finite and populations_finite
-        rho_step, _, _, _ = macroscopic3d(f)
+        rho_step, ux_step, uy_step, uz_step = macroscopic3d(f)
         densities_finite = bool(torch.isfinite(rho_step).all().item())
         finite_density_checks += 1
         all_densities_finite = all_densities_finite and densities_finite
         if densities_finite:
             density_min = min(density_min, float(rho_step.min().item()))
             density_max = max(density_max, float(rho_step.max().item()))
+        mass = float(f.sum().item())
+        momentum = torch.stack(tuple(
+            (rho_step * velocity).sum() for velocity in (ux_step, uy_step, uz_step)
+        ))
+        momentum_norm = float(torch.linalg.vector_norm(momentum).item())
+        final_mass = mass
+        final_momentum_norm = momentum_norm
+        abs_mass_drift = abs(mass - initial_mass)
+        abs_momentum_drift = abs(momentum_norm - initial_momentum_norm)
+        max_abs_mass_drift = max(max_abs_mass_drift, abs_mass_drift)
+        max_relative_mass_drift = max(
+            max_relative_mass_drift, abs_mass_drift / max(abs(initial_mass), 1.0e-30),
+        )
+        max_abs_momentum_drift = max(max_abs_momentum_drift, abs_momentum_drift)
+        max_relative_momentum_drift = max(
+            max_relative_momentum_drift,
+            abs_momentum_drift / max(abs(initial_momentum_norm), 1.0e-30),
+        )
+        mass_sample_count += 1
         # --- snapshot export ---
         if config.save_snapshots and step >= config.snapshot_start_step and step <= config.snapshot_end_step and (step - config.snapshot_start_step) % config.snapshot_interval == 0:
             _export_snapshot(f, step, config)
@@ -405,6 +449,16 @@ def _run_suboff_lbm_drag(
             "all_densities_finite": all_densities_finite,
             "density_min": density_min if math.isfinite(density_min) else None,
             "density_max": density_max if math.isfinite(density_max) else None,
+            "initial_lattice_mass": initial_mass,
+            "final_lattice_mass": final_mass,
+            "max_abs_mass_drift": max_abs_mass_drift,
+            "max_relative_mass_drift": max_relative_mass_drift,
+            "initial_lattice_momentum_norm": initial_momentum_norm,
+            "final_lattice_momentum_norm": final_momentum_norm,
+            "max_abs_momentum_drift": max_abs_momentum_drift,
+            "max_relative_momentum_drift": max_relative_momentum_drift,
+            "mass_sample_count": mass_sample_count,
+            "sampled_step_count": completed_steps,
         },
     }
     return cd, fx_lu, mesh_stats
@@ -587,6 +641,16 @@ def run_suboff_resistance_runtime(
     density_checks = runtime_evidence.get("finite_density_checks")
     density_min = runtime_evidence.get("density_min")
     density_max = runtime_evidence.get("density_max")
+    initial_mass = runtime_evidence.get("initial_lattice_mass")
+    final_mass = runtime_evidence.get("final_lattice_mass")
+    max_abs_mass_drift = runtime_evidence.get("max_abs_mass_drift")
+    max_relative_mass_drift = runtime_evidence.get("max_relative_mass_drift")
+    initial_momentum = runtime_evidence.get("initial_lattice_momentum_norm")
+    final_momentum = runtime_evidence.get("final_lattice_momentum_norm")
+    max_abs_momentum_drift = runtime_evidence.get("max_abs_momentum_drift")
+    max_relative_momentum_drift = runtime_evidence.get("max_relative_momentum_drift")
+    mass_sample_count = runtime_evidence.get("mass_sample_count")
+    sampled_step_count = runtime_evidence.get("sampled_step_count")
     grid = final_iteration.get("grid")
     numerical_fields = (requested_steps, completed_steps, population_checks, density_checks, density_min, density_max)
     evidence_is_numeric = all(isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -610,6 +674,28 @@ def run_suboff_resistance_runtime(
         raise RuntimeError("SUBOFF runner returned invalid runtime numerical evidence")
     if not domain_pass or not mach_pass:
         raise RuntimeError("SUBOFF runner failed runtime preflight")
+    conservation_fields = (
+        initial_mass, final_mass, max_abs_mass_drift, max_relative_mass_drift,
+        initial_momentum, final_momentum, max_abs_momentum_drift,
+        max_relative_momentum_drift,
+    )
+    conservation_is_numeric = all(
+        isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
+        for value in conservation_fields
+    )
+    conservation_sampled = (
+        isinstance(mass_sample_count, int) and not isinstance(mass_sample_count, bool)
+        and isinstance(sampled_step_count, int) and not isinstance(sampled_step_count, bool)
+        and mass_sample_count == completed_steps + 1 and sampled_step_count == completed_steps
+    )
+    conservation_pass = (
+        conservation_is_numeric and conservation_sampled and float(initial_mass) > 0.0
+        and float(final_mass) > 0.0 and float(max_abs_mass_drift) >= 0.0
+        and float(max_relative_mass_drift) >= 0.0 and float(max_abs_momentum_drift) >= 0.0
+        and float(max_relative_momentum_drift) >= 0.0
+        and float(max_relative_mass_drift) <= config.conservation_max_relative_mass_drift
+        and float(max_relative_momentum_drift) <= config.conservation_max_relative_momentum_drift
+    )
     return {
         "schema": "suboff-resistance-runtime-observation-v1",
         "case": "suboff_runtime",
@@ -633,6 +719,22 @@ def run_suboff_resistance_runtime(
                      "all_populations_finite": runtime_evidence["all_populations_finite"],
                      "all_densities_finite": runtime_evidence["all_densities_finite"],
                      "density_min": float(density_min), "density_max": float(density_max)},
-        "conservation": {"status": "withheld", "reason": "no_runtime_conservation_observer"},
-        "physics": {"status": "withheld", "reason": "no_independent_physics_validation"},
+        "conservation": {
+            "status": "measured",
+            "pass": conservation_pass,
+            "initial_lattice_mass": float(initial_mass) if conservation_is_numeric else None,
+            "final_lattice_mass": float(final_mass) if conservation_is_numeric else None,
+            "max_abs_mass_drift": float(max_abs_mass_drift) if conservation_is_numeric else None,
+            "max_relative_mass_drift": float(max_relative_mass_drift) if conservation_is_numeric else None,
+            "initial_lattice_momentum_norm": float(initial_momentum) if conservation_is_numeric else None,
+            "final_lattice_momentum_norm": float(final_momentum) if conservation_is_numeric else None,
+            "max_abs_momentum_drift": float(max_abs_momentum_drift) if conservation_is_numeric else None,
+            "max_relative_momentum_drift": float(max_relative_momentum_drift) if conservation_is_numeric else None,
+            "mass_sample_count": mass_sample_count,
+            "sampled_step_count": sampled_step_count,
+            "max_relative_mass_drift_limit": config.conservation_max_relative_mass_drift,
+            "max_relative_momentum_drift_limit": config.conservation_max_relative_momentum_drift,
+        },
+        "physics": {"status": "withheld", "pass": False,
+                    "reason": "no_independent_physics_validation"},
     }

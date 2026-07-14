@@ -13,6 +13,35 @@ from tensorlbm.marine_run_provenance import build_marine_run_provenance
 import tensorlbm.suboff_resistance as suboff
 
 
+def test_real_runner_measures_hash_bound_mass_conservation_and_does_not_promote_physics():
+    config = suboff.SuboffResistanceBenchmarkConfig(
+        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
+        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
+        conservation_max_relative_mass_drift=1.0e-12,
+    )
+    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(config))
+
+    conservation = observation["conservation"]
+    assert conservation["status"] == "measured"
+    assert conservation["pass"] is False
+    assert conservation["initial_lattice_mass"] > 0.0
+    assert conservation["final_lattice_mass"] > 0.0
+    assert conservation["max_abs_mass_drift"] >= 0.0
+    assert conservation["max_relative_mass_drift"] > 1.0e-12
+    assert conservation["mass_sample_count"] == 11
+    assert conservation["sampled_step_count"] == 10
+    assert conservation["max_relative_mass_drift_limit"] == pytest.approx(1.0e-12)
+    assert observation["physics"]["pass"] is False
+
+    provenance = build_marine_run_provenance(observation, runner=observation["runner"])
+    reference = build_marine_reference_manifest(case="suboff_runtime", coefficient=0.004, source="test reference")
+    artifact = build_marine_resistance_artifact(observation, provenance, reference)
+    evidence = cast(dict[str, Any], artifact["evidence"])
+    binding = cast(dict[str, Any], artifact["binding"])
+    assert evidence["observation"]["conservation"] == conservation
+    assert binding["observation_sha256"]
+
+
 def test_real_runner_observation_binds_to_withheld_canonical_artifact(monkeypatch):
     calls: list[object] = []
 
