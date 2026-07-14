@@ -26,7 +26,9 @@ _C = C  # (19, 3)
 _W = W
 KAPPA = 0.41
 B_CONST = 5.0
-_SHIFT_SPECS = [(a, s) for a in [0, 1, 2] for s in [-1, 1]]  # 6 neighbor shifts
+# ``C`` is ordered (x, y, z), whereas lattice fields are indexed (z, y, x).
+# Topology-changing operations must traverse all 18 non-rest D3Q19 links.
+_D3Q19_TENSOR_SHIFTS = [(int(C[q, 2]), int(C[q, 1]), int(C[q, 0])) for q in range(1, 19)]
 
 # Opposite direction indices for D3Q19
 _OPP = torch.tensor([0,2,1,4,3,6,5,8,7,10,9,12,11,14,13,16,15,18,17])
@@ -140,10 +142,10 @@ def _init_new(f, flags, mask, rho_init, device, ux=None, uy=None, uz=None):
     if ux is None or uy is None or uz is None:
         _, ux, uy, uz = macroscopic3d(f)
     active = (flags == LIQUID) | (flags == INTERFACE)
-    sl_stack = torch.stack([active.roll(s, dims=a) for a, s in _SHIFT_SPECS])
-    ux_stack = torch.stack([ux.roll(s, dims=a) for a, s in _SHIFT_SPECS])
-    uy_stack = torch.stack([uy.roll(s, dims=a) for a, s in _SHIFT_SPECS])
-    uz_stack = torch.stack([uz.roll(s, dims=a) for a, s in _SHIFT_SPECS])
+    sl_stack = torch.stack([active.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS])
+    ux_stack = torch.stack([ux.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS])
+    uy_stack = torch.stack([uy.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS])
+    uz_stack = torch.stack([uz.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS])
     sl_f = sl_stack.float()
     uxa = (ux_stack * sl_f).sum(dim=0)
     uya = (uy_stack * sl_f).sum(dim=0)
@@ -450,18 +452,21 @@ def free_surface_step(
     # Only positive overflow needs a newly promoted gas receiver.  An emptying
     # interface retains the established interface-only redistribution path.
     adjacent_converting = torch.stack([
-        to_liq.roll(s, dims=a) for a, s in _SHIFT_SPECS
+        to_liq.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS
     ]).any(dim=0)
     recv_new = gas_mask & adjacent_converting & ~solid_mask
     recv_mask = recv_iface | recv_new
-    # Count receiving cells per donor (6 face directions).
-    shifted_recv = torch.stack([recv_mask.roll(s, dims=a) for a, s in _SHIFT_SPECS])
+    # Count receiving cells per donor over every moving D3Q19 link.
+    shifted_recv = torch.stack([
+        recv_mask.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS
+    ])
     n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
     # Excess per receiving neighbor
     excess_per_nb = excess / n_recv
-    # Distribute: sum contributions from all 6 neighbor directions into receiving cells
-    for a, s in _SHIFT_SPECS:
-        mass = mass + excess_per_nb.roll(-s, dims=a) * recv_mask
+    # Distribute to receivers over every D3Q19 link.
+    for shift in _D3Q19_TENSOR_SHIFTS:
+        receiver_shift = tuple(-delta for delta in shift)
+        mass = mass + excess_per_nb.roll(receiver_shift, dims=(0, 1, 2)) * recv_mask
     if mass_ledger is not None:
         mass_ledger['redistribution'] = float(mass.sum())
     # Clamp mass to valid range
@@ -482,10 +487,14 @@ def free_surface_step(
     if mass_ledger is not None:
         mass_ledger['conversion'] = float(mass.sum())
 
-    # Neighbor propagation: gas next to liquid/interface → interface
-    shifted_flags = torch.stack([flags.roll(s, dims=a) for a, s in _SHIFT_SPECS])
+    # Neighbor propagation: gas next to liquid/interface → interface.
+    # Include cells converted to GAS above, so a zero-mass halo deleted during
+    # cleanup is restored before it can expose a direct L/G streaming link.
+    shifted_flags = torch.stack([
+        flags.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS
+    ])
     is_neighbor = ((shifted_flags == LIQUID) | (shifted_flags == INTERFACE)).any(dim=0)
-    to_i = (gas_mask & is_neighbor & (~solid_mask)) | recv_new
+    to_i = (((gas_mask | to_gas) & is_neighbor & (~solid_mask)) | recv_new)
     # (no .any() sync — _init_new uses torch.where for empty mask)
     f = _init_new(f, flags, to_i, rho_gas, device, ux, uy, uz)
     flags = torch.where(to_i, torch.full_like(flags, INTERFACE), flags)
@@ -497,6 +506,9 @@ def free_surface_step(
 
     # Isolated interface removal (prevents floating interface cells)
     interface_mask = (flags == INTERFACE)
+    shifted_flags = torch.stack([
+        flags.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS
+    ])
     has_neighbor = ((shifted_flags == LIQUID) | (shifted_flags == INTERFACE)).any(dim=0)
     isolated = interface_mask & ~has_neighbor & (~solid_mask)
     # (no .any() sync — torch.where handles empty masks)
@@ -519,12 +531,18 @@ def _redistribute_mass(mass, flags, mex, nx, ny, nz, c, device):
     """Redistribute excess mass to interface neighbors (vectorized)."""
     # Simple: distribute excess mass equally to interface neighbors
     interface_mask = (flags == INTERFACE)
-    # Count interface neighbors per cell (6 directions)
-    shifted_iface = torch.stack([interface_mask.roll(s, dims=a) for a, s in _SHIFT_SPECS])
+    # Count interface neighbours over every moving D3Q19 link.
+    shifted_iface = torch.stack([
+        interface_mask.roll(shift, dims=(0, 1, 2)) for shift in _D3Q19_TENSOR_SHIFTS
+    ])
     n_iface_neighbors = shifted_iface.sum(dim=0).clamp(min=1)
     # Excess mass to distribute (per neighbor)
     excess_per_neighbor = mex / n_iface_neighbors
-    # Add to neighbors (sum from all 6 directions)
-    for a, s in _SHIFT_SPECS:
-        mass = mass + excess_per_neighbor.roll(-s, dims=a) * interface_mask.roll(-s, dims=a)
+    # Add to neighbours over every D3Q19 link.
+    for shift in _D3Q19_TENSOR_SHIFTS:
+        receiver_shift = tuple(-delta for delta in shift)
+        mass = mass + (
+            excess_per_neighbor.roll(receiver_shift, dims=(0, 1, 2))
+            * interface_mask.roll(receiver_shift, dims=(0, 1, 2))
+        )
     return mass
