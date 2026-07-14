@@ -120,6 +120,9 @@ class DamBreak3DConfig:
     run_name: str | None = None
     device: str = "cpu"
     overwrite: bool = False
+    # Tracked-mass accounting tolerance, not a physical/PV conservation claim.
+    free_surface_unexplained_tolerance: float = 1.0e-3
+    free_surface_paired_tolerance: float = 1.0e-5
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -136,6 +139,8 @@ class DamBreak3DConfig:
             raise ValueError("rho_heavy > rho_light")
         if self.tau <= 0.5:
             raise ValueError(f"tau={self.tau} <= 0.5")
+        if self.free_surface_unexplained_tolerance < 0 or self.free_surface_paired_tolerance < 0:
+            raise ValueError("free-surface accounting tolerances must be non-negative")
 
     def resolved_run_name(self) -> str:
         if self.run_name:
@@ -427,7 +432,12 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
     diagnostics: list[dict[str, object]] = []
     front_series: list[tuple[int, float, float]] = []
     fs_handoff: list[dict[str, object]] = []
+    fs_runtime: dict[str, object] = {}
+    fs_initial_topology: tuple[int, int] | None = None
+    fs_topology_changed = False
     gy = -config.gravity
+    if config.model == "fs":
+        fs_initial_topology = (int((flags == LIQUID).sum()), int((flags == INTERFACE).sum()))
 
     for step in range(1, config.n_steps + 1):
         # Collision + streaming
@@ -492,7 +502,35 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
                 surface_tension=config.A if config.A > 0 else 0.0,
                 C_s=config.C_s if config.collision == "mrt_smag" else 0.0,
                 free_slip_y=config.free_slip_y, y_wall_mask=y_wall,
+                runtime_ledger=fs_runtime,
+                paired_liquid_interface_debit=True,
             )
+            steps = fs_runtime["steps"]
+            assert isinstance(steps, list) and steps
+            quality = steps[-1]
+            assert isinstance(quality, dict)
+            finite = bool(torch.isfinite(f_water).all() and torch.isfinite(fill).all() and torch.isfinite(mass).all())
+            quality["finite"] = finite
+            quality["flags_finite"] = True  # Integral flags have no NaN representation.
+            topology = (int((flags == LIQUID).sum()), int((flags == INTERFACE).sum()))
+            quality["liquid_cells"], quality["interface_cells"] = topology
+            fs_topology_changed = fs_topology_changed or topology != fs_initial_topology
+            violations: list[str] = []
+            if not finite:
+                violations.append("non-finite free-surface state")
+            if int(quality["directLG"]) != 0:
+                violations.append("direct liquid/gas link")
+            if abs(float(quality["unexplained_residual"])) > config.free_surface_unexplained_tolerance:
+                violations.append("unexplained tracked-mass residual exceeds tolerance")
+            if abs(float(quality["paired_residual"])) > config.free_surface_paired_tolerance:
+                violations.append("paired liquid/interface residual exceeds tolerance")
+            if violations:
+                quality["quality_gate"] = "failed: " + "; ".join(violations)
+                raise RuntimeError(
+                    f"free-surface quality gate fail-closed at step {step}: {'; '.join(violations)}; "
+                    f"record={quality}"
+                )
+            quality["quality_gate"] = "passed"
             fs_handoff.append({
                 "step": step,
                 "f_shape": list(f_water.shape),
@@ -566,6 +604,16 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             for s, ts, xs, mr in front_series
         ],
         **({"fs_handoff": fs_handoff} if config.model == "fs" else {}),
+        **({
+            "free_surface_quality_curve": fs_runtime.get("steps", []),
+            "free_surface_quality_gate": {
+                "passed": True,
+                "unexplained_tolerance": config.free_surface_unexplained_tolerance,
+                "paired_tolerance": config.free_surface_paired_tolerance,
+                "topology_changed": fs_topology_changed,
+                "diagnostic": "tracked-mass accounting only; not a physical/PV closure claim",
+            },
+        } if config.model == "fs" else {}),
     }
 
     meta_path = run_dir / "run_metadata.json"
