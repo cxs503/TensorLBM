@@ -143,14 +143,18 @@ def halo_exchange_3d(
     Each slab has shape ``(19, nz, ny, nx_local + 2*overlap)``.
     """
     ov = decomp.overlap
-    for i in range(len(slabs) - 1):
-        r = slabs[i][:, :, :, -ov - 1:-1]
-        lg = slabs[i + 1][:, :, :, :ov]
-        lg.copy_(r.to(lg.device))
+    n_slabs = len(slabs)
 
-        l_ = slabs[i + 1][:, :, :, ov:2 * ov]
-        rg = slabs[i][:, :, :, -ov:]
-        rg.copy_(l_.to(rg.device))
+    # Every 3-D slab has an explicit ghost layer on both sides, including
+    # the global x boundaries.  Source data are always owned cells, so copy
+    # order cannot make one ghost exchange consume another ghost exchange.
+    for i, slab in enumerate(slabs):
+        left = slabs[(i - 1) % n_slabs]
+        right = slabs[(i + 1) % n_slabs]
+        left_ghost = slab[:, :, :, :ov]
+        right_ghost = slab[:, :, :, -ov:]
+        left_ghost.copy_(left[:, :, :, -2 * ov:-ov].to(left_ghost.device))
+        right_ghost.copy_(right[:, :, :, ov:2 * ov].to(right_ghost.device))
 
     return slabs
 
@@ -284,12 +288,16 @@ class MultiGPUSolver3D:
         decomp: DomainDecomposition,
     ) -> None:
         q, nz, ny, nx = f_global.shape
+        if q != 19:
+            raise ValueError(f"MultiGPUSolver3D requires D3Q19 populations, got {q}")
         if decomp.nx_global == 0:
             decomp = DomainDecomposition(
                 devices=decomp.devices,
                 nx_global=nx,
                 overlap=decomp.overlap,
             )
+        if decomp.nx_global != nx:
+            raise ValueError(f"decomp.nx_global ({decomp.nx_global}) != nx ({nx})")
         self.decomp = decomp
         self.nz = nz
         self.ny = ny
@@ -298,11 +306,13 @@ class MultiGPUSolver3D:
         ov = decomp.overlap
         self.slabs: list[torch.Tensor] = []
         for dev, (x0, x1) in zip(decomp.devices, decomp.slabs):
-            x0g = max(0, x0 - ov)
-            x1g = min(nx, x1 + ov)
-            slab = f_global[:, :, :, x0g:x1g].to(dev).contiguous()
+            # Keep physical ghosts on both sides, including global x edges.
+            # Modulo indexing seeds periodic ghosts before the first step.
+            x_indices = torch.arange(x0 - ov, x1 + ov, device=f_global.device) % nx
+            slab = f_global.index_select(3, x_indices).to(dev).contiguous()
             self.slabs.append(slab)
         self._x_ranges = decomp.slabs
+        halo_exchange_3d(self.slabs, self.decomp)
 
     def step(
         self,
@@ -310,13 +320,19 @@ class MultiGPUSolver3D:
         stream_fn: Callable,
         boundary_fn: Callable | None = None,
     ) -> None:
-        """Advance one time step across all slabs."""
+        """Advance one time step across all slabs.
+
+        Exchange post-collision owned populations before streaming, so a local
+        pull-stream reads neighbour data at an x interface rather than a
+        locally periodic value that would be replaced too late.
+        """
         for i, slab in enumerate(self.slabs):
             self.slabs[i] = collide_fn(slab)
-            self.slabs[i] = stream_fn(self.slabs[i])
+        halo_exchange_3d(self.slabs, self.decomp)
+        for i, slab in enumerate(self.slabs):
+            self.slabs[i] = stream_fn(slab)
             if boundary_fn is not None:
                 self.slabs[i] = boundary_fn(self.slabs[i])
-        halo_exchange_3d(self.slabs, self.decomp)
         self._step_count += 1
 
     def gather(self) -> torch.Tensor:
@@ -327,7 +343,7 @@ class MultiGPUSolver3D:
         ov = self.decomp.overlap
         f_out = torch.zeros((q, nz, ny, nx), dtype=self.slabs[0].dtype)
         for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
-            x0g_local = ov if x0 > 0 else 0
+            x0g_local = ov
             local_width = x1 - x0
             f_out[:, :, :, x0:x1] = slab[:, :, :, x0g_local:x0g_local + local_width].cpu()
         return f_out
