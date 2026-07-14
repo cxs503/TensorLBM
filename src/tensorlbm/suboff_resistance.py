@@ -306,6 +306,14 @@ def _run_suboff_lbm_drag(
     ref_area_lu = float(form_stats_lu["wetted_area_lu2"])
     dyn_pressure_lu = 0.5 * config.lbm_u_in**2 * max(ref_area_lu, 1e-12)
     drag_samples: list[float] = []
+    # Runtime numerical evidence is measured inside the actual solver loop.
+    completed_steps = 0
+    finite_population_checks = 0
+    finite_density_checks = 0
+    all_populations_finite = True
+    all_densities_finite = True
+    density_min = float("inf")
+    density_max = float("-inf")
     coarse_cells = int(nx * ny * nz)
 
     adaptive_solver: AdaptiveSolver3D | None = None
@@ -341,6 +349,19 @@ def _run_suboff_lbm_drag(
             f = apply_zou_he_channel_boundaries_3d(f, u_in=config.lbm_u_in, wall_mask=wall_mask, obstacle_mask=torch.zeros_like(mask))
         else:
             f = apply_zou_he_channel_boundaries_3d(f, u_in=config.lbm_u_in, wall_mask=wall_mask, obstacle_mask=mask)
+        # Record direct per-step state observations. A finite final drag alone
+        # cannot stand in for this numerical evidence.
+        completed_steps += 1
+        populations_finite = bool(torch.isfinite(f).all().item())
+        finite_population_checks += 1
+        all_populations_finite = all_populations_finite and populations_finite
+        rho_step, _, _, _ = macroscopic3d(f)
+        densities_finite = bool(torch.isfinite(rho_step).all().item())
+        finite_density_checks += 1
+        all_densities_finite = all_densities_finite and densities_finite
+        if densities_finite:
+            density_min = min(density_min, float(rho_step.min().item()))
+            density_max = max(density_max, float(rho_step.max().item()))
         # --- snapshot export ---
         if config.save_snapshots and step >= config.snapshot_start_step and step <= config.snapshot_end_step and (step - config.snapshot_start_step) % config.snapshot_interval == 0:
             _export_snapshot(f, step, config)
@@ -375,6 +396,16 @@ def _run_suboff_lbm_drag(
         "cell_saving_pct": (
             (1.0 - float(active_cells) / max(float(finest_uniform_cells), 1.0)) * 100.0
         ),
+        "runtime_evidence": {
+            "requested_steps": config.lbm_steps,
+            "completed_steps": completed_steps,
+            "finite_population_checks": finite_population_checks,
+            "finite_density_checks": finite_density_checks,
+            "all_populations_finite": all_populations_finite,
+            "all_densities_finite": all_densities_finite,
+            "density_min": density_min if math.isfinite(density_min) else None,
+            "density_max": density_max if math.isfinite(density_max) else None,
+        },
     }
     return cd, fx_lu, mesh_stats
 
@@ -483,6 +514,7 @@ def run_suboff_resistance_benchmark(
                     "steps": config.lbm_steps,
                 },
                 "mesh": mesh_stats,
+                "runtime_evidence": mesh_stats["runtime_evidence"],
                 "cd_richardson": richardson_cd if prev_cd is not None else None,
                 "error_pct": error_pct,
             }
@@ -526,4 +558,81 @@ def run_suboff_resistance_benchmark(
             ),
         },
         "iterations": iterations,
+    }
+
+
+def run_suboff_resistance_runtime(
+    config: SuboffResistanceBenchmarkConfig,
+) -> dict[str, object]:
+    """Execute the local SUBOFF runner and retain only directly observed facts.
+
+    A normal return or a finite drag is not validation evidence.  Downstream
+    artifact/gate code must keep unobserved preflight, numerical, conservation,
+    and physics assertions withheld.
+    """
+    result = run_suboff_resistance_benchmark(config)
+    simulated = result.get("simulated")
+    iterations = result.get("iterations")
+    coefficient = simulated.get("cd") if isinstance(simulated, dict) else None
+    final_iteration = iterations[-1] if isinstance(iterations, list) and iterations and isinstance(iterations[-1], dict) else None
+    runtime_evidence = final_iteration.get("runtime_evidence") if isinstance(final_iteration, dict) else None
+    if not isinstance(runtime_evidence, dict):
+        raise RuntimeError("SUBOFF runner returned no runtime numerical evidence")
+    if (not isinstance(coefficient, (int, float)) or isinstance(coefficient, bool)
+            or not math.isfinite(float(coefficient))):
+        raise RuntimeError("SUBOFF runner returned no finite measured resistance coefficient")
+    requested_steps = runtime_evidence.get("requested_steps")
+    completed_steps = runtime_evidence.get("completed_steps")
+    population_checks = runtime_evidence.get("finite_population_checks")
+    density_checks = runtime_evidence.get("finite_density_checks")
+    density_min = runtime_evidence.get("density_min")
+    density_max = runtime_evidence.get("density_max")
+    grid = final_iteration.get("grid")
+    numerical_fields = (requested_steps, completed_steps, population_checks, density_checks, density_min, density_max)
+    evidence_is_numeric = all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                              and math.isfinite(float(value)) for value in numerical_fields)
+    numerics_pass = (evidence_is_numeric and requested_steps == config.lbm_steps
+                     and completed_steps == requested_steps and population_checks == completed_steps
+                     and density_checks == completed_steps
+                     and runtime_evidence.get("all_populations_finite") is True
+                     and runtime_evidence.get("all_densities_finite") is True
+                     and float(density_min) > 0.0 and float(density_min) <= float(density_max))
+    domain_pass = (isinstance(grid, dict) and all(isinstance(grid.get(axis), int) and grid[axis] > 0
+                  for axis in ("nx", "ny", "nz")))
+    lattice_mach = config.lbm_u_in / math.sqrt(1.0 / 3.0)
+    mach_pass = math.isfinite(lattice_mach) and lattice_mach < 0.25
+    preflight_checks = {
+        "config": {"pass": True, "lbm_tau": config.lbm_tau, "lbm_u_in": config.lbm_u_in},
+        "domain": {"pass": domain_pass, "grid": grid},
+        "mach": {"pass": mach_pass, "lattice_mach": lattice_mach, "limit": 0.25},
+    }
+    if not numerics_pass:
+        raise RuntimeError("SUBOFF runner returned invalid runtime numerical evidence")
+    if not domain_pass or not mach_pass:
+        raise RuntimeError("SUBOFF runner failed runtime preflight")
+    return {
+        "schema": "suboff-resistance-runtime-observation-v1",
+        "case": "suboff_runtime",
+        "runner": "tensorlbm.suboff_resistance.run_suboff_resistance_benchmark",
+        "completion": {
+            "state": "COMPLETED",
+            "requested_steps": int(requested_steps),
+            "completed_steps": int(completed_steps),
+            "evidence": "per_step_runtime_observation",
+        },
+        "resistance": {
+            "coefficient": float(coefficient),
+            "basis": "runner_simulated_cd",
+            "status": "measured",
+        },
+        "preflight": {"status": "measured", "pass": all(check["pass"] for check in preflight_checks.values()),
+                      "checks": preflight_checks},
+        "numerics": {"status": "measured", "pass": numerics_pass,
+                     "requested_steps": int(requested_steps), "completed_steps": int(completed_steps),
+                     "finite_population_checks": int(population_checks), "finite_density_checks": int(density_checks),
+                     "all_populations_finite": runtime_evidence["all_populations_finite"],
+                     "all_densities_finite": runtime_evidence["all_densities_finite"],
+                     "density_min": float(density_min), "density_max": float(density_max)},
+        "conservation": {"status": "withheld", "reason": "no_runtime_conservation_observer"},
+        "physics": {"status": "withheld", "reason": "no_independent_physics_validation"},
     }

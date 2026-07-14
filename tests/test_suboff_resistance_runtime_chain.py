@@ -1,0 +1,94 @@
+"""Runtime-chain coverage for fail-closed SUBOFF resistance evidence."""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any, cast
+
+import pytest
+
+from tensorlbm.marine_reference_manifest import build_marine_reference_manifest
+from tensorlbm.marine_resistance_artifact import build_marine_resistance_artifact
+from tensorlbm.marine_run_provenance import build_marine_run_provenance
+import tensorlbm.suboff_resistance as suboff
+
+
+def test_real_runner_observation_binds_to_withheld_canonical_artifact(monkeypatch):
+    calls: list[object] = []
+
+    def runner(config):
+        calls.append(config)
+        return {"simulated": {"cd": 0.0042}, "iterations": [{
+            "grid": {"nx": 36, "ny": 32, "nz": 32},
+            "runtime_evidence": {"requested_steps": 10, "completed_steps": 10,
+                "finite_population_checks": 10, "finite_density_checks": 10,
+                "all_populations_finite": True, "all_densities_finite": True,
+                "density_min": 0.99, "density_max": 1.01},
+        }]}
+
+    monkeypatch.setattr(suboff, "run_suboff_resistance_benchmark", runner)
+    config = suboff.SuboffResistanceBenchmarkConfig(lbm_steps=10, lbm_warmup_steps=0)
+    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(config))
+    provenance = build_marine_run_provenance(observation, runner=observation["runner"])
+    reference = build_marine_reference_manifest(
+        case="suboff_runtime", coefficient=0.004, source="test reference",
+    )
+    artifact = build_marine_resistance_artifact(observation, provenance, reference)
+
+    assert calls == [config]
+    assert observation["completion"]["completed_steps"] == 10
+    assert artifact["binding"]["reference_sha256"] == reference["sha256"]
+    assert artifact["resistance"]["relative_error_pct"] == pytest.approx(5.0)
+    assert artifact["preflight"]["pass"] is True
+    assert artifact["preflight"]["checks"]["config"]["pass"] is True
+    assert artifact["preflight"]["checks"]["domain"]["pass"] is True
+    assert artifact["preflight"]["checks"]["mach"]["pass"] is True
+    assert artifact["numerics"]["pass"] is True
+    assert artifact["numerics"]["finite_population_checks"] == 10
+    assert artifact["numerics"]["finite_density_checks"] == 10
+    assert artifact["conservation"]["pass"] is False
+    assert artifact["physics"]["pass"] is False
+
+
+def test_gate_cli_reports_withheld_evidence_as_failure(tmp_path, monkeypatch):
+    monkeypatch.setattr(suboff, "run_suboff_resistance_benchmark", lambda config: {"simulated": {"cd": 0.0042}, "iterations": [{
+        "grid": {"nx": 36, "ny": 32, "nz": 32},
+        "runtime_evidence": {"requested_steps": 10, "completed_steps": 10,
+            "finite_population_checks": 10, "finite_density_checks": 10,
+            "all_populations_finite": True, "all_densities_finite": True,
+            "density_min": 0.99, "density_max": 1.01},
+    }]})
+    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(
+        suboff.SuboffResistanceBenchmarkConfig(lbm_steps=10, lbm_warmup_steps=0)
+    ))
+    provenance = build_marine_run_provenance(observation, runner=observation["runner"])
+    reference = build_marine_reference_manifest(case="suboff_runtime", coefficient=0.004, source="test reference")
+    artifact = build_marine_resistance_artifact(observation, provenance, reference)
+    artifact_path = tmp_path / "suboff_runtime" / "marine_resistance_kpi.json"
+    artifact_path.parent.mkdir()
+    artifact_path.write_text(json.dumps(artifact), encoding="utf-8")
+    manifest = {
+        "gate": "marine_resistance",
+        "cases": {"suboff_runtime": {"artifact": "suboff_runtime/marine_resistance_kpi.json",
+        "max_relative_error_pct": 10.0, "max_mass_relative_drift": 1.0, "max_momentum_relative_drift": 1.0,
+        "required_preflight_checks": []}},
+    }
+    manifest_path = tmp_path / "gate.json"
+    report_path = tmp_path / "gate-report.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    import subprocess
+    completed = subprocess.run(
+        ["python", "scripts/evaluate_benchmark_gate.py", "--artifacts", str(tmp_path),
+         "--manifest", str(manifest_path), "--report", str(report_path)],
+        cwd=Path(__file__).parents[1], text=True, capture_output=True, check=False,
+    )
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert completed.returncode == 1
+    assert report["gate"] == "marine_resistance"
+    assert report["pass"] is False
+    assert report["cases"][0]["completion"]["pass"] is True
+    assert report["cases"][0]["preflight"]["pass"] is True
+    assert report["cases"][0]["numerics"]["pass"] is True
+    assert report["cases"][0]["physics"]["pass"] is False
