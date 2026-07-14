@@ -14,8 +14,14 @@ from .adaptive_refinement import (
     AdaptiveSolver3D,
     nonequilibrium_indicator_3d,
 )
-from .boundaries3d import apply_zou_he_channel_boundaries_3d, make_channel_wall_mask_3d
-from .d3q19 import equilibrium3d, macroscopic3d
+from .boundaries3d import (
+    apply_zou_he_channel_boundaries_3d,
+    bounce_back_cells_3d,
+    make_channel_wall_mask_3d,
+    zou_he_inlet_velocity_3d,
+    zou_he_outlet_pressure_3d,
+)
+from .d3q19 import C, equilibrium3d, macroscopic3d
 from .obstacles import compute_obstacle_forces_3d
 from .solver3d import stream3d
 from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask, suboff_statistics
@@ -67,6 +73,10 @@ class SuboffResistanceBenchmarkConfig:
     snapshot_end_step: int = 0
     snapshot_interval: int = 1
     snapshot_crop_size: int = 100
+    # Operator budgets are expensive full-field float64 reductions.  They are
+    # opt-in diagnostics, never part of the normal benchmark hot path.
+    momentum_budget_diagnostic: bool = False
+    momentum_budget_interval: int = 1
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "hull_type", SuboffHullType(self.hull_type).value)
@@ -121,6 +131,8 @@ class SuboffResistanceBenchmarkConfig:
             )
         if self.adaptive_max_patches < 1:
             raise ValueError("adaptive_max_patches must be >= 1")
+        if self.momentum_budget_interval < 1:
+            raise ValueError("momentum_budget_interval must be >= 1")
 
     @property
     def resolved_radius_m(self) -> float:
@@ -257,6 +269,18 @@ def _crop_central_region(tensor: torch.Tensor, crop_size: int) -> torch.Tensor:
     return tensor[:, sy:sy + crop_size, sx:sx + crop_size]
 
 
+def _lattice_momentum(f: torch.Tensor) -> torch.Tensor:
+    """Return total D3Q19 population momentum in lattice momentum units.
+
+    Components use the fixed (x, y, z) lattice axes.  A positive budget entry
+    means the named operator added positive-axis fluid momentum.  Float64
+    accumulation makes this an operator-budget observation, not a rho*u
+    reconstruction artifact.
+    """
+    directions = C.to(device=f.device, dtype=torch.float64).view(19, 3, 1, 1, 1)
+    return (f.to(torch.float64).unsqueeze(1) * directions).sum(dim=(0, 2, 3, 4))
+
+
 def _export_snapshot(
     f: torch.Tensor,
     step: int,
@@ -338,6 +362,9 @@ def _run_suboff_lbm_drag(
         (initial_rho * velocity).sum()
         for velocity in (initial_ux, initial_uy, initial_uz)
     ))
+    initial_population_momentum = (
+        _lattice_momentum(f) if config.momentum_budget_diagnostic else None
+    )
     initial_momentum_norm = float(torch.linalg.vector_norm(initial_momentum).item())
     final_mass = initial_mass
     final_momentum_norm = initial_momentum_norm
@@ -346,6 +373,18 @@ def _run_suboff_lbm_drag(
     max_abs_momentum_drift = 0.0
     max_relative_momentum_drift = 0.0
     mass_sample_count = 1
+    # These full-field float64 reductions are deliberately allocated and used
+    # only in explicit diagnostic mode.  A sample is an actual operator-state
+    # snapshot; unsampled steps are never synthesized or represented as zero.
+    momentum_budget_samples: list[dict[str, object]] = []
+    momentum_budget_totals = {
+        "collision": torch.zeros(3, dtype=torch.float64, device=device),
+        "inlet_boundary": torch.zeros(3, dtype=torch.float64, device=device),
+        "outlet_boundary": torch.zeros(3, dtype=torch.float64, device=device),
+        "wall_exchange": torch.zeros(3, dtype=torch.float64, device=device),
+        "solid_exchange": torch.zeros(3, dtype=torch.float64, device=device),
+        "unexplained_residual": torch.zeros(3, dtype=torch.float64, device=device),
+    }
     coarse_cells = int(nx * ny * nz)
 
     adaptive_solver: AdaptiveSolver3D | None = None
@@ -364,6 +403,9 @@ def _run_suboff_lbm_drag(
         )
 
     for step in range(1, config.lbm_steps + 1):
+        sample_budget = (config.momentum_budget_diagnostic
+                         and (step - 1) % config.momentum_budget_interval == 0)
+        momentum_before = _lattice_momentum(f) if sample_budget else None
         if config.use_rans_ke and ke_solver is not None:
             _, ux, uy, uz = macroscopic3d(f)
             nu_t = ke_solver.step(ux, uy, uz, mask)
@@ -372,15 +414,55 @@ def _run_suboff_lbm_drag(
             f = collide_smagorinsky_mrt3d(f, tau=tau_eff, C_s=0.0)
         else:
             f = collide_smagorinsky_mrt3d(f, tau=config.lbm_tau, C_s=config.smagorinsky_cs)
+        momentum_after_collision = _lattice_momentum(f) if sample_budget else None
         f = stream3d(f)
+        momentum_after_stream = _lattice_momentum(f) if sample_budget else None
         fx, _, _ = compute_obstacle_forces_3d(f, mask)
         if config.use_wall_model:
             _, ux, uy, uz = macroscopic3d(f)
             nu = (config.lbm_tau - 0.5) / 3.0
             f = apply_wall_model_bounce_back(f, mask, ux, uy, uz, nu)
-            f = apply_zou_he_channel_boundaries_3d(f, u_in=config.lbm_u_in, wall_mask=wall_mask, obstacle_mask=torch.zeros_like(mask))
+        if sample_budget:
+            momentum_after_solid_preboundary = _lattice_momentum(f)
+            f = zou_he_inlet_velocity_3d(f, config.lbm_u_in)
+            momentum_after_inlet = _lattice_momentum(f)
+            f = zou_he_outlet_pressure_3d(f)
+            momentum_after_outlet = _lattice_momentum(f)
+            f = bounce_back_cells_3d(f, wall_mask)
+            momentum_after_wall = _lattice_momentum(f)
+            if not config.use_wall_model:
+                f = bounce_back_cells_3d(f, mask)
+            momentum_after_boundaries = _lattice_momentum(f)
+            assert (momentum_before is not None and momentum_after_collision is not None
+                    and momentum_after_stream is not None)
+            collision_delta = momentum_after_collision - momentum_before
+            inlet_delta = momentum_after_inlet - momentum_after_solid_preboundary
+            outlet_delta = momentum_after_outlet - momentum_after_inlet
+            wall_delta = momentum_after_wall - momentum_after_outlet
+            solid_delta = (momentum_after_solid_preboundary - momentum_after_stream
+                           + momentum_after_boundaries - momentum_after_wall)
+            total_delta = momentum_after_boundaries - momentum_before
+            explained_delta = collision_delta + inlet_delta + outlet_delta + wall_delta + solid_delta
+            operator_deltas = {
+                "collision": collision_delta, "inlet_boundary": inlet_delta,
+                "outlet_boundary": outlet_delta, "wall_exchange": wall_delta,
+                "solid_exchange": solid_delta,
+                "unexplained_residual": total_delta - explained_delta,
+            }
+            for name, delta in operator_deltas.items():
+                momentum_budget_totals[name] += delta
+            momentum_budget_samples.append({
+                "step": step,
+                "fluid_momentum_delta": [float(value) for value in total_delta.cpu().tolist()],
+                **{name: [float(value) for value in delta.cpu().tolist()]
+                   for name, delta in operator_deltas.items()},
+            })
         else:
-            f = apply_zou_he_channel_boundaries_3d(f, u_in=config.lbm_u_in, wall_mask=wall_mask, obstacle_mask=mask)
+            # Preserve the established normal-path operator grouping exactly.
+            f = apply_zou_he_channel_boundaries_3d(
+                f, u_in=config.lbm_u_in, wall_mask=wall_mask,
+                obstacle_mask=torch.zeros_like(mask) if config.use_wall_model else mask,
+            )
         # Record direct per-step state observations. A finite final drag alone
         # cannot stand in for this numerical evidence.
         completed_steps += 1
@@ -428,6 +510,46 @@ def _run_suboff_lbm_drag(
         ):
             drag_samples.append(float(fx.item()))
 
+    sampled_indices = list(range(1, config.lbm_steps + 1, config.momentum_budget_interval)
+                           if config.momentum_budget_diagnostic else [])
+    full_budget_coverage = (config.momentum_budget_diagnostic
+                            and len(sampled_indices) == config.lbm_steps)
+    momentum_budget_summary: dict[str, object] = {
+        "status": "measured" if config.momentum_budget_diagnostic else "disabled",
+        "mode": "operator_state_snapshots" if config.momentum_budget_diagnostic else "disabled",
+        "interval": config.momentum_budget_interval if config.momentum_budget_diagnostic else None,
+        "sampled_step_indices": sampled_indices,
+        "sample_count": len(sampled_indices),
+        "coverage": "full_per_step" if full_budget_coverage else (
+            "sampled" if config.momentum_budget_diagnostic else "disabled"),
+        "units": "lattice momentum per time step (rho_lu * dx_lu^4 / dt_lu)",
+        "sign_convention": "positive component is momentum added to fluid along positive (x,y,z) lattice axis",
+        "boundary_flux": {
+            "status": "unavailable",
+            "reason": "inlet/outlet entries are population-state changes from BC operators, not face-integrated fluxes",
+        },
+        "body_force": {"status": "unavailable", "reason": "no body-force operator is enabled in this SUBOFF loop"},
+        "samples": momentum_budget_samples,
+        "cumulative_sampled": {
+            **{name: [float(value) for value in total.cpu().tolist()]
+               for name, total in momentum_budget_totals.items()},
+        },
+    }
+    sampled_cumulative = momentum_budget_summary["cumulative_sampled"]
+    assert isinstance(sampled_cumulative, dict)
+    sampled_cumulative["closure_residual"] = list(sampled_cumulative["unexplained_residual"])
+    if full_budget_coverage:
+        assert initial_population_momentum is not None
+        momentum_total = _lattice_momentum(f)
+        sampled_cumulative["fluid_momentum_delta"] = [
+            float(value) for value in (momentum_total - initial_population_momentum).cpu().tolist()
+        ]
+    else:
+        momentum_budget_summary["closure"] = {
+            "status": "withheld",
+            "reason": "unsampled_steps_preclude_full_run_closure",
+        }
+
     if adaptive_cells:
         active_cells = int(round(sum(adaptive_cells) / len(adaptive_cells)))
         finest_uniform_cells = int(coarse_cells * 9)
@@ -466,6 +588,7 @@ def _run_suboff_lbm_drag(
             "max_relative_momentum_drift": max_relative_momentum_drift,
             "mass_sample_count": mass_sample_count,
             "sampled_step_count": completed_steps,
+            "momentum_budget": momentum_budget_summary,
         },
     }
     return cd, fx_lu, mesh_stats
@@ -704,6 +827,7 @@ def run_suboff_resistance_runtime(
     max_relative_momentum_drift = runtime_evidence.get("max_relative_momentum_drift")
     mass_sample_count = runtime_evidence.get("mass_sample_count")
     sampled_step_count = runtime_evidence.get("sampled_step_count")
+    momentum_budget = runtime_evidence.get("momentum_budget")
     grid = final_iteration.get("grid")
     numerical_fields = (requested_steps, completed_steps, population_checks, density_checks, density_min, density_max)
     evidence_is_numeric = all(isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -801,6 +925,44 @@ def run_suboff_resistance_runtime(
     else:
         dominant_channel = "momentum"
         attribution_reason = "momentum_bound_exceeded" if not momentum_pass else "momentum_is_larger_normalized_drift"
+    budget_diagnostic = (isinstance(momentum_budget, dict)
+                         and momentum_budget.get("status") == "measured"
+                         and isinstance(momentum_budget.get("samples"), list))
+    budget_observed = (budget_diagnostic
+                       and momentum_budget.get("coverage") == "full_per_step"
+                       and len(momentum_budget["samples"]) == completed_steps)
+    operator_attribution: dict[str, object]
+    if not budget_diagnostic:
+        operator_attribution = {"status": "withheld", "reason": "operator_budget_disabled"}
+    else:
+        cumulative = momentum_budget.get("cumulative_sampled")
+        if not isinstance(cumulative, dict):
+            operator_attribution = {"status": "withheld", "reason": "momentum_budget_cumulative_unavailable"}
+        else:
+            channels = ("collision", "inlet_boundary", "outlet_boundary", "wall_exchange", "solid_exchange")
+            norms: dict[str, float] = {}
+            for channel in channels:
+                value = cumulative.get(channel)
+                if (not isinstance(value, list) or len(value) != 3
+                        or not all(isinstance(component, (int, float)) and math.isfinite(float(component))
+                                   for component in value)):
+                    norms = {}
+                    break
+                norms[channel] = math.sqrt(sum(float(component) ** 2 for component in value))
+            if not norms:
+                operator_attribution = {"status": "withheld", "reason": "non_finite_operator_budget"}
+            else:
+                dominant_operator = max(norms, key=lambda channel: norms[channel])
+                operator_attribution = {
+                    "status": "measured" if budget_observed else "sampled",
+                    "dominant_operator": dominant_operator,
+                    "reason": ("largest_cumulative_operator_momentum_norm"
+                               if budget_observed else "largest_sampled_operator_momentum_norm"),
+                    "coverage": momentum_budget.get("coverage"),
+                    "cumulative_norms": norms,
+                    "boundary_flux": momentum_budget.get("boundary_flux"),
+                    "body_force": momentum_budget.get("body_force"),
+                }
     return {
         "schema": "suboff-resistance-runtime-observation-v1",
         "case": "suboff_runtime",
@@ -862,7 +1024,11 @@ def run_suboff_resistance_runtime(
                          "normalized_bound_utilization": mass_normalized},
                 "momentum": {"max_relative_drift": float(max_relative_momentum_drift) if conservation_is_numeric else None,
                              "limit": config.conservation_max_relative_momentum_drift, "pass": momentum_pass,
-                             "normalized_bound_utilization": momentum_normalized},
+                             "normalized_bound_utilization": momentum_normalized,
+                             "operator_budget": momentum_budget if budget_diagnostic else {
+                                 "status": "disabled", "reason": "operator_budget_disabled"},
+                             "per_step_budget": momentum_budget if budget_observed else None,
+                             "operator_attribution": operator_attribution},
             },
         },
         "physics": {"status": "withheld", "pass": False,
