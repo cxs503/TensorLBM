@@ -48,6 +48,9 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 import torch
+import torch.distributed as dist
+
+from tensorlbm.d3q19 import C
 
 
 # ---------------------------------------------------------------------------
@@ -377,6 +380,112 @@ def auto_decompose(
     return DomainDecomposition(devices=devices, nx_global=nx)
 
 
+# ---------------------------------------------------------------------------
+# Two-rank CPU/Gloo D3Q19 transport
+# ---------------------------------------------------------------------------
+
+class D3Q19GlooTransport:
+    """One-rank-per-x-slab D3Q19 transport for an initialized two-rank Gloo PG.
+
+    ``step`` has production ordering: collision on owned cells, transport of
+    all 19 post-collision boundary populations, ghost validation, then pull
+    streaming.  Each rank stores only its owned slab and ghosts.
+    """
+
+    def __init__(self) -> None:
+        if not dist.is_available() or not dist.is_initialized():
+            raise RuntimeError("D3Q19GlooTransport requires an initialized torch.distributed group")
+        if dist.get_backend() != "gloo":
+            raise RuntimeError("D3Q19GlooTransport requires the Gloo backend")
+        if dist.get_world_size() != 2:
+            raise RuntimeError("D3Q19GlooTransport requires exactly two ranks")
+        self.rank = dist.get_rank()
+
+    @staticmethod
+    def _check_owned(f_owned: torch.Tensor) -> None:
+        if f_owned.ndim != 4 or f_owned.shape[0] != 19:
+            raise ValueError("owned distributions must have shape (19, nz, ny, nx_local)")
+        if f_owned.shape[-1] < 1:
+            raise ValueError("each rank must own at least one x cell")
+        if f_owned.device.type != "cpu":
+            raise ValueError("D3Q19GlooTransport is CPU-only")
+
+    def exchange_ghosts(self, f_owned: torch.Tensor) -> torch.Tensor:
+        """Transport all populations' owned boundary planes and pad ghosts."""
+        self._check_owned(f_owned)
+        boundary = torch.stack((f_owned[..., -1], f_owned[..., 0]), dim=-1).contiguous()
+        peer = torch.empty_like(boundary)
+        # Every rank sends just its two boundary planes.  Unlike all_gather,
+        # this stays valid when the owned slab widths differ (for example 4/5).
+        peer_rank = 1 - self.rank
+        send_request = dist.isend(boundary, dst=peer_rank)
+        receive_request = dist.irecv(peer, src=peer_rank)
+        assert send_request is not None and receive_request is not None
+        send_request.wait()
+        receive_request.wait()
+        padded = torch.empty((*f_owned.shape[:-1], f_owned.shape[-1] + 2), dtype=f_owned.dtype)
+        padded[..., 0] = peer[..., 0]
+        padded[..., 1:-1] = f_owned
+        padded[..., -1] = peer[..., 1]
+        self.validate_ghosts(padded, peer)
+        return padded
+
+    def validate_ghosts(self, padded: torch.Tensor, peer: torch.Tensor | None = None) -> None:
+        """Fail closed when either ghost differs from peer-owned data."""
+        if padded.ndim != 4 or padded.shape[0] != 19 or padded.shape[-1] < 3:
+            raise ValueError("padded distributions must have shape (19, nz, ny, nx_local + 2)")
+        if peer is None:
+            owned = padded[..., 1:-1]
+            boundary = torch.stack((owned[..., -1], owned[..., 0]), dim=-1).contiguous()
+            peer = torch.empty_like(boundary)
+            peer_rank = 1 - self.rank
+            send_request = dist.isend(boundary, dst=peer_rank)
+            receive_request = dist.irecv(peer, src=peer_rank)
+            assert send_request is not None and receive_request is not None
+            send_request.wait()
+            receive_request.wait()
+        if not torch.equal(padded[..., 0], peer[..., 0]) or not torch.equal(padded[..., -1], peer[..., 1]):
+            raise RuntimeError("D3Q19 Gloo ghost validation failed")
+
+    def gather_owned(self, f_owned: torch.Tensor) -> torch.Tensor:
+        """Collect variable-width owned slabs in rank order on every rank.
+
+        ``all_gather`` requires identically shaped tensors, so first exchange
+        widths and pad only for the collective; the returned tensor contains
+        exactly the owned columns, never padding or ghost cells.
+        """
+        self._check_owned(f_owned)
+        width = torch.tensor([f_owned.shape[-1]], dtype=torch.int64)
+        widths = [torch.empty_like(width) for _ in range(2)]
+        dist.all_gather(widths, width)
+        owned_widths = [int(item.item()) for item in widths]
+        max_width = max(owned_widths)
+        packed = torch.zeros((*f_owned.shape[:-1], max_width), dtype=f_owned.dtype)
+        packed[..., :f_owned.shape[-1]] = f_owned
+        gathered = [torch.empty_like(packed) for _ in range(2)]
+        dist.all_gather(gathered, packed)
+        full = torch.cat(
+            [gathered[rank][..., :rank_width] for rank, rank_width in enumerate(owned_widths)],
+            dim=-1,
+        )
+        return full
+
+    def stream(self, padded: torch.Tensor) -> torch.Tensor:
+        """Periodic y/z and ghost-backed x pull stream, returning owned cells."""
+        self.validate_ghosts(padded)
+        out = torch.empty_like(padded[..., 1:-1])
+        for q, (cx, cy, cz) in enumerate(C.tolist()):
+            out[q] = torch.roll(padded[q], shifts=(cz, cy, cx), dims=(0, 1, 2))[..., 1:-1]
+        return out
+
+    def step(self, f_owned: torch.Tensor, collide_fn: Callable[[torch.Tensor], torch.Tensor] | None = None) -> torch.Tensor:
+        """Execute collision -> Gloo transport -> validation -> stream."""
+        self._check_owned(f_owned)
+        post_collision = f_owned if collide_fn is None else collide_fn(f_owned)
+        self._check_owned(post_collision)
+        return self.stream(self.exchange_ghosts(post_collision))
+
+
 __all__ = [
     "DomainDecomposition",
     "MultiGPUSolver2D",
@@ -384,4 +493,5 @@ __all__ = [
     "halo_exchange_2d",
     "halo_exchange_3d",
     "auto_decompose",
+    "D3Q19GlooTransport",
 ]
