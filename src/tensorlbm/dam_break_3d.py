@@ -65,6 +65,33 @@ import matplotlib.pyplot as plt
 Model3D = Literal["sc", "cg", "fe", "fs"]
 
 
+def _topology_event(
+    previous: tuple[int, int], current: tuple[int, int], conversion: float, redistribution: float,
+) -> bool:
+    """Whether topology work occurred, including count-neutral exchanges."""
+    return current != previous or abs(conversion) + abs(redistribution) > 0.0
+
+
+def _linear_drift_slope(history: list[tuple[int, float]], window: int) -> tuple[float, int]:
+    """Terminal/rolling least-squares slope of cumulative drift versus step."""
+    points = history[-window:]
+    count = len(points)
+    if count < 2:
+        return 0.0, count
+    mean_step = sum(point[0] for point in points) / count
+    mean_drift = sum(point[1] for point in points) / count
+    denominator = sum((point[0] - mean_step) ** 2 for point in points)
+    return (
+        sum((point[0] - mean_step) * (point[1] - mean_drift) for point in points) / denominator,
+        count,
+    )
+
+
+def _topology_drift_violates(event: bool, normalized_drift: float, tolerance: float) -> bool:
+    """Apply the topology gate for both count-changing and neutral work."""
+    return event and abs(normalized_drift) > tolerance
+
+
 @dataclass(frozen=True)
 class DamBreak3DConfig:
     """3D dam-break with obstacle (Koshizuka & Oka 1996).
@@ -123,6 +150,15 @@ class DamBreak3DConfig:
     # Tracked-mass accounting tolerance, not a physical/PV conservation claim.
     free_surface_unexplained_tolerance: float = 1.0e-3
     free_surface_paired_tolerance: float = 1.0e-5
+    # Long-run campaign limits observe the independent ledger only; they never
+    # apply a global mass correction.  Limits are relative to the initial
+    # tracked mass, so they retain their meaning when the domain is resized.
+    free_surface_relative_cumulative_drift_tolerance: float = 1.0e-3
+    free_surface_relative_drift_slope_tolerance: float = 1.0e-5
+    # A topology update may move O(1) lattice mass locally.  Five percent of
+    # that explicit work is the default accounting alarm, not a PV claim.
+    free_surface_topology_normalized_drift_tolerance: float = 5.0e-2
+    free_surface_drift_slope_window: int = 100
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -139,8 +175,13 @@ class DamBreak3DConfig:
             raise ValueError("rho_heavy > rho_light")
         if self.tau <= 0.5:
             raise ValueError(f"tau={self.tau} <= 0.5")
-        if self.free_surface_unexplained_tolerance < 0 or self.free_surface_paired_tolerance < 0:
+        if (self.free_surface_unexplained_tolerance < 0 or self.free_surface_paired_tolerance < 0
+                or self.free_surface_relative_cumulative_drift_tolerance < 0
+                or self.free_surface_relative_drift_slope_tolerance < 0
+                or self.free_surface_topology_normalized_drift_tolerance < 0):
             raise ValueError("free-surface accounting tolerances must be non-negative")
+        if self.free_surface_drift_slope_window < 2:
+            raise ValueError("free_surface_drift_slope_window must be at least two")
 
     def resolved_run_name(self) -> str:
         if self.run_name:
@@ -434,10 +475,16 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
     fs_handoff: list[dict[str, object]] = []
     fs_runtime: dict[str, object] = {}
     fs_initial_topology: tuple[int, int] | None = None
+    fs_initial_mass: float | None = None
+    fs_previous_topology: tuple[int, int] | None = None
+    fs_topology_events: list[dict[str, object]] = []
+    fs_cumulative_drift_history: list[tuple[int, float]] = []
     fs_topology_changed = False
     gy = -config.gravity
     if config.model == "fs":
         fs_initial_topology = (int((flags == LIQUID).sum()), int((flags == INTERFACE).sum()))
+        fs_previous_topology = fs_initial_topology
+        fs_initial_mass = float(mass.sum().item())
 
     for step in range(1, config.n_steps + 1):
         # Collision + streaming
@@ -515,6 +562,58 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             topology = (int((flags == LIQUID).sum()), int((flags == INTERFACE).sum()))
             quality["liquid_cells"], quality["interface_cells"] = topology
             fs_topology_changed = fs_topology_changed or topology != fs_initial_topology
+            assert fs_initial_mass is not None and fs_previous_topology is not None
+            cumulative_drift = float(quality["mass_end"]) - fs_initial_mass
+            conversion = float(quality["conversion"])
+            redistribution = float(quality["redistribution"])
+            conversion_redistribution_scale = abs(conversion) + abs(redistribution)
+            # Attribute drift relative to the local topology work, rather than
+            # subtracting physical conversion/redistribution from a mass delta.
+            normalized_drift = (float(quality["mass_drift"]) / conversion_redistribution_scale
+                                if conversion_redistribution_scale > 0.0
+                                else float(quality["mass_drift"]))
+            # A count-neutral exchange can still convert or redistribute mass.
+            # Therefore topology work, not just net flag counts, defines an
+            # event and activates its normalized-drift gate.
+            topology_count_changed = topology != fs_previous_topology
+            topology_event = _topology_event(fs_previous_topology, topology, conversion, redistribution)
+            relative_cumulative_drift = cumulative_drift / fs_initial_mass
+            fs_cumulative_drift_history.append((step, cumulative_drift))
+            cumulative_drift_slope, regression_count = _linear_drift_slope(
+                fs_cumulative_drift_history, config.free_surface_drift_slope_window,
+            )
+            relative_cumulative_drift_slope = cumulative_drift_slope / fs_initial_mass
+            quality.update({
+                "time": float(step),
+                "initial_mass": fs_initial_mass,
+                "instantaneous_mass_drift": float(quality["mass_drift"]),
+                "cumulative_drift": cumulative_drift,
+                "relative_cumulative_drift": relative_cumulative_drift,
+                "cumulative_drift_average_rate": cumulative_drift / step,
+                "relative_cumulative_drift_average_rate": relative_cumulative_drift / step,
+                "cumulative_drift_slope": cumulative_drift_slope,
+                "relative_cumulative_drift_slope": relative_cumulative_drift_slope,
+                "drift_slope_window_steps": regression_count,
+                "conversion_redistribution_normalized_drift": normalized_drift,
+                "topology_event": topology_event,
+                "topology_count_changed": topology_count_changed,
+                "liquid_cell_delta": topology[0] - fs_previous_topology[0],
+                "interface_cell_delta": topology[1] - fs_previous_topology[1],
+            })
+            if topology_event:
+                fs_topology_events.append({
+                    "step": step,
+                    "time": float(step),
+                    "liquid_cells_before": fs_previous_topology[0],
+                    "interface_cells_before": fs_previous_topology[1],
+                    "liquid_cells_after": topology[0],
+                    "interface_cells_after": topology[1],
+                    "conversion": float(quality["conversion"]),
+                    "redistribution": float(quality["redistribution"]),
+                    "topology_count_changed": topology_count_changed,
+                    "conversion_redistribution_normalized_drift": normalized_drift,
+                })
+            fs_previous_topology = topology
             violations: list[str] = []
             if not finite:
                 violations.append("non-finite free-surface state")
@@ -524,6 +623,14 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
                 violations.append("unexplained tracked-mass residual exceeds tolerance")
             if abs(float(quality["paired_residual"])) > config.free_surface_paired_tolerance:
                 violations.append("paired liquid/interface residual exceeds tolerance")
+            if abs(relative_cumulative_drift) > config.free_surface_relative_cumulative_drift_tolerance:
+                violations.append("relative cumulative tracked-mass drift exceeds tolerance")
+            if abs(relative_cumulative_drift_slope) > config.free_surface_relative_drift_slope_tolerance:
+                violations.append("relative cumulative tracked-mass drift slope exceeds tolerance")
+            if _topology_drift_violates(
+                topology_event, normalized_drift, config.free_surface_topology_normalized_drift_tolerance,
+            ):
+                violations.append("topology-event conversion/redistribution-normalized drift exceeds tolerance")
             if violations:
                 quality["quality_gate"] = "failed: " + "; ".join(violations)
                 raise RuntimeError(
@@ -610,9 +717,14 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
                 "passed": True,
                 "unexplained_tolerance": config.free_surface_unexplained_tolerance,
                 "paired_tolerance": config.free_surface_paired_tolerance,
+                "relative_cumulative_drift_tolerance": config.free_surface_relative_cumulative_drift_tolerance,
+                "relative_drift_slope_tolerance": config.free_surface_relative_drift_slope_tolerance,
+                "topology_normalized_drift_tolerance": config.free_surface_topology_normalized_drift_tolerance,
+                "drift_slope_window": config.free_surface_drift_slope_window,
                 "topology_changed": fs_topology_changed,
                 "diagnostic": "tracked-mass accounting only; not a physical/PV closure claim",
             },
+            "free_surface_topology_events": fs_topology_events,
         } if config.model == "fs" else {}),
     }
 
