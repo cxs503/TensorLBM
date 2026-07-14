@@ -1,4 +1,4 @@
-"""Two-rank fault injection: corrupted received D3Q19 ghosts must fail closed."""
+"""Three-rank fault injection: corrupted received D3Q19 ghosts must fail closed."""
 from __future__ import annotations
 
 import os
@@ -15,7 +15,8 @@ from tensorlbm.multi_gpu import D3Q19GlooTransport
 dist.init_process_group("gloo")
 rank = dist.get_rank()
 transport = D3Q19GlooTransport()
-owned = torch.full((19, 2, 3, 4), float(rank + 1), dtype=torch.float64)
+assert dist.get_world_size() == 3
+owned = torch.full((19, 2, 3, (3, 3, 4)[rank]), float(rank + 1), dtype=torch.float64)
 padded = transport.exchange_ghosts(owned)
 if rank == 0:
     padded[7, 0, 0, 0] += 1.0
@@ -40,7 +41,7 @@ def test_torchrun_gloo_corrupt_ghost_exits_nonzero(tmp_path: Path) -> None:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(root / "src") + os.pathsep + env.get("PYTHONPATH", "")
     result = subprocess.run(
-        ["torchrun", "--standalone", "--nproc_per_node=2", str(worker)],
+        ["torchrun", "--standalone", "--nproc_per_node=3", str(worker)],
         cwd=root,
         env=env,
         text=True,

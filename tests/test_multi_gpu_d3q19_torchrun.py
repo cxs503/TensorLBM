@@ -1,6 +1,6 @@
-"""Actual two-rank CPU/Gloo D3Q19 transport integration coverage.
+"""Actual three-rank CPU/Gloo D3Q19 transport integration coverage.
 
-Run directly with ``torchrun --standalone --nproc_per_node=2``; pytest starts
+Run directly with ``torchrun --standalone --nproc_per_node=3``; pytest starts
 that command so the tested transport cannot be substituted with in-process
 list copies.
 """
@@ -33,10 +33,11 @@ def monolithic_stream(f):
 dist.init_process_group("gloo")
 rank = dist.get_rank()
 torch.manual_seed(20260714)
-# The 4/5 cut is intentionally non-uniform: collective transport must not
-# assume that each rank has the same number of owned x cells.
-full = torch.randn(19, 3, 4, 9, dtype=torch.float64)
-cut = (0, 4, 9)
+# The 3/3/4 cut is intentionally non-uniform.  The ring transports only to
+# rank-neighbours, while gathering can reconstruct variable-width ownership.
+assert dist.get_world_size() == 3
+full = torch.randn(19, 3, 4, 10, dtype=torch.float64)
+cut = (0, 3, 6, 10)
 owned = full[..., cut[rank]:cut[rank + 1]].clone()
 transport = D3Q19GlooTransport()
 reference = full.clone()
@@ -50,7 +51,7 @@ for step in range(1, 4):
     mismatch = int((actual != reference).sum().item())
     metrics.append({
         "step": step,
-        "cut": [4, 5],
+        "owned_widths": [3, 3, 4],
         "nx_global": actual.shape[-1],
         "mismatch_all19_owned": mismatch,
         "periodic_x_edge_mismatch": int((actual[..., (0, -1)] != reference[..., (0, -1)]).sum().item()),
@@ -65,7 +66,7 @@ if any(item["mismatch_all19_owned"] for item in metrics):
 
 
 @pytest.mark.parametrize("run_under_torchrun", [True])
-def test_torchrun_gloo_two_rank_nonuniform_4_5_all19_owned_equivalence_for_1_2_n_steps(
+def test_torchrun_gloo_three_rank_nonuniform_3_3_4_all19_owned_equivalence_for_1_2_3_steps(
     tmp_path: Path, run_under_torchrun: bool
 ) -> None:
     worker = tmp_path / "gloo_equivalence_worker.py"
@@ -74,7 +75,7 @@ def test_torchrun_gloo_two_rank_nonuniform_4_5_all19_owned_equivalence_for_1_2_n
     env = os.environ.copy()
     env["PYTHONPATH"] = str(root / "src") + os.pathsep + env.get("PYTHONPATH", "")
     result = subprocess.run(
-        ["torchrun", "--standalone", "--nproc_per_node=2", str(worker)],
+        ["torchrun", "--standalone", "--nproc_per_node=3", str(worker)],
         cwd=root,
         env=env,
         text=True,
@@ -87,6 +88,6 @@ def test_torchrun_gloo_two_rank_nonuniform_4_5_all19_owned_equivalence_for_1_2_n
     assert '"step": 1' in result.stdout
     assert '"step": 2' in result.stdout
     assert '"step": 3' in result.stdout
-    assert '"cut": [4, 5]' in result.stdout
-    assert '"nx_global": 9' in result.stdout
+    assert '"owned_widths": [3, 3, 4]' in result.stdout
+    assert '"nx_global": 10' in result.stdout
     assert '"periodic_x_edge_mismatch": 0' in result.stdout
