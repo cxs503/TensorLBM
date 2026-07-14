@@ -70,7 +70,8 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
                            mass_after_redistribution, mass_after_clamp,
                            mass_after_conversion, mass_after_isolation, mass_end,
                            abb_population_delta, exchange_liquid_credit,
-                           exchange_interface_credit):
+                           exchange_interface_credit, exchange_bulk_debit,
+                           paired_liquid_interface_debit):
     """Record a physical tracked-mass budget without correcting the solver.
 
     Reference convention: ``mass.sum()`` is lattice liquid mass.  ABB is a
@@ -85,7 +86,11 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
     isolation = mass_after_isolation - mass_after_conversion
     boundary = mass_end - mass_after_isolation
     mass_drift = mass_end - mass_start
-    explained = redistribution + clamp + conversion + isolation + boundary
+    paired_net = exchange_liquid_credit + exchange_bulk_debit
+    # A paired L/I transfer is internal only after its explicit liquid-source
+    # debit has been applied; a legacy one-sided credit remains unexplained.
+    paired_explained = paired_net if paired_liquid_interface_debit else 0.0
+    explained = paired_explained + redistribution + clamp + conversion + isolation + boundary
     unexplained = mass_drift - explained
     record = {
         "step": len(steps) + 1,
@@ -96,18 +101,24 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
         "abb_population_delta": float(abb_population_delta),
         "abb_tracked_mass_source": 0.0,
         "liquid_interface_exchange": 0.0,
-        "liquid_interface_interface_credit": float(exchange_liquid_credit + exchange_interface_credit),
-        "liquid_interface_bulk_debit": 0.0,
+        "liquid_interface_interface_credit": float(exchange_liquid_credit),
+        "liquid_interface_neighbor_credit": float(exchange_interface_credit),
+        "liquid_interface_bulk_debit": float(exchange_bulk_debit),
+        "liquid_interface_paired_residual": float(paired_net),
+        "liquid_interface_paired": bool(paired_liquid_interface_debit),
         "redistribution": float(redistribution),
         "clamp": float(clamp),
         "conversion": float(conversion),
         "isolation": float(isolation),
         "boundary": float(boundary),
         "unexplained_residual": float(unexplained),
-        "closed_domain_conserved": abs(float(unexplained)) <= 1.0e-8,
+        # Runtime fields are float32; a paired sum may retain reduction-order
+        # roundoff even though every link has an equal/opposite counterpart.
+        "closed_domain_conserved": abs(float(unexplained)) <= 1.0e-6,
         "diagnostic": (
-            "one-sided liquid/interface mass credit has no bulk-liquid debit"
-            if abs(float(unexplained)) > 1.0e-8 else "closed tracked-mass budget balances"
+            "one-sided liquid/interface mass credit or unpaired interface/interface credit"
+            if abs(float(unexplained)) > 1.0e-6
+            else "tracked-mass ledger balances; not a physical/PV closure claim"
         ),
         "direct_liquid_gas_links": 0,
     }
@@ -237,6 +248,7 @@ def free_surface_step(
     mass_ledger=None,
     freeze_topology=False,
     runtime_ledger=None,
+    paired_liquid_interface_debit=False,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -444,6 +456,13 @@ def free_surface_step(
     mass_delta_interface = torch.where(
         from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f)
     )
+    # A L/I credit at interface target x is paired link-by-link with a debit
+    # at its pull source x-c_q.  This uses only existing D3Q19 links; it is
+    # neither a global rescale nor a topology mutation.
+    mass_delta_bulk_debit = -torch.stack([
+        mass_delta_liquid[q].roll((-sz, -sy, -sx), dims=(0, 1, 2))
+        for q, (sx, sy, sz) in enumerate(_C19_SHIFTS)
+    ]).sum(0)
     mass_delta = (
         mass_delta_liquid +
         # Gas is a pressure boundary, not a liquid-mass reservoir.  Adding
@@ -451,6 +470,14 @@ def free_surface_step(
         # mass in a quiescent closed column.
         torch.zeros_like(f) + mass_delta_interface
     ).sum(0)
+    if paired_liquid_interface_debit:
+        valid_bulk_owner = flags == LIQUID
+        invalid_debit = mass_delta_bulk_debit.masked_select(~valid_bulk_owner)
+        if bool((invalid_debit.abs() > 1.0e-8).any()):
+            raise RuntimeError("L/I paired debit has no LIQUID bulk owner")
+        mass_delta = mass_delta + torch.where(
+            valid_bulk_owner, mass_delta_bulk_debit, torch.zeros_like(mass_delta_bulk_debit)
+        )
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
     mass_after_exchange_value = float(mass.sum())
     fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
@@ -458,6 +485,9 @@ def free_surface_step(
         mass_ledger['exchange'] = float(mass.sum())
         mass_ledger['exchange_liquid_delta'] = float(mass_delta_liquid.sum())
         mass_ledger['exchange_interface_delta'] = float(mass_delta_interface.sum())
+        mass_ledger['exchange_bulk_debit'] = float(
+            mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
+        )
         mass_ledger['exchange_gas_delta'] = 0.0
         mass_ledger['fill_mass_after_exchange'] = float((fill * rho_liquid).sum())
 
@@ -484,6 +514,10 @@ def free_surface_step(
                 mass_end=float(mass.sum()), abb_population_delta=float(abb_delta.sum()),
                 exchange_liquid_credit=float(mass_delta_liquid.sum()),
                 exchange_interface_credit=float(mass_delta_interface.sum()),
+                exchange_bulk_debit=float(
+                    mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
+                ),
+                paired_liquid_interface_debit=paired_liquid_interface_debit,
             )
         return f, fill, flags, mass, df
 
@@ -599,6 +633,10 @@ def free_surface_step(
             mass_end=float(mass.sum()), abb_population_delta=float(abb_delta.sum()),
             exchange_liquid_credit=float(mass_delta_liquid.sum()),
             exchange_interface_credit=float(mass_delta_interface.sum()),
+            exchange_bulk_debit=float(
+                mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
+            ),
+            paired_liquid_interface_debit=paired_liquid_interface_debit,
         )
 
     return f, fill, flags, mass, df
