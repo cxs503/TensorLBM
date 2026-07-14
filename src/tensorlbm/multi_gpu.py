@@ -425,6 +425,16 @@ class D3Q19GlooTransport:
         digest.update(f_owned.detach().contiguous().numpy().tobytes())
         return digest.hexdigest()
 
+    @staticmethod
+    def _checkpoint_generation(digests: list[str], world_size: int, step: int) -> str:
+        """Bind a checkpoint set to its complete rank payload collection."""
+        digest = hashlib.sha256()
+        digest.update(b"tensorlbm-d3q19-gloo-generation-v1\0")
+        digest.update(f"{world_size}:{step}:".encode("ascii"))
+        for rank, member_digest in enumerate(digests):
+            digest.update(f"{rank}:{member_digest};".encode("ascii"))
+        return digest.hexdigest()
+
     def save_checkpoint(self, checkpoint_dir: os.PathLike[str] | str, f_owned: torch.Tensor, *, step: int) -> None:
         """Save verified rank-local owned state for a later same-world restart.
 
@@ -437,13 +447,20 @@ class D3Q19GlooTransport:
         checkpoint_dir = os.fspath(checkpoint_dir)
         os.makedirs(checkpoint_dir, exist_ok=True)
         owned = f_owned.detach().contiguous().clone()
+        member_digest = self._checkpoint_digest(owned, self.rank, self.world_size, step)
+        gathered_digests: list[object] = [None] * self.world_size
+        dist.all_gather_object(gathered_digests, member_digest)
+        if not all(isinstance(item, str) for item in gathered_digests):
+            raise RuntimeError("D3Q19 checkpoint generation collection failed")
+        generation = self._checkpoint_generation(gathered_digests, self.world_size, step)  # type: ignore[arg-type]
         payload = {
             "format": "tensorlbm.d3q19.gloo.rank-local.v1",
             "rank": self.rank,
             "world_size": self.world_size,
             "step": step,
+            "generation": generation,
             "owned": owned,
-            "digest": self._checkpoint_digest(owned, self.rank, self.world_size, step),
+            "digest": member_digest,
         }
         target = os.path.join(checkpoint_dir, f"rank-{self.rank}.pt")
         temporary = target + ".tmp"
@@ -452,37 +469,52 @@ class D3Q19GlooTransport:
         dist.barrier()
 
     def load_checkpoint(self, checkpoint_dir: os.PathLike[str] | str) -> tuple[torch.Tensor, int]:
-        """Load this rank's state, rejecting absence, identity errors, and tampering."""
-        target = os.path.join(os.fspath(checkpoint_dir), f"rank-{self.rank}.pt")
-        if not os.path.isfile(target):
-            raise RuntimeError(f"D3Q19 checkpoint missing rank-local file: {target}")
-        try:
-            payload = torch.load(target, map_location="cpu", weights_only=True)
-        except Exception as exc:
-            raise RuntimeError(f"D3Q19 checkpoint cannot be decoded: {target}") from exc
-        expected_keys = {"format", "rank", "world_size", "step", "owned", "digest"}
-        if not isinstance(payload, dict) or set(payload) != expected_keys:
-            raise RuntimeError("D3Q19 checkpoint has an invalid payload schema")
-        owned = payload["owned"]
-        if (
-            payload["format"] != "tensorlbm.d3q19.gloo.rank-local.v1"
-            or payload["rank"] != self.rank
-            or payload["world_size"] != self.world_size
-            or not isinstance(payload["step"], int)
-            or isinstance(payload["step"], bool)
-            or payload["step"] < 0
-            or not isinstance(payload["digest"], str)
-            or not isinstance(owned, torch.Tensor)
-        ):
-            raise RuntimeError("D3Q19 checkpoint identity or metadata validation failed")
-        try:
-            self._check_owned(owned)
-        except (TypeError, ValueError) as exc:
-            raise RuntimeError("D3Q19 checkpoint owned state validation failed") from exc
-        if self._checkpoint_digest(owned, self.rank, self.world_size, payload["step"]) != payload["digest"]:
-            raise RuntimeError("D3Q19 checkpoint digest validation failed")
+        """Load only after validating every member of the checkpoint set."""
+        checkpoint_dir = os.fspath(checkpoint_dir)
+        payloads: list[dict[object, object]] = []
+        expected_keys = {"format", "rank", "world_size", "step", "generation", "owned", "digest"}
+        for expected_rank in range(self.world_size):
+            target = os.path.join(checkpoint_dir, f"rank-{expected_rank}.pt")
+            if not os.path.isfile(target):
+                raise RuntimeError(f"D3Q19 checkpoint missing rank-local file: {target}")
+            try:
+                payload = torch.load(target, map_location="cpu", weights_only=True)
+            except Exception as exc:
+                raise RuntimeError(f"D3Q19 checkpoint cannot be decoded: {target}") from exc
+            if not isinstance(payload, dict) or set(payload) != expected_keys:
+                raise RuntimeError("D3Q19 checkpoint has an invalid payload schema")
+            owned = payload["owned"]
+            if (
+                payload["format"] != "tensorlbm.d3q19.gloo.rank-local.v1"
+                or payload["rank"] != expected_rank
+                or payload["world_size"] != self.world_size
+                or not isinstance(payload["step"], int)
+                or isinstance(payload["step"], bool)
+                or payload["step"] < 0
+                or not isinstance(payload["generation"], str)
+                or not isinstance(payload["digest"], str)
+                or not isinstance(owned, torch.Tensor)
+            ):
+                raise RuntimeError("D3Q19 checkpoint identity or metadata validation failed")
+            try:
+                self._check_owned(owned)
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError("D3Q19 checkpoint owned state validation failed") from exc
+            if self._checkpoint_digest(owned, expected_rank, self.world_size, payload["step"]) != payload["digest"]:
+                raise RuntimeError("D3Q19 checkpoint digest validation failed")
+            payloads.append(payload)
+        steps = {payload["step"] for payload in payloads}
+        generations = {payload["generation"] for payload in payloads}
+        if len(steps) != 1 or len(generations) != 1:
+            raise RuntimeError("D3Q19 checkpoint generation validation failed")
+        step = payloads[0]["step"]
+        generation = payloads[0]["generation"]
+        digests = [payload["digest"] for payload in payloads]
+        if generation != self._checkpoint_generation(digests, self.world_size, step):  # type: ignore[arg-type]
+            raise RuntimeError("D3Q19 checkpoint generation validation failed")
+        owned = payloads[self.rank]["owned"]
         dist.barrier()
-        return owned, payload["step"]
+        return owned, step  # type: ignore[return-value]
 
     def exchange_ghosts(self, f_owned: torch.Tensor) -> torch.Tensor:
         """Transport all populations' owned boundary planes and pad ghosts."""
