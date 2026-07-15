@@ -92,8 +92,112 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
     paired_explained = paired_net if paired_liquid_interface_debit else 0.0
     explained = paired_explained + redistribution + clamp + conversion + isolation + boundary
     unexplained = mass_drift - explained
+    step_number = len(steps) + 1
+    # Keep raw operator activity distinct from a root-cause claim.  In
+    # particular ABB is a population reconstruction observation, not a
+    # tracked-mass source, and the paired L/I event retains both endpoints
+    # rather than hiding them in a correction.
+    events = (
+        {
+            "event_id": f"step:{step_number}:operator:conversion",
+            "operator": "conversion",
+            "tracked_mass": True,
+            "net_delta": float(conversion),
+            "gross_magnitude": abs(float(conversion)),
+        },
+        {
+            "event_id": f"step:{step_number}:operator:redistribution",
+            "operator": "redistribution",
+            "tracked_mass": True,
+            "net_delta": float(redistribution),
+            "gross_magnitude": abs(float(redistribution)),
+        },
+        {
+            "event_id": f"step:{step_number}:operator:clamp",
+            "operator": "clamp",
+            "tracked_mass": True,
+            "net_delta": float(clamp),
+            "gross_magnitude": abs(float(clamp)),
+        },
+        {
+            "event_id": f"step:{step_number}:operator:isolation",
+            "operator": "isolation",
+            "tracked_mass": True,
+            "net_delta": float(isolation),
+            "gross_magnitude": abs(float(isolation)),
+        },
+        {
+            "event_id": f"step:{step_number}:operator:boundary",
+            "operator": "boundary",
+            "tracked_mass": True,
+            "net_delta": float(boundary),
+            "gross_magnitude": abs(float(boundary)),
+        },
+        {
+            "event_id": f"step:{step_number}:operator:abb",
+            "operator": "abb",
+            "tracked_mass": False,
+            "population_delta": float(abb_population_delta),
+            "net_delta": 0.0,
+            "gross_magnitude": abs(float(abb_population_delta)),
+        },
+        {
+            "event_id": f"step:{step_number}:operator:interface_paired_debit",
+            "operator": "interface_paired_debit",
+            "tracked_mass": True,
+            "interface_credit": float(exchange_liquid_credit),
+            "bulk_debit": float(exchange_bulk_debit),
+            "net_delta": float(paired_net),
+            "gross_magnitude": (
+                abs(float(exchange_liquid_credit)) + abs(float(exchange_bulk_debit))
+            ),
+        },
+    )
+    tracked_events = tuple(event for event in events if event["tracked_mass"])
+    gross = max(events, key=lambda event: float(event["gross_magnitude"]))
+    # Reconcile *all* tracked deltas independently of the legacy unexplained
+    # field (which deliberately leaves a one-sided L/I credit unexplained).
+    # No tolerance is used for attribution: a cause is named only when exactly
+    # one non-zero tracked delta supplies the expected drift.  Thus large,
+    # opposite conversion/redistribution activity cannot be mislabeled as the
+    # cause of their tiny cancellation residual.
+    tracked_delta_sum = sum(float(event["net_delta"]) for event in tracked_events)
+    reconciliation_residual = float(mass_drift) - tracked_delta_sum
+    active_events = tuple(event for event in tracked_events if float(event["net_delta"]) != 0.0)
+    if len(active_events) == 1 and reconciliation_residual == 0.0:
+        root_event = active_events[0]
+        root_operator = root_event["operator"]
+        root_reason = "single_tracked_operator_reconciles_observed_drift"
+    elif len(active_events) == 0:
+        root_event = None
+        root_operator = "withheld/unexplained"
+        root_reason = "no_nonzero_tracked_operator"
+    elif reconciliation_residual != 0.0:
+        root_event = None
+        root_operator = "withheld/unexplained"
+        root_reason = "tracked_deltas_do_not_reconcile_observed_drift"
+    else:
+        root_event = None
+        root_operator = "withheld/unexplained"
+        root_reason = "multiple_tracked_operators_no_unique_residual_cause"
+    attribution = {
+        "gross_activity_event_id": gross["event_id"],
+        "gross_activity_operator": gross["operator"],
+        "gross_activity_magnitude": float(gross["gross_magnitude"]),
+        "dominant_event_id": None if root_event is None else root_event["event_id"],
+        "dominant_operator": root_operator,
+        "dominant_magnitude": 0.0 if root_event is None else abs(float(root_event["net_delta"])),
+        "reason": root_reason,
+        "events": events,
+    }
+    reconciliation = {
+        "sum_tracked_deltas": float(tracked_delta_sum),
+        "expected_drift": float(tracked_delta_sum),
+        "observed_drift": float(mass_drift),
+        "residual": float(reconciliation_residual),
+    }
     record = {
-        "step": len(steps) + 1,
+        "step": step_number,
         "mass_start": float(mass_start),
         "mass_end": float(mass_end),
         "mass_drift": float(mass_drift),
@@ -129,10 +233,26 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
             if abs(float(unexplained)) > 1.0e-6
             else "tracked-mass ledger balances; not a physical/PV closure claim"
         ),
+        "operator_attribution": attribution,
+        "residual_reconciliation": reconciliation,
         "direct_liquid_gas_links": 0,
         "directLG": 0,
     }
     steps.append(record)
+    # A curve is append-only and retains the exact event identity used for each
+    # point, so a long-run gate can cite an operator rather than a bare step.
+    ledger.setdefault("operator_curve", []).append({
+        "step": step_number,
+        "mass_drift": float(mass_drift),
+        "unexplained_residual": float(unexplained),
+        "sum_tracked_deltas": reconciliation["sum_tracked_deltas"],
+        "expected_drift": reconciliation["expected_drift"],
+        "reconciliation_residual": reconciliation["residual"],
+        "dominant_operator": attribution["dominant_operator"],
+        "dominant_event_id": attribution["dominant_event_id"],
+        "gross_activity_operator": attribution["gross_activity_operator"],
+        "attribution_reason": attribution["reason"],
+    })
     ledger.update(record)
 
 

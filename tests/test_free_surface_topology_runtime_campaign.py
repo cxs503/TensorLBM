@@ -81,3 +81,63 @@ def test_ten_actual_topology_changing_steps_have_local_paired_liquid_interface_b
 
     assert any(abs(float(step["conversion"])) > 1.0e-4 for step in steps)
     assert any(abs(float(step["redistribution"])) > 1.0e-4 for step in steps)
+
+
+def test_runtime_ledger_separates_gross_operator_activity_from_drift_attribution() -> None:
+    """Cancellation is gross activity, not evidence of a drift root cause.
+
+    This deliberately exercises the real conversion path, rather than feeding
+    synthetic ledger numbers into a reporting helper. ABB is retained as a
+    population-only observation.  Steps 3 and 5 have real, opposite conversion
+    and redistribution deltas; their roundoff drift must be withheld rather
+    than falsely assigned to the larger gross operator.
+    """
+    f, fill, flags, solid = _topology_changing_closed_state()
+    runtime: dict[str, object] = {}
+    mass = fill.clone()
+    for _ in range(10):
+        f, fill, flags, mass, _ = free_surface_step(
+            f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=1.0e-3,
+            runtime_ledger=runtime, paired_liquid_interface_debit=True,
+        )
+
+    steps = runtime["steps"]
+    curve = runtime["operator_curve"]
+    assert isinstance(steps, list) and isinstance(curve, list)
+    assert len(curve) == len(steps) == 10
+    for step, point in zip(steps, curve):
+        attribution = step["operator_attribution"]
+        assert point["step"] == step["step"]
+        assert attribution["gross_activity_event_id"].startswith(f"step:{step['step']}:operator:")
+        assert attribution["gross_activity_operator"] in {
+            "conversion", "redistribution", "clamp", "isolation", "boundary",
+            "abb", "interface_paired_debit",
+        }
+        events = attribution["events"]
+        assert {event["operator"] for event in events} == {
+            "conversion", "redistribution", "clamp", "isolation", "boundary",
+            "abb", "interface_paired_debit",
+        }
+        assert all(event["event_id"].startswith(f"step:{step['step']}:operator:") for event in events)
+        abb = next(event for event in events if event["operator"] == "abb")
+        assert abb["tracked_mass"] is False
+        reconciliation = step["residual_reconciliation"]
+        assert reconciliation["sum_tracked_deltas"] == pytest.approx(
+            reconciliation["expected_drift"], abs=0.0
+        )
+        assert reconciliation["observed_drift"] == pytest.approx(step["mass_drift"], abs=0.0)
+
+    for index in (2, 4):  # steps 3 and 5
+        step = steps[index]
+        attribution = step["operator_attribution"]
+        assert abs(float(step["conversion"])) > 1.0e-4
+        assert abs(float(step["redistribution"])) > 1.0e-4
+        assert float(step["conversion"]) * float(step["redistribution"]) < 0.0
+        assert attribution["gross_activity_operator"] in {"conversion", "redistribution"}
+        assert attribution["dominant_operator"] == "withheld/unexplained"
+        assert attribution["dominant_event_id"] is None
+        assert attribution["reason"] in {
+            "multiple_tracked_operators_no_unique_residual_cause",
+            "tracked_deltas_do_not_reconcile_observed_drift",
+        }
+        assert abs(float(step["residual_reconciliation"]["residual"])) <= 1.0e-6
