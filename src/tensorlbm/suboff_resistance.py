@@ -360,8 +360,8 @@ def _same_time_control_volume_momentum_evidence(
             "operator_state_deltas": {
                 "status": "measured",
                 "values": {name: operator_sample[name] for name in (
-                    "collision", "inlet_boundary", "outlet_boundary", "wall_exchange",
-                    "solid_exchange", "unexplained_residual",
+                    "collision", "streaming", "inlet_boundary", "outlet_boundary",
+                    "wall_exchange", "solid_exchange", "unexplained_residual",
                 )},
                 "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
                 "meaning": "population-state deltas over the stated interval; not face-flux terms",
@@ -494,6 +494,7 @@ def _run_suboff_lbm_drag(
     }
     momentum_budget_totals = {
         "collision": torch.zeros(3, dtype=torch.float64, device=device),
+        "streaming": torch.zeros(3, dtype=torch.float64, device=device),
         "inlet_boundary": torch.zeros(3, dtype=torch.float64, device=device),
         "outlet_boundary": torch.zeros(3, dtype=torch.float64, device=device),
         "wall_exchange": torch.zeros(3, dtype=torch.float64, device=device),
@@ -550,18 +551,23 @@ def _run_suboff_lbm_drag(
             momentum_after_boundaries = _lattice_momentum(f)
             assert (momentum_before is not None and momentum_after_collision is not None
                     and momentum_after_stream is not None)
+            # Exact global first moments of the full retained population array
+            # before and after each operator. This is an operator-domain ledger,
+            # explicitly not a physical fluid control-volume balance.
             collision_delta = momentum_after_collision - momentum_before
+            streaming_delta = momentum_after_stream - momentum_after_collision
             inlet_delta = momentum_after_inlet - momentum_after_solid_preboundary
             outlet_delta = momentum_after_outlet - momentum_after_inlet
             wall_delta = momentum_after_wall - momentum_after_outlet
             solid_delta = (momentum_after_solid_preboundary - momentum_after_stream
                            + momentum_after_boundaries - momentum_after_wall)
             total_delta = momentum_after_boundaries - momentum_before
-            explained_delta = collision_delta + inlet_delta + outlet_delta + wall_delta + solid_delta
+            explained_delta = (collision_delta + streaming_delta + inlet_delta + outlet_delta
+                               + wall_delta + solid_delta)
             operator_deltas = {
-                "collision": collision_delta, "inlet_boundary": inlet_delta,
-                "outlet_boundary": outlet_delta, "wall_exchange": wall_delta,
-                "solid_exchange": solid_delta,
+                "collision": collision_delta, "streaming": streaming_delta,
+                "inlet_boundary": inlet_delta, "outlet_boundary": outlet_delta,
+                "wall_exchange": wall_delta, "solid_exchange": solid_delta,
                 "unexplained_residual": total_delta - explained_delta,
             }
             for name, delta in operator_deltas.items():
@@ -578,6 +584,55 @@ def _run_suboff_lbm_drag(
                 "face_flux": face_flux,
                 **{name: [float(value) for value in delta.cpu().tolist()]
                    for name, delta in operator_deltas.items()},
+                "operator_domain_ledger": {
+                    "status": "measured",
+                    "domain": "entire retained D3Q19 population array",
+                    "sample_phase": "post_complete_d3q19_bc_population_state",
+                    "operator_identity": {
+                        "status": "measured",
+                        "equation": (
+                            "fluid_momentum_delta = collision + streaming + inlet_boundary "
+                            "+ outlet_boundary + wall_exchange + solid_exchange "
+                            "+ unexplained_residual"
+                        ),
+                        "residual": [float(value) for value in operator_deltas[
+                            "unexplained_residual"].cpu().tolist()],
+                        "meaning": (
+                            "exact same-phase full-array population-momentum identity; "
+                            "not a physical control-volume closure"
+                        ),
+                    },
+                    "streaming": {
+                        "fluid_momentum_change": [float(value) for value in streaming_delta.cpu().tolist()],
+                        "implementation": "periodic torch.roll permutation",
+                        "expected": "zero_global_population_momentum_delta",
+                        "meaning": (
+                            "stream3d is a periodic population permutation; any nonzero "
+                            "floating-point reduction remainder is not a boundary flux"
+                        ),
+                    },
+                    "wall_impulse": {
+                        "fluid_momentum_change": [float(value) for value in wall_delta.cpu().tolist()],
+                        "reaction_on_wall": [float(value) for value in (-wall_delta).cpu().tolist()],
+                        "sign_convention": (
+                            "fluid_momentum_change is added to fluid; reaction_on_wall "
+                            "is the equal-and-opposite operator reaction"
+                        ),
+                        "scope": "bounce_back_cells_3d(wall_mask) over all retained populations",
+                    },
+                    "solid_impulse": {
+                        "fluid_momentum_change": [float(value) for value in solid_delta.cpu().tolist()],
+                        "reaction_on_solid": [float(value) for value in (-solid_delta).cpu().tolist()],
+                        "sign_convention": (
+                            "fluid_momentum_change is added to fluid; reaction_on_solid "
+                            "is the equal-and-opposite operator reaction"
+                        ),
+                        "scope": (
+                            "sum of all retained-population solid operators in this step "
+                            "(wall model when enabled and obstacle bounce-back when enabled)"
+                        ),
+                    },
+                },
             })
         else:
             # Preserve the established normal-path operator grouping exactly.
