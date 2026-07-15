@@ -71,7 +71,7 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
                            mass_after_conversion, mass_after_isolation, mass_end,
                            abb_population_delta, exchange_liquid_credit,
                            exchange_interface_credit, exchange_bulk_debit,
-                           paired_liquid_interface_debit):
+                           paired_liquid_interface_debit, conversion_evidence=None):
     """Record a physical tracked-mass budget without correcting the solver.
 
     Reference convention: ``mass.sum()`` is lattice liquid mass.  ABB is a
@@ -235,6 +235,9 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
         ),
         "operator_attribution": attribution,
         "residual_reconciliation": reconciliation,
+        # Observation only: exact conversion/redistribution cell-link evidence
+        # prevents reduction-order residuals from becoming root-cause claims.
+        "conversion_evidence": conversion_evidence,
         "direct_liquid_gas_links": 0,
         "directLG": 0,
     }
@@ -397,6 +400,9 @@ def free_surface_step(
     if mass is None:
         mass = init_mass_from_fill(fill, flags, rho_liquid)
     mass_start_value = float(mass.sum())
+    # Filled after conversion only for runtime-ledger callers; this avoids any
+    # diagnostic allocation in production paths that do not request evidence.
+    conversion_evidence = None
     if mass_ledger is not None:
         mass_ledger['start'] = float(mass.sum())
         mass_ledger['interface_start'] = float(mass[flags == INTERFACE].sum())
@@ -648,6 +654,7 @@ def free_surface_step(
                     mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
                 ),
                 paired_liquid_interface_debit=paired_liquid_interface_debit,
+                conversion_evidence=conversion_evidence,
             )
         return f, fill, flags, mass, df
 
@@ -688,6 +695,9 @@ def free_surface_step(
     n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
     # Excess per receiving neighbor
     excess_per_nb = excess / n_recv
+    # This is the donor/receiver mass state before any of the 18 link updates.
+    # Retain it only for a requested runtime observation.
+    mass_before_redistribution = mass.clone() if runtime_ledger is not None else None
     # Distribute to receivers over every D3Q19 link.
     for shift in _D3Q19_TENSOR_SHIFTS:
         receiver_shift = tuple(-delta for delta in shift)
@@ -701,6 +711,15 @@ def free_surface_step(
     if mass_ledger is not None:
         mass_ledger['clamp'] = float(mass.sum())
 
+    # Capture exact sparse cell/link observations around redistribution and
+    # conversion.  The evidence uses no attribution tolerance and is retained
+    # only on the runtime-ledger diagnostic path.  It is intentionally a
+    # sparse state snapshot, rather than a guessed residual attribution.
+    mass_before_conversion = mass.clone() if runtime_ledger is not None else None
+    fill_before_conversion = fill.clone() if runtime_ledger is not None else None
+    flags_before_conversion = flags.clone() if runtime_ledger is not None else None
+    f_before_conversion = f.clone() if runtime_ledger is not None else None
+
     # Apply cell conversion (mass assignment AFTER redistribution)
     # (no .any() sync — torch.where handles empty masks)
     flags = torch.where(to_liq, torch.full_like(flags, LIQUID), flags)
@@ -712,6 +731,71 @@ def free_surface_step(
     mass = torch.where(to_gas, torch.zeros_like(mass), mass)
     f = torch.where(to_gas.unsqueeze(0), torch.zeros_like(f), f)
     mass_after_conversion_value = float(mass.sum())
+    if runtime_ledger is not None:
+        assert mass_before_redistribution is not None
+        assert mass_before_conversion is not None
+        assert fill_before_conversion is not None
+        assert flags_before_conversion is not None
+        assert f_before_conversion is not None
+        conversion_delta = mass - mass_before_conversion
+        conversion_cells = []
+        for cell in torch.nonzero((to_liq | to_gas) & (conversion_delta != 0.0), as_tuple=False).tolist():
+            z, y, x = (int(value) for value in cell)
+            conversion_cells.append({
+                "cell": (z, y, x),
+                "flag_before": int(flags_before_conversion[z, y, x]),
+                "flag_after": int(flags[z, y, x]),
+                "mass_before": float(mass_before_conversion[z, y, x]),
+                "mass_after": float(mass[z, y, x]),
+                "mass_delta": float(conversion_delta[z, y, x]),
+                "fill_before": float(fill_before_conversion[z, y, x]),
+                "fill_after": float(fill[z, y, x]),
+                "f_before": tuple(float(value) for value in f_before_conversion[:, z, y, x]),
+                "f_after": tuple(float(value) for value in f[:, z, y, x]),
+                "population_before": float(f_before_conversion[:, z, y, x].sum()),
+                "population_after": float(f[:, z, y, x].sum()),
+                "event_id": "conversion",
+                "operator": "conversion",
+            })
+        redistribution_links = []
+        # Donor d reaches r=d-shift under the periodic roll convention above.
+        # Only exact nonzero link contributions are retained.
+        shape = mass.shape
+        for shift in _D3Q19_TENSOR_SHIFTS:
+            dz, dy, dx = shift
+            receiver_for_donor = recv_mask.roll(shift, dims=(0, 1, 2))
+            for donor in torch.nonzero((excess_per_nb != 0.0) & receiver_for_donor, as_tuple=False).tolist():
+                z, y, x = (int(value) for value in donor)
+                rz, ry, rx = ((z - dz) % shape[0], (y - dy) % shape[1],
+                              (x - dx) % shape[2])
+                redistribution_links.append({
+                    "donor": (z, y, x),
+                    "receiver": (rz, ry, rx),
+                    "shift": (dz, dy, dx),
+                    "mass_delta": float(excess_per_nb[z, y, x]),
+                    "event_id": "redistribution",
+                    "operator": "redistribution",
+                    "donor_mass_before_redistribution": float(mass_before_redistribution[z, y, x]),
+                    "receiver_flag_before": int(flags_before_conversion[rz, ry, rx]),
+                    "receiver_flag_after": int(flags[rz, ry, rx]),
+                    "receiver_fill_before": float(fill_before_conversion[rz, ry, rx]),
+                    "receiver_fill_after": float(fill[rz, ry, rx]),
+                    "receiver_mass_before": float(mass_before_redistribution[rz, ry, rx]),
+                    "receiver_mass_after": float(mass[rz, ry, rx]),
+                    "receiver_f_before": tuple(float(value) for value in f_before_conversion[:, rz, ry, rx]),
+                    "receiver_f_after": tuple(float(value) for value in f[:, rz, ry, rx]),
+                })
+        # ``sum`` is deliberately Python/float64 here: this reports the exact
+        # per-cell/link contributions even when float32 tensor reductions round
+        # their aggregate differently.  Both totals are retained as evidence.
+        conversion_evidence = {
+            "snapshot_kind": "actual_sparse_pre_redistribution_to_post_conversion",
+            "conversion_cells": tuple(conversion_cells),
+            "redistribution_links": tuple(redistribution_links),
+            "conversion_cell_delta_sum": float(sum(cell["mass_delta"] for cell in conversion_cells)),
+            "conversion_tensor_delta_sum": float(conversion_delta.sum()),
+            "redistribution_link_delta_sum": float(sum(link["mass_delta"] for link in redistribution_links)),
+        }
     if mass_ledger is not None:
         mass_ledger['conversion'] = float(mass.sum())
 
@@ -767,6 +851,7 @@ def free_surface_step(
                 mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
             ),
             paired_liquid_interface_debit=paired_liquid_interface_debit,
+            conversion_evidence=conversion_evidence,
         )
 
     return f, fill, flags, mass, df

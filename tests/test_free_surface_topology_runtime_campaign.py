@@ -141,3 +141,57 @@ def test_runtime_ledger_separates_gross_operator_activity_from_drift_attribution
             "tracked_deltas_do_not_reconcile_observed_drift",
         }
         assert abs(float(step["residual_reconciliation"]["residual"])) <= 1.0e-6
+
+
+def test_hundred_actual_steps_preserve_fail_closed_cell_link_evidence_at_41_and_46() -> None:
+    """The observed residual has candidates, not a false single-cell cause."""
+    f, fill, flags, solid = _topology_changing_closed_state()
+    runtime: dict[str, object] = {}
+    mass = fill.clone()
+    for _ in range(100):
+        f, fill, flags, mass, _ = free_surface_step(
+            f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=1.0e-3,
+            runtime_ledger=runtime, paired_liquid_interface_debit=True,
+        )
+
+    steps = runtime["steps"]
+    assert isinstance(steps, list) and len(steps) == 100
+    for number in (41, 46):
+        step = steps[number - 1]
+        evidence = step["conversion_evidence"]
+        assert evidence is not None
+        assert evidence["snapshot_kind"] == "actual_sparse_pre_redistribution_to_post_conversion"
+        cells = evidence["conversion_cells"]
+        links = evidence["redistribution_links"]
+        assert cells and links
+        assert float(step["conversion"]) < 0.0
+        assert any(float(cell["mass_delta"]) < 0.0 for cell in cells)
+        assert all(cell["flag_before"] == INTERFACE for cell in cells)
+        assert all(cell["flag_after"] == GAS for cell in cells)
+        assert all(cell["event_id"] == cell["operator"] == "conversion" for cell in cells)
+        assert all(len(cell["f_before"]) == len(cell["f_after"]) == 19 for cell in cells)
+        assert all(float(cell["fill_after"]) == 0.0 for cell in cells)
+        assert all(float(cell["population_after"]) == 0.0 for cell in cells)
+        assert all(float(link["mass_delta"]) > 0.0 for link in links)
+        assert all(link["event_id"] == link["operator"] == "redistribution" for link in links)
+        assert all(len(link["receiver_f_before"]) == len(link["receiver_f_after"]) == 19 for link in links)
+        assert all(link["receiver_flag_before"] == INTERFACE for link in links)
+        assert sum(float(cell["mass_delta"]) for cell in cells) == pytest.approx(
+            float(evidence["conversion_cell_delta_sum"]), abs=0.0
+        )
+        assert sum(float(link["mass_delta"]) for link in links) == pytest.approx(
+            float(evidence["redistribution_link_delta_sum"]), abs=0.0
+        )
+        # Float32 stage reductions differ from the exact sparse float64
+        # enumeration; this is evidence of reduction order, not a cell cause.
+        assert float(evidence["conversion_tensor_delta_sum"]) == pytest.approx(
+            float(evidence["conversion_cell_delta_sum"]), abs=0.0
+        )
+        assert float(evidence["conversion_tensor_delta_sum"]) != float(step["conversion"])
+        assert float(evidence["redistribution_link_delta_sum"]) == pytest.approx(
+            -float(evidence["conversion_cell_delta_sum"]), abs=1.0e-11
+        )
+        attribution = step["operator_attribution"]
+        assert attribution["dominant_operator"] == "withheld/unexplained"
+        assert attribution["dominant_event_id"] is None
+        assert attribution["reason"] == "tracked_deltas_do_not_reconcile_observed_drift"
