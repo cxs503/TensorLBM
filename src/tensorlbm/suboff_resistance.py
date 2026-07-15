@@ -281,6 +281,93 @@ def _lattice_momentum(f: torch.Tensor) -> torch.Tensor:
     return (f.to(torch.float64).unsqueeze(1) * directions).sum(dim=(0, 2, 3, 4))
 
 
+def _masked_lattice_momentum(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """First population moment retained at cell centres selected by ``mask``.
+
+    This is storage only.  It deliberately does not assign streamed
+    populations, reconstructed Zou/He populations, or cell-reset bounce-back
+    populations to physical links.
+    """
+    if mask.shape != f.shape[1:]:
+        raise ValueError("mask must have spatial shape (nz, ny, nx) matching f")
+    directions = C.to(device=f.device, dtype=torch.float64).view(19, 3, 1, 1, 1)
+    weighted = f.to(torch.float64).unsqueeze(1) * directions
+    return (weighted * mask.to(torch.float64).view(1, 1, *mask.shape)).sum(dim=(0, 2, 3, 4))
+
+
+def _fluid_only_same_phase_control_volume_classification(
+    operator_samples: list[dict[str, object]],
+    *,
+    wall_mask: torch.Tensor,
+    solid_mask: torch.Tensor,
+    full_per_step: bool,
+) -> dict[str, object]:
+    """Fail closed when this loop cannot define a physical fluid-only CV ledger.
+
+    The implementation streams all cells through periodic ``roll`` and then
+    mutates selected cells in Zou/He and bounce-back operators. It retains no
+    per-population source/target link or overwrite provenance, so a numerical
+    fluid-only residual would be a false closure.
+    """
+    fluid_mask = ~(wall_mask | solid_mask)
+    overlap = wall_mask & solid_mask
+    storage_samples: list[dict[str, object]] = []
+    for sample in operator_samples:
+        step = sample["step"]
+        if not isinstance(step, int):
+            raise ValueError("operator sample step must be an int")
+        storage_samples.append({
+            "step": step,
+            "time_interval": {"start": f"retained_state[{step - 1}]",
+                              "end": f"retained_state[{step}]"},
+            "value": sample["fluid_only_storage_change"],
+            "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
+        })
+    return {
+        "status": "not_definable",
+        "kind": "fluid_only_same_phase_discrete_control_volume_momentum_ledger",
+        "sample_phase": "retained_state_before_collision_to_post_complete_d3q19_bc_population_state",
+        "coverage": "full_per_step" if full_per_step else "sampled",
+        "fluid_mask": {
+            "status": "measured",
+            "definition": "not (channel_wall_mask or suboff_solid_mask)",
+            "fluid_cell_count": int(fluid_mask.sum().item()),
+            "wall_cell_count": int(wall_mask.sum().item()),
+            "solid_cell_count": int(solid_mask.sum().item()),
+            "wall_solid_overlap_cell_count": int(overlap.sum().item()),
+            "solid_and_wall_excluded_from_storage": True,
+        },
+        "storage": {"status": "measured", "samples": storage_samples,
+                    "meaning": "cell-centred fluid-mask population first-moment change only"},
+        "stream_ownership": {
+            "status": "not_definable",
+            "implementation": "stream3d periodic torch.roll over every population cell",
+            "missing_provenance": ["per_population_pre_stream_source_cell", "fluid_cv_crossing_link_classification"],
+            "reason": "periodic_stream_has_no_recorded_source_target_link_ownership",
+        },
+        "zou_he_overwrite_ownership": {
+            "status": "not_definable",
+            "operators": ["zou_he_inlet_velocity_3d", "zou_he_outlet_pressure_3d"],
+            "missing_provenance": ["overwritten_population_link_owner", "fluid_cv_boundary_link_classification"],
+            "reason": "cell_plane_reconstruction_overwrites_populations_without_link_provenance",
+        },
+        "wall_solid_linkwise_exchange": {
+            "status": "not_definable",
+            "operators": ["bounce_back_cells_3d(wall_mask)", "bounce_back_cells_3d(solid_mask)"],
+            "reason": "cell_based_population_reset_has_no_fluid_solid_link_pairing",
+        },
+        "control_volume_residual": {
+            "status": "not_definable", "value": None,
+            "reason": "required_link_owned_transport_and_boundary_impulse_terms_are_not_observable",
+        },
+        "prohibitions": [
+            "cell_based_reset_delta_is_not_physical_traction",
+            "do_not_use_full_array_operator_identity_as_fluid_only_control_volume_closure",
+            "do_not_substitute_face_population_flux_for_discrete_link_crossing_term",
+        ],
+    }
+
+
 def d3q19_x_face_momentum_flux(f: torch.Tensor) -> dict[str, list[float]]:
     """Measure population momentum flux through the D3Q19 inlet/outlet faces.
 
@@ -522,6 +609,8 @@ def _run_suboff_lbm_drag(
         sample_budget = (config.momentum_budget_diagnostic
                          and (step - 1) % config.momentum_budget_interval == 0)
         momentum_before = _lattice_momentum(f) if sample_budget else None
+        fluid_mask = ~(wall_mask | mask)
+        fluid_momentum_before = _masked_lattice_momentum(f, fluid_mask) if sample_budget else None
         if config.use_rans_ke and ke_solver is not None:
             _, ux, uy, uz = macroscopic3d(f)
             nu_t = ke_solver.step(ux, uy, uz, mask)
@@ -562,6 +651,9 @@ def _run_suboff_lbm_drag(
             solid_delta = (momentum_after_solid_preboundary - momentum_after_stream
                            + momentum_after_boundaries - momentum_after_wall)
             total_delta = momentum_after_boundaries - momentum_before
+            assert fluid_momentum_before is not None
+            fluid_momentum_after = _masked_lattice_momentum(f, fluid_mask)
+            fluid_only_storage_change = fluid_momentum_after - fluid_momentum_before
             explained_delta = (collision_delta + streaming_delta + inlet_delta + outlet_delta
                                + wall_delta + solid_delta)
             operator_deltas = {
@@ -581,6 +673,9 @@ def _run_suboff_lbm_drag(
             momentum_budget_samples.append({
                 "step": step,
                 "fluid_momentum_delta": [float(value) for value in total_delta.cpu().tolist()],
+                "fluid_only_storage_change": [
+                    float(value) for value in fluid_only_storage_change.cpu().tolist()
+                ],
                 "face_flux": face_flux,
                 **{name: [float(value) for value in delta.cpu().tolist()]
                    for name, delta in operator_deltas.items()},
@@ -751,6 +846,16 @@ def _run_suboff_lbm_drag(
     momentum_budget_summary["same_time_control_volume"] = (
         _same_time_control_volume_momentum_evidence(
             momentum_budget_samples, face_flux_samples,
+            full_per_step=full_budget_coverage,
+        ) if config.momentum_budget_diagnostic else {
+            "status": "disabled", "reason": "operator_budget_disabled",
+        }
+    )
+    momentum_budget_summary["fluid_only_same_phase_control_volume"] = (
+        _fluid_only_same_phase_control_volume_classification(
+            momentum_budget_samples,
+            wall_mask=wall_mask,
+            solid_mask=mask,
             full_per_step=full_budget_coverage,
         ) if config.momentum_budget_diagnostic else {
             "status": "disabled", "reason": "operator_budget_disabled",

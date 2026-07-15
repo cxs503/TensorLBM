@@ -86,6 +86,33 @@ def test_full_operator_diagnostic_binds_same_time_control_volume_evidence_withou
     assert json.loads(json.dumps(evidence))["samples"][0]["control_volume_residual"] == residual
 
 
+def test_small_runtime_strictly_fail_closes_fluid_only_control_volume_ledger():
+    """The actual SUBOFF operator order has no link-owned fluid CV ledger."""
+    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(
+        suboff.SuboffResistanceBenchmarkConfig(
+            base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
+            lbm_steps=10, lbm_warmup_steps=0, momentum_budget_diagnostic=True,
+            momentum_budget_interval=1,
+        )
+    ))
+    budget = observation["conservation"]["source_attribution"]["momentum"]["operator_budget"]
+    fluid_cv = budget["fluid_only_same_phase_control_volume"]
+
+    assert fluid_cv["status"] == "not_definable"
+    assert fluid_cv["storage"]["status"] == "measured"
+    assert fluid_cv["fluid_mask"]["definition"] == "not (channel_wall_mask or suboff_solid_mask)"
+    assert fluid_cv["fluid_mask"]["fluid_cell_count"] > 0
+    assert fluid_cv["fluid_mask"]["wall_solid_overlap_cell_count"] == 0
+    assert fluid_cv["stream_ownership"]["status"] == "not_definable"
+    assert fluid_cv["zou_he_overwrite_ownership"]["status"] == "not_definable"
+    assert fluid_cv["wall_solid_linkwise_exchange"]["status"] == "not_definable"
+    assert fluid_cv["control_volume_residual"]["status"] == "not_definable"
+    assert "cell_based_reset_delta_is_not_physical_traction" in fluid_cv["prohibitions"]
+    # This must remain a serialisable fail-closed classification, not a fake
+    # zero closure inferred from the full-array operator identity.
+    assert json.loads(json.dumps(fluid_cv))["control_volume_residual"]["value"] is None
+
+
 def test_real_runner_measures_hash_bound_mass_conservation_and_does_not_promote_physics():
     config = suboff.SuboffResistanceBenchmarkConfig(
         base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
