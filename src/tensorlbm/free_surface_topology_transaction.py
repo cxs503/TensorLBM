@@ -8,6 +8,11 @@ ABB, or mass-exchange arithmetic.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+import io
+import pickle
+import weakref
+from typing import Mapping
 
 import torch
 
@@ -25,6 +30,90 @@ from .free_surface_inventory_reconciliation import inventory_measurement
 
 class TopologyTransactionError(ValueError):
     """A staged topology candidate violated the solver's terminal contract."""
+
+
+@dataclass(frozen=True)
+class ReplayTensorRecord:
+    """Description of a tensor serialized into immutable replay evidence."""
+
+    name: str
+    dtype: str
+    shape: tuple[int, ...]
+    sha256: str
+
+
+@dataclass(frozen=True)
+class ReplayEvidence:
+    """In-process capture-integrity evidence, not provenance or attestation.
+
+    Hashes detect accidental/view corruption for an object captured in this
+    process.  They do not make publicly constructed or cross-process evidence
+    trustworthy; audits require a private in-process identity capability.
+    """
+
+    invocation_payload: bytes
+    invocation_sha256: str
+    phase_payload: bytes
+    phase_sha256: str
+    candidate_payload: bytes
+    candidate_sha256: str
+    tensor_records: tuple[ReplayTensorRecord, ...]
+
+
+_TRUSTED_REPLAY_EVIDENCE: dict[int, weakref.ReferenceType[ReplayEvidence]] = {}
+
+
+def _register_trusted_replay_evidence(evidence: ReplayEvidence) -> ReplayEvidence:
+    """Give a production capture an identity-bound, process-local capability."""
+    evidence_id = id(evidence)
+
+    def _discard(_: weakref.ReferenceType[ReplayEvidence]) -> None:
+        _TRUSTED_REPLAY_EVIDENCE.pop(evidence_id, None)
+
+    _TRUSTED_REPLAY_EVIDENCE[evidence_id] = weakref.ref(evidence, _discard)
+    return evidence
+
+
+def is_trusted_replay_evidence(evidence: object) -> bool:
+    """True only for the exact object emitted by this process' capture path."""
+    reference = _TRUSTED_REPLAY_EVIDENCE.get(id(evidence))
+    return reference is not None and reference() is evidence
+
+
+def _freeze_replay_payload(value: object) -> tuple[bytes, str]:
+    buffer = io.BytesIO()
+    torch.save(value, buffer)
+    payload = buffer.getvalue()
+    return payload, hashlib.sha256(payload).hexdigest()
+
+
+def restore_replay_payload(payload: bytes, expected_sha256: str) -> object:
+    """Safely restore a hash-checked primitive/tensor capture payload."""
+    if hashlib.sha256(payload).hexdigest() != expected_sha256:
+        raise TopologyTransactionError("WITHHELD: replay evidence digest mismatch")
+    try:
+        return torch.load(io.BytesIO(payload), weights_only=True)
+    except (RuntimeError, ValueError, TypeError, pickle.UnpicklingError) as error:
+        raise TopologyTransactionError("WITHHELD: replay evidence payload cannot be safely loaded") from error
+
+
+def _replay_tensor_records(value: object, prefix: str = "") -> tuple[ReplayTensorRecord, ...]:
+    if isinstance(value, torch.Tensor):
+        _, digest = _freeze_replay_payload(value.detach().clone())
+        return (ReplayTensorRecord(prefix, str(value.dtype), tuple(value.shape), digest),)
+    if isinstance(value, Mapping):
+        return tuple(
+            record
+            for key, item in value.items()
+            for record in _replay_tensor_records(item, f"{prefix}.{key}" if prefix else str(key))
+        )
+    if isinstance(value, tuple):
+        return tuple(
+            record
+            for index, item in enumerate(value)
+            for record in _replay_tensor_records(item, f"{prefix}[{index}]")
+        )
+    return ()
 
 
 @dataclass(frozen=True)
@@ -69,6 +158,42 @@ class IToGOwnershipTransaction:
             raise TopologyTransactionError(
                 "WITHHELD: entire free_surface_step topology candidate has tampered I→G debit/credit residual"
             )
+
+
+def _serialize_i_to_g_ownership(value: IToGOwnershipTransaction | None) -> dict[str, object] | None:
+    """Encode ownership as tensors/primitives accepted by safe torch loading."""
+    if value is None:
+        return None
+    return {
+        "receiver_increment": value.receiver_increment.clone(),
+        "receiver_mask": value.receiver_mask.clone(),
+        "donor_debit": value.donor_debit.clone(),
+        "receiver_credit": value.receiver_credit.clone(),
+        "residual": value.residual.clone(),
+        "donor_debit_records": value.donor_debit_records.clone(),
+        "receiver_credit_records": value.receiver_credit_records.clone(),
+    }
+
+
+def restore_i_to_g_ownership(value: object) -> IToGOwnershipTransaction | None:
+    """Validate safe payload data before restoring the transaction API object."""
+    if value is None:
+        return None
+    required = (
+        "receiver_increment", "receiver_mask", "donor_debit", "receiver_credit",
+        "residual", "donor_debit_records", "receiver_credit_records",
+    )
+    if not isinstance(value, dict) or set(value) != set(required) or any(
+        not isinstance(value[name], torch.Tensor) for name in required
+    ):
+        raise TopologyTransactionError("WITHHELD: captured I→G ownership has invalid schema")
+    transaction = IToGOwnershipTransaction(
+        value["receiver_increment"], value["receiver_mask"], (), value["donor_debit"],
+        value["receiver_credit"], value["residual"], value["donor_debit_records"],
+        value["receiver_credit_records"],
+    )
+    transaction.validate()
+    return transaction
 
 
 def build_i_to_g_ownership_transaction(
@@ -147,6 +272,24 @@ class TopologyTransactionPlan:
     interface_flag: int
     solid_flag: int
     solid_mask: torch.Tensor
+    _replay_evidence: ReplayEvidence | None = None
+
+    @property
+    def replay_evidence(self) -> ReplayEvidence | None:
+        """Immutable serialized evidence; never a writable tensor/mapping view."""
+        return self._replay_evidence
+
+    @property
+    def replay_stages(self) -> dict[str, tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]] | None:
+        """Compatibility copy rebuilt from verified private evidence each access."""
+        if self._replay_evidence is None:
+            return None
+        restored = restore_replay_payload(
+            self._replay_evidence.phase_payload, self._replay_evidence.phase_sha256,
+        )
+        if not isinstance(restored, dict):
+            raise TopologyTransactionError("WITHHELD: replay phase evidence has invalid schema")
+        return restored
 
 
 def _init_new(
@@ -199,6 +342,7 @@ def build_topology_transaction(
     redistribution_link_evidence: tuple[dict[str, object], ...] = (),
     i_to_g_increment: torch.Tensor | None = None,
     i_to_g_ownership: IToGOwnershipTransaction | None = None,
+    capture_replay_stages: bool = False,
 ) -> TopologyTransactionPlan:
     """Build a detached candidate in the legacy conversion/halo/cleanup order.
 
@@ -224,9 +368,24 @@ def build_topology_transaction(
         if bool((i_to_g_ownership.receiver_mask & ((flags != interface_flag) | to_gas | to_liq)).any()):
             raise TopologyTransactionError("I→G receiver must be a surviving pre-topology INTERFACE cell")
     inventory_stages = {} if capture_inventory else None
+    replay_stages = {} if capture_replay_stages else None
+    replay_invocation = None
+    if capture_replay_stages:
+        replay_invocation = {
+            "f": f.clone(), "fill": fill.clone(), "flags": flags.clone(), "mass": mass.clone(),
+            "to_iface": to_iface.clone(), "to_liq": to_liq.clone(), "to_gas": to_gas.clone(),
+            "recv_new": recv_new.clone(), "redistribution_increment": redistribution_increment.clone(),
+            "rho_liquid": rho_liquid, "rho_gas": rho_gas, "solid_mask": solid_mask.clone(),
+            "gas_flag": gas_flag, "liquid_flag": liquid_flag, "interface_flag": interface_flag,
+            "solid_flag": solid_flag, "ux": ux.clone(), "uy": uy.clone(), "uz": uz.clone(),
+            "i_to_g_increment": None if i_to_g_increment is None else i_to_g_increment.clone(),
+            "i_to_g_ownership": _serialize_i_to_g_ownership(i_to_g_ownership),
+        }
     gas_mask = cflags == gas_flag
     cf = _init_new(cf, cflags, to_iface, rho_gas, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_iface, torch.full_like(cflags, interface_flag), cflags)
+    if replay_stages is not None:
+        replay_stages["to_iface_initialization"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
 
     mass_before_redistribution = cmass.clone() if capture_evidence else None
     combined_increment = redistribution_increment
@@ -240,12 +399,16 @@ def build_topology_transaction(
                 "WITHHELD: entire free_surface_step topology candidate combined receiver capacity is outside [0, rho_liquid] before clamp"
             )
     cmass = cmass + combined_increment
+    if replay_stages is not None:
+        replay_stages["legacy_redistribution_and_i_to_g_increment"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
     if inventory_stages is not None:
         inventory_stages["after_topology_redistribution"] = inventory_measurement(
             cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
         )
     mass_after_redistribution = float(cmass.sum())
     cmass = cmass.clamp(0.0, rho_liquid)
+    if replay_stages is not None:
+        replay_stages["clamp"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
     if inventory_stages is not None:
         inventory_stages["after_topology_clamp"] = inventory_measurement(
             cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
@@ -267,6 +430,8 @@ def build_topology_transaction(
         # No f transfer: independent mass/fill and population density are
         # separate representations at INTERFACE, so copying f would double count.
         cfill = torch.where(i_to_g_ownership.receiver_mask, cmass / float(rho_liquid), cfill)
+    if replay_stages is not None:
+        replay_stages["to_liq_to_gas_conversion"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
     if inventory_stages is not None:
         inventory_stages["after_topology_conversion"] = inventory_measurement(
             cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
@@ -286,6 +451,8 @@ def build_topology_transaction(
     cflags = torch.where(to_i, torch.full_like(cflags, interface_flag), cflags)
     cfill = torch.where(to_i & ~recv_new, torch.zeros_like(cfill), cfill)
     cmass = torch.where(to_i & ~recv_new, torch.zeros_like(cmass), cmass)
+    if replay_stages is not None:
+        replay_stages["halo_boundary"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
     interface_mask = cflags == interface_flag
     has_neighbor = ((torch.stack(all_moving_neighbor_masks(cflags)) == liquid_flag) | (torch.stack(all_moving_neighbor_masks(cflags)) == interface_flag)).any(dim=0)
     isolated = interface_mask & ~has_neighbor & ~solid_mask
@@ -293,7 +460,11 @@ def build_topology_transaction(
     cfill = torch.where(isolated, torch.zeros_like(cfill), cfill)
     cmass = torch.where(isolated, torch.zeros_like(cmass), cmass)
     cf = torch.where(isolated.unsqueeze(0), torch.zeros_like(cf), cf)
+    if replay_stages is not None:
+        replay_stages["isolated_interface"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
     cflags = torch.where(solid_mask, torch.full_like(cflags, solid_flag), cflags)
+    if replay_stages is not None:
+        replay_stages["solid_enforcement"] = tuple(value.clone() for value in (cf, cfill, cflags, cmass))
     if inventory_stages is not None:
         inventory_stages["after_topology_halo_isolation_boundary"] = inventory_measurement(
             cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
@@ -343,7 +514,20 @@ def build_topology_transaction(
             "i_to_g_population_owner_status": "WITHHELD_NO_POPULATION_TRANSFER",
         }
     _validate_candidate(cf, cfill, cflags, cmass, solid_mask, gas_flag, liquid_flag, interface_flag, solid_flag)
-    return TopologyTransactionPlan(cf, cfill, cflags, cmass, mass_after_redistribution, mass_after_clamp, mass_after_conversion, mass_after_isolation, inventory_stages, evidence, gas_flag, liquid_flag, interface_flag, solid_flag, solid_mask.clone())
+    replay_evidence = None
+    if replay_stages is not None:
+        assert replay_invocation is not None
+        invocation_payload, invocation_sha256 = _freeze_replay_payload(replay_invocation)
+        phase_payload, phase_sha256 = _freeze_replay_payload(replay_stages)
+        candidate_payload, candidate_sha256 = _freeze_replay_payload((cf.clone(), cfill.clone(), cflags.clone(), cmass.clone()))
+        replay_evidence = _register_trusted_replay_evidence(ReplayEvidence(
+            invocation_payload, invocation_sha256, phase_payload, phase_sha256,
+            candidate_payload, candidate_sha256,
+            _replay_tensor_records(replay_invocation, "invocation")
+            + _replay_tensor_records(replay_stages, "phases")
+            + _replay_tensor_records((cf, cfill, cflags, cmass), "candidate"),
+        ))
+    return TopologyTransactionPlan(cf, cfill, cflags, cmass, mass_after_redistribution, mass_after_clamp, mass_after_conversion, mass_after_isolation, inventory_stages, evidence, gas_flag, liquid_flag, interface_flag, solid_flag, solid_mask.clone(), replay_evidence)
 
 
 def commit_topology_transaction(

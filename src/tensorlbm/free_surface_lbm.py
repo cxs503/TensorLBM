@@ -438,6 +438,8 @@ def free_surface_step(
     inventory_reconciliation_ledger=None,
     conversion_density_audit_ledger=None,
     enable_i_to_g_ownership_closure=False,
+    capture_replay_stages=False,
+    replay_capture=None,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -449,6 +451,10 @@ def free_surface_step(
     """
     if not isinstance(enable_i_to_g_ownership_closure, bool):
         raise ValueError("enable_i_to_g_ownership_closure must be bool")
+    if not isinstance(capture_replay_stages, bool):
+        raise ValueError("capture_replay_stages must be bool")
+    if replay_capture is not None and not isinstance(replay_capture, dict):
+        raise ValueError("replay_capture must be a dict or None")
 
     # Ledger output is transactional too: topology validation may fail after
     # ABB/exchange observations were calculated.  Accumulate into a detached
@@ -892,8 +898,11 @@ def free_surface_step(
         ),
         redistribution_link_evidence=redistribution_link_evidence,
         i_to_g_ownership=i_to_g_ownership,
+        capture_replay_stages=capture_replay_stages,
     )
     f, fill, flags, mass = commit_topology_transaction(plan)
+    if replay_capture is not None and plan.replay_evidence is not None:
+        replay_capture["evidence"] = plan.replay_evidence
     if inventory_reconciliation_ledger is not None:
         assert inventory_stages is not None and plan.inventory_stages is not None
         _append_inventory_reconciliation(inventory_reconciliation_ledger, {
