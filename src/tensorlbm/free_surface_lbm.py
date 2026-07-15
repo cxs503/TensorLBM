@@ -698,10 +698,16 @@ def free_surface_step(
     # This is the donor/receiver mass state before any of the 18 link updates.
     # Retain it only for a requested runtime observation.
     mass_before_redistribution = mass.clone() if runtime_ledger is not None else None
-    # Distribute to receivers over every D3Q19 link.
-    for shift in _D3Q19_TENSOR_SHIFTS:
-        receiver_shift = tuple(-delta for delta in shift)
-        mass = mass + excess_per_nb.roll(receiver_shift, dims=(0, 1, 2)) * recv_mask
+    # Aggregate every D3Q19 receiver contribution in the mass dtype, then
+    # commit it once.  Sequential float32 rebinding rounds the same mass field
+    # 18 times and leaves a transaction residual when conversion removes the
+    # donor excess.  This preserves each link/mask contribution and topology;
+    # only their deterministic same-dtype aggregation precedes one commit.
+    redistribution_increment = torch.stack([
+        excess_per_nb.roll(tuple(-delta for delta in shift), dims=(0, 1, 2)) * recv_mask
+        for shift in _D3Q19_TENSOR_SHIFTS
+    ]).sum(dim=0)
+    mass = mass + redistribution_increment
     mass_after_redistribution_value = float(mass.sum())
     if mass_ledger is not None:
         mass_ledger['redistribution'] = float(mass.sum())
@@ -868,11 +874,11 @@ def _redistribute_mass(mass, flags, mex, nx, ny, nz, c, device):
     n_iface_neighbors = shifted_iface.sum(dim=0).clamp(min=1)
     # Excess mass to distribute (per neighbor)
     excess_per_neighbor = mex / n_iface_neighbors
-    # Add to neighbours over every D3Q19 link.
-    for shift in _D3Q19_TENSOR_SHIFTS:
-        receiver_shift = tuple(-delta for delta in shift)
-        mass = mass + (
-            excess_per_neighbor.roll(receiver_shift, dims=(0, 1, 2))
-            * interface_mask.roll(receiver_shift, dims=(0, 1, 2))
-        )
+    # Aggregate all D3Q19 link increments before the one mass-field commit.
+    redistribution_increment = torch.stack([
+        excess_per_neighbor.roll(tuple(-delta for delta in shift), dims=(0, 1, 2))
+        * interface_mask.roll(tuple(-delta for delta in shift), dims=(0, 1, 2))
+        for shift in _D3Q19_TENSOR_SHIFTS
+    ]).sum(dim=0)
+    mass = mass + redistribution_increment
     return mass
