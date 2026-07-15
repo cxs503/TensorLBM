@@ -257,7 +257,7 @@ def _validate_case_definition(definition: object) -> tuple[str, torch.Tensor, to
 
 def _run_case(
     case_id: str, f: torch.Tensor, fill: torch.Tensor, flags: torch.Tensor, solid: torch.Tensor,
-    requested_steps: int, freeze_topology: bool, paired: bool,
+    requested_steps: int, freeze_topology: bool, paired: bool, enable_i_to_g_ownership_closure: bool,
 ) -> ClosureCaseReport:
     f, fill, flags, solid = (field.clone() for field in (f, fill, flags, solid))
     mass = fill.clone()
@@ -283,6 +283,7 @@ def _run_case(
                     freeze_topology=freeze_topology, runtime_ledger=runtime,
                     ownership_ledger=ownership, inventory_reconciliation_ledger=inventory,
                     paired_liquid_interface_debit=paired,
+                    enable_i_to_g_ownership_closure=enable_i_to_g_ownership_closure,
                 )
             except (RuntimeError, ValueError) as error:
                 failure_reason = str(error)
@@ -326,6 +327,7 @@ def _run_case(
 
 def run_free_surface_closure_experiment(
     *, extra_cases: tuple[tuple[str, Any, Any, Any, Any, int, bool, bool], ...] = (),
+    enable_i_to_g_ownership_closure: bool = False,
 ) -> ClosureExperimentReport:
     """Run the fixed R1 diagnostic matrix without emitting files or corrections.
 
@@ -336,6 +338,8 @@ def run_free_surface_closure_experiment(
     """
     if not isinstance(extra_cases, tuple):
         raise ClosureExperimentError("extra_cases must be a tuple of case definitions")
+    if not isinstance(enable_i_to_g_ownership_closure, bool):
+        raise ClosureExperimentError("enable_i_to_g_ownership_closure must be bool")
     frozen = _frozen_runtime_state()
     conversion = _conversion_state()
     definitions = (
@@ -345,7 +349,13 @@ def run_free_surface_closure_experiment(
         ("C_dam_break_style_tiny_dynamic_topology", *conversion, 10, False, True),
         *extra_cases,
     )
-    cases = tuple(_run_case(*_validate_case_definition(definition)) for definition in definitions)
+    cases = tuple(
+        _run_case(
+            *_validate_case_definition(definition),
+            enable_i_to_g_ownership_closure=enable_i_to_g_ownership_closure,
+        )
+        for definition in definitions
+    )
     return ClosureExperimentReport(
         status=DIAGNOSTIC_NOT_PHYSICAL_CLOSURE,
         physical_closure_claim=False,

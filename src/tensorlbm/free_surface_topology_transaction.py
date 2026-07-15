@@ -11,13 +11,121 @@ from dataclasses import dataclass
 
 import torch
 
-from .core.d3q19_stencil import D3Q19_MOVING_Q, all_moving_neighbor_masks, assert_no_direct_phase_links
+from .core.d3q19_stencil import (
+    D3Q19_MOVING_Q,
+    all_moving_neighbor_masks,
+    assert_no_direct_phase_links,
+    moving_tensor_shifts,
+    roll_from_pull_source,
+    roll_to_neighbor,
+)
 from .d3q19 import equilibrium3d
 from .free_surface_inventory_reconciliation import inventory_measurement
 
 
 class TopologyTransactionError(ValueError):
     """A staged topology candidate violated the solver's terminal contract."""
+
+
+@dataclass(frozen=True)
+class IToGOwnershipTransaction:
+    """Exact local independent-mass debit/credit for staged INTERFACE→GAS cells.
+
+    ``donor_debit`` and ``receiver_credit`` are independently scatter/reduced
+    same-dtype tensors.  They are signed records, never aliases of a common
+    credit sum: a nonzero residual is WITHHELD rather than accepted under a
+    numerical tolerance.
+    """
+
+    receiver_increment: torch.Tensor
+    receiver_mask: torch.Tensor
+    links: tuple[dict[str, object], ...]
+    donor_debit: torch.Tensor
+    receiver_credit: torch.Tensor
+    residual: torch.Tensor
+    donor_debit_records: torch.Tensor
+    receiver_credit_records: torch.Tensor
+
+    def validate(self) -> None:
+        """Reject altered or non-exact I→G ownership evidence fail-closed."""
+        if self.donor_debit.dtype != self.receiver_credit.dtype:
+            raise TopologyTransactionError(
+                "WITHHELD: entire free_surface_step topology candidate has mixed I→G debit/credit dtypes"
+            )
+        if not bool(self.donor_debit == self.donor_debit_records.sum()) or not bool(self.receiver_credit == self.receiver_credit_records.sum()):
+            raise TopologyTransactionError(
+                "WITHHELD: entire free_surface_step topology candidate has tampered I→G debit/credit records"
+            )
+        if not torch.equal(self.receiver_increment, self.receiver_credit_records):
+            raise TopologyTransactionError(
+                "WITHHELD: entire free_surface_step topology candidate has tampered I→G receiver credit aggregation"
+            )
+        actual_residual = self.donor_debit + self.receiver_credit
+        if not bool(actual_residual == 0):
+            raise TopologyTransactionError(
+                "WITHHELD: entire free_surface_step topology candidate has non-exact I→G debit/credit closure"
+            )
+        if not bool(self.residual == actual_residual):
+            raise TopologyTransactionError(
+                "WITHHELD: entire free_surface_step topology candidate has tampered I→G debit/credit residual"
+            )
+
+
+def build_i_to_g_ownership_transaction(
+    flags: torch.Tensor, mass: torch.Tensor, *, to_gas: torch.Tensor,
+    to_liq: torch.Tensor, solid_mask: torch.Tensor, gas_flag: int,
+    liquid_flag: int, interface_flag: int, rho_liquid: float,
+) -> IToGOwnershipTransaction:
+    """Construct a local, paired D3Q19 I→G mass transaction or fail closed.
+
+    Only independent mass/fill ownership moves. Populations remain kinetic
+    state: transferring them to an INTERFACE receiver would double-count a
+    quantity not owned by the independent mass field.
+    """
+    if to_gas.shape != flags.shape or to_liq.shape != flags.shape or mass.shape != flags.shape:
+        raise TopologyTransactionError("I→G ownership fields must match flags shape")
+    donor = to_gas & ~solid_mask
+    if bool((donor & (flags != interface_flag)).any()):
+        raise TopologyTransactionError("WITHHELD: LIQUID→GAS has no declared local inventory owner")
+    receiver_mask = (flags == interface_flag) & ~to_gas & ~to_liq & ~solid_mask
+    receiver_by_q = torch.stack(all_moving_neighbor_masks(receiver_mask))
+    receiver_count = receiver_by_q.sum(dim=0)
+    if bool((donor & (receiver_count == 0)).any()):
+        raise TopologyTransactionError(
+            "WITHHELD: entire free_surface_step topology candidate I→G donor has no legal INTERFACE receiver"
+        )
+    debit_field = torch.where(donor, mass, torch.zeros_like(mass))
+    credit_per_link = debit_field / receiver_count.clamp(min=1).to(mass.dtype)
+    increment = torch.stack([
+        roll_to_neighbor(credit_per_link, q) * receiver_mask for q in D3Q19_MOVING_Q
+    ]).sum(dim=0)
+    capacity = torch.where(receiver_mask, float(rho_liquid) - mass, torch.zeros_like(mass))
+    if bool((increment > capacity).any()):
+        raise TopologyTransactionError(
+            "WITHHELD: entire free_surface_step topology candidate I→G receiver capacity would overflow"
+        )
+    shape = tuple(int(value) for value in mass.shape)
+    links: list[dict[str, object]] = []
+    for q, shift in zip(D3Q19_MOVING_Q, moving_tensor_shifts()):
+        dz, dy, dx = shift
+        receiver_for_donor = roll_from_pull_source(receiver_mask, q)
+        for raw in torch.nonzero(donor & receiver_for_donor, as_tuple=False).tolist():
+            z, y, x = (int(value) for value in raw)
+            credit = credit_per_link[z, y, x]
+            links.append({"donor": (z, y, x), "receiver": ((z - dz) % shape[0], (y - dy) % shape[1], (x - dx) % shape[2]), "q": q, "shift": (dz, dy, dx), "debit": float(-credit), "credit": float(credit), "event_id": "i_to_g_independent_mass_ownership", "operator": "i_to_g_independent_mass_ownership"})
+    transaction = IToGOwnershipTransaction(
+        increment, receiver_mask & (increment != 0.0), tuple(links),
+        -debit_field.sum(), increment.sum(), torch.zeros((), dtype=mass.dtype, device=mass.device),
+        -debit_field, increment,
+    )
+    transaction = IToGOwnershipTransaction(
+        transaction.receiver_increment, transaction.receiver_mask, transaction.links,
+        transaction.donor_debit, transaction.receiver_credit,
+        transaction.donor_debit + transaction.receiver_credit,
+        transaction.donor_debit_records, transaction.receiver_credit_records,
+    )
+    transaction.validate()
+    return transaction
 
 
 @dataclass(frozen=True)
@@ -89,18 +197,49 @@ def build_topology_transaction(
     capture_evidence: bool = False,
     capture_inventory: bool = False,
     redistribution_link_evidence: tuple[dict[str, object], ...] = (),
+    i_to_g_increment: torch.Tensor | None = None,
+    i_to_g_ownership: IToGOwnershipTransaction | None = None,
 ) -> TopologyTransactionPlan:
-    """Build a detached candidate in the legacy conversion/halo/cleanup order."""
+    """Build a detached candidate in the legacy conversion/halo/cleanup order.
+
+    With I→G ownership, this is an all-or-nothing ``free_surface_step``
+    topology candidate: any capacity or accounting failure is WITHHELD, with
+    no partial topology publication.
+    """
     if ux is None or uy is None or uz is None:
         raise TopologyTransactionError("topology transaction requires pre-conversion velocity fields")
     cf, cfill, cflags, cmass = (value.clone() for value in (f, fill, flags, mass))
+    if (i_to_g_increment is None) != (i_to_g_ownership is None):
+        raise TopologyTransactionError("I→G increment and ownership evidence must be supplied together")
+    if i_to_g_ownership is not None:
+        i_to_g_ownership.validate()
+        if i_to_g_increment is None or i_to_g_increment.shape != flags.shape:
+            raise TopologyTransactionError("I→G increment must match topology fields")
+        if not torch.equal(i_to_g_increment, i_to_g_ownership.receiver_increment):
+            raise TopologyTransactionError(
+                "WITHHELD: entire free_surface_step topology candidate has tampered I→G increment evidence"
+            )
+        if i_to_g_ownership.receiver_mask.shape != flags.shape:
+            raise TopologyTransactionError("I→G receiver mask must match topology fields")
+        if bool((i_to_g_ownership.receiver_mask & ((flags != interface_flag) | to_gas | to_liq)).any()):
+            raise TopologyTransactionError("I→G receiver must be a surviving pre-topology INTERFACE cell")
     inventory_stages = {} if capture_inventory else None
     gas_mask = cflags == gas_flag
     cf = _init_new(cf, cflags, to_iface, rho_gas, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_iface, torch.full_like(cflags, interface_flag), cflags)
 
     mass_before_redistribution = cmass.clone() if capture_evidence else None
-    cmass = cmass + redistribution_increment
+    combined_increment = redistribution_increment
+    if i_to_g_increment is not None:
+        assert i_to_g_ownership is not None
+        combined_increment = redistribution_increment + i_to_g_increment
+        combined_receivers = i_to_g_ownership.receiver_mask
+        combined_candidate = cmass + combined_increment
+        if bool((((combined_candidate < 0.0) | (combined_candidate > float(rho_liquid))) & combined_receivers).any()):
+            raise TopologyTransactionError(
+                "WITHHELD: entire free_surface_step topology candidate combined receiver capacity is outside [0, rho_liquid] before clamp"
+            )
+    cmass = cmass + combined_increment
     if inventory_stages is not None:
         inventory_stages["after_topology_redistribution"] = inventory_measurement(
             cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
@@ -124,6 +263,10 @@ def build_topology_transaction(
     cfill = torch.where(to_gas, torch.zeros_like(cfill), cfill)
     cmass = torch.where(to_gas, torch.zeros_like(cmass), cmass)
     cf = torch.where(to_gas.unsqueeze(0), torch.zeros_like(cf), cf)
+    if i_to_g_ownership is not None:
+        # No f transfer: independent mass/fill and population density are
+        # separate representations at INTERFACE, so copying f would double count.
+        cfill = torch.where(i_to_g_ownership.receiver_mask, cmass / float(rho_liquid), cfill)
     if inventory_stages is not None:
         inventory_stages["after_topology_conversion"] = inventory_measurement(
             cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
@@ -193,6 +336,11 @@ def build_topology_transaction(
             "conversion_cell_delta_sum": float(sum(cell["mass_delta"] for cell in cells)),
             "conversion_tensor_delta_sum": float(conversion_delta.sum()),
             "redistribution_link_delta_sum": float(sum(float(link["mass_delta"]) for link in links)),
+            "i_to_g_ownership_links": () if i_to_g_ownership is None else i_to_g_ownership.links,
+            "i_to_g_ownership_debit": None if i_to_g_ownership is None else float(i_to_g_ownership.donor_debit),
+            "i_to_g_ownership_credit": None if i_to_g_ownership is None else float(i_to_g_ownership.receiver_credit),
+            "i_to_g_ownership_residual": None if i_to_g_ownership is None else float(i_to_g_ownership.residual),
+            "i_to_g_population_owner_status": "WITHHELD_NO_POPULATION_TRANSFER",
         }
     _validate_candidate(cf, cfill, cflags, cmass, solid_mask, gas_flag, liquid_flag, interface_flag, solid_flag)
     return TopologyTransactionPlan(cf, cfill, cflags, cmass, mass_after_redistribution, mass_after_clamp, mass_after_conversion, mass_after_isolation, inventory_stages, evidence, gas_flag, liquid_flag, interface_flag, solid_flag, solid_mask.clone())
