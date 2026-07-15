@@ -19,6 +19,11 @@ from .torch_dataset_materialize import (
     FieldSnapshotReference,
     materialize_torch_field_dataset,
 )
+from .torch_holdout_evaluation import (
+    HoldoutEvaluationRecord,
+    HoldoutSampleEvidence,
+    evaluate_evidence_gated_holdout,
+)
 from .torch_dataset_flow_training import (
     DatasetTrainingExecutionRecord,
     run_evidence_gated_field_dataset_flow_reconstruction,
@@ -31,6 +36,8 @@ __all__ = [
     "DatasetTrainingExecutionRecord",
     "EvaluationSpec",
     "FieldSnapshotReference",
+    "HoldoutEvaluationRecord",
+    "HoldoutSampleEvidence",
     "ModelArtifact",
     "ModelArtifactStatus",
     "ModelSignature",
@@ -38,6 +45,7 @@ __all__ = [
     "TrainingBackend",
     "TrainingSpec",
     "materialize_torch_field_dataset",
+    "evaluate_evidence_gated_holdout",
     "run_evidence_gated_field_dataset_flow_reconstruction",
     "validate_evaluation_spec",
     "validate_model_artifact",
