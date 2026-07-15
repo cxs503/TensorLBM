@@ -30,6 +30,7 @@ from .solver3d import stream3d as _stream3d
 from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
 from .free_surface_topology_transaction import (
     build_topology_transaction,
+    build_i_to_g_ownership_transaction,
     commit_topology_transaction,
 )
 from .free_surface_inventory_reconciliation import (
@@ -436,6 +437,7 @@ def free_surface_step(
     ownership_ledger=None,
     inventory_reconciliation_ledger=None,
     conversion_density_audit_ledger=None,
+    enable_i_to_g_ownership_closure=False,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -445,6 +447,9 @@ def free_surface_step(
       - Interface gas pressure (anti-bounce-back)
       - Neighbor flags (prevents isolated cells)
     """
+    if not isinstance(enable_i_to_g_ownership_closure, bool):
+        raise ValueError("enable_i_to_g_ownership_closure must be bool")
+
     # Ledger output is transactional too: topology validation may fail after
     # ABB/exchange observations were calculated.  Accumulate into a detached
     # copy and publish it only on a successful return, so a failed step never
@@ -808,8 +813,20 @@ def free_surface_step(
 
     # ---- 5a. Körner mass redistribution (excess → interface neighbors) ----
     # Excess mass at converting cells (vectorized, no bool sync)
-    excess = (torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass)) +
-              torch.where(to_gas, mass, torch.zeros_like(mass)))
+    # I→L overflow and I→G independent-mass ownership are different
+    # transactions.  The latter is an opt-in experimental diagnostic/proposal:
+    # default solver arithmetic and topology stay bit-for-bit on the legacy
+    # path until a strict local closure representation is established.
+    i_to_g = to_gas & interface_mask
+    # Disabled is the exact legacy solver path: this diagnostic/proposal must
+    # not alter its tensors, topology, or existing campaign ledgers.  Only the
+    # opt-in proposal removes I→G mass from the legacy redistribution before it
+    # stages its own all-or-nothing candidate.
+    redistribution_to_g = to_gas if not enable_i_to_g_ownership_closure else (to_gas & ~interface_mask)
+    excess = (
+        torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass))
+        + torch.where(redistribution_to_g, mass, torch.zeros_like(mass))
+    )
     # Existing interface cells receive first.  If a converting interface has
     # none, promote its adjacent gas halo to receivers in this same step; a
     # conversion must never silently discard excess merely because topology
@@ -820,6 +837,13 @@ def free_surface_step(
     adjacent_converting = torch.stack(all_moving_neighbor_masks(to_liq)).any(dim=0)
     recv_new = gas_mask & adjacent_converting & ~solid_mask
     recv_mask = recv_iface | recv_new
+    i_to_g_ownership = None
+    if enable_i_to_g_ownership_closure and bool(i_to_g.any()):
+        i_to_g_ownership = build_i_to_g_ownership_transaction(
+            flags, mass, to_gas=i_to_g, to_liq=to_liq, solid_mask=solid_mask,
+            gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE,
+            rho_liquid=rho_liquid,
+        )
     # Count receiving cells per donor over every moving D3Q19 link.
     shifted_recv = torch.stack(all_moving_neighbor_masks(recv_mask))
     n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
@@ -831,7 +855,7 @@ def free_surface_step(
     # 18 times and leaves a transaction residual when conversion removes the
     # donor excess.  This preserves each link/mask contribution and topology;
     # only their deterministic same-dtype aggregation precedes one commit.
-    redistribution_increment = torch.stack([
+    legacy_redistribution_increment = torch.stack([
         roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q
     ]).sum(dim=0)
     redistribution_link_evidence = ()
@@ -845,9 +869,16 @@ def free_surface_step(
                 z, y, x = (int(value) for value in donor)
                 links.append({"donor": (z, y, x), "receiver": ((z - dz) % shape[0], (y - dy) % shape[1], (x - dx) % shape[2]), "shift": (dz, dy, dx), "mass_delta": float(excess_per_nb[z, y, x]), "event_id": "redistribution", "operator": "redistribution"})
         redistribution_link_evidence = tuple(links)
+    # Publish I→G debit/credit paths through the same topology evidence
+    # channel; each receiver is a declared surviving INTERFACE owner.
+    redistribution_link_evidence = redistribution_link_evidence + tuple(
+        {**link, "mass_delta": float(link["credit"])}
+        for link in (() if i_to_g_ownership is None else i_to_g_ownership.links)
+    )
     plan = build_topology_transaction(
         f, fill, flags, mass, to_iface=to_iface, to_liq=to_liq, to_gas=to_gas,
-        recv_new=recv_new, redistribution_increment=redistribution_increment,
+        recv_new=recv_new, redistribution_increment=legacy_redistribution_increment,
+        i_to_g_increment=None if i_to_g_ownership is None else i_to_g_ownership.receiver_increment,
         rho_liquid=rho_liquid, rho_gas=rho_gas, solid_mask=solid_mask,
         gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE, solid_flag=SOLID,
         ux=ux, uy=uy, uz=uz,
@@ -860,6 +891,7 @@ def free_surface_step(
             or conversion_density_audit_ledger is not None
         ),
         redistribution_link_evidence=redistribution_link_evidence,
+        i_to_g_ownership=i_to_g_ownership,
     )
     f, fill, flags, mass = commit_topology_transaction(plan)
     if inventory_reconciliation_ledger is not None:
