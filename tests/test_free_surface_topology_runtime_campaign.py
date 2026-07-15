@@ -143,8 +143,8 @@ def test_runtime_ledger_separates_gross_operator_activity_from_drift_attribution
         assert abs(float(step["residual_reconciliation"]["residual"])) <= 1.0e-6
 
 
-def test_hundred_actual_steps_preserve_fail_closed_cell_link_evidence_at_41_and_46() -> None:
-    """The observed residual has candidates, not a false single-cell cause."""
+def test_hundred_actual_float32_steps_have_exact_redistribution_transaction_at_41_and_46() -> None:
+    """One redistribution commit leaves no float32 transaction residual."""
     f, fill, flags, solid = _topology_changing_closed_state()
     runtime: dict[str, object] = {}
     mass = fill.clone()
@@ -164,7 +164,6 @@ def test_hundred_actual_steps_preserve_fail_closed_cell_link_evidence_at_41_and_
         cells = evidence["conversion_cells"]
         links = evidence["redistribution_links"]
         assert cells and links
-        assert float(step["conversion"]) < 0.0
         assert any(float(cell["mass_delta"]) < 0.0 for cell in cells)
         assert all(cell["flag_before"] == INTERFACE for cell in cells)
         assert all(cell["flag_after"] == GAS for cell in cells)
@@ -182,16 +181,13 @@ def test_hundred_actual_steps_preserve_fail_closed_cell_link_evidence_at_41_and_
         assert sum(float(link["mass_delta"]) for link in links) == pytest.approx(
             float(evidence["redistribution_link_delta_sum"]), abs=0.0
         )
-        # Float32 stage reductions differ from the exact sparse float64
-        # enumeration; this is evidence of reduction order, not a cell cause.
+        # The aggregate tensor commit preserves the same exact sparse link sum.
         assert float(evidence["conversion_tensor_delta_sum"]) == pytest.approx(
             float(evidence["conversion_cell_delta_sum"]), abs=0.0
         )
-        assert float(evidence["conversion_tensor_delta_sum"]) != float(step["conversion"])
         assert float(evidence["redistribution_link_delta_sum"]) == pytest.approx(
             -float(evidence["conversion_cell_delta_sum"]), abs=1.0e-11
         )
-        attribution = step["operator_attribution"]
-        assert attribution["dominant_operator"] == "withheld/unexplained"
-        assert attribution["dominant_event_id"] is None
-        assert attribution["reason"] == "tracked_deltas_do_not_reconcile_observed_drift"
+        reconciliation = step["residual_reconciliation"]
+        assert float(reconciliation["residual"]) == 0.0
+        assert float(step["mass_drift"]) == 0.0
