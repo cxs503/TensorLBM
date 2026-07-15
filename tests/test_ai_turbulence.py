@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 import torch
 
-from tensorlbm import (
+from tensorlbm import equilibrium, macroscopic
+from tensorlbm.ai import (
     AIPipelineResult,
     EddyViscosityDataset,
     EddyViscosityMLP,
@@ -18,12 +19,10 @@ from tensorlbm import (
     TrainConfig,
     build_flow_token_batch,
     collide_ai_les_bgk,
-    equilibrium,
     extract_les_samples_2d,
     load_dataset_pt,
     load_flow_transformer_model,
     load_model,
-    macroscopic,
     predict_nu_t_2d,
     reconstruct_flow_field,
     run_ai_dns_pipeline,
