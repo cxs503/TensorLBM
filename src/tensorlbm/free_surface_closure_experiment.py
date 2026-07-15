@@ -71,6 +71,8 @@ class ClosureStepEvidence:
     direct_liquid_gas_links: int
     finite: bool
     failure_reason: str | None
+    # Appended with a default so existing positional construction remains ABI-compatible.
+    inventory_reconciliation: tuple[tuple[str, object], ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -203,7 +205,9 @@ def _event_summary(runtime_record: dict[str, object] | None) -> tuple[tuple[Topo
 def _freeze_value(value: object) -> object:
     """Detach nested solver evidence so the returned report is immutable."""
     if isinstance(value, Mapping):
-        return tuple((str(key), _freeze_value(item)) for key, item in sorted(value.items()))
+        # Mapping order is evidence here: inventory stages are a canonical
+        # chronological ledger, not an unordered set of diagnostics.
+        return tuple((str(key), _freeze_value(item)) for key, item in value.items())
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
         return tuple(_freeze_value(item) for item in value)
     return deepcopy(value)
@@ -271,12 +275,14 @@ def _run_case(
             failure_reason = f"direct LIQUID-GAS links before step: {pre.direct_liquid_gas_links}"
         runtime: dict[str, object] = {}
         ownership: dict[str, object] = {}
+        inventory: dict[str, object] = {}
         if failure_reason is None:
             try:
                 f, fill, flags, mass, _ = free_surface_step(
                     f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=1.0e-3,
                     freeze_topology=freeze_topology, runtime_ledger=runtime,
-                    ownership_ledger=ownership, paired_liquid_interface_debit=paired,
+                    ownership_ledger=ownership, inventory_reconciliation_ledger=inventory,
+                    paired_liquid_interface_debit=paired,
                 )
             except (RuntimeError, ValueError) as error:
                 failure_reason = str(error)
@@ -296,6 +302,7 @@ def _run_case(
             total_liquid_inventory=current.total_liquid_inventory, population_mass_sum=current.population_mass_sum,
             tracked_independent_mass_drift=current.independent_mass - initial.independent_mass,
             inventory_drift=current.total_liquid_inventory - initial.total_liquid_inventory,
+            inventory_reconciliation=_freeze_mapping(inventory if inventory else None),
             runtime_ledger=_freeze_mapping(record if isinstance(record, dict) else None), ownership_ledger=_freeze_value(ownership_state),
             ledger_reconciliation_residual=reconciliation, ownership_unresolved_categories=unresolved,
             topology_events=events, topology_event_evidence_available=evidence_available,
