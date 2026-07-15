@@ -13,6 +13,7 @@ import torch
 
 from .core.d3q19_stencil import D3Q19_MOVING_Q, all_moving_neighbor_masks, assert_no_direct_phase_links
 from .d3q19 import equilibrium3d
+from .free_surface_inventory_reconciliation import inventory_measurement
 
 
 class TopologyTransactionError(ValueError):
@@ -31,6 +32,7 @@ class TopologyTransactionPlan:
     mass_after_clamp: float
     mass_after_conversion: float
     mass_after_isolation: float
+    inventory_stages: dict[str, dict[str, float]] | None
     conversion_evidence: dict[str, object] | None
     gas_flag: int
     liquid_flag: int
@@ -85,20 +87,30 @@ def build_topology_transaction(
     gas_flag: int, liquid_flag: int, interface_flag: int, solid_flag: int,
     ux: torch.Tensor | None = None, uy: torch.Tensor | None = None, uz: torch.Tensor | None = None,
     capture_evidence: bool = False,
+    capture_inventory: bool = False,
     redistribution_link_evidence: tuple[dict[str, object], ...] = (),
 ) -> TopologyTransactionPlan:
     """Build a detached candidate in the legacy conversion/halo/cleanup order."""
     if ux is None or uy is None or uz is None:
         raise TopologyTransactionError("topology transaction requires pre-conversion velocity fields")
     cf, cfill, cflags, cmass = (value.clone() for value in (f, fill, flags, mass))
+    inventory_stages = {} if capture_inventory else None
     gas_mask = cflags == gas_flag
     cf = _init_new(cf, cflags, to_iface, rho_gas, ux, uy, uz, liquid_flag, interface_flag)
     cflags = torch.where(to_iface, torch.full_like(cflags, interface_flag), cflags)
 
     mass_before_redistribution = cmass.clone() if capture_evidence else None
     cmass = cmass + redistribution_increment
+    if inventory_stages is not None:
+        inventory_stages["after_topology_redistribution"] = inventory_measurement(
+            cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
+        )
     mass_after_redistribution = float(cmass.sum())
     cmass = cmass.clamp(0.0, rho_liquid)
+    if inventory_stages is not None:
+        inventory_stages["after_topology_clamp"] = inventory_measurement(
+            cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
+        )
     mass_after_clamp = float(cmass.sum())
     mass_before_conversion = cmass.clone() if capture_evidence else None
     fill_before_conversion = cfill.clone() if capture_evidence else None
@@ -112,6 +124,10 @@ def build_topology_transaction(
     cfill = torch.where(to_gas, torch.zeros_like(cfill), cfill)
     cmass = torch.where(to_gas, torch.zeros_like(cmass), cmass)
     cf = torch.where(to_gas.unsqueeze(0), torch.zeros_like(cf), cf)
+    if inventory_stages is not None:
+        inventory_stages["after_topology_conversion"] = inventory_measurement(
+            cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
+        )
     mass_after_conversion = float(cmass.sum())
     # Evidence attributes conversion itself, not the subsequent envelope halo.
     # Preserve the legacy post-conversion/pre-halo observation boundary.
@@ -135,6 +151,10 @@ def build_topology_transaction(
     cmass = torch.where(isolated, torch.zeros_like(cmass), cmass)
     cf = torch.where(isolated.unsqueeze(0), torch.zeros_like(cf), cf)
     cflags = torch.where(solid_mask, torch.full_like(cflags, solid_flag), cflags)
+    if inventory_stages is not None:
+        inventory_stages["after_topology_halo_isolation_boundary"] = inventory_measurement(
+            cf, cfill, cflags, cmass, rho_liquid=rho_liquid,
+        )
     mass_after_isolation = float(cmass.sum())
 
     evidence = None
@@ -175,7 +195,7 @@ def build_topology_transaction(
             "redistribution_link_delta_sum": float(sum(float(link["mass_delta"]) for link in links)),
         }
     _validate_candidate(cf, cfill, cflags, cmass, solid_mask, gas_flag, liquid_flag, interface_flag, solid_flag)
-    return TopologyTransactionPlan(cf, cfill, cflags, cmass, mass_after_redistribution, mass_after_clamp, mass_after_conversion, mass_after_isolation, evidence, gas_flag, liquid_flag, interface_flag, solid_flag, solid_mask.clone())
+    return TopologyTransactionPlan(cf, cfill, cflags, cmass, mass_after_redistribution, mass_after_clamp, mass_after_conversion, mass_after_isolation, inventory_stages, evidence, gas_flag, liquid_flag, interface_flag, solid_flag, solid_mask.clone())
 
 
 def commit_topology_transaction(

@@ -32,6 +32,11 @@ from .free_surface_topology_transaction import (
     build_topology_transaction,
     commit_topology_transaction,
 )
+from .free_surface_inventory_reconciliation import (
+    CANONICAL_STAGE_ORDER,
+    inventory_measurement,
+    inventory_stage_deltas,
+)
 
 GAS = 0; LIQUID = 1; INTERFACE = 2; SOLID = 3
 
@@ -284,6 +289,30 @@ def _append_ownership_ledger(
     ledger["latest"] = state
 
 
+def _append_inventory_reconciliation(ledger, stages):
+    """Publish cold actual-state stage measurements after a successful step."""
+    if tuple(stages) != CANONICAL_STAGE_ORDER:
+        raise ValueError("inventory reconciliation stages must use canonical chronological order")
+    deltas = inventory_stage_deltas(stages)
+    total_delta = (
+        stages["after_topology_halo_isolation_boundary"]["total_liquid_inventory"]
+        - stages["before_collision"]["total_liquid_inventory"]
+    )
+    summed = sum(delta["total_liquid_inventory"] for delta in deltas.values())
+    ledger["status"] = "DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE"
+    ledger["operator_attribution_status"] = "OBSERVED_COMBINED_NOT_ATOMIC"
+    ledger["stages"] = stages
+    ledger["stage_deltas"] = deltas
+    ledger["pre_topology_combined_total_liquid_inventory_delta"] = float(
+        stages["after_mass_exchange"]["total_liquid_inventory"]
+        - stages["before_collision"]["total_liquid_inventory"]
+    )
+    ledger["observed_total_liquid_inventory_delta"] = float(total_delta)
+    ledger["sum_stage_total_liquid_inventory_delta"] = float(summed)
+    ledger["total_liquid_inventory_reconciliation_residual"] = float(total_delta - summed)
+    ledger["abb_inventory_status"] = "POPULATION_ONLY_WITHHELD"
+
+
 # ===========================================================================
 # Initialization
 # ===========================================================================
@@ -405,6 +434,7 @@ def free_surface_step(
     runtime_ledger=None,
     paired_liquid_interface_debit=False,
     ownership_ledger=None,
+    inventory_reconciliation_ledger=None,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -424,6 +454,11 @@ def free_surface_step(
     runtime_ledger = None if published_runtime_ledger is None else deepcopy(published_runtime_ledger)
     published_ownership_ledger = ownership_ledger
     ownership_ledger = None if published_ownership_ledger is None else deepcopy(published_ownership_ledger)
+    published_inventory_reconciliation_ledger = inventory_reconciliation_ledger
+    inventory_reconciliation_ledger = (
+        None if published_inventory_reconciliation_ledger is None
+        else deepcopy(published_inventory_reconciliation_ledger)
+    )
     # Owners must be read from the pre-topology state.  This cold clone exists
     # only when callers request diagnostic ownership evidence.
     ownership_flags = None if ownership_ledger is None else flags.clone()
@@ -437,6 +472,11 @@ def free_surface_step(
     if mass is None:
         mass = init_mass_from_fill(fill, flags, rho_liquid)
     mass_start_value = float(mass.sum())
+    inventory_stages = None
+    if inventory_reconciliation_ledger is not None:
+        inventory_stages = {
+            "before_collision": inventory_measurement(f, fill, flags, mass, rho_liquid=rho_liquid),
+        }
     # Filled after conversion only for runtime-ledger callers; this avoids any
     # diagnostic allocation in production paths that do not request evidence.
     conversion_evidence = None
@@ -524,6 +564,10 @@ def free_surface_step(
     # Remove NaN for non-BGK
     if collision != 'bgk':
         f = torch.nan_to_num(f, nan=0.0, posinf=0.0, neginf=0.0)
+    if inventory_stages is not None:
+        inventory_stages["after_collision_and_forcing"] = inventory_measurement(
+            f, fill, flags, mass, rho_liquid=rho_liquid,
+        )
 
     # Preserve post-collision outgoing populations for anti-bounce-back (ABB).
     # For a missing pull population q at x, Körner ABB uses the *local*
@@ -538,6 +582,10 @@ def free_surface_step(
     # ---- 2b. Zero gas cells AFTER streaming (prevent mass leak into gas) ----
     gas_mask_pre = (flags == GAS)
     f = torch.where(gas_mask_pre.unsqueeze(0), torch.zeros_like(f), f)
+    if inventory_stages is not None:
+        inventory_stages["after_stream_and_gas_zero"] = inventory_measurement(
+            f, fill, flags, mass, rho_liquid=rho_liquid,
+        )
 
     # ---- 2c. Anti-bounce-back for interface cells (gas pressure) ----
     # Standard Körner: interface cells get f[q] = f[opp[q]] from gas directions
@@ -567,6 +615,8 @@ def free_surface_step(
         mass_ledger['abb_population_delta'] = float(abb_delta.sum())
         mass_ledger['abb_population_abs_delta'] = float(abb_delta.abs().sum())
     f = torch.where(need_abb, f_abb, f)
+    if inventory_stages is not None:
+        inventory_stages["after_abb"] = inventory_measurement(f, fill, flags, mass, rho_liquid=rho_liquid)
 
     # ---- 3. Wall BCs ----
     f = bounce_back_cells_3d(f, solid_mask)
@@ -612,6 +662,10 @@ def free_surface_step(
         f = f + forcing
         f = f.clamp(min=0.0, max=rho_liquid * 3.0)  # prevent inf from wall function forcing
         df = (tau_w * near_mask.to(f.dtype)).sum()
+    if inventory_stages is not None:
+        inventory_stages["after_wall_boundary"] = inventory_measurement(
+            f, fill, flags, mass, rho_liquid=rho_liquid,
+        )
 
     # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
     # (no .any() sync — multicard-safe under TCCL; torch.where handles empty masks)
@@ -654,6 +708,10 @@ def free_surface_step(
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
     mass_after_exchange_value = float(mass.sum())
     fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
+    if inventory_stages is not None:
+        inventory_stages["after_mass_exchange"] = inventory_measurement(
+            f, fill, flags, mass, rho_liquid=rho_liquid,
+        )
     if mass_ledger is not None:
         mass_ledger['exchange'] = float(mass.sum())
         mass_ledger['exchange_liquid_delta'] = float(mass_delta_liquid.sum())
@@ -703,6 +761,16 @@ def free_surface_step(
                 conversion_evidence=conversion_evidence,
                 abb_population_delta=float(abb_delta.sum()),
             )
+        if inventory_reconciliation_ledger is not None:
+            assert inventory_stages is not None
+            after_mass_exchange = inventory_stages["after_mass_exchange"]
+            _append_inventory_reconciliation(inventory_reconciliation_ledger, {
+                **inventory_stages,
+                "after_topology_redistribution": after_mass_exchange,
+                "after_topology_clamp": after_mass_exchange,
+                "after_topology_conversion": after_mass_exchange,
+                "after_topology_halo_isolation_boundary": after_mass_exchange,
+            })
         if published_mass_ledger is not None:
             published_mass_ledger.clear()
             published_mass_ledger.update(mass_ledger)
@@ -712,6 +780,9 @@ def free_surface_step(
         if published_ownership_ledger is not None:
             published_ownership_ledger.clear()
             published_ownership_ledger.update(ownership_ledger)
+        if published_inventory_reconciliation_ledger is not None:
+            published_inventory_reconciliation_ledger.clear()
+            published_inventory_reconciliation_ledger.update(inventory_reconciliation_ledger)
         return f, fill, flags, mass, df
     gas_mask = (flags == GAS)
     interface_mask = (flags == INTERFACE)
@@ -768,9 +839,16 @@ def free_surface_step(
         gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE, solid_flag=SOLID,
         ux=ux, uy=uy, uz=uz,
         capture_evidence=(runtime_ledger is not None or ownership_ledger is not None),
+        capture_inventory=inventory_reconciliation_ledger is not None,
         redistribution_link_evidence=redistribution_link_evidence,
     )
     f, fill, flags, mass = commit_topology_transaction(plan)
+    if inventory_reconciliation_ledger is not None:
+        assert inventory_stages is not None and plan.inventory_stages is not None
+        _append_inventory_reconciliation(inventory_reconciliation_ledger, {
+            **inventory_stages,
+            **plan.inventory_stages,
+        })
     if mass_ledger is not None:
         mass_ledger['redistribution'] = plan.mass_after_redistribution
         mass_ledger['clamp'] = plan.mass_after_clamp
@@ -815,6 +893,9 @@ def free_surface_step(
     if published_ownership_ledger is not None:
         published_ownership_ledger.clear()
         published_ownership_ledger.update(ownership_ledger)
+    if published_inventory_reconciliation_ledger is not None:
+        published_inventory_reconciliation_ledger.clear()
+        published_inventory_reconciliation_ledger.update(inventory_reconciliation_ledger)
     return f, fill, flags, mass, df
 
 
