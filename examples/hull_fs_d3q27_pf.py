@@ -21,7 +21,7 @@ from tensorlbm.advanced_collision import collide_kbc_d3q27, collide_cascaded_d3q
 from tensorlbm.cumulant import collide_cumulant_d3q27
 from tensorlbm.turbulence import collide_smagorinsky_mrt27
 from tensorlbm.ship_cad import build_hull_mask
-from tensorlbm.suboff_resistance import _ittc57_friction_coefficient, _voxel_wetted_area
+from tensorlbm.hydrodynamics import ittc57_friction_coefficient, voxel_wetted_area
 
 KAPPA = 0.41
 B_CONST = 5.0
@@ -46,7 +46,7 @@ def run_hull_fs_d3q27(hull_type="wigley", nx=192, ny=96, nz=96,
         device="cpu")
     solid = solid.to(dev)
     fluid = ~solid
-    S = _voxel_wetted_area(solid, 1.0)
+    S = voxel_wetted_area(solid, 1.0)
     dyn_p_S = 0.5 * rho_liq * u_in**2 * S
 
     # Water mask
@@ -73,7 +73,7 @@ def run_hull_fs_d3q27(hull_type="wigley", nx=192, ny=96, nz=96,
     alpha_ac = 0.02
 
     # ITTC reference
-    cf_ittc = _ittc57_friction_coefficient(re)
+    cf_ittc = ittc57_friction_coefficient(re)
     ct_ref = cf_ittc * 1.15  # form factor (1+k)
 
     # Lattice (D3Q27)

@@ -35,7 +35,7 @@ from .boundaries3d import far_field_bc_3d
 from .cg_advanced_collision import collide_cg_kbc_3d, collide_cg_cumulant_3d, collide_cg_cascaded_3d
 from .free_surface_lbm import free_surface_step, init_flags_from_fill, GAS, LIQUID, INTERFACE
 from .ship_cad import build_hull_mask, ShipHullType
-from .suboff_resistance import _ittc57_friction_coefficient, _voxel_wetted_area
+from .hydrodynamics import ittc57_friction_coefficient, voxel_wetted_area
 
 KAPPA = 0.41
 B_CONST = 5.0
@@ -195,7 +195,7 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
     # Build hull
     solid, fill_height = _build_hull(cfg, device)
     fluid = ~solid
-    S = _voxel_wetted_area(solid, 1.0)
+    S = voxel_wetted_area(solid, dx=1.0)
     dyn_p_S = 0.5 * 1.0 * u_in**2 * S
 
     # Water mask
@@ -240,7 +240,7 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
     opp = OPP.to(device)
 
     # ITTC reference
-    cf_ittc = _ittc57_friction_coefficient(cfg.re)
+    cf_ittc = ittc57_friction_coefficient(cfg.re)
     ct_ref = cf_ittc * cfg.form_factor
 
     print(f"=== Free-Surface {cfg.hull_type} ===", flush=True)
