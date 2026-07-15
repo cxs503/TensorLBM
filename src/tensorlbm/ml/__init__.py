@@ -19,11 +19,16 @@ from .torch_dataset_materialize import (
     FieldSnapshotReference,
     materialize_torch_field_dataset,
 )
+from .torch_dataset_flow_training import (
+    DatasetTrainingExecutionRecord,
+    run_evidence_gated_field_dataset_flow_reconstruction,
+)
 
 __all__ = [
     "BACKEND_REGISTRY",
     "BackendAvailability",
     "DatasetMaterializationRecord",
+    "DatasetTrainingExecutionRecord",
     "EvaluationSpec",
     "FieldSnapshotReference",
     "ModelArtifact",
@@ -33,6 +38,7 @@ __all__ = [
     "TrainingBackend",
     "TrainingSpec",
     "materialize_torch_field_dataset",
+    "run_evidence_gated_field_dataset_flow_reconstruction",
     "validate_evaluation_spec",
     "validate_model_artifact",
     "validate_training_spec",
