@@ -12,6 +12,8 @@ References: Körner et al. (2005), waLBerla free_surface/, Maarten-vd-Sande/lbm
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 import torch
 
 from .d3q19 import C, W, equilibrium3d, macroscopic3d
@@ -263,6 +265,25 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
     ledger.update(record)
 
 
+def _append_ownership_ledger(
+    ledger, *, flags, mass_delta_liquid, liquid_interface_mask,
+    paired_liquid_interface_debit, conversion_evidence, abb_population_delta,
+):
+    """Append cold tracked-state ownership evidence without solver feedback."""
+    from .free_surface_ownership_ledger import build_ownership_ledger
+
+    state = build_ownership_ledger(
+        flags=flags,
+        mass_delta_liquid=mass_delta_liquid,
+        liquid_interface_mask=liquid_interface_mask,
+        paired_liquid_interface_debit=paired_liquid_interface_debit,
+        conversion_evidence=conversion_evidence,
+        abb_population_delta=abb_population_delta,
+    )
+    ledger.setdefault("steps", []).append(state)
+    ledger["latest"] = state
+
+
 # ===========================================================================
 # Initialization
 # ===========================================================================
@@ -383,6 +404,7 @@ def free_surface_step(
     freeze_topology=False,
     runtime_ledger=None,
     paired_liquid_interface_debit=False,
+    ownership_ledger=None,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -397,7 +419,14 @@ def free_surface_step(
     # copy and publish it only on a successful return, so a failed step never
     # leaks partial diagnostic state to its caller.
     published_mass_ledger = mass_ledger
-    mass_ledger = None if published_mass_ledger is None else dict(published_mass_ledger)
+    mass_ledger = None if published_mass_ledger is None else deepcopy(published_mass_ledger)
+    published_runtime_ledger = runtime_ledger
+    runtime_ledger = None if published_runtime_ledger is None else deepcopy(published_runtime_ledger)
+    published_ownership_ledger = ownership_ledger
+    ownership_ledger = None if published_ownership_ledger is None else deepcopy(published_ownership_ledger)
+    # Owners must be read from the pre-topology state.  This cold clone exists
+    # only when callers request diagnostic ownership evidence.
+    ownership_flags = None if ownership_ledger is None else flags.clone()
 
     device = f.device
     _assert_no_direct_liquid_gas_links(flags)
@@ -664,9 +693,25 @@ def free_surface_step(
                 paired_liquid_interface_debit=paired_liquid_interface_debit,
                 conversion_evidence=conversion_evidence,
             )
+        if ownership_ledger is not None:
+            assert ownership_flags is not None
+            _append_ownership_ledger(
+                ownership_ledger, flags=ownership_flags,
+                mass_delta_liquid=mass_delta_liquid,
+                liquid_interface_mask=from_liq,
+                paired_liquid_interface_debit=paired_liquid_interface_debit,
+                conversion_evidence=conversion_evidence,
+                abb_population_delta=float(abb_delta.sum()),
+            )
         if published_mass_ledger is not None:
             published_mass_ledger.clear()
             published_mass_ledger.update(mass_ledger)
+        if published_runtime_ledger is not None:
+            published_runtime_ledger.clear()
+            published_runtime_ledger.update(runtime_ledger)
+        if published_ownership_ledger is not None:
+            published_ownership_ledger.clear()
+            published_ownership_ledger.update(ownership_ledger)
         return f, fill, flags, mass, df
     gas_mask = (flags == GAS)
     interface_mask = (flags == INTERFACE)
@@ -706,7 +751,7 @@ def free_surface_step(
         roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q
     ]).sum(dim=0)
     redistribution_link_evidence = ()
-    if runtime_ledger is not None:
+    if runtime_ledger is not None or ownership_ledger is not None:
         links = []
         shape = mass.shape
         for q, shift in zip(D3Q19_MOVING_Q, moving_tensor_shifts()):
@@ -721,7 +766,8 @@ def free_surface_step(
         recv_new=recv_new, redistribution_increment=redistribution_increment,
         rho_liquid=rho_liquid, rho_gas=rho_gas, solid_mask=solid_mask,
         gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE, solid_flag=SOLID,
-        ux=ux, uy=uy, uz=uz, capture_evidence=(runtime_ledger is not None),
+        ux=ux, uy=uy, uz=uz,
+        capture_evidence=(runtime_ledger is not None or ownership_ledger is not None),
         redistribution_link_evidence=redistribution_link_evidence,
     )
     f, fill, flags, mass = commit_topology_transaction(plan)
@@ -749,10 +795,26 @@ def free_surface_step(
             paired_liquid_interface_debit=paired_liquid_interface_debit,
             conversion_evidence=plan.conversion_evidence,
         )
+    if ownership_ledger is not None:
+        assert ownership_flags is not None
+        _append_ownership_ledger(
+            ownership_ledger, flags=ownership_flags,
+            mass_delta_liquid=mass_delta_liquid,
+            liquid_interface_mask=from_liq,
+            paired_liquid_interface_debit=paired_liquid_interface_debit,
+            conversion_evidence=plan.conversion_evidence,
+            abb_population_delta=float(abb_delta.sum()),
+        )
 
     if published_mass_ledger is not None:
         published_mass_ledger.clear()
         published_mass_ledger.update(mass_ledger)
+    if published_runtime_ledger is not None:
+        published_runtime_ledger.clear()
+        published_runtime_ledger.update(runtime_ledger)
+    if published_ownership_ledger is not None:
+        published_ownership_ledger.clear()
+        published_ownership_ledger.update(ownership_ledger)
     return f, fill, flags, mass, df
 
 
