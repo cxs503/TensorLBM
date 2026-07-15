@@ -21,6 +21,7 @@ from .free_surface_lbm import (
     free_surface_step,
     total_liquid_inventory,
 )
+from .free_surface_topology_transaction import ReplayEvidence
 
 DIAGNOSTIC_NOT_PHYSICAL_CLOSURE = "DIAGNOSTIC_NOT_PHYSICAL_CLOSURE"
 WITHHELD = "WITHHELD"
@@ -71,8 +72,9 @@ class ClosureStepEvidence:
     direct_liquid_gas_links: int
     finite: bool
     failure_reason: str | None
-    # Appended with a default so existing positional construction remains ABI-compatible.
+    # Appended with defaults so existing positional construction remains ABI-compatible.
     inventory_reconciliation: tuple[tuple[str, object], ...] | None = None
+    replay_evidence: ReplayEvidence | None = None
 
 
 @dataclass(frozen=True)
@@ -258,6 +260,7 @@ def _validate_case_definition(definition: object) -> tuple[str, torch.Tensor, to
 def _run_case(
     case_id: str, f: torch.Tensor, fill: torch.Tensor, flags: torch.Tensor, solid: torch.Tensor,
     requested_steps: int, freeze_topology: bool, paired: bool, enable_i_to_g_ownership_closure: bool,
+    capture_replay_stages: bool = False,
 ) -> ClosureCaseReport:
     f, fill, flags, solid = (field.clone() for field in (f, fill, flags, solid))
     mass = fill.clone()
@@ -276,6 +279,7 @@ def _run_case(
         runtime: dict[str, object] = {}
         ownership: dict[str, object] = {}
         inventory: dict[str, object] = {}
+        replay_capture: dict[str, object] = {}
         if failure_reason is None:
             try:
                 f, fill, flags, mass, _ = free_surface_step(
@@ -284,6 +288,8 @@ def _run_case(
                     ownership_ledger=ownership, inventory_reconciliation_ledger=inventory,
                     paired_liquid_interface_debit=paired,
                     enable_i_to_g_ownership_closure=enable_i_to_g_ownership_closure,
+                    capture_replay_stages=capture_replay_stages,
+                    replay_capture=replay_capture if capture_replay_stages else None,
                 )
             except (RuntimeError, ValueError) as error:
                 failure_reason = str(error)
@@ -298,6 +304,11 @@ def _run_case(
             failure_reason = "non-finite state after free_surface_step"
         if failure_reason is None and current.direct_liquid_gas_links:
             failure_reason = f"direct LIQUID-GAS links after step: {current.direct_liquid_gas_links}"
+        captured_replay_evidence = replay_capture.get("evidence")
+        replay_evidence = (
+            captured_replay_evidence if failure_reason is None
+            and isinstance(captured_replay_evidence, ReplayEvidence) else None
+        )
         observations.append(ClosureStepEvidence(
             step=number, independent_mass=current.independent_mass,
             total_liquid_inventory=current.total_liquid_inventory, population_mass_sum=current.population_mass_sum,
@@ -309,6 +320,7 @@ def _run_case(
             topology_events=events, topology_event_evidence_available=evidence_available,
             abb_population_only=abb_population_only, direct_liquid_gas_links=current.direct_liquid_gas_links,
             finite=current.finite, failure_reason=failure_reason,
+            replay_evidence=replay_evidence,
         ))
         mass_curve.append(current.independent_mass)
         inventory_curve.append(current.total_liquid_inventory)
@@ -328,6 +340,7 @@ def _run_case(
 def run_free_surface_closure_experiment(
     *, extra_cases: tuple[tuple[str, Any, Any, Any, Any, int, bool, bool], ...] = (),
     enable_i_to_g_ownership_closure: bool = False,
+    capture_replay_stages: bool = False,
 ) -> ClosureExperimentReport:
     """Run the fixed R1 diagnostic matrix without emitting files or corrections.
 
@@ -340,6 +353,8 @@ def run_free_surface_closure_experiment(
         raise ClosureExperimentError("extra_cases must be a tuple of case definitions")
     if not isinstance(enable_i_to_g_ownership_closure, bool):
         raise ClosureExperimentError("enable_i_to_g_ownership_closure must be bool")
+    if not isinstance(capture_replay_stages, bool):
+        raise ClosureExperimentError("capture_replay_stages must be bool")
     frozen = _frozen_runtime_state()
     conversion = _conversion_state()
     definitions = (
@@ -353,6 +368,7 @@ def run_free_surface_closure_experiment(
         _run_case(
             *_validate_case_definition(definition),
             enable_i_to_g_ownership_closure=enable_i_to_g_ownership_closure,
+            capture_replay_stages=capture_replay_stages,
         )
         for definition in definitions
     )
