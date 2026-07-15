@@ -76,7 +76,20 @@ def test_suboff_runtime_reports_closed_per_step_momentum_operator_budget() -> No
     budget = observation["conservation"]["source_attribution"]["momentum"]["per_step_budget"]
     assert budget["status"] == "measured"
     assert budget["units"] == "lattice momentum per time step (rho_lu * dx_lu^4 / dt_lu)"
-    assert budget["boundary_flux"]["status"] == "unavailable"
+    boundary_flux = budget["boundary_flux"]
+    assert boundary_flux["status"] == "measured"
+    assert boundary_flux["kind"] == "face_integrated_population_momentum_flux"
+    assert boundary_flux["sign_convention"] == (
+        "outward control-volume transport: inlet normal is -x, "
+        "outlet normal is +x; net_outward=inlet_outward+outlet_outward"
+    )
+    assert boundary_flux["closure"] == {
+        "status": "withheld",
+        "reason": "face_flux_is_not_a_bc_population_delta",
+    }
+    # Face transport is observed separately; these remain BC operator deltas.
+    assert "face_flux" in budget["samples"][0]
+    assert "inlet_boundary" in budget["samples"][0]
     assert budget["body_force"]["status"] == "unavailable"
     assert budget["coverage"] == "full_per_step"
     assert budget["sampled_step_indices"] == list(range(1, 11))

@@ -281,6 +281,36 @@ def _lattice_momentum(f: torch.Tensor) -> torch.Tensor:
     return (f.to(torch.float64).unsqueeze(1) * directions).sum(dim=(0, 2, 3, 4))
 
 
+def d3q19_x_face_momentum_flux(f: torch.Tensor) -> dict[str, list[float]]:
+    """Measure population momentum flux through the D3Q19 inlet/outlet faces.
+
+    ``Phi_alpha = sum_face sum_q f_q c_q,alpha c_q,x n_x`` is integrated on
+    the two x-normal control faces.  The inlet uses the outward normal ``-x``;
+    the outlet uses ``+x``.  Thus returned components are outward transport,
+    and ``net_outward`` is inlet plus outlet.  Values are instantaneous lattice
+    force / momentum-per-time: ``rho_lu * dx_lu**4 / dt_lu**2``.
+
+    This is intentionally distinct from a Zou/He population-state delta.  It
+    observes kinetic transport at a face and cannot close an operator-delta
+    budget without a time-discrete control-volume formulation.
+    """
+    if f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have D3Q19 shape (19, nz, ny, nx)")
+    directions = C.to(device=f.device, dtype=torch.float64)
+    # q-by-component contribution to Pi_(component,x), accumulated on a face.
+    contribution = directions * directions[:, 0:1]
+    inlet_populations = f[:, :, :, 0].to(torch.float64).sum(dim=(1, 2))
+    outlet_populations = f[:, :, :, -1].to(torch.float64).sum(dim=(1, 2))
+    inlet = -(inlet_populations.unsqueeze(1) * contribution).sum(dim=0)
+    outlet = (outlet_populations.unsqueeze(1) * contribution).sum(dim=0)
+    net = inlet + outlet
+    return {
+        "inlet_outward": [float(value) for value in inlet.cpu().tolist()],
+        "outlet_outward": [float(value) for value in outlet.cpu().tolist()],
+        "net_outward": [float(value) for value in net.cpu().tolist()],
+    }
+
+
 def _export_snapshot(
     f: torch.Tensor,
     step: int,
@@ -377,6 +407,14 @@ def _run_suboff_lbm_drag(
     # only in explicit diagnostic mode.  A sample is an actual operator-state
     # snapshot; unsampled steps are never synthesized or represented as zero.
     momentum_budget_samples: list[dict[str, object]] = []
+    # Face fluxes are sampled alongside the operator snapshots, but remain a
+    # separate transport observation rather than a population-delta channel.
+    face_flux_samples: list[dict[str, object]] = []
+    face_flux_totals = {
+        "inlet_outward": torch.zeros(3, dtype=torch.float64, device=device),
+        "outlet_outward": torch.zeros(3, dtype=torch.float64, device=device),
+        "net_outward": torch.zeros(3, dtype=torch.float64, device=device),
+    }
     momentum_budget_totals = {
         "collision": torch.zeros(3, dtype=torch.float64, device=device),
         "inlet_boundary": torch.zeros(3, dtype=torch.float64, device=device),
@@ -451,9 +489,16 @@ def _run_suboff_lbm_drag(
             }
             for name, delta in operator_deltas.items():
                 momentum_budget_totals[name] += delta
+            # Measure after the complete inlet/outlet/wall/solid BC sequence,
+            # on exactly the population state retained for the next step.
+            face_flux = d3q19_x_face_momentum_flux(f)
+            for name, values in face_flux.items():
+                face_flux_totals[name] += torch.tensor(values, dtype=torch.float64, device=device)
+            face_flux_samples.append({"step": step, **face_flux})
             momentum_budget_samples.append({
                 "step": step,
                 "fluid_momentum_delta": [float(value) for value in total_delta.cpu().tolist()],
+                "face_flux": face_flux,
                 **{name: [float(value) for value in delta.cpu().tolist()]
                    for name, delta in operator_deltas.items()},
             })
@@ -525,8 +570,30 @@ def _run_suboff_lbm_drag(
         "units": "lattice momentum per time step (rho_lu * dx_lu^4 / dt_lu)",
         "sign_convention": "positive component is momentum added to fluid along positive (x,y,z) lattice axis",
         "boundary_flux": {
-            "status": "unavailable",
-            "reason": "inlet/outlet entries are population-state changes from BC operators, not face-integrated fluxes",
+            "status": "measured" if config.momentum_budget_diagnostic else "disabled",
+            "kind": "face_integrated_population_momentum_flux" if config.momentum_budget_diagnostic else None,
+            "sampling_state": "post_complete_d3q19_bc_population_state" if config.momentum_budget_diagnostic else None,
+            "samples": face_flux_samples,
+            "coverage": "full_per_step" if full_budget_coverage else (
+                "sampled" if config.momentum_budget_diagnostic else "disabled"
+            ),
+            "sample_sum": {
+                name: [float(value) for value in total.cpu().tolist()]
+                for name, total in face_flux_totals.items()
+            },
+            "sample_sum_semantics": (
+                "sum_of_observed_instantaneous_fluxes_only; not a time integral "
+                "or full-run flux when coverage is sampled"
+            ),
+            "units": "lattice momentum flux / force (rho_lu * dx_lu^4 / dt_lu^2)",
+            "sign_convention": (
+                "outward control-volume transport: inlet normal is -x, "
+                "outlet normal is +x; net_outward=inlet_outward+outlet_outward"
+            ),
+            "closure": {
+                "status": "withheld",
+                "reason": "face_flux_is_not_a_bc_population_delta",
+            },
         },
         "body_force": {"status": "unavailable", "reason": "no body-force operator is enabled in this SUBOFF loop"},
         "samples": momentum_budget_samples,
