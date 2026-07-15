@@ -435,6 +435,7 @@ def free_surface_step(
     paired_liquid_interface_debit=False,
     ownership_ledger=None,
     inventory_reconciliation_ledger=None,
+    conversion_density_audit_ledger=None,
 ):
     """One free-surface LBM timestep (full Körner model).
 
@@ -458,6 +459,11 @@ def free_surface_step(
     inventory_reconciliation_ledger = (
         None if published_inventory_reconciliation_ledger is None
         else deepcopy(published_inventory_reconciliation_ledger)
+    )
+    published_conversion_density_audit_ledger = conversion_density_audit_ledger
+    conversion_density_audit_ledger = (
+        None if published_conversion_density_audit_ledger is None
+        else deepcopy(published_conversion_density_audit_ledger)
     )
     # Owners must be read from the pre-topology state.  This cold clone exists
     # only when callers request diagnostic ownership evidence.
@@ -771,6 +777,10 @@ def free_surface_step(
                 "after_topology_conversion": after_mass_exchange,
                 "after_topology_halo_isolation_boundary": after_mass_exchange,
             })
+        if conversion_density_audit_ledger is not None:
+            from .free_surface_conversion_density_audit import build_conversion_density_audit
+            conversion_density_audit_ledger["audit"] = build_conversion_density_audit(None, rho_liquid=rho_liquid)
+            conversion_density_audit_ledger["status"] = "DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE"
         if published_mass_ledger is not None:
             published_mass_ledger.clear()
             published_mass_ledger.update(mass_ledger)
@@ -780,6 +790,9 @@ def free_surface_step(
         if published_ownership_ledger is not None:
             published_ownership_ledger.clear()
             published_ownership_ledger.update(ownership_ledger)
+        if published_conversion_density_audit_ledger is not None:
+            published_conversion_density_audit_ledger.clear()
+            published_conversion_density_audit_ledger.update(conversion_density_audit_ledger)
         if published_inventory_reconciliation_ledger is not None:
             published_inventory_reconciliation_ledger.clear()
             published_inventory_reconciliation_ledger.update(inventory_reconciliation_ledger)
@@ -838,8 +851,14 @@ def free_surface_step(
         rho_liquid=rho_liquid, rho_gas=rho_gas, solid_mask=solid_mask,
         gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE, solid_flag=SOLID,
         ux=ux, uy=uy, uz=uz,
-        capture_evidence=(runtime_ledger is not None or ownership_ledger is not None),
-        capture_inventory=inventory_reconciliation_ledger is not None,
+        capture_evidence=(
+            runtime_ledger is not None or ownership_ledger is not None
+            or conversion_density_audit_ledger is not None
+        ),
+        capture_inventory=(
+            inventory_reconciliation_ledger is not None
+            or conversion_density_audit_ledger is not None
+        ),
         redistribution_link_evidence=redistribution_link_evidence,
     )
     f, fill, flags, mass = commit_topology_transaction(plan)
@@ -849,6 +868,17 @@ def free_surface_step(
             **inventory_stages,
             **plan.inventory_stages,
         })
+    if conversion_density_audit_ledger is not None:
+        from .free_surface_conversion_density_audit import build_conversion_density_audit
+        conversion_density_audit_ledger["audit"] = build_conversion_density_audit(
+            plan.conversion_evidence, rho_liquid=rho_liquid,
+            observed_conversion_inventory_delta=(
+                None if plan.inventory_stages is None
+                else plan.inventory_stages["after_topology_conversion"]["total_liquid_inventory"]
+                - plan.inventory_stages["after_topology_clamp"]["total_liquid_inventory"]
+            ),
+        )
+        conversion_density_audit_ledger["status"] = "DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE"
     if mass_ledger is not None:
         mass_ledger['redistribution'] = plan.mass_after_redistribution
         mass_ledger['clamp'] = plan.mass_after_clamp
@@ -893,6 +923,9 @@ def free_surface_step(
     if published_ownership_ledger is not None:
         published_ownership_ledger.clear()
         published_ownership_ledger.update(ownership_ledger)
+    if published_conversion_density_audit_ledger is not None:
+        published_conversion_density_audit_ledger.clear()
+        published_conversion_density_audit_ledger.update(conversion_density_audit_ledger)
     if published_inventory_reconciliation_ledger is not None:
         published_inventory_reconciliation_ledger.clear()
         published_inventory_reconciliation_ledger.update(inventory_reconciliation_ledger)

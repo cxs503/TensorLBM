@@ -165,7 +165,7 @@ def build_topology_transaction(
         assert mass_after_conversion_field is not None and f_after_conversion is not None
         conversion_delta = mass_after_conversion_field - mass_before_conversion
         cells = []
-        for cell in torch.nonzero((to_liq | to_gas) & (conversion_delta != 0.0), as_tuple=False).tolist():
+        for cell in torch.nonzero(to_liq | to_gas, as_tuple=False).tolist():
             z, y, x = (int(value) for value in cell)
             cells.append({"cell": (z, y, x), "flag_before": int(flags_before_conversion[z, y, x]), "flag_after": int(flags_after_conversion[z, y, x]), "mass_before": float(mass_before_conversion[z, y, x]), "mass_after": float(mass_after_conversion_field[z, y, x]), "mass_delta": float(conversion_delta[z, y, x]), "fill_before": float(fill_before_conversion[z, y, x]), "fill_after": float(fill_after_conversion[z, y, x]), "f_before": tuple(float(value) for value in f_before_conversion[:, z, y, x]), "f_after": tuple(float(value) for value in f_after_conversion[:, z, y, x]), "population_before": float(f_before_conversion[:, z, y, x].sum()), "population_after": float(f_after_conversion[:, z, y, x].sum()), "event_id": "conversion", "operator": "conversion"})
         links = []
