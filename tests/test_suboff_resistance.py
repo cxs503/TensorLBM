@@ -97,9 +97,21 @@ def test_suboff_runtime_reports_closed_per_step_momentum_operator_budget() -> No
     assert len(budget["samples"]) == 10
     assert all(len(step["fluid_momentum_delta"]) == 3 for step in budget["samples"])
     assert all(len(step["unexplained_residual"]) == 3 for step in budget["samples"])
+    ledger = budget["samples"][0]["operator_domain_ledger"]
+    assert ledger["domain"] == "entire retained D3Q19 population array"
+    assert ledger["operator_identity"]["status"] == "measured"
+    assert ledger["operator_identity"]["meaning"].endswith("not a physical control-volume closure")
+    assert ledger["streaming"]["implementation"] == "periodic torch.roll permutation"
+    assert ledger["streaming"]["expected"] == "zero_global_population_momentum_delta"
+    assert max(abs(value) for value in budget["samples"][0]["streaming"]) < 1.0e-9
+    assert ledger["wall_impulse"]["fluid_momentum_change"] == budget["samples"][0]["wall_exchange"]
+    assert ledger["solid_impulse"]["fluid_momentum_change"] == budget["samples"][0]["solid_exchange"]
+    for impulse in (ledger["wall_impulse"], ledger["solid_impulse"]):
+        reaction = impulse["reaction_on_wall"] if "reaction_on_wall" in impulse else impulse["reaction_on_solid"]
+        assert reaction == [-value for value in impulse["fluid_momentum_change"]]
     cumulative = budget["cumulative_sampled"]
     explained = [sum(cumulative[name][axis] for name in (
-        "collision", "inlet_boundary", "outlet_boundary", "wall_exchange",
+        "collision", "streaming", "inlet_boundary", "outlet_boundary", "wall_exchange",
         "solid_exchange", "unexplained_residual",
     )) for axis in range(3)]
     assert max(abs(cumulative["fluid_momentum_delta"][axis] - explained[axis])
