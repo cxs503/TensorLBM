@@ -28,6 +28,10 @@ from .torch_dataset_flow_training import (
     DatasetTrainingExecutionRecord,
     run_evidence_gated_field_dataset_flow_reconstruction,
 )
+from .torch_flow_transformer_holdout_evaluation import (
+    FlowTransformerHoldoutEvaluationRecord,
+    evaluate_evidence_gated_flow_transformer_holdout,
+)
 
 __all__ = [
     "BACKEND_REGISTRY",
@@ -36,6 +40,7 @@ __all__ = [
     "DatasetTrainingExecutionRecord",
     "EvaluationSpec",
     "FieldSnapshotReference",
+    "FlowTransformerHoldoutEvaluationRecord",
     "HoldoutEvaluationRecord",
     "HoldoutSampleEvidence",
     "ModelArtifact",
@@ -46,6 +51,7 @@ __all__ = [
     "TrainingSpec",
     "materialize_torch_field_dataset",
     "evaluate_evidence_gated_holdout",
+    "evaluate_evidence_gated_flow_transformer_holdout",
     "run_evidence_gated_field_dataset_flow_reconstruction",
     "validate_evaluation_spec",
     "validate_model_artifact",
