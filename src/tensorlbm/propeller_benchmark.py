@@ -387,6 +387,98 @@ def _summarize_windows(
     }
 
 
+def _is_exact_integer(value: float) -> bool:
+    return math.isfinite(value) and abs(value - round(value)) <= _SENSITIVITY_MATCH_TOL
+
+
+def _spatial_level_contract(config: PropellerBenchmarkConfig) -> dict[str, object]:
+    """Describe one actual voxel level without calling it convergence evidence."""
+    config.validate()
+    steps = config.steps_per_revolution
+    if not math.isclose(config.rpm * steps, 1.0, rel_tol=0.0, abs_tol=_SENSITIVITY_MATCH_TOL):
+        raise ValueError(
+            "actual angular increment "
+            f"{config.angular_increment_degrees:.17g} deg/update disagrees with claimed "
+            f"{360.0 / steps:.17g} deg/update"
+        )
+    if config.sampling_steps is not None:
+        raise ValueError("spatial refinement requires sampling_steps=None")
+    sampled = config.n_revolutions * steps
+    for label, rotations in (("warmup_steps", config.warmup_steps * config.rpm), ("sample_window_steps", config.sample_window_steps * config.rpm), ("total sampling steps", sampled * config.rpm)):
+        if not _is_exact_integer(rotations):
+            raise ValueError(f"{label} must contain an exact whole number of rotations")
+    if config.tip_ma >= LOW_MACH_TIP_GATE:
+        raise ValueError("low-Mach gate")
+    d_lu = config.geometry.diameter
+    extents = [config.nx / d_lu, config.ny / d_lu, config.nz / d_lu]
+    return {
+        "diameter_lu": d_lu, "cell_size_m": config.model_diameter_m / d_lu,
+        "domain_cells": [config.nx, config.ny, config.nz], "domain_per_diameter": extents,
+        "domain_physical_m": [extent * config.model_diameter_m for extent in extents],
+        "steps_per_revolution": steps, "angular_increment_degrees": config.angular_increment_degrees,
+        "warmup_steps": config.warmup_steps, "sample_window_steps": config.sample_window_steps,
+        "sampled_steps": sampled, "complete_rotations": sampled * config.rpm,
+        "complete_windows": sampled // config.sample_window_steps, "tip_ma": config.tip_ma,
+        "re_d": config.re_d, "advance_ratios": [u / (config.rpm * d_lu) for u in config.inflow_velocities],
+    }
+
+
+def _same(a: float, b: float) -> bool:
+    return math.isclose(a, b, rel_tol=0.0, abs_tol=_SENSITIVITY_MATCH_TOL)
+
+
+def _persist_spatial_evidence(config: PropellerBenchmarkConfig, evidence: dict[str, object]) -> None:
+    path = config.output_root / "propeller_owt" / "resolution_sensitivity.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    evidence["artifact"] = str(path)
+    path.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+
+
+def run_propeller_resolution_sensitivity(configs: tuple[PropellerBenchmarkConfig, ...], *, level_names: tuple[str, ...] | None = None) -> dict[str, object]:
+    """Assess true voxel refinement and fail closed before incompatible runs.
+
+    Direct voxelisation means increasing ``diameter_lu`` is spatial refinement
+    only with a fixed physical propeller and tank.  This moving-boundary solver
+    also needs identical update/angle histories; if low-Mach/Re/J scaling
+    conflicts with those histories, no coefficient is computed or reported.
+    """
+    if len(configs) < 3:
+        for config in configs:
+            _spatial_level_contract(config)
+        raise ValueError("at least 3 valid spatial resolution levels are required")
+    names = level_names or tuple(f"level_{i}" for i in range(len(configs)))
+    if len(names) != len(configs) or len(set(names)) != len(names):
+        raise ValueError("level_names must be unique and match configs")
+    contracts = [_spatial_level_contract(c) for c in configs]
+    diameters = [float(c["diameter_lu"]) for c in contracts]
+    if any(b <= a for a, b in zip(diameters, diameters[1:])):
+        raise ValueError("spatial resolution must strictly refine: diameter_lu must increase")
+    reference, ref_contract = configs[0], contracts[0]
+    geometry_fields = ("n_blades", "hub_diameter_ratio", "hub_length_ratio", "pitch_ratio_07", "blade_area_ratio", "skew_deg", "rake_ratio", "max_thickness_ratio")
+    geometry_matched = all(getattr(c.geometry, field) == getattr(reference.geometry, field) for c in configs[1:] for field in geometry_fields) and all(_same(c.model_diameter_m, reference.model_diameter_m) for c in configs[1:])
+    domain_matched = all(
+        all(_same(float(value), float(ref_value)) for value, ref_value in zip(
+            list(contract["domain_per_diameter"]), list(ref_contract["domain_per_diameter"]),
+        ))
+        for contract in contracts[1:]
+    )
+    j_matched = all(list(contract["advance_ratios"]) == list(ref_contract["advance_ratios"]) for contract in contracts[1:])
+    re_matched = all(_same(float(contract["re_d"]), float(ref_contract["re_d"])) for contract in contracts[1:])
+    mach_matched = all(_same(float(contract["tip_ma"]), float(ref_contract["tip_ma"])) for contract in contracts[1:])
+    temporal_matched = all(contract["steps_per_revolution"] == ref_contract["steps_per_revolution"] and _same(float(contract["angular_increment_degrees"]), float(ref_contract["angular_increment_degrees"])) and contract["warmup_steps"] == ref_contract["warmup_steps"] and contract["sample_window_steps"] == ref_contract["sample_window_steps"] and contract["sampled_steps"] == ref_contract["sampled_steps"] for contract in contracts[1:])
+    comparable = geometry_matched and domain_matched and j_matched and re_matched and mach_matched and temporal_matched
+    levels = [{"name": name, **contract, "campaign_status": "not_run", "same_operator_force_torque_check": {"status": "withheld", "reason": "campaign_not_executed"}} for name, contract in zip(names, contracts)]
+    evidence: dict[str, object] = {
+        "name": "propeller_open_water_spatial_refinement", "status": "withheld",
+        "reason": "eligible_for_execution" if comparable else "incomparable_voxel_refinement_contract",
+        "comparison_basis": {"kind": "same_physical_geometry_true_spatial_refinement", "geometry_matched": geometry_matched, "physical_domain_matched": domain_matched, "advance_ratios_matched": j_matched, "re_d_matched": re_matched, "low_mach_matched": mach_matched, "exact_rotation_time_sampling_matched": temporal_matched, "levels": contracts},
+        "levels": levels,
+        "metric_convergence": {"status": "withheld", "reason": "incomparable_or_unexecuted", "kt_kq_eta_differences": None},
+    }
+    _persist_spatial_evidence(configs[0], evidence)
+    return evidence
+
+
 def _d3q19_momentum_x(
     distributions: torch.Tensor, region: torch.Tensor | None = None,
 ) -> torch.Tensor:
@@ -613,6 +705,8 @@ def _require_resolution_sensitivity_contract(
                 "into complete sample windows"
             )
 
+    if len(configs) not in (2, 3):
+        raise ValueError("resolution sensitivity requires a two- or three-level coarse-to-fine sequence")
     baseline = configs[0]
     baseline.validate()
     baseline_steps = exact_steps_per_revolution(baseline)
@@ -665,21 +759,27 @@ def _require_resolution_sensitivity_contract(
             "window_revolutions": window_revs,
             "complete_windows": config.n_revolutions / window_revs,
         })
+        if index:
+            previous = configs[index - 1]
+            if not (config.nx > previous.nx and config.ny > previous.ny and config.nz > previous.nz):
+                raise ValueError(
+                    "resolution sensitivity levels must be strictly coarse-to-fine in nx, ny, and nz"
+                )
     return {"low_mach_gate": LOW_MACH_TIP_GATE, "levels": levels}
 
 
-def run_propeller_resolution_sensitivity(
+def _legacy_run_propeller_resolution_sensitivity(
     configs: tuple[PropellerBenchmarkConfig, ...], *, level_names: tuple[str, ...] | None = None,
 ) -> dict[str, object]:
-    """Execute a multi-resolution, multi-J repeatability campaign.
+    """Legacy two-domain comparator retained privately; not convergence evidence.
 
     Each level is independently run by :func:`run_propeller_benchmark`; no
     coefficient is interpolated or synthesized. The evidence reports final-
     window status and same-operator force/torque action-reaction residuals for
     every level, plus changes at matching J relative to the first level.
     """
-    if len(configs) < 2:
-        raise ValueError("resolution sensitivity requires at least two levels")
+    if len(configs) not in (2, 3):
+        raise ValueError("resolution sensitivity requires a two- or three-level coarse-to-fine sequence")
     if level_names is None:
         level_names = tuple(f"level_{index}" for index in range(len(configs)))
     if len(level_names) != len(configs) or len(set(level_names)) != len(level_names):
