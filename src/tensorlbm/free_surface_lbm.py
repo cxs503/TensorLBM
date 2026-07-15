@@ -26,6 +26,10 @@ from .core.d3q19_stencil import (
 )
 from .solver3d import stream3d as _stream3d
 from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
+from .free_surface_topology_transaction import (
+    build_topology_transaction,
+    commit_topology_transaction,
+)
 
 GAS = 0; LIQUID = 1; INTERFACE = 2; SOLID = 3
 
@@ -388,6 +392,13 @@ def free_surface_step(
       - Interface gas pressure (anti-bounce-back)
       - Neighbor flags (prevents isolated cells)
     """
+    # Ledger output is transactional too: topology validation may fail after
+    # ABB/exchange observations were calculated.  Accumulate into a detached
+    # copy and publish it only on a successful return, so a failed step never
+    # leaks partial diagnostic state to its caller.
+    published_mass_ledger = mass_ledger
+    mass_ledger = None if published_mass_ledger is None else dict(published_mass_ledger)
+
     device = f.device
     _assert_no_direct_liquid_gas_links(flags)
     c_dev = _C.to(device).float()
@@ -653,19 +664,16 @@ def free_surface_step(
                 paired_liquid_interface_debit=paired_liquid_interface_debit,
                 conversion_evidence=conversion_evidence,
             )
+        if published_mass_ledger is not None:
+            published_mass_ledger.clear()
+            published_mass_ledger.update(mass_ledger)
         return f, fill, flags, mass, df
-
-    # ---- 5. Cell conversion (fill-based, like original) ----
     gas_mask = (flags == GAS)
     interface_mask = (flags == INTERFACE)
     liquid_mask = (flags == LIQUID)
 
     # Gas → Interface (received mass from streaming)
     to_iface = gas_mask & (fill > 0.01) & (~solid_mask)
-    # (no .any() sync — _init_new uses torch.where for empty mask)
-    f = _init_new(f, flags, to_iface, rho_gas, device, ux, uy, uz)
-    flags = torch.where(to_iface, torch.full_like(flags, INTERFACE), flags)
-
     to_liq = interface_mask & (fill >= 0.999) & (~solid_mask)
     to_gas = (interface_mask | liquid_mask) & (fill <= 0.01) & (~solid_mask)
 
@@ -688,9 +696,7 @@ def free_surface_step(
     n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
     # Excess per receiving neighbor
     excess_per_nb = excess / n_recv
-    # This is the donor/receiver mass state before any of the 18 link updates.
-    # Retain it only for a requested runtime observation.
-    mass_before_redistribution = mass.clone() if runtime_ledger is not None else None
+
     # Aggregate every D3Q19 receiver contribution in the mass dtype, then
     # commit it once.  Sequential float32 rebinding rounds the same mass field
     # 18 times and leaves a transaction residual when conversion removes the
@@ -699,145 +705,41 @@ def free_surface_step(
     redistribution_increment = torch.stack([
         roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q
     ]).sum(dim=0)
-    mass = mass + redistribution_increment
-    mass_after_redistribution_value = float(mass.sum())
-    if mass_ledger is not None:
-        mass_ledger['redistribution'] = float(mass.sum())
-    # Clamp mass to valid range
-    mass = mass.clamp(0.0, rho_liquid)
-    mass_after_clamp_value = float(mass.sum())
-    if mass_ledger is not None:
-        mass_ledger['clamp'] = float(mass.sum())
-
-    # Capture exact sparse cell/link observations around redistribution and
-    # conversion.  The evidence uses no attribution tolerance and is retained
-    # only on the runtime-ledger diagnostic path.  It is intentionally a
-    # sparse state snapshot, rather than a guessed residual attribution.
-    mass_before_conversion = mass.clone() if runtime_ledger is not None else None
-    fill_before_conversion = fill.clone() if runtime_ledger is not None else None
-    flags_before_conversion = flags.clone() if runtime_ledger is not None else None
-    f_before_conversion = f.clone() if runtime_ledger is not None else None
-
-    # Apply cell conversion (mass assignment AFTER redistribution)
-    # (no .any() sync — torch.where handles empty masks)
-    flags = torch.where(to_liq, torch.full_like(flags, LIQUID), flags)
-    fill = torch.where(to_liq, torch.ones_like(fill), fill)
-    mass = torch.where(to_liq, torch.full_like(mass, rho_liquid), mass)
-
-    flags = torch.where(to_gas, torch.full_like(flags, GAS), flags)
-    fill = torch.where(to_gas, torch.zeros_like(fill), fill)
-    mass = torch.where(to_gas, torch.zeros_like(mass), mass)
-    f = torch.where(to_gas.unsqueeze(0), torch.zeros_like(f), f)
-    mass_after_conversion_value = float(mass.sum())
+    redistribution_link_evidence = ()
     if runtime_ledger is not None:
-        assert mass_before_redistribution is not None
-        assert mass_before_conversion is not None
-        assert fill_before_conversion is not None
-        assert flags_before_conversion is not None
-        assert f_before_conversion is not None
-        conversion_delta = mass - mass_before_conversion
-        conversion_cells = []
-        for cell in torch.nonzero((to_liq | to_gas) & (conversion_delta != 0.0), as_tuple=False).tolist():
-            z, y, x = (int(value) for value in cell)
-            conversion_cells.append({
-                "cell": (z, y, x),
-                "flag_before": int(flags_before_conversion[z, y, x]),
-                "flag_after": int(flags[z, y, x]),
-                "mass_before": float(mass_before_conversion[z, y, x]),
-                "mass_after": float(mass[z, y, x]),
-                "mass_delta": float(conversion_delta[z, y, x]),
-                "fill_before": float(fill_before_conversion[z, y, x]),
-                "fill_after": float(fill[z, y, x]),
-                "f_before": tuple(float(value) for value in f_before_conversion[:, z, y, x]),
-                "f_after": tuple(float(value) for value in f[:, z, y, x]),
-                "population_before": float(f_before_conversion[:, z, y, x].sum()),
-                "population_after": float(f[:, z, y, x].sum()),
-                "event_id": "conversion",
-                "operator": "conversion",
-            })
-        redistribution_links = []
-        # Donor d reaches r=d-shift under the periodic roll convention above.
-        # Only exact nonzero link contributions are retained.
+        links = []
         shape = mass.shape
         for q, shift in zip(D3Q19_MOVING_Q, moving_tensor_shifts()):
             dz, dy, dx = shift
             receiver_for_donor = roll_from_pull_source(recv_mask, q)
             for donor in torch.nonzero((excess_per_nb != 0.0) & receiver_for_donor, as_tuple=False).tolist():
                 z, y, x = (int(value) for value in donor)
-                rz, ry, rx = ((z - dz) % shape[0], (y - dy) % shape[1],
-                              (x - dx) % shape[2])
-                redistribution_links.append({
-                    "donor": (z, y, x),
-                    "receiver": (rz, ry, rx),
-                    "shift": (dz, dy, dx),
-                    "mass_delta": float(excess_per_nb[z, y, x]),
-                    "event_id": "redistribution",
-                    "operator": "redistribution",
-                    "donor_mass_before_redistribution": float(mass_before_redistribution[z, y, x]),
-                    "receiver_flag_before": int(flags_before_conversion[rz, ry, rx]),
-                    "receiver_flag_after": int(flags[rz, ry, rx]),
-                    "receiver_fill_before": float(fill_before_conversion[rz, ry, rx]),
-                    "receiver_fill_after": float(fill[rz, ry, rx]),
-                    "receiver_mass_before": float(mass_before_redistribution[rz, ry, rx]),
-                    "receiver_mass_after": float(mass[rz, ry, rx]),
-                    "receiver_f_before": tuple(float(value) for value in f_before_conversion[:, rz, ry, rx]),
-                    "receiver_f_after": tuple(float(value) for value in f[:, rz, ry, rx]),
-                })
-        # ``sum`` is deliberately Python/float64 here: this reports the exact
-        # per-cell/link contributions even when float32 tensor reductions round
-        # their aggregate differently.  Both totals are retained as evidence.
-        conversion_evidence = {
-            "snapshot_kind": "actual_sparse_pre_redistribution_to_post_conversion",
-            "conversion_cells": tuple(conversion_cells),
-            "redistribution_links": tuple(redistribution_links),
-            "conversion_cell_delta_sum": float(sum(cell["mass_delta"] for cell in conversion_cells)),
-            "conversion_tensor_delta_sum": float(conversion_delta.sum()),
-            "redistribution_link_delta_sum": float(sum(link["mass_delta"] for link in redistribution_links)),
-        }
+                links.append({"donor": (z, y, x), "receiver": ((z - dz) % shape[0], (y - dy) % shape[1], (x - dx) % shape[2]), "shift": (dz, dy, dx), "mass_delta": float(excess_per_nb[z, y, x]), "event_id": "redistribution", "operator": "redistribution"})
+        redistribution_link_evidence = tuple(links)
+    plan = build_topology_transaction(
+        f, fill, flags, mass, to_iface=to_iface, to_liq=to_liq, to_gas=to_gas,
+        recv_new=recv_new, redistribution_increment=redistribution_increment,
+        rho_liquid=rho_liquid, rho_gas=rho_gas, solid_mask=solid_mask,
+        gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE, solid_flag=SOLID,
+        ux=ux, uy=uy, uz=uz, capture_evidence=(runtime_ledger is not None),
+        redistribution_link_evidence=redistribution_link_evidence,
+    )
+    f, fill, flags, mass = commit_topology_transaction(plan)
     if mass_ledger is not None:
-        mass_ledger['conversion'] = float(mass.sum())
-
-    # Neighbor propagation: gas next to liquid/interface → interface.
-    # Include cells converted to GAS above, so a zero-mass halo deleted during
-    # cleanup is restored before it can expose a direct L/G streaming link.
-    shifted_flags = torch.stack(all_moving_neighbor_masks(flags))
-    is_neighbor = ((shifted_flags == LIQUID) | (shifted_flags == INTERFACE)).any(dim=0)
-    to_i = (((gas_mask | to_gas) & is_neighbor & (~solid_mask)) | recv_new)
-    # (no .any() sync — _init_new uses torch.where for empty mask)
-    f = _init_new(f, flags, to_i, rho_gas, device, ux, uy, uz)
-    flags = torch.where(to_i, torch.full_like(flags, INTERFACE), flags)
-    # A topology-only GAS -> INTERFACE transition has no physical donor.
-    # Its mass must remain zero until the mass-exchange stencil transfers it.
-    # Seeding it with 0.01*rho_liquid injected mass at every new gas halo.
-    fill = torch.where(to_i & ~recv_new, torch.zeros_like(fill), fill)
-    mass = torch.where(to_i & ~recv_new, torch.zeros_like(mass), mass)
-
-    # Isolated interface removal (prevents floating interface cells)
-    interface_mask = (flags == INTERFACE)
-    shifted_flags = torch.stack(all_moving_neighbor_masks(flags))
-    has_neighbor = ((shifted_flags == LIQUID) | (shifted_flags == INTERFACE)).any(dim=0)
-    isolated = interface_mask & ~has_neighbor & (~solid_mask)
-    # (no .any() sync — torch.where handles empty masks)
-    flags = torch.where(isolated, torch.full_like(flags, GAS), flags)
-    fill = torch.where(isolated, torch.zeros_like(fill), fill)
-    mass = torch.where(isolated, torch.zeros_like(mass), mass)
-    f = torch.where(isolated.unsqueeze(0), torch.zeros_like(f), f)
-    mass_after_isolation_value = float(mass.sum())
-    if mass_ledger is not None:
-        mass_ledger['isolation'] = float(mass.sum())
-
-    flags = torch.where(solid_mask, torch.full_like(flags, SOLID), flags)
-    if mass_ledger is not None:
+        mass_ledger['redistribution'] = plan.mass_after_redistribution
+        mass_ledger['clamp'] = plan.mass_after_clamp
+        mass_ledger['conversion'] = plan.mass_after_conversion
+        mass_ledger['isolation'] = plan.mass_after_isolation
         mass_ledger['boundary'] = float(mass.sum())
         mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
     if runtime_ledger is not None:
         _append_runtime_ledger(
             runtime_ledger, mass_start=mass_start_value,
             mass_after_exchange=mass_after_exchange_value,
-            mass_after_redistribution=mass_after_redistribution_value,
-            mass_after_clamp=mass_after_clamp_value,
-            mass_after_conversion=mass_after_conversion_value,
-            mass_after_isolation=mass_after_isolation_value,
+            mass_after_redistribution=plan.mass_after_redistribution,
+            mass_after_clamp=plan.mass_after_clamp,
+            mass_after_conversion=plan.mass_after_conversion,
+            mass_after_isolation=plan.mass_after_isolation,
             mass_end=float(mass.sum()), abb_population_delta=float(abb_delta.sum()),
             exchange_liquid_credit=float(mass_delta_liquid.sum()),
             exchange_interface_credit=float(mass_delta_interface.sum()),
@@ -845,9 +747,12 @@ def free_surface_step(
                 mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
             ),
             paired_liquid_interface_debit=paired_liquid_interface_debit,
-            conversion_evidence=conversion_evidence,
+            conversion_evidence=plan.conversion_evidence,
         )
 
+    if published_mass_ledger is not None:
+        published_mass_ledger.clear()
+        published_mass_ledger.update(mass_ledger)
     return f, fill, flags, mass, df
 
 
