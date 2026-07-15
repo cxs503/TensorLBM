@@ -311,6 +311,83 @@ def d3q19_x_face_momentum_flux(f: torch.Tensor) -> dict[str, list[float]]:
     }
 
 
+def _same_time_control_volume_momentum_evidence(
+    operator_samples: list[dict[str, object]],
+    face_flux_samples: list[dict[str, object]],
+    *,
+    full_per_step: bool,
+) -> dict[str, object]:
+    """Bind retained-state operator and face-transport observations by step.
+
+    This is evidence at one discrete sample phase, not a control-volume
+    closure.  The loop does not expose every streaming or physical-boundary
+    control-volume term required to calculate a residual.
+    """
+    flux_by_step = {sample.get("step"): sample for sample in face_flux_samples}
+    missing_terms = [
+        "streaming_face_crossing_term",
+        "wall_control_volume_boundary_term",
+        "solid_control_volume_boundary_term",
+    ]
+    samples: list[dict[str, object]] = []
+    for operator_sample in operator_samples:
+        step = operator_sample.get("step")
+        face_sample = flux_by_step.get(step)
+        if not isinstance(step, int) or not isinstance(face_sample, dict):
+            return {
+                "status": "withheld",
+                "reason": "operator_and_face_flux_samples_are_not_phase_matched",
+                "missing_terms": missing_terms,
+                "samples": [],
+            }
+        samples.append({
+            "step": step,
+            "time_interval": {"start": f"retained_state[{step - 1}]",
+                              "end": f"retained_state[{step}]"},
+            "sample_phase": "post_complete_d3q19_bc_population_state",
+            "storage_change": {
+                "status": "measured",
+                "value": operator_sample["fluid_momentum_delta"],
+                "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
+            },
+            "measured_x_face_transport": {
+                "status": "measured",
+                "time_index": f"retained_state[{step}]",
+                "value": face_sample["net_outward"],
+                "units": "lattice momentum flux / force (rho_lu * dx_lu^4 / dt_lu^2)",
+                "sign_convention": "positive is net outward transport through x-normal faces",
+            },
+            "operator_state_deltas": {
+                "status": "measured",
+                "values": {name: operator_sample[name] for name in (
+                    "collision", "inlet_boundary", "outlet_boundary", "wall_exchange",
+                    "solid_exchange", "unexplained_residual",
+                )},
+                "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
+                "meaning": "population-state deltas over the stated interval; not face-flux terms",
+            },
+            "control_volume_residual": {
+                "status": "withheld",
+                "value": None,
+                "reason": "required_control_volume_terms_unavailable",
+                "missing_terms": missing_terms,
+            },
+        })
+    return {
+        "status": "measured" if full_per_step else "sampled",
+        "kind": "same_discrete_time_layer_control_volume_momentum_evidence",
+        "control_volume": "entire retained D3Q19 lattice population domain; x-normal inlet and outlet faces only",
+        "coverage": "full_per_step" if full_per_step else "sampled",
+        "sample_phase": "post_complete_d3q19_bc_population_state",
+        "closure": {
+            "status": "withheld",
+            "reason": "face_flux_is_not_a_population_delta_and_control_volume_terms_are_incomplete",
+            "missing_terms": missing_terms,
+        },
+        "samples": samples,
+    }
+
+
 def _export_snapshot(
     f: torch.Tensor,
     step: int,
@@ -616,6 +693,14 @@ def _run_suboff_lbm_drag(
             "status": "withheld",
             "reason": "unsampled_steps_preclude_full_run_closure",
         }
+    momentum_budget_summary["same_time_control_volume"] = (
+        _same_time_control_volume_momentum_evidence(
+            momentum_budget_samples, face_flux_samples,
+            full_per_step=full_budget_coverage,
+        ) if config.momentum_budget_diagnostic else {
+            "status": "disabled", "reason": "operator_budget_disabled",
+        }
+    )
 
     if adaptive_cells:
         active_cells = int(round(sum(adaptive_cells) / len(adaptive_cells)))
