@@ -516,6 +516,72 @@ class D3Q19GlooTransport:
         dist.barrier()
         return owned, step  # type: ignore[return-value]
 
+    def load_repartition_checkpoint(
+        self,
+        checkpoint_dir: os.PathLike[str] | str,
+        *,
+        source_world_size: int,
+    ) -> tuple[torch.Tensor, int]:
+        """Validate a complete source set then repartition only owned D3Q19 state.
+
+        Saved and restarting process-group sizes may differ.  Every target rank
+        validates every source member before concatenating source-owned slabs in
+        source rank order and making a balanced target x-slab assignment.
+        """
+        if not isinstance(source_world_size, int) or isinstance(source_world_size, bool) or source_world_size < 2:
+            raise ValueError("source_world_size must be an integer of at least two")
+        checkpoint_dir = os.fspath(checkpoint_dir)
+        payloads: list[dict[object, object]] = []
+        expected_keys = {"format", "rank", "world_size", "step", "generation", "owned", "digest"}
+        for expected_rank in range(source_world_size):
+            target = os.path.join(checkpoint_dir, f"rank-{expected_rank}.pt")
+            if not os.path.isfile(target):
+                raise RuntimeError(f"D3Q19 repartition checkpoint missing rank-local file: {target}")
+            try:
+                payload = torch.load(target, map_location="cpu", weights_only=True)
+            except Exception as exc:
+                raise RuntimeError(f"D3Q19 repartition checkpoint cannot be decoded: {target}") from exc
+            if not isinstance(payload, dict) or set(payload) != expected_keys:
+                raise RuntimeError("D3Q19 repartition checkpoint has an invalid payload schema")
+            owned = payload["owned"]
+            if (
+                payload["format"] != "tensorlbm.d3q19.gloo.rank-local.v1"
+                or payload["rank"] != expected_rank
+                or payload["world_size"] != source_world_size
+                or not isinstance(payload["step"], int)
+                or isinstance(payload["step"], bool)
+                or payload["step"] < 0
+                or not isinstance(payload["generation"], str)
+                or not isinstance(payload["digest"], str)
+                or not isinstance(owned, torch.Tensor)
+            ):
+                raise RuntimeError("D3Q19 repartition checkpoint identity or metadata validation failed")
+            try:
+                self._check_owned(owned)
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError("D3Q19 repartition checkpoint owned state validation failed") from exc
+            if self._checkpoint_digest(owned, expected_rank, source_world_size, payload["step"]) != payload["digest"]:
+                raise RuntimeError("D3Q19 repartition checkpoint digest validation failed")
+            payloads.append(payload)
+        steps = {payload["step"] for payload in payloads}
+        generations = {payload["generation"] for payload in payloads}
+        if len(steps) != 1 or len(generations) != 1:
+            raise RuntimeError("D3Q19 repartition checkpoint generation validation failed")
+        step = payloads[0]["step"]
+        generation = payloads[0]["generation"]
+        digests = [payload["digest"] for payload in payloads]
+        if generation != self._checkpoint_generation(digests, source_world_size, step):  # type: ignore[arg-type]
+            raise RuntimeError("D3Q19 repartition checkpoint generation validation failed")
+        full_owned = torch.cat([payload["owned"] for payload in payloads], dim=-1)  # type: ignore[list-item]
+        width = full_owned.shape[-1]
+        base, remainder = divmod(width, self.world_size)
+        x0 = self.rank * base + min(self.rank, remainder)
+        x1 = x0 + base + (1 if self.rank < remainder else 0)
+        if x0 == x1:
+            raise RuntimeError("D3Q19 repartition checkpoint assigns an empty owned slab")
+        dist.barrier()
+        return full_owned[..., x0:x1].contiguous(), step  # type: ignore[return-value]
+
     def exchange_ghosts(self, f_owned: torch.Tensor) -> torch.Tensor:
         """Transport all populations' owned boundary planes and pad ghosts."""
         self._check_owned(f_owned)
