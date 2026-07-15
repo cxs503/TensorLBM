@@ -391,6 +391,123 @@ def _is_exact_integer(value: float) -> bool:
     return math.isfinite(value) and abs(value - round(value)) <= _SENSITIVITY_MATCH_TOL
 
 
+@dataclass(frozen=True)
+class PhysicalPropellerRefinementSpec:
+    """Fixed dimensional open-water case mapped onto several voxel grids.
+
+    ``steps_per_revolution`` is deliberately one global integer.  The moving
+    mask is sampled once per lattice update, so this is the only way to retain
+    an identical physical azimuth schedule (including its exact endpoints).
+    """
+
+    diameter_m: float
+    advance_speed_ms: float
+    rotation_rps: float
+    nu_m2s: float
+    diameter_lu_levels: tuple[int, ...]
+    steps_per_revolution: int
+    rho_kgm3: float = 1000.0
+    tau_min: float = 0.5001
+    tau_max: float = 2.0
+    low_mach_max: float = LOW_MACH_TIP_GATE
+    output_root: Path = Path("outputs")
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_root", Path(self.output_root))
+
+    def validate(self) -> None:
+        positive = {
+            "diameter_m": self.diameter_m, "advance_speed_ms": self.advance_speed_ms,
+            "rotation_rps": self.rotation_rps, "nu_m2s": self.nu_m2s,
+            "rho_kgm3": self.rho_kgm3, "tau_min": self.tau_min,
+            "tau_max": self.tau_max, "low_mach_max": self.low_mach_max,
+        }
+        for name, value in positive.items():
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be finite and > 0")
+        if self.tau_min <= 0.5 or self.tau_max <= self.tau_min:
+            raise ValueError("require 0.5 < tau_min < tau_max")
+        if len(self.diameter_lu_levels) < 3:
+            raise ValueError("physical refinement requires at least three voxel levels")
+        if any(not isinstance(value, int) or value <= 0 for value in self.diameter_lu_levels):
+            raise ValueError("diameter_lu_levels must contain positive integers")
+        if any(b <= a for a, b in zip(self.diameter_lu_levels, self.diameter_lu_levels[1:])):
+            raise ValueError("diameter_lu_levels must be strictly coarse-to-fine")
+        if not isinstance(self.steps_per_revolution, int) or self.steps_per_revolution < 1:
+            raise ValueError("steps_per_revolution must be a positive integer")
+
+
+def map_physical_propeller_refinement(spec: PhysicalPropellerRefinementSpec) -> dict[str, object]:
+    """Map a fixed physical propeller to lattices and prove feasibility first.
+
+    With ``dx=D/D_lu`` and exact physical rotation sampling ``dt=1/(n*N)``,
+    this derives ``U_lu=U*dt/dx``, ``nu_lu=nu*dt/dx²`` and
+    ``rpm_lu=n*dt=1/N``.  Thus matching ``N`` fixes the moving-mask history,
+    but the lattice tip Mach is ``pi*D_lu/(sqrt(3)*N)``.  It cannot also be
+    invariant under a genuine change in ``D_lu``.  The function records this
+    algebraic incompatibility instead of running or inventing KT/KQ data.
+    """
+    spec.validate()
+    physical_re = spec.rotation_rps * spec.diameter_m**2 / spec.nu_m2s
+    physical_j = spec.advance_speed_ms / (spec.rotation_rps * spec.diameter_m)
+    dt_s = 1.0 / (spec.rotation_rps * spec.steps_per_revolution)
+    levels: list[dict[str, object]] = []
+    violations: list[dict[str, object]] = []
+    reference_tip_ma: float | None = None
+    for index, diameter_lu in enumerate(spec.diameter_lu_levels):
+        dx_m = spec.diameter_m / diameter_lu
+        rpm_lu = spec.rotation_rps * dt_s
+        u_lu = spec.advance_speed_ms * dt_s / dx_m
+        nu_lu = spec.nu_m2s * dt_s / dx_m**2
+        tau = 0.5 + 3.0 * nu_lu
+        tip_ma = (2.0 * math.pi * rpm_lu * (diameter_lu / 2.0)) / (1.0 / math.sqrt(3.0))
+        re_lu = rpm_lu * diameter_lu**2 / nu_lu
+        j_lu = u_lu / (rpm_lu * diameter_lu)
+        name = f"level_{index}"
+        level = {
+            "name": name, "diameter_lu": diameter_lu, "dx_m": dx_m, "dt_s": dt_s,
+            "rpm_lu": rpm_lu, "u_lu": u_lu, "nu_lu": nu_lu, "tau": tau,
+            "steps_per_revolution": spec.steps_per_revolution,
+            "angular_increment_degrees": 360.0 / spec.steps_per_revolution,
+            "tip_ma": tip_ma, "re_d_lu": re_lu, "j_lu": j_lu,
+            "re_d_preserved": _same(re_lu, physical_re), "j_preserved": _same(j_lu, physical_j),
+        }
+        levels.append(level)
+        if not spec.tau_min <= tau <= spec.tau_max:
+            violations.append({"constraint": "tau_range", "level": name, "actual": tau,
+                               "required": [spec.tau_min, spec.tau_max], "operator": "BGK/MRT relaxation"})
+        if tip_ma >= spec.low_mach_max:
+            violations.append({"constraint": "low_mach", "level": name, "actual": tip_ma,
+                               "required": f"< {spec.low_mach_max}", "operator": "moving-wall bounce-back"})
+        if reference_tip_ma is None:
+            reference_tip_ma = tip_ma
+        elif not _same(tip_ma, reference_tip_ma):
+            violations.append({"constraint": "tip_mach_preservation", "level": name, "actual": tip_ma,
+                               "required": reference_tip_ma, "operator": "fixed-N moving-mask sampling"})
+    evidence: dict[str, object] = {
+        "name": "propeller_physical_to_lattice_three_level_refinement",
+        "status": "fail_closed" if violations else "feasible",
+        "physical_case": {"diameter_m": spec.diameter_m, "advance_speed_ms": spec.advance_speed_ms,
+                          "rotation_rps": spec.rotation_rps, "nu_m2s": spec.nu_m2s,
+                          "re_d": physical_re, "advance_ratio_j": physical_j},
+        "mapping_contract": {"dx": "D / D_lu", "dt": "1 / (n_phys * steps_per_revolution)",
+                             "nu_lu": "nu_phys * dt / dx^2", "rpm_lu": "n_phys * dt",
+                             "tip_ma": "pi * D_lu / (sqrt(3) * steps_per_revolution)",
+                             "exact_rotation_sampling": True},
+        "levels": levels, "violations": violations,
+        "campaign": {"status": "not_run" if violations else "eligible_for_execution",
+                     "reason": "physical_lattice_constraints_incompatible" if violations else "all_constraints_satisfied"},
+        "metric_convergence": {"status": "withheld" if violations else "not_run",
+                               "reason": "fail_closed_no_kt_kq_generated" if violations else "campaign_not_executed",
+                               "kt_kq_eta_differences": None},
+    }
+    path = spec.output_root / "propeller_owt" / "physical_lattice_refinement.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    evidence["artifact"] = str(path)
+    path.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+    return evidence
+
+
 def _spatial_level_contract(config: PropellerBenchmarkConfig) -> dict[str, object]:
     """Describe one actual voxel level without calling it convergence evidence."""
     config.validate()
@@ -1206,10 +1323,12 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
 
 __all__ = [
     "PropellerBenchmarkConfig",
+    "PhysicalPropellerRefinementSpec",
     "MovingWallReaction3D",
     "rotating_wall_velocity_3d",
     "moving_wall_bounce_back_3d",
     "moving_wall_bounce_back_3d_with_reaction",
+    "map_physical_propeller_refinement",
     "run_propeller_resolution_sensitivity",
     "run_propeller_benchmark",
 ]
