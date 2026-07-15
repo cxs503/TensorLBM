@@ -13,6 +13,41 @@ from tensorlbm.marine_run_provenance import build_marine_run_provenance
 import tensorlbm.suboff_resistance as suboff
 
 
+def test_d3q19_face_integrated_momentum_flux_has_outward_face_signs():
+    """The two x control faces have opposite outward normals at rest."""
+    rho = suboff.torch.ones((2, 3, 4), dtype=suboff.torch.float32)
+    zero = suboff.torch.zeros_like(rho)
+    f = suboff.equilibrium3d(rho, zero, zero, zero)
+
+    flux = suboff.d3q19_x_face_momentum_flux(f)
+
+    # Pi_xx = rho / 3 per cell.  The inlet outward normal is -x and the
+    # outlet outward normal is +x; the transverse components vanish.
+    assert flux["inlet_outward"][0] == pytest.approx(-2.0)
+    assert flux["outlet_outward"][0] == pytest.approx(2.0)
+    assert flux["net_outward"] == pytest.approx([0.0, 0.0, 0.0])
+
+
+def test_runtime_budget_reports_measured_face_flux_separately_from_bc_delta():
+    config = suboff.SuboffResistanceBenchmarkConfig(
+        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
+        lbm_steps=10, lbm_warmup_steps=0, momentum_budget_diagnostic=True,
+        momentum_budget_interval=1,
+    )
+
+    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(config))
+    budget = observation["conservation"]["source_attribution"]["momentum"]["operator_budget"]
+    boundary_flux = budget["boundary_flux"]
+
+    assert boundary_flux["status"] == "measured"
+    assert boundary_flux["kind"] == "face_integrated_population_momentum_flux"
+    assert len(boundary_flux["samples"]) == 10
+    assert "inlet_boundary" in budget["samples"][0]  # BC population delta
+    assert "face_flux" in budget["samples"][0]       # measured face transport
+    assert boundary_flux["closure"]["status"] == "withheld"
+    assert boundary_flux["closure"]["reason"] == "face_flux_is_not_a_bc_population_delta"
+
+
 def test_real_runner_measures_hash_bound_mass_conservation_and_does_not_promote_physics():
     config = suboff.SuboffResistanceBenchmarkConfig(
         base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
