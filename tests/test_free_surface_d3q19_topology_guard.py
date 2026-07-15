@@ -6,10 +6,14 @@ seams, across a real conversion plus its following real timestep.
 """
 from __future__ import annotations
 
+import ast
+import inspect
+
 import pytest
 import torch
 
 from tensorlbm.d3q19 import C, equilibrium3d
+import tensorlbm.free_surface_lbm as free_surface_lbm
 from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID, free_surface_step
 
 
@@ -75,3 +79,28 @@ def test_conversion_retains_every_d3q19_interface_link(
     _assert_full18_separation(flags)
     _, _, next_flags, _, _ = free_surface_step(f, fill, flags, solid, mass=mass)
     _assert_full18_separation(next_flags)
+
+
+def test_topology_paths_use_canonical_moving_stencil_utility() -> None:
+    """Topology traversal must not recreate a (z, y, x) D3Q19 shift table."""
+    source = inspect.getsource(free_surface_lbm)
+    tree = ast.parse(source)
+    assert "_D3Q19_TENSOR_SHIFTS" not in source
+
+    imported_names = {
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom) and node.module == "core.d3q19_stencil"
+        for alias in node.names
+    }
+    expected = {
+        "all_moving_neighbor_masks",
+        "assert_no_direct_phase_links",
+        "moving_tensor_shifts",
+        "roll_from_pull_source",
+        "roll_to_neighbor",
+    }
+    assert expected <= imported_names
+
+    used_names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
+    assert expected <= used_names
