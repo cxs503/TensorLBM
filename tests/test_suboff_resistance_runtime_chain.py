@@ -48,6 +48,44 @@ def test_runtime_budget_reports_measured_face_flux_separately_from_bc_delta():
     assert boundary_flux["closure"]["reason"] == "face_flux_is_not_a_bc_population_delta"
 
 
+def test_full_operator_diagnostic_binds_same_time_control_volume_evidence_without_false_closure():
+    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(
+        suboff.SuboffResistanceBenchmarkConfig(
+            base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
+            lbm_steps=10, lbm_warmup_steps=0, momentum_budget_diagnostic=True,
+            momentum_budget_interval=1,
+        )
+    ))
+    budget = observation["conservation"]["source_attribution"]["momentum"]["operator_budget"]
+    evidence = budget["same_time_control_volume"]
+
+    assert evidence["status"] == "measured"
+    assert evidence["coverage"] == "full_per_step"
+    assert evidence["control_volume"] == (
+        "entire retained D3Q19 lattice population domain; x-normal inlet and outlet faces only"
+    )
+    assert len(evidence["samples"]) == 10
+    first = evidence["samples"][0]
+    assert first["step"] == 1
+    assert first["time_interval"] == {"start": "retained_state[0]", "end": "retained_state[1]"}
+    assert first["sample_phase"] == budget["boundary_flux"]["sampling_state"]
+    assert first["measured_x_face_transport"]["value"] == budget["boundary_flux"]["samples"][0]["net_outward"]
+    assert first["operator_state_deltas"]["values"]["inlet_boundary"] == budget["samples"][0]["inlet_boundary"]
+    assert first["operator_state_deltas"]["meaning"].endswith("not face-flux terms")
+    residual = first["control_volume_residual"]
+    assert residual["status"] == "withheld"
+    assert residual["value"] is None
+    assert residual["missing_terms"] == [
+        "streaming_face_crossing_term",
+        "wall_control_volume_boundary_term",
+        "solid_control_volume_boundary_term",
+    ]
+    assert evidence["closure"]["status"] == "withheld"
+    assert "face_flux_is_not_a_population_delta" in evidence["closure"]["reason"]
+    # The evidence itself remains JSON-machine-readable with the withheld terms.
+    assert json.loads(json.dumps(evidence))["samples"][0]["control_volume_residual"] == residual
+
+
 def test_real_runner_measures_hash_bound_mass_conservation_and_does_not_promote_physics():
     config = suboff.SuboffResistanceBenchmarkConfig(
         base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
