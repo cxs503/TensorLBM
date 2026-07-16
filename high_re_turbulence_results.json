@@ -1,0 +1,114 @@
+[
+  {
+    "Re": 1000,
+    "collision": "bgk",
+    "turbulence_model": "none",
+    "Cd": 1.7661113393393635,
+    "Strouhal": 92.21556886227546,
+    "finite": true
+  },
+  {
+    "Re": 1000,
+    "collision": "bgk",
+    "turbulence_model": "smagorinsky",
+    "Cd": 1.7600193170280778,
+    "Strouhal": 92.21556886227546,
+    "finite": true
+  },
+  {
+    "Re": 1000,
+    "collision": "bgk",
+    "turbulence_model": "wale",
+    "Cd": 1.7790446901868657,
+    "Strouhal": 92.21556886227546,
+    "finite": true
+  },
+  {
+    "Re": 1000,
+    "collision": "bgk",
+    "turbulence_model": "vreman",
+    "Cd": 1.7619297588126344,
+    "Strouhal": 92.21556886227546,
+    "finite": true
+  },
+  {
+    "Re": 1000,
+    "collision": "bgk",
+    "turbulence_model": "dynsmag",
+    "Cd": 1.7421160249155612,
+    "Strouhal": 92.21556886227546,
+    "finite": true
+  },
+  {
+    "Re": 1000,
+    "collision": "mrt",
+    "turbulence_model": "none",
+    "Cd": 1.9737806863732508,
+    "Strouhal": 2.9940119760479043,
+    "finite": true
+  },
+  {
+    "Re": 1000,
+    "collision": "mrt",
+    "turbulence_model": "smagorinsky",
+    "Cd": 1.963926843260318,
+    "Strouhal": 2.9940119760479043,
+    "finite": true
+  },
+  {
+    "Re": 5000,
+    "collision": "bgk",
+    "turbulence_model": "none",
+    "Cd": null,
+    "Strouhal": null,
+    "finite": false
+  },
+  {
+    "Re": 5000,
+    "collision": "bgk",
+    "turbulence_model": "smagorinsky",
+    "Cd": 1.8373262692787329,
+    "Strouhal": 92.81437125748504,
+    "finite": true
+  },
+  {
+    "Re": 5000,
+    "collision": "bgk",
+    "turbulence_model": "wale",
+    "Cd": 1.8300590739248999,
+    "Strouhal": 92.81437125748504,
+    "finite": true
+  },
+  {
+    "Re": 5000,
+    "collision": "bgk",
+    "turbulence_model": "vreman",
+    "Cd": 1.7816982355756137,
+    "Strouhal": 92.81437125748504,
+    "finite": true
+  },
+  {
+    "Re": 5000,
+    "collision": "bgk",
+    "turbulence_model": "dynsmag",
+    "Cd": 1.7591373422603414,
+    "Strouhal": 92.81437125748504,
+    "finite": true
+  },
+  {
+    "Re": 5000,
+    "collision": "mrt",
+    "turbulence_model": "none",
+    "Cd": 2.05192848307614,
+    "Strouhal": 2.9940119760479043,
+    "finite": true
+  },
+  {
+    "Re": 5000,
+    "collision": "mrt",
+    "turbulence_model": "smagorinsky",
+    "Cd": 2.011496448312282,
+    "Strouhal": 2.9940119760479043,
+    "finite": true
+  }
+]
