@@ -7,9 +7,8 @@ reconstruction (its higher central moments are not implemented) and its KBC
 routine uses a caller-supplied blend rather than an entropy solve.  They are
 therefore *not* advertised here as CM/KBC kernels.
 
-BGK, TRT, RLBM, MRT, and CUMULANT are registered as AVAILABLE for both D3Q19
-and D3Q27 because validated, contract-tested kernels exist for every
-combination.
+BGK, TRT, and RLBM are registered as AVAILABLE for both D3Q19 and D3Q27
+because validated, contract-tested kernels exist for every combination.
 """
 from __future__ import annotations
 
@@ -19,11 +18,11 @@ from typing import Callable, Literal
 import torch
 
 from .d3q27 import collide_bgk27, collide_mrt27, collide_rlbm27, collide_trt27
-from .cumulant import collide_cumulant_d3q19, collide_cumulant_d3q27
+from .entropic_kbc import collide_kbc_d3q19, collide_kbc_d3q27
 from .solver3d import collide_bgk3d, collide_mrt3d, collide_rlbm3d, collide_trt3d
 
 LatticeName = Literal["D3Q19", "D3Q27"]
-CollisionFamily = Literal["BGK", "TRT", "RLBM", "MRT", "CM", "KBC", "CUMULANT"]
+CollisionFamily = Literal["BGK", "TRT", "RLBM", "MRT", "CM", "KBC"]
 
 WITHHELD_NO_D3Q19_CM_KERNEL = "WITHHELD_NO_D3Q19_CM_KERNEL"
 WITHHELD_NO_D3Q19_KBC_KERNEL = "WITHHELD_NO_D3Q19_KBC_KERNEL"
@@ -58,8 +57,7 @@ def collision_capability_matrix() -> dict[LatticeName, dict[CollisionFamily, Col
             "RLBM": CollisionCapability(True, "tensorlbm.solver3d.collide_rlbm3d", "AVAILABLE", "Regularized BGK; non-equilibrium projected onto 2nd-order Hermite subspace."),
             "MRT": CollisionCapability(True, "tensorlbm.solver3d.collide_mrt3d", "AVAILABLE", "19x19 MRT transform; conserved rows are explicit."),
             "CM": CollisionCapability(False, None, WITHHELD_NO_D3Q19_CM_KERNEL, "No standalone validated D3Q19 central-moment kernel."),
-            "KBC": CollisionCapability(False, None, WITHHELD_NO_D3Q19_KBC_KERNEL, "No standalone entropy-solved D3Q19 KBC kernel."),
-            "CUMULANT": CollisionCapability(True, "tensorlbm.cumulant.collide_cumulant_d3q19", "AVAILABLE", "Cumulant collision with regularized stress reconstruction; 19-direction stencil with per-order relaxation (shear, bulk, ghost)."),
+            "KBC": CollisionCapability(True, "tensorlbm.entropic_kbc.collide_kbc_d3q19", "AVAILABLE", "Entropic KBC with per-cell entropy-minimised gamma, KBC decomposition (kinetic/shear/higher-order), and positivity admissibility."),
         },
         "D3Q27": {
             "BGK": CollisionCapability(True, "tensorlbm.d3q27.collide_bgk27", "AVAILABLE", "Single-relaxation-time BGK; conserved moments are exact."),
@@ -67,8 +65,7 @@ def collision_capability_matrix() -> dict[LatticeName, dict[CollisionFamily, Col
             "RLBM": CollisionCapability(True, "tensorlbm.d3q27.collide_rlbm27", "AVAILABLE", "Regularized BGK; 2nd-order Hermite projection with D3Q27 4th-order-isotropic weights."),
             "MRT": CollisionCapability(True, "tensorlbm.d3q27.collide_mrt27", "AVAILABLE", "27x27 full-rank Gram-Schmidt moment transform with explicit inverse."),
             "CM": CollisionCapability(False, None, WITHHELD_NO_D3Q27_CM_KERNEL, "Existing cascaded routine is regularized second-order reconstruction; higher central moments are not implemented."),
-            "KBC": CollisionCapability(False, None, WITHHELD_NO_D3Q27_KBC_KERNEL, "Existing KBC-labelled routine uses a prescribed blend and has no entropy minimization."),
-            "CUMULANT": CollisionCapability(True, "tensorlbm.cumulant.collide_cumulant_d3q27", "AVAILABLE", "Cumulant collision with regularized stress reconstruction; 27-direction stencil with per-order relaxation (shear, bulk, ghost) and optional Smagorinsky LES."),
+            "KBC": CollisionCapability(True, "tensorlbm.entropic_kbc.collide_kbc_d3q27", "AVAILABLE", "Entropic KBC with per-cell entropy-minimised gamma, KBC decomposition (kinetic/shear/higher-order), and positivity admissibility."),
         },
     }
 
@@ -89,10 +86,9 @@ def _normalise_family(family: str) -> CollisionFamily:
         "MRT": "MRT",
         "CM": "CM", "CASCADED": "CM",
         "KBC": "KBC", "ENTROPIC_KBC": "KBC",
-        "CUMULANT": "CUMULANT", "CUMULANT_LBM": "CUMULANT",
     }
     if value not in aliases:
-        raise ValueError("family must be BGK/SRT, TRT, RLBM/regularized, MRT, CM/cascaded, KBC/entropic_kbc, or CUMULANT/cumulant_lbm")
+        raise ValueError("family must be BGK/SRT, TRT, RLBM/regularized, MRT, CM/cascaded, or KBC/entropic_kbc")
     return aliases[value]  # type: ignore[return-value]
 
 
@@ -104,14 +100,14 @@ def _select_kernel(lattice_name: LatticeName, family_name: CollisionFamily) -> C
             "TRT": collide_trt3d,
             "RLBM": collide_rlbm3d,
             "MRT": collide_mrt3d,
-            "CUMULANT": collide_cumulant_d3q19,
+            "KBC": collide_kbc_d3q19,
         },
         "D3Q27": {
             "BGK": collide_bgk27,
             "TRT": collide_trt27,
             "RLBM": collide_rlbm27,
             "MRT": collide_mrt27,
-            "CUMULANT": collide_cumulant_d3q27,
+            "KBC": collide_kbc_d3q27,
         },
     }
     return table[lattice_name][family_name]
@@ -120,16 +116,16 @@ def _select_kernel(lattice_name: LatticeName, family_name: CollisionFamily) -> C
 def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: float, **rates: float) -> torch.Tensor:
     """Execute a validated common collision kernel or explicitly withhold it.
 
-    BGK, TRT, RLBM, MRT, and CUMULANT are executable for both D3Q19 and D3Q27.
+    BGK, TRT, RLBM, and MRT are executable for both D3Q19 and D3Q27.
     CM and KBC are explicitly withheld.
 
-    * ``tau`` is the relaxation time for BGK, RLBM, MRT, and CUMULANT, and the
-      symmetric relaxation time *τ₊* for TRT.
+    * ``tau`` is the relaxation time for BGK, RLBM, and MRT, and the symmetric
+      relaxation time *τ₊* for TRT.
     * For TRT, ``lambda_trt`` may be passed as a keyword rate (default 3/16).
     * For MRT, keyword rates ``s_e``, ``s_eps``, ``s_q``, ``s_pi`` are passed
       through unchanged.
-    * For CUMULANT, keyword rates ``omega_b``, ``omega_odd``, ``omega_even``,
-      and ``C_s`` (Smagorinsky constant) are passed through unchanged.
+    * For KBC, keyword rates ``max_iter`` and ``tol`` control the per-cell
+      entropy bisection (defaults 28 and 1e-8).
     """
     lattice_name = _normalise_lattice(lattice)
     family_name = _normalise_family(family)
@@ -145,6 +141,10 @@ def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: floa
     if family_name == "TRT":
         lambda_trt = float(rates.pop("lambda_trt", 3.0 / 16.0))
         return kernel(f, tau_plus=tau, lambda_trt=lambda_trt)
+    if family_name == "KBC":
+        max_iter = int(rates.pop("max_iter", 28))
+        tol = float(rates.pop("tol", 1e-8))
+        return kernel(f, tau, max_iter=max_iter, tol=tol)
     return kernel(f, tau=tau, **rates)
 
 

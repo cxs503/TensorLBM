@@ -123,7 +123,7 @@ def test_common_mrt_dispatch_is_executable_and_equilibrium_fixed_point(lattice, 
 
 @pytest.mark.parametrize(
     ("family", "reason"),
-    [("CM", WITHHELD_NO_D3Q27_CM_KERNEL), ("KBC", WITHHELD_NO_D3Q27_KBC_KERNEL)],
+    [("CM", WITHHELD_NO_D3Q27_CM_KERNEL)],
 )
 def test_d3q27_unverified_advanced_kernels_are_explicitly_withheld(family, reason) -> None:
     rho = torch.ones((1, 1, 1))
