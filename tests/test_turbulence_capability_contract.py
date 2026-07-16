@@ -89,8 +89,8 @@ class TestDynamicSmagorinsky:
         [
             ("D2Q9", "BGK", "IMPLEMENTED"),
             ("D3Q19", "BGK", "IMPLEMENTED"),
+            ("D3Q19", "MRT", "IMPLEMENTED"),
             ("D2Q9", "MRT", NO_IMPLEMENTATION),
-            ("D3Q19", "MRT", NO_IMPLEMENTATION),
             ("D3Q27", "BGK", NO_IMPLEMENTATION),
             ("D3Q27", "MRT", NO_IMPLEMENTATION),
         ],
@@ -106,6 +106,14 @@ class TestDynamicSmagorinsky:
             assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
             assert cap.test_evidence is not None
             assert "test_dynamic_smagorinsky.py" in cap.test_evidence
+
+    def test_d3q19_mrt_is_implemented_and_contract_tested(self) -> None:
+        cap = turbulence_capability_matrix()["dynamic_smagorinsky"]["D3Q19"]["MRT"]
+        assert cap.implementation_status == "IMPLEMENTED"
+        assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
+        assert cap.entrypoint == "tensorlbm.turbulence.collide_dynamic_smagorinsky_mrt3d"
+        assert cap.test_evidence is not None
+        assert "test_dynamic_smagorinsky.py" in cap.test_evidence
 
     def test_hot_path_note_documents_item_sync(self) -> None:
         cap = turbulence_capability_matrix()["dynamic_smagorinsky"]["D2Q9"]["BGK"]
@@ -363,7 +371,7 @@ def test_hot_path_audit_returns_nonempty_list() -> None:
 def test_hot_path_audit_documents_dynamic_smagorinsky_item_sync() -> None:
     audit = turbulence_hot_path_audit()
     dyn_entries = [e for e in audit if "dynamic_smagorinsky" in e.function]
-    assert len(dyn_entries) >= 2
+    assert len(dyn_entries) >= 3
     for entry in dyn_entries:
         assert "item()" in entry.pattern
         assert entry.severity == "SYNC"

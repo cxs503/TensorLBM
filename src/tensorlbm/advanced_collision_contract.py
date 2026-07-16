@@ -9,6 +9,12 @@ therefore *not* advertised here as CM/KBC kernels.
 
 BGK, TRT, and RLBM are registered as AVAILABLE for both D3Q19 and D3Q27
 because validated, contract-tested kernels exist for every combination.
+
+CUMULANT is registered as AVAILABLE for D3Q27
+(``tensorlbm.cumulant.collide_cumulant_d3q27``, Geier et al. 2015) and
+WITHHELD for D3Q19, where no standalone cumulant kernel exists — the
+CG-specific ``collide_cg_cumulant_3d`` is a regularized-stress alias, not a
+cumulant transform.
 """
 from __future__ import annotations
 
@@ -17,14 +23,16 @@ from typing import Callable, Literal
 
 import torch
 
+from .cumulant import collide_cumulant_d3q27
 from .d3q27 import collide_bgk27, collide_mrt27, collide_rlbm27, collide_trt27
 from .solver3d import collide_bgk3d, collide_mrt3d, collide_rlbm3d, collide_trt3d
 
 LatticeName = Literal["D3Q19", "D3Q27"]
-CollisionFamily = Literal["BGK", "TRT", "RLBM", "MRT", "CM", "KBC"]
+CollisionFamily = Literal["BGK", "TRT", "RLBM", "MRT", "CM", "KBC", "CUMULANT"]
 
 WITHHELD_NO_D3Q19_CM_KERNEL = "WITHHELD_NO_D3Q19_CM_KERNEL"
 WITHHELD_NO_D3Q19_KBC_KERNEL = "WITHHELD_NO_D3Q19_KBC_KERNEL"
+WITHHELD_NO_D3Q19_CUMULANT_KERNEL = "WITHHELD_NO_D3Q19_CUMULANT_KERNEL"
 WITHHELD_NO_D3Q27_CM_KERNEL = "WITHHELD_NO_D3Q27_CM_KERNEL"
 WITHHELD_NO_D3Q27_KBC_KERNEL = "WITHHELD_NO_D3Q27_KBC_KERNEL"
 
@@ -57,6 +65,7 @@ def collision_capability_matrix() -> dict[LatticeName, dict[CollisionFamily, Col
             "MRT": CollisionCapability(True, "tensorlbm.solver3d.collide_mrt3d", "AVAILABLE", "19x19 MRT transform; conserved rows are explicit."),
             "CM": CollisionCapability(False, None, WITHHELD_NO_D3Q19_CM_KERNEL, "No standalone validated D3Q19 central-moment kernel."),
             "KBC": CollisionCapability(False, None, WITHHELD_NO_D3Q19_KBC_KERNEL, "No standalone entropy-solved D3Q19 KBC kernel."),
+            "CUMULANT": CollisionCapability(False, None, WITHHELD_NO_D3Q19_CUMULANT_KERNEL, "No standalone D3Q19 cumulant kernel; the CG-specific 'cumulant' alias is a regularized-stress adapter, not a cumulant transform."),
         },
         "D3Q27": {
             "BGK": CollisionCapability(True, "tensorlbm.d3q27.collide_bgk27", "AVAILABLE", "Single-relaxation-time BGK; conserved moments are exact."),
@@ -65,6 +74,7 @@ def collision_capability_matrix() -> dict[LatticeName, dict[CollisionFamily, Col
             "MRT": CollisionCapability(True, "tensorlbm.d3q27.collide_mrt27", "AVAILABLE", "27x27 full-rank Gram-Schmidt moment transform with explicit inverse."),
             "CM": CollisionCapability(False, None, WITHHELD_NO_D3Q27_CM_KERNEL, "Existing cascaded routine is regularized second-order reconstruction; higher central moments are not implemented."),
             "KBC": CollisionCapability(False, None, WITHHELD_NO_D3Q27_KBC_KERNEL, "Existing KBC-labelled routine uses a prescribed blend and has no entropy minimization."),
+            "CUMULANT": CollisionCapability(True, "tensorlbm.cumulant.collide_cumulant_d3q27", "AVAILABLE", "D3Q27 cumulant collision (Geier et al. 2015); factored central-moment transform with independent cumulant relaxation."),
         },
     }
 
@@ -85,9 +95,10 @@ def _normalise_family(family: str) -> CollisionFamily:
         "MRT": "MRT",
         "CM": "CM", "CASCADED": "CM",
         "KBC": "KBC", "ENTROPIC_KBC": "KBC",
+        "CUMULANT": "CUMULANT", "CUMULANT_LBM": "CUMULANT",
     }
     if value not in aliases:
-        raise ValueError("family must be BGK/SRT, TRT, RLBM/regularized, MRT, CM/cascaded, or KBC/entropic_kbc")
+        raise ValueError("family must be BGK/SRT, TRT, RLBM/regularized, MRT, CM/cascaded, KBC/entropic_kbc, or CUMULANT")
     return aliases[value]  # type: ignore[return-value]
 
 
@@ -105,6 +116,7 @@ def _select_kernel(lattice_name: LatticeName, family_name: CollisionFamily) -> C
             "TRT": collide_trt27,
             "RLBM": collide_rlbm27,
             "MRT": collide_mrt27,
+            "CUMULANT": collide_cumulant_d3q27,
         },
     }
     return table[lattice_name][family_name]
@@ -114,6 +126,7 @@ def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: floa
     """Execute a validated common collision kernel or explicitly withhold it.
 
     BGK, TRT, RLBM, and MRT are executable for both D3Q19 and D3Q27.
+    CUMULANT is executable for D3Q27 only.
     CM and KBC are explicitly withheld.
 
     * ``tau`` is the relaxation time for BGK, RLBM, and MRT, and the symmetric
@@ -121,6 +134,8 @@ def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: floa
     * For TRT, ``lambda_trt`` may be passed as a keyword rate (default 3/16).
     * For MRT, keyword rates ``s_e``, ``s_eps``, ``s_q``, ``s_pi`` are passed
       through unchanged.
+    * For CUMULANT (D3Q27), keyword rates ``omega_b``, ``omega_odd``,
+      ``omega_even``, and ``C_s`` are passed through unchanged.
     """
     lattice_name = _normalise_lattice(lattice)
     family_name = _normalise_family(family)
@@ -141,6 +156,7 @@ def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: floa
 
 __all__ = [
     "CollisionCapability", "CollisionKernelWithheldError", "WITHHELD_NO_D3Q19_CM_KERNEL",
-    "WITHHELD_NO_D3Q19_KBC_KERNEL", "WITHHELD_NO_D3Q27_CM_KERNEL",
-    "WITHHELD_NO_D3Q27_KBC_KERNEL", "collision_capability_matrix", "collide_advanced_3d",
+    "WITHHELD_NO_D3Q19_KBC_KERNEL", "WITHHELD_NO_D3Q19_CUMULANT_KERNEL",
+    "WITHHELD_NO_D3Q27_CM_KERNEL", "WITHHELD_NO_D3Q27_KBC_KERNEL",
+    "collision_capability_matrix", "collide_advanced_3d",
 ]
