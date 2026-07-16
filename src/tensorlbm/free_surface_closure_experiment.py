@@ -75,6 +75,7 @@ class ClosureStepEvidence:
     # Appended with defaults so existing positional construction remains ABI-compatible.
     inventory_reconciliation: tuple[tuple[str, object], ...] | None = None
     replay_evidence: ReplayEvidence | None = None
+    strict_failure_replay_evidence: object | None = None
 
 
 @dataclass(frozen=True)
@@ -309,6 +310,7 @@ def _run_case(
             captured_replay_evidence if failure_reason is None
             and isinstance(captured_replay_evidence, ReplayEvidence) else None
         )
+        strict_failure_replay_evidence = replay_capture.get("strict_failure_evidence")
         observations.append(ClosureStepEvidence(
             step=number, independent_mass=current.independent_mass,
             total_liquid_inventory=current.total_liquid_inventory, population_mass_sum=current.population_mass_sum,
@@ -321,6 +323,7 @@ def _run_case(
             abb_population_only=abb_population_only, direct_liquid_gas_links=current.direct_liquid_gas_links,
             finite=current.finite, failure_reason=failure_reason,
             replay_evidence=replay_evidence,
+            strict_failure_replay_evidence=strict_failure_replay_evidence,
         ))
         mass_curve.append(current.independent_mass)
         inventory_curve.append(current.total_liquid_inventory)

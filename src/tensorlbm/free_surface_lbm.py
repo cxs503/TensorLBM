@@ -29,9 +29,12 @@ from .core.d3q19_stencil import (
 from .solver3d import stream3d as _stream3d
 from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
 from .free_surface_topology_transaction import (
+    TopologyTransactionError,
     build_topology_transaction,
     build_i_to_g_ownership_transaction,
+    capture_strict_failure_invocation,
     commit_topology_transaction,
+    publish_strict_failure_evidence,
 )
 from .free_surface_inventory_reconciliation import (
     CANONICAL_STAGE_ORDER,
@@ -845,11 +848,47 @@ def free_surface_step(
     recv_mask = recv_iface | recv_new
     i_to_g_ownership = None
     if enable_i_to_g_ownership_closure and bool(i_to_g.any()):
-        i_to_g_ownership = build_i_to_g_ownership_transaction(
-            flags, mass, to_gas=i_to_g, to_liq=to_liq, solid_mask=solid_mask,
-            gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE,
-            rho_liquid=rho_liquid,
+        strict_failure_capture = None
+        builder_invocation = {
+            "flags": flags,
+            "mass": mass,
+            "to_gas": i_to_g,
+            "to_liq": to_liq,
+            "solid_mask": solid_mask,
+            "gas_flag": GAS,
+            "liquid_flag": LIQUID,
+            "interface_flag": INTERFACE,
+            "rho_liquid": rho_liquid,
+        }
+        if capture_replay_stages and replay_capture is not None:
+            # Freeze before the builder receives any writable value.  The
+            # capture also defines the exact detached strict-error replay.
+            strict_failure_capture = capture_strict_failure_invocation(
+                builder_invocation, builder="i_to_g_ownership",
+            )
+        # Keep capture disabled on the legacy call path.  Opt-in replay capture
+        # makes the builder a transactional boundary: it may not retain or
+        # mutate solver-owned fields, even on its exceptional path.
+        builder_inputs = (
+            {
+                name: value.detach().clone() if isinstance(value, torch.Tensor) else value
+                for name, value in builder_invocation.items()
+            }
+            if strict_failure_capture is not None else builder_invocation
         )
+        try:
+            i_to_g_ownership = build_i_to_g_ownership_transaction(
+                builder_inputs["flags"], builder_inputs["mass"],
+                to_gas=builder_inputs["to_gas"], to_liq=builder_inputs["to_liq"],
+                solid_mask=builder_inputs["solid_mask"], gas_flag=GAS,
+                liquid_flag=LIQUID, interface_flag=INTERFACE, rho_liquid=rho_liquid,
+            )
+        except TopologyTransactionError as error:
+            if strict_failure_capture is not None:
+                replay_capture["strict_failure_evidence"] = publish_strict_failure_evidence(
+                    strict_failure_capture, error,
+                )
+            raise
     # Count receiving cells per donor over every moving D3Q19 link.
     shifted_recv = torch.stack(all_moving_neighbor_masks(recv_mask))
     n_recv = shifted_recv.sum(dim=0).float().clamp(min=1.0)
