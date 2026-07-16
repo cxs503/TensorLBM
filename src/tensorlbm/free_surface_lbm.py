@@ -27,7 +27,13 @@ from .core.d3q19_stencil import (
     roll_to_neighbor,
 )
 from .solver3d import stream3d as _stream3d
-from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
+from .turbulence import (
+    _neq_stress_norm_3d,
+    _nu_t_to_tau_eff,
+    _smagorinsky_tau,
+    _vreman_nu_t_3d,
+    _wale_nu_t_3d,
+)
 from .free_surface_topology_transaction import (
     TopologyTransactionError,
     build_topology_transaction,
@@ -427,7 +433,7 @@ def free_surface_step(
     f, fill, flags, solid_mask, mass=None,
     tau=1.0, gx=0.0, gy=0.0, gz=0.0,
     rho_liquid=1.0, rho_gas=1.0,
-    surface_tension=0.0, C_s=0.0,
+    surface_tension=0.0, C_s=0.0, sgs_model='smagorinsky',
     free_slip_y=False, y_wall_mask=None,
     bubble_pressure=None,
     collision='bgk',
@@ -458,6 +464,11 @@ def free_surface_step(
         raise ValueError("capture_replay_stages must be bool")
     if replay_capture is not None and not isinstance(replay_capture, dict):
         raise ValueError("replay_capture must be a dict or None")
+    _VALID_SGS_MODELS = ('smagorinsky', 'wale', 'vreman')
+    if sgs_model not in _VALID_SGS_MODELS:
+        raise ValueError(
+            f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}"
+        )
 
     # Ledger output is transactional too: topology validation may fail after
     # ABB/exchange observations were calculated.  Accumulate into a detached
@@ -537,7 +548,16 @@ def free_surface_step(
         f = collide_mrt3d(f_collide, tau)
     else:  # bgk
         if C_s > 0:
-            tau_eff = _smagorinsky_tau(tau, _neq_stress_norm_3d(f_collide - feq), rho_s, C_s)
+            if sgs_model == 'smagorinsky':
+                tau_eff = _smagorinsky_tau(
+                    tau, _neq_stress_norm_3d(f_collide - feq), rho_s, C_s,
+                )
+            elif sgs_model == 'wale':
+                nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
+                tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+            else:  # vreman
+                nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
+                tau_eff = _nu_t_to_tau_eff(tau, nu_t)
             f = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
         else:
             f = f_collide - (f_collide - feq) / tau
