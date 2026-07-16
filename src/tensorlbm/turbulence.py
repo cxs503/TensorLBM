@@ -37,10 +37,14 @@ WALE
     - :func:`collide_wale_bgk`    – D2Q9  BGK + WALE
     - :func:`collide_wale_bgk3d`  – D3Q19 BGK + WALE
     - :func:`collide_wale_bgk27`  – D3Q27 BGK + WALE
+    - :func:`collide_wale_mrt3d`  – D3Q19 MRT + WALE
+    - :func:`collide_wale_mrt27`  – D3Q27 MRT + WALE
 Vreman
     - :func:`collide_vreman_bgk`    – D2Q9  BGK + Vreman
     - :func:`collide_vreman_bgk3d`  – D3Q19 BGK + Vreman
     - :func:`collide_vreman_bgk27`  – D3Q27 BGK + Vreman
+    - :func:`collide_vreman_mrt3d`  – D3Q19 MRT + Vreman
+    - :func:`collide_vreman_mrt27`  – D3Q27 MRT + Vreman
 """
 
 from __future__ import annotations
@@ -851,6 +855,172 @@ def collide_wale_bgk27(
     return f - f_neq / tau_eff.unsqueeze(0)
 
 
+def collide_wale_mrt3d(
+    f: torch.Tensor,
+    tau: float,
+    C_w: float = 0.5,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q19 MRT collision with WALE LES sub-grid turbulence model.
+
+    Combines the D3Q19 multi-relaxation-time (MRT) collision operator with a
+    spatially varying stress relaxation rate derived from the local WALE
+    effective viscosity.  The WALE model produces the correct cubic near-wall
+    vanishing of :math:`\\nu_t` without damping functions, making this operator
+    preferable to :func:`collide_smagorinsky_mrt3d` for wall-bounded flows.
+
+    The MRT relaxation vector is identical to :func:`collide_smagorinsky_mrt3d`
+    except that the per-cell stress relaxation rate ``1/τ_eff(x)`` is computed
+    from the WALE eddy viscosity instead of the Smagorinsky non-equilibrium
+    stress norm.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_w: WALE constant (default 0.5; typical range 0.3–0.6).
+        s_e: Relaxation rate for the energy moment.
+        s_eps: Relaxation rate for the energy-square moment.
+        s_q: Relaxation rate for heat-flux moments.
+        s_pi: Relaxation rate for higher-order stress moments
+              (defaults to *s_e* when *None*).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+    M, M_inv = _get_d3q19_mrt_matrices(device)
+
+    # Per-cell effective relaxation time from WALE model
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    f_neq = f - feq
+    nu_t = _wale_nu_t_3d(ux, uy, uz, C_w)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)  # (nz, ny, nx)
+    s_nu_field = 1.0 / tau_eff
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)      # (19, N)
+    feq_flat = feq.reshape(19, -1)  # (19, N)
+    s_nu_flat = s_nu_field.reshape(-1)  # (N,)
+
+    m = M @ f_flat               # (19, N)
+    m_eq = M @ feq_flat          # (19, N)
+    dm = m - m_eq                # (19, N)
+
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps,
+         0.0, s_q, 0.0, s_q, 0.0, s_q,
+         0.0, 0.0, 0.0, 0.0, 0.0,
+         s_pi, s_pi,
+         1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )  # (19,)
+    m_star = m - s_fixed.unsqueeze(1) * dm  # (19, N) via broadcast
+    # Override stress modes 9-13 with the spatially varying WALE rate
+    for k in (9, 10, 11, 12, 13):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(19, nz, ny, nx)
+
+
+def collide_wale_mrt27(
+    f: torch.Tensor,
+    tau: float,
+    C_w: float = 0.5,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q27 MRT collision with WALE LES sub-grid turbulence model.
+
+    Combines the D3Q27 MRT collision operator with a spatially varying stress
+    relaxation rate derived from the local WALE effective viscosity.
+
+    The MRT relaxation vector follows :func:`collide_smagorinsky_mrt27`
+    except that the stress-mode relaxation rates (rows 5–9) are replaced by
+    the per-cell ``1/τ_eff(x)`` from the WALE model.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_w: WALE constant (default 0.5).
+        s_e: Relaxation rate for the energy moment (row 4).
+        s_eps: Relaxation rate for the energy-square moment (row 19).
+        s_q: Relaxation rate for 3rd-order heat-flux moments (rows 10–18).
+        s_pi: Relaxation rate for 4th-order+ moments (rows 20–26);
+              defaults to *s_e* when *None*.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+    M, M_inv = _get_d3q27_mrt_matrices(device)
+
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    f_neq = f - feq
+    nu_t = _wale_nu_t_3d(ux, uy, uz, C_w)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)  # (nz, ny, nx)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(27, -1)
+    feq_flat = feq.reshape(27, -1)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    # Fixed relaxation rates for non-stress modes
+    s_fixed = torch.tensor(
+        [
+            0.0,   # 0  mass
+            0.0,   # 1  jx
+            0.0,   # 2  jy
+            0.0,   # 3  jz
+            s_e,   # 4  energy
+            0.0,   # 5  Nxx  – overridden below
+            0.0,   # 6  Nyy  – overridden below
+            0.0,   # 7  Pxy  – overridden below
+            0.0,   # 8  Pxz  – overridden below
+            0.0,   # 9  Pyz  – overridden below
+            s_q,   # 10
+            s_q,   # 11
+            s_q,   # 12
+            s_q,   # 13
+            s_q,   # 14
+            s_q,   # 15
+            s_q,   # 16
+            s_q,   # 17
+            s_q,   # 18
+            s_eps, # 19
+            s_pi,  # 20
+            s_pi,  # 21
+            s_pi,  # 22
+            s_pi,  # 23
+            s_pi,  # 24
+            s_pi,  # 25
+            s_pi,  # 26
+        ],
+        dtype=f.dtype,
+        device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    # Override stress modes 5–9 with spatially varying WALE rate
+    for k in (5, 6, 7, 8, 9):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(27, nz, ny, nx)
+
+
 # ---------------------------------------------------------------------------
 # Vreman collision operators
 # ---------------------------------------------------------------------------
@@ -933,6 +1103,173 @@ def collide_vreman_bgk27(
     tau_eff = _nu_t_to_tau_eff(tau, nu_t)
 
     return f - f_neq / tau_eff.unsqueeze(0)
+
+
+def collide_vreman_mrt3d(
+    f: torch.Tensor,
+    tau: float,
+    C_V: float = 0.025,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q19 MRT collision with Vreman LES sub-grid turbulence model.
+
+    Combines the D3Q19 multi-relaxation-time (MRT) collision operator with a
+    spatially varying stress relaxation rate derived from the local Vreman
+    effective viscosity.  The Vreman model naturally produces zero eddy
+    viscosity in laminar regions and for solid-body rotation, making it
+    computationally cheaper than WALE while avoiding spurious eddy viscosity
+    in non-turbulent zones.
+
+    The MRT relaxation vector is identical to :func:`collide_smagorinsky_mrt3d`
+    except that the per-cell stress relaxation rate ``1/τ_eff(x)`` is computed
+    from the Vreman eddy viscosity instead of the Smagorinsky non-equilibrium
+    stress norm.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_V: Vreman constant (default 0.025; corresponds to C_s ≈ 0.1).
+        s_e: Relaxation rate for the energy moment.
+        s_eps: Relaxation rate for the energy-square moment.
+        s_q: Relaxation rate for heat-flux moments.
+        s_pi: Relaxation rate for higher-order stress moments
+              (defaults to *s_e* when *None*).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+    M, M_inv = _get_d3q19_mrt_matrices(device)
+
+    # Per-cell effective relaxation time from Vreman model
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    f_neq = f - feq
+    nu_t = _vreman_nu_t_3d(ux, uy, uz, C_V)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)  # (nz, ny, nx)
+    s_nu_field = 1.0 / tau_eff
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)      # (19, N)
+    feq_flat = feq.reshape(19, -1)  # (19, N)
+    s_nu_flat = s_nu_field.reshape(-1)  # (N,)
+
+    m = M @ f_flat               # (19, N)
+    m_eq = M @ feq_flat          # (19, N)
+    dm = m - m_eq                # (19, N)
+
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps,
+         0.0, s_q, 0.0, s_q, 0.0, s_q,
+         0.0, 0.0, 0.0, 0.0, 0.0,
+         s_pi, s_pi,
+         1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )  # (19,)
+    m_star = m - s_fixed.unsqueeze(1) * dm  # (19, N) via broadcast
+    # Override stress modes 9-13 with the spatially varying Vreman rate
+    for k in (9, 10, 11, 12, 13):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(19, nz, ny, nx)
+
+
+def collide_vreman_mrt27(
+    f: torch.Tensor,
+    tau: float,
+    C_V: float = 0.025,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q27 MRT collision with Vreman LES sub-grid turbulence model.
+
+    Combines the D3Q27 MRT collision operator with a spatially varying stress
+    relaxation rate derived from the local Vreman effective viscosity.
+
+    The MRT relaxation vector follows :func:`collide_smagorinsky_mrt27`
+    except that the stress-mode relaxation rates (rows 5–9) are replaced by
+    the per-cell ``1/τ_eff(x)`` from the Vreman model.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_V: Vreman constant (default 0.025).
+        s_e: Relaxation rate for the energy moment (row 4).
+        s_eps: Relaxation rate for the energy-square moment (row 19).
+        s_q: Relaxation rate for 3rd-order heat-flux moments (rows 10–18).
+        s_pi: Relaxation rate for 4th-order+ moments (rows 20–26);
+              defaults to *s_e* when *None*.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+    M, M_inv = _get_d3q27_mrt_matrices(device)
+
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    f_neq = f - feq
+    nu_t = _vreman_nu_t_3d(ux, uy, uz, C_V)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)  # (nz, ny, nx)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(27, -1)
+    feq_flat = feq.reshape(27, -1)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    # Fixed relaxation rates for non-stress modes
+    s_fixed = torch.tensor(
+        [
+            0.0,   # 0  mass
+            0.0,   # 1  jx
+            0.0,   # 2  jy
+            0.0,   # 3  jz
+            s_e,   # 4  energy
+            0.0,   # 5  Nxx  – overridden below
+            0.0,   # 6  Nyy  – overridden below
+            0.0,   # 7  Pxy  – overridden below
+            0.0,   # 8  Pxz  – overridden below
+            0.0,   # 9  Pyz  – overridden below
+            s_q,   # 10
+            s_q,   # 11
+            s_q,   # 12
+            s_q,   # 13
+            s_q,   # 14
+            s_q,   # 15
+            s_q,   # 16
+            s_q,   # 17
+            s_q,   # 18
+            s_eps, # 19
+            s_pi,  # 20
+            s_pi,  # 21
+            s_pi,  # 22
+            s_pi,  # 23
+            s_pi,  # 24
+            s_pi,  # 25
+            s_pi,  # 26
+        ],
+        dtype=f.dtype,
+        device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    # Override stress modes 5–9 with spatially varying Vreman rate
+    for k in (5, 6, 7, 8, 9):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(27, nz, ny, nx)
 
 
 def _box_filter_2d(field: torch.Tensor, width: int = 2) -> torch.Tensor:
@@ -1179,8 +1516,12 @@ __all__ = [
     "collide_wale_bgk",
     "collide_wale_bgk3d",
     "collide_wale_bgk27",
+    "collide_wale_mrt3d",
+    "collide_wale_mrt27",
     # Vreman
     "collide_vreman_bgk",
     "collide_vreman_bgk3d",
     "collide_vreman_bgk27",
+    "collide_vreman_mrt3d",
+    "collide_vreman_mrt27",
 ]

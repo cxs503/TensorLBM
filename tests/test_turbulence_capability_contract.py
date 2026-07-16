@@ -114,7 +114,7 @@ class TestDynamicSmagorinsky:
 
 
 # ---------------------------------------------------------------------------
-# WALE: BGK only (D2Q9, D3Q19, D3Q27); no MRT
+# WALE: BGK (D2Q9, D3Q19, D3Q27) + MRT (D3Q19, D3Q27); D2Q9 MRT not implemented
 # ---------------------------------------------------------------------------
 
 class TestWALE:
@@ -128,15 +128,24 @@ class TestWALE:
         assert cap.test_evidence is not None
         assert "test_turbulence_extensions.py" in cap.test_evidence
 
-    @pytest.mark.parametrize("lattice", ["D2Q9", "D3Q19", "D3Q27"])
-    def test_mrt_not_implemented(self, lattice: str) -> None:
+    @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
+    def test_mrt_implemented_and_contract_tested(self, lattice: str) -> None:
         cap = turbulence_capability_matrix()["wale"][lattice]["MRT"]
+        assert cap.implementation_status == "IMPLEMENTED"
+        assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
+        assert cap.entrypoint is not None
+        assert cap.entrypoint.startswith("tensorlbm.turbulence.collide_wale_mrt")
+        assert cap.test_evidence is not None
+        assert "test_turbulence_extensions.py" in cap.test_evidence
+
+    def test_d2q9_mrt_not_implemented(self) -> None:
+        cap = turbulence_capability_matrix()["wale"]["D2Q9"]["MRT"]
         assert cap.implementation_status == NO_IMPLEMENTATION
         assert cap.verification_level == VERIFICATION_NO_IMPLEMENTATION
 
 
 # ---------------------------------------------------------------------------
-# Vreman: BGK only (D2Q9, D3Q19, D3Q27); no MRT
+# Vreman: BGK (D2Q9, D3Q19, D3Q27) + MRT (D3Q19, D3Q27); D2Q9 MRT not implemented
 # ---------------------------------------------------------------------------
 
 class TestVreman:
@@ -150,9 +159,18 @@ class TestVreman:
         assert cap.test_evidence is not None
         assert "test_turbulence_extensions.py" in cap.test_evidence
 
-    @pytest.mark.parametrize("lattice", ["D2Q9", "D3Q19", "D3Q27"])
-    def test_mrt_not_implemented(self, lattice: str) -> None:
+    @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
+    def test_mrt_implemented_and_contract_tested(self, lattice: str) -> None:
         cap = turbulence_capability_matrix()["vreman"][lattice]["MRT"]
+        assert cap.implementation_status == "IMPLEMENTED"
+        assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
+        assert cap.entrypoint is not None
+        assert cap.entrypoint.startswith("tensorlbm.turbulence.collide_vreman_mrt")
+        assert cap.test_evidence is not None
+        assert "test_turbulence_extensions.py" in cap.test_evidence
+
+    def test_d2q9_mrt_not_implemented(self) -> None:
+        cap = turbulence_capability_matrix()["vreman"]["D2Q9"]["MRT"]
         assert cap.implementation_status == NO_IMPLEMENTATION
         assert cap.verification_level == VERIFICATION_NO_IMPLEMENTATION
 

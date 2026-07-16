@@ -253,7 +253,7 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
     },
 
     # -----------------------------------------------------------------------
-    # WALE — BGK only (D2Q9, D3Q19, D3Q27); no MRT variants
+    # WALE — BGK (D2Q9, D3Q19, D3Q27) + MRT (D3Q19, D3Q27); all CONTRACT_TESTED
     # -----------------------------------------------------------------------
     "wale": {
         "D2Q9": {
@@ -273,6 +273,13 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 None,
                 "D3Q19 BGK + WALE.",
             ),
+            "MRT": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.turbulence.collide_wale_mrt3d",
+                "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
+                None,
+                "D3Q19 MRT with per-cell stress rate override (modes 9-13) from WALE eddy viscosity.",
+            ),
         },
         "D3Q27": {
             "BGK": (
@@ -282,11 +289,18 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 None,
                 "D3Q27 BGK + WALE; reuses D3Q19 _wale_nu_t_3d helper.",
             ),
+            "MRT": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.turbulence.collide_wale_mrt27",
+                "test_turbulence_extensions.py: shape, finite, mass, equilibrium identity",
+                None,
+                "D3Q27 MRT with per-cell stress rate override (modes 5-9) from WALE eddy viscosity.",
+            ),
         },
     },
 
     # -----------------------------------------------------------------------
-    # Vreman — BGK only (D2Q9, D3Q19, D3Q27); no MRT variants
+    # Vreman — BGK (D2Q9, D3Q19, D3Q27) + MRT (D3Q19, D3Q27); all CONTRACT_TESTED
     # -----------------------------------------------------------------------
     "vreman": {
         "D2Q9": {
@@ -306,6 +320,13 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 None,
                 "D3Q19 BGK + Vreman.",
             ),
+            "MRT": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.turbulence.collide_vreman_mrt3d",
+                "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
+                None,
+                "D3Q19 MRT with per-cell stress rate override (modes 9-13) from Vreman eddy viscosity.",
+            ),
         },
         "D3Q27": {
             "BGK": (
@@ -314,6 +335,13 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "test_turbulence_extensions.py: shape, finite, mass, equilibrium identity",
                 None,
                 "D3Q27 BGK + Vreman; reuses D3Q19 _vreman_nu_t_3d helper.",
+            ),
+            "MRT": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.turbulence.collide_vreman_mrt27",
+                "test_turbulence_extensions.py: shape, finite, mass, equilibrium identity",
+                None,
+                "D3Q27 MRT with per-cell stress rate override (modes 5-9) from Vreman eddy viscosity.",
             ),
         },
     },
