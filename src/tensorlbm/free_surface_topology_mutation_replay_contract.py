@@ -14,11 +14,14 @@ import torch
 from .free_surface_topology_transaction import (
     IToGOwnershipTransaction,
     ReplayEvidence,
+    StrictFailureReplayEvidence,
     TopologyTransactionError,
     build_topology_transaction,
     is_trusted_replay_evidence,
+    is_trusted_strict_failure_evidence,
     restore_i_to_g_ownership,
     restore_replay_payload,
+    restore_strict_failure_invocation,
     _replay_tensor_records,
 )
 
@@ -26,6 +29,7 @@ AVAILABLE_REPLAYED_EXACT = "AVAILABLE_REPLAYED_EXACT"
 MISSING_INPUT_WITHHELD = "MISSING_INPUT_WITHHELD"
 ORDER_UNAVAILABLE_WITHHELD = "ORDER_UNAVAILABLE_WITHHELD"
 WITHHELD = "WITHHELD"
+STRICT_FAILURE_REPLAYED_EXACT = "STRICT_FAILURE_REPLAYED_EXACT"
 
 _FIELDS = ("f", "fill", "flags", "mass")
 _PHASES = (
@@ -66,6 +70,18 @@ class TopologyMutationReplayReport:
     final_candidate_exact: bool
     final_compared_tensors: tuple[str, ...]
     phases: tuple[ReplayPhaseReport, ...]
+
+
+@dataclass(frozen=True)
+class StrictFailureReplayReport:
+    """Exact reproduction of a rejection, never a candidate or closure claim."""
+
+    status: str
+    mutates_solver_state: bool
+    physical_claim: bool
+    error_type: str | None
+    error_message: str | None
+    reason: str | None
 
 
 def _tensor_state(value: object) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | None:
@@ -170,4 +186,39 @@ def audit_topology_mutation_replay(evidence: object) -> TopologyMutationReplayRe
         final_candidate_exact=final_compared == _FIELDS,
         final_compared_tensors=final_compared,
         phases=tuple(reports),
+    )
+
+
+def audit_strict_failure_replay(evidence: object) -> StrictFailureReplayReport:
+    """Replay a trusted pre-invocation capture and require its rejection exactly.
+
+    An unexpected candidate, a different exception, or malformed evidence is
+    withheld. This does not produce phase evidence or a final candidate.
+    """
+    if not isinstance(evidence, StrictFailureReplayEvidence):
+        return StrictFailureReplayReport(WITHHELD, False, False, None, None, "immutable strict failure evidence is required")
+    if not is_trusted_strict_failure_evidence(evidence):
+        return StrictFailureReplayReport(WITHHELD, False, False, None, None, "strict failure evidence is not a trusted in-process capture")
+    try:
+        invocation = restore_strict_failure_invocation(evidence)
+        from .free_surface_topology_transaction import build_i_to_g_ownership_transaction
+        build_i_to_g_ownership_transaction(**invocation)  # type: ignore[arg-type]
+    except TopologyTransactionError as error:
+        if type(error).__name__ == evidence.error_type and str(error) == evidence.error_message:
+            return StrictFailureReplayReport(
+                STRICT_FAILURE_REPLAYED_EXACT, False, False,
+                evidence.error_type, evidence.error_message, None,
+            )
+        return StrictFailureReplayReport(
+            WITHHELD, False, False, type(error).__name__, str(error),
+            "detached builder rejection differs from captured strict failure",
+        )
+    except (RuntimeError, ValueError) as error:
+        return StrictFailureReplayReport(
+            WITHHELD, False, False, type(error).__name__, str(error),
+            "detached builder raised an unexpected error type",
+        )
+    return StrictFailureReplayReport(
+        WITHHELD, False, False, None, None,
+        "detached builder unexpectedly produced a candidate",
     )

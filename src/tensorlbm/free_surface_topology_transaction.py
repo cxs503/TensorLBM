@@ -60,7 +60,26 @@ class ReplayEvidence:
     tensor_records: tuple[ReplayTensorRecord, ...]
 
 
+@dataclass(frozen=True)
+class StrictFailureReplayEvidence:
+    """Trusted pre-invocation capture of an exact strict builder rejection.
+
+    No phase or final-candidate tensors exist: the builder failed before it
+    could publish either.  This is deliberately not a ``ReplayEvidence``.
+    """
+
+    invocation_payload: bytes
+    invocation_sha256: str
+    tensor_records: tuple[ReplayTensorRecord, ...]
+    builder: str
+    error_type: str
+    error_message: str
+
+
 _TRUSTED_REPLAY_EVIDENCE: dict[int, weakref.ReferenceType[ReplayEvidence]] = {}
+_TRUSTED_STRICT_FAILURE_EVIDENCE: dict[
+    int, weakref.ReferenceType[StrictFailureReplayEvidence]
+] = {}
 
 
 def _register_trusted_replay_evidence(evidence: ReplayEvidence) -> ReplayEvidence:
@@ -77,6 +96,24 @@ def _register_trusted_replay_evidence(evidence: ReplayEvidence) -> ReplayEvidenc
 def is_trusted_replay_evidence(evidence: object) -> bool:
     """True only for the exact object emitted by this process' capture path."""
     reference = _TRUSTED_REPLAY_EVIDENCE.get(id(evidence))
+    return reference is not None and reference() is evidence
+
+
+def _register_trusted_strict_failure_evidence(
+    evidence: StrictFailureReplayEvidence,
+) -> StrictFailureReplayEvidence:
+    evidence_id = id(evidence)
+
+    def _discard(_: weakref.ReferenceType[StrictFailureReplayEvidence]) -> None:
+        _TRUSTED_STRICT_FAILURE_EVIDENCE.pop(evidence_id, None)
+
+    _TRUSTED_STRICT_FAILURE_EVIDENCE[evidence_id] = weakref.ref(evidence, _discard)
+    return evidence
+
+
+def is_trusted_strict_failure_evidence(evidence: object) -> bool:
+    """True only for the exact failure evidence emitted in this process."""
+    reference = _TRUSTED_STRICT_FAILURE_EVIDENCE.get(id(evidence))
     return reference is not None and reference() is evidence
 
 
@@ -194,6 +231,48 @@ def restore_i_to_g_ownership(value: object) -> IToGOwnershipTransaction | None:
     )
     transaction.validate()
     return transaction
+
+
+_I_TO_G_FAILURE_INVOCATION_KEYS = frozenset({
+    "flags", "mass", "to_gas", "to_liq", "solid_mask", "gas_flag", "liquid_flag",
+    "interface_flag", "rho_liquid",
+})
+
+
+def capture_strict_failure_invocation(
+    invocation: Mapping[str, object], *, builder: str,
+) -> tuple[bytes, str, tuple[ReplayTensorRecord, ...], str]:
+    """Freeze a complete declared builder invocation before an opt-in failure."""
+    frozen = dict(invocation)
+    if builder != "i_to_g_ownership" or set(frozen) != _I_TO_G_FAILURE_INVOCATION_KEYS:
+        raise TopologyTransactionError("strict failure capture requires the complete I→G invocation")
+    for name, value in tuple(frozen.items()):
+        if isinstance(value, torch.Tensor):
+            frozen[name] = value.detach().clone()
+    payload, digest = _freeze_replay_payload(frozen)
+    return payload, digest, _replay_tensor_records(frozen, "invocation"), builder
+
+
+def publish_strict_failure_evidence(
+    capture: tuple[bytes, str, tuple[ReplayTensorRecord, ...], str], error: TopologyTransactionError,
+) -> StrictFailureReplayEvidence:
+    """Bind a pre-call snapshot to the exact rejection while preserving the raise."""
+    payload, digest, records, builder = capture
+    return _register_trusted_strict_failure_evidence(StrictFailureReplayEvidence(
+        payload, digest, records, builder, type(error).__name__, str(error),
+    ))
+
+
+def restore_strict_failure_invocation(evidence: StrictFailureReplayEvidence) -> dict[str, object]:
+    """Restore a complete detached invocation; validation is replayed by caller."""
+    invocation = restore_replay_payload(evidence.invocation_payload, evidence.invocation_sha256)
+    if not isinstance(invocation, dict) or evidence.builder != "i_to_g_ownership":
+        raise TopologyTransactionError("WITHHELD: strict failure invocation schema is invalid")
+    if set(invocation) != _I_TO_G_FAILURE_INVOCATION_KEYS:
+        raise TopologyTransactionError("WITHHELD: strict failure I→G invocation schema is invalid")
+    if _replay_tensor_records(invocation, "invocation") != evidence.tensor_records:
+        raise TopologyTransactionError("WITHHELD: strict failure tensor records do not match payload tensors")
+    return invocation
 
 
 def build_i_to_g_ownership_transaction(
