@@ -92,9 +92,27 @@ class DomainDecomposition:
         return slabs
 
     @classmethod
-    def from_devices(cls, device_ids: list[int], nx_global: int = 0) -> DomainDecomposition:
-        """Convenience constructor from integer GPU IDs."""
-        devices = [f"cuda:{d}" for d in device_ids]
+    def from_devices(
+        cls,
+        device_ids: list[int],
+        nx_global: int = 0,
+        device_type: str = "cuda",
+    ) -> DomainDecomposition:
+        """Convenience constructor from integer device IDs.
+
+        Args:
+            device_ids:  List of integer device indices (e.g. ``[0, 1, 2]``).
+            nx_global:   Global domain width.
+            device_type: Device family string — ``"cuda"``, ``"sdaa"``, or
+                         ``"cpu"``.  Defaults to ``"cuda"`` for backward
+                         compatibility.  For ``"cpu"`` the bare string
+                         ``"cpu"`` is used (no index suffix) since PyTorch
+                         does not support ``"cpu:0"``.
+        """
+        if device_type == "cpu":
+            devices = ["cpu"] * len(device_ids)
+        else:
+            devices = [f"{device_type}:{d}" for d in device_ids]
         return cls(devices=devices, nx_global=nx_global)
 
     @property
@@ -128,12 +146,12 @@ def halo_exchange_2d(
         # Right ghost of slab i ← interior right of slab i+1
         right_of_i     = slabs[i][:, :, -ov - 1:-1]   # interior right of i
         left_ghost_ip1 = slabs[i + 1][:, :, :ov]       # left ghost of i+1
-        left_ghost_ip1.copy_(right_of_i.to(left_ghost_ip1.device))
+        left_ghost_ip1.copy_(right_of_i.contiguous().to(left_ghost_ip1.device))
 
         # Left ghost of slab i ← interior left of slab i+1
         left_of_ip1  = slabs[i + 1][:, :, ov:2 * ov]  # interior left of i+1
         right_ghost_i = slabs[i][:, :, -ov:]            # right ghost of i
-        right_ghost_i.copy_(left_of_ip1.to(right_ghost_i.device))
+        right_ghost_i.copy_(left_of_ip1.contiguous().to(right_ghost_i.device))
 
     return slabs
 
@@ -157,8 +175,8 @@ def halo_exchange_3d(
         right = slabs[(i + 1) % n_slabs]
         left_ghost = slab[:, :, :, :ov]
         right_ghost = slab[:, :, :, -ov:]
-        left_ghost.copy_(left[:, :, :, -2 * ov:-ov].to(left_ghost.device))
-        right_ghost.copy_(right[:, :, :, ov:2 * ov].to(right_ghost.device))
+        left_ghost.copy_(left[:, :, :, -2 * ov:-ov].contiguous().to(left_ghost.device))
+        right_ghost.copy_(right[:, :, :, ov:2 * ov].contiguous().to(right_ghost.device))
 
     return slabs
 
@@ -354,28 +372,242 @@ class MultiGPUSolver3D:
 
 
 # ---------------------------------------------------------------------------
+# Device-agnostic multi-device 3-D solver (common module)
+# ---------------------------------------------------------------------------
+
+class MultiDeviceSolver3D:
+    """Device-agnostic multi-device D3Q19 LBM solver via x-axis decomposition.
+
+    A *common module* that works with any device family (``cuda``, ``sdaa``,
+    ``cpu``).  The global distribution is split into x-slabs, one per device.
+    Each device runs collision, streaming, and boundary kernels **independently
+    and unmodified**; halo exchange synchronises x-interface ghost planes
+    between adjacent slabs before streaming.
+
+    Per-step ordering (matching the production ``MultiGPUSolver3D`` contract):
+
+    1. **Collide** — each card applies ``collide_fn`` to its slab.
+    2. **Halo exchange** — ghost planes refreshed between adjacent slabs.
+    3. **Stream** — each card applies ``stream_fn`` (pull-stream reads
+       neighbour data from the freshly-exchanged ghosts).
+    4. **Boundary** — each card applies ``boundary_fn`` (if provided).
+    5. **Force aggregate** — if ``force_fn`` is provided, each card computes a
+       local force contribution and the results are **all-reduced** (summed)
+       across all cards.
+
+    Args:
+        f_global:    Global initial distribution ``(19, nz, ny, nx)`` on any
+                     device.
+        devices:     List of device strings, e.g. ``["sdaa:0", "sdaa:1"]``.
+        collide_fn:  Collision kernel ``f → f'`` applied per slab.
+        stream_fn:   Streaming kernel ``f → f'`` applied per slab.
+        boundary_fn: Optional boundary kernel ``f → f'`` applied per slab
+                     after streaming.
+        force_fn:    Optional force kernel ``f → tensor`` that returns a
+                     per-slab force contribution.  Contributions are summed
+                     across all cards (all-reduce).
+        overlap:     Ghost-layer width (default 1).
+
+    Example::
+
+        from tensorlbm.multi_gpu import MultiDeviceSolver3D
+        from tensorlbm.solver3d import collide_bgk3d, stream3d
+
+        solver = MultiDeviceSolver3D(
+            f_global=f0,
+            devices=[f"sdaa:{i}" for i in range(8)],
+            collide_fn=lambda f: collide_bgk3d(f, tau=0.8),
+            stream_fn=stream3d,
+        )
+        for _ in range(n_steps):
+            solver.step()
+        f_final = solver.gather()
+    """
+
+    def __init__(
+        self,
+        f_global: torch.Tensor,
+        devices: list[str],
+        collide_fn: Callable[[torch.Tensor], torch.Tensor],
+        stream_fn: Callable[[torch.Tensor], torch.Tensor],
+        boundary_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
+        force_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
+        overlap: int = 1,
+    ) -> None:
+        q, nz, ny, nx = f_global.shape
+        if q != 19:
+            raise ValueError(
+                f"MultiDeviceSolver3D requires D3Q19 populations, got {q}"
+            )
+        self.decomp = DomainDecomposition(
+            devices=devices, nx_global=nx, overlap=overlap,
+        )
+        self.nz = nz
+        self.ny = ny
+        self.collide_fn = collide_fn
+        self.stream_fn = stream_fn
+        self.boundary_fn = boundary_fn
+        self.force_fn = force_fn
+        self._step_count = 0
+
+        ov = self.decomp.overlap
+        self.slabs: list[torch.Tensor] = []
+        for dev, (x0, x1) in zip(self.decomp.devices, self.decomp.slabs):
+            # Periodic ghost seeding via modulo indexing, matching
+            # MultiGPUSolver3D.  Halo exchange overwrites before first stream.
+            x_indices = torch.arange(x0 - ov, x1 + ov, device=f_global.device) % nx
+            slab = f_global.index_select(3, x_indices).to(dev).contiguous()
+            self.slabs.append(slab)
+        self._x_ranges = self.decomp.slabs
+        halo_exchange_3d(self.slabs, self.decomp)
+
+    def step(self) -> torch.Tensor | None:
+        """Advance one time step: collide → halo → stream → boundary → force.
+
+        Returns:
+            Aggregated force tensor (on CPU) if ``force_fn`` was provided,
+            otherwise ``None``.
+        """
+        # 1. Collide on each card (independent, unmodified kernel)
+        for i, slab in enumerate(self.slabs):
+            self.slabs[i] = self.collide_fn(slab)
+
+        # 2. Halo exchange between adjacent slabs
+        halo_exchange_3d(self.slabs, self.decomp)
+
+        # 3. Stream on each card (pull-stream reads from refreshed ghosts)
+        for i, slab in enumerate(self.slabs):
+            self.slabs[i] = self.stream_fn(slab)
+
+        # 4. Boundary on each card (independent, unmodified kernel)
+        if self.boundary_fn is not None:
+            for i, slab in enumerate(self.slabs):
+                self.slabs[i] = self.boundary_fn(slab)
+
+        self._step_count += 1
+
+        # 5. Force all-reduce (sum across cards)
+        if self.force_fn is not None:
+            return self.reduce_force()
+        return None
+
+    def reduce_force(self) -> torch.Tensor:
+        """All-reduce (sum) per-card force contributions.
+
+        Each card evaluates ``force_fn`` on its **owned** interior cells
+        (ghost layers are stripped, since they contain stale data after
+        streaming); the results are copied to CPU and summed.  The returned
+        tensor lives on CPU.
+
+        Returns:
+            Summed force tensor on CPU.
+        """
+        assert self.force_fn is not None
+        ov = self.decomp.overlap
+        total: torch.Tensor | None = None
+        for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
+            owned = slab[:, :, :, ov:ov + (x1 - x0)]
+            local = self.force_fn(owned).detach().cpu()
+            total = local.clone() if total is None else total + local
+        assert total is not None
+        return total
+
+    def gather(self) -> torch.Tensor:
+        """Assemble slab interiors into a global tensor on CPU."""
+        q = self.slabs[0].shape[0]
+        nz, ny = self.nz, self.ny
+        nx = self.decomp.nx_global
+        ov = self.decomp.overlap
+        f_out = torch.zeros((q, nz, ny, nx), dtype=self.slabs[0].dtype)
+        for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
+            x0g_local = ov
+            local_width = x1 - x0
+            f_out[:, :, :, x0:x1] = slab[:, :, :, x0g_local:x0g_local + local_width].cpu()
+        return f_out
+
+    def gather_macroscopic(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Gather per-slab macroscopic fields into global (rho, ux, uy, uz).
+
+        Each slab's owned cells are converted to macroscopic quantities and
+        concatenated along x into global fields on CPU.
+
+        Returns:
+            ``(rho, ux, uy, uz)`` each of shape ``(nz, ny, nx)`` on CPU.
+        """
+        from .d3q19 import macroscopic3d
+
+        nz, ny = self.nz, self.ny
+        nx = self.decomp.nx_global
+        ov = self.decomp.overlap
+        dtype = self.slabs[0].dtype
+        rho_out = torch.zeros((nz, ny, nx), dtype=dtype)
+        ux_out = torch.zeros((nz, ny, nx), dtype=dtype)
+        uy_out = torch.zeros((nz, ny, nx), dtype=dtype)
+        uz_out = torch.zeros((nz, ny, nx), dtype=dtype)
+        for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
+            # Extract owned interior (strip ghosts)
+            owned = slab[:, :, :, ov:ov + (x1 - x0)]
+            rho, ux, uy, uz = macroscopic3d(owned)
+            rho_out[:, :, x0:x1] = rho.cpu()
+            ux_out[:, :, x0:x1] = ux.cpu()
+            uy_out[:, :, x0:x1] = uy.cpu()
+            uz_out[:, :, x0:x1] = uz.cpu()
+        return rho_out, ux_out, uy_out, uz_out
+
+    @property
+    def n_devices(self) -> int:
+        return self.decomp.n_devices
+
+
+# ---------------------------------------------------------------------------
 # Convenience: auto-detect and use all available GPUs
 # ---------------------------------------------------------------------------
 
 def auto_decompose(
     f_global: torch.Tensor,
-    n_gpus: int | None = None,
+    n_devices: int | None = None,
+    device_type: str | None = None,
 ) -> DomainDecomposition:
-    """Build a :class:`DomainDecomposition` using all available CUDA devices.
+    """Build a :class:`DomainDecomposition` using all available accelerator devices.
+
+    Device-type auto-detection order:
+
+    1. CUDA (if ``torch.cuda.is_available()``)
+    2. SDAA (if ``torch.sdaa.is_available()``)
+    3. CPU fallback
 
     Args:
-        f_global: Global distribution tensor.  Shape determines nx_global.
-        n_gpus:   Override GPU count (default: all available GPUs, or 1 CPU).
+        f_global:    Global distribution tensor.  Shape determines ``nx_global``.
+        n_devices:   Override device count (default: all available devices, or
+                     1 CPU).
+        device_type: Force a device family (``"cuda"``, ``"sdaa"``, or
+                     ``"cpu"``).  When *None*, the first available backend
+                     is selected automatically.
 
     Returns:
         Configured :class:`DomainDecomposition`.
     """
-    if n_gpus is None:
-        n_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
-    if n_gpus == 0:
+    if device_type is None:
+        if torch.cuda.is_available():
+            device_type = "cuda"
+        elif hasattr(torch, "sdaa") and torch.sdaa.is_available():
+            device_type = "sdaa"
+        else:
+            device_type = "cpu"
+
+    if n_devices is None:
+        if device_type == "cuda":
+            n_devices = torch.cuda.device_count()
+        elif device_type == "sdaa":
+            n_devices = torch.sdaa.device_count()  # type: ignore[attr-defined]
+        else:
+            n_devices = 0
+    assert n_devices is not None
+
+    if n_devices == 0:
         devices = ["cpu"]
     else:
-        devices = [f"cuda:{i}" for i in range(n_gpus)]
+        devices = [f"{device_type}:{i}" for i in range(n_devices)]
 
     nx = f_global.shape[-1]
     return DomainDecomposition(devices=devices, nx_global=nx)
@@ -678,6 +910,7 @@ __all__ = [
     "DomainDecomposition",
     "MultiGPUSolver2D",
     "MultiGPUSolver3D",
+    "MultiDeviceSolver3D",
     "halo_exchange_2d",
     "halo_exchange_3d",
     "auto_decompose",
