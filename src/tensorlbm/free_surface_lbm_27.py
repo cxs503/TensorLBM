@@ -23,6 +23,7 @@ from .d3q27 import C as C27
 from .d3q27 import W as W27
 from .d3q27 import OPPOSITE as OPP27
 from .d3q27 import (
+    _get_d3q27_mrt_matrices,
     collide_bgk27,
     collide_mrt27,
     equilibrium27,
@@ -38,7 +39,13 @@ from .core.d3q27_stencil import (
     roll_from_pull_source_27,
     roll_to_neighbor_27,
 )
-from .turbulence import _neq_stress_norm_27, _smagorinsky_tau
+from .turbulence import (
+    _neq_stress_norm_27,
+    _smagorinsky_tau,
+    _wale_nu_t_3d,
+    _vreman_nu_t_3d,
+    _nu_t_to_tau_eff,
+)
 
 GAS = 0
 LIQUID = 1
@@ -197,6 +204,114 @@ def _compute_interface_normal_27(
 
 
 # ===========================================================================
+# MRT collision with per-cell effective relaxation time (SGS support)
+# ===========================================================================
+
+def _collide_mrt27_with_tau_eff(
+    f: torch.Tensor,
+    feq: torch.Tensor,
+    tau_eff: torch.Tensor,
+    device: torch.device,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q27 MRT collision with per-cell effective relaxation time.
+
+    Identical to :func:`~tensorlbm.d3q27.collide_mrt27` except that the
+    stress-mode relaxation rates (rows 5–9) use the per-cell ``1/τ_eff(x)``
+    instead of a scalar ``1/τ``.  This is the standard pattern for
+    coupling MRT with any algebraic SGS model (Smagorinsky, WALE, Vreman).
+
+    Args:
+        f: Post-collision-ready distribution, shape ``(27, nz, ny, nx)``.
+        feq: Equilibrium distribution, same shape.
+        tau_eff: Per-cell effective relaxation time, shape ``(nz, ny, nx)``.
+        device: Torch device.
+        s_e, s_eps, s_q, s_pi: Fixed MRT relaxation rates for non-stress modes.
+
+    Returns:
+        Post-MRT-collision distribution of the same shape as *f*.
+    """
+    if s_pi is None:
+        s_pi = s_e
+    M, M_inv = _get_d3q27_mrt_matrices(device)
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(27, -1)
+    feq_flat = feq.reshape(27, -1)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    s_fixed = torch.tensor(
+        [
+            0.0,   # 0  mass
+            0.0,   # 1  jx
+            0.0,   # 2  jy
+            0.0,   # 3  jz
+            s_e,   # 4  energy
+            0.0,   # 5  Nxx  – overridden below
+            0.0,   # 6  Nyy  – overridden below
+            0.0,   # 7  Pxy  – overridden below
+            0.0,   # 8  Pxz  – overridden below
+            0.0,   # 9  Pyz  – overridden below
+            s_q,   # 10
+            s_q,   # 11
+            s_q,   # 12
+            s_q,   # 13
+            s_q,   # 14
+            s_q,   # 15
+            s_q,   # 16
+            s_q,   # 17
+            s_q,   # 18
+            s_eps, # 19
+            s_pi,  # 20
+            s_pi,  # 21
+            s_pi,  # 22
+            s_pi,  # 23
+            s_pi,  # 24
+            s_pi,  # 25
+            s_pi,  # 26
+        ],
+        dtype=f.dtype,
+        device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in (5, 6, 7, 8, 9):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(27, nz, ny, nx)
+
+
+def _compute_tau_eff_sgs(
+    tau: float,
+    sgs_model: str,
+    f_neq: torch.Tensor,
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    C_s: float,
+) -> torch.Tensor:
+    """Compute per-cell effective relaxation time for a given SGS model.
+
+    Shared by D3Q19 and D3Q27 free-surface steps.  Uses the common
+    turbulence module functions so that both lattices share identical
+    SGS physics.
+    """
+    if sgs_model == 'smagorinsky':
+        return _smagorinsky_tau(tau, _neq_stress_norm_27(f_neq), rho, C_s)
+    elif sgs_model == 'wale':
+        nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
+        return _nu_t_to_tau_eff(tau, nu_t)
+    else:  # vreman
+        nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
+        return _nu_t_to_tau_eff(tau, nu_t)
+
+
+# ===========================================================================
 # Core timestep — full Körner model (D3Q27)
 # ===========================================================================
 
@@ -210,6 +325,7 @@ def free_surface_step_27(
     gx: float = 0.0, gy: float = 0.0, gz: float = 0.0,
     rho_liquid: float = 1.0, rho_gas: float = 1.0,
     surface_tension: float = 0.0, C_s: float = 0.0,
+    sgs_model: str = 'smagorinsky',
     free_slip_y: bool = False, y_wall_mask: torch.Tensor | None = None,
     collision: str = 'bgk',
     mass_ledger: dict | None = None,
@@ -221,7 +337,7 @@ def free_surface_step_27(
     D3Q27 lattice with 27 velocity directions.
 
     Pipeline:
-      1. Macroscopic + collision (BGK or MRT, optional Smagorinsky SGS)
+      1. Macroscopic + collision (BGK or MRT, optional SGS)
       2. Guo gravity force
       3. Stream (pull scheme)
       4. Zero gas cells
@@ -242,7 +358,11 @@ def free_surface_step_27(
         rho_liquid: Liquid density (lattice units).
         rho_gas: Gas density (lattice units).
         surface_tension: Surface tension coefficient (0 = disabled).
-        C_s: Smagorinsky constant (0 = disabled).
+        C_s: SGS model constant (0 = no SGS).  Interpreted as the
+            Smagorinsky constant, WALE constant, or Vreman constant
+            depending on *sgs_model*.
+        sgs_model: SGS model name — ``'smagorinsky'``, ``'wale'``, or
+            ``'vreman'``.  Only used when ``C_s > 0``.
         free_slip_y: Apply free-slip on y-walls.
         y_wall_mask: Wall mask for free-slip (required if free_slip_y).
         collision: 'bgk' or 'mrt'.
@@ -253,6 +373,11 @@ def free_surface_step_27(
         Tuple ``(f, fill, flags, mass, df)`` where ``df`` is the wall
         shear stress diagnostic (0.0 if wall function not used).
     """
+    _VALID_SGS = ('smagorinsky', 'wale', 'vreman')
+    if sgs_model not in _VALID_SGS:
+        raise ValueError(
+            f"sgs_model must be one of {_VALID_SGS}, got {sgs_model!r}"
+        )
     device = f.device
     _assert_no_direct_liquid_gas_links_27(flags)
     c_dev = _C.to(device).float()
@@ -287,10 +412,18 @@ def free_surface_step_27(
         f_collide = f
 
     if collision == 'mrt':
-        f = collide_mrt27(f_collide, tau)
+        if C_s > 0:
+            tau_eff = _compute_tau_eff_sgs(
+                tau, sgs_model, f_collide - feq, rho_s, ux, uy, uz, C_s,
+            )
+            f = _collide_mrt27_with_tau_eff(f_collide, feq, tau_eff, device)
+        else:
+            f = collide_mrt27(f_collide, tau)
     else:  # bgk
         if C_s > 0:
-            tau_eff = _smagorinsky_tau(tau, _neq_stress_norm_27(f_collide - feq), rho_s, C_s)
+            tau_eff = _compute_tau_eff_sgs(
+                tau, sgs_model, f_collide - feq, rho_s, ux, uy, uz, C_s,
+            )
             f = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
         else:
             f = f_collide - (f_collide - feq) / tau

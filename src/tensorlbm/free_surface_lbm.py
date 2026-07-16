@@ -27,6 +27,7 @@ from .core.d3q19_stencil import (
     roll_to_neighbor,
 )
 from .solver3d import stream3d as _stream3d
+from .solver3d import _get_d3q19_mrt_matrices
 from .turbulence import (
     _neq_stress_norm_3d,
     _nu_t_to_tau_eff,
@@ -426,6 +427,53 @@ def _compute_interface_normal(flags, mass, rho):
 
 
 # ===========================================================================
+# MRT collision with per-cell effective relaxation time (SGS support)
+# ===========================================================================
+
+def _collide_mrt3d_with_tau_eff(
+    f: torch.Tensor,
+    feq: torch.Tensor,
+    tau_eff: torch.Tensor,
+    device: torch.device,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q19 MRT collision with per-cell effective relaxation time.
+
+    Identical to :func:`~tensorlbm.solver3d.collide_mrt3d` except that the
+    stress-mode relaxation rates (rows 9–13) use the per-cell ``1/τ_eff(x)``
+    instead of a scalar ``1/τ``.  This is the standard pattern for coupling
+    MRT with any algebraic SGS model (Smagorinsky, WALE, Vreman).
+    """
+    if s_pi is None:
+        s_pi = s_e
+    M, M_inv = _get_d3q19_mrt_matrices(device)
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)
+    feq_flat = feq.reshape(19, -1)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps,
+         0.0, s_q, 0.0, s_q, 0.0, s_q,
+         0.0, 0.0, 0.0, 0.0, 0.0,
+         s_pi, s_pi,
+         1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in (9, 10, 11, 12, 13):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(19, nz, ny, nx)
+
+
+# ===========================================================================
 # Core timestep — full Körner model
 # ===========================================================================
 
@@ -544,8 +592,21 @@ def free_surface_step(
         from .advanced_collision_d3q19 import collide_cumulant_d3q19
         f = collide_cumulant_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
     elif collision == 'mrt':
-        from .solver3d import collide_mrt3d
-        f = collide_mrt3d(f_collide, tau)
+        if C_s > 0:
+            if sgs_model == 'smagorinsky':
+                tau_eff = _smagorinsky_tau(
+                    tau, _neq_stress_norm_3d(f_collide - feq), rho_s, C_s,
+                )
+            elif sgs_model == 'wale':
+                nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
+                tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+            else:  # vreman
+                nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
+                tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+            f = _collide_mrt3d_with_tau_eff(f_collide, feq, tau_eff, device)
+        else:
+            from .solver3d import collide_mrt3d
+            f = collide_mrt3d(f_collide, tau)
     else:  # bgk
         if C_s > 0:
             if sgs_model == 'smagorinsky':
