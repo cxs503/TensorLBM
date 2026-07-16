@@ -1294,7 +1294,7 @@ def run_dg_lbm_suboff_flow(config: DGLBMSuboffConfig) -> Path:
             )
             diagnostics.append(asdict(point))
             logger.info(
-                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f drag=%.4f",
+                "step=%5d mass=%.6f drift=%+.6f mean_rho=%.6f max|u|=%.6f",
                 point.step, point.mass, point.mass_drift,
                 point.mean_rho, point.max_speed,
             )
