@@ -97,8 +97,6 @@ from .d3q27 import W as W27
 from .d3q27 import (
     collide_bgk27,
     collide_mrt27,
-    collide_rlbm27,
-    collide_trt27,
     correct_mass27,
     equilibrium27,
     macroscopic27,
@@ -458,7 +456,9 @@ from .thermal3d import (
 )
 from .turbulence import (
     collide_dynamic_smagorinsky_bgk,
+    collide_dynamic_smagorinsky_bgk27,
     collide_dynamic_smagorinsky_bgk3d,
+    collide_dynamic_smagorinsky_mrt3d,
     collide_smagorinsky_bgk,
     collide_smagorinsky_bgk3d,
     collide_smagorinsky_bgk27,
@@ -956,6 +956,8 @@ __all__ = [
     # Dynamic Smagorinsky
     "collide_dynamic_smagorinsky_bgk",
     "collide_dynamic_smagorinsky_bgk3d",
+    "collide_dynamic_smagorinsky_mrt3d",
+    "collide_dynamic_smagorinsky_bgk27",
     # Wave BC additions
     "jonswap_spectrum",
     "jonswap_wave_velocity_3d",
