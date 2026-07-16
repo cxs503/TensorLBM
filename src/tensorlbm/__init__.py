@@ -76,6 +76,12 @@ from .d3q27 import (
     macroscopic27,
     stream27,
 )
+from .advanced_collision_contract import (
+    CollisionCapability,
+    CollisionKernelWithheldError,
+    collide_advanced_3d,
+    collision_capability_matrix,
+)
 from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
 from .dam_break import DamBreakConfig, run_dam_break
 from .hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface
