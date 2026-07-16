@@ -29,6 +29,7 @@ from .boundaries import (
     bounce_back_cells,
     compute_obstacle_forces,
     cylinder_mask,
+    far_field_bc_2d,
     make_channel_wall_mask,
 )
 from .d2q9 import equilibrium, macroscopic
@@ -249,12 +250,13 @@ def run_single_combination(
     ny: int = 50,
     steps: int = 200,
     device: str = "cpu",
+    boundary_mode: str = "farfield",
 ) -> dict[str, Any]:
     """Run one collision × turbulence combination and return a result dict.
 
     The result dict always contains the keys:
         collision_family, turbulence_model, Cd, finite,
-        steps_completed, status, physical_validation
+        steps_completed, status, physical_validation, boundary_mode
     """
     collide_fn = _COLLIDE_DISPATCH[collision_family]
 
@@ -281,13 +283,16 @@ def run_single_combination(
             f = collide_fn(f, tau, tau_eff)
             f = stream(f)
             fx, fy = compute_obstacle_forces(f, mask)
-            f = apply_simple_channel_boundaries(
-                f,
-                u_in=u_in,
-                wall_mask=wall_mask,
-                obstacle_mask=torch.zeros_like(mask),
-            )
-            f = bounce_back_cells(f, mask)
+            if boundary_mode == "farfield":
+                f = far_field_bc_2d(f, u_in=u_in, obstacle_mask=mask)
+            else:
+                f = apply_simple_channel_boundaries(
+                    f,
+                    u_in=u_in,
+                    wall_mask=wall_mask,
+                    obstacle_mask=torch.zeros_like(mask),
+                )
+                f = bounce_back_cells(f, mask)
 
             if not torch.isfinite(fx).item() or not torch.isfinite(f).all().item():
                 crashed = True
@@ -317,6 +322,7 @@ def run_single_combination(
         "steps_completed": steps_completed,
         "status": "diagnostic_only",
         "physical_validation": False,
+        "boundary_mode": boundary_mode,
     }
 
 
@@ -327,6 +333,7 @@ def run_cross_validation_matrix(
     steps: int = 200,
     artifact_path: str | None = None,
     device: str = "cpu",
+    boundary_mode: str = "farfield",
 ) -> list[dict[str, Any]]:
     """Run the full 4×4 collision × turbulence matrix.
 
@@ -338,7 +345,8 @@ def run_cross_validation_matrix(
     for cf in D2Q9_COLLISION_FAMILIES:
         for tm in D2Q9_TURBULENCE_MODELS:
             result = run_single_combination(
-                cf, tm, re=re, nx=nx, ny=ny, steps=steps, device=device
+                cf, tm, re=re, nx=nx, ny=ny, steps=steps, device=device,
+                boundary_mode=boundary_mode,
             )
             results.append(result)
 
@@ -349,6 +357,7 @@ def run_cross_validation_matrix(
             "reynolds_number": re,
             "grid": {"nx": nx, "ny": ny},
             "steps": steps,
+            "boundary_mode": boundary_mode,
             "status": "diagnostic_only",
             "physical_validation": False,
             "collision_families": D2Q9_COLLISION_FAMILIES,

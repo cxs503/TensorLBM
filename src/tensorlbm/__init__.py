@@ -78,6 +78,7 @@ from .wall_model import wall_function_3d
 from .boundaries_d3q27 import (
     apply_zou_he_channel_boundaries_27,
     bounce_back_cells_27,
+    far_field_bc_27,
     make_channel_wall_mask_27,
     zou_he_inlet_velocity_27,
     zou_he_outlet_pressure_27,
@@ -921,6 +922,7 @@ __all__ = [
     "zou_he_outlet_pressure_27",
     "make_channel_wall_mask_27",
     "apply_zou_he_channel_boundaries_27",
+    "far_field_bc_27",
     # D3Q27 runner
     "SphereFlowD3Q27Config",
     "run_sphere_flow_d3q27",

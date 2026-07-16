@@ -33,11 +33,13 @@ import torch
 from .advanced_collision_contract import collide_advanced_3d
 from .boundaries3d import (
     apply_simple_channel_boundaries_3d,
+    far_field_bc_3d,
     make_channel_wall_mask_3d,
     sphere_mask,
 )
 from .boundaries_d3q27 import (
     apply_zou_he_channel_boundaries_27,
+    far_field_bc_27,
     make_channel_wall_mask_27,
 )
 from .d3q19 import equilibrium3d, macroscopic3d
@@ -78,6 +80,7 @@ class SphereCrossValidationConfig:
     device: str = "cpu"
     smagorinsky_cs: float = 0.1
     wale_cw: float = 0.5
+    boundary_mode: str = "farfield"
 
 
 @dataclass(frozen=True)
@@ -93,6 +96,7 @@ class SphereCrossValidationResult:
     reference_Cd: float
     status: str
     physical_validation: bool
+    boundary_mode: str = "farfield"
 
 
 @dataclass(frozen=True)
@@ -160,7 +164,13 @@ def _apply_boundaries(
     u_in: float,
     wall_mask: torch.Tensor,
     obstacle_mask: torch.Tensor,
+    boundary_mode: str = "farfield",
 ) -> torch.Tensor:
+    if boundary_mode == "farfield":
+        if lattice == "D3Q19":
+            return far_field_bc_3d(f, u_in=u_in, obstacle_mask=obstacle_mask)
+        return far_field_bc_27(f, u_in=u_in, obstacle_mask=obstacle_mask)
+    # channel mode (original behaviour)
     if lattice == "D3Q19":
         return apply_simple_channel_boundaries_3d(
             f, u_in=u_in, wall_mask=wall_mask, obstacle_mask=obstacle_mask
@@ -261,7 +271,9 @@ def _run_single_combination(
         fx, _, _ = _compute_forces(lattice, f, mask)
 
         # Boundaries
-        f = _apply_boundaries(lattice, f, u_in, wall_mask, mask)
+        f = _apply_boundaries(
+            lattice, f, u_in, wall_mask, mask, boundary_mode=config.boundary_mode
+        )
 
         steps_completed = step
 
@@ -298,6 +310,7 @@ def _run_single_combination(
         reference_Cd=ref_cd,
         status="diagnostic_only",
         physical_validation=False,
+        boundary_mode=config.boundary_mode,
     )
 
 
