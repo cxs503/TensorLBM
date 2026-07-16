@@ -100,3 +100,43 @@ def test_component_registry_exposes_only_audited_collision_availability() -> Non
     assert matrix["collision"]["mrt"]["available"] is True
     assert matrix["collision"]["cm"]["available"] is False
     assert matrix["collision"]["kbc"]["available"] is False
+
+
+# ---------------------------------------------------------------------------
+# D3Q27 multiphase (Shan-Chen) component evidence
+# ---------------------------------------------------------------------------
+
+def test_shan_chen_is_known_multiphase_value() -> None:
+    """shan_chen must be a recognised multiphase value, not an unknown request."""
+    result = assess_capability({
+        "lattice": "d3q19", "collision": "mrt", "multiphase": "shan_chen",
+    })
+    # It should be WITHHELD (unverified composition), NOT NOT_SUPPORTED (unknown).
+    assert result.status is CapabilityStatus.WITHHELD
+    assert result.evidence_tier is EvidenceTier.NO_COMPOSITION_EVIDENCE
+    assert not any(reason.code == "UNKNOWN_VALUE" for reason in result.reasons)
+
+
+def test_multiphase_component_registry_shows_shan_chen_available() -> None:
+    """The component matrix must advertise shan_chen multiphase as available."""
+    matrix = capability_matrix()
+    assert "multiphase" in matrix
+    assert "shan_chen" in matrix["multiphase"]
+    assert matrix["multiphase"]["shan_chen"]["available"] is True
+    assert matrix["multiphase"]["shan_chen"]["evidence_tier"] == EvidenceTier.COMPONENT_CONTRACT.value
+
+
+def test_d3q27_shan_chen_multiphase_is_withheld_without_complete_composition() -> None:
+    """D3Q27 + shan_chen must be WITHHELD (component exists, no full composition)."""
+    result = assess_capability({
+        "lattice": "d3q27", "collision": "mrt", "multiphase": "shan_chen",
+    })
+    assert result.status is CapabilityStatus.WITHHELD
+    assert any(reason.code == "WITHHELD_D3Q27_COMPOSITION" for reason in result.reasons)
+
+
+def test_multiphase_component_registry_has_single_phase_free_surface_phase_field() -> None:
+    """All previously-known multiphase values must still be in the component registry."""
+    matrix = capability_matrix()
+    for mp in ("single_phase", "free_surface", "phase_field", "shan_chen"):
+        assert mp in matrix["multiphase"], f"{mp} missing from multiphase component registry"

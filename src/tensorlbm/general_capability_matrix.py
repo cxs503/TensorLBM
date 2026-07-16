@@ -105,12 +105,15 @@ _COMPONENT_EVIDENCE: dict[str, dict[str, tuple[bool, EvidenceTier, str]]] = {
         "d3q27": (True, EvidenceTier.COMPONENT_CONTRACT, "D3Q27 MRT entrypoint is executable: tensorlbm.d3q27.collide_mrt27."),
     },
     "collision": {
-        "bgk": (True, EvidenceTier.COMPONENT_CONTRACT, "advanced_collision_contract advertises BGK for D3Q19 and D3Q27."),
-        "trt": (True, EvidenceTier.COMPONENT_CONTRACT, "advanced_collision_contract advertises TRT for D3Q19 and D3Q27."),
-        "rlbm": (True, EvidenceTier.COMPONENT_CONTRACT, "advanced_collision_contract advertises RLBM for D3Q19 and D3Q27."),
         "mrt": (True, EvidenceTier.COMPONENT_CONTRACT, "advanced_collision_contract advertises MRT for D3Q19 and D3Q27."),
         "cm": (False, EvidenceTier.UNIMPLEMENTED, "CM is explicitly withheld: no standalone validated central-moment kernel."),
         "kbc": (False, EvidenceTier.UNIMPLEMENTED, "KBC is explicitly withheld: no entropy-solved KBC kernel."),
+    },
+    "multiphase": {
+        "single_phase": (True, EvidenceTier.COMPONENT_CONTRACT, "Single-phase is the default; no multiphase coupling required."),
+        "shan_chen": (True, EvidenceTier.COMPONENT_CONTRACT, "D3Q27 Shan-Chen multiphase collision is executable: tensorlbm.multiphase3d_d3q27.collide_sc_single_component_27 / collide_sc_two_component_27."),
+        "free_surface": (True, EvidenceTier.COMPONENT_CONTRACT, "Free-surface LBM is implemented: tensorlbm.free_surface_lbm."),
+        "phase_field": (True, EvidenceTier.COMPONENT_CONTRACT, "Phase-field LBM is implemented: tensorlbm.phasefield.free_energy."),
     },
 }
 
@@ -124,9 +127,9 @@ _R1_SUPPORTED = CapabilityRequest(
 
 _ALIASES = {
     "lattice": {"d3q19": "d3q19", "d3q27": "d3q27"},
-    "collision": {"bgk": "bgk", "srt": "bgk", "trt": "trt", "two_relaxation_time": "trt", "rlbm": "rlbm", "regularized": "rlbm", "regularised": "rlbm", "mrt": "mrt", "cm": "cm", "cascaded": "cm", "kbc": "kbc", "entropic_kbc": "kbc"},
+    "collision": {"mrt": "mrt", "cm": "cm", "cascaded": "cm", "kbc": "kbc", "entropic_kbc": "kbc"},
     "turbulence": {"none": "none", "laminar": "none", "smagorinsky": "smagorinsky", "les": "smagorinsky"},
-    "multiphase": {"single_phase": "single_phase", "single-phase": "single_phase", "free_surface": "free_surface", "phase_field": "phase_field"},
+    "multiphase": {"single_phase": "single_phase", "single-phase": "single_phase", "free_surface": "free_surface", "phase_field": "phase_field", "shan_chen": "shan_chen", "shan-chen": "shan_chen", "sc": "shan_chen"},
     "boundary": {"static_wall": "static_wall", "static-wall": "static_wall", "velocity_inlet": "velocity_inlet", "pressure_outlet": "pressure_outlet", "periodic": "periodic"},
     "geometry": {"static_solid_mask": "static_solid_mask", "static-mask": "static_solid_mask", "voxel_mask": "static_solid_mask", "immersed_boundary": "immersed_boundary", "ibm": "immersed_boundary", "dynamic_geometry": "dynamic_geometry"},
     "wall_treatment": {"bounce_back": "bounce_back", "bounce-back": "bounce_back", "wall_function": "wall_function", "bouzidi": "bouzidi"},
@@ -138,9 +141,9 @@ _ALIASES = {
 # known but unverified values are withheld; unknown values are not supported.
 _KNOWN_VALUES: dict[str, frozenset[str]] = {
     "lattice": frozenset(("d3q19", "d3q27")),
-    "collision": frozenset(("bgk", "trt", "rlbm", "mrt", "cm", "kbc")),
+    "collision": frozenset(("mrt", "cm", "kbc")),
     "turbulence": frozenset(("none", "smagorinsky")),
-    "multiphase": frozenset(("single_phase", "free_surface", "phase_field")),
+    "multiphase": frozenset(("single_phase", "free_surface", "phase_field", "shan_chen")),
     "boundary": frozenset(("static_wall", "velocity_inlet", "pressure_outlet", "periodic")),
     "geometry": frozenset(("static_solid_mask", "immersed_boundary", "dynamic_geometry")),
     "wall_treatment": frozenset(("bounce_back", "wall_function", "bouzidi")),

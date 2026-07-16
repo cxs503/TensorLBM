@@ -213,6 +213,11 @@ from .multiphase3d import (
     init_free_energy_g_3d,
     sc_two_component_force_3d,
 )
+from .multiphase3d_d3q27 import (
+    collide_sc_single_component_27,
+    collide_sc_two_component_27,
+    sc_two_component_force_27,
+)
 from .multiphase_benchmarks import (
     FreeEnergyDropletConfig,
     MultiphaseBenchmarkSuiteConfig,
@@ -456,9 +461,7 @@ from .thermal3d import (
 )
 from .turbulence import (
     collide_dynamic_smagorinsky_bgk,
-    collide_dynamic_smagorinsky_bgk27,
     collide_dynamic_smagorinsky_bgk3d,
-    collide_dynamic_smagorinsky_mrt3d,
     collide_smagorinsky_bgk,
     collide_smagorinsky_bgk3d,
     collide_smagorinsky_bgk27,
@@ -784,6 +787,10 @@ __all__ = [
     "color_gradient_step_3d",
     "init_free_energy_g_3d",
     "free_energy_step_3d",
+    # Multiphase models – D3Q27
+    "sc_two_component_force_27",
+    "collide_sc_two_component_27",
+    "collide_sc_single_component_27",
     # Multiphase benchmark suite
     "StaticDropletConfig",
     "run_static_droplet",
@@ -956,8 +963,6 @@ __all__ = [
     # Dynamic Smagorinsky
     "collide_dynamic_smagorinsky_bgk",
     "collide_dynamic_smagorinsky_bgk3d",
-    "collide_dynamic_smagorinsky_mrt3d",
-    "collide_dynamic_smagorinsky_bgk27",
     # Wave BC additions
     "jonswap_spectrum",
     "jonswap_wave_velocity_3d",
