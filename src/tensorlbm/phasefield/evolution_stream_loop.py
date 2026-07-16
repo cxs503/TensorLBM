@@ -20,6 +20,7 @@ from .stream_boundary_contract import (
     BoundaryPolicy,
     stream_free_energy_adapter,
 )
+from .phase_inventory_flux import adapter_stream_boundary_crossing
 
 ADAPTER_STREAM_LOOP_STAGE = "collision_then_adapter_stream"
 
@@ -62,6 +63,11 @@ class FreeEnergyAdapterStreamLoopDiagnostic:
     f_distribution_inventory: float
     g_distribution_inventory: float
     distribution_inventory: float
+    stream_boundary_outgoing_g: float = 0.0
+    stream_boundary_incoming_g: float = 0.0
+    stream_boundary_net_g: float = 0.0
+    stream_boundary_crossing_status: str = "initial_no_stream"
+    stream_boundary_scope: str = "Initial inventory; no adapter stream precedes it."
     phi_integral_name: str = "phi_integral=sum_x(phi), where phi=sum_i(g_i)"
     f_mass_name: str = "f_mass=sum_i,x(f_i)"
     g_sum_name: str = "g_sum=sum_i,x(g_i)"
@@ -85,7 +91,14 @@ class FreeEnergyAdapterStreamLoopResult:
 
 
 def _diagnostic(
-    step: int, state: FreeEnergyCollisionOnlyState
+    step: int,
+    state: FreeEnergyCollisionOnlyState,
+    *,
+    stream_boundary_outgoing_g: float = 0.0,
+    stream_boundary_incoming_g: float = 0.0,
+    stream_boundary_net_g: float = 0.0,
+    stream_boundary_crossing_status: str = "initial_no_stream",
+    stream_boundary_scope: str = "Initial inventory; no adapter stream precedes it.",
 ) -> FreeEnergyAdapterStreamLoopDiagnostic:
     f_inventory = float(state.f.sum().item())
     g_inventory = float(state.g.sum().item())
@@ -97,6 +110,11 @@ def _diagnostic(
         f_distribution_inventory=f_inventory,
         g_distribution_inventory=g_inventory,
         distribution_inventory=f_inventory + g_inventory,
+        stream_boundary_outgoing_g=stream_boundary_outgoing_g,
+        stream_boundary_incoming_g=stream_boundary_incoming_g,
+        stream_boundary_net_g=stream_boundary_net_g,
+        stream_boundary_crossing_status=stream_boundary_crossing_status,
+        stream_boundary_scope=stream_boundary_scope,
     )
 
 
@@ -142,7 +160,20 @@ def collision_then_adapter_stream(
         )
         current = FreeEnergyCollisionOnlyState(f=streamed.f, g=streamed.g)
         step_states.append(current)
-        diagnostics.append(_diagnostic(step, current))
+        crossing = adapter_stream_boundary_crossing(
+            post_collision_g, boundary=config.boundary
+        )
+        diagnostics.append(
+            _diagnostic(
+                step,
+                current,
+                stream_boundary_outgoing_g=crossing.outgoing_g,
+                stream_boundary_incoming_g=crossing.incoming_g,
+                stream_boundary_net_g=crossing.net_g,
+                stream_boundary_crossing_status=crossing.status,
+                stream_boundary_scope=crossing.scope,
+            )
+        )
 
     return FreeEnergyAdapterStreamLoopResult(
         state=current,
