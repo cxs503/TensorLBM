@@ -415,6 +415,109 @@ def collide_bgk27(f: torch.Tensor, tau: float) -> torch.Tensor:
     return f - (f - feq) / tau
 
 
+def collide_trt27(
+    f: torch.Tensor,
+    tau_plus: float,
+    lambda_trt: float = 3.0 / 16.0,
+) -> torch.Tensor:
+    """Two-relaxation-time (TRT) collision step for D3Q27.
+
+    Uses two independent relaxation rates: *τ₊* controls the symmetric part
+    (sets viscosity ν = (τ₊ − ½) / 3) and *τ₋* controls the anti-symmetric
+    part (derived from the magic parameter Λ). Setting Λ = 3/16 eliminates
+    wall-placement errors in Poiseuille flow (Ginzburg 2008).
+
+    The symmetric/anti-symmetric decomposition uses the D3Q27
+    :data:`OPPOSITE` direction map, which pairs every direction with its
+    negation (including the 8 corner directions absent from D3Q19).
+
+    Reference
+    ---------
+    Ginzburg, I. (2008). Two-relaxation-time lattice Boltzmann scheme.
+    *Commun. Comput. Phys.* 3(2), 427–478.
+
+    Args:
+        f:           Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau_plus:    Symmetric relaxation time (τ₊ > 0.5).
+        lambda_trt:  Magic parameter Λ (default 3/16).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+
+    tau_minus = 0.5 + lambda_trt / (tau_plus - 0.5)
+
+    opp = OPPOSITE.to(f.device)
+    f_plus = 0.5 * (f + f[opp])
+    f_minus = 0.5 * (f - f[opp])
+    feq_plus = 0.5 * (feq + feq[opp])
+    feq_minus = 0.5 * (feq - feq[opp])
+
+    return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
+
+
+def collide_rlbm27(f: torch.Tensor, tau: float) -> torch.Tensor:
+    """Regularized BGK (RLBM) collision step for D3Q27.
+
+    Projects the non-equilibrium distribution onto the second-order Hermite
+    polynomial subspace before BGK relaxation, filtering out higher-order
+    ghost modes for improved stability at low viscosity (τ → 0.5).
+    See Latt & Chopard, *Math. Comput. Simul.* (2006).
+
+    The D3Q27 lattice has 4th-order isotropy (it includes the 8 corner
+    directions), so the second-order Hermite projection is exact for the
+    hydrodynamic stress tensor — the same projection formula as D3Q19,
+    applied with the D3Q27 weights and velocity set.
+
+    Args:
+        f:   Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Relaxation time (τ > 0.5). Kinematic viscosity ν = (τ − ½)/3.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    device = f.device
+    c = _c_on(device).to(f.dtype)
+    w = _w_on(device).to(f.dtype)
+
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    fneq = f - feq
+
+    cx = c[:, 0].view(27, 1, 1, 1)
+    cy = c[:, 1].view(27, 1, 1, 1)
+    cz = c[:, 2].view(27, 1, 1, 1)
+
+    # Second-order non-equilibrium moments Π_αβ
+    pi_xx = (cx * cx * fneq).sum(dim=0)
+    pi_yy = (cy * cy * fneq).sum(dim=0)
+    pi_zz = (cz * cz * fneq).sum(dim=0)
+    pi_xy = (cx * cy * fneq).sum(dim=0)
+    pi_xz = (cx * cz * fneq).sum(dim=0)
+    pi_yz = (cy * cz * fneq).sum(dim=0)
+
+    cs2 = 1.0 / 3.0
+    h_xx = cx * cx - cs2
+    h_yy = cy * cy - cs2
+    h_zz = cz * cz - cs2
+    h_xy = cx * cy
+    h_xz = cx * cz
+    h_yz = cy * cz
+    w_view = w.view(27, 1, 1, 1)
+    fneq_reg = (9.0 / 2.0) * w_view * (
+        h_xx * pi_xx
+        + h_yy * pi_yy
+        + h_zz * pi_zz
+        + 2.0 * h_xy * pi_xy
+        + 2.0 * h_xz * pi_xz
+        + 2.0 * h_yz * pi_yz
+    )
+
+    return feq + (1.0 - 1.0 / tau) * fneq_reg
+
+
 def _build_d3q27_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
     """Compute and return (M, M_inv) for the D3Q27 MRT transformation.
 
@@ -662,6 +765,8 @@ __all__ = [
     "equilibrium27",
     "macroscopic27",
     "collide_bgk27",
+    "collide_trt27",
+    "collide_rlbm27",
     "collide_mrt27",
     "stream27",
     "correct_mass27",

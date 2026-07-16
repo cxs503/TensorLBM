@@ -6,6 +6,9 @@ experimental approximations elsewhere in the package.  In particular,
 reconstruction (its higher central moments are not implemented) and its KBC
 routine uses a caller-supplied blend rather than an entropy solve.  They are
 therefore *not* advertised here as CM/KBC kernels.
+
+BGK, TRT, and RLBM are registered as AVAILABLE for both D3Q19 and D3Q27
+because validated, contract-tested kernels exist for every combination.
 """
 from __future__ import annotations
 
@@ -14,11 +17,11 @@ from typing import Callable, Literal
 
 import torch
 
-from .d3q27 import collide_mrt27
-from .solver3d import collide_mrt3d
+from .d3q27 import collide_bgk27, collide_mrt27, collide_rlbm27, collide_trt27
+from .solver3d import collide_bgk3d, collide_mrt3d, collide_rlbm3d, collide_trt3d
 
 LatticeName = Literal["D3Q19", "D3Q27"]
-CollisionFamily = Literal["MRT", "CM", "KBC"]
+CollisionFamily = Literal["BGK", "TRT", "RLBM", "MRT", "CM", "KBC"]
 
 WITHHELD_NO_D3Q19_CM_KERNEL = "WITHHELD_NO_D3Q19_CM_KERNEL"
 WITHHELD_NO_D3Q19_KBC_KERNEL = "WITHHELD_NO_D3Q19_KBC_KERNEL"
@@ -48,11 +51,17 @@ def collision_capability_matrix() -> dict[LatticeName, dict[CollisionFamily, Col
     """
     return {
         "D3Q19": {
+            "BGK": CollisionCapability(True, "tensorlbm.solver3d.collide_bgk3d", "AVAILABLE", "Single-relaxation-time BGK; conserved moments are exact."),
+            "TRT": CollisionCapability(True, "tensorlbm.solver3d.collide_trt3d", "AVAILABLE", "Two-relaxation-time with magic-parameter Λ; symmetric/anti-symmetric split via OPPOSITE."),
+            "RLBM": CollisionCapability(True, "tensorlbm.solver3d.collide_rlbm3d", "AVAILABLE", "Regularized BGK; non-equilibrium projected onto 2nd-order Hermite subspace."),
             "MRT": CollisionCapability(True, "tensorlbm.solver3d.collide_mrt3d", "AVAILABLE", "19x19 MRT transform; conserved rows are explicit."),
             "CM": CollisionCapability(False, None, WITHHELD_NO_D3Q19_CM_KERNEL, "No standalone validated D3Q19 central-moment kernel."),
             "KBC": CollisionCapability(False, None, WITHHELD_NO_D3Q19_KBC_KERNEL, "No standalone entropy-solved D3Q19 KBC kernel."),
         },
         "D3Q27": {
+            "BGK": CollisionCapability(True, "tensorlbm.d3q27.collide_bgk27", "AVAILABLE", "Single-relaxation-time BGK; conserved moments are exact."),
+            "TRT": CollisionCapability(True, "tensorlbm.d3q27.collide_trt27", "AVAILABLE", "Two-relaxation-time with magic-parameter Λ; symmetric/anti-symmetric split via D3Q27 OPPOSITE (includes corner directions)."),
+            "RLBM": CollisionCapability(True, "tensorlbm.d3q27.collide_rlbm27", "AVAILABLE", "Regularized BGK; 2nd-order Hermite projection with D3Q27 4th-order-isotropic weights."),
             "MRT": CollisionCapability(True, "tensorlbm.d3q27.collide_mrt27", "AVAILABLE", "27x27 full-rank Gram-Schmidt moment transform with explicit inverse."),
             "CM": CollisionCapability(False, None, WITHHELD_NO_D3Q27_CM_KERNEL, "Existing cascaded routine is regularized second-order reconstruction; higher central moments are not implemented."),
             "KBC": CollisionCapability(False, None, WITHHELD_NO_D3Q27_KBC_KERNEL, "Existing KBC-labelled routine uses a prescribed blend and has no entropy minimization."),
@@ -69,18 +78,49 @@ def _normalise_lattice(lattice: str) -> LatticeName:
 
 def _normalise_family(family: str) -> CollisionFamily:
     value = family.upper().replace("-", "_")
-    aliases = {"MRT": "MRT", "CM": "CM", "CASCADED": "CM", "KBC": "KBC", "ENTROPIC_KBC": "KBC"}
+    aliases = {
+        "BGK": "BGK", "SRT": "BGK",
+        "TRT": "TRT", "TWO_RELAXATION_TIME": "TRT",
+        "RLBM": "RLBM", "REGULARIZED": "RLBM", "REGULARISED": "RLBM",
+        "MRT": "MRT",
+        "CM": "CM", "CASCADED": "CM",
+        "KBC": "KBC", "ENTROPIC_KBC": "KBC",
+    }
     if value not in aliases:
-        raise ValueError("family must be MRT, CM/cascaded, or KBC/entropic_kbc")
+        raise ValueError("family must be BGK/SRT, TRT, RLBM/regularized, MRT, CM/cascaded, or KBC/entropic_kbc")
     return aliases[value]  # type: ignore[return-value]
+
+
+def _select_kernel(lattice_name: LatticeName, family_name: CollisionFamily) -> Callable[..., torch.Tensor]:
+    """Return the validated kernel callable for a lattice/family pair."""
+    table: dict[LatticeName, dict[str, Callable[..., torch.Tensor]]] = {
+        "D3Q19": {
+            "BGK": collide_bgk3d,
+            "TRT": collide_trt3d,
+            "RLBM": collide_rlbm3d,
+            "MRT": collide_mrt3d,
+        },
+        "D3Q27": {
+            "BGK": collide_bgk27,
+            "TRT": collide_trt27,
+            "RLBM": collide_rlbm27,
+            "MRT": collide_mrt27,
+        },
+    }
+    return table[lattice_name][family_name]
 
 
 def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: float, **rates: float) -> torch.Tensor:
     """Execute a validated common collision kernel or explicitly withhold it.
 
-    Currently MRT is executable for D3Q19 and D3Q27.  Keyword rates map to the
-    native MRT API (``s_e``, ``s_eps``, ``s_q``, ``s_pi``); they are passed
-    through unchanged after the lattice direction dimension is checked.
+    BGK, TRT, RLBM, and MRT are executable for both D3Q19 and D3Q27.
+    CM and KBC are explicitly withheld.
+
+    * ``tau`` is the relaxation time for BGK, RLBM, and MRT, and the symmetric
+      relaxation time *τ₊* for TRT.
+    * For TRT, ``lambda_trt`` may be passed as a keyword rate (default 3/16).
+    * For MRT, keyword rates ``s_e``, ``s_eps``, ``s_q``, ``s_pi`` are passed
+      through unchanged.
     """
     lattice_name = _normalise_lattice(lattice)
     family_name = _normalise_family(family)
@@ -92,7 +132,10 @@ def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: floa
     capability = collision_capability_matrix()[lattice_name][family_name]
     if not capability.available:
         raise CollisionKernelWithheldError(f"{capability.status}: {capability.note}")
-    kernel: Callable[..., torch.Tensor] = collide_mrt3d if lattice_name == "D3Q19" else collide_mrt27
+    kernel = _select_kernel(lattice_name, family_name)
+    if family_name == "TRT":
+        lambda_trt = float(rates.pop("lambda_trt", 3.0 / 16.0))
+        return kernel(f, tau_plus=tau, lambda_trt=lambda_trt)
     return kernel(f, tau=tau, **rates)
 
 

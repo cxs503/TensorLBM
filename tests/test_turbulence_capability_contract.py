@@ -43,7 +43,7 @@ def test_matrix_covers_all_audited_families_lattices_collisions() -> None:
     for family in expected_families:
         assert set(matrix[family]) == {"D2Q9", "D3Q19", "D3Q27"}, family
         for lattice in ("D2Q9", "D3Q19", "D3Q27"):
-            assert set(matrix[family][lattice]) == {"BGK", "MRT", "N/A"}, (family, lattice)
+            assert set(matrix[family][lattice]) == {"BGK", "MRT", "TRT", "RLBM", "N/A"}, (family, lattice)
 
 
 # ---------------------------------------------------------------------------

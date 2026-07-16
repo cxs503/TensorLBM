@@ -55,7 +55,7 @@ class CollisionCombinationEvidence:
     """Evidence or explicit withholding for one capability-matrix cell."""
 
     lattice: Literal["D3Q19", "D3Q27"]
-    family: Literal["MRT", "CM", "KBC"]
+    family: Literal["BGK", "TRT", "RLBM", "MRT", "CM", "KBC"]
     status: Literal["PASS", "FAIL", "SKIPPED_WITHHELD"]
     entrypoint: str | None
     withheld_reason: str | None
