@@ -43,6 +43,38 @@ from .turbulence import (
     _wale_nu_t_3d,
 )
 
+_VALID_SGS_MODELS = ("smagorinsky", "wale", "vreman")
+
+
+def _validate_sgs_model(sgs_model: str) -> None:
+    """Validate the SGS model selector, raising ValueError if unknown."""
+    if sgs_model not in _VALID_SGS_MODELS:
+        raise ValueError(
+            f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}"
+        )
+
+
+def _compute_tau_eff(
+    sgs_model: str,
+    tau: float,
+    f_neq: torch.Tensor,
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    C_s: float,
+) -> torch.Tensor:
+    """Compute the per-cell effective relaxation time for the selected SGS model.
+
+    Mirrors the dispatch in :func:`tensorlbm.multiphase3d.free_energy_step_3d`.
+    """
+    if sgs_model == "smagorinsky":
+        return _smagorinsky_tau(tau, _neq_stress_norm_27(f_neq), rho, C_s)
+    if sgs_model == "wale":
+        return _nu_t_to_tau_eff(tau, _wale_nu_t_3d(ux, uy, uz, C_s))
+    # vreman
+    return _nu_t_to_tau_eff(tau, _vreman_nu_t_3d(ux, uy, uz, C_s))
+
 _CS2 = 1.0 / 3.0
 
 # Cache for SC neighbour-sum gather indices keyed by (nz, ny, nx, device_type, device_index)
@@ -172,6 +204,8 @@ def collide_sc_two_component_27(
     gz: float = 0.0,
     solid_mask: torch.Tensor | None = None,
     use_guo: bool = False,
+    C_s: float = 0.0,
+    sgs_model: str = "smagorinsky",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Shan-Chen two-component BGK collision step for D3Q27.
 
@@ -190,10 +224,17 @@ def collide_sc_two_component_27(
                      Δfᵢ = (1 − 1/(2τ))·wᵢ·[(cᵢ−u)/cs² + (cᵢ·u)·cᵢ/cs⁴]·F
                      which improves stability at high-density gradients and
                      is the standard in waLBerla (``lbm::force_model::GuoField``).
+        C_s:         SGS model constant.  When > 0, an LES sub-grid model is
+                     applied to both component collisions.  Interpreted as the
+                     Smagorinsky constant C_s, WALE constant C_w, or Vreman
+                     constant C_V depending on *sgs_model*.
+        sgs_model:   Sub-grid model selector: ``'smagorinsky'`` (default),
+                     ``'wale'``, or ``'vreman'``.  Only active when ``C_s > 0``.
 
     Returns:
         Updated ``(f1, f2)`` after BGK collision.
     """
+    _validate_sgs_model(sgs_model)
     device = f1.device
     rho1, ux1, uy1, uz1 = macroscopic27(f1)
     rho2, ux2, uy2, uz2 = macroscopic27(f2)
@@ -211,6 +252,8 @@ def collide_sc_two_component_27(
             f1, f2, rho1, rho2, ux1, uy1, uz1, ux2, uy2, uz2,
             Fx1, Fy1, Fz1, Fx2, Fy2, Fz2,
             tau1, tau2, device,
+            C_s=C_s, sgs_model=sgs_model,
+            rho1_s=rho1_s, rho2_s=rho2_s,
         )
     else:
         # --- Velocity-shift (first-order, original TensorLBM) ---
@@ -226,8 +269,18 @@ def collide_sc_two_component_27(
             uy2 + tau2 * Fy2 / rho2_s,
             uz2 + tau2 * Fz2 / rho2_s,
         )
-        f1_out = f1 - (f1 - feq1) / tau1
-        f2_out = f2 - (f2 - feq2) / tau2
+        if C_s > 0.0:
+            tau_eff1 = _compute_tau_eff(
+                sgs_model, tau1, f1 - feq1, rho1_s, ux1, uy1, uz1, C_s,
+            )
+            tau_eff2 = _compute_tau_eff(
+                sgs_model, tau2, f2 - feq2, rho2_s, ux2, uy2, uz2, C_s,
+            )
+            f1_out = f1 - (f1 - feq1) / tau_eff1.unsqueeze(0)
+            f2_out = f2 - (f2 - feq2) / tau_eff2.unsqueeze(0)
+        else:
+            f1_out = f1 - (f1 - feq1) / tau1
+            f2_out = f2 - (f2 - feq2) / tau2
 
     # Solid cells skip collision.
     if solid_mask is not None:
@@ -258,6 +311,10 @@ def _bgk_collision_guo_27(
     tau1: float,
     tau2: float,
     device: torch.device,
+    C_s: float = 0.0,
+    sgs_model: str = "smagorinsky",
+    rho1_s: torch.Tensor | None = None,
+    rho2_s: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """BGK collision with Guo (2002) second-order forcing for SC two-component (D3Q27).
 
@@ -267,6 +324,10 @@ def _bgk_collision_guo_27(
     This is applied as a post-collision correction to reduce spurious
     currents in multiphase flows — the standard approach used by
     waLBerla (``lbm::force_model::GuoField``).
+
+    When *C_s* > 0 the per-cell effective relaxation time from the selected
+    SGS model replaces the scalar τ in both the BGK relaxation and the
+    Guo correction factor (1 − 1/(2τ_eff)).
 
     References
     ----------
@@ -280,34 +341,58 @@ def _bgk_collision_guo_27(
     cy = c[:, 1].float().view(27, 1, 1, 1)
     cz = c[:, 2].float().view(27, 1, 1, 1)
 
-    # Velocity-shift equilibrium for BGK step
+    if rho1_s is None:
+        rho1_s = torch.clamp(rho1, min=1e-12)
+    if rho2_s is None:
+        rho2_s = torch.clamp(rho2, min=1e-12)
+
+    # Velocity-shift equilibrium for BGK step (uses base tau, not tau_eff)
     feq1 = equilibrium27(
         rho1,
-        ux1 + tau1 * Fx1 / torch.clamp(rho1, min=1e-12),
-        uy1 + tau1 * Fy1 / torch.clamp(rho1, min=1e-12),
-        uz1 + tau1 * Fz1 / torch.clamp(rho1, min=1e-12),
+        ux1 + tau1 * Fx1 / rho1_s,
+        uy1 + tau1 * Fy1 / rho1_s,
+        uz1 + tau1 * Fz1 / rho1_s,
     )
     feq2 = equilibrium27(
         rho2,
-        ux2 + tau2 * Fx2 / torch.clamp(rho2, min=1e-12),
-        uy2 + tau2 * Fy2 / torch.clamp(rho2, min=1e-12),
-        uz2 + tau2 * Fz2 / torch.clamp(rho2, min=1e-12),
+        ux2 + tau2 * Fx2 / rho2_s,
+        uy2 + tau2 * Fy2 / rho2_s,
+        uz2 + tau2 * Fz2 / rho2_s,
     )
 
-    f1_post = f1 - (f1 - feq1) / tau1
-    f2_post = f2 - (f2 - feq2) / tau2
+    # Compute per-cell effective relaxation time if SGS is enabled
+    if C_s > 0.0:
+        tau_eff1 = _compute_tau_eff(
+            sgs_model, tau1, f1 - feq1, rho1_s, ux1, uy1, uz1, C_s,
+        )
+        tau_eff2 = _compute_tau_eff(
+            sgs_model, tau2, f2 - feq2, rho2_s, ux2, uy2, uz2, C_s,
+        )
+        # Broadcast (nz, ny, nx) → (1, nz, ny, nx) for division over 27 dirs
+        tau_eff1_b = tau_eff1.unsqueeze(0)
+        tau_eff2_b = tau_eff2.unsqueeze(0)
+        guo_factor1 = (1.0 - 1.0 / (2.0 * tau_eff1)).unsqueeze(0)
+        guo_factor2 = (1.0 - 1.0 / (2.0 * tau_eff2)).unsqueeze(0)
+    else:
+        tau_eff1_b = tau1
+        tau_eff2_b = tau2
+        guo_factor1 = 1.0 - 1.0 / (2.0 * tau1)
+        guo_factor2 = 1.0 - 1.0 / (2.0 * tau2)
+
+    f1_post = f1 - (f1 - feq1) / tau_eff1_b
+    f2_post = f2 - (f2 - feq2) / tau_eff2_b
 
     # Guo correction term for component 1
     cu1 = cx * ux1.unsqueeze(0) + cy * uy1.unsqueeze(0) + cz * uz1.unsqueeze(0)
     term_a1 = (cx - ux1.unsqueeze(0)) * Fx1.unsqueeze(0) + (cy - uy1.unsqueeze(0)) * Fy1.unsqueeze(0) + (cz - uz1.unsqueeze(0)) * Fz1.unsqueeze(0)
     term_b1 = cu1 * (cx * Fx1.unsqueeze(0) + cy * Fy1.unsqueeze(0) + cz * Fz1.unsqueeze(0))
-    delta_f1 = (1.0 - 1.0 / (2.0 * tau1)) * w * (term_a1 / cs2 + term_b1 / cs4)
+    delta_f1 = guo_factor1 * w * (term_a1 / cs2 + term_b1 / cs4)
 
     # Guo correction term for component 2
     cu2 = cx * ux2.unsqueeze(0) + cy * uy2.unsqueeze(0) + cz * uz2.unsqueeze(0)
     term_a2 = (cx - ux2.unsqueeze(0)) * Fx2.unsqueeze(0) + (cy - uy2.unsqueeze(0)) * Fy2.unsqueeze(0) + (cz - uz2.unsqueeze(0)) * Fz2.unsqueeze(0)
     term_b2 = cu2 * (cx * Fx2.unsqueeze(0) + cy * Fy2.unsqueeze(0) + cz * Fz2.unsqueeze(0))
-    delta_f2 = (1.0 - 1.0 / (2.0 * tau2)) * w * (term_a2 / cs2 + term_b2 / cs4)
+    delta_f2 = guo_factor2 * w * (term_a2 / cs2 + term_b2 / cs4)
 
     return f1_post + delta_f1, f2_post + delta_f2
 
@@ -325,6 +410,8 @@ def collide_sc_single_component_27(
     gy: float = 0.0,
     gz: float = 0.0,
     solid_mask: torch.Tensor | None = None,
+    C_s: float = 0.0,
+    sgs_model: str = "smagorinsky",
 ) -> torch.Tensor:
     """Shan-Chen single-component multiphase BGK collision for D3Q27.
 
@@ -337,10 +424,17 @@ def collide_sc_single_component_27(
         gy:          y body-force acceleration.
         gz:          z body-force acceleration.
         solid_mask:  Optional boolean mask ``(nz, ny, nx)`` of solid/wall cells.
+        C_s:         SGS model constant.  When > 0, an LES sub-grid model is
+                     applied to the collision.  Interpreted as the Smagorinsky
+                     constant C_s, WALE constant C_w, or Vreman constant C_V
+                     depending on *sgs_model*.
+        sgs_model:   Sub-grid model selector: ``'smagorinsky'`` (default),
+                     ``'wale'``, or ``'vreman'``.  Only active when ``C_s > 0``.
 
     Returns:
         Updated distribution tensor of the same shape.
     """
+    _validate_sgs_model(sgs_model)
     rho, ux, uy, uz = macroscopic27(f)
     psi = psi_fn(rho)
     sx, sy, sz = _sc_neighbor_weighted_sum_27(psi, solid_mask)
@@ -354,28 +448,37 @@ def collide_sc_single_component_27(
         uy + tau * Fy / rho_s,
         uz + tau * Fz / rho_s,
     )
-    f_out = f - (f - feq) / tau
+    if C_s > 0.0:
+        tau_eff = _compute_tau_eff(
+            sgs_model, tau, f - feq, rho_s, ux, uy, uz, C_s,
+        )
+        f_out = f - (f - feq) / tau_eff.unsqueeze(0)
+    else:
+        f_out = f - (f - feq) / tau
     if solid_mask is not None:
         f_out = torch.where(solid_mask.unsqueeze(0), f, f_out)
     return f_out
 
 
 # ---------------------------------------------------------------------------
-# Free-Energy / Phase-Field (D3Q27)
-# ---------------------------------------------------------------------------#
-# Extends the D3Q19 Swift et al. formulation to the D3Q27 velocity set.
-# Two coupled LBM equations:
-#   f  – momentum distribution for total density ρ and velocity u.
-#   g  – order-parameter distribution that advects the phase field φ = Σᵢ gᵢ.
-#
-# Chemical potential: μ = −Aφ + Bφ³ − κ∇²φ   (shared DoubleWellFreeEnergy)
-# Driving force:      Fᵢ = −φ ∇μ + ρ_eff g_body   (Korteweg force)
-#
-# The phase-field operators (DoubleWellFreeEnergy, force_minus_phi_grad_mu,
-# central_gradient_3d, laplacian_3d) are lattice-agnostic and reused
-# unchanged from the phasefield/ package.  Only the equilibrium and
-# macroscopic moments use the 27-direction lattice.
+# Public API
+# ---------------------------------------------------------------------------
 
+__all__ = [
+    # D3Q27 SC two-component
+    "sc_two_component_force_27",
+    "collide_sc_two_component_27",
+    "init_free_energy_g_3d_27",
+    "free_energy_step_3d_27",
+    # D3Q27 SC single-component
+    "collide_sc_single_component_27",
+    # Re-exported pseudopotential helpers (same as 2D / D3Q19)
+    "psi_linear",
+    "psi_exp",
+    "psi_power",
+    "psi_carnahan_starling",
+    "psi_peng_robinson",
+]
 
 def init_free_energy_g_3d_27(
     phi: torch.Tensor,
