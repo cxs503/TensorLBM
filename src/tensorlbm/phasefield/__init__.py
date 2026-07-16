@@ -29,6 +29,14 @@ from .ch_validation import (
 )
 from .free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu, force_mu_grad_phi
 from .operators import central_gradient_3d, laplacian_3d
+from .phase_inventory_flux import (
+    ADAPTER_STREAM_DIAGNOSTIC_ONLY,
+    AdapterStreamBoundaryCrossing,
+    PhaseInventoryFluxDiagnostic,
+    PhaseInventoryFluxStep,
+    adapter_stream_boundary_crossing,
+    diagnose_adapter_stream_phase_inventory_flux,
+)
 from .static_droplet import (
     DropletGeometryDiagnostic,
     KortewegForceDiagnostic,
@@ -42,6 +50,8 @@ from .static_droplet import (
 
 __all__ = [
     "ADAPTER_STREAM_LOOP_STAGE",
+    "ADAPTER_STREAM_DIAGNOSTIC_ONLY",
+    "AdapterStreamBoundaryCrossing",
     "COLLISION_ONLY_STAGE",
     "D3Q19_POPULATIONS",
     "DoubleWellFreeEnergy",
@@ -59,9 +69,13 @@ __all__ = [
     "KortewegForceDiagnostic",
     "LaplaceStyleDiagnostic",
     "NO_STREAMING_BOUNDARY_WITHHELD",
+    "PhaseInventoryFluxDiagnostic",
+    "PhaseInventoryFluxStep",
     "StaticDropletDiagnosticResult",
+    "adapter_stream_boundary_crossing",
     "central_gradient_3d",
     "collision_then_adapter_stream",
+    "diagnose_adapter_stream_phase_inventory_flux",
     "diagnose_static_droplet",
     "estimate_droplet_radius",
     "force_minus_phi_grad_mu",
