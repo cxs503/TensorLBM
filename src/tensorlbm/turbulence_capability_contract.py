@@ -269,9 +269,11 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             "BGK": (
                 IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_wale_bgk3d",
-                "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
+                "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity; "
+                "test_multiphase_turbulence_sgs.py: free_surface_step + free_energy_step_3d SGS coupling",
                 None,
-                "D3Q19 BGK + WALE.",
+                "D3Q19 BGK + WALE.  Also available as SGS option in free_surface_step "
+                "(free_surface_lbm.py) and free_energy_step_3d (multiphase3d.py) via sgs_model='wale'.",
             ),
             "MRT": (
                 IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
@@ -316,9 +318,11 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             "BGK": (
                 IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_vreman_bgk3d",
-                "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
+                "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity; "
+                "test_multiphase_turbulence_sgs.py: free_surface_step + free_energy_step_3d SGS coupling",
                 None,
-                "D3Q19 BGK + Vreman.",
+                "D3Q19 BGK + Vreman.  Also available as SGS option in free_surface_step "
+                "(free_surface_lbm.py) and free_energy_step_3d (multiphase3d.py) via sgs_model='vreman'.",
             ),
             "MRT": (
                 IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,

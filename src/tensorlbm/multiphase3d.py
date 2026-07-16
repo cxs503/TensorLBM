@@ -27,7 +27,13 @@ from .d3q19 import C, W, equilibrium3d, macroscopic3d
 from .multiphase import psi_exp, psi_linear, psi_power, psi_carnahan_starling, psi_peng_robinson  # re-export for convenience
 from .phasefield.free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu
 from .solver3d import _get_d3q19_mrt_matrices
-from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
+from .turbulence import (
+    _neq_stress_norm_3d,
+    _nu_t_to_tau_eff,
+    _smagorinsky_tau,
+    _vreman_nu_t_3d,
+    _wale_nu_t_3d,
+)
 
 _CS2 = 1.0 / 3.0
 
@@ -593,6 +599,8 @@ def free_energy_step_3d(
     gz: float = 0.0,
     rho_heavy: float | None = None,
     rho_light: float | None = None,
+    C_s: float = 0.0,
+    sgs_model: str = 'smagorinsky',
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy two-phase step for D3Q19.
 
@@ -619,10 +627,22 @@ def free_energy_step_3d(
         gz:         z body-force acceleration.
         rho_heavy:  Effective density for the φ=+1 phase (Boussinesq buoyancy).
         rho_light:  Effective density for the φ=−1 phase.
+        C_s:        SGS model constant.  When > 0, an LES sub-grid model is
+                    applied to the *f* collision.  Interpreted as the
+                    Smagorinsky constant C_s, WALE constant C_w, or Vreman
+                    constant C_V depending on *sgs_model*.
+        sgs_model:  Sub-grid model selector: ``'smagorinsky'`` (default),
+                    ``'wale'``, or ``'vreman'``.  Only affects the *f*
+                    collision when ``C_s > 0``.
 
     Returns:
         Updated ``(f, g)`` after one collision step.
     """
+    _VALID_SGS_MODELS = ('smagorinsky', 'wale', 'vreman')
+    if sgs_model not in _VALID_SGS_MODELS:
+        raise ValueError(
+            f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}"
+        )
     device = f.device
     c = _c_on_3d(device)
     w = _w_on_3d(device)
@@ -658,7 +678,20 @@ def free_energy_step_3d(
 
     # Collision for f (BGK with Korteweg + buoyancy force)
     feq = equilibrium3d(rho, ux_eq, uy_eq, uz_eq)
-    f_out = f - (f - feq) / tau_f
+    if C_s > 0.0:
+        if sgs_model == 'smagorinsky':
+            tau_eff = _smagorinsky_tau(
+                tau_f, _neq_stress_norm_3d(f - feq), rho_s, C_s,
+            )
+        elif sgs_model == 'wale':
+            nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
+            tau_eff = _nu_t_to_tau_eff(tau_f, nu_t)
+        else:  # vreman
+            nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
+            tau_eff = _nu_t_to_tau_eff(tau_f, nu_t)
+        f_out = f - (f - feq) / tau_eff.unsqueeze(0)
+    else:
+        f_out = f - (f - feq) / tau_f
 
     # Equilibrium for g  (D=3, cs²=1/3 → diff_factor = 3|c|² − 3)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
