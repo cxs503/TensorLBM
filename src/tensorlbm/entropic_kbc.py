@@ -17,12 +17,13 @@ Key components
 
 Post-collision state::
 
-    f* = f_eq + γ·s + h
+    f* = f_eq + γ·s + (1 − 1/τ)·h
 
 where *k* is fully relaxed (removed), *s* is scaled by the entropy-optimal *γ*,
-and *h* is retained.  The shear viscosity is set by the target *τ* via the
-initial guess ``γ₀ = 1 − 1/τ``; the entropy condition adjusts *γ* per cell for
-stability while respecting the H-theorem (``H(f*) ≤ H(f)``).
+and *h* is relaxed by the BGK factor (1 − 1/τ).  The shear viscosity is set by
+the target *τ* via the initial guess ``γ₀ = 1 − 1/τ``; the entropy condition
+adjusts *γ* per cell for stability while respecting the H-theorem
+(``H(f*) ≤ H(f)``).
 
 References
 ----------
@@ -243,9 +244,8 @@ def solve_gamma_entropy(
     gamma_lower = torch.where(no_constraint, gamma_init, gamma_lower)
     gamma_upper = torch.where(no_constraint, gamma_init, gamma_upper)
 
-    # Ensure gamma_init is within [lower, upper]
-    gamma_lower = torch.minimum(gamma_lower, gamma_init)
-    gamma_upper = torch.maximum(gamma_upper, gamma_init)
+    # Clamp gamma_init to the admissibility domain [lower, upper]
+    gamma_init = torch.clamp(gamma_init, gamma_lower, gamma_upper)
     # Guarantee lower < upper
     gamma_lower = torch.minimum(gamma_lower, gamma_upper - 1e-10)
 
@@ -289,8 +289,9 @@ def collide_kbc_d3q19(
 
     1. Decompose ``f = f_eq + k + s + h`` (kinetic / shear / higher-order)
     2. Remove *k* (fully relaxed kinetic ghost modes)
-    3. Find per-cell ``γ`` that minimises ``H(f_eq + γ·s + h)``
-    4. Post-collision: ``f* = f_eq + γ·s + h``
+    3. Relax *h* by the BGK factor: ``h* = (1 − 1/τ)·h``
+    4. Find per-cell ``γ`` that minimises ``H(f_eq + γ·s + h*)``
+    5. Post-collision: ``f* = f_eq + γ·s + h*``
 
     The shear viscosity is set by *τ* via the initial guess
     ``γ₀ = 1 − 1/τ``; the entropy condition adjusts *γ* per cell for
@@ -323,11 +324,14 @@ def collide_kbc_d3q19(
         rho.shape, 1.0 - 1.0 / tau, device=device, dtype=dtype,
     )
 
-    w = p["w"]
-    gamma = solve_gamma_entropy(feq, s, h, w, gamma_init, max_iter=max_iter, tol=tol)
+    # Relax higher-order modes by the BGK factor (1 − 1/τ)
+    h_relaxed = (1.0 - 1.0 / tau) * h
 
-    # Post-collision: f* = f_eq + γ·s + h  (k is removed)
-    return feq + gamma.unsqueeze(0) * s + h
+    w = p["w"]
+    gamma = solve_gamma_entropy(feq, s, h_relaxed, w, gamma_init, max_iter=max_iter, tol=tol)
+
+    # Post-collision: f* = f_eq + γ·s + (1-1/τ)·h  (k is removed, h relaxed)
+    return feq + gamma.unsqueeze(0) * s + h_relaxed
 
 
 def collide_kbc_d3q27(
@@ -367,10 +371,13 @@ def collide_kbc_d3q27(
         rho.shape, 1.0 - 1.0 / tau, device=device, dtype=dtype,
     )
 
-    w = p["w"]
-    gamma = solve_gamma_entropy(feq, s, h, w, gamma_init, max_iter=max_iter, tol=tol)
+    # Relax higher-order modes by the BGK factor (1 − 1/τ)
+    h_relaxed = (1.0 - 1.0 / tau) * h
 
-    return feq + gamma.unsqueeze(0) * s + h
+    w = p["w"]
+    gamma = solve_gamma_entropy(feq, s, h_relaxed, w, gamma_init, max_iter=max_iter, tol=tol)
+
+    return feq + gamma.unsqueeze(0) * s + h_relaxed
 
 
 __all__ = [
