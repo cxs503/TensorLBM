@@ -7,6 +7,10 @@ Verifies:
     - D2Q9  BGK + Vreman: shape, mass, momentum, equilibrium identity, finite output
     - D3Q19 BGK + Vreman: shape, mass, momentum, equilibrium identity, finite output
     - D3Q27 BGK + Vreman: shape, mass, momentum, equilibrium identity
+    - D3Q19 MRT + WALE:   shape, mass, momentum, equilibrium identity, finite output
+    - D3Q27 MRT + WALE:   shape, mass, momentum, equilibrium identity
+    - D3Q19 MRT + Vreman: shape, mass, momentum, equilibrium identity, finite output
+    - D3Q27 MRT + Vreman: shape, mass, momentum, equilibrium identity
     - Eddy viscosity is non-negative
     - Effective tau is always > 0.5
 """
@@ -19,9 +23,13 @@ from tensorlbm import (
     collide_vreman_bgk,
     collide_vreman_bgk3d,
     collide_vreman_bgk27,
+    collide_vreman_mrt3d,
+    collide_vreman_mrt27,
     collide_wale_bgk,
     collide_wale_bgk3d,
     collide_wale_bgk27,
+    collide_wale_mrt3d,
+    collide_wale_mrt27,
     equilibrium,
     equilibrium3d,
     macroscopic,
@@ -350,3 +358,147 @@ class TestVreman3D27:
         uz = torch.full_like(rho, -0.01)
         feq = equilibrium27(rho, ux, uy, uz)
         assert torch.allclose(collide_vreman_bgk27(feq, tau=0.7), feq, atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# D3Q19 MRT + WALE
+# ---------------------------------------------------------------------------
+
+class TestWALEMRT3D19:
+    def test_shape(self) -> None:
+        f = _f3d19()
+        assert collide_wale_mrt3d(f, tau=0.7).shape == f.shape
+
+    def test_finite(self) -> None:
+        f = _f3d19()
+        assert torch.isfinite(collide_wale_mrt3d(f, tau=0.7)).all()
+
+    def test_conserves_mass(self) -> None:
+        f = _f3d19()
+        rho, _, _, _ = macroscopic3d(f)
+        rho_out, _, _, _ = macroscopic3d(collide_wale_mrt3d(f, tau=0.7))
+        assert torch.allclose(rho_out, rho, atol=1e-4)
+
+    def test_conserves_momentum(self) -> None:
+        f = _f3d19()
+        _, ux, uy, uz = macroscopic3d(f)
+        _, ux_out, uy_out, uz_out = macroscopic3d(collide_wale_mrt3d(f, tau=0.7))
+        assert torch.allclose(ux_out, ux, atol=1e-4)
+        assert torch.allclose(uy_out, uy, atol=1e-4)
+        assert torch.allclose(uz_out, uz, atol=1e-4)
+
+    def test_equilibrium_is_identity(self) -> None:
+        nz, ny, nx = 4, 6, 8
+        rho = torch.ones((nz, ny, nx))
+        ux = torch.full_like(rho, 0.03)
+        uy = torch.full_like(rho, 0.01)
+        uz = torch.full_like(rho, -0.01)
+        feq = equilibrium3d(rho, ux, uy, uz)
+        assert torch.allclose(collide_wale_mrt3d(feq, tau=0.7), feq, atol=1e-4)
+
+    @pytest.mark.parametrize("C_w", [0.3, 0.5, 0.6])
+    def test_various_C_w(self, C_w: float) -> None:
+        f = _f3d19()
+        f_out = collide_wale_mrt3d(f, tau=0.7, C_w=C_w)
+        assert torch.isfinite(f_out).all()
+
+
+# ---------------------------------------------------------------------------
+# D3Q27 MRT + WALE
+# ---------------------------------------------------------------------------
+
+class TestWALEMRT3D27:
+    def test_shape(self) -> None:
+        f = _f3d27()
+        assert collide_wale_mrt27(f, tau=0.7).shape == f.shape
+
+    def test_finite(self) -> None:
+        f = _f3d27()
+        assert torch.isfinite(collide_wale_mrt27(f, tau=0.7)).all()
+
+    def test_conserves_mass(self) -> None:
+        f = _f3d27()
+        rho, _, _, _ = macroscopic27(f)
+        rho_out, _, _, _ = macroscopic27(collide_wale_mrt27(f, tau=0.7))
+        assert torch.allclose(rho_out, rho, atol=1e-4)
+
+    def test_equilibrium_is_identity(self) -> None:
+        nz, ny, nx = 4, 6, 8
+        rho = torch.ones((nz, ny, nx))
+        ux = torch.full_like(rho, 0.03)
+        uy = torch.full_like(rho, 0.01)
+        uz = torch.full_like(rho, -0.01)
+        feq = equilibrium27(rho, ux, uy, uz)
+        assert torch.allclose(collide_wale_mrt27(feq, tau=0.7), feq, atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# D3Q19 MRT + Vreman
+# ---------------------------------------------------------------------------
+
+class TestVremanMRT3D19:
+    def test_shape(self) -> None:
+        f = _f3d19()
+        assert collide_vreman_mrt3d(f, tau=0.7).shape == f.shape
+
+    def test_finite(self) -> None:
+        f = _f3d19()
+        assert torch.isfinite(collide_vreman_mrt3d(f, tau=0.7)).all()
+
+    def test_conserves_mass(self) -> None:
+        f = _f3d19()
+        rho, _, _, _ = macroscopic3d(f)
+        rho_out, _, _, _ = macroscopic3d(collide_vreman_mrt3d(f, tau=0.7))
+        assert torch.allclose(rho_out, rho, atol=1e-4)
+
+    def test_conserves_momentum(self) -> None:
+        f = _f3d19()
+        _, ux, uy, uz = macroscopic3d(f)
+        _, ux_out, uy_out, uz_out = macroscopic3d(collide_vreman_mrt3d(f, tau=0.7))
+        assert torch.allclose(ux_out, ux, atol=1e-4)
+        assert torch.allclose(uy_out, uy, atol=1e-4)
+        assert torch.allclose(uz_out, uz, atol=1e-4)
+
+    def test_equilibrium_is_identity(self) -> None:
+        nz, ny, nx = 4, 6, 8
+        rho = torch.ones((nz, ny, nx))
+        ux = torch.full_like(rho, 0.03)
+        uy = torch.full_like(rho, 0.01)
+        uz = torch.full_like(rho, -0.01)
+        feq = equilibrium3d(rho, ux, uy, uz)
+        assert torch.allclose(collide_vreman_mrt3d(feq, tau=0.7), feq, atol=1e-4)
+
+    @pytest.mark.parametrize("C_V", [0.01, 0.025, 0.05])
+    def test_various_C_V(self, C_V: float) -> None:
+        f = _f3d19()
+        f_out = collide_vreman_mrt3d(f, tau=0.7, C_V=C_V)
+        assert torch.isfinite(f_out).all()
+
+
+# ---------------------------------------------------------------------------
+# D3Q27 MRT + Vreman
+# ---------------------------------------------------------------------------
+
+class TestVremanMRT3D27:
+    def test_shape(self) -> None:
+        f = _f3d27()
+        assert collide_vreman_mrt27(f, tau=0.7).shape == f.shape
+
+    def test_finite(self) -> None:
+        f = _f3d27()
+        assert torch.isfinite(collide_vreman_mrt27(f, tau=0.7)).all()
+
+    def test_conserves_mass(self) -> None:
+        f = _f3d27()
+        rho, _, _, _ = macroscopic27(f)
+        rho_out, _, _, _ = macroscopic27(collide_vreman_mrt27(f, tau=0.7))
+        assert torch.allclose(rho_out, rho, atol=1e-4)
+
+    def test_equilibrium_is_identity(self) -> None:
+        nz, ny, nx = 4, 6, 8
+        rho = torch.ones((nz, ny, nx))
+        ux = torch.full_like(rho, 0.03)
+        uy = torch.full_like(rho, 0.01)
+        uz = torch.full_like(rho, -0.01)
+        feq = equilibrium27(rho, ux, uy, uz)
+        assert torch.allclose(collide_vreman_mrt27(feq, tau=0.7), feq, atol=1e-4)
