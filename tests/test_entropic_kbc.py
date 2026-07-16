@@ -482,3 +482,203 @@ class TestKBCStability:
             f = stream27(f)
         assert torch.isfinite(f).all()
         assert (f > 0).all()
+
+
+# ---------------------------------------------------------------------------
+# 7. KBC diagnostics: root-cause tests for admissibility-domain and h-relaxation
+# ---------------------------------------------------------------------------
+
+class TestKBCDiagnostics:
+    """Diagnostic tests reproducing the two KBC root-cause bugs.
+
+    Root cause 1 — *admissibility-domain expansion*: ``solve_gamma_entropy``
+    expanded the positivity domain to include ``gamma_init`` instead of
+    clamping ``gamma_init`` to the domain.  When ``gamma_init`` is far outside
+    the domain the bisection wastes iterations in the (clamped, non-physical)
+    expanded region and fails to converge within ``max_iter``.
+
+    Root cause 2 — *higher-order mode h not relaxed*: the post-collision state
+    ``f* = f_eq + γ·s + h`` retains *h* fully.  The correct form is
+    ``f* = f_eq + γ·s + (1 − 1/τ)·h``, so at τ = 1 the higher-order modes must
+    vanish entirely.
+    """
+
+    # -- Root cause 1: admissibility-domain expansion --------------------------
+
+    def test_gamma_init_outside_domain_converges_with_few_iterations(self):
+        """With gamma_init far outside the domain, bisection must still converge.
+
+        Bug: the domain is expanded to include gamma_init, so the bisection
+        interval becomes huge and max_iter=10 is insufficient.
+
+        Fix: gamma_init is clamped to the domain; the interval stays tight.
+        """
+        from tensorlbm.entropic_kbc import kbc_decompose_d3q19, solve_gamma_entropy
+
+        torch.manual_seed(19)
+        rho = 0.9 + torch.rand(2, 3, 4)
+        ux = 0.05 * torch.randn_like(rho)
+        uy = 0.05 * torch.randn_like(rho)
+        uz = 0.05 * torch.randn_like(rho)
+        feq = equilibrium3d(rho, ux, uy, uz)
+        f = feq + 3.0e-3 * torch.randn_like(feq)
+        assert (f > 0).all(), "test state must have positive populations"
+
+        f_neq = f - feq
+        s, k, h = kbc_decompose_d3q19(f_neq)
+        w = W19.to(feq.device).view(19, 1, 1, 1)
+
+        # Reference: well-converged gamma (gamma_init inside domain, many iters)
+        gamma_ref = solve_gamma_entropy(
+            feq, s, h, w,
+            torch.zeros_like(rho), max_iter=100, tol=1e-12,
+        )
+
+        # Bug trigger: gamma_init far outside domain, limited iterations
+        gamma_init_bad = torch.full_like(rho, 1000.0)
+        gamma_test = solve_gamma_entropy(
+            feq, s, h, w, gamma_init_bad, max_iter=10, tol=1e-12,
+        )
+
+        # With the fix, the domain is not expanded, so 10 iterations suffice.
+        max_err = (gamma_test - gamma_ref).abs().max().item()
+        assert max_err < 0.05, (
+            f"gamma_init outside domain caused non-convergence: "
+            f"max |gamma_test - gamma_ref| = {max_err:.4f} (should be < 0.05)"
+        )
+
+    def test_gamma_init_outside_domain_preserves_positivity(self):
+        """Post-collision must be positive even when gamma_init is outside domain."""
+        from tensorlbm.entropic_kbc import kbc_decompose_d3q19, solve_gamma_entropy
+
+        torch.manual_seed(19)
+        rho = 0.9 + torch.rand(2, 3, 4)
+        ux = 0.05 * torch.randn_like(rho)
+        uy = 0.05 * torch.randn_like(rho)
+        uz = 0.05 * torch.randn_like(rho)
+        feq = equilibrium3d(rho, ux, uy, uz)
+        f = feq + 3.0e-3 * torch.randn_like(feq)
+
+        f_neq = f - feq
+        s, k, h = kbc_decompose_d3q19(f_neq)
+        w = W19.to(feq.device).view(19, 1, 1, 1)
+
+        gamma_init_bad = torch.full_like(rho, 1000.0)
+        gamma = solve_gamma_entropy(
+            feq, s, h, w, gamma_init_bad, max_iter=10,
+        )
+        f_post = feq + gamma.unsqueeze(0) * s + h
+        assert (f_post > 0).all(), (
+            "Post-collision must be positive even with gamma_init outside domain"
+        )
+
+    # -- Root cause 2: higher-order mode h not relaxed -------------------------
+
+    def test_higher_order_modes_relaxed_at_tau1(self):
+        """At τ = 1, (1 − 1/τ) = 0, so h must vanish in post-collision."""
+        from tensorlbm.entropic_kbc import collide_kbc_d3q19, kbc_decompose_d3q19
+
+        f = _state_19()
+        rho, ux, uy, uz = macroscopic3d(f)
+        feq = equilibrium3d(rho, ux, uy, uz)
+        f_neq = f - feq
+        _, _, h_pre = kbc_decompose_d3q19(f_neq)
+
+        f_post = collide_kbc_d3q19(f, tau=1.0)
+        rho_p, ux_p, uy_p, uz_p = macroscopic3d(f_post)
+        feq_p = equilibrium3d(rho_p, ux_p, uy_p, uz_p)
+        f_neq_post = f_post - feq_p
+        _, _, h_post = kbc_decompose_d3q19(f_neq_post)
+
+        h_pre_max = h_pre.abs().max().item()
+        h_post_max = h_post.abs().max().item()
+        # With the fix, h_post should be ~0 (scaled by 1-1/1 = 0).
+        # With the bug, h_post ≈ h_pre (fully retained).
+        assert h_post_max < 0.1 * h_pre_max, (
+            f"Higher-order modes not relaxed at tau=1.0: "
+            f"h_post={h_post_max:.6e} vs h_pre={h_pre_max:.6e} "
+            f"(retained fraction={h_post_max/h_pre_max:.4f}, expected ~0)"
+        )
+
+    def test_higher_order_modes_relaxed_at_tau08(self):
+        """At τ = 0.8, h should be scaled by (1 − 1/τ) = −0.25."""
+        from tensorlbm.entropic_kbc import collide_kbc_d3q19, kbc_decompose_d3q19
+
+        f = _state_19()
+        rho, ux, uy, uz = macroscopic3d(f)
+        feq = equilibrium3d(rho, ux, uy, uz)
+        f_neq = f - feq
+        _, _, h_pre = kbc_decompose_d3q19(f_neq)
+
+        tau = 0.8
+        f_post = collide_kbc_d3q19(f, tau=tau)
+        rho_p, ux_p, uy_p, uz_p = macroscopic3d(f_post)
+        feq_p = equilibrium3d(rho_p, ux_p, uy_p, uz_p)
+        f_neq_post = f_post - feq_p
+        _, _, h_post = kbc_decompose_d3q19(f_neq_post)
+
+        expected_factor = abs(1.0 - 1.0 / tau)  # 0.25
+        h_pre_max = h_pre.abs().max().item()
+        h_post_max = h_post.abs().max().item()
+        retained = h_post_max / h_pre_max if h_pre_max > 0 else 0.0
+
+        # With the fix, retained ≈ expected_factor (0.25).
+        # With the bug, retained ≈ 1.0 (fully retained).
+        assert retained < 0.5, (
+            f"Higher-order modes not relaxed at tau={tau}: "
+            f"retained fraction={retained:.4f}, expected ~{expected_factor:.4f}"
+        )
+
+    # -- Cd validation: 16³ sphere flow, 20 steps ------------------------------
+
+    def test_kbc_sphere_cd_reasonable_vs_bgk(self):
+        """KBC Cd on a 16³ grid (20 steps) should be close to BGK Cd.
+
+        With the h-not-relaxed bug, KBC Cd drifts far above BGK Cd.
+        After the fix, KBC Cd should be within ~50 % of BGK Cd.
+        """
+        from tensorlbm.boundaries3d import (
+            apply_simple_channel_boundaries_3d,
+            make_channel_wall_mask_3d,
+            sphere_mask,
+        )
+        from tensorlbm.solver3d import collide_bgk3d, stream3d
+        from tensorlbm.obstacles import compute_obstacle_forces_3d
+        from tensorlbm.entropic_kbc import collide_kbc_d3q19
+
+        def _run(collision_fn, nx=16, ny=16, nz=16, steps=20, re=50):
+            radius = max(4.0, nx * 0.08)
+            u_in = 0.06
+            nu = u_in * 2.0 * radius / re
+            tau = 3.0 * nu + 0.5
+            dev = torch.device("cpu")
+            mask = sphere_mask(nx, ny, nz, nx * 0.5, ny * 0.5, nz * 0.5,
+                               radius, device=dev)
+            wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=dev)
+            f = equilibrium3d(
+                torch.ones(nz, ny, nx, device=dev),
+                torch.full((nz, ny, nx), u_in, device=dev),
+                torch.zeros(nz, ny, nx, device=dev),
+                torch.zeros(nz, ny, nx, device=dev),
+                device=dev,
+            )
+            fx_list: list[float] = []
+            for _ in range(steps):
+                f = collision_fn(f, tau=tau)
+                f = stream3d(f)
+                fx, _, _ = compute_obstacle_forces_3d(f, mask)
+                f = apply_simple_channel_boundaries_3d(
+                    f, u_in=u_in, wall_mask=wall_mask, obstacle_mask=mask,
+                )
+                fx_list.append(float(fx.item()))
+            fx_mean = sum(fx_list) / len(fx_list)
+            area = math.pi * radius ** 2
+            return fx_mean / (0.5 * u_in ** 2 * area)
+
+        cd_bgk = _run(collide_bgk3d)
+        cd_kbc = _run(collide_kbc_d3q19)
+        ratio = cd_kbc / cd_bgk
+        assert ratio < 2.0, (
+            f"KBC Cd={cd_kbc:.2f} vs BGK Cd={cd_bgk:.2f} (ratio={ratio:.3f}); "
+            f"expected ratio < 2.0 after h-relaxation fix"
+        )
