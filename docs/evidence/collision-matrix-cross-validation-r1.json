@@ -1,0 +1,156 @@
+{
+  "canonical_payload_sha256": "1d43ace44e14a527820402098edebdbb3de5dbe8ee0f47d32f4c2a285b60377b",
+  "combinations": [
+    {
+      "entrypoint": "tensorlbm.solver3d.collide_mrt3d",
+      "family": "MRT",
+      "lattice": "D3Q19",
+      "probes": [
+        {
+          "detail": "post-collision equilibrium minus input equilibrium",
+          "finite": true,
+          "max_abs_error": 5.960464477539063e-08,
+          "name": "equilibrium_fixed_point",
+          "status": "PASS",
+          "tolerance": 2e-05
+        },
+        {
+          "detail": "maximum difference across rho, ux, uy, uz recovered before and after collision",
+          "finite": true,
+          "max_abs_error": 1.1920928955078125e-07,
+          "name": "mass_momentum_collision_invariants",
+          "status": "PASS",
+          "tolerance": 2e-05
+        },
+        {
+          "detail": "all post-collision non-equilibrium populations are finite",
+          "finite": true,
+          "max_abs_error": 0.0,
+          "name": "finite_non_equilibrium",
+          "status": "PASS",
+          "tolerance": 0.0
+        }
+      ],
+      "source_provenance": [
+        {
+          "module": "tensorlbm.collision_matrix_cross_validation",
+          "path": "src/tensorlbm/collision_matrix_cross_validation.py",
+          "sha256": "6914cdef6d9241eb2427126aef119ffbd921dc40ee48d8fe573589c98592d549"
+        },
+        {
+          "module": "tensorlbm.advanced_collision_contract",
+          "path": "src/tensorlbm/advanced_collision_contract.py",
+          "sha256": "2f177f7723177fba4cac6d6a56bc8ea50957d8cceeaf87895e5b78daffc9fb2c"
+        },
+        {
+          "module": "tensorlbm.d3q19",
+          "path": "src/tensorlbm/d3q19.py",
+          "sha256": "aba5e5b4013302ad99fb487bdfebd6a8162f4158280feea5e5c82fcc24f4628a"
+        },
+        {
+          "module": "tensorlbm.solver3d",
+          "path": "src/tensorlbm/solver3d.py",
+          "sha256": "651a2ebe052c319d1b9d9f2ae87f65b800e2b480d6d928d86461acb3bc518a5a"
+        }
+      ],
+      "status": "PASS",
+      "withheld_reason": null
+    },
+    {
+      "entrypoint": null,
+      "family": "CM",
+      "lattice": "D3Q19",
+      "probes": [],
+      "source_provenance": [],
+      "status": "SKIPPED_WITHHELD",
+      "withheld_reason": "WITHHELD_NO_D3Q19_CM_KERNEL"
+    },
+    {
+      "entrypoint": null,
+      "family": "KBC",
+      "lattice": "D3Q19",
+      "probes": [],
+      "source_provenance": [],
+      "status": "SKIPPED_WITHHELD",
+      "withheld_reason": "WITHHELD_NO_D3Q19_KBC_KERNEL"
+    },
+    {
+      "entrypoint": "tensorlbm.d3q27.collide_mrt27",
+      "family": "MRT",
+      "lattice": "D3Q27",
+      "probes": [
+        {
+          "detail": "post-collision equilibrium minus input equilibrium",
+          "finite": true,
+          "max_abs_error": 2.9802322387695312e-08,
+          "name": "equilibrium_fixed_point",
+          "status": "PASS",
+          "tolerance": 2e-05
+        },
+        {
+          "detail": "maximum difference across rho, ux, uy, uz recovered before and after collision",
+          "finite": true,
+          "max_abs_error": 1.1920928955078125e-07,
+          "name": "mass_momentum_collision_invariants",
+          "status": "PASS",
+          "tolerance": 2e-05
+        },
+        {
+          "detail": "all post-collision non-equilibrium populations are finite",
+          "finite": true,
+          "max_abs_error": 0.0,
+          "name": "finite_non_equilibrium",
+          "status": "PASS",
+          "tolerance": 0.0
+        }
+      ],
+      "source_provenance": [
+        {
+          "module": "tensorlbm.collision_matrix_cross_validation",
+          "path": "src/tensorlbm/collision_matrix_cross_validation.py",
+          "sha256": "6914cdef6d9241eb2427126aef119ffbd921dc40ee48d8fe573589c98592d549"
+        },
+        {
+          "module": "tensorlbm.advanced_collision_contract",
+          "path": "src/tensorlbm/advanced_collision_contract.py",
+          "sha256": "2f177f7723177fba4cac6d6a56bc8ea50957d8cceeaf87895e5b78daffc9fb2c"
+        },
+        {
+          "module": "tensorlbm.d3q27",
+          "path": "src/tensorlbm/d3q27.py",
+          "sha256": "a673e2f61eeb0202dddaba8a24ecb3b4762a141dbd772c11bf26c7ed4556a132"
+        }
+      ],
+      "status": "PASS",
+      "withheld_reason": null
+    },
+    {
+      "entrypoint": null,
+      "family": "CM",
+      "lattice": "D3Q27",
+      "probes": [],
+      "source_provenance": [],
+      "status": "SKIPPED_WITHHELD",
+      "withheld_reason": "WITHHELD_NO_D3Q27_CM_KERNEL"
+    },
+    {
+      "entrypoint": null,
+      "family": "KBC",
+      "lattice": "D3Q27",
+      "probes": [],
+      "source_provenance": [],
+      "status": "SKIPPED_WITHHELD",
+      "withheld_reason": "WITHHELD_NO_D3Q27_KBC_KERNEL"
+    }
+  ],
+  "device": "cpu",
+  "dtype": "torch.float32",
+  "probe_shape": [
+    2,
+    2,
+    3
+  ],
+  "runner": "tensorlbm.collision_matrix_cross_validation.run_collision_matrix_cross_validation",
+  "schema_version": "tensorlbm.collision-matrix-cross-validation/v1",
+  "torch_version": "2.7.1"
+}
