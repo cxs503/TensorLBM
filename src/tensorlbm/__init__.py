@@ -7,6 +7,12 @@ from .amr_capability_contract import (
     local_refinement_capability_matrix,
     require_local_refinement_capability,
 )
+from .boundary_capability_contract import (
+    BoundaryConditionCapability,
+    BoundaryConditionWithheldError,
+    boundary_capability_matrix,
+    require_boundary_condition_capability,
+)
 from .adaptive_refinement import (
     AdaptationSchedule,
     AdaptiveSolver2D,
