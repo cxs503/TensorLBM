@@ -82,6 +82,20 @@ from .advanced_collision_contract import (
     collide_advanced_3d,
     collision_capability_matrix,
 )
+from .wall_refinement_combination_gate import (
+    CollisionFamily as WallRefinementCollisionFamily,
+    CombinationEvidence,
+    CombinationGateDecision,
+    GateStatus as WallRefinementGateStatus,
+    GeometryKind,
+    GeometryOwnership,
+    Lattice as WallRefinementLattice,
+    PhysicsModel,
+    RefinementType,
+    WallRefinementCombination,
+    WallTreatment,
+    assess_wall_refinement_combination,
+)
 from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
 from .dam_break import DamBreakConfig, run_dam_break
 from .hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface
