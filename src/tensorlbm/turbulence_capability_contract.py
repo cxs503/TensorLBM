@@ -236,7 +236,7 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
     },
 
     # -----------------------------------------------------------------------
-    # Dynamic Smagorinsky — 2 combinations (D2Q9 BGK, D3Q19 BGK), CONTRACT_TESTED
+    # Dynamic Smagorinsky — 3 combinations (D2Q9 BGK, D3Q19 BGK, D3Q19 MRT), CONTRACT_TESTED
     # -----------------------------------------------------------------------
     "dynamic_smagorinsky": {
         "D2Q9": {
@@ -257,6 +257,15 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1160 "
                 "is a GPU→CPU sync point per collision step.",
                 "D3Q19 dynamic Smagorinsky.",
+            ),
+            "MRT": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.turbulence.collide_dynamic_smagorinsky_mrt3d",
+                "test_dynamic_smagorinsky.py: shape, finite, mass, momentum, equilibrium identity",
+                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1218 "
+                "is a GPU→CPU sync point per collision step.",
+                "D3Q19 MRT with dynamic Smagorinsky; per-cell tau_eff replaces stress-mode "
+                "relaxation rate (modes 9-13), non-stress modes use fixed MRT rates.",
             ),
         },
     },
@@ -475,6 +484,14 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
         function="collide_dynamic_smagorinsky_bgk3d",
         file="tensorlbm/turbulence.py",
         line=1160,
+        pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
+        severity="SYNC",
+        note="Global Cs reduction to Python float; GPU→CPU sync per collision step.",
+    ),
+    HotPathAllocation(
+        function="collide_dynamic_smagorinsky_mrt3d",
+        file="tensorlbm/turbulence.py",
+        line=1296,
         pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
         severity="SYNC",
         note="Global Cs reduction to Python float; GPU→CPU sync per collision step.",
