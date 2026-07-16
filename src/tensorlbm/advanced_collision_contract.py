@@ -56,7 +56,8 @@ def collision_capability_matrix() -> dict[LatticeName, dict[CollisionFamily, Col
             "TRT": CollisionCapability(True, "tensorlbm.solver3d.collide_trt3d", "AVAILABLE", "Two-relaxation-time with magic-parameter Λ; symmetric/anti-symmetric split via OPPOSITE."),
             "RLBM": CollisionCapability(True, "tensorlbm.solver3d.collide_rlbm3d", "AVAILABLE", "Regularized BGK; non-equilibrium projected onto 2nd-order Hermite subspace."),
             "MRT": CollisionCapability(True, "tensorlbm.solver3d.collide_mrt3d", "AVAILABLE", "19x19 MRT transform; conserved rows are explicit."),
-            "CM": CollisionCapability(False, None, WITHHELD_NO_D3Q19_CM_KERNEL, "No standalone validated D3Q19 central-moment kernel."),
+            "CM": CollisionCapability(True, "tensorlbm.cascaded_collision.collide_cascaded_d3q19", "AVAILABLE", "Full cascaded central-moment hierarchy (0th-4th order)."),
+            "CUMULANT": CollisionCapability(True, "tensorlbm.cumulant.collide_cumulant_d3q19", "AVAILABLE", "D3Q19 cumulant collision kernel."),
             "KBC": CollisionCapability(True, "tensorlbm.entropic_kbc.collide_kbc_d3q19", "AVAILABLE", "Entropic KBC with per-cell entropy-minimised gamma, KBC decomposition (kinetic/shear/higher-order), and positivity admissibility."),
         },
         "D3Q27": {
@@ -64,7 +65,8 @@ def collision_capability_matrix() -> dict[LatticeName, dict[CollisionFamily, Col
             "TRT": CollisionCapability(True, "tensorlbm.d3q27.collide_trt27", "AVAILABLE", "Two-relaxation-time with magic-parameter Λ; symmetric/anti-symmetric split via D3Q27 OPPOSITE (includes corner directions)."),
             "RLBM": CollisionCapability(True, "tensorlbm.d3q27.collide_rlbm27", "AVAILABLE", "Regularized BGK; 2nd-order Hermite projection with D3Q27 4th-order-isotropic weights."),
             "MRT": CollisionCapability(True, "tensorlbm.d3q27.collide_mrt27", "AVAILABLE", "27x27 full-rank Gram-Schmidt moment transform with explicit inverse."),
-            "CM": CollisionCapability(False, None, WITHHELD_NO_D3Q27_CM_KERNEL, "Existing cascaded routine is regularized second-order reconstruction; higher central moments are not implemented."),
+            "CM": CollisionCapability(True, "tensorlbm.cascaded_collision.collide_cascaded_d3q27", "AVAILABLE", "Full cascaded central-moment hierarchy (0th-6th order)."),
+            "CUMULANT": CollisionCapability(True, "tensorlbm.cumulant.collide_cumulant_d3q27", "AVAILABLE", "D3Q27 cumulant collision kernel."),
             "KBC": CollisionCapability(True, "tensorlbm.entropic_kbc.collide_kbc_d3q27", "AVAILABLE", "Entropic KBC with per-cell entropy-minimised gamma, KBC decomposition (kinetic/shear/higher-order), and positivity admissibility."),
         },
     }
@@ -85,11 +87,29 @@ def _normalise_family(family: str) -> CollisionFamily:
         "RLBM": "RLBM", "REGULARIZED": "RLBM", "REGULARISED": "RLBM",
         "MRT": "MRT",
         "CM": "CM", "CASCADED": "CM",
+        "CUMULANT": "CUMULANT", "CUMULANT_LBM": "CUMULANT",
         "KBC": "KBC", "ENTROPIC_KBC": "KBC",
     }
     if value not in aliases:
-        raise ValueError("family must be BGK/SRT, TRT, RLBM/regularized, MRT, CM/cascaded, or KBC/entropic_kbc")
+        raise ValueError("family must be BGK/SRT, TRT, RLBM/regularized, MRT, CM/cascaded, or CUMULANT, or KBC/entropic_kbc")
     return aliases[value]  # type: ignore[return-value]
+
+
+
+def _select_cm(lattice: str):
+    if lattice == "D3Q19":
+        from .cascaded_collision import collide_cascaded_d3q19
+        return collide_cascaded_d3q19
+    from .cascaded_collision import collide_cascaded_d3q27
+    return collide_cascaded_d3q27
+
+
+def _select_cumulant(lattice: str):
+    if lattice == "D3Q19":
+        from .cumulant import collide_cumulant_d3q19
+        return collide_cumulant_d3q19
+    from .cumulant import collide_cumulant_d3q27
+    return collide_cumulant_d3q27
 
 
 def _select_kernel(lattice_name: LatticeName, family_name: CollisionFamily) -> Callable[..., torch.Tensor]:
@@ -100,6 +120,8 @@ def _select_kernel(lattice_name: LatticeName, family_name: CollisionFamily) -> C
             "TRT": collide_trt3d,
             "RLBM": collide_rlbm3d,
             "MRT": collide_mrt3d,
+            "CUMULANT": _select_cumulant("D3Q19"),
+            "CM": _select_cm("D3Q19"),
             "KBC": collide_kbc_d3q19,
         },
         "D3Q27": {
@@ -107,6 +129,8 @@ def _select_kernel(lattice_name: LatticeName, family_name: CollisionFamily) -> C
             "TRT": collide_trt27,
             "RLBM": collide_rlbm27,
             "MRT": collide_mrt27,
+            "CUMULANT": _select_cumulant("D3Q27"),
+            "CM": _select_cm("D3Q27"),
             "KBC": collide_kbc_d3q27,
         },
     }
