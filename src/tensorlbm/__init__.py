@@ -102,6 +102,13 @@ from .d3q27 import (
     macroscopic27,
     stream27,
 )
+from .free_surface_lbm_27 import (
+    free_surface_step_27,
+    init_fill_rectangular_27,
+    init_flags_from_fill_27,
+    init_mass_from_fill_27,
+    total_liquid_inventory_27,
+)
 from .advanced_collision_contract import (
     CollisionCapability,
     CollisionKernelWithheldError,
