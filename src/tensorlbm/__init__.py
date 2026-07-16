@@ -349,7 +349,15 @@ from .rans_ke import (
     KESolver,
     KOmegaSSTSolver,
     collide_rans_ke,
+    collide_rans_komega_sst,
     komega_sst_collision_d2q9,
+)
+from .rans_common import (
+    collide_rans_3d,
+    collide_rans_bgk27,
+    collide_rans_bgk3d,
+    collide_rans_mrt27,
+    collide_rans_mrt3d,
 )
 from .ship_cad import (  # noqa: I001
     ShipHullType,
@@ -481,9 +489,13 @@ from .turbulence import (
     collide_vreman_bgk,
     collide_vreman_bgk3d,
     collide_vreman_bgk27,
+    collide_vreman_mrt3d,
+    collide_vreman_mrt27,
     collide_wale_bgk,
     collide_wale_bgk3d,
     collide_wale_bgk27,
+    collide_wale_mrt3d,
+    collide_wale_mrt27,
 )
 from .turbulent_channel import (
     TurbulentChannelConfig,
