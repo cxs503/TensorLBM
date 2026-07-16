@@ -130,6 +130,14 @@ from .accuracy_recommendation import (
     PhysicalAccuracyEvidence,
     recommend_by_physical_accuracy,
 )
+from .cross_module_composition_matrix import (
+    CompositionDecision,
+    CompositionRequest,
+    CompositionStatus,
+    SubContractResult,
+    SubContractStatus,
+    assess_composition,
+)
 from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
 from .dam_break import DamBreakConfig, run_dam_break
 from .hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface
