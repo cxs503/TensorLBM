@@ -13,6 +13,13 @@ from .boundary_capability_contract import (
     boundary_capability_matrix,
     require_boundary_condition_capability,
 )
+from .turbulence_capability_contract import (
+    TurbulenceCapability,
+    TurbulenceWithheldError,
+    turbulence_capability_matrix,
+    require_turbulence_capability,
+    turbulence_hot_path_audit,
+)
 from .adaptive_refinement import (
     AdaptationSchedule,
     AdaptiveSolver2D,
