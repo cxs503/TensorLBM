@@ -103,6 +103,14 @@ from .wall_refinement_combination_gate import (
     WallTreatment,
     assess_wall_refinement_combination,
 )
+from .accuracy_recommendation import (
+    AccuracyRecommendation,
+    ConvergenceEvidence,
+    ErrorMetric,
+    KPIDefinition,
+    PhysicalAccuracyEvidence,
+    recommend_by_physical_accuracy,
+)
 from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
 from .dam_break import DamBreakConfig, run_dam_break
 from .hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface
