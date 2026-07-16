@@ -12,6 +12,14 @@ from .evolution_adapter import (
     initialize_free_energy_collision_only_state,
     run_free_energy_collision_only,
 )
+from .evolution_stream_loop import (
+    ADAPTER_STREAM_LOOP_STAGE,
+    FreeEnergyAdapterStreamLoopConfig,
+    FreeEnergyAdapterStreamLoopDiagnostic,
+    FreeEnergyAdapterStreamLoopResult,
+    collision_then_adapter_stream,
+    run_free_energy_adapter_stream_loop,
+)
 from .ch_validation import (
     FreeEnergyCHDiagnosticResult,
     FreeEnergyCHStepDiagnostic,
@@ -33,10 +41,14 @@ from .static_droplet import (
 )
 
 __all__ = [
-    "DoubleWellFreeEnergy",
+    "ADAPTER_STREAM_LOOP_STAGE",
     "COLLISION_ONLY_STAGE",
     "D3Q19_POPULATIONS",
+    "DoubleWellFreeEnergy",
     "DropletGeometryDiagnostic",
+    "FreeEnergyAdapterStreamLoopConfig",
+    "FreeEnergyAdapterStreamLoopDiagnostic",
+    "FreeEnergyAdapterStreamLoopResult",
     "FreeEnergyCHDiagnosticResult",
     "FreeEnergyCHStepDiagnostic",
     "FreeEnergyCHValidationConfig",
@@ -49,17 +61,19 @@ __all__ = [
     "NO_STREAMING_BOUNDARY_WITHHELD",
     "StaticDropletDiagnosticResult",
     "central_gradient_3d",
+    "collision_then_adapter_stream",
     "diagnose_static_droplet",
     "estimate_droplet_radius",
     "force_minus_phi_grad_mu",
     "force_mu_grad_phi",
-    "laplacian_3d",
-    "initialize_static_droplet",
     "initialize_free_energy_collision_only_state",
+    "initialize_static_droplet",
+    "laplacian_3d",
     "phase_volume_smoothed",
     "phase_volume_threshold",
     "periodic_chemical_potential_and_korteweg_force",
     "run_closed_periodic_free_energy_diagnostic",
+    "run_free_energy_adapter_stream_loop",
     "run_free_energy_collision_only",
     "uniform_phase_capillary_force",
 ]
