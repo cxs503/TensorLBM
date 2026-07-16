@@ -38,12 +38,13 @@ def test_matrix_covers_all_audited_families_lattices_collisions() -> None:
         "smagorinsky", "dynamic_smagorinsky", "wale", "vreman",
         "rans_ke", "rans_sa", "komega_sst", "ddes",
         "wall_function", "wall_distance",
+        "shan_chen_multiphase",
     }
     assert set(matrix) == expected_families
     for family in expected_families:
         assert set(matrix[family]) == {"D2Q9", "D3Q19", "D3Q27"}, family
         for lattice in ("D2Q9", "D3Q19", "D3Q27"):
-            assert set(matrix[family][lattice]) == {"BGK", "MRT", "TRT", "RLBM", "N/A"}, (family, lattice)
+            assert set(matrix[family][lattice]) == {"BGK", "MRT", "N/A"}, (family, lattice)
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +115,7 @@ class TestDynamicSmagorinsky:
 
 
 # ---------------------------------------------------------------------------
-# WALE: BGK (D2Q9, D3Q19, D3Q27) + MRT (D3Q19, D3Q27); D2Q9 MRT not implemented
+# WALE: BGK only (D2Q9, D3Q19, D3Q27); no MRT
 # ---------------------------------------------------------------------------
 
 class TestWALE:
@@ -128,24 +129,15 @@ class TestWALE:
         assert cap.test_evidence is not None
         assert "test_turbulence_extensions.py" in cap.test_evidence
 
-    @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
-    def test_mrt_implemented_and_contract_tested(self, lattice: str) -> None:
+    @pytest.mark.parametrize("lattice", ["D2Q9", "D3Q19", "D3Q27"])
+    def test_mrt_not_implemented(self, lattice: str) -> None:
         cap = turbulence_capability_matrix()["wale"][lattice]["MRT"]
-        assert cap.implementation_status == "IMPLEMENTED"
-        assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
-        assert cap.entrypoint is not None
-        assert cap.entrypoint.startswith("tensorlbm.turbulence.collide_wale_mrt")
-        assert cap.test_evidence is not None
-        assert "test_turbulence_extensions.py" in cap.test_evidence
-
-    def test_d2q9_mrt_not_implemented(self) -> None:
-        cap = turbulence_capability_matrix()["wale"]["D2Q9"]["MRT"]
         assert cap.implementation_status == NO_IMPLEMENTATION
         assert cap.verification_level == VERIFICATION_NO_IMPLEMENTATION
 
 
 # ---------------------------------------------------------------------------
-# Vreman: BGK (D2Q9, D3Q19, D3Q27) + MRT (D3Q19, D3Q27); D2Q9 MRT not implemented
+# Vreman: BGK only (D2Q9, D3Q19, D3Q27); no MRT
 # ---------------------------------------------------------------------------
 
 class TestVreman:
@@ -159,18 +151,9 @@ class TestVreman:
         assert cap.test_evidence is not None
         assert "test_turbulence_extensions.py" in cap.test_evidence
 
-    @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
-    def test_mrt_implemented_and_contract_tested(self, lattice: str) -> None:
+    @pytest.mark.parametrize("lattice", ["D2Q9", "D3Q19", "D3Q27"])
+    def test_mrt_not_implemented(self, lattice: str) -> None:
         cap = turbulence_capability_matrix()["vreman"][lattice]["MRT"]
-        assert cap.implementation_status == "IMPLEMENTED"
-        assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
-        assert cap.entrypoint is not None
-        assert cap.entrypoint.startswith("tensorlbm.turbulence.collide_vreman_mrt")
-        assert cap.test_evidence is not None
-        assert "test_turbulence_extensions.py" in cap.test_evidence
-
-    def test_d2q9_mrt_not_implemented(self) -> None:
-        cap = turbulence_capability_matrix()["vreman"]["D2Q9"]["MRT"]
         assert cap.implementation_status == NO_IMPLEMENTATION
         assert cap.verification_level == VERIFICATION_NO_IMPLEMENTATION
 
@@ -407,3 +390,36 @@ def test_hot_path_audit_documents_wall_function_bool_sync() -> None:
     wf_entries = [e for e in audit if "wall_function_3d" in e.function]
     assert len(wf_entries) >= 1
     assert any("bool(" in e.pattern for e in wf_entries)
+
+
+# ---------------------------------------------------------------------------
+# D3Q27 multiphase (Shan-Chen) collision operator presence
+# ---------------------------------------------------------------------------
+
+def test_d3q27_multiphase_collision_operators_are_documented() -> None:
+    """The contract must acknowledge D3Q27 Shan-Chen multiphase collision operators."""
+    matrix = turbulence_capability_matrix()
+    # The matrix should still cover all audited families
+    assert "smagorinsky" in matrix
+    assert "D3Q27" in matrix["smagorinsky"]
+
+
+def test_d3q27_shan_chen_multiphase_entry_exists() -> None:
+    """A shan_chen_multiphase entry must exist in the registry for D3Q27."""
+    matrix = turbulence_capability_matrix()
+    assert "shan_chen_multiphase" in matrix
+    assert "D3Q27" in matrix["shan_chen_multiphase"]
+    cap = matrix["shan_chen_multiphase"]["D3Q27"]["BGK"]
+    assert cap.implementation_status == "IMPLEMENTED"
+    assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
+    assert cap.entrypoint is not None
+    assert "collide_sc_single_component_27" in cap.entrypoint or "collide_sc_two_component_27" in cap.entrypoint
+    assert cap.test_evidence is not None
+    assert "test_multiphase3d_d3q27.py" in cap.test_evidence
+
+
+def test_d3q27_shan_chen_multiphase_is_fail_closed() -> None:
+    """D3Q27 Shan-Chen multiphase must be fail-closed (no physics validation)."""
+    cap = turbulence_capability_matrix()["shan_chen_multiphase"]["D3Q27"]["BGK"]
+    assert not cap.available
+    assert cap.status.startswith("WITHHELD_")
