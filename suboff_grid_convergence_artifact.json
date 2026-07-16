@@ -1,0 +1,224 @@
+{
+  "artifact_kind": "suboff_grid_convergence_study",
+  "schema": "suboff-grid-convergence-study-r1",
+  "status": "diagnostic_only",
+  "physical_validation": false,
+  "grid_levels": [
+    {
+      "level_id": "coarse",
+      "nx": 48,
+      "ny": 24,
+      "nz": 24,
+      "steps": 4,
+      "capture_steps": [
+        3,
+        4
+      ]
+    },
+    {
+      "level_id": "medium",
+      "nx": 64,
+      "ny": 32,
+      "nz": 32,
+      "steps": 4,
+      "capture_steps": [
+        3,
+        4
+      ]
+    },
+    {
+      "level_id": "fine",
+      "nx": 96,
+      "ny": 48,
+      "nz": 48,
+      "steps": 4,
+      "capture_steps": [
+        3,
+        4
+      ]
+    }
+  ],
+  "Ct_per_level": [
+    881.8390800569949,
+    977.6445305797813,
+    928.3302341272916
+  ],
+  "convergence_indicator": {
+    "relative_ct_changes": [
+      0.10864278153401218,
+      0.05044194992145495
+    ],
+    "ct_trend": "non_monotonic",
+    "max_relative_change": 0.10864278153401218,
+    "convergence_claim": "withheld",
+    "note": "Relative Ct changes are diagnostic indicators only; they do not constitute a grid convergence claim or physical validation."
+  },
+  "per_level_results": [
+    {
+      "level_id": "coarse",
+      "grid_shape_zyx": [
+        24,
+        24,
+        48
+      ],
+      "nx": 48,
+      "ny": 24,
+      "nz": 24,
+      "steps": 4,
+      "capture_steps": [
+        3,
+        4
+      ],
+      "solid_cells": 225,
+      "fluid_cells": 27423,
+      "total_cells": 27648,
+      "hull_length_lu": 28.799999999999997,
+      "hull_radius_lu": 1.6802800466744456,
+      "reference_area_lu2": 8.869787454927154,
+      "link_count": 1498,
+      "campaign_status": "measured_candidate",
+      "physical_validation": false,
+      "Ct": 881.8390800569949,
+      "force_time_series": [
+        [
+          3.5898499488830566,
+          1.7881393432617188e-06,
+          3.8743019104003906e-07
+        ],
+        [
+          3.449702739715576,
+          1.2516975402832031e-06,
+          2.682209014892578e-07
+        ]
+      ],
+      "mean_force": [
+        3.5197763442993164,
+        1.519918441772461e-06,
+        3.2782554626464844e-07
+      ],
+      "std_force": [
+        0.07007360458374023,
+        2.682209014892578e-07,
+        5.960464477539063e-08
+      ],
+      "campaign_provenance_hash": "3f2eeffd5788545206d278813150e4ca40dc4457cc3c3ff3c68fc9977652dd39",
+      "geometry_source_hash": "b8784ade862f159082d44526a6fb6efa408a61dc53a9f3d395c9b2003dd29437"
+    },
+    {
+      "level_id": "medium",
+      "grid_shape_zyx": [
+        32,
+        32,
+        64
+      ],
+      "nx": 64,
+      "ny": 32,
+      "nz": 32,
+      "steps": 4,
+      "capture_steps": [
+        3,
+        4
+      ],
+      "solid_cells": 607,
+      "fluid_cells": 64929,
+      "total_cells": 65536,
+      "hull_length_lu": 38.4,
+      "hull_radius_lu": 2.2403733955659275,
+      "reference_area_lu2": 15.768511030981609,
+      "link_count": 2970,
+      "campaign_status": "measured_candidate",
+      "physical_validation": false,
+      "Ct": 977.6445305797813,
+      "force_time_series": [
+        [
+          7.144680500030518,
+          3.3974647521972656e-06,
+          7.450580596923828e-09
+        ],
+        [
+          6.729718208312988,
+          3.2782554626464844e-06,
+          -3.121793270111084e-06
+        ]
+      ],
+      "mean_force": [
+        6.937199354171753,
+        3.337860107421875e-06,
+        -1.55717134475708e-06
+      ],
+      "std_force": [
+        0.20748114585876465,
+        5.960464477539063e-08,
+        1.564621925354004e-06
+      ],
+      "campaign_provenance_hash": "8d5e7201f4229b32d163833efcff63bf7b3629604c91f979ccf77f8442be1e78",
+      "geometry_source_hash": "8775b4c06b7a84a39f724e01d3278f1b32bc7618bc13bb6bc89933e592d53bbb"
+    },
+    {
+      "level_id": "fine",
+      "grid_shape_zyx": [
+        48,
+        48,
+        96
+      ],
+      "nx": 96,
+      "ny": 48,
+      "nz": 48,
+      "steps": 4,
+      "capture_steps": [
+        3,
+        4
+      ],
+      "solid_cells": 1781,
+      "fluid_cells": 219403,
+      "total_cells": 221184,
+      "hull_length_lu": 57.599999999999994,
+      "hull_radius_lu": 3.3605600933488913,
+      "reference_area_lu2": 35.47914981970862,
+      "link_count": 6306,
+      "campaign_status": "measured_candidate",
+      "physical_validation": false,
+      "Ct": 928.3302341272916,
+      "force_time_series": [
+        [
+          15.33602237701416,
+          1.4171004295349121e-05,
+          2.2724270820617676e-06
+        ],
+        [
+          14.306708335876465,
+          1.0222196578979492e-05,
+          1.9371509552001953e-06
+        ]
+      ],
+      "mean_force": [
+        14.821365356445312,
+        1.2196600437164307e-05,
+        2.1047890186309814e-06
+      ],
+      "std_force": [
+        0.5146570205688477,
+        1.9744038581848145e-06,
+        1.6763806343078613e-07
+      ],
+      "campaign_provenance_hash": "706d334befa3f86a3c65d04d79d842c395e59e4b04076adc0607ab4ddd7762fe",
+      "geometry_source_hash": "4296a1563437a8c516e450959ccb3e8f5bd4285083901aad43fe0d1c73bac1e9"
+    }
+  ],
+  "provenance": {
+    "runner_api": "tensorlbm.suboff_full_wet_force_window_campaign.run_suboff_full_wet_force_window_campaign",
+    "model_identity": {
+      "lattice": "D3Q19",
+      "collision": "MRT",
+      "hull_type": "bare_hull",
+      "boundary": "zou_he_channel+stationary_bounce_back",
+      "physics": "single_phase_incompressible"
+    },
+    "cad_source": "tensorlbm.suboff_cad.build_suboff_mask",
+    "force_method": "d3q19_linkwise_momentum_exchange",
+    "sample_phase": "post_stream_pre_bounce_back",
+    "reference_area_mode": "cross_section_pi_R_squared_lattice_units",
+    "prohibition": "no_convergence_claim_or_physical_validation"
+  },
+  "provenance_hash": "ce49a086371950253ce934528d7a121bed3725d9fa5735e9123bf40d5f21fd55"
+}
