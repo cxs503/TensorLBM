@@ -29,6 +29,8 @@ from .turbulence import collide_smagorinsky_mrt3d
 from .utils import resolve_device
 from .rans_ke import KESolver
 from .wall_model import apply_wall_model_bounce_back
+from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
+from .wall_function_contract import WallFunctionCapability
 
 
 @dataclass(frozen=True)
@@ -133,6 +135,17 @@ class SuboffResistanceBenchmarkConfig:
             raise ValueError("adaptive_max_patches must be >= 1")
         if self.momentum_budget_interval < 1:
             raise ValueError("momentum_budget_interval must be >= 1")
+        if self.use_wall_model:
+            # Cold-path admission: the loop below must not decide capability.
+            require_wall_function_run(WallFunctionRunRequest(
+                capability=WallFunctionCapability.MOVING_BOUNCE_BACK,
+                lattice="D3Q19",
+                physics="single_phase_incompressible",
+                collision="MRT_SMAGORINSKY",
+                geometry="static_voxel_solid",
+                backend="torch",
+                adaptive_mesh=self.use_adaptive_mesh,
+            ))
 
     @property
     def resolved_radius_m(self) -> float:

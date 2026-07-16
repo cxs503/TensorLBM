@@ -62,6 +62,8 @@ from .dg_advection import equilibrium_dg, get_ops
 from .dg_band import build_band_topology, compute_dg_solid_force, hybrid_step, project_band_to_lbm
 from .physics import collide_smagorinsky_bgk3d, collide_dynamic_smagorinsky_bgk3d, collide_mrt3d, collide_smagorinsky_mrt3d
 from .wall_model import apply_wall_model_bounce_back, wall_function_3d
+from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
+from .wall_function_contract import WallFunctionCapability
 from .boundaries3d import free_slip_y_walls_3d, free_slip_z_walls_3d
 from .obstacles import compute_obstacle_forces_3d
 from .logging_config import configure_logging, logger
@@ -200,6 +202,19 @@ class DGLBMConfig:
             raise ValueError("Only dg_order=1,2,4 (linear DG) is currently supported")
         if self.num_threads is not None and self.num_threads < 1:
             raise ValueError("num_threads must be >= 1")
+        if self.use_wall_model or self.use_wall_function:
+            # This public DG/sphere configuration does not supply the full
+            # collision and geometry dimensions the contract requires.
+            require_wall_function_run(WallFunctionRunRequest(
+                capability=(WallFunctionCapability.LOG_LAW_BODY_FORCE
+                            if self.use_wall_function
+                            else WallFunctionCapability.MOVING_BOUNCE_BACK),
+                lattice="D3Q19",
+                physics="single_phase_incompressible",
+                collision="WITHHELD_DG_CONFIG",
+                geometry="WITHHELD_DG_CONFIG",
+                backend="torch",
+            ))
 
     # ------------------------------------------------------------------
     # Run name
@@ -747,6 +762,26 @@ class DGLBMSuboffConfig:
             raise ValueError("Only dg_order=1,2,4 (linear DG) is currently supported")
         if self.num_threads is not None and self.num_threads < 1:
             raise ValueError("num_threads must be >= 1")
+        if self.use_wall_model:
+            # The legacy hybrid's collision and DG-band geometry are not an
+            # audited wrapper tuple, so public enabling fails closed.
+            require_wall_function_run(WallFunctionRunRequest(
+                capability=WallFunctionCapability.MOVING_BOUNCE_BACK,
+                lattice="D3Q19",
+                physics="single_phase_incompressible",
+                collision="WITHHELD_DG_CONFIG",
+                geometry="WITHHELD_DG_CONFIG",
+                backend="torch",
+            ))
+        if self.use_wall_function:
+            require_wall_function_run(WallFunctionRunRequest(
+                capability=WallFunctionCapability.LOG_LAW_BODY_FORCE,
+                lattice="D3Q19",
+                physics="single_phase_incompressible",
+                collision="MRT_SMAGORINSKY",
+                geometry="static_voxel_solid",
+                backend="torch",
+            ))
 
     # ------------------------------------------------------------------
     # Run name

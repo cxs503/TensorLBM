@@ -44,6 +44,8 @@ from .free_surface_lbm import (
 from .core.d3q19_stencil import assert_no_direct_phase_links
 from .ship_cad import build_hull_mask, ShipHullType
 from .hydrodynamics import ittc57_friction_coefficient, voxel_wetted_area
+from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
+from .wall_function_contract import WallFunctionCapability
 
 KAPPA = 0.41
 B_CONST = 5.0
@@ -77,6 +79,23 @@ class HullFreeSurfaceV2Config:
     use_free_surface: bool = True   # False = double-body (viscous only)
     collision_model: str = "kbc"  # "kbc", "cumulant", "cascaded"
     form_factor: float = 1.15       # (1+k) for ITTC reference
+
+    def __post_init__(self) -> None:
+        if self.use_wall_function:
+            # Cold-path admission: this D3Q19 free-surface hull path uses a
+            # CG-KBC/cumulant/cascaded collision and (optionally) a Körner
+            # free-surface step.  Neither tuple is in the audited
+            # D3Q19/MRT-Smagorinsky/single-phase matrix, so public enabling
+            # fails closed before the solver loop.
+            require_wall_function_run(WallFunctionRunRequest(
+                capability=WallFunctionCapability.LOG_LAW_BODY_FORCE,
+                lattice="D3Q19",
+                physics="single_phase_incompressible",
+                collision=self.collision_model.upper(),
+                geometry="static_voxel_solid",
+                backend="torch",
+                free_surface=self.use_free_surface,
+            ))
 
 
 def _build_hull(cfg: HullFreeSurfaceV2Config, device: torch.device):

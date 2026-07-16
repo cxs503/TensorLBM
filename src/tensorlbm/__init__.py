@@ -20,6 +20,12 @@ from .turbulence_capability_contract import (
     require_turbulence_capability,
     turbulence_hot_path_audit,
 )
+from .wall_function_contract import (
+    ValidationLevel,
+    WallFunctionCapability,
+    WallFunctionCompatibilityError,
+)
+from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
 from .adaptive_refinement import (
     AdaptationSchedule,
     AdaptiveSolver2D,
