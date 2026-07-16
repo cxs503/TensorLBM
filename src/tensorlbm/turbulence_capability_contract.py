@@ -14,11 +14,10 @@ Audit scope (source files read, not docstring assertions):
     - ``tensorlbm/rans_ke.py``         – RANS k-epsilon, SA, k-omega SST
     - ``tensorlbm/ddes.py``            – DDES / SAS hybrid (2-D only)
     - ``tensorlbm/wall_model.py``      – wall-function, wall-distance FMM
-    - ``tensorlbm/multiphase3d_d3q27.py`` – D3Q27 Shan-Chen multiphase collision
     - callers: ``suboff_resistance.py``, ``turbulent_channel.py``, examples/
     - tests: ``test_marine.py``, ``test_d3q27.py``, ``test_phase4.py``,
       ``test_dynamic_smagorinsky.py``, ``test_turbulence_extensions.py``,
-      ``test_turbulent_channel.py``, ``test_multiphase3d_d3q27.py``
+      ``test_turbulent_channel.py``
 """
 from __future__ import annotations
 
@@ -42,7 +41,7 @@ TurbulenceFamily = Literal[
     "wall_distance",
 ]
 LatticeName = Literal["D2Q9", "D3Q19", "D3Q27"]
-CollisionName = Literal["BGK", "MRT", "N/A"]
+CollisionName = Literal["BGK", "MRT", "CG", "N/A"]
 
 # ---------------------------------------------------------------------------
 # Machine-readable withheld codes (fail-closed)
@@ -103,10 +102,9 @@ _AUDITED_FAMILIES: tuple[str, ...] = (
     "ddes",
     "wall_function",
     "wall_distance",
-    "shan_chen_multiphase",
 )
 _AUDITED_LATTICES: tuple[str, ...] = ("D2Q9", "D3Q19", "D3Q27")
-_AUDITED_COLLISIONS: tuple[str, ...] = ("BGK", "MRT", "N/A")
+_AUDITED_COLLISIONS: tuple[str, ...] = ("BGK", "MRT", "CG", "N/A")
 
 
 # ---------------------------------------------------------------------------
@@ -209,6 +207,15 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 None,
                 "D3Q19 MRT with per-cell stress rate override (modes 9-13). Used in suboff_resistance.py.",
             ),
+            "CG": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.cg_advanced_collision.collide_cg_regularized_stress_3d(sgs_model='smagorinsky')",
+                "test_cg_sgs_coupling.py: shape, finite, mass, momentum, equilibrium identity, stability",
+                None,
+                "Color-Gradient multiphase + Smagorinsky via per-cell tau_eff in the "
+                "regularized-stress / central-stress CG adapters. "
+                "C_s=0 (default) is a no-op preserving scalar-tau behaviour.",
+            ),
         },
         "D3Q27": {
             "BGK": (
@@ -275,6 +282,15 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 None,
                 "D3Q19 BGK + WALE.",
             ),
+            "CG": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.cg_advanced_collision.collide_cg_regularized_stress_3d(sgs_model='wale')",
+                "test_cg_sgs_coupling.py: shape, finite, mass, momentum, equilibrium identity, stability",
+                None,
+                "Color-Gradient multiphase + WALE via per-cell tau_eff = tau + 3*nu_t "
+                "in the regularized-stress / central-stress CG adapters. "
+                "Reuses _wale_nu_t_3d helper from turbulence.py.",
+            ),
         },
         "D3Q27": {
             "BGK": (
@@ -307,6 +323,15 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
                 None,
                 "D3Q19 BGK + Vreman.",
+            ),
+            "CG": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.cg_advanced_collision.collide_cg_regularized_stress_3d(sgs_model='vreman')",
+                "test_cg_sgs_coupling.py: shape, finite, mass, momentum, equilibrium identity, stability",
+                None,
+                "Color-Gradient multiphase + Vreman via per-cell tau_eff = tau + 3*nu_t "
+                "in the regularized-stress / central-stress CG adapters. "
+                "Reuses _vreman_nu_t_3d helper from turbulence.py.",
             ),
         },
         "D3Q27": {
@@ -426,25 +451,6 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 None,
                 None,
                 "Iterative Eikonal (FMM-like) wall-distance solver; 3-D. No unit tests.",
-            ),
-        },
-    },
-
-    # -----------------------------------------------------------------------
-    # Shan-Chen multiphase — D3Q27 BGK only; CONTRACT_TESTED
-    # -----------------------------------------------------------------------
-    "shan_chen_multiphase": {
-        "D3Q27": {
-            "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
-                "tensorlbm.multiphase3d_d3q27.collide_sc_single_component_27 / collide_sc_two_component_27",
-                "test_multiphase3d_d3q27.py: shape, finite, mass conservation, "
-                "solid-mask, Guo forcing, static-droplet stability",
-                None,
-                "D3Q27 Shan-Chen single-component and two-component BGK collision with "
-                "27-direction neighbour gather, force-shifted equilibrium, and optional "
-                "Guo second-order forcing. 4th-order isotropic lattice (includes corner "
-                "directions).  Also available for D3Q19 in tensorlbm.multiphase3d.",
             ),
         },
     },

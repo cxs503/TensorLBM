@@ -81,13 +81,16 @@ def collide_mrt_d3q19(f: torch.Tensor, tau: float, **rates: float) -> torch.Tens
 
 
 def collide_regularized_stress_d3q19(
-    f_total: torch.Tensor, feq: torch.Tensor, tau: float,
+    f_total: torch.Tensor, feq: torch.Tensor, tau: float | torch.Tensor,
 ) -> torch.Tensor:
     """Relax only the D3Q19 second-order non-equilibrium stress.
 
     ``feq`` is deliberately supplied by the caller.  This lets force-aware
     users retain their own equilibrium construction instead of silently
     recomputing unshifted hydrodynamics in this common kernel.
+
+    *tau* may be a scalar or a per-cell tensor ``(nz, ny, nx)``; the
+    relaxation rate ``omega = 1/tau`` broadcasts over the stress components.
     """
     pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz = second_order_stress_d3q19(f_total - feq)
     omega = 1.0 / tau
@@ -98,12 +101,14 @@ def collide_regularized_stress_d3q19(
 
 
 def collide_central_stress_d3q19(
-    f_total: torch.Tensor, feq: torch.Tensor, tau: float, s_bulk: float | None = None,
+    f_total: torch.Tensor, feq: torch.Tensor, tau: float | torch.Tensor, s_bulk: float | None = None,
 ) -> torch.Tensor:
     """Second-order central-stress approximation with independent trace rate.
 
     This is not a full cascaded collision: it only relaxes the second-order
     trace/deviatoric stresses and projects away every higher-order mode.
+
+    *tau* may be a scalar or a per-cell tensor ``(nz, ny, nx)``.
     """
     pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz = second_order_stress_d3q19(f_total - feq)
     omega_shear = 1.0 / tau
