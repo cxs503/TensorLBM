@@ -34,6 +34,14 @@ from .multiphase import (
     psi_peng_robinson,
     psi_power,
 )  # re-export for convenience
+from .phasefield.free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu
+from .turbulence import (
+    _neq_stress_norm_27,
+    _nu_t_to_tau_eff,
+    _smagorinsky_tau,
+    _vreman_nu_t_3d,
+    _wale_nu_t_3d,
+)
 
 _CS2 = 1.0 / 3.0
 
@@ -353,6 +361,186 @@ def collide_sc_single_component_27(
 
 
 # ---------------------------------------------------------------------------
+# Free-Energy / Phase-Field (D3Q27)
+# ---------------------------------------------------------------------------#
+# Extends the D3Q19 Swift et al. formulation to the D3Q27 velocity set.
+# Two coupled LBM equations:
+#   f  – momentum distribution for total density ρ and velocity u.
+#   g  – order-parameter distribution that advects the phase field φ = Σᵢ gᵢ.
+#
+# Chemical potential: μ = −Aφ + Bφ³ − κ∇²φ   (shared DoubleWellFreeEnergy)
+# Driving force:      Fᵢ = −φ ∇μ + ρ_eff g_body   (Korteweg force)
+#
+# The phase-field operators (DoubleWellFreeEnergy, force_minus_phi_grad_mu,
+# central_gradient_3d, laplacian_3d) are lattice-agnostic and reused
+# unchanged from the phasefield/ package.  Only the equilibrium and
+# macroscopic moments use the 27-direction lattice.
+
+
+def init_free_energy_g_3d_27(
+    phi: torch.Tensor,
+    ux: torch.Tensor | None = None,
+    uy: torch.Tensor | None = None,
+    uz: torch.Tensor | None = None,
+) -> torch.Tensor:
+    """Initialise the D3Q27 FE order-parameter distribution in equilibrium.
+
+    Args:
+        phi: Initial phase field, shape ``(nz, ny, nx)``.
+        ux:  Initial x-velocity (optional, defaults to zero).
+        uy:  Initial y-velocity (optional, defaults to zero).
+        uz:  Initial z-velocity (optional, defaults to zero).
+
+    Returns:
+        Equilibrium distribution g, shape ``(27, nz, ny, nx)``.
+    """
+    device = phi.device
+    c = _c_on_27(device)
+    w = _w_on_27(device).view(27, 1, 1, 1)
+
+    if ux is None:
+        ux = torch.zeros_like(phi)
+    if uy is None:
+        uy = torch.zeros_like(phi)
+    if uz is None:
+        uz = torch.zeros_like(phi)
+
+    cx = c[:, 0].float().view(27, 1, 1, 1)
+    cy = c[:, 1].float().view(27, 1, 1, 1)
+    cz = c[:, 2].float().view(27, 1, 1, 1)
+    cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
+    u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
+    return w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+
+
+def free_energy_step_3d_27(
+    f: torch.Tensor,
+    g: torch.Tensor,
+    tau_f: float = 1.0,
+    tau_g: float = 0.7,
+    A: float = 0.1,
+    B: float = 0.1,
+    kappa: float = 0.02,
+    Gamma: float = 0.5,
+    gx: float = 0.0,
+    gy: float = 0.0,
+    gz: float = 0.0,
+    rho_heavy: float | None = None,
+    rho_light: float | None = None,
+    C_s: float = 0.0,
+    sgs_model: str = 'smagorinsky',
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Free-Energy two-phase step for D3Q27.
+
+    Two coupled LBM equations:
+      • **f**: momentum distribution for total density ρ and velocity u.
+      • **g**: order-parameter distribution that advects the phase field φ.
+
+    The Korteweg stress drives interface dynamics.  When *rho_heavy* and
+    *rho_light* are given the gravitational body force is scaled by the local
+    effective density (Boussinesq buoyancy).
+
+    This follows the same algorithmic pattern as the D3Q19
+    :func:`~tensorlbm.multiphase3d.free_energy_step_3d` but uses the
+    27-direction velocity set.  The lattice-agnostic phase-field operators
+    (chemical potential, Korteweg force) are reused from the
+    :mod:`tensorlbm.phasefield` package.
+
+    Args:
+        f:          Momentum distribution, shape ``(27, nz, ny, nx)``.
+        g:          Order-parameter distribution, shape ``(27, nz, ny, nx)``;
+                    its zeroth moment is the phase field φ = Σᵢ gᵢ.
+        tau_f:      Relaxation time for momentum (ν = cs²(τ_f − ½)).
+        tau_g:      Relaxation time for phase field (M = cs²(τ_g − ½)).
+        A:          Double-well coefficient.
+        B:          Quartic coefficient.
+        kappa:      Interfacial-tension parameter (gradient penalty).
+        Gamma:      Phase-field mobility coupling.
+        gx:         x body-force acceleration.
+        gy:         y body-force acceleration.
+        gz:         z body-force acceleration.
+        rho_heavy:  Effective density for the φ=+1 phase (Boussinesq buoyancy).
+        rho_light:  Effective density for the φ=−1 phase.
+        C_s:        SGS model constant.  When > 0, an LES sub-grid model is
+                    applied to the *f* collision.  Interpreted as the
+                    Smagorinsky constant C_s, WALE constant C_w, or Vreman
+                    constant C_V depending on *sgs_model*.
+        sgs_model:  Sub-grid model selector: ``'smagorinsky'`` (default),
+                    ``'wale'``, or ``'vreman'``.  Only affects the *f*
+                    collision when ``C_s > 0``.
+
+    Returns:
+        Updated ``(f, g)`` after one collision step.
+    """
+    _VALID_SGS_MODELS = ('smagorinsky', 'wale', 'vreman')
+    if sgs_model not in _VALID_SGS_MODELS:
+        raise ValueError(
+            f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}"
+        )
+    device = f.device
+    c = _c_on_27(device)
+    w = _w_on_27(device)
+    cx = c[:, 0].float().view(27, 1, 1, 1)
+    cy = c[:, 1].float().view(27, 1, 1, 1)
+    cz = c[:, 2].float().view(27, 1, 1, 1)
+    w_v = w.view(27, 1, 1, 1)
+
+    # Macroscopic quantities
+    rho, ux, uy, uz = macroscopic27(f)
+    phi = g.sum(dim=0)  # order parameter
+
+    # Effective density for buoyancy (Boussinesq approximation)
+    if rho_heavy is not None and rho_light is not None:
+        phi_c = phi.clamp(-1.0, 1.0)
+        rho_eff = 0.5 * ((1.0 + phi_c) * rho_heavy + (1.0 - phi_c) * rho_light)
+    else:
+        rho_eff = rho
+
+    # Chemical potential and Korteweg force (lattice-agnostic, periodic stencil)
+    mu = DoubleWellFreeEnergy(A=A, B=B, kappa=kappa).chemical_potential(
+        phi, boundary="periodic"
+    )
+    force_x, force_y, force_z = force_minus_phi_grad_mu(phi, mu, boundary="periodic")
+    Fx = force_x + rho_eff * gx
+    Fy = force_y + rho_eff * gy
+    Fz = force_z + rho_eff * gz
+
+    rho_s = torch.clamp(rho, min=1e-12)
+    ux_eq = ux + tau_f * Fx / rho_s
+    uy_eq = uy + tau_f * Fy / rho_s
+    uz_eq = uz + tau_f * Fz / rho_s
+
+    # Collision for f (BGK with Korteweg + buoyancy force)
+    feq = equilibrium27(rho, ux_eq, uy_eq, uz_eq)
+    if C_s > 0.0:
+        if sgs_model == 'smagorinsky':
+            tau_eff = _smagorinsky_tau(
+                tau_f, _neq_stress_norm_27(f - feq), rho_s, C_s,
+            )
+        elif sgs_model == 'wale':
+            nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
+            tau_eff = _nu_t_to_tau_eff(tau_f, nu_t)
+        else:  # vreman
+            nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
+            tau_eff = _nu_t_to_tau_eff(tau_f, nu_t)
+        f_out = f - (f - feq) / tau_eff.unsqueeze(0)
+    else:
+        f_out = f - (f - feq) / tau_f
+
+    # Equilibrium for g  (D=3, cs²=1/3 → diff_factor = 3|c|² − 3)
+    cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
+    u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
+    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+    c_sq = cx ** 2 + cy ** 2 + cz ** 2
+    diff_factor = c_sq / _CS2 - 3.0  # = 3|c|² − 3;  Σ_i wᵢ diff_factor = 0
+    geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
+    geq = geq_adv + geq_diff
+    g_out = g - (g - geq) / tau_g
+
+    return f_out, g_out
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -362,6 +550,9 @@ __all__ = [
     "collide_sc_two_component_27",
     # D3Q27 SC single-component
     "collide_sc_single_component_27",
+    # D3Q27 Free-Energy / Phase-Field
+    "init_free_energy_g_3d_27",
+    "free_energy_step_3d_27",
     # Re-exported pseudopotential helpers (same as 2D / D3Q19)
     "psi_linear",
     "psi_exp",
