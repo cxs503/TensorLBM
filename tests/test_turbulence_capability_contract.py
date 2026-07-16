@@ -80,7 +80,7 @@ class TestSmagorinsky:
 
 
 # ---------------------------------------------------------------------------
-# Dynamic Smagorinsky: only D2Q9 BGK and D3Q19 BGK
+# Dynamic Smagorinsky: D2Q9 BGK, D3Q19 BGK/MRT, D3Q27 BGK/MRT
 # ---------------------------------------------------------------------------
 
 class TestDynamicSmagorinsky:
@@ -90,9 +90,9 @@ class TestDynamicSmagorinsky:
             ("D2Q9", "BGK", "IMPLEMENTED"),
             ("D3Q19", "BGK", "IMPLEMENTED"),
             ("D3Q19", "MRT", "IMPLEMENTED"),
+            ("D3Q27", "BGK", "IMPLEMENTED"),
+            ("D3Q27", "MRT", "IMPLEMENTED"),
             ("D2Q9", "MRT", NO_IMPLEMENTATION),
-            ("D3Q27", "BGK", NO_IMPLEMENTATION),
-            ("D3Q27", "MRT", NO_IMPLEMENTATION),
         ],
     )
     def test_combinations(self, lattice: str, collision: str, expected_impl: str) -> None:
@@ -114,6 +114,27 @@ class TestDynamicSmagorinsky:
         assert cap.entrypoint == "tensorlbm.turbulence.collide_dynamic_smagorinsky_mrt3d"
         assert cap.test_evidence is not None
         assert "test_dynamic_smagorinsky.py" in cap.test_evidence
+
+    def test_d3q27_bgk_is_implemented_and_contract_tested(self) -> None:
+        cap = turbulence_capability_matrix()["dynamic_smagorinsky"]["D3Q27"]["BGK"]
+        assert cap.implementation_status == "IMPLEMENTED"
+        assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
+        assert cap.entrypoint == "tensorlbm.turbulence.collide_dynamic_smagorinsky_bgk27"
+        assert cap.test_evidence is not None
+        assert "test_dynamic_smagorinsky_extensions.py" in cap.test_evidence
+
+    def test_d3q27_mrt_is_implemented_and_contract_tested(self) -> None:
+        cap = turbulence_capability_matrix()["dynamic_smagorinsky"]["D3Q27"]["MRT"]
+        assert cap.implementation_status == "IMPLEMENTED"
+        assert cap.verification_level == VERIFICATION_CONTRACT_TESTED
+        assert cap.entrypoint == "tensorlbm.turbulence.collide_dynamic_smagorinsky_mrt27"
+        assert cap.test_evidence is not None
+        assert "test_dynamic_smagorinsky_mrt27.py" in cap.test_evidence
+
+    def test_d3q27_mrt_hot_path_note_documents_item_sync(self) -> None:
+        cap = turbulence_capability_matrix()["dynamic_smagorinsky"]["D3Q27"]["MRT"]
+        assert cap.hot_path_note is not None
+        assert "item()" in cap.hot_path_note
 
     def test_hot_path_note_documents_item_sync(self) -> None:
         cap = turbulence_capability_matrix()["dynamic_smagorinsky"]["D2Q9"]["BGK"]

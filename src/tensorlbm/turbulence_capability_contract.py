@@ -236,7 +236,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
     },
 
     # -----------------------------------------------------------------------
-    # Dynamic Smagorinsky — 3 combinations (D2Q9 BGK, D3Q19 BGK, D3Q19 MRT), CONTRACT_TESTED
+    # Dynamic Smagorinsky — 5 combinations (D2Q9 BGK, D3Q19 BGK/MRT,
+    # D3Q27 BGK/MRT), all CONTRACT_TESTED
     # -----------------------------------------------------------------------
     "dynamic_smagorinsky": {
         "D2Q9": {
@@ -244,7 +245,7 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_dynamic_smagorinsky_bgk",
                 "test_dynamic_smagorinsky.py: shape, finite",
-                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1096 "
+                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1147 "
                 "is a GPU→CPU sync point per collision step.",
                 "Dynamic Smagorinsky with Germano identity; test-filter box averaging.",
             ),
@@ -254,7 +255,7 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_dynamic_smagorinsky_bgk3d",
                 "test_dynamic_smagorinsky.py: shape",
-                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1160 "
+                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1211 "
                 "is a GPU→CPU sync point per collision step.",
                 "D3Q19 dynamic Smagorinsky.",
             ),
@@ -262,10 +263,29 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_dynamic_smagorinsky_mrt3d",
                 "test_dynamic_smagorinsky.py: shape, finite, mass, momentum, equilibrium identity",
-                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1218 "
+                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1297 "
                 "is a GPU→CPU sync point per collision step.",
                 "D3Q19 MRT with dynamic Smagorinsky; per-cell tau_eff replaces stress-mode "
                 "relaxation rate (modes 9-13), non-stress modes use fixed MRT rates.",
+            ),
+        },
+        "D3Q27": {
+            "BGK": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.turbulence.collide_dynamic_smagorinsky_bgk27",
+                "test_dynamic_smagorinsky_extensions.py: shape, finite, mass, momentum, equilibrium identity",
+                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1389 "
+                "is a GPU→CPU sync point per collision step.",
+                "D3Q27 BGK + dynamic Smagorinsky.",
+            ),
+            "MRT": (
+                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                "tensorlbm.turbulence.collide_dynamic_smagorinsky_mrt27",
+                "test_dynamic_smagorinsky_mrt27.py: shape, finite, mass, momentum, equilibrium identity, sphere flow",
+                "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1476 "
+                "is a GPU→CPU sync point per collision step.",
+                "D3Q27 MRT with dynamic Smagorinsky; per-cell tau_eff replaces stress-mode "
+                "relaxation rate (modes 5-9), non-stress modes use fixed MRT rates.",
             ),
         },
     },
@@ -474,7 +494,7 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
     HotPathAllocation(
         function="collide_dynamic_smagorinsky_bgk",
         file="tensorlbm/turbulence.py",
-        line=1096,
+        line=1147,
         pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
         severity="SYNC",
         note="Global Cs reduction to Python float; GPU→CPU sync per collision step. "
@@ -483,7 +503,7 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
     HotPathAllocation(
         function="collide_dynamic_smagorinsky_bgk3d",
         file="tensorlbm/turbulence.py",
-        line=1160,
+        line=1211,
         pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
         severity="SYNC",
         note="Global Cs reduction to Python float; GPU→CPU sync per collision step.",
@@ -491,10 +511,27 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
     HotPathAllocation(
         function="collide_dynamic_smagorinsky_mrt3d",
         file="tensorlbm/turbulence.py",
-        line=1296,
+        line=1297,
         pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
         severity="SYNC",
         note="Global Cs reduction to Python float; GPU→CPU sync per collision step.",
+    ),
+    HotPathAllocation(
+        function="collide_dynamic_smagorinsky_bgk27",
+        file="tensorlbm/turbulence.py",
+        line=1389,
+        pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
+        severity="SYNC",
+        note="Global Cs reduction to Python float; GPU→CPU sync per collision step.",
+    ),
+    HotPathAllocation(
+        function="collide_dynamic_smagorinsky_mrt27",
+        file="tensorlbm/turbulence.py",
+        line=1476,
+        pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
+        severity="SYNC",
+        note="Global Cs reduction to Python float; GPU→CPU sync per collision step. "
+             "Architecturally inherent to the dynamic procedure (single global Cs).",
     ),
     HotPathAllocation(
         function="collide_rans_ke",
