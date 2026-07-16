@@ -62,7 +62,7 @@ class TestDGLBMSuboffConfig:
 
     def test_validate_raises_bad_dg_order(self) -> None:
         with pytest.raises(ValueError, match="dg_order"):
-            DGLBMSuboffConfig(dg_order=2).validate()
+            DGLBMSuboffConfig(dg_order=3).validate()
 
     def test_validate_passes_defaults(self) -> None:
         DGLBMSuboffConfig().validate()
