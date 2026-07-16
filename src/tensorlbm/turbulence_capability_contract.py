@@ -41,7 +41,7 @@ TurbulenceFamily = Literal[
     "wall_distance",
 ]
 LatticeName = Literal["D2Q9", "D3Q19", "D3Q27"]
-CollisionName = Literal["BGK", "MRT", "N/A"]
+CollisionName = Literal["BGK", "MRT", "TRT", "RLBM", "N/A"]
 
 # ---------------------------------------------------------------------------
 # Machine-readable withheld codes (fail-closed)
@@ -104,7 +104,7 @@ _AUDITED_FAMILIES: tuple[str, ...] = (
     "wall_distance",
 )
 _AUDITED_LATTICES: tuple[str, ...] = ("D2Q9", "D3Q19", "D3Q27")
-_AUDITED_COLLISIONS: tuple[str, ...] = ("BGK", "MRT", "N/A")
+_AUDITED_COLLISIONS: tuple[str, ...] = ("BGK", "MRT", "TRT", "RLBM", "N/A")
 
 
 # ---------------------------------------------------------------------------

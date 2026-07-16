@@ -105,6 +105,9 @@ _COMPONENT_EVIDENCE: dict[str, dict[str, tuple[bool, EvidenceTier, str]]] = {
         "d3q27": (True, EvidenceTier.COMPONENT_CONTRACT, "D3Q27 MRT entrypoint is executable: tensorlbm.d3q27.collide_mrt27."),
     },
     "collision": {
+        "bgk": (True, EvidenceTier.COMPONENT_CONTRACT, "advanced_collision_contract advertises BGK for D3Q19 and D3Q27."),
+        "trt": (True, EvidenceTier.COMPONENT_CONTRACT, "advanced_collision_contract advertises TRT for D3Q19 and D3Q27."),
+        "rlbm": (True, EvidenceTier.COMPONENT_CONTRACT, "advanced_collision_contract advertises RLBM for D3Q19 and D3Q27."),
         "mrt": (True, EvidenceTier.COMPONENT_CONTRACT, "advanced_collision_contract advertises MRT for D3Q19 and D3Q27."),
         "cm": (False, EvidenceTier.UNIMPLEMENTED, "CM is explicitly withheld: no standalone validated central-moment kernel."),
         "kbc": (False, EvidenceTier.UNIMPLEMENTED, "KBC is explicitly withheld: no entropy-solved KBC kernel."),
@@ -121,7 +124,7 @@ _R1_SUPPORTED = CapabilityRequest(
 
 _ALIASES = {
     "lattice": {"d3q19": "d3q19", "d3q27": "d3q27"},
-    "collision": {"mrt": "mrt", "cm": "cm", "cascaded": "cm", "kbc": "kbc", "entropic_kbc": "kbc"},
+    "collision": {"bgk": "bgk", "srt": "bgk", "trt": "trt", "two_relaxation_time": "trt", "rlbm": "rlbm", "regularized": "rlbm", "regularised": "rlbm", "mrt": "mrt", "cm": "cm", "cascaded": "cm", "kbc": "kbc", "entropic_kbc": "kbc"},
     "turbulence": {"none": "none", "laminar": "none", "smagorinsky": "smagorinsky", "les": "smagorinsky"},
     "multiphase": {"single_phase": "single_phase", "single-phase": "single_phase", "free_surface": "free_surface", "phase_field": "phase_field"},
     "boundary": {"static_wall": "static_wall", "static-wall": "static_wall", "velocity_inlet": "velocity_inlet", "pressure_outlet": "pressure_outlet", "periodic": "periodic"},
@@ -135,7 +138,7 @@ _ALIASES = {
 # known but unverified values are withheld; unknown values are not supported.
 _KNOWN_VALUES: dict[str, frozenset[str]] = {
     "lattice": frozenset(("d3q19", "d3q27")),
-    "collision": frozenset(("mrt", "cm", "kbc")),
+    "collision": frozenset(("bgk", "trt", "rlbm", "mrt", "cm", "kbc")),
     "turbulence": frozenset(("none", "smagorinsky")),
     "multiphase": frozenset(("single_phase", "free_surface", "phase_field")),
     "boundary": frozenset(("static_wall", "velocity_inlet", "pressure_outlet", "periodic")),
