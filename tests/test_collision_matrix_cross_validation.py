@@ -19,14 +19,18 @@ def test_runner_records_only_available_mrt_and_explicitly_skips_withheld_familie
         ("D3Q19", "MRT"),
         ("D3Q19", "CM"),
         ("D3Q19", "KBC"),
+        ("D3Q19", "CUMULANT"),
         ("D3Q27", "MRT"),
         ("D3Q27", "CM"),
         ("D3Q27", "KBC"),
+        ("D3Q27", "CUMULANT"),
     ]
     available = [item for item in evidence.combinations if item.status == "PASS"]
     assert [(item.lattice, item.family) for item in available] == [
         ("D3Q19", "MRT"),
+        ("D3Q19", "CUMULANT"),
         ("D3Q27", "MRT"),
+        ("D3Q27", "CUMULANT"),
     ]
     for item in available:
         assert [probe.name for probe in item.probes] == [

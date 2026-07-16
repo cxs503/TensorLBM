@@ -508,6 +508,7 @@ from .wave_bc import (
 )
 from .cumulant import (
     collide_cumulant_d2q9,
+    collide_cumulant_d3q19,
     collide_cumulant_d3q27,
 )
 from .streamlines import (
@@ -1009,6 +1010,7 @@ __all__ = [
     "reconstruct_flow_field",
     # Cumulant LBM
     "collide_cumulant_d2q9",
+    "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
     # Streamline / pathline tracing
     "Streamline",

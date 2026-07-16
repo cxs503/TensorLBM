@@ -54,6 +54,7 @@ from __future__ import annotations
 import torch
 
 from .d2q9 import equilibrium, macroscopic
+from .d3q19 import equilibrium3d, macroscopic3d
 from .d3q27 import equilibrium27, macroscopic27
 
 # ---------------------------------------------------------------------------
@@ -347,7 +348,140 @@ def collide_cumulant_d3q27(
     return feq + fneq_reg + fneq_ho_s
 
 
+# ---------------------------------------------------------------------------
+# D3Q19 cumulant collision
+# ---------------------------------------------------------------------------
+
+def collide_cumulant_d3q19(
+    f: torch.Tensor,
+    tau: float,
+    omega_b: float = 1.0,
+    omega_odd: float = 1.0,
+    omega_even: float = 1.0,
+    C_s: float = 0.0,
+) -> torch.Tensor:
+    """Cumulant LBM collision step for the D3Q19 lattice.
+
+    Implements the 3-D cumulant operator for the 19-direction lattice,
+    following the same regularized-reconstruction pattern as the D3Q27
+    cumulant (Geier *et al.*, 2015) but using the D3Q19 stencil (no corner
+    directions).
+
+    The D3Q19 lattice has 19 populations and 19 raw moments.  The
+    transformation chain is:
+
+    1. **Raw moments** – density *ρ*, momentum *j*, and the 2nd-order
+       stress tensor *Π*_{αβ} = Σ_i c_{iα} c_{iβ} f_i are extracted from
+       the populations via grouped summation (the 19×19 moment basis).
+    2. **Central-moment shift** – because *f*^{neq} = *f* − *f*^{eq}
+       carries zero momentum (Σ c_{iα} f^{neq}_i = 0), the 2nd-order
+       central moments coincide with the raw 2nd-order moments.  This is
+       the Galilean-invariant shift by the local velocity *u*.
+    3. **Cumulant relaxation** – the 2nd-order cumulants (which equal the
+       central moments at this order) are relaxed independently: shear
+       modes at *ω* = 1/*τ*, the bulk/trace mode at *ω_b*, and the
+       residual higher-order modes at *ω_even*.
+    4. **Inverse transform** – the relaxed stress tensor is projected back
+       onto the 2nd-order Hermite subspace and combined with the
+       relaxed higher-order residual to recover post-collision
+       populations.
+
+    Args:
+        f:          Distribution tensor, shape ``(19, nz, ny, nx)``.
+        tau:        Shear relaxation time τ > 0.5.
+        omega_b:    Bulk viscosity rate (default 1.0).
+        omega_odd:  Rate for odd-order ghost modes (default 1.0).
+        omega_even: Rate for even-order ghost modes ≥ 4 (default 1.0).
+        C_s:        Smagorinsky constant (0 = no LES, 0.1 = typical).
+
+    Returns:
+        Post-collision distribution tensor, shape ``(19, nz, ny, nx)``.
+    """
+    device = f.device
+    cs2 = 1.0 / 3.0
+
+    # ---- Macroscopic fields -------------------------------------------
+    rho, ux, uy, uz = macroscopic3d(f)
+
+    # ---- Equilibrium distributions (for reference / back-transform) ---
+    feq = equilibrium3d(rho, ux, uy, uz)
+
+    # ---- Non-equilibrium part -----------------------------------------
+    fneq = f - feq
+
+    # ---- Strain rate tensor from fneq (2nd Hermite moment) ------------
+    # Π_αβ = Σ_i c_iα c_iβ fneq_i
+    from .d3q19 import C as C19  # noqa: PLC0415
+    c = C19.to(device).float()   # (19, 3)
+    cx = c[:, 0].view(19, 1, 1, 1)
+    cy = c[:, 1].view(19, 1, 1, 1)
+    cz = c[:, 2].view(19, 1, 1, 1)
+
+    pi_xx = (cx * cx * fneq).sum(0)
+    pi_yy = (cy * cy * fneq).sum(0)
+    pi_zz = (cz * cz * fneq).sum(0)
+    pi_xy = (cx * cy * fneq).sum(0)
+    pi_xz = (cx * cz * fneq).sum(0)
+    pi_yz = (cy * cz * fneq).sum(0)
+
+    # ---- Relaxation rate: scalar or per-cell Smagorinsky LES ----------
+    if C_s > 0.0:
+        # Smagorinsky: tau_eff = 0.5*(tau + sqrt(tau² + 18*C_s²*|Π|/ρ))
+        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2
+                   + 2.0*(pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
+        rho_safe = rho.clamp(min=1e-12)
+        tau_eff = 0.5 * (tau + torch.sqrt(tau * tau + 18.0 * C_s * C_s * pi_norm / rho_safe))
+        omega = 1.0 / tau_eff  # per-cell tensor
+    else:
+        omega = 1.0 / tau  # scalar
+
+    # Bulk mode: trace of stress tensor
+    trace = pi_xx + pi_yy + pi_zz
+
+    # Relax shear/normal stress components
+    pi_xx_s = pi_xx - omega * pi_xx - (omega_b - omega) * trace / 3.0
+    pi_yy_s = pi_yy - omega * pi_yy - (omega_b - omega) * trace / 3.0
+    pi_zz_s = pi_zz - omega * pi_zz - (omega_b - omega) * trace / 3.0
+    pi_xy_s = pi_xy - omega * pi_xy
+    pi_xz_s = pi_xz - omega * pi_xz
+    pi_yz_s = pi_yz - omega * pi_yz
+
+    # ---- D3Q19 weights (rest 1/3, face 1/18, edge 1/36) --------------
+    w19 = (
+        torch.tensor(
+            [1.0 / 3.0]                       # (0,0,0)
+            + [1.0 / 18.0] * 6                # 6 face centres
+            + [1.0 / 36.0] * 12,              # 12 edge centres
+            dtype=f.dtype, device=device,
+        )
+        .view(19, 1, 1, 1)
+    )
+
+    h_xx = cx * cx - cs2
+    h_yy = cy * cy - cs2
+    h_zz = cz * cz - cs2
+    h_xy = cx * cy
+    h_xz = cx * cz
+    h_yz = cy * cz
+
+    # Hermite reconstruction from 2nd-order stress tensor only
+    fneq_reg = (4.5 * w19 * (
+        h_xx * pi_xx_s + h_yy * pi_yy_s + h_zz * pi_zz_s
+        + 2.0 * h_xy * pi_xy_s + 2.0 * h_xz * pi_xz_s + 2.0 * h_yz * pi_yz_s
+    ))
+
+    # Higher-order fneq relaxed separately
+    fneq_ho = fneq - (4.5 * w19 * (
+        h_xx * pi_xx + h_yy * pi_yy + h_zz * pi_zz
+        + 2.0 * h_xy * pi_xy + 2.0 * h_xz * pi_xz + 2.0 * h_yz * pi_yz
+    ))
+    fneq_ho_s = (1.0 - omega_even) * fneq_ho
+
+    return feq + fneq_reg + fneq_ho_s
+
+
 __all__ = [
     "collide_cumulant_d2q9",
+    "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
 ]

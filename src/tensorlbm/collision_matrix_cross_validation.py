@@ -55,7 +55,7 @@ class CollisionCombinationEvidence:
     """Evidence or explicit withholding for one capability-matrix cell."""
 
     lattice: Literal["D3Q19", "D3Q27"]
-    family: Literal["BGK", "TRT", "RLBM", "MRT", "CM", "KBC"]
+    family: Literal["BGK", "TRT", "RLBM", "MRT", "CM", "KBC", "CUMULANT"]
     status: Literal["PASS", "FAIL", "SKIPPED_WITHHELD"]
     entrypoint: str | None
     withheld_reason: str | None
@@ -134,14 +134,15 @@ def _non_equilibrium(lattice: str) -> torch.Tensor:
     return f + perturbation
 
 
-def _probe_available_mrt(lattice: Literal["D3Q19", "D3Q27"]) -> tuple[ConsistencyProbeResult, ...]:
+def _probe_available_kernel(lattice: Literal["D3Q19", "D3Q27"], family: str = "MRT") -> tuple[ConsistencyProbeResult, ...]:
+    """Run deterministic consistency probes for one AVAILABLE kernel cell."""
     equilibrium_state, _, _, _, _ = _state(lattice)
-    equilibrium_post = collide_advanced_3d(lattice, "MRT", equilibrium_state, tau=0.8)
+    equilibrium_post = collide_advanced_3d(lattice, family, equilibrium_state, tau=0.8)
     fixed_error = _max_abs(equilibrium_post - equilibrium_state)
 
     non_equilibrium = _non_equilibrium(lattice)
     before = _macroscopic(lattice, non_equilibrium)
-    after_population = collide_advanced_3d(lattice, "MRT", non_equilibrium, tau=0.8)
+    after_population = collide_advanced_3d(lattice, family, non_equilibrium, tau=0.8)
     after = _macroscopic(lattice, after_population)
     invariant_error = max(_max_abs(after[index] - before[index]) for index in range(4))
 
@@ -175,7 +176,7 @@ def run_collision_matrix_cross_validation() -> CollisionMatrixCrossValidationEvi
     matrix = collision_capability_matrix()
     combinations: list[CollisionCombinationEvidence] = []
     for lattice in ("D3Q19", "D3Q27"):
-        for family in ("MRT", "CM", "KBC"):
+        for family in ("MRT", "CM", "KBC", "CUMULANT"):
             capability = matrix[lattice][family]
             if not capability.available:
                 combinations.append(CollisionCombinationEvidence(
@@ -183,7 +184,7 @@ def run_collision_matrix_cross_validation() -> CollisionMatrixCrossValidationEvi
                     capability.status, (), (),
                 ))
                 continue
-            probes = _probe_available_mrt(lattice)
+            probes = _probe_available_kernel(lattice, family)
             combinations.append(CollisionCombinationEvidence(
                 lattice, family, "PASS" if all(item.status == "PASS" for item in probes) else "FAIL",
                 capability.entrypoint, None, probes, _source_provenance(lattice),
