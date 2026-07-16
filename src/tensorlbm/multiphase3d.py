@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 from .d3q19 import C, W, equilibrium3d, macroscopic3d
 from .multiphase import psi_exp, psi_linear, psi_power, psi_carnahan_starling, psi_peng_robinson  # re-export for convenience
+from .phasefield.free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu
 from .solver3d import _get_d3q19_mrt_matrices
 from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
 
@@ -641,16 +642,14 @@ def free_energy_step_3d(
     else:
         rho_eff = rho
 
-    # Chemical potential: μ = −Aφ + Bφ³ − κ∇²φ
-    mu = -A * phi + B * phi ** 3 - kappa * _laplacian_3d(phi)
-
-    # Korteweg (capillary) body force: F_cap = −φ ∇μ + ρ_eff g_body
-    grad_mu_x = 0.5 * (torch.roll(mu, -1, dims=2) - torch.roll(mu, 1, dims=2))
-    grad_mu_y = 0.5 * (torch.roll(mu, -1, dims=1) - torch.roll(mu, 1, dims=1))
-    grad_mu_z = 0.5 * (torch.roll(mu, -1, dims=0) - torch.roll(mu, 1, dims=0))
-    Fx = -phi * grad_mu_x + rho_eff * gx
-    Fy = -phi * grad_mu_y + rho_eff * gy
-    Fz = -phi * grad_mu_z + rho_eff * gz
+    # Chemical potential and Korteweg force retain the legacy periodic stencil.
+    mu = DoubleWellFreeEnergy(A=A, B=B, kappa=kappa).chemical_potential(
+        phi, boundary="periodic"
+    )
+    force_x, force_y, force_z = force_minus_phi_grad_mu(phi, mu, boundary="periodic")
+    Fx = force_x + rho_eff * gx
+    Fy = force_y + rho_eff * gy
+    Fz = force_z + rho_eff * gz
 
     rho_s = torch.clamp(rho, min=1e-12)
     ux_eq = ux + tau_f * Fx / rho_s
