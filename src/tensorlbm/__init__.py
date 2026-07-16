@@ -1,5 +1,12 @@
 from ._version import __version__
 from .backends import get_backend, set_backend
+from .amr_capability_contract import (
+    LocalRefinementCapability,
+    LocalRefinementWithheldError,
+    REQUIRED_FRONTEND_METADATA,
+    local_refinement_capability_matrix,
+    require_local_refinement_capability,
+)
 from .adaptive_refinement import (
     AdaptationSchedule,
     AdaptiveSolver2D,
