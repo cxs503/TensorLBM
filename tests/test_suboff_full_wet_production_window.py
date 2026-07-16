@@ -70,3 +70,20 @@ def test_actual_tiny_full_wet_runner_smoke_is_withheld_not_synthetic() -> None:
     assert result["window_status"] == "WITHHELD_NO_POPULATION_STATE"
     assert result["force_window"] is None
     assert result["physical_validation"] is False
+
+
+def test_actual_population_export_is_consumed_as_measured_candidate() -> None:
+    asset, config = _inputs()
+    config = FullyWettedFlowConfig(
+        geometry=config.geometry, composition=config.composition, device_spec=config.device_spec,
+        shape=config.shape, tau=config.tau, inlet_velocity=config.inlet_velocity, steps=config.steps,
+        capture_population_steps=(1,),
+    )
+
+    result = run_suboff_full_wet_production_window(asset, config)
+
+    assert result["status"] == "measured_candidate"
+    assert result["window_status"] == "MEASURED_REAL_POPULATION_STATE"
+    assert result["force_window"]["windows"] == 1
+    assert result["force_window"]["observation"]["sample_phase"] == "post_stream_pre_bounce_back"
+    assert result["physical_validation"] is False

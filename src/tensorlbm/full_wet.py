@@ -7,6 +7,7 @@ loop owns only prebound numerical work and same-phase observations.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from hashlib import sha256
 from math import isfinite
 from typing import Mapping, cast
 
@@ -27,6 +28,7 @@ _UNSUPPORTED = (
     "physical_control_volume_closure",
     "arbitrary_geometry_physical_accuracy_claim",
 )
+_POPULATION_SAMPLE_PHASE = "post_stream_pre_bounce_back"
 
 
 def _finite_positive(value: object, name: str) -> float:
@@ -39,6 +41,16 @@ def _finite_scalar(value: object, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value):
         raise ValueError(f"{name} must be a finite scalar")
     return float(value)
+
+
+def _geometry_ownership_hash(geometry: "VoxelBodyGeometry") -> str:
+    """Hash the immutable geometry snapshot which owns an exported state."""
+    mask = geometry.mask.detach().to(device="cpu", dtype=torch.uint8).contiguous()
+    digest = sha256()
+    digest.update(geometry.body_id.encode("utf-8"))
+    digest.update(repr(tuple(mask.shape)).encode("ascii"))
+    digest.update(mask.numpy().tobytes())
+    return digest.hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +99,7 @@ class FullyWettedFlowConfig:
     tau: float
     inlet_velocity: float
     steps: int
+    capture_population_steps: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.geometry, VoxelBodyGeometry):
@@ -105,6 +118,14 @@ class FullyWettedFlowConfig:
             raise ValueError("inlet_velocity must be finite and in (0, 0.15)")
         if not isinstance(self.steps, int) or isinstance(self.steps, bool) or self.steps < 1:
             raise ValueError("steps must be an integer >= 1")
+        if not isinstance(self.capture_population_steps, tuple):
+            raise ValueError("capture_population_steps must be a tuple of unique ascending step indices")
+        if any(not isinstance(step, int) or isinstance(step, bool) or not 1 <= step <= self.steps
+               for step in self.capture_population_steps):
+            raise ValueError("capture_population_steps must contain step indices in [1, steps]")
+        if tuple(sorted(self.capture_population_steps)) != self.capture_population_steps or (
+                len(set(self.capture_population_steps)) != len(self.capture_population_steps)):
+            raise ValueError("capture_population_steps must be unique and ascending")
         if self.composition.lattice != "D3Q19":
             raise ValueError("Fully wetted flow R1 requires composition.lattice='D3Q19'")
         if self.composition.collision != "MRT":
@@ -119,6 +140,32 @@ class FullyWettedFlowConfig:
             raise ValueError("Fully wetted flow R1 requires its fixed channel boundary contract")
 
 
+@dataclass(frozen=True, slots=True, init=False)
+class D3Q19PopulationSnapshot:
+    """Immutable view of detached production ``f`` at post-stream/pre-bounce-back.
+
+    The private payload is cloned at capture and every public ``f`` access
+    returns another detached clone.  Neither a later solver update nor a
+    consumer's in-place edit can mutate the result's auditable snapshot.
+    """
+
+    step_index: int
+    sample_phase: str
+    _f: torch.Tensor = field(repr=False)
+    ownership_hash: str
+
+    def __init__(self, step_index: int, sample_phase: str, f: torch.Tensor, ownership_hash: str) -> None:
+        object.__setattr__(self, "step_index", step_index)
+        object.__setattr__(self, "sample_phase", sample_phase)
+        object.__setattr__(self, "_f", f.detach().clone())
+        object.__setattr__(self, "ownership_hash", ownership_hash)
+
+    @property
+    def f(self) -> torch.Tensor:
+        """Return a detached clone so caller mutation cannot alter this record."""
+        return self._f.detach().clone()
+
+
 @dataclass(frozen=True, slots=True)
 class FullyWettedFlowResult:
     """Final R1 fields and same-phase diagnostics, without accuracy claims."""
@@ -130,6 +177,12 @@ class FullyWettedFlowResult:
     moment: tuple[float, float, float]
     status: str
     evidence: Mapping[str, object]
+    population_snapshots: tuple[D3Q19PopulationSnapshot, ...] = ()
+
+    @property
+    def population_states(self) -> tuple[torch.Tensor, ...]:
+        """Real-state observer compatibility view; empty unless explicitly opted in."""
+        return tuple(snapshot.f for snapshot in self.population_snapshots)
 
 
 def run_fully_wetted_flow(config: FullyWettedFlowConfig) -> FullyWettedFlowResult:
@@ -142,6 +195,9 @@ def run_fully_wetted_flow(config: FullyWettedFlowConfig) -> FullyWettedFlowResul
     plan = TorchBackend().compile_d3q19_mrt(config.composition, float(config.tau), config.device_spec)
     u_in = float(config.inlet_velocity)
     steps = config.steps
+    capture_steps = config.capture_population_steps
+    population_ownership_hash = _geometry_ownership_hash(geometry) if capture_steps else ""
+    population_snapshots: list[D3Q19PopulationSnapshot] = []
     origin_x, origin_y, origin_z = geometry.resolved_origin
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
     ux0 = torch.full_like(rho0, u_in)
@@ -153,10 +209,19 @@ def run_fully_wetted_flow(config: FullyWettedFlowConfig) -> FullyWettedFlowResul
     density, ux, uy, uz = macroscopic3d(f)
     status = "COMPLETED"
 
-    for _ in range(steps):
+    for step_index in range(1, steps + 1):
         f = plan.step(f)
         force_tensors = compute_obstacle_forces_3d(f, mask)
         moment_tensors = compute_obstacle_moments_3d(f, mask, origin_x, origin_y, origin_z)
+        # Actual production f after collision+stream and before retained
+        # channel/bounce-back updates; no population is reconstructed.
+        if step_index in capture_steps:
+            population_snapshots.append(D3Q19PopulationSnapshot(
+                step_index=step_index,
+                sample_phase=_POPULATION_SAMPLE_PHASE,
+                f=f.detach().clone(),
+                ownership_hash=population_ownership_hash,
+            ))
         f = apply_zou_he_channel_boundaries_3d(f, u_in, wall_mask, mask)
         density, ux, uy, uz = macroscopic3d(f)
         finite = bool(torch.isfinite(f).all().item() and torch.isfinite(density).all().item()
@@ -205,10 +270,12 @@ def run_fully_wetted_flow(config: FullyWettedFlowConfig) -> FullyWettedFlowResul
         moment=moment,
         status=status,
         evidence=evidence,
+        population_snapshots=tuple(population_snapshots),
     )
 
 
 __all__ = [
+    "D3Q19PopulationSnapshot",
     "FullyWettedFlowConfig",
     "FullyWettedFlowResult",
     "VoxelBodyGeometry",
