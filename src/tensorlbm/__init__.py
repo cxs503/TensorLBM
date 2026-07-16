@@ -223,6 +223,8 @@ from .multiphase3d import (
 from .multiphase3d_d3q27 import (
     collide_sc_single_component_27,
     collide_sc_two_component_27,
+    free_energy_step_3d_27,
+    init_free_energy_g_3d_27,
     sc_two_component_force_27,
 )
 from .multiphase_benchmarks import (
