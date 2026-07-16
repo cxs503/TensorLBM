@@ -19,6 +19,7 @@ from tensorlbm.models.torch_execution import measure_plan_overhead
 from tensorlbm.solver3d import collide_mrt3d, stream3d
 
 from tensorlbm.full_wet import (
+    D3Q19PopulationSnapshot,
     FullyWettedFlowConfig,
     VoxelBodyGeometry,
     run_fully_wetted_flow,
@@ -161,6 +162,62 @@ def test_full_wet_result_matches_direct_explicit_existing_kernel_loop_bitwise() 
 
     assert torch.equal(result.density, direct_density)
     assert torch.equal(result.velocity, torch.stack((direct_ux, direct_uy, direct_uz)))
+
+
+def test_population_export_is_opt_in_and_default_result_has_no_snapshots() -> None:
+    result = run_fully_wetted_flow(_config(_cube_mask(), steps=2))
+
+    assert result.population_snapshots == ()
+
+
+def test_population_export_captures_detached_actual_post_stream_states_deterministically() -> None:
+    config = _config(_cube_mask(), steps=3, capture_population_steps=(1, 3))
+    first = run_fully_wetted_flow(config)
+    second = run_fully_wetted_flow(config)
+
+    assert tuple(type(snapshot) for snapshot in first.population_snapshots) == (
+        D3Q19PopulationSnapshot,
+        D3Q19PopulationSnapshot,
+    )
+    assert tuple(snapshot.step_index for snapshot in first.population_snapshots) == (1, 3)
+    assert {snapshot.sample_phase for snapshot in first.population_snapshots} == {"post_stream_pre_bounce_back"}
+    assert len({snapshot.ownership_hash for snapshot in first.population_snapshots}) == 1
+    for left, right in zip(first.population_snapshots, second.population_snapshots):
+        assert left.f.shape == (19, 7, 9, 11)
+        assert left.f.dtype is torch.float32
+        assert left.f.device.type == "cpu"
+        assert not left.f.requires_grad
+        assert torch.isfinite(left.f).all()
+        assert torch.equal(left.f, right.f)
+        assert left.f.data_ptr() != right.f.data_ptr()
+
+    exported = first.population_snapshots[0].f
+    original = exported.clone()
+    exported.zero_()
+    assert torch.equal(first.population_snapshots[0].f, original)
+
+    # The export is captured from the actual state after plan.step and before
+    # the retained channel boundary update; it is never reconstructed.
+    mask = config.geometry.mask
+    rho = torch.ones(config.shape)
+    ux = torch.full_like(rho, config.inlet_velocity)
+    zero = torch.zeros_like(rho)
+    ux[mask] = 0.0
+    f = equilibrium3d(rho, ux, zero, zero)
+    wall_mask = make_channel_wall_mask_3d(*config.shape, mask, device=torch.device("cpu"))
+    expected: dict[int, torch.Tensor] = {}
+    for step in range(1, config.steps + 1):
+        f = stream3d(collide_mrt3d(f, config.tau))
+        if step in config.capture_population_steps:
+            expected[step] = f.clone()
+        f = apply_zou_he_channel_boundaries_3d(f, config.inlet_velocity, wall_mask, mask)
+    assert all(torch.equal(snapshot.f, expected[snapshot.step_index]) for snapshot in first.population_snapshots)
+
+
+@pytest.mark.parametrize("capture_steps", [(-1,), (0,), (4,), (1, 1), (2, 1), [1]])
+def test_population_export_validates_explicit_capture_schedule(capture_steps: object) -> None:
+    with pytest.raises(ValueError):
+        _config(_cube_mask(), steps=3, capture_population_steps=capture_steps)
 
 
 def test_hot_loop_ast_is_prebound_and_has_required_existing_operations() -> None:

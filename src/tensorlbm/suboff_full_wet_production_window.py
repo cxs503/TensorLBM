@@ -58,12 +58,16 @@ def _runner_metadata(result: object) -> dict[str, object]:
 
 
 def _public_population_sequence(result: object) -> Sequence[torch.Tensor] | None:
-    """Accept only an explicit public state-window field, never inferred fields."""
+    """Accept only an explicit non-empty public state-window field, never inferred fields."""
     states = getattr(result, "population_states", None)
     if states is None:
         return None
-    if not isinstance(states, Sequence) or isinstance(states, (str, bytes)) or not states:
-        raise ValueError("public population_states must be a non-empty sequence")
+    if not isinstance(states, Sequence) or isinstance(states, (str, bytes)):
+        raise ValueError("public population_states must be a sequence")
+    # The production API's opt-in export is empty by default.  That means no
+    # observation window was requested, not a malformed substitute state.
+    if not states:
+        return None
     if not all(isinstance(state, torch.Tensor) for state in states):
         raise TypeError("public population_states must contain only torch.Tensor values")
     return states

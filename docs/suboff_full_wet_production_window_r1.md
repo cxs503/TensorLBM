@@ -6,13 +6,27 @@ public `run_fully_wetted_flow` API to
 
 ## Audited public-result boundary
 
-The R1 `FullyWettedFlowResult` public fields are `density`, `velocity`,
-`force`, `reaction`, `moment`, `status`, and `evidence`.  It does **not** expose
-D3Q19 `f` populations or a per-step population-state sequence.  In particular,
-the final density/velocity fields and same-phase force diagnostic cannot be
-used to reconstruct an observed force window without inventing state.
+The R1 `FullyWettedFlowResult` public fields are `density`, `velocity`, `force`,
+`reaction`, `moment`, `status`, `evidence`, and opt-in
+`population_snapshots`.  By default, `population_snapshots == ()` and the
+adapter remains fail-closed; it never derives `f` from density, velocity, or a
+force diagnostic.
 
-Accordingly, the default tiny production run is deliberately returned as:
+## Opt-in production population export
+
+Set `FullyWettedFlowConfig.capture_population_steps` to a tuple of unique,
+ascending one-based solver step indices, for example `(10, 20)`.  This is
+explicitly opt-in, so default runs retain no population-window memory.  Each
+`D3Q19PopulationSnapshot` contains its step index, the documented
+`post_stream_pre_bounce_back` phase, an ownership hash of the immutable voxel
+geometry snapshot, and a detached `(19, z, y, x)` float32 clone of the actual
+production state immediately after `plan.step` and before the retained channel
+boundary update.  No population is reconstructed or synthesized.
+
+Snapshot records are frozen and their public `f` property returns a detached
+clone, so consumer-side in-place mutation cannot alter the result record.
+
+Accordingly, a default tiny production run is deliberately returned as:
 
 ```text
 status = window_status = WITHHELD_NO_POPULATION_STATE
@@ -26,12 +40,12 @@ changed.
 
 ## Future-compatible measured path
 
-The adapter only invokes `observe_suboff_real_state_force_window` if a future
-**public** full-wet result explicitly exports a nonempty
-`population_states: Sequence[torch.Tensor]`.  Those tensors are passed directly
-to the observer; they are neither synthesized nor reconstructed.  A successful
-observer result remains `measured_candidate` and always has
-`physical_validation: false`.
+The adapter only invokes `observe_suboff_real_state_force_window` for a public
+result with a nonempty `population_states: Sequence[torch.Tensor]` view.  The
+full-wet R1 result supplies that view only from its opt-in snapshots.  Those
+tensors are passed directly to the observer; they are neither synthesized nor
+reconstructed.  A successful observer result remains `measured_candidate` and
+always has `physical_validation: false`.
 
 The injectable `runner` argument exists only to contract-test a public result
 interface.  It is not a synthetic-state production path.
