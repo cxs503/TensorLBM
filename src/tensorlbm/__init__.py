@@ -102,6 +102,7 @@ from .d3q27 import (
     equilibrium27,
     macroscopic27,
     stream27,
+    stream27_roll,
 )
 from .free_surface_lbm_27 import (
     free_surface_step_27,
