@@ -137,7 +137,7 @@ def _select_kernel(lattice_name: LatticeName, family_name: CollisionFamily) -> C
     return table[lattice_name][family_name]
 
 
-def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: float, **rates: float) -> torch.Tensor:
+def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: float | torch.Tensor, **rates: float) -> torch.Tensor:
     """Execute a validated common collision kernel or explicitly withhold it.
 
     BGK, TRT, RLBM, and MRT are executable for both D3Q19 and D3Q27.
@@ -156,7 +156,10 @@ def collide_advanced_3d(lattice: str, family: str, f: torch.Tensor, *, tau: floa
     expected_q = 19 if lattice_name == "D3Q19" else 27
     if f.ndim != 4 or f.shape[0] != expected_q:
         raise ValueError(f"{lattice_name} populations must have shape ({expected_q}, nz, ny, nx)")
-    if tau <= 0.5:
+    if isinstance(tau, torch.Tensor):
+        if (tau <= 0.5).any():
+            raise ValueError("all tau values must be greater than 0.5")
+    elif tau <= 0.5:
         raise ValueError("tau must be greater than 0.5")
     capability = collision_capability_matrix()[lattice_name][family_name]
     if not capability.available:

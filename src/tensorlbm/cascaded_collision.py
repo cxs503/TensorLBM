@@ -457,7 +457,10 @@ def collide_cascaded_d3q19(
     """
     if f.ndim != 4 or f.shape[0] != 19:
         raise ValueError(f"D3Q19 populations must have shape (19, nz, ny, nx), got {tuple(f.shape)}")
-    if tau <= 0.5:
+    if isinstance(tau, torch.Tensor):
+        if (tau <= 0.5).any():
+            raise ValueError("all tau values must be > 0.5")
+    elif tau <= 0.5:
         raise ValueError(f"tau must be > 0.5, got {tau}")
 
     device = f.device
@@ -525,7 +528,10 @@ def collide_cascaded_d3q27(
     """
     if f.ndim != 4 or f.shape[0] != 27:
         raise ValueError(f"D3Q27 populations must have shape (27, nz, ny, nx), got {tuple(f.shape)}")
-    if tau <= 0.5:
+    if isinstance(tau, torch.Tensor):
+        if (tau <= 0.5).any():
+            raise ValueError("all tau values must be > 0.5")
+    elif tau <= 0.5:
         raise ValueError(f"tau must be > 0.5, got {tau}")
 
     if s_5 is None:
