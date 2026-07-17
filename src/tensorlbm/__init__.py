@@ -620,6 +620,7 @@ from .general_sim import (
     PhysicsConfig,
     SolverConfig,
 )
+from .lbm_step import LBMStepExecutor
 
 __all__ = [
     "__version__",
@@ -959,6 +960,8 @@ __all__ = [
     # Minimal D2Q9 scaffold
     "D2Q9",
     "LBMSimulation",
+    # Common timestep executor
+    "LBMStepExecutor",
     # Pre-processing geometry
     "poly_to_mask_2d",
     "poly_to_mask_and_q_2d",

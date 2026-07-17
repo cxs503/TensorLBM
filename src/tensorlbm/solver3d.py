@@ -186,7 +186,9 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     ]
     # dims: (z, y, x) → roll dims = (3, 2, 1) for (x, y, z)
     out = torch.empty_like(f)
-    for q in range(19):
+    # q=0: rest direction — no shift needed, just copy (skip torch.roll)
+    out[0] = f[0]
+    for q in range(1, 19):
         sx, sy, sz = shifts[q]
         out[q] = torch.roll(f[q], shifts=(sz, sy, sx), dims=(0, 1, 2))
     return out

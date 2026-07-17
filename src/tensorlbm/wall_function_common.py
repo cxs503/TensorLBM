@@ -148,12 +148,19 @@ def _apply_body_force(
     fy: torch.Tensor,
     fz: torch.Tensor,
     lattice: str,
+    *,
+    ux: torch.Tensor | None = None,
+    uy: torch.Tensor | None = None,
+    uz: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply a Guo body-force correction to a 3-D distribution.
 
     This is a **lattice-agnostic** helper: it dispatches to the correct
     velocity vectors (``C``, ``W``) for D3Q19 or D3Q27.  The Guo forcing
     term is ``w_i * 3 * (c_i · F)`` added to the distribution.
+
+    If *ux*, *uy*, *uz* are provided, they are used directly instead of
+    recomputing macroscopic fields from *f*.
     """
     if lattice == "D3Q19":
         from .d3q19 import C as C_LAT, W as W_LAT
@@ -178,12 +185,15 @@ def _apply_body_force(
     # correct force application at non-trivial velocities.
     cs2 = 1.0 / 3.0
     cu = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
-    # Need velocity field for the correction term; extract from f.
-    if lattice == "D3Q19":
-        from .d3q19 import macroscopic3d as _macro
+    # Need velocity field for the correction term; use pre-computed if available.
+    if ux is not None and uy is not None and uz is not None:
+        _ux, _uy, _uz = ux, uy, uz
     else:
-        from .d3q27 import macroscopic27 as _macro
-    _rho, _ux, _uy, _uz = _macro(f)
+        if lattice == "D3Q19":
+            from .d3q19 import macroscopic3d as _macro
+        else:
+            from .d3q27 import macroscopic27 as _macro
+        _rho, _ux, _uy, _uz = _macro(f)
     cu_u = cx * _ux.unsqueeze(0) + cy * _uy.unsqueeze(0) + cz * _uz.unsqueeze(0)
     forcing = w_view * (1.0 + cu_u / cs2) * cu / cs2
     return f + forcing
@@ -202,6 +212,10 @@ def wall_function(
     lattice: str = "D3Q19",
     nu: float = 0.02,
     y_val: float = 0.5,
+    rho: torch.Tensor | None = None,
+    ux: torch.Tensor | None = None,
+    uy: torch.Tensor | None = None,
+    uz: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply a wall-function correction to the distribution.
 
@@ -221,6 +235,11 @@ def wall_function(
     function can be combined with any turbulence model (RANS, LES, etc.)
     or collision operator (BGK, MRT, etc.).
 
+    If *rho*, *ux*, *uy*, *uz* are provided, they are used directly instead
+    of recomputing macroscopic fields from *f*.  This enables macroscopic
+    reuse: the solver computes (rho, ux, uy, uz) once per step and passes
+    them to both the collision operator and the wall function.
+
     Args:
         f:      Distribution tensor ``(Q, nz, ny, nx)``.
         mask:   Boolean solid mask ``(nz, ny, nx)``.  ``True`` = solid.
@@ -229,6 +248,10 @@ def wall_function(
         lattice: Lattice name (``"D3Q19"`` or ``"D3Q27"``).
         nu:     Kinematic viscosity (lattice units).
         y_val:  Distance from the near-wall cell centre to the wall.
+        rho:    Optional pre-computed density field ``(nz, ny, nx)``.
+        ux:     Optional pre-computed x-velocity field ``(nz, ny, nx)``.
+        uy:     Optional pre-computed y-velocity field ``(nz, ny, nx)``.
+        uz:     Optional pre-computed z-velocity field ``(nz, ny, nx)``.
 
     Returns:
         Corrected distribution, same shape as *f*.
@@ -240,7 +263,11 @@ def wall_function(
         return f
 
     near = _near_wall_mask(mask)
-    rho, ux, uy, uz = _macroscopic(lattice, f)
+    if rho is not None and ux is not None and uy is not None and uz is not None:
+        # Use pre-computed macroscopic fields (no recompute)
+        pass
+    else:
+        rho, ux, uy, uz = _macroscopic(lattice, f)
     u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
 
     # Wall shear stress from pre-computed u_tau
@@ -253,7 +280,7 @@ def wall_function(
     fy = coef * (uy * inv_umag)
     fz = coef * (uz * inv_umag)
 
-    return _apply_body_force(f, fx, fy, fz, lattice)
+    return _apply_body_force(f, fx, fy, fz, lattice, ux=ux, uy=uy, uz=uz)
 
 
 __all__ = [
