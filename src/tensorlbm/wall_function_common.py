@@ -171,9 +171,21 @@ def _apply_body_force(
     cy = c[:, 1].view(q, 1, 1, 1)
     cz = c[:, 2].view(q, 1, 1, 1)
     w_view = w.view(q, 1, 1, 1)
-    forcing = w_view * 3.0 * (
-        cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
-    )
+
+    # Full Guo forcing: w_i * (1 + c_i·u/c_s²) * (c_i·F) / c_s²
+    # c_s² = 1/3 for both D3Q19 and D3Q27, so 1/c_s² = 3.
+    # The (1 + c·u/cs²) velocity-correction term is essential for
+    # correct force application at non-trivial velocities.
+    cs2 = 1.0 / 3.0
+    cu = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
+    # Need velocity field for the correction term; extract from f.
+    if lattice == "D3Q19":
+        from .d3q19 import macroscopic3d as _macro
+    else:
+        from .d3q27 import macroscopic27 as _macro
+    _rho, _ux, _uy, _uz = _macro(f)
+    cu_u = cx * _ux.unsqueeze(0) + cy * _uy.unsqueeze(0) + cz * _uz.unsqueeze(0)
+    forcing = w_view * (1.0 + cu_u / cs2) * cu / cs2
     return f + forcing
 
 
