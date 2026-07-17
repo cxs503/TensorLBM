@@ -66,12 +66,17 @@ def equilibrium3d(
     uy: torch.Tensor,
     uz: torch.Tensor,
     device: torch.device | None = None,
+    *,
+    out: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Compute D3Q19 equilibrium distribution f_eq for rho and velocity fields.
 
     Args:
         rho: density field of shape (nz, ny, nx).
         ux, uy, uz: velocity components of shape (nz, ny, nx).
+        out: optional pre-allocated output tensor of shape (19, nz, ny, nx).
+            If provided, the result is written into this tensor in-place,
+            avoiding a new allocation.
 
     Returns:
         Tensor of shape (19, nz, ny, nx).
@@ -93,7 +98,11 @@ def equilibrium3d(
         + c[:, 1].view(19, 1, 1, 1) * uy
         + c[:, 2].view(19, 1, 1, 1) * uz
     )
-    return w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    result = w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    if out is not None:
+        out.copy_(result)
+        return out
+    return result
 
 
 def macroscopic3d(

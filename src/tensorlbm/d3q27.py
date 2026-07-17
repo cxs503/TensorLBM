@@ -345,6 +345,8 @@ def equilibrium27(
     uy: torch.Tensor,
     uz: torch.Tensor,
     device: torch.device | None = None,
+    *,
+    out: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Compute D3Q27 Maxwell-Boltzmann equilibrium distribution.
 
@@ -354,6 +356,9 @@ def equilibrium27(
         uy: y-velocity field, shape ``(nz, ny, nx)``.
         uz: z-velocity field, shape ``(nz, ny, nx)``.
         device: Target device (inferred from *rho* if *None*).
+        out: optional pre-allocated output tensor of shape ``(27, nz, ny, nx)``.
+            If provided, the result is written into this tensor in-place,
+            avoiding a new allocation.
 
     Returns:
         Equilibrium distribution of shape ``(27, nz, ny, nx)``.
@@ -369,7 +374,11 @@ def equilibrium27(
 
     u_sq = ux * ux + uy * uy + uz * uz
     cu = cx * ux + cy * uy + cz * uz
-    return w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    result = w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    if out is not None:
+        out.copy_(result)
+        return out
+    return result
 
 
 def macroscopic27(
