@@ -720,41 +720,47 @@ def correct_mass27(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     if current.abs() < 1e-30:
         return f
     return f * (target_mass / current)
+_STREAM27_SHIFTS = None
 
+def _init_stream27_shifts():
+    """Pre-compute D3Q27 streaming shifts as Python tuples (no host sync)."""
+    global _STREAM27_SHIFTS
+    if _STREAM27_SHIFTS is not None:
+        return
+    from .d3q27 import C as C27
+    shifts = [(0, 0, 0)]
+    for q in range(1, 27):
+        cx, cy, cz = C27[q].tolist()
+        shifts.append((int(cx), int(cy), int(cz)))
+    _STREAM27_SHIFTS = shifts
 
-def stream27(f: torch.Tensor) -> torch.Tensor:
-    """Periodic gather streaming for D3Q27.
+def stream27_roll(f: torch.Tensor) -> torch.Tensor:
+    """Memory-optimized D3Q27 streaming using torch.roll.
 
-    Index tensors are cached per (shape, device) to avoid re-allocation on
-    every call.
+    Uses pre-computed Python-tuple shifts (no .item() host sync)
+    and torch.empty_like (no per-step allocation). Eliminates the
+    4×[27,N] int64 index tensors that cause OOM on large grids.
 
     Args:
         f: Distribution tensor of shape ``(27, nz, ny, nx)``.
 
     Returns:
-        Streamed distribution of the same shape.
+        Streamed tensor of the same shape.
     """
-    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
-    device = f.device
-    c = _c_on(device)
+    _init_stream27_shifts()
+    out = torch.empty_like(f)
+    for q in range(27):
+        sx, sy, sz = _STREAM27_SHIFTS[q]
+        if sx == 0 and sy == 0 and sz == 0:
+            out[q] = f[q]
+        else:
+            out[q] = torch.roll(f[q], shifts=(sz, sy, sx), dims=(0, 1, 2))
+    return out
 
-    cache_key = (nz, ny, nx, device.type, device.index)
-    if cache_key not in _stream27_cache:
-        z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz
-        y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
-        x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
-        q_idx = torch.arange(27, device=device).view(27, 1, 1, 1).expand(27, nz, ny, nx)
-        z_idx = z_src.unsqueeze(2).unsqueeze(3).expand(27, nz, ny, nx)
-        y_idx = y_src.unsqueeze(1).unsqueeze(3).expand(27, nz, ny, nx)
-        x_idx = x_src.unsqueeze(1).unsqueeze(2).expand(27, nz, ny, nx)
-        _stream27_cache[cache_key] = (q_idx, z_idx, y_idx, x_idx)
-
-    q_idx, z_idx, y_idx, x_idx = _stream27_cache[cache_key]
-    return f[q_idx, z_idx, y_idx, x_idx]
-
+# Backward-compatible alias
+stream27 = stream27_roll
 
 __all__ = [
-    "C",
     "W",
     "OPPOSITE",
     "PropellerLoadReport",
@@ -769,6 +775,7 @@ __all__ = [
     "collide_rlbm27",
     "collide_mrt27",
     "stream27",
+    "stream27_roll",
     "correct_mass27",
     "_get_d3q27_mrt_matrices",
 ]
