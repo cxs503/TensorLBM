@@ -298,3 +298,98 @@ class TestFWHResultWrapper:
         assert torch.isfinite(result.p_prime).all()
         assert torch.isfinite(result.spl).all()
         assert all(math.isfinite(v) for v in result.oaspl)
+
+
+# ===========================================================================
+# Recovered original tests (lost during the capability-contract extraction
+# commit cfb26c6).  These 7 tests existed in the pre-extraction test file and
+# were not carried forward into the class-based rewrite.  They are restored
+# here as standalone functions to preserve the original contract.
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# AcousticObserver defaults and label (lost: observer_defaults, observer_label)
+# ---------------------------------------------------------------------------
+
+def test_acoustic_observer_defaults():
+    """AcousticObserver should default z=0.0 and label=''."""
+    obs = AcousticObserver(x=10.0, y=0.0)
+    assert obs.z == 0.0
+    assert obs.label == ""
+
+
+def test_acoustic_observer_label():
+    """AcousticObserver should accept a human-readable label."""
+    obs = AcousticObserver(x=1.0, y=2.0, z=3.0, label="test")
+    assert obs.label == "test"
+
+
+# ---------------------------------------------------------------------------
+# FWHSurface creation (lost: fwh_surface_creation)
+# ---------------------------------------------------------------------------
+
+def test_fwh_surface_creation():
+    """FWHSurface should expose positions, normals, areas, pressure with
+    correct shapes."""
+    surf = _make_simple_surface(n_src=4, T=50)
+    assert surf.pressure.shape == (4, 50)
+    assert surf.positions.shape == (4, 3)
+    assert surf.normals.shape == (4, 3)
+    assert surf.areas.shape == (4,)
+
+
+# ---------------------------------------------------------------------------
+# compute_fwh_far_field time-axis correctness (lost: time_axis)
+# ---------------------------------------------------------------------------
+
+def test_compute_fwh_far_field_time_axis():
+    """The returned time axis must be [0, dt, 2*dt, ...] with correct spacing."""
+    dt = 1e-4
+    T = 80
+    surf = _make_simple_surface(n_src=4, T=T, dt=dt)
+    observers = [AcousticObserver(x=0.1, y=0.0)]
+    _, time_list = compute_fwh_far_field(surf, observers)
+    assert len(time_list) == T
+    assert abs(time_list[1] - dt) < 1e-10
+
+
+# ---------------------------------------------------------------------------
+# compute_fwh_far_field nonzero output (lost: nonzero_output)
+# ---------------------------------------------------------------------------
+
+def test_compute_fwh_far_field_nonzero():
+    """Far-field pressure should be non-trivially non-zero for a dipole
+    source with a causal propagation path."""
+    surf = _make_simple_surface(n_src=8, T=100)
+    # Keep propagation delay inside the recorded window: a 10 m observer at
+    # dt=1e-4 s lies 291 samples away and cannot receive a causal signal.
+    observers = [AcousticObserver(x=0.1, y=0.0)]
+    p_prime, _ = compute_fwh_far_field(surf, observers)
+    assert p_prime.abs().max().item() > 0.0
+
+
+# ---------------------------------------------------------------------------
+# compute_fwh_far_field dtype preservation (lost: dtype_preservation)
+# ---------------------------------------------------------------------------
+
+def test_compute_fwh_far_field_preserves_input_dtype():
+    """If the input pressure is float64, the output should be float64."""
+    surface = _make_simple_surface(n_src=4, T=20)
+    surface.pressure = surface.pressure.double()
+    p_prime, _ = compute_fwh_far_field(surface, [AcousticObserver(x=10.0, y=0.0)])
+    assert p_prime.dtype == torch.float64
+
+
+# ---------------------------------------------------------------------------
+# OASPL monotonicity (lost: oaspl_monotonicity)
+# ---------------------------------------------------------------------------
+
+def test_oaspl_louder_signal_higher_spl():
+    """A louder signal (larger amplitude) should produce a higher OASPL."""
+    T = 200
+    quiet = torch.randn(1, T) * 1e-4
+    loud = torch.randn(1, T) * 1e-2
+    spl_quiet = oaspl(quiet, dt=1e-4)[0]
+    spl_loud = oaspl(loud, dt=1e-4)[0]
+    assert spl_loud > spl_quiet
