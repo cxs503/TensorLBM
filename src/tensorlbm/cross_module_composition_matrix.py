@@ -59,6 +59,9 @@ from .boundary_capability_contract import (
 from .turbulence_capability_contract import (
     turbulence_capability_matrix,
 )
+from .acoustics_capability_contract import (
+    acoustics_capability_matrix,
+)
 from .accuracy_recommendation import (
     PhysicalAccuracyEvidence,
     recommend_by_physical_accuracy,
@@ -109,6 +112,7 @@ class CompositionRequest:
     wall_treatment: str = "bounce_back"
     refinement: str = "none"
     backend: str = "torch"
+    post_processing: str = "none"
     outputs: tuple[str, ...] = ("rho", "velocity")
 
 
@@ -176,6 +180,7 @@ _ALIASES: dict[str, dict[str, str]] = {
     "wall_treatment": {"bounce_back": "bounce_back", "bounce-back": "bounce_back", "wall_function": "wall_function", "bouzidi": "bouzidi"},
     "refinement": {"none": "none", "no_amr": "none", "no-amr": "none", "amr": "amr"},
     "backend": {"torch": "torch", "pytorch": "torch", "cuda": "cuda", "cpu": "cpu"},
+    "post_processing": {"none": "none", "acoustics": "acoustics", "fwh": "acoustics", "aeroacoustics": "acoustics"},
 }
 
 _KNOWN_VALUES: dict[str, frozenset[str]] = {
@@ -188,6 +193,7 @@ _KNOWN_VALUES: dict[str, frozenset[str]] = {
     "wall_treatment": frozenset(("bounce_back", "wall_function", "bouzidi")),
     "refinement": frozenset(("none", "amr")),
     "backend": frozenset(("torch", "cuda", "cpu")),
+    "post_processing": frozenset(("none", "acoustics")),
     "outputs": frozenset(("rho", "velocity", "pressure", "vorticity", "force")),
 }
 
@@ -579,6 +585,33 @@ def _query_turbulence_contract(req: CompositionRequest) -> SubContractResult:
         SubContractStatus.WITHHELD, (cap.status,), (), cap.note)
 
 
+def _query_acoustics_contract(req: CompositionRequest) -> SubContractResult:
+    """Query acoustics_capability_contract (only when post_processing == acoustics).
+
+    Acoustics is a post-processing layer: it operates on saved density / pressure
+    history and does not enter the timestep hot path.  It is collision-agnostic
+    and physics-agnostic, so the sub-contract only checks whether the function
+    is implemented.  The fail-closed status (WITHHELD_NO_PHYSICS_VALIDATION) is
+    inherited from the acoustics capability contract.
+    """
+    if req.post_processing != "acoustics":
+        return SubContractResult("acoustics_capability_contract", "post_processing",
+            SubContractStatus.NOT_APPLICABLE, (), (),
+            "Acoustics contract is not applicable when post_processing != 'acoustics'.")
+    # Acoustics is lattice-agnostic for FWH/SPL/OASPL; surface_pressure_extraction
+    # supports D2Q9/D3Q19/D3Q27.  Query the N/A (lattice-agnostic) entry for the
+    # FWH far-field function as the representative post-processing capability.
+    matrix = acoustics_capability_matrix()
+    cap = matrix["fwh_far_field"]["N/A"]
+    if cap.implementation_status == "IMPLEMENTED":
+        return SubContractResult("acoustics_capability_contract", "post_processing",
+            SubContractStatus.WITHHELD, (cap.status,), (),
+            cap.note)
+    return SubContractResult("acoustics_capability_contract", "post_processing",
+        SubContractStatus.NOT_SUPPORTED, (cap.status,), (),
+        cap.note)
+
+
 def _query_accuracy_recommendation(
     req: CompositionRequest,
     evidence: Sequence[PhysicalAccuracyEvidence] | None,
@@ -633,6 +666,7 @@ def assess_composition(
         _query_amr_contract(request),
         _query_boundary_contract(request),
         _query_turbulence_contract(request),
+        _query_acoustics_contract(request),
         _query_accuracy_recommendation(request, physical_accuracy_evidence),
     ]
 
