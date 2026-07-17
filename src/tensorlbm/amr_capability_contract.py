@@ -13,7 +13,7 @@ from typing import Literal, Mapping
 
 LatticeName = Literal["D2Q9", "D3Q19", "D3Q27"]
 PhysicsName = Literal["single_phase", "turbulence", "multiphase", "ibm", "curved_wall"]
-RefinementPath = Literal["adaptive_dynamic", "multigrid_static", "surface_shell", "multipatch_static"]
+RefinementPath = Literal["adaptive_dynamic", "multigrid_static", "surface_shell", "multipatch_static", "common_module"]
 
 REQUIRED_FRONTEND_METADATA = (
     "subcycling",
@@ -34,6 +34,7 @@ WITHHELD_UNKNOWN_PHYSICS = "WITHHELD_UNKNOWN_PHYSICS"
 
 _AUDITED_PATHS: tuple[RefinementPath, ...] = (
     "adaptive_dynamic", "multigrid_static", "surface_shell", "multipatch_static",
+    "common_module",
 )
 _AUDITED_LATTICES: tuple[LatticeName, ...] = ("D2Q9", "D3Q19", "D3Q27")
 _AUDITED_PHYSICS: tuple[PhysicsName, ...] = (
@@ -67,10 +68,17 @@ class LocalRefinementCapability:
 
 
 def _capability_for(path: RefinementPath, lattice: LatticeName, physics: PhysicsName) -> LocalRefinementCapability:
+    # The common_module path provides solver-agnostic refine/coarsen/halo
+    # exchange for D3Q19 and D3Q27 via tensorlbm.amr_common.
+    if path == "common_module":
+        return _common_module_capability(lattice, physics)
+
+    # Paths other than common_module do not have D3Q27 mechanics.
     if lattice == "D3Q27":
         return LocalRefinementCapability(
             "NO_IMPLEMENTATION", WITHHELD_NO_D3Q27_LOCAL_REFINEMENT, None, None,
-            "No D3Q27 local-refinement/AMR solver or exchange implementation was found.",
+            "No D3Q27 local-refinement/AMR solver or exchange implementation was found "
+            "for this path.  Use the common_module path for D3Q27 AMR mechanics.",
         )
 
     mechanics: dict[tuple[RefinementPath, LatticeName], tuple[str, str, str]] = {
@@ -112,6 +120,42 @@ def _capability_for(path: RefinementPath, lattice: LatticeName, physics: Physics
         mechanics_status, WITHHELD_REQUIRED_METADATA_NOT_EMITTED, entrypoint, exchange_scheme,
         "Patch mechanics exist, but current paths do not emit all required frontend metadata or a "
         "flux/inventory ledger; they are not precision/physics validation claims.",
+    )
+
+
+def _common_module_capability(lattice: LatticeName, physics: PhysicsName) -> LocalRefinementCapability:
+    """Capability for the solver-agnostic common AMR module.
+
+    ``tensorlbm.amr_common`` provides ``refine``, ``coarsen``,
+    ``halo_exchange``, and ``AMRPatch3D`` as a public interface that can be
+    combined with any collision operator or turbulence model.  It supports
+    D3Q19 and D3Q27 with Filippova–Hänel second-order interface exchange.
+    """
+    if lattice not in ("D3Q19", "D3Q27"):
+        return LocalRefinementCapability(
+            "NO_IMPLEMENTATION", WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE, None, None,
+            f"common_module has no audited {lattice} implementation. "
+            "Supported lattices: D3Q19, D3Q27.",
+        )
+    mechanics_status = "AVAILABLE_MECHANICS_ONLY"
+    entrypoint = "tensorlbm.amr_common"
+    exchange_scheme = (
+        "FH second-order exchange (refine/coarsen/halo_exchange); "
+        "solver-agnostic, combinable with any collision/turbulence"
+    )
+    if physics != "single_phase":
+        return LocalRefinementCapability(
+            mechanics_status, WITHHELD_NO_COUPLED_AMR_PHYSICS_CONTRACT, entrypoint, exchange_scheme,
+            "The common AMR module provides solver-agnostic mechanics, but no audited "
+            "coupling, geometry-update, exchange, or conservation/evidence contract exists "
+            "for this physics combination.",
+        )
+    return LocalRefinementCapability(
+        mechanics_status, WITHHELD_REQUIRED_METADATA_NOT_EMITTED, entrypoint, exchange_scheme,
+        "Common AMR module mechanics exist for "
+        f"{lattice} (refine/coarsen/halo_exchange/AMRPatch3D), but current paths do not emit "
+        "all required frontend metadata or a flux/inventory ledger; they are not "
+        "precision/physics validation claims.",
     )
 
 

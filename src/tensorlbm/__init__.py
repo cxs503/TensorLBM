@@ -26,6 +26,19 @@ from .wall_function_contract import (
     WallFunctionCompatibilityError,
 )
 from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
+from .amr_common import (
+    AMRPatch3D as CommonAMRPatch3D,
+    SUPPORTED_LATTICES as AMR_SUPPORTED_LATTICES,
+    coarsen as amr_coarsen,
+    halo_exchange as amr_halo_exchange,
+    refine as amr_refine,
+)
+from .wall_function_common import (
+    SUPPORTED_LATTICES as WALL_FN_SUPPORTED_LATTICES,
+    compute_u_tau,
+    compute_y_plus,
+    wall_function as common_wall_function,
+)
 from .adaptive_refinement import (
     AdaptationSchedule,
     AdaptiveSolver2D,

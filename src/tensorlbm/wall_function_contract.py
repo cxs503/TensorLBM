@@ -27,6 +27,7 @@ class WallFunctionCapability(str, Enum):
     LOG_LAW_BODY_FORCE = "log_law_body_force"
     MOVING_BOUNCE_BACK = "moving_bounce_back"
     ROUGH_WALL_SLIP = "rough_wall_slip"
+    COMMON_WALL_FUNCTION = "common_wall_function"
 
 
 WITHHELD_UNVERIFIED_COMBINATION = "WITHHELD_UNVERIFIED_COMBINATION"
@@ -112,6 +113,17 @@ def wall_function_capability_matrix() -> Mapping[WallFunctionCapability, WallFun
             frozenset({"torch"}), ValidationLevel.IMPLEMENTATION_ONLY,
             "Equivalent-sand-grain slip wrapper shares the D3Q19 moving bounce-back path; existing "
             "tests only exercise imports and roughness-correction monotonicity.",
+        ),
+        WallFunctionCapability.COMMON_WALL_FUNCTION: WallFunctionCapabilityRecord(
+            "tensorlbm.wall_function_common.wall_function",
+            frozenset({"D3Q19", "D3Q27"}), frozenset({"single_phase_incompressible"}),
+            frozenset({"BGK", "MRT", "CM", "KBC"}), frozenset({"static_voxel_solid"}),
+            frozenset({"torch"}), ValidationLevel.IMPLEMENTATION_ONLY,
+            "Solver-agnostic common wall-function module: wall_function(f, mask, u_tau, y_plus, ...) "
+            "→ f_corrected.  Takes pre-computed u_tau/y_plus so it can combine with any "
+            "collision/turbulence.  Supports D3Q19 and D3Q27 via lattice-dispatched body force. "
+            "Contract tests verify shape, finiteness, near-wall-only correction, and mass conservation; "
+            "no physical validation evidence is admitted.",
         ),
     })
 

@@ -30,6 +30,7 @@ class WallTreatment(str, Enum):
     NONE = "none"
     STANDARD_STATIC = "standard_static"
     WALL_FUNCTION = "wall_function"
+    COMMON_WALL_FUNCTION = "common_wall_function"
 
 
 class RefinementType(str, Enum):
@@ -129,6 +130,17 @@ def assess_wall_refinement_combination(
     in :mod:`tensorlbm.advanced_collision_contract`.  Every other row is
     withheld; especially wall-function+AMR/static refinement, D3Q27 wall
     functions, and refinement with multiphase, IBM, or curved walls.
+
+    **Clear combination path (common modules):**  The
+    ``COMMON_WALL_FUNCTION`` treatment (from
+    :mod:`tensorlbm.wall_function_common`) combined with
+    ``DYNAMIC_AMR`` refinement (from :mod:`tensorlbm.amr_common`) has a
+    *clear path to admission*: when all required cross-level evidence is
+    supplied (wall_distance_dy, y_plus, level_link_owner,
+    wall_geometry_owner, interface_transfer_proof), the combination is
+    **ALLOWED**.  Without complete evidence it remains **WITHHELD**
+    (fail-closed).  The legacy ``WALL_FUNCTION`` treatment is always
+    withheld with refinement — it has no admission path.
     """
 
     reasons: list[str] = []
@@ -144,6 +156,8 @@ def assess_wall_refinement_combination(
         reasons.append(WITHHELD_REFINEMENT_IBM)
     if has_refinement and combination.geometry_kind is GeometryKind.CURVED_STATIC:
         reasons.append(WITHHELD_NON_BASELINE_REFINEMENT)
+
+    is_common_wf = combination.wall_treatment is WallTreatment.COMMON_WALL_FUNCTION
 
     if combination.wall_treatment is WallTreatment.WALL_FUNCTION:
         if combination.lattice is Lattice.D3Q27:
@@ -161,6 +175,30 @@ def assess_wall_refinement_combination(
             # D3Q19 function exists, but it is not an admitted combination row.
             reasons.append(WITHHELD_UNKNOWN_COMBINATION)
 
+    elif is_common_wf:
+        # The common wall-function module supports D3Q27 (unlike legacy).
+        if has_refinement:
+            # Clear path: common_wall_function + AMR is admissible WITH
+            # complete cross-level evidence.  Without evidence, fail-closed.
+            required = ("wall_distance_dy", "y_plus", "level_link_owner",
+                        "wall_geometry_owner", "interface_transfer_proof")
+            missing_evidence = _missing(combination.evidence, *required)
+            if missing_evidence:
+                reasons.append(WITHHELD_WALL_FUNCTION_WITH_REFINEMENT)
+                missing.extend(missing_evidence)
+            # If all evidence is present and no other reasons, this path
+            # is ALLOWED (see baseline check below).
+        if combination.geometry_kind is GeometryKind.CURVED_STATIC:
+            reasons.append(WITHHELD_WALL_FUNCTION_CURVED_WALL)
+            missing.extend(_missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner"))
+        if combination.geometry_kind is GeometryKind.IBM:
+            reasons.append(WITHHELD_WALL_FUNCTION_IBM)
+            missing.extend(_missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner"))
+        if not has_refinement and not reasons:
+            # Common wall function without refinement on a single-level
+            # planar static grid is an admitted baseline (implementation-only).
+            pass
+
     baseline = (
         combination.wall_treatment in {WallTreatment.NONE, WallTreatment.STANDARD_STATIC}
         and combination.refinement is RefinementType.NONE
@@ -168,6 +206,23 @@ def assess_wall_refinement_combination(
         and combination.geometry_kind is GeometryKind.PLANAR_STATIC
         and combination.physics is PhysicsModel.SINGLE_PHASE
     )
+    # Common wall function without refinement is also a baseline.
+    if (is_common_wf
+            and not has_refinement
+            and combination.geometry_ownership is GeometryOwnership.SINGLE_LEVEL
+            and combination.geometry_kind is GeometryKind.PLANAR_STATIC
+            and combination.physics is PhysicsModel.SINGLE_PHASE
+            and not reasons):
+        baseline = True
+
+    # Common wall function + AMR with complete evidence is an admitted path.
+    if (is_common_wf
+            and has_refinement
+            and combination.physics is PhysicsModel.SINGLE_PHASE
+            and combination.geometry_kind is GeometryKind.PLANAR_STATIC
+            and not reasons):
+        baseline = True
+
     if not baseline and not reasons:
         reasons.append(WITHHELD_UNKNOWN_COMBINATION)
 

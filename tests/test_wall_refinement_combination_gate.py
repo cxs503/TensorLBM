@@ -96,3 +96,101 @@ def test_unavailable_collision_contract_cannot_be_promoted_by_baseline_shape():
     decision = assess_wall_refinement_combination(baseline(collision=CollisionFamily.CM))
     assert decision.status is GateStatus.WITHHELD
     assert WITHHELD_UNSUPPORTED_COLLISION in decision.reasons
+
+
+# ---------------------------------------------------------------------------
+# Common wall-function × refinement combination path
+# ---------------------------------------------------------------------------
+
+def test_common_wall_function_without_refinement_is_allowed():
+    """Common wall function on a single-level planar grid is a baseline."""
+    decision = assess_wall_refinement_combination(
+        baseline(wall_treatment=WallTreatment.COMMON_WALL_FUNCTION)
+    )
+    assert decision.status is GateStatus.ALLOWED
+
+
+def test_common_wall_function_with_amr_is_withheld_without_evidence():
+    """Without cross-level evidence, common_wf + AMR is fail-closed."""
+    decision = assess_wall_refinement_combination(
+        baseline(
+            wall_treatment=WallTreatment.COMMON_WALL_FUNCTION,
+            refinement=RefinementType.DYNAMIC_AMR,
+            geometry_ownership=GeometryOwnership.FINE_LEVEL,
+        )
+    )
+    assert decision.status is GateStatus.WITHHELD
+    assert WITHHELD_WALL_FUNCTION_WITH_REFINEMENT in decision.reasons
+    assert set(decision.missing_required_evidence) == {
+        "wall_distance_dy", "y_plus", "level_link_owner",
+        "wall_geometry_owner", "interface_transfer_proof",
+    }
+
+
+def test_common_wall_function_with_amr_is_allowed_with_complete_evidence():
+    """With all cross-level evidence, common_wf + AMR has a clear admission path."""
+    decision = assess_wall_refinement_combination(
+        baseline(
+            wall_treatment=WallTreatment.COMMON_WALL_FUNCTION,
+            refinement=RefinementType.DYNAMIC_AMR,
+            geometry_ownership=GeometryOwnership.FINE_LEVEL,
+            evidence=CombinationEvidence(
+                wall_distance_dy=0.5,
+                y_plus=50.0,
+                level_link_owner="fine",
+                wall_geometry_owner="fine",
+                interface_transfer_proof="FH proof",
+            ),
+        )
+    )
+    assert decision.status is GateStatus.ALLOWED
+    assert decision.missing_required_evidence == ()
+
+
+def test_common_wall_function_d3q27_with_amr_is_allowed_with_evidence():
+    """D3Q27 common wall function + AMR is admissible (unlike legacy WALL_FUNCTION)."""
+    decision = assess_wall_refinement_combination(
+        baseline(
+            lattice=Lattice.D3Q27,
+            wall_treatment=WallTreatment.COMMON_WALL_FUNCTION,
+            refinement=RefinementType.DYNAMIC_AMR,
+            geometry_ownership=GeometryOwnership.FINE_LEVEL,
+            evidence=CombinationEvidence(
+                wall_distance_dy=0.5,
+                y_plus=50.0,
+                level_link_owner="fine",
+                wall_geometry_owner="fine",
+                interface_transfer_proof="FH proof",
+            ),
+        )
+    )
+    assert decision.status is GateStatus.ALLOWED
+
+
+def test_legacy_wall_function_with_amr_still_withheld_even_with_evidence():
+    """The legacy WALL_FUNCTION + AMR has no admission path (always withheld)."""
+    decision = assess_wall_refinement_combination(
+        baseline(
+            wall_treatment=WallTreatment.WALL_FUNCTION,
+            refinement=RefinementType.DYNAMIC_AMR,
+            geometry_ownership=GeometryOwnership.FINE_LEVEL,
+            evidence=CombinationEvidence(1.0, 50.0, "fine", "fine", "FH proof"),
+        )
+    )
+    assert decision.status is GateStatus.WITHHELD
+    assert WITHHELD_WALL_FUNCTION_WITH_REFINEMENT in decision.reasons
+
+
+def test_common_wall_function_with_amr_withholds_for_multiphase():
+    """Common_wf + AMR + multiphase is withheld regardless of evidence."""
+    decision = assess_wall_refinement_combination(
+        baseline(
+            wall_treatment=WallTreatment.COMMON_WALL_FUNCTION,
+            refinement=RefinementType.DYNAMIC_AMR,
+            physics=PhysicsModel.MULTIPHASE,
+            geometry_ownership=GeometryOwnership.FINE_LEVEL,
+            evidence=CombinationEvidence(0.5, 50.0, "fine", "fine", "FH proof"),
+        )
+    )
+    assert decision.status is GateStatus.WITHHELD
+    assert WITHHELD_REFINEMENT_MULTIPHASE in decision.reasons
