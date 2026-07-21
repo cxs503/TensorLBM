@@ -44,9 +44,25 @@
 
     /* Layout */
     .main-layout {
-      margin-top: var(--nav-height);
       display: flex;
-      height: calc(100vh - var(--nav-height));
+      height: calc(100vh - var(--nav-height) - 32px);
+    }
+    .workflow-stepper {
+      margin-top: var(--nav-height);
+    }
+    .step-item {
+      padding: 2px 8px;
+      border-radius: 3px;
+      color: #666;
+    }
+    .step-item.active {
+      background: #0d6efd;
+      color: #fff;
+      font-weight: 600;
+    }
+    .step-arrow {
+      color: #aaa;
+      padding: 0 2px;
     }
 
     /* Jobs sidebar */
@@ -255,6 +271,53 @@
     }
     .agent-typing { font-style: italic; color: #6c757d; font-size: .85rem; }
 
+    /* ── NEW NAV STYLES ───────────────────────────── */
+    .nav-top-link {
+      color: rgba(255,255,255,.8);
+      text-decoration: none;
+      padding: .4rem .9rem;
+      border-radius: .4rem;
+      font-size: .92rem;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .nav-top-link:hover,
+    .nav-top-link.active { background: rgba(255,255,255,.18); color: #fff; }
+
+    .nav-top-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,.8);
+      padding: .4rem .9rem;
+      border-radius: .4rem;
+      font-size: .92rem;
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .nav-top-btn:hover,
+    .nav-top-btn.active,
+    .nav-top-btn.show { background: rgba(255,255,255,.18); color: #fff; }
+    .nav-top-btn::after { border-color: rgba(255,255,255,.6) transparent transparent; }
+
+    .nav-icon-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.35);
+      color: rgba(255,255,255,.8);
+      border-radius: .35rem;
+      padding: .3rem .55rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .nav-icon-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
+
+    .navbar-module-title {
+      font-size: .8rem;
+      letter-spacing: .3px;
+      opacity: .7;
+    }
+
     /* Language switcher */
     .lang-switcher { display: flex; align-items: center; gap: .25rem; }
     .lang-btn {
@@ -269,61 +332,301 @@
     }
     .lang-btn:hover { background: rgba(255,255,255,.18); color: #fff; }
     .lang-btn.active-lang { background: rgba(255,255,255,.22); color: #fff; border-color: rgba(255,255,255,.7); font-weight: 600; }
+
+    /* ── PHASE COLOURS ────────────────────────────── */
+    :root {
+      --phase-geo:     #0891b2; /* teal   – geometry */
+      --phase-preproc: #d97706; /* amber  – pre-process */
+      --phase-solve:   #16a34a; /* green  – solve */
+      --phase-post:    #7c3aed; /* purple – post-process */
+      --phase-ai:      #0e7490; /* cyan   – ai/advanced */
+    }
+
+    /* ── WORKFLOW STEPPER ─────────────────────────── */
+    .wf-stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+      padding-bottom: .25rem;
+    }
+    .wf-step {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .35rem .9rem;
+      border-radius: .4rem;
+      font-size: .82rem;
+      font-weight: 500;
+      color: #adb5bd;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s, color .15s;
+    }
+    .wf-step:hover { background: #e9ecef; color: #495057; }
+    .wf-step.wf-active { background: #e7f1ff; color: #0d6efd; font-weight: 600; }
+    .wf-step.wf-done { color: #198754; }
+    .wf-step .wf-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 700;
+      background: #dee2e6; color: #6c757d;
+      flex-shrink: 0;
+    }
+    .wf-step.wf-active .wf-num { background: #0d6efd; color: #fff; }
+    .wf-step.wf-done .wf-num { background: #198754; color: #fff; }
+    .wf-sep { color: #ced4da; font-size: .9rem; padding: 0 .1rem; flex-shrink: 0; }
+
+    /* ── SIDEBAR DUAL MODE ────────────────────────── */
+    .sidebar-mode-bar {
+      display: flex;
+      border-bottom: 1px solid #dee2e6;
+      background: #f8f9fa;
+    }
+    .sidebar-mode-btn {
+      flex: 1;
+      padding: .4rem .5rem;
+      border: none;
+      background: transparent;
+      font-size: .78rem;
+      font-weight: 500;
+      color: #6c757d;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      display: flex; align-items: center; justify-content: center; gap: .3rem;
+    }
+    .sidebar-mode-btn.active { background: #fff; color: #0d6efd; border-bottom: 2px solid #0d6efd; }
+    .sidebar-collapse-btn {
+      padding: .4rem .6rem;
+      border: none; border-left: 1px solid #dee2e6;
+      background: transparent;
+      color: #6c757d; font-size: .85rem;
+      cursor: pointer;
+    }
+    .sidebar-collapse-btn:hover { background: #e9ecef; }
+
+    /* Collapsed sidebar (icon strip) */
+    .jobs-sidebar.collapsed {
+      width: 48px !important;
+      min-width: 48px !important;
+    }
+    .jobs-sidebar.collapsed .sidebar-hide-when-collapsed { display: none !important; }
+    .jobs-sidebar.collapsed .sidebar-mode-bar { flex-direction: column; }
+    .jobs-sidebar.collapsed .sidebar-mode-btn { font-size: 1rem; padding: .55rem 0; }
+    .jobs-sidebar.collapsed .sidebar-collapse-btn { border-left: none; border-top: 1px solid #dee2e6; }
+
+    /* Workflow tree */
+    .wf-tree { padding: .5rem; }
+    .wf-tree-step {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .5rem .7rem;
+      border-radius: .4rem;
+      font-size: .85rem;
+      cursor: pointer;
+      color: #495057;
+      transition: background .15s;
+      margin-bottom: .2rem;
+      text-decoration: none;
+    }
+    .wf-tree-step:hover { background: #f0f7ff; color: #0d6efd; }
+    .wf-tree-step.active { background: #e7f1ff; color: #0d6efd; font-weight: 600; }
+    .wf-tree-step .phase-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── CAD SUB-TABS ─────────────────────────────── */
+    .cad-sub-panel { display: none; }
+    .cad-sub-panel.active { display: block; }
+
+    /* ── PP MERGED TABS ───────────────────────────── */
+    .pp-merged-panel { display: none; }
+    .pp-merged-panel.active { display: block; }
+
+    /* ── SETTINGS OFFCANVAS ───────────────────────── */
+    #settings-offcanvas .offcanvas-header { background: #1a3a5c; color: #fff; }
+    #settings-offcanvas .offcanvas-header .btn-close { filter: invert(1); }
   </style>
 </head>
 <body>
 
 <!-- Navbar -->
 <div class="top-navbar">
-  <span class="brand me-4"><i class="bi bi-water"></i> <span data-i18n="nav.brand">TensorLBM Platform</span></span>
-  <nav class="d-flex gap-1">
-    <a href="#" data-tab="dashboard" class="active" onclick="return showTab('dashboard',this)"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
-    <a href="#" data-tab="cad" onclick="return showTab('cad',this)"><i class="bi bi-rulers"></i> <span data-i18n="nav.cad">CAD</span></a>
-    <a href="#" data-tab="preprocess" onclick="return showTab('preprocess',this)"><i class="bi bi-grid-3x3"></i> <span data-i18n="nav.preprocess">Pre-processing</span></a>
-    <a href="#" data-tab="solve" onclick="return showTab('solve',this)"><i class="bi bi-play-circle"></i> <span data-i18n="nav.solve">Solve</span></a>
-    <a href="#" data-tab="postprocess" onclick="return showTab('postprocess',this)"><i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.postprocess">Post-process</span></a>
-    <a href="#" data-tab="benchmarks" onclick="return showTab('benchmarks',this)"><i class="bi bi-trophy"></i> <span data-i18n="nav.benchmarks">Benchmarks</span></a>
-    <a href="#" data-tab="compare" onclick="return showTab('compare',this)"><i class="bi bi-arrow-left-right"></i> <span data-i18n="nav.compare">Compare</span></a>
-    <a href="#" data-tab="ai-flow" onclick="return showTab('ai-flow',this)"><i class="bi bi-cpu"></i> <span data-i18n="nav.ai_flow">AI Flow</span></a>
-    <a href="#" data-tab="orchestration" onclick="return showTab('orchestration',this)"><i class="bi bi-diagram-3"></i> <span data-i18n="nav.orchestration">Orchestration</span></a>
-    <a href="#" data-tab="agent" onclick="return showTab('agent',this)"><i class="bi bi-robot"></i> <span data-i18n="nav.agent">AI Agent</span></a>
-    <a href="#" data-tab="suboff" onclick="return showTab('suboff',this)"><i class="bi bi-submarine"></i> <span data-i18n="nav.suboff">水下回转体基准标模</span></a>
-    <a href="#" data-tab="simulations" onclick="return showTab('simulations',this)"><i class="bi bi-wind"></i> <span data-i18n="nav.simulations">Simulation</span></a>
-    <a href="#" data-tab="cylinder" onclick="return showTab('cylinder',this)"><i class="bi bi-circle"></i> <span data-i18n="nav.cylinder">Cylinder</span></a>
-  </nav>
-  <span class="ms-auto d-flex align-items-center gap-3">
-    <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
-    <div class="lang-switcher">
-      <button class="lang-btn" data-lang="en" onclick="i18n.switch('en')" title="English">EN</button>
-      <button class="lang-btn" data-lang="zh" onclick="i18n.switch('zh')" title="中文">中文</button>
+  <span class="brand me-4"><i class="bi bi-water"></i> <span data-i18n="nav.brand">TensorLBM</span></span>
+  <nav class="d-flex gap-1 align-items-center" id="top-nav">
+    <!-- Dashboard (direct) -->
+    <a href="#" class="nav-top-link active" data-tab="dashboard"><i class="bi bi-speedometer2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+
+    <!-- Projects dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-projects">
+        <i class="bi bi-folder2-open"></i> <span data-i18n="nav.projects_group">Projects</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="projects"><i class="bi bi-folder2-open me-2"></i><span data-i18n="nav.projects">Project Manager</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="templates"><i class="bi bi-collection me-2"></i><span data-i18n="nav.templates">Templates</span></a></li>
+      </ul>
     </div>
+
+    <!-- Geometry / CAD dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-cad">
+        <i class="bi bi-rulers"></i> <span data-i18n="nav.cad_group">Geometry</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="cad" data-cad-sub="hull"><i class="bi bi-water me-2"></i><span data-i18n="nav.cad_hull">Ship Hull</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="cad" data-cad-sub="suboff"><i class="bi bi-tsunami me-2"></i><span data-i18n="nav.cad_suboff">Submarine (SUBOFF)</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="cad" data-cad-sub="offshore"><i class="bi bi-wind me-2"></i><span data-i18n="nav.cad_offshore">Offshore Structure</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="cad" data-cad-sub="propeller"><i class="bi bi-gear-wide-connected me-2"></i><span data-i18n="nav.cad_propeller">Propeller</span></a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#" data-tab="geo3d"><i class="bi bi-box me-2"></i><span data-i18n="nav.geo3d">3D Preview</span></a></li>
+      </ul>
+    </div>
+
+    <!-- Simulation dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-sim">
+        <i class="bi bi-play-circle"></i> <span data-i18n="nav.sim_group">Simulation</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="preprocess"><i class="bi bi-grid-3x3 me-2"></i><span data-i18n="nav.preprocess">Pre-processing</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="solve"><i class="bi bi-play-circle me-2"></i><span data-i18n="nav.solve">Solver</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="benchmarks"><i class="bi bi-trophy me-2"></i><span data-i18n="nav.benchmarks">Benchmarks</span></a></li>
+      </ul>
+    </div>
+
+    <!-- Results dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-results">
+        <i class="bi bi-bar-chart-line"></i> <span data-i18n="nav.results_group">Results</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="postprocess"><i class="bi bi-bar-chart-line me-2"></i><span data-i18n="nav.postprocess">Post-process</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="reports"><i class="bi bi-file-earmark-text me-2"></i><span data-i18n="nav.reports">Reports</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="compare"><i class="bi bi-arrow-left-right me-2"></i><span data-i18n="nav.compare">Compare</span></a></li>
+      </ul>
+    </div>
+
+    <!-- AI / Advanced dropdown -->
+    <div class="dropdown">
+      <button class="nav-top-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="nav-drop-ai">
+        <i class="bi bi-cpu"></i> <span data-i18n="nav.ai_group">AI / Advanced</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-dark shadow">
+        <li><a class="dropdown-item" href="#" data-tab="ai-flow"><i class="bi bi-cpu me-2"></i><span data-i18n="nav.ai_flow">AI Flow</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="orchestration"><i class="bi bi-diagram-3 me-2"></i><span data-i18n="nav.orchestration">Orchestration</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="agent"><i class="bi bi-robot me-2"></i><span data-i18n="nav.agent">AI Agent</span></a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item" href="#" data-tab="suboff"><i class="bi bi-submarine me-2"></i><span data-i18n="nav.suboff">SUBOFF Surrogate</span></a></li>
+      </ul>
+    </div>
+  </nav>
+  <span class="ms-auto d-flex align-items-center gap-2">
+    <span class="navbar-module-title small text-white-50" id="navbar-module-title"></span>
+    <span class="small" id="ws-status"><span class="dot dot-queued"></span> <span data-i18n="ws.connecting">Connecting…</span></span>
+    <button class="nav-icon-btn" data-bs-toggle="offcanvas" data-bs-target="#settings-offcanvas" title="Settings">
+      <i class="bi bi-gear-fill"></i>
+    </button>
+    <button class="nav-icon-btn" data-bs-toggle="modal" data-bs-target="#shortcuts-modal" title="Keyboard shortcuts (?)">
+      <i class="bi bi-keyboard"></i>
+    </button>
   </span>
+</div>
+
+<div id="workflow-stepper" class="workflow-stepper d-none d-md-flex align-items-center px-3 py-1 border-bottom bg-light" style="gap:0;font-size:0.78rem;min-height:32px;">
+  <span class="step-item" data-step="geo">① <span data-i18n="sidebar.step_geo">Geometry</span></span>
+  <span class="step-arrow">›</span>
+  <span class="step-item" data-step="preprocess">② <span data-i18n="sidebar.step_preproc">Pre-process</span></span>
+  <span class="step-arrow">›</span>
+  <span class="step-item" data-step="solve">③ <span data-i18n="sidebar.step_solve">Solve</span></span>
+  <span class="step-arrow">›</span>
+  <span class="step-item" data-step="postprocess">④ <span data-i18n="sidebar.step_post">Post-process</span></span>
 </div>
 
 <!-- Main layout -->
 <div class="main-layout">
-  <!-- Jobs sidebar -->
-  <div class="jobs-sidebar">
-    <div class="sidebar-header">
-      <i class="bi bi-list-task"></i> <span data-i18n="sidebar.title">Jobs</span>
-      <span class="jobs-count ms-auto" id="jobs-count">0</span>
-      <button class="btn btn-sm btn-outline-danger" onclick="clearAllJobs()" data-i18n-title="sidebar.clear_title" title="Clear completed/failed jobs">
-        <i class="bi bi-trash"></i>
+  <!-- Left panel: Workflow tree / Jobs monitor -->
+  <div class="jobs-sidebar" id="jobs-sidebar">
+    <!-- Mode bar -->
+    <div class="sidebar-mode-bar">
+      <button class="sidebar-mode-btn active" id="sidebar-btn-workflow" onclick="sidebarSetMode('workflow')" title="Workflow">
+        <i class="bi bi-diagram-3"></i> <span class="sidebar-hide-when-collapsed" data-i18n="sidebar.wf_mode">Workflow</span>
+      </button>
+      <button class="sidebar-mode-btn" id="sidebar-btn-jobs" onclick="sidebarSetMode('jobs')" title="Jobs">
+        <i class="bi bi-list-task"></i> <span class="sidebar-hide-when-collapsed" data-i18n="sidebar.jobs_mode">Jobs</span>
+      </button>
+      <button class="sidebar-collapse-btn" onclick="sidebarToggleCollapse()" id="sidebar-collapse-btn" title="Collapse">
+        <i class="bi bi-chevron-left" id="sidebar-collapse-icon"></i>
       </button>
     </div>
-    <div class="sidebar-tools">
-      <input class="form-control form-control-sm" id="jobs-search" data-i18n-placeholder="sidebar.search_placeholder" placeholder="Search job name / id" oninput="onJobsFilterChanged()" />
-      <select class="form-select form-select-sm" id="jobs-status-filter" onchange="onJobsFilterChanged()">
-        <option value="all" data-i18n="sidebar.filter_all">All status</option>
-        <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
-        <option value="running" data-i18n="sidebar.filter_running">Running</option>
-        <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
-        <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
-      </select>
-      <div class="shortcut-hint" data-i18n="sidebar.shortcut_hint">Shortcuts: Alt+1..9 switch modules, Ctrl/⌘+K search jobs.</div>
+
+    <!-- Workflow tree pane -->
+    <div id="sidebar-workflow-pane" class="flex-1 overflow-auto wf-tree">
+      <div class="small text-muted fw-semibold px-1 mb-2 sidebar-hide-when-collapsed" data-i18n="sidebar.wf_title">Workflow</div>
+      <a class="wf-tree-step" href="#" data-tab="cad" onclick="showTab('cad');return false;">
+        <span class="phase-dot" style="background:var(--phase-geo)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">1</span><span data-i18n="sidebar.step_geo">Geometry</span></span>
+        <i class="bi bi-rulers sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="preprocess" onclick="showTab('preprocess');return false;">
+        <span class="phase-dot" style="background:var(--phase-preproc)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">2</span><span data-i18n="sidebar.step_preproc">Pre-process</span></span>
+        <i class="bi bi-grid-3x3 sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="solve" onclick="showTab('solve');return false;">
+        <span class="phase-dot" style="background:var(--phase-solve)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">3</span><span data-i18n="sidebar.step_solve">Solve</span></span>
+        <i class="bi bi-play-circle sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="postprocess" onclick="showTab('postprocess');return false;">
+        <span class="phase-dot" style="background:var(--phase-post)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">4</span><span data-i18n="sidebar.step_post">Post-process</span></span>
+        <i class="bi bi-bar-chart-line sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="reports" onclick="showTab('reports');return false;">
+        <span class="phase-dot" style="background:var(--phase-post)"></span>
+        <span class="sidebar-hide-when-collapsed"><span class="text-muted small me-1">5</span><span data-i18n="sidebar.step_reports">Reports</span></span>
+        <i class="bi bi-file-earmark-text sidebar-hide-when-collapsed ms-auto text-muted small"></i>
+      </a>
+      <hr class="my-2">
+      <div class="small text-muted fw-semibold px-1 mb-2 sidebar-hide-when-collapsed" data-i18n="sidebar.other_title">Other</div>
+      <a class="wf-tree-step" href="#" data-tab="projects" onclick="showTab('projects');return false;">
+        <span class="phase-dot" style="background:#6c757d"></span>
+        <span class="sidebar-hide-when-collapsed"><span data-i18n="nav.projects">Projects</span></span>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="benchmarks" onclick="showTab('benchmarks');return false;">
+        <span class="phase-dot" style="background:#6c757d"></span>
+        <span class="sidebar-hide-when-collapsed"><span data-i18n="nav.benchmarks">Benchmarks</span></span>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="compare" onclick="showTab('compare');return false;">
+        <span class="phase-dot" style="background:#6c757d"></span>
+        <span class="sidebar-hide-when-collapsed"><span data-i18n="nav.compare">Compare</span></span>
+      </a>
     </div>
-    <div class="jobs-list" id="jobs-list">
-      <div class="text-center text-muted py-4 small" id="no-jobs-msg" data-i18n="sidebar.no_jobs">No jobs yet.</div>
+
+    <!-- Jobs monitor pane -->
+    <div id="sidebar-jobs-pane" style="display:none" class="d-flex flex-column flex-1 overflow-hidden">
+      <div class="sidebar-header sidebar-hide-when-collapsed">
+        <i class="bi bi-list-task"></i> <span data-i18n="sidebar.title">Jobs</span>
+        <span class="jobs-count ms-auto" id="jobs-count">0</span>
+        <button class="btn btn-sm btn-outline-danger" onclick="clearAllJobs()" data-i18n-title="sidebar.clear_title" title="Clear completed/failed jobs">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+      <div class="sidebar-tools sidebar-hide-when-collapsed">
+        <input class="form-control form-control-sm" id="jobs-search" data-i18n-placeholder="sidebar.search_placeholder" placeholder="Search job name / id" oninput="onJobsFilterChanged()" />
+        <select class="form-select form-select-sm" id="jobs-status-filter" onchange="onJobsFilterChanged()">
+          <option value="all" data-i18n="sidebar.filter_all">All status</option>
+          <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
+          <option value="running" data-i18n="sidebar.filter_running">Running</option>
+          <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
+          <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
+        </select>
+        <div class="shortcut-hint" data-i18n="sidebar.shortcut_hint">Shortcuts: Alt+1..9 switch modules, Ctrl/⌘+K search jobs.</div>
+      </div>
+      <div class="jobs-list" id="jobs-list">
+        <div class="text-center text-muted py-4 small" id="no-jobs-msg" data-i18n="sidebar.no_jobs">No jobs yet.</div>
+      </div>
     </div>
   </div>
 
@@ -340,6 +643,15 @@
         <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-warning" id="stat-running">—</div><div class="stat-label" data-i18n="stat.running">Running</div></div></div>
         <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-success" id="stat-completed">—</div><div class="stat-label" data-i18n="stat.completed">Completed</div></div></div>
         <div class="col-sm-3"><div class="card stat-card"><div class="stat-num text-danger" id="stat-failed">—</div><div class="stat-label" data-i18n="stat.failed">Failed</div></div></div>
+      </div>
+      <!-- Workflow pipeline summary -->
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-diagram-3"></i> <span data-i18n="projects.workflow_summary">Workflow Pipeline</span></div>
+        <div class="card-body py-2">
+          <div class="d-flex flex-wrap gap-3 align-items-center" id="wf-pipeline">
+            <span class="text-muted small" data-i18n="dashboard.loading">Loading…</span>
+          </div>
+        </div>
       </div>
       <div class="row g-3">
         <div class="col-md-6">
@@ -362,7 +674,52 @@
             </div>
           </div>
         </div>
+      <!-- Recent activity timeline -->
+      <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-calendar3"></i> <span data-i18n="dashboard.timeline_title">Job Timeline</span></span>
+              <button class="btn btn-outline-secondary btn-sm" onclick="dashboardLoadTimeline()"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body small">
+              <div class="d-flex gap-2 mb-2">
+                <select id="dashboard-timeline-status" class="form-select form-select-sm" onchange="dashboardLoadTimeline()">
+                  <option value="" data-i18n="dashboard.timeline_all">All jobs</option>
+                  <option value="queued" data-i18n="sidebar.filter_queued">Queued</option>
+                  <option value="running" data-i18n="sidebar.filter_running">Running</option>
+                  <option value="completed" data-i18n="sidebar.filter_completed">Completed</option>
+                  <option value="failed" data-i18n="sidebar.filter_failed">Failed</option>
+                </select>
+                <input id="dashboard-timeline-limit" type="number" class="form-control form-control-sm" value="8" min="1" max="50" onchange="dashboardLoadTimeline()" />
+              </div>
+              <div id="dashboard-timeline-table" class="table-responsive small text-muted" data-i18n="dashboard.loading">Loading…</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-activity"></i> <span data-i18n="dashboard.live_metrics_title">Live Metrics</span>
+              <div class="form-check form-switch d-inline-flex ms-3 mb-0">
+                <input class="form-check-input" type="checkbox" id="dashboard-live-auto" onchange="dashboardToggleLiveMetricsAuto()">
+                <label class="form-check-label small" for="dashboard-live-auto" data-i18n="dashboard.auto_refresh">Auto</label>
+              </div>
+            </div>
+            <div class="card-body small">
+              <div class="small text-muted mb-2" id="dashboard-selected-job" data-i18n="dashboard.no_job_selected">Select a job from the sidebar.</div>
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="dashboardLoadLiveMetrics()"><i class="bi bi-activity"></i> <span data-i18n="dashboard.live_metrics_btn">Load</span></button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="dashboardResetLiveMetrics()"><i class="bi bi-arrow-counterclockwise"></i></button>
+              </div>
+              <div id="dashboard-live-summary" class="small text-muted mb-1">-</div>
+              <pre id="dashboard-live-metrics-result" class="small mb-0" style="white-space:pre-wrap;max-height:160px;overflow:auto">-</pre>
+              <!-- hidden placeholder so JS reference remains valid -->
+              <div id="dashboard-notify-result" style="display:none"></div>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
     </div>
 
     <!-- ================================================================ -->
@@ -371,6 +728,28 @@
     <div class="tab-panel" id="panel-cad">
       <h4 class="mb-3"><i class="bi bi-rulers"></i> <span data-i18n="cad.title">Ship Hull CAD Modelling</span></h4>
 
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step wf-active" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
+      <!-- CAD sub-tabs -->
+      <ul class="nav nav-tabs mb-3" id="cad-tabs">
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="showCadSub('hull',this);return false;" data-cad-sub="hull"><i class="bi bi-water me-1"></i><span data-i18n="nav.cad_hull">Ship Hull</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showCadSub('suboff',this);return false;" data-cad-sub="suboff"><i class="bi bi-tsunami me-1"></i><span data-i18n="nav.cad_suboff">Submarine</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showCadSub('offshore',this);return false;" data-cad-sub="offshore"><i class="bi bi-wind me-1"></i><span data-i18n="offshore.title">Offshore</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showCadSub('propeller',this);return false;" data-cad-sub="propeller"><i class="bi bi-gear-wide-connected me-1"></i><span data-i18n="propeller.title">Propeller</span></a></li>
+      </ul>
+
+      <div class="cad-sub-panel active" id="cad-sub-hull">
       <div class="row g-3">
 
         <!-- Hull type & parameters -->
@@ -474,9 +853,24 @@
               <span class="ms-auto small text-muted" id="cad3d-model-id"></span>
             </div>
             <div class="card-body config-form">
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label class="form-label form-label-sm" for="cad3d-source-type" data-i18n="cad.model3d_source">3D Model Source</label>
+                  <select class="form-select form-select-sm" id="cad3d-source-type" onchange="cad3dOnSourceTypeChange()">
+                    <option value="parametric" selected data-i18n="cad.model3d_source_parametric">Parametric Hull</option>
+                    <option value="stl" data-i18n="cad.model3d_source_stl">Import STL</option>
+                    <option value="step" data-i18n="cad.model3d_source_step">Import STEP</option>
+                  </select>
+                </div>
+                <div class="col-md-8" id="cad3d-file-wrap" style="display:none;">
+                  <label class="form-label form-label-sm" for="cad3d-file-input" data-i18n="cad.model3d_file">3D Model File</label>
+                  <input type="file" class="form-control form-control-sm" id="cad3d-file-input" accept=".stl,.step,.stp">
+                </div>
+              </div>
+              <div class="small text-muted mb-2" id="cad3d-source-help" data-i18n="cad.model3d_source_help_parametric">Build a 3D hull model from the current hull parameters.</div>
               <div class="d-flex flex-wrap gap-2 mb-2">
                 <button class="btn btn-sm btn-primary" onclick="cad3dCreateOrUpdate()">
-                  <i class="bi bi-box"></i> <span data-i18n="cad.model3d_build">Build 3D Model</span>
+                  <i class="bi bi-box"></i> <span id="cad3d-build-label" data-i18n="cad.model3d_build">Build 3D Model</span>
                 </button>
                 <button class="btn btn-sm btn-outline-secondary" onclick="cad3dToggleWireframe()">
                   <i class="bi bi-grid-3x3"></i> <span data-i18n="cad.model3d_wireframe">Wireframe</span>
@@ -552,11 +946,9 @@
 
         </div><!-- /col-lg-8 -->
       </div><!-- /row -->
+      </div><!-- /cad-sub-hull -->
 
-      <!-- ---------------------------------------------------------------- -->
-      <!-- SUBOFF Submarine Panel                                            -->
-      <!-- ---------------------------------------------------------------- -->
-      <h5 class="mt-4 mb-3"><i class="bi bi-tsunami"></i> <span data-i18n="cad.suboff_title">SUBOFF Submarine CAD Modelling</span></h5>
+      <div class="cad-sub-panel" id="cad-sub-suboff">
       <div class="row g-3">
         <div class="col-lg-4">
           <div class="card">
@@ -607,6 +999,24 @@
           </div>
         </div>
         <div class="col-lg-8">
+          <div class="card mb-3">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-badge-3d me-1"></i>
+              <span data-i18n="cad.suboff_3d_title">3D Interactive View</span>
+              <span class="ms-auto small text-muted" id="suboff-3d-info" data-i18n="cad.suboff_3d_hint">Click Preview Submarine to load 3D view.</span>
+            </div>
+            <div class="card-body p-0" style="position:relative;">
+              <div id="suboff-3d-canvas" style="width:100%;height:420px;background:#111827;border-radius:0 0 .375rem .375rem;overflow:hidden;"></div>
+            </div>
+            <div class="card-footer py-1 d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" onclick="suboff3dToggleWireframe()">
+                <i class="bi bi-grid-3x3"></i> <span data-i18n="cad.suboff_3d_wireframe">Wireframe</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="suboff3dResetCamera()">
+                <i class="bi bi-fullscreen-exit"></i> <span data-i18n="cad.suboff_3d_reset_cam">Reset Camera</span>
+              </button>
+            </div>
+          </div>
           <div class="card">
             <div class="card-header"><i class="bi bi-image me-2"></i> <span data-i18n="cad.suboff_title">Submarine Preview</span></div>
             <div class="card-body text-center" id="suboff-preview-area">
@@ -616,11 +1026,9 @@
           <div id="suboff-mask-result" class="mt-3"></div>
         </div>
       </div>
+      </div><!-- /cad-sub-suboff -->
 
-      <!-- ---------------------------------------------------------------- -->
-      <!-- Offshore Structures Panel                                         -->
-      <!-- ---------------------------------------------------------------- -->
-      <h5 class="mt-4 mb-3"><i class="bi bi-wind"></i> <span data-i18n="offshore.title">Offshore Structure CAD</span></h5>
+      <div class="cad-sub-panel" id="cad-sub-offshore">
       <div class="row g-3">
         <div class="col-lg-4">
           <div class="card">
@@ -710,11 +1118,9 @@
           <div id="offshore-mask-result" class="mt-3"></div>
         </div>
       </div>
+      </div><!-- /cad-sub-offshore -->
 
-      <!-- ---------------------------------------------------------------- -->
-      <!-- Wageningen B-Series Propeller Performance Panel                  -->
-      <!-- ---------------------------------------------------------------- -->
-      <h5 class="mt-4 mb-3"><i class="bi bi-gear-wide-connected"></i> <span data-i18n="propeller.title">Wageningen B-Series Propeller</span></h5>
+      <div class="cad-sub-panel" id="cad-sub-propeller">
       <div class="row g-3">
         <div class="col-lg-4">
           <div class="card">
@@ -784,6 +1190,7 @@
           </div>
         </div>
       </div>
+      </div><!-- /cad-sub-propeller -->
 
     </div><!-- /panel-cad -->
 
@@ -792,6 +1199,20 @@
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-preprocess">
       <h4 class="mb-3"><i class="bi bi-grid-3x3"></i> <span data-i18n="preprocess.title">Pre-processing</span></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step wf-active" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
       <div class="row g-3">
 
         <!-- Polygon mask -->
@@ -863,6 +1284,76 @@
           </div>
         </div>
 
+        <!-- Fluid material database -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-droplet-half"></i> <span data-i18n="preprocess.materials">Material Database</span></div>
+            <div class="card-body">
+              <div class="d-flex gap-2 mb-3 align-items-end flex-wrap">
+                <div>
+                  <label class="form-label mb-1" data-i18n="preprocess.material_select">Select Fluid</label>
+                  <select class="form-select form-select-sm" id="material-filter" onchange="loadMaterials()" style="min-width:140px">
+                    <option value="">All</option>
+                    <option value="liquid">Liquid</option>
+                    <option value="gas">Gas</option>
+                  </select>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" onclick="loadMaterials()"><i class="bi bi-arrow-clockwise"></i></button>
+              </div>
+              <div id="material-table" class="small"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Y+ Wall-Distance Calculator -->
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-rulers"></i> <span data-i18n="preprocess.yplus_title">Y⁺ Wall-Distance Calculator</span></div>
+            <div class="card-body config-form">
+              <div class="row g-2 mb-2">
+                <div class="col-md-2">
+                  <label data-i18n="preprocess.yplus_re">Reynolds number Re</label>
+                  <input type="number" class="form-control" id="yp-re" value="1e5" step="1000" min="100" />
+                </div>
+                <div class="col-md-2">
+                  <label data-i18n="preprocess.yplus_u">Velocity U [m/s]</label>
+                  <input type="number" class="form-control" id="yp-u" value="10.0" step="1" min="0.001" />
+                </div>
+                <div class="col-md-2">
+                  <label data-i18n="preprocess.yplus_l">Length L [m]</label>
+                  <input type="number" class="form-control" id="yp-l" value="1.0" step="0.1" min="0.001" />
+                </div>
+                <div class="col-md-2">
+                  <label data-i18n="preprocess.yplus_nu">Kinematic ν [m²/s]</label>
+                  <input type="number" class="form-control" id="yp-nu" value="1e-5" step="1e-6" min="1e-8" />
+                </div>
+                <div class="col-md-1">
+                  <label data-i18n="preprocess.yplus_target">Target y⁺</label>
+                  <input type="number" class="form-control" id="yp-yplus" value="1.0" step="0.5" min="0.1" max="100" />
+                </div>
+                <div class="col-md-1">
+                  <label data-i18n="preprocess.yplus_ncells">Grid cells</label>
+                  <input type="number" class="form-control" id="yp-ncells" value="200" step="10" min="10" />
+                </div>
+                <div class="col-md-1">
+                  <label data-i18n="preprocess.yplus_geom">Geometry</label>
+                  <select class="form-select" id="yp-geom">
+                    <option value="flat_plate">Flat plate</option>
+                    <option value="channel">Channel</option>
+                    <option value="cylinder">Cylinder</option>
+                  </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                  <button class="btn btn-primary w-100" onclick="runYPlus()">
+                    <i class="bi bi-calculator"></i> <span data-i18n="preprocess.yplus_compute">Compute y⁺</span>
+                  </button>
+                </div>
+              </div>
+              <div id="yp-result" class="mt-3"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -871,6 +1362,22 @@
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-solve">
       <h4 class="mb-3"><i class="bi bi-play-circle"></i> <span data-i18n="solve.title">Solver</span></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step wf-active" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
+      <!-- Template notification bar -->
+      <div id="solve-template-msg" class="alert alert-success alert-sm py-1 small mb-2" style="display:none"></div>
       <div class="row g-3">
         <div class="col-md-4 col-lg-3">
           <div class="card">
@@ -879,10 +1386,17 @@
               <select class="form-select" id="sim-type" onchange="onSimTypeChange()">
                 <optgroup id="optgroup-2d-single" label="2D Single-phase">
                   <option value="cylinder_flow">Cylinder Flow (2D)</option>
+                  <option value="rotating_cylinder">Rotating Cylinder (2D)</option>
+                  <option value="cumulant_cylinder_flow">Cumulant Cylinder Flow (2D)</option>
                   <option value="lid_driven_cavity">Lid-Driven Cavity (2D)</option>
                   <option value="backward_facing_step">Backward-Facing Step (2D)</option>
                   <option value="turbulent_channel">Turbulent Channel LES (2D)</option>
                   <option value="pipeline_flow">Pipeline Flow (2D)</option>
+                  <option value="sliding_mesh_rotor">Sliding Mesh Rotor (2D)</option>
+                  <option value="passive_scalar_transport">Passive Scalar Transport (2D)</option>
+                  <option value="cavitation_flow">Cavitation Flow (2D)</option>
+                  <option value="oscillating_airfoil">Oscillating Airfoil (2D)</option>
+                  <option value="conjugate_ht">Conjugate Heat Transfer (2D)</option>
                 </optgroup>
                 <optgroup id="optgroup-2d-multi" label="2D Multiphase">
                   <option value="dam_break">Dam Break (2D)</option>
@@ -892,6 +1406,13 @@
                 <optgroup id="optgroup-3d" label="3D">
                   <option value="sphere_flow">Sphere Flow (3D D3Q19)</option>
                   <option value="ship_hull">Ship Hull – Wigley (3D)</option>
+                  <option value="sphere_flow_d3q27">Sphere Flow 3D – D3Q27</option>
+                  <option value="thermal_cavity_3d">3D Thermal Cavity (Boussinesq)</option>
+                  <option value="porous_drainage_3d">3D Porous Drainage (Shan-Chen)</option>
+                  <option value="hull_free_surface">Hull Free-Surface (Color-Gradient)</option>
+                  <option value="actuator_disk">Actuator Disk Propulsor (3D)</option>
+                  <option value="propeller_open_water">Propeller Open-Water (3D)</option>
+                  <option value="ibm_propeller">IBM Propeller (3D)</option>
                 </optgroup>
               </select>
               <div id="sim-description" class="form-text mt-2"></div>
@@ -905,10 +1426,17 @@
               <button class="btn btn-sm btn-outline-secondary ms-auto me-2" onclick="resetDefaults()">
                 <i class="bi bi-arrow-counterclockwise"></i> <span data-i18n="solve.defaults_btn">Defaults</span>
               </button>
+              <button class="btn btn-sm btn-outline-info me-2" id="validate-btn" onclick="validateSolverParams()">
+                <i class="bi bi-check2-circle"></i> <span data-i18n="solve.validate">Validate</span>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary me-2" id="preflight-btn" onclick="runPreflight()">
+                <i class="bi bi-clipboard2-check"></i> <span data-i18n="solve.preflight_btn">Pre-flight</span>
+              </button>
               <button class="btn btn-primary" id="submit-btn" onclick="submitJob()">
                 <i class="bi bi-play-fill"></i> <span data-i18n="solve.submit_btn">Submit Job</span>
               </button>
             </div>
+            <div id="validate-result" class="px-3 pt-2" style="display:none"></div>
             <div class="card-body config-form">
               <div class="border rounded p-2 mb-3 bg-light" id="physics-layer">
                 <div class="d-flex align-items-center mb-2">
@@ -960,6 +1488,85 @@
           </div>
         </div>
       </div>
+
+      <!-- Parametric Sensitivity Study -->
+      <div class="row g-3 mt-1">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header d-flex align-items-center">
+              <i class="bi bi-graph-up me-2"></i>
+              <strong data-i18n="solve.study_title">Parametric Sensitivity Study</strong>
+              <span class="ms-2 badge bg-info text-dark small" data-i18n="solve.study_hint">Submits one job per value</span>
+            </div>
+            <div class="card-body config-form">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                  <label data-i18n="solve.study_solver">Solver type</label>
+                  <select class="form-select form-select-sm" id="study-solver">
+                    <option value="cylinder_flow">cylinder_flow</option>
+                    <option value="rotating_cylinder">rotating_cylinder</option>
+                    <option value="lid_driven_cavity">lid_driven_cavity</option>
+                    <option value="backward_facing_step">backward_facing_step</option>
+                    <option value="turbulent_channel">turbulent_channel</option>
+                    <option value="pipeline_flow">pipeline_flow</option>
+                    <option value="dam_break">dam_break</option>
+                    <option value="sloshing_tank">sloshing_tank</option>
+                    <option value="sphere_flow">sphere_flow</option>
+                    <option value="porous_drainage">porous_drainage</option>
+                    <option value="actuator_disk">actuator_disk</option>
+                    <option value="propeller_open_water">propeller_open_water</option>
+                    <option value="ibm_propeller">ibm_propeller</option>
+                    <option value="sphere_flow_d3q27">sphere_flow_d3q27</option>
+                    <option value="thermal_cavity_3d">thermal_cavity_3d</option>
+                    <option value="porous_drainage_3d">porous_drainage_3d</option>
+                    <option value="hull_free_surface">hull_free_surface</option>
+                    <option value="cumulant_cylinder_flow">cumulant_cylinder_flow</option>
+                    <option value="sliding_mesh_rotor">sliding_mesh_rotor</option>
+                    <option value="passive_scalar_transport">passive_scalar_transport</option>
+                    <option value="cavitation_flow">cavitation_flow</option>
+                    <option value="oscillating_airfoil">oscillating_airfoil</option>
+                    <option value="conjugate_ht">conjugate_ht</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label data-i18n="solve.study_param">Parameter</label>
+                  <select class="form-select form-select-sm" id="study-param">
+                    <option value="re">re</option>
+                    <option value="u_in">u_in</option>
+                    <option value="u_lid">u_lid</option>
+                    <option value="nx">nx</option>
+                    <option value="ny">ny</option>
+                    <option value="n_steps">n_steps</option>
+                    <option value="radius">radius</option>
+                    <option value="spin_ratio">spin_ratio</option>
+                    <option value="tau">tau</option>
+                    <option value="rpm">rpm</option>
+                    <option value="rpm_lu">rpm_lu</option>
+                    <option value="diameter">diameter</option>
+                    <option value="hub_diameter_ratio">hub_diameter_ratio</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label data-i18n="solve.study_values">Values (comma-separated)</label>
+                  <input type="text" class="form-control form-control-sm" id="study-values" value="50, 100, 200, 400" placeholder="e.g. 50,100,200" />
+                </div>
+                <div class="col-md-3">
+                  <label data-i18n="solve.study_base_config">Base config (JSON)</label>
+                  <input type="text" class="form-control form-control-sm font-monospace" id="study-base-config"
+                    value='{"nx":200,"ny":80,"u_in":0.08,"re":100,"n_steps":3000,"output_interval":500,"device":"cpu"}'
+                    style="font-size:.75rem" />
+                </div>
+                <div class="col-md-1">
+                  <button class="btn btn-primary btn-sm w-100" onclick="submitParametricStudy()">
+                    <i class="bi bi-play-fill"></i> <span data-i18n="solve.study_submit">Submit</span>
+                  </button>
+                </div>
+              </div>
+              <div id="study-result" class="mt-3 small"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ================================================================ -->
@@ -967,6 +1574,20 @@
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-postprocess">
       <h4 class="mb-3"><i class="bi bi-bar-chart-line"></i> <span data-i18n="postprocess.title">Post-processing</span></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step wf-active" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
       <div class="row g-3 mb-3">
         <div class="col-md-5">
           <div class="card">
@@ -988,21 +1609,67 @@
 
       <!-- Tabs within post-process -->
       <ul class="nav nav-tabs mb-3" id="pp-tabs">
-        <li class="nav-item"><a class="nav-link active" href="#" onclick="showPPTab('snapshots',this)"><i class="bi bi-images"></i> <span data-i18n="postprocess.tab_snapshots">Snapshots</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('viewer',this)"><i class="bi bi-grid-1x2"></i> <span data-i18n="postprocess.tab_viewer">Field Viewer</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('logs',this)"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs">Logs</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('files',this)"><i class="bi bi-folder"></i> <span data-i18n="postprocess.tab_files">Files</span></a></li>
-        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPTab('metadata',this)"><i class="bi bi-code-square"></i> <span data-i18n="postprocess.tab_metadata">Metadata</span></a></li>
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="showPPMergedTab('results',this);return false;"><i class="bi bi-images"></i> <span data-i18n="postprocess.tab_results">Results</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('fieldview',this);return false;"><i class="bi bi-grid-1x2"></i> <span data-i18n="postprocess.tab_fieldview">Field View</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('probes',this);return false;"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes_analysis">Probes &amp; Analysis</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('export',this);return false;"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('logs',this);return false;"><i class="bi bi-terminal"></i> <span data-i18n="postprocess.tab_logs_files">Logs &amp; Files</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('abcompare',this);return false;"><i class="bi bi-layout-split"></i> <span data-i18n="postprocess.tab_abcompare">A/B Compare</span></a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="showPPMergedTab('engineering',this);return false;"><i class="bi bi-cpu"></i> <span data-i18n="postprocess.tab_engineering">Engineering Analysis</span></a></li>
       </ul>
 
+      <!-- ─── Results merged panel ─── -->
+      <div class="pp-merged-panel active" id="pp-merged-results">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('snapshots',this,'pp-merged-results')">Snapshots</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('metadata',this,'pp-merged-results')">Metadata</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('studycompare',this,'pp-merged-results')">Study Compare</button>
+        </div>
       <div id="pp-snapshots" class="pp-tab-panel">
         <div id="snapshots-grid" class="row g-2">
           <div class="col-12 text-muted small" data-i18n="postprocess.no_job">No job selected.</div>
         </div>
       </div>
+      <div id="pp-metadata" class="pp-tab-panel" style="display:none">
+        <pre id="pp-metadata-box" class="bg-light p-3 border rounded small" style="max-height:500px;overflow:auto" data-i18n="postprocess.no_job_meta">Select a job to view metadata.</pre>
+      </div>
+      <!-- Study-Group Compare -->
+      <div id="pp-studycompare" class="pp-tab-panel" style="display:none">
+        <div class="card">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i class="bi bi-bar-chart-steps me-1"></i>
+            <span data-i18n="postprocess.studycompare_title">Study-Group Comparison</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2 mb-3 align-items-end">
+              <div class="col-sm-6 col-md-4">
+                <label class="form-label small mb-1" data-i18n="postprocess.studycompare_group_label">Study Group Name</label>
+                <input type="text" class="form-control form-control-sm" id="study-compare-group"
+                       placeholder="e.g. re_sweep_2025" />
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-sm btn-primary" onclick="loadStudyCompare()">
+                  <i class="bi bi-arrow-repeat"></i>
+                  <span data-i18n="postprocess.studycompare_load">Load</span>
+                </button>
+              </div>
+            </div>
+            <div id="study-compare-result"></div>
+            <!-- Engineering summary report (populated by app_postprocess_engineering.js) -->
+            <div id="study-report" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /pp-merged-results -->
 
+      <!-- ─── Field View merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-fieldview">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('viewer',this,'pp-merged-fieldview')">Field Viewer</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('timeavg',this,'pp-merged-fieldview')">Time Average</button>
+        </div>
       <!-- ---- Field Viewer Tab ---- -->
-      <div id="pp-viewer" class="pp-tab-panel" style="display:none">
+      <div id="pp-viewer" class="pp-tab-panel">
         <div class="row g-3 mb-3">
           <!-- Controls -->
           <div class="col-lg-3">
@@ -1071,15 +1738,400 @@
           </div>
         </div>
       </div>
-      <div id="pp-logs" class="pp-tab-panel" style="display:none">
+
+      <!-- ---- Time Average Tab ---- -->
+      <div id="pp-timeavg" class="pp-tab-panel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-3">
+            <div class="card h-100">
+              <div class="card-header small fw-semibold"><i class="bi bi-clock-history"></i> <span data-i18n="postprocess.tab_timeavg">Time Average</span></div>
+              <div class="card-body small">
+                <p class="text-muted" data-i18n="postprocess.timeavg_hint">Computes mean and RMS fields from all checkpoints.</p>
+                <div class="mb-2">
+                  <label class="form-label mb-1" data-i18n="postprocess.timeavg_field">Field</label>
+                  <select class="form-select form-select-sm" id="ta-field">
+                    <option value="velocity_magnitude">Velocity magnitude</option>
+                    <option value="vorticity">Vorticity</option>
+                    <option value="ux">x-velocity</option>
+                    <option value="uy">y-velocity</option>
+                    <option value="density">Density</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label mb-1" data-i18n="postprocess.timeavg_show">Show</label>
+                  <select class="form-select form-select-sm" id="ta-show">
+                    <option value="mean" data-i18n="postprocess.timeavg_mean">Mean</option>
+                    <option value="rms" data-i18n="postprocess.timeavg_rms">RMS</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary btn-sm w-100" onclick="runTimeAverage()">
+                  <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.timeavg_compute">Compute Time Average</span>
+                </button>
+                <div class="mt-3" id="ta-info"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-9">
+            <div class="card">
+              <div class="card-header small d-flex align-items-center gap-2">
+                <span id="ta-title" class="fw-semibold">Time-Averaged Field</span>
+                <span class="text-muted ms-auto" id="ta-stats"></span>
+              </div>
+              <div class="card-body p-2 text-center">
+                <p class="text-muted small mt-3" id="ta-hint">Select a field and click Compute Time Average.</p>
+                <canvas id="ta-canvas" style="display:none;max-width:100%;border:1px solid #dee2e6"></canvas>
+                <canvas id="ta-legend" width="30" height="256" style="display:none;vertical-align:top;margin-left:6px;border:1px solid #dee2e6"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /pp-merged-fieldview -->
+
+      <!-- ─── Probes & Analysis merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-probes">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('probes',this,'pp-merged-probes')">Probe Monitor</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('advanced',this,'pp-merged-probes')">Advanced Analytics</button>
+        </div>
+      <!-- ---- Probe Monitor Tab ---- -->
+      <div id="pp-probes" class="pp-tab-panel">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-pin-map"></i> <span data-i18n="postprocess.tab_probes">Probe Monitor</span></div>
+              <div class="card-body small">
+                <p class="text-muted" data-i18n="postprocess.probe_hint">Add probe locations then click Extract History.</p>
+                <div id="probe-list" class="mb-2"></div>
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="addProbeRow()">
+                  <i class="bi bi-plus-circle"></i> <span data-i18n="postprocess.probe_add">Add Probe</span>
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="runProbeHistory()">
+                  <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.probe_run">Extract History</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-header small fw-semibold">Time History</div>
+              <div class="card-body p-2">
+                <canvas id="probe-chart" style="width:100%;max-height:360px"></canvas>
+                <p class="text-muted small mt-2" id="probe-chart-hint">No data yet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="pp-advanced" class="pp-tab-panel" style="display:none">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-speedometer2"></i> Unified Monitor</div>
+              <div class="card-body small">
+                <button class="btn btn-sm btn-primary w-100 mb-2" onclick="loadUnifiedMonitor()">
+                  <i class="bi bi-arrow-repeat"></i> Refresh Monitor
+                </button>
+                <div id="pp-monitor-summary" class="small text-muted">Select job then refresh.</div>
+              </div>
+            </div>
+            <div class="card mt-3">
+              <div class="card-header small fw-semibold"><i class="bi bi-magic"></i> Analysis Tools</div>
+              <div class="card-body small">
+                <label class="form-label mb-1">Job Analysis API</label>
+                <select id="pp-adv-endpoint" class="form-select form-select-sm mb-2">
+                  <option value="force">Force decomposition</option>
+                  <option value="wss">Wall shear stress</option>
+                  <option value="vortex">Vortex criterion</option>
+                  <option value="heat">Heat flux</option>
+                  <option value="acoustic">Acoustics spectrum</option>
+                  <option value="turbulence">Turbulence statistics</option>
+                  <option value="animation">Animation (GIF metadata/file)</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="runAdvancedEndpoint()">
+                  Run selected job analysis
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runStreamlinesQuick()">
+                  Run streamlines (quick)
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runSurfaceIntegralsQuick()">
+                  Run surface integrals (quick)
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runInletProfilePreviewQuick()">
+                  Run inlet-profile preview
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runDfsemPreviewQuick()">
+                  Run DFSEM preview
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="runSpongePreviewQuick()">
+                  Run sponge preview
+                </button>
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="runRoughnessPreviewQuick()">
+                  Run roughness preview
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-code-square"></i> Advanced Result</div>
+              <div class="card-body">
+                <pre id="pp-advanced-result" class="small mb-0" style="white-space:pre-wrap;max-height:540px;overflow:auto">-</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /pp-merged-probes -->
+
+      <!-- ─── Export merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-export">
+      <!-- ---- Export Tab ---- -->
+      <div id="pp-export" class="pp-tab-panel">
+        <div class="row g-3">
+          <div class="col-lg-5">
+            <div class="card">
+              <div class="card-header small fw-semibold"><i class="bi bi-box-arrow-down"></i> <span data-i18n="postprocess.tab_export">Export</span></div>
+              <div class="card-body small">
+                <p class="text-muted" data-i18n="postprocess.export_hint">Download checkpoint data as a zip archive for use in ParaView, VisIt, MATLAB or Python.</p>
+                <div class="mb-2">
+                  <label class="form-label mb-1" data-i18n="postprocess.export_format">Export format</label>
+                  <select class="form-select form-select-sm" id="exp-format">
+                    <option value="vts" data-i18n="postprocess.export_format_vts">VTS (VTK XML – ParaView)</option>
+                    <option value="vtk" data-i18n="postprocess.export_format_vtk">VTK (Legacy ASCII)</option>
+                    <option value="hdf5" data-i18n="postprocess.export_format_hdf5">HDF5 + XDMF</option>
+                    <option value="csv" data-i18n="postprocess.export_format_csv">CSV (flat text)</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label mb-1" data-i18n="postprocess.export_checkpoint">Checkpoint</label>
+                  <select class="form-select form-select-sm" id="exp-checkpoint">
+                    <option value="latest">latest</option>
+                  </select>
+                </div>
+                <button class="btn btn-success btn-sm w-100" id="exp-btn" onclick="downloadExport()">
+                  <i class="bi bi-download"></i> <span data-i18n="postprocess.export_btn">Download</span>
+                </button>
+                <div class="mt-3 small text-muted" id="exp-status"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="card h-100">
+              <div class="card-header small fw-semibold"><i class="bi bi-info-circle"></i> Format guide</div>
+              <div class="card-body small text-muted">
+                <dl class="mb-0">
+                  <dt>VTS (VTK XML)</dt>
+                  <dd>Open in <strong>ParaView</strong> or VisIt. Base64 inline binary. Best for 2-D and 3-D fields.</dd>
+                  <dt>VTK (Legacy)</dt>
+                  <dd>ASCII structured-points format. Compatible with older VTK tools and Python <code>pyvista</code>.</dd>
+                  <dt>HDF5 + XDMF</dt>
+                  <dd>Requires <code>h5py</code> on the server. Open the <code>.xdmf</code> file in ParaView to auto-load field data.</dd>
+                  <dt>CSV</dt>
+                  <dd>Flat text with columns <code>i,j,ux,uy,rho</code> (2-D) or <code>i,j,k,ux,uy,uz,rho</code> (3-D). Read with <code>pandas.read_csv()</code>.</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /pp-merged-export -->
+
+      <!-- ─── Logs & Files merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-logs">
+        <div class="d-flex gap-2 mb-3">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('logs',this,'pp-merged-logs')">Logs</button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('files',this,'pp-merged-logs')">Files</button>
+        </div>
+      <div id="pp-logs" class="pp-tab-panel">
         <div class="log-box" id="pp-log-box" data-i18n="postprocess.no_job_logs">Select a job to view logs.</div>
       </div>
       <div id="pp-files" class="pp-tab-panel" style="display:none">
         <div id="files-table"></div>
       </div>
-      <div id="pp-metadata" class="pp-tab-panel" style="display:none">
-        <pre id="pp-metadata-box" class="bg-light p-3 border rounded small" style="max-height:500px;overflow:auto" data-i18n="postprocess.no_job_meta">Select a job to view metadata.</pre>
-      </div>
+      </div><!-- /pp-merged-logs -->
+
+      <!-- ─── A/B Compare merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-abcompare">
+        <div class="card mb-3">
+          <div class="card-header small fw-semibold"><i class="bi bi-layout-split"></i> <span data-i18n="postprocess.abcompare_title">A/B Snapshot Compare</span></div>
+          <div class="card-body">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold" data-i18n="postprocess.abcompare_job_a">Job A</label>
+                <select class="form-select form-select-sm" id="ab-job-a"></select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold" data-i18n="postprocess.abcompare_job_b">Job B</label>
+                <select class="form-select form-select-sm" id="ab-job-b"></select>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="abCompareLoad()">
+              <i class="bi bi-arrow-left-right me-1"></i><span data-i18n="postprocess.abcompare_run">Compare</span>
+            </button>
+          </div>
+        </div>
+        <div id="ab-compare-grid" class="row g-3"></div>
+      </div><!-- /pp-merged-abcompare -->
+
+      <!-- ─── Engineering Analysis merged panel ─── -->
+      <div class="pp-merged-panel" id="pp-merged-engineering">
+        <div class="alert alert-secondary py-2 small mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          <span data-i18n="postprocess.engineering_help">Advanced analysis tools to close engineering verification gaps.</span>
+        </div>
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          <button class="btn btn-sm btn-primary pp-sub-btn" onclick="showPPSub('eng-spectrum',this,'pp-merged-engineering')"><i class="bi bi-activity me-1"></i><span data-i18n="postprocess.probe_spectrum_title">Spectral Analysis (FFT)</span></button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('eng-pod',this,'pp-merged-engineering')"><i class="bi bi-layers me-1"></i><span data-i18n="postprocess.pod_title">POD Modal Decomposition</span></button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('eng-iso',this,'pp-merged-engineering')"><i class="bi bi-box me-1"></i><span data-i18n="postprocess.isosurface_title">Iso-Surface / Iso-Contour</span></button>
+          <button class="btn btn-sm btn-outline-secondary pp-sub-btn" onclick="showPPSub('eng-study',this,'pp-merged-engineering')"><i class="bi bi-bar-chart-steps me-1"></i><span data-i18n="postprocess.studycompare_title">Study-Group Comparison</span></button>
+        </div>
+
+        <!-- Spectral Analysis (FFT) -->
+        <div id="pp-eng-spectrum" class="pp-tab-panel">
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-activity"></i> <span data-i18n="postprocess.probe_spectrum_title">Spectral Analysis (FFT)</span> <span id="probe-spectrum-status" class="ms-2 badge bg-secondary"></span></div>
+                <div class="card-body small">
+                  <div class="mb-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="probe-spectrum-use-job" checked>
+                    <label class="form-check-label" for="probe-spectrum-use-job" data-i18n="postprocess.probe_spectrum_use_job">Use job probe data</label>
+                  </div>
+                  <div class="mb-2" id="probe-spectrum-signal-wrap">
+                    <label class="form-label mb-1" data-i18n="postprocess.probe_spectrum_signal">Signal (comma-separated values)</label>
+                    <textarea class="form-control form-control-sm font-monospace" id="probe-spectrum-signal" rows="3" placeholder="e.g. 0.1, 0.3, 0.2, ..."></textarea>
+                  </div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <label class="form-label mb-1" data-i18n="postprocess.probe_spectrum_dt">Time step Δt</label>
+                      <input type="number" class="form-control form-control-sm" id="probe-spectrum-dt" value="0.01" step="0.001" min="0.0001">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label mb-1" data-i18n="postprocess.probe_spectrum_column">CSV column</label>
+                      <input type="text" class="form-control form-control-sm" id="probe-spectrum-column" value="cd" placeholder="cd">
+                    </div>
+                  </div>
+                  <button class="btn btn-primary btn-sm w-100" id="probe-spectrum-run">
+                    <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.probe_spectrum_run">Compute Spectrum</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-8">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-bar-chart-line"></i> Result</div>
+                <div class="card-body" id="probe-spectrum-output">
+                  <p class="text-muted small">Select a job and click Compute Spectrum.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- POD Modal Decomposition -->
+        <div id="pp-eng-pod" class="pp-tab-panel" style="display:none">
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-layers"></i> <span data-i18n="postprocess.pod_title">POD Modal Decomposition</span> <span id="pod-status" class="ms-2 badge bg-secondary"></span></div>
+                <div class="card-body small">
+                  <div class="mb-2">
+                    <label class="form-label mb-1" data-i18n="postprocess.pod_field">Field</label>
+                    <select class="form-select form-select-sm" id="pod-field">
+                      <option value="ux">x-velocity (ux)</option>
+                      <option value="uy">y-velocity (uy)</option>
+                      <option value="velocity_magnitude">Velocity magnitude</option>
+                      <option value="vorticity">Vorticity</option>
+                      <option value="density">Density</option>
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label mb-1" data-i18n="postprocess.pod_n_modes">Modes to retain</label>
+                    <input type="number" class="form-control form-control-sm" id="pod-n-modes" value="10" min="1" max="200">
+                  </div>
+                  <div class="mb-2 form-check">
+                    <input class="form-check-input" type="checkbox" id="pod-return-coefficients" checked>
+                    <label class="form-check-label" for="pod-return-coefficients" data-i18n="postprocess.pod_return_coefficients">Return coefficients</label>
+                  </div>
+                  <button class="btn btn-primary btn-sm w-100" id="pod-run">
+                    <i class="bi bi-play-fill"></i> <span data-i18n="postprocess.pod_run">Compute POD</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-8">
+              <div class="card h-100">
+                <div class="card-header small fw-semibold"><i class="bi bi-graph-up"></i> Result</div>
+                <div class="card-body" id="pod-output">
+                  <p class="text-muted small">Select a job and click Compute POD.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Iso-Surface / Iso-Contour -->
+        <div id="pp-eng-iso" class="pp-tab-panel" style="display:none">
+          <div class="card">
+            <div class="card-header small fw-semibold">
+              <i class="bi bi-box"></i> <span data-i18n="postprocess.isosurface_title">Iso-Surface / Iso-Contour</span>
+            </div>
+            <div class="card-body small">
+              <div class="mb-2 d-flex gap-2 align-items-center flex-wrap">
+                <label class="small fw-semibold mb-0" for="iso-job-id" data-i18n="postprocess.iso_job_id">Job ID:</label>
+                <input type="text" id="iso-job-id" class="form-control form-control-sm" style="width:220px" placeholder="job id">
+                <label class="small fw-semibold mb-0" for="iso-field" data-i18n="postprocess.isosurface_field">Field:</label>
+                <select id="iso-field" class="form-select form-select-sm" style="width:140px">
+                  <option value="velocity_magnitude" data-i18n="postprocess.field_velocity_magnitude">Velocity Mag</option>
+                  <option value="pressure" data-i18n="postprocess.field_pressure">Pressure</option>
+                  <option value="vorticity" data-i18n="postprocess.field_vorticity">Vorticity</option>
+                </select>
+                <label class="small fw-semibold mb-0" for="iso-value" data-i18n="postprocess.isosurface_value">Isovalue:</label>
+                <input type="number" id="iso-value" class="form-control form-control-sm" style="width:90px" value="0.05" step="0.01">
+                <button class="btn btn-sm btn-primary" onclick="loadIsosurface()"><i class="bi bi-box me-1"></i><span data-i18n="postprocess.iso_render">Render</span></button>
+              </div>
+              <div id="iso-canvas-container" style="width:100%;height:400px;background:#1a1a2e;border-radius:6px;position:relative;">
+                <canvas id="iso-canvas" style="width:100%;height:100%"></canvas>
+                <div id="iso-placeholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#666;font-size:0.85rem;">
+                  <i class="bi bi-box me-2"></i><span data-i18n="postprocess.iso_placeholder">Enter job ID and click Render</span>
+                </div>
+              </div>
+              <div id="iso-info" class="small text-muted mt-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Study-Group Report Aggregation -->
+        <div id="pp-eng-study" class="pp-tab-panel" style="display:none">
+          <div class="card">
+            <div class="card-header d-flex align-items-center gap-2">
+              <i class="bi bi-bar-chart-steps me-1"></i>
+              <span data-i18n="postprocess.engineering_title">Engineering Analysis</span> &mdash;
+              <span data-i18n="postprocess.studycompare_title">Study-Group Comparison</span>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-3 align-items-end">
+                <div class="col-sm-6 col-md-4">
+                  <label class="form-label small mb-1" data-i18n="postprocess.studycompare_group_label">Study Group Name</label>
+                  <input type="text" class="form-control form-control-sm" id="eng-study-compare-group"
+                         placeholder="e.g. re_sweep_2025" />
+                </div>
+                <div class="col-auto">
+                  <button class="btn btn-sm btn-primary" id="studycompare-load">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span data-i18n="postprocess.studycompare_load">Load</span>
+                  </button>
+                </div>
+              </div>
+              <div id="eng-study-report"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /pp-merged-engineering -->
+
     </div>
 
     <!-- ================================================================ -->
@@ -1289,7 +2341,7 @@
       <h4 class="mb-3"><i class="bi bi-arrow-left-right"></i> <span data-i18n="compare.title">Compare runs</span></h4>
       <div class="card mb-3">
         <div class="card-body small">
-          <p class="mb-2" data-i18n="compare.desc">Select 2–10 completed jobs and view their derived parameters and diagnostics side by side.</p>
+          <p class="mb-2" data-i18n="compare.desc">Select 2–10 completed jobs and compare engineering KPIs, report links, and derived diagnostics side by side.</p>
           <div class="row g-2 align-items-end">
             <div class="col-md-9">
               <label class="form-label mb-1" data-i18n="compare.jobs_label">Jobs</label>
@@ -1329,7 +2381,13 @@
               <label data-i18n="ai_flow.epochs">Epochs</label>
               <input id="aiflow-epochs" type="number" class="form-control form-control-sm mb-2" value="20" min="1" max="500" />
               <label data-i18n="ai_flow.mask_ratio">Mask ratio</label>
-              <input id="aiflow-mask" type="number" class="form-control form-control-sm mb-3" value="0.15" step="0.01" min="0.01" max="0.9" />
+              <input id="aiflow-mask" type="number" class="form-control form-control-sm mb-2" value="0.15" step="0.01" min="0.01" max="0.9" />
+              <label data-i18n="ai.backend_label">Compute Backend</label>
+              <select id="aiflow-backend" class="form-select form-select-sm mb-3">
+                <option value="torch" selected data-i18n="ai.backend_torch">PyTorch (default)</option>
+                <option value="paddle" data-i18n="ai.backend_paddle">PaddlePaddle</option>
+                <option value="mindspore" data-i18n="ai.backend_mindspore">MindSpore</option>
+              </select>
               <button class="btn btn-primary btn-sm w-100" onclick="aiFlowTrain()"><i class="bi bi-play-circle"></i> <span data-i18n="ai_flow.train_btn">Train</span></button>
             </div>
           </div>
@@ -1382,8 +2440,10 @@
             <div class="card-body config-form">
               <label data-i18n="orch.template_id">Template</label>
               <select id="orch-template" class="form-select form-select-sm mb-2"></select>
-              <label data-i18n="orch.re_values">Re sweep values (comma)</label>
-              <input id="orch-re-values" class="form-control form-control-sm mb-2" value="80,100,120" />
+              <label data-i18n="orch.sweep_json">Sweep JSON</label>
+              <textarea id="orch-sweep" class="form-control form-control-sm mb-2" rows="4">[
+  {"name":"re","values":[80,100,120]}
+]</textarea>
               <label data-i18n="orch.nx">nx</label>
               <input id="orch-nx" type="number" class="form-control form-control-sm mb-2" value="160" min="16" max="1024" />
               <label data-i18n="orch.ny">ny</label>
@@ -1458,6 +2518,62 @@
           </div>
         </div>
       </div>
+      <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header"><span data-i18n="orch.study_title">Study analytics</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="orch.study_group">Study group</label>
+              <input id="orch-study-group" class="form-control form-control-sm mb-2" placeholder="study_group" />
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-primary flex-fill" onclick="orchLoadStudySummary()"><i class="bi bi-kanban"></i> <span data-i18n="orch.study_summary_btn">Load summary</span></button>
+                <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="orchLoadSobol()"><i class="bi bi-bar-chart-steps"></i> <span data-i18n="orch.sobol_btn">Run Sobol</span></button>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-8">
+                  <label data-i18n="orch.output_metric">Output metric</label>
+                  <input id="orch-sobol-metric" class="form-control form-control-sm" value="cd_mean" />
+                </div>
+                <div class="col-4">
+                  <label data-i18n="orch.bootstrap">Bootstrap</label>
+                  <input id="orch-sobol-bootstrap" type="number" class="form-control form-control-sm" value="100" min="10" max="1000" />
+                </div>
+              </div>
+              <pre id="orch-study-result" class="small mb-0" style="white-space:pre-wrap;max-height:300px;overflow:auto">-</pre>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header"><span data-i18n="orch.bayes_title">Bayesian optimization</span></div>
+            <div class="card-body config-form">
+              <label data-i18n="orch.bayes_parameters">Parameter bounds JSON</label>
+              <textarea id="orch-bayes-parameters" class="form-control form-control-sm mb-2" rows="5">{
+  "re": [80, 160],
+  "u_in": [0.04, 0.12]
+}</textarea>
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <label data-i18n="orch.bayes_objective">Objective</label>
+                  <input id="orch-bayes-objective" class="form-control form-control-sm" value="drag" />
+                </div>
+                <div class="col-3">
+                  <label data-i18n="orch.bayes_iterations">Iterations</label>
+                  <input id="orch-bayes-iterations" type="number" class="form-control form-control-sm" value="6" min="1" max="100" />
+                </div>
+                <div class="col-3">
+                  <label data-i18n="orch.bayes_kappa">Kappa</label>
+                  <input id="orch-bayes-kappa" type="number" class="form-control form-control-sm" value="2.576" step="0.001" min="0.001" />
+                </div>
+              </div>
+              <label data-i18n="orch.bayes_observations">Initial observations JSON</label>
+              <textarea id="orch-bayes-observations" class="form-control form-control-sm mb-3" rows="4">[]</textarea>
+              <button class="btn btn-sm btn-outline-success w-100 mb-2" onclick="orchRunBayesianOpt()"><i class="bi bi-stars"></i> <span data-i18n="orch.bayes_btn">Suggest design points</span></button>
+              <pre id="orch-bayes-result" class="small mb-0" style="white-space:pre-wrap;max-height:240px;overflow:auto">-</pre>
+            </div>
+          </div>
+        </div>
+      </div>
     </div><!-- /orchestration -->
 
     <!-- ================================================================ -->
@@ -1511,7 +2627,7 @@
           <div class="card mb-3">
             <div class="card-header fw-semibold"><i class="bi bi-database"></i> <span data-i18n="suboff.data">Data</span></div>
             <div class="card-body">
-              <div class="mb-2"><input class="form-control form-control-sm" id="suboff-data-dir" placeholder="/root/LBM-Platform/suboff_all/suboff8" value="/root/LBM-Platform/suboff_all/suboff8"></div>
+              <div class="mb-2"><input class="form-control form-control-sm" id="suboff-data-dir" placeholder="/tmp/suboff_snapshots" value="/tmp/suboff_600x150"></div>
               <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-outline-primary" onclick="suboffScanData()"><span data-i18n="suboff.scan">Scan</span></button>
               </div>
@@ -1526,7 +2642,6 @@
                 <div class="col-6"><label class="form-label small mb-0">Epochs</label><input class="form-control form-control-sm" id="suboff-epochs" value="50" type="number" min="1" max="5000"></div>
                 <div class="col-6"><label class="form-label small mb-0">LR</label><input class="form-control form-control-sm" id="suboff-lr" value="0.0001" step="0.00001"></div>
                 <div class="col-6"><label class="form-label small mb-0">Points</label><input class="form-control form-control-sm" id="suboff-npoints" value="2000" type="number" min="100" max="50000"></div>
-                <div class="col-6"><label class="form-label small mb-0">Device</label><select class="form-select form-select-sm" id="suboff-device"><option value="sdaa:0">SDAA (龙芯加速卡)</option><option value="cpu">CPU</option></select></div>
               </div>
               <div class="d-flex gap-2">
                 <button class="btn btn-sm btn-primary" onclick="suboffStartTrain()"><span data-i18n="suboff.train">Train</span></button>
@@ -1568,52 +2683,6 @@
               <div id="suboff-viz-result" class="mt-2"></div>
             </div>
           </div>
-
-          <!-- Animation panel -->
-          <div class="card mt-3">
-            <div class="card-header fw-semibold"><i class="bi bi-film"></i> <span data-i18n="suboff.animation">Time-Series Animation</span></div>
-            <div class="card-body">
-              <div class="row g-2 mb-2">
-                <div class="col-3"><label class="form-label small mb-0">View</label>
-                  <select class="form-select form-select-sm" id="suboff-anim-view">
-                    <option value="full">Full tail field (LBM original)</option>
-                    <option value="train">Training crop (near-suboff)</option>
-                  </select></div>
-                <div class="col-3"><label class="form-label small mb-0">Start Snap</label>
-                  <input class="form-control form-control-sm" id="suboff-anim-start" value="0" type="number" min="0"></div>
-                <div class="col-3"><label class="form-label small mb-0">End Snap</label>
-                  <input class="form-control form-control-sm" id="suboff-anim-end" value="30" type="number" min="1"></div>
-                <div class="col-3"><label class="form-label small mb-0">Axis</label>
-                  <select class="form-select form-select-sm" id="suboff-anim-axis"><option value="z">Z (XY plane)</option><option value="y">Y (XZ plane)</option><option value="x">X (YZ plane)</option></select></div>
-              </div>
-              <div class="row g-2 mb-2">
-                <div class="col-3"><label class="form-label small mb-0">Slice</label>
-                  <input class="form-control form-control-sm" id="suboff-anim-slice" value="100" type="number" min="0"></div>
-                <div class="col-3"><label class="form-label small mb-0">Channels</label>
-                  <select class="form-select form-select-sm" id="suboff-anim-channels">
-                    <option value="p,ux,uy,uz">All (p, ux, uy, uz)</option>
-                    <option value="p">Pressure only</option>
-                    <option value="ux">Axial velocity only</option>
-                    <option value="p,ux">p + ux</option>
-                  </select></div>
-                <div class="col-3"><label class="form-label small mb-0">Speed (fps)</label>
-                  <input class="form-control form-control-sm" id="suboff-anim-speed" value="5" type="number" min="1" max="30"></div>
-                <div class="col-3"><label class="form-label small mb-0">&nbsp;</label>
-                  <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-primary flex-fill" onclick="suboffLoadAnimation()"><i class="bi bi-download"></i> Load</button>
-                    <button class="btn btn-sm btn-success flex-fill" id="suboff-anim-play" onclick="suboffPlayAnimation()" disabled><i class="bi bi-play-fill"></i> Play</button>
-                    <button class="btn btn-sm btn-outline-secondary" id="suboff-anim-pause" onclick="suboffPauseAnimation()" disabled><i class="bi bi-pause-fill"></i></button>
-                  </div>
-                </div>
-              </div>
-              <!-- Progress bar -->
-              <div class="progress mb-2" style="height:6px" id="suboff-anim-progress-wrap">
-                <div class="progress-bar bg-info" id="suboff-anim-progress" style="width:0%"></div>
-              </div>
-              <div class="small text-muted" id="suboff-anim-info">Click Load to fetch animation frames. "Full tail field" shows the original LBM simulation data (200x50x200); "Training crop" shows the near-suboff region (100x50x100) used for AI training.</div>
-              <div id="suboff-anim-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px"></div>
-            </div>
-          </div>
         </div>
 
         <!-- Right: status + results -->
@@ -1624,314 +2693,329 @@
               <span class="text-muted small">Loading…</span>
             </div>
           </div>
-          <!-- Training progress container (shows one card per running job) -->
-          <div id="suboff-progress-container" class="mb-3" style="display:none"></div>
-          <div class="card mb-3">
-            <div class="card-header fw-semibold"><i class="bi bi-table"></i> 训练结果</div>
+          <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-table"></i> <span data-i18n="suboff.results">Results</span></div>
             <div class="card-body p-2">
               <div class="table-responsive" style="max-height:400px;overflow-y:auto">
                 <table class="table table-sm table-hover mb-0" id="suboff-results-table">
-                  <thead class="table-light"><tr><th>#</th><th>Phase</th><th>Epoch</th><th>Loss(1e-4)</th><th>MSE(1e-4)</th><th>LR</th><th>Best Loss</th></tr></thead>
+                  <thead class="table-light"><tr><th>#</th><th>Status</th><th>Epoch</th><th>Loss</th><th>Best</th></tr></thead>
                   <tbody></tbody>
                 </table>
               </div>
-            </div>
-          </div>
-          <div class="card mt-2">
-            <div class="card-header fw-semibold"><i class="bi bi-graph-up"></i> 推理结果</div>
-            <div class="card-body p-2">
-              <div id="suboff-predict-table" class="small"></div>
-            </div>
-          </div>
-          <div class="card mt-2">
-            <div class="card-header fw-semibold"><i class="bi bi-bar-chart"></i> 误差分析结果</div>
-            <div class="card-body p-2">
-              <div id="suboff-error-right" class="small"></div>
-            </div>
-          </div>
-          <div class="card mt-2">
-            <div class="card-header fw-semibold"><i class="bi bi-eye"></i> Visualization 结果</div>
-            <div class="card-body p-2">
-              <div id="suboff-viz-right"></div>
-            </div>
-          </div>
-          <div class="card mt-2">
-            <div class="card-header fw-semibold"><i class="bi bi-film"></i> Time-Series Animation 结果</div>
-            <div class="card-body p-2">
-              <div class="progress mb-2" style="height:6px">
-                <div class="progress-bar bg-info" id="suboff-anim-progress-right" style="width:0%"></div>
-              </div>
-              <div class="small text-muted mb-2" id="suboff-anim-info-right"></div>
-              <div id="suboff-anim-grid-right" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
             </div>
           </div>
         </div>
       </div>
     </div><!-- /suboff -->
 
-    <!-- ====== General Simulation (XFlow-style) ====== -->
-    <div class="tab-panel" id="panel-simulations">
-      <h4 class="mb-3"><i class="bi bi-wind"></i> <span data-i18n="sim.title">General LBM Simulation</span></h4>
+    <!-- ================================================================ -->
+    <!-- PROJECTS                                                         -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-projects">
+      <h4 class="mb-1"><i class="bi bi-folder2-open"></i> <span data-i18n="projects.title">Projects</span></h4>
+      <p class="text-muted small mb-3" data-i18n="projects.subtitle">Manage simulation projects and cases in a workflow-centric project hierarchy.</p>
 
-      <!-- Geometry -->
+      <!-- Project list pane -->
+      <div id="pf-project-list-pane">
+        <div class="row g-3">
+          <!-- New project form -->
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header fw-semibold"><i class="bi bi-plus-circle"></i> <span data-i18n="projects.new_project">New Project</span></div>
+              <div class="card-body config-form">
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.project_name">Project Name</label>
+                  <input class="form-control form-control-sm" id="pf-new-project-name" placeholder="My Simulation Project">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.description">Description</label>
+                  <textarea class="form-control form-control-sm" id="pf-new-project-desc" rows="2" placeholder="Brief description…"></textarea>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.owner">Owner</label>
+                  <input class="form-control form-control-sm" id="pf-new-project-owner" placeholder="engineer@company.com">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.tags">Tags</label>
+                  <input class="form-control form-control-sm" id="pf-new-project-tags" placeholder="marine, resistance, 3d">
+                </div>
+                <button class="btn btn-sm btn-primary" data-pf-action="create-project">
+                  <i class="bi bi-plus"></i> <span data-i18n="projects.create">Create Project</span>
+                </button>
+                <div id="pf-project-msg" class="alert py-1 small mt-2" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Projects list -->
+          <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0" data-i18n="projects.title">Projects</h6>
+              <button class="btn btn-sm btn-outline-secondary" data-pf-action="refresh-projects"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div id="pf-projects-list">
+              <div class="text-muted small p-3" data-i18n="projects.no_projects">No projects yet.</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /project-list-pane -->
+
+      <!-- Case pane (shown when a project is open) -->
+      <div id="pf-case-pane" style="display:none">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <button class="btn btn-sm btn-outline-secondary" data-pf-action="back-to-projects">
+            <i class="bi bi-arrow-left"></i> <span data-i18n="projects.back">← Projects</span>
+          </button>
+          <h5 class="mb-0" id="pf-case-project-title"></h5>
+        </div>
+        <div class="row g-3">
+          <!-- New case form -->
+          <div class="col-lg-4">
+            <div class="card">
+              <div class="card-header fw-semibold"><i class="bi bi-plus-circle"></i> <span data-i18n="projects.new_case">New Case</span></div>
+              <div class="card-body config-form">
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.case_name">Case Name</label>
+                  <input class="form-control form-control-sm" id="pf-new-case-name" placeholder="Re100 cylinder">
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.description">Description</label>
+                  <textarea class="form-control form-control-sm" id="pf-new-case-desc" rows="2"></textarea>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label" data-i18n="projects.scenario">Scenario</label>
+                  <select class="form-select form-select-sm" id="pf-new-case-scenario">
+                    <option value="custom">Custom</option>
+                    <option value="cylinder_flow">Cylinder Flow</option>
+                    <option value="lid_driven_cavity">Lid-Driven Cavity</option>
+                    <option value="ship_hull_flow">Ship Hull Flow</option>
+                    <option value="dam_break">Dam Break</option>
+                    <option value="sloshing_tank">Sloshing Tank</option>
+                    <option value="turbulent_channel">Turbulent Channel</option>
+                    <option value="backward_facing_step">Backward-Facing Step</option>
+                    <option value="porous_drainage">Porous Drainage</option>
+                    <option value="pipeline_flow">Pipeline Flow</option>
+                    <option value="sphere_flow">Sphere Flow (3D)</option>
+                  </select>
+                </div>
+                <button class="btn btn-sm btn-primary" data-pf-action="create-case">
+                  <i class="bi bi-plus"></i> <span data-i18n="projects.create_case">Create Case</span>
+                </button>
+                <div id="pf-case-msg" class="alert py-1 small mt-2" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cases list -->
+          <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0" data-i18n="projects.cases">Cases</h6>
+              <button class="btn btn-sm btn-outline-secondary" data-pf-action="refresh-cases">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+            <div id="pf-cases-list">
+              <div class="text-muted small p-3" data-i18n="projects.no_cases">No cases yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clone Case inline panel -->
+        <div id="pf-clone-panel" class="card mt-3" style="display:none">
+          <div class="card-header fw-semibold"><i class="bi bi-copy"></i> <span data-i18n="projects.clone_case">Clone Case</span></div>
+          <div class="card-body config-form">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label mb-1" data-i18n="projects.clone_name">New case name</label>
+                <input class="form-control form-control-sm" id="pf-clone-name" placeholder="Clone of …">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1" data-i18n="projects.clone_overrides">Config overrides (JSON, optional)</label>
+                <input class="form-control form-control-sm font-monospace" id="pf-clone-overrides" placeholder='{"re": 200}' style="font-size:.75rem">
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-primary btn-sm w-100" data-pf-action="do-clone">
+                  <i class="bi bi-copy"></i> <span data-i18n="projects.clone_btn">Clone</span>
+                </button>
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-outline-secondary btn-sm w-100" data-pf-action="cancel-clone">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+            </div>
+            <div id="pf-clone-msg" class="alert py-1 small mt-2" style="display:none"></div>
+          </div>
+        </div>
+      </div><!-- /case-pane -->
+    </div><!-- /projects -->
+
+    <!-- ================================================================ -->
+    <!-- TEMPLATES                                                        -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-templates">
+      <h4 class="mb-1"><i class="bi bi-collection"></i> <span data-i18n="templates.title">Engineering Templates</span></h4>
+      <p class="text-muted small mb-3" data-i18n="templates.subtitle">Pre-configured engineering scenario wizards – select a template to pre-fill the Solve panel.</p>
+
+      <!-- Category filter -->
+      <div class="d-flex gap-2 mb-3 flex-wrap" id="pf-template-cats">
+        <button class="btn btn-sm btn-primary pf-cat-btn active" data-cat="all" onclick="templatesFilterCategory('all')" data-i18n="templates.all">All</button>
+        <button class="btn btn-sm btn-outline-secondary pf-cat-btn" data-cat="external_flow" onclick="templatesFilterCategory('external_flow')">External Flow</button>
+        <button class="btn btn-sm btn-outline-secondary pf-cat-btn" data-cat="internal_flow" onclick="templatesFilterCategory('internal_flow')">Internal Flow</button>
+        <button class="btn btn-sm btn-outline-secondary pf-cat-btn" data-cat="multiphase" onclick="templatesFilterCategory('multiphase')">Multiphase</button>
+        <button class="btn btn-sm btn-outline-secondary pf-cat-btn" data-cat="ocean_engineering" onclick="templatesFilterCategory('ocean_engineering')">Ocean Engineering</button>
+      </div>
+
+      <div id="pf-templates-container">
+        <div class="text-muted small p-3" data-i18n="templates.loading">Loading templates…</div>
+      </div>
+    </div><!-- /templates -->
+
+    <!-- ================================================================ -->
+    <!-- REPORTS + CONVERGENCE                                            -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-reports">
+      <h4 class="mb-1"><i class="bi bi-file-earmark-text"></i> <span data-i18n="reports.title">Reports</span></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step" onclick="showTab('cad')"><span class="wf-num">1</span><i class="bi bi-rulers"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_geo">Geometry</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('preprocess')"><span class="wf-num">2</span><i class="bi bi-grid-3x3"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_preproc">Pre-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('solve')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_solve">Solve</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('postprocess')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_post">Post-process</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step wf-active" onclick="showTab('reports')"><span class="wf-num">5</span><i class="bi bi-file-earmark-text"></i><span class="d-none d-md-inline" data-i18n="sidebar.step_reports">Reports</span></div>
+      </div>
+
+      <p class="text-muted small mb-3" data-i18n="reports.subtitle">Engineering report generation and convergence monitoring for simulation jobs.</p>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Job ID</label>
+          <div class="input-group input-group-sm">
+            <input class="form-control" id="reports-job-id" placeholder="Enter job ID or click a job in the sidebar">
+            <button class="btn btn-primary" onclick="reportsTabInit(document.getElementById('reports-job-id').value.trim())">
+              <i class="bi bi-arrow-right"></i> Load
+            </button>
+          </div>
+          <div class="form-text" data-i18n="reports.no_job">Select a completed job to generate a report.</div>
+        </div>
+      </div>
+
       <div class="row g-3">
-        <div class="col-md-6">
+        <!-- Convergence charts -->
+        <div class="col-lg-7">
           <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-box"></i> Geometry</div>
-            <div class="card-body">
-              <div class="mb-2">
-                <label class="form-label small mb-0">Source</label>
-                <select class="form-select form-select-sm" id="sim-geo-source">
-                  <option value="none">Empty Channel</option>
-                  <option value="parametric_sphere">Sphere</option>
-                  <option value="parametric_cylinder">Cylinder</option>
-                  <option value="parametric_hull">Ship Hull</option>
-                  <option value="polygon_2d">2D Polygon</option>
-                  <option value="stl_file">STL Import</option>
-                </select>
-              </div>
-              <div id="sim-stl-row" style="display:none">
-                <div class="mb-2"><input class="form-control form-control-sm" id="sim-stl-path" placeholder="STL file path"></div>
-                <div class="mb-2"><select class="form-select form-select-sm" id="sim-stl-units"><option value="m">meters</option><option value="mm">millimeters</option></select></div>
-              </div>
-              <div id="sim-sphere-row" style="display:none">
-                <div class="mb-2"><label class="form-label small mb-0">Radius (m)</label><input class="form-control form-control-sm" id="sim-sphere-radius" value="0.5" type="number"></div>
-                <div class="mb-2"><label class="form-label small mb-0">Center [x,y,z]</label><input class="form-control form-control-sm" id="sim-sphere-center" value="0,0,0"></div>
-              </div>
-              <div id="sim-cylinder-row" style="display:none">
-                <div class="mb-2"><label class="form-label small mb-0">Radius (m)</label><input class="form-control form-control-sm" id="sim-cylinder-radius" value="0.5" type="number"></div>
-                <div class="mb-2"><label class="form-label small mb-0">Length (m)</label><input class="form-control form-control-sm" id="sim-cylinder-length" value="2.0" type="number"></div>
-                <div class="mb-2"><label class="form-label small mb-0">Axis</label><select class="form-select form-select-sm" id="sim-cylinder-axis"><option value="x">X</option><option value="y">Y</option><option value="z" selected>Z</option></select></div>
-              </div>
-              <div id="sim-hull-row" style="display:none">
-                <div class="mb-2"><label class="form-label small mb-0">Hull Type</label><select class="form-select form-select-sm" id="sim-hull-type"><option value="wigley">Wigley</option><option value="suboff_bare">SUBOFF Bare</option></select></div>
-                <div class="mb-2"><label class="form-label small mb-0">Length (m)</label><input class="form-control form-control-sm" id="sim-hull-length" value="4.356" type="number"></div>
-              </div>
-              <div id="sim-polygon-row" style="display:none">
-                <div class="mb-2"><label class="form-label small mb-0">Vertices [x,y] pairs (physical m)</label><input class="form-control form-control-sm" id="sim-polygon-vertices" placeholder="0.5,0.3;0.7,0.5;0.5,0.7;0.3,0.5" value="0.5,0.3;0.7,0.5;0.5,0.7;0.3,0.5"></div>
-                <div class="small text-muted">Format: x1,y1;x2,y2;... (semicolon-separated pairs)</div>
+            <div class="card-header fw-semibold">
+              <i class="bi bi-graph-up"></i> <span data-i18n="convergence.title">Convergence Monitor</span>
+              <span class="ms-2 badge bg-secondary small" id="cvg-job-status"></span>
+            </div>
+            <div class="card-body p-2">
+              <div id="cvg-charts">
+                <div class="text-muted small p-2" data-i18n="convergence.no_data">No convergence data available yet.</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Physics -->
-        <div class="col-md-6">
+        <!-- Report summary + link -->
+        <div class="col-lg-5">
           <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-droplet"></i> Physics</div>
-            <div class="card-body">
-              <div class="mb-2"><label class="form-label small mb-0">Density (kg/m³)</label><input class="form-control form-control-sm" id="sim-density" value="1000" type="number"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Viscosity (m²/s)</label><input class="form-control form-control-sm" id="sim-viscosity" value="1e-6" type="number" step="any"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Inlet Velocity (m/s)</label><input class="form-control form-control-sm" id="sim-inlet-velocity" value="1.0" type="number"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Reference Length (m)</label><input class="form-control form-control-sm" id="sim-ref-length" value="1.0" type="number"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Gravity [x,y,z]</label><input class="form-control form-control-sm" id="sim-gravity" value="0,0,0"></div>
+            <div class="card-header fw-semibold">
+              <i class="bi bi-file-earmark-check"></i> <span data-i18n="reports.summary">Report Summary</span>
+            </div>
+            <div class="card-body p-2" id="report-summary">
+              <div class="text-muted small p-2" data-i18n="reports.no_job">Select a job to view its report.</div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Solver -->
-      <div class="row g-3 mt-1">
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-gear"></i> Solver</div>
-            <div class="card-body">
-              <div class="mb-2"><label class="form-label small mb-0">Lattice</label><select class="form-select form-select-sm" id="sim-lattice"><option value="d2q9">D2Q9 (2D)</option><option value="d3q19" selected>D3Q19 (3D)</option><option value="d3q27">D3Q27 (3D)</option></select></div>
-              <div class="mb-2"><label class="form-label small mb-0">Collision</label><select class="form-select form-select-sm" id="sim-collision"><option value="bgk">BGK</option><option value="mrt">MRT</option><option value="smagorinsky_bgk">Smagorinsky BGK</option><option value="smagorinsky_mrt" selected>Smagorinsky MRT</option></select></div>
-              <div class="mb-2"><label class="form-label small mb-0">Resolution (cells/ref_length)</label><input class="form-control form-control-sm" id="sim-resolution" value="48" type="number"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Domain Padding [xmin,xmax,ymin,ymax,zmin,zmax]</label><input class="form-control form-control-sm" id="sim-padding" value="2,4,1,1,1,1"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Device</label><select class="form-select form-select-sm" id="sim-device"><option value="cpu">CPU</option><option value="sdaa:0">SDAA</option></select></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-clock"></i> Time Stepping</div>
-            <div class="card-body">
-              <div class="mb-2"><label class="form-label small mb-0">Max Steps</label><input class="form-control form-control-sm" id="sim-max-steps" value="5000" type="number"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Warmup Steps</label><input class="form-control form-control-sm" id="sim-warmup" value="1000" type="number"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Snapshot Interval</label><input class="form-control form-control-sm" id="sim-snap-interval" value="100" type="number"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Force Sample Interval</label><input class="form-control form-control-sm" id="sim-force-interval" value="10" type="number"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Smagorinsky Cs</label><input class="form-control form-control-sm" id="sim-smag-cs" value="0.1" type="number" step="any"></div>
-              <div class="mb-2"><label class="form-label small mb-0">Target Mach</label><input class="form-control form-control-sm" id="sim-target-mach" value="0.05" type="number" step="any"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Controls -->
-      <div class="row g-3 mt-2">
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-play-circle"></i> Run</div>
-            <div class="card-body">
-              <div class="d-flex gap-2 align-items-center mb-2">
-                <input class="form-control form-control-sm" id="sim-name" placeholder="Simulation name" value="my_sim" style="max-width:200px">
-                <input class="form-control form-control-sm" id="sim-output-dir" placeholder="Output directory" value="/tmp/tensorlbm_sim" style="max-width:250px">
-                <input class="form-control form-control-sm" id="sim-run-steps" placeholder="Steps (default=max)" type="number" style="max-width:120px">
-                <button class="btn btn-primary btn-sm" onclick="simSetup()">Setup</button>
-                <button class="btn btn-success btn-sm" onclick="simRun()">Run</button>
-                <button class="btn btn-warning btn-sm" onclick="simStop()">Stop Poll</button>
-                <select class="form-select form-select-sm" id="sim-export-format" style="max-width:100px">
-                  <option value="npy">NPY</option>
-                  <option value="vtk">VTK</option>
-                  <option value="hdf5">HDF5</option>
-                </select>
-                <button class="btn btn-info btn-sm" onclick="simResults()">Export</button>
-              </div>
-              <div id="sim-progress" class="small text-muted"></div>
-              <div id="sim-result" class="small mt-1"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Visualization -->
-      <div class="row g-3 mt-2">
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-map"></i> Contour Map</div>
-            <div class="card-body">
-              <div class="d-flex gap-2 align-items-center mb-2">
-                <input class="form-control form-control-sm" id="sim-viz-snap" value="0" type="number" placeholder="Snapshot" style="max-width:80px">
-                <select class="form-select form-select-sm" id="sim-viz-channel" style="max-width:120px">
-                  <option value="ux">ux</option><option value="uy">uy</option><option value="uz">uz</option><option value="rho">rho</option>
-                </select>
-                <button class="btn btn-outline-primary btn-sm" onclick="simViz()">Show</button>
-              </div>
-              <div id="sim-viz-container" style="width:100%;height:400px"></div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-graph-up"></i> Force History</div>
-            <div class="card-body">
-              <button class="btn btn-outline-primary btn-sm mb-2" onclick="simForces()">Load Forces</button>
-              <div id="sim-force-container" style="width:100%;height:400px"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div><!-- /simulations -->
+    </div><!-- /reports -->
 
     <!-- ================================================================ -->
-    <!-- CYLINDER FLOW — Interactive Simulation + Speed Comparison -->
+    <!-- 3D GEOMETRY PREVIEW (P3.1)                                        -->
     <!-- ================================================================ -->
-    <div class="tab-panel" id="panel-cylinder">
+    <div class="tab-panel" id="panel-geo3d">
+      <h4 class="mb-3"><i class="bi bi-box"></i> <span data-i18n="geo3d.title">3D Geometry Preview</span></h4>
 
-      <!-- ── Section 1: Interactive Simulation ──────────────────────── -->
-      <h4 class="mb-2"><i class="bi bi-wind"></i> Cylinder Flow — Interactive Simulation</h4>
-
-      <!-- Parameter controls -->
-      <div class="card mb-2">
-        <div class="card-body py-2">
-          <div class="row g-2 align-items-center">
-            <div class="col-auto"><label class="form-label small mb-0">NX</label>
-              <input class="form-control form-control-sm" id="cyl-nx" value="200" type="number" min="50" max="800" style="width:80px"></div>
-            <div class="col-auto"><label class="form-label small mb-0">NY</label>
-              <input class="form-control form-control-sm" id="cyl-ny" value="80" type="number" min="20" max="400" style="width:80px"></div>
-            <div class="col-auto"><label class="form-label small mb-0">u_in</label>
-              <input class="form-control form-control-sm" id="cyl-uin" value="0.08" type="number" min="0.01" max="0.2" step="0.01" style="width:80px"></div>
-            <div class="col-auto"><label class="form-label small mb-0">Re</label>
-              <input class="form-control form-control-sm" id="cyl-re" value="100" type="number" min="10" max="500" step="10" style="width:80px"></div>
-            <div class="col-auto"><label class="form-label small mb-0">Radius</label>
-              <input class="form-control form-control-sm" id="cyl-radius" value="10" type="number" min="3" max="50" style="width:80px"></div>
-            <div class="col-auto"><label class="form-label small mb-0">Steps/frame</label>
-              <input class="form-control form-control-sm" id="cyl-steps-per-frame" value="10" type="number" min="1" max="50" style="width:80px"></div>
-            <div class="col-auto d-flex gap-1">
-              <button class="btn btn-primary btn-sm" onclick="cylInteractiveInit()" id="cyl-init-btn"><i class="bi bi-play-fill"></i> Init</button>
-              <button class="btn btn-warning btn-sm" onclick="cylInteractivePause()" id="cyl-pause-btn" disabled><i class="bi bi-pause-fill"></i> Pause</button>
-              <button class="btn btn-success btn-sm" onclick="cylInteractiveResume()" id="cyl-resume-btn" disabled><i class="bi bi-play-fill"></i> Resume</button>
-              <button class="btn btn-outline-danger btn-sm" onclick="cylInteractiveReset()" id="cyl-reset-btn" disabled><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
-            </div>
-            <div class="col-auto ms-auto">
-              <span class="badge bg-primary" id="cyl-interactive-step">Step 0</span>
-              <span class="badge bg-info" id="cyl-interactive-info">Not connected</span>
+      <div class="row g-3">
+        <!-- Controls sidebar -->
+        <div class="col-lg-3">
+          <!-- STL Upload -->
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-upload"></i> <span data-i18n="geo3d.upload">Load STL</span></div>
+            <div class="card-body">
+              <input type="file" id="geo3d-file-input" class="form-control form-control-sm mb-2" accept=".stl">
+              <button class="btn btn-sm btn-primary w-100" onclick="geo3dLoadFile()" data-i18n="geo3d.load_btn">Load &amp; Preview</button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Interactive canvases — vertical stack -->
-      <div class="card mb-2" style="background:#111827;border-color:#334155">
-        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-speedometer2"></i> Speed Field <small class="text-muted">(drag cylinder to move)</small></div>
-        <div class="card-body p-1">
-          <canvas id="cyl-interactive-speed" width="600" height="240" style="width:100%;background:#0a0a1a;cursor:grab;border-radius:4px"></canvas>
-        </div>
-      </div>
-      <div class="card mb-2" style="background:#111827;border-color:#334155">
-        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-tornado"></i> Vorticity Field</div>
-        <div class="card-body p-1">
-          <canvas id="cyl-interactive-vort" width="600" height="240" style="width:100%;background:#0a0a1a;border-radius:4px"></canvas>
-        </div>
-      </div>
-      <div class="card mb-2" style="background:#111827;border-color:#334155">
-        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-droplet"></i> Pressure (rho) Field</div>
-        <div class="card-body p-1">
-          <canvas id="cyl-interactive-rho" width="600" height="240" style="width:100%;background:#0a0a1a;border-radius:4px"></canvas>
-        </div>
-      </div>
-
-      <!-- ── Section 2: Speed Comparison ──────────────────────────── -->
-      <hr class="my-3" style="border-color:#334155">
-      <h5 class="mb-2"><i class="bi bi-bar-chart"></i> Speed Comparison — 某厂商 f32 vs SDAA f32</h5>
-
-      <!-- Compare controls -->
-      <div class="card mb-2">
-        <div class="card-body d-flex align-items-center gap-2 flex-wrap py-2">
-          <div><label class="form-label small mb-0">NX</label>
-            <input class="form-control form-control-sm" id="cyl-cmp-nx" value="400" type="number" min="100" max="800" style="width:65px"></div>
-          <div><label class="form-label small mb-0">NY</label>
-            <input class="form-control form-control-sm" id="cyl-cmp-ny" value="160" type="number" min="40" max="400" style="width:65px"></div>
-          <div><label class="form-label small mb-0">u_in</label>
-            <input class="form-control form-control-sm" id="cyl-cmp-uin" value="0.08" type="number" min="0.01" max="0.2" step="0.01" style="width:65px"></div>
-          <div><label class="form-label small mb-0">Re</label>
-            <input class="form-control form-control-sm" id="cyl-cmp-re" value="100" type="number" min="10" max="500" step="10" style="width:65px"></div>
-          <div><label class="form-label small mb-0">Radius</label>
-            <input class="form-control form-control-sm" id="cyl-cmp-radius" value="13" type="number" min="3" max="50" style="width:65px"></div>
-          <button class="btn btn-warning btn-sm" onclick="cylCompareStart()"><i class="bi bi-play-fill"></i> Start All</button>
-          <button class="btn btn-outline-secondary btn-sm" onclick="cylCompareStop()"><i class="bi bi-stop-fill"></i> Stop</button>
-          <span class="small text-muted ms-auto" id="cyl-compare-info">Click Start to begin comparison</span>
-        </div>
-      </div>
-
-      <!-- Two columns: 某厂商 f32 | SDAA f32 -->
-      <div class="row g-2">
-        <div class="col-6">
-          <div class="card h-100" style="background:#1a1a2e;border-color:#4488ff">
-            <div class="card-header fw-semibold" style="background:#2233aa;color:#fff"><i class="bi bi-cpu"></i> 某厂商 f32</div>
-            <div class="card-body p-1">
-              <canvas id="cyl-canvas-cpu" width="400" height="160" style="width:100%;background:#111"></canvas>
-              <div class="text-center mt-1">
-                <span class="badge bg-primary" id="cyl-cpu-step">Step 0</span>
-                <span class="badge bg-info" id="cyl-cpu-speed">— ms/step</span>
+          <!-- Refinement Zone -->
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-bounding-box"></i> <span data-i18n="geo3d.ref_zone">Refinement Zone</span></div>
+            <div class="card-body">
+              <label class="form-label small" data-i18n="geo3d.ref_center">Centre (x, y, z)</label>
+              <div class="input-group input-group-sm mb-1">
+                <input type="number" id="geo3d-rx" class="form-control" value="0" step="0.1">
+                <input type="number" id="geo3d-ry" class="form-control" value="0" step="0.1">
+                <input type="number" id="geo3d-rz" class="form-control" value="0" step="0.1">
               </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6">
-          <div class="card h-100" style="background:#1a1a2e;border-color:#44ff88">
-            <div class="card-header fw-semibold" style="background:#22aa44;color:#fff"><i class="bi bi-lightning"></i> SDAA f32</div>
-            <div class="card-body p-1">
-              <canvas id="cyl-canvas-sdaa" width="400" height="160" style="width:100%;background:#111"></canvas>
-              <div class="text-center mt-1">
-                <span class="badge bg-success" id="cyl-sdaa-step">Step 0</span>
-                <span class="badge bg-info" id="cyl-sdaa-speed">— ms/step</span>
+              <label class="form-label small" data-i18n="geo3d.ref_size">Size (w, h, d)</label>
+              <div class="input-group input-group-sm mb-2">
+                <input type="number" id="geo3d-rw" class="form-control" value="1" step="0.1">
+                <input type="number" id="geo3d-rh" class="form-control" value="1" step="0.1">
+                <input type="number" id="geo3d-rd" class="form-control" value="1" step="0.1">
               </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="geo3d-show-ref" checked onchange="geo3dToggleRef()">
+                <label class="form-check-label small" for="geo3d-show-ref" data-i18n="geo3d.show_ref">Show zone</label>
+              </div>
+              <button class="btn btn-sm btn-outline-primary w-100" onclick="geo3dUpdateRef()" data-i18n="geo3d.apply_ref">Apply</button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Speed comparison bar -->
-      <div class="card mt-2" style="background:#1a1a2e">
-        <div class="card-body p-2">
-          <canvas id="cyl-compare-chart" width="800" height="120" style="width:100%;background:#111;border-radius:4px"></canvas>
-        </div>
-      </div>
-    </div><!-- /cylinder -->
+          <!-- Probe Placement -->
+          <div class="card mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-crosshair"></i> <span data-i18n="geo3d.probes">Probe Points</span></div>
+            <div class="card-body">
+              <p class="small text-muted" data-i18n="geo3d.probe_hint">Click on the model to place a probe marker.</p>
+              <button class="btn btn-sm btn-outline-secondary w-100 mb-2" onclick="geo3dClearProbes()" data-i18n="geo3d.clear_probes">Clear Probes</button>
+              <div id="geo3d-probe-list" class="small" style="max-height:120px;overflow-y:auto;"></div>
+            </div>
+          </div>
+
+          <!-- Camera controls hint -->
+          <div class="card">
+            <div class="card-body small text-muted">
+              <b data-i18n="geo3d.controls">Controls:</b><br>
+              🖱️ <span data-i18n="geo3d.ctrl_rotate">Left-drag: rotate</span><br>
+              🖱️ <span data-i18n="geo3d.ctrl_pan">Right-drag: pan</span><br>
+              🖱️ <span data-i18n="geo3d.ctrl_zoom">Scroll: zoom</span><br>
+              🖱️ <span data-i18n="geo3d.ctrl_probe">Shift+click: place probe</span>
+            </div>
+          </div>
+        </div><!-- /controls -->
+
+        <!-- Three.js canvas -->
+        <div class="col-lg-9">
+          <div id="geo3d-canvas-wrap" style="position:relative;background:#1a1a2e;border-radius:8px;overflow:hidden;height:580px;">
+            <div id="geo3d-placeholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;text-align:center;pointer-events:none;">
+              <i class="bi bi-box" style="font-size:3rem;"></i><br>
+              <span data-i18n="geo3d.drop_hint">Upload an STL file to begin</span>
+            </div>
+            <canvas id="geo3d-canvas" style="width:100%;height:100%;display:block;"></canvas>
+          </div>
+          <!-- Status bar -->
+          <div class="mt-1 small text-muted d-flex gap-3" id="geo3d-status-bar">
+            <span id="geo3d-mesh-info"></span>
+            <span id="geo3d-coord-display"></span>
+          </div>
+        </div><!-- /canvas -->
+      </div><!-- /row -->
+    </div><!-- /panel-geo3d -->
 
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
@@ -1942,19 +3026,145 @@
   <img id="lightbox-img" src="" alt="snapshot" />
 </div>
 
+<!-- Keyboard Shortcuts Modal -->
+<div class="modal fade" id="shortcuts-modal" tabindex="-1" aria-labelledby="shortcuts-modal-label" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title fw-semibold" id="shortcuts-modal-label"><i class="bi bi-keyboard me-2"></i><span data-i18n="common.shortcuts_title">Keyboard Shortcuts</span></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body small p-0">
+        <table class="table table-sm table-hover mb-0">
+          <tbody>
+            <tr><td class="ps-3"><kbd>?</kbd></td><td data-i18n="shortcuts.show_shortcuts">Show this shortcuts reference</td></tr>
+            <tr><td class="ps-3"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>K</kbd></td><td data-i18n="shortcuts.focus_search">Focus job search</td></tr>
+            <tr><td class="ps-3"><kbd>/</kbd></td><td data-i18n="shortcuts.focus_search_slash">Focus job search (alternative)</td></tr>
+            <tr><td class="ps-3"><kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>9</kbd></td><td data-i18n="shortcuts.switch_tab">Switch to module 1–9</td></tr>
+            <tr><td class="ps-3"><kbd>Alt</kbd> + <kbd>0</kbd></td><td data-i18n="shortcuts.last_tab">Switch to module 10</td></tr>
+            <tr><td class="ps-3"><kbd>Esc</kbd></td><td data-i18n="shortcuts.close_modal">Close modal / lightbox</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer py-2">
+        <small class="text-muted me-auto" data-i18n="shortcuts.hint">Press <kbd>?</kbd> anytime to reopen</small>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal" data-i18n="common.close">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="settings-offcanvas" aria-labelledby="settings-offcanvas-label" style="width:360px">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="settings-offcanvas-label"><i class="bi bi-gear-fill me-2"></i> <span data-i18n="settings.title">Settings</span></h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <!-- Language -->
+    <h6 class="fw-semibold mb-2" data-i18n="settings.language">Language</h6>
+    <div class="lang-switcher mb-4">
+      <button class="lang-btn" data-lang="en" title="English">EN</button>
+      <button class="lang-btn" data-lang="zh" title="中文">中文</button>
+    </div>
+
+    <!-- Webhook / Notifications -->
+    <h6 class="fw-semibold mb-2" data-i18n="settings.notifications">Notifications</h6>
+    <div class="mb-2">
+      <label class="form-label small" data-i18n="dashboard.notify_webhook">Webhook URL</label>
+      <input id="dashboard-notify-webhook" class="form-control form-control-sm" placeholder="https://example.com/webhook" />
+    </div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="dashboard-notify-complete" checked>
+          <label class="form-check-label small" for="dashboard-notify-complete" data-i18n="dashboard.notify_complete">On complete</label>
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="dashboard-notify-failure" checked>
+          <label class="form-check-label small" for="dashboard-notify-failure" data-i18n="dashboard.notify_failure">On failure</label>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-2 mb-4">
+      <button class="btn btn-sm btn-outline-primary flex-fill" onclick="dashboardSaveNotifications()"><i class="bi bi-save"></i> <span data-i18n="dashboard.notify_save">Save</span></button>
+      <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="dashboardTestWebhook()"><i class="bi bi-send-check"></i> <span data-i18n="dashboard.notify_test">Test</span></button>
+    </div>
+    <div id="settings-notify-result" class="small mb-3"></div>
+
+    <!-- HPC -->
+    <h6 class="fw-semibold mb-2" data-i18n="settings.hpc">HPC Defaults</h6>
+    <div class="row g-2 mb-4">
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.hpc_partition">Partition</label>
+        <input id="dashboard-hpc-partition" class="form-control form-control-sm" placeholder="gpu" />
+      </div>
+      <div class="col-3">
+        <label class="form-label small" data-i18n="dashboard.hpc_nodes">Nodes</label>
+        <input id="dashboard-hpc-nodes" type="number" class="form-control form-control-sm" value="1" min="1" />
+      </div>
+      <div class="col-3">
+        <label class="form-label small" data-i18n="dashboard.hpc_cpus">CPUs</label>
+        <input id="dashboard-hpc-cpus" type="number" class="form-control form-control-sm" value="4" min="1" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.hpc_mem">Memory</label>
+        <input id="dashboard-hpc-mem" class="form-control form-control-sm" value="8G" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.hpc_walltime">Walltime</label>
+        <input id="dashboard-hpc-walltime" class="form-control form-control-sm" value="02:00:00" />
+      </div>
+    </div>
+    <button class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="dashboardSubmitHpc()"><i class="bi bi-cloud-upload"></i> <span data-i18n="dashboard.hpc_submit">Submit to HPC</span></button>
+    <pre id="dashboard-hpc-result" class="small mt-1 mb-4" style="white-space:pre-wrap;max-height:100px;overflow:auto">-</pre>
+
+    <!-- Auto-stop defaults -->
+    <h6 class="fw-semibold mb-2" data-i18n="settings.autostop">Auto-stop Defaults</h6>
+    <div class="form-check form-switch mb-2">
+      <input class="form-check-input" type="checkbox" id="dashboard-auto-stop-enabled" checked>
+      <label class="form-check-label small" for="dashboard-auto-stop-enabled" data-i18n="dashboard.auto_stop_enabled">Enable convergence auto-stop</label>
+    </div>
+    <div class="row g-2 mb-3">
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.auto_stop_key">Residual key</label>
+        <input id="dashboard-auto-stop-key" class="form-control form-control-sm" value="residual" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.auto_stop_tol">Rel. tolerance</label>
+        <input id="dashboard-auto-stop-tol" type="number" class="form-control form-control-sm" value="0.0001" step="0.0001" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.auto_stop_patience">Patience</label>
+        <input id="dashboard-auto-stop-patience" type="number" class="form-control form-control-sm" value="5" min="1" />
+      </div>
+      <div class="col-6">
+        <label class="form-label small" data-i18n="dashboard.auto_stop_min_steps">Min steps</label>
+        <input id="dashboard-auto-stop-min-steps" type="number" class="form-control form-control-sm" value="20" min="1" />
+      </div>
+    </div>
+    <button class="btn btn-sm btn-outline-success w-100 mb-1" onclick="dashboardApplyAutoStop()"><i class="bi bi-stop-circle"></i> <span data-i18n="dashboard.auto_stop_apply">Apply auto-stop</span></button>
+    <pre id="dashboard-auto-stop-result" class="small mt-1" style="white-space:pre-wrap;max-height:80px;overflow:auto">-</pre>
+  </div>
+</div>
+
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.35.2/plotly.min.js"></script>
-<script src="/static/js/app_utils.js?v=3"></script>
-<script src="/static/js/app_core.js?v=3"></script>
-<script src="/static/js/app_cad.js?v=3"></script>
-<script src="/static/js/app_solver.js?v=3"></script>
-<script src="/static/js/app_postprocess.js?v=2"></script>
-<script src="/static/js/app_ai.js?v=2"></script>
-<script src="/static/js/app_suboff.js?v=2"></script>
-<script src="/static/js/app_simulations.js?v=2"></script>
-<script src="/static/js/app_cylinder.js?v=6"></script>
+<script src="/static/js/app_utils.js"></script>
+<script src="/static/js/app_core.js"></script>
+<script src="/static/js/app_cad.js"></script>
+<script src="/static/js/app_solver.js"></script>
+<script src="/static/js/app_postprocess.js"></script>
+<script src="/static/js/app_postprocess_engineering.js"></script>
+<script src="/static/js/app_ai.js"></script>
+<script src="/static/js/app_suboff.js"></script>
 <!-- aiFlowPollJob -->
 <script src="/static/js/app_lightbox.js"></script>
+<script src="/static/js/app_projects.js"></script>
+<script src="/static/js/app_templates.js"></script>
+<script src="/static/js/app_convergence.js"></script>
+<script src="/static/js/app_geo3d.js"></script>
 </body>
 </html>
