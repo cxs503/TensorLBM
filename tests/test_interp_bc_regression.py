@@ -93,18 +93,19 @@ def _make_f_pair_27(
 # ===========================================================================
 
 class TestBouzidiBounceBack3DBugs:
-    """Identify pre-existing bugs in the original bouzidi_bounce_back_3d."""
+    """Verify the FIXED bouzidi_bounce_back_3d sets f[opp] (unknown pop).
 
-    def test_quadratic_uses_fp_opp_not_fp_d(self) -> None:
-        """BUG: quadratic branch (q >= 0.5) uses fp_opp instead of fp_d.
+    The original code had a bug: it set f[direction] (the known, valid
+    population pointing toward solid) instead of f[opp] (the unknown
+    population that streamed from the solid cell).  This has been fixed;
+    these tests verify the corrected behaviour.
+    """
 
-        Standard BFL quadratic (q >= 0.5):
-            f_bc = f_opp / (2q) + (2q - 1) / (2q) * f_prev[direction]
-        Code uses:
-            f_bc = f_opp / (2q) + (2q - 1) / (2q) * f_prev[opp]
-                                     ^^^^^^^^^^^^^^^^  should be f_prev[direction]
+    def test_quadratic_sets_f_opp_not_f_direction(self) -> None:
+        """Quadratic branch (q >= 0.5) sets f[opp], not f[direction].
 
-        This bug is faithfully reproduced in the common module.
+        f_bc = f_opp / (2q) + (2q - 1) / (2q) * fp_opp
+        The result must appear in f_out[opp], not f_out[direction].
         """
         f, f_prev, fluid_nodes = _make_f_pair_3d()
         direction = 1
@@ -114,25 +115,17 @@ class TestBouzidiBounceBack3DBugs:
 
         f_out = bouzidi_bounce_back_3d(f, f_prev, fluid_nodes, q, direction=direction)
 
-        # What the code actually computes (using fp_opp):
         f_opp = f[opp][fluid_nodes]
         fp_opp = f_prev[opp][fluid_nodes]
-        fp_d = f_prev[direction][fluid_nodes]
-        code_result = f_opp / (2 * q_val) + (2 * q_val - 1) / (2 * q_val) * fp_opp
+        expected = f_opp / (2 * q_val) + (2 * q_val - 1) / (2 * q_val) * fp_opp
 
-        # What standard BFL would compute (using fp_d):
-        standard_result = f_opp / (2 * q_val) + (2 * q_val - 1) / (2 * q_val) * fp_d
+        # Result must be in f_out[opp] (the unknown population)
+        assert torch.allclose(f_out[opp][fluid_nodes], expected, atol=1e-6)
+        # f_out[direction] must be unchanged (it was already valid)
+        assert torch.allclose(f_out[direction][fluid_nodes], f[direction][fluid_nodes], atol=1e-7)
 
-        # The code matches the fp_opp version (buggy), not the fp_d version (standard)
-        assert torch.allclose(f_out[direction][fluid_nodes], code_result, atol=1e-6)
-        # The bug means code != standard when fp_opp != fp_d
-        if not torch.allclose(fp_opp, fp_d, atol=1e-8):
-            assert not torch.allclose(code_result, standard_result, atol=1e-6), (
-                "Expected quadratic formula to differ from standard BFL due to fp_opp bug"
-            )
-
-    def test_quadratic_bug_reproduced_in_common(self) -> None:
-        """The same quadratic bug is reproduced in the common module."""
+    def test_quadratic_fixed_in_common(self) -> None:
+        """The same fix is applied in the common module."""
         f, f_prev, fluid_nodes = _make_f_pair_3d()
         direction = 1
         opp = int(OPP3D[direction].item())
@@ -145,16 +138,15 @@ class TestBouzidiBounceBack3DBugs:
 
         f_opp = f[opp][fluid_nodes]
         fp_opp = f_prev[opp][fluid_nodes]
-        code_result = f_opp / (2 * q_val) + (2 * q_val - 1) / (2 * q_val) * fp_opp
+        expected = f_opp / (2 * q_val) + (2 * q_val - 1) / (2 * q_val) * fp_opp
 
-        assert torch.allclose(f_out_common[direction][fluid_nodes], code_result, atol=1e-6)
+        assert torch.allclose(f_out_common[opp][fluid_nodes], expected, atol=1e-6)
 
-    def test_linear_branch_uses_correct_fp_d(self) -> None:
-        """Linear branch (q < 0.5) correctly uses fp_d (pre-stream same direction).
+    def test_linear_branch_sets_f_opp(self) -> None:
+        """Linear branch (q < 0.5) sets f[opp] with the correct formula.
 
-        Standard BFL linear (q < 0.5):
-            f_bc = 2q * f_opp + (1 - 2q) * f_prev[direction]
-        This is correct in both original and common.
+        f_bc = 2q * f_opp + (1 - 2q) * fp_d
+        The result must appear in f_out[opp].
         """
         f, f_prev, fluid_nodes = _make_f_pair_3d()
         direction = 1
@@ -168,7 +160,7 @@ class TestBouzidiBounceBack3DBugs:
         fp_d = f_prev[direction][fluid_nodes]
         expected = 2.0 * q_val * f_opp + (1.0 - 2.0 * q_val) * fp_d
 
-        assert torch.allclose(f_out[direction][fluid_nodes], expected, atol=1e-6)
+        assert torch.allclose(f_out[opp][fluid_nodes], expected, atol=1e-6)
 
     def test_2d_dead_code_line65(self) -> None:
         """BUG (cosmetic): 2D bouzidi_bounce_back has a dead no-op expression.
@@ -250,7 +242,13 @@ class TestBouzidiEquivalenceD3Q19:
         assert torch.equal(f_orig[direction][mask_other], f_comm[direction][mask_other])
 
     def test_q_half_gives_bounce_back_both(self) -> None:
-        """At q=0.5, both versions reproduce standard bounce-back: f_bc = f_opp."""
+        """At q=0.5, both versions set f[opp] = f_opp (the streamed-from-solid value).
+
+        With the fix, BFL sets f_out[opp] = f_bc.  At q=0.5, f_bc = f_opp
+        (the post-stream value at the opposite direction, which came from
+        the solid cell).  So f_out[opp] == f[opp] (unchanged), and
+        f_out[direction] is also unchanged (it was already valid).
+        """
         f, f_prev, fluid_nodes = _make_f_pair_3d()
         direction = 7
         opp = int(OPP3D[direction].item())
@@ -260,9 +258,11 @@ class TestBouzidiEquivalenceD3Q19:
         f_comm = bouzidi_bounce_back_3d_common(
             f, f_prev, fluid_nodes, q, direction=direction, lattice="D3Q19"
         )
-        # Both should equal f[opp] at fluid nodes
-        assert torch.allclose(f_orig[direction][fluid_nodes], f[opp][fluid_nodes], atol=1e-6)
-        assert torch.allclose(f_comm[direction][fluid_nodes], f[opp][fluid_nodes], atol=1e-6)
+        # At q=0.5, f_bc = f_opp = f[opp], so f_out[opp] = f[opp] (unchanged)
+        assert torch.allclose(f_orig[opp][fluid_nodes], f[opp][fluid_nodes], atol=1e-6)
+        assert torch.allclose(f_comm[opp][fluid_nodes], f[opp][fluid_nodes], atol=1e-6)
+        # f_out[direction] must also be unchanged
+        assert torch.allclose(f_orig[direction][fluid_nodes], f[direction][fluid_nodes], atol=1e-7)
 
 
 # ===========================================================================
@@ -273,7 +273,12 @@ class TestBouzidiD3Q27PhysicalReasonableness:
     """D3Q27 is common-module-only; verify physical reasonableness."""
 
     def test_q_half_bounce_back_all_directions(self) -> None:
-        """q=0.5 must give standard bounce-back for all 27 directions."""
+        """q=0.5 gives standard bounce-back for all 27 directions.
+
+        With the fix, BFL sets f_out[opp] = f_bc.  At q=0.5, f_bc = f_opp
+        = f[opp], so f_out[opp] == f[opp] (unchanged — the streamed-from-solid
+        value is already correct at q=0.5 with NoDynamics).
+        """
         f, f_prev, fluid_nodes = _make_f_pair_27()
         q = torch.full(f.shape[1:], 0.5)
 
@@ -283,8 +288,9 @@ class TestBouzidiD3Q27PhysicalReasonableness:
                 f.clone(), f_prev.clone(), fluid_nodes, q,
                 direction=direction, lattice="D3Q27",
             )
+            # At q=0.5, f_out[opp] = f[opp] (unchanged)
             assert torch.allclose(
-                f_out[direction][fluid_nodes], f[opp][fluid_nodes], atol=1e-5
+                f_out[opp][fluid_nodes], f[opp][fluid_nodes], atol=1e-5
             ), f"q=0.5 bounce-back failed for direction {direction}"
 
     def test_output_finite_all_directions(self) -> None:
