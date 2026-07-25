@@ -452,11 +452,16 @@ class MultiDeviceSolver3D:
 
         ov = self.decomp.overlap
         self.slabs: list[torch.Tensor] = []
-        for dev, (x0, x1) in zip(self.decomp.devices, self.decomp.slabs):
+        for i, (dev, (x0, x1)) in enumerate(zip(self.decomp.devices, self.decomp.slabs)):
             # Periodic ghost seeding via modulo indexing, matching
             # MultiGPUSolver3D.  Halo exchange overwrites before first stream.
+            dev_obj = torch.device(dev)
             x_indices = torch.arange(x0 - ov, x1 + ov, device=f_global.device) % nx
-            slab = f_global.index_select(3, x_indices).to(dev).contiguous()
+            slab = f_global.index_select(3, x_indices)
+            if dev_obj != f_global.device:
+                slab = slab.contiguous().to(dev_obj)
+            else:
+                slab = slab.contiguous()
             self.slabs.append(slab)
         self._x_ranges = self.decomp.slabs
         halo_exchange_3d(self.slabs, self.decomp)

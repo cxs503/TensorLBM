@@ -104,7 +104,38 @@ def compute_u_tau(
             u_tau[turb] = ut
         return u_tau
 
-    raise ValueError(f"Unknown wall_law {wall_law!r}; supported: 'log', 'reichardt'")
+    if wall_law == "gradient":
+        # Direct velocity-gradient method: τ_w = ν·u_mag / y_val
+        # Bug 11 fix: correct formula is ν·u/y_val (NOT 2ν·u/y_val).
+        # For half-way BB with y_val=0.5: τ_w = ν·u/0.5 = 2ν·u (correct).
+        # The old 2ν·u/y_val gave 4ν·u (2× too strong).
+        # No log-law assumption; works for all y+ including buffer/viscous sublayer.
+        tau_w = nu * u_mag / y_val
+        return torch.sqrt(tau_w.clamp(min=1e-30))
+
+    if wall_law == "hybrid":
+        # y+ threshold for switching: y+_thresh = 11.6 (viscous-log transition)
+        # u_tau_vis = sqrt(nu * u / y)  (laminar shear, u+ = y+ for y+ < 5)
+        # u_tau_log = Newton(log-law)    (for y+ >= 11.6)
+        yp_thresh = 11.6
+        u_tau_vis = torch.sqrt(nu * u_mag / max(y_val, 1e-10))
+        y_plus = y_val * u_tau_vis / nu
+
+        u_tau = u_tau_vis.clone()
+        turb = (y_plus > yp_thresh) & (u_mag > 1e-10)
+        if bool(turb.any()):
+            from math import log as _log, exp as _exp
+            u_tau_g = u_tau_vis[turb].clone()
+            um = u_mag[turb]
+            for _ in range(8):
+                lyp = torch.log(y_val * u_tau_g / nu)
+                fv = u_tau_g * (lyp / _KAPPA + _B_LOG) - um
+                fp = (lyp / _KAPPA + _B_LOG) + 1.0 / _KAPPA
+                u_tau_g = (u_tau_g - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
+            u_tau[turb] = u_tau_g
+        return u_tau
+
+    raise ValueError(f"Unknown wall_law {wall_law!r}; supported: 'log', 'reichardt', 'gradient', 'hybrid'")
 
 
 def compute_y_plus(
@@ -130,18 +161,70 @@ def compute_y_plus(
 # ---------------------------------------------------------------------------
 
 def _near_wall_mask(solid: torch.Tensor) -> torch.Tensor:
-    """Identify fluid cells adjacent to solid cells (6-connected)."""
+    """Identify fluid cells adjacent to solid cells (6-connected).
+
+    Bug 9 fix: do NOT use ``torch.roll`` (which wraps periodically in z
+    for 2-D extruded simulations).  Instead use interior-only slicing
+    with one-sided boundary handling.
+    """
     fluid = ~solid
     near = torch.zeros_like(solid)
-    for ax, sgn in [(2, 1), (2, -1), (1, 1), (1, -1), (0, 1), (0, -1)]:
-        near |= torch.roll(solid, sgn, dims=ax) & fluid
+    nz, ny, nx = solid.shape
+
+    # x-direction (interior only, no periodic wrap)
+    near[:, :, 1:-1] |= (solid[:, :, 2:] | solid[:, :, :-2]) & fluid[:, :, 1:-1]
+    # y-direction
+    near[:, 1:-1, :] |= (solid[:, 2:, :] | solid[:, :-2, :]) & fluid[:, 1:-1, :]
+    # z-direction (no periodic wrap for 2-D simulations)
+    if nz > 1:
+        near[1:-1] |= (solid[2:] | solid[:-2]) & fluid[1:-1]
+        near[0]    |= solid[1] & fluid[0]
+        near[-1]   |= solid[-2] & fluid[-1]
     return near
 
 
-# ---------------------------------------------------------------------------
-# Public wall_function interface
-# ---------------------------------------------------------------------------
+def _compute_wall_normal(
+    solid: torch.Tensor,
+    near: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Compute outward wall normal (from solid toward fluid) at near-wall cells.
 
+    Uses the gradient of the solid mask.  Returns zero outside near-wall.
+    """
+    nz, ny, nx = solid.shape
+    sf = solid.to(torch.float32)
+
+    gx = torch.zeros_like(sf)
+    gy = torch.zeros_like(sf)
+    gz = torch.zeros_like(sf)
+
+    gx[:, :, 1:-1] = (sf[:, :, 2:] - sf[:, :, :-2]) * 0.5
+    gx[:, :, 0]    = sf[:, :, 1] - sf[:, :, 0]
+    gx[:, :, -1]   = sf[:, :, -1] - sf[:, :, -2]
+
+    gy[:, 1:-1, :] = (sf[:, 2:, :] - sf[:, :-2, :]) * 0.5
+    gy[:, 0, :]    = sf[:, 1, :] - sf[:, 0, :]
+    gy[:, -1, :]   = sf[:, -1, :] - sf[:, -2, :]
+
+    if nz > 1:
+        gz[1:-1] = (sf[2:] - sf[:-2]) * 0.5
+        gz[0]    = sf[1] - sf[0]
+        gz[-1]   = sf[-1] - sf[-2]
+
+    nx_n = -gx
+    ny_n = -gy
+    nz_n = -gz
+
+    mag = torch.sqrt(nx_n * nx_n + ny_n * ny_n + nz_n * nz_n)
+    has_normal = mag > 1e-10
+    inv_mag = torch.where(has_normal, 1.0 / mag, torch.zeros_like(mag))
+    near_f = near.to(torch.float32)
+    return nx_n * inv_mag * near_f, ny_n * inv_mag * near_f, nz_n * inv_mag * near_f
+
+
+# --------------------------------------------------------------------------- #
+# Public wall_function interface
+# --------------------------------------------------------------------------- #
 def _apply_body_force(
     f: torch.Tensor,
     fx: torch.Tensor,

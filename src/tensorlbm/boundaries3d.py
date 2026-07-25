@@ -345,28 +345,76 @@ def far_field_bc_3d(
     obstacle_mask: torch.Tensor | None = None,
     uy: float = 0.0,
     uz: float = 0.0,
+    bc_config: dict | None = None,
 ) -> torch.Tensor:
     """Free-stream (Dirichlet) far-field boundary condition for external aero.
 
-    Imposes the free-stream equilibrium on the inlet and **all four lateral
-    faces** (y±, z±), zero-gradient outlet at x=nx-1.  Unlike channel walls
-    (bounce-back on top/bottom) the lateral faces do not accelerate the flow
-    around the body, so there is **no blockage** — the body sees effectively
-    unbounded flow.  Validated: sphere Re=100 Cd error ~65% (channel) → ~9%
+    Imposes the free-stream equilibrium on the inlet (x-) and selected lateral
+    faces, zero-gradient outlet at x=nx-1.  Unlike channel walls (bounce-back
+    on top/bottom) the lateral faces do not accelerate the flow around the
+    body, so there is **no blockage** — the body sees effectively unbounded
+    flow.  Validated: sphere Re=100 Cd error ~65% (channel) → ~9%
     (far-field) at the same grid.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        u_in: Free-stream x-velocity.
+        obstacle_mask: Optional solid mask for bounce-back.
+        uy, uz: Free-stream y/z velocity components (default 0).
+        bc_config: Optional dict specifying lateral face treatment::
+
+            bc_config = {
+                'far_field_faces': ['y-', 'y+', 'z-', 'z+'],  # Dirichlet free-stream
+                'periodic_faces': [],                         # left to torch.roll
+            }
+
+            Face names: ``'y-'`` (y=0), ``'y+'`` (y=ny-1),
+            ``'z-'`` (z=0), ``'z+'`` (z=nz-1).
+            Periodic faces are NOT overwritten — ``stream3d`` (torch.roll)
+            handles periodicity automatically.
+
+            If ``None`` (default), uses legacy behavior: y± always far-field,
+            z± far-field only when ``nz > 4`` (3D mode).  For 2D (nz ≤ 4)
+            the z-direction is left periodic (torch.roll).
+
+    Direction-agnostic usage (2D extruded cylinder):
+
+        ===========================  ============================  ===========================
+        axis                         far_field_faces               periodic_faces
+        ===========================  ============================  ===========================
+        ``'z'`` (cylinder in x-y)    ``['y-', 'y+']``              ``['z-', 'z+']``
+        ``'y'`` (cylinder in x-z)    ``['z-', 'z+']``              ``['y-', 'y+']``
+        ``'x'`` (cylinder in y-z)    ``['y-', 'y+', 'z-', 'z+']``  ``[]``
+        ===========================  ============================  ===========================
     """
+    if bc_config is None:
+        # Legacy behavior: y± far-field; z± far-field only in 3D (nz > 4)
+        ff = ['y-', 'y+']
+        if f.shape[1] > 4:
+            ff.extend(['z-', 'z+'])
+        bc_config = {'far_field_faces': ff, 'periodic_faces': []}
+
     rho1 = torch.ones((f.shape[1], f.shape[2], f.shape[3]), dtype=f.dtype, device=f.device)
     feq = equilibrium3d(
         rho1, torch.full_like(rho1, u_in), torch.full_like(rho1, uy),
         torch.full_like(rho1, uz), device=f.device,
     )
-    f = f.clone()
     f[:, :, :, 0] = feq[:, :, :, 0]          # inlet (free stream)
     f[:, :, :, -1] = f[:, :, :, -2]          # outlet (zero gradient)
-    f[:, 0, :, :] = feq[:, 0, :, :]          # y- lateral
-    f[:, -1, :, :] = feq[:, -1, :, :]        # y+ lateral
-    f[:, :, 0, :] = feq[:, :, 0, :]          # z- lateral
-    f[:, :, -1, :] = feq[:, :, -1, :]        # z+ lateral
+
+    # Far-field (Dirichlet free-stream) on selected lateral faces
+    for face in bc_config.get('far_field_faces', []):
+        if face == 'y-':
+            f[:, :, 0, :] = feq[:, :, 0, :]
+        elif face == 'y+':
+            f[:, :, -1, :] = feq[:, :, -1, :]
+        elif face == 'z-':
+            f[:, 0, :, :] = feq[:, 0, :, :]
+        elif face == 'z+':
+            f[:, -1, :, :] = feq[:, -1, :, :]
+
+    # Periodic faces: left untouched — torch.roll in stream3d handles wrap-around.
+    # (Listed in bc_config for documentation / future explicit enforcement.)
     if obstacle_mask is not None:
         f = bounce_back_cells_3d(f, obstacle_mask)
     return f
@@ -715,14 +763,16 @@ def nscbc_outlet_3d(
 
     rho, ux, uy, uz = macroscopic3d(f)
 
-    rho_out = rho[:, :, -1]
-    ux_out  = ux[:, :, -1]
-    uy_out  = uy[:, :, -1]
-    uz_out  = uz[:, :, -1]
+    rho_out = rho[:, :, -1].unsqueeze(-1)      # (nz, ny, 1)
+    ux_out  = ux[:, :, -1].unsqueeze(-1)
+    uy_out  = uy[:, :, -1].unsqueeze(-1)
+    uz_out  = uz[:, :, -1].unsqueeze(-1)
 
     L1 = sigma * c_s * (rho_out - rho_target)
     rho_corrected = (rho_out - L1).clamp(min=1e-6)
 
     f_new = f.clone()
-    f_new[:, :, :, -1] = equilibrium3d(rho_corrected, ux_out, uy_out, uz_out)
+    f_new[:, :, :, -1] = equilibrium3d(
+        rho_corrected.squeeze(-1), ux_out.squeeze(-1), uy_out.squeeze(-1), uz_out.squeeze(-1)
+    )
     return f_new
