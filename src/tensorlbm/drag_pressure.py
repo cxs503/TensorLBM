@@ -135,9 +135,10 @@ class SurfaceMesh:
         nz_n = -nz_grad * near.float()
         
         norm = torch.sqrt(nx_n**2 + ny_n**2 + nz_n**2).clamp(min=1e-10)
-        # dA = gradient magnitude (surface area element)
-        dA = norm.clone()
-        return cls(near, nx_n/norm, ny_n/norm, nz_n/norm, dA)
+        # dA = 1.0 (surface area per cell, default)
+        # Note: |∇solid| via central difference gives 0.5 for face-aligned
+        # walls (wrong by 2×). Use dA=1.0 for all cells.
+        return cls(near, nx_n/norm, ny_n/norm, nz_n/norm)
     
     @classmethod
     def from_square_prism(cls, solid, near, cx, cy, D):
@@ -240,27 +241,24 @@ def drag_pressure_integration(f, mesh, dpS):
 
 
 def drag_friction_integration(f, mesh, dpS, nu):
-    """Friction drag via 3D wall shear stress.
+    """Friction drag via 3D wall shear stress (first-order, half-way BB).
     
-    Tangent velocity: u_t = u - (u·n)·n  (velocity minus normal component)
-    Wall shear: τ = 2ν · u_t  (half-way BB, du/dn = 2·u_tangent)
-    Force vector: F = τ · dA  (shear acts in tangent direction)
+    τ = 2ν · u_t  where u_t = u - (u·n)·n (tangent velocity)
     
     Verified on Couette flow: Cf error = 0.00%.
-    For 2D (nz_n=0): reduces to u_t = ux·ny - uy·nx (same as before).
+    Note: overestimates for curved surfaces at high τ (non-linear profile).
+    The second-order formula (3·u_t1 - u_t2/3) was tested but gave worse
+    results because the velocity profile is not quadratic at high τ.
     """
     rho, ux, uy, uz = macroscopic3d(f)
-    # Normal component of velocity: u·n
-    u_dot_n = ux * mesh.nx_n + uy * mesh.ny_n + uz * mesh.nz_n
-    # Tangent velocity: u_t = u - (u·n)·n
-    ut_x = ux - u_dot_n * mesh.nx_n
-    ut_y = uy - u_dot_n * mesh.ny_n
-    ut_z = uz - u_dot_n * mesh.nz_n
-    # Wall shear stress vector: τ = 2ν · u_t
+    nx, ny, nz = mesh.nx_n, mesh.ny_n, mesh.nz_n
+    u_dot_n = ux * nx + uy * ny + uz * nz
+    ut_x = ux - u_dot_n * nx
+    ut_y = uy - u_dot_n * ny
+    ut_z = uz - u_dot_n * nz
     tau_x = 2.0 * nu * ut_x
     tau_y = 2.0 * nu * ut_y
     tau_z = 2.0 * nu * ut_z
-    # Force = τ · dA (shear in tangent direction)
     mask = mesh.near.float() * mesh.dA
     ffx = (tau_x * mask).sum()
     ffy = (tau_y * mask).sum()
