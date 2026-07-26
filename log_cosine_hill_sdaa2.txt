@@ -1,0 +1,41 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:2] [CosineHill] nx=300 ny=100 nz=4 H=20 L=100 x_c=100.0 u_in=0.05 nu=1.000000e-02 tau=0.530000 Re=100.0 Cs=0.05
+[SDAA:2] [CosineHill] solid=63100 hill_cells=3800 max_hill_h=20.0
+[SDAA:2] [CosineHill] near_hill=348 mesh built (0.5s)
+[SDAA:2] [CosineHill] init done (0.5s), starting loop...
+[SDAA:2] [CosineHill] step=500 sep/H=0.000 reattach/H=0.000 Cd_hill=-0.5107 max|u|=0.0563 (15s)
+[SDAA:2] [CosineHill] step=1000 sep/H=0.000 reattach/H=0.000 Cd_hill=0.3550 max|u|=0.0575 (28s)
+[SDAA:2] [CosineHill] step=1500 sep/H=0.000 reattach/H=0.000 Cd_hill=0.0903 max|u|=0.0532 (42s)
+[SDAA:2] [CosineHill] step=2000 sep/H=0.000 reattach/H=0.000 Cd_hill=-0.0178 max|u|=0.0529 (56s)
+[SDAA:2] [CosineHill] step=2500 sep/H=0.000 reattach/H=0.000 Cd_hill=0.0130 max|u|=0.0533 (71s)
+[SDAA:2] [CosineHill] step=3000 sep/H=0.000 reattach/H=0.000 Cd_hill=0.0363 max|u|=0.0534 (85s)
+[SDAA:2] [CosineHill] step=3500 sep/H=0.000 reattach/H=0.000 Cd_hill=0.0115 max|u|=0.0531 (99s)
+[SDAA:2] [CosineHill] step=4000 sep/H=0.000 reattach/H=0.000 Cd_hill=0.0018 max|u|=0.0515 (113s)
+[SDAA:2] [CosineHill] step=4500 sep/H=0.000 reattach/H=0.000 Cd_hill=0.0048 max|u|=0.0507 (127s)
+[SDAA:2] [CosineHill] step=5000 sep/H=0.000 reattach/H=0.000 Cd_hill=0.0043 max|u|=0.0506 (141s)
+
+============================================================
+[SDAA:2] [CosineHill] FINAL RESULTS
+============================================================
+  Separation x   = None (0.000 H)
+  Reattachment x = None (0.000 H)
+  Bubble length  = 0.000 H
+  Cd_hill (pressure) = 0.0007
+  Finite: True
+  Wall time: 141s (2.3 min)
+  Results saved to results_cosine_hill_sdaa2.json

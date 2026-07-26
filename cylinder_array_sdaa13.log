@@ -1,0 +1,49 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:13 CylinderArray] nx=300 ny=200 nz=4 D=20 R=10.0 spacing=40 u_in=0.05 nu=5.000000e-03 tau=0.515 Re=200 Cs=0.05 n_cylinders=9 n_steps=5000
+[SDAA:13 CylinderArray] solid cells: 13812 (cylinders: 11412, walls: 2400)
+[SDAA:13 CylinderArray] cylinder 1 center=(110.0,60.0) near_cells=240
+[SDAA:13 CylinderArray] cylinder 2 center=(110.0,100.0) near_cells=240
+[SDAA:13 CylinderArray] cylinder 3 center=(110.0,140.0) near_cells=240
+[SDAA:13 CylinderArray] cylinder 4 center=(150.0,60.0) near_cells=240
+[SDAA:13 CylinderArray] cylinder 5 center=(150.0,100.0) near_cells=240
+[SDAA:13 CylinderArray] cylinder 6 center=(150.0,140.0) near_cells=240
+[SDAA:13 CylinderArray] cylinder 7 center=(190.0,60.0) near_cells=240
+[SDAA:13 CylinderArray] cylinder 8 center=(190.0,100.0) near_cells=240
+[SDAA:13 CylinderArray] cylinder 9 center=(190.0,140.0) near_cells=240
+[SDAA:13 CylinderArray] init done (0.0s), initial_mass=240000.0
+[SDAA:13 CylinderArray] step=500 dp=6.485356e-03 (18s)
+[SDAA:13 CylinderArray] step=1000 dp=2.678936e-03 (36s)
+[SDAA:13 CylinderArray] step=1500 dp=1.244507e-03 (54s)
+[SDAA:13 CylinderArray] step=2000 dp=1.290796e-03 (72s)
+[SDAA:13 CylinderArray] step=2500 dp=1.754254e-03 (90s)
+[SDAA:13 CylinderArray] step=3000 dp=1.612761e-03 (107s)
+[SDAA:13 CylinderArray] step=3500 dp=1.914305e-03 (125s)
+[SDAA:13 CylinderArray] step=4000 dp=2.619488e-03 (144s)
+[SDAA:13 CylinderArray] step=4500 dp=2.053048e-03 (162s)
+[SDAA:13 CylinderArray] step=5000 dp=2.876145e-03 (179s)
+[SDAA:13 CylinderArray] DONE dp=2.876145e-03 time=179s
+[SDAA:13 CylinderArray] cyl 1 Cd_p=1.819507 Cd_f=0.143160 Cd_tot=1.962667
+[SDAA:13 CylinderArray] cyl 2 Cd_p=1.905471 Cd_f=0.151403 Cd_tot=2.056873
+[SDAA:13 CylinderArray] cyl 3 Cd_p=1.819168 Cd_f=0.142895 Cd_tot=1.962063
+[SDAA:13 CylinderArray] cyl 4 Cd_p=0.268522 Cd_f=0.055914 Cd_tot=0.324436
+[SDAA:13 CylinderArray] cyl 5 Cd_p=-0.033682 Cd_f=0.034663 Cd_tot=0.000980
+[SDAA:13 CylinderArray] cyl 6 Cd_p=0.273739 Cd_f=0.054816 Cd_tot=0.328555
+[SDAA:13 CylinderArray] cyl 7 Cd_p=0.527004 Cd_f=0.067050 Cd_tot=0.594054
+[SDAA:13 CylinderArray] cyl 8 Cd_p=-0.140379 Cd_f=0.014587 Cd_tot=-0.125791
+[SDAA:13 CylinderArray] cyl 9 Cd_p=0.543108 Cd_f=0.068318 Cd_tot=0.611426
+[SDAA:13 CylinderArray] Results written to cylinder_array_sdaa13.json

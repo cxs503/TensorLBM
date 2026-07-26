@@ -1,0 +1,32 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:1 SUBOFF Re=1000 standard_bb] mode=standard_bb use_bfl=False use_fix=False nx=200 ny=80 nz=80 L=80 R_max=4.6674 D=9.3349 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.042
+[SDAA:1 SUBOFF Re=1000 standard_bb] solid cells: 4651  L/D=8.57
+[SDAA:1 SUBOFF Re=1000 standard_bb] near-wall cells: 2050
+[SDAA:1 SUBOFF Re=1000 standard_bb] init done (0.6s), initial_mass=1280000.0
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=500 Cd_p=0.012264 Cd_f=0.072072 Cd_tot=0.084337 Cl=-0.000007 (83s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=1000 Cd_p=0.005659 Cd_f=0.045648 Cd_tot=0.051308 Cl=-0.000005 (165s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=1500 Cd_p=0.005486 Cd_f=0.041107 Cd_tot=0.046593 Cl=-0.000002 (247s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=2000 Cd_p=0.005473 Cd_f=0.039668 Cd_tot=0.045142 Cl=-0.000001 (329s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=2500 Cd_p=0.005455 Cd_f=0.039216 Cd_tot=0.044672 Cl=-0.000003 (410s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=3000 Cd_p=0.005430 Cd_f=0.039064 Cd_tot=0.044494 Cl=-0.000003 (490s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=3500 Cd_p=0.005420 Cd_f=0.039009 Cd_tot=0.044430 Cl=-0.000004 (570s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=4000 Cd_p=0.005393 Cd_f=0.038984 Cd_tot=0.044376 Cl=-0.000003 (650s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=4500 Cd_p=0.005389 Cd_f=0.038970 Cd_tot=0.044359 Cl=-0.000004 (730s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] step=5000 Cd_p=0.005389 Cd_f=0.038964 Cd_tot=0.044353 Cl=-0.000004 (810s)
+[SDAA:1 SUBOFF Re=1000 standard_bb] DONE mode=standard_bb Cd_p=0.005389 Cd_f=0.038967 Cd_tot=0.044356 Cl=-0.000004 (ref Cf=0.042) err=5.6% time=810s
+[SDAA:1 SUBOFF Re=1000 standard_bb] Results written to results_bfl_friction_fix/suboff_standard_bb_sdaa1.json
