@@ -256,6 +256,22 @@ class SurfaceMesh:
         return cls(near, nx_n, ny_n, nz_n)
     
     @classmethod
+    def from_stl(cls, solid, near, vertices, faces, face_normals, origin, spacing):
+        """STL-derived surface normals for arbitrary geometry.
+
+        Thin wrapper around :func:`tensorlbm.stl_geometry.SurfaceMesh_from_stl`
+        that finds the nearest STL triangle for each near-wall cell and
+        uses its face normal (flipped to point outward).
+
+        ``dA = 1.0`` (default, consistent with from_sphere / from_cylinder).
+        """
+        from .stl_geometry import SurfaceMesh_from_stl
+
+        return SurfaceMesh_from_stl(
+            solid, near, vertices, faces, face_normals, origin, spacing
+        )
+
+    @classmethod
     def from_gradient(cls, solid, near):
         """Generic normal from gradient of solid mask (for arbitrary geometry).
         
