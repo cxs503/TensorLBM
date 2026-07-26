@@ -1,0 +1,11 @@
+{
+  "step3_cylinder_BFL": {
+    "method": "BFL",
+    "compute_me": false,
+    "Cd_mean": 1.8496808134821334,
+    "Cd_std": 0.03309828569014766,
+    "Cd_ref": 1.3,
+    "n_samples": 1500,
+    "elapsed_s": 433.4616322517395
+  }
+}
