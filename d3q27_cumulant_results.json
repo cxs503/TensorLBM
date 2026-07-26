@@ -1,0 +1,80 @@
+[
+  {
+    "lattice": "D3Q27",
+    "collision": "CUMULANT",
+    "hull": "bare_hull",
+    "grid": "160x64x64",
+    "Ct_fric": 0.0035477764644299492,
+    "Ct_pres": 2.057724387036739e-05,
+    "Ct_total": 0.0035683537083003166,
+    "error_pct": 11.892501029621807,
+    "steps": 1500,
+    "finite": true,
+    "elapsed_s": 244.33352041244507
+  },
+  {
+    "lattice": "D3Q27",
+    "collision": "CUMULANT",
+    "hull": "bare_hull",
+    "grid": "200x80x80",
+    "Ct_fric": 0.0034910123486856146,
+    "Ct_pres": 2.3132579681278868e-05,
+    "Ct_total": 0.0035141449283668936,
+    "error_pct": 13.230989423039658,
+    "steps": 1500,
+    "finite": true,
+    "elapsed_s": 408.7475206851959
+  },
+  {
+    "lattice": "D3Q27",
+    "collision": "CUMULANT",
+    "hull": "bare_hull",
+    "grid": "256x96x96",
+    "Ct_fric": 0.0034341001521664746,
+    "Ct_pres": 2.254069939027901e-05,
+    "Ct_total": 0.0034566408515567535,
+    "error_pct": 14.650843171438183,
+    "steps": 2000,
+    "finite": true,
+    "elapsed_s": 1033.524596452713
+  },
+  {
+    "lattice": "D3Q27",
+    "collision": "CUMULANT",
+    "hull": "full",
+    "grid": "160x64x64",
+    "Ct_fric": 0.0036874478922010747,
+    "Ct_pres": 0.00010008540203245696,
+    "Ct_total": 0.0037875332942335317,
+    "error_pct": 6.480659401641188,
+    "steps": 1500,
+    "finite": true,
+    "elapsed_s": 202.91809964179993
+  },
+  {
+    "lattice": "D3Q27",
+    "collision": "CUMULANT",
+    "hull": "full",
+    "grid": "200x80x80",
+    "Ct_fric": 0.0037572464633584407,
+    "Ct_pres": 0.00011139564540309452,
+    "Ct_total": 0.003868642108761535,
+    "error_pct": 4.477972623171966,
+    "steps": 1500,
+    "finite": true,
+    "elapsed_s": 368.9558320045471
+  },
+  {
+    "lattice": "D3Q27",
+    "collision": "CUMULANT",
+    "hull": "full",
+    "grid": "256x96x96",
+    "Ct_fric": 0.003765427397145599,
+    "Ct_pres": 0.00010817978593828819,
+    "Ct_total": 0.0038736071830838873,
+    "error_pct": 4.355378195459568,
+    "steps": 2000,
+    "finite": true,
+    "elapsed_s": 940.7195708751678
+  }
+]
