@@ -219,15 +219,23 @@ def get_near_wall_3d(solid):
 def drag_pressure_integration(f, mesh, dpS):
     """Pressure drag: 3D force vector from pressure × normal × dA.
     
-    F = -Σ p · n · dA  (force on wall, negative of fluid force)
+    F = -Σ (p - p_0) · n · dA  (force on wall, negative of fluid force)
+    Background pressure p_0 is subtracted to prevent spurious force from
+    discrete surface non-closure (Σ n·dA ≠ 0 on staircase surface).
     Returns: (Cd_x, Cd_y, Cd_z) = (fx, fy, fz) / dpS
     """
     rho, _, _, _ = macroscopic3d(f)
     p = (rho - 1.0) / 3.0
-    mask = mesh.near.float() * mesh.dA
-    fpx = -(p * mesh.nx_n * mask).sum()
-    fpy = -(p * mesh.ny_n * mask).sum()
-    fpz = -(p * mesh.nz_n * mask).sum()
+    # Subtract background pressure (average at near-wall cells)
+    # This prevents spurious force when discrete surface is not perfectly closed
+    mask_float = mesh.near.float()
+    n_near = mask_float.sum().clamp(min=1.0)
+    p0 = (p * mask_float).sum() / n_near
+    p_corr = p - p0
+    mask = mask_float * mesh.dA
+    fpx = -(p_corr * mesh.nx_n * mask).sum()
+    fpy = -(p_corr * mesh.ny_n * mask).sum()
+    fpz = -(p_corr * mesh.nz_n * mask).sum()
     return float(fpx.item() / dpS), float(fpy.item() / dpS), float(fpz.item() / dpS)
 
 
