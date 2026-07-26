@@ -199,6 +199,63 @@ class SurfaceMesh:
         return cls(near, nx_n, ny_n, nz_n)
 
     @classmethod
+    def from_ellipsoid(cls, solid, near, cx, cy, cz, a, b, c):
+        """Analytical normal for 3D ellipsoid.
+        
+        Ellipsoid: (x/a)² + (y/b)² + (z/c)² = 1
+        Normal: n = (x/a², y/b², z/c²) / |n|
+        """
+        nz, ny, nx = solid.shape
+        device = solid.device
+        zz, yy, xx = torch.meshgrid(
+            torch.arange(nz, device=device, dtype=torch.float32),
+            torch.arange(ny, device=device, dtype=torch.float32),
+            torch.arange(nx, device=device, dtype=torch.float32),
+            indexing='ij')
+        nx_n = (xx - cx) / (a * a)
+        ny_n = (yy - cy) / (b * b)
+        nz_n = (zz - cz) / (c * c)
+        norm = torch.sqrt(nx_n**2 + ny_n**2 + nz_n**2).clamp(min=1e-10)
+        nx_n = nx_n / norm * near.float()
+        ny_n = ny_n / norm * near.float()
+        nz_n = nz_n / norm * near.float()
+        return cls(near, nx_n, ny_n, nz_n)
+    
+    @classmethod
+    def from_naca(cls, solid, near, x_le, y_c, chord):
+        """Analytical normal for NACA 4-digit airfoil (2D extruded).
+        
+        NACA surface: y_t = 0.6*(0.2969*sqrt(x) - 0.1260*x - 0.3516*x² + 0.2843*x³ - 0.1015*x⁴)
+        Tangent: dy/dx = 0.6*(0.2969/(2*sqrt(x)) - 0.1260 - 0.7032*x + 0.8529*x² - 0.4060*x³)
+        Normal: n = (-dy/dx, sign, 0) / |n|  (sign=+1 upper, -1 lower)
+        """
+        nz, ny, nx = solid.shape
+        device = solid.device
+        zz, yy, xx = torch.meshgrid(
+            torch.arange(nz, device=device, dtype=torch.float32),
+            torch.arange(ny, device=device, dtype=torch.float32),
+            torch.arange(nx, device=device, dtype=torch.float32),
+            indexing='ij')
+        # NACA x coordinate (normalized 0-1)
+        xc = (xx - x_le) / chord
+        xc = xc.clamp(min=1e-6, max=1.0)
+        # Derivative of NACA thickness equation
+        dydx = 0.6 * (0.2969 / (2.0 * torch.sqrt(xc)) - 0.1260 - 0.7032 * xc
+                       + 0.8529 * xc**2 - 0.4060 * xc**3)
+        # Determine upper/lower surface from solid mask
+        # Upper: y > y_c, Lower: y < y_c
+        sign = torch.where(yy > y_c, 1.0, -1.0)
+        # Normal: (-dydx, sign, 0) normalized
+        nx_n = -dydx * sign
+        ny_n = sign.float()
+        nz_n = torch.zeros_like(nx_n)
+        norm = torch.sqrt(nx_n**2 + ny_n**2).clamp(min=1e-10)
+        nx_n = nx_n / norm * near.float()
+        ny_n = ny_n / norm * near.float()
+        nz_n = nz_n / norm * near.float()
+        return cls(near, nx_n, ny_n, nz_n)
+    
+    @classmethod
     def from_gradient(cls, solid, near):
         """Generic normal from gradient of solid mask (for arbitrary geometry).
         
@@ -400,15 +457,27 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none'):
     return float(fpx.item() / dpS), float(fpy.item() / dpS), float(fpz.item() / dpS)
 
 
-def drag_friction_integration(f, mesh, dpS, nu):
-    """Friction drag via 3D wall shear stress (first-order, half-way BB).
-    
-    τ = 2ν · u_t  where u_t = u - (u·n)·n (tangent velocity)
-    
-    Verified on Couette flow: Cf error = 0.00%.
-    Note: overestimates for curved surfaces at high τ (non-linear profile).
-    The second-order formula (3·u_t1 - u_t2/3) was tested but gave worse
-    results because the velocity profile is not quadratic at high τ.
+def drag_friction_integration(f, mesh, dpS, nu, q_wall=None):
+    """Friction drag via 3D wall shear stress.
+
+    Standard half-way BB (q_wall=None):
+        τ = 2ν · u_t = ν · u_t / 0.5
+    where u_t = u - (u·n)·n (tangent velocity) and the wall is at 0.5
+    cell distance from the near-wall fluid cell.
+
+    BFL corrected (q_wall provided):
+        τ = ν · u_t / q
+    where q is the fractional wall distance from the BFL q-field, averaged
+    over boundary directions at each near-wall cell.  When q=0.5 this
+    reduces to the standard formula τ = 2ν·u_t.
+
+    Parameters
+    ----------
+    q_wall : torch.Tensor or None, shape (nz, ny, nx)
+        Effective fractional wall distance at each near-wall cell.
+        When None, uses the standard half-way BB formula (q=0.5).
+
+    Verified on Couette flow: Cf error = 0.00% (standard, q_wall=None).
     """
     rho, ux, uy, uz = macroscopic3d(f)
     nx, ny, nz = mesh.nx_n, mesh.ny_n, mesh.nz_n
@@ -416,9 +485,17 @@ def drag_friction_integration(f, mesh, dpS, nu):
     ut_x = ux - u_dot_n * nx
     ut_y = uy - u_dot_n * ny
     ut_z = uz - u_dot_n * nz
-    tau_x = 2.0 * nu * ut_x
-    tau_y = 2.0 * nu * ut_y
-    tau_z = 2.0 * nu * ut_z
+    if q_wall is not None:
+        # BFL: τ = ν · u_t / q  (q=0.5 → τ = 2ν·u_t, standard)
+        inv_q = 1.0 / q_wall.clamp(min=1e-6)
+        tau_x = nu * ut_x * inv_q
+        tau_y = nu * ut_y * inv_q
+        tau_z = nu * ut_z * inv_q
+    else:
+        # Standard half-way BB: τ = 2ν · u_t
+        tau_x = 2.0 * nu * ut_x
+        tau_y = 2.0 * nu * ut_y
+        tau_z = 2.0 * nu * ut_z
     mask = mesh.near.float() * mesh.dA
     ffx = (tau_x * mask).sum()
     ffy = (tau_y * mask).sum()
