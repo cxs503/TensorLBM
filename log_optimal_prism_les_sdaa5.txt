@@ -1,0 +1,40 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:5 Prism-LES] nx=400 ny=160 nz=4 D=24 u_in=0.08 nu=1.920000e-03 tau=0.505760 Re=1000.0 Cs=0.1 extrap=quadratic
+[SDAA:5 Prism-LES] solid=2304 near=384 mesh built (0.7s)
+[SDAA:5 Prism-LES] init done (0.8s), starting loop...
+[SDAA:5 Prism-LES] step=500 Cd=nan max|u|=0.1411 (262s)
+[SDAA:5 Prism-LES] step=1000 Cd=nan max|u|=0.1326 (525s)
+[SDAA:5 Prism-LES] step=1500 Cd=nan max|u|=0.1396 (783s)
+[SDAA:5 Prism-LES] step=2000 Cd=nan max|u|=0.1879 (1039s)
+[SDAA:5 Prism-LES] step=2500 Cd=1.6426 max|u|=0.2380 (1190s)
+[SDAA:5 Prism-LES] step=3000 Cd=1.6026 max|u|=0.2142 (1211s)
+[SDAA:5 Prism-LES] step=3500 Cd=1.5789 max|u|=0.2405 (1231s)
+[SDAA:5 Prism-LES] step=4000 Cd=1.5618 max|u|=0.2552 (1252s)
+[SDAA:5 Prism-LES] step=4500 Cd=1.5509 max|u|=0.2946 (1272s)
+[SDAA:5 Prism-LES] step=5000 Cd=1.5421 max|u|=0.2814 (1293s)
+[SDAA:5 Prism-LES] step=5500 Cd=1.5351 max|u|=0.2914 (1313s)
+[SDAA:5 Prism-LES] step=6000 Cd=1.5293 max|u|=0.2578 (1334s)
+[SDAA:5 Prism-LES] step=6500 Cd=1.5390 max|u|=0.3257 (1354s)
+[SDAA:5 Prism-LES] step=7000 Cd=1.5580 max|u|=0.3297 (1375s)
+[SDAA:5 Prism-LES] step=7500 Cd=1.6215 max|u|=0.3150 (1395s)
+[SDAA:5 Prism-LES] step=8000 Cd=1.7305 max|u|=0.3487 (1416s)
+[SDAA:5 Prism-LES] step=8500 Cd=1.8417 max|u|=0.4189 (1437s)
+[SDAA:5 Prism-LES] step=9000 Cd=1.8285 max|u|=0.4230 (1457s)
+[SDAA:5 Prism-LES] step=9500 Cd=1.8462 max|u|=0.5218 (1478s)
+[SDAA:5 Prism-LES] step=10000 Cd=1.8578 max|u|=0.5747 (1499s)
+[SDAA:5 Prism-LES] DONE Cd=1.8578 (ref=2.1, err=11.5%) Cl_amp=2.2608 St=3.0000 (ref=0.14, err=2042.9%) (1499s)

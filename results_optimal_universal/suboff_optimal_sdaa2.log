@@ -1,0 +1,31 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:2 suboff] SUBOFF nx=320 ny=120 nz=120 L=80.0 R=4.6674 D=9.3349 u_in=0.06 nu=4.800000e-03 tau=0.514400 Re=1000.0 blockage=7.78% dpS=4.223004e+00 extrap=quadratic L/D=8.57
+[SDAA:2 suboff] solid cells: 4651  near-wall cells: 2050
+[SDAA:2 suboff] init done (1.2s), initial_mass=4608000.0
+[SDAA:2 suboff] step=500 Cd_p=0.012299 Cd_f=0.071829 Cd_tot=0.084128 (ref=0.0420) (218s)
+[SDAA:2 suboff] step=1000 Cd_p=0.005924 Cd_f=0.044645 Cd_tot=0.050570 (ref=0.0420) (462s)
+[SDAA:2 suboff] step=1500 Cd_p=0.005793 Cd_f=0.039650 Cd_tot=0.045443 (ref=0.0420) (700s)
+[SDAA:2 suboff] step=2000 Cd_p=0.005781 Cd_f=0.037899 Cd_tot=0.043680 (ref=0.0420) (936s)
+[SDAA:2 suboff] step=2500 Cd_p=0.005777 Cd_f=0.037289 Cd_tot=0.043066 (ref=0.0420) (1165s)
+[SDAA:2 suboff] step=3000 Cd_p=0.005750 Cd_f=0.037070 Cd_tot=0.042820 (ref=0.0420) (1376s)
+[SDAA:2 suboff] step=3500 Cd_p=0.005726 Cd_f=0.036982 Cd_tot=0.042708 (ref=0.0420) (1586s)
+[SDAA:2 suboff] step=4000 Cd_p=0.005709 Cd_f=0.036943 Cd_tot=0.042652 (ref=0.0420) (1797s)
+[SDAA:2 suboff] step=4500 Cd_p=0.005700 Cd_f=0.036924 Cd_tot=0.042624 (ref=0.0420) (2009s)
+[SDAA:2 suboff] step=5000 Cd_p=0.005696 Cd_f=0.036915 Cd_tot=0.042610 (ref=0.0420) (2221s)
+[SDAA:2 suboff] DONE [OK] Cd_p=0.005696 Cd_f=0.036915 Cd_tot=0.042610 (ref=0.041995) err=1.5% (prev=2.3%) time=2221s
+[SDAA:2 suboff] Results written to results_optimal_universal/suboff_optimal_sdaa2.json

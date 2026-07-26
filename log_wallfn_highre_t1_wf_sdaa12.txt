@@ -1,0 +1,46 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] test=t1_wf use_wf=True wall_law=gradient y_val=0.5 nx=200 ny=80 nz=80 L=80.0 R=4.6674 D=9.3349 u_in=0.06 nu=4.800000e-05 tau=0.500144 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.008333 n_steps=5000
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] solid cells: 4651  L/D=8.57
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] near-wall cells: 2050
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] |n| stats: min=1.000000 max=1.000000 mean=1.000000
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] init done (0.6s), initial_mass=1280000.0
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=500 Cd_p=0.008436 Cd_f=0.001657 Cd_tot=0.010093 (86s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=1000 Cd_p=0.002622 Cd_f=0.001651 Cd_tot=0.004273 (171s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=1500 Cd_p=-0.004245 Cd_f=0.001715 Cd_tot=-0.002530 (256s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=2000 Cd_p=-0.000812 Cd_f=0.001917 Cd_tot=0.001106 (341s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=2500 Cd_p=-0.001217 Cd_f=0.002160 Cd_tot=0.000942 (426s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=3000 Cd_p=0.001092 Cd_f=0.002244 Cd_tot=0.003337 (511s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=3500 Cd_p=-0.000570 Cd_f=0.002359 Cd_tot=0.001789 (596s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=4000 Cd_p=-0.001243 Cd_f=0.002378 Cd_tot=0.001135 (681s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=4500 Cd_p=-0.000717 Cd_f=0.002430 Cd_tot=0.001713 (766s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] step=5000 Cd_p=-0.001440 Cd_f=0.002460 Cd_tot=0.001020 (851s)
+[SDAA:12 T1-WF Re=1e5 gradient y=0.5] DONE Cd_p=-0.001440 Cd_f=0.002460 Cd_tot=0.001020 (ref Cf=0.008333) err=87.8% time=851s
+Traceback (most recent call last):
+  File "/root/TensorLBM_dev/suboff_wallfn_highre_worker.py", line 431, in <module>
+    main()
+  File "/root/TensorLBM_dev/suboff_wallfn_highre_worker.py", line 427, in main
+    run(test, device_id, output_path)
+  File "/root/TensorLBM_dev/suboff_wallfn_highre_worker.py", line 411, in run
+    Path(output_path).write_text(json.dumps(result, indent=2))
+  File "/usr/lib64/python3.11/pathlib.py", line 1078, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.11/pathlib.py", line 1044, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'results_wallfn_highre/suboff_re1e5_wf_gradient_sdaa12.json'

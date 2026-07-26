@@ -1,0 +1,73 @@
+{
+  "benchmark": "flat_plate_blasius",
+  "device": "sdaa:4",
+  "lattice": "D3Q19",
+  "collision": "MRT+Smagorinsky",
+  "C_s": 0.05,
+  "normal_method": "from_gradient",
+  "L_ref": 100.0,
+  "nx": 400,
+  "ny": 80,
+  "nz": 4,
+  "u_in": 0.05,
+  "Re_L": 1000.0,
+  "nu": 0.005,
+  "tau": 0.515,
+  "n_steps": 10000,
+  "warmup": 2000,
+  "n_samples": 8000,
+  "plate_area": 1600,
+  "dpS": 2.0000000000000004,
+  "Cd_pressure": 0.0,
+  "Cd_friction": 0.03076456981617957,
+  "Cd_total": 0.03076456981617957,
+  "Cd_blasius_L100": 0.04199504732703608,
+  "Cd_blasius_full": 0.02099752366351804,
+  "Re_full": 4000.0,
+  "Cf_local": [
+    {
+      "x": 25,
+      "Re_x": 250.0,
+      "Cf_simulated": 0.06013238996826112,
+      "Cf_blasius": 0.04199504732703608,
+      "error_pct": 43.18924205509434
+    },
+    {
+      "x": 50,
+      "Re_x": 500.0,
+      "Cf_simulated": 0.04109547502547502,
+      "Cf_blasius": 0.029694982741197206,
+      "error_pct": 38.39198151296242
+    },
+    {
+      "x": 100,
+      "Re_x": 1000.0,
+      "Cf_simulated": 0.028840971531346436,
+      "Cf_blasius": 0.02099752366351804,
+      "error_pct": 37.35415658302566
+    },
+    {
+      "x": 200,
+      "Re_x": 2000.0,
+      "Cf_simulated": 0.021520237424410876,
+      "Cf_blasius": 0.014847491370598603,
+      "error_pct": 44.94190895457142
+    },
+    {
+      "x": 300,
+      "Re_x": 3000.0,
+      "Cf_simulated": 0.01970171608868986,
+      "Cf_blasius": 0.012122925939447677,
+      "error_pct": 62.51617956834167
+    },
+    {
+      "x": 399,
+      "Re_x": 3990.0000000000005,
+      "Cf_simulated": 0.01960921601299196,
+      "Cf_blasius": 0.010511909941897638,
+      "error_pct": 86.5428463654822
+    }
+  ],
+  "finite": true,
+  "wall_time_s": 554.3367390632629
+}

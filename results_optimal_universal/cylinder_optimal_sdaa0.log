@@ -1,0 +1,31 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:0 cylinder] CYLINDER nx=600 ny=200 nz=4 D=48.0 R=24.0 u_in=0.08 nu=1.920000e-02 tau=0.557600 Re=200.0 blockage=24.00% dpS=6.144000e-01 extrap=quadratic
+[SDAA:0 cylinder] solid cells: 7172  near-wall cells: 544
+[SDAA:0 cylinder] init done (0.4s), initial_mass=480000.0
+[SDAA:0 cylinder] step=500 Cd_p=2.890920 Cd_f=0.331362 Cd_tot=3.222282 (ref=1.3000) (35s)
+[SDAA:0 cylinder] step=1000 Cd_p=1.171812 Cd_f=0.187333 Cd_tot=1.359145 (ref=1.3000) (68s)
+[SDAA:0 cylinder] step=1500 Cd_p=1.308138 Cd_f=0.171021 Cd_tot=1.479159 (ref=1.3000) (101s)
+[SDAA:0 cylinder] step=2000 Cd_p=1.283496 Cd_f=0.162989 Cd_tot=1.446486 (ref=1.3000) (134s)
+[SDAA:0 cylinder] step=2500 Cd_p=1.252872 Cd_f=0.158783 Cd_tot=1.411655 (ref=1.3000) (167s)
+[SDAA:0 cylinder] step=3000 Cd_p=1.238344 Cd_f=0.155796 Cd_tot=1.394139 (ref=1.3000) (203s)
+[SDAA:0 cylinder] step=3500 Cd_p=1.232961 Cd_f=0.154441 Cd_tot=1.387402 (ref=1.3000) (240s)
+[SDAA:0 cylinder] step=4000 Cd_p=1.231827 Cd_f=0.153841 Cd_tot=1.385668 (ref=1.3000) (277s)
+[SDAA:0 cylinder] step=4500 Cd_p=1.228760 Cd_f=0.153580 Cd_tot=1.382340 (ref=1.3000) (314s)
+[SDAA:0 cylinder] step=5000 Cd_p=1.231673 Cd_f=0.153639 Cd_tot=1.385312 (ref=1.3000) (351s)
+[SDAA:0 cylinder] DONE [OK] Cd_p=1.231673 Cd_f=0.153639 Cd_tot=1.385312 (ref=1.300000) err=6.6% (prev=7.9%) time=351s
+[SDAA:0 cylinder] Results written to results_optimal_universal/cylinder_optimal_sdaa0.json

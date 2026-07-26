@@ -1,0 +1,38 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:3 CYL Re=200 standard_bb] mode=standard_bb use_bfl=False use_fix=False nx=400 ny=160 nz=4 D=48 R=24.0000 u_in=0.08 nu=1.920000e-02 tau=0.557600 Cs=0.05 dpS=6.144000e-01 Cd_ref=1.3
+[SDAA:3 CYL Re=200 standard_bb] solid cells: 7172
+[SDAA:3 CYL Re=200 standard_bb] near-wall cells: 544
+[SDAA:3 CYL Re=200 standard_bb] init done (0.4s), initial_mass=256000.0
+[SDAA:3 CYL Re=200 standard_bb] step=500 (warmup, 23s)
+[SDAA:3 CYL Re=200 standard_bb] step=1000 (warmup, 45s)
+[SDAA:3 CYL Re=200 standard_bb] step=1500 (warmup, 68s)
+[SDAA:3 CYL Re=200 standard_bb] step=2000 (warmup, 90s)
+[SDAA:3 CYL Re=200 standard_bb] step=2500 Cd_p=1.451224 Cd_f=0.184473 Cd_tot=1.635697 Cl=-0.007097 (113s)
+[SDAA:3 CYL Re=200 standard_bb] step=3000 Cd_p=1.443023 Cd_f=0.183098 Cd_tot=1.626120 Cl=0.008813 (135s)
+[SDAA:3 CYL Re=200 standard_bb] step=3500 Cd_p=1.446653 Cd_f=0.182742 Cd_tot=1.629395 Cl=0.022139 (158s)
+[SDAA:3 CYL Re=200 standard_bb] step=4000 Cd_p=1.442350 Cd_f=0.182880 Cd_tot=1.625230 Cl=0.014227 (180s)
+[SDAA:3 CYL Re=200 standard_bb] step=4500 Cd_p=1.452904 Cd_f=0.183397 Cd_tot=1.636301 Cl=-0.016546 (203s)
+[SDAA:3 CYL Re=200 standard_bb] step=5000 Cd_p=1.447999 Cd_f=0.183975 Cd_tot=1.631975 Cl=-0.038856 (225s)
+[SDAA:3 CYL Re=200 standard_bb] step=5500 Cd_p=1.455386 Cd_f=0.184342 Cd_tot=1.639728 Cl=-0.015751 (248s)
+[SDAA:3 CYL Re=200 standard_bb] step=6000 Cd_p=1.446815 Cd_f=0.184582 Cd_tot=1.631398 Cl=0.038947 (271s)
+[SDAA:3 CYL Re=200 standard_bb] step=6500 Cd_p=1.455135 Cd_f=0.184794 Cd_tot=1.639929 Cl=0.052150 (293s)
+[SDAA:3 CYL Re=200 standard_bb] step=7000 Cd_p=1.445096 Cd_f=0.184862 Cd_tot=1.629958 Cl=-0.018553 (315s)
+[SDAA:3 CYL Re=200 standard_bb] step=7500 Cd_p=1.452584 Cd_f=0.184993 Cd_tot=1.637577 Cl=-0.093580 (338s)
+[SDAA:3 CYL Re=200 standard_bb] step=8000 Cd_p=1.445594 Cd_f=0.185067 Cd_tot=1.630660 Cl=-0.041692 (361s)
+[SDAA:3 CYL Re=200 standard_bb] DONE mode=standard_bb Cd_p=1.448730 Cd_f=0.184100 Cd_tot=1.632831 Cl=-0.007983 (ref Cd=1.3) err=25.6% time=361s
+[SDAA:3 CYL Re=200 standard_bb] Results written to results_bfl_friction_fix/cylinder_standard_bb_sdaa3.json

@@ -1,0 +1,52 @@
+{
+  "case": "SDAA:15 T3-FF Re=1000 formulas",
+  "test": "t3_formulas",
+  "device": "sdaa:15",
+  "Re": 1000,
+  "model": "smag_bb",
+  "wall_law": null,
+  "y_val": null,
+  "L": 80.0,
+  "D": 9.334889148191365,
+  "radius": 4.667444574095683,
+  "L_D_ratio": 8.57,
+  "grid": "200x80x80",
+  "u_in": 0.06,
+  "nu": 0.0048,
+  "tau": 0.5144,
+  "Cs": 0.05,
+  "n_steps": 5000,
+  "steps_completed": 5000,
+  "n_solid": 4651,
+  "n_near": 2050,
+  "dpS": 4.2230043604847625,
+  "dpS_formula": "0.5*u_in^2*pi*D*L (wetted area)",
+  "normal_method": "from_suboff",
+  "Cd_pressure": 0.005388977383330682,
+  "Cd_friction": 0.0389638505306847,
+  "Cd_total": 0.04435282791401539,
+  "Cf_ref": 0.075,
+  "ref_name": "ITTC-1957 Cf=0.075/(log10(Re)-2)^2",
+  "error_pct": 40.86289611464615,
+  "finite": true,
+  "diverged": false,
+  "elapsed_s": 947.7499787807465,
+  "avg_window": 500,
+  "friction_formulas": {
+    "a_standard_2nu_ut": {
+      "formula": "tau = 2*nu*u_t",
+      "Cd_f": 0.0389638505306847
+    },
+    "b_bfl_fix_nu_ut_q": {
+      "formula": "tau = nu*u_t/q (q=0.5)",
+      "Cd_f": 0.03896384734791567
+    },
+    "c_gradient_nu_dutdn": {
+      "formula": "tau = nu*du_t/dn (forward diff, delta_n=1.0)",
+      "Cd_f": 0.03759006652412016
+    },
+    "a_minus_b": 3.1827690274988107e-09,
+    "a_minus_c": 0.0013737840065645365,
+    "b_minus_c": 0.001373780823795509
+  }
+}

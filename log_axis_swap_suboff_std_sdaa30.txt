@@ -1,0 +1,37 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[suboff standard SDAA:30] nx=200 ny=80 nz=80 L=80.0 R_max=4.667 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=1.231915e-01 Cf_ITTC=0.075000
+[suboff standard SDAA:30] solid cells: 4651  L/D=8.57
+[suboff standard SDAA:30] near-wall cells: 2050
+[suboff standard SDAA:30] normal stats: nx=[-1.000,1.000] ny=[-1.000,1.000] nz=[-1.000,1.000]
+[suboff standard SDAA:30] init done (0.6s), starting loop...
+[suboff standard SDAA:30] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (80s)
+[suboff standard SDAA:30] step=1000 Cd_p=0.193996 Cd_f=1.564826 Cd_tot=1.758822 (160s)
+[suboff standard SDAA:30] step=1500 Cd_p=0.188066 Cd_f=1.409156 Cd_tot=1.597221 (240s)
+[suboff standard SDAA:30] step=2000 Cd_p=0.187628 Cd_f=1.359828 Cd_tot=1.547456 (320s)
+[suboff standard SDAA:30] step=2500 Cd_p=0.187012 Cd_f=1.344330 Cd_tot=1.531342 (399s)
+[suboff standard SDAA:30] step=3000 Cd_p=0.186139 Cd_f=1.339110 Cd_tot=1.525249 (479s)
+[suboff standard SDAA:30] step=3500 Cd_p=0.185804 Cd_f=1.337240 Cd_tot=1.523044 (558s)
+[suboff standard SDAA:30] step=4000 Cd_p=0.184863 Cd_f=1.336358 Cd_tot=1.521221 (637s)
+[suboff standard SDAA:30] step=4500 Cd_p=0.184722 Cd_f=1.335900 Cd_tot=1.520621 (717s)
+[suboff standard SDAA:30] step=5000 Cd_p=0.184734 Cd_f=1.335681 Cd_tot=1.520415 (796s)
+
+[suboff standard SDAA:30] === FINAL RESULTS ===
+[suboff standard SDAA:30] Cd_p = 0.184734
+[suboff standard SDAA:30] Cd_f = 1.335681
+[suboff standard SDAA:30] Cd_tot = 1.520415 (ITTC Cf=0.075000)
+[suboff standard SDAA:30] time = 796s

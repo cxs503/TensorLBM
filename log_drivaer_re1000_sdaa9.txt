@@ -1,0 +1,45 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+drivaer_re1000_sdaa9 nx=300 ny=100 nz=80 u_in=0.05 nu=3.000000e-03 tau=0.509000 Cs=0.05 dpS=3.750000e-01 Cd_ref=0.3
+drivaer_re1000_sdaa9 solid cells: 16338
+drivaer_re1000_sdaa9 near-wall cells: 4370
+drivaer_re1000_sdaa9 normal stats: nx_n=[-1.000, 1.000] ny_n=[-1.000, 1.000] nz_n=[-1.000, 1.000]
+drivaer_re1000_sdaa9 |n| stats: min=1.000000 max=1.000000 mean=1.000000
+drivaer_re1000_sdaa9 3D check: nx_n nonzero=630/4370 ny_n nonzero=2520/4370 nz_n nonzero=1556/4370
+drivaer_re1000_sdaa9 init done (0.1s), initial_mass=2400000.0
+drivaer_re1000_sdaa9 step=500 Cd_p=1.4502 Cd_f=1.0445 Cd_tot=2.4948 Cl=0.444968 (149s)
+drivaer_re1000_sdaa9 step=1000 Cd_p=0.6958 Cd_f=0.5892 Cd_tot=1.2850 Cl=0.438773 (297s)
+drivaer_re1000_sdaa9 step=1500 Cd_p=0.6678 Cd_f=0.4830 Cd_tot=1.1508 Cl=0.321098 (445s)
+drivaer_re1000_sdaa9 step=2000 Cd_p=0.6569 Cd_f=0.4381 Cd_tot=1.0950 Cl=0.266321 (591s)
+drivaer_re1000_sdaa9 step=2500 Cd_p=0.6489 Cd_f=0.4169 Cd_tot=1.0658 Cl=0.208336 (735s)
+drivaer_re1000_sdaa9 step=3000 Cd_p=0.6444 Cd_f=0.4056 Cd_tot=1.0501 Cl=0.174183 (880s)
+drivaer_re1000_sdaa9 step=3500 Cd_p=0.6405 Cd_f=0.3990 Cd_tot=1.0394 Cl=0.154709 (1025s)
+drivaer_re1000_sdaa9 step=4000 Cd_p=0.6366 Cd_f=0.3947 Cd_tot=1.0313 Cl=0.137820 (1169s)
+drivaer_re1000_sdaa9 step=4500 Cd_p=0.6353 Cd_f=0.3918 Cd_tot=1.0271 Cl=0.123178 (1314s)
+drivaer_re1000_sdaa9 step=5000 Cd_p=0.6337 Cd_f=0.3903 Cd_tot=1.0240 Cl=0.111535 (1458s)
+drivaer_re1000_sdaa9 step=5500 Cd_p=0.6308 Cd_f=0.3886 Cd_tot=1.0194 Cl=0.104264 (1603s)
+drivaer_re1000_sdaa9 step=6000 Cd_p=0.6297 Cd_f=0.3873 Cd_tot=1.0171 Cl=0.097780 (1747s)
+drivaer_re1000_sdaa9 step=6500 Cd_p=0.6290 Cd_f=0.3865 Cd_tot=1.0155 Cl=0.091616 (1892s)
+drivaer_re1000_sdaa9 step=7000 Cd_p=0.6275 Cd_f=0.3857 Cd_tot=1.0132 Cl=0.087095 (2036s)
+drivaer_re1000_sdaa9 step=7500 Cd_p=0.6265 Cd_f=0.3850 Cd_tot=1.0116 Cl=0.083604 (2181s)
+drivaer_re1000_sdaa9 step=8000 Cd_p=0.6258 Cd_f=0.3845 Cd_tot=1.0103 Cl=0.080878 (2325s)
+drivaer_re1000_sdaa9 step=8500 Cd_p=0.6254 Cd_f=0.3840 Cd_tot=1.0095 Cl=0.078295 (2470s)
+drivaer_re1000_sdaa9 step=9000 Cd_p=0.6247 Cd_f=0.3837 Cd_tot=1.0084 Cl=0.076312 (2615s)
+drivaer_re1000_sdaa9 step=9500 Cd_p=0.6243 Cd_f=0.3833 Cd_tot=1.0076 Cl=0.074656 (2759s)
+drivaer_re1000_sdaa9 step=10000 Cd_p=0.6238 Cd_f=0.3831 Cd_tot=1.0069 Cl=0.073471 (2904s)
+drivaer_re1000_sdaa9 DONE Cd_p=0.6241 Cd_f=0.3832 Cd_tot=1.0073 Cl=0.074063 (ref=0.3000) err=235.8% time=2904s
+drivaer_re1000_sdaa9 Results written to /root/TensorLBM_dev/drivaer_re1000_sdaa9.json
