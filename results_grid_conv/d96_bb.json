@@ -1,0 +1,22 @@
+{
+  "method": "BB+pressure",
+  "method_id": 1,
+  "device": "sdaa:4",
+  "grid": "800x320x4",
+  "D": 96,
+  "diameter": 96.0,
+  "Re": 200.0,
+  "u_in": 0.08,
+  "nu": 0.0384,
+  "tau": 0.6152,
+  "Cs": 0.05,
+  "n_steps": 3000,
+  "warmup": 300,
+  "Cd_mean": 1.5215914264252723,
+  "Cd_std": 0.4037776912850764,
+  "Cd_err_pct": 17.04549434040556,
+  "Cd_ref": 1.3,
+  "n_samples": 2700,
+  "finite": true,
+  "elapsed_s": 421.80868196487427
+}

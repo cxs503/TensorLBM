@@ -1,0 +1,28 @@
+{
+  "axis": "z",
+  "device": "sdaa:8",
+  "grid": "240x96x4",
+  "diameter": 24.0,
+  "Re": 200.0,
+  "u_in": 0.08,
+  "nu": 0.0096,
+  "tau": 0.5288,
+  "Cs": 0.05,
+  "n_steps": 3000,
+  "warmup": 300,
+  "bc_config": {
+    "far_field_faces": [
+      "y-",
+      "y+"
+    ],
+    "periodic_faces": [
+      "z-",
+      "z+"
+    ]
+  },
+  "Cd_p_mean": 1.3836045570191553,
+  "Cd_p_std": 0.04681731331590226,
+  "n_samples": 2700,
+  "finite": true,
+  "elapsed_s": 82.65880918502808
+}
