@@ -98,6 +98,7 @@ class SurfaceMesh:
         """Analytical normal for 3D sphere.
         
         n = ((x-cx)/R, (y-cy)/R, (z-cz)/R) at each near-wall cell.
+        dA = 1.0 (default; 1/max|n| overestimates staircase area).
         """
         nz, ny, nx = solid.shape
         device = solid.device
