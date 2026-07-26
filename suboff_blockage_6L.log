@@ -20,3 +20,12 @@
 [SDAA:25 SUBOFF Re=1000 6L blockage] step=500 Cd_p=0.011000 Cd_f=0.071442 Cd_tot=0.082443 (987s)
 [SDAA:25 SUBOFF Re=1000 6L blockage] step=1000 Cd_p=0.006084 Cd_f=0.044544 Cd_tot=0.050628 (1967s)
 [SDAA:25 SUBOFF Re=1000 6L blockage] step=1500 Cd_p=0.005907 Cd_f=0.039618 Cd_tot=0.045526 (2947s)
+[SDAA:25 SUBOFF Re=1000 6L blockage] step=2000 Cd_p=0.005852 Cd_f=0.037865 Cd_tot=0.043717 (3926s)
+[SDAA:25 SUBOFF Re=1000 6L blockage] step=2500 Cd_p=0.005823 Cd_f=0.037232 Cd_tot=0.043055 (4936s)
+[SDAA:25 SUBOFF Re=1000 6L blockage] step=3000 Cd_p=0.005793 Cd_f=0.036991 Cd_tot=0.042785 (6053s)
+[SDAA:25 SUBOFF Re=1000 6L blockage] step=3500 Cd_p=0.005774 Cd_f=0.036891 Cd_tot=0.042665 (7176s)
+[SDAA:25 SUBOFF Re=1000 6L blockage] step=4000 Cd_p=0.005761 Cd_f=0.036845 Cd_tot=0.042606 (8299s)
+[SDAA:25 SUBOFF Re=1000 6L blockage] step=4500 Cd_p=0.005754 Cd_f=0.036824 Cd_tot=0.042578 (9422s)
+[SDAA:25 SUBOFF Re=1000 6L blockage] step=5000 Cd_p=0.005751 Cd_f=0.036813 Cd_tot=0.042564 (10546s)
+[SDAA:25 SUBOFF Re=1000 6L blockage] DONE Cd_p=0.005751 Cd_f=0.036813 Cd_tot=0.042564 Cf=0.042564 (ref Cf=0.041995) err=1.4% time=10546s (2109.3ms/step)
+[SDAA:25 SUBOFF Re=1000 6L blockage] Results written to suboff_blockage_6L_sdaa25.json
