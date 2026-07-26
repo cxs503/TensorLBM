@@ -48,5 +48,30 @@
     "diverged": false,
     "last_step": 5000,
     "elapsed_s": 1647.855369567871
+  },
+  {
+    "case": "square_Re22000",
+    "model": "k-epsilon",
+    "model_label": "MRT+k-epsilon(RANS)",
+    "device": "sdaa:7",
+    "grid": "400x160x4",
+    "diameter": 48.0,
+    "u_in": 0.08,
+    "Re": 22000.0,
+    "nu": 0.00017454545454545454,
+    "tau": 0.5005236363636364,
+    "n_steps": 5000,
+    "warmup": 1000,
+    "Cd_mean": 2.1795329098434513,
+    "Cd_std": 0.14252838948994387,
+    "Cl_mean": -0.004664622659523354,
+    "Cl_std": 0.010134837395844106,
+    "Cd_ref": 2.1,
+    "error_pct": 3.787281421116723,
+    "n_samples": 4000,
+    "finite": true,
+    "diverged": false,
+    "last_step": 5000,
+    "elapsed_s": 594.3155205249786
   }
 ]
