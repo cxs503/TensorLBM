@@ -448,7 +448,8 @@ def wall_function_3d(
 
             u_tau_log = torch.where(near, ut_log, torch.zeros_like(ut_log))
             tau_w = u_tau_log * u_tau_log
-            coef = -(tau_w / y_val) * (w_log * near.to(f.dtype))
+            # Bug 23 fix: force = -tau_w (no Guo, no /y_val)
+            coef = -tau_w * (w_log * near.to(f.dtype))
             f = ibm_apply_body_force_3d(f,
                 coef * (ut_x * inv_utan),
                 coef * (ut_y * inv_utan),
@@ -548,7 +549,11 @@ def wall_function_3d(
     # Bug 12 note: do NOT combine with bounce-back — use one or the other.
     # NOTE: hybrid wall law handles body force internally (per-region: bb + log).
     if wall_law != "hybrid":
-        coef = -(tau_w / y_val) * near.to(f.dtype)
+        # Bug 23: original -tau_w/y_val was 2x too strong (ibm has no Guo)
+        # Fix: use -tau_w (correct magnitude, ibm_apply_body_force_3d is simple forcing)
+        # NOTE: wall function needs BB for penetration prevention
+        #       and correct timing (post-stream). Still under investigation.
+        coef = -tau_w * near.to(f.dtype)
         fx = coef * (ut_x * inv_utan)
         fy = coef * (ut_y * inv_utan)
         fz = coef * (ut_z * inv_utan)
@@ -686,7 +691,8 @@ def wall_function_d3q27(
 
     tau_w = u_tau * u_tau
     # Bug 10 fix: use u_tangent direction, not u/|u|.
-    coef = -(tau_w / y_val) * near.to(f.dtype)
+    # Bug 23 fix: force = -tau_w (ibm_apply_body_force_3d has no Guo factor)
+    coef = -tau_w * near.to(f.dtype)
     fx = coef * (ut_x * inv_utan)
     fy = coef * (ut_y * inv_utan)
     fz = coef * (ut_z * inv_utan)
