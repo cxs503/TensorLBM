@@ -307,8 +307,18 @@ def run_benchmark(bench_name: str, device_id: int, output_path: str | None = Non
         )
 
         # === Step 5: Force via common interface ===
+        # Wigley: match bug29 parameters (extrap='quadratic', p0_method='far_field')
+        # to verify previous 14.3% result. Others use default (extrap='none').
         if step > warmup:
-            fx_p, fy_p, _ = drag_pressure_integration(f, mesh, dpS, extrap="none")
+            if shape == "wigley":
+                fx_p, fy_p, _ = drag_pressure_integration(
+                    f, mesh, dpS, extrap="quadratic",
+                    p0_method="far_field", solid=solid,
+                )
+            else:
+                fx_p, fy_p, _ = drag_pressure_integration(
+                    f, mesh, dpS, extrap="none",
+                )
             fx_f, fy_f, _ = drag_friction_integration(
                 f, mesh, dpS, nu, q_wall=None, formula="standard"
             )

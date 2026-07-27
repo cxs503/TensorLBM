@@ -24,3 +24,4 @@
 [suboff_re1000_long SDAA:2] step=500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (239s)
 [suboff_re1000_long SDAA:2] step=1000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (478s)
 [suboff_re1000_long SDAA:2] step=1500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (716s)
+[suboff_re1000_long SDAA:2] step=2000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (953s)
