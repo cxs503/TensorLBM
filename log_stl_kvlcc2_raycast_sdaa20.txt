@@ -14,22 +14,13 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-=== SUBOFF Bare Hull: Re=1000 (SDAA:18) ===
-Grid: 200×80×80, L=80.0, D=9.335, u_in=0.06, tau=0.5144, Cs=0.05
-Steps: 5000, warmup: 1000
-Bug 37 fix: ux0[solid]=0 (not f[:,solid]=0)
-
-solid=4651 near=2050 mesh=from_suboff (0.5s)
-Wetted area: 2346, dpS=4.223004
-
-init done mass=1280000.0 (0.5s)
-
-  Step        Cd_p        Cd_f          Cd
----------------------------------------------
-   500  (max|u|=0.0637)
-  1000  (max|u|=0.0636)
-  1500    0.005471    0.040260    0.045731  (240s)
-  2000    0.005474    0.039404    0.044879  (319s)
-  2500    0.005440    0.039130    0.044569  (398s)
-  3000    0.005426    0.039033    0.044459  (477s)
-  3500    0.005404    0.039000    0.044404  (556s)
+[SDAA:20 KVLCC2] STL ship benchmark: KVLCC2
+[SDAA:20 KVLCC2] grid=200x80x80 L_lat=120 spacing=2.6667
+[SDAA:20 KVLCC2] u_in=0.06 Re=1e+05 nu=7.200000e-05 tau=0.500216 Cs=0.05
+[SDAA:20 KVLCC2] dA_method=stl_area normal=stl
+[SDAA:20 KVLCC2] solid=10290 near=5610 faces=608
+[SDAA:20 KVLCC2] Cf_ITTC=0.008333
+[SDAA:20 KVLCC2] dA stats: mean=1.1870 min=0.6421 max=2.5478 sum=6659.1
+[SDAA:20 KVLCC2] S_wetted(STL)=6659.1 dpS=1.198634e+01
+[SDAA:20 KVLCC2] init done (0.6s) mass=1280000.0
+[SDAA:20 KVLCC2] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.008333) [74s]
