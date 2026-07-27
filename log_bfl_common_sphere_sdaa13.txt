@@ -29,3 +29,6 @@
 [Sph-Re100-bfl SDAA:13] step=4500 Cd_p=0.739571 Cd_f=0.787173 Cd_tot=1.526743 Cl=-0.000561 (1873s)
 [Sph-Re100-bfl SDAA:13] step=5000 Cd_p=0.739969 Cd_f=0.786982 Cd_tot=1.526951 Cl=-0.000583 (2081s)
 [Sph-Re100-bfl SDAA:13] step=5500 Cd_p=0.739351 Cd_f=0.786841 Cd_tot=1.526192 Cl=-0.000563 (2288s)
+[Sph-Re100-bfl SDAA:13] step=6000 Cd_p=0.739800 Cd_f=0.786814 Cd_tot=1.526613 Cl=-0.000580 (2495s)
+[Sph-Re100-bfl SDAA:13] DONE Cd_p=0.741901 Cd_f=0.789458 Cd_tot=1.531360 Cl=-0.000616 (ref Cd=1.09) err=40.5% time=2495s
+[Sph-Re100-bfl SDAA:13] Results written to results_bfl_common/bfl_sphere_sdaa13.json
