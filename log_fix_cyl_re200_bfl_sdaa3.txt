@@ -1,0 +1,27 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re200_bfl SDAA:3] D=48.0 nx=600 ny=240 nz=4 u_in=0.08 Re=200.0 nu=1.920000e-02 tau=0.557600 Cs=0.05 dpS=6.144000e-01 BB_baseline=1.22 use_bfl=True
+[cyl_re200_bfl SDAA:3] BFL with FIXED q_wall (normal distance r-R, NOT avg per-direction q)
+[cyl_re200_bfl SDAA:3] solid cells: 7172
+[cyl_re200_bfl SDAA:3] near-wall cells: 544
+[cyl_re200_bfl SDAA:3] SurfaceMesh.from_cylinder built
+[cyl_re200_bfl SDAA:3] computing BFL q-values (analytical cylinder)...
+[cyl_re200_bfl SDAA:3] BFL q-field: 3424 links (0.3s) q=[0.0142, 1.0000] mean=0.3556
+  q_wall (FIXED): n_near=544 q_min=0.1000 q_max=1.0000 q_mean=0.3553
+[cyl_re200_bfl SDAA:3] init done (0.7s), initial_mass=576000.0
+[cyl_re200_bfl SDAA:3] step=1500 Cd_p=1.170374 Cd_f=0.343065 Cd_tot=1.513439 Cl=-0.002185 (167s)
+[cyl_re200_bfl SDAA:3] step=2000 Cd_p=1.165848 Cd_f=0.329885 Cd_tot=1.495734 Cl=-0.002829 (223s)

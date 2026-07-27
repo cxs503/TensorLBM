@@ -50,7 +50,7 @@ def run_dam_break(device_id, output_path=None):
 
     tau = 1.0
     rho_l = 1.0
-    rho_g = 0.5  # FIX: 2:1 ratio (was 0.01 = 100:1)
+    rho_g = 0.01  # 100:1 density ratio (stable for VOF)
     gy_lattice = -1e-4
     g_phys = abs(gy_lattice)
 
@@ -66,6 +66,9 @@ def run_dam_break(device_id, output_path=None):
     uz = torch.zeros((nz, ny, nx), device=device)
     f = equilibrium3d(rho_field, ux, uy, uz, device=device)
 
+    # Mass conservation target
+    target_phi_sum = phi[~solid].sum().item()
+
     n_steps = 3000
     sample_interval = 50
     front_history = []
@@ -79,6 +82,7 @@ def run_dam_break(device_id, output_path=None):
         f, phi = free_surface_vof_step(
             f, phi, tau=tau, gy=gy_lattice,
             rho_liquid=rho_l, rho_gas=rho_g, solid=solid,
+            target_phi_sum=target_phi_sum, c_comp=0.0,
         )
 
         if step % sample_interval == 0:

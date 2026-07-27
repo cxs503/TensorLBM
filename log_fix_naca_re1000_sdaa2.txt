@@ -1,0 +1,26 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[naca_re1000_grad SDAA:2] chord=100.0 nx=600 ny=300 nz=4 u_in=0.05 Re=1000.0 nu=5.000000e-03 tau=0.515000 Cs=0.05 MRT+Smag steps=10000
+[naca_re1000_grad SDAA:2] from_gradient normals (NOT from_naca); far_field p0; quadratic extrap
+[naca_re1000_grad SDAA:2] solid cells=3228
+[naca_re1000_grad SDAA:2] near-wall cells=816
+[naca_re1000_grad SDAA:2] SurfaceMesh.from_gradient built
+[naca_re1000_grad SDAA:2] step=500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=-0.013572 (49s, 0.098s/step)
+[naca_re1000_grad SDAA:2] step=1000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=0.000190 (97s, 0.097s/step)
+[naca_re1000_grad SDAA:2] step=1500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=0.000354 (146s, 0.097s/step)
+[naca_re1000_grad SDAA:2] step=2000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=0.000081 (194s, 0.097s/step)
+[naca_re1000_grad SDAA:2] step=2500/10000 Cd_p=0.071982 Cd_f=0.066561 Cd_tot=0.138543 Cl=-0.000078 (243s, 0.097s/step)
