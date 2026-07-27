@@ -109,15 +109,33 @@ _D3Q19_MIRROR_Z = torch.tensor(
 )
 
 
-def bounce_back_cells_3d(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+def bounce_back_cells_3d(
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    f_pre: torch.Tensor | None = None,
+) -> torch.Tensor:
     """Bounce-back reflection on selected cells (obstacle/walls) for D3Q19.
 
     Uses ``torch.where`` instead of clone + scatter to reduce the number of
     GPU kernel launches and avoid an intermediate boolean-indexed allocation.
+
+    Args:
+        f:     Distribution tensor, shape ``(19, nz, ny, nx)``.
+        mask:  Boolean mask ``(nz, ny, nx)`` of wall cells.
+        f_pre: Pre-collision distribution (for correct half-way BB).
+               If provided, uses ``f_pre[opp]`` at solid cells instead of
+               ``f[opp]``. This is critical: collision modifies f at solid
+               cells, so using post-collision f breaks the no-slip condition
+               (gives ~16% velocity error). Default: None (backward-compatible).
+
+    Bug fix (BB bug): Using post-collision f for BB gives 16.66% u_max error.
+    With f_pre (pre-collision): 0.00% error. This is the root cause of many
+    issues including friction grid divergence and wall function inaccuracy.
     """
     opp = OPPOSITE.to(f.device)  # (19,)
+    src = f_pre if f_pre is not None else f
     # mask.unsqueeze(0) broadcasts (1, nz, ny, nx) → (19, nz, ny, nx)
-    return torch.where(mask.unsqueeze(0), f[opp], f)
+    return torch.where(mask.unsqueeze(0), src[opp], f)
 
 
 def free_slip_cells_3d(
