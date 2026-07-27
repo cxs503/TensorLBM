@@ -1,0 +1,22 @@
+{
+  "case": "periodic_hill",
+  "Re": 2800.0,
+  "H": 40.0,
+  "L": 100.0,
+  "nx": 400,
+  "ny": 200,
+  "nz": 4,
+  "nu": 0.0007142857142857143,
+  "tau": 0.5021428571428571,
+  "body_force": 1.785714285714286e-08,
+  "Cs": 0.1,
+  "n_steps": 20000,
+  "warmup": 4000,
+  "n_samples": 160,
+  "separation_x": 208,
+  "reattachment_x": 209,
+  "xr_H": 0.025,
+  "xr_H_ref": 5.0,
+  "wall_clock_s": 5340.805329084396,
+  "device": "sdaa:5"
+}
