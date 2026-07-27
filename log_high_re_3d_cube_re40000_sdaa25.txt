@@ -28,3 +28,7 @@
 [cube_re40000_3d SDAA:25] step=7000/10000 Cd_p=1.0009 Cd_f=-0.0003 Cd_tot=1.0006 Cl=0.653698 (5982s, 0.855s/step)
 [cube_re40000_3d SDAA:25] step=8000/10000 Cd_p=0.9940 Cd_f=-0.0003 Cd_tot=0.9938 Cl=0.615196 (6848s, 0.856s/step)
 [cube_re40000_3d SDAA:25] step=9000/10000 Cd_p=0.9468 Cd_f=-0.0003 Cd_tot=0.9465 Cl=0.589491 (7700s, 0.856s/step)
+[cube_re40000_3d SDAA:25] step=10000/10000 Cd_p=0.9428 Cd_f=-0.0002 Cd_tot=0.9426 Cl=0.608832 (8552s, 0.855s/step)
+
+[cube_re40000_3d SDAA:25] === FINAL ===  Cd_p=0.9529 Cd_f=-0.0002 Cd_tot=0.9527 (ref=1.1) err=13.4% Cl=0.585214 St=0.19390634553085775 finite=True time=8552s
+[cube_re40000_3d SDAA:25] saved to results_high_re_3d_cube_re40000_sdaa25.json
