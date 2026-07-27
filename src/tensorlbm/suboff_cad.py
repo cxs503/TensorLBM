@@ -239,6 +239,55 @@ def suboff_radius_profile(
 
 
 # ---------------------------------------------------------------------------
+# NACA 0015 airfoil thickness helper
+# ---------------------------------------------------------------------------
+
+# Precompute the NACA 0015 maximum half-thickness for normalisation.
+_x_sample = np.linspace(0.0, 1.0, 10000)
+_t_sample = 0.15  # NACA 0015 thickness parameter
+_yt_sample = (_t_sample / 0.2) * (
+    0.2969 * np.sqrt(_x_sample)
+    - 0.1260 * _x_sample
+    - 0.3516 * _x_sample ** 2
+    + 0.2843 * _x_sample ** 3
+    - 0.1015 * _x_sample ** 5
+)
+_NACA0015_MAX_THICKNESS: float = float(np.max(np.maximum(_yt_sample, 0.0)))
+
+
+def _naca0015_thickness(x_norm: np.ndarray | float) -> np.ndarray:
+    """Normalised NACA 0015 airfoil half-thickness, ∈ [0, 1].
+
+    Uses the symmetric NACA 4-digit thickness equation with ``t = 0.15``
+    (NACA 0015).  The result is normalised so the maximum half-thickness
+    (at *x* ≈ 0.30) equals 1.0.
+
+    Parameters
+    ----------
+    x_norm :
+        Normalised chord position ∈ [0, 1] (0 = leading edge,
+        1 = trailing edge).  Values outside this range are clipped.
+
+    Returns
+    -------
+    np.ndarray
+        Normalised half-thickness ∈ [0, 1].
+    """
+    x = np.asarray(x_norm, dtype=float)
+    x = np.clip(x, 0.0, 1.0)
+    t = 0.15  # NACA 0015 thickness parameter
+    yt = (t / 0.2) * (
+        0.2969 * np.sqrt(x)
+        - 0.1260 * x
+        - 0.3516 * x ** 2
+        + 0.2843 * x ** 3
+        - 0.1015 * x ** 5
+    )
+    yt = np.maximum(yt, 0.0)
+    return yt / _NACA0015_MAX_THICKNESS
+
+
+# ---------------------------------------------------------------------------
 # Public mask generators
 # ---------------------------------------------------------------------------
 
@@ -331,19 +380,30 @@ def _add_sail_mask(
     config: SuboffConfig,
     device: torch.device,
 ) -> torch.Tensor:
-    """Add the conning-tower sail to an existing hull mask (in-place OR)."""
+    """Add the conning-tower sail (NACA 0015 profile) to an existing hull mask.
+
+    The sail cross-section in the *x-z* plane follows a NACA 0015
+    half-airfoil: the chord runs along *x*, the thickness (height) along
+    *z*, and the shape is extruded at constant width along *y*.
+    """
     x_bow = cx - length / 2.0
 
     # Sail axial extents
     sail_x_c = x_bow + config.sail_x_frac * length
     sail_half_len = config.sail_length_frac * length / 2.0
+    sail_x0 = sail_x_c - sail_half_len
+    sail_x1 = sail_x_c + sail_half_len
+    sail_len = sail_x1 - sail_x0
 
     # Sail y extents (centred on hull axis)
     sail_half_w = config.sail_halfwidth_frac * length
 
-    # Sail z extents: from hull top (cz + radius) upward
-    sail_z_bottom = cz + radius  # top of hull at axial centre of sail
-    sail_z_top = sail_z_bottom + config.sail_height_frac * length
+    # Sail height (max, at x ≈ 0.30 chord)
+    sail_height = config.sail_height_frac * length
+
+    # Hull surface at sail centre
+    r_at_sail = float(suboff_radius_profile(np.array([config.sail_x_frac]), config)[0]) * radius
+    sail_z_bottom = cz + r_at_sail
 
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
@@ -352,13 +412,19 @@ def _add_sail_mask(
         indexing="ij",
     )
 
+    # Normalised chord position ∈ [0, 1]
+    x_norm = ((xx - sail_x0) / sail_len).cpu().numpy()
+    # NACA 0015 thickness (normalised [0, 1]) → actual height
+    naca_h_np = _naca0015_thickness(x_norm) * sail_height
+    naca_h = torch.tensor(naca_h_np, device=device, dtype=torch.float32)
+
     sail = (
-        (xx >= sail_x_c - sail_half_len)
-        & (xx <= sail_x_c + sail_half_len)
+        (xx >= sail_x0)
+        & (xx <= sail_x1)
         & (yy >= cy - sail_half_w)
         & (yy <= cy + sail_half_w)
         & (zz >= sail_z_bottom)
-        & (zz <= sail_z_top)
+        & (zz <= sail_z_bottom + naca_h)
     )
     return mask | sail
 
@@ -376,12 +442,22 @@ def _add_fin_masks(
     config: SuboffConfig,
     device: torch.device,
 ) -> torch.Tensor:
-    """Add cruciform stern appendages (4 fins) to an existing mask."""
+    """Add cruciform stern appendages (4 NACA 0015 fins) to an existing mask.
+
+    Each fin's cross-section is a NACA 0015 airfoil: the chord runs along
+    *x*, the thickness varies in the tangential direction, and the span
+    (radial extent) is constant.
+    """
     x_bow = cx - length / 2.0
     fin_x_c = x_bow + config.fin_x_frac * length
     fin_half_len = config.fin_length_frac * length / 2.0
+    fin_x0 = fin_x_c - fin_half_len
+    fin_x1 = fin_x_c + fin_half_len
+    fin_len = fin_x1 - fin_x0
     fin_span = config.fin_span_frac * length
     fin_half_t = config.fin_thickness_frac * length / 2.0
+
+    r_at_fin = float(suboff_radius_profile(np.array([config.fin_x_frac]), config)[0]) * radius
 
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
@@ -390,18 +466,30 @@ def _add_fin_masks(
         indexing="ij",
     )
 
-    in_axial_fin = (xx >= fin_x_c - fin_half_len) & (xx <= fin_x_c + fin_half_len)
+    # Normalised chord position ∈ [0, 1]
+    x_norm = ((xx - fin_x0) / fin_len).cpu().numpy()
+    # NACA 0015 half-thickness (normalised [0, 1]) → actual half-thickness
+    naca_t_np = _naca0015_thickness(x_norm) * fin_half_t
+    naca_t = torch.tensor(naca_t_np, device=device, dtype=torch.float32)
 
-    # Top fin (z+): from cz+radius upward
-    in_y_fin = (yy >= cy - fin_half_t) & (yy <= cy + fin_half_t)
-    in_z_fin = (zz >= cz - fin_half_t) & (zz <= cz + fin_half_t)
-    top = in_axial_fin & in_y_fin & (zz >= cz + radius) & (zz <= cz + radius + fin_span)
+    in_chord = (xx >= fin_x0) & (xx <= fin_x1)
+
+    # Top fin (z+): thickness in y, span in z
+    top = (in_chord
+           & (yy >= cy - naca_t) & (yy <= cy + naca_t)
+           & (zz >= cz + r_at_fin) & (zz <= cz + r_at_fin + fin_span))
     # Bottom fin (z-)
-    bot = in_axial_fin & in_y_fin & (zz <= cz - radius) & (zz >= cz - radius - fin_span)
-    # Port fin (y+): from cy+radius outward
-    port = in_axial_fin & in_z_fin & (yy >= cy + radius) & (yy <= cy + radius + fin_span)
+    bot = (in_chord
+           & (yy >= cy - naca_t) & (yy <= cy + naca_t)
+           & (zz <= cz - r_at_fin) & (zz >= cz - r_at_fin - fin_span))
+    # Port fin (y+): thickness in z, span in y
+    port = (in_chord
+            & (zz >= cz - naca_t) & (zz <= cz + naca_t)
+            & (yy >= cy + r_at_fin) & (yy <= cy + r_at_fin + fin_span))
     # Starboard fin (y-)
-    stbd = in_axial_fin & in_z_fin & (yy <= cy - radius) & (yy >= cy - radius - fin_span)
+    stbd = (in_chord
+            & (zz >= cz - naca_t) & (zz <= cz + naca_t)
+            & (yy <= cy - r_at_fin) & (yy >= cy - r_at_fin - fin_span))
 
     return mask | top | bot | port | stbd
 
@@ -789,7 +877,7 @@ def export_suboff_stl(
     """Export a triangulated SUBOFF surface mesh as ASCII STL.
 
     The bare hull is tessellated as a surface of revolution.  The sail and
-    fins are approximated as closed triangulated boxes.
+    fins are tessellated as NACA 0015 airfoil-profiled surfaces.
 
     Parameters
     ----------
@@ -892,6 +980,188 @@ def _box_triangles_yz(
 
 
 # ---------------------------------------------------------------------------
+# NACA 0015 airfoil surface-mesh helpers
+# ---------------------------------------------------------------------------
+
+
+def _naca_sail_triangles(
+    tris: list,
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    z_base: float,
+    height: float,
+    n_chord: int = 24,
+) -> None:
+    """Append triangles for a NACA 0015 half-airfoil sail extruded along *y*.
+
+    The chord runs along *x* from *x0* to *x1*.  The half-airfoil thickness
+    is along *z*, from *z_base* to *z_base + naca_h(x)·height*.  The shape
+    is extruded along *y* from *y0* to *y1*.
+    """
+    x_norm = np.linspace(0.0, 1.0, n_chord)
+    x_vals = x0 + x_norm * (x1 - x0)
+    h_vals = _naca0015_thickness(x_norm) * height
+    y_vals = (y0, y1)
+
+    # --- Top surface (z = z_base + h(x)) ---
+    for i in range(n_chord - 1):
+        for j in range(len(y_vals) - 1):
+            p00 = np.array([x_vals[i],     y_vals[j],     z_base + h_vals[i]])
+            p10 = np.array([x_vals[i + 1], y_vals[j],     z_base + h_vals[i + 1]])
+            p11 = np.array([x_vals[i + 1], y_vals[j + 1], z_base + h_vals[i + 1]])
+            p01 = np.array([x_vals[i],     y_vals[j + 1], z_base + h_vals[i]])
+            tris.append((p00, p10, p11))
+            tris.append((p00, p11, p01))
+
+    # --- Bottom surface (z = z_base, flat, downward normal) ---
+    for i in range(n_chord - 1):
+        for j in range(len(y_vals) - 1):
+            p00 = np.array([x_vals[i],     y_vals[j],     z_base])
+            p10 = np.array([x_vals[i + 1], y_vals[j],     z_base])
+            p11 = np.array([x_vals[i + 1], y_vals[j + 1], z_base])
+            p01 = np.array([x_vals[i],     y_vals[j + 1], z_base])
+            tris.append((p00, p11, p10))
+            tris.append((p00, p01, p11))
+
+    # --- Side surfaces (airfoil profile at y = y0 and y = y1) ---
+    for j, yv in enumerate(y_vals):
+        for i in range(n_chord - 1):
+            p_bot = np.array([x_vals[i],     yv, z_base])
+            p_bot_n = np.array([x_vals[i + 1], yv, z_base])
+            p_top = np.array([x_vals[i],     yv, z_base + h_vals[i]])
+            p_top_n = np.array([x_vals[i + 1], yv, z_base + h_vals[i + 1]])
+            if j == 1:  # +y side, outward normal +y
+                tris.append((p_bot, p_top, p_top_n))
+                tris.append((p_bot, p_top_n, p_bot_n))
+            else:  # -y side, outward normal -y
+                tris.append((p_bot, p_top_n, p_top))
+                tris.append((p_bot, p_bot_n, p_top_n))
+
+    # --- Leading/trailing edge caps (nearly degenerate) ---
+    for cap_i, (xv, hv) in enumerate(
+        [(x_vals[0], h_vals[0]), (x_vals[-1], h_vals[-1])]
+    ):
+        if hv < 1e-10:
+            continue  # skip degenerate
+        p_b0 = np.array([xv, y_vals[0], z_base])
+        p_b1 = np.array([xv, y_vals[1], z_base])
+        p_t0 = np.array([xv, y_vals[0], z_base + hv])
+        p_t1 = np.array([xv, y_vals[1], z_base + hv])
+        if cap_i == 0:  # LE, -x normal
+            tris.append((p_b0, p_t1, p_t0))
+            tris.append((p_b0, p_b1, p_t1))
+        else:  # TE, +x normal
+            tris.append((p_b0, p_t0, p_t1))
+            tris.append((p_b0, p_t1, p_b1))
+
+
+def _naca_fin_triangles(
+    tris: list,
+    x0: float,
+    x1: float,
+    thick_axis: str,
+    span_vals: tuple[float, float],
+    half_t: float,
+    n_chord: int = 24,
+) -> None:
+    """Append triangles for a NACA 0015 full-airfoil fin extruded along span.
+
+    The chord runs along *x* from *x0* to *x1*.  The symmetric airfoil
+    thickness is along *thick_axis* (``'y'`` or ``'z'``).  The span runs
+    along the other transverse axis from *span_vals[0]* to *span_vals[1]*.
+    """
+    x_norm = np.linspace(0.0, 1.0, n_chord)
+    x_vals = x0 + x_norm * (x1 - x0)
+    t_vals = _naca0015_thickness(x_norm) * half_t  # half-thickness [0, half_t]
+    s0, s1 = span_vals
+
+    if thick_axis == "y":
+        # Thickness in y, span in z
+        for i in range(n_chord - 1):
+            # Upper surface (y = +t)
+            p00 = np.array([x_vals[i],     t_vals[i],     s0])
+            p10 = np.array([x_vals[i + 1], t_vals[i + 1], s0])
+            p11 = np.array([x_vals[i + 1], t_vals[i + 1], s1])
+            p01 = np.array([x_vals[i],     t_vals[i],     s1])
+            tris.append((p00, p10, p11))
+            tris.append((p00, p11, p01))
+            # Lower surface (y = -t)
+            p00 = np.array([x_vals[i],     -t_vals[i],     s0])
+            p10 = np.array([x_vals[i + 1], -t_vals[i + 1], s0])
+            p11 = np.array([x_vals[i + 1], -t_vals[i + 1], s1])
+            p01 = np.array([x_vals[i],     -t_vals[i],     s1])
+            tris.append((p00, p11, p10))
+            tris.append((p00, p01, p11))
+
+        # Root cap (s = s0) and tip cap (s = s1)
+        for s_idx, sv in enumerate([s0, s1]):
+            for i in range(n_chord - 1):
+                pu = np.array([x_vals[i],     t_vals[i],     sv])
+                pu_n = np.array([x_vals[i + 1], t_vals[i + 1], sv])
+                pl = np.array([x_vals[i],     -t_vals[i],     sv])
+                pl_n = np.array([x_vals[i + 1], -t_vals[i + 1], sv])
+                if s_idx == 1:  # tip, +span normal
+                    tris.append((pu, pu_n, pl_n))
+                    tris.append((pu, pl_n, pl))
+                else:  # root, -span normal
+                    tris.append((pu, pl_n, pu_n))
+                    tris.append((pu, pl, pl_n))
+
+        # Trailing-edge cap (x = x1, nearly closed)
+        te_h = t_vals[-1]
+        if te_h > 1e-10:
+            p_u0 = np.array([x_vals[-1],  te_h,  s0])
+            p_u1 = np.array([x_vals[-1],  te_h,  s1])
+            p_l0 = np.array([x_vals[-1], -te_h,  s0])
+            p_l1 = np.array([x_vals[-1], -te_h,  s1])
+            tris.append((p_u0, p_u1, p_l1))
+            tris.append((p_u0, p_l1, p_l0))
+
+    else:  # thick_axis == "z", span in y
+        for i in range(n_chord - 1):
+            # Upper surface (z = +t)
+            p00 = np.array([x_vals[i],     s0, t_vals[i]])
+            p10 = np.array([x_vals[i + 1], s0, t_vals[i + 1]])
+            p11 = np.array([x_vals[i + 1], s1, t_vals[i + 1]])
+            p01 = np.array([x_vals[i],     s1, t_vals[i]])
+            tris.append((p00, p10, p11))
+            tris.append((p00, p11, p01))
+            # Lower surface (z = -t)
+            p00 = np.array([x_vals[i],     s0, -t_vals[i]])
+            p10 = np.array([x_vals[i + 1], s0, -t_vals[i + 1]])
+            p11 = np.array([x_vals[i + 1], s1, -t_vals[i + 1]])
+            p01 = np.array([x_vals[i],     s1, -t_vals[i]])
+            tris.append((p00, p11, p10))
+            tris.append((p00, p01, p11))
+
+        # Root cap (s = s0) and tip cap (s = s1)
+        for s_idx, sv in enumerate([s0, s1]):
+            for i in range(n_chord - 1):
+                pu = np.array([x_vals[i],     sv, t_vals[i]])
+                pu_n = np.array([x_vals[i + 1], sv, t_vals[i + 1]])
+                pl = np.array([x_vals[i],     sv, -t_vals[i]])
+                pl_n = np.array([x_vals[i + 1], sv, -t_vals[i + 1]])
+                if s_idx == 1:  # tip, +span normal
+                    tris.append((pu, pu_n, pl_n))
+                    tris.append((pu, pl_n, pl))
+                else:  # root, -span normal
+                    tris.append((pu, pl_n, pu_n))
+                    tris.append((pu, pl, pl_n))
+
+        # Trailing-edge cap
+        te_h = t_vals[-1]
+        if te_h > 1e-10:
+            p_u0 = np.array([x_vals[-1], s0,  te_h])
+            p_u1 = np.array([x_vals[-1], s1,  te_h])
+            p_l0 = np.array([x_vals[-1], s0, -te_h])
+            p_l1 = np.array([x_vals[-1], s1, -te_h])
+            tris.append((p_u0, p_u1, p_l1))
+            tris.append((p_u0, p_l1, p_l0))
+
+
+# ---------------------------------------------------------------------------
 # Shared triangle builder (used by both STL export and mesh3d)
 # ---------------------------------------------------------------------------
 
@@ -947,37 +1217,38 @@ def _build_suboff_triangles(
                            np.array([X[-1, j_next], Y[-1, j_next], Z[-1, j_next]]),
                            np.array([X[-1, j],      Y[-1, j],      Z[-1, j]])))
 
-    # ---- Sail (conning tower) ----
+    # ---- Sail (conning tower, NACA 0015 half-airfoil) ----
     if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
         sail_xc = config.sail_x_frac * length
         sail_x0 = sail_xc - config.sail_length_frac * length / 2.0
         sail_x1 = sail_xc + config.sail_length_frac * length / 2.0
         sail_hw = config.sail_halfwidth_frac * length
+        sail_height = config.sail_height_frac * length
         r_at_sail = float(suboff_radius_profile(np.array([config.sail_x_frac]), config)[0]) * radius
-        sail_z0 = r_at_sail
-        sail_z1 = r_at_sail + config.sail_height_frac * length
-        _box_triangles(triangles, sail_x0, sail_x1, -sail_hw, sail_hw, sail_z0, sail_z1)
+        _naca_sail_triangles(triangles, sail_x0, sail_x1,
+                             -sail_hw, sail_hw, r_at_sail, sail_height)
 
-    # ---- Cruciform fins ----
+    # ---- Cruciform fins (NACA 0015 airfoil) ----
     if hull_type == SuboffHullType.FULL:
         fin_xc = config.fin_x_frac * length
         fin_x0 = fin_xc - config.fin_length_frac * length / 2.0
         fin_x1 = fin_xc + config.fin_length_frac * length / 2.0
         fin_span = config.fin_span_frac * length
-        fin_ht = config.fin_thickness_frac * length
+        fin_half_t = config.fin_thickness_frac * length / 2.0
         r_at_fin = float(suboff_radius_profile(np.array([config.fin_x_frac]), config)[0]) * radius
-        _box_triangles(triangles, fin_x0, fin_x1,
-                       -fin_ht / 2, fin_ht / 2,
-                       r_at_fin, r_at_fin + fin_span)
-        _box_triangles(triangles, fin_x0, fin_x1,
-                       -fin_ht / 2, fin_ht / 2,
-                       -(r_at_fin + fin_span), -r_at_fin)
-        _box_triangles_yz(triangles, fin_x0, fin_x1,
-                          r_at_fin, r_at_fin + fin_span,
-                          -fin_ht / 2, fin_ht / 2)
-        _box_triangles_yz(triangles, fin_x0, fin_x1,
-                          -(r_at_fin + fin_span), -r_at_fin,
-                          -fin_ht / 2, fin_ht / 2)
+
+        # Top fin (z+): thickness in y, span in z
+        _naca_fin_triangles(triangles, fin_x0, fin_x1, "y",
+                            (r_at_fin, r_at_fin + fin_span), fin_half_t)
+        # Bottom fin (z-)
+        _naca_fin_triangles(triangles, fin_x0, fin_x1, "y",
+                            (-(r_at_fin + fin_span), -r_at_fin), fin_half_t)
+        # Port fin (y+): thickness in z, span in y
+        _naca_fin_triangles(triangles, fin_x0, fin_x1, "z",
+                            (r_at_fin, r_at_fin + fin_span), fin_half_t)
+        # Starboard fin (y-)
+        _naca_fin_triangles(triangles, fin_x0, fin_x1, "z",
+                            (-(r_at_fin + fin_span), -r_at_fin), fin_half_t)
 
     return triangles
 
