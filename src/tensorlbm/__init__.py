@@ -266,6 +266,14 @@ from .obstacles import (
     compute_obstacle_moments_3d,
     wigley_hull_mask,
 )
+from .momentum_exchange import (
+    momentum_exchange_standard,
+    momentum_exchange_galilean,
+    momentum_exchange_bfl,
+    momentum_exchange_stress,
+    momentum_exchange_pressure_friction,
+    compare_all_methods,
+)
 from .pipeline_flow import (
     PipelineFlowConfig,
     make_pipeline_wall_mask,
@@ -742,6 +750,13 @@ __all__ = [
     "compute_obstacle_forces_3d",
     "compute_obstacle_forces_27",
     "compute_obstacle_moments_3d",
+    # Momentum exchange variants
+    "momentum_exchange_standard",
+    "momentum_exchange_galilean",
+    "momentum_exchange_bfl",
+    "momentum_exchange_stress",
+    "momentum_exchange_pressure_friction",
+    "compare_all_methods",
     # Turbulence
     "collide_smagorinsky_bgk",
     "collide_smagorinsky_mrt",
