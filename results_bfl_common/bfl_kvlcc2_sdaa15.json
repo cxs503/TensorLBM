@@ -1,0 +1,28 @@
+{
+  "case": "kvlcc2_Re1000",
+  "mode": "bfl",
+  "device": "sdaa:15",
+  "Re": 1000,
+  "L": 80.0,
+  "grid": "300x120x120",
+  "u_in": 0.06,
+  "nu": 0.0048,
+  "tau": 0.5144,
+  "Cs": 0.05,
+  "n_steps": 5000,
+  "n_solid": 30668,
+  "n_near": 14634,
+  "dpS": 8.143008158104744,
+  "Cd_pressure": 0.01862151994554453,
+  "Cd_friction": 0.09941485567042198,
+  "Cd_total": 0.11803637561596637,
+  "Cl": 2.2302987477848678e-05,
+  "bfl_stats": {
+    "n_links": 75076,
+    "q_value": 0.5,
+    "method": "generic_voxelised"
+  },
+  "friction_formula": "nu*u_t/q",
+  "finite": true,
+  "elapsed_s": 3802.38667011261
+}

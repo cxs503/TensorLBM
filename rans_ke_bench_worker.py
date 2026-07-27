@@ -34,9 +34,17 @@ import torch
 
 # ---- Common interface imports ----
 from tensorlbm.boundaries3d import far_field_bc_3d, bounce_back_cells_3d
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import correct_mass3d, stream3d
-from tensorlbm.rans_ke import KESolver, collide_rans_ke, C_MU, C_E1, C_E2
+from tensorlbm.collision_common import (
+    equilibrium3d,
+    macroscopic3d,
+    correct_mass3d,
+    stream3d,
+    collide_rans_ke,
+    KESolver,
+    C_MU,
+    C_E1,
+    C_E2,
+)
 from tensorlbm.lbm_step_correct import lbm_step_correct
 from tensorlbm.drag_pressure import (
     get_near_wall_3d,
