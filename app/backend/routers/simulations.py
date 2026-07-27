@@ -540,7 +540,7 @@ def _build_parametric_solid(shape: str, dom: dict, device: torch.device):
         return solid, {
             "cx": info["cx"], "cy": info["cy"], "cz": info["cz"],
             "length": info["length"], "radius": info["radius"],
-            "config": config, "S_wet": info["wetted_area_lu2"],
+            "config": config, "_S_wet": info["wetted_area_lu2"],
         }
 
     else:  # sphere (default)
@@ -695,9 +695,8 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
         elif shape == "ellipsoid":
             mesh = SurfaceMesh.from_ellipsoid(solid, near, **mesh_kwargs)
         elif shape == "suboff":
+            S_wet = mesh_kwargs.pop("_S_wet", float(near.sum().item()))
             mesh = SurfaceMesh.from_suboff(solid, near, **mesh_kwargs)
-            # Use actual wetted area for dpS
-            S_wet = mesh_kwargs.get("S_wet", n_near)
             dpS = 0.5 * u_in ** 2 * S_wet
         else:
             mesh = SurfaceMesh.from_sphere(solid, near, **mesh_kwargs)
