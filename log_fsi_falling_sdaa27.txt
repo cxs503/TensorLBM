@@ -22,3 +22,5 @@
 [Falling SDAA:27] step=1000/15000 Cd=0.0005 v_y=-0.005775 pos_y=56.79 (211s)
 [Falling SDAA:27] step=2000/15000 Cd=0.0001 v_y=-0.012196 pos_y=47.15 (419s)
 [Falling SDAA:27] step=3000/15000 Cd=0.0001 v_y=-0.018616 pos_y=31.10 (627s)
+[Falling SDAA:27] step=4000/15000 Cd=0.0000 v_y=-0.025037 pos_y=8.62 (836s)
+[Falling SDAA:27] step=5000/15000 Cd=0.0000 v_y=-0.031457 pos_y=-20.27 (1043s)

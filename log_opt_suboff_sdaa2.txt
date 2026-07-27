@@ -37,3 +37,5 @@
 [suboff_re1000_opt SDAA:2] step=7000/10000 Cd_p=0.005388 Cd_f=0.038958 Cd_tot=0.044347 (1543s)
 [suboff_re1000_opt SDAA:2] step=7500/10000 Cd_p=0.005387 Cd_f=0.038958 Cd_tot=0.044345 (1623s)
 [suboff_re1000_opt SDAA:2] step=8000/10000 Cd_p=0.005389 Cd_f=0.038958 Cd_tot=0.044347 (1703s)
+[suboff_re1000_opt SDAA:2] step=8500/10000 Cd_p=0.005387 Cd_f=0.038958 Cd_tot=0.044345 (1783s)
+[suboff_re1000_opt SDAA:2] step=9000/10000 Cd_p=0.005389 Cd_f=0.038958 Cd_tot=0.044347 (1862s)

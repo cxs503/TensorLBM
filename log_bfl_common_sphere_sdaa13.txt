@@ -23,3 +23,5 @@
 [Sph-Re100-bfl SDAA:13] init done (3.2s), initial_mass=2304000.0
 [Sph-Re100-bfl SDAA:13] step=2000 Cd_p=0.751156 Cd_f=0.798235 Cd_tot=1.549391 Cl=-0.000700 (839s)
 [Sph-Re100-bfl SDAA:13] step=2500 Cd_p=0.743434 Cd_f=0.792993 Cd_tot=1.536427 Cl=-0.000700 (1046s)
+[Sph-Re100-bfl SDAA:13] step=3000 Cd_p=0.742769 Cd_f=0.790029 Cd_tot=1.532798 Cl=-0.000684 (1252s)
+[Sph-Re100-bfl SDAA:13] step=3500 Cd_p=0.740479 Cd_f=0.788420 Cd_tot=1.528899 Cl=-0.000587 (1459s)

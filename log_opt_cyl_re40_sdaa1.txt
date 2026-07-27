@@ -41,3 +41,16 @@
 [cyl_re40_opt SDAA:1] step=8500/10000 Cd_p=1.133374 Cd_f=0.439382 Cd_tot=1.572757 (1471s)
 [cyl_re40_opt SDAA:1] step=9000/10000 Cd_p=1.132667 Cd_f=0.439098 Cd_tot=1.571765 (1560s)
 [cyl_re40_opt SDAA:1] step=9500/10000 Cd_p=1.131975 Cd_f=0.438845 Cd_tot=1.570821 (1648s)
+[cyl_re40_opt SDAA:1] step=10000/10000 Cd_p=1.131369 Cd_f=0.438634 Cd_tot=1.570003 (1736s)
+
+============================================================
+[cyl_re40_opt SDAA:1] FINAL RESULTS
+============================================================
+[cyl_re40_opt SDAA:1] Cd_p  = 1.132346
+[cyl_re40_opt SDAA:1] Cd_f  = 0.438990
+[cyl_re40_opt SDAA:1] Cd_tot= 1.571336
+[cyl_re40_opt SDAA:1] Cd_ref= 1.500000  err=4.8%
+[cyl_re40_opt SDAA:1] St    = 0.13630809148074477
+[cyl_re40_opt SDAA:1] time  = 1736s (28.9 min)
+[cyl_re40_opt SDAA:1] finite= True
+[cyl_re40_opt SDAA:1] Results → results_optimize_bench/cyl_re40_sdaa1.json

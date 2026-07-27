@@ -14,11 +14,9 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[KVLCC2-Re1000-bfl SDAA:15] nx=300 ny=120 nz=120 L=80.0 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 Re=1000 use_bfl=True
-[KVLCC2-Re1000-bfl SDAA:15] solid cells: 30668  Cb_numerical=0.8874
-[KVLCC2-Re1000-bfl SDAA:15] dpS = 8.143008e+00 (D=draft=18.0)
-[KVLCC2-Re1000-bfl SDAA:15] near-wall cells: 14634
-[KVLCC2-Re1000-bfl SDAA:15] computing BFL q-values (generic voxelised)...
-[KVLCC2-Re1000-bfl SDAA:15] BFL q-field: 75076 links (0.1s) (q=0.5, generic voxelised)
-[KVLCC2-Re1000-bfl SDAA:15] init done (0.8s), initial_mass=4320000.0
-[KVLCC2-Re1000-bfl SDAA:15] step=1500 Cd_p=0.020359 Cd_f=0.133526 Cd_tot=0.153885 Cl=-0.000031 (1129s)
+[rayleigh_benard SDAA:31] Starting: Rayleigh-Benard, Ra=1e4 > Ra_c=1708
+[rayleigh_benard SDAA:31] device=sdaa:31, kwargs={'nx': 100, 'ny': 50, 'nz': 4, 'Ra': 10000.0, 'Pr': 0.71, 'n_steps': 8000}
+EXCEP: [actsPrintExceptionInfo][1431]:Fatbin  base  :0x617c04192000
+EXCEP: [actsPrintExceptionInfo][1434]:Exception type:SDAA_ERROR_INVALID_ADDRESS_SPACE
+EXCEP: [actsPrintExceptionInfo][1435]:Exception val :0x7
+EXCEP: [actsPrintExceptionInfo][1436]:Exception pc  :0x617c041ce8c8
