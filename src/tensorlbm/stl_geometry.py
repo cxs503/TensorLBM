@@ -444,24 +444,36 @@ def SurfaceMesh_from_stl(
     )  # (n_near, 3)
 
     # Flip normals to align with gradient direction (outward)
-    # Bug 29 fix: gradient sign can be wrong for complex geometries (ship hulls)
-    # Use additional check: direction from solid centroid to cell
+    # The gradient of the solid mask reliably points from solid→fluid (outward)
+    # for all cells with non-zero gradient.  This correctly orients STL normals
+    # that may have been stored pointing inward (original Bug 29).
     dot = (normals * grad_normals).sum(axis=1)
     flip_mask = dot < 0
     normals[flip_mask] = -normals[flip_mask]
 
-    # Bug 29: Additional check using solid centroid direction
-    # For ship hulls, gradient may be unreliable at curved surfaces
-    solid_coords = np.argwhere(solid_cpu)
-    if len(solid_coords) > 0:
+    # Bug 29 refinement: centroid-direction fallback ONLY for cells where the
+    # gradient is unreliable (near-zero).  Applying the global-centroid check
+    # to ALL cells is wrong for elongated geometries (ship hulls): at the bow
+    # the outward normal points upstream (-x) while the direction from the
+    # solid centroid to the bow cell is (+x), giving dot_ct≈−1 and incorrectly
+    # flipping an already-correct normal.  Restricting to weak-gradient cells
+    # preserves the gradient-based orientation everywhere the gradient is
+    # trustworthy and only uses the centroid as a tie-breaker at degenerate
+    # corners.
+    grad_norm_arr = np.linalg.norm(grad_normals, axis=1)
+    weak_grad = grad_norm_arr < 1e-6          # zero gradient → unreliable
+    solid_coords = np.argwhere(solid_cpu.numpy()).astype(np.float64)
+    if len(solid_coords) > 0 and weak_grad.any():
         solid_center = solid_coords.mean(axis=0)  # (3,)
-        cell_to_center = cell_pos - solid_center  # direction from center to cell
+        wg_idx = np.where(weak_grad)[0]
+        cell_pos_wg = cell_pos[wg_idx]
+        cell_to_center = cell_pos_wg - solid_center
         ct_norm = np.linalg.norm(cell_to_center, axis=1, keepdims=True)
         ct_dir = cell_to_center / np.where(ct_norm > 1e-10, ct_norm, 1.0)
-        dot_ct = (normals * ct_dir).sum(axis=1)
-        # If normal points toward center (inward), flip it
-        inward = dot_ct < -0.3  # significant inward component
-        normals[inward] = -normals[inward]
+        dot_ct = (normals[wg_idx] * ct_dir).sum(axis=1)
+        inward = dot_ct < -0.3
+        inward_idx = wg_idx[inward]
+        normals[inward_idx] = -normals[inward_idx]
 
     # Fallback for cells where gradient is zero (degenerate corners):
     # use direction from nearest triangle centroid to cell
@@ -473,7 +485,11 @@ def SurfaceMesh_from_stl(
         fallback_dir = fallback_dir / np.where(fb_norm > 1e-10, fb_norm, 1.0)
         dot_fb = (normals[zero_grad] * fallback_dir).sum(axis=1)
         flip_fb = dot_fb < 0
-        normals[zero_grad][flip_fb] = -normals[zero_grad][flip_fb]
+        # Fix chained-indexing: normals[zero_grad] is a copy (advanced
+        # indexing), so we must write back to the original array.
+        zg_idx = np.where(zero_grad)[0]
+        flip_zg = zg_idx[flip_fb]
+        normals[flip_zg] = -normals[flip_zg]
 
     # Normalise
     nrm = np.linalg.norm(normals, axis=1, keepdims=True)
