@@ -69,3 +69,30 @@
 [SDAA:23 Series60_stl] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [121s]
 [SDAA:23 Series60_stl] step=1000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [249s]
 [SDAA:23 Series60_stl] step=1500 Cd_p=0.116999 Cd_f=0.055842 Cd_tot=0.172841 (ITTC=0.075000) [414s]
+[SDAA:23 Series60_stl] step=2000 Cd_p=0.120857 Cd_f=0.054967 Cd_tot=0.175824 (ITTC=0.075000) [581s]
+[SDAA:23 Series60_stl] step=2500 Cd_p=0.121594 Cd_f=0.054738 Cd_tot=0.176333 (ITTC=0.075000) [784s]
+[SDAA:23 Series60_stl] step=3000 Cd_p=0.122238 Cd_f=0.054655 Cd_tot=0.176893 (ITTC=0.075000) [950s]
+[SDAA:23 Series60_stl] step=3500 Cd_p=0.121066 Cd_f=0.054559 Cd_tot=0.175626 (ITTC=0.075000) [1114s]
+[SDAA:23 Series60_stl] step=4000 Cd_p=0.120636 Cd_f=0.054412 Cd_tot=0.175048 (ITTC=0.075000) [1278s]
+[SDAA:23 Series60_stl] step=4500 Cd_p=0.119692 Cd_f=0.054262 Cd_tot=0.173953 (ITTC=0.075000) [1443s]
+[SDAA:23 Series60_stl] step=5000 Cd_p=0.119305 Cd_f=0.054121 Cd_tot=0.173426 (ITTC=0.075000) [1607s]
+
+============================================================
+[SDAA:23 Series60_stl] FINAL RESULTS
+============================================================
+  Cd_pressure  = 0.119498
+  Cd_friction  = 0.054191
+  Cd_total     = 0.173690
+  Cf_ITTC      = 0.075000  (err=131.6%)
+  S_wetted     = 2437.6
+  Wall time: 1607s (26.8 min)
+  Finite: True
+  Saved to results_bug29_series60_common_sdaa23_stl.json
+
+============================================================
+[SDAA:23 Series60] NORMAL METHOD COMPARISON
+============================================================
+  from_gradient: Cd_p=0.005813 Cd_f=0.037924 Cd_tot=0.043737
+  from_stl:      Cd_p=0.119498 Cd_f=0.054191 Cd_tot=0.173690
+  delta:          dCd_p=0.113685 dCd_f=0.016267 dCd_tot=0.129953
+  Comparison saved to results_bug29_series60_common_sdaa23_comparison.json
