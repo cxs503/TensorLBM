@@ -1,0 +1,22 @@
+{
+  "test4": {
+    "results": {
+      "bfl_guo": {
+        "Cd": NaN,
+        "drag_fric": NaN,
+        "drag_pres": NaN
+      },
+      "bfl_simple": {
+        "Cd": NaN,
+        "drag_fric": NaN,
+        "drag_pres": NaN
+      },
+      "legacy": {
+        "Cd": 0.047983722761273384,
+        "drag_fric": 0.03200387582182884,
+        "drag_pres": 0.015979846939444542
+      }
+    },
+    "pass": false
+  }
+}

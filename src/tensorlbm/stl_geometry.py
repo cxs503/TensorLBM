@@ -37,6 +37,7 @@ __all__ = [
     "read_stl",
     "voxelize_stl",
     "SurfaceMesh_from_stl",
+    "mirror_stl",
     "write_stl",
     "get_near_wall_3d",
     "make_sphere_stl",
@@ -282,6 +283,74 @@ def _nearest_triangle_normals(cell_pos, centroids, face_normals):
     return face_normals[idx].astype(np.float64).copy(), idx
 
 
+def _compute_triangle_areas(vertices, faces):
+    """Compute per-triangle areas from vertices and faces."""
+    v0 = vertices[faces[:, 0]]
+    v1 = vertices[faces[:, 1]]
+    v2 = vertices[faces[:, 2]]
+    cross = np.cross(v1 - v0, v2 - v0)
+    return 0.5 * np.linalg.norm(cross, axis=1).astype(np.float64)
+
+
+def mirror_stl(vertices, faces, face_normals, axis=1):
+    """Mirror an STL half-hull about a symmetry plane to create a full hull.
+
+    Ship-hull STL files are typically half-hulls (one side only, y >= 0).
+    This function mirrors the mesh about the specified axis plane (default:
+    y=0) to create a closed full hull suitable for voxelization.
+
+    The mirrored triangles have their winding reversed so that normals
+    point outward on the mirrored side.
+
+    Parameters
+    ----------
+    vertices : np.ndarray, shape (N, 3)
+        Original vertex coordinates.
+    faces : np.ndarray, shape (M, 3)
+        Triangle vertex indices.
+    face_normals : np.ndarray, shape (M, 3)
+        Face normals of the original mesh.
+    axis : int, default 1
+        Axis to mirror (0=x, 1=y, 2=z).
+
+    Returns
+    -------
+    vertices_full : np.ndarray, shape (2N, 3)
+    faces_full : np.ndarray, shape (2M, 3)
+    normals_full : np.ndarray, shape (2M, 3)
+    """
+    n_v = len(vertices)
+    n_f = len(faces)
+
+    # Mirrored vertices: negate the mirror axis coordinate
+    vertices_mir = vertices.copy().astype(np.float64)
+    vertices_mir[:, axis] = -vertices_mir[:, axis]
+
+    # Combine: original + mirrored
+    vertices_full = np.vstack([vertices.astype(np.float64), vertices_mir])
+
+    # Original faces stay the same
+    faces_orig = faces.copy()
+    # Mirrored faces: offset indices by n_v, reverse winding (swap v1,v2)
+    faces_mir = np.column_stack([
+        faces[:, 0] + n_v,
+        faces[:, 2] + n_v,  # reversed winding
+        faces[:, 1] + n_v,
+    ])
+
+    faces_full = np.vstack([faces_orig, faces_mir]).astype(np.int32)
+
+    # Mirrored normals: negate the mirror axis component
+    normals_mir = face_normals.copy().astype(np.float64)
+    normals_mir[:, axis] = -normals_mir[:, axis]
+    normals_full = np.vstack([
+        face_normals.astype(np.float64),
+        normals_mir,
+    ]).astype(np.float32)
+
+    return vertices_full, faces_full, normals_full
+
+
 def SurfaceMesh_from_stl(
     solid,
     near,
@@ -290,6 +359,7 @@ def SurfaceMesh_from_stl(
     face_normals,
     origin,
     spacing,
+    dA_method="none",
 ):
     """Build a :class:`SurfaceMesh` with STL-derived surface normals.
 
@@ -317,13 +387,21 @@ def SurfaceMesh_from_stl(
         Physical coordinates of the grid's lower corner.
     spacing : tuple of float
         Cell size in each direction.
+    dA_method : {'none', 'stl_area', 'cos_theta'}, default 'none'
+        Surface area element computation:
+        - 'none': dA = 1.0 (default, consistent with from_sphere etc.)
+        - 'stl_area': dA = triangle_area / count, distributing the true
+          STL surface area among near-wall cells.  This corrects the
+          staircase surface-area underestimation (dA=1.0 gives ~88.5%
+          of true area).
+        - 'cos_theta': dA = 1 / |n_dominant|, the geometric surface-area
+          correction for a staircase approximation of a tilted surface.
 
     Returns
     -------
     SurfaceMesh
-        With ``nx_n``, ``ny_n``, ``nz_n`` tensors of shape (nz, ny, nx).
-        ``dA = 1.0`` (default, consistent with
-        :meth:`SurfaceMesh.from_sphere` / :meth:`SurfaceMesh.from_cylinder`).
+        With ``nx_n``, ``ny_n``, ``nz_n`` tensors of shape (nz, ny, nx)
+        and ``dA`` tensor of the same shape.
     """
     nz, ny, nx = solid.shape
     device = solid.device
@@ -397,13 +475,60 @@ def SurfaceMesh_from_stl(
     ny_n[iz_t, iy_t, ix_t] = torch.tensor(normals[:, 1], dtype=torch.float32)
     nz_n[iz_t, iy_t, ix_t] = torch.tensor(normals[:, 2], dtype=torch.float32)
 
+    # ---- Surface area element (dA) computation ----
+    if dA_method == "none":
+        dA = torch.ones(nz, ny, nx, dtype=torch.float32)
+    elif dA_method == "stl_area":
+        # STL-based surface area correction.
+        # For each near-wall cell, use the nearest triangle's area as
+        # the raw dA, then scale so that sum(dA) = true STL surface area
+        # in lattice units.  This corrects the staircase area
+        # underestimation (dA=1.0 gives ~88-93% of true area).
+        tri_areas = _compute_triangle_areas(
+            vertices.astype(np.float64), faces.astype(np.int64)
+        )
+        # Raw dA per cell = area of nearest triangle (in STL units)
+        dA_raw = tri_areas[tri_idx].astype(np.float64)
+        # Convert to lattice units: divide by cell-face area (spacing²)
+        s2 = float(spacing[0] * spacing[1])  # isotropic assumption
+        dA_raw_lattice = dA_raw / s2
+        # Scale so sum(dA) = true STL area in lattice units
+        true_area_lattice = float(tri_areas.sum()) / s2
+        sum_raw = float(dA_raw_lattice.sum())
+        if sum_raw > 1e-10:
+            scale = true_area_lattice / sum_raw
+        else:
+            scale = 1.0
+        dA_per_cell = (dA_raw_lattice * scale).astype(np.float32)
+        dA = torch.ones(nz, ny, nx, dtype=torch.float32)
+        dA[iz_t, iy_t, ix_t] = torch.tensor(dA_per_cell, dtype=torch.float32)
+    elif dA_method == "cos_theta":
+        # Geometric surface-area correction: dA = 1 / |n_dominant|
+        # For a face-aligned surface (n = (1,0,0)), dA = 1.0.
+        # For a 45° surface, dA = 1/cos(45°) = √2 ≈ 1.414.
+        # This corrects the staircase area underestimation.
+        abs_nx = np.abs(normals[:, 0])
+        abs_ny = np.abs(normals[:, 1])
+        abs_nz = np.abs(normals[:, 2])
+        n_dom = np.maximum(np.maximum(abs_nx, abs_ny), abs_nz)
+        n_dom = np.where(n_dom > 1e-6, n_dom, 1.0)
+        dA_per_cell = (1.0 / n_dom).astype(np.float32)
+        dA = torch.ones(nz, ny, nx, dtype=torch.float32)
+        dA[iz_t, iy_t, ix_t] = torch.tensor(dA_per_cell, dtype=torch.float32)
+    else:
+        raise ValueError(
+            f"dA_method must be 'none', 'stl_area', or 'cos_theta', "
+            f"got '{dA_method}'"
+        )
+
     # Move back to original device
     if device.type != "cpu":
         nx_n = nx_n.to(device)
         ny_n = ny_n.to(device)
         nz_n = nz_n.to(device)
+        dA = dA.to(device)
 
-    return SurfaceMesh(near, nx_n, ny_n, nz_n)
+    return SurfaceMesh(near, nx_n, ny_n, nz_n, dA)
 
 
 # ---------------------------------------------------------------------------

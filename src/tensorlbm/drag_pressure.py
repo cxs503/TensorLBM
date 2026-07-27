@@ -222,12 +222,32 @@ class SurfaceMesh:
         return cls(near, nx_n, ny_n, nz_n)
     
     @classmethod
-    def from_naca(cls, solid, near, x_le, y_c, chord):
+    def from_naca(cls, solid, near, x_le, y_c, chord, m=0.04, p=0.40, t=0.12):
         """Analytical normal for NACA 4-digit airfoil (2D extruded).
-        
-        NACA surface: y_t = 0.6*(0.2969*sqrt(x) - 0.1260*x - 0.3516*x² + 0.2843*x³ - 0.1015*x⁴)
-        Tangent: dy/dx = 0.6*(0.2969/(2*sqrt(x)) - 0.1260 - 0.7032*x + 0.8529*x² - 0.4060*x³)
-        Normal: n = (-dy/dx, sign, 0) / |n|  (sign=+1 upper, -1 lower)
+
+        For a cambered airfoil (e.g. NACA 4412: m=0.04, p=0.40, t=0.12)
+        the mean camber line y_camber(x) is NOT at y_c — it is shifted
+        upward by the camber.  The upper/lower surface classification
+        must use the camber line, not the chord centerline, otherwise
+        lower-surface cells near the camber line get outward normals
+        pointing UP instead of DOWN, corrupting the lift sign.
+
+        Surface equations (body frame, x normalised 0–1):
+          y_camber = m/p²·(2px − x²)            for x < p
+          y_camber = m/(1−p)²·((1−2p) + 2px − x²)  for x ≥ p
+          y_t      = 5t·(0.2969√x − 0.1260x − 0.3516x² + 0.2843x³ − 0.1015x⁴)
+          upper:   y = y_camber + y_t
+          lower:   y = y_camber − y_t
+
+        The outward normal uses the FULL surface slope (camber + thickness
+        derivative), and the sign (upper +1 / lower −1) is determined by
+        comparing the cell y to the camber line, not the chord centerline.
+
+        Parameters
+        ----------
+        m, p, t : float
+            NACA 4-digit parameters (max camber, camber position, thickness).
+            Defaults give NACA 4412.  Set m=0 for a symmetric airfoil.
         """
         nz, ny, nx = solid.shape
         device = solid.device
@@ -239,13 +259,41 @@ class SurfaceMesh:
         # NACA x coordinate (normalized 0-1)
         xc = (xx - x_le) / chord
         xc = xc.clamp(min=1e-6, max=1.0)
-        # Derivative of NACA thickness equation
-        dydx = 0.6 * (0.2969 / (2.0 * torch.sqrt(xc)) - 0.1260 - 0.7032 * xc
-                       + 0.8529 * xc**2 - 0.4060 * xc**3)
-        # Determine upper/lower surface from solid mask
-        # Upper: y > y_c, Lower: y < y_c
-        sign = torch.where(yy > y_c, 1.0, -1.0)
-        # Normal: (-dydx, sign, 0) normalized
+
+        # --- Camber line y_camber(x) in lattice units ---
+        # y_camber_lattice = y_c + camber(x) * chord
+        camber = torch.where(
+            xc < p,
+            (m / (p ** 2)) * (2.0 * p * xc - xc ** 2),
+            (m / ((1.0 - p) ** 2)) * ((1.0 - 2.0 * p) + 2.0 * p * xc - xc ** 2),
+        )
+        y_camber_lattice = y_c + camber * chord
+
+        # --- Thickness derivative dy_t/dx ---
+        dydx_t = 5.0 * t * (
+            0.2969 / (2.0 * torch.sqrt(xc))
+            - 0.1260
+            - 0.7032 * xc
+            + 0.8529 * xc ** 2
+            - 0.4060 * xc ** 3
+        )
+
+        # --- Camber line derivative dy_camber/dx ---
+        dydx_camber = torch.where(
+            xc < p,
+            (m / (p ** 2)) * (2.0 * p - 2.0 * xc),
+            (m / ((1.0 - p) ** 2)) * (2.0 * p - 2.0 * xc),
+        )
+
+        # --- Upper/lower classification using camber line ---
+        # Upper: y > y_camber, Lower: y < y_camber
+        sign = torch.where(yy > y_camber_lattice, 1.0, -1.0)
+
+        # --- Outward normal ---
+        # Upper surface slope: dy/dx = dy_camber/dx + dy_t/dx
+        # Lower surface slope: dy/dx = dy_camber/dx - dy_t/dx
+        # Normal = (-dy/dx, sign, 0) / |n|
+        dydx = dydx_camber + sign * dydx_t
         nx_n = -dydx * sign
         ny_n = sign.float()
         nz_n = torch.zeros_like(nx_n)
@@ -256,19 +304,25 @@ class SurfaceMesh:
         return cls(near, nx_n, ny_n, nz_n)
     
     @classmethod
-    def from_stl(cls, solid, near, vertices, faces, face_normals, origin, spacing):
+    def from_stl(cls, solid, near, vertices, faces, face_normals, origin, spacing,
+                 dA_method="none"):
         """STL-derived surface normals for arbitrary geometry.
 
         Thin wrapper around :func:`tensorlbm.stl_geometry.SurfaceMesh_from_stl`
         that finds the nearest STL triangle for each near-wall cell and
         uses its face normal (flipped to point outward).
 
-        ``dA = 1.0`` (default, consistent with from_sphere / from_cylinder).
+        Parameters
+        ----------
+        dA_method : {'none', 'stl_area', 'cos_theta'}, default 'none'
+            Surface area element computation method.  See
+            :func:`SurfaceMesh_from_stl` for details.
         """
         from .stl_geometry import SurfaceMesh_from_stl
 
         return SurfaceMesh_from_stl(
-            solid, near, vertices, faces, face_normals, origin, spacing
+            solid, near, vertices, faces, face_normals, origin, spacing,
+            dA_method=dA_method,
         )
 
     @classmethod
@@ -423,7 +477,8 @@ def _shift_along_normal_dominant(field, mesh, steps):
     return result
 
 
-def drag_pressure_integration(f, mesh, dpS, extrap='none'):
+def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall',
+                              solid=None, p0_inlet_width=5):
     """Pressure drag: 3D force vector from pressure × normal × dA.
 
     F = -Σ (p_wall - p_0) · n · dA  (force on wall, negative of fluid force)
@@ -443,15 +498,58 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none'):
         where p1 is the pressure at the near-wall cell, p2/p3 are pressures
         1/2 cells further into the fluid along the dominant normal axis.
 
+    p0_method : {'near_wall', 'far_field', 'domain_avg', 'inlet'}
+        Method for computing the background pressure p_0::
+
+            'near_wall'  → average pressure at near-wall cells (original).
+                           Can over-correct when wall function alters the
+                           near-wall pressure field (negative Cd_p bug).
+            'far_field'  → average pressure at fluid cells that are NOT
+                           near-wall (bulk free-stream reference).  More
+                           stable when wall functions change near-wall p.
+            'domain_avg' → average pressure over ALL fluid cells.
+            'inlet'      → average pressure at the first *p0_inlet_width*
+                           x-planes (inlet/free-stream reference).
+
+    solid : torch.Tensor or None
+        Solid mask ``(nz, ny, nx)``.  Required for p0_method != 'near_wall'.
+
+    p0_inlet_width : int
+        Number of x-planes for the 'inlet' p0_method (default 5).
+
     Returns: (Cd_x, Cd_y, Cd_z) = (fx, fy, fz) / dpS
     """
     rho, _, _, _ = macroscopic3d(f)
     p = (rho - 1.0) / 3.0
-    # Subtract background pressure (average at near-wall cells)
-    # This prevents spurious force when discrete surface is not perfectly closed
+    # Subtract background pressure p_0 to prevent spurious force from
+    # discrete surface non-closure (Σ n·dA ≠ 0 on staircase surface).
     mask_float = mesh.near.float()
-    n_near = mask_float.sum().clamp(min=1.0)
-    p0 = (p * mask_float).sum() / n_near
+    if p0_method == 'near_wall':
+        n_p0 = mask_float.sum().clamp(min=1.0)
+        p0 = (p * mask_float).sum() / n_p0
+    elif p0_method == 'far_field':
+        # Bulk fluid cells (fluid but NOT near-wall) — stable free-stream ref
+        if solid is None:
+            raise ValueError("solid mask required for p0_method='far_field'")
+        far_mask = (~solid).float() * (1.0 - mask_float)
+        n_p0 = far_mask.sum().clamp(min=1.0)
+        p0 = (p * far_mask).sum() / n_p0
+    elif p0_method == 'domain_avg':
+        if solid is None:
+            raise ValueError("solid mask required for p0_method='domain_avg'")
+        fluid_mask = (~solid).float()
+        n_p0 = fluid_mask.sum().clamp(min=1.0)
+        p0 = (p * fluid_mask).sum() / n_p0
+    elif p0_method == 'inlet':
+        if solid is None:
+            raise ValueError("solid mask required for p0_method='inlet'")
+        inlet_mask = (~solid).float()
+        inlet_mask[:, :, p0_inlet_width:] = 0.0
+        n_p0 = inlet_mask.sum().clamp(min=1.0)
+        p0 = (p * inlet_mask).sum() / n_p0
+    else:
+        raise ValueError(f"p0_method must be 'near_wall', 'far_field', "
+                         f"'domain_avg', or 'inlet', got '{p0_method}'")
     p_corr = p - p0
 
     if extrap == 'none':
@@ -473,45 +571,92 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none'):
     return float(fpx.item() / dpS), float(fpy.item() / dpS), float(fpz.item() / dpS)
 
 
-def drag_friction_integration(f, mesh, dpS, nu, q_wall=None):
+def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard'):
     """Friction drag via 3D wall shear stress.
 
-    Standard half-way BB (q_wall=None):
-        τ = 2ν · u_t = ν · u_t / 0.5
-    where u_t = u - (u·n)·n (tangent velocity) and the wall is at 0.5
-    cell distance from the near-wall fluid cell.
+    Multiple friction formulas are supported via the *formula* parameter.
+    All formulas use the tangential velocity u_t = u - (u·n)·n at near-wall
+    cells.  For half-way bounce-back the wall is at distance q=0.5 from the
+    near-wall fluid cell; u_1 is the tangential velocity at the near-wall
+    cell (distance 0.5 from wall) and u_2 is at the second cell (distance
+    1.5 from wall), obtained by shifting one cell along the dominant
+    normal direction into the fluid.
 
-    BFL corrected (q_wall provided):
-        τ = ν · u_t / q
-    where q is the fractional wall distance from the BFL q-field, averaged
-    over boundary directions at each near-wall cell.  When q=0.5 this
-    reduces to the standard formula τ = 2ν·u_t.
+    ==============  =================================================  ===========
+    formula         expression (standard BB, Δn=0.5)                   exact for
+    ==============  =================================================  ===========
+    'standard'      τ = 2ν·u_1 = ν·u_1/0.5                             linear
+    '2nd_order'     τ = ν·(3·u_1 − u_2)                                (task spec)
+    'central'       τ = ν·u_2                                          (task spec)
+    'lagrange'      τ = ν·(3·u_1 − u_2/3)                              linear+quad
+    'bfl'           τ = ν·u_1/q  (requires q_wall)                     linear
+    ==============  =================================================  ===========
+
+    The 'lagrange' formula is the exact second-order derivative for the
+    non-uniform grid with sample points at distances 0 (wall, u=0),
+    0.5 (u_1) and 1.5 (u_2) from the wall — it is exact for both linear
+    and quadratic velocity profiles and is expected to converge best
+    under grid refinement for smooth boundary layers.
 
     Parameters
     ----------
     q_wall : torch.Tensor or None, shape (nz, ny, nx)
         Effective fractional wall distance at each near-wall cell.
-        When None, uses the standard half-way BB formula (q=0.5).
+        Used only when formula='bfl'.
+    formula : str
+        Friction formula: 'standard' (default), '2nd_order', 'central',
+        'lagrange', or 'bfl'.
 
     Verified on Couette flow: Cf error = 0.00% (standard, q_wall=None).
     """
     rho, ux, uy, uz = macroscopic3d(f)
     nx, ny, nz = mesh.nx_n, mesh.ny_n, mesh.nz_n
     u_dot_n = ux * nx + uy * ny + uz * nz
-    ut_x = ux - u_dot_n * nx
+    ut_x = ux - u_dot_n * nx   # u_1 tangential (near-wall cell)
     ut_y = uy - u_dot_n * ny
     ut_z = uz - u_dot_n * nz
-    if q_wall is not None:
-        # BFL: τ = ν · u_t / q  (q=0.5 → τ = 2ν·u_t, standard)
+
+    if formula == 'standard':
+        # τ = 2ν · u_1  (1st-order forward difference, Δn=0.5)
+        tau_x = 2.0 * nu * ut_x
+        tau_y = 2.0 * nu * ut_y
+        tau_z = 2.0 * nu * ut_z
+    elif formula == 'bfl':
+        # τ = ν · u_1 / q  (BFL corrected; q=0.5 → standard)
+        if q_wall is None:
+            raise ValueError("formula='bfl' requires q_wall tensor")
         inv_q = 1.0 / q_wall.clamp(min=1e-6)
         tau_x = nu * ut_x * inv_q
         tau_y = nu * ut_y * inv_q
         tau_z = nu * ut_z * inv_q
+    elif formula in ('2nd_order', 'central', 'lagrange'):
+        # Need u_2: tangential velocity at second cell from wall.
+        # Shift velocity one cell along dominant normal into the fluid.
+        ut2_x = _shift_along_normal_dominant(ut_x, mesh, steps=1)
+        ut2_y = _shift_along_normal_dominant(ut_y, mesh, steps=1)
+        ut2_z = _shift_along_normal_dominant(ut_z, mesh, steps=1)
+        if formula == '2nd_order':
+            # τ = ν·(3·u_1 − u_2)  [task-specified 2nd-order forward diff]
+            tau_x = nu * (3.0 * ut_x - ut2_x)
+            tau_y = nu * (3.0 * ut_y - ut2_y)
+            tau_z = nu * (3.0 * ut_z - ut2_z)
+        elif formula == 'central':
+            # τ = ν·u_2  [task-specified central/forward diff, Δn=0.5]
+            tau_x = nu * ut2_x
+            tau_y = nu * ut2_y
+            tau_z = nu * ut2_z
+        else:  # 'lagrange'
+            # τ = ν·(3·u_1 − u_2/3)  [exact 2nd-order for non-uniform grid:
+            # wall at 0, u_1 at 0.5, u_2 at 1.5 — Lagrange interpolation]
+            tau_x = nu * (3.0 * ut_x - ut2_x / 3.0)
+            tau_y = nu * (3.0 * ut_y - ut2_y / 3.0)
+            tau_z = nu * (3.0 * ut_z - ut2_z / 3.0)
     else:
-        # Standard half-way BB: τ = 2ν · u_t
-        tau_x = 2.0 * nu * ut_x
-        tau_y = 2.0 * nu * ut_y
-        tau_z = 2.0 * nu * ut_z
+        raise ValueError(
+            f"formula must be 'standard', '2nd_order', 'central', "
+            f"'lagrange', or 'bfl'; got '{formula}'"
+        )
+
     mask = mesh.near.float() * mesh.dA
     ffx = (tau_x * mask).sum()
     ffy = (tau_y * mask).sum()

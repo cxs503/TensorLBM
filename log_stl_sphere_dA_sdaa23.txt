@@ -1,0 +1,45 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:23 Sphere-dA] Sphere dA comparison: R=12.0 Re=100
+[SDAA:23 Sphere-dA] grid=64x64x64 u_in=0.05 nu=1.200000e-02 tau=0.536000
+[SDAA:23 Sphere-dA] true_area=1809.56 stl_area=1805.43 n_near=1584
+[SDAA:23 Sphere-dA=none] sum_dA=1584.00 ratio_to_true=0.8754
+[SDAA:23 Sphere-dA=none] step=500 Cd=0.000000 (ref=1.0900) [28s]
+[SDAA:23 Sphere-dA=none] step=1000 Cd=1.091255 (ref=1.0900) [61s]
+[SDAA:23 Sphere-dA=none] step=1500 Cd=1.077272 (ref=1.0900) [94s]
+[SDAA:23 Sphere-dA=none] step=2000 Cd=1.078643 (ref=1.0900) [128s]
+[SDAA:23 Sphere-dA=none] step=2500 Cd=1.085434 (ref=1.0900) [162s]
+[SDAA:23 Sphere-dA=none] step=3000 Cd=1.086592 (ref=1.0900) [195s]
+[SDAA:23 Sphere-dA=none] FINAL: Cd_p=0.730891 Cd_f=0.355122 Cd_tot=1.086013 (ref=1.0900, err=0.4%)
+[SDAA:23 Sphere-dA=stl_area] sum_dA=1805.43 ratio_to_true=0.9977
+[SDAA:23 Sphere-dA=stl_area] step=500 Cd=0.000000 (ref=1.0900) [28s]
+[SDAA:23 Sphere-dA=stl_area] step=1000 Cd=1.371158 (ref=1.0900) [62s]
+[SDAA:23 Sphere-dA=stl_area] step=1500 Cd=1.360939 (ref=1.0900) [96s]
+[SDAA:23 Sphere-dA=stl_area] step=2000 Cd=1.365198 (ref=1.0900) [130s]
+[SDAA:23 Sphere-dA=stl_area] step=2500 Cd=1.374299 (ref=1.0900) [163s]
+[SDAA:23 Sphere-dA=stl_area] step=3000 Cd=1.375747 (ref=1.0900) [197s]
+[SDAA:23 Sphere-dA=stl_area] FINAL: Cd_p=1.001737 Cd_f=0.373286 Cd_tot=1.375023 (ref=1.0900, err=26.1%)
+[SDAA:23 Sphere-dA=cos_theta] sum_dA=1911.07 ratio_to_true=1.0561
+[SDAA:23 Sphere-dA=cos_theta] step=500 Cd=0.000000 (ref=1.0900) [29s]
+[SDAA:23 Sphere-dA=cos_theta] step=1000 Cd=1.297811 (ref=1.0900) [64s]
+[SDAA:23 Sphere-dA=cos_theta] step=1500 Cd=1.277832 (ref=1.0900) [97s]
+[SDAA:23 Sphere-dA=cos_theta] step=2000 Cd=1.278477 (ref=1.0900) [131s]
+[SDAA:23 Sphere-dA=cos_theta] step=2500 Cd=1.286377 (ref=1.0900) [165s]
+[SDAA:23 Sphere-dA=cos_theta] step=3000 Cd=1.287681 (ref=1.0900) [199s]
+[SDAA:23 Sphere-dA=cos_theta] FINAL: Cd_p=0.863971 Cd_f=0.423058 Cd_tot=1.287029 (ref=1.0900, err=18.1%)
+
+[SDAA:23 Sphere-dA] Saved to results_stl_sphere_dA_sdaa23.json

@@ -99,12 +99,18 @@ def build_naca4412(chord, nx, ny, x_le, y_c_chord, alpha_deg, device):
     x_lower = x_le + xc * chord
     y_lower = y_c_chord + (yc - yt) * chord
 
-    # Rotate by alpha about quarter-chord
+    # Rotate by alpha about quarter-chord.
+    # For positive angle of attack (leading edge UP, trailing edge DOWN)
+    # with the y-axis pointing up, this is a CLOCKWISE rotation:
+    #   [xr]   [ cos  sin] [dx]
+    #   [yr] = [-sin  cos] [dy]
+    # The previous code used counterclockwise rotation, which gave
+    # negative alpha (leading edge down) and hence negative lift.
     def rotate(xp, yp):
         dx = xp - x_qc
         dy = yp - y_qc
-        xr = x_qc + cos_a * dx - sin_a * dy
-        yr = y_qc + sin_a * dx + cos_a * dy
+        xr = x_qc + cos_a * dx + sin_a * dy
+        yr = y_qc - sin_a * dx + cos_a * dy
         return xr, yr
 
     x_upper_r, y_upper_r = rotate(x_upper, y_upper)
