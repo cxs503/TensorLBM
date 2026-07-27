@@ -12,11 +12,11 @@
   "Cs": 0.1,
   "n_steps": 20000,
   "warmup": 4000,
-  "n_samples": 160,
-  "separation_x": 208,
-  "reattachment_x": 209,
-  "xr_H": 0.025,
+  "n_samples": 80,
+  "separation_x": 210,
+  "reattachment_x": 251,
+  "xr_H": 1.025,
   "xr_H_ref": 5.0,
-  "wall_clock_s": 5340.805329084396,
+  "wall_clock_s": 4816.467089176178,
   "device": "sdaa:5"
 }

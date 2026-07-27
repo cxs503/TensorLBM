@@ -24,13 +24,15 @@
 [hill SDAA:5] step 10000: u_bulk=0.043551 [4319s]
 [hill SDAA:5] step 12000: u_bulk=0.042058 [4463s]
 [hill SDAA:5] step 14000: u_bulk=0.041379 [4575s]
-A:5] step  8000: u_bulk=0.044521 [1603s]
-[hill SDAA:5] step  9000: u_bulk=0.043921 [2229s]
-[hill SDAA:5] step 10000: u_bulk=0.043551 [2863s]
-[hill SDAA:5] step 11000: u_bulk=0.042534 [3505s]
-[hill SDAA:5] step 12000: u_bulk=0.042058 [4142s]
-[hill SDAA:5] step 13000: u_bulk=0.041802 [4776s]
-[hill SDAA:5] step 14000: u_bulk=0.041379 [4926s]
+[hill SDAA:5] step 16000: u_bulk=0.040564 [4655s]
+[hill SDAA:5] step 18000: u_bulk=0.039475 [4736s]
+[hill SDAA:5] step 20000: u_bulk=0.038741 [4816s]
+
+[hill SDAA:5] === Results ===
+[hill SDAA:5] sep_x=210 reatt_x=251 xr/H=1.02 (ref~5.0)
+[hill SDAA:5] Time=4816s
+[hill SDAA:5] Saved to results_internal_hill_sdaa5.json
+_bulk=0.041379 [4926s]
 [hill SDAA:5] step 15000: u_bulk=0.040831 [4995s]
 [hill SDAA:5] step 16000: u_bulk=0.040564 [5064s]
 [hill SDAA:5] step 17000: u_bulk=0.040307 [5133s]
