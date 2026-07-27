@@ -30,3 +30,22 @@
 [SDAA:1 C2 full L=80] step=4000 Cd_p=0.008449 Cd_f=0.043838 Cd_tot=0.052287 Cl=-0.000014 (640s)
 [SDAA:1 C2 full L=80] step=4500 Cd_p=0.008427 Cd_f=0.043805 Cd_tot=0.052232 Cl=-0.000015 (721s)
 [SDAA:1 C2 full L=80] step=5000 Cd_p=0.008416 Cd_f=0.043788 Cd_tot=0.052203 Cl=-0.000014 (801s)
+[SDAA:1 C2 full L=80] step=5500 Cd_p=0.008409 Cd_f=0.043778 Cd_tot=0.052186 Cl=-0.000015 (881s)
+[SDAA:1 C2 full L=80] step=6000 Cd_p=0.008407 Cd_f=0.043772 Cd_tot=0.052179 Cl=-0.000015 (961s)
+[SDAA:1 C2 full L=80] step=6500 Cd_p=0.008405 Cd_f=0.043769 Cd_tot=0.052174 Cl=-0.000015 (1041s)
+[SDAA:1 C2 full L=80] step=7000 Cd_p=0.008405 Cd_f=0.043767 Cd_tot=0.052172 Cl=-0.000014 (1121s)
+[SDAA:1 C2 full L=80] step=7500 Cd_p=0.008404 Cd_f=0.043766 Cd_tot=0.052170 Cl=-0.000015 (1201s)
+[SDAA:1 C2 full L=80] step=8000 Cd_p=0.008404 Cd_f=0.043766 Cd_tot=0.052170 Cl=-0.000014 (1281s)
+[SDAA:1 C2 full L=80] step=8500 Cd_p=0.008404 Cd_f=0.043766 Cd_tot=0.052170 Cl=-0.000015 (1361s)
+[SDAA:1 C2 full L=80] step=9000 Cd_p=0.008404 Cd_f=0.043766 Cd_tot=0.052170 Cl=-0.000014 (1441s)
+[SDAA:1 C2 full L=80] step=9500 Cd_p=0.008404 Cd_f=0.043766 Cd_tot=0.052170 Cl=-0.000015 (1521s)
+[SDAA:1 C2 full L=80] step=10000 Cd_p=0.008404 Cd_f=0.043766 Cd_tot=0.052170 Cl=-0.000014 (1601s)
+
+[SDAA:1 C2 full L=80] === FINAL (Cd_ref=0.055000) ===
+[SDAA:1 C2 full L=80] Cd_p   = 0.008409
+[SDAA:1 C2 full L=80] Cd_f   = 0.043778
+[SDAA:1 C2 full L=80] Cd_tot = 0.052186
+[SDAA:1 C2 full L=80] Cl     = -0.000015
+[SDAA:1 C2 full L=80] St     = 2.333722
+[SDAA:1 C2 full L=80] err    = 5.1%  time=1601s
+[SDAA:1 C2 full L=80] saved to results_suboff_appendage/case2_full.json

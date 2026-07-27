@@ -161,8 +161,41 @@ def run_rotating(device_id, output_path=None):
         cd_tot = fx_p + fx_f
         cl = fy_p + fy_f
 
-        # Torque: M_z = Cl * R_blade (transverse force × lever arm)
-        torque = cl * dpS * R_blade
+        # Torque: compute actual moment of pressure distribution about hub
+        # M_z = sum((x-cx)*Fy - (y-cy)*Fx) over near-wall cells
+        rho_m, _, _, _ = macroscopic3d(f)
+        p_m = (rho_m - 1.0) / 3.0
+        mask_float = mesh.near.float()
+        if mask_float.device != p_m.device:
+            mask_float = mask_float.to(p_m.device)
+        far_mask = (~solid).float() * (1.0 - mask_float)
+        n_p0 = far_mask.sum().clamp(min=1.0)
+        p0 = (p_m * far_mask).sum() / n_p0
+        p_corr = p_m - p0
+        mask_t = mask_float * mesh.dA
+        # Per-cell pressure force: F = -p * n * dA
+        fpx_cell = -(p_corr * mesh.nx_n * mask_t)
+        fpy_cell = -(p_corr * mesh.ny_n * mask_t)
+        # Moment about z-axis at (cx, cy)
+        yy_m, xx_m = torch.meshgrid(
+            torch.arange(ny, device=f.device, dtype=torch.float32),
+            torch.arange(nx, device=f.device, dtype=torch.float32),
+            indexing='ij')
+        torque_p = ((xx_m - cx) * fpy_cell - (yy_m - cy) * fpx_cell).sum()
+        # Friction torque (tangential stress contributes to moment)
+        _, ux_m, uy_m, uz_m = macroscopic3d(f)
+        nx_n, ny_n = mesh.nx_n, mesh.ny_n
+        if nx_n.device != ux_m.device:
+            nx_n = nx_n.to(ux_m.device); ny_n = ny_n.to(ux_m.device)
+        u_dot_n = ux_m * nx_n + uy_m * ny_n
+        ut_x = ux_m - u_dot_n * nx_n
+        ut_y = uy_m - u_dot_n * ny_n
+        tau_x = 2.0 * nu * ut_x
+        tau_y = 2.0 * nu * ut_y
+        ffx_cell = tau_x * mask_t
+        ffy_cell = tau_y * mask_t
+        torque_f = ((xx_m - cx) * ffy_cell - (yy_m - cy) * ffx_cell).sum()
+        torque = float((torque_p + torque_f).item())
         power = torque * omega
         cp = power / p_ref if p_ref > 0 else 0.0
 

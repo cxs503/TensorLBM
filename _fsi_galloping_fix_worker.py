@@ -118,10 +118,12 @@ def run_galloping(device_id, output_path=None):
     last_dy_shift = 0
     cy_current = float(cy)
     nan_count = 0
+    # Displacement clamp: keep mask within domain
+    max_disp = ny // 2 - D // 2 - 4
 
-    ramp_steps = 1000
+    ramp_steps = 2000
     for step in range(1, n_steps + 1):
-        u_cur = min(u_in, 0.02 + (u_in - 0.02) * step / ramp_steps)
+        u_cur = min(u_in, 0.01 + (u_in - 0.01) * step / ramp_steps)
 
         # 1. LBM step
         f = lbm_step_correct(
@@ -132,6 +134,11 @@ def run_galloping(device_id, output_path=None):
 
         # 2. Check if displacement requires mask shift (INCREMENTAL)
         disp_y = sm_state.disp[0].item()
+        # Clamp displacement to keep mask within domain
+        if math.isfinite(disp_y) and abs(disp_y) > max_disp:
+            disp_y = max_disp if disp_y > 0 else -max_disp
+            sm_state.disp[0] = disp_y
+            sm_state.vel[0] *= 0.5
         if math.isfinite(disp_y):
             dy_shift_total = int(round(disp_y))
             dy_incremental = dy_shift_total - last_dy_shift
@@ -139,8 +146,11 @@ def run_galloping(device_id, output_path=None):
                 solid = shift_solid_mask(solid, dx=0, dy=dy_incremental, dz=0)
                 near = get_near_wall_3d(solid)
                 cy_current = float(cy + disp_y)
+                # Bounds-check cy_current for from_square_prism
+                cy_int = int(cy_current)
+                cy_int = max(D, min(cy_int, ny - D))
                 mesh = SurfaceMesh.from_square_prism(
-                    solid, near, int(cx), int(cy_current), int(D))
+                    solid, near, int(cx), cy_int, int(D))
                 last_dy_shift = dy_shift_total
 
         # 3. Compute force with (possibly new) mesh
@@ -226,8 +236,8 @@ def run_galloping(device_id, output_path=None):
         "galloping_detected": bool(galloping_detected),
         "early_disp_max": float(early_disp),
         "late_disp_max": float(late_disp),
-        "nan_count": nan_count,
-        "target_galloping_onset": galloping_detected,
+        "nan_count": int(nan_count),
+        "target_galloping_onset": bool(galloping_detected),
         "finite": bool(torch.isfinite(f).all().item()),
         "elapsed_s": float(elapsed),
     }

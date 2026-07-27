@@ -22,3 +22,5 @@
 [sphere_bfl_lagrange SDAA:6] BFL q-field: 28722 links (7.7s) q=[0.0126, 1.0000] mean=0.3727
   q_wall: n_near=4302 q_min=0.1000 q_max=0.9045 q_mean=0.4023
 [sphere_bfl_lagrange SDAA:6] init done (8.2s), initial_mass=5832000.0
+[sphere_bfl_lagrange SDAA:6] step=1000 Cd_p=0.665890 Cd_f=0.695274 Cd_tot=1.361163 Cl=-0.000010 (1242s)
+[sphere_bfl_lagrange SDAA:6] step=1500 Cd_p=0.659903 Cd_f=0.680671 Cd_tot=1.340574 Cl=-0.000012 (1854s)
