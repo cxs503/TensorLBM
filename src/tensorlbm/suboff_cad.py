@@ -153,6 +153,12 @@ def suboff_radius_profile(
 ) -> np.ndarray:
     """Normalised hull radius *r(xi) / R_max* for the SUBOFF bare hull.
 
+    **真实 DARPA SUBOFF 4段公式** (Groves et al. 1989, from suboff8.py):
+      段1 船首 [0, 0.2333]:  多项式 + 指数 1/2.1
+      段2 平行中体 (0.2333, 0.7417]:  R = R_max
+      段3 尾锥 (0.7417, 0.9748]:  6阶多项式
+      段4 尾尖 (0.9748, 1.0]:  椭圆收缩
+
     Parameters
     ----------
     xi :
@@ -170,32 +176,64 @@ def suboff_radius_profile(
     if config is None:
         config = SuboffConfig()
 
-    alpha = config.bow_fraction     # bow end (normalised)
-    beta = config.stern_fraction    # stern start from aft
-    n = config.stern_exponent
-
     xi = np.asarray(xi, dtype=float)
     r = np.zeros_like(xi)
 
-    # Bow section: quarter-ellipse profile (r = 0 at tip, r = R_max at alpha)
-    bow = (xi >= 0.0) & (xi < alpha)
-    xi_bow = np.clip(xi[bow] / alpha, 0.0, 1.0)
-    # quarter-ellipse: r = sqrt(1 - (1-t)^2) = sqrt(2t - t^2)
-    r[bow] = np.sqrt(np.clip(2.0 * xi_bow - xi_bow**2, 0.0, 1.0))
+    # SUBOFF 真实参数 (ft → normalized)
+    L_ft = 14.291667  # 总长 (ft)
+    Rmax_ft = 0.8333333  # 最大半径 (ft)
+    BOW_END = 3.333333 / L_ft      # 0.2333
+    MID_END = 10.645833 / L_ft     # 0.7449
+    STERN_END = 13.979167 / L_ft   # 0.9781
 
-    # Parallel midbody
-    mid = (xi >= alpha) & (xi <= 1.0 - beta)
+    # 段1: 船首 [0, 0.2333]
+    bow = (xi >= 0.0) & (xi < BOW_END)
+    if np.any(bow):
+        x_ft = xi[bow] * L_ft
+        tmp = 0.3 * x_ft - 1.0
+        tmp2 = tmp * tmp
+        tmp4 = tmp2 * tmp2
+        a1 = (1.126395101 * x_ft * tmp4
+              + 0.442874707 * x_ft * x_ft * (tmp2 * tmp)
+              + 1.0
+              - tmp4 * (1.2 * x_ft + 1.0))
+        a1 = np.maximum(a1, 0.0)
+        r[bow] = np.power(a1, 1.0 / 2.1)
+
+    # 段2: 平行中体 (0.2333, 0.7449]
+    mid = (xi >= BOW_END) & (xi <= MID_END)
     r[mid] = 1.0
 
-    # Stern taper: generalised-ellipse taper from R_max to 0
-    stern = (xi > 1.0 - beta) & (xi <= 1.0)
-    eta = np.clip((xi[stern] - (1.0 - beta)) / beta, 0.0, 1.0)
-    if n == 2.0:
-        # Circular quarter-ellipse: r = sqrt(1 - eta^2)
-        r[stern] = np.sqrt(np.clip(1.0 - eta**2, 0.0, 1.0))
-    else:
-        # Generalised: r = (1 - eta^n)^(1/n)
-        r[stern] = np.clip(1.0 - eta**n, 0.0, 1.0) ** (1.0 / n)
+    # 段3: 尾锥 (0.7449, 0.9781]
+    stern_taper = (xi > MID_END) & (xi <= STERN_END)
+    if np.any(stern_taper):
+        r1 = 0.1175
+        k0 = 10.0
+        k1 = 44.6244
+        x_ft = xi[stern_taper] * L_ft
+        ksi = (13.979167 - x_ft) / 3.333333
+        ksi2 = ksi * ksi
+        ksi3 = ksi2 * ksi
+        ksi4 = ksi3 * ksi
+        ksi5 = ksi4 * ksi
+        ksi6 = ksi5 * ksi
+
+        a3 = (r1 * r1
+              + r1 * k0 * ksi2
+              + (20.0 - 20.0 * r1 * r1 - 4.0 * r1 * k0 - k1 / 3.0) * ksi3
+              + (-45.0 + 45.0 * r1 * r1 + 6.0 * r1 * k0 + k1) * ksi4
+              + (36.0 - 36.0 * r1 * r1 - 4.0 * r1 * k0 - k1) * ksi5
+              + (-10.0 + 10.0 * r1 * r1 + r1 * k0 + k1 / 3.0) * ksi6)
+        a3 = np.maximum(a3, 0.0)
+        r[stern_taper] = np.sqrt(a3)
+
+    # 段4: 尾尖 (0.9781, 1.0]
+    tail = (xi > STERN_END) & (xi <= 1.0)
+    if np.any(tail):
+        x_ft = xi[tail] * L_ft
+        val = 1.0 - (3.2 * x_ft - 44.733333) ** 2
+        val = np.maximum(val, 0.0)
+        r[tail] = np.sqrt(val) * 0.1175
 
     return np.clip(r, 0.0, 1.0)
 
