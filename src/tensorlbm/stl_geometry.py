@@ -173,6 +173,35 @@ def read_stl(path):
         has_stored[:, None], stored_normals, computed_normals
     ).astype(np.float32)
 
+    # Bug 48: Auto-detect and mirror half hull FIRST.
+    # Some STL files (e.g. KVLCC2) are half hulls (y >= 0 only).
+    # Mirror to get full hull before orienting normals.
+    if vertices[:, 1].min() >= 0 and vertices[:, 1].max() > 0:
+        vertices, faces, face_normals = mirror_stl(
+            vertices, faces, face_normals, axis=1
+        )
+        # Recompute normals from cross products after mirroring.
+        # mirror_stl reverses winding for mirrored faces, so cross products
+        # give correct outward direction for mirrored half.
+        v0 = vertices[faces[:, 0]]
+        v1 = vertices[faces[:, 1]]
+        v2 = vertices[faces[:, 2]]
+        cross = np.cross(v1 - v0, v2 - v0).astype(np.float32)
+        norms = np.linalg.norm(cross, axis=1, keepdims=True)
+        face_normals = cross / np.where(norms > 1e-10, norms, 1.0)
+
+    # Bug 47: Auto-detect and flip inward normals (AFTER mirror).
+    # Check: if majority of normals point toward the centroid, flip all.
+    centroid = vertices.mean(axis=0)
+    face_centers = vertices[faces].mean(axis=1)
+    dir_to_centroid = centroid - face_centers
+    dir_norm = np.linalg.norm(dir_to_centroid, axis=1, keepdims=True)
+    dir_to_centroid = dir_to_centroid / np.where(dir_norm > 1e-10, dir_norm, 1.0)
+    dot_centroid = (face_normals * dir_to_centroid).sum(axis=1)
+    n_inward = np.sum(dot_centroid > 0)
+    if n_inward >= 0.5 * len(face_normals):
+        face_normals = -face_normals  # flip all normals
+
     return vertices, faces, face_normals
 
 

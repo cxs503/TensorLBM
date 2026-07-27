@@ -29,3 +29,11 @@
 [sphere_re100_3d SDAA:27] step=1600/3000 Cd_p=0.6755 Cd_f=0.4244 Cd_tot=1.0999 Cl=-0.000074 (1382s, 0.864s/step)
 [sphere_re100_3d SDAA:27] step=1800/3000 Cd_p=0.6726 Cd_f=0.4221 Cd_tot=1.0947 Cl=-0.000087 (1553s, 0.863s/step)
 [sphere_re100_3d SDAA:27] step=2000/3000 Cd_p=0.6712 Cd_f=0.4204 Cd_tot=1.0916 Cl=-0.000100 (1725s, 0.863s/step)
+[sphere_re100_3d SDAA:27] step=2200/3000 Cd_p=0.6713 Cd_f=0.4193 Cd_tot=1.0906 Cl=-0.000133 (1897s, 0.862s/step)
+[sphere_re100_3d SDAA:27] step=2400/3000 Cd_p=0.6667 Cd_f=0.4183 Cd_tot=1.0850 Cl=-0.000185 (2068s, 0.862s/step)
+[sphere_re100_3d SDAA:27] step=2600/3000 Cd_p=0.6628 Cd_f=0.4169 Cd_tot=1.0797 Cl=-0.000148 (2240s, 0.862s/step)
+[sphere_re100_3d SDAA:27] step=2800/3000 Cd_p=0.6638 Cd_f=0.4161 Cd_tot=1.0799 Cl=-0.000113 (2412s, 0.861s/step)
+[sphere_re100_3d SDAA:27] step=3000/3000 Cd_p=0.6630 Cd_f=0.4155 Cd_tot=1.0785 Cl=-0.000105 (2584s, 0.861s/step)
+
+[sphere_re100_3d SDAA:27] === FINAL ===  Cd_p=0.6641 Cd_f=0.4167 Cd_tot=1.0808 (ref=1.09) err=0.8% Cl=-0.000060 St=None finite=True time=2584s
+[sphere_re100_3d SDAA:27] saved to results_high_re_3d_sphere_re100_sdaa27.json

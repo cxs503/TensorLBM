@@ -32,3 +32,16 @@
 [SDAA:20 KVLCC2] step=3500 Cd_p=0.000362 Cd_f=0.001620 Cd_tot=0.001981 (ITTC=0.008333) [871s]
 [SDAA:20 KVLCC2] step=4000 Cd_p=0.000295 Cd_f=0.001619 Cd_tot=0.001915 (ITTC=0.008333) [953s]
 [SDAA:20 KVLCC2] step=4500 Cd_p=0.000209 Cd_f=0.001621 Cd_tot=0.001829 (ITTC=0.008333) [1036s]
+[SDAA:20 KVLCC2] step=5000 Cd_p=-0.000314 Cd_f=0.001588 Cd_tot=0.001274 (ITTC=0.008333) [1118s]
+
+============================================================
+[SDAA:20 KVLCC2] FINAL RESULTS
+============================================================
+  Cd_pressure  = -0.000053
+  Cd_friction  = 0.001604
+  Cd_total     = 0.001551
+  Cf_ITTC      = 0.008333  (err=81.4%)
+  S_wetted     = 6659.1
+  Wall time: 1118s (18.6 min)
+  Finite: True
+  Saved to results_bug46b_kvlcc2_sdaa20.json

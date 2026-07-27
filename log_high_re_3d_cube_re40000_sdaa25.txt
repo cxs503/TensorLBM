@@ -21,3 +21,4 @@
 [cube_re40000_3d SDAA:25] init done (0.7s) mass=4194304.0
 [cube_re40000_3d SDAA:25] step=1000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.790174 (857s, 0.857s/step)
 [cube_re40000_3d SDAA:25] step=2000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.717224 (1708s, 0.854s/step)
+[cube_re40000_3d SDAA:25] step=3000/10000 Cd_p=1.0404 Cd_f=0.0000 Cd_tot=1.0404 Cl=0.694591 (2558s, 0.853s/step)
