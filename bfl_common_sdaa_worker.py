@@ -19,6 +19,7 @@ Usage:
 """
 from __future__ import annotations
 
+import functools
 import json
 import math
 import sys
@@ -30,8 +31,15 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 import numpy as np
 import torch
 from tensorlbm.boundaries3d import far_field_bc_3d, bounce_back_cells_3d
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import correct_mass3d, stream3d
+from tensorlbm.collision_common import (
+    equilibrium3d,
+    macroscopic3d,
+    collide_bgk3d,
+    collide_smagorinsky_mrt3d,
+    correct_mass3d,
+    stream3d,
+)
+from tensorlbm.lbm_step_correct import lbm_step_correct
 from tensorlbm.drag_pressure import (
     SurfaceMesh,
     get_near_wall_2d,
@@ -52,11 +60,6 @@ from tensorlbm.bfl_common import (
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
-def no_dynamics(f, f_pre, solid):
-    """Restore solid cells to pre-collision values."""
-    sm = solid.unsqueeze(0).expand_as(f)
-    return torch.where(sm, f_pre, f)
-
 
 def drag_friction_bfl(f, mesh, dpS, nu, q_wall=None, u_wall=None):
     """Friction drag with BFL q-correction and optional wall velocity.
@@ -130,8 +133,6 @@ def compute_q_wall_per_cell(bfl_mask, bfl_q, near, device):
 # --------------------------------------------------------------------------- #
 def run_cylinder(device_id, mode, output_path):
     """Cylinder Re=200, D=48.  mode: 'bfl' or 'bb'."""
-    from tensorlbm.solver3d import collide_bgk3d
-
     device = torch.device(f"sdaa:{device_id}")
     torch.sdaa.set_device(device)
 
@@ -224,27 +225,16 @@ def run_cylinder(device_id, mode, output_path):
 
     cd_p_hist, cd_f_hist, cd_tot_hist, cl_hist = [], [], [], []
     bc_config = {"far_field_faces": ["y-", "y+"], "periodic_faces": ["z-", "z+"]}
+    far_field_fn = functools.partial(far_field_bc_3d, bc_config=bc_config)
 
     for step in range(1, n_steps + 1):
-        f_pre = f.clone()
-        f = collide_bgk3d(f, tau=tau)
-        f = no_dynamics(f, f_pre, solid)
-
-        if use_bfl:
-            f = bounce_back_cells_3d(f, solid)
-            f_pre_stream = f.clone()
-            f = stream3d(f)
-            f = far_field_bc_3d(f, u_in, bc_config=bc_config)
-            f = bfl_bounce_back_common(
-                f, f_pre_stream, bfl_mask, bfl_q, lattice="D3Q19"
-            )
-        else:
-            f = bounce_back_cells_3d(f, solid)
-            f = stream3d(f)
-            f = far_field_bc_3d(f, u_in, bc_config=bc_config)
-
-        if step % 200 == 0:
-            f = correct_mass3d(f, im)
+        f = lbm_step_correct(
+            f, collide_bgk3d, tau, solid, u_in, far_field_fn,
+            correct_mass_fn=correct_mass3d, target_mass=im,
+            step=step, mass_interval=200,
+            wall_treatment="bfl" if use_bfl else "bb",
+            bfl_mask=bfl_mask, bfl_q=bfl_q,
+        )
 
         fx_p, fy_p, _ = drag_pressure_integration(f, mesh, dpS)
         fx_f, fy_f, _ = drag_friction_bfl(f, mesh, dpS, nu, q_wall=q_wall)
