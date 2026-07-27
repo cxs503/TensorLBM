@@ -14,14 +14,11 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[KVLCC2-Re1000-bfl SDAA:15] nx=300 ny=120 nz=120 L=80.0 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 Re=1000 use_bfl=True
-[KVLCC2-Re1000-bfl SDAA:15] solid cells: 30668  Cb_numerical=0.8874
-[KVLCC2-Re1000-bfl SDAA:15] dpS = 8.143008e+00 (D=draft=18.0)
-[KVLCC2-Re1000-bfl SDAA:15] near-wall cells: 14634
-[KVLCC2-Re1000-bfl SDAA:15] computing BFL q-values (generic voxelised)...
-[KVLCC2-Re1000-bfl SDAA:15] BFL q-field: 75076 links (0.1s) (q=0.5, generic voxelised)
-[KVLCC2-Re1000-bfl SDAA:15] init done (0.8s), initial_mass=4320000.0
-[KVLCC2-Re1000-bfl SDAA:15] step=1500 Cd_p=0.020359 Cd_f=0.133526 Cd_tot=0.153885 Cl=-0.000031 (1129s)
-[KVLCC2-Re1000-bfl SDAA:15] step=2000 Cd_p=0.019257 Cd_f=0.121674 Cd_tot=0.140931 Cl=0.000034 (1513s)
-[KVLCC2-Re1000-bfl SDAA:15] step=2500 Cd_p=0.019052 Cd_f=0.114476 Cd_tot=0.133528 Cl=-0.000013 (1898s)
-[KVLCC2-Re1000-bfl SDAA:15] step=3000 Cd_p=0.018918 Cd_f=0.109482 Cd_tot=0.128400 Cl=0.000023 (2280s)
+Device: sdaa:0
+
+============================================================
+TEST 1: Stationary cylinder Re=100
+============================================================
+[stationary] Re=100 D=24 grid=200x100x4 u_in=0.1 nu=2.400000e-02 tau=0.572000 n_steps=500
+[stationary] solid=1764 markers=62
+[stationary] init done (0.3s)
