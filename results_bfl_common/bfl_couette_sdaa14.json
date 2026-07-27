@@ -1,0 +1,22 @@
+{
+  "case": "couette_bfl",
+  "device": "sdaa:14",
+  "lattice": "D3Q19",
+  "collision": "BGK",
+  "boundary": "BFL_moving_wall",
+  "grid": "80x12x4",
+  "tau": 1.0,
+  "nu": 0.16666666666666666,
+  "u_top": 0.05,
+  "H": 10,
+  "n_steps": 3000,
+  "warmup": 500,
+  "Cf_mean": -0.6667120101451873,
+  "Cf_exact": 0.6666666666666666,
+  "Cf_err_pct": 200.0068015217781,
+  "u_err_max_pct": 0.005103647708892822,
+  "n_bfl_links": 3200,
+  "friction_formula": "nu*(u_t-u_wall)/q",
+  "finite": true,
+  "elapsed_s": 58.63537645339966
+}

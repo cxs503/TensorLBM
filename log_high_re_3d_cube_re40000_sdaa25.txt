@@ -22,3 +22,6 @@
 [cube_re40000_3d SDAA:25] step=1000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.790174 (857s, 0.857s/step)
 [cube_re40000_3d SDAA:25] step=2000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.717224 (1708s, 0.854s/step)
 [cube_re40000_3d SDAA:25] step=3000/10000 Cd_p=1.0404 Cd_f=0.0000 Cd_tot=1.0404 Cl=0.694591 (2558s, 0.853s/step)
+[cube_re40000_3d SDAA:25] step=4000/10000 Cd_p=1.0698 Cd_f=-0.0003 Cd_tot=1.0695 Cl=0.624149 (3408s, 0.852s/step)
+[cube_re40000_3d SDAA:25] step=5000/10000 Cd_p=1.0467 Cd_f=-0.0002 Cd_tot=1.0464 Cl=0.541976 (4257s, 0.851s/step)
+[cube_re40000_3d SDAA:25] step=6000/10000 Cd_p=1.0327 Cd_f=-0.0000 Cd_tot=1.0326 Cl=0.644648 (5107s, 0.851s/step)
