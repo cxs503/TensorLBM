@@ -31,3 +31,17 @@
 [SDAA:21 DTMB5415] step=3000 Cd_p=-0.000243 Cd_f=0.049718 Cd_tot=0.049475 (ITTC=0.075000) [479s]
 [SDAA:21 DTMB5415] step=3500 Cd_p=-0.000236 Cd_f=0.049359 Cd_tot=0.049123 (ITTC=0.075000) [563s]
 [SDAA:21 DTMB5415] step=4000 Cd_p=-0.000238 Cd_f=0.049182 Cd_tot=0.048944 (ITTC=0.075000) [646s]
+[SDAA:21 DTMB5415] step=4500 Cd_p=-0.000235 Cd_f=0.049097 Cd_tot=0.048862 (ITTC=0.075000) [729s]
+[SDAA:21 DTMB5415] step=5000 Cd_p=-0.000234 Cd_f=0.049057 Cd_tot=0.048823 (ITTC=0.075000) [812s]
+
+============================================================
+[SDAA:21 DTMB5415] FINAL RESULTS
+============================================================
+  Cd_pressure  = -0.000234
+  Cd_friction  = 0.049077
+  Cd_total     = 0.048843
+  Cf_ITTC      = 0.075000  (err=34.9%)
+  S_wetted     = 4755.7
+  Wall time: 812s (13.5 min)
+  Finite: True
+  Saved to results_bug46_dtmb5415_sdaa21.json
