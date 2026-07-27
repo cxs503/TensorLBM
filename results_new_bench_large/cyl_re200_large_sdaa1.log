@@ -31,3 +31,16 @@
 [cyl_re200_large SDAA:1] step=3500/5000 Cd_p=0.973457 Cd_f=0.137016 Cd_tot=1.110473 (417s)
 [cyl_re200_large SDAA:1] step=4000/5000 Cd_p=0.963138 Cd_f=0.135014 Cd_tot=1.098152 (478s)
 [cyl_re200_large SDAA:1] step=4500/5000 Cd_p=0.952866 Cd_f=0.133634 Cd_tot=1.086500 (539s)
+[cyl_re200_large SDAA:1] step=5000/5000 Cd_p=0.944846 Cd_f=0.132629 Cd_tot=1.077475 (600s)
+
+============================================================
+[cyl_re200_large SDAA:1] FINAL RESULTS
+============================================================
+[cyl_re200_large SDAA:1] Cd_p  = 0.948856
+[cyl_re200_large SDAA:1] Cd_f  = 0.133131
+[cyl_re200_large SDAA:1] Cd_tot= 1.081988
+[cyl_re200_large SDAA:1] Cd_ref= 1.300000  err=16.8%
+[cyl_re200_large SDAA:1] St    = None
+[cyl_re200_large SDAA:1] time  = 600s (10.0 min)
+[cyl_re200_large SDAA:1] finite= True
+[cyl_re200_large SDAA:1] Results → results_new_bench_large/cyl_re200_large_sdaa1.json

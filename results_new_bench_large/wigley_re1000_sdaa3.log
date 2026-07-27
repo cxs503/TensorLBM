@@ -27,3 +27,19 @@
 [wigley_re1000 SDAA:3] step=2000/5000 Cd_p=0.009397 Cd_f=0.040662 Cd_tot=0.050059 (307s)
 [wigley_re1000 SDAA:3] step=2500/5000 Cd_p=0.009365 Cd_f=0.040059 Cd_tot=0.049424 (386s)
 [wigley_re1000 SDAA:3] step=3000/5000 Cd_p=0.009332 Cd_f=0.039819 Cd_tot=0.049151 (466s)
+[wigley_re1000 SDAA:3] step=3500/5000 Cd_p=0.009310 Cd_f=0.039718 Cd_tot=0.049028 (546s)
+[wigley_re1000 SDAA:3] step=4000/5000 Cd_p=0.009275 Cd_f=0.039662 Cd_tot=0.048937 (625s)
+[wigley_re1000 SDAA:3] step=4500/5000 Cd_p=0.009261 Cd_f=0.039630 Cd_tot=0.048891 (704s)
+[wigley_re1000 SDAA:3] step=5000/5000 Cd_p=0.009260 Cd_f=0.039613 Cd_tot=0.048873 (783s)
+
+============================================================
+[wigley_re1000 SDAA:3] FINAL RESULTS
+============================================================
+[wigley_re1000 SDAA:3] Cd_p  = 0.009261
+[wigley_re1000 SDAA:3] Cd_f  = 0.039621
+[wigley_re1000 SDAA:3] Cd_tot= 0.048882
+[wigley_re1000 SDAA:3] Cd_ref= 0.075000  err=34.8%
+[wigley_re1000 SDAA:3] St    = None
+[wigley_re1000 SDAA:3] time  = 783s (13.1 min)
+[wigley_re1000 SDAA:3] finite= True
+[wigley_re1000 SDAA:3] Results → results_new_bench_large/wigley_re1000_sdaa3.json
