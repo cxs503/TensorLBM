@@ -29,3 +29,5 @@
 [SDAA:2 C3 bare_hull L=160] step=3500 Cd_p=0.008176 Cd_f=0.044970 Cd_tot=0.053146 Cl=0.000000 (1798s)
 [SDAA:2 C3 bare_hull L=160] step=4000 Cd_p=0.008179 Cd_f=0.044828 Cd_tot=0.053007 Cl=-0.000008 (2054s)
 [SDAA:2 C3 bare_hull L=160] step=4500 Cd_p=0.008152 Cd_f=0.044753 Cd_tot=0.052904 Cl=-0.000001 (2310s)
+[SDAA:2 C3 bare_hull L=160] step=5000 Cd_p=0.008199 Cd_f=0.044719 Cd_tot=0.052918 Cl=-0.000010 (2566s)
+[SDAA:2 C3 bare_hull L=160] step=5500 Cd_p=0.008131 Cd_f=0.044700 Cd_tot=0.052831 Cl=-0.000001 (2821s)

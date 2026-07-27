@@ -26,3 +26,4 @@
 [cyl_re3900_20pct SDAA:4] step=2000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.025870 nu_t_max=2.1877e-02 (1375s, 0.687s/step)
 [cyl_re3900_20pct SDAA:4] step=2500/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.020161 nu_t_max=3.5308e-02 (1717s, 0.687s/step)
 [cyl_re3900_20pct SDAA:4] step=3000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.029203 nu_t_max=5.0978e-02 (2061s, 0.687s/step)
+[cyl_re3900_20pct SDAA:4] step=3500/10000 Cd_p=1.0808 Cd_f=0.0120 Cd_tot=1.0928 Cl=-0.014627 nu_t_max=6.6628e-02 (2405s, 0.687s/step)
