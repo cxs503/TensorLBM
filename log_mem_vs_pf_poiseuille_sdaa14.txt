@@ -18,3 +18,10 @@
 [PoiseuilleMEMvsPF SDAA:14] init done (0.3s)
 [PoiseuilleMEMvsPF SDAA:14] step=500 Cd_MEM=nan Cd_PF_f=nan (Cd_body=42.666667) u_max=0.073980 (7s)
 [PoiseuilleMEMvsPF SDAA:14] step=1000 Cd_MEM=63.997882 Cd_PF_f=59.731338 (Cd_body=42.666667) u_max=0.073999 (42s)
+[PoiseuilleMEMvsPF SDAA:14] step=1500 Cd_MEM=63.998529 Cd_PF_f=59.732009 (Cd_body=42.666667) u_max=0.073999 (76s)
+[PoiseuilleMEMvsPF SDAA:14] step=2000 Cd_MEM=63.998745 Cd_PF_f=59.732232 (Cd_body=42.666667) u_max=0.073999 (110s)
+[PoiseuilleMEMvsPF SDAA:14] step=2500 Cd_MEM=63.998853 Cd_PF_f=59.732344 (Cd_body=42.666667) u_max=0.073999 (144s)
+[PoiseuilleMEMvsPF SDAA:14] step=3000 Cd_MEM=63.998917 Cd_PF_f=59.732411 (Cd_body=42.666667) u_max=0.073999 (178s)
+
+[PoiseuilleMEMvsPF SDAA:14] === FINAL === u_max=0.073999(err=48.00%) Cd_MEM=63.998917(err=50.00%) Cd_PF_f=59.732411(err=40.00%) Cd_p=0.000000 |diff|=4.26650656 t=178s
+[PoiseuilleMEMvsPF SDAA:14] saved mem_vs_pf_poiseuille_sdaa14.json

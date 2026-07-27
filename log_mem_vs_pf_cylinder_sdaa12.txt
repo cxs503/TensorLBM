@@ -20,3 +20,13 @@
 [CylMEMvsPF SDAA:12] step=500 (warmup) (12s)
 [CylMEMvsPF SDAA:12] step=1000 (warmup) (24s)
 [CylMEMvsPF SDAA:12] step=1500 Cd_MEM=1.5965 Cd_PF=1.4831 (ref=1.30) (38s)
+[CylMEMvsPF SDAA:12] step=2000 Cd_MEM=1.5818 Cd_PF=1.4691 (ref=1.30) (53s)
+[CylMEMvsPF SDAA:12] step=2500 Cd_MEM=1.5651 Cd_PF=1.4534 (ref=1.30) (67s)
+[CylMEMvsPF SDAA:12] step=3000 Cd_MEM=1.5542 Cd_PF=1.4432 (ref=1.30) (81s)
+[CylMEMvsPF SDAA:12] step=3500 Cd_MEM=1.5466 Cd_PF=1.4361 (ref=1.30) (96s)
+[CylMEMvsPF SDAA:12] step=4000 Cd_MEM=1.5413 Cd_PF=1.4311 (ref=1.30) (110s)
+[CylMEMvsPF SDAA:12] step=4500 Cd_MEM=1.5377 Cd_PF=1.4277 (ref=1.30) (124s)
+[CylMEMvsPF SDAA:12] step=5000 Cd_MEM=1.5353 Cd_PF=1.4254 (ref=1.30) (139s)
+
+[CylMEMvsPF SDAA:12] === FINAL === Cd_MEM=1.5353(err=18.1%) Cd_P=1.2624 Cd_F=0.1630 Cd_PF=1.4254(err=9.6%) |diff|=0.109841 t=139s
+[CylMEMvsPF SDAA:12] saved mem_vs_pf_cylinder_sdaa12.json
