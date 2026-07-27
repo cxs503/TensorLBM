@@ -190,11 +190,41 @@ def free_slip_z_walls_3d(
     return free_slip_cells_3d(f, wall_mask, axis=2)
 
 
+def _as_inlet_profile_3d(
+    value: float | torch.Tensor, ref: torch.Tensor,
+) -> torch.Tensor:
+    """Convert a scalar or tensor to a (nz, ny) inlet profile.
+
+    Args:
+        value: Scalar float or tensor of shape (nz, ny) or broadcastable.
+        ref:   Reference tensor of shape (nz, ny) for shape/device/dtype.
+
+    Returns:
+        Profile tensor of shape (nz, ny) on the correct device/dtype.
+    """
+    if isinstance(value, torch.Tensor):
+        profile = value.to(device=ref.device, dtype=ref.dtype)
+        if profile.ndim == 0:
+            return torch.full_like(ref, float(profile.item()))
+        if profile.shape != ref.shape:
+            # Try broadcasting (e.g. (1, ny) → (nz, ny))
+            try:
+                return profile.expand_as(ref).contiguous()
+            except RuntimeError as exc:
+                msg = (
+                    f"Inlet profile must have shape {tuple(ref.shape)}, "
+                    f"got {tuple(profile.shape)}"
+                )
+                raise ValueError(msg) from exc
+        return profile
+    return torch.full_like(ref, float(value))
+
+
 def zou_he_inlet_velocity_3d(
     f: torch.Tensor,
-    u_in: float,
-    uy_in: float = 0.0,
-    uz_in: float = 0.0,
+    u_in: float | torch.Tensor,
+    uy_in: float | torch.Tensor = 0.0,
+    uz_in: float | torch.Tensor = 0.0,
 ) -> torch.Tensor:
     """Zou/He inlet velocity boundary condition at the left face (x=0) for D3Q19.
 
@@ -205,9 +235,13 @@ def zou_he_inlet_velocity_3d(
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)``.
-        u_in: Prescribed x-velocity at the inlet.
-        uy_in: Prescribed y-velocity at the inlet (default 0).
-        uz_in: Prescribed z-velocity at the inlet (default 0).
+        u_in: Prescribed x-velocity at the inlet.  May be a scalar (uniform)
+            or a tensor of shape ``(nz, ny)`` for a spatially-varying profile
+            (e.g. parabolic Poiseuille inlet).
+        uy_in: Prescribed y-velocity at the inlet (default 0).  Scalar or
+            ``(nz, ny)`` tensor.
+        uz_in: Prescribed z-velocity at the inlet (default 0).  Scalar or
+            ``(nz, ny)`` tensor.
 
     Returns:
         Updated distribution tensor (same shape).
@@ -228,14 +262,21 @@ def zou_he_inlet_velocity_3d(
         f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0]
         + f[12, :, :, 0] + f[14, :, :, 0]
     )  # cx<0 directions at x=0 → shape (nz, ny)
-    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_in)  # (nz, ny)
+
+    # Support scalar or tensor (nz, ny) velocity profiles
+    ref = f[0, :, :, 0]  # (nz, ny)
+    u_col = _as_inlet_profile_3d(u_in, ref)
+    uy_col = _as_inlet_profile_3d(uy_in, ref)
+    uz_col = _as_inlet_profile_3d(uz_in, ref)
+
+    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_col)  # (nz, ny)
 
     # Step 2: Compute equilibrium at (rho, u_in, uy_in, uz_in) for the inlet plane only.
     # Unsqueeze to (nz, ny, 1) so equilibrium3d produces (19, nz, ny, 1).
     rho3 = rho.unsqueeze(-1)               # (nz, ny, 1)
-    ux_field = torch.full_like(rho3, u_in)
-    uy_field = torch.full_like(rho3, uy_in)
-    uz_field = torch.full_like(rho3, uz_in)
+    ux_field = u_col.unsqueeze(-1)         # (nz, ny, 1)
+    uy_field = uy_col.unsqueeze(-1)         # (nz, ny, 1)
+    uz_field = uz_col.unsqueeze(-1)         # (nz, ny, 1)
     feq = equilibrium3d(rho3, ux_field, uy_field, uz_field, device=device)  # (19, nz, ny, 1)
 
     # Step 3: Non-equilibrium bounce-back (vectorised, no Python loop, no .item())

@@ -33,6 +33,7 @@ def bouzidi_bounce_back_d3q19_vec(
     f_prev: torch.Tensor,
     fluid_boundary_mask: torch.Tensor,
     q_field: torch.Tensor,
+    wall_correction: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Vectorized BFL interpolated bounce-back for ALL D3Q19 directions.
 
@@ -41,6 +42,18 @@ def bouzidi_bounce_back_d3q19_vec(
         f_prev: Pre-stream distribution (19, nz, ny, nx)
         fluid_boundary_mask: (19, nz, ny, nx) bool
         q_field: (19, nz, ny, nx) float, per-direction fractional distance
+        wall_correction: Optional (19, nz, ny, nx) float, moving-wall
+            momentum correction added to f_bc.  For a wall moving with
+            velocity **u_w**, the correction for the *unknown* population
+            in direction ``opp_d`` is::
+
+                corr[opp_d] = 2·ρ·w[opp_d]·(c[opp_d]·u_w)/cs²
+
+            Since the scatter step sets ``f_out[e] = f_bc[opp[e]]``, the
+            correction added to ``f_bc[d]`` is ``corr[opp[d]]``.  Pass a
+            pre-computed ``(19, nz, ny, nx)`` tensor that already accounts
+            for this opp-indexing (i.e. ``wall_correction[d]`` is the value
+            to add to ``f_bc[d]``).
 
     Returns:
         Updated distribution tensor.
@@ -71,6 +84,10 @@ def bouzidi_bounce_back_d3q19_vec(
     f_bc_quad = f_opp_all * inv_2q + (2.0 * safe_q - 1.0) * inv_2q * fp_opp_all
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)  # (19, nz, ny, nx)
+
+    # Moving-wall momentum correction (already opp-indexed by caller)
+    if wall_correction is not None:
+        f_bc = f_bc + wall_correction
 
     # Scatter: for each output direction e, set f_out[e] = f_bc[opp[e]]
     # where mask[opp[e]] is True.
