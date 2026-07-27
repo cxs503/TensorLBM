@@ -1,0 +1,23 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re3900_20pct SDAA:4] D=48.0 nx=400 ny=240 nz=50 u_in=0.08 Re=3900.0 nu=9.846154e-04 tau=0.502954 blockage=0.20 MRT+RANS-k-epsilon steps=10000
+[cyl_re3900_20pct SDAA:4] 20% blockage (ny=240) vs previous 30% (ny=160)
+[cyl_re3900_20pct SDAA:4] solid cells=89650
+[cyl_re3900_20pct SDAA:4] near-wall cells=6800
+[cyl_re3900_20pct SDAA:4] SurfaceMesh.from_cylinder built
+[cyl_re3900_20pct SDAA:4] KESolver initialized, k0=9.999988e-05 eps0=1.000000e-06
+[cyl_re3900_20pct SDAA:4] step=500/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.008415 nu_t_max=7.5061e-03 (345s, 0.690s/step)

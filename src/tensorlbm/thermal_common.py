@@ -898,6 +898,9 @@ def run_heated_cylinder_common(
     Re: float = 200.0,
     Pr: float = 0.71,
     n_steps: int = 6000,
+    nx: int = 320,
+    ny: int = 160,
+    nz: int = 4,
 ) -> dict[str, object]:
     """Heated cylinder in cross-flow using common modules.
 
@@ -908,8 +911,11 @@ def run_heated_cylinder_common(
     """
     device = torch.device(device)
     R = D / 2.0
-    nx, ny, nz = 320, 160, 4
     cx, cy = nx * 0.25, ny * 0.5
+    # Ensure cylinder fits within domain (avoid SDAA crash from OOB access)
+    cx = max(cx, R + 2.0)
+    cy = max(cy, R + 2.0)
+    cy = min(cy, ny - R - 2.0)
     u_in = 0.08
     nu = u_in * D / Re
     tau = 3.0 * nu + 0.5
