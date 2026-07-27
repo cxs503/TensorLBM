@@ -6,6 +6,66 @@ Vectorized: ~5 batch ops per call → ~5ms
 import math, torch
 from tensorlbm.ibm import ibm_delta_hat, ibm_delta_4pt
 
+__all__ = [
+    "ibm_velocity_interpolate_3d_vec",
+    "ibm_direct_forcing_3d_vec",
+]
+
+
+def ibm_velocity_interpolate_3d_vec(
+    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    marker_x: torch.Tensor, marker_y: torch.Tensor, marker_z: torch.Tensor,
+    kernel: str = "hat",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Vectorized 3D velocity interpolation onto Lagrangian markers."""
+    nz, ny, nx = ux.shape
+    device = ux.device
+    n_markers = marker_x.shape[0]
+
+    delta_fn = ibm_delta_hat if kernel == "hat" else ibm_delta_4pt
+    support = 2 if kernel == "hat" else 4
+    half_s = support // 2
+
+    mx = marker_x
+    my = marker_y
+    mz = marker_z
+
+    ix0 = (torch.floor(mx) - half_s + 1).long()
+    iy0 = (torch.floor(my) - half_s + 1).long()
+    iz0 = (torch.floor(mz) - half_s + 1).long()
+
+    offsets = torch.arange(support, device=device)
+
+    ix_all = (ix0.unsqueeze(1) + offsets.unsqueeze(0)) % nx
+    iy_all = (iy0.unsqueeze(1) + offsets.unsqueeze(0)) % ny
+    iz_all = (iz0.unsqueeze(1) + offsets.unsqueeze(0)) % nz
+
+    rx_all = (ix0.unsqueeze(1) + offsets.unsqueeze(0)).float() - mx.unsqueeze(1)
+    ry_all = (iy0.unsqueeze(1) + offsets.unsqueeze(0)).float() - my.unsqueeze(1)
+    rz_all = (iz0.unsqueeze(1) + offsets.unsqueeze(0)).float() - mz.unsqueeze(1)
+
+    wx_all = delta_fn(rx_all)
+    wy_all = delta_fn(ry_all)
+    wz_all = delta_fn(rz_all)
+
+    u_mx = torch.zeros(n_markers, dtype=ux.dtype, device=device)
+    u_my = torch.zeros(n_markers, dtype=uy.dtype, device=device)
+    u_mz = torch.zeros(n_markers, dtype=uz.dtype, device=device)
+
+    for di in range(support):
+        for dj in range(support):
+            for dk in range(support):
+                w = wx_all[:, di] * wy_all[:, dj] * wz_all[:, dk]
+                ix = ix_all[:, di]
+                iy = iy_all[:, dj]
+                iz = iz_all[:, dk]
+                u_mx += w * ux[iz, iy, ix]
+                u_my += w * uy[iz, iy, ix]
+                u_mz += w * uz[iz, iy, ix]
+
+    return u_mx, u_my, u_mz
+
+
 def ibm_direct_forcing_3d_vec(
     ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
     marker_x: torch.Tensor, marker_y: torch.Tensor, marker_z: torch.Tensor,

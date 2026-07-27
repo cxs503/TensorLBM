@@ -20,3 +20,11 @@
 [cube_re40000 RANS-ke SDAA:6] SurfaceMesh.from_gradient built
 [cube_re40000 RANS-ke SDAA:6] KESolver initialized, k0=9.999995e-05 eps0=1.000000e-06
 [cube_re40000 RANS-ke SDAA:6] step=200/2000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.796359 nu_t_max=4.7268e-03 (31s, 0.155s/step)
+[cube_re40000 RANS-ke SDAA:6] step=400/2000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.835219 nu_t_max=7.2412e-03 (62s, 0.155s/step)
+[cube_re40000 RANS-ke SDAA:6] step=600/2000 Cd_p=1.1058 Cd_f=0.0007 Cd_tot=1.1066 Cl=0.801403 nu_t_max=9.7246e-03 (93s, 0.154s/step)
+[cube_re40000 RANS-ke SDAA:6] step=800/2000 Cd_p=1.1185 Cd_f=0.0007 Cd_tot=1.1192 Cl=0.761672 nu_t_max=1.2857e-02 (123s, 0.154s/step)
+[cube_re40000 RANS-ke SDAA:6] step=1000/2000 Cd_p=1.0952 Cd_f=0.0007 Cd_tot=1.0959 Cl=0.724564 nu_t_max=1.5264e-02 (154s, 0.154s/step)
+[cube_re40000 RANS-ke SDAA:6] step=1200/2000 Cd_p=1.0775 Cd_f=0.0007 Cd_tot=1.0782 Cl=0.702426 nu_t_max=1.6928e-02 (185s, 0.154s/step)
+[cube_re40000 RANS-ke SDAA:6] step=1400/2000 Cd_p=1.0714 Cd_f=0.0007 Cd_tot=1.0721 Cl=0.688283 nu_t_max=1.8164e-02 (216s, 0.154s/step)
+[cube_re40000 RANS-ke SDAA:6] step=1600/2000 Cd_p=1.0704 Cd_f=0.0007 Cd_tot=1.0711 Cl=0.682338 nu_t_max=1.9313e-02 (247s, 0.154s/step)
+[cube_re40000 RANS-ke SDAA:6] step=1800/2000 Cd_p=1.0619 Cd_f=0.0007 Cd_tot=1.0626 Cl=0.673241 nu_t_max=2.0441e-02 (278s, 0.155s/step)

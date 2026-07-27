@@ -91,6 +91,16 @@ def drag_friction_bfl(f, mesh, dpS, nu, q_wall=None, u_wall=None):
         tau_y = 2.0 * nu * ut_y
         tau_z = 2.0 * nu * ut_z
 
+    # For moving walls, the formula above computes the shear stress exerted
+    # BY the wall ON the fluid (negative when u_wall > u_fluid).  The drag
+    # force ON the wall is the reaction: F_wall = -τ_fluid.  For stationary
+    # walls (u_wall=None) the formula already gives the correct positive
+    # drag (shear stress exerted by the fluid on the wall).
+    if u_wall is not None:
+        tau_x = -tau_x
+        tau_y = -tau_y
+        tau_z = -tau_z
+
     mask = mesh.near.float() * mesh.dA
     ffx = (tau_x * mask).sum()
     ffy = (tau_y * mask).sum()

@@ -21,3 +21,14 @@
 [Cyl-Re200-bfl SDAA:12] BFL q-field: 3424 links (0.1s) q=[0.0142, 1.0000] mean=0.3556
   q_wall: n_near=544 q_min=0.0535 q_max=1.0000 q_mean=0.3806
 [Cyl-Re200-bfl SDAA:12] init done (0.5s), initial_mass=256000.0
+[Cyl-Re200-bfl SDAA:12] step=2500 Cd_p=1.458571 Cd_f=0.379896 Cd_tot=1.838467 Cl=-0.008236 (107s)
+[Cyl-Re200-bfl SDAA:12] step=3000 Cd_p=1.450144 Cd_f=0.376779 Cd_tot=1.826923 Cl=0.008806 (128s)
+[Cyl-Re200-bfl SDAA:12] step=3500 Cd_p=1.453597 Cd_f=0.375563 Cd_tot=1.829161 Cl=0.023746 (149s)
+[Cyl-Re200-bfl SDAA:12] step=4000 Cd_p=1.449149 Cd_f=0.375333 Cd_tot=1.824482 Cl=0.016303 (170s)
+[Cyl-Re200-bfl SDAA:12] step=4500 Cd_p=1.459622 Cd_f=0.375913 Cd_tot=1.835536 Cl=-0.016473 (191s)
+[Cyl-Re200-bfl SDAA:12] step=5000 Cd_p=1.454613 Cd_f=0.376677 Cd_tot=1.831290 Cl=-0.041841 (211s)
+[Cyl-Re200-bfl SDAA:12] step=5500 Cd_p=1.462032 Cd_f=0.377094 Cd_tot=1.839127 Cl=-0.019088 (232s)
+[Cyl-Re200-bfl SDAA:12] step=6000 Cd_p=1.453369 Cd_f=0.377357 Cd_tot=1.830726 Cl=0.039894 (253s)
+[Cyl-Re200-bfl SDAA:12] step=6500 Cd_p=1.461725 Cd_f=0.377596 Cd_tot=1.839321 Cl=0.057520 (274s)
+[Cyl-Re200-bfl SDAA:12] step=7000 Cd_p=1.451611 Cd_f=0.377608 Cd_tot=1.829219 Cl=-0.015724 (295s)
+[Cyl-Re200-bfl SDAA:12] step=7500 Cd_p=1.459125 Cd_f=0.377778 Cd_tot=1.836902 Cl=-0.099620 (316s)
