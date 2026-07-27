@@ -14,14 +14,13 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-Device: sdaa:0
-
-============================================================
-TEST 1: Stationary cylinder Re=100
-============================================================
-[stationary] Re=100 D=24 grid=200x100x4 u_in=0.1 nu=2.400000e-02 tau=0.572000 n_steps=500
-[stationary] solid=1764 markers=62
-[stationary] init done (0.3s)
-[stationary] step=100/500 max_u=0.0337 Cd_tot=0.1278 Cd_ibm=0.1950 (629s)
-[stationary] step=200/500 max_u=0.0670 Cd_tot=0.8994 Cd_ibm=4.5984 (3111s)
-[stationary] step=300/500 max_u=0.1000 Cd_tot=1.3810 Cd_ibm=9.8238 (10751s)
+=== SUBOFF Re=1000 L=80 ===
+solid=4373, near=1938, S_wet=1997.7
+cx=100.0, cy=40.0, cz=40.0, L=80.0, R=4.667444574095683
+tau=0.5144, dpS=3.596
+Traceback (most recent call last):
+  File "<string>", line 35, in <module>
+  File "/root/TensorLBM_dev/src/tensorlbm/lbm_step_correct.py", line 205, in lbm_step_correct
+    f = collide_fn(f, tau=tau, **collide_kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: 'Tensor' object is not callable
