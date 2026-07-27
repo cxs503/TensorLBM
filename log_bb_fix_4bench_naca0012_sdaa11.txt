@@ -1,0 +1,37 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:11 NACA0012-BBfix Re=1000 6L] chord=100 nx=600 ny=300 nz=4 u_in=0.05 nu=5.000000e-03 tau=0.515000 Cs=0.05 n_steps=10000 dpS=5.000000e-01
+[SDAA:11 NACA0012-BBfix Re=1000 6L] solid=4028 near=832 mesh=from_naca (0.6s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] init done (0.6s) mass=720000.0
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=1000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=0.000000 (154s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=2000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=0.000000 (306s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=3000/10000 Cd_p=0.053113 Cd_f=0.061722 Cd_tot=0.114835 Cl=0.001616 (457s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=4000/10000 Cd_p=0.053921 Cd_f=0.058390 Cd_tot=0.112312 Cl=0.001353 (607s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=5000/10000 Cd_p=0.053800 Cd_f=0.056908 Cd_tot=0.110708 Cl=0.001262 (700s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=6000/10000 Cd_p=0.053562 Cd_f=0.056082 Cd_tot=0.109644 Cl=0.001227 (793s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=7000/10000 Cd_p=0.053369 Cd_f=0.055558 Cd_tot=0.108927 Cl=0.001202 (885s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=8000/10000 Cd_p=0.053211 Cd_f=0.055209 Cd_tot=0.108420 Cl=0.001186 (978s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=9000/10000 Cd_p=0.053120 Cd_f=0.054973 Cd_tot=0.108094 Cl=0.001177 (1071s)
+[SDAA:11 NACA0012-BBfix Re=1000 6L] step=10000/10000 Cd_p=0.053050 Cd_f=0.054813 Cd_tot=0.107863 Cl=0.001174 (1163s)
+
+[SDAA:11 NACA0012-BBfix Re=1000 6L] === FINAL (Cd_ref=0.05) ===
+[SDAA:11 NACA0012-BBfix Re=1000 6L] Cd_p  = 0.053069
+[SDAA:11 NACA0012-BBfix Re=1000 6L] Cd_f  = 0.054850
+[SDAA:11 NACA0012-BBfix Re=1000 6L] Cd_tot= 0.107919  err=115.8%
+[SDAA:11 NACA0012-BBfix Re=1000 6L] St    = None
+[SDAA:11 NACA0012-BBfix Re=1000 6L] time  = 1163s
+[SDAA:11 NACA0012-BBfix Re=1000 6L] saved to results_bb_fix_retest/naca0012_sdaa11.json

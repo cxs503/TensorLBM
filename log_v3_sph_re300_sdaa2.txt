@@ -1,0 +1,20 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[sph_re300 SDAA:2] shape=sphere D=40.0 nx=180 ny=180 nz=180 u_in=0.08 Re=300.0 nu=1.066667e-02 tau=0.532000 collision=mrt_smag Cs=0.05 n_steps=5000
+[sph_re300 SDAA:2] solid=33371 near=4302 dpS=4.021239e+00
+[sph_re300 SDAA:2] init done (0.6s) mass=5832000.0
+[sph_re300 SDAA:2] step=500/5000 Cd=0.0000 Cl=0.000000 (527s, 1.055s/step)

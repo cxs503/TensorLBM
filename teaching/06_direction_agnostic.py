@@ -7,24 +7,37 @@ axes of the geometry should give identical drag results.
 Tests a cylinder oriented along z vs along y.  Both should give the
 same Cd (within numerical precision).
 
+Uses the COMMON INTERFACE ONLY:
+  - lbm_step_correct() for the main loop
+  - SurfaceMesh.from_cylinder() with axis swap for surface normals
+  - bounce_back_cells_3d(f_pre) for half-way BB (inside lbm_step_correct)
+  - far_field_bc_3d for far-field boundary
+  - drag_pressure_integration / drag_friction_integration for force
+  - momentum_exchange_standard for MEM cross-validation
+
 Usage:
-    PYTHONPATH=src python teaching/06_direction_agnostic.py [--device sdaa:11]
+    PYTHONPATH=src python teaching/06_direction_agnostic.py [device_id]
 """
 from __future__ import annotations
 
-import argparse
+import sys
 import torch
 
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
+from tensorlbm.solver3d import collide_bgk3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d
-from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d, drag_pressure_integration, drag_friction_integration
+from tensorlbm.lbm_step_correct import lbm_step_correct
+from tensorlbm.drag_pressure import (
+    SurfaceMesh, get_near_wall_3d,
+    drag_pressure_integration, drag_friction_integration,
+)
 from tensorlbm.momentum_exchange import momentum_exchange_standard
 
 
 def run_case(axis: str, nx=64, ny=32, nz=32, R=6.0, u_in=0.05, tau=0.6,
-             n_steps=1500, device="sdaa:11"):
-    dev = torch.device(device)
+             n_steps=1500, device_id=19):
+    dev = torch.device(f'sdaa:{device_id}')
+    torch.sdaa.set_device(dev)
     cx = nx // 4
     D = 2 * R
     nu = (tau - 0.5) / 3.0
@@ -53,11 +66,8 @@ def run_case(axis: str, nx=64, ny=32, nz=32, R=6.0, u_in=0.05, tau=0.6,
 
     cd_hist = []
     for step in range(1, n_steps + 1):
-        f_pre = f.clone()
-        f = collide_bgk3d(f, tau=tau)
-        f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
-        f = stream3d(f)
-        f = far_field_bc_3d(f, u_in=u_in, obstacle_mask=solid)
+        # Common interface: lbm_step_correct
+        f = lbm_step_correct(f, collide_bgk3d, tau, solid, u_in, far_field_bc_3d)
         if step > 500 and step % 20 == 0:
             fx, _, _ = momentum_exchange_standard(f, solid, near)
             cd_hist.append(fx / dpS)
@@ -66,17 +76,17 @@ def run_case(axis: str, nx=64, ny=32, nz=32, R=6.0, u_in=0.05, tau=0.6,
     return cd_mean
 
 
-def run(device="sdaa:11"):
+def run(device_id=19):
     print("=== Direction-Agnostic Verification: y↔z swap ===")
-    print(f"Device: {device}")
+    print(f"Device: sdaa:{device_id}")
     print()
 
     print("Running cylinder along z-axis...")
-    cd_z = run_case(axis='z', device=device)
+    cd_z = run_case(axis='z', device_id=device_id)
     print(f"  Cd (z-axis): {cd_z:.6f}")
 
     print("Running cylinder along y-axis...")
-    cd_y = run_case(axis='y', device=device)
+    cd_y = run_case(axis='y', device_id=device_id)
     print(f"  Cd (y-axis): {cd_y:.6f}")
 
     diff = abs(cd_z - cd_y)
@@ -84,16 +94,15 @@ def run(device="sdaa:11"):
 
     print()
     print(f"Difference: {diff:.6f} ({rel:.2f}%)")
-    if rel < 0.01:
+    passed = rel < 0.01
+    if passed:
         print("PASS: Direction-agnostic (0.00% difference)")
     else:
         print(f"CHECK: {rel:.2f}% difference (expected < 0.01%)")
 
-    return {"cd_z": cd_z, "cd_y": cd_y, "diff_pct": rel}
+    return {"cd_z": cd_z, "cd_y": cd_y, "diff_pct": rel, "passed": passed}
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Direction-agnostic verification")
-    parser.add_argument("--device", default="sdaa:11")
-    args = parser.parse_args()
-    run(device=args.device)
+    dev = int(sys.argv[1]) if len(sys.argv) > 1 else 19
+    run(device_id=dev)

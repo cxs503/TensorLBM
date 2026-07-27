@@ -1,0 +1,94 @@
+=== SDAA:28 SUBOFF L=40 standard ===
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:28 SUBOFF-BBfix L=40 standard] nx=100 ny=40 nz=40 L=40 D=4.667 u_in=0.06 nu=2.400000e-03 tau=0.507200 Cs=0.05 dpS=1.055751e+00 Cf_ref=0.041995 n_steps=5000
+[SDAA:28 SUBOFF-BBfix L=40 standard] solid=671 near=570 mesh=from_suboff (0.4s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] init done (0.4s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=500 Cd_p=0.015585 Cd_f=0.049440 Cd_tot=0.065025 (25s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=1000 Cd_p=0.010830 Cd_f=0.036467 Cd_tot=0.047296 (49s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=1500 Cd_p=0.010775 Cd_f=0.035440 Cd_tot=0.046215 (73s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=2000 Cd_p=0.010727 Cd_f=0.035309 Cd_tot=0.046036 (98s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=2500 Cd_p=0.010699 Cd_f=0.035278 Cd_tot=0.045978 (122s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=3000 Cd_p=0.010698 Cd_f=0.035270 Cd_tot=0.045968 (146s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=3500 Cd_p=0.010696 Cd_f=0.035268 Cd_tot=0.045964 (170s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=4000 Cd_p=0.010698 Cd_f=0.035267 Cd_tot=0.045965 (195s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=4500 Cd_p=0.010697 Cd_f=0.035267 Cd_tot=0.045963 (219s)
+[SDAA:28 SUBOFF-BBfix L=40 standard] step=5000 Cd_p=0.010698 Cd_f=0.035267 Cd_tot=0.045964 (243s)
+
+[SDAA:28 SUBOFF-BBfix L=40 standard] === FINAL (Cf_ref=0.041995) ===
+[SDAA:28 SUBOFF-BBfix L=40 standard] Cd_p  = 0.010697
+[SDAA:28 SUBOFF-BBfix L=40 standard] Cd_f  = 0.035267
+[SDAA:28 SUBOFF-BBfix L=40 standard] Cd_tot= 0.045964  err=9.5%
+[SDAA:28 SUBOFF-BBfix L=40 standard] time=243s
+[SDAA:28 SUBOFF-BBfix L=40 standard] saved to results_grid_conv_bbfix/suboff_L40_std_sdaa28.json
+=== SDAA:28 SUBOFF L=80 standard ===
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:28 SUBOFF-BBfix L=80 standard] nx=200 ny=80 nz=80 L=80 D=9.335 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.041995 n_steps=5000
+[SDAA:28 SUBOFF-BBfix L=80 standard] solid=4651 near=2050 mesh=from_suboff (0.8s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] init done (0.9s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=500 Cd_p=0.012264 Cd_f=0.072072 Cd_tot=0.084337 (145s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=1000 Cd_p=0.005659 Cd_f=0.045648 Cd_tot=0.051308 (290s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=1500 Cd_p=0.005486 Cd_f=0.041107 Cd_tot=0.046593 (434s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=2000 Cd_p=0.005473 Cd_f=0.039668 Cd_tot=0.045142 (577s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=2500 Cd_p=0.005455 Cd_f=0.039216 Cd_tot=0.044672 (721s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=3000 Cd_p=0.005430 Cd_f=0.039064 Cd_tot=0.044494 (864s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=3500 Cd_p=0.005420 Cd_f=0.039009 Cd_tot=0.044430 (1008s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=4000 Cd_p=0.005393 Cd_f=0.038984 Cd_tot=0.044376 (1151s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=4500 Cd_p=0.005389 Cd_f=0.038970 Cd_tot=0.044359 (1295s)
+[SDAA:28 SUBOFF-BBfix L=80 standard] step=5000 Cd_p=0.005389 Cd_f=0.038964 Cd_tot=0.044353 (1438s)
+
+[SDAA:28 SUBOFF-BBfix L=80 standard] === FINAL (Cf_ref=0.041995) ===
+[SDAA:28 SUBOFF-BBfix L=80 standard] Cd_p  = 0.005389
+[SDAA:28 SUBOFF-BBfix L=80 standard] Cd_f  = 0.038967
+[SDAA:28 SUBOFF-BBfix L=80 standard] Cd_tot= 0.044356  err=5.6%
+[SDAA:28 SUBOFF-BBfix L=80 standard] time=1438s
+[SDAA:28 SUBOFF-BBfix L=80 standard] saved to results_grid_conv_bbfix/suboff_L80_std_sdaa28.json
+=== SDAA:28 SUBOFF L=160 standard ===
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:28 SUBOFF-BBfix L=160 standard] nx=300 ny=120 nz=120 L=160 D=18.670 u_in=0.06 nu=9.600000e-03 tau=0.528800 Cs=0.05 dpS=1.689202e+01 Cf_ref=0.041995 n_steps=3000
+[SDAA:28 SUBOFF-BBfix L=160 standard] solid=37031 near=8014 mesh=from_suboff (1.1s)
+[SDAA:28 SUBOFF-BBfix L=160 standard] init done (1.3s)

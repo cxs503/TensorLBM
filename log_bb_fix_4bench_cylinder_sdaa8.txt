@@ -1,0 +1,37 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] nx=400 ny=160 nz=4 D=48.0 u_in=0.08 nu=1.920000e-02 tau=0.557600 Cs=0.05 n_steps=5000 dpS=6.144000e-01
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] solid=7172 near=544 mesh=from_cylinder (0.4s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] init done (0.4s) mass=256000.0
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=500/5000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.000000 (23s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=1000/5000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.000000 (46s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=1500/5000 Cd_p=1.5169 Cd_f=0.1936 Cd_tot=1.7104 Cl=-0.010859 (69s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=2000/5000 Cd_p=1.4611 Cd_f=0.1878 Cd_tot=1.6488 Cl=-0.013259 (92s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=2500/5000 Cd_p=1.4512 Cd_f=0.1845 Cd_tot=1.6357 Cl=-0.007097 (115s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=3000/5000 Cd_p=1.4430 Cd_f=0.1831 Cd_tot=1.6261 Cl=0.008813 (137s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=3500/5000 Cd_p=1.4467 Cd_f=0.1827 Cd_tot=1.6294 Cl=0.022139 (160s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=4000/5000 Cd_p=1.4423 Cd_f=0.1829 Cd_tot=1.6252 Cl=0.014227 (183s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=4500/5000 Cd_p=1.4529 Cd_f=0.1834 Cd_tot=1.6363 Cl=-0.016546 (205s)
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] step=5000/5000 Cd_p=1.4480 Cd_f=0.1840 Cd_tot=1.6320 Cl=-0.038856 (229s)
+
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] === FINAL (Cd_ref=1.33) ===
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] Cd_p  = 1.447999
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] Cd_f  = 0.183975
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] Cd_tot= 1.631975  err=22.7%
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] St    = None
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] time  = 229s
+[SDAA:8 Cylinder-BBfix Re=200 D=48.0] saved to results_bb_fix_retest/cylinder_sdaa8.json

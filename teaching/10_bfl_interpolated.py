@@ -12,12 +12,19 @@ BFL formula (wall at fractional distance q from fluid cell):
 The friction drag uses the BFL-corrected formula:
     τ = ν · u_1 / q  (instead of τ = 2ν·u_1 for q=0.5)
 
+Uses the COMMON INTERFACE ONLY:
+  - bouzidi_bounce_back_3d_common() from tensorlbm.interpolated_bc_common
+  - bounce_back_cells_3d(f_pre) for half-way BB
+  - SurfaceMesh.from_sphere() for surface normals
+  - drag_pressure_integration / drag_friction_integration for force
+  - momentum_exchange_standard / momentum_exchange_bfl for MEM
+
 Usage:
-    PYTHONPATH=src python teaching/10_bfl_interpolated.py [--device sdaa:13]
+    PYTHONPATH=src python teaching/10_bfl_interpolated.py [device_id]
 """
 from __future__ import annotations
 
-import argparse
+import sys
 import math
 
 import torch
@@ -30,14 +37,11 @@ from tensorlbm.drag_pressure import (
     drag_pressure_integration, drag_friction_integration,
 )
 from tensorlbm.momentum_exchange import momentum_exchange_standard, momentum_exchange_bfl
+from tensorlbm.interpolated_bc_common import bouzidi_bounce_back_3d_common
 
 
 def compute_q_wall_sphere(solid, cx, cy, cz, R, device):
-    """Compute fractional wall distance q for sphere geometry.
-
-    For each near-wall fluid cell, q = distance to wall surface / 1.0
-    (in lattice units, where the wall is at the sphere surface).
-    """
+    """Compute fractional wall distance q for sphere geometry."""
     nz, ny, nx = solid.shape
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
@@ -46,28 +50,26 @@ def compute_q_wall_sphere(solid, cx, cy, cz, R, device):
         indexing="ij",
     )
     dist_to_center = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2)
-    # q = fractional distance from fluid cell to wall
-    # For a cell at distance r from center, wall is at R
-    # q = |R - r| (distance from cell to wall surface)
     q = (R - dist_to_center).abs()
-    q = q.clamp(min=0.01, max=0.99)  # clamp to valid range
+    q = q.clamp(min=0.01, max=0.99)
     return q
 
 
 def run(
     nx=48, ny=40, nz=40, R=6.0, u_in=0.05, tau=0.6,
-    n_steps=1500, warmup=500, device="sdaa:13",
+    n_steps=2000, warmup=800, device_id=19,
 ):
-    dev = torch.device(device)
+    dev = torch.device(f'sdaa:{device_id}')
+    torch.sdaa.set_device(dev)
     cx, cy, cz = nx // 4, ny // 2, nz // 2
     D = 2 * R
     nu = (tau - 0.5) / 3.0
     Re = u_in * D / nu
     dpS = 0.5 * u_in ** 2 * math.pi * R ** 2
 
-    print(f"=== BFL Interpolated BB + Friction: Re={Re:.0f} ===")
-    print(f"Grid: {nx}×{ny}×{nz}, R={R}, D={D}")
-    print(f"Device: {device}, steps={n_steps}")
+    print(f"=== BFL Interpolated BB + Friction: Re={Re:.0f} (SDAA:{device_id}) ===")
+    print(f"Grid: {nx}x{ny}x{nz}, R={R}, D={D}")
+    print(f"Steps: {n_steps}, warmup: {warmup}")
     print()
 
     zz, yy, xx = torch.meshgrid(
@@ -99,11 +101,30 @@ def run(
     print(f"{'Step':>6s}  {'Cd_MEM':>8s}  {'Cd_BFL':>8s}  {'Cd_f_std':>8s}  {'Cd_f_bfl':>8s}")
     print("-" * 50)
 
+    c = C.to(dev).float()
+
     for step in range(1, n_steps + 1):
         f_pre = f.clone()
         f = collide_bgk3d(f, tau=tau)
+
+        # NoDynamics: restore solid cells
+        sm = solid.unsqueeze(0).expand_as(f)
+        for q in range(19):
+            f[q] = torch.where(sm[q], f_pre[q], f[q])
+
+        # Half-way BB (common interface, with f_pre)
         f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
+
+        # BFL interpolated bounce-back (common interface)
+        # Apply for each direction that crosses the boundary
+        for direction in range(1, 19):
+            bouzidi_bounce_back_3d_common(f, f_pre, near, q_wall, direction,
+                                          lattice="D3Q19")
+
+        # Streaming
         f = stream3d(f)
+
+        # Far-field BC
         f = far_field_bc_3d(f, u_in=u_in, obstacle_mask=solid)
 
         if step > warmup and step % 20 == 0:
@@ -143,14 +164,19 @@ def run(
         print(f"  Cd_MEM (BFL, q-weighted): {cd_bfl:.4f}")
         print(f"  Cf (standard, q=0.5):     {cf_std:.4f}")
         print(f"  Cf (BFL, q-weighted):      {cf_bfl:.4f}")
-        print(f"  BFL/standard ratio (MEM):  {cd_bfl/cd_std:.3f}" if abs(cd_std) > 1e-10 else "")
-        return {"cd_std": cd_std, "cd_bfl": cd_bfl, "cf_std": cf_std, "cf_bfl": cf_bfl, "Re": Re}
-    return {"Re": Re}
+        if abs(cd_std) > 1e-10:
+            print(f"  BFL/standard ratio (MEM):  {cd_bfl/cd_std:.3f}")
+
+        # BFL should be close to standard for well-resolved sphere
+        diff_pct = abs(cd_bfl - cd_std) / max(abs(cd_std), 1e-10) * 100
+        passed = diff_pct < 20.0
+        print(f"  BFL vs std difference: {diff_pct:.1f}%")
+        print(f"  PASS (BFL vs std <20%): {passed}")
+        return {"cd_std": cd_std, "cd_bfl": cd_bfl, "cf_std": cf_std,
+                "cf_bfl": cf_bfl, "Re": Re, "passed": passed}
+    return {"Re": Re, "passed": False}
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="BFL interpolated BB")
-    parser.add_argument("--device", default="sdaa:13")
-    parser.add_argument("--n-steps", type=int, default=1500)
-    args = parser.parse_args()
-    run(n_steps=args.n_steps, device=args.device)
+    dev = int(sys.argv[1]) if len(sys.argv) > 1 else 19
+    run(device_id=dev)

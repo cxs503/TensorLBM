@@ -1,0 +1,39 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[PoiseuilleMEMvsPF SDAA:14] nx=80 ny=12 nz=12 tau=1.0 nu=0.166667
+[PoiseuilleMEMvsPF SDAA:14] H_full=10 H_half=5.0 G=6.666667e-04 u_max_target=0.05
+[PoiseuilleMEMvsPF SDAA:14] u_max_exact=0.050000 n_steps=3000
+[PoiseuilleMEMvsPF SDAA:14] near-wall cells=1920
+[PoiseuilleMEMvsPF SDAA:14] SurfaceMesh built (from_gradient)
+[PoiseuilleMEMvsPF SDAA:14] init done (0.4s), starting loop...
+[PoiseuilleMEMvsPF SDAA:14] step=500 Cd_MEM=nan Cd_PF_f=nan (Cd_body=42.666667) u_max=0.024660 (7s)
+[PoiseuilleMEMvsPF SDAA:14] step=1000 Cd_MEM=27.732052 Cd_PF_f=19.910090 (Cd_body=42.666667) u_max=0.024666 (40s)
+[PoiseuilleMEMvsPF SDAA:14] step=1500 Cd_MEM=27.732349 Cd_PF_f=19.910253 (Cd_body=42.666667) u_max=0.024666 (73s)
+[PoiseuilleMEMvsPF SDAA:14] step=2000 Cd_MEM=27.732448 Cd_PF_f=19.910307 (Cd_body=42.666667) u_max=0.024666 (106s)
+[PoiseuilleMEMvsPF SDAA:14] step=2500 Cd_MEM=27.732497 Cd_PF_f=19.910334 (Cd_body=42.666667) u_max=0.024666 (139s)
+[PoiseuilleMEMvsPF SDAA:14] step=3000 Cd_MEM=27.732527 Cd_PF_f=19.910350 (Cd_body=42.666667) u_max=0.024666 (172s)
+
+[PoiseuilleMEMvsPF SDAA:14] === FINAL RESULTS ===
+[PoiseuilleMEMvsPF SDAA:14] u_max_sim  = 0.024666  (exact=0.050000, err=50.67%)
+[PoiseuilleMEMvsPF SDAA:14] u_err_max  = 50.88%
+[PoiseuilleMEMvsPF SDAA:14] Cd_body   = 42.666667
+[PoiseuilleMEMvsPF SDAA:14] Cd_MEM     = 27.732527  (err=35.00%)
+[PoiseuilleMEMvsPF SDAA:14] Cd_PF_f    = 19.910350  (err=53.34%)
+[PoiseuilleMEMvsPF SDAA:14] Cd_PF_p    = 0.000000  (should be ~0)
+[PoiseuilleMEMvsPF SDAA:14] |MEM-PF|   = 7.82217675
+[PoiseuilleMEMvsPF SDAA:14] time       = 172s
+[PoiseuilleMEMvsPF SDAA:14] results saved to mem_vs_pf_poiseuille_sdaa14.json

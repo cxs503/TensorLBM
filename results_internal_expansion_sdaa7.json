@@ -1,0 +1,22 @@
+{
+  "case": "sudden_expansion",
+  "Re": 1000.0,
+  "ER": 2.0,
+  "inlet_h": 20.0,
+  "nx": 300,
+  "ny": 60,
+  "nz": 4,
+  "nu": 0.002,
+  "tau": 0.506,
+  "Cs": 0.1,
+  "n_steps": 10000,
+  "warmup": 2000,
+  "n_samples": 80,
+  "reattachment_x": NaN,
+  "xr_over_h": NaN,
+  "xr_ref": 9.0,
+  "cp": -0.14937020168872547,
+  "cp_ref": 0.55,
+  "wall_clock_s": 424.0294783115387,
+  "device": "sdaa:7"
+}
