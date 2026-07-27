@@ -26,3 +26,10 @@
 [cube_re40000 SDAA:24] step=7000/10000 Cd=1.0206 Cl=-1.641404 (6068s, 0.867s/step)
 [cube_re40000 SDAA:24] step=8000/10000 Cd=1.0136 Cl=-1.791250 (6918s, 0.865s/step)
 [cube_re40000 SDAA:24] step=9000/10000 Cd=0.9670 Cl=-1.774355 (7767s, 0.863s/step)
+[cube_re40000 SDAA:24] step=10000/10000 Cd=0.9642 Cl=-2.101527 (8617s, 0.862s/step)
+
+[cube_re40000 SDAA:24] === FINAL ===
+[cube_re40000 SDAA:24] Cd_p=0.9250 Cd_f=0.0378 Cd_tot=0.9628 (ref=1.1, err=12.5%)
+[cube_re40000 SDAA:24] Cl=-1.878084 Cl_rms=0.934907 St=0.11249999999999999
+[cube_re40000 SDAA:24] time=8617s (0.862s/step)
+[cube_re40000 SDAA:24] saved to results_new_bench_cube_re40000_sdaa24.json
