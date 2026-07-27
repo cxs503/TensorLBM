@@ -733,11 +733,23 @@ def run_thermal_cavity_common(
         uz = uz.masked_fill(wall, 0.0)
 
         T = thermal_macroscopic_3d(g)
-        # Buoyancy coupling
-        f = apply_buoyancy_3d(f, T, T_ref=0.5, beta=beta, g_y=-1.0, lattice="D3Q19")
-        # Momentum collision + streaming + bounce-back
-        f = collide_bgk3d(f, tau)
-        f = bounce_back_cells_3d(f, wall, f_pre=f)
+
+        # --- FIX: apply buoyancy AFTER collision with Guo factor ---
+        # The old code applied buoyancy BEFORE collision, which caused the
+        # collision to multiply the force by (1-1/tau).  For tau<1 this is
+        # NEGATIVE, reversing the buoyancy direction (hot fluid sinks!).
+        # Correct Guo forcing: Delta_f = (1-1/(2*tau)) * w*3*cy*F_y, applied
+        # to the POST-collision distribution.
+        f_pre = f.clone()                       # save pre-collision for BB
+        f = collide_bgk3d(f, tau)                # collision first
+        guo_factor = 1.0 - 1.0 / (2.0 * tau)    # Guo (2002) forcing factor
+        f_buoy = apply_buoyancy_3d(              # compute force increment
+            f, T, T_ref=0.5, beta=beta, g_y=-1.0, lattice="D3Q19",
+        )
+        f = f + guo_factor * (f_buoy - f)        # add scaled force post-collision
+
+        # Bounce-back + streaming (use pre-collision f for half-way BB)
+        f = bounce_back_cells_3d(f, wall, f_pre=f_pre)
         f = stream3d(f)
         f = bounce_back_cells_3d(f, wall)
 

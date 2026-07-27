@@ -21,3 +21,11 @@
 [cyl_re3900_3d_rans SDAA:1] SurfaceMesh.from_cylinder built
 [cyl_re3900_3d_rans SDAA:1] KESolver initialized, k0=9.999994e-05 eps0=1.000000e-06
 [cyl_re3900_3d_rans SDAA:1] step=500/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.007700 nu_t_max=7.8687e-03 (229s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=1000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.010013 nu_t_max=1.6660e-02 (458s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=1500/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.011548 nu_t_max=1.9215e-02 (686s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=2000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.024753 nu_t_max=2.6015e-02 (915s, 0.457s/step)
+[cyl_re3900_3d_rans SDAA:1] step=2500/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.030492 nu_t_max=4.3409e-02 (1142s, 0.457s/step)
+[cyl_re3900_3d_rans SDAA:1] step=3000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.037918 nu_t_max=6.2006e-02 (1369s, 0.456s/step)
+[cyl_re3900_3d_rans SDAA:1] step=3500/10000 Cd_p=1.2954 Cd_f=0.0142 Cd_tot=1.3095 Cl=-0.028596 nu_t_max=7.7639e-02 (1597s, 0.456s/step)
+[cyl_re3900_3d_rans SDAA:1] step=4000/10000 Cd_p=1.3078 Cd_f=0.0142 Cd_tot=1.3220 Cl=-0.017769 nu_t_max=9.1135e-02 (1826s, 0.456s/step)
+[cyl_re3900_3d_rans SDAA:1] step=4500/10000 Cd_p=1.3276 Cd_f=0.0141 Cd_tot=1.3417 Cl=0.013351 nu_t_max=1.0067e-01 (2055s, 0.457s/step)
