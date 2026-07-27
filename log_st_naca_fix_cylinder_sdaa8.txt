@@ -37,3 +37,5 @@
 [CylStFix SDAA:8] step=36000 Cd=1.5319 Cl=0.0091 max|ux|=0.1321 (2340s)
 [CylStFix SDAA:8] step=38000 Cd=1.5358 Cl=0.0088 max|ux|=0.1323 (2469s)
 [CylStFix SDAA:8] step=40000 Cd=1.5389 Cl=-0.0056 max|ux|=0.1323 (2597s)
+[CylStFix SDAA:8] step=42000 Cd=1.5420 Cl=-0.0117 max|ux|=0.1341 (2725s)
+[CylStFix SDAA:8] step=44000 Cd=1.5444 Cl=-0.0019 max|ux|=0.1341 (2853s)
