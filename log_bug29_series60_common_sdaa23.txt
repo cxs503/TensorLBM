@@ -37,3 +37,35 @@
 [SDAA:23 Series60_grad] step=2500 Cd_p=0.005899 Cd_f=0.041305 Cd_tot=0.047204 (ITTC=0.075000) [538s]
 [SDAA:23 Series60_grad] step=3000 Cd_p=0.005862 Cd_f=0.040011 Cd_tot=0.045872 (ITTC=0.075000) [706s]
 [SDAA:23 Series60_grad] step=3500 Cd_p=0.005853 Cd_f=0.039122 Cd_tot=0.044975 (ITTC=0.075000) [872s]
+[SDAA:23 Series60_grad] step=4000 Cd_p=0.005822 Cd_f=0.038469 Cd_tot=0.044291 (ITTC=0.075000) [1039s]
+[SDAA:23 Series60_grad] step=4500 Cd_p=0.005818 Cd_f=0.038053 Cd_tot=0.043871 (ITTC=0.075000) [1205s]
+[SDAA:23 Series60_grad] step=5000 Cd_p=0.005808 Cd_f=0.037795 Cd_tot=0.043603 (ITTC=0.075000) [1371s]
+
+============================================================
+[SDAA:23 Series60_grad] FINAL RESULTS
+============================================================
+  Cd_pressure  = 0.005813
+  Cd_friction  = 0.037924
+  Cd_total     = 0.043737
+  Cf_ITTC      = 0.075000  (err=41.7%)
+  S_wetted     = 6740.0
+  Wall time: 1371s (22.9 min)
+  Finite: True
+  Saved to results_bug29_series60_common_sdaa23_grad.json
+
+[SDAA:23 Series60] === RUN B: from_stl normals ===
+[SDAA:23 Series60] Exported STL: /tmp/series60_hull_23.stl
+[SDAA:23 Series60] STL: 3482 verts, 6844 faces
+[SDAA:23 Series60] STL voxelized: solid=80640 near=13120 (analytical: solid=11242 near=6740)
+[SDAA:23 Series60_stl] Bug 29 retest via common interface (lbm_step_correct)
+[SDAA:23 Series60_stl] grid=200x80x80 L_lat=80.0 spacing=1.0000
+[SDAA:23 Series60_stl] u_in=0.06 Re=1e+03 nu=4.800000e-03 tau=0.514400 Cs=0.05
+[SDAA:23 Series60_stl] normal_method=stl dA_method=stl_area
+[SDAA:23 Series60_stl] solid=80640 near=13120 faces=6844
+[SDAA:23 Series60_stl] Cf_ITTC=0.075000 S_wetted=2437.6 dpS=4.387648e+00
+[SDAA:23 Series60_stl] dA stats: mean=0.1858 min=0.1768 max=0.3100 sum=2437.6
+[SDAA:23 Series60_stl] Normal orientation check: 86.5% outward (865/1000 sampled)
+[SDAA:23 Series60_stl] init done (0.1s) mass=1280000.0
+[SDAA:23 Series60_stl] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [121s]
+[SDAA:23 Series60_stl] step=1000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [249s]
+[SDAA:23 Series60_stl] step=1500 Cd_p=0.116999 Cd_f=0.055842 Cd_tot=0.172841 (ITTC=0.075000) [414s]

@@ -239,7 +239,7 @@ def run_couette(device_id, output_path):
 
         # P+F: AFTER streaming (bottom wall)
         if step > warmup:
-            _, ffx, _ = drag_friction_integration(f, mesh_bot, dpS, nu)
+            ffx, _, _ = drag_friction_integration(f, mesh_bot, dpS, nu)
             cdp_x, _, _ = drag_pressure_integration(f, mesh_bot, dpS, solid=solid, p0_method='far_field')
             if math.isfinite(ffx):
                 pf_f_hist.append(ffx); pf_p_hist.append(cdp_x)

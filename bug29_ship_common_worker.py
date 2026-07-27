@@ -228,7 +228,10 @@ def run_ship_lbm(
         )
 
         if step > warmup:
-            fx_p, _, _ = drag_pressure_integration(f, mesh, dpS, extrap='quadratic')
+            fx_p, _, _ = drag_pressure_integration(
+                f, mesh, dpS, extrap='quadratic',
+                p0_method='far_field', solid=solid,
+            )
             fx_f, _, _ = drag_friction_integration(f, mesh, dpS, nu)
             cd_p_hist.append(float(fx_p))
             cd_f_hist.append(float(fx_f))
