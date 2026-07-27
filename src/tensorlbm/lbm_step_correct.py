@@ -75,7 +75,9 @@ def lbm_step_correct(
         f[q] = torch.where(sm[q], f_pre[q], f[q])
 
     # 4. Half-way bounce-back (BEFORE streaming)
-    f = bounce_back_cells_3d(f, solid)
+    #    Bug fix: pass f_pre (pre-collision) for correct no-slip
+    #    Using post-collision f gives 16.66% u_max error
+    f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
 
     # 5. Streaming
     from .solver3d import stream3d
