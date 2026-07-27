@@ -25,3 +25,11 @@
 [channel_retau180 RANS-ke SDAA:7] step= 1500 u_bulk=0.042041 u_tau=0.002778 Re_tau=180.0 Cf=0.008731 nu_t_max=3.4494e-03 finite=True [131s]
 [channel_retau180 RANS-ke SDAA:7] step= 2000 u_bulk=0.041555 u_tau=0.002778 Re_tau=180.0 Cf=0.008937 nu_t_max=4.3076e-03 finite=True [177s]
 [channel_retau180 RANS-ke SDAA:7] step= 2500 u_bulk=0.041069 u_tau=0.002778 Re_tau=180.0 Cf=0.009150 nu_t_max=5.2353e-03 finite=True [225s]
+[channel_retau180 RANS-ke SDAA:7] step= 3000 u_bulk=0.040578 u_tau=0.002778 Re_tau=180.0 Cf=0.009372 nu_t_max=6.0898e-03 finite=True [275s]
+[channel_retau180 RANS-ke SDAA:7] step= 3500 u_bulk=0.040081 u_tau=0.002778 Re_tau=180.0 Cf=0.009606 nu_t_max=7.0516e-03 finite=True [322s]
+[channel_retau180 RANS-ke SDAA:7] step= 4000 u_bulk=0.039577 u_tau=0.002778 Re_tau=180.0 Cf=0.009852 nu_t_max=7.9475e-03 finite=True [373s]
+[channel_retau180 RANS-ke SDAA:7] step= 4500 u_bulk=0.039065 u_tau=0.002778 Re_tau=180.0 Cf=0.010112 nu_t_max=8.9208e-03 finite=True [421s]
+[channel_retau180 RANS-ke SDAA:7] step= 5000 u_bulk=0.038546 u_tau=0.002778 Re_tau=180.0 Cf=0.010386 nu_t_max=9.8503e-03 finite=True [469s]
+
+[channel_retau180 RANS-ke SDAA:7] === FINAL ===  Re_tau=180.0 Cf=0.009402 (ref=0.0073461891643709825) RMS_loglaw=4.5350 finite=True time=469s
+[channel_retau180 RANS-ke SDAA:7] saved to results_rans_ke_channel_retau180_sdaa7.json

@@ -50,6 +50,7 @@ import torch
 
 __all__ = [
     "vof_advect_upwind_3d",
+    "interface_compression_3d",
     "interface_normal_3d",
     "mean_curvature_3d",
     "surface_tension_force_3d",
@@ -140,7 +141,65 @@ def vof_advect_upwind_3d(
     )
 
     phi_new = phi - (ux * dphi_dx + uy * dphi_dy + uz * dphi_dz)
+
+    # Interface compression: sharpen the interface to counteract upwind
+    # diffusion.  Adds a compressive flux along the interface normal:
+    #   dphi/dt += C_comp * div(phi(1-phi) * n_hat)
+    # where n_hat = grad(phi)/|grad(phi)|.  This is mass-conservative
+    # and keeps the interface 2-3 cells wide (OpenFOAM interFoam approach).
+    # Default C_comp=0 (disabled); set via the step function.
     return phi_new.clamp(0.0, 1.0)
+
+
+def interface_compression_3d(
+    phi: torch.Tensor,
+    c_comp: float = 0.5,
+) -> torch.Tensor:
+    """Interface compression term to counteract numerical diffusion.
+
+    Computes the compressive flux::
+
+        C_comp * div(phi·(1−phi) · n̂)
+
+    where ``n̂ = ∇φ/|∇φ|`` is the interface normal.  This term is
+    mass-conservative (it's a divergence) and sharpens the interface
+    by pushing intermediate phi values toward 0 or 1.
+
+    Args:
+        phi:    Volume fraction, shape ``(nz, ny, nx)``.
+        c_comp: Compression coefficient (0 = off, ~0.5 typical).
+
+    Returns:
+        Compression increment, shape ``(nz, ny, nx)``, to be added
+        to phi.
+    """
+    if c_comp == 0.0:
+        return torch.zeros_like(phi)
+
+    # Interface normal and gradient magnitude
+    nx_n, ny_n, nz_n, mag = interface_normal_3d(phi)
+
+    # Compressive flux: F = phi*(1-phi) * n_hat
+    # Only active at the interface (phi*(1-phi) is nonzero only for 0<phi<1)
+    alpha = phi * (1.0 - phi)  # interface indicator
+    Fx = c_comp * alpha * nx_n
+    Fy = c_comp * alpha * ny_n
+    Fz = c_comp * alpha * nz_n
+
+    # Divergence of F (central differences with replicate padding)
+    p5d_x = Fx.unsqueeze(0).unsqueeze(0)
+    pad_x = torch.nn.functional.pad(p5d_x, (1, 1, 0, 0, 0, 0), mode="replicate").squeeze(0).squeeze(0)
+    dFx_dx = (pad_x[1:-1, 1:-1, 2:] - pad_x[1:-1, 1:-1, 0:-2]) * 0.5
+
+    p5d_y = Fy.unsqueeze(0).unsqueeze(0)
+    pad_y = torch.nn.functional.pad(p5d_y, (0, 0, 1, 1, 0, 0), mode="replicate").squeeze(0).squeeze(0)
+    dFy_dy = (pad_y[1:-1, 2:, 1:-1] - pad_y[1:-1, 0:-2, 1:-1]) * 0.5
+
+    p5d_z = Fz.unsqueeze(0).unsqueeze(0)
+    pad_z = torch.nn.functional.pad(p5d_z, (0, 0, 0, 0, 1, 1), mode="replicate").squeeze(0).squeeze(0)
+    dFz_dz = (pad_z[2:, 1:-1, 1:-1] - pad_z[0:-2, 1:-1, 1:-1]) * 0.5
+
+    return dFx_dx + dFy_dy + dFz_dz
 
 
 # --------------------------------------------------------------------------- #
@@ -415,6 +474,7 @@ def free_surface_vof_step(
     stream_fn=None,
     bounce_back_fn=None,
     target_phi_sum: float | None = None,
+    c_comp: float = 0.5,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """One composable free-surface VOF LBM step (collision + stream + advect).
 
@@ -455,6 +515,9 @@ def free_surface_vof_step(
         target_phi_sum: Target total fluid volume (sum of phi over non-solid
             cells).  If given, phi is globally rescaled each step to
             preserve this total, correcting upwind advection mass drift.
+        c_comp: Interface compression coefficient (0 = off, ~0.5 typical).
+            Counteracts upwind numerical diffusion to keep the interface
+            sharp (2-3 cells wide).
 
     Returns:
         ``(f_updated, phi_updated)``.
@@ -486,6 +549,10 @@ def free_surface_vof_step(
         uz = uz.masked_fill(solid, 0.0)
 
     phi = vof_advect_upwind_3d(phi, ux, uy, uz)
+
+    # 4b. Interface compression to keep the interface sharp
+    if c_comp > 0.0:
+        phi = (phi + interface_compression_3d(phi, c_comp)).clamp(0.0, 1.0)
 
     # 5. Global mass conservation: rescale phi to preserve total fluid volume
     if target_phi_sum is not None and target_phi_sum > 1e-10:

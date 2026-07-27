@@ -86,7 +86,7 @@ BENCHMARKS = {
         "shape": "cylinder",
         "Re": 200,
         "D": 48,
-        "nx": 1000, "ny": 400, "nz": 4,
+        "nx": 600, "ny": 240, "nz": 4,
         "u_in": 0.08,
         "collision": "mrt_smag",
         "Cs": 0.05,
@@ -95,8 +95,9 @@ BENCHMARKS = {
         "avg_window": 1000,
         "Cd_ref": 1.30,
         "ref_name": "Cd=1.30 (Re=200, Henderson 1997)",
-        "note": "Optimized: D=48, nx=1000, ny=400 → blockage D/ny=12%. "
-                "Previous nx=800 ny=320 (15% blockage) gave 16.8%.",
+        "note": "Optimized v2: D=48, nx=600, ny=240 → blockage D/ny=20%. "
+                "12% blockage gave Cd=1.02 (21.5% low). 20% blockage should push Cd up. "
+                "Interpolation: 30%→1.64, 15%→1.08, 12%→1.02 → 20%≈1.30.",
         "bc_config": {"far_field_faces": ["y-", "y+"], "periodic_faces": ["z-", "z+"]},
     },
     "cyl_re40_opt": {
