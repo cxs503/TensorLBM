@@ -112,6 +112,12 @@ def _parse_stl_full(path: Path):
         n_tri_candidate = int(np.frombuffer(data[80:84], dtype=np.uint32)[0])
         if len(data) == 84 + 50 * n_tri_candidate and n_tri_candidate > 0:
             return _parse_stl_binary_full(data, n_tri_candidate)
+        # Fallback: try computing n_tri from file size (non-standard binary STL)
+        n_tri_computed = (len(data) - 84) // 50
+        remainder = (len(data) - 84) % 50
+        if n_tri_computed > 0 and remainder < 4:
+            # Allow small remainder (padding/footer)
+            return _parse_stl_binary_full(data[:84 + n_tri_computed * 50], n_tri_computed)
     return _parse_stl_ascii_full(data)
 
 
