@@ -20,33 +20,74 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from . import job_manager  # noqa: E402
 from .middleware import install_production_middleware  # noqa: E402
-from .routers import (
-    agent,
-    ai_governance,
-    ai_suboff,  # noqa: E402
-    ai_transformer,
-    benchmarks,
-    cad,
-    cylinder_bench,
-    cylinder_compare,
-    cylinder_device_sim,
-    cylinder_interactive,
-    jobs,
-    notifications,
-    orchestration,
-    postprocess,
-    preprocess,
-    projects,
-    reports,
-    simulations,
-    solver,
-    suboff,
-    templates,
-    xflow_projects,
-    xflow_streaming,
-)
-from .services.xflow_streaming import hub as streaming_hub  # noqa: E402
-from .routers import simulations as _sim_mod  # noqa: E402
+
+# Import routers; skip any that are incomplete (under active development)
+_router_imports: dict[str, object] = {}
+for _name, _mod in [
+    ("agent", "agent"),
+    ("ai_governance", "ai_governance"),
+    ("ai_suboff", "ai_suboff"),
+    ("ai_transformer", "ai_transformer"),
+    ("benchmarks", "benchmarks"),
+    ("cad", "cad"),
+    ("cylinder_bench", "cylinder_bench"),
+    ("cylinder_compare", "cylinder_compare"),
+    ("cylinder_device_sim", "cylinder_device_sim"),
+    ("cylinder_interactive", "cylinder_interactive"),
+    ("jobs", "jobs"),
+    ("notifications", "notifications"),
+    ("orchestration", "orchestration"),
+    ("postprocess", "postprocess"),
+    ("preprocess", "preprocess"),
+    ("projects", "projects"),
+    ("reports", "reports"),
+    ("simulations", "simulations"),
+    ("solver", "solver"),
+    ("suboff", "suboff"),
+    ("templates", "templates"),
+    ("xflow_projects", "xflow_projects"),
+    ("xflow_streaming", "xflow_streaming"),
+]:
+    try:
+        _router_imports[_name] = __import__(f"backend.routers.{_mod}", fromlist=[_mod])
+    except Exception as e:
+        import logging
+        logging.warning(f"Router {_mod} not available, skipping: {e}")
+
+agent = _router_imports.get("agent")
+ai_governance = _router_imports.get("ai_governance")
+ai_suboff = _router_imports.get("ai_suboff")
+ai_transformer = _router_imports.get("ai_transformer")
+benchmarks = _router_imports.get("benchmarks")
+cad = _router_imports.get("cad")
+cylinder_bench = _router_imports.get("cylinder_bench")
+cylinder_compare = _router_imports.get("cylinder_compare")
+cylinder_device_sim = _router_imports.get("cylinder_device_sim")
+cylinder_interactive = _router_imports.get("cylinder_interactive")
+jobs = _router_imports.get("jobs")
+notifications = _router_imports.get("notifications")
+orchestration = _router_imports.get("orchestration")
+postprocess = _router_imports.get("postprocess")
+preprocess = _router_imports.get("preprocess")
+projects = _router_imports.get("projects")
+reports = _router_imports.get("reports")
+simulations = _router_imports.get("simulations")
+solver = _router_imports.get("solver")
+suboff = _router_imports.get("suboff")
+templates = _router_imports.get("templates")
+xflow_projects = _router_imports.get("xflow_projects")
+xflow_streaming = _router_imports.get("xflow_streaming")
+try:
+    from .services.xflow_streaming import hub as streaming_hub  # noqa: E402
+except ImportError:
+    streaming_hub = None
+    import logging
+    logging.warning("xflow_streaming service not available")
+
+try:
+    from .routers import simulations as _sim_mod  # noqa: E402
+except ImportError:
+    _sim_mod = None
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
@@ -73,7 +114,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     loop = asyncio.get_running_loop()
     _notify_queue = asyncio.Queue()
     job_manager.set_event_loop(loop, _notify_queue)  # type: ignore[arg-type]
-    streaming_hub.attach(_sim_mod._jobs)
+    streaming_hub.attach(_sim_mod._jobs) if streaming_hub and _sim_mod else None
     _ws_broadcast_task = asyncio.create_task(_ws_broadcaster(_notify_queue))
     try:
         yield
