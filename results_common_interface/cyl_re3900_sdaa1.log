@@ -1,0 +1,25 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re3900 SDAA:1] Re=3900 D=192 grid=768x576x4 u_in=0.08 nu=3.938462e-03 tau=0.511815 dpS=2.457600e+00
+[cyl_re3900 SDAA:1] collision=mrt_smag Cs=0.1 n_steps=5000 avg_window=1500
+[cyl_re3900 SDAA:1] solid cells: 115668
+[cyl_re3900 SDAA:1] near-wall cells: 2176
+[cyl_re3900 SDAA:1] SurfaceMesh.from_cylinder built
+[cyl_re3900 SDAA:1] init done (0.5s) mass=1769472.0
+[cyl_re3900 SDAA:1] step=500/5000 Cd_p=8.9857 Cd_f=0.0952 Cd_tot=9.0809 (172s)
+[cyl_re3900 SDAA:1] step=1000/5000 Cd_p=0.2793 Cd_f=0.0594 Cd_tot=0.3386 (345s)
+[cyl_re3900 SDAA:1] step=1500/5000 Cd_p=0.6866 Cd_f=0.0425 Cd_tot=0.7291 (516s)

@@ -1,0 +1,34 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re40 SDAA:0] shape=cylinder D=48.0 nx=400 ny=160 nz=4 u_in=0.08 Re=40.0 nu=9.600000e-02 tau=0.788000 collision=mrt Cs=0.0 n_steps=10000
+[cyl_re40 SDAA:0] solid=7172 near=544 dpS=6.144000e-01
+[cyl_re40 SDAA:0] init done (0.4s) mass=256000.0
+[cyl_re40 SDAA:0] step=500/10000 Cd=0.0000 Cl=0.000000 (37s, 0.073s/step)
+[cyl_re40 SDAA:0] step=1000/10000 Cd=0.0000 Cl=0.000000 (61s, 0.061s/step)
+[cyl_re40 SDAA:0] step=1500/10000 Cd=0.0000 Cl=0.000000 (84s, 0.056s/step)
+[cyl_re40 SDAA:0] step=2000/10000 Cd=0.0000 Cl=0.000000 (106s, 0.053s/step)
+[cyl_re40 SDAA:0] step=2500/10000 Cd=2.5082 Cl=-0.004368 (128s, 0.051s/step)
+[cyl_re40 SDAA:0] step=3000/10000 Cd=2.5029 Cl=-0.003169 (161s, 0.054s/step)
+[cyl_re40 SDAA:0] step=3500/10000 Cd=2.4985 Cl=-0.004720 (198s, 0.056s/step)
+[cyl_re40 SDAA:0] step=4000/10000 Cd=2.4945 Cl=-0.006682 (234s, 0.059s/step)
+[cyl_re40 SDAA:0] step=4500/10000 Cd=2.4876 Cl=-0.006818 (271s, 0.060s/step)
+[cyl_re40 SDAA:0] step=5000/10000 Cd=2.4800 Cl=-0.005375 (307s, 0.061s/step)
+[cyl_re40 SDAA:0] step=5500/10000 Cd=2.4714 Cl=-0.004271 (369s, 0.067s/step)
+[cyl_re40 SDAA:0] step=6000/10000 Cd=2.4680 Cl=-0.004651 (487s, 0.081s/step)
+[cyl_re40 SDAA:0] step=6500/10000 Cd=2.4629 Cl=-0.005746 (605s, 0.093s/step)
+[cyl_re40 SDAA:0] step=7000/10000 Cd=2.4637 Cl=-0.006195 (726s, 0.104s/step)
+[cyl_re40 SDAA:0] step=7500/10000 Cd=2.4605 Cl=-0.005580 (845s, 0.113s/step)

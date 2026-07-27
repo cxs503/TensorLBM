@@ -1,0 +1,28 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re3900 SDAA:1] shape=cylinder D=48.0 nx=400 ny=160 nz=4 u_in=0.08 Re=3900.0 nu=9.846154e-04 tau=0.502954 collision=mrt_smag Cs=0.1 n_steps=20000
+[cyl_re3900 SDAA:1] solid=7172 near=544 dpS=6.144000e-01
+[cyl_re3900 SDAA:1] init done (0.4s) mass=256000.0
+[cyl_re3900 SDAA:1] step=500/20000 Cd=0.0000 Cl=0.000000 (34s, 0.069s/step)
+[cyl_re3900 SDAA:1] step=1000/20000 Cd=0.0000 Cl=0.000000 (68s, 0.068s/step)
+[cyl_re3900 SDAA:1] step=1500/20000 Cd=0.0000 Cl=0.000000 (102s, 0.068s/step)
+[cyl_re3900 SDAA:1] step=2000/20000 Cd=0.0000 Cl=0.000000 (136s, 0.068s/step)
+[cyl_re3900 SDAA:1] step=2500/20000 Cd=0.0000 Cl=0.000000 (170s, 0.068s/step)
+[cyl_re3900 SDAA:1] step=3000/20000 Cd=0.0000 Cl=0.000000 (219s, 0.073s/step)
+[cyl_re3900 SDAA:1] step=3500/20000 Cd=0.0000 Cl=0.000000 (367s, 0.105s/step)
+[cyl_re3900 SDAA:1] step=4000/20000 Cd=0.0000 Cl=0.000000 (514s, 0.129s/step)
+[cyl_re3900 SDAA:1] step=4500/20000 Cd=1.4084 Cl=1.049555 (663s, 0.147s/step)

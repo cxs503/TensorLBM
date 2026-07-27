@@ -1,115 +1,88 @@
 #!/usr/bin/env python
 """Teaching Example 07: STL geometry → voxelize → normals → drag.
 
-Demonstrates the full STL workflow:
-1. Load STL mesh (vertices + faces + normals)
-2. Voxelize into a boolean solid mask
-3. Compute near-wall mask and surface normals from STL
-4. Run LBM simulation and compute drag
-
-Uses a simple sphere STL for demonstration (no external STL file needed).
+Demonstrates the full STL workflow using the COMMON INTERFACE ONLY:
+1. make_sphere_stl() → generate STL mesh (vertices, faces)
+2. write_stl() → write to temp file
+3. read_stl() → read back (vertices, faces, face_normals)
+4. voxelize_stl() → boolean solid mask
+5. SurfaceMesh_from_stl() → surface normals from STL
+6. lbm_step_correct() → main loop
+7. drag_pressure_integration / drag_friction_integration → force
 
 Usage:
-    PYTHONPATH=src python teaching/07_stl_geometry.py [--device sdaa:11]
+    PYTHONPATH=src python teaching/07_stl_geometry.py [device_id]
 """
 from __future__ import annotations
 
-import argparse
+import sys
 import math
+import tempfile
 
 import torch
-import numpy as np
 
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
+from tensorlbm.solver3d import collide_bgk3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d, far_field_bc_3d
-from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d, drag_pressure_integration, drag_friction_integration
+from tensorlbm.lbm_step_correct import lbm_step_correct
+from tensorlbm.drag_pressure import (
+    SurfaceMesh, get_near_wall_3d,
+    drag_pressure_integration, drag_friction_integration,
+)
 from tensorlbm.momentum_exchange import momentum_exchange_standard
-
-
-def make_sphere_stl(R=6.0, n_seg=16):
-    """Generate a sphere STL mesh (vertices, faces, normals)."""
-    # UV sphere
-    vertices = []
-    faces = []
-    normals = []
-
-    for i in range(n_seg + 1):
-        theta = math.pi * i / n_seg
-        for j in range(n_seg):
-            phi = 2 * math.pi * j / n_seg
-            x = R * math.sin(theta) * math.cos(phi)
-            y = R * math.sin(theta) * math.sin(phi)
-            z = R * math.cos(theta)
-            vertices.append([x, y, z])
-
-    for i in range(n_seg):
-        for j in range(n_seg):
-            i1 = i * n_seg + j
-            i2 = i * n_seg + (j + 1) % n_seg
-            i3 = (i + 1) * n_seg + j
-            i4 = (i + 1) * n_seg + (j + 1) % n_seg
-            if i > 0:
-                faces.append([i1, i3, i2])
-                v = np.array(vertices[i1])
-                normals.append(v / np.linalg.norm(v))
-            if i < n_seg - 1:
-                faces.append([i2, i3, i4])
-                v = np.array(vertices[i2])
-                normals.append(v / np.linalg.norm(v))
-
-    return np.array(vertices, dtype=np.float32), np.array(faces, dtype=np.int64), np.array(normals, dtype=np.float32)
-
-
-def voxelize_sphere(vertices, faces, nx, ny, nz, cx, cy, cz, device):
-    """Voxelize STL mesh into boolean mask (sphere approximation)."""
-    zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=device, dtype=torch.float32),
-        torch.arange(ny, device=device, dtype=torch.float32),
-        torch.arange(nx, device=device, dtype=torch.float32),
-        indexing="ij",
-    )
-    # For sphere: distance from center
-    R = float(np.max(np.linalg.norm(vertices, axis=1)))
-    return (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2 <= R ** 2
+from tensorlbm.stl_geometry import (
+    make_sphere_stl, write_stl, read_stl,
+    voxelize_stl, SurfaceMesh_from_stl,
+)
 
 
 def run(
     nx=48, ny=40, nz=40, R=6.0, u_in=0.05, tau=0.6,
-    n_steps=1500, warmup=500, device="sdaa:11",
+    n_steps=2000, warmup=800, device_id=19,
 ):
-    dev = torch.device(device)
+    dev = torch.device(f'sdaa:{device_id}')
+    torch.sdaa.set_device(dev)
     cx, cy, cz = nx // 4, ny // 2, nz // 2
     D = 2 * R
     nu = (tau - 0.5) / 3.0
     Re = u_in * D / nu
     dpS = 0.5 * u_in ** 2 * math.pi * R ** 2
+    Cd_ref = 1.09
 
-    print(f"=== STL Geometry → Voxelize → Drag: Re={Re:.0f} ===")
-    print(f"Grid: {nx}×{ny}×{nz}, R={R}, D={D}")
-    print(f"Device: {device}, steps={n_steps}")
+    print(f"=== STL Geometry → Voxelize → Drag: Re={Re:.0f} (SDAA:{device_id}) ===")
+    print(f"Grid: {nx}x{ny}x{nz}, R={R}, D={D}")
+    print(f"Steps: {n_steps}, warmup: {warmup}")
     print()
 
-    # 1. Generate STL mesh
-    vertices, faces, face_normals = make_sphere_stl(R=R)
+    # 1. Generate STL mesh using common interface make_sphere_stl
+    vertices, faces = make_sphere_stl((cx, cy, cz), R, n_lat=16, n_lon=32)
     print(f"STL mesh: {len(vertices)} vertices, {len(faces)} faces")
 
-    # 2. Voxelize
-    solid = voxelize_sphere(vertices, faces, nx, ny, nz, cx, cy, cz, dev)
+    # 2. Write STL to temp file, then read it back
+    stl_path = tempfile.mktemp(suffix='.stl')
+    write_stl(stl_path, vertices, faces, binary=True)
+    vertices_r, faces_r, face_normals = read_stl(stl_path)
+    print(f"read_stl: {len(vertices_r)} vertices, {len(faces_r)} faces, "
+          f"{len(face_normals)} normals")
+
+    # 3. Voxelize STL into boolean solid mask
+    solid = voxelize_stl(vertices_r, faces_r, (nx, ny, nz),
+                         origin=(0.0, 0.0, 0.0), spacing=(1.0, 1.0, 1.0))
     n_solid = int(solid.sum().item())
     print(f"Voxelize: {n_solid} solid cells")
 
-    # 3. Near-wall mask and normals
+    # 4. Near-wall mask and STL-derived normals
     near = get_near_wall_3d(solid)
     n_near = int(near.sum().item())
     print(f"Near-wall cells: {n_near}")
 
-    # Use analytical sphere normals (in practice, from STL)
-    mesh = SurfaceMesh.from_sphere(solid, near, cx, cy, cz, R)
-    print(f"SurfaceMesh: normals computed from sphere geometry")
+    # Common interface: SurfaceMesh_from_stl for STL-derived normals
+    mesh = SurfaceMesh_from_stl(solid, near, vertices_r, faces_r, face_normals,
+                                origin=(0.0, 0.0, 0.0), spacing=(1.0, 1.0, 1.0))
+    print(f"SurfaceMesh: normals from STL")
     print()
 
-    # 4. LBM simulation
+    # 5. LBM simulation using lbm_step_correct
     rho0 = torch.ones(nz, ny, nx, device=dev)
     ux0 = torch.full((nz, ny, nx), u_in, device=dev)
     f = equilibrium3d(rho0, ux0, torch.zeros_like(ux0), torch.zeros_like(ux0), device=dev)
@@ -122,11 +95,7 @@ def run(
     print("-" * 40)
 
     for step in range(1, n_steps + 1):
-        f_pre = f.clone()
-        f = collide_bgk3d(f, tau=tau)
-        f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
-        f = stream3d(f)
-        f = far_field_bc_3d(f, u_in=u_in, obstacle_mask=solid)
+        f = lbm_step_correct(f, collide_bgk3d, tau, solid, u_in, far_field_bc_3d)
 
         if step > warmup and step % 20 == 0:
             fx_me, _, _ = momentum_exchange_standard(f, solid, near)
@@ -139,28 +108,32 @@ def run(
 
         if step % 500 == 0 or step == n_steps:
             _, ux, uy, uz = macroscopic3d(f)
-            ms = float(torch.sqrt(ux**2 + uy**2 + uz**2).max().item())
+            fluid = (~solid).float()
+            ms = float(torch.sqrt((ux*fluid)**2 + (uy*fluid)**2 + (uz*fluid)**2).max().item())
             n = len(cd_mem_hist)
             if n > 0:
                 print(f" {step:5d}  {cd_mem_hist[-1]:8.4f}  {cd_pf_hist[-1]:8.4f}  {ms:8.4f}")
             else:
                 print(f" {step:5d}  {'---':>8s}  {'---':>8s}  {ms:8.4f}")
 
+    import os; os.unlink(stl_path)
+
     n = len(cd_mem_hist)
     if n > 0:
         cd_mem = sum(cd_mem_hist) / n
         cd_pf = sum(cd_pf_hist) / n
+        cd_err = abs(cd_pf - Cd_ref) / Cd_ref * 100
         print()
         print("=== Final ===")
-        print(f"  Cd_MEM: {cd_mem:.4f}  (target ~1.09 for Re=100)")
-        print(f"  Cd_PF:  {cd_pf:.4f}")
-        return {"cd_mem": cd_mem, "cd_pf": cd_pf, "Re": Re}
-    return {"Re": Re}
+        print(f"  Cd_MEM: {cd_mem:.4f}  (ref {Cd_ref})")
+        print(f"  Cd_PF:  {cd_pf:.4f}  (err {cd_err:.1f}%)")
+        passed = cd_err < 30.0
+        print(f"  PASS (Cd<30%): {passed}")
+        return {"cd_mem": cd_mem, "cd_pf": cd_pf, "cd_err_pct": cd_err,
+                "Re": Re, "passed": passed}
+    return {"Re": Re, "passed": False}
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="STL geometry → drag")
-    parser.add_argument("--device", default="sdaa:11")
-    parser.add_argument("--n-steps", type=int, default=1500)
-    args = parser.parse_args()
-    run(n_steps=args.n_steps, device=args.device)
+    dev = int(sys.argv[1]) if len(sys.argv) > 1 else 19
+    run(device_id=dev)

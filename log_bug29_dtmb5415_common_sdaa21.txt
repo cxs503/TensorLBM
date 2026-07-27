@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:21 DTMB5415] Bug 29 retest via common interface (lbm_step_correct)
+[SDAA:21 DTMB5415] grid=200x80x80 L_lat=120.0 spacing=1.1833
+[SDAA:21 DTMB5415] u_in=0.06 Re=1e+03 nu=7.200000e-03 tau=0.521600 Cs=0.05
+[SDAA:21 DTMB5415] normal_method=stl dA_method=stl_area
+[SDAA:21 DTMB5415] solid=4900 near=4098 faces=608
+[SDAA:21 DTMB5415] Cf_ITTC=0.075000 S_wetted=4755.7 dpS=8.560220e+00
+[SDAA:21 DTMB5415] dA stats: mean=1.1605 min=0.5902 max=2.5655 sum=4755.7
+[SDAA:21 DTMB5415] Normal orientation check: 50.0% outward (500/1000 sampled)
+[SDAA:21 DTMB5415] init done (0.5s) mass=1280000.0
+[SDAA:21 DTMB5415] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [75s]
+[SDAA:21 DTMB5415] step=1000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [149s]
+[SDAA:21 DTMB5415] step=1500 Cd_p=0.000070 Cd_f=0.055355 Cd_tot=0.055425 (ITTC=0.075000) [233s]
+[SDAA:21 DTMB5415] step=2000 Cd_p=0.000078 Cd_f=0.051997 Cd_tot=0.052074 (ITTC=0.075000) [348s]
+[SDAA:21 DTMB5415] step=2500 Cd_p=0.000087 Cd_f=0.050464 Cd_tot=0.050550 (ITTC=0.075000) [538s]
+[SDAA:21 DTMB5415] step=3000 Cd_p=0.000091 Cd_f=0.049718 Cd_tot=0.049810 (ITTC=0.075000) [706s]
+[SDAA:21 DTMB5415] step=3500 Cd_p=0.000098 Cd_f=0.049359 Cd_tot=0.049457 (ITTC=0.075000) [872s]
+[SDAA:21 DTMB5415] step=4000 Cd_p=0.000097 Cd_f=0.049182 Cd_tot=0.049279 (ITTC=0.075000) [1037s]

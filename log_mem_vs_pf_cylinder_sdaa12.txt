@@ -1,0 +1,27 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[CylMEMvsPF SDAA:12] D=48 Re=200 nx=576 ny=288 nz=8 u_in=0.1 tau=0.5720 nu=0.024000
+[CylMEMvsPF SDAA:12] solid cells=14344
+[CylMEMvsPF SDAA:12] near-wall cells=1088
+[CylMEMvsPF SDAA:12] SurfaceMesh built (from_cylinder)
+[CylMEMvsPF SDAA:12] A_ref=384 dpS=1.920000
+[CylMEMvsPF SDAA:12] init done (0.4s), starting loop...
+[CylMEMvsPF SDAA:12] step=500 Cd_MEM=nan Cd_P=nan Cd_F=nan Cd_PF=nan (ref=1.30) (35s)
+[CylMEMvsPF SDAA:12] step=1000 Cd_MEM=nan Cd_P=nan Cd_F=nan Cd_PF=nan (ref=1.30) (70s)
+[CylMEMvsPF SDAA:12] step=1500 Cd_MEM=4.9988 Cd_P=3.0773 Cd_F=0.6498 Cd_PF=3.7271 (ref=1.30) (111s)
+[CylMEMvsPF SDAA:12] step=2000 Cd_MEM=4.9988 Cd_P=3.0773 Cd_F=0.6498 Cd_PF=3.7271 (ref=1.30) (153s)
+[CylMEMvsPF SDAA:12] step=2500 Cd_MEM=4.9988 Cd_P=3.0773 Cd_F=0.6498 Cd_PF=3.7271 (ref=1.30) (194s)

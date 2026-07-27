@@ -1,0 +1,30 @@
+{
+  "case": "wall_mounted_cube_Re40000",
+  "device": "sdaa:24",
+  "grid": "300x100x4",
+  "D": 24,
+  "Re": 40000,
+  "u_in": 0.1,
+  "nu": 6.000000000000001e-05,
+  "tau": 0.50018,
+  "Cs": 0.1,
+  "n_steps": 10000,
+  "Cd_pressure": NaN,
+  "Cd_friction": NaN,
+  "Cd_total": NaN,
+  "Cl": NaN,
+  "St": null,
+  "Cd_ref": 1.1,
+  "error_pct": NaN,
+  "normals": "from_gradient",
+  "finite": false,
+  "elapsed_s": 179.6794900894165,
+  "modules_used": [
+    "drag_pressure.get_near_wall_3d",
+    "drag_pressure.SurfaceMesh.from_gradient",
+    "lbm_step_correct.lbm_step_correct",
+    "drag_pressure.drag_pressure_integration",
+    "drag_pressure.drag_friction_integration",
+    "postprocess.detect_strouhal"
+  ]
+}

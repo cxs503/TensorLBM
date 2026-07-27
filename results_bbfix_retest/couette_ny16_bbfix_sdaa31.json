@@ -1,0 +1,20 @@
+{
+  "case": "couette_bbfix_grid_conv",
+  "device": "sdaa:31",
+  "grid": "80x16x4",
+  "tau": 1.0,
+  "nu": 0.16666666666666666,
+  "u_top": 0.05,
+  "H": 14,
+  "n_steps": 4000,
+  "warmup": 500,
+  "Cf_exact": 0.4761904761904761,
+  "bb_fix": true,
+  "step_method": "lbm_step_correct_pattern (BB fix: f_pre)",
+  "Cf_mean_standard": 0.475667817007218,
+  "Cf_err_pct_standard": 0.10975842848420349,
+  "Cf_mean_lagrange": 0.47566319746630525,
+  "Cf_err_pct_lagrange": 0.11072853207587943,
+  "elapsed_s": 107.46054077148438,
+  "finite": true
+}

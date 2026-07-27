@@ -1,0 +1,33 @@
+{
+  "case": "[SDAA:10 SUBOFF Re=1000 BB-fix]",
+  "test": "suboff_re1000_bb_fix",
+  "device": "sdaa:10",
+  "Re": 1000,
+  "L": 80,
+  "R_max": 4.667444574095683,
+  "D": 9.334889148191365,
+  "grid": "200x80x80",
+  "u_in": 0.06,
+  "nu": 0.0048,
+  "tau": 0.5144,
+  "Cs": 0.05,
+  "n_steps": 5000,
+  "n_solid": 4651,
+  "n_near": 2050,
+  "dpS": 4.2230043604847625,
+  "normal_method": "from_suboff",
+  "bb_fix": true,
+  "Cd_pressure": 0.005388795221851387,
+  "Cd_friction": 0.03896704233988533,
+  "Cd_total": 0.04435583756173665,
+  "Cl": -4.032847238826521e-06,
+  "fz": -3.985789565923094e-06,
+  "Cf_ref": 0.042,
+  "error_pct": 5.609137051753928,
+  "previous_pre_bb_fix": {
+    "Cd_total": 0.044,
+    "error_pct": 5.6
+  },
+  "finite": true,
+  "elapsed_s": 1369.3992793560028
+}

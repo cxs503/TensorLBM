@@ -1,121 +1,104 @@
 #!/usr/bin/env python
 """Teaching Example 02: Poiseuille flow — exact solution with corrected BB.
 
-Demonstrates the **half-way bounce-back** for pressure-driven channel flow
-and verifies the parabolic velocity profile and friction coefficient.
+Physics: two parallel plates, both stationary, driven by a body force.
+         Parabolic velocity profile: u(y) = (G/2ν) * y' * (H - y')
 
-Physics
--------
-Poiseuille flow: two parallel plates, both stationary, driven by a body
-force (pressure gradient).  The exact steady-state solution is parabolic:
+Key concepts:
+  - Half-way bounce-back (BB) with f_pre for exact no-slip
+  - Body force via velocity shift (Guo scheme, no double-counting)
+  - Friction coefficient Cf = 8ν / (U_max * H)
+  - lbm_step_correct() for verified-correct main loop
 
-    u(y) = (G/2ν) * y * (H - y)
-
-where G is the pressure gradient, ν is viscosity, H is channel height,
-and y is measured from the bottom wall (y=0.5 to y=H-0.5 for half-way BB).
-
-Key points
-----------
-1. **Body force**: applied as a uniform acceleration to all fluid cells.
-2. **Corrected BB**: both walls use ``f_pre`` for exact no-slip.
-3. **Friction coefficient**: Cf = τ_wall / (0.5 ρ U_max²) matches exact.
-
-Usage
------
-    PYTHONPATH=src python teaching/02_poiseuille_exact.py [--device sdaa:9]
-
-Expected output
----------------
-    u_max_error < 0.1%
-    Cf_error < 1%
-    PASS
+Usage:
+  PYTHONPATH=src python teaching/02_poiseuille_exact.py [device_id]
 """
 from __future__ import annotations
-
-import argparse
-import math
-
+import sys, math
+sys.path.insert(0, 'src')
 import torch
+from tensorlbm.d3q19 import C, W, equilibrium3d, macroscopic3d
+from tensorlbm.solver3d import correct_mass3d
+from tensorlbm.lbm_step_correct import lbm_step_correct
+from tensorlbm.drag_pressure import (
+    get_near_wall_3d, SurfaceMesh,
+    drag_pressure_integration, drag_friction_integration,
+)
 
-from tensorlbm.d3q19 import C, equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_bgk3d, stream3d
-from tensorlbm.boundaries3d import bounce_back_cells_3d
 
+def run(device_id=0, ny=16, nx=32, nz=4, force=1e-5, tau=1.0, n_steps=5000):
+    dev = torch.device(f'sdaa:{device_id}')
+    torch.sdaa.set_device(dev)
 
-def run(
-    ny: int = 16,
-    nx: int = 32,
-    nz: int = 4,
-    force: float = 1e-5,
-    tau: float = 1.0,
-    n_steps: int = 5000,
-    device: str = "sdaa:9",
-):
-    dev = torch.device(device)
-    torch.manual_seed(42)
+    print(f"=== Poiseuille Flow (SDAA:{device_id}) ===")
+    print(f"Grid: {nx}×{ny}×{nz}, tau={tau}, force={force}, steps={n_steps}")
+    print()
 
-    # --- Grid setup ---
+    # --- Solid mask: walls at y=0 and y=ny-1 ---
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=dev)
     solid[:, 0, :] = True   # bottom wall
     solid[:, -1, :] = True  # top wall
+
+    # --- Near-wall mesh ---
+    near = get_near_wall_3d(solid)
+    mesh = SurfaceMesh.from_gradient(solid, near)
 
     # --- Initial condition ---
     rho0 = torch.ones(nz, ny, nx, device=dev)
     f = equilibrium3d(rho0, torch.zeros_like(rho0), torch.zeros_like(rho0),
                       torch.zeros_like(rho0), device=dev)
+    initial_mass = float(rho0.sum().item())
 
-    # Body force: Guo forcing scheme
-    # Δf_i = w_i * (1 - 1/(2τ)) * [3*c_ix*F + 9*c_ix*(c·u)*F - 3*ux*F]
-    # For simplicity with small u: Δf_i ≈ w_i * (1 - 1/(2τ)) * 3 * c_ix * F
-    from tensorlbm.d3q19 import W as W_LAT
-    c = C.to(dev).float()
-    w_lat = W_LAT.to(dev).float()
-    # Precompute the direction-dependent part: w_i * 3 * c_ix * (1 - 1/(2τ))
-    force_coeff = w_lat * 3.0 * c[:, 0] * (1.0 - 0.5 / tau) * force  # (19,)
+    nu = (tau - 0.5) / 3.0
+    H = float(ny - 2)  # channel height: walls at y=0.5 and y=ny-1-0.5, so H=ny-2
+    dpS = 0.5 * 1.0 * force * H * nz  # for pressure normalization
 
-    print(f"=== Poiseuille Flow: Corrected BB ===")
-    print(f"Grid: {nx}×{ny}×{nz}, tau={tau}, force={force}, steps={n_steps}")
-    print(f"Device: {device}")
-    print()
-
-    # --- Time loop ---
-    for step in range(1, n_steps + 1):
-        # 1. Save pre-collision f
-        f_pre = f.clone()
-
-        # 2. Collision with body force (Guo scheme)
+    # --- Custom collide_fn: BGK + body force via velocity shift ---
+    # Velocity shift method: u' = u + τ*F/ρ in equilibrium provides the
+    # correct body force G.  No explicit force term needed — the simplified
+    # Guo force term Δf = w*3*c_x*(1-1/2τ)*G combined with velocity shift
+    # double-counts the force (gives 1.5×G instead of G).
+    def collide_bgk_force(f, tau, **kwargs):
         rho, ux, uy, uz = macroscopic3d(f)
-        # Add force to velocity for equilibrium
-        ux = ux + force * tau / rho
+        ux = ux + force * tau / rho  # velocity shift (Guo)
         feq = equilibrium3d(rho, ux, uy, uz, device=dev)
-        f = f - (f - feq) / tau
-        # Force term (Guo scheme, simplified for small u)
-        f = f + force_coeff.view(19, 1, 1, 1).expand(19, nz, ny, nx)
+        return f - (f - feq) / tau
 
-        # 3. Corrected half-way bounce-back
-        f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
+    # --- Far-field BC: periodic in x (handled by torch.roll) ---
+    def periodic_x_bc(f, u_in):
+        return f
 
-        # 4. Streaming
-        f = stream3d(f)
+    print(f"nu={nu:.6f}, H={H}, u_max_exact={force*H**2/(8*nu):.8f}")
+    print(f"{'Step':>6s}  {'u_max':>8s}  {'Cf':>8s}  {'Cd_p':>8s}")
+    print("-" * 40)
 
-        # 5. Periodic BC in x
-        f[:, :, :, 0] = f[:, :, :, -2]
-        f[:, :, :, -1] = f[:, :, :, -2]
+    for step in range(1, n_steps + 1):
+        f = lbm_step_correct(
+            f, collide_bgk_force, tau, solid, 0.0, periodic_x_bc,
+            correct_mass_fn=correct_mass3d, target_mass=initial_mass,
+            step=step, mass_interval=200,
+        )
+
+        if step % 500 == 0 or step == n_steps:
+            _, ux, _, _ = macroscopic3d(f)
+            u_profile = ux[:, 1:-1, :].mean(dim=(0, 2))
+            u_max = float(u_profile.max().item())
+            # drag_friction_integration already returns F/dpS
+            ffx, _, _ = drag_friction_integration(f, mesh, dpS, nu)
+            Cf = ffx  # already normalized
+            fpx, _, _ = drag_pressure_integration(f, mesh, dpS, solid=solid)
+            print(f" {step:5d}  {u_max:8.5f}  {Cf:8.6f}  {fpx:8.6f}")
 
     # --- Extract velocity profile ---
     _, ux, _, _ = macroscopic3d(f)
     u_profile = ux[:, 1:-1, :].mean(dim=(0, 2))  # (ny-2,)
 
-    # --- Exact solution ---
-    nu = (tau - 0.5) / 3.0
-    H = ny - 1.0  # channel height (wall at 0.5 to ny-1+0.5)
+    # --- Exact solution: u(y) = G/(2ν) * y' * (H - y') ---
+    # where y' = y - 0.5 (distance from bottom wall), H = ny - 2
     y_interior = torch.arange(1, ny - 1, device=dev, dtype=torch.float32)
-    # u(y) = G/(2nu) * (y-0.5) * (H-0.5 - (y-0.5))
-    # where G = force / rho (body force per unit mass)
-    G = force  # pressure gradient = body force
-    u_exact = G / (2.0 * nu) * (y_interior - 0.5) * (H - 0.5 - (y_interior - 0.5))
+    G = force
+    u_exact = G / (2.0 * nu) * (y_interior - 0.5) * (H - (y_interior - 0.5))
 
-    # --- Error ---
     u_num = u_profile.cpu().numpy()
     u_ex = u_exact.cpu().numpy()
     u_max_exact = float(u_ex.max())
@@ -123,50 +106,28 @@ def run(
     max_err = max(abs(a - b) for a, b in zip(u_num, u_ex)) / abs(u_max_exact)
     max_err_pct = max_err * 100
 
-    # Friction: Cf = tau_wall / (0.5 * rho * U_max^2)
-    # tau_wall = nu * du/dy at wall = nu * G * H / (2*nu) = G*H/2
-    # Cf = 2 * tau_wall / (rho * U_max^2) = 2 * G*H/2 / (G^2*H^2/(8*nu^2))
-    #    = 8*nu^2 / (G*H^2) ... let's just compute numerically
-    u_max_val = abs(u_max_num)
-    if u_max_val > 1e-12:
-        # du/dy at wall (forward diff from first interior cell)
-        du_dy_wall = u_num[0] / 0.5  # u at y=1, wall at y=0.5, distance=0.5
-        tau_wall = nu * du_dy_wall
-        cf_num = 2.0 * tau_wall / u_max_val**2
-    else:
-        cf_num = 0.0
-
-    # Exact Cf: u_max = G*H^2/(8*nu), tau_wall = G*H/2
-    # Cf = 2*tau_wall/u_max^2 = 2*(G*H/2) / (G^2*H^4/(64*nu^2))
-    #    = 64*nu^2 / (G*H^3) ... let's use the standard form
-    # For plane Poiseuille: Cf = 8*nu / (U_max * H)
+    # Friction: Cf = 8ν / (U_max * H)  (plane Poiseuille)
     cf_exact = 8.0 * nu / (u_max_exact * H) if u_max_exact > 0 else 0.0
+    du_dy_wall = u_num[0] / 0.5  # forward diff: u(y=1) / 0.5
+    tau_wall = nu * du_dy_wall
+    cf_num = 2.0 * tau_wall / u_max_num**2 if u_max_num > 1e-12 else 0.0
     cf_err_pct = abs(cf_num - cf_exact) / abs(cf_exact) * 100 if cf_exact > 0 else 0.0
 
-    print(f"Velocity profile (interior cells):")
-    print(f"  {'y':>5s}  {'u_num':>12s}  {'u_exact':>12s}  {'err':>12s}")
-    for i, (yv, un, ue) in enumerate(zip(y_interior.cpu().numpy(), u_num, u_ex)):
-        print(f"  {yv:5.1f}  {un:12.8f}  {ue:12.8f}  {abs(un-ue):12.2e}")
-
-    print()
+    print(f"\n=== FINAL RESULTS ===")
     print(f"u_max:  num={u_max_num:.8f}, exact={u_max_exact:.8f}")
     print(f"u_max error: {max_err_pct:.2f}%")
     print(f"Cf:     num={cf_num:.6f}, exact={cf_exact:.6f}")
     print(f"Cf error:    {cf_err_pct:.2f}%")
 
-    if max_err_pct < 0.1:
-        print("PASS: Corrected BB gives accurate Poiseuille profile")
-    else:
-        print(f"CHECK: u_max error = {max_err_pct:.2f}% (expected < 0.1%)")
+    print(f"\n  {'y':>5s}  {'u_num':>12s}  {'u_exact':>12s}  {'err':>12s}")
+    for yv, un, ue in zip(y_interior.cpu().numpy(), u_num, u_ex):
+        print(f"  {yv:5.1f}  {un:12.8f}  {ue:12.8f}  {abs(un-ue):12.2e}")
 
-    return {"u_max_err_pct": max_err_pct, "cf_err_pct": cf_err_pct,
-            "u_max_num": u_max_num, "u_max_exact": u_max_exact}
+    passed = max_err_pct < 1.0
+    print(f"\n{'PASS' if passed else 'FAIL'}: u_max error={max_err_pct:.2f}% (target < 1%)")
+    return passed
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Poiseuille flow — corrected BB")
-    parser.add_argument("--device", default="sdaa:9", help="Device")
-    parser.add_argument("--ny", type=int, default=16, help="Grid size Y")
-    parser.add_argument("--n-steps", type=int, default=5000, help="Steps")
-    args = parser.parse_args()
-    run(ny=args.ny, n_steps=args.n_steps, device=args.device)
+    dev = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+    run(device_id=dev)

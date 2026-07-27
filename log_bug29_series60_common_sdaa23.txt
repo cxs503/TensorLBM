@@ -1,0 +1,39 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:23 Series60] Cb=0.60 hull benchmark
+[SDAA:23 Series60] grid=200x80x80 L=80.0 B=16.0 T=12.0
+[SDAA:23 Series60] u_in=0.06 Re=1e+03 nu=4.800000e-03 tau=0.514400 Cs=0.05
+[SDAA:23 Series60] solid=11242 near=6740 Cb=0.7319 (theoretical ~0.60)
+[SDAA:23 Series60] Cf_ITTC=0.075000 S_wetted=6740.0 dpS=1.213200e+01
+
+[SDAA:23 Series60] === RUN A: from_gradient normals ===
+[SDAA:23 Series60_grad] Bug 29 retest via common interface (lbm_step_correct)
+[SDAA:23 Series60_grad] grid=200x80x80 L_lat=80.0 spacing=1.0000
+[SDAA:23 Series60_grad] u_in=0.06 Re=1e+03 nu=4.800000e-03 tau=0.514400 Cs=0.05
+[SDAA:23 Series60_grad] normal_method=from_gradient dA_method=none
+[SDAA:23 Series60_grad] solid=11242 near=6740 faces=0
+[SDAA:23 Series60_grad] Cf_ITTC=0.075000 S_wetted=6740.0 dpS=1.213200e+01
+[SDAA:23 Series60_grad] dA stats: mean=1.0000 min=1.0000 max=1.0000 sum=6740.0
+[SDAA:23 Series60_grad] Normal orientation check: 84.3% outward (843/1000 sampled)
+[SDAA:23 Series60_grad] init done (0.0s) mass=1280000.0
+[SDAA:23 Series60_grad] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [74s]
+[SDAA:23 Series60_grad] step=1000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [148s]
+[SDAA:23 Series60_grad] step=1500 Cd_p=0.006070 Cd_f=0.046349 Cd_tot=0.052419 (ITTC=0.075000) [232s]
+[SDAA:23 Series60_grad] step=2000 Cd_p=0.005948 Cd_f=0.043185 Cd_tot=0.049133 (ITTC=0.075000) [348s]
+[SDAA:23 Series60_grad] step=2500 Cd_p=0.005899 Cd_f=0.041305 Cd_tot=0.047204 (ITTC=0.075000) [538s]
+[SDAA:23 Series60_grad] step=3000 Cd_p=0.005862 Cd_f=0.040011 Cd_tot=0.045872 (ITTC=0.075000) [706s]
+[SDAA:23 Series60_grad] step=3500 Cd_p=0.005853 Cd_f=0.039122 Cd_tot=0.044975 (ITTC=0.075000) [872s]
