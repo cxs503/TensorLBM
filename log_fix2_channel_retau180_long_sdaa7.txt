@@ -38,3 +38,8 @@
 [channel_retau180_long SDAA:7] step=16000 u_bulk=0.025369 u_tau=0.002778 Re_tau=180.0 Cf=0.023978 nu_t_max=3.0133e-02 finite=True [1836s]
 [channel_retau180_long SDAA:7] step=17000 u_bulk=0.024145 u_tau=0.002778 Re_tau=180.0 Cf=0.026470 nu_t_max=3.0976e-02 finite=True [1982s]
 [channel_retau180_long SDAA:7] step=18000 u_bulk=0.022975 u_tau=0.002778 Re_tau=180.0 Cf=0.029234 nu_t_max=3.2504e-02 finite=True [2132s]
+[channel_retau180_long SDAA:7] step=19000 u_bulk=0.021870 u_tau=0.002778 Re_tau=180.0 Cf=0.032263 nu_t_max=3.3614e-02 finite=True [2293s]
+[channel_retau180_long SDAA:7] step=20000 u_bulk=0.020835 u_tau=0.002778 Re_tau=180.0 Cf=0.035550 nu_t_max=3.4284e-02 finite=True [2446s]
+
+[channel_retau180_long SDAA:7] === FINAL ===  Re_tau=180.0 Cf=0.017656 (ref=0.0073461891643709825) Cf_err=140.3% RMS_loglaw=6.9066 finite=True time=2446s
+[channel_retau180_long SDAA:7] saved to results_fix2_benchmarks/channel_retau180_long_sdaa7.json
