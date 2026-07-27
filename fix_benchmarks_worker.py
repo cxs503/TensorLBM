@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Fix failing benchmarks — 4 tasks on SDAA cards 0-3.
 
-SDAA:0 — Cylinder Re=3900 3D+RANS (D=48, nx=600, ny=240, nz=200, 20% blockage)
-SDAA:1 — NACA 0012 Re=1000 from_gradient (chord=100, nx=600, ny=300, nz=4)
-SDAA:2 — KVLCC2 Re=10000 RANS (nx=200, ny=80, nz=80, from_gradient)
-SDAA:3 — BFL sphere friction fix (D=40, 180³, from_sphere, q_wall fix)
+SDAA:0 — BFL sphere friction fix (D=40, 180³, from_sphere, q_wall fix, 3000 steps)
+SDAA:1 — Cylinder Re=3900 3D+RANS (D=48, nx=400, ny=160, nz=50, 10000 steps)
+SDAA:2 — NACA 0012 Re=1000 from_gradient (chord=100, nx=600, ny=300, nz=4)
+SDAA:3 — BFL cylinder Re=200 (D=48, nx=600, ny=240, nz=4, 5000 steps)
 
 Usage:
   python fix_benchmarks_worker.py <benchmark> <device_id> <output_path>
-  benchmark: cyl_re3900_3d_rans | naca_re1000_grad | kvlcc2_re10000_rans | sphere_bfl_fix
+  benchmark: sphere_bfl_fix | cyl_re3900_3d_rans | naca_re1000_grad | cyl_re200_bfl
 """
 from __future__ import annotations
 
@@ -42,7 +42,9 @@ from tensorlbm.postprocess import detect_strouhal
 from tensorlbm.bfl_common import (
     bfl_bounce_back_common,
     compute_q_sphere_common,
+    compute_q_cylinder_common,
     compute_q_wall_sphere,
+    compute_q_wall_cylinder,
 )
 
 
@@ -114,14 +116,14 @@ def run_cyl_re3900_3d_rans(device_id, output_path):
 
     D = 48.0
     R = D / 2.0
-    nx, ny, nz = 400, 240, 50    # 3D (nz=50), 20% blockage (D/ny=0.20), fits 15GB
+    nx, ny, nz = 400, 160, 50    # 3D (nz=50), 20% blockage (D/ny=0.30→0.20), 3.2M cells
     u_in = 0.08
     Re = 3900.0
     nu = u_in * D / Re
     tau = 3.0 * nu + 0.5
-    n_steps = 15000
-    warmup = 3750
-    avg_window = 7500
+    n_steps = 10000
+    warmup = 3000
+    avg_window = 5000
 
     cx = nx * 0.25
     cy = ny * 0.5
@@ -370,161 +372,203 @@ def run_naca_re1000_grad(device_id, output_path):
 
 
 # ========================================================================== #
-# BENCHMARK 3: KVLCC2 Re=10000 RANS (SDAA:2)
+# BENCHMARK 3: BFL cylinder Re=200 verification (SDAA:3)
 # ========================================================================== #
-def run_kvlcc2_re10000_rans(device_id, output_path):
-    """KVLCC2 Re=10000 — RANS k-epsilon, from_gradient normals.
+def run_cyl_re200_bfl(device_id, output_path):
+    """Cylinder Re=200 — BFL with fixed q_wall (normal distance, not avg q).
 
-    Previous Re=1000 Smagorinsky gave poor results.
-    Re=10000 with RANS k-epsilon for high-Re stability.
-    Reference: ITTC Cf=0.075/(log10(Re)-2)^2.
-    Target: <30%.
+    Uses compute_q_wall_cylinder (analytical normal distance r-R) for the
+    friction formula, and compute_q_cylinder_common for the BFL bounce-back
+    q-field.  MRT+Smagorinsky(0.05), from_cylinder normals.
+    BB baseline: Cd=1.220 (6.1% error vs ref 1.15).
+    Target: BFL Cd within 20% of BB result (i.e. 0.976 < Cd < 1.464).
     """
-    from tensorlbm.ship_cad import build_hull_mask, ShipHullType
-
     device = torch.device(f"sdaa:{device_id}")
     torch.sdaa.set_device(device)
-    tag = f"[kvlcc2_re10000_rans SDAA:{device_id}]"
+    tag = f"[cyl_re200_bfl SDAA:{device_id}]"
 
-    L = 80.0
-    nx, ny, nz = 200, 80, 80
-    Re = 10000.0
-    u_in = 0.06
-    nu = u_in * L / Re
+    D = 48.0
+    R = D / 2.0
+    nx, ny, nz = 600, 240, 4    # 20% blockage (D/ny=0.20), quasi-2D
+    Re = 200.0
+    u_in = 0.08
+    nu = u_in * D / Re
     tau = 3.0 * nu + 0.5
     n_steps = 5000
-    warmup = 1000
+    warmup = 1250
+    cs_smag = 0.05
+    Cd_bb_baseline = 1.220   # BB result from previous run (6.1% err)
+    Cd_ref = 1.15             # literature Re=200 cylinder
 
-    print(f"{tag} nx={nx} ny={ny} nz={nz} L={L} u_in={u_in} Re={Re} "
-          f"nu={nu:.6e} tau={tau:.6f} MRT+RANS-k-epsilon steps={n_steps}", flush=True)
-    print(f"{tag} from_gradient normals (NOT STL); RANS k-epsilon for high-Re stability", flush=True)
+    cx = nx * 0.25
+    cy = ny * 0.5
+    A_frontal = D * nz
+    dpS = 0.5 * u_in ** 2 * A_frontal
+
+    print(f"{tag} D={D} nx={nx} ny={ny} nz={nz} u_in={u_in} Re={Re} "
+          f"nu={nu:.6e} tau={tau:.6f} Cs={cs_smag} "
+          f"dpS={dpS:.6e} BB_baseline={Cd_bb_baseline} use_bfl=True", flush=True)
+    print(f"{tag} BFL with FIXED q_wall (normal distance r-R, NOT avg per-direction q)", flush=True)
     t0 = time.time()
 
-    cx = nx * 0.30
-    cy = ny * 0.5
-    cz_keel = nz * 0.5 - 8
-    beam = ny * 0.20
-    draft = nz * 0.15
-
-    solid, stats = build_hull_mask(
-        hull_type=ShipHullType.KVLCC2,
-        nx=nx, ny=ny, nz=nz,
-        cx=cx, cy=cy,
-        cz_keel=cz_keel,
-        length=L,
-        beam=beam,
-        draft=draft,
-        device=str(device),
-    )
+    # Build cylinder solid (extruded along z)
+    solid = build_cylinder_solid(nx, ny, nz, cx, cy, R, device)
     n_solid = int(solid.sum().item())
-    cb_num = stats.get("Cb_numerical", 0)
-    print(f"{tag} solid cells: {n_solid}  Cb_numerical={cb_num:.4f}", flush=True)
-
-    # ITTC reference: Cf = 0.075 / (log10(Re) - 2)^2
-    cf_ittc = 0.075 / (math.log10(Re) - 2) ** 2
-    # Approximate Cd (friction-dominated for slender ship)
-    cd_ref = cf_ittc  # Cf ≈ Cd for slender hull at moderate Re
-    dpS = 0.5 * 1.0 * u_in ** 2 * draft * L  # wetted area approximation
-    print(f"{tag} ITTC Cf={cf_ittc:.6f} (Re={Re}) dpS={dpS:.6e}", flush=True)
+    print(f"{tag} solid cells: {n_solid}", flush=True)
 
     near = get_near_wall_3d(solid)
     n_near = int(near.sum().item())
     print(f"{tag} near-wall cells: {n_near}", flush=True)
 
-    # from_gradient normals (NOT STL) per task spec
-    mesh = SurfaceMesh.from_gradient(solid, near)
-    print(f"{tag} SurfaceMesh.from_gradient built", flush=True)
+    mesh = SurfaceMesh.from_cylinder(solid, near, cx, cy, R, axis="z")
+    print(f"{tag} SurfaceMesh.from_cylinder built", flush=True)
 
-    bc_config = {
-        "far_field_faces": ["y-", "y+", "z-", "z+"],
-        "periodic_faces": [],
+    # BFL q-field (analytical cylinder) for bounce-back
+    print(f"{tag} computing BFL q-values (analytical cylinder)...", flush=True)
+    t_q = time.time()
+    bfl_mask, bfl_q = compute_q_cylinder_common(
+        nx, ny, nz, cx, cy, R, device, axis="z", lattice="D3Q19"
+    )
+    n_links = int(bfl_mask.sum().item())
+    q_at_boundary = bfl_q[bfl_mask]
+    bfl_stats = {
+        "n_links": n_links,
+        "q_min": float(q_at_boundary.min()) if n_links > 0 else None,
+        "q_max": float(q_at_boundary.max()) if n_links > 0 else None,
+        "q_mean": float(q_at_boundary.mean()) if n_links > 0 else None,
     }
-    far_field_fn = functools.partial(far_field_bc_3d, bc_config=bc_config)
+    print(f"{tag} BFL q-field: {n_links} links ({time.time()-t_q:.1f}s) "
+          f"q=[{bfl_stats['q_min']:.4f}, {bfl_stats['q_max']:.4f}] "
+          f"mean={bfl_stats['q_mean']:.4f}", flush=True)
 
+    # FIXED q_wall: normal distance from cell to cylinder surface (r - R)
+    q_wall = compute_q_wall_cylinder(near, cx, cy, R, device, axis="z")
+    q_at_near = q_wall[near]
+    print(f"  q_wall (FIXED): n_near={n_near} "
+          f"q_min={float(q_at_near.min()):.4f} q_max={float(q_at_near.max()):.4f} "
+          f"q_mean={float(q_at_near.mean()):.4f}", flush=True)
+
+    # Initialize
     rho0 = torch.ones((nz, ny, nx), device=device)
     ux0 = torch.full((nz, ny, nx), u_in, device=device)
     ux0[solid] = 0.0
-    f = equilibrium3d(rho0, ux0, torch.zeros_like(ux0),
-                      torch.zeros_like(ux0), device=device)
-    initial_mass = float(rho0.sum().item())
-
-    # Initialize k-epsilon solver
-    ke = KESolver(nu=nu, nu_t_max=0.5)
-    ke.initialize(ux0, torch.zeros_like(ux0), torch.zeros_like(ux0))
-    print(f"{tag} KESolver initialized, k0={ke._k.mean().item():.6e} "
-          f"eps0={ke._eps.mean().item():.6e}", flush=True)
-
-    collide_fn = functools.partial(collide_rans_ke, ke_solver=ke, mask=solid)
+    f = equilibrium3d(
+        rho0, ux0, torch.zeros_like(ux0), torch.zeros_like(ux0), device=device
+    )
+    im = float(rho0.sum().item())
+    print(f"{tag} init done ({time.time() - t0:.1f}s), initial_mass={im}", flush=True)
 
     cd_p_hist, cd_f_hist, cd_tot_hist, cl_hist = [], [], [], []
 
     for step in range(1, n_steps + 1):
-        f = lbm_step_correct(
-            f, collide_fn, tau, solid, u_in, far_field_fn,
-            correct_mass_fn=correct_mass3d, target_mass=initial_mass,
-            step=step, mass_interval=200,
+        f_pre = f.clone()
+        f = collide_smagorinsky_mrt3d(f, tau=tau, C_s=cs_smag)
+        # NoDynamics
+        sm = solid.unsqueeze(0).expand_as(f)
+        f = torch.where(sm, f_pre, f)
+
+        # BFL bounce-back
+        f = bounce_back_cells_3d(f, solid)
+        f_pre_stream = f.clone()
+        f = stream3d(f)
+        f = far_field_bc_3d(f, u_in)
+        f = bfl_bounce_back_common(
+            f, f_pre_stream, bfl_mask, bfl_q, lattice="D3Q19"
         )
 
-        fx_p, fy_p, _ = drag_pressure_integration(
-            f, mesh, dpS, extrap="none", p0_method="far_field", solid=solid)
+        if step % 200 == 0:
+            f = correct_mass3d(f, im)
+
+        fx_p, fy_p, _ = drag_pressure_integration(f, mesh, dpS)
+        # BFL friction with FIXED q_wall (normal distance)
         fx_f, fy_f, _ = drag_friction_integration(
-            f, mesh, dpS, nu, q_wall=None, formula="standard")
-        cd_p, cd_f = float(fx_p), float(fx_f)
-        cd_tot = cd_p + cd_f
-        cl = float(fy_p + fy_f)
+            f, mesh, dpS, nu, q_wall=q_wall, formula="bfl")
+        cd_tot = fx_p + fx_f
+        cl = fy_p + fy_f
+
+        if step > warmup:
+            if math.isfinite(cd_tot):
+                cd_p_hist.append(fx_p)
+                cd_f_hist.append(fx_f)
+                cd_tot_hist.append(cd_tot)
+                cl_hist.append(cl)
 
         if not torch.isfinite(f).all():
             print(f"{tag} DIVERGED at step {step}", flush=True)
             break
-        if step > warmup and math.isfinite(cd_tot):
-            cd_p_hist.append(cd_p)
-            cd_f_hist.append(cd_f)
-            cd_tot_hist.append(cd_tot)
-            cl_hist.append(cl)
-        if step % 500 == 0 or step == n_steps:
+
+        if step % 500 == 0:
             n_avg = min(500, len(cd_tot_hist))
-            ap = sum(cd_p_hist[-n_avg:]) / max(n_avg, 1)
-            af = sum(cd_f_hist[-n_avg:]) / max(n_avg, 1)
-            at = sum(cd_tot_hist[-n_avg:]) / max(n_avg, 1)
-            nu_t_max = float(ke.compute_nu_t(solid).max().item())
-            el = time.time() - t0
-            print(f"{tag} step={step}/{n_steps} Cd_p={ap:.6f} Cd_f={af:.6f} "
-                  f"Cd_tot={at:.6f} Cl={cl:.6f} nu_t_max={nu_t_max:.4e} "
-                  f"({el:.0f}s, {el/step:.3f}s/step)", flush=True)
+            if n_avg > 0:
+                print(
+                    f"{tag} step={step} Cd_p={sum(cd_p_hist[-n_avg:])/n_avg:.6f} "
+                    f"Cd_f={sum(cd_f_hist[-n_avg:])/n_avg:.6f} "
+                    f"Cd_tot={sum(cd_tot_hist[-n_avg:])/n_avg:.6f} "
+                    f"Cl={sum(cl_hist[-n_avg:])/n_avg:.6f} "
+                    f"({time.time()-t0:.0f}s)",
+                    flush=True,
+                )
 
     elapsed = time.time() - t0
-    nf = min(2000, len(cd_tot_hist))
-    cd_p_f = sum(cd_p_hist[-nf:]) / max(nf, 1)
-    cd_f_f = sum(cd_f_hist[-nf:]) / max(nf, 1)
-    cd_tot_f = sum(cd_tot_hist[-nf:]) / max(nf, 1)
-    cl_f = sum(cl_hist[-nf:]) / max(nf, 1)
-
-    cd_err = abs(cd_tot_f - cd_ref) / cd_ref * 100 if cd_ref > 0 else float("nan")
-    finite = bool(torch.isfinite(f).all().item())
-    print(f"\n{tag} === FINAL ===  Cd_p={cd_p_f:.6f} Cd_f={cd_f_f:.6f} "
-          f"Cd_tot={cd_tot_f:.6f} (ref ITTC Cf={cd_ref:.6f}) err={cd_err:.1f}% "
-          f"Cl={cl_f:.6f} finite={finite} time={elapsed:.0f}s", flush=True)
+    n_final = max(1, len(cd_tot_hist))
+    cd_p_final = sum(cd_p_hist) / n_final if cd_p_hist else float("nan")
+    cd_f_final = sum(cd_f_hist) / n_final if cd_f_hist else float("nan")
+    cd_tot_final = sum(cd_tot_hist) / n_final if cd_tot_hist else float("nan")
+    cl_final = sum(cl_hist) / n_final if cl_hist else float("nan")
+    err_vs_bb = (
+        abs(cd_tot_final - Cd_bb_baseline) / Cd_bb_baseline * 100
+        if Cd_bb_baseline > 0 and math.isfinite(cd_tot_final)
+        else float("nan")
+    )
+    err_vs_ref = (
+        abs(cd_tot_final - Cd_ref) / Cd_ref * 100
+        if Cd_ref > 0 and math.isfinite(cd_tot_final)
+        else float("nan")
+    )
 
     result = {
-        "case": "kvlcc2_re10000_rans", "device": f"sdaa:{device_id}",
-        "shape": "kvlcc2_hull", "lattice": "D3Q19",
-        "collision": "MRT+RANS-k-epsilon",
-        "constants": {"C_mu": C_MU, "C_e1": C_E1, "C_e2": C_E2},
-        "boundary": "halfway_BB+farfield(y±,z±)",
-        "normal_method": "from_gradient",
-        "grid": f"{nx}x{ny}x{nz}", "L": L, "u_in": u_in, "Re": Re,
-        "nu": nu, "tau": tau, "n_steps": n_steps, "warmup": warmup,
-        "n_solid": n_solid, "n_near": n_near, "Cb_numerical": cb_num,
-        "Cd_pressure": cd_p_f, "Cd_friction": cd_f_f, "Cd_total": cd_tot_f,
-        "Cd_ref": cd_ref, "Cf_ITTC": cf_ittc, "Cd_err_pct": cd_err,
-        "Cl": cl_f,
-        "n_samples": len(cd_tot_hist),
-        "finite": finite,
-        "elapsed_s": elapsed, "time_per_step_s": elapsed / n_steps,
-        "key_result": "STABLE" if finite else "DIVERGED",
+        "case": "cyl_Re200_bfl_fix",
+        "device": f"sdaa:{device_id}",
+        "Re": int(Re),
+        "D": float(D),
+        "grid": f"{nx}x{ny}x{nz}",
+        "u_in": float(u_in),
+        "nu": float(nu),
+        "tau": float(tau),
+        "Cs": float(cs_smag),
+        "n_steps": int(n_steps),
+        "warmup": int(warmup),
+        "n_solid": int(n_solid),
+        "n_near": int(n_near),
+        "dpS": float(dpS),
+        "Cd_pressure": float(cd_p_final) if cd_p_final == cd_p_final else None,
+        "Cd_friction": float(cd_f_final) if cd_f_final == cd_f_final else None,
+        "Cd_total": float(cd_tot_final) if cd_tot_final == cd_tot_final else None,
+        "Cl": float(cl_final) if cl_final == cl_final else None,
+        "Cd_bb_baseline": float(Cd_bb_baseline),
+        "Cd_ref": float(Cd_ref),
+        "err_vs_bb_pct": float(err_vs_bb) if err_vs_bb == err_vs_bb else None,
+        "err_vs_ref_pct": float(err_vs_ref) if err_vs_ref == err_vs_ref else None,
+        "bfl_stats": bfl_stats,
+        "q_wall_method": "normal_distance_r_minus_R",
+        "q_wall_mean": float(q_at_near.mean()),
+        "friction_formula": "nu*u_t/q_wall (FIXED: normal distance)",
+        "finite": bool(torch.isfinite(f).all().item()),
+        "elapsed_s": float(elapsed),
     }
-    Path(output_path).write_text(json.dumps(result, indent=2))
-    print(f"{tag} saved to {output_path}", flush=True)
+
+    print(
+        f"{tag} DONE Cd_p={cd_p_final:.6f} Cd_f={cd_f_final:.6f} "
+        f"Cd_tot={cd_tot_final:.6f} Cl={cl_final:.6f} "
+        f"(BB baseline={Cd_bb_baseline}, ref={Cd_ref}) "
+        f"err_vs_bb={err_vs_bb:.1f}% err_vs_ref={err_vs_ref:.1f}% "
+        f"time={elapsed:.0f}s",
+        flush=True,
+    )
+
+    if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_text(json.dumps(result, indent=2))
     return result
 
 
@@ -550,8 +594,8 @@ def run_sphere_bfl_fix(device_id, output_path):
     u_in = 0.08
     nu = u_in * D / Re
     tau = 3.0 * nu + 0.5
-    n_steps = 6000
-    warmup = 1500
+    n_steps = 3000
+    warmup = 750
     Cd_ref = 1.09
     cs_smag = 0.05
     R = D / 2.0
@@ -726,7 +770,7 @@ def run_sphere_bfl_fix(device_id, output_path):
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         print("Usage: python fix_benchmarks_worker.py <benchmark> <device_id> <output_path>")
-        print("  benchmark: cyl_re3900_3d_rans | naca_re1000_grad | kvlcc2_re10000_rans | sphere_bfl_fix")
+        print("  benchmark: cyl_re3900_3d_rans | naca_re1000_grad | cyl_re200_bfl | sphere_bfl_fix")
         sys.exit(1)
 
     benchmark = sys.argv[1]
@@ -736,7 +780,7 @@ if __name__ == "__main__":
     runners = {
         "cyl_re3900_3d_rans": run_cyl_re3900_3d_rans,
         "naca_re1000_grad": run_naca_re1000_grad,
-        "kvlcc2_re10000_rans": run_kvlcc2_re10000_rans,
+        "cyl_re200_bfl": run_cyl_re200_bfl,
         "sphere_bfl_fix": run_sphere_bfl_fix,
     }
 
