@@ -30,3 +30,22 @@
 [SDAA:0 C1 with_sail L=80] step=4000 Cd_p=0.006878 Cd_f=0.039875 Cd_tot=0.046753 Cl=-0.000009 (642s)
 [SDAA:0 C1 with_sail L=80] step=4500 Cd_p=0.006872 Cd_f=0.039858 Cd_tot=0.046730 Cl=-0.000010 (722s)
 [SDAA:0 C1 with_sail L=80] step=5000 Cd_p=0.006871 Cd_f=0.039849 Cd_tot=0.046721 Cl=-0.000009 (802s)
+[SDAA:0 C1 with_sail L=80] step=5500 Cd_p=0.006868 Cd_f=0.039845 Cd_tot=0.046713 Cl=-0.000010 (883s)
+[SDAA:0 C1 with_sail L=80] step=6000 Cd_p=0.006870 Cd_f=0.039843 Cd_tot=0.046713 Cl=-0.000009 (963s)
+[SDAA:0 C1 with_sail L=80] step=6500 Cd_p=0.006868 Cd_f=0.039842 Cd_tot=0.046709 Cl=-0.000010 (1043s)
+[SDAA:0 C1 with_sail L=80] step=7000 Cd_p=0.006870 Cd_f=0.039841 Cd_tot=0.046711 Cl=-0.000009 (1124s)
+[SDAA:0 C1 with_sail L=80] step=7500 Cd_p=0.006868 Cd_f=0.039841 Cd_tot=0.046709 Cl=-0.000010 (1204s)
+[SDAA:0 C1 with_sail L=80] step=8000 Cd_p=0.006870 Cd_f=0.039841 Cd_tot=0.046711 Cl=-0.000009 (1285s)
+[SDAA:0 C1 with_sail L=80] step=8500 Cd_p=0.006868 Cd_f=0.039841 Cd_tot=0.046709 Cl=-0.000010 (1365s)
+[SDAA:0 C1 with_sail L=80] step=9000 Cd_p=0.006870 Cd_f=0.039841 Cd_tot=0.046710 Cl=-0.000009 (1445s)
+[SDAA:0 C1 with_sail L=80] step=9500 Cd_p=0.006868 Cd_f=0.039841 Cd_tot=0.046709 Cl=-0.000010 (1526s)
+[SDAA:0 C1 with_sail L=80] step=10000 Cd_p=0.006870 Cd_f=0.039841 Cd_tot=0.046710 Cl=-0.000009 (1606s)
+
+[SDAA:0 C1 with_sail L=80] === FINAL (Cd_ref=0.046000) ===
+[SDAA:0 C1 with_sail L=80] Cd_p   = 0.006868
+[SDAA:0 C1 with_sail L=80] Cd_f   = 0.039845
+[SDAA:0 C1 with_sail L=80] Cd_tot = 0.046713
+[SDAA:0 C1 with_sail L=80] Cl     = -0.000010
+[SDAA:0 C1 with_sail L=80] St     = 2.333722
+[SDAA:0 C1 with_sail L=80] err    = 1.5%  time=1606s
+[SDAA:0 C1 with_sail L=80] saved to results_suboff_appendage/case1_with_sail.json

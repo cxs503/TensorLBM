@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+=== SUBOFF STL Re=1000 L=80 ===
+STL: /tmp/suboff_bare_hull_ascii.stl
+STL: 4682 verts, 9600 faces
+Scaled: L=80.0
+/root/TensorLBM_dev/suboff_stl_worker.py:43: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.detach().clone() or sourceTensor.detach().clone().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  solid = torch.tensor(solid_np, dtype=torch.bool, device=device)
+Grid: 200x80x80, solid=4280 (0.3%)
+Near-wall: 1320
+Mesh: from_gradient
+u_in=0.06, tau=0.5144, Cs=0.05, dpS=2.376, S_wet=1320
+step=1500/5000 Cd_p=0.137441 Cd_f=0.000974 Cd_tot=0.138415 (ref=0.042) Cl=-0.061833 (201s)
+step=2000/5000 Cd_p=0.137006 Cd_f=0.000972 Cd_tot=0.137977 (ref=0.042) Cl=-0.061473 (269s)
+step=2500/5000 Cd_p=0.137510 Cd_f=0.000974 Cd_tot=0.138483 (ref=0.042) Cl=-0.061031 (336s)
+step=3000/5000 Cd_p=0.137809 Cd_f=0.000971 Cd_tot=0.138780 (ref=0.042) Cl=-0.061278 (403s)
+step=3500/5000 Cd_p=0.137711 Cd_f=0.000973 Cd_tot=0.138684 (ref=0.042) Cl=-0.061070 (470s)
+step=4000/5000 Cd_p=0.137508 Cd_f=0.000970 Cd_tot=0.138478 (ref=0.042) Cl=-0.061157 (537s)
+step=4500/5000 Cd_p=0.137714 Cd_f=0.000974 Cd_tot=0.138688 (ref=0.042) Cl=-0.060963 (604s)
