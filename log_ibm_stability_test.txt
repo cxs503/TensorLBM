@@ -23,3 +23,4 @@ TEST 1: Stationary cylinder Re=100
 [stationary] solid=1764 markers=62
 [stationary] init done (0.3s)
 [stationary] step=100/500 max_u=0.0337 Cd_tot=0.1278 Cd_ibm=0.1950 (629s)
+[stationary] step=200/500 max_u=0.0670 Cd_tot=0.8994 Cd_ibm=4.5984 (3111s)
