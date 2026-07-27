@@ -225,14 +225,21 @@ def ibm_apply_body_force_3d_common(
     fy_grid: torch.Tensor,
     fz_grid: torch.Tensor,
     lattice: IBMLatticeName = "D3Q19",
+    tau: float | None = None,
 ) -> torch.Tensor:
     """Apply a 3-D Guo body-force correction to a D3Q19 or D3Q27 distribution.
 
-    Uses the first-order Guo (2002) forcing scheme::
+    Uses the Guo (2002) forcing scheme::
 
-        f_i ← f_i + w_i · 3 · (c_ix F_x + c_iy F_y + c_iz F_z)
+        f_i ← f_i + (1 − 1/(2τ)) · w_i · 3 · (c_ix F_x + c_iy F_y + c_iz F_z)
 
-    where the factor ``3 = 1/c_s²`` is identical for D3Q19 and D3Q27.
+    where the factor ``3 = 1/c_s²`` is identical for D3Q19 and D3Q27, and
+    ``(1 − 1/(2τ))`` is the **Guo forcing factor** that accounts for the
+    discrete lattice effect of body forces applied during/after collision.
+
+    **Critical for stability**: without the ``(1 − 1/(2τ))`` factor the force
+    is applied at full strength, which overshoots by ~8× for typical τ≈0.57
+    and causes immediate divergence for moving bodies.
 
     Args:
         f:       Distribution tensor of shape ``(Q, nz, ny, nx)``.
@@ -240,6 +247,10 @@ def ibm_apply_body_force_3d_common(
         fy_grid: Eulerian y-force field of shape ``(nz, ny, nx)``.
         fz_grid: Eulerian z-force field of shape ``(nz, ny, nx)``.
         lattice: ``"D3Q19"`` or ``"D3Q27"``.
+        tau:     Relaxation time τ.  When provided, the Guo factor
+                 ``(1 − 1/(2τ))`` is applied.  When ``None`` (legacy),
+                 the factor defaults to 1.0 (NOT recommended — causes
+                 instability for moving bodies).
 
     Returns:
         Updated distribution tensor of the same shape as ``f``.
@@ -256,7 +267,11 @@ def ibm_apply_body_force_3d_common(
     cy = c[:, 1].view(q, 1, 1, 1)
     cz = c[:, 2].view(q, 1, 1, 1)
     w_view = w.view(q, 1, 1, 1)
-    forcing = w_view * 3.0 * (
+    # Guo forcing factor: (1 − 1/(2τ)).  Essential for stability.
+    guo_factor = 1.0
+    if tau is not None:
+        guo_factor = 1.0 - 1.0 / (2.0 * tau)
+    forcing = w_view * 3.0 * guo_factor * (
         cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0) + cz * fz_grid.unsqueeze(0)
     )
     return f + forcing
