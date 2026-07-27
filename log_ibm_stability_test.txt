@@ -26,3 +26,14 @@ TEST 1: Stationary cylinder Re=100
 [stationary] step=200/500 max_u=0.0670 Cd_tot=0.8994 Cd_ibm=4.5984 (3111s)
 [stationary] step=300/500 max_u=0.1000 Cd_tot=1.3810 Cd_ibm=9.8238 (10751s)
 [stationary] step=400/500 max_u=0.1000 Cd_tot=1.4371 Cd_ibm=14.4377 (24824s)
+[stationary] step=500/500 max_u=0.1000 Cd_tot=1.3134 Cd_ibm=13.8184 (44005s)
+
+[stationary] PASS — Cd_tot=1.3134 Cd_ibm=13.8184 Cl=-0.0055 max_u=0.1000 (44005s)
+
+============================================================
+TEST 2: Oscillating cylinder A=0.05*u_in, St=0.1
+============================================================
+[oscillating] Re=100 D=24 grid=200x100x4 u_in=0.1 nu=2.400000e-02 tau=0.572000 n_steps=500
+[oscillating] solid=1764 markers=62
+[oscillating] oscillating: A_vel=0.005 St=0.1 f_lat=4.166667e-04
+[oscillating] init done (0.3s)
