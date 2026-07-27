@@ -14,18 +14,13 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-=== Sphere Drag: Re=100 (SDAA:17) ===
-Grid: 180×180×180, D=40.0, u_in=0.08, tau=0.5960, Cs=0.05
-Steps: 3000, warmup: 600
-Bug 37 fix: ux0[solid]=0 (not f[:,solid]=0)
-
-solid=33371 near=4302 mesh=from_sphere (0.5s)
-init done mass=5832000.0 (0.5s)
-
-  Step      Cd_p      Cd_f        Cd
-----------------------------------------
-   500  (max|u|=0.1040)
-  1000    0.6601    0.4352    1.0953  (829s)
-  1500    0.6501    0.4250    1.0751  (1240s)
-  2000    0.6461    0.4200    1.0662  (1652s)
-  2500    0.6364    0.4172    1.0537  (2063s)
+[SDAA:20 KVLCC2] Bug 29 retest via common interface (lbm_step_correct)
+[SDAA:20 KVLCC2] grid=200x80x80 L_lat=120.0 spacing=2.6667
+[SDAA:20 KVLCC2] u_in=0.06 Re=1e+05 nu=7.200000e-05 tau=0.500216 Cs=0.05
+[SDAA:20 KVLCC2] normal_method=stl dA_method=stl_area
+[SDAA:20 KVLCC2] solid=10290 near=5610 faces=608
+[SDAA:20 KVLCC2] Cf_ITTC=0.008333 S_wetted=6659.1 dpS=1.198634e+01
+[SDAA:20 KVLCC2] dA stats: mean=1.1870 min=0.6421 max=2.5478 sum=6659.1
+[SDAA:20 KVLCC2] Normal orientation check: 51.5% outward (515/1000 sampled)
+[SDAA:20 KVLCC2] init done (0.5s) mass=1280000.0
+[SDAA:20 KVLCC2] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.008333) [124s]

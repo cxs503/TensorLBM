@@ -19,3 +19,4 @@
 [cube_re40000_3d SDAA:25] near-wall (cube)=2880
 [cube_re40000_3d SDAA:25] SurfaceMesh.from_gradient built
 [cube_re40000_3d SDAA:25] init done (0.7s) mass=4194304.0
+[cube_re40000_3d SDAA:25] step=1000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.790174 (857s, 0.857s/step)

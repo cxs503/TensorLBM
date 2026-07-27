@@ -23,3 +23,4 @@
 [suboff_re1000_long SDAA:2] init done (1.0s) mass=4320000.0
 [suboff_re1000_long SDAA:2] step=500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (239s)
 [suboff_re1000_long SDAA:2] step=1000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (478s)
+[suboff_re1000_long SDAA:2] step=1500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (716s)
