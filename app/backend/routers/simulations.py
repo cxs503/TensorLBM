@@ -404,9 +404,14 @@ def _auto_select_params(req: GenericRunRequest, shape: str) -> dict[str, Any]:
     if Cs == 0.0 and "smag" in collision:
         Cs = 0.10 if Re > 1000 else 0.05
     if steps == 0:
-        steps = 5000 if shape == "cylinder" else 2000
+        if shape == "suboff":
+            steps = 10000  # SUBOFF needs long warmup
+        elif shape == "cylinder":
+            steps = 5000
+        else:
+            steps = 2000
     if warmup == 0:
-        warmup = int(steps * 0.6)
+        warmup = int(steps * 0.5) if shape == "suboff" else int(steps * 0.6)
 
     return {
         "collision": collision,
@@ -445,6 +450,21 @@ def _auto_domain(shape: str, params: dict[str, Any]) -> dict[str, Any]:
         cz = nz * 0.5
         return {"nx": nx, "ny": ny, "nz": nz, "cx": cx, "cy": cy, "cz": cz,
                 "R": R, "length": length, "axis": axis}
+    elif shape == "suboff":
+        # SUBOFF parametric submarine hull
+        L = float(params.get("length", 80.0))
+        R = L / (2 * 8.57)  # L/D = 8.57
+        hull_type = str(params.get("hull_type", "bare_hull"))
+        # 4L domain for best accuracy (2.7% verified)
+        nx = int(params.get("nx", 320))
+        ny = int(params.get("ny", 120))
+        nz = int(params.get("nz", 120))
+        cx = nx * 0.5
+        cy = ny * 0.5
+        cz = nz * 0.5
+        return {"nx": nx, "ny": ny, "nz": nz, "cx": cx, "cy": cy, "cz": cz,
+                "R": R, "length": L, "axis": "x", "hull_type": hull_type}
+
     elif shape == "ellipsoid":
         a = float(params.get("a", 20.0))
         b = float(params.get("b", 12.0))
@@ -506,6 +526,22 @@ def _build_parametric_solid(shape: str, dom: dict, device: torch.device):
         solid = ((xx - cx) ** 2 / a ** 2 + (yy - cy) ** 2 / b ** 2
                  + (zz - cz) ** 2 / c ** 2) < 1.0
         return solid, {"cx": cx, "cy": cy, "cz": cz, "a": a, "b": b, "c": c}
+
+    elif shape == "suboff":
+        from tensorlbm.suboff_cad import build_suboff_mask, SuboffConfig
+        L = dom["length"]
+        hull_type = dom.get("hull_type", "bare_hull")
+        config = SuboffConfig()
+        solid, info = build_suboff_mask(
+            hull_type=hull_type, nx=nx, ny=ny, nz=nz,
+            length=L, config=config, device=str(device),
+        )
+        solid = solid.to(device)
+        return solid, {
+            "cx": info["cx"], "cy": info["cy"], "cz": info["cz"],
+            "length": info["length"], "radius": info["radius"],
+            "config": config, "S_wet": info["wetted_area_lu2"],
+        }
 
     else:  # sphere (default)
         zz, yy, xx = torch.meshgrid(
@@ -658,6 +694,11 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
             mesh = SurfaceMesh.from_cylinder(solid, near, **mesh_kwargs)
         elif shape == "ellipsoid":
             mesh = SurfaceMesh.from_ellipsoid(solid, near, **mesh_kwargs)
+        elif shape == "suboff":
+            mesh = SurfaceMesh.from_suboff(solid, near, **mesh_kwargs)
+            # Use actual wetted area for dpS
+            S_wet = mesh_kwargs.get("S_wet", n_near)
+            dpS = 0.5 * u_in ** 2 * S_wet
         else:
             mesh = SurfaceMesh.from_sphere(solid, near, **mesh_kwargs)
 
