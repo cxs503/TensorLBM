@@ -494,7 +494,8 @@
       <ul class="dropdown-menu dropdown-menu-dark shadow">
         <li><a class="dropdown-item" href="#" data-tab="preprocess"><i class="bi bi-grid-3x3 me-2"></i><span data-i18n="nav.preprocess">Pre-processing</span></a></li>
         <li><a class="dropdown-item" href="#" data-tab="solve"><i class="bi bi-play-circle me-2"></i><span data-i18n="nav.solve">Solver</span></a></li>
-        <li><a class="dropdown-item" href="#" data-tab="generic"><i class="bi bi-box-seam me-2"></i><span data-i18n="nav.generic">Generic CFD (STL)</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="generic"><i class="bi bi-box-seam me-2"></i><span data-i18n="nav.generic">Generic CFD</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="cylinder"><i class="bi bi-wind me-2"></i><span data-i18n="nav.cylinder">Cylinder Flow</span></a></li>
         <li><a class="dropdown-item" href="#" data-tab="benchmarks"><i class="bi bi-trophy me-2"></i><span data-i18n="nav.benchmarks">Benchmarks</span></a></li>
       </ul>
     </div>
@@ -3400,6 +3401,107 @@
 
     </div><!-- /panel-generic -->
 
+    <!-- ── Cylinder Flow: Interactive + Speed Comparison ── -->
+    <div class="tab-panel" id="panel-cylinder">
+      <h4 class="mb-2"><i class="bi bi-wind"></i> Cylinder Flow — Interactive Simulation</h4>
+      <div class="card mb-2">
+        <div class="card-body py-2">
+          <div class="row g-2 align-items-center">
+            <div class="col-auto"><label class="form-label small mb-0">NX</label>
+              <input class="form-control form-control-sm" id="cyl-nx" value="200" type="number" min="50" max="800" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">NY</label>
+              <input class="form-control form-control-sm" id="cyl-ny" value="80" type="number" min="20" max="400" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">u_in</label>
+              <input class="form-control form-control-sm" id="cyl-uin" value="0.08" type="number" min="0.01" max="0.2" step="0.01" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">Re</label>
+              <input class="form-control form-control-sm" id="cyl-re" value="100" type="number" min="10" max="500" step="10" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">Radius</label>
+              <input class="form-control form-control-sm" id="cyl-radius" value="10" type="number" min="3" max="50" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">Steps/frame</label>
+              <input class="form-control form-control-sm" id="cyl-steps-per-frame" value="10" type="number" min="1" max="50" style="width:80px"></div>
+            <div class="col-auto d-flex gap-1">
+              <button class="btn btn-primary btn-sm" onclick="cylInteractiveInit()" id="cyl-init-btn"><i class="bi bi-play-fill"></i> Init</button>
+              <button class="btn btn-warning btn-sm" onclick="cylInteractivePause()" id="cyl-pause-btn" disabled><i class="bi bi-pause-fill"></i> Pause</button>
+              <button class="btn btn-success btn-sm" onclick="cylInteractiveResume()" id="cyl-resume-btn" disabled><i class="bi bi-play-fill"></i> Resume</button>
+              <button class="btn btn-outline-danger btn-sm" onclick="cylInteractiveReset()" id="cyl-reset-btn" disabled><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+            </div>
+            <div class="col-auto ms-auto">
+              <span class="badge bg-primary" id="cyl-interactive-step">Step 0</span>
+              <span class="badge bg-info" id="cyl-interactive-info">Not connected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-2" style="background:#111827;border-color:#334155">
+        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-speedometer2"></i> Speed Field <small class="text-muted">(drag cylinder to move)</small></div>
+        <div class="card-body p-1">
+          <canvas id="cyl-interactive-speed" width="600" height="240" style="width:100%;background:#0a0a1a;cursor:grab;border-radius:4px"></canvas>
+        </div>
+      </div>
+      <div class="card mb-2" style="background:#111827;border-color:#334155">
+        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-tornado"></i> Vorticity Field</div>
+        <div class="card-body p-1">
+          <canvas id="cyl-interactive-vort" width="600" height="240" style="width:100%;background:#0a0a1a;border-radius:4px"></canvas>
+        </div>
+      </div>
+      <div class="card mb-2" style="background:#111827;border-color:#334155">
+        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-droplet"></i> Pressure (rho) Field</div>
+        <div class="card-body p-1">
+          <canvas id="cyl-interactive-rho" width="600" height="240" style="width:100%;background:#0a0a1a;border-radius:4px"></canvas>
+        </div>
+      </div>
+      <hr class="my-3" style="border-color:#334155">
+      <h5 class="mb-2"><i class="bi bi-bar-chart"></i> Speed Comparison — CPU vs SDAA</h5>
+      <div class="card mb-2">
+        <div class="card-body d-flex align-items-center gap-2 flex-wrap py-2">
+          <div><label class="form-label small mb-0">NX</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-nx" value="400" type="number" min="100" max="800" style="width:65px"></div>
+          <div><label class="form-label small mb-0">NY</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-ny" value="160" type="number" min="40" max="400" style="width:65px"></div>
+          <div><label class="form-label small mb-0">u_in</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-uin" value="0.08" type="number" min="0.01" max="0.2" step="0.01" style="width:65px"></div>
+          <div><label class="form-label small mb-0">Re</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-re" value="100" type="number" min="10" max="500" step="10" style="width:65px"></div>
+          <div><label class="form-label small mb-0">Radius</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-radius" value="13" type="number" min="3" max="50" style="width:65px"></div>
+          <button class="btn btn-warning btn-sm" onclick="cylCompareStart()"><i class="bi bi-play-fill"></i> Start All</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="cylCompareStop()"><i class="bi bi-stop-fill"></i> Stop</button>
+          <span class="small text-muted ms-auto" id="cyl-compare-info">Click Start to begin comparison</span>
+        </div>
+      </div>
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="card h-100" style="background:#1a1a2e;border-color:#4488ff">
+            <div class="card-header fw-semibold" style="background:#2233aa;color:#fff"><i class="bi bi-cpu"></i> CPU</div>
+            <div class="card-body p-1">
+              <canvas id="cyl-canvas-cpu" width="400" height="160" style="width:100%;background:#111"></canvas>
+              <div class="text-center mt-1">
+                <span class="badge bg-primary" id="cyl-cpu-step">Step 0</span>
+                <span class="badge bg-info" id="cyl-cpu-speed">— ms/step</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card h-100" style="background:#1a1a2e;border-color:#44ff88">
+            <div class="card-header fw-semibold" style="background:#22aa44;color:#fff"><i class="bi bi-lightning"></i> SDAA</div>
+            <div class="card-body p-1">
+              <canvas id="cyl-canvas-sdaa" width="400" height="160" style="width:100%;background:#111"></canvas>
+              <div class="text-center mt-1">
+                <span class="badge bg-success" id="cyl-sdaa-step">Step 0</span>
+                <span class="badge bg-info" id="cyl-sdaa-speed">— ms/step</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt-2" style="background:#1a1a2e">
+        <div class="card-body p-2">
+          <canvas id="cyl-compare-chart" width="800" height="120" style="width:100%;background:#111;border-radius:4px"></canvas>
+        </div>
+      </div>
+    </div><!-- /panel-cylinder -->
+
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
 
@@ -3551,5 +3653,6 @@
 <script src="/static/js/app_convergence.js"></script>
 <script src="/static/js/app_geo3d.js"></script>
 <script src="/static/js/app_generic.js"></script>
+<script src="/static/js/app_cylinder.js"></script>
 </body>
 </html>
