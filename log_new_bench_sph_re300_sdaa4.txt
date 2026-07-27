@@ -25,3 +25,15 @@
 [sph_re300 SDAA:4] step=3000/5000 Cd=0.6659 Cl=-0.000182 (2825s, 0.942s/step)
 [sph_re300 SDAA:4] step=3500/5000 Cd=0.6581 Cl=-0.000233 (3298s, 0.942s/step)
 [sph_re300 SDAA:4] step=4000/5000 Cd=0.6530 Cl=-0.000323 (3772s, 0.943s/step)
+[sph_re300 SDAA:4] step=4500/5000 Cd=0.6480 Cl=-0.000452 (4247s, 0.944s/step)
+[sph_re300 SDAA:4] step=5000/5000 Cd=0.6449 Cl=-0.000604 (4721s, 0.944s/step)
+
+[sph_re300 SDAA:4] === FINAL RESULTS ===
+[sph_re300 SDAA:4] Cd_p   = 0.4844
+[sph_re300 SDAA:4] Cd_f   = 0.1605
+[sph_re300 SDAA:4] Cd_tot = 0.6449  (ref=0.44, err=46.6%)
+[sph_re300 SDAA:4] Cl     = -0.000604
+[sph_re300 SDAA:4] Cl_rms = 0.000238
+[sph_re300 SDAA:4] St     = 0.1160
+[sph_re300 SDAA:4] time = 4721s (0.944s/step)
+[sph_re300 SDAA:4] results saved to results_new_bench_sph_re300_sdaa4.json
