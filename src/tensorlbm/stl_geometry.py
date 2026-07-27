@@ -615,6 +615,12 @@ def SurfaceMesh_from_stl(
     near_cpu = near.cpu() if device.type != "cpu" else near
 
     near_idx = near_cpu.nonzero(as_tuple=False)  # (n_near, 3) — (iz, iy, ix)
+    # Bug 46 fix: only use FLUID near-wall cells (solid=False) for normal orientation.
+    # The normal must point toward fluid, not solid. This is why from_gradient
+    # is more reliable — the gradient naturally points from solid to fluid.
+    solid_np = solid_cpu.numpy() if hasattr(solid_cpu, 'numpy') else solid_cpu
+    is_fluid = ~solid_np[near_idx[:, 0], near_idx[:, 1], near_idx[:, 2]]
+    near_idx = near_idx[is_fluid]
     n_near = near_idx.shape[0]
     if n_near == 0:
         z = torch.zeros(nz, ny, nx, dtype=torch.float32, device=device)
