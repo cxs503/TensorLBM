@@ -24,3 +24,4 @@
 [sph_re10000 SDAA:5] step=2500/5000 Cd=0.5450 Cl=0.001760 (2306s, 0.922s/step)
 [sph_re10000 SDAA:5] step=3000/5000 Cd=0.5620 Cl=0.009343 (2769s, 0.923s/step)
 [sph_re10000 SDAA:5] step=3500/5000 Cd=0.5629 Cl=-0.016467 (3232s, 0.924s/step)
+[sph_re10000 SDAA:5] step=4000/5000 Cd=0.5673 Cl=-0.027242 (3696s, 0.924s/step)
