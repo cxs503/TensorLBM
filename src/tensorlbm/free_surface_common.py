@@ -99,6 +99,9 @@ def vof_advect_upwind_3d(
     backward or forward difference depending on the sign of the local
     velocity component, guaranteeing monotone (non-oscillatory) transport.
 
+    Boundary handling: **zero-gradient** (Neumann) at all domain edges
+    via reflective padding, so no mass wraps around periodically.
+
     Args:
         phi: Volume fraction, shape ``(nz, ny, nx)``.
         ux:  x-velocity, shape ``(nz, ny, nx)``.
@@ -109,24 +112,28 @@ def vof_advect_upwind_3d(
         Updated volume fraction, shape ``(nz, ny, nx)``, clamped to
         ``[0, 1]``.
     """
+    # Pad phi with edge replication (zero-gradient / Neumann BC) so that
+    # the upwind stencil at domain boundaries does not wrap periodically.
+    pad_phi = torch.nn.functional.pad(phi, (1, 1, 1, 1, 1, 1), mode="replicate")
+
     # Upwind differences: backward if u>0, forward if u<0
-    # x-direction (dim=2 in (nz,ny,nx) layout)
+    # x-direction (dim=2 in (nz,ny,nx) layout); in padded array dim=2
     dphi_dx = torch.where(
         ux > 0,
-        phi - torch.roll(phi, shifts=1, dims=2),   # backward
-        torch.roll(phi, shifts=-1, dims=2) - phi,  # forward
+        pad_phi[1:-1, 1:-1, 1:-1] - pad_phi[1:-1, 1:-1, 0:-2],    # backward
+        pad_phi[1:-1, 1:-1, 2:]   - pad_phi[1:-1, 1:-1, 1:-1],   # forward
     )
     # y-direction (dim=1)
     dphi_dy = torch.where(
         uy > 0,
-        phi - torch.roll(phi, shifts=1, dims=1),
-        torch.roll(phi, shifts=-1, dims=1) - phi,
+        pad_phi[1:-1, 1:-1, 1:-1] - pad_phi[1:-1, 0:-2, 1:-1],
+        pad_phi[1:-1, 2:,   1:-1] - pad_phi[1:-1, 1:-1, 1:-1],
     )
     # z-direction (dim=0)
     dphi_dz = torch.where(
         uz > 0,
-        phi - torch.roll(phi, shifts=1, dims=0),
-        torch.roll(phi, shifts=-1, dims=0) - phi,
+        pad_phi[1:-1, 1:-1, 1:-1] - pad_phi[0:-2, 1:-1, 1:-1],
+        pad_phi[2:,   1:-1, 1:-1] - pad_phi[1:-1, 1:-1, 1:-1],
     )
 
     phi_new = phi - (ux * dphi_dx + uy * dphi_dy + uz * dphi_dz)
@@ -404,6 +411,7 @@ def free_surface_vof_step(
     solid: torch.Tensor | None = None,
     stream_fn=None,
     bounce_back_fn=None,
+    target_phi_sum: float | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """One composable free-surface VOF LBM step (collision + stream + advect).
 
@@ -412,7 +420,13 @@ def free_surface_vof_step(
       2. Streaming (D3Q19 pull scheme)
       3. Bounce-back at solid walls (half-way)
       4. VOF advection of ``phi`` with the post-stream velocity
-      5. Re-synchronise density: rescale ``f`` so ``rho = rho_blend(phi)``
+      5. Global mass conservation correction for ``phi``
+
+    The density coupling is through the **equilibrium** in the collision
+    step: ``feq`` is computed with ``rho_blend = rho_l·phi + rho_g·(1−phi)``,
+    so the collision naturally drives ``f`` toward the phi-determined
+    density.  No explicit density rescaling is applied (which was found to
+    amplify numerical errors and break mass conservation).
 
     Designed to be inserted into *any* time loop::
 
@@ -435,6 +449,9 @@ def free_surface_vof_step(
         bounce_back_fn: Custom bounce-back function
             ``fn(f, solid) -> f``.  If None and ``solid`` is given, uses
             :func:`tensorlbm.boundaries3d.bounce_back_cells_3d`.
+        target_phi_sum: Target total fluid volume (sum of phi over non-solid
+            cells).  If given, phi is globally rescaled each step to
+            preserve this total, correcting upwind advection mass drift.
 
     Returns:
         ``(f_updated, phi_updated)``.
@@ -467,11 +484,18 @@ def free_surface_vof_step(
 
     phi = vof_advect_upwind_3d(phi, ux, uy, uz)
 
-    # 5. Re-synchronise density: rescale f so rho matches rho_blend(phi)
-    rho_blend = rho_liquid * phi + rho_gas * (1.0 - phi)
-    rho_safe = torch.clamp(rho, min=1e-12)
-    scale = (rho_blend / rho_safe).clamp(0.01, 100.0)
-    f = f * scale.unsqueeze(0)
+    # 5. Global mass conservation: rescale phi to preserve total fluid volume
+    if target_phi_sum is not None and target_phi_sum > 1e-10:
+        if solid is not None:
+            phi_sum = phi[~solid].sum().item()
+        else:
+            phi_sum = phi.sum().item()
+        if phi_sum > 1e-10:
+            scale_phi = target_phi_sum / phi_sum
+            phi = (phi * scale_phi).clamp(0.0, 1.0)
+
+    # 6. Clamp f to non-negative for stability in gas cells
+    f = f.clamp(min=0.0)
 
     return f, phi
 
