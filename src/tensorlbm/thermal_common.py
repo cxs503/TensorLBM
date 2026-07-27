@@ -560,12 +560,18 @@ def nusselt_hot_wall_3d(
         return 0.0
     L = T.shape[2] - 1  # characteristic length in x
     if wall == "x-":
-        grad = (T[:, :, 0] - T[:, :, 1])  # ∂T/∂x at x=0
+        # Forward difference: ∂T/∂x ≈ (T[1] - T[0]) at x=0
+        # Nu = -∂T/∂x * L / ΔT (hot wall, heat flows into fluid → Nu > 0)
+        # grad = T[0] - T[1] = -∂T/∂x, so Nu = grad * L / ΔT
+        grad = (T[:, :, 0] - T[:, :, 1])  # = -∂T/∂x at x=0
     elif wall == "x+":
+        # Backward difference: ∂T/∂x ≈ (T[-1] - T[-2]) at x=nx-1
+        # For cold wall: grad = T[-1] - T[-2] = -∂T/∂x, Nu = grad * L / ΔT
         grad = (T[:, :, -1] - T[:, :, -2])
     else:
         raise ValueError(f"wall must be x- or x+, got {wall!r}")
-    nu = float((-grad * L / dT).mean().item())
+    # Nu = -∂T/∂n * L / ΔT; grad already = -∂T/∂n, so no extra minus
+    nu = float((grad * L / dT).mean().item())
     return nu
 
 

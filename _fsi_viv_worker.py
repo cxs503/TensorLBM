@@ -30,8 +30,12 @@ import torch
 
 # ---- Common interface imports (ONLY these modules) ----
 from tensorlbm.boundaries3d import far_field_bc_3d
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.solver3d import collide_mrt3d, correct_mass3d
+from tensorlbm.collision_common import (
+    equilibrium3d,
+    macroscopic3d,
+    collide_mrt3d,
+    correct_mass3d,
+)
 from tensorlbm.lbm_step_correct import lbm_step_correct
 from tensorlbm.drag_pressure import (
     get_near_wall_3d,
