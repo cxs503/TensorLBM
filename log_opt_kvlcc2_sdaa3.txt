@@ -29,3 +29,17 @@
 [kvlcc2_re1000_grad SDAA:3] step=3000/5000 Cd_p=0.008437 Cd_f=0.035822 Cd_tot=0.044259 (468s)
 [kvlcc2_re1000_grad SDAA:3] step=3500/5000 Cd_p=0.008376 Cd_f=0.035069 Cd_tot=0.043445 (548s)
 [kvlcc2_re1000_grad SDAA:3] step=4000/5000 Cd_p=0.008301 Cd_f=0.034545 Cd_tot=0.042846 (628s)
+[kvlcc2_re1000_grad SDAA:3] step=4500/5000 Cd_p=0.008265 Cd_f=0.034227 Cd_tot=0.042492 (708s)
+[kvlcc2_re1000_grad SDAA:3] step=5000/5000 Cd_p=0.008252 Cd_f=0.034042 Cd_tot=0.042294 (788s)
+
+============================================================
+[kvlcc2_re1000_grad SDAA:3] FINAL RESULTS
+============================================================
+[kvlcc2_re1000_grad SDAA:3] Cd_p  = 0.008259
+[kvlcc2_re1000_grad SDAA:3] Cd_f  = 0.034134
+[kvlcc2_re1000_grad SDAA:3] Cd_tot= 0.042393
+[kvlcc2_re1000_grad SDAA:3] Cd_ref= 0.075000  err=43.5%
+[kvlcc2_re1000_grad SDAA:3] St    = None
+[kvlcc2_re1000_grad SDAA:3] time  = 788s (13.1 min)
+[kvlcc2_re1000_grad SDAA:3] finite= True
+[kvlcc2_re1000_grad SDAA:3] Results → results_optimize_bench/kvlcc2_sdaa3.json
