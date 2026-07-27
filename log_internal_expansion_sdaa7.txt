@@ -21,3 +21,10 @@
 [expansion SDAA:7] step  4000: u_bulk=0.024726 [143s]
 [expansion SDAA:7] step  6000: u_bulk=0.027803 [220s]
 [expansion SDAA:7] step  8000: u_bulk=0.027965 [305s]
+[expansion SDAA:7] step 10000: u_bulk=0.026957 [399s]
+
+[expansion SDAA:7] === Results ===
+[expansion SDAA:7] reatt_x=60 xr/h=0.00 (ref~9.0)
+[expansion SDAA:7] Cp=-0.1576 (ref~0.55)
+[expansion SDAA:7] Time=399s
+[expansion SDAA:7] Saved to results_internal_expansion_sdaa7.json

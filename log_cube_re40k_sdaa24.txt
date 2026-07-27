@@ -18,3 +18,5 @@
 [Cube SDAA:24] near-wall (cube)=288
 [Cube SDAA:24] SurfaceMesh.from_gradient built
 [Cube SDAA:24] init done (0.8s)
+[Cube SDAA:24] step=1000/10000 Cd_p=0.5304 Cd_f=-0.0002 Cd=0.5302 Cl=0.863453 (616s)
+[Cube SDAA:24] step=2000/10000 Cd_p=2.1062 Cd_f=0.0002 Cd=2.1064 Cl=0.902671 (1217s)

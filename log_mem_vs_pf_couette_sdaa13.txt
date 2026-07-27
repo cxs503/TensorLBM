@@ -14,24 +14,14 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[CouetteMEMvsPF SDAA:13] nx=80 ny=12 nz=12 tau=1.0 nu=0.166667 u_top=0.05
-[CouetteMEMvsPF SDAA:13] H=10 Cf_exact=0.666667 n_steps=3000
-[CouetteMEMvsPF SDAA:13] near-wall cells=1920
-[CouetteMEMvsPF SDAA:13] SurfaceMesh built (from_gradient, bottom wall only)
-[CouetteMEMvsPF SDAA:13] init done (0.4s), starting loop...
-[CouetteMEMvsPF SDAA:13] step=500 Cf_MEM=nan Cf_PF=nan (exact=0.666667) u[mid]=0.027492 (8s)
-[CouetteMEMvsPF SDAA:13] step=1000 Cf_MEM=-5005.688311 Cf_PF=0.000000 (exact=0.666667) u[mid]=0.027499 (42s)
-[CouetteMEMvsPF SDAA:13] step=1500 Cf_MEM=-6672.349453 Cf_PF=0.000000 (exact=0.666667) u[mid]=0.027499 (77s)
-[CouetteMEMvsPF SDAA:13] step=2000 Cf_MEM=-8338.997390 Cf_PF=0.000000 (exact=0.666667) u[mid]=0.027499 (111s)
-[CouetteMEMvsPF SDAA:13] step=2500 Cf_MEM=-10005.642122 Cf_PF=0.000000 (exact=0.666667) u[mid]=0.027499 (145s)
-[CouetteMEMvsPF SDAA:13] step=3000 Cf_MEM=-11672.285440 Cf_PF=0.000000 (exact=0.666667) u[mid]=0.027499 (180s)
+[CouetteMEMvsPF SDAA:13] nx=80 ny=12 nz=12 tau=1.0 nu=0.166667 u_top=0.05 Cf_exact=0.666667
+[CouetteMEMvsPF SDAA:13] init done (0.4s)
+[CouetteMEMvsPF SDAA:13] step=500 Cf_MEM=nan Cf_PF=nan (exact=0.666667) u[mid]=0.027492 (7s)
+[CouetteMEMvsPF SDAA:13] step=1000 Cf_MEM=0.666579 Cf_PF=0.666585 (exact=0.666667) u[mid]=0.027499 (40s)
+[CouetteMEMvsPF SDAA:13] step=1500 Cf_MEM=0.666591 Cf_PF=0.666597 (exact=0.666667) u[mid]=0.027499 (74s)
+[CouetteMEMvsPF SDAA:13] step=2000 Cf_MEM=0.666595 Cf_PF=0.666601 (exact=0.666667) u[mid]=0.027499 (107s)
+[CouetteMEMvsPF SDAA:13] step=2500 Cf_MEM=0.666597 Cf_PF=0.666603 (exact=0.666667) u[mid]=0.027499 (141s)
+[CouetteMEMvsPF SDAA:13] step=3000 Cf_MEM=0.666598 Cf_PF=0.666604 (exact=0.666667) u[mid]=0.027499 (174s)
 
-[CouetteMEMvsPF SDAA:13] === FINAL RESULTS ===
-[CouetteMEMvsPF SDAA:13] Cf_exact  = 0.666667
-[CouetteMEMvsPF SDAA:13] Cf_MEM    = -11672.285440  (err=1750942.82%)
-[CouetteMEMvsPF SDAA:13] Cf_PF_f   = 0.000000  (err=100.00%)
-[CouetteMEMvsPF SDAA:13] Cd_PF_p   = 0.000000  (should be ~0)
-[CouetteMEMvsPF SDAA:13] |MEM-PF|  = 11672.28544010
-[CouetteMEMvsPF SDAA:13] u_err_max = 0.01%
-[CouetteMEMvsPF SDAA:13] time      = 180s
-[CouetteMEMvsPF SDAA:13] results saved to mem_vs_pf_couette_sdaa13.json
+[CouetteMEMvsPF SDAA:13] === FINAL === Cf_MEM=0.666598(err=0.01%) Cf_PF=0.666604(err=0.01%) Cd_p=0.000000 |diff|=0.00000645 u_err=0.01% t=174s
+[CouetteMEMvsPF SDAA:13] saved mem_vs_pf_couette_sdaa13.json

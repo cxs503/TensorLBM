@@ -14,11 +14,10 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[SuboffMEMvsPF SDAA:15] Re=1000 nx=160 ny=80 nz=80 u_in=0.05 tau=0.5144 nu=0.004800
-[SuboffMEMvsPF SDAA:15] L=96.0 R=5.60 cx=53 cy=40.0 cz=40.0
-[SuboffMEMvsPF SDAA:15] solid cells=7859
-[SuboffMEMvsPF SDAA:15] near-wall cells=2822
-[SuboffMEMvsPF SDAA:15] SurfaceMesh built (from_suboff)
-[SuboffMEMvsPF SDAA:15] S_wet=4006 dpS=5.007500
-[SuboffMEMvsPF SDAA:15] init done (1.1s), starting loop...
-[SuboffMEMvsPF SDAA:15] step=500 Cd_MEM=nan Cd_P=nan Cd_F=nan Cd_PF=nan (ref=0.042) (159s)
+[SuboffMEMvsPF SDAA:15] Re=1000 nx=160 ny=80 nz=80 u_in=0.05 tau=0.5144 L=96.0 R=5.60
+[SuboffMEMvsPF SDAA:15] solid=7859 near=2822 S_wet=4006 dpS=5.007500
+[SuboffMEMvsPF SDAA:15] init done (1.1s)
+[SuboffMEMvsPF SDAA:15] step=500 (warmup) (162s)
+[SuboffMEMvsPF SDAA:15] step=1000 (warmup) (320s)
+[SuboffMEMvsPF SDAA:15] step=1500 Cd_MEM=-0.022375 Cd_PF=0.047788 (ref=0.042) (508s)
+[SuboffMEMvsPF SDAA:15] step=2000 Cd_MEM=-0.023462 Cd_PF=0.047061 (ref=0.042) (695s)
