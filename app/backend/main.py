@@ -154,28 +154,37 @@ install_production_middleware(app)
 # Routers
 # ---------------------------------------------------------------------------
 
-app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
-app.include_router(cad.router, prefix="/api/cad", tags=["CAD"])
-app.include_router(preprocess.router, prefix="/api/preprocess", tags=["Pre-processing"])
-app.include_router(solver.router, prefix="/api/solve", tags=["Solver"])
-app.include_router(postprocess.router, prefix="/api/postprocess", tags=["Post-processing"])
-app.include_router(benchmarks.router, prefix="/api/benchmarks", tags=["Benchmarks"])
-app.include_router(agent.router, prefix="/api/agent", tags=["LLM Agent"])
-app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transformer"])
-app.include_router(ai_governance.router, prefix="/api/ai/governance", tags=["AI Governance"])
-app.include_router(ai_suboff.router, prefix="/api/ai/suboff", tags=["SUBOFF AI"])
-app.include_router(suboff.router, prefix="/api/suboff", tags=["SUBOFF Physics"])
-app.include_router(cylinder_interactive.router, prefix="/api/cylinder-interactive", tags=["Cylinder Interactive"])
-app.include_router(cylinder_bench.router, prefix="/api/cylinder-bench", tags=["Cylinder Benchmark"])
-app.include_router(cylinder_compare.router, prefix="/api/cylinder-compare", tags=["Cylinder Compare"])
-app.include_router(simulations.router, tags=["Simulations"])
-app.include_router(orchestration.router, prefix="/api/orchestration", tags=["Orchestration"])
-app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
-app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
-app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
-app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
-app.include_router(xflow_streaming.router, prefix="/api/stream", tags=["XFlow Streaming"])
-app.include_router(xflow_projects.router, prefix="/api/projects", tags=["XFlow Projects"])
+# Register routers (skip any that failed to import)
+_router_registry = [
+    (jobs, "/api/jobs", "Jobs"),
+    (cad, "/api/cad", "CAD"),
+    (preprocess, "/api/preprocess", "Pre-processing"),
+    (solver, "/api/solve", "Solver"),
+    (postprocess, "/api/postprocess", "Post-processing"),
+    (benchmarks, "/api/benchmarks", "Benchmarks"),
+    (agent, "/api/agent", "LLM Agent"),
+    (ai_transformer, "/api/ai", "AI Transformer"),
+    (ai_governance, "/api/ai/governance", "AI Governance"),
+    (ai_suboff, "/api/ai/suboff", "SUBOFF AI"),
+    (suboff, "/api/suboff", "SUBOFF Physics"),
+    (cylinder_interactive, "/api/cylinder-interactive", "Cylinder Interactive"),
+    (cylinder_bench, "/api/cylinder-bench", "Cylinder Benchmark"),
+    (cylinder_compare, "/api/cylinder-compare", "Cylinder Compare"),
+    (simulations, "", "Simulations"),
+    (orchestration, "/api/orchestration", "Orchestration"),
+    (projects, "/api/projects", "Projects"),
+    (templates, "/api/templates", "Templates"),
+    (reports, "/api/reports", "Reports"),
+    (notifications, "/api/notifications", "Notifications"),
+    (xflow_streaming, "/api/stream", "XFlow Streaming"),
+    (xflow_projects, "/api/xflow-projects", "XFlow Projects"),
+]
+for _mod, _prefix, _tag in _router_registry:
+    if _mod is not None:
+        kwargs = {"tags": [_tag]}
+        if _prefix:
+            kwargs["prefix"] = _prefix
+        app.include_router(_mod.router, **kwargs)
 
 # ---------------------------------------------------------------------------
 # WebSocket
