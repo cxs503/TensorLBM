@@ -114,14 +114,14 @@ def run_cyl_re3900_3d_rans(device_id, output_path):
 
     D = 48.0
     R = D / 2.0
-    nx, ny, nz = 600, 240, 200   # TRUE 3D, 20% blockage
+    nx, ny, nz = 400, 240, 50    # 3D (nz=50), 20% blockage (D/ny=0.20), fits 15GB
     u_in = 0.08
     Re = 3900.0
     nu = u_in * D / Re
     tau = 3.0 * nu + 0.5
-    n_steps = 20000
-    warmup = 5000
-    avg_window = 10000
+    n_steps = 15000
+    warmup = 3750
+    avg_window = 7500
 
     cx = nx * 0.25
     cy = ny * 0.5
