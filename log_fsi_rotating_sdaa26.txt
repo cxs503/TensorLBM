@@ -1,0 +1,26 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 192.0.2.25
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Rotating SDAA:26] nx=300 ny=300 nz=4 D=60 R=30 Re=1000 u_in=0.1 nu=6.000000e-03 tau=0.518000
+[Rotating SDAA:26] TSR=5.0 omega=0.016667 rad/step rot_period=377.0 steps steps/deg=1.05
+[Rotating SDAA:26] near-wall cells=1200
+[Rotating SDAA:26] SurfaceMesh.from_gradient built
+[Rotating SDAA:26] init done (0.5s)
+[Rotating SDAA:26] step=2000/20000 angle=109.9° Cd=1.5993 Cl=0.0171 torque=0.62 Cp=0.0073 (146s)
+[Rotating SDAA:26] DIVERGED at step 2528
+
+[Rotating SDAA:26] === FINAL ===  Cp_mean=nan Cp_max=nan (ref=0.45) err=nan% Cd_mean=nan torque_mean=nan time=185s
+[Rotating SDAA:26] results saved to fsi_rotating_sdaa26.json

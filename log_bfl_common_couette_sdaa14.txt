@@ -21,3 +21,14 @@
 [Couette-BFL SDAA:14] moving wall correction computed (u_top=0.05)
 [Couette-BFL SDAA:14] init done (0.4s), starting loop...
 [Couette-BFL SDAA:14] step=500 Cf=0.000000 (exact=0.666667) u[ny//2]=0.027492 (8s)
+[Couette-BFL SDAA:14] step=1000 Cf=0.666737 (exact=0.666667) u[ny//2]=0.027499 (20s)
+[Couette-BFL SDAA:14] step=1500 Cf=0.666721 (exact=0.666667) u[ny//2]=0.027499 (32s)
+[Couette-BFL SDAA:14] step=2000 Cf=0.666716 (exact=0.666667) u[ny//2]=0.027499 (44s)
+[Couette-BFL SDAA:14] step=2500 Cf=0.666714 (exact=0.666667) u[ny//2]=0.027499 (55s)
+[Couette-BFL SDAA:14] step=3000 Cf=0.666712 (exact=0.666667) u[ny//2]=0.027499 (67s)
+
+[Couette-BFL SDAA:14] === FINAL RESULTS ===
+[Couette-BFL SDAA:14] Cf      = 0.666712  (exact=0.666667, err=0.01%)
+[Couette-BFL SDAA:14] u_err   = 0.01% (max relative error)
+[Couette-BFL SDAA:14] time = 67s
+[Couette-BFL SDAA:14] results saved to results_bfl_common/bfl_couette_sdaa14.json
