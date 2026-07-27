@@ -669,6 +669,35 @@ def SurfaceMesh_from_stl(
         vertices.astype(np.float64), faces.astype(np.int64),
     )
 
+    # Bug 46b: STL face normals have |nx|≈0 at bow/stern of slender hulls
+    # (surface nearly parallel to x-axis). Use gradient of solid mask to
+    # fix the x-component — gradient naturally captures axial direction.
+    # Hybrid: STL y/z + gradient x.
+    solid_np = solid_cpu.numpy() if hasattr(solid_cpu, 'numpy') else np.asarray(solid_cpu)
+    for i in range(n_near):
+        iz, iy, ix = int(near_idx[i, 0]), int(near_idx[i, 1]), int(near_idx[i, 2])
+        # Gradient of solid mask (points from fluid=0 to solid=1)
+        gx = 0.0
+        gy = 0.0
+        gz = 0.0
+        if ix > 0 and ix < nx - 1:
+            gx = float(solid_np[iz, iy, ix+1]) - float(solid_np[iz, iy, ix-1])
+        if iy > 0 and iy < ny - 1:
+            gy = float(solid_np[iz, iy+1, ix]) - float(solid_np[iz, iy-1, ix])
+        if iz > 0 and iz < nz - 1:
+            gz = float(solid_np[iz+1, iy, ix]) - float(solid_np[iz-1, iy, ix])
+        # Outward = -gradient (from solid to fluid)
+        gnorm = (gx*gx + gy*gy + gz*gz)**0.5
+        if gnorm > 1e-10:
+            gx_out = -gx / gnorm
+            # Replace x-component with gradient x (STL |nx| too small)
+            # Keep y/z from STL (accurate transverse direction)
+            normals[i, 0] = gx_out
+            # Re-normalize
+            nrm_i = (normals[i, 0]**2 + normals[i, 1]**2 + normals[i, 2]**2)**0.5
+            if nrm_i > 1e-10:
+                normals[i] = normals[i] / nrm_i
+
     # Normalise
     nrm = np.linalg.norm(normals, axis=1, keepdims=True)
     normals = normals / np.where(nrm > 1e-10, nrm, 1.0)
