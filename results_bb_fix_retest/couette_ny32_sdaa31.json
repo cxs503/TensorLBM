@@ -1,0 +1,21 @@
+{
+  "case": "couette_bb_fix_retest",
+  "device": "sdaa:31",
+  "grid": "80x32x4",
+  "tau": 1.0,
+  "nu": 0.16666666666666666,
+  "u_top": 0.05,
+  "H": 30,
+  "n_steps": 4000,
+  "warmup": 1600,
+  "Cf_exact": 0.2222222222222222,
+  "bb_fix": true,
+  "friction_formula": "standard (\u03c4=2\u03bd\u00b7u_t)",
+  "Cf_mean": 0.21686799201027795,
+  "Cf_err_pct": 2.409403595374915,
+  "u_at_y1": 0.0008322002831846476,
+  "u_exact_y1": 0.0016666666666666668,
+  "u_err_pct_y1": 50.067983008921146,
+  "finite": true,
+  "elapsed_s": 65.55484414100647
+}

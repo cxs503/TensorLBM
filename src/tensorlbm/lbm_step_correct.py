@@ -35,6 +35,7 @@ def lbm_step_correct(
     target_mass: float | None = None,
     step: int = 0,
     mass_interval: int = 200,
+    bounce_back_fn=None,
     **collide_kwargs,
 ) -> torch.Tensor:
     """One correct LBM step with NoDynamics + half-way BB.
@@ -58,6 +59,11 @@ def lbm_step_correct(
         target_mass: Target total mass for correction.
         step: Current step number (for mass correction interval).
         mass_interval: Mass correction interval (default 200).
+        bounce_back_fn: Custom bounce-back function with signature
+            ``fn(f, solid, f_pre) -> f``.  If None, uses
+            ``bounce_back_cells_3d(f, solid, f_pre=f_pre)``.
+            Use this for moving-wall Couette (pass a partial that
+            binds top_wall_mask and u_top).
         **collide_kwargs: Additional collision parameters (e.g., C_s=0.05).
 
     Returns:
@@ -77,7 +83,10 @@ def lbm_step_correct(
     # 4. Half-way bounce-back (BEFORE streaming)
     #    Bug fix: pass f_pre (pre-collision) for correct no-slip
     #    Using post-collision f gives 16.66% u_max error
-    f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
+    if bounce_back_fn is not None:
+        f = bounce_back_fn(f, solid, f_pre)
+    else:
+        f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
 
     # 5. Streaming
     from .solver3d import stream3d

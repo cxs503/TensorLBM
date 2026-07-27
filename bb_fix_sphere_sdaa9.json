@@ -1,0 +1,31 @@
+{
+  "case": "[SDAA:9 SPH Re=100 BB-fix]",
+  "test": "sphere_re100_bb_fix",
+  "device": "sdaa:9",
+  "Re": 100,
+  "D": 40,
+  "grid": "120x120x120",
+  "u_in": 0.08,
+  "nu": 0.032,
+  "tau": 0.596,
+  "Cs": 0.05,
+  "n_steps": 3000,
+  "n_solid": 33371,
+  "n_near": 4302,
+  "dpS": 4.0212385965949355,
+  "normal_method": "from_sphere",
+  "bb_fix": true,
+  "Cd_pressure": 1.074880193296975,
+  "Cd_friction": 0.5528804756470717,
+  "Cd_total": 1.6277606689440454,
+  "Cl": -0.00034348789920350887,
+  "fz": -0.00034325701531596456,
+  "Cd_ref": 1.09,
+  "error_pct": 49.33584118752709,
+  "previous_pre_bb_fix": {
+    "Cd_total": 1.069,
+    "error_pct": 2.0
+  },
+  "finite": true,
+  "elapsed_s": 1752.140235900879
+}
