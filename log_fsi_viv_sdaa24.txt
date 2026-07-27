@@ -27,3 +27,6 @@
 [VIV SDAA:24] step=12000/30000 Cd_p=1.9643 Cd_f=0.2423 Cd=2.2066 Cl_rms=0.5926 disp_max=0.00 (397s)
 [VIV SDAA:24] step=14000/30000 Cd_p=2.0263 Cd_f=0.2464 Cd=2.2727 Cl_rms=0.8263 disp_max=0.00 (460s)
 [VIV SDAA:24] step=16000/30000 Cd_p=2.0372 Cd_f=0.2436 Cd=2.2808 Cl_rms=0.9637 disp_max=0.00 (523s)
+[VIV SDAA:24] step=18000/30000 Cd_p=2.0089 Cd_f=0.2472 Cd=2.2561 Cl_rms=0.7055 disp_max=0.00 (586s)
+[VIV SDAA:24] step=20000/30000 Cd_p=2.0674 Cd_f=0.2459 Cd=2.3133 Cl_rms=1.0850 disp_max=0.00 (649s)
+[VIV SDAA:24] step=22000/30000 Cd_p=1.9633 Cd_f=0.2438 Cd=2.2071 Cl_rms=0.6600 disp_max=0.00 (713s)

@@ -28,3 +28,19 @@
 [cyl_re200_opt SDAA:0] step=2000/5000 Cd_p=1.156283 Cd_f=0.158859 Cd_tot=1.315142 (147s)
 [cyl_re200_opt SDAA:0] step=2500/5000 Cd_p=1.120869 Cd_f=0.153981 Cd_tot=1.274849 (186s)
 [cyl_re200_opt SDAA:0] step=3000/5000 Cd_p=1.099451 Cd_f=0.150131 Cd_tot=1.249582 (224s)
+[cyl_re200_opt SDAA:0] step=3500/5000 Cd_p=1.088347 Cd_f=0.148038 Cd_tot=1.236384 (262s)
+[cyl_re200_opt SDAA:0] step=4000/5000 Cd_p=1.082491 Cd_f=0.146820 Cd_tot=1.229311 (300s)
+[cyl_re200_opt SDAA:0] step=4500/5000 Cd_p=1.074816 Cd_f=0.146031 Cd_tot=1.220847 (338s)
+[cyl_re200_opt SDAA:0] step=5000/5000 Cd_p=1.074222 Cd_f=0.145638 Cd_tot=1.219860 (376s)
+
+============================================================
+[cyl_re200_opt SDAA:0] FINAL RESULTS
+============================================================
+[cyl_re200_opt SDAA:0] Cd_p  = 1.074519
+[cyl_re200_opt SDAA:0] Cd_f  = 0.145835
+[cyl_re200_opt SDAA:0] Cd_tot= 1.220354
+[cyl_re200_opt SDAA:0] Cd_ref= 1.300000  err=6.1%
+[cyl_re200_opt SDAA:0] St    = None
+[cyl_re200_opt SDAA:0] time  = 376s (6.3 min)
+[cyl_re200_opt SDAA:0] finite= True
+[cyl_re200_opt SDAA:0] Results → results_optimize_bench/cyl_re200_v2_sdaa0.json
