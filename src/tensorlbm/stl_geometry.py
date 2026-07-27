@@ -444,9 +444,24 @@ def SurfaceMesh_from_stl(
     )  # (n_near, 3)
 
     # Flip normals to align with gradient direction (outward)
+    # Bug 29 fix: gradient sign can be wrong for complex geometries (ship hulls)
+    # Use additional check: direction from solid centroid to cell
     dot = (normals * grad_normals).sum(axis=1)
     flip_mask = dot < 0
     normals[flip_mask] = -normals[flip_mask]
+
+    # Bug 29: Additional check using solid centroid direction
+    # For ship hulls, gradient may be unreliable at curved surfaces
+    solid_coords = np.argwhere(solid_cpu)
+    if len(solid_coords) > 0:
+        solid_center = solid_coords.mean(axis=0)  # (3,)
+        cell_to_center = cell_pos - solid_center  # direction from center to cell
+        ct_norm = np.linalg.norm(cell_to_center, axis=1, keepdims=True)
+        ct_dir = cell_to_center / np.where(ct_norm > 1e-10, ct_norm, 1.0)
+        dot_ct = (normals * ct_dir).sum(axis=1)
+        # If normal points toward center (inward), flip it
+        inward = dot_ct < -0.3  # significant inward component
+        normals[inward] = -normals[inward]
 
     # Fallback for cells where gradient is zero (degenerate corners):
     # use direction from nearest triangle centroid to cell

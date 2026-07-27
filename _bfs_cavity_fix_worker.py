@@ -191,13 +191,18 @@ def run_bfs_parabolic(
             ux_zmid = ux[nz // 2]
             ux_zmid = ux_zmid.masked_fill(solid[nz // 2], 0.0)
 
-            # Reattachment: scan y=1 downstream of step for first x where ux > 0
-            centreline = ux_zmid[1, x_step:].cpu()
+            # Bug 28 fix: scan multiple y levels (not just y=1)
+            # Recirculation is at y=step_h..step_h+5, not y=1 (bottom wall)
             xr_star = 0.0
-            for i, val in enumerate(centreline.tolist()):
-                if val > 0.0:
-                    xr_star = float(i) / max(step_h, 1)
-                    break
+            for y_check in range(1, min(step_h + 6, ny - 1)):
+                cl = ux_zmid[y_check, x_step:].cpu()
+                has_neg = any(v < 0 for v in cl.tolist()[:20])
+                if has_neg:
+                    for i, val in enumerate(cl.tolist()):
+                        if val > 0.0:
+                            xr_star = float(i) / max(step_h, 1)
+                            break
+                    break  # found recirculation at this y level
             xr_hist.append(xr_star)
 
             if step % 500 == 0 or step == n_steps:
@@ -213,11 +218,16 @@ def run_bfs_parabolic(
     # Final measurements
     rho_f, ux_f, uy_f, uz_f = macroscopic3d(f)
     ux_zmid = ux_f[nz // 2].masked_fill(solid[nz // 2], 0.0)
-    centreline = ux_zmid[1, x_step:].cpu()
+    # Bug 28 fix: scan multiple y levels for final detection
     final_xr = 0.0
-    for i, val in enumerate(centreline.tolist()):
-        if val > 0.0:
-            final_xr = float(i) / max(step_h, 1)
+    for y_check in range(1, min(step_h + 6, ny - 1)):
+        cl = ux_zmid[y_check, x_step:].cpu()
+        has_neg = any(v < 0 for v in cl.tolist()[:20])
+        if has_neg:
+            for i, val in enumerate(cl.tolist()):
+                if val > 0.0:
+                    final_xr = float(i) / max(step_h, 1)
+                    break
             break
 
     # Average xr over last 20% of history
