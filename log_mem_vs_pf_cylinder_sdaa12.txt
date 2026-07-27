@@ -14,14 +14,19 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[CylMEMvsPF SDAA:12] D=48 Re=200 nx=576 ny=288 nz=8 u_in=0.1 tau=0.5720 nu=0.024000
-[CylMEMvsPF SDAA:12] solid cells=14344
-[CylMEMvsPF SDAA:12] near-wall cells=1088
-[CylMEMvsPF SDAA:12] SurfaceMesh built (from_cylinder)
-[CylMEMvsPF SDAA:12] A_ref=384 dpS=1.920000
-[CylMEMvsPF SDAA:12] init done (0.4s), starting loop...
-[CylMEMvsPF SDAA:12] step=500 Cd_MEM=nan Cd_P=nan Cd_F=nan Cd_PF=nan (ref=1.30) (35s)
-[CylMEMvsPF SDAA:12] step=1000 Cd_MEM=nan Cd_P=nan Cd_F=nan Cd_PF=nan (ref=1.30) (70s)
-[CylMEMvsPF SDAA:12] step=1500 Cd_MEM=4.9988 Cd_P=3.0773 Cd_F=0.6498 Cd_PF=3.7271 (ref=1.30) (111s)
-[CylMEMvsPF SDAA:12] step=2000 Cd_MEM=4.9988 Cd_P=3.0773 Cd_F=0.6498 Cd_PF=3.7271 (ref=1.30) (153s)
-[CylMEMvsPF SDAA:12] step=2500 Cd_MEM=4.9988 Cd_P=3.0773 Cd_F=0.6498 Cd_PF=3.7271 (ref=1.30) (194s)
+[CylMEMvsPF SDAA:12] D=48 Re=200 nx=576 ny=288 nz=8 u_in=0.1 tau=0.5720
+[CylMEMvsPF SDAA:12] solid=14344 near=1088 dpS=1.9200
+[CylMEMvsPF SDAA:12] init done (0.5s)
+[CylMEMvsPF SDAA:12] step=500 (warmup) (35s)
+[CylMEMvsPF SDAA:12] step=1000 (warmup) (70s)
+[CylMEMvsPF SDAA:12] step=1500 Cd_MEM=14.1691 Cd_PF=3.7271 (ref=1.30) (112s)
+[CylMEMvsPF SDAA:12] step=2000 Cd_MEM=14.1691 Cd_PF=3.7271 (ref=1.30) (153s)
+[CylMEMvsPF SDAA:12] step=2500 Cd_MEM=14.1691 Cd_PF=3.7271 (ref=1.30) (194s)
+[CylMEMvsPF SDAA:12] step=3000 Cd_MEM=14.1691 Cd_PF=3.7271 (ref=1.30) (235s)
+[CylMEMvsPF SDAA:12] step=3500 Cd_MEM=14.1691 Cd_PF=3.7271 (ref=1.30) (275s)
+[CylMEMvsPF SDAA:12] step=4000 Cd_MEM=14.1691 Cd_PF=3.7271 (ref=1.30) (316s)
+[CylMEMvsPF SDAA:12] step=4500 Cd_MEM=14.1691 Cd_PF=3.7271 (ref=1.30) (357s)
+[CylMEMvsPF SDAA:12] step=5000 Cd_MEM=14.1691 Cd_PF=3.7271 (ref=1.30) (397s)
+
+[CylMEMvsPF SDAA:12] === FINAL === Cd_MEM=14.1691(err=989.9%) Cd_P=3.0773 Cd_F=0.6498 Cd_PF=3.7271(err=186.7%) |diff|=10.441961 t=397s
+[CylMEMvsPF SDAA:12] saved mem_vs_pf_cylinder_sdaa12.json

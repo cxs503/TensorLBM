@@ -21,3 +21,5 @@
 [sph_re300 SDAA:2] SurfaceMesh.from_sphere built
 [sph_re300 SDAA:2] init done (0.7s) mass=1728000.0
 [sph_re300 SDAA:2] step=500/2000 Cd_p=1.4194 Cd_f=0.3128 Cd_tot=1.7322 (411s)
+[sph_re300 SDAA:2] step=1000/2000 Cd_p=0.8970 Cd_f=0.2506 Cd_tot=1.1476 (820s)
+[sph_re300 SDAA:2] step=1500/2000 Cd_p=0.8879 Cd_f=0.2416 Cd_tot=1.1295 (1232s)

@@ -11,12 +11,12 @@
   "Cs": 0.1,
   "n_steps": 10000,
   "warmup": 2000,
-  "n_samples": 80,
-  "reattachment_x": NaN,
-  "xr_over_h": NaN,
+  "n_samples": 40,
+  "reattachment_x": 60,
+  "xr_over_h": 0.0,
   "xr_ref": 9.0,
-  "cp": -0.14937020168872547,
+  "cp": -0.15756850043544543,
   "cp_ref": 0.55,
-  "wall_clock_s": 424.0294783115387,
+  "wall_clock_s": 398.89217829704285,
   "device": "sdaa:7"
 }

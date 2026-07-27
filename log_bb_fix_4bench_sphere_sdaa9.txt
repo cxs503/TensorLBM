@@ -20,3 +20,5 @@
 [SDAA:9 Sphere-BBfix Re=100 D=40.0] step=500/3000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.000000 (536s)
 [SDAA:9 Sphere-BBfix Re=100 D=40.0] step=1000/3000 Cd_p=0.6604 Cd_f=0.4406 Cd_tot=1.1010 Cl=-0.000003 (1067s)
 [SDAA:9 Sphere-BBfix Re=100 D=40.0] step=1500/3000 Cd_p=0.6542 Cd_f=0.4285 Cd_tot=1.0827 Cl=-0.000008 (1524s)
+[SDAA:9 Sphere-BBfix Re=100 D=40.0] step=2000/3000 Cd_p=0.6469 Cd_f=0.4217 Cd_tot=1.0686 Cl=-0.000028 (1940s)
+[SDAA:9 Sphere-BBfix Re=100 D=40.0] step=2500/3000 Cd_p=0.6419 Cd_f=0.4185 Cd_tot=1.0604 Cl=-0.000036 (2353s)

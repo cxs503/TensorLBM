@@ -18,3 +18,5 @@
 [sph_re10000 SDAA:3] solid=33371 near=4302 dpS=4.021239e+00
 [sph_re10000 SDAA:3] init done (0.6s) mass=5832000.0
 [sph_re10000 SDAA:3] step=500/5000 Cd=0.0000 Cl=0.000000 (511s, 1.021s/step)
+[sph_re10000 SDAA:3] step=1000/5000 Cd=0.0000 Cl=0.000000 (1047s, 1.047s/step)
+[sph_re10000 SDAA:3] step=1500/5000 Cd=0.5446 Cl=-0.000080 (1585s, 1.056s/step)

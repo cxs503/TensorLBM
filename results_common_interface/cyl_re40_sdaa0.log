@@ -24,3 +24,11 @@
 [cyl_re40 SDAA:0] step=1000/5000 Cd_p=1.5656 Cd_f=0.7886 Cd_tot=2.3541 (255s)
 [cyl_re40 SDAA:0] step=1500/5000 Cd_p=1.4790 Cd_f=0.6825 Cd_tot=2.1615 (381s)
 [cyl_re40 SDAA:0] step=2000/5000 Cd_p=1.5791 Cd_f=0.6565 Cd_tot=2.2355 (508s)
+[cyl_re40 SDAA:0] step=2500/5000 Cd_p=1.5592 Cd_f=0.6367 Cd_tot=2.1960 (635s)
+[cyl_re40 SDAA:0] step=3000/5000 Cd_p=1.6349 Cd_f=0.6324 Cd_tot=2.2672 (762s)
+[cyl_re40 SDAA:0] step=3500/5000 Cd_p=1.6159 Cd_f=0.6276 Cd_tot=2.2435 (889s)
+[cyl_re40 SDAA:0] step=4000/5000 Cd_p=1.6096 Cd_f=0.6233 Cd_tot=2.2329 (1015s)
+[cyl_re40 SDAA:0] step=4500/5000 Cd_p=1.6019 Cd_f=0.6202 Cd_tot=2.2221 (1137s)
+[cyl_re40 SDAA:0] step=5000/5000 Cd_p=1.6004 Cd_f=0.6182 Cd_tot=2.2187 (1247s)
+[cyl_re40 SDAA:0] DONE  Cd_p=1.6040  Cd_f=0.6206  Cd_tot=2.2246  St=None  (ref=1.50)  err=48.3%  time=1247s
+[cyl_re40 SDAA:0] Results → results_common_interface/cyl_re40_sdaa0.json

@@ -55,3 +55,4 @@
 [SDAA:29 SUBOFF-BBfix L=80 lagrange] nx=200 ny=80 nz=80 L=80 D=9.335 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.041995 n_steps=5000
 [SDAA:29 SUBOFF-BBfix L=80 lagrange] solid=4651 near=2050 mesh=from_suboff (0.5s)
 [SDAA:29 SUBOFF-BBfix L=80 lagrange] init done (0.6s)
+[SDAA:29 SUBOFF-BBfix L=80 lagrange] step=500 Cd_p=0.012264 Cd_f=0.076963 Cd_tot=0.089227 (85s)

@@ -30,3 +30,18 @@
 [cyl_re3900 SDAA:1] step=5500/20000 Cd=1.8909 Cl=1.369587 (518s, 0.094s/step)
 [cyl_re3900 SDAA:1] step=6000/20000 Cd=1.8881 Cl=-0.304911 (668s, 0.111s/step)
 [cyl_re3900 SDAA:1] step=6500/20000 Cd=2.3943 Cl=-1.593117 (819s, 0.126s/step)
+[cyl_re3900 SDAA:1] step=7000/20000 Cd=1.9251 Cl=0.780194 (970s, 0.139s/step)
+[cyl_re3900 SDAA:1] step=7500/20000 Cd=2.1037 Cl=1.230270 (1122s, 0.150s/step)
+[cyl_re3900 SDAA:1] step=8000/20000 Cd=1.9387 Cl=-1.064364 (1275s, 0.159s/step)
+[cyl_re3900 SDAA:1] DIVERGED at step 8475
+
+[cyl_re3900 SDAA:1] === FINAL RESULTS ===
+[cyl_re3900 SDAA:1] Cd_p   = 1.3358
+[cyl_re3900 SDAA:1] Cd_f   = 0.0170
+[cyl_re3900 SDAA:1] Cd_tot = 1.3528  (ref=0.98, err=38.0%)
+[cyl_re3900 SDAA:1] Cl     = 4.842330
+[cyl_re3900 SDAA:1] Cl_rms = 149.490252
+[cyl_re3900 SDAA:1] St     = 0.2682
+[cyl_re3900 SDAA:1] Recirc_len = 1.17D  (ref=1.4D, err=16.5%)
+[cyl_re3900 SDAA:1] time = 1421s (0.071s/step)
+[cyl_re3900 SDAA:1] results saved to results_new_bench_cyl_re3900_sdaa1.json

@@ -37,3 +37,17 @@
 [SDAA:22 Wigley] step=3000 Cd_p=0.024805 Cd_f=0.039819 Cd_tot=0.064624 (ITTC=0.075000) [700s]
 [SDAA:22 Wigley] step=3500 Cd_p=0.024754 Cd_f=0.039718 Cd_tot=0.064472 (ITTC=0.075000) [866s]
 [SDAA:22 Wigley] step=4000 Cd_p=0.024704 Cd_f=0.039662 Cd_tot=0.064366 (ITTC=0.075000) [1031s]
+[SDAA:22 Wigley] step=4500 Cd_p=0.024681 Cd_f=0.039630 Cd_tot=0.064312 (ITTC=0.075000) [1197s]
+[SDAA:22 Wigley] step=5000 Cd_p=0.024676 Cd_f=0.039613 Cd_tot=0.064288 (ITTC=0.075000) [1363s]
+
+============================================================
+[SDAA:22 Wigley] FINAL RESULTS
+============================================================
+  Cd_pressure  = 0.024679
+  Cd_friction  = 0.039621
+  Cd_total     = 0.064300
+  Cf_ITTC      = 0.075000  (err=14.3%)
+  S_wetted     = 3062.0
+  Wall time: 1363s (22.7 min)
+  Finite: True
+  Saved to results_bug29_wigley_common_sdaa22.json
