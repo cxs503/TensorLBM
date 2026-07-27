@@ -31,3 +31,6 @@ step=3000/5000 Cd_p=0.137809 Cd_f=0.000971 Cd_tot=0.138780 (ref=0.042) Cl=-0.061
 step=3500/5000 Cd_p=0.137711 Cd_f=0.000973 Cd_tot=0.138684 (ref=0.042) Cl=-0.061070 (470s)
 step=4000/5000 Cd_p=0.137508 Cd_f=0.000970 Cd_tot=0.138478 (ref=0.042) Cl=-0.061157 (537s)
 step=4500/5000 Cd_p=0.137714 Cd_f=0.000974 Cd_tot=0.138688 (ref=0.042) Cl=-0.060963 (604s)
+step=5000/5000 Cd_p=0.137697 Cd_f=0.000969 Cd_tot=0.138666 (ref=0.042) Cl=-0.061198 (671s)
+=== FINAL === Cd_p=0.137697 Cd_f=0.000969 Cd_tot=0.138666 (ref=0.042) err=230.2% St=None time=671s
+Saved to results_suboff_stl_test.json

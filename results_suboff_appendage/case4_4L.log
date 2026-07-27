@@ -28,3 +28,5 @@
 [SDAA:3 C4 bare_hull L=80] step=3000 Cd_p=0.005532 Cd_f=0.035527 Cd_tot=0.041059 Cl=-0.000001 (1658s)
 [SDAA:3 C4 bare_hull L=80] step=3500 Cd_p=0.005507 Cd_f=0.035457 Cd_tot=0.040965 Cl=-0.000001 (1933s)
 [SDAA:3 C4 bare_hull L=80] step=4000 Cd_p=0.005492 Cd_f=0.035426 Cd_tot=0.040919 Cl=-0.000001 (2208s)
+[SDAA:3 C4 bare_hull L=80] step=4500 Cd_p=0.005485 Cd_f=0.035411 Cd_tot=0.040896 Cl=-0.000001 (2483s)
+[SDAA:3 C4 bare_hull L=80] step=5000 Cd_p=0.005481 Cd_f=0.035404 Cd_tot=0.040884 Cl=-0.000001 (2758s)
