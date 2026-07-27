@@ -29,3 +29,17 @@
 [cyl_re3900_3d_rans SDAA:1] step=3500/10000 Cd_p=1.2954 Cd_f=0.0142 Cd_tot=1.3095 Cl=-0.028596 nu_t_max=7.7639e-02 (1597s, 0.456s/step)
 [cyl_re3900_3d_rans SDAA:1] step=4000/10000 Cd_p=1.3078 Cd_f=0.0142 Cd_tot=1.3220 Cl=-0.017769 nu_t_max=9.1135e-02 (1826s, 0.456s/step)
 [cyl_re3900_3d_rans SDAA:1] step=4500/10000 Cd_p=1.3276 Cd_f=0.0141 Cd_tot=1.3417 Cl=0.013351 nu_t_max=1.0067e-01 (2055s, 0.457s/step)
+[cyl_re3900_3d_rans SDAA:1] step=5000/10000 Cd_p=1.3331 Cd_f=0.0140 Cd_tot=1.3471 Cl=0.015631 nu_t_max=1.0544e-01 (2285s, 0.457s/step)
+[cyl_re3900_3d_rans SDAA:1] step=5500/10000 Cd_p=1.3447 Cd_f=0.0138 Cd_tot=1.3585 Cl=0.008310 nu_t_max=1.0739e-01 (2516s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=6000/10000 Cd_p=1.3475 Cd_f=0.0136 Cd_tot=1.3611 Cl=-0.017423 nu_t_max=1.1232e-01 (2748s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=6500/10000 Cd_p=1.3601 Cd_f=0.0134 Cd_tot=1.3734 Cl=-0.003258 nu_t_max=1.1335e-01 (2980s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=7000/10000 Cd_p=1.3499 Cd_f=0.0131 Cd_tot=1.3630 Cl=0.012577 nu_t_max=1.1122e-01 (3213s, 0.459s/step)
+[cyl_re3900_3d_rans SDAA:1] step=7500/10000 Cd_p=1.3314 Cd_f=0.0127 Cd_tot=1.3441 Cl=0.011758 nu_t_max=1.0769e-01 (3447s, 0.460s/step)
+[cyl_re3900_3d_rans SDAA:1] step=8000/10000 Cd_p=1.3364 Cd_f=0.0124 Cd_tot=1.3488 Cl=-0.015045 nu_t_max=1.0390e-01 (3680s, 0.460s/step)
+[cyl_re3900_3d_rans SDAA:1] step=8500/10000 Cd_p=1.3668 Cd_f=0.0123 Cd_tot=1.3791 Cl=-0.023875 nu_t_max=1.0007e-01 (3912s, 0.460s/step)
+[cyl_re3900_3d_rans SDAA:1] step=9000/10000 Cd_p=1.3828 Cd_f=0.0121 Cd_tot=1.3950 Cl=0.006527 nu_t_max=9.9097e-02 (4145s, 0.461s/step)
+[cyl_re3900_3d_rans SDAA:1] step=9500/10000 Cd_p=1.4084 Cd_f=0.0119 Cd_tot=1.4204 Cl=0.034369 nu_t_max=9.8606e-02 (4377s, 0.461s/step)
+[cyl_re3900_3d_rans SDAA:1] step=10000/10000 Cd_p=1.4202 Cd_f=0.0117 Cd_tot=1.4320 Cl=-0.000989 nu_t_max=1.0322e-01 (4610s, 0.461s/step)
+
+[cyl_re3900_3d_rans SDAA:1] === FINAL ===  Cd_p=1.3648 Cd_f=0.0127 Cd_tot=1.3775 (ref=0.98) err=40.6% Cl=0.001346 St=0.26407776032916447 finite=True time=4610s
+[cyl_re3900_3d_rans SDAA:1] saved to results_fix_benchmarks/cyl_re3900_3d_rans_sdaa1.json

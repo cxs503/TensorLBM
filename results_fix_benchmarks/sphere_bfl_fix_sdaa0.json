@@ -1,0 +1,33 @@
+{
+  "case": "sphere_Re100_bfl_fix",
+  "device": "sdaa:0",
+  "Re": 100,
+  "D": 40.0,
+  "grid": "180x180x180",
+  "u_in": 0.08,
+  "nu": 0.032,
+  "tau": 0.596,
+  "Cs": 0.05,
+  "n_steps": 3000,
+  "warmup": 750,
+  "n_solid": 33371,
+  "n_near": 4302,
+  "dpS": 4.0212385965949355,
+  "Cd_pressure": 0.6524876811546286,
+  "Cd_friction": 0.7124418918869128,
+  "Cd_total": 1.364929573041543,
+  "Cl": -3.837776523516184e-05,
+  "Cd_ref": 1.09,
+  "error_pct": 25.22289660931586,
+  "bfl_stats": {
+    "n_links": 28722,
+    "q_min": 0.012634970247745514,
+    "q_max": 1.0,
+    "q_mean": 0.37265652418136597
+  },
+  "q_wall_method": "normal_distance_r_minus_R",
+  "q_wall_mean": 0.4022959768772125,
+  "friction_formula": "nu*u_t/q_wall (FIXED: normal distance)",
+  "finite": true,
+  "elapsed_s": 3540.700043439865
+}
