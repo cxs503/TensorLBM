@@ -1,0 +1,22 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cube_re40000 RANS-ke SDAA:6] D=16.0 nx=128 ny=64 nz=64 u_in=0.08 Re=40000.0 nu=3.200000e-05 tau=0.500096 MRT+RANS-k-epsilon steps=2000
+[cube_re40000 RANS-ke SDAA:6] solid_total=19968
+[cube_re40000 RANS-ke SDAA:6] near-wall (cube)=1280
+[cube_re40000 RANS-ke SDAA:6] SurfaceMesh.from_gradient built
+[cube_re40000 RANS-ke SDAA:6] KESolver initialized, k0=9.999995e-05 eps0=1.000000e-06
+[cube_re40000 RANS-ke SDAA:6] step=200/2000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.796359 nu_t_max=4.7268e-03 (31s, 0.155s/step)

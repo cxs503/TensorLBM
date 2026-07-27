@@ -1,0 +1,35 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[naca_re6e6 RANS-ke SDAA:5] chord=1000.0 nx=800 ny=200 nz=4 u_in=0.1 Re=6000000.0 nu=1.666667e-05 tau=0.500050 MRT+RANS-k-epsilon steps=3000
+[naca_re6e6 RANS-ke SDAA:5] Smagorinsky DIVERGED at tau=0.50005 — testing RANS stability
+[naca_re6e6 RANS-ke SDAA:5] solid cells=274576
+[naca_re6e6 RANS-ke SDAA:5] near-wall cells=5500
+[naca_re6e6 RANS-ke SDAA:5] SurfaceMesh.from_naca built
+[naca_re6e6 RANS-ke SDAA:5] KESolver initialized, k0=9.999993e-05 eps0=1.000000e-06
+[naca_re6e6 RANS-ke SDAA:5] step=200/3000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=-0.000604 nu_t_max=4.9912e-03 (28s, 0.138s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=400/3000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=-0.002297 nu_t_max=9.0538e-03 (55s, 0.138s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=600/3000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=-0.000789 nu_t_max=1.3288e-02 (82s, 0.137s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=800/3000 Cd_p=0.189957 Cd_f=0.000132 Cd_tot=0.190089 Cl=0.002913 nu_t_max=1.7827e-02 (110s, 0.137s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=1000/3000 Cd_p=0.175348 Cd_f=0.000118 Cd_tot=0.175466 Cl=0.000520 nu_t_max=2.2189e-02 (138s, 0.138s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=1200/3000 Cd_p=0.165339 Cd_f=0.000109 Cd_tot=0.165448 Cl=0.001068 nu_t_max=2.6669e-02 (166s, 0.138s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=1400/3000 Cd_p=0.159995 Cd_f=0.000102 Cd_tot=0.160098 Cl=0.001725 nu_t_max=3.1293e-02 (193s, 0.138s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=1600/3000 Cd_p=0.156570 Cd_f=0.000098 Cd_tot=0.156668 Cl=0.001792 nu_t_max=3.5955e-02 (221s, 0.138s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=1800/3000 Cd_p=0.155304 Cd_f=0.000094 Cd_tot=0.155397 Cl=0.001707 nu_t_max=4.0557e-02 (249s, 0.138s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=2000/3000 Cd_p=0.155776 Cd_f=0.000091 Cd_tot=0.155867 Cl=0.001388 nu_t_max=4.5524e-02 (277s, 0.138s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=2200/3000 Cd_p=0.157031 Cd_f=0.000089 Cd_tot=0.157119 Cl=0.001088 nu_t_max=5.0580e-02 (305s, 0.139s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=2400/3000 Cd_p=0.158661 Cd_f=0.000087 Cd_tot=0.158748 Cl=0.000683 nu_t_max=7.0431e-02 (334s, 0.139s/step)
+[naca_re6e6 RANS-ke SDAA:5] step=2600/3000 Cd_p=0.160428 Cd_f=0.000085 Cd_tot=0.160513 Cl=0.000362 nu_t_max=9.3584e-02 (363s, 0.140s/step)

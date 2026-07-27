@@ -1,11 +1,16 @@
 """Common Immersed Boundary Method (IBM) module — solver-agnostic direct forcing.
 
-This module extracts the validated IBM kernels
-(:func:`tensorlbm.ibm.ibm_direct_forcing_3d`,
-:func:`tensorlbm.ibm.ibm_apply_body_force_3d`) behind a lattice-neutral public
-interface that can be inserted into **any** collision → stream → boundary loop
-without binding to a specific solver.  It supports both the D3Q19 and D3Q27
-lattices.
+This module provides the IBM kernels integrated with the 9 common modules
+workflow (solid → near → mesh → lbm_step → drag → St).  It supports:
+
+* **Stationary bodies** — IBM replaces bounce-back for boundary enforcement.
+* **Moving bodies** — marker positions update each step; no mask rebuild.
+* **Rotating bodies** — rigid-body rotation of markers; Magnus effect.
+
+IBM advantages over bounce-back (BB):
+  - Handles moving bodies without rebuilding the solid mask each step.
+  - Handles thin (zero-thickness) surfaces.
+  - Works with any geometry (STL / analytical).
 
 Public contract
 ----------------
@@ -24,14 +29,28 @@ Public contract
         - ``f_corrected`` – distribution with the Guo body-force correction
           applied, shape ``(Q, nz, ny, nx)``.
 
-This module deliberately does **not** modify the solver hot path
-(``solver3d.py`` / ``d3q27.py`` collision & streaming).  It only wraps the
-existing IBM helpers and adds a D3Q27-aware Guo forcing application.
+``ibm_step_correct(f, collide_fn, tau, solid, u_in, far_field_bc_fn, markers, u_target_fn, ...)``
+    One LBM step with IBM forcing instead of bounce-back:
+      1. Collision (all cells)
+      2. IBM: interpolate velocity → compute force → spread → Guo correction
+      3. Streaming
+      4. Far-field BC
+      5. Mass correction (optional)
+
+``generate_cylinder_markers(cx, cy, cz, R, nz, axis='z', n_theta=64)``
+    Analytical Lagrangian markers on a cylinder surface.
+
+``generate_sphere_markers(cx, cy, cz, R, n_theta=32, n_phi=16)``
+    Analytical Lagrangian markers on a sphere surface.
+
+``compute_ibm_drag_from_markers(marker_fx, marker_fy, marker_fz, dpS)``
+    Drag/lift coefficients from IBM marker forces (momentum exchange).
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import Literal
+from typing import Callable, Literal
 
 import torch
 
@@ -47,7 +66,13 @@ __all__ = [
     "IBMCapabilityWithheldError",
     "ibm_direct_forcing_3d_common",
     "ibm_apply_body_force_3d_common",
+    "ibm_step_correct",
     "derive_surface_markers_3d",
+    "generate_cylinder_markers",
+    "generate_sphere_markers",
+    "update_moving_markers",
+    "update_rotating_markers",
+    "compute_ibm_drag_from_markers",
     "macroscopic_velocity_3d",
 ]
 
@@ -361,3 +386,347 @@ def ibm_direct_forcing_3d_common(
 
     force = torch.stack([fx_grid, fy_grid, fz_grid], dim=0)
     return force, f_corrected
+
+
+# --------------------------------------------------------------------------- #
+# Analytical marker generation (cylinder / sphere)
+# --------------------------------------------------------------------------- #
+
+
+def generate_cylinder_markers(
+    cx: float,
+    cy: float,
+    cz: float,
+    R: float,
+    nz: int,
+    axis: str = "z",
+    n_theta: int = 64,
+    n_axial: int | None = None,
+    device: torch.device | str = "cpu",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Generate Lagrangian markers on a cylinder surface.
+
+    For a cylinder extruded along *axis* with centre (cx, cy, cz) and radius
+    R, markers are placed at uniform angular and axial spacing on the surface.
+
+    Args:
+        cx, cy, cz: Cylinder centre in lattice coordinates.
+        R: Cylinder radius in lattice units.
+        nz: Number of cells along the extrusion axis (for axial marker span).
+        axis: Extrusion axis: ``'z'`` (default), ``'y'``, or ``'x'``.
+        n_theta: Number of markers around the circumference.
+        n_axial: Number of markers along the axis.  If ``None``, uses
+            ``max(2, nz // 4)`` to give ~4-cell spacing.
+        device: Torch device for the output tensors.
+
+    Returns:
+        Tuple ``(marker_x, marker_y, marker_z)`` each of shape ``(N,)``.
+    """
+    if n_axial is None:
+        n_axial = max(2, nz // 4)
+
+    theta = torch.linspace(0, 2 * math.pi, n_theta, device=device, dtype=torch.float32)[:-1]
+    if axis == "z":
+        axial = torch.linspace(0.5, nz - 0.5, n_axial, device=device, dtype=torch.float32)
+        # Broadcast: (n_axial, n_theta)
+        ax, th = torch.meshgrid(axial, theta, indexing="ij")
+        mx = (cx + R * torch.cos(th)).reshape(-1)
+        my = (cy + R * torch.sin(th)).reshape(-1)
+        mz = (cz + ax).reshape(-1)
+    elif axis == "y":
+        axial = torch.linspace(0.5, nz - 0.5, n_axial, device=device, dtype=torch.float32)
+        ax, th = torch.meshgrid(axial, theta, indexing="ij")
+        mx = (cx + R * torch.cos(th)).reshape(-1)
+        my = (cy + ax).reshape(-1)
+        mz = (cz + R * torch.sin(th)).reshape(-1)
+    elif axis == "x":
+        axial = torch.linspace(0.5, nz - 0.5, n_axial, device=device, dtype=torch.float32)
+        ax, th = torch.meshgrid(axial, theta, indexing="ij")
+        mx = (cx + ax).reshape(-1)
+        my = (cy + R * torch.cos(th)).reshape(-1)
+        mz = (cz + R * torch.sin(th)).reshape(-1)
+    else:
+        raise ValueError(f"axis must be 'x', 'y', or 'z', got '{axis}'")
+
+    return mx, my, mz
+
+
+def generate_sphere_markers(
+    cx: float,
+    cy: float,
+    cz: float,
+    R: float,
+    n_theta: int = 32,
+    n_phi: int = 16,
+    device: torch.device | str = "cpu",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Generate Lagrangian markers on a sphere surface.
+
+    Markers are placed at uniform angular spacing (theta = azimuth, phi =
+    polar) on the sphere surface.
+
+    Args:
+        cx, cy, cz: Sphere centre in lattice coordinates.
+        R: Sphere radius in lattice units.
+        n_theta: Number of azimuthal markers (around equator).
+        n_phi: Number of polar markers (pole to pole).
+        device: Torch device for the output tensors.
+
+    Returns:
+        Tuple ``(marker_x, marker_y, marker_z)`` each of shape ``(N,)``.
+    """
+    theta = torch.linspace(0, 2 * math.pi, n_theta, device=device, dtype=torch.float32)[:-1]
+    phi = torch.linspace(0, math.pi, n_phi, device=device, dtype=torch.float32)
+    th, ph = torch.meshgrid(theta, phi, indexing="ij")
+
+    mx = (cx + R * torch.sin(ph) * torch.cos(th)).reshape(-1)
+    my = (cy + R * torch.sin(ph) * torch.sin(th)).reshape(-1)
+    mz = (cz + R * torch.cos(ph)).reshape(-1)
+    return mx, my, mz
+
+
+# --------------------------------------------------------------------------- #
+# Moving / rotating body marker updates
+# --------------------------------------------------------------------------- #
+
+
+def update_moving_markers(
+    marker_x0: torch.Tensor,
+    marker_y0: torch.Tensor,
+    marker_z0: torch.Tensor,
+    cx: float,
+    cy: float,
+    cz: float,
+    displacement: tuple[float, float, float],
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Translate all markers by a rigid-body displacement.
+
+    For a moving body with uniform velocity u_body over time dt, the
+    displacement is (u_x*dt, u_y*dt, u_z*dt).  This updates marker positions
+    without rebuilding the solid mask — the key IBM advantage for moving bodies.
+
+    Args:
+        marker_x0, marker_y0, marker_z0: Initial marker positions, shape (N,).
+        cx, cy, cz: Body centre (not used for translation, kept for API symmetry).
+        displacement: (dx, dy, dz) translation in lattice units.
+
+    Returns:
+        Updated (marker_x, marker_y, marker_z) each of shape (N,).
+    """
+    dx, dy, dz = displacement
+    return (
+        marker_x0 + dx,
+        marker_y0 + dy,
+        marker_z0 + dz,
+    )
+
+
+def update_rotating_markers(
+    marker_x0: torch.Tensor,
+    marker_y0: torch.Tensor,
+    marker_z0: torch.Tensor,
+    cx: float,
+    cy: float,
+    cz: float,
+    angle: float,
+    axis: str = "x",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Rotate all markers about a body centre by *angle* radians.
+
+    For a rotating body with angular velocity omega over time dt, the
+    rotation angle is omega*dt.  The rotation is about the specified axis
+    passing through (cx, cy, cz).
+
+    Args:
+        marker_x0, marker_y0, marker_z0: Initial marker positions, shape (N,).
+        cx, cy, cz: Rotation centre (body centre).
+        angle: Rotation angle in radians.
+        axis: Rotation axis: ``'x'``, ``'y'``, or ``'z'``.
+
+    Returns:
+        Updated (marker_x, marker_y, marker_z) each of shape (N,).
+    """
+    cos_a = math.cos(angle)
+    sin_a = math.sin(angle)
+    dx = marker_x0 - cx
+    dy = marker_y0 - cy
+    dz = marker_z0 - cz
+
+    if axis == "x":
+        # Rotate about x: y' = y*cos - z*sin, z' = y*sin + z*cos
+        new_y = cy + dy * cos_a - dz * sin_a
+        new_z = cz + dy * sin_a + dz * cos_a
+        return marker_x0.clone(), new_y, new_z
+    elif axis == "y":
+        # Rotate about y: x' = x*cos + z*sin, z' = -x*sin + z*cos
+        new_x = cx + dx * cos_a + dz * sin_a
+        new_z = cz - dx * sin_a + dz * cos_a
+        return new_x, marker_y0.clone(), new_z
+    elif axis == "z":
+        # Rotate about z: x' = x*cos - y*sin, y' = x*sin + y*cos
+        new_x = cx + dx * cos_a - dy * sin_a
+        new_y = cy + dx * sin_a + dy * cos_a
+        return new_x, new_y, marker_z0.clone()
+    else:
+        raise ValueError(f"axis must be 'x', 'y', or 'z', got '{axis}'")
+
+
+# --------------------------------------------------------------------------- #
+# IBM drag from marker forces (momentum exchange)
+# --------------------------------------------------------------------------- #
+
+
+def compute_ibm_drag_from_markers(
+    marker_fx: torch.Tensor,
+    marker_fy: torch.Tensor,
+    marker_fz: torch.Tensor,
+    dpS: float,
+) -> tuple[float, float, float]:
+    """Compute drag/lift coefficients from IBM marker forces.
+
+    The total force on the body is the negative of the sum of IBM forces
+    applied to the fluid (Newton's third law).  The drag coefficient is:
+
+        Cd = -sum(F_marker) / dpS
+
+    where dpS = 0.5 * rho * U^2 * A_frontal is the dynamic pressure × area.
+
+    Args:
+        marker_fx, marker_fy, marker_fz: Per-marker IBM forces, shape (N,).
+            These are the forces applied TO the fluid; the body feels the
+            negative.
+        dpS: Dynamic pressure × frontal area (0.5 * u^2 * A).
+
+    Returns:
+        Tuple (Cd_x, Cd_y, Cd_z) — drag (x), lift (y), side (z) coefficients.
+    """
+    fx_body = -float(marker_fx.sum().item())
+    fy_body = -float(marker_fy.sum().item())
+    fz_body = -float(marker_fz.sum().item())
+    if dpS == 0:
+        return 0.0, 0.0, 0.0
+    return fx_body / dpS, fy_body / dpS, fz_body / dpS
+
+
+# --------------------------------------------------------------------------- #
+# IBM-integrated LBM step (replaces lbm_step_correct for IBM)
+# --------------------------------------------------------------------------- #
+
+
+def ibm_step_correct(
+    f: torch.Tensor,
+    collide_fn: Callable,
+    tau: float,
+    solid: torch.Tensor,
+    u_in: float,
+    far_field_bc_fn: Callable,
+    markers: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    u_target_fn: Callable[[int], tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    *,
+    lattice: IBMLatticeName = "D3Q19",
+    kernel: IBMKernelName = "hat",
+    correct_mass_fn: Callable | None = None,
+    target_mass: float | None = None,
+    step: int = 0,
+    mass_interval: int = 200,
+    **collide_kwargs,
+) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
+    """One LBM step with IBM direct forcing instead of bounce-back.
+
+    Order of operations:
+      1. Collision (all cells — no NoDynamics, IBM handles the body)
+      2. IBM: interpolate velocity at markers → compute direct-forcing →
+         spread to grid → apply Guo body-force correction
+      3. Streaming
+      4. Far-field BC (without bounce-back on solid)
+      5. Mass correction (optional, every mass_interval steps)
+
+    Unlike ``lbm_step_correct`` (which uses bounce-back + NoDynamics), this
+    step does NOT enforce no-slip via bounce-back.  Instead, the IBM force
+    drives the fluid velocity at marker positions to match the target (solid)
+    velocity.  This allows moving bodies without rebuilding the solid mask.
+
+    Args:
+        f: Distribution tensor (Q, nz, ny, nx).
+        collide_fn: Collision function (e.g., collide_mrt3d).
+        tau: Relaxation time.
+        solid: Boolean solid mask (nz, ny, nx) — used for mass correction
+            and optional NoDynamics, NOT for bounce-back.
+        u_in: Free-stream velocity for far-field BC.
+        far_field_bc_fn: Far-field BC function ``fn(f, u_in) -> f``.
+        markers: Tuple (marker_x, marker_y, marker_z) each of shape (N,).
+        u_target_fn: Callable ``fn(step) -> (ut_x, ut_y, ut_z)`` returning
+            per-marker target velocity tensors.  For a stationary body,
+            return zeros.  For a moving body, return the body velocity.
+            For a rotating body, return the rigid-body velocity at each marker.
+        lattice: ``"D3Q19"`` or ``"D3Q27"``.
+        kernel: Delta kernel: ``"hat"`` or ``"4pt"``.
+        correct_mass_fn: Mass correction function (e.g., correct_mass3d).
+        target_mass: Target total mass for correction.
+        step: Current step number (for mass correction interval).
+        mass_interval: Mass correction interval (default 200).
+        **collide_kwargs: Additional collision parameters (e.g., C_s=0.05).
+
+    Returns:
+        Tuple ``(f_new, marker_forces)`` where:
+        - ``f_new``: Updated distribution tensor.
+        - ``marker_forces``: Tuple (marker_fx, marker_fy, marker_fz) of the
+          IBM forces at each marker (shape (N,)).  Use
+          :func:`compute_ibm_drag_from_markers` to get Cd/Cl.
+    """
+    # 1. Collision (all cells)
+    f = collide_fn(f, tau=tau, **collide_kwargs)
+
+    # 2. IBM direct forcing
+    lattice_name = _normalise_lattice(lattice)
+    kernel_name = _normalise_kernel(kernel)
+    _, ux, uy, uz = macroscopic_velocity_3d(f, lattice=lattice_name)
+
+    marker_x, marker_y, marker_z = markers
+    ut_x, ut_y, ut_z = u_target_fn(step)
+
+    # Ensure target velocities are on the right device
+    device = f.device
+    ut_x = ut_x.to(device)
+    ut_y = ut_y.to(device)
+    ut_z = ut_z.to(device)
+    marker_x = marker_x.to(device)
+    marker_y = marker_y.to(device)
+    marker_z = marker_z.to(device)
+
+    # Compute IBM force (interpolate + spread)
+    fx_grid, fy_grid, fz_grid = ibm_direct_forcing_3d(
+        ux, uy, uz, marker_x, marker_y, marker_z,
+        ut_x, ut_y, ut_z, kernel=kernel_name,
+    )
+
+    # Per-marker forces (before spreading) for drag computation
+    # F_marker = u_target - u_interpolated
+    from .ibm import ibm_velocity_interpolate_3d
+    u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
+        ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name,
+    )
+    marker_fx = (ut_x - u_mx).detach()
+    marker_fy = (ut_y - u_my).detach()
+    marker_fz = (ut_z - u_mz).detach()
+
+    # Apply Guo body-force correction
+    f = ibm_apply_body_force_3d_common(f, fx_grid, fy_grid, fz_grid, lattice=lattice_name)
+
+    # 3. Streaming
+    if lattice_name == "D3Q19":
+        from .solver3d import stream3d
+        f = stream3d(f)
+    else:
+        from .d3q27 import stream27_roll
+        f = stream27_roll(f)
+
+    # 4. Far-field BC (no bounce-back on solid — IBM handles the body)
+    f = far_field_bc_fn(f, u_in)
+
+    # 5. Mass correction
+    if correct_mass_fn is not None and target_mass is not None:
+        if step % mass_interval == 0:
+            f = correct_mass_fn(f, target_mass)
+
+    return f, (marker_fx, marker_fy, marker_fz)

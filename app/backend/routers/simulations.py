@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import torch
@@ -905,17 +905,90 @@ def _generic_run_job(job: "job_manager.Job", req: GenericRunRequest) -> dict[str
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.post("/generic-run")
-def generic_run(req: GenericRunRequest) -> dict:
+async def generic_run(request: Request) -> dict:
     """Submit a generic LBM simulation job.
 
     Builds geometry (STL or parametric), auto-selects solver parameters,
     and runs the simulation using the common interface (lbm_step_correct +
     drag_pressure + drag_friction).  Returns a job_id for async monitoring.
 
+    Accepts either:
+      - JSON body (``GenericRunRequest``) — for programmatic use with
+        server-side STL paths.
+      - Multipart form-data (``stl_file`` + ``params`` JSON string) — for
+        browser-based STL upload.
+
     Real-time Cd/Cl/St updates are streamed via:
       - The global WebSocket ``/ws`` (job diagnostics).
       - The dedicated WebSocket ``/api/simulations/generic-run/{job_id}/ws``.
     """
+    import json as _json
+    import tempfile
+    import os
+
+    content_type = request.headers.get("content-type", "")
+
+    if "multipart/form-data" in content_type:
+        # ── Multipart form-data: browser STL upload ──
+        form = await request.form()
+        stl_file = form.get("stl_file")
+        params_str = form.get("params", "{}")
+
+        try:
+            params = _json.loads(params_str) if isinstance(params_str, str) else params_str
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid params JSON")
+
+        # Build GenericRunRequest from the frontend params
+        physics_raw = params.get("physics", {})
+        solver_raw = params.get("solver", {})
+        geometry_raw = params.get("geometry", {})
+        output_raw = params.get("output", {})
+
+        # Save uploaded STL to a temp file
+        stl_path = ""
+        if stl_file is not None and hasattr(stl_file, "read"):
+            suffix = os.path.splitext(getattr(stl_file, "filename", "") or "")[1] or ".stl"
+            fd, stl_path = tempfile.mkstemp(suffix=suffix, prefix="generic_run_")
+            try:
+                content = await stl_file.read()
+                with os.fdopen(fd, "wb") as fh:
+                    fh.write(content)
+            except Exception:
+                os.close(fd)
+                raise
+
+        req = GenericRunRequest(
+            geometry=GenericRunGeometry(
+                source="stl" if stl_path else geometry_raw.get("source", "parametric"),
+                path=stl_path,
+                shape=geometry_raw.get("shape", "sphere"),
+                params=geometry_raw.get("params", {}),
+            ),
+            physics=GenericRunPhysics(
+                Re=physics_raw.get("re", 100.0),
+                u_in=physics_raw.get("u_in", 0.08),
+                density=physics_raw.get("density", 1000.0),
+                viscosity=physics_raw.get("viscosity", 1e-6),
+            ),
+            solver=GenericRunSolver(
+                collision=solver_raw.get("collision", ""),
+                Cs=solver_raw.get("cs", 0.0),
+                steps=solver_raw.get("steps", 0),
+                warmup=solver_raw.get("warmup", 0),
+                lattice=solver_raw.get("lattice", "d3q19"),
+            ),
+            output=GenericRunOutput(
+                fields=output_raw.get("fields", ["velocity", "pressure"]),
+                forces=output_raw.get("forces", True),
+                strouhal=output_raw.get("st", True),
+            ),
+        )
+    else:
+        # ── JSON body: existing programmatic API ──
+        body = await request.json()
+        req = GenericRunRequest(**body)
+
     # Validate STL path if source is 'stl'
     if req.geometry.source == "stl" and not req.geometry.path:
         raise HTTPException(
