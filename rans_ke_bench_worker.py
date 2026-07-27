@@ -621,8 +621,10 @@ def run_channel_retau180(device_id, output_path):
 
     # For channel: use manual loop (periodic in x,z, walls at y=0,ny-1)
     # collide_rans_ke advances k/eps internally, then collides
-    ux_samples = []
+    # Use running sum for profile (avoid OOM from storing all samples)
+    ux_sum = torch.zeros(nz, ny, nx, device=device)
     cf_samples = []
+    n_profile_samples = 0
 
     t0 = time.time()
     for step in range(1, n_steps + 1):
@@ -657,10 +659,11 @@ def run_channel_retau180(device_id, output_path):
         if step % 100 == 0:
             f = correct_mass3d(f, initial_mass)
 
-        # Sample after warmup
+        # Sample after warmup (running sum to avoid OOM)
         if step > warmup:
             _, ux_s, _, _ = macroscopic3d(f)
-            ux_samples.append(ux_s.clone())
+            ux_sum += ux_s
+            n_profile_samples += 1
             u_bulk = float(ux_s[fluid].mean().item())
             u_tau_sim = math.sqrt(body_force * h)
             cf = 2.0 * u_tau_sim ** 2 / (u_bulk ** 2) if u_bulk > 0 else 0.0
@@ -684,11 +687,10 @@ def run_channel_retau180(device_id, output_path):
 
     elapsed = time.time() - t0
 
-    # Compute mean velocity profile
-    if ux_samples:
-        ux_stacked = torch.stack(ux_samples, dim=0)
-        ux_mean = ux_stacked.mean(dim=0)
-        ux_y = ux_mean.mean(dim=(0, 2))  # average over x,z
+    # Compute mean velocity profile from running sum
+    if n_profile_samples > 0:
+        ux_mean = ux_sum / n_profile_samples  # (nz, ny, nx)
+        ux_y = ux_mean.mean(dim=(0, 2))  # average over x,z → (ny,)
 
         y_coords = torch.arange(ny, dtype=torch.float32, device=device)
         y_dist = y_coords + 0.5
@@ -716,7 +718,7 @@ def run_channel_retau180(device_id, output_path):
                 sum((up - up_ll)**2 for _, up, up_ll in log_region) / len(log_region))
         else:
             rms_error = float('nan')
-        n_samples = len(ux_samples)
+        n_samples = n_profile_samples
     else:
         profile_data = []
         rms_error = float('nan')

@@ -104,7 +104,7 @@ def run_galloping(device_id, output_path=None):
     print(f"{tag} near-wall cells={n_near}", flush=True)
 
     # --- Common interface: SurfaceMesh.from_square_prism ---
-    mesh = SurfaceMesh.from_square_prism(solid, near, float(cx), float(cy), float(D))
+    mesh = SurfaceMesh.from_square_prism(solid, near, int(cx), int(cy), int(D))
     print(f"{tag} SurfaceMesh.from_square_prism built", flush=True)
 
     # --- Far-field BC ---
@@ -152,7 +152,7 @@ def run_galloping(device_id, output_path=None):
             solid = shift_solid_mask(solid, dx=0, dy=dy_shift, dz=0)
             near = get_near_wall_3d(solid)
             mesh = SurfaceMesh.from_square_prism(
-                solid, near, float(cx), float(cy + disp_y), float(D))
+                solid, near, int(cx), int(cy + disp_y), int(D))
 
         cd_p = result.cd_pressure[0]
         cd_f = result.cd_friction[0]

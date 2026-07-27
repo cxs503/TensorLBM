@@ -30,3 +30,5 @@
 [cyl_re40_opt SDAA:1] step=3000/10000 Cd_p=1.175291 Cd_f=0.458005 Cd_tot=1.633296 (498s)
 [cyl_re40_opt SDAA:1] step=3500/10000 Cd_p=1.175814 Cd_f=0.454480 Cd_tot=1.630294 (586s)
 [cyl_re40_opt SDAA:1] step=4000/10000 Cd_p=1.155315 Cd_f=0.449977 Cd_tot=1.605292 (675s)
+[cyl_re40_opt SDAA:1] step=4500/10000 Cd_p=1.152820 Cd_f=0.447270 Cd_tot=1.600091 (764s)
+[cyl_re40_opt SDAA:1] step=5000/10000 Cd_p=1.146865 Cd_f=0.445119 Cd_tot=1.591984 (852s)

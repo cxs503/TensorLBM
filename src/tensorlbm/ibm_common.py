@@ -694,18 +694,29 @@ def ibm_step_correct(
     marker_y = marker_y.to(device)
     marker_z = marker_z.to(device)
 
-    # Compute IBM force (interpolate + spread)
-    fx_grid, fy_grid, fz_grid = ibm_direct_forcing_3d(
-        ux, uy, uz, marker_x, marker_y, marker_z,
-        ut_x, ut_y, ut_z, kernel=kernel_name,
-    )
-
-    # Per-marker forces (before spreading) for drag computation
-    # F_marker = u_target - u_interpolated
-    from .ibm import ibm_velocity_interpolate_3d
-    u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
-        ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name,
-    )
+    # Compute IBM force (interpolate + spread) — use vectorized kernel
+    try:
+        from .ibm_vec import ibm_direct_forcing_3d_vec
+        fx_grid, fy_grid, fz_grid = ibm_direct_forcing_3d_vec(
+            ux, uy, uz, marker_x, marker_y, marker_z,
+            ut_x, ut_y, ut_z, kernel=kernel_name,
+        )
+        # Per-marker forces for drag: F = u_target - u_interpolated
+        # Use vectorized interpolation from ibm_vec
+        from .ibm import ibm_velocity_interpolate_3d
+        u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
+            ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name,
+        )
+    except Exception:
+        # Fallback to non-vectorized kernel
+        fx_grid, fy_grid, fz_grid = ibm_direct_forcing_3d(
+            ux, uy, uz, marker_x, marker_y, marker_z,
+            ut_x, ut_y, ut_z, kernel=kernel_name,
+        )
+        from .ibm import ibm_velocity_interpolate_3d
+        u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
+            ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name,
+        )
     marker_fx = (ut_x - u_mx).detach()
     marker_fy = (ut_y - u_my).detach()
     marker_fz = (ut_z - u_mz).detach()
