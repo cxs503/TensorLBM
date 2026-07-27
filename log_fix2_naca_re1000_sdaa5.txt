@@ -1,0 +1,34 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[naca_re1000_from_naca SDAA:5] chord=100.0 nx=600 ny=300 nz=4 u_in=0.05 Re=1000.0 nu=5.000000e-03 tau=0.515000 Cs=0.05 MRT+Smag steps=10000
+[naca_re1000_from_naca SDAA:5] from_naca analytical normals (NOT from_gradient); far_field p0; quadratic extrap
+[naca_re1000_from_naca SDAA:5] solid cells=3228
+[naca_re1000_from_naca SDAA:5] near-wall cells=816
+[naca_re1000_from_naca SDAA:5] SurfaceMesh.from_naca built (m=0, t=0.12)
+[naca_re1000_from_naca SDAA:5] step=500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=-0.014441 (49s, 0.099s/step)
+[naca_re1000_from_naca SDAA:5] step=1000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=-0.000059 (98s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=1500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=-0.000365 (147s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=2000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 Cl=-0.000223 (196s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=2500/10000 Cd_p=0.031408 Cd_f=0.065946 Cd_tot=0.097353 Cl=-0.000568 (244s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=3000/10000 Cd_p=0.032943 Cd_f=0.062791 Cd_tot=0.095734 Cl=-0.000806 (293s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=3500/10000 Cd_p=0.033548 Cd_f=0.060939 Cd_tot=0.094487 Cl=-0.000860 (342s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=4000/10000 Cd_p=0.033737 Cd_f=0.059816 Cd_tot=0.093552 Cl=-0.000961 (391s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=4500/10000 Cd_p=0.033752 Cd_f=0.059074 Cd_tot=0.092826 Cl=-0.001008 (440s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=5000/10000 Cd_p=0.033703 Cd_f=0.058547 Cd_tot=0.092250 Cl=-0.000999 (488s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=5500/10000 Cd_p=0.033619 Cd_f=0.058154 Cd_tot=0.091773 Cl=-0.001006 (537s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=6000/10000 Cd_p=0.033565 Cd_f=0.057848 Cd_tot=0.091413 Cl=-0.001036 (586s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=6500/10000 Cd_p=0.033486 Cd_f=0.057609 Cd_tot=0.091095 Cl=-0.001021 (635s, 0.098s/step)

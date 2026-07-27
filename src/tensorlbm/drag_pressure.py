@@ -599,6 +599,7 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     'central'       τ = ν·u_2                                          (task spec)
     'lagrange'      τ = ν·(3·u_1 − u_2/3)                              linear+quad
     'bfl'           τ = ν·u_1/q  (requires q_wall)                     linear
+    'bfl_lagrange'  τ = ν·(3·u_1 − u_2/3)/(2·q)  (requires q_wall)    linear+quad
     ==============  =================================================  ===========
 
     The 'lagrange' formula is the exact second-order derivative for the
@@ -611,10 +612,10 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     ----------
     q_wall : torch.Tensor or None, shape (nz, ny, nx)
         Effective fractional wall distance at each near-wall cell.
-        Used only when formula='bfl'.
+        Used when formula='bfl' or formula='bfl_lagrange'.
     formula : str
         Friction formula: 'standard' (default), '2nd_order', 'central',
-        'lagrange', or 'bfl'.
+        'lagrange', 'bfl', or 'bfl_lagrange'.
 
     Verified on Couette flow: Cf error = 0.00% (standard, q_wall=None).
     """
@@ -638,6 +639,20 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
         tau_x = nu * ut_x * inv_q
         tau_y = nu * ut_y * inv_q
         tau_z = nu * ut_z * inv_q
+    elif formula == 'bfl_lagrange':
+        # τ = ν·(3·u_1 − u_2/3) / (2·q)  [2nd-order Lagrange with BFL wall distance]
+        # Reduces to 'lagrange' when q=0.5: τ = ν·(3·u_1 − u_2/3).
+        # Combines non-uniform-grid 2nd-order accuracy (Lagrange) with the
+        # actual BFL wall distance q, giving 2nd-order friction for BFL.
+        if q_wall is None:
+            raise ValueError("formula='bfl_lagrange' requires q_wall tensor")
+        ut2_x = _shift_along_normal_dominant(ut_x, mesh, steps=1)
+        ut2_y = _shift_along_normal_dominant(ut_y, mesh, steps=1)
+        ut2_z = _shift_along_normal_dominant(ut_z, mesh, steps=1)
+        inv_2q = 1.0 / (2.0 * q_wall.clamp(min=1e-6))
+        tau_x = nu * (3.0 * ut_x - ut2_x / 3.0) * inv_2q
+        tau_y = nu * (3.0 * ut_y - ut2_y / 3.0) * inv_2q
+        tau_z = nu * (3.0 * ut_z - ut2_z / 3.0) * inv_2q
     elif formula in ('2nd_order', 'central', 'lagrange'):
         # Need u_2: tangential velocity at second cell from wall.
         # Shift velocity one cell along dominant normal into the fluid.
@@ -663,7 +678,7 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     else:
         raise ValueError(
             f"formula must be 'standard', '2nd_order', 'central', "
-            f"'lagrange', or 'bfl'; got '{formula}'"
+            f"'lagrange', 'bfl', or 'bfl_lagrange'; got '{formula}'"
         )
 
     mask = mesh.near.float() * mesh.dA

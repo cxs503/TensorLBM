@@ -1,0 +1,28 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[channel_retau180_long SDAA:7] Re_tau target=180
+[channel_retau180_long SDAA:7] Grid: 64x64x64, h=32.0, nu=0.000494, tau=0.501481
+[channel_retau180_long SDAA:7] u_tau_target=0.002778, body_force=2.411265e-07
+[channel_retau180_long SDAA:7] n_steps=20000, warmup=2000 (longer than 5000)
+[channel_retau180_long SDAA:7] Fluid cells: 253952
+[channel_retau180_long SDAA:7] KESolver initialized, k0=9.999995e-05 eps0=1.000000e-06
+[channel_retau180_long SDAA:7] step= 1000 u_bulk=0.042533 u_tau=0.002778 Re_tau=180.0 Cf=0.008530 nu_t_max=2.5634e-03 finite=True [89s]
+[channel_retau180_long SDAA:7] step= 2000 u_bulk=0.041555 u_tau=0.002778 Re_tau=180.0 Cf=0.008937 nu_t_max=4.3076e-03 finite=True [180s]
+[channel_retau180_long SDAA:7] step= 3000 u_bulk=0.040578 u_tau=0.002778 Re_tau=180.0 Cf=0.009372 nu_t_max=6.0898e-03 finite=True [278s]
+[channel_retau180_long SDAA:7] step= 4000 u_bulk=0.039577 u_tau=0.002778 Re_tau=180.0 Cf=0.009852 nu_t_max=7.9475e-03 finite=True [379s]
+[channel_retau180_long SDAA:7] step= 5000 u_bulk=0.038546 u_tau=0.002778 Re_tau=180.0 Cf=0.010386 nu_t_max=9.8503e-03 finite=True [483s]
+[channel_retau180_long SDAA:7] step= 6000 u_bulk=0.037483 u_tau=0.002778 Re_tau=180.0 Cf=0.010984 nu_t_max=1.1796e-02 finite=True [590s]

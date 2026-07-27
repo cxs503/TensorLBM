@@ -1,0 +1,32 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:1 C2 full L=80] nx=200 ny=80 nz=80 L=80 D=9.335 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=4.223004e+00 Cd_ref=0.055000 ref=AFF-8 Cd≈0.055 (sail+fins add ~30% drag)
+[SDAA:1 C2 full L=80] solid=4514 L/D=8.57 solid_frac=0.35% (0.7s)
+[SDAA:1 C2 full L=80] near-wall=2290
+[SDAA:1 C2 full L=80] bow nx_n mean=-0.1419 (expect < 0)
+[SDAA:1 C2 full L=80] stern nx_n mean=0.2434 (expect > 0)
+[SDAA:1 C2 full L=80] init done (1.0s) mass=1280000.0
+[SDAA:1 C2 full L=80] step=500 Cd_p=0.020447 Cd_f=0.081837 Cd_tot=0.102284 Cl=-0.000011 (81s)
+[SDAA:1 C2 full L=80] step=1000 Cd_p=0.010133 Cd_f=0.052622 Cd_tot=0.062755 Cl=-0.000013 (160s)
+[SDAA:1 C2 full L=80] step=1500 Cd_p=0.009175 Cd_f=0.047003 Cd_tot=0.056179 Cl=-0.000009 (240s)
+[SDAA:1 C2 full L=80] step=2000 Cd_p=0.008882 Cd_f=0.045004 Cd_tot=0.053885 Cl=-0.000011 (320s)
+[SDAA:1 C2 full L=80] step=2500 Cd_p=0.008703 Cd_f=0.044286 Cd_tot=0.052989 Cl=-0.000013 (400s)
+[SDAA:1 C2 full L=80] step=3000 Cd_p=0.008579 Cd_f=0.044010 Cd_tot=0.052589 Cl=-0.000014 (480s)
+[SDAA:1 C2 full L=80] step=3500 Cd_p=0.008518 Cd_f=0.043896 Cd_tot=0.052413 Cl=-0.000015 (560s)
+[SDAA:1 C2 full L=80] step=4000 Cd_p=0.008449 Cd_f=0.043838 Cd_tot=0.052287 Cl=-0.000014 (640s)
+[SDAA:1 C2 full L=80] step=4500 Cd_p=0.008427 Cd_f=0.043805 Cd_tot=0.052232 Cl=-0.000015 (721s)
+[SDAA:1 C2 full L=80] step=5000 Cd_p=0.008416 Cd_f=0.043788 Cd_tot=0.052203 Cl=-0.000014 (801s)

@@ -1,0 +1,25 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:2 C3 bare_hull L=160] nx=300 ny=120 nz=120 L=160 D=18.670 u_in=0.06 nu=9.600000e-03 tau=0.528800 Cs=0.05 dpS=1.689202e+01 Cd_ref=0.041995 ref=Blasius Cf=1.328/sqrt(Re)=0.041995
+[SDAA:2 C3 bare_hull L=160] solid=34995 L/D=8.57 solid_frac=0.81% (0.6s)
+[SDAA:2 C3 bare_hull L=160] near-wall=7630
+[SDAA:2 C3 bare_hull L=160] bow nx_n mean=-0.1448 (expect < 0)
+[SDAA:2 C3 bare_hull L=160] stern nx_n mean=0.1937 (expect > 0)
+[SDAA:2 C3 bare_hull L=160] init done (1.7s) mass=4320000.0
+[SDAA:2 C3 bare_hull L=160] step=500 Cd_p=0.020524 Cd_f=0.098339 Cd_tot=0.118862 Cl=-0.000021 (258s)
+[SDAA:2 C3 bare_hull L=160] step=1000 Cd_p=0.008603 Cd_f=0.056947 Cd_tot=0.065550 Cl=-0.000008 (515s)
+[SDAA:2 C3 bare_hull L=160] step=1500 Cd_p=0.008292 Cd_f=0.049912 Cd_tot=0.058203 Cl=-0.000009 (772s)

@@ -1,0 +1,31 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Galloping-fix SDAA:10] m*=5.0 zeta=0.1 f_n=0.000271 m=2880.00 k=0.008340 c=0.980177 f_n_check=0.000271 zeta_check=0.100000
+[Galloping-fix SDAA:10] nx=300 ny=100 nz=4 D=24 Re=1000 u_in=0.1 nu=2.400000e-03 tau=0.507200 dpS=4.800000e-01
+[Galloping-fix SDAA:10] near-wall cells=384
+[Galloping-fix SDAA:10] SurfaceMesh.from_square_prism built
+[Galloping-fix SDAA:10] init done (0.3s)
+Traceback (most recent call last):
+  File "/root/TensorLBM_dev/_fsi_galloping_fix_worker.py", line 245, in <module>
+    run_galloping(dev, out)
+  File "/root/TensorLBM_dev/_fsi_galloping_fix_worker.py", line 142, in run_galloping
+    mesh = SurfaceMesh.from_square_prism(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/TensorLBM_dev/src/tensorlbm/drag_pressure.py", line 369, in from_square_prism
+    ny_n[:, cy-D//2-1, :] = -1.0
+    ~~~~^^^^^^^^^^^^^^^^^
+IndexError: index -1764015228 is out of bounds for dimension 1 with size 100
