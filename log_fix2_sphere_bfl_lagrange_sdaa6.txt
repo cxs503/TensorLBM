@@ -25,3 +25,6 @@
 [sphere_bfl_lagrange SDAA:6] step=1000 Cd_p=0.665890 Cd_f=0.695274 Cd_tot=1.361163 Cl=-0.000010 (1242s)
 [sphere_bfl_lagrange SDAA:6] step=1500 Cd_p=0.659903 Cd_f=0.680671 Cd_tot=1.340574 Cl=-0.000012 (1854s)
 [sphere_bfl_lagrange SDAA:6] step=2000 Cd_p=0.652524 Cd_f=0.669912 Cd_tot=1.322436 Cl=-0.000033 (2468s)
+[sphere_bfl_lagrange SDAA:6] step=2500 Cd_p=0.647524 Cd_f=0.664707 Cd_tot=1.312231 Cl=-0.000042 (3074s)
+[sphere_bfl_lagrange SDAA:6] step=3000 Cd_p=0.643299 Cd_f=0.660623 Cd_tot=1.303922 Cl=-0.000078 (3678s)
+[sphere_bfl_lagrange SDAA:6] DONE Cd_p=0.652488 Cd_f=0.671900 Cd_tot=1.324388 Cl=-0.000038 (ref Cd=1.09) err=21.5% time=3678s
