@@ -442,6 +442,10 @@ def _shift_along_normal_dominant(field, mesh, steps):
     Returns a tensor the same shape as *field*.
     """
     nx_n, ny_n, nz_n = mesh.nx_n, mesh.ny_n, mesh.nz_n
+    # Bug 32: device sync
+    _dev = field.device
+    if nx_n.device != _dev:
+        nx_n = nx_n.to(_dev); ny_n = ny_n.to(_dev); nz_n = nz_n.to(_dev)
     abs_nx = nx_n.abs()
     abs_ny = ny_n.abs()
     abs_nz = nz_n.abs()
@@ -524,6 +528,11 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
     # Subtract background pressure p_0 to prevent spurious force from
     # discrete surface non-closure (Σ n·dA ≠ 0 on staircase surface).
     mask_float = mesh.near.float()
+    # Bug 32 fix: ensure mask on same device as p
+    if mask_float.device != p.device:
+        mask_float = mask_float.to(p.device)
+    if solid is not None and solid.device != p.device:
+        solid = solid.to(p.device)
     if p0_method == 'near_wall':
         n_p0 = mask_float.sum().clamp(min=1.0)
         p0 = (p * mask_float).sum() / n_p0
