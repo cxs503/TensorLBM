@@ -14,18 +14,14 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[Galloping-fix SDAA:10] m*=5.0 zeta=0.1 f_n=0.000271 m=2880.00 k=0.008340 c=0.980177 f_n_check=0.000271 zeta_check=0.100000
+[Galloping-fix SDAA:10] m*=5.0 zeta=0.1 f_n=0.001000 m=2880.00 k=0.113698 c=3.619115 f_n_check=0.001000 zeta_check=0.100000
 [Galloping-fix SDAA:10] nx=300 ny=100 nz=4 D=24 Re=1000 u_in=0.1 nu=2.400000e-03 tau=0.507200 dpS=4.800000e-01
 [Galloping-fix SDAA:10] near-wall cells=384
 [Galloping-fix SDAA:10] SurfaceMesh.from_square_prism built
 [Galloping-fix SDAA:10] init done (0.3s)
-Traceback (most recent call last):
-  File "/root/TensorLBM_dev/_fsi_galloping_fix_worker.py", line 245, in <module>
-    run_galloping(dev, out)
-  File "/root/TensorLBM_dev/_fsi_galloping_fix_worker.py", line 142, in run_galloping
-    mesh = SurfaceMesh.from_square_prism(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/TensorLBM_dev/src/tensorlbm/drag_pressure.py", line 369, in from_square_prism
-    ny_n[:, cy-D//2-1, :] = -1.0
-    ~~~~^^^^^^^^^^^^^^^^^
-IndexError: index -1764015228 is out of bounds for dimension 1 with size 100
+[Galloping-fix SDAA:10] step=2000/20000 Cd=-0.0512 Cl_rms=0.0208 disp_max=0.14 nan_count=0 (58s)
+[Galloping-fix SDAA:10] WARNING: force NaN at step 2935, skipping spring update (count=1)
+[Galloping-fix SDAA:10] DIVERGED at step 2935
+
+[Galloping-fix SDAA:10] === FINAL ===  A/D=0.0042 disp_rms/D=0.0027 Cd_mean=nan Cl_rms=nan St=0.08177172061328788 galloping=NO early_disp=0.14 late_disp=0.06 nan_count=1 time=85s
+[Galloping-fix SDAA:10] results saved to fsi_galloping_fix_sdaa10.json

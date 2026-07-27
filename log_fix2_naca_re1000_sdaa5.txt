@@ -32,3 +32,13 @@
 [naca_re1000_from_naca SDAA:5] step=5500/10000 Cd_p=0.033619 Cd_f=0.058154 Cd_tot=0.091773 Cl=-0.001006 (537s, 0.098s/step)
 [naca_re1000_from_naca SDAA:5] step=6000/10000 Cd_p=0.033565 Cd_f=0.057848 Cd_tot=0.091413 Cl=-0.001036 (586s, 0.098s/step)
 [naca_re1000_from_naca SDAA:5] step=6500/10000 Cd_p=0.033486 Cd_f=0.057609 Cd_tot=0.091095 Cl=-0.001021 (635s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=7000/10000 Cd_p=0.033454 Cd_f=0.057419 Cd_tot=0.090873 Cl=-0.001020 (683s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=7500/10000 Cd_p=0.033383 Cd_f=0.057267 Cd_tot=0.090650 Cl=-0.001051 (732s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=8000/10000 Cd_p=0.033361 Cd_f=0.057143 Cd_tot=0.090503 Cl=-0.001003 (781s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=8500/10000 Cd_p=0.033298 Cd_f=0.057041 Cd_tot=0.090339 Cl=-0.000991 (829s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=9000/10000 Cd_p=0.033287 Cd_f=0.056957 Cd_tot=0.090244 Cl=-0.001031 (878s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=9500/10000 Cd_p=0.033250 Cd_f=0.056890 Cd_tot=0.090141 Cl=-0.001011 (927s, 0.098s/step)
+[naca_re1000_from_naca SDAA:5] step=10000/10000 Cd_p=0.033252 Cd_f=0.056836 Cd_tot=0.090087 Cl=-0.001020 (975s, 0.098s/step)
+
+[naca_re1000_from_naca SDAA:5] === FINAL ===  Cd_p=0.033272 Cd_f=0.056931 Cd_tot=0.090203 (ref=0.05) err=80.4% Cl=-0.000974 St=None finite=True time=975s
+[naca_re1000_from_naca SDAA:5] saved to results_fix2_benchmarks/naca_re1000_from_naca_sdaa5.json
