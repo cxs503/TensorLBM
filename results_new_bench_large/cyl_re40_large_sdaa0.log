@@ -37,3 +37,20 @@
 [cyl_re40_large SDAA:0] step=6500/10000 Cd_p=1.221486 Cd_f=0.466029 Cd_tot=1.687515 (715s)
 [cyl_re40_large SDAA:0] step=7000/10000 Cd_p=1.220225 Cd_f=0.465585 Cd_tot=1.685810 (771s)
 [cyl_re40_large SDAA:0] step=7500/10000 Cd_p=1.219691 Cd_f=0.465273 Cd_tot=1.684964 (827s)
+[cyl_re40_large SDAA:0] step=8000/10000 Cd_p=1.218474 Cd_f=0.464957 Cd_tot=1.683431 (883s)
+[cyl_re40_large SDAA:0] step=8500/10000 Cd_p=1.217783 Cd_f=0.464676 Cd_tot=1.682459 (939s)
+[cyl_re40_large SDAA:0] step=9000/10000 Cd_p=1.216410 Cd_f=0.464333 Cd_tot=1.680743 (996s)
+[cyl_re40_large SDAA:0] step=9500/10000 Cd_p=1.215686 Cd_f=0.464036 Cd_tot=1.679722 (1052s)
+[cyl_re40_large SDAA:0] step=10000/10000 Cd_p=1.214674 Cd_f=0.463743 Cd_tot=1.678417 (1108s)
+
+============================================================
+[cyl_re40_large SDAA:0] FINAL RESULTS
+============================================================
+[cyl_re40_large SDAA:0] Cd_p  = 1.216138
+[cyl_re40_large SDAA:0] Cd_f  = 0.464197
+[cyl_re40_large SDAA:0] Cd_tot= 1.680335
+[cyl_re40_large SDAA:0] Cd_ref= 1.500000  err=12.0%
+[cyl_re40_large SDAA:0] St    = 0.1477410903292616
+[cyl_re40_large SDAA:0] time  = 1108s (18.5 min)
+[cyl_re40_large SDAA:0] finite= True
+[cyl_re40_large SDAA:0] Results → results_new_bench_large/cyl_re40_large_sdaa0.json

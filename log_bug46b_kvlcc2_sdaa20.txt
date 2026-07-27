@@ -24,3 +24,5 @@
 [SDAA:20 KVLCC2] Normal orientation check: 51.5% outward (515/1000 sampled)
 [SDAA:20 KVLCC2] init done (0.5s) mass=1280000.0
 [SDAA:20 KVLCC2] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.008333) [124s]
+[SDAA:20 KVLCC2] step=1000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.008333) [246s]
+[SDAA:20 KVLCC2] step=1500 Cd_p=0.000560 Cd_f=0.001624 Cd_tot=0.002184 (ITTC=0.008333) [410s]

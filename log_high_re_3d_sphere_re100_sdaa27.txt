@@ -24,3 +24,4 @@
 [sphere_re100_3d SDAA:27] step=600/3000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.000016 (523s, 0.872s/step)
 [sphere_re100_3d SDAA:27] step=800/3000 Cd_p=0.6872 Cd_f=0.4444 Cd_tot=1.1316 Cl=0.000035 (695s, 0.869s/step)
 [sphere_re100_3d SDAA:27] step=1000/3000 Cd_p=0.6861 Cd_f=0.4368 Cd_tot=1.1228 Cl=0.000055 (867s, 0.867s/step)
+[sphere_re100_3d SDAA:27] step=1200/3000 Cd_p=0.6829 Cd_f=0.4313 Cd_tot=1.1142 Cl=-0.000028 (1038s, 0.865s/step)
