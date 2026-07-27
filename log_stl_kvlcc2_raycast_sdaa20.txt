@@ -30,3 +30,18 @@
 [SDAA:20 KVLCC2] step=2500 Cd_p=-0.001641 Cd_f=0.001737 Cd_tot=0.000096 (ITTC=0.008333) [396s]
 [SDAA:20 KVLCC2] step=3000 Cd_p=-0.001770 Cd_f=0.001700 Cd_tot=-0.000070 (ITTC=0.008333) [479s]
 [SDAA:20 KVLCC2] step=3500 Cd_p=-0.001924 Cd_f=0.001622 Cd_tot=-0.000302 (ITTC=0.008333) [562s]
+[SDAA:20 KVLCC2] step=4000 Cd_p=-0.001596 Cd_f=0.001623 Cd_tot=0.000027 (ITTC=0.008333) [645s]
+[SDAA:20 KVLCC2] step=4500 Cd_p=-0.001134 Cd_f=0.001624 Cd_tot=0.000490 (ITTC=0.008333) [728s]
+[SDAA:20 KVLCC2] step=5000 Cd_p=-0.001395 Cd_f=0.001591 Cd_tot=0.000196 (ITTC=0.008333) [811s]
+
+============================================================
+[SDAA:20 KVLCC2] FINAL RESULTS
+============================================================
+  Cd_pressure  = -0.001264
+  Cd_friction  = 0.001607
+  Cd_total     = 0.000343
+  Cf_ITTC      = 0.008333  (err=95.9%)
+  S_wetted     = 6659.1
+  Wall time: 811s (13.5 min)
+  Finite: True
+  Saved to results_stl_kvlcc2_raycast_sdaa20.json

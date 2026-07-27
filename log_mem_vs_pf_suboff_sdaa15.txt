@@ -21,3 +21,12 @@
 [SuboffMEMvsPF SDAA:15] step=1000 (warmup) (73s)
 [SuboffMEMvsPF SDAA:15] step=1500 Cd_MEM=0.066557 Cd_PF=0.048921 (ref=0.042) (125s)
 [SuboffMEMvsPF SDAA:15] step=2000 Cd_MEM=0.065570 Cd_PF=0.048243 (ref=0.042) (178s)
+[SuboffMEMvsPF SDAA:15] step=2500 Cd_MEM=0.065027 Cd_PF=0.047867 (ref=0.042) (229s)
+[SuboffMEMvsPF SDAA:15] step=3000 Cd_MEM=0.064696 Cd_PF=0.047636 (ref=0.042) (281s)
+[SuboffMEMvsPF SDAA:15] step=3500 Cd_MEM=0.064481 Cd_PF=0.047485 (ref=0.042) (333s)
+[SuboffMEMvsPF SDAA:15] step=4000 Cd_MEM=0.064327 Cd_PF=0.047376 (ref=0.042) (384s)
+[SuboffMEMvsPF SDAA:15] step=4500 Cd_MEM=0.064214 Cd_PF=0.047295 (ref=0.042) (436s)
+[SuboffMEMvsPF SDAA:15] step=5000 Cd_MEM=0.064127 Cd_PF=0.047233 (ref=0.042) (488s)
+
+[SuboffMEMvsPF SDAA:15] === FINAL === Cd_MEM=0.064127(err=52.7%) Cd_P=0.006125 Cd_F=0.041109 Cd_PF=0.047233(err=12.5%) |diff|=0.016894 t=488s
+[SuboffMEMvsPF SDAA:15] saved mem_vs_pf_suboff_sdaa15.json

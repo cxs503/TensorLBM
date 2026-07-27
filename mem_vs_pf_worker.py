@@ -51,16 +51,20 @@ def _float_list(lst):
 def collide_bgk3d_guo(f, tau, Fx):
     """BGK collision with proper Guo body force (x-direction, uniform).
 
-    Uses the proper Guo forcing scheme:
-      1. Shift equilibrium velocity: u* = u + tau*F/rho
-      2. Collision with shifted equilibrium
-      3. Add forcing term: (1-1/2tau) * w_q * (c_q-u)/cs2 * F
-    The force term uses the ORIGINAL velocity u (not u*).
+    Uses the original Guo (2002) forcing scheme:
+      1. Physical velocity: u_phys = u + F/(2*rho)
+      2. Equilibrium with u_phys
+      3. Collision: f_post = f - (f - feq)/tau
+      4. Force term: (1-1/2tau) * w * [(c-u_phys)/cs2 + (c·u_phys)*c/cs4] * F
+
+    Note: Using u_phys = u + F/(2*rho) in BOTH equilibrium and force term
+    gives the correct force. Using u* = u + tau*F/rho in equilibrium with
+    raw u in force term gives (2 - 1/(2*tau))× the correct force.
     """
     rho, ux, uy, uz = macroscopic3d(f)
-    # Guo velocity shift: u* = u + tau * F / rho
-    ux_shift = ux + tau * Fx / rho.clamp(min=1e-12)
-    feq = equilibrium3d(rho, ux_shift, uy, uz)
+    # Guo physical velocity: u_phys = u + F / (2 * rho)
+    ux_guo = ux + Fx / (2.0 * rho.clamp(min=1e-12))
+    feq = equilibrium3d(rho, ux_guo, uy, uz)
     f_post = f - (f - feq) / tau
 
     c = C.to(f.device).float()
@@ -68,12 +72,12 @@ def collide_bgk3d_guo(f, tau, Fx):
     cs2 = 1.0 / 3.0
     cs4 = cs2 * cs2
     factor = (1.0 - 0.5 / tau)
-    # Force term uses ORIGINAL velocity (not shifted)
-    cu = (c[:, 0].view(19, 1, 1, 1) * ux
+    # Force term uses physical velocity u_phys (same as equilibrium)
+    cu = (c[:, 0].view(19, 1, 1, 1) * ux_guo
           + c[:, 1].view(19, 1, 1, 1) * uy
           + c[:, 2].view(19, 1, 1, 1) * uz)
     force = factor * w.view(19, 1, 1, 1) * (
-        (c[:, 0].view(19, 1, 1, 1) - ux) / cs2
+        (c[:, 0].view(19, 1, 1, 1) - ux_guo) / cs2
         + c[:, 0].view(19, 1, 1, 1) * cu / cs4
     ) * Fx
     return f_post + force

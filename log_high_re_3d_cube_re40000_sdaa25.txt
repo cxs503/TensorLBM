@@ -14,17 +14,8 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-=== Sphere Drag: Re=100 (SDAA:17) ===
-Grid: 180×180×180, D=40.0, u_in=0.08, tau=0.5960, Cs=0.05
-Steps: 3000, warmup: 600
-Bug 37 fix: ux0[solid]=0 (not f[:,solid]=0)
-
-solid=33371 near=4302 mesh=from_sphere (0.5s)
-init done mass=5832000.0 (0.5s)
-
-  Step      Cd_p      Cd_f        Cd
-----------------------------------------
-   500  (max|u|=0.1040)
-  1000    0.6601    0.4352    1.0953  (829s)
-  1500    0.6501    0.4250    1.0751  (1240s)
-  2000    0.6461    0.4200    1.0662  (1652s)
+[cube_re40000_3d SDAA:25] D=24.0 nx=256 ny=128 nz=128 u_in=0.08 Re=40000.0 nu=4.800000e-05 tau=0.500144 MRT+Smag(Cs=0.1) steps=10000
+[cube_re40000_3d SDAA:25] solid_total=78208
+[cube_re40000_3d SDAA:25] near-wall (cube)=2880
+[cube_re40000_3d SDAA:25] SurfaceMesh.from_gradient built
+[cube_re40000_3d SDAA:25] init done (0.7s) mass=4194304.0

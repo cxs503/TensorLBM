@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re200_large SDAA:1] cylinder Re=200 grid=800x320x4 u_in=0.08 nu=1.920000e-02 tau=0.557600 dpS=6.144000e-01
+[cyl_re200_large SDAA:1] collision=mrt_smag Cs=0.05 n_steps=5000 warmup=1000 avg_window=1000
+[cyl_re200_large SDAA:1] blockage D/ny=15.0%
+[cyl_re200_large SDAA:1] Cd_ref=1.300000 (Cd=1.30 (Re=200, Henderson 1997))
+[cyl_re200_large SDAA:1] solid cells: 7172
+[cyl_re200_large SDAA:1] near-wall cells: 544
+[cyl_re200_large SDAA:1] SurfaceMesh.from_cylinder built
+[cyl_re200_large SDAA:1] init done (0.4s) mass=1024000.0
+[cyl_re200_large SDAA:1] step=500/5000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (56s)
+[cyl_re200_large SDAA:1] step=1000/5000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (112s)
+[cyl_re200_large SDAA:1] step=1500/5000 Cd_p=1.107408 Cd_f=0.160687 Cd_tot=1.268095 (173s)
+[cyl_re200_large SDAA:1] step=2000/5000 Cd_p=1.048601 Cd_f=0.150514 Cd_tot=1.199116 (234s)
+[cyl_re200_large SDAA:1] step=2500/5000 Cd_p=1.015331 Cd_f=0.143681 Cd_tot=1.159012 (295s)
+[cyl_re200_large SDAA:1] step=3000/5000 Cd_p=0.995537 Cd_f=0.140027 Cd_tot=1.135565 (356s)
+[cyl_re200_large SDAA:1] step=3500/5000 Cd_p=0.973457 Cd_f=0.137016 Cd_tot=1.110473 (417s)
+[cyl_re200_large SDAA:1] step=4000/5000 Cd_p=0.963138 Cd_f=0.135014 Cd_tot=1.098152 (478s)
+[cyl_re200_large SDAA:1] step=4500/5000 Cd_p=0.952866 Cd_f=0.133634 Cd_tot=1.086500 (539s)

@@ -14,17 +14,10 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-=== Sphere Drag: Re=100 (SDAA:17) ===
-Grid: 180×180×180, D=40.0, u_in=0.08, tau=0.5960, Cs=0.05
-Steps: 3000, warmup: 600
-Bug 37 fix: ux0[solid]=0 (not f[:,solid]=0)
-
-solid=33371 near=4302 mesh=from_sphere (0.5s)
-init done mass=5832000.0 (0.5s)
-
-  Step      Cd_p      Cd_f        Cd
-----------------------------------------
-   500  (max|u|=0.1040)
-  1000    0.6601    0.4352    1.0953  (829s)
-  1500    0.6501    0.4250    1.0751  (1240s)
-  2000    0.6461    0.4200    1.0662  (1652s)
+[cyl_re3900_3d SDAA:24] D=48.0 nx=200 ny=200 nz=200 u_in=0.08 Re=3900.0 nu=9.846154e-04 tau=0.502954 MRT+Smag(Cs=0.15) steps=5000
+[cyl_re3900_3d SDAA:24] TRUE 3D grid (nz=200) — testing if 3D prevents divergence
+[cyl_re3900_3d SDAA:24] solid cells=358600
+[cyl_re3900_3d SDAA:24] near-wall cells=27200
+[cyl_re3900_3d SDAA:24] SurfaceMesh.from_cylinder built
+[cyl_re3900_3d SDAA:24] init done (0.5s) mass=8000000.0
+[cyl_re3900_3d SDAA:24] step=500/5000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.001024 (491s, 0.982s/step)
