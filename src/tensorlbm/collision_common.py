@@ -64,7 +64,7 @@ from .turbulence import (  # noqa: F401
 #  RANS k-epsilon collision (from rans_ke)                           #
 # ------------------------------------------------------------------ #
 try:
-    from .rans_ke import KESolver, collide_rans_ke  # noqa: F401
+    from .rans_ke import KESolver, collide_rans_ke, C_MU, C_E1, C_E2  # noqa: F401
 except ImportError:  # pragma: no cover
     pass
 
@@ -95,6 +95,9 @@ __all__ = [
     # RANS k-epsilon
     "collide_rans_ke",
     "KESolver",
+    "C_MU",
+    "C_E1",
+    "C_E2",
     # RANS common
     "collide_rans_bgk3d",
     "collide_rans_mrt3d",

@@ -186,17 +186,18 @@ def interface_compression_3d(
     Fy = c_comp * alpha * ny_n
     Fz = c_comp * alpha * nz_n
 
-    # Divergence of F (central differences with replicate padding)
+    # Divergence of F (central differences with replicate padding on ALL axes)
+    # Fix: pad all 3 axes simultaneously so all terms have shape (nz, ny, nx)
     p5d_x = Fx.unsqueeze(0).unsqueeze(0)
-    pad_x = torch.nn.functional.pad(p5d_x, (1, 1, 0, 0, 0, 0), mode="replicate").squeeze(0).squeeze(0)
+    pad_x = torch.nn.functional.pad(p5d_x, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
     dFx_dx = (pad_x[1:-1, 1:-1, 2:] - pad_x[1:-1, 1:-1, 0:-2]) * 0.5
 
     p5d_y = Fy.unsqueeze(0).unsqueeze(0)
-    pad_y = torch.nn.functional.pad(p5d_y, (0, 0, 1, 1, 0, 0), mode="replicate").squeeze(0).squeeze(0)
+    pad_y = torch.nn.functional.pad(p5d_y, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
     dFy_dy = (pad_y[1:-1, 2:, 1:-1] - pad_y[1:-1, 0:-2, 1:-1]) * 0.5
 
     p5d_z = Fz.unsqueeze(0).unsqueeze(0)
-    pad_z = torch.nn.functional.pad(p5d_z, (0, 0, 0, 0, 1, 1), mode="replicate").squeeze(0).squeeze(0)
+    pad_z = torch.nn.functional.pad(p5d_z, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
     dFz_dz = (pad_z[2:, 1:-1, 1:-1] - pad_z[0:-2, 1:-1, 1:-1]) * 0.5
 
     return dFx_dx + dFy_dy + dFz_dz
