@@ -25,3 +25,10 @@
 [VIV-fix SDAA:6] step=8000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.27 (269s)
 [VIV-fix SDAA:6] step=10000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.20 (336s)
 [VIV-fix SDAA:6] step=12000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=0.84 (403s)
+[VIV-fix SDAA:6] step=14000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.09 (471s)
+[VIV-fix SDAA:6] step=16000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.02 (538s)
+[VIV-fix SDAA:6] step=18000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=0.72 (604s)
+[VIV-fix SDAA:6] step=20000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=0.93 (671s)
+
+[VIV-fix SDAA:6] === FINAL ===  A/D=0.0239 (ref=0.6) err=96.0% disp_rms/D=0.0154 Cd_mean=0.0000 Cl_rms=0.0000 St=0.04800000000000001 time=671s
+[VIV-fix SDAA:6] results saved to fsi_viv_fix_sdaa6.json
