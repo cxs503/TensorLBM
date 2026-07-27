@@ -25,3 +25,7 @@
 [sphere_re100_3d SDAA:27] step=800/3000 Cd_p=0.6872 Cd_f=0.4444 Cd_tot=1.1316 Cl=0.000035 (695s, 0.869s/step)
 [sphere_re100_3d SDAA:27] step=1000/3000 Cd_p=0.6861 Cd_f=0.4368 Cd_tot=1.1228 Cl=0.000055 (867s, 0.867s/step)
 [sphere_re100_3d SDAA:27] step=1200/3000 Cd_p=0.6829 Cd_f=0.4313 Cd_tot=1.1142 Cl=-0.000028 (1038s, 0.865s/step)
+[sphere_re100_3d SDAA:27] step=1400/3000 Cd_p=0.6790 Cd_f=0.4274 Cd_tot=1.1064 Cl=-0.000052 (1210s, 0.864s/step)
+[sphere_re100_3d SDAA:27] step=1600/3000 Cd_p=0.6755 Cd_f=0.4244 Cd_tot=1.0999 Cl=-0.000074 (1382s, 0.864s/step)
+[sphere_re100_3d SDAA:27] step=1800/3000 Cd_p=0.6726 Cd_f=0.4221 Cd_tot=1.0947 Cl=-0.000087 (1553s, 0.863s/step)
+[sphere_re100_3d SDAA:27] step=2000/3000 Cd_p=0.6712 Cd_f=0.4204 Cd_tot=1.0916 Cl=-0.000100 (1725s, 0.863s/step)

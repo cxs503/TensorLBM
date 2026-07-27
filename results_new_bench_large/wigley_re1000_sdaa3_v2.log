@@ -23,3 +23,10 @@
 [wigley_re1000 SDAA:3] init done (0.4s) mass=1280000.0
 [wigley_re1000 SDAA:3] step=500/5000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (74s)
 [wigley_re1000 SDAA:3] step=1000/5000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (147s)
+[wigley_re1000 SDAA:3] step=1500/5000 Cd_p=0.025438 Cd_f=0.042224 Cd_tot=0.067661 (230s)
+[wigley_re1000 SDAA:3] step=2000/5000 Cd_p=0.025084 Cd_f=0.040662 Cd_tot=0.065746 (313s)
+[wigley_re1000 SDAA:3] step=2500/5000 Cd_p=0.024902 Cd_f=0.040059 Cd_tot=0.064961 (395s)
+[wigley_re1000 SDAA:3] step=3000/5000 Cd_p=0.024805 Cd_f=0.039819 Cd_tot=0.064624 (478s)
+[wigley_re1000 SDAA:3] step=3500/5000 Cd_p=0.024754 Cd_f=0.039718 Cd_tot=0.064472 (561s)
+[wigley_re1000 SDAA:3] step=4000/5000 Cd_p=0.024704 Cd_f=0.039662 Cd_tot=0.064366 (643s)
+[wigley_re1000 SDAA:3] step=4500/5000 Cd_p=0.024681 Cd_f=0.039630 Cd_tot=0.064312 (726s)

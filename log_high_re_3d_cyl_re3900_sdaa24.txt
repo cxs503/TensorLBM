@@ -22,3 +22,4 @@
 [cyl_re3900_3d SDAA:24] init done (0.5s) mass=8000000.0
 [cyl_re3900_3d SDAA:24] step=500/5000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.001024 (491s, 0.982s/step)
 [cyl_re3900_3d SDAA:24] step=1000/5000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.004948 (975s, 0.975s/step)
+[cyl_re3900_3d SDAA:24] step=1500/5000 Cd_p=2.2956 Cd_f=0.0163 Cd_tot=2.3118 Cl=-0.064229 (1457s, 0.971s/step)
