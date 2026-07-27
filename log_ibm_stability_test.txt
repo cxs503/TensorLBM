@@ -25,3 +25,4 @@ TEST 1: Stationary cylinder Re=100
 [stationary] step=100/500 max_u=0.0337 Cd_tot=0.1278 Cd_ibm=0.1950 (629s)
 [stationary] step=200/500 max_u=0.0670 Cd_tot=0.8994 Cd_ibm=4.5984 (3111s)
 [stationary] step=300/500 max_u=0.1000 Cd_tot=1.3810 Cd_ibm=9.8238 (10751s)
+[stationary] step=400/500 max_u=0.1000 Cd_tot=1.4371 Cd_ibm=14.4377 (24824s)

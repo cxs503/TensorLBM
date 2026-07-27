@@ -488,10 +488,31 @@
       geo.scale(2, 1, 1);
       size = { x: 4, y: 2, z: 2 };
     } else if (shape === 'suboff') {
-      // SUBOFF: body of revolution, L/D ≈ 8.57
-      geo = new THREE.SphereGeometry(1, 48, 32);
-      geo.scale(4.285, 1, 1);
-      size = { x: 8.57, y: 2, z: 2 };
+      // SUBOFF: body of revolution (ellipsoid bow + cylinder + tapered stern)
+      // L/D ≈ 8.57, bow=0.233L, midbody=0.515L, stern=0.252L
+      var L = 8.57, R = 1.0;
+      var nAxial = 80, nCirc = 32;
+      var pts = [];
+      for (var i = 0; i <= nAxial; i++) {
+        var xi = i / nAxial;  // 0=bow, 1=stern
+        var x = (xi - 0.5) * L;  // centered
+        var r;
+        if (xi < 0.233) {
+          // Ellipsoidal bow
+          r = R * Math.sqrt(1 - Math.pow(1 - xi / 0.233, 2));
+        } else if (xi < 0.748) {
+          // Cylindrical midbody
+          r = R;
+        } else {
+          // Polynomial stern taper
+          var s = (xi - 0.748) / 0.252;
+          r = R * Math.sqrt(1 - s * s);
+        }
+        pts.push(new THREE.Vector2(Math.max(r, 0.01), x));
+      }
+      geo = new THREE.LatheGeometry(pts, nCirc);
+      geo.rotateZ(Math.PI / 2);  // axis along x
+      size = { x: L, y: 2 * R, z: 2 * R };
     } else {
       return;
     }
@@ -512,7 +533,7 @@
     );
     _scene.add(_bboxHelper);
 
-    _camera.position.set(0, 0, 6);
+    _camera.position.set(0, 0, Math.max(size.x, size.y, size.z) * 1.5);
     if (_controls) _controls.reset();
 
     var ph = _el('generic-placeholder');
