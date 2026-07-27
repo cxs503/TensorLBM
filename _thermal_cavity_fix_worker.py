@@ -38,7 +38,7 @@ def main():
         device=device,
         nx=100, ny=100, nz=4,
         Ra=1e4, Pr=0.71,
-        n_steps=15000,
+        n_steps=8000,
     )
 
     elapsed = time.time() - t0
