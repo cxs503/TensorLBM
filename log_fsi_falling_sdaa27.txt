@@ -19,3 +19,5 @@
 [Falling SDAA:27] near-wall cells=4302
 [Falling SDAA:27] SurfaceMesh.from_sphere built
 [Falling SDAA:27] init done (0.4s)
+[Falling SDAA:27] step=1000/15000 Cd=0.0005 v_y=-0.005775 pos_y=56.79 (211s)
+[Falling SDAA:27] step=2000/15000 Cd=0.0001 v_y=-0.012196 pos_y=47.15 (419s)

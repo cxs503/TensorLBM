@@ -29,3 +29,8 @@
 [suboff_re1000_opt SDAA:2] step=3000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (927s)
 [suboff_re1000_opt SDAA:2] step=3500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (1001s)
 [suboff_re1000_opt SDAA:2] step=4000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (1075s)
+[suboff_re1000_opt SDAA:2] step=4500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (1148s)
+[suboff_re1000_opt SDAA:2] step=5000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (1222s)
+[suboff_re1000_opt SDAA:2] step=5500/10000 Cd_p=0.005386 Cd_f=0.038961 Cd_tot=0.044347 (1302s)
+[suboff_re1000_opt SDAA:2] step=6000/10000 Cd_p=0.005388 Cd_f=0.038959 Cd_tot=0.044348 (1383s)
+[suboff_re1000_opt SDAA:2] step=6500/10000 Cd_p=0.005387 Cd_f=0.038959 Cd_tot=0.044345 (1463s)

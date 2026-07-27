@@ -14,13 +14,14 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[Rotating SDAA:26] nx=300 ny=300 nz=4 D=60 R=30 Re=1000 u_in=0.1 nu=6.000000e-03 tau=0.518000
-[Rotating SDAA:26] TSR=5.0 omega=0.016667 rad/step rot_period=377.0 steps steps/deg=1.05
-[Rotating SDAA:26] near-wall cells=1200
-[Rotating SDAA:26] SurfaceMesh.from_gradient built
-[Rotating SDAA:26] init done (0.5s)
-[Rotating SDAA:26] step=2000/20000 angle=109.9° Cd=1.5993 Cl=0.0171 torque=0.62 Cp=0.0073 (146s)
-[Rotating SDAA:26] DIVERGED at step 2528
-
-[Rotating SDAA:26] === FINAL ===  Cp_mean=nan Cp_max=nan (ref=0.45) err=nan% Cd_mean=nan torque_mean=nan time=185s
-[Rotating SDAA:26] results saved to fsi_rotating_sdaa26.json
+[Rotating SDAA:26] nx=300 ny=300 nz=4 D=60 R=30 Re=1000 u_in=0.05 nu=3.000000e-03 tau=0.509000
+[Rotating SDAA:26] TSR=5.0 omega=0.008333 rad/step (fixed-mask quasi-steady)
+Traceback (most recent call last):
+  File "/root/TensorLBM_dev/_fsi_rotating_worker.py", line 272, in <module>
+    run_rotating(dev, out)
+  File "/root/TensorLBM_dev/_fsi_rotating_worker.py", line 134, in run_rotating
+    solid = build_turbine_mask(nx, ny, nz, cx, cy, R_blade, n_blades,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/TensorLBM_dev/_fsi_rotating_worker.py", line 83, in build_turbine_mask
+    blade |= (xb >= -R_blade) & (xb <= R_blade) & (abs(yb) <= blade_width / 2) & (r <= R_blade)
+RuntimeError: "bitwise_or_cpu" not implemented for 'Float'
