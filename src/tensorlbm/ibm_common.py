@@ -323,8 +323,9 @@ def ibm_direct_forcing_3d_common(
     u_target: torch.Tensor,
     *,
     lattice: IBMLatticeName = "D3Q19",
-    kernel: IBMKernelName = "hat",
+    kernel: IBMKernelName = "4pt",
     markers: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
+    tau: float | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the direct-forcing IBM body force and apply it to ``f``.
 
@@ -334,7 +335,8 @@ def ibm_direct_forcing_3d_common(
     2. Resolves marker positions (from ``markers`` or derived from ``mask``).
     3. Broadcasts ``u_target`` to per-marker target velocities.
     4. Calls the validated :func:`ibm_direct_forcing_3d` kernel.
-    5. Applies the Guo body-force correction to ``f`` (D3Q19 or D3Q27 aware).
+    5. Applies the Guo body-force correction to ``f`` (D3Q19 or D3Q27 aware),
+       including the ``(1 − 1/(2τ))`` Guo factor when ``tau`` is provided.
 
     Args:
         f:        Distribution tensor, shape ``(Q, nz, ny, nx)``.
@@ -343,9 +345,12 @@ def ibm_direct_forcing_3d_common(
                   ``(N, 3)``.
         lattice:  ``"D3Q19"`` or ``"D3Q27"``.
         kernel:   Delta kernel: ``"hat"`` (2-point) or ``"4pt"`` (4-point).
+                  Default is ``"4pt"`` for stability.
         markers:  Optional explicit ``(marker_x, marker_y, marker_z)`` triple,
                   each of shape ``(N,)``.  When ``None``, surface markers are
                   derived from ``mask``.
+        tau:      Relaxation time τ.  When provided, the Guo forcing factor
+                  ``(1 − 1/(2τ))`` is applied.  Essential for stability.
 
     Returns:
         Tuple ``(force, f_corrected)``:
@@ -394,9 +399,9 @@ def ibm_direct_forcing_3d_common(
         ux, uy, uz, marker_x, marker_y, marker_z, ut_x, ut_y, ut_z, kernel=kernel_name
     )
 
-    # 6. Apply Guo body-force correction (lattice-aware).
+    # 6. Apply Guo body-force correction (lattice-aware, with Guo factor).
     f_corrected = ibm_apply_body_force_3d_common(
-        f, fx_grid, fy_grid, fz_grid, lattice=lattice_name
+        f, fx_grid, fy_grid, fz_grid, lattice=lattice_name, tau=tau
     )
 
     force = torch.stack([fx_grid, fy_grid, fz_grid], dim=0)
@@ -628,6 +633,72 @@ def compute_ibm_drag_from_markers(
 # --------------------------------------------------------------------------- #
 
 
+def _ibm_force_spread_3d_vec(
+    marker_fx: torch.Tensor,
+    marker_fy: torch.Tensor,
+    marker_fz: torch.Tensor,
+    marker_x: torch.Tensor,
+    marker_y: torch.Tensor,
+    marker_z: torch.Tensor,
+    nz: int,
+    ny: int,
+    nx: int,
+    kernel: str = "4pt",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Vectorized 3D force spreading (replaces Python loops).
+
+    Spreads per-marker forces onto the Eulerian grid using the delta kernel.
+    This is the vectorized counterpart of ``ibm_force_spread_3d`` in
+    :mod:`ibm`, using ``index_put_`` with ``accumulate=True`` for
+    scatter-add.
+    """
+    from .ibm import ibm_delta_hat, ibm_delta_4pt
+
+    device = marker_fx.device
+    n_markers = marker_x.shape[0]
+    if n_markers == 0:
+        z = torch.zeros((nz, ny, nx), dtype=marker_fx.dtype, device=device)
+        return z, z.clone(), z.clone()
+
+    delta_fn = ibm_delta_hat if kernel == "hat" else ibm_delta_4pt
+    support = 2 if kernel == "hat" else 4
+    half_s = support // 2
+
+    ix0 = (torch.floor(marker_x) - half_s + 1).long()
+    iy0 = (torch.floor(marker_y) - half_s + 1).long()
+    iz0 = (torch.floor(marker_z) - half_s + 1).long()
+
+    offsets = torch.arange(support, device=device)
+    ix_all = (ix0.unsqueeze(1) + offsets.unsqueeze(0)) % nx
+    iy_all = (iy0.unsqueeze(1) + offsets.unsqueeze(0)) % ny
+    iz_all = (iz0.unsqueeze(1) + offsets.unsqueeze(0)) % nz
+
+    rx_all = (ix0.unsqueeze(1) + offsets.unsqueeze(0)).float() - marker_x.unsqueeze(1)
+    ry_all = (iy0.unsqueeze(1) + offsets.unsqueeze(0)).float() - marker_y.unsqueeze(1)
+    rz_all = (iz0.unsqueeze(1) + offsets.unsqueeze(0)).float() - marker_z.unsqueeze(1)
+
+    wx_all = delta_fn(rx_all)
+    wy_all = delta_fn(ry_all)
+    wz_all = delta_fn(rz_all)
+
+    fx_grid = torch.zeros(nz, ny, nx, dtype=marker_fx.dtype, device=device)
+    fy_grid = torch.zeros(nz, ny, nx, dtype=marker_fy.dtype, device=device)
+    fz_grid = torch.zeros(nz, ny, nx, dtype=marker_fz.dtype, device=device)
+
+    for di in range(support):
+        for dj in range(support):
+            for dk in range(support):
+                w = wx_all[:, di] * wy_all[:, dj] * wz_all[:, dk]
+                ix = ix_all[:, di]
+                iy = iy_all[:, dj]
+                iz = iz_all[:, dk]
+                fx_grid.index_put_((iz, iy, ix), w * marker_fx, accumulate=True)
+                fy_grid.index_put_((iz, iy, ix), w * marker_fy, accumulate=True)
+                fz_grid.index_put_((iz, iy, ix), w * marker_fz, accumulate=True)
+
+    return fx_grid, fy_grid, fz_grid
+
+
 def ibm_step_correct(
     f: torch.Tensor,
     collide_fn: Callable,
@@ -639,68 +710,99 @@ def ibm_step_correct(
     u_target_fn: Callable[[int], tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
     *,
     lattice: IBMLatticeName = "D3Q19",
-    kernel: IBMKernelName = "hat",
+    kernel: IBMKernelName = "4pt",
     correct_mass_fn: Callable | None = None,
     target_mass: float | None = None,
     step: int = 0,
     mass_interval: int = 200,
+    ramp_steps: int = 1000,
+    n_force_iter: int = 4,
+    force_clip: float | None = 0.05,
     **collide_kwargs,
 ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]:
     """One LBM step with IBM direct forcing instead of bounce-back.
 
-    Order of operations:
-      1. Collision (all cells — no NoDynamics, IBM handles the body)
-      2. IBM: interpolate velocity at markers → compute direct-forcing →
-         spread to grid → apply Guo body-force correction
-      3. Streaming
-      4. Far-field BC (without bounce-back on solid)
-      5. Mass correction (optional, every mass_interval steps)
+    **Stability measures** (based on mature IBM-LBM implementations):
 
-    Unlike ``lbm_step_correct`` (which uses bounce-back + NoDynamics), this
-    step does NOT enforce no-slip via bounce-back.  Instead, the IBM force
-    drives the fluid velocity at marker positions to match the target (solid)
-    velocity.  This allows moving bodies without rebuilding the solid mask.
+    1. **NoDynamics** for solid cells — solid cells are restored to their
+       pre-collision state after collision, preventing non-physical
+       distributions that corrupt the IBM velocity interpolation.
+    2. **Guo forcing factor** ``(1 − 1/(2τ))`` — the body force is scaled
+       by this factor to account for discrete lattice effects.  Without it,
+       the force overshoots by ~8× for typical τ≈0.57.
+    3. **4-point Peskin kernel** (default) — smoother forces than the
+       2-point hat kernel, with 4³=64 cell support vs 2³=8.
+    4. **Velocity ramp** — the free-stream velocity and target velocity are
+       linearly ramped from 0 to full over ``ramp_steps`` steps to avoid
+       large initial forces.
+    5. **Multi-direct forcing (MDM)** — the IBM force is applied
+       ``n_force_iter`` times per step, re-interpolating the velocity after
+       each application.  This improves no-slip enforcement (Lai & Peskin
+       2000).
+    6. **Force clamping** — per-marker force is clamped to
+       ``[-force_clip, force_clip]`` to prevent runaway forces.
+
+    Order of operations:
+      1. Save pre-collision state
+      2. Collision (all cells)
+      3. NoDynamics: restore solid cells to pre-collision state
+      4. IBM: interpolate velocity → compute force → spread → Guo correction
+         (repeated ``n_force_iter`` times for multi-direct forcing)
+      5. Streaming
+      6. Far-field BC
+      7. Mass correction (optional, every mass_interval steps)
 
     Args:
         f: Distribution tensor (Q, nz, ny, nx).
         collide_fn: Collision function (e.g., collide_mrt3d).
         tau: Relaxation time.
-        solid: Boolean solid mask (nz, ny, nx) — used for mass correction
-            and optional NoDynamics, NOT for bounce-back.
+        solid: Boolean solid mask (nz, ny, nx) — used for NoDynamics and
+            mass correction, NOT for bounce-back.
         u_in: Free-stream velocity for far-field BC.
         far_field_bc_fn: Far-field BC function ``fn(f, u_in) -> f``.
         markers: Tuple (marker_x, marker_y, marker_z) each of shape (N,).
         u_target_fn: Callable ``fn(step) -> (ut_x, ut_y, ut_z)`` returning
-            per-marker target velocity tensors.  For a stationary body,
-            return zeros.  For a moving body, return the body velocity.
-            For a rotating body, return the rigid-body velocity at each marker.
+            per-marker target velocity tensors.
         lattice: ``"D3Q19"`` or ``"D3Q27"``.
-        kernel: Delta kernel: ``"hat"`` or ``"4pt"``.
+        kernel: Delta kernel: ``"4pt"`` (default, stable) or ``"hat"``.
         correct_mass_fn: Mass correction function (e.g., correct_mass3d).
         target_mass: Target total mass for correction.
-        step: Current step number (for mass correction interval).
+        step: Current step number (for mass correction and velocity ramp).
         mass_interval: Mass correction interval (default 200).
+        ramp_steps: Number of steps for linear velocity ramp (default 1000).
+            Set to 0 to disable ramping.
+        n_force_iter: Number of multi-direct forcing iterations (default 4).
+            Each iteration re-interpolates velocity and applies a correction.
+        force_clip: Maximum per-marker force magnitude (default 0.05).
+            Set to None to disable clamping.
         **collide_kwargs: Additional collision parameters (e.g., C_s=0.05).
 
     Returns:
         Tuple ``(f_new, marker_forces)`` where:
         - ``f_new``: Updated distribution tensor.
         - ``marker_forces``: Tuple (marker_fx, marker_fy, marker_fz) of the
-          IBM forces at each marker (shape (N,)).  Use
+          total IBM forces at each marker (shape (N,)).  Use
           :func:`compute_ibm_drag_from_markers` to get Cd/Cl.
     """
-    # 1. Collision (all cells)
+    # ---- 1. Save pre-collision state (for NoDynamics) ----
+    f_pre = f.clone()
+
+    # ---- 2. Collision (all cells) ----
     f = collide_fn(f, tau=tau, **collide_kwargs)
 
-    # 2. IBM direct forcing
+    # ---- 3. NoDynamics: restore solid cells to pre-collision state ----
+    # This prevents non-physical distributions in solid cells that would
+    # corrupt the IBM velocity interpolation at the boundary markers.
+    sm = solid.unsqueeze(0).expand_as(f)
+    f = torch.where(sm, f_pre, f)
+
+    # ---- 4. IBM direct forcing (with multi-direct forcing) ----
     lattice_name = _normalise_lattice(lattice)
     kernel_name = _normalise_kernel(kernel)
-    _, ux, uy, uz = macroscopic_velocity_3d(f, lattice=lattice_name)
 
     marker_x, marker_y, marker_z = markers
     ut_x, ut_y, ut_z = u_target_fn(step)
 
-    # Ensure target velocities are on the right device
     device = f.device
     ut_x = ut_x.to(device)
     ut_y = ut_y.to(device)
@@ -709,37 +811,71 @@ def ibm_step_correct(
     marker_y = marker_y.to(device)
     marker_z = marker_z.to(device)
 
-    # Compute IBM force (interpolate + spread) — use vectorized kernel
-    try:
-        from .ibm_vec import ibm_direct_forcing_3d_vec
-        fx_grid, fy_grid, fz_grid = ibm_direct_forcing_3d_vec(
-            ux, uy, uz, marker_x, marker_y, marker_z,
-            ut_x, ut_y, ut_z, kernel=kernel_name,
-        )
-        # Per-marker forces for drag: F = u_target - u_interpolated
-        # Use vectorized interpolation from ibm_vec
-        from .ibm import ibm_velocity_interpolate_3d
-        u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
-            ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name,
-        )
-    except Exception:
-        # Fallback to non-vectorized kernel
-        fx_grid, fy_grid, fz_grid = ibm_direct_forcing_3d(
-            ux, uy, uz, marker_x, marker_y, marker_z,
-            ut_x, ut_y, ut_z, kernel=kernel_name,
-        )
-        from .ibm import ibm_velocity_interpolate_3d
-        u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
-            ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name,
-        )
-    marker_fx = (ut_x - u_mx).detach()
-    marker_fy = (ut_y - u_my).detach()
-    marker_fz = (ut_z - u_mz).detach()
+    # Velocity ramp: scale both target velocity and free-stream by ramp factor
+    if ramp_steps > 0 and step < ramp_steps:
+        ramp = float(step + 1) / float(ramp_steps)
+        ut_x = ut_x * ramp
+        ut_y = ut_y * ramp
+        ut_z = ut_z * ramp
 
-    # Apply Guo body-force correction
-    f = ibm_apply_body_force_3d_common(f, fx_grid, fy_grid, fz_grid, lattice=lattice_name)
+    nz, ny, nx = f.shape[1:]
 
-    # 3. Streaming
+    # Guo forcing factor: (1 − 1/(2τ))
+    guo_factor = 1.0 - 1.0 / (2.0 * tau)
+
+    # Accumulate total marker forces for drag computation
+    marker_fx_total = torch.zeros_like(ut_x)
+    marker_fy_total = torch.zeros_like(ut_y)
+    marker_fz_total = torch.zeros_like(ut_z)
+
+    for _iter in range(n_force_iter):
+        # 4a. Extract macroscopic velocity from current f
+        rho, ux, uy, uz = macroscopic_velocity_3d(f, lattice=lattice_name)
+
+        # 4b. Interpolate velocity at marker positions
+        try:
+            from .ibm_vec import ibm_velocity_interpolate_3d_vec
+            u_mx, u_my, u_mz = ibm_velocity_interpolate_3d_vec(
+                ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name
+            )
+        except Exception:
+            from .ibm import ibm_velocity_interpolate_3d
+            u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
+                ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name
+            )
+
+        # 4c. Compute direct-forcing: F = ρ · (u_target − u_IB)
+        #     (ρ ≈ 1.0 for incompressible LBM, but we use the mean density
+        #      for correctness — avoids per-marker density interpolation cost)
+        rho_mean = rho.mean()
+        marker_fx = rho_mean * (ut_x - u_mx)
+        marker_fy = rho_mean * (ut_y - u_my)
+        marker_fz = rho_mean * (ut_z - u_mz)
+
+        # 4d. Force clamping (safety)
+        if force_clip is not None:
+            marker_fx = torch.clamp(marker_fx, -force_clip, force_clip)
+            marker_fy = torch.clamp(marker_fy, -force_clip, force_clip)
+            marker_fz = torch.clamp(marker_fz, -force_clip, force_clip)
+
+        # Accumulate for drag reporting
+        marker_fx_total += marker_fx.detach()
+        marker_fy_total += marker_fy.detach()
+        marker_fz_total += marker_fz.detach()
+
+        # 4e. Spread force to Eulerian grid (vectorized)
+        fx_grid, fy_grid, fz_grid = _ibm_force_spread_3d_vec(
+            marker_fx, marker_fy, marker_fz,
+            marker_x, marker_y, marker_z,
+            nz, ny, nx, kernel=kernel_name,
+        )
+
+        # 4f. Apply Guo body-force correction (with (1−1/2τ) factor)
+        f = ibm_apply_body_force_3d_common(
+            f, fx_grid, fy_grid, fz_grid, lattice=lattice_name, tau=tau
+        )
+
+    # ---- 5. Streaming ----
     if lattice_name == "D3Q19":
         from .solver3d import stream3d
         f = stream3d(f)
@@ -747,12 +883,16 @@ def ibm_step_correct(
         from .d3q27 import stream27_roll
         f = stream27_roll(f)
 
-    # 4. Far-field BC (no bounce-back on solid — IBM handles the body)
-    f = far_field_bc_fn(f, u_in)
+    # ---- 6. Far-field BC ----
+    # Scale u_in by ramp factor during startup
+    u_in_eff = u_in
+    if ramp_steps > 0 and step < ramp_steps:
+        u_in_eff = u_in * float(step + 1) / float(ramp_steps)
+    f = far_field_bc_fn(f, u_in_eff)
 
-    # 5. Mass correction
+    # ---- 7. Mass correction ----
     if correct_mass_fn is not None and target_mass is not None:
         if step % mass_interval == 0:
             f = correct_mass_fn(f, target_mass)
 
-    return f, (marker_fx, marker_fy, marker_fz)
+    return f, (marker_fx_total, marker_fy_total, marker_fz_total)
