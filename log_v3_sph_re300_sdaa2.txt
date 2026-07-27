@@ -23,3 +23,4 @@
 [sph_re300 SDAA:2] step=2000/5000 Cd=0.6935 Cl=-0.000037 (2151s, 1.076s/step)
 [sph_re300 SDAA:2] step=2500/5000 Cd=0.6770 Cl=-0.000089 (2684s, 1.073s/step)
 [sph_re300 SDAA:2] step=3000/5000 Cd=0.6659 Cl=-0.000182 (3208s, 1.069s/step)
+[sph_re300 SDAA:2] step=3500/5000 Cd=0.6581 Cl=-0.000233 (3714s, 1.061s/step)
