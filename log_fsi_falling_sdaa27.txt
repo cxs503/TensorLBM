@@ -33,3 +33,7 @@
 [Falling SDAA:27] step=12000/15000 Cd=0.0000 v_y=-0.076402 pos_y=-402.32 (2490s)
 [Falling SDAA:27] step=13000/15000 Cd=0.0000 v_y=-0.082823 pos_y=-482.58 (2697s)
 [Falling SDAA:27] step=14000/15000 Cd=0.0000 v_y=-0.089243 pos_y=-569.26 (2904s)
+[Falling SDAA:27] step=15000/15000 Cd=0.0000 v_y=-0.095664 pos_y=-662.36 (3111s)
+
+[Falling SDAA:27] === FINAL ===  v_terminal=0.086675 (ref=0.030000) err=188.9% Cd_terminal=0.0000 Cd_stokes=0.2400 Cd_exp=1.0900 time=3111s
+[Falling SDAA:27] results saved to fsi_falling_sdaa27.json
