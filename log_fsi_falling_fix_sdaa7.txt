@@ -14,13 +14,8 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[sphere_bfl_fix SDAA:0] nx=180 ny=180 nz=180 D=40 R=20.0 u_in=0.08 nu=3.200000e-02 tau=0.596000 Cs=0.05 dpS=4.021239e+00 Cd_ref=1.09 use_bfl=True
-[sphere_bfl_fix SDAA:0] BFL with FIXED q_wall (normal distance r-R, NOT avg per-direction q)
-[sphere_bfl_fix SDAA:0] solid cells: 33371
-[sphere_bfl_fix SDAA:0] near-wall cells: 4302
-[sphere_bfl_fix SDAA:0] computing BFL q-values (analytical sphere)...
-[sphere_bfl_fix SDAA:0] BFL q-field: 28722 links (7.7s) q=[0.0126, 1.0000] mean=0.3727
-  q_wall (FIXED): n_near=4302 q_min=0.1000 q_max=0.9045 q_mean=0.4023
-[sphere_bfl_fix SDAA:0] init done (8.2s), initial_mass=5832000.0
-[sphere_bfl_fix SDAA:0] step=1000 Cd_p=0.665890 Cd_f=0.736957 Cd_tot=1.402847 Cl=-0.000011 (1190s)
-[sphere_bfl_fix SDAA:0] step=1500 Cd_p=0.659903 Cd_f=0.721599 Cd_tot=1.381503 Cl=-0.000012 (1773s)
+[Falling-fix SDAA:7] nx=120 ny=120 nz=120 D=40 R=20.0 Re=100 nu=2.000000e-02 tau=0.560000
+[Falling-fix SDAA:7] m*=1.5 mass=96000.00 g_lbm=1.783508e-05 U_target=0.05
+[Falling-fix SDAA:7] solid cells=33401
+[Falling-fix SDAA:7] near-wall cells=4302
+[Falling-fix SDAA:7] init done (0.4s)

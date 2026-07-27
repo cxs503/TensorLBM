@@ -25,3 +25,10 @@
 [cyl_re200_bfl SDAA:3] init done (0.7s), initial_mass=576000.0
 [cyl_re200_bfl SDAA:3] step=1500 Cd_p=1.170374 Cd_f=0.343065 Cd_tot=1.513439 Cl=-0.002185 (167s)
 [cyl_re200_bfl SDAA:3] step=2000 Cd_p=1.165848 Cd_f=0.329885 Cd_tot=1.495734 Cl=-0.002829 (223s)
+[cyl_re200_bfl SDAA:3] step=2500 Cd_p=1.129988 Cd_f=0.319776 Cd_tot=1.449763 Cl=-0.002565 (278s)
+[cyl_re200_bfl SDAA:3] step=3000 Cd_p=1.108214 Cd_f=0.311726 Cd_tot=1.419940 Cl=-0.000875 (334s)
+[cyl_re200_bfl SDAA:3] step=3500 Cd_p=1.096786 Cd_f=0.307141 Cd_tot=1.403926 Cl=0.001893 (390s)
+[cyl_re200_bfl SDAA:3] step=4000 Cd_p=1.090626 Cd_f=0.304273 Cd_tot=1.394899 Cl=0.004516 (446s)
+[cyl_re200_bfl SDAA:3] step=4500 Cd_p=1.082730 Cd_f=0.302291 Cd_tot=1.385022 Cl=0.004772 (501s)
+[cyl_re200_bfl SDAA:3] step=5000 Cd_p=1.081929 Cd_f=0.301164 Cd_tot=1.383093 Cl=0.001633 (556s)
+[cyl_re200_bfl SDAA:3] DONE Cd_p=1.112174 Cd_f=0.313039 Cd_tot=1.425213 Cl=0.000727 (BB baseline=1.22, ref=1.15) err_vs_bb=16.8% err_vs_ref=23.9% time=556s

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""FSI VIV fix — SDAA:4.
+"""FSI VIV fix — SDAA:6.
 
-Fix: use m*=2, f_n = St*U/D (actual vortex shedding freq in lattice units,
-NOT f_n=0.2 which is 500x too high).  With f_n≈0.0004, k drops from 36383
-to ~0.03, allowing the structure to respond to vortex shedding.
+Fix: lower spring constant for VIV lock-in.
+The vortex shedding frequency is f_vortex = St*U/D = 0.2*0.1/48 ≈ 0.000417.
+Using f_n matching f_vortex gives k≈0.03 (was 4096 with f_n=0.15),
+allowing the structure to respond to vortex shedding.
 
+Cylinder Re=200, D=48, nx=400, ny=120, nz=4
+20000 steps
 Target: A/D > 0.1
 """
 from __future__ import annotations
@@ -201,6 +204,7 @@ def run_viv(device_id, output_path=None):
         "St": st,
         "A_ref": A_ref,
         "error_pct": float(err),
+        "target_A_over_D_gt_0.1": float(A_D) > 0.1,
         "finite": bool(torch.isfinite(f).all().item()),
         "elapsed_s": float(elapsed),
     }
@@ -213,6 +217,6 @@ def run_viv(device_id, output_path=None):
 
 
 if __name__ == "__main__":
-    dev = int(sys.argv[1]) if len(sys.argv) > 1 else 4
+    dev = int(sys.argv[1]) if len(sys.argv) > 1 else 6
     out = sys.argv[2] if len(sys.argv) > 2 else None
     run_viv(dev, out)

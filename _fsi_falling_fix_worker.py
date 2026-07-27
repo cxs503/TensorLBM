@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""FSI falling sphere fix — SDAA:5.
+"""FSI falling sphere fix — SDAA:7.
 
-Fix: use IBM direct forcing (ibm_common) instead of drag integration.
-The original approach used bounce-back with shift_solid_mask, but standard
-bounce-back doesn't account for wall velocity → Cd=0.
+Fix: use shift_solid_mask when displacement > 1 cell.
+Rebuild near-wall mesh after mask shift.
+Uses moving bounce-back (includes sphere velocity) + Galilean-invariant
+momentum exchange for drag computation.
 
-IBM direct forcing enforces no-slip at the moving boundary by applying
-a body force to the fluid. The reaction force gives the drag.
-
+Sphere Re=100, D=40, 120^3
+10000 steps
 Target: Cd > 0.5, v_terminal < 0.1
 """
 from __future__ import annotations
@@ -24,12 +24,12 @@ import numpy as np
 import torch
 import torch_sdaa  # noqa: F401
 
-from tensorlbm.boundaries3d import far_field_bc_3d, bounce_back_cells_3d
-from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.boundaries3d import bounce_back_cells_3d
+from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C, W, OPPOSITE
 from tensorlbm.solver3d import collide_mrt3d, stream3d, correct_mass3d
-from tensorlbm.ibm_common import ibm_direct_forcing_3d_common
-from tensorlbm.sixdof_common import RigidBodyState
-from tensorlbm.sixdof import SixDOFBody, step_sixdof, FluidForcesMoments
+from tensorlbm.drag_pressure import get_near_wall_3d
+from tensorlbm.fsi_common import shift_solid_mask
+from tensorlbm.momentum_exchange import momentum_exchange_galilean
 
 
 def build_sphere_mask(nx, ny, nz, cx, cy, cz, R, device):
@@ -43,12 +43,34 @@ def build_sphere_mask(nx, ny, nz, cx, cy, cz, R, device):
     return sphere
 
 
+def moving_bounce_back_3d(f, mask, u_wall, f_pre=None):
+    """Half-way bounce-back with wall velocity for moving boundaries.
+
+    f_new[i] = f_pre[opp[i]] - 6*w[i]*(c[i]·u_wall)  at solid cells
+    f_new[i] = f[i]                                     at fluid cells
+    """
+    device = f.device
+    opp = OPPOSITE.to(device)
+    src = f_pre if f_pre is not None else f
+    c = C.to(device).float()  # (19, 3)
+    w = W.to(device).float()  # (19,)
+
+    # Wall velocity correction: 6*w[i]*(c[i]·u_wall)
+    # u_wall is (3,) tensor
+    cu = (c * u_wall.unsqueeze(0)).sum(dim=1)  # (19,) c·u
+    correction = (6.0 * w * cu).view(19, 1, 1, 1)  # (19,1,1,1)
+
+    # At solid cells: f_pre[opp] - correction
+    bounced = src[opp] - correction
+    return torch.where(mask.unsqueeze(0), bounced, f)
+
+
 def run_falling(device_id, output_path=None):
     device = torch.device(f"sdaa:{device_id}")
     torch.sdaa.set_device(device_id)
 
-    nx, ny, nz = 80, 80, 80
-    D = 20
+    nx, ny, nz = 120, 120, 120
+    D = 40
     R = D / 2.0
     cx = nx // 2
     cy = ny // 2
@@ -57,7 +79,7 @@ def run_falling(device_id, output_path=None):
     u_ref = 0.05  # expected terminal velocity scale
     nu = u_ref * D / Re
     tau = 3.0 * nu + 0.5
-    n_steps = 8000
+    n_steps = 10000
     tag = f"[Falling-fix SDAA:{device_id}]"
 
     # Structural parameters
@@ -68,25 +90,24 @@ def run_falling(device_id, output_path=None):
     Cd_ref = 1.09
 
     # Gravity tuned for U_terminal ≈ 0.05
-    # v_term = sqrt(2*m*g / (rho*A*Cd)) → g = v^2 * rho * A * Cd / (2*m)
     U_target = 0.05
     g_lbm = U_target ** 2 * rho_f * A_front * Cd_ref / (2.0 * mass)
+
+    dpS_ref = 0.5 * rho_f * U_target ** 2 * A_front
 
     print(f"{tag} nx={nx} ny={ny} nz={nz} D={D} R={R} Re={Re} "
           f"nu={nu:.6e} tau={tau:.6f}", flush=True)
     print(f"{tag} m*={m_star} mass={mass:.2f} g_lbm={g_lbm:.6e} "
           f"U_target={U_target}", flush=True)
 
-    dpS_ref = 0.5 * rho_f * U_target ** 2 * A_front
-
     t0 = time.time()
     solid = build_sphere_mask(nx, ny, nz, cx, cy, cz, R, device)
     n_solid = int(solid.sum().item())
     print(f"{tag} solid cells={n_solid}", flush=True)
 
-    # BC: all walls no-slip (bounce-back), no far-field
-    bc_config = {'far_field_faces': [], 'periodic_faces': []}
-    far_field_fn = functools_partial = None  # not used
+    near = get_near_wall_3d(solid)
+    n_near = int(near.sum().item())
+    print(f"{tag} near-wall cells={n_near}", flush=True)
 
     # Initialise flow (quiescent)
     rho0 = torch.ones((nz, ny, nx), device=device)
@@ -95,81 +116,71 @@ def run_falling(device_id, output_path=None):
     im = float(rho0.sum().item())
     print(f"{tag} init done ({time.time()-t0:.1f}s)", flush=True)
 
-    # Rigid body with gravity in -y
-    body = SixDOFBody(
-        mass=mass,
-        ixx=0.4 * mass * R ** 2,
-        iyy=0.4 * mass * R ** 2,
-        izz=0.4 * mass * R ** 2,
-        gravity=(0.0, -g_lbm, 0.0),
-        fix_surge=True,
-        fix_heave=True,
-        fix_roll=True, fix_pitch=True, fix_yaw=True,
-    )
-    rb_state = RigidBodyState(
-        pos=torch.tensor([float(cx), float(cy), float(cz)], dtype=torch.float64),
-        vel=torch.tensor([0.0, 0.0, 0.0], dtype=torch.float64),
-        quat=torch.tensor([1.0, 0.0, 0.0, 0.0], dtype=torch.float64),
-        omega_body=torch.zeros(3, dtype=torch.float64),
-    )
+    # Sphere state (falling in -y direction)
+    pos_y = float(cy)
+    vel_y = 0.0
+    disp_y = 0.0  # accumulated displacement from initial position
 
     cd_hist = []
     vel_hist = []
     force_hist = []
 
     for step in range(1, n_steps + 1):
-        # 1. IBM direct forcing: enforce no-slip at sphere surface
-        #    Target velocity = sphere velocity (body falling in -y)
-        u_target = rb_state.vel.detach().to(f.dtype).clone()
+        # Sphere velocity as tensor
+        u_wall = torch.tensor([0.0, vel_y, 0.0], device=device, dtype=f.dtype)
 
-        force_on_fluid, f_corrected = ibm_direct_forcing_3d_common(
-            f, solid, u_target,
-            lattice="D3Q19", kernel="4pt", tau=tau,
-        )
-        f = f_corrected
-
-        # 2. Save pre-collision state for NoDynamics + half-way BB
+        # 1. Save pre-collision state for bounce-back
         f_pre = f.clone()
 
-        # 3. Collision
+        # 2. Collision (MRT for stability)
         f = collide_mrt3d(f, tau=tau)
 
-        # 4. NoDynamics: restore solid cells to pre-collision
-        sm = solid.unsqueeze(0).expand_as(f)
-        for q in range(f.shape[0]):
-            f[q] = torch.where(sm[q], f_pre[q], f[q])
+        # 3. Moving bounce-back at sphere surface (pre-stream, with wall velocity)
+        f = moving_bounce_back_3d(f, solid, u_wall, f_pre=f_pre)
 
-        # 5. Bounce-back at solid (half-way, before streaming)
-        f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
-
-        # 6. Streaming
+        # 4. Streaming
         f = stream3d(f)
 
-        # 7. Mass correction
+        # 5. Moving bounce-back at sphere surface (post-stream, with wall velocity)
+        f = moving_bounce_back_3d(f, solid, u_wall)
+
+        # 6. Mass correction
         if step % 200 == 0:
             f = correct_mass3d(f, im)
 
-        # 7. Compute drag force = reaction force from IBM
-        #    F_fluid_on_body = -sum(IBM force on fluid)
-        fy_drag = -float(force_on_fluid[1].sum().item())
-        fx_drag = -float(force_on_fluid[0].sum().item())
-        fz_drag = -float(force_on_fluid[2].sum().item())
-
-        # 8. Advance rigid body with drag + gravity
-        fluid = FluidForcesMoments(
-            fx=fx_drag, fy=fy_drag, fz=fz_drag,
-            mx=0.0, my=0.0, mz=0.0,
-        )
-        pos_new, vel_new, quat_new, omega_new = step_sixdof(
-            rb_state.pos, rb_state.vel, rb_state.quat, rb_state.omega_body,
-            fluid, body, 1.0,
-        )
-        rb_state = RigidBodyState(
-            pos=pos_new, vel=vel_new, quat=quat_new, omega_body=omega_new,
+        # 7. Compute drag force via Galilean-invariant momentum exchange
+        fx_drag, fy_drag, fz_drag = momentum_exchange_galilean(
+            f, solid, near, tau=tau,
         )
 
-        # 9. Compute Cd from drag force
-        v_y = abs(rb_state.vel[1].item())
+        # fy_drag is the force on the wall (drag-positive convention)
+        # For a falling sphere (moving in -y), drag opposes motion → positive fy_drag
+        # means drag in +y (upward), which is correct
+
+        # 8. Advance sphere: m*a = F_gravity + F_drag
+        #    gravity in -y, drag in +y (opposing motion)
+        a_y = (fy_drag - mass * g_lbm) / mass
+        vel_y += a_y * 1.0  # dt=1
+        pos_y += vel_y * 1.0
+        disp_y += vel_y * 1.0
+
+        # 9. Shift solid mask when displacement > 1 cell
+        dy_shift = int(round(disp_y))
+        if abs(dy_shift) >= 1:
+            solid = shift_solid_mask(solid, dx=0, dy=dy_shift, dz=0)
+            near = get_near_wall_3d(solid)
+            # Reset accumulated displacement (mask has been shifted)
+            disp_y -= dy_shift
+
+            # Fill newly freed cells with equilibrium
+            rho_cur, ux_cur, uy_cur, uz_cur = macroscopic3d(f)
+            feq_fill = equilibrium3d(
+                rho_cur, ux_cur, uy_cur, uz_cur, device=device,
+            )
+            f = torch.where(solid.unsqueeze(0), f, feq_fill)
+
+        # 10. Compute Cd
+        v_y = abs(vel_y)
         u_cur = max(v_y, 1e-6)
         dpS_cur = 0.5 * rho_f * u_cur ** 2 * A_front
         cd_cur = fy_drag / dpS_cur if dpS_cur > 1e-12 else 0.0
@@ -188,7 +199,7 @@ def run_falling(device_id, output_path=None):
             f_avg = sum(force_hist[-n_avg:]) / n_avg
             print(f"{tag} step={step}/{n_steps} Cd={cd_avg:.4f} "
                   f"v_y={v_avg:.6f} F_drag={f_avg:.4f} "
-                  f"({time.time()-t0:.0f}s)", flush=True)
+                  f"pos_y={pos_y:.2f} ({time.time()-t0:.0f}s)", flush=True)
 
     elapsed = time.time() - t0
 
@@ -218,9 +229,11 @@ def run_falling(device_id, output_path=None):
         "Cd_terminal": cd_terminal,
         "Cd_exp": Cd_ref,
         "error_pct": float(err),
+        "target_Cd_gt_0.5": cd_terminal > 0.5,
+        "target_v_lt_0.1": v_terminal < 0.1,
         "finite": bool(torch.isfinite(f).all().item()),
         "elapsed_s": float(elapsed),
-        "method": "IBM_direct_forcing",
+        "method": "moving_bounce_back_MEM",
     }
 
     if output_path:
@@ -231,6 +244,6 @@ def run_falling(device_id, output_path=None):
 
 
 if __name__ == "__main__":
-    dev = int(sys.argv[1]) if len(sys.argv) > 1 else 5
+    dev = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     out = sys.argv[2] if len(sys.argv) > 2 else None
     run_falling(dev, out)
