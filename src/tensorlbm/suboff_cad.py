@@ -127,16 +127,16 @@ class SuboffConfig:
     stern_exponent: float = 2.0
 
     # --- Sail (conning tower) ---
-    sail_x_frac: float = 0.44
-    sail_length_frac: float = 0.12
-    sail_height_frac: float = 0.14
-    sail_halfwidth_frac: float = 0.025
+    sail_x_frac: float = 0.254     # real SUBOFF: centre at ~25.4% L
+    sail_length_frac: float = 0.085  # real: 0.369 ft / 4.356 m
+    sail_height_frac: float = 0.106  # real: 1.508 ft above centreline
+    sail_halfwidth_frac: float = 0.008  # real: Zmax = 0.109 ft half-width
 
     # --- Cruciform stern appendages ---
-    fin_x_frac: float = 0.87
-    fin_length_frac: float = 0.10
-    fin_span_frac: float = 0.12
-    fin_thickness_frac: float = 0.015
+    fin_x_frac: float = 0.890      # real SUBOFF: trailing edge at 92% L, centre ~89%
+    fin_length_frac: float = 0.060  # real: chord 0.504–0.854 ft ≈ 0.06 L
+    fin_span_frac: float = 0.052    # real: 0.075–0.825 ft radial span ≈ 0.052 L
+    fin_thickness_frac: float = 0.008  # real: max NACA 0015 thickness ≈ 0.15*c/L
 
     # --- Metadata (read-only) ---
     _label: str = field(default="DARPA SUBOFF-inspired", init=False, repr=False)
