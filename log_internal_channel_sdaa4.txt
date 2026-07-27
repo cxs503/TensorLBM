@@ -22,10 +22,10 @@
 [channel SDAA:4] step  6000: u_bulk=0.042847 [4097s]
 [channel SDAA:4] step  8000: u_bulk=0.042697 [4329s]
 [channel SDAA:4] step 10000: u_bulk=0.042535 [4507s]
-el SDAA:4] step  6000: u_bulk=0.042847 [1139s]
-[channel SDAA:4] step  7000: u_bulk=0.042768 [1826s]
-[channel SDAA:4] step  8000: u_bulk=0.042697 [2507s]
-[channel SDAA:4] step  9000: u_bulk=0.042617 [3196s]
+[channel SDAA:4] step 12000: u_bulk=0.042379 [4686s]
+[channel SDAA:4] step 14000: u_bulk=0.042221 [4863s]
+[channel SDAA:4] step 16000: u_bulk=0.042044 [4988s]
+el SDAA:4] step  9000: u_bulk=0.042617 [3196s]
 [channel SDAA:4] step 10000: u_bulk=0.042535 [3888s]
 [channel SDAA:4] step 11000: u_bulk=0.042454 [4579s]
 [channel SDAA:4] step 12000: u_bulk=0.042379 [5005s]
@@ -33,3 +33,13 @@ el SDAA:4] step  6000: u_bulk=0.042847 [1139s]
 [channel SDAA:4] step 14000: u_bulk=0.042221 [5187s]
 [channel SDAA:4] step 15000: u_bulk=0.042135 [5277s]
 [channel SDAA:4] step 16000: u_bulk=0.042044 [5368s]
+[channel SDAA:4] step 17000: u_bulk=0.041948 [5459s]
+[channel SDAA:4] step 18000: u_bulk=0.041858 [5549s]
+[channel SDAA:4] step 19000: u_bulk=0.041772 [5640s]
+[channel SDAA:4] step 20000: u_bulk=0.041696 [5730s]
+
+[channel SDAA:4] === Results ===
+[channel SDAA:4] Cf=0.009868 (ref~0.007346)
+[channel SDAA:4] RMS vs log-law=3.7434
+[channel SDAA:4] Time=5730s
+[channel SDAA:4] Saved to results_internal_channel_sdaa4.json
