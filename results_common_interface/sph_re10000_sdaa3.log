@@ -22,3 +22,8 @@
 [sph_re10000 SDAA:3] init done (1.0s) mass=1728000.0
 [sph_re10000 SDAA:3] step=500/2500 Cd_p=1.1969 Cd_f=0.0133 Cd_tot=1.2103 (493s)
 [sph_re10000 SDAA:3] step=1000/2500 Cd_p=0.8500 Cd_f=0.0105 Cd_tot=0.8604 (984s)
+[sph_re10000 SDAA:3] step=1500/2500 Cd_p=0.8101 Cd_f=0.0100 Cd_tot=0.8201 (1481s)
+[sph_re10000 SDAA:3] step=2000/2500 Cd_p=0.8892 Cd_f=0.0091 Cd_tot=0.8983 (1983s)
+[sph_re10000 SDAA:3] step=2500/2500 Cd_p=0.8374 Cd_f=0.0090 Cd_tot=0.8464 (2484s)
+[sph_re10000 SDAA:3] DONE  Cd_p=0.8633  Cd_f=0.0090  Cd_tot=0.8724  St=None  (ref=0.40)  err=118.1%  time=2484s
+[sph_re10000 SDAA:3] Results → results_common_interface/sph_re10000_sdaa3.json

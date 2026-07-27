@@ -95,3 +95,14 @@
 [SDAA:28 SUBOFF-BBfix L=160 standard] step=500 Cd_p=0.018504 Cd_f=0.103356 Cd_tot=0.121860 (321s)
 [SDAA:28 SUBOFF-BBfix L=160 standard] step=1000 Cd_p=0.006626 Cd_f=0.059601 Cd_tot=0.066227 (639s)
 [SDAA:28 SUBOFF-BBfix L=160 standard] step=1500 Cd_p=0.006260 Cd_f=0.051971 Cd_tot=0.058232 (956s)
+[SDAA:28 SUBOFF-BBfix L=160 standard] step=2000 Cd_p=0.006134 Cd_f=0.048795 Cd_tot=0.054930 (1223s)
+[SDAA:28 SUBOFF-BBfix L=160 standard] step=2500 Cd_p=0.006116 Cd_f=0.047275 Cd_tot=0.053391 (1478s)
+[SDAA:28 SUBOFF-BBfix L=160 standard] step=3000 Cd_p=0.006116 Cd_f=0.046536 Cd_tot=0.052653 (1733s)
+
+[SDAA:28 SUBOFF-BBfix L=160 standard] === FINAL (Cf_ref=0.041995) ===
+[SDAA:28 SUBOFF-BBfix L=160 standard] Cd_p  = 0.006116
+[SDAA:28 SUBOFF-BBfix L=160 standard] Cd_f  = 0.046905
+[SDAA:28 SUBOFF-BBfix L=160 standard] Cd_tot= 0.053022  err=26.3%
+[SDAA:28 SUBOFF-BBfix L=160 standard] time=1733s
+[SDAA:28 SUBOFF-BBfix L=160 standard] saved to results_grid_conv_bbfix/suboff_L160_std_sdaa28.json
+=== SDAA:28 DONE ===

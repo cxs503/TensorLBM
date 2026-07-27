@@ -20,3 +20,5 @@
 [cube_re40000 SDAA:24] step=1000/10000 Cd=0.0000 Cl=0.000000 (893s, 0.893s/step)
 [cube_re40000 SDAA:24] step=2000/10000 Cd=0.0000 Cl=0.000000 (1790s, 0.895s/step)
 [cube_re40000 SDAA:24] step=3000/10000 Cd=1.0623 Cl=-3.278965 (2664s, 0.888s/step)
+[cube_re40000 SDAA:24] step=4000/10000 Cd=1.0865 Cl=-3.092488 (3519s, 0.880s/step)
+[cube_re40000 SDAA:24] step=5000/10000 Cd=1.0654 Cl=-2.821364 (4369s, 0.874s/step)
