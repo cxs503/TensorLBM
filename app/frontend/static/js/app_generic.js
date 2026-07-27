@@ -743,18 +743,35 @@
   }
 
   function _handleWSMessage(msg) {
-    var type = msg.type || msg.event || '';
+    var type = msg.type || msg.event || msg.kind || '';
     var step = msg.step || msg.timestep || 0;
 
     // Status update
-    if (type === 'status' || type === 'job_status') {
+    if (type === 'status' || type === 'job_status' || type === 'generic_run_setup') {
       _updateJobStatus(msg.status || msg.job_status || 'running', step, msg);
     }
 
-    // Metrics update (Cd, Cl, St, forces)
-    if (type === 'metrics' || type === 'force' || type === 'diagnostics' || msg.cd !== undefined) {
-      _updateCharts(step, msg);
-      _updateForceDecomposition(msg);
+    // Metrics update (Cd, Cl, St, forces) — handle both camelCase and PascalCase
+    var hasMetrics = type === 'metrics' || type === 'force' || type === 'diagnostics' || type === 'generic_run_step'
+      || msg.cd !== undefined || msg.Cd_total !== undefined || msg.Cd_pressure !== undefined;
+    if (hasMetrics) {
+      // Normalize keys: backend sends PascalCase (Cd_pressure, Cd_total, Cl, St)
+      var normalized = {
+        step: step,
+        cd: msg.cd !== undefined ? msg.cd : msg.Cd_total,
+        cd_p: msg.cd_p !== undefined ? msg.cd_p : msg.Cd_pressure,
+        cd_f: msg.cd_f !== undefined ? msg.cd_f : msg.Cd_friction,
+        cd_total: msg.cd_total !== undefined ? msg.cd_total : msg.Cd_total,
+        Cl: msg.Cl !== undefined ? msg.Cl : msg.cl,
+        St: msg.St !== undefined ? msg.St : msg.st,
+      };
+      _updateCharts(step, normalized);
+      _updateForceDecomposition(normalized);
+      // Progress from step/total_steps
+      if (msg.total_steps) {
+        var pct = (step / msg.total_steps) * 100;
+        _updateProgress(pct, step);
+      }
     }
 
     // Progress
