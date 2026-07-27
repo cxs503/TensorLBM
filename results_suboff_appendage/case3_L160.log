@@ -31,3 +31,21 @@
 [SDAA:2 C3 bare_hull L=160] step=4500 Cd_p=0.008152 Cd_f=0.044753 Cd_tot=0.052904 Cl=-0.000001 (2310s)
 [SDAA:2 C3 bare_hull L=160] step=5000 Cd_p=0.008199 Cd_f=0.044719 Cd_tot=0.052918 Cl=-0.000010 (2566s)
 [SDAA:2 C3 bare_hull L=160] step=5500 Cd_p=0.008131 Cd_f=0.044700 Cd_tot=0.052831 Cl=-0.000001 (2821s)
+[SDAA:2 C3 bare_hull L=160] step=6000 Cd_p=0.008137 Cd_f=0.044676 Cd_tot=0.052814 Cl=-0.000010 (3076s)
+[SDAA:2 C3 bare_hull L=160] step=6500 Cd_p=0.008117 Cd_f=0.044665 Cd_tot=0.052783 Cl=-0.000001 (3331s)
+[SDAA:2 C3 bare_hull L=160] step=7000 Cd_p=0.008131 Cd_f=0.044658 Cd_tot=0.052789 Cl=-0.000010 (3586s)
+[SDAA:2 C3 bare_hull L=160] step=7500 Cd_p=0.008114 Cd_f=0.044653 Cd_tot=0.052767 Cl=-0.000001 (3842s)
+[SDAA:2 C3 bare_hull L=160] step=8000 Cd_p=0.008129 Cd_f=0.044650 Cd_tot=0.052779 Cl=-0.000010 (4096s)
+[SDAA:2 C3 bare_hull L=160] step=8500 Cd_p=0.008113 Cd_f=0.044648 Cd_tot=0.052762 Cl=-0.000002 (4351s)
+[SDAA:2 C3 bare_hull L=160] step=9000 Cd_p=0.008128 Cd_f=0.044647 Cd_tot=0.052775 Cl=-0.000009 (4606s)
+[SDAA:2 C3 bare_hull L=160] step=9500 Cd_p=0.008114 Cd_f=0.044647 Cd_tot=0.052760 Cl=-0.000002 (4861s)
+[SDAA:2 C3 bare_hull L=160] step=10000 Cd_p=0.008127 Cd_f=0.044646 Cd_tot=0.052774 Cl=-0.000009 (5115s)
+
+[SDAA:2 C3 bare_hull L=160] === FINAL (Cd_ref=0.041995) ===
+[SDAA:2 C3 bare_hull L=160] Cd_p   = 0.008131
+[SDAA:2 C3 bare_hull L=160] Cd_f   = 0.044700
+[SDAA:2 C3 bare_hull L=160] Cd_tot = 0.052831
+[SDAA:2 C3 bare_hull L=160] Cl     = -0.000001
+[SDAA:2 C3 bare_hull L=160] St     = 3.111630
+[SDAA:2 C3 bare_hull L=160] err    = 25.8%  time=5115s
+[SDAA:2 C3 bare_hull L=160] saved to results_suboff_appendage/case3_L160.json
