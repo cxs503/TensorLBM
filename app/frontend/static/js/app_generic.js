@@ -43,6 +43,12 @@
   var _fieldAxis = 'z';
   var _wsReconnectTimer = null;
   var _wsClosedByUser = false;
+  var _geoSource = 'stl';        // 'stl' or 'parametric'
+  var _paramShape = 'sphere';   // 'sphere','cylinder','ellipsoid','suboff'
+  var _evoTimer = null;          // flow-field evolution poll timer
+  var _evoCanvas = null;
+  var _evoCtx = null;
+  var _evoRunning = false;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -381,6 +387,150 @@
     if (e) e.value = v;
   }
 
+  // ── Parametric geometry source ──────────────────────────────────────────
+
+  function _onGeometrySourceChange() {
+    var stlRadio = _el('generic-geo-stl');
+    _geoSource = stlRadio && stlRadio.checked ? 'stl' : 'parametric';
+    var stlSection = _el('generic-stl-section');
+    var paramOpts = _el('generic-param-opts');
+    if (stlSection) stlSection.style.display = _geoSource === 'stl' ? '' : 'none';
+    if (paramOpts) paramOpts.style.display = _geoSource === 'parametric' ? '' : 'none';
+    if (_geoSource === 'parametric') {
+      _onParamShapeChange();
+    } else {
+      // Restore STL placeholder state
+      var ph = _el('generic-placeholder');
+      if (ph) ph.style.display = _stlMesh ? 'none' : '';
+      _setHTML('generic-mesh-info', _stlGeo
+        ? '<span class="text-muted small">STL loaded</span>'
+        : '<span class="text-muted small">No STL loaded</span>');
+    }
+  }
+
+  function _onParamShapeChange() {
+    var shapeSel = _el('generic-param-shape');
+    _paramShape = shapeSel ? shapeSel.value : 'sphere';
+    var hullWrap = _el('generic-hull-type-wrap');
+    var lengthWrap = _el('generic-param-length-wrap');
+
+    // Show hull_type only for suboff
+    if (hullWrap) hullWrap.style.display = _paramShape === 'suboff' ? '' : 'none';
+    // Show length for cylinder, ellipsoid, suboff
+    var showLen = (_paramShape === 'cylinder' || _paramShape === 'ellipsoid' || _paramShape === 'suboff');
+    if (lengthWrap) lengthWrap.style.display = showLen ? '' : 'none';
+
+    // Pre-fill optimal defaults for SUBOFF
+    if (_paramShape === 'suboff') {
+      _applySuboffDefaults();
+    }
+
+    // Update param info text
+    var info = _el('generic-param-info');
+    if (info) {
+      var descs = {
+        sphere: 'Sphere: drag benchmark (Re vs Cd).',
+        cylinder: 'Cylinder: vortex shedding (Cd, Cl, St).',
+        ellipsoid: 'Ellipsoid: 3D bluff body.',
+        suboff: 'SUBOFF: submarine hull benchmark (4L domain, Re=1000).',
+      };
+      info.textContent = descs[_paramShape] || '';
+    }
+
+    // Load 3D preview
+    _loadParametricPreview(_paramShape);
+  }
+
+  function _applySuboffDefaults() {
+    // SUBOFF optimal parameters (verified ~2.7% error at 4L domain)
+    _setVal('generic-re', 1000);
+    _setVal('generic-u-in', 0.06);
+    _setVal('generic-density', 1.0);
+    _setVal('generic-viscosity', 0.0048);
+    // Solver
+    var coll = _el('generic-collision');
+    if (coll) coll.value = 'mrt_smag';
+    _setVal('generic-cs', 0.05);
+    _setVal('generic-steps', 10000);
+    _setVal('generic-warmup', 5000);
+    // Domain: 4L (320×120×120), manual (not auto)
+    var autoCb = _el('generic-auto-domain');
+    if (autoCb) {
+      autoCb.checked = false;
+      var manual = _el('generic-domain-manual');
+      if (manual) manual.style.display = '';
+    }
+    _setVal('generic-nx', 320);
+    _setVal('generic-ny', 120);
+    _setVal('generic-nz', 120);
+    // Param dims
+    _setVal('generic-param-length', 80);
+    _setVal('generic-param-radius', Math.round(80 / (2 * 8.57))); // L/D=8.57
+    showToast('SUBOFF optimal defaults applied (Re=1000, 4L domain)', 'info');
+  }
+
+  function _loadParametricPreview(shape) {
+    _initThree();
+    if (!_scene) return;
+    // Remove existing mesh + bbox
+    if (_stlMesh) { _scene.remove(_stlMesh); _stlMesh.geometry.dispose(); _stlMesh = null; }
+    if (_bboxHelper) { _scene.remove(_bboxHelper); _bboxHelper = null; }
+
+    var geo, size;
+    if (shape === 'sphere') {
+      geo = new THREE.SphereGeometry(1, 32, 24);
+      size = { x: 2, y: 2, z: 2 };
+    } else if (shape === 'cylinder') {
+      geo = new THREE.CylinderGeometry(0.5, 0.5, 2, 32);
+      size = { x: 1, y: 2, z: 1 };
+    } else if (shape === 'ellipsoid') {
+      geo = new THREE.SphereGeometry(1, 32, 24);
+      geo.scale(2, 1, 1);
+      size = { x: 4, y: 2, z: 2 };
+    } else if (shape === 'suboff') {
+      // SUBOFF: body of revolution, L/D ≈ 8.57
+      geo = new THREE.SphereGeometry(1, 48, 32);
+      geo.scale(4.285, 1, 1);
+      size = { x: 8.57, y: 2, z: 2 };
+    } else {
+      return;
+    }
+
+    var mat = new THREE.MeshPhongMaterial({
+      color: 0x4488cc, specular: 0x224466, shininess: 60,
+      side: THREE.DoubleSide, transparent: true, opacity: 0.92,
+    });
+    _stlMesh = new THREE.Mesh(geo, mat);
+    _scene.add(_stlMesh);
+
+    // Bounding box wireframe
+    var bboxGeo = new THREE.BoxGeometry(size.x, size.y, size.z);
+    var bboxEdges = new THREE.EdgesGeometry(bboxGeo);
+    _bboxHelper = new THREE.LineSegments(
+      bboxEdges,
+      new THREE.LineBasicMaterial({ color: 0x22c55e, linewidth: 1 })
+    );
+    _scene.add(_bboxHelper);
+
+    _camera.position.set(0, 0, 6);
+    if (_controls) _controls.reset();
+
+    var ph = _el('generic-placeholder');
+    if (ph) ph.style.display = 'none';
+
+    // Mesh info
+    var nVerts = geo.attributes.position.count;
+    var nFaces = geo.index ? geo.index.count / 3 : nVerts / 3;
+    _stlGeo = { vertices: nVerts, faces: nFaces, size: size, volume: 0 };
+    _setHTML('generic-mesh-info',
+      '<table class="table table-sm table-borderless mb-0 small">' +
+      '<tr><th>Shape</th><td>' + escHtml(shape) + '</td></tr>' +
+      '<tr><th>Vertices</th><td>' + nVerts.toLocaleString() + '</td></tr>' +
+      '<tr><th>Bounding box</th><td>' + _fmt(size.x, 2) + ' × ' + _fmt(size.y, 2) + ' × ' + _fmt(size.z, 2) + '</td></tr>' +
+      '</table>'
+    );
+  }
+
   // ── Parameter collection ─────────────────────────────────────────────────
 
   function _collectParams() {
@@ -389,6 +539,25 @@
     document.querySelectorAll('.generic-field-cb:checked').forEach(function (cb) {
       outputFields.push(cb.value);
     });
+
+    // Geometry source + parametric shape info
+    var geoSource = _geoSource;
+    var paramShape = _paramShape;
+    var paramParams = {};
+    if (geoSource === 'parametric') {
+      paramParams.radius = _num('generic-param-radius', 20);
+      if (paramShape === 'cylinder' || paramShape === 'ellipsoid' || paramShape === 'suboff') {
+        paramParams.length = _num('generic-param-length', 80);
+      }
+      paramParams.axis = _el('generic-param-axis') ? _el('generic-param-axis').value : 'x';
+      if (paramShape === 'suboff') {
+        paramParams.hull_type = _el('generic-hull-type') ? _el('generic-hull-type').value : 'bare_hull';
+        // Pass domain dims so backend uses them
+        paramParams.nx = _num('generic-nx', 320);
+        paramParams.ny = _num('generic-ny', 120);
+        paramParams.nz = _num('generic-nz', 120);
+      }
+    }
 
     return {
       physics: {
@@ -404,6 +573,9 @@
         warmup: _num('generic-warmup', 2000),
       },
       geometry: {
+        source: geoSource,
+        shape: paramShape,
+        params: paramParams,
         nx: _num('generic-nx', 200),
         ny: _num('generic-ny', 100),
         nz: _num('generic-nz', 100),
@@ -424,13 +596,17 @@
   // ── Run submission ──────────────────────────────────────────────────────
 
   function _submitRun() {
-    if (!_stlFile) {
-      showToast('Please upload an STL file first', 'warning');
-      return;
-    }
     var params = _collectParams();
     var formData = new FormData();
-    formData.append('stl_file', _stlFile);
+
+    if (_geoSource === 'stl') {
+      if (!_stlFile) {
+        showToast('Please upload an STL file first (or switch to Parametric)', 'warning');
+        return;
+      }
+      formData.append('stl_file', _stlFile);
+    }
+    // For parametric, no file is appended; the backend detects source='parametric'
     formData.append('params', JSON.stringify(params));
 
     var btn = _el('generic-run-btn');
@@ -465,6 +641,8 @@
         _connectJobWS(data.job_id);
         // Also start REST polling as fallback
         _startPolling(data.job_id);
+        // Start flow field evolution polling
+        _startFieldEvolution(data.job_id);
       })
       .catch(function (e) {
         _setHTML('generic-run-status', '<span class="text-danger">Error: ' + escHtml(e.message) + '</span>');
@@ -492,6 +670,8 @@
         _setHTML('generic-run-status', '<span class="badge bg-secondary">cancelled</span>');
         _closeJobWS();
         _stopPolling();
+        _stopFieldEvolution();
+        _setHTML('generic-evo-status', '<span class="text-secondary">Cancelled</span>');
       })
       .catch(function (e) {
         showToast('Cancel failed: ' + e.message, 'danger');
@@ -574,6 +754,8 @@
       _setHTML('generic-run-status', '<span class="badge bg-danger">failed</span> ' + escHtml(msg.error || msg.message || ''));
       _closeJobWS();
       _stopPolling();
+      _stopFieldEvolution();
+      _setHTML('generic-evo-status', '<span class="text-danger">Failed</span>');
     }
   }
 
@@ -759,6 +941,7 @@
         if (data.status === 'failed' || data.status === 'cancelled') {
           _stopPolling();
           _closeJobWS();
+          _stopFieldEvolution();
         }
       })
       .catch(function () {});
@@ -769,12 +952,16 @@
   function _onJobComplete() {
     _stopPolling();
     _closeJobWS();
+    _stopFieldEvolution();
     _setHTML('generic-ws-status', '<span class="dot dot-completed"></span> Done');
+    _setHTML('generic-evo-status', '<span class="text-success">Completed</span>');
     var cancelBtn = _el('generic-cancel-btn');
     if (cancelBtn) cancelBtn.disabled = true;
     // Auto-load results
     _loadResults();
     _loadField('velocity');
+    // Final field evolution render
+    if (_currentJobId) _pollFieldEvolution(_currentJobId);
     showToast('Simulation completed', 'success');
   }
 
@@ -912,6 +1099,93 @@
     );
   }
 
+  // ── Flow field evolution (live polling during simulation) ────────────────
+
+  function _startFieldEvolution(jobId) {
+    _stopFieldEvolution();
+    _evoCanvas = _el('generic-evo-canvas');
+    _evoCtx = _evoCanvas ? _evoCanvas.getContext('2d') : null;
+    _evoRunning = true;
+    _setHTML('generic-evo-status', '<span class="text-warning"><span class="spinner-border spinner-border-sm"></span> Running</span>');
+    _setHTML('generic-evo-info', 'Polling for velocity field…');
+    // Poll immediately, then every 3 seconds
+    _pollFieldEvolution(jobId);
+    _evoTimer = setInterval(function () { _pollFieldEvolution(jobId); }, 3000);
+  }
+
+  function _stopFieldEvolution() {
+    _evoRunning = false;
+    if (_evoTimer) { clearInterval(_evoTimer); _evoTimer = null; }
+  }
+
+  function _pollFieldEvolution(jobId) {
+    if (!_evoRunning) return;
+    // Request velocity_magnitude field (backend stores under this key)
+    var url = RUN_ENDPOINT + '/' + encodeURIComponent(jobId) + '/fields/velocity_magnitude';
+    fetch(url)
+      .then(function (r) {
+        if (r.status === 409) {
+          // Job not yet completed — show running status, keep polling
+          _setHTML('generic-evo-info', 'Simulation running… field available on completion.');
+          return null;
+        }
+        if (r.status === 404) {
+          // Field not found — try 'velocity' as fallback
+          return fetch(RUN_ENDPOINT + '/' + encodeURIComponent(jobId) + '/fields/velocity')
+            .then(function (r2) { return r2.ok ? r2.json() : null; });
+        }
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        _renderFlowField(_evoCanvas, data);
+        var step = data.step || data.timestep || 'final';
+        _setHTML('generic-evo-step', 'Step ' + step);
+        _setHTML('generic-evo-info', 'Velocity magnitude (mid-plane slice)');
+        _setHTML('generic-evo-status', '<span class="text-success">Rendered</span>');
+      })
+      .catch(function () { /* silent retry */ });
+  }
+
+  function _renderFlowField(canvas, data) {
+    if (!canvas || !_evoCtx) return;
+    // Extract 2D grid from response
+    var grid = data.data || data.grid || data.values;
+    if (!Array.isArray(grid) || grid.length === 0) return;
+
+    var ny = grid.length;
+    var nx = grid[0].length;
+    canvas.width = nx;
+    canvas.height = ny;
+
+    // Find min/max for normalisation
+    var vmin = Infinity, vmax = -Infinity;
+    for (var i = 0; i < ny; i++) {
+      for (var j = 0; j < nx; j++) {
+        var v = grid[i][j];
+        if (v < vmin) vmin = v;
+        if (v > vmax) vmax = v;
+      }
+    }
+    var range = (vmax - vmin) || 1;
+
+    var imgData = _evoCtx.createImageData(nx, ny);
+    for (var i2 = 0; i2 < ny; i2++) {
+      for (var j2 = 0; j2 < nx; j2++) {
+        var val = grid[i2][j2];
+        var t = (val - vmin) / range;
+        var rgb = _turbo(t);
+        var idx = (i2 * nx + j2) * 4;
+        imgData.data[idx] = rgb[0];
+        imgData.data[idx + 1] = rgb[1];
+        imgData.data[idx + 2] = rgb[2];
+        imgData.data[idx + 3] = 255;
+      }
+    }
+    _evoCtx.putImageData(imgData, 0, 0);
+  }
+
   // ── Results summary ──────────────────────────────────────────────────────
 
   function _loadResults() {
@@ -1019,6 +1293,7 @@
     _currentJobId = null;
     _closeJobWS();
     _stopPolling();
+    _stopFieldEvolution();
     if (_stlMesh && _scene) { _scene.remove(_stlMesh); _stlMesh.geometry.dispose(); _stlMesh = null; }
     if (_bboxHelper && _scene) { _scene.remove(_bboxHelper); _bboxHelper = null; }
     var ph = _el('generic-placeholder');
@@ -1045,6 +1320,12 @@
     // Clear field canvas
     var canvas = _el('generic-field-canvas');
     if (canvas) { var ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    // Reset evolution panel
+    _setHTML('generic-evo-status', 'Idle');
+    _setHTML('generic-evo-info', 'Waiting for simulation…');
+    _setHTML('generic-evo-step', '');
+    var evoC = _el('generic-evo-canvas');
+    if (evoC) { var evoCtx2 = evoC.getContext('2d'); evoCtx2.clearRect(0, 0, evoC.width, evoC.height); }
     showToast('Cleared', 'info');
   }
 
@@ -1089,6 +1370,18 @@
         if (manual) manual.style.display = autoDomainCb.checked ? 'none' : '';
       });
     }
+
+    // Geometry source + parametric shape selectors
+    var geoStlRadio = _el('generic-geo-stl');
+    if (geoStlRadio) geoStlRadio.addEventListener('change', _onGeometrySourceChange);
+    var geoParamRadio = _el('generic-geo-param');
+    if (geoParamRadio) geoParamRadio.addEventListener('change', _onGeometrySourceChange);
+    var paramShapeSel = _el('generic-param-shape');
+    if (paramShapeSel) paramShapeSel.addEventListener('change', _onParamShapeChange);
+    var hullTypeSel = _el('generic-hull-type');
+    if (hullTypeSel) hullTypeSel.addEventListener('change', function () {
+      _loadParametricPreview('suboff');
+    });
 
     // Wrap showTab to init on tab enter
     var origShowTab = window.showTab;

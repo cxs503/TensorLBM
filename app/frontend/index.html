@@ -3029,7 +3029,7 @@
     <!-- GENERIC CFD (STL upload + params + run + real-time + field viz)  -->
     <!-- ================================================================ -->
     <div class="tab-panel" id="panel-generic">
-      <h4 class="mb-3"><i class="bi bi-box-seam"></i> <span data-i18n="generic.title">Generic CFD (STL)</span> <small class="text-muted">– upload geometry, configure, run, visualise</small></h4>
+      <h4 class="mb-3"><i class="bi bi-box-seam"></i> <span data-i18n="generic.title">Generic CFD</span> <small class="text-muted">– parametric or STL geometry, configure, run, visualise</small></h4>
 
       <!-- Workflow stepper -->
       <div class="wf-stepper mb-3">
@@ -3043,10 +3043,64 @@
       </div>
 
       <div class="row g-3">
-        <!-- ── LEFT: STL Upload + 3D Preview ── -->
+        <!-- ── LEFT: Geometry Source + 3D Preview + Evolution ── -->
         <div class="col-lg-7">
-          <!-- STL Upload -->
+          <!-- Geometry Source -->
           <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-shapes me-2"></i> <strong>Geometry Source</strong></div>
+            <div class="card-body">
+              <div class="btn-group w-100 mb-2" role="group">
+                <input type="radio" class="btn-check" name="generic-geo-source" id="generic-geo-stl" value="stl" checked>
+                <label class="btn btn-outline-primary btn-sm" for="generic-geo-stl"><i class="bi bi-upload"></i> STL Upload</label>
+                <input type="radio" class="btn-check" name="generic-geo-source" id="generic-geo-param" value="parametric">
+                <label class="btn btn-outline-primary btn-sm" for="generic-geo-param"><i class="bi bi-shapes"></i> Parametric</label>
+              </div>
+              <!-- Parametric options -->
+              <div id="generic-param-opts" style="display:none">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="small">Shape</label>
+                    <select class="form-select form-select-sm" id="generic-param-shape">
+                      <option value="sphere">Sphere</option>
+                      <option value="cylinder">Cylinder</option>
+                      <option value="ellipsoid">Ellipsoid</option>
+                      <option value="suboff">SUBOFF (submarine)</option>
+                    </select>
+                  </div>
+                  <div class="col-6" id="generic-hull-type-wrap" style="display:none">
+                    <label class="small">Hull type</label>
+                    <select class="form-select form-select-sm" id="generic-hull-type">
+                      <option value="bare_hull" selected>Bare hull</option>
+                      <option value="with_sail">With sail</option>
+                      <option value="full">Full (sail+stern)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row g-2 mt-1">
+                  <div class="col-4">
+                    <label class="small">Radius R</label>
+                    <input type="number" class="form-control form-control-sm" id="generic-param-radius" value="20" min="1" step="1" />
+                  </div>
+                  <div class="col-4" id="generic-param-length-wrap">
+                    <label class="small">Length L</label>
+                    <input type="number" class="form-control form-control-sm" id="generic-param-length" value="80" min="1" step="1" />
+                  </div>
+                  <div class="col-4">
+                    <label class="small">Axis</label>
+                    <select class="form-select form-select-sm" id="generic-param-axis">
+                      <option value="x" selected>X</option>
+                      <option value="y">Y</option>
+                      <option value="z">Z</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="small text-muted mt-2" id="generic-param-info">Select a shape to preview.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STL Upload (hidden when parametric) -->
+          <div class="card mb-3" id="generic-stl-section">
             <div class="card-header d-flex align-items-center">
               <i class="bi bi-upload me-2"></i> <strong>STL Upload</strong>
               <button class="btn btn-sm btn-outline-secondary ms-auto" id="generic-reset-btn" title="Reset all">
@@ -3085,7 +3139,27 @@
           <div class="card">
             <div class="card-header"><i class="bi bi-info-circle me-2"></i> Mesh Info</div>
             <div class="card-body" id="generic-mesh-info">
-              <span class="text-muted small">No STL loaded</span>
+              <span class="text-muted small">No geometry loaded</span>
+            </div>
+          </div>
+
+          <!-- Flow Field Evolution -->
+          <div class="card mb-3">
+            <div class="card-header d-flex align-items-center">
+              <i class="bi bi-water me-2"></i> <strong>Flow Field Evolution</strong>
+              <span class="ms-2 small text-muted" id="generic-evo-status">Idle</span>
+            </div>
+            <div class="card-body p-2">
+              <div class="text-center">
+                <canvas id="generic-evo-canvas" width="600" height="200" style="max-width:100%;border:1px solid #dee2e6;border-radius:.3rem;background:#000;"></canvas>
+              </div>
+              <div class="d-flex justify-content-between small mt-1">
+                <span id="generic-evo-info" class="text-muted">Waiting for simulation…</span>
+                <span id="generic-evo-step" class="text-muted"></span>
+              </div>
+              <!-- Colorbar legend -->
+              <div class="mt-1" style="height:10px;border-radius:3px;background:linear-gradient(to right, rgb(0,153,178), rgb(0,190,127), rgb(148,209,0), rgb(249,221,0), rgb(249,80,0), rgb(180,0,0));"></div>
+              <div class="d-flex justify-content-between small text-muted"><span>0</span><span>|u|</span></div>
             </div>
           </div>
         </div><!-- /left -->
