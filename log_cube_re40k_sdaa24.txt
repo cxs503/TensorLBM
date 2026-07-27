@@ -20,3 +20,7 @@
 [Cube SDAA:24] init done (0.8s)
 [Cube SDAA:24] step=1000/10000 Cd_p=0.5304 Cd_f=-0.0002 Cd=0.5302 Cl=0.863453 (616s)
 [Cube SDAA:24] step=2000/10000 Cd_p=2.1062 Cd_f=0.0002 Cd=2.1064 Cl=0.902671 (1217s)
+[Cube SDAA:24] DIVERGED at step 2559
+
+[Cube SDAA:24] === FINAL ===  Cd_p=nan Cd_f=nan Cd=nan (ref=1.1) err=nan% Cl=nan St=0.09378663540445487 time=1560s
+[Cube SDAA:24] saved to results_cube_re40k_sdaa24.json

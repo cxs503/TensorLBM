@@ -22,26 +22,8 @@
 [SDAA:21 DTMB5415] Cf_ITTC=0.075000 S_wetted=4755.7 dpS=8.560220e+00
 [SDAA:21 DTMB5415] dA stats: mean=1.1605 min=0.5902 max=2.5655 sum=4755.7
 [SDAA:21 DTMB5415] Normal orientation check: 50.0% outward (500/1000 sampled)
-[SDAA:21 DTMB5415] init done (0.5s) mass=1280000.0
-[SDAA:21 DTMB5415] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [75s]
-[SDAA:21 DTMB5415] step=1000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [149s]
-[SDAA:21 DTMB5415] step=1500 Cd_p=0.000070 Cd_f=0.055355 Cd_tot=0.055425 (ITTC=0.075000) [233s]
-[SDAA:21 DTMB5415] step=2000 Cd_p=0.000078 Cd_f=0.051997 Cd_tot=0.052074 (ITTC=0.075000) [348s]
-[SDAA:21 DTMB5415] step=2500 Cd_p=0.000087 Cd_f=0.050464 Cd_tot=0.050550 (ITTC=0.075000) [538s]
-[SDAA:21 DTMB5415] step=3000 Cd_p=0.000091 Cd_f=0.049718 Cd_tot=0.049810 (ITTC=0.075000) [706s]
-[SDAA:21 DTMB5415] step=3500 Cd_p=0.000098 Cd_f=0.049359 Cd_tot=0.049457 (ITTC=0.075000) [872s]
-[SDAA:21 DTMB5415] step=4000 Cd_p=0.000097 Cd_f=0.049182 Cd_tot=0.049279 (ITTC=0.075000) [1037s]
-[SDAA:21 DTMB5415] step=4500 Cd_p=0.000101 Cd_f=0.049097 Cd_tot=0.049198 (ITTC=0.075000) [1203s]
-[SDAA:21 DTMB5415] step=5000 Cd_p=0.000104 Cd_f=0.049057 Cd_tot=0.049161 (ITTC=0.075000) [1368s]
-
-============================================================
-[SDAA:21 DTMB5415] FINAL RESULTS
-============================================================
-  Cd_pressure  = 0.000102
-  Cd_friction  = 0.049077
-  Cd_total     = 0.049179
-  Cf_ITTC      = 0.075000  (err=34.4%)
-  S_wetted     = 4755.7
-  Wall time: 1368s (22.8 min)
-  Finite: True
-  Saved to results_bug29_dtmb5415_common_sdaa21.json
+[SDAA:21 DTMB5415] init done (0.4s) mass=1280000.0
+[SDAA:21 DTMB5415] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [74s]
+[SDAA:21 DTMB5415] step=1000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [148s]
+[SDAA:21 DTMB5415] step=1500 Cd_p=-0.000055 Cd_f=0.055355 Cd_tot=0.055299 (ITTC=0.075000) [231s]
+[SDAA:21 DTMB5415] step=2000 Cd_p=-0.000049 Cd_f=0.051997 Cd_tot=0.051947 (ITTC=0.075000) [314s]
