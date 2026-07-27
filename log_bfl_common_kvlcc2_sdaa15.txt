@@ -21,3 +21,4 @@
 [KVLCC2-Re1000-bfl SDAA:15] computing BFL q-values (generic voxelised)...
 [KVLCC2-Re1000-bfl SDAA:15] BFL q-field: 75076 links (0.1s) (q=0.5, generic voxelised)
 [KVLCC2-Re1000-bfl SDAA:15] init done (0.8s), initial_mass=4320000.0
+[KVLCC2-Re1000-bfl SDAA:15] step=1500 Cd_p=0.020359 Cd_f=0.133526 Cd_tot=0.153885 Cl=-0.000031 (1129s)

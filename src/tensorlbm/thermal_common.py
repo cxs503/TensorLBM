@@ -454,22 +454,21 @@ def thermal_dirichlet_wall_3d(
         Updated distribution (same shape).
     """
     g_new = g.clone()
-    # Create a single-cell equilibrium at T_wall (shape 7,1,1,1) for broadcasting
-    T_one = torch.tensor([T_wall], dtype=g.dtype, device=g.device).view(1, 1, 1)
-    zero_one = torch.zeros(1, 1, 1, dtype=g.dtype, device=g.device)
-    geq_wall = thermal_equilibrium_3d(T_one, zero_one, zero_one, zero_one)  # (7,1,1,1)
+    # Equilibrium at T_wall with zero velocity: g_eq = w_i * T_wall
+    w = _w_thermal(g.device).to(g.dtype)
+    geq_scalar = (w * T_wall).view(7, 1, 1, 1)  # (7,1,1,1) broadcastable to 3D slices
     if wall == "x-":
-        g_new[:, :, :, 0] = geq_wall
+        g_new[:, :, :, 0] = geq_scalar.squeeze(-1)
     elif wall == "x+":
-        g_new[:, :, :, -1] = geq_wall
+        g_new[:, :, :, -1] = geq_scalar.squeeze(-1)
     elif wall == "y-":
-        g_new[:, :, 0, :] = geq_wall
+        g_new[:, :, 0, :] = geq_scalar.squeeze(-1)
     elif wall == "y+":
-        g_new[:, :, -1, :] = geq_wall
+        g_new[:, :, -1, :] = geq_scalar.squeeze(-1)
     elif wall == "z-":
-        g_new[:, 0, :, :] = geq_wall
+        g_new[:, 0, :, :] = geq_scalar.squeeze(-1)
     elif wall == "z+":
-        g_new[:, -1, :, :] = geq_wall
+        g_new[:, -1, :, :] = geq_scalar.squeeze(-1)
     else:
         raise ValueError(f"wall must be x-/x+/y-/y+/z-/z+, got {wall!r}")
     return g_new

@@ -30,3 +30,10 @@
 [VIV SDAA:24] step=18000/30000 Cd_p=2.0089 Cd_f=0.2472 Cd=2.2561 Cl_rms=0.7055 disp_max=0.00 (586s)
 [VIV SDAA:24] step=20000/30000 Cd_p=2.0674 Cd_f=0.2459 Cd=2.3133 Cl_rms=1.0850 disp_max=0.00 (649s)
 [VIV SDAA:24] step=22000/30000 Cd_p=1.9633 Cd_f=0.2438 Cd=2.2071 Cl_rms=0.6600 disp_max=0.00 (713s)
+[VIV SDAA:24] step=24000/30000 Cd_p=2.1069 Cd_f=0.2482 Cd=2.3551 Cl_rms=1.0507 disp_max=0.00 (776s)
+[VIV SDAA:24] step=26000/30000 Cd_p=1.9736 Cd_f=0.2438 Cd=2.2173 Cl_rms=0.7442 disp_max=0.00 (839s)
+[VIV SDAA:24] step=28000/30000 Cd_p=2.0701 Cd_f=0.2482 Cd=2.3183 Cl_rms=0.9952 disp_max=0.00 (903s)
+[VIV SDAA:24] step=30000/30000 Cd_p=1.9993 Cd_f=0.2427 Cd=2.2419 Cl_rms=0.8615 disp_max=0.00 (966s)
+
+[VIV SDAA:24] === FINAL ===  A/D=0.0000 (ref=0.6) err=100.0% disp_rms/D=0.0000 Cd_mean=2.2762 Cl_rms=0.8967 St=0.30945425664148796 time=966s
+[VIV SDAA:24] results saved to fsi_viv_sdaa24.json
