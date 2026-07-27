@@ -1,0 +1,23 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Sph-Re100-bfl SDAA:13] nx=160 ny=120 nz=120 D=40 R=20.0 u_in=0.08 nu=3.200000e-02 tau=0.596000 Cs=0.05 dpS=4.021239e+00 Cd_ref=1.09 use_bfl=True
+[Sph-Re100-bfl SDAA:13] solid cells: 33371
+[Sph-Re100-bfl SDAA:13] near-wall cells: 4302
+[Sph-Re100-bfl SDAA:13] computing BFL q-values (analytical sphere)...
+[Sph-Re100-bfl SDAA:13] BFL q-field: 28722 links (2.8s) q=[0.0126, 1.0000] mean=0.3727
+  q_wall: n_near=4302 q_min=0.0369 q_max=0.7056 q_mean=0.3821
+[Sph-Re100-bfl SDAA:13] init done (3.2s), initial_mass=2304000.0

@@ -36,17 +36,36 @@ def lbm_step_correct(
     step: int = 0,
     mass_interval: int = 200,
     bounce_back_fn=None,
+    wall_treatment: str = "bb",
+    nu: float | None = None,
+    y_val: float = 1.0,
+    near_mask: torch.Tensor | None = None,
     **collide_kwargs,
 ) -> torch.Tensor:
-    """One correct LBM step with NoDynamics + half-way BB.
+    """One correct LBM step with NoDynamics + half-way BB or wall function.
 
-    Order of operations:
+    Order of operations depends on *wall_treatment*:
+
+    **BB mode** (``wall_treatment='bb'``, default):
       1. Collision (all cells)
       2. NoDynamics: restore solid cells to pre-collision
       3. Bounce-back at solid (BEFORE streaming → half-way)
       4. Streaming
-      5. Far-field BC (without obstacle_mask → don't touch solid)
-      6. Mass correction (optional, every mass_interval steps)
+      5. Far-field BC
+      6. Mass correction (optional)
+
+    **WF mode** (``wall_treatment='wf'``):
+      1. Collision (all cells)
+      2. NoDynamics: restore solid cells to pre-collision
+      3. Streaming (NO bounce-back before streaming)
+      4. Wall function (AFTER streaming → replaces BB)
+      5. Far-field BC
+      6. Mass correction (optional)
+
+    The WF mode uses the wall function from
+    :mod:`tensorlbm.wall_function_common` which applies a y+ threshold:
+    cells with ``y+ < 11.6`` get bounce-back (viscous sublayer), cells
+    with ``y+ >= 11.6`` get the log-law wall function (body force).
 
     Args:
         f: Distribution tensor (19, nz, ny, nx).
@@ -62,8 +81,12 @@ def lbm_step_correct(
         bounce_back_fn: Custom bounce-back function with signature
             ``fn(f, solid, f_pre) -> f``.  If None, uses
             ``bounce_back_cells_3d(f, solid, f_pre=f_pre)``.
-            Use this for moving-wall Couette (pass a partial that
-            binds top_wall_mask and u_top).
+            Only used when ``wall_treatment='bb'``.
+        wall_treatment: ``'bb'`` (bounce-back, default) or ``'wf'``
+            (wall function replaces BB).
+        nu: Kinematic viscosity (lattice units).  Required for WF mode.
+        y_val: Wall distance for wall function (default 1.0).
+        near_mask: Pre-computed near-wall mask (optional, for WF mode).
         **collide_kwargs: Additional collision parameters (e.g., C_s=0.05).
 
     Returns:
@@ -80,20 +103,40 @@ def lbm_step_correct(
     for q in range(f.shape[0]):
         f[q] = torch.where(sm[q], f_pre[q], f[q])
 
-    # 4. Half-way bounce-back (BEFORE streaming)
-    #    Bug fix: pass f_pre (pre-collision) for correct no-slip
-    #    Using post-collision f gives 16.66% u_max error
-    if bounce_back_fn is not None:
-        f = bounce_back_fn(f, solid, f_pre)
+    if wall_treatment == "wf":
+        # WF mode: collide → NoDynamics → stream → WF → BC
+        # Skip bounce-back before streaming
+
+        # 4. Streaming
+        from .solver3d import stream3d
+        f = stream3d(f)
+
+        # 5. Wall function (replaces BB, applied after streaming)
+        from .wall_function_common import apply_wall_function
+        if nu is None:
+            nu = (tau - 0.5) / 3.0
+        f, _diag = apply_wall_function(
+            f, solid, near_mask, nu=nu, y_val=y_val,
+            lattice="D3Q19",
+        )
+
+        # 6. Far-field BC
+        f = far_field_bc_fn(f, u_in)
+
     else:
-        f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
+        # BB mode: collide → NoDynamics → BB → stream → BC
+        # 4. Half-way bounce-back (BEFORE streaming)
+        if bounce_back_fn is not None:
+            f = bounce_back_fn(f, solid, f_pre)
+        else:
+            f = bounce_back_cells_3d(f, solid, f_pre=f_pre)
 
-    # 5. Streaming
-    from .solver3d import stream3d
-    f = stream3d(f)
+        # 5. Streaming
+        from .solver3d import stream3d
+        f = stream3d(f)
 
-    # 6. Far-field BC (without obstacle_mask → don't touch solid)
-    f = far_field_bc_fn(f, u_in)
+        # 6. Far-field BC (without obstacle_mask → don't touch solid)
+        f = far_field_bc_fn(f, u_in)
 
     # 7. Mass correction
     if correct_mass_fn is not None and target_mass is not None:

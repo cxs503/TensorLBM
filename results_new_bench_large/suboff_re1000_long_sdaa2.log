@@ -33,3 +33,23 @@
 [suboff_re1000_long SDAA:2] step=5000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (2369s)
 [suboff_re1000_long SDAA:2] step=5500/10000 Cd_p=0.006068 Cd_f=0.045796 Cd_tot=0.051864 (2623s)
 [suboff_re1000_long SDAA:2] step=6000/10000 Cd_p=0.006073 Cd_f=0.045767 Cd_tot=0.051840 (2876s)
+[suboff_re1000_long SDAA:2] step=6500/10000 Cd_p=0.006054 Cd_f=0.045753 Cd_tot=0.051807 (3130s)
+[suboff_re1000_long SDAA:2] step=7000/10000 Cd_p=0.006065 Cd_f=0.045744 Cd_tot=0.051809 (3383s)
+[suboff_re1000_long SDAA:2] step=7500/10000 Cd_p=0.006050 Cd_f=0.045737 Cd_tot=0.051787 (3636s)
+[suboff_re1000_long SDAA:2] step=8000/10000 Cd_p=0.006062 Cd_f=0.045733 Cd_tot=0.051796 (3890s)
+[suboff_re1000_long SDAA:2] step=8500/10000 Cd_p=0.006049 Cd_f=0.045731 Cd_tot=0.051780 (4143s)
+[suboff_re1000_long SDAA:2] step=9000/10000 Cd_p=0.006061 Cd_f=0.045729 Cd_tot=0.051791 (4397s)
+[suboff_re1000_long SDAA:2] step=9500/10000 Cd_p=0.006049 Cd_f=0.045728 Cd_tot=0.051778 (4744s)
+[suboff_re1000_long SDAA:2] step=10000/10000 Cd_p=0.006061 Cd_f=0.045728 Cd_tot=0.051789 (5105s)
+
+============================================================
+[suboff_re1000_long SDAA:2] FINAL RESULTS
+============================================================
+[suboff_re1000_long SDAA:2] Cd_p  = 0.006055
+[suboff_re1000_long SDAA:2] Cd_f  = 0.045729
+[suboff_re1000_long SDAA:2] Cd_tot= 0.051784
+[suboff_re1000_long SDAA:2] Cd_ref= 0.042000  err=23.3%
+[suboff_re1000_long SDAA:2] St    = 0.10258184422051185
+[suboff_re1000_long SDAA:2] time  = 5105s (85.1 min)
+[suboff_re1000_long SDAA:2] finite= True
+[suboff_re1000_long SDAA:2] Results → results_new_bench_large/suboff_re1000_long_sdaa2.json

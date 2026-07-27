@@ -1,0 +1,23 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[KVLCC2-Re1000-bfl SDAA:15] nx=300 ny=120 nz=120 L=80.0 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 Re=1000 use_bfl=True
+[KVLCC2-Re1000-bfl SDAA:15] solid cells: 30668  Cb_numerical=0.8874
+[KVLCC2-Re1000-bfl SDAA:15] dpS = 8.143008e+00 (D=draft=18.0)
+[KVLCC2-Re1000-bfl SDAA:15] near-wall cells: 14634
+[KVLCC2-Re1000-bfl SDAA:15] computing BFL q-values (generic voxelised)...
+[KVLCC2-Re1000-bfl SDAA:15] BFL q-field: 75076 links (0.1s) (q=0.5, generic voxelised)
+[KVLCC2-Re1000-bfl SDAA:15] init done (0.8s), initial_mass=4320000.0

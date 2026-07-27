@@ -1,0 +1,25 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[suboff_re1000_opt SDAA:2] suboff Re=1000 grid=200x80x80 u_in=0.06 nu=4.800000e-03 tau=0.514400 dpS=4.223004e+00
+[suboff_re1000_opt SDAA:2] collision=mrt_smag Cs=0.05 n_steps=10000 warmup=5000 avg_window=2000
+[suboff_re1000_opt SDAA:2] Cd_ref=0.042000 (Cf=0.042 (Blasius 1.328/sqrt(Re)))
+[suboff_re1000_opt SDAA:2] solid cells: 4651
+[suboff_re1000_opt SDAA:2] near-wall cells: 2050
+[suboff_re1000_opt SDAA:2] SurfaceMesh normals: from_suboff
+[suboff_re1000_opt SDAA:2] init done (1.0s) mass=1280000.0
+[suboff_re1000_opt SDAA:2] step=500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (255s)
+[suboff_re1000_opt SDAA:2] step=1000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (504s)

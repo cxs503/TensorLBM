@@ -26,3 +26,10 @@
 [cyl_re3900_3d SDAA:24] step=2000/5000 Cd_p=1.8073 Cd_f=0.0144 Cd_tot=1.8217 Cl=-0.200280 (1940s, 0.970s/step)
 [cyl_re3900_3d SDAA:24] step=2500/5000 Cd_p=1.8132 Cd_f=0.0140 Cd_tot=1.8272 Cl=-0.197507 (2423s, 0.969s/step)
 [cyl_re3900_3d SDAA:24] step=3000/5000 Cd_p=1.7577 Cd_f=0.0136 Cd_tot=1.7713 Cl=-0.409421 (2905s, 0.968s/step)
+[cyl_re3900_3d SDAA:24] step=3500/5000 Cd_p=1.5722 Cd_f=0.0127 Cd_tot=1.5849 Cl=-0.176950 (3387s, 0.968s/step)
+[cyl_re3900_3d SDAA:24] step=4000/5000 Cd_p=1.5963 Cd_f=0.0123 Cd_tot=1.6087 Cl=1.007851 (3869s, 0.967s/step)
+[cyl_re3900_3d SDAA:24] step=4500/5000 Cd_p=1.8902 Cd_f=0.0134 Cd_tot=1.9036 Cl=2.562832 (4351s, 0.967s/step)
+[cyl_re3900_3d SDAA:24] step=5000/5000 Cd_p=2.7375 Cd_f=0.0170 Cd_tot=2.7545 Cl=2.556875 (4833s, 0.967s/step)
+
+[cyl_re3900_3d SDAA:24] === FINAL ===  Cd_p=2.0747 Cd_f=0.0142 Cd_tot=2.0889 (ref=0.98) err=113.2% Cl=1.671749 St=None finite=True time=4833s
+[cyl_re3900_3d SDAA:24] saved to results_high_re_3d_cyl_re3900_sdaa24.json
