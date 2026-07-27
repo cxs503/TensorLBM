@@ -21,3 +21,7 @@
 [channel_retau180 RANS-ke SDAA:7] Fluid cells: 253952
 [channel_retau180 RANS-ke SDAA:7] KESolver initialized, k0=9.999995e-05 eps0=1.000000e-06
 [channel_retau180 RANS-ke SDAA:7] step=  500 u_bulk=0.043040 u_tau=0.002778 Re_tau=180.0 Cf=0.008331 nu_t_max=1.5272e-03 finite=True [41s]
+[channel_retau180 RANS-ke SDAA:7] step= 1000 u_bulk=0.042533 u_tau=0.002778 Re_tau=180.0 Cf=0.008530 nu_t_max=2.5634e-03 finite=True [85s]
+[channel_retau180 RANS-ke SDAA:7] step= 1500 u_bulk=0.042041 u_tau=0.002778 Re_tau=180.0 Cf=0.008731 nu_t_max=3.4494e-03 finite=True [131s]
+[channel_retau180 RANS-ke SDAA:7] step= 2000 u_bulk=0.041555 u_tau=0.002778 Re_tau=180.0 Cf=0.008937 nu_t_max=4.3076e-03 finite=True [177s]
+[channel_retau180 RANS-ke SDAA:7] step= 2500 u_bulk=0.041069 u_tau=0.002778 Re_tau=180.0 Cf=0.009150 nu_t_max=5.2353e-03 finite=True [225s]
