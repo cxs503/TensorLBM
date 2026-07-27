@@ -14,19 +14,7 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[SuboffMEMvsPF SDAA:15] Re=1000 nx=160 ny=80 nz=80 u_in=0.05 tau=0.5144 L=96.0 R=5.60
-[SuboffMEMvsPF SDAA:15] solid=7859 near=2822 S_wet=4006 dpS=5.007500
-[SuboffMEMvsPF SDAA:15] init done (1.1s)
-[SuboffMEMvsPF SDAA:15] step=500 (warmup) (162s)
-[SuboffMEMvsPF SDAA:15] step=1000 (warmup) (320s)
-[SuboffMEMvsPF SDAA:15] step=1500 Cd_MEM=-0.022375 Cd_PF=0.047788 (ref=0.042) (508s)
-[SuboffMEMvsPF SDAA:15] step=2000 Cd_MEM=-0.023462 Cd_PF=0.047061 (ref=0.042) (695s)
-[SuboffMEMvsPF SDAA:15] step=2500 Cd_MEM=-0.024086 Cd_PF=0.046642 (ref=0.042) (878s)
-[SuboffMEMvsPF SDAA:15] step=3000 Cd_MEM=-0.024466 Cd_PF=0.046390 (ref=0.042) (997s)
-[SuboffMEMvsPF SDAA:15] step=3500 Cd_MEM=-0.024730 Cd_PF=0.046210 (ref=0.042) (1114s)
-[SuboffMEMvsPF SDAA:15] step=4000 Cd_MEM=-0.024922 Cd_PF=0.046078 (ref=0.042) (1229s)
-[SuboffMEMvsPF SDAA:15] step=4500 Cd_MEM=-0.025065 Cd_PF=0.045980 (ref=0.042) (1344s)
-[SuboffMEMvsPF SDAA:15] step=5000 Cd_MEM=-0.025174 Cd_PF=0.045905 (ref=0.042) (1460s)
-
-[SuboffMEMvsPF SDAA:15] === FINAL === Cd_MEM=-0.025174(err=159.9%) Cd_P=0.006768 Cd_F=0.039136 Cd_PF=0.045905(err=9.3%) |diff|=0.071078 t=1460s
-[SuboffMEMvsPF SDAA:15] saved mem_vs_pf_suboff_sdaa15.json
+[SuboffMEMvsPF SDAA:15] Re=1000 nx=200 ny=80 nz=80 u_in=0.06 tau=0.5144 L=80 R=4.67
+[SuboffMEMvsPF SDAA:15] solid=4651 near=2050 S_wet=2346.1 dpS=4.2230
+[SuboffMEMvsPF SDAA:15] init done (0.5s)
+[SuboffMEMvsPF SDAA:15] step=500 (warmup) (37s)
