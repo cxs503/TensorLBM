@@ -1,0 +1,46 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+=== Cylinder Drag: Re=200 (SDAA:16) ===
+Grid: 400×160×4, D=48.0, u_in=0.08, tau=0.5576, Cs=0.05
+Steps: 5000, warmup: 1000
+Bug 37 fix: ux0[solid]=0 (not f[:,solid]=0)
+
+solid=7172 near=544 mesh=from_cylinder (0.4s)
+init done mass=256000.0 (0.4s)
+
+  Step      Cd_p      Cd_f        Cd        Cl
+--------------------------------------------------
+   500       ---       ---       ---  (max|u|=0.1410)
+  1000       ---       ---       ---  (max|u|=0.1353)
+  1500    1.5007    0.1923    1.6931   -0.0125  (61s)
+  2000    1.4546    0.1863    1.6409   -0.0130  (82s)
+  2500    1.4485    0.1839    1.6324   -0.0034  (102s)
+  3000    1.4438    0.1829    1.6267    0.0143  (122s)
+  3500    1.4446    0.1827    1.6273    0.0236  (142s)
+  4000    1.4461    0.1830    1.6291    0.0073  (162s)
+  4500    1.4501    0.1836    1.6337   -0.0270  (182s)
+  5000    1.4533    0.1842    1.6375   -0.0395  (202s)
+
+=== FINAL ===
+  Cd_p = 1.4475
+  Cd_f = 0.1832
+  Cd   = 1.6307  (ref=1.33, err=22.6%)
+  Cl_amp = 0.0431
+  St = None  (ref~0.20)
+  time = 202s
+
+PASS: Cd err=22.6% (target < 30%)

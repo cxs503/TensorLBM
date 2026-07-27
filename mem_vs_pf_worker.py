@@ -51,13 +51,16 @@ def _float_list(lst):
 def collide_bgk3d_guo(f, tau, Fx):
     """BGK collision with proper Guo body force (x-direction, uniform).
 
-    Includes the half-force velocity correction: u_Guo = u + F/(2ρ).
-    The force is applied DURING collision (correct Guo scheme).
+    Uses the proper Guo forcing scheme:
+      1. Shift equilibrium velocity: u* = u + tau*F/rho
+      2. Collision with shifted equilibrium
+      3. Add forcing term: (1-1/2tau) * w_q * (c_q-u)/cs2 * F
+    The force term uses the ORIGINAL velocity u (not u*).
     """
     rho, ux, uy, uz = macroscopic3d(f)
-    # Guo half-force velocity correction
-    ux_guo = ux + Fx / (2.0 * rho)
-    feq = equilibrium3d(rho, ux_guo, uy, uz)
+    # Guo velocity shift: u* = u + tau * F / rho
+    ux_shift = ux + tau * Fx / rho.clamp(min=1e-12)
+    feq = equilibrium3d(rho, ux_shift, uy, uz)
     f_post = f - (f - feq) / tau
 
     c = C.to(f.device).float()
@@ -65,11 +68,12 @@ def collide_bgk3d_guo(f, tau, Fx):
     cs2 = 1.0 / 3.0
     cs4 = cs2 * cs2
     factor = (1.0 - 0.5 / tau)
-    cu = (c[:, 0].view(19, 1, 1, 1) * ux_guo
+    # Force term uses ORIGINAL velocity (not shifted)
+    cu = (c[:, 0].view(19, 1, 1, 1) * ux
           + c[:, 1].view(19, 1, 1, 1) * uy
           + c[:, 2].view(19, 1, 1, 1) * uz)
     force = factor * w.view(19, 1, 1, 1) * (
-        (c[:, 0].view(19, 1, 1, 1) - ux_guo) / cs2
+        (c[:, 0].view(19, 1, 1, 1) - ux) / cs2
         + c[:, 0].view(19, 1, 1, 1) * cu / cs4
     ) * Fx
     return f_post + force
@@ -94,11 +98,11 @@ def run_cylinder(device_id, output_path):
     device = torch.device(f"sdaa:{device_id}")
     torch.sdaa.set_device(device)
 
-    D = 48; Re = 200; u_in = 0.1
+    D = 48; Re = 200; u_in = 0.08
     nu_lat = u_in * D / Re; tau = 3.0 * nu_lat + 0.5
     n_steps = 5000; warmup = 1000
-    nx = 12 * D; ny = 6 * D; nz = 8
-    cx = 3 * D; cy = ny // 2; cz = nz // 2
+    nx = 10 * D; ny = 4 * D; nz = 4
+    cx = nx // 4; cy = ny // 2; cz = nz // 2
 
     tag = f"[CylMEMvsPF SDAA:{device_id}]"
     print(f"{tag} D={D} Re={Re} nx={nx} ny={ny} nz={nz} u_in={u_in} tau={tau:.4f}", flush=True)
@@ -175,7 +179,7 @@ def run_cylinder(device_id, output_path):
     print(f"\n{tag} === FINAL === Cd_MEM={cd_mem:.4f}(err={mem_err:.1f}%) Cd_P={cd_p:.4f} "
           f"Cd_F={cd_f:.4f} Cd_PF={cd_pf:.4f}(err={pf_err:.1f}%) |diff|={diff:.6f} t={elapsed:.0f}s", flush=True)
     result = {"case":"cylinder_D48_Re200","device":f"sdaa:{device_id}","D":D,"Re":Re,
-              "nx":nx,"ny":ny,"nz":nz,"u_in":u_in,"tau":tau,"nu":nu_lat,
+              "nx":nx,"ny":ny,"nz":nz,"u_in":_float(u_in),"tau":_float(tau),"nu":_float(nu_lat),
               "n_steps":n_steps,"n_samples":n_rec,"Cd_ref":Cd_ref,
               "Cd_MEM":_float(cd_mem),"Cd_MEM_err_pct":_float(mem_err),
               "Cd_pressure":_float(cd_p),"Cd_friction":_float(cd_f),
@@ -269,7 +273,7 @@ def run_couette(device_id, output_path):
     print(f"\n{tag} === FINAL === Cf_MEM={cf_mem:.6f}(err={mem_err:.2f}%) Cf_PF={cf_pf:.6f}(err={pf_err:.2f}%) "
           f"Cd_p={cf_p:.6f} |diff|={diff:.8f} u_err={u_err:.2f}% t={elapsed:.0f}s", flush=True)
     result = {"case":"couette_3d","device":f"sdaa:{device_id}","grid":f"{nx}x{ny}x{nz}",
-              "tau":tau,"nu":nu,"u_top":u_top,"H":H,"n_steps":n_steps,"n_samples":n_rec,
+              "tau":_float(tau),"nu":_float(nu),"u_top":_float(u_top),"H":H,"n_steps":n_steps,"n_samples":n_rec,
               "Cf_exact":_float(Cf_exact),"Cf_MEM":_float(cf_mem),"Cf_MEM_err_pct":_float(mem_err),
               "Cf_PF_friction":_float(cf_pf),"Cf_PF_err_pct":_float(pf_err),
               "Cd_PF_pressure":_float(cf_p),"MEM_PF_diff":_float(diff),
@@ -314,7 +318,7 @@ def run_poiseuille(device_id, output_path):
 
     for step in range(1, n_steps + 1):
         f_pre = f.clone()
-        # Collision with proper Guo body force (half-force velocity correction)
+        # Collision with proper Guo body force (velocity shift: u* = u + tau*F/rho)
         f = collide_bgk3d_guo(f, tau=tau, Fx=G)
         sm = solid.unsqueeze(0).expand_as(f)
         for q in range(19):
@@ -367,7 +371,7 @@ def run_poiseuille(device_id, output_path):
           f"Cd_MEM={cd_mem:.6f}(err={mem_err:.2f}%) Cd_PF_f={cd_pf_f:.6f}(err={pf_err:.2f}%) "
           f"Cd_p={cd_pf_p:.6f} |diff|={diff:.8f} t={elapsed:.0f}s", flush=True)
     result = {"case":"poiseuille_3d","device":f"sdaa:{device_id}","grid":f"{nx}x{ny}x{nz}",
-              "tau":tau,"nu":nu,"G":G,"u_max_target":u_max_target,"u_max_exact":u_max_exact,
+              "tau":_float(tau),"nu":_float(nu),"G":_float(G),"u_max_target":_float(u_max_target),"u_max_exact":_float(u_max_exact),
               "H_full":H_full,"n_steps":n_steps,"n_samples":n_rec,
               "Cd_body":_float(cd_body),"Cd_MEM":_float(cd_mem),"Cd_MEM_err_pct":_float(mem_err),
               "Cd_PF_friction":_float(cd_pf_f),"Cd_PF_err_pct":_float(pf_err),
@@ -385,16 +389,16 @@ def run_poiseuille(device_id, output_path):
 # ---------------------------------------------------------------------------
 def run_suboff(device_id, output_path):
     from tensorlbm.suboff_cad import build_suboff_mask, SuboffConfig
-    from tensorlbm.suboff_resistance import _voxel_wetted_area
 
     device = torch.device(f"sdaa:{device_id}")
     torch.sdaa.set_device(device)
 
-    Re = 1000; nx, ny, nz = 160, 80, 80; u_in = 0.05
-    hull_length = nx * 0.6; nu_lat = u_in * hull_length / Re; tau = 3.0 * nu_lat + 0.5
+    Re = 1000; nx, ny, nz = 200, 80, 80; u_in = 0.06
+    hull_length = 80; nu_lat = u_in * hull_length / Re; tau = 3.0 * nu_lat + 0.5
     n_steps = 5000; warmup = 1000
-    cx = nx // 3; cy = ny / 2.0; cz = nz / 2.0
+    cx = nx * 0.30; cy = ny / 2.0; cz = nz / 2.0
     config = SuboffConfig(); radius = config.r_over_l * hull_length
+    D = 2.0 * radius
 
     tag = f"[SuboffMEMvsPF SDAA:{device_id}]"
     print(f"{tag} Re={Re} nx={nx} ny={ny} nz={nz} u_in={u_in} tau={tau:.4f} L={hull_length} R={radius:.2f}", flush=True)
@@ -405,8 +409,8 @@ def run_suboff(device_id, output_path):
                                   radius=radius, config=config, device=device)
     near = get_near_wall_3d(solid)
     mesh = SurfaceMesh.from_suboff(solid, near, cx, cy, cz, hull_length, radius, config=config)
-    S_wet = _voxel_wetted_area(solid, 1.0); dpS = 0.5 * 1.0 * u_in ** 2 * S_wet
-    print(f"{tag} solid={int(solid.sum())} near={int(near.sum())} S_wet={S_wet:.0f} dpS={dpS:.6f}", flush=True)
+    S_wet = math.pi * D * hull_length; dpS = 0.5 * 1.0 * u_in ** 2 * S_wet
+    print(f"{tag} solid={int(solid.sum())} near={int(near.sum())} S_wet={S_wet:.1f} dpS={dpS:.4f}", flush=True)
 
     rho0 = torch.ones((nz, ny, nx), device=device)
     ux0 = torch.full((nz, ny, nx), u_in, device=device); ux0[solid] = 0.0
@@ -464,8 +468,8 @@ def run_suboff(device_id, output_path):
     print(f"\n{tag} === FINAL === Cd_MEM={cd_mem:.6f}(err={mem_err:.1f}%) Cd_P={cd_p:.6f} "
           f"Cd_F={cd_f:.6f} Cd_PF={cd_pf:.6f}(err={pf_err:.1f}%) |diff|={diff:.6f} t={elapsed:.0f}s", flush=True)
     result = {"case":"suboff_Re1000","device":f"sdaa:{device_id}","Re":Re,
-              "nx":nx,"ny":ny,"nz":nz,"L":hull_length,"R":_float(radius),
-              "u_in":u_in,"tau":tau,"nu":nu_lat,"S_wet":_float(S_wet),
+              "nx":nx,"ny":ny,"nz":nz,"L":hull_length,"R":_float(radius),"D":_float(D),
+              "u_in":_float(u_in),"tau":_float(tau),"nu":_float(nu_lat),"S_wet":_float(S_wet),
               "n_steps":n_steps,"n_samples":n_rec,"Cd_ref":Cd_ref,
               "Cd_MEM":_float(cd_mem),"Cd_MEM_err_pct":_float(mem_err),
               "Cd_pressure":_float(cd_p),"Cd_friction":_float(cd_f),
