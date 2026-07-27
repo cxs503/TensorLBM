@@ -454,22 +454,22 @@ def thermal_dirichlet_wall_3d(
         Updated distribution (same shape).
     """
     g_new = g.clone()
-    zeros = torch.zeros_like(g[0:1])
-    geq_wall = thermal_equilibrium_3d(
-        torch.full_like(zeros, T_wall), zeros, zeros, zeros
-    )  # (7, 1, 1, 1) broadcastable
+    # Create a single-cell equilibrium at T_wall (shape 7,1,1,1) for broadcasting
+    T_one = torch.tensor([T_wall], dtype=g.dtype, device=g.device).view(1, 1, 1)
+    zero_one = torch.zeros(1, 1, 1, dtype=g.dtype, device=g.device)
+    geq_wall = thermal_equilibrium_3d(T_one, zero_one, zero_one, zero_one)  # (7,1,1,1)
     if wall == "x-":
-        g_new[:, :, :, 0] = geq_wall.expand(-1, g.shape[1], g.shape[2], 1)
+        g_new[:, :, :, 0] = geq_wall
     elif wall == "x+":
-        g_new[:, :, :, -1] = geq_wall.expand(-1, g.shape[1], g.shape[2], 1)
+        g_new[:, :, :, -1] = geq_wall
     elif wall == "y-":
-        g_new[:, :, 0, :] = geq_wall.expand(-1, g.shape[1], 1, g.shape[3])
+        g_new[:, :, 0, :] = geq_wall
     elif wall == "y+":
-        g_new[:, :, -1, :] = geq_wall.expand(-1, g.shape[1], 1, g.shape[3])
+        g_new[:, :, -1, :] = geq_wall
     elif wall == "z-":
-        g_new[:, 0, :, :] = geq_wall.expand(-1, 1, g.shape[2], g.shape[3])
+        g_new[:, 0, :, :] = geq_wall
     elif wall == "z+":
-        g_new[:, -1, :, :] = geq_wall.expand(-1, 1, g.shape[2], g.shape[3])
+        g_new[:, -1, :, :] = geq_wall
     else:
         raise ValueError(f"wall must be x-/x+/y-/y+/z-/z+, got {wall!r}")
     return g_new
@@ -868,6 +868,10 @@ def run_conjugate_ht_common(
         "n_steps": n_steps,
         "T_field": T_final.cpu(),
     }
+
+
+# ---------------------------------------------------------------------------
+# Benchmark 2: Heated cylinder — SDAA:29
 # ---------------------------------------------------------------------------
 
 
@@ -957,6 +961,115 @@ def run_heated_cylinder_common(
         "Re": Re,
         "Pr": Pr,
         "D": D,
+        "nx": nx, "ny": ny, "nz": nz,
+        "n_steps": n_steps,
+        "T_field": T_final.cpu(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Benchmark 4: Rayleigh-Benard convection — SDAA:31
+# ---------------------------------------------------------------------------
+
+
+def run_rayleigh_benard_common(
+    device: str | torch.device,
+    nx: int = 100,
+    ny: int = 50,
+    nz: int = 4,
+    Ra: float = 1e4,
+    Pr: float = 0.71,
+    n_steps: int = 8000,
+) -> dict[str, object]:
+    """Rayleigh-Benard convection using common modules.
+
+    Hot bottom wall (y=0, T=1), cold top wall (y=ny-1, T=0).
+    Periodic in x and z.
+    Buoyancy via Boussinesq approximation.
+
+    Reference: critical Ra_c=1708. At Ra=10^4 > Ra_c, convection occurs.
+    Target: Nu > 1 (convection detected).
+    """
+    device = torch.device(device)
+    T_hot, T_cold = 1.0, 0.0
+    delta_T = T_hot - T_cold
+    H = float(ny - 1)  # cavity height
+
+    tau_T = 0.8
+    alpha = (tau_T - 0.5) / 3.0
+    nu = alpha * Pr
+    tau = 3.0 * nu + 0.5
+    beta = Ra * nu * alpha / (H ** 3 * delta_T)
+
+    # Wall mask: only top and bottom (no-slip)
+    wall = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
+    wall[:, 0, :] = True
+    wall[:, -1, :] = True
+
+    from .d3q19 import equilibrium3d, macroscopic3d
+    from .solver3d import collide_bgk3d, stream3d
+    from .boundaries3d import bounce_back_cells_3d
+
+    # Initial: linear T profile + small perturbation to trigger convection
+    _, y_idx, _ = torch.meshgrid(
+        torch.arange(nz, device=device, dtype=torch.float32),
+        torch.arange(ny, device=device, dtype=torch.float32),
+        torch.arange(nx, device=device, dtype=torch.float32),
+        indexing="ij",
+    )
+    rho = torch.ones((nz, ny, nx), device=device)
+    ux = torch.zeros_like(rho)
+    uy = torch.zeros_like(rho)
+    uz = torch.zeros_like(rho)
+    T = T_hot - delta_T * y_idx / H
+    # Small random perturbation to break symmetry
+    T = T + 0.01 * torch.rand_like(T)
+
+    f = equilibrium3d(rho, ux, uy, uz, device=device)
+    g = thermal_equilibrium_3d(T, ux, uy, uz)
+
+    nu_hist = []
+    for step in range(n_steps):
+        rho, ux, uy, uz = macroscopic3d(f)
+        ux = ux.masked_fill(wall, 0.0)
+        uy = uy.masked_fill(wall, 0.0)
+        uz = uz.masked_fill(wall, 0.0)
+
+        T = thermal_macroscopic_3d(g)
+        # Buoyancy: hot fluid rises (positive y direction)
+        f = apply_buoyancy_3d(f, T, T_ref=0.5, beta=beta, g_y=-1.0, lattice="D3Q19")
+        # Momentum: collision + bounce-back + streaming
+        f = collide_bgk3d(f, tau)
+        f = bounce_back_cells_3d(f, wall, f_pre=f)
+        f = stream3d(f)
+        f = bounce_back_cells_3d(f, wall)
+
+        # Thermal: collision + streaming + Dirichlet top/bottom
+        g = thermal_collide_bgk_3d(g, T, ux, uy, uz, tau_T=tau_T)
+        g = thermal_stream_3d(g)
+        g = thermal_dirichlet_wall_3d(g, T_hot, "y-")
+        g = thermal_dirichlet_wall_3d(g, T_cold, "y+")
+        # Periodic in x, z (streaming is already periodic)
+
+        if step % 200 == 0 or step == n_steps - 1:
+            T = thermal_macroscopic_3d(g)
+            # Nu = heat flux at hot wall / (k * dT/H)
+            grad_hot = T[:, 0, :] - T[:, 1, :]
+            nu_val = float((-grad_hot * H / delta_T).mean().item())
+            nu_hist.append(nu_val)
+
+    T_final = thermal_macroscopic_3d(g)
+    grad_hot = T_final[:, 0, :] - T_final[:, 1, :]
+    nu_final = float((-grad_hot * H / delta_T).mean().item())
+    convection_detected = nu_final > 1.05  # Nu > 1 means convection
+    return {
+        "nusselt": nu_final,
+        "nusselt_ref": 1.0,  # conduction baseline
+        "nusselt_history": nu_hist,
+        "Ra": Ra,
+        "Pr": Pr,
+        "Ra_critical": 1708.0,
+        "convection_detected": convection_detected,
         "nx": nx, "ny": ny, "nz": nz,
         "n_steps": n_steps,
         "T_field": T_final.cpu(),
