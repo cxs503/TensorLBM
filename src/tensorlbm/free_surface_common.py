@@ -114,7 +114,10 @@ def vof_advect_upwind_3d(
     """
     # Pad phi with edge replication (zero-gradient / Neumann BC) so that
     # the upwind stencil at domain boundaries does not wrap periodically.
-    pad_phi = torch.nn.functional.pad(phi, (1, 1, 1, 1, 1, 1), mode="replicate")
+    # F.pad with mode="replicate" requires a 5D tensor for 3D padding.
+    p5d = phi.unsqueeze(0).unsqueeze(0)  # (1, 1, nz, ny, nx)
+    pad5d = torch.nn.functional.pad(p5d, (1, 1, 1, 1, 1, 1), mode="replicate")
+    pad_phi = pad5d.squeeze(0).squeeze(0)  # back to (nz+2, ny+2, nx+2)
 
     # Upwind differences: backward if u>0, forward if u<0
     # x-direction (dim=2 in (nz,ny,nx) layout); in padded array dim=2

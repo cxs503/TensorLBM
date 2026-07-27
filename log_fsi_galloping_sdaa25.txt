@@ -14,10 +14,8 @@
  TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
  TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
 --------------+--------------------------------------------
-[VIV SDAA:24] m*=10.0 zeta=0.01 f_n=0.2 m=23040.00 k=36383.3097 c=579.0584 f_n_check=0.200000 zeta_check=0.010000
-[VIV SDAA:24] nx=400 ny=120 nz=4 D=48 Re=200 u_in=0.1 nu=2.400000e-02 tau=0.572000 dpS=9.600000e-01
-[VIV SDAA:24] near-wall cells=544
-[VIV SDAA:24] SurfaceMesh.from_cylinder built
-[VIV SDAA:24] init done (0.4s)
-[VIV SDAA:24] step=2000/30000 Cd_p=1.7295 Cd_f=0.2167 Cd=1.9462 Cl_rms=0.0207 disp_max=0.00 (67s)
-[VIV SDAA:24] step=4000/30000 Cd_p=1.7858 Cd_f=0.2236 Cd=2.0094 Cl_rms=0.0220 disp_max=0.00 (135s)
+[Galloping SDAA:25] m*=5.0 zeta=0.1 f_n=0.1 m=2880.00 k=1136.9784 c=361.9115 f_n_check=0.100000 zeta_check=0.100000
+[Galloping SDAA:25] nx=300 ny=100 nz=4 D=24 Re=1000 u_in=0.1 nu=2.400000e-03 tau=0.507200 dpS=4.800000e-01
+[Galloping SDAA:25] near-wall cells=384
+[Galloping SDAA:25] SurfaceMesh.from_square_prism built
+[Galloping SDAA:25] init done (0.6s)

@@ -32,3 +32,6 @@
 [cyl_re40_opt SDAA:1] step=4000/10000 Cd_p=1.155315 Cd_f=0.449977 Cd_tot=1.605292 (675s)
 [cyl_re40_opt SDAA:1] step=4500/10000 Cd_p=1.152820 Cd_f=0.447270 Cd_tot=1.600091 (764s)
 [cyl_re40_opt SDAA:1] step=5000/10000 Cd_p=1.146865 Cd_f=0.445119 Cd_tot=1.591984 (852s)
+[cyl_re40_opt SDAA:1] step=5500/10000 Cd_p=1.143504 Cd_f=0.443548 Cd_tot=1.587052 (941s)
+[cyl_re40_opt SDAA:1] step=6000/10000 Cd_p=1.140755 Cd_f=0.442363 Cd_tot=1.583118 (1029s)
+[cyl_re40_opt SDAA:1] step=6500/10000 Cd_p=1.138531 Cd_f=0.441470 Cd_tot=1.580001 (1117s)

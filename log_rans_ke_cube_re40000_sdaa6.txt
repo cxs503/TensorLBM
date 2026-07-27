@@ -28,3 +28,7 @@
 [cube_re40000 RANS-ke SDAA:6] step=1400/2000 Cd_p=1.0714 Cd_f=0.0007 Cd_tot=1.0721 Cl=0.688283 nu_t_max=1.8164e-02 (216s, 0.154s/step)
 [cube_re40000 RANS-ke SDAA:6] step=1600/2000 Cd_p=1.0704 Cd_f=0.0007 Cd_tot=1.0711 Cl=0.682338 nu_t_max=1.9313e-02 (247s, 0.154s/step)
 [cube_re40000 RANS-ke SDAA:6] step=1800/2000 Cd_p=1.0619 Cd_f=0.0007 Cd_tot=1.0626 Cl=0.673241 nu_t_max=2.0441e-02 (278s, 0.155s/step)
+[cube_re40000 RANS-ke SDAA:6] step=2000/2000 Cd_p=1.0621 Cd_f=0.0006 Cd_tot=1.0628 Cl=0.659195 nu_t_max=2.1549e-02 (311s, 0.155s/step)
+
+[cube_re40000 RANS-ke SDAA:6] === FINAL ===  Cd_p=1.0633 Cd_f=0.0007 Cd_tot=1.0639 (ref=1.1) err=3.3% Cl=0.675841 St=None finite=True time=311s
+[cube_re40000 RANS-ke SDAA:6] saved to results_rans_ke_cube_re40000_sdaa6.json
