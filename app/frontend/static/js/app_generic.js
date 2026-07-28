@@ -472,104 +472,218 @@
   // ── NACA 0015 airfoil helpers for sail/fin preview ──────────────────────
 
   // Normalised NACA 0015 half-thickness ∈ [0, 1] (max at x ≈ 0.30).
-  function _naca0015Thickness(xNorm) {
-    var x = Math.max(0, Math.min(1, xNorm));
-    var t = 0.15;
-    var yt = (t / 0.2) * (
-      0.2969 * Math.sqrt(x)
-      - 0.1260 * x
-      - 0.3516 * x * x
-      + 0.2843 * x * x * x
-      - 0.1015 * x * x * x * x * x
-    );
-    return Math.max(yt, 0) / 0.0755;  // normalise by precomputed max
+  // ── Real DARPA SUBOFF geometry helpers ────────────────────────────────
+
+  // SUBOFF constants (feet)
+  var _SUBOFF_L_FT = 14.291667;
+  var _SUBOFF_RMAX_FT = 0.8333333;
+  var _SAIL_ZMAX = 0.109375;
+  var _SAIL_YTMP = 1.507813;
+  var _SAIL_X1S = 3.032986, _SAIL_X1E = 3.358507, _SAIL_X2E = 3.559028, _SAIL_X3E = 4.241319;
+  var _FIN_H = 13.146284, _FIN_R_IN = 0.075, _FIN_R_OUT = 0.825;
+  var _FIN_SWEEP_K = -0.466308, _FIN_SWEEP_C = 0.88859;
+
+  // NACA 4-digit half-thickness with SUBOFF coefficients
+  function _naca4Thickness(s) {
+    s = Math.max(0, Math.min(1, s));
+    return Math.max(
+      0.2969 * Math.sqrt(s) - 0.126 * s - 0.3516 * s * s
+      + 0.2852 * s * s * s - 0.1045 * s * s * s * s, 0);
+  }
+
+  // Sail half-thickness z_tmp at axial position x_ft (feet)
+  function _sailHalfThickness(xFt) {
+    if (xFt <= _SAIL_X1S || xFt >= _SAIL_X3E) return 0;
+    if (xFt < _SAIL_X1E) {
+      var D = 3.0720 * (xFt - _SAIL_X1S);
+      var C = 1 - Math.pow(D - 1, 4) * (4 * D + 1);
+      var B = (1 / 3) * D * D * Math.pow(D - 1, 3);
+      var A = 2 * D * Math.pow(D - 1, 4);
+      return _SAIL_ZMAX * Math.sqrt(Math.max(2.094759 * A + 0.2071781 * B + C, 0));
+    }
+    if (xFt <= _SAIL_X2E) return _SAIL_ZMAX;
+    var E = (_SAIL_X3E - xFt) / 0.6822917;
+    var F = E - 1;
+    var G = 2.238361 * E * Math.pow(F, 4);
+    var H = 3.106529 * E * E * Math.pow(F, 3);
+    var P = 1 - Math.pow(F, 4) * (4 * E + 1);
+    return _SAIL_ZMAX * Math.max(G + H + P, 0);
   }
 
   // Hull radius at normalised axial position xi (0=bow, 1=stern).
+  // Real DARPA SUBOFF 4-segment polynomial (Groves et al. 1989).
   function _hullRadiusAt(xi, R) {
-    if (xi < 0.233) {
-      return R * Math.sqrt(1 - Math.pow(1 - xi / 0.233, 2));
-    } else if (xi < 0.748) {
-      return R;
-    } else {
-      var s = (xi - 0.748) / 0.252;
-      return R * Math.sqrt(Math.max(1 - s * s, 0));
+    var BOW_END = 3.333333 / _SUBOFF_L_FT;
+    var MID_END = 10.645833 / _SUBOFF_L_FT;
+    var STERN_END = 13.979167 / _SUBOFF_L_FT;
+    if (xi <= 0 || xi > 1) return 0;
+    if (xi <= BOW_END) {
+      var x_ft = xi * _SUBOFF_L_FT;
+      var tmp = 0.3 * x_ft - 1;
+      var tmp2 = tmp * tmp, tmp3 = tmp2 * tmp, tmp4 = tmp2 * tmp2;
+      var a1 = 1.126395101 * x_ft * tmp4
+             + 0.442874707 * x_ft * x_ft * tmp3
+             + 1.0 - tmp4 * (1.2 * x_ft + 1.0);
+      return R * Math.pow(Math.max(a1, 0), 1.0 / 2.1);
     }
+    if (xi <= MID_END) return R;
+    if (xi <= STERN_END) {
+      var x_ft = xi * _SUBOFF_L_FT;
+      var r1 = 0.1175, k0 = 10, k1 = 44.6244;
+      var ksi = (13.979167 - x_ft) / 3.333333;
+      var ks2 = ksi*ksi, ks3 = ks2*ksi, ks4 = ks3*ksi, ks5 = ks4*ksi, ks6 = ks5*ksi;
+      var a3 = r1*r1 + r1*k0*ks2
+             + (20-20*r1*r1-4*r1*k0-k1/3)*ks3
+             + (-45+45*r1*r1+6*r1*k0+k1)*ks4
+             + (36-36*r1*r1-4*r1*k0-k1)*ks5
+             + (-10+10*r1*r1+r1*k0+k1/3)*ks6;
+      return R * Math.sqrt(Math.max(a3, 0));
+    }
+    var x_ft = xi * _SUBOFF_L_FT;
+    var a4 = 1.0 - Math.pow(3.2 * x_ft - 44.733333, 2);
+    return R * Math.sqrt(Math.max(a4, 0)) * 0.1175;
   }
 
-  // Build a non-indexed BufferGeometry for a NACA 0015 half-airfoil sail
-  // extruded along y.  Chord along x [x0,x1], height along z from zBase.
-  function _buildNacaSailGeometry(x0, x1, y0, y1, zBase, height, nChord) {
-    nChord = nChord || 24;
+  // Build a non-indexed BufferGeometry for the real SUBOFF sail
+  // (3-segment polynomial + semi-elliptical cap, on +z).
+  function _buildRealSailGeometry(L, R, nAxial, nArc) {
+    nAxial = nAxial || 30;
+    nArc = nArc || 12;
+    var invLu = L / _SUBOFF_L_FT;  // lu per ft
     var p = [];
-    for (var i = 0; i < nChord - 1; i++) {
-      var xn = i / (nChord - 1);
-      var xnN = (i + 1) / (nChord - 1);
-      var x = x0 + xn * (x1 - x0);
-      var xN = x0 + xnN * (x1 - x0);
-      var h = _naca0015Thickness(xn) * height;
-      var hN = _naca0015Thickness(xnN) * height;
 
-      // Top surface (z = zBase + h, +z normal)
-      p.push(x, y0, zBase + h, xN, y0, zBase + hN, xN, y1, zBase + hN);
-      p.push(x, y0, zBase + h, xN, y1, zBase + hN, x, y1, zBase + h);
-      // Bottom surface (z = zBase, -z normal)
-      p.push(x, y0, zBase, xN, y1, zBase, xN, y0, zBase);
-      p.push(x, y0, zBase, x, y1, zBase, xN, y1, zBase);
-      // Side y = y1 (+y normal)
-      p.push(x, y1, zBase, x, y1, zBase + h, xN, y1, zBase + hN);
-      p.push(x, y1, zBase, xN, y1, zBase + hN, xN, y1, zBase);
-      // Side y = y0 (-y normal)
-      p.push(x, y0, zBase, xN, y0, zBase, xN, y0, zBase + hN);
-      p.push(x, y0, zBase, xN, y0, zBase + hN, x, y0, zBase + h);
+    // Sample x positions and compute outlines
+    var xFtArr = [], outlines = [];
+    for (var i = 0; i < nAxial; i++) {
+      var xFt = _SAIL_X1S + (_SAIL_X3E - _SAIL_X1S) * i / (nAxial - 1);
+      xFtArr.push(xFt);
+      var zt = _sailHalfThickness(xFt);
+      if (zt < 1e-8) { outlines.push([]); continue; }
+      var pts = [];
+      pts.push([-zt * invLu, 0]);
+      pts.push([-zt * invLu, _SAIL_YTMP * invLu]);
+      for (var j = 1; j < nArc; j++) {
+        var theta = Math.PI * (1 - j / nArc);
+        pts.push([zt * Math.cos(theta) * invLu,
+                  (_SAIL_YTMP + (zt / 2) * Math.sin(theta)) * invLu]);
+      }
+      pts.push([zt * invLu, _SAIL_YTMP * invLu]);
+      pts.push([zt * invLu, 0]);
+      outlines.push(pts);
     }
+
+    // Loft between consecutive x positions
+    for (var i = 0; i < nAxial - 1; i++) {
+      var p0 = outlines[i], p1 = outlines[i + 1];
+      var n = Math.min(p0.length, p1.length);
+      if (n < 2) continue;
+      var x0 = xFtArr[i] * invLu - L / 2;
+      var x1 = xFtArr[i + 1] * invLu - L / 2;
+      for (var j = 0; j < n - 1; j++) {
+        p.push(x0, p0[j][0], p0[j][1]);
+        p.push(x0, p0[j+1][0], p0[j+1][1]);
+        p.push(x1, p1[j+1][0], p1[j+1][1]);
+        p.push(x0, p0[j][0], p0[j][1]);
+        p.push(x1, p1[j+1][0], p1[j+1][1]);
+        p.push(x1, p1[j][0], p1[j][1]);
+      }
+    }
+
     var geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(p), 3));
     geo.computeVertexNormals();
     return geo;
   }
 
-  // Build a non-indexed BufferGeometry for a NACA 0015 full-airfoil fin
-  // extruded along span.  thickAxis 'y' → span in z; 'z' → span in y.
-  function _buildNacaFinGeometry(x0, x1, thickAxis, s0, s1, halfT, nChord) {
-    nChord = nChord || 24;
+  // Build a non-indexed BufferGeometry for one real SUBOFF swept NACA fin.
+  // spanAxis 'y' → extends in y, thickness in z; 'z' → extends in z, thickness in y.
+  function _buildRealFinGeometry(L, R, sign, spanAxis, nChord, nSpan) {
+    nChord = nChord || 20;
+    nSpan = nSpan || 10;
+    var invLu = L / _SUBOFF_L_FT;
     var p = [];
-    for (var i = 0; i < nChord - 1; i++) {
-      var xn = i / (nChord - 1);
-      var xnN = (i + 1) / (nChord - 1);
-      var x = x0 + xn * (x1 - x0);
-      var xN = x0 + xnN * (x1 - x0);
-      var t = _naca0015Thickness(xn) * halfT;
-      var tN = _naca0015Thickness(xnN) * halfT;
 
-      if (thickAxis === 'y') {
-        // Upper surface (y = +t, +y normal)
-        p.push(x, t, s0, xN, tN, s0, xN, tN, s1);
-        p.push(x, t, s0, xN, tN, s1, x, t, s1);
-        // Lower surface (y = -t, -y normal)
-        p.push(x, -t, s0, xN, -tN, s1, xN, -tN, s0);
-        p.push(x, -t, s0, x, -t, s1, xN, -tN, s1);
-        // Root cap (s = s0, -span normal)
-        p.push(x, t, s0, x, -t, s0, xN, -tN, s0);
-        p.push(x, t, s0, xN, -tN, s0, xN, tN, s0);
-        // Tip cap (s = s1, +span normal)
-        p.push(x, t, s1, xN, tN, s1, xN, -tN, s1);
-        p.push(x, t, s1, xN, -tN, s1, x, -t, s1);
-      } else {
-        // Upper surface (z = +t, +z normal)
-        p.push(x, s0, t, xN, s0, tN, xN, s1, tN);
-        p.push(x, s0, t, xN, s1, tN, x, s1, t);
-        // Lower surface (z = -t, -z normal)
-        p.push(x, s0, -t, xN, s1, -tN, xN, s0, -tN);
-        p.push(x, s0, -t, x, s1, -t, xN, s1, -tN);
-        // Root cap (s = s0, -span normal)
-        p.push(x, s0, t, x, s0, -t, xN, s0, -tN);
-        p.push(x, s0, t, xN, s0, -tN, xN, s0, tN);
-        // Tip cap (s = s1, +span normal)
-        p.push(x, s1, t, xN, s1, tN, xN, s1, -tN);
-        p.push(x, s1, t, xN, s1, -tN, x, s1, -t);
+    var rArr = [], sArr = [], tArr = [];
+    for (var i = 0; i < nSpan; i++)
+      rArr.push(_FIN_R_IN + (_FIN_R_OUT - _FIN_R_IN) * i / (nSpan - 1));
+    for (var j = 0; j < nChord; j++) {
+      var s = j / (nChord - 1);
+      sArr.push(s);
+      tArr.push(_naca4Thickness(s));
+    }
+
+    function getX(i, j) {
+      var cy = _FIN_SWEEP_K * rArr[i] + _FIN_SWEEP_C;
+      return (_FIN_H + (sArr[j] - 1) * cy) * invLu - L / 2;
+    }
+
+    // Upper (+) and lower (−) surfaces
+    for (var ts = 1; ts >= -1; ts -= 2) {
+      for (var i = 0; i < nSpan - 1; i++) {
+        for (var j = 0; j < nChord - 1; j++) {
+          var x00 = getX(i, j), x10 = getX(i, j+1), x11 = getX(i+1, j+1), x01 = getX(i+1, j);
+          var t0 = tArr[j] * invLu, t1 = tArr[j+1] * invLu;
+          var r0 = rArr[i] * invLu, r1 = rArr[i+1] * invLu;
+          var a, b, c, d;
+          if (spanAxis === 'y') {
+            a = [x00, sign * r0, ts * t0]; b = [x10, sign * r0, ts * t1];
+            c = [x11, sign * r1, ts * t1]; d = [x01, sign * r1, ts * t0];
+          } else {
+            a = [x00, ts * t0, sign * r0]; b = [x10, ts * t1, sign * r0];
+            c = [x11, ts * t1, sign * r1]; d = [x01, ts * t0, sign * r1];
+          }
+          if (ts > 0) {
+            p.push(a[0],a[1],a[2], b[0],b[1],b[2], c[0],c[1],c[2]);
+            p.push(a[0],a[1],a[2], c[0],c[1],c[2], d[0],d[1],d[2]);
+          } else {
+            p.push(a[0],a[1],a[2], c[0],c[1],c[2], b[0],b[1],b[2]);
+            p.push(a[0],a[1],a[2], d[0],d[1],d[2], c[0],c[1],c[2]);
+          }
+        }
       }
     }
+
+    // Root and tip caps
+    for (var capIdx = 0; capIdx < 2; capIdx++) {
+      var i = (capIdx === 0) ? 0 : nSpan - 1;
+      for (var j = 0; j < nChord - 1; j++) {
+        var x0 = getX(i, j), x1 = getX(i, j+1);
+        var t0 = tArr[j] * invLu, t1 = tArr[j+1] * invLu;
+        var rv = rArr[i] * invLu;
+        var pu, pun, pl, pln;
+        if (spanAxis === 'y') {
+          pu = [x0, sign*rv, t0]; pun = [x1, sign*rv, t1];
+          pl = [x0, sign*rv, -t0]; pln = [x1, sign*rv, -t1];
+        } else {
+          pu = [x0, t0, sign*rv]; pun = [x1, t1, sign*rv];
+          pl = [x0, -t0, sign*rv]; pln = [x1, -t1, sign*rv];
+        }
+        if (capIdx === 1) {
+          p.push(pu[0],pu[1],pu[2], pun[0],pun[1],pun[2], pln[0],pln[1],pln[2]);
+          p.push(pu[0],pu[1],pu[2], pln[0],pln[1],pln[2], pl[0],pl[1],pl[2]);
+        } else {
+          p.push(pu[0],pu[1],pu[2], pln[0],pln[1],pln[2], pun[0],pun[1],pun[2]);
+          p.push(pu[0],pu[1],pu[2], pl[0],pl[1],pl[2], pln[0],pln[1],pln[2]);
+        }
+      }
+    }
+
+    // Trailing-edge cap
+    var te = tArr[nChord-1] * invLu;
+    if (te > 1e-10) {
+      for (var i = 0; i < nSpan - 1; i++) {
+        var x0 = getX(i, nChord-1), x1 = getX(i+1, nChord-1);
+        var r0 = rArr[i] * invLu, r1 = rArr[i+1] * invLu;
+        if (spanAxis === 'y') {
+          p.push(x0,sign*r0,te, x1,sign*r1,te, x1,sign*r1,-te);
+          p.push(x0,sign*r0,te, x1,sign*r1,-te, x0,sign*r0,-te);
+        } else {
+          p.push(x0,te,sign*r0, x1,te,sign*r1, x1,-te,sign*r1);
+          p.push(x0,te,sign*r0, x1,-te,sign*r1, x0,-te,sign*r0);
+        }
+      }
+    }
+
     var geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(p), 3));
     geo.computeVertexNormals();
@@ -612,9 +726,9 @@
       geo.scale(2, 1, 1);
       size = { x: 4, y: 2, z: 2 };
     } else if (shape === 'suboff') {
-      // SUBOFF: body of revolution (ellipsoid bow + cylinder + tapered stern)
-      // L/D ≈ 8.57, bow=0.233L, midbody=0.515L, stern=0.252L
-      var L = 8.57, R = 1.0;
+      // SUBOFF: real DARPA body of revolution + sail + fins
+      // L/D = 8.57, L = 14.292 ft, R = 0.8333 ft
+      var L = 8.57 * 2, R = 1.0;  // L/D = L/(2R) = 8.57
       var nAxial = 80, nCirc = 32;
       var pts = [];
       for (var i = 0; i <= nAxial; i++) {
@@ -633,38 +747,25 @@
       var allGeos = [hullGeo.toNonIndexed()];
       var maxR = R;
 
-      // Add sail (NACA 0015 half-airfoil on hull top)
+      // Add sail (real DARPA 3-segment polynomial + arc top, on +z)
       if (hullType === 'with_sail' || hullType === 'full') {
-        var sailXc = -L / 2 + 0.254 * L;
-        var sailLen = 0.085 * L;
-        var sailX0 = sailXc - sailLen / 2;
-        var sailX1 = sailXc + sailLen / 2;
-        var sailHw = 0.008 * L;
-        var sailHeight = 0.106 * L;
-        var rAtSail = _hullRadiusAt(0.254, R);
-        allGeos.push(_buildNacaSailGeometry(sailX0, sailX1, -sailHw, sailHw, rAtSail, sailHeight));
-        maxR = Math.max(maxR, rAtSail + sailHeight);
+        allGeos.push(_buildRealSailGeometry(L, R));
+        // Sail height in lu: (yTmp + Zmax/2) * L / L_ft
+        var sailH = (_SAIL_YTMP + _SAIL_ZMAX / 2) * L / _SUBOFF_L_FT;
+        maxR = Math.max(maxR, sailH);
       }
 
-      // Add cruciform fins (4 × NACA 0015 airfoil)
+      // Add cruciform fins (4 × real swept NACA 4-digit)
       if (hullType === 'full') {
-        var finXc = -L / 2 + 0.890 * L;
-        var finLen = 0.060 * L;
-        var finX0 = finXc - finLen / 2;
-        var finX1 = finXc + finLen / 2;
-        var finSpan = 0.052 * L;
-        var finHalfT = 0.008 * L / 2;
-        var rAtFin = _hullRadiusAt(0.890, R);
-
-        // Top fin (z+): thickness in y, span in z
-        allGeos.push(_buildNacaFinGeometry(finX0, finX1, 'y', rAtFin, rAtFin + finSpan, finHalfT));
+        // Top fin (z+): extends in z, thickness in y
+        allGeos.push(_buildRealFinGeometry(L, R, +1, 'z'));
         // Bottom fin (z-)
-        allGeos.push(_buildNacaFinGeometry(finX0, finX1, 'y', -(rAtFin + finSpan), -rAtFin, finHalfT));
-        // Port fin (y+): thickness in z, span in y
-        allGeos.push(_buildNacaFinGeometry(finX0, finX1, 'z', rAtFin, rAtFin + finSpan, finHalfT));
+        allGeos.push(_buildRealFinGeometry(L, R, -1, 'z'));
+        // Port fin (y+): extends in y, thickness in z
+        allGeos.push(_buildRealFinGeometry(L, R, +1, 'y'));
         // Starboard fin (y-)
-        allGeos.push(_buildNacaFinGeometry(finX0, finX1, 'z', -(rAtFin + finSpan), -rAtFin, finHalfT));
-        maxR = Math.max(maxR, rAtFin + finSpan);
+        allGeos.push(_buildRealFinGeometry(L, R, -1, 'y'));
+        maxR = Math.max(maxR, _FIN_R_OUT * L / _SUBOFF_L_FT);
       }
 
       // Merge all geometries into one non-indexed BufferGeometry
