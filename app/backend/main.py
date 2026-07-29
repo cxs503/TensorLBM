@@ -18,76 +18,25 @@ from fastapi.staticfiles import StaticFiles
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-from . import job_manager  # noqa: E402
-from .middleware import install_production_middleware  # noqa: E402
-
-# Import routers; skip any that are incomplete (under active development)
-_router_imports: dict[str, object] = {}
-for _name, _mod in [
-    ("agent", "agent"),
-    ("ai_governance", "ai_governance"),
-    ("ai_suboff", "ai_suboff"),
-    ("ai_transformer", "ai_transformer"),
-    ("benchmarks", "benchmarks"),
-    ("cad", "cad"),
-    ("cylinder_bench", "cylinder_bench"),
-    ("cylinder_compare", "cylinder_compare"),
-    ("cylinder_device_sim", "cylinder_device_sim"),
-    ("cylinder_interactive", "cylinder_interactive"),
-    ("jobs", "jobs"),
-    ("notifications", "notifications"),
-    ("orchestration", "orchestration"),
-    ("postprocess", "postprocess"),
-    ("preprocess", "preprocess"),
-    ("projects", "projects"),
-    ("reports", "reports"),
-    ("simulations", "simulations"),
-    ("solver", "solver"),
-    ("suboff", "suboff"),
-    ("templates", "templates"),
-    ("xflow_projects", "xflow_projects"),
-    ("xflow_streaming", "xflow_streaming"),
-]:
-    try:
-        _router_imports[_name] = __import__(f"backend.routers.{_mod}", fromlist=[_mod])
-    except Exception as e:
-        import logging
-        logging.warning(f"Router {_mod} not available, skipping: {e}")
-
-agent = _router_imports.get("agent")
-ai_governance = _router_imports.get("ai_governance")
-ai_suboff = _router_imports.get("ai_suboff")
-ai_transformer = _router_imports.get("ai_transformer")
-benchmarks = _router_imports.get("benchmarks")
-cad = _router_imports.get("cad")
-cylinder_bench = _router_imports.get("cylinder_bench")
-cylinder_compare = _router_imports.get("cylinder_compare")
-cylinder_device_sim = _router_imports.get("cylinder_device_sim")
-cylinder_interactive = _router_imports.get("cylinder_interactive")
-jobs = _router_imports.get("jobs")
-notifications = _router_imports.get("notifications")
-orchestration = _router_imports.get("orchestration")
-postprocess = _router_imports.get("postprocess")
-preprocess = _router_imports.get("preprocess")
-projects = _router_imports.get("projects")
-reports = _router_imports.get("reports")
-simulations = _router_imports.get("simulations")
-solver = _router_imports.get("solver")
-suboff = _router_imports.get("suboff")
-templates = _router_imports.get("templates")
-xflow_projects = _router_imports.get("xflow_projects")
-xflow_streaming = _router_imports.get("xflow_streaming")
-try:
-    from .services.xflow_streaming import hub as streaming_hub  # noqa: E402
-except ImportError:
-    streaming_hub = None
-    import logging
-    logging.warning("xflow_streaming service not available")
-
-try:
-    from .routers import simulations as _sim_mod  # noqa: E402
-except ImportError:
-    _sim_mod = None
+from . import job_manager, security  # noqa: E402
+from .routers import (  # noqa: E402
+    agent,
+    ai_governance,
+    ai_suboff,  # noqa: E402
+    ai_transformer,
+    benchmarks,
+    cad,
+    jobs,
+    notifications,
+    orchestration,
+    postprocess,
+    preprocess,
+    projects,
+    reports,
+    solver,
+    suboff,
+    templates,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
@@ -114,7 +63,6 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     loop = asyncio.get_running_loop()
     _notify_queue = asyncio.Queue()
     job_manager.set_event_loop(loop, _notify_queue)  # type: ignore[arg-type]
-    streaming_hub.attach(_sim_mod._jobs) if streaming_hub and _sim_mod else None
     _ws_broadcast_task = asyncio.create_task(_ws_broadcaster(_notify_queue))
     try:
         yield
@@ -147,44 +95,68 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Production middleware: auth, rate-limit, gzip, metrics
-install_production_middleware(app)
+
+# ---------------------------------------------------------------------------
+# Security middleware
+# ---------------------------------------------------------------------------
+
+@app.middleware("http")
+async def auth_and_audit_middleware(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
+    if not request.url.path.startswith("/api/"):
+        return await call_next(request)
+
+    started = asyncio.get_running_loop().time()
+    try:
+        ctx = security.authorize_request(request)
+    except security.AuthorizationError as exc:
+        response = JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        security.audit_request(
+            request,
+            None,
+            response.status_code,
+            asyncio.get_running_loop().time() - started,
+        )
+        return response
+
+    request.state.auth_context = ctx
+    try:
+        response = await call_next(request)
+    except Exception:
+        security.audit_request(request, ctx, 500, asyncio.get_running_loop().time() - started)
+        raise
+
+    security.audit_request(
+        request,
+        ctx,
+        response.status_code,
+        asyncio.get_running_loop().time() - started,
+    )
+    return response
+
 
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
 
-# Register routers (skip any that failed to import)
-_router_registry = [
-    (jobs, "/api/jobs", "Jobs"),
-    (cad, "/api/cad", "CAD"),
-    (preprocess, "/api/preprocess", "Pre-processing"),
-    (solver, "/api/solve", "Solver"),
-    (postprocess, "/api/postprocess", "Post-processing"),
-    (benchmarks, "/api/benchmarks", "Benchmarks"),
-    (agent, "/api/agent", "LLM Agent"),
-    (ai_transformer, "/api/ai", "AI Transformer"),
-    (ai_governance, "/api/ai/governance", "AI Governance"),
-    (ai_suboff, "/api/ai/suboff", "SUBOFF AI"),
-    (suboff, "/api/suboff", "SUBOFF Physics"),
-    (cylinder_interactive, "/api/cylinder-interactive", "Cylinder Interactive"),
-    (cylinder_bench, "/api/cylinder-bench", "Cylinder Benchmark"),
-    (cylinder_compare, "/api/cylinder-compare", "Cylinder Compare"),
-    (simulations, "", "Simulations"),
-    (orchestration, "/api/orchestration", "Orchestration"),
-    (projects, "/api/projects", "Projects"),
-    (templates, "/api/templates", "Templates"),
-    (reports, "/api/reports", "Reports"),
-    (notifications, "/api/notifications", "Notifications"),
-    (xflow_streaming, "/api/stream", "XFlow Streaming"),
-    (xflow_projects, "/api/xflow-projects", "XFlow Projects"),
-]
-for _mod, _prefix, _tag in _router_registry:
-    if _mod is not None:
-        kwargs = {"tags": [_tag]}
-        if _prefix:
-            kwargs["prefix"] = _prefix
-        app.include_router(_mod.router, **kwargs)
+app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
+app.include_router(cad.router, prefix="/api/cad", tags=["CAD"])
+app.include_router(preprocess.router, prefix="/api/preprocess", tags=["Pre-processing"])
+app.include_router(solver.router, prefix="/api/solve", tags=["Solver"])
+app.include_router(postprocess.router, prefix="/api/postprocess", tags=["Post-processing"])
+app.include_router(benchmarks.router, prefix="/api/benchmarks", tags=["Benchmarks"])
+app.include_router(agent.router, prefix="/api/agent", tags=["LLM Agent"])
+app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transformer"])
+app.include_router(ai_governance.router, prefix="/api/ai/governance", tags=["AI Governance"])
+app.include_router(ai_suboff.router, prefix="/api/ai/suboff", tags=["SUBOFF AI"])
+app.include_router(suboff.router, prefix="/api/suboff", tags=["SUBOFF Physics"])
+app.include_router(orchestration.router, prefix="/api/orchestration", tags=["Orchestration"])
+app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
+app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
+app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 
 # ---------------------------------------------------------------------------
 # WebSocket
@@ -346,23 +318,14 @@ async def health() -> dict:
 async def platform_status() -> dict:
     try:
         import torch
-        import torch_sdaa
 
-        sdaa_ok = torch.sdaa.is_available()
-        n_sdaas = torch.sdaa.device_count() if sdaa_ok else 0
-        sdaa_names = (
-            [torch.sdaa.get_device_name(i) for i in range(n_sdaas)] if sdaa_ok else []
-        )
         cuda_ok = torch.cuda.is_available()
         n_gpus = torch.cuda.device_count() if cuda_ok else 0
         gpu_names = (
             [torch.cuda.get_device_name(i) for i in range(n_gpus)] if cuda_ok else []
         )
-        devices = ["cpu"] + [f"sdaa:{i}" for i in range(n_sdaas)] + [f"cuda:{i}" for i in range(n_gpus)]
+        devices = ["cpu"] + [f"cuda:{i}" for i in range(n_gpus)]
     except Exception:
-        sdaa_ok = False
-        n_sdaas = 0
-        sdaa_names = []
         cuda_ok = False
         n_gpus = 0
         gpu_names = []
@@ -383,9 +346,6 @@ async def platform_status() -> dict:
         "platform": "TensorLBM",
         "scheduler_backend": jm.scheduler_backend(),
         "scheduler_profile": jm.scheduler_profile(),
-        "sdaa_available": sdaa_ok,
-        "sdaa_count": n_sdaas,
-        "sdaa_names": sdaa_names,
         "cuda_available": cuda_ok,
         "gpu_count": n_gpus,
         "gpu_names": gpu_names,

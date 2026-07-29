@@ -263,11 +263,9 @@ def bouzidi_bounce_back_3d(
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
-    # Set f[opp] (the UNKNOWN population, from solid toward fluid),
-    # NOT f[direction] (the known population, from fluid toward solid).
-    target = f_out[opp].clone()
+    target = f_out[direction].clone()
     target[fluid_nodes] = f_bc
-    f_out[opp] = target
+    f_out[direction] = target
 
     return f_out
 

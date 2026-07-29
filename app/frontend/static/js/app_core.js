@@ -15,7 +15,7 @@ const UI_STORAGE_KEY = 'tensorlbm_ui_state_v1';
 const TAB_SEQUENCE = [
   'dashboard', 'projects', 'templates', 'cad', 'preprocess', 'solve',
   'postprocess', 'reports', 'benchmarks', 'compare', 'ai-flow',
-  'orchestration', 'agent', 'suboff', 'geo3d', 'generic', 'cylinder',
+  'orchestration', 'agent', 'suboff', 'geo3d',
 ];
 const TAB_ENTER_HANDLERS = {
   dashboard: () => dashboardInit(),
@@ -44,7 +44,6 @@ const TAB_ENTER_HANDLERS = {
       if (el) el.focus();
     }, 50);
   },
-  generic: () => { if (typeof genericInit === 'function') genericInit(); },
 };
 const uiState = {
   activeTab: 'dashboard',
@@ -123,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
       dashboard: 'dashboard',
       projects: 'projects', templates: 'projects',
       cad: 'cad', geo3d: 'cad',
-      preprocess: 'sim', solve: 'sim', benchmarks: 'sim', generic: 'sim', cylinder: 'sim',
+      preprocess: 'sim', solve: 'sim', benchmarks: 'sim',
       postprocess: 'results', reports: 'results', compare: 'results',
       'ai-flow': 'ai', orchestration: 'ai', agent: 'ai', suboff: 'ai',
     };
@@ -148,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
       preprocess: 'Pre-processing', solve: 'Solver', benchmarks: 'Benchmarks',
       postprocess: 'Post-process', reports: 'Reports', compare: 'Compare Runs',
       'ai-flow': 'AI Flow', orchestration: 'Orchestration', agent: 'AI Agent',
-      suboff: 'SUBOFF Surrogate', generic: 'Generic CFD', cylinder: 'Cylinder Flow',
+      suboff: 'SUBOFF Surrogate',
     };
     const titleEl = document.getElementById('navbar-module-title');
     if (titleEl) titleEl.textContent = moduleNames[activeTab] ? '— ' + moduleNames[activeTab] : '';

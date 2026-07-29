@@ -524,11 +524,6 @@ def dg_lbm_step(
     forward-Euler).  This solves the continuous DVBE on the DG polynomial
     basis — stable and recovering ν = τ/3.
 
-    For stability of the explicit RK3 integrator the collision term requires
-    ``Δt_sub < 2 τ``; this function automatically raises *n_substeps* to satisfy
-    that bound when *tau* is small (high-Re).  The advection CFL demands only
-    ``n_substeps ≥ 3`` for P1.
-
     Args:
         f_dg: nodal DOFs ``(Q, ..., cells..., ..., nodes...)``.
         velocities / weights: lattice ``(Q, ndim)`` and ``(Q,)``.
@@ -537,23 +532,14 @@ def dg_lbm_step(
             discrete-LBM exterior set this to ``τ_lbm − ½``.
         ndim_spatial: 2 or 3.
         dt: macro-step (1.0 for the LBM clock).
-        n_substeps: minimum sub-steps (will be increased if needed for stability).
+        n_substeps: RK sub-steps (P1 ⇒ ≥3 for the advection CFL; collision adds a
+            dt/τ ≤ 2 stability bound that is comfortably met for τ ≳ 0.55).
         scheme: ``"euler"`` or ``"rk3"``.
-        q_first: position of the Q axis.
 
     Returns the updated DOFs.
     """
-    import math
-
     if n_substeps < 1:
         raise ValueError("n_substeps must be >= 1")
-    # Stability constraint from the collision term: Δt_sub/τ ≤ 2 (conservative).
-    min_substeps_coll = max(1, int(math.ceil(dt / (2.0 * tau))))
-    # SSP-RK3 requires n_substeps ≥ 10 for τ ≤ 0.06 (empirical fix)
-    if tau < 0.06:
-        min_substeps_coll = max(min_substeps_coll, 10)
-    if n_substeps < min_substeps_coll:
-        n_substeps = min_substeps_coll
     dt_sub = dt / n_substeps
 
     def rhs(f: torch.Tensor) -> torch.Tensor:
@@ -571,10 +557,6 @@ def dg_lbm_step(
     f = f_dg
     for _ in range(n_substeps):
         f = step_fn(f)
-        # Positivity preservation: clamp small negative overshoots (Gibbs
-        # phenomenon near sharp gradients) so macroscopic moments stay
-        # well-posed.
-        f = f.clamp(min=0.0)
     return f
 
 

@@ -12,7 +12,6 @@ import sys
 from pathlib import Path
 
 import torch
-import torch_sdaa
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
@@ -38,7 +37,7 @@ GY  = -5e-5
 RHO_LIQ = 1.0
 RHO_GAS = 0.01
 N_STEPS = 500
-DEVICE  = "sdaa" if torch.sdaa.is_available() else "cpu"
+DEVICE  = "cuda" if torch.cuda.is_available() else "cpu"
 
 A = COL_WIDTH
 G_ABS = abs(GY)

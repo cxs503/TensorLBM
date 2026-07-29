@@ -8,7 +8,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import torch
-import torch_sdaa
 import matplotlib
 matplotlib.use("Agg")
 
@@ -127,7 +126,7 @@ def run_fe_3d(config: FE3DConfig):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--device", default="sdaa" if torch.sdaa.is_available() else "cpu")
+    p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--kappa", type=float, default=0.02)
     p.add_argument("--n-steps", type=int, default=2000)
     p.add_argument("--run-name", default="fe_3d")

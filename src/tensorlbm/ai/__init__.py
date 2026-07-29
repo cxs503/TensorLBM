@@ -1,13 +1,34 @@
-"""Torch-based AI utilities for TensorLBM flow and turbulence workflows.
+"""AI sub-package for HPC + AI demonstration in TensorLBM.
 
-The core API covers datasets, turbulence closures, pipelines, and the
-self-supervised flow transformer.  SUBOFF reconstruction is optional and is
-queried explicitly with :func:`get_suboff_availability`; it never blocks this
-package's core imports.
+Implements the end-to-end pipeline
+
+    Agent → modelling/solving/post-processing
+          → dataset extraction
+          → SQLite persistence
+          → neural-network turbulence-model training
+          → AI-enhanced LBM collision (LES closure)
+
+All components are CPU-friendly and are exposed both as ordinary Python
+APIs and as platform agent tools.
+
+Multi-backend support
+---------------------
+Set the active computation framework before importing (or at any point
+before training / inference):
+
+    import tensorlbm.backends as B
+    B.set_backend("paddle")    # or "mindspore"
+
+Or via environment variable::
+
+    TENSORLBM_BACKEND=paddle python my_script.py
+
+The LBM solver core still runs on PyTorch; only the AI sub-package uses
+the multi-backend dispatch.
 """
 from __future__ import annotations
 
-import importlib
+from ..backends import get_backend, set_backend  # re-export for convenience
 
 from .database import (
     LBMDatabase,
@@ -43,6 +64,9 @@ from .transformer import (
 )
 
 __all__ = [
+    # backends
+    "get_backend",
+    "set_backend",
     # dataset
     "EddyViscosityDataset",
     "extract_les_samples_2d",
@@ -85,38 +109,12 @@ __all__ = [
     "reconstruct_flow_field",
 ]
 
-_OPTIONAL_SUBOFF_MODULES = (
-    "tensorlbm.ai.suboff_utils",
-    "tensorlbm.ai.suboff_train",
-    "tensorlbm.ai.suboff_inference",
+# SUBOFF 3D surrogate modules
+from tensorlbm.ai.nn import encoder_module, decoder_module, attention_module
+from tensorlbm.ai.suboff_coord import coord_ori27, coord_ori28, coord_ori28_addition
+from tensorlbm.ai.suboff_dataset import (
+    CylinderDatasetMultiRe14,
+    read_multi_re_cylinder_data27,
+    read_multi_re_cylinder_data28,
+    read_multi_re_cylinder_data28_addition,
 )
-
-
-def _load_optional_suboff_api() -> tuple[bool, str]:
-    """Check whether all optional SUBOFF modules can be imported.
-
-    Only a missing module that is part of the optional SUBOFF group is
-    converted into an unavailable result.  Missing transitive dependencies and
-    other import errors remain visible to callers.
-    """
-    for module_name in _OPTIONAL_SUBOFF_MODULES:
-        try:
-            importlib.import_module(module_name)
-        except ModuleNotFoundError as exc:
-            if exc.name == module_name:
-                return False, f"Optional SUBOFF module is not installed: {module_name}"
-            raise
-    return True, "Optional SUBOFF modules are importable."
-
-
-def get_suboff_availability() -> dict[str, str | bool]:
-    """Return the explicit availability state of optional SUBOFF support."""
-    available, reason = _load_optional_suboff_api()
-    return {
-        "available": available,
-        "status": "AVAILABLE" if available else "NOT_AVAILABLE",
-        "reason": reason,
-    }
-
-
-__all__ += ["get_suboff_availability"]
