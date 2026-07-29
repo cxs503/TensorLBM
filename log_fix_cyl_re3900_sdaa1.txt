@@ -1,0 +1,45 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re3900_3d_rans SDAA:1] D=48.0 nx=400 ny=160 nz=50 u_in=0.08 Re=3900.0 nu=9.846154e-04 tau=0.502954 MRT+RANS-k-epsilon steps=10000
+[cyl_re3900_3d_rans SDAA:1] 3D grid (nz=50) prevents divergence; RANS k-epsilon for accuracy
+[cyl_re3900_3d_rans SDAA:1] solid cells=89650
+[cyl_re3900_3d_rans SDAA:1] near-wall cells=6800
+[cyl_re3900_3d_rans SDAA:1] SurfaceMesh.from_cylinder built
+[cyl_re3900_3d_rans SDAA:1] KESolver initialized, k0=9.999994e-05 eps0=1.000000e-06
+[cyl_re3900_3d_rans SDAA:1] step=500/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.007700 nu_t_max=7.8687e-03 (229s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=1000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.010013 nu_t_max=1.6660e-02 (458s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=1500/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.011548 nu_t_max=1.9215e-02 (686s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=2000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.024753 nu_t_max=2.6015e-02 (915s, 0.457s/step)
+[cyl_re3900_3d_rans SDAA:1] step=2500/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.030492 nu_t_max=4.3409e-02 (1142s, 0.457s/step)
+[cyl_re3900_3d_rans SDAA:1] step=3000/10000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.037918 nu_t_max=6.2006e-02 (1369s, 0.456s/step)
+[cyl_re3900_3d_rans SDAA:1] step=3500/10000 Cd_p=1.2954 Cd_f=0.0142 Cd_tot=1.3095 Cl=-0.028596 nu_t_max=7.7639e-02 (1597s, 0.456s/step)
+[cyl_re3900_3d_rans SDAA:1] step=4000/10000 Cd_p=1.3078 Cd_f=0.0142 Cd_tot=1.3220 Cl=-0.017769 nu_t_max=9.1135e-02 (1826s, 0.456s/step)
+[cyl_re3900_3d_rans SDAA:1] step=4500/10000 Cd_p=1.3276 Cd_f=0.0141 Cd_tot=1.3417 Cl=0.013351 nu_t_max=1.0067e-01 (2055s, 0.457s/step)
+[cyl_re3900_3d_rans SDAA:1] step=5000/10000 Cd_p=1.3331 Cd_f=0.0140 Cd_tot=1.3471 Cl=0.015631 nu_t_max=1.0544e-01 (2285s, 0.457s/step)
+[cyl_re3900_3d_rans SDAA:1] step=5500/10000 Cd_p=1.3447 Cd_f=0.0138 Cd_tot=1.3585 Cl=0.008310 nu_t_max=1.0739e-01 (2516s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=6000/10000 Cd_p=1.3475 Cd_f=0.0136 Cd_tot=1.3611 Cl=-0.017423 nu_t_max=1.1232e-01 (2748s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=6500/10000 Cd_p=1.3601 Cd_f=0.0134 Cd_tot=1.3734 Cl=-0.003258 nu_t_max=1.1335e-01 (2980s, 0.458s/step)
+[cyl_re3900_3d_rans SDAA:1] step=7000/10000 Cd_p=1.3499 Cd_f=0.0131 Cd_tot=1.3630 Cl=0.012577 nu_t_max=1.1122e-01 (3213s, 0.459s/step)
+[cyl_re3900_3d_rans SDAA:1] step=7500/10000 Cd_p=1.3314 Cd_f=0.0127 Cd_tot=1.3441 Cl=0.011758 nu_t_max=1.0769e-01 (3447s, 0.460s/step)
+[cyl_re3900_3d_rans SDAA:1] step=8000/10000 Cd_p=1.3364 Cd_f=0.0124 Cd_tot=1.3488 Cl=-0.015045 nu_t_max=1.0390e-01 (3680s, 0.460s/step)
+[cyl_re3900_3d_rans SDAA:1] step=8500/10000 Cd_p=1.3668 Cd_f=0.0123 Cd_tot=1.3791 Cl=-0.023875 nu_t_max=1.0007e-01 (3912s, 0.460s/step)
+[cyl_re3900_3d_rans SDAA:1] step=9000/10000 Cd_p=1.3828 Cd_f=0.0121 Cd_tot=1.3950 Cl=0.006527 nu_t_max=9.9097e-02 (4145s, 0.461s/step)
+[cyl_re3900_3d_rans SDAA:1] step=9500/10000 Cd_p=1.4084 Cd_f=0.0119 Cd_tot=1.4204 Cl=0.034369 nu_t_max=9.8606e-02 (4377s, 0.461s/step)
+[cyl_re3900_3d_rans SDAA:1] step=10000/10000 Cd_p=1.4202 Cd_f=0.0117 Cd_tot=1.4320 Cl=-0.000989 nu_t_max=1.0322e-01 (4610s, 0.461s/step)
+
+[cyl_re3900_3d_rans SDAA:1] === FINAL ===  Cd_p=1.3648 Cd_f=0.0127 Cd_tot=1.3775 (ref=0.98) err=40.6% Cl=0.001346 St=0.26407776032916447 finite=True time=4610s
+[cyl_re3900_3d_rans SDAA:1] saved to results_fix_benchmarks/cyl_re3900_3d_rans_sdaa1.json

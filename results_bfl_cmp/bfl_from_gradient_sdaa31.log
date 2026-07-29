@@ -1,0 +1,35 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] wall_method=bfl_from_gradient normal=from_gradient nx=200 ny=80 nz=80 L=80 R_max=4.6674 D=9.3349 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.042
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] solid cells: 4651  L/D=8.57
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] near-wall cells: 2050
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] |n| stats: min=1.000000 max=1.000000 mean=1.000000
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] computing BFL q-values on CPU...
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] BFL q-field: 11842 links (0.5s) q=[0.0045, 0.9999] mean=0.7346
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] init done (1.1s), initial_mass=1280000.0
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=500 Cd_p=0.011701 Cd_f=0.130826 Cd_tot=0.142527 Cl=-0.000007 (118s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=1000 Cd_p=0.005292 Cd_f=0.111485 Cd_tot=0.116777 Cl=-0.000008 (232s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=1500 Cd_p=0.005074 Cd_f=0.105551 Cd_tot=0.110625 Cl=-0.000006 (341s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=2000 Cd_p=0.005041 Cd_f=0.103524 Cd_tot=0.108565 Cl=-0.000005 (450s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=2500 Cd_p=0.004998 Cd_f=0.102813 Cd_tot=0.107811 Cl=-0.000006 (559s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=3000 Cd_p=0.004976 Cd_f=0.102539 Cd_tot=0.107515 Cl=-0.000007 (669s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=3500 Cd_p=0.004972 Cd_f=0.102433 Cd_tot=0.107405 Cl=-0.000006 (779s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=4000 Cd_p=0.004959 Cd_f=0.102385 Cd_tot=0.107344 Cl=-0.000007 (887s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=4500 Cd_p=0.004961 Cd_f=0.102362 Cd_tot=0.107324 Cl=-0.000006 (995s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] step=5000 Cd_p=0.004960 Cd_f=0.102353 Cd_tot=0.107313 Cl=-0.000007 (1103s)
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] DONE Cd_p=0.004961 Cd_f=0.102358 Cd_tot=0.107318 Cl=-0.000007 (ref Cf=0.042) err=155.5% time=1103s
+[SDAA:31 SUBOFF Re=1000 bfl_from_gradient] Results written to results_bfl_cmp/bfl_from_gradient_sdaa31.json

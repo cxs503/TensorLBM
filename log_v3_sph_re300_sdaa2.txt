@@ -1,0 +1,39 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[sph_re300 SDAA:2] shape=sphere D=40.0 nx=180 ny=180 nz=180 u_in=0.08 Re=300.0 nu=1.066667e-02 tau=0.532000 collision=mrt_smag Cs=0.05 n_steps=5000
+[sph_re300 SDAA:2] solid=33371 near=4302 dpS=4.021239e+00
+[sph_re300 SDAA:2] init done (0.6s) mass=5832000.0
+[sph_re300 SDAA:2] step=500/5000 Cd=0.0000 Cl=0.000000 (527s, 1.055s/step)
+[sph_re300 SDAA:2] step=1000/5000 Cd=0.0000 Cl=0.000000 (1082s, 1.082s/step)
+[sph_re300 SDAA:2] step=1500/5000 Cd=0.7137 Cl=0.000003 (1626s, 1.084s/step)
+[sph_re300 SDAA:2] step=2000/5000 Cd=0.6935 Cl=-0.000037 (2151s, 1.076s/step)
+[sph_re300 SDAA:2] step=2500/5000 Cd=0.6770 Cl=-0.000089 (2684s, 1.073s/step)
+[sph_re300 SDAA:2] step=3000/5000 Cd=0.6659 Cl=-0.000182 (3208s, 1.069s/step)
+[sph_re300 SDAA:2] step=3500/5000 Cd=0.6581 Cl=-0.000233 (3714s, 1.061s/step)
+[sph_re300 SDAA:2] step=4000/5000 Cd=0.6530 Cl=-0.000323 (4127s, 1.032s/step)
+[sph_re300 SDAA:2] step=4500/5000 Cd=0.6480 Cl=-0.000452 (4540s, 1.009s/step)
+[sph_re300 SDAA:2] step=5000/5000 Cd=0.6449 Cl=-0.000604 (4953s, 0.991s/step)
+
+[sph_re300 SDAA:2] === FINAL RESULTS ===
+[sph_re300 SDAA:2] Cd_p   = 0.4844
+[sph_re300 SDAA:2] Cd_f   = 0.1605
+[sph_re300 SDAA:2] Cd_tot = 0.6449  (ref=0.44, err=46.6%)
+[sph_re300 SDAA:2] Cl     = -0.000604
+[sph_re300 SDAA:2] Cl_rms = 0.000238
+[sph_re300 SDAA:2] St     = 0.1160
+[sph_re300 SDAA:2] time = 4953s (0.991s/step)
+[sph_re300 SDAA:2] results saved to results_new_bench_sph_re300_sdaa2.json

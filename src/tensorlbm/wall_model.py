@@ -448,7 +448,8 @@ def wall_function_3d(
 
             u_tau_log = torch.where(near, ut_log, torch.zeros_like(ut_log))
             tau_w = u_tau_log * u_tau_log
-            coef = -(tau_w / y_val) * (w_log * near.to(f.dtype))
+            # Bug 23 fix: force = -tau_w (no Guo, no /y_val)
+            coef = -tau_w * (w_log * near.to(f.dtype))
             f = ibm_apply_body_force_3d(f,
                 coef * (ut_x * inv_utan),
                 coef * (ut_y * inv_utan),
@@ -548,7 +549,11 @@ def wall_function_3d(
     # Bug 12 note: do NOT combine with bounce-back — use one or the other.
     # NOTE: hybrid wall law handles body force internally (per-region: bb + log).
     if wall_law != "hybrid":
-        coef = -(tau_w / y_val) * near.to(f.dtype)
+        # Bug 23: original -tau_w/y_val was 2x too strong (ibm has no Guo)
+        # Fix: use -tau_w (correct magnitude, ibm_apply_body_force_3d is simple forcing)
+        # NOTE: wall function needs BB for penetration prevention
+        #       and correct timing (post-stream). Still under investigation.
+        coef = -tau_w * near.to(f.dtype)
         fx = coef * (ut_x * inv_utan)
         fy = coef * (ut_y * inv_utan)
         fz = coef * (ut_z * inv_utan)
@@ -686,7 +691,8 @@ def wall_function_d3q27(
 
     tau_w = u_tau * u_tau
     # Bug 10 fix: use u_tangent direction, not u/|u|.
-    coef = -(tau_w / y_val) * near.to(f.dtype)
+    # Bug 23 fix: force = -tau_w (ibm_apply_body_force_3d has no Guo factor)
+    coef = -tau_w * near.to(f.dtype)
     fx = coef * (ut_x * inv_utan)
     fy = coef * (ut_y * inv_utan)
     fz = coef * (ut_z * inv_utan)
@@ -709,6 +715,367 @@ def wall_function_d3q27(
     return f, drag_fric, drag_pres
 
 
+# ===========================================================================
+# MATURE WALL FUNCTION + BFL (from literature survey, SDAA 28-31)
+# ===========================================================================
+# Implements the recommended architecture from docs/WALL_FUNCTION_SURVEY.md:
+#   1. BFL interpolated bounce-back (Bouzidi et al. 2001) — post-stream
+#   2. Wall function Guo body force (OpenLB-style) — post-stream, after BFL
+#   3. Wall-surface momentum exchange for drag (Yu et al. 2003)
+#
+# Key improvements over the legacy wall_function_3d:
+#   - Uses **Guo forcing** (1 + c·u/cs²) correction, not simple forcing
+#   - Combines BFL (geometric accuracy) + wall function (turbulence)
+#   - Force magnitude: −τ_w/dy (per unit volume, correct for Guo)
+#   - Uses tangential velocity for curved walls
+# ===========================================================================
+
+
+def guo_body_force_d3q19(
+    f: torch.Tensor,
+    fx: torch.Tensor,
+    fy: torch.Tensor,
+    fz: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+) -> torch.Tensor:
+    """Apply a Guo body-force correction to a D3Q19 distribution.
+
+    Implements the full Guo forcing scheme (Guo et al. 2002):
+
+        F_i = w_i · (1 + c_i·u / cs²) · (c_i·F) / cs²
+
+    The ``(1 + c_i·u / cs²)`` velocity-correction term is **essential** for
+    correct force application at non-trivial velocities.  Without it, the
+    force is applied as "simple forcing" (``w_i · 3 · c_i·F``), which
+    introduces an O(u²) error in the momentum transfer.
+
+    This is the recommended forcing scheme for wall functions, as used by
+    OpenLB and described in the wall-function survey
+    (``docs/WALL_FUNCTION_SURVEY.md``).
+
+    Args:
+        f:  Distribution tensor ``(19, nz, ny, nx)``.
+        fx: Eulerian x-force field ``(nz, ny, nx)``.
+        fy: Eulerian y-force field ``(nz, ny, nx)``.
+        fz: Eulerian z-force field ``(nz, ny, nx)``.
+        ux: x-velocity field ``(nz, ny, nx)`` (for the Guo correction).
+        uy: y-velocity field ``(nz, ny, nx)``.
+        uz: z-velocity field ``(nz, ny, nx)``.
+
+    Returns:
+        Updated distribution, same shape as *f*.
+    """
+    from .d3q19 import C as C_LAT, W as W_LAT
+
+    device = f.device
+    c = C_LAT.to(device).float()
+    w = W_LAT.to(device).float()
+    q = 19
+
+    cx = c[:, 0].view(q, 1, 1, 1)
+    cy = c[:, 1].view(q, 1, 1, 1)
+    cz = c[:, 2].view(q, 1, 1, 1)
+    w_view = w.view(q, 1, 1, 1)
+
+    cs2 = 1.0 / 3.0
+    # c_i · u  (velocity correction term)
+    cu_u = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
+    # c_i · F  (force projection)
+    cu_f = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
+
+    forcing = w_view * (1.0 + cu_u / cs2) * cu_f / cs2
+    return f + forcing
+
+
+def guo_body_force_d3q27(
+    f: torch.Tensor,
+    fx: torch.Tensor,
+    fy: torch.Tensor,
+    fz: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+) -> torch.Tensor:
+    """Apply a Guo body-force correction to a D3Q27 distribution.
+
+    D3Q27 analogue of :func:`guo_body_force_d3q19`.
+    """
+    from .d3q27 import C as C27, W as W27
+
+    device = f.device
+    c = C27.to(device).float()
+    w = W27.to(device).float()
+    q = 27
+
+    cx = c[:, 0].view(q, 1, 1, 1)
+    cy = c[:, 1].view(q, 1, 1, 1)
+    cz = c[:, 2].view(q, 1, 1, 1)
+    w_view = w.view(q, 1, 1, 1)
+
+    cs2 = 1.0 / 3.0
+    cu_u = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
+    cu_f = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
+
+    forcing = w_view * (1.0 + cu_u / cs2) * cu_f / cs2
+    return f + forcing
+
+
+def _solve_wall_law(
+    u_tan_mag: torch.Tensor,
+    nu: float,
+    y_val: float,
+    wall_law: str,
+    near: torch.Tensor,
+) -> torch.Tensor:
+    """Solve the wall law for u_τ (friction velocity).
+
+    Supports ``"log"``, ``"reichardt"``, ``"gradient"``, and ``"hybrid"``.
+    Returns u_τ field, zero outside near-wall cells.
+    """
+    u_tan_mag = u_tan_mag.clamp(min=1e-12)
+
+    if wall_law == "reichardt":
+        # Reichardt unified wall law (1951): valid for all y+.
+        ut = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
+        for _ in range(12):
+            yp = (y_val * ut / nu).clamp(min=1e-6)
+            up = (1.0 / _KAPPA) * torch.log1p(_KAPPA * yp) + 7.8 * (
+                1.0 - torch.exp(-yp / 11.0) - (yp / 11.0) * torch.exp(-yp / 3.0)
+            )
+            ut = (u_tan_mag / up.clamp(min=1e-6)).clamp(min=1e-12)
+        return torch.where(near, ut, torch.zeros_like(ut))
+
+    if wall_law == "gradient":
+        # Direct velocity-gradient: τ_w = ν·u_tan / y_val
+        tau_w = nu * u_tan_mag / y_val
+        return torch.where(near, torch.sqrt(tau_w.clamp(min=1e-30)),
+                           torch.zeros_like(tau_w))
+
+    if wall_law == "hybrid":
+        # Gradient for y+ <= 60, log-law for y+ > 60
+        ut_vis = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
+        yp = y_val * ut_vis / nu
+        u_tau = torch.where(near, ut_vis, torch.zeros_like(ut_vis))
+        log_region = (yp > 60.0) & near
+        if bool(log_region.any()):
+            ut = ut_vis[log_region].clone()
+            um = u_tan_mag[log_region]
+            for _ in range(8):
+                lyp = torch.log(y_val * ut / nu)
+                fv = ut * (lyp / _KAPPA + _B_LOG) - um
+                fp = (lyp / _KAPPA + _B_LOG) + 1.0 / _KAPPA
+                ut = (ut - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
+            u_tau[log_region] = ut
+        return u_tau
+
+    # Default: log-law (Newton iteration)
+    u_tau = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
+    y_plus = y_val * u_tau / nu
+    turb = (y_plus > 11.6) & near
+    if bool(turb.any()):
+        ut = u_tau[turb].clone()
+        um = u_tan_mag[turb]
+        for _ in range(8):
+            lyp = torch.log(y_val * ut / nu)
+            fv = ut * (lyp / _KAPPA + _B_LOG) - um
+            fp = (lyp / _KAPPA + _B_LOG) + 1.0 / _KAPPA
+            ut = (ut - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
+        u_tau[turb] = ut
+    return torch.where(near, u_tau, torch.zeros_like(u_tau))
+
+
+def bfl_wall_function_3d(
+    f: torch.Tensor,
+    f_prev: torch.Tensor,
+    solid: torch.Tensor,
+    nu: float,
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor,
+    *,
+    y_val: float = 0.5,
+    wall_law: str = "reichardt",
+    near_mask: torch.Tensor | None = None,
+    apply_bfl: bool = True,
+    use_guo: bool = True,
+) -> tuple[torch.Tensor, float, float]:
+    """Mature BFL + wall function with Guo forcing (literature-recommended).
+
+    Implements the architecture from ``docs/WALL_FUNCTION_SURVEY.md``:
+
+    1. **BFL interpolated bounce-back** (Bouzidi et al. 2001) — post-stream,
+       provides second-order geometric accuracy for curved boundaries.
+    2. **Wall function Guo body force** (OpenLB-style) — post-stream, after
+       BFL, provides correct wall shear for high-Re flows.
+    3. **Wall-surface momentum exchange** for drag (Yu et al. 2003).
+
+    Key improvements over the legacy :func:`wall_function_3d`:
+
+    - Uses **Guo forcing** ``(1 + c·u/cs²)`` correction (not simple forcing)
+    - Combines BFL (geometric accuracy) + wall function (turbulence)
+    - Force magnitude: ``−τ_w/dy`` (per unit volume, correct for Guo)
+    - Uses tangential velocity for curved walls
+
+    Args:
+        f:  Post-stream distribution ``(19, nz, ny, nx)``.
+        f_prev: Pre-stream (post-collision) distribution ``(19, nz, ny, nx)``.
+        solid: Boolean solid mask ``(nz, ny, nx)``.
+        nu: Kinematic viscosity (lattice units).
+        fluid_boundary_mask: ``(19, nz, ny, nx)`` bool, BFL boundary links.
+        q_field: ``(19, nz, ny, nx)`` float, BFL q-values per direction.
+        y_val: Distance from near-wall cell centre to wall (default 0.5).
+        wall_law: ``"log"``, ``"reichardt"``, ``"gradient"``, or ``"hybrid"``.
+        near_mask: Optional pre-computed near-wall mask.
+        apply_bfl: If True, apply BFL bounce-back (default).  Set False to
+            use only the wall function (for flat walls where BFL is N/A).
+        use_guo: If True, use Guo forcing (recommended).  If False, use
+            simple forcing (legacy behaviour, for comparison).
+
+    Returns:
+        ``(f_corrected, drag_friction_x, drag_pressure_x)``.
+    """
+    from .d3q19 import macroscopic3d
+    from .bfl_d3q19 import bouzidi_bounce_back_d3q19
+
+    fluid = ~solid
+    if near_mask is not None:
+        near = near_mask
+    else:
+        near = _near_wall_mask_no_wrap(solid)
+
+    # ── Step 1: BFL interpolated bounce-back (post-stream) ──
+    if apply_bfl and fluid_boundary_mask is not None:
+        f = bouzidi_bounce_back_d3q19(f, f_prev, fluid_boundary_mask, q_field)
+
+    # ── Step 2: Compute macroscopic fields ──
+    rho, ux, uy, uz = macroscopic3d(f)
+
+    # ── Step 3: Compute wall normal and tangential velocity ──
+    nx_n, ny_n, nz_n = compute_wall_normal(solid, near)
+    u_dot_n = ux * nx_n + uy * ny_n + uz * nz_n
+    ut_x = ux - u_dot_n * nx_n
+    ut_y = uy - u_dot_n * ny_n
+    ut_z = uz - u_dot_n * nz_n
+    u_tan_mag = torch.sqrt(ut_x * ut_x + ut_y * ut_y + ut_z * ut_z).clamp(min=1e-12)
+    u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
+    has_tan = u_tan_mag > 1e-10
+    u_tan_mag = torch.where(has_tan, u_tan_mag, u_mag)
+    ut_x = torch.where(has_tan, ut_x, ux)
+    ut_y = torch.where(has_tan, ut_y, uy)
+    ut_z = torch.where(has_tan, ut_z, uz)
+    inv_utan = 1.0 / u_tan_mag
+
+    # ── Step 4: Solve wall law for u_τ ──
+    u_tau = _solve_wall_law(u_tan_mag, nu, y_val, wall_law, near)
+    tau_w = u_tau * u_tau
+
+    # ── Step 5: Apply Guo body force: F = −(τ_w/dy) · û_tan ──
+    # With Guo forcing, force is per unit volume: F = −τ_w/dy · û_tan
+    # With simple forcing, force is per unit area: F = −τ_w · û_tan
+    near_f = near.to(f.dtype)
+    if use_guo:
+        coef = -(tau_w / y_val) * near_f
+    else:
+        # Legacy simple forcing (for comparison)
+        coef = -tau_w * near_f
+
+    fx = coef * (ut_x * inv_utan)
+    fy = coef * (ut_y * inv_utan)
+    fz = coef * (ut_z * inv_utan)
+
+    if use_guo:
+        f = guo_body_force_d3q19(f, fx, fy, fz, ux, uy, uz)
+    else:
+        # Legacy simple forcing (ibm_apply_body_force_3d)
+        from .ibm import ibm_apply_body_force_3d
+        f = ibm_apply_body_force_3d(f, fx, fy, fz)
+
+    # ── Step 6: Compute drag ──
+    # Friction drag = integrated wall shear (from τ_w)
+    drag_fric = float((tau_w * (ut_x * inv_utan) * near_f).sum().item())
+
+    # Pressure drag = surface pressure integration
+    p = (rho - 1.0) / 3.0
+    sp = torch.roll(solid, 1, dims=2)
+    sm = torch.roll(solid, -1, dims=2)
+    drag_pres = float((-p * (sp.to(f.dtype) - sm.to(f.dtype)) * fluid.to(f.dtype)).sum().item())
+
+    return f, drag_fric, drag_pres
+
+
+def bfl_wall_function_d3q27(
+    f: torch.Tensor,
+    f_prev: torch.Tensor,
+    solid: torch.Tensor,
+    nu: float,
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor,
+    *,
+    y_val: float = 0.5,
+    wall_law: str = "reichardt",
+    near_mask: torch.Tensor | None = None,
+    apply_bfl: bool = True,
+) -> tuple[torch.Tensor, float, float]:
+    """D3Q27 variant of :func:`bfl_wall_function_3d`.
+
+    Uses D3Q27 Guo forcing with the correct lattice weights
+    (8/27, 2/27, 1/54, 1/216).
+    """
+    from .d3q27 import macroscopic27, C as C27
+
+    fluid = ~solid
+    if near_mask is not None:
+        near = near_mask
+    else:
+        near = _near_wall_mask_no_wrap(solid)
+
+    # ── Step 1: BFL bounce-back (if applicable) ──
+    # Note: D3Q27 BFL uses the same interpolation formulas but with 27
+    # directions.  For now, we skip BFL for D3Q27 (flat-wall mode).
+    # BFL for D3Q27 would require a separate q-value computation.
+
+    # ── Step 2: Compute macroscopic fields ──
+    rho, ux, uy, uz = macroscopic27(f)
+
+    # ── Step 3: Compute wall normal and tangential velocity ──
+    nx_n, ny_n, nz_n = compute_wall_normal(solid, near)
+    u_dot_n = ux * nx_n + uy * ny_n + uz * nz_n
+    ut_x = ux - u_dot_n * nx_n
+    ut_y = uy - u_dot_n * ny_n
+    ut_z = uz - u_dot_n * nz_n
+    u_tan_mag = torch.sqrt(ut_x * ut_x + ut_y * ut_y + ut_z * ut_z).clamp(min=1e-12)
+    u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
+    has_tan = u_tan_mag > 1e-10
+    u_tan_mag = torch.where(has_tan, u_tan_mag, u_mag)
+    ut_x = torch.where(has_tan, ut_x, ux)
+    ut_y = torch.where(has_tan, ut_y, uy)
+    ut_z = torch.where(has_tan, ut_z, uz)
+    inv_utan = 1.0 / u_tan_mag
+
+    # ── Step 4: Solve wall law for u_τ ──
+    u_tau = _solve_wall_law(u_tan_mag, nu, y_val, wall_law, near)
+    tau_w = u_tau * u_tau
+
+    # ── Step 5: Apply Guo body force ──
+    near_f = near.to(f.dtype)
+    coef = -(tau_w / y_val) * near_f
+    fx = coef * (ut_x * inv_utan)
+    fy = coef * (ut_y * inv_utan)
+    fz = coef * (ut_z * inv_utan)
+
+    f = guo_body_force_d3q27(f, fx, fy, fz, ux, uy, uz)
+
+    # ── Step 6: Compute drag ──
+    drag_fric = float((tau_w * (ut_x * inv_utan) * near_f).sum().item())
+    p = (rho - 1.0) / 3.0
+    sp = torch.roll(solid, 1, dims=2)
+    sm = torch.roll(solid, -1, dims=2)
+    drag_pres = float((-p * (sp.to(f.dtype) - sm.to(f.dtype)) * fluid.to(f.dtype)).sum().item())
+
+    return f, drag_fric, drag_pres
+
+
 __all__ = [
     "compute_wall_distance_fmm",
     "compute_wall_distance_fmm_2d",
@@ -717,4 +1084,9 @@ __all__ = [
     "compute_wall_normal",
     "wall_function_3d",
     "wall_function_d3q27",
+    # Mature wall function + BFL (literature-recommended)
+    "guo_body_force_d3q19",
+    "guo_body_force_d3q27",
+    "bfl_wall_function_3d",
+    "bfl_wall_function_d3q27",
 ]

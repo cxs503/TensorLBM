@@ -1,0 +1,34 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] test=t4_p0_compare use_wf=True wall_law=log y_val=1.0 p0_method=far_field nx=200 ny=80 nz=80 L=80.0 R=4.6674 D=9.3349 u_in=0.06 nu=4.800000e-05 tau=0.500144 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.008333 n_steps=5000
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] solid cells: 4651  L/D=8.57
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] near-wall cells: 2050
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] |n| stats: min=1.000000 max=1.000000 mean=1.000000
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] init done (0.6s), initial_mass=1280000.0
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=500 Cd_p=0.008426 Cd_f=0.003015 Cd_tot=0.011441 p_near=0.008426 p_far=0.008426 p_dom=0.008426 (143s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=1000 Cd_p=0.002606 Cd_f=0.002987 Cd_tot=0.005593 p_near=0.002606 p_far=0.002606 p_dom=0.002606 (286s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=1500 Cd_p=-0.004165 Cd_f=0.003247 Cd_tot=-0.000919 p_near=-0.004173 p_far=-0.004165 p_dom=-0.004166 (428s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=2000 Cd_p=-0.000870 Cd_f=0.004000 Cd_tot=0.003130 p_near=-0.000880 p_far=-0.000870 p_dom=-0.000870 (571s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=2500 Cd_p=-0.000557 Cd_f=0.004799 Cd_tot=0.004243 p_near=-0.000562 p_far=-0.000557 p_dom=-0.000557 (714s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=3000 Cd_p=0.001175 Cd_f=0.005097 Cd_tot=0.006272 p_near=0.001169 p_far=0.001175 p_dom=0.001175 (856s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=3500 Cd_p=0.000080 Cd_f=0.005502 Cd_tot=0.005582 p_near=0.000074 p_far=0.000080 p_dom=0.000080 (999s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=4000 Cd_p=-0.000047 Cd_f=0.005798 Cd_tot=0.005751 p_near=-0.000053 p_far=-0.000047 p_dom=-0.000047 (1142s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=4500 Cd_p=-0.001560 Cd_f=0.005706 Cd_tot=0.004147 p_near=-0.001565 p_far=-0.001560 p_dom=-0.001560 (1285s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] step=5000 Cd_p=-0.001185 Cd_f=0.005972 Cd_tot=0.004787 p_near=-0.001190 p_far=-0.001185 p_dom=-0.001185 (1428s)
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] DONE Cd_p=-0.001185 Cd_f=0.005972 Cd_tot=0.004787 (ref Cf=0.008333) err=42.6% time=1428s
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] P0_CMP near=-0.001190 far=-0.001185 dom=-0.001185 |n-f|=4.69e-06 |n-d|=4.68e-06
+[SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare] Results written to results_wallfn_loglaw/t4_p0_compare_sdaa15.json

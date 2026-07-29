@@ -1,0 +1,51 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:3 C4 bare_hull L=80] nx=320 ny=120 nz=120 L=80 D=9.335 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=4.223004e+00 Cd_ref=0.041995 ref=Blasius Cf=1.328/sqrt(Re)=0.041995
+[SDAA:3 C4 bare_hull L=80] solid=4371 L/D=8.57 solid_frac=0.09% (0.6s)
+[SDAA:3 C4 bare_hull L=80] near-wall=1934
+[SDAA:3 C4 bare_hull L=80] bow nx_n mean=-0.1537 (expect < 0)
+[SDAA:3 C4 bare_hull L=80] stern nx_n mean=0.1919 (expect > 0)
+[SDAA:3 C4 bare_hull L=80] init done (1.9s) mass=4608000.0
+[SDAA:3 C4 bare_hull L=80] step=500 Cd_p=0.011815 Cd_f=0.067426 Cd_tot=0.079241 Cl=-0.000000 (278s)
+[SDAA:3 C4 bare_hull L=80] step=1000 Cd_p=0.005895 Cd_f=0.042139 Cd_tot=0.048034 Cl=-0.000001 (554s)
+[SDAA:3 C4 bare_hull L=80] step=1500 Cd_p=0.005663 Cd_f=0.037663 Cd_tot=0.043325 Cl=-0.000002 (830s)
+[SDAA:3 C4 bare_hull L=80] step=2000 Cd_p=0.005607 Cd_f=0.036183 Cd_tot=0.041791 Cl=-0.000001 (1106s)
+[SDAA:3 C4 bare_hull L=80] step=2500 Cd_p=0.005570 Cd_f=0.035699 Cd_tot=0.041269 Cl=-0.000001 (1382s)
+[SDAA:3 C4 bare_hull L=80] step=3000 Cd_p=0.005532 Cd_f=0.035527 Cd_tot=0.041059 Cl=-0.000001 (1658s)
+[SDAA:3 C4 bare_hull L=80] step=3500 Cd_p=0.005507 Cd_f=0.035457 Cd_tot=0.040965 Cl=-0.000001 (1933s)
+[SDAA:3 C4 bare_hull L=80] step=4000 Cd_p=0.005492 Cd_f=0.035426 Cd_tot=0.040919 Cl=-0.000001 (2208s)
+[SDAA:3 C4 bare_hull L=80] step=4500 Cd_p=0.005485 Cd_f=0.035411 Cd_tot=0.040896 Cl=-0.000001 (2483s)
+[SDAA:3 C4 bare_hull L=80] step=5000 Cd_p=0.005481 Cd_f=0.035404 Cd_tot=0.040884 Cl=-0.000001 (2758s)
+[SDAA:3 C4 bare_hull L=80] step=5500 Cd_p=0.005481 Cd_f=0.035400 Cd_tot=0.040880 Cl=-0.000001 (3032s)
+[SDAA:3 C4 bare_hull L=80] step=6000 Cd_p=0.005478 Cd_f=0.035398 Cd_tot=0.040876 Cl=-0.000001 (3306s)
+[SDAA:3 C4 bare_hull L=80] step=6500 Cd_p=0.005478 Cd_f=0.035396 Cd_tot=0.040874 Cl=-0.000001 (3581s)
+[SDAA:3 C4 bare_hull L=80] step=7000 Cd_p=0.005478 Cd_f=0.035395 Cd_tot=0.040873 Cl=-0.000001 (3855s)
+[SDAA:3 C4 bare_hull L=80] step=7500 Cd_p=0.005478 Cd_f=0.035395 Cd_tot=0.040873 Cl=-0.000001 (4129s)
+[SDAA:3 C4 bare_hull L=80] step=8000 Cd_p=0.005478 Cd_f=0.035395 Cd_tot=0.040873 Cl=-0.000001 (4403s)
+[SDAA:3 C4 bare_hull L=80] step=8500 Cd_p=0.005478 Cd_f=0.035395 Cd_tot=0.040873 Cl=-0.000001 (4677s)
+[SDAA:3 C4 bare_hull L=80] step=9000 Cd_p=0.005478 Cd_f=0.035395 Cd_tot=0.040873 Cl=-0.000001 (4951s)
+[SDAA:3 C4 bare_hull L=80] step=9500 Cd_p=0.005478 Cd_f=0.035395 Cd_tot=0.040874 Cl=-0.000001 (5225s)
+[SDAA:3 C4 bare_hull L=80] step=10000 Cd_p=0.005478 Cd_f=0.035395 Cd_tot=0.040874 Cl=-0.000001 (5499s)
+
+[SDAA:3 C4 bare_hull L=80] === FINAL (Cd_ref=0.041995) ===
+[SDAA:3 C4 bare_hull L=80] Cd_p   = 0.005481
+[SDAA:3 C4 bare_hull L=80] Cd_f   = 0.035400
+[SDAA:3 C4 bare_hull L=80] Cd_tot = 0.040880
+[SDAA:3 C4 bare_hull L=80] Cl     = -0.000001
+[SDAA:3 C4 bare_hull L=80] St     = 2.333722
+[SDAA:3 C4 bare_hull L=80] err    = 2.7%  time=5499s
+[SDAA:3 C4 bare_hull L=80] saved to results_suboff_appendage/case4_4L.json

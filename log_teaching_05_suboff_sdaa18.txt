@@ -1,0 +1,46 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+=== SUBOFF Bare Hull: Re=1000 (SDAA:18) ===
+Grid: 200×80×80, L=80.0, D=9.335, u_in=0.06, tau=0.5144, Cs=0.05
+Steps: 5000, warmup: 1000
+Bug 37 fix: ux0[solid]=0 (not f[:,solid]=0)
+
+solid=4651 near=2050 mesh=from_suboff (0.5s)
+Wetted area: 2346, dpS=4.223004
+
+init done mass=1280000.0 (0.5s)
+
+  Step        Cd_p        Cd_f          Cd
+---------------------------------------------
+   500  (max|u|=0.0637)
+  1000  (max|u|=0.0636)
+  1500    0.005471    0.040260    0.045731  (240s)
+  2000    0.005474    0.039404    0.044879  (319s)
+  2500    0.005440    0.039130    0.044569  (398s)
+  3000    0.005426    0.039033    0.044459  (477s)
+  3500    0.005404    0.039000    0.044404  (556s)
+  4000    0.005399    0.038977    0.044375  (635s)
+  4500    0.005383    0.038967    0.044350  (714s)
+  5000    0.005393    0.038962    0.044355  (793s)
+
+=== FINAL ===
+  Cd_p = 0.005398
+  Cd_f = 0.038982
+  Cd   = 0.044379  (ref=0.041995, err=5.7%)
+  time = 793s
+
+PASS: Cd err=5.7% (target < 6%)

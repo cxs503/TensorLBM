@@ -1,0 +1,39 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[sphere_re100_3d SDAA:27] D=40.0 nx=180 ny=180 nz=180 u_in=0.08 Re=100.0 nu=3.200000e-02 tau=0.596000 MRT+Smag(Cs=0.05) steps=3000
+[sphere_re100_3d SDAA:27] solid cells=33371
+[sphere_re100_3d SDAA:27] near-wall cells=4302
+[sphere_re100_3d SDAA:27] SurfaceMesh.from_sphere built
+[sphere_re100_3d SDAA:27] init done (0.5s) mass=5832000.0
+[sphere_re100_3d SDAA:27] step=200/3000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=-0.000002 (175s, 0.874s/step)
+[sphere_re100_3d SDAA:27] step=400/3000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.001020 (349s, 0.872s/step)
+[sphere_re100_3d SDAA:27] step=600/3000 Cd_p=0.0000 Cd_f=0.0000 Cd_tot=0.0000 Cl=0.000016 (523s, 0.872s/step)
+[sphere_re100_3d SDAA:27] step=800/3000 Cd_p=0.6872 Cd_f=0.4444 Cd_tot=1.1316 Cl=0.000035 (695s, 0.869s/step)
+[sphere_re100_3d SDAA:27] step=1000/3000 Cd_p=0.6861 Cd_f=0.4368 Cd_tot=1.1228 Cl=0.000055 (867s, 0.867s/step)
+[sphere_re100_3d SDAA:27] step=1200/3000 Cd_p=0.6829 Cd_f=0.4313 Cd_tot=1.1142 Cl=-0.000028 (1038s, 0.865s/step)
+[sphere_re100_3d SDAA:27] step=1400/3000 Cd_p=0.6790 Cd_f=0.4274 Cd_tot=1.1064 Cl=-0.000052 (1210s, 0.864s/step)
+[sphere_re100_3d SDAA:27] step=1600/3000 Cd_p=0.6755 Cd_f=0.4244 Cd_tot=1.0999 Cl=-0.000074 (1382s, 0.864s/step)
+[sphere_re100_3d SDAA:27] step=1800/3000 Cd_p=0.6726 Cd_f=0.4221 Cd_tot=1.0947 Cl=-0.000087 (1553s, 0.863s/step)
+[sphere_re100_3d SDAA:27] step=2000/3000 Cd_p=0.6712 Cd_f=0.4204 Cd_tot=1.0916 Cl=-0.000100 (1725s, 0.863s/step)
+[sphere_re100_3d SDAA:27] step=2200/3000 Cd_p=0.6713 Cd_f=0.4193 Cd_tot=1.0906 Cl=-0.000133 (1897s, 0.862s/step)
+[sphere_re100_3d SDAA:27] step=2400/3000 Cd_p=0.6667 Cd_f=0.4183 Cd_tot=1.0850 Cl=-0.000185 (2068s, 0.862s/step)
+[sphere_re100_3d SDAA:27] step=2600/3000 Cd_p=0.6628 Cd_f=0.4169 Cd_tot=1.0797 Cl=-0.000148 (2240s, 0.862s/step)
+[sphere_re100_3d SDAA:27] step=2800/3000 Cd_p=0.6638 Cd_f=0.4161 Cd_tot=1.0799 Cl=-0.000113 (2412s, 0.861s/step)
+[sphere_re100_3d SDAA:27] step=3000/3000 Cd_p=0.6630 Cd_f=0.4155 Cd_tot=1.0785 Cl=-0.000105 (2584s, 0.861s/step)
+
+[sphere_re100_3d SDAA:27] === FINAL ===  Cd_p=0.6641 Cd_f=0.4167 Cd_tot=1.0808 (ref=1.09) err=0.8% Cl=-0.000060 St=None finite=True time=2584s
+[sphere_re100_3d SDAA:27] saved to results_high_re_3d_sphere_re100_sdaa27.json
