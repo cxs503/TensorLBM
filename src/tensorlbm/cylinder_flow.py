@@ -558,27 +558,23 @@ def _strouhal_number(
     """Estimate Strouhal number from the dominant frequency of the lift-coefficient series.
 
     Returns *None* when the series is too short or has no clear spectral peak.
-    Delegates to :func:`tensorlbm.postprocess.detect_strouhal` which applies a
-    Hanning window, band-pass filters to the physically expected St range
-    [0.05, 0.35], requires a minimum of 5 shedding cycles, and falls back to
-    autocorrelation when the FFT peak is ambiguous.
+    Uses numpy FFT (O(N log N)) rather than a manual DFT loop.
     """
-    from .postprocess import detect_strouhal
+    import numpy as np
 
     n = len(cl_series)
     if n < 16:
         return None
-    st = detect_strouhal(
-        cl_series,
-        sample_rate=1.0 / output_interval,
-        u_ref=u_in,
-        length_ref=diameter,
-        st_min=0.05,
-        st_max=0.35,
-        min_cycles=5,
-        method="auto",
-    )
-    return st
+    n2 = 1
+    while n2 * 2 <= n:
+        n2 *= 2
+    data = np.array(cl_series[:n2], dtype=np.float64)
+    spectrum = np.abs(np.fft.rfft(data))
+    best_k = int(np.argmax(spectrum[1:])) + 1
+    if best_k <= 0:
+        return None
+    freq_lbm = best_k / (n2 * output_interval)
+    return freq_lbm * diameter / u_in
 
 
 def _save_flow_snapshot(

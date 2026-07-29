@@ -642,160 +642,6 @@ class RunningStats:
         self._m2 = None
 
 
-def detect_strouhal(
-    cl_signal,
-    sample_rate: float = 1.0,
-    u_ref: float = 1.0,
-    length_ref: float = 1.0,
-    *,
-    st_min: float = 0.05,
-    st_max: float = 0.35,
-    min_cycles: int = 5,
-    method: str = "auto",
-):
-    """Robust Strouhal-number detection from a lift-coefficient time series.
-
-    Implements three safeguards against spurious frequency peaks:
-
-    1. **Hanning window** applied before FFT to reduce spectral leakage.
-    2. **Band-pass filter** to the physically expected St range
-       ``[st_min, st_max]`` (default 0.05–0.35, covering bluff bodies
-       and cylinders).  Frequencies outside this range are masked out
-       before peak-finding, preventing the algorithm from latching onto
-       high-frequency numerical noise (the classic *St ≈ 3.0* failure).
-    3. **Minimum cycle count**: requires at least *min_cycles* shedding
-       periods in the signal.  For a bluff body at St ≈ 0.14 with
-       ``u_ref = 0.08`` and ``length_ref = 24``, one period ≈ 214 steps,
-       so 5 cycles ≈ 1070 steps.  Set *min_cycles* = 10 for
-       high-confidence estimates (≈ 10000+ steps).
-
-    When ``method='auto'`` (default), both FFT and autocorrelation are
-    computed; the FFT peak is returned if it falls inside the St band,
-    otherwise the autocorrelation lag is used.  ``method='fft'`` or
-    ``'autocorr'`` forces a single method.
-
-    Parameters
-    ----------
-    cl_signal : array-like or torch.Tensor, shape (N,)
-        Lift-coefficient (or transverse-force) time history.
-    sample_rate : float
-        Samples per lattice time unit (typically 1.0 when recording every
-        step; use the recording interval if subsampled).
-    u_ref, length_ref : float
-        Reference velocity and characteristic length for St = f·D/U.
-    st_min, st_max : float
-        Physically expected Strouhal band.  Peaks outside this range are
-        rejected.
-    min_cycles : int
-        Minimum number of shedding cycles required in the signal.  If the
-        signal is shorter than ``min_cycles`` periods (estimated from
-        ``st_max``), returns *None*.
-    method : {'auto', 'fft', 'autocorr'}
-        Detection method.
-
-    Returns
-    -------
-    float or None
-        Detected Strouhal number, or *None* if the signal is too short or
-        no clear peak is found.
-    """
-    import numpy as np
-
-    # --- Convert to numpy 1-D float array ---
-    if hasattr(cl_signal, "cpu"):
-        arr = cl_signal.detach().cpu().numpy().astype(np.float64).ravel()
-    else:
-        arr = np.asarray(cl_signal, dtype=np.float64).ravel()
-
-    n = arr.size
-    if n < 32 or u_ref == 0.0 or length_ref == 0.0:
-        return None
-
-    # --- Minimum-cycle gate ---
-    # Period in samples = D * sample_rate / (St * U)
-    # Shortest period (highest St) → fewest steps per cycle
-    steps_per_cycle_min = length_ref * sample_rate / (st_max * u_ref)
-    min_samples = int(min_cycles * steps_per_cycle_min)
-    if n < min_samples:
-        return None
-
-    # Detrend (remove mean)
-    arr = arr - arr.mean()
-
-    # Frequency axis (cycles per sample); convert to physical freq
-    freqs = np.fft.rfftfreq(n, d=1.0 / sample_rate)
-    st_axis = freqs * length_ref / u_ref  # Strouhal at each bin
-
-    # --- FFT with Hanning window ---
-    def _fft_peak():
-        win = np.hanning(n)
-        spectrum = np.abs(np.fft.rfft(arr * win))
-        if spectrum.size <= 2:
-            return None
-        # Mask to physically expected St band (skip DC at index 0)
-        valid = (st_axis >= st_min) & (st_axis <= st_max)
-        valid[0] = False
-        if not valid.any():
-            return None
-        spectrum_masked = np.where(valid, spectrum, 0.0)
-        peak_idx = int(np.argmax(spectrum_masked))
-        if spectrum_masked[peak_idx] <= 0:
-            return None
-        # Parabolic interpolation for sub-bin accuracy
-        if 0 < peak_idx < spectrum.size - 1:
-            y0, y1, y2 = spectrum[peak_idx - 1], spectrum[peak_idx], spectrum[peak_idx + 1]
-            denom = y0 - 2.0 * y1 + y2
-            if abs(denom) > 1e-30:
-                offset = 0.5 * (y0 - y2) / denom
-                offset = float(np.clip(offset, -1.0, 1.0))
-            else:
-                offset = 0.0
-        else:
-            offset = 0.0
-        return float(st_axis[peak_idx] + offset * (st_axis[1] - st_axis[0]))
-
-    # --- Autocorrelation ---
-    def _autocorr_peak():
-        # Normalised autocorrelation via FFT (efficient, unbiased)
-        nfft = 2 * n
-        sig_pad = np.zeros(nfft, dtype=np.float64)
-        sig_pad[:n] = arr
-        S = np.fft.rfft(sig_pad)
-        R = np.fft.irfft(S * np.conj(S))[:n].real
-        if R[0] <= 0:
-            return None
-        R = R / R[0]  # normalise
-        # Find first zero crossing, then first peak after it (the
-        # fundamental shedding period)
-        # Restrict search to lags corresponding to [st_min, st_max]
-        # Period in samples = D * sample_rate / (St * U)
-        lag_min = int(max(1, length_ref * sample_rate / (st_max * u_ref)))
-        lag_max = int(min(n - 1, length_ref * sample_rate / (st_min * u_ref)))
-        if lag_max <= lag_min + 1:
-            return None
-        R_search = R[lag_min:lag_max + 1]
-        peak_off = int(np.argmax(R_search))
-        lag = lag_min + peak_off
-        if R[lag] < 0.1:  # too weak — no clear periodicity
-            return None
-        period = lag / sample_rate  # in time units
-        f_peak = 1.0 / period
-        return float(f_peak * length_ref / u_ref)
-
-    # --- Method dispatch ---
-    st_fft = _fft_peak() if method in ("auto", "fft") else None
-    st_ac = _autocorr_peak() if method in ("auto", "autocorr") else None
-
-    if method == "fft":
-        return st_fft
-    if method == "autocorr":
-        return st_ac
-    # auto: prefer FFT if inside band, else autocorrelation
-    if st_fft is not None:
-        return st_fft
-    return st_ac
-
-
 def compute_strouhal_fft(
     fy_signal: torch.Tensor,
     sample_rate: float = 1.0,
@@ -804,11 +650,6 @@ def compute_strouhal_fft(
 ) -> float:
     """Estimate the Strouhal number from a force signal using the FFT.
 
-    Thin wrapper around :func:`detect_strouhal` with the default bluff-body
-    St band ``[0.05, 0.35]`` and a 5-cycle minimum.  Returns *0.0* (not
-    *None*) for backward compatibility when the signal is too short or no
-    peak is found.
-
     Args:
         fy_signal: Force-history tensor of shape ``(N,)``.
         sample_rate: Samples per time unit.
@@ -816,19 +657,21 @@ def compute_strouhal_fft(
         length_ref: Reference length.
 
     Returns:
-        Estimated Strouhal number (0.0 if undetectable).
+        Estimated Strouhal number.
     """
-    st = detect_strouhal(
-        fy_signal,
-        sample_rate=sample_rate,
-        u_ref=u_ref,
-        length_ref=length_ref,
-        st_min=0.05,
-        st_max=0.35,
-        min_cycles=5,
-        method="auto",
-    )
-    return float(st) if st is not None else 0.0
+    if fy_signal.numel() < 4 or u_ref == 0.0:
+        return 0.0
+    start = fy_signal.numel() // 4
+    signal = fy_signal[start:].float()
+    signal = signal - signal.mean()
+    window = torch.hann_window(signal.numel(), device=signal.device, dtype=signal.dtype)
+    spectrum = torch.fft.rfft(signal * window)
+    amplitude = spectrum.abs()
+    if amplitude.numel() <= 1:
+        return 0.0
+    peak_index = int(torch.argmax(amplitude[1:]).item()) + 1
+    freq = torch.fft.rfftfreq(signal.numel(), d=1.0 / sample_rate, device=signal.device)[peak_index]
+    return float((freq * length_ref / u_ref).item())
 
 
 def compute_added_mass_2d(
@@ -908,7 +751,6 @@ __all__ = [
     "compute_divergence",
     "compute_drag_lift_coefficients",
     "RunningStats",
-    "detect_strouhal",
     "compute_strouhal_fft",
     "compute_added_mass_2d",
     "compute_added_mass_3d",
