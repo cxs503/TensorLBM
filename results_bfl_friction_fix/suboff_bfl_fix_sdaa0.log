@@ -1,0 +1,36 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:0 SUBOFF Re=1000 bfl_fix] mode=bfl_fix use_bfl=True use_fix=True nx=200 ny=80 nz=80 L=80 R_max=4.6674 D=9.3349 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.042
+[SDAA:0 SUBOFF Re=1000 bfl_fix] solid cells: 4651  L/D=8.57
+[SDAA:0 SUBOFF Re=1000 bfl_fix] near-wall cells: 2050
+[SDAA:0 SUBOFF Re=1000 bfl_fix] computing BFL q-values on CPU...
+[SDAA:0 SUBOFF Re=1000 bfl_fix] BFL q-field: 11842 links (0.5s) q=[0.0045, 0.9999] mean=0.7346
+[SDAA:0 SUBOFF Re=1000 bfl_fix] computing effective q_wall for friction fix...
+  q_wall stats: n_near=2050 n_no_links=2 q_min=0.1407 q_max=0.9999 q_mean=0.7321
+[SDAA:0 SUBOFF Re=1000 bfl_fix] init done (1.1s), initial_mass=1280000.0
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=500 Cd_p=0.010874 Cd_f=0.095719 Cd_tot=0.106592 Cl=-0.000007 (119s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=1000 Cd_p=0.005509 Cd_f=0.080817 Cd_tot=0.086326 Cl=-0.000008 (237s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=1500 Cd_p=0.005366 Cd_f=0.076396 Cd_tot=0.081762 Cl=-0.000006 (356s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=2000 Cd_p=0.005355 Cd_f=0.074882 Cd_tot=0.080238 Cl=-0.000005 (469s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=2500 Cd_p=0.005307 Cd_f=0.074354 Cd_tot=0.079662 Cl=-0.000006 (581s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=3000 Cd_p=0.005280 Cd_f=0.074152 Cd_tot=0.079432 Cl=-0.000007 (694s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=3500 Cd_p=0.005278 Cd_f=0.074073 Cd_tot=0.079352 Cl=-0.000006 (807s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=4000 Cd_p=0.005260 Cd_f=0.074038 Cd_tot=0.079297 Cl=-0.000007 (919s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=4500 Cd_p=0.005263 Cd_f=0.074021 Cd_tot=0.079285 Cl=-0.000007 (1030s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] step=5000 Cd_p=0.005261 Cd_f=0.074014 Cd_tot=0.079275 Cl=-0.000007 (1141s)
+[SDAA:0 SUBOFF Re=1000 bfl_fix] DONE mode=bfl_fix Cd_p=0.005262 Cd_f=0.074018 Cd_tot=0.079280 Cl=-0.000007 (ref Cf=0.042) err=88.8% time=1141s
+[SDAA:0 SUBOFF Re=1000 bfl_fix] Results written to results_bfl_friction_fix/suboff_bfl_fix_sdaa0.json

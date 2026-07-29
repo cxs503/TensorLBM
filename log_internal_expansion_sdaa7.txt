@@ -1,0 +1,30 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[expansion SDAA:7] nx=300 ny=60 nz=4 ER=2.0 Re=1000.0 inlet_h=20.0 nu=2.000000e-03 tau=0.506000 Cs=0.1 steps=10000
+[expansion SDAA:7] solid=30000 near=2476
+[expansion SDAA:7] init done (0.6s)
+[expansion SDAA:7] step  2000: u_bulk=0.030063 [70s]
+[expansion SDAA:7] step  4000: u_bulk=0.024726 [143s]
+[expansion SDAA:7] step  6000: u_bulk=0.027803 [220s]
+[expansion SDAA:7] step  8000: u_bulk=0.027965 [305s]
+[expansion SDAA:7] step 10000: u_bulk=0.026957 [399s]
+
+[expansion SDAA:7] === Results ===
+[expansion SDAA:7] reatt_x=60 xr/h=0.00 (ref~9.0)
+[expansion SDAA:7] Cp=-0.1576 (ref~0.55)
+[expansion SDAA:7] Time=399s
+[expansion SDAA:7] Saved to results_internal_expansion_sdaa7.json

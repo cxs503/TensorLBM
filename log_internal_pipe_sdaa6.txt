@@ -1,0 +1,45 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[pipe SDAA:6] nx=4 ny=64 nz=64 Re=4000.0 D=62.0 nu=7.750000e-04 tau=0.502325 G=8.064516e-07 Cs=0.1 steps=20000
+[pipe SDAA:6] solid=4380 near=688
+[pipe SDAA:6] init done (0.5s)
+[pipe SDAA:6] step  1000: u_bulk=0.050626 [29s]
+[pipe SDAA:6] step  2000: u_bulk=0.051013 [57s]
+[pipe SDAA:6] step  3000: u_bulk=0.051400 [86s]
+[pipe SDAA:6] step  4000: u_bulk=0.051781 [115s]
+[pipe SDAA:6] step  5000: u_bulk=0.052158 [143s]
+[pipe SDAA:6] step  6000: u_bulk=0.052529 [171s]
+[pipe SDAA:6] step  7000: u_bulk=0.052893 [198s]
+[pipe SDAA:6] step  8000: u_bulk=0.053244 [226s]
+[pipe SDAA:6] step  9000: u_bulk=0.053560 [254s]
+[pipe SDAA:6] step 10000: u_bulk=0.053809 [281s]
+[pipe SDAA:6] step 11000: u_bulk=0.053945 [309s]
+[pipe SDAA:6] step 12000: u_bulk=0.053995 [336s]
+[pipe SDAA:6] step 13000: u_bulk=0.053879 [364s]
+[pipe SDAA:6] step 14000: u_bulk=0.053702 [391s]
+[pipe SDAA:6] step 15000: u_bulk=0.053528 [419s]
+[pipe SDAA:6] step 16000: u_bulk=0.053363 [446s]
+[pipe SDAA:6] step 17000: u_bulk=0.053205 [473s]
+[pipe SDAA:6] step 18000: u_bulk=0.053012 [500s]
+[pipe SDAA:6] step 19000: u_bulk=0.052776 [527s]
+[pipe SDAA:6] step 20000: u_bulk=0.052457 [555s]
+
+[pipe SDAA:6] === Results ===
+[pipe SDAA:6] f=0.035283 (Blasius=0.039735)
+[pipe SDAA:6] u_bulk=0.053238
+[pipe SDAA:6] Time=555s
+[pipe SDAA:6] Saved to results_internal_pipe_sdaa6.json

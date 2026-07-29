@@ -1,0 +1,48 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Couette SDAA:10 ny=16] nx=80 ny=16 nz=4 tau=1.0 nu=0.166667 u_top=0.05
+[Couette SDAA:10 ny=16] H=14 Cf_exact=0.476190 n_steps=4000
+[Couette SDAA:10 ny=16] near-wall cells (bottom only)=320
+[Couette SDAA:10 ny=16] init done (0.4s), starting loop...
+[Couette SDAA:10 ny=16] step=1000 Cf=0.472874 (exact=0.476190) u[1]=0.001785 (16s)
+[Couette SDAA:10 ny=16] step=2000 Cf=0.475042 (exact=0.476190) u[1]=0.001786 (34s)
+[Couette SDAA:10 ny=16] step=3000 Cf=0.475480 (exact=0.476190) u[1]=0.001786 (51s)
+[Couette SDAA:10 ny=16] step=4000 Cf=0.475668 (exact=0.476190) u[1]=0.001786 (68s)
+
+[Couette SDAA:10 ny=16] === FINAL RESULTS ===
+[Couette SDAA:10 ny=16] Cf      = 0.475668  (exact=0.476190, err=0.11%)
+[Couette SDAA:10 ny=16] Cf_formula = 0.476190  (analytical formula prediction)
+[Couette SDAA:10 ny=16] u_err   = 0.01% (max relative error)
+[Couette SDAA:10 ny=16] u_profile:
+[Couette SDAA:10 ny=16]   y= 0  u=33.333282  exact=0.000000
+[Couette SDAA:10 ny=16]   y= 1  u=0.001786  exact=0.001786
+[Couette SDAA:10 ny=16]   y= 2  u=0.005357  exact=0.005357
+[Couette SDAA:10 ny=16]   y= 3  u=0.008928  exact=0.008929
+[Couette SDAA:10 ny=16]   y= 4  u=0.012499  exact=0.012500
+[Couette SDAA:10 ny=16]   y= 5  u=0.016070  exact=0.016071
+[Couette SDAA:10 ny=16]   y= 6  u=0.019641  exact=0.019643
+[Couette SDAA:10 ny=16]   y= 7  u=0.023213  exact=0.023214
+[Couette SDAA:10 ny=16]   y= 8  u=0.026784  exact=0.026786
+[Couette SDAA:10 ny=16]   y= 9  u=0.030355  exact=0.030357
+[Couette SDAA:10 ny=16]   y=10  u=0.033927  exact=0.033929
+[Couette SDAA:10 ny=16]   y=11  u=0.037499  exact=0.037500
+[Couette SDAA:10 ny=16]   y=12  u=0.041070  exact=0.041071
+[Couette SDAA:10 ny=16]   y=13  u=0.044642  exact=0.044643
+[Couette SDAA:10 ny=16]   y=14  u=0.048214  exact=0.048214
+[Couette SDAA:10 ny=16]   y=15  u=-33.324951  exact=0.000000
+[Couette SDAA:10 ny=16] time = 68s
+[Couette SDAA:10 ny=16] results saved to friction_test2_couette_ny16_sdaa10.json

@@ -1,0 +1,24 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:5] [Prism] nx=400 ny=160 nz=4 D=24 u_in=0.08 nu=1.920000e-03 tau=0.505760 Re=1000.0 extrap=quadratic
+[SDAA:5] [Prism] solid=2304 near=384 mesh built (0.7s)
+[SDAA:5] [Prism] init done (0.9s), starting loop...
+[SDAA:5] [Prism] step=500 Cd=nan max|u|=0.1423 (256s)
+[SDAA:5] [Prism] step=1000 Cd=nan max|u|=0.1337 (500s)
+[SDAA:5] [Prism] step=1500 Cd=nan max|u|=0.1421 (743s)
+[SDAA:5] [Prism] DIVERGED at step 1981
+[SDAA:5] [Prism] DONE Cd=nan (ref=2.1, err=nan%) Cl_amp=0.0000 St=nan (ref=0.14, err=nan%) (978s)

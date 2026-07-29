@@ -1,0 +1,46 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Cyl40 SDAA:27] nx=400 ny=160 nz=4 D=48.0 Re=40 u_in=0.1 nu=1.200000e-01 tau=0.860000 dpS=9.600000e-01
+[Cyl40 SDAA:27] solid cells=7172
+[Cyl40 SDAA:27] near-wall cells=544
+[Cyl40 SDAA:27] SurfaceMesh.from_cylinder built
+[Cyl40 SDAA:27] init done (0.4s)
+[Cyl40 SDAA:27] step=500 Cd_p=3.2665 Cd_f=0.9941 Cd=4.2606 Cl=-0.002160 sep=nan° (19s)
+[Cyl40 SDAA:27] step=1000 Cd_p=1.7953 Cd_f=0.6731 Cd=2.4684 Cl=-0.008117 sep=nan° (38s)
+[Cyl40 SDAA:27] step=1500 Cd_p=1.8373 Cd_f=0.6559 Cd=2.4932 Cl=-0.008799 sep=nan° (57s)
+[Cyl40 SDAA:27] step=2000 Cd_p=1.8257 Cd_f=0.6496 Cd=2.4753 Cl=-0.004762 sep=130.8° (76s)
+[Cyl40 SDAA:27] step=2500 Cd_p=1.8187 Cd_f=0.6468 Cd=2.4655 Cl=-0.003129 sep=130.8° (95s)
+[Cyl40 SDAA:27] step=3000 Cd_p=1.8144 Cd_f=0.6450 Cd=2.4594 Cl=-0.005168 sep=130.8° (114s)
+[Cyl40 SDAA:27] step=3500 Cd_p=1.8099 Cd_f=0.6437 Cd=2.4536 Cl=-0.006686 sep=130.8° (132s)
+[Cyl40 SDAA:27] step=4000 Cd_p=1.8026 Cd_f=0.6419 Cd=2.4445 Cl=-0.005521 sep=130.8° (151s)
+[Cyl40 SDAA:27] step=4500 Cd_p=1.7937 Cd_f=0.6398 Cd=2.4335 Cl=-0.004158 sep=130.7° (170s)
+[Cyl40 SDAA:27] step=5000 Cd_p=1.7901 Cd_f=0.6381 Cd=2.4281 Cl=-0.004716 sep=130.7° (188s)
+[Cyl40 SDAA:27] step=5500 Cd_p=1.7852 Cd_f=0.6369 Cd=2.4222 Cl=-0.005786 sep=130.7° (207s)
+[Cyl40 SDAA:27] step=6000 Cd_p=1.7862 Cd_f=0.6364 Cd=2.4226 Cl=-0.005575 sep=130.8° (226s)
+[Cyl40 SDAA:27] step=6500 Cd_p=1.7829 Cd_f=0.6360 Cd=2.4189 Cl=-0.004686 sep=130.8° (244s)
+[Cyl40 SDAA:27] step=7000 Cd_p=1.7845 Cd_f=0.6358 Cd=2.4203 Cl=-0.004689 sep=130.8° (263s)
+[Cyl40 SDAA:27] step=7500 Cd_p=1.7815 Cd_f=0.6355 Cd=2.4171 Cl=-0.005315 sep=130.8° (281s)
+[Cyl40 SDAA:27] step=8000 Cd_p=1.7832 Cd_f=0.6354 Cd=2.4186 Cl=-0.005469 sep=130.8° (303s)
+[Cyl40 SDAA:27] step=8500 Cd_p=1.7806 Cd_f=0.6352 Cd=2.4158 Cl=-0.004991 sep=130.8° (332s)
+[Cyl40 SDAA:27] step=9000 Cd_p=1.7823 Cd_f=0.6351 Cd=2.4174 Cl=-0.004804 sep=130.8° (361s)
+[Cyl40 SDAA:27] step=9500 Cd_p=1.7799 Cd_f=0.6349 Cd=2.4149 Cl=-0.005089 sep=130.8° (390s)
+[Cyl40 SDAA:27] step=10000 Cd_p=1.7816 Cd_f=0.6349 Cd=2.4165 Cl=-0.005316 sep=130.8° (419s)
+
+[Cyl40 SDAA:27] === FINAL ===
+[Cyl40 SDAA:27] Cd_p=1.7816 Cd_f=0.6349 Cd=2.4165 (ref=1.5) err=61.1%
+[Cyl40 SDAA:27] Cl=-0.005316 sep_angle=130.8° (ref=53.0°) err=146.7% time=419s
+[Cyl40 SDAA:27] saved to results_cylinder_sdaa27.json

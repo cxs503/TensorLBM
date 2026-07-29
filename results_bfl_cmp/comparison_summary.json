@@ -1,0 +1,105 @@
+{
+  "title": "SUBOFF BFL vs Standard BB Drag Comparison",
+  "date": "2026-07-26",
+  "parameters": {
+    "geometry": "SUBOFF bare hull",
+    "L": 80,
+    "nx": 200, "ny": 80, "nz": 80,
+    "Re": 1000,
+    "u_in": 0.06,
+    "nu": 0.0048,
+    "tau": 0.5144,
+    "Cs": 0.05,
+    "collision": "MRT + Smagorinsky",
+    "n_steps": 5000,
+    "dpS_formula": "0.5*u_in^2*pi*D*L (wetted area)",
+    "dpS": 4.223004,
+    "Cf_ref": 0.042,
+    "n_solid": 4651,
+    "n_near": 2050,
+    "L_D_ratio": 8.57,
+    "R_max": 4.6674,
+    "D": 9.3349
+  },
+  "results": {
+    "standard_bb": {
+      "device": "sdaa:29",
+      "wall_method": "standard_bb",
+      "normal_method": "from_suboff",
+      "Cd_pressure": 0.005389,
+      "Cd_friction": 0.038967,
+      "Cd_total": 0.044356,
+      "error_pct": 5.6,
+      "elapsed_s": 804,
+      "bfl_links": null,
+      "bfl_q_mean": null
+    },
+    "bfl_from_suboff": {
+      "device": "sdaa:30",
+      "wall_method": "bfl_from_suboff",
+      "normal_method": "from_suboff",
+      "Cd_pressure": 0.005262,
+      "Cd_friction": 0.102827,
+      "Cd_total": 0.108089,
+      "error_pct": 157.4,
+      "elapsed_s": 1086,
+      "bfl_links": 11842,
+      "bfl_q_mean": 0.7346
+    },
+    "bfl_from_gradient": {
+      "device": "sdaa:31",
+      "wall_method": "bfl_from_gradient",
+      "normal_method": "from_gradient",
+      "Cd_pressure": 0.004961,
+      "Cd_friction": 0.102358,
+      "Cd_total": 0.107318,
+      "error_pct": 155.5,
+      "elapsed_s": 1103,
+      "bfl_links": 11842,
+      "bfl_q_mean": 0.7346
+    }
+  },
+  "comparison": {
+    "Cd_p": {
+      "standard_bb": 0.005389,
+      "bfl_from_suboff": 0.005262,
+      "bfl_from_gradient": 0.004961,
+      "comment": "Pressure drag similar across methods (~0.005). BFL slightly lower."
+    },
+    "Cd_f": {
+      "standard_bb": 0.038967,
+      "bfl_from_suboff": 0.102827,
+      "bfl_from_gradient": 0.102358,
+      "comment": "BFL friction drag 2.6x higher than standard BB. BFL places wall at true surface, increasing near-wall velocity gradient. Friction formula (tau=2*nu*u_t) assumes half-way BB wall distance (0.5), not adjusted for BFL q-values."
+    },
+    "Cd_tot": {
+      "standard_bb": 0.044356,
+      "bfl_from_suboff": 0.108089,
+      "bfl_from_gradient": 0.107318,
+      "comment": "Standard BB closest to Cf_ref=0.042 (5.6% error). BFL overestimates by ~155%."
+    },
+    "bfl_normal_comparison": {
+      "from_suboff_Cd_tot": 0.108089,
+      "from_gradient_Cd_tot": 0.107318,
+      "diff_pct": 0.72,
+      "comment": "BFL from_suboff vs from_gradient differ by <1%. Normal method has minimal impact on drag when q-values are analytical."
+    }
+  },
+  "key_findings": [
+    "Standard BB gives Cd_tot=0.0444, closest to Cf_ref=0.042 (5.6% error).",
+    "BFL overestimates total drag by ~155% due to 2.6x higher friction drag.",
+    "Pressure drag is similar across all methods (~0.005), confirming BFL correctly handles pressure.",
+    "BFL from_suboff vs from_gradient differ by <1% — normal method has minimal impact.",
+    "BFL q-values: 11842 boundary links, q_mean=0.735 (wall closer to solid cell than half-way).",
+    "Root cause: friction drag formula (tau=2*nu*u_t) assumes half-way BB (wall at 0.5 cell distance). BFL places wall at q distance, so near-wall velocity is lower, inflating computed friction. Formula needs q-correction for BFL.",
+    "Vectorized BFL (bfl_d3q19_vec.py) is 30x faster than original, making BFL runs feasible on SDAA."
+  ],
+  "files": {
+    "worker": "suboff_bfl_cmp_worker.py",
+    "vectorized_bfl": "src/tensorlbm/bfl_d3q19_vec.py",
+    "results_dir": "results_bfl_cmp/",
+    "standard_bb_json": "results_bfl_cmp/standard_bb_sdaa29.json",
+    "bfl_from_suboff_json": "results_bfl_cmp/bfl_from_suboff_sdaa30.json",
+    "bfl_from_gradient_json": "results_bfl_cmp/bfl_from_gradient_sdaa31.json"
+  }
+}

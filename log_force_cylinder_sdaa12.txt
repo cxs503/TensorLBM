@@ -1,0 +1,43 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA CYL D=48] nx=400 ny=160 nz=4 D=48 u_in=0.08 nu=1.920000e-02 tau=0.557600 Cs=0.05 Cd_ref=1.3
+  solid cells: 7172
+  near-wall cells: 544
+  init done (0.5s), mass=256000.0
+  step=500 (warmup, 39s)
+  step=1000 (warmup, 77s)
+  step=1500 Cd_p=1.5009 Cd_f=0.1922 Cd_tot=1.6931 Cd_MEM=1.9540 (119s)
+  step=2000 Cd_p=1.4735 Cd_f=0.1891 Cd_tot=1.6626 Cd_MEM=1.9172 (166s)
+  step=2500 Cd_p=1.4648 Cd_f=0.1872 Cd_tot=1.6520 Cd_MEM=1.9037 (213s)
+  step=3000 Cd_p=1.4584 Cd_f=0.1860 Cd_tot=1.6444 Cd_MEM=1.8940 (261s)
+  step=3500 Cd_p=1.4561 Cd_f=0.1853 Cd_tot=1.6414 Cd_MEM=1.8896 (324s)
+  step=4000 Cd_p=1.4535 Cd_f=0.1849 Cd_tot=1.6383 Cd_MEM=1.8852 (400s)
+  step=4500 Cd_p=1.4538 Cd_f=0.1846 Cd_tot=1.6384 Cd_MEM=1.8846 (475s)
+  step=5000 Cd_p=1.4528 Cd_f=0.1845 Cd_tot=1.6374 Cd_MEM=1.8828 (550s)
+
+======================================================================
+CYLINDER D=48 Re=200 (BB fix): Cd_ref=1.3
+======================================================================
+Method                              Cd     Error%
+--------------------------------------------------
+MEM (pre-stream)                1.8828      44.8%
+Pressure                        1.4528
+Friction                        0.1845
+Pressure+Friction               1.6374      26.0%
+Cl                             -0.0046
+
+Results saved to force_methods_results_sdaa12.json

@@ -366,9 +366,181 @@ def wall_function(
     return _apply_body_force(f, fx, fy, fz, lattice, ux=ux, uy=uy, uz=uz)
 
 
+def log_law(u_tau: torch.Tensor, y_plus: torch.Tensor) -> torch.Tensor:
+    """Standard log-law of the wall: ``u+ = (1/κ)·ln(y+) + B``.
+
+    Args:
+        u_tau:  Friction velocity field (used only for shape/device inference
+                when *y_plus* is scalar; not part of the formula itself).
+        y_plus: Dimensionless wall distance field ``(nz, ny, nx)``.
+
+    Returns:
+        u+ field, same shape as *y_plus*.  Values are clamped to ``y+``
+        (viscous sublayer) for ``y+ < 11.6``.
+    """
+    yp = y_plus.clamp(min=1e-6)
+    up_log = (1.0 / _KAPPA) * torch.log(yp) + _B_LOG
+    # In the viscous sublayer (y+ < 11.6) u+ = y+
+    up_vis = yp
+    return torch.where(yp < 11.6, up_vis, up_log)
+
+
+def velocity_ramp(
+    step: int,
+    u_target: float,
+    u_start: float = 0.02,
+    ramp_steps: int = 1000,
+) -> float:
+    """Linear velocity ramp for high-Re stability.
+
+    Ramps the inlet velocity from *u_start* to *u_target* over
+    *ramp_steps* steps, then holds at *u_target*.  Prevents the initial
+    transient from diverging at high Reynolds numbers where the full
+    velocity creates an enormous pressure spike at the body surface.
+
+    Args:
+        step:       Current step number (1-indexed).
+        u_target:   Target free-stream velocity.
+        u_start:    Initial velocity (default 0.02).
+        ramp_steps: Number of steps to reach *u_target* (default 1000).
+
+    Returns:
+        Current inlet velocity.
+    """
+    if step >= ramp_steps:
+        return u_target
+    frac = step / ramp_steps
+    return u_start + (u_target - u_start) * frac
+
+
+def apply_wall_function(
+    f: torch.Tensor,
+    solid: torch.Tensor,
+    near: torch.Tensor | None,
+    nu: float,
+    y_val: float = 1.0,
+    *,
+    lattice: str = "D3Q19",
+    y_plus_threshold: float = 11.6,
+    rho: torch.Tensor | None = None,
+    ux: torch.Tensor | None = None,
+    uy: torch.Tensor | None = None,
+    uz: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, dict]:
+    """Apply wall function that **REPLACES** bounce-back (not additive).
+
+    This is the key function for the WF (wall-function) mode.  It is
+    called **after streaming** (not before, like bounce-back).  The
+    wall treatment is selected per-cell based on the local y+ value:
+
+    - ``y+ < y_plus_threshold`` (viscous sublayer): apply bounce-back
+      at those near-wall cells.  BB is accurate in the viscous sublayer.
+    - ``y+ >= y_plus_threshold`` (log-law region): apply the log-law
+      wall function as a Guo body force.  This decouples the wall shear
+      from the bulk relaxation time, enabling high-Re simulations.
+
+    The function returns the modified distribution and a diagnostics
+    dict with y+ statistics.
+
+    Args:
+        f:                 Distribution tensor ``(Q, nz, ny, nx)``.
+        solid:             Boolean solid mask ``(nz, ny, nx)``.
+        near:              Near-wall mask.  If ``None``, computed internally.
+        nu:                Kinematic viscosity (lattice units).
+        y_val:             Distance from near-wall cell centre to wall.
+        lattice:           ``"D3Q19"`` or ``"D3Q27"``.
+        y_plus_threshold:  y+ below which BB is used (default 11.6).
+        rho, ux, uy, uz:   Optional pre-computed macroscopic fields.
+
+    Returns:
+        ``(f_corrected, diagnostics)`` where diagnostics contains:
+        ``y_plus_mean``, ``y_plus_max``, ``n_bb_cells``, ``n_wf_cells``.
+    """
+    _validate_lattice(lattice)
+
+    if near is None:
+        near = _near_wall_mask(solid)
+
+    # Compute macroscopic fields
+    if rho is not None and ux is not None and uy is not None and uz is not None:
+        pass
+    else:
+        rho, ux, uy, uz = _macroscopic(lattice, f)
+
+    # Compute wall normal and tangential velocity
+    nx_n, ny_n, nz_n = _compute_wall_normal(solid, near)
+    u_dot_n = ux * nx_n + uy * ny_n + uz * nz_n
+    ut_x = ux - u_dot_n * nx_n
+    ut_y = uy - u_dot_n * ny_n
+    ut_z = uz - u_dot_n * nz_n
+    u_tan_mag = torch.sqrt(ut_x * ut_x + ut_y * ut_y + ut_z * ut_z).clamp(min=1e-12)
+    has_tan = u_tan_mag > 1e-10
+    u_tan_mag = torch.where(has_tan, u_tan_mag, torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12))
+    ut_x = torch.where(has_tan, ut_x, ux)
+    ut_y = torch.where(has_tan, ut_y, uy)
+    ut_z = torch.where(has_tan, ut_z, uz)
+    inv_utan = 1.0 / u_tan_mag
+
+    # Compute u_tau using log-law Newton iteration
+    u_tau = compute_u_tau(u_tan_mag, nu, y_val=y_val, wall_law="log")
+    u_tau = torch.where(near, u_tau, torch.zeros_like(u_tau))
+
+    # Compute y+
+    y_plus = compute_y_plus(u_tau, nu, y_val=y_val)
+    y_plus = torch.where(near, y_plus, torch.zeros_like(y_plus))
+
+    # Classify cells: BB (viscous) vs WF (log-law)
+    use_bb = near & (y_plus < y_plus_threshold)
+    use_wf = near & (y_plus >= y_plus_threshold)
+
+    n_bb = int(use_bb.sum().item())
+    n_wf = int(use_wf.sum().item())
+
+    # --- 1. Bounce-back for viscous sublayer cells ---
+    if n_bb > 0:
+        if lattice == "D3Q19":
+            from .d3q19 import OPPOSITE as OPP
+            opp = OPP.to(f.device)
+        else:
+            from .d3q27 import OPPOSITE as OPP
+            opp = OPP.to(f.device)
+        bb_mask = use_bb.unsqueeze(0).expand_as(f)
+        f = torch.where(bb_mask, f[opp], f)
+
+    # --- 2. Wall function (Guo body force) for log-law cells ---
+    if n_wf > 0:
+        tau_w = u_tau * u_tau
+        # Body force: F = -tau_w * û_tan (decelerate tangential flow)
+        coef = -tau_w * use_wf.to(f.dtype)
+        fx = coef * (ut_x * inv_utan)
+        fy = coef * (ut_y * inv_utan)
+        fz = coef * (ut_z * inv_utan)
+        f = _apply_body_force(f, fx, fy, fz, lattice, ux=ux, uy=uy, uz=uz)
+
+    # Diagnostics
+    y_plus_near = y_plus[near]
+    if y_plus_near.numel() > 0:
+        yp_mean = float(y_plus_near.mean().item())
+        yp_max = float(y_plus_near.max().item())
+    else:
+        yp_mean = 0.0
+        yp_max = 0.0
+
+    diag = {
+        "y_plus_mean": yp_mean,
+        "y_plus_max": yp_max,
+        "n_bb_cells": n_bb,
+        "n_wf_cells": n_wf,
+    }
+    return f, diag
+
+
 __all__ = [
     "SUPPORTED_LATTICES",
     "compute_u_tau",
     "compute_y_plus",
+    "log_law",
+    "velocity_ramp",
+    "apply_wall_function",
     "wall_function",
 ]

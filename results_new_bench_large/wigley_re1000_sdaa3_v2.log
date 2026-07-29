@@ -1,0 +1,45 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[wigley_re1000 SDAA:3] wigley Re=1000 grid=200x80x80 u_in=0.06 nu=4.800000e-03 tau=0.514400 dpS=5.511600e+00
+[wigley_re1000 SDAA:3] collision=mrt_smag Cs=0.05 n_steps=5000 warmup=1000 avg_window=1000
+[wigley_re1000 SDAA:3] Cd_ref=0.075000 (Cf_ITTC = 0.075/(log10(Re)-2)^2)
+[wigley_re1000 SDAA:3] solid cells: 7375
+[wigley_re1000 SDAA:3] near-wall cells: 3062
+[wigley_re1000 SDAA:3] SurfaceMesh.from_wigley built
+[wigley_re1000 SDAA:3] init done (0.4s) mass=1280000.0
+[wigley_re1000 SDAA:3] step=500/5000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (74s)
+[wigley_re1000 SDAA:3] step=1000/5000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (147s)
+[wigley_re1000 SDAA:3] step=1500/5000 Cd_p=0.025438 Cd_f=0.042224 Cd_tot=0.067661 (230s)
+[wigley_re1000 SDAA:3] step=2000/5000 Cd_p=0.025084 Cd_f=0.040662 Cd_tot=0.065746 (313s)
+[wigley_re1000 SDAA:3] step=2500/5000 Cd_p=0.024902 Cd_f=0.040059 Cd_tot=0.064961 (395s)
+[wigley_re1000 SDAA:3] step=3000/5000 Cd_p=0.024805 Cd_f=0.039819 Cd_tot=0.064624 (478s)
+[wigley_re1000 SDAA:3] step=3500/5000 Cd_p=0.024754 Cd_f=0.039718 Cd_tot=0.064472 (561s)
+[wigley_re1000 SDAA:3] step=4000/5000 Cd_p=0.024704 Cd_f=0.039662 Cd_tot=0.064366 (643s)
+[wigley_re1000 SDAA:3] step=4500/5000 Cd_p=0.024681 Cd_f=0.039630 Cd_tot=0.064312 (726s)
+[wigley_re1000 SDAA:3] step=5000/5000 Cd_p=0.024676 Cd_f=0.039613 Cd_tot=0.064288 (809s)
+
+============================================================
+[wigley_re1000 SDAA:3] FINAL RESULTS
+============================================================
+[wigley_re1000 SDAA:3] Cd_p  = 0.024679
+[wigley_re1000 SDAA:3] Cd_f  = 0.039621
+[wigley_re1000 SDAA:3] Cd_tot= 0.064300
+[wigley_re1000 SDAA:3] Cd_ref= 0.075000  err=14.3%
+[wigley_re1000 SDAA:3] St    = None
+[wigley_re1000 SDAA:3] time  = 809s (13.5 min)
+[wigley_re1000 SDAA:3] finite= True
+[wigley_re1000 SDAA:3] Results → results_new_bench_large/wigley_re1000_sdaa3_v2.json

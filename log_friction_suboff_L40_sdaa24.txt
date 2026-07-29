@@ -1,0 +1,38 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:24 SUBOFF L=40 Re=1000] nx=100 ny=40 nz=40 L=40 D=4.667 u_in=0.06 nu=2.400000e-03 tau=0.507200 Cs=0.05 dpS=1.055751e+00 Cf_ref=0.041995
+[SDAA:24 SUBOFF L=40 Re=1000] solid=671 near=570 (0.4s)
+[SDAA:24 SUBOFF L=40 Re=1000] init done (0.4s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=500 Cd_p=0.017171 Cd_f[standard]=0.049388 Cd_f[2nd_order]=0.014459 Cd_f[central]=0.059623 Cd_f[lagrange]=0.054207 (34s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=1000 Cd_p=0.012856 Cd_f[standard]=0.036413 Cd_f[2nd_order]=0.005369 Cd_f[central]=0.049250 Cd_f[lagrange]=0.038203 (67s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=1500 Cd_p=0.012730 Cd_f[standard]=0.035385 Cd_f[2nd_order]=0.004853 Cd_f[central]=0.048225 Cd_f[lagrange]=0.037003 (101s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=2000 Cd_p=0.012682 Cd_f[standard]=0.035254 Cd_f[2nd_order]=0.004791 Cd_f[central]=0.048090 Cd_f[lagrange]=0.036851 (134s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=2500 Cd_p=0.012659 Cd_f[standard]=0.035223 Cd_f[2nd_order]=0.004778 Cd_f[central]=0.048058 Cd_f[lagrange]=0.036816 (168s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=3000 Cd_p=0.012658 Cd_f[standard]=0.035215 Cd_f[2nd_order]=0.004774 Cd_f[central]=0.048048 Cd_f[lagrange]=0.036807 (201s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=3500 Cd_p=0.012656 Cd_f[standard]=0.035213 Cd_f[2nd_order]=0.004773 Cd_f[central]=0.048046 Cd_f[lagrange]=0.036804 (234s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=4000 Cd_p=0.012657 Cd_f[standard]=0.035212 Cd_f[2nd_order]=0.004773 Cd_f[central]=0.048045 Cd_f[lagrange]=0.036803 (267s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=4500 Cd_p=0.012656 Cd_f[standard]=0.035212 Cd_f[2nd_order]=0.004773 Cd_f[central]=0.048045 Cd_f[lagrange]=0.036803 (301s)
+[SDAA:24 SUBOFF L=40 Re=1000] step=5000 Cd_p=0.012657 Cd_f[standard]=0.035212 Cd_f[2nd_order]=0.004773 Cd_f[central]=0.048045 Cd_f[lagrange]=0.036803 (334s)
+
+[SDAA:24 SUBOFF L=40 Re=1000] === FINAL (Cf_ref=0.041995) ===
+[SDAA:24 SUBOFF L=40 Re=1000] Cd_p = 0.012657
+[SDAA:24 SUBOFF L=40 Re=1000] standard    : Cd_f=0.035212 Cd_tot=0.047869 err=14.0%
+[SDAA:24 SUBOFF L=40 Re=1000] 2nd_order   : Cd_f=0.004773 Cd_tot=0.017430 err=58.5%
+[SDAA:24 SUBOFF L=40 Re=1000] central     : Cd_f=0.048045 Cd_tot=0.060702 err=44.5%
+[SDAA:24 SUBOFF L=40 Re=1000] lagrange    : Cd_f=0.036803 Cd_tot=0.049460 err=17.8%
+[SDAA:24 SUBOFF L=40 Re=1000] time=334s
+[SDAA:24 SUBOFF L=40 Re=1000] saved to results_friction_formula_conv/suboff_L40_sdaa24.json

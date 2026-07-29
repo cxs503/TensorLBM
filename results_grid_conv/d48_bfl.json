@@ -1,0 +1,22 @@
+{
+  "method": "BFL+ME",
+  "method_id": 2,
+  "device": "sdaa:3",
+  "grid": "400x160x4",
+  "D": 48,
+  "diameter": 48.0,
+  "Re": 200.0,
+  "u_in": 0.08,
+  "nu": 0.0192,
+  "tau": 0.5576,
+  "Cs": 0.05,
+  "n_steps": 3000,
+  "warmup": 300,
+  "Cd_mean": 1.747813966286222,
+  "Cd_std": 0.07051206895252093,
+  "Cd_err_pct": 34.44722817586322,
+  "Cd_ref": 1.3,
+  "n_samples": 2700,
+  "finite": true,
+  "elapsed_s": 1132.263703584671
+}

@@ -1,0 +1,50 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re40 SDAA:0] shape=cylinder D=48.0 nx=400 ny=160 nz=4 u_in=0.08 Re=40.0 nu=9.600000e-02 tau=0.788000 collision=mrt Cs=0.0 n_steps=10000
+[cyl_re40 SDAA:0] solid=7172 near=544 dpS=6.144000e-01
+[cyl_re40 SDAA:0] init done (0.5s) mass=256000.0
+[cyl_re40 SDAA:0] step=500/10000 Cd=0.0000 Cl=0.000000 (38s, 0.075s/step)
+[cyl_re40 SDAA:0] step=1000/10000 Cd=0.0000 Cl=0.000000 (75s, 0.075s/step)
+[cyl_re40 SDAA:0] step=1500/10000 Cd=0.0000 Cl=0.000000 (112s, 0.074s/step)
+[cyl_re40 SDAA:0] step=2000/10000 Cd=0.0000 Cl=0.000000 (149s, 0.074s/step)
+[cyl_re40 SDAA:0] step=2500/10000 Cd=2.5082 Cl=-0.004368 (186s, 0.074s/step)
+[cyl_re40 SDAA:0] step=3000/10000 Cd=2.5029 Cl=-0.003169 (275s, 0.092s/step)
+[cyl_re40 SDAA:0] step=3500/10000 Cd=2.4985 Cl=-0.004720 (393s, 0.112s/step)
+[cyl_re40 SDAA:0] step=4000/10000 Cd=2.4945 Cl=-0.006682 (513s, 0.128s/step)
+[cyl_re40 SDAA:0] step=4500/10000 Cd=2.4876 Cl=-0.006818 (632s, 0.140s/step)
+[cyl_re40 SDAA:0] step=5000/10000 Cd=2.4800 Cl=-0.005375 (752s, 0.150s/step)
+[cyl_re40 SDAA:0] step=5500/10000 Cd=2.4714 Cl=-0.004271 (871s, 0.158s/step)
+[cyl_re40 SDAA:0] step=6000/10000 Cd=2.4680 Cl=-0.004651 (989s, 0.165s/step)
+[cyl_re40 SDAA:0] step=6500/10000 Cd=2.4629 Cl=-0.005746 (1108s, 0.171s/step)
+[cyl_re40 SDAA:0] step=7000/10000 Cd=2.4637 Cl=-0.006195 (1228s, 0.175s/step)
+[cyl_re40 SDAA:0] step=7500/10000 Cd=2.4605 Cl=-0.005580 (1345s, 0.179s/step)
+[cyl_re40 SDAA:0] step=8000/10000 Cd=2.4621 Cl=-0.004834 (1446s, 0.181s/step)
+[cyl_re40 SDAA:0] step=8500/10000 Cd=2.4591 Cl=-0.004778 (1468s, 0.173s/step)
+[cyl_re40 SDAA:0] step=9000/10000 Cd=2.4607 Cl=-0.005369 (1490s, 0.166s/step)
+[cyl_re40 SDAA:0] step=9500/10000 Cd=2.4581 Cl=-0.005779 (1513s, 0.159s/step)
+[cyl_re40 SDAA:0] step=10000/10000 Cd=2.4597 Cl=-0.005619 (1535s, 0.153s/step)
+
+[cyl_re40 SDAA:0] === FINAL RESULTS ===
+[cyl_re40 SDAA:0] Cd_p   = 1.8232
+[cyl_re40 SDAA:0] Cd_f   = 0.6357
+[cyl_re40 SDAA:0] Cd_tot = 2.4589  (ref=1.5, err=63.9%)
+[cyl_re40 SDAA:0] Cl     = -0.005699
+[cyl_re40 SDAA:0] Cl_rms = 0.001059
+[cyl_re40 SDAA:0] St     = 0.2260
+[cyl_re40 SDAA:0] Sep_angle = 49.4°  (ref=53.0°, err=6.9%)
+[cyl_re40 SDAA:0] time = 1535s (0.153s/step)
+[cyl_re40 SDAA:0] results saved to results_new_bench_cyl_re40_sdaa0.json

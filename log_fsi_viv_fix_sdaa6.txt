@@ -1,0 +1,34 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[VIV-fix SDAA:6] m*=2.0 zeta=0.01 f_n=0.000417 m=4608.00 k=0.031583 c=0.241274 f_n_check=0.000417
+[VIV-fix SDAA:6] nx=400 ny=120 nz=4 D=48 Re=200 u_in=0.1 nu=2.400000e-02 tau=0.572000 dpS=9.600000e-01
+[VIV-fix SDAA:6] near-wall cells=544
+[VIV-fix SDAA:6] SurfaceMesh.from_cylinder built
+[VIV-fix SDAA:6] init done (0.3s)
+[VIV-fix SDAA:6] step=2000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.49 (66s)
+[VIV-fix SDAA:6] step=4000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.40 (134s)
+[VIV-fix SDAA:6] step=6000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=0.99 (201s)
+[VIV-fix SDAA:6] step=8000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.27 (269s)
+[VIV-fix SDAA:6] step=10000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.20 (336s)
+[VIV-fix SDAA:6] step=12000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=0.84 (403s)
+[VIV-fix SDAA:6] step=14000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.09 (471s)
+[VIV-fix SDAA:6] step=16000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=1.02 (538s)
+[VIV-fix SDAA:6] step=18000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=0.72 (604s)
+[VIV-fix SDAA:6] step=20000/20000 Cd_p=0.0000 Cd_f=0.0000 Cd=0.0000 Cl_rms=0.0000 disp_max=0.93 (671s)
+
+[VIV-fix SDAA:6] === FINAL ===  A/D=0.0239 (ref=0.6) err=96.0% disp_rms/D=0.0154 Cd_mean=0.0000 Cl_rms=0.0000 St=0.04800000000000001 time=671s
+[VIV-fix SDAA:6] results saved to fsi_viv_fix_sdaa6.json

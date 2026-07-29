@@ -1,0 +1,48 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Pois3D SDAA:8] nx=80 ny=12 nz=12 tau=1.0 nu=0.166667
+[Pois3D SDAA:8] H=10 H_half=5.0 G=6.666667e-04 u_max=0.05
+[Pois3D SDAA:8] near-wall cells=1920
+[Pois3D SDAA:8] init done (0.4s), starting loop...
+[Pois3D SDAA:8] step=1000 u_max=0.049665 Cd_f=41.242646 (17s)
+[Pois3D SDAA:8] step=2000 u_max=0.049665 Cd_f=41.243198 (37s)
+[Pois3D SDAA:8] step=3000 u_max=0.049665 Cd_f=41.243308 (57s)
+[Pois3D SDAA:8] step=4000 u_max=0.049665 Cd_f=41.243356 (77s)
+
+[Pois3D SDAA:8] === FINAL RESULTS ===
+[Pois3D SDAA:8] u_max   = 0.049665  (exact=0.050000)
+[Pois3D SDAA:8] u_err   = 1.75% (max relative error)
+[Pois3D SDAA:8] Cd_f    = 41.243356  (friction drag, both walls)
+[Pois3D SDAA:8] Cd_body = 42.666667  (body force = exact friction)
+[Pois3D SDAA:8] Cd_f_err= 3.34% (friction vs body force)
+[Pois3D SDAA:8] Cd_p    = 0.000000  (pressure, should be ~0)
+[Pois3D SDAA:8] Cd_f_formula = 40.533333  (analytical formula prediction)
+[Pois3D SDAA:8] u_profile:
+[Pois3D SDAA:8]   y= 0  u=0.001722  exact=0.000000
+[Pois3D SDAA:8]   y= 1  u=0.009666  exact=0.009500
+[Pois3D SDAA:8]   y= 2  u=0.025666  exact=0.025500
+[Pois3D SDAA:8]   y= 3  u=0.037666  exact=0.037500
+[Pois3D SDAA:8]   y= 4  u=0.045665  exact=0.045500
+[Pois3D SDAA:8]   y= 5  u=0.049665  exact=0.049500
+[Pois3D SDAA:8]   y= 6  u=0.049665  exact=0.049500
+[Pois3D SDAA:8]   y= 7  u=0.045665  exact=0.045500
+[Pois3D SDAA:8]   y= 8  u=0.037666  exact=0.037500
+[Pois3D SDAA:8]   y= 9  u=0.025666  exact=0.025500
+[Pois3D SDAA:8]   y=10  u=0.009666  exact=0.009500
+[Pois3D SDAA:8]   y=11  u=0.001722  exact=0.000000
+[Pois3D SDAA:8] time = 77s
+[Pois3D SDAA:8] results saved to friction_test1_poiseuille3d_sdaa8.json
