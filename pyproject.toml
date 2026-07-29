@@ -9,6 +9,7 @@ description = "PyTorch-based Lattice Boltzmann Method solvers and utilities."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "torch",
     "matplotlib",
     "einops",
 ]
@@ -17,6 +18,7 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-cov",
+    "ruff",
     "mypy",
     "hypothesis",
     "tqdm",
@@ -32,12 +34,6 @@ where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "tensorlbm._version.__version__"}
-
-[tool.pytest.ini_options]
-# This checkout is deliberately tested from source.  Without this declaration,
-# an editable install of the sibling /root/TensorLBM checkout wins import
-# resolution and pytest can validate different code from the working tree.
-pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100
