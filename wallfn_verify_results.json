@@ -1,0 +1,8 @@
+{
+  "test4": {
+    "y_val": 0.5,
+    "guo_factor": 0.5,
+    "current_over_factor": 4.0,
+    "F_dot_n_max": 0.0
+  }
+}

@@ -1,0 +1,34 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Couette-BFL SDAA:14] nx=80 ny=12 nz=4 tau=1.0 nu=0.166667 u_top=0.05
+[Couette-BFL SDAA:14] H=10 Cf_exact=0.666667 n_steps=3000
+[Couette-BFL SDAA:14] near-wall cells=640
+[Couette-BFL SDAA:14] BFL links=3200 (q=0.5 everywhere, flat walls)
+[Couette-BFL SDAA:14] moving wall correction computed (u_top=0.05)
+[Couette-BFL SDAA:14] init done (0.4s), starting loop...
+[Couette-BFL SDAA:14] step=500 Cf=0.000000 (exact=0.666667) u[ny//2]=0.027492 (8s)
+[Couette-BFL SDAA:14] step=1000 Cf=0.666737 (exact=0.666667) u[ny//2]=0.027499 (20s)
+[Couette-BFL SDAA:14] step=1500 Cf=0.666721 (exact=0.666667) u[ny//2]=0.027499 (32s)
+[Couette-BFL SDAA:14] step=2000 Cf=0.666716 (exact=0.666667) u[ny//2]=0.027499 (44s)
+[Couette-BFL SDAA:14] step=2500 Cf=0.666714 (exact=0.666667) u[ny//2]=0.027499 (55s)
+[Couette-BFL SDAA:14] step=3000 Cf=0.666712 (exact=0.666667) u[ny//2]=0.027499 (67s)
+
+[Couette-BFL SDAA:14] === FINAL RESULTS ===
+[Couette-BFL SDAA:14] Cf      = 0.666712  (exact=0.666667, err=0.01%)
+[Couette-BFL SDAA:14] u_err   = 0.01% (max relative error)
+[Couette-BFL SDAA:14] time = 67s
+[Couette-BFL SDAA:14] results saved to results_bfl_common/bfl_couette_sdaa14.json

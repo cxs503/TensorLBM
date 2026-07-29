@@ -1,0 +1,23 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[conjugate_ht SDAA:30] Starting: Conjugate HT, channel + heated block
+[conjugate_ht SDAA:30] device=sdaa:30, kwargs={'nx': 200, 'ny': 80, 'nz': 4, 'Pr': 0.71, 'n_steps': 6000}
+[conjugate_ht SDAA:30] DONE in 103.5s — flux_continuity_error=1.4922 (target < 0.1)
+[conjugate_ht SDAA:30] PASS=False
+[conjugate_ht SDAA:30] Results saved to /root/TensorLBM_dev/thermal_common_conjugate_ht_sdaa30.json
+[conjugate_ht SDAA:30] T_field saved to /root/TensorLBM_dev/thermal_common_conjugate_ht_sdaa30.npy
+[conjugate_ht SDAA:30] Summary: {"benchmark": "conjugate_ht", "device": "sdaa:30", "elapsed_s": 103.5, "passed": false, "metric": "flux_continuity_error=1.4922 (target < 0.1)", "result": {"flux_continuity_error": 1.4922259021053912, "q_fluid": 0.008079888299107552, "q_solid": 0.0011748260585591197, "flux_error_history": [1.1143836034454515, 1.4880279669180865, 1.491029506148873, 1.4910187366489729, 1.4917655582931277, 1.4917788885857692, 1.4920542223324853, 1.4918739938959953, 1.492286050420838, 1.4921788956359778, 1.4922283023726701, 1.4917677470000237, 1.49162742637797, 1.491583514166614, 1.4918730188533256, 1.4920918609424383, 1.4922360652765692, 1.4923336388512793, 1.4923249532488834, 1.4923863339569414, 1.492306560711205, 1.4922833673768572, 1.492158991049438, 1.4921434789329198, 1.4921064249217315, 1.4921464564985885, 1.492162423523442, 1.4921967217471652, 1.4922135946913593, 1.4922241130876583, 1.4922259021053912], "Pr": 0.71, "alpha_s": 0.2, "alpha_f": 0.10000000000000002, "nx": 200, "ny": 80, "nz": 4, "n_steps": 6000}}

@@ -1,23 +1,28 @@
 """Parametric SUBOFF submarine hull CAD module for TensorLBM.
 
-Implements a DARPA SUBOFF-inspired axisymmetric body of revolution with
-an ellipsoidal bow, cylindrical parallel midbody, and polynomial stern
-taper.  Three model variants are supported:
+Implements the **real DARPA SUBOFF geometry** from the actual offset
+tables (Groves, Huang, Chang 1989, DTRC/SHD-1298-01), ported from
+``suboff8.py``.  The hull uses the 4-segment DARPA polynomial equations
+(bow, parallel midbody, stern taper, stern cap).  The sail uses the
+3-segment polynomial profile with a semi-elliptical cap.  The stern
+appendages use swept NACA 4-digit airfoils with SUBOFF-specific
+coefficients ``(0.2969, 0.126, 0.3516, 0.2852, 0.1045)``.
+
+Three model variants are supported:
 
 - **BARE_HULL** – naked axisymmetric body (AFF-1 equivalent).
-- **WITH_SAIL**  – bare hull plus a conning-tower sail (AFF-3 equivalent).
+- **WITH_SAIL**  – bare hull plus sail (AFF-3 equivalent).
 - **FULL**       – bare hull, sail, and four cruciform stern appendages
                    (AFF-8 equivalent).
 
-Reference geometry: Groves, N.C., Huang, T.T., Chang, M.S. (1989),
-"Geometric Characteristics of DARPA SUBOFF Models", DTRC/SHD-1298-01.
+Real SUBOFF dimensions:
+  - L = 14.292 ft = 4.356 m
+  - D = 0.508 m (R = 0.254 m)
+  - L/D = 8.57
+  - Cp ≈ 0.79 (prismatic coefficient)
 
-Normalized geometry (default, matching DARPA SUBOFF AFF-1):
-  - Hull length L (user-supplied lattice units)
-  - Max radius  R = L / (2 × 8.57) ≈ 0.0583 L  (L/D ≈ 8.57)
-  - Bow nose fraction: 0.233 L
-  - Parallel midbody: 0.233 L – 0.748 L
-  - Stern taper: 0.748 L – 1.0 L
+The geometry works internally in feet (matching the DARPA offset tables)
+and converts to lattice units via ``ft_per_lu = L_ft / length``.
 
 Public API
 ----------
@@ -57,9 +62,53 @@ __all__ = [
 ]
 
 
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
+# Real DARPA SUBOFF geometry constants (feet)
+# --------------------------------------------------------------------------- #
+# Source: Groves, Huang, Chang (1989), DTRC/SHD-1298-01.
+# These are the actual offset-table dimensions used by suboff8.py.
+
+_SUBOFF_L_FT = 14.291667        # Total hull length (ft)  = 4.356 m
+_SUBOFF_RMAX_FT = 0.8333333     # Max hull radius (ft)    = 0.254 m
+_M_TO_FT = 3.2808399            # metres → feet
+
+# Hull segment boundaries (ft)
+_BOW_END_FT = 3.333333          # Bow end / parallel midbody start
+_MID_END_FT = 10.645833         # Parallel midbody end / stern taper start
+_STERN_END_FT = 13.979167        # Stern taper end / stern cap start
+
+# Sail (conning tower) constants (ft)
+_SAIL_ZMAX = 0.109375           # Max half-thickness (transverse) of sail
+_SAIL_YTMP = 1.507813           # Sail height boundary (vertical, up)
+_SAIL_X1_START = 3.032986       # Segment 1 (entrance) start
+_SAIL_X1_END = 3.358507         # Segment 1 end / segment 2 start
+_SAIL_X2_END = 3.559028         # Segment 2 (middle) end / segment 3 start
+_SAIL_X3_END = 4.241319         # Segment 3 (exit) end
+
+# Stern appendage (fin) constants (ft)
+_FIN_H = 13.146284              # Fin root chord axial position
+_FIN_R_INNER = 0.075            # Fin inner radius (from axis)
+_FIN_R_OUTER = 0.825            # Fin outer radius
+_FIN_SWEEP_K = -0.466308        # Sweep slope
+_FIN_SWEEP_C = 0.88859          # Sweep intercept
+
+# NACA 4-digit thickness coefficients (SUBOFF variant, slightly different
+# from the standard 0.2843/0.1015 closure)
+_NACA_COEFFS = (0.2969, 0.126, 0.3516, 0.2852, 0.1045)
+
+
+def _ft_per_lu(length: float) -> float:
+    """Feet-per-lattice-unit conversion factor.
+
+    ``dx`` (metres per lattice unit) = L_m / length, and
+    ``ft_per_lu`` = dx × 3.2808399 = L_ft / length.
+    """
+    return _SUBOFF_L_FT / length
+
+
+# --------------------------------------------------------------------------- #
 # Enumerations
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- #
 
 
 class SuboffHullType(str, Enum):  # noqa: UP042
@@ -127,16 +176,16 @@ class SuboffConfig:
     stern_exponent: float = 2.0
 
     # --- Sail (conning tower) ---
-    sail_x_frac: float = 0.44
-    sail_length_frac: float = 0.12
-    sail_height_frac: float = 0.14
-    sail_halfwidth_frac: float = 0.025
+    sail_x_frac: float = 0.254     # real SUBOFF: centre at ~25.4% L
+    sail_length_frac: float = 0.085  # real: 0.369 ft / 4.356 m
+    sail_height_frac: float = 0.106  # real: 1.508 ft above centreline
+    sail_halfwidth_frac: float = 0.008  # real: Zmax = 0.109 ft half-width
 
     # --- Cruciform stern appendages ---
-    fin_x_frac: float = 0.87
-    fin_length_frac: float = 0.10
-    fin_span_frac: float = 0.12
-    fin_thickness_frac: float = 0.015
+    fin_x_frac: float = 0.890      # real SUBOFF: trailing edge at 92% L, centre ~89%
+    fin_length_frac: float = 0.060  # real: chord 0.504–0.854 ft ≈ 0.06 L
+    fin_span_frac: float = 0.052    # real: 0.075–0.825 ft radial span ≈ 0.052 L
+    fin_thickness_frac: float = 0.008  # real: max NACA 0015 thickness ≈ 0.15*c/L
 
     # --- Metadata (read-only) ---
     _label: str = field(default="DARPA SUBOFF-inspired", init=False, repr=False)
@@ -152,6 +201,12 @@ def suboff_radius_profile(
     config: SuboffConfig | None = None,
 ) -> np.ndarray:
     """Normalised hull radius *r(xi) / R_max* for the SUBOFF bare hull.
+
+    **真实 DARPA SUBOFF 4段公式** (Groves et al. 1989, from suboff8.py):
+      段1 船首 [0, 0.2333]:  多项式 + 指数 1/2.1
+      段2 平行中体 (0.2333, 0.7417]:  R = R_max
+      段3 尾锥 (0.7417, 0.9748]:  6阶多项式
+      段4 尾尖 (0.9748, 1.0]:  椭圆收缩
 
     Parameters
     ----------
@@ -170,34 +225,115 @@ def suboff_radius_profile(
     if config is None:
         config = SuboffConfig()
 
-    alpha = config.bow_fraction     # bow end (normalised)
-    beta = config.stern_fraction    # stern start from aft
-    n = config.stern_exponent
-
     xi = np.asarray(xi, dtype=float)
     r = np.zeros_like(xi)
 
-    # Bow section: quarter-ellipse profile (r = 0 at tip, r = R_max at alpha)
-    bow = (xi >= 0.0) & (xi < alpha)
-    xi_bow = np.clip(xi[bow] / alpha, 0.0, 1.0)
-    # quarter-ellipse: r = sqrt(1 - (1-t)^2) = sqrt(2t - t^2)
-    r[bow] = np.sqrt(np.clip(2.0 * xi_bow - xi_bow**2, 0.0, 1.0))
+    # SUBOFF 真实参数 (ft → normalized)
+    L_ft = 14.291667  # 总长 (ft)
+    Rmax_ft = 0.8333333  # 最大半径 (ft)
+    BOW_END = 3.333333 / L_ft      # 0.2333
+    MID_END = 10.645833 / L_ft     # 0.7449
+    STERN_END = 13.979167 / L_ft   # 0.9781
 
-    # Parallel midbody
-    mid = (xi >= alpha) & (xi <= 1.0 - beta)
+    # 段1: 船首 [0, 0.2333]
+    bow = (xi >= 0.0) & (xi < BOW_END)
+    if np.any(bow):
+        x_ft = xi[bow] * L_ft
+        tmp = 0.3 * x_ft - 1.0
+        tmp2 = tmp * tmp
+        tmp4 = tmp2 * tmp2
+        a1 = (1.126395101 * x_ft * tmp4
+              + 0.442874707 * x_ft * x_ft * (tmp2 * tmp)
+              + 1.0
+              - tmp4 * (1.2 * x_ft + 1.0))
+        a1 = np.maximum(a1, 0.0)
+        r[bow] = np.power(a1, 1.0 / 2.1)
+
+    # 段2: 平行中体 (0.2333, 0.7449]
+    mid = (xi >= BOW_END) & (xi <= MID_END)
     r[mid] = 1.0
 
-    # Stern taper: generalised-ellipse taper from R_max to 0
-    stern = (xi > 1.0 - beta) & (xi <= 1.0)
-    eta = np.clip((xi[stern] - (1.0 - beta)) / beta, 0.0, 1.0)
-    if n == 2.0:
-        # Circular quarter-ellipse: r = sqrt(1 - eta^2)
-        r[stern] = np.sqrt(np.clip(1.0 - eta**2, 0.0, 1.0))
-    else:
-        # Generalised: r = (1 - eta^n)^(1/n)
-        r[stern] = np.clip(1.0 - eta**n, 0.0, 1.0) ** (1.0 / n)
+    # 段3: 尾锥 (0.7449, 0.9781]
+    stern_taper = (xi > MID_END) & (xi <= STERN_END)
+    if np.any(stern_taper):
+        r1 = 0.1175
+        k0 = 10.0
+        k1 = 44.6244
+        x_ft = xi[stern_taper] * L_ft
+        ksi = (13.979167 - x_ft) / 3.333333
+        ksi2 = ksi * ksi
+        ksi3 = ksi2 * ksi
+        ksi4 = ksi3 * ksi
+        ksi5 = ksi4 * ksi
+        ksi6 = ksi5 * ksi
+
+        a3 = (r1 * r1
+              + r1 * k0 * ksi2
+              + (20.0 - 20.0 * r1 * r1 - 4.0 * r1 * k0 - k1 / 3.0) * ksi3
+              + (-45.0 + 45.0 * r1 * r1 + 6.0 * r1 * k0 + k1) * ksi4
+              + (36.0 - 36.0 * r1 * r1 - 4.0 * r1 * k0 - k1) * ksi5
+              + (-10.0 + 10.0 * r1 * r1 + r1 * k0 + k1 / 3.0) * ksi6)
+        a3 = np.maximum(a3, 0.0)
+        r[stern_taper] = np.sqrt(a3)
+
+    # 段4: 尾尖 (0.9781, 1.0]
+    tail = (xi > STERN_END) & (xi <= 1.0)
+    if np.any(tail):
+        x_ft = xi[tail] * L_ft
+        val = 1.0 - (3.2 * x_ft - 44.733333) ** 2
+        val = np.maximum(val, 0.0)
+        r[tail] = np.sqrt(val) * 0.1175
 
     return np.clip(r, 0.0, 1.0)
+
+
+# ---------------------------------------------------------------------------
+# NACA 0015 airfoil thickness helper
+# ---------------------------------------------------------------------------
+
+# Precompute the NACA 0015 maximum half-thickness for normalisation.
+_x_sample = np.linspace(0.0, 1.0, 10000)
+_t_sample = 0.15  # NACA 0015 thickness parameter
+_yt_sample = (_t_sample / 0.2) * (
+    0.2969 * np.sqrt(_x_sample)
+    - 0.1260 * _x_sample
+    - 0.3516 * _x_sample ** 2
+    + 0.2843 * _x_sample ** 3
+    - 0.1015 * _x_sample ** 5
+)
+_NACA0015_MAX_THICKNESS: float = float(np.max(np.maximum(_yt_sample, 0.0)))
+
+
+def _naca0015_thickness(x_norm: np.ndarray | float) -> np.ndarray:
+    """Normalised NACA 0015 airfoil half-thickness, ∈ [0, 1].
+
+    Uses the symmetric NACA 4-digit thickness equation with ``t = 0.15``
+    (NACA 0015).  The result is normalised so the maximum half-thickness
+    (at *x* ≈ 0.30) equals 1.0.
+
+    Parameters
+    ----------
+    x_norm :
+        Normalised chord position ∈ [0, 1] (0 = leading edge,
+        1 = trailing edge).  Values outside this range are clipped.
+
+    Returns
+    -------
+    np.ndarray
+        Normalised half-thickness ∈ [0, 1].
+    """
+    x = np.asarray(x_norm, dtype=float)
+    x = np.clip(x, 0.0, 1.0)
+    t = 0.15  # NACA 0015 thickness parameter
+    yt = (t / 0.2) * (
+        0.2969 * np.sqrt(x)
+        - 0.1260 * x
+        - 0.3516 * x ** 2
+        + 0.2843 * x ** 3
+        - 0.1015 * x ** 5
+    )
+    yt = np.maximum(yt, 0.0)
+    return yt / _NACA0015_MAX_THICKNESS
 
 
 # ---------------------------------------------------------------------------
@@ -293,19 +429,24 @@ def _add_sail_mask(
     config: SuboffConfig,
     device: torch.device,
 ) -> torch.Tensor:
-    """Add the conning-tower sail to an existing hull mask (in-place OR)."""
-    x_bow = cx - length / 2.0
+    """Add the real DARPA SUBOFF sail (3-segment polynomial + arc top).
 
-    # Sail axial extents
-    sail_x_c = x_bow + config.sail_x_frac * length
-    sail_half_len = config.sail_length_frac * length / 2.0
+    The sail uses the actual DARPA SUBOFF offset-table geometry from
+    ``suboff8.py`` / Groves et al. (1989).  Three axial segments are
+    defined:
 
-    # Sail y extents (centred on hull axis)
-    sail_half_w = config.sail_halfwidth_frac * length
+    - **Entrance** (3.033–3.359 ft): 4th-power polynomial z-profile.
+    - **Middle**  (3.359–3.559 ft): constant ``Zmax = 0.109375`` ft.
+    - **Exit**   (3.559–4.241 ft): 4th-power polynomial z-profile.
 
-    # Sail z extents: from hull top (cz + radius) upward
-    sail_z_bottom = cz + radius  # top of hull at axial centre of sail
-    sail_z_top = sail_z_bottom + config.sail_height_frac * length
+    Each segment has a rectangular body (height ``y_tmp = 1.507813`` ft
+    in the vertical direction, half-thickness ``z_tmp`` in the
+    transverse direction) topped by a semi-elliptical cap.
+
+    Coordinate convention (target): *z* = vertical (up), *y* =
+    transverse.  This is a y↔z swap of suboff8.py's convention.
+    """
+    ftlu = _ft_per_lu(length)
 
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
@@ -314,14 +455,53 @@ def _add_sail_mask(
         indexing="ij",
     )
 
-    sail = (
-        (xx >= sail_x_c - sail_half_len)
-        & (xx <= sail_x_c + sail_half_len)
-        & (yy >= cy - sail_half_w)
-        & (yy <= cy + sail_half_w)
-        & (zz >= sail_z_bottom)
-        & (zz <= sail_z_top)
-    )
+    x_bow = cx - length / 2.0
+    # Centered coords → feet.  z = up (sail on +z), y = transverse.
+    x_ft = (xx - x_bow) * ftlu
+    y_ft = (yy - cy) * ftlu          # transverse
+    z_ft = (zz - cz) * ftlu          # vertical (up)
+
+    Zmax = _SAIL_ZMAX               # 0.109375 ft — max half-thickness
+    y_tmp = _SAIL_YTMP              # 1.507813 ft — sail height boundary
+
+    # --- Segment 1: entrance (_SAIL_X1_START < x < _SAIL_X1_END) ---
+    m1 = (x_ft > _SAIL_X1_START) & (x_ft < _SAIL_X1_END)
+    D = 3.0720 * (x_ft - _SAIL_X1_START)
+    C = 1.0 - torch.pow(D - 1.0, 4) * (4.0 * D + 1.0)
+    B = (1.0 / 3.0) * D * D * torch.pow(D - 1.0, 3)
+    A = 2.0 * D * torch.pow(D - 1.0, 4)
+    z_tmp = Zmax * torch.sqrt(torch.clamp(2.094759 * A + 0.2071781 * B + C, min=0))
+
+    sail1 = ((z_ft <= y_tmp) & (z_ft > 0) &
+             (y_ft > -z_tmp) & (y_ft < z_tmp)) & m1
+    z_upper = (z_ft > y_tmp) & (z_ft < (y_tmp + z_tmp / 2))
+    z2 = torch.sqrt(torch.clamp(z_tmp * z_tmp - torch.pow(2 * (z_ft - y_tmp), 2), min=0))
+    sail1_top = (z_upper & (y_ft > -z2) & (y_ft < z2)) & m1
+
+    # --- Segment 2: middle (_SAIL_X1_END < x <= _SAIL_X2_END) ---
+    m2 = (x_ft > _SAIL_X1_END) & (x_ft <= _SAIL_X2_END)
+    sail2 = ((z_ft <= y_tmp) & (z_ft > 0) &
+             (y_ft > -Zmax) & (y_ft < Zmax)) & m2
+    z_upper2 = (z_ft > y_tmp) & (z_ft < (y_tmp + Zmax / 2))
+    z2_2 = torch.sqrt(torch.clamp(Zmax * Zmax - torch.pow(2 * (z_ft - y_tmp), 2), min=0))
+    sail2_top = (z_upper2 & (y_ft > -z2_2) & (y_ft < z2_2)) & m2
+
+    # --- Segment 3: exit (_SAIL_X2_END < x <= _SAIL_X3_END) ---
+    m3 = (x_ft <= _SAIL_X3_END) & (x_ft > _SAIL_X2_END)
+    E = (_SAIL_X3_END - x_ft) / 0.6822917
+    F = E - 1.0
+    G = 2.238361 * E * torch.pow(F, 4)
+    H = 3.106529 * (E * E) * torch.pow(F, 3)
+    P = 1.0 - torch.pow(F, 4) * (4.0 * E + 1.0)
+    z_tmp3 = Zmax * (G + H + P)
+
+    sail3 = ((z_ft <= y_tmp) & (z_ft > 0) &
+             (y_ft > -z_tmp3) & (y_ft < z_tmp3)) & m3
+    z_upper3 = (z_ft > y_tmp) & (z_ft < (y_tmp + z_tmp3 / 2))
+    z2_3 = torch.sqrt(torch.clamp(z_tmp3 * z_tmp3 - torch.pow(2 * (z_ft - y_tmp), 2), min=0))
+    sail3_top = (z_upper3 & (y_ft > -z2_3) & (y_ft < z2_3)) & m3
+
+    sail = sail1 | sail1_top | sail2 | sail2_top | sail3 | sail3_top
     return mask | sail
 
 
@@ -338,12 +518,19 @@ def _add_fin_masks(
     config: SuboffConfig,
     device: torch.device,
 ) -> torch.Tensor:
-    """Add cruciform stern appendages (4 fins) to an existing mask."""
-    x_bow = cx - length / 2.0
-    fin_x_c = x_bow + config.fin_x_frac * length
-    fin_half_len = config.fin_length_frac * length / 2.0
-    fin_span = config.fin_span_frac * length
-    fin_half_t = config.fin_thickness_frac * length / 2.0
+    """Add real DARPA SUBOFF cruciform stern appendages.
+
+    Uses the actual NACA 4-digit thickness equation with SUBOFF-specific
+    coefficients ``(0.2969, 0.126, 0.3516, 0.2852, 0.1045)`` and a sweep
+    angle that shifts the chord aft as the radial position increases:
+
+    ``cy = -0.466308 * r + 0.88859``,  ``s = (x - h) / cy + 1``
+
+    Four fins are generated (cruciform):
+    - **fin_v** (|y| ∈ [0.075, 0.825] ft): extends in y, thickness in z.
+    - **fin_h** (|z| ∈ [0.075, 0.825] ft): extends in z, thickness in y.
+    """
+    ftlu = _ft_per_lu(length)
 
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
@@ -352,20 +539,42 @@ def _add_fin_masks(
         indexing="ij",
     )
 
-    in_axial_fin = (xx >= fin_x_c - fin_half_len) & (xx <= fin_x_c + fin_half_len)
+    x_bow = cx - length / 2.0
+    x_ft = (xx - x_bow) * ftlu
+    y_ft = torch.abs(yy - cy) * ftlu
+    z_ft = torch.abs(zz - cz) * ftlu
 
-    # Top fin (z+): from cz+radius upward
-    in_y_fin = (yy >= cy - fin_half_t) & (yy <= cy + fin_half_t)
-    in_z_fin = (zz >= cz - fin_half_t) & (zz <= cz + fin_half_t)
-    top = in_axial_fin & in_y_fin & (zz >= cz + radius) & (zz <= cz + radius + fin_span)
-    # Bottom fin (z-)
-    bot = in_axial_fin & in_y_fin & (zz <= cz - radius) & (zz >= cz - radius - fin_span)
-    # Port fin (y+): from cy+radius outward
-    port = in_axial_fin & in_z_fin & (yy >= cy + radius) & (yy <= cy + radius + fin_span)
-    # Starboard fin (y-)
-    stbd = in_axial_fin & in_z_fin & (yy <= cy - radius) & (yy >= cy - radius - fin_span)
+    h = _FIN_H                         # 13.146284 ft
+    cy_val = _FIN_SWEEP_K * y_ft + _FIN_SWEEP_C   # sweep for y-fins
+    cz_val = _FIN_SWEEP_K * z_ft + _FIN_SWEEP_C   # sweep for z-fins
 
-    return mask | top | bot | port | stbd
+    s = (x_ft - h) / cy_val + 1.0       # chord parameter for y-fins
+    sz = (x_ft - h) / cz_val + 1.0      # chord parameter for z-fins
+
+    # --- Fins extending in y (thickness in z) — port/starboard ---
+    mask_s = (s > 0) & (s < 1)
+    a = _NACA_COEFFS[0] * torch.sqrt(torch.clamp(s, min=0))
+    b = _NACA_COEFFS[1] * s
+    c = _NACA_COEFFS[2] * s * s
+    d = _NACA_COEFFS[3] * s * s * s
+    e = _NACA_COEFFS[4] * s * s * s * s
+    z_suboff = a - b - c + d - e
+    fin_v = ((y_ft > _FIN_R_INNER) & (y_ft < _FIN_R_OUTER) &
+             (z_ft > -z_suboff) & (z_ft < z_suboff)) & mask_s
+
+    # --- Fins extending in z (thickness in y) — top/bottom ---
+    mask_sz = (sz > 0) & (sz < 1)
+    a_h = _NACA_COEFFS[0] * torch.sqrt(torch.clamp(sz, min=0))
+    b_h = _NACA_COEFFS[1] * sz
+    c_h = _NACA_COEFFS[2] * sz * sz
+    d_h = _NACA_COEFFS[3] * sz * sz * sz
+    e_h = _NACA_COEFFS[4] * sz * sz * sz * sz
+    y_suboff = a_h - b_h - c_h + d_h - e_h
+    fin_h = ((z_ft > _FIN_R_INNER) & (z_ft < _FIN_R_OUTER) &
+             (y_ft > -y_suboff) & (y_ft < y_suboff)) & mask_sz
+
+    fins = fin_v | fin_h
+    return mask | fins
 
 
 def build_suboff_mask(
@@ -600,33 +809,64 @@ def generate_suboff_previews(
     ax.set_ylim(-radius * 1.6, radius * 1.6)
     ax.set_aspect("equal")
 
-    # Add sail in side profile
-    if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
-        sail_xc = config.sail_x_frac * length
-        sail_x0 = sail_xc - config.sail_length_frac * length / 2.0
-        sail_w = config.sail_length_frac * length
-        sail_h = config.sail_height_frac * length
-        sail_z0 = radius  # top of hull at sail location (approx)
-        ax.add_patch(mpatches.Rectangle(
-            (sail_x0, sail_z0), sail_w, sail_h,
-            color="#70AD47", alpha=0.6, label="Sail",
-        ))
+    # --- Real geometry helpers for preview ---
+    _ftlu = _ft_per_lu(length)
+    _inv = 1.0 / _ftlu  # ft → lu
 
-    # Add fin silhouettes
+    # Sail dimensions (lattice units)
+    sail_x0 = _SAIL_X1_START * _inv
+    sail_x1 = _SAIL_X3_END * _inv
+    sail_body_h = _SAIL_YTMP * _inv       # rectangular body height
+    sail_cap_h = (_SAIL_ZMAX / 2) * _inv   # max cap height above body
+
+    # Fin dimensions (lattice units)
+    fin_r_in = _FIN_R_INNER * _inv
+    fin_r_out = _FIN_R_OUTER * _inv
+    # Hull radius at fin axial location (stern taper)
+    xi_fin = _FIN_H / _SUBOFF_L_FT
+    r_hull_fin = float(suboff_radius_profile(np.array([xi_fin]), config)[0]) * radius
+
+    # Add sail in side profile (real 3-segment polynomial + cap)
+    if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
+        n_sp = 80
+        x_ft_sp = np.linspace(_SAIL_X1_START, _SAIL_X3_END, n_sp)
+        z_tmp_sp = _sail_half_thickness_np(x_ft_sp)
+        x_lu_sp = x_ft_sp * _inv
+        z_bot = radius  # hull surface at sail (midbody = R_max)
+        z_top = z_bot + (_SAIL_YTMP + z_tmp_sp / 2) * _inv
+        ax.fill_between(x_lu_sp, z_top, z_bot, alpha=0.5, color="#70AD47", label="Sail")
+        ax.plot(x_lu_sp, z_top, "g-", linewidth=1.0)
+
+    # Add fin silhouettes in side profile (swept NACA)
     if hull_type == SuboffHullType.FULL:
-        fin_xc = config.fin_x_frac * length
-        fin_x0 = fin_xc - config.fin_length_frac * length / 2.0
-        fin_w = config.fin_length_frac * length
-        fin_span = config.fin_span_frac * length
-        # Top fin
-        ax.add_patch(mpatches.Rectangle(
-            (fin_x0, radius), fin_w, fin_span,
-            color="#ED7D31", alpha=0.6, label="Fin",
+        n_fp = 50
+        s_fp = np.linspace(0, 1, n_fp)
+        # Fin leading/trailing edge x at root and tip
+        for r_ft, ls in [(_FIN_R_INNER, "-"), (_FIN_R_OUTER, "--")]:
+            cy = _FIN_SWEEP_K * r_ft + _FIN_SWEEP_C
+            x_ft_fp = _FIN_H + (s_fp - 1) * cy
+            x_lu_fp = x_ft_fp * _inv
+            ax.plot(x_lu_fp, np.full_like(x_lu_fp, r_hull_fin + (r_ft - r_hull_fin)),
+                    color="#ED7D31", linewidth=0.8, linestyle=ls, alpha=0.6)
+        # Filled fin shape (top + bottom)
+        fin_top = r_hull_fin + (fin_r_out - r_hull_fin)
+        cy_root = _FIN_SWEEP_K * _FIN_R_INNER + _FIN_SWEEP_C
+        cy_tip = _FIN_SWEEP_K * _FIN_R_OUTER + _FIN_SWEEP_C
+        x_le_root = (_FIN_H - cy_root) * _inv
+        x_te_root = _FIN_H * _inv
+        x_le_tip = (_FIN_H - cy_tip) * _inv
+        x_te_tip = _FIN_H * _inv
+        # Top fin polygon
+        ax.add_patch(mpatches.Polygon(
+            [[x_le_root, r_hull_fin], [x_te_root, r_hull_fin],
+             [x_te_tip, fin_top], [x_le_tip, fin_top]],
+            closed=True, color="#ED7D31", alpha=0.4, label="Fin",
         ))
-        # Bottom fin
-        ax.add_patch(mpatches.Rectangle(
-            (fin_x0, -radius - fin_span), fin_w, fin_span,
-            color="#ED7D31", alpha=0.6,
+        # Bottom fin polygon
+        ax.add_patch(mpatches.Polygon(
+            [[x_le_root, -r_hull_fin], [x_te_root, -r_hull_fin],
+             [x_te_tip, -fin_top], [x_le_tip, -fin_top]],
+            closed=True, color="#ED7D31", alpha=0.4,
         ))
 
     ax.legend(fontsize=7)
@@ -654,38 +894,40 @@ def generate_suboff_previews(
     ax.grid(True, linewidth=0.3)
     ax.legend(fontsize=6, loc="upper right")
 
-    # Add sail cross-section in body plan (top half)
+    # Add sail cross-section in body plan (real shape: rectangle + elliptical cap)
     if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
-        sail_hw = config.sail_halfwidth_frac * length
-        sail_zbot = radius
-        sail_ztop = radius + config.sail_height_frac * length
+        zmax_lu = _SAIL_ZMAX * _inv
+        ytmp_lu = _SAIL_YTMP * _inv
+        z_bot = radius
+        z_top_body = z_bot + ytmp_lu
+        z_top_cap = z_bot + ytmp_lu + zmax_lu / 2
+        # Rectangular body
         ax.add_patch(mpatches.Rectangle(
-            (-sail_hw, sail_zbot), 2 * sail_hw, sail_ztop - sail_zbot,
+            (-zmax_lu, z_bot), 2 * zmax_lu, ytmp_lu,
             color="#70AD47", alpha=0.5, label="Sail section",
         ))
+        # Elliptical cap (semi-ellipse, semi-axes zmax_lu in y, zmax_lu/2 in z)
+        cap_theta = np.linspace(0, math.pi, 30)
+        cap_y = zmax_lu * np.cos(cap_theta)
+        cap_z = z_top_body + (zmax_lu / 2) * np.sin(cap_theta)
+        ax.fill(cap_y, cap_z, color="#70AD47", alpha=0.4)
 
-    # Add fin cross-sections
+    # Add fin cross-sections (real NACA 4-digit airfoil)
     if hull_type == SuboffHullType.FULL:
-        fin_span = config.fin_span_frac * length
-        fin_ht = config.fin_thickness_frac * length
-        # Vertical fins (top/bottom)
-        ax.add_patch(mpatches.Rectangle(
-            (-fin_ht / 2, radius), fin_ht, fin_span,
-            color="#ED7D31", alpha=0.5,
-        ))
-        ax.add_patch(mpatches.Rectangle(
-            (-fin_ht / 2, -radius - fin_span), fin_ht, fin_span,
-            color="#ED7D31", alpha=0.5,
-        ))
-        # Horizontal fins (port/starboard)
-        ax.add_patch(mpatches.Rectangle(
-            (radius, -fin_ht / 2), fin_span, fin_ht,
-            color="#ED7D31", alpha=0.5,
-        ))
-        ax.add_patch(mpatches.Rectangle(
-            (-radius - fin_span, -fin_ht / 2), fin_span, fin_ht,
-            color="#ED7D31", alpha=0.5,
-        ))
+        n_fc = 30
+        s_fc = np.linspace(0, 1, n_fc)
+        t_fc = _naca4_thickness_np(s_fc) * _inv  # half-thickness (lu)
+        # Top fin (extends in z, thickness in y) — show airfoil cross-section
+        cy_mid = _FIN_SWEEP_K * ((_FIN_R_INNER + _FIN_R_OUTER) / 2) + _FIN_SWEEP_C
+        x_mid_ft = _FIN_H + (s_fc - 1) * cy_mid
+        # Scale airfoil to fit in the cross-section view
+        fin_scale = (fin_r_out - r_hull_fin) / max(t_fc.max(), 1e-8) * 0.3
+        fin_y = t_fc * fin_scale
+        fin_z = r_hull_fin + s_fc * (fin_r_out - r_hull_fin)
+        ax.plot(fin_y, fin_z, color="#ED7D31", linewidth=1.0, label="Fin section")
+        ax.plot(-fin_y, fin_z, color="#ED7D31", linewidth=1.0)
+        ax.plot(fin_z, fin_y, color="#ED7D31", linewidth=1.0)
+        ax.plot(fin_z, -fin_y, color="#ED7D31", linewidth=1.0)
 
     # --- Top view (plan view, y-x plane) ---
     ax = axes[2]
@@ -700,31 +942,36 @@ def generate_suboff_previews(
     ax.set_xlim(0, length * 1.02)
     ax.set_ylim(-radius * 1.6, radius * 1.6)
 
-    # Add sail top view
+    # Add sail top view (real width profile: 2*z_tmp along x)
     if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
-        sail_xc = config.sail_x_frac * length
-        sail_x0 = sail_xc - config.sail_length_frac * length / 2.0
-        sail_w = config.sail_length_frac * length
-        sail_hw = config.sail_halfwidth_frac * length
-        ax.add_patch(mpatches.Rectangle(
-            (sail_x0, -sail_hw), sail_w, 2 * sail_hw,
-            color="#70AD47", alpha=0.6, label="Sail",
-        ))
+        n_st = 80
+        x_ft_st = np.linspace(_SAIL_X1_START, _SAIL_X3_END, n_st)
+        z_tmp_st = _sail_half_thickness_np(x_ft_st)
+        x_lu_st = x_ft_st * _inv
+        hw_st = z_tmp_st * _inv  # half-width in y
+        ax.fill_between(x_lu_st, hw_st, -hw_st, alpha=0.5, color="#70AD47", label="Sail")
+        ax.plot(x_lu_st, hw_st, "g-", linewidth=1.0)
+        ax.plot(x_lu_st, -hw_st, "g-", linewidth=1.0)
 
-    # Add fin top view (port/starboard fins are visible from top)
+    # Add fin top view (port/starboard fins visible — swept NACA)
     if hull_type == SuboffHullType.FULL:
-        fin_xc = config.fin_x_frac * length
-        fin_x0 = fin_xc - config.fin_length_frac * length / 2.0
-        fin_w = config.fin_length_frac * length
-        fin_span = config.fin_span_frac * length
-        fin_ht = config.fin_thickness_frac * length
-        ax.add_patch(mpatches.Rectangle(
-            (fin_x0, radius), fin_w, fin_span,
-            color="#ED7D31", alpha=0.5, label="Fin",
+        cy_root = _FIN_SWEEP_K * _FIN_R_INNER + _FIN_SWEEP_C
+        cy_tip = _FIN_SWEEP_K * _FIN_R_OUTER + _FIN_SWEEP_C
+        x_le_root = (_FIN_H - cy_root) * _inv
+        x_te_root = _FIN_H * _inv
+        x_le_tip = (_FIN_H - cy_tip) * _inv
+        x_te_tip = _FIN_H * _inv
+        # Port fin (y+)
+        ax.add_patch(mpatches.Polygon(
+            [[x_le_root, r_hull_fin], [x_te_root, r_hull_fin],
+             [x_te_tip, fin_r_out], [x_le_tip, fin_r_out]],
+            closed=True, color="#ED7D31", alpha=0.4, label="Fin",
         ))
-        ax.add_patch(mpatches.Rectangle(
-            (fin_x0, -radius - fin_span), fin_w, fin_span,
-            color="#ED7D31", alpha=0.5,
+        # Starboard fin (y-)
+        ax.add_patch(mpatches.Polygon(
+            [[x_le_root, -r_hull_fin], [x_te_root, -r_hull_fin],
+             [x_te_tip, -fin_r_out], [x_le_tip, -fin_r_out]],
+            closed=True, color="#ED7D31", alpha=0.4,
         ))
 
     ax.legend(fontsize=7)
@@ -751,7 +998,7 @@ def export_suboff_stl(
     """Export a triangulated SUBOFF surface mesh as ASCII STL.
 
     The bare hull is tessellated as a surface of revolution.  The sail and
-    fins are approximated as closed triangulated boxes.
+    fins are tessellated as NACA 0015 airfoil-profiled surfaces.
 
     Parameters
     ----------
@@ -853,6 +1100,207 @@ def _box_triangles_yz(
     _box_triangles(tris, x0, x1, y0, y1, z0, z1)
 
 
+# --------------------------------------------------------------------------- #
+# Real DARPA SUBOFF surface-mesh helpers (sail + fins)
+# --------------------------------------------------------------------------- #
+
+
+def _sail_half_thickness_np(x_ft):
+    """Sail half-thickness *z_tmp* (ft) at axial position *x_ft* (ft).
+
+    Numpy implementation of the 3-segment DARPA polynomial.
+    """
+    x_ft = np.asarray(x_ft, dtype=float)
+    z_tmp = np.zeros_like(x_ft)
+    Zmax = _SAIL_ZMAX
+
+    # Segment 1: entrance
+    m1 = (x_ft > _SAIL_X1_START) & (x_ft < _SAIL_X1_END)
+    if np.any(m1):
+        D = 3.0720 * (x_ft[m1] - _SAIL_X1_START)
+        C = 1.0 - (D - 1.0) ** 4 * (4.0 * D + 1.0)
+        B = (1.0 / 3.0) * D * D * (D - 1.0) ** 3
+        A = 2.0 * D * (D - 1.0) ** 4
+        z_tmp[m1] = Zmax * np.sqrt(np.maximum(2.094759 * A + 0.2071781 * B + C, 0))
+
+    # Segment 2: middle
+    m2 = (x_ft > _SAIL_X1_END) & (x_ft <= _SAIL_X2_END)
+    z_tmp[m2] = Zmax
+
+    # Segment 3: exit
+    m3 = (x_ft <= _SAIL_X3_END) & (x_ft > _SAIL_X2_END)
+    if np.any(m3):
+        E = (_SAIL_X3_END - x_ft[m3]) / 0.6822917
+        F = E - 1.0
+        G = 2.238361 * E * F ** 4
+        H = 3.106529 * E * E * F ** 3
+        P = 1.0 - F ** 4 * (4.0 * E + 1.0)
+        z_tmp[m3] = Zmax * (G + H + P)
+
+    return np.maximum(z_tmp, 0.0)
+
+
+def _naca4_thickness_np(s):
+    """NACA 4-digit half-thickness at chord position *s* (0=LE, 1=TE).
+
+    Uses the SUBOFF-specific coefficients ``(0.2969, 0.126, 0.3516,
+    0.2852, 0.1045)`` with a 4th-power trailing-edge closure.
+    """
+    s = np.clip(np.asarray(s, dtype=float), 0.0, 1.0)
+    a, b, c, d, e = _NACA_COEFFS
+    t = a * np.sqrt(np.maximum(s, 0)) - b * s - c * s ** 2 + d * s ** 3 - e * s ** 4
+    return np.maximum(t, 0.0)
+
+
+def _sail_cross_section_pts(z_tmp: float, n_arc: int = 12) -> list[tuple[float, float]]:
+    """Cross-section outline ``(y_ft, z_ft)`` for the sail at a given *z_tmp*.
+
+    Goes from bottom-left counterclockwise to bottom-right.
+    The bottom edge (inside the hull) is left open.
+    """
+    y_tmp = _SAIL_YTMP
+    if z_tmp < 1e-8:
+        return []
+    pts: list[tuple[float, float]] = [(-z_tmp, 0.0), (-z_tmp, y_tmp)]
+    # Semi-elliptical cap: θ from π → 0
+    for j in range(1, n_arc):
+        theta = math.pi * (1.0 - j / n_arc)
+        y = z_tmp * math.cos(theta)
+        z = y_tmp + (z_tmp / 2.0) * math.sin(theta)
+        pts.append((y, z))
+    pts.append((z_tmp, y_tmp))
+    pts.append((z_tmp, 0.0))
+    return pts
+
+
+def _real_sail_triangles(
+    tris: list,
+    length: float,
+    n_axial: int = 30,
+    n_arc: int = 12,
+) -> None:
+    """Append surface triangles for the real SUBOFF sail.
+
+    Works in lattice units: hull from x=0 to x=length, centred at y=z=0.
+    The sail sits on +z (vertical up) with thickness in y (transverse).
+    """
+    ftlu = _ft_per_lu(length)
+    inv = 1.0 / ftlu  # ft → lu
+
+    x_ft_arr = np.linspace(_SAIL_X1_START, _SAIL_X3_END, n_axial)
+    z_tmp_arr = _sail_half_thickness_np(x_ft_arr)
+    outlines = [_sail_cross_section_pts(zt, n_arc) for zt in z_tmp_arr]
+
+    for i in range(n_axial - 1):
+        p0_list = outlines[i]
+        p1_list = outlines[i + 1]
+        n = min(len(p0_list), len(p1_list))
+        if n < 2:
+            continue
+        x0 = x_ft_arr[i] * inv
+        x1 = x_ft_arr[i + 1] * inv
+        for j in range(n - 1):
+            a = np.array([x0, p0_list[j][0] * inv, p0_list[j][1] * inv])
+            b = np.array([x0, p0_list[j + 1][0] * inv, p0_list[j + 1][1] * inv])
+            c = np.array([x1, p1_list[j + 1][0] * inv, p1_list[j + 1][1] * inv])
+            d = np.array([x1, p1_list[j][0] * inv, p1_list[j][1] * inv])
+            tris.append((a, b, c))
+            tris.append((a, c, d))
+
+
+def _loft_one_fin(
+    tris: list,
+    x_lu: np.ndarray,
+    r_lu: np.ndarray,
+    t_lu: np.ndarray,
+    span_axis: str,
+    sign: int,
+) -> None:
+    """Loft upper/lower surfaces + caps for one swept NACA fin.
+
+    *x_lu* has shape ``(n_span, n_chord)``; *r_lu* is ``(n_span,)``;
+    *t_lu* is ``(n_chord,)``.
+    """
+    n_span, n_chord = x_lu.shape
+
+    def _pt(i: int, j: int, thick_sign: int) -> np.ndarray:
+        if span_axis == "y":
+            return np.array([x_lu[i, j], sign * r_lu[i], thick_sign * t_lu[j]])
+        return np.array([x_lu[i, j], thick_sign * t_lu[j], sign * r_lu[i]])
+
+    # --- Upper (+) and lower (−) surfaces ---
+    for ts in (+1, -1):
+        for i in range(n_span - 1):
+            for j in range(n_chord - 1):
+                p00 = _pt(i, j, ts)
+                p10 = _pt(i, j + 1, ts)
+                p11 = _pt(i + 1, j + 1, ts)
+                p01 = _pt(i + 1, j, ts)
+                if ts > 0:
+                    tris.append((p00, p10, p11))
+                    tris.append((p00, p11, p01))
+                else:
+                    tris.append((p00, p11, p10))
+                    tris.append((p00, p01, p11))
+
+    # --- Root cap (i=0) and tip cap (i=n_span-1) ---
+    for cap_i, i in enumerate((0, n_span - 1)):
+        for j in range(n_chord - 1):
+            pu = _pt(i, j, +1)
+            pu_n = _pt(i, j + 1, +1)
+            pl = _pt(i, j, -1)
+            pl_n = _pt(i, j + 1, -1)
+            if cap_i == 1:  # tip
+                tris.append((pu, pu_n, pl_n))
+                tris.append((pu, pl_n, pl))
+            else:  # root
+                tris.append((pu, pl_n, pu_n))
+                tris.append((pu, pl, pl_n))
+
+    # --- Trailing-edge cap (s=1, nearly closed) ---
+    te = t_lu[-1]
+    if te > 1e-10:
+        for i in range(n_span - 1):
+            pu0 = _pt(i, -1, +1)
+            pu1 = _pt(i + 1, -1, +1)
+            pl0 = _pt(i, -1, -1)
+            pl1 = _pt(i + 1, -1, -1)
+            tris.append((pu0, pu1, pl1))
+            tris.append((pu0, pl1, pl0))
+
+
+def _real_fin_triangles(
+    tris: list,
+    length: float,
+    n_chord: int = 20,
+    n_span: int = 10,
+) -> None:
+    """Append surface triangles for the 4 real SUBOFF cruciform stern fins.
+
+    Each fin is a swept NACA 4-digit airfoil.  Works in lattice units:
+    hull from x=0 to x=length, centred at y=z=0.
+    """
+    ftlu = _ft_per_lu(length)
+    inv = 1.0 / ftlu
+    h = _FIN_H
+
+    r_arr = np.linspace(_FIN_R_INNER, _FIN_R_OUTER, n_span)
+    s_arr = np.linspace(0, 1, n_chord)
+    t_arr = _naca4_thickness_np(s_arr)
+
+    cy_arr = _FIN_SWEEP_K * r_arr + _FIN_SWEEP_C
+    # x_ft[i, j] = h + (s_j - 1) * cy_i  → (n_span, n_chord)
+    x_ft = h + (s_arr[None, :] - 1.0) * cy_arr[:, None]
+
+    x_lu = x_ft * inv
+    r_lu = r_arr * inv
+    t_lu = t_arr * inv
+
+    # 4 fins: (span_axis, sign)
+    for span_axis, sign in (("y", +1), ("y", -1), ("z", +1), ("z", -1)):
+        _loft_one_fin(tris, x_lu, r_lu, t_lu, span_axis, sign)
+
+
 # ---------------------------------------------------------------------------
 # Shared triangle builder (used by both STL export and mesh3d)
 # ---------------------------------------------------------------------------
@@ -909,37 +1357,13 @@ def _build_suboff_triangles(
                            np.array([X[-1, j_next], Y[-1, j_next], Z[-1, j_next]]),
                            np.array([X[-1, j],      Y[-1, j],      Z[-1, j]])))
 
-    # ---- Sail (conning tower) ----
+    # ---- Sail (real DARPA 3-segment polynomial + arc top) ----
     if hull_type in (SuboffHullType.WITH_SAIL, SuboffHullType.FULL):
-        sail_xc = config.sail_x_frac * length
-        sail_x0 = sail_xc - config.sail_length_frac * length / 2.0
-        sail_x1 = sail_xc + config.sail_length_frac * length / 2.0
-        sail_hw = config.sail_halfwidth_frac * length
-        r_at_sail = float(suboff_radius_profile(np.array([config.sail_x_frac]), config)[0]) * radius
-        sail_z0 = r_at_sail
-        sail_z1 = r_at_sail + config.sail_height_frac * length
-        _box_triangles(triangles, sail_x0, sail_x1, -sail_hw, sail_hw, sail_z0, sail_z1)
+        _real_sail_triangles(triangles, length)
 
-    # ---- Cruciform fins ----
+    # ---- Cruciform fins (real swept NACA 4-digit) ----
     if hull_type == SuboffHullType.FULL:
-        fin_xc = config.fin_x_frac * length
-        fin_x0 = fin_xc - config.fin_length_frac * length / 2.0
-        fin_x1 = fin_xc + config.fin_length_frac * length / 2.0
-        fin_span = config.fin_span_frac * length
-        fin_ht = config.fin_thickness_frac * length
-        r_at_fin = float(suboff_radius_profile(np.array([config.fin_x_frac]), config)[0]) * radius
-        _box_triangles(triangles, fin_x0, fin_x1,
-                       -fin_ht / 2, fin_ht / 2,
-                       r_at_fin, r_at_fin + fin_span)
-        _box_triangles(triangles, fin_x0, fin_x1,
-                       -fin_ht / 2, fin_ht / 2,
-                       -(r_at_fin + fin_span), -r_at_fin)
-        _box_triangles_yz(triangles, fin_x0, fin_x1,
-                          r_at_fin, r_at_fin + fin_span,
-                          -fin_ht / 2, fin_ht / 2)
-        _box_triangles_yz(triangles, fin_x0, fin_x1,
-                          -(r_at_fin + fin_span), -r_at_fin,
-                          -fin_ht / 2, fin_ht / 2)
+        _real_fin_triangles(triangles, length)
 
     return triangles
 

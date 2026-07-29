@@ -353,13 +353,11 @@ def _relax_d3q19(
 
     # 3rd order (indices 10-15)
     lo, hi = _D3Q19_ORDER_BOUNDS["third"]
-    for i in range(lo, hi):
-        out[i] = (1.0 - omega_3) * k[i]
+    out[lo:hi] = (1.0 - omega_3) * k[lo:hi]
 
     # 4th order (indices 16-18)
     lo, hi = _D3Q19_ORDER_BOUNDS["fourth"]
-    for i in range(lo, hi):
-        out[i] = (1.0 - omega_4) * k[i]
+    out[lo:hi] = (1.0 - omega_4) * k[lo:hi]
 
     return out
 
@@ -400,23 +398,19 @@ def _relax_d3q27(
 
     # 3rd order (indices 10-16)
     lo, hi = _D3Q27_ORDER_BOUNDS["third"]
-    for i in range(lo, hi):
-        out[i] = (1.0 - omega_3) * k[i]
+    out[lo:hi] = (1.0 - omega_3) * k[lo:hi]
 
     # 4th order (indices 17-22)
     lo, hi = _D3Q27_ORDER_BOUNDS["fourth"]
-    for i in range(lo, hi):
-        out[i] = (1.0 - omega_4) * k[i]
+    out[lo:hi] = (1.0 - omega_4) * k[lo:hi]
 
     # 5th order (indices 23-25)
     lo, hi = _D3Q27_ORDER_BOUNDS["fifth"]
-    for i in range(lo, hi):
-        out[i] = (1.0 - omega_5) * k[i]
+    out[lo:hi] = (1.0 - omega_5) * k[lo:hi]
 
     # 6th order (index 26)
     lo, hi = _D3Q27_ORDER_BOUNDS["sixth"]
-    for i in range(lo, hi):
-        out[i] = (1.0 - omega_6) * k[i]
+    out[lo:hi] = (1.0 - omega_6) * k[lo:hi]
 
     return out
 

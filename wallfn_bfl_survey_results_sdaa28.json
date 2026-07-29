@@ -1,0 +1,27 @@
+{
+  "test1": {
+    "results": {
+      "guo": {
+        "u_max": 0.11963897943496704,
+        "u_max_analytical": 0.1225,
+        "u_max_error_pct": 2.3355269918636385,
+        "u_tau_analytical": 0.026457513110645904,
+        "u_tau_computed": 0.033208880573511124,
+        "tau_w_analytical": 0.0007,
+        "tau_w_computed": 0.0011028297489457245,
+        "tau_w_error_pct": 57.547106992246356
+      },
+      "simple": {
+        "u_max": 0.12654991447925568,
+        "u_max_analytical": 0.1225,
+        "u_max_error_pct": 3.3060526361270846,
+        "u_tau_analytical": 0.026457513110645904,
+        "u_tau_computed": 0.03412996977567673,
+        "tau_w_analytical": 0.0007,
+        "tau_w_computed": 0.001164854836888607,
+        "tau_w_error_pct": 66.40783384122956
+      }
+    },
+    "pass": true
+  }
+}

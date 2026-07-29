@@ -1,0 +1,28 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[sph_re300 SDAA:2] Re=300 D=40 grid=120x120x120 u_in=0.08 nu=1.066667e-02 tau=0.532000 dpS=4.021239e+00
+[sph_re300 SDAA:2] collision=mrt_smag Cs=0.05 n_steps=2000 avg_window=800
+[sph_re300 SDAA:2] solid cells: 33371
+[sph_re300 SDAA:2] near-wall cells: 4302
+[sph_re300 SDAA:2] SurfaceMesh.from_sphere built
+[sph_re300 SDAA:2] init done (1.0s) mass=1728000.0
+[sph_re300 SDAA:2] step=500/2000 Cd_p=1.4204 Cd_f=0.3119 Cd_tot=1.7323 (499s)
+[sph_re300 SDAA:2] step=1000/2000 Cd_p=0.8977 Cd_f=0.2498 Cd_tot=1.1475 (992s)
+[sph_re300 SDAA:2] step=1500/2000 Cd_p=0.8887 Cd_f=0.2408 Cd_tot=1.1295 (1498s)
+[sph_re300 SDAA:2] step=2000/2000 Cd_p=0.8622 Cd_f=0.2336 Cd_tot=1.0958 (2012s)
+[sph_re300 SDAA:2] DONE  Cd_p=0.8701  Cd_f=0.2358  Cd_tot=1.1059  St=None  (ref=0.44)  err=151.3%  time=2012s
+[sph_re300 SDAA:2] Results → results_common_interface/sph_re300_sdaa2.json

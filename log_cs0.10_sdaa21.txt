@@ -1,0 +1,31 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:21 Cs=0.1] nx=200 ny=80 nz=80 L=80.0 R=4.667 D=9.335 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.1 dpS=4.223004e+00 Cf_ref=0.041995 n_solid=4651
+[SDAA:21 Cs=0.1] near-wall cells: 2050
+[SDAA:21 Cs=0.1] init done (0.0s), initial_mass=1280000.0
+[SDAA:21 Cs=0.1] step=500 Cd_p=0.011726 Cd_f=0.070588 Cd_tot=0.082314 (81s)
+[SDAA:21 Cs=0.1] step=1000 Cd_p=0.006613 Cd_f=0.044528 Cd_tot=0.051140 (161s)
+[SDAA:21 Cs=0.1] step=1500 Cd_p=0.006440 Cd_f=0.039902 Cd_tot=0.046342 (242s)
+[SDAA:21 Cs=0.1] step=2000 Cd_p=0.006393 Cd_f=0.038329 Cd_tot=0.044723 (322s)
+[SDAA:21 Cs=0.1] step=2500 Cd_p=0.006368 Cd_f=0.037806 Cd_tot=0.044174 (403s)
+[SDAA:21 Cs=0.1] step=3000 Cd_p=0.006344 Cd_f=0.037624 Cd_tot=0.043968 (484s)
+[SDAA:21 Cs=0.1] step=3500 Cd_p=0.006331 Cd_f=0.037554 Cd_tot=0.043884 (564s)
+[SDAA:21 Cs=0.1] step=4000 Cd_p=0.006322 Cd_f=0.037523 Cd_tot=0.043845 (645s)
+[SDAA:21 Cs=0.1] step=4500 Cd_p=0.006319 Cd_f=0.037509 Cd_tot=0.043828 (725s)
+[SDAA:21 Cs=0.1] step=5000 Cd_p=0.006321 Cd_f=0.037503 Cd_tot=0.043824 (805s)
+[SDAA:21 Cs=0.1] DONE Cd_p=0.006321 Cd_f=0.037503 Cd_tot=0.043824 Cf=0.043824 (ref Cf=0.041995) err=4.4% time=805s (160.9ms/step)
+[SDAA:21 Cs=0.1] Results written to suboff_cs0.10_sdaa21.json

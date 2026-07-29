@@ -1,0 +1,32 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] extrap=quadratic nx=120 ny=120 nz=120 D=20 R=10.0 u_in=0.005 nu=1.000000e+00 tau=3.500000 Cs=0.05 dpS=3.926991e-03
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] solid cells: 4139
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] near-wall cells: 1118
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] init done (0.5s), initial_mass=1728000.0
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=200 Cd_p=115.5148 Cd_f=294.6069 Cd_tot=410.1218 Cl=0.002674 (47s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=400 Cd_p=87.8955 Cd_f=241.8786 Cd_tot=329.7741 Cl=-0.051263 (94s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=600 Cd_p=86.6539 Cd_f=238.2287 Cd_tot=324.8826 Cl=-0.090081 (141s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=800 Cd_p=86.3427 Cd_f=237.2368 Cd_tot=323.5795 Cl=-0.109755 (188s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=1000 Cd_p=86.2233 Cd_f=236.8550 Cd_tot=323.0782 Cl=-0.119061 (235s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=1200 Cd_p=86.1713 Cd_f=236.6868 Cd_tot=322.8581 Cl=-0.122765 (282s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=1400 Cd_p=86.1475 Cd_f=236.6086 Cd_tot=322.7561 Cl=-0.124388 (329s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=1600 Cd_p=86.1363 Cd_f=236.5723 Cd_tot=322.7086 Cl=-0.125208 (376s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=1800 Cd_p=86.1305 Cd_f=236.5537 Cd_tot=322.6842 Cl=-0.125477 (423s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] step=2000 Cd_p=86.1277 Cd_f=236.5446 Cd_tot=322.6722 Cl=-0.125595 (469s)
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] DONE extrap=quadratic Cd_p=86.0881 Cd_f=236.5051 Cd_tot=322.5931 Cl=-0.123296 (ref=240.0000) err=34.4% time=469s
+[SDAA:26 Stokes Re=0.1 extrap=quadratic] Results written to results_extrap_bfl_fix/sphere_stokes_quadratic_sdaa26.json

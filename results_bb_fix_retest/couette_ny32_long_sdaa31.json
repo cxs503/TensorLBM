@@ -1,0 +1,17 @@
+{
+  "case": "couette_bb_fix_retest_long",
+  "device": "sdaa:31",
+  "grid": "80x32x4",
+  "tau": 1.0,
+  "nu": 0.16666666666666666,
+  "u_top": 0.05,
+  "H": 30,
+  "n_steps": 8000,
+  "warmup": 4000,
+  "Cf_exact": 0.2222222222222222,
+  "bb_fix": true,
+  "Cf_mean": 0.22209120232146232,
+  "Cf_err_pct": 0.058958955341952,
+  "finite": true,
+  "elapsed_s": 108.58398699760437
+}

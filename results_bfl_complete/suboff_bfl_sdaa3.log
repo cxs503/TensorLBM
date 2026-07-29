@@ -1,0 +1,35 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SUBOFF-Re1000-bfl SDAA:3] nx=200 ny=80 nz=80 L=80 R_max=4.6674 D=9.3349 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.042 use_bfl=True
+[SUBOFF-Re1000-bfl SDAA:3] solid cells: 4651  L/D=8.57
+[SUBOFF-Re1000-bfl SDAA:3] near-wall cells: 2050
+[SUBOFF-Re1000-bfl SDAA:3] computing BFL q-values on CPU...
+[SUBOFF-Re1000-bfl SDAA:3] BFL q-field: 11842 links (0.5s) q=[0.0045, 0.9999] mean=0.7346
+  q_wall: n_near=2050 q_min=0.1407 q_max=0.9999 q_mean=0.7321
+[SUBOFF-Re1000-bfl SDAA:3] init done (1.1s), initial_mass=1280000.0
+[SUBOFF-Re1000-bfl SDAA:3] step=500 Cd_p=0.007154 Cd_f=0.047176 Cd_tot=0.054331 Cl=-0.000007 (125s)
+[SUBOFF-Re1000-bfl SDAA:3] step=1000 Cd_p=0.001201 Cd_f=0.031493 Cd_tot=0.032694 Cl=-0.000007 (247s)
+[SUBOFF-Re1000-bfl SDAA:3] step=1500 Cd_p=0.001245 Cd_f=0.028605 Cd_tot=0.029850 Cl=-0.000004 (370s)
+[SUBOFF-Re1000-bfl SDAA:3] step=2000 Cd_p=0.001390 Cd_f=0.027675 Cd_tot=0.029065 Cl=-0.000004 (490s)
+[SUBOFF-Re1000-bfl SDAA:3] step=2500 Cd_p=0.001426 Cd_f=0.027387 Cd_tot=0.028812 Cl=-0.000006 (609s)
+[SUBOFF-Re1000-bfl SDAA:3] step=3000 Cd_p=0.001412 Cd_f=0.027287 Cd_tot=0.028699 Cl=-0.000007 (729s)
+[SUBOFF-Re1000-bfl SDAA:3] step=3500 Cd_p=0.001408 Cd_f=0.027252 Cd_tot=0.028660 Cl=-0.000008 (847s)
+[SUBOFF-Re1000-bfl SDAA:3] step=4000 Cd_p=0.001384 Cd_f=0.027236 Cd_tot=0.028620 Cl=-0.000007 (965s)
+[SUBOFF-Re1000-bfl SDAA:3] step=4500 Cd_p=0.001383 Cd_f=0.027227 Cd_tot=0.028610 Cl=-0.000008 (1084s)
+[SUBOFF-Re1000-bfl SDAA:3] step=5000 Cd_p=0.001384 Cd_f=0.027224 Cd_tot=0.028608 Cl=-0.000007 (1202s)
+[SUBOFF-Re1000-bfl SDAA:3] DONE Cd_p=0.001383 Cd_f=0.027225 Cd_tot=0.028609 Cl=-0.000008 (ref Cf=0.042) err=31.9% time=1202s
+[SUBOFF-Re1000-bfl SDAA:3] Results written to results_bfl_complete/suboff_bfl_sdaa3.json
