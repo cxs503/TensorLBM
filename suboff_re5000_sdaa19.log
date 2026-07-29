@@ -1,0 +1,32 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:19 SUBOFF Re=5000] nx=200 ny=80 nz=80 L=80.0 R=4.6674 D=9.3349 u_in=0.06 nu=9.600000e-04 tau=0.502880 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.025983 n_solid=4651 n_steps=5000 ref=ITTC-1957 Cf=0.075/(log10(Re)-2)^2
+[SDAA:19 SUBOFF Re=5000] near-wall cells: 2050
+[SDAA:19 SUBOFF Re=5000] |n| stats: min=1.000000 max=1.000000 mean=1.000000
+[SDAA:19 SUBOFF Re=5000] init done (0.0s), initial_mass=1280000.0
+[SDAA:19 SUBOFF Re=5000] step=500 Cd_p=0.009753 Cd_f=0.020362 Cd_tot=0.030116 (80s)
+[SDAA:19 SUBOFF Re=5000] step=1000 Cd_p=0.005144 Cd_f=0.013849 Cd_tot=0.018993 (160s)
+[SDAA:19 SUBOFF Re=5000] step=1500 Cd_p=0.004928 Cd_f=0.012290 Cd_tot=0.017218 (240s)
+[SDAA:19 SUBOFF Re=5000] step=2000 Cd_p=0.004824 Cd_f=0.011726 Cd_tot=0.016550 (320s)
+[SDAA:19 SUBOFF Re=5000] step=2500 Cd_p=0.004885 Cd_f=0.011515 Cd_tot=0.016400 (400s)
+[SDAA:19 SUBOFF Re=5000] step=3000 Cd_p=0.005079 Cd_f=0.011468 Cd_tot=0.016548 (480s)
+[SDAA:19 SUBOFF Re=5000] step=3500 Cd_p=0.004737 Cd_f=0.011426 Cd_tot=0.016163 (560s)
+[SDAA:19 SUBOFF Re=5000] step=4000 Cd_p=0.003500 Cd_f=0.011270 Cd_tot=0.014770 (640s)
+[SDAA:19 SUBOFF Re=5000] step=4500 Cd_p=0.001962 Cd_f=0.010873 Cd_tot=0.012836 (720s)
+[SDAA:19 SUBOFF Re=5000] step=5000 Cd_p=0.002008 Cd_f=0.010534 Cd_tot=0.012542 (800s)
+[SDAA:19 SUBOFF Re=5000] DONE Cd_p=0.002008 Cd_f=0.010534 Cd_tot=0.012542 Cf=0.012542 (ref Cf=0.025983) err=51.7% time=800s (160.0ms/step)
+[SDAA:19 SUBOFF Re=5000] Results written to suboff_re5000_sdaa19.json

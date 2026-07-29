@@ -1,0 +1,26 @@
+{
+  "cylinder": {
+    "case": "cylinder_D48_Re200",
+    "device": "sdaa:12",
+    "grid": "480x192x4",
+    "D": 48.0,
+    "u_in": 0.08,
+    "Re": 200.0,
+    "nu": 0.0192,
+    "tau": 0.5576,
+    "n_steps": 5000,
+    "warmup": 1000,
+    "Cd_p_mean": 1.2397307066324472,
+    "Cd_f_mean": 0.15918084429965046,
+    "Cd_pf_mean": 1.3989115509320988,
+    "Cd_mem_mean": 2.4399543832987556,
+    "Cd_ref": 1.3,
+    "Cd_pf_err_pct": 7.608580840930677,
+    "Cd_mem_err_pct": 87.68879871528888,
+    "mem_vs_pf_diff_pct": 74.41805964594451,
+    "St": NaN,
+    "n_samples": 4000,
+    "finite": true,
+    "elapsed_s": 1396.3750150203705
+  }
+}

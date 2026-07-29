@@ -1,10 +1,18 @@
-"""Common Fluid-Structure Interaction (FSI) module — composes IBM + 6-DOF.
+"""Common Fluid-Structure Interaction (FSI) module — composes IBM + 6-DOF + spring-mass.
 
-This module provides a single solver-agnostic ``fsi_step`` that combines the
-common IBM direct-forcing interface (:mod:`tensorlbm.ibm_common`) with the
-common 6-DOF rigid-body integrator (:mod:`tensorlbm.sixdof_common`).  It can
-be inserted into **any** collision → stream → boundary loop and composed with
-arbitrary turbulence or multiphase models.
+This module provides solver-agnostic FSI steps that combine the common IBM
+direct-forcing interface (:mod:`tensorlbm.ibm_common`) with the common 6-DOF
+rigid-body integrator (:mod:`tensorlbm.sixdof_common`) and a spring-mass-damper
+system for vortex-induced vibration (VIV).  It can be inserted into **any**
+collision → stream → boundary loop and composed with arbitrary turbulence or
+multiphase models.
+
+Three coupling modes are provided:
+
+1. ``fsi_step`` — IBM direct-forcing + 6-DOF rigid-body (original, tested).
+2. ``spring_mass_step`` — spring-mass-damper integrator for VIV / galloping.
+3. ``fsi_step_drag`` — drag-based force (pressure + friction integration) +
+   structure update (spring-mass or rigid-body), for moving-boundary FSI.
 
 Public contract
 ----------------
@@ -18,6 +26,18 @@ Public contract
         - ``structure_updated`` – advanced :class:`RigidBodyState`.
         - ``force``            – ``(6,)`` force/moment on the body (fluid → solid).
 
+``spring_mass_step(state, force, dt, *, smd) -> SpringMassState``
+
+    Advance a spring-mass-damper oscillator by one explicit step:
+        m·ÿ + c·ẏ + k·y = F
+    Natural frequency: f_n = (1/2π)·√(k/m)
+    Damping ratio:     ζ = c / (2·√(k·m))
+
+``fsi_step_drag(f, mesh, dpS, nu, structure, *, smd=None, body=None, dt=1.0)``
+
+    Compute fluid force via drag_pressure_integration + drag_friction_integration,
+    then advance the structure (spring-mass or rigid-body).
+
 The body force on the fluid is the IBM direct-forcing field; the force on the
 **body** is its Newton-third-law reaction (negative of the summed IBM force,
 resolved about the body centre of mass).  This is a one-step explicit coupling
@@ -28,6 +48,7 @@ This module does **not** modify the solver hot path.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Literal
 
@@ -48,7 +69,13 @@ __all__ = [
     "FSICouplingName",
     "FSICapabilityWithheldError",
     "FSIResult",
+    "FSIDragResult",
+    "SpringMassDamper",
+    "SpringMassState",
+    "spring_mass_step",
     "fsi_step",
+    "fsi_step_drag",
+    "shift_solid_mask",
 ]
 
 FSILatticeName = Literal["D3Q19", "D3Q27"]
@@ -75,6 +102,316 @@ class FSIResult:
     structure_updated: RigidBodyState
     force_on_body: torch.Tensor
     force_on_fluid: torch.Tensor
+
+
+@dataclass
+class FSIDragResult:
+    """Output of :func:`fsi_step_drag`.
+
+    Attributes:
+        structure_updated: Advanced structure state (SpringMassState or
+                           RigidBodyState, depending on which was passed).
+        force:            ``(3,)`` force ``[fx, fy, fz]`` exerted by the fluid
+                          on the body (lattice units).
+        cd_pressure:      ``(3,)`` pressure-drag coefficients ``[Cdpx, Cdpy, Cdpz]``.
+        cd_friction:      ``(3,)`` friction-drag coefficients.
+        cd_total:         ``(3,)`` total drag coefficients.
+    """
+
+    structure_updated: object
+    force: torch.Tensor
+    cd_pressure: tuple
+    cd_friction: tuple
+    cd_total: tuple
+
+
+# --------------------------------------------------------------------------- #
+# Spring-mass-damper system (for VIV / galloping)
+# --------------------------------------------------------------------------- #
+
+
+@dataclass
+class SpringMassDamper:
+    """Spring-mass-damper oscillator properties for VIV / galloping.
+
+    Models the 1-DOF (or multi-DOF) equation of motion:
+        m·ÿ + c·ẏ + k·y = F_fluid
+
+    Attributes:
+        mass:       Oscillator mass [lattice units].
+        stiffness:  Spring stiffness k [lattice units].
+        damping:    Damping coefficient c [lattice units].
+        n_dof:      Number of DOFs (1 = transverse only, 2 = x+y, 3 = xyz).
+        gravity:    Gravity vector ``(3,)`` [lattice units], default zero.
+    """
+
+    mass: float
+    stiffness: float = 0.0
+    damping: float = 0.0
+    n_dof: int = 1
+    gravity: tuple[float, ...] = (0.0, 0.0, 0.0)
+
+    @property
+    def natural_frequency(self) -> float:
+        """Natural frequency f_n = (1/2π)·√(k/m) [Hz, lattice units]."""
+        if self.mass <= 0 or self.stiffness <= 0:
+            return 0.0
+        return (1.0 / (2.0 * math.pi)) * math.sqrt(self.stiffness / self.mass)
+
+    @property
+    def damping_ratio(self) -> float:
+        """Damping ratio ζ = c / (2·√(k·m))."""
+        if self.mass <= 0 or self.stiffness <= 0:
+            return 0.0
+        return self.damping / (2.0 * math.sqrt(self.stiffness * self.mass))
+
+    @classmethod
+    def from_mass_ratio_freq(
+        cls,
+        mass_ratio: float,
+        rho_f: float,
+        D: float,
+        u_in: float,
+        f_n: float,
+        zeta: float,
+        n_dof: int = 1,
+    ) -> "SpringMassDamper":
+        """Build SMD from non-dimensional VIV parameters.
+
+        m* = m / (ρ_f · D^n), f_n = natural frequency, ζ = damping ratio.
+
+        For 2D (n=2): m = m* · ρ_f · D²
+        For 3D (n=3): m = m* · ρ_f · D³
+
+        k = m · (2π·f_n)²
+        c = 2·ζ·√(k·m)
+        """
+        n = 2 if n_dof <= 2 else 3
+        mass = mass_ratio * rho_f * D ** n
+        omega_n = 2.0 * math.pi * f_n
+        k = mass * omega_n ** 2
+        c = 2.0 * zeta * math.sqrt(k * mass)
+        return cls(mass=mass, stiffness=k, damping=c, n_dof=n_dof)
+
+
+@dataclass
+class SpringMassState:
+    """State of a spring-mass-damper oscillator.
+
+    Attributes:
+        disp:  Displacement ``(n_dof,)`` [lattice units].
+        vel:   Velocity ``(n_dof,)`` [lattice units / step].
+    """
+
+    disp: torch.Tensor
+    vel: torch.Tensor
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.disp, torch.Tensor):
+            self.disp = torch.tensor(self.disp, dtype=torch.float64)
+        if not isinstance(self.vel, torch.Tensor):
+            self.vel = torch.tensor(self.vel, dtype=torch.float64)
+        if self.disp.shape != self.vel.shape:
+            raise ValueError(
+                f"disp and vel must have the same shape; got "
+                f"{tuple(self.disp.shape)} and {tuple(self.vel.shape)}."
+            )
+
+    def clone(self) -> "SpringMassState":
+        return SpringMassState(self.disp.clone(), self.vel.clone())
+
+    @classmethod
+    def zero(cls, n_dof: int = 1, dtype: torch.dtype = torch.float64) -> "SpringMassState":
+        return cls(
+            torch.zeros(n_dof, dtype=dtype),
+            torch.zeros(n_dof, dtype=dtype),
+        )
+
+
+def spring_mass_step(
+    state: SpringMassState,
+    force: torch.Tensor,
+    dt: float,
+    *,
+    smd: SpringMassDamper,
+) -> SpringMassState:
+    """Advance a spring-mass-damper oscillator by one explicit step.
+
+    Solves:  m·ÿ + c·ẏ + k·y = F
+
+    Using Symplectic Euler (semi-implicit):
+        1. a = (F - c·ẏ - k·y) / m
+        2. v_new = v + a·dt
+        3. y_new = y + v_new·dt
+
+    Args:
+        state: Current :class:`SpringMassState`.
+        force: External force ``(n_dof,)`` (fluid force on body).
+        dt:    Time step.
+        smd:   :class:`SpringMassDamper` properties.
+
+    Returns:
+        Advanced :class:`SpringMassState`.
+    """
+    if dt <= 0:
+        raise ValueError(f"dt must be positive; got {dt}.")
+    m = smd.mass
+    k = smd.stiffness
+    c = smd.damping
+    f = force.detach().to(torch.float64)
+    if f.shape != state.disp.shape:
+        f = f.reshape(state.disp.shape)
+
+    # Spring + damping restoring force
+    f_restore = -k * state.disp - c * state.vel
+    # Gravity (if any)
+    grav = torch.tensor(smd.gravity[: f.shape[0]], dtype=torch.float64)
+
+    a = (f + f_restore + m * grav) / m
+    vel_new = state.vel + a * dt
+    disp_new = state.disp + vel_new * dt
+    return SpringMassState(disp=disp_new, vel=vel_new)
+
+
+# --------------------------------------------------------------------------- #
+# Moving-boundary mask shifting
+# --------------------------------------------------------------------------- #
+
+
+def shift_solid_mask(
+    solid: torch.Tensor,
+    dx: int,
+    dy: int,
+    dz: int = 0,
+) -> torch.Tensor:
+    """Shift a solid mask by integer lattice displacements.
+
+    Used for moving-boundary FSI where the body translates.  Cells that
+    leave the domain are clipped; fresh cells (previously solid, now fluid)
+    are filled with the equilibrium distribution by the caller.
+
+    Args:
+        solid: Solid mask ``(nz, ny, nx)``.
+        dx, dy, dz: Integer shift in lattice cells.
+
+    Returns:
+        Shifted solid mask of the same shape.
+    """
+    nz, ny, nx = solid.shape
+    shifted = torch.zeros_like(solid)
+    # Source and destination ranges (clipped to domain)
+    z0s = max(0, -dz); z1s = min(nz, nz - dz)
+    y0s = max(0, -dy); y1s = min(ny, ny - dy)
+    x0s = max(0, -dx); x1s = min(nx, nx - dx)
+    z0d = max(0, dz); z1d = z0d + (z1s - z0s)
+    y0d = max(0, dy); y1d = y0d + (y1s - y0s)
+    x0d = max(0, dx); x1d = x0d + (x1s - x0s)
+    if z1s > z0s and y1s > y0s and x1s > x0s:
+        shifted[z0d:z1d, y0d:y1d, x0d:x1d] = solid[z0s:z1s, y0s:y1s, x0s:x1s]
+    return shifted
+
+
+# --------------------------------------------------------------------------- #
+# Drag-based FSI step (pressure + friction integration → structure update)
+# --------------------------------------------------------------------------- #
+
+
+def fsi_step_drag(
+    f: torch.Tensor,
+    mesh,
+    dpS: float,
+    nu: float,
+    structure,
+    *,
+    smd: SpringMassDamper | None = None,
+    body: SixDOFBody | None = None,
+    dt: float = 1.0,
+    force_axis: int = 1,
+    extrap: str = "none",
+    p0_method: str = "far_field",
+    solid: torch.Tensor | None = None,
+    friction_formula: str = "standard",
+) -> FSIDragResult:
+    """One FSI step using drag integration for force + structure update.
+
+    Computes the fluid force on the body via
+    :func:`drag_pressure_integration` + :func:`drag_friction_integration`,
+    then advances the structure (spring-mass-damper or rigid-body).
+
+    Args:
+        f:          Distribution tensor ``(Q, nz, ny, nx)``.
+        mesh:       :class:`SurfaceMesh` with precomputed normals.
+        dpS:        Dynamic pressure scale (0.5·ρ·U²·A).
+        nu:         Lattice kinematic viscosity.
+        structure:  Current structure state (:class:`SpringMassState` or
+                    :class:`RigidBodyState`).
+        smd:        Spring-mass-damper properties (required for SMD structure).
+        body:       :class:`SixDOFBody` (required for rigid-body structure).
+        dt:         Time step.
+        force_axis: Axis index (0=x, 1=y, 2=z) of the transverse force driving
+                    the spring-mass oscillator (for 1-DOF VIV).
+        extrap:     Pressure extrapolation method ('none', 'linear', 'quadratic').
+        p0_method:  Background pressure method.
+        solid:      Solid mask (required for p0_method != 'near_wall').
+        friction_formula: Friction formula ('standard', '2nd_order', etc.).
+
+    Returns:
+        :class:`FSIDragResult` with advanced structure state and force/CD.
+    """
+    from .drag_pressure import (
+        drag_pressure_integration,
+        drag_friction_integration,
+    )
+
+    # 1. Compute fluid force via drag integration.
+    fx_p, fy_p, fz_p = drag_pressure_integration(
+        f, mesh, dpS, extrap=extrap, p0_method=p0_method, solid=solid,
+    )
+    fx_f, fy_f, fz_f = drag_friction_integration(
+        f, mesh, dpS, nu, formula=friction_formula,
+    )
+    cd_p = (fx_p, fy_p, fz_p)
+    cd_f = (fx_f, fy_f, fz_f)
+    cd_t = (fx_p + fx_f, fy_p + fy_f, fz_p + fz_f)
+
+    # Force in lattice units: F = Cd · dpS  (dpS = 0.5·ρ·U²·A)
+    # For spring-mass, we need the actual force, not just Cd.
+    force_vec = torch.tensor(
+        [cd_t[0] * dpS, cd_t[1] * dpS, cd_t[2] * dpS],
+        dtype=torch.float64,
+    )
+
+    # 2. Advance the structure.
+    if isinstance(structure, SpringMassState):
+        if smd is None:
+            raise ValueError("smd (SpringMassDamper) is required for SpringMassState.")
+        if smd.n_dof == 1:
+            # 1-DOF: use only the transverse force component
+            f_drive = force_vec[force_axis].reshape(1)
+        else:
+            f_drive = force_vec[: smd.n_dof]
+        struct_new = spring_mass_step(structure, f_drive, dt, smd=smd)
+    elif isinstance(structure, RigidBodyState):
+        if body is None:
+            raise ValueError("body (SixDOFBody) is required for RigidBodyState.")
+        force_6 = torch.tensor(
+            [cd_t[0] * dpS, cd_t[1] * dpS, cd_t[2] * dpS, 0.0, 0.0, 0.0],
+            dtype=torch.float64,
+        )
+        struct_new = rigid_body_step(structure, force_6, dt, body=body)
+    else:
+        raise TypeError(
+            f"structure must be SpringMassState or RigidBodyState; "
+            f"got {type(structure).__name__}."
+        )
+
+    return FSIDragResult(
+        structure_updated=struct_new,
+        force=force_vec,
+        cd_pressure=cd_p,
+        cd_friction=cd_f,
+        cd_total=cd_t,
+    )
 
 
 def _normalise_lattice(lattice: str) -> FSILatticeName:

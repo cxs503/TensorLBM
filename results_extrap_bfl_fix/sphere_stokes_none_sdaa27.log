@@ -1,0 +1,32 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:27 Stokes Re=0.1 extrap=none] extrap=none nx=120 ny=120 nz=120 D=20 R=10.0 u_in=0.005 nu=1.000000e+00 tau=3.500000 Cs=0.05 dpS=3.926991e-03
+[SDAA:27 Stokes Re=0.1 extrap=none] solid cells: 4139
+[SDAA:27 Stokes Re=0.1 extrap=none] near-wall cells: 1118
+[SDAA:27 Stokes Re=0.1 extrap=none] init done (0.5s), initial_mass=1728000.0
+[SDAA:27 Stokes Re=0.1 extrap=none] step=200 Cd_p=111.6320 Cd_f=294.6069 Cd_tot=406.2390 Cl=0.002680 (44s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=400 Cd_p=86.3981 Cd_f=241.8786 Cd_tot=328.2766 Cl=-0.051074 (88s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=600 Cd_p=85.1797 Cd_f=238.2287 Cd_tot=323.4085 Cl=-0.089698 (132s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=800 Cd_p=84.8742 Cd_f=237.2368 Cd_tot=322.1110 Cl=-0.109251 (176s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=1000 Cd_p=84.7569 Cd_f=236.8550 Cd_tot=321.6118 Cl=-0.118260 (220s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=1200 Cd_p=84.7059 Cd_f=236.6868 Cd_tot=321.3927 Cl=-0.122189 (263s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=1400 Cd_p=84.6823 Cd_f=236.6086 Cd_tot=321.2909 Cl=-0.123789 (307s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=1600 Cd_p=84.6714 Cd_f=236.5723 Cd_tot=321.2437 Cl=-0.124564 (351s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=1800 Cd_p=84.6658 Cd_f=236.5537 Cd_tot=321.2195 Cl=-0.124850 (395s)
+[SDAA:27 Stokes Re=0.1 extrap=none] step=2000 Cd_p=84.6630 Cd_f=236.5446 Cd_tot=321.2076 Cl=-0.124938 (438s)
+[SDAA:27 Stokes Re=0.1 extrap=none] DONE extrap=none Cd_p=84.6235 Cd_f=236.5051 Cd_tot=321.1286 Cl=-0.122643 (ref=240.0000) err=33.8% time=438s
+[SDAA:27 Stokes Re=0.1 extrap=none] Results written to results_extrap_bfl_fix/sphere_stokes_none_sdaa27.json

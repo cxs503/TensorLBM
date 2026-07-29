@@ -1,0 +1,59 @@
+{
+  "benchmark": "backward_facing_step_bbfix",
+  "device": "sdaa:30",
+  "grid": "400x20x4",
+  "step_h": 10,
+  "x_step": 100,
+  "expansion_ratio": 2.0,
+  "u_in": 0.05,
+  "u_max_profile": 0.07407407462596893,
+  "Re": 1000.0,
+  "nu": 0.0005,
+  "tau": 0.5015,
+  "Cs": 0.05,
+  "n_steps": 10000,
+  "inlet_type": "parabolic_poiseuille",
+  "bb_fix": true,
+  "bug28_fix": true,
+  "detection_y": 1,
+  "xr_H_final": 0.1,
+  "xr_H_mean": 0.10000000000000002,
+  "xr_H_ref": 6.0,
+  "xr_error_pct": 98.33333333333334,
+  "ux_diagnostics": {
+    "y1": {
+      "ux_at_xstep": -6.713313268846832e-06,
+      "ux_at_xstep+10": 4.036938844365068e-05,
+      "ux_at_xstep+30": 3.313114575576037e-05,
+      "has_negative": true
+    },
+    "y3": {
+      "ux_at_xstep": -5.713017344533e-06,
+      "ux_at_xstep+10": 7.677670510020107e-05,
+      "ux_at_xstep+30": 6.64057006360963e-05,
+      "has_negative": true
+    },
+    "y5": {
+      "ux_at_xstep": -5.7502693380229175e-06,
+      "ux_at_xstep+10": 7.988373545231298e-05,
+      "ux_at_xstep+30": 6.773012137273327e-05,
+      "has_negative": true
+    },
+    "y7": {
+      "ux_at_xstep": -4.908308255835436e-06,
+      "ux_at_xstep+10": 8.421269012615085e-05,
+      "ux_at_xstep+30": 6.980894977459684e-05,
+      "has_negative": true
+    },
+    "y9": {
+      "ux_at_xstep": 1.792871807992924e-05,
+      "ux_at_xstep+10": 0.00011671927495626733,
+      "ux_at_xstep+30": 7.925500540295616e-05,
+      "has_negative": false
+    }
+  },
+  "finite": true,
+  "diverged": false,
+  "last_step": 10000,
+  "elapsed_s": 278.48251152038574
+}

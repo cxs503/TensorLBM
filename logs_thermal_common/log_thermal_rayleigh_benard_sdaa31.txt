@@ -1,0 +1,22 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[rayleigh_benard SDAA:31] Starting: Rayleigh-Benard, Ra=1e4 > Ra_c=1708
+[rayleigh_benard SDAA:31] device=sdaa:31, kwargs={'nx': 100, 'ny': 50, 'nz': 4, 'Ra': 10000.0, 'Pr': 0.71, 'n_steps': 8000}
+EXCEP: [actsPrintExceptionInfo][1431]:Fatbin  base  :0x617c04192000
+EXCEP: [actsPrintExceptionInfo][1434]:Exception type:SDAA_ERROR_INVALID_ADDRESS_SPACE
+EXCEP: [actsPrintExceptionInfo][1435]:Exception val :0x7
+EXCEP: [actsPrintExceptionInfo][1436]:Exception pc  :0x617c041ce8c8

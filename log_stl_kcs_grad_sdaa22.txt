@@ -1,0 +1,47 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:22 KCS] STL ship benchmark: KCS
+[SDAA:22 KCS] grid=200x80x80 L_lat=120 spacing=1.9167
+[SDAA:22 KCS] u_in=0.06 Re=1e+03 nu=7.200000e-03 tau=0.521600 Cs=0.05
+[SDAA:22 KCS] dA_method=none normal=from_gradient
+[SDAA:22 KCS] solid=5814 near=4366 faces=608
+[SDAA:22 KCS] Cf_ITTC=0.075000
+[SDAA:22 KCS] dA stats: mean=1.0000 min=1.0000 max=1.0000 sum=4366.0
+[SDAA:22 KCS] S_wetted(STL)=5027.0 dpS=9.048515e+00
+[SDAA:22 KCS] init done (0.0s) mass=1280000.0
+[SDAA:22 KCS] step=500 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (ITTC=0.075000) [74s]
+[SDAA:22 KCS] step=1000 Cd_p=0.012083 Cd_f=0.048608 Cd_tot=0.060691 (ITTC=0.075000) [157s]
+[SDAA:22 KCS] step=1500 Cd_p=0.011484 Cd_f=0.042524 Cd_tot=0.054008 (ITTC=0.075000) [241s]
+[SDAA:22 KCS] step=2000 Cd_p=0.011237 Cd_f=0.040123 Cd_tot=0.051359 (ITTC=0.075000) [324s]
+[SDAA:22 KCS] step=2500 Cd_p=0.011119 Cd_f=0.039042 Cd_tot=0.050161 (ITTC=0.075000) [408s]
+[SDAA:22 KCS] step=3000 Cd_p=0.011053 Cd_f=0.038520 Cd_tot=0.049573 (ITTC=0.075000) [491s]
+[SDAA:22 KCS] step=3500 Cd_p=0.011029 Cd_f=0.038266 Cd_tot=0.049295 (ITTC=0.075000) [574s]
+[SDAA:22 KCS] step=4000 Cd_p=0.010995 Cd_f=0.038136 Cd_tot=0.049131 (ITTC=0.075000) [658s]
+[SDAA:22 KCS] step=4500 Cd_p=0.010984 Cd_f=0.038073 Cd_tot=0.049056 (ITTC=0.075000) [741s]
+[SDAA:22 KCS] step=5000 Cd_p=0.010976 Cd_f=0.038041 Cd_tot=0.049017 (ITTC=0.075000) [825s]
+
+============================================================
+[SDAA:22 KCS] FINAL RESULTS
+============================================================
+  Cd_pressure  = 0.010980
+  Cd_friction  = 0.038057
+  Cd_total     = 0.049037
+  Cf_ITTC      = 0.075000  (err=34.6%)
+  S_wetted     = 5027.0
+  Wall time: 825s (13.7 min)
+  Finite: True
+  Saved to results_stl_kcs_grad_sdaa22.json

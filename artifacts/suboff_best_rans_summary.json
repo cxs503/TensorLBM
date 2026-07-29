@@ -1,0 +1,104 @@
+{
+  "task": "SUBOFF best combination (4L+Cumulant) + RANS k-epsilon at Re=1e4/1e5",
+  "date": "2026-07-26",
+  "devices": ["sdaa:20", "sdaa:21", "sdaa:22"],
+  "benchmarks": {
+    "bench1_cumulant_re1000": {
+      "description": "SUBOFF 4L domain + Cumulant D3Q19 at Re=1000",
+      "grid": "320x120x120 (4L domain, 0.48% blockage)",
+      "collision": "Cumulant D3Q19 (pure, no Smagorinsky)",
+      "normal_method": "from_suboff (analytical axisymmetric)",
+      "parameters": {
+        "L": 80.0, "D": 9.3349, "radius": 4.6674,
+        "u_in": 0.06, "Re": 1000, "tau": 0.5144, "nu": 0.0048,
+        "n_steps": 5000, "avg_window": 500,
+        "dpS": 4.223, "dpS_formula": "0.5*u_in^2*pi*D*L (wetted area)"
+      },
+      "results": {
+        "Cd_pressure": 0.004871,
+        "Cd_friction": 0.036915,
+        "Cd_total": 0.041786,
+        "Cf_numerical": 0.041786,
+        "Cf_ref": 0.041995,
+        "ref_name": "Blasius Cf=1.328/sqrt(Re)",
+        "error_pct": 0.50,
+        "finite": true,
+        "diverged": false,
+        "elapsed_s": 1983
+      },
+      "comparison": {
+        "MRT+Smag (4L)": "2.3% error",
+        "Cumulant (4L)": "0.5% error (4.6x better)"
+      }
+    },
+    "bench2_rans_ke_re1e5": {
+      "description": "SUBOFF Re=1e5 with RANS k-epsilon (MRT)",
+      "grid": "200x80x80",
+      "collision": "RANS k-epsilon (collide_rans_ke -> collide_rans_mrt3d)",
+      "normal_method": "from_gradient",
+      "parameters": {
+        "L": 80.0, "D": 9.3349, "radius": 4.6674,
+        "u_in": 0.06, "Re": 100000, "tau": 0.500144, "nu": 4.8e-5,
+        "n_steps": 5000, "avg_window": 500,
+        "dpS": 4.223, "dpS_formula": "0.5*u_in^2*pi*D*L (wetted area)"
+      },
+      "results": {
+        "Cd_pressure": 0.006171,
+        "Cd_friction": 0.000451,
+        "Cd_total": 0.006623,
+        "Cf_numerical": 0.006623,
+        "Cf_ref": 0.008333,
+        "ref_name": "ITTC-1957 Cf=0.075/(log10(Re)-2)^2",
+        "error_pct": 20.5,
+        "finite": true,
+        "diverged": false,
+        "elapsed_s": 1038
+      },
+      "comparison": {
+        "Smagorinsky": "23.9% error",
+        "Vreman": "16.4% error",
+        "RANS k-epsilon": "20.5% error (slightly better than Smag, worse than Vreman)"
+      }
+    },
+    "bench3_rans_ke_re1e4": {
+      "description": "SUBOFF Re=1e4 with RANS k-epsilon (MRT)",
+      "grid": "200x80x80",
+      "collision": "RANS k-epsilon (collide_rans_ke -> collide_rans_mrt3d)",
+      "normal_method": "from_gradient",
+      "parameters": {
+        "L": 80.0, "D": 9.3349, "radius": 4.6674,
+        "u_in": 0.06, "Re": 10000, "tau": 0.50144, "nu": 4.8e-4,
+        "n_steps": 5000, "avg_window": 500,
+        "dpS": 4.223, "dpS_formula": "0.5*u_in^2*pi*D*L (wetted area)"
+      },
+      "results": {
+        "Cd_pressure": 0.006148,
+        "Cd_friction": 0.004501,
+        "Cd_total": 0.010649,
+        "Cf_numerical": 0.010649,
+        "Cf_ref": 0.01875,
+        "ref_name": "ITTC-1957 Cf=0.075/(log10(Re)-2)^2",
+        "error_pct": 43.2,
+        "finite": true,
+        "diverged": false,
+        "elapsed_s": 1028
+      },
+      "comparison": {
+        "Smagorinsky": "20.6% error",
+        "RANS k-epsilon": "43.2% error (much worse than Smag)"
+      }
+    }
+  },
+  "summary_table": [
+    {"Benchmark": "B1: 4L+Cumulant Re=1000", "Cd_p": 0.004871, "Cd_f": 0.036915, "Cd_tot": 0.041786, "Cf_ref": 0.041995, "Error%": 0.5},
+    {"Benchmark": "B2: RANS k-eps Re=1e5", "Cd_p": 0.006171, "Cd_f": 0.000451, "Cd_tot": 0.006623, "Cf_ref": 0.008333, "Error%": 20.5},
+    {"Benchmark": "B3: RANS k-eps Re=1e4", "Cd_p": 0.006148, "Cd_f": 0.004501, "Cd_tot": 0.010649, "Cf_ref": 0.01875, "Error%": 43.2}
+  ],
+  "key_findings": [
+    "Cumulant D3Q19 on 4L domain achieves 0.5% error at Re=1000 — best SUBOFF result, 4.6x better than MRT+Smag (2.3%)",
+    "RANS k-epsilon at Re=1e5: 20.5% error — slightly better than Smagorinsky (23.9%), worse than Vreman (16.4%)",
+    "RANS k-epsilon at Re=1e4: 43.2% error — much worse than Smagorinsky (20.6%), model over-generates eddy viscosity at transitional Re",
+    "RANS k-epsilon significantly under-predicts friction drag (Cd_f) at both high Re — model needs wall functions for accurate near-wall behavior",
+    "All 3 simulations stable (no divergence), 5000 steps completed"
+  ]
+}

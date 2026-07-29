@@ -1,0 +1,63 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:4 Blasius] nx=400 ny=80 nz=4 L=100.0 u_in=0.05 nu=5.000000e-03 tau=0.515000 Cs=0.05 Re_L=1000.0
+[SDAA:4 Blasius] Blasius Cd(L=100.0)=0.041995
+[SDAA:4 Blasius] dpS=2.000000e+00 plate_area=1600
+[SDAA:4 Blasius] solid cells: 3200 (plate 2 cells thick at bottom)
+[SDAA:4 Blasius] near-wall cells: 1600
+[SDAA:4 Blasius] normal stats: ny_n=[1.000, 1.000] (expect ~1.0 at plate top)
+[SDAA:4 Blasius] init done (0.4s), initial_mass=128000.0
+[SDAA:4 Blasius] Blasius Cf at x-stations:
+  x= 25  Re_x=    250  Cf_blasius=0.041995
+  x= 50  Re_x=    500  Cf_blasius=0.029695
+  x=100  Re_x=   1000  Cf_blasius=0.020998
+  x=200  Re_x=   2000  Cf_blasius=0.014847
+  x=300  Re_x=   3000  Cf_blasius=0.012123
+  x=399  Re_x=   3990  Cf_blasius=0.010512
+[SDAA:4 Blasius] step=1000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (Blasius Cd=0.041995) [28s]
+[SDAA:4 Blasius] step=2000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (Blasius Cd=0.041995) [56s]
+[SDAA:4 Blasius] step=3000 Cd_p=0.000000 Cd_f=0.038870 Cd_tot=0.038870 (Blasius Cd=0.041995) [93s]
+[SDAA:4 Blasius] step=4000 Cd_p=0.000000 Cd_f=0.035762 Cd_tot=0.035762 (Blasius Cd=0.041995) [130s]
+[SDAA:4 Blasius] step=5000 Cd_p=0.000000 Cd_f=0.033873 Cd_tot=0.033873 (Blasius Cd=0.041995) [167s]
+[SDAA:4 Blasius] step=6000 Cd_p=0.000000 Cd_f=0.032634 Cd_tot=0.032634 (Blasius Cd=0.041995) [204s]
+[SDAA:4 Blasius] step=7000 Cd_p=0.000000 Cd_f=0.031794 Cd_tot=0.031794 (Blasius Cd=0.041995) [241s]
+[SDAA:4 Blasius] step=8000 Cd_p=0.000000 Cd_f=0.031284 Cd_tot=0.031284 (Blasius Cd=0.041995) [278s]
+[SDAA:4 Blasius] step=9000 Cd_p=0.000000 Cd_f=0.030829 Cd_tot=0.030829 (Blasius Cd=0.041995) [367s]
+[SDAA:4 Blasius] step=10000 Cd_p=0.000000 Cd_f=0.030533 Cd_tot=0.030533 (Blasius Cd=0.041995) [554s]
+
+============================================================
+[SDAA:4 Blasius] FINAL RESULTS
+============================================================
+  Cd_pressure  = 0.000000
+  Cd_friction  = 0.030765
+  Cd_total     = 0.030765
+  Cd_blasius(L=100) = 0.041995
+  Cd_blasius(full=400) = 0.020998
+
+  Local Cf comparison:
+      x     Re_x     Cf_sim    Cf_blas     err%
+  ---------------------------------------------
+     25      250   0.060132   0.041995     43.2%
+     50      500   0.041095   0.029695     38.4%
+    100     1000   0.028841   0.020998     37.4%
+    200     2000   0.021520   0.014847     44.9%
+    300     3000   0.019702   0.012123     62.5%
+    399     3990   0.019609   0.010512     86.5%
+
+  Wall time: 554s (9.2 min)
+  Finite: True
+  Results saved to /root/TensorLBM_dev/results_blasius_sdaa4.json

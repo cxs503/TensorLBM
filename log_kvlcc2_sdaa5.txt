@@ -1,0 +1,48 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:5 KVLCC2] nx=300 ny=120 nz=120 L=80.0 u_in=0.06 nu=4.800000e-05 tau=0.500144 Cs=0.05 Re=1e+05
+[SDAA:5 KVLCC2] Cf_ITTC=0.008333  Ct_ref(task)=0.003500
+[SDAA:5 KVLCC2] solid cells: 30668  Cb_numerical=0.8874 (theoretical ~0.81)
+[SDAA:5 KVLCC2] hull: L=80.0 B=24.0 T=18.0 cx=90.0 cy=60.0 cz_keel=50.0
+[SDAA:5 KVLCC2] dpS = 0.5*u^2*pi*D*L = 8.143008e+00 (D=draft=18.0)
+[SDAA:5 KVLCC2] near-wall cells: 14634
+[SDAA:5 KVLCC2] normal stats: nx_n=[-1.000, 1.000] ny_n=[-1.000, 1.000] nz_n=[-1.000, 1.000]
+[SDAA:5 KVLCC2] init done (0.9s), initial_mass=4320000.0
+[SDAA:5 KVLCC2] step=500 Ct_p=0.000000 Ct_f=0.000000 Ct_tot=0.000000 (ITTC=0.008333, task_ref=0.003500) Cl=0.000000 [241s]
+[SDAA:5 KVLCC2] step=1000 Ct_p=0.000000 Ct_f=0.000000 Ct_tot=0.000000 (ITTC=0.008333, task_ref=0.003500) Cl=0.000000 [486s]
+[SDAA:5 KVLCC2] step=1500 Ct_p=0.026054 Ct_f=0.003788 Ct_tot=0.029841 (ITTC=0.008333, task_ref=0.003500) Cl=-0.000687 [758s]
+[SDAA:5 KVLCC2] step=2000 Ct_p=0.026456 Ct_f=0.003653 Ct_tot=0.030109 (ITTC=0.008333, task_ref=0.003500) Cl=-0.013244 [1033s]
+[SDAA:5 KVLCC2] step=2500 Ct_p=0.029125 Ct_f=0.003582 Ct_tot=0.032707 (ITTC=0.008333, task_ref=0.003500) Cl=-0.004361 [1305s]
+[SDAA:5 KVLCC2] step=3000 Ct_p=0.027232 Ct_f=0.003465 Ct_tot=0.030697 (ITTC=0.008333, task_ref=0.003500) Cl=-0.007572 [1568s]
+[SDAA:5 KVLCC2] step=3500 Ct_p=0.026078 Ct_f=0.003063 Ct_tot=0.029141 (ITTC=0.008333, task_ref=0.003500) Cl=0.021783 [1835s]
+[SDAA:5 KVLCC2] step=4000 Ct_p=0.028186 Ct_f=0.002768 Ct_tot=0.030954 (ITTC=0.008333, task_ref=0.003500) Cl=-0.002004 [2102s]
+[SDAA:5 KVLCC2] step=4500 Ct_p=0.027656 Ct_f=0.002629 Ct_tot=0.030286 (ITTC=0.008333, task_ref=0.003500) Cl=0.003889 [2368s]
+[SDAA:5 KVLCC2] step=5000 Ct_p=0.023835 Ct_f=0.002461 Ct_tot=0.026296 (ITTC=0.008333, task_ref=0.003500) Cl=0.020948 [2634s]
+
+============================================================
+[SDAA:5 KVLCC2] FINAL RESULTS
+============================================================
+  Ct_pressure  = 0.025745
+  Ct_friction  = 0.002545
+  Ct_total     = 0.028291
+  Cf_ITTC      = 0.008333  (err=239.5%)
+  Ct_ref(task) = 0.003500  (err=708.3%)
+  Cl_total     = 0.012419
+  Cb_numerical = 0.8874  (theoretical ~0.81)
+  Wall time: 2634s (43.9 min)
+  Finite: True
+  Results saved to /root/TensorLBM_dev/results_kvlcc2_sdaa5.json
