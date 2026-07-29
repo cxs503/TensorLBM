@@ -1,0 +1,23 @@
+{
+  "couette_corrected_bb_only": {
+    "u_max": 0.047500044107437134,
+    "u_err": 9.411259819473215e-05,
+    "Cf": 0.7386683225631714,
+    "y_plus": 0.0866009666257188,
+    "config": "corrected-BB-only"
+  },
+  "couette_old_bb_only": {
+    "u_max": 0.049999795854091644,
+    "u_err": 5.262729434750324,
+    "Cf": 0.740726113319397,
+    "y_plus": 0.0,
+    "config": "old-BB-only"
+  },
+  "couette_corrected_bb_force_yp": {
+    "u_max": 0.047500044107437134,
+    "u_err": 9.411259819473215e-05,
+    "Cf": 0.7386683225631714,
+    "y_plus": 0.0866009666257188,
+    "config": "corrected-BB-force-yp"
+  }
+}

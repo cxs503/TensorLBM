@@ -1,0 +1,11 @@
+{
+  "step3_cylinder_BB": {
+    "method": "standard_BB",
+    "compute_me": false,
+    "Cd_mean": 1.8841924353263433,
+    "Cd_std": 0.026813103073529704,
+    "Cd_ref": 1.3,
+    "n_samples": 1500,
+    "elapsed_s": 83.93123078346252
+  }
+}

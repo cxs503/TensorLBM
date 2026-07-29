@@ -1,0 +1,26 @@
+{
+  "benchmark": "series60_normal_comparison",
+  "test_id": 4,
+  "device": "sdaa:23",
+  "Re": 1000,
+  "L": 80.0,
+  "Cb_numerical": 0.7319,
+  "from_gradient": {
+    "Cd_pressure": 0.005813192291829489,
+    "Cd_friction": 0.037924064478680033,
+    "Cd_total": 0.04373725677050951,
+    "n_solid": 11242,
+    "n_near": 6740
+  },
+  "from_stl": {
+    "Cd_pressure": 0.11949842222386241,
+    "Cd_friction": 0.05419149335344733,
+    "Cd_total": 0.17368991557730995,
+    "n_solid": 80640,
+    "n_near": 13120,
+    "n_faces": 6844
+  },
+  "delta_Cd_p": 0.11368522993203292,
+  "delta_Cd_f": 0.016267428874767294,
+  "delta_Cd_tot": 0.12995265880680043
+}

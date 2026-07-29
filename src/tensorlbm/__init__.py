@@ -74,7 +74,7 @@ from .boundaries3d import (
     zou_he_outlet_pressure_3d,
     zou_he_outlet_pressure_z,
 )
-from .wall_model import wall_function_3d
+from .wall_model import wall_function_3d, wall_function_d3q27
 from .boundaries_d3q27 import (
     apply_zou_he_channel_boundaries_27,
     bounce_back_cells_27,
@@ -168,6 +168,7 @@ from .interpolated_bc import (
     compute_q_circle,
     compute_q_sphere,
 )
+from .interpolated_bc_suboff import compute_q_suboff
 from .acoustics import (
     AcousticObserver,
     FWHResult,
@@ -264,6 +265,14 @@ from .obstacles import (
     compute_obstacle_forces_27,
     compute_obstacle_moments_3d,
     wigley_hull_mask,
+)
+from .momentum_exchange import (
+    momentum_exchange_standard,
+    momentum_exchange_galilean,
+    momentum_exchange_bfl,
+    momentum_exchange_stress,
+    momentum_exchange_pressure_friction,
+    compare_all_methods,
 )
 from .pipeline_flow import (
     PipelineFlowConfig,
@@ -535,6 +544,8 @@ from .cumulant import (
     collide_cumulant_d3q19,
     collide_cumulant_d3q27,
 )
+from .cumulant_smag import collide_cumulant_smag_d3q27
+from .yplus_guide import DragMonitor, estimate_yplus, yplus_recommendation, grid_quality_metrics, recommend_grid
 from .streamlines import (
     Streamline,
     trace_streamlines_2d,
@@ -739,6 +750,13 @@ __all__ = [
     "compute_obstacle_forces_3d",
     "compute_obstacle_forces_27",
     "compute_obstacle_moments_3d",
+    # Momentum exchange variants
+    "momentum_exchange_standard",
+    "momentum_exchange_galilean",
+    "momentum_exchange_bfl",
+    "momentum_exchange_stress",
+    "momentum_exchange_pressure_friction",
+    "compare_all_methods",
     # Turbulence
     "collide_smagorinsky_bgk",
     "collide_smagorinsky_mrt",

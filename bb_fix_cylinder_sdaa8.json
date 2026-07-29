@@ -1,0 +1,31 @@
+{
+  "case": "[SDAA:8 CYL Re=200 BB-fix]",
+  "test": "cylinder_re200_bb_fix",
+  "device": "sdaa:8",
+  "Re": 200,
+  "D": 48,
+  "grid": "400x160x4",
+  "u_in": 0.08,
+  "nu": 0.0192,
+  "tau": 0.5576,
+  "Cs": 0.05,
+  "n_steps": 5000,
+  "warmup": 1000,
+  "n_solid": 7172,
+  "n_near": 544,
+  "dpS": 0.6144000000000001,
+  "normal_method": "from_cylinder",
+  "bb_fix": true,
+  "Cd_pressure": 1.457764674220624,
+  "Cd_friction": 0.18523536845653615,
+  "Cd_total": 1.6430000426771534,
+  "Cl": -0.005179940206782403,
+  "Cd_ref": 1.3,
+  "error_pct": 26.38461866747333,
+  "previous_pre_bb_fix": {
+    "Cd_total": 1.63,
+    "error_pct": 25.3
+  },
+  "finite": true,
+  "elapsed_s": 266.2112662792206
+}

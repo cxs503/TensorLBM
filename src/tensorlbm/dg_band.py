@@ -26,7 +26,7 @@ from dataclasses import dataclass
 
 import torch
 
-from .dg_advection import _Ops, equilibrium_dg, get_ops, macroscopic_dg
+from .dg_advection import _Ops, collide_bgk_dg, equilibrium_dg, get_ops, macroscopic_dg
 
 
 @dataclass
@@ -337,7 +337,24 @@ def dg_lbm_step_band(
     scheme: str = "rk3",
     opposite: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Sub-cycled SSP-RK3 advance of the band (advection + collision), frozen ghosts."""
+    """Sub-cycled SSP-RK3 advance of the band (advection + collision), frozen ghosts.
+
+    The method-of-lines RHS combines DG advection and BGK collision:
+    ``df/dt = −c·∇f − (f−f_eq)/τ``.  For stability of the explicit RK3 integrator
+    the collision term requires ``Δt_sub < 2 τ``; this function automatically
+    raises *n_substeps* to satisfy that bound when *tau* is small (high-Re).  The
+    advection CFL demands only ``n_substeps ≥ 3`` for P1, so the caller should
+    pass the advection-driven *n_substeps* and let this function bump it if the
+    collision term is stiffer.
+    """
+    import math
+
+    # Stability constraint from the collision term in the RHS:
+    # For explicit SSP-RK3 on dy/dt = −(y−y_eq)/τ, the real-axis stability
+    # boundary is ≈ 2.5, so we require Δt_sub / τ ≤ 2.0 (conservative).
+    min_substeps_coll = max(1, int(math.ceil(dt / (2.0 * tau))))
+    if n_substeps < min_substeps_coll:
+        n_substeps = min_substeps_coll
     dt_sub = dt / n_substeps
 
     def rhs(f: torch.Tensor) -> torch.Tensor:
@@ -355,6 +372,12 @@ def dg_lbm_step_band(
     f = f_dg
     for _ in range(n_substeps):
         f = step(f)
+        # Positivity preservation: DG advection near sharp gradients (obstacle
+        # walls, band↔exterior interface) can produce small negative overshoots
+        # (Gibbs phenomenon).  Clamp to a small floor so macroscopic moments
+        # remain well-posed and the subsequent collision RHS does not amplify
+        # the non-physical values into NaN.
+        f = f.clamp(min=0.0)
     return f
 
 

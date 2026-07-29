@@ -1,0 +1,58 @@
+{
+  "title": "SUBOFF Pressure Extrapolation Comparison (SDAA 26-28)",
+  "description": "Tests wall-pressure extrapolation methods (none/linear/quadratic) for SUBOFF bare hull Re=1000",
+  "parameters": {
+    "geometry": "SUBOFF bare hull",
+    "Re": 1000,
+    "L": 80,
+    "nx": 200, "ny": 80, "nz": 80,
+    "u_in": 0.06,
+    "nu": 0.0048,
+    "tau": 0.5144,
+    "Cs": 0.05,
+    "n_steps": 5000,
+    "collision": "MRT+Smagorinsky",
+    "dpS_formula": "0.5*u_in^2*pi*D*L (wetted area)",
+    "Cf_ref": 0.042,
+    "R_max": 4.6674,
+    "D": 9.3349,
+    "n_solid": 4651,
+    "n_near": 2050
+  },
+  "results": {
+    "none": {
+      "device": "sdaa:26",
+      "extrap_formula": "p_wall = p1 (pressure at near-wall cell, current method)",
+      "Cd_pressure": 0.005389,
+      "Cd_friction": 0.038967,
+      "Cd_total": 0.044356,
+      "error_pct": 5.6,
+      "elapsed_s": 800
+    },
+    "linear": {
+      "device": "sdaa:27",
+      "extrap_formula": "p_wall = 2*p1 - p2 (1st-order extrapolation)",
+      "Cd_pressure": 0.005437,
+      "Cd_friction": 0.038967,
+      "Cd_total": 0.044404,
+      "error_pct": 5.7,
+      "elapsed_s": 818
+    },
+    "quadratic": {
+      "device": "sdaa:28",
+      "extrap_formula": "p_wall = 3*p1 - 3*p2 + p3 (2nd-order extrapolation)",
+      "Cd_pressure": 0.004584,
+      "Cd_friction": 0.038967,
+      "Cd_total": 0.043551,
+      "error_pct": 3.7,
+      "elapsed_s": 838
+    }
+  },
+  "analysis": {
+    "friction_drag_identical": true,
+    "friction_note": "Cd_f is identical across all methods (0.038967) since only pressure integration was modified",
+    "linear_effect": "Linear extrapolation has negligible effect on Cd_p (+0.9%), slightly increasing total drag error (5.6% -> 5.7%)",
+    "quadratic_effect": "Quadratic extrapolation reduces Cd_p by 14.9% (0.005389 -> 0.004584), reducing total drag error from 5.6% to 3.7% (34% error reduction)",
+    "conclusion": "Quadratic extrapolation (3*p1 - 3*p2 + p3) improves pressure drag accuracy for SUBOFF bare hull. Linear extrapolation does not help — the pressure profile near the wall is not well-approximated by a linear gradient from cell 1 to cell 2, but is better captured by the quadratic fit through cells 1, 2, 3."
+  }
+}
