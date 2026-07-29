@@ -1,0 +1,29 @@
+[
+  {
+    "case": "sdaa:7 Re=2000000 smag_wf",
+    "device": "sdaa:7",
+    "Re": 2000000,
+    "model": "smag_wf",
+    "L": 80.0,
+    "grid": "200x80x80",
+    "u_in": 0.06,
+    "nu": 2.4e-06,
+    "tau": 0.5000072,
+    "n_steps": 5000,
+    "n_steps_run": 5000,
+    "n_solid": 4651,
+    "n_near": 2050,
+    "dpS": 4.2226021193194265,
+    "dpS_type": "wetted_area_piDL",
+    "D_wetted": 9.334,
+    "Cd_pressure": -0.0018861231611921828,
+    "Cd_friction": 0.003375661774431935,
+    "Cd_total": 0.001489538613239753,
+    "Cf_ref": 0.004054304100826604,
+    "ref_name": "ITTC-1957 Ct=0.075/(log10(Re)-2)^2",
+    "error_pct": 63.260313577956296,
+    "finite": true,
+    "diverged": false,
+    "elapsed_s": 1465.4359736442566
+  }
+]

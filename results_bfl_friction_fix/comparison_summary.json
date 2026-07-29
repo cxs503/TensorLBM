@@ -1,0 +1,120 @@
+{
+  "title": "BFL Friction Fix (τ=ν·u_t/q) Verification: SUBOFF + Cylinder",
+  "date": "2026-07-26",
+  "fix_description": "When BFL is active, friction drag uses τ=ν·u_t/q instead of standard τ=2ν·u_t (=ν·u_t/0.5). q_wall is the average BFL q-value per near-wall cell. When q=0.5, the fix reduces to the standard formula.",
+  "tests": {
+    "test1_suboff": {
+      "geometry": "SUBOFF bare hull",
+      "Re": 1000,
+      "L": 80,
+      "grid": "200x80x80",
+      "u_in": 0.06,
+      "nu": 0.0048,
+      "tau": 0.5144,
+      "Cs": 0.05,
+      "n_steps": 5000,
+      "Cf_ref": 0.042,
+      "results": {
+        "bfl_fix_sdaa0": {
+          "mode": "bfl_fix",
+          "friction_formula": "nu*u_t/q",
+          "Cd_pressure": 0.005262,
+          "Cd_friction": 0.074018,
+          "Cd_total": 0.079280,
+          "error_pct": 88.8,
+          "bfl_q_mean": 0.7346,
+          "q_wall_mean": 0.7321,
+          "elapsed_s": 1141
+        },
+        "standard_bb_sdaa1": {
+          "mode": "standard_bb",
+          "friction_formula": "2*nu*u_t",
+          "Cd_pressure": 0.005389,
+          "Cd_friction": 0.038967,
+          "Cd_total": 0.044356,
+          "error_pct": 5.6,
+          "bfl_q_mean": null,
+          "elapsed_s": 810
+        },
+        "bfl_nofix_reference": {
+          "mode": "bfl (no fix, from previous run)",
+          "friction_formula": "2*nu*u_t",
+          "Cd_pressure": 0.005262,
+          "Cd_friction": 0.102827,
+          "Cd_total": 0.108089,
+          "error_pct": 157.4,
+          "bfl_q_mean": 0.7346
+        }
+      },
+      "analysis": {
+        "fix_effect_on_friction": "BFL no fix Cd_f=0.1028 → BFL+fix Cd_f=0.0740 (28% reduction). Expected from formula: 0.5/0.7321=0.683, so 0.1028*0.683=0.0702. Actual 0.0740 is close (flow field still converging).",
+        "fix_vs_standard_bb": "BFL+fix Cd_f=0.074 is still 1.9x higher than standard BB Cd_f=0.039. The BFL flow field has different near-wall velocities than standard BB.",
+        "pressure_drag": "Cd_p nearly identical: BFL+fix=0.00526 vs standard BB=0.00539. BFL correctly handles pressure.",
+        "total_error": "BFL no fix: 157.4% → BFL+fix: 88.8% → standard BB: 5.6%. Fix improves BFL but doesn't match standard BB.",
+        "expected_vs_actual": "Expected ~5-6% after fix (similar to standard BB). Actual: 88.8%. The fix alone is insufficient because the BFL flow field itself produces different near-wall velocities."
+      }
+    },
+    "test2_cylinder": {
+      "geometry": "2D extruded cylinder (axis=z)",
+      "Re": 200,
+      "D": 48,
+      "grid": "400x160x4",
+      "u_in": 0.08,
+      "nu": 0.0192,
+      "tau": 0.5576,
+      "Cs": 0.05,
+      "n_steps": 8000,
+      "warmup": 2000,
+      "Cd_ref": 1.30,
+      "results": {
+        "bfl_fix_sdaa2": {
+          "mode": "bfl_fix",
+          "friction_formula": "nu*u_t/q",
+          "Cd_pressure": 1.308948,
+          "Cd_friction": 0.829422,
+          "Cd_total": 2.138370,
+          "error_pct": 64.5,
+          "bfl_q_mean": 0.3920,
+          "q_wall_mean": 0.4048,
+          "elapsed_s": 455
+        },
+        "standard_bb_sdaa3": {
+          "mode": "standard_bb",
+          "friction_formula": "2*nu*u_t",
+          "Cd_pressure": 1.448730,
+          "Cd_friction": 0.184100,
+          "Cd_total": 1.632831,
+          "error_pct": 25.6,
+          "bfl_q_mean": null,
+          "elapsed_s": 361
+        }
+      },
+      "analysis": {
+        "q_value_impact": "Cylinder q_mean=0.392 < 0.5, so the fix INCREASES friction (1/q > 2). This is opposite to SUBOFF where q_mean=0.735 > 0.5.",
+        "fix_effect_on_friction": "BFL+fix Cd_f=0.829 vs standard BB Cd_f=0.184 (4.5x higher). The fix correctly accounts for closer wall distance but the BFL near-wall velocities are much higher.",
+        "pressure_drag": "BFL+fix Cd_p=1.309 vs standard BB Cd_p=1.449. BFL pressure drag is actually closer to ref Cd=1.30.",
+        "total_error": "BFL+fix: 64.5% vs standard BB: 25.6%. The fix makes BFL worse for the cylinder because q<0.5 increases friction.",
+        "physics": "For q<0.5, the wall is closer to the near-wall fluid cell. The fix τ=ν·u_t/q correctly increases friction to account for the steeper gradient. However, the BFL flow field produces much higher near-wall velocities than standard BB, compounding the effect."
+      }
+    }
+  },
+  "key_findings": [
+    "The BFL friction fix (τ=ν·u_t/q) is mathematically correct: it reduces to τ=2ν·u_t when q=0.5 (standard half-way BB).",
+    "SUBOFF (q_mean=0.735 > 0.5): Fix reduces friction by 28% (0.103→0.074), improving total error from 157% to 89%. But still 1.9x higher friction than standard BB (0.039).",
+    "Cylinder (q_mean=0.392 < 0.5): Fix INCREASES friction (1/q > 2), making BFL+fix worse (64.5% vs 25.6% error for standard BB).",
+    "The fix alone is insufficient to match standard BB because the BFL flow field produces different near-wall velocities than standard BB staircase walls.",
+    "Pressure drag is well-handled by BFL in both cases (similar to or better than standard BB).",
+    "The q-value distribution matters: q>0.5 (wall farther) → fix helps; q<0.5 (wall closer) → fix hurts relative to standard BB.",
+    "For a linear velocity profile, τ=ν·u_t/q gives the exact shear stress regardless of q. The discrepancy arises because near-wall cells are not in the viscous sublayer at these grid resolutions."
+  ],
+  "files": {
+    "suboff_worker": "suboff_bfl_friction_fix_worker.py",
+    "cylinder_worker": "cylinder_bfl_friction_fix_worker.py (newly created)",
+    "drag_pressure_impl": "src/tensorlbm/drag_pressure.py (drag_friction_integration with q_wall parameter)",
+    "results_dir": "results_bfl_friction_fix/",
+    "suboff_bfl_fix_json": "results_bfl_friction_fix/suboff_bfl_fix_sdaa0.json",
+    "suboff_std_bb_json": "results_bfl_friction_fix/suboff_standard_bb_sdaa1.json",
+    "cylinder_bfl_fix_json": "results_bfl_friction_fix/cylinder_bfl_fix_sdaa2.json",
+    "cylinder_std_bb_json": "results_bfl_friction_fix/cylinder_standard_bb_sdaa3.json"
+  }
+}
