@@ -172,6 +172,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     drag gate and 1% stationarity gate (1.45% block range, 1.39% trend).  The
     final block is lower at 1.14977, so the saved state is extended from 5000
     to 8000 steps before risking the estimated ~22.7 GiB R16 allocation.
+29. Static AMR now has a uniform-fine reference benchmark independent of
+    SUBOFF.  A 24-step moving smooth perturbation used 72.27% fewer cells,
+    held relative mass drift to `1.02e-7`, reflux residual to `1.46e-11`, kept
+    all populations positive, and improved density RMS versus uniform coarse
+    both inside the refined block (`4.00e-6`→`3.40e-6`) and on the interface
+    shell (`3.63e-6`→`2.69e-6`).  This admits the short smooth-interface test,
+    not a body-force or long SUBOFF AMR claim.
 
 ## Rejected candidates
 

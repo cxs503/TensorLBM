@@ -30,9 +30,31 @@ exterior cells on crossing links, never an unrelated enclosing shell.
 
 The former global shell-reflux implementation failed long SUBOFF runs and has
 been removed from this runtime.  The new face-local path passes free-stream,
-mass/momentum, locality and positivity-limiter tests, but still requires a
-long physical-interface benchmark against a uniform fine grid before it can
-support a production AMR accuracy claim.
+mass/momentum, locality and positivity-limiter tests.
+
+## Uniform-fine interface benchmark
+
+`examples/amr_interface_validate.py` advances the same smooth moving density
+perturbation three ways: uniform coarse, composite 2:1 AMR, and a uniform-fine
+reference with two time substeps.  All cases start from the identical
+piecewise-constant population field, so interpolation initialization is not
+hidden in the comparison.  The reference is restricted back to coarse control
+volumes before errors are measured globally, inside the fine-owned block and
+on a two-cell interface shell.
+
+The 24-step CPU regression used 42,600 allocated cells instead of 153,600
+uniform-fine cells (72.27% saving).  Relative mass drift was `1.02e-7`, maximum
+population reflux residual `1.46e-11`, no correction was limited, and all
+populations remained positive.  Refined-region density RMS error fell from
+`4.00e-6` on the uniform coarse grid to `3.40e-6` with AMR; interface-shell
+error fell from `3.63e-6` to `2.69e-6`.  This admits the short smooth-interface
+regression.  It does not yet admit SUBOFF AMR: longer pulse crossings, wall
+force invariance and uniform-fine body-force comparison remain mandatory.
+
+```bash
+PYTHONPATH=src python examples/amr_interface_validate.py \
+  --device cpu --steps 24 --output results/amr-interface-24.json
+```
 
 ## SUBOFF layout
 
