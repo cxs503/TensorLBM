@@ -1125,6 +1125,13 @@ def bfl_wall_function_3d(
                 else wall_activation
             ),
             return_force=True,
+            # During smooth body insertion, wall-frame force removes the
+            # background flux of a co-moving transparent wall.  All admitted
+            # samples are taken after activation reaches one, where the
+            # laboratory-frame impulse closes the fixed control volume.
+            force_frame=(
+                "laboratory" if wall_activation >= 1.0 else "wall"
+            ),
         )
     else:
         bfl_force = (0.0, 0.0, 0.0)
@@ -1235,9 +1242,13 @@ def bfl_wall_function_3d(
         tau_w * (ut_x * inv_utan) * traction_area * wall_activation
     ).sum().item())
 
-    # Conservative boundary force from link momentum exchange.  In
-    # wall-model-slip mode this is predominantly pressure/form drag; wall
-    # shear is supplied separately by the Guo stress above.
+    # Laboratory-frame boundary impulse from link momentum exchange.  This is
+    # the force that closes the independent fixed control-volume balance.  In
+    # wall-model-slip mode the tangential wall velocity is a numerical closure,
+    # not physical body motion, so a moving-wall-frame correction would remove
+    # part of the actual population impulse and fail force conservation after
+    # the distributions become non-equilibrium.  Wall shear is supplied by
+    # the Guo stress above.
     drag_pres = bfl_force[0]
 
     if return_wall_diagnostics:

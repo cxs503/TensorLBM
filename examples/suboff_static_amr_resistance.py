@@ -488,7 +488,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     checkpoint = Path(args.checkpoint) if args.checkpoint else None
     checkpoint_signature = {
-        "schema_version": 7,
+        "schema_version": 8,
         "coarse_shape_zyx": list(shape),
         "hull_type": args.hull_type,
         "speed_knots": args.speed_knots,
@@ -529,6 +529,7 @@ def run(args: argparse.Namespace) -> dict:
         "sponge_inlet": args.sponge_inlet,
         "far_field_mode": args.far_field_mode,
         "boundary_treatment": "bfl_wall_model",
+        "link_force_frame": "laboratory_after_wall_activation",
         "refinement_ratio": plan.ratio,
         "wall_viscosity_basis": "physical_reynolds",
     }
@@ -604,7 +605,7 @@ def run(args: argparse.Namespace) -> dict:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-suboff-static-amr-checkpoint-v7",
+            "schema": "tensorlbm-suboff-static-amr-checkpoint-v8",
             "configuration": checkpoint_signature,
             "step": step,
             "coarse_populations": amr.coarse_f.detach().cpu(),
@@ -939,7 +940,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     rho_c, ux_c, uy_c, uz_c = macroscopic3d(amr.coarse_f)
     result = {
-        "schema": "tensorlbm-suboff-static-amr-v7",
+        "schema": "tensorlbm-suboff-static-amr-v8",
         "status": (
             "single_grid_candidate" if single_grid_admitted
             else (

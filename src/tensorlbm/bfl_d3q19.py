@@ -165,6 +165,7 @@ def bouzidi_bounce_back_d3q19(
     wall_density: torch.Tensor | None = None,
     boundary_fraction: float = 1.0,
     return_force: bool = False,
+    force_frame: str = "laboratory",
 ) -> torch.Tensor | tuple[torch.Tensor, tuple[float, float, float]]:
     """Apply BFL interpolated bounce-back for ALL D3Q19 directions.
     
@@ -182,8 +183,12 @@ def bouzidi_bounce_back_d3q19(
             Required when ``wall_velocity`` is provided.
         boundary_fraction: Smooth activation in ``[0,1]``.  Zero leaves the
             streamed population untouched; one applies the complete BFL wall.
-        return_force: Also return the conservative link momentum-exchange
-            force on the wall.
+        return_force: Also return the link momentum-exchange force on the wall.
+        force_frame: ``"laboratory"`` returns the discrete force that closes
+            a fixed laboratory-frame control-volume balance. ``"wall"``
+            returns the Galilean-invariant moving-wall-frame diagnostic.  A
+            numerical tangential slip velocity is not a physical body motion,
+            so stationary-body force validation must use ``"laboratory"``.
     
     Returns:
         Updated distribution tensor.
@@ -193,6 +198,8 @@ def bouzidi_bounce_back_d3q19(
         raise ValueError("wall_density is required with wall_velocity")
     if not 0.0 <= boundary_fraction <= 1.0:
         raise ValueError("boundary_fraction must be in [0,1]")
+    if force_frame not in {"laboratory", "wall"}:
+        raise ValueError("force_frame must be 'laboratory' or 'wall'")
     opp = OPPOSITE.to(f.device)
     weights = W.to(device=f.device, dtype=f.dtype)
     f_out = f.clone()
@@ -259,16 +266,19 @@ def bouzidi_bounce_back_d3q19(
         f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
         if return_force and boundary_fraction > 0.0:
-            # Galilean-invariant momentum exchange in the wall frame:
-            # (c_d-u_w)f_d - (c_opp-u_w)f_opp.  This reduces to the standard
-            # (f_d+f_opp)c_d expression for a stationary wall and removes
-            # background tangential momentum from wall-model-slip forces.
+            # Laboratory-frame discrete momentum exchange is the population
+            # impulse that exactly closes a fixed control-volume balance:
+            # c_d*f_d - c_opp*f_opp = c_d*(f_d+f_opp).
             exchange_sum = fp_d + f_bc
-            exchange_diff = f_bc - fp_d
             link_fx = float(dcx) * exchange_sum
             link_fy = float(dcy) * exchange_sum
             link_fz = float(dcz) * exchange_sum
-            if wall_velocity is not None:
+            if force_frame == "wall" and wall_velocity is not None:
+                # Galilean-invariant momentum exchange in the moving-wall
+                # frame.  This is a useful physical diagnostic for a genuinely
+                # moving body, but it does not equal the laboratory-frame
+                # population impulse when u_w is an artificial slip closure.
+                exchange_diff = f_bc - fp_d
                 link_fx = link_fx + exchange_diff * uwx[mask]
                 link_fy = link_fy + exchange_diff * uwy[mask]
                 link_fz = link_fz + exchange_diff * uwz[mask]

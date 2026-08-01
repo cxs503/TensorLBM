@@ -178,6 +178,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "cv_margin": config.cv_margin,
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
+            "link_force_frame": "laboratory_after_wall_activation",
         }
         if state.get("configuration") != expected:
             raise ValueError("checkpoint configuration does not match flat-plate run")
@@ -201,7 +202,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-flat-plate-checkpoint-v3",
+            "schema": "tensorlbm-flat-plate-checkpoint-v4",
             "configuration": {
                 "shape_zyx": list(shape), "plate_length": config.plate_length,
                 "plate_start_fraction": config.plate_start_fraction,
@@ -217,6 +218,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
                 "cv_margin": config.cv_margin,
                 "smagorinsky_cs": config.smagorinsky_cs,
                 "positivity_limiter": config.positivity_limiter,
+                "link_force_frame": "laboratory_after_wall_activation",
             },
             "step": step,
             "populations": f.detach().cpu(),
@@ -348,7 +350,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         and exchange_sampling_acceptable
     )
     return {
-        "schema": "tensorlbm-flat-plate-wall-model-v3",
+        "schema": "tensorlbm-flat-plate-wall-model-v4",
         "configuration": {
             "shape_zyx": list(shape), "plate_length": config.plate_length,
             "plate_start_fraction": config.plate_start_fraction,
@@ -365,6 +367,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "stress_exchange_distance": config.stress_exchange_distance,
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
+            "link_force_frame": "laboratory_after_wall_activation",
             "report_interval": config.report_interval,
             "wall_diagnostic_interval": config.wall_diagnostic_interval,
             "resumed_from_step": start_step,

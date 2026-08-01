@@ -35,6 +35,7 @@ _IDENTITY_FIELDS = (
     "sponge_inlet",
     "far_field_mode",
     "boundary_treatment",
+    "link_force_frame",
     "refinement_ratio",
     "reflux_enabled",
     "maximum_reflux_correction_fraction",
@@ -75,7 +76,7 @@ def assess_suboff_amr_convergence(
     source_numerical_quality_admitted = True
     geometry_resolution_by_fine_length: dict[float, tuple[bool, bool]] = {}
     for record in records:
-        schema_valid &= record.get("schema") == "tensorlbm-suboff-static-amr-v7"
+        schema_valid &= record.get("schema") == "tensorlbm-suboff-static-amr-v8"
         configuration = record.get("configuration")
         result = record.get("result")
         acceptance = record.get("acceptance")
@@ -285,7 +286,7 @@ def assess_suboff_amr_convergence(
         "fine_hull_resolutions": resolutions,
         "mean_resistances_n": resistance_values,
         "configuration_identity": {
-            "v7_schema": schema_valid,
+            "v8_schema": schema_valid,
             "required_fields_present": required_fields_present,
             "identity_fields_equal": identity_fields_equal,
             "fine_to_coarse_ratios": fine_to_coarse,

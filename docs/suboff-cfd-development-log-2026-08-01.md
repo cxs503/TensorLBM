@@ -681,6 +681,22 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     two subprocess regression tests execute that probe.  The failed log is
     retained, fresh waiters replace the affected exact PIDs, and corrected v7
     L150 is running as PID 1442221 on physical GPU3.
+84. A developed-flow force-closure reproduction identifies the remaining
+    observer discrepancy.  BFL returned Galilean-invariant momentum exchange
+    in the frame of the *numerical tangential slip velocity*; that velocity is
+    a wall-model closure, not physical body motion.  Once populations become
+    non-equilibrium, this wall-frame diagnostic no longer equals the discrete
+    laboratory-frame population impulse required by a fixed control volume.
+    The common BFL API now makes the force frame explicit and the stationary-
+    body wall model uses laboratory-frame exchange after wall activation;
+    wall-frame force is retained for genuinely moving-wall diagnostics and
+    smooth startup.  A 100-step AMR reproduction reduces source-corrected
+    BFL/CV mismatch from 8.27% to 0.000496%, while a curved non-equilibrium unit
+    test proves laboratory-frame closure to 1e-11.  SUBOFF advances to schema
+    v8 and flat-plate output to v4 with `link_force_frame` in provenance.  The
+    just-started v7 L90/L150 jobs were stopped before their first report and
+    are superseded; the original v6 L120 continues naturally.  Fifty focused
+    BFL, wall, flat-plate, AMR, convergence and launcher tests pass.
 
 ## Rejected candidates
 
