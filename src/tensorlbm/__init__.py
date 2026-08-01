@@ -643,6 +643,10 @@ from .amr_interface_validation import (
     AMRInterfaceValidationConfig,
     run_amr_interface_validation,
 )
+from .spatial_convergence import (
+    SpatialConvergenceAssessment,
+    assess_spatial_convergence,
+)
 from .suboff_static_amr import (
     SuboffStaticAMRPlan,
     build_fine_suboff_mask,
@@ -718,6 +722,8 @@ __all__ = [
     "convective_refined_tau",
     "AMRInterfaceValidationConfig",
     "run_amr_interface_validation",
+    "SpatialConvergenceAssessment",
+    "assess_spatial_convergence",
     "SuboffStaticAMRPlan",
     "build_fine_suboff_mask",
     "plan_suboff_static_amr",
