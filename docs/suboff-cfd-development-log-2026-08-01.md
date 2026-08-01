@@ -473,11 +473,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     split is caused by a non-conservative operator, without hiding that defect
     behind a post-processing correction.
 61. Production admission now enforces physical duration directly rather than
-    relying on campaign naming: at least five body-length convective times in
-    total and two convective times after warmup are required by default.  The
+    relying on campaign naming.  The initial default required at least five
+    body-length convective times in total and two after warmup.  The measured
+    L90 force spectrum later exposed an approximately 1.5-time dominant mode,
+    so schema v6 raises this to eight times total and five after warmup.  The
     active four-time L90 boundary runs remain sensitivity evidence only even
-    if a late force window passes; a selected v5 candidate will be extended to
-    at least six convective times before any three-grid sequence is assessed.
+    if a late force window passes; no three-grid sequence is assessed from a
+    history containing only one or two cycles of its slowest resolved mode.
 62. Both U=0.06 wider-sponge L90 sensitivities completed and are rejected.
     Without inlet damping the post-warmup CV mean is 96.25 N but its eight
     blocks span 0.96--202.35 N, CV/BFL differs by 54.5%, and maximum speed is
