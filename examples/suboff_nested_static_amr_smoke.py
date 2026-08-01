@@ -38,7 +38,10 @@ from tensorlbm.drag_pressure import (
     drag_pressure_integration,
     get_near_wall_3d,
 )
-from tensorlbm.entropic_kbc import collide_kbc_d3q19
+from tensorlbm.entropic_kbc import (
+    collide_kbc_d3q19,
+    collide_natural_kbc_d3q19,
+)
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
@@ -204,7 +207,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--cs-smag", type=float, default=0.05)
     result.add_argument(
         "--collision-model",
-        choices=("cumulant_smagorinsky", "entropic_kbc"),
+        choices=("cumulant_smagorinsky", "entropic_kbc", "natural_kbc"),
         default="cumulant_smagorinsky",
     )
     result.add_argument("--kbc-max-iterations", type=int, default=12)
@@ -873,6 +876,8 @@ def run(args: argparse.Namespace) -> dict:
                 tau=tau,
                 max_iter=args.kbc_max_iterations,
             )
+        elif args.collision_model == "natural_kbc":
+            post = collide_natural_kbc_d3q19(state, tau=tau)
         else:
             post = collide_cumulant_d3q19(
                 state,
