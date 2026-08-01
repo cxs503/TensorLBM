@@ -642,6 +642,7 @@ from .general_sim import (
 from .lbm_step import LBMStepExecutor
 from .static_block_amr import (
     AMRAdvanceResult,
+    NestedStaticBlockAMR3D,
     PopulationRefluxLedger,
     StaticBlockAMR3D,
     StaticBlockAMRConfig,
@@ -732,6 +733,7 @@ __all__ = [
     "mark_cells_for_refinement",
     "PopulationRefluxLedger",
     "AMRAdvanceResult",
+    "NestedStaticBlockAMR3D",
     "StaticBlockAMR3D",
     "StaticBlockAMRConfig",
     "convective_refined_tau",
