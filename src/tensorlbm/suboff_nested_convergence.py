@@ -104,6 +104,7 @@ def assess_suboff_nested_convergence(
                 "surface_observer_target_met",
                 "population_health_target_met",
                 "collision_viscosity_target_met",
+                "wall_exchange_scaling_target_met",
                 "target_reynolds_duration_target_met",
             )
         )
