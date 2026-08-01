@@ -1460,6 +1460,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      uses the worst value from either direction.  Fifty-seven focused
      single/nested AMR, SUBOFF smoke and startup-health tests pass.  This closes
      a semantic and safety gap but does not retroactively admit any trajectory.
+162. Split wall activation is rejected by the strict runtime at step 1560.
+     Normal impermeability was already fully active at step 300 while wall
+     shear was only `53.14%` active at failure; nevertheless the population
+     floor and `1.9374e-5` collision-limiter fraction appear at the baseline
+     onset.  Log/checkpoint SHA-256 values are
+     `b1fc4b14df1727943f144c11a79e86e8f2f468c1c66d059c804cc4b1915719e0`
+     and `669fca75f0bf60a09db28e4886b5d9b8f21304c5ba62de2644de08d9720d7069`.
+     The wall startup order is therefore ruled out as the primary instability
+     mechanism.  Its released GPU now isolates bidirectional transfer
+     positivity on the otherwise matched baseline interface.
 
 ## Rejected candidates
 
