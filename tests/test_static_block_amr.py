@@ -274,6 +274,21 @@ def test_fine_solid_gets_a_fluid_ghost_layer() -> None:
     assert not bool(padded[:, :, -1].any())
 
 
+def test_interface_filter_must_not_overlap_solid_or_near_wall_fluid() -> None:
+    coarse = _uniform_equilibrium((8, 9, 11))
+    fine_solid = torch.zeros((6, 8, 8), dtype=torch.bool)
+    fine_solid[0, 3, 3] = True
+    config = StaticBlockAMRConfig(
+        BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+        tau_coarse=0.56,
+        interface_filter_width=1,
+        interface_filter_strength=0.2,
+    )
+
+    with pytest.raises(ValueError, match="solid or its near-wall"):
+        StaticBlockAMR3D(coarse, config, fine_solid=fine_solid)
+
+
 def test_cell_centered_trilinear_ghost_fill_is_exact_for_linear_density() -> None:
     shape = (8, 9, 11)
     z, y, x = torch.meshgrid(
