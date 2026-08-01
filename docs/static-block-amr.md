@@ -85,10 +85,26 @@ BFL link fields, output and allocator fragmentation.
 PYTHONPATH=src python examples/suboff_static_amr_resistance.py \
   --device cuda:0 --hull-type bare_hull \
   --nx 300 --ny 120 --nz 120 --hull-length 120 \
-  --steps 5000 --output results/suboff-amr-l120.json
+  --steps 5000 --warmup-steps 2500 \
+  --wall-law musker --stress-exchange-distance 3 \
+  --checkpoint results/suboff-amr-l120.ckpt --checkpoint-interval 500 \
+  --output results/suboff-amr-l120.json
 ```
 
-The output deliberately reports `grid_candidate_not_yet_validated`.  A drag
-claim additionally requires a verified momentum-exchange observer, settled
-time windows, at least three effective resolutions, and comparison with the
-primary AFF-1/AFF-8 tow-tank measurements.
+The production runner now persists both coarse and fine populations plus the
+complete post-warmup evidence ledger by atomic replacement.  Restart identity
+includes geometry, refinement box, collision/LES parameters, open boundary,
+sponge, positivity policy, wall model, exchange height and diagnostic cadence.
+It applies analytical SUBOFF normals and wetted-area weighting on the fine
+surface, and records exchange `y+`, rejected samples, CV/BFL observer
+difference, force stationarity, positivity limiting and maximum per-population
+reflux residual.
+
+A save-at-step-4/resume-to-step-6 CPU composition test verifies that force and
+wall histories continue without reset; its maximum reflux residual is
+`5.46e-12`, force-observer difference 0.198%, and all states remain finite.
+The tiny geometry's force is intentionally meaningless and is rejected.
+
+Even a passing output is labelled only `single_grid_candidate`.  A drag claim
+additionally requires settled time/domain windows, at least three effective
+resolutions, and comparison with the primary AFF-1/AFF-8 tow-tank measurements.
