@@ -11,6 +11,7 @@ from .bfl_d3q19 import bouzidi_bounce_back_d3q19
 from .boundaries3d import far_field_bc_3d, sphere_mask
 from .checkpoint_io import atomic_torch_save
 from .control_volume_force import box_control_volume, observe_control_volume_force
+from .cuda_memory_budget import require_cuda_memory_budget
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
@@ -99,6 +100,11 @@ def run_sphere_bfl_control_volume(
         torch.cuda.set_device(device)
         torch.cuda.reset_peak_memory_stats(device)
     shape = (config.nz, config.ny, config.nx)
+    estimated_peak_gib = math.prod(shape) * 1000.0 / 2**30
+    memory_budget = require_cuda_memory_budget(
+        device, estimated_peak_gib=estimated_peak_gib,
+        reserve_gib=1.0, label="sphere benchmark",
+    )
     cx, cy, cz = (
         config.nx * config.center_x_fraction,
         config.ny / 2.0,
@@ -277,6 +283,9 @@ def run_sphere_bfl_control_volume(
         "measured_peak_allocated_gib": (
             torch.cuda.max_memory_allocated(device) / 2**30
             if device.type == "cuda" else None
+        ),
+        "cuda_memory_preflight": (
+            memory_budget.to_dict() if memory_budget is not None else None
         ),
     }
 

@@ -32,6 +32,7 @@ from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
+from tensorlbm.cuda_memory_budget import require_cuda_memory_budget
 from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
@@ -158,6 +159,10 @@ def run(args: argparse.Namespace) -> dict:
         coarse_hull_length=args.hull_length,
         wall_margin=args.wall_margin,
         wake_cells=args.wake_cells,
+    )
+    memory_budget = require_cuda_memory_budget(
+        device, estimated_peak_gib=plan.estimated_peak_gib(),
+        reserve_gib=1.0, label="SUBOFF static-AMR run",
     )
     fine_solid, fine_geometry = build_fine_suboff_mask(
         plan, hull_type=args.hull_type, coarse_center=center,
@@ -718,6 +723,9 @@ def run(args: argparse.Namespace) -> dict:
             "saving_fraction": plan.cell_saving_fraction,
             "estimated_peak_gib": plan.estimated_peak_gib(),
             "measured_peak_allocated_gib": peak_gib,
+            "cuda_memory_preflight": (
+                memory_budget.to_dict() if memory_budget is not None else None
+            ),
         },
         "geometry": fine_geometry | {
             "appendage_halfway_links": appendage_links,
