@@ -60,6 +60,11 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     low-frequency pressure-force excursions.  Hull placement is now explicit,
     and the default equilibrium-difference sponge excludes the prescribed
     inlet; the next direct comparison uses an elongated downstream domain.
+13. The completed L120 hard-equilibrium run averaged 122.29 N over its final
+    2000 steps (39.92% high) with 38.18% block drift.  Its wall friction was
+    67.10 N, corresponding to `Cf≈0.00245`, about 14% below ITTC-1957 at the
+    physical Reynolds number.  A finite two-sided flat-plate external-flow
+    benchmark now isolates this wall-stress bias before further SUBOFF tuning.
 
 ## Rejected candidates
 
