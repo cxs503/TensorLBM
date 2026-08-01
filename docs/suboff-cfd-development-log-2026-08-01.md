@@ -1008,6 +1008,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      launcher and stable `exec` handoff, so no second calculation can enter the
      card early.  Physical GPU2 and GPU3 continue one-level v8 L120/L150,
      while the local GPU continues sphere R15; no service or port is touched.
+115. Nested results now have a separate fail-closed three-grid assessor rather
+     than being coerced into the one-level v8 schema.  It requires source
+     integration/duration/stationarity/nested-CV/surface gates, exact identity
+     of physical and finest-cell wall/CV contracts, invariant domain/outer
+     mesh/time ratios, all measured geometry members, a finest absolute
+     geometry, monotone fitted spatial order/error/RMS and an extrapolated
+     experiment error within 5%.  A manufactured second-order sequence is
+     admitted; changing only exchange distance or failing one surface observer
+     blocks physical validation.  A CLI writes the immutable convergence
+     artifact when all three queued records exist.
 
 ## Rejected candidates
 

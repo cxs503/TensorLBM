@@ -667,6 +667,7 @@ from .suboff_static_amr import (
     plan_nested_suboff_static_amr,
     plan_suboff_static_amr,
 )
+from .suboff_nested_convergence import assess_suboff_nested_convergence
 from .control_volume_force import (
     ControlVolumeForceResult,
     NestedControlVolumeAssessment,
@@ -754,6 +755,7 @@ __all__ = [
     "build_fine_suboff_mask",
     "plan_nested_suboff_static_amr",
     "plan_suboff_static_amr",
+    "assess_suboff_nested_convergence",
     "ControlVolumeForceResult",
     "NestedControlVolumeAssessment",
     "assess_nested_control_volume_invariance",
