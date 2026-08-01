@@ -673,6 +673,11 @@ from .sphere_bfl_control_volume import (
     schiller_naumann_cd,
 )
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
+from .cylinder_bfl_control_volume import (
+    CYLINDER_RE100_CD_REFERENCE,
+    CylinderBFLControlVolumeConfig,
+    run_cylinder_bfl_control_volume,
+)
 
 __all__ = [
     "__version__",
@@ -716,6 +721,9 @@ __all__ = [
     "run_sphere_bfl_control_volume",
     "schiller_naumann_cd",
     "non_equilibrium_far_field_bc_3d",
+    "CYLINDER_RE100_CD_REFERENCE",
+    "CylinderBFLControlVolumeConfig",
+    "run_cylinder_bfl_control_volume",
     # D2Q9 lattice
     "C",
     "W",
