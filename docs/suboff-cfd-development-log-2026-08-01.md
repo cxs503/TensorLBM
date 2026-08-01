@@ -186,6 +186,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     exposes both ratios, requires density improvement, and permits at most 5%
     velocity regression; the candidate passes while the residual reflection
     remains explicit evidence for later higher-order prolongation work.
+31. A reusable spatial-convergence assessor now requires at least three
+    strictly increasing resolutions, checks monotonicity, fits the observed
+    order in `phi(N)=phi_inf+a*N^-p`, and reports the extrapolated limit,
+    finest-grid discretisation error and fit RMS.  A manufactured second-order
+    sequence recovers `p=2` and its exact limit.  The pending fixed-physical-
+    height flat-plate campaign therefore adds L384/exchange=4.5 between
+    L256/exchange=3 and L512/exchange=6; two-grid agreement is insufficient.
 
 ## Rejected candidates
 
