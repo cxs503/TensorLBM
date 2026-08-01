@@ -398,6 +398,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     current_step = 0
     resumed_from_step = 0
+    resumed_legacy_v2_checkpoint = False
     force_samples: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
@@ -407,7 +408,18 @@ def run(args: argparse.Namespace) -> dict:
 
     if args.resume:
         state = torch.load(args.checkpoint, map_location=device, weights_only=True)
-        if state.get("configuration") != checkpoint_signature:
+        stored_configuration = state.get("configuration")
+        legacy_v2_signature = dict(checkpoint_signature)
+        legacy_v2_signature["schema_version"] = 2
+        legacy_v2_signature.pop("hull_type")
+        resumed_legacy_v2_checkpoint = (
+            args.hull_type == "bare_hull"
+            and stored_configuration == legacy_v2_signature
+        )
+        if (
+            stored_configuration != checkpoint_signature
+            and not resumed_legacy_v2_checkpoint
+        ):
             raise ValueError("checkpoint configuration does not match nested smoke")
         current_step = int(state["step"])
         resumed_from_step = current_step
@@ -843,6 +855,7 @@ def run(args: argparse.Namespace) -> dict:
             "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
             "checkpoint_interval": args.checkpoint_interval,
             "resumed_from_step": resumed_from_step,
+            "resumed_legacy_v2_checkpoint": resumed_legacy_v2_checkpoint,
         },
         "planning": planning | {"measured_peak_allocated_gib": peak_gib},
         "geometry": nested_geometry | {
