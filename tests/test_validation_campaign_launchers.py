@@ -20,6 +20,7 @@ ROOT = Path(__file__).parents[1]
         ("run_suboff_nested_v10_scaled_level.sh", "L90"),
         ("run_suboff_nested_v11_scaled_wall_level.sh", "L90"),
         ("run_suboff_nested_v12_four_level_l90.sh", "L90"),
+        ("run_suboff_nested_v13_mass_conservative_l90.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_domain_width.sh", "W30"),
@@ -154,6 +155,53 @@ def test_four_level_l90_launcher_preserves_physical_cv_and_fails_closed_memory(
     )
     assert arguments[arguments.index("--collision-model") + 1] == "natural_kbc"
     assert "--preflight-only" in arguments
+
+
+def test_mass_conservative_l90_launcher_can_form_clean_inlet_sponge_pair(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env.update({
+        "TENSORLBM_PYTHON": str(fake_python),
+        "TENSORLBM_CAMPAIGN_GENERATION": "v14",
+        "TENSORLBM_SPONGE_INLET": "1",
+    })
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT
+                / "scripts"
+                / "run_suboff_nested_v13_mass_conservative_l90.sh"
+            ),
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--collision-model") + 1] == "natural_kbc"
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
+        "4.21875"
+    )
+    assert arguments[arguments.index("--deep-wall-margin") + 1] == "0"
+    assert "--sponge-inlet" in arguments
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v14-equivalent-l90-12k.json" in output
 
 
 def test_nested_launcher_routes_optional_inlet_sponge(tmp_path: Path) -> None:
