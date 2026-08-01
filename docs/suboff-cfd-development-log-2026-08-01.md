@@ -1631,6 +1631,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      default, and the runner rejects coefficients outside `[0,0.3]`.  This
      makes any resumed long SGS trajectory reproducible in its command line,
      checkpoint identity and convergence configuration.
+182. The audited slow-Re repeat v19 reproduces the v15 failure exactly at step
+     2520.  Its inner applied reflux correction fraction is `1.3011e-4`, below
+     the new `1e-3` gate, so population health is independently the first
+     failing contract.  Reproduction log/checkpoint SHA-256 values are
+     `476a819d898590c21d048ce1543618962fae7900697d6e132d8bbbc1dc32e62d`
+     and `4966bf7cb81819a4058595c6bdd024a87b807f3b9f69aec2ae843964fc820d43`.
+     GPU2 now runs the viscosity-correct natural-KBC L90 diagnostic, still
+     excluded from physical acceptance pending nonlinear evidence.
 
 ## Rejected candidates
 
