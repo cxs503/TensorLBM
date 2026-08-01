@@ -62,6 +62,9 @@ def test_flat_plate_checkpoint_can_resume(tmp_path: Path) -> None:
     assert state["schema"] == "tensorlbm-flat-plate-checkpoint-v4"
     assert state["configuration"]["sponge_strength"] == pytest.approx(0.2)
     assert state["configuration"]["smagorinsky_cs"] == pytest.approx(0.05)
+    assert state["configuration"]["wall_traction_source_scheme"] == (
+        "mass_conservative_post_collision_guo_v2"
+    )
     resumed = run_flat_plate_wall_model(FlatPlateWallModelConfig(
         **common, steps=6, resume=True,
     ))
@@ -69,6 +72,27 @@ def test_flat_plate_checkpoint_can_resume(tmp_path: Path) -> None:
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["configuration"]["statistics_window_steps_requested"] == 0
     assert resumed["result"]["finite"] is True
+
+
+def test_flat_plate_rejects_checkpoint_from_old_wall_source(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "flat.ckpt"
+    common = dict(
+        nx=64, ny=32, nz=3, plate_length=24,
+        plate_start_fraction=0.25, reynolds=2e4,
+        resolved_reynolds=2e3, lattice_speed=0.04,
+        warmup_steps=2, ramp_steps=2, sponge_width=3,
+        cv_margin=3, report_interval=0, checkpoint_interval=2,
+        checkpoint_path=str(checkpoint), device="cpu",
+    )
+    run_flat_plate_wall_model(FlatPlateWallModelConfig(**common, steps=4))
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"].pop("wall_traction_source_scheme")
+    torch.save(state, checkpoint)
+
+    with pytest.raises(ValueError, match="checkpoint configuration"):
+        run_flat_plate_wall_model(FlatPlateWallModelConfig(
+            **common, steps=6, resume=True,
+        ))
 
 
 def test_flat_plate_statistics_tail_must_fit_after_warmup() -> None:

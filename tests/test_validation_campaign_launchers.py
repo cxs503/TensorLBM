@@ -25,6 +25,7 @@ ROOT = Path(__file__).parents[1]
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_domain_width.sh", "W30"),
         ("run_flat_plate_v4_equivalent_level.sh", "L256"),
+        ("run_flat_plate_v5_mass_conservative_level.sh", "L256"),
     ),
 )
 def test_campaign_launcher_preflight_imports_current_checkout(
@@ -202,6 +203,43 @@ def test_mass_conservative_l90_launcher_can_form_clean_inlet_sponge_pair(
     assert "--sponge-inlet" in arguments
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-nested-v14-equivalent-l90-12k.json" in output
+
+
+def test_flat_plate_v5_uses_a_distinct_checkpoint_generation(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT / "scripts" / "run_flat_plate_v5_mass_conservative_level.sh"
+            ),
+            "L256",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    checkpoint = arguments[arguments.index("--checkpoint") + 1]
+    output = arguments[arguments.index("--output") + 1]
+    assert "flat-plate-v5-equivalent-l256-32000.ckpt" in checkpoint
+    assert "flat-plate-v5-equivalent-l256-32000.json" in output
 
 
 def test_nested_launcher_routes_optional_inlet_sponge(tmp_path: Path) -> None:

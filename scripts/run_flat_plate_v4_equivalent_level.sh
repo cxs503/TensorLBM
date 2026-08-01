@@ -46,7 +46,12 @@ export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
 if [[ ${TENSORLBM_PREFLIGHT_ONLY:-0} == 1 ]]; then
   exec "$python" -c 'import tensorlbm; print(tensorlbm.__file__)'
 fi
-stem="$result_dir/flat-plate-v4-equivalent-l${length}-${steps}"
+campaign_generation=${TENSORLBM_CAMPAIGN_GENERATION:-v4}
+if [[ ! $campaign_generation =~ ^v[0-9]+$ ]]; then
+  echo "TENSORLBM_CAMPAIGN_GENERATION must look like v4 or v5" >&2
+  exit 2
+fi
+stem="$result_dir/flat-plate-${campaign_generation}-equivalent-l${length}-${steps}"
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
   resume=(--resume)
