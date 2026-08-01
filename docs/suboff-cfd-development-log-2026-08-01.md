@@ -1002,6 +1002,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      supports AFF-1/AFF-8, resume, exact physical-GPU selection, PID chaining
      and import-only preflight.  Launcher subprocess coverage passes alongside
      the existing sphere/cylinder/flat/v8 launchers.
+114. The three-level queue is now concrete on physical GPU1.  Active L150 PID
+     1471212 runs first; exact L90 waiter PID 1473702 is gated on it, and exact
+     L120 waiter PID 1473870 is gated on L90.  Both waiters use the tested
+     launcher and stable `exec` handoff, so no second calculation can enter the
+     card early.  Physical GPU2 and GPU3 continue one-level v8 L120/L150,
+     while the local GPU continues sphere R15; no service or port is touched.
 
 ## Rejected candidates
 
