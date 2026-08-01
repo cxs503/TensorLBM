@@ -26,6 +26,9 @@ def _record(coarse_length: float) -> dict[str, object]:
             "les_model": "smagorinsky",
             "collision_model": "cumulant_smagorinsky",
             "wall_law": "musker",
+            "wall_traction_source_scheme": (
+                "mass_conservative_post_collision_guo_v2"
+            ),
             "wall_distance": 0.5,
             "wall_viscosity_basis": "physical_reynolds",
             "pressure_reference": "near_wall",
@@ -103,6 +106,16 @@ def test_changed_physics_fails_identity(records: list[dict[str, object]]) -> Non
     result = assess_suboff_amr_convergence(records)
 
     assert result["configuration_identity"]["identity_fields_equal"] is False
+    assert result["admitted"] is False
+
+
+def test_missing_wall_source_version_fails_provenance(
+    records: list[dict[str, object]],
+) -> None:
+    records[0]["configuration"].pop("wall_traction_source_scheme")
+    result = assess_suboff_amr_convergence(records)
+
+    assert result["configuration_identity"]["required_fields_present"] is False
     assert result["admitted"] is False
 
 

@@ -86,6 +86,9 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert resumed["configuration"]["link_force_frame"] == (
         "laboratory_after_wall_activation"
     )
+    assert resumed["configuration"]["wall_traction_source_scheme"] == (
+        "mass_conservative_post_collision_guo_v2"
+    )
     assert resumed["configuration"]["statistics_window_steps_resolved"] == 2
     assert resumed["configuration"]["surface_pressure_extrapolation"] == "none"
     assert resumed["result"]["force_stationarity"]["sample_count"] == 2
@@ -141,3 +144,15 @@ def test_legacy_none_surface_observer_checkpoint_can_resume(tmp_path: Path) -> N
     resumed = module.run(resumed_args)
 
     assert resumed["configuration"]["resumed_from_step"] == 4
+
+
+def test_checkpoint_without_wall_source_version_is_rejected(tmp_path: Path) -> None:
+    args, checkpoint = _arguments(tmp_path, steps=4)
+    module.run(args)
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"].pop("wall_traction_source_scheme")
+    torch.save(state, checkpoint)
+
+    resumed_args, _ = _arguments(tmp_path, steps=6, resume=True)
+    with pytest.raises(ValueError, match="checkpoint configuration"):
+        module.run(resumed_args)

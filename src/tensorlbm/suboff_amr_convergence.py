@@ -28,6 +28,7 @@ _IDENTITY_FIELDS = (
     "les_model",
     "collision_model",
     "wall_law",
+    "wall_traction_source_scheme",
     "wall_distance",
     "wall_viscosity_basis",
     "pressure_reference",
