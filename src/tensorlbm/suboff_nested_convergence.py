@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 
 _IDENTITY_FIELDS = (
-    "hull_type",
     "speed_knots",
     "center_x_fraction",
     "lattice_speed",
@@ -48,8 +47,12 @@ def assess_suboff_nested_convergence(
     parsed: list[tuple[float, float, dict, dict, dict, dict]] = []
     schema_valid = True
     source_quality = True
+    normalized_hull_types: list[str] = []
     for record in records:
-        schema_valid &= record.get("schema") == "tensorlbm-suboff-nested-amr-smoke-v2"
+        schema_valid &= record.get("schema") in {
+            "tensorlbm-suboff-nested-amr-smoke-v2",
+            "tensorlbm-suboff-nested-amr-smoke-v3",
+        }
         configuration = record.get("configuration")
         result = record.get("result")
         acceptance = record.get("acceptance")
@@ -62,6 +65,10 @@ def assess_suboff_nested_convergence(
         resolution = geometry.get("resolution")
         if not isinstance(statistics, dict) or not isinstance(resolution, dict):
             raise ValueError("each record needs statistics and geometry resolution")
+        hull_type = configuration.get("hull_type", resolution.get("hull_type"))
+        if hull_type not in {"bare_hull", "full"}:
+            raise ValueError("each record needs an explicit measured hull type")
+        normalized_hull_types.append(hull_type)
         finest_length = float(configuration["finest_hull_length_cells"])
         mean_resistance = statistics.get("mean_resistance_n")
         if mean_resistance is None:
@@ -90,6 +97,7 @@ def assess_suboff_nested_convergence(
     if len(set(resolutions)) != len(resolutions):
         raise ValueError("finest hull resolutions must be unique")
     baseline = parsed[0][2]
+    hull_type_invariant = len(set(normalized_hull_types)) == 1
     required_fields_present = all(
         field in configuration
         for _, _, configuration, result, _, geometry in parsed
@@ -186,6 +194,7 @@ def assess_suboff_nested_convergence(
         and required_fields_present
         and identity_equal
         and scaled_configuration_invariant
+        and hull_type_invariant
         and reference_invariant
     )
     admitted = (
@@ -197,7 +206,9 @@ def assess_suboff_nested_convergence(
     )
     return {
         "schema": "tensorlbm-suboff-nested-convergence-v1",
-        "hull_type": baseline.get("hull_type"),
+        "hull_type": (
+            normalized_hull_types[0] if hull_type_invariant else None
+        ),
         "fine_hull_resolutions": resolutions,
         "mean_resistances_n": resistances,
         "configuration_identity": {
@@ -210,6 +221,7 @@ def assess_suboff_nested_convergence(
             "time_steps_over_coarse_length": time_ratios,
             "scaled_configuration_invariant": scaled_configuration_invariant,
             "experimental_reference_invariant": reference_invariant,
+            "measured_hull_type_invariant": hull_type_invariant,
             "admitted": provenance_admitted,
         },
         "spatial_convergence": {
