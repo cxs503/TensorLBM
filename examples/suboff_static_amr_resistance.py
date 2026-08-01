@@ -803,6 +803,9 @@ def run(args: argparse.Namespace) -> dict:
             history.append(row)
             print(
                 f"step={current_step}/{args.steps} Rt={mean_force:.3f} N "
+                f"P_bfl={pressure * scale:.3f} N "
+                f"T_wall={friction * scale:.3f} N "
+                f"Rt_bfl={bfl_resistance:.3f} N "
                 f"exp={point.resistance_n:.3f} N err={row['error_pct']:.2f}% "
                 f"reflux={ledger.mass_residual:.3e}", flush=True,
             )
