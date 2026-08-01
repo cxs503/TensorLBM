@@ -1161,9 +1161,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nested-cv-target", type=float, default=1.0)
     p.add_argument("--surface-observer-target", type=float, default=5.0)
     p.add_argument("--numerical-source-target", type=float, default=1.0)
-    p.add_argument("--minimum-convective-times", type=float, default=5.0)
+    p.add_argument("--minimum-convective-times", type=float, default=8.0)
     p.add_argument(
-        "--minimum-sampling-convective-times", type=float, default=2.0,
+        "--minimum-sampling-convective-times", type=float, default=5.0,
     )
     p.add_argument(
         "--far-field-mode",
