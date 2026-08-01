@@ -399,6 +399,24 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     Reynolds, fine wall viscosity and viscosity basis.  Twenty focused wall,
     flat-plate, AMR and convergence tests pass, and v3 checkpoints are
     intentionally non-resumable under the corrected physics.
+54. The local D32, 25D-wide cylinder reached 80000 steps and is rejected after
+    window audit.  The full post-40000 mean `Cd=1.3650` is only 2.63% high and
+    has 0.00067% CV/BFL disagreement, but its eight blocks rise from 1.211 to
+    1.438 (17.0% trend).  The final 15000 samples are stationary (0.61% trend)
+    but `Cd=1.4352` is 7.91% high and only 4.95 shedding cycles are observed;
+    the final 10000 samples give `St=0.16850` (2.75% error) but only 3.16
+    cycles.  No window simultaneously meets drag, stationarity, Strouhal and
+    cycle-count gates.  A committed sidecar records full launch provenance,
+    four late-window assessments and SHA-256 hashes while explicitly retaining
+    `physical_validation=false` for the legacy-v1 source.
+55. The v4 L120 1500-step wall-physics diagnostic completed with physical
+    `Re=13.21M`, `nu_wall_fine=1.09e-6`, zero positivity limiting, no limited
+    reflux directions and `3.73e-9` maximum residual.  Wall shear over the
+    post-750 samples is 80.5 N instead of the v3 collision-viscosity value near
+    190--240 N.  CV resistance still falls across all eight blocks
+    (`166.6`→`136.9 N`, 20.2% trend) and the two observers differ by 27.3%, so
+    the short run is correctly rejected as transient.  The clean v4
+    L90/L120/L150 production sequence is active.
 
 ## Rejected candidates
 
