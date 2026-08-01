@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 import torch
@@ -37,7 +38,11 @@ from tensorlbm.drag_pressure import (
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
-from tensorlbm.population_positivity import limit_nonequilibrium_for_positivity
+from tensorlbm.population_health import inspect_population_health
+from tensorlbm.population_positivity import (
+    PositivityDiagnostics,
+    limit_nonequilibrium_for_positivity,
+)
 from tensorlbm.solver3d import stream3d
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
@@ -89,6 +94,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--ramp-steps", type=int, default=0)
     result.add_argument("--report-interval", type=int, default=1)
     result.add_argument("--wall-diagnostic-interval", type=int, default=1)
+    result.add_argument(
+        "--health-interval", type=int, default=0,
+        help="root-step cadence for per-level population/rho/speed diagnostics; 0 disables",
+    )
     result.add_argument("--minimum-convective-times", type=float, default=8.0)
     result.add_argument(
         "--minimum-statistics-convective-times", type=float, default=5.0,
@@ -130,6 +139,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("memory bytes per cell must be positive")
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint interval must be non-negative")
+    if args.health_interval < 0:
+        raise ValueError("health interval must be non-negative")
     if not 0 <= args.warmup_steps < args.steps:
         raise ValueError("warmup steps must lie in [0, steps)")
     if not 0 <= args.statistics_window_steps <= args.steps - args.warmup_steps:
@@ -405,6 +416,7 @@ def run(args: argparse.Namespace) -> dict:
     maximum_reflux_residual = [0.0, 0.0]
     maximum_reflux_limited_directions = [0, 0]
     maximum_rejected_fraction = 0.0
+    health_records: list[dict] = []
 
     if args.resume:
         state = torch.load(args.checkpoint, map_location=device, weights_only=True)
@@ -438,6 +450,7 @@ def run(args: argparse.Namespace) -> dict:
             int(value) for value in state["maximum_reflux_limited_directions"]
         ]
         maximum_rejected_fraction = float(state["maximum_rejected_fraction"])
+        health_records = list(state.get("health_records", []))
 
     def save_checkpoint(step: int) -> None:
         assert args.checkpoint is not None
@@ -455,12 +468,31 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_reflux_limited_directions
             ),
             "maximum_rejected_fraction": maximum_rejected_fraction,
+            "health_records": health_records,
         }, args.checkpoint)
 
-    def collide(state: torch.Tensor, tau: float) -> torch.Tensor:
+    def require_finite_limiter(
+        diagnostic: PositivityDiagnostics, *, level: int, stage: str,
+    ) -> None:
+        values = (
+            diagnostic.minimum_population_before,
+            diagnostic.minimum_population_after,
+            diagnostic.minimum_alpha,
+        )
+        if not all(math.isfinite(value) for value in values):
+            raise FloatingPointError(
+                "non-finite population detected "
+                f"at root_step={current_step}, level={level}, stage={stage}; "
+                f"minimum_before={diagnostic.minimum_population_before}, "
+                f"minimum_after={diagnostic.minimum_population_after}, "
+                f"minimum_alpha={diagnostic.minimum_alpha}",
+            )
+
+    def collide(state: torch.Tensor, tau: float, level: int) -> torch.Tensor:
         nonlocal maximum_limiter_fraction
         post = collide_cumulant_d3q19(state, tau=tau, C_s=args.cs_smag)
         post, diagnostic = limit_nonequilibrium_for_positivity(post)
+        require_finite_limiter(diagnostic, level=level, stage="post_collision")
         maximum_limiter_fraction = max(
             maximum_limiter_fraction, diagnostic.limited_fraction,
         )
@@ -472,7 +504,7 @@ def run(args: argparse.Namespace) -> dict:
         nonlocal maximum_limiter_fraction, maximum_rejected_fraction
         del substep
         before = state
-        collided = collide(state, tau)
+        collided = collide(state, tau, level)
         if level < 2:
             out = stream3d(collided)
             if level == 0:
@@ -534,6 +566,7 @@ def run(args: argparse.Namespace) -> dict:
             mean_wall_distance = None
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
+        require_finite_limiter(positivity, level=level, stage="post_wall")
         maximum_limiter_fraction = max(
             maximum_limiter_fraction, positivity.limited_fraction,
         )
@@ -588,6 +621,21 @@ def run(args: argparse.Namespace) -> dict:
         current_step = step
         force_samples.clear()
         ledgers = hierarchy.step(advance)
+        if args.health_interval and current_step % args.health_interval == 0:
+            level_health = [
+                inspect_population_health(populations).to_dict()
+                for populations in hierarchy.level_populations
+            ]
+            health_records.append({"step": current_step, "levels": level_health})
+            print(
+                "nested health "
+                + json.dumps(health_records[-1], separators=(",", ":")),
+                flush=True,
+            )
+            if not all(record["finite"] for record in level_health):
+                raise FloatingPointError(
+                    f"non-finite hierarchy state at root_step={current_step}",
+                )
         if len(force_samples) != 4:
             raise RuntimeError("three-level hierarchy must emit four finest force samples")
         for index, ledger in enumerate(ledgers):
@@ -877,6 +925,7 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_positivity_limited_fraction": maximum_limiter_fraction,
             "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
             "finite": finite,
+            "population_health": health_records,
             "statistics": {
                 "warmup_steps": args.warmup_steps,
                 "statistics_window_steps_requested": args.statistics_window_steps,
