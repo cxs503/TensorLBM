@@ -224,6 +224,38 @@ def test_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     )
 
 
+def test_d3q27_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
+    """D3Q27 uses the same area/volume traction contract as D3Q19."""
+    from tensorlbm.d3q27 import C as C27, equilibrium27
+    from tensorlbm.wall_model import bfl_wall_function_d3q27
+
+    shape = (3, 5, 5)
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.06, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f = equilibrium27(rho, ux, zero, zero)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    solid[:, 0, :] = True
+    near = torch.zeros(shape, dtype=torch.bool)
+    near[:, 1, :] = True
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    area = torch.full(shape, 0.75, dtype=torch.float64)
+
+    out, friction, _ = bfl_wall_function_d3q27(
+        f.clone(), f, solid, 1e-3, masks, q,
+        near_mask=near, apply_bfl=False, area_weight=area,
+        wall_activation=0.4,
+    )
+    population_change = (out - f).sum(dim=(1, 2, 3))
+    fluid_momentum_change = (
+        population_change[:, None] * C27.to(f)
+    ).sum(dim=0)
+    assert fluid_momentum_change[0].item() == pytest.approx(
+        -friction, abs=5e-11,
+    )
+
+
 def test_bfl_link_normal_recovers_flat_wall_direction() -> None:
     masks = torch.zeros((19, 3, 3, 3), dtype=torch.bool)
     cell = (1, 1, 1)
