@@ -15,18 +15,21 @@ case "$level" in
     viscosity_start=300
     viscosity_end=600
     health_interval=60
+    stress_exchange_distance=4.21875
     ;;
   120)
     start_re=3000
     viscosity_start=400
     viscosity_end=800
     health_interval=80
+    stress_exchange_distance=5.625
     ;;
   150)
     start_re=2000
     viscosity_start=500
     viscosity_end=1000
     health_interval=100
+    stress_exchange_distance=7.03125
     ;;
   *) usage ;;
 esac
@@ -47,6 +50,7 @@ export TENSORLBM_RESOLVED_REYNOLDS_START=${TENSORLBM_RESOLVED_REYNOLDS_START:-$s
 export TENSORLBM_VISCOSITY_RAMP_START_STEP=${TENSORLBM_VISCOSITY_RAMP_START_STEP:-$viscosity_start}
 export TENSORLBM_VISCOSITY_RAMP_END_STEP=${TENSORLBM_VISCOSITY_RAMP_END_STEP:-$viscosity_end}
 export TENSORLBM_HEALTH_INTERVAL=${TENSORLBM_HEALTH_INTERVAL:-$health_interval}
+export TENSORLBM_STRESS_EXCHANGE_DISTANCE=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-$stress_exchange_distance}
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 exec "$root/scripts/run_suboff_nested_v3_equivalent_level.sh" "$@"

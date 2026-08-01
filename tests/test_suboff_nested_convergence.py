@@ -19,7 +19,7 @@ def _record(length: int, resistance: float) -> dict:
             "nu_water": 1.004e-6,
             "cs_smag": 0.05,
             "wall_law": "musker",
-            "stress_exchange_distance": 0.0234375 * length,
+            "stress_exchange_distance": (3.0 / 256.0) * finest,
             "inner_wall_margin": length / 15.0,
             "inner_wake_cells": 2.0 * length / 15.0,
             "cv_margin": length / 15.0,
@@ -121,6 +121,22 @@ def test_nested_convergence_fails_if_scaled_exchange_distance_changes() -> None:
 
     assert result["configuration_identity"]["scaled_configuration_invariant"] is False
     assert result["physical_validation"] is False
+
+
+def test_nested_exchange_distance_is_normalized_by_finest_resolution() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+
+    result = assess_suboff_nested_convergence(records)
+
+    ratios = result["configuration_identity"]["wall_model_over_finest_length"]
+    assert ratios["stress_exchange_distance_over_finest_length"] == [
+        3.0 / 256.0,
+        3.0 / 256.0,
+        3.0 / 256.0,
+    ]
 
 
 def test_nested_convergence_requires_all_observer_gates() -> None:

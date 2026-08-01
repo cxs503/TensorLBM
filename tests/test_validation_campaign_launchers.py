@@ -89,6 +89,9 @@ def test_nested_v4_launcher_expands_audited_l150_continuation(
     assert arguments[arguments.index("--viscosity-ramp-start-step") + 1] == "500"
     assert arguments[arguments.index("--viscosity-ramp-end-step") + 1] == "1000"
     assert arguments[arguments.index("--health-interval") + 1] == "100"
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
+        "7.03125"
+    )
     assert arguments[arguments.index("--interface-filter-width") + 1] == "0"
     assert arguments[arguments.index("--interface-filter-strength") + 1] == "0"
     assert arguments[

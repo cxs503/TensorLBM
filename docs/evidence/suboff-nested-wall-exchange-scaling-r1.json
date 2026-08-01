@@ -1,0 +1,53 @@
+{
+  "schema": "tensorlbm-wall-exchange-scaling-audit-v1",
+  "status": "future_nested_campaign_corrected",
+  "reference_scaling": {
+    "source": "validated flat-plate equivalent-grid launcher",
+    "exchange_distance_over_body_length": 0.01171875,
+    "exact_fraction": "3/256",
+    "members": [
+      {"body_length_cells": 256, "exchange_distance_cells": 3.0},
+      {"body_length_cells": 384, "exchange_distance_cells": 4.5},
+      {"body_length_cells": 512, "exchange_distance_cells": 6.0}
+    ]
+  },
+  "single_level_suboff_cross_check": {
+    "coarse_hull_length_cells": 120,
+    "fine_hull_length_cells": 240,
+    "exchange_distance_cells": 2.8125,
+    "exchange_distance_over_fine_length": 0.01171875
+  },
+  "previous_nested_l90": {
+    "finest_hull_length_cells": 360,
+    "exchange_distance_cells": 1.0,
+    "exchange_distance_over_finest_length": 0.002777777777777778,
+    "relative_to_reference_distance": 0.23703703703703705,
+    "classification": "wall-distance sensitivity trajectory, not an equivalent-grid member"
+  },
+  "corrected_nested_equivalent_sequence": [
+    {
+      "coarse_hull_length_cells": 90,
+      "finest_hull_length_cells": 360,
+      "exchange_distance_cells": 4.21875,
+      "exchange_distance_over_finest_length": 0.01171875
+    },
+    {
+      "coarse_hull_length_cells": 120,
+      "finest_hull_length_cells": 480,
+      "exchange_distance_cells": 5.625,
+      "exchange_distance_over_finest_length": 0.01171875
+    },
+    {
+      "coarse_hull_length_cells": 150,
+      "finest_hull_length_cells": 600,
+      "exchange_distance_cells": 7.03125,
+      "exchange_distance_over_finest_length": 0.01171875
+    }
+  ],
+  "code_contract": {
+    "launcher": "scripts/run_suboff_nested_v4_continuation_level.sh",
+    "convergence_identity": "stress_exchange_distance / finest_hull_length_cells",
+    "no_retroactive_relabeling": true
+  },
+  "conclusion": "The earlier distance=1 nested trajectories remain valid stability and wall-distance sensitivity evidence, but they cannot enter the production-equivalent grid sequence. Future L90/L120/L150 candidates use the flat-plate-validated normalized exchange distance."
+}
