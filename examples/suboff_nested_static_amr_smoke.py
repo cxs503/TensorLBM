@@ -64,6 +64,7 @@ from tensorlbm.static_block_amr import (
     NestedStaticBlockAMR3D,
     StaticBlockAMRConfig,
 )
+from tensorlbm.subcycled_force import UniformSubcycleAverager
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import (
     apply_suboff_appendage_halfway_links,
@@ -446,6 +447,7 @@ def run(args: argparse.Namespace) -> dict:
     finest_planning_solid = planning_solids[-1]
     refinement_depth = len(refinement_plans)
     level_count = refinement_depth + 1
+    force_averager = UniformSubcycleAverager(refinement_depth)
     physical_re = point.speed_mps * MODEL_LENGTH_M / args.nu_water
     initial_tau_by_level = continuation.tau_by_level(
         0,
@@ -560,7 +562,7 @@ def run(args: argparse.Namespace) -> dict:
         ],
         "refinement_depth": refinement_depth,
         "level_count": level_count,
-        "force_samples_per_root_step": 2**refinement_depth,
+        "force_samples_per_root_step": force_averager.expected_samples,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
         "nested_fine_shape": list(nested_plan.fine_physical_shape),
         "fine_physical_shapes_by_level": [
@@ -630,7 +632,7 @@ def run(args: argparse.Namespace) -> dict:
         "cv_margin": args.cv_margin,
         "auxiliary_cv_margins": list(auxiliary_margins),
         "surface_force_interval": args.surface_force_interval,
-        "force_samples_per_root_step": 2**refinement_depth,
+        "force_samples_per_root_step": force_averager.expected_samples,
         "ramp_steps": args.ramp_steps,
         "wall_normal_ramp_steps": wall_normal_ramp_steps,
         "wall_shear_ramp_steps": wall_shear_ramp_steps,
@@ -1223,7 +1225,7 @@ def run(args: argparse.Namespace) -> dict:
             ]
             wall_exchange_health = {
                 "force_samples_observed": len(force_samples),
-                "force_samples_expected": 2**refinement_depth,
+                "force_samples_expected": force_averager.expected_samples,
                 "diagnostic_samples": len(diagnostic_force_samples),
                 "mean_distance_cells": (
                     sum(
@@ -1382,12 +1384,11 @@ def run(args: argparse.Namespace) -> dict:
                     f"{maximum_interface_correction:.6g} > "
                     f"{args.maximum_reflux_applied_correction_fraction:.6g}",
                 )
-        expected_force_samples = 2**refinement_depth
-        if len(force_samples) != expected_force_samples:
-            raise RuntimeError(
-                f"{level_count}-level hierarchy must emit "
-                f"{expected_force_samples} finest force samples",
-            )
+        # The common averager owns both the recursive sample-count invariant
+        # and its denominator.  This must evolve with refinement depth.
+        cv_mean = force_averager.mean(
+            (item["cv"] for item in force_samples), observable="CV force",
+        )
         for index, ledger in enumerate(ledgers):
             maximum_reflux_residual[index] = max(
                 maximum_reflux_residual[index],
@@ -1419,21 +1420,30 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_raw_momentum_mismatch[index],
                 raw_mismatch_moments[index][1],
             )
-        sample_count = float(len(force_samples))
-        cv_mean = sum(item["cv"] for item in force_samples) / sample_count
-        bfl_mean = sum(item["bfl"] for item in force_samples) / sample_count
-        pressure_mean = (
-            sum(item["pressure"] for item in force_samples) / sample_count
+        bfl_mean = force_averager.mean(
+            (item["bfl"] for item in force_samples), observable="BFL force",
         )
-        friction_mean = (
-            sum(item["friction"] for item in force_samples) / sample_count
+        pressure_mean = force_averager.mean(
+            (item["pressure"] for item in force_samples),
+            observable="BFL pressure force",
         )
-        source_mean = sum(item["source"] for item in force_samples) / sample_count
+        friction_mean = force_averager.mean(
+            (item["friction"] for item in force_samples),
+            observable="wall shear force",
+        )
+        source_mean = force_averager.mean(
+            (item["source"] for item in force_samples),
+            observable="numerical momentum source",
+        )
         auxiliary_means = (
             {
-                margin: sum(
-                    item["auxiliary"][margin] for item in force_samples
-                ) / sample_count
+                margin: force_averager.mean(
+                    (
+                        item["auxiliary"][margin]
+                        for item in force_samples
+                    ),
+                    observable=f"auxiliary CV force margin {margin}",
+                )
                 for margin in auxiliary_margins
             }
             if current_step % args.surface_force_interval == 0 else None
@@ -1782,7 +1792,7 @@ def run(args: argparse.Namespace) -> dict:
             "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
             "checkpoint_interval": args.checkpoint_interval,
             "gradient_sgs_solid_velocity": [0.0, 0.0, 0.0],
-            "force_samples_per_root_step": 2**refinement_depth,
+            "force_samples_per_root_step": force_averager.expected_samples,
             "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
             "gradient_sgs_uses_finest_solid_mask": (
                 args.collision_model in {"cumulant_wale", "cumulant_vreman"}
@@ -1832,6 +1842,9 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "maximum_positivity_limited_fraction": maximum_limiter_fraction,
             "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
+            "force_sample_aggregation": force_averager.provenance(
+                force_averager.expected_samples,
+            ),
             "finite": finite,
             "population_health": health_records,
             "maximum_observed_speed": maximum_observed_speed,
