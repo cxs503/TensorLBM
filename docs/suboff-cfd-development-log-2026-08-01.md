@@ -1480,6 +1480,11 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      collision formulation both recovers target viscosity and passes entropy,
      positivity and interface audits; apparent stability cannot substitute for
      the correct Reynolds number.
+164. Nested SUBOFF results now expose `collision_viscosity_target_met`, and
+     the fail-closed three-grid assessor requires it for every source record.
+     The cumulant production path passes; `entropic_kbc` remains callable only
+     for diagnostics and can no longer become a physical single-grid candidate
+     or enter a convergence claim while its shear-wave audit is rejected.
 
 ## Rejected candidates
 

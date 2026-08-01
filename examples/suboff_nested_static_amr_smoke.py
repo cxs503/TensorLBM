@@ -1409,6 +1409,9 @@ def run(args: argparse.Namespace) -> dict:
     stationarity_acceptable = (
         force_stationarity is not None and force_stationarity.meets(1.0)
     )
+    collision_viscosity_acceptable = (
+        args.collision_model == "cumulant_smagorinsky"
+    )
     auxiliary_cv_difference_pct = None
     nested_cv_acceptable = False
     surface_observer_difference_pct = None
@@ -1466,6 +1469,7 @@ def run(args: argparse.Namespace) -> dict:
         and geometry_resolution.absolute_reference_resolved
         and not args.disable_wall_stress
         and population_health_acceptable
+        and collision_viscosity_acceptable
     )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30
@@ -1605,6 +1609,7 @@ def run(args: argparse.Namespace) -> dict:
                 reference_error_pct is not None and reference_error_pct <= 5.0
             ),
             "population_health_target_met": population_health_acceptable,
+            "collision_viscosity_target_met": collision_viscosity_acceptable,
             "minimum_population_target": args.minimum_health_population,
             "positivity_limited_fraction_target": (
                 args.maximum_positivity_limited_fraction
