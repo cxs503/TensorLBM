@@ -13,11 +13,11 @@ import torch
 
 def _lattice(q: int, device: torch.device, dtype: torch.dtype):
     if q == 19:
-        from .d3q19 import C, equilibrium3d, macroscopic3d
-        return C.to(device=device), equilibrium3d, macroscopic3d
+        from .d3q19 import C, equilibrium3d
+        return C.to(device=device), equilibrium3d
     if q == 27:
-        from .d3q27 import C, equilibrium27, macroscopic27
-        return C.to(device=device), equilibrium27, macroscopic27
+        from .d3q27 import C, equilibrium27
+        return C.to(device=device), equilibrium27
     raise ValueError("only D3Q19 and D3Q27 are supported")
 
 
@@ -40,9 +40,7 @@ def non_equilibrium_far_field_bc_3d(
     allowed = {"x-", "x+", "y-", "y+", "z-", "z+"}
     if not set(faces) <= allowed:
         raise ValueError("unknown far-field face")
-    c, equilibrium, macro = _lattice(f.shape[0], f.device, f.dtype)
-    rho, ux, uy, uz = macro(f)
-    local_eq = equilibrium(rho, ux, uy, uz, device=f.device)
+    c, equilibrium = _lattice(f.shape[0], f.device, f.dtype)
     out = f.clone()
 
     def apply_face(
@@ -52,16 +50,28 @@ def non_equilibrium_far_field_bc_3d(
         incoming: torch.Tensor,
         outlet: bool = False,
     ) -> None:
-        interior_rho = rho[interior_slice]
+        interior_values = f[(slice(None),) + interior_slice]
+        vector_shape = (f.shape[0],) + (1,) * (interior_values.ndim - 1)
+        rho_i = interior_values.sum(dim=0).clamp_min(1e-12)
+        ux_i = (
+            interior_values * c[:, 0].to(f.dtype).view(vector_shape)
+        ).sum(dim=0) / rho_i
+        uy_i = (
+            interior_values * c[:, 1].to(f.dtype).view(vector_shape)
+        ).sum(dim=0) / rho_i
+        uz_i = (
+            interior_values * c[:, 2].to(f.dtype).view(vector_shape)
+        ).sum(dim=0) / rho_i
+        local_eq = equilibrium(rho_i, ux_i, uy_i, uz_i, device=f.device)
         if outlet:
-            target_ux = ux[interior_slice]
-            target_uy = uy[interior_slice]
-            target_uz = uz[interior_slice]
+            target_ux = ux_i
+            target_uy = uy_i
+            target_uz = uz_i
         else:
-            target_ux = torch.full_like(interior_rho, u_in)
-            target_uy = torch.full_like(interior_rho, uy_far)
-            target_uz = torch.full_like(interior_rho, uz_far)
-        target_rho = torch.full_like(interior_rho, rho_far)
+            target_ux = torch.full_like(rho_i, u_in)
+            target_uy = torch.full_like(rho_i, uy_far)
+            target_uz = torch.full_like(rho_i, uz_far)
+        target_rho = torch.full_like(rho_i, rho_far)
         target_eq = equilibrium(
             target_rho, target_ux, target_uy, target_uz, device=f.device,
         )
@@ -69,8 +79,8 @@ def non_equilibrium_far_field_bc_3d(
         for direction in directions:
             out[(direction,) + boundary_slice] = (
                 target_eq[direction]
-                + f[(direction,) + interior_slice]
-                - local_eq[(direction,) + interior_slice]
+                + interior_values[direction]
+                - local_eq[direction]
             )
 
     # Tensor spatial order is z,y,x.  c order is x,y,z.
