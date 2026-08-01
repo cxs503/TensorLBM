@@ -1510,6 +1510,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      runs default to a fail-closed `1e-3` ceiling, persist per-interface maxima
      in checkpoints/results and include the threshold in convergence identity.
      Eighty-six focused interface, runtime, launcher and convergence tests pass.
+168. The pulse-admitted crossing-link reflux candidate is rejected by the L90
+     high-Re test at step 1440, 120 steps earlier than the baseline floor.
+     Peak speed reaches `0.23746`, collision limiting `1.1760e-4`, inner raw
+     mass/momentum mismatch `255.82`/`16.14`, and the inner reflux residual
+     `2.0401` with one limited direction.  Log/checkpoint SHA-256 values are
+     `874b26a24ac420294b20dd593dd3951c9dfc09e8ee92604af86646bd063d60f8`
+     and `cee170dc42fa64cba37f717dc7e301be290ba4e3f7e24dbbbf3fbe789c00de0c`.
+     This demonstrates why small-pulse admission is necessary but insufficient.
+     The option remains experimental and is withheld from production defaults.
+     GPU2 now repeats the slow-Re candidate with bidirectional transfer health,
+     root-step ledger accumulation and the new applied-correction gate enabled.
 
 ## Rejected candidates
 
