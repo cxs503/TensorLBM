@@ -36,8 +36,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
    baseline but has not yet demonstrated lower long-period reflection.
 8. The periodic-span cylinder at Re=100, D=24 and 8.3D transverse width gave
    `Cd_CV=1.47698` and `Cd_BFL=1.47699` (observer difference 0.00078%).  The
-   value is 11.1% above the nominal unconfined reference 1.33; a 16.7D-wide
-   domain rerun is in progress to quantify blockage before changing numerics.
+   value is 11.1% above the nominal unconfined reference 1.33.  Increasing the
+   width to 16.7D gave `Cd_CV=1.26448`, `Cd_BFL=1.26449` (difference 0.00053%),
+   4.93% below the reference.  Domain blockage is therefore confirmed, but the
+   5000-step sampling window spans only about two expected shedding periods.
+   Strouhal/lift-spectrum diagnostics and a longer window are required before
+   interpreting the remaining error.
 9. The D3Q27 wall-stress source contained the same obsolete `tau_w/y1`
    scaling already removed from D3Q19.  Both lattices now share the
    `tau_w*A/V` traction contract and exact population-momentum regression.
