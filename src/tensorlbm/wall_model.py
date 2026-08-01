@@ -277,6 +277,38 @@ def compute_wall_normal(
     return nx_n, ny_n, nz_n
 
 
+def compute_bfl_link_normal(
+    fluid_boundary_mask: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Reconstruct a smooth boundary normal from D3Q19 crossing links.
+
+    The weighted sum points from a boundary fluid node into the solid.  Its
+    sign is immaterial for tangential projection; using link geometry keeps
+    the wall-model slip direction consistent with the same surface used by
+    BFL, unlike a staircase-mask finite-difference gradient.
+    """
+    from .d3q19 import C, W
+
+    if fluid_boundary_mask.ndim != 4 or fluid_boundary_mask.shape[0] != 19:
+        raise ValueError("fluid_boundary_mask must have shape (19,nz,ny,nx)")
+    device = fluid_boundary_mask.device
+    dtype = torch.float32
+    c = C.to(device=device, dtype=dtype)
+    w = W.to(device=device, dtype=dtype)
+    shape = fluid_boundary_mask.shape[1:]
+    nx_n = torch.zeros(shape, device=device, dtype=dtype)
+    ny_n = torch.zeros_like(nx_n)
+    nz_n = torch.zeros_like(nx_n)
+    for direction in range(1, 19):
+        link = fluid_boundary_mask[direction].to(dtype) * w[direction]
+        nx_n = nx_n + link * c[direction, 0]
+        ny_n = ny_n + link * c[direction, 1]
+        nz_n = nz_n + link * c[direction, 2]
+    mag = torch.sqrt(nx_n * nx_n + ny_n * ny_n + nz_n * nz_n)
+    inv_mag = torch.where(mag > 1e-12, 1.0 / mag, torch.zeros_like(mag))
+    return nx_n * inv_mag, ny_n * inv_mag, nz_n * inv_mag
+
+
 def _near_wall_mask_no_wrap(solid: torch.Tensor) -> torch.Tensor:
     """Near-wall mask without periodic wrap (correct for 2-D extruded sims).
 
@@ -899,6 +931,8 @@ def bfl_wall_function_3d(
     near_mask: torch.Tensor | None = None,
     apply_bfl: bool = True,
     use_guo: bool = True,
+    bfl_wall_mode: str = "stationary",
+    wall_activation: float = 1.0,
 ) -> tuple[torch.Tensor, float, float]:
     """Mature BFL + wall function with Guo forcing (literature-recommended).
 
@@ -931,6 +965,12 @@ def bfl_wall_function_3d(
             use only the wall function (for flat walls where BFL is N/A).
         use_guo: If True, use Guo forcing (recommended).  If False, use
             simple forcing (legacy behaviour, for comparison).
+        bfl_wall_mode: ``"stationary"`` applies no-slip BFL.  The
+            ``"wall_model_slip"`` mode applies moving-wall BFL with the
+            local tangential fluid velocity, enforcing no penetration while
+            leaving tangential shear to the wall-stress model.
+        wall_activation: Smooth wall startup fraction in ``[0,1]`` applied
+            to both BFL reconstruction and wall shear.
 
     Returns:
         ``(f_corrected, drag_friction_x, drag_pressure_x)``.
@@ -938,21 +978,53 @@ def bfl_wall_function_3d(
     from .d3q19 import macroscopic3d
     from .bfl_d3q19 import bouzidi_bounce_back_d3q19
 
-    fluid = ~solid
     if near_mask is not None:
         near = near_mask
     else:
         near = _near_wall_mask_no_wrap(solid)
 
+    if bfl_wall_mode not in {"stationary", "wall_model_slip"}:
+        raise ValueError(
+            "bfl_wall_mode must be 'stationary' or 'wall_model_slip'"
+        )
+    if not 0.0 <= wall_activation <= 1.0:
+        raise ValueError("wall_activation must be in [0,1]")
+
+    # Wall normals are geometric and can be shared by the BFL slip closure
+    # and the subsequent wall-stress evaluation.
+    nx_n, ny_n, nz_n = compute_wall_normal(solid, near)
+
     # ── Step 1: BFL interpolated bounce-back (post-stream) ──
     if apply_bfl and fluid_boundary_mask is not None:
-        f = bouzidi_bounce_back_d3q19(f, f_prev, fluid_boundary_mask, q_field)
+        wall_velocity = None
+        wall_density = None
+        if bfl_wall_mode == "wall_model_slip":
+            rho_pre, ux_pre, uy_pre, uz_pre = macroscopic3d(f_prev)
+            slip_nx, slip_ny, slip_nz = compute_bfl_link_normal(
+                fluid_boundary_mask,
+            )
+            u_dot_n_pre = (
+                ux_pre * slip_nx + uy_pre * slip_ny + uz_pre * slip_nz
+            )
+            wall_velocity = (
+                ux_pre - u_dot_n_pre * slip_nx,
+                uy_pre - u_dot_n_pre * slip_ny,
+                uz_pre - u_dot_n_pre * slip_nz,
+            )
+            wall_density = rho_pre
+        f, bfl_force = bouzidi_bounce_back_d3q19(
+            f, f_prev, fluid_boundary_mask, q_field,
+            wall_velocity=wall_velocity, wall_density=wall_density,
+            boundary_fraction=wall_activation,
+            return_force=True,
+        )
+    else:
+        bfl_force = (0.0, 0.0, 0.0)
 
     # ── Step 2: Compute macroscopic fields ──
     rho, ux, uy, uz = macroscopic3d(f)
 
     # ── Step 3: Compute wall normal and tangential velocity ──
-    nx_n, ny_n, nz_n = compute_wall_normal(solid, near)
     u_dot_n = ux * nx_n + uy * ny_n + uz * nz_n
     ut_x = ux - u_dot_n * nx_n
     ut_y = uy - u_dot_n * ny_n
@@ -975,10 +1047,10 @@ def bfl_wall_function_3d(
     # With simple forcing, force is per unit area: F = −τ_w · û_tan
     near_f = near.to(f.dtype)
     if use_guo:
-        coef = -(tau_w / y_val) * near_f
+        coef = -(tau_w / y_val) * near_f * wall_activation
     else:
         # Legacy simple forcing (for comparison)
-        coef = -tau_w * near_f
+        coef = -tau_w * near_f * wall_activation
 
     fx = coef * (ut_x * inv_utan)
     fy = coef * (ut_y * inv_utan)
@@ -993,13 +1065,14 @@ def bfl_wall_function_3d(
 
     # ── Step 6: Compute drag ──
     # Friction drag = integrated wall shear (from τ_w)
-    drag_fric = float((tau_w * (ut_x * inv_utan) * near_f).sum().item())
+    drag_fric = float((
+        tau_w * (ut_x * inv_utan) * near_f * wall_activation
+    ).sum().item())
 
-    # Pressure drag = surface pressure integration
-    p = (rho - 1.0) / 3.0
-    sp = torch.roll(solid, 1, dims=2)
-    sm = torch.roll(solid, -1, dims=2)
-    drag_pres = float((-p * (sp.to(f.dtype) - sm.to(f.dtype)) * fluid.to(f.dtype)).sum().item())
+    # Conservative boundary force from link momentum exchange.  In
+    # wall-model-slip mode this is predominantly pressure/form drag; wall
+    # shear is supplied separately by the Guo stress above.
+    drag_pres = bfl_force[0]
 
     return f, drag_fric, drag_pres
 
