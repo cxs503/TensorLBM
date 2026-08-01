@@ -657,6 +657,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     the standalone 5% reference gate.  It is retained for Richardson fitting,
     not discarded or tuned.  The exact R12 successor started automatically on
     the same GPU, with R15 waiting on its exact PID.
+81. Production scheduling is advanced without terminating any CFD solve.  The
+    not-yet-started v6 L150 waiter was removed after the wet-area defect was
+    proven; the running v6 L90/L120 diagnostics continue to natural completion.
+    Three detached v7 launchers now wait separately on those exact two PIDs and
+    the migrated sphere R15 PID, then replace them in place on physical GPUs
+    1/2/3 with fresh v7 L90/L120/L150 runs.  This starts the corrected three-
+    grid campaign at the earliest safe time and avoids spending GPU3 on a v6
+    level that the new fail-closed assessor cannot admit.
 
 ## Rejected candidates
 
