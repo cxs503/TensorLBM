@@ -78,6 +78,7 @@ class StaticBlockAMRConfig:
     ghost: int = 1
     reflux: bool = True
     maximum_reflux_correction_fraction: float = 0.2
+    reflux_correction_stencil: str = "exterior_cells"
     regularize_restriction: bool = False
     regularize_prolongation: bool = False
     ghost_interpolation: str = "injection"
@@ -96,6 +97,12 @@ class StaticBlockAMRConfig:
         if not 0.0 < self.maximum_reflux_correction_fraction <= 1.0:
             raise ValueError(
                 "maximum_reflux_correction_fraction must lie in (0,1]",
+            )
+        if self.reflux_correction_stencil not in (
+            "exterior_cells", "crossing_links",
+        ):
+            raise ValueError(
+                "reflux_correction_stencil must be exterior_cells or crossing_links",
             )
         if self.interface_filter_width < 0:
             raise ValueError("interface_filter_width must be non-negative")
@@ -531,6 +538,7 @@ class StaticBlockAMR3D:
             maximum_correction_fraction=(
                 self.config.maximum_reflux_correction_fraction
             ),
+            correction_stencil=self.config.reflux_correction_stencil,
         )
         self.last_reflux = PopulationRefluxLedger(
             report.requested_inventory_correction,
@@ -762,6 +770,7 @@ class NestedStaticBlockAMR3D:
             coarse_transfer,
             fine_transfer,
             maximum_correction_fraction=config.maximum_reflux_correction_fraction,
+            correction_stencil=config.reflux_correction_stencil,
         )
         ledger = PopulationRefluxLedger(
             report.requested_inventory_correction,

@@ -28,6 +28,7 @@ class AMRInterfaceValidationConfig:
     steps: int = 24
     device: str = "cpu"
     regularize_prolongation: bool = False
+    reflux_correction_stencil: str = "exterior_cells"
     interface_filter_width: int = 0
     interface_filter_strength: float = 0.0
 
@@ -54,6 +55,12 @@ class AMRInterfaceValidationConfig:
         ):
             raise ValueError(
                 "interface filter width and strength must both be zero or positive",
+            )
+        if self.reflux_correction_stencil not in (
+            "exterior_cells", "crossing_links",
+        ):
+            raise ValueError(
+                "reflux_correction_stencil must be exterior_cells or crossing_links",
             )
 
 
@@ -127,6 +134,7 @@ def run_amr_interface_validation(
             config.box,
             tau_coarse=config.tau_coarse,
             regularize_prolongation=config.regularize_prolongation,
+            reflux_correction_stencil=config.reflux_correction_stencil,
             interface_filter_width=config.interface_filter_width,
             interface_filter_strength=config.interface_filter_strength,
         ),
@@ -237,6 +245,7 @@ def run_amr_interface_validation(
             "steps": config.steps,
             "device": config.device,
             "regularize_prolongation": config.regularize_prolongation,
+            "reflux_correction_stencil": config.reflux_correction_stencil,
             "interface_filter_width": config.interface_filter_width,
             "interface_filter_strength": config.interface_filter_strength,
             "reflux_method": "face_local_conserved_moment_flux",

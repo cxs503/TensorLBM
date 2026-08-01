@@ -97,6 +97,11 @@ if [[ $ghost_interpolation != injection && $ghost_interpolation != trilinear ]];
   echo "TENSORLBM_GHOST_INTERPOLATION must be injection or trilinear" >&2
   exit 2
 fi
+reflux_correction_stencil=${TENSORLBM_REFLUX_CORRECTION_STENCIL:-exterior_cells}
+if [[ $reflux_correction_stencil != exterior_cells && $reflux_correction_stencil != crossing_links ]]; then
+  echo "TENSORLBM_REFLUX_CORRECTION_STENCIL must be exterior_cells or crossing_links" >&2
+  exit 2
+fi
 transfer_positivity=()
 if [[ ${TENSORLBM_ENFORCE_TRANSFER_POSITIVITY:-0} == 1 ]]; then
   transfer_positivity=(--enforce-transfer-positivity)
@@ -147,6 +152,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --far-field-mode non_equilibrium_extrapolation \
   --memory-bytes-per-cell 742 \
   --ghost-interpolation "$ghost_interpolation" \
+  --reflux-correction-stencil "$reflux_correction_stencil" \
   --interface-filter-width "$interface_filter_width" \
   --interface-filter-strength "$interface_filter_strength" \
   --checkpoint "$checkpoint" --checkpoint-interval "$checkpoint_interval" \

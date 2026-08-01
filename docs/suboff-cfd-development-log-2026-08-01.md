@@ -1421,6 +1421,18 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Wall-law shear is therefore not the sole trigger; the next common-module
      work targets conservative space-time interface transfer and the normal
      geometry/interface coupling rather than retuning the wall law.
+158. Reflux now has an opt-in `crossing_links` stencil that closes mass and
+     three-component momentum using a weighted minimum-norm projection over
+     only directions that physically cross the refinement boundary.  Unlike
+     the legacy exterior-cell stencil, it cannot modify the rest population
+     or tangential/non-crossing directions.  Forty-four focused flux-register,
+     single/nested AMR and pulse-validation tests pass.  In the matched 24-step
+     pulse A/B it preserves the `1.0172e-7` mass drift, lowers the maximum
+     conserved correction from `2.5527e-4` to `7.9711e-5`, lowers reflux
+     residual from `2.1828e-11` to `7.2760e-12`, and improves global/refined
+     density plus refined velocity RMS.  Interface density RMS rises by 0.40%,
+     so the method is pulse-admitted for a strict SUBOFF A/B but remains
+     non-default until that high-Re test passes.
 
 ## Rejected candidates
 

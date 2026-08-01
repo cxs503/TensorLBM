@@ -26,6 +26,7 @@ def _args(
     regularize_restriction: bool = False,
     regularize_prolongation: bool = False,
     ghost_interpolation: str = "injection",
+    reflux_correction_stencil: str = "exterior_cells",
     enforce_transfer_positivity: bool = False,
     disable_wall_stress: bool = False,
     collision_model: str = "cumulant_smagorinsky",
@@ -47,6 +48,7 @@ def _args(
         "--resolved-reynolds", "2000", "--sponge-width", "3",
         "--memory-bytes-per-cell", "742",
         "--ghost-interpolation", ghost_interpolation,
+        "--reflux-correction-stencil", reflux_correction_stencil,
         "--collision-model", collision_model,
         "--kbc-max-iterations", "4",
         "--omega-bulk", str(omega_bulk),
@@ -162,6 +164,17 @@ def test_nested_smoke_can_use_cell_centered_trilinear_ghosts(tmp_path: Path) -> 
     result = MODULE.run(_args(tmp_path, steps=1, ghost_interpolation="trilinear"))
 
     assert result["configuration"]["ghost_interpolation"] == "trilinear"
+    assert result["result"]["finite"] is True
+
+
+def test_nested_smoke_can_use_crossing_link_reflux(tmp_path: Path) -> None:
+    result = MODULE.run(_args(
+        tmp_path,
+        steps=1,
+        reflux_correction_stencil="crossing_links",
+    ))
+
+    assert result["configuration"]["reflux_correction_stencil"] == "crossing_links"
     assert result["result"]["finite"] is True
 
 
@@ -315,6 +328,7 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("hull_type")
     state["configuration"].pop("regularize_restriction")
     state["configuration"].pop("regularize_prolongation")
+    state["configuration"].pop("reflux_correction_stencil")
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
     state["configuration"].pop("interface_filter_width")
@@ -347,6 +361,7 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     state["configuration"].pop("regularize_restriction")
     state["configuration"].pop("regularize_prolongation")
+    state["configuration"].pop("reflux_correction_stencil")
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
     state["configuration"].pop("interface_filter_width")

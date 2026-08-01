@@ -26,6 +26,7 @@ _IDENTITY_FIELDS = (
     "kbc_max_iterations",
     "regularize_restriction",
     "regularize_prolongation",
+    "reflux_correction_stencil",
     "ghost_interpolation",
     "enforce_transfer_positivity",
     "interface_filter_width",

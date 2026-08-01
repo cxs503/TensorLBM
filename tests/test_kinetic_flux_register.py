@@ -11,6 +11,7 @@ from tensorlbm.kinetic_flux_register import (
     build_kinetic_interface_links,
     conserved_population_moments,
     observe_kinetic_interface_transfer,
+    project_onto_active_conserved_moments,
     project_onto_conserved_moments,
 )
 
@@ -71,6 +72,29 @@ def test_reflux_projection_preserves_only_conserved_moments() -> None:
     assert not torch.allclose(projected, mismatch)
 
 
+def test_active_reflux_projection_uses_only_crossing_directions() -> None:
+    torch.manual_seed(29)
+    mismatch = torch.randn(19, dtype=torch.float64)
+    active = torch.ones(19, dtype=torch.bool)
+    active[0] = False
+    active[7] = False
+
+    projected = project_onto_active_conserved_moments(mismatch, active)
+    c = C19.to(dtype=mismatch.dtype)
+
+    assert projected[0].item() == 0.0
+    assert projected[7].item() == 0.0
+    assert projected.sum().item() == pytest.approx(
+        mismatch.sum().item(), abs=2e-14,
+    )
+    torch.testing.assert_close(
+        (projected[:, None] * c).sum(dim=0),
+        (mismatch[:, None] * c).sum(dim=0),
+        rtol=0.0,
+        atol=2e-14,
+    )
+
+
 def test_population_inventory_moments_are_explicit() -> None:
     inventory = torch.zeros(19, dtype=torch.float64)
     inventory[0] = 2.0
@@ -122,6 +146,53 @@ def test_reflux_is_local_to_exterior_interface_links_and_conservative() -> None:
         (corrected - before).sum(dim=(1, 2, 3))[:, None] * c
     ).sum(dim=0)
     assert torch.allclose(actual_momentum, expected_momentum, atol=2e-14)
+
+
+def test_crossing_link_reflux_changes_only_actual_stream_links() -> None:
+    shape = (8, 9, 10)
+    inside = _box(shape)
+    links = build_kinetic_interface_links(inside, q=19)
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.03, dtype=torch.float64)
+    zero = torch.zeros_like(rho)
+    coarse = equilibrium3d(rho, ux, zero, zero)
+    before = coarse.clone()
+    base = observe_kinetic_interface_transfer(coarse, links)
+    fine = KineticInterfaceTransfer(
+        outgoing=base.outgoing * 1.001,
+        incoming=base.incoming * 0.999,
+    )
+
+    corrected, report = apply_face_local_reflux(
+        coarse,
+        links,
+        base,
+        fine,
+        correction_stencil="crossing_links",
+    )
+
+    receiving = torch.zeros_like(links.outgoing_origins)
+    for direction in range(1, 19):
+        cx, cy, cz = (int(value) for value in C19[direction].tolist())
+        receiving[direction] = torch.roll(
+            links.outgoing_origins[direction],
+            shifts=(cz, cy, cx),
+            dims=(0, 1, 2),
+        )
+    crossing = receiving | links.incoming_origins
+    changed = (corrected - before).abs() > 0.0
+    assert not bool((changed & ~crossing).any())
+    assert not bool(changed[0].any())
+    expected_mass, expected_momentum = conserved_population_moments(
+        fine.net_outgoing - base.net_outgoing,
+    )
+    actual_inventory = (corrected - before).sum(dim=(1, 2, 3))
+    actual_mass, actual_momentum = conserved_population_moments(actual_inventory)
+    assert actual_mass.item() == pytest.approx(expected_mass.item(), abs=2e-14)
+    torch.testing.assert_close(
+        actual_momentum, expected_momentum, rtol=0.0, atol=2e-14,
+    )
+    assert report.mass_residual == pytest.approx(0.0, abs=2e-14)
 
 
 def test_reflux_limiter_exposes_unapplied_residual() -> None:

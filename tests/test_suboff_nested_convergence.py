@@ -31,6 +31,7 @@ def _record(length: int, resistance: float) -> dict:
             "kbc_max_iterations": 12,
             "regularize_restriction": True,
             "regularize_prolongation": True,
+            "reflux_correction_stencil": "crossing_links",
             "ghost_interpolation": "trilinear",
             "enforce_transfer_positivity": True,
             "interface_filter_width": 4,
