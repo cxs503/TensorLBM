@@ -22,7 +22,11 @@
     "remote_log": "results/amr_campaign_20260801/suboff-nested-v16-l90-rejected-crossing-link-step1440.log",
     "remote_log_sha256": "874b26a24ac420294b20dd593dd3951c9dfc09e8ee92604af86646bd063d60f8",
     "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v16-l90-crossing-link-reflux-2400.ckpt",
-    "remote_checkpoint_sha256": "cee170dc42fa64cba37f717dc7e301be290ba4e3f7e24dbbbf3fbe789c00de0c"
+    "remote_checkpoint_sha256": "cee170dc42fa64cba37f717dc7e301be290ba4e3f7e24dbbbf3fbe789c00de0c",
+    "reproduction_log": "results/amr_campaign_20260801/suboff-nested-v18-l90-rejected-crossing-link-reproduction-step1440.log",
+    "reproduction_log_sha256": "d55de5ab01c53811e2bf9f9155ad7cfc15d316205668f293691c18a21b894eff",
+    "reproduction_checkpoint_sha256": "400542944be97738978ec4451cbc0addf783ebc441df8d897562e358f23be45f"
   },
-  "conclusion": "The pulse-admitted crossing-link stencil fails earlier than the baseline under high-Re SUBOFF conditions. It is retained as an experimental common option but withheld from production defaults and convergence claims."
+  "reproduced": true,
+  "conclusion": "The pulse-admitted crossing-link stencil fails earlier than the baseline under high-Re SUBOFF conditions and reproduces the same state trajectory with bidirectional transfer protection enabled. It is retained as an experimental common option but withheld from production defaults and convergence claims."
 }

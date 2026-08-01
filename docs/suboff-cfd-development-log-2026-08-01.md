@@ -1558,6 +1558,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      non-equilibrium stress can only increase tau, and invalid states fail
      closed.  Stability alone will not promote a coefficient without this
      dissipation audit and subsequent force/grid sensitivity.
+173. The crossing-link reflux failure reproduces exactly in v18 with
+     bidirectional transfer positivity: the level health, raw mismatch,
+     step-1440 population floor and peak speed are identical to v16, while both
+     transfer limiters remain inactive until failure.  Reproduction
+     log/checkpoint SHA-256 values are
+     `d55de5ab01c53811e2bf9f9155ad7cfc15d316205668f293691c18a21b894eff`
+     and `400542944be97738978ec4451cbc0addf783ebc441df8d897562e358f23be45f`.
+     The negative result is therefore deterministic rather than a GPU anomaly.
+     GPU1 now supplies the `C_s=0.20` upper sensitivity point.
 
 ## Rejected candidates
 
