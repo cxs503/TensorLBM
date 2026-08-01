@@ -665,6 +665,22 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     1/2/3 with fresh v7 L90/L120/L150 runs.  This starts the corrected three-
     grid campaign at the earliest safe time and avoids spending GPU3 on a v6
     level that the new fail-closed assessor cannot admit.
+82. The migrated sphere R15 diagnostic completes its explicit 4000-step,
+    eight-convective-time tail with Cd=1.145560 by control volume and 1.145629
+    by BFL.  Observer spread is 0.00603%, the 95% confidence half-width is
+    0.00611%, drift/trend are 0.0104%/0.0192%, and reference error is 4.93%, so
+    every single-grid v3 gate passes.  Its v2-checkpoint SHA-256 and migration
+    policy remain recorded.  It is not inserted into the fresh R9/R12/R15 fit
+    because CV margin, ramp, warmup and report intervals are not the exact
+    3:4:5 configuration of that sequence.
+83. The first detached v7 L150 handoff exposed a launcher-only import failure:
+    the remote Python environment did not have the repository `src` directory
+    on `PYTHONPATH`.  It failed before geometry/grid allocation and produced no
+    CFD record.  Both common launchers now export the current checkout's `src`
+    path and provide a no-allocation `TENSORLBM_PREFLIGHT_ONLY=1` import probe;
+    two subprocess regression tests execute that probe.  The failed log is
+    retained, fresh waiters replace the affected exact PIDs, and corrected v7
+    L150 is running as PID 1442221 on physical GPU3.
 
 ## Rejected candidates
 
