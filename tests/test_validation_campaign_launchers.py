@@ -19,6 +19,7 @@ ROOT = Path(__file__).parents[1]
         ("run_suboff_nested_v4_continuation_level.sh", "L90"),
         ("run_suboff_nested_v10_scaled_level.sh", "L90"),
         ("run_suboff_nested_v11_scaled_wall_level.sh", "L90"),
+        ("run_suboff_nested_v12_four_level_l90.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_domain_width.sh", "W30"),
@@ -109,6 +110,50 @@ def test_nested_v4_launcher_expands_audited_l150_continuation(
     ] == "7.5"
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-nested-v4-equivalent-l150-20k.json" in output
+
+
+def test_four_level_l90_launcher_preserves_physical_cv_and_fails_closed_memory(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env.update({
+        "TENSORLBM_PYTHON": str(fake_python),
+        "TENSORLBM_RUN_PREFLIGHT_ONLY": "1",
+    })
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_nested_v12_four_level_l90.sh"),
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--deep-wall-margin") + 1] == "13"
+    assert arguments[arguments.index("--deep-wake-cells") + 1] == "26"
+    assert arguments[arguments.index("--cv-margin") + 1] == "16"
+    assert arguments[arguments.index("--aux-cv-margins") + 1] == "8,24"
+    assert arguments[arguments.index("--memory-bytes-per-cell") + 1] == "943"
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
+        "4.21875"
+    )
+    assert arguments[arguments.index("--collision-model") + 1] == "natural_kbc"
+    assert "--preflight-only" in arguments
 
 
 def test_nested_launcher_routes_optional_inlet_sponge(tmp_path: Path) -> None:

@@ -40,6 +40,29 @@ case "$level" in
   *) usage ;;
 esac
 
+steps=${TENSORLBM_STEPS:-$steps}
+warmup=${TENSORLBM_WARMUP_STEPS:-$warmup}
+statistics=${TENSORLBM_STATISTICS_WINDOW_STEPS:-$statistics}
+ramp=${TENSORLBM_RAMP_STEPS:-$ramp}
+report=${TENSORLBM_REPORT_INTERVAL:-$report}
+checkpoint_interval=${TENSORLBM_CHECKPOINT_INTERVAL:-$checkpoint_interval}
+for value in "$steps" "$report" "$checkpoint_interval"; do
+  [[ $value =~ ^[1-9][0-9]*$ ]] || {
+    echo "step/report/checkpoint overrides must be positive integers" >&2
+    exit 2
+  }
+done
+for value in "$warmup" "$statistics" "$ramp"; do
+  [[ $value =~ ^[0-9]+$ ]] || {
+    echo "warmup/statistics/ramp overrides must be non-negative integers" >&2
+    exit 2
+  }
+done
+if (( warmup >= steps || statistics > steps - warmup || ramp > steps )); then
+  echo "warmup/statistics/ramp overrides do not fit the requested steps" >&2
+  exit 2
+fi
+
 if [[ -n "$wait_for_pid" ]]; then
   [[ "$wait_for_pid" =~ ^[0-9]+$ ]] || usage
   while kill -0 "$wait_for_pid" 2>/dev/null; do
@@ -108,6 +131,8 @@ if [[ ${TENSORLBM_ENFORCE_TRANSFER_POSITIVITY:-0} == 1 ]]; then
 fi
 inner_wall_margin=${TENSORLBM_INNER_WALL_MARGIN:-4}
 inner_wake_cells=${TENSORLBM_INNER_WAKE_CELLS:-8}
+deep_wall_margin=${TENSORLBM_DEEP_WALL_MARGIN:-0}
+deep_wake_cells=${TENSORLBM_DEEP_WAKE_CELLS:-0}
 cv_margin=${TENSORLBM_CV_MARGIN:-4}
 aux_cv_margins=${TENSORLBM_AUX_CV_MARGINS:-2,6}
 resolved_reynolds_start=${TENSORLBM_RESOLVED_REYNOLDS_START:-0}
@@ -126,6 +151,14 @@ case "$collision_model" in
   *) echo "unsupported TENSORLBM_COLLISION_MODEL: $collision_model" >&2; exit 2 ;;
 esac
 stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1}
+memory_bytes_per_cell=${TENSORLBM_MEMORY_BYTES_PER_CELL:-742}
+run_preflight=()
+if [[ ${TENSORLBM_RUN_PREFLIGHT_ONLY:-0} == 1 ]]; then
+  run_preflight=(--preflight-only)
+elif [[ ${TENSORLBM_RUN_PREFLIGHT_ONLY:-0} != 0 ]]; then
+  echo "TENSORLBM_RUN_PREFLIGHT_ONLY must be 0 or 1" >&2
+  exit 2
+fi
 sponge_inlet=()
 if [[ ${TENSORLBM_SPONGE_INLET:-0} == 1 ]]; then
   sponge_inlet=(--sponge-inlet)
@@ -149,6 +182,8 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --outer-wall-margin "$outer_wall" --outer-wake-cells "$outer_wake" \
   --inner-wall-margin "$inner_wall_margin" \
   --inner-wake-cells "$inner_wake_cells" \
+  --deep-wall-margin "$deep_wall_margin" \
+  --deep-wake-cells "$deep_wake_cells" \
   --cv-margin "$cv_margin" --aux-cv-margins "$aux_cv_margins" \
   --surface-force-interval "$surface" \
   --steps "$steps" --warmup-steps "$warmup" \
@@ -170,11 +205,12 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --sponge-width "$sponge" --sponge-strength 0.3 \
   "${sponge_inlet[@]}" \
   --far-field-mode non_equilibrium_extrapolation \
-  --memory-bytes-per-cell 742 \
+  --memory-bytes-per-cell "$memory_bytes_per_cell" \
   --ghost-interpolation "$ghost_interpolation" \
   --reflux-correction-stencil "$reflux_correction_stencil" \
   --interface-filter-width "$interface_filter_width" \
   --interface-filter-strength "$interface_filter_strength" \
   --checkpoint "$checkpoint" --checkpoint-interval "$checkpoint_interval" \
   --output "$output" "${restriction_filter[@]}" \
-  "${prolongation_filter[@]}" "${transfer_positivity[@]}" "${resume[@]}"
+  "${prolongation_filter[@]}" "${transfer_positivity[@]}" \
+  "${run_preflight[@]}" "${resume[@]}"
