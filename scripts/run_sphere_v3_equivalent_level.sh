@@ -40,6 +40,9 @@ cd "$root"
 mkdir -p "$result_dir"
 python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
 export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
+if [[ ${TENSORLBM_PREFLIGHT_ONLY:-0} == 1 ]]; then
+  exec "$python" -c 'import tensorlbm; print(tensorlbm.__file__)'
+fi
 stem="$result_dir/sphere-v3-equivalent-r${radius}-${steps}"
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
