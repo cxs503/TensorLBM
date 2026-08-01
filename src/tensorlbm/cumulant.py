@@ -547,6 +547,73 @@ def gradient_sgs_effective_tau_d3q19(
     return _nu_t_to_tau_eff(tau, nu_t)
 
 
+def summarize_gradient_sgs_effective_tau_d3q19(
+    f: torch.Tensor,
+    *,
+    tau: float,
+    model: str,
+    coefficient: float,
+    chunk_cells: int = 262_144,
+) -> dict[str, float]:
+    """Summarize WALE/Vreman relaxation in z-slabs with edge-safe halos.
+
+    Gradient closures cannot be audited by flattening independent chunks:
+    doing so destroys spatial adjacency.  This routine retains complete x-y
+    planes and adds two neighbouring z-planes on either side of every slab.
+    One plane is sufficient for centred interior differences; the second is
+    required when a one-plane first/last slab contains a physical edge using
+    the second-order one-sided stencil.  The result therefore matches an
+    unchunked evaluation while peak memory stays bounded.
+    """
+    if chunk_cells < 1:
+        raise ValueError("chunk_cells must be positive")
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    nz, ny, nx = f.shape[1:]
+    planes_per_chunk = max(1, chunk_cells // (ny * nx))
+    minimum = math.inf
+    maximum = -math.inf
+    total = 0.0
+    count = 0
+    for start in range(0, nz, planes_per_chunk):
+        stop = min(start + planes_per_chunk, nz)
+        halo_start = max(0, start - 2)
+        halo_stop = min(nz, stop + 2)
+        effective_with_halo = gradient_sgs_effective_tau_d3q19(
+            f[:, halo_start:halo_stop],
+            tau=tau,
+            model=model,
+            coefficient=coefficient,
+        )
+        effective = effective_with_halo[
+            start - halo_start:stop - halo_start
+        ]
+        minimum = min(minimum, float(effective.min().item()))
+        maximum = max(maximum, float(effective.max().item()))
+        total += float(effective.sum(dtype=torch.float64).item())
+        count += effective.numel()
+    mean = total / count
+    molecular_viscosity = (tau - 0.5) / 3.0
+    mean_eddy_viscosity = max(0.0, (mean - tau) / 3.0)
+    maximum_eddy_viscosity = max(0.0, (maximum - tau) / 3.0)
+    return {
+        "cell_count": float(count),
+        "molecular_tau": tau,
+        "effective_tau_minimum": minimum,
+        "effective_tau_mean": mean,
+        "effective_tau_maximum": maximum,
+        "molecular_kinematic_viscosity": molecular_viscosity,
+        "mean_eddy_kinematic_viscosity": mean_eddy_viscosity,
+        "maximum_eddy_kinematic_viscosity": maximum_eddy_viscosity,
+        "mean_eddy_to_molecular_viscosity_ratio": (
+            mean_eddy_viscosity / molecular_viscosity
+        ),
+        "maximum_eddy_to_molecular_viscosity_ratio": (
+            maximum_eddy_viscosity / molecular_viscosity
+        ),
+    }
+
+
 def smagorinsky_effective_tau_d3q19(
     f: torch.Tensor,
     *,
@@ -649,6 +716,7 @@ __all__ = [
     "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
     "gradient_sgs_effective_tau_d3q19",
+    "summarize_gradient_sgs_effective_tau_d3q19",
     "smagorinsky_effective_tau_d3q19",
     "summarize_smagorinsky_effective_tau_d3q19",
 ]
