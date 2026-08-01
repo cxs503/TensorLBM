@@ -50,6 +50,7 @@ from tensorlbm.static_block_amr import (
     StaticBlockAMR3D,
     StaticBlockAMRConfig,
 )
+from tensorlbm.surface_area_weights import bfl_surface_area_weights
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import (
     build_fine_suboff_mask,
@@ -212,15 +213,37 @@ def run(args: argparse.Namespace) -> dict:
             args.hull_length * 2.0, args.hull_length * 2.0 / (2.0 * 8.57),
             config=config,
         )
-        fine_area_weight = torch.full_like(
-            fine_near,
-            float(fine_geometry["wetted_area_lu2"])
-            / max(float(fine_near.sum().item()), 1.0),
-            dtype=amr.fine_f.dtype,
+        fine_area_weight, surface_area_diagnostics = bfl_surface_area_weights(
+            bfl_mask,
+            (fine_surface.nx_n, fine_surface.ny_n, fine_surface.nz_n),
+            reference_area=float(fine_geometry["wetted_area_lu2"]),
+            boundary_mask=fine_near,
         )
     else:
         fine_surface = SurfaceMesh.from_gradient(fine_solid_g, fine_near)
-        fine_area_weight = None
+        bare_solid, _ = build_suboff_mask(
+            "bare_hull", nx_f, ny_f, nz_f,
+            cx=fine_center[0], cy=fine_center[1], cz=fine_center[2],
+            length=args.hull_length * 2.0, config=config, device=device,
+        )
+        bare_near = get_near_wall_3d(bare_solid)
+        bare_surface = SurfaceMesh.from_gradient(bare_solid, bare_near)
+        bare_bfl_mask, _ = compute_q_suboff(
+            nx_f, ny_f, nz_f, *fine_center, args.hull_length * 2.0,
+            hull_type="bare_hull", config=config, device=device,
+        )
+        _, bare_area_diagnostics = bfl_surface_area_weights(
+            bare_bfl_mask,
+            (bare_surface.nx_n, bare_surface.ny_n, bare_surface.nz_n),
+            reference_area=float(fine_geometry["wetted_area_lu2"]),
+            boundary_mask=bare_near,
+        )
+        fine_area_weight, surface_area_diagnostics = bfl_surface_area_weights(
+            bfl_mask,
+            (fine_surface.nx_n, fine_surface.ny_n, fine_surface.nz_n),
+            calibration_factor=bare_area_diagnostics.calibration_factor,
+            boundary_mask=fine_near,
+        )
     fine_solid_q = fine_solid_g.unsqueeze(0).expand_as(amr.fine_f)
     fine_indices = fine_solid_g.nonzero(as_tuple=False)
     z_min, y_min, x_min = (
@@ -644,7 +667,10 @@ def run(args: argparse.Namespace) -> dict:
             "estimated_peak_gib": plan.estimated_peak_gib(),
             "measured_peak_allocated_gib": peak_gib,
         },
-        "geometry": fine_geometry | {"appendage_halfway_links": appendage_links},
+        "geometry": fine_geometry | {
+            "appendage_halfway_links": appendage_links,
+            "surface_area_weighting": vars(surface_area_diagnostics),
+        },
         "result": {
             "mean_resistance_n": mean_force,
             "mean_bfl_pressure_n_diagnostic": (

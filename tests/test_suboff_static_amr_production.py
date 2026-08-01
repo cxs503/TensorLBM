@@ -4,6 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
 import torch
 
 EXAMPLES = Path(__file__).parents[1] / "examples"
@@ -53,6 +54,9 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
     assert resumed["acceptance"]["physical_validation"] is False
+    assert resumed["geometry"]["surface_area_weighting"][
+        "calibrated_area"
+    ] == pytest.approx(resumed["geometry"]["wetted_area_lu2"], rel=1e-6)
     assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v2"
     assert state["step"] == 6
     assert len(state["force_history"]) == 4

@@ -700,6 +700,10 @@ from .flat_plate_wall_model import (
     run_flat_plate_wall_model,
 )
 from .flat_plate_convergence import assess_flat_plate_convergence
+from .surface_area_weights import (
+    SurfaceAreaWeightDiagnostics,
+    bfl_surface_area_weights,
+)
 
 __all__ = [
     "__version__",
@@ -762,6 +766,8 @@ __all__ = [
     "ittc_1957_friction_coefficient",
     "run_flat_plate_wall_model",
     "assess_flat_plate_convergence",
+    "SurfaceAreaWeightDiagnostics",
+    "bfl_surface_area_weights",
     # D2Q9 lattice
     "C",
     "W",
