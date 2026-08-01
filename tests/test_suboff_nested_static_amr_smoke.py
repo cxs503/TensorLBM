@@ -27,6 +27,7 @@ def _args(
     enforce_transfer_positivity: bool = False,
     disable_wall_stress: bool = False,
     collision_model: str = "cumulant_smagorinsky",
+    omega_bulk: float = 1.0,
 ):
     values = [
         "--device", "cpu",
@@ -44,6 +45,7 @@ def _args(
         "--ghost-interpolation", ghost_interpolation,
         "--collision-model", collision_model,
         "--kbc-max-iterations", "4",
+        "--omega-bulk", str(omega_bulk),
         "--output", str(tmp_path / "nested-smoke.json"),
         "--checkpoint", str(tmp_path / "nested-smoke.ckpt"),
         "--checkpoint-interval", "1",
@@ -173,6 +175,13 @@ def test_nested_smoke_dispatches_entropic_kbc_collision(tmp_path: Path) -> None:
     assert result["result"]["finite"] is True
 
 
+def test_nested_smoke_records_independent_bulk_relaxation(tmp_path: Path) -> None:
+    result = MODULE.run(_args(tmp_path, steps=1, omega_bulk=0.5))
+
+    assert result["configuration"]["omega_bulk"] == 0.5
+    assert result["result"]["finite"] is True
+
+
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
@@ -185,6 +194,7 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("wall_stress_enabled")
     state["configuration"].pop("collision_model")
     state["configuration"].pop("kbc_max_iterations")
+    state["configuration"].pop("omega_bulk")
     state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
     torch.save(state, checkpoint)
 
@@ -206,6 +216,7 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("wall_stress_enabled")
     state["configuration"].pop("collision_model")
     state["configuration"].pop("kbc_max_iterations")
+    state["configuration"].pop("omega_bulk")
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
