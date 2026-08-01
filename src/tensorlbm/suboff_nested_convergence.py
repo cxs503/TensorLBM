@@ -120,6 +120,8 @@ def assess_suboff_nested_convergence(
             "aux_cv_margins", "stress_exchange_distance",
             "steps", "warmup_steps", "statistics_window_steps",
             "ramp_steps", "report_interval", "wall_diagnostic_interval",
+            "resolved_wall_normal_ramp_steps",
+            "resolved_wall_shear_ramp_steps",
             "surface_force_interval",
             "health_interval", "resolved_reynolds_start",
             "viscosity_ramp_start_step", "viscosity_ramp_end_step",
@@ -192,6 +194,7 @@ def assess_suboff_nested_convergence(
     time_ratios: dict[str, list[float]] = {}
     for field in (
         "steps", "warmup_steps", "statistics_window_steps", "ramp_steps",
+        "resolved_wall_normal_ramp_steps", "resolved_wall_shear_ramp_steps",
         "report_interval", "wall_diagnostic_interval", "surface_force_interval",
         "health_interval", "viscosity_ramp_start_step",
         "viscosity_ramp_end_step",
