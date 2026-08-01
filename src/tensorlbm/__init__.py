@@ -663,6 +663,10 @@ from .sponge_layer import (
     build_sponge_sigma_3d,
     smoothstep5,
 )
+from .population_positivity import (
+    PositivityDiagnostics,
+    limit_nonequilibrium_for_positivity,
+)
 
 __all__ = [
     "__version__",
@@ -700,6 +704,8 @@ __all__ = [
     "apply_equilibrium_difference_sponge",
     "build_sponge_sigma_3d",
     "smoothstep5",
+    "PositivityDiagnostics",
+    "limit_nonequilibrium_for_positivity",
     # D2Q9 lattice
     "C",
     "W",

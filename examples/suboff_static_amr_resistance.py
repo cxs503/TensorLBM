@@ -36,6 +36,7 @@ from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.drag_pressure import get_near_wall_3d
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
+from tensorlbm.population_positivity import limit_nonequilibrium_for_positivity
 from tensorlbm.solver3d import stream3d
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
@@ -200,17 +201,23 @@ def run(args: argparse.Namespace) -> dict:
         device=device,
     )
     force_samples: list[tuple[float, float, float]] = []
+    positivity_fractions: list[float] = []
     current_step = 0
 
     def advance(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
         def collide(state: torch.Tensor) -> torch.Tensor:
             if args.collision_model == "cumulant_smagorinsky":
-                return collide_cumulant_d3q19(
+                result = collide_cumulant_d3q19(
                     state, tau=tau, C_s=args.cs_smag,
                 )
-            if args.les_model == "wale":
-                return collide_wale_mrt3d(state, tau, C_w=args.cw_wale)
-            return collide_smagorinsky_mrt3d(state, tau, C_s=args.cs_smag)
+            elif args.les_model == "wale":
+                result = collide_wale_mrt3d(state, tau, C_w=args.cw_wale)
+            else:
+                result = collide_smagorinsky_mrt3d(state, tau, C_s=args.cs_smag)
+            if not args.disable_positivity_limiter:
+                result, diagnostic = limit_nonequilibrium_for_positivity(result)
+                positivity_fractions.append(diagnostic.limited_fraction)
+            return result
 
         if level == 0:
             out = stream3d(collide(f))
@@ -234,6 +241,9 @@ def run(args: argparse.Namespace) -> dict:
             bfl_wall_mode="wall_model_slip", wall_activation=activation,
             apply_wall_stress=not args.diagnostic_uncoupled_wall_stress,
         )
+        if not args.disable_positivity_limiter:
+            out, diagnostic = limit_nonequilibrium_for_positivity(out)
+            positivity_fractions.append(diagnostic.limited_fraction)
         cv_force = float(observe_control_volume_force(
             before, out, post_collision, fine_cv, solid=fine_solid_g,
         ).force_on_body[0].item())
@@ -252,6 +262,7 @@ def run(args: argparse.Namespace) -> dict:
     recent_wall_shear: list[float] = []
     for current_step in range(1, args.steps + 1):
         force_samples.clear()
+        positivity_fractions.clear()
         ledger = amr.step(advance)
         pressure = sum(item[0] for item in force_samples) / len(force_samples)
         friction = sum(item[1] for item in force_samples) / len(force_samples)
@@ -281,6 +292,9 @@ def run(args: argparse.Namespace) -> dict:
                 ),
                 "error_pct": abs(mean_force - point.resistance_n) / point.resistance_n * 100.0,
                 "reflux_mass_residual": ledger.mass_residual,
+                "maximum_positivity_limited_fraction": max(
+                    positivity_fractions, default=0.0,
+                ),
             }
             history.append(row)
             print(
@@ -312,6 +326,7 @@ def run(args: argparse.Namespace) -> dict:
                 args.cw_wale if args.les_model == "wale" else args.cs_smag
             ),
             "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
+            "positivity_limiter_enabled": not args.disable_positivity_limiter,
         },
         "mesh": {
             "coarse_cells": plan.coarse_cells,
@@ -365,6 +380,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cv-margin", type=int, default=8)
     p.add_argument("--disable-reflux", action="store_true")
     p.add_argument("--diagnostic-uncoupled-wall-stress", action="store_true")
+    p.add_argument("--disable-positivity-limiter", action="store_true")
     p.add_argument("--steps", type=int, default=5000)
     p.add_argument("--report-interval", type=int, default=100)
     p.add_argument("--average-window", type=int, default=500)
