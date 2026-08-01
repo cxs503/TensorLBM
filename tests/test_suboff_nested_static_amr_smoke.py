@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import torch
+
 EXAMPLES = Path(__file__).parents[1] / "examples"
 sys.path.insert(0, str(EXAMPLES))
 MODULE_PATH = EXAMPLES / "suboff_nested_static_amr_smoke.py"
@@ -91,3 +93,18 @@ def test_nested_aff8_smoke_records_appendage_resolution(tmp_path: Path) -> None:
     assert resolution["sail_only_cells"] > 0
     assert resolution["fin_only_cells"] > 0
     assert result["physical_validation"] is False
+
+
+def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
+    MODULE.run(_args(tmp_path, steps=1))
+    checkpoint = tmp_path / "nested-smoke.ckpt"
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"]["schema_version"] = 2
+    state["configuration"].pop("hull_type")
+    state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
+    torch.save(state, checkpoint)
+
+    resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
+
+    assert resumed["configuration"]["resumed_legacy_v2_checkpoint"] is True
+    assert resumed["configuration"]["resumed_from_step"] == 1

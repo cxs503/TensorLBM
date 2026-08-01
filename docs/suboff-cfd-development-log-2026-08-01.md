@@ -1032,6 +1032,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      geometry explicitly says `bare_hull`, normalises all source identities and
      requires the three hull types to agree.  It never substitutes a default or
      accepts an unknown/mixed geometry.
+118. v3 restart has a narrow audited bridge for the active L150 v2 checkpoint:
+     only `bare_hull` may migrate, and only when the stored signature equals
+     the current signature after removing exactly the newly explicit hull type
+     and changing version 3 to 2.  Every other physics/grid/cadence field must
+     match byte-for-byte; AFF-8 and partial matches fail.  The resumed output
+     records `resumed_legacy_v2_checkpoint=true`, and its next atomic save is
+     native v3.  A regression rewrites only those two legacy fields and proves
+     1-to-2-step recovery.
 
 ## Rejected candidates
 
