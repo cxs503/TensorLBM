@@ -220,6 +220,46 @@ def test_sphere_launcher_names_natural_kbc_variant_separately(
     assert "sphere-v3-natural-kbc-equivalent-r9-7200.json" in output
 
 
+def test_gradient_sgs_pilot_launcher_records_vreman_coefficient(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_nested_l90_gradient_sgs_pilot.sh"),
+            "vreman",
+            "0.1",
+            "v31",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--collision-model") + 1] == (
+        "cumulant_vreman"
+    )
+    assert arguments[arguments.index("--vreman-cv") + 1] == "0.1"
+    assert arguments[arguments.index("--wale-cw") + 1] == "0.5"
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v31-l90-vreman-masked-2400.json" in output
+
+
 def test_nested_v10_launcher_scales_all_inner_physical_locations(
     tmp_path: Path,
 ) -> None:
