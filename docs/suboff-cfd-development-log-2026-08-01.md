@@ -949,6 +949,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      immutable negative artifact is retained; exact v8 L120 has automatically
      started on the same physical GPU with a uniform 10000-step explicit tail
      and laboratory-frame force ledger.
+108. CUDA checkpoint/restart is now exercised rather than inferred from the
+     CPU regression.  A three-level L90 run writes a 428 MiB atomic checkpoint
+     after step 1, a fresh process restores all three tensors
+     (`450x90x90`, `358x48x48`, `396x60x60`, each D3Q19) and advances to step
+     2.  The resumed artifact retains records `[1,2]`, declares
+     `resumed_from_step=1`, closes source-corrected force within 0.000126%, and
+     keeps both reflux residuals below 1.82e-12.  Measured peak is 3.366 GiB.
+     This admits restart mechanics and state relinking; it does not turn the
+     two-step startup into a resistance result.
 
 ## Rejected candidates
 
