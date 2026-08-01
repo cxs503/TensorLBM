@@ -91,6 +91,37 @@ _OPTIONAL_SUBOFF_MODULES = (
     "tensorlbm.ai.suboff_inference",
 )
 
+_OPTIONAL_SUBOFF_EXPORTS = {
+    # utilities
+    "build_suboff_model": "tensorlbm.ai.suboff_utils",
+    "default_suboff_device": "tensorlbm.ai.suboff_utils",
+    "ensure_dir": "tensorlbm.ai.suboff_utils",
+    "get_suboff_coords": "tensorlbm.ai.suboff_utils",
+    "load_checkpoint": "tensorlbm.ai.suboff_utils",
+    "pointwise_rel_loss": "tensorlbm.ai.suboff_utils",
+    "save_checkpoint": "tensorlbm.ai.suboff_utils",
+    # training
+    "SuboffTrainConfig": "tensorlbm.ai.suboff_train",
+    "train_suboff": "tensorlbm.ai.suboff_train",
+    "SuboffFinetuneConfig": "tensorlbm.ai.suboff_train",
+    "finetune_suboff": "tensorlbm.ai.suboff_train",
+    # inference
+    "SuboffPredictConfig": "tensorlbm.ai.suboff_inference",
+    "predict_suboff": "tensorlbm.ai.suboff_inference",
+    "SuboffErrorConfig": "tensorlbm.ai.suboff_inference",
+    "error_analysis_suboff": "tensorlbm.ai.suboff_inference",
+}
+
+
+def __getattr__(name: str):
+    """Load optional SUBOFF symbols only when callers explicitly request them."""
+    module_name = _OPTIONAL_SUBOFF_EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(importlib.import_module(module_name), name)
+    globals()[name] = value
+    return value
+
 
 def _load_optional_suboff_api() -> tuple[bool, str]:
     """Check whether all optional SUBOFF modules can be imported.
@@ -119,4 +150,4 @@ def get_suboff_availability() -> dict[str, str | bool]:
     }
 
 
-__all__ += ["get_suboff_availability"]
+__all__ += ["get_suboff_availability", *_OPTIONAL_SUBOFF_EXPORTS]
