@@ -25,8 +25,9 @@ def _args(
         "--nx", "80", "--ny", "40", "--nz", "40",
         "--hull-length", "24", "--center-x-fraction", "0.35",
         "--outer-wall-margin", "4", "--outer-wake-cells", "8",
-        "--inner-wall-margin", "2", "--inner-wake-cells", "0",
+        "--inner-wall-margin", "3", "--inner-wake-cells", "0",
         "--cv-margin", "2", "--steps", str(steps), "--ramp-steps", "0",
+        "--aux-cv-margins", "1,3", "--surface-force-interval", "1",
         "--warmup-steps", "0", "--statistics-window-steps", str(steps),
         "--report-interval", "1", "--wall-diagnostic-interval", "1",
         "--resolved-reynolds", "2000", "--sponge-width", "3",
@@ -55,6 +56,8 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["acceptance"]["fully_activated_steps_assessed"] == 2
     assert result["acceptance"]["single_grid_candidate"] is False
     assert result["result"]["statistics"]["statistics_window_steps_resolved"] == 2
+    assert result["result"]["statistics"]["auxiliary_cv_difference_pct"] is not None
+    assert result["result"]["statistics"]["surface_observer_difference_pct"] is not None
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:

@@ -969,6 +969,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      because they fail duration/stationarity even when force closure passes.
      Final step count and analysis-window choice remain outside checkpoint
      physics identity, allowing longer unbiased resumes from the same state.
+110. The long-run evidence contract now adds two auxiliary finest-level
+     control volumes and independent surface-pressure integration at a declared
+     cadence.  Auxiliary means are paired with the primary CV at identical
+     timestamps and must agree within 1%; surface pressure plus simultaneous
+     wall shear must agree with the paired CV within 5%.  These sparse
+     observers are checkpointed with each step record but are not recomputed
+     every finest substep, avoiding unnecessary GPU synchronisation.  Both
+     gates are mandatory for a nested single-grid candidate, closing the same
+     sampling-phase and surface-observer loopholes found in the one-level
+     campaign.
 
 ## Rejected candidates
 
