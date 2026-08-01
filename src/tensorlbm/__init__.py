@@ -632,6 +632,17 @@ from .general_sim import (
     SolverConfig,
 )
 from .lbm_step import LBMStepExecutor
+from .static_block_amr import (
+    PopulationRefluxLedger,
+    StaticBlockAMR3D,
+    StaticBlockAMRConfig,
+    convective_refined_tau,
+)
+from .suboff_static_amr import (
+    SuboffStaticAMRPlan,
+    build_fine_suboff_mask,
+    plan_suboff_static_amr,
+)
 
 __all__ = [
     "__version__",
@@ -648,6 +659,13 @@ __all__ = [
     "vorticity_indicator_3d",
     "gradient_indicator_3d",
     "mark_cells_for_refinement",
+    "PopulationRefluxLedger",
+    "StaticBlockAMR3D",
+    "StaticBlockAMRConfig",
+    "convective_refined_tau",
+    "SuboffStaticAMRPlan",
+    "build_fine_suboff_mask",
+    "plan_suboff_static_amr",
     # D2Q9 lattice
     "C",
     "W",
