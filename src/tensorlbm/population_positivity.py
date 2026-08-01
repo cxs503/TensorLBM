@@ -1,8 +1,8 @@
 """Moment-preserving positivity limiter for lattice populations."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 
 import torch
 
@@ -31,8 +31,8 @@ def limit_nonequilibrium_for_positivity(
     """
     if f.ndim != 4 or f.shape[0] not in (19, 27):
         raise ValueError("f must have shape (19|27,nz,ny,nx)")
-    if floor < 0.0:
-        raise ValueError("floor must be non-negative")
+    if not math.isfinite(floor) or floor < 0.0:
+        raise ValueError("floor must be finite and non-negative")
     if f.shape[0] == 19:
         from .d3q19 import C, W
     else:
@@ -58,6 +58,19 @@ def limit_nonequilibrium_for_positivity(
             minimum_population_after=minimum_before,
         )
     below_cells = (f < floor).any(dim=0)
+    limited_cells = int(below_cells.sum().item())
+    if limited_cells == 0:
+        # An empty selected set is an identity operation, never a reduction
+        # over a zero-length alpha tensor.  This also keeps alternate tensor
+        # backends fail-safe if scalar min and elementwise comparison disagree.
+        return f, PositivityDiagnostics(
+            limited_cells=0,
+            total_cells=total,
+            limited_fraction=0.0,
+            minimum_alpha=1.0,
+            minimum_population_before=minimum_before,
+            minimum_population_after=minimum_before,
+        )
     selected = f[:, below_cells]
     c = C.to(device=f.device, dtype=f.dtype)
     w = W.to(device=f.device, dtype=f.dtype)
@@ -84,7 +97,6 @@ def limit_nonequilibrium_for_positivity(
     limited_values = limited_values.clamp_min(floor)
     out = f.clone()
     out[:, below_cells] = limited_values
-    limited_cells = int(below_cells.sum().item())
     diagnostics = PositivityDiagnostics(
         limited_cells=limited_cells,
         total_cells=total,

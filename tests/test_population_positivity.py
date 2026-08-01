@@ -52,10 +52,15 @@ def test_negative_nonequilibrium_is_limited_while_moments_are_preserved() -> Non
 def test_invalid_floor_is_rejected() -> None:
     with pytest.raises(ValueError, match="non-negative"):
         limit_nonequilibrium_for_positivity(torch.ones((19, 2, 2, 2)), floor=-1.0)
+    with pytest.raises(ValueError, match="finite"):
+        limit_nonequilibrium_for_positivity(
+            torch.ones((19, 2, 2, 2)), floor=math.nan,
+        )
 
 
 def test_sparse_d3q27_limiter_preserves_mass_and_momentum() -> None:
-    from tensorlbm.d3q27 import C as C27, equilibrium27
+    from tensorlbm.d3q27 import C as C27
+    from tensorlbm.d3q27 import equilibrium27
 
     shape = (3, 4, 5)
     rho = torch.ones(shape, dtype=torch.float64)
