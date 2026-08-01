@@ -147,6 +147,94 @@ def test_suboff_v9_launcher_uses_quadratic_inlet_pressure_observer(
     assert "suboff-v9-equivalent-l120-16k.json" in output
 
 
+def test_suboff_v9_launcher_can_extend_only_time_and_statistics(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env.update({
+        "TENSORLBM_PYTHON": str(fake_python),
+        "TENSORLBM_SUBOFF_STEPS": "32000",
+        "TENSORLBM_SUBOFF_STATISTICS_WINDOW_STEPS": "26000",
+        "TENSORLBM_SUBOFF_RUN_LABEL": "32k-continuation",
+    })
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_v9_equivalent_level.sh"),
+            "L120",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--steps") + 1] == "32000"
+    assert arguments[arguments.index("--warmup-steps") + 1] == "6000"
+    assert arguments[arguments.index("--statistics-window-steps") + 1] == (
+        "26000"
+    )
+    output = arguments[arguments.index("--output") + 1]
+    checkpoint = arguments[arguments.index("--checkpoint") + 1]
+    assert output.endswith("suboff-v9-equivalent-l120-32k-continuation.json")
+    assert checkpoint.endswith("suboff-v9-equivalent-l120-32k-continuation.ckpt")
+
+
+@pytest.mark.parametrize(
+    ("name", "value", "message"),
+    (
+        ("TENSORLBM_SUBOFF_STEPS", "not-an-integer", "positive integer"),
+        (
+            "TENSORLBM_SUBOFF_STATISTICS_WINDOW_STEPS",
+            "999999",
+            "must fit after warmup",
+        ),
+        ("TENSORLBM_SUBOFF_RUN_LABEL", "bad/path", "unsupported characters"),
+    ),
+)
+def test_suboff_launcher_rejects_invalid_continuation_overrides(
+    tmp_path: Path,
+    name: str,
+    value: str,
+    message: str,
+) -> None:
+    env = os.environ.copy()
+    env.update({
+        "TENSORLBM_PYTHON": sys.executable,
+        name: value,
+    })
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_v9_equivalent_level.sh"),
+            "L120",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 2
+    assert message in completed.stderr
+
+
 def test_cylinder_domain_launcher_changes_only_lateral_clearance(
     tmp_path: Path,
 ) -> None:

@@ -40,6 +40,29 @@ case "$level" in
   *) usage ;;
 esac
 
+# Long-running validation often needs more samples than the first campaign
+# allocation provides.  Keep every physical/numerical setting identical while
+# allowing a checkpoint continuation to extend only the terminal step and the
+# statistics window.  The checkpoint signature deliberately excludes both.
+steps=${TENSORLBM_SUBOFF_STEPS:-$steps}
+statistics=${TENSORLBM_SUBOFF_STATISTICS_WINDOW_STEPS:-$statistics}
+if [[ ! $steps =~ ^[1-9][0-9]*$ ]]; then
+  echo "TENSORLBM_SUBOFF_STEPS must be a positive integer" >&2
+  exit 2
+fi
+if [[ ! $statistics =~ ^[0-9]+$ ]]; then
+  echo "TENSORLBM_SUBOFF_STATISTICS_WINDOW_STEPS must be a non-negative integer" >&2
+  exit 2
+fi
+if (( steps <= warmup )); then
+  echo "steps must exceed warmup_steps=$warmup" >&2
+  exit 2
+fi
+if (( statistics > steps - warmup )); then
+  echo "statistics window must fit after warmup" >&2
+  exit 2
+fi
+
 if [[ -n "$wait_for_pid" ]]; then
   [[ "$wait_for_pid" =~ ^[0-9]+$ ]] || usage
   while kill -0 "$wait_for_pid" 2>/dev/null; do
@@ -66,8 +89,13 @@ if [[ ! $campaign_generation =~ ^v[0-9]+$ ]]; then
 fi
 pressure_reference=${TENSORLBM_PRESSURE_REFERENCE:-near_wall}
 surface_pressure_extrapolation=${TENSORLBM_SURFACE_PRESSURE_EXTRAPOLATION:-none}
-checkpoint="$result_dir/suboff-${campaign_generation}${variant}-equivalent-l${level}-${steps%000}k.ckpt"
-output="$result_dir/suboff-${campaign_generation}${variant}-equivalent-l${level}-${steps%000}k.json"
+run_label=${TENSORLBM_SUBOFF_RUN_LABEL:-${steps%000}k}
+if [[ ! $run_label =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+  echo "TENSORLBM_SUBOFF_RUN_LABEL contains unsupported characters" >&2
+  exit 2
+fi
+checkpoint=${TENSORLBM_SUBOFF_CHECKPOINT:-$result_dir/suboff-${campaign_generation}${variant}-equivalent-l${level}-${run_label}.ckpt}
+output=${TENSORLBM_SUBOFF_OUTPUT:-$result_dir/suboff-${campaign_generation}${variant}-equivalent-l${level}-${run_label}.json}
 resume=()
 if [[ -f "$checkpoint" ]]; then
   resume=(--resume)
