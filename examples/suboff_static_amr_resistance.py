@@ -29,6 +29,7 @@ from suboff_experimental_resistance import (
 from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.checkpoint_io import atomic_torch_save
 from tensorlbm.control_volume_force import (
+    assess_nested_control_volume_invariance,
     box_control_volume,
     observe_control_volume_force,
 )
@@ -36,7 +37,11 @@ from tensorlbm.cuda_memory_budget import require_cuda_memory_budget
 from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d
+from tensorlbm.drag_pressure import (
+    SurfaceMesh,
+    drag_pressure_integration,
+    get_near_wall_3d,
+)
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
@@ -137,14 +142,31 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("report-interval and average-window must be positive")
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint-interval must be non-negative")
+    if args.surface_force_interval < 1:
+        raise ValueError("surface-force-interval must be positive")
     if not 0.0 < args.maximum_reflux_correction_fraction <= 1.0:
         raise ValueError(
             "maximum-reflux-correction-fraction must lie in (0,1]",
         )
     if args.resume and not args.checkpoint:
         raise ValueError("resume requires --checkpoint")
-    if min(args.error_target, args.drift_target, args.force_observer_target) < 0.0:
+    if min(
+        args.error_target,
+        args.drift_target,
+        args.force_observer_target,
+        args.nested_cv_target,
+        args.surface_observer_target,
+    ) < 0.0:
         raise ValueError("acceptance targets must be non-negative")
+    aux_cv_margins = tuple(sorted({
+        int(value) for value in args.aux_cv_margins.split(",") if value.strip()
+    }))
+    if any(margin < 1 for margin in aux_cv_margins):
+        raise ValueError("aux-cv-margins must contain positive integers")
+    if len({args.cv_margin, *aux_cv_margins}) < 3:
+        raise ValueError(
+            "primary plus auxiliary control volumes must provide three distinct margins",
+        )
     device = torch.device(args.device)
     if device.type == "cuda":
         torch.cuda.set_device(device)
@@ -256,6 +278,7 @@ def run(args: argparse.Namespace) -> dict:
             calibration_factor=bare_area_diagnostics.calibration_factor,
             boundary_mask=fine_near,
         )
+    fine_surface.dA = fine_area_weight
     fine_solid_q = fine_solid_g.unsqueeze(0).expand_as(amr.fine_f)
     fine_indices = fine_solid_g.nonzero(as_tuple=False)
     z_min, y_min, x_min = (
@@ -271,6 +294,17 @@ def run(args: argparse.Namespace) -> dict:
         z0=z_min - args.cv_margin, z1=z_max + args.cv_margin,
         device=device,
     )
+    auxiliary_cvs: dict[int, torch.Tensor] = {}
+    for margin in aux_cv_margins:
+        if margin == args.cv_margin:
+            continue
+        auxiliary_cvs[margin] = box_control_volume(
+            fine_solid_g.shape,
+            x0=x_min - margin, x1=x_max + margin,
+            y0=y_min - margin, y1=y_max + margin,
+            z0=z_min - margin, z1=z_max + margin,
+            device=device,
+        )
 
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     if args.sponge_inlet:
@@ -280,6 +314,12 @@ def run(args: argparse.Namespace) -> dict:
         device=device, faces=sponge_faces,
     )
     force_samples: list[tuple[float, float, float]] = []
+    paired_primary_cv_samples: list[tuple[int, float]] = []
+    auxiliary_cv_samples: dict[int, list[tuple[int, float]]] = {
+        margin: [] for margin in auxiliary_cvs
+    }
+    surface_pressure_samples: list[tuple[int, float]] = []
+    surface_total_samples: list[tuple[int, float]] = []
     wall_diagnostic_samples: list[WallStressDiagnostics] = []
     positivity_fractions: list[float] = []
     current_step = 0
@@ -378,6 +418,19 @@ def run(args: argparse.Namespace) -> dict:
             before, out, post_collision, fine_cv, solid=fine_solid_g,
         ).force_on_body[0].item())
         force_samples.append((pressure, friction, cv_force))
+        if (
+            current_step > args.warmup_steps
+            and current_step % args.surface_force_interval == 0
+        ):
+            paired_primary_cv_samples.append((current_step, cv_force))
+            for margin, auxiliary_cv in auxiliary_cvs.items():
+                auxiliary_force = float(observe_control_volume_force(
+                    before, out, post_collision, auxiliary_cv,
+                    solid=fine_solid_g,
+                ).force_on_body[0].item())
+                auxiliary_cv_samples[margin].append(
+                    (current_step, auxiliary_force),
+                )
         return AMRAdvanceResult(out, post_collision)
 
     dx_fine_m = MODEL_LENGTH_M / (2.0 * args.hull_length)
@@ -387,7 +440,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     checkpoint = Path(args.checkpoint) if args.checkpoint else None
     checkpoint_signature = {
-        "schema_version": 4,
+        "schema_version": 5,
         "coarse_shape_zyx": list(shape),
         "hull_type": args.hull_type,
         "speed_knots": args.speed_knots,
@@ -397,6 +450,9 @@ def run(args: argparse.Namespace) -> dict:
         "wall_margin": args.wall_margin,
         "wake_cells": args.wake_cells,
         "cv_margin": args.cv_margin,
+        "aux_cv_margins": list(auxiliary_cvs),
+        "surface_force_interval": args.surface_force_interval,
+        "pressure_reference": args.pressure_reference,
         "reflux_enabled": not args.disable_reflux,
         "reflux_method": "face_local_conserved_moment_flux",
         "maximum_reflux_correction_fraction": (
@@ -443,6 +499,19 @@ def run(args: argparse.Namespace) -> dict:
         bfl_total_history = state["bfl_total_history"].tolist()
         pressure_history = state["pressure_history"].tolist()
         wall_shear_history = state["wall_shear_history"].tolist()
+        paired_primary_cv_samples = [
+            tuple(item) for item in state["paired_primary_cv_samples"].tolist()
+        ]
+        auxiliary_cv_samples = {
+            int(margin): [tuple(item) for item in samples.tolist()]
+            for margin, samples in state["auxiliary_cv_samples"].items()
+        }
+        surface_pressure_samples = [
+            tuple(item) for item in state["surface_pressure_samples"].tolist()
+        ]
+        surface_total_samples = [
+            tuple(item) for item in state["surface_total_samples"].tolist()
+        ]
         recent_forces = state["recent_forces"].tolist()
         recent_bfl_pressure = state["recent_bfl_pressure"].tolist()
         recent_wall_shear = state["recent_wall_shear"].tolist()
@@ -477,7 +546,7 @@ def run(args: argparse.Namespace) -> dict:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-suboff-static-amr-checkpoint-v4",
+            "schema": "tensorlbm-suboff-static-amr-checkpoint-v5",
             "configuration": checkpoint_signature,
             "step": step,
             "coarse_populations": amr.coarse_f.detach().cpu(),
@@ -490,6 +559,19 @@ def run(args: argparse.Namespace) -> dict:
             "wall_shear_history": torch.tensor(
                 wall_shear_history, dtype=torch.float64,
             ),
+            "paired_primary_cv_samples": torch.tensor(
+                paired_primary_cv_samples, dtype=torch.float64,
+            ).reshape(-1, 2),
+            "auxiliary_cv_samples": {
+                margin: torch.tensor(samples, dtype=torch.float64).reshape(-1, 2)
+                for margin, samples in auxiliary_cv_samples.items()
+            },
+            "surface_pressure_samples": torch.tensor(
+                surface_pressure_samples, dtype=torch.float64,
+            ).reshape(-1, 2),
+            "surface_total_samples": torch.tensor(
+                surface_total_samples, dtype=torch.float64,
+            ).reshape(-1, 2),
             "recent_forces": torch.tensor(recent_forces, dtype=torch.float64),
             "recent_bfl_pressure": torch.tensor(
                 recent_bfl_pressure, dtype=torch.float64,
@@ -540,6 +622,18 @@ def run(args: argparse.Namespace) -> dict:
         cv_force = sum(item[2] for item in force_samples) / len(force_samples)
         resistance = cv_force * scale
         bfl_resistance = (pressure + friction) * scale
+        if (
+            current_step > args.warmup_steps
+            and current_step % args.surface_force_interval == 0
+        ):
+            surface_pressure = drag_pressure_integration(
+                amr.fine_f, fine_surface, 1.0, extrap="none",
+                p0_method=args.pressure_reference, solid=fine_solid_g,
+            )[0]
+            surface_pressure_samples.append((current_step, surface_pressure))
+            surface_total_samples.append(
+                (current_step, surface_pressure + friction),
+            )
         maximum_positivity_limited_fraction = max(
             maximum_positivity_limited_fraction,
             max(positivity_fractions, default=0.0),
@@ -652,6 +746,31 @@ def run(args: argparse.Namespace) -> dict:
     mean_bfl_total = sum(bfl_total_history) / len(bfl_total_history)
     mean_pressure = sum(pressure_history) / len(pressure_history)
     mean_wall_shear = sum(wall_shear_history) / len(wall_shear_history)
+    final_window_start = args.steps - args.average_window
+
+    def sampled_mean(samples: list[tuple[int, float]]) -> float:
+        selected = [value for step, value in samples if step > final_window_start]
+        return sum(selected) / len(selected) if selected else math.nan
+
+    paired_primary_cv_mean = sampled_mean(paired_primary_cv_samples)
+    auxiliary_cv_means = {
+        margin: sampled_mean(samples)
+        for margin, samples in auxiliary_cv_samples.items()
+    }
+    surface_pressure_mean = sampled_mean(surface_pressure_samples)
+    surface_total_mean = sampled_mean(surface_total_samples)
+    auxiliary_items = list(auxiliary_cv_means.items())
+    nested_cv_assessment = assess_nested_control_volume_invariance(
+        paired_primary_cv_mean,
+        [value for _, value in auxiliary_items],
+    )
+    auxiliary_cv_difference_pct = {
+        str(margin): difference
+        for (margin, _), difference in zip(
+            auxiliary_items, nested_cv_assessment.differences_pct,
+            strict=True,
+        )
+    }
     force_stationarity = assess_force_stationarity(
         force_history,
         block_size=max(1, len(force_history) // 8),
@@ -661,6 +780,10 @@ def run(args: argparse.Namespace) -> dict:
     )
     force_observer_difference_pct = (
         abs(mean_bfl_total - mean_force) / max(abs(mean_force), 1e-30) * 100.0
+    )
+    surface_observer_difference_pct = (
+        abs(surface_total_mean - mean_bfl_total)
+        / max(abs(mean_bfl_total), 1e-30) * 100.0
     )
     maximum_rejected_fraction = max(
         wall_rejected_fraction_history, default=0.0,
@@ -686,6 +809,10 @@ def run(args: argparse.Namespace) -> dict:
         and reference_error_pct <= args.error_target
         and force_stationarity.meets(args.drift_target)
         and force_observer_difference_pct <= args.force_observer_target
+        and nested_cv_assessment.meets(
+            args.nested_cv_target, minimum_auxiliary_count=2,
+        )
+        and surface_observer_difference_pct <= args.surface_observer_target
         and limiter_acceptable
         and reflux_acceptable
         and wall_sampling_acceptable
@@ -696,7 +823,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     rho_c, ux_c, uy_c, uz_c = macroscopic3d(amr.coarse_f)
     result = {
-        "schema": "tensorlbm-suboff-static-amr-v4",
+        "schema": "tensorlbm-suboff-static-amr-v5",
         "status": (
             "single_grid_candidate" if single_grid_admitted
             else "single_grid_rejected"
@@ -751,6 +878,37 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "mean_bfl_link_plus_wall_stress_n_diagnostic": mean_bfl_total,
             "force_observer_difference_pct": force_observer_difference_pct,
+            "paired_primary_control_volume_resistance_n": (
+                paired_primary_cv_mean * scale
+            ),
+            "paired_control_volume_samples_in_window": sum(
+                step > final_window_start
+                for step, _ in paired_primary_cv_samples
+            ),
+            "auxiliary_control_volume_resistance_n": {
+                str(margin): value * scale
+                for margin, value in auxiliary_cv_means.items()
+            },
+            "auxiliary_control_volume_difference_pct": (
+                auxiliary_cv_difference_pct
+            ),
+            "nested_control_volume_invariance": {
+                "auxiliary_count": nested_cv_assessment.auxiliary_count,
+                "maximum_difference_pct": (
+                    nested_cv_assessment.maximum_difference_pct
+                ),
+                "finite": nested_cv_assessment.finite,
+            },
+            "mean_surface_pressure_n_diagnostic": surface_pressure_mean * scale,
+            "mean_surface_pressure_plus_wall_stress_n_diagnostic": (
+                surface_total_mean * scale
+            ),
+            "surface_pressure_samples_in_window": sum(
+                step > final_window_start for step, _ in surface_pressure_samples
+            ),
+            "surface_vs_bfl_observer_difference_pct": (
+                surface_observer_difference_pct
+            ),
             "experimental_resistance_n": point.resistance_n,
             "error_pct": reference_error_pct,
             "force_stationarity": force_stationarity.to_dict(),
@@ -794,6 +952,8 @@ def run(args: argparse.Namespace) -> dict:
             "force_error_target_pct": args.error_target,
             "stationarity_target_pct": args.drift_target,
             "force_observer_target_pct": args.force_observer_target,
+            "nested_control_volume_target_pct": args.nested_cv_target,
+            "surface_observer_target_pct": args.surface_observer_target,
             "maximum_limiter_fraction": 1e-3,
             "maximum_reflux_population_residual": 1e-6,
             "maximum_exchange_rejected_fraction": 0.01,
@@ -803,6 +963,14 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "force_observer_target_met": (
                 force_observer_difference_pct <= args.force_observer_target
+            ),
+            "nested_control_volume_target_met": (
+                nested_cv_assessment.meets(
+                    args.nested_cv_target, minimum_auxiliary_count=2,
+                )
+            ),
+            "surface_observer_target_met": (
+                surface_observer_difference_pct <= args.surface_observer_target
             ),
             "limiter_target_met": limiter_acceptable,
             "reflux_target_met": reflux_acceptable,
@@ -835,6 +1003,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--wall-margin", type=int, default=8)
     p.add_argument("--wake-cells", type=int, default=50)
     p.add_argument("--cv-margin", type=int, default=8)
+    p.add_argument(
+        "--aux-cv-margins", default="4,10",
+        help="Comma-separated independent nested control-volume margins.",
+    )
+    p.add_argument("--surface-force-interval", type=int, default=25)
+    p.add_argument(
+        "--pressure-reference",
+        choices=("near_wall", "far_field", "domain_avg", "inlet"),
+        default="near_wall",
+    )
     p.add_argument("--disable-reflux", action="store_true")
     p.add_argument("--maximum-reflux-correction-fraction", type=float, default=0.2)
     p.add_argument("--diagnostic-uncoupled-wall-stress", action="store_true")
@@ -869,6 +1047,8 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--error-target", type=float, default=5.0)
     p.add_argument("--drift-target", type=float, default=1.0)
     p.add_argument("--force-observer-target", type=float, default=1.0)
+    p.add_argument("--nested-cv-target", type=float, default=1.0)
+    p.add_argument("--surface-observer-target", type=float, default=5.0)
     p.add_argument(
         "--far-field-mode",
         choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),
