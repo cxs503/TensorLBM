@@ -1274,6 +1274,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      released GPU after passing the uniform-fine pulse benchmark; it preserves
      mass and changes interface density RMS by 0.24%, so it is a materially
      stronger but still hydrodynamically audited test.
+143. Coarse-to-fine prolongation now has an independent second-order Hermite
+     regularization option.  It removes non-hydrodynamic ghost modes before
+     every fine substep ghost fill (and during initial child allocation), while
+     preserving density, momentum and the complete viscous-stress tensor.
+     The option is default-off, explicit in launchers, checkpoints and
+     three-grid identity checks, and is separate from fine-to-coarse
+     restriction regularization.  In the 24-step uniform-fine pulse benchmark,
+     prolongation regularization alone changes interface density RMS by 0.30%
+     with identical mass drift; combined with the force-safe width-two,
+     strength-1.0 kinetic filter it remains admitted, slightly improves
+     refined-region velocity error, and changes refined density RMS by 0.23%.
 
 ## Rejected candidates
 

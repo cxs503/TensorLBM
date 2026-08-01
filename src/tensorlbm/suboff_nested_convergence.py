@@ -30,6 +30,7 @@ _IDENTITY_FIELDS = (
     "omega_bulk",
     "kbc_max_iterations",
     "regularize_restriction",
+    "regularize_prolongation",
     "ghost_interpolation",
     "enforce_transfer_positivity",
     "interface_filter_width",
