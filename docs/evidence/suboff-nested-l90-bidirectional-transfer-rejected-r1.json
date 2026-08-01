@@ -1,0 +1,22 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "candidate": "suboff-nested-v17-l90-bidirectional-transfer-positivity",
+  "status": "rejected",
+  "failure": {
+    "step": 1560,
+    "minimum_population": 1.862645149230957e-09,
+    "maximum_speed": 0.19061227142810822,
+    "maximum_collision_limited_fraction": 0.000025557314338477773,
+    "outer_prolongation_limited_fraction": 0.0,
+    "inner_prolongation_limited_fraction": 0.0,
+    "outer_restriction_limited_fraction": 0.0,
+    "inner_restriction_limited_fraction": 0.0
+  },
+  "artifacts": {
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v17-l90-rejected-bidirectional-transfer-step1560.log",
+    "remote_log_sha256": "62a41933ec8bee8a3156f9c5cad4e592dc1f8e17b5d4e33e5f4305219d0631dd",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v17-l90-bidirectional-transfer-positivity-2400.ckpt",
+    "remote_checkpoint_sha256": "6bd506193372e2da75b536c57e7de49686710dddef967e25fbafe043ab543ebb"
+  },
+  "conclusion": "Bidirectional transfer positivity closes the transfer safety contract but is inactive before this failure and does not alter the baseline onset."
+}
