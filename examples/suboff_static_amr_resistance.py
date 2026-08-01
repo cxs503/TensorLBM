@@ -142,6 +142,10 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("stress-exchange-distance must be non-negative")
     if min(args.report_interval, args.average_window) < 1:
         raise ValueError("report-interval and average-window must be positive")
+    if not 0 <= args.statistics_window_steps <= args.steps - args.warmup_steps:
+        raise ValueError(
+            "statistics-window-steps must be zero or fit after warmup",
+        )
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint-interval must be non-negative")
     if args.surface_force_interval < 1:
@@ -816,11 +820,20 @@ def run(args: argparse.Namespace) -> dict:
         ):
             save_checkpoint(current_step)
 
-    mean_force = sum(force_history) / len(force_history)
-    mean_bfl_total = sum(bfl_total_history) / len(bfl_total_history)
-    mean_pressure = sum(pressure_history) / len(pressure_history)
-    mean_wall_shear = sum(wall_shear_history) / len(wall_shear_history)
-    final_window_start = args.steps - args.average_window
+    statistics_window_steps = args.statistics_window_steps or len(force_history)
+    selected_force_history = force_history[-statistics_window_steps:]
+    selected_bfl_total_history = bfl_total_history[-statistics_window_steps:]
+    selected_pressure_history = pressure_history[-statistics_window_steps:]
+    selected_wall_shear_history = wall_shear_history[-statistics_window_steps:]
+    mean_force = sum(selected_force_history) / len(selected_force_history)
+    mean_bfl_total = (
+        sum(selected_bfl_total_history) / len(selected_bfl_total_history)
+    )
+    mean_pressure = sum(selected_pressure_history) / len(selected_pressure_history)
+    mean_wall_shear = (
+        sum(selected_wall_shear_history) / len(selected_wall_shear_history)
+    )
+    final_window_start = args.steps - statistics_window_steps
 
     def sampled_mean(samples: list[tuple[int, float]]) -> float:
         selected = [value for step, value in samples if step > final_window_start]
@@ -851,8 +864,8 @@ def run(args: argparse.Namespace) -> dict:
         )
     }
     force_stationarity = assess_force_stationarity(
-        force_history,
-        block_size=max(1, len(force_history) // 8),
+        selected_force_history,
+        block_size=max(1, len(selected_force_history) // 8),
     )
     reference_error_pct = (
         abs(mean_force - point.resistance_n) / point.resistance_n * 100.0
@@ -904,9 +917,12 @@ def run(args: argparse.Namespace) -> dict:
     total_convective_times = (
         args.steps * args.lattice_speed / args.hull_length
     )
-    sampling_convective_times = (
+    post_warmup_convective_times = (
         (args.steps - args.warmup_steps)
         * args.lattice_speed / args.hull_length
+    )
+    sampling_convective_times = (
+        statistics_window_steps * args.lattice_speed / args.hull_length
     )
     duration_acceptable = (
         total_convective_times >= args.minimum_convective_times
@@ -972,7 +988,10 @@ def run(args: argparse.Namespace) -> dict:
             "sponge_inlet_enabled": args.sponge_inlet,
             "wall_activation_ramp_steps": args.ramp_steps,
             "total_convective_times": total_convective_times,
+            "post_warmup_convective_times": post_warmup_convective_times,
             "sampling_convective_times": sampling_convective_times,
+            "statistics_window_steps_requested": args.statistics_window_steps,
+            "statistics_window_steps_resolved": statistics_window_steps,
         },
         "mesh": {
             "coarse_cells": plan.coarse_cells,
@@ -1184,6 +1203,13 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--warmup-steps", type=int, default=2500)
     p.add_argument("--report-interval", type=int, default=100)
     p.add_argument("--average-window", type=int, default=500)
+    p.add_argument(
+        "--statistics-window-steps", type=int, default=0,
+        help=(
+            "Explicit final force-statistics tail; zero uses all post-warmup "
+            "samples."
+        ),
+    )
     p.add_argument("--ramp-steps", type=int, default=1000)
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument("--resolved-reynolds", type=float, default=2.0e6)

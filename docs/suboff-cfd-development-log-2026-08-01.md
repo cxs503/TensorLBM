@@ -703,6 +703,19 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     still-running v6 L120 PID 1428395 before taking physical GPU2.  v7 startup
     logs are retained with `superseded-force-frame` names; no v7 result is
     eligible for the v8 convergence assessor.
+86. L90 force-history spectral evidence shows a dominant period of 2500 steps
+    (1.67 hull convective times), an integrated autocorrelation time of 201
+    steps, only 37.4 effective samples in the former tail, and a 3.23% standard
+    error estimate.  SUBOFF v8 therefore gains an explicit final statistics
+    window, matching the sphere/cylinder evidence contract.  Full histories
+    remain checkpointed, while mean force, Student-t stationarity and every
+    paired observer use only the declared tail; analysis-window choice is not
+    part of the physics checkpoint signature, so a longer run may be resumed
+    and assessed with a longer exact tail without restarting.  The three-grid
+    assessor requires the resolved tail to scale with hull resolution, and the
+    launcher fixes 7500/10000/12500-step tails for L90/L120/L150.  Jobs that
+    had not reached their first report were superseded once more rather than
+    allowing an ambiguous startup-inclusive mean into production evidence.
 
 ## Rejected candidates
 
