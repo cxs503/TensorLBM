@@ -608,6 +608,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     configuration force-integration area; an AFF-8 run is rejected if its
     calibrated area does not exceed the bare-hull area.  Forty-three focused
     CAD/static-AMR production and resolution tests pass.
+75. The exact L90/L120/L150 AFF-1 production sequence is encoded in
+    `scripts/run_suboff_v6_equivalent_level.sh` instead of relying on copied
+    terminal commands.  The launcher fixes every 3:4:5 spatial and temporal
+    parameter, resumes only the matching level checkpoint, binds one physical
+    GPU explicitly and can wait for one exact predecessor PID before replacing
+    it.  This makes the queued L150 takeover reproducible without polling or
+    terminating unrelated GPU work.
 
 ## Rejected candidates
 
