@@ -1485,6 +1485,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      The cumulant production path passes; `entropic_kbc` remains callable only
      for diagnostics and can no longer become a physical single-grid candidate
      or enter a convergence claim while its shear-wave audit is rejected.
+165. First-order coarse-to-fine ghost injection is rejected at step 1560, the
+     same population-floor onset as the trilinear baseline; collision limiter
+     use reaches `1.1542e-5`.  Log/checkpoint SHA-256 values are
+     `d900466b3c668874b4415a54dbd5a7edf69ebd5b81578333828442049c201e57`
+     and `ffa6eff23b14db9537144eaa28b026b0de63d879d3274f8951e43d06a3f9543b`.
+     Spatial interpolation order alone is therefore ruled out.  The released
+     GPU runs the factorial combination of stream-link-local reflux and the
+     newly bidirectional transfer-positivity guard.
 
 ## Rejected candidates
 
