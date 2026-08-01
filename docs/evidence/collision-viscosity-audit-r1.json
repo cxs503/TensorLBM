@@ -1,0 +1,30 @@
+{
+  "schema": "tensorlbm-collision-viscosity-comparison-v1",
+  "method": "periodic transverse shear-wave exponential decay",
+  "target_kinematic_viscosity": 0.10000000000000002,
+  "maximum_relative_error_pct": 2.0,
+  "models": {
+    "bgk": {
+      "recovered_kinematic_viscosity": 0.10020650199912177,
+      "relative_error_pct": 0.20650199912175532,
+      "admitted": true,
+      "source": "results/collision-viscosity-bgk-r1.json",
+      "source_sha256": "3744f55b01e01fb9ba9d6f34c3364e298988d1ddd1f51a41e64fc6794a55804d"
+    },
+    "cumulant": {
+      "recovered_kinematic_viscosity": 0.10005168382684297,
+      "relative_error_pct": 0.051683826842952016,
+      "admitted": true,
+      "source": "results/collision-viscosity-cumulant-r1.json",
+      "source_sha256": "1a81134f03045db019f8a4eae68acad7b2fdd5c9db2c32478f16ff07e72aa176"
+    },
+    "entropic_kbc": {
+      "recovered_kinematic_viscosity": 0.17107530142553148,
+      "relative_error_pct": 71.07530142553145,
+      "admitted": false,
+      "source": "results/collision-viscosity-entropic_kbc-r1.json",
+      "source_sha256": "ed55c57c92fb649971c775cc306f40964754dbce044c0b1a7228dba4a3fd18de"
+    }
+  },
+  "conclusion": "The current entropic KBC kernel does not recover the requested shear viscosity and is withheld from SUBOFF stability or accuracy campaigns."
+}
