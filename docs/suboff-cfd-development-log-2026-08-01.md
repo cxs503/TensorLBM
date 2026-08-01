@@ -1347,6 +1347,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      finest transverse buffer; satisfying that geometry also requires moving
      the outer interface from its six-cell to eight-cell coarse margin, which
      passed a 6.96-GiB preflight.
+150. Interface health now separates correction quality from the defect being
+     corrected.  A common population-inventory moment reduction reports raw
+     mass mismatch and the norm of raw three-component momentum mismatch before
+     reflux, while the existing ledger continues to report bounded correction,
+     limiter use and post-correction residual.  Per-interface maxima persist in
+     checkpoints and final results.  This prevents a small corrected residual
+     from hiding a large recurring coarse/fine transfer imbalance; 53 focused
+     flux-register, AMR runtime and SUBOFF tests pass.
 
 ## Rejected candidates
 

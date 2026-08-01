@@ -189,6 +189,11 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     assert health["maximum_wall_sample_rejected_fraction"] == 0.0
     assert [record["finite"] for record in health["levels"]] == [True, True, True]
     assert len(health["interfaces"]) == 2
+    assert all(
+        record["raw_mass_mismatch"] >= 0.0
+        and record["raw_momentum_mismatch_norm"] >= 0.0
+        for record in health["interfaces"]
+    )
     assert health["finest_peak_speed_context"] is not None
     assert "bfl_link_count" in health["finest_peak_speed_context"]
     assert all(
@@ -197,6 +202,10 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     )
     assert result["acceptance"]["population_health_target_met"] is True
     assert result["result"]["maximum_observed_speed"] < 0.3
+    assert len(result["result"]["maximum_raw_mass_mismatch_by_interface"]) == 2
+    assert len(
+        result["result"]["maximum_raw_momentum_mismatch_by_interface"],
+    ) == 2
 
 
 def test_wall_stress_can_be_disabled_only_as_nonphysical_diagnostic(

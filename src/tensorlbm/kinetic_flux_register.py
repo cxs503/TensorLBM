@@ -84,6 +84,27 @@ class FaceLocalRefluxReport:
         return float(self.residual.sum().item())
 
 
+def conserved_population_moments(
+    population_inventory: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return mass and momentum represented by a Q-population inventory."""
+    if (
+        not isinstance(population_inventory, torch.Tensor)
+        or population_inventory.ndim != 1
+        or population_inventory.numel() not in (19, 27)
+    ):
+        raise ValueError("population_inventory must be a D3Q19 or D3Q27 vector")
+    if not population_inventory.is_floating_point():
+        raise TypeError("population_inventory must be floating point")
+    c = _lattice_velocities(
+        int(population_inventory.numel()), population_inventory.device,
+    ).to(dtype=population_inventory.dtype)
+    return (
+        population_inventory.sum(),
+        (population_inventory[:, None] * c).sum(dim=0),
+    )
+
+
 def build_kinetic_interface_links(
     inside: torch.Tensor,
     *,
@@ -179,8 +200,7 @@ def project_onto_conserved_moments(
     w = _lattice_weights(
         int(kinetic_mismatch.numel()), kinetic_mismatch.device,
     ).to(dtype=kinetic_mismatch.dtype)
-    mass = kinetic_mismatch.sum()
-    momentum = (kinetic_mismatch[:, None] * c).sum(dim=0)
+    mass, momentum = conserved_population_moments(kinetic_mismatch)
     projected = w * (mass + 3.0 * (c * momentum).sum(dim=1))
     # Lattice constants are commonly stored in FP32 even for an FP64 state.
     # Close the four conserved moments algebraically so their reflux accuracy
@@ -249,6 +269,7 @@ __all__ = [
     "KineticInterfaceTransfer",
     "apply_face_local_reflux",
     "build_kinetic_interface_links",
+    "conserved_population_moments",
     "observe_kinetic_interface_transfer",
     "project_onto_conserved_moments",
 ]
