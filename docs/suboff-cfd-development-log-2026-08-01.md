@@ -716,6 +716,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     launcher fixes 7500/10000/12500-step tails for L90/L120/L150.  Jobs that
     had not reached their first report were superseded once more rather than
     allowing an ambiguous startup-inclusive mean into production evidence.
+87. The common force-stationarity report now also quantifies temporal
+    correlation instead of treating every time step as independent.  An FFT
+    autocovariance gives the first zero crossing, integrated autocorrelation
+    time, effective sample count and autocorrelation-adjusted standard error;
+    the resolved spectral peak reports dominant period and its power fraction.
+    These are diagnostic additions—the conservative Student-t batch, drift and
+    trend gates are not relaxed.  A repeated-sample regression proves that the
+    effective count decreases appropriately, and 25 focused force/sphere/
+    cylinder/flat/SUBOFF tests pass with the expanded report.
 
 ## Rejected candidates
 
