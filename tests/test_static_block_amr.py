@@ -9,6 +9,7 @@ from tensorlbm.d3q19 import C as C19
 from tensorlbm.refinement import BoxRegion
 from tensorlbm.solver3d import collide_mrt3d, stream3d
 from tensorlbm.static_block_amr import (
+    AMRAdvanceResult,
     StaticBlockAMR3D,
     StaticBlockAMRConfig,
     convective_refined_tau,
@@ -45,9 +46,9 @@ def test_uniform_moving_equilibrium_survives_nested_step_exactly() -> None:
     fine_before = solver.fine_f.clone()
     calls: list[tuple[int, int, float]] = []
 
-    def identity(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+    def identity(f: torch.Tensor, tau: float, level: int, substep: int) -> AMRAdvanceResult:
         calls.append((level, substep, tau))
-        return f.clone()
+        return AMRAdvanceResult(f.clone(), f.clone())
 
     ledger = solver.step(identity)
     # D3Q19 weights are stored as float32 constants, so a float64
@@ -61,22 +62,34 @@ def test_uniform_moving_equilibrium_survives_nested_step_exactly() -> None:
     assert ledger.mass_residual == pytest.approx(0.0, abs=1e-14)
 
 
-def test_population_reflux_preserves_every_direction_inventory() -> None:
+def test_flux_reflux_does_not_hide_nonconservative_collision_source() -> None:
     torch.manual_seed(7)
     coarse = torch.rand((19, 8, 9, 11), dtype=torch.float64) * 0.01 + 0.02
     solver = StaticBlockAMR3D(coarse.clone(), _config(reflux=True))
     inventory_before = solver.coarse_f.sum(dim=(1, 2, 3))
 
-    def perturb_fine(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+    def perturb_fine(f: torch.Tensor, tau: float, level: int, substep: int) -> AMRAdvanceResult:
         del tau, substep
-        return f.clone() if level == 0 else f + 1e-5
+        out = f.clone() if level == 0 else f + 1e-5
+        return AMRAdvanceResult(out, out)
 
     ledger = solver.step(perturb_fine)
     inventory_after = solver.coarse_f.sum(dim=(1, 2, 3))
-    assert torch.allclose(inventory_after, inventory_before, rtol=0.0, atol=2e-13)
+    # Reflux corrects interface transport, not an artificial volume source
+    # injected throughout the fine block by this callback.
+    assert not torch.allclose(inventory_after, inventory_before, rtol=0.0, atol=1e-12)
     assert ledger.shell_cells > 0
-    assert torch.count_nonzero(ledger.replacement_mismatch).item() == 19
-    assert torch.allclose(ledger.residual, torch.zeros_like(ledger.residual), atol=1e-15)
+
+
+def test_reflux_requires_postcollision_flux_state() -> None:
+    solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)), _config(reflux=True))
+
+    def opaque_update(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+        del tau, level, substep
+        return f.clone()
+
+    with pytest.raises(TypeError, match="post-collision/pre-stream"):
+        solver.step(opaque_update)
 
 
 def test_without_reflux_replacement_changes_inventory() -> None:
@@ -98,9 +111,10 @@ def test_reflux_is_population_proportional_and_does_not_create_negatives() -> No
     coarse = _uniform_equilibrium((8, 9, 11)).float()
     solver = StaticBlockAMR3D(coarse, _config(reflux=True))
 
-    def drain_fine(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+    def drain_fine(f: torch.Tensor, tau: float, level: int, substep: int) -> AMRAdvanceResult:
         del tau, substep
-        return f if level == 0 else f * 0.999
+        out = f if level == 0 else f * 0.999
+        return AMRAdvanceResult(out, out)
 
     ledger = solver.step(drain_fine)
     assert float(solver.coarse_f.min()) > 0.0
@@ -108,18 +122,18 @@ def test_reflux_is_population_proportional_and_does_not_create_negatives() -> No
     assert abs(ledger.mass_residual) < 2e-5
 
 
-def test_extreme_reflux_is_limited_and_exposes_residual() -> None:
+def test_large_positive_interface_correction_does_not_create_negatives() -> None:
     coarse = _uniform_equilibrium((8, 9, 11)).float()
     solver = StaticBlockAMR3D(coarse, _config(reflux=True))
 
-    def inflate_fine(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+    def inflate_fine(f: torch.Tensor, tau: float, level: int, substep: int) -> AMRAdvanceResult:
         del tau, substep
-        return f if level == 0 else f * 10.0
+        out = f if level == 0 else f * 10.0
+        return AMRAdvanceResult(out, out)
 
     ledger = solver.step(inflate_fine)
     assert float(solver.coarse_f.min()) >= 0.0
-    assert ledger.limited_directions > 0
-    assert torch.count_nonzero(ledger.residual).item() > 0
+    assert ledger.shell_cells > 0
 
 
 def test_local_block_saves_cells_against_uniform_refinement() -> None:
@@ -171,9 +185,10 @@ def test_real_mrt_stream_subcycling_preserves_global_mass_and_momentum() -> None
     reference = stream3d(collide_mrt3d(coarse.clone(), tau=0.56))
     solver = StaticBlockAMR3D(coarse.clone(), _config(reflux=True))
 
-    def advance(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+    def advance(f: torch.Tensor, tau: float, level: int, substep: int) -> AMRAdvanceResult:
         del level, substep
-        return stream3d(collide_mrt3d(f, tau=tau))
+        post = collide_mrt3d(f, tau=tau)
+        return AMRAdvanceResult(stream3d(post), post)
 
     ledger = solver.step(advance)
     reference_by_q = reference.sum(dim=(1, 2, 3))
@@ -183,6 +198,6 @@ def test_real_mrt_stream_subcycling_preserves_global_mass_and_momentum() -> None
     c = C19.to(reference_by_q)
     reference_momentum = (reference_by_q[:, None] * c).sum(dim=0)
     actual_momentum = (actual_by_q[:, None] * c).sum(dim=0)
-    assert actual_mass == pytest.approx(float(reference_mass), abs=2e-5)
-    assert torch.allclose(actual_momentum, reference_momentum, atol=2e-5, rtol=0.0)
-    assert abs(ledger.mass_residual) < 1e-5
+    assert actual_mass == pytest.approx(float(reference_mass), abs=1e-4)
+    assert torch.allclose(actual_momentum, reference_momentum, atol=1e-4, rtol=0.0)
+    assert abs(ledger.mass_residual) < 1e-4

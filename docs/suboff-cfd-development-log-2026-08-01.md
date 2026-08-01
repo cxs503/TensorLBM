@@ -45,6 +45,11 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     or only three report points.  Equal-duration block means now check range,
     first-half/second-half drift and linear trend, and fail closed with fewer
     than four complete blocks.
+11. The failed shell-reflux implementation has been replaced in the runtime
+    by a link-local kinetic register.  It observes post-collision/pre-stream
+    populations, integrates two fine substeps in physical cell-volume units,
+    preserves uniform flow, and corrects only exterior interface links.  It
+    remains an implementation candidate pending long uniform-grid comparison.
 
 ## Rejected candidates
 
@@ -71,9 +76,10 @@ Active direct-grid comparisons cover:
 - a long L120 time history beyond five nominal convective times;
 - R=12 sphere in an approximately 8D transverse domain.
 
-The present static-block shell-reflux AMR is explicitly excluded from physical
-claims.  Its failed logs are retained as negative evidence while a face-local
-conservative coupling is developed as a common module.
+The former static-block shell-reflux AMR is explicitly excluded from physical
+claims.  Its failed logs are retained as negative evidence.  The replacement
+face-local kinetic coupling is implemented but is not promoted until its
+long-run interface and force behaviour agree with a uniform fine grid.
 
 No result is admitted before at least five convective times, three settled
 windows, two independent force observers, and three effective resolutions.

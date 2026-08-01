@@ -8,7 +8,7 @@ population-transfer helpers and a real solver loop:
 * time-interpolated coarse data at the fine ghost layer;
 * Filippova-Haenel-style non-equilibrium population rescaling;
 * restriction of the fine-owned volume; and
-* a population-wise reflux correction on the adjacent coarse shell.
+* a link-local kinetic flux register and exterior-interface reflux correction.
 
 The runtime is collision/boundary agnostic.  A caller provides an ``advance``
 callback and may therefore compose D3Q19/D3Q27, MRT/cumulant, wall models and
@@ -22,9 +22,26 @@ from typing import Callable
 import torch
 
 from .fixed_nested_transfer import restrict_populations_2to1
+from .kinetic_flux_register import (
+    KineticInterfaceTransfer,
+    apply_face_local_reflux,
+    build_kinetic_interface_links,
+    observe_kinetic_interface_transfer,
+)
 from .refinement import BoxRegion
 
-Advance3D = Callable[[torch.Tensor, float, int, int], torch.Tensor]
+
+@dataclass(frozen=True)
+class AMRAdvanceResult:
+    """One level update plus its post-collision/pre-stream populations."""
+
+    populations: torch.Tensor
+    post_collision: torch.Tensor
+
+
+Advance3D = Callable[
+    [torch.Tensor, float, int, int], torch.Tensor | AMRAdvanceResult,
+]
 _SUPPORTED_Q = {19: "D3Q19", 27: "D3Q27"}
 
 
@@ -101,7 +118,12 @@ class StaticBlockAMRConfig:
 
 @dataclass(frozen=True)
 class PopulationRefluxLedger:
-    """Population-wise coarse/fine replacement and reflux accounting."""
+    """Population-wise coarse/fine replacement and reflux accounting.
+
+    ``shell_cells`` is retained for result-schema compatibility and now means
+    the number of corrected exterior interface links.  Corrections are never
+    distributed over an unrelated enclosing shell.
+    """
 
     replacement_mismatch: torch.Tensor
     applied_shell_correction: torch.Tensor
@@ -152,21 +174,6 @@ def _sample_parent_with_ghost(
     )
 
 
-def _coarse_shell_mask(
-    shape: tuple[int, int, int], box: BoxRegion, device: torch.device,
-) -> torch.Tensor:
-    """One-cell coarse shell outside a box, including edges and corners."""
-    nz, ny, nx = shape
-    shell = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    shell[
-        box.z0 - 1:box.z1 + 1,
-        box.y0 - 1:box.y1 + 1,
-        box.x0 - 1:box.x1 + 1,
-    ] = True
-    shell[box.z0:box.z1, box.y0:box.y1, box.x0:box.x1] = False
-    return shell
-
-
 class StaticBlockAMR3D:
     """One coarse grid plus one fixed, fine-owned, 2:1 nested block."""
 
@@ -198,6 +205,22 @@ class StaticBlockAMR3D:
         else:
             self.fine_solid = None
             self.fine_solid_with_ghost = None
+        coarse_owned = torch.zeros(
+            coarse_f.shape[1:], dtype=torch.bool, device=coarse_f.device,
+        )
+        b = config.box
+        coarse_owned[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = True
+        fine_owned = torch.zeros(
+            self.fine_f.shape[1:], dtype=torch.bool, device=coarse_f.device,
+        )
+        g = config.ghost
+        fine_owned[g:-g, g:-g, g:-g] = True
+        self.coarse_interface_links = build_kinetic_interface_links(
+            coarse_owned, q=coarse_f.shape[0],
+        )
+        self.fine_interface_links = build_kinetic_interface_links(
+            fine_owned, q=coarse_f.shape[0],
+        )
         self.last_reflux: PopulationRefluxLedger | None = None
 
     @property
@@ -244,72 +267,104 @@ class StaticBlockAMR3D:
             spatial_ratio=1.0 / self.config.ratio,
         )
 
-    def _replace_and_reflux(self, restricted: torch.Tensor) -> PopulationRefluxLedger:
+    def _replace_without_reflux(self, restricted: torch.Tensor) -> PopulationRefluxLedger:
         b = self.config.box
         old_patch = self.coarse_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1]
         mismatch = old_patch.sum(dim=(1, 2, 3)) - restricted.sum(dim=(1, 2, 3))
         self.coarse_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = restricted
-
-        correction = torch.zeros_like(mismatch)
-        shell_cells = 0
-        limited_directions = 0
-        if self.config.reflux:
-            shell = _coarse_shell_mask(self.coarse_f.shape[1:], b, self.coarse_f.device)
-            shell_cells = int(shell.sum().item())
-            shell_values = self.coarse_f[:, shell]
-            shell_inventory = shell_values.sum(dim=1)
-            requested_factor = mismatch / shell_inventory.clamp_min(1e-30)
-            # Proportional reflux preserves the local population shape and
-            # cannot turn a small diagonal population negative merely because
-            # every shell cell received the same absolute subtraction.  A
-            # single step may remove at most 20% of any directional shell
-            # inventory; a larger mismatch is left in the explicit residual.
-            factor = requested_factor.clamp_min(-0.2)
-            limited_directions = int((factor != requested_factor).sum().item())
-            delta = shell_values * factor[:, None]
-            self.coarse_f[:, shell] = shell_values + delta
-            applied_total = delta.sum(dim=1)
-            correction = applied_total / shell_cells
-        else:
-            applied_total = torch.zeros_like(mismatch)
-        residual = mismatch - applied_total
         return PopulationRefluxLedger(
-            mismatch, correction, shell_cells, residual, limited_directions,
+            mismatch, torch.zeros_like(mismatch), 0, mismatch, 0,
         )
+
+    @staticmethod
+    def _unpack_advance(
+        result: torch.Tensor | AMRAdvanceResult,
+        expected_shape: torch.Size,
+        *,
+        require_flux_state: bool,
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+        if isinstance(result, AMRAdvanceResult):
+            populations, post_collision = result.populations, result.post_collision
+            if post_collision.shape != expected_shape:
+                raise ValueError("post_collision changed the population shape")
+        else:
+            populations, post_collision = result, None
+        if populations.shape != expected_shape:
+            raise ValueError("advance changed the population shape")
+        if require_flux_state and post_collision is None:
+            raise TypeError(
+                "reflux-enabled AMR advance must return AMRAdvanceResult with "
+                "post-collision/pre-stream populations"
+            )
+        return populations, post_collision
 
     def step(self, advance: Advance3D) -> PopulationRefluxLedger:
         """Advance one coarse step and two time-interpolated fine substeps.
 
-        ``advance(f, tau, level, substep)`` must return a new population
-        tensor with the same shape.  ``level`` is 0/1; the coarse call uses
-        ``substep=-1`` and fine calls use 0 and 1.
+        With reflux enabled, ``advance(f, tau, level, substep)`` must return
+        :class:`AMRAdvanceResult`, including the state after collision and
+        before streaming.  A raw tensor remains accepted only when reflux is
+        disabled. ``level`` is 0/1; the coarse call uses ``substep=-1`` and
+        fine calls use 0 and 1.
         """
         coarse_old = self.coarse_f.clone()
-        coarse_new = advance(self.coarse_f, self.config.tau_coarse, 0, -1)
-        if coarse_new.shape != self.coarse_f.shape:
-            raise ValueError("advance changed the coarse population shape")
+        coarse_new, coarse_post = self._unpack_advance(
+            advance(self.coarse_f, self.config.tau_coarse, 0, -1),
+            self.coarse_f.shape, require_flux_state=self.config.reflux,
+        )
         self.coarse_f = coarse_new
+        coarse_transfer = (
+            observe_kinetic_interface_transfer(
+                coarse_post, self.coarse_interface_links,
+            )
+            if coarse_post is not None else None
+        )
+        fine_transfer: KineticInterfaceTransfer | None = None
 
         for substep in range(self.config.ratio):
             alpha_start = substep / self.config.ratio
             parent_start = torch.lerp(coarse_old, self.coarse_f, alpha_start)
             self._fill_ghost(parent_start)
-            fine_new = advance(
-                self.fine_f, self.config.tau_fine, 1, substep,
+            fine_new, fine_post = self._unpack_advance(
+                advance(self.fine_f, self.config.tau_fine, 1, substep),
+                self.fine_f.shape, require_flux_state=self.config.reflux,
             )
-            if fine_new.shape != self.fine_f.shape:
-                raise ValueError("advance changed the fine population shape")
+            if fine_post is not None:
+                observed = observe_kinetic_interface_transfer(
+                    fine_post, self.fine_interface_links,
+                    cell_volume=1.0 / self.config.ratio**3,
+                )
+                fine_transfer = observed if fine_transfer is None else fine_transfer + observed
             self.fine_f = fine_new
             alpha_end = (substep + 1) / self.config.ratio
             parent_end = torch.lerp(coarse_old, self.coarse_f, alpha_end)
             self._fill_ghost(parent_end)
 
-        self.last_reflux = self._replace_and_reflux(self._restrict_physical())
+        restricted = self._restrict_physical()
+        if not self.config.reflux:
+            self.last_reflux = self._replace_without_reflux(restricted)
+            return self.last_reflux
+        if coarse_transfer is None or fine_transfer is None:
+            raise RuntimeError("missing interface transfer for reflux")
+        b = self.config.box
+        self.coarse_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = restricted
+        self.coarse_f, report = apply_face_local_reflux(
+            self.coarse_f, self.coarse_interface_links,
+            coarse_transfer, fine_transfer,
+        )
+        self.last_reflux = PopulationRefluxLedger(
+            report.requested_inventory_correction,
+            report.applied_inventory_correction,
+            report.corrected_links,
+            report.residual,
+            report.limited_directions,
+        )
         return self.last_reflux
 
 
 __all__ = [
     "Advance3D",
+    "AMRAdvanceResult",
     "PopulationRefluxLedger",
     "StaticBlockAMR3D",
     "StaticBlockAMRConfig",
