@@ -21,6 +21,7 @@ from suboff_experimental_resistance import (
 )
 
 from tensorlbm.boundaries3d import far_field_bc_3d
+from tensorlbm.checkpoint_io import atomic_torch_save
 from tensorlbm.control_volume_force import (
     box_control_volume,
     fluid_momentum_change,
@@ -53,7 +54,6 @@ from tensorlbm.suboff_static_amr import (
 )
 from tensorlbm.surface_area_weights import bfl_surface_area_weights
 from tensorlbm.wall_model import (
-    WallStressDiagnostics,
     bfl_wall_function_3d,
     physical_wall_lattice_viscosity,
 )
@@ -96,6 +96,9 @@ def parser() -> argparse.ArgumentParser:
         default="non_equilibrium_extrapolation",
     )
     result.add_argument("--output", type=Path)
+    result.add_argument("--checkpoint", type=Path)
+    result.add_argument("--checkpoint-interval", type=int, default=0)
+    result.add_argument("--resume", action="store_true")
     result.add_argument("--preflight-only", action="store_true")
     return result
 
@@ -107,6 +110,10 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("stress exchange distance must be positive")
     if args.memory_bytes_per_cell <= 0.0:
         raise ValueError("memory bytes per cell must be positive")
+    if args.checkpoint_interval < 0:
+        raise ValueError("checkpoint interval must be non-negative")
+    if args.resume and args.checkpoint is None:
+        raise ValueError("resume requires a checkpoint path")
     device = torch.device(args.device)
     if device.type == "cuda":
         torch.cuda.set_device(device)
@@ -177,7 +184,7 @@ def run(args: argparse.Namespace) -> dict:
     }
     if args.preflight_only:
         return {
-            "schema": "tensorlbm-suboff-nested-amr-smoke-v1",
+            "schema": "tensorlbm-suboff-nested-amr-smoke-v2",
             "status": "preflight_only",
             "physical_validation": False,
             "planning": planning,
@@ -202,6 +209,27 @@ def run(args: argparse.Namespace) -> dict:
         (outer_amr_config, inner_amr_config),
         fine_solids=(None, nested_solid),
     )
+    checkpoint_signature = {
+        "schema_version": 2,
+        "shape_zyx": list(shape),
+        "speed_knots": args.speed_knots,
+        "hull_length": args.hull_length,
+        "center_x_fraction": args.center_x_fraction,
+        "outer_box": vars(outer_plan.box),
+        "inner_box": vars(nested_plan.box_in_outer_allocated_coordinates),
+        "cv_margin": args.cv_margin,
+        "ramp_steps": args.ramp_steps,
+        "lattice_speed": args.lattice_speed,
+        "resolved_reynolds": args.resolved_reynolds,
+        "rho_water": args.rho_water,
+        "nu_water": args.nu_water,
+        "cs_smag": args.cs_smag,
+        "wall_law": args.wall_law,
+        "stress_exchange_distance": args.stress_exchange_distance,
+        "sponge_width": args.sponge_width,
+        "sponge_strength": args.sponge_strength,
+        "far_field_mode": args.far_field_mode,
+    }
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
     finest_solid_q = finest_solid.unsqueeze(0).expand_as(hierarchy.finest_f)
@@ -274,12 +302,53 @@ def run(args: argparse.Namespace) -> dict:
         lattice_speed=args.lattice_speed,
     )
     current_step = 0
+    resumed_from_step = 0
     force_samples: list[tuple[float, float, float, float]] = []
     step_records: list[dict] = []
-    wall_diagnostics: list[WallStressDiagnostics] = []
     maximum_limiter_fraction = 0.0
     maximum_reflux_residual = [0.0, 0.0]
     maximum_reflux_limited_directions = [0, 0]
+    maximum_rejected_fraction = 0.0
+
+    if args.resume:
+        state = torch.load(args.checkpoint, map_location=device, weights_only=True)
+        if state.get("configuration") != checkpoint_signature:
+            raise ValueError("checkpoint configuration does not match nested smoke")
+        current_step = int(state["step"])
+        resumed_from_step = current_step
+        if current_step >= args.steps:
+            raise ValueError("checkpoint already reached or exceeded requested steps")
+        hierarchy.restore_level_populations([
+            populations.to(device=device)
+            for populations in state["level_populations"]
+        ])
+        step_records = list(state["step_records"])
+        maximum_limiter_fraction = float(state["maximum_limiter_fraction"])
+        maximum_reflux_residual = [
+            float(value) for value in state["maximum_reflux_residual"]
+        ]
+        maximum_reflux_limited_directions = [
+            int(value) for value in state["maximum_reflux_limited_directions"]
+        ]
+        maximum_rejected_fraction = float(state["maximum_rejected_fraction"])
+
+    def save_checkpoint(step: int) -> None:
+        assert args.checkpoint is not None
+        atomic_torch_save({
+            "schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2",
+            "configuration": checkpoint_signature,
+            "step": step,
+            "level_populations": [
+                level.detach().cpu() for level in hierarchy.level_populations
+            ],
+            "step_records": step_records,
+            "maximum_limiter_fraction": maximum_limiter_fraction,
+            "maximum_reflux_residual": maximum_reflux_residual,
+            "maximum_reflux_limited_directions": (
+                maximum_reflux_limited_directions
+            ),
+            "maximum_rejected_fraction": maximum_rejected_fraction,
+        }, args.checkpoint)
 
     def collide(state: torch.Tensor, tau: float) -> torch.Tensor:
         nonlocal maximum_limiter_fraction
@@ -293,7 +362,7 @@ def run(args: argparse.Namespace) -> dict:
     def advance(
         state: torch.Tensor, tau: float, level: int, substep: int,
     ) -> AMRAdvanceResult:
-        nonlocal maximum_limiter_fraction
+        nonlocal maximum_limiter_fraction, maximum_rejected_fraction
         del substep
         before = state
         collided = collide(state, tau)
@@ -333,7 +402,9 @@ def run(args: argparse.Namespace) -> dict:
             return_wall_diagnostics=True,
         )
         out, friction, pressure, diagnostics = wall_result
-        wall_diagnostics.append(diagnostics)
+        maximum_rejected_fraction = max(
+            maximum_rejected_fraction, diagnostics.rejected_fraction,
+        )
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
         maximum_limiter_fraction = max(
@@ -366,7 +437,9 @@ def run(args: argparse.Namespace) -> dict:
         ))
         return AMRAdvanceResult(out, post_collision)
 
-    for current_step in range(1, args.steps + 1):
+    start_step = current_step
+    for step in range(start_step + 1, args.steps + 1):
+        current_step = step
         force_samples.clear()
         ledgers = hierarchy.step(advance)
         if len(force_samples) != 4:
@@ -397,6 +470,7 @@ def run(args: argparse.Namespace) -> dict:
                 abs(corrected - bfl_mean) / max(abs(corrected), 1.0e-30) * 100.0
             ),
             "mean_y_plus": sum(item[3] for item in force_samples) / 4.0,
+            "wall_fully_activated": current_step >= args.ramp_steps,
         })
         print(
             f"nested smoke step={current_step}/{args.steps} "
@@ -404,24 +478,34 @@ def run(args: argparse.Namespace) -> dict:
             f"closure={step_records[-1]['source_corrected_observer_difference_pct']:.5f}%",
             flush=True,
         )
+        if (
+            args.checkpoint is not None
+            and args.checkpoint_interval > 0
+            and current_step % args.checkpoint_interval == 0
+        ):
+            save_checkpoint(current_step)
 
-    maximum_corrected_difference = max(
-        record["source_corrected_observer_difference_pct"]
-        for record in step_records
-    )
-    maximum_rejected = max(
-        diagnostic.rejected_fraction for diagnostic in wall_diagnostics
+    eligible_records = [
+        record for record in step_records if record["wall_fully_activated"]
+    ]
+    maximum_corrected_difference = (
+        max(
+            record["source_corrected_observer_difference_pct"]
+            for record in eligible_records
+        )
+        if eligible_records else None
     )
     finite = all(
         bool(torch.isfinite(level).all()) for level in hierarchy.level_populations
     )
     admitted = (
         finite
+        and maximum_corrected_difference is not None
         and maximum_corrected_difference <= 0.1
         and max(maximum_reflux_residual) <= 1.0e-6
         and max(maximum_reflux_limited_directions) == 0
         and maximum_limiter_fraction <= 1.0e-3
-        and maximum_rejected <= 0.01
+        and maximum_rejected_fraction <= 0.01
     )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30
@@ -433,11 +517,12 @@ def run(args: argparse.Namespace) -> dict:
         fine_hull_length_cells=finest_length,
     )
     return {
-        "schema": "tensorlbm-suboff-nested-amr-smoke-v1",
+        "schema": "tensorlbm-suboff-nested-amr-smoke-v2",
         "status": "integration_smoke_pass" if admitted else "integration_smoke_fail",
         "physical_validation": False,
         "configuration": vars(args) | {
             "output": str(args.output) if args.output else None,
+            "checkpoint": str(args.checkpoint) if args.checkpoint else None,
             "physical_reynolds": physical_re,
             "finest_wall_nu": wall_nu,
             "finest_hull_length_cells": finest_length,
@@ -446,6 +531,9 @@ def run(args: argparse.Namespace) -> dict:
                 outer_amr_config.tau_fine,
                 inner_amr_config.tau_fine,
             ],
+            "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
+            "checkpoint_interval": args.checkpoint_interval,
+            "resumed_from_step": resumed_from_step,
         },
         "planning": planning | {"measured_peak_allocated_gib": peak_gib},
         "geometry": nested_geometry | {
@@ -464,11 +552,12 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_reflux_limited_directions
             ),
             "maximum_positivity_limited_fraction": maximum_limiter_fraction,
-            "maximum_wall_sample_rejected_fraction": maximum_rejected,
+            "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
             "finite": finite,
         },
         "acceptance": {
             "integration_smoke_admitted": admitted,
+            "fully_activated_steps_assessed": len(eligible_records),
             "resistance_accuracy_assessed": False,
             "time_convergence_assessed": False,
             "grid_convergence_assessed": False,
