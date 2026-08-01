@@ -371,6 +371,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     additional 1 GiB and persist the preflight numbers in results.  Ten focused
     memory/sphere/static-AMR tests pass.  R15 waits for a genuinely free safe
     device instead of competing with another workload.
+51. Cylinder checkpoint/result provenance is likewise promoted to v2 with the
+    complete center, collision, warmup/ramp, sponge, CV, open-boundary and
+    periodic-axis identity plus the live-memory preflight.  Save/resume and
+    changed-sponge rejection tests pass.  The already-running D32/80k process
+    remains isolated on its loaded v1 code and is treated as diagnostic; future
+    formal cylinder sequences use v2 rather than retroactively relabelling it.
 
 ## Rejected candidates
 
