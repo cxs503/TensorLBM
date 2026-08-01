@@ -17,7 +17,10 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
    an exact momentum-vs-reported-traction regression.
 4. MRT+Smagorinsky AMR became non-finite near step 900.  D3Q19 cumulant+
    Smagorinsky extended this to step 1660.  A moment-preserving positivity
-   limiter is now under long-run test; triggering fraction is recorded.
+   limiter prevented NaNs but the force still grew monotonically after about
+   step 1400.  Enlarging the domain and refinement patch did not cure it.  All
+   shell-reflux AMR candidates were stopped; the next AMR implementation must
+   use face-local flux registers and conservative coarse/fine reconstruction.
 5. Direct uniform L120 with the corrected wall traction remained finite
    through at least step 1800.  At that point it reported approximately
    103 N pressure and 82 N wall shear.  One convective time is 2000 steps at
@@ -28,10 +31,20 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
    Keeping D=16 but increasing transverse width from 4D to 8D gave
    `Cd=1.19869` (9.8% error), proving domain blockage was dominant.
 7. An incoming-only non-equilibrium extrapolation boundary is implemented
-   separately from the legacy hard-equilibrium boundary.  It is not promoted
-   until the same wide-domain sphere case demonstrates lower reflection/error.
-8. A periodic-span cylinder benchmark now uses the same BFL and independent
-   control-volume observer; physical Re=100 runs remain required.
+   separately from the legacy hard-equilibrium boundary.  On the R=8, 8D-wide
+   sphere it changed mean Cd by less than 0.0001%; it therefore preserves the
+   baseline but has not yet demonstrated lower long-period reflection.
+8. The periodic-span cylinder at Re=100, D=24 and 8.3D transverse width gave
+   `Cd_CV=1.47698` and `Cd_BFL=1.47699` (observer difference 0.00078%).  The
+   value is 11.1% above the nominal unconfined reference 1.33; a 16.7D-wide
+   domain rerun is in progress to quantify blockage before changing numerics.
+9. The D3Q27 wall-stress source contained the same obsolete `tau_w/y1`
+   scaling already removed from D3Q19.  Both lattices now share the
+   `tau_w*A/V` traction contract and exact population-momentum regression.
+10. Force admission no longer depends on an instantaneous reference crossing
+    or only three report points.  Equal-duration block means now check range,
+    first-half/second-half drift and linear trend, and fail closed with fewer
+    than four complete blocks.
 
 ## Rejected candidates
 
@@ -50,14 +63,17 @@ Results and logs are under:
 
 `/home/wxsc/TensorLBM-cfd-20260801/results/amr_campaign_20260801`
 
-Active comparisons cover:
+Active direct-grid comparisons cover:
 
-- uniform L120 versus AMR effective L240;
-- AMR effective L360 (diameter about 42 cells);
-- standard versus enlarged external domain;
-- standard versus enlarged refinement patch;
-- coupled versus diagnostic uncoupled wall traction;
-- Cumulant, WALE and positivity-limited collision paths.
+- legacy hard-equilibrium versus incoming-only non-equilibrium far field at
+  uniform L120;
+- uniform L120 versus uniform L160 spatial convergence;
+- a long L120 time history beyond five nominal convective times;
+- R=12 sphere in an approximately 8D transverse domain.
+
+The present static-block shell-reflux AMR is explicitly excluded from physical
+claims.  Its failed logs are retained as negative evidence while a face-local
+conservative coupling is developed as a common module.
 
 No result is admitted before at least five convective times, three settled
 windows, two independent force observers, and three effective resolutions.
