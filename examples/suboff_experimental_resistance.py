@@ -28,6 +28,7 @@ from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
+from tensorlbm.checkpoint_io import atomic_torch_save
 from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.drag_pressure import (
@@ -392,7 +393,7 @@ def run_case(args: argparse.Namespace) -> dict:
         if checkpoint is None:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({
+        atomic_torch_save({
             "schema": "tensorlbm-suboff-direct-checkpoint-v1",
             "configuration": checkpoint_signature,
             "step": step,
