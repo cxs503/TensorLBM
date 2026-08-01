@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from pathlib import Path
 
 import torch
 
@@ -43,6 +44,9 @@ class FlatPlateWallModelConfig:
     smagorinsky_cs: float = 0.05
     positivity_limiter: bool = True
     report_interval: int = 1000
+    checkpoint_interval: int = 0
+    checkpoint_path: str | None = None
+    resume: bool = False
     device: str = "cpu"
 
     @property
@@ -77,6 +81,10 @@ class FlatPlateWallModelConfig:
             raise ValueError("smagorinsky_cs must lie in [0,0.5)")
         if self.report_interval < 0:
             raise ValueError("report_interval must be non-negative")
+        if self.checkpoint_interval < 0:
+            raise ValueError("checkpoint_interval must be non-negative")
+        if self.resume and not self.checkpoint_path:
+            raise ValueError("resume requires checkpoint_path")
 
 
 def _halfway_links(solid: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -135,6 +143,48 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     cv_history: list[float] = []
     bfl_total_history: list[float] = []
     maximum_limited_fraction = 0.0
+    start_step = 0
+    checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
+    if config.resume:
+        assert checkpoint is not None
+        state = torch.load(checkpoint, map_location=device, weights_only=True)
+        expected = {
+            "shape_zyx": list(shape), "plate_length": config.plate_length,
+            "reynolds": config.reynolds,
+            "resolved_reynolds": config.resolved_reynolds,
+            "lattice_speed": config.lattice_speed, "wall_law": config.wall_law,
+        }
+        if state.get("configuration") != expected:
+            raise ValueError("checkpoint configuration does not match flat-plate run")
+        f = state["populations"].to(device=device)
+        start_step = int(state["step"])
+        friction_history = state["friction_history"].tolist()
+        cv_history = state["control_volume_history"].tolist()
+        bfl_total_history = state["bfl_total_history"].tolist()
+        maximum_limited_fraction = float(state["maximum_limited_fraction"])
+        if start_step >= config.steps:
+            raise ValueError("checkpoint already reached or exceeded requested steps")
+
+    def save_checkpoint(step: int) -> None:
+        if checkpoint is None:
+            return
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        torch.save({
+            "schema": "tensorlbm-flat-plate-checkpoint-v1",
+            "configuration": {
+                "shape_zyx": list(shape), "plate_length": config.plate_length,
+                "reynolds": config.reynolds,
+                "resolved_reynolds": config.resolved_reynolds,
+                "lattice_speed": config.lattice_speed,
+                "wall_law": config.wall_law,
+            },
+            "step": step,
+            "populations": f.detach().cpu(),
+            "friction_history": torch.tensor(friction_history, dtype=torch.float64),
+            "control_volume_history": torch.tensor(cv_history, dtype=torch.float64),
+            "bfl_total_history": torch.tensor(bfl_total_history, dtype=torch.float64),
+            "maximum_limited_fraction": maximum_limited_fraction,
+        }, checkpoint)
 
     def outer(state: torch.Tensor) -> torch.Tensor:
         return non_equilibrium_far_field_bc_3d(
@@ -142,7 +192,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             faces=("x-", "x+", "y-", "y+"),
         )
 
-    for step in range(1, config.steps + 1):
+    for step in range(start_step + 1, config.steps + 1):
         old = f
         collided = collide_cumulant_d3q19(
             f, config.tau, C_s=config.smagorinsky_cs,
@@ -191,6 +241,14 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
                 f"max_limited={maximum_limited_fraction:.3e}",
                 flush=True,
             )
+        if (
+            checkpoint is not None and config.checkpoint_interval
+            and step % config.checkpoint_interval == 0
+        ):
+            save_checkpoint(step)
+
+    if checkpoint is not None:
+        save_checkpoint(config.steps)
 
     area = 2.0 * config.plate_length * config.nz
     denominator = 0.5 * config.lattice_speed**2 * area
@@ -225,6 +283,8 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
             "report_interval": config.report_interval,
+            "resumed_from_step": start_step,
+            "checkpoint_path": str(checkpoint) if checkpoint else None,
         },
         "result": {
             "friction_coefficient": cf,
