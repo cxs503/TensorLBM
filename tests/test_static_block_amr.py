@@ -49,6 +49,46 @@ def test_convective_tau_scaling() -> None:
             tau_coarse=0.56,
             ghost_interpolation="cubic",
         )
+    with pytest.raises(ValueError, match="both be zero or positive"):
+        StaticBlockAMRConfig(
+            BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+            tau_coarse=0.56,
+            interface_filter_width=2,
+        )
+
+
+def test_interface_filter_is_composed_into_the_fine_advance() -> None:
+    config = StaticBlockAMRConfig(
+        BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+        tau_coarse=0.56,
+        interface_filter_width=1,
+        interface_filter_strength=0.5,
+    )
+    solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)), config)
+    initial = solver.fine_f.clone()
+
+    def add_kinetic_mode(
+        f: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
+        del tau, substep
+        out = f.clone()
+        if level == 1:
+            out[7] += 1.0e-3
+            out[8] += 1.0e-3
+            out[9] -= 1.0e-3
+            out[10] -= 1.0e-3
+        return AMRAdvanceResult(out, out)
+
+    solver.step(add_kinetic_mode)
+
+    shell_change = torch.linalg.vector_norm(
+        solver.fine_f[:, 1, 1, 1] - initial[:, 1, 1, 1],
+    )
+    core_change = torch.linalg.vector_norm(
+        solver.fine_f[:, 3, 3, 3] - initial[:, 3, 3, 3],
+    )
+    assert shell_change < core_change
+    assert float(core_change) > 0.0
 
 
 def test_single_interface_accepts_a_convectively_scaled_dynamic_tau_pair() -> None:
