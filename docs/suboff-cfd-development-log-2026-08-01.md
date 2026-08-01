@@ -938,6 +938,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Smooth activation is supported, and force-closure admission now considers
      only fully activated steps, preventing the intentional moving-wall-frame
      startup diagnostic from contaminating laboratory-frame closure evidence.
+107. The independent v6 L120 diagnostic finishes and is rejected despite an
+     apparently favourable reference error.  Its full 10000-step post-warmup
+     CV mean is 91.207 N (4.36% high), but eight blocks span 77.80--104.83 N,
+     half-mean drift is 10.73%, trend 14.32% and 95% half-width 9.78%.  The
+     old 1500-step sparse paired window averages only 85.34 N, demonstrating
+     that tail choice and sampling phase can reverse the apparent error while
+     the low-frequency mode remains unresolved.  Its pre-v8 wall-frame BFL and
+     surface paths fail observer gates and are not repaired post hoc.  The
+     immutable negative artifact is retained; exact v8 L120 has automatically
+     started on the same physical GPU with a uniform 10000-step explicit tail
+     and laboratory-frame force ledger.
 
 ## Rejected candidates
 
