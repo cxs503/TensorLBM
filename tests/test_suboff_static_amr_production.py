@@ -71,9 +71,14 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert set(state["auxiliary_cv_samples"]) == {2, 4}
     assert len(state["surface_pressure_samples"]) == 4
     assert len(state["paired_bfl_total_samples"]) == 4
+    assert len(state["numerical_momentum_source_samples"]) == 8
+    assert len(state["corrected_cv_samples"]) == 8
     assert resumed["result"]["nested_control_volume_invariance"][
         "auxiliary_count"
     ] == 2
+    assert resumed["result"][
+        "source_corrected_cv_vs_bfl_difference_pct"
+    ] < 1.0
     assert resumed["configuration"]["wall_viscosity_basis"] == "physical_reynolds"
     assert resumed["configuration"]["wall_model_reynolds"] == pytest.approx(
         resumed["configuration"]["physical_reynolds"],

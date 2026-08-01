@@ -463,6 +463,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     distinguish AMR inventory-placement error from a real pressure/acoustic
     transient without selecting whichever observer happens to match the tow
     value.
+60. The paired v5 ledger also separates non-physical momentum introduced by
+    the collision and positivity operators from wall momentum exchange.  For
+    each sampled fine substep it records the raw CV force, collision-plus-
+    limiter momentum source, and the source-corrected CV closure diagnostic.
+    The corrected value is never substituted for physical resistance: a
+    numerical source above 1% rejects the run, while corrected-CV/BFL closure
+    is a second algebraic gate.  This identifies whether a long-run observer
+    split is caused by a non-conservative operator, without hiding that defect
+    behind a post-processing correction.
 
 ## Rejected candidates
 

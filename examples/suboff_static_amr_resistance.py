@@ -31,6 +31,7 @@ from tensorlbm.checkpoint_io import atomic_torch_save
 from tensorlbm.control_volume_force import (
     assess_nested_control_volume_invariance,
     box_control_volume,
+    fluid_momentum_change,
     observe_control_volume_force,
 )
 from tensorlbm.cuda_memory_budget import require_cuda_memory_budget
@@ -156,6 +157,7 @@ def run(args: argparse.Namespace) -> dict:
         args.force_observer_target,
         args.nested_cv_target,
         args.surface_observer_target,
+        args.numerical_source_target,
     ) < 0.0:
         raise ValueError("acceptance targets must be non-negative")
     aux_cv_margins = tuple(sorted({
@@ -331,6 +333,8 @@ def run(args: argparse.Namespace) -> dict:
     surface_pressure_samples: list[tuple[int, float]] = []
     surface_total_samples: list[tuple[int, float]] = []
     paired_bfl_total_samples: list[tuple[int, float]] = []
+    numerical_momentum_source_samples: list[tuple[int, float]] = []
+    corrected_cv_samples: list[tuple[int, float]] = []
     wall_diagnostic_samples: list[WallStressDiagnostics] = []
     positivity_fractions: list[float] = []
     current_step = 0
@@ -422,6 +426,7 @@ def run(args: argparse.Namespace) -> dict:
             wall_diagnostic_samples.append(wall_diagnostics)
         else:
             out, friction, pressure = wall_result
+        before_positivity = out
         if not args.disable_positivity_limiter:
             out, diagnostic = limit_nonequilibrium_for_positivity(out)
             positivity_fractions.append(diagnostic.limited_fraction)
@@ -433,6 +438,19 @@ def run(args: argparse.Namespace) -> dict:
             current_step > args.warmup_steps
             and current_step % args.surface_force_interval == 0
         ):
+            collision_source = float(fluid_momentum_change(
+                before, post_collision, fine_cv, solid=fine_solid_g,
+            )[0].item())
+            positivity_source = float(fluid_momentum_change(
+                before_positivity, out, fine_cv, solid=fine_solid_g,
+            )[0].item())
+            numerical_source = collision_source + positivity_source
+            numerical_momentum_source_samples.append(
+                (current_step, numerical_source),
+            )
+            corrected_cv_samples.append(
+                (current_step, cv_force + numerical_source),
+            )
             paired_primary_cv_samples.append((current_step, cv_force))
             for margin, auxiliary_cv in auxiliary_cvs.items():
                 auxiliary_force = float(observe_control_volume_force(
@@ -526,6 +544,13 @@ def run(args: argparse.Namespace) -> dict:
         paired_bfl_total_samples = [
             tuple(item) for item in state["paired_bfl_total_samples"].tolist()
         ]
+        numerical_momentum_source_samples = [
+            tuple(item)
+            for item in state["numerical_momentum_source_samples"].tolist()
+        ]
+        corrected_cv_samples = [
+            tuple(item) for item in state["corrected_cv_samples"].tolist()
+        ]
         recent_forces = state["recent_forces"].tolist()
         recent_bfl_pressure = state["recent_bfl_pressure"].tolist()
         recent_wall_shear = state["recent_wall_shear"].tolist()
@@ -588,6 +613,12 @@ def run(args: argparse.Namespace) -> dict:
             ).reshape(-1, 2),
             "paired_bfl_total_samples": torch.tensor(
                 paired_bfl_total_samples, dtype=torch.float64,
+            ).reshape(-1, 2),
+            "numerical_momentum_source_samples": torch.tensor(
+                numerical_momentum_source_samples, dtype=torch.float64,
+            ).reshape(-1, 2),
+            "corrected_cv_samples": torch.tensor(
+                corrected_cv_samples, dtype=torch.float64,
             ).reshape(-1, 2),
             "recent_forces": torch.tensor(recent_forces, dtype=torch.float64),
             "recent_bfl_pressure": torch.tensor(
@@ -780,6 +811,10 @@ def run(args: argparse.Namespace) -> dict:
     surface_pressure_mean = sampled_mean(surface_pressure_samples)
     surface_total_mean = sampled_mean(surface_total_samples)
     paired_bfl_total_mean = sampled_mean(paired_bfl_total_samples)
+    numerical_momentum_source_mean = sampled_mean(
+        numerical_momentum_source_samples,
+    )
+    corrected_cv_mean = sampled_mean(corrected_cv_samples)
     auxiliary_items = list(auxiliary_cv_means.items())
     nested_cv_assessment = assess_nested_control_volume_invariance(
         paired_primary_cv_mean,
@@ -804,6 +839,14 @@ def run(args: argparse.Namespace) -> dict:
     )
     surface_observer_difference_pct = (
         abs(surface_total_mean - paired_bfl_total_mean)
+        / max(abs(paired_bfl_total_mean), 1e-30) * 100.0
+    )
+    corrected_cv_observer_difference_pct = (
+        abs(corrected_cv_mean - paired_bfl_total_mean)
+        / max(abs(paired_bfl_total_mean), 1e-30) * 100.0
+    )
+    numerical_momentum_source_fraction_pct = (
+        abs(numerical_momentum_source_mean)
         / max(abs(paired_bfl_total_mean), 1e-30) * 100.0
     )
     maximum_rejected_fraction = max(
@@ -834,6 +877,10 @@ def run(args: argparse.Namespace) -> dict:
             args.nested_cv_target, minimum_auxiliary_count=2,
         )
         and surface_observer_difference_pct <= args.surface_observer_target
+        and numerical_momentum_source_fraction_pct
+        <= args.numerical_source_target
+        and corrected_cv_observer_difference_pct
+        <= args.force_observer_target
         and limiter_acceptable
         and reflux_acceptable
         and wall_sampling_acceptable
@@ -925,6 +972,18 @@ def run(args: argparse.Namespace) -> dict:
                 surface_total_mean * scale
             ),
             "paired_bfl_link_plus_wall_stress_n": paired_bfl_total_mean * scale,
+            "mean_numerical_momentum_source_n_diagnostic": (
+                numerical_momentum_source_mean * scale
+            ),
+            "numerical_momentum_source_fraction_pct": (
+                numerical_momentum_source_fraction_pct
+            ),
+            "source_corrected_control_volume_resistance_n_diagnostic": (
+                corrected_cv_mean * scale
+            ),
+            "source_corrected_cv_vs_bfl_difference_pct": (
+                corrected_cv_observer_difference_pct
+            ),
             "surface_pressure_samples_in_window": sum(
                 step > final_window_start for step, _ in surface_pressure_samples
             ),
@@ -976,6 +1035,9 @@ def run(args: argparse.Namespace) -> dict:
             "force_observer_target_pct": args.force_observer_target,
             "nested_control_volume_target_pct": args.nested_cv_target,
             "surface_observer_target_pct": args.surface_observer_target,
+            "numerical_momentum_source_target_pct": (
+                args.numerical_source_target
+            ),
             "maximum_limiter_fraction": 1e-3,
             "maximum_reflux_population_residual": 1e-6,
             "maximum_exchange_rejected_fraction": 0.01,
@@ -993,6 +1055,14 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "surface_observer_target_met": (
                 surface_observer_difference_pct <= args.surface_observer_target
+            ),
+            "numerical_momentum_source_target_met": (
+                numerical_momentum_source_fraction_pct
+                <= args.numerical_source_target
+            ),
+            "source_corrected_cv_closure_target_met": (
+                corrected_cv_observer_difference_pct
+                <= args.force_observer_target
             ),
             "limiter_target_met": limiter_acceptable,
             "reflux_target_met": reflux_acceptable,
@@ -1071,6 +1141,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--force-observer-target", type=float, default=1.0)
     p.add_argument("--nested-cv-target", type=float, default=1.0)
     p.add_argument("--surface-observer-target", type=float, default=5.0)
+    p.add_argument("--numerical-source-target", type=float, default=1.0)
     p.add_argument(
         "--far-field-mode",
         choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),
