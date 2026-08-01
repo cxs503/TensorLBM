@@ -16,6 +16,7 @@ ROOT = Path(__file__).parents[1]
         ("run_suboff_v8_equivalent_level.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
+        ("run_flat_plate_v4_equivalent_level.sh", "L256"),
     ),
 )
 def test_campaign_launcher_preflight_imports_current_checkout(

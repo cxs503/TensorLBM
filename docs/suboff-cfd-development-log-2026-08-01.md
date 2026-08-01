@@ -765,6 +765,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     waiter 4004961 follows R9; cylinder R15 waiter 4005447 follows R12.  Each
     launcher uses `exec`, so its PID remains stable when computation begins and
     downstream levels cannot start early.
+93. Flat-plate validation is also rebuilt as a strict v4 space-time sequence.
+    The earlier L256/L384/L512 evidence used 30000 steps and 15000-step warmup
+    on every grid, corresponding to unequal convective durations, so its good
+    spatial fit is retained as historical evidence but not treated as the new
+    production proof.  v4 records an explicit analysis tail and requires total,
+    warmup, ramp, tail, report and wall-diagnostic intervals divided by plate
+    length to be invariant.  The exact launcher uses total steps
+    32000/48000/64000, warmup and tails 16000/24000/32000, and proportionally
+    scaled exchange height, sponge, CV and diagnostics.  Twelve focused
+    flat-plate/convergence/launcher tests pass; this sequence will follow the
+    cylinder chain on the same local GPU.
 
 ## Rejected candidates
 

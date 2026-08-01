@@ -16,13 +16,17 @@ _IDENTITY_FIELDS = (
     "lattice_speed",
     "plate_start_fraction",
     "wall_law",
-    "ramp_steps",
     "sponge_strength",
     "smagorinsky_cs",
     "positivity_limiter",
     "link_force_frame",
 )
 _RATIO_FIELDS = ("sponge_width", "cv_margin")
+_TIME_RATIO_FIELDS = (
+    "steps", "warmup_steps", "ramp_steps",
+    "statistics_window_steps_resolved", "report_interval",
+    "wall_diagnostic_interval",
+)
 
 
 def assess_flat_plate_convergence(
@@ -65,7 +69,7 @@ def assess_flat_plate_convergence(
     required_fields_present = all(
         field in configuration
         for _, _, configuration, _ in parsed
-        for field in _IDENTITY_FIELDS + _RATIO_FIELDS
+        for field in _IDENTITY_FIELDS + _RATIO_FIELDS + _TIME_RATIO_FIELDS
     )
     exchange_ratios = [
         float(configuration["stress_exchange_distance"]) / length
@@ -99,6 +103,18 @@ def assess_flat_plate_convergence(
         and max(sponge_ratios) - min(sponge_ratios) <= 1e-12
         and max(cv_margin_ratios) - min(cv_margin_ratios) <= 1e-12
     )
+    time_ratios = {
+        field: [
+            float(configuration[field]) / length
+            for length, _, configuration, _ in parsed
+        ]
+        for field in _TIME_RATIO_FIELDS
+    }
+    time_ratio_invariant = all(
+        all(math.isfinite(value) for value in values)
+        and max(values) - min(values) <= 1e-12
+        for values in time_ratios.values()
+    )
     values = [item[1] for item in parsed]
     spatial = assess_spatial_convergence(resolutions, values)
     reference_values = {
@@ -122,6 +138,7 @@ def assess_flat_plate_convergence(
         and exchange_ratio_invariant
         and domain_ratio_invariant
         and numerical_length_ratio_invariant
+        and time_ratio_invariant
         and reference_invariant
     )
     admitted = (
@@ -146,6 +163,8 @@ def assess_flat_plate_convergence(
             "numerical_length_ratio_invariant": (
                 numerical_length_ratio_invariant
             ),
+            "time_steps_over_plate_length": time_ratios,
+            "time_ratio_invariant": time_ratio_invariant,
             "reference_invariant": reference_invariant,
             "admitted": provenance_admitted,
         },

@@ -25,6 +25,7 @@ def main() -> None:
     parser.add_argument("--lattice-speed", type=float, default=0.06)
     parser.add_argument("--steps", type=int, default=12000)
     parser.add_argument("--warmup-steps", type=int, default=6000)
+    parser.add_argument("--statistics-window-steps", type=int, default=0)
     parser.add_argument("--ramp-steps", type=int, default=1000)
     parser.add_argument("--sponge-width", type=int, default=24)
     parser.add_argument("--sponge-strength", type=float, default=0.2)
@@ -62,6 +63,7 @@ def main() -> None:
         wall_diagnostic_interval=args.wall_diagnostic_interval,
         checkpoint_interval=args.checkpoint_interval,
         checkpoint_path=args.checkpoint, resume=args.resume,
+        statistics_window_steps=args.statistics_window_steps,
         device=args.device,
     ))
     output = Path(args.output)
