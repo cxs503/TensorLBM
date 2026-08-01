@@ -14,6 +14,7 @@ ROOT = Path(__file__).parents[1]
     ("script", "level"),
     (
         ("run_suboff_v8_equivalent_level.sh", "L90"),
+        ("run_suboff_nested_v3_equivalent_level.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
         ("run_flat_plate_v4_equivalent_level.sh", "L256"),

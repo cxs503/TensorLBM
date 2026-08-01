@@ -994,6 +994,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      chain and records nonzero sail, fin and appendage-link evidence while
      keeping physical validation false.  No AFF-8 GPU campaign is launched
      before AFF-1 long-run behaviour is understood.
+113. A deterministic three-level campaign launcher fixes L90/L120/L150 at the
+     same 3:4:5 space-time ratios as v8: 12000/16000/20000 total steps,
+     4500/6000/7500 warmup, 7500/10000/12500 final tails, proportionally scaled
+     activation/report/surface/y+ cadence and checkpoints, constant one-finest-
+     cell exchange distance, and identical inner margin/CV ownership.  It
+     supports AFF-1/AFF-8, resume, exact physical-GPU selection, PID chaining
+     and import-only preflight.  Launcher subprocess coverage passes alongside
+     the existing sphere/cylinder/flat/v8 launchers.
 
 ## Rejected candidates
 
