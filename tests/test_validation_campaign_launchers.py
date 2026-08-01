@@ -167,5 +167,8 @@ def test_nested_v10_launcher_scales_all_inner_physical_locations(
     assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
         "3.515625"
     )
+    assert "--regularize-prolongation" in arguments
+    assert arguments[arguments.index("--interface-filter-width") + 1] == "2"
+    assert arguments[arguments.index("--interface-filter-strength") + 1] == "1.0"
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-nested-v10-equivalent-l150-20k.json" in output
