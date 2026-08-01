@@ -300,7 +300,13 @@ class StaticBlockAMR3D:
             weight[:, 0], weight[:, 1], weight[:, 2],
         )
 
-    def _fill_ghost(self, parent_time_state: torch.Tensor) -> None:
+    def _fill_ghost(
+        self,
+        parent_time_state: torch.Tensor,
+        *,
+        tau_source: float | None = None,
+        tau_target: float | None = None,
+    ) -> None:
         plan = self._ghost_sampling_plan
         if self.config.ghost_interpolation == "injection":
             sampled = parent_time_state[:, plan.z0, plan.y0, plan.x0]
@@ -338,18 +344,27 @@ class StaticBlockAMR3D:
             )
         sampled = rescale_nonequilibrium(
             sampled[:, None, None, :],
-            tau_source=self.config.tau_coarse,
-            tau_target=self.config.tau_fine,
+            tau_source=(
+                self.config.tau_coarse if tau_source is None else tau_source
+            ),
+            tau_target=(self.config.tau_fine if tau_target is None else tau_target),
             spatial_ratio=float(self.config.ratio),
         )[:, 0, 0, :]
         self.fine_f.reshape(self.fine_f.shape[0], -1)[:, plan.target_flat] = sampled
 
-    def _restrict_physical(self) -> torch.Tensor:
+    def _restrict_physical(
+        self,
+        *,
+        tau_source: float | None = None,
+        tau_target: float | None = None,
+    ) -> torch.Tensor:
         restricted = restrict_populations_2to1(self.fine_physical)
         restricted = rescale_nonequilibrium(
             restricted,
-            tau_source=self.config.tau_fine,
-            tau_target=self.config.tau_coarse,
+            tau_source=(self.config.tau_fine if tau_source is None else tau_source),
+            tau_target=(
+                self.config.tau_coarse if tau_target is None else tau_target
+            ),
             spatial_ratio=1.0 / self.config.ratio,
             regularize=self.config.regularize_restriction,
         )
@@ -396,7 +411,12 @@ class StaticBlockAMR3D:
             )
         return populations, post_collision
 
-    def step(self, advance: Advance3D) -> PopulationRefluxLedger:
+    def step(
+        self,
+        advance: Advance3D,
+        *,
+        tau_pair: tuple[float, float] | None = None,
+    ) -> PopulationRefluxLedger:
         """Advance one coarse step and two time-interpolated fine substeps.
 
         With reflux enabled, ``advance(f, tau, level, substep)`` must return
@@ -405,9 +425,17 @@ class StaticBlockAMR3D:
         disabled. ``level`` is 0/1; the coarse call uses ``substep=-1`` and
         fine calls use 0 and 1.
         """
+        tau_coarse, tau_fine = (
+            (self.config.tau_coarse, self.config.tau_fine)
+            if tau_pair is None else tau_pair
+        )
+        if abs(
+            tau_fine - convective_refined_tau(tau_coarse, self.config.ratio)
+        ) > 1.0e-12:
+            raise ValueError("dynamic tau_pair must preserve convective scaling")
         coarse_old = self.coarse_f.clone()
         coarse_new, coarse_post = self._unpack_advance(
-            advance(self.coarse_f, self.config.tau_coarse, 0, -1),
+            advance(self.coarse_f, tau_coarse, 0, -1),
             self.coarse_f.shape, require_flux_state=self.config.reflux,
         )
         self.coarse_f = coarse_new
@@ -422,9 +450,11 @@ class StaticBlockAMR3D:
         for substep in range(self.config.ratio):
             alpha_start = substep / self.config.ratio
             parent_start = torch.lerp(coarse_old, self.coarse_f, alpha_start)
-            self._fill_ghost(parent_start)
+            self._fill_ghost(
+                parent_start, tau_source=tau_coarse, tau_target=tau_fine,
+            )
             fine_new, fine_post = self._unpack_advance(
-                advance(self.fine_f, self.config.tau_fine, 1, substep),
+                advance(self.fine_f, tau_fine, 1, substep),
                 self.fine_f.shape, require_flux_state=self.config.reflux,
             )
             if fine_post is not None:
@@ -436,9 +466,13 @@ class StaticBlockAMR3D:
             self.fine_f = fine_new
             alpha_end = (substep + 1) / self.config.ratio
             parent_end = torch.lerp(coarse_old, self.coarse_f, alpha_end)
-            self._fill_ghost(parent_end)
+            self._fill_ghost(
+                parent_end, tau_source=tau_coarse, tau_target=tau_fine,
+            )
 
-        restricted = self._restrict_physical()
+        restricted = self._restrict_physical(
+            tau_source=tau_fine, tau_target=tau_coarse,
+        )
         if not self.config.reflux:
             self.last_reflux = self._replace_without_reflux(restricted)
             return self.last_reflux
@@ -585,14 +619,17 @@ class NestedStaticBlockAMR3D:
         advance: Advance3D,
         coarse_substep: int,
         ledgers: list[PopulationRefluxLedger | None],
+        tau_by_level: Sequence[float],
     ) -> tuple[torch.Tensor, torch.Tensor]:
         interface = self.interfaces[interface_index]
         config = interface.config
+        tau_coarse = tau_by_level[interface_index]
+        tau_fine = tau_by_level[interface_index + 1]
         coarse_old = interface.coarse_f.clone()
         coarse_new, coarse_post = interface._unpack_advance(
             advance(
                 interface.coarse_f,
-                config.tau_coarse,
+                tau_coarse,
                 interface_index,
                 coarse_substep,
             ),
@@ -616,7 +653,11 @@ class NestedStaticBlockAMR3D:
             parent_start = torch.lerp(
                 coarse_old, interface.coarse_f, alpha_start,
             )
-            interface._fill_ghost(parent_start)
+            interface._fill_ghost(
+                parent_start,
+                tau_source=tau_coarse,
+                tau_target=tau_fine,
+            )
 
             if interface_index + 1 < len(self.interfaces):
                 child = self.interfaces[interface_index + 1]
@@ -626,12 +667,13 @@ class NestedStaticBlockAMR3D:
                     advance,
                     child_substep,
                     ledgers,
+                    tau_by_level,
                 )
             else:
                 fine_new, unpacked_post = interface._unpack_advance(
                     advance(
                         interface.fine_f,
-                        config.tau_fine,
+                        tau_fine,
                         interface_index + 1,
                         child_substep,
                     ),
@@ -652,11 +694,18 @@ class NestedStaticBlockAMR3D:
             )
             alpha_end = (local_substep + 1) / config.ratio
             parent_end = torch.lerp(coarse_old, interface.coarse_f, alpha_end)
-            interface._fill_ghost(parent_end)
+            interface._fill_ghost(
+                parent_end,
+                tau_source=tau_coarse,
+                tau_target=tau_fine,
+            )
 
         if fine_transfer is None:
             raise RuntimeError("nested AMR omitted fine interface transfer")
-        restricted = interface._restrict_physical()
+        restricted = interface._restrict_physical(
+            tau_source=tau_fine,
+            tau_target=tau_coarse,
+        )
         box = config.box
         interface.coarse_f[
             :, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1
@@ -688,12 +737,36 @@ class NestedStaticBlockAMR3D:
         ledgers[interface_index] = ledger
         return interface.coarse_f, coarse_post
 
-    def step(self, advance: Advance3D) -> tuple[PopulationRefluxLedger, ...]:
+    def step(
+        self,
+        advance: Advance3D,
+        *,
+        tau_by_level: Sequence[float] | None = None,
+    ) -> tuple[PopulationRefluxLedger, ...]:
         """Advance the complete hierarchy by one root-grid time step."""
+        if tau_by_level is None:
+            tau_by_level = (
+                self.interfaces[0].config.tau_coarse,
+                *(interface.config.tau_fine for interface in self.interfaces),
+            )
+        if len(tau_by_level) != len(self.interfaces) + 1:
+            raise ValueError("tau_by_level must contain one value per hierarchy level")
+        for level, (coarse_tau, fine_tau, interface) in enumerate(zip(
+            tau_by_level[:-1],
+            tau_by_level[1:],
+            self.interfaces,
+            strict=True,
+        )):
+            expected = convective_refined_tau(coarse_tau, interface.config.ratio)
+            if abs(fine_tau - expected) > 1.0e-12:
+                raise ValueError(
+                    "dynamic tau chain violates convective scaling at "
+                    f"interface {level}",
+                )
         ledgers: list[PopulationRefluxLedger | None] = [
             None for _ in self.interfaces
         ]
-        self._advance_interface(0, advance, -1, ledgers)
+        self._advance_interface(0, advance, -1, ledgers, tau_by_level)
         if any(ledger is None for ledger in ledgers):
             raise RuntimeError("nested AMR did not produce every reflux ledger")
         self.last_reflux = tuple(

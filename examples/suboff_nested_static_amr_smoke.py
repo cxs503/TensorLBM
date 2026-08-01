@@ -64,6 +64,7 @@ from tensorlbm.suboff_static_amr import (
     plan_suboff_static_amr,
 )
 from tensorlbm.surface_area_weights import bfl_surface_area_weights
+from tensorlbm.viscosity_continuation import ResolvedReynoldsContinuation
 from tensorlbm.wall_model import (
     bfl_wall_function_3d,
     physical_wall_lattice_viscosity,
@@ -127,6 +128,14 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--lattice-speed", type=float, default=0.06)
     result.add_argument("--resolved-reynolds", type=float, default=100000.0)
+    result.add_argument(
+        "--resolved-reynolds-start",
+        type=float,
+        default=0.0,
+        help="positive startup Reynolds; 0 uses --resolved-reynolds",
+    )
+    result.add_argument("--viscosity-ramp-start-step", type=int, default=0)
+    result.add_argument("--viscosity-ramp-end-step", type=int, default=0)
     result.add_argument("--rho-water", type=float, default=998.2)
     result.add_argument("--nu-water", type=float, default=1.004e-6)
     result.add_argument("--cs-smag", type=float, default=0.05)
@@ -187,6 +196,29 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("health interval must be non-negative")
     if not args.lattice_speed < args.maximum_health_speed < 1.0:
         raise ValueError("maximum health speed must lie between inlet speed and one")
+    resolved_reynolds_start = (
+        args.resolved_reynolds
+        if args.resolved_reynolds_start == 0.0
+        else args.resolved_reynolds_start
+    )
+    if (
+        resolved_reynolds_start != args.resolved_reynolds
+        and not (
+            0 <= args.viscosity_ramp_start_step
+            < args.viscosity_ramp_end_step
+            <= args.steps
+        )
+    ):
+        raise ValueError(
+            "non-constant viscosity continuation needs "
+            "0 <= ramp start < ramp end <= steps",
+        )
+    continuation = ResolvedReynoldsContinuation(
+        resolved_reynolds_start,
+        args.resolved_reynolds,
+        args.viscosity_ramp_start_step,
+        args.viscosity_ramp_end_step,
+    )
     if not 0 <= args.warmup_steps < args.steps:
         raise ValueError("warmup steps must lie in [0, steps)")
     if not 0 <= args.statistics_window_steps <= args.steps - args.warmup_steps:
@@ -295,9 +327,13 @@ def run(args: argparse.Namespace) -> dict:
         }
 
     physical_re = point.speed_mps * MODEL_LENGTH_M / args.nu_water
-    collision_re = args.resolved_reynolds
-    nu_coarse = args.lattice_speed * args.hull_length / collision_re
-    tau_coarse = 0.5 + 3.0 * nu_coarse
+    initial_tau_by_level = continuation.tau_by_level(
+        0,
+        lattice_speed=args.lattice_speed,
+        root_hull_length=args.hull_length,
+        levels=3,
+    )
+    tau_coarse = initial_tau_by_level[0]
     outer_amr_config = StaticBlockAMRConfig(
         outer_plan.box,
         tau_coarse=tau_coarse,
@@ -335,6 +371,9 @@ def run(args: argparse.Namespace) -> dict:
         "ramp_steps": args.ramp_steps,
         "lattice_speed": args.lattice_speed,
         "resolved_reynolds": args.resolved_reynolds,
+        "resolved_reynolds_start": resolved_reynolds_start,
+        "viscosity_ramp_start_step": args.viscosity_ramp_start_step,
+        "viscosity_ramp_end_step": args.viscosity_ramp_end_step,
         "rho_water": args.rho_water,
         "nu_water": args.nu_water,
         "cs_smag": args.cs_smag,
@@ -500,12 +539,16 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("collision_model")
         legacy_v3_signature.pop("kbc_max_iterations")
         legacy_v3_signature.pop("omega_bulk")
+        legacy_v3_signature.pop("resolved_reynolds_start")
+        legacy_v3_signature.pop("viscosity_ramp_start_step")
+        legacy_v3_signature.pop("viscosity_ramp_end_step")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
             and not args.disable_wall_stress
             and args.collision_model == "cumulant_smagorinsky"
+            and resolved_reynolds_start == args.resolved_reynolds
             and stored_configuration == legacy_v3_signature
         )
         legacy_v2_signature = dict(checkpoint_signature)
@@ -519,6 +562,9 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop("collision_model")
         legacy_v2_without_new_transfer.pop("kbc_max_iterations")
         legacy_v2_without_new_transfer.pop("omega_bulk")
+        legacy_v2_without_new_transfer.pop("resolved_reynolds_start")
+        legacy_v2_without_new_transfer.pop("viscosity_ramp_start_step")
+        legacy_v2_without_new_transfer.pop("viscosity_ramp_end_step")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
@@ -526,6 +572,7 @@ def run(args: argparse.Namespace) -> dict:
             and not args.enforce_transfer_positivity
             and not args.disable_wall_stress
             and args.collision_model == "cumulant_smagorinsky"
+            and resolved_reynolds_start == args.resolved_reynolds
             and stored_configuration == legacy_v2_without_new_transfer
         )
         if (
@@ -746,7 +793,17 @@ def run(args: argparse.Namespace) -> dict:
     for step in range(start_step + 1, args.steps + 1):
         current_step = step
         force_samples.clear()
-        ledgers = hierarchy.step(advance)
+        instantaneous_reynolds = continuation.reynolds_at(current_step)
+        instantaneous_tau_by_level = continuation.tau_by_level(
+            current_step,
+            lattice_speed=args.lattice_speed,
+            root_hull_length=args.hull_length,
+            levels=3,
+        )
+        ledgers = hierarchy.step(
+            advance,
+            tau_by_level=instantaneous_tau_by_level,
+        )
         if args.health_interval and current_step % args.health_interval == 0:
             level_health = [
                 inspect_population_health(populations).to_dict()
@@ -857,6 +914,7 @@ def run(args: argparse.Namespace) -> dict:
         ]
         record = {
             "step": current_step,
+            "collision_resolved_reynolds": instantaneous_reynolds,
             "cv_resistance_n": cv_mean * scale,
             "bfl_plus_wall_stress_n": bfl_mean * scale,
             "bfl_pressure_n": pressure_mean * scale,
@@ -1075,10 +1133,14 @@ def run(args: argparse.Namespace) -> dict:
             "finest_wall_nu": wall_nu,
             "finest_hull_length_cells": finest_length,
             "tau_by_level": [
-                outer_amr_config.tau_coarse,
-                outer_amr_config.tau_fine,
-                inner_amr_config.tau_fine,
+                *continuation.tau_by_level(
+                    args.steps,
+                    lattice_speed=args.lattice_speed,
+                    root_hull_length=args.hull_length,
+                    levels=3,
+                ),
             ],
+            "initial_tau_by_level": list(initial_tau_by_level),
             "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
             "checkpoint_interval": args.checkpoint_interval,
             "resumed_from_step": resumed_from_step,
