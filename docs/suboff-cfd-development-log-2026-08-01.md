@@ -105,6 +105,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     these is promoted by proximity to experiment.  A curved moving-slip
     boundary force ledger and nested-CV invariance test now precede further
     SUBOFF accuracy claims.
+20. The healthy-GPU R12 sphere in an 8D transverse domain completed with
+    `Cd=1.16053`, 6.30% above Schiller–Naumann, and 0.00248% BFL/CV
+    disagreement.  This improves monotonically from the geometrically similar
+    R8 result `Cd=1.19869` (9.80% high), but still fails the 5% drag and 1%
+    stationarity gates (1.67% block range, 1.61% trend).  R14 is running with
+    checkpoints; extrapolated R16 peak memory (~22.7 GiB) is deferred until
+    R14 establishes the remaining resolution trend.
 
 ## Rejected candidates
 
