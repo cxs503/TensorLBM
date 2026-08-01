@@ -117,6 +117,27 @@ position — the 1/q factor double-counts the correction.
 
 **Recommendation**: Use wall-surface MEM with BFL interpolation.
 
+### 3.4 Force frame is part of the numerical contract
+
+Two link-force quantities must not be conflated:
+
+```
+F_lab  = (f_i + f_opp) c_i
+F_wall = F_lab + (f_opp - f_i) u_wall
+```
+
+`F_lab` is the discrete laboratory-frame population impulse and closes a
+fixed control-volume momentum balance exactly.  `F_wall` is the
+Galilean-invariant moving-wall-frame diagnostic used for a genuinely moving
+body.  In a wall-model-slip closure, the tangential `u_wall` supplied to BFL
+is an artificial numerical velocity that prevents BFL from also imposing
+no-slip; it is not the physical velocity of the stationary body.  Applying
+the moving-wall correction with that artificial velocity removes part of the
+actual population impulse once the flow becomes non-equilibrium.  Stationary
+wall-model force validation must therefore use `F_lab` after wall activation,
+while `F_wall` remains available for physical moving-wall diagnostics and the
+co-moving startup limit.
+
 ---
 
 ## 4. Wall Functions for High-Re LBM

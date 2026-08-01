@@ -100,6 +100,14 @@ surface, and records exchange `y+`, rejected samples, CV/BFL observer
 difference, force stationarity, positivity limiting and maximum per-population
 reflux residual.
 
+Production evidence uses laboratory-frame BFL population impulse, which
+closes the fixed nested control volumes; the artificial tangential slip
+velocity is never treated as physical body motion in the force ledger.  Mean,
+Student-t confidence and paired observers use an explicitly recorded final
+statistics tail.  The checkpoint retains the full history so a run can be
+extended and reassessed with a longer tail without mixing startup samples or
+changing the saved physical state.
+
 Local wall area is orientation-aware rather than uniformly divided among
 nodes.  Axial BFL face projections determine each patch area; the analytical
 bare-hull area calibrates only the total.  For a full appendage geometry the
