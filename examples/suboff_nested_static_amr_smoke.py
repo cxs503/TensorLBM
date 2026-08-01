@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 from pathlib import Path
 
 import torch
@@ -32,6 +31,7 @@ from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
+from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.population_positivity import limit_nonequilibrium_for_positivity
 from tensorlbm.solver3d import stream3d
@@ -74,7 +74,15 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--inner-wake-cells", type=int, default=8)
     result.add_argument("--cv-margin", type=int, default=4)
     result.add_argument("--steps", type=int, default=2)
+    result.add_argument("--warmup-steps", type=int, default=0)
+    result.add_argument("--statistics-window-steps", type=int, default=0)
     result.add_argument("--ramp-steps", type=int, default=0)
+    result.add_argument("--report-interval", type=int, default=1)
+    result.add_argument("--wall-diagnostic-interval", type=int, default=1)
+    result.add_argument("--minimum-convective-times", type=float, default=8.0)
+    result.add_argument(
+        "--minimum-statistics-convective-times", type=float, default=5.0,
+    )
     result.add_argument("--lattice-speed", type=float, default=0.06)
     result.add_argument("--resolved-reynolds", type=float, default=100000.0)
     result.add_argument("--rho-water", type=float, default=998.2)
@@ -112,6 +120,17 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("memory bytes per cell must be positive")
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint interval must be non-negative")
+    if not 0 <= args.warmup_steps < args.steps:
+        raise ValueError("warmup steps must lie in [0, steps)")
+    if not 0 <= args.statistics_window_steps <= args.steps - args.warmup_steps:
+        raise ValueError("statistics window exceeds the post-warmup trajectory")
+    if min(
+        args.report_interval,
+        args.wall_diagnostic_interval,
+        args.minimum_convective_times,
+        args.minimum_statistics_convective_times,
+    ) <= 0:
+        raise ValueError("report/diagnostic intervals and duration targets must be positive")
     if args.resume and args.checkpoint is None:
         raise ValueError("resume requires a checkpoint path")
     device = torch.device(args.device)
@@ -226,6 +245,7 @@ def run(args: argparse.Namespace) -> dict:
         "cs_smag": args.cs_smag,
         "wall_law": args.wall_law,
         "stress_exchange_distance": args.stress_exchange_distance,
+        "wall_diagnostic_interval": args.wall_diagnostic_interval,
         "sponge_width": args.sponge_width,
         "sponge_strength": args.sponge_strength,
         "far_field_mode": args.far_field_mode,
@@ -303,7 +323,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     current_step = 0
     resumed_from_step = 0
-    force_samples: list[tuple[float, float, float, float]] = []
+    force_samples: list[tuple[float, float, float, float | None]] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
     maximum_reflux_residual = [0.0, 0.0]
@@ -380,11 +400,20 @@ def run(args: argparse.Namespace) -> dict:
                     sponge,
                     velocity_target=(args.lattice_speed, 0.0, 0.0),
                 )
+                if args.far_field_mode == "non_equilibrium_extrapolation":
+                    out = non_equilibrium_far_field_bc_3d(
+                        out, u_in=args.lattice_speed,
+                    )
+                else:
+                    out = far_field_bc_3d(out, u_in=args.lattice_speed)
             return AMRAdvanceResult(out, collided)
 
         post_collision = torch.where(finest_solid_q, before, collided)
         out = stream3d(post_collision)
         activation = smooth_ramp_factor(current_step, args.ramp_steps)
+        collect_wall_diagnostics = (
+            current_step % args.wall_diagnostic_interval == 0
+        )
         wall_result = bfl_wall_function_3d(
             out,
             post_collision,
@@ -399,12 +428,17 @@ def run(args: argparse.Namespace) -> dict:
             stress_exchange_distance=args.stress_exchange_distance,
             wall_normals=(surface.nx_n, surface.ny_n, surface.nz_n),
             area_weight=area_weight,
-            return_wall_diagnostics=True,
+            return_wall_diagnostics=collect_wall_diagnostics,
         )
-        out, friction, pressure, diagnostics = wall_result
-        maximum_rejected_fraction = max(
-            maximum_rejected_fraction, diagnostics.rejected_fraction,
-        )
+        if collect_wall_diagnostics:
+            out, friction, pressure, diagnostics = wall_result
+            maximum_rejected_fraction = max(
+                maximum_rejected_fraction, diagnostics.rejected_fraction,
+            )
+            mean_y_plus = diagnostics.y_plus_mean
+        else:
+            out, friction, pressure = wall_result
+            mean_y_plus = None
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
         maximum_limiter_fraction = max(
@@ -433,7 +467,7 @@ def run(args: argparse.Namespace) -> dict:
             cv_force,
             pressure + friction,
             collision_source + positivity_source,
-            diagnostics.y_plus_mean or math.nan,
+            mean_y_plus,
         ))
         return AMRAdvanceResult(out, post_collision)
 
@@ -457,6 +491,9 @@ def run(args: argparse.Namespace) -> dict:
         bfl_mean = sum(item[1] for item in force_samples) / 4.0
         source_mean = sum(item[2] for item in force_samples) / 4.0
         corrected = cv_mean + source_mean
+        y_plus_samples = [
+            item[3] for item in force_samples if item[3] is not None
+        ]
         step_records.append({
             "step": current_step,
             "cv_resistance_n": cv_mean * scale,
@@ -469,15 +506,19 @@ def run(args: argparse.Namespace) -> dict:
             "source_corrected_observer_difference_pct": (
                 abs(corrected - bfl_mean) / max(abs(corrected), 1.0e-30) * 100.0
             ),
-            "mean_y_plus": sum(item[3] for item in force_samples) / 4.0,
+            "mean_y_plus": (
+                sum(y_plus_samples) / len(y_plus_samples)
+                if y_plus_samples else None
+            ),
             "wall_fully_activated": current_step >= args.ramp_steps,
         })
-        print(
-            f"nested smoke step={current_step}/{args.steps} "
-            f"Rt={step_records[-1]['cv_resistance_n']:.3f} N "
-            f"closure={step_records[-1]['source_corrected_observer_difference_pct']:.5f}%",
-            flush=True,
-        )
+        if current_step % args.report_interval == 0 or current_step == args.steps:
+            print(
+                f"nested smoke step={current_step}/{args.steps} "
+                f"Rt={step_records[-1]['cv_resistance_n']:.3f} N "
+                f"closure={step_records[-1]['source_corrected_observer_difference_pct']:.5f}%",
+                flush=True,
+            )
         if (
             args.checkpoint is not None
             and args.checkpoint_interval > 0
@@ -498,6 +539,11 @@ def run(args: argparse.Namespace) -> dict:
     finite = all(
         bool(torch.isfinite(level).all()) for level in hierarchy.level_populations
     )
+    geometry_resolution = assess_suboff_geometry_resolution(
+        finest_solid,
+        hull_type="bare_hull",
+        fine_hull_length_cells=finest_length,
+    )
     admitted = (
         finite
         and maximum_corrected_difference is not None
@@ -507,18 +553,72 @@ def run(args: argparse.Namespace) -> dict:
         and maximum_limiter_fraction <= 1.0e-3
         and maximum_rejected_fraction <= 0.01
     )
+    post_warmup_records = [
+        record for record in eligible_records
+        if record["step"] > args.warmup_steps
+    ]
+    statistics_window_steps = (
+        args.statistics_window_steps or len(post_warmup_records)
+    )
+    selected_records = post_warmup_records[-statistics_window_steps:]
+    total_convective_times = (
+        args.steps * args.lattice_speed / args.hull_length
+    )
+    sampling_convective_times = (
+        len(selected_records) * args.lattice_speed / args.hull_length
+    )
+    duration_acceptable = (
+        total_convective_times >= args.minimum_convective_times
+        and sampling_convective_times
+        >= args.minimum_statistics_convective_times
+    )
+    force_stationarity = None
+    mean_resistance = None
+    mean_bfl = None
+    mean_source = None
+    reference_error_pct = None
+    if selected_records:
+        cv_values = [record["cv_resistance_n"] for record in selected_records]
+        mean_resistance = sum(cv_values) / len(cv_values)
+        mean_bfl = sum(
+            record["bfl_plus_wall_stress_n"] for record in selected_records
+        ) / len(selected_records)
+        mean_source = sum(
+            record["numerical_source_n"] for record in selected_records
+        ) / len(selected_records)
+        reference_error_pct = (
+            abs(mean_resistance - point.resistance_n)
+            / point.resistance_n
+            * 100.0
+        )
+        if len(cv_values) >= 4:
+            force_stationarity = assess_force_stationarity(
+                cv_values,
+                block_size=max(1, len(cv_values) // 8),
+            )
+    stationarity_acceptable = (
+        force_stationarity is not None and force_stationarity.meets(1.0)
+    )
+    single_grid_candidate = (
+        admitted
+        and duration_acceptable
+        and stationarity_acceptable
+        and reference_error_pct is not None
+        and reference_error_pct <= 5.0
+        and geometry_resolution.absolute_reference_resolved
+    )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30
         if device.type == "cuda" else None
     )
-    geometry_resolution = assess_suboff_geometry_resolution(
-        finest_solid,
-        hull_type="bare_hull",
-        fine_hull_length_cells=finest_length,
-    )
     return {
         "schema": "tensorlbm-suboff-nested-amr-smoke-v2",
-        "status": "integration_smoke_pass" if admitted else "integration_smoke_fail",
+        "status": (
+            "single_grid_candidate"
+            if single_grid_candidate else (
+                "integration_smoke_pass" if admitted else "integration_smoke_fail"
+            )
+        ),
         "physical_validation": False,
         "configuration": vars(args) | {
             "output": str(args.output) if args.output else None,
@@ -554,10 +654,32 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_positivity_limited_fraction": maximum_limiter_fraction,
             "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
             "finite": finite,
+            "statistics": {
+                "warmup_steps": args.warmup_steps,
+                "statistics_window_steps_requested": args.statistics_window_steps,
+                "statistics_window_steps_resolved": len(selected_records),
+                "total_convective_times": total_convective_times,
+                "sampling_convective_times": sampling_convective_times,
+                "mean_resistance_n": mean_resistance,
+                "mean_bfl_plus_wall_stress_n": mean_bfl,
+                "mean_numerical_source_n": mean_source,
+                "experimental_resistance_n": point.resistance_n,
+                "reference_error_pct": reference_error_pct,
+                "force_stationarity": (
+                    force_stationarity.to_dict()
+                    if force_stationarity is not None else None
+                ),
+            },
         },
         "acceptance": {
             "integration_smoke_admitted": admitted,
             "fully_activated_steps_assessed": len(eligible_records),
+            "duration_target_met": duration_acceptable,
+            "stationarity_target_met": stationarity_acceptable,
+            "reference_error_target_met": (
+                reference_error_pct is not None and reference_error_pct <= 5.0
+            ),
+            "single_grid_candidate": single_grid_candidate,
             "resistance_accuracy_assessed": False,
             "time_convergence_assessed": False,
             "grid_convergence_assessed": False,

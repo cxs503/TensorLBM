@@ -958,6 +958,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      keeps both reflux residuals below 1.82e-12.  Measured peak is 3.366 GiB.
      This admits restart mechanics and state relinking; it does not turn the
      two-step startup into a resistance result.
+109. The nested runner now carries the same anti-cherry-picking analysis
+     contract needed before a long trajectory: declared warmup and final
+     statistics windows, root-step convective durations, eight-block
+     stationarity, FFT autocorrelation/effective sample count, reference error,
+     and a fail-closed single-grid-candidate decision.  Reporting and wall y+
+     reductions have independent cadences, while force and both reflux ledgers
+     remain every-step; the outer non-equilibrium boundary is reimposed after
+     sponge damping.  Short smoke tests continue to report integration-only,
+     because they fail duration/stationarity even when force closure passes.
+     Final step count and analysis-window choice remain outside checkpoint
+     physics identity, allowing longer unbiased resumes from the same state.
 
 ## Rejected candidates
 

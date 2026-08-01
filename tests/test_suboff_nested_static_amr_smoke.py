@@ -27,6 +27,8 @@ def _args(
         "--outer-wall-margin", "4", "--outer-wake-cells", "8",
         "--inner-wall-margin", "2", "--inner-wake-cells", "0",
         "--cv-margin", "2", "--steps", str(steps), "--ramp-steps", "0",
+        "--warmup-steps", "0", "--statistics-window-steps", str(steps),
+        "--report-interval", "1", "--wall-diagnostic-interval", "1",
         "--resolved-reynolds", "2000", "--sponge-width", "3",
         "--memory-bytes-per-cell", "742",
         "--output", str(tmp_path / "nested-smoke.json"),
@@ -51,6 +53,8 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert max(result["result"]["maximum_reflux_residual_by_interface"]) < 1.0e-6
     assert result["acceptance"]["resistance_accuracy_assessed"] is False
     assert result["acceptance"]["fully_activated_steps_assessed"] == 2
+    assert result["acceptance"]["single_grid_candidate"] is False
+    assert result["result"]["statistics"]["statistics_window_steps_resolved"] == 2
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
