@@ -1217,6 +1217,43 @@ def run(args: argparse.Namespace) -> dict:
                 inspect_population_health(populations).to_dict()
                 for populations in hierarchy.level_populations
             ]
+            diagnostic_force_samples = [
+                sample for sample in force_samples
+                if sample["y_plus"] is not None
+            ]
+            wall_exchange_health = {
+                "force_samples_observed": len(force_samples),
+                "force_samples_expected": 2**refinement_depth,
+                "diagnostic_samples": len(diagnostic_force_samples),
+                "mean_distance_cells": (
+                    sum(
+                        sample["wall_distance"]
+                        for sample in diagnostic_force_samples
+                    ) / len(diagnostic_force_samples)
+                    if diagnostic_force_samples else None
+                ),
+                "minimum_y_plus": (
+                    min(
+                        sample["y_plus_min"]
+                        for sample in diagnostic_force_samples
+                    )
+                    if diagnostic_force_samples else None
+                ),
+                "mean_y_plus": (
+                    sum(
+                        sample["y_plus"]
+                        for sample in diagnostic_force_samples
+                    ) / len(diagnostic_force_samples)
+                    if diagnostic_force_samples else None
+                ),
+                "maximum_y_plus": (
+                    max(
+                        sample["y_plus_max"]
+                        for sample in diagnostic_force_samples
+                    )
+                    if diagnostic_force_samples else None
+                ),
+            }
             interface_health = [
                 {
                     "maximum_reflux_residual": float(ledger.residual.abs().max()),
@@ -1287,6 +1324,7 @@ def run(args: argparse.Namespace) -> dict:
                 ),
                 "maximum_collision_limited_fraction": maximum_limiter_fraction,
                 "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
+                "wall_exchange": wall_exchange_health,
                 "levels": level_health,
                 "interfaces": interface_health,
                 "finest_peak_speed_context": finest_peak_context,
