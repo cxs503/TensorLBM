@@ -26,6 +26,19 @@ def _record(length: int, resistance: float) -> dict:
             "aux_cv_margins": "2,6",
             "sponge_strength": 0.3,
             "far_field_mode": "non_equilibrium_extrapolation",
+            "collision_model": "cumulant_smagorinsky",
+            "omega_bulk": 1.0,
+            "kbc_max_iterations": 12,
+            "regularize_restriction": True,
+            "ghost_interpolation": "trilinear",
+            "enforce_transfer_positivity": True,
+            "interface_filter_width": 4,
+            "interface_filter_strength": 0.2,
+            "disable_wall_stress": False,
+            "maximum_health_speed": 0.3,
+            "minimum_convective_times": 8.0,
+            "minimum_target_reynolds_convective_times": 7.5,
+            "minimum_statistics_convective_times": 5.0,
             "nx": 5 * length,
             "ny": length,
             "nz": length,
@@ -40,6 +53,10 @@ def _record(length: int, resistance: float) -> dict:
             "report_interval": 25.0 * length / 6.0,
             "wall_diagnostic_interval": 2.0 * length / 3.0,
             "surface_force_interval": length / 3.0,
+            "health_interval": 2.0 * length / 3.0,
+            "resolved_reynolds_start": {90: 5000, 120: 3000, 150: 2000}[length],
+            "viscosity_ramp_start_step": 10.0 * length / 3.0,
+            "viscosity_ramp_end_step": 20.0 * length / 3.0,
             "finest_hull_length_cells": finest,
         },
         "result": {
@@ -47,6 +64,9 @@ def _record(length: int, resistance: float) -> dict:
                 "statistics_window_steps_resolved": 250.0 * length / 3.0,
                 "mean_resistance_n": resistance,
                 "experimental_resistance_n": 87.4,
+                "target_reynolds_convective_times": 7.6,
+                "fully_physical_convective_times": 6.0,
+                "sampling_convective_times": 5.0,
             },
         },
         "acceptance": {
@@ -55,6 +75,8 @@ def _record(length: int, resistance: float) -> dict:
             "stationarity_target_met": True,
             "nested_control_volume_target_met": True,
             "surface_observer_target_met": True,
+            "population_health_target_met": True,
+            "target_reynolds_duration_target_met": True,
         },
         "geometry": {
             "resolution": {
@@ -103,6 +125,45 @@ def test_nested_convergence_requires_all_observer_gates() -> None:
     result = assess_suboff_nested_convergence(records)
 
     assert result["source_numerical_quality_admitted"] is False
+    assert result["physical_validation"] is False
+
+
+def test_nested_convergence_rejects_missing_target_reynolds_duration() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+    records[0]["acceptance"]["target_reynolds_duration_target_met"] = False
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["source_numerical_quality_admitted"] is False
+    assert result["physical_validation"] is False
+
+
+def test_nested_convergence_rejects_changed_interface_filter() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+    records[-1]["configuration"]["interface_filter_strength"] = 0.25
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["configuration_identity"]["identity_fields_equal"] is False
+    assert result["physical_validation"] is False
+
+
+def test_nested_convergence_rejects_unscaled_viscosity_continuation() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+    records[-1]["configuration"]["viscosity_ramp_end_step"] += 1
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["configuration_identity"]["scaled_configuration_invariant"] is False
     assert result["physical_validation"] is False
 
 
