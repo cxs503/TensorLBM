@@ -58,6 +58,7 @@ def _record(coarse_length: float) -> dict[str, object]:
             "report_interval": fine_length * 25.0 / 12.0,
             "wall_diagnostic_interval": fine_length / 3.0,
             "surface_force_interval": fine_length / 12.0,
+            "statistics_window_steps_resolved": fine_length * 50.0 / 3.0,
         },
         "result": {
             "mean_resistance_n": resistance,

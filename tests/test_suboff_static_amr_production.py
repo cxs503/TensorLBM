@@ -30,6 +30,7 @@ def _arguments(tmp_path: Path, *, steps: int, resume: bool = False):
         "--aux-cv-margins", "2,4", "--surface-force-interval", "1",
         "--steps", str(steps), "--warmup-steps", "2",
         "--report-interval", "2", "--average-window", "2",
+        "--statistics-window-steps", "2",
         "--ramp-steps", "2", "--resolved-reynolds", "2000",
         "--collision-model", "cumulant_smagorinsky",
         "--wall-law", "musker", "--stress-exchange-distance", "1",
@@ -85,6 +86,8 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert resumed["configuration"]["link_force_frame"] == (
         "laboratory_after_wall_activation"
     )
+    assert resumed["configuration"]["statistics_window_steps_resolved"] == 2
+    assert resumed["result"]["force_stationarity"]["sample_count"] == 2
     assert resumed["configuration"]["wall_model_reynolds"] == pytest.approx(
         resumed["configuration"]["physical_reynolds"],
     )
@@ -114,3 +117,10 @@ def test_underresolved_aff8_records_component_and_area_evidence(
     assert result["acceptance"][
         "absolute_reference_geometry_target_met"
     ] is False
+
+
+def test_statistics_tail_must_fit_after_warmup(tmp_path: Path) -> None:
+    args, _ = _arguments(tmp_path, steps=4)
+    args.statistics_window_steps = 3
+    with pytest.raises(ValueError, match="statistics-window-steps"):
+        module.run(args)

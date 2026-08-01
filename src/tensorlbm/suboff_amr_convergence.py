@@ -147,6 +147,7 @@ def assess_suboff_amr_convergence(
             "report_interval",
             "wall_diagnostic_interval",
             "surface_force_interval",
+            "statistics_window_steps_resolved",
         )
     )
     identity_fields_equal = required_fields_present and all(
@@ -229,6 +230,7 @@ def assess_suboff_amr_convergence(
             "steps", "warmup_steps", "average_window", "ramp_steps",
             "report_interval", "wall_diagnostic_interval",
             "surface_force_interval",
+            "statistics_window_steps_resolved",
         )
     }
     ratio_values = (
