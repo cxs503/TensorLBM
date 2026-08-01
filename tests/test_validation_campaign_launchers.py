@@ -150,7 +150,7 @@ def test_four_level_l90_launcher_preserves_physical_cv_and_fails_closed_memory(
     assert arguments[arguments.index("--aux-cv-margins") + 1] == "8,24"
     assert arguments[arguments.index("--memory-bytes-per-cell") + 1] == "943"
     assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
-        "4.21875"
+        "1.0"
     )
     assert arguments[arguments.index("--collision-model") + 1] == "natural_kbc"
     assert "--preflight-only" in arguments

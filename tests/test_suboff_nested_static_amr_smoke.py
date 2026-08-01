@@ -144,6 +144,8 @@ def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -
     assert preflight["planning"]["level_count"] == 4
     assert len(preflight["planning"]["allocated_cells_by_level"]) == 4
     assert len(preflight["planning"]["fine_physical_shapes_by_level"]) == 3
+    assert preflight["planning"]["stress_exchange_distance_cells"] == 1.0
+    assert preflight["planning"]["estimated_exchange_y_plus"] > 0.0
     assert sum(preflight["planning"]["allocated_cells_by_level"]) == (
         preflight["planning"]["total_allocated_cells"]
     )
