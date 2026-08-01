@@ -506,6 +506,20 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     oscillation cannot be attributed to a completely ineffective outlet
     operator.  Three-dimensional domain extent, body-startup forcing and
     numerical momentum sources remain separately instrumented.
+65. The v5 long-ramp checkpoint at step 6750 resolves the force-accounting
+    ambiguity.  In its latest 1125-step paired window the primary and two
+    auxiliary CVs agree within 0.1%; collision-plus-limiter momentum source is
+    about 0.09% of force; and analytical-surface total differs from the primary
+    CV by about 3.1%.  The wall-frame BFL link total is nevertheless about 23%
+    higher.  Over all post-warmup samples the physical totals are 116.87 N
+    (CV) and about 113 N (surface), versus 148.69 N from wall-frame link
+    exchange.  Schema v6 therefore admits only against independent nested-CV
+    and analytical-surface agreement; it retains BFL/CV and source-corrected-
+    CV/BFL differences as explicit diagnostics but no longer treats a
+    fictitious slip-wall reference-frame force as a conservative total-force
+    identity.  Experiment error, stationarity, numerical-source, duration and
+    three-grid gates are unchanged, so this does not promote the still-
+    oscillatory L90 run.
 
 ## Rejected candidates
 

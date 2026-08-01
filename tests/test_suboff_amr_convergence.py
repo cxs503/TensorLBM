@@ -11,9 +11,9 @@ def _record(coarse_length: float) -> dict[str, object]:
     fine_length = 2.0 * coarse_length
     resistance = 100.0 + 500.0 / fine_length**2
     return {
-        "schema": "tensorlbm-suboff-static-amr-v5",
+        "schema": "tensorlbm-suboff-static-amr-v6",
         "configuration": {
-            "schema_version": 5,
+            "schema_version": 6,
             "hull_type": "bare_hull",
             "speed_knots": 5.92,
             "center_x_fraction": 0.3,
@@ -86,7 +86,7 @@ def test_wrong_schema_fails_provenance(records: list[dict[str, object]]) -> None
     records[0]["schema"] = "tensorlbm-suboff-static-amr-v3"
     result = assess_suboff_amr_convergence(records)
 
-    assert result["configuration_identity"]["v5_schema"] is False
+    assert result["configuration_identity"]["v6_schema"] is False
     assert result["admitted"] is False
 
 
