@@ -253,6 +253,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     resuming into the new force sequence.  The common stationarity assessor
     also now fails closed, rather than dividing by zero, when only one complete
     time block exists.
+39. The completed v2 fixed-height flat-plate sequence is monotonic:
+    L256/L384/L512 `Cf` values are 0.004597289/0.004657755/0.004668967.  Its
+    mathematical fit gives observed order 3.739, extrapolated
+    `Cf=0.004674770`, and 0.124% finest-grid distance; the limit is 0.272%
+    below ITTC.  This is stored with `physical_validation=false` because v2
+    lacks the expanded configuration identity.  The generic CLI now names its
+    gate `mathematical_fit_admitted`, never bare `admitted`; only the active v3
+    case-specific aggregator may issue a formal convergence admission.
 
 ## Rejected candidates
 
