@@ -1609,6 +1609,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      candidate or convergence source.  Seventy-two focused nested-runner,
      KBC, viscosity and entropy tests pass.  This enables a fail-closed L90
      interface experiment once a GPU is released without weakening admission.
+179. The `C_s=0.10` candidate passes the historical step-1560 failure point
+     with positive populations and zero limiter use, but its step-1500 SGS
+     audit quantifies substantial modeled dissipation: mean eddy/molecular
+     viscosity ratios are `0.0433/0.5510/0.7828` on levels 0/1/2, with local
+     maxima `46.88/12.48/4.57`.  Thus it is a potentially stable LES candidate,
+     not a DNS-equivalent Re=100,000 solution.  Audit SHA-256 is
+     `55568700cd2f2e691d932dbe31009bbf4ff98a0f74e3bbb816a9b7fb6462beed`.
+     It must still finish the health window and pass coefficient/grid/force
+     sensitivity before any production promotion.
 
 ## Rejected candidates
 
