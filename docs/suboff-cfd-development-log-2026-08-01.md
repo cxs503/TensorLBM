@@ -851,6 +851,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     The analytical L2 body contains 1,830,129 cells.  This fits the intended
     high-memory GPU class on paper, but an actual CUDA preflight remains
     mandatory because the empirical estimate is not an allocation guarantee.
+100. A three-level curved-wall integration test now assigns geometry and force
+     exclusively to L2 while L0/L1 remain parent transport levels.  Over three
+     root steps (12 finest substeps), a BFL sphere with Musker/Guo wall stress
+     is evaluated only on L2; at every substep the independent finest-level
+     control volume agrees with laboratory-frame BFL plus applied wall stress
+     within 0.002%.  Both kinetic interfaces simultaneously retain maximum
+     reflux residual below 2e-10.  This closes the common scheduling,
+     ownership and instantaneous-force ledger for a curved body.  SUBOFF still
+     requires its own short three-level reproduction because its analytical
+     hull, area weights, exchange sampler and elongated wake are more demanding
+     than the manufactured sphere.
 
 ## Rejected candidates
 
