@@ -159,6 +159,10 @@ def project_no_penetration(
 def run_case(args: argparse.Namespace) -> dict:
     if args.surface_force_interval < 1:
         raise ValueError("surface-force-interval must be positive")
+    if args.checkpoint_interval < 0:
+        raise ValueError("checkpoint-interval must be non-negative")
+    if args.resume and not args.checkpoint:
+        raise ValueError("resume requires --checkpoint")
     point = experimental_point(args.hull_type, args.speed_knots)
     device = torch.device(args.device)
     if device.type == "cuda":
@@ -317,6 +321,63 @@ def run_case(args: argparse.Namespace) -> dict:
             else "surface_pressure"
         )
 
+    checkpoint = Path(args.checkpoint) if args.checkpoint else None
+    checkpoint_signature = {
+        "grid_nx_ny_nz": [args.nx, args.ny, args.nz],
+        "hull_type": args.hull_type, "hull_length": args.hull_length,
+        "speed_knots": args.speed_knots,
+        "center_x_fraction": args.center_x_fraction,
+        "lattice_speed": args.lattice_speed,
+        "resolved_reynolds": args.resolved_reynolds,
+        "boundary": args.boundary,
+        "collision_model": args.collision_model,
+        "far_field_mode": args.far_field_mode,
+    }
+    start_step = 0
+    if args.resume:
+        assert checkpoint is not None
+        state = torch.load(checkpoint, map_location=device, weights_only=True)
+        if state.get("configuration") != checkpoint_signature:
+            raise ValueError("checkpoint configuration does not match SUBOFF run")
+        start_step = int(state["step"])
+        if start_step >= args.steps:
+            raise ValueError("checkpoint already reached or exceeded requested steps")
+        f = state["populations"].to(device=device)
+        all_p = state["pressure_history"].tolist()
+        all_p_voxel = state["bfl_pressure_history"].tolist()
+        all_f = state["friction_history"].tolist()
+        all_cv = state["control_volume_history"].tolist()
+        all_bfl_total = state["bfl_total_history"].tolist()
+        block_p = state["pending_pressure_block"].tolist()
+        block_f = state["pending_friction_block"].tolist()
+        surface_pressure_samples = [
+            (int(sample_step), float(value))
+            for sample_step, value in state["surface_pressure_samples"].tolist()
+        ]
+        snapshots = list(state["snapshots"])
+
+    def save_checkpoint(step: int) -> None:
+        if checkpoint is None:
+            return
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        torch.save({
+            "schema": "tensorlbm-suboff-direct-checkpoint-v1",
+            "configuration": checkpoint_signature,
+            "step": step,
+            "populations": f.detach().cpu(),
+            "pressure_history": torch.tensor(all_p, dtype=torch.float64),
+            "bfl_pressure_history": torch.tensor(all_p_voxel, dtype=torch.float64),
+            "friction_history": torch.tensor(all_f, dtype=torch.float64),
+            "control_volume_history": torch.tensor(all_cv, dtype=torch.float64),
+            "bfl_total_history": torch.tensor(all_bfl_total, dtype=torch.float64),
+            "pending_pressure_block": torch.tensor(block_p, dtype=torch.float64),
+            "pending_friction_block": torch.tensor(block_f, dtype=torch.float64),
+            "surface_pressure_samples": torch.tensor(
+                surface_pressure_samples, dtype=torch.float64,
+            ).reshape(-1, 2),
+            "snapshots": snapshots,
+        }, checkpoint)
+
     def apply_outer_boundary(state: torch.Tensor) -> torch.Tensor:
         if args.far_field_mode == "non_equilibrium_extrapolation":
             return non_equilibrium_far_field_bc_3d(
@@ -324,7 +385,7 @@ def run_case(args: argparse.Namespace) -> dict:
             )
         return far_field_bc_3d(state, u_in=args.lattice_speed)
 
-    for step in range(1, args.steps + 1):
+    for step in range(start_step + 1, args.steps + 1):
         ramp_factor = smooth_ramp_factor(step, args.ramp_steps)
         boundary_speed = args.lattice_speed
         f_step_old = f.clone()
@@ -462,6 +523,11 @@ def run_case(args: argparse.Namespace) -> dict:
                 flush=True,
             )
             block_p.clear(); block_f.clear()
+        if (
+            checkpoint is not None and args.checkpoint_interval
+            and step % args.checkpoint_interval == 0
+        ):
+            save_checkpoint(step)
 
     completed = len(all_p)
     window = min(args.average_window, completed)
@@ -557,6 +623,8 @@ def run_case(args: argparse.Namespace) -> dict:
             "sponge_inlet_enabled": args.sponge_inlet,
             "far_field_mode": args.far_field_mode,
             "steps_requested": args.steps, "steps_completed": completed,
+            "resumed_from_step": start_step,
+            "checkpoint_path": str(checkpoint) if checkpoint else None,
             "wall_activation_ramp_steps": (
                 args.ramp_steps
                 if args.boundary in {"bfl_wall_model", "bfl_spalding"} else 0
@@ -627,6 +695,8 @@ def run_case(args: argparse.Namespace) -> dict:
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    if checkpoint is not None:
+        save_checkpoint(completed)
     print(
         f"{tag} DONE Rt={predicted_n:.3f} N experiment={point.resistance_n:.3f} N "
         f"error={error_pct:.2f}% drift={drift_pct:.2f}% output={output}",
@@ -706,6 +776,9 @@ def parser() -> argparse.ArgumentParser:
         "--surface-force-interval", type=int, default=50,
         help="Cadence for the independent surface-pressure force observer.",
     )
+    p.add_argument("--checkpoint", default=None)
+    p.add_argument("--checkpoint-interval", type=int, default=2000)
+    p.add_argument("--resume", action="store_true")
     p.add_argument("--rho-water", type=float, default=998.2)
     p.add_argument("--nu-water", type=float, default=1.004e-6)
     p.add_argument("--error-target", type=float, default=5.0)
