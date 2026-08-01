@@ -1626,6 +1626,11 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      viscosity drift in the new formulation at high Re, but does not replace
      nonlinear/AMR validation.  Source hashes are recorded in
      `docs/evidence/collision-viscosity-high-re-limit-r1.json`.
+181. Production nested launchers now pass `C_s` explicitly from
+     `TENSORLBM_CS_SMAG` (default `0.05`) rather than relying on a hidden parser
+     default, and the runner rejects coefficients outside `[0,0.3]`.  This
+     makes any resumed long SGS trajectory reproducible in its command line,
+     checkpoint identity and convergence configuration.
 
 ## Rejected candidates
 
