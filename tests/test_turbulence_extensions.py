@@ -37,6 +37,7 @@ from tensorlbm import (
 )
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
 from tensorlbm.turbulence import (
+    _nonperiodic_derivative,
     _nu_t_to_tau_eff,
     _vreman_nu_t_2d,
     _vreman_nu_t_3d,
@@ -79,6 +80,44 @@ def _f3d27(nz: int = 4, ny: int = 6, nx: int = 8, u_mag: float = 0.04) -> torch.
 # ---------------------------------------------------------------------------
 
 class TestNuTHelpers:
+    def test_nonperiodic_derivative_is_exact_for_linear_field(self) -> None:
+        z, y, x = torch.meshgrid(
+            torch.arange(5, dtype=torch.float64),
+            torch.arange(6, dtype=torch.float64),
+            torch.arange(7, dtype=torch.float64),
+            indexing="ij",
+        )
+        field = 2.0 * x - 3.0 * y + 4.0 * z + 1.0
+
+        torch.testing.assert_close(
+            _nonperiodic_derivative(field, 2), torch.full_like(field, 2.0),
+        )
+        torch.testing.assert_close(
+            _nonperiodic_derivative(field, 1), torch.full_like(field, -3.0),
+        )
+        torch.testing.assert_close(
+            _nonperiodic_derivative(field, 0), torch.full_like(field, 4.0),
+        )
+
+    def test_nonperiodic_derivative_does_not_wrap_opposite_face(self) -> None:
+        field = torch.zeros((4, 5, 6), dtype=torch.float64)
+        field[:, :, -1] = 100.0
+
+        derivative = _nonperiodic_derivative(field, 2)
+
+        assert bool((derivative[:, :, 0] == 0.0).all())
+        assert bool((derivative[:, :, 1] == 0.0).all())
+        assert bool((derivative[:, :, -2:] != 0.0).any())
+
+    def test_nonperiodic_derivative_handles_thin_dimensions(self) -> None:
+        singleton = torch.ones((1, 3, 4))
+        pair = torch.tensor([0.0, 2.0]).view(2, 1, 1).expand(2, 3, 4)
+
+        assert bool((_nonperiodic_derivative(singleton, 0) == 0.0).all())
+        torch.testing.assert_close(
+            _nonperiodic_derivative(pair, 0), torch.full_like(pair, 2.0),
+        )
+
     def test_wale_nu_t_2d_nonnegative(self) -> None:
         ny, nx = 10, 12
         ux = torch.rand((ny, nx)) * 0.05
