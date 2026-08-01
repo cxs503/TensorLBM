@@ -862,6 +862,23 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      requires its own short three-level reproduction because its analytical
      hull, area weights, exchange sampler and elongated wake are more demanding
      than the manufactured sphere.
+101. The exact v8 L90 trajectory completes all 12000 steps and is formally
+     rejected rather than tuned: its declared 7500-step tail gives 115.121 N,
+     31.72% above the 87.4 N experiment.  Eight batch means span
+     91.43--134.52 N, with 6.57% trend and 10.00% 95% confidence half-width,
+     so stationarity fails independently of reference error.  Conservation
+     evidence remains strong: raw CV/BFL means differ by 0.0912%, numerical
+     source is 0.0912%, source-corrected paired observers differ by 0.000355%,
+     and nested CV spread is 0.0541%; positivity and reflux gates pass.  The
+     separate surface-pressure path is 11.37% high and fails its 5% diagnostic
+     gate.  Mean runtime y+=5750 agrees with the new 5855 prior.  Post-hoc
+     analysis of the immutable raw tail finds a 3750-step (2.5-convective-time)
+     dominant period, 295-step integrated autocorrelation time, only 25.4
+     effective samples and 4.82% autocorrelation-adjusted standard error; the
+     declared tail spans only two dominant cycles.  The immutable result and
+     separate audit are preserved locally and remotely.  The checkpoint auditor
+     performs this expanded analysis because the process loaded the preceding
+     stationarity module before those fields were added.
 
 ## Rejected candidates
 
