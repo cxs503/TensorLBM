@@ -979,6 +979,21 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      gates are mandatory for a nested single-grid candidate, closing the same
      sampling-phase and surface-observer loopholes found in the one-level
      campaign.
+111. AFF-8 appendage-link ownership is moved out of the one-level example into
+     the common SUBOFF geometry module.  The axisymmetric body retains
+     analytical BFL intersections, while sail/fin links outside that body
+     receive an audited q=0.5 fallback and an exact count; malformed D3Q19
+     link fields fail closed.  The one-level v8 path is refactored to call the
+     common function without changing its physics.
+112. The three-level runner now accepts both AFF-1 and AFF-8.  At L2 it
+     regenerates bare body, sail and cruciform fins from analytical CAD,
+     measures actual component cell counts/thicknesses and appendage halfway
+     links, uses gradient normals for the full geometry, and transfers the
+     bare-body analytical area calibration to the complete wet surface.  A CPU
+     AFF-8 curved-wall smoke exercises the full collision/BFL/wall/CV/surface
+     chain and records nonzero sail, fin and appendage-link evidence while
+     keeping physical validation false.  No AFF-8 GPU campaign is launched
+     before AFF-1 long-run behaviour is understood.
 
 ## Rejected candidates
 

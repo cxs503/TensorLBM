@@ -50,6 +50,7 @@ from tensorlbm.static_block_amr import (
 )
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import (
+    apply_suboff_appendage_halfway_links,
     assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
     build_nested_fine_suboff_mask,
@@ -66,6 +67,9 @@ from tensorlbm.wall_model import (
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--device", default="cpu")
+    result.add_argument(
+        "--hull-type", choices=("bare_hull", "full"), default="bare_hull",
+    )
     result.add_argument("--speed-knots", type=float, default=5.92)
     result.add_argument("--nx", type=int, default=600)
     result.add_argument("--ny", type=int, default=120)
@@ -153,7 +157,7 @@ def run(args: argparse.Namespace) -> dict:
     if device.type == "cuda":
         torch.cuda.set_device(device)
         torch.cuda.reset_peak_memory_stats(device)
-    point = experimental_point("bare_hull", args.speed_knots)
+    point = experimental_point(args.hull_type, args.speed_knots)
     shape = (args.nz, args.ny, args.nx)
     center = (
         args.nx * args.center_x_fraction,
@@ -162,7 +166,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     geometry_config = SuboffConfig()
     coarse_solid, _ = build_suboff_mask(
-        "bare_hull", args.nx, args.ny, args.nz,
+        args.hull_type, args.nx, args.ny, args.nz,
         cx=center[0], cy=center[1], cz=center[2],
         length=args.hull_length, config=geometry_config, device=device,
     )
@@ -174,7 +178,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     outer_solid, _ = build_fine_suboff_mask(
         outer_plan,
-        hull_type="bare_hull",
+        hull_type=args.hull_type,
         coarse_center=center,
         config=geometry_config,
         device=device,
@@ -187,7 +191,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     nested_solid, nested_geometry = build_nested_fine_suboff_mask(
         nested_plan,
-        hull_type="bare_hull",
+        hull_type=args.hull_type,
         coarse_center=center,
         config=geometry_config,
         device=device,
@@ -246,6 +250,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     checkpoint_signature = {
         "schema_version": 2,
+        "hull_type": args.hull_type,
         "shape_zyx": list(shape),
         "speed_knots": args.speed_knots,
         "hull_length": args.hull_length,
@@ -281,24 +286,68 @@ def run(args: argparse.Namespace) -> dict:
     finest_length = nested_plan.effective_hull_length_cells
     bfl_mask, bfl_q = compute_q_suboff(
         nx_f, ny_f, nz_f, *finest_center, finest_length,
-        hull_type="bare_hull", config=geometry_config, device=device,
+        hull_type=args.hull_type, config=geometry_config, device=device,
         solid_mask=finest_solid,
     )
+    appendage_halfway_links = 0
+    if args.hull_type == "full":
+        appendage_halfway_links = apply_suboff_appendage_halfway_links(
+            finest_solid,
+            bfl_mask,
+            bfl_q,
+            center=finest_center,
+            length=finest_length,
+            config=geometry_config,
+        )
     near = get_near_wall_3d(finest_solid)
-    surface = SurfaceMesh.from_suboff(
-        finest_solid,
-        near,
-        *finest_center,
-        finest_length,
-        finest_length / (2.0 * 8.57),
-        config=geometry_config,
-    )
-    area_weight, area_diagnostics = bfl_surface_area_weights(
-        bfl_mask,
-        (surface.nx_n, surface.ny_n, surface.nz_n),
-        reference_area=float(finest_geometry["wetted_area_lu2"]),
-        boundary_mask=near,
-    )
+    bare_solid = None
+    with_sail_solid = None
+    if args.hull_type == "bare_hull":
+        surface = SurfaceMesh.from_suboff(
+            finest_solid,
+            near,
+            *finest_center,
+            finest_length,
+            finest_length / (2.0 * 8.57),
+            config=geometry_config,
+        )
+        area_weight, area_diagnostics = bfl_surface_area_weights(
+            bfl_mask,
+            (surface.nx_n, surface.ny_n, surface.nz_n),
+            reference_area=float(finest_geometry["wetted_area_lu2"]),
+            boundary_mask=near,
+        )
+    else:
+        surface = SurfaceMesh.from_gradient(finest_solid, near)
+        bare_solid, _ = build_suboff_mask(
+            "bare_hull", nx_f, ny_f, nz_f,
+            cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
+            length=finest_length, config=geometry_config, device=device,
+        )
+        with_sail_solid, _ = build_suboff_mask(
+            "with_sail", nx_f, ny_f, nz_f,
+            cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
+            length=finest_length, config=geometry_config, device=device,
+        )
+        bare_near = get_near_wall_3d(bare_solid)
+        bare_surface = SurfaceMesh.from_gradient(bare_solid, bare_near)
+        bare_bfl_mask, _ = compute_q_suboff(
+            nx_f, ny_f, nz_f, *finest_center, finest_length,
+            hull_type="bare_hull", config=geometry_config, device=device,
+            solid_mask=bare_solid,
+        )
+        _, bare_area_diagnostics = bfl_surface_area_weights(
+            bare_bfl_mask,
+            (bare_surface.nx_n, bare_surface.ny_n, bare_surface.nz_n),
+            reference_area=float(finest_geometry["wetted_area_lu2"]),
+            boundary_mask=bare_near,
+        )
+        area_weight, area_diagnostics = bfl_surface_area_weights(
+            bfl_mask,
+            (surface.nx_n, surface.ny_n, surface.nz_n),
+            calibration_factor=bare_area_diagnostics.calibration_factor,
+            boundary_mask=near,
+        )
     indices = finest_solid.nonzero(as_tuple=False)
     z_min, y_min, x_min = (
         int(indices[:, axis].min().item()) for axis in range(3)
@@ -618,8 +667,12 @@ def run(args: argparse.Namespace) -> dict:
     )
     geometry_resolution = assess_suboff_geometry_resolution(
         finest_solid,
-        hull_type="bare_hull",
+        hull_type=args.hull_type,
         fine_hull_length_cells=finest_length,
+        center_yz=(finest_center[1], finest_center[2]),
+        bare_hull=bare_solid,
+        with_sail=with_sail_solid,
+        appendage_halfway_links=appendage_halfway_links,
     )
     admitted = (
         finite
@@ -764,6 +817,7 @@ def run(args: argparse.Namespace) -> dict:
         "geometry": nested_geometry | {
             "resolution": geometry_resolution.to_dict(),
             "area_weighting": vars(area_diagnostics),
+            "appendage_halfway_links": appendage_halfway_links,
             "geometry_owner_level": 2,
             "force_owner_level": 2,
         },
