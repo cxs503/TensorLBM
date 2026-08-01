@@ -146,6 +146,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     physical sampling height and increases the wall stress.  The first-cell
     formulation is rejected as grid dependent; the replacement campaign fixes
     `y/L` with L256/exchange=3 and L512/exchange=6.
+25. Nested control volumes are now an admission criterion rather than a
+    passive table.  A reusable assessment compares one primary force balance
+    with independently enclosing volumes, rejects non-finite values, and
+    requires at least two auxiliary volumes.  Direct SUBOFF admission requires
+    every auxiliary mean to agree with the primary within 1%; a close tow-tank
+    match from one arbitrarily placed control surface cannot pass this gate.
 
 ## Rejected candidates
 

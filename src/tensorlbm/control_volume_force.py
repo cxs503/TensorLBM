@@ -16,6 +16,8 @@ physical boundary conditions and sponge forcing must remain outside it.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
+from collections.abc import Sequence
 
 import torch
 
@@ -131,6 +133,52 @@ class ControlVolumeForceResult:
         return tuple(float(value) for value in self.force_on_body.tolist())
 
 
+@dataclass(frozen=True)
+class NestedControlVolumeAssessment:
+    """Invariance evidence for one primary and multiple enclosing CVs."""
+
+    auxiliary_count: int
+    differences_pct: tuple[float, ...]
+    maximum_difference_pct: float
+    finite: bool
+
+    def meets(self, target_pct: float, *, minimum_auxiliary_count: int = 2) -> bool:
+        if target_pct < 0.0 or minimum_auxiliary_count < 1:
+            raise ValueError("targets must be non-negative with at least one auxiliary CV")
+        return (
+            self.finite
+            and self.auxiliary_count >= minimum_auxiliary_count
+            and self.maximum_difference_pct <= target_pct
+        )
+
+
+def assess_nested_control_volume_invariance(
+    primary_force: float,
+    auxiliary_forces: Sequence[float],
+) -> NestedControlVolumeAssessment:
+    """Compare independently enclosed force balances without selecting one."""
+    auxiliary = tuple(float(value) for value in auxiliary_forces)
+    finite = math.isfinite(primary_force) and all(
+        math.isfinite(value) for value in auxiliary
+    )
+    if finite:
+        denominator = max(abs(primary_force), 1e-30)
+        differences = tuple(
+            abs(value - primary_force) / denominator * 100.0
+            for value in auxiliary
+        )
+        maximum = max(differences, default=math.inf)
+    else:
+        differences = tuple(math.inf for _ in auxiliary)
+        maximum = math.inf
+    return NestedControlVolumeAssessment(
+        auxiliary_count=len(auxiliary),
+        differences_pct=differences,
+        maximum_difference_pct=maximum,
+        finite=finite,
+    )
+
+
 def observe_control_volume_force(
     f_old: torch.Tensor,
     f_new: torch.Tensor,
@@ -184,6 +232,8 @@ def box_control_volume(
 
 __all__ = [
     "ControlVolumeForceResult",
+    "NestedControlVolumeAssessment",
+    "assess_nested_control_volume_invariance",
     "box_control_volume",
     "fluid_momentum",
     "observe_control_volume_force",

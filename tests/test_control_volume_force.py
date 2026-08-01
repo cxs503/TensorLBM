@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from tensorlbm.control_volume_force import (
+    assess_nested_control_volume_invariance,
     box_control_volume,
     observe_control_volume_force,
     streaming_momentum_import,
@@ -79,6 +80,16 @@ def test_periodic_axis_control_volume_may_span_complete_axis() -> None:
         f, streamed, f, cv, periodic_axes=("z",),
     )
     assert torch.allclose(result.force_on_body, torch.zeros(3, dtype=f.dtype), atol=1e-14)
+
+
+def test_nested_control_volume_assessment_requires_two_consistent_observers() -> None:
+    assessment = assess_nested_control_volume_invariance(100.0, [100.4, 99.6])
+    assert assessment.maximum_difference_pct == pytest.approx(0.4)
+    assert assessment.meets(1.0)
+    assert not assess_nested_control_volume_invariance(100.0, [100.1]).meets(1.0)
+    assert not assess_nested_control_volume_invariance(
+        100.0, [float("nan"), 100.0],
+    ).meets(1.0)
 
 
 def test_curved_moving_slip_impulse_is_invariant_across_nested_control_volumes() -> None:
