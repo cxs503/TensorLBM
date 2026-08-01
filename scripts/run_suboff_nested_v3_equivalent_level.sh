@@ -121,6 +121,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --report-interval "$report" --wall-diagnostic-interval "$wall_diagnostic" \
   --health-interval "$health_interval" --maximum-health-speed 0.3 \
   --minimum-convective-times 8 \
+  --minimum-target-reynolds-convective-times 7.5 \
   --minimum-statistics-convective-times 5 \
   --lattice-speed 0.06 --resolved-reynolds 100000 \
   --resolved-reynolds-start "$resolved_reynolds_start" \

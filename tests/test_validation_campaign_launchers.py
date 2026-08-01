@@ -83,5 +83,8 @@ def test_nested_v4_launcher_expands_audited_l150_continuation(
     assert arguments[arguments.index("--viscosity-ramp-start-step") + 1] == "500"
     assert arguments[arguments.index("--viscosity-ramp-end-step") + 1] == "1000"
     assert arguments[arguments.index("--health-interval") + 1] == "100"
+    assert arguments[
+        arguments.index("--minimum-target-reynolds-convective-times") + 1
+    ] == "7.5"
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-nested-v4-equivalent-l150-20k.json" in output
