@@ -136,6 +136,12 @@ def parser() -> argparse.ArgumentParser:
         default="cumulant_smagorinsky",
     )
     result.add_argument("--kbc-max-iterations", type=int, default=12)
+    result.add_argument(
+        "--omega-bulk",
+        type=float,
+        default=1.0,
+        help="cumulant bulk-mode relaxation rate in (0,2]",
+    )
     result.add_argument("--wall-law", choices=("musker", "reichardt", "log"), default="musker")
     result.add_argument(
         "--disable-wall-stress",
@@ -173,6 +179,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("memory bytes per cell must be positive")
     if args.kbc_max_iterations < 2:
         raise ValueError("KBC maximum iterations must be at least two")
+    if not 0.0 < args.omega_bulk <= 2.0:
+        raise ValueError("bulk relaxation rate must lie in (0,2]")
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint interval must be non-negative")
     if args.health_interval < 0:
@@ -332,6 +340,7 @@ def run(args: argparse.Namespace) -> dict:
         "cs_smag": args.cs_smag,
         "collision_model": args.collision_model,
         "kbc_max_iterations": args.kbc_max_iterations,
+        "omega_bulk": args.omega_bulk,
         "wall_law": args.wall_law,
         "wall_stress_enabled": not args.disable_wall_stress,
         "stress_exchange_distance": args.stress_exchange_distance,
@@ -490,6 +499,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("wall_stress_enabled")
         legacy_v3_signature.pop("collision_model")
         legacy_v3_signature.pop("kbc_max_iterations")
+        legacy_v3_signature.pop("omega_bulk")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and args.ghost_interpolation == "injection"
@@ -508,6 +518,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop("wall_stress_enabled")
         legacy_v2_without_new_transfer.pop("collision_model")
         legacy_v2_without_new_transfer.pop("kbc_max_iterations")
+        legacy_v2_without_new_transfer.pop("omega_bulk")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
@@ -599,7 +610,12 @@ def run(args: argparse.Namespace) -> dict:
                 max_iter=args.kbc_max_iterations,
             )
         else:
-            post = collide_cumulant_d3q19(state, tau=tau, C_s=args.cs_smag)
+            post = collide_cumulant_d3q19(
+                state,
+                tau=tau,
+                omega_b=args.omega_bulk,
+                C_s=args.cs_smag,
+            )
         post, diagnostic = limit_nonequilibrium_for_positivity(post)
         require_finite_limiter(diagnostic, level=level, stage="post_collision")
         maximum_limiter_fraction = max(
