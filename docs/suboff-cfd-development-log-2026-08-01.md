@@ -1018,6 +1018,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      admitted; changing only exchange distance or failing one surface observer
      blocks physical validation.  A CLI writes the immutable convergence
      artifact when all three queued records exist.
+116. Future nested records now preserve measured exchange distance and
+     min/mean/max y+ at the cadence level, plus final-tail reductions.  This
+     distinguishes the requested one-cell exchange from the curved-link
+     sampler's actual `max(exchange,y1+0.5)` location and prevents interpreting
+     an ideal ITTC prior as runtime applicability evidence.  The active L150
+     process predates this output-only addition and remains unchanged; queued
+     L90/L120 will load it when their processes start.
 
 ## Rejected candidates
 
