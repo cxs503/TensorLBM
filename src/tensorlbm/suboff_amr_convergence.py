@@ -68,7 +68,7 @@ def assess_suboff_amr_convergence(
         raise ValueError("SUBOFF AMR convergence requires at least three records")
     parsed: list[tuple[float, float, dict[str, object], dict[str, object], dict[str, object]]] = []
     schema_valid = True
-    single_grid_admitted = True
+    source_numerical_quality_admitted = True
     for record in records:
         schema_valid &= record.get("schema") == "tensorlbm-suboff-static-amr-v6"
         configuration = record.get("configuration")
@@ -81,7 +81,9 @@ def assess_suboff_amr_convergence(
         resolution = float(configuration["fine_hull_length_cells"])
         resistance = float(result["mean_resistance_n"])
         parsed.append((resolution, resistance, configuration, result, acceptance))
-        single_grid_admitted &= acceptance.get("single_grid_admitted") is True
+        source_numerical_quality_admitted &= (
+            acceptance.get("numerical_quality_admitted") is True
+        )
 
     parsed.sort(key=lambda item: item[0])
     resolutions = [item[0] for item in parsed]
@@ -220,7 +222,7 @@ def assess_suboff_amr_convergence(
     )
     admitted = (
         provenance_admitted
-        and single_grid_admitted
+        and source_numerical_quality_admitted
         and spatial_admitted
         and extrapolated_experiment_error
         <= maximum_extrapolated_experiment_error_pct
@@ -258,7 +260,9 @@ def assess_suboff_amr_convergence(
                 maximum_extrapolated_experiment_error_pct
             ),
         },
-        "single_grid_runs_admitted": single_grid_admitted,
+        "source_numerical_quality_admitted": (
+            source_numerical_quality_admitted
+        ),
         "physical_validation": admitted,
         "admitted": admitted,
     }
