@@ -51,7 +51,7 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     resumed = module.run(resumed_args)
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
 
-    assert first["schema"] == "tensorlbm-suboff-static-amr-v7"
+    assert first["schema"] == "tensorlbm-suboff-static-amr-v8"
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
     assert resumed["acceptance"]["physical_validation"] is False
@@ -60,7 +60,7 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert resumed["geometry"]["surface_area_weighting"][
         "calibrated_area"
     ] == pytest.approx(resumed["geometry"]["wetted_area_lu2"], rel=1e-6)
-    assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v7"
+    assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v8"
     assert state["step"] == 6
     assert len(state["force_history"]) == 4
     assert len(state["wall_y_plus_mean_history"]) == 4
@@ -82,6 +82,9 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
         "source_corrected_cv_vs_bfl_difference_pct"
     ] < 1.0
     assert resumed["configuration"]["wall_viscosity_basis"] == "physical_reynolds"
+    assert resumed["configuration"]["link_force_frame"] == (
+        "laboratory_after_wall_activation"
+    )
     assert resumed["configuration"]["wall_model_reynolds"] == pytest.approx(
         resumed["configuration"]["physical_reynolds"],
     )

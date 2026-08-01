@@ -11,9 +11,9 @@ def _record(coarse_length: float) -> dict[str, object]:
     fine_length = 2.0 * coarse_length
     resistance = 100.0 + 500.0 / fine_length**2
     return {
-        "schema": "tensorlbm-suboff-static-amr-v7",
+        "schema": "tensorlbm-suboff-static-amr-v8",
         "configuration": {
-            "schema_version": 7,
+            "schema_version": 8,
             "hull_type": "bare_hull",
             "speed_knots": 5.92,
             "center_x_fraction": 0.3,
@@ -33,6 +33,7 @@ def _record(coarse_length: float) -> dict[str, object]:
             "sponge_inlet": False,
             "far_field_mode": "non_equilibrium_extrapolation",
             "boundary_treatment": "bfl_wall_model",
+            "link_force_frame": "laboratory_after_wall_activation",
             "refinement_ratio": 2,
             "reflux_enabled": True,
             "maximum_reflux_correction_fraction": 0.2,
@@ -91,7 +92,7 @@ def test_wrong_schema_fails_provenance(records: list[dict[str, object]]) -> None
     records[0]["schema"] = "tensorlbm-suboff-static-amr-v3"
     result = assess_suboff_amr_convergence(records)
 
-    assert result["configuration_identity"]["v7_schema"] is False
+    assert result["configuration_identity"]["v8_schema"] is False
     assert result["admitted"] is False
 
 

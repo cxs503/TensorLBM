@@ -13,7 +13,7 @@ ROOT = Path(__file__).parents[1]
 @pytest.mark.parametrize(
     ("script", "level"),
     (
-        ("run_suboff_v7_equivalent_level.sh", "L90"),
+        ("run_suboff_v8_equivalent_level.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
     ),
 )

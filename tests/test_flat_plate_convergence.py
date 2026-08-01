@@ -8,7 +8,7 @@ from tensorlbm.flat_plate_convergence import assess_flat_plate_convergence
 def _record(length: int) -> dict[str, object]:
     reference = 0.0046875
     return {
-        "schema": "tensorlbm-flat-plate-wall-model-v3",
+        "schema": "tensorlbm-flat-plate-wall-model-v4",
         "configuration": {
             "shape_zyx": [3, length // 2, 2 * length],
             "plate_length": length,
@@ -24,6 +24,7 @@ def _record(length: int) -> dict[str, object]:
             "cv_margin": 3 * length // 128,
             "smagorinsky_cs": 0.05,
             "positivity_limiter": True,
+            "link_force_frame": "laboratory_after_wall_activation",
         },
         "result": {
             "friction_coefficient": reference + 0.5 / length**2,
