@@ -114,6 +114,9 @@ def test_underresolved_aff8_records_component_and_area_evidence(
     assert resolution["sail_only_cells"] >= 0
     assert resolution["fin_only_cells"] >= 0
     assert resolution["absolute_reference_resolved"] is False
+    assert result["result"][
+        "source_corrected_cv_vs_bfl_difference_pct"
+    ] < 1.0
     assert result["acceptance"][
         "absolute_reference_geometry_target_met"
     ] is False
