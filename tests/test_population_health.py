@@ -20,6 +20,7 @@ def test_uniform_equilibrium_health_is_reduced_to_scalars() -> None:
     assert health.maximum_density == pytest.approx(1.02, abs=2e-8)
     assert health.minimum_density == pytest.approx(1.02, abs=2e-8)
     assert health.maximum_speed == pytest.approx(0.04, abs=2e-8)
+    assert health.maximum_speed_index_zyx is not None
     assert health.to_dict()["finite"] is True
 
 
@@ -33,6 +34,7 @@ def test_nonfinite_population_is_reported_without_macroscopic_claims(bad: float)
     assert health.minimum_density is None
     assert health.maximum_density is None
     assert health.maximum_speed is None
+    assert health.maximum_speed_index_zyx is None
 
 
 def test_population_health_rejects_wrong_layout() -> None:
