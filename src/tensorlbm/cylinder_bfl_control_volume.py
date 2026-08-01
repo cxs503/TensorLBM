@@ -12,11 +12,13 @@ from .control_volume_force import box_control_volume, observe_control_volume_for
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
+from .force_convergence import assess_force_stationarity
 from .solver3d import stream3d
 from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
 
 
 CYLINDER_RE100_CD_REFERENCE = 1.33
+CYLINDER_RE100_ST_REFERENCE = 0.164
 
 
 @dataclass(frozen=True)
@@ -65,6 +67,42 @@ def _ramp(step: int, steps: int) -> float:
     return 0.5 * (1.0 - math.cos(math.pi * step / steps))
 
 
+def estimate_strouhal_from_lift(
+    lift_coefficients: list[float],
+    *,
+    lattice_speed: float,
+    diameter: float,
+) -> tuple[float, float]:
+    """Estimate shedding Strouhal number and observed cycle count by FFT."""
+    count = len(lift_coefficients)
+    if count < 16 or lattice_speed <= 0.0 or diameter <= 0.0:
+        return math.nan, 0.0
+    signal = torch.tensor(lift_coefficients, dtype=torch.float64)
+    index = torch.arange(count, dtype=torch.float64)
+    centered_index = index - index.mean()
+    slope = (
+        (centered_index * (signal - signal.mean())).sum()
+        / centered_index.square().sum().clamp_min(1e-30)
+    )
+    detrended = signal - signal.mean() - slope * centered_index
+    window = torch.hann_window(count, periodic=True, dtype=torch.float64)
+    spectrum = torch.fft.rfft(detrended * window).abs().square()
+    spectrum[0] = 0.0
+    peak = int(spectrum.argmax().item())
+    peak_bin = float(peak)
+    if 0 < peak < spectrum.numel() - 1:
+        left, center, right = (
+            float(spectrum[peak - 1]), float(spectrum[peak]),
+            float(spectrum[peak + 1]),
+        )
+        denominator = left - 2.0 * center + right
+        if abs(denominator) > 1e-30:
+            peak_bin += 0.5 * (left - right) / denominator
+    frequency = peak_bin / count
+    strouhal = frequency * diameter / lattice_speed
+    return strouhal, frequency * count
+
+
 def run_cylinder_bfl_control_volume(
     config: CylinderBFLControlVolumeConfig,
 ) -> dict[str, object]:
@@ -105,6 +143,7 @@ def run_cylinder_bfl_control_volume(
     )
     forces: list[float] = []
     bfl_forces: list[float] = []
+    lift_forces: list[float] = []
 
     def apply_outer(state: torch.Tensor) -> torch.Tensor:
         if config.far_field_mode == "non_equilibrium_extrapolation":
@@ -140,12 +179,14 @@ def run_cylinder_bfl_control_volume(
             f, sigma, velocity_target=(config.lattice_speed, 0.0, 0.0),
         )
         f = apply_outer(f)
-        cv_force = float(observe_control_volume_force(
+        cv_vector = observe_control_volume_force(
             old, f, post, cv, solid=solid, periodic_axes=("z",),
-        ).force_on_body[0].item())
+        ).force_on_body
+        cv_force = float(cv_vector[0].item())
         if step > config.warmup_steps:
             forces.append(cv_force)
             bfl_forces.append(bfl_force[0])
+            lift_forces.append(float(cv_vector[1].item()))
         if not bool(torch.isfinite(f).all()):
             raise FloatingPointError(f"cylinder benchmark diverged at step {step}")
 
@@ -155,6 +196,16 @@ def run_cylinder_bfl_control_volume(
         0.5 * config.lattice_speed**2 * (2.0 * config.radius) * config.nz
     )
     cd, cd_bfl = mean_force / denominator, mean_bfl / denominator
+    cd_history = [force / denominator for force in forces]
+    cy_history = [force / denominator for force in lift_forces]
+    stationarity = assess_force_stationarity(
+        cd_history,
+        block_size=max(1, len(cd_history) // 8),
+    )
+    strouhal, shedding_cycles = estimate_strouhal_from_lift(
+        cy_history, lattice_speed=config.lattice_speed,
+        diameter=2.0 * config.radius,
+    )
     return {
         "schema": "tensorlbm-cylinder-bfl-control-volume-v1",
         "configuration": {
@@ -169,6 +220,16 @@ def run_cylinder_bfl_control_volume(
             "cd_reference": CYLINDER_RE100_CD_REFERENCE,
             "reference_error_pct": abs(cd - CYLINDER_RE100_CD_REFERENCE)
             / CYLINDER_RE100_CD_REFERENCE * 100.0,
+            "mean_lift_coefficient": sum(cy_history) / len(cy_history),
+            "strouhal": strouhal,
+            "strouhal_reference": CYLINDER_RE100_ST_REFERENCE,
+            "strouhal_reference_error_pct": (
+                abs(strouhal - CYLINDER_RE100_ST_REFERENCE)
+                / CYLINDER_RE100_ST_REFERENCE * 100.0
+                if math.isfinite(strouhal) else math.inf
+            ),
+            "shedding_cycles_observed": shedding_cycles,
+            "drag_stationarity": stationarity.to_dict(),
             "finite": math.isfinite(cd),
         },
     }
@@ -176,6 +237,8 @@ def run_cylinder_bfl_control_volume(
 
 __all__ = [
     "CYLINDER_RE100_CD_REFERENCE",
+    "CYLINDER_RE100_ST_REFERENCE",
     "CylinderBFLControlVolumeConfig",
+    "estimate_strouhal_from_lift",
     "run_cylinder_bfl_control_volume",
 ]
