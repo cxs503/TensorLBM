@@ -14,6 +14,7 @@ from .control_volume_force import box_control_volume, observe_control_volume_for
 from .cuda_memory_budget import require_cuda_memory_budget
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
+from .entropic_kbc import collide_natural_kbc_d3q19
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
 from .solver3d import stream3d
@@ -46,6 +47,7 @@ class CylinderBFLControlVolumeConfig:
     resume: bool = False
     statistics_window_steps: int = 0
     minimum_shedding_cycles: float = 8.0
+    collision_model: str = "cumulant_d3q19_cs0"
     device: str = "cpu"
 
     @property
@@ -90,6 +92,10 @@ class CylinderBFLControlVolumeConfig:
             "non_equilibrium_extrapolation", "legacy_hard_equilibrium",
         }:
             raise ValueError("unknown far_field_mode")
+        if self.collision_model not in {
+            "cumulant_d3q19_cs0", "natural_kbc_d3q19",
+        }:
+            raise ValueError("unknown collision_model")
         if self.report_interval < 0 or self.checkpoint_interval < 0:
             raise ValueError("report/checkpoint intervals must be non-negative")
         if not 0 <= self.statistics_window_steps <= self.steps - self.warmup_steps:
@@ -206,7 +212,7 @@ def run_cylinder_bfl_control_volume(
         "center_x_fraction": config.center_x_fraction,
         "reynolds": config.reynolds,
         "lattice_speed": config.lattice_speed,
-        "collision_model": "cumulant_d3q19_cs0",
+        "collision_model": config.collision_model,
         "warmup_steps": config.warmup_steps,
         "ramp_steps": config.ramp_steps,
         "sponge_width": config.sponge_width,
@@ -260,7 +266,10 @@ def run_cylinder_bfl_control_volume(
 
     for step in range(start_step + 1, config.steps + 1):
         old = f
-        collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
+        if config.collision_model == "natural_kbc_d3q19":
+            collided = collide_natural_kbc_d3q19(f, config.tau)
+        else:
+            collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
         post = torch.where(solid_q, old, collided)
         f = apply_outer(stream3d(post))
         rho_post, ux_post, uy_post, uz_post = macroscopic3d(post)

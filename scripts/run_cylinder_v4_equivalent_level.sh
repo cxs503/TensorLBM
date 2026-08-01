@@ -39,11 +39,17 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 mkdir -p "$result_dir"
 python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
+collision_model=${TENSORLBM_COLLISION_MODEL:-cumulant_d3q19_cs0}
+case "$collision_model" in
+  cumulant_d3q19_cs0) variant= ;;
+  natural_kbc_d3q19) variant=-natural-kbc ;;
+  *) echo "unsupported TENSORLBM_COLLISION_MODEL: $collision_model" >&2; exit 2 ;;
+esac
 export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
 if [[ ${TENSORLBM_PREFLIGHT_ONLY:-0} == 1 ]]; then
   exec "$python" -c 'import tensorlbm; print(tensorlbm.__file__)'
 fi
-stem="$result_dir/cylinder-v4-equivalent-r${radius}-${steps}"
+stem="$result_dir/cylinder-v4${variant}-equivalent-r${radius}-${steps}"
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
   resume=(--resume)
@@ -54,6 +60,7 @@ exec "$python" examples/cylinder_bfl_cv_validate.py \
   --device cuda:0 --nx "$domain" --ny "$domain" --nz 3 \
   --radius "$radius" --center-x-fraction 0.30 \
   --reynolds 100 --lattice-speed 0.06 \
+  --collision-model "$collision_model" \
   --steps "$steps" --warmup-steps "$warmup" --ramp-steps "$ramp" \
   --sponge-width "$sponge" --sponge-strength 0.2 --cv-margin "$cv" \
   --report-interval "$report" --checkpoint-interval "$checkpoint_interval" \

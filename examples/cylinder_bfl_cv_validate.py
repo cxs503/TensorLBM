@@ -22,6 +22,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--center-x-fraction", type=float, default=0.30)
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--lattice-speed", type=float, default=0.06)
+    p.add_argument(
+        "--collision-model",
+        choices=("cumulant_d3q19_cs0", "natural_kbc_d3q19"),
+        default="cumulant_d3q19_cs0",
+    )
     p.add_argument("--steps", type=int, default=8000)
     p.add_argument("--warmup-steps", type=int, default=4000)
     p.add_argument("--ramp-steps", type=int, default=500)
@@ -60,6 +65,7 @@ def main() -> None:
         statistics_window_steps=args.statistics_window_steps,
         minimum_shedding_cycles=args.minimum_shedding_cycles,
         far_field_mode=args.far_field_mode, device=args.device,
+        collision_model=args.collision_model,
     )
     result = run_cylinder_bfl_control_volume(config)
     output = Path(args.output)

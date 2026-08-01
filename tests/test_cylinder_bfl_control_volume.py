@@ -57,6 +57,25 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
     assert artifact["acceptance"]["domain_reference_target_met"] is False
 
 
+def test_short_natural_kbc_cylinder_composition_is_finite() -> None:
+    cfg = CylinderBFLControlVolumeConfig(
+        nx=56, ny=40, nz=3, radius=4, center_x_fraction=0.35,
+        reynolds=20, lattice_speed=0.04, steps=4, warmup_steps=2,
+        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        collision_model="natural_kbc_d3q19",
+    )
+
+    artifact = run_cylinder_bfl_control_volume(cfg)
+
+    assert artifact["result"]["finite"] is True
+    assert artifact["configuration"]["collision_model"] == "natural_kbc_d3q19"
+
+
+def test_unknown_cylinder_collision_model_is_rejected() -> None:
+    with pytest.raises(ValueError, match="collision_model"):
+        CylinderBFLControlVolumeConfig(collision_model="magic").validate()
+
+
 def test_strouhal_estimator_recovers_synthetic_lift_frequency() -> None:
     speed, diameter, target = 0.08, 20.0, 0.16
     frequency = target * speed / diameter
