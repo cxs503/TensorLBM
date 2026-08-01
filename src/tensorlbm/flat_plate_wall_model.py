@@ -19,7 +19,11 @@ from .sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_sponge_sigma_3d,
 )
-from .wall_model import bfl_wall_function_3d, physical_wall_lattice_viscosity
+from .wall_model import (
+    WALL_TRACTION_SOURCE_SCHEME,
+    bfl_wall_function_3d,
+    physical_wall_lattice_viscosity,
+)
 
 
 def ittc_1957_friction_coefficient(reynolds: float) -> float:
@@ -184,6 +188,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
             "link_force_frame": "laboratory_after_wall_activation",
+            "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
         }
         if state.get("configuration") != expected:
             raise ValueError("checkpoint configuration does not match flat-plate run")
@@ -224,6 +229,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
                 "smagorinsky_cs": config.smagorinsky_cs,
                 "positivity_limiter": config.positivity_limiter,
                 "link_force_frame": "laboratory_after_wall_activation",
+                "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
             },
             "step": step,
             "populations": f.detach().cpu(),
@@ -377,6 +383,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
             "link_force_frame": "laboratory_after_wall_activation",
+            "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
             "report_interval": config.report_interval,
             "wall_diagnostic_interval": config.wall_diagnostic_interval,
             "resumed_from_step": start_step,
