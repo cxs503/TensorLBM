@@ -1,0 +1,64 @@
+{
+  "schema": "tensorlbm-cylinder-domain-convergence-interim-v1",
+  "status": "rejected_incomplete_and_w30_not_stationary",
+  "physical_validation": false,
+  "fixed_resolution": {
+    "radius_cells": 9.0,
+    "diameter_cells": 18.0,
+    "reynolds": 100.0
+  },
+  "lateral_width_diameters": [
+    20.0,
+    30.0
+  ],
+  "cd_control_volume": [
+    1.4472501372001216,
+    1.440345872007055
+  ],
+  "strouhal": [
+    0.1734554103120994,
+    0.17329661554164824
+  ],
+  "w20_to_w30_change_pct": {
+    "cd_control_volume": 0.4793477266294287,
+    "strouhal": 0.09163177824035573
+  },
+  "w30": {
+    "observer_difference_pct": 0.000406099547910089,
+    "drag_reference_error_pct": 8.296682105793602,
+    "strouhal_reference_error_pct": 5.668668013200143,
+    "shedding_cycles_observed": 12.997246165623618,
+    "drag_stationarity": {
+      "half_mean_drift_pct": 0.8098130302034132,
+      "linear_trend_pct": 1.6646376066857866,
+      "confidence95_half_width_pct": 0.6635962223140003,
+      "target_pct": 1.0,
+      "target_met": false
+    },
+    "numerical_quality_admitted": false
+  },
+  "reason": [
+    "A domain-convergence decision requires the active 40D result in addition to 20D and 30D.",
+    "The completed 30D trajectory fails the one-percent linear-trend stationarity gate, so it cannot be promoted even though the W20-to-W30 mean changes are below one percent.",
+    "The independent control-volume and BFL link-force observers agree, so the current discrepancy is not hidden by choosing a preferred force observer."
+  ],
+  "required_follow_up": [
+    "Complete the 40D trajectory.",
+    "Extend any domain member that fails the identical stationarity gate before assessing domain convergence.",
+    "Keep the existing R9/R12/R15 grid-convergence rejection independent of this domain-size study."
+  ],
+  "sources": [
+    {
+      "path": "results/cylinder-v4-equivalent-r9-54000.json",
+      "sha256": "313ee8efaa57fc09803cc8f0ce639f2de3df17573bf066de5ae940cd0723e4cd"
+    },
+    {
+      "path": "results/cylinder-v4-domain-w30d-r9-54000.json",
+      "sha256": "f92711a0365434774fbc2b2d7aeb3b86b820c32c0d3f3697ff23b84c36982d4c"
+    },
+    {
+      "remote_checkpoint": "results/cylinder_domain_convergence/cylinder-v4-domain-w30d-r9-54k.ckpt",
+      "sha256": "fdff555de0b88b27880250931f391f95ae1af9720b9034a3a630dc4622ace5b8"
+    }
+  ]
+}

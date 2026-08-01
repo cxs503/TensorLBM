@@ -171,6 +171,25 @@ def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -
     assert bool(checkpoint["level_solid_masks"][3].any())
 
 
+def test_health_record_exposes_recursive_wall_exchange_samples(
+    tmp_path: Path,
+) -> None:
+    args = _args(tmp_path, steps=1, deep_wall_margin=4)
+    args.health_interval = 1
+
+    result = MODULE.run(args)
+
+    health = result["result"]["population_health"][0]
+    wall = health["wall_exchange"]
+    assert wall["force_samples_observed"] == 8
+    assert wall["force_samples_expected"] == 8
+    assert wall["diagnostic_samples"] == 8
+    assert wall["mean_distance_cells"] > 0.0
+    assert wall["minimum_y_plus"] > 0.0
+    assert wall["minimum_y_plus"] <= wall["mean_y_plus"]
+    assert wall["mean_y_plus"] <= wall["maximum_y_plus"]
+
+
 def test_nested_preflight_rejects_cv_flux_stencil_inside_interface_filter(
     tmp_path: Path,
 ) -> None:
