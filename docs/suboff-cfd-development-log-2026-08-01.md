@@ -156,6 +156,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     default) so production GPU runs do not synchronize min/mean/max reductions
     every time step.  The cadence is part of checkpoint identity, and a BFL
     run with no collected wall-applicability sample fails closed.
+27. The elongated L120 collision-`Re=1e5` run finished at 156.37 N (78.92%
+    high) with 12.66% drift and is rejected.  Its first nested-CV report
+    incorrectly compared a 50-step-cadence auxiliary mean (~−7983 N) against
+    the primary every-step mean.  Direct checkpoint audit at the identical 40
+    timestamps shows margin 4 and 12 differ from the margin-8 primary by only
+    0.00113% and 0.00168%.  This is sampling-phase aliasing, not spatial CV
+    failure.  Checkpoint schema v3 now stores the primary CV at every auxiliary
+    timestamp and gates only paired means; every-step primary history remains
+    the resistance/time-stationarity observer.  Sparse and dense temporal
+    averages are never mixed again.
 
 ## Rejected candidates
 

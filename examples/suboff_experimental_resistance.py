@@ -339,6 +339,7 @@ def run_case(args: argparse.Namespace) -> dict:
     all_cv: list[float] = []
     all_bfl_total: list[float] = []
     surface_pressure_samples: list[tuple[int, float]] = []
+    primary_cv_samples: list[tuple[int, float]] = []
     auxiliary_cv_samples: dict[int, list[tuple[int, float]]] = {
         margin: [] for margin in auxiliary_cvs
     }
@@ -397,6 +398,10 @@ def run_case(args: argparse.Namespace) -> dict:
             (int(sample_step), float(value))
             for sample_step, value in state["surface_pressure_samples"].tolist()
         ]
+        primary_cv_samples = [
+            (int(sample_step), float(value))
+            for sample_step, value in state["primary_cv_samples"].tolist()
+        ]
         auxiliary_cv_samples = {
             int(margin): [
                 (int(sample_step), float(value))
@@ -412,7 +417,7 @@ def run_case(args: argparse.Namespace) -> dict:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-suboff-direct-checkpoint-v2",
+            "schema": "tensorlbm-suboff-direct-checkpoint-v3",
             "configuration": checkpoint_signature,
             "step": step,
             "populations": f.detach().cpu(),
@@ -425,6 +430,9 @@ def run_case(args: argparse.Namespace) -> dict:
             "pending_friction_block": torch.tensor(block_f, dtype=torch.float64),
             "surface_pressure_samples": torch.tensor(
                 surface_pressure_samples, dtype=torch.float64,
+            ).reshape(-1, 2),
+            "primary_cv_samples": torch.tensor(
+                primary_cv_samples, dtype=torch.float64,
             ).reshape(-1, 2),
             "auxiliary_cv_samples": {
                 str(margin): torch.tensor(samples, dtype=torch.float64).reshape(-1, 2)
@@ -565,6 +573,7 @@ def run_case(args: argparse.Namespace) -> dict:
         all_cv.append(cv_force_lu)
         all_bfl_total.append(pressure_voxel_lu + friction_lu)
         if step % args.surface_force_interval == 0:
+            primary_cv_samples.append((step, cv_force_lu))
             surface_pressure_lu = (
                 pressure_lu
                 if force_method == "surface_pressure"
@@ -637,6 +646,14 @@ def run_case(args: argparse.Namespace) -> dict:
         value for sample_step, value in surface_pressure_samples
         if sample_step > completed - window
     ]
+    primary_cv_window = [
+        value for sample_step, value in primary_cv_samples
+        if sample_step > completed - window
+    ]
+    primary_cv_paired_final = (
+        sum(primary_cv_window) / len(primary_cv_window)
+        if primary_cv_window else math.nan
+    )
     surface_pressure_final = (
         sum(surface_window) / len(surface_window)
         if surface_window else math.nan
@@ -652,7 +669,7 @@ def run_case(args: argparse.Namespace) -> dict:
         )
     auxiliary_items = list(auxiliary_cv_final.items())
     nested_cv_assessment = assess_nested_control_volume_invariance(
-        p_final + f_final,
+        primary_cv_paired_final,
         [value for _, value in auxiliary_items],
     )
     auxiliary_cv_difference_pct = {
@@ -691,7 +708,7 @@ def run_case(args: argparse.Namespace) -> dict:
         else True
     )
     result = {
-        "schema": "tensorlbm-suboff-experimental-resistance-v2",
+        "schema": "tensorlbm-suboff-experimental-resistance-v3",
         "status": "measured_candidate" if finite else "failed",
         "physical_validation": False,
         "primary_source": PRIMARY_SOURCE,
@@ -796,6 +813,10 @@ def run_case(args: argparse.Namespace) -> dict:
                 str(margin): value * force_scale
                 for margin, value in auxiliary_cv_final.items()
             },
+            "paired_primary_control_volume_resistance_n": (
+                primary_cv_paired_final * force_scale
+            ),
+            "paired_control_volume_samples_in_window": len(primary_cv_window),
             "auxiliary_control_volume_difference_pct": auxiliary_cv_difference_pct,
             "nested_control_volume_invariance": {
                 "auxiliary_count": nested_cv_assessment.auxiliary_count,
