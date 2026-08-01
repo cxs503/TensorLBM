@@ -224,6 +224,67 @@ def test_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     )
 
 
+def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> None:
+    """Exchange sampling changes the law input without changing force accounting."""
+    from tensorlbm.d3q19 import C as C19
+    from tensorlbm.wall_model import bfl_wall_function_3d
+
+    shape = (3, 8, 7)
+    rho = torch.ones(shape, dtype=torch.float64)
+    y = torch.arange(shape[1], dtype=torch.float64).view(1, -1, 1)
+    ux = (0.01 + 0.01 * y).expand(shape).clone()
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f = equilibrium3d(rho, ux, zero, zero)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    solid[:, 0, :] = True
+    near = torch.zeros(shape, dtype=torch.bool)
+    near[:, 1, :] = True
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    for direction in (4, 8, 9, 16, 18):
+        masks[direction, :, 1, :] = True
+    nx = torch.zeros(shape, dtype=torch.float64)
+    ny = torch.zeros(shape, dtype=torch.float64)
+    nz = torch.zeros(shape, dtype=torch.float64)
+    ny[:, 1, :] = 1.0
+
+    local_out, local_friction, _ = bfl_wall_function_3d(
+        f.clone(), f, solid, 1e-3, masks, q,
+        near_mask=near, apply_bfl=False, wall_normals=(nx, ny, nz),
+        wall_law="reichardt", y_val=0.5,
+    )
+    exchange_out, exchange_friction, _ = bfl_wall_function_3d(
+        f.clone(), f, solid, 1e-3, masks, q,
+        near_mask=near, apply_bfl=False, wall_normals=(nx, ny, nz),
+        wall_law="reichardt", stress_exchange_distance=2.0,
+    )
+    assert exchange_friction != pytest.approx(local_friction, rel=1e-5)
+    population_change = (exchange_out - f).sum(dim=(1, 2, 3))
+    momentum_change = (population_change[:, None] * C19.to(f)).sum(dim=0)
+    assert momentum_change[0].item() == pytest.approx(
+        -exchange_friction, abs=5e-11,
+    )
+    assert torch.isfinite(exchange_out).all()
+    assert torch.isfinite(local_out).all()
+
+
+def test_exchange_location_requires_positive_distance() -> None:
+    from tensorlbm.wall_model import bfl_wall_function_3d
+
+    shape = (3, 3, 3)
+    rho = torch.ones(shape)
+    zero = torch.zeros(shape)
+    f = equilibrium3d(rho, zero, zero, zero)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    with pytest.raises(ValueError, match="stress_exchange_distance"):
+        bfl_wall_function_3d(
+            f, f, solid, 0.01, masks, q,
+            stress_exchange_distance=0.0,
+        )
+
+
 def test_d3q27_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     """D3Q27 uses the same area/volume traction contract as D3Q19."""
     from tensorlbm.d3q27 import C as C27, equilibrium27

@@ -42,6 +42,7 @@ class FlatPlateWallModelConfig:
     sponge_strength: float = 0.2
     cv_margin: int = 6
     wall_law: str = "log"
+    stress_exchange_distance: float | None = None
     smagorinsky_cs: float = 0.05
     positivity_limiter: bool = True
     report_interval: int = 1000
@@ -78,6 +79,8 @@ class FlatPlateWallModelConfig:
             raise ValueError("invalid averaging window")
         if self.wall_law not in {"log", "reichardt", "musker"}:
             raise ValueError("unsupported wall law")
+        if self.stress_exchange_distance is not None and self.stress_exchange_distance <= 0.0:
+            raise ValueError("stress_exchange_distance must be positive")
         if not 0.0 <= self.smagorinsky_cs < 0.5:
             raise ValueError("smagorinsky_cs must lie in [0,0.5)")
         if self.report_interval < 0:
@@ -154,6 +157,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "reynolds": config.reynolds,
             "resolved_reynolds": config.resolved_reynolds,
             "lattice_speed": config.lattice_speed, "wall_law": config.wall_law,
+            "stress_exchange_distance": config.stress_exchange_distance,
         }
         if state.get("configuration") != expected:
             raise ValueError("checkpoint configuration does not match flat-plate run")
@@ -178,6 +182,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
                 "resolved_reynolds": config.resolved_reynolds,
                 "lattice_speed": config.lattice_speed,
                 "wall_law": config.wall_law,
+                "stress_exchange_distance": config.stress_exchange_distance,
             },
             "step": step,
             "populations": f.detach().cpu(),
@@ -211,6 +216,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             bfl_wall_mode="wall_model_slip",
             wall_activation=_ramp(step, config.ramp_steps),
             wall_law=config.wall_law,
+            stress_exchange_distance=config.stress_exchange_distance,
         )
         if config.positivity_limiter:
             f, diagnostic = limit_nonequilibrium_for_positivity(f)
@@ -281,6 +287,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "wall_nu": config.wall_nu, "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
             "wall_law": config.wall_law, "device": config.device,
+            "stress_exchange_distance": config.stress_exchange_distance,
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
             "report_interval": config.report_interval,

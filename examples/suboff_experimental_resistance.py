@@ -162,6 +162,8 @@ def run_case(args: argparse.Namespace) -> dict:
         raise ValueError("surface-force-interval must be positive")
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint-interval must be non-negative")
+    if args.stress_exchange_distance < 0.0:
+        raise ValueError("stress-exchange-distance must be non-negative")
     if args.resume and not args.checkpoint:
         raise ValueError("resume requires --checkpoint")
     aux_cv_margins = tuple(sorted({
@@ -358,6 +360,10 @@ def run_case(args: argparse.Namespace) -> dict:
         "collision_model": args.collision_model,
         "far_field_mode": args.far_field_mode,
         "aux_cv_margins": list(auxiliary_cvs),
+        "stress_exchange_distance": (
+            args.stress_exchange_distance
+            if args.stress_exchange_distance > 0.0 else None
+        ),
     }
     start_step = 0
     if args.resume:
@@ -457,6 +463,10 @@ def run_case(args: argparse.Namespace) -> dict:
                     else 1.0
                 ),
                 exchange_distance=args.exchange_distance,
+                stress_exchange_distance=(
+                    args.stress_exchange_distance
+                    if args.stress_exchange_distance > 0.0 else None
+                ),
                 nonequilibrium_scale=args.wall_nonequilibrium_scale,
                 wall_normals=(
                     pressure_mesh.nx_n, pressure_mesh.ny_n,
@@ -640,7 +650,16 @@ def run_case(args: argparse.Namespace) -> dict:
                     f"D3Q19 MRT+Smagorinsky(Cs={args.cs_smag})"
                 )
             ),
-            "wall_treatment": f"{args.wall_law}(y={args.wall_distance})",
+            "wall_treatment": (
+                f"{args.wall_law}(exchange_y={args.stress_exchange_distance})"
+                if args.stress_exchange_distance > 0.0
+                and args.boundary != "bfl_spalding"
+                else f"{args.wall_law}(y={args.wall_distance})"
+            ),
+            "stress_exchange_distance": (
+                args.stress_exchange_distance
+                if args.stress_exchange_distance > 0.0 else None
+            ),
             "pressure_force_method": (
                 "conservative BFL link momentum exchange"
                 if force_method == "bfl_momentum" else
@@ -799,6 +818,13 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--wall-law", choices=("log", "reichardt", "musker"), default="log")
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument("--exchange-distance", type=float, default=3.0)
+    p.add_argument(
+        "--stress-exchange-distance", type=float, default=0.0,
+        help=(
+            "Wall-normal velocity sampling distance for BFL slip + Guo stress; "
+            "0 keeps the legacy boundary-node stress input."
+        ),
+    )
     p.add_argument("--wall-nonequilibrium-scale", type=float, default=0.5)
     p.add_argument(
         "--boundary",

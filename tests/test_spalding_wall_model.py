@@ -7,6 +7,7 @@ from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.spalding_wall_model import (
     apply_spalding_exchange_wall_model,
     effective_bfl_wall_distance,
+    sample_wall_exchange_velocity,
     solve_spalding_friction_velocity,
     spalding_u_plus_from_y_plus,
     spalding_y_plus,
@@ -45,6 +46,45 @@ def test_flat_halfway_links_recover_half_cell_normal_distance() -> None:
     mask, q, normals, cell = _flat_boundary()
     distance = effective_bfl_wall_distance(mask, q, normals)
     assert distance[cell].item() == pytest.approx(0.5)
+
+
+def test_exchange_velocity_samples_linear_field_at_requested_wall_distance() -> None:
+    mask, q, normals, cell = _flat_boundary()
+    shape = q.shape[1:]
+    z, y, x = torch.meshgrid(
+        torch.arange(shape[0], dtype=torch.float64),
+        torch.arange(shape[1], dtype=torch.float64),
+        torch.arange(shape[2], dtype=torch.float64), indexing="ij",
+    )
+    samples = sample_wall_exchange_velocity(
+        (2.0 * y + x, torch.zeros_like(x), torch.zeros_like(x)),
+        mask, q.double(), tuple(component.double() for component in normals),
+        exchange_distance=2.0,
+    )
+    assert int(samples.boundary.sum().item()) == 1
+    assert samples.y1.item() == pytest.approx(0.5)
+    assert samples.y2.item() == pytest.approx(2.0)
+    # Boundary-node centre is y=3 and y2-y1=1.5 cells outward into fluid.
+    assert samples.velocity_x.item() == pytest.approx(2.0 * 4.5 + cell[2])
+
+
+def test_exchange_velocity_rejects_nonpositive_distance() -> None:
+    mask, q, normals, _ = _flat_boundary()
+    zero = torch.zeros(q.shape[1:])
+    with pytest.raises(ValueError, match="exchange_distance"):
+        sample_wall_exchange_velocity(
+            (zero, zero, zero), mask, q, normals, exchange_distance=0.0,
+        )
+
+
+def test_exchange_velocity_excludes_points_outside_domain() -> None:
+    mask, q, normals, _ = _flat_boundary()
+    zero = torch.zeros(q.shape[1:])
+    samples = sample_wall_exchange_velocity(
+        (zero, zero, zero), mask, q, normals, exchange_distance=20.0,
+    )
+    assert not bool(samples.boundary.any())
+    assert samples.velocity_x.numel() == 0
 
 
 def test_zero_flow_is_unchanged_and_has_zero_shear() -> None:

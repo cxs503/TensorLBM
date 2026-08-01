@@ -26,12 +26,18 @@ def test_short_flat_plate_composition_is_finite() -> None:
         resolved_reynolds=2e3, lattice_speed=0.04,
         steps=4, warmup_steps=2, ramp_steps=2,
         sponge_width=3, cv_margin=3, device="cpu",
+        stress_exchange_distance=2.0,
     )
     result = run_flat_plate_wall_model(cfg)["result"]
     assert result["finite"] is True
     assert math.isfinite(result["friction_coefficient"])
     assert result["drag_stationarity"]["sufficiently_sampled"] is False
     assert math.isfinite(result["maximum_positivity_limited_fraction"])
+
+
+def test_flat_plate_rejects_nonpositive_exchange_distance() -> None:
+    with pytest.raises(ValueError, match="stress_exchange_distance"):
+        FlatPlateWallModelConfig(stress_exchange_distance=0.0).validate()
 
 
 def test_flat_plate_checkpoint_can_resume(tmp_path: Path) -> None:

@@ -30,6 +30,10 @@ def main() -> None:
     parser.add_argument("--sponge-strength", type=float, default=0.2)
     parser.add_argument("--cv-margin", type=int, default=6)
     parser.add_argument("--wall-law", choices=("log", "reichardt", "musker"), default="log")
+    parser.add_argument(
+        "--stress-exchange-distance", type=float, default=0.0,
+        help="Wall-normal velocity sampling distance; 0 uses the boundary node.",
+    )
     parser.add_argument("--cs-smag", type=float, default=0.05)
     parser.add_argument("--disable-positivity-limiter", action="store_true")
     parser.add_argument("--report-interval", type=int, default=1000)
@@ -47,6 +51,10 @@ def main() -> None:
         warmup_steps=args.warmup_steps, ramp_steps=args.ramp_steps,
         sponge_width=args.sponge_width, sponge_strength=args.sponge_strength,
         cv_margin=args.cv_margin, wall_law=args.wall_law,
+        stress_exchange_distance=(
+            args.stress_exchange_distance
+            if args.stress_exchange_distance > 0.0 else None
+        ),
         smagorinsky_cs=args.cs_smag,
         positivity_limiter=not args.disable_positivity_limiter,
         report_interval=args.report_interval,

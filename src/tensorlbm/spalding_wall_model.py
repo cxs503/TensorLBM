@@ -114,9 +114,9 @@ def _sample_sparse_trilinear(
     x: torch.Tensor,
 ) -> torch.Tensor:
     nz, ny, nx = field.shape
-    z = z.clamp(0.0, nz - 1.000001)
-    y = y.clamp(0.0, ny - 1.000001)
-    x = x.clamp(0.0, nx - 1.000001)
+    z = z.clamp(0.0, nz - 1.0)
+    y = y.clamp(0.0, ny - 1.0)
+    x = x.clamp(0.0, nx - 1.0)
     z0, y0, x0 = z.floor().long(), y.floor().long(), x.floor().long()
     z1, y1, x1 = (z0 + 1).clamp_max(nz - 1), (y0 + 1).clamp_max(ny - 1), (x0 + 1).clamp_max(nx - 1)
     wz, wy, wx = z - z0, y - y0, x - x0
@@ -152,6 +152,83 @@ def _equilibrium_sparse(
 
 
 @dataclass(frozen=True)
+class WallExchangeSamples:
+    boundary: torch.Tensor
+    y1: torch.Tensor
+    y2: torch.Tensor
+    normal_x: torch.Tensor
+    normal_y: torch.Tensor
+    normal_z: torch.Tensor
+    velocity_x: torch.Tensor
+    velocity_y: torch.Tensor
+    velocity_z: torch.Tensor
+
+
+def sample_wall_exchange_velocity(
+    velocity: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor,
+    normals: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    *,
+    exchange_distance: float,
+    boundary_mask: torch.Tensor | None = None,
+) -> WallExchangeSamples:
+    """Sample velocity sparsely at a wall-normal exchange location ``y2``."""
+    if exchange_distance <= 0.0:
+        raise ValueError("exchange_distance must be positive")
+    ux, uy, uz = velocity
+    if any(field.shape != q_field.shape[1:] for field in velocity):
+        raise ValueError("velocity fields must have the spatial grid shape")
+    nx_n, ny_n, nz_n = (
+        component.to(device=ux.device, dtype=ux.dtype) for component in normals
+    )
+    y1_field = effective_bfl_wall_distance(
+        fluid_boundary_mask, q_field, (nx_n, ny_n, nz_n),
+    )
+    boundary = fluid_boundary_mask.any(dim=0) & (y1_field > 0.0)
+    if boundary_mask is not None:
+        if boundary_mask.shape != boundary.shape or boundary_mask.dtype is not torch.bool:
+            raise ValueError("boundary_mask must be bool with the spatial grid shape")
+        boundary = boundary & boundary_mask
+    indices = boundary.nonzero(as_tuple=False)
+    if not indices.numel():
+        empty = torch.empty(0, device=ux.device, dtype=ux.dtype)
+        return WallExchangeSamples(
+            boundary, empty, empty, empty, empty, empty, empty, empty, empty,
+        )
+    iz, iy, ix = indices[:, 0], indices[:, 1], indices[:, 2]
+    nxb, nyb, nzb = nx_n[boundary], ny_n[boundary], nz_n[boundary]
+    y1 = y1_field[boundary]
+    y2 = torch.maximum(torch.full_like(y1, exchange_distance), y1 + 0.5)
+    offset = y2 - y1
+    sample_z = iz.to(ux.dtype) + offset * nzb
+    sample_y = iy.to(ux.dtype) + offset * nyb
+    sample_x = ix.to(ux.dtype) + offset * nxb
+    valid = (
+        (sample_z >= 0.0) & (sample_z <= ux.shape[0] - 1.0)
+        & (sample_y >= 0.0) & (sample_y <= ux.shape[1] - 1.0)
+        & (sample_x >= 0.0) & (sample_x <= ux.shape[2] - 1.0)
+    )
+    if not bool(valid.all()):
+        invalid_indices = indices[~valid]
+        boundary = boundary.clone()
+        boundary[
+            invalid_indices[:, 0], invalid_indices[:, 1], invalid_indices[:, 2]
+        ] = False
+        y1, y2 = y1[valid], y2[valid]
+        nxb, nyb, nzb = nxb[valid], nyb[valid], nzb[valid]
+        sample_z, sample_y, sample_x = (
+            sample_z[valid], sample_y[valid], sample_x[valid]
+        )
+    return WallExchangeSamples(
+        boundary, y1, y2, nxb, nyb, nzb,
+        _sample_sparse_trilinear(ux, sample_z, sample_y, sample_x),
+        _sample_sparse_trilinear(uy, sample_z, sample_y, sample_x),
+        _sample_sparse_trilinear(uz, sample_z, sample_y, sample_x),
+    )
+
+
+@dataclass(frozen=True)
 class SpaldingWallDiagnostics:
     boundary_nodes: int
     mean_y1: float
@@ -182,28 +259,18 @@ def apply_spalding_exchange_wall_model(
     c, w, macro = _lattice(f.shape[0], f.device, f.dtype)
     rho, ux, uy, uz = macro(f)
     nx_n, ny_n, nz_n = (component.to(device=f.device, dtype=f.dtype) for component in normals)
-    y1_field = effective_bfl_wall_distance(
-        fluid_boundary_mask, q_field, (nx_n, ny_n, nz_n),
+    samples = sample_wall_exchange_velocity(
+        (ux, uy, uz), fluid_boundary_mask, q_field,
+        (nx_n, ny_n, nz_n), exchange_distance=exchange_distance,
     )
-    boundary = fluid_boundary_mask.any(dim=0) & (y1_field > 0.0)
-    indices = boundary.nonzero(as_tuple=False)
-    count = int(indices.shape[0])
+    boundary = samples.boundary
+    count = int(boundary.sum().item())
     if count == 0:
         zero = (0.0, 0.0, 0.0)
         return f, SpaldingWallDiagnostics(0, 0.0, 0.0, 0.0, zero)
-    iz, iy, ix = indices[:, 0], indices[:, 1], indices[:, 2]
-    nxb, nyb, nzb = nx_n[boundary], ny_n[boundary], nz_n[boundary]
-    y1 = y1_field[boundary]
-    # y2 is measured from the wall and must remain beyond the boundary node.
-    y2 = torch.full_like(y1, exchange_distance)
-    y2 = torch.maximum(y2, y1 + 0.5)
-    offset = y2 - y1
-    sample_z = iz.to(f.dtype) + offset * nzb
-    sample_y = iy.to(f.dtype) + offset * nyb
-    sample_x = ix.to(f.dtype) + offset * nxb
-    u2x = _sample_sparse_trilinear(ux, sample_z, sample_y, sample_x)
-    u2y = _sample_sparse_trilinear(uy, sample_z, sample_y, sample_x)
-    u2z = _sample_sparse_trilinear(uz, sample_z, sample_y, sample_x)
+    nxb, nyb, nzb = samples.normal_x, samples.normal_y, samples.normal_z
+    y1, y2 = samples.y1, samples.y2
+    u2x, u2y, u2z = samples.velocity_x, samples.velocity_y, samples.velocity_z
     u2n = u2x * nxb + u2y * nyb + u2z * nzb
     t2x, t2y, t2z = u2x - u2n * nxb, u2y - u2n * nyb, u2z - u2n * nzb
     u2mag = torch.sqrt(t2x.square() + t2y.square() + t2z.square()).clamp_min(1e-20)
@@ -250,9 +317,11 @@ __all__ = [
     "SPALDING_A",
     "SPALDING_KAPPA",
     "SpaldingWallDiagnostics",
+    "WallExchangeSamples",
     "apply_spalding_exchange_wall_model",
     "effective_bfl_wall_distance",
     "solve_spalding_friction_velocity",
+    "sample_wall_exchange_velocity",
     "spalding_u_plus_from_y_plus",
     "spalding_y_plus",
 ]
