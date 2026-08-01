@@ -892,6 +892,19 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      but still above the 1000 planning target.  The startup resistance
      magnitude is explicitly not assessed: this artifact admits allocation and
      integration only, with accuracy/time/grid validation all false.
+103. The same integration advances an exact L150 three-level root step after
+     calibrating the memory model explicitly from L120 and adding 20% margin
+     (742 B/cell).  The original 943 B/cell gate first rejected the case after
+     mask allocation, so no unsafe allocation occurred.  The calibrated gate
+     reserves 1 GiB and predicts 17.436 GiB; measured peak is 15.010 GiB on the
+     23.69 GiB card.  The hierarchy has 25,231,128 cells, 97.66% savings versus
+     uniform 4x, exact L2 length/diameter 600/70.01 cells and 1,830,129 body
+     cells.  Source-corrected force closure is 0.000147%; interface residuals
+     are 3.64e-12/1.64e-11, with no limiting, rejection or non-finite state.
+     Mean y+=1088, close to but still 8.8% above the 1000 planning target; the
+     difference from the 833 ideal prior is explained by the curved-link
+     sampler's actual `max(exchange, y1+0.5)` distance.  As with L120, this is
+     allocation/integration evidence only and makes no drag-accuracy claim.
 
 ## Rejected candidates
 
