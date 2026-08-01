@@ -8,7 +8,7 @@ import torch
 
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
-from .entropic_kbc import collide_kbc_d3q19
+from .entropic_kbc import collide_kbc_d3q19, collide_natural_kbc_d3q19
 from .solver3d import collide_bgk3d, stream3d
 
 
@@ -27,8 +27,12 @@ class CollisionViscosityAuditConfig:
     dtype: str = "float64"
 
     def validate(self) -> None:
-        if self.collision_model not in {"bgk", "cumulant", "entropic_kbc"}:
-            raise ValueError("collision_model must be bgk, cumulant or entropic_kbc")
+        if self.collision_model not in {
+            "bgk", "cumulant", "entropic_kbc", "natural_kbc",
+        }:
+            raise ValueError(
+                "collision_model must be bgk, cumulant, entropic_kbc or natural_kbc",
+            )
         if not 0.5 < self.tau < 2.0:
             raise ValueError("tau must lie in (0.5,2)")
         if self.wavelength_cells < 16 or self.transverse_cells < 3:
@@ -57,6 +61,8 @@ def _collide(
             tau=config.tau,
             C_s=0.0,
         )
+    if config.collision_model == "natural_kbc":
+        return collide_natural_kbc_d3q19(populations, config.tau)
     return collide_kbc_d3q19(
         populations,
         config.tau,

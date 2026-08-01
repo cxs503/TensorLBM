@@ -24,7 +24,14 @@
       "admitted": false,
       "source": "results/collision-viscosity-entropic_kbc-r1.json",
       "source_sha256": "ed55c57c92fb649971c775cc306f40964754dbce044c0b1a7228dba4a3fd18de"
+    },
+    "natural_kbc_experimental": {
+      "recovered_kinematic_viscosity": 0.1000517284024363,
+      "relative_error_pct": 0.051728402436279616,
+      "admitted": true,
+      "source": "results/collision-viscosity-natural-kbc-r1.json",
+      "source_sha256": "2b559bd7e7ba7e437f178659212f094ddec0ecc1df5cc81e7fb750ac6381a450"
     }
   },
-  "conclusion": "The current entropic KBC kernel does not recover the requested shear viscosity and is withheld from SUBOFF stability or accuracy campaigns."
+  "conclusion": "The current entropic KBC kernel does not recover the requested shear viscosity and is withheld. The primary-source mirror-state natural KBC candidate recovers viscosity but remains experimental pending stronger entropy, flow and AMR validation."
 }

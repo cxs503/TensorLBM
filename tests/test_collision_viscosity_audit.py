@@ -8,7 +8,9 @@ from tensorlbm.collision_viscosity_audit import (
 )
 
 
-@pytest.mark.parametrize("collision_model", ("bgk", "cumulant"))
+@pytest.mark.parametrize(
+    "collision_model", ("bgk", "cumulant", "natural_kbc"),
+)
 def test_audited_collision_recovers_target_viscosity(
     collision_model: str,
 ) -> None:

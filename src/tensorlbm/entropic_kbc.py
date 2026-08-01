@@ -36,8 +36,12 @@ import functools
 
 import torch
 
-from .d3q19 import C as C19, W as W19, equilibrium3d, macroscopic3d
-from .d3q27 import C as C27, W as W27, equilibrium27, macroscopic27
+from .d3q19 import C as C19
+from .d3q19 import W as W19
+from .d3q19 import equilibrium3d, macroscopic3d
+from .d3q27 import C as C27
+from .d3q27 import W as W27
+from .d3q27 import equilibrium27, macroscopic27
 
 _CS2 = 1.0 / 3.0  # lattice speed of sound squared
 _FACTOR = 9.0 / 2.0  # Hermite projection factor = 1 / (2 * cs^4)
@@ -380,6 +384,88 @@ def collide_kbc_d3q27(
     return feq + gamma.unsqueeze(0) * s + h_relaxed
 
 
+def _natural_kbc_gamma(
+    f: torch.Tensor,
+    feq: torch.Tensor,
+    shear_delta: torch.Tensor,
+    higher_delta: torch.Tensor,
+    beta: float,
+) -> torch.Tensor:
+    """Approximate KBC gamma with an admissible positivity-domain clamp."""
+    inverse_equilibrium = feq.clamp_min(1.0e-30).reciprocal()
+    numerator = (shear_delta * higher_delta * inverse_equilibrium).sum(dim=0)
+    denominator = (higher_delta.square() * inverse_equilibrium).sum(dim=0)
+    gamma = torch.where(
+        denominator > 1.0e-30,
+        1.0 / beta
+        - (2.0 - 1.0 / beta) * numerator / denominator.clamp_min(1.0e-30),
+        torch.full_like(denominator, 2.0),
+    )
+
+    base = f - 2.0 * beta * shear_delta
+    direction = -beta * higher_delta
+    epsilon = torch.finfo(f.dtype).eps
+    ratio = (epsilon - base) / torch.where(
+        direction.abs() > 1.0e-30,
+        direction,
+        torch.ones_like(direction),
+    )
+    negative_infinity = torch.full_like(denominator, -torch.inf)
+    positive_infinity = torch.full_like(denominator, torch.inf)
+    lower = torch.where(
+        direction > 1.0e-30,
+        ratio,
+        negative_infinity.unsqueeze(0),
+    ).amax(dim=0)
+    upper = torch.where(
+        direction < -1.0e-30,
+        ratio,
+        positive_infinity.unsqueeze(0),
+    ).amin(dim=0)
+    return torch.minimum(torch.maximum(gamma, lower), upper)
+
+
+def collide_natural_kbc_d3q19(
+    f: torch.Tensor,
+    tau: float,
+) -> torch.Tensor:
+    """Experimental natural-moment KBC collision with fixed shear viscosity.
+
+    This follows ``f' = f - 2*beta*Delta_s - beta*gamma*Delta_h`` with
+    ``beta = 1/(2*tau)``. The deviatoric second-order projection is the shear
+    part; bulk and higher-order residuals form ``Delta_h``. The analytical
+    entropic scalar-product approximation supplies gamma and is clamped to the
+    population positivity interval.
+
+    The kernel remains experimental until independent viscosity, entropy and
+    flow benchmarks pass; it does not replace :func:`collide_kbc_d3q19`.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    if tau <= 0.5:
+        raise ValueError(f"tau must be > 0.5, got {tau}")
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    shear_delta, bulk_delta, higher_delta = _kbc_decompose(
+        f - feq,
+        _lattice_constants(C19, W19, f.device, f.dtype),
+    )
+    remaining_delta = bulk_delta + higher_delta
+    beta = 1.0 / (2.0 * tau)
+    gamma = _natural_kbc_gamma(
+        f,
+        feq,
+        shear_delta,
+        remaining_delta,
+        beta,
+    )
+    return (
+        f
+        - 2.0 * beta * shear_delta
+        - beta * gamma.unsqueeze(0) * remaining_delta
+    )
+
+
 __all__ = [
     "discrete_entropy",
     "kbc_decompose_d3q19",
@@ -387,4 +473,5 @@ __all__ = [
     "solve_gamma_entropy",
     "collide_kbc_d3q19",
     "collide_kbc_d3q27",
+    "collide_natural_kbc_d3q19",
 ]
