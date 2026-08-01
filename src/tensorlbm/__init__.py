@@ -661,6 +661,7 @@ from .spalding_wall_model import (
 )
 from .sponge_layer import (
     apply_equilibrium_difference_sponge,
+    build_anisotropic_sponge_sigma_3d,
     build_sponge_sigma_3d,
     smoothstep5,
 )
@@ -717,6 +718,7 @@ __all__ = [
     "spalding_u_plus_from_y_plus",
     "spalding_y_plus",
     "apply_equilibrium_difference_sponge",
+    "build_anisotropic_sponge_sigma_3d",
     "build_sponge_sigma_3d",
     "smoothstep5",
     "PositivityDiagnostics",

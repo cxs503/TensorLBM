@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import torch
+import pytest
 
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
+    build_anisotropic_sponge_sigma_3d,
     build_sponge_sigma_3d,
     smoothstep5,
 )
@@ -24,6 +26,17 @@ def test_sponge_is_zero_interior_and_strongest_at_selected_face() -> None:
     assert sigma[4, 5, 6].item() == 0.0
     assert torch.isclose(sigma[4, 5, -1], torch.tensor(0.2))
     assert sigma[4, 5, -2].item() < sigma[4, 5, -1].item()
+
+
+def test_anisotropic_sponge_uses_independent_face_widths() -> None:
+    sigma = build_anisotropic_sponge_sigma_3d(
+        (15, 17, 41), face_widths={"x+": 12, "y-": 3},
+        max_strength=0.2,
+    )
+    assert sigma[7, 8, 30].item() > 0.0
+    assert sigma[7, 4, 20].item() == 0.0
+    assert sigma[7, 0, 20].item() == pytest.approx(0.2)
+    assert sigma[7, 8, 0].item() == 0.0
 
 
 def test_target_equilibrium_is_fixed_point() -> None:

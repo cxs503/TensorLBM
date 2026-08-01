@@ -41,7 +41,7 @@ from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
-    build_sponge_sigma_3d,
+    build_anisotropic_sponge_sigma_3d,
 )
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_reference_data import (
@@ -254,13 +254,17 @@ def run_case(args: argparse.Namespace) -> dict:
         device=device,
     )
     if args.sponge_mode == "equilibrium_difference":
-        sponge_faces = ("x+", "y-", "y+", "z-", "z+")
+        outlet_width = args.outlet_sponge_width or args.sponge_width
+        face_widths = {
+            "x+": outlet_width,
+            "y-": args.sponge_width, "y+": args.sponge_width,
+            "z-": args.sponge_width, "z+": args.sponge_width,
+        }
         if args.sponge_inlet:
-            sponge_faces = ("x-",) + sponge_faces
-        sponge = build_sponge_sigma_3d(
-            (args.nz, args.ny, args.nx), width=args.sponge_width,
+            face_widths["x-"] = args.sponge_width
+        sponge = build_anisotropic_sponge_sigma_3d(
+            (args.nz, args.ny, args.nx), face_widths=face_widths,
             max_strength=args.sponge_strength, device=device,
-            faces=sponge_faces,
         )
     else:
         sponge = build_far_field_sponge(
@@ -547,6 +551,7 @@ def run_case(args: argparse.Namespace) -> dict:
                 )
             ),
             "sponge_width": args.sponge_width,
+            "outlet_sponge_width": args.outlet_sponge_width or args.sponge_width,
             "sponge_strength": args.sponge_strength,
             "sponge_mode": args.sponge_mode,
             "sponge_inlet_enabled": args.sponge_inlet,
@@ -658,6 +663,10 @@ def parser() -> argparse.ArgumentParser:
         help="bfl_spalding is the exchange-location validation path; other modes are diagnostics.",
     )
     p.add_argument("--sponge-width", type=int, default=12)
+    p.add_argument(
+        "--outlet-sponge-width", type=int, default=0,
+        help="Independent x+ sponge thickness; 0 uses --sponge-width.",
+    )
     p.add_argument("--sponge-strength", type=float, default=0.2)
     p.add_argument(
         "--sponge-inlet", action="store_true",
