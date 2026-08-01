@@ -1582,6 +1582,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      gradients.  The immutable audit SHA-256 is
      `eae9ea0f37f0426601de449d14aaf9ab9bc2ff99796414b138f6557612452f62`.
      Higher-`C_s` candidates will be compared at matched checkpoint phases.
+176. Matched target-Re step-600 audits quantify the `C_s=0.10/0.15`
+     dissipation.  For 0.10, mean eddy/molecular viscosity ratios on levels
+     0/1/2 are `0.0166/0.1285/0.0922` with local maxima
+     `42.13/11.41/3.41`; for 0.15 the means rise to
+     `0.0371/0.2882/0.2068` and maxima to `93.18/25.42/7.63`.
+     Thus 0.15 materially lowers the effective Re across the refined levels;
+     stability must be weighed against this model change, with 0.10 preferred
+     if it clears the same health window.  Audit SHA-256 values are
+     `56baf724194e3bd480e4c67da45ff10ef63675b018df4906ff929c73b2b4bc00`
+     and `3b277e7f636bcf5247ab5664f506bf0541b74adf456c8851c4e3c2b83f0646cd`.
 
 ## Rejected candidates
 
