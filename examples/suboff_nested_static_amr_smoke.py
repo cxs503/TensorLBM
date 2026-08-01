@@ -988,15 +988,24 @@ def run(args: argparse.Namespace) -> dict:
         ):
             save_checkpoint(current_step)
 
-    eligible_records = [
+    wall_activated_records = [
         record for record in step_records if record["wall_fully_activated"]
+    ]
+    target_reynolds_records = [
+        record for record in wall_activated_records
+        if math.isclose(
+            record["collision_resolved_reynolds"],
+            args.resolved_reynolds,
+            rel_tol=1.0e-12,
+            abs_tol=0.0,
+        )
     ]
     maximum_corrected_difference = (
         max(
             record["source_corrected_observer_difference_pct"]
-            for record in eligible_records
+            for record in target_reynolds_records
         )
-        if eligible_records else None
+        if target_reynolds_records else None
     )
     finite = all(
         bool(torch.isfinite(level).all()) for level in hierarchy.level_populations
@@ -1047,6 +1056,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     admitted = (
         finite
+        and bool(target_reynolds_records)
         and maximum_corrected_difference is not None
         and maximum_corrected_difference <= 0.1
         and max(maximum_reflux_residual) <= 1.0e-6
@@ -1056,7 +1066,7 @@ def run(args: argparse.Namespace) -> dict:
         and maximum_rejected_fraction <= 0.01
     )
     post_warmup_records = [
-        record for record in eligible_records
+        record for record in target_reynolds_records
         if record["step"] > args.warmup_steps
     ]
     statistics_window_steps = (
@@ -1227,6 +1237,8 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_observed_density": maximum_observed_density,
             "statistics": {
                 "warmup_steps": args.warmup_steps,
+                "wall_activated_steps_available": len(wall_activated_records),
+                "target_reynolds_steps_available": len(target_reynolds_records),
                 "statistics_window_steps_requested": args.statistics_window_steps,
                 "statistics_window_steps_resolved": len(selected_records),
                 "total_convective_times": total_convective_times,
@@ -1269,7 +1281,9 @@ def run(args: argparse.Namespace) -> dict:
         },
         "acceptance": {
             "integration_smoke_admitted": admitted,
-            "fully_activated_steps_assessed": len(eligible_records),
+            "fully_activated_steps_assessed": len(wall_activated_records),
+            "target_reynolds_steps_assessed": len(target_reynolds_records),
+            "target_reynolds_reached": bool(target_reynolds_records),
             "duration_target_met": duration_acceptable,
             "stationarity_target_met": stationarity_acceptable,
             "nested_control_volume_target_met": nested_cv_acceptable,
