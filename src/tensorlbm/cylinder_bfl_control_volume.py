@@ -274,6 +274,10 @@ def run_cylinder_bfl_control_volume(
         if math.isfinite(strouhal) else math.inf
     )
     observer_difference = abs(cd - cd_bfl) / max(abs(cd), 1e-30) * 100.0
+    final_rho, final_ux, final_uy, final_uz = macroscopic3d(f)
+    final_speed = torch.sqrt(
+        final_ux.square() + final_uy.square() + final_uz.square()
+    )
     return {
         "schema": "tensorlbm-cylinder-bfl-control-volume-v1",
         "configuration": {
@@ -295,6 +299,12 @@ def run_cylinder_bfl_control_volume(
             "strouhal_reference_error_pct": strouhal_error,
             "shedding_cycles_observed": shedding_cycles,
             "drag_stationarity": stationarity.to_dict(),
+            "density_mean": float(final_rho.mean().item()),
+            "density_min_max": [
+                float(final_rho.min().item()), float(final_rho.max().item()),
+            ],
+            "relative_mass_drift": float(final_rho.mean().item() - 1.0),
+            "maximum_speed": float(final_speed.max().item()),
             "finite": math.isfinite(cd),
         },
         "acceptance": {
