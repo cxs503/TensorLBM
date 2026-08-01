@@ -631,7 +631,7 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     already-running exact AFF-1 campaign without weakening future AFF-8 claims.
 78. The exact SUBOFF launcher also supports the paired AFF-8 sequence through
     `SUBOFF_HULL_TYPE=full`.  It retains the identical L90/L120/L150 mesh and
-    duration ratios, writes variant-isolated `suboff-v7-aff8-*` artifacts and
+    duration ratios, writes variant-isolated `suboff-v8-aff8-*` artifacts and
     activates the measured appendage-resolution/area gates.  The default stays
     AFF-1, so the already queued L150 command and its checkpoint names are
     unchanged.  AFF-8 execution remains deliberately behind the AFF-1 result
@@ -646,8 +646,9 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     records.  The currently running internally consistent v6 sequence remains
     diagnostic grid/time evidence and will not be relabelled as final physical
     validation.  Its launcher is superseded by
-    `scripts/run_suboff_v7_equivalent_level.sh`, whose artifact names also
-    carry v7.  Fifty-eight focused CAD, area, AMR and convergence tests pass.
+    the current `scripts/run_suboff_v8_equivalent_level.sh`; the later v8
+    revision also corrects force-frame provenance.  Fifty-eight focused CAD,
+    area, AMR and convergence tests pass.
 80. The first fresh exact sphere member, R9 on 216x144x144, completes 7200
     steps with an eight-convective-time tail.  Tail mean Cd is 1.165145 by the
     control volume and 1.165198 by BFL (0.00449% observer difference); the 95%
