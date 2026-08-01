@@ -85,6 +85,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     It is not admitted: eight block means span 8.44%, linear trend is 6.25%,
     and the positivity limiter peaked at 0.238% of cells.  A lower collision
     Reynolds sensitivity is running with the same physical wall viscosity.
+17. A 30,000-step Re=100 cylinder run in the 16.7D-wide domain gave
+    `Cd=1.26146` with 0.00064% CV/BFL disagreement, but failed the physical
+    gate: Cd was 5.15% low, `St=0.1368` was 16.6% low, and eight Cd blocks
+    spanned 6.58%.  The benchmark now writes resumable population/force-history
+    checkpoints; a 60,000-step inlet-sponge-free run is in progress rather
+    than restarting every extension from an empty history.
 
 ## Rejected candidates
 
