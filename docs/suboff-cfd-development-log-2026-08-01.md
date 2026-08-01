@@ -1225,6 +1225,21 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      strength remain explicit checkpointed parameters and zero by default.  A
      fresh matched L90 v6 kinetic-filter A/B is active against the immutable
      unfiltered trajectory before production promotion.
+139. The one-level equivalent-L120 campaign completes 16000 root steps.  Its
+     final 10000-step mean resistance is 86.67285 N, 0.83198% below the 87.4 N
+     experiment.  Independent BFL-plus-wall-stress and primary control-volume
+     means differ by 0.16528%, the two auxiliary control volumes differ by at
+     most 0.09457%, numerical momentum source is 0.16526%, maximum positivity
+     limiting is `4.7338e-5`, and maximum reflux residual is `2.3842e-7`.
+     Nevertheless the run is correctly rejected: the block-mean range is
+     36.67%, autocorrelation-adjusted 95% confidence half-width is 9.90%, and
+     the separate normal-pressure surface integral differs from the paired
+     control volume by 45.25%.  The result is strong force-scale evidence but
+     not a converged validation point.  Result/log SHA-256 values are
+     `9fbcede94bebe8ffa9632c0fdca704278b1aa03fcce4dc384a2e3b69d977b950`
+     and `89ac1b2f12fbe66d35489c50ffb4aa2ba8e8e0ab587ff3ba666688b5b6c3c010`.
+     Its released GPU automatically starts the L120 nested continuation
+     baseline with 80-step health cadence.
 
 ## Rejected candidates
 
