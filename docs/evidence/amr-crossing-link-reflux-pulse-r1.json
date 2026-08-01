@@ -10,9 +10,10 @@
     "velocity_x_rms_refined_amr": 1.2955464399055927e-06,
     "maximum_conserved_moment_correction": 0.00025526684476062655,
     "maximum_reflux_population_residual": 2.1827872842550278e-11,
+    "maximum_applied_correction_fraction": 1.1561978681129403e-06,
     "relative_mass_drift": 1.0172393588625148e-07,
     "source": "results/amr-pulse-exterior-cells-r1.json",
-    "source_sha256": "cc80c3671fad7249070056af6c9085836d1ba819329787d15ac914fc65d7ced4"
+    "source_sha256": "7cbb34f287639012615b02d2a1198a03cbb513ba707a44614d9c49ce87787f4f"
   },
   "candidate_result": {
     "correction_stencil": "crossing_links",
@@ -22,9 +23,10 @@
     "velocity_x_rms_refined_amr": 1.2687306707448442e-06,
     "maximum_conserved_moment_correction": 7.971130980877206e-05,
     "maximum_reflux_population_residual": 7.275957614183426e-12,
+    "maximum_applied_correction_fraction": 4.826132681046147e-06,
     "relative_mass_drift": 1.0172393588625148e-07,
     "source": "results/amr-pulse-crossing-links-r1.json",
-    "source_sha256": "c5c47ee2569f8739b685fa589dff09ed053c8953f1a5b638f7cb9c3dc66b5da9"
+    "source_sha256": "cb144d5d1d1b13c72946420e5e9a4f1aac21ab21d96913d9140adef4c31ba884"
   },
   "interpretation": "The candidate preserves the same mass drift, improves global/refined density and refined velocity error, reduces the largest conserved correction by 68.8%, and reduces the residual by 66.7%. Interface density RMS rises by 0.40%, so the method is admitted only to a fail-closed SUBOFF A/B test and is not yet a production default."
 }

@@ -78,6 +78,7 @@ class FaceLocalRefluxReport:
     residual: torch.Tensor
     corrected_links: int
     limited_directions: int
+    maximum_applied_correction_fraction: float
 
     @property
     def mass_residual(self) -> float:
@@ -156,11 +157,12 @@ def _apply_population_total(
     requested: torch.Tensor,
     *,
     maximum_correction_fraction: float,
-) -> tuple[torch.Tensor, torch.Tensor, int, int]:
+) -> tuple[torch.Tensor, torch.Tensor, int, int, float]:
     """Apply a bounded requested total per direction on interface links."""
     applied = torch.zeros_like(requested)
     limited = 0
     corrected_links = 0
+    maximum_applied_fraction = 0.0
     for direction in range(populations.shape[0]):
         selected = mask[direction]
         count = int(selected.sum().item())
@@ -176,10 +178,20 @@ def _apply_population_total(
         )
         if bool(limited_factor != factor):
             limited += 1
+        maximum_applied_fraction = max(
+            maximum_applied_fraction,
+            abs(float(limited_factor.item())),
+        )
         delta = values * limited_factor
         populations[direction, selected] = values + delta
         applied[direction] = delta.sum()
-    return populations, applied, corrected_links, limited
+    return (
+        populations,
+        applied,
+        corrected_links,
+        limited,
+        maximum_applied_fraction,
+    )
 
 
 def project_onto_conserved_moments(
@@ -320,13 +332,25 @@ def apply_face_local_reflux(
         requested = project_onto_conserved_moments(raw_mismatch)
         exterior_cells = exterior_links.any(dim=0)
         correction_mask = exterior_cells.unsqueeze(0).expand_as(exterior_links)
-    corrected, applied, corrected_links, limited = _apply_population_total(
+    (
+        corrected,
+        applied,
+        corrected_links,
+        limited,
+        maximum_applied_fraction,
+    ) = _apply_population_total(
         coarse_populations, correction_mask, requested,
         maximum_correction_fraction=maximum_correction_fraction,
     )
     residual = requested - applied
     return corrected, FaceLocalRefluxReport(
-        raw_mismatch, requested, applied, residual, corrected_links, limited,
+        raw_mismatch,
+        requested,
+        applied,
+        residual,
+        corrected_links,
+        limited,
+        maximum_applied_fraction,
     )
 
 

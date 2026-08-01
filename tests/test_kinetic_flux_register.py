@@ -135,6 +135,7 @@ def test_reflux_is_local_to_exterior_interface_links_and_conservative() -> None:
     actual = (corrected - before).sum().item()
     assert actual == pytest.approx(expected, abs=2e-14)
     assert report.mass_residual == pytest.approx(0.0, abs=2e-14)
+    assert 0.0 < report.maximum_applied_correction_fraction < 0.2
     changed = (corrected - before).abs().sum(dim=0) > 0.0
     assert not bool(changed[inside].any())
     assert bool(changed.any())
@@ -210,4 +211,5 @@ def test_reflux_limiter_exposes_unapplied_residual() -> None:
     corrected, report = apply_face_local_reflux(coarse, links, base, fine)
     assert float(corrected.min()) >= 0.0
     assert report.limited_directions > 0
+    assert report.maximum_applied_correction_fraction == pytest.approx(0.2)
     assert abs(report.mass_residual) > 0.0
