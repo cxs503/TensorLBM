@@ -152,6 +152,10 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     requires at least two auxiliary volumes.  Direct SUBOFF admission requires
     every auxiliary mean to agree with the primary within 1%; a close tow-tank
     match from one arbitrarily placed control surface cannot pass this gate.
+26. Wall applicability reductions are cadence-controlled (50 steps by
+    default) so production GPU runs do not synchronize min/mean/max reductions
+    every time step.  The cadence is part of checkpoint identity, and a BFL
+    run with no collected wall-applicability sample fails closed.
 
 ## Rejected candidates
 

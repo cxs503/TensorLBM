@@ -27,6 +27,7 @@ def test_short_flat_plate_composition_is_finite() -> None:
         steps=4, warmup_steps=2, ramp_steps=2,
         sponge_width=3, cv_margin=3, device="cpu",
         stress_exchange_distance=2.0,
+        wall_diagnostic_interval=1,
     )
     result = run_flat_plate_wall_model(cfg)["result"]
     assert result["finite"] is True

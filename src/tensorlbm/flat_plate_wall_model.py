@@ -46,6 +46,7 @@ class FlatPlateWallModelConfig:
     smagorinsky_cs: float = 0.05
     positivity_limiter: bool = True
     report_interval: int = 1000
+    wall_diagnostic_interval: int = 50
     checkpoint_interval: int = 0
     checkpoint_path: str | None = None
     resume: bool = False
@@ -85,6 +86,8 @@ class FlatPlateWallModelConfig:
             raise ValueError("smagorinsky_cs must lie in [0,0.5)")
         if self.report_interval < 0:
             raise ValueError("report_interval must be non-negative")
+        if self.wall_diagnostic_interval < 1:
+            raise ValueError("wall_diagnostic_interval must be positive")
         if self.checkpoint_interval < 0:
             raise ValueError("checkpoint_interval must be non-negative")
         if self.resume and not self.checkpoint_path:
@@ -162,6 +165,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "resolved_reynolds": config.resolved_reynolds,
             "lattice_speed": config.lattice_speed, "wall_law": config.wall_law,
             "stress_exchange_distance": config.stress_exchange_distance,
+            "wall_diagnostic_interval": config.wall_diagnostic_interval,
         }
         if state.get("configuration") != expected:
             raise ValueError("checkpoint configuration does not match flat-plate run")
@@ -193,6 +197,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
                 "lattice_speed": config.lattice_speed,
                 "wall_law": config.wall_law,
                 "stress_exchange_distance": config.stress_exchange_distance,
+                "wall_diagnostic_interval": config.wall_diagnostic_interval,
             },
             "step": step,
             "populations": f.detach().cpu(),
@@ -232,15 +237,23 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             )
         post = torch.where(solid_q, old, collided)
         f = outer(stream3d(post))
-        f, friction, bfl_force, wall_diagnostics = bfl_wall_function_3d(
+        collect_wall_diagnostics = (
+            step > config.warmup_steps
+            and step % config.wall_diagnostic_interval == 0
+        )
+        wall_result = bfl_wall_function_3d(
             f, post, solid, config.wall_nu, bfl_mask, bfl_q,
             near_mask=near, wall_normals=(normal_x, normal_y, normal_z),
             bfl_wall_mode="wall_model_slip",
             wall_activation=_ramp(step, config.ramp_steps),
             wall_law=config.wall_law,
             stress_exchange_distance=config.stress_exchange_distance,
-            return_wall_diagnostics=True,
+            return_wall_diagnostics=collect_wall_diagnostics,
         )
+        if collect_wall_diagnostics:
+            f, friction, bfl_force, wall_diagnostics = wall_result
+        else:
+            f, friction, bfl_force = wall_result
         if config.positivity_limiter:
             f, diagnostic = limit_nonequilibrium_for_positivity(f)
             maximum_limited_fraction = max(
@@ -257,13 +270,14 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             friction_history.append(friction)
             cv_history.append(cv_force)
             bfl_total_history.append(friction + bfl_force)
-            if wall_diagnostics.y_plus_mean is not None:
-                wall_y_plus_min_history.append(wall_diagnostics.y_plus_min)
-                wall_y_plus_mean_history.append(wall_diagnostics.y_plus_mean)
-                wall_y_plus_max_history.append(wall_diagnostics.y_plus_max)
-            wall_rejected_fraction_history.append(
-                wall_diagnostics.rejected_fraction,
-            )
+            if collect_wall_diagnostics:
+                if wall_diagnostics.y_plus_mean is not None:
+                    wall_y_plus_min_history.append(wall_diagnostics.y_plus_min)
+                    wall_y_plus_mean_history.append(wall_diagnostics.y_plus_mean)
+                    wall_y_plus_max_history.append(wall_diagnostics.y_plus_max)
+                wall_rejected_fraction_history.append(
+                    wall_diagnostics.rejected_fraction,
+                )
         if not bool(torch.isfinite(f).all()):
             raise FloatingPointError(f"flat-plate benchmark diverged at step {step}")
         if config.report_interval and step % config.report_interval == 0:
@@ -303,7 +317,10 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     )
     limiter_acceptable = maximum_limited_fraction <= 1e-3
     maximum_rejected_fraction = max(wall_rejected_fraction_history, default=0.0)
-    exchange_sampling_acceptable = maximum_rejected_fraction <= 0.01
+    exchange_sampling_acceptable = (
+        bool(wall_rejected_fraction_history)
+        and maximum_rejected_fraction <= 0.01
+    )
     admitted = (
         reference_error <= 5.0
         and stationarity.meets(1.0)
@@ -324,6 +341,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
             "report_interval": config.report_interval,
+            "wall_diagnostic_interval": config.wall_diagnostic_interval,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
         },
