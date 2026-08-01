@@ -79,6 +79,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     from about 43 N at L120 to 12.9 N at L160, indicating spatial convergence
     of the curved moving-slip boundary diagnostic even though the short wake
     domain remains physically unacceptable.
+16. The first finite flat-plate production run (`Re=1e6`, plate L=256,
+    collision `Re=1e5`) gave `Cf=0.004493`, only 4.15% below ITTC-1957, and
+    its control-volume versus BFL-plus-wall-stress total differed by 0.029%.
+    It is not admitted: eight block means span 8.44%, linear trend is 6.25%,
+    and the positivity limiter peaked at 0.238% of cells.  A lower collision
+    Reynolds sensitivity is running with the same physical wall viscosity.
 
 ## Rejected candidates
 
