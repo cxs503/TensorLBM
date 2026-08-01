@@ -88,3 +88,26 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert resumed["configuration"]["wall_nu_fine"] < 0.01 * (
         2.0 * (resumed["configuration"]["tau_coarse"] - 0.5) / 3.0
     )
+
+
+def test_underresolved_aff8_records_component_and_area_evidence(
+    tmp_path: Path,
+) -> None:
+    args, _ = _arguments(tmp_path, steps=4)
+    args.hull_type = "full"
+    result = module.run(args)
+    geometry = result["geometry"]
+    resolution = geometry["geometry_resolution"]
+
+    assert geometry["wetted_area_scope"] == "bare_hull_analytical_approximation"
+    assert geometry["force_integration_area_scope"] == "full"
+    assert geometry["force_integration_calibrated_area_lu2"] > geometry[
+        "bare_hull_wetted_area_lu2"
+    ]
+    assert resolution["hull_type"] == "full"
+    assert resolution["sail_only_cells"] >= 0
+    assert resolution["fin_only_cells"] >= 0
+    assert resolution["absolute_reference_resolved"] is False
+    assert result["acceptance"][
+        "absolute_reference_geometry_target_met"
+    ] is False

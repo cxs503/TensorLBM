@@ -59,6 +59,7 @@ from tensorlbm.static_block_amr import (
 )
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import (
+    assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
     plan_suboff_static_amr,
 )
@@ -245,6 +246,8 @@ def run(args: argparse.Namespace) -> dict:
             length=args.hull_length * 2.0, device=device,
         )
     fine_near = get_near_wall_3d(fine_solid_g)
+    bare_solid = None
+    with_sail_solid = None
     if args.hull_type == "bare_hull":
         fine_surface = SurfaceMesh.from_suboff(
             fine_solid_g, fine_near, *fine_center,
@@ -261,6 +264,11 @@ def run(args: argparse.Namespace) -> dict:
         fine_surface = SurfaceMesh.from_gradient(fine_solid_g, fine_near)
         bare_solid, _ = build_suboff_mask(
             "bare_hull", nx_f, ny_f, nz_f,
+            cx=fine_center[0], cy=fine_center[1], cz=fine_center[2],
+            length=args.hull_length * 2.0, config=config, device=device,
+        )
+        with_sail_solid, _ = build_suboff_mask(
+            "with_sail", nx_f, ny_f, nz_f,
             cx=fine_center[0], cy=fine_center[1], cz=fine_center[2],
             length=args.hull_length * 2.0, config=config, device=device,
         )
@@ -282,6 +290,15 @@ def run(args: argparse.Namespace) -> dict:
             calibration_factor=bare_area_diagnostics.calibration_factor,
             boundary_mask=fine_near,
         )
+    geometry_resolution = assess_suboff_geometry_resolution(
+        fine_solid_g,
+        hull_type=args.hull_type,
+        fine_hull_length_cells=args.hull_length * 2.0,
+        center_yz=(fine_center[1], fine_center[2]),
+        bare_hull=bare_solid,
+        with_sail=with_sail_solid,
+        appendage_halfway_links=appendage_links,
+    )
     fine_surface.dA = fine_area_weight
     fine_solid_q = fine_solid_g.unsqueeze(0).expand_as(amr.fine_f)
     fine_indices = fine_solid_g.nonzero(as_tuple=False)
@@ -863,6 +880,17 @@ def run(args: argparse.Namespace) -> dict:
     surface_area_acceptable = (
         surface_area_diagnostics.unweighted_nodes == 0
         and surface_area_diagnostics.calibrated_area > 0.0
+        and (
+            args.hull_type == "bare_hull"
+            or surface_area_diagnostics.calibrated_area
+            > float(fine_geometry["bare_hull_wetted_area_lu2"])
+        )
+    )
+    geometry_convergence_member_acceptable = (
+        geometry_resolution.convergence_member_resolved
+    )
+    absolute_reference_geometry_acceptable = (
+        geometry_resolution.absolute_reference_resolved
     )
     finite = (
         bool(torch.isfinite(amr.coarse_f).all())
@@ -896,10 +924,12 @@ def run(args: argparse.Namespace) -> dict:
         and reflux_acceptable
         and wall_sampling_acceptable
         and surface_area_acceptable
+        and geometry_convergence_member_acceptable
     )
     single_grid_admitted = (
         numerical_quality_admitted
         and reference_error_pct <= args.error_target
+        and absolute_reference_geometry_acceptable
     )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30 if device.type == "cuda" else None
@@ -954,6 +984,11 @@ def run(args: argparse.Namespace) -> dict:
         },
         "geometry": fine_geometry | {
             "appendage_halfway_links": appendage_links,
+            "geometry_resolution": geometry_resolution.to_dict(),
+            "force_integration_area_scope": args.hull_type,
+            "force_integration_calibrated_area_lu2": (
+                surface_area_diagnostics.calibrated_area
+            ),
             "surface_area_weighting": vars(surface_area_diagnostics),
         },
         "result": {
@@ -1093,6 +1128,12 @@ def run(args: argparse.Namespace) -> dict:
             "reflux_target_met": reflux_acceptable,
             "wall_sampling_target_met": wall_sampling_acceptable,
             "surface_area_target_met": surface_area_acceptable,
+            "geometry_convergence_member_target_met": (
+                geometry_convergence_member_acceptable
+            ),
+            "absolute_reference_geometry_target_met": (
+                absolute_reference_geometry_acceptable
+            ),
             "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
             "single_grid_admitted": single_grid_admitted,
             "numerical_quality_admitted": numerical_quality_admitted,

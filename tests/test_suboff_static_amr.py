@@ -4,6 +4,7 @@ import torch
 
 from tensorlbm.suboff_cad import build_suboff_mask
 from tensorlbm.suboff_static_amr import (
+    assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
     plan_suboff_static_amr,
 )
@@ -76,3 +77,55 @@ def test_l120_plan_reaches_28_cells_across_diameter_with_small_memory() -> None:
     assert plan.effective_diameter_cells > 28.0 - 0.01
     assert plan.cell_saving_fraction > 0.75
     assert plan.estimated_peak_gib() < 8.0
+
+
+def _full_component_resolution(length: float):
+    nx = int(length + 40)
+    ny = nz = int(length * 0.28) + 10
+    center = (nx / 2.0, ny / 2.0, nz / 2.0)
+    masks = {
+        hull_type: build_suboff_mask(
+            hull_type, nx, ny, nz,
+            cx=center[0], cy=center[1], cz=center[2], length=length,
+        )[0]
+        for hull_type in ("bare_hull", "with_sail", "full")
+    }
+    return assess_suboff_geometry_resolution(
+        masks["full"], hull_type="full", fine_hull_length_cells=length,
+        center_yz=(center[1], center[2]),
+        bare_hull=masks["bare_hull"], with_sail=masks["with_sail"],
+        appendage_halfway_links=1,
+    )
+
+
+def test_aff8_resolution_measures_rasterized_sail_and_cruciform_fins() -> None:
+    coarse = _full_component_resolution(180.0)
+    assert coarse.diameter_cells == 180.0 / 8.57
+    assert coarse.sail_only_cells > 0
+    assert coarse.fin_only_cells > 0
+    assert coarse.sail_max_thickness_cells == 3
+    assert coarse.vertical_fin_max_thickness_cells == 3
+    assert coarse.horizontal_fin_max_thickness_cells == 3
+    assert coarse.convergence_member_resolved is True
+    assert coarse.absolute_reference_resolved is False
+
+    reference = _full_component_resolution(240.0)
+    assert reference.sail_max_thickness_cells >= 4
+    assert reference.vertical_fin_max_thickness_cells >= 4
+    assert reference.horizontal_fin_max_thickness_cells >= 4
+    assert reference.absolute_reference_resolved is True
+
+
+def test_aff8_resolution_fails_closed_without_boundary_links() -> None:
+    assessment = _full_component_resolution(240.0)
+    masks = torch.zeros((8, 8, 8), dtype=torch.bool)
+    # Component masks are intentionally empty: nominal hull length alone is
+    # insufficient evidence that AFF-8 appendages survived rasterization.
+    missing = assess_suboff_geometry_resolution(
+        masks, hull_type="full", fine_hull_length_cells=240.0,
+        center_yz=(4.0, 4.0), bare_hull=masks, with_sail=masks,
+        appendage_halfway_links=0,
+    )
+    assert assessment.absolute_reference_resolved is True
+    assert missing.convergence_member_resolved is False
+    assert missing.absolute_reference_resolved is False

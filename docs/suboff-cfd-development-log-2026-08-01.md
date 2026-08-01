@@ -594,6 +594,20 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     Richardson convergence of both mean Cd and shedding Strouhal number.  The
     earlier D32 result remains rejected evidence; it is not relabelled under
     the new schema.
+74. AFF-8 geometry admission now measures the rasterized configuration rather
+    than trusting nominal CAD dimensions.  The common static-AMR resolution
+    assessor records bare-hull, sail-only and fin-only cell counts, actual sail
+    thickness, both cruciform-fin thicknesses and the number of halfway
+    appendage links.  A convergence member requires at least 16 cells across
+    the hull diameter and three across every appendage thickness; an absolute
+    experimental-reference claim requires 24 and four, respectively.  At the
+    exact fine-hull resolutions L180/L240/L300, measured appendage thicknesses
+    are 3/4/5 cells, so L180 may be the coarse Richardson member but cannot
+    make a standalone AFF-8 accuracy claim.  Output also distinguishes the
+    legacy bare-hull analytical `wetted_area_lu2` from the calibrated full-
+    configuration force-integration area; an AFF-8 run is rejected if its
+    calibrated area does not exceed the bare-hull area.  Forty-three focused
+    CAD/static-AMR production and resolution tests pass.
 
 ## Rejected candidates
 
