@@ -46,6 +46,8 @@
   ],
   "code_contract": {
     "launcher": "scripts/run_suboff_nested_v4_continuation_level.sh",
+    "geometrically_scaled_three_grid_launcher": "scripts/run_suboff_nested_v11_scaled_wall_level.sh",
+    "historical_v10_launcher_reusable_for_formal_convergence": false,
     "convergence_identity": "stress_exchange_distance / finest_hull_length_cells",
     "no_retroactive_relabeling": true
   },
