@@ -43,6 +43,12 @@ def test_convective_tau_scaling() -> None:
             tau_coarse=0.56,
             maximum_reflux_correction_fraction=0.0,
         )
+    with pytest.raises(ValueError, match="ghost_interpolation"):
+        StaticBlockAMRConfig(
+            BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+            tau_coarse=0.56,
+            ghost_interpolation="cubic",
+        )
 
 
 def test_restriction_regularization_is_an_explicit_common_option() -> None:
@@ -62,6 +68,29 @@ def test_restriction_regularization_is_an_explicit_common_option() -> None:
     ledger = solver.step(identity)
     assert bool(torch.isfinite(solver.coarse_f).all())
     assert abs(ledger.mass_residual) < 1e-12
+
+
+def test_transfer_positivity_limits_amplified_restriction_before_parent_use() -> None:
+    config = StaticBlockAMRConfig(
+        BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+        tau_coarse=0.5002,
+        enforce_transfer_positivity=True,
+    )
+    solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)).float(), config)
+    # Inject a zero-mass/momentum stress large enough that fine-to-coarse
+    # non-equilibrium amplification would otherwise create negatives.
+    physical = solver.fine_physical
+    physical[0] -= 0.2
+    physical[1] += 0.1
+    physical[2] += 0.1
+
+    restricted = solver._restrict_physical()
+
+    assert float(restricted.min()) >= 0.0
+    diagnostic = solver.last_restriction_positivity
+    assert diagnostic is not None
+    assert diagnostic.limited_fraction > 0.0
+    assert diagnostic.minimum_alpha < 1.0
 
 
 def test_uniform_moving_equilibrium_survives_nested_step_exactly() -> None:
@@ -186,6 +215,50 @@ def test_fine_solid_gets_a_fluid_ghost_layer() -> None:
     assert not bool(padded[:, -1].any())
     assert not bool(padded[:, :, 0].any())
     assert not bool(padded[:, :, -1].any())
+
+
+def test_cell_centered_trilinear_ghost_fill_is_exact_for_linear_density() -> None:
+    shape = (8, 9, 11)
+    z, y, x = torch.meshgrid(
+        *(torch.arange(size, dtype=torch.float64) for size in shape),
+        indexing="ij",
+    )
+    rho = 1.0 + 1e-3 * x + 2e-3 * y + 3e-3 * z
+    zero = torch.zeros_like(rho)
+    parent = equilibrium3d(rho, zero, zero, zero)
+    config = StaticBlockAMRConfig(
+        BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+        tau_coarse=0.56,
+        ghost_interpolation="trilinear",
+    )
+    solver = StaticBlockAMR3D(parent, config)
+    interior_before = solver.fine_f[:, 1:-1, 1:-1, 1:-1].clone()
+    solver.fine_f[:, 0] = 0.0
+    solver.fine_f[:, -1] = 0.0
+    solver.fine_f[:, :, 0] = 0.0
+    solver.fine_f[:, :, -1] = 0.0
+    solver.fine_f[:, :, :, 0] = 0.0
+    solver.fine_f[:, :, :, -1] = 0.0
+
+    solver._fill_ghost(parent)
+
+    torch.testing.assert_close(
+        solver.fine_f[:, 1:-1, 1:-1, 1:-1], interior_before,
+    )
+    plan = solver._ghost_sampling_plan
+    filled_density = solver.fine_f.reshape(19, -1)[:, plan.target_flat].sum(dim=0)
+    _, nz, ny, nx = solver.fine_f.shape
+    local_z = torch.div(plan.target_flat, ny * nx, rounding_mode="floor")
+    remainder = plan.target_flat % (ny * nx)
+    local_y = torch.div(remainder, nx, rounding_mode="floor")
+    local_x = remainder % nx
+    fine_z = (config.box.z0 * 2 - 1 + local_z + 0.5) / 2.0 - 0.5
+    fine_y = (config.box.y0 * 2 - 1 + local_y + 0.5) / 2.0 - 0.5
+    fine_x = (config.box.x0 * 2 - 1 + local_x + 0.5) / 2.0 - 0.5
+    expected = 1.0 + 1e-3 * fine_x + 2e-3 * fine_y + 3e-3 * fine_z
+    expected = expected.to(filled_density)
+    # The package lattice weights are intentionally stored in float32.
+    torch.testing.assert_close(filled_density, expected, atol=2e-7, rtol=0.0)
 
 
 def test_block_must_be_strictly_interior() -> None:

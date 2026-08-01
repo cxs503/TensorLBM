@@ -103,6 +103,17 @@ def parser() -> argparse.ArgumentParser:
         action="store_true",
         help="filter fine-to-coarse transfer to resolved second-order stress",
     )
+    result.add_argument(
+        "--ghost-interpolation",
+        choices=("injection", "trilinear"),
+        default="injection",
+        help="coarse-to-fine ghost-shell spatial interpolation",
+    )
+    result.add_argument(
+        "--enforce-transfer-positivity",
+        action="store_true",
+        help="limit fine-to-coarse populations before parent replacement",
+    )
     result.add_argument("--minimum-convective-times", type=float, default=8.0)
     result.add_argument(
         "--minimum-statistics-convective-times", type=float, default=5.0,
@@ -253,11 +264,15 @@ def run(args: argparse.Namespace) -> dict:
         outer_plan.box,
         tau_coarse=tau_coarse,
         regularize_restriction=args.regularize_restriction,
+        ghost_interpolation=args.ghost_interpolation,
+        enforce_transfer_positivity=args.enforce_transfer_positivity,
     )
     inner_amr_config = StaticBlockAMRConfig(
         nested_plan.box_in_outer_allocated_coordinates,
         tau_coarse=outer_amr_config.tau_fine,
         regularize_restriction=args.regularize_restriction,
+        ghost_interpolation=args.ghost_interpolation,
+        enforce_transfer_positivity=args.enforce_transfer_positivity,
     )
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, args.lattice_speed)
@@ -292,6 +307,8 @@ def run(args: argparse.Namespace) -> dict:
         "sponge_strength": args.sponge_strength,
         "far_field_mode": args.far_field_mode,
         "regularize_restriction": args.regularize_restriction,
+        "ghost_interpolation": args.ghost_interpolation,
+        "enforce_transfer_positivity": args.enforce_transfer_positivity,
     }
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
@@ -419,32 +436,47 @@ def run(args: argparse.Namespace) -> dict:
     current_step = 0
     resumed_from_step = 0
     resumed_legacy_v2_checkpoint = False
+    resumed_legacy_v3_checkpoint = False
     force_samples: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
     maximum_reflux_residual = [0.0, 0.0]
     maximum_reflux_limited_directions = [0, 0]
+    maximum_transfer_limited_fraction = [0.0, 0.0]
+    minimum_transfer_alpha = [1.0, 1.0]
     maximum_rejected_fraction = 0.0
     health_records: list[dict] = []
 
     if args.resume:
         state = torch.load(args.checkpoint, map_location=device, weights_only=True)
         stored_configuration = state.get("configuration")
+        legacy_v3_signature = dict(checkpoint_signature)
+        legacy_v3_signature.pop("regularize_restriction")
+        legacy_v3_signature.pop("ghost_interpolation")
+        legacy_v3_signature.pop("enforce_transfer_positivity")
+        resumed_legacy_v3_checkpoint = (
+            not args.regularize_restriction
+            and args.ghost_interpolation == "injection"
+            and not args.enforce_transfer_positivity
+            and stored_configuration == legacy_v3_signature
+        )
         legacy_v2_signature = dict(checkpoint_signature)
         legacy_v2_signature["schema_version"] = 2
         legacy_v2_signature.pop("hull_type")
-        legacy_v2_without_filter = dict(legacy_v2_signature)
-        legacy_v2_without_filter.pop("regularize_restriction")
+        legacy_v2_without_new_transfer = dict(legacy_v2_signature)
+        legacy_v2_without_new_transfer.pop("regularize_restriction")
+        legacy_v2_without_new_transfer.pop("ghost_interpolation")
+        legacy_v2_without_new_transfer.pop("enforce_transfer_positivity")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
-            and stored_configuration in (
-                legacy_v2_signature,
-                legacy_v2_without_filter,
-            )
+            and args.ghost_interpolation == "injection"
+            and not args.enforce_transfer_positivity
+            and stored_configuration == legacy_v2_without_new_transfer
         )
         if (
             stored_configuration != checkpoint_signature
+            and not resumed_legacy_v3_checkpoint
             and not resumed_legacy_v2_checkpoint
         ):
             raise ValueError("checkpoint configuration does not match nested smoke")
@@ -465,6 +497,16 @@ def run(args: argparse.Namespace) -> dict:
             int(value) for value in state["maximum_reflux_limited_directions"]
         ]
         maximum_rejected_fraction = float(state["maximum_rejected_fraction"])
+        maximum_transfer_limited_fraction = [
+            float(value) for value in state.get(
+                "maximum_transfer_limited_fraction", (0.0, 0.0),
+            )
+        ]
+        minimum_transfer_alpha = [
+            float(value) for value in state.get(
+                "minimum_transfer_alpha", (1.0, 1.0),
+            )
+        ]
         health_records = list(state.get("health_records", []))
 
     def save_checkpoint(step: int) -> None:
@@ -483,6 +525,8 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_reflux_limited_directions
             ),
             "maximum_rejected_fraction": maximum_rejected_fraction,
+            "maximum_transfer_limited_fraction": maximum_transfer_limited_fraction,
+            "minimum_transfer_alpha": minimum_transfer_alpha,
             "health_records": health_records,
         }, args.checkpoint)
 
@@ -662,6 +706,14 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_reflux_limited_directions[index],
                 ledger.limited_directions,
             )
+            maximum_transfer_limited_fraction[index] = max(
+                maximum_transfer_limited_fraction[index],
+                ledger.restriction_limited_fraction,
+            )
+            minimum_transfer_alpha[index] = min(
+                minimum_transfer_alpha[index],
+                ledger.restriction_minimum_alpha,
+            )
         cv_mean = sum(item["cv"] for item in force_samples) / 4.0
         bfl_mean = sum(item["bfl"] for item in force_samples) / 4.0
         pressure_mean = sum(item["pressure"] for item in force_samples) / 4.0
@@ -782,6 +834,7 @@ def run(args: argparse.Namespace) -> dict:
         and maximum_corrected_difference <= 0.1
         and max(maximum_reflux_residual) <= 1.0e-6
         and max(maximum_reflux_limited_directions) == 0
+        and max(maximum_transfer_limited_fraction) <= 1.0e-3
         and maximum_limiter_fraction <= 1.0e-3
         and maximum_rejected_fraction <= 0.01
     )
@@ -919,6 +972,7 @@ def run(args: argparse.Namespace) -> dict:
             "checkpoint_interval": args.checkpoint_interval,
             "resumed_from_step": resumed_from_step,
             "resumed_legacy_v2_checkpoint": resumed_legacy_v2_checkpoint,
+            "resumed_legacy_v3_checkpoint": resumed_legacy_v3_checkpoint,
         },
         "planning": planning | {"measured_peak_allocated_gib": peak_gib},
         "geometry": nested_geometry | {
@@ -937,6 +991,10 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_reflux_limited_directions_by_interface": (
                 maximum_reflux_limited_directions
             ),
+            "maximum_transfer_limited_fraction_by_interface": (
+                maximum_transfer_limited_fraction
+            ),
+            "minimum_transfer_alpha_by_interface": minimum_transfer_alpha,
             "maximum_positivity_limited_fraction": maximum_limiter_fraction,
             "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
             "finite": finite,

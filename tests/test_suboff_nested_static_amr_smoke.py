@@ -23,6 +23,8 @@ def _args(
     resume: bool = False,
     hull_type: str = "bare_hull",
     regularize_restriction: bool = False,
+    ghost_interpolation: str = "injection",
+    enforce_transfer_positivity: bool = False,
 ):
     values = [
         "--device", "cpu",
@@ -37,6 +39,7 @@ def _args(
         "--report-interval", "1", "--wall-diagnostic-interval", "1",
         "--resolved-reynolds", "2000", "--sponge-width", "3",
         "--memory-bytes-per-cell", "742",
+        "--ghost-interpolation", ghost_interpolation,
         "--output", str(tmp_path / "nested-smoke.json"),
         "--checkpoint", str(tmp_path / "nested-smoke.ckpt"),
         "--checkpoint-interval", "1",
@@ -47,6 +50,8 @@ def _args(
         values.append("--resume")
     if regularize_restriction:
         values.append("--regularize-restriction")
+    if enforce_transfer_positivity:
+        values.append("--enforce-transfer-positivity")
     return MODULE.parser().parse_args(values)
 
 
@@ -108,16 +113,54 @@ def test_nested_smoke_can_regularize_both_restriction_interfaces(
     assert max(result["result"]["maximum_reflux_residual_by_interface"]) < 1e-6
 
 
+def test_nested_smoke_can_use_cell_centered_trilinear_ghosts(tmp_path: Path) -> None:
+    result = MODULE.run(_args(tmp_path, steps=1, ghost_interpolation="trilinear"))
+
+    assert result["configuration"]["ghost_interpolation"] == "trilinear"
+    assert result["result"]["finite"] is True
+
+
+def test_nested_smoke_records_transfer_positivity_diagnostics(tmp_path: Path) -> None:
+    result = MODULE.run(_args(
+        tmp_path,
+        steps=1,
+        enforce_transfer_positivity=True,
+    ))
+
+    assert result["configuration"]["enforce_transfer_positivity"] is True
+    assert len(result["result"]["minimum_transfer_alpha_by_interface"]) == 2
+
+
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     state["configuration"]["schema_version"] = 2
     state["configuration"].pop("hull_type")
+    state["configuration"].pop("regularize_restriction")
+    state["configuration"].pop("ghost_interpolation")
+    state["configuration"].pop("enforce_transfer_positivity")
     state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
 
     assert resumed["configuration"]["resumed_legacy_v2_checkpoint"] is True
+    assert resumed["configuration"]["resumed_from_step"] == 1
+
+
+def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
+    tmp_path: Path,
+) -> None:
+    MODULE.run(_args(tmp_path, steps=1))
+    checkpoint = tmp_path / "nested-smoke.ckpt"
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"].pop("regularize_restriction")
+    state["configuration"].pop("ghost_interpolation")
+    state["configuration"].pop("enforce_transfer_positivity")
+    torch.save(state, checkpoint)
+
+    resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
+
+    assert resumed["configuration"]["resumed_legacy_v3_checkpoint"] is True
     assert resumed["configuration"]["resumed_from_step"] == 1
