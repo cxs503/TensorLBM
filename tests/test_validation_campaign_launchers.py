@@ -436,6 +436,52 @@ def test_cylinder_domain_launcher_changes_only_lateral_clearance(
     assert "cylinder-v4-domain-w30d-r9-54k.json" in output
 
 
+def test_cylinder_domain_launcher_can_extend_an_identical_checkpoint(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    seed = tmp_path / "w30-54k.ckpt"
+    seed.write_bytes(b"checkpoint provenance fixture")
+    result_dir = tmp_path / "continued"
+    env = os.environ.copy()
+    env.update({
+        "TENSORLBM_PYTHON": str(fake_python),
+        "TENSORLBM_STEPS": "63000",
+        "TENSORLBM_CONTINUE_FROM_CHECKPOINT": str(seed),
+    })
+
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_cylinder_v4_domain_width.sh"),
+            "W30",
+            "0",
+            str(result_dir),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--steps") + 1] == "63000"
+    assert "--resume" in arguments
+    checkpoint = arguments[arguments.index("--checkpoint") + 1]
+    output = arguments[arguments.index("--output") + 1]
+    assert checkpoint.endswith("cylinder-v4-domain-w30d-r9-63k.ckpt")
+    assert output.endswith("cylinder-v4-domain-w30d-r9-63k.json")
+    assert Path(checkpoint).read_bytes() == seed.read_bytes()
+
+
 def test_sphere_launcher_names_natural_kbc_variant_separately(
     tmp_path: Path,
 ) -> None:
