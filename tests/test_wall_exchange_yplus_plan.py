@@ -6,6 +6,7 @@ import pytest
 
 from tensorlbm.hydrodynamics import ittc57_friction_coefficient
 from tensorlbm.yplus_guide import (
+    estimate_bfl_exchange_yplus_bounds,
     estimate_exchange_yplus,
     plan_exchange_yplus_refinement,
 )
@@ -44,6 +45,23 @@ def test_refinement_plan_finds_one_extra_level_for_l150_minimum_sample() -> None
     assert plan["planned_characteristic_length_cells"] == 600.0
     assert plan["planned_exchange_y_plus_estimate"] == pytest.approx(
         832.7648659452148,
+    )
+
+
+def test_bfl_exchange_plan_reports_nominal_height_is_not_a_maximum() -> None:
+    bounds = estimate_bfl_exchange_yplus_bounds(
+        physical_reynolds=13_213_381.41322709,
+        characteristic_length_cells=720.0,
+        requested_exchange_distance_cells=1.0,
+    )
+
+    assert bounds["minimum_effective_exchange_distance_cells"] == 1.0
+    assert bounds["maximum_effective_exchange_distance_cells"] == 1.5
+    assert bounds["minimum_exchange_y_plus_estimate"] == pytest.approx(
+        693.9707216210123,
+    )
+    assert bounds["maximum_exchange_y_plus_estimate"] == pytest.approx(
+        1040.9560824315184,
     )
 
 
