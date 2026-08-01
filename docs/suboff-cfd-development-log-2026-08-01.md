@@ -293,6 +293,19 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     paths produce bit-identical masks/q fields in the regression test; the
     BFL plus static-AMR production group passes 17 tests.  This optimization
     is common to AFF-1/AFF-8 and future analytical SUBOFF campaigns.
+44. The first L120/fine-L240 AFF-1 AMR trajectory was stopped at step 1000 as
+    negative evidence, not averaged into a resistance claim.  Although its
+    state remained finite (`rho=0.912..1.059`, maximum speed 0.225), the
+    hidden historical population-reflux residual reached 25.79, the positivity
+    limiter reached 0.295%, and instantaneous control-volume resistance ranged
+    from about -1592 to 1854 N versus the 87.4 N experiment.  The cause exposed
+    a one-sided reflux guard: removal was capped but positive injection was
+    unbounded.  Reflux corrections are now symmetrically limited to 20% of
+    local directional inventory; unapplied corrections remain explicit
+    residuals and therefore cannot pass conservation.  V3 checkpoints/results
+    additionally retain requested/applied peaks and limited-direction counts.
+    The strengthened AMR groups pass 25 tests, and an exact-physics 1500-step
+    diagnostic rerun is active before changing refinement-box placement.
 
 ## Rejected candidates
 

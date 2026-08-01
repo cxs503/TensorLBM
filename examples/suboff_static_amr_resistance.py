@@ -132,6 +132,10 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("report-interval and average-window must be positive")
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint-interval must be non-negative")
+    if not 0.0 < args.maximum_reflux_correction_fraction <= 1.0:
+        raise ValueError(
+            "maximum-reflux-correction-fraction must lie in (0,1]",
+        )
     if args.resume and not args.checkpoint:
         raise ValueError("resume requires --checkpoint")
     if min(args.error_target, args.drift_target, args.force_observer_target) < 0.0:
@@ -173,6 +177,9 @@ def run(args: argparse.Namespace) -> dict:
         StaticBlockAMRConfig(
             plan.box, tau_coarse=tau_coarse,
             reflux=not args.disable_reflux,
+            maximum_reflux_correction_fraction=(
+                args.maximum_reflux_correction_fraction
+            ),
         ),
         fine_solid=fine_solid,
     )
@@ -278,6 +285,9 @@ def run(args: argparse.Namespace) -> dict:
     wall_rejected_fraction_history: list[float] = []
     maximum_positivity_limited_fraction = 0.0
     maximum_reflux_population_residual = 0.0
+    maximum_reflux_requested_correction = 0.0
+    maximum_reflux_applied_correction = 0.0
+    maximum_reflux_limited_directions = 0
 
     def advance(
         f: torch.Tensor, tau: float, level: int, substep: int,
@@ -375,6 +385,9 @@ def run(args: argparse.Namespace) -> dict:
         "wake_cells": args.wake_cells,
         "cv_margin": args.cv_margin,
         "reflux_enabled": not args.disable_reflux,
+        "maximum_reflux_correction_fraction": (
+            args.maximum_reflux_correction_fraction
+        ),
         "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
         "positivity_limiter_enabled": not args.disable_positivity_limiter,
         "warmup_steps": args.warmup_steps,
@@ -430,6 +443,15 @@ def run(args: argparse.Namespace) -> dict:
         maximum_reflux_population_residual = float(
             state["maximum_reflux_population_residual"],
         )
+        maximum_reflux_requested_correction = float(
+            state["maximum_reflux_requested_correction"],
+        )
+        maximum_reflux_applied_correction = float(
+            state["maximum_reflux_applied_correction"],
+        )
+        maximum_reflux_limited_directions = int(
+            state["maximum_reflux_limited_directions"],
+        )
         history = list(state["history"])
 
     def save_checkpoint(step: int) -> None:
@@ -475,6 +497,15 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_reflux_population_residual": (
                 maximum_reflux_population_residual
             ),
+            "maximum_reflux_requested_correction": (
+                maximum_reflux_requested_correction
+            ),
+            "maximum_reflux_applied_correction": (
+                maximum_reflux_applied_correction
+            ),
+            "maximum_reflux_limited_directions": (
+                maximum_reflux_limited_directions
+            ),
             "history": history,
         }, checkpoint)
 
@@ -497,6 +528,17 @@ def run(args: argparse.Namespace) -> dict:
         maximum_reflux_population_residual = max(
             maximum_reflux_population_residual,
             float(ledger.residual.abs().max().item()),
+        )
+        maximum_reflux_requested_correction = max(
+            maximum_reflux_requested_correction,
+            float(ledger.replacement_mismatch.abs().max().item()),
+        )
+        maximum_reflux_applied_correction = max(
+            maximum_reflux_applied_correction,
+            float(ledger.applied_shell_correction.abs().max().item()),
+        )
+        maximum_reflux_limited_directions = max(
+            maximum_reflux_limited_directions, ledger.limited_directions,
         )
         if current_step > args.warmup_steps:
             force_history.append(resistance)
@@ -555,6 +597,13 @@ def run(args: argparse.Namespace) -> dict:
                 "reflux_max_population_residual": float(
                     ledger.residual.abs().max().item()
                 ),
+                "reflux_max_requested_correction": float(
+                    ledger.replacement_mismatch.abs().max().item()
+                ),
+                "reflux_max_applied_correction": float(
+                    ledger.applied_shell_correction.abs().max().item()
+                ),
+                "reflux_limited_directions": ledger.limited_directions,
                 "maximum_positivity_limited_fraction": max(
                     positivity_fractions, default=0.0,
                 ),
@@ -678,6 +727,15 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_reflux_population_residual": (
                 maximum_reflux_population_residual
             ),
+            "maximum_reflux_requested_correction": (
+                maximum_reflux_requested_correction
+            ),
+            "maximum_reflux_applied_correction": (
+                maximum_reflux_applied_correction
+            ),
+            "maximum_reflux_limited_directions": (
+                maximum_reflux_limited_directions
+            ),
             "wall_stress_applicability": {
                 "samples": len(wall_y_plus_mean_history),
                 "y_plus_min": min(wall_y_plus_min_history, default=None),
@@ -744,6 +802,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--wake-cells", type=int, default=50)
     p.add_argument("--cv-margin", type=int, default=8)
     p.add_argument("--disable-reflux", action="store_true")
+    p.add_argument("--maximum-reflux-correction-fraction", type=float, default=0.2)
     p.add_argument("--diagnostic-uncoupled-wall-stress", action="store_true")
     p.add_argument("--disable-positivity-limiter", action="store_true")
     p.add_argument("--steps", type=int, default=5000)

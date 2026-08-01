@@ -46,7 +46,7 @@ class KineticInterfaceTransfer:
     def net_outgoing(self) -> torch.Tensor:
         return self.outgoing - self.incoming
 
-    def __add__(self, other: object) -> "KineticInterfaceTransfer":
+    def __add__(self, other: object) -> KineticInterfaceTransfer:
         if not isinstance(other, KineticInterfaceTransfer):
             return NotImplemented
         return KineticInterfaceTransfer(
@@ -54,7 +54,7 @@ class KineticInterfaceTransfer:
             self.incoming + other.incoming,
         )
 
-    def scaled(self, factor: float) -> "KineticInterfaceTransfer":
+    def scaled(self, factor: float) -> KineticInterfaceTransfer:
         return KineticInterfaceTransfer(
             self.outgoing * factor, self.incoming * factor,
         )
@@ -123,9 +123,9 @@ def _apply_population_total(
     mask: torch.Tensor,
     requested: torch.Tensor,
     *,
-    maximum_removal_fraction: float,
+    maximum_correction_fraction: float,
 ) -> tuple[torch.Tensor, torch.Tensor, int, int]:
-    """Apply one requested total per direction, proportionally on link cells."""
+    """Apply a bounded requested total per direction on interface links."""
     applied = torch.zeros_like(requested)
     limited = 0
     corrected_links = 0
@@ -139,7 +139,9 @@ def _apply_population_total(
         inventory = values.sum()
         desired = requested[direction]
         factor = desired / inventory.clamp_min(1e-30)
-        limited_factor = factor.clamp_min(-maximum_removal_fraction)
+        limited_factor = factor.clamp(
+            -maximum_correction_fraction, maximum_correction_fraction,
+        )
         if bool(limited_factor != factor):
             limited += 1
         delta = values * limited_factor
@@ -154,11 +156,18 @@ def apply_face_local_reflux(
     coarse_transfer: KineticInterfaceTransfer,
     fine_transfer: KineticInterfaceTransfer,
     *,
-    maximum_removal_fraction: float = 0.2,
+    maximum_correction_fraction: float = 0.2,
 ) -> tuple[torch.Tensor, FaceLocalRefluxReport]:
-    """Correct only exterior coarse cells receiving/supplying interface links."""
-    if not 0.0 < maximum_removal_fraction <= 1.0:
-        raise ValueError("maximum_removal_fraction must lie in (0,1]")
+    """Correct exterior links without unbounded removal or injection.
+
+    A large positive fine/coarse mismatch is as destabilising as excessive
+    removal: it can multiply one directional population in a single step.
+    Both signs are therefore capped relative to the selected link inventory;
+    any unapplied amount remains explicit in ``report.residual`` and fails the
+    production conservation gate.
+    """
+    if not 0.0 < maximum_correction_fraction <= 1.0:
+        raise ValueError("maximum_correction_fraction must lie in (0,1]")
     if coarse_populations.shape != coarse_links.outgoing_origins.shape:
         raise ValueError("coarse populations and links must share shape")
     # Fine-minus-coarse *net* outward transport is exactly the inventory that
@@ -179,7 +188,7 @@ def apply_face_local_reflux(
     exterior_links = receiving | coarse_links.incoming_origins
     corrected, applied, corrected_links, limited = _apply_population_total(
         coarse_populations, exterior_links, requested,
-        maximum_removal_fraction=maximum_removal_fraction,
+        maximum_correction_fraction=maximum_correction_fraction,
     )
     residual = requested - applied
     return corrected, FaceLocalRefluxReport(

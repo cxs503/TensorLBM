@@ -31,6 +31,7 @@ _IDENTITY_FIELDS = (
     "boundary_treatment",
     "refinement_ratio",
     "reflux_enabled",
+    "maximum_reflux_correction_fraction",
     "reflux_method",
     "wall_stress_coupled",
     "positivity_limiter_enabled",

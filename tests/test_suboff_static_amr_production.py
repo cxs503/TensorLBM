@@ -62,3 +62,6 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert len(state["force_history"]) == 4
     assert len(state["wall_y_plus_mean_history"]) == 4
     assert state["maximum_reflux_population_residual"] < 1e-6
+    assert state["maximum_reflux_requested_correction"] >= 0.0
+    assert state["maximum_reflux_applied_correction"] >= 0.0
+    assert state["maximum_reflux_limited_directions"] == 0
