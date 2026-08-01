@@ -776,6 +776,11 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     scaled exchange height, sponge, CV and diagnostics.  Twelve focused
     flat-plate/convergence/launcher tests pass; this sequence will follow the
     cylinder chain on the same local GPU.
+94. The flat-plate queue is now PID-linked as well: L256 waiter 4015500 follows
+    cylinder R15 waiter/process 4005447, L384 waiter 4016131 follows L256, and
+    L512 waiter 4016750 follows L384.  Thus sphere, cylinder and flat-plate
+    validation form one deterministic GPU queue with no polling race or
+    resource contention.
 
 ## Rejected candidates
 
