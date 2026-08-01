@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -52,3 +53,23 @@ def test_cylinder_cli_help() -> None:
         check=True, capture_output=True, text=True,
     )
     assert "--far-field-mode" in completed.stdout
+
+
+def test_cylinder_checkpoint_can_resume(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "cylinder.ckpt"
+    common = dict(
+        nx=48, ny=36, nz=3, radius=4, center_x_fraction=0.35,
+        reynolds=20, lattice_speed=0.04, warmup_steps=2,
+        ramp_steps=2, sponge_width=3, cv_margin=2,
+        report_interval=0, checkpoint_interval=2,
+        checkpoint_path=str(checkpoint), device="cpu",
+    )
+    run_cylinder_bfl_control_volume(CylinderBFLControlVolumeConfig(
+        **common, steps=4,
+    ))
+    resumed = run_cylinder_bfl_control_volume(CylinderBFLControlVolumeConfig(
+        **common, steps=6, resume=True,
+    ))
+    assert checkpoint.exists()
+    assert resumed["configuration"]["resumed_from_step"] == 4
+    assert resumed["result"]["finite"] is True
