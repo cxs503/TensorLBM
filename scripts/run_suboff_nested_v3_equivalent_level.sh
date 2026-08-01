@@ -104,6 +104,7 @@ aux_cv_margins=${TENSORLBM_AUX_CV_MARGINS:-2,6}
 resolved_reynolds_start=${TENSORLBM_RESOLVED_REYNOLDS_START:-0}
 viscosity_ramp_start=${TENSORLBM_VISCOSITY_RAMP_START_STEP:-0}
 viscosity_ramp_end=${TENSORLBM_VISCOSITY_RAMP_END_STEP:-0}
+health_interval=${TENSORLBM_HEALTH_INTERVAL:-$report}
 
 export CUDA_VISIBLE_DEVICES=$gpu
 exec "$python" examples/suboff_nested_static_amr_smoke.py \
@@ -118,7 +119,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --steps "$steps" --warmup-steps "$warmup" \
   --statistics-window-steps "$statistics" --ramp-steps "$ramp" \
   --report-interval "$report" --wall-diagnostic-interval "$wall_diagnostic" \
-  --health-interval "$report" --maximum-health-speed 0.3 \
+  --health-interval "$health_interval" --maximum-health-speed 0.3 \
   --minimum-convective-times 8 \
   --minimum-statistics-convective-times 5 \
   --lattice-speed 0.06 --resolved-reynolds 100000 \
