@@ -151,6 +151,12 @@ def parser() -> argparse.ArgumentParser:
         help="coarse-to-fine ghost-shell spatial interpolation",
     )
     result.add_argument(
+        "--reflux-correction-stencil",
+        choices=("exterior_cells", "crossing_links"),
+        default="exterior_cells",
+        help="where the conserved stream-register correction may be applied",
+    )
+    result.add_argument(
         "--enforce-transfer-positivity",
         action="store_true",
         help="limit fine-to-coarse populations before parent replacement",
@@ -373,6 +379,7 @@ def run(args: argparse.Namespace) -> dict:
         tau_coarse=tau_coarse,
         regularize_restriction=args.regularize_restriction,
         regularize_prolongation=args.regularize_prolongation,
+        reflux_correction_stencil=args.reflux_correction_stencil,
         ghost_interpolation=args.ghost_interpolation,
         enforce_transfer_positivity=args.enforce_transfer_positivity,
         interface_filter_width=args.interface_filter_width,
@@ -383,6 +390,7 @@ def run(args: argparse.Namespace) -> dict:
         tau_coarse=outer_amr_config.tau_fine,
         regularize_restriction=args.regularize_restriction,
         regularize_prolongation=args.regularize_prolongation,
+        reflux_correction_stencil=args.reflux_correction_stencil,
         ghost_interpolation=args.ghost_interpolation,
         enforce_transfer_positivity=args.enforce_transfer_positivity,
         interface_filter_width=args.interface_filter_width,
@@ -534,6 +542,7 @@ def run(args: argparse.Namespace) -> dict:
         "far_field_mode": args.far_field_mode,
         "regularize_restriction": args.regularize_restriction,
         "regularize_prolongation": args.regularize_prolongation,
+        "reflux_correction_stencil": args.reflux_correction_stencil,
         "ghost_interpolation": args.ghost_interpolation,
         "enforce_transfer_positivity": args.enforce_transfer_positivity,
         "interface_filter_width": args.interface_filter_width,
@@ -670,6 +679,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature = dict(checkpoint_signature)
         legacy_v3_signature.pop("regularize_restriction")
         legacy_v3_signature.pop("regularize_prolongation")
+        legacy_v3_signature.pop("reflux_correction_stencil")
         legacy_v3_signature.pop("ghost_interpolation")
         legacy_v3_signature.pop("enforce_transfer_positivity")
         legacy_v3_signature.pop("interface_filter_width")
@@ -688,6 +698,7 @@ def run(args: argparse.Namespace) -> dict:
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and not args.regularize_prolongation
+            and args.reflux_correction_stencil == "exterior_cells"
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
             and args.interface_filter_width == 0
@@ -707,6 +718,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer = dict(legacy_v2_signature)
         legacy_v2_without_new_transfer.pop("regularize_restriction")
         legacy_v2_without_new_transfer.pop("regularize_prolongation")
+        legacy_v2_without_new_transfer.pop("reflux_correction_stencil")
         legacy_v2_without_new_transfer.pop("ghost_interpolation")
         legacy_v2_without_new_transfer.pop("enforce_transfer_positivity")
         legacy_v2_without_new_transfer.pop("interface_filter_width")
@@ -726,6 +738,7 @@ def run(args: argparse.Namespace) -> dict:
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
             and not args.regularize_prolongation
+            and args.reflux_correction_stencil == "exterior_cells"
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
             and args.interface_filter_width == 0
