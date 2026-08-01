@@ -12,6 +12,7 @@ from .control_volume_force import box_control_volume, observe_control_volume_for
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
+from .force_convergence import assess_force_stationarity
 from .interpolated_bc import compute_q_sphere
 from .solver3d import stream3d
 from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
@@ -161,6 +162,12 @@ def run_sphere_bfl_control_volume(
     cd = mean_force / dynamic_area
     cd_bfl = mean_bfl_force / dynamic_area
     reference = schiller_naumann_cd(config.reynolds)
+    cd_history = [force / dynamic_area for force in forces]
+    stationarity = assess_force_stationarity(
+        cd_history, block_size=max(1, len(cd_history) // 8),
+    )
+    observer_difference = abs(cd - cd_bfl) / max(abs(cd), 1e-30) * 100.0
+    reference_error = abs(cd - reference) / reference * 100.0
     return {
         "schema": "tensorlbm-sphere-bfl-control-volume-v1",
         "configuration": {
@@ -173,10 +180,23 @@ def run_sphere_bfl_control_volume(
         "result": {
             "cd_control_volume": cd,
             "cd_bfl_link": cd_bfl,
-            "observer_difference_pct": abs(cd - cd_bfl) / abs(cd) * 100.0,
+            "observer_difference_pct": observer_difference,
             "cd_reference_schiller_naumann": reference,
-            "reference_error_pct": abs(cd - reference) / reference * 100.0,
+            "reference_error_pct": reference_error,
+            "drag_stationarity": stationarity.to_dict(),
             "finite": math.isfinite(cd),
+        },
+        "acceptance": {
+            "drag_error_target_pct": 5.0,
+            "stationarity_target_pct": 1.0,
+            "force_observer_target_pct": 1.0,
+            "drag_target_met": reference_error <= 5.0,
+            "stationarity_target_met": stationarity.meets(1.0),
+            "force_observer_target_met": observer_difference <= 1.0,
+            "admitted": (
+                reference_error <= 5.0 and stationarity.meets(1.0)
+                and observer_difference <= 1.0
+            ),
         },
         "measured_peak_allocated_gib": (
             torch.cuda.max_memory_allocated(device) / 2**30
