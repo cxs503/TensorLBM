@@ -1207,16 +1207,24 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      `f9364a57d01e00cd30e6a62d6276ce5ec26e4c161b25f3b571f0e83b1c7c696a`
      and `78dbd82d2ff256105fcb7a7d75e80f73036bc7e421665661b7f78b2aaa9272a1`.
 137. A common AMR transition-shell filter is implemented for D3Q19 and D3Q27.
-     A raised-cosine shell damps only non-equilibrium populations in physical
-     fine cells adjacent to a resolution transition; an explicit conserved-
-     moment projection keeps cell density and all three momentum components
-     unchanged, while ghost cells, geometry, wall traction and bulk viscosity
-     are untouched.  Width and strength are explicit checkpointed parameters,
-     zero by default.  Nested conservation, uniform-flow invariance and both
-     lattices are covered by 79 focused AMR/continuation/launcher tests.  A
-     matched L90 `width=4`, `strength=0.2` A/B is active against the retained
-     unfiltered trajectory before the option can be promoted to a production
-     default.
+     A raised-cosine shell acts in physical fine cells adjacent to a resolution
+     transition.  The first prototype damped the complete non-equilibrium
+     population; a low-amplitude hydrodynamic pulse showed a 4.6% increase in
+     interface density error, so that design was rejected at SUBOFF step 720
+     and its log retained with SHA-256
+     `28df39102ac46cea3e2c696cd91a2070c0b10ce87db02dc57742c79788da2029`.
+138. The replacement filter projects the non-equilibrium population onto its
+     complete symmetric second-order stress and damps only the residual
+     higher-order kinetic modes.  Cell density, all three momentum components
+     and all six viscous-stress moments are invariant.  On the same 24-step
+     hydrodynamic pulse, `width=4`, `strength=0.2` changes interface density RMS
+     from `2.660644e-6` to `2.662313e-6` (0.063%) while slightly reducing the
+     refined-region density and velocity errors; mass drift remains
+     `3.051718e-7` and the benchmark stays admitted.  Filtering is forbidden
+     if its shell intersects a solid or adjacent wall-fluid cell.  Width and
+     strength remain explicit checkpointed parameters and zero by default.  A
+     fresh matched L90 v6 kinetic-filter A/B is active against the immutable
+     unfiltered trajectory before production promotion.
 
 ## Rejected candidates
 
