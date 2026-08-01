@@ -1382,6 +1382,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      only as integration smoke tests, while every convergence source already
      requires `population_health_target_met=true`.  This excludes v10-style
      trajectories that touch the limiter floor and later appear to recover.
+154. The combined v10 scaled L90 candidate is rejected and stopped at step
+     2040.  It does not delay either speed threshold, crosses the population
+     floor and limiter gate one cadence earlier than the baseline (step 1500),
+     reaches a negative population of `-1.5701e-5`, and attains peak speed
+     0.20036.  Its later partial speed recovery is immaterial under the new
+     history-aware health gate.  Log/checkpoint SHA-256 values are
+     `fb658fbb0623831b16ffd5ee13d0891c9c7fe3bd8ed615bc6fb25fed6061f1b3`
+     and `81183c00ca937b8ec2b7d96a8122eaaaa3a34788ff89999cca2352db1c8b1c41`.
+     GPU3 now tests a split startup: BFL normal impermeability completes during
+     the initial low-Re 300 steps, while physical wall shear retains the
+     3000-step ramp.
 
 ## Rejected candidates
 
