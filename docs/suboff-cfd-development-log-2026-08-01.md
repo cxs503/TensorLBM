@@ -65,6 +65,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     67.10 N, corresponding to `Cf≈0.00245`, about 14% below ITTC-1957 at the
     physical Reynolds number.  A finite two-sided flat-plate external-flow
     benchmark now isolates this wall-stress bias before further SUBOFF tuning.
+14. The paired L120 incoming-only non-equilibrium run also failed: its final
+    2000-step mean was 139.34 N (59.43% high) with 4.33% block drift.  Both
+    short-domain boundary variants show the same order of force-observer gap
+    and low-frequency pressure excursions.  Non-equilibrium reconstruction is
+    therefore retained as a cleaner open boundary, not claimed as a cure for
+    an under-sized wake domain.
 
 ## Rejected candidates
 
