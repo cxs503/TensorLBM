@@ -118,6 +118,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     It is still rejected because early blocks rise from ~1.225 while the final
     four settle near 1.45 (20.6% trend over the admitted window).  A 25D-wide
     rerun uses a 30k warmup to separate long startup from residual blockage.
+22. The flat-plate L256/L512 comparison exposed a grid contract error in the
+    original wall-stress path: both grids evaluated the wall law at the first
+    cell centre (`y=0.5`), so refinement changed the physical exchange height.
+    A reusable sparse trilinear exchange sampler now evaluates velocity and
+    wall distance at a declared wall-normal location while retaining BFL slip
+    impermeability and conservative Guo traction.  Population assimilation is
+    deliberately excluded from this path.  Manufactured linear-field tests,
+    positive-distance validation, and exact source-momentum/traction tests
+    cover the new module.  Flat-plate and direct-SUBOFF checkpoints record the
+    exchange distance, preventing physically different runs from being
+    resumed into one history.
 
 ## Rejected candidates
 

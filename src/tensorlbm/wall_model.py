@@ -857,7 +857,7 @@ def guo_body_force_d3q27(
 def _solve_wall_law(
     u_tan_mag: torch.Tensor,
     nu: float,
-    y_val: float,
+    y_val: float | torch.Tensor,
     wall_law: str,
     near: torch.Tensor,
 ) -> torch.Tensor:
@@ -867,12 +867,17 @@ def _solve_wall_law(
     Returns u_τ field, zero outside near-wall cells.
     """
     u_tan_mag = u_tan_mag.clamp(min=1e-12)
+    wall_distance = torch.as_tensor(
+        y_val, device=u_tan_mag.device, dtype=u_tan_mag.dtype,
+    ).expand_as(u_tan_mag)
+    if bool((wall_distance <= 0.0).any()):
+        raise ValueError("wall distance must be positive")
 
     if wall_law == "reichardt":
         # Reichardt unified wall law (1951): valid for all y+.
-        ut = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
+        ut = torch.sqrt(nu * u_tan_mag / wall_distance).clamp(min=1e-12)
         for _ in range(12):
-            yp = (y_val * ut / nu).clamp(min=1e-6)
+            yp = (wall_distance * ut / nu).clamp(min=1e-6)
             up = (1.0 / _KAPPA) * torch.log1p(_KAPPA * yp) + 7.8 * (
                 1.0 - torch.exp(-yp / 11.0) - (yp / 11.0) * torch.exp(-yp / 3.0)
             )
@@ -882,9 +887,9 @@ def _solve_wall_law(
     if wall_law == "musker":
         # Musker continuous law, evaluated in log form to avoid overflow at
         # the high y+ values encountered by wall-modelled external flows.
-        ut = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
+        ut = torch.sqrt(nu * u_tan_mag / wall_distance).clamp(min=1e-12)
         for _ in range(12):
-            yp = (y_val * ut / nu).clamp(min=1e-6)
+            yp = (wall_distance * ut / nu).clamp(min=1e-6)
             polynomial = (yp.square() - 8.15 * yp + 86.0).clamp_min(1e-12)
             up = (
                 5.424 * torch.arctan(0.11976 * yp - 0.488)
@@ -897,21 +902,22 @@ def _solve_wall_law(
 
     if wall_law == "gradient":
         # Direct velocity-gradient: τ_w = ν·u_tan / y_val
-        tau_w = nu * u_tan_mag / y_val
+        tau_w = nu * u_tan_mag / wall_distance
         return torch.where(near, torch.sqrt(tau_w.clamp(min=1e-30)),
                            torch.zeros_like(tau_w))
 
     if wall_law == "hybrid":
         # Gradient for y+ <= 60, log-law for y+ > 60
-        ut_vis = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
-        yp = y_val * ut_vis / nu
+        ut_vis = torch.sqrt(nu * u_tan_mag / wall_distance).clamp(min=1e-12)
+        yp = wall_distance * ut_vis / nu
         u_tau = torch.where(near, ut_vis, torch.zeros_like(ut_vis))
         log_region = (yp > 60.0) & near
         if bool(log_region.any()):
             ut = ut_vis[log_region].clone()
             um = u_tan_mag[log_region]
+            ym = wall_distance[log_region]
             for _ in range(8):
-                lyp = torch.log(y_val * ut / nu)
+                lyp = torch.log(ym * ut / nu)
                 fv = ut * (lyp / _KAPPA + _B_LOG) - um
                 fp = (lyp / _KAPPA + _B_LOG) + 1.0 / _KAPPA
                 ut = (ut - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
@@ -924,14 +930,15 @@ def _solve_wall_law(
         )
 
     # Log-law (Newton iteration)
-    u_tau = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
-    y_plus = y_val * u_tau / nu
+    u_tau = torch.sqrt(nu * u_tan_mag / wall_distance).clamp(min=1e-12)
+    y_plus = wall_distance * u_tau / nu
     turb = (y_plus > 11.6) & near
     if bool(turb.any()):
         ut = u_tau[turb].clone()
         um = u_tan_mag[turb]
+        ym = wall_distance[turb]
         for _ in range(8):
-            lyp = torch.log(y_val * ut / nu)
+            lyp = torch.log(ym * ut / nu)
             fv = ut * (lyp / _KAPPA + _B_LOG) - um
             fp = (lyp / _KAPPA + _B_LOG) + 1.0 / _KAPPA
             ut = (ut - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
@@ -955,6 +962,7 @@ def bfl_wall_function_3d(
     bfl_wall_mode: str = "stationary",
     wall_activation: float = 1.0,
     exchange_distance: float = 3.0,
+    stress_exchange_distance: float | None = None,
     nonequilibrium_scale: float = 0.5,
     wall_normals: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
     area_weight: torch.Tensor | None = None,
@@ -1003,6 +1011,10 @@ def bfl_wall_function_3d(
             BFL remains fully active.  It also ramps wall shear.  This avoids
             blending a valid reflected population with the non-physical
             population streamed out of a solid cell.
+        stress_exchange_distance: Optional wall-normal sampling distance for
+            the stress law.  BFL remains a slip/no-penetration boundary; only
+            the velocity and distance used to evaluate ``u_tau`` move to this
+            exchange location.  No population assimilation is performed.
 
     Returns:
         ``(f_corrected, drag_friction_x, drag_pressure_x)``.
@@ -1022,6 +1034,8 @@ def bfl_wall_function_3d(
         )
     if not 0.0 <= wall_activation <= 1.0:
         raise ValueError("wall_activation must be in [0,1]")
+    if stress_exchange_distance is not None and stress_exchange_distance <= 0.0:
+        raise ValueError("stress_exchange_distance must be positive")
 
     # Wall normals are geometric and can be shared by the BFL slip closure
     # and the subsequent wall-stress evaluation.
@@ -1086,6 +1100,26 @@ def bfl_wall_function_3d(
 
     # ── Step 2: Compute macroscopic fields ──
     rho, ux, uy, uz = macroscopic3d(f)
+    local_ux, local_uy, local_uz = ux, uy, uz
+    stress_near = near
+    stress_y: float | torch.Tensor = y_val
+    if stress_exchange_distance is not None:
+        from .spalding_wall_model import sample_wall_exchange_velocity
+        samples = sample_wall_exchange_velocity(
+            (ux, uy, uz), fluid_boundary_mask, q_field,
+            (nx_n, ny_n, nz_n),
+            exchange_distance=stress_exchange_distance,
+            boundary_mask=near,
+        )
+        stress_near = near & samples.boundary
+        ux = torch.zeros_like(local_ux)
+        uy = torch.zeros_like(local_uy)
+        uz = torch.zeros_like(local_uz)
+        ux[samples.boundary] = samples.velocity_x
+        uy[samples.boundary] = samples.velocity_y
+        uz[samples.boundary] = samples.velocity_z
+        stress_y = torch.full_like(local_ux, stress_exchange_distance)
+        stress_y[samples.boundary] = samples.y2
 
     # ── Step 3: Compute wall normal and tangential velocity ──
     u_dot_n = ux * nx_n + uy * ny_n + uz * nz_n
@@ -1102,7 +1136,7 @@ def bfl_wall_function_3d(
     inv_utan = 1.0 / u_tan_mag
 
     # ── Step 4: Solve wall law for u_τ ──
-    u_tau = _solve_wall_law(u_tan_mag, nu, y_val, wall_law, near)
+    u_tau = _solve_wall_law(u_tan_mag, nu, stress_y, wall_law, stress_near)
     tau_w = u_tau * u_tau
 
     # ── Step 5: Apply wall traction to the boundary control volume ──
@@ -1110,7 +1144,7 @@ def bfl_wall_function_3d(
     # control-volume volume, so the source is τ_w*A/V, not τ_w/y1.  Wall
     # distance already enters the wall-law solve; dividing by y1 again
     # doubled the applied force for the common y1=0.5 case.
-    near_f = near.to(f.dtype)
+    near_f = stress_near.to(f.dtype)
     if area_weight is None:
         traction_area = near_f
     else:
@@ -1125,7 +1159,9 @@ def bfl_wall_function_3d(
 
     if apply_wall_stress:
         if use_guo:
-            f = guo_body_force_d3q19(f, fx, fy, fz, ux, uy, uz)
+            f = guo_body_force_d3q19(
+                f, fx, fy, fz, local_ux, local_uy, local_uz,
+            )
         else:
             # Legacy simple forcing (ibm_apply_body_force_3d)
             from .ibm import ibm_apply_body_force_3d
