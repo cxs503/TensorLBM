@@ -23,6 +23,7 @@ from tensorlbm.cumulant import (
     collide_cumulant_d3q19,
     gradient_sgs_effective_tau_d3q19,
     smagorinsky_effective_tau_d3q19,
+    summarize_gradient_sgs_effective_tau_d3q19,
     summarize_smagorinsky_effective_tau_d3q19,
 )
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
@@ -268,6 +269,38 @@ class TestRelaxationBehaviour:
             collide_cumulant_d3q19(
                 populations, tau=0.55, C_s=0.1, C_w=0.5,
             )
+
+    @pytest.mark.parametrize(
+        ("model", "coefficient"), (("wale", 0.5), ("vreman", 0.025)),
+    )
+    def test_gradient_sgs_summary_is_halo_chunk_invariant(
+        self, model: str, coefficient: float,
+    ) -> None:
+        torch.manual_seed(7)
+        rho = torch.ones((7, 5, 6), dtype=torch.float64)
+        ux = 0.02 * torch.rand_like(rho)
+        uy = 0.02 * torch.rand_like(rho)
+        uz = 0.02 * torch.rand_like(rho)
+        populations = equilibrium3d(rho, ux, uy, uz)
+
+        one_plane = summarize_gradient_sgs_effective_tau_d3q19(
+            populations,
+            tau=0.55,
+            model=model,
+            coefficient=coefficient,
+            chunk_cells=30,
+        )
+        whole_domain = summarize_gradient_sgs_effective_tau_d3q19(
+            populations,
+            tau=0.55,
+            model=model,
+            coefficient=coefficient,
+            chunk_cells=10_000,
+        )
+
+        assert one_plane == pytest.approx(whole_domain, rel=1.0e-13, abs=1.0e-15)
+        assert one_plane["cell_count"] == 210.0
+        assert one_plane["effective_tau_minimum"] >= 0.55
 
     def test_smagorinsky_effective_tau_is_explicit(self) -> None:
         rho = torch.ones((2, 3, 4))
