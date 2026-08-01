@@ -586,6 +586,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     R9/R12/R15 with exactly proportional integer configurations; the active
     migrated R15 run remains a single-resolution diagnostic because its old
     CV margin is not part of that new sequence.
+73. Cylinder validation is upgraded to schema v3 with an explicit tail window,
+    Student-t drag-mean convergence, configurable minimum shedding cycles, and
+    separate numerical-quality versus Cd/Strouhal reference gates.  A new
+    hashed-source three-grid assessor requires exact scaling of domain, CV,
+    sponge and all time windows, invariant periodic span, and simultaneous
+    Richardson convergence of both mean Cd and shedding Strouhal number.  The
+    earlier D32 result remains rejected evidence; it is not relabelled under
+    the new schema.
 
 ## Rejected candidates
 
