@@ -28,6 +28,8 @@ def test_audit_groups_fine_substeps_and_reports_observer_closure() -> None:
             "rho_water": 998.2,
             "lattice_speed": 0.06,
             "warmup_steps": 8,
+            "nu_water": 1.004e-6,
+            "stress_exchange_distance": 2.109375,
         },
         "force_history": torch.tensor([10.0, 12.0], dtype=torch.float64),
         "bfl_total_history": torch.tensor([10.1, 12.1], dtype=torch.float64),
@@ -61,6 +63,7 @@ def test_audit_groups_fine_substeps_and_reports_observer_closure() -> None:
     assert report["case"]["hull_type"] == "bare_hull"
     assert report["force_decomposition"]["mean_modeled_wall_shear_n"] == pytest.approx(6.1)
     assert report["wall_model_applicability"]["mean_observed_y_plus"] == pytest.approx(52.0)
+    assert report["wall_model_applicability"]["ittc_exchange_y_plus_prior"] > 5000.0
     closure = report["observer_closure"]
     assert closure["history_cv_vs_bfl"]["mean_residual_n"] == pytest.approx(0.1)
     assert closure["sampled_cv_vs_bfl"]["mean_difference_pct"] == pytest.approx(

@@ -32,6 +32,93 @@ from typing import Sequence
 
 import torch
 
+from .hydrodynamics import ittc57_friction_coefficient
+
+
+def estimate_exchange_yplus(
+    *,
+    physical_reynolds: float,
+    characteristic_length_cells: float,
+    exchange_distance_cells: float,
+) -> float:
+    """Estimate wall-model exchange-location y+ in lattice units.
+
+    The estimate uses ITTC-1957 to obtain ``u_tau/U`` and the exact lattice
+    similarity relation ``nu = U L_cells / Re``.  Unlike a first-cell helper,
+    this API accepts the actual finest-level body resolution and the declared
+    wall-normal exchange distance, so it remains valid under local refinement.
+    """
+    if min(
+        physical_reynolds,
+        characteristic_length_cells,
+        exchange_distance_cells,
+    ) <= 0.0:
+        raise ValueError("Reynolds number, length and exchange distance must be positive")
+    cf = ittc57_friction_coefficient(physical_reynolds)
+    return (
+        exchange_distance_cells
+        / characteristic_length_cells
+        * physical_reynolds
+        * math.sqrt(cf / 2.0)
+    )
+
+
+def plan_exchange_yplus_refinement(
+    *,
+    physical_reynolds: float,
+    characteristic_length_cells: float,
+    minimum_exchange_distance_cells: float = 1.0,
+    target_maximum_yplus: float = 1000.0,
+    refinement_ratio: int = 2,
+) -> dict:
+    """Plan extra wall-normal refinement needed to meet an exchange y+ target.
+
+    ``characteristic_length_cells`` is the body's current finest-level
+    resolution.  Each additional local level multiplies that resolution by
+    ``refinement_ratio`` while retaining a one-cell (or caller-supplied)
+    minimum interpolation distance.  The result is a planning diagnostic, not
+    an accuracy claim; the final wall model still requires measured y+ and
+    force-convergence evidence.
+    """
+    if target_maximum_yplus <= 0.0:
+        raise ValueError("target maximum y+ must be positive")
+    if refinement_ratio < 2:
+        raise ValueError("refinement ratio must be at least two")
+    current_minimum_yplus = estimate_exchange_yplus(
+        physical_reynolds=physical_reynolds,
+        characteristic_length_cells=characteristic_length_cells,
+        exchange_distance_cells=minimum_exchange_distance_cells,
+    )
+    required_characteristic_cells = (
+        characteristic_length_cells
+        * current_minimum_yplus
+        / target_maximum_yplus
+    )
+    resolution_ratio = required_characteristic_cells / characteristic_length_cells
+    additional_levels = max(
+        0,
+        math.ceil(math.log(max(resolution_ratio, 1.0), refinement_ratio)),
+    )
+    planned_characteristic_cells = (
+        characteristic_length_cells * refinement_ratio**additional_levels
+    )
+    return {
+        "physical_reynolds": physical_reynolds,
+        "current_characteristic_length_cells": characteristic_length_cells,
+        "minimum_exchange_distance_cells": minimum_exchange_distance_cells,
+        "target_maximum_y_plus": target_maximum_yplus,
+        "current_minimum_exchange_y_plus_estimate": current_minimum_yplus,
+        "required_characteristic_length_cells": required_characteristic_cells,
+        "refinement_ratio": refinement_ratio,
+        "additional_refinement_levels": additional_levels,
+        "planned_characteristic_length_cells": planned_characteristic_cells,
+        "planned_exchange_y_plus_estimate": estimate_exchange_yplus(
+            physical_reynolds=physical_reynolds,
+            characteristic_length_cells=planned_characteristic_cells,
+            exchange_distance_cells=minimum_exchange_distance_cells,
+        ),
+    }
+
 
 def estimate_yplus(
     *,

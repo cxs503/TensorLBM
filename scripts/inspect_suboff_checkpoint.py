@@ -25,6 +25,11 @@ from suboff_experimental_resistance import (  # noqa: E402
     force_scale_newton,
 )
 
+from tensorlbm.yplus_guide import (  # noqa: E402
+    estimate_exchange_yplus,
+    plan_exchange_yplus_refinement,
+)
+
 
 def _sample_tensor(state: dict, name: str) -> torch.Tensor:
     value = state.get(name)
@@ -168,6 +173,22 @@ def audit_checkpoint(state: dict) -> dict:
         )
 
     current_mean = float(force_history.mean())
+    wall_exchange_prior = None
+    wall_refinement_plan = None
+    exchange_distance = configuration.get("stress_exchange_distance")
+    physical_viscosity = configuration.get("nu_water")
+    if exchange_distance is not None and physical_viscosity is not None:
+        physical_reynolds = point.speed_mps * MODEL_LENGTH_M / physical_viscosity
+        finest_length_cells = 2.0 * configuration["hull_length"]
+        wall_exchange_prior = estimate_exchange_yplus(
+            physical_reynolds=physical_reynolds,
+            characteristic_length_cells=finest_length_cells,
+            exchange_distance_cells=exchange_distance,
+        )
+        wall_refinement_plan = plan_exchange_yplus_refinement(
+            physical_reynolds=physical_reynolds,
+            characteristic_length_cells=finest_length_cells,
+        )
     return {
         "checkpoint_schema": state.get("schema"),
         "checkpoint_step": int(state["step"]),
@@ -205,6 +226,8 @@ def audit_checkpoint(state: dict) -> dict:
             "maximum_rejected_sample_fraction": _finite_history_reduction(
                 state, "wall_rejected_fraction_history", "max",
             ),
+            "ittc_exchange_y_plus_prior": wall_exchange_prior,
+            "minimum_sample_refinement_plan": wall_refinement_plan,
         },
         "numerical_quality": {
             "maximum_positivity_limited_fraction": state.get(

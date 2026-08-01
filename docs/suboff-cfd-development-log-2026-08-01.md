@@ -810,6 +810,21 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     auditor now persists force decomposition, wall-model y+ applicability and
     AMR/positivity quality alongside observer closure so this diagnosis is
     repeated identically at every resolution.
+97. The wall exchange-height contract is now resolution-planned rather than
+    inherited blindly from the Re=1e6 flat plate.  ITTC-1957 plus lattice
+    similarity predicts y+=5855 for the current fixed `y/L=0.01171875` at the
+    SUBOFF physical Re=13.21 million; the L90 runtime mean y+=5753 independently
+    confirms the estimate.  Because L90/L120/L150 scale exchange distance with
+    hull cells, their physical sampling location and expected y+ do not
+    converge even though geometry does.  A common estimator now consumes the
+    actual finest-level body resolution and exchange distance, while a planner
+    reports the minimum resolution and number of additional 2:1 wall-normal
+    levels needed for a declared y+ target.  With the exchange sampler's
+    approximately one-finest-cell minimum, L150 requires one additional local
+    2:1 surface level: effective L=600 predicts y+=833, inside the existing
+    100--1000 engineering target.  This is a quantitative design requirement
+    for the post-campaign surface-shell refinement, not a reason to alter the
+    active three-grid trajectories.
 
 ## Rejected candidates
 
