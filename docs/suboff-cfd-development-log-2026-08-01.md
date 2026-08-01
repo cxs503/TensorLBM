@@ -1201,8 +1201,11 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      hierarchy is still finite, but peak speed has oscillated up to 0.191,
      cumulative collision positivity limiting is `3.09161e-5`, maximum reflux
      residual is `1.78814e-7`, and instantaneous force observers do not close.
-     This trajectory is retained as an unfiltered baseline and is not force
-     evidence.
+     The trajectory is stopped at step 2280 and retained as an unfiltered
+     baseline, not force evidence.  Its immutable rejected log and step-2250
+     checkpoint SHA-256 values are
+     `f9364a57d01e00cd30e6a62d6276ce5ec26e4c161b25f3b571f0e83b1c7c696a`
+     and `78dbd82d2ff256105fcb7a7d75e80f73036bc7e421665661b7f78b2aaa9272a1`.
 137. A common AMR transition-shell filter is implemented for D3Q19 and D3Q27.
      A raised-cosine shell damps only non-equilibrium populations in physical
      fine cells adjacent to a resolution transition; an explicit conserved-
