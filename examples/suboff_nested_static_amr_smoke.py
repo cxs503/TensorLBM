@@ -98,6 +98,11 @@ def parser() -> argparse.ArgumentParser:
         "--health-interval", type=int, default=0,
         help="root-step cadence for per-level population/rho/speed diagnostics; 0 disables",
     )
+    result.add_argument(
+        "--regularize-restriction",
+        action="store_true",
+        help="filter fine-to-coarse transfer to resolved second-order stress",
+    )
     result.add_argument("--minimum-convective-times", type=float, default=8.0)
     result.add_argument(
         "--minimum-statistics-convective-times", type=float, default=5.0,
@@ -245,11 +250,14 @@ def run(args: argparse.Namespace) -> dict:
     nu_coarse = args.lattice_speed * args.hull_length / collision_re
     tau_coarse = 0.5 + 3.0 * nu_coarse
     outer_amr_config = StaticBlockAMRConfig(
-        outer_plan.box, tau_coarse=tau_coarse,
+        outer_plan.box,
+        tau_coarse=tau_coarse,
+        regularize_restriction=args.regularize_restriction,
     )
     inner_amr_config = StaticBlockAMRConfig(
         nested_plan.box_in_outer_allocated_coordinates,
         tau_coarse=outer_amr_config.tau_fine,
+        regularize_restriction=args.regularize_restriction,
     )
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, args.lattice_speed)
@@ -283,6 +291,7 @@ def run(args: argparse.Namespace) -> dict:
         "sponge_width": args.sponge_width,
         "sponge_strength": args.sponge_strength,
         "far_field_mode": args.far_field_mode,
+        "regularize_restriction": args.regularize_restriction,
     }
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
@@ -424,9 +433,15 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_signature = dict(checkpoint_signature)
         legacy_v2_signature["schema_version"] = 2
         legacy_v2_signature.pop("hull_type")
+        legacy_v2_without_filter = dict(legacy_v2_signature)
+        legacy_v2_without_filter.pop("regularize_restriction")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
-            and stored_configuration == legacy_v2_signature
+            and not args.regularize_restriction
+            and stored_configuration in (
+                legacy_v2_signature,
+                legacy_v2_without_filter,
+            )
         )
         if (
             stored_configuration != checkpoint_signature

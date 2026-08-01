@@ -4,8 +4,8 @@ from __future__ import annotations
 import pytest
 import torch
 
-from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.refinement import BoxRegion
 from tensorlbm.solver3d import collide_mrt3d, stream3d
 from tensorlbm.static_block_amr import (
@@ -43,6 +43,25 @@ def test_convective_tau_scaling() -> None:
             tau_coarse=0.56,
             maximum_reflux_correction_fraction=0.0,
         )
+
+
+def test_restriction_regularization_is_an_explicit_common_option() -> None:
+    config = StaticBlockAMRConfig(
+        BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+        tau_coarse=0.56,
+        regularize_restriction=True,
+    )
+    solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)), config)
+
+    def identity(
+        f: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
+        del tau, level, substep
+        return AMRAdvanceResult(f.clone(), f.clone())
+
+    ledger = solver.step(identity)
+    assert bool(torch.isfinite(solver.coarse_f).all())
+    assert abs(ledger.mass_residual) < 1e-12
 
 
 def test_uniform_moving_equilibrium_survives_nested_step_exactly() -> None:

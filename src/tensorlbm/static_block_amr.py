@@ -21,6 +21,7 @@ from dataclasses import dataclass
 
 import torch
 
+from .amr_population_transfer import rescale_nonequilibrium
 from .fixed_nested_transfer import restrict_populations_2to1
 from .kinetic_flux_register import (
     KineticInterfaceTransfer,
@@ -58,42 +59,6 @@ def convective_refined_tau(tau_coarse: float, ratio: int = 2) -> float:
     return 0.5 + ratio * (tau_coarse - 0.5)
 
 
-def _macroscopic(f: torch.Tensor) -> tuple[torch.Tensor, ...]:
-    if f.shape[0] == 19:
-        from .d3q19 import macroscopic3d
-        return macroscopic3d(f)
-    if f.shape[0] == 27:
-        from .d3q27 import macroscopic27
-        return macroscopic27(f)
-    raise ValueError("only D3Q19 and D3Q27 are supported")
-
-
-def _equilibrium(
-    q: int, rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
-    uz: torch.Tensor,
-) -> torch.Tensor:
-    if q == 19:
-        from .d3q19 import equilibrium3d
-        return equilibrium3d(rho, ux, uy, uz, device=rho.device)
-    if q == 27:
-        from .d3q27 import equilibrium27
-        return equilibrium27(rho, ux, uy, uz, device=rho.device)
-    raise ValueError("only D3Q19 and D3Q27 are supported")
-
-
-def _rescale_nonequilibrium(
-    f: torch.Tensor, *, tau_source: float, tau_target: float,
-    spatial_ratio: float,
-) -> torch.Tensor:
-    """Rescale non-equilibrium stress between convectively scaled levels."""
-    rho, ux, uy, uz = _macroscopic(f)
-    feq = _equilibrium(f.shape[0], rho, ux, uy, uz)
-    # fneq is proportional to tau times the lattice velocity gradient.  A
-    # fine lattice gradient is 1/r of the coarse gradient.
-    scale = tau_target / (spatial_ratio * tau_source)
-    return feq + scale * (f - feq)
-
-
 @dataclass(frozen=True)
 class StaticBlockAMRConfig:
     """Configuration for one strictly interior 2:1 fine block."""
@@ -104,6 +69,7 @@ class StaticBlockAMRConfig:
     ghost: int = 1
     reflux: bool = True
     maximum_reflux_correction_fraction: float = 0.2
+    regularize_restriction: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.box, BoxRegion):
@@ -172,7 +138,7 @@ def _sample_parent_with_ghost(
     y_c = torch.div(y_f, r, rounding_mode="floor")
     x_c = torch.div(x_f, r, rounding_mode="floor")
     sampled = parent[:, z_c[:, None, None], y_c[None, :, None], x_c[None, None, :]]
-    return _rescale_nonequilibrium(
+    return rescale_nonequilibrium(
         sampled,
         tau_source=config.tau_coarse,
         tau_target=config.tau_fine,
@@ -266,11 +232,12 @@ class StaticBlockAMR3D:
 
     def _restrict_physical(self) -> torch.Tensor:
         restricted = restrict_populations_2to1(self.fine_physical)
-        return _rescale_nonequilibrium(
+        return rescale_nonequilibrium(
             restricted,
             tau_source=self.config.tau_fine,
             tau_target=self.config.tau_coarse,
             spatial_ratio=1.0 / self.config.ratio,
+            regularize=self.config.regularize_restriction,
         )
 
     def _replace_without_reflux(self, restricted: torch.Tensor) -> PopulationRefluxLedger:

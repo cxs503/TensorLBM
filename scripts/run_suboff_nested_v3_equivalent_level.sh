@@ -79,6 +79,10 @@ resume=()
 if [[ -f "$checkpoint" ]]; then
   resume=(--resume)
 fi
+restriction_filter=()
+if [[ ${TENSORLBM_REGULARIZE_RESTRICTION:-0} == 1 ]]; then
+  restriction_filter=(--regularize-restriction)
+fi
 
 export CUDA_VISIBLE_DEVICES=$gpu
 exec "$python" examples/suboff_nested_static_amr_smoke.py \
@@ -100,4 +104,4 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --far-field-mode non_equilibrium_extrapolation \
   --memory-bytes-per-cell 742 \
   --checkpoint "$checkpoint" --checkpoint-interval "$checkpoint_interval" \
-  --output "$output" "${resume[@]}"
+  --output "$output" "${restriction_filter[@]}" "${resume[@]}"

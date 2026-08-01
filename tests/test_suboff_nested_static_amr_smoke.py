@@ -22,6 +22,7 @@ def _args(
     preflight: bool = False,
     resume: bool = False,
     hull_type: str = "bare_hull",
+    regularize_restriction: bool = False,
 ):
     values = [
         "--device", "cpu",
@@ -44,6 +45,8 @@ def _args(
         values.append("--preflight-only")
     if resume:
         values.append("--resume")
+    if regularize_restriction:
+        values.append("--regularize-restriction")
     return MODULE.parser().parse_args(values)
 
 
@@ -93,6 +96,16 @@ def test_nested_aff8_smoke_records_appendage_resolution(tmp_path: Path) -> None:
     assert resolution["sail_only_cells"] > 0
     assert resolution["fin_only_cells"] > 0
     assert result["physical_validation"] is False
+
+
+def test_nested_smoke_can_regularize_both_restriction_interfaces(
+    tmp_path: Path,
+) -> None:
+    result = MODULE.run(_args(tmp_path, steps=1, regularize_restriction=True))
+
+    assert result["configuration"]["regularize_restriction"] is True
+    assert result["result"]["finite"] is True
+    assert max(result["result"]["maximum_reflux_residual_by_interface"]) < 1e-6
 
 
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
