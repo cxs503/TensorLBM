@@ -760,6 +760,11 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     spans about 12.3 expected shedding cycles, exceeding the eight-cycle gate.
     Thirteen cylinder/convergence/launcher tests pass.  The sequence is queued
     behind the exact sphere chain and therefore does not contend for its GPU.
+92. The local one-GPU queue is concrete and PID-linked: cylinder R9 waiter
+    4004293 follows the exact sphere R15 process/waiter 3855756; cylinder R12
+    waiter 4004961 follows R9; cylinder R15 waiter 4005447 follows R12.  Each
+    launcher uses `exec`, so its PID remains stable when computation begins and
+    downstream levels cannot start early.
 
 ## Rejected candidates
 
