@@ -73,8 +73,13 @@ variant=
 if [[ "$hull_type" == full ]]; then
   variant=-aff8
 fi
-checkpoint="$result_dir/suboff-nested-v3${variant}-equivalent-l${level}-${steps%000}k.ckpt"
-output="$result_dir/suboff-nested-v3${variant}-equivalent-l${level}-${steps%000}k.json"
+campaign_generation=${TENSORLBM_CAMPAIGN_GENERATION:-v3}
+if [[ ! $campaign_generation =~ ^v[0-9]+$ ]]; then
+  echo "TENSORLBM_CAMPAIGN_GENERATION must look like v3 or v4" >&2
+  exit 2
+fi
+checkpoint="$result_dir/suboff-nested-${campaign_generation}${variant}-equivalent-l${level}-${steps%000}k.ckpt"
+output="$result_dir/suboff-nested-${campaign_generation}${variant}-equivalent-l${level}-${steps%000}k.json"
 resume=()
 if [[ -f "$checkpoint" ]]; then
   resume=(--resume)
@@ -92,6 +97,13 @@ transfer_positivity=()
 if [[ ${TENSORLBM_ENFORCE_TRANSFER_POSITIVITY:-0} == 1 ]]; then
   transfer_positivity=(--enforce-transfer-positivity)
 fi
+inner_wall_margin=${TENSORLBM_INNER_WALL_MARGIN:-4}
+inner_wake_cells=${TENSORLBM_INNER_WAKE_CELLS:-8}
+cv_margin=${TENSORLBM_CV_MARGIN:-4}
+aux_cv_margins=${TENSORLBM_AUX_CV_MARGINS:-2,6}
+resolved_reynolds_start=${TENSORLBM_RESOLVED_REYNOLDS_START:-0}
+viscosity_ramp_start=${TENSORLBM_VISCOSITY_RAMP_START_STEP:-0}
+viscosity_ramp_end=${TENSORLBM_VISCOSITY_RAMP_END_STEP:-0}
 
 export CUDA_VISIBLE_DEVICES=$gpu
 exec "$python" examples/suboff_nested_static_amr_smoke.py \
@@ -99,8 +111,9 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --nx "$nx" --ny "$cross" --nz "$cross" --hull-length "$level" \
   --center-x-fraction 0.3 \
   --outer-wall-margin "$outer_wall" --outer-wake-cells "$outer_wake" \
-  --inner-wall-margin 4 --inner-wake-cells 8 \
-  --cv-margin 4 --aux-cv-margins 2,6 \
+  --inner-wall-margin "$inner_wall_margin" \
+  --inner-wake-cells "$inner_wake_cells" \
+  --cv-margin "$cv_margin" --aux-cv-margins "$aux_cv_margins" \
   --surface-force-interval "$surface" \
   --steps "$steps" --warmup-steps "$warmup" \
   --statistics-window-steps "$statistics" --ramp-steps "$ramp" \
@@ -109,6 +122,9 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --minimum-convective-times 8 \
   --minimum-statistics-convective-times 5 \
   --lattice-speed 0.06 --resolved-reynolds 100000 \
+  --resolved-reynolds-start "$resolved_reynolds_start" \
+  --viscosity-ramp-start-step "$viscosity_ramp_start" \
+  --viscosity-ramp-end-step "$viscosity_ramp_end" \
   --wall-law musker --stress-exchange-distance 1 \
   --sponge-width "$sponge" --sponge-strength 0.3 \
   --far-field-mode non_equilibrium_extrapolation \
