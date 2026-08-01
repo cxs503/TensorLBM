@@ -190,15 +190,8 @@ def run(args: argparse.Namespace) -> dict:
     bfl_mask, bfl_q = compute_q_suboff(
         nx_f, ny_f, nz_f, *fine_center, args.hull_length * 2.0,
         hull_type=args.hull_type, config=config, device=device,
+        solid_mask=fine_solid_g,
     )
-    # The independent geometry constructions must agree before a force run.
-    q_solid, _ = build_suboff_mask(
-        args.hull_type, nx_f, ny_f, nz_f, cx=fine_center[0],
-        cy=fine_center[1], cz=fine_center[2], length=args.hull_length * 2.0,
-        config=config, device=device,
-    )
-    if not torch.equal(q_solid, fine_solid_g):
-        raise RuntimeError("fine CAD mask and BFL geometry disagree")
     appendage_links = 0
     if args.hull_type == "full":
         appendage_links = _appendage_halfway_links(

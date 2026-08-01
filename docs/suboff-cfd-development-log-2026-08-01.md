@@ -285,6 +285,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     extrapolated resistance within the experimental tolerance.  Six focused
     assessor tests and the full static-AMR/interface group pass; the active
     exploratory AFF-1 v2 run remains diagnostic and cannot enter this v3 gate.
+43. SUBOFF BFL preprocessing now accepts the solver's existing CAD solid mask
+    instead of rebuilding the full geometry twice, and performs the ten-step
+    link bisection in FP32.  The requested q resolution is only about 1/1024
+    lattice units, so FP64 coordinates added cost without usable wall-location
+    information on the single-precision solver state.  Rebuilt and reused
+    paths produce bit-identical masks/q fields in the regression test; the
+    BFL plus static-AMR production group passes 17 tests.  This optimization
+    is common to AFF-1/AFF-8 and future analytical SUBOFF campaigns.
 
 ## Rejected candidates
 

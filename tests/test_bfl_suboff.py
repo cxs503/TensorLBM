@@ -60,6 +60,30 @@ def test_bfl_link_masks_follow_d3q19_xyz_directions() -> None:
         assert torch.equal(masks[direction], expected), direction
 
 
+def test_bfl_q_reuses_solver_cad_mask_without_changing_links() -> None:
+    nx, ny, nz, length = 80, 40, 40, 32.0
+    cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
+    solid, _ = build_suboff_mask(
+        "bare_hull", nx, ny, nz, cx=cx, cy=cy, cz=cz,
+        length=length, device="cpu",
+    )
+    built_mask, built_q = compute_q_suboff(
+        nx, ny, nz, cx, cy, cz, length, device="cpu",
+    )
+    reused_mask, reused_q = compute_q_suboff(
+        nx, ny, nz, cx, cy, cz, length, device="cpu",
+        solid_mask=solid,
+    )
+
+    assert torch.equal(reused_mask, built_mask)
+    assert torch.equal(reused_q, built_q)
+    with pytest.raises(ValueError, match="solid_mask"):
+        compute_q_suboff(
+            nx, ny, nz, cx, cy, cz, length, device="cpu",
+            solid_mask=solid.float(),
+        )
+
+
 def test_full_hull_uses_halfway_links_on_voxel_appendages() -> None:
     nx, ny, nz, length = 120, 60, 60, 48.0
     cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
