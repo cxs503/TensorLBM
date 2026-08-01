@@ -609,7 +609,7 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     calibrated area does not exceed the bare-hull area.  Forty-three focused
     CAD/static-AMR production and resolution tests pass.
 75. The exact L90/L120/L150 AFF-1 production sequence is encoded in
-    `scripts/run_suboff_v6_equivalent_level.sh` instead of relying on copied
+    the versioned production launcher instead of relying on copied
     terminal commands.  The launcher fixes every 3:4:5 spatial and temporal
     parameter, resumes only the matching level checkpoint, binds one physical
     GPU explicitly and can wait for one exact predecessor PID before replacing
@@ -631,11 +631,23 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     already-running exact AFF-1 campaign without weakening future AFF-8 claims.
 78. The exact SUBOFF launcher also supports the paired AFF-8 sequence through
     `SUBOFF_HULL_TYPE=full`.  It retains the identical L90/L120/L150 mesh and
-    duration ratios, writes variant-isolated `suboff-v6-aff8-*` artifacts and
+    duration ratios, writes variant-isolated `suboff-v7-aff8-*` artifacts and
     activates the measured appendage-resolution/area gates.  The default stays
     AFF-1, so the already queued L150 command and its checkpoint names are
     unchanged.  AFF-8 execution remains deliberately behind the AFF-1 result
     review rather than competing for the three occupied production GPUs.
+79. The bare-hull analytical wet area is corrected from a circumference-only
+    approximation to the full surface-of-revolution metric
+    `2*pi*R*L integral rho*sqrt(1+(R/L drho/dxi)^2) dxi`.  Independent
+    300-by-120 triangle integration agrees within 0.2%; the former expression
+    was 1.16% low because it omitted bow/stern meridional slope.  Since this
+    area scales the applied wall traction, the production result/checkpoint
+    schema advances to v7 and the convergence assessor admits only v7 source
+    records.  The currently running internally consistent v6 sequence remains
+    diagnostic grid/time evidence and will not be relabelled as final physical
+    validation.  Its launcher is superseded by
+    `scripts/run_suboff_v7_equivalent_level.sh`, whose artifact names also
+    carry v7.  Fifty-eight focused CAD, area, AMR and convergence tests pass.
 
 ## Rejected candidates
 

@@ -55,8 +55,8 @@ variant=
 if [[ "$hull_type" == full ]]; then
   variant=-aff8
 fi
-checkpoint="$result_dir/suboff-v6${variant}-equivalent-l${level}-${steps%000}k.ckpt"
-output="$result_dir/suboff-v6${variant}-equivalent-l${level}-${steps%000}k.json"
+checkpoint="$result_dir/suboff-v7${variant}-equivalent-l${level}-${steps%000}k.ckpt"
+output="$result_dir/suboff-v7${variant}-equivalent-l${level}-${steps%000}k.json"
 resume=()
 if [[ -f "$checkpoint" ]]; then
   resume=(--resume)

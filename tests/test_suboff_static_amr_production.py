@@ -51,7 +51,7 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     resumed = module.run(resumed_args)
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
 
-    assert first["schema"] == "tensorlbm-suboff-static-amr-v6"
+    assert first["schema"] == "tensorlbm-suboff-static-amr-v7"
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
     assert resumed["acceptance"]["physical_validation"] is False
@@ -60,7 +60,7 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert resumed["geometry"]["surface_area_weighting"][
         "calibrated_area"
     ] == pytest.approx(resumed["geometry"]["wetted_area_lu2"], rel=1e-6)
-    assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v6"
+    assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v7"
     assert state["step"] == 6
     assert len(state["force_history"]) == 4
     assert len(state["wall_y_plus_mean_history"]) == 4
@@ -99,7 +99,7 @@ def test_underresolved_aff8_records_component_and_area_evidence(
     geometry = result["geometry"]
     resolution = geometry["geometry_resolution"]
 
-    assert geometry["wetted_area_scope"] == "bare_hull_analytical_approximation"
+    assert geometry["wetted_area_scope"] == "bare_hull_surface_of_revolution"
     assert geometry["force_integration_area_scope"] == "full"
     assert geometry["force_integration_calibrated_area_lu2"] > geometry[
         "bare_hull_wetted_area_lu2"

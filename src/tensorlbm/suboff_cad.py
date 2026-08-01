@@ -704,11 +704,17 @@ def suboff_statistics(
     # V = pi * R_max^2 * L * integral of rho^2 dxi over [0,1]
     vol_bare = math.pi * radius**2 * length * float(np.trapezoid(r_norm**2, xi_int))
 
-    # Wetted area of bare hull (surface of revolution)
-    # A = 2*pi * R_max * L * integral of rho * sqrt(1 + (d rho/d xi * L/R)^2) dxi
-    # Simplified without the derivative correction:
-    circ_integral = float(np.trapezoid(r_norm, xi_int))
-    wetted_bare = 2.0 * math.pi * radius * length * circ_integral
+    # Exact surface-of-revolution metric for r(x)=R*rho(x/L):
+    # A = 2*pi*R*L integral rho*sqrt(1 + (R/L * d rho/d xi)^2) dxi.
+    # The slope factor matters at the bow and stern; omitting it biases the
+    # reference area low by about 1.16% for the standard SUBOFF profile.
+    drho_dxi = np.gradient(r_norm, xi_int, edge_order=2)
+    meridional_metric = np.sqrt(
+        1.0 + np.square((radius / length) * drho_dxi),
+    )
+    wetted_bare = 2.0 * math.pi * radius * length * float(np.trapezoid(
+        r_norm * meridional_metric, xi_int,
+    ))
 
     # Prismatic coefficient (Cp = V / (A_max * L))
     a_max = math.pi * radius**2
@@ -729,7 +735,8 @@ def suboff_statistics(
         "stern_fraction": config.stern_fraction,
         "displacement_lu3": round(vol_bare, 2),
         "wetted_area_lu2": round(wetted_bare, 2),
-        "wetted_area_scope": "bare_hull_analytical_approximation",
+        "wetted_area_scope": "bare_hull_surface_of_revolution",
+        "wetted_area_method": "profile_meridional_metric_quadrature",
         "bare_hull_wetted_area_lu2": round(wetted_bare, 2),
         "prismatic_coefficient": round(float(cp), 4),
     }
