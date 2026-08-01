@@ -1121,7 +1121,7 @@ def bfl_wall_function_3d(
             solid_mask=solid,
         )
         if return_wall_diagnostics:
-            requested = int((near & fluid_boundary_mask.any(dim=0)).sum().item())
+            requested = int(fluid_boundary_mask.any(dim=0).sum().item())
             active = wall_diagnostics.boundary_nodes
             diagnostics = WallStressDiagnostics(
                 mode="spalding_exchange_assimilation",
