@@ -32,6 +32,8 @@ def test_resolved_periodic_force_can_converge_in_mean() -> None:
 
     assert report.relative_range_pct == pytest.approx(40.0)
     assert report.confidence95_half_width_pct < 5.0
+    assert report.dominant_period_steps == pytest.approx(20.0)
+    assert report.effective_sample_count < report.sample_count
     assert report.meets(5.0)
 
 
@@ -60,3 +62,13 @@ def test_single_complete_block_fails_closed_without_division_by_zero() -> None:
     assert math.isinf(report.half_mean_drift_pct)
     assert math.isinf(report.linear_trend_pct)
     assert not report.meets(1.0)
+
+
+def test_autocorrelation_diagnostics_reduce_repeated_sample_count() -> None:
+    samples = [value for value in range(40) for _ in range(10)]
+    report = assess_force_stationarity(samples, block_size=100)
+
+    assert report.autocorrelation_zero_crossing_lag is not None
+    assert report.integrated_autocorrelation_time_steps > 1.0
+    assert report.effective_sample_count < len(samples) / 5.0
+    assert report.autocorrelation_standard_error_pct > 0.0
