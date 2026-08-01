@@ -1317,6 +1317,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      regularized restriction and prolongation plus the force-safe width-two,
      strength-1.0 kinetic filter.  It may continue to 12000 steps only if its
      60-step health cadence survives the known 1400--2400 instability window.
+147. The AMR design is cross-checked against three primary grid-refinement
+     studies in `docs/amr-interface-literature-audit-2026-08-01.md`.  The audit
+     confirms the need for non-equilibrium rescaling, fine-to-coarse filtering,
+     space-time reconstruction and population-wise transfer accounting, while
+     explicitly recording two open gaps: a manufactured local conservation
+     test for cell-centred coarse-to-fine interpolation, and an independent
+     viscosity audit before the experimental KBC collision can be considered a
+     production stabilizer.  No proprietary PowerFLOW/XFlow behavior is
+     inferred without public technical evidence.
 
 ## Rejected candidates
 
