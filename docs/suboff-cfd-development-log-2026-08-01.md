@@ -385,6 +385,20 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     AMR regression group passes six tests.  The production run resumes from its
     atomic step-1500 checkpoint with unchanged physical identity; the lost 250
     transient steps are recomputed rather than reconstructed.
+53. The resumed v3 AFF-1 sequence then exposed a separate physical-contract
+    error before any result was admitted.  At L90/step4500 the mean wall shear
+    alone was about 229 N (latest 750-step mean 238 N) versus 87.4 N total tow
+    resistance, with mean `y+≈75`.  The runner had passed the artificial
+    `Re_collision=1e5` viscosity to the wall law.  The validated flat-plate
+    path correctly separates collision viscosity from
+    `nu_wall=U_lattice*L_fine/Re_physical`; applying the former to physical
+    traction overpredicts skin friction.  All three v3 trajectories were
+    stopped and retained as negative evidence.  A common
+    `physical_wall_lattice_viscosity` contract now serves flat plate and
+    SUBOFF; static-AMR result/checkpoint schema v4 persists the physical wall
+    Reynolds, fine wall viscosity and viscosity basis.  Twenty focused wall,
+    flat-plate, AMR and convergence tests pass, and v3 checkpoints are
+    intentionally non-resumable under the corrected physics.
 
 ## Rejected candidates
 
