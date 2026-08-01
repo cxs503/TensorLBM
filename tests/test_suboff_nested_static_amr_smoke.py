@@ -22,6 +22,7 @@ def _args(tmp_path: Path, *, preflight: bool = False):
         "--inner-wall-margin", "2", "--inner-wake-cells", "0",
         "--cv-margin", "2", "--steps", "2", "--ramp-steps", "0",
         "--resolved-reynolds", "2000", "--sponge-width", "3",
+        "--memory-bytes-per-cell", "742",
         "--output", str(tmp_path / "nested-smoke.json"),
     ]
     if preflight:
@@ -47,3 +48,4 @@ def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
     assert result["status"] == "preflight_only"
     assert result["physical_validation"] is False
     assert result["planning"]["total_allocated_cells"] > 0
+    assert result["planning"]["memory_estimate_bytes_per_cell"] == 742.0

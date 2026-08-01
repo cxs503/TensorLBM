@@ -85,6 +85,12 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--sponge-width", type=int, default=24)
     result.add_argument("--sponge-strength", type=float, default=0.3)
     result.add_argument(
+        "--memory-bytes-per-cell",
+        type=float,
+        default=943.0,
+        help="explicit peak-memory model coefficient; recorded in output",
+    )
+    result.add_argument(
         "--far-field-mode",
         choices=("non_equilibrium_extrapolation", "equilibrium"),
         default="non_equilibrium_extrapolation",
@@ -99,6 +105,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("grid, hull length and steps must be positive")
     if args.stress_exchange_distance <= 0.0:
         raise ValueError("stress exchange distance must be positive")
+    if args.memory_bytes_per_cell <= 0.0:
+        raise ValueError("memory bytes per cell must be positive")
     device = torch.device(args.device)
     if device.type == "cuda":
         torch.cuda.set_device(device)
@@ -142,9 +150,12 @@ def run(args: argparse.Namespace) -> dict:
         config=geometry_config,
         device=device,
     )
+    estimated_peak_gib = nested_plan.estimated_peak_gib(
+        args.memory_bytes_per_cell,
+    )
     memory_budget = require_cuda_memory_budget(
         device,
-        estimated_peak_gib=nested_plan.estimated_peak_gib(),
+        estimated_peak_gib=estimated_peak_gib,
         reserve_gib=1.0,
         label="SUBOFF nested static-AMR smoke",
     )
@@ -158,7 +169,8 @@ def run(args: argparse.Namespace) -> dict:
         "total_allocated_cells": nested_plan.total_allocated_cells,
         "uniform_finest_cells": nested_plan.uniform_finest_cells,
         "cell_saving_fraction": nested_plan.cell_saving_fraction,
-        "estimated_peak_gib": nested_plan.estimated_peak_gib(),
+        "memory_estimate_bytes_per_cell": args.memory_bytes_per_cell,
+        "estimated_peak_gib": estimated_peak_gib,
         "cuda_memory_preflight": (
             memory_budget.to_dict() if memory_budget is not None else None
         ),
