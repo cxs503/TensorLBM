@@ -30,18 +30,31 @@ def _lattice_velocities(q: int, device: torch.device, dtype: torch.dtype) -> tor
     return C.to(device=device, dtype=dtype)
 
 
-def _validate(f: torch.Tensor, control_volume: torch.Tensor) -> None:
+def _validate(
+    f: torch.Tensor,
+    control_volume: torch.Tensor,
+    periodic_axes: tuple[str, ...] = (),
+) -> None:
     if f.ndim != 4 or f.shape[0] not in (19, 27):
         raise ValueError("populations must have shape (19|27,nz,ny,nx)")
     if control_volume.shape != f.shape[1:] or control_volume.dtype is not torch.bool:
         raise ValueError("control_volume must be bool with the spatial grid shape")
     if control_volume.device != f.device:
         raise ValueError("populations and control_volume must share a device")
-    if (
-        bool(control_volume[0].any()) or bool(control_volume[-1].any())
-        or bool(control_volume[:, 0].any()) or bool(control_volume[:, -1].any())
-        or bool(control_volume[:, :, 0].any()) or bool(control_volume[:, :, -1].any())
-    ):
+    if not set(periodic_axes) <= {"x", "y", "z"}:
+        raise ValueError("periodic_axes may contain only x, y, z")
+    touches_nonperiodic = (
+        ("z" not in periodic_axes and (
+            bool(control_volume[0].any()) or bool(control_volume[-1].any())
+        ))
+        or ("y" not in periodic_axes and (
+            bool(control_volume[:, 0].any()) or bool(control_volume[:, -1].any())
+        ))
+        or ("x" not in periodic_axes and (
+            bool(control_volume[:, :, 0].any()) or bool(control_volume[:, :, -1].any())
+        ))
+    )
+    if touches_nonperiodic:
         raise ValueError("control volume must be strictly interior")
 
 
@@ -50,9 +63,10 @@ def fluid_momentum(
     control_volume: torch.Tensor,
     *,
     solid: torch.Tensor | None = None,
+    periodic_axes: tuple[str, ...] = (),
 ) -> torch.Tensor:
     """Return the total fluid momentum inside a control volume."""
-    _validate(f, control_volume)
+    _validate(f, control_volume, periodic_axes)
     owned = control_volume
     if solid is not None:
         if solid.shape != owned.shape or solid.dtype is not torch.bool:
@@ -72,13 +86,15 @@ def fluid_momentum(
 def streaming_momentum_import(
     f_post_collision: torch.Tensor,
     control_volume: torch.Tensor,
+    *,
+    periodic_axes: tuple[str, ...] = (),
 ) -> torch.Tensor:
     """Net momentum imported through the outer control-volume faces.
 
     Positive values enter the control volume.  Populations are sampled from
     their source cells in the post-collision, pre-stream state.
     """
-    _validate(f_post_collision, control_volume)
+    _validate(f_post_collision, control_volume, periodic_axes)
     accumulator_dtype = (
         torch.float64 if f_post_collision.dtype == torch.float32
         else f_post_collision.dtype
@@ -122,14 +138,21 @@ def observe_control_volume_force(
     control_volume: torch.Tensor,
     *,
     solid: torch.Tensor | None = None,
+    periodic_axes: tuple[str, ...] = (),
 ) -> ControlVolumeForceResult:
     """Observe force on an enclosed body over one complete LBM step."""
     if f_old.shape != f_new.shape or f_old.shape != f_post_collision.shape:
         raise ValueError("all population tensors must have the same shape")
-    old_momentum = fluid_momentum(f_old, control_volume, solid=solid)
-    new_momentum = fluid_momentum(f_new, control_volume, solid=solid)
+    old_momentum = fluid_momentum(
+        f_old, control_volume, solid=solid, periodic_axes=periodic_axes,
+    )
+    new_momentum = fluid_momentum(
+        f_new, control_volume, solid=solid, periodic_axes=periodic_axes,
+    )
     change = new_momentum - old_momentum
-    imported = streaming_momentum_import(f_post_collision, control_volume)
+    imported = streaming_momentum_import(
+        f_post_collision, control_volume, periodic_axes=periodic_axes,
+    )
     return ControlVolumeForceResult(imported - change, imported, change)
 
 
@@ -143,10 +166,16 @@ def box_control_volume(
     z0: int,
     z1: int,
     device: torch.device | str = "cpu",
+    periodic_axes: tuple[str, ...] = (),
 ) -> torch.Tensor:
     """Create a strictly interior Cartesian control-volume mask."""
     nz, ny, nx = shape
-    if not (0 < x0 < x1 < nx - 1 and 0 < y0 < y1 < ny - 1 and 0 < z0 < z1 < nz - 1):
+    valid_x = 0 <= x0 < x1 <= nx if "x" in periodic_axes else 0 < x0 < x1 < nx - 1
+    valid_y = 0 <= y0 < y1 <= ny if "y" in periodic_axes else 0 < y0 < y1 < ny - 1
+    valid_z = 0 <= z0 < z1 <= nz if "z" in periodic_axes else 0 < z0 < z1 < nz - 1
+    if not set(periodic_axes) <= {"x", "y", "z"}:
+        raise ValueError("periodic_axes may contain only x, y, z")
+    if not (valid_x and valid_y and valid_z):
         raise ValueError("control-volume bounds must be strictly interior")
     mask = torch.zeros(shape, dtype=torch.bool, device=device)
     mask[z0:z1, y0:y1, x0:x1] = True
