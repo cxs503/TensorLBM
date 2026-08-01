@@ -19,9 +19,11 @@ def _args(
     steps: int = 2,
     preflight: bool = False,
     resume: bool = False,
+    hull_type: str = "bare_hull",
 ):
     values = [
         "--device", "cpu",
+        "--hull-type", hull_type,
         "--nx", "80", "--ny", "40", "--nz", "40",
         "--hull-length", "24", "--center-x-fraction", "0.35",
         "--outer-wall-margin", "4", "--outer-wake-cells", "8",
@@ -77,3 +79,14 @@ def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:
     assert [record["step"] for record in resumed["result"]["steps"]] == [1, 2]
     assert resumed["configuration"]["resumed_from_step"] == 1
     assert resumed["status"] == "integration_smoke_pass"
+
+
+def test_nested_aff8_smoke_records_appendage_resolution(tmp_path: Path) -> None:
+    result = MODULE.run(_args(tmp_path, steps=1, hull_type="full"))
+
+    resolution = result["geometry"]["resolution"]
+    assert resolution["hull_type"] == "full"
+    assert result["geometry"]["appendage_halfway_links"] > 0
+    assert resolution["sail_only_cells"] > 0
+    assert resolution["fin_only_cells"] > 0
+    assert result["physical_validation"] is False

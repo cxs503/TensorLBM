@@ -36,7 +36,6 @@ from tensorlbm.control_volume_force import (
 )
 from tensorlbm.cuda_memory_budget import require_cuda_memory_budget
 from tensorlbm.cumulant import collide_cumulant_d3q19
-from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.drag_pressure import (
     SurfaceMesh,
@@ -59,6 +58,7 @@ from tensorlbm.static_block_amr import (
 )
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import (
+    apply_suboff_appendage_halfway_links,
     assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
     plan_suboff_static_amr,
@@ -73,40 +73,6 @@ from tensorlbm.wall_model import (
     bfl_wall_function_3d,
     physical_wall_lattice_viscosity,
 )
-
-
-def _appendage_halfway_links(
-    solid: torch.Tensor,
-    mask: torch.Tensor,
-    q: torch.Tensor,
-    *,
-    nx: int,
-    ny: int,
-    nz: int,
-    cx: float,
-    cy: float,
-    cz: float,
-    length: float,
-    device: torch.device,
-) -> int:
-    """Use analytical q on the body and halfway links on voxel appendages."""
-    bare, _ = build_suboff_mask(
-        "bare_hull", nx, ny, nz, cx=cx, cy=cy, cz=cz, length=length,
-        config=SuboffConfig(), device=device,
-    )
-    count = 0
-    for direction in range(1, 19):
-        dcx, dcy, dcz = (int(value) for value in C19[direction].tolist())
-        full_neighbor = torch.roll(
-            solid, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
-        )
-        bare_neighbor = torch.roll(
-            bare, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
-        )
-        halfway = mask[direction] & full_neighbor & ~bare_neighbor
-        count += int(halfway.sum().item())
-        q[direction][halfway] = 0.5
-    return count
 
 
 def _sponge(
@@ -244,10 +210,13 @@ def run(args: argparse.Namespace) -> dict:
     )
     appendage_links = 0
     if args.hull_type == "full":
-        appendage_links = _appendage_halfway_links(
-            fine_solid_g, bfl_mask, bfl_q, nx=nx_f, ny=ny_f, nz=nz_f,
-            cx=fine_center[0], cy=fine_center[1], cz=fine_center[2],
-            length=args.hull_length * 2.0, device=device,
+        appendage_links = apply_suboff_appendage_halfway_links(
+            fine_solid_g,
+            bfl_mask,
+            bfl_q,
+            center=fine_center,
+            length=args.hull_length * 2.0,
+            config=config,
         )
     fine_near = get_near_wall_3d(fine_solid_g)
     bare_solid = None
