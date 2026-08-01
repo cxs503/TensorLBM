@@ -54,6 +54,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     populations, integrates two fine substeps in physical cell-volume units,
     preserves uniform flow, and corrects only exterior interface links.  It
     remains an implementation candidate pending long uniform-grid comparison.
+12. The standard L120 domain is only 2.5 hull lengths long: 0.375L upstream
+    of the bow and 1.125L downstream of the stern.  This is inadequate for a
+    validation-grade external-flow wake and is consistent with the recurring
+    low-frequency pressure-force excursions.  Hull placement is now explicit,
+    and the default equilibrium-difference sponge excludes the prescribed
+    inlet; the next direct comparison uses an elongated downstream domain.
 
 ## Rejected candidates
 

@@ -201,9 +201,12 @@ def run(args: argparse.Namespace) -> dict:
     )
 
     coarse_free = equilibrium3d(rho, ux, zero, zero, device=device)
+    sponge_faces = ("x+", "y-", "y+", "z-", "z+")
+    if args.sponge_inlet:
+        sponge_faces = ("x-",) + sponge_faces
     sponge = build_sponge_sigma_3d(
         shape, width=args.sponge_width, max_strength=args.sponge_strength,
-        device=device,
+        device=device, faces=sponge_faces,
     )
     force_samples: list[tuple[float, float, float]] = []
     positivity_fractions: list[float] = []
@@ -348,6 +351,9 @@ def run(args: argparse.Namespace) -> dict:
             "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
             "positivity_limiter_enabled": not args.disable_positivity_limiter,
             "far_field_mode": args.far_field_mode,
+            "sponge_width": args.sponge_width,
+            "sponge_strength": args.sponge_strength,
+            "sponge_inlet_enabled": args.sponge_inlet,
         },
         "mesh": {
             "coarse_cells": plan.coarse_cells,
@@ -422,6 +428,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument("--sponge-width", type=int, default=12)
     p.add_argument("--sponge-strength", type=float, default=0.2)
+    p.add_argument("--sponge-inlet", action="store_true")
     p.add_argument(
         "--far-field-mode",
         choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),
