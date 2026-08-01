@@ -39,6 +39,7 @@ class SphereBFLControlVolumeConfig:
     ramp_steps: int = 500
     sponge_width: int = 18
     sponge_strength: float = 0.2
+    sponge_inlet: bool = False
     cv_margin: int = 8
     far_field_mode: str = "non_equilibrium_extrapolation"
     report_interval: int = 500
@@ -119,10 +120,13 @@ def run_sphere_bfl_control_volume(
         z1=int(math.ceil(cz + config.radius)) + config.cv_margin + 1,
         device=device,
     )
+    sponge_faces = ("x+", "y-", "y+", "z-", "z+")
+    if config.sponge_inlet:
+        sponge_faces = ("x-",) + sponge_faces
     sigma = build_sponge_sigma_3d(
         shape, width=config.sponge_width,
         max_strength=config.sponge_strength, device=device,
-        faces=("x+", "y-", "y+", "z-", "z+"),
+        faces=sponge_faces,
     )
     forces: list[float] = []
     bfl_forces: list[float] = []
@@ -135,6 +139,7 @@ def run_sphere_bfl_control_volume(
             "shape_zyx": list(shape), "radius": config.radius,
             "reynolds": config.reynolds,
             "lattice_speed": config.lattice_speed,
+            "sponge_inlet": config.sponge_inlet,
         }
         if state.get("configuration") != expected:
             raise ValueError("checkpoint configuration does not match sphere run")
@@ -155,6 +160,7 @@ def run_sphere_bfl_control_volume(
                 "shape_zyx": list(shape), "radius": config.radius,
                 "reynolds": config.reynolds,
                 "lattice_speed": config.lattice_speed,
+                "sponge_inlet": config.sponge_inlet,
             },
             "step": step,
             "populations": f.detach().cpu(),
@@ -234,6 +240,7 @@ def run_sphere_bfl_control_volume(
             "far_field_mode": config.far_field_mode,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
+            "sponge_inlet": config.sponge_inlet,
         },
         "result": {
             "cd_control_volume": cd,

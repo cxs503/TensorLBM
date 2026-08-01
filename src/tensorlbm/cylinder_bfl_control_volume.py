@@ -36,6 +36,7 @@ class CylinderBFLControlVolumeConfig:
     ramp_steps: int = 500
     sponge_width: int = 24
     sponge_strength: float = 0.2
+    sponge_inlet: bool = False
     cv_margin: int = 8
     far_field_mode: str = "non_equilibrium_extrapolation"
     report_interval: int = 1000
@@ -145,10 +146,13 @@ def run_cylinder_bfl_control_volume(
         y1=int(math.ceil(cy + config.radius)) + config.cv_margin + 1,
         z0=0, z1=config.nz, periodic_axes=("z",), device=device,
     )
+    sponge_faces = ("x+", "y-", "y+")
+    if config.sponge_inlet:
+        sponge_faces = ("x-",) + sponge_faces
     sigma = build_sponge_sigma_3d(
         shape, width=config.sponge_width,
         max_strength=config.sponge_strength, device=device,
-        faces=("x+", "y-", "y+"),
+        faces=sponge_faces,
     )
     forces: list[float] = []
     bfl_forces: list[float] = []
@@ -161,6 +165,7 @@ def run_cylinder_bfl_control_volume(
         expected = {
             "shape_zyx": list(shape), "radius": config.radius,
             "reynolds": config.reynolds, "lattice_speed": config.lattice_speed,
+            "sponge_inlet": config.sponge_inlet,
         }
         if state.get("configuration") != expected:
             raise ValueError("checkpoint configuration does not match cylinder run")
@@ -182,6 +187,7 @@ def run_cylinder_bfl_control_volume(
                 "shape_zyx": list(shape), "radius": config.radius,
                 "reynolds": config.reynolds,
                 "lattice_speed": config.lattice_speed,
+                "sponge_inlet": config.sponge_inlet,
             },
             "step": step,
             "populations": f.detach().cpu(),
@@ -287,6 +293,7 @@ def run_cylinder_bfl_control_volume(
             "far_field_mode": config.far_field_mode, "device": config.device,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
+            "sponge_inlet": config.sponge_inlet,
         },
         "result": {
             "cd_control_volume": cd, "cd_bfl_link": cd_bfl,
