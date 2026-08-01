@@ -639,6 +639,10 @@ from .static_block_amr import (
     StaticBlockAMRConfig,
     convective_refined_tau,
 )
+from .amr_interface_validation import (
+    AMRInterfaceValidationConfig,
+    run_amr_interface_validation,
+)
 from .suboff_static_amr import (
     SuboffStaticAMRPlan,
     build_fine_suboff_mask,
@@ -646,6 +650,8 @@ from .suboff_static_amr import (
 )
 from .control_volume_force import (
     ControlVolumeForceResult,
+    NestedControlVolumeAssessment,
+    assess_nested_control_volume_invariance,
     box_control_volume,
     fluid_momentum,
     observe_control_volume_force,
@@ -710,10 +716,14 @@ __all__ = [
     "StaticBlockAMR3D",
     "StaticBlockAMRConfig",
     "convective_refined_tau",
+    "AMRInterfaceValidationConfig",
+    "run_amr_interface_validation",
     "SuboffStaticAMRPlan",
     "build_fine_suboff_mask",
     "plan_suboff_static_amr",
     "ControlVolumeForceResult",
+    "NestedControlVolumeAssessment",
+    "assess_nested_control_volume_invariance",
     "box_control_volume",
     "fluid_momentum",
     "observe_control_volume_force",
