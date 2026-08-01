@@ -14,6 +14,7 @@ def test_positive_equilibrium_is_unchanged() -> None:
     zero = torch.zeros(shape, dtype=torch.float64)
     f = equilibrium3d(rho, ux, zero, zero)
     out, diagnostics = limit_nonequilibrium_for_positivity(f)
+    assert out is f
     assert torch.equal(out, f)
     assert diagnostics.limited_cells == 0
     assert diagnostics.minimum_alpha == 1.0

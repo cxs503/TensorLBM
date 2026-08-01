@@ -39,6 +39,16 @@ def limit_nonequilibrium_for_positivity(
         from .d3q27 import equilibrium27, macroscopic27
         equilibrium, macro = equilibrium27, macroscopic27
     minimum_before = float(f.min().item())
+    total = int(f[0].numel())
+    if minimum_before >= floor:
+        return f, PositivityDiagnostics(
+            limited_cells=0,
+            total_cells=total,
+            limited_fraction=0.0,
+            minimum_alpha=1.0,
+            minimum_population_before=minimum_before,
+            minimum_population_after=minimum_before,
+        )
     rho, ux, uy, uz = macro(f)
     feq = equilibrium(rho, ux, uy, uz, device=f.device)
     below = f < floor
