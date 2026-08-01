@@ -84,6 +84,7 @@ def _record(length: int, resistance: float) -> dict:
             "surface_observer_target_met": True,
             "population_health_target_met": True,
             "collision_viscosity_target_met": True,
+            "wall_exchange_scaling_target_met": True,
             "target_reynolds_duration_target_met": True,
         },
         "geometry": {
@@ -145,6 +146,19 @@ def test_nested_convergence_requires_all_observer_gates() -> None:
         for length in (90, 120, 150)
     ]
     records[1]["acceptance"]["surface_observer_target_met"] = False
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["source_numerical_quality_admitted"] is False
+    assert result["physical_validation"] is False
+
+
+def test_nested_convergence_rejects_unscaled_wall_exchange_gate() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+    records[0]["acceptance"]["wall_exchange_scaling_target_met"] = False
 
     result = assess_suboff_nested_convergence(records)
 

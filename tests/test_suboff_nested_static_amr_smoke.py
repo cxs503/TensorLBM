@@ -311,6 +311,23 @@ def test_nested_smoke_records_independent_bulk_relaxation(tmp_path: Path) -> Non
     assert result["result"]["finite"] is True
 
 
+def test_nested_single_grid_gate_requires_flat_plate_wall_scaling(
+    tmp_path: Path,
+) -> None:
+    unscaled = MODULE.run(_args(tmp_path, steps=1))
+    scaled_args = _args(tmp_path, steps=1)
+    scaled_args.stress_exchange_distance = (3.0 / 256.0) * (4.0 * 24.0)
+    scaled_args.checkpoint = tmp_path / "scaled.ckpt"
+    scaled_args.output = tmp_path / "scaled.json"
+    scaled = MODULE.run(scaled_args)
+
+    assert unscaled["acceptance"]["wall_exchange_scaling_target_met"] is False
+    assert scaled["acceptance"]["wall_exchange_scaling_target_met"] is True
+    assert scaled["configuration"][
+        "stress_exchange_distance_over_finest_length"
+    ] == pytest.approx(3.0 / 256.0)
+
+
 def test_nested_smoke_can_filter_both_physical_interface_shells(
     tmp_path: Path,
 ) -> None:

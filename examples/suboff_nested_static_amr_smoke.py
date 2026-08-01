@@ -1522,6 +1522,10 @@ def run(args: argparse.Namespace) -> dict:
             "cumulant_smagorinsky", "cumulant_wale", "cumulant_vreman",
         }
     )
+    wall_exchange_ratio = args.stress_exchange_distance / finest_length
+    wall_exchange_scaling_acceptable = math.isclose(
+        wall_exchange_ratio, 3.0 / 256.0, rel_tol=0.0, abs_tol=1.0e-12,
+    )
     auxiliary_cv_difference_pct = None
     nested_cv_acceptable = False
     surface_observer_difference_pct = None
@@ -1580,6 +1584,7 @@ def run(args: argparse.Namespace) -> dict:
         and not args.disable_wall_stress
         and population_health_acceptable
         and collision_viscosity_acceptable
+        and wall_exchange_scaling_acceptable
     )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30
@@ -1616,6 +1621,9 @@ def run(args: argparse.Namespace) -> dict:
             "gradient_sgs_solid_velocity": [0.0, 0.0, 0.0],
             "gradient_sgs_uses_finest_solid_mask": (
                 args.collision_model in {"cumulant_wale", "cumulant_vreman"}
+            ),
+            "stress_exchange_distance_over_finest_length": (
+                wall_exchange_ratio
             ),
             "resumed_from_step": resumed_from_step,
             "resumed_legacy_v2_checkpoint": resumed_legacy_v2_checkpoint,
@@ -1730,6 +1738,10 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "population_health_target_met": population_health_acceptable,
             "collision_viscosity_target_met": collision_viscosity_acceptable,
+            "wall_exchange_scaling_target_met": (
+                wall_exchange_scaling_acceptable
+            ),
+            "wall_exchange_distance_over_finest_length_target": 3.0 / 256.0,
             "minimum_population_target": args.minimum_health_population,
             "positivity_limited_fraction_target": (
                 args.maximum_positivity_limited_fraction
