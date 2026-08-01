@@ -1156,6 +1156,24 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Re=2000 diagnostic remains clean through step 250 with peak speed 0.07044
      and zero transfer limiting; this run only determines a safe high-
      resolution startup state and is not eligible for resistance validation.
+132. The continuation path is now a reproducible common campaign rather than
+     a hand-written command.  The legacy v3 launcher retains its cold-start
+     defaults, while the v4 wrapper selects resolution-specific safe startup
+     Reynolds numbers, a smooth continuation interval, larger finest-level
+     wall/wake buffers, trilinear ghost interpolation, second-order
+     restriction regularisation and transfer positivity.  It writes distinct
+     v4 checkpoints, remains fully environment-overridable, and passes launcher
+     argument-capture tests at L150.
+133. A geometry-independent, fail-closed nested-startup assessor now separates
+     numerical startup evidence from force validation.  It audits population
+     finiteness and positivity, density, the weakly-compressible speed gate,
+     collision/transfer limiter fractions, reflux conservation and actual
+     arrival at the requested collision Reynolds number.  Applied to the L90
+     pilot it reports `startup_stability_pass`, 101 target-Re steps, peak speed
+     0.089989, minimum population 0.0160873 and zero limiter use.  The persisted
+     assessment has SHA-256
+     `369f65b998332b9a73bcd407dbfd9acd92a1a6d7866b9f776e3949691768961d`;
+     by contract this status makes no resistance-accuracy claim.
 
 ## Rejected candidates
 
