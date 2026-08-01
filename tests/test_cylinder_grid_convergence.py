@@ -10,9 +10,9 @@ from tensorlbm.cylinder_grid_convergence import assess_cylinder_grid_convergence
 def _record(radius: float) -> dict[str, object]:
     diameter = 2.0 * radius
     return {
-        "schema": "tensorlbm-cylinder-bfl-control-volume-v3",
+        "schema": "tensorlbm-cylinder-bfl-control-volume-v4",
         "configuration": {
-            "schema_version": 3,
+            "schema_version": 4,
             "shape_zyx": [3, 16 * radius, 24 * radius],
             "radius": radius,
             "center_x_fraction": 0.3,
@@ -27,7 +27,8 @@ def _record(radius: float) -> dict[str, object]:
             "cv_margin": 2.0 * radius / 3.0,
             "far_field_mode": "non_equilibrium_extrapolation",
             "periodic_axes": ["z"],
-            "statistics_window_steps": 1000.0 * radius,
+            "link_force_frame": "laboratory_after_wall_activation",
+            "statistics_window_steps_resolved": 1000.0 * radius,
             "minimum_shedding_cycles": 8.0,
             "report_interval": 50.0 * radius,
             "steps": 2000.0 * radius,
