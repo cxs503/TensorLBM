@@ -51,6 +51,7 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 mkdir -p "$result_dir"
 python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
+export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
 variant=
 if [[ "$hull_type" == full ]]; then
   variant=-aff8

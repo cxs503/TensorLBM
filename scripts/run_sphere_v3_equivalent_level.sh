@@ -39,6 +39,7 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 mkdir -p "$result_dir"
 python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
+export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
 stem="$result_dir/sphere-v3-equivalent-r${radius}-${steps}"
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
