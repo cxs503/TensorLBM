@@ -60,6 +60,7 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["result"]["statistics"]["statistics_window_steps_resolved"] == 2
     assert result["result"]["statistics"]["auxiliary_cv_difference_pct"] is not None
     assert result["result"]["statistics"]["surface_observer_difference_pct"] is not None
+    assert result["result"]["statistics"]["wall_exchange"]["mean_distance_cells"] > 0.0
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
