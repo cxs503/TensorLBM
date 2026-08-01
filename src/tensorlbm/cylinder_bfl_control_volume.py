@@ -44,6 +44,8 @@ class CylinderBFLControlVolumeConfig:
     checkpoint_interval: int = 0
     checkpoint_path: str | None = None
     resume: bool = False
+    statistics_window_steps: int = 0
+    minimum_shedding_cycles: float = 8.0
     device: str = "cpu"
 
     @property
@@ -70,6 +72,12 @@ class CylinderBFLControlVolumeConfig:
             raise ValueError("unknown far_field_mode")
         if self.report_interval < 0 or self.checkpoint_interval < 0:
             raise ValueError("report/checkpoint intervals must be non-negative")
+        if not 0 <= self.statistics_window_steps <= self.steps - self.warmup_steps:
+            raise ValueError(
+                "statistics_window_steps must be zero or fit after warmup",
+            )
+        if self.minimum_shedding_cycles < 0.0:
+            raise ValueError("minimum_shedding_cycles must be non-negative")
         if self.ramp_steps < 0 or self.sponge_width < 0:
             raise ValueError("ramp_steps and sponge_width must be non-negative")
         if not 0.0 <= self.sponge_strength <= 1.0:
@@ -172,7 +180,7 @@ def run_cylinder_bfl_control_volume(
     start_step = 0
     checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
     checkpoint_signature = {
-        "schema_version": 2,
+        "schema_version": 3,
         "shape_zyx": list(shape),
         "radius": config.radius,
         "center_x_fraction": config.center_x_fraction,
@@ -187,6 +195,7 @@ def run_cylinder_bfl_control_volume(
         "cv_margin": config.cv_margin,
         "far_field_mode": config.far_field_mode,
         "periodic_axes": ["z"],
+        "statistics_window_steps": config.statistics_window_steps,
     }
     if config.resume:
         assert checkpoint is not None
@@ -206,7 +215,7 @@ def run_cylinder_bfl_control_volume(
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-cylinder-checkpoint-v2",
+            "schema": "tensorlbm-cylinder-checkpoint-v3",
             "configuration": checkpoint_signature,
             "step": step,
             "populations": f.detach().cpu(),
@@ -276,14 +285,18 @@ def run_cylinder_bfl_control_volume(
     if checkpoint is not None:
         save_checkpoint(config.steps)
 
-    mean_force = sum(forces) / len(forces)
-    mean_bfl = sum(bfl_forces) / len(bfl_forces)
+    statistics_window = config.statistics_window_steps or len(forces)
+    selected_forces = forces[-statistics_window:]
+    selected_bfl_forces = bfl_forces[-statistics_window:]
+    selected_lift_forces = lift_forces[-statistics_window:]
+    mean_force = sum(selected_forces) / len(selected_forces)
+    mean_bfl = sum(selected_bfl_forces) / len(selected_bfl_forces)
     denominator = (
         0.5 * config.lattice_speed**2 * (2.0 * config.radius) * config.nz
     )
     cd, cd_bfl = mean_force / denominator, mean_bfl / denominator
-    cd_history = [force / denominator for force in forces]
-    cy_history = [force / denominator for force in lift_forces]
+    cd_history = [force / denominator for force in selected_forces]
+    cy_history = [force / denominator for force in selected_lift_forces]
     stationarity = assess_force_stationarity(
         cd_history,
         block_size=max(1, len(cd_history) // 8),
@@ -299,12 +312,18 @@ def run_cylinder_bfl_control_volume(
         if math.isfinite(strouhal) else math.inf
     )
     observer_difference = abs(cd - cd_bfl) / max(abs(cd), 1e-30) * 100.0
+    numerical_quality_admitted = (
+        math.isfinite(cd)
+        and stationarity.meets(1.0)
+        and observer_difference <= 1.0
+        and shedding_cycles >= config.minimum_shedding_cycles
+    )
     final_rho, final_ux, final_uy, final_uz = macroscopic3d(f)
     final_speed = torch.sqrt(
         final_ux.square() + final_uy.square() + final_uz.square()
     )
     return {
-        "schema": "tensorlbm-cylinder-bfl-control-volume-v2",
+        "schema": "tensorlbm-cylinder-bfl-control-volume-v3",
         "configuration": checkpoint_signature | {
             "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
@@ -313,6 +332,8 @@ def run_cylinder_bfl_control_volume(
             "checkpoint_path": str(checkpoint) if checkpoint else None,
             "report_interval": config.report_interval,
             "checkpoint_interval": config.checkpoint_interval,
+            "statistics_window_steps_resolved": statistics_window,
+            "minimum_shedding_cycles": config.minimum_shedding_cycles,
         },
         "result": {
             "cd_control_volume": cd, "cd_bfl_link": cd_bfl,
@@ -338,16 +359,18 @@ def run_cylinder_bfl_control_volume(
             "strouhal_error_target_pct": 5.0,
             "stationarity_target_pct": 1.0,
             "force_observer_target_pct": 1.0,
-            "minimum_shedding_cycles": 8.0,
+            "minimum_shedding_cycles": config.minimum_shedding_cycles,
             "drag_target_met": reference_error <= 5.0,
             "strouhal_target_met": strouhal_error <= 5.0,
             "stationarity_target_met": stationarity.meets(1.0),
             "force_observer_target_met": observer_difference <= 1.0,
-            "cycle_target_met": shedding_cycles >= 8.0,
+            "cycle_target_met": (
+                shedding_cycles >= config.minimum_shedding_cycles
+            ),
+            "numerical_quality_admitted": numerical_quality_admitted,
             "admitted": (
                 reference_error <= 5.0 and strouhal_error <= 5.0
-                and stationarity.meets(1.0) and observer_difference <= 1.0
-                and shedding_cycles >= 8.0
+                and numerical_quality_admitted
             ),
         },
         "cuda_memory_preflight": (
