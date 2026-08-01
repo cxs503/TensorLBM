@@ -1592,6 +1592,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      if it clears the same health window.  Audit SHA-256 values are
      `56baf724194e3bd480e4c67da45ff10ef63675b018df4906ff929c73b2b4bc00`
      and `3b277e7f636bcf5247ab5664f506bf0541b74adf456c8851c4e3c2b83f0646cd`.
+177. A primary-source KBC candidate is implemented without replacing the
+     rejected legacy API.  It uses `beta=1/(2*tau)`, relaxes the deviatoric
+     shear deviation by `2*beta`, applies the analytical entropic scalar-product
+     gamma only to bulk/higher-order deviations, and clamps gamma to the
+     population positivity interval.  The periodic shear wave recovers
+     viscosity `0.1000517` for target `0.1` (0.052% error), versus 71.08% for
+     the legacy kernel; mass/momentum, positivity and no-material-entropy-rise
+     tests pass (50 focused KBC/audit tests total).  Result SHA-256 is
+     `2b559bd7e7ba7e437f178659212f094ddec0ecc1df5cc81e7fb750ac6381a450`.
+     The new kernel remains experimental until stronger entropy, canonical-flow
+     and AMR tests pass; it is not yet enabled in SUBOFF.
 
 ## Rejected candidates
 

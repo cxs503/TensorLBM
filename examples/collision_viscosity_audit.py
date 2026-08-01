@@ -16,7 +16,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--collision-model",
-        choices=("bgk", "cumulant", "entropic_kbc"),
+        choices=("bgk", "cumulant", "entropic_kbc", "natural_kbc"),
         required=True,
     )
     parser.add_argument("--tau", type=float, default=0.8)
