@@ -196,6 +196,19 @@ def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:
     assert bool(checkpoint_state["level_solid_masks"][2].any())
 
 
+def test_checkpoint_without_mass_conservative_wall_source_is_rejected(
+    tmp_path: Path,
+) -> None:
+    MODULE.run(_args(tmp_path, steps=1))
+    path = tmp_path / "nested-smoke.ckpt"
+    state = torch.load(path, map_location="cpu", weights_only=True)
+    state["configuration"].pop("wall_traction_source_scheme")
+    torch.save(state, path)
+
+    with pytest.raises(ValueError, match="configuration does not match"):
+        MODULE.run(_args(tmp_path, steps=2, resume=True))
+
+
 def test_nested_aff8_smoke_records_appendage_resolution(tmp_path: Path) -> None:
     result = MODULE.run(_args(tmp_path, steps=1, hull_type="full"))
 

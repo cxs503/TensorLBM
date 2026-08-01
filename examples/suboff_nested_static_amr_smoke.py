@@ -73,6 +73,7 @@ from tensorlbm.suboff_static_amr import (
 from tensorlbm.surface_area_weights import bfl_surface_area_weights
 from tensorlbm.viscosity_continuation import ResolvedReynoldsContinuation
 from tensorlbm.wall_model import (
+    WALL_TRACTION_SOURCE_SCHEME,
     bfl_wall_function_3d,
     physical_wall_lattice_viscosity,
 )
@@ -573,6 +574,7 @@ def run(args: argparse.Namespace) -> dict:
             / finest_plan.effective_hull_length_cells
         ),
         "estimated_exchange_y_plus": estimated_exchange_y_plus,
+        "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
         "cuda_memory_preflight": (
             memory_budget.to_dict() if memory_budget is not None else None
         ),
@@ -631,6 +633,7 @@ def run(args: argparse.Namespace) -> dict:
         "omega_bulk": args.omega_bulk,
         "wall_law": args.wall_law,
         "wall_stress_enabled": not args.disable_wall_stress,
+        "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
         "stress_exchange_distance": args.stress_exchange_distance,
         "wall_diagnostic_interval": args.wall_diagnostic_interval,
         "sponge_width": args.sponge_width,
@@ -1711,6 +1714,7 @@ def run(args: argparse.Namespace) -> dict:
             "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
             "checkpoint_interval": args.checkpoint_interval,
             "gradient_sgs_solid_velocity": [0.0, 0.0, 0.0],
+            "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
             "gradient_sgs_uses_finest_solid_mask": (
                 args.collision_model in {"cumulant_wale", "cumulant_vreman"}
             ),
