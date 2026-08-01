@@ -730,6 +730,11 @@ from .surface_area_weights import (
     SurfaceAreaWeightDiagnostics,
     bfl_surface_area_weights,
 )
+from .drag_pressure import (
+    BFLWallPressureDiagnostics,
+    integrate_bfl_projected_pressure,
+    reconstruct_bfl_wall_pressure,
+)
 
 __all__ = [
     "__version__",
@@ -806,6 +811,9 @@ __all__ = [
     "assess_flat_plate_convergence",
     "SurfaceAreaWeightDiagnostics",
     "bfl_surface_area_weights",
+    "BFLWallPressureDiagnostics",
+    "integrate_bfl_projected_pressure",
+    "reconstruct_bfl_wall_pressure",
     # D2Q9 lattice
     "C",
     "W",
