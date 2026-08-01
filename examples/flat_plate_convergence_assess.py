@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -14,11 +15,18 @@ def main() -> None:
     parser.add_argument("inputs", nargs="+")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
-    records = [
-        json.loads(Path(path).read_text(encoding="utf-8"))
-        for path in args.inputs
-    ]
+    sources = []
+    records = []
+    for path_value in args.inputs:
+        path = Path(path_value)
+        payload = path.read_bytes()
+        records.append(json.loads(payload))
+        sources.append({
+            "path": str(path),
+            "sha256": hashlib.sha256(payload).hexdigest(),
+        })
     assessment = assess_flat_plate_convergence(records)
+    assessment["sources"] = sources
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(assessment, indent=2), encoding="utf-8")

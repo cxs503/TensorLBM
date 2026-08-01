@@ -334,6 +334,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     difference, zero positivity limiting and zero rejected exchange samples.
     Its mean sampled `y+=565.44`; the run passes every single-grid gate.  L512
     remains active, so the formal three-grid v3 fit is not issued early.
+47. V3 L512 then completed and the provenance-gated L256/L384/L512 sequence is
+    formally admitted.  `Cf` increases monotonically from 0.0045972893 through
+    0.0046577555 to 0.0046689666; the fit gives observed order 3.739,
+    `Cf_inf=0.0046747705`, 0.124% finest-grid discretisation error and zero
+    reported fit RMS for the three-point model.  The extrapolated value is only
+    0.272% below ITTC-1957.  Every source run passes its own force, stationarity,
+    positivity and exchange gates, while all physical identities and scaled
+    domain/sponge/CV/exchange lengths match.  The committed convergence artifact
+    records SHA-256 hashes of the three full remote source JSON files.
 
 ## Rejected candidates
 
