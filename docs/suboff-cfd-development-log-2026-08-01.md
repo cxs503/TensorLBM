@@ -91,6 +91,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     spanned 6.58%.  The benchmark now writes resumable population/force-history
     checkpoints; a 60,000-step inlet-sponge-free run is in progress rather
     than restarting every extension from an empty history.
+18. Lowering only the flat-plate collision Reynolds number from `1e5` to
+    `2e4` removed all positivity limiting and produced excellent stationarity
+    (0.054% block range, 0.040% trend) with 0.029% force-observer disagreement.
+    However, `Cf=0.005212` is 11.19% above ITTC.  Collision-Re sensitivity is
+    therefore material; a declared 20k/50k/100k sequence is used instead of
+    selecting whichever numerical viscosity happens to match the correlation.
 
 ## Rejected candidates
 
