@@ -170,8 +170,13 @@ def assess_suboff_nested_convergence(
             "inner_wall_margin",
             "inner_wake_cells",
             "cv_margin",
-            "stress_exchange_distance",
         )
+    }
+    wall_model_ratios = {
+        "stress_exchange_distance_over_finest_length": [
+            float(item[2]["stress_exchange_distance"]) / resolution
+            for resolution, item in zip(resolutions, parsed, strict=True)
+        ],
     }
     auxiliary_margins: list[list[float]] = []
     for _, _, configuration, _, _, _ in parsed:
@@ -227,6 +232,7 @@ def assess_suboff_nested_convergence(
         *domain_ratios.values(),
         *outer_mesh_ratios.values(),
         *inner_mesh_ratios.values(),
+        *wall_model_ratios.values(),
         *auxiliary_cv_ratios.values(),
         *time_ratios.values(),
         *physical_duration_groups.values(),
@@ -292,6 +298,7 @@ def assess_suboff_nested_convergence(
             "domain_over_coarse_length": domain_ratios,
             "outer_mesh_over_coarse_length": outer_mesh_ratios,
             "inner_mesh_over_coarse_length": inner_mesh_ratios,
+            "wall_model_over_finest_length": wall_model_ratios,
             "auxiliary_cv_over_coarse_length": auxiliary_cv_ratios,
             "time_steps_over_coarse_length": time_ratios,
             "physical_duration_convective_times": physical_duration_groups,
