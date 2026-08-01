@@ -39,10 +39,15 @@ def main() -> None:
             "maximum_finest_error_pct": args.maximum_finest_error_pct,
             "maximum_fit_rms_pct": args.maximum_fit_rms_pct,
             "minimum_order": args.minimum_order,
-            "admitted": assessment.meets(
+            "mathematical_fit_admitted": assessment.meets(
                 maximum_finest_error_pct=args.maximum_finest_error_pct,
                 maximum_fit_rms_pct=args.maximum_fit_rms_pct,
                 minimum_order=args.minimum_order,
+            ),
+            "physical_validation": False,
+            "claim_boundary": (
+                "Numerical sequence fit only; case-specific configuration "
+                "identity and physical-reference gates are required."
             ),
         },
     }
