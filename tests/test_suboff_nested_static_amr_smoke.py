@@ -154,6 +154,8 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
         "restriction_minimum_alpha" in record
         for record in health["interfaces"]
     )
+    assert result["acceptance"]["population_health_target_met"] is True
+    assert result["result"]["maximum_observed_speed"] < 0.3
 
 
 def test_wall_stress_can_be_disabled_only_as_nonphysical_diagnostic(

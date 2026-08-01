@@ -996,6 +996,41 @@ def run(args: argparse.Namespace) -> dict:
         with_sail=with_sail_solid,
         appendage_halfway_links=appendage_halfway_links,
     )
+    maximum_observed_speed = (
+        max(
+            float(level["maximum_speed"])
+            for record in health_records
+            for level in record["levels"]
+            if level["maximum_speed"] is not None
+        )
+        if health_records else None
+    )
+    minimum_observed_density = (
+        min(
+            float(level["minimum_density"])
+            for record in health_records
+            for level in record["levels"]
+            if level["minimum_density"] is not None
+        )
+        if health_records else None
+    )
+    maximum_observed_density = (
+        max(
+            float(level["maximum_density"])
+            for record in health_records
+            for level in record["levels"]
+            if level["maximum_density"] is not None
+        )
+        if health_records else None
+    )
+    population_health_acceptable = (
+        maximum_observed_speed is not None
+        and maximum_observed_speed <= args.maximum_health_speed
+        and minimum_observed_density is not None
+        and minimum_observed_density > 0.0
+        and maximum_observed_density is not None
+        and math.isfinite(maximum_observed_density)
+    )
     admitted = (
         finite
         and maximum_corrected_difference is not None
@@ -1112,6 +1147,7 @@ def run(args: argparse.Namespace) -> dict:
         and reference_error_pct <= 5.0
         and geometry_resolution.absolute_reference_resolved
         and not args.disable_wall_stress
+        and population_health_acceptable
     )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30
@@ -1172,6 +1208,9 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
             "finite": finite,
             "population_health": health_records,
+            "maximum_observed_speed": maximum_observed_speed,
+            "minimum_observed_density": minimum_observed_density,
+            "maximum_observed_density": maximum_observed_density,
             "statistics": {
                 "warmup_steps": args.warmup_steps,
                 "statistics_window_steps_requested": args.statistics_window_steps,
@@ -1224,6 +1263,7 @@ def run(args: argparse.Namespace) -> dict:
             "reference_error_target_met": (
                 reference_error_pct is not None and reference_error_pct <= 5.0
             ),
+            "population_health_target_met": population_health_acceptable,
             "single_grid_candidate": single_grid_candidate,
             "resistance_accuracy_assessed": False,
             "time_convergence_assessed": False,
