@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from pathlib import Path
 
 import torch
 
@@ -37,6 +38,10 @@ class CylinderBFLControlVolumeConfig:
     sponge_strength: float = 0.2
     cv_margin: int = 8
     far_field_mode: str = "non_equilibrium_extrapolation"
+    report_interval: int = 1000
+    checkpoint_interval: int = 0
+    checkpoint_path: str | None = None
+    resume: bool = False
     device: str = "cpu"
 
     @property
@@ -59,6 +64,10 @@ class CylinderBFLControlVolumeConfig:
             "non_equilibrium_extrapolation", "legacy_hard_equilibrium",
         }:
             raise ValueError("unknown far_field_mode")
+        if self.report_interval < 0 or self.checkpoint_interval < 0:
+            raise ValueError("report/checkpoint intervals must be non-negative")
+        if self.resume and not self.checkpoint_path:
+            raise ValueError("resume requires checkpoint_path")
 
 
 def _ramp(step: int, steps: int) -> float:
@@ -144,6 +153,42 @@ def run_cylinder_bfl_control_volume(
     forces: list[float] = []
     bfl_forces: list[float] = []
     lift_forces: list[float] = []
+    start_step = 0
+    checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
+    if config.resume:
+        assert checkpoint is not None
+        state = torch.load(checkpoint, map_location=device, weights_only=True)
+        expected = {
+            "shape_zyx": list(shape), "radius": config.radius,
+            "reynolds": config.reynolds, "lattice_speed": config.lattice_speed,
+        }
+        if state.get("configuration") != expected:
+            raise ValueError("checkpoint configuration does not match cylinder run")
+        f = state["populations"].to(device=device)
+        start_step = int(state["step"])
+        forces = state["drag_force_history"].tolist()
+        bfl_forces = state["bfl_drag_history"].tolist()
+        lift_forces = state["lift_force_history"].tolist()
+        if start_step >= config.steps:
+            raise ValueError("checkpoint already reached or exceeded requested steps")
+
+    def save_checkpoint(step: int) -> None:
+        if checkpoint is None:
+            return
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        torch.save({
+            "schema": "tensorlbm-cylinder-checkpoint-v1",
+            "configuration": {
+                "shape_zyx": list(shape), "radius": config.radius,
+                "reynolds": config.reynolds,
+                "lattice_speed": config.lattice_speed,
+            },
+            "step": step,
+            "populations": f.detach().cpu(),
+            "drag_force_history": torch.tensor(forces, dtype=torch.float64),
+            "bfl_drag_history": torch.tensor(bfl_forces, dtype=torch.float64),
+            "lift_force_history": torch.tensor(lift_forces, dtype=torch.float64),
+        }, checkpoint)
 
     def apply_outer(state: torch.Tensor) -> torch.Tensor:
         if config.far_field_mode == "non_equilibrium_extrapolation":
@@ -159,7 +204,7 @@ def run_cylinder_bfl_control_volume(
             },
         )
 
-    for step in range(1, config.steps + 1):
+    for step in range(start_step + 1, config.steps + 1):
         old = f
         collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
         post = torch.where(solid_q, old, collided)
@@ -189,6 +234,22 @@ def run_cylinder_bfl_control_volume(
             lift_forces.append(float(cv_vector[1].item()))
         if not bool(torch.isfinite(f).all()):
             raise FloatingPointError(f"cylinder benchmark diverged at step {step}")
+        if config.report_interval and step % config.report_interval == 0:
+            recent = forces[-min(len(forces), config.report_interval):]
+            recent_cd = (
+                sum(recent) / len(recent)
+                / (0.5 * config.lattice_speed**2 * (2.0 * config.radius) * config.nz)
+                if recent else math.nan
+            )
+            print(f"cylinder step={step}/{config.steps} recent_Cd={recent_cd:.6f}", flush=True)
+        if (
+            checkpoint is not None and config.checkpoint_interval
+            and step % config.checkpoint_interval == 0
+        ):
+            save_checkpoint(step)
+
+    if checkpoint is not None:
+        save_checkpoint(config.steps)
 
     mean_force = sum(forces) / len(forces)
     mean_bfl = sum(bfl_forces) / len(bfl_forces)
@@ -220,6 +281,8 @@ def run_cylinder_bfl_control_volume(
             "reynolds": config.reynolds, "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
             "far_field_mode": config.far_field_mode, "device": config.device,
+            "resumed_from_step": start_step,
+            "checkpoint_path": str(checkpoint) if checkpoint else None,
         },
         "result": {
             "cd_control_volume": cd, "cd_bfl_link": cd_bfl,
