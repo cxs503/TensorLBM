@@ -1574,6 +1574,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      and maximum eddy viscosity, and their ratios to molecular viscosity.
      Chunk-invariance and input-contract tests pass.  This artifact is required
      before a stable `C_s` candidate can advance to resistance convergence.
+175. The first checkpoint SGS audit covers v19 at step 900 with `C_s=0.05`.
+     Mean eddy/molecular viscosity ratios on levels 0/1/2 are only
+     `0.000295`, `0.002277` and `0.001621`; local maxima are `0.8077`,
+     `0.2110` and `0.0642`.  Thus the baseline coefficient adds negligible
+     domain-mean viscosity while acting locally in the strongest coarse-level
+     gradients.  The immutable audit SHA-256 is
+     `eae9ea0f37f0426601de449d14aaf9ab9bc2ff99796414b138f6557612452f62`.
+     Higher-`C_s` candidates will be compared at matched checkpoint phases.
 
 ## Rejected candidates
 
