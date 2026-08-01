@@ -124,6 +124,12 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--minimum-convective-times", type=float, default=8.0)
     result.add_argument(
+        "--minimum-target-reynolds-convective-times",
+        type=float,
+        default=7.5,
+        help="minimum trajectory duration after collision Re reaches its target",
+    )
+    result.add_argument(
         "--minimum-statistics-convective-times", type=float, default=5.0,
     )
     result.add_argument("--lattice-speed", type=float, default=0.06)
@@ -228,6 +234,7 @@ def run(args: argparse.Namespace) -> dict:
         args.wall_diagnostic_interval,
         args.surface_force_interval,
         args.minimum_convective_times,
+        args.minimum_target_reynolds_convective_times,
         args.minimum_statistics_convective_times,
     ) <= 0:
         raise ValueError("report/diagnostic intervals and duration targets must be positive")
@@ -999,6 +1006,15 @@ def run(args: argparse.Namespace) -> dict:
     wall_activated_records = [
         record for record in step_records if record["wall_fully_activated"]
     ]
+    all_target_reynolds_records = [
+        record for record in step_records
+        if math.isclose(
+            record["collision_resolved_reynolds"],
+            args.resolved_reynolds,
+            rel_tol=1.0e-12,
+            abs_tol=0.0,
+        )
+    ]
     target_reynolds_records = [
         record for record in wall_activated_records
         if math.isclose(
@@ -1084,11 +1100,23 @@ def run(args: argparse.Namespace) -> dict:
     total_convective_times = (
         args.steps * args.lattice_speed / args.hull_length
     )
+    target_reynolds_convective_times = (
+        len(all_target_reynolds_records)
+        * args.lattice_speed
+        / args.hull_length
+    )
+    fully_physical_convective_times = (
+        len(target_reynolds_records)
+        * args.lattice_speed
+        / args.hull_length
+    )
     sampling_convective_times = (
         len(selected_records) * args.lattice_speed / args.hull_length
     )
     duration_acceptable = (
         total_convective_times >= args.minimum_convective_times
+        and target_reynolds_convective_times
+        >= args.minimum_target_reynolds_convective_times
         and sampling_convective_times
         >= args.minimum_statistics_convective_times
     )
@@ -1250,6 +1278,12 @@ def run(args: argparse.Namespace) -> dict:
                 "statistics_window_steps_requested": args.statistics_window_steps,
                 "statistics_window_steps_resolved": len(selected_records),
                 "total_convective_times": total_convective_times,
+                "target_reynolds_convective_times": (
+                    target_reynolds_convective_times
+                ),
+                "fully_physical_convective_times": (
+                    fully_physical_convective_times
+                ),
                 "sampling_convective_times": sampling_convective_times,
                 "mean_resistance_n": mean_resistance,
                 "mean_bfl_plus_wall_stress_n": mean_bfl,
@@ -1293,6 +1327,10 @@ def run(args: argparse.Namespace) -> dict:
             "target_reynolds_steps_assessed": len(target_reynolds_records),
             "target_reynolds_reached": bool(target_reynolds_records),
             "duration_target_met": duration_acceptable,
+            "target_reynolds_duration_target_met": (
+                target_reynolds_convective_times
+                >= args.minimum_target_reynolds_convective_times
+            ),
             "stationarity_target_met": stationarity_acceptable,
             "nested_control_volume_target_met": nested_cv_acceptable,
             "surface_observer_target_met": surface_observer_acceptable,

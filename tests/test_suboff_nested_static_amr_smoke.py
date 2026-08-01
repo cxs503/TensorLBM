@@ -77,6 +77,8 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["acceptance"]["fully_activated_steps_assessed"] == 2
     assert result["acceptance"]["single_grid_candidate"] is False
     assert result["result"]["statistics"]["statistics_window_steps_resolved"] == 2
+    assert result["result"]["statistics"]["target_reynolds_convective_times"] > 0
+    assert result["result"]["statistics"]["fully_physical_convective_times"] > 0
     assert result["result"]["statistics"]["auxiliary_cv_difference_pct"] is not None
     assert result["result"]["statistics"]["surface_observer_difference_pct"] is not None
     assert result["result"]["statistics"]["wall_exchange"]["mean_distance_cells"] > 0.0
@@ -206,6 +208,10 @@ def test_nested_smoke_uses_smooth_resolved_viscosity_continuation(
     assert result["result"]["statistics"]["target_reynolds_steps_available"] == 1
     assert result["acceptance"]["target_reynolds_steps_assessed"] == 1
     assert result["acceptance"]["target_reynolds_reached"] is True
+    assert result["result"]["statistics"]["target_reynolds_convective_times"] == pytest.approx(
+        0.06 / 24.0,
+    )
+    assert result["acceptance"]["target_reynolds_duration_target_met"] is False
     assert result["configuration"]["initial_tau_by_level"][0] > (
         result["configuration"]["tau_by_level"][0]
     )
