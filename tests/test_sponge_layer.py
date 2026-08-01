@@ -143,3 +143,54 @@ def test_production_cumulant_open_boundary_absorbs_acoustic_return() -> None:
     finally:
         torch.set_num_threads(previous_threads)
     assert damped < 0.01 * undamped
+
+
+def test_production_inlet_sponge_absorbs_upstream_acoustic_return() -> None:
+    """Adding x- damping must attenuate a pulse returning from the inlet."""
+    shape = (3, 3, 180)
+    lattice_speed = 0.06
+    x = torch.arange(shape[2], dtype=torch.float32)
+    pulse = 1e-3 * torch.exp(-((x - 135.0) / 6.0).square())
+    rho = (1.0 + pulse).view(1, 1, -1).expand(shape)
+    ux = torch.full(shape, lattice_speed)
+    zero = torch.zeros(shape)
+    initial = equilibrium3d(rho, ux, zero, zero)
+    outlet_only = build_sponge_sigma_3d(
+        shape, width=30, max_strength=0.3, faces=("x+",),
+    )
+    both_streamwise_faces = build_sponge_sigma_3d(
+        shape, width=30, max_strength=0.3, faces=("x-", "x+"),
+    )
+
+    def returned_energy(include_inlet: bool) -> float:
+        f = initial.clone()
+        maximum = 0.0
+        sigma = both_streamwise_faces if include_inlet else outlet_only
+        for step in range(1, 701):
+            f = stream3d(collide_cumulant_d3q19(
+                f, tau=0.500324, C_s=0.05,
+            ))
+            f = non_equilibrium_far_field_bc_3d(
+                f, u_in=lattice_speed, faces=("x-", "x+"),
+            )
+            f = apply_equilibrium_difference_sponge(
+                f, sigma,
+                velocity_target=(lattice_speed, 0.0, 0.0),
+            )
+            f = non_equilibrium_far_field_bc_3d(
+                f, u_in=lattice_speed, faces=("x-", "x+"),
+            )
+            if step >= 450:
+                density, _, _, _ = macroscopic3d(f)
+                energy = float((density[:, :, 90:170] - 1.0).square().mean())
+                maximum = max(maximum, energy)
+        return maximum
+
+    previous_threads = torch.get_num_threads()
+    try:
+        torch.set_num_threads(1)
+        undamped_inlet = returned_energy(False)
+        damped_inlet = returned_energy(True)
+    finally:
+        torch.set_num_threads(previous_threads)
+    assert damped_inlet < 0.01 * undamped_inlet
