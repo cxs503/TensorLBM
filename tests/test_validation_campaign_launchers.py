@@ -146,11 +146,11 @@ def test_four_level_l90_launcher_preserves_physical_cv_and_fails_closed_memory(
 
     assert completed.returncode == 0, completed.stderr
     arguments = completed.stdout.splitlines()
-    assert arguments[arguments.index("--deep-wall-margin") + 1] == "13"
-    assert arguments[arguments.index("--deep-wake-cells") + 1] == "26"
-    assert arguments[arguments.index("--cv-margin") + 1] == "16"
-    assert arguments[arguments.index("--aux-cv-margins") + 1] == "8,24"
-    assert arguments[arguments.index("--memory-bytes-per-cell") + 1] == "943"
+    assert arguments[arguments.index("--deep-wall-margin") + 1] == "7"
+    assert arguments[arguments.index("--deep-wake-cells") + 1] == "14"
+    assert arguments[arguments.index("--cv-margin") + 1] == "8"
+    assert arguments[arguments.index("--aux-cv-margins") + 1] == "4,12"
+    assert arguments[arguments.index("--memory-bytes-per-cell") + 1] == "1100"
     assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
         "1.0"
     )

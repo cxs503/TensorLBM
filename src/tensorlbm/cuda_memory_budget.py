@@ -19,6 +19,19 @@ class CUDAMemoryBudget:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class CUDARuntimeReserve:
+    """Measured free-memory reserve after persistent solver allocation."""
+
+    free_gib: float
+    total_gib: float
+    required_reserve_gib: float
+    admitted: bool
+
+    def to_dict(self) -> dict[str, float | bool]:
+        return asdict(self)
+
+
 def assess_cuda_memory_budget(
     *,
     free_bytes: int,
@@ -70,8 +83,55 @@ def require_cuda_memory_budget(
     return budget
 
 
+def assess_cuda_runtime_reserve(
+    *,
+    free_bytes: int,
+    total_bytes: int,
+    required_reserve_gib: float = 1.0,
+) -> CUDARuntimeReserve:
+    """Assess measured free memory after persistent fields are allocated."""
+    if min(free_bytes, total_bytes) < 0 or free_bytes > total_bytes:
+        raise ValueError("invalid CUDA free/total byte counts")
+    if required_reserve_gib < 0.0:
+        raise ValueError("required CUDA reserve must be non-negative")
+    free_gib = free_bytes / 2**30
+    return CUDARuntimeReserve(
+        free_gib=free_gib,
+        total_gib=total_bytes / 2**30,
+        required_reserve_gib=required_reserve_gib,
+        admitted=free_gib >= required_reserve_gib,
+    )
+
+
+def require_cuda_runtime_reserve(
+    device: torch.device,
+    *,
+    required_reserve_gib: float = 1.0,
+    label: str = "LBM run",
+) -> CUDARuntimeReserve | None:
+    """Reject a run whose actual persistent allocation consumed its reserve."""
+    if device.type != "cuda":
+        return None
+    free_bytes, total_bytes = torch.cuda.mem_get_info(device)
+    reserve = assess_cuda_runtime_reserve(
+        free_bytes=free_bytes,
+        total_bytes=total_bytes,
+        required_reserve_gib=required_reserve_gib,
+    )
+    if not reserve.admitted:
+        raise MemoryError(
+            f"{label} left only {reserve.free_gib:.2f} GiB after persistent "
+            f"allocation; at least {required_reserve_gib:.2f} GiB is required "
+            "for collision and diagnostic temporaries",
+        )
+    return reserve
+
+
 __all__ = [
     "CUDAMemoryBudget",
+    "CUDARuntimeReserve",
     "assess_cuda_memory_budget",
+    "assess_cuda_runtime_reserve",
     "require_cuda_memory_budget",
+    "require_cuda_runtime_reserve",
 ]

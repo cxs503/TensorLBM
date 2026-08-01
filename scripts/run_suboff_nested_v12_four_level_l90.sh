@@ -9,9 +9,11 @@ usage() {
 [[ $# -ge 2 && $# -le 4 ]] || usage
 [[ $1 == L90 ]] || usage
 
-# Four physical levels: L=90 -> 180 -> 360 -> 720.  The deepest block keeps
-# the largest force CV (24 finest cells) plus its streaming-source guard away
-# from the interface.  A one-cell exchange distance is the interpolation
+# Four physical levels: L=90 -> 180 -> 360 -> 720.  The first allocation probe
+# with a 24-cell auxiliary CV consumed 23.6 GiB and was rejected before step
+# one.  This revision keeps a 12-cell auxiliary CV plus its streaming-source
+# guard away from the interface and uses the measured 1100 B/cell coefficient.
+# A one-cell exchange distance is the interpolation
 # floor and has a nominal a-priori y+ estimate of about 694 at L=720 (versus
 # about 1527 measured at L=360 in v20).  The BFL y1+0.5 clearance makes the
 # conservative pre-run range roughly 694--1041, so measured y+ remains a
@@ -20,12 +22,12 @@ usage() {
 export TENSORLBM_CAMPAIGN_GENERATION=${TENSORLBM_CAMPAIGN_GENERATION:-v12}
 export TENSORLBM_INNER_WALL_MARGIN=${TENSORLBM_INNER_WALL_MARGIN:-8}
 export TENSORLBM_INNER_WAKE_CELLS=${TENSORLBM_INNER_WAKE_CELLS:-12}
-export TENSORLBM_DEEP_WALL_MARGIN=${TENSORLBM_DEEP_WALL_MARGIN:-13}
-export TENSORLBM_DEEP_WAKE_CELLS=${TENSORLBM_DEEP_WAKE_CELLS:-26}
-export TENSORLBM_CV_MARGIN=${TENSORLBM_CV_MARGIN:-16}
-export TENSORLBM_AUX_CV_MARGINS=${TENSORLBM_AUX_CV_MARGINS:-8,24}
+export TENSORLBM_DEEP_WALL_MARGIN=${TENSORLBM_DEEP_WALL_MARGIN:-7}
+export TENSORLBM_DEEP_WAKE_CELLS=${TENSORLBM_DEEP_WAKE_CELLS:-14}
+export TENSORLBM_CV_MARGIN=${TENSORLBM_CV_MARGIN:-8}
+export TENSORLBM_AUX_CV_MARGINS=${TENSORLBM_AUX_CV_MARGINS:-4,12}
 export TENSORLBM_STRESS_EXCHANGE_DISTANCE=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1.0}
-export TENSORLBM_MEMORY_BYTES_PER_CELL=${TENSORLBM_MEMORY_BYTES_PER_CELL:-943}
+export TENSORLBM_MEMORY_BYTES_PER_CELL=${TENSORLBM_MEMORY_BYTES_PER_CELL:-1100}
 export TENSORLBM_REGULARIZE_RESTRICTION=${TENSORLBM_REGULARIZE_RESTRICTION:-1}
 export TENSORLBM_REGULARIZE_PROLONGATION=${TENSORLBM_REGULARIZE_PROLONGATION:-0}
 export TENSORLBM_GHOST_INTERPOLATION=${TENSORLBM_GHOST_INTERPOLATION:-trilinear}
