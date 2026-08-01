@@ -22,7 +22,12 @@
     "remote_log": "results/amr_campaign_20260801/suboff-nested-v15-l90-rejected-slow-re-step2520.log",
     "remote_log_sha256": "20c7b745e2c3451fb92af53a20a33bd137b92390883e598700aa46136ea5dd4f",
     "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v15-l90-slow-re-ramp-3600.ckpt",
-    "remote_checkpoint_sha256": "23ef5303daf9453745c392dec467cfea1468d7c62988a519a5f146ad5a5270dd"
+    "remote_checkpoint_sha256": "23ef5303daf9453745c392dec467cfea1468d7c62988a519a5f146ad5a5270dd",
+    "reproduction_log": "results/amr_campaign_20260801/suboff-nested-v19-l90-rejected-slow-re-reproduction-step2520.log",
+    "reproduction_log_sha256": "476a819d898590c21d048ce1543618962fae7900697d6e132d8bbbc1dc32e62d",
+    "reproduction_checkpoint_sha256": "4966bf7cb81819a4058595c6bdd024a87b807f3b9f69aec2ae843964fc820d43",
+    "reproduction_inner_maximum_applied_correction_fraction": 0.00013011044939048588
   },
+  "reproduced": true,
   "conclusion": "A six-times longer Reynolds continuation delays but does not remove the high-Re instability. It is a useful startup control, not a production stability remedy."
 }
