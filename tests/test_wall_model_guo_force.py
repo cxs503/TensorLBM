@@ -6,6 +6,7 @@ import torch
 
 from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q27 import C as C27
+from tensorlbm.wall_function_common import _apply_body_force
 from tensorlbm.wall_model import guo_body_force_d3q19, guo_body_force_d3q27
 
 
@@ -62,3 +63,28 @@ def test_mass_identity_covers_nonorthogonal_velocity_and_force() -> None:
 
     assert float(source.sum()) == pytest.approx(0.0, abs=1.0e-19)
 
+
+@pytest.mark.parametrize(("q", "lattice"), ((19, "D3Q19"), (27, "D3Q27")))
+def test_solver_agnostic_wall_source_uses_the_same_moment_contract(
+    q: int,
+    lattice: str,
+) -> None:
+    shape = (2, 2, 3)
+    dtype = torch.float64
+    state = torch.zeros((q, *shape), dtype=dtype)
+    ux = torch.full(shape, 0.06, dtype=dtype)
+    uy = torch.full(shape, -0.01, dtype=dtype)
+    uz = torch.full(shape, 0.02, dtype=dtype)
+    fx = torch.full(shape, -2.0e-4, dtype=dtype)
+    fy = torch.full(shape, 3.0e-5, dtype=dtype)
+    fz = torch.full(shape, -1.0e-5, dtype=dtype)
+
+    source = _apply_body_force(
+        state, fx, fy, fz, lattice,
+        ux=ux, uy=uy, uz=uz,
+    )
+
+    torch.testing.assert_close(
+        source.sum(dim=0), torch.zeros(shape, dtype=dtype),
+        rtol=0.0, atol=2.0e-18,
+    )

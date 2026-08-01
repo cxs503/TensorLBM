@@ -172,7 +172,19 @@ class LBMStepExecutor:
         self._macroscopic_fn = macro_fn
         self._equilibrium_fn = eq_fn
         self._C = C.to(device)
-        self._W = W.to(device).to(dtype)
+        del W
+        weights_by_squared_speed = (
+            (1.0 / 3.0, 1.0 / 18.0, 1.0 / 36.0)
+            if self.Q == 19 else (
+                8.0 / 27.0, 2.0 / 27.0, 1.0 / 54.0, 1.0 / 216.0,
+            )
+        )
+        speed_weights = torch.tensor(
+            weights_by_squared_speed, device=device, dtype=dtype,
+        )
+        self._W = speed_weights[
+            self._C.square().sum(dim=1).to(torch.long)
+        ]
         self._OPPOSITE = OPPOSITE.to(device)
 
         # Pre-compute float lattice vectors and views (avoid per-step alloc)
@@ -450,7 +462,7 @@ class LBMStepExecutor:
         Same formula as
         :func:`tensorlbm.wall_function_common._apply_body_force`::
 
-            forcing = w * (1 + c·u/cs²) * (c·F) / cs²
+            forcing = w * ((c·F-u·F)/cs² + (c·u)(c·F)/cs⁴)
             f_new = f + forcing
 
         but reuses pre-computed ``(ux, uy, uz)`` instead of calling
@@ -468,14 +480,17 @@ class LBMStepExecutor:
         self.feq.addcmul_(self._cy_view, uy.unsqueeze(0))
         self.feq.addcmul_(self._cz_view, uz.unsqueeze(0))
 
-        # forcing = w * (1 + cu_u/cs²) * cu / cs²
-        # Write into out_stream as scratch, then add to f in-place
+        # Mass-conservative post-collision source.  Write into out_stream as
+        # scratch, then add to f in-place.
         scratch = self.out_stream
-        torch.mul(self.feq, 1.0 / cs2, out=scratch)  # cu_u / cs²
-        scratch.add_(1.0)  # 1 + cu_u / cs²
-        scratch.mul_(self._tmp_f)  # (1 + cu_u/cs²) * cu
-        scratch.mul_(self._w_view)  # w * (1 + cu_u/cs²) * cu
-        scratch.mul_(1.0 / cs2)  # w * (1 + cu_u/cs²) * cu / cs²
+        torch.mul(self.feq, self._tmp_f, out=scratch)
+        scratch.mul_(1.0 / cs2**2)
+        scratch.add_(self._tmp_f, alpha=1.0 / cs2)
+        torch.mul(ux, fx, out=self.u_mag)
+        self.u_mag.addcmul_(uy, fy)
+        self.u_mag.addcmul_(uz, fz)
+        scratch.sub_(self.u_mag.unsqueeze(0), alpha=1.0 / cs2)
+        scratch.mul_(self._w_view)
 
         # f += forcing  [in-place if f is not aliased with scratch]
         if f.data_ptr() == scratch.data_ptr():

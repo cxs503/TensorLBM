@@ -18,10 +18,16 @@
     "result": "pass"
   },
   "regression_tests": {
-    "command": ".venv/bin/python -m pytest -q tests/test_wall_model_guo_force.py tests/test_wall_model_force_closure.py tests/test_flat_plate_wall_model.py tests/test_nested_static_block_wall_force.py tests/test_spalding_wall_model.py",
-    "passed": 20,
+    "command": "wall-model moment/closure suites plus solver-agnostic wall_function_common and LBMStepExecutor regression suites",
+    "passed": 74,
     "failed": 0
   },
+  "corrected_common_paths": [
+    "wall_model.guobody_force_d3q19/d3q27",
+    "wall_function_common._apply_body_force",
+    "LBMStepExecutor._apply_body_force_inplace",
+    "legacy D3Q27 wall_function_d3q27 source"
+  ],
   "campaign_policy": {
     "pre_correction_resistance_results": "stability and diagnostic evidence only; not eligible for physical promotion",
     "checkpoint_without_scheme": "rejected instead of silently resuming with changed wall physics",

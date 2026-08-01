@@ -240,32 +240,37 @@ def _apply_body_force(
 
     This is a **lattice-agnostic** helper: it dispatches to the correct
     velocity vectors (``C``, ``W``) for D3Q19 or D3Q27.  The Guo forcing
-    term is ``w_i * 3 * (c_i · F)`` added to the distribution.
+    term has zero zeroth moment and first moment exactly equal to ``F``.
 
     If *ux*, *uy*, *uz* are provided, they are used directly instead of
     recomputing macroscopic fields from *f*.
     """
     if lattice == "D3Q19":
-        from .d3q19 import C as C_LAT, W as W_LAT
+        from .d3q19 import C as C_LAT
         q = 19
+        weights_by_squared_speed = (1.0 / 3.0, 1.0 / 18.0, 1.0 / 36.0)
     elif lattice == "D3Q27":
-        from .d3q27 import C as C_LAT, W as W_LAT
+        from .d3q27 import C as C_LAT
         q = 27
+        weights_by_squared_speed = (
+            8.0 / 27.0, 2.0 / 27.0, 1.0 / 54.0, 1.0 / 216.0,
+        )
     else:
         raise ValueError(f"Unsupported lattice: {lattice!r}")
 
     device = f.device
-    c = C_LAT.to(device).float()
-    w = W_LAT.to(device).float()
+    c = C_LAT.to(device=device, dtype=f.dtype)
+    speed_weights = torch.tensor(
+        weights_by_squared_speed, device=device, dtype=f.dtype,
+    )
+    w = speed_weights[c.square().sum(dim=1).to(torch.long)]
     cx = c[:, 0].view(q, 1, 1, 1)
     cy = c[:, 1].view(q, 1, 1, 1)
     cz = c[:, 2].view(q, 1, 1, 1)
     w_view = w.view(q, 1, 1, 1)
 
-    # Full Guo forcing: w_i * (1 + c_i·u/c_s²) * (c_i·F) / c_s²
-    # c_s² = 1/3 for both D3Q19 and D3Q27, so 1/c_s² = 3.
-    # The (1 + c·u/cs²) velocity-correction term is essential for
-    # correct force application at non-trivial velocities.
+    # Mass-conservative post-collision source.  The -u·F term is required
+    # for a zero zeroth moment at non-trivial velocities.
     cs2 = 1.0 / 3.0
     cu = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
     # Need velocity field for the correction term; use pre-computed if available.
@@ -278,7 +283,10 @@ def _apply_body_force(
             from .d3q27 import macroscopic27 as _macro
         _rho, _ux, _uy, _uz = _macro(f)
     cu_u = cx * _ux.unsqueeze(0) + cy * _uy.unsqueeze(0) + cz * _uz.unsqueeze(0)
-    forcing = w_view * (1.0 + cu_u / cs2) * cu / cs2
+    u_dot_force = (_ux * fx + _uy * fy + _uz * fz).unsqueeze(0)
+    forcing = w_view * (
+        (cu - u_dot_force) / cs2 + cu_u * cu / cs2**2
+    )
     return f + forcing
 
 
