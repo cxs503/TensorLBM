@@ -21,6 +21,7 @@ from tensorlbm.advanced_collision_contract import (
 )
 from tensorlbm.cumulant import (
     collide_cumulant_d3q19,
+    gradient_sgs_effective_tau_d3q19,
     smagorinsky_effective_tau_d3q19,
     summarize_smagorinsky_effective_tau_d3q19,
 )
@@ -194,6 +195,79 @@ class TestRelaxationBehaviour:
         out = collide_cumulant_d3q19(f_pert, tau=0.55, C_s=0.1)
         assert torch.isfinite(out).all()
         assert out.shape == f_pert.shape
+
+    @pytest.mark.parametrize(
+        ("coefficient_name", "coefficient"),
+        (("C_w", 0.5), ("C_v", 0.025)),
+    )
+    def test_gradient_sgs_preserves_mass_and_momentum(
+        self, coefficient_name: str, coefficient: float,
+    ) -> None:
+        z, y, x = torch.meshgrid(
+            torch.arange(4, dtype=torch.float64),
+            torch.arange(5, dtype=torch.float64),
+            torch.arange(6, dtype=torch.float64),
+            indexing="ij",
+        )
+        rho = torch.ones_like(x, dtype=torch.float64)
+        ux = 0.01 + 0.001 * y
+        uy = -0.005 + 0.0005 * z
+        uz = 0.0003 * x
+        populations = equilibrium3d(rho, ux, uy, uz)
+        populations[1] += 1.0e-4
+        populations[2] -= 1.0e-4
+
+        output = collide_cumulant_d3q19(
+            populations, tau=0.55, **{coefficient_name: coefficient},
+        )
+        before = macroscopic3d(populations)
+        after = macroscopic3d(output)
+
+        assert torch.isfinite(output).all()
+        for expected, actual in zip(before, after, strict=True):
+            torch.testing.assert_close(actual, expected, atol=2.0e-8, rtol=0.0)
+
+    @pytest.mark.parametrize(
+        ("model", "coefficient", "coefficient_name"),
+        (("wale", 0.5, "C_w"), ("vreman", 0.025, "C_v")),
+    )
+    def test_gradient_sgs_diagnostic_matches_collision_parameterisation(
+        self, model: str, coefficient: float, coefficient_name: str,
+    ) -> None:
+        z, y, x = torch.meshgrid(
+            torch.arange(4, dtype=torch.float64),
+            torch.arange(5, dtype=torch.float64),
+            torch.arange(6, dtype=torch.float64),
+            indexing="ij",
+        )
+        rho = torch.ones_like(x, dtype=torch.float64)
+        populations = equilibrium3d(
+            rho,
+            0.01 + 0.001 * y,
+            -0.005 + 0.0005 * z,
+            0.0003 * x,
+        )
+        effective = gradient_sgs_effective_tau_d3q19(
+            populations, tau=0.55, model=model, coefficient=coefficient,
+        )
+
+        assert effective.shape == rho.shape
+        assert bool(torch.isfinite(effective).all())
+        assert bool((effective >= 0.55).all())
+        assert bool((effective > 0.55).any())
+        output = collide_cumulant_d3q19(
+            populations, tau=0.55, **{coefficient_name: coefficient},
+        )
+        assert torch.isfinite(output).all()
+
+    def test_only_one_sgs_model_can_be_active(self) -> None:
+        rho = torch.ones((3, 3, 3))
+        zero = torch.zeros_like(rho)
+        populations = equilibrium3d(rho, zero, zero, zero)
+        with pytest.raises(ValueError, match="only one"):
+            collide_cumulant_d3q19(
+                populations, tau=0.55, C_s=0.1, C_w=0.5,
+            )
 
     def test_smagorinsky_effective_tau_is_explicit(self) -> None:
         rho = torch.ones((2, 3, 4))

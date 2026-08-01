@@ -89,7 +89,6 @@ def collide_cumulant_d2q9(
     Returns:
         Post-collision distribution tensor of shape ``(9, ny, nx)``.
     """
-    device = f.device
     omega = 1.0 / tau
     cs2 = 1.0 / 3.0
 
@@ -361,6 +360,8 @@ def collide_cumulant_d3q19(
     omega_odd: float = 1.0,
     omega_even: float = 1.0,
     C_s: float = 0.0,
+    C_w: float = 0.0,
+    C_v: float = 0.0,
 ) -> torch.Tensor:
     """Cumulant LBM collision step for the D3Q19 lattice.
 
@@ -394,11 +395,24 @@ def collide_cumulant_d3q19(
         omega_b:    Bulk viscosity rate (default 1.0).
         omega_odd:  Rate for odd-order ghost modes (default 1.0).
         omega_even: Rate for even-order ghost modes ≥ 4 (default 1.0).
-        C_s:        Smagorinsky constant (0 = no LES, 0.1 = typical).
+        C_s:        Smagorinsky constant (0 = disabled, 0.1 = typical).
+        C_w:        WALE constant (0 = disabled, 0.5 = typical).
+        C_v:        Vreman constant (0 = disabled, 0.025 = typical).
+
+        At most one SGS coefficient may be non-zero.  WALE and Vreman use
+        velocity-gradient invariants and are useful alternatives when the
+        non-equilibrium-stress Smagorinsky closure is too dissipative near a
+        wall.  All three closures alter only the local shear relaxation time;
+        the cumulant/Hermite reconstruction and conserved moments are shared.
 
     Returns:
         Post-collision distribution tensor, shape ``(19, nz, ny, nx)``.
     """
+    if min(C_s, C_w, C_v) < 0.0:
+        raise ValueError("SGS coefficients must be non-negative")
+    if sum(value > 0.0 for value in (C_s, C_w, C_v)) > 1:
+        raise ValueError("only one SGS model may be active")
+
     device = f.device
     cs2 = 1.0 / 3.0
 
@@ -414,7 +428,7 @@ def collide_cumulant_d3q19(
     # ---- Strain rate tensor from fneq (2nd Hermite moment) ------------
     # Π_αβ = Σ_i c_iα c_iβ fneq_i
     from .d3q19 import C as C19  # noqa: PLC0415
-    c = C19.to(device).float()   # (19, 3)
+    c = C19.to(device=device, dtype=f.dtype)  # (19, 3)
     cx = c[:, 0].view(19, 1, 1, 1)
     cy = c[:, 1].view(19, 1, 1, 1)
     cz = c[:, 2].view(19, 1, 1, 1)
@@ -426,8 +440,22 @@ def collide_cumulant_d3q19(
     pi_xz = (cx * cz * fneq).sum(0)
     pi_yz = (cy * cz * fneq).sum(0)
 
-    # ---- Relaxation rate: scalar or per-cell Smagorinsky LES ----------
-    if C_s > 0.0:
+    # ---- Relaxation rate: scalar or per-cell SGS LES ------------------
+    if C_w > 0.0:
+        from .turbulence import _nu_t_to_tau_eff, _wale_nu_t_3d  # noqa: PLC0415
+
+        tau_eff = _nu_t_to_tau_eff(
+            tau, _wale_nu_t_3d(ux, uy, uz, C_w),
+        )
+        omega = 1.0 / tau_eff
+    elif C_v > 0.0:
+        from .turbulence import _nu_t_to_tau_eff, _vreman_nu_t_3d  # noqa: PLC0415
+
+        tau_eff = _nu_t_to_tau_eff(
+            tau, _vreman_nu_t_3d(ux, uy, uz, C_v),
+        )
+        omega = 1.0 / tau_eff
+    elif C_s > 0.0:
         # Smagorinsky: tau_eff = 0.5*(tau + sqrt(tau² + 18*C_s²*|Π|/ρ))
         pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2
                    + 2.0*(pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
@@ -480,6 +508,43 @@ def collide_cumulant_d3q19(
     fneq_ho_s = (1.0 - omega_even) * fneq_ho
 
     return feq + fneq_reg + fneq_ho_s
+
+
+def gradient_sgs_effective_tau_d3q19(
+    f: torch.Tensor,
+    *,
+    tau: float,
+    model: str,
+    coefficient: float,
+) -> torch.Tensor:
+    """Return the local WALE or Vreman relaxation time used by collision.
+
+    The function exposes the production formula for audits and regression
+    tests.  Unlike the stress-local Smagorinsky diagnostic, gradient models
+    require a spatially coherent three-dimensional field; callers must not
+    flatten or independently chunk the domain without one-cell halos.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    if tau <= 0.5:
+        raise ValueError("tau must be greater than 0.5")
+    if coefficient < 0.0:
+        raise ValueError("coefficient must be non-negative")
+    if model not in {"wale", "vreman"}:
+        raise ValueError("model must be wale or vreman")
+    rho, ux, uy, uz = macroscopic3d(f)
+    del rho
+    from .turbulence import (  # noqa: PLC0415
+        _nu_t_to_tau_eff,
+        _vreman_nu_t_3d,
+        _wale_nu_t_3d,
+    )
+
+    if model == "wale":
+        nu_t = _wale_nu_t_3d(ux, uy, uz, coefficient)
+    else:
+        nu_t = _vreman_nu_t_3d(ux, uy, uz, coefficient)
+    return _nu_t_to_tau_eff(tau, nu_t)
 
 
 def smagorinsky_effective_tau_d3q19(
@@ -583,6 +648,7 @@ __all__ = [
     "collide_cumulant_d2q9",
     "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
+    "gradient_sgs_effective_tau_d3q19",
     "smagorinsky_effective_tau_d3q19",
     "summarize_smagorinsky_effective_tau_d3q19",
 ]
