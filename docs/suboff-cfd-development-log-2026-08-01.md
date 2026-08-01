@@ -1263,6 +1263,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      active width-four L90 experiment remains a stability-only A/B and cannot
      be promoted as force evidence.  The guard, planning provenance and public
      API are covered by 69 focused AMR/SUBOFF regression tests.
+142. The width-four, strength-0.2 kinetic-only L90 A/B is rejected at step
+     1560.  Against 26 exactly aligned health records, peak speed is only 3.64%
+     below the unfiltered baseline (`0.18367` versus `0.19061`), while the
+     candidate already reaches a negative minimum population
+     (`-4.4671e-5`) and triggers collision positivity limiting.  The exact-PID
+     job was stopped and its immutable log SHA-256 is
+     `73d862e4b6b925f555931def2bcf6f6c91106f3b743e85c667f6eb58f1541d2e`.
+     A force-admissible width-two, strength-1.0 candidate is now running on the
+     released GPU after passing the uniform-fine pulse benchmark; it preserves
+     mass and changes interface density RMS by 0.24%, so it is a materially
+     stronger but still hydrodynamically audited test.
 
 ## Rejected candidates
 
