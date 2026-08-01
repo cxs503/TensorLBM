@@ -71,6 +71,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     and low-frequency pressure excursions.  Non-equilibrium reconstruction is
     therefore retained as a cleaner open boundary, not claimed as a cure for
     an under-sized wake domain.
+15. Uniform L160 in the same short-domain proportions also failed, averaging
+    159.22 N (82.18% high) with 11.70% block drift.  Its 75.81 N wall friction
+    is only about 3.3% below the ITTC context value (~78.4 N), versus the L120
+    run's ~14% deficit.  The dominant error is pressure resistance (83.42 N),
+    not a need to tune friction upward.  The CV versus BFL-total gap also fell
+    from about 43 N at L120 to 12.9 N at L160, indicating spatial convergence
+    of the curved moving-slip boundary diagnostic even though the short wake
+    domain remains physically unacceptable.
 
 ## Rejected candidates
 
