@@ -26,6 +26,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--ramp-steps", type=int, default=500)
     p.add_argument("--sponge-width", type=int, default=16)
     p.add_argument("--sponge-strength", type=float, default=0.2)
+    p.add_argument("--sponge-inlet", action="store_true")
     p.add_argument("--cv-margin", type=int, default=5)
     p.add_argument("--report-interval", type=int, default=500)
     p.add_argument("--checkpoint-interval", type=int, default=500)
@@ -47,7 +48,8 @@ def main() -> None:
         reynolds=args.reynolds, lattice_speed=args.lattice_speed,
         steps=args.steps, warmup_steps=args.warmup_steps,
         ramp_steps=args.ramp_steps, sponge_width=args.sponge_width,
-        sponge_strength=args.sponge_strength, cv_margin=args.cv_margin,
+        sponge_strength=args.sponge_strength, sponge_inlet=args.sponge_inlet,
+        cv_margin=args.cv_margin,
         report_interval=args.report_interval,
         checkpoint_interval=args.checkpoint_interval,
         checkpoint_path=args.checkpoint, resume=args.resume,
