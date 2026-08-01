@@ -22,6 +22,7 @@ from tensorlbm.advanced_collision_contract import (
 from tensorlbm.cumulant import (
     collide_cumulant_d3q19,
     smagorinsky_effective_tau_d3q19,
+    summarize_smagorinsky_effective_tau_d3q19,
 )
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 
@@ -225,3 +226,22 @@ class TestRelaxationBehaviour:
             smagorinsky_effective_tau_d3q19(
                 torch.zeros((19, 2, 3, 4)), tau=0.5, C_s=0.1,
             )
+
+    def test_smagorinsky_tau_summary_is_chunk_invariant(self) -> None:
+        rho = torch.ones((2, 3, 4), dtype=torch.float64)
+        zero = torch.zeros_like(rho)
+        populations = equilibrium3d(rho, zero, zero, zero)
+        populations[1] += 1.0e-3
+        populations[2] -= 1.0e-3
+
+        small = summarize_smagorinsky_effective_tau_d3q19(
+            populations, tau=0.55, C_s=0.1, chunk_cells=5,
+        )
+        large = summarize_smagorinsky_effective_tau_d3q19(
+            populations, tau=0.55, C_s=0.1, chunk_cells=100,
+        )
+
+        assert small == pytest.approx(large)
+        assert small["cell_count"] == 24
+        assert small["effective_tau_minimum"] >= 0.55
+        assert small["maximum_eddy_to_molecular_viscosity_ratio"] > 0.0

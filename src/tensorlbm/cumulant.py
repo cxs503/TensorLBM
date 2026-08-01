@@ -51,6 +51,8 @@ Lycett-Brown, D., & Luo, K. H. (2016).
 """
 from __future__ import annotations
 
+import math
+
 import torch
 
 from .d2q9 import equilibrium, macroscopic
@@ -528,9 +530,59 @@ def smagorinsky_effective_tau_d3q19(
     )
 
 
+def summarize_smagorinsky_effective_tau_d3q19(
+    f: torch.Tensor,
+    *,
+    tau: float,
+    C_s: float,
+    chunk_cells: int = 262_144,
+) -> dict[str, float]:
+    """Summarize local SGS relaxation in bounded-memory spatial chunks."""
+    if chunk_cells < 1:
+        raise ValueError("chunk_cells must be positive")
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    flat = f.reshape(19, -1)
+    count = flat.shape[1]
+    minimum = math.inf
+    maximum = -math.inf
+    total = 0.0
+    for start in range(0, count, chunk_cells):
+        stop = min(start + chunk_cells, count)
+        effective = smagorinsky_effective_tau_d3q19(
+            flat[:, start:stop].reshape(19, 1, 1, stop - start),
+            tau=tau,
+            C_s=C_s,
+        )
+        minimum = min(minimum, float(effective.min().item()))
+        maximum = max(maximum, float(effective.max().item()))
+        total += float(effective.sum(dtype=torch.float64).item())
+    mean = total / count
+    molecular_viscosity = (tau - 0.5) / 3.0
+    mean_eddy_viscosity = max(0.0, (mean - tau) / 3.0)
+    maximum_eddy_viscosity = max(0.0, (maximum - tau) / 3.0)
+    return {
+        "cell_count": float(count),
+        "molecular_tau": tau,
+        "effective_tau_minimum": minimum,
+        "effective_tau_mean": mean,
+        "effective_tau_maximum": maximum,
+        "molecular_kinematic_viscosity": molecular_viscosity,
+        "mean_eddy_kinematic_viscosity": mean_eddy_viscosity,
+        "maximum_eddy_kinematic_viscosity": maximum_eddy_viscosity,
+        "mean_eddy_to_molecular_viscosity_ratio": (
+            mean_eddy_viscosity / molecular_viscosity
+        ),
+        "maximum_eddy_to_molecular_viscosity_ratio": (
+            maximum_eddy_viscosity / molecular_viscosity
+        ),
+    }
+
+
 __all__ = [
     "collide_cumulant_d2q9",
     "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
     "smagorinsky_effective_tau_d3q19",
+    "summarize_smagorinsky_effective_tau_d3q19",
 ]
