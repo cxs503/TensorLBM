@@ -215,6 +215,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     invariant exchange-height/plate-length ratio.  Existing v2 runs are
     retained as development evidence but fail formal provenance rather than
     being retroactively relabelled.
+35. The 25D-wide D24 cylinder completed 60,000 steps.  Its full post-30k mean
+    `Cd=1.38966` is 4.49% high, but is rejected because eight blocks rise from
+    1.242 to 1.444 (13.55% trend); `St=0.17300` is 5.49% high.  A separately
+    audited final-15k window is stationary (0.911% range, 0.746% trend) but
+    settles at `Cd=1.44097` (8.34% high) and `St=0.17521` (6.83% high, only
+    6.57 cycles).  Thus startup-biased full-window averaging cannot be used to
+    claim drag accuracy.  CV/BFL disagreement is only 0.00053% and density is
+    stable; the queued D32 run tests spatial resolution at the same 25D width.
 
 ## Rejected candidates
 
