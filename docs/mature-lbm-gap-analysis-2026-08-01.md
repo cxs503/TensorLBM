@@ -27,7 +27,7 @@ reference.
 | concern | former path | mature direction | TensorLBM common module |
 |---|---|---|---|
 | curved wall | BFL, but startup blended with streamed solid data | full BFL at all times | `bfl_d3q19.py`, corrected ramp in `wall_model.py` |
-| wall model | first-cell log/Reichardt stress imposed as Guo force | velocity sampled at exchange location; unified Spalding law; non-equilibrium assimilation | `spalding_wall_model.py` |
+| wall model | first-cell log/Reichardt stress; former velocity correction had a nonzero force-source zeroth moment | velocity sampled at exchange location; unified Spalding law; mass-conservative post-collision traction source | `wall_model.py`, `spalding_wall_model.py` |
 | LES | constant Smagorinsky default | near-wall WALE WMLES candidate | existing `collide_wale_mrt3d`, exposed by runners |
 | open boundary | direct distribution-to-equilibrium blend | equilibrium-difference absorbing source with smooth strength | `sponge_layer.py` |
 | force | link force alone | independent momentum balance | `control_volume_force.py` |
@@ -36,7 +36,7 @@ reference.
 
 ## Mandatory validation ladder
 
-1. Manufactured Spalding states and equilibrium fixed points.
+1. Manufactured wall-law states, plus zero-mass/exact-momentum force-source moments on D3Q19 and D3Q27.
 2. Laminar Couette/Poiseuille wall stress.
 3. Turbulent periodic channel mean profile and friction Reynolds number.
 4. Cylinder and sphere drag with BFL link force agreeing with an interior
