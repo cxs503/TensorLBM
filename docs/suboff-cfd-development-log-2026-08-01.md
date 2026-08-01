@@ -695,7 +695,7 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     test proves laboratory-frame closure to 1e-11.  SUBOFF advances to schema
     v8 and flat-plate output to v4 with `link_force_frame` in provenance.  The
     just-started v7 L90/L150 jobs were stopped before their first report and
-    are superseded; the original v6 L120 continues naturally.  Fifty focused
+    are superseded; the original v6 L120 continues naturally.  Fifty-one focused
     BFL, wall, flat-plate, AMR, convergence and launcher tests pass.
 85. Remote v8 preflight imports the intended checkout explicitly, then the
     corrected campaign starts cleanly: L90 is PID 1446335 on physical GPU1,
