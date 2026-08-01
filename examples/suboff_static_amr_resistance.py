@@ -248,6 +248,8 @@ def run(args: argparse.Namespace) -> dict:
     started = time.time()
     history: list[dict] = []
     recent_forces: list[float] = []
+    recent_bfl_pressure: list[float] = []
+    recent_wall_shear: list[float] = []
     for current_step in range(1, args.steps + 1):
         force_samples.clear()
         ledger = amr.step(advance)
@@ -257,8 +259,12 @@ def run(args: argparse.Namespace) -> dict:
         resistance = cv_force * scale
         bfl_resistance = (pressure + friction) * scale
         recent_forces.append(resistance)
+        recent_bfl_pressure.append(pressure * scale)
+        recent_wall_shear.append(friction * scale)
         if len(recent_forces) > args.average_window:
             recent_forces.pop(0)
+            recent_bfl_pressure.pop(0)
+            recent_wall_shear.pop(0)
         if not bool(torch.isfinite(amr.coarse_f).all()) or not bool(torch.isfinite(amr.fine_f).all()):
             raise FloatingPointError(f"non-finite population at step {current_step}")
         if current_step % args.report_interval == 0 or current_step == args.steps:
@@ -267,6 +273,8 @@ def run(args: argparse.Namespace) -> dict:
                 "step": current_step,
                 "instantaneous_resistance_n": resistance,
                 "window_resistance_n": mean_force,
+                "instantaneous_bfl_pressure_n": pressure * scale,
+                "instantaneous_wall_shear_n": friction * scale,
                 "instantaneous_bfl_link_plus_wall_stress_n": bfl_resistance,
                 "instantaneous_force_observer_difference_n": (
                     bfl_resistance - resistance
@@ -317,6 +325,12 @@ def run(args: argparse.Namespace) -> dict:
         "geometry": fine_geometry | {"appendage_halfway_links": appendage_links},
         "result": {
             "mean_resistance_n": mean_force,
+            "mean_bfl_pressure_n_diagnostic": (
+                sum(recent_bfl_pressure) / len(recent_bfl_pressure)
+            ),
+            "mean_wall_shear_n_diagnostic": (
+                sum(recent_wall_shear) / len(recent_wall_shear)
+            ),
             "experimental_resistance_n": point.resistance_n,
             "error_pct": abs(mean_force - point.resistance_n) / point.resistance_n * 100.0,
             "coarse_density_min_max": [float(rho_c.min()), float(rho_c.max())],
