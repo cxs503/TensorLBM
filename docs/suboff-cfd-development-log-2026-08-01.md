@@ -361,6 +361,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     passes.  The old 5000-step state remains negative evidence and is not
     resumed.  A clean R15 8000-step run uses explicit scaled parameters on the
     otherwise idle GPU 0 instead.
+50. The clean R15 launch revealed that physical GPU 0 was not actually idle:
+    two unrelated processes occupied about 11 GiB, and the new run exited on
+    its own allocation failure without touching them.  A reusable CUDA memory
+    budget gate now compares an empirical peak with live free memory plus a
+    configurable reserve before allocating solver populations.  Sphere uses
+    1000 bytes/cell (slightly above the measured R15 coefficient), while static
+    AMR uses its existing 943 bytes/allocated-cell estimate; both reserve an
+    additional 1 GiB and persist the preflight numbers in results.  Ten focused
+    memory/sphere/static-AMR tests pass.  R15 waits for a genuinely free safe
+    device instead of competing with another workload.
 
 ## Rejected candidates
 
