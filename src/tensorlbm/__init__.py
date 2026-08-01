@@ -682,6 +682,11 @@ from .cylinder_bfl_control_volume import (
     estimate_strouhal_from_lift,
     run_cylinder_bfl_control_volume,
 )
+from .flat_plate_wall_model import (
+    FlatPlateWallModelConfig,
+    ittc_1957_friction_coefficient,
+    run_flat_plate_wall_model,
+)
 
 __all__ = [
     "__version__",
@@ -732,6 +737,9 @@ __all__ = [
     "CylinderBFLControlVolumeConfig",
     "estimate_strouhal_from_lift",
     "run_cylinder_bfl_control_volume",
+    "FlatPlateWallModelConfig",
+    "ittc_1957_friction_coefficient",
+    "run_flat_plate_wall_model",
     # D2Q9 lattice
     "C",
     "W",

@@ -600,7 +600,17 @@ def run_case(args: argparse.Namespace) -> dict:
             ),
             "experimental_ct": experimental_ct,
             "predicted_ct": predicted_ct,
+            "predicted_friction_cf": (
+                f_final * force_scale / dynamic_pressure_area
+            ),
+            "predicted_pressure_ct": (
+                p_final * force_scale / dynamic_pressure_area
+            ),
             "ittc_1957_cf_context_only": ittc_cf,
+            "wall_model_vs_ittc_friction_error_pct": (
+                abs(f_final * force_scale / dynamic_pressure_area - ittc_cf)
+                / ittc_cf * 100.0
+            ),
             "experimental_ct_over_ittc_cf": experimental_ct / ittc_cf,
         },
         "snapshots": snapshots,
