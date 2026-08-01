@@ -523,6 +523,59 @@ def collide_smagorinsky_mrt27(
 # Velocity-gradient helpers (shared by WALE and Vreman)
 # ---------------------------------------------------------------------------
 
+def _nonperiodic_derivative(
+    field: torch.Tensor,
+    dim: int,
+) -> torch.Tensor:
+    """Differentiate with centred interiors and physical one-sided edges.
+
+    ``torch.roll`` silently imposes periodicity.  That is invalid at open
+    far-field boundaries and, more importantly, couples opposite faces of an
+    independently allocated AMR block.  A second-order one-sided stencil at
+    each real tensor edge avoids that artificial shear while retaining the
+    centred second-order stencil in the interior.
+    """
+    size = field.shape[dim]
+    if size == 1:
+        return torch.zeros_like(field)
+    if size == 2:
+        difference = field.select(dim, 1) - field.select(dim, 0)
+        return torch.stack((difference, difference), dim=dim)
+
+    derivative = torch.empty_like(field)
+    interior = [slice(None)] * field.ndim
+    lower = [slice(None)] * field.ndim
+    upper = [slice(None)] * field.ndim
+    forward = [slice(None)] * field.ndim
+    backward = [slice(None)] * field.ndim
+    interior[dim] = slice(1, -1)
+    forward[dim] = slice(2, None)
+    backward[dim] = slice(None, -2)
+    derivative[tuple(interior)] = 0.5 * (
+        field[tuple(forward)] - field[tuple(backward)]
+    )
+    lower[dim] = 0
+    upper[dim] = -1
+    first = [slice(None)] * field.ndim
+    second = [slice(None)] * field.ndim
+    penultimate = [slice(None)] * field.ndim
+    antepenultimate = [slice(None)] * field.ndim
+    first[dim] = 1
+    second[dim] = 2
+    penultimate[dim] = -2
+    antepenultimate[dim] = -3
+    derivative[tuple(lower)] = 0.5 * (
+        -3.0 * field[tuple(lower)]
+        + 4.0 * field[tuple(first)]
+        - field[tuple(second)]
+    )
+    derivative[tuple(upper)] = 0.5 * (
+        3.0 * field[tuple(upper)]
+        - 4.0 * field[tuple(penultimate)]
+        + field[tuple(antepenultimate)]
+    )
+    return derivative
+
 def _velocity_gradients_2d(
     ux: torch.Tensor,
     uy: torch.Tensor,
@@ -535,10 +588,10 @@ def _velocity_gradients_2d(
     Returns:
         ``(g11, g12, g21, g22)`` where ``g_ij = ∂u_i/∂x_j``.
     """
-    g11 = 0.5 * (torch.roll(ux, -1, dims=-1) - torch.roll(ux, 1, dims=-1))
-    g12 = 0.5 * (torch.roll(ux, -1, dims=-2) - torch.roll(ux, 1, dims=-2))
-    g21 = 0.5 * (torch.roll(uy, -1, dims=-1) - torch.roll(uy, 1, dims=-1))
-    g22 = 0.5 * (torch.roll(uy, -1, dims=-2) - torch.roll(uy, 1, dims=-2))
+    g11 = _nonperiodic_derivative(ux, -1)
+    g12 = _nonperiodic_derivative(ux, -2)
+    g21 = _nonperiodic_derivative(uy, -1)
+    g22 = _nonperiodic_derivative(uy, -2)
     return g11, g12, g21, g22
 
 
@@ -560,18 +613,15 @@ def _velocity_gradients_3d(
         ``(g11, g12, g13, g21, g22, g23, g31, g32, g33)``
         where ``g_ij = ∂u_i/∂x_j``.
     """
-    def _cd(u: torch.Tensor, dim: int) -> torch.Tensor:
-        return 0.5 * (torch.roll(u, -1, dims=dim) - torch.roll(u, 1, dims=dim))
-
-    g11 = _cd(ux, 2)  # ∂ux/∂x
-    g12 = _cd(ux, 1)  # ∂ux/∂y
-    g13 = _cd(ux, 0)  # ∂ux/∂z
-    g21 = _cd(uy, 2)  # ∂uy/∂x
-    g22 = _cd(uy, 1)  # ∂uy/∂y
-    g23 = _cd(uy, 0)  # ∂uy/∂z
-    g31 = _cd(uz, 2)  # ∂uz/∂x
-    g32 = _cd(uz, 1)  # ∂uz/∂y
-    g33 = _cd(uz, 0)  # ∂uz/∂z
+    g11 = _nonperiodic_derivative(ux, 2)  # ∂ux/∂x
+    g12 = _nonperiodic_derivative(ux, 1)  # ∂ux/∂y
+    g13 = _nonperiodic_derivative(ux, 0)  # ∂ux/∂z
+    g21 = _nonperiodic_derivative(uy, 2)  # ∂uy/∂x
+    g22 = _nonperiodic_derivative(uy, 1)  # ∂uy/∂y
+    g23 = _nonperiodic_derivative(uy, 0)  # ∂uy/∂z
+    g31 = _nonperiodic_derivative(uz, 2)  # ∂uz/∂x
+    g32 = _nonperiodic_derivative(uz, 1)  # ∂uz/∂y
+    g33 = _nonperiodic_derivative(uz, 0)  # ∂uz/∂z
     return g11, g12, g13, g21, g22, g23, g31, g32, g33
 
 
@@ -987,7 +1037,6 @@ def collide_wale_mrt3d(
 
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)
-    f_neq = f - feq
     nu_t = _wale_nu_t_3d(ux, uy, uz, C_w)
     tau_eff = _nu_t_to_tau_eff(tau, nu_t)
     s_nu_flat = (1.0 / tau_eff).reshape(-1)
@@ -1046,7 +1095,6 @@ def collide_wale_mrt27(
 
     rho, ux, uy, uz = macroscopic27(f)
     feq = equilibrium27(rho, ux, uy, uz)
-    f_neq = f - feq
     nu_t = _wale_nu_t_3d(ux, uy, uz, C_w)
     tau_eff = _nu_t_to_tau_eff(tau, nu_t)
     s_nu_flat = (1.0 / tau_eff).reshape(-1)
@@ -1111,7 +1159,6 @@ def collide_vreman_mrt3d(
 
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)
-    f_neq = f - feq
     nu_t = _vreman_nu_t_3d(ux, uy, uz, C_V)
     tau_eff = _nu_t_to_tau_eff(tau, nu_t)
     s_nu_flat = (1.0 / tau_eff).reshape(-1)
@@ -1170,7 +1217,6 @@ def collide_vreman_mrt27(
 
     rho, ux, uy, uz = macroscopic27(f)
     feq = equilibrium27(rho, ux, uy, uz)
-    f_neq = f - feq
     nu_t = _vreman_nu_t_3d(ux, uy, uz, C_V)
     tau_eff = _nu_t_to_tau_eff(tau, nu_t)
     s_nu_flat = (1.0 / tau_eff).reshape(-1)
