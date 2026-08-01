@@ -426,6 +426,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     passes 24 tests.  Thus the 1500-step production gap is not excused, but the
     primitive force formulas close; long-run AMR sampling, CV placement and
     pressure-transient decay remain the hypotheses tested by the active runs.
+57. A checkpoint pressure audit at v4 L90/step3500 gives 80--86 N from
+    analytical-normal surface integration and about 90 N from BFL link
+    momentum exchange; these pressure observers agree in sign and scale.  The
+    simultaneous CV-derived pressure is much lower, so matching the experiment
+    with CV alone is not accepted.  The hypothesis that separate float32 total-
+    momentum sums caused the gap was tested and rejected: both paths already
+    accumulate in float64 and agree on a large manufactured CV.  The common CV
+    observer nevertheless now subtracts populations locally before reduction,
+    which is better conditioned, but no accuracy claim is attached to that
+    mechanical improvement.  AMR substep/CV placement remains under audit.
 
 ## Rejected candidates
 
