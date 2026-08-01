@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 import torch
 
@@ -73,3 +75,12 @@ def test_sparse_d3q27_limiter_preserves_mass_and_momentum() -> None:
         (before[:, None] * C27.to(before)).sum(dim=0),
         atol=5e-9, rtol=0.0,
     )
+
+
+def test_nonfinite_state_is_passed_to_caller_for_fail_closed_abort() -> None:
+    f = torch.ones((19, 2, 2, 2))
+    f[1, 0, 0, 0] = torch.nan
+    out, diagnostics = limit_nonequilibrium_for_positivity(f)
+    assert out is f
+    assert math.isnan(diagnostics.minimum_population_before)
+    assert math.isnan(diagnostics.minimum_alpha)
