@@ -160,6 +160,39 @@ def test_wall_model_slip_bfl_preserves_uniform_tangential_flow() -> None:
     assert stationary_force[0] > 0.0
 
 
+def test_wall_model_startup_ramps_relative_normal_velocity_not_bfl_population() -> None:
+    """Activation zero must be a co-moving impermeable wall, not a leaky blend."""
+    from tensorlbm.wall_model import bfl_wall_function_3d
+
+    shape = (3, 3, 3)
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.04, dtype=torch.float64)
+    uy = torch.full(shape, 0.03, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f_prev = equilibrium3d(rho, ux, uy, zero)
+    masks = torch.zeros_like(f_prev, dtype=torch.bool)
+    q = torch.full_like(f_prev, 0.5)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    near = torch.zeros(shape, dtype=torch.bool)
+    cell = (1, 1, 1)
+    near[cell] = True
+    # Plane wall normal +y: all positive-y links enter the solid.
+    for direction in (3, 7, 10, 15, 17):
+        masks[(direction,) + cell] = True
+
+    out, friction, pressure = bfl_wall_function_3d(
+        f_prev.clone(), f_prev, solid, 0.02, masks, q,
+        near_mask=near, bfl_wall_mode="wall_model_slip",
+        wall_activation=0.0,
+    )
+    assert torch.allclose(
+        out[(slice(None),) + cell], f_prev[(slice(None),) + cell], atol=1e-14,
+    )
+    assert friction == pytest.approx(0.0, abs=1e-14)
+    # D3Q19 weights are float32 constants, even for this float64 state.
+    assert pressure == pytest.approx(0.0, abs=2e-9)
+
+
 def test_bfl_link_normal_recovers_flat_wall_direction() -> None:
     masks = torch.zeros((19, 3, 3, 3), dtype=torch.bool)
     cell = (1, 1, 1)

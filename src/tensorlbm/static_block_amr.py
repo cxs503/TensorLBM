@@ -107,6 +107,7 @@ class PopulationRefluxLedger:
     applied_shell_correction: torch.Tensor
     shell_cells: int
     residual: torch.Tensor
+    limited_directions: int = 0
 
     @property
     def mass_residual(self) -> float:
@@ -251,13 +252,30 @@ class StaticBlockAMR3D:
 
         correction = torch.zeros_like(mismatch)
         shell_cells = 0
+        limited_directions = 0
         if self.config.reflux:
             shell = _coarse_shell_mask(self.coarse_f.shape[1:], b, self.coarse_f.device)
             shell_cells = int(shell.sum().item())
-            correction = mismatch / shell_cells
-            self.coarse_f[:, shell] += correction[:, None]
-        residual = mismatch - correction * shell_cells
-        return PopulationRefluxLedger(mismatch, correction, shell_cells, residual)
+            shell_values = self.coarse_f[:, shell]
+            shell_inventory = shell_values.sum(dim=1)
+            requested_factor = mismatch / shell_inventory.clamp_min(1e-30)
+            # Proportional reflux preserves the local population shape and
+            # cannot turn a small diagonal population negative merely because
+            # every shell cell received the same absolute subtraction.  A
+            # single step may remove at most 20% of any directional shell
+            # inventory; a larger mismatch is left in the explicit residual.
+            factor = requested_factor.clamp_min(-0.2)
+            limited_directions = int((factor != requested_factor).sum().item())
+            delta = shell_values * factor[:, None]
+            self.coarse_f[:, shell] = shell_values + delta
+            applied_total = delta.sum(dim=1)
+            correction = applied_total / shell_cells
+        else:
+            applied_total = torch.zeros_like(mismatch)
+        residual = mismatch - applied_total
+        return PopulationRefluxLedger(
+            mismatch, correction, shell_cells, residual, limited_directions,
+        )
 
     def step(self, advance: Advance3D) -> PopulationRefluxLedger:
         """Advance one coarse step and two time-interpolated fine substeps.

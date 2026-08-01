@@ -933,6 +933,10 @@ def bfl_wall_function_3d(
     use_guo: bool = True,
     bfl_wall_mode: str = "stationary",
     wall_activation: float = 1.0,
+    exchange_distance: float = 3.0,
+    nonequilibrium_scale: float = 0.5,
+    wall_normals: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
+    area_weight: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, float, float]:
     """Mature BFL + wall function with Guo forcing (literature-recommended).
 
@@ -969,8 +973,14 @@ def bfl_wall_function_3d(
             ``"wall_model_slip"`` mode applies moving-wall BFL with the
             local tangential fluid velocity, enforcing no penetration while
             leaving tangential shear to the wall-stress model.
-        wall_activation: Smooth wall startup fraction in ``[0,1]`` applied
-            to both BFL reconstruction and wall shear.
+            ``"spalding_exchange"`` uses an exchange-location Spalding
+            model and non-equilibrium population assimilation after BFL.
+        wall_activation: Smooth wall startup fraction in ``[0,1]``.  In
+            ``wall_model_slip`` mode this ramps the *relative wall-normal
+            velocity* from zero to the full impermeability constraint while
+            BFL remains fully active.  It also ramps wall shear.  This avoids
+            blending a valid reflected population with the non-physical
+            population streamed out of a solid cell.
 
     Returns:
         ``(f_corrected, drag_friction_x, drag_pressure_x)``.
@@ -983,22 +993,26 @@ def bfl_wall_function_3d(
     else:
         near = _near_wall_mask_no_wrap(solid)
 
-    if bfl_wall_mode not in {"stationary", "wall_model_slip"}:
+    if bfl_wall_mode not in {"stationary", "wall_model_slip", "spalding_exchange"}:
         raise ValueError(
-            "bfl_wall_mode must be 'stationary' or 'wall_model_slip'"
+            "bfl_wall_mode must be 'stationary', 'wall_model_slip', or "
+            "'spalding_exchange'"
         )
     if not 0.0 <= wall_activation <= 1.0:
         raise ValueError("wall_activation must be in [0,1]")
 
     # Wall normals are geometric and can be shared by the BFL slip closure
     # and the subsequent wall-stress evaluation.
-    nx_n, ny_n, nz_n = compute_wall_normal(solid, near)
+    if wall_normals is None:
+        nx_n, ny_n, nz_n = compute_wall_normal(solid, near)
+    else:
+        nx_n, ny_n, nz_n = wall_normals
 
     # ── Step 1: BFL interpolated bounce-back (post-stream) ──
     if apply_bfl and fluid_boundary_mask is not None:
         wall_velocity = None
         wall_density = None
-        if bfl_wall_mode == "wall_model_slip":
+        if bfl_wall_mode in {"wall_model_slip", "spalding_exchange"}:
             rho_pre, ux_pre, uy_pre, uz_pre = macroscopic3d(f_prev)
             slip_nx, slip_ny, slip_nz = compute_bfl_link_normal(
                 fluid_boundary_mask,
@@ -1006,20 +1020,47 @@ def bfl_wall_function_3d(
             u_dot_n_pre = (
                 ux_pre * slip_nx + uy_pre * slip_ny + uz_pre * slip_nz
             )
-            wall_velocity = (
-                ux_pre - u_dot_n_pre * slip_nx,
-                uy_pre - u_dot_n_pre * slip_ny,
-                uz_pre - u_dot_n_pre * slip_nz,
-            )
+            # Smoothly introduce the body in the fluid frame.  At activation
+            # zero the wall moves with the local fluid velocity and creates
+            # no impulse.  At one only its tangential component remains, so
+            # BFL enforces no penetration and the stress model owns shear.
+            if bfl_wall_mode == "wall_model_slip":
+                wall_velocity = (
+                    ux_pre - wall_activation * u_dot_n_pre * slip_nx,
+                    uy_pre - wall_activation * u_dot_n_pre * slip_ny,
+                    uz_pre - wall_activation * u_dot_n_pre * slip_nz,
+                )
+            else:
+                wall_velocity = (
+                    (1.0 - wall_activation) * ux_pre,
+                    (1.0 - wall_activation) * uy_pre,
+                    (1.0 - wall_activation) * uz_pre,
+                )
             wall_density = rho_pre
         f, bfl_force = bouzidi_bounce_back_d3q19(
             f, f_prev, fluid_boundary_mask, q_field,
             wall_velocity=wall_velocity, wall_density=wall_density,
-            boundary_fraction=wall_activation,
+            # Never interpolate with streamed-from-solid data.  Startup is
+            # handled by the relative wall velocity above.
+            boundary_fraction=(
+                1.0 if bfl_wall_mode in {"wall_model_slip", "spalding_exchange"}
+                else wall_activation
+            ),
             return_force=True,
         )
     else:
         bfl_force = (0.0, 0.0, 0.0)
+
+    if bfl_wall_mode == "spalding_exchange":
+        from .spalding_wall_model import apply_spalding_exchange_wall_model
+        f, wall_diagnostics = apply_spalding_exchange_wall_model(
+            f, fluid_boundary_mask, q_field, (nx_n, ny_n, nz_n), nu,
+            exchange_distance=exchange_distance,
+            nonequilibrium_scale=nonequilibrium_scale,
+            area_weight=area_weight,
+            activation=wall_activation,
+        )
+        return f, wall_diagnostics.shear_force[0], bfl_force[0]
 
     # ── Step 2: Compute macroscopic fields ──
     rho, ux, uy, uz = macroscopic3d(f)

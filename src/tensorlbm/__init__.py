@@ -643,6 +643,26 @@ from .suboff_static_amr import (
     build_fine_suboff_mask,
     plan_suboff_static_amr,
 )
+from .control_volume_force import (
+    ControlVolumeForceResult,
+    box_control_volume,
+    fluid_momentum,
+    observe_control_volume_force,
+    streaming_momentum_import,
+)
+from .spalding_wall_model import (
+    SpaldingWallDiagnostics,
+    apply_spalding_exchange_wall_model,
+    effective_bfl_wall_distance,
+    solve_spalding_friction_velocity,
+    spalding_u_plus_from_y_plus,
+    spalding_y_plus,
+)
+from .sponge_layer import (
+    apply_equilibrium_difference_sponge,
+    build_sponge_sigma_3d,
+    smoothstep5,
+)
 
 __all__ = [
     "__version__",
@@ -666,6 +686,20 @@ __all__ = [
     "SuboffStaticAMRPlan",
     "build_fine_suboff_mask",
     "plan_suboff_static_amr",
+    "ControlVolumeForceResult",
+    "box_control_volume",
+    "fluid_momentum",
+    "observe_control_volume_force",
+    "streaming_momentum_import",
+    "SpaldingWallDiagnostics",
+    "apply_spalding_exchange_wall_model",
+    "effective_bfl_wall_distance",
+    "solve_spalding_friction_velocity",
+    "spalding_u_plus_from_y_plus",
+    "spalding_y_plus",
+    "apply_equilibrium_difference_sponge",
+    "build_sponge_sigma_3d",
+    "smoothstep5",
     # D2Q9 lattice
     "C",
     "W",
