@@ -112,6 +112,7 @@ def run_sphere_bfl_control_volume(
     sigma = build_sponge_sigma_3d(
         shape, width=config.sponge_width,
         max_strength=config.sponge_strength, device=device,
+        faces=("x+", "y-", "y+", "z-", "z+"),
     )
     forces: list[float] = []
     bfl_forces: list[float] = []
