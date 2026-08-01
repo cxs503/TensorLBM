@@ -86,3 +86,11 @@ proportions and invariant `exchange_distance/plate_length` before fitting the
 observed order and extrapolated `Cf`.  Earlier v2 campaign files remain useful
 development evidence but fail this formal provenance gate; they are never
 silently promoted to a v3 grid-convergence claim.
+
+The completed v2 development sequence is nevertheless numerically coherent:
+L256/L384/L512 give `Cf=0.004597289`, `0.004657755`, and `0.004668967`.
+The sequence is monotonic; a three-point fit gives observed order 3.739,
+`Cf_infinity=0.004674770`, and 0.124% finest-grid discretisation distance.
+The extrapolated value is about 0.272% below ITTC.  The stored evidence labels
+this only a mathematical fit (`physical_validation=false`); the active v3
+reruns must reproduce it before the case-specific convergence gate can pass.
