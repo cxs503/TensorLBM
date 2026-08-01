@@ -26,6 +26,19 @@ _IDENTITY_FIELDS = (
     "aux_cv_margins",
     "sponge_strength",
     "far_field_mode",
+    "collision_model",
+    "omega_bulk",
+    "kbc_max_iterations",
+    "regularize_restriction",
+    "ghost_interpolation",
+    "enforce_transfer_positivity",
+    "interface_filter_width",
+    "interface_filter_strength",
+    "disable_wall_stress",
+    "maximum_health_speed",
+    "minimum_convective_times",
+    "minimum_target_reynolds_convective_times",
+    "minimum_statistics_convective_times",
 )
 
 
@@ -89,6 +102,8 @@ def assess_suboff_nested_convergence(
                 "stationarity_target_met",
                 "nested_control_volume_target_met",
                 "surface_observer_target_met",
+                "population_health_target_met",
+                "target_reynolds_duration_target_met",
             )
         )
 
@@ -108,6 +123,8 @@ def assess_suboff_nested_convergence(
             "steps", "warmup_steps", "statistics_window_steps",
             "ramp_steps", "report_interval", "wall_diagnostic_interval",
             "surface_force_interval",
+            "health_interval", "resolved_reynolds_start",
+            "viscosity_ramp_start_step", "viscosity_ramp_end_step",
         )
     ) and all(
         "statistics_window_steps_resolved" in result["statistics"]
@@ -143,6 +160,8 @@ def assess_suboff_nested_convergence(
     for field in (
         "steps", "warmup_steps", "statistics_window_steps", "ramp_steps",
         "report_interval", "wall_diagnostic_interval", "surface_force_interval",
+        "health_interval", "viscosity_ramp_start_step",
+        "viscosity_ramp_end_step",
     ):
         time_ratios[field] = [
             float(item[2][field]) / coarse
@@ -152,11 +171,22 @@ def assess_suboff_nested_convergence(
         float(item[3]["statistics"]["statistics_window_steps_resolved"]) / coarse
         for coarse, item in zip(coarse_lengths, parsed, strict=True)
     ]
+    physical_duration_groups = {
+        field: [
+            float(item[3]["statistics"][field]) for item in parsed
+        ]
+        for field in (
+            "target_reynolds_convective_times",
+            "fully_physical_convective_times",
+            "sampling_convective_times",
+        )
+    }
     ratio_groups = [
         finest_ratios,
         *domain_ratios.values(),
         *outer_mesh_ratios.values(),
         *time_ratios.values(),
+        *physical_duration_groups.values(),
     ]
     scaled_configuration_invariant = (
         all(all(math.isfinite(value) for value in values) for values in ratio_groups)
@@ -219,6 +249,7 @@ def assess_suboff_nested_convergence(
             "domain_over_coarse_length": domain_ratios,
             "outer_mesh_over_coarse_length": outer_mesh_ratios,
             "time_steps_over_coarse_length": time_ratios,
+            "physical_duration_convective_times": physical_duration_groups,
             "scaled_configuration_invariant": scaled_configuration_invariant,
             "experimental_reference_invariant": reference_invariant,
             "measured_hull_type_invariant": hull_type_invariant,
