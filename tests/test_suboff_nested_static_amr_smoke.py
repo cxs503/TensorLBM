@@ -35,6 +35,7 @@ def _args(
     vreman_cv: float = 0.025,
     interface_filter_width: int = 0,
     interface_filter_strength: float = 0.0,
+    sponge_inlet: bool = False,
 ):
     values = [
         "--device", "cpu",
@@ -74,7 +75,27 @@ def _args(
         values.append("--enforce-transfer-positivity")
     if disable_wall_stress:
         values.append("--disable-wall-stress")
+    if sponge_inlet:
+        values.append("--sponge-inlet")
     return MODULE.parser().parse_args(values)
+
+
+def test_nested_smoke_can_include_upstream_sponge(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = MODULE.build_sponge_sigma_3d
+    observed: dict[str, tuple[str, ...]] = {}
+
+    def capture_faces(*args, **kwargs):
+        observed["faces"] = kwargs["faces"]
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(MODULE, "build_sponge_sigma_3d", capture_faces)
+    result = MODULE.run(_args(tmp_path, steps=1, sponge_inlet=True))
+
+    assert observed["faces"] == ("x-", "x+", "y-", "y+", "z-", "z+")
+    assert result["configuration"]["sponge_inlet"] is True
 
 
 def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) -> None:
@@ -443,6 +464,7 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("minimum_health_population")
     state["configuration"].pop("maximum_positivity_limited_fraction")
     state["configuration"].pop("maximum_reflux_applied_correction_fraction")
+    state["configuration"].pop("sponge_inlet")
     state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
     torch.save(state, checkpoint)
 
@@ -479,6 +501,7 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("minimum_health_population")
     state["configuration"].pop("maximum_positivity_limited_fraction")
     state["configuration"].pop("maximum_reflux_applied_correction_fraction")
+    state["configuration"].pop("sponge_inlet")
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
@@ -497,6 +520,7 @@ def test_natural_kbc_can_resume_checkpoint_before_gradient_sgs_options(
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     state["configuration"].pop("wale_cw")
     state["configuration"].pop("vreman_cv")
+    state["configuration"].pop("sponge_inlet")
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(
@@ -504,4 +528,19 @@ def test_natural_kbc_can_resume_checkpoint_before_gradient_sgs_options(
     ))
 
     assert resumed["configuration"]["resumed_pre_gradient_sgs_checkpoint"] is True
+    assert resumed["configuration"]["resumed_from_step"] == 1
+
+
+def test_current_checkpoint_can_resume_before_inlet_sponge_option(
+    tmp_path: Path,
+) -> None:
+    MODULE.run(_args(tmp_path, steps=1))
+    checkpoint = tmp_path / "nested-smoke.ckpt"
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"].pop("sponge_inlet")
+    torch.save(state, checkpoint)
+
+    resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
+
+    assert resumed["configuration"]["resumed_pre_inlet_sponge_checkpoint"] is True
     assert resumed["configuration"]["resumed_from_step"] == 1

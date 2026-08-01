@@ -110,6 +110,38 @@ def test_nested_v4_launcher_expands_audited_l150_continuation(
     assert "suboff-nested-v4-equivalent-l150-20k.json" in output
 
 
+def test_nested_launcher_routes_optional_inlet_sponge(tmp_path: Path) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env.update({
+        "TENSORLBM_PYTHON": str(fake_python),
+        "TENSORLBM_SPONGE_INLET": "1",
+    })
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_nested_v3_equivalent_level.sh"),
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "--sponge-inlet" in completed.stdout.splitlines()
+
+
 def test_suboff_v9_launcher_uses_quadratic_inlet_pressure_observer(
     tmp_path: Path,
 ) -> None:

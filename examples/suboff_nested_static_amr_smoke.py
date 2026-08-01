@@ -235,6 +235,11 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--sponge-width", type=int, default=24)
     result.add_argument("--sponge-strength", type=float, default=0.3)
     result.add_argument(
+        "--sponge-inlet",
+        action="store_true",
+        help="include the upstream x- face in equilibrium-difference damping",
+    )
+    result.add_argument(
         "--memory-bytes-per-cell",
         type=float,
         default=943.0,
@@ -568,6 +573,7 @@ def run(args: argparse.Namespace) -> dict:
         "wall_diagnostic_interval": args.wall_diagnostic_interval,
         "sponge_width": args.sponge_width,
         "sponge_strength": args.sponge_strength,
+        "sponge_inlet": args.sponge_inlet,
         "far_field_mode": args.far_field_mode,
         "regularize_restriction": args.regularize_restriction,
         "regularize_prolongation": args.regularize_prolongation,
@@ -673,12 +679,15 @@ def run(args: argparse.Namespace) -> dict:
     auxiliary_control_volumes = {
         margin: build_control_volume(margin) for margin in auxiliary_margins
     }
+    sponge_faces = ["x+", "y-", "y+", "z-", "z+"]
+    if args.sponge_inlet:
+        sponge_faces.insert(0, "x-")
     sponge = build_sponge_sigma_3d(
         shape,
         width=args.sponge_width,
         max_strength=args.sponge_strength,
         device=device,
-        faces=("x+", "y-", "y+", "z-", "z+"),
+        faces=tuple(sponge_faces),
     )
     wall_nu = physical_wall_lattice_viscosity(
         args.lattice_speed, finest_length, physical_re,
@@ -694,6 +703,7 @@ def run(args: argparse.Namespace) -> dict:
     resumed_legacy_v2_checkpoint = False
     resumed_legacy_v3_checkpoint = False
     resumed_pre_gradient_sgs_checkpoint = False
+    resumed_pre_inlet_sponge_checkpoint = False
     force_samples: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
@@ -710,11 +720,19 @@ def run(args: argparse.Namespace) -> dict:
     if args.resume:
         state = torch.load(args.checkpoint, map_location=device, weights_only=True)
         stored_configuration = state.get("configuration")
+        pre_inlet_sponge_signature = dict(checkpoint_signature)
+        pre_inlet_sponge_signature.pop("sponge_inlet")
+        resumed_pre_inlet_sponge_checkpoint = (
+            not args.sponge_inlet
+            and stored_configuration == pre_inlet_sponge_signature
+        )
         pre_gradient_sgs_signature = dict(checkpoint_signature)
         pre_gradient_sgs_signature.pop("wale_cw")
         pre_gradient_sgs_signature.pop("vreman_cv")
+        pre_gradient_sgs_signature.pop("sponge_inlet")
         resumed_pre_gradient_sgs_checkpoint = (
             args.collision_model not in {"cumulant_wale", "cumulant_vreman"}
+            and not args.sponge_inlet
             and stored_configuration == pre_gradient_sgs_signature
         )
         legacy_v3_signature = dict(checkpoint_signature)
@@ -739,6 +757,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("minimum_health_population")
         legacy_v3_signature.pop("maximum_positivity_limited_fraction")
         legacy_v3_signature.pop("maximum_reflux_applied_correction_fraction")
+        legacy_v3_signature.pop("sponge_inlet")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and not args.regularize_prolongation
@@ -755,6 +774,7 @@ def run(args: argparse.Namespace) -> dict:
             and args.minimum_health_population == 1.0e-8
             and args.maximum_positivity_limited_fraction == 1.0e-6
             and args.maximum_reflux_applied_correction_fraction == 1.0e-3
+            and not args.sponge_inlet
             and stored_configuration == legacy_v3_signature
         )
         legacy_v2_signature = dict(checkpoint_signature)
@@ -784,6 +804,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop(
             "maximum_reflux_applied_correction_fraction",
         )
+        legacy_v2_without_new_transfer.pop("sponge_inlet")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
@@ -801,10 +822,12 @@ def run(args: argparse.Namespace) -> dict:
             and args.minimum_health_population == 1.0e-8
             and args.maximum_positivity_limited_fraction == 1.0e-6
             and args.maximum_reflux_applied_correction_fraction == 1.0e-3
+            and not args.sponge_inlet
             and stored_configuration == legacy_v2_without_new_transfer
         )
         if (
             stored_configuration != checkpoint_signature
+            and not resumed_pre_inlet_sponge_checkpoint
             and not resumed_pre_gradient_sgs_checkpoint
             and not resumed_legacy_v3_checkpoint
             and not resumed_legacy_v2_checkpoint
@@ -1630,6 +1653,9 @@ def run(args: argparse.Namespace) -> dict:
             "resumed_legacy_v3_checkpoint": resumed_legacy_v3_checkpoint,
             "resumed_pre_gradient_sgs_checkpoint": (
                 resumed_pre_gradient_sgs_checkpoint
+            ),
+            "resumed_pre_inlet_sponge_checkpoint": (
+                resumed_pre_inlet_sponge_checkpoint
             ),
         },
         "planning": planning | {"measured_peak_allocated_gib": peak_gib},
