@@ -685,7 +685,22 @@ def run(args: argparse.Namespace) -> dict:
                 inspect_population_health(populations).to_dict()
                 for populations in hierarchy.level_populations
             ]
-            health_records.append({"step": current_step, "levels": level_health})
+            interface_health = [
+                {
+                    "maximum_reflux_residual": float(ledger.residual.abs().max()),
+                    "reflux_limited_directions": ledger.limited_directions,
+                    "restriction_limited_fraction": (
+                        ledger.restriction_limited_fraction
+                    ),
+                    "restriction_minimum_alpha": ledger.restriction_minimum_alpha,
+                }
+                for ledger in ledgers
+            ]
+            health_records.append({
+                "step": current_step,
+                "levels": level_health,
+                "interfaces": interface_health,
+            })
             print(
                 "nested health "
                 + json.dumps(health_records[-1], separators=(",", ":")),

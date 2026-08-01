@@ -131,6 +131,20 @@ def test_nested_smoke_records_transfer_positivity_diagnostics(tmp_path: Path) ->
     assert len(result["result"]["minimum_transfer_alpha_by_interface"]) == 2
 
 
+def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
+    args = _args(tmp_path, steps=1, enforce_transfer_positivity=True)
+    args.health_interval = 1
+    result = MODULE.run(args)
+
+    health = result["result"]["population_health"][0]
+    assert [record["finite"] for record in health["levels"]] == [True, True, True]
+    assert len(health["interfaces"]) == 2
+    assert all(
+        "restriction_minimum_alpha" in record
+        for record in health["interfaces"]
+    )
+
+
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
