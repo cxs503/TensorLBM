@@ -725,6 +725,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     trend gates are not relaxed.  A repeated-sample regression proves that the
     effective count decreases appropriately, and 25 focused force/sphere/
     cylinder/flat/SUBOFF tests pass with the expanded report.
+88. A remote launcher regression catches one stale deployed file: the SUBOFF
+    v8 launcher had the import-only preflight, while the remote sphere launcher
+    was still its preceding revision.  The attempted test process timed out
+    before producing a checkpoint/result and was terminated by the test
+    harness; an exact process audit found no residual sphere PID.  The sphere
+    launcher is now synchronized, direct remote preflight resolves the intended
+    `src/tensorlbm/__init__.py`, and both launcher subprocess tests pass on the
+    Wuxi host.  Existing CFD PIDs and services were untouched.
 
 ## Rejected candidates
 
