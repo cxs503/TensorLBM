@@ -8,7 +8,7 @@ from tensorlbm.suboff_nested_convergence import assess_suboff_nested_convergence
 def _record(length: int, resistance: float) -> dict:
     finest = 4.0 * length
     return {
-        "schema": "tensorlbm-suboff-nested-amr-smoke-v2",
+        "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
         "configuration": {
             "hull_type": "bare_hull",
             "speed_knots": 5.92,
@@ -104,3 +104,19 @@ def test_nested_convergence_requires_all_observer_gates() -> None:
 
     assert result["source_numerical_quality_admitted"] is False
     assert result["physical_validation"] is False
+
+
+def test_v2_bare_record_uses_explicit_geometry_hull_type() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+    records[-1]["schema"] = "tensorlbm-suboff-nested-amr-smoke-v2"
+    records[-1]["configuration"].pop("hull_type")
+    records[-1]["geometry"]["resolution"]["hull_type"] = "bare_hull"
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["hull_type"] == "bare_hull"
+    assert result["configuration_identity"]["measured_hull_type_invariant"] is True
+    assert result["physical_validation"] is True

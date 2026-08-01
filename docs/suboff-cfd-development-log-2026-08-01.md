@@ -1025,6 +1025,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      an ideal ITTC prior as runtime applicability evidence.  The active L150
      process predates this output-only addition and remains unchanged; queued
      L90/L120 will load it when their processes start.
+117. Adding AFF-8 changes the nested output/checkpoint semantic version to v3
+     before queued L90/L120 start.  The already-running L150 remains immutable
+     v2, whose runner hard-coded AFF-1 but omitted `hull_type` from configuration.
+     The convergence assessor accepts that legacy source only when its measured
+     geometry explicitly says `bare_hull`, normalises all source identities and
+     requires the three hull types to agree.  It never substitutes a default or
+     accepts an unknown/mixed geometry.
 
 ## Rejected candidates
 

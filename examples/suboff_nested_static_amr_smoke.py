@@ -223,7 +223,7 @@ def run(args: argparse.Namespace) -> dict:
     }
     if args.preflight_only:
         return {
-            "schema": "tensorlbm-suboff-nested-amr-smoke-v2",
+            "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
             "status": "preflight_only",
             "physical_validation": False,
             "planning": planning,
@@ -249,7 +249,7 @@ def run(args: argparse.Namespace) -> dict:
         fine_solids=(None, nested_solid),
     )
     checkpoint_signature = {
-        "schema_version": 2,
+        "schema_version": 3,
         "hull_type": args.hull_type,
         "shape_zyx": list(shape),
         "speed_knots": args.speed_knots,
@@ -430,7 +430,7 @@ def run(args: argparse.Namespace) -> dict:
     def save_checkpoint(step: int) -> None:
         assert args.checkpoint is not None
         atomic_torch_save({
-            "schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2",
+            "schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v3",
             "configuration": checkpoint_signature,
             "step": step,
             "level_populations": [
@@ -821,7 +821,7 @@ def run(args: argparse.Namespace) -> dict:
         if device.type == "cuda" else None
     )
     return {
-        "schema": "tensorlbm-suboff-nested-amr-smoke-v2",
+        "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
         "status": (
             "single_grid_candidate"
             if single_grid_candidate else (
