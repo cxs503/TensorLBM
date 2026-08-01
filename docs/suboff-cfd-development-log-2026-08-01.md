@@ -1326,6 +1326,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      viscosity audit before the experimental KBC collision can be considered a
      production stabilizer.  No proprietary PowerFLOW/XFlow behavior is
      inferred without public technical evidence.
+148. The force-admissible width-two, strength-1.0 kinetic filter is also
+     rejected.  It crosses speed 0.1 at step 1500, speed 0.15 and the
+     positivity floor at step 1560—exactly the same onset as the unfiltered
+     baseline—and reaches speed 0.18870 with limiter activation by step 1680.
+     Log/checkpoint SHA-256 values are
+     `e971f7994549dc4104761a3aa935695a723a2243c9fff735b359301c0d452e88`
+     and `e26a98e6f456febdfd82ad08d65bd633ef4700b258995a1a25d8151770ea6328`.
+     This rules out unresolved higher-order kinetic content as the dominant
+     mode; GPU1 now isolates interface placement by expanding the transverse
+     finest-level wall buffer from 16 to 24 cells without any interface filter
+     or prolongation change.
 
 ## Rejected candidates
 
