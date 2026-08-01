@@ -2,6 +2,7 @@
   "schema": "tensorlbm-wall-traction-source-moment-audit-v1",
   "status": "corrected_and_regression_tested",
   "finding": "The previous velocity-corrected wall-traction source omitted the isotropic -w_i(u dot F)/cs^2 term. Its first moment was the requested force, but its zeroth moment was (u dot F)/cs^2 instead of zero.",
+  "secondary_finding": "The solver-agnostic wall path also divided the already-integrated wall traction by y_val a second time. It now uses the same unit lattice wall-area/control-volume scaling as the mature BFL wall path.",
   "corrected_source": "w_i * ((c_i dot F - u dot F)/cs^2 + (c_i dot u)(c_i dot F)/cs^4)",
   "operator_split": "post_collision_exact_traction_impulse",
   "checkpoint_scheme": "mass_conservative_post_collision_guo_v2",
@@ -19,7 +20,7 @@
   },
   "regression_tests": {
     "command": "wall-model moment/closure suites plus solver-agnostic wall_function_common and LBMStepExecutor regression suites",
-    "passed": 74,
+    "passed": 75,
     "failed": 0
   },
   "corrected_common_paths": [
