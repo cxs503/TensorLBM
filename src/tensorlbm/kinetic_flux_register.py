@@ -22,6 +22,16 @@ def _lattice_velocities(q: int, device: torch.device) -> torch.Tensor:
     return C.to(device=device)
 
 
+def _lattice_weights(q: int, device: torch.device) -> torch.Tensor:
+    if q == 19:
+        from .d3q19 import W
+    elif q == 27:
+        from .d3q27 import W
+    else:
+        raise ValueError("only D3Q19 and D3Q27 are supported")
+    return W.to(device=device)
+
+
 @dataclass(frozen=True)
 class KineticInterfaceLinks:
     """Origin-cell masks for every population crossing one closed interface."""
@@ -62,6 +72,7 @@ class KineticInterfaceTransfer:
 
 @dataclass(frozen=True)
 class FaceLocalRefluxReport:
+    raw_kinetic_mismatch: torch.Tensor
     requested_inventory_correction: torch.Tensor
     applied_inventory_correction: torch.Tensor
     residual: torch.Tensor
@@ -150,6 +161,41 @@ def _apply_population_total(
     return populations, applied, corrected_links, limited
 
 
+def project_onto_conserved_moments(
+    kinetic_mismatch: torch.Tensor,
+) -> torch.Tensor:
+    """Discard non-conserved kinetic modes while preserving mass/momentum.
+
+    Isothermal LBM collision conserves only density and the three momentum
+    components, not each directional population.  Coarse/fine reflux must
+    therefore match those four moments and must not inject the remaining
+    kinetic-mode mismatch into the exterior flow.
+    """
+    if kinetic_mismatch.ndim != 1 or kinetic_mismatch.numel() not in (19, 27):
+        raise ValueError("kinetic_mismatch must be a D3Q19 or D3Q27 vector")
+    c = _lattice_velocities(
+        int(kinetic_mismatch.numel()), kinetic_mismatch.device,
+    ).to(dtype=kinetic_mismatch.dtype)
+    w = _lattice_weights(
+        int(kinetic_mismatch.numel()), kinetic_mismatch.device,
+    ).to(dtype=kinetic_mismatch.dtype)
+    mass = kinetic_mismatch.sum()
+    momentum = (kinetic_mismatch[:, None] * c).sum(dim=0)
+    projected = w * (mass + 3.0 * (c * momentum).sum(dim=1))
+    # Lattice constants are commonly stored in FP32 even for an FP64 state.
+    # Close the four conserved moments algebraically so their reflux accuracy
+    # is set by the state dtype, not by rounded tabulated weights.
+    projected[0] += mass - projected.sum()
+    momentum_residual = momentum - (projected[:, None] * c).sum(dim=0)
+    for axis, (positive_index, negative_index) in enumerate(
+        ((1, 2), (3, 4), (5, 6)),
+    ):
+        half = 0.5 * momentum_residual[axis]
+        projected[positive_index] += half
+        projected[negative_index] -= half
+    return projected
+
+
 def apply_face_local_reflux(
     coarse_populations: torch.Tensor,
     coarse_links: KineticInterfaceLinks,
@@ -170,13 +216,12 @@ def apply_face_local_reflux(
         raise ValueError("maximum_correction_fraction must lie in (0,1]")
     if coarse_populations.shape != coarse_links.outgoing_origins.shape:
         raise ValueError("coarse populations and links must share shape")
-    # Fine-minus-coarse *net* outward transport is exactly the inventory that
-    # the coarse exterior must gain after the fine-owned patch replaces its
-    # coarse representation.  Outgoing and incoming quadratures must be
-    # combined before correction: at edges/corners their fine/coarse link
-    # counts differ even for a uniform equilibrium, while their net transfer
-    # is exactly zero (free-stream preservation).
-    requested = fine_transfer.net_outgoing - coarse_transfer.net_outgoing
+    # Fine-minus-coarse net transport is first reduced to the four moments
+    # conserved by isothermal collision.  Matching all Q populations would
+    # incorrectly reflux non-conserved stress/higher-order kinetic modes and
+    # can generate O(1) corrections in strong-gradient flows.
+    raw_mismatch = fine_transfer.net_outgoing - coarse_transfer.net_outgoing
+    requested = project_onto_conserved_moments(raw_mismatch)
     c = _lattice_velocities(coarse_links.q, coarse_populations.device)
     receiving = torch.zeros_like(coarse_links.outgoing_origins)
     for direction in range(1, coarse_links.q):
@@ -186,13 +231,15 @@ def apply_face_local_reflux(
             shifts=(cz, cy, cx), dims=(0, 1, 2),
         )
     exterior_links = receiving | coarse_links.incoming_origins
+    exterior_cells = exterior_links.any(dim=0)
+    correction_mask = exterior_cells.unsqueeze(0).expand_as(exterior_links)
     corrected, applied, corrected_links, limited = _apply_population_total(
-        coarse_populations, exterior_links, requested,
+        coarse_populations, correction_mask, requested,
         maximum_correction_fraction=maximum_correction_fraction,
     )
     residual = requested - applied
     return corrected, FaceLocalRefluxReport(
-        requested, applied, residual, corrected_links, limited,
+        raw_mismatch, requested, applied, residual, corrected_links, limited,
     )
 
 
@@ -203,4 +250,5 @@ __all__ = [
     "apply_face_local_reflux",
     "build_kinetic_interface_links",
     "observe_kinetic_interface_transfer",
+    "project_onto_conserved_moments",
 ]
