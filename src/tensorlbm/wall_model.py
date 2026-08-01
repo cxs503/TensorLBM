@@ -1095,6 +1095,7 @@ def bfl_wall_function_3d(
             nonequilibrium_scale=nonequilibrium_scale,
             area_weight=area_weight,
             activation=wall_activation,
+            solid_mask=solid,
         )
         return f, wall_diagnostics.shear_force[0], bfl_force[0]
 
@@ -1110,6 +1111,7 @@ def bfl_wall_function_3d(
             (nx_n, ny_n, nz_n),
             exchange_distance=stress_exchange_distance,
             boundary_mask=near,
+            fluid_mask=~solid,
         )
         stress_near = near & samples.boundary
         ux = torch.zeros_like(local_ux)
