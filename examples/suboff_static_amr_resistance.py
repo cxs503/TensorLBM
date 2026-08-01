@@ -287,24 +287,34 @@ def run(args: argparse.Namespace) -> dict:
     z_max, y_max, x_max = (
         int(fine_indices[:, axis].max().item()) + 1 for axis in range(3)
     )
-    fine_cv = box_control_volume(
-        fine_solid_g.shape,
-        x0=x_min - args.cv_margin, x1=x_max + args.cv_margin,
-        y0=y_min - args.cv_margin, y1=y_max + args.cv_margin,
-        z0=z_min - args.cv_margin, z1=z_max + args.cv_margin,
-        device=device,
-    )
-    auxiliary_cvs: dict[int, torch.Tensor] = {}
-    for margin in aux_cv_margins:
-        if margin == args.cv_margin:
-            continue
-        auxiliary_cvs[margin] = box_control_volume(
+
+    def build_owned_control_volume(margin: int) -> torch.Tensor:
+        bounds = (
+            x_min - margin, x_max + margin, nx_f,
+            y_min - margin, y_max + margin, ny_f,
+            z_min - margin, z_max + margin, nz_f,
+        )
+        for lower, upper, size in zip(
+            bounds[0::3], bounds[1::3], bounds[2::3], strict=True,
+        ):
+            if lower <= g or upper >= size - g:
+                raise ValueError(
+                    f"control-volume margin {margin} reaches the AMR ghost/interface layer",
+                )
+        return box_control_volume(
             fine_solid_g.shape,
             x0=x_min - margin, x1=x_max + margin,
             y0=y_min - margin, y1=y_max + margin,
             z0=z_min - margin, z1=z_max + margin,
             device=device,
         )
+
+    fine_cv = build_owned_control_volume(args.cv_margin)
+    auxiliary_cvs: dict[int, torch.Tensor] = {}
+    for margin in aux_cv_margins:
+        if margin == args.cv_margin:
+            continue
+        auxiliary_cvs[margin] = build_owned_control_volume(margin)
 
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     if args.sponge_inlet:
