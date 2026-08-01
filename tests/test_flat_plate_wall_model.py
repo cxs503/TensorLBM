@@ -67,4 +67,15 @@ def test_flat_plate_checkpoint_can_resume(tmp_path: Path) -> None:
     ))
     assert checkpoint.exists()
     assert resumed["configuration"]["resumed_from_step"] == 4
+    assert resumed["configuration"]["statistics_window_steps_requested"] == 0
     assert resumed["result"]["finite"] is True
+
+
+def test_flat_plate_statistics_tail_must_fit_after_warmup() -> None:
+    config = FlatPlateWallModelConfig(
+        nx=64, ny=32, nz=3, plate_length=24,
+        plate_start_fraction=0.25, steps=4, warmup_steps=2,
+        statistics_window_steps=3,
+    )
+    with pytest.raises(ValueError, match="statistics_window_steps"):
+        config.validate()

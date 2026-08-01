@@ -53,6 +53,7 @@ class FlatPlateWallModelConfig:
     checkpoint_interval: int = 0
     checkpoint_path: str | None = None
     resume: bool = False
+    statistics_window_steps: int = 0
     device: str = "cpu"
 
     @property
@@ -95,6 +96,10 @@ class FlatPlateWallModelConfig:
             raise ValueError("wall_diagnostic_interval must be positive")
         if self.checkpoint_interval < 0:
             raise ValueError("checkpoint_interval must be non-negative")
+        if not 0 <= self.statistics_window_steps <= self.steps - self.warmup_steps:
+            raise ValueError(
+                "statistics_window_steps must be zero or fit after warmup",
+            )
         if self.resume and not self.checkpoint_path:
             raise ValueError("resume requires checkpoint_path")
 
@@ -322,12 +327,16 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     if checkpoint is not None:
         save_checkpoint(config.steps)
 
+    statistics_window = config.statistics_window_steps or len(friction_history)
+    selected_friction = friction_history[-statistics_window:]
+    selected_cv = cv_history[-statistics_window:]
+    selected_bfl = bfl_total_history[-statistics_window:]
     area = 2.0 * config.plate_length * config.nz
     denominator = 0.5 * config.lattice_speed**2 * area
-    cf_history = [force / denominator for force in friction_history]
+    cf_history = [force / denominator for force in selected_friction]
     cf = sum(cf_history) / len(cf_history)
-    cv_mean = sum(cv_history) / len(cv_history)
-    bfl_mean = sum(bfl_total_history) / len(bfl_total_history)
+    cv_mean = sum(selected_cv) / len(selected_cv)
+    bfl_mean = sum(selected_bfl) / len(selected_bfl)
     cf_reference = ittc_1957_friction_coefficient(config.reynolds)
     stationarity = assess_force_stationarity(
         cf_history, block_size=max(1, len(cf_history) // 8),
@@ -372,6 +381,10 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "wall_diagnostic_interval": config.wall_diagnostic_interval,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
+            "statistics_window_steps_requested": (
+                config.statistics_window_steps
+            ),
+            "statistics_window_steps_resolved": statistics_window,
         },
         "result": {
             "friction_coefficient": cf,
