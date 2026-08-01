@@ -80,6 +80,9 @@ def test_nested_v4_launcher_expands_audited_l150_continuation(
     assert "--regularize-restriction" in arguments
     assert "--enforce-transfer-positivity" in arguments
     assert arguments[arguments.index("--ghost-interpolation") + 1] == "trilinear"
+    assert arguments[arguments.index("--reflux-correction-stencil") + 1] == (
+        "exterior_cells"
+    )
     assert arguments[arguments.index("--inner-wall-margin") + 1] == "8"
     assert arguments[arguments.index("--resolved-reynolds-start") + 1] == "2000"
     assert arguments[arguments.index("--viscosity-ramp-start-step") + 1] == "500"

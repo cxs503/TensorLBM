@@ -49,6 +49,12 @@ def test_convective_tau_scaling() -> None:
             tau_coarse=0.56,
             ghost_interpolation="cubic",
         )
+    with pytest.raises(ValueError, match="reflux_correction_stencil"):
+        StaticBlockAMRConfig(
+            BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+            tau_coarse=0.56,
+            reflux_correction_stencil="shell",
+        )
     with pytest.raises(ValueError, match="both be zero or positive"):
         StaticBlockAMRConfig(
             BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
@@ -224,6 +230,27 @@ def test_uniform_moving_equilibrium_survives_nested_step_exactly() -> None:
     ]
     assert [tau for _, _, tau in calls] == pytest.approx([0.56, 0.62, 0.62])
     assert ledger.mass_residual == pytest.approx(0.0, abs=1e-14)
+
+
+def test_crossing_link_reflux_preserves_uniform_moving_equilibrium() -> None:
+    config = StaticBlockAMRConfig(
+        BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+        tau_coarse=0.56,
+        reflux_correction_stencil="crossing_links",
+    )
+    solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)), config)
+    before = solver.coarse_f.clone()
+
+    def identity(
+        f: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
+        del tau, level, substep
+        return AMRAdvanceResult(f.clone(), f.clone())
+
+    ledger = solver.step(identity)
+
+    torch.testing.assert_close(solver.coarse_f, before, rtol=0.0, atol=2e-8)
+    assert ledger.mass_residual == pytest.approx(0.0, abs=2e-14)
 
 
 def test_flux_reflux_does_not_hide_nonconservative_collision_source() -> None:

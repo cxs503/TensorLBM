@@ -62,3 +62,16 @@ def test_interface_validation_exercises_regularized_prolongation() -> None:
 
     assert result["configuration"]["regularize_prolongation"] is True
     assert result["acceptance"]["admitted"] is True
+
+
+def test_interface_validation_exercises_crossing_link_reflux() -> None:
+    result = run_amr_interface_validation(AMRInterfaceValidationConfig(
+        shape_zyx=(12, 14, 24),
+        box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
+        pulse_radius=1.5,
+        steps=3,
+        reflux_correction_stencil="crossing_links",
+    ))
+
+    assert result["configuration"]["reflux_correction_stencil"] == "crossing_links"
+    assert result["acceptance"]["admitted"] is True
