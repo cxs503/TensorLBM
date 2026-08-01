@@ -32,6 +32,8 @@ _IDENTITY_FIELDS = (
     "interface_filter_strength",
     "disable_wall_stress",
     "maximum_health_speed",
+    "minimum_health_population",
+    "maximum_positivity_limited_fraction",
     "minimum_convective_times",
     "minimum_target_reynolds_convective_times",
     "minimum_statistics_convective_times",

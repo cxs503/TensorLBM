@@ -123,6 +123,18 @@ def parser() -> argparse.ArgumentParser:
         help="fail-closed peak lattice-speed limit at health cadence",
     )
     result.add_argument(
+        "--minimum-health-population",
+        type=float,
+        default=1.0e-8,
+        help="fail-closed minimum population required at health cadence",
+    )
+    result.add_argument(
+        "--maximum-positivity-limited-fraction",
+        type=float,
+        default=1.0e-6,
+        help="largest production-admissible fraction limited at any step",
+    )
+    result.add_argument(
         "--regularize-restriction",
         action="store_true",
         help="filter fine-to-coarse transfer to resolved second-order stress",
@@ -248,6 +260,10 @@ def run(args: argparse.Namespace) -> dict:
     )
     if not args.lattice_speed < args.maximum_health_speed < 1.0:
         raise ValueError("maximum health speed must lie between inlet speed and one")
+    if not 0.0 <= args.minimum_health_population < 1.0:
+        raise ValueError("minimum health population must lie in [0,1)")
+    if not 0.0 <= args.maximum_positivity_limited_fraction <= 1.0:
+        raise ValueError("maximum positivity-limited fraction must lie in [0,1]")
     if (args.interface_filter_width == 0) != (
         args.interface_filter_strength == 0.0
     ):
@@ -522,6 +538,10 @@ def run(args: argparse.Namespace) -> dict:
         "enforce_transfer_positivity": args.enforce_transfer_positivity,
         "interface_filter_width": args.interface_filter_width,
         "interface_filter_strength": args.interface_filter_strength,
+        "minimum_health_population": args.minimum_health_population,
+        "maximum_positivity_limited_fraction": (
+            args.maximum_positivity_limited_fraction
+        ),
     }
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
@@ -663,6 +683,8 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("viscosity_ramp_end_step")
         legacy_v3_signature.pop("wall_normal_ramp_steps")
         legacy_v3_signature.pop("wall_shear_ramp_steps")
+        legacy_v3_signature.pop("minimum_health_population")
+        legacy_v3_signature.pop("maximum_positivity_limited_fraction")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and not args.regularize_prolongation
@@ -675,6 +697,8 @@ def run(args: argparse.Namespace) -> dict:
             and resolved_reynolds_start == args.resolved_reynolds
             and wall_normal_ramp_steps == args.ramp_steps
             and wall_shear_ramp_steps == args.ramp_steps
+            and args.minimum_health_population == 1.0e-8
+            and args.maximum_positivity_limited_fraction == 1.0e-6
             and stored_configuration == legacy_v3_signature
         )
         legacy_v2_signature = dict(checkpoint_signature)
@@ -696,6 +720,8 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop("viscosity_ramp_end_step")
         legacy_v2_without_new_transfer.pop("wall_normal_ramp_steps")
         legacy_v2_without_new_transfer.pop("wall_shear_ramp_steps")
+        legacy_v2_without_new_transfer.pop("minimum_health_population")
+        legacy_v2_without_new_transfer.pop("maximum_positivity_limited_fraction")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
@@ -709,6 +735,8 @@ def run(args: argparse.Namespace) -> dict:
             and resolved_reynolds_start == args.resolved_reynolds
             and wall_normal_ramp_steps == args.ramp_steps
             and wall_shear_ramp_steps == args.ramp_steps
+            and args.minimum_health_population == 1.0e-8
+            and args.maximum_positivity_limited_fraction == 1.0e-6
             and stored_configuration == legacy_v2_without_new_transfer
         )
         if (
@@ -1060,6 +1088,25 @@ def run(args: argparse.Namespace) -> dict:
                     f"at root_step={current_step}: {peak_speed:.6g} > "
                     f"{args.maximum_health_speed:.6g}",
                 )
+            minimum_population = min(
+                float(record["minimum_population"]) for record in level_health
+            )
+            if minimum_population < args.minimum_health_population:
+                raise FloatingPointError(
+                    "hierarchy crossed the population-health floor "
+                    f"at root_step={current_step}: {minimum_population:.6g} < "
+                    f"{args.minimum_health_population:.6g}",
+                )
+            if (
+                maximum_limiter_fraction
+                > args.maximum_positivity_limited_fraction
+            ):
+                raise FloatingPointError(
+                    "hierarchy exceeded the positivity-limiter gate "
+                    f"at root_step={current_step}: "
+                    f"{maximum_limiter_fraction:.6g} > "
+                    f"{args.maximum_positivity_limited_fraction:.6g}",
+                )
         if len(force_samples) != 4:
             raise RuntimeError("three-level hierarchy must emit four finest force samples")
         for index, ledger in enumerate(ledgers):
@@ -1231,6 +1278,14 @@ def run(args: argparse.Namespace) -> dict:
         )
         if health_records else None
     )
+    minimum_observed_population = (
+        min(
+            float(level["minimum_population"])
+            for record in health_records
+            for level in record["levels"]
+        )
+        if health_records else None
+    )
     minimum_observed_density = (
         min(
             float(level["minimum_density"])
@@ -1252,6 +1307,8 @@ def run(args: argparse.Namespace) -> dict:
     population_health_acceptable = (
         maximum_observed_speed is not None
         and maximum_observed_speed <= args.maximum_health_speed
+        and minimum_observed_population is not None
+        and minimum_observed_population >= args.minimum_health_population
         and minimum_observed_density is not None
         and minimum_observed_density > 0.0
         and maximum_observed_density is not None
@@ -1265,8 +1322,9 @@ def run(args: argparse.Namespace) -> dict:
         and max(maximum_reflux_residual) <= 1.0e-6
         and max(maximum_reflux_limited_directions) == 0
         and max(maximum_transfer_limited_fraction) <= 1.0e-3
-        and maximum_limiter_fraction <= 1.0e-3
+        and maximum_limiter_fraction <= args.maximum_positivity_limited_fraction
         and maximum_rejected_fraction <= 0.01
+        and (args.health_interval == 0 or population_health_acceptable)
     )
     post_warmup_records = [
         record for record in target_reynolds_records
@@ -1456,6 +1514,7 @@ def run(args: argparse.Namespace) -> dict:
             "finite": finite,
             "population_health": health_records,
             "maximum_observed_speed": maximum_observed_speed,
+            "minimum_observed_population": minimum_observed_population,
             "minimum_observed_density": minimum_observed_density,
             "maximum_observed_density": maximum_observed_density,
             "statistics": {
@@ -1525,6 +1584,10 @@ def run(args: argparse.Namespace) -> dict:
                 reference_error_pct is not None and reference_error_pct <= 5.0
             ),
             "population_health_target_met": population_health_acceptable,
+            "minimum_population_target": args.minimum_health_population,
+            "positivity_limited_fraction_target": (
+                args.maximum_positivity_limited_fraction
+            ),
             "single_grid_candidate": single_grid_candidate,
             "resistance_accuracy_assessed": False,
             "time_convergence_assessed": False,

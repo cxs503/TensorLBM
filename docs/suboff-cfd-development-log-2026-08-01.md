@@ -1373,6 +1373,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      that full normal impermeability can coexist with zero applied shear and
      that invalid activation fractions fail closed.  This is a diagnostic and
      startup-control capability, not a change to already running trajectories.
+153. Population health is now a runtime gate rather than an end-of-run note.
+     Production defaults require every cadence sample to remain above
+     `1e-8` and cumulative positivity limiting to remain at or below `1e-6`;
+     both thresholds are explicit configuration, checkpoint and convergence
+     identity fields.  Crossing either threshold writes the health record and
+     then fails closed immediately.  Runs without health cadence remain usable
+     only as integration smoke tests, while every convergence source already
+     requires `population_health_target_met=true`.  This excludes v10-style
+     trajectories that touch the limiter floor and later appear to recover.
 
 ## Rejected candidates
 
