@@ -320,6 +320,7 @@ def run(args: argparse.Namespace) -> dict:
     }
     surface_pressure_samples: list[tuple[int, float]] = []
     surface_total_samples: list[tuple[int, float]] = []
+    paired_bfl_total_samples: list[tuple[int, float]] = []
     wall_diagnostic_samples: list[WallStressDiagnostics] = []
     positivity_fractions: list[float] = []
     current_step = 0
@@ -512,6 +513,9 @@ def run(args: argparse.Namespace) -> dict:
         surface_total_samples = [
             tuple(item) for item in state["surface_total_samples"].tolist()
         ]
+        paired_bfl_total_samples = [
+            tuple(item) for item in state["paired_bfl_total_samples"].tolist()
+        ]
         recent_forces = state["recent_forces"].tolist()
         recent_bfl_pressure = state["recent_bfl_pressure"].tolist()
         recent_wall_shear = state["recent_wall_shear"].tolist()
@@ -571,6 +575,9 @@ def run(args: argparse.Namespace) -> dict:
             ).reshape(-1, 2),
             "surface_total_samples": torch.tensor(
                 surface_total_samples, dtype=torch.float64,
+            ).reshape(-1, 2),
+            "paired_bfl_total_samples": torch.tensor(
+                paired_bfl_total_samples, dtype=torch.float64,
             ).reshape(-1, 2),
             "recent_forces": torch.tensor(recent_forces, dtype=torch.float64),
             "recent_bfl_pressure": torch.tensor(
@@ -633,6 +640,9 @@ def run(args: argparse.Namespace) -> dict:
             surface_pressure_samples.append((current_step, surface_pressure))
             surface_total_samples.append(
                 (current_step, surface_pressure + friction),
+            )
+            paired_bfl_total_samples.append(
+                (current_step, pressure + friction),
             )
         maximum_positivity_limited_fraction = max(
             maximum_positivity_limited_fraction,
@@ -759,6 +769,7 @@ def run(args: argparse.Namespace) -> dict:
     }
     surface_pressure_mean = sampled_mean(surface_pressure_samples)
     surface_total_mean = sampled_mean(surface_total_samples)
+    paired_bfl_total_mean = sampled_mean(paired_bfl_total_samples)
     auxiliary_items = list(auxiliary_cv_means.items())
     nested_cv_assessment = assess_nested_control_volume_invariance(
         paired_primary_cv_mean,
@@ -782,8 +793,8 @@ def run(args: argparse.Namespace) -> dict:
         abs(mean_bfl_total - mean_force) / max(abs(mean_force), 1e-30) * 100.0
     )
     surface_observer_difference_pct = (
-        abs(surface_total_mean - mean_bfl_total)
-        / max(abs(mean_bfl_total), 1e-30) * 100.0
+        abs(surface_total_mean - paired_bfl_total_mean)
+        / max(abs(paired_bfl_total_mean), 1e-30) * 100.0
     )
     maximum_rejected_fraction = max(
         wall_rejected_fraction_history, default=0.0,
@@ -903,6 +914,7 @@ def run(args: argparse.Namespace) -> dict:
             "mean_surface_pressure_plus_wall_stress_n_diagnostic": (
                 surface_total_mean * scale
             ),
+            "paired_bfl_link_plus_wall_stress_n": paired_bfl_total_mean * scale,
             "surface_pressure_samples_in_window": sum(
                 step > final_window_start for step, _ in surface_pressure_samples
             ),
