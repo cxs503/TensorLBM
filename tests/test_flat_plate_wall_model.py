@@ -59,7 +59,7 @@ def test_flat_plate_checkpoint_can_resume(tmp_path: Path) -> None:
     )
     run_flat_plate_wall_model(FlatPlateWallModelConfig(**common, steps=4))
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
-    assert state["schema"] == "tensorlbm-flat-plate-checkpoint-v3"
+    assert state["schema"] == "tensorlbm-flat-plate-checkpoint-v4"
     assert state["configuration"]["sponge_strength"] == pytest.approx(0.2)
     assert state["configuration"]["smagorinsky_cs"] == pytest.approx(0.05)
     resumed = run_flat_plate_wall_model(FlatPlateWallModelConfig(

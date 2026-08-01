@@ -175,13 +175,67 @@ def test_wall_model_slip_bfl_preserves_uniform_tangential_flow() -> None:
     _, slip_force = bouzidi_bounce_back_d3q19(
         f_streamed, f_prev, masks, q,
         wall_velocity=(ux, zero, zero), wall_density=rho,
-        return_force=True,
+        return_force=True, force_frame="wall",
     )
     _, stationary_force = bouzidi_bounce_back_d3q19(
         f_streamed, f_prev, masks, q, return_force=True,
     )
     assert slip_force[0] == pytest.approx(0.0, abs=1e-14)
     assert stationary_force[0] > 0.0
+
+
+def test_moving_bfl_laboratory_force_closes_nonequilibrium_control_volume() -> None:
+    """Wall-frame correction must not replace the conservative force ledger."""
+    from tensorlbm.boundaries3d import sphere_mask
+    from tensorlbm.control_volume_force import box_control_volume, observe_control_volume_force
+    from tensorlbm.interpolated_bc import compute_q_sphere
+    from tensorlbm.solver3d import stream3d
+    from tensorlbm.wall_model import compute_bfl_link_normal
+
+    shape = (20, 20, 28)
+    nx, ny, nz = 28, 20, 20
+    cx, cy, cz, radius = 11.0, 10.0, 10.0, 3.5
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.06, dtype=torch.float64)
+    zero = torch.zeros_like(rho)
+    old = equilibrium3d(rho, ux, zero, zero)
+    solid = sphere_mask(
+        nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"),
+    )
+    masks, q = compute_q_sphere(
+        nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"),
+    )
+    # A deterministic non-equilibrium perturbation makes the two force frames
+    # observably different while keeping every population positive.
+    old = old.clone()
+    old[7][masks[7]] *= 1.03
+    streamed = stream3d(old)
+    nx_n, ny_n, nz_n = compute_bfl_link_normal(masks)
+    normal_speed = ux * nx_n
+    wall_velocity = (
+        ux - normal_speed * nx_n,
+        -normal_speed * ny_n,
+        -normal_speed * nz_n,
+    )
+    updated, laboratory_force = bouzidi_bounce_back_d3q19(
+        streamed, old, masks, q,
+        wall_velocity=wall_velocity, wall_density=rho,
+        return_force=True, force_frame="laboratory",
+    )
+    _, wall_frame_force = bouzidi_bounce_back_d3q19(
+        streamed, old, masks, q,
+        wall_velocity=wall_velocity, wall_density=rho,
+        return_force=True, force_frame="wall",
+    )
+    cv = box_control_volume(
+        shape, x0=5, x1=18, y0=4, y1=17, z0=4, z1=17,
+    )
+    cv_force = observe_control_volume_force(
+        old, updated, old, cv, solid=solid,
+    ).force_on_body
+
+    assert cv_force[0].item() == pytest.approx(laboratory_force[0], abs=1e-11)
+    assert wall_frame_force[0] != pytest.approx(laboratory_force[0], abs=1e-7)
 
 
 def test_wall_model_startup_ramps_relative_normal_velocity_not_bfl_population() -> None:

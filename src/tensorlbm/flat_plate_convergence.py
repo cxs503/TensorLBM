@@ -20,6 +20,7 @@ _IDENTITY_FIELDS = (
     "sponge_strength",
     "smagorinsky_cs",
     "positivity_limiter",
+    "link_force_frame",
 )
 _RATIO_FIELDS = ("sponge_width", "cv_margin")
 
@@ -39,7 +40,7 @@ def assess_flat_plate_convergence(
     schema_valid = True
     single_grid_admitted = True
     for record in records:
-        schema_valid &= record.get("schema") == "tensorlbm-flat-plate-wall-model-v3"
+        schema_valid &= record.get("schema") == "tensorlbm-flat-plate-wall-model-v4"
         configuration = record.get("configuration")
         result = record.get("result")
         acceptance = record.get("acceptance")
@@ -134,7 +135,7 @@ def assess_flat_plate_convergence(
         "resolutions": resolutions,
         "friction_coefficients": values,
         "configuration_identity": {
-            "v3_schema": schema_valid,
+            "v4_schema": schema_valid,
             "required_fields_present": required_fields_present,
             "identity_fields_equal": configuration_identity,
             "exchange_distance_over_length": exchange_ratios,
