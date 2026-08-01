@@ -468,3 +468,23 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
 
     assert resumed["configuration"]["resumed_legacy_v3_checkpoint"] is True
     assert resumed["configuration"]["resumed_from_step"] == 1
+
+
+def test_natural_kbc_can_resume_checkpoint_before_gradient_sgs_options(
+    tmp_path: Path,
+) -> None:
+    MODULE.run(_args(
+        tmp_path, steps=1, collision_model="natural_kbc",
+    ))
+    checkpoint = tmp_path / "nested-smoke.ckpt"
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"].pop("wale_cw")
+    state["configuration"].pop("vreman_cv")
+    torch.save(state, checkpoint)
+
+    resumed = MODULE.run(_args(
+        tmp_path, steps=2, resume=True, collision_model="natural_kbc",
+    ))
+
+    assert resumed["configuration"]["resumed_pre_gradient_sgs_checkpoint"] is True
+    assert resumed["configuration"]["resumed_from_step"] == 1
