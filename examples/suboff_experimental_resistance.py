@@ -25,6 +25,7 @@ import torch
 
 from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.control_volume_force import (
+    assess_nested_control_volume_invariance,
     box_control_volume,
     observe_control_volume_force,
 )
@@ -640,6 +641,17 @@ def run_case(args: argparse.Namespace) -> dict:
         auxiliary_cv_final[margin] = (
             sum(selected) / len(selected) if selected else math.nan
         )
+    auxiliary_items = list(auxiliary_cv_final.items())
+    nested_cv_assessment = assess_nested_control_volume_invariance(
+        p_final + f_final,
+        [value for _, value in auxiliary_items],
+    )
+    auxiliary_cv_difference_pct = {
+        str(margin): difference
+        for (margin, _), difference in zip(
+            auxiliary_items, nested_cv_assessment.differences_pct,
+        )
+    }
     error_pct = abs(predicted_n - point.resistance_n) / point.resistance_n * 100.0
     force_stationarity = assess_force_stationarity(
         [
@@ -767,10 +779,13 @@ def run_case(args: argparse.Namespace) -> dict:
                 str(margin): value * force_scale
                 for margin, value in auxiliary_cv_final.items()
             },
-            "auxiliary_control_volume_difference_pct": {
-                str(margin): abs(value - (p_final + f_final))
-                / max(abs(p_final + f_final), 1e-30) * 100.0
-                for margin, value in auxiliary_cv_final.items()
+            "auxiliary_control_volume_difference_pct": auxiliary_cv_difference_pct,
+            "nested_control_volume_invariance": {
+                "auxiliary_count": nested_cv_assessment.auxiliary_count,
+                "maximum_difference_pct": (
+                    nested_cv_assessment.maximum_difference_pct
+                ),
+                "finite": nested_cv_assessment.finite,
             },
             "friction_resistance_n": f_final * force_scale,
             "total_resistance_n": predicted_n,
@@ -820,13 +835,21 @@ def run_case(args: argparse.Namespace) -> dict:
             "force_error_target_pct": args.error_target,
             "steady_drift_target_pct": args.drift_target,
             "maximum_exchange_rejected_fraction": 0.01,
+            "nested_control_volume_target_pct": 1.0,
+            "minimum_auxiliary_control_volumes": 2,
             "force_target_met": error_pct <= args.error_target,
             "steady_target_met": force_stationarity.meets(args.drift_target),
             "exchange_sampling_target_met": exchange_sampling_acceptable,
+            "nested_control_volume_target_met": (
+                nested_cv_assessment.meets(1.0, minimum_auxiliary_count=2)
+            ),
             "admitted": (
                 error_pct <= args.error_target
                 and force_stationarity.meets(args.drift_target)
                 and exchange_sampling_acceptable
+                and nested_cv_assessment.meets(
+                    1.0, minimum_auxiliary_count=2,
+                )
                 and finite
             ),
             "claim_boundary": "One grid/time candidate; grid and time convergence plus paired AFF-1/AFF-8 ratio are required for physical validation.",
