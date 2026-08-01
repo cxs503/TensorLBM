@@ -20,6 +20,7 @@ ROOT = Path(__file__).parents[1]
         ("run_suboff_nested_v10_scaled_level.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
+        ("run_cylinder_v4_domain_width.sh", "W30"),
         ("run_flat_plate_v4_equivalent_level.sh", "L256"),
     ),
 )
@@ -141,6 +142,43 @@ def test_suboff_v9_launcher_uses_quadratic_inlet_pressure_observer(
     ] == "quadratic"
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-v9-equivalent-l120-16k.json" in output
+
+
+def test_cylinder_domain_launcher_changes_only_lateral_clearance(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_cylinder_v4_domain_width.sh"),
+            "W30",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--nx") + 1] == "360"
+    assert arguments[arguments.index("--ny") + 1] == "540"
+    assert arguments[arguments.index("--radius") + 1] == "9"
+    assert arguments[arguments.index("--steps") + 1] == "54000"
+    output = arguments[arguments.index("--output") + 1]
+    assert "cylinder-v4-domain-w30d-r9-54k.json" in output
 
 
 def test_nested_v10_launcher_scales_all_inner_physical_locations(
