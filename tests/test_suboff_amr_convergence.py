@@ -33,6 +33,7 @@ def _record(coarse_length: float) -> dict[str, object]:
             "boundary_treatment": "bfl_wall_model",
             "refinement_ratio": 2,
             "reflux_enabled": True,
+            "maximum_reflux_correction_fraction": 0.2,
             "reflux_method": "face_local_post_collision_kinetic_flux",
             "wall_stress_coupled": True,
             "positivity_limiter_enabled": True,

@@ -37,6 +37,12 @@ def test_convective_tau_scaling() -> None:
     assert convective_refined_tau(0.5001) == pytest.approx(0.5002)
     with pytest.raises(ValueError):
         convective_refined_tau(0.5)
+    with pytest.raises(ValueError, match="maximum_reflux_correction_fraction"):
+        StaticBlockAMRConfig(
+            BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+            tau_coarse=0.56,
+            maximum_reflux_correction_fraction=0.0,
+        )
 
 
 def test_uniform_moving_equilibrium_survives_nested_step_exactly() -> None:
@@ -134,6 +140,8 @@ def test_large_positive_interface_correction_does_not_create_negatives() -> None
     ledger = solver.step(inflate_fine)
     assert float(solver.coarse_f.min()) >= 0.0
     assert ledger.shell_cells > 0
+    assert ledger.limited_directions > 0
+    assert float(ledger.residual.abs().max()) > 0.0
 
 
 def test_local_block_saves_cells_against_uniform_refinement() -> None:

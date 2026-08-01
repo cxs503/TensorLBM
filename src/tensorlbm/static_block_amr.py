@@ -16,8 +16,8 @@ problem-specific physical boundaries without teaching this module about them.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import torch
 
@@ -103,6 +103,7 @@ class StaticBlockAMRConfig:
     ratio: int = 2
     ghost: int = 1
     reflux: bool = True
+    maximum_reflux_correction_fraction: float = 0.2
 
     def __post_init__(self) -> None:
         if not isinstance(self.box, BoxRegion):
@@ -110,6 +111,10 @@ class StaticBlockAMRConfig:
         convective_refined_tau(self.tau_coarse, self.ratio)
         if self.ghost != 1:
             raise ValueError("the production runtime currently supports ghost=1")
+        if not 0.0 < self.maximum_reflux_correction_fraction <= 1.0:
+            raise ValueError(
+                "maximum_reflux_correction_fraction must lie in (0,1]",
+            )
 
     @property
     def tau_fine(self) -> float:
@@ -351,6 +356,9 @@ class StaticBlockAMR3D:
         self.coarse_f, report = apply_face_local_reflux(
             self.coarse_f, self.coarse_interface_links,
             coarse_transfer, fine_transfer,
+            maximum_correction_fraction=(
+                self.config.maximum_reflux_correction_fraction
+            ),
         )
         self.last_reflux = PopulationRefluxLedger(
             report.requested_inventory_correction,
