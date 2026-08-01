@@ -161,11 +161,13 @@ def apply_face_local_reflux(
         raise ValueError("maximum_removal_fraction must lie in (0,1]")
     if coarse_populations.shape != coarse_links.outgoing_origins.shape:
         raise ValueError("coarse populations and links must share shape")
-    # Fine-minus-coarse net outward transport is exactly the inventory that
+    # Fine-minus-coarse *net* outward transport is exactly the inventory that
     # the coarse exterior must gain after the fine-owned patch replaces its
-    # coarse representation.
-    delta_out = fine_transfer.outgoing - coarse_transfer.outgoing
-    delta_in = fine_transfer.incoming - coarse_transfer.incoming
+    # coarse representation.  Outgoing and incoming quadratures must be
+    # combined before correction: at edges/corners their fine/coarse link
+    # counts differ even for a uniform equilibrium, while their net transfer
+    # is exactly zero (free-stream preservation).
+    requested = fine_transfer.net_outgoing - coarse_transfer.net_outgoing
     c = _lattice_velocities(coarse_links.q, coarse_populations.device)
     receiving = torch.zeros_like(coarse_links.outgoing_origins)
     for direction in range(1, coarse_links.q):
@@ -174,20 +176,14 @@ def apply_face_local_reflux(
             coarse_links.outgoing_origins[direction],
             shifts=(cz, cy, cx), dims=(0, 1, 2),
         )
-    corrected, applied_out, count_out, limited_out = _apply_population_total(
-        coarse_populations, receiving, delta_out,
+    exterior_links = receiving | coarse_links.incoming_origins
+    corrected, applied, corrected_links, limited = _apply_population_total(
+        coarse_populations, exterior_links, requested,
         maximum_removal_fraction=maximum_removal_fraction,
     )
-    corrected, applied_in, count_in, limited_in = _apply_population_total(
-        corrected, coarse_links.incoming_origins, -delta_in,
-        maximum_removal_fraction=maximum_removal_fraction,
-    )
-    requested = delta_out - delta_in
-    applied = applied_out + applied_in
     residual = requested - applied
     return corrected, FaceLocalRefluxReport(
-        requested, applied, residual, count_out + count_in,
-        limited_out + limited_in,
+        requested, applied, residual, corrected_links, limited,
     )
 
 

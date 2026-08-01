@@ -43,7 +43,11 @@ from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_sponge_sigma_3d,
 )
-from tensorlbm.static_block_amr import StaticBlockAMR3D, StaticBlockAMRConfig
+from tensorlbm.static_block_amr import (
+    AMRAdvanceResult,
+    StaticBlockAMR3D,
+    StaticBlockAMRConfig,
+)
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import build_fine_suboff_mask, plan_suboff_static_amr
 from tensorlbm.turbulence import collide_smagorinsky_mrt3d, collide_wale_mrt3d
@@ -205,7 +209,9 @@ def run(args: argparse.Namespace) -> dict:
     positivity_fractions: list[float] = []
     current_step = 0
 
-    def advance(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+    def advance(
+        f: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
         def collide(state: torch.Tensor) -> torch.Tensor:
             if args.collision_model == "cumulant_smagorinsky":
                 result = collide_cumulant_d3q19(
@@ -221,7 +227,8 @@ def run(args: argparse.Namespace) -> dict:
             return result
 
         if level == 0:
-            out = stream3d(collide(f))
+            post_collision = collide(f)
+            out = stream3d(post_collision)
             if args.far_field_mode == "non_equilibrium_extrapolation":
                 out = non_equilibrium_far_field_bc_3d(
                     out, u_in=args.lattice_speed,
@@ -234,10 +241,12 @@ def run(args: argparse.Namespace) -> dict:
                     velocity_target=(args.lattice_speed, 0.0, 0.0),
                 )
             if args.far_field_mode == "non_equilibrium_extrapolation":
-                return non_equilibrium_far_field_bc_3d(
+                out = non_equilibrium_far_field_bc_3d(
                     out, u_in=args.lattice_speed,
                 )
-            return far_field_bc_3d(out, u_in=args.lattice_speed)
+            else:
+                out = far_field_bc_3d(out, u_in=args.lattice_speed)
+            return AMRAdvanceResult(out, post_collision)
 
         before = f
         collided = collide(f)
@@ -258,7 +267,7 @@ def run(args: argparse.Namespace) -> dict:
             before, out, post_collision, fine_cv, solid=fine_solid_g,
         ).force_on_body[0].item())
         force_samples.append((pressure, friction, cv_force))
-        return out
+        return AMRAdvanceResult(out, post_collision)
 
     dx_fine_m = MODEL_LENGTH_M / (2.0 * args.hull_length)
     scale = force_scale_newton(
@@ -330,6 +339,7 @@ def run(args: argparse.Namespace) -> dict:
             "tau_fine": amr.config.tau_fine, "physical_reynolds": physical_re,
             "collision_reynolds": collision_re, "steps": args.steps,
             "reflux_enabled": amr.config.reflux,
+            "reflux_method": "face_local_post_collision_kinetic_flux",
             "les_model": args.les_model,
             "collision_model": args.collision_model,
             "les_constant": (
