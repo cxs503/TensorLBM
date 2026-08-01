@@ -352,6 +352,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     allocation is estimated below 18 GiB, and each grid has an independent
     checkpoint.  The convergence CLI now records source SHA-256 hashes just as
     the admitted flat-plate chain does.
+49. Sphere checkpoint/result provenance is upgraded to v2 after auditing the
+    old R15 state.  V1 persisted only shape, radius, Reynolds number and lattice
+    speed (plus a later inlet-sponge default), so it could not prove that CV
+    margin, center, ramp, sponge width/strength or outer-boundary mode remained
+    unchanged on resume.  V2 stores and compares all of those fields plus the
+    collision identity and warmup; a save/resume mismatch regression test
+    passes.  The old 5000-step state remains negative evidence and is not
+    resumed.  A clean R15 8000-step run uses explicit scaled parameters on the
+    otherwise idle GPU 0 instead.
 
 ## Rejected candidates
 
