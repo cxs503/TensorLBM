@@ -29,7 +29,11 @@ from tensorlbm.control_volume_force import (
 from tensorlbm.cuda_memory_budget import require_cuda_memory_budget
 from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d
-from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d
+from tensorlbm.drag_pressure import (
+    SurfaceMesh,
+    drag_pressure_integration,
+    get_near_wall_3d,
+)
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
@@ -73,6 +77,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--inner-wall-margin", type=int, default=4)
     result.add_argument("--inner-wake-cells", type=int, default=8)
     result.add_argument("--cv-margin", type=int, default=4)
+    result.add_argument("--aux-cv-margins", default="2,6")
+    result.add_argument("--surface-force-interval", type=int, default=50)
     result.add_argument("--steps", type=int, default=2)
     result.add_argument("--warmup-steps", type=int, default=0)
     result.add_argument("--statistics-window-steps", type=int, default=0)
@@ -127,10 +133,20 @@ def run(args: argparse.Namespace) -> dict:
     if min(
         args.report_interval,
         args.wall_diagnostic_interval,
+        args.surface_force_interval,
         args.minimum_convective_times,
         args.minimum_statistics_convective_times,
     ) <= 0:
         raise ValueError("report/diagnostic intervals and duration targets must be positive")
+    auxiliary_margins = tuple(
+        int(value.strip())
+        for value in args.aux_cv_margins.split(",")
+        if value.strip()
+    )
+    if len(auxiliary_margins) != 2 or len({args.cv_margin, *auxiliary_margins}) != 3:
+        raise ValueError("primary and two auxiliary CV margins must be distinct")
+    if min(auxiliary_margins) < 1:
+        raise ValueError("auxiliary CV margins must be positive")
     if args.resume and args.checkpoint is None:
         raise ValueError("resume requires a checkpoint path")
     device = torch.device(args.device)
@@ -237,6 +253,8 @@ def run(args: argparse.Namespace) -> dict:
         "outer_box": vars(outer_plan.box),
         "inner_box": vars(nested_plan.box_in_outer_allocated_coordinates),
         "cv_margin": args.cv_margin,
+        "auxiliary_cv_margins": list(auxiliary_margins),
+        "surface_force_interval": args.surface_force_interval,
         "ramp_steps": args.ramp_steps,
         "lattice_speed": args.lattice_speed,
         "resolved_reynolds": args.resolved_reynolds,
@@ -288,23 +306,31 @@ def run(args: argparse.Namespace) -> dict:
     z_max, y_max, x_max = (
         int(indices[:, axis].max().item()) + 1 for axis in range(3)
     )
-    bounds = (
-        x_min - args.cv_margin, x_max + args.cv_margin, nx_f,
-        y_min - args.cv_margin, y_max + args.cv_margin, ny_f,
-        z_min - args.cv_margin, z_max + args.cv_margin, nz_f,
-    )
-    for lower, upper, size in zip(
-        bounds[0::3], bounds[1::3], bounds[2::3], strict=True,
-    ):
-        if lower <= 1 or upper >= size - 1:
-            raise ValueError("control volume reaches the nested interface")
-    control_volume = box_control_volume(
-        finest_solid.shape,
-        x0=x_min - args.cv_margin, x1=x_max + args.cv_margin,
-        y0=y_min - args.cv_margin, y1=y_max + args.cv_margin,
-        z0=z_min - args.cv_margin, z1=z_max + args.cv_margin,
-        device=device,
-    )
+    def build_control_volume(margin: int) -> torch.Tensor:
+        bounds = (
+            x_min - margin, x_max + margin, nx_f,
+            y_min - margin, y_max + margin, ny_f,
+            z_min - margin, z_max + margin, nz_f,
+        )
+        for lower, upper, size in zip(
+            bounds[0::3], bounds[1::3], bounds[2::3], strict=True,
+        ):
+            if lower <= 1 or upper >= size - 1:
+                raise ValueError(
+                    f"control-volume margin {margin} reaches the nested interface",
+                )
+        return box_control_volume(
+            finest_solid.shape,
+            x0=x_min - margin, x1=x_max + margin,
+            y0=y_min - margin, y1=y_max + margin,
+            z0=z_min - margin, z1=z_max + margin,
+            device=device,
+        )
+
+    control_volume = build_control_volume(args.cv_margin)
+    auxiliary_control_volumes = {
+        margin: build_control_volume(margin) for margin in auxiliary_margins
+    }
     sponge = build_sponge_sigma_3d(
         shape,
         width=args.sponge_width,
@@ -323,7 +349,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     current_step = 0
     resumed_from_step = 0
-    force_samples: list[tuple[float, float, float, float | None]] = []
+    force_samples: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
     maximum_reflux_residual = [0.0, 0.0]
@@ -463,12 +489,28 @@ def run(args: argparse.Namespace) -> dict:
             control_volume,
             solid=finest_solid,
         )[0])
-        force_samples.append((
-            cv_force,
-            pressure + friction,
-            collision_source + positivity_source,
-            mean_y_plus,
-        ))
+        auxiliary_forces = (
+            {
+                margin: float(observe_control_volume_force(
+                    before,
+                    out,
+                    post_collision,
+                    auxiliary_cv,
+                    solid=finest_solid,
+                ).force_on_body[0])
+                for margin, auxiliary_cv in auxiliary_control_volumes.items()
+            }
+            if current_step % args.surface_force_interval == 0 else {}
+        )
+        force_samples.append({
+            "cv": cv_force,
+            "bfl": pressure + friction,
+            "pressure": pressure,
+            "friction": friction,
+            "source": collision_source + positivity_source,
+            "y_plus": mean_y_plus,
+            "auxiliary": auxiliary_forces,
+        })
         return AMRAdvanceResult(out, post_collision)
 
     start_step = current_step
@@ -487,19 +529,40 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_reflux_limited_directions[index],
                 ledger.limited_directions,
             )
-        cv_mean = sum(item[0] for item in force_samples) / 4.0
-        bfl_mean = sum(item[1] for item in force_samples) / 4.0
-        source_mean = sum(item[2] for item in force_samples) / 4.0
+        cv_mean = sum(item["cv"] for item in force_samples) / 4.0
+        bfl_mean = sum(item["bfl"] for item in force_samples) / 4.0
+        pressure_mean = sum(item["pressure"] for item in force_samples) / 4.0
+        friction_mean = sum(item["friction"] for item in force_samples) / 4.0
+        source_mean = sum(item["source"] for item in force_samples) / 4.0
+        auxiliary_means = (
+            {
+                margin: sum(
+                    item["auxiliary"][margin] for item in force_samples
+                ) / 4.0
+                for margin in auxiliary_margins
+            }
+            if current_step % args.surface_force_interval == 0 else None
+        )
         corrected = cv_mean + source_mean
         y_plus_samples = [
-            item[3] for item in force_samples if item[3] is not None
+            item["y_plus"] for item in force_samples
+            if item["y_plus"] is not None
         ]
-        step_records.append({
+        record = {
             "step": current_step,
             "cv_resistance_n": cv_mean * scale,
             "bfl_plus_wall_stress_n": bfl_mean * scale,
+            "bfl_pressure_n": pressure_mean * scale,
+            "wall_shear_n": friction_mean * scale,
             "numerical_source_n": source_mean * scale,
             "source_corrected_cv_n": corrected * scale,
+            "auxiliary_cv_n": (
+                {
+                    str(margin): value * scale
+                    for margin, value in auxiliary_means.items()
+                }
+                if auxiliary_means is not None else None
+            ),
             "raw_observer_difference_pct": (
                 abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1.0e-30) * 100.0
             ),
@@ -511,7 +574,21 @@ def run(args: argparse.Namespace) -> dict:
                 if y_plus_samples else None
             ),
             "wall_fully_activated": current_step >= args.ramp_steps,
-        })
+            "surface_pressure_plus_wall_stress_n": None,
+        }
+        if current_step % args.surface_force_interval == 0:
+            surface_pressure = drag_pressure_integration(
+                hierarchy.finest_f,
+                surface,
+                1.0,
+                extrap="none",
+                p0_method="near_wall",
+                solid=finest_solid,
+            )[0]
+            record["surface_pressure_plus_wall_stress_n"] = (
+                (surface_pressure + friction_mean) * scale
+            )
+        step_records.append(record)
         if current_step % args.report_interval == 0 or current_step == args.steps:
             print(
                 f"nested smoke step={current_step}/{args.steps} "
@@ -599,10 +676,58 @@ def run(args: argparse.Namespace) -> dict:
     stationarity_acceptable = (
         force_stationarity is not None and force_stationarity.meets(1.0)
     )
+    auxiliary_cv_difference_pct = None
+    nested_cv_acceptable = False
+    surface_observer_difference_pct = None
+    surface_observer_acceptable = False
+    if selected_records and mean_resistance is not None:
+        auxiliary_records = [
+            record for record in selected_records
+            if record["auxiliary_cv_n"] is not None
+        ]
+        auxiliary_means_n = {
+            str(margin): sum(
+                record["auxiliary_cv_n"][str(margin)]
+                for record in auxiliary_records
+            ) / len(auxiliary_records)
+            for margin in auxiliary_margins
+        } if auxiliary_records else {}
+        if auxiliary_records:
+            paired_primary_mean = sum(
+                record["cv_resistance_n"] for record in auxiliary_records
+            ) / len(auxiliary_records)
+            auxiliary_cv_difference_pct = {
+                margin: abs(value - paired_primary_mean)
+                / max(abs(paired_primary_mean), 1.0e-30) * 100.0
+                for margin, value in auxiliary_means_n.items()
+            }
+            nested_cv_acceptable = (
+                max(auxiliary_cv_difference_pct.values()) <= 1.0
+            )
+        surface_records = [
+            record for record in selected_records
+            if record["surface_pressure_plus_wall_stress_n"] is not None
+        ]
+        if surface_records:
+            surface_mean = sum(
+                record["surface_pressure_plus_wall_stress_n"]
+                for record in surface_records
+            ) / len(surface_records)
+            paired_cv_mean = sum(
+                record["cv_resistance_n"] for record in surface_records
+            ) / len(surface_records)
+            surface_observer_difference_pct = (
+                abs(surface_mean - paired_cv_mean)
+                / max(abs(paired_cv_mean), 1.0e-30)
+                * 100.0
+            )
+            surface_observer_acceptable = surface_observer_difference_pct <= 5.0
     single_grid_candidate = (
         admitted
         and duration_acceptable
         and stationarity_acceptable
+        and nested_cv_acceptable
+        and surface_observer_acceptable
         and reference_error_pct is not None
         and reference_error_pct <= 5.0
         and geometry_resolution.absolute_reference_resolved
@@ -669,6 +794,10 @@ def run(args: argparse.Namespace) -> dict:
                     force_stationarity.to_dict()
                     if force_stationarity is not None else None
                 ),
+                "auxiliary_cv_difference_pct": auxiliary_cv_difference_pct,
+                "surface_observer_difference_pct": (
+                    surface_observer_difference_pct
+                ),
             },
         },
         "acceptance": {
@@ -676,6 +805,8 @@ def run(args: argparse.Namespace) -> dict:
             "fully_activated_steps_assessed": len(eligible_records),
             "duration_target_met": duration_acceptable,
             "stationarity_target_met": stationarity_acceptable,
+            "nested_control_volume_target_met": nested_cv_acceptable,
+            "surface_observer_target_met": surface_observer_acceptable,
             "reference_error_target_met": (
                 reference_error_pct is not None and reference_error_pct <= 5.0
             ),
