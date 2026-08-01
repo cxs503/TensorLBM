@@ -193,6 +193,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     sequence recovers `p=2` and its exact limit.  The pending fixed-physical-
     height flat-plate campaign therefore adds L384/exchange=4.5 between
     L256/exchange=3 and L512/exchange=6; two-grid agreement is insufficient.
+32. The complete L256/exchange=3 Musker flat-plate run passed every single-grid
+    gate: `Cf=0.00459729` (1.924% below ITTC), 0.283% eight-block range,
+    0.028% linear trend, 0.0286% CV/BFL-total disagreement, no positivity
+    limiting and no rejected exchange sample.  Exchange `y+` ranged 533–808
+    with mean 563.  This replaces the grid-dependent first-cell candidate but
+    remains a single-grid result until L384/L512 establish spatial convergence
+    and the streamwise stress distribution is audited.
 
 ## Rejected candidates
 

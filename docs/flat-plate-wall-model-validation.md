@@ -60,3 +60,14 @@ PYTHONPATH=src python examples/flat_plate_wall_model_validate.py \
 
 No SUBOFF result is admitted by matching total resistance while this benchmark
 shows a material, unresolved wall-friction bias.
+
+## Admitted single-grid exchange candidate
+
+The L256, collision-`Re=2e4`, Musker, exchange=3 run completed 30,000 steps
+with a 15,000-step measurement window.  It produced `Cf=0.00459729` (1.924%
+from ITTC), 0.283% eight-block range, 0.028% trend, 0.0286% independent-force
+difference, zero positivity limiting and zero rejected exchange samples.
+Mean exchange `y+` was 563 (range 533–808).  It passes the fail-closed
+single-grid schema.  It is not yet a grid-converged wall-model validation;
+the declared L256/L384/L512 sequence holds `exchange_distance/plate_length`
+fixed at `3/256`.
