@@ -117,6 +117,10 @@ from .advanced_collision_contract import (
     collide_advanced_3d,
     collision_capability_matrix,
 )
+from .collision_viscosity_audit import (
+    CollisionViscosityAuditConfig,
+    run_collision_viscosity_audit,
+)
 from .wall_refinement_combination_gate import (
     CollisionFamily as WallRefinementCollisionFamily,
     CombinationEvidence,
@@ -1275,4 +1279,7 @@ __all__ = [
     "halo_exchange_2d",
     "halo_exchange_3d",
     "auto_decompose",
+    # Collision physical-property audit
+    "CollisionViscosityAuditConfig",
+    "run_collision_viscosity_audit",
 ]

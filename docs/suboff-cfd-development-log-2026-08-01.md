@@ -1470,6 +1470,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      The wall startup order is therefore ruled out as the primary instability
      mechanism.  Its released GPU now isolates bidirectional transfer
      positivity on the otherwise matched baseline interface.
+163. Collision admission now includes a reusable periodic shear-wave decay
+     audit that measures recovered viscosity rather than trusting a collision
+     label.  At `tau=0.8` the target kinematic viscosity is `0.1`: BGK recovers
+     `0.1002065` (0.207% error) and cumulant `0.1000517` (0.052% error), while
+     the current entropic KBC kernel recovers `0.1710753` (71.08% error).
+     Sixty KBC/contract/audit tests pass with KBC deliberately rejected by the
+     new 2% physical-property gate.  KBC remains withheld from SUBOFF until its
+     collision formulation both recovers target viscosity and passes entropy,
+     positivity and interface audits; apparent stability cannot substitute for
+     the correct Reynolds number.
 
 ## Rejected candidates
 
