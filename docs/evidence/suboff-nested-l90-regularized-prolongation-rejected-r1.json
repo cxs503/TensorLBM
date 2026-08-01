@@ -1,0 +1,26 @@
+{
+  "schema": "tensorlbm-suboff-nested-prolongation-evidence-v1",
+  "status": "rejected",
+  "candidate": {
+    "regularize_restriction": true,
+    "regularize_prolongation": true,
+    "interface_filter_width": 0,
+    "last_health_step": 1620,
+    "maximum_speed": 0.18061789870262146,
+    "minimum_population": 1.862645149230957e-9,
+    "maximum_collision_limited_fraction": 0.00004616805170821791
+  },
+  "aligned_onset_against_unregularized_prolongation": {
+    "speed_0.1_step": {"baseline": 1500, "candidate": 1500},
+    "speed_0.15_step": {"baseline": 1560, "candidate": 1560},
+    "population_at_or_below_1e-8_step": {"baseline": 1560, "candidate": 1560}
+  },
+  "provenance": {
+    "log": "suboff-nested-v8-l90-rejected-regularized-prolongation-step1620.log",
+    "log_sha256": "ef064dec7675654f811c00604a73a5a01d4fe0765dbef920c09b31e1a4e11f06",
+    "checkpoint": "suboff-nested-v8-l90-rejected-regularized-prolongation-step1500.ckpt",
+    "checkpoint_sha256": "6dc9abf8fdbc3de3de2ff86e3b0060d1a65c4c96879e53a821fdf57caaa2bfb1"
+  },
+  "force_evidence_eligible": false,
+  "conclusion": "Removing prolongated higher-order modes does not delay the interface instability."
+}

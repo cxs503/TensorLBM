@@ -1337,6 +1337,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      mode; GPU1 now isolates interface placement by expanding the transverse
      finest-level wall buffer from 16 to 24 cells without any interface filter
      or prolongation change.
+149. Coarse-to-fine Hermite regularization alone is likewise rejected.  Its
+     aligned threshold steps are unchanged (speed 0.1 at 1500, speed 0.15 and
+     positivity floor at 1560); limiter use reaches `4.6168e-5` and peak speed
+     0.18062 by step 1620.  Log/checkpoint SHA-256 values are
+     `ef064dec7675654f811c00604a73a5a01d4fe0765dbef920c09b31e1a4e11f06`
+     and `6dc9abf8fdbc3de3de2ff86e3b0060d1a65c4c96879e53a821fdf57caaa2bfb1`.
+     GPU2 now supplies a second placement response point with a 32-cell
+     finest transverse buffer; satisfying that geometry also requires moving
+     the outer interface from its six-cell to eight-cell coarse margin, which
+     passed a 6.96-GiB preflight.
 
 ## Rejected candidates
 
