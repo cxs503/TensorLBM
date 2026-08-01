@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Three-level SUBOFF wall/refinement integration smoke test.
+"""Recursive three- or four-level SUBOFF wall/refinement integration runner.
 
 This runner validates allocation, deepest-level geometry/force ownership and
-two conservative AMR interfaces.  It is intentionally not a resistance
-validation run and never promotes a short trajectory by reference proximity.
+every conservative AMR interface.  It is intentionally not a resistance
+validation claim and never promotes a short trajectory by reference proximity.
 """
 from __future__ import annotations
 
