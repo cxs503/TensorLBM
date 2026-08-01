@@ -497,6 +497,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     changed the oscillation amplitude/phase rather than produced a stationary
     solution.  This also rules out positivity limiting as the sole cause of
     the observer split.
+64. A deterministic acoustic-return regression now exercises the exact
+    production chain (D3Q19 cumulant-Smagorinsky at `tau=0.500324`, incoming-
+    only NEE, equilibrium-difference sponge, and `U=0.06`).  A 30-cell,
+    strength-0.3 outlet layer reduces maximum returned density-perturbation
+    energy from `8.86e-9` to `2.94e-12` (>3000x) on the test domain.  Thus the
+    sponge/NEE implementation absorbs a planar low-amplitude pulse; the SUBOFF
+    oscillation cannot be attributed to a completely ineffective outlet
+    operator.  Three-dimensional domain extent, body-startup forcing and
+    numerical momentum sources remain separately instrumented.
 
 ## Rejected candidates
 
