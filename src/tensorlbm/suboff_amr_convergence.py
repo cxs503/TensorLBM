@@ -5,6 +5,10 @@ import math
 from typing import TYPE_CHECKING
 
 from .spatial_convergence import assess_spatial_convergence
+from .suboff_static_amr import (
+    MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS,
+    MIN_CONVERGENCE_DIAMETER_CELLS,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -69,6 +73,7 @@ def assess_suboff_amr_convergence(
     parsed: list[tuple[float, float, dict[str, object], dict[str, object], dict[str, object]]] = []
     schema_valid = True
     source_numerical_quality_admitted = True
+    geometry_resolution_by_fine_length: dict[float, tuple[bool, bool]] = {}
     for record in records:
         schema_valid &= record.get("schema") == "tensorlbm-suboff-static-amr-v6"
         configuration = record.get("configuration")
@@ -84,11 +89,53 @@ def assess_suboff_amr_convergence(
         source_numerical_quality_admitted &= (
             acceptance.get("numerical_quality_admitted") is True
         )
+        if configuration.get("hull_type") == "full":
+            geometry = record.get("geometry")
+            measured = (
+                geometry.get("geometry_resolution")
+                if isinstance(geometry, dict) else None
+            )
+            convergence_resolved = (
+                isinstance(measured, dict)
+                and measured.get("convergence_member_resolved") is True
+                and acceptance.get(
+                    "geometry_convergence_member_target_met",
+                ) is True
+            )
+            absolute_resolved = (
+                isinstance(measured, dict)
+                and measured.get("absolute_reference_resolved") is True
+                and acceptance.get(
+                    "absolute_reference_geometry_target_met",
+                ) is True
+            )
+        else:
+            diameter = resolution / 8.57
+            convergence_resolved = (
+                diameter >= MIN_CONVERGENCE_DIAMETER_CELLS
+            )
+            absolute_resolved = (
+                diameter >= MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS
+            )
+        geometry_resolution_by_fine_length[resolution] = (
+            convergence_resolved, absolute_resolved,
+        )
 
     parsed.sort(key=lambda item: item[0])
     resolutions = [item[0] for item in parsed]
     if len(set(resolutions)) != len(resolutions):
         raise ValueError("fine-grid hull resolutions must be unique")
+    source_geometry_convergence_admitted = all(
+        geometry_resolution_by_fine_length[resolution][0]
+        for resolution in resolutions
+    )
+    finest_absolute_reference_geometry_admitted = (
+        geometry_resolution_by_fine_length[resolutions[-1]][1]
+    )
+    geometry_resolution_admitted = (
+        source_geometry_convergence_admitted
+        and finest_absolute_reference_geometry_admitted
+    )
     baseline = parsed[0][2]
     required_fields_present = all(
         field in configuration
@@ -226,6 +273,7 @@ def assess_suboff_amr_convergence(
     admitted = (
         provenance_admitted
         and source_numerical_quality_admitted
+        and geometry_resolution_admitted
         and spatial_admitted
         and extrapolated_experiment_error
         <= maximum_extrapolated_experiment_error_pct
@@ -266,6 +314,15 @@ def assess_suboff_amr_convergence(
         "source_numerical_quality_admitted": (
             source_numerical_quality_admitted
         ),
+        "geometry_resolution": {
+            "source_convergence_members_admitted": (
+                source_geometry_convergence_admitted
+            ),
+            "finest_absolute_reference_admitted": (
+                finest_absolute_reference_geometry_admitted
+            ),
+            "admitted": geometry_resolution_admitted,
+        },
         "physical_validation": admitted,
         "admitted": admitted,
     }
