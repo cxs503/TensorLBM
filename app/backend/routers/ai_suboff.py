@@ -60,6 +60,15 @@ def _best_checkpoint() -> Path | None:
 _training_jobs: dict[str, dict] = {}
 
 
+def _empty_accelerator_cache() -> None:
+    """Release cache for the accelerator backend available on this host."""
+    sdaa = getattr(torch, "sdaa", None)
+    if sdaa is not None and hasattr(sdaa, "empty_cache"):
+        sdaa.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
 # ── Request models ───────────────────────────────────────────────────────────
 
 class SuboffTrainRequest(BaseModel):
@@ -154,7 +163,7 @@ def train_suboff_api(req: SuboffTrainRequest):
             import traceback; traceback.print_exc()
         finally:
             gc.collect()
-            torch.sdaa.empty_cache()
+            _empty_accelerator_cache()
 
     threading.Thread(target=worker, daemon=True).start()
     return {"job_id": job_id, "status": "started", "iters": req.iters}
@@ -222,7 +231,7 @@ def finetune_suboff_api(req: SuboffFinetuneRequest):
             import traceback; traceback.print_exc()
         finally:
             gc.collect()
-            torch.sdaa.empty_cache()
+            _empty_accelerator_cache()
 
     threading.Thread(target=worker, daemon=True).start()
     return {"job_id": job_id, "status": "started", "iters": req.iters}
@@ -331,7 +340,7 @@ def suboff_predict_api(req: SuboffPredictRequest):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         gc.collect()
-        torch.sdaa.empty_cache()
+        _empty_accelerator_cache()
 
 
 # ── Error analysis ───────────────────────────────────────────────────────────
@@ -592,7 +601,7 @@ def suboff_viz_data(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         gc.collect()
-        torch.sdaa.empty_cache()
+        _empty_accelerator_cache()
 
 @router.get("/viz")
 def suboff_visualization(
