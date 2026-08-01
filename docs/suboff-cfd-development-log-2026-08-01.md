@@ -1567,6 +1567,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      and `400542944be97738978ec4451cbc0addf783ebc441df8d897562e358f23be45f`.
      The negative result is therefore deterministic rather than a GPU anomaly.
      GPU1 now supplies the `C_s=0.20` upper sensitivity point.
+174. SGS dissipation can now be audited directly from any nested checkpoint.
+     `scripts/inspect_nested_smagorinsky_checkpoint.py` reads the collision tau
+     chain recorded at the latest health sample and evaluates each hierarchy
+     level in bounded-memory chunks.  It reports min/mean/max `tau_eff`, mean
+     and maximum eddy viscosity, and their ratios to molecular viscosity.
+     Chunk-invariance and input-contract tests pass.  This artifact is required
+     before a stable `C_s` candidate can advance to resistance convergence.
 
 ## Rejected candidates
 
