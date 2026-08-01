@@ -245,27 +245,24 @@ def project_onto_active_conserved_moments(
         int(kinetic_mismatch.numel()), kinetic_mismatch.device,
     ).to(dtype=kinetic_mismatch.dtype)
     active_weights = torch.where(active_directions, w, torch.zeros_like(w))
+    if not bool(active_directions[1:7].all()):
+        raise ValueError("active crossing directions omit an axial pair")
     basis = torch.cat((
         torch.ones((1, c.shape[0]), device=c.device, dtype=c.dtype),
         c.T,
     ), dim=0)
     gram = (basis * active_weights.unsqueeze(0)) @ basis.T
-    if int(torch.linalg.matrix_rank(gram).item()) < 4:
-        raise ValueError("active crossing directions do not span mass and momentum")
     mass, momentum = conserved_population_moments(kinetic_mismatch)
     target = torch.cat((mass.reshape(1), momentum))
     coefficients = torch.linalg.solve(gram, target)
     projected = active_weights * (basis.T @ coefficients)
     # Close residual roundoff on active opposite-axis pairs.  A valid closed
     # 3-D interface necessarily has all six axial directions available.
-    active_indices = torch.nonzero(active_directions, as_tuple=False).flatten()
-    projected[active_indices[0]] += target[0] - projected.sum()
+    projected[1] += target[0] - projected.sum()
     momentum_residual = target[1:] - (projected[:, None] * c).sum(dim=0)
     for axis, (positive_index, negative_index) in enumerate(
         ((1, 2), (3, 4), (5, 6)),
     ):
-        if not bool(active_directions[positive_index] and active_directions[negative_index]):
-            raise ValueError("active crossing directions omit an axial pair")
         half = 0.5 * momentum_residual[axis]
         projected[positive_index] += half
         projected[negative_index] -= half
