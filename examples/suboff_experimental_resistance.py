@@ -163,6 +163,8 @@ def run_case(args: argparse.Namespace) -> dict:
         raise ValueError("surface-force-interval must be positive")
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint-interval must be non-negative")
+    if args.wall_diagnostic_interval < 1:
+        raise ValueError("wall-diagnostic-interval must be positive")
     if args.stress_exchange_distance < 0.0:
         raise ValueError("stress-exchange-distance must be non-negative")
     if args.resume and not args.checkpoint:
@@ -372,6 +374,7 @@ def run_case(args: argparse.Namespace) -> dict:
             args.stress_exchange_distance
             if args.stress_exchange_distance > 0.0 else None
         ),
+        "wall_diagnostic_interval": args.wall_diagnostic_interval,
     }
     start_step = 0
     if args.resume:
@@ -454,8 +457,10 @@ def run_case(args: argparse.Namespace) -> dict:
         f_post_collision = f.clone()
         f = stream3d(f)
         f = apply_outer_boundary(f)
+        wall_diagnostics = None
         if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}:
-            f, friction_lu, pressure_voxel_lu, wall_diagnostics = bfl_wall_function_3d(
+            collect_wall_diagnostics = step % args.wall_diagnostic_interval == 0
+            wall_result = bfl_wall_function_3d(
                 f, f_post_collision, solid, nu_lu,
                 bfl_mask, bfl_q, y_val=args.wall_distance,
                 wall_law=args.wall_law, near_mask=near,
@@ -491,30 +496,34 @@ def run_case(args: argparse.Namespace) -> dict:
                     )
                     if args.hull_type == "bare_hull" else None
                 ),
-                return_wall_diagnostics=True,
+                return_wall_diagnostics=collect_wall_diagnostics,
             )
-            wall_applicability["samples"] = int(wall_applicability["samples"]) + 1
-            wall_applicability["maximum_rejected_fraction"] = max(
-                float(wall_applicability["maximum_rejected_fraction"]),
-                wall_diagnostics.rejected_fraction,
-            )
-            if wall_diagnostics.y_plus_mean is not None:
-                wall_applicability["y_plus_mean_sum"] = (
-                    float(wall_applicability["y_plus_mean_sum"])
-                    + wall_diagnostics.y_plus_mean
+            if collect_wall_diagnostics:
+                f, friction_lu, pressure_voxel_lu, wall_diagnostics = wall_result
+                wall_applicability["samples"] = int(wall_applicability["samples"]) + 1
+                wall_applicability["maximum_rejected_fraction"] = max(
+                    float(wall_applicability["maximum_rejected_fraction"]),
+                    wall_diagnostics.rejected_fraction,
                 )
-            if wall_diagnostics.y_plus_min is not None:
-                current_min = wall_applicability["y_plus_min"]
-                wall_applicability["y_plus_min"] = (
-                    wall_diagnostics.y_plus_min if current_min is None
-                    else min(float(current_min), wall_diagnostics.y_plus_min)
-                )
-            if wall_diagnostics.y_plus_max is not None:
-                current_max = wall_applicability["y_plus_max"]
-                wall_applicability["y_plus_max"] = (
-                    wall_diagnostics.y_plus_max if current_max is None
-                    else max(float(current_max), wall_diagnostics.y_plus_max)
-                )
+                if wall_diagnostics.y_plus_mean is not None:
+                    wall_applicability["y_plus_mean_sum"] = (
+                        float(wall_applicability["y_plus_mean_sum"])
+                        + wall_diagnostics.y_plus_mean
+                    )
+                if wall_diagnostics.y_plus_min is not None:
+                    current_min = wall_applicability["y_plus_min"]
+                    wall_applicability["y_plus_min"] = (
+                        wall_diagnostics.y_plus_min if current_min is None
+                        else min(float(current_min), wall_diagnostics.y_plus_min)
+                    )
+                if wall_diagnostics.y_plus_max is not None:
+                    current_max = wall_applicability["y_plus_max"]
+                    wall_applicability["y_plus_max"] = (
+                        wall_diagnostics.y_plus_max if current_max is None
+                        else max(float(current_max), wall_diagnostics.y_plus_max)
+                    )
+            else:
+                f, friction_lu, pressure_voxel_lu = wall_result
         else:
             if args.boundary == "projected_wall":
                 f = project_no_penetration(f, solid, near)
@@ -601,7 +610,7 @@ def run_case(args: argparse.Namespace) -> dict:
                 "elapsed_s": time.time() - started,
                 "wall_stress_diagnostics": (
                     asdict(wall_diagnostics)
-                    if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}
+                    if wall_diagnostics is not None
                     else None
                 ),
             }
@@ -673,7 +682,14 @@ def run_case(args: argparse.Namespace) -> dict:
     maximum_exchange_rejected_fraction = float(
         wall_applicability["maximum_rejected_fraction"],
     )
-    exchange_sampling_acceptable = maximum_exchange_rejected_fraction <= 0.01
+    exchange_sampling_acceptable = (
+        (
+            wall_samples > 0
+            and maximum_exchange_rejected_fraction <= 0.01
+        )
+        if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}
+        else True
+    )
     result = {
         "schema": "tensorlbm-suboff-experimental-resistance-v2",
         "status": "measured_candidate" if finite else "failed",
@@ -755,6 +771,7 @@ def run_case(args: argparse.Namespace) -> dict:
             ),
             "average_window": window,
             "surface_force_interval": args.surface_force_interval,
+            "wall_diagnostic_interval": args.wall_diagnostic_interval,
         },
         "geometry": geometry,
         "result": {
@@ -879,6 +896,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--steps", type=int, default=5000)
     p.add_argument("--average-window", type=int, default=500)
     p.add_argument("--report-interval", type=int, default=250)
+    p.add_argument("--wall-diagnostic-interval", type=int, default=50)
     p.add_argument("--mass-interval", type=int, default=200)
     p.add_argument("--cv-margin", type=int, default=8)
     p.add_argument(

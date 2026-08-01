@@ -36,6 +36,9 @@ rejected samples fails the benchmark admission gate.  These fields are
 applicability evidence: a log-law run must not be promoted merely because its
 integrated force matches ITTC while its sampled `y+` lies outside the law's
 valid region.
+GPU reductions for this ledger are sampled every 50 steps by default
+(`--wall-diagnostic-interval`); the cadence is checkpointed, and a BFL run
+with no collected applicability samples fails closed.
 
 ITTC-1957 is recorded as an engineering correlation, not an exact Navier–
 Stokes solution.  Acceptance requires a stationary Cf history at multiple

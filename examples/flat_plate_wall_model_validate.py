@@ -37,6 +37,7 @@ def main() -> None:
     parser.add_argument("--cs-smag", type=float, default=0.05)
     parser.add_argument("--disable-positivity-limiter", action="store_true")
     parser.add_argument("--report-interval", type=int, default=1000)
+    parser.add_argument("--wall-diagnostic-interval", type=int, default=50)
     parser.add_argument("--checkpoint-interval", type=int, default=2000)
     parser.add_argument("--checkpoint", default=None)
     parser.add_argument("--resume", action="store_true")
@@ -58,6 +59,7 @@ def main() -> None:
         smagorinsky_cs=args.cs_smag,
         positivity_limiter=not args.disable_positivity_limiter,
         report_interval=args.report_interval,
+        wall_diagnostic_interval=args.wall_diagnostic_interval,
         checkpoint_interval=args.checkpoint_interval,
         checkpoint_path=args.checkpoint, resume=args.resume,
         device=args.device,
