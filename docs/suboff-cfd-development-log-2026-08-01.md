@@ -417,6 +417,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     (`166.6`→`136.9 N`, 20.2% trend) and the two observers differ by 27.3%, so
     the short run is correctly rejected as transient.  The clean v4
     L90/L120/L150 production sequence is active.
+56. Independent force closure is verified below the production level before
+    attributing the v4 observer gap to a formula.  On a transient curved sphere
+    step, BFL slip pressure plus Guo wall shear agrees with the enclosing
+    control-volume momentum balance to `3.6e-8%`.  A six-step SUBOFF static-AMR
+    composition gives 0.30% mean disagreement while its force falls by an order
+    of magnitude, with `3.64e-12` reflux residual.  The focused BFL/CV suite
+    passes 24 tests.  Thus the 1500-step production gap is not excused, but the
+    primitive force formulas close; long-run AMR sampling, CV placement and
+    pressure-transient decay remain the hypotheses tested by the active runs.
 
 ## Rejected candidates
 
