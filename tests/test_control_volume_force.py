@@ -65,3 +65,17 @@ def test_control_volume_must_be_interior() -> None:
     bad[:, 2:5, 2:5] = True
     with pytest.raises(ValueError, match="strictly interior"):
         streaming_momentum_import(f, bad)
+
+
+def test_periodic_axis_control_volume_may_span_complete_axis() -> None:
+    shape = (3, 9, 11)
+    f = _state(shape=shape)
+    cv = box_control_volume(
+        shape, x0=2, x1=8, y0=2, y1=7, z0=0, z1=3,
+        periodic_axes=("z",),
+    )
+    streamed = stream3d(f)
+    result = observe_control_volume_force(
+        f, streamed, f, cv, periodic_axes=("z",),
+    )
+    assert torch.allclose(result.force_on_body, torch.zeros(3, dtype=f.dtype), atol=1e-14)
