@@ -135,6 +135,7 @@ class PopulationRefluxLedger:
     shell_cells: int
     residual: torch.Tensor
     limited_directions: int = 0
+    raw_kinetic_mismatch: torch.Tensor | None = None
 
     @property
     def mass_residual(self) -> float:
@@ -278,7 +279,7 @@ class StaticBlockAMR3D:
         mismatch = old_patch.sum(dim=(1, 2, 3)) - restricted.sum(dim=(1, 2, 3))
         self.coarse_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = restricted
         return PopulationRefluxLedger(
-            mismatch, torch.zeros_like(mismatch), 0, mismatch, 0,
+            mismatch, torch.zeros_like(mismatch), 0, mismatch, 0, mismatch,
         )
 
     @staticmethod
@@ -366,6 +367,7 @@ class StaticBlockAMR3D:
             report.corrected_links,
             report.residual,
             report.limited_directions,
+            report.raw_kinetic_mismatch,
         )
         return self.last_reflux
 

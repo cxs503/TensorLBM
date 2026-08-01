@@ -65,3 +65,4 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert state["maximum_reflux_requested_correction"] >= 0.0
     assert state["maximum_reflux_applied_correction"] >= 0.0
     assert state["maximum_reflux_limited_directions"] == 0
+    assert state["maximum_raw_kinetic_mismatch"] >= 0.0

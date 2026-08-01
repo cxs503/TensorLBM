@@ -119,6 +119,8 @@ def run_amr_interface_validation(
     tau_fine = convective_refined_tau(config.tau_coarse)
     maximum_reflux_residual = 0.0
     maximum_limited_directions = 0
+    maximum_raw_kinetic_mismatch = 0.0
+    maximum_requested_correction = 0.0
     for _ in range(config.steps):
         coarse_baseline = _advance_periodic(
             coarse_baseline, config.tau_coarse,
@@ -140,6 +142,16 @@ def run_amr_interface_validation(
         )
         maximum_limited_directions = max(
             maximum_limited_directions, ledger.limited_directions,
+        )
+        if ledger.raw_kinetic_mismatch is None:
+            raise RuntimeError("AMR ledger omitted raw kinetic mismatch")
+        maximum_raw_kinetic_mismatch = max(
+            maximum_raw_kinetic_mismatch,
+            float(ledger.raw_kinetic_mismatch.abs().max().item()),
+        )
+        maximum_requested_correction = max(
+            maximum_requested_correction,
+            float(ledger.replacement_mismatch.abs().max().item()),
         )
 
     reference_coarse = restrict_populations_2to1(uniform_fine)
@@ -169,6 +181,8 @@ def run_amr_interface_validation(
         "relative_mass_drift": abs(final_mass - initial_mass) / abs(initial_mass),
         "minimum_population": float(solver.coarse_f.min().item()),
         "maximum_reflux_population_residual": maximum_reflux_residual,
+        "maximum_raw_kinetic_mismatch": maximum_raw_kinetic_mismatch,
+        "maximum_conserved_moment_correction": maximum_requested_correction,
         "maximum_limited_directions": maximum_limited_directions,
         "finite": finite,
     }
@@ -196,7 +210,7 @@ def run_amr_interface_validation(
         and velocity_not_materially_worse
     )
     return {
-        "schema": "tensorlbm-amr-interface-validation-v1",
+        "schema": "tensorlbm-amr-interface-validation-v2",
         "configuration": {
             "shape_zyx": list(config.shape_zyx),
             "box": vars(config.box),
@@ -207,6 +221,7 @@ def run_amr_interface_validation(
             "pulse_radius": config.pulse_radius,
             "steps": config.steps,
             "device": config.device,
+            "reflux_method": "face_local_conserved_moment_flux",
         },
         "mesh": {
             "allocated_cells": solver.total_allocated_cells,
