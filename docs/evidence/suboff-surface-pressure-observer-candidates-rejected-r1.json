@@ -1,0 +1,59 @@
+{
+  "schema": "tensorlbm-surface-pressure-observer-candidate-evidence-v1",
+  "case": "suboff_bare_hull_l120_step16000",
+  "status": "candidate_observers_rejected_for_suboff_admission",
+  "purpose": "Diagnose the independent macroscopic-pressure surface observer without changing or replaying the CFD state.",
+  "co_temporal_reference": {
+    "control_volume_resistance_n": 109.80319607486855,
+    "bfl_link_pressure_n": 34.658106591708176,
+    "wall_shear_n": 75.28595521836252,
+    "bfl_link_plus_wall_shear_n": 109.94406181007069,
+    "bfl_total_vs_control_volume_difference_pct": 0.12828928504603127
+  },
+  "candidates": {
+    "legacy_dominant_axis_quadratic": {
+      "surface_pressure_n": 17.194014472964387,
+      "surface_plus_wall_shear_n": 92.47996969132691,
+      "total_vs_control_volume_difference_pct": 15.776613981008284,
+      "admitted": false,
+      "defect": "Assumes a unit wall offset and does not use link-specific BFL q."
+    },
+    "linkwise_quadratic_actual_q_nodal_area": {
+      "surface_pressure_n": 51.069481882119604,
+      "surface_plus_wall_shear_n": 126.35543710048212,
+      "total_vs_control_volume_difference_pct": 15.074461962225158,
+      "requested_links": 94634,
+      "usable_links": 94634,
+      "fallback_cells": 0,
+      "admitted": false,
+      "conclusion": "Actual-q reconstruction is manufactured-solution exact and fully covered, but nodal smooth-surface area integration remains materially biased in this high-non-equilibrium near-wall state."
+    },
+    "linkwise_quadratic_actual_q_axial_projection": {
+      "surface_pressure_n": 1196.0393450684678,
+      "surface_plus_wall_shear_n": 1271.3253002868303,
+      "total_vs_control_volume_difference_pct": 1057.8217626925775,
+      "requested_axial_links": 24550,
+      "usable_axial_links": 24550,
+      "fallback_cells": 0,
+      "admitted": false,
+      "conclusion": "The discrete projected-face identity closes constant and linear manufactured fields, but raw boundary-cell density pressure is not a usable SUBOFF force observer in this wall-modeled LBM state."
+    }
+  },
+  "production_decision": {
+    "surface_pressure_default_changed": false,
+    "surface_pressure_admission_gate_changed": false,
+    "flow_state_changed": false,
+    "retained_common_modules": [
+      "reconstruct_bfl_wall_pressure",
+      "integrate_bfl_projected_pressure",
+      "inspect_suboff_surface_pressure_checkpoint.py"
+    ],
+    "next_requirement": "Any replacement surface observer must pass canonical-body and SUBOFF co-temporal observer convergence before promotion; mean force agreement alone is insufficient."
+  },
+  "artifacts": {
+    "remote_audit": "results/amr_campaign_20260801/suboff-v9-l120-step16k-surface-pressure-audit-r2.json",
+    "remote_audit_sha256": "5a22551f9fc642dfaf9ed4abd155696b3444d58945d16ed33d244cf5cdec8aa4",
+    "source_checkpoint_sha256": "4b62cc1f514c7efde1a24da447248de9264a51ba39b3d4ff4949f1cf961e08f6"
+  },
+  "claim_boundary": "This is a read-only single-time observer audit. It neither validates nor changes the L120 resistance result."
+}
