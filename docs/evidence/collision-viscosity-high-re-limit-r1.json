@@ -1,0 +1,29 @@
+{
+  "schema": "tensorlbm-collision-viscosity-comparison-v1",
+  "tau": 0.5002,
+  "target_kinematic_viscosity": 0.00006666666666665932,
+  "wavelength_cells": 64,
+  "steps": 800,
+  "maximum_relative_error_pct": 2.0,
+  "models": {
+    "bgk": {
+      "recovered_kinematic_viscosity": 0.00006864275179712097,
+      "relative_error_pct": 2.9641276956928007,
+      "admitted": false,
+      "source_sha256": "bf3ddf2ab928f4fb50020f0e0fde12b790b74883ffcf01c3f2b67a2bc01ef837"
+    },
+    "cumulant": {
+      "recovered_kinematic_viscosity": 0.0000678077127641215,
+      "relative_error_pct": 1.711569146193448,
+      "admitted": true,
+      "source_sha256": "65d36d6aac90bdcf862ddde0a6a269493aced814d253c0feca3d30e05717818a"
+    },
+    "natural_kbc_experimental": {
+      "recovered_kinematic_viscosity": 0.00006784692952604819,
+      "relative_error_pct": 1.7703942890834896,
+      "admitted": true,
+      "source_sha256": "d787b4949bd39b000d9dfb5f03c53ecc64918db25ffd58e5fdaeacfef496b8e0"
+    }
+  },
+  "conclusion": "Natural KBC recovers the target high-Re-limit shear viscosity comparably to cumulant, but remains withheld pending nonlinear flow and AMR evidence."
+}
