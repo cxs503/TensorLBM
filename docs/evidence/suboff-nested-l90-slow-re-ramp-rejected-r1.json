@@ -1,0 +1,28 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "candidate": "suboff-nested-v15-l90-slow-re-ramp",
+  "status": "rejected",
+  "configuration_delta": {
+    "viscosity_ramp_start_step": 300,
+    "viscosity_ramp_end_step": 1800,
+    "baseline_viscosity_ramp_end_step": 600,
+    "resolved_reynolds_start": 5000,
+    "resolved_reynolds_target": 100000
+  },
+  "failure": {
+    "step": 2520,
+    "steps_at_target_reynolds": 720,
+    "minimum_population": 1.862645149230957e-09,
+    "maximum_speed": 0.17086394131183624,
+    "maximum_collision_limited_fraction": 0.000013603086664028493,
+    "inner_raw_mass_mismatch": 3.061717987060547,
+    "inner_raw_momentum_mismatch_norm": 0.3434709310531616
+  },
+  "artifacts": {
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v15-l90-rejected-slow-re-step2520.log",
+    "remote_log_sha256": "20c7b745e2c3451fb92af53a20a33bd137b92390883e598700aa46136ea5dd4f",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v15-l90-slow-re-ramp-3600.ckpt",
+    "remote_checkpoint_sha256": "23ef5303daf9453745c392dec467cfea1468d7c62988a519a5f146ad5a5270dd"
+  },
+  "conclusion": "A six-times longer Reynolds continuation delays but does not remove the high-Re instability. It is a useful startup control, not a production stability remedy."
+}

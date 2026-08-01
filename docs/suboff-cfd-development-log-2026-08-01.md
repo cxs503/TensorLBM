@@ -1531,6 +1531,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      extrapolated sequence, not a changed reference, determine final physical
      validation.  Canonical R9 SHA-256 is
      `313ee8efaa57fc09803cc8f0ce639f2de3df17573bf066de5ae940cd0723e4cd`.
+170. Extending the resolved-Re continuation from step 600 to step 1800 delays
+     but does not remove the nested instability.  The candidate fails the
+     population gate at step 2520, only 720 steps after reaching Re=100,000,
+     with peak speed `0.17086`, limiter fraction `1.3603e-5` and inner raw
+     mass/momentum mismatch `3.0617`/`0.34347`.  Log/checkpoint SHA-256 values
+     are `20c7b745e2c3451fb92af53a20a33bd137b92390883e598700aa46136ea5dd4f`
+     and `23ef5303daf9453745c392dec467cfea1468d7c62988a519a5f146ad5a5270dd`.
+     Slow startup is retained as a control but rejected as a stability fix.
+     GPU6 now isolates `C_s=0.10` SGS dissipation under the standard ramp and
+     all new health gates; any stable result still requires model sensitivity.
 
 ## Rejected candidates
 
