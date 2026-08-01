@@ -215,6 +215,10 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
         "restriction_minimum_alpha" in record
         for record in health["interfaces"]
     )
+    assert all(
+        "prolongation_minimum_alpha" in record
+        for record in health["interfaces"]
+    )
     assert result["acceptance"]["population_health_target_met"] is True
     assert result["result"]["maximum_observed_speed"] < 0.3
     assert result["result"]["minimum_observed_population"] > 1.0e-8
