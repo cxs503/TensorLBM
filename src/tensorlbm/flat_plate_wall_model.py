@@ -11,6 +11,7 @@ from .cumulant import collide_cumulant_d3q19
 from .d3q19 import C, equilibrium3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
+from .population_positivity import limit_nonequilibrium_for_positivity
 from .solver3d import stream3d
 from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
 from .wall_model import bfl_wall_function_3d
@@ -39,6 +40,8 @@ class FlatPlateWallModelConfig:
     sponge_strength: float = 0.2
     cv_margin: int = 6
     wall_law: str = "log"
+    smagorinsky_cs: float = 0.05
+    positivity_limiter: bool = True
     device: str = "cpu"
 
     @property
@@ -69,6 +72,8 @@ class FlatPlateWallModelConfig:
             raise ValueError("invalid averaging window")
         if self.wall_law not in {"log", "reichardt", "musker"}:
             raise ValueError("unsupported wall law")
+        if not 0.0 <= self.smagorinsky_cs < 0.5:
+            raise ValueError("smagorinsky_cs must lie in [0,0.5)")
 
 
 def _halfway_links(solid: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -126,6 +131,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     friction_history: list[float] = []
     cv_history: list[float] = []
     bfl_total_history: list[float] = []
+    maximum_limited_fraction = 0.0
 
     def outer(state: torch.Tensor) -> torch.Tensor:
         return non_equilibrium_far_field_bc_3d(
@@ -135,7 +141,14 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
 
     for step in range(1, config.steps + 1):
         old = f
-        collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
+        collided = collide_cumulant_d3q19(
+            f, config.tau, C_s=config.smagorinsky_cs,
+        )
+        if config.positivity_limiter:
+            collided, diagnostic = limit_nonequilibrium_for_positivity(collided)
+            maximum_limited_fraction = max(
+                maximum_limited_fraction, diagnostic.limited_fraction,
+            )
         post = torch.where(solid_q, old, collided)
         f = outer(stream3d(post))
         f, friction, bfl_force = bfl_wall_function_3d(
@@ -145,6 +158,11 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             wall_activation=_ramp(step, config.ramp_steps),
             wall_law=config.wall_law,
         )
+        if config.positivity_limiter:
+            f, diagnostic = limit_nonequilibrium_for_positivity(f)
+            maximum_limited_fraction = max(
+                maximum_limited_fraction, diagnostic.limited_fraction,
+            )
         f = apply_equilibrium_difference_sponge(
             f, sigma, velocity_target=(config.lattice_speed, 0.0, 0.0),
         )
@@ -178,6 +196,8 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "wall_nu": config.wall_nu, "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
             "wall_law": config.wall_law, "device": config.device,
+            "smagorinsky_cs": config.smagorinsky_cs,
+            "positivity_limiter": config.positivity_limiter,
         },
         "result": {
             "friction_coefficient": cf,
@@ -189,6 +209,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
                 abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1e-30) * 100.0
             ),
             "drag_stationarity": stationarity.to_dict(),
+            "maximum_positivity_limited_fraction": maximum_limited_fraction,
             "finite": math.isfinite(cf),
         },
     }
