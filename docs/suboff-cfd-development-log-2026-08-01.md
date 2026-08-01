@@ -577,6 +577,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     L90 (`12000` steps) and L120 (`16000` steps) v6 records now run concurrently
     with every spatial and temporal parameter in the 3:4 ratio.  L150
     (`20000` steps) is queued for the GPU released by the sphere benchmark.
+72. Sphere validation now has its own fail-closed three-grid assessor and CLI
+    with SHA-256 source records.  It requires v3 source schemas, numerical-
+    quality admission, invariant Re/Mach/collision/boundary physics, and exact
+    scaling of domain, CV margin, sponge, ramp, warmup, report and tail-window
+    durations by radius.  Only the Richardson-extrapolated Cd may pass the
+    Schiller-Naumann 5% reference gate.  The intended fresh sequence is
+    R9/R12/R15 with exactly proportional integer configurations; the active
+    migrated R15 run remains a single-resolution diagnostic because its old
+    CV margin is not part of that new sequence.
 
 ## Rejected candidates
 
