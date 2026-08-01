@@ -112,6 +112,13 @@ health_interval=${TENSORLBM_HEALTH_INTERVAL:-$report}
 interface_filter_width=${TENSORLBM_INTERFACE_FILTER_WIDTH:-0}
 interface_filter_strength=${TENSORLBM_INTERFACE_FILTER_STRENGTH:-0}
 stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1}
+wall_ramp_options=()
+if [[ -n ${TENSORLBM_WALL_NORMAL_RAMP_STEPS:-} ]]; then
+  wall_ramp_options+=(--wall-normal-ramp-steps "$TENSORLBM_WALL_NORMAL_RAMP_STEPS")
+fi
+if [[ -n ${TENSORLBM_WALL_SHEAR_RAMP_STEPS:-} ]]; then
+  wall_ramp_options+=(--wall-shear-ramp-steps "$TENSORLBM_WALL_SHEAR_RAMP_STEPS")
+fi
 
 export CUDA_VISIBLE_DEVICES=$gpu
 exec "$python" examples/suboff_nested_static_amr_smoke.py \
@@ -125,6 +132,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --surface-force-interval "$surface" \
   --steps "$steps" --warmup-steps "$warmup" \
   --statistics-window-steps "$statistics" --ramp-steps "$ramp" \
+  "${wall_ramp_options[@]}" \
   --report-interval "$report" --wall-diagnostic-interval "$wall_diagnostic" \
   --health-interval "$health_interval" --maximum-health-speed 0.3 \
   --minimum-convective-times 8 \
