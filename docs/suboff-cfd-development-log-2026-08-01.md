@@ -267,6 +267,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     `sponge_width/L` and `cv_margin/L`; the active sequence uses 24/36/48 and
     6/9/12 at L256/L384/L512.  This prevents different relative sponge or
     force-observer placement from masquerading as spatial convergence.
+41. The safe-memory R15 sphere point completed with 18.72 GiB peak allocation.
+    Its post-2500 mean `Cd=1.15650` is 5.93% above Schiller–Naumann, with
+    1.68% block range and 1.62% trend, so it is rejected; CV/BFL disagreement
+    remains only 0.00327%.  This 5000-step state is earlier in its transient
+    than the R14 8000-step late window and is not mixed into an observed-order
+    fit.  It is retained for a later equal-time resume rather than using an
+    unsafe ~22.7 GiB R16 run on a 23.69 GiB device.
 
 ## Rejected candidates
 
