@@ -1,0 +1,77 @@
+{
+  "schema": "tensorlbm-nested-longtime-sensitivity-evidence-v1",
+  "candidate": "suboff-nested-v20-equivalent-l90-12k",
+  "status": "integration_stability_pass_physical_validation_rejected",
+  "configuration": {
+    "collision_model": "cumulant_smagorinsky",
+    "smagorinsky_coefficient": 0.1,
+    "coarse_hull_length_cells": 90,
+    "finest_hull_length_cells": 360,
+    "stress_exchange_distance": 1.0,
+    "stress_exchange_distance_over_finest_length": 0.002777777777777778,
+    "flat_plate_calibrated_target_ratio": 0.01171875,
+    "relative_wall_exchange_height": 0.23703703703703705,
+    "steps": 12000,
+    "total_convective_times": 8.0,
+    "sampling_convective_times": 5.0
+  },
+  "health": {
+    "finite": true,
+    "minimum_observed_population": 0.01265275664627552,
+    "maximum_observed_speed": 0.10795371979475021,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_transfer_limited_fraction_by_interface": [0.0, 0.0],
+    "maximum_reflux_applied_correction_fraction_by_interface": [
+      0.0000948967135627754,
+      0.000059649340983014554
+    ],
+    "maximum_reflux_applied_correction_fraction_limit": 0.001,
+    "maximum_reflux_residual_by_interface": [
+      2.9802322387695312e-8,
+      5.960464477539063e-8
+    ]
+  },
+  "force_statistics": {
+    "mean_resistance_n": 127.87399063281582,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 46.30891376752381,
+    "block_mean_relative_range_pct": 15.197529695828852,
+    "half_mean_drift_pct": 5.72532745912714,
+    "linear_trend_pct": 6.698785111750692,
+    "confidence95_half_width_pct": 4.084361318107477,
+    "effective_sample_count": 19.86647814544845,
+    "dominant_period_steps": 1875.0,
+    "surface_observer_difference_pct": 5.209294537481356,
+    "maximum_auxiliary_control_volume_difference_pct": 0.0552906012433821,
+    "maximum_source_corrected_observer_difference_pct": 0.04667710034416464
+  },
+  "wall_exchange": {
+    "samples": 125,
+    "mean_distance_cells": 1.0673763751983643,
+    "minimum_y_plus": 12.484591484069824,
+    "mean_y_plus": 1526.5885109863282,
+    "maximum_y_plus": 2731.36376953125,
+    "maximum_rejected_fraction": 0.0
+  },
+  "acceptance": {
+    "integration_smoke_admitted": true,
+    "population_health_target_met": true,
+    "reflux_applied_correction_target_met": true,
+    "nested_control_volume_target_met": true,
+    "wall_exchange_scaling_target_met": false,
+    "stationarity_target_met": false,
+    "surface_observer_target_met": false,
+    "reference_error_target_met": false,
+    "single_grid_candidate": false,
+    "physical_validation": false
+  },
+  "artifacts": {
+    "remote_result": "results/amr_campaign_20260801/suboff-nested-v20-equivalent-l90-12k.json",
+    "remote_result_sha256": "ba3226fc090accd082c7d2d79bacc83d36dfbd6b60758dad94268c55a9eaa2dc",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v20-equivalent-l90-12k.ckpt",
+    "remote_checkpoint_sha256": "8a66c8c54d14a60aba8956617a376c2d166f2774ee9d91cb4fb993501b4ee0b0",
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v20-equivalent-l90-12k.log",
+    "remote_log_sha256": "e171fa504c773c45b6bf1ea0a48e1d726222d2fe64ad5602d5de8883415b78fe"
+  },
+  "conclusion": "C_s=0.1 supplies a positive, limiter-free 8-convective-time nested trajectory, but the exchange height is only 23.7% of the flat-plate-calibrated physical ratio. Its 46.3% drag error and failed stationarity prohibit reuse as a grid-convergence member; the wall-scaled v33/v11 campaigns are independent fresh runs."
+}
