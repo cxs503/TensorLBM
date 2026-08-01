@@ -1393,6 +1393,34 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      GPU3 now tests a split startup: BFL normal impermeability completes during
      the initial low-Re 300 steps, while physical wall shear retains the
      3000-step ramp.
+155. The exact equivalent Re=100 sphere sequence is complete at R9/R12/R15.
+     Control-volume drag coefficients are `1.1651455`, `1.1496003` and
+     `1.1455558`; all three records pass duration, stationarity, independent
+     BFL-link observer and numerical-quality gates.  The sequence is monotonic
+     with observed order `4.1844`, Richardson-extrapolated Cd `1.1429363` and
+     a `0.2292%` estimated finest-grid discretisation error.  The extrapolated
+     value is `4.6903%` above Schiller--Naumann, within the declared 5% physical
+     validation target.  The canonical convergence record includes SHA-256
+     hashes of all three immutable source JSON files.
+156. Enlarging the finest transverse wall clearance from 16 to 24 fine cells
+     is rejected.  It advances speed thresholds from steps 1500/1560 to
+     1380/1440, reaches the population floor at 1440 rather than 1560 and uses
+     the collision positivity limiter on `1.5636e-4` of cells.  Log/checkpoint
+     SHA-256 values are `b75292f246205c9a2ea1a6d615218f1a7152573d132e1b6a54c59650f016fedc`
+     and `8e7d3d7221fe07f9aa3f9248c0e5c136111715c7fd5469e4710c63186c14777d`.
+     Thus simply moving the transverse fine/coarse interface outward is not a
+     stability remedy; the 32-cell placement response remains active.
+157. The no-wall-shear causal diagnostic is rejected at step 1560.  Disabling
+     physical wall stress changes neither the 0.1/0.15 speed threshold steps
+     nor the first population-floor step relative to the unfiltered baseline;
+     limiter use reaches `1.2366e-5`.  Meanwhile the newly exposed inner raw
+     interface defects grow to mass `3.2432` and momentum norm `0.78243` before
+     reflux.  Log/checkpoint SHA-256 values are
+     `97d1465e34fa773a817cd5b452cc7553fb8a5ba235ed7af45de75dd10e79c76a`
+     and `7cec790945927dea66606b7a071580c223108959458d7436d5c18843cd440ea0`.
+     Wall-law shear is therefore not the sole trigger; the next common-module
+     work targets conservative space-time interface transfer and the normal
+     geometry/interface coupling rather than retuning the wall law.
 
 ## Rejected candidates
 
