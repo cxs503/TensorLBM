@@ -189,22 +189,34 @@ def bouzidi_bounce_back_d3q19(
         mask_lin = q_cell < 0.5
         mask_quad = ~mask_lin
 
-        # Post-stream populations
-        # f_opp = f[opp_d] at the fluid boundary cell (post-stream).
-        # In the pull scheme, f[opp_d](x_f) = f_post[opp_d](x_f - c_opp_d)
-        # Since c_opp_d = -c_d and x_f + c_d = x_s (solid), this is
-        # f_post[opp_d](x_s) — the value streamed FROM the solid cell.
-        f_opp = f[opp_d][mask]
-        # Pre-stream populations (post-collision, before streaming)
+        # Pre-stream populations (post-collision, before streaming).  With
+        # pull streaming the unknown population is f_opp(x_f,t+1), whose
+        # source lies inside the solid.  It must be reconstructed from the
+        # known outgoing f_d populations; the post-stream value from the
+        # solid is not physical boundary data.
         fp_opp = f_prev[opp_d][mask]
         fp_d = f_prev[d][mask]
 
-        # Linear (q < 0.5): f_bc = 2q*f_opp + (1-2q)*fp_d
-        f_bc_lin = 2.0 * q_cell * f_opp + (1.0 - 2.0 * q_cell) * fp_d
+        dcx, dcy, dcz = (int(v) for v in C[d].tolist())
+        fp_d_upstream_field = torch.roll(
+            f_prev[d], shifts=(dcz, dcy, dcx), dims=(0, 1, 2),
+        )
+        fp_d_upstream = fp_d_upstream_field[mask]
 
-        # Quadratic (q >= 0.5): f_bc = f_opp/(2q) + (2q-1)/(2q)*fp_opp
+        # Wall closer than half-link: interpolate the two outgoing fluid
+        # populations at x_f and x_f-c_d.
+        f_bc_lin = (
+            2.0 * q_cell * fp_d
+            + (1.0 - 2.0 * q_cell) * fp_d_upstream
+        )
+
+        # Wall farther than half-link: interpolate outgoing and opposite
+        # post-collision populations at the boundary fluid node.
         safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
-        f_bc_quad = f_opp / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+        f_bc_quad = (
+            fp_d / (2.0 * safe_q)
+            + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+        )
 
         f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 

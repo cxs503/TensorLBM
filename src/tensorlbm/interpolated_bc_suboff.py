@@ -44,28 +44,61 @@ def _suboff_radius_norm_torch(
     torch.Tensor
         Normalised radius, same shape as *xi*.
     """
-    alpha = config.bow_fraction
-    beta = config.stern_fraction
-    n = config.stern_exponent
+    # Keep this device-native implementation algebraically identical to
+    # suboff_cad.suboff_radius_profile.  The previous ellipsoid surrogate
+    # produced q-values for a different body than build_suboff_mask(), which
+    # invalidated BFL resistance runs even though their voxel mask was real.
+    length_ft = 14.291667
+    bow_end = 3.333333 / length_ft
+    mid_end = 10.645833 / length_ft
+    stern_end = 13.979167 / length_ft
 
-    bow_mask = (xi >= 0.0) & (xi < alpha)
-    mid_mask = (xi >= alpha) & (xi <= 1.0 - beta)
-    stern_mask = (xi > 1.0 - beta) & (xi <= 1.0)
+    bow_mask = (xi >= 0.0) & (xi < bow_end)
+    mid_mask = (xi >= bow_end) & (xi <= mid_end)
+    stern_mask = (xi > mid_end) & (xi <= stern_end)
+    tail_mask = (xi > stern_end) & (xi <= 1.0)
 
-    xi_bow = xi / alpha
-    bow_r = torch.sqrt(torch.clamp(2.0 * xi_bow - xi_bow**2, 0.0, 1.0))
+    x_ft = xi * length_ft
 
-    eta = (xi - (1.0 - beta)) / beta
-    if n == 2.0:
-        stern_r = torch.sqrt(torch.clamp(1.0 - eta**2, 0.0, 1.0))
-    else:
-        stern_r = torch.clamp(1.0 - eta**n, 0.0, 1.0) ** (1.0 / n)
+    tmp = 0.3 * x_ft - 1.0
+    tmp2 = tmp * tmp
+    tmp4 = tmp2 * tmp2
+    bow_poly = (
+        1.126395101 * x_ft * tmp4
+        + 0.442874707 * x_ft * x_ft * (tmp2 * tmp)
+        + 1.0
+        - tmp4 * (1.2 * x_ft + 1.0)
+    )
+    bow_r = torch.clamp(bow_poly, min=0.0).pow(1.0 / 2.1)
+
+    r1, k0, k1 = 0.1175, 10.0, 44.6244
+    ksi = (13.979167 - x_ft) / 3.333333
+    ksi2 = ksi * ksi
+    ksi3 = ksi2 * ksi
+    ksi4 = ksi3 * ksi
+    ksi5 = ksi4 * ksi
+    ksi6 = ksi5 * ksi
+    stern_poly = (
+        r1 * r1
+        + r1 * k0 * ksi2
+        + (20.0 - 20.0 * r1 * r1 - 4.0 * r1 * k0 - k1 / 3.0) * ksi3
+        + (-45.0 + 45.0 * r1 * r1 + 6.0 * r1 * k0 + k1) * ksi4
+        + (36.0 - 36.0 * r1 * r1 - 4.0 * r1 * k0 - k1) * ksi5
+        + (-10.0 + 10.0 * r1 * r1 + r1 * k0 + k1 / 3.0) * ksi6
+    )
+    stern_r = torch.sqrt(torch.clamp(stern_poly, min=0.0))
+
+    tail_poly = 1.0 - (3.2 * x_ft - 44.733333) ** 2
+    tail_r = 0.1175 * torch.sqrt(torch.clamp(tail_poly, min=0.0))
 
     r = torch.where(
         bow_mask, bow_r,
         torch.where(
             mid_mask, torch.ones_like(xi),
-            torch.where(stern_mask, stern_r, torch.zeros_like(xi)),
+            torch.where(
+                stern_mask, stern_r,
+                torch.where(tail_mask, tail_r, torch.zeros_like(xi)),
+            ),
         ),
     )
     return torch.clamp(r, 0.0, 1.0)
@@ -182,8 +215,15 @@ def compute_q_suboff(
             continue  # rest direction
 
         # ---- Identify boundary links ----
-        sx, sy, sz = int(dcz), int(dcy), int(dcx)
-        nb_solid = torch.roll(solid, shifts=(-sz, -sy, -sx), dims=(0, 1, 2))
+        # Tensor storage is (z, y, x), while D3Q19 vectors are (x, y, z).
+        # Keep the components in their physical axes and only reorder them
+        # when forming the torch-roll tuple.  The former double permutation
+        # made x-directed BFL masks inspect z-neighbours (and vice versa).
+        nb_solid = torch.roll(
+            solid,
+            shifts=(-int(dcz), -int(dcy), -int(dcx)),
+            dims=(0, 1, 2),
+        )
         boundary = ~solid & nb_solid  # (nz, ny, nx)
 
         if not boundary.any():
@@ -198,6 +238,11 @@ def compute_q_suboff(
         k_f = idx[:, 0].to(dtype=torch.float64, device=device)
         j_f = idx[:, 1].to(dtype=torch.float64, device=device)
         i_f = idx[:, 2].to(dtype=torch.float64, device=device)
+
+        endpoint_in_main_body = _inside_hull(
+            i_f + dcx, j_f + dcy, k_f + dcz,
+            x_bow, cy, cz, hull_length, radius, config,
+        )
 
         # ---- Bisection on boundary cells only ----
         t_lo = torch.zeros(n_cells, dtype=torch.float64, device=device)
@@ -222,6 +267,11 @@ def compute_q_suboff(
 
         # Final q
         q = ((t_lo + t_hi) * 0.5).clamp(1e-6, 1.0).float()
+        # Sail and control surfaces are voxelised rather than described by
+        # the axisymmetric profile.  Their solid endpoint is therefore not
+        # inside the main-body implicit function; use standard half-way BB
+        # on those links instead of a spurious q≈1 result.
+        q = torch.where(endpoint_in_main_body, q, torch.full_like(q, 0.5))
 
         # ---- Scatter back to full-size tensor ----
         fluid_boundary_mask[d, k_f.long(), j_f.long(), i_f.long()] = True
