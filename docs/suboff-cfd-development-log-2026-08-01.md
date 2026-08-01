@@ -1618,6 +1618,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      `55568700cd2f2e691d932dbe31009bbf4ff98a0f74e3bbb816a9b7fb6462beed`.
      It must still finish the health window and pass coefficient/grid/force
      sensitivity before any production promotion.
+180. The collision viscosity audit is repeated near the SUBOFF relaxation
+     limit at `tau=0.5002` with a 64-cell shear wavelength and 800 steps.
+     Cumulant recovers `6.78077e-5` (1.712% error) and experimental natural KBC
+     `6.78469e-5` (1.770% error) for target `6.66667e-5`; both meet the 2%
+     gate, while BGK is at 2.964%.  This rules out the legacy KBC-style
+     viscosity drift in the new formulation at high Re, but does not replace
+     nonlinear/AMR validation.  Source hashes are recorded in
+     `docs/evidence/collision-viscosity-high-re-limit-r1.json`.
 
 ## Rejected candidates
 
