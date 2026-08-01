@@ -13,13 +13,15 @@ class PopulationHealth:
 
     finite: bool
     minimum_population: float
+    minimum_population_direction: int | None
+    minimum_population_index_zyx: tuple[int, int, int] | None
     maximum_population: float
     minimum_density: float | None
     maximum_density: float | None
     maximum_speed: float | None
     maximum_speed_index_zyx: tuple[int, int, int] | None
 
-    def to_dict(self) -> dict[str, bool | float | None]:
+    def to_dict(self) -> dict[str, object]:
         return asdict(self)
 
 
@@ -41,9 +43,20 @@ def inspect_population_health(f: torch.Tensor) -> PopulationHealth:
     finite = math.isfinite(minimum_value) and math.isfinite(maximum_value)
     if not finite:
         return PopulationHealth(
-            False, minimum_value, maximum_value, None, None, None,
+            False, minimum_value, None, None, maximum_value, None, None, None,
             None,
         )
+
+    minimum_flat_index = int(f.argmin().item())
+    nz, ny, nx = f.shape[1:]
+    spatial_cell_count = nz * ny * nx
+    minimum_population_direction = minimum_flat_index // spatial_cell_count
+    minimum_spatial_flat_index = minimum_flat_index % spatial_cell_count
+    minimum_population_index = (
+        minimum_spatial_flat_index // (ny * nx),
+        (minimum_spatial_flat_index % (ny * nx)) // nx,
+        minimum_spatial_flat_index % nx,
+    )
 
     if f.shape[0] == 19:
         from .d3q19 import C
@@ -74,6 +87,8 @@ def inspect_population_health(f: torch.Tensor) -> PopulationHealth:
     return PopulationHealth(
         finite,
         minimum_value,
+        minimum_population_direction,
+        minimum_population_index,
         maximum_value,
         density_minimum_value,
         density_maximum_value,

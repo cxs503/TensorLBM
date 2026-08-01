@@ -17,6 +17,8 @@ def test_uniform_equilibrium_health_is_reduced_to_scalars() -> None:
 
     assert health.finite is True
     assert health.minimum_population > 0.0
+    assert health.minimum_population_direction is not None
+    assert health.minimum_population_index_zyx is not None
     assert health.maximum_density == pytest.approx(1.02, abs=2e-8)
     assert health.minimum_density == pytest.approx(1.02, abs=2e-8)
     assert health.maximum_speed == pytest.approx(0.04, abs=2e-8)
@@ -35,6 +37,8 @@ def test_nonfinite_population_is_reported_without_macroscopic_claims(bad: float)
     assert health.maximum_density is None
     assert health.maximum_speed is None
     assert health.maximum_speed_index_zyx is None
+    assert health.minimum_population_direction is None
+    assert health.minimum_population_index_zyx is None
 
 
 def test_population_health_rejects_wrong_layout() -> None:
@@ -42,3 +46,14 @@ def test_population_health_rejects_wrong_layout() -> None:
         inspect_population_health(torch.ones((9, 3, 4)))
     with pytest.raises(TypeError, match="floating"):
         inspect_population_health(torch.ones((19, 2, 2, 2), dtype=torch.int64))
+
+
+def test_population_health_localizes_population_floor() -> None:
+    f = torch.ones((19, 3, 4, 5), dtype=torch.float64)
+    f[13, 2, 1, 4] = 1.0e-12
+
+    health = inspect_population_health(f)
+
+    assert health.minimum_population == pytest.approx(1.0e-12)
+    assert health.minimum_population_direction == 13
+    assert health.minimum_population_index_zyx == (2, 1, 4)
