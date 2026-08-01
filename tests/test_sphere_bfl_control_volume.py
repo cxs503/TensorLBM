@@ -38,3 +38,5 @@ def test_short_sphere_composition_is_finite() -> None:
     assert measured["finite"] is True
     assert math.isfinite(measured["cd_control_volume"])
     assert math.isfinite(measured["cd_bfl_link"])
+    assert measured["drag_stationarity"]["sufficiently_sampled"] is False
+    assert result["acceptance"]["admitted"] is False
