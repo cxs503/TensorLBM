@@ -135,6 +135,12 @@ def parser() -> argparse.ArgumentParser:
         help="largest production-admissible fraction limited at any step",
     )
     result.add_argument(
+        "--maximum-reflux-applied-correction-fraction",
+        type=float,
+        default=1.0e-3,
+        help="largest admissible per-direction interface inventory correction",
+    )
+    result.add_argument(
         "--regularize-restriction",
         action="store_true",
         help="filter fine-to-coarse transfer to resolved second-order stress",
@@ -270,6 +276,10 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("minimum health population must lie in [0,1)")
     if not 0.0 <= args.maximum_positivity_limited_fraction <= 1.0:
         raise ValueError("maximum positivity-limited fraction must lie in [0,1]")
+    if not 0.0 < args.maximum_reflux_applied_correction_fraction <= 0.2:
+        raise ValueError(
+            "maximum reflux applied correction fraction must lie in (0,0.2]",
+        )
     if (args.interface_filter_width == 0) != (
         args.interface_filter_strength == 0.0
     ):
@@ -551,6 +561,9 @@ def run(args: argparse.Namespace) -> dict:
         "maximum_positivity_limited_fraction": (
             args.maximum_positivity_limited_fraction
         ),
+        "maximum_reflux_applied_correction_fraction": (
+            args.maximum_reflux_applied_correction_fraction
+        ),
     }
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
@@ -666,6 +679,7 @@ def run(args: argparse.Namespace) -> dict:
     maximum_limiter_fraction = 0.0
     maximum_reflux_residual = [0.0, 0.0]
     maximum_reflux_limited_directions = [0, 0]
+    maximum_reflux_applied_correction_fraction = [0.0, 0.0]
     maximum_transfer_limited_fraction = [0.0, 0.0]
     minimum_transfer_alpha = [1.0, 1.0]
     maximum_raw_mass_mismatch = [0.0, 0.0]
@@ -695,6 +709,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("wall_shear_ramp_steps")
         legacy_v3_signature.pop("minimum_health_population")
         legacy_v3_signature.pop("maximum_positivity_limited_fraction")
+        legacy_v3_signature.pop("maximum_reflux_applied_correction_fraction")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and not args.regularize_prolongation
@@ -710,6 +725,7 @@ def run(args: argparse.Namespace) -> dict:
             and wall_shear_ramp_steps == args.ramp_steps
             and args.minimum_health_population == 1.0e-8
             and args.maximum_positivity_limited_fraction == 1.0e-6
+            and args.maximum_reflux_applied_correction_fraction == 1.0e-3
             and stored_configuration == legacy_v3_signature
         )
         legacy_v2_signature = dict(checkpoint_signature)
@@ -734,6 +750,9 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop("wall_shear_ramp_steps")
         legacy_v2_without_new_transfer.pop("minimum_health_population")
         legacy_v2_without_new_transfer.pop("maximum_positivity_limited_fraction")
+        legacy_v2_without_new_transfer.pop(
+            "maximum_reflux_applied_correction_fraction",
+        )
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
@@ -750,6 +769,7 @@ def run(args: argparse.Namespace) -> dict:
             and wall_shear_ramp_steps == args.ramp_steps
             and args.minimum_health_population == 1.0e-8
             and args.maximum_positivity_limited_fraction == 1.0e-6
+            and args.maximum_reflux_applied_correction_fraction == 1.0e-3
             and stored_configuration == legacy_v2_without_new_transfer
         )
         if (
@@ -773,6 +793,11 @@ def run(args: argparse.Namespace) -> dict:
         ]
         maximum_reflux_limited_directions = [
             int(value) for value in state["maximum_reflux_limited_directions"]
+        ]
+        maximum_reflux_applied_correction_fraction = [
+            float(value) for value in state.get(
+                "maximum_reflux_applied_correction_fraction", (0.0, 0.0),
+            )
         ]
         maximum_rejected_fraction = float(state["maximum_rejected_fraction"])
         maximum_transfer_limited_fraction = [
@@ -811,6 +836,9 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_reflux_residual": maximum_reflux_residual,
             "maximum_reflux_limited_directions": (
                 maximum_reflux_limited_directions
+            ),
+            "maximum_reflux_applied_correction_fraction": (
+                maximum_reflux_applied_correction_fraction
             ),
             "maximum_rejected_fraction": maximum_rejected_fraction,
             "maximum_transfer_limited_fraction": maximum_transfer_limited_fraction,
@@ -1020,6 +1048,9 @@ def run(args: argparse.Namespace) -> dict:
                 {
                     "maximum_reflux_residual": float(ledger.residual.abs().max()),
                     "reflux_limited_directions": ledger.limited_directions,
+                    "maximum_applied_correction_fraction": (
+                        ledger.maximum_applied_correction_fraction
+                    ),
                     "restriction_limited_fraction": (
                         ledger.restriction_limited_fraction
                     ),
@@ -1126,6 +1157,20 @@ def run(args: argparse.Namespace) -> dict:
                     f"{maximum_limiter_fraction:.6g} > "
                     f"{args.maximum_positivity_limited_fraction:.6g}",
                 )
+            maximum_interface_correction = max(
+                ledger.maximum_applied_correction_fraction
+                for ledger in ledgers
+            )
+            if (
+                maximum_interface_correction
+                > args.maximum_reflux_applied_correction_fraction
+            ):
+                raise FloatingPointError(
+                    "hierarchy exceeded the reflux-correction gate "
+                    f"at root_step={current_step}: "
+                    f"{maximum_interface_correction:.6g} > "
+                    f"{args.maximum_reflux_applied_correction_fraction:.6g}",
+                )
         if len(force_samples) != 4:
             raise RuntimeError("three-level hierarchy must emit four finest force samples")
         for index, ledger in enumerate(ledgers):
@@ -1136,6 +1181,10 @@ def run(args: argparse.Namespace) -> dict:
             maximum_reflux_limited_directions[index] = max(
                 maximum_reflux_limited_directions[index],
                 ledger.limited_directions,
+            )
+            maximum_reflux_applied_correction_fraction[index] = max(
+                maximum_reflux_applied_correction_fraction[index],
+                ledger.maximum_applied_correction_fraction,
             )
             maximum_transfer_limited_fraction[index] = max(
                 maximum_transfer_limited_fraction[index],
@@ -1342,6 +1391,8 @@ def run(args: argparse.Namespace) -> dict:
         and maximum_corrected_difference <= 0.1
         and max(maximum_reflux_residual) <= 1.0e-6
         and max(maximum_reflux_limited_directions) == 0
+        and max(maximum_reflux_applied_correction_fraction)
+        <= args.maximum_reflux_applied_correction_fraction
         and max(maximum_transfer_limited_fraction) <= 1.0e-3
         and maximum_limiter_fraction <= args.maximum_positivity_limited_fraction
         and maximum_rejected_fraction <= 0.01
@@ -1524,6 +1575,9 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_reflux_limited_directions_by_interface": (
                 maximum_reflux_limited_directions
             ),
+            "maximum_reflux_applied_correction_fraction_by_interface": (
+                maximum_reflux_applied_correction_fraction
+            ),
             "maximum_transfer_limited_fraction_by_interface": (
                 maximum_transfer_limited_fraction
             ),
@@ -1613,6 +1667,13 @@ def run(args: argparse.Namespace) -> dict:
             "minimum_population_target": args.minimum_health_population,
             "positivity_limited_fraction_target": (
                 args.maximum_positivity_limited_fraction
+            ),
+            "reflux_applied_correction_fraction_target": (
+                args.maximum_reflux_applied_correction_fraction
+            ),
+            "reflux_applied_correction_target_met": (
+                max(maximum_reflux_applied_correction_fraction)
+                <= args.maximum_reflux_applied_correction_fraction
             ),
             "single_grid_candidate": single_grid_candidate,
             "resistance_accuracy_assessed": False,

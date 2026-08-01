@@ -46,6 +46,7 @@
     "maximum_reflux_population_residual": 7.275957614183426e-12,
     "maximum_raw_kinetic_mismatch": 0.00013256072998046875,
     "maximum_conserved_moment_correction": 7.971130980877206e-05,
+    "maximum_applied_correction_fraction": 4.826132681046147e-06,
     "maximum_limited_directions": 0,
     "finite": true,
     "refined_to_coarse_density_error_ratio": 0.8490492534646686,
