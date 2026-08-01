@@ -1187,6 +1187,33 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Re=2000 through step 500, continuation to Re=100000 at step 1000, a
      5000-step wall ramp and health checks every 100 steps.  Low-Re force from
      the diagnostic remains explicitly excluded from physical validation.
+135. Continuation validation now reports and gates three distinct durations:
+     total trajectory time, time actually spent at the target collision
+     Reynolds number, and time with both target Reynolds number and a fully
+     activated wall.  The selected force window remains a fourth, stricter
+     duration.  Production admission requires at least 7.5 target-Re
+     convective times in addition to eight total and five sampled convective
+     times, so a long low-Re startup cannot satisfy the physical-duration gate.
+136. The unfiltered L90 continuation reveals a later coarse/fine-interface
+     mode that the 700-step pilot could not expose.  It stays mild through
+     approximately step 1380, then the finest-level peak repeatedly approaches
+     the allocated block boundary rather than the hull.  At step 2250 the
+     hierarchy is still finite, but peak speed has oscillated up to 0.191,
+     cumulative collision positivity limiting is `3.09161e-5`, maximum reflux
+     residual is `1.78814e-7`, and instantaneous force observers do not close.
+     This trajectory is retained as an unfiltered baseline and is not force
+     evidence.
+137. A common AMR transition-shell filter is implemented for D3Q19 and D3Q27.
+     A raised-cosine shell damps only non-equilibrium populations in physical
+     fine cells adjacent to a resolution transition; an explicit conserved-
+     moment projection keeps cell density and all three momentum components
+     unchanged, while ghost cells, geometry, wall traction and bulk viscosity
+     are untouched.  Width and strength are explicit checkpointed parameters,
+     zero by default.  Nested conservation, uniform-flow invariance and both
+     lattices are covered by 79 focused AMR/continuation/launcher tests.  A
+     matched L90 `width=4`, `strength=0.2` A/B is active against the retained
+     unfiltered trajectory before the option can be promoted to a production
+     default.
 
 ## Rejected candidates
 
