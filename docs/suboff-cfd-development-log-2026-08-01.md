@@ -1541,6 +1541,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Slow startup is retained as a control but rejected as a stability fix.
      GPU6 now isolates `C_s=0.10` SGS dissipation under the standard ramp and
      all new health gates; any stable result still requires model sensitivity.
+171. Bidirectional transfer positivity is physically inactive in the matched
+     L90 trajectory and is rejected as a stability remedy at step 1560.  Both
+     prolongation and restriction report zero limited fraction through failure,
+     while the population floor, peak speed `0.19061` and collision-limiter
+     onset reproduce the baseline.  Log/checkpoint SHA-256 values are
+     `62a41933ec8bee8a3156f9c5cad4e592dc1f8e17b5d4e33e5f4305219d0631dd`
+     and `6bd506193372e2da75b536c57e7de49686710dddef967e25fbafe043ab543ebb`.
+     The safety feature remains enabled, but cannot be credited with stability.
+     GPU3 now supplies the `C_s=0.15` counterpart to the `C_s=0.10` SGS test.
 
 ## Rejected candidates
 
