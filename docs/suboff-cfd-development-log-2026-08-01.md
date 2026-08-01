@@ -733,6 +733,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     launcher is now synchronized, direct remote preflight resolves the intended
     `src/tensorlbm/__init__.py`, and both launcher subprocess tests pass on the
     Wuxi host.  Existing CFD PIDs and services were untouched.
+89. Production-scale v8 confirms the force-frame correction before the
+    statistics window opens.  At L90 step 3000 (full wall activation), the
+    instantaneous nested-CV resistance is 121.456 N and laboratory-frame BFL
+    plus wall stress is 121.613 N: raw difference 0.156 N or 0.129%.  The
+    corresponding phase of v6 using artificial-slip wall-frame exchange was
+    about 41.7 N apart.  Numerical-source pairing begins only after the step
+    4500 warmup, so this checkpoint is conservation evidence, not an admitted
+    drag mean; the run continues unchanged into its declared tail.
 
 ## Rejected candidates
 
