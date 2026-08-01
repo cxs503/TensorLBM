@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-import torch
 import pytest
+import torch
 
+from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
+from tensorlbm.solver3d import stream3d
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_anisotropic_sponge_sigma_3d,
@@ -68,7 +71,7 @@ def test_sponge_reduces_macroscopic_velocity_perturbation() -> None:
 
 def test_equilibrium_difference_layer_absorbs_periodic_acoustic_return() -> None:
     """A pulse crossing x+ must not return through torch.roll at full energy."""
-    from tensorlbm.solver3d import collide_bgk3d, stream3d
+    from tensorlbm.solver3d import collide_bgk3d
 
     shape = (3, 3, 160)
     x = torch.arange(shape[2], dtype=torch.float32)
@@ -92,3 +95,51 @@ def test_equilibrium_difference_layer_absorbs_periodic_acoustic_return() -> None
     undamped = returned_energy(False)
     damped = returned_energy(True)
     assert damped < 0.2 * undamped
+
+
+def test_production_cumulant_open_boundary_absorbs_acoustic_return() -> None:
+    """The production collision/NEE chain must attenuate a returning pulse."""
+    shape = (3, 3, 180)
+    lattice_speed = 0.06
+    x = torch.arange(shape[2], dtype=torch.float32)
+    pulse = 1e-3 * torch.exp(-((x - 45.0) / 6.0).square())
+    rho = (1.0 + pulse).view(1, 1, -1).expand(shape)
+    ux = torch.full(shape, lattice_speed)
+    zero = torch.zeros(shape)
+    initial = equilibrium3d(rho, ux, zero, zero)
+    sigma = build_sponge_sigma_3d(
+        shape, width=30, max_strength=0.3, faces=("x+",),
+    )
+
+    def returned_energy(use_sponge: bool) -> float:
+        f = initial.clone()
+        maximum = 0.0
+        for step in range(1, 701):
+            f = stream3d(collide_cumulant_d3q19(
+                f, tau=0.500324, C_s=0.05,
+            ))
+            f = non_equilibrium_far_field_bc_3d(
+                f, u_in=lattice_speed, faces=("x-", "x+"),
+            )
+            if use_sponge:
+                f = apply_equilibrium_difference_sponge(
+                    f, sigma,
+                    velocity_target=(lattice_speed, 0.0, 0.0),
+                )
+            f = non_equilibrium_far_field_bc_3d(
+                f, u_in=lattice_speed, faces=("x-", "x+"),
+            )
+            if step >= 450:
+                density, _, _, _ = macroscopic3d(f)
+                energy = float((density[:, :, 10:90] - 1.0).square().mean())
+                maximum = max(maximum, energy)
+        return maximum
+
+    previous_threads = torch.get_num_threads()
+    try:
+        torch.set_num_threads(1)
+        undamped = returned_energy(False)
+        damped = returned_energy(True)
+    finally:
+        torch.set_num_threads(previous_threads)
+    assert damped < 0.01 * undamped
