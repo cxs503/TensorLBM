@@ -126,6 +126,13 @@ case "$collision_model" in
   *) echo "unsupported TENSORLBM_COLLISION_MODEL: $collision_model" >&2; exit 2 ;;
 esac
 stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1}
+sponge_inlet=()
+if [[ ${TENSORLBM_SPONGE_INLET:-0} == 1 ]]; then
+  sponge_inlet=(--sponge-inlet)
+elif [[ ${TENSORLBM_SPONGE_INLET:-0} != 0 ]]; then
+  echo "TENSORLBM_SPONGE_INLET must be 0 or 1" >&2
+  exit 2
+fi
 wall_ramp_options=()
 if [[ -n ${TENSORLBM_WALL_NORMAL_RAMP_STEPS:-} ]]; then
   wall_ramp_options+=(--wall-normal-ramp-steps "$TENSORLBM_WALL_NORMAL_RAMP_STEPS")
@@ -161,6 +168,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --cs-smag "$cs_smag" --wale-cw "$wale_cw" --vreman-cv "$vreman_cv" \
   --wall-law musker --stress-exchange-distance "$stress_exchange_distance" \
   --sponge-width "$sponge" --sponge-strength 0.3 \
+  "${sponge_inlet[@]}" \
   --far-field-mode non_equilibrium_extrapolation \
   --memory-bytes-per-cell 742 \
   --ghost-interpolation "$ghost_interpolation" \
