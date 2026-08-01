@@ -79,3 +79,40 @@ def test_periodic_axis_control_volume_may_span_complete_axis() -> None:
         f, streamed, f, cv, periodic_axes=("z",),
     )
     assert torch.allclose(result.force_on_body, torch.zeros(3, dtype=f.dtype), atol=1e-14)
+
+
+def test_curved_moving_slip_impulse_is_invariant_across_nested_control_volumes() -> None:
+    """The first off-lattice slip impulse must close before wake evolution."""
+    from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19
+    from tensorlbm.boundaries3d import sphere_mask
+    from tensorlbm.interpolated_bc import compute_q_sphere
+    from tensorlbm.wall_model import compute_bfl_link_normal
+
+    shape = (32, 32, 48)
+    nx, ny, nz = 48, 32, 32
+    cx, cy, cz, radius = 18.0, 16.0, 16.0, 6.0
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.06, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    old = equilibrium3d(rho, ux, zero, zero)
+    solid = sphere_mask(nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"))
+    masks, q = compute_q_sphere(
+        nx, ny, nz, cx, cy, cz, radius, device=torch.device("cpu"),
+    )
+    nx_n, ny_n, nz_n = compute_bfl_link_normal(masks)
+    normal_speed = ux * nx_n
+    wall_velocity = (
+        ux - normal_speed * nx_n,
+        -normal_speed * ny_n,
+        -normal_speed * nz_n,
+    )
+    new, bfl_force = bouzidi_bounce_back_d3q19(
+        old.clone(), old, masks, q,
+        wall_velocity=wall_velocity, wall_density=rho, return_force=True,
+    )
+    tight = box_control_volume(shape, x0=9, x1=28, y0=7, y1=26, z0=7, z1=26)
+    wide = box_control_volume(shape, x0=6, x1=31, y0=4, y1=29, z0=4, z1=29)
+    tight_force = observe_control_volume_force(old, new, old, tight, solid=solid).force_on_body
+    wide_force = observe_control_volume_force(old, new, old, wide, solid=solid).force_on_body
+    assert torch.allclose(tight_force, wide_force, atol=1e-11, rtol=0.0)
+    assert tight_force[0].item() == pytest.approx(bfl_force[0], abs=1e-8)
