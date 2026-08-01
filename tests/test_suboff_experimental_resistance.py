@@ -47,6 +47,14 @@ def test_force_scale_is_positive_and_dimensionally_consistent() -> None:
     assert scale == pytest.approx(7614.44, rel=2e-3)
 
 
+def test_smooth_startup_ramp_has_quiet_endpoints() -> None:
+    assert module.smooth_ramp_factor(0, 100) == 0.0
+    assert module.smooth_ramp_factor(50, 100) == pytest.approx(0.5)
+    assert module.smooth_ramp_factor(100, 100) == 1.0
+    assert module.smooth_ramp_factor(200, 100) == 1.0
+    assert module.smooth_ramp_factor(1, 100) < 0.001
+
+
 def test_non_table_speed_is_rejected() -> None:
     with pytest.raises(ValueError, match="primary Table 14"):
         module.experimental_point("bare_hull", 7.0)
