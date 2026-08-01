@@ -1040,6 +1040,42 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      records `resumed_legacy_v2_checkpoint=true`, and its next atomic save is
      native v3.  A regression rewrites only those two legacy fields and proves
      1-to-2-step recovery.
+119. The first production-length nested L150 attempt is rejected at root step
+     625 because all force observers are non-finite.  Its exact PID alone is
+     terminated and the log is retained; no resistance value is extracted.
+     The originally queued L90/L120 jobs also exposed an environment defect:
+     the launcher assumed a repository `.venv` that does not exist on the
+     Wuxi node.  Interpreter selection now honours `TENSORLBM_PYTHON`, then a
+     local venv, then `python3`, and rejects a non-executable path explicitly.
+120. A reusable low-frequency population-health observer now reports, per
+     hierarchy level, population extrema, density extrema and peak lattice
+     speed as host scalars.  The nested runner also fails immediately when the
+     already-paid positivity reduction reports a non-finite collision or wall
+     state, naming root step, level and stage instead of continuing to a later
+     `NaN` force report.  Health records survive checkpoints, while a zero
+     cadence keeps the production hot path unchanged.
+121. A matched L150 diagnostic localises the instability before `NaN`: through
+     step 175 all levels remain positive, but the finest level reaches peak
+     speed 0.109.  At step 200 its positivity limiter is active, density spans
+     0.866--1.366 and peak speed reaches 0.455.  The unbounded fine-to-coarse
+     reconstruction then creates negative populations on L1 by step 225 and
+     on L0 by step 250; at step 350 the finest density spans 0.036--64.0 and
+     peak speed is 1.254.  This trajectory is physically invalid and is
+     stopped there.  The causal order identifies AMR transfer amplification,
+     rather than the still-stable one-level wall/open-boundary path, as the
+     first repair target.
+122. Three explicit common transfer controls are implemented for the matched
+     A/B run.  Fine-to-coarse restriction can project non-equilibrium content
+     onto the six second-order Hermite stress moments before convective
+     rescaling, filtering higher kinetic modes without empirical force tuning.
+     The one-cell ghost shell can use cell-centred trilinear interpolation;
+     its donor plan is cached and samples only the shell instead of allocating
+     a full fine-block temporary every substep.  Finally, restriction can apply
+     the moment-preserving positivity limiter before the parent consumes the
+     state, with per-interface limited fraction and minimum alpha persisted as
+     admission evidence.  All three remain explicit physics/numerics options,
+     old unfiltered checkpoints have a narrow baseline-only migration path,
+     and 36 focused transfer/hierarchy/runner tests pass.
 
 ## Rejected candidates
 
