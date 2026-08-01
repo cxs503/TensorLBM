@@ -658,9 +658,12 @@ from .spatial_convergence import (
 )
 from .suboff_static_amr import (
     SuboffGeometryResolution,
+    SuboffNestedStaticAMRPlan,
     SuboffStaticAMRPlan,
     assess_suboff_geometry_resolution,
+    build_nested_fine_suboff_mask,
     build_fine_suboff_mask,
+    plan_nested_suboff_static_amr,
     plan_suboff_static_amr,
 )
 from .control_volume_force import (
@@ -742,9 +745,12 @@ __all__ = [
     "SpatialConvergenceAssessment",
     "assess_spatial_convergence",
     "SuboffGeometryResolution",
+    "SuboffNestedStaticAMRPlan",
     "SuboffStaticAMRPlan",
     "assess_suboff_geometry_resolution",
+    "build_nested_fine_suboff_mask",
     "build_fine_suboff_mask",
+    "plan_nested_suboff_static_amr",
     "plan_suboff_static_amr",
     "ControlVolumeForceResult",
     "NestedControlVolumeAssessment",
