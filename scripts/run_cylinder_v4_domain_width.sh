@@ -17,6 +17,11 @@ wait_for_pid=${4:-}
 radius=9
 diameter=$((2 * radius))
 nx=360
+steps=${TENSORLBM_STEPS:-54000}
+if [[ ! $steps =~ ^[1-9][0-9]*$ ]] || (( steps < 54000 )); then
+  echo "TENSORLBM_STEPS must be an integer >= 54000" >&2
+  exit 2
+fi
 case "$width" in
   20) ny=$((20 * diameter)) ;;
   30) ny=$((30 * diameter)) ;;
@@ -39,7 +44,20 @@ export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
 if [[ ${TENSORLBM_PREFLIGHT_ONLY:-0} == 1 ]]; then
   exec "$python" -c 'import tensorlbm; print(tensorlbm.__file__)'
 fi
-stem="$result_dir/cylinder-v4-domain-w${width}d-r9-54k"
+if (( steps % 1000 == 0 )); then
+  step_suffix="$((steps / 1000))k"
+else
+  step_suffix=$steps
+fi
+stem="$result_dir/cylinder-v4-domain-w${width}d-r9-${step_suffix}"
+seed_checkpoint=${TENSORLBM_CONTINUE_FROM_CHECKPOINT:-}
+if [[ -n "$seed_checkpoint" && ! -f "$stem.ckpt" ]]; then
+  if [[ ! -f "$seed_checkpoint" ]]; then
+    echo "continuation seed checkpoint does not exist: $seed_checkpoint" >&2
+    exit 2
+  fi
+  cp --reflink=auto -- "$seed_checkpoint" "$stem.ckpt"
+fi
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
   resume=(--resume)
@@ -50,7 +68,7 @@ exec "$python" examples/cylinder_bfl_cv_validate.py \
   --device cuda:0 --nx "$nx" --ny "$ny" --nz 3 \
   --radius "$radius" --center-x-fraction 0.30 \
   --reynolds 100 --lattice-speed 0.06 \
-  --steps 54000 --warmup-steps 31500 --ramp-steps 450 \
+  --steps "$steps" --warmup-steps 31500 --ramp-steps 450 \
   --sponge-width 18 --sponge-strength 0.2 --cv-margin 6 \
   --report-interval 450 --checkpoint-interval 4500 \
   --checkpoint "$stem.ckpt" --statistics-window-steps 22500 \
