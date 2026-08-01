@@ -29,6 +29,12 @@ def test_unknown_far_field_mode_is_rejected() -> None:
         cfg.validate()
 
 
+def test_unknown_collision_model_is_rejected() -> None:
+    cfg = SphereBFLControlVolumeConfig(collision_model="magic")
+    with pytest.raises(ValueError, match="collision_model"):
+        cfg.validate()
+
+
 def test_short_sphere_composition_is_finite() -> None:
     cfg = SphereBFLControlVolumeConfig(
         nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
@@ -44,6 +50,21 @@ def test_short_sphere_composition_is_finite() -> None:
     assert result["acceptance"]["admitted"] is False
     assert result["schema"] == "tensorlbm-sphere-bfl-control-volume-v3"
     assert result["configuration"]["collision_model"] == "cumulant_d3q19_cs0"
+
+
+def test_short_natural_kbc_sphere_composition_is_finite() -> None:
+    cfg = SphereBFLControlVolumeConfig(
+        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
+        reynolds=20.0, lattice_speed=0.04, steps=4, warmup_steps=2,
+        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        collision_model="natural_kbc_d3q19",
+    )
+
+    result = run_sphere_bfl_control_volume(cfg)
+
+    assert result["result"]["finite"] is True
+    assert result["configuration"]["collision_model"] == "natural_kbc_d3q19"
+    assert result["acceptance"]["admitted"] is False
 
 
 def test_v3_checkpoint_requires_complete_physics_identity(tmp_path) -> None:
