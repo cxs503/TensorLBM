@@ -137,6 +137,37 @@ def test_nested_hierarchy_accepts_dynamic_convective_tau_chain() -> None:
         hierarchy.step(identity, tau_by_level=(0.55, 0.60, 0.69))
 
 
+def test_nested_interface_filters_preserve_uniform_state_and_conservation() -> None:
+    outer = StaticBlockAMRConfig(
+        BoxRegion(x0=3, x1=11, y0=3, y1=9, z0=3, z1=9),
+        tau_coarse=0.56,
+        interface_filter_width=1,
+        interface_filter_strength=0.25,
+    )
+    inner = StaticBlockAMRConfig(
+        BoxRegion(x0=4, x1=14, y0=4, y1=10, z0=4, z1=10),
+        tau_coarse=outer.tau_fine,
+        interface_filter_width=1,
+        interface_filter_strength=0.25,
+    )
+    hierarchy = NestedStaticBlockAMR3D(
+        _equilibrium((12, 12, 14)), (outer, inner),
+    )
+    before = tuple(level.clone() for level in hierarchy.level_populations)
+
+    def identity(
+        state: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
+        del tau, level, substep
+        return AMRAdvanceResult(state.clone(), state.clone())
+
+    ledgers = hierarchy.step(identity)
+
+    for actual, expected in zip(hierarchy.level_populations, before, strict=True):
+        assert torch.allclose(actual, expected, rtol=0.0, atol=3.0e-8)
+    assert all(abs(ledger.mass_residual) < 1.0e-12 for ledger in ledgers)
+
+
 def test_nested_hierarchy_reports_cell_savings() -> None:
     hierarchy = NestedStaticBlockAMR3D(
         _equilibrium((12, 12, 14)), _configs(),
