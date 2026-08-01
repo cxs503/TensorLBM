@@ -480,8 +480,57 @@ def collide_cumulant_d3q19(
     return feq + fneq_reg + fneq_ho_s
 
 
+def smagorinsky_effective_tau_d3q19(
+    f: torch.Tensor,
+    *,
+    tau: float,
+    C_s: float,
+) -> torch.Tensor:
+    """Return the local D3Q19 Smagorinsky relaxation time used by collision.
+
+    This diagnostic mirrors the production collision formula so high-Re runs
+    can quantify how much subgrid viscosity is actually being introduced.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    if tau <= 0.5:
+        raise ValueError("tau must be greater than 0.5")
+    if C_s < 0.0:
+        raise ValueError("C_s must be non-negative")
+    if C_s == 0.0:
+        return torch.full(
+            f.shape[1:], tau, dtype=f.dtype, device=f.device,
+        )
+    rho, ux, uy, uz = macroscopic3d(f)
+    fneq = f - equilibrium3d(rho, ux, uy, uz)
+    from .d3q19 import C as C19  # noqa: PLC0415
+
+    c = C19.to(device=f.device, dtype=f.dtype)
+    cx = c[:, 0, None, None, None]
+    cy = c[:, 1, None, None, None]
+    cz = c[:, 2, None, None, None]
+    pi_xx = (cx.square() * fneq).sum(dim=0)
+    pi_yy = (cy.square() * fneq).sum(dim=0)
+    pi_zz = (cz.square() * fneq).sum(dim=0)
+    pi_xy = (cx * cy * fneq).sum(dim=0)
+    pi_xz = (cx * cz * fneq).sum(dim=0)
+    pi_yz = (cy * cz * fneq).sum(dim=0)
+    pi_norm = torch.sqrt(
+        pi_xx.square() + pi_yy.square() + pi_zz.square()
+        + 2.0 * (pi_xy.square() + pi_xz.square() + pi_yz.square())
+    )
+    return 0.5 * (
+        tau
+        + torch.sqrt(
+            tau * tau
+            + 18.0 * C_s * C_s * pi_norm / rho.clamp_min(1.0e-12)
+        )
+    )
+
+
 __all__ = [
     "collide_cumulant_d2q9",
     "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
+    "smagorinsky_effective_tau_d3q19",
 ]

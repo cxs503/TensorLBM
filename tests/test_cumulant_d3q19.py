@@ -16,13 +16,14 @@ import pytest
 import torch
 
 from tensorlbm.advanced_collision_contract import (
-    CollisionKernelWithheldError,
-    collision_capability_matrix,
     collide_advanced_3d,
+    collision_capability_matrix,
 )
-from tensorlbm.cumulant import collide_cumulant_d3q19
+from tensorlbm.cumulant import (
+    collide_cumulant_d3q19,
+    smagorinsky_effective_tau_d3q19,
+)
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-
 
 # ---------------------------------------------------------------------------
 # Shape, importability, and basic properties
@@ -192,3 +193,35 @@ class TestRelaxationBehaviour:
         out = collide_cumulant_d3q19(f_pert, tau=0.55, C_s=0.1)
         assert torch.isfinite(out).all()
         assert out.shape == f_pert.shape
+
+    def test_smagorinsky_effective_tau_is_explicit(self) -> None:
+        rho = torch.ones((2, 3, 4))
+        zero = torch.zeros_like(rho)
+        equilibrium = equilibrium3d(rho, zero, zero, zero)
+        base = smagorinsky_effective_tau_d3q19(
+            equilibrium,
+            tau=0.55,
+            C_s=0.1,
+        )
+        torch.testing.assert_close(base, torch.full_like(base, 0.55))
+
+        perturbed = equilibrium.clone()
+        perturbed[1] += 1.0e-3
+        perturbed[2] -= 1.0e-3
+        effective = smagorinsky_effective_tau_d3q19(
+            perturbed,
+            tau=0.55,
+            C_s=0.1,
+        )
+        assert bool((effective >= 0.55).all())
+        assert bool((effective > 0.55).any())
+
+    def test_smagorinsky_tau_diagnostic_rejects_invalid_input(self) -> None:
+        with pytest.raises(ValueError, match="shape"):
+            smagorinsky_effective_tau_d3q19(
+                torch.zeros((9, 2, 3, 4)), tau=0.55, C_s=0.1,
+            )
+        with pytest.raises(ValueError, match="greater"):
+            smagorinsky_effective_tau_d3q19(
+                torch.zeros((19, 2, 3, 4)), tau=0.5, C_s=0.1,
+            )
