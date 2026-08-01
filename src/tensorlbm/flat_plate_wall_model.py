@@ -8,6 +8,7 @@ from pathlib import Path
 import torch
 
 from .control_volume_force import box_control_volume, observe_control_volume_force
+from .checkpoint_io import atomic_torch_save
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import C, equilibrium3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
@@ -169,7 +170,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         if checkpoint is None:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({
+        atomic_torch_save({
             "schema": "tensorlbm-flat-plate-checkpoint-v1",
             "configuration": {
                 "shape_zyx": list(shape), "plate_length": config.plate_length,
