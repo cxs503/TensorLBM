@@ -253,10 +253,11 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
         near_mask=near, apply_bfl=False, wall_normals=(nx, ny, nz),
         wall_law="reichardt", y_val=0.5,
     )
-    exchange_out, exchange_friction, _ = bfl_wall_function_3d(
+    exchange_out, exchange_friction, _, diagnostics = bfl_wall_function_3d(
         f.clone(), f, solid, 1e-3, masks, q,
         near_mask=near, apply_bfl=False, wall_normals=(nx, ny, nz),
         wall_law="reichardt", stress_exchange_distance=2.0,
+        return_wall_diagnostics=True,
     )
     assert exchange_friction != pytest.approx(local_friction, rel=1e-5)
     population_change = (exchange_out - f).sum(dim=(1, 2, 3))
@@ -266,6 +267,13 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
     )
     assert torch.isfinite(exchange_out).all()
     assert torch.isfinite(local_out).all()
+    assert diagnostics.mode == "exchange_location_guo"
+    assert diagnostics.requested_nodes == diagnostics.active_nodes == 21
+    assert diagnostics.rejected_fraction == pytest.approx(0.0)
+    assert diagnostics.wall_distance_mean == pytest.approx(2.0)
+    assert diagnostics.y_plus_min is not None and diagnostics.y_plus_min > 0.0
+    assert diagnostics.y_plus_max is not None
+    assert diagnostics.shear_force[0] == pytest.approx(exchange_friction)
 
 
 def test_exchange_location_requires_positive_distance() -> None:

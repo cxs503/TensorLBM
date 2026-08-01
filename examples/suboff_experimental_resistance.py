@@ -339,6 +339,13 @@ def run_case(args: argparse.Namespace) -> dict:
     auxiliary_cv_samples: dict[int, list[tuple[int, float]]] = {
         margin: [] for margin in auxiliary_cvs
     }
+    wall_applicability: dict[str, float | int | None] = {
+        "samples": 0,
+        "y_plus_min": None,
+        "y_plus_mean_sum": 0.0,
+        "y_plus_max": None,
+        "maximum_rejected_fraction": 0.0,
+    }
     diverged = False
     force_method = args.force_method
     if force_method == "auto":
@@ -394,13 +401,14 @@ def run_case(args: argparse.Namespace) -> dict:
             for margin, samples in state["auxiliary_cv_samples"].items()
         }
         snapshots = list(state["snapshots"])
+        wall_applicability = dict(state["wall_applicability"])
 
     def save_checkpoint(step: int) -> None:
         if checkpoint is None:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-suboff-direct-checkpoint-v1",
+            "schema": "tensorlbm-suboff-direct-checkpoint-v2",
             "configuration": checkpoint_signature,
             "step": step,
             "populations": f.detach().cpu(),
@@ -419,6 +427,7 @@ def run_case(args: argparse.Namespace) -> dict:
                 for margin, samples in auxiliary_cv_samples.items()
             },
             "snapshots": snapshots,
+            "wall_applicability": wall_applicability,
         }, checkpoint)
 
     def apply_outer_boundary(state: torch.Tensor) -> torch.Tensor:
@@ -445,7 +454,7 @@ def run_case(args: argparse.Namespace) -> dict:
         f = stream3d(f)
         f = apply_outer_boundary(f)
         if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}:
-            f, friction_lu, pressure_voxel_lu = bfl_wall_function_3d(
+            f, friction_lu, pressure_voxel_lu, wall_diagnostics = bfl_wall_function_3d(
                 f, f_post_collision, solid, nu_lu,
                 bfl_mask, bfl_q, y_val=args.wall_distance,
                 wall_law=args.wall_law, near_mask=near,
@@ -481,7 +490,30 @@ def run_case(args: argparse.Namespace) -> dict:
                     )
                     if args.hull_type == "bare_hull" else None
                 ),
+                return_wall_diagnostics=True,
             )
+            wall_applicability["samples"] = int(wall_applicability["samples"]) + 1
+            wall_applicability["maximum_rejected_fraction"] = max(
+                float(wall_applicability["maximum_rejected_fraction"]),
+                wall_diagnostics.rejected_fraction,
+            )
+            if wall_diagnostics.y_plus_mean is not None:
+                wall_applicability["y_plus_mean_sum"] = (
+                    float(wall_applicability["y_plus_mean_sum"])
+                    + wall_diagnostics.y_plus_mean
+                )
+            if wall_diagnostics.y_plus_min is not None:
+                current_min = wall_applicability["y_plus_min"]
+                wall_applicability["y_plus_min"] = (
+                    wall_diagnostics.y_plus_min if current_min is None
+                    else min(float(current_min), wall_diagnostics.y_plus_min)
+                )
+            if wall_diagnostics.y_plus_max is not None:
+                current_max = wall_applicability["y_plus_max"]
+                wall_applicability["y_plus_max"] = (
+                    wall_diagnostics.y_plus_max if current_max is None
+                    else max(float(current_max), wall_diagnostics.y_plus_max)
+                )
         else:
             if args.boundary == "projected_wall":
                 f = project_no_penetration(f, solid, near)
@@ -566,6 +598,11 @@ def run_case(args: argparse.Namespace) -> dict:
                 ),
                 "error_pct": abs(predicted_n - point.resistance_n) / point.resistance_n * 100.0,
                 "elapsed_s": time.time() - started,
+                "wall_stress_diagnostics": (
+                    asdict(wall_diagnostics)
+                    if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}
+                    else None
+                ),
             }
             snapshots.append(snapshot)
             print(
@@ -620,8 +657,13 @@ def run_case(args: argparse.Namespace) -> dict:
     experimental_ct = point.resistance_n / dynamic_pressure_area
     predicted_ct = predicted_n / dynamic_pressure_area
     ittc_cf = 0.075 / (math.log10(re) - 2.0) ** 2
+    wall_samples = int(wall_applicability["samples"])
+    maximum_exchange_rejected_fraction = float(
+        wall_applicability["maximum_rejected_fraction"],
+    )
+    exchange_sampling_acceptable = maximum_exchange_rejected_fraction <= 0.01
     result = {
-        "schema": "tensorlbm-suboff-experimental-resistance-v1",
+        "schema": "tensorlbm-suboff-experimental-resistance-v2",
         "status": "measured_candidate" if finite else "failed",
         "physical_validation": False,
         "primary_source": PRIMARY_SOURCE,
@@ -737,6 +779,18 @@ def run_case(args: argparse.Namespace) -> dict:
             "last_three_block_drift_pct": drift_pct,
             "force_stationarity": force_stationarity.to_dict(),
             "finite": finite, "diverged": diverged,
+            "wall_stress_applicability": {
+                "samples": wall_samples,
+                "y_plus_min": wall_applicability["y_plus_min"],
+                "y_plus_mean": (
+                    float(wall_applicability["y_plus_mean_sum"]) / wall_samples
+                    if wall_samples else None
+                ),
+                "y_plus_max": wall_applicability["y_plus_max"],
+                "maximum_rejected_fraction": (
+                    maximum_exchange_rejected_fraction
+                ),
+            },
         },
         "coefficients": {
             "reference_wetted_area_m2": reference_area_m2,
@@ -765,9 +819,16 @@ def run_case(args: argparse.Namespace) -> dict:
         "acceptance": {
             "force_error_target_pct": args.error_target,
             "steady_drift_target_pct": args.drift_target,
+            "maximum_exchange_rejected_fraction": 0.01,
             "force_target_met": error_pct <= args.error_target,
             "steady_target_met": force_stationarity.meets(args.drift_target),
-            "admitted": error_pct <= args.error_target and force_stationarity.meets(args.drift_target) and finite,
+            "exchange_sampling_target_met": exchange_sampling_acceptable,
+            "admitted": (
+                error_pct <= args.error_target
+                and force_stationarity.meets(args.drift_target)
+                and exchange_sampling_acceptable
+                and finite
+            ),
             "claim_boundary": "One grid/time candidate; grid and time convergence plus paired AFF-1/AFF-8 ratio are required for physical validation.",
         },
     }

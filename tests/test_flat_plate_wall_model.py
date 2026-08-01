@@ -33,6 +33,11 @@ def test_short_flat_plate_composition_is_finite() -> None:
     assert math.isfinite(result["friction_coefficient"])
     assert result["drag_stationarity"]["sufficiently_sampled"] is False
     assert math.isfinite(result["maximum_positivity_limited_fraction"])
+    applicability = result["wall_stress_applicability"]
+    assert applicability["samples"] == 2
+    assert applicability["y_plus_min"] > 0.0
+    assert applicability["y_plus_max"] >= applicability["y_plus_min"]
+    assert applicability["maximum_rejected_fraction"] == pytest.approx(0.0)
 
 
 def test_flat_plate_rejects_nonpositive_exchange_distance() -> None:

@@ -129,6 +129,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     cover the new module.  Flat-plate and direct-SUBOFF checkpoints record the
     exchange distance, preventing physically different runs from being
     resumed into one history.
+23. Wall stress now emits an applicability ledger: requested/active exchange
+    nodes, rejected sample fraction, exchange distance, min/mean/max `y+`,
+    mean friction velocity, and the full shear-force vector.  Samples outside
+    the domain or with a solid-contaminated trilinear stencil are rejected
+    rather than clipped.  Flat-plate and direct-SUBOFF outputs persist the
+    ledger; more than 1% rejected exchange samples fails admission.  This
+    prevents an integrated-force match from hiding an invalid wall-law region
+    or geometry-intersection sampling error.
 
 ## Rejected candidates
 

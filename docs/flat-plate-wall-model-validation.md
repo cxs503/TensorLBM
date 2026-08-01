@@ -29,6 +29,14 @@ Its integrated fluid momentum change is unit-tested to equal the negative of
 the reported wall traction.  A value of zero retains the legacy first-cell
 input and is useful only as a declared sensitivity case.
 
+The result records the minimum, time-mean and maximum exchange-location
+`y+`, plus the largest fraction of requested boundary samples rejected for
+leaving the domain or touching a solid interpolation value.  More than 1%
+rejected samples fails the benchmark admission gate.  These fields are
+applicability evidence: a log-law run must not be promoted merely because its
+integrated force matches ITTC while its sampled `y+` lies outside the law's
+valid region.
+
 ITTC-1957 is recorded as an engineering correlation, not an exact Navier–
 Stokes solution.  Acceptance requires a stationary Cf history at multiple
 plate resolutions and collision Reynolds sensitivities.  The control-volume

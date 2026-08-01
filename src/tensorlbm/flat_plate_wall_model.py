@@ -146,6 +146,10 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     friction_history: list[float] = []
     cv_history: list[float] = []
     bfl_total_history: list[float] = []
+    wall_y_plus_min_history: list[float] = []
+    wall_y_plus_mean_history: list[float] = []
+    wall_y_plus_max_history: list[float] = []
+    wall_rejected_fraction_history: list[float] = []
     maximum_limited_fraction = 0.0
     start_step = 0
     checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
@@ -166,6 +170,12 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         friction_history = state["friction_history"].tolist()
         cv_history = state["control_volume_history"].tolist()
         bfl_total_history = state["bfl_total_history"].tolist()
+        wall_y_plus_min_history = state["wall_y_plus_min_history"].tolist()
+        wall_y_plus_mean_history = state["wall_y_plus_mean_history"].tolist()
+        wall_y_plus_max_history = state["wall_y_plus_max_history"].tolist()
+        wall_rejected_fraction_history = state[
+            "wall_rejected_fraction_history"
+        ].tolist()
         maximum_limited_fraction = float(state["maximum_limited_fraction"])
         if start_step >= config.steps:
             raise ValueError("checkpoint already reached or exceeded requested steps")
@@ -175,7 +185,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-flat-plate-checkpoint-v1",
+            "schema": "tensorlbm-flat-plate-checkpoint-v2",
             "configuration": {
                 "shape_zyx": list(shape), "plate_length": config.plate_length,
                 "reynolds": config.reynolds,
@@ -189,6 +199,18 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "friction_history": torch.tensor(friction_history, dtype=torch.float64),
             "control_volume_history": torch.tensor(cv_history, dtype=torch.float64),
             "bfl_total_history": torch.tensor(bfl_total_history, dtype=torch.float64),
+            "wall_y_plus_min_history": torch.tensor(
+                wall_y_plus_min_history, dtype=torch.float64,
+            ),
+            "wall_y_plus_mean_history": torch.tensor(
+                wall_y_plus_mean_history, dtype=torch.float64,
+            ),
+            "wall_y_plus_max_history": torch.tensor(
+                wall_y_plus_max_history, dtype=torch.float64,
+            ),
+            "wall_rejected_fraction_history": torch.tensor(
+                wall_rejected_fraction_history, dtype=torch.float64,
+            ),
             "maximum_limited_fraction": maximum_limited_fraction,
         }, checkpoint)
 
@@ -210,13 +232,14 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             )
         post = torch.where(solid_q, old, collided)
         f = outer(stream3d(post))
-        f, friction, bfl_force = bfl_wall_function_3d(
+        f, friction, bfl_force, wall_diagnostics = bfl_wall_function_3d(
             f, post, solid, config.wall_nu, bfl_mask, bfl_q,
             near_mask=near, wall_normals=(normal_x, normal_y, normal_z),
             bfl_wall_mode="wall_model_slip",
             wall_activation=_ramp(step, config.ramp_steps),
             wall_law=config.wall_law,
             stress_exchange_distance=config.stress_exchange_distance,
+            return_wall_diagnostics=True,
         )
         if config.positivity_limiter:
             f, diagnostic = limit_nonequilibrium_for_positivity(f)
@@ -234,6 +257,13 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             friction_history.append(friction)
             cv_history.append(cv_force)
             bfl_total_history.append(friction + bfl_force)
+            if wall_diagnostics.y_plus_mean is not None:
+                wall_y_plus_min_history.append(wall_diagnostics.y_plus_min)
+                wall_y_plus_mean_history.append(wall_diagnostics.y_plus_mean)
+                wall_y_plus_max_history.append(wall_diagnostics.y_plus_max)
+            wall_rejected_fraction_history.append(
+                wall_diagnostics.rejected_fraction,
+            )
         if not bool(torch.isfinite(f).all()):
             raise FloatingPointError(f"flat-plate benchmark diverged at step {step}")
         if config.report_interval and step % config.report_interval == 0:
@@ -272,14 +302,17 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1e-30) * 100.0
     )
     limiter_acceptable = maximum_limited_fraction <= 1e-3
+    maximum_rejected_fraction = max(wall_rejected_fraction_history, default=0.0)
+    exchange_sampling_acceptable = maximum_rejected_fraction <= 0.01
     admitted = (
         reference_error <= 5.0
         and stationarity.meets(1.0)
         and observer_difference <= 1.0
         and limiter_acceptable
+        and exchange_sampling_acceptable
     )
     return {
-        "schema": "tensorlbm-flat-plate-wall-model-v1",
+        "schema": "tensorlbm-flat-plate-wall-model-v2",
         "configuration": {
             "shape_zyx": list(shape), "plate_length": config.plate_length,
             "reynolds": config.reynolds,
@@ -303,6 +336,16 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "total_force_observer_difference_pct": observer_difference,
             "drag_stationarity": stationarity.to_dict(),
             "maximum_positivity_limited_fraction": maximum_limited_fraction,
+            "wall_stress_applicability": {
+                "samples": len(wall_y_plus_mean_history),
+                "y_plus_min": min(wall_y_plus_min_history, default=None),
+                "y_plus_mean": (
+                    sum(wall_y_plus_mean_history) / len(wall_y_plus_mean_history)
+                    if wall_y_plus_mean_history else None
+                ),
+                "y_plus_max": max(wall_y_plus_max_history, default=None),
+                "maximum_rejected_fraction": maximum_rejected_fraction,
+            },
             "finite": math.isfinite(cf),
         },
         "acceptance": {
@@ -310,10 +353,12 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "stationarity_target_pct": 1.0,
             "force_observer_target_pct": 1.0,
             "maximum_limiter_fraction": 1e-3,
+            "maximum_exchange_rejected_fraction": 0.01,
             "friction_target_met": reference_error <= 5.0,
             "stationarity_target_met": stationarity.meets(1.0),
             "force_observer_target_met": observer_difference <= 1.0,
             "limiter_target_met": limiter_acceptable,
+            "exchange_sampling_target_met": exchange_sampling_acceptable,
             "admitted": admitted,
         },
     }
