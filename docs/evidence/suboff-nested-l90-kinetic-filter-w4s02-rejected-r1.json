@@ -1,0 +1,31 @@
+{
+  "schema": "tensorlbm-suboff-nested-filter-evidence-v1",
+  "status": "rejected",
+  "reason": "late interface instability and negative population",
+  "baseline": {
+    "log": "suboff-nested-v4-l90-continuation-rejected-interface-step2280.log",
+    "sha256": "f9364a57d01e00cd30e6a62d6276ce5ec26e4c161b25f3b571f0e83b1c7c696a"
+  },
+  "candidate": {
+    "log": "suboff-nested-v6-l90-rejected-kinetic-w4s02-step1560.log",
+    "sha256": "73d862e4b6b925f555931def2bcf6f6c91106f3b743e85c667f6eb58f1541d2e",
+    "interface_filter_width": 4,
+    "interface_filter_strength": 0.2
+  },
+  "aligned_health_comparison": {
+    "common_step_count": 26,
+    "first_common_step": 60,
+    "latest_common_step": 1560,
+    "baseline_maximum_speed": 0.19061227142810822,
+    "candidate_maximum_speed": 0.1836705207824707,
+    "baseline_minimum_population": 1.862645149230957e-09,
+    "candidate_minimum_population": -0.000044671276555163786,
+    "latest_candidate_to_baseline_speed_ratio": 0.9635818271634432
+  },
+  "force_evidence_eligible": false,
+  "notes": [
+    "The candidate first triggered collision positivity limiting by step 1560.",
+    "Its width-four shell also overlaps the largest auxiliary control-volume flux stencil in the L90 geometry.",
+    "The exact-PID job was stopped after the failure became reproducible; no resistance result is claimed."
+  ]
+}
