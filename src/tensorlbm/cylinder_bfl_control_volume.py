@@ -1,23 +1,23 @@
 """Canonical unconfined cylinder drag using BFL and control-volume force."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from pathlib import Path
 
 import torch
 
-from .bfl_d3q19 import compute_q_cylinder_d3q19, bouzidi_bounce_back_d3q19
+from .bfl_d3q19 import bouzidi_bounce_back_d3q19, compute_q_cylinder_d3q19
 from .boundaries3d import far_field_bc_3d
-from .control_volume_force import box_control_volume, observe_control_volume_force
 from .checkpoint_io import atomic_torch_save
+from .control_volume_force import box_control_volume, observe_control_volume_force
+from .cuda_memory_budget import require_cuda_memory_budget
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
 from .solver3d import stream3d
 from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
-
 
 CYLINDER_RE100_CD_REFERENCE = 1.33
 CYLINDER_RE100_ST_REFERENCE = 0.164
@@ -59,6 +59,8 @@ class CylinderBFLControlVolumeConfig:
             raise ValueError("cylinder domain is too small")
         if self.radius < 3.0 or not 0 <= self.warmup_steps < self.steps:
             raise ValueError("invalid radius or time window")
+        if not 0.0 < self.center_x_fraction < 1.0:
+            raise ValueError("center_x_fraction must lie in (0,1)")
         cx = self.nx * self.center_x_fraction
         if min(cx, self.nx - cx, self.ny / 2) <= self.radius + self.cv_margin + 2:
             raise ValueError("cylinder/control volume does not fit")
@@ -68,6 +70,10 @@ class CylinderBFLControlVolumeConfig:
             raise ValueError("unknown far_field_mode")
         if self.report_interval < 0 or self.checkpoint_interval < 0:
             raise ValueError("report/checkpoint intervals must be non-negative")
+        if self.ramp_steps < 0 or self.sponge_width < 0:
+            raise ValueError("ramp_steps and sponge_width must be non-negative")
+        if not 0.0 <= self.sponge_strength <= 1.0:
+            raise ValueError("sponge_strength must lie in [0,1]")
         if self.resume and not self.checkpoint_path:
             raise ValueError("resume requires checkpoint_path")
 
@@ -123,6 +129,11 @@ def run_cylinder_bfl_control_volume(
         torch.cuda.set_device(device)
         torch.cuda.reset_peak_memory_stats(device)
     shape = (config.nz, config.ny, config.nx)
+    estimated_peak_gib = math.prod(shape) * 1000.0 / 2**30
+    memory_budget = require_cuda_memory_budget(
+        device, estimated_peak_gib=estimated_peak_gib,
+        reserve_gib=1.0, label="cylinder benchmark",
+    )
     cx, cy = config.nx * config.center_x_fraction, config.ny / 2.0
     yy, xx = torch.meshgrid(
         torch.arange(config.ny, device=device, dtype=torch.float32),
@@ -160,17 +171,27 @@ def run_cylinder_bfl_control_volume(
     lift_forces: list[float] = []
     start_step = 0
     checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
+    checkpoint_signature = {
+        "schema_version": 2,
+        "shape_zyx": list(shape),
+        "radius": config.radius,
+        "center_x_fraction": config.center_x_fraction,
+        "reynolds": config.reynolds,
+        "lattice_speed": config.lattice_speed,
+        "collision_model": "cumulant_d3q19_cs0",
+        "warmup_steps": config.warmup_steps,
+        "ramp_steps": config.ramp_steps,
+        "sponge_width": config.sponge_width,
+        "sponge_strength": config.sponge_strength,
+        "sponge_inlet": config.sponge_inlet,
+        "cv_margin": config.cv_margin,
+        "far_field_mode": config.far_field_mode,
+        "periodic_axes": ["z"],
+    }
     if config.resume:
         assert checkpoint is not None
         state = torch.load(checkpoint, map_location=device, weights_only=True)
-        expected = {
-            "shape_zyx": list(shape), "radius": config.radius,
-            "reynolds": config.reynolds, "lattice_speed": config.lattice_speed,
-            "sponge_inlet": config.sponge_inlet,
-        }
-        stored_configuration = dict(state.get("configuration", {}))
-        stored_configuration.setdefault("sponge_inlet", False)
-        if stored_configuration != expected:
+        if state.get("configuration") != checkpoint_signature:
             raise ValueError("checkpoint configuration does not match cylinder run")
         f = state["populations"].to(device=device)
         start_step = int(state["step"])
@@ -185,13 +206,8 @@ def run_cylinder_bfl_control_volume(
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-cylinder-checkpoint-v1",
-            "configuration": {
-                "shape_zyx": list(shape), "radius": config.radius,
-                "reynolds": config.reynolds,
-                "lattice_speed": config.lattice_speed,
-                "sponge_inlet": config.sponge_inlet,
-            },
+            "schema": "tensorlbm-cylinder-checkpoint-v2",
+            "configuration": checkpoint_signature,
             "step": step,
             "populations": f.detach().cpu(),
             "drag_force_history": torch.tensor(forces, dtype=torch.float64),
@@ -288,15 +304,15 @@ def run_cylinder_bfl_control_volume(
         final_ux.square() + final_uy.square() + final_uz.square()
     )
     return {
-        "schema": "tensorlbm-cylinder-bfl-control-volume-v1",
-        "configuration": {
-            "shape_zyx": list(shape), "radius": config.radius,
-            "reynolds": config.reynolds, "tau": config.tau,
+        "schema": "tensorlbm-cylinder-bfl-control-volume-v2",
+        "configuration": checkpoint_signature | {
+            "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
-            "far_field_mode": config.far_field_mode, "device": config.device,
+            "device": config.device,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
-            "sponge_inlet": config.sponge_inlet,
+            "report_interval": config.report_interval,
+            "checkpoint_interval": config.checkpoint_interval,
         },
         "result": {
             "cd_control_volume": cd, "cd_bfl_link": cd_bfl,
@@ -334,6 +350,9 @@ def run_cylinder_bfl_control_volume(
                 and shedding_cycles >= 8.0
             ),
         },
+        "cuda_memory_preflight": (
+            memory_budget.to_dict() if memory_budget is not None else None
+        ),
     }
 
 
