@@ -70,6 +70,7 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert len(state["paired_primary_cv_samples"]) == 8
     assert set(state["auxiliary_cv_samples"]) == {2, 4}
     assert len(state["surface_pressure_samples"]) == 4
+    assert len(state["paired_bfl_total_samples"]) == 4
     assert resumed["result"]["nested_control_volume_invariance"][
         "auxiliary_count"
     ] == 2
