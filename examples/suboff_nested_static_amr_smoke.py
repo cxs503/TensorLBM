@@ -511,9 +511,15 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_rejected_fraction, diagnostics.rejected_fraction,
             )
             mean_y_plus = diagnostics.y_plus_mean
+            minimum_y_plus = diagnostics.y_plus_min
+            maximum_y_plus = diagnostics.y_plus_max
+            mean_wall_distance = diagnostics.wall_distance_mean
         else:
             out, friction, pressure = wall_result
             mean_y_plus = None
+            minimum_y_plus = None
+            maximum_y_plus = None
+            mean_wall_distance = None
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
         maximum_limiter_fraction = max(
@@ -558,6 +564,9 @@ def run(args: argparse.Namespace) -> dict:
             "friction": friction,
             "source": collision_source + positivity_source,
             "y_plus": mean_y_plus,
+            "y_plus_min": minimum_y_plus,
+            "y_plus_max": maximum_y_plus,
+            "wall_distance": mean_wall_distance,
             "auxiliary": auxiliary_forces,
         })
         return AMRAdvanceResult(out, post_collision)
@@ -597,6 +606,18 @@ def run(args: argparse.Namespace) -> dict:
             item["y_plus"] for item in force_samples
             if item["y_plus"] is not None
         ]
+        y_plus_minima = [
+            item["y_plus_min"] for item in force_samples
+            if item["y_plus_min"] is not None
+        ]
+        y_plus_maxima = [
+            item["y_plus_max"] for item in force_samples
+            if item["y_plus_max"] is not None
+        ]
+        wall_distances = [
+            item["wall_distance"] for item in force_samples
+            if item["wall_distance"] is not None
+        ]
         record = {
             "step": current_step,
             "cv_resistance_n": cv_mean * scale,
@@ -621,6 +642,12 @@ def run(args: argparse.Namespace) -> dict:
             "mean_y_plus": (
                 sum(y_plus_samples) / len(y_plus_samples)
                 if y_plus_samples else None
+            ),
+            "minimum_y_plus": min(y_plus_minima) if y_plus_minima else None,
+            "maximum_y_plus": max(y_plus_maxima) if y_plus_maxima else None,
+            "mean_wall_distance_cells": (
+                sum(wall_distances) / len(wall_distances)
+                if wall_distances else None
             ),
             "wall_fully_activated": current_step >= args.ramp_steps,
             "surface_pressure_plus_wall_stress_n": None,
@@ -707,6 +734,10 @@ def run(args: argparse.Namespace) -> dict:
     mean_bfl = None
     mean_source = None
     reference_error_pct = None
+    wall_records = [
+        record for record in selected_records
+        if record["mean_y_plus"] is not None
+    ]
     if selected_records:
         cv_values = [record["cv_resistance_n"] for record in selected_records]
         mean_resistance = sum(cv_values) / len(cv_values)
@@ -852,6 +883,27 @@ def run(args: argparse.Namespace) -> dict:
                 "surface_observer_difference_pct": (
                     surface_observer_difference_pct
                 ),
+                "wall_exchange": {
+                    "samples": len(wall_records),
+                    "mean_distance_cells": (
+                        sum(record["mean_wall_distance_cells"] for record in wall_records)
+                        / len(wall_records)
+                        if wall_records else None
+                    ),
+                    "minimum_y_plus": (
+                        min(record["minimum_y_plus"] for record in wall_records)
+                        if wall_records else None
+                    ),
+                    "mean_y_plus": (
+                        sum(record["mean_y_plus"] for record in wall_records)
+                        / len(wall_records)
+                        if wall_records else None
+                    ),
+                    "maximum_y_plus": (
+                        max(record["maximum_y_plus"] for record in wall_records)
+                        if wall_records else None
+                    ),
+                },
             },
         },
         "acceptance": {
