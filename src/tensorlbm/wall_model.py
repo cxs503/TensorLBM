@@ -1084,15 +1084,19 @@ def bfl_wall_function_3d(
     u_tau = _solve_wall_law(u_tan_mag, nu, y_val, wall_law, near)
     tau_w = u_tau * u_tau
 
-    # ── Step 5: Apply Guo body force: F = −(τ_w/dy) · û_tan ──
-    # With Guo forcing, force is per unit volume: F = −τ_w/dy · û_tan
-    # With simple forcing, force is per unit area: F = −τ_w · û_tan
+    # ── Step 5: Apply wall traction to the boundary control volume ──
+    # The integrated force is τ_w*A.  A lattice boundary cell has unit
+    # control-volume volume, so the source is τ_w*A/V, not τ_w/y1.  Wall
+    # distance already enters the wall-law solve; dividing by y1 again
+    # doubled the applied force for the common y1=0.5 case.
     near_f = near.to(f.dtype)
-    if use_guo:
-        coef = -(tau_w / y_val) * near_f * wall_activation
+    if area_weight is None:
+        traction_area = near_f
     else:
-        # Legacy simple forcing (for comparison)
-        coef = -tau_w * near_f * wall_activation
+        if area_weight.shape != near.shape:
+            raise ValueError("area_weight must have the spatial grid shape")
+        traction_area = near_f * area_weight.to(device=f.device, dtype=f.dtype)
+    coef = -tau_w * traction_area * wall_activation
 
     fx = coef * (ut_x * inv_utan)
     fy = coef * (ut_y * inv_utan)
@@ -1109,7 +1113,7 @@ def bfl_wall_function_3d(
     # ── Step 6: Compute drag ──
     # Friction drag = integrated wall shear (from τ_w)
     drag_fric = float((
-        tau_w * (ut_x * inv_utan) * near_f * wall_activation
+        tau_w * (ut_x * inv_utan) * traction_area * wall_activation
     ).sum().item())
 
     # Conservative boundary force from link momentum exchange.  In

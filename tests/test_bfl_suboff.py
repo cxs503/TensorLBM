@@ -193,6 +193,37 @@ def test_wall_model_startup_ramps_relative_normal_velocity_not_bfl_population() 
     assert pressure == pytest.approx(0.0, abs=2e-9)
 
 
+def test_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
+    """Wall distance affects u_tau, but must not multiply integrated force."""
+    from tensorlbm.d3q19 import C as C19
+    from tensorlbm.wall_model import bfl_wall_function_3d
+
+    shape = (3, 5, 5)
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.06, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f = equilibrium3d(rho, ux, zero, zero)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    solid[:, 0, :] = True
+    near = torch.zeros(shape, dtype=torch.bool)
+    near[:, 1, :] = True
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+
+    out, friction, _ = bfl_wall_function_3d(
+        f.clone(), f, solid, 1e-3, masks, q,
+        near_mask=near, apply_bfl=False, use_guo=True,
+        wall_activation=1.0, y_val=0.5,
+    )
+    population_change = (out - f).sum(dim=(1, 2, 3))
+    fluid_momentum_change = (
+        population_change[:, None] * C19.to(f)
+    ).sum(dim=0)
+    assert fluid_momentum_change[0].item() == pytest.approx(
+        -friction, abs=5e-11,
+    )
+
+
 def test_bfl_link_normal_recovers_flat_wall_direction() -> None:
     masks = torch.zeros((19, 3, 3, 3), dtype=torch.bool)
     cell = (1, 1, 1)
