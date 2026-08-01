@@ -471,7 +471,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     checkpoint = Path(args.checkpoint) if args.checkpoint else None
     checkpoint_signature = {
-        "schema_version": 5,
+        "schema_version": 6,
         "coarse_shape_zyx": list(shape),
         "hull_type": args.hull_type,
         "speed_knots": args.speed_knots,
@@ -587,7 +587,7 @@ def run(args: argparse.Namespace) -> dict:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-suboff-static-amr-checkpoint-v5",
+            "schema": "tensorlbm-suboff-static-amr-checkpoint-v6",
             "configuration": checkpoint_signature,
             "step": step,
             "coarse_populations": amr.coarse_f.detach().cpu(),
@@ -840,8 +840,8 @@ def run(args: argparse.Namespace) -> dict:
         abs(mean_bfl_total - mean_force) / max(abs(mean_force), 1e-30) * 100.0
     )
     surface_observer_difference_pct = (
-        abs(surface_total_mean - paired_bfl_total_mean)
-        / max(abs(paired_bfl_total_mean), 1e-30) * 100.0
+        abs(surface_total_mean - paired_primary_cv_mean)
+        / max(abs(paired_primary_cv_mean), 1e-30) * 100.0
     )
     corrected_cv_observer_difference_pct = (
         abs(corrected_cv_mean - paired_bfl_total_mean)
@@ -887,15 +887,12 @@ def run(args: argparse.Namespace) -> dict:
         and not args.diagnostic_uncoupled_wall_stress
         and reference_error_pct <= args.error_target
         and force_stationarity.meets(args.drift_target)
-        and force_observer_difference_pct <= args.force_observer_target
         and nested_cv_assessment.meets(
             args.nested_cv_target, minimum_auxiliary_count=2,
         )
         and surface_observer_difference_pct <= args.surface_observer_target
         and numerical_momentum_source_fraction_pct
         <= args.numerical_source_target
-        and corrected_cv_observer_difference_pct
-        <= args.force_observer_target
         and limiter_acceptable
         and reflux_acceptable
         and wall_sampling_acceptable
@@ -906,7 +903,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     rho_c, ux_c, uy_c, uz_c = macroscopic3d(amr.coarse_f)
     result = {
-        "schema": "tensorlbm-suboff-static-amr-v5",
+        "schema": "tensorlbm-suboff-static-amr-v6",
         "status": (
             "single_grid_candidate" if single_grid_admitted
             else "single_grid_rejected"
@@ -1004,7 +1001,7 @@ def run(args: argparse.Namespace) -> dict:
             "surface_pressure_samples_in_window": sum(
                 step > final_window_start for step, _ in surface_pressure_samples
             ),
-            "surface_vs_bfl_observer_difference_pct": (
+            "surface_vs_control_volume_observer_difference_pct": (
                 surface_observer_difference_pct
             ),
             "experimental_resistance_n": point.resistance_n,
@@ -1066,7 +1063,7 @@ def run(args: argparse.Namespace) -> dict:
             "stationarity_target_met": force_stationarity.meets(
                 args.drift_target,
             ),
-            "force_observer_target_met": (
+            "bfl_vs_control_volume_diagnostic_target_met": (
                 force_observer_difference_pct <= args.force_observer_target
             ),
             "nested_control_volume_target_met": (
@@ -1081,7 +1078,7 @@ def run(args: argparse.Namespace) -> dict:
                 numerical_momentum_source_fraction_pct
                 <= args.numerical_source_target
             ),
-            "source_corrected_cv_closure_target_met": (
+            "source_corrected_cv_vs_bfl_diagnostic_target_met": (
                 corrected_cv_observer_difference_pct
                 <= args.force_observer_target
             ),

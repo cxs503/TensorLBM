@@ -70,7 +70,7 @@ def assess_suboff_amr_convergence(
     schema_valid = True
     single_grid_admitted = True
     for record in records:
-        schema_valid &= record.get("schema") == "tensorlbm-suboff-static-amr-v5"
+        schema_valid &= record.get("schema") == "tensorlbm-suboff-static-amr-v6"
         configuration = record.get("configuration")
         result = record.get("result")
         acceptance = record.get("acceptance")
@@ -232,7 +232,7 @@ def assess_suboff_amr_convergence(
         "fine_hull_resolutions": resolutions,
         "mean_resistances_n": resistance_values,
         "configuration_identity": {
-            "v5_schema": schema_valid,
+            "v6_schema": schema_valid,
             "required_fields_present": required_fields_present,
             "identity_fields_equal": identity_fields_equal,
             "fine_to_coarse_ratios": fine_to_coarse,
