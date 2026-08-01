@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import math
+
+import pytest
 import torch
 
 from tensorlbm.suboff_cad import build_suboff_mask
@@ -80,3 +83,35 @@ def test_second_level_regenerates_exact_cad_and_contains_complete_hull() -> None
         .repeat_interleave(2, 2)
     )
     assert torch.count_nonzero(nested_solid ^ repeated).item() > 0
+
+
+def test_third_refinement_block_is_recursive_and_reports_exact_memory() -> None:
+    center, _, parent = _nested_case()
+    parent_solid, _ = build_nested_fine_suboff_mask(
+        parent, hull_type="bare_hull", coarse_center=center,
+    )
+    deepest = plan_nested_suboff_static_amr(
+        parent, parent_solid, wall_margin=2, wake_cells=2,
+    )
+    deepest_solid, geometry = build_nested_fine_suboff_mask(
+        deepest, hull_type="bare_hull", coarse_center=center,
+    )
+
+    assert deepest.refinement_depth == 3
+    assert deepest.cumulative_ratio == 8
+    assert deepest.effective_hull_length_cells == 640.0
+    assert geometry["length"] == 640.0
+    assert deepest_solid.shape == deepest.fine_physical_shape
+    assert len(deepest.allocated_cells_by_level) == 4
+    assert sum(deepest.allocated_cells_by_level) == deepest.total_allocated_cells
+    assert deepest.uniform_finest_cells == math.prod(parent.outer.coarse_shape) * 8**3
+
+    indices = deepest_solid.nonzero(as_tuple=False)
+    # Two parent cells become a four-cell wall buffer on the child grid.
+    assert deepest.wall_buffer_finest_cells == 4
+    # Cell-centred rasterization may occupy the cell immediately below the
+    # continuous four-cell geometric clearance.
+    assert min(int(indices[:, axis].min()) for axis in range(3)) >= 3
+    assert deepest.estimated_peak_gib(742.0) == pytest.approx(
+        deepest.total_allocated_cells * 742.0 / 2**30,
+    )

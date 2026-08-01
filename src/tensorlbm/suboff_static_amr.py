@@ -248,12 +248,30 @@ class SuboffStaticAMRPlan:
         """Empirical peak estimate; 943 B/cell matches the RTX3090 probes."""
         return self.total_allocated_cells * bytes_per_cell / 2**30
 
+    @property
+    def refinement_depth(self) -> int:
+        """Number of 2:1 interfaces between the root and finest grid."""
+        return 1
+
+    @property
+    def cumulative_ratio(self) -> int:
+        return self.ratio
+
+    @property
+    def allocated_cells_by_level(self) -> tuple[int, ...]:
+        return self.coarse_cells, self.fine_allocated_cells
+
+    @property
+    def fine_origin_coarse_xyz(self) -> tuple[float, float, float]:
+        """Global origin of the physical fine block in root-cell units."""
+        return float(self.box.x0), float(self.box.y0), float(self.box.z0)
+
 
 @dataclass(frozen=True)
 class SuboffNestedStaticAMRPlan:
-    """Second near-body 2:1 block inside a :class:`SuboffStaticAMRPlan`."""
+    """One recursively nested near-body 2:1 SUBOFF refinement block."""
 
-    outer: SuboffStaticAMRPlan
+    outer: SuboffStaticAMRPlan | SuboffNestedStaticAMRPlan
     ratio: int
     ghost: int
     box_in_outer_allocated_coordinates: BoxRegion
@@ -271,6 +289,35 @@ class SuboffNestedStaticAMRPlan:
 
     def estimated_peak_gib(self, bytes_per_cell: float = 943.0) -> float:
         return self.total_allocated_cells * bytes_per_cell / 2**30
+
+    @property
+    def refinement_depth(self) -> int:
+        return self.outer.refinement_depth + 1
+
+    @property
+    def cumulative_ratio(self) -> int:
+        return self.outer.cumulative_ratio * self.ratio
+
+    @property
+    def allocated_cells_by_level(self) -> tuple[int, ...]:
+        return self.outer.allocated_cells_by_level + (
+            self.additional_allocated_cells,
+        )
+
+    @property
+    def fine_origin_coarse_xyz(self) -> tuple[float, float, float]:
+        """Global origin of this physical block in root-cell units."""
+        parent_origin = self.outer.fine_origin_coarse_xyz
+        parent_ratio = self.outer.cumulative_ratio
+        box = self.box_in_outer_allocated_coordinates
+        return tuple(
+            origin + (coordinate - self.ghost) / parent_ratio
+            for origin, coordinate in zip(
+                parent_origin,
+                (box.x0, box.y0, box.z0),
+                strict=True,
+            )
+        )
 
 
 def plan_suboff_static_amr(
@@ -360,7 +407,7 @@ def build_fine_suboff_mask(
 
 
 def plan_nested_suboff_static_amr(
-    outer: SuboffStaticAMRPlan,
+    outer: SuboffStaticAMRPlan | SuboffNestedStaticAMRPlan,
     outer_fine_solid: torch.Tensor,
     *,
     wall_margin: int = 3,
@@ -368,7 +415,7 @@ def plan_nested_suboff_static_amr(
     ratio: int = 2,
     ghost: int = 1,
 ) -> SuboffNestedStaticAMRPlan:
-    """Plan a conservative second block around the exact outer-level hull.
+    """Plan another conservative block around the exact parent-level hull.
 
     The returned box is expressed in the *allocated* outer fine grid,
     including its ghost layer, exactly as required by
@@ -420,8 +467,11 @@ def plan_nested_suboff_static_amr(
     allocated_shape = tuple(size + 2 * ghost for size in fine_shape)
     additional_cells = math.prod(allocated_shape)
     total = outer.total_allocated_cells + additional_cells
-    uniform = outer.coarse_cells * (outer.ratio * ratio) ** 3
-    effective_length = outer.coarse_hull_length * outer.ratio * ratio
+    root = outer
+    while isinstance(root, SuboffNestedStaticAMRPlan):
+        root = root.outer
+    uniform = root.coarse_cells * (outer.cumulative_ratio * ratio) ** 3
+    effective_length = outer.effective_hull_length_cells * ratio
     return SuboffNestedStaticAMRPlan(
         outer=outer,
         ratio=ratio,
@@ -449,28 +499,15 @@ def build_nested_fine_suboff_mask(
     config: SuboffConfig | None = None,
     device: torch.device | str = "cpu",
 ) -> tuple[torch.Tensor, dict]:
-    """Regenerate exact CAD on the second nested level without voxel repeat."""
+    """Regenerate exact CAD on any nested level without voxel repeat."""
     if config is None:
         config = SuboffConfig()
-    outer = plan.outer
-    outer_ratio = outer.ratio
-    inner_ratio = plan.ratio
-    ghost = plan.ghost
-    box = plan.box_in_outer_allocated_coordinates
     cx, cy, cz = coarse_center
-
-    def local_center(coarse_value: float, outer_origin: int, inner_origin: int) -> float:
-        global_parent_origin = (
-            outer_origin * outer_ratio + inner_origin - ghost
-        )
-        return (
-            coarse_value * outer_ratio * inner_ratio
-            - global_parent_origin * inner_ratio
-        )
-
-    local_cx = local_center(cx, outer.box.x0, box.x0)
-    local_cy = local_center(cy, outer.box.y0, box.y0)
-    local_cz = local_center(cz, outer.box.z0, box.z0)
+    origin_x, origin_y, origin_z = plan.fine_origin_coarse_xyz
+    cumulative_ratio = plan.cumulative_ratio
+    local_cx = (cx - origin_x) * cumulative_ratio
+    local_cy = (cy - origin_y) * cumulative_ratio
+    local_cz = (cz - origin_z) * cumulative_ratio
     nz_f, ny_f, nx_f = plan.fine_physical_shape
     length = plan.effective_hull_length_cells
     return build_suboff_mask(

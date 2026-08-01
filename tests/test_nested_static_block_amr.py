@@ -36,6 +36,20 @@ def _configs() -> tuple[StaticBlockAMRConfig, StaticBlockAMRConfig]:
     return outer, inner
 
 
+def _four_level_configs() -> tuple[
+    StaticBlockAMRConfig,
+    StaticBlockAMRConfig,
+    StaticBlockAMRConfig,
+]:
+    outer, inner = _configs()
+    deepest = StaticBlockAMRConfig(
+        # The level-2 allocation is (14, 14, 22), including ghost cells.
+        BoxRegion(x0=3, x1=19, y0=3, y1=11, z0=3, z1=11),
+        tau_coarse=inner.tau_fine,
+    )
+    return outer, inner, deepest
+
+
 def test_three_levels_follow_exact_recursive_subcycling() -> None:
     hierarchy = NestedStaticBlockAMR3D(
         _equilibrium((12, 12, 14)), _configs(),
@@ -66,6 +80,35 @@ def test_three_levels_follow_exact_recursive_subcycling() -> None:
     assert all(abs(ledger.mass_residual) < 1.0e-13 for ledger in ledgers)
     for actual, expected in zip(hierarchy.level_populations, before, strict=True):
         assert torch.allclose(actual, expected, rtol=0.0, atol=2.0e-8)
+
+
+def test_four_levels_follow_eight_finest_substeps_and_conserve() -> None:
+    hierarchy = NestedStaticBlockAMR3D(
+        _equilibrium((12, 12, 14)), _four_level_configs(),
+    )
+    before = tuple(level.clone() for level in hierarchy.level_populations)
+    calls: list[tuple[int, int]] = []
+
+    def identity(
+        state: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
+    ) -> AMRAdvanceResult:
+        del tau
+        calls.append((level, substep))
+        return AMRAdvanceResult(state.clone(), state.clone())
+
+    ledgers = hierarchy.step(identity)
+
+    assert [sum(level == expected for level, _ in calls) for expected in range(4)] == [
+        1, 2, 4, 8,
+    ]
+    assert [substep for level, substep in calls if level == 3] == list(range(8))
+    assert len(ledgers) == 3
+    assert all(abs(ledger.mass_residual) < 1.0e-12 for ledger in ledgers)
+    for actual, expected in zip(hierarchy.level_populations, before, strict=True):
+        assert torch.allclose(actual, expected, rtol=0.0, atol=3.0e-8)
 
 
 def test_three_level_mrt_step_remains_finite_and_conservative() -> None:
