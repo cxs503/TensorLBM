@@ -2,7 +2,7 @@
 
 Uses fast vectorized operations from solver3d/boundaries3d.
 Compares standard bounce_back_cells_3d (staircase) vs BFL interpolated
-bounce-back with ellipsoid-analytical q-values.
+bounce-back with analytical DARPA SUBOFF q-values.
 
 Reports Ct_total at steps 200/400/600/800/1000.
 """
@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 import time
 
+import pytest
 import torch
 
 from tensorlbm.d3q19 import C as C19, equilibrium3d, OPPOSITE as OPP19
@@ -22,6 +23,7 @@ from tensorlbm.interpolated_bc import bouzidi_bounce_back_3d
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.interpolated_bc_suboff import _suboff_radius_norm_torch
 from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19
+from tensorlbm.wall_model import compute_bfl_link_normal
 from tensorlbm.suboff_cad import suboff_radius_profile
 from tensorlbm.suboff_resistance import _voxel_wetted_area
 
@@ -118,6 +120,78 @@ def test_mature_bfl_uses_bouzidi_branches() -> None:
     out = bouzidi_bounce_back_d3q19(f, f_prev, masks, q)
     assert out[2, 1, 1, 2].item() == 6.0
     assert out[2, 1, 1, 4].item() == 7.0
+
+
+def test_wall_model_slip_bfl_preserves_uniform_tangential_flow() -> None:
+    """Moving BFL at local tangent speed is slip, not a second no-slip wall."""
+    shape = (3, 3, 3)
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.06, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f_prev = equilibrium3d(rho, ux, zero, zero)
+    f_streamed = f_prev.clone()
+    masks = torch.zeros_like(f_prev, dtype=torch.bool)
+    q = torch.full_like(f_prev, 0.5)
+    cell = (1, 1, 1)
+    # Plane wall normal +y: outgoing links c_y>0 cross the wall.
+    for direction in (3, 7, 10):
+        masks[(direction,) + cell] = True
+
+    slip = bouzidi_bounce_back_d3q19(
+        f_streamed, f_prev, masks, q,
+        wall_velocity=(ux, zero, zero), wall_density=rho,
+    )
+    stationary = bouzidi_bounce_back_d3q19(
+        f_streamed, f_prev, masks, q,
+    )
+
+    assert torch.allclose(slip[(slice(None),) + cell], f_prev[(slice(None),) + cell], atol=1e-14)
+    assert not torch.allclose(stationary[(slice(None),) + cell], f_prev[(slice(None),) + cell])
+
+    _, slip_force = bouzidi_bounce_back_d3q19(
+        f_streamed, f_prev, masks, q,
+        wall_velocity=(ux, zero, zero), wall_density=rho,
+        return_force=True,
+    )
+    _, stationary_force = bouzidi_bounce_back_d3q19(
+        f_streamed, f_prev, masks, q, return_force=True,
+    )
+    assert slip_force[0] == pytest.approx(0.0, abs=1e-14)
+    assert stationary_force[0] > 0.0
+
+
+def test_bfl_link_normal_recovers_flat_wall_direction() -> None:
+    masks = torch.zeros((19, 3, 3, 3), dtype=torch.bool)
+    cell = (1, 1, 1)
+    for direction in (3, 7, 10, 15, 17):  # all links with c_y=+1
+        masks[(direction,) + cell] = True
+    nx_n, ny_n, nz_n = compute_bfl_link_normal(masks)
+    assert nx_n[cell].item() == pytest.approx(0.0, abs=1e-7)
+    assert ny_n[cell].item() == pytest.approx(1.0, abs=1e-7)
+    assert nz_n[cell].item() == pytest.approx(0.0, abs=1e-7)
+
+
+def test_moving_bfl_requires_density() -> None:
+    f = torch.zeros((19, 2, 2, 2))
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    velocity = (torch.zeros_like(f[0]),) * 3
+    with pytest.raises(ValueError, match="wall_density"):
+        bouzidi_bounce_back_d3q19(
+            f, f, masks, q, wall_velocity=velocity,
+        )
+
+
+def test_zero_boundary_fraction_is_transparent() -> None:
+    f = torch.rand((19, 3, 3, 3))
+    f_prev = torch.rand_like(f)
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    masks[7, 1, 1, 1] = True
+    q = torch.full_like(f, 0.31)
+    out = bouzidi_bounce_back_d3q19(
+        f, f_prev, masks, q, boundary_fraction=0.0,
+    )
+    assert torch.equal(out, f)
 
 
 def far_field_bc_19(f: torch.Tensor, u_in: float = 0.06) -> torch.Tensor:

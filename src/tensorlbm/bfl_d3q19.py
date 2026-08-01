@@ -6,7 +6,7 @@ directions (10 directions, no intersection with extruded cylinder).
 """
 import math
 import torch
-from .d3q19 import C
+from .d3q19 import C, W
 
 
 def compute_q_cylinder_d3q19(
@@ -160,7 +160,12 @@ def bouzidi_bounce_back_d3q19(
     f_prev: torch.Tensor,
     fluid_boundary_mask: torch.Tensor,
     q_field: torch.Tensor,
-) -> torch.Tensor:
+    *,
+    wall_velocity: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
+    wall_density: torch.Tensor | None = None,
+    boundary_fraction: float = 1.0,
+    return_force: bool = False,
+) -> torch.Tensor | tuple[torch.Tensor, tuple[float, float, float]]:
     """Apply BFL interpolated bounce-back for ALL D3Q19 directions.
     
     Per-direction q-values (not per-cell). Uses OPPOSITE array.
@@ -170,13 +175,30 @@ def bouzidi_bounce_back_d3q19(
         f_prev: Pre-stream distribution (19, nz, ny, nx)
         fluid_boundary_mask: (19, nz, ny, nx) bool
         q_field: (19, nz, ny, nx) float, per-direction fractional distance
+        wall_velocity: Optional wall velocity fields ``(ux, uy, uz)``.  A
+            local tangential velocity gives an impermeable slip wall suitable
+            for wall-stress models; ``None`` is a stationary no-slip wall.
+        wall_density: Density field used by the moving-wall correction.
+            Required when ``wall_velocity`` is provided.
+        boundary_fraction: Smooth activation in ``[0,1]``.  Zero leaves the
+            streamed population untouched; one applies the complete BFL wall.
+        return_force: Also return the conservative link momentum-exchange
+            force on the wall.
     
     Returns:
         Updated distribution tensor.
     """
     from .d3q19 import OPPOSITE
+    if wall_velocity is not None and wall_density is None:
+        raise ValueError("wall_density is required with wall_velocity")
+    if not 0.0 <= boundary_fraction <= 1.0:
+        raise ValueError("boundary_fraction must be in [0,1]")
     opp = OPPOSITE.to(f.device)
+    weights = W.to(device=f.device, dtype=f.dtype)
     f_out = f.clone()
+    force_x = torch.zeros((), device=f.device, dtype=f.dtype)
+    force_y = torch.zeros_like(force_x)
+    force_z = torch.zeros_like(force_x)
     
     for d in range(1, 19):  # skip rest
         opp_d = int(opp[d].item())
@@ -218,13 +240,59 @@ def bouzidi_bounce_back_d3q19(
             + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
         )
 
+        if wall_velocity is not None:
+            uwx, uwy, uwz = wall_velocity
+            c_dot_uw = (
+                float(dcx) * uwx[mask]
+                + float(dcy) * uwy[mask]
+                + float(dcz) * uwz[mask]
+            )
+            rho_w = wall_density[mask]
+            moving_base = weights[d] * rho_w * c_dot_uw
+            # Bouzidi moving-wall correction.  With our convention c_d
+            # points from fluid to solid, the sign is negative.  At q=.5
+            # both branches reduce to standard moving half-way bounce-back:
+            # f_opp = f_d - 6*w*rho*(c_d·u_wall).
+            f_bc_lin = f_bc_lin - 6.0 * moving_base
+            f_bc_quad = f_bc_quad - (3.0 / safe_q) * moving_base
+
         f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
+
+        if return_force and boundary_fraction > 0.0:
+            # Galilean-invariant momentum exchange in the wall frame:
+            # (c_d-u_w)f_d - (c_opp-u_w)f_opp.  This reduces to the standard
+            # (f_d+f_opp)c_d expression for a stationary wall and removes
+            # background tangential momentum from wall-model-slip forces.
+            exchange_sum = fp_d + f_bc
+            exchange_diff = f_bc - fp_d
+            link_fx = float(dcx) * exchange_sum
+            link_fy = float(dcy) * exchange_sum
+            link_fz = float(dcz) * exchange_sum
+            if wall_velocity is not None:
+                link_fx = link_fx + exchange_diff * uwx[mask]
+                link_fy = link_fy + exchange_diff * uwy[mask]
+                link_fz = link_fz + exchange_diff * uwz[mask]
+            force_x = force_x + boundary_fraction * link_fx.sum()
+            force_y = force_y + boundary_fraction * link_fy.sum()
+            force_z = force_z + boundary_fraction * link_fz.sum()
 
         # Set f[opp_d] (the UNKNOWN population, from solid toward fluid),
         # NOT f[d] (the known population, from fluid toward solid).
         # The unknown is the one whose streaming source is the solid cell.
         target = f_out[opp_d].clone()
-        target[mask] = f_bc
+        if boundary_fraction == 1.0:
+            target[mask] = f_bc
+        elif boundary_fraction > 0.0:
+            target[mask] = (
+                (1.0 - boundary_fraction) * target[mask]
+                + boundary_fraction * f_bc
+            )
         f_out[opp_d] = target
     
+    if return_force:
+        return f_out, (
+            float(force_x.item()),
+            float(force_y.item()),
+            float(force_z.item()),
+        )
     return f_out

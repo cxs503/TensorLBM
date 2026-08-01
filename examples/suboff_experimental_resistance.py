@@ -85,6 +85,16 @@ def force_scale_newton(
     return rho_water * dx_m**2 * (speed_mps / lattice_speed) ** 2
 
 
+def smooth_ramp_factor(step: int, ramp_steps: int) -> float:
+    """Raised-cosine wall activation without endpoint impulses."""
+    if ramp_steps <= 0 or step >= ramp_steps:
+        return 1.0
+    if step <= 0:
+        return 0.0
+    phase = float(step) / float(ramp_steps)
+    return 0.5 * (1.0 - math.cos(math.pi * phase))
+
+
 def build_far_field_sponge(
     nx: int, ny: int, nz: int, width: int, strength: float,
     device: torch.device,
@@ -178,7 +188,7 @@ def run_case(args: argparse.Namespace) -> dict:
 
     bfl_mask = None
     bfl_q = None
-    if args.boundary == "bfl_wall":
+    if args.boundary in {"bfl_wall", "bfl_wall_model"}:
         print(f"{tag} building BFL link-distance field", flush=True)
         bfl_mask, bfl_q = compute_q_suboff(
             args.nx, args.ny, args.nz, cx, cy, cz, length_lu,
@@ -215,7 +225,8 @@ def run_case(args: argparse.Namespace) -> dict:
 
     rho0 = torch.ones((args.nz, args.ny, args.nx), device=device)
     ux0 = torch.full_like(rho0, args.lattice_speed)
-    ux0[solid] = 0.0
+    if not (args.boundary == "bfl_wall_model" and args.ramp_steps > 0):
+        ux0[solid] = 0.0
     zeros = torch.zeros_like(rho0)
     f = equilibrium3d(rho0, ux0, zeros, zeros, device=device)
     free_stream_f = equilibrium3d(
@@ -240,21 +251,36 @@ def run_case(args: argparse.Namespace) -> dict:
     all_p_voxel: list[float] = []
     all_f: list[float] = []
     diverged = False
+    force_method = args.force_method
+    if force_method == "auto":
+        force_method = (
+            "bfl_momentum" if args.boundary == "bfl_wall_model"
+            else "surface_pressure"
+        )
 
     for step in range(1, args.steps + 1):
+        ramp_factor = smooth_ramp_factor(step, args.ramp_steps)
+        boundary_speed = args.lattice_speed
         f_pre_collision = f.clone()
         f = collide_smagorinsky_mrt3d(f, tau=tau, C_s=args.cs_smag)
         # NoDynamics: do not collide populations located inside the body.
         f = torch.where(solid_mask, f_pre_collision, f)
         f_post_collision = f.clone()
         f = stream3d(f)
-        f = far_field_bc_3d(f, u_in=args.lattice_speed)
-        if args.boundary == "bfl_wall":
+        f = far_field_bc_3d(f, u_in=boundary_speed)
+        if args.boundary in {"bfl_wall", "bfl_wall_model"}:
             f, friction_lu, pressure_voxel_lu = bfl_wall_function_3d(
                 f, f_post_collision, solid, nu_lu,
                 bfl_mask, bfl_q, y_val=args.wall_distance,
                 wall_law=args.wall_law, near_mask=near,
                 apply_bfl=True, use_guo=True,
+                bfl_wall_mode=(
+                    "wall_model_slip"
+                    if args.boundary == "bfl_wall_model" else "stationary"
+                ),
+                wall_activation=(
+                    ramp_factor if args.boundary == "bfl_wall_model" else 1.0
+                ),
             )
         else:
             if args.boundary == "projected_wall":
@@ -267,12 +293,15 @@ def run_case(args: argparse.Namespace) -> dict:
             f = (1.0 - sponge) * f + sponge * free_stream_f
         # Re-assert outer faces because the wall-force operation computes and
         # updates the full tensor, while the physical far field is prescribed.
-        f = far_field_bc_3d(f, u_in=args.lattice_speed)
-        pressure_lu = drag_pressure_integration(
-            f, pressure_mesh, 1.0, extrap="none",
-            p0_method=args.pressure_reference,
-            solid=solid,
-        )[0]
+        f = far_field_bc_3d(f, u_in=boundary_speed)
+        if force_method == "bfl_momentum":
+            pressure_lu = pressure_voxel_lu
+        else:
+            pressure_lu = drag_pressure_integration(
+                f, pressure_mesh, 1.0, extrap="none",
+                p0_method=args.pressure_reference,
+                solid=solid,
+            )[0]
         if step % args.mass_interval == 0:
             f = correct_mass3d(f, initial_mass)
 
@@ -312,9 +341,10 @@ def run_case(args: argparse.Namespace) -> dict:
     predicted_n = (p_final + f_final) * force_scale
     error_pct = abs(predicted_n - point.resistance_n) / point.resistance_n * 100.0
     recent = [x["predicted_resistance_n"] for x in snapshots[-3:]]
+    recent_mean = sum(recent) / len(recent) if recent else 0.0
     drift_pct = (
-        (max(recent) - min(recent)) / (sum(recent) / len(recent)) * 100.0
-        if len(recent) >= 3 and sum(recent) != 0 else math.inf
+        (max(recent) - min(recent)) / abs(recent_mean) * 100.0
+        if len(recent) >= 3 and abs(recent_mean) > 1e-12 else math.inf
     )
     finite = not diverged and math.isfinite(predicted_n)
     reference_area_m2 = float(geometry["wetted_area_lu2"]) * dx_m**2
@@ -347,26 +377,35 @@ def run_case(args: argparse.Namespace) -> dict:
             "collision": f"D3Q19 MRT+Smagorinsky(Cs={args.cs_smag})",
             "wall_treatment": f"{args.wall_law}(y={args.wall_distance})",
             "pressure_force_method": (
+                "conservative BFL link momentum exchange"
+                if force_method == "bfl_momentum" else
                 f"{pressure_method}; p0={args.pressure_reference}"
             ),
             "boundary": (
-                "far_field + target sponge + NoDynamics + BFL + Guo wall function"
-                if args.boundary == "bfl_wall" else
+                "far_field + target sponge + NoDynamics + BFL slip + Guo wall stress"
+                if args.boundary == "bfl_wall_model" else
                 (
-                    "far_field + target sponge + NoDynamics + normal-velocity projection + wall function"
-                    if args.boundary == "projected_wall" else
-                    "far_field + target sponge + NoDynamics + legacy wall-function body force"
+                    "far_field + target sponge + NoDynamics + stationary BFL + Guo wall function"
+                    if args.boundary == "bfl_wall" else
+                    (
+                        "far_field + target sponge + NoDynamics + normal-velocity projection + wall function"
+                        if args.boundary == "projected_wall" else
+                        "far_field + target sponge + NoDynamics + legacy wall-function body force"
+                    )
                 )
             ),
             "sponge_width": args.sponge_width,
             "sponge_strength": args.sponge_strength,
             "steps_requested": args.steps, "steps_completed": completed,
+            "wall_activation_ramp_steps": (
+                args.ramp_steps if args.boundary == "bfl_wall_model" else 0
+            ),
             "average_window": window,
         },
         "geometry": geometry,
         "result": {
             "pressure_resistance_n": p_final * force_scale,
-            "voxel_pressure_resistance_n_diagnostic": (
+            "boundary_force_resistance_n_diagnostic": (
                 sum(all_p_voxel[-window:]) / window * force_scale
             ),
             "friction_resistance_n": f_final * force_scale,
@@ -421,6 +460,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--average-window", type=int, default=500)
     p.add_argument("--report-interval", type=int, default=250)
     p.add_argument("--mass-interval", type=int, default=200)
+    p.add_argument("--ramp-steps", type=int, default=1000)
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument("--cs-smag", type=float, default=0.05)
     p.add_argument(
@@ -431,9 +471,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument(
         "--boundary",
-        choices=("bfl_wall", "projected_wall", "legacy_wall"),
-        default="bfl_wall",
-        help="BFL is the physical-validation path; legacy_wall is diagnostic only.",
+        choices=("bfl_wall_model", "bfl_wall", "projected_wall", "legacy_wall"),
+        default="bfl_wall_model",
+        help="bfl_wall_model is the wall-modelled validation path; other modes are diagnostics.",
     )
     p.add_argument("--sponge-width", type=int, default=12)
     p.add_argument("--sponge-strength", type=float, default=1.0)
@@ -441,6 +481,11 @@ def parser() -> argparse.ArgumentParser:
         "--pressure-reference",
         choices=("near_wall", "far_field", "domain_avg", "inlet"),
         default="near_wall",
+    )
+    p.add_argument(
+        "--force-method",
+        choices=("auto", "bfl_momentum", "surface_pressure"),
+        default="auto",
     )
     p.add_argument("--rho-water", type=float, default=998.2)
     p.add_argument("--nu-water", type=float, default=1.004e-6)
