@@ -1,0 +1,32 @@
+{
+  "schema": "tensorlbm-recursive-force-aggregation-audit-v1",
+  "status": "rejected_and_restarted",
+  "campaign": "suboff-nested-v12-four-level-l90-3k-r2",
+  "finding": {
+    "refinement_depth": 3,
+    "finest_substeps_per_root_step": 8,
+    "legacy_hardcoded_denominator": 4,
+    "absolute_force_bias_factor": 0.5,
+    "observer_relative_difference_affected": false,
+    "absolute_resistance_affected": true
+  },
+  "runtime_state_at_rejection": {
+    "last_health_root_step": 120,
+    "statistics_started": false,
+    "checkpoint_created": false,
+    "terminated_pid": 1609211
+  },
+  "correction": {
+    "aggregation_denominator": "len(force_samples)",
+    "expected_samples": "2**refinement_depth",
+    "configuration_field": "force_samples_per_root_step",
+    "regression": "four-level runtime requires and records eight samples",
+    "commit": "65e52ad"
+  },
+  "admissibility": {
+    "r2_stability_diagnostic_only": true,
+    "r2_resistance_eligible": false,
+    "replacement_campaign": "suboff-nested-v12-four-level-l90-3k-r3"
+  },
+  "physical_validation": false
+}
