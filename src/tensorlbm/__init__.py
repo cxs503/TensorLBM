@@ -633,6 +633,7 @@ from .general_sim import (
 )
 from .lbm_step import LBMStepExecutor
 from .static_block_amr import (
+    AMRAdvanceResult,
     PopulationRefluxLedger,
     StaticBlockAMR3D,
     StaticBlockAMRConfig,
@@ -695,6 +696,7 @@ __all__ = [
     "gradient_indicator_3d",
     "mark_cells_for_refinement",
     "PopulationRefluxLedger",
+    "AMRAdvanceResult",
     "StaticBlockAMR3D",
     "StaticBlockAMRConfig",
     "convective_refined_tau",

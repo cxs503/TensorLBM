@@ -13,17 +13,26 @@ far-field domain; one strictly interior fine block owns the geometry and wake.
 - two fine collision/streaming substeps per coarse step;
 - time-interpolated coarse data on a one-cell fine ghost layer;
 - non-equilibrium rescaling across levels;
-- population-wise conservative restriction; and
-- population-proportional inventory correction on the adjacent coarse shell,
-  with a positivity-oriented per-step depletion limiter.
+- population-wise conservative restriction;
+- post-collision/pre-stream kinetic flux observation on every link crossing
+  the closed coarse/fine interface; and
+- exterior-link-local reflux, with a positivity-oriented per-step depletion
+  limiter and explicit unapplied residual.
 
-The current correction distributes each population mismatch in proportion to
-the corresponding shell population.  It conserves global mass and momentum
-to roundoff while the limiter is inactive; a correction that would remove
-more than 20% of a directional inventory is limited and reported as a reflux
-residual.  It is not yet a face-local flux register.  Unsteady interface-sensitive cases
-must therefore be checked against a uniformly refined reference before this
-runtime is described as fully adaptive production AMR.
+Each diagonal lattice link is counted once, including links leaving through a
+block edge or corner.  Fine transfers from two substeps are scaled by the fine
+cell volume before comparison with the coarse transfer.  Outgoing and incoming
+quadratures are combined before reflux so a uniform equilibrium is preserved
+exactly despite different edge/corner link counts at the two resolutions.
+The callback must return `AMRAdvanceResult` with its post-collision/pre-stream
+state; reflux fails closed if that state is hidden.  Corrections touch only
+exterior cells on crossing links, never an unrelated enclosing shell.
+
+The former global shell-reflux implementation failed long SUBOFF runs and has
+been removed from this runtime.  The new face-local path passes free-stream,
+mass/momentum, locality and positivity-limiter tests, but still requires a
+long physical-interface benchmark against a uniform fine grid before it can
+support a production AMR accuracy claim.
 
 ## SUBOFF layout
 
