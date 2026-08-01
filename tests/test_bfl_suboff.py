@@ -20,10 +20,104 @@ from tensorlbm.boundaries3d import bounce_back_cells_3d
 from tensorlbm.suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask
 from tensorlbm.interpolated_bc import bouzidi_bounce_back_3d
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
+from tensorlbm.interpolated_bc_suboff import _suboff_radius_norm_torch
+from tensorlbm.bfl_d3q19 import bouzidi_bounce_back_d3q19
+from tensorlbm.suboff_cad import suboff_radius_profile
 from tensorlbm.suboff_resistance import _voxel_wetted_area
 
 C19_SHIFTS = [(int(C19[q, 0]), int(C19[q, 1]), int(C19[q, 2])) for q in range(19)]
 OPP_LIST = [int(x) for x in OPP19.tolist()]
+
+
+def test_bfl_analytical_profile_matches_real_suboff_geometry() -> None:
+    """BFL intersections and the CAD mask must describe the same hull."""
+    xi = torch.linspace(-0.05, 1.05, 4097, dtype=torch.float64)
+    actual = _suboff_radius_norm_torch(xi, SuboffConfig()).cpu().numpy()
+    expected = suboff_radius_profile(xi.cpu().numpy(), SuboffConfig())
+    assert abs(actual - expected).max() < 1e-10
+
+
+def test_bfl_link_masks_follow_d3q19_xyz_directions() -> None:
+    """Each BFL mask must mark the solid neighbour in that D3Q19 link."""
+    nx, ny, nz, length = 80, 40, 40, 32.0
+    cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
+    solid, _ = build_suboff_mask(
+        SuboffHullType.BARE_HULL, nx=nx, ny=ny, nz=nz,
+        cx=cx, cy=cy, cz=cz, length=length, device="cpu",
+        config=SuboffConfig(),
+    )
+    masks, _ = compute_q_suboff(
+        nx, ny, nz, cx, cy, cz, length, device="cpu",
+    )
+    for direction in range(1, 19):
+        dcx, dcy, dcz = (int(v) for v in C19[direction].tolist())
+        neighbour = torch.roll(
+            solid, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+        )
+        expected = ~solid & neighbour
+        assert torch.equal(masks[direction], expected), direction
+
+
+def test_full_hull_uses_halfway_links_on_voxel_appendages() -> None:
+    nx, ny, nz, length = 120, 60, 60, 48.0
+    cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
+    bare, _ = build_suboff_mask(
+        "bare_hull", nx, ny, nz, cx=cx, cy=cy, cz=cz,
+        length=length, device="cpu",
+    )
+    full, _ = build_suboff_mask(
+        "full", nx, ny, nz, cx=cx, cy=cy, cz=cz,
+        length=length, device="cpu",
+    )
+    masks, q = compute_q_suboff(
+        nx, ny, nz, cx, cy, cz, length, hull_type="full", device="cpu",
+    )
+    appendage_links = 0
+    for direction in range(1, 19):
+        dcx, dcy, dcz = (int(v) for v in C19[direction].tolist())
+        full_nb = torch.roll(full, (-dcz, -dcy, -dcx), (0, 1, 2))
+        bare_nb = torch.roll(bare, (-dcz, -dcy, -dcx), (0, 1, 2))
+        links = masks[direction] & full_nb & ~bare_nb
+        appendage_links += int(links.sum())
+        assert torch.all(q[direction][links] == 0.5)
+    assert appendage_links > 0
+
+
+def test_mature_bfl_reconstructs_unknown_from_outgoing_fluid_population() -> None:
+    """At q=.5, BFL is exact half-way bounce-back, not solid streaming."""
+    f = torch.zeros((19, 3, 3, 5), dtype=torch.float64)
+    f_prev = torch.zeros_like(f)
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    direction = 1  # c=(+1,0,0), unknown is direction 2
+    masks[direction, 1, 1, 2] = True
+    f[2, 1, 1, 2] = 99.0  # streamed-from-solid value must be discarded
+    f_prev[direction, 1, 1, 2] = 7.0
+
+    out = bouzidi_bounce_back_d3q19(f, f_prev, masks, q)
+    assert out[2, 1, 1, 2].item() == 7.0
+
+
+def test_mature_bfl_uses_bouzidi_branches() -> None:
+    f = torch.zeros((19, 3, 3, 6), dtype=torch.float64)
+    f_prev = torch.zeros_like(f)
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    direction = 1
+    # q<.5 at x=2: 2q*f_d(x)+(1-2q)*f_d(x-c_d)
+    masks[direction, 1, 1, 2] = True
+    q[direction, 1, 1, 2] = 0.25
+    f_prev[direction, 1, 1, 2] = 8.0
+    f_prev[direction, 1, 1, 1] = 4.0
+    # q>.5 at x=4: f_d/(2q)+(2q-1)/(2q)*f_opp
+    masks[direction, 1, 1, 4] = True
+    q[direction, 1, 1, 4] = 0.75
+    f_prev[direction, 1, 1, 4] = 9.0
+    f_prev[2, 1, 1, 4] = 3.0
+
+    out = bouzidi_bounce_back_d3q19(f, f_prev, masks, q)
+    assert out[2, 1, 1, 2].item() == 6.0
+    assert out[2, 1, 1, 4].item() == 7.0
 
 
 def far_field_bc_19(f: torch.Tensor, u_in: float = 0.06) -> torch.Tensor:
