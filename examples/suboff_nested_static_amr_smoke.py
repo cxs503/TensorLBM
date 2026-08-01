@@ -71,6 +71,7 @@ from tensorlbm.suboff_static_amr import (
     assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
     build_nested_fine_suboff_mask,
+    count_suboff_appendage_boundary_links,
     plan_nested_suboff_static_amr,
     plan_suboff_static_amr,
 )
@@ -603,6 +604,43 @@ def run(args: argparse.Namespace) -> dict:
         },
     }
     if args.preflight_only:
+        planning_bare_solid = None
+        planning_with_sail_solid = None
+        planning_appendage_links = 0
+        if args.hull_type == "full":
+            planning_bare_solid, _ = build_nested_fine_suboff_mask(
+                finest_plan,
+                hull_type="bare_hull",
+                coarse_center=center,
+                config=geometry_config,
+                device=device,
+            )
+            planning_with_sail_solid, _ = build_nested_fine_suboff_mask(
+                finest_plan,
+                hull_type="with_sail",
+                coarse_center=center,
+                config=geometry_config,
+                device=device,
+            )
+            planning_appendage_links = count_suboff_appendage_boundary_links(
+                finest_planning_solid,
+                planning_bare_solid,
+            )
+        planning_resolution = assess_suboff_geometry_resolution(
+            finest_planning_solid,
+            hull_type=args.hull_type,
+            fine_hull_length_cells=(
+                finest_plan.effective_hull_length_cells
+            ),
+            center_yz=(
+                float(finest_geometry["cy"]),
+                float(finest_geometry["cz"]),
+            ),
+            bare_hull=planning_bare_solid,
+            with_sail=planning_with_sail_solid,
+            appendage_halfway_links=planning_appendage_links,
+        )
+        planning["geometry_resolution"] = planning_resolution.to_dict()
         return {
             "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
             "status": "preflight_only",
