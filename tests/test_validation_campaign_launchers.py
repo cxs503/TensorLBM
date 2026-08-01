@@ -260,6 +260,45 @@ def test_gradient_sgs_pilot_launcher_records_vreman_coefficient(
     assert "suboff-nested-v31-l90-vreman-masked-2400.json" in output
 
 
+def test_cylinder_launcher_names_natural_kbc_variant_separately(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env.update({
+        "TENSORLBM_PYTHON": str(fake_python),
+        "TENSORLBM_COLLISION_MODEL": "natural_kbc_d3q19",
+    })
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_cylinder_v4_equivalent_level.sh"),
+            "R9",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--collision-model") + 1] == (
+        "natural_kbc_d3q19"
+    )
+    output = arguments[arguments.index("--output") + 1]
+    assert "cylinder-v4-natural-kbc-equivalent-r9-54000.json" in output
+
+
 def test_nested_v10_launcher_scales_all_inner_physical_locations(
     tmp_path: Path,
 ) -> None:
