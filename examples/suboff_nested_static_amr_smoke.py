@@ -852,6 +852,14 @@ def run(args: argparse.Namespace) -> dict:
                 }
             health_records.append({
                 "step": current_step,
+                "collision_resolved_reynolds": instantaneous_reynolds,
+                "collision_tau_by_level": list(instantaneous_tau_by_level),
+                "target_reynolds_reached": math.isclose(
+                    instantaneous_reynolds,
+                    args.resolved_reynolds,
+                    rel_tol=1.0e-12,
+                    abs_tol=0.0,
+                ),
                 "levels": level_health,
                 "interfaces": interface_health,
                 "finest_peak_speed_context": finest_peak_context,

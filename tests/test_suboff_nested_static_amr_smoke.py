@@ -147,6 +147,9 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     result = MODULE.run(args)
 
     health = result["result"]["population_health"][0]
+    assert health["collision_resolved_reynolds"] == 2000.0
+    assert len(health["collision_tau_by_level"]) == 3
+    assert health["target_reynolds_reached"] is True
     assert [record["finite"] for record in health["levels"]] == [True, True, True]
     assert len(health["interfaces"]) == 2
     assert health["finest_peak_speed_context"] is not None
