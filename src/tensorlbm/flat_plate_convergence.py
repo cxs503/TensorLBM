@@ -20,6 +20,7 @@ _IDENTITY_FIELDS = (
     "smagorinsky_cs",
     "positivity_limiter",
     "link_force_frame",
+    "wall_traction_source_scheme",
 )
 _RATIO_FIELDS = ("sponge_width", "cv_margin")
 _TIME_RATIO_FIELDS = (
