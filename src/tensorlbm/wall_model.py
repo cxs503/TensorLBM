@@ -14,6 +14,7 @@ from .propeller_benchmark import moving_wall_bounce_back_3d
 
 KAPPA = 0.41
 B_CONST = 5.0
+WALL_TRACTION_SOURCE_SCHEME = "mass_conservative_post_collision_guo_v2"
 
 
 def physical_wall_lattice_viscosity(
@@ -1429,6 +1430,7 @@ def bfl_wall_function_d3q27(
 
 
 __all__ = [
+    "WALL_TRACTION_SOURCE_SCHEME",
     "compute_wall_distance_fmm",
     "compute_wall_distance_fmm_2d",
     "compute_wall_slip_velocity",
