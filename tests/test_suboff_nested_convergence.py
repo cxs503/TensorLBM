@@ -82,6 +82,7 @@ def _record(length: int, resistance: float) -> dict:
             "nested_control_volume_target_met": True,
             "surface_observer_target_met": True,
             "population_health_target_met": True,
+            "collision_viscosity_target_met": True,
             "target_reynolds_duration_target_met": True,
         },
         "geometry": {
