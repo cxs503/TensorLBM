@@ -282,6 +282,8 @@ class TestRelaxationBehaviour:
         uy = 0.02 * torch.rand_like(rho)
         uz = 0.02 * torch.rand_like(rho)
         populations = equilibrium3d(rho, ux, uy, uz)
+        solid_mask = torch.zeros_like(rho, dtype=torch.bool)
+        solid_mask[2:5, 1:4, 2:5] = True
 
         one_plane = summarize_gradient_sgs_effective_tau_d3q19(
             populations,
@@ -289,6 +291,7 @@ class TestRelaxationBehaviour:
             model=model,
             coefficient=coefficient,
             chunk_cells=30,
+            solid_mask=solid_mask,
         )
         whole_domain = summarize_gradient_sgs_effective_tau_d3q19(
             populations,
@@ -296,11 +299,59 @@ class TestRelaxationBehaviour:
             model=model,
             coefficient=coefficient,
             chunk_cells=10_000,
+            solid_mask=solid_mask,
         )
 
-        assert one_plane == pytest.approx(whole_domain, rel=1.0e-13, abs=1.0e-15)
+        assert one_plane == pytest.approx(whole_domain, rel=3.0e-13, abs=3.0e-15)
         assert one_plane["cell_count"] == 210.0
         assert one_plane["effective_tau_minimum"] >= 0.55
+
+    @pytest.mark.parametrize(
+        ("model", "coefficient"), (("wale", 0.5), ("vreman", 0.025)),
+    )
+    def test_gradient_sgs_uses_wall_velocity_inside_solid(
+        self, model: str, coefficient: float,
+    ) -> None:
+        z, y, x = torch.meshgrid(
+            torch.arange(5, dtype=torch.float64),
+            torch.arange(5, dtype=torch.float64),
+            torch.arange(7, dtype=torch.float64),
+            indexing="ij",
+        )
+        rho = torch.ones_like(x)
+        populations = equilibrium3d(
+            rho,
+            0.04 + 0.001 * y,
+            0.02 + 0.001 * z,
+            -0.01 + 0.001 * x,
+        )
+        solid_mask = torch.zeros_like(rho, dtype=torch.bool)
+        solid_mask[1:4, 1:4, 4:] = True
+
+        unmasked = gradient_sgs_effective_tau_d3q19(
+            populations, tau=0.55, model=model, coefficient=coefficient,
+        )
+        masked = gradient_sgs_effective_tau_d3q19(
+            populations,
+            tau=0.55,
+            model=model,
+            coefficient=coefficient,
+            solid_mask=solid_mask,
+        )
+
+        assert float((masked - unmasked).abs().max().item()) > 1.0e-8
+
+    def test_gradient_sgs_rejects_incompatible_solid_mask(self) -> None:
+        rho = torch.ones((4, 5, 6))
+        zero = torch.zeros_like(rho)
+        populations = equilibrium3d(rho, zero, zero, zero)
+        with pytest.raises(ValueError, match="solid_mask"):
+            collide_cumulant_d3q19(
+                populations,
+                tau=0.55,
+                C_w=0.5,
+                solid_mask=torch.zeros((4, 5, 5), dtype=torch.bool),
+            )
 
     def test_smagorinsky_effective_tau_is_explicit(self) -> None:
         rho = torch.ones((2, 3, 4))

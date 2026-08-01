@@ -1,0 +1,36 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "status": "rejected_before_physical_assessment",
+  "candidates": [
+    {
+      "name": "suboff-nested-v26-l90-wale050-nonperiodic-2400",
+      "collision_model": "cumulant_wale",
+      "coefficient": 0.5,
+      "last_completed_report_step": 120,
+      "remote_pid_terminated": 1558446,
+      "remote_log": "results/amr_campaign_20260801/suboff-nested-v26-l90-wale050-nonperiodic-2400.log",
+      "remote_log_sha256": "57f7e882591f48d03bd34947303f3ee81d3235a0463084bcfcde2eb4ceac8e1a"
+    },
+    {
+      "name": "suboff-nested-v27-l90-vreman025-nonperiodic-2400",
+      "collision_model": "cumulant_vreman",
+      "coefficient": 0.025,
+      "last_completed_report_step": 120,
+      "remote_pid_terminated": 1558447,
+      "remote_log": "results/amr_campaign_20260801/suboff-nested-v27-l90-vreman025-nonperiodic-2400.log",
+      "remote_log_sha256": "d8e38b9f6b34024d21b811907ebc5b2ab4f8c719f50be115318d4ce51cce4e9a"
+    }
+  ],
+  "rejection_reason": {
+    "kind": "solid_side_velocity_not_imposed_for_sgs_gradient",
+    "detail": "The nonperiodic gradient fix removed opposite-face wrapping, but the finest-level closure still differentiated macroscopic values stored inside the immersed solid. Those populations originate from prolongated flow state and are not a physical wall velocity, so near-wall SGS viscosity was not admissible."
+  },
+  "corrective_action": {
+    "collision_contract": "Gradient SGS collision now accepts a boolean solid mask and explicit three-component wall velocity; masked velocities are imposed before WALE/Vreman invariants are evaluated.",
+    "checkpoint_contract": "Every nested checkpoint now stores one solid mask per hierarchy level so bounded-memory postprocessing uses the identical mask.",
+    "wall_velocity_lattice_units": [0.0, 0.0, 0.0],
+    "required_reproduction": true,
+    "reuse_of_partial_checkpoints_for_physics": false
+  },
+  "conclusion": "Both trajectories were stopped before the first checkpoint and are implementation-rejection evidence only."
+}

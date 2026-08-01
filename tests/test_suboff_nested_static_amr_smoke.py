@@ -126,12 +126,19 @@ def test_nested_preflight_rejects_cv_flux_stencil_inside_interface_filter(
 
 def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:
     first = MODULE.run(_args(tmp_path, steps=1))
+    checkpoint_state = torch.load(
+        tmp_path / "nested-smoke.ckpt", map_location="cpu", weights_only=True,
+    )
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
 
     assert first["result"]["steps"][0]["step"] == 1
     assert [record["step"] for record in resumed["result"]["steps"]] == [1, 2]
     assert resumed["configuration"]["resumed_from_step"] == 1
     assert resumed["status"] == "integration_smoke_pass"
+    assert len(checkpoint_state["level_solid_masks"]) == 3
+    assert checkpoint_state["level_solid_masks"][0] is None
+    assert checkpoint_state["level_solid_masks"][1] is None
+    assert bool(checkpoint_state["level_solid_masks"][2].any())
 
 
 def test_nested_aff8_smoke_records_appendage_resolution(tmp_path: Path) -> None:
