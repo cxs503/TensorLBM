@@ -59,8 +59,15 @@ variant=
 if [[ "$hull_type" == full ]]; then
   variant=-aff8
 fi
-checkpoint="$result_dir/suboff-v8${variant}-equivalent-l${level}-${steps%000}k.ckpt"
-output="$result_dir/suboff-v8${variant}-equivalent-l${level}-${steps%000}k.json"
+campaign_generation=${TENSORLBM_SUBOFF_AMR_GENERATION:-v8}
+if [[ ! $campaign_generation =~ ^v[0-9]+$ ]]; then
+  echo "TENSORLBM_SUBOFF_AMR_GENERATION must look like v8 or v9" >&2
+  exit 2
+fi
+pressure_reference=${TENSORLBM_PRESSURE_REFERENCE:-near_wall}
+surface_pressure_extrapolation=${TENSORLBM_SURFACE_PRESSURE_EXTRAPOLATION:-none}
+checkpoint="$result_dir/suboff-${campaign_generation}${variant}-equivalent-l${level}-${steps%000}k.ckpt"
+output="$result_dir/suboff-${campaign_generation}${variant}-equivalent-l${level}-${steps%000}k.json"
 resume=()
 if [[ -f "$checkpoint" ]]; then
   resume=(--resume)
@@ -72,6 +79,8 @@ exec "$python" examples/suboff_static_amr_resistance.py \
   --nx "$nx" --ny "$cross" --nz "$cross" --hull-length "$level" \
   --center-x-fraction 0.3 --wall-margin "$wall" --wake-cells "$wake" \
   --cv-margin "$cv" --aux-cv-margins "$aux" \
+  --pressure-reference "$pressure_reference" \
+  --surface-pressure-extrapolation "$surface_pressure_extrapolation" \
   --surface-force-interval "$surface" --steps "$steps" \
   --warmup-steps "$warmup" --report-interval "$report" \
   --average-window "$average" --ramp-steps "$ramp" \

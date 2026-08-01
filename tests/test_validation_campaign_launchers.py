@@ -14,6 +14,7 @@ ROOT = Path(__file__).parents[1]
     ("script", "level"),
     (
         ("run_suboff_v8_equivalent_level.sh", "L90"),
+        ("run_suboff_v9_equivalent_level.sh", "L90"),
         ("run_suboff_nested_v3_equivalent_level.sh", "L90"),
         ("run_suboff_nested_v4_continuation_level.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
@@ -90,3 +91,40 @@ def test_nested_v4_launcher_expands_audited_l150_continuation(
     ] == "7.5"
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-nested-v4-equivalent-l150-20k.json" in output
+
+
+def test_suboff_v9_launcher_uses_quadratic_inlet_pressure_observer(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_v9_equivalent_level.sh"),
+            "L120",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--pressure-reference") + 1] == "inlet"
+    assert arguments[
+        arguments.index("--surface-pressure-extrapolation") + 1
+    ] == "quadratic"
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-v9-equivalent-l120-16k.json" in output

@@ -31,6 +31,7 @@ _IDENTITY_FIELDS = (
     "wall_distance",
     "wall_viscosity_basis",
     "pressure_reference",
+    "surface_pressure_extrapolation",
     "sponge_strength",
     "sponge_inlet",
     "far_field_mode",

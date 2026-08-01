@@ -474,6 +474,7 @@ def run(args: argparse.Namespace) -> dict:
         "aux_cv_margins": list(auxiliary_cvs),
         "surface_force_interval": args.surface_force_interval,
         "pressure_reference": args.pressure_reference,
+        "surface_pressure_extrapolation": args.surface_pressure_extrapolation,
         "reflux_enabled": not args.disable_reflux,
         "reflux_method": "face_local_conserved_moment_flux",
         "maximum_reflux_correction_fraction": (
@@ -510,7 +511,17 @@ def run(args: argparse.Namespace) -> dict:
     if args.resume:
         assert checkpoint is not None
         state = torch.load(checkpoint, map_location=device, weights_only=True)
-        if state.get("configuration") != checkpoint_signature:
+        stored_configuration = state.get("configuration")
+        legacy_none_signature = dict(checkpoint_signature)
+        legacy_none_signature.pop("surface_pressure_extrapolation")
+        resumed_legacy_none_observer = (
+            args.surface_pressure_extrapolation == "none"
+            and stored_configuration == legacy_none_signature
+        )
+        if (
+            stored_configuration != checkpoint_signature
+            and not resumed_legacy_none_observer
+        ):
             raise ValueError("checkpoint configuration does not match static-AMR run")
         current_step = int(state["step"])
         if current_step >= args.steps:
@@ -668,7 +679,8 @@ def run(args: argparse.Namespace) -> dict:
             and current_step % args.surface_force_interval == 0
         ):
             surface_pressure = drag_pressure_integration(
-                amr.fine_f, fine_surface, 1.0, extrap="none",
+                amr.fine_f, fine_surface, 1.0,
+                extrap=args.surface_pressure_extrapolation,
                 p0_method=args.pressure_reference, solid=fine_solid_g,
             )[0]
             surface_pressure_samples.append((current_step, surface_pressure))
@@ -1165,6 +1177,12 @@ def parser() -> argparse.ArgumentParser:
         "--pressure-reference",
         choices=("near_wall", "far_field", "domain_avg", "inlet"),
         default="near_wall",
+    )
+    p.add_argument(
+        "--surface-pressure-extrapolation",
+        choices=("none", "linear", "quadratic"),
+        default="none",
+        help="wall-normal extrapolation used only by the surface-pressure observer",
     )
     p.add_argument("--disable-reflux", action="store_true")
     p.add_argument("--maximum-reflux-correction-fraction", type=float, default=0.2)

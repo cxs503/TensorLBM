@@ -29,6 +29,7 @@ def _record(coarse_length: float) -> dict[str, object]:
             "wall_distance": 0.5,
             "wall_viscosity_basis": "physical_reynolds",
             "pressure_reference": "near_wall",
+            "surface_pressure_extrapolation": "quadratic",
             "sponge_strength": 0.2,
             "sponge_inlet": False,
             "far_field_mode": "non_equilibrium_extrapolation",
