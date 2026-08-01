@@ -163,6 +163,11 @@ def run_case(args: argparse.Namespace) -> dict:
         raise ValueError("checkpoint-interval must be non-negative")
     if args.resume and not args.checkpoint:
         raise ValueError("resume requires --checkpoint")
+    aux_cv_margins = tuple(sorted({
+        int(value) for value in args.aux_cv_margins.split(",") if value.strip()
+    }))
+    if any(margin < 1 for margin in aux_cv_margins):
+        raise ValueError("aux-cv-margins must contain positive integers")
     point = experimental_point(args.hull_type, args.speed_knots)
     device = torch.device(args.device)
     if device.type == "cuda":
@@ -298,6 +303,22 @@ def run_case(args: argparse.Namespace) -> dict:
         raise RuntimeError("control volume does not contain the complete body")
     if args.sponge_width > 0 and float(sponge[cv].max().item()) > 0.0:
         raise ValueError("control volume overlaps the sponge; enlarge the domain or reduce cv-margin")
+    auxiliary_cvs: dict[int, torch.Tensor] = {}
+    for margin in aux_cv_margins:
+        if margin == args.cv_margin:
+            continue
+        candidate = box_control_volume(
+            (args.nz, args.ny, args.nx),
+            x0=max(1, x_min - margin), x1=min(args.nx - 1, x_max + margin),
+            y0=max(1, y_min - margin), y1=min(args.ny - 1, y_max + margin),
+            z0=max(1, z_min - margin), z1=min(args.nz - 1, z_max + margin),
+            device=device,
+        )
+        if bool(solid[candidate.logical_not() & solid].any()):
+            raise ValueError(f"auxiliary control volume margin {margin} does not contain body")
+        if args.sponge_width > 0 and float(sponge[candidate].max().item()) > 0.0:
+            raise ValueError(f"auxiliary control volume margin {margin} overlaps sponge")
+        auxiliary_cvs[margin] = candidate
 
     force_scale = force_scale_newton(
         rho_water=args.rho_water, dx_m=dx_m,
@@ -312,6 +333,9 @@ def run_case(args: argparse.Namespace) -> dict:
     all_cv: list[float] = []
     all_bfl_total: list[float] = []
     surface_pressure_samples: list[tuple[int, float]] = []
+    auxiliary_cv_samples: dict[int, list[tuple[int, float]]] = {
+        margin: [] for margin in auxiliary_cvs
+    }
     diverged = False
     force_method = args.force_method
     if force_method == "auto":
@@ -332,6 +356,7 @@ def run_case(args: argparse.Namespace) -> dict:
         "boundary": args.boundary,
         "collision_model": args.collision_model,
         "far_field_mode": args.far_field_mode,
+        "aux_cv_margins": list(auxiliary_cvs),
     }
     start_step = 0
     if args.resume:
@@ -354,6 +379,13 @@ def run_case(args: argparse.Namespace) -> dict:
             (int(sample_step), float(value))
             for sample_step, value in state["surface_pressure_samples"].tolist()
         ]
+        auxiliary_cv_samples = {
+            int(margin): [
+                (int(sample_step), float(value))
+                for sample_step, value in samples.tolist()
+            ]
+            for margin, samples in state["auxiliary_cv_samples"].items()
+        }
         snapshots = list(state["snapshots"])
 
     def save_checkpoint(step: int) -> None:
@@ -375,6 +407,10 @@ def run_case(args: argparse.Namespace) -> dict:
             "surface_pressure_samples": torch.tensor(
                 surface_pressure_samples, dtype=torch.float64,
             ).reshape(-1, 2),
+            "auxiliary_cv_samples": {
+                str(margin): torch.tensor(samples, dtype=torch.float64).reshape(-1, 2)
+                for margin, samples in auxiliary_cv_samples.items()
+            },
             "snapshots": snapshots,
         }, checkpoint)
 
@@ -487,6 +523,11 @@ def run_case(args: argparse.Namespace) -> dict:
             surface_pressure_samples.append((
                 step, surface_pressure_lu,
             ))
+            for margin, auxiliary_cv in auxiliary_cvs.items():
+                auxiliary_force = float(observe_control_volume_force(
+                    f_step_old, f, f_post_collision, auxiliary_cv, solid=solid,
+                ).force_on_body[0].item())
+                auxiliary_cv_samples[margin].append((step, auxiliary_force))
         block_p.append(pressure_lu); block_f.append(friction_lu)
 
         if not bool(torch.isfinite(f).all()):
@@ -542,6 +583,15 @@ def run_case(args: argparse.Namespace) -> dict:
         sum(surface_window) / len(surface_window)
         if surface_window else math.nan
     )
+    auxiliary_cv_final: dict[int, float] = {}
+    for margin, samples in auxiliary_cv_samples.items():
+        selected = [
+            value for sample_step, value in samples
+            if sample_step > completed - window
+        ]
+        auxiliary_cv_final[margin] = (
+            sum(selected) / len(selected) if selected else math.nan
+        )
     error_pct = abs(predicted_n - point.resistance_n) / point.resistance_n * 100.0
     force_stationarity = assess_force_stationarity(
         [
@@ -651,6 +701,15 @@ def run_case(args: argparse.Namespace) -> dict:
                 (surface_pressure_final + f_final) * force_scale
             ),
             "surface_pressure_samples_in_window": len(surface_window),
+            "auxiliary_control_volume_resistance_n": {
+                str(margin): value * force_scale
+                for margin, value in auxiliary_cv_final.items()
+            },
+            "auxiliary_control_volume_difference_pct": {
+                str(margin): abs(value - (p_final + f_final))
+                / max(abs(p_final + f_final), 1e-30) * 100.0
+                for margin, value in auxiliary_cv_final.items()
+            },
             "friction_resistance_n": f_final * force_scale,
             "total_resistance_n": predicted_n,
             "experimental_resistance_n": point.resistance_n,
@@ -718,6 +777,10 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--report-interval", type=int, default=250)
     p.add_argument("--mass-interval", type=int, default=200)
     p.add_argument("--cv-margin", type=int, default=8)
+    p.add_argument(
+        "--aux-cv-margins", default="4,12",
+        help="Comma-separated nested control-volume margins sampled independently.",
+    )
     p.add_argument("--ramp-steps", type=int, default=1000)
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument("--cs-smag", type=float, default=0.05)
