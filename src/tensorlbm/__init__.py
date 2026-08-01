@@ -640,6 +640,10 @@ from .general_sim import (
     SolverConfig,
 )
 from .lbm_step import LBMStepExecutor
+from .amr_interface_filter import (
+    damp_interface_nonequilibrium,
+    interface_shell_blend,
+)
 from .static_block_amr import (
     AMRAdvanceResult,
     NestedStaticBlockAMR3D,
@@ -736,6 +740,8 @@ __all__ = [
     "vorticity_indicator_3d",
     "gradient_indicator_3d",
     "mark_cells_for_refinement",
+    "damp_interface_nonequilibrium",
+    "interface_shell_blend",
     "PopulationRefluxLedger",
     "AMRAdvanceResult",
     "NestedStaticBlockAMR3D",

@@ -129,3 +129,10 @@ def test_d3q27_filter_preserves_macroscopic_state() -> None:
 
     for actual, expected in zip(after, before, strict=True):
         assert torch.allclose(actual, expected, rtol=0.0, atol=3.0e-15)
+
+
+def test_interface_filter_is_publicly_exported() -> None:
+    import tensorlbm
+
+    assert tensorlbm.damp_interface_nonequilibrium is damp_interface_nonequilibrium
+    assert tensorlbm.interface_shell_blend is interface_shell_blend
