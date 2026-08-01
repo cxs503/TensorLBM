@@ -30,7 +30,10 @@ from tensorlbm.control_volume_force import (
     fluid_momentum_change,
     observe_control_volume_force,
 )
-from tensorlbm.cuda_memory_budget import require_cuda_memory_budget
+from tensorlbm.cuda_memory_budget import (
+    require_cuda_memory_budget,
+    require_cuda_runtime_reserve,
+)
 from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.drag_pressure import (
@@ -766,6 +769,15 @@ def run(args: argparse.Namespace) -> dict:
         max_strength=args.sponge_strength,
         device=device,
         faces=tuple(sponge_faces),
+    )
+    runtime_memory_reserve = require_cuda_runtime_reserve(
+        device,
+        required_reserve_gib=1.0,
+        label="SUBOFF nested static-AMR smoke",
+    )
+    planning["cuda_runtime_reserve_after_persistent_allocation"] = (
+        runtime_memory_reserve.to_dict()
+        if runtime_memory_reserve is not None else None
     )
     wall_nu = physical_wall_lattice_viscosity(
         args.lattice_speed, finest_length, physical_re,
