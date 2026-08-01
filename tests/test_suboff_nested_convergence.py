@@ -63,6 +63,7 @@ def _record(length: int, resistance: float) -> dict:
             "report_interval": 25.0 * length / 6.0,
             "wall_diagnostic_interval": 2.0 * length / 3.0,
             "surface_force_interval": length / 3.0,
+            "force_samples_per_root_step": 4,
             "health_interval": 2.0 * length / 3.0,
             "resolved_reynolds_start": {90: 5000, 120: 3000, 150: 2000}[length],
             "viscosity_ramp_start_step": 10.0 * length / 3.0,
@@ -89,6 +90,7 @@ def _record(length: int, resistance: float) -> dict:
             "collision_viscosity_target_met": True,
             "wall_exchange_scaling_target_met": True,
             "target_reynolds_duration_target_met": True,
+            "force_sample_aggregation_target_met": True,
         },
         "geometry": {
             "resolution": {

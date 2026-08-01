@@ -107,6 +107,7 @@ def assess_suboff_nested_convergence(
                 "collision_viscosity_target_met",
                 "wall_exchange_scaling_target_met",
                 "target_reynolds_duration_target_met",
+                "force_sample_aggregation_target_met",
             )
         )
 
@@ -130,6 +131,7 @@ def assess_suboff_nested_convergence(
             "resolved_wall_normal_ramp_steps",
             "resolved_wall_shear_ramp_steps",
             "surface_force_interval",
+            "force_samples_per_root_step",
             "health_interval", "resolved_reynolds_start",
             "viscosity_ramp_start_step", "viscosity_ramp_end_step",
         )
