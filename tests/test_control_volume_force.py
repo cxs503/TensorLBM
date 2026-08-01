@@ -6,6 +6,7 @@ import torch
 from tensorlbm.control_volume_force import (
     assess_nested_control_volume_invariance,
     box_control_volume,
+    fluid_momentum_change,
     observe_control_volume_force,
     streaming_momentum_import,
 )
@@ -49,6 +50,23 @@ def test_internal_momentum_source_is_reported_as_opposite_body_force() -> None:
     assert result.momentum_import[0].item() == pytest.approx(0.0, abs=1e-14)
     assert result.fluid_momentum_change[0].item() == pytest.approx(2 * impulse)
     assert result.force_on_body[0].item() == pytest.approx(-2 * impulse)
+
+
+def test_large_float32_cv_accumulates_local_change_before_reduction() -> None:
+    shape = (3, 130, 130)
+    old = torch.full((19, *shape), 0.055, dtype=torch.float32)
+    new = old.clone()
+    cv = box_control_volume(
+        shape, x0=2, x1=128, y0=2, y1=128, z0=0, z1=3,
+        periodic_axes=("z",),
+    )
+    new[1, cv] += 1.0e-7
+    expected = (new[1, cv] - old[1, cv]).sum(dtype=torch.float64)
+
+    stable = fluid_momentum_change(
+        old, new, cv, periodic_axes=("z",),
+    )[0]
+    assert stable.item() == pytest.approx(float(expected), abs=1e-14)
 
 
 def test_single_population_crossing_has_exact_kinetic_flux() -> None:

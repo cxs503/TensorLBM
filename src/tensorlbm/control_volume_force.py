@@ -15,11 +15,14 @@ physical boundary conditions and sponge forcing must remain outside it.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
-from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import torch
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 def _lattice_velocities(q: int, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
@@ -83,6 +86,37 @@ def fluid_momentum(
     inventory = f[:, owned].sum(dim=1, dtype=accumulator_dtype)
     c = _lattice_velocities(f.shape[0], f.device, accumulator_dtype)
     return (inventory[:, None] * c).sum(dim=0)
+
+
+def fluid_momentum_change(
+    f_old: torch.Tensor,
+    f_new: torch.Tensor,
+    control_volume: torch.Tensor,
+    *,
+    solid: torch.Tensor | None = None,
+    periodic_axes: tuple[str, ...] = (),
+) -> torch.Tensor:
+    """Accumulate local population changes without subtracting large totals."""
+    if f_old.shape != f_new.shape:
+        raise ValueError("old and new populations must share shape")
+    _validate(f_old, control_volume, periodic_axes)
+    owned = control_volume
+    if solid is not None:
+        if solid.shape != owned.shape or solid.dtype is not torch.bool:
+            raise ValueError("solid must be bool with the spatial grid shape")
+        if solid.device != f_old.device:
+            raise ValueError("solid and populations must share a device")
+        owned = owned & ~solid
+    accumulator_dtype = (
+        torch.float64 if f_old.dtype == torch.float32 else f_old.dtype
+    )
+    # Subtract locally before reduction.  Summing old/new inventories first
+    # and then subtracting loses a small force beneath O(N-cell) float32 totals.
+    population_change = (f_new[:, owned] - f_old[:, owned]).sum(
+        dim=1, dtype=accumulator_dtype,
+    )
+    c = _lattice_velocities(f_old.shape[0], f_old.device, accumulator_dtype)
+    return (population_change[:, None] * c).sum(dim=0)
 
 
 def streaming_momentum_import(
@@ -191,13 +225,10 @@ def observe_control_volume_force(
     """Observe force on an enclosed body over one complete LBM step."""
     if f_old.shape != f_new.shape or f_old.shape != f_post_collision.shape:
         raise ValueError("all population tensors must have the same shape")
-    old_momentum = fluid_momentum(
-        f_old, control_volume, solid=solid, periodic_axes=periodic_axes,
+    change = fluid_momentum_change(
+        f_old, f_new, control_volume,
+        solid=solid, periodic_axes=periodic_axes,
     )
-    new_momentum = fluid_momentum(
-        f_new, control_volume, solid=solid, periodic_axes=periodic_axes,
-    )
-    change = new_momentum - old_momentum
     imported = streaming_momentum_import(
         f_post_collision, control_volume, periodic_axes=periodic_axes,
     )
@@ -236,6 +267,7 @@ __all__ = [
     "assess_nested_control_volume_invariance",
     "box_control_volume",
     "fluid_momentum",
+    "fluid_momentum_change",
     "observe_control_volume_force",
     "streaming_momentum_import",
 ]
