@@ -21,6 +21,12 @@ def test_config_derived_viscosity_and_tau() -> None:
     assert cfg.tau == pytest.approx(0.53)
 
 
+def test_unknown_far_field_mode_is_rejected() -> None:
+    cfg = SphereBFLControlVolumeConfig(far_field_mode="magic")
+    with pytest.raises(ValueError, match="far_field_mode"):
+        cfg.validate()
+
+
 def test_short_sphere_composition_is_finite() -> None:
     cfg = SphereBFLControlVolumeConfig(
         nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
