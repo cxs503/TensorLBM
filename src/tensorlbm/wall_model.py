@@ -937,6 +937,7 @@ def bfl_wall_function_3d(
     nonequilibrium_scale: float = 0.5,
     wall_normals: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
     area_weight: torch.Tensor | None = None,
+    apply_wall_stress: bool = True,
 ) -> tuple[torch.Tensor, float, float]:
     """Mature BFL + wall function with Guo forcing (literature-recommended).
 
@@ -1097,12 +1098,13 @@ def bfl_wall_function_3d(
     fy = coef * (ut_y * inv_utan)
     fz = coef * (ut_z * inv_utan)
 
-    if use_guo:
-        f = guo_body_force_d3q19(f, fx, fy, fz, ux, uy, uz)
-    else:
-        # Legacy simple forcing (ibm_apply_body_force_3d)
-        from .ibm import ibm_apply_body_force_3d
-        f = ibm_apply_body_force_3d(f, fx, fy, fz)
+    if apply_wall_stress:
+        if use_guo:
+            f = guo_body_force_d3q19(f, fx, fy, fz, ux, uy, uz)
+        else:
+            # Legacy simple forcing (ibm_apply_body_force_3d)
+            from .ibm import ibm_apply_body_force_3d
+            f = ibm_apply_body_force_3d(f, fx, fy, fz)
 
     # ── Step 6: Compute drag ──
     # Friction drag = integrated wall shear (from τ_w)
