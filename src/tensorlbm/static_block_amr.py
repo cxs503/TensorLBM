@@ -137,6 +137,8 @@ class PopulationRefluxLedger:
     raw_kinetic_mismatch: torch.Tensor | None = None
     restriction_limited_fraction: float = 0.0
     restriction_minimum_alpha: float = 1.0
+    prolongation_limited_fraction: float = 0.0
+    prolongation_minimum_alpha: float = 1.0
 
     @property
     def mass_residual(self) -> float:
@@ -210,6 +212,14 @@ class StaticBlockAMR3D:
         self.coarse_f = coarse_f
         self.config = config
         self.fine_f = _sample_parent_with_ghost(coarse_f, config)
+        self.last_prolongation_positivity: PositivityDiagnostics | None = None
+        self._maximum_prolongation_limited_fraction = 0.0
+        self._minimum_prolongation_alpha = 1.0
+        if config.enforce_transfer_positivity:
+            self.fine_f, diagnostic = limit_nonequilibrium_for_positivity(
+                self.fine_f,
+            )
+            self._record_prolongation_positivity(diagnostic)
         self._interface_filter_blend = interface_shell_blend(
             self.fine_f.shape[1:],
             ghost=config.ghost,
@@ -265,6 +275,31 @@ class StaticBlockAMR3D:
             fine_owned, q=coarse_f.shape[0],
         )
         self.last_reflux: PopulationRefluxLedger | None = None
+
+    def _record_prolongation_positivity(
+        self,
+        diagnostic: PositivityDiagnostics,
+    ) -> None:
+        if not all(math.isfinite(value) for value in (
+            diagnostic.minimum_population_before,
+            diagnostic.minimum_population_after,
+            diagnostic.minimum_alpha,
+        )):
+            raise FloatingPointError("non-finite coarse-to-fine AMR prolongation")
+        self.last_prolongation_positivity = diagnostic
+        self._maximum_prolongation_limited_fraction = max(
+            self._maximum_prolongation_limited_fraction,
+            diagnostic.limited_fraction,
+        )
+        self._minimum_prolongation_alpha = min(
+            self._minimum_prolongation_alpha,
+            diagnostic.minimum_alpha,
+        )
+
+    def _reset_prolongation_positivity(self) -> None:
+        self.last_prolongation_positivity = None
+        self._maximum_prolongation_limited_fraction = 0.0
+        self._minimum_prolongation_alpha = 1.0
 
     @property
     def physical_fine_shape(self) -> tuple[int, int, int]:
@@ -395,6 +430,12 @@ class StaticBlockAMR3D:
             spatial_ratio=float(self.config.ratio),
             regularize=self.config.regularize_prolongation,
         )[:, 0, 0, :]
+        if self.config.enforce_transfer_positivity:
+            sampled_4d, diagnostic = limit_nonequilibrium_for_positivity(
+                sampled[:, None, None, :],
+            )
+            sampled = sampled_4d[:, 0, 0, :]
+            self._record_prolongation_positivity(diagnostic)
         self.fine_f.reshape(self.fine_f.shape[0], -1)[:, plan.target_flat] = sampled
 
     def _restrict_physical(
@@ -480,6 +521,7 @@ class StaticBlockAMR3D:
             (self.config.tau_coarse, self.config.tau_fine)
             if tau_pair is None else tau_pair
         )
+        self._reset_prolongation_positivity()
         if abs(
             tau_fine - convective_refined_tau(tau_coarse, self.config.ratio)
         ) > 1.0e-12:
@@ -555,6 +597,8 @@ class StaticBlockAMR3D:
                 self.last_restriction_positivity.minimum_alpha
                 if self.last_restriction_positivity is not None else 1.0
             ),
+            self._maximum_prolongation_limited_fraction,
+            self._minimum_prolongation_alpha,
         )
         return self.last_reflux
 
@@ -787,6 +831,8 @@ class NestedStaticBlockAMR3D:
                 interface.last_restriction_positivity.minimum_alpha
                 if interface.last_restriction_positivity is not None else 1.0
             ),
+            interface._maximum_prolongation_limited_fraction,
+            interface._minimum_prolongation_alpha,
         )
         interface.last_reflux = ledger
         ledgers[interface_index] = ledger
@@ -821,6 +867,8 @@ class NestedStaticBlockAMR3D:
         ledgers: list[PopulationRefluxLedger | None] = [
             None for _ in self.interfaces
         ]
+        for interface in self.interfaces:
+            interface._reset_prolongation_positivity()
         self._advance_interface(0, advance, -1, ledgers, tau_by_level)
         if any(ledger is None for ledger in ledgers):
             raise RuntimeError("nested AMR did not produce every reflux ledger")
