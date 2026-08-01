@@ -1,6 +1,7 @@
 """Fail-closed multi-resolution assessment for flat-plate wall-model runs."""
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 from .spatial_convergence import assess_spatial_convergence
@@ -20,6 +21,7 @@ _IDENTITY_FIELDS = (
     "smagorinsky_cs",
     "positivity_limiter",
 )
+_RATIO_FIELDS = ("sponge_width", "cv_margin")
 
 
 def assess_flat_plate_convergence(
@@ -62,7 +64,7 @@ def assess_flat_plate_convergence(
     required_fields_present = all(
         field in configuration
         for _, _, configuration, _ in parsed
-        for field in _IDENTITY_FIELDS
+        for field in _IDENTITY_FIELDS + _RATIO_FIELDS
     )
     exchange_ratios = [
         float(configuration["stress_exchange_distance"]) / length
@@ -82,6 +84,19 @@ def assess_flat_plate_convergence(
     domain_ratio_invariant = (
         max(streamwise_ratios) - min(streamwise_ratios) <= 1e-12
         and max(transverse_ratios) - min(transverse_ratios) <= 1e-12
+    )
+    sponge_ratios = [
+        float(configuration.get("sponge_width", math.nan)) / length
+        for length, _, configuration, _ in parsed
+    ]
+    cv_margin_ratios = [
+        float(configuration.get("cv_margin", math.nan)) / length
+        for length, _, configuration, _ in parsed
+    ]
+    numerical_length_ratio_invariant = (
+        all(math.isfinite(value) for value in sponge_ratios + cv_margin_ratios)
+        and max(sponge_ratios) - min(sponge_ratios) <= 1e-12
+        and max(cv_margin_ratios) - min(cv_margin_ratios) <= 1e-12
     )
     values = [item[1] for item in parsed]
     spatial = assess_spatial_convergence(resolutions, values)
@@ -105,6 +120,7 @@ def assess_flat_plate_convergence(
         and configuration_identity
         and exchange_ratio_invariant
         and domain_ratio_invariant
+        and numerical_length_ratio_invariant
         and reference_invariant
     )
     admitted = (
@@ -124,6 +140,11 @@ def assess_flat_plate_convergence(
             "exchange_distance_over_length": exchange_ratios,
             "exchange_ratio_invariant": exchange_ratio_invariant,
             "domain_ratio_invariant": domain_ratio_invariant,
+            "sponge_width_over_length": sponge_ratios,
+            "cv_margin_over_length": cv_margin_ratios,
+            "numerical_length_ratio_invariant": (
+                numerical_length_ratio_invariant
+            ),
             "reference_invariant": reference_invariant,
             "admitted": provenance_admitted,
         },
