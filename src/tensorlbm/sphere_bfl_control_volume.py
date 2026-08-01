@@ -1,6 +1,7 @@
 """Canonical sphere drag with BFL and an independent control-volume force."""
 from __future__ import annotations
 
+import hashlib
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -48,6 +49,9 @@ class SphereBFLControlVolumeConfig:
     checkpoint_interval: int = 0
     checkpoint_path: str | None = None
     resume: bool = False
+    allow_v2_checkpoint: bool = False
+    statistics_window_steps: int = 0
+    minimum_statistics_convective_times: float = 5.0
     device: str = "cpu"
 
     @property
@@ -76,6 +80,12 @@ class SphereBFLControlVolumeConfig:
             raise ValueError("unknown far_field_mode")
         if self.report_interval < 0 or self.checkpoint_interval < 0:
             raise ValueError("report/checkpoint intervals must be non-negative")
+        if not 0 <= self.statistics_window_steps <= self.steps - self.warmup_steps:
+            raise ValueError(
+                "statistics_window_steps must be zero or fit after warmup",
+            )
+        if self.minimum_statistics_convective_times < 0.0:
+            raise ValueError("minimum_statistics_convective_times must be non-negative")
         if self.ramp_steps < 0 or self.sponge_width < 0:
             raise ValueError("ramp_steps and sponge_width must be non-negative")
         if not 0.0 <= self.sponge_strength <= 1.0:
@@ -88,6 +98,14 @@ def _ramp(step: int, steps: int) -> float:
     if steps <= 0 or step >= steps:
         return 1.0
     return 0.5 * (1.0 - math.cos(math.pi * step / steps))
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def run_sphere_bfl_control_volume(
@@ -146,7 +164,7 @@ def run_sphere_bfl_control_volume(
     start_step = 0
     checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
     checkpoint_signature = {
-        "schema_version": 2,
+        "schema_version": 3,
         "shape_zyx": list(shape),
         "radius": config.radius,
         "center_x_fraction": config.center_x_fraction,
@@ -160,12 +178,38 @@ def run_sphere_bfl_control_volume(
         "sponge_inlet": config.sponge_inlet,
         "cv_margin": config.cv_margin,
         "far_field_mode": config.far_field_mode,
+        "statistics_window_steps": config.statistics_window_steps,
     }
+    migration_provenance: dict[str, object] | None = None
     if config.resume:
         assert checkpoint is not None
         state = torch.load(checkpoint, map_location=device, weights_only=True)
-        if state.get("configuration") != checkpoint_signature:
-            raise ValueError("checkpoint configuration does not match sphere run")
+        source_configuration = state.get("configuration")
+        if source_configuration != checkpoint_signature:
+            shared_target = {
+                key: value for key, value in checkpoint_signature.items()
+                if key not in {"schema_version", "statistics_window_steps"}
+            }
+            v2_compatible = (
+                config.allow_v2_checkpoint
+                and state.get("schema") == "tensorlbm-sphere-checkpoint-v2"
+                and isinstance(source_configuration, dict)
+                and source_configuration.get("schema_version") == 2
+                and all(
+                    source_configuration.get(key) == value
+                    for key, value in shared_target.items()
+                )
+            )
+            if not v2_compatible:
+                raise ValueError("checkpoint configuration does not match sphere run")
+            migration_provenance = {
+                "source_schema": state["schema"],
+                "source_step": int(state["step"]),
+                "source_checkpoint_sha256": _sha256_file(checkpoint),
+                "statistics_policy": "retain_full_history_use_explicit_tail_window",
+            }
+        else:
+            migration_provenance = state.get("migration_provenance")
         f = state["populations"].to(device=device)
         start_step = int(state["step"])
         forces = state["drag_force_history"].tolist()
@@ -178,12 +222,13 @@ def run_sphere_bfl_control_volume(
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-sphere-checkpoint-v2",
+            "schema": "tensorlbm-sphere-checkpoint-v3",
             "configuration": checkpoint_signature,
             "step": step,
             "populations": f.detach().cpu(),
             "drag_force_history": torch.tensor(forces, dtype=torch.float64),
             "bfl_drag_history": torch.tensor(bfl_forces, dtype=torch.float64),
+            "migration_provenance": migration_provenance,
         }, checkpoint)
 
     def apply_outer(state: torch.Tensor) -> torch.Tensor:
@@ -237,19 +282,35 @@ def run_sphere_bfl_control_volume(
     if checkpoint is not None:
         save_checkpoint(config.steps)
 
-    mean_force = sum(forces) / len(forces)
-    mean_bfl_force = sum(bfl_forces) / len(bfl_forces)
+    statistics_window = config.statistics_window_steps or len(forces)
+    selected_forces = forces[-statistics_window:]
+    selected_bfl_forces = bfl_forces[-statistics_window:]
+    mean_force = sum(selected_forces) / len(selected_forces)
+    mean_bfl_force = sum(selected_bfl_forces) / len(selected_bfl_forces)
     cd = mean_force / dynamic_area
     cd_bfl = mean_bfl_force / dynamic_area
     reference = schiller_naumann_cd(config.reynolds)
-    cd_history = [force / dynamic_area for force in forces]
+    cd_history = [force / dynamic_area for force in selected_forces]
     stationarity = assess_force_stationarity(
         cd_history, block_size=max(1, len(cd_history) // 8),
     )
     observer_difference = abs(cd - cd_bfl) / max(abs(cd), 1e-30) * 100.0
     reference_error = abs(cd - reference) / reference * 100.0
+    statistics_convective_times = (
+        len(selected_forces) * config.lattice_speed / (2.0 * config.radius)
+    )
+    duration_acceptable = (
+        statistics_convective_times
+        >= config.minimum_statistics_convective_times
+    )
+    numerical_quality_admitted = (
+        math.isfinite(cd)
+        and stationarity.meets(1.0)
+        and observer_difference <= 1.0
+        and duration_acceptable
+    )
     return {
-        "schema": "tensorlbm-sphere-bfl-control-volume-v2",
+        "schema": "tensorlbm-sphere-bfl-control-volume-v3",
         "configuration": checkpoint_signature | {
             "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
@@ -258,6 +319,12 @@ def run_sphere_bfl_control_volume(
             "checkpoint_path": str(checkpoint) if checkpoint else None,
             "report_interval": config.report_interval,
             "checkpoint_interval": config.checkpoint_interval,
+            "statistics_window_steps_resolved": statistics_window,
+            "statistics_convective_times": statistics_convective_times,
+            "minimum_statistics_convective_times": (
+                config.minimum_statistics_convective_times
+            ),
+            "migration_provenance": migration_provenance,
         },
         "result": {
             "cd_control_volume": cd,
@@ -275,9 +342,10 @@ def run_sphere_bfl_control_volume(
             "drag_target_met": reference_error <= 5.0,
             "stationarity_target_met": stationarity.meets(1.0),
             "force_observer_target_met": observer_difference <= 1.0,
+            "duration_target_met": duration_acceptable,
+            "numerical_quality_admitted": numerical_quality_admitted,
             "admitted": (
-                reference_error <= 5.0 and stationarity.meets(1.0)
-                and observer_difference <= 1.0
+                reference_error <= 5.0 and numerical_quality_admitted
             ),
         },
         "measured_peak_allocated_gib": (
