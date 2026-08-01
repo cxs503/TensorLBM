@@ -321,7 +321,19 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     6.30% lower refined-region density error and only 3.55% velocity-error
     regression versus uniform coarse; it passes the existing 5% interface
     gate.  The raw kinetic mismatch and projected correction are both retained
-    as diagnostics.  An exact AFF-1 1000-step conserved-moment rerun is active.
+    as diagnostics.  The exact AFF-1 conserved-moment rerun then completed
+    1000 steps with 7.90 GiB peak allocation, zero positivity limiting, zero
+    limited reflux directions and `1.86e-9` residual.  It stays finite with
+    maximum coarse speed 0.0681, whereas the old kinetic-mode reflux failed by
+    this time.  Its 500-sample startup mean is correctly rejected
+    (`R=235.9 N`, 170% error, 15.2% observer difference, 5.9% trend); a clean
+    8000-step/4000-warmup production candidate is active on the freed GPU.
+46. V3 L384 flat-plate validation completed and exactly reproduces the v2
+    fixed-height result: `Cf=0.0046577554833`, 0.635% from ITTC-1957, with
+    0.00078% stationary-block range, 0.00068% trend, 0.0582% force-observer
+    difference, zero positivity limiting and zero rejected exchange samples.
+    Its mean sampled `y+=565.44`; the run passes every single-grid gate.  L512
+    remains active, so the formal three-grid v3 fit is not issued early.
 
 ## Rejected candidates
 
