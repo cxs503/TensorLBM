@@ -60,7 +60,10 @@ def _record(coarse_length: float) -> dict[str, object]:
             "mean_resistance_n": resistance,
             "experimental_resistance_n": 100.0,
         },
-        "acceptance": {"single_grid_admitted": True},
+        "acceptance": {
+            "single_grid_admitted": True,
+            "numerical_quality_admitted": True,
+        },
     }
 
 
@@ -112,10 +115,10 @@ def test_rejected_source_run_fails_final_admission(
     records: list[dict[str, object]],
 ) -> None:
     rejected = copy.deepcopy(records)
-    rejected[-1]["acceptance"]["single_grid_admitted"] = False
+    rejected[-1]["acceptance"]["numerical_quality_admitted"] = False
     result = assess_suboff_amr_convergence(rejected)
 
-    assert result["single_grid_runs_admitted"] is False
+    assert result["source_numerical_quality_admitted"] is False
     assert result["admitted"] is False
 
 

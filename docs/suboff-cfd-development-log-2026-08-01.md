@@ -532,6 +532,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     ramp history is extended in v5 to eight convective times for diagnosis,
     while a clean v6 12000-step run now repeats the identical evolution under
     the conservative CV/surface admission contract.
+67. The extended v5 slow-ramp run reaches eight convective times but remains
+    rejected: mean CV resistance is 117.91 N, eight block means span
+    103.60--129.75 N (22.2% range), and the finest-window CV is 117.37 N.
+    Nested CV spread is 0.073% and numerical momentum source is 0.068%, so the
+    remaining 35% tow error is physical/discretisation rather than a hidden
+    conservation correction.  Production schema v6 also separates
+    `numerical_quality_admitted` from `single_grid_admitted`: coarse and medium
+    grids may enter Richardson convergence when they pass stability,
+    conservation, observer and duration gates even if each is not yet within
+    5% of experiment; only the extrapolated grid sequence may make the final
+    experimental-accuracy claim.
 
 ## Rejected candidates
 

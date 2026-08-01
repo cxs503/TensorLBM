@@ -881,11 +881,10 @@ def run(args: argparse.Namespace) -> dict:
         and sampling_convective_times
         >= args.minimum_sampling_convective_times
     )
-    single_grid_admitted = (
+    numerical_quality_admitted = (
         finite
         and duration_acceptable
         and not args.diagnostic_uncoupled_wall_stress
-        and reference_error_pct <= args.error_target
         and force_stationarity.meets(args.drift_target)
         and nested_cv_assessment.meets(
             args.nested_cv_target, minimum_auxiliary_count=2,
@@ -898,6 +897,10 @@ def run(args: argparse.Namespace) -> dict:
         and wall_sampling_acceptable
         and surface_area_acceptable
     )
+    single_grid_admitted = (
+        numerical_quality_admitted
+        and reference_error_pct <= args.error_target
+    )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30 if device.type == "cuda" else None
     )
@@ -906,7 +909,10 @@ def run(args: argparse.Namespace) -> dict:
         "schema": "tensorlbm-suboff-static-amr-v6",
         "status": (
             "single_grid_candidate" if single_grid_admitted
-            else "single_grid_rejected"
+            else (
+                "numerically_converged_grid"
+                if numerical_quality_admitted else "single_grid_rejected"
+            )
         ),
         "configuration": checkpoint_signature | {
             "device": str(device),
@@ -1089,6 +1095,7 @@ def run(args: argparse.Namespace) -> dict:
             "surface_area_target_met": surface_area_acceptable,
             "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
             "single_grid_admitted": single_grid_admitted,
+            "numerical_quality_admitted": numerical_quality_admitted,
             "physical_validation": False,
         },
     }
