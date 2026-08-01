@@ -33,11 +33,9 @@ def limit_nonequilibrium_for_positivity(
     if floor < 0.0:
         raise ValueError("floor must be non-negative")
     if f.shape[0] == 19:
-        from .d3q19 import equilibrium3d, macroscopic3d
-        equilibrium, macro = equilibrium3d, macroscopic3d
+        from .d3q19 import C, W
     else:
-        from .d3q27 import equilibrium27, macroscopic27
-        equilibrium, macro = equilibrium27, macroscopic27
+        from .d3q27 import C, W
     minimum_before = float(f.min().item())
     total = int(f[0].numel())
     if minimum_before >= floor:
@@ -49,22 +47,34 @@ def limit_nonequilibrium_for_positivity(
             minimum_population_before=minimum_before,
             minimum_population_after=minimum_before,
         )
-    rho, ux, uy, uz = macro(f)
-    feq = equilibrium(rho, ux, uy, uz, device=f.device)
-    below = f < floor
-    denominator = feq - f
+    below_cells = (f < floor).any(dim=0)
+    selected = f[:, below_cells]
+    c = C.to(device=f.device, dtype=f.dtype)
+    w = W.to(device=f.device, dtype=f.dtype)
+    rho = selected.sum(dim=0)
+    momentum = (selected[:, None, :] * c[:, :, None]).sum(dim=0)
+    ux, uy, uz = (momentum[axis] / rho.clamp_min(1e-30) for axis in range(3))
+    cu = (
+        c[:, 0, None] * ux + c[:, 1, None] * uy + c[:, 2, None] * uz
+    )
+    speed2 = ux.square() + uy.square() + uz.square()
+    feq = w[:, None] * rho[None, :] * (
+        1.0 + 3.0 * cu + 4.5 * cu.square() - 1.5 * speed2
+    )
+    below = selected < floor
+    denominator = feq - selected
     candidate = torch.where(
         below,
         (feq - floor) / denominator.clamp_min(1e-30),
-        torch.ones_like(f),
+        torch.ones_like(selected),
     )
     alpha = candidate.amin(dim=0).clamp(0.0, 1.0)
-    limited = alpha < 1.0
-    out = feq + alpha.unsqueeze(0) * (f - feq)
+    limited_values = feq + alpha.unsqueeze(0) * (selected - feq)
     # A final maximum only absorbs last-bit roundoff and is not the limiter.
-    out = out.clamp_min(floor)
-    limited_cells = int(limited.sum().item())
-    total = int(limited.numel())
+    limited_values = limited_values.clamp_min(floor)
+    out = f.clone()
+    out[:, below_cells] = limited_values
+    limited_cells = int(below_cells.sum().item())
     diagnostics = PositivityDiagnostics(
         limited_cells=limited_cells,
         total_cells=total,
