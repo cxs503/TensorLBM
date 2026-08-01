@@ -36,6 +36,8 @@ def _args(
     interface_filter_width: int = 0,
     interface_filter_strength: float = 0.0,
     sponge_inlet: bool = False,
+    deep_wall_margin: int = 0,
+    deep_wake_cells: int = 0,
 ):
     values = [
         "--device", "cpu",
@@ -44,6 +46,8 @@ def _args(
         "--hull-length", "24", "--center-x-fraction", "0.35",
         "--outer-wall-margin", "4", "--outer-wake-cells", "8",
         "--inner-wall-margin", "3", "--inner-wake-cells", "0",
+        "--deep-wall-margin", str(deep_wall_margin),
+        "--deep-wake-cells", str(deep_wake_cells),
         "--cv-margin", "2", "--steps", str(steps), "--ramp-steps", "0",
         "--aux-cv-margins", "1,3", "--surface-force-interval", "1",
         "--warmup-steps", "0", "--statistics-window-steps", str(steps),
@@ -129,6 +133,34 @@ def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
     clearance = result["planning"]["control_volume_interface_clearance"]
     assert clearance["all_flux_stencils_outside_filter"] is True
     assert len(clearance["volumes"]) == 3
+
+
+def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -> None:
+    preflight = MODULE.run(_args(
+        tmp_path, steps=1, preflight=True, deep_wall_margin=4,
+    ))
+
+    assert preflight["planning"]["refinement_depth"] == 3
+    assert preflight["planning"]["level_count"] == 4
+    assert len(preflight["planning"]["allocated_cells_by_level"]) == 4
+    assert len(preflight["planning"]["fine_physical_shapes_by_level"]) == 3
+    assert sum(preflight["planning"]["allocated_cells_by_level"]) == (
+        preflight["planning"]["total_allocated_cells"]
+    )
+
+    result = MODULE.run(_args(
+        tmp_path, steps=1, deep_wall_margin=4,
+    ))
+    checkpoint = torch.load(
+        tmp_path / "nested-smoke.ckpt", map_location="cpu", weights_only=True,
+    )
+    assert result["geometry"]["geometry_owner_level"] == 3
+    assert result["geometry"]["force_owner_level"] == 3
+    assert len(result["result"]["maximum_reflux_residual_by_interface"]) == 3
+    assert len(checkpoint["level_populations"]) == 4
+    assert len(checkpoint["level_solid_masks"]) == 4
+    assert all(mask is None for mask in checkpoint["level_solid_masks"][:3])
+    assert bool(checkpoint["level_solid_masks"][3].any())
 
 
 def test_nested_preflight_rejects_cv_flux_stencil_inside_interface_filter(

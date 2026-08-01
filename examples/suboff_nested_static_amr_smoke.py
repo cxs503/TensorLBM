@@ -94,6 +94,16 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--outer-wake-cells", type=int, default=100)
     result.add_argument("--inner-wall-margin", type=int, default=4)
     result.add_argument("--inner-wake-cells", type=int, default=8)
+    result.add_argument(
+        "--deep-wall-margin",
+        type=int,
+        default=0,
+        help=(
+            "optional third 2:1 interface around the hull; 0 keeps the "
+            "three-level hierarchy, values >=2 create four levels"
+        ),
+    )
+    result.add_argument("--deep-wake-cells", type=int, default=0)
     result.add_argument("--cv-margin", type=int, default=4)
     result.add_argument("--aux-cv-margins", default="2,6")
     result.add_argument("--surface-force-interval", type=int, default=50)
@@ -263,6 +273,12 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("grid, hull length and steps must be positive")
     if args.stress_exchange_distance <= 0.0:
         raise ValueError("stress exchange distance must be positive")
+    if args.deep_wall_margin != 0 and args.deep_wall_margin < 2:
+        raise ValueError("deep wall margin must be 0 or at least two")
+    if args.deep_wake_cells < 0 or (
+        args.deep_wall_margin == 0 and args.deep_wake_cells != 0
+    ):
+        raise ValueError("deep wake cells require an enabled deep block")
     if args.memory_bytes_per_cell <= 0.0:
         raise ValueError("memory bytes per cell must be positive")
     if args.kbc_max_iterations < 2:
@@ -398,42 +414,63 @@ def run(args: argparse.Namespace) -> dict:
         config=geometry_config,
         device=device,
     )
+    refinement_plans = [outer_plan, nested_plan]
+    planning_solids = [outer_solid, nested_solid]
+    finest_geometry = nested_geometry
+    if args.deep_wall_margin:
+        deep_plan = plan_nested_suboff_static_amr(
+            nested_plan,
+            nested_solid,
+            wall_margin=args.deep_wall_margin,
+            wake_cells=args.deep_wake_cells,
+        )
+        deep_solid, deep_geometry = build_nested_fine_suboff_mask(
+            deep_plan,
+            hull_type=args.hull_type,
+            coarse_center=center,
+            config=geometry_config,
+            device=device,
+        )
+        refinement_plans.append(deep_plan)
+        planning_solids.append(deep_solid)
+        finest_geometry = deep_geometry
+    finest_plan = refinement_plans[-1]
+    finest_planning_solid = planning_solids[-1]
+    refinement_depth = len(refinement_plans)
+    level_count = refinement_depth + 1
     physical_re = point.speed_mps * MODEL_LENGTH_M / args.nu_water
     initial_tau_by_level = continuation.tau_by_level(
         0,
         lattice_speed=args.lattice_speed,
         root_hull_length=args.hull_length,
-        levels=3,
+        levels=level_count,
     )
-    tau_coarse = initial_tau_by_level[0]
-    outer_amr_config = StaticBlockAMRConfig(
+    refinement_boxes = [
         outer_plan.box,
-        tau_coarse=tau_coarse,
-        regularize_restriction=args.regularize_restriction,
-        regularize_prolongation=args.regularize_prolongation,
-        reflux_correction_stencil=args.reflux_correction_stencil,
-        ghost_interpolation=args.ghost_interpolation,
-        enforce_transfer_positivity=args.enforce_transfer_positivity,
-        interface_filter_width=args.interface_filter_width,
-        interface_filter_strength=args.interface_filter_strength,
-    )
-    inner_amr_config = StaticBlockAMRConfig(
-        nested_plan.box_in_outer_allocated_coordinates,
-        tau_coarse=outer_amr_config.tau_fine,
-        regularize_restriction=args.regularize_restriction,
-        regularize_prolongation=args.regularize_prolongation,
-        reflux_correction_stencil=args.reflux_correction_stencil,
-        ghost_interpolation=args.ghost_interpolation,
-        enforce_transfer_positivity=args.enforce_transfer_positivity,
-        interface_filter_width=args.interface_filter_width,
-        interface_filter_strength=args.interface_filter_strength,
-    )
+        *[
+            plan.box_in_outer_allocated_coordinates
+            for plan in refinement_plans[1:]
+        ],
+    ]
+    amr_configs = []
+    for interface_index, box in enumerate(refinement_boxes):
+        amr_configs.append(StaticBlockAMRConfig(
+            box,
+            tau_coarse=initial_tau_by_level[interface_index],
+            regularize_restriction=args.regularize_restriction,
+            regularize_prolongation=args.regularize_prolongation,
+            reflux_correction_stencil=args.reflux_correction_stencil,
+            ghost_interpolation=args.ghost_interpolation,
+            enforce_transfer_positivity=args.enforce_transfer_positivity,
+            interface_filter_width=args.interface_filter_width,
+            interface_filter_strength=args.interface_filter_strength,
+        ))
 
     # Derive force-observer geometry before allocating the hierarchy so that
     # preflight mode catches a CV whose radius-one streaming flux stencil
     # would sample the interface filter.  Fine masks omit the AMR ghost shell.
-    nested_indices = nested_solid.nonzero(as_tuple=False)
-    ghost = inner_amr_config.ghost
+    nested_indices = finest_planning_solid.nonzero(as_tuple=False)
+    ghost = amr_configs[-1].ghost
     z_min, y_min, x_min = (
         int(nested_indices[:, axis].min().item()) + ghost for axis in range(3)
     )
@@ -441,7 +478,9 @@ def run(args: argparse.Namespace) -> dict:
         int(nested_indices[:, axis].max().item()) + 1 + ghost
         for axis in range(3)
     )
-    finest_shape = tuple(int(size) + 2 * ghost for size in nested_solid.shape)
+    finest_shape = tuple(
+        int(size) + 2 * ghost for size in finest_planning_solid.shape
+    )
 
     def control_volume_bounds(margin: int) -> tuple[int, int, int, int, int, int]:
         return (
@@ -484,7 +523,7 @@ def run(args: argparse.Namespace) -> dict:
                 f"stencil requires at least {required} cells to remain "
                 "outside the interface filter",
             )
-    estimated_peak_gib = nested_plan.estimated_peak_gib(
+    estimated_peak_gib = finest_plan.estimated_peak_gib(
         args.memory_bytes_per_cell,
     )
     memory_budget = require_cuda_memory_budget(
@@ -498,19 +537,28 @@ def run(args: argparse.Namespace) -> dict:
         "inner_box_in_outer_allocated_coordinates": vars(
             nested_plan.box_in_outer_allocated_coordinates,
         ),
+        "refinement_boxes_in_parent_allocated_coordinates": [
+            vars(box) for box in refinement_boxes
+        ],
+        "refinement_depth": refinement_depth,
+        "level_count": level_count,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
         "nested_fine_shape": list(nested_plan.fine_physical_shape),
-        "wall_buffer_parent_cells": nested_plan.wall_buffer_parent_cells,
-        "wall_buffer_finest_cells": nested_plan.wall_buffer_finest_cells,
+        "fine_physical_shapes_by_level": [
+            list(plan.fine_physical_shape) for plan in refinement_plans
+        ],
+        "allocated_cells_by_level": list(finest_plan.allocated_cells_by_level),
+        "wall_buffer_parent_cells": finest_plan.wall_buffer_parent_cells,
+        "wall_buffer_finest_cells": finest_plan.wall_buffer_finest_cells,
         "downstream_buffer_parent_cells": (
-            nested_plan.downstream_buffer_parent_cells
+            finest_plan.downstream_buffer_parent_cells
         ),
         "downstream_buffer_finest_cells": (
-            nested_plan.downstream_buffer_finest_cells
+            finest_plan.downstream_buffer_finest_cells
         ),
-        "total_allocated_cells": nested_plan.total_allocated_cells,
-        "uniform_finest_cells": nested_plan.uniform_finest_cells,
-        "cell_saving_fraction": nested_plan.cell_saving_fraction,
+        "total_allocated_cells": finest_plan.total_allocated_cells,
+        "uniform_finest_cells": finest_plan.uniform_finest_cells,
+        "cell_saving_fraction": finest_plan.cell_saving_fraction,
         "memory_estimate_bytes_per_cell": args.memory_bytes_per_cell,
         "estimated_peak_gib": estimated_peak_gib,
         "cuda_memory_preflight": (
@@ -536,8 +584,10 @@ def run(args: argparse.Namespace) -> dict:
     zero = torch.zeros_like(rho)
     hierarchy = NestedStaticBlockAMR3D(
         equilibrium3d(rho, ux, zero, zero, device=device),
-        (outer_amr_config, inner_amr_config),
-        fine_solids=(None, nested_solid),
+        tuple(amr_configs),
+        fine_solids=(None,) * (refinement_depth - 1) + (
+            finest_planning_solid,
+        ),
     )
     checkpoint_signature = {
         "schema_version": 3,
@@ -590,17 +640,19 @@ def run(args: argparse.Namespace) -> dict:
             args.maximum_reflux_applied_correction_fraction
         ),
     }
+    if refinement_depth > 2:
+        checkpoint_signature["refinement_depth"] = refinement_depth
+        checkpoint_signature["deep_box"] = vars(refinement_boxes[-1])
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
     finest_solid_q = finest_solid.unsqueeze(0).expand_as(hierarchy.finest_f)
-    finest_geometry = nested_geometry
     finest_center = (
-        float(finest_geometry["cx"]) + inner_amr_config.ghost,
-        float(finest_geometry["cy"]) + inner_amr_config.ghost,
-        float(finest_geometry["cz"]) + inner_amr_config.ghost,
+        float(finest_geometry["cx"]) + amr_configs[-1].ghost,
+        float(finest_geometry["cy"]) + amr_configs[-1].ghost,
+        float(finest_geometry["cz"]) + amr_configs[-1].ghost,
     )
     nz_f, ny_f, nx_f = finest_solid.shape
-    finest_length = nested_plan.effective_hull_length_cells
+    finest_length = finest_plan.effective_hull_length_cells
     bfl_mask, bfl_q = compute_q_suboff(
         nx_f, ny_f, nz_f, *finest_center, finest_length,
         hull_type=args.hull_type, config=geometry_config, device=device,
@@ -707,13 +759,13 @@ def run(args: argparse.Namespace) -> dict:
     force_samples: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
-    maximum_reflux_residual = [0.0, 0.0]
-    maximum_reflux_limited_directions = [0, 0]
-    maximum_reflux_applied_correction_fraction = [0.0, 0.0]
-    maximum_transfer_limited_fraction = [0.0, 0.0]
-    minimum_transfer_alpha = [1.0, 1.0]
-    maximum_raw_mass_mismatch = [0.0, 0.0]
-    maximum_raw_momentum_mismatch = [0.0, 0.0]
+    maximum_reflux_residual = [0.0] * refinement_depth
+    maximum_reflux_limited_directions = [0] * refinement_depth
+    maximum_reflux_applied_correction_fraction = [0.0] * refinement_depth
+    maximum_transfer_limited_fraction = [0.0] * refinement_depth
+    minimum_transfer_alpha = [1.0] * refinement_depth
+    maximum_raw_mass_mismatch = [0.0] * refinement_depth
+    maximum_raw_momentum_mismatch = [0.0] * refinement_depth
     maximum_rejected_fraction = 0.0
     health_records: list[dict] = []
 
@@ -851,28 +903,29 @@ def run(args: argparse.Namespace) -> dict:
         ]
         maximum_reflux_applied_correction_fraction = [
             float(value) for value in state.get(
-                "maximum_reflux_applied_correction_fraction", (0.0, 0.0),
+                "maximum_reflux_applied_correction_fraction",
+                (0.0,) * refinement_depth,
             )
         ]
         maximum_rejected_fraction = float(state["maximum_rejected_fraction"])
         maximum_transfer_limited_fraction = [
             float(value) for value in state.get(
-                "maximum_transfer_limited_fraction", (0.0, 0.0),
+                "maximum_transfer_limited_fraction", (0.0,) * refinement_depth,
             )
         ]
         minimum_transfer_alpha = [
             float(value) for value in state.get(
-                "minimum_transfer_alpha", (1.0, 1.0),
+                "minimum_transfer_alpha", (1.0,) * refinement_depth,
             )
         ]
         maximum_raw_mass_mismatch = [
             float(value) for value in state.get(
-                "maximum_raw_mass_mismatch", (0.0, 0.0),
+                "maximum_raw_mass_mismatch", (0.0,) * refinement_depth,
             )
         ]
         maximum_raw_momentum_mismatch = [
             float(value) for value in state.get(
-                "maximum_raw_momentum_mismatch", (0.0, 0.0),
+                "maximum_raw_momentum_mismatch", (0.0,) * refinement_depth,
             )
         ]
         health_records = list(state.get("health_records", []))
@@ -974,7 +1027,7 @@ def run(args: argparse.Namespace) -> dict:
         del substep
         before = state
         collided = collide(state, tau, level)
-        if level < 2:
+        if level < refinement_depth:
             out = stream3d(collided)
             if level == 0:
                 if args.far_field_mode == "non_equilibrium_extrapolation":
@@ -1102,7 +1155,7 @@ def run(args: argparse.Namespace) -> dict:
             current_step,
             lattice_speed=args.lattice_speed,
             root_hull_length=args.hull_length,
-            levels=3,
+            levels=level_count,
         )
         ledgers = hierarchy.step(
             advance,
@@ -1251,8 +1304,12 @@ def run(args: argparse.Namespace) -> dict:
                     f"{maximum_interface_correction:.6g} > "
                     f"{args.maximum_reflux_applied_correction_fraction:.6g}",
                 )
-        if len(force_samples) != 4:
-            raise RuntimeError("three-level hierarchy must emit four finest force samples")
+        expected_force_samples = 2**refinement_depth
+        if len(force_samples) != expected_force_samples:
+            raise RuntimeError(
+                f"{level_count}-level hierarchy must emit "
+                f"{expected_force_samples} finest force samples",
+            )
         for index, ledger in enumerate(ledgers):
             maximum_reflux_residual[index] = max(
                 maximum_reflux_residual[index],
@@ -1633,7 +1690,7 @@ def run(args: argparse.Namespace) -> dict:
                     args.steps,
                     lattice_speed=args.lattice_speed,
                     root_hull_length=args.hull_length,
-                    levels=3,
+                    levels=level_count,
                 ),
             ],
             "initial_tau_by_level": list(initial_tau_by_level),
@@ -1659,12 +1716,12 @@ def run(args: argparse.Namespace) -> dict:
             ),
         },
         "planning": planning | {"measured_peak_allocated_gib": peak_gib},
-        "geometry": nested_geometry | {
+        "geometry": finest_geometry | {
             "resolution": geometry_resolution.to_dict(),
             "area_weighting": vars(area_diagnostics),
             "appendage_halfway_links": appendage_halfway_links,
-            "geometry_owner_level": 2,
-            "force_owner_level": 2,
+            "geometry_owner_level": refinement_depth,
+            "force_owner_level": refinement_depth,
         },
         "result": {
             "steps": step_records,
