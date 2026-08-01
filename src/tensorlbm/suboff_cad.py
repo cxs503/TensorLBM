@@ -729,6 +729,8 @@ def suboff_statistics(
         "stern_fraction": config.stern_fraction,
         "displacement_lu3": round(vol_bare, 2),
         "wetted_area_lu2": round(wetted_bare, 2),
+        "wetted_area_scope": "bare_hull_analytical_approximation",
+        "bare_hull_wetted_area_lu2": round(wetted_bare, 2),
         "prismatic_coefficient": round(float(cp), 4),
     }
 

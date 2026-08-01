@@ -648,7 +648,9 @@ from .spatial_convergence import (
     assess_spatial_convergence,
 )
 from .suboff_static_amr import (
+    SuboffGeometryResolution,
     SuboffStaticAMRPlan,
+    assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
     plan_suboff_static_amr,
 )
@@ -729,7 +731,9 @@ __all__ = [
     "run_amr_interface_validation",
     "SpatialConvergenceAssessment",
     "assess_spatial_convergence",
+    "SuboffGeometryResolution",
     "SuboffStaticAMRPlan",
+    "assess_suboff_geometry_resolution",
     "build_fine_suboff_mask",
     "plan_suboff_static_amr",
     "ControlVolumeForceResult",
