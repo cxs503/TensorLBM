@@ -245,6 +245,8 @@ def test_nested_smoke_dispatches_entropic_kbc_collision(tmp_path: Path) -> None:
     ))
 
     assert result["configuration"]["collision_model"] == "entropic_kbc"
+    assert result["acceptance"]["collision_viscosity_target_met"] is False
+    assert result["acceptance"]["single_grid_candidate"] is False
     assert result["result"]["finite"] is True
 
 
