@@ -19,11 +19,11 @@ def _record(length: int, resistance: float) -> dict:
             "nu_water": 1.004e-6,
             "cs_smag": 0.05,
             "wall_law": "musker",
-            "stress_exchange_distance": 1.0,
-            "inner_wall_margin": 4,
-            "inner_wake_cells": 8,
-            "cv_margin": 4,
-            "aux_cv_margins": "2,6",
+            "stress_exchange_distance": 0.0234375 * length,
+            "inner_wall_margin": length / 15.0,
+            "inner_wake_cells": 2.0 * length / 15.0,
+            "cv_margin": length / 15.0,
+            "aux_cv_margins": f"{length // 30},{length // 10}",
             "sponge_strength": 0.3,
             "far_field_mode": "non_equilibrium_extrapolation",
             "collision_model": "cumulant_smagorinsky",
@@ -102,7 +102,7 @@ def test_nested_three_grid_sequence_can_be_admitted() -> None:
     assert result["physical_validation"] is True
 
 
-def test_nested_convergence_fails_if_exchange_contract_changes() -> None:
+def test_nested_convergence_fails_if_scaled_exchange_distance_changes() -> None:
     records = [
         _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
         for length in (90, 120, 150)
@@ -112,7 +112,7 @@ def test_nested_convergence_fails_if_exchange_contract_changes() -> None:
 
     result = assess_suboff_nested_convergence(changed)
 
-    assert result["configuration_identity"]["identity_fields_equal"] is False
+    assert result["configuration_identity"]["scaled_configuration_invariant"] is False
     assert result["physical_validation"] is False
 
 
@@ -161,6 +161,21 @@ def test_nested_convergence_rejects_unscaled_viscosity_continuation() -> None:
         for length in (90, 120, 150)
     ]
     records[-1]["configuration"]["viscosity_ramp_end_step"] += 1
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["configuration_identity"]["scaled_configuration_invariant"] is False
+    assert result["physical_validation"] is False
+
+
+def test_nested_convergence_rejects_unscaled_inner_patch_geometry() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+    records[-1]["configuration"]["inner_wall_margin"] = (
+        records[-2]["configuration"]["inner_wall_margin"]
+    )
 
     result = assess_suboff_nested_convergence(records)
 

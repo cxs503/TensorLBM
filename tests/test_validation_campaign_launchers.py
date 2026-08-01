@@ -17,6 +17,7 @@ ROOT = Path(__file__).parents[1]
         ("run_suboff_v9_equivalent_level.sh", "L90"),
         ("run_suboff_nested_v3_equivalent_level.sh", "L90"),
         ("run_suboff_nested_v4_continuation_level.sh", "L90"),
+        ("run_suboff_nested_v10_scaled_level.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
         ("run_flat_plate_v4_equivalent_level.sh", "L256"),
@@ -128,3 +129,43 @@ def test_suboff_v9_launcher_uses_quadratic_inlet_pressure_observer(
     ] == "quadratic"
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-v9-equivalent-l120-16k.json" in output
+
+
+def test_nested_v10_launcher_scales_all_inner_physical_locations(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_nested_v10_scaled_level.sh"),
+            "L150",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--inner-wall-margin") + 1] == "15"
+    assert arguments[arguments.index("--inner-wake-cells") + 1] == "20"
+    assert arguments[arguments.index("--cv-margin") + 1] == "10"
+    assert arguments[arguments.index("--aux-cv-margins") + 1] == "5,15"
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
+        "3.515625"
+    )
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v10-equivalent-l150-20k.json" in output
