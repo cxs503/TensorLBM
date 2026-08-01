@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import math
+import os
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 import torch
@@ -50,9 +52,11 @@ def test_strouhal_estimator_recovers_synthetic_lift_frequency() -> None:
 
 
 def test_cylinder_cli_help() -> None:
+    source_root = Path(__file__).parents[1] / "src"
     completed = subprocess.run(
         [sys.executable, "examples/cylinder_bfl_cv_validate.py", "--help"],
         check=True, capture_output=True, text=True,
+        env=os.environ | {"PYTHONPATH": str(source_root)},
     )
     assert "--far-field-mode" in completed.stdout
 
