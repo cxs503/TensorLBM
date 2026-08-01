@@ -184,6 +184,7 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     health = result["result"]["population_health"][0]
     assert health["collision_resolved_reynolds"] == 2000.0
     assert len(health["collision_tau_by_level"]) == 3
+    assert health["wall_activation"] == 1.0
     assert health["target_reynolds_reached"] is True
     assert health["maximum_collision_limited_fraction"] == 0.0
     assert health["maximum_wall_sample_rejected_fraction"] == 0.0

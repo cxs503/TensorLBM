@@ -980,6 +980,9 @@ def run(args: argparse.Namespace) -> dict:
                 "step": current_step,
                 "collision_resolved_reynolds": instantaneous_reynolds,
                 "collision_tau_by_level": list(instantaneous_tau_by_level),
+                "wall_activation": smooth_ramp_factor(
+                    current_step, args.ramp_steps,
+                ),
                 "target_reynolds_reached": math.isclose(
                     instantaneous_reynolds,
                     args.resolved_reynolds,
