@@ -879,6 +879,19 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      separate audit are preserved locally and remotely.  The checkpoint auditor
      performs this expanded analysis because the process loaded the preceding
      stationarity module before those fields were added.
+102. The independent three-level SUBOFF smoke runner passes its first real CUDA
+     L120 allocation on the freed physical GPU1.  L0/L1/L2 contain 13,570,112
+     allocated cells versus 552,960,000 for a uniform 4x domain (97.55%
+     saving); measured peak is 7.808 GiB versus the deliberately conservative
+     11.918 GiB estimate.  Exact L2 CAD resolves length/diameter as 480/56.01
+     cells and owns all geometry and force.  At the first fully activated root
+     step, source-corrected CV and BFL-plus-wall-stress differ by 0.000286%,
+     the two reflux residuals are 7.28e-12 and 5.46e-12, no reflux direction or
+     population is limited, no wall sample is rejected, and all states remain
+     finite.  Mean exchange y+=1303, substantially below the one-level ~5750
+     but still above the 1000 planning target.  The startup resistance
+     magnitude is explicitly not assessed: this artifact admits allocation and
+     integration only, with accuracy/time/grid validation all false.
 
 ## Rejected candidates
 
