@@ -223,6 +223,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     6.57 cycles).  Thus startup-biased full-window averaging cannot be used to
     claim drag accuracy.  CV/BFL disagreement is only 0.00053% and density is
     stable; the queued D32 run tests spatial resolution at the same 25D width.
+36. The L512/exchange=6 Musker flat plate also passed every v2 single-grid
+    gate: `Cf=0.00466897` (0.395% below ITTC), 0.00147% block range, 0.00091%
+    trend, 0.0821% force-observer difference, no limiter and no rejected
+    samples.  Mean exchange `y+` is 566 (range 552–588), close to L256's 563
+    because `exchange_distance/L` is fixed; the two `Cf` values differ by
+    about 1.56%.  This is strong grid-consistency evidence, but v2 provenance
+    remains below the formal v3 multi-grid gate, whose rerun chain is active.
 
 ## Rejected candidates
 
