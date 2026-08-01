@@ -905,6 +905,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      difference from the 833 ideal prior is explained by the curved-link
      sampler's actual `max(exchange, y1+0.5)` distance.  As with L120, this is
      allocation/integration evidence only and makes no drag-accuracy claim.
+104. The fresh exact sphere R12 sequence completes 9600 steps with a declared
+     3200-step (8-convective-time) tail.  Cd_CV=1.14960034 and
+     Cd_BFL=1.14966316 differ by 0.00546%; eight block means span only 0.0221%,
+     trend is 0.0205% and the 95% half-width is 0.00652%.  It is numerically
+     admitted but correctly fails physical admission: error against
+     Schiller--Naumann is 5.30069%, just above the 5% gate.  Re-analysis of the
+     immutable tail gives 944-step integrated autocorrelation time, 3.39
+     effective samples and 0.00403% autocorrelation-adjusted standard error;
+     the residual 0.3007-point miss is therefore spatial/model bias, not mean
+     uncertainty.  Exact R15 has automatically started from a fresh state and
+     the cylinder sequence remains PID-gated behind it.
 
 ## Rejected candidates
 
