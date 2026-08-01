@@ -97,6 +97,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     However, `Cf=0.005212` is 11.19% above ITTC.  Collision-Re sensitivity is
     therefore material; a declared 20k/50k/100k sequence is used instead of
     selecting whichever numerical viscosity happens to match the correlation.
+19. The elongated L120 domain (1L upstream, 3L downstream; 72-cell outlet
+    sponge, no inlet sponge) still failed: 155.24 N mean, 77.62% error and
+    19.52% block range.  More importantly, the three force paths disagree:
+    CV total 155.24 N, BFL-link plus wall stress 200.56 N, and sampled surface
+    pressure plus wall stress 60.11 N (surface pressure −7.00 N).  No one of
+    these is promoted by proximity to experiment.  A curved moving-slip
+    boundary force ledger and nested-CV invariance test now precede further
+    SUBOFF accuracy claims.
 
 ## Rejected candidates
 
