@@ -117,6 +117,7 @@ health_interval=${TENSORLBM_HEALTH_INTERVAL:-$report}
 interface_filter_width=${TENSORLBM_INTERFACE_FILTER_WIDTH:-0}
 interface_filter_strength=${TENSORLBM_INTERFACE_FILTER_STRENGTH:-0}
 maximum_reflux_applied_correction_fraction=${TENSORLBM_MAXIMUM_REFLUX_APPLIED_CORRECTION_FRACTION:-0.001}
+cs_smag=${TENSORLBM_CS_SMAG:-0.05}
 stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1}
 wall_ramp_options=()
 if [[ -n ${TENSORLBM_WALL_NORMAL_RAMP_STEPS:-} ]]; then
@@ -149,6 +150,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --resolved-reynolds-start "$resolved_reynolds_start" \
   --viscosity-ramp-start-step "$viscosity_ramp_start" \
   --viscosity-ramp-end-step "$viscosity_ramp_end" \
+  --cs-smag "$cs_smag" \
   --wall-law musker --stress-exchange-distance "$stress_exchange_distance" \
   --sponge-width "$sponge" --sponge-strength 0.3 \
   --far-field-mode non_equilibrium_extrapolation \
