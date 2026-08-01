@@ -47,6 +47,7 @@
     ],
     "refinement_depth": 3,
     "level_count": 4,
+    "force_samples_per_root_step": 8,
     "outer_fine_shape": [
       46,
       46,
@@ -155,6 +156,25 @@
           "flux_stencil_outside_filter": true
         }
       ]
+    },
+    "geometry_resolution": {
+      "hull_type": "bare_hull",
+      "fine_hull_length_cells": 720.0,
+      "diameter_cells": 84.01400233372229,
+      "solid_cells": 3153517,
+      "bare_hull_cells": 3153517,
+      "sail_only_cells": 0,
+      "fin_only_cells": 0,
+      "sail_max_thickness_cells": null,
+      "vertical_fin_max_thickness_cells": null,
+      "horizontal_fin_max_thickness_cells": null,
+      "appendage_halfway_links": 0,
+      "minimum_convergence_diameter_cells": 16.0,
+      "minimum_absolute_reference_diameter_cells": 24.0,
+      "minimum_convergence_appendage_thickness_cells": 3,
+      "minimum_absolute_reference_appendage_thickness_cells": 4,
+      "convergence_member_resolved": true,
+      "absolute_reference_resolved": true
     }
   }
 }
