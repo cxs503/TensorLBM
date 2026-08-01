@@ -1,0 +1,55 @@
+{
+  "schema": "tensorlbm-amr-interface-validation-v1",
+  "configuration": {
+    "shape_zyx": [
+      20,
+      24,
+      40
+    ],
+    "box": {
+      "x0": 14,
+      "x1": 28,
+      "y0": 5,
+      "y1": 19,
+      "z0": 4,
+      "z1": 16
+    },
+    "tau_coarse": 0.56,
+    "tau_fine": 0.6200000000000001,
+    "velocity_x": 0.04,
+    "perturbation": 0.001,
+    "pulse_radius": 2.5,
+    "steps": 100,
+    "device": "cpu"
+  },
+  "mesh": {
+    "allocated_cells": 42600,
+    "uniform_fine_cells": 153600,
+    "saving_fraction": 0.72265625
+  },
+  "result": {
+    "density_rms_global_amr": 5.462299668579362e-06,
+    "density_rms_global_coarse": 5.834715921082534e-06,
+    "density_rms_refined_amr": 4.351925781520549e-06,
+    "density_rms_refined_coarse": 4.565247309074039e-06,
+    "density_rms_interface_amr": 5.130582849233178e-06,
+    "density_rms_interface_coarse": 5.495636287378147e-06,
+    "velocity_x_rms_refined_amr": 2.2342376269079978e-06,
+    "velocity_x_rms_refined_coarse": 2.190709437854821e-06,
+    "relative_mass_drift": 3.0517180765875443e-07,
+    "minimum_population": 0.024575723335146904,
+    "maximum_reflux_population_residual": 1.4551915228366852e-11,
+    "maximum_limited_directions": 0,
+    "finite": true,
+    "refined_to_coarse_density_error_ratio": 0.953272733521033,
+    "refined_to_coarse_velocity_x_error_ratio": 1.019869448819192
+  },
+  "acceptance": {
+    "relative_mass_drift_target": 1e-05,
+    "maximum_reflux_population_residual": 1e-06,
+    "refined_region_improves_density": true,
+    "maximum_velocity_error_ratio": 1.05,
+    "refined_region_velocity_not_materially_worse": true,
+    "admitted": true
+  }
+}
