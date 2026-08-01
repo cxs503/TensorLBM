@@ -99,6 +99,12 @@ def parser() -> argparse.ArgumentParser:
         help="root-step cadence for per-level population/rho/speed diagnostics; 0 disables",
     )
     result.add_argument(
+        "--maximum-health-speed",
+        type=float,
+        default=0.3,
+        help="fail-closed peak lattice-speed limit at health cadence",
+    )
+    result.add_argument(
         "--regularize-restriction",
         action="store_true",
         help="filter fine-to-coarse transfer to resolved second-order stress",
@@ -157,6 +163,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("checkpoint interval must be non-negative")
     if args.health_interval < 0:
         raise ValueError("health interval must be non-negative")
+    if not args.lattice_speed < args.maximum_health_speed < 1.0:
+        raise ValueError("maximum health speed must lie between inlet speed and one")
     if not 0 <= args.warmup_steps < args.steps:
         raise ValueError("warmup steps must lie in [0, steps)")
     if not 0 <= args.statistics_window_steps <= args.steps - args.warmup_steps:
@@ -239,6 +247,14 @@ def run(args: argparse.Namespace) -> dict:
         ),
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
         "nested_fine_shape": list(nested_plan.fine_physical_shape),
+        "wall_buffer_parent_cells": nested_plan.wall_buffer_parent_cells,
+        "wall_buffer_finest_cells": nested_plan.wall_buffer_finest_cells,
+        "downstream_buffer_parent_cells": (
+            nested_plan.downstream_buffer_parent_cells
+        ),
+        "downstream_buffer_finest_cells": (
+            nested_plan.downstream_buffer_finest_cells
+        ),
         "total_allocated_cells": nested_plan.total_allocated_cells,
         "uniform_finest_cells": nested_plan.uniform_finest_cells,
         "cell_saving_fraction": nested_plan.cell_saving_fraction,
@@ -709,6 +725,17 @@ def run(args: argparse.Namespace) -> dict:
             if not all(record["finite"] for record in level_health):
                 raise FloatingPointError(
                     f"non-finite hierarchy state at root_step={current_step}",
+                )
+            peak_speed = max(
+                float(record["maximum_speed"])
+                for record in level_health
+                if record["maximum_speed"] is not None
+            )
+            if peak_speed > args.maximum_health_speed:
+                raise FloatingPointError(
+                    "hierarchy exceeded the weakly-compressible speed gate "
+                    f"at root_step={current_step}: {peak_speed:.6g} > "
+                    f"{args.maximum_health_speed:.6g}",
                 )
         if len(force_samples) != 4:
             raise RuntimeError("three-level hierarchy must emit four finest force samples")

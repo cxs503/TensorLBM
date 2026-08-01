@@ -264,6 +264,10 @@ class SuboffNestedStaticAMRPlan:
     cell_saving_fraction: float
     effective_hull_length_cells: float
     effective_diameter_cells: float
+    wall_buffer_parent_cells: int
+    wall_buffer_finest_cells: int
+    downstream_buffer_parent_cells: int
+    downstream_buffer_finest_cells: int
 
     def estimated_peak_gib(self, bytes_per_cell: float = 943.0) -> float:
         return self.total_allocated_cells * bytes_per_cell / 2**30
@@ -430,6 +434,10 @@ def plan_nested_suboff_static_amr(
         cell_saving_fraction=1.0 - total / uniform,
         effective_hull_length_cells=effective_length,
         effective_diameter_cells=effective_length / 8.57,
+        wall_buffer_parent_cells=wall_margin,
+        wall_buffer_finest_cells=wall_margin * ratio,
+        downstream_buffer_parent_cells=wall_margin + wake_cells,
+        downstream_buffer_finest_cells=(wall_margin + wake_cells) * ratio,
     )
 
 
