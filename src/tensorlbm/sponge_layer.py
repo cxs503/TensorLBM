@@ -11,6 +11,8 @@ implementations, with a C2-continuous fifth-order strength ramp.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import torch
 
 
@@ -54,6 +56,29 @@ def build_sponge_sigma_3d(
     return sigma
 
 
+def build_anisotropic_sponge_sigma_3d(
+    shape: tuple[int, int, int],
+    *,
+    face_widths: Mapping[str, int],
+    max_strength: float = 0.2,
+    device: torch.device | str = "cpu",
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
+    """Build a sponge with an independent thickness on each selected face."""
+    sigma = torch.zeros(shape, device=device, dtype=dtype)
+    for face, width in face_widths.items():
+        if width < 0:
+            raise ValueError("sponge face widths must be non-negative")
+        if width == 0:
+            continue
+        face_sigma = build_sponge_sigma_3d(
+            shape, width=width, max_strength=max_strength,
+            device=device, dtype=dtype, faces=(face,),
+        )
+        sigma = torch.maximum(sigma, face_sigma)
+    return sigma
+
+
 def apply_equilibrium_difference_sponge(
     f: torch.Tensor,
     sigma: torch.Tensor,
@@ -87,6 +112,7 @@ def apply_equilibrium_difference_sponge(
 
 __all__ = [
     "apply_equilibrium_difference_sponge",
+    "build_anisotropic_sponge_sigma_3d",
     "build_sponge_sigma_3d",
     "smoothstep5",
 ]
