@@ -35,7 +35,7 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
     assert math.isfinite(result["cd_control_volume"])
     assert math.isfinite(result["cd_bfl_link"])
     assert result["drag_stationarity"]["sufficiently_sampled"] is False
-    assert artifact["schema"] == "tensorlbm-cylinder-bfl-control-volume-v2"
+    assert artifact["schema"] == "tensorlbm-cylinder-bfl-control-volume-v3"
 
 
 def test_strouhal_estimator_recovers_synthetic_lift_frequency() -> None:
@@ -75,7 +75,7 @@ def test_cylinder_checkpoint_can_resume(tmp_path) -> None:
     ))
     assert checkpoint.exists()
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
-    assert state["schema"] == "tensorlbm-cylinder-checkpoint-v2"
+    assert state["schema"] == "tensorlbm-cylinder-checkpoint-v3"
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
     with pytest.raises(ValueError, match="configuration"):

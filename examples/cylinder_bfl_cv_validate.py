@@ -33,6 +33,8 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--checkpoint-interval", type=int, default=5000)
     p.add_argument("--checkpoint", default=None)
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--statistics-window-steps", type=int, default=0)
+    p.add_argument("--minimum-shedding-cycles", type=float, default=8.0)
     p.add_argument(
         "--far-field-mode",
         choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),
@@ -55,6 +57,8 @@ def main() -> None:
         report_interval=args.report_interval,
         checkpoint_interval=args.checkpoint_interval,
         checkpoint_path=args.checkpoint, resume=args.resume,
+        statistics_window_steps=args.statistics_window_steps,
+        minimum_shedding_cycles=args.minimum_shedding_cycles,
         far_field_mode=args.far_field_mode, device=args.device,
     )
     result = run_cylinder_bfl_control_volume(config)
