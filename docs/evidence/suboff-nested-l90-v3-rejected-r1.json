@@ -1,0 +1,29 @@
+{
+  "schema": "tensorlbm-suboff-nested-result-evidence-v1",
+  "status": "rejected",
+  "result": {
+    "mean_resistance_n": 96.7900258652709,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 10.743736687952973,
+    "stationarity_relative_range_pct": 93.72722853518233,
+    "stationarity_confidence95_half_width_pct": 25.599865823813136,
+    "maximum_auxiliary_cv_difference_pct": 0.02963562872470721,
+    "surface_observer_difference_pct": 25.84438999696913,
+    "maximum_positivity_limited_fraction": 0.006000982042648709,
+    "maximum_reflux_residual": 1.1920928955078125e-7
+  },
+  "provenance": {
+    "result": "suboff-nested-v3-equivalent-l90-12k.json",
+    "result_sha256": "73660fae62d4930db6d65e99eeb30f558d1ac21c7263f4df7ab4653a51e667ad",
+    "log": "suboff-nested-v3-equivalent-l90-12k.log",
+    "log_sha256": "ceb8745b7b48e921fa9e9627773357535ec177081074146a24b9e1ff44cd0ddf"
+  },
+  "force_evidence_eligible": false,
+  "rejection_reasons": [
+    "reference error exceeds five percent",
+    "force time series is non-stationary",
+    "surface observer fails independence target",
+    "positivity limiting exceeds the production threshold",
+    "the legacy run has no cadence-resolved population-health record"
+  ]
+}
