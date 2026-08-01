@@ -8,11 +8,16 @@ from tensorlbm.nested_health_comparison import (
 )
 
 
-def _record(step: int, speed: float, population: float) -> dict:
+def _record(
+    step: int,
+    speed: float,
+    population: float,
+    limiter: float = 0.0,
+) -> dict:
     return {
         "step": step,
         "target_reynolds_reached": step >= 2,
-        "maximum_collision_limited_fraction": 0.0,
+        "maximum_collision_limited_fraction": limiter,
         "levels": [{
             "finite": True,
             "maximum_speed": speed,
@@ -51,6 +56,38 @@ def test_comparison_aligns_steps_and_reports_worst_and_latest_ratios() -> None:
     assert comparison["candidate_maximum_speed"] == pytest.approx(0.12)
     assert comparison["latest_candidate_to_baseline_speed_ratio"] == pytest.approx(0.6)
     assert comparison["candidate_minimum_population"] == pytest.approx(0.018)
+
+
+def test_comparison_reports_aligned_instability_onset() -> None:
+    baseline = [
+        _record(1, 0.09, 0.02),
+        _record(2, 0.11, 1.0e-9, limiter=1.0e-5),
+        _record(3, 0.16, 1.0e-9, limiter=1.0e-5),
+    ]
+    candidate = [
+        _record(1, 0.08, 0.02),
+        _record(2, 0.09, 0.01),
+        _record(3, 0.12, 0.005),
+    ]
+
+    onset = compare_nested_health(baseline, candidate)["instability_onset"]
+
+    assert onset["speed_threshold_steps"]["0.1"] == {
+        "baseline": 2,
+        "candidate": 3,
+    }
+    assert onset["speed_threshold_steps"]["0.15"] == {
+        "baseline": 3,
+        "candidate": None,
+    }
+    assert onset["population_at_or_below_1e-8_step"] == {
+        "baseline": 2,
+        "candidate": None,
+    }
+    assert onset["collision_limiter_step"] == {
+        "baseline": 2,
+        "candidate": None,
+    }
 
 
 def test_comparison_requires_a_common_step() -> None:

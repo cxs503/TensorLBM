@@ -4,7 +4,10 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _PREFIX = "nested health "
 
@@ -85,6 +88,27 @@ def compare_nested_health(
     baseline_populations = values("baseline", "minimum_population")
     candidate_populations = values("candidate", "minimum_population")
     latest = aligned[-1]
+
+    def first_step(
+        side: str,
+        metric: str,
+        predicate: Callable[[float], bool],
+    ) -> int | None:
+        for item in aligned:
+            value = item[side][metric]
+            if value is not None and predicate(float(value)):
+                return int(item["step"])
+        return None
+
+    speed_threshold_steps = {
+        str(threshold): {
+            side: first_step(
+                side, "maximum_speed", lambda value, limit=threshold: value >= limit,
+            )
+            for side in ("baseline", "candidate")
+        }
+        for threshold in (0.1, 0.15, 0.3)
+    }
     return {
         "schema": "tensorlbm-nested-health-comparison-v1",
         "common_step_count": len(common_steps),
@@ -97,6 +121,23 @@ def compare_nested_health(
         "latest_candidate_to_baseline_speed_ratio": latest[
             "candidate_to_baseline_speed_ratio"
         ],
+        "instability_onset": {
+            "speed_threshold_steps": speed_threshold_steps,
+            "population_at_or_below_1e-8_step": {
+                side: first_step(
+                    side, "minimum_population", lambda value: value <= 1.0e-8,
+                )
+                for side in ("baseline", "candidate")
+            },
+            "collision_limiter_step": {
+                side: first_step(
+                    side,
+                    "maximum_collision_limited_fraction",
+                    lambda value: value > 0.0,
+                )
+                for side in ("baseline", "candidate")
+            },
+        },
         "aligned_steps": aligned,
     }
 
