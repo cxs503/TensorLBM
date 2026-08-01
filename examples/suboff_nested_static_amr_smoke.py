@@ -42,6 +42,7 @@ from tensorlbm.entropic_kbc import collide_kbc_d3q19
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
+from tensorlbm.kinetic_flux_register import conserved_population_moments
 from tensorlbm.population_health import inspect_population_health
 from tensorlbm.population_positivity import (
     PositivityDiagnostics,
@@ -611,6 +612,8 @@ def run(args: argparse.Namespace) -> dict:
     maximum_reflux_limited_directions = [0, 0]
     maximum_transfer_limited_fraction = [0.0, 0.0]
     minimum_transfer_alpha = [1.0, 1.0]
+    maximum_raw_mass_mismatch = [0.0, 0.0]
+    maximum_raw_momentum_mismatch = [0.0, 0.0]
     maximum_rejected_fraction = 0.0
     health_records: list[dict] = []
 
@@ -706,6 +709,16 @@ def run(args: argparse.Namespace) -> dict:
                 "minimum_transfer_alpha", (1.0, 1.0),
             )
         ]
+        maximum_raw_mass_mismatch = [
+            float(value) for value in state.get(
+                "maximum_raw_mass_mismatch", (0.0, 0.0),
+            )
+        ]
+        maximum_raw_momentum_mismatch = [
+            float(value) for value in state.get(
+                "maximum_raw_momentum_mismatch", (0.0, 0.0),
+            )
+        ]
         health_records = list(state.get("health_records", []))
 
     def save_checkpoint(step: int) -> None:
@@ -726,6 +739,8 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_rejected_fraction": maximum_rejected_fraction,
             "maximum_transfer_limited_fraction": maximum_transfer_limited_fraction,
             "minimum_transfer_alpha": minimum_transfer_alpha,
+            "maximum_raw_mass_mismatch": maximum_raw_mass_mismatch,
+            "maximum_raw_momentum_mismatch": maximum_raw_momentum_mismatch,
             "health_records": health_records,
         }, args.checkpoint)
 
@@ -902,6 +917,17 @@ def run(args: argparse.Namespace) -> dict:
             advance,
             tau_by_level=instantaneous_tau_by_level,
         )
+        raw_mismatch_moments = []
+        for ledger in ledgers:
+            if ledger.raw_kinetic_mismatch is None:
+                raise RuntimeError("nested reflux ledger omitted raw kinetic mismatch")
+            raw_mass, raw_momentum = conserved_population_moments(
+                ledger.raw_kinetic_mismatch,
+            )
+            raw_mismatch_moments.append((
+                abs(float(raw_mass)),
+                float(torch.linalg.vector_norm(raw_momentum)),
+            ))
         if args.health_interval and current_step % args.health_interval == 0:
             level_health = [
                 inspect_population_health(populations).to_dict()
@@ -915,8 +941,10 @@ def run(args: argparse.Namespace) -> dict:
                         ledger.restriction_limited_fraction
                     ),
                     "restriction_minimum_alpha": ledger.restriction_minimum_alpha,
+                    "raw_mass_mismatch": raw_mismatch_moments[index][0],
+                    "raw_momentum_mismatch_norm": raw_mismatch_moments[index][1],
                 }
-                for ledger in ledgers
+                for index, ledger in enumerate(ledgers)
             ]
             finest_peak_index = level_health[-1]["maximum_speed_index_zyx"]
             finest_peak_context = None
@@ -1002,6 +1030,14 @@ def run(args: argparse.Namespace) -> dict:
             minimum_transfer_alpha[index] = min(
                 minimum_transfer_alpha[index],
                 ledger.restriction_minimum_alpha,
+            )
+            maximum_raw_mass_mismatch[index] = max(
+                maximum_raw_mass_mismatch[index],
+                raw_mismatch_moments[index][0],
+            )
+            maximum_raw_momentum_mismatch[index] = max(
+                maximum_raw_momentum_mismatch[index],
+                raw_mismatch_moments[index][1],
             )
         cv_mean = sum(item["cv"] for item in force_samples) / 4.0
         bfl_mean = sum(item["bfl"] for item in force_samples) / 4.0
@@ -1357,6 +1393,12 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_transfer_limited_fraction
             ),
             "minimum_transfer_alpha_by_interface": minimum_transfer_alpha,
+            "maximum_raw_mass_mismatch_by_interface": (
+                maximum_raw_mass_mismatch
+            ),
+            "maximum_raw_momentum_mismatch_by_interface": (
+                maximum_raw_momentum_mismatch
+            ),
             "maximum_positivity_limited_fraction": maximum_limiter_fraction,
             "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
             "finite": finite,
