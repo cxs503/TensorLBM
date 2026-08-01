@@ -133,6 +133,23 @@ def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
     clearance = result["planning"]["control_volume_interface_clearance"]
     assert clearance["all_flux_stencils_outside_filter"] is True
     assert len(clearance["volumes"]) == 3
+    resolution = result["planning"]["geometry_resolution"]
+    assert resolution["hull_type"] == "bare_hull"
+    assert resolution["diameter_cells"] == pytest.approx(96.0 / 8.57)
+
+
+def test_nested_aff8_preflight_measures_appendage_resolution(
+    tmp_path: Path,
+) -> None:
+    result = MODULE.run(_args(
+        tmp_path, steps=1, preflight=True, hull_type="full",
+    ))
+
+    resolution = result["planning"]["geometry_resolution"]
+    assert resolution["hull_type"] == "full"
+    assert resolution["appendage_halfway_links"] > 0
+    assert resolution["sail_only_cells"] > 0
+    assert resolution["fin_only_cells"] > 0
 
 
 def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -> None:

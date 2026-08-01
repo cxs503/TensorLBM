@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import torch
 
+from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.suboff_cad import build_suboff_mask
 from tensorlbm.suboff_static_amr import (
+    apply_suboff_appendage_halfway_links,
     assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
+    count_suboff_appendage_boundary_links,
     plan_suboff_static_amr,
 )
 
@@ -129,3 +132,48 @@ def test_aff8_resolution_fails_closed_without_boundary_links() -> None:
     assert assessment.absolute_reference_resolved is True
     assert missing.convergence_member_resolved is False
     assert missing.absolute_reference_resolved is False
+
+
+def test_aff8_geometry_only_boundary_link_count_is_positive() -> None:
+    length = 240.0
+    nx = int(length + 40)
+    ny = nz = int(length * 0.28) + 10
+    center = (nx / 2.0, ny / 2.0, nz / 2.0)
+    masks = {
+        hull_type: build_suboff_mask(
+            hull_type, nx, ny, nz,
+            cx=center[0], cy=center[1], cz=center[2], length=length,
+        )[0]
+        for hull_type in ("bare_hull", "full")
+    }
+
+    count = count_suboff_appendage_boundary_links(
+        masks["full"], masks["bare_hull"],
+    )
+
+    assert count > 0
+
+
+def test_geometry_only_appendage_link_count_matches_runtime_treatment() -> None:
+    nx, ny, nz, length = 120, 40, 40, 80.0
+    center = (nx / 2.0, ny / 2.0, nz / 2.0)
+    bare = build_suboff_mask(
+        "bare_hull", nx, ny, nz,
+        cx=center[0], cy=center[1], cz=center[2], length=length,
+    )[0]
+    full = build_suboff_mask(
+        "full", nx, ny, nz,
+        cx=center[0], cy=center[1], cz=center[2], length=length,
+    )[0]
+    link_mask, q = compute_q_suboff(
+        nx, ny, nz, *center, length,
+        hull_type="full", solid_mask=full,
+    )
+
+    preflight_count = count_suboff_appendage_boundary_links(full, bare)
+    runtime_count = apply_suboff_appendage_halfway_links(
+        full, link_mask, q, center=center, length=length,
+    )
+
+    assert preflight_count > 0
+    assert runtime_count == preflight_count

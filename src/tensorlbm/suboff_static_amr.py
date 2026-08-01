@@ -19,6 +19,51 @@ MIN_CONVERGENCE_APPENDAGE_THICKNESS_CELLS = 3
 MIN_ABSOLUTE_REFERENCE_APPENDAGE_THICKNESS_CELLS = 4
 
 
+def count_suboff_appendage_boundary_links(
+    solid: torch.Tensor,
+    bare_hull: torch.Tensor,
+) -> int:
+    """Count fluid-to-voxel-appendage links without allocating a Q field.
+
+    This is the geometry-only counterpart of
+    :func:`apply_suboff_appendage_halfway_links`.  It lets a cold preflight
+    prove that AFF-8 sail/fin voxels expose actual boundary links before the
+    population hierarchy and the D3Q19 link-distance field are allocated.
+    """
+    if (
+        solid.ndim != 3
+        or solid.dtype is not torch.bool
+        or bare_hull.shape != solid.shape
+        or bare_hull.dtype is not torch.bool
+        or bare_hull.device != solid.device
+    ):
+        raise ValueError("solid and bare_hull must be matching 3-D bool tensors")
+    if bool((bare_hull & ~solid).any()):
+        raise ValueError("bare_hull must be a subset of solid")
+    touches_boundary = (
+        bool(solid[0].any()) or bool(solid[-1].any())
+        or bool(solid[:, 0].any()) or bool(solid[:, -1].any())
+        or bool(solid[:, :, 0].any()) or bool(solid[:, :, -1].any())
+    )
+    if touches_boundary:
+        raise ValueError("SUBOFF geometry must be interior for link counting")
+
+    from .d3q19 import C
+
+    fluid = ~solid
+    count = 0
+    for direction in range(1, 19):
+        dcx, dcy, dcz = (int(value) for value in C[direction].tolist())
+        full_neighbor = torch.roll(
+            solid, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+        )
+        bare_neighbor = torch.roll(
+            bare_hull, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+        )
+        count += int((fluid & full_neighbor & ~bare_neighbor).sum().item())
+    return count
+
+
 def apply_suboff_appendage_halfway_links(
     solid: torch.Tensor,
     link_mask: torch.Tensor,
