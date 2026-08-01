@@ -164,6 +164,12 @@ def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -
     assert result["geometry"]["geometry_owner_level"] == 3
     assert result["geometry"]["force_owner_level"] == 3
     assert result["configuration"]["force_samples_per_root_step"] == 8
+    assert result["result"]["force_sample_aggregation"] == {
+        "refinement_depth": 3,
+        "expected_samples": 8,
+        "observed_samples": 8,
+        "uniform_sample_count_met": True,
+    }
     assert len(result["result"]["maximum_reflux_residual_by_interface"]) == 3
     assert len(checkpoint["level_populations"]) == 4
     assert len(checkpoint["level_solid_masks"]) == 4
