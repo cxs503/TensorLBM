@@ -200,6 +200,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     with mean 563.  This replaces the grid-dependent first-cell candidate but
     remains a single-grid result until L384/L512 establish spatial convergence
     and the streamwise stress distribution is audited.
+33. Extending R14 sphere from 5000 to 8000 steps gives a full post-2500 mean
+    `Cd=1.15145`, still rejected at 5.47% reference error and 1.25% trend.
+    A separately audited final-3000 window is stationary (0.169% block range,
+    0.161% trend) with 0.00581% CV/BFL disagreement, but `Cd=1.14776` remains
+    5.132% above Schiller–Naumann.  The late window is not substituted for the
+    declared full window; it identifies a small residual spatial/model bias
+    for the running R15 point to resolve.
 
 ## Rejected candidates
 
