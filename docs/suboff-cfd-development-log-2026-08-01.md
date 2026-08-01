@@ -697,6 +697,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     just-started v7 L90/L150 jobs were stopped before their first report and
     are superseded; the original v6 L120 continues naturally.  Fifty focused
     BFL, wall, flat-plate, AMR, convergence and launcher tests pass.
+85. Remote v8 preflight imports the intended checkout explicitly, then the
+    corrected campaign starts cleanly: L90 is PID 1446335 on physical GPU1,
+    L150 is PID 1446431 on physical GPU3, and the L120 launcher waits on the
+    still-running v6 L120 PID 1428395 before taking physical GPU2.  v7 startup
+    logs are retained with `superseded-force-frame` names; no v7 result is
+    eligible for the v8 convergence assessor.
 
 ## Rejected candidates
 
