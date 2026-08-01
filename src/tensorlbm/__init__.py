@@ -667,6 +667,11 @@ from .population_positivity import (
     PositivityDiagnostics,
     limit_nonequilibrium_for_positivity,
 )
+from .sphere_bfl_control_volume import (
+    SphereBFLControlVolumeConfig,
+    run_sphere_bfl_control_volume,
+    schiller_naumann_cd,
+)
 
 __all__ = [
     "__version__",
@@ -706,6 +711,9 @@ __all__ = [
     "smoothstep5",
     "PositivityDiagnostics",
     "limit_nonequilibrium_for_positivity",
+    "SphereBFLControlVolumeConfig",
+    "run_sphere_bfl_control_volume",
+    "schiller_naumann_cd",
     # D2Q9 lattice
     "C",
     "W",
