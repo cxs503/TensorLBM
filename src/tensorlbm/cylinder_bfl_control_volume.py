@@ -139,7 +139,7 @@ def run_cylinder_bfl_control_volume(
     sigma = build_sponge_sigma_3d(
         shape, width=config.sponge_width,
         max_strength=config.sponge_strength, device=device,
-        faces=("x-", "x+", "y-", "y+"),
+        faces=("x+", "y-", "y+"),
     )
     forces: list[float] = []
     bfl_forces: list[float] = []

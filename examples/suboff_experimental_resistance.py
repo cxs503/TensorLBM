@@ -170,7 +170,11 @@ def run_case(args: argparse.Namespace) -> dict:
     resolved_re = args.resolved_reynolds if args.resolved_reynolds > 0 else re
     collision_nu_lu = args.lattice_speed * length_lu / resolved_re
     tau = 0.5 + 3.0 * collision_nu_lu
-    cx, cy, cz = args.nx * 0.35, args.ny / 2.0, args.nz / 2.0
+    cx, cy, cz = args.nx * args.center_x_fraction, args.ny / 2.0, args.nz / 2.0
+    if not 0.0 < args.center_x_fraction < 1.0:
+        raise ValueError("center-x-fraction must lie in (0,1)")
+    if cx - length_lu / 2.0 <= 1 or cx + length_lu / 2.0 >= args.nx - 1:
+        raise ValueError("SUBOFF hull does not fit inside the streamwise domain")
     tag = f"[{args.hull_type} L={length_lu:g} Re={re:.4e}]"
 
     print(
@@ -248,9 +252,13 @@ def run_case(args: argparse.Namespace) -> dict:
         device=device,
     )
     if args.sponge_mode == "equilibrium_difference":
+        sponge_faces = ("x+", "y-", "y+", "z-", "z+")
+        if args.sponge_inlet:
+            sponge_faces = ("x-",) + sponge_faces
         sponge = build_sponge_sigma_3d(
             (args.nz, args.ny, args.nx), width=args.sponge_width,
             max_strength=args.sponge_strength, device=device,
+            faces=sponge_faces,
         )
     else:
         sponge = build_far_field_sponge(
@@ -469,6 +477,7 @@ def run_case(args: argparse.Namespace) -> dict:
         "configuration": {
             "hull_type": args.hull_type, "device": str(device),
             "grid_nx_ny_nz": [args.nx, args.ny, args.nz],
+            "center_x_fraction": args.center_x_fraction,
             "hull_length_lu": length_lu, "hull_radius_lu": radius_lu,
             "dx_m": dx_m, "reynolds_number": re,
             "lattice_speed": args.lattice_speed, "wall_nu_lu": nu_lu,
@@ -513,6 +522,7 @@ def run_case(args: argparse.Namespace) -> dict:
             "sponge_width": args.sponge_width,
             "sponge_strength": args.sponge_strength,
             "sponge_mode": args.sponge_mode,
+            "sponge_inlet_enabled": args.sponge_inlet,
             "far_field_mode": args.far_field_mode,
             "steps_requested": args.steps, "steps_completed": completed,
             "wall_activation_ramp_steps": (
@@ -582,6 +592,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--device", default="cuda:0")
     p.add_argument("--nx", type=int, default=200); p.add_argument("--ny", type=int, default=80); p.add_argument("--nz", type=int, default=80)
     p.add_argument("--hull-length", type=float, default=80.0)
+    p.add_argument("--center-x-fraction", type=float, default=0.35)
     p.add_argument("--steps", type=int, default=5000)
     p.add_argument("--average-window", type=int, default=500)
     p.add_argument("--report-interval", type=int, default=250)
@@ -613,6 +624,10 @@ def parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--sponge-width", type=int, default=12)
     p.add_argument("--sponge-strength", type=float, default=0.2)
+    p.add_argument(
+        "--sponge-inlet", action="store_true",
+        help="Also damp the prescribed inlet; disabled by default to avoid upstream reflection.",
+    )
     p.add_argument(
         "--sponge-mode",
         choices=("equilibrium_difference", "legacy_distribution_blend"),
