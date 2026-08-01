@@ -50,12 +50,12 @@ from tensorlbm.static_block_amr import (
     StaticBlockAMR3D,
     StaticBlockAMRConfig,
 )
-from tensorlbm.surface_area_weights import bfl_surface_area_weights
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import (
     build_fine_suboff_mask,
     plan_suboff_static_amr,
 )
+from tensorlbm.surface_area_weights import bfl_surface_area_weights
 from tensorlbm.turbulence import (
     collide_smagorinsky_mrt3d,
     collide_wale_mrt3d,
@@ -598,6 +598,10 @@ def run(args: argparse.Namespace) -> dict:
     )
     limiter_acceptable = maximum_positivity_limited_fraction <= 1e-3
     reflux_acceptable = maximum_reflux_population_residual <= 1e-6
+    surface_area_acceptable = (
+        surface_area_diagnostics.unweighted_nodes == 0
+        and surface_area_diagnostics.calibrated_area > 0.0
+    )
     finite = (
         bool(torch.isfinite(amr.coarse_f).all())
         and bool(torch.isfinite(amr.fine_f).all())
@@ -612,6 +616,7 @@ def run(args: argparse.Namespace) -> dict:
         and limiter_acceptable
         and reflux_acceptable
         and wall_sampling_acceptable
+        and surface_area_acceptable
     )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30 if device.type == "cuda" else None
@@ -727,6 +732,7 @@ def run(args: argparse.Namespace) -> dict:
             "limiter_target_met": limiter_acceptable,
             "reflux_target_met": reflux_acceptable,
             "wall_sampling_target_met": wall_sampling_acceptable,
+            "surface_area_target_met": surface_area_acceptable,
             "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
             "single_grid_admitted": single_grid_admitted,
             "physical_validation": False,

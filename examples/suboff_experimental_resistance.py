@@ -781,6 +781,15 @@ def run_case(args: argparse.Namespace) -> dict:
         if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}
         else True
     )
+    surface_area_acceptable = (
+        surface_area_diagnostics is not None
+        and surface_area_diagnostics.unweighted_nodes == 0
+        and surface_area_diagnostics.calibrated_area > 0.0
+    )
+    production_boundary_acceptable = (
+        args.boundary == "bfl_wall_model"
+        and force_method == "control_volume"
+    )
     result = {
         "schema": "tensorlbm-suboff-experimental-resistance-v4",
         "status": "measured_candidate" if finite else "failed",
@@ -969,6 +978,8 @@ def run_case(args: argparse.Namespace) -> dict:
             "nested_control_volume_target_met": (
                 nested_cv_assessment.meets(1.0, minimum_auxiliary_count=2)
             ),
+            "surface_area_target_met": surface_area_acceptable,
+            "production_boundary_target_met": production_boundary_acceptable,
             "admitted": (
                 error_pct <= args.error_target
                 and force_stationarity.meets(args.drift_target)
@@ -976,6 +987,8 @@ def run_case(args: argparse.Namespace) -> dict:
                 and nested_cv_assessment.meets(
                     1.0, minimum_auxiliary_count=2,
                 )
+                and surface_area_acceptable
+                and production_boundary_acceptable
                 and finite
             ),
             "claim_boundary": (
@@ -1045,8 +1058,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--boundary",
         choices=("bfl_spalding", "bfl_wall_model", "bfl_wall", "projected_wall", "legacy_wall"),
-        default="bfl_spalding",
-        help="bfl_spalding is the exchange-location validation path; other modes are diagnostics.",
+        default="bfl_wall_model",
+        help=(
+            "bfl_wall_model is the production BFL+exchange-stress path; "
+            "other modes are diagnostics."
+        ),
     )
     p.add_argument("--sponge-width", type=int, default=12)
     p.add_argument(
