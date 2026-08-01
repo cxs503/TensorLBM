@@ -35,6 +35,7 @@ from tensorlbm.drag_pressure import (
     drag_pressure_integration,
     get_near_wall_3d,
 )
+from tensorlbm.entropic_kbc import collide_kbc_d3q19
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
@@ -129,6 +130,12 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--rho-water", type=float, default=998.2)
     result.add_argument("--nu-water", type=float, default=1.004e-6)
     result.add_argument("--cs-smag", type=float, default=0.05)
+    result.add_argument(
+        "--collision-model",
+        choices=("cumulant_smagorinsky", "entropic_kbc"),
+        default="cumulant_smagorinsky",
+    )
+    result.add_argument("--kbc-max-iterations", type=int, default=12)
     result.add_argument("--wall-law", choices=("musker", "reichardt", "log"), default="musker")
     result.add_argument(
         "--disable-wall-stress",
@@ -164,6 +171,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("stress exchange distance must be positive")
     if args.memory_bytes_per_cell <= 0.0:
         raise ValueError("memory bytes per cell must be positive")
+    if args.kbc_max_iterations < 2:
+        raise ValueError("KBC maximum iterations must be at least two")
     if args.checkpoint_interval < 0:
         raise ValueError("checkpoint interval must be non-negative")
     if args.health_interval < 0:
@@ -321,6 +330,8 @@ def run(args: argparse.Namespace) -> dict:
         "rho_water": args.rho_water,
         "nu_water": args.nu_water,
         "cs_smag": args.cs_smag,
+        "collision_model": args.collision_model,
+        "kbc_max_iterations": args.kbc_max_iterations,
         "wall_law": args.wall_law,
         "wall_stress_enabled": not args.disable_wall_stress,
         "stress_exchange_distance": args.stress_exchange_distance,
@@ -477,11 +488,14 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("ghost_interpolation")
         legacy_v3_signature.pop("enforce_transfer_positivity")
         legacy_v3_signature.pop("wall_stress_enabled")
+        legacy_v3_signature.pop("collision_model")
+        legacy_v3_signature.pop("kbc_max_iterations")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
             and not args.disable_wall_stress
+            and args.collision_model == "cumulant_smagorinsky"
             and stored_configuration == legacy_v3_signature
         )
         legacy_v2_signature = dict(checkpoint_signature)
@@ -492,12 +506,15 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop("ghost_interpolation")
         legacy_v2_without_new_transfer.pop("enforce_transfer_positivity")
         legacy_v2_without_new_transfer.pop("wall_stress_enabled")
+        legacy_v2_without_new_transfer.pop("collision_model")
+        legacy_v2_without_new_transfer.pop("kbc_max_iterations")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
             and not args.disable_wall_stress
+            and args.collision_model == "cumulant_smagorinsky"
             and stored_configuration == legacy_v2_without_new_transfer
         )
         if (
@@ -575,7 +592,14 @@ def run(args: argparse.Namespace) -> dict:
 
     def collide(state: torch.Tensor, tau: float, level: int) -> torch.Tensor:
         nonlocal maximum_limiter_fraction
-        post = collide_cumulant_d3q19(state, tau=tau, C_s=args.cs_smag)
+        if args.collision_model == "entropic_kbc":
+            post = collide_kbc_d3q19(
+                state,
+                tau=tau,
+                max_iter=args.kbc_max_iterations,
+            )
+        else:
+            post = collide_cumulant_d3q19(state, tau=tau, C_s=args.cs_smag)
         post, diagnostic = limit_nonequilibrium_for_positivity(post)
         require_finite_limiter(diagnostic, level=level, stage="post_collision")
         maximum_limiter_fraction = max(
