@@ -342,6 +342,14 @@ def test_nested_health_population_floor_fails_during_run(tmp_path: Path) -> None
         MODULE.run(args)
 
 
+def test_nested_smoke_rejects_unbounded_sgs_coefficient(tmp_path: Path) -> None:
+    args = _args(tmp_path, steps=1)
+    args.cs_smag = 0.31
+
+    with pytest.raises(ValueError, match="cs_smag"):
+        MODULE.run(args)
+
+
 def test_nested_health_reflux_correction_gate_fails_during_run(
     tmp_path: Path,
 ) -> None:

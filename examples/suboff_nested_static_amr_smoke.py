@@ -275,6 +275,8 @@ def run(args: argparse.Namespace) -> dict:
     )
     if not args.lattice_speed < args.maximum_health_speed < 1.0:
         raise ValueError("maximum health speed must lie between inlet speed and one")
+    if not 0.0 <= args.cs_smag <= 0.3:
+        raise ValueError("cs_smag must lie in [0,0.3]")
     if not 0.0 <= args.minimum_health_population < 1.0:
         raise ValueError("minimum health population must lie in [0,1)")
     if not 0.0 <= args.maximum_positivity_limited_fraction <= 1.0:
