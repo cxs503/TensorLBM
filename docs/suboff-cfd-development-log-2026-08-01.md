@@ -927,6 +927,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      conservation, wall ownership and allocation.  A production nested run
      must add a long smooth activation, checkpoint/restart and the same
      convective-time statistics used by v8 before any accuracy comparison.
+106. The three-level runner now closes the first of those production gaps with
+     atomic multi-level checkpoints.  The checkpoint stores L0/L1/L2
+     populations, stepwise paired-force evidence and accumulated limiter,
+     reflux and wall-sampling maxima; restore validates a physics/grid
+     signature and relinks shared parent/child tensors before advancing.
+     Requested final steps remain outside the signature so a trajectory can be
+     extended without relabelling its physics.  A CPU 1-step checkpoint resumed
+     to step 2 reproduces both records and passes the same integration gates.
+     Smooth activation is supported, and force-closure admission now considers
+     only fully activated steps, preventing the intentional moving-wall-frame
+     startup diagnostic from contaminating laboratory-frame closure evidence.
 
 ## Rejected candidates
 

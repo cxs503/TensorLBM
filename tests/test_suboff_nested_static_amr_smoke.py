@@ -13,20 +13,30 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-def _args(tmp_path: Path, *, preflight: bool = False):
+def _args(
+    tmp_path: Path,
+    *,
+    steps: int = 2,
+    preflight: bool = False,
+    resume: bool = False,
+):
     values = [
         "--device", "cpu",
         "--nx", "80", "--ny", "40", "--nz", "40",
         "--hull-length", "24", "--center-x-fraction", "0.35",
         "--outer-wall-margin", "4", "--outer-wake-cells", "8",
         "--inner-wall-margin", "2", "--inner-wake-cells", "0",
-        "--cv-margin", "2", "--steps", "2", "--ramp-steps", "0",
+        "--cv-margin", "2", "--steps", str(steps), "--ramp-steps", "0",
         "--resolved-reynolds", "2000", "--sponge-width", "3",
         "--memory-bytes-per-cell", "742",
         "--output", str(tmp_path / "nested-smoke.json"),
+        "--checkpoint", str(tmp_path / "nested-smoke.ckpt"),
+        "--checkpoint-interval", "1",
     ]
     if preflight:
         values.append("--preflight-only")
+    if resume:
+        values.append("--resume")
     return MODULE.parser().parse_args(values)
 
 
@@ -40,6 +50,7 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["result"]["maximum_source_corrected_observer_difference_pct"] < 0.1
     assert max(result["result"]["maximum_reflux_residual_by_interface"]) < 1.0e-6
     assert result["acceptance"]["resistance_accuracy_assessed"] is False
+    assert result["acceptance"]["fully_activated_steps_assessed"] == 2
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
@@ -49,3 +60,13 @@ def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
     assert result["physical_validation"] is False
     assert result["planning"]["total_allocated_cells"] > 0
     assert result["planning"]["memory_estimate_bytes_per_cell"] == 742.0
+
+
+def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:
+    first = MODULE.run(_args(tmp_path, steps=1))
+    resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
+
+    assert first["result"]["steps"][0]["step"] == 1
+    assert [record["step"] for record in resumed["result"]["steps"]] == [1, 2]
+    assert resumed["configuration"]["resumed_from_step"] == 1
+    assert resumed["status"] == "integration_smoke_pass"
