@@ -157,6 +157,8 @@ def project_no_penetration(
 
 
 def run_case(args: argparse.Namespace) -> dict:
+    if args.surface_force_interval < 1:
+        raise ValueError("surface-force-interval must be positive")
     point = experimental_point(args.hull_type, args.speed_knots)
     device = torch.device(args.device)
     if device.type == "cuda":
@@ -301,6 +303,7 @@ def run_case(args: argparse.Namespace) -> dict:
     all_f: list[float] = []
     all_cv: list[float] = []
     all_bfl_total: list[float] = []
+    surface_pressure_samples: list[tuple[int, float]] = []
     diverged = False
     force_method = args.force_method
     if force_method == "auto":
@@ -407,6 +410,18 @@ def run_case(args: argparse.Namespace) -> dict:
         all_f.append(friction_lu)
         all_cv.append(cv_force_lu)
         all_bfl_total.append(pressure_voxel_lu + friction_lu)
+        if step % args.surface_force_interval == 0:
+            surface_pressure_lu = (
+                pressure_lu
+                if force_method == "surface_pressure"
+                else drag_pressure_integration(
+                    f, pressure_mesh, 1.0, extrap="none",
+                    p0_method=args.pressure_reference, solid=solid,
+                )[0]
+            )
+            surface_pressure_samples.append((
+                step, surface_pressure_lu,
+            ))
         block_p.append(pressure_lu); block_f.append(friction_lu)
 
         if not bool(torch.isfinite(f).all()):
@@ -428,6 +443,10 @@ def run_case(args: argparse.Namespace) -> dict:
                 "bfl_link_plus_wall_stress_n": (
                     sum(all_bfl_total[-len(block_p):]) / len(block_p) * force_scale
                 ),
+                "surface_pressure_plus_wall_stress_n": (
+                    (surface_pressure_samples[-1][1] + fr_lu) * force_scale
+                    if surface_pressure_samples else math.nan
+                ),
                 "error_pct": abs(predicted_n - point.resistance_n) / point.resistance_n * 100.0,
                 "elapsed_s": time.time() - started,
             }
@@ -445,6 +464,14 @@ def run_case(args: argparse.Namespace) -> dict:
     p_final = sum(all_p[-window:]) / window if window else math.nan
     f_final = sum(all_f[-window:]) / window if window else math.nan
     predicted_n = (p_final + f_final) * force_scale
+    surface_window = [
+        value for sample_step, value in surface_pressure_samples
+        if sample_step > completed - window
+    ]
+    surface_pressure_final = (
+        sum(surface_window) / len(surface_window)
+        if surface_window else math.nan
+    )
     error_pct = abs(predicted_n - point.resistance_n) / point.resistance_n * 100.0
     force_stationarity = assess_force_stationarity(
         [
@@ -530,6 +557,7 @@ def run_case(args: argparse.Namespace) -> dict:
                 if args.boundary in {"bfl_wall_model", "bfl_spalding"} else 0
             ),
             "average_window": window,
+            "surface_force_interval": args.surface_force_interval,
         },
         "geometry": geometry,
         "result": {
@@ -543,6 +571,13 @@ def run_case(args: argparse.Namespace) -> dict:
             "bfl_link_plus_wall_stress_n_diagnostic": (
                 sum(all_bfl_total[-window:]) / window * force_scale
             ),
+            "surface_pressure_resistance_n_diagnostic": (
+                surface_pressure_final * force_scale
+            ),
+            "surface_pressure_plus_wall_stress_n_diagnostic": (
+                (surface_pressure_final + f_final) * force_scale
+            ),
+            "surface_pressure_samples_in_window": len(surface_window),
             "friction_resistance_n": f_final * force_scale,
             "total_resistance_n": predicted_n,
             "experimental_resistance_n": point.resistance_n,
@@ -641,12 +676,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--pressure-reference",
         choices=("near_wall", "far_field", "domain_avg", "inlet"),
-        default="near_wall",
+        default="inlet",
     )
     p.add_argument(
         "--force-method",
         choices=("auto", "control_volume", "bfl_momentum", "surface_pressure"),
         default="auto",
+    )
+    p.add_argument(
+        "--surface-force-interval", type=int, default=50,
+        help="Cadence for the independent surface-pressure force observer.",
     )
     p.add_argument("--rho-water", type=float, default=998.2)
     p.add_argument("--nu-water", type=float, default=1.004e-6)
