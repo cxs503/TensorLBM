@@ -158,6 +158,8 @@ def run(args: argparse.Namespace) -> dict:
         args.nested_cv_target,
         args.surface_observer_target,
         args.numerical_source_target,
+        args.minimum_convective_times,
+        args.minimum_sampling_convective_times,
     ) < 0.0:
         raise ValueError("acceptance targets must be non-negative")
     aux_cv_margins = tuple(sorted({
@@ -867,8 +869,21 @@ def run(args: argparse.Namespace) -> dict:
         and bool(torch.isfinite(amr.fine_f).all())
         and math.isfinite(mean_force)
     )
+    total_convective_times = (
+        args.steps * args.lattice_speed / args.hull_length
+    )
+    sampling_convective_times = (
+        (args.steps - args.warmup_steps)
+        * args.lattice_speed / args.hull_length
+    )
+    duration_acceptable = (
+        total_convective_times >= args.minimum_convective_times
+        and sampling_convective_times
+        >= args.minimum_sampling_convective_times
+    )
     single_grid_admitted = (
         finite
+        and duration_acceptable
         and not args.diagnostic_uncoupled_wall_stress
         and reference_error_pct <= args.error_target
         and force_stationarity.meets(args.drift_target)
@@ -919,6 +934,8 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "sponge_inlet_enabled": args.sponge_inlet,
             "wall_activation_ramp_steps": args.ramp_steps,
+            "total_convective_times": total_convective_times,
+            "sampling_convective_times": sampling_convective_times,
         },
         "mesh": {
             "coarse_cells": plan.coarse_cells,
@@ -1038,6 +1055,10 @@ def run(args: argparse.Namespace) -> dict:
             "numerical_momentum_source_target_pct": (
                 args.numerical_source_target
             ),
+            "minimum_convective_times": args.minimum_convective_times,
+            "minimum_sampling_convective_times": (
+                args.minimum_sampling_convective_times
+            ),
             "maximum_limiter_fraction": 1e-3,
             "maximum_reflux_population_residual": 1e-6,
             "maximum_exchange_rejected_fraction": 0.01,
@@ -1064,6 +1085,7 @@ def run(args: argparse.Namespace) -> dict:
                 corrected_cv_observer_difference_pct
                 <= args.force_observer_target
             ),
+            "duration_target_met": duration_acceptable,
             "limiter_target_met": limiter_acceptable,
             "reflux_target_met": reflux_acceptable,
             "wall_sampling_target_met": wall_sampling_acceptable,
@@ -1142,6 +1164,10 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nested-cv-target", type=float, default=1.0)
     p.add_argument("--surface-observer-target", type=float, default=5.0)
     p.add_argument("--numerical-source-target", type=float, default=1.0)
+    p.add_argument("--minimum-convective-times", type=float, default=5.0)
+    p.add_argument(
+        "--minimum-sampling-convective-times", type=float, default=2.0,
+    )
     p.add_argument(
         "--far-field-mode",
         choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),

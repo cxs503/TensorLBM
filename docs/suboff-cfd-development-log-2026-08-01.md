@@ -472,6 +472,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     is a second algebraic gate.  This identifies whether a long-run observer
     split is caused by a non-conservative operator, without hiding that defect
     behind a post-processing correction.
+61. Production admission now enforces physical duration directly rather than
+    relying on campaign naming: at least five body-length convective times in
+    total and two convective times after warmup are required by default.  The
+    active four-time L90 boundary runs remain sensitivity evidence only even
+    if a late force window passes; a selected v5 candidate will be extended to
+    at least six convective times before any three-grid sequence is assessed.
 
 ## Rejected candidates
 
