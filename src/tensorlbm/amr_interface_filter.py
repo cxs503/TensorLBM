@@ -1,15 +1,18 @@
 """Moment-preserving kinetic filter for coarse/fine transition shells.
 
 Abrupt resolution changes can reflect unresolved non-hydrodynamic modes back
-into a fine block.  This module damps only the non-equilibrium population in a
-thin *physical* shell next to a block interface.  Density and momentum remain
-unchanged; no empirical body force or geometry modification is introduced.
+into a fine block.  This module damps only the kinetic residual *above* the
+resolved second-order viscous stress in a thin physical shell.  Density,
+momentum and the complete symmetric stress tensor remain unchanged; no
+empirical body force or geometry modification is introduced.
 """
 from __future__ import annotations
 
 import math
 
 import torch
+
+from .amr_population_transfer import regularize_nonequilibrium_second_order
 
 
 def interface_shell_blend(
@@ -104,7 +107,11 @@ def damp_interface_nonequilibrium(
 
     equilibrium = _macroscopic_and_equilibrium(f)
     non_equilibrium = _remove_conserved_roundoff(f - equilibrium)
-    return f - blend.unsqueeze(0) * non_equilibrium
+    resolved_stress = regularize_nonequilibrium_second_order(non_equilibrium)
+    kinetic_residual = _remove_conserved_roundoff(
+        non_equilibrium - resolved_stress,
+    )
+    return f - blend.unsqueeze(0) * kinetic_residual
 
 
 __all__ = ["damp_interface_nonequilibrium", "interface_shell_blend"]

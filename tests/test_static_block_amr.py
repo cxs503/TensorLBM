@@ -66,6 +66,15 @@ def test_interface_filter_is_composed_into_the_fine_advance() -> None:
     )
     solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)), config)
     initial = solver.fine_f.clone()
+    c = C19.to(dtype=initial.dtype)
+    moments = torch.stack((
+        torch.ones(19, dtype=initial.dtype),
+        c[:, 0], c[:, 1], c[:, 2],
+        c[:, 0].square(), c[:, 1].square(), c[:, 2].square(),
+        c[:, 0] * c[:, 1], c[:, 0] * c[:, 2], c[:, 1] * c[:, 2],
+    ))
+    _, _, right = torch.linalg.svd(moments, full_matrices=True)
+    kinetic_mode = right[-1] / torch.linalg.vector_norm(right[-1])
 
     def add_kinetic_mode(
         f: torch.Tensor, tau: float, level: int, substep: int,
@@ -73,10 +82,7 @@ def test_interface_filter_is_composed_into_the_fine_advance() -> None:
         del tau, substep
         out = f.clone()
         if level == 1:
-            out[7] += 1.0e-3
-            out[8] += 1.0e-3
-            out[9] -= 1.0e-3
-            out[10] -= 1.0e-3
+            out += 1.0e-3 * kinetic_mode[:, None, None, None]
         return AMRAdvanceResult(out, out)
 
     solver.step(add_kinetic_mode)

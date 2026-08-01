@@ -7,6 +7,9 @@ from tensorlbm.amr_interface_filter import (
     damp_interface_nonequilibrium,
     interface_shell_blend,
 )
+from tensorlbm.amr_population_transfer import (
+    regularize_nonequilibrium_second_order,
+)
 from tensorlbm.d3q19 import C, equilibrium3d, macroscopic3d
 from tensorlbm.d3q27 import equilibrium27, macroscopic27
 
@@ -18,12 +21,16 @@ def _perturbed_population() -> torch.Tensor:
     uy = torch.full(shape, -0.01, dtype=torch.float64)
     uz = torch.full(shape, 0.005, dtype=torch.float64)
     f = equilibrium3d(rho, ux, uy, uz)
-    perturbation = torch.zeros_like(f)
-    perturbation[7] = 2.0e-3
-    perturbation[8] = 2.0e-3
-    perturbation[9] = -2.0e-3
-    perturbation[10] = -2.0e-3
-    return f + perturbation
+    c = C.to(dtype=f.dtype)
+    moments = torch.stack((
+        torch.ones(19, dtype=f.dtype),
+        c[:, 0], c[:, 1], c[:, 2],
+        c[:, 0].square(), c[:, 1].square(), c[:, 2].square(),
+        c[:, 0] * c[:, 1], c[:, 0] * c[:, 2], c[:, 1] * c[:, 2],
+    ))
+    _, _, right = torch.linalg.svd(moments, full_matrices=True)
+    kinetic_mode = right[-1] / torch.linalg.vector_norm(right[-1])
+    return f + 2.0e-3 * kinetic_mode[:, None, None, None]
 
 
 def test_interface_shell_excludes_ghosts_and_retains_core() -> None:
@@ -55,10 +62,33 @@ def test_filter_preserves_density_and_momentum_and_reduces_nonequilibrium() -> N
     assert torch.allclose(uy_after, uy_before, rtol=0.0, atol=2.0e-15)
     assert torch.allclose(uz_after, uz_before, rtol=0.0, atol=2.0e-15)
     equilibrium = equilibrium3d(rho_before, ux_before, uy_before, uz_before)
-    before_norm = torch.linalg.vector_norm((f - equilibrium)[:, 1, 1, 1])
-    after_norm = torch.linalg.vector_norm((filtered - equilibrium)[:, 1, 1, 1])
+    before_neq = f - equilibrium
+    after_neq = filtered - equilibrium
+    before_kinetic = before_neq - regularize_nonequilibrium_second_order(before_neq)
+    after_kinetic = after_neq - regularize_nonequilibrium_second_order(after_neq)
+    before_norm = torch.linalg.vector_norm(before_kinetic[:, 1, 1, 1])
+    after_norm = torch.linalg.vector_norm(after_kinetic[:, 1, 1, 1])
     assert after_norm == pytest.approx(0.6 * before_norm)
     assert torch.equal(filtered[:, 4, 5, 6], f[:, 4, 5, 6])
+
+    c = C.to(dtype=f.dtype)
+    for first_axis in range(3):
+        for second_axis in range(first_axis, 3):
+            before_stress = torch.einsum(
+                "qzyx,q,q->zyx",
+                before_neq,
+                c[:, first_axis],
+                c[:, second_axis],
+            )
+            after_stress = torch.einsum(
+                "qzyx,q,q->zyx",
+                after_neq,
+                c[:, first_axis],
+                c[:, second_axis],
+            )
+            assert torch.allclose(
+                after_stress, before_stress, rtol=0.0, atol=3.0e-15,
+            )
 
 
 def test_uniform_equilibrium_is_unchanged() -> None:

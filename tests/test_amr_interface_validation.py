@@ -33,3 +33,19 @@ def test_amr_interface_validation_is_public() -> None:
 
     assert tensorlbm.AMRInterfaceValidationConfig is AMRInterfaceValidationConfig
     assert tensorlbm.run_amr_interface_validation is run_amr_interface_validation
+
+
+def test_interface_validation_exercises_transition_filter() -> None:
+    result = run_amr_interface_validation(AMRInterfaceValidationConfig(
+        shape_zyx=(12, 14, 24),
+        box=BoxRegion(x0=8, x1=16, y0=4, y1=10, z0=3, z1=9),
+        pulse_radius=1.5,
+        steps=3,
+        interface_filter_width=1,
+        interface_filter_strength=0.2,
+    ))
+
+    assert result["configuration"]["interface_filter_width"] == 1
+    assert result["configuration"]["interface_filter_strength"] == 0.2
+    assert result["result"]["finite"] is True
+    assert result["result"]["relative_mass_drift"] < 1.0e-5

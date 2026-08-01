@@ -27,6 +27,8 @@ class AMRInterfaceValidationConfig:
     pulse_radius: float = 2.5
     steps: int = 24
     device: str = "cpu"
+    interface_filter_width: int = 0
+    interface_filter_strength: float = 0.0
 
     def validate(self) -> None:
         nz, ny, nx = self.shape_zyx
@@ -46,6 +48,12 @@ class AMRInterfaceValidationConfig:
             raise ValueError("invalid pulse parameters")
         if self.steps < 1:
             raise ValueError("steps must be positive")
+        if (self.interface_filter_width == 0) != (
+            self.interface_filter_strength == 0.0
+        ):
+            raise ValueError(
+                "interface filter width and strength must both be zero or positive",
+            )
 
 
 def _initial_coarse(config: AMRInterfaceValidationConfig, device: torch.device) -> torch.Tensor:
@@ -114,7 +122,12 @@ def run_amr_interface_validation(
     uniform_fine = _repeat_2to1(coarse_initial)
     solver = StaticBlockAMR3D(
         coarse_initial.clone(),
-        StaticBlockAMRConfig(config.box, tau_coarse=config.tau_coarse),
+        StaticBlockAMRConfig(
+            config.box,
+            tau_coarse=config.tau_coarse,
+            interface_filter_width=config.interface_filter_width,
+            interface_filter_strength=config.interface_filter_strength,
+        ),
     )
     tau_fine = convective_refined_tau(config.tau_coarse)
     maximum_reflux_residual = 0.0
@@ -221,6 +234,8 @@ def run_amr_interface_validation(
             "pulse_radius": config.pulse_radius,
             "steps": config.steps,
             "device": config.device,
+            "interface_filter_width": config.interface_filter_width,
+            "interface_filter_strength": config.interface_filter_strength,
             "reflux_method": "face_local_conserved_moment_flux",
         },
         "mesh": {
