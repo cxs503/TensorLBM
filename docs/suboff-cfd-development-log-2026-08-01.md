@@ -179,6 +179,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     both inside the refined block (`4.00e-6`→`3.40e-6`) and on the interface
     shell (`3.63e-6`→`2.69e-6`).  This admits the short smooth-interface test,
     not a body-force or long SUBOFF AMR claim.
+30. Extending that interface benchmark to 100 coarse steps retained
+    `3.05e-7` mass drift, `1.46e-11` maximum reflux residual, positivity and no
+    limited directions.  Density RMS stayed 4.67% better than uniform coarse,
+    but streamwise-velocity RMS was 1.99% worse.  The admission contract now
+    exposes both ratios, requires density improvement, and permits at most 5%
+    velocity regression; the candidate passes while the residual reflection
+    remains explicit evidence for later higher-order prolongation work.
 
 ## Rejected candidates
 
