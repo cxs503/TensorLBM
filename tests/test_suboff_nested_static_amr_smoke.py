@@ -199,6 +199,10 @@ def test_nested_smoke_uses_smooth_resolved_viscosity_continuation(
     records = result["result"]["steps"]
     assert records[0]["collision_resolved_reynolds"] == pytest.approx(800.0)
     assert records[1]["collision_resolved_reynolds"] == 2000.0
+    assert result["result"]["statistics"]["statistics_window_steps_resolved"] == 1
+    assert result["result"]["statistics"]["target_reynolds_steps_available"] == 1
+    assert result["acceptance"]["target_reynolds_steps_assessed"] == 1
+    assert result["acceptance"]["target_reynolds_reached"] is True
     assert result["configuration"]["initial_tau_by_level"][0] > (
         result["configuration"]["tau_by_level"][0]
     )
