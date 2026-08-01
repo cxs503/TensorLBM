@@ -758,7 +758,7 @@ def wall_function_d3q27(
 # Key improvements over the legacy wall_function_3d:
 #   - Uses **Guo forcing** (1 + c·u/cs²) correction, not simple forcing
 #   - Combines BFL (geometric accuracy) + wall function (turbulence)
-#   - Force magnitude: −τ_w/dy (per unit volume, correct for Guo)
+#   - Force magnitude: −τ_w*A/V on the boundary control volume
 #   - Uses tangential velocity for curved walls
 # ===========================================================================
 
@@ -879,6 +879,22 @@ def _solve_wall_law(
             ut = (u_tan_mag / up.clamp(min=1e-6)).clamp(min=1e-12)
         return torch.where(near, ut, torch.zeros_like(ut))
 
+    if wall_law == "musker":
+        # Musker continuous law, evaluated in log form to avoid overflow at
+        # the high y+ values encountered by wall-modelled external flows.
+        ut = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
+        for _ in range(12):
+            yp = (y_val * ut / nu).clamp(min=1e-6)
+            polynomial = (yp.square() - 8.15 * yp + 86.0).clamp_min(1e-12)
+            up = (
+                5.424 * torch.arctan(0.11976 * yp - 0.488)
+                + 0.434 * (9.6 * torch.log(yp + 10.6) - 2.0 * torch.log(polynomial))
+                - 3.507
+            )
+            up = torch.where(yp < 3.0, yp, up)
+            ut = (u_tan_mag / up.clamp(min=1e-6)).clamp(min=1e-12)
+        return torch.where(near, ut, torch.zeros_like(ut))
+
     if wall_law == "gradient":
         # Direct velocity-gradient: τ_w = ν·u_tan / y_val
         tau_w = nu * u_tan_mag / y_val
@@ -902,7 +918,12 @@ def _solve_wall_law(
             u_tau[log_region] = ut
         return u_tau
 
-    # Default: log-law (Newton iteration)
+    if wall_law != "log":
+        raise ValueError(
+            "wall_law must be 'log', 'reichardt', 'musker', 'gradient', or 'hybrid'"
+        )
+
+    # Log-law (Newton iteration)
     u_tau = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
     y_plus = y_val * u_tau / nu
     turb = (y_plus > 11.6) & near
