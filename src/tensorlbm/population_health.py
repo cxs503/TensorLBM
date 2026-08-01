@@ -17,6 +17,7 @@ class PopulationHealth:
     minimum_density: float | None
     maximum_density: float | None
     maximum_speed: float | None
+    maximum_speed_index_zyx: tuple[int, int, int] | None
 
     def to_dict(self) -> dict[str, bool | float | None]:
         return asdict(self)
@@ -41,6 +42,7 @@ def inspect_population_health(f: torch.Tensor) -> PopulationHealth:
     if not finite:
         return PopulationHealth(
             False, minimum_value, maximum_value, None, None, None,
+            None,
         )
 
     if f.shape[0] == 19:
@@ -57,6 +59,13 @@ def inspect_population_health(f: torch.Tensor) -> PopulationHealth:
         momentum_x.square() + momentum_y.square() + momentum_z.square(),
     ) / density.abs().clamp_min(torch.finfo(f.dtype).tiny)
     maximum_speed = float(speed.max().item())
+    maximum_speed_flat_index = int(speed.argmax().item())
+    ny, nx = speed.shape[1:]
+    maximum_speed_index = (
+        maximum_speed_flat_index // (ny * nx),
+        (maximum_speed_flat_index % (ny * nx)) // nx,
+        maximum_speed_flat_index % nx,
+    )
     density_minimum_value = float(density_minimum.item())
     density_maximum_value = float(density_maximum.item())
     finite = all(math.isfinite(value) for value in (
@@ -69,6 +78,7 @@ def inspect_population_health(f: torch.Tensor) -> PopulationHealth:
         density_minimum_value,
         density_maximum_value,
         maximum_speed,
+        maximum_speed_index,
     )
 
 

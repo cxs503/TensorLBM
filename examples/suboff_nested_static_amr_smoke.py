@@ -712,10 +712,27 @@ def run(args: argparse.Namespace) -> dict:
                 }
                 for ledger in ledgers
             ]
+            finest_peak_index = level_health[-1]["maximum_speed_index_zyx"]
+            finest_peak_context = None
+            if finest_peak_index is not None:
+                peak_z, peak_y, peak_x = finest_peak_index
+                finest_peak_context = {
+                    "near_wall": bool(near[peak_z, peak_y, peak_x]),
+                    "solid": bool(finest_solid[peak_z, peak_y, peak_x]),
+                    "cells_from_allocated_boundary": min(
+                        peak_z,
+                        peak_y,
+                        peak_x,
+                        nz_f - 1 - peak_z,
+                        ny_f - 1 - peak_y,
+                        nx_f - 1 - peak_x,
+                    ),
+                }
             health_records.append({
                 "step": current_step,
                 "levels": level_health,
                 "interfaces": interface_health,
+                "finest_peak_speed_context": finest_peak_context,
             })
             print(
                 "nested health "
