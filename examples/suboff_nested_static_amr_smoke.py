@@ -1,0 +1,478 @@
+#!/usr/bin/env python3
+"""Three-level SUBOFF wall/refinement integration smoke test.
+
+This runner validates allocation, deepest-level geometry/force ownership and
+two conservative AMR interfaces.  It is intentionally not a resistance
+validation run and never promotes a short trajectory by reference proximity.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+from pathlib import Path
+
+import torch
+from suboff_experimental_resistance import (
+    MODEL_LENGTH_M,
+    experimental_point,
+    force_scale_newton,
+    smooth_ramp_factor,
+)
+
+from tensorlbm.boundaries3d import far_field_bc_3d
+from tensorlbm.control_volume_force import (
+    box_control_volume,
+    fluid_momentum_change,
+    observe_control_volume_force,
+)
+from tensorlbm.cuda_memory_budget import require_cuda_memory_budget
+from tensorlbm.cumulant import collide_cumulant_d3q19
+from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d
+from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
+from tensorlbm.interpolated_bc_suboff import compute_q_suboff
+from tensorlbm.population_positivity import limit_nonequilibrium_for_positivity
+from tensorlbm.solver3d import stream3d
+from tensorlbm.sponge_layer import (
+    apply_equilibrium_difference_sponge,
+    build_sponge_sigma_3d,
+)
+from tensorlbm.static_block_amr import (
+    AMRAdvanceResult,
+    NestedStaticBlockAMR3D,
+    StaticBlockAMRConfig,
+)
+from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
+from tensorlbm.suboff_static_amr import (
+    assess_suboff_geometry_resolution,
+    build_fine_suboff_mask,
+    build_nested_fine_suboff_mask,
+    plan_nested_suboff_static_amr,
+    plan_suboff_static_amr,
+)
+from tensorlbm.surface_area_weights import bfl_surface_area_weights
+from tensorlbm.wall_model import (
+    WallStressDiagnostics,
+    bfl_wall_function_3d,
+    physical_wall_lattice_viscosity,
+)
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(description=__doc__)
+    result.add_argument("--device", default="cpu")
+    result.add_argument("--speed-knots", type=float, default=5.92)
+    result.add_argument("--nx", type=int, default=600)
+    result.add_argument("--ny", type=int, default=120)
+    result.add_argument("--nz", type=int, default=120)
+    result.add_argument("--hull-length", type=float, default=120.0)
+    result.add_argument("--center-x-fraction", type=float, default=0.3)
+    result.add_argument("--outer-wall-margin", type=int, default=8)
+    result.add_argument("--outer-wake-cells", type=int, default=100)
+    result.add_argument("--inner-wall-margin", type=int, default=4)
+    result.add_argument("--inner-wake-cells", type=int, default=8)
+    result.add_argument("--cv-margin", type=int, default=4)
+    result.add_argument("--steps", type=int, default=2)
+    result.add_argument("--ramp-steps", type=int, default=0)
+    result.add_argument("--lattice-speed", type=float, default=0.06)
+    result.add_argument("--resolved-reynolds", type=float, default=100000.0)
+    result.add_argument("--rho-water", type=float, default=998.2)
+    result.add_argument("--nu-water", type=float, default=1.004e-6)
+    result.add_argument("--cs-smag", type=float, default=0.05)
+    result.add_argument("--wall-law", choices=("musker", "reichardt", "log"), default="musker")
+    result.add_argument("--stress-exchange-distance", type=float, default=1.0)
+    result.add_argument("--sponge-width", type=int, default=24)
+    result.add_argument("--sponge-strength", type=float, default=0.3)
+    result.add_argument(
+        "--far-field-mode",
+        choices=("non_equilibrium_extrapolation", "equilibrium"),
+        default="non_equilibrium_extrapolation",
+    )
+    result.add_argument("--output", type=Path)
+    result.add_argument("--preflight-only", action="store_true")
+    return result
+
+
+def run(args: argparse.Namespace) -> dict:
+    if min(args.nx, args.ny, args.nz, args.hull_length, args.steps) <= 0:
+        raise ValueError("grid, hull length and steps must be positive")
+    if args.stress_exchange_distance <= 0.0:
+        raise ValueError("stress exchange distance must be positive")
+    device = torch.device(args.device)
+    if device.type == "cuda":
+        torch.cuda.set_device(device)
+        torch.cuda.reset_peak_memory_stats(device)
+    point = experimental_point("bare_hull", args.speed_knots)
+    shape = (args.nz, args.ny, args.nx)
+    center = (
+        args.nx * args.center_x_fraction,
+        args.ny / 2.0,
+        args.nz / 2.0,
+    )
+    geometry_config = SuboffConfig()
+    coarse_solid, _ = build_suboff_mask(
+        "bare_hull", args.nx, args.ny, args.nz,
+        cx=center[0], cy=center[1], cz=center[2],
+        length=args.hull_length, config=geometry_config, device=device,
+    )
+    outer_plan = plan_suboff_static_amr(
+        coarse_solid,
+        coarse_hull_length=args.hull_length,
+        wall_margin=args.outer_wall_margin,
+        wake_cells=args.outer_wake_cells,
+    )
+    outer_solid, _ = build_fine_suboff_mask(
+        outer_plan,
+        hull_type="bare_hull",
+        coarse_center=center,
+        config=geometry_config,
+        device=device,
+    )
+    nested_plan = plan_nested_suboff_static_amr(
+        outer_plan,
+        outer_solid,
+        wall_margin=args.inner_wall_margin,
+        wake_cells=args.inner_wake_cells,
+    )
+    nested_solid, nested_geometry = build_nested_fine_suboff_mask(
+        nested_plan,
+        hull_type="bare_hull",
+        coarse_center=center,
+        config=geometry_config,
+        device=device,
+    )
+    memory_budget = require_cuda_memory_budget(
+        device,
+        estimated_peak_gib=nested_plan.estimated_peak_gib(),
+        reserve_gib=1.0,
+        label="SUBOFF nested static-AMR smoke",
+    )
+    planning = {
+        "outer_box": vars(outer_plan.box),
+        "inner_box_in_outer_allocated_coordinates": vars(
+            nested_plan.box_in_outer_allocated_coordinates,
+        ),
+        "outer_fine_shape": list(outer_plan.fine_physical_shape),
+        "nested_fine_shape": list(nested_plan.fine_physical_shape),
+        "total_allocated_cells": nested_plan.total_allocated_cells,
+        "uniform_finest_cells": nested_plan.uniform_finest_cells,
+        "cell_saving_fraction": nested_plan.cell_saving_fraction,
+        "estimated_peak_gib": nested_plan.estimated_peak_gib(),
+        "cuda_memory_preflight": (
+            memory_budget.to_dict() if memory_budget is not None else None
+        ),
+    }
+    if args.preflight_only:
+        return {
+            "schema": "tensorlbm-suboff-nested-amr-smoke-v1",
+            "status": "preflight_only",
+            "physical_validation": False,
+            "planning": planning,
+        }
+
+    physical_re = point.speed_mps * MODEL_LENGTH_M / args.nu_water
+    collision_re = args.resolved_reynolds
+    nu_coarse = args.lattice_speed * args.hull_length / collision_re
+    tau_coarse = 0.5 + 3.0 * nu_coarse
+    outer_amr_config = StaticBlockAMRConfig(
+        outer_plan.box, tau_coarse=tau_coarse,
+    )
+    inner_amr_config = StaticBlockAMRConfig(
+        nested_plan.box_in_outer_allocated_coordinates,
+        tau_coarse=outer_amr_config.tau_fine,
+    )
+    rho = torch.ones(shape, device=device)
+    ux = torch.full_like(rho, args.lattice_speed)
+    zero = torch.zeros_like(rho)
+    hierarchy = NestedStaticBlockAMR3D(
+        equilibrium3d(rho, ux, zero, zero, device=device),
+        (outer_amr_config, inner_amr_config),
+        fine_solids=(None, nested_solid),
+    )
+    finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
+    assert finest_solid is not None
+    finest_solid_q = finest_solid.unsqueeze(0).expand_as(hierarchy.finest_f)
+    finest_geometry = nested_geometry
+    finest_center = (
+        float(finest_geometry["cx"]) + inner_amr_config.ghost,
+        float(finest_geometry["cy"]) + inner_amr_config.ghost,
+        float(finest_geometry["cz"]) + inner_amr_config.ghost,
+    )
+    nz_f, ny_f, nx_f = finest_solid.shape
+    finest_length = nested_plan.effective_hull_length_cells
+    bfl_mask, bfl_q = compute_q_suboff(
+        nx_f, ny_f, nz_f, *finest_center, finest_length,
+        hull_type="bare_hull", config=geometry_config, device=device,
+        solid_mask=finest_solid,
+    )
+    near = get_near_wall_3d(finest_solid)
+    surface = SurfaceMesh.from_suboff(
+        finest_solid,
+        near,
+        *finest_center,
+        finest_length,
+        finest_length / (2.0 * 8.57),
+        config=geometry_config,
+    )
+    area_weight, area_diagnostics = bfl_surface_area_weights(
+        bfl_mask,
+        (surface.nx_n, surface.ny_n, surface.nz_n),
+        reference_area=float(finest_geometry["wetted_area_lu2"]),
+        boundary_mask=near,
+    )
+    indices = finest_solid.nonzero(as_tuple=False)
+    z_min, y_min, x_min = (
+        int(indices[:, axis].min().item()) for axis in range(3)
+    )
+    z_max, y_max, x_max = (
+        int(indices[:, axis].max().item()) + 1 for axis in range(3)
+    )
+    bounds = (
+        x_min - args.cv_margin, x_max + args.cv_margin, nx_f,
+        y_min - args.cv_margin, y_max + args.cv_margin, ny_f,
+        z_min - args.cv_margin, z_max + args.cv_margin, nz_f,
+    )
+    for lower, upper, size in zip(
+        bounds[0::3], bounds[1::3], bounds[2::3], strict=True,
+    ):
+        if lower <= 1 or upper >= size - 1:
+            raise ValueError("control volume reaches the nested interface")
+    control_volume = box_control_volume(
+        finest_solid.shape,
+        x0=x_min - args.cv_margin, x1=x_max + args.cv_margin,
+        y0=y_min - args.cv_margin, y1=y_max + args.cv_margin,
+        z0=z_min - args.cv_margin, z1=z_max + args.cv_margin,
+        device=device,
+    )
+    sponge = build_sponge_sigma_3d(
+        shape,
+        width=args.sponge_width,
+        max_strength=args.sponge_strength,
+        device=device,
+        faces=("x+", "y-", "y+", "z-", "z+"),
+    )
+    wall_nu = physical_wall_lattice_viscosity(
+        args.lattice_speed, finest_length, physical_re,
+    )
+    scale = force_scale_newton(
+        rho_water=args.rho_water,
+        dx_m=MODEL_LENGTH_M / finest_length,
+        speed_mps=point.speed_mps,
+        lattice_speed=args.lattice_speed,
+    )
+    current_step = 0
+    force_samples: list[tuple[float, float, float, float]] = []
+    step_records: list[dict] = []
+    wall_diagnostics: list[WallStressDiagnostics] = []
+    maximum_limiter_fraction = 0.0
+    maximum_reflux_residual = [0.0, 0.0]
+    maximum_reflux_limited_directions = [0, 0]
+
+    def collide(state: torch.Tensor, tau: float) -> torch.Tensor:
+        nonlocal maximum_limiter_fraction
+        post = collide_cumulant_d3q19(state, tau=tau, C_s=args.cs_smag)
+        post, diagnostic = limit_nonequilibrium_for_positivity(post)
+        maximum_limiter_fraction = max(
+            maximum_limiter_fraction, diagnostic.limited_fraction,
+        )
+        return post
+
+    def advance(
+        state: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
+        nonlocal maximum_limiter_fraction
+        del substep
+        before = state
+        collided = collide(state, tau)
+        if level < 2:
+            out = stream3d(collided)
+            if level == 0:
+                if args.far_field_mode == "non_equilibrium_extrapolation":
+                    out = non_equilibrium_far_field_bc_3d(
+                        out, u_in=args.lattice_speed,
+                    )
+                else:
+                    out = far_field_bc_3d(out, u_in=args.lattice_speed)
+                out = apply_equilibrium_difference_sponge(
+                    out,
+                    sponge,
+                    velocity_target=(args.lattice_speed, 0.0, 0.0),
+                )
+            return AMRAdvanceResult(out, collided)
+
+        post_collision = torch.where(finest_solid_q, before, collided)
+        out = stream3d(post_collision)
+        activation = smooth_ramp_factor(current_step, args.ramp_steps)
+        wall_result = bfl_wall_function_3d(
+            out,
+            post_collision,
+            finest_solid,
+            wall_nu,
+            bfl_mask,
+            bfl_q,
+            wall_law=args.wall_law,
+            near_mask=near,
+            bfl_wall_mode="wall_model_slip",
+            wall_activation=activation,
+            stress_exchange_distance=args.stress_exchange_distance,
+            wall_normals=(surface.nx_n, surface.ny_n, surface.nz_n),
+            area_weight=area_weight,
+            return_wall_diagnostics=True,
+        )
+        out, friction, pressure, diagnostics = wall_result
+        wall_diagnostics.append(diagnostics)
+        before_positivity = out
+        out, positivity = limit_nonequilibrium_for_positivity(out)
+        maximum_limiter_fraction = max(
+            maximum_limiter_fraction, positivity.limited_fraction,
+        )
+        cv_force = float(observe_control_volume_force(
+            before,
+            out,
+            post_collision,
+            control_volume,
+            solid=finest_solid,
+        ).force_on_body[0])
+        collision_source = float(fluid_momentum_change(
+            before,
+            post_collision,
+            control_volume,
+            solid=finest_solid,
+        )[0])
+        positivity_source = float(fluid_momentum_change(
+            before_positivity,
+            out,
+            control_volume,
+            solid=finest_solid,
+        )[0])
+        force_samples.append((
+            cv_force,
+            pressure + friction,
+            collision_source + positivity_source,
+            diagnostics.y_plus_mean or math.nan,
+        ))
+        return AMRAdvanceResult(out, post_collision)
+
+    for current_step in range(1, args.steps + 1):
+        force_samples.clear()
+        ledgers = hierarchy.step(advance)
+        if len(force_samples) != 4:
+            raise RuntimeError("three-level hierarchy must emit four finest force samples")
+        for index, ledger in enumerate(ledgers):
+            maximum_reflux_residual[index] = max(
+                maximum_reflux_residual[index],
+                float(ledger.residual.abs().max()),
+            )
+            maximum_reflux_limited_directions[index] = max(
+                maximum_reflux_limited_directions[index],
+                ledger.limited_directions,
+            )
+        cv_mean = sum(item[0] for item in force_samples) / 4.0
+        bfl_mean = sum(item[1] for item in force_samples) / 4.0
+        source_mean = sum(item[2] for item in force_samples) / 4.0
+        corrected = cv_mean + source_mean
+        step_records.append({
+            "step": current_step,
+            "cv_resistance_n": cv_mean * scale,
+            "bfl_plus_wall_stress_n": bfl_mean * scale,
+            "numerical_source_n": source_mean * scale,
+            "source_corrected_cv_n": corrected * scale,
+            "raw_observer_difference_pct": (
+                abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1.0e-30) * 100.0
+            ),
+            "source_corrected_observer_difference_pct": (
+                abs(corrected - bfl_mean) / max(abs(corrected), 1.0e-30) * 100.0
+            ),
+            "mean_y_plus": sum(item[3] for item in force_samples) / 4.0,
+        })
+        print(
+            f"nested smoke step={current_step}/{args.steps} "
+            f"Rt={step_records[-1]['cv_resistance_n']:.3f} N "
+            f"closure={step_records[-1]['source_corrected_observer_difference_pct']:.5f}%",
+            flush=True,
+        )
+
+    maximum_corrected_difference = max(
+        record["source_corrected_observer_difference_pct"]
+        for record in step_records
+    )
+    maximum_rejected = max(
+        diagnostic.rejected_fraction for diagnostic in wall_diagnostics
+    )
+    finite = all(
+        bool(torch.isfinite(level).all()) for level in hierarchy.level_populations
+    )
+    admitted = (
+        finite
+        and maximum_corrected_difference <= 0.1
+        and max(maximum_reflux_residual) <= 1.0e-6
+        and max(maximum_reflux_limited_directions) == 0
+        and maximum_limiter_fraction <= 1.0e-3
+        and maximum_rejected <= 0.01
+    )
+    peak_gib = (
+        torch.cuda.max_memory_allocated(device) / 2**30
+        if device.type == "cuda" else None
+    )
+    geometry_resolution = assess_suboff_geometry_resolution(
+        finest_solid,
+        hull_type="bare_hull",
+        fine_hull_length_cells=finest_length,
+    )
+    return {
+        "schema": "tensorlbm-suboff-nested-amr-smoke-v1",
+        "status": "integration_smoke_pass" if admitted else "integration_smoke_fail",
+        "physical_validation": False,
+        "configuration": vars(args) | {
+            "output": str(args.output) if args.output else None,
+            "physical_reynolds": physical_re,
+            "finest_wall_nu": wall_nu,
+            "finest_hull_length_cells": finest_length,
+            "tau_by_level": [
+                outer_amr_config.tau_coarse,
+                outer_amr_config.tau_fine,
+                inner_amr_config.tau_fine,
+            ],
+        },
+        "planning": planning | {"measured_peak_allocated_gib": peak_gib},
+        "geometry": nested_geometry | {
+            "resolution": geometry_resolution.to_dict(),
+            "area_weighting": vars(area_diagnostics),
+            "geometry_owner_level": 2,
+            "force_owner_level": 2,
+        },
+        "result": {
+            "steps": step_records,
+            "maximum_source_corrected_observer_difference_pct": (
+                maximum_corrected_difference
+            ),
+            "maximum_reflux_residual_by_interface": maximum_reflux_residual,
+            "maximum_reflux_limited_directions_by_interface": (
+                maximum_reflux_limited_directions
+            ),
+            "maximum_positivity_limited_fraction": maximum_limiter_fraction,
+            "maximum_wall_sample_rejected_fraction": maximum_rejected,
+            "finite": finite,
+        },
+        "acceptance": {
+            "integration_smoke_admitted": admitted,
+            "resistance_accuracy_assessed": False,
+            "time_convergence_assessed": False,
+            "grid_convergence_assessed": False,
+        },
+    }
+
+
+def main() -> None:
+    args = parser().parse_args()
+    result = run(args)
+    rendered = json.dumps(result, indent=2, allow_nan=False)
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
+
+
+if __name__ == "__main__":
+    main()
