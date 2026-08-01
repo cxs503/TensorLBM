@@ -115,6 +115,28 @@ def test_nested_hierarchy_requires_tau_chain_and_reflux() -> None:
         NestedStaticBlockAMR3D(coarse, (outer, replacement_only))
 
 
+def test_nested_hierarchy_accepts_dynamic_convective_tau_chain() -> None:
+    hierarchy = NestedStaticBlockAMR3D(
+        _equilibrium((12, 12, 14)), _configs(),
+    )
+    observed: dict[int, set[float]] = {0: set(), 1: set(), 2: set()}
+
+    def identity(
+        state: torch.Tensor,
+        tau: float,
+        level: int,
+        substep: int,
+    ) -> AMRAdvanceResult:
+        del substep
+        observed[level].add(tau)
+        return AMRAdvanceResult(state.clone(), state.clone())
+
+    hierarchy.step(identity, tau_by_level=(0.55, 0.60, 0.70))
+    assert observed == {0: {0.55}, 1: {0.60}, 2: {0.70}}
+    with pytest.raises(ValueError, match="interface 1"):
+        hierarchy.step(identity, tau_by_level=(0.55, 0.60, 0.69))
+
+
 def test_nested_hierarchy_reports_cell_savings() -> None:
     hierarchy = NestedStaticBlockAMR3D(
         _equilibrium((12, 12, 14)), _configs(),

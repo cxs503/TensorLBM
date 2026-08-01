@@ -4,6 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
 import torch
 
 EXAMPLES = Path(__file__).parents[1] / "examples"
@@ -182,6 +183,24 @@ def test_nested_smoke_records_independent_bulk_relaxation(tmp_path: Path) -> Non
     assert result["result"]["finite"] is True
 
 
+def test_nested_smoke_uses_smooth_resolved_viscosity_continuation(
+    tmp_path: Path,
+) -> None:
+    args = _args(tmp_path, steps=2)
+    args.resolved_reynolds_start = 500.0
+    args.resolved_reynolds = 2000.0
+    args.viscosity_ramp_start_step = 0
+    args.viscosity_ramp_end_step = 2
+    result = MODULE.run(args)
+
+    records = result["result"]["steps"]
+    assert records[0]["collision_resolved_reynolds"] == pytest.approx(800.0)
+    assert records[1]["collision_resolved_reynolds"] == 2000.0
+    assert result["configuration"]["initial_tau_by_level"][0] > (
+        result["configuration"]["tau_by_level"][0]
+    )
+
+
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
@@ -195,6 +214,9 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("collision_model")
     state["configuration"].pop("kbc_max_iterations")
     state["configuration"].pop("omega_bulk")
+    state["configuration"].pop("resolved_reynolds_start")
+    state["configuration"].pop("viscosity_ramp_start_step")
+    state["configuration"].pop("viscosity_ramp_end_step")
     state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
     torch.save(state, checkpoint)
 
@@ -217,6 +239,9 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("collision_model")
     state["configuration"].pop("kbc_max_iterations")
     state["configuration"].pop("omega_bulk")
+    state["configuration"].pop("resolved_reynolds_start")
+    state["configuration"].pop("viscosity_ramp_start_step")
+    state["configuration"].pop("viscosity_ramp_end_step")
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
