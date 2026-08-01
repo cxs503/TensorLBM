@@ -11,6 +11,7 @@ from .boundaries3d import far_field_bc_3d, sphere_mask
 from .control_volume_force import box_control_volume, observe_control_volume_force
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
+from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .interpolated_bc import compute_q_sphere
 from .solver3d import stream3d
 from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
@@ -114,7 +115,9 @@ def run_sphere_bfl_control_volume(
         collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
         post = torch.where(solid_q, old, collided)
         f = stream3d(post)
-        f = far_field_bc_3d(f, u_in=config.lattice_speed)
+        f = non_equilibrium_far_field_bc_3d(
+            f, u_in=config.lattice_speed,
+        )
         rho_post, ux_post, uy_post, uz_post = macroscopic3d(post)
         activation = _ramp(step, config.ramp_steps)
         wall_velocity = (
@@ -130,7 +133,9 @@ def run_sphere_bfl_control_volume(
         f = apply_equilibrium_difference_sponge(
             f, sigma, velocity_target=(config.lattice_speed, 0.0, 0.0),
         )
-        f = far_field_bc_3d(f, u_in=config.lattice_speed)
+        f = non_equilibrium_far_field_bc_3d(
+            f, u_in=config.lattice_speed,
+        )
         cv_force = float(observe_control_volume_force(
             old, f, post, cv, solid=solid,
         ).force_on_body[0].item())

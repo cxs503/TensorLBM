@@ -35,6 +35,7 @@ from tensorlbm.drag_pressure import (
     drag_pressure_integration,
     get_near_wall_3d,
 )
+from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.sponge_layer import (
@@ -300,6 +301,13 @@ def run_case(args: argparse.Namespace) -> dict:
             else "surface_pressure"
         )
 
+    def apply_outer_boundary(state: torch.Tensor) -> torch.Tensor:
+        if args.far_field_mode == "non_equilibrium_extrapolation":
+            return non_equilibrium_far_field_bc_3d(
+                state, u_in=args.lattice_speed,
+            )
+        return far_field_bc_3d(state, u_in=args.lattice_speed)
+
     for step in range(1, args.steps + 1):
         ramp_factor = smooth_ramp_factor(step, args.ramp_steps)
         boundary_speed = args.lattice_speed
@@ -315,7 +323,7 @@ def run_case(args: argparse.Namespace) -> dict:
         f = torch.where(solid_mask, f_pre_collision, f)
         f_post_collision = f.clone()
         f = stream3d(f)
-        f = far_field_bc_3d(f, u_in=boundary_speed)
+        f = apply_outer_boundary(f)
         if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}:
             f, friction_lu, pressure_voxel_lu = bfl_wall_function_3d(
                 f, f_post_collision, solid, nu_lu,
@@ -368,7 +376,7 @@ def run_case(args: argparse.Namespace) -> dict:
                 f = (1.0 - sponge_4d) * f + sponge_4d * free_stream_f
         # Re-assert outer faces because the wall-force operation computes and
         # updates the full tensor, while the physical far field is prescribed.
-        f = far_field_bc_3d(f, u_in=boundary_speed)
+        f = apply_outer_boundary(f)
         cv_force_lu = float(observe_control_volume_force(
             f_step_old, f, f_post_collision, cv, solid=solid,
         ).force_on_body[0].item())
@@ -502,6 +510,7 @@ def run_case(args: argparse.Namespace) -> dict:
             "sponge_width": args.sponge_width,
             "sponge_strength": args.sponge_strength,
             "sponge_mode": args.sponge_mode,
+            "far_field_mode": args.far_field_mode,
             "steps_requested": args.steps, "steps_completed": completed,
             "wall_activation_ramp_steps": (
                 args.ramp_steps
@@ -604,6 +613,11 @@ def parser() -> argparse.ArgumentParser:
         "--sponge-mode",
         choices=("equilibrium_difference", "legacy_distribution_blend"),
         default="equilibrium_difference",
+    )
+    p.add_argument(
+        "--far-field-mode",
+        choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),
+        default="non_equilibrium_extrapolation",
     )
     p.add_argument(
         "--pressure-reference",
