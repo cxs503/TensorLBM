@@ -19,6 +19,55 @@ MIN_CONVERGENCE_APPENDAGE_THICKNESS_CELLS = 3
 MIN_ABSOLUTE_REFERENCE_APPENDAGE_THICKNESS_CELLS = 4
 
 
+def apply_suboff_appendage_halfway_links(
+    solid: torch.Tensor,
+    link_mask: torch.Tensor,
+    q: torch.Tensor,
+    *,
+    center: tuple[float, float, float],
+    length: float,
+    config: SuboffConfig | None = None,
+) -> int:
+    """Assign halfway q to voxel appendage links outside the analytical body.
+
+    The axisymmetric body retains its analytical link distance.  Sail and fin
+    links, which do not yet have an analytical intersection routine, receive
+    the declared halfway fallback and are counted as geometry evidence.
+    """
+    if solid.ndim != 3 or solid.dtype is not torch.bool:
+        raise ValueError("solid must be a 3-D boolean tensor")
+    if link_mask.shape != q.shape or link_mask.shape[1:] != solid.shape:
+        raise ValueError("link mask and q must match the solid grid")
+    if link_mask.ndim != 4 or link_mask.shape[0] != 19:
+        raise ValueError("appendage link treatment requires D3Q19")
+    if length <= 0.0:
+        raise ValueError("length must be positive")
+    if config is None:
+        config = SuboffConfig()
+    from .d3q19 import C
+
+    nz, ny, nx = solid.shape
+    cx, cy, cz = center
+    bare, _ = build_suboff_mask(
+        "bare_hull", nx, ny, nz,
+        cx=cx, cy=cy, cz=cz, length=length,
+        config=config, device=solid.device,
+    )
+    count = 0
+    for direction in range(1, 19):
+        dcx, dcy, dcz = (int(value) for value in C[direction].tolist())
+        full_neighbor = torch.roll(
+            solid, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+        )
+        bare_neighbor = torch.roll(
+            bare, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
+        )
+        halfway = link_mask[direction] & full_neighbor & ~bare_neighbor
+        count += int(halfway.sum().item())
+        q[direction][halfway] = 0.5
+    return count
+
+
 @dataclass(frozen=True)
 class SuboffGeometryResolution:
     """Measured voxel-resolution evidence for an AFF-1/AFF-8 geometry."""
@@ -439,6 +488,7 @@ __all__ = [
     "SuboffGeometryResolution",
     "SuboffNestedStaticAMRPlan",
     "SuboffStaticAMRPlan",
+    "apply_suboff_appendage_halfway_links",
     "assess_suboff_geometry_resolution",
     "build_nested_fine_suboff_mask",
     "build_fine_suboff_mask",
