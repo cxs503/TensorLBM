@@ -31,6 +31,12 @@ def test_audit_groups_fine_substeps_and_reports_observer_closure() -> None:
         },
         "force_history": torch.tensor([10.0, 12.0], dtype=torch.float64),
         "bfl_total_history": torch.tensor([10.1, 12.1], dtype=torch.float64),
+        "pressure_history": torch.tensor([4.0, 6.0], dtype=torch.float64),
+        "wall_shear_history": torch.tensor([6.1, 6.1], dtype=torch.float64),
+        "wall_y_plus_min_history": torch.tensor([30.0, 32.0]),
+        "wall_y_plus_mean_history": torch.tensor([50.0, 54.0]),
+        "wall_y_plus_max_history": torch.tensor([80.0, 90.0]),
+        "wall_rejected_fraction_history": torch.tensor([0.0, 0.001]),
         "paired_primary_cv_samples": _pairs([
             (10, 10.0), (10, 12.0), (12, 14.0), (12, 16.0),
         ]),
@@ -53,6 +59,8 @@ def test_audit_groups_fine_substeps_and_reports_observer_closure() -> None:
 
     assert report["sampled_coarse_steps"] == 2
     assert report["case"]["hull_type"] == "bare_hull"
+    assert report["force_decomposition"]["mean_modeled_wall_shear_n"] == pytest.approx(6.1)
+    assert report["wall_model_applicability"]["mean_observed_y_plus"] == pytest.approx(52.0)
     closure = report["observer_closure"]
     assert closure["history_cv_vs_bfl"]["mean_residual_n"] == pytest.approx(0.1)
     assert closure["sampled_cv_vs_bfl"]["mean_difference_pct"] == pytest.approx(

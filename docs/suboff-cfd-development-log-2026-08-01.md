@@ -796,6 +796,20 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     fine substeps by coarse step and reports history, raw/source-corrected,
     nested-CV and surface-observer closure without promoting an in-progress
     checkpoint to validated CFD evidence.
+96. Force decomposition narrows the remaining physical error.  In the L90 v8
+    step-7500 checkpoint, mean modeled wall shear is 76.30 N and the residual
+    CV contribution after subtracting it is 34.45 N.  In the independently
+    running L120 v6 diagnostic at step 12000, those values are 70.93 N and
+    25.08 N.  For context only, ITTC-1957 at the 13.21-million physical Reynolds
+    number and the 5.9227 m2 analytical wetted area gives 78.41 N friction,
+    leaving 8.99 N between that correlation and the 87.4 N total experiment.
+    Thus neither grid supports increasing wall shear to match total drag; the
+    dominant excess decreases with refinement in the CV remainder associated
+    mainly with pressure/form drag.  The v6 link-pressure observer is excluded
+    because it predates the laboratory-frame correction.  The checkpoint
+    auditor now persists force decomposition, wall-model y+ applicability and
+    AMR/positivity quality alongside observer closure so this diagnosis is
+    repeated identically at every resolution.
 
 ## Rejected candidates
 
