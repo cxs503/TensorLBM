@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from tensorlbm.spatial_convergence import assess_spatial_convergence

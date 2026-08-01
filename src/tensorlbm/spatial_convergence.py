@@ -1,9 +1,12 @@
 """Resolution-sequence convergence and discretisation uncertainty evidence."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
-from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 @dataclass(frozen=True)
@@ -44,12 +47,12 @@ def _linear_fit(x: tuple[float, ...], y: tuple[float, ...]) -> tuple[float, floa
         return mean_y, 0.0, math.inf
     slope = sum(
         (x_value - mean_x) * (y_value - mean_y)
-        for x_value, y_value in zip(x, y)
+        for x_value, y_value in zip(x, y, strict=True)
     ) / denominator
     intercept = mean_y - slope * mean_x
     residual = sum(
         (value - (intercept + slope * coordinate)) ** 2
-        for coordinate, value in zip(x, y)
+        for coordinate, value in zip(x, y, strict=True)
     )
     return intercept, slope, residual
 
@@ -68,12 +71,14 @@ def assess_spatial_convergence(
         raise ValueError("at least three paired resolutions and values are required")
     if not all(math.isfinite(value) and value > 0.0 for value in n):
         raise ValueError("resolutions must be finite and positive")
-    if any(right <= left for left, right in zip(n, n[1:])):
+    if any(right <= left for left, right in zip(n, n[1:], strict=False)):
         raise ValueError("resolutions must be strictly increasing")
     if not 0.0 < minimum_order_search < maximum_order_search:
         raise ValueError("invalid observed-order search interval")
     finite = all(math.isfinite(value) for value in phi)
-    differences = tuple(right - left for left, right in zip(phi, phi[1:]))
+    differences = tuple(
+        right - left for left, right in zip(phi, phi[1:], strict=False)
+    )
     monotonic = finite and (
         all(value >= 0.0 for value in differences)
         or all(value <= 0.0 for value in differences)
