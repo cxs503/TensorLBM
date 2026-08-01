@@ -1294,6 +1294,18 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Result/log SHA-256 values are
      `73660fae62d4930db6d65e99eeb30f558d1ac21c7263f4df7ab4653a51e667ad`
      and `ceb8745b7b48e921fa9e9627773357535ec177081074146a24b9e1ff44cd0ddf`.
+145. Nested three-grid provenance now distinguishes dimensionless solver
+     identity from physical mesh placement.  Inner refinement margins, wake
+     extent, primary/auxiliary control-volume locations and wall exchange
+     distance must scale with coarse hull length; leaving any one fixed in
+     lattice cells fails the convergence gate.  The new v10 launcher uses an
+     exact integer 3:4:5 L90/L120/L150 design: inner margins 9/12/15, inner
+     wakes 12/16/20, primary CV margins 6/8/10, auxiliary margins
+     3,9 / 4,12 / 5,15, and wall sampling distances
+     2.109375/2.8125/3.515625.  Its largest preflight is 22.51 GiB at L150,
+     below a 24-GiB RTX 3090 budget but intentionally close enough that the
+     runtime memory guard remains mandatory.  Earlier constant-inner-margin
+     runs are stability evidence only, never formal grid convergence members.
 
 ## Rejected candidates
 

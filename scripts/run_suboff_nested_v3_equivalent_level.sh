@@ -111,6 +111,7 @@ viscosity_ramp_end=${TENSORLBM_VISCOSITY_RAMP_END_STEP:-0}
 health_interval=${TENSORLBM_HEALTH_INTERVAL:-$report}
 interface_filter_width=${TENSORLBM_INTERFACE_FILTER_WIDTH:-0}
 interface_filter_strength=${TENSORLBM_INTERFACE_FILTER_STRENGTH:-0}
+stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1}
 
 export CUDA_VISIBLE_DEVICES=$gpu
 exec "$python" examples/suboff_nested_static_amr_smoke.py \
@@ -133,7 +134,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --resolved-reynolds-start "$resolved_reynolds_start" \
   --viscosity-ramp-start-step "$viscosity_ramp_start" \
   --viscosity-ramp-end-step "$viscosity_ramp_end" \
-  --wall-law musker --stress-exchange-distance 1 \
+  --wall-law musker --stress-exchange-distance "$stress_exchange_distance" \
   --sponge-width "$sponge" --sponge-strength 0.3 \
   --far-field-mode non_equilibrium_extrapolation \
   --memory-bytes-per-cell 742 \

@@ -19,11 +19,6 @@ _IDENTITY_FIELDS = (
     "nu_water",
     "cs_smag",
     "wall_law",
-    "stress_exchange_distance",
-    "inner_wall_margin",
-    "inner_wake_cells",
-    "cv_margin",
-    "aux_cv_margins",
     "sponge_strength",
     "far_field_mode",
     "collision_model",
@@ -121,6 +116,8 @@ def assess_suboff_nested_convergence(
             *_IDENTITY_FIELDS,
             "nx", "ny", "nz", "hull_length",
             "outer_wall_margin", "outer_wake_cells", "sponge_width",
+            "inner_wall_margin", "inner_wake_cells", "cv_margin",
+            "aux_cv_margins", "stress_exchange_distance",
             "steps", "warmup_steps", "statistics_window_steps",
             "ramp_steps", "report_interval", "wall_diagnostic_interval",
             "surface_force_interval",
@@ -157,6 +154,41 @@ def assess_suboff_nested_convergence(
         ]
         for field in ("outer_wall_margin", "outer_wake_cells", "sponge_width")
     }
+    inner_mesh_ratios = {
+        field: [
+            float(item[2][field]) / coarse
+            for coarse, item in zip(coarse_lengths, parsed, strict=True)
+        ]
+        for field in (
+            "inner_wall_margin",
+            "inner_wake_cells",
+            "cv_margin",
+            "stress_exchange_distance",
+        )
+    }
+    auxiliary_margins: list[list[float]] = []
+    for _, _, configuration, _, _, _ in parsed:
+        raw = configuration["aux_cv_margins"]
+        if isinstance(raw, str):
+            values = [float(value.strip()) for value in raw.split(",") if value.strip()]
+        elif isinstance(raw, (list, tuple)):
+            values = [float(value) for value in raw]
+        else:
+            values = []
+        auxiliary_margins.append(values)
+    auxiliary_counts = {len(values) for values in auxiliary_margins}
+    if len(auxiliary_counts) == 1 and next(iter(auxiliary_counts), 0) > 0:
+        auxiliary_cv_ratios = {
+            f"margin_{index}_over_coarse_length": [
+                values[index] / coarse
+                for values, coarse in zip(
+                    auxiliary_margins, coarse_lengths, strict=True,
+                )
+            ]
+            for index in range(next(iter(auxiliary_counts)))
+        }
+    else:
+        auxiliary_cv_ratios = {"margin_count_mismatch": [math.inf]}
     time_ratios: dict[str, list[float]] = {}
     for field in (
         "steps", "warmup_steps", "statistics_window_steps", "ramp_steps",
@@ -186,6 +218,8 @@ def assess_suboff_nested_convergence(
         finest_ratios,
         *domain_ratios.values(),
         *outer_mesh_ratios.values(),
+        *inner_mesh_ratios.values(),
+        *auxiliary_cv_ratios.values(),
         *time_ratios.values(),
         *physical_duration_groups.values(),
     ]
@@ -249,6 +283,8 @@ def assess_suboff_nested_convergence(
             "finest_to_coarse_ratios": finest_ratios,
             "domain_over_coarse_length": domain_ratios,
             "outer_mesh_over_coarse_length": outer_mesh_ratios,
+            "inner_mesh_over_coarse_length": inner_mesh_ratios,
+            "auxiliary_cv_over_coarse_length": auxiliary_cv_ratios,
             "time_steps_over_coarse_length": time_ratios,
             "physical_duration_convective_times": physical_duration_groups,
             "scaled_configuration_invariant": scaled_configuration_invariant,
