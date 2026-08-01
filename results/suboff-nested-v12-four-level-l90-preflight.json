@@ -92,6 +92,13 @@
     "stress_exchange_distance_cells": 1.0,
     "stress_exchange_distance_over_finest_length": 0.001388888888888889,
     "estimated_exchange_y_plus": 693.9707216210123,
+    "estimated_bfl_exchange_y_plus_bounds": {
+      "requested_exchange_distance_cells": 1.0,
+      "minimum_effective_exchange_distance_cells": 1.0,
+      "maximum_effective_exchange_distance_cells": 1.5,
+      "minimum_exchange_y_plus_estimate": 693.9707216210123,
+      "maximum_exchange_y_plus_estimate": 1040.9560824315186
+    },
     "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
     "cuda_memory_preflight": null,
     "control_volume_interface_clearance": {

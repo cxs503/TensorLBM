@@ -12,8 +12,10 @@ usage() {
 # Four physical levels: L=90 -> 180 -> 360 -> 720.  The deepest block keeps
 # the largest force CV (24 finest cells) plus its streaming-source guard away
 # from the interface.  A one-cell exchange distance is the interpolation
-# floor and has an a-priori y+ estimate of about 694 at L=720 (versus about
-# 1527 measured at L=360 in v20).  This is a wall-distance/refinement pilot,
+# floor and has a nominal a-priori y+ estimate of about 694 at L=720 (versus
+# about 1527 measured at L=360 in v20).  The BFL y1+0.5 clearance makes the
+# conservative pre-run range roughly 694--1041, so measured y+ remains a
+# mandatory gate.  This is a wall-distance/refinement pilot,
 # not a member of the fixed exchange-height grid-convergence sequence.
 export TENSORLBM_CAMPAIGN_GENERATION=${TENSORLBM_CAMPAIGN_GENERATION:-v12}
 export TENSORLBM_INNER_WALL_MARGIN=${TENSORLBM_INNER_WALL_MARGIN:-8}

@@ -27,8 +27,8 @@ Usage — real-time monitoring::
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Sequence
 
 import torch
 
@@ -61,6 +61,56 @@ def estimate_exchange_yplus(
         * physical_reynolds
         * math.sqrt(cf / 2.0)
     )
+
+
+def estimate_bfl_exchange_yplus_bounds(
+    *,
+    physical_reynolds: float,
+    characteristic_length_cells: float,
+    requested_exchange_distance_cells: float,
+    minimum_bfl_wall_distance_cells: float = 0.0,
+    maximum_bfl_wall_distance_cells: float = 1.0,
+) -> dict[str, float]:
+    """Bound y+ after the BFL sampler enforces clearance from the wall.
+
+    The exchange sampler uses ``y2=max(requested, y1+0.5)`` at each curved
+    boundary node.  A requested one-cell height therefore does not imply that
+    every sample lies exactly one cell from the analytical wall.  This helper
+    exposes the corresponding a-priori range instead of reporting the nominal
+    value as a guaranteed maximum.
+    """
+    if requested_exchange_distance_cells <= 0.0:
+        raise ValueError("requested exchange distance must be positive")
+    if not (
+        0.0 <= minimum_bfl_wall_distance_cells
+        <= maximum_bfl_wall_distance_cells
+    ):
+        raise ValueError("BFL wall-distance bounds must be ordered and non-negative")
+    minimum_effective_distance = max(
+        requested_exchange_distance_cells,
+        minimum_bfl_wall_distance_cells + 0.5,
+    )
+    maximum_effective_distance = max(
+        requested_exchange_distance_cells,
+        maximum_bfl_wall_distance_cells + 0.5,
+    )
+    common = {
+        "physical_reynolds": physical_reynolds,
+        "characteristic_length_cells": characteristic_length_cells,
+    }
+    return {
+        "requested_exchange_distance_cells": requested_exchange_distance_cells,
+        "minimum_effective_exchange_distance_cells": minimum_effective_distance,
+        "maximum_effective_exchange_distance_cells": maximum_effective_distance,
+        "minimum_exchange_y_plus_estimate": estimate_exchange_yplus(
+            **common,
+            exchange_distance_cells=minimum_effective_distance,
+        ),
+        "maximum_exchange_y_plus_estimate": estimate_exchange_yplus(
+            **common,
+            exchange_distance_cells=maximum_effective_distance,
+        ),
+    }
 
 
 def plan_exchange_yplus_refinement(
