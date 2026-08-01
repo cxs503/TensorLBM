@@ -16,6 +16,7 @@ problem-specific physical boundaries without teaching this module about them.
 """
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
@@ -28,6 +29,10 @@ from .kinetic_flux_register import (
     apply_face_local_reflux,
     build_kinetic_interface_links,
     observe_kinetic_interface_transfer,
+)
+from .population_positivity import (
+    PositivityDiagnostics,
+    limit_nonequilibrium_for_positivity,
 )
 from .refinement import BoxRegion
 
@@ -70,6 +75,8 @@ class StaticBlockAMRConfig:
     reflux: bool = True
     maximum_reflux_correction_fraction: float = 0.2
     regularize_restriction: bool = False
+    ghost_interpolation: str = "injection"
+    enforce_transfer_positivity: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.box, BoxRegion):
@@ -77,6 +84,8 @@ class StaticBlockAMRConfig:
         convective_refined_tau(self.tau_coarse, self.ratio)
         if self.ghost != 1:
             raise ValueError("the production runtime currently supports ghost=1")
+        if self.ghost_interpolation not in ("injection", "trilinear"):
+            raise ValueError("ghost_interpolation must be injection or trilinear")
         if not 0.0 < self.maximum_reflux_correction_fraction <= 1.0:
             raise ValueError(
                 "maximum_reflux_correction_fraction must lie in (0,1]",
@@ -102,10 +111,26 @@ class PopulationRefluxLedger:
     residual: torch.Tensor
     limited_directions: int = 0
     raw_kinetic_mismatch: torch.Tensor | None = None
+    restriction_limited_fraction: float = 0.0
+    restriction_minimum_alpha: float = 1.0
 
     @property
     def mass_residual(self) -> float:
         return float(self.residual.sum().item())
+
+
+@dataclass(frozen=True)
+class _GhostSamplingPlan:
+    target_flat: torch.Tensor
+    z0: torch.Tensor
+    y0: torch.Tensor
+    x0: torch.Tensor
+    z1: torch.Tensor | None = None
+    y1: torch.Tensor | None = None
+    x1: torch.Tensor | None = None
+    wz: torch.Tensor | None = None
+    wy: torch.Tensor | None = None
+    wx: torch.Tensor | None = None
 
 
 def _validate_parent_and_box(f: torch.Tensor, config: StaticBlockAMRConfig) -> None:
@@ -160,6 +185,8 @@ class StaticBlockAMR3D:
         self.coarse_f = coarse_f
         self.config = config
         self.fine_f = _sample_parent_with_ghost(coarse_f, config)
+        self._ghost_sampling_plan = self._build_ghost_sampling_plan()
+        self.last_restriction_positivity: PositivityDiagnostics | None = None
         physical_shape = self.physical_fine_shape
         if fine_solid is not None:
             if fine_solid.shape != physical_shape or fine_solid.dtype is not torch.bool:
@@ -221,24 +248,122 @@ class StaticBlockAMR3D:
     def cell_saving_fraction(self) -> float:
         return 1.0 - self.total_allocated_cells / self.uniform_fine_equivalent_cells
 
-    def _fill_ghost(self, parent_time_state: torch.Tensor) -> None:
-        sampled = _sample_parent_with_ghost(parent_time_state, self.config)
-        g = self.config.ghost
-        ghost_mask = torch.ones(
-            self.fine_f.shape[1:], dtype=torch.bool, device=self.fine_f.device,
+    def _build_ghost_sampling_plan(self) -> _GhostSamplingPlan:
+        """Cache the non-overlapping one-cell shell and its parent donors."""
+        _, nz, ny, nx = self.fine_f.shape
+        device = self.fine_f.device
+        regions = (
+            (
+                torch.tensor((0, nz - 1), device=device),
+                torch.arange(ny, device=device),
+                torch.arange(nx, device=device),
+            ),
+            (
+                torch.arange(1, nz - 1, device=device),
+                torch.tensor((0, ny - 1), device=device),
+                torch.arange(nx, device=device),
+            ),
+            (
+                torch.arange(1, nz - 1, device=device),
+                torch.arange(1, ny - 1, device=device),
+                torch.tensor((0, nx - 1), device=device),
+            ),
         )
-        ghost_mask[g:-g, g:-g, g:-g] = False
-        self.fine_f[:, ghost_mask] = sampled[:, ghost_mask]
+        coordinates = [
+            torch.stack(torch.meshgrid(z, y, x, indexing="ij"), dim=-1).reshape(-1, 3)
+            for z, y, x in regions
+        ]
+        local = torch.cat(coordinates, dim=0)
+        target_flat = (local[:, 0] * ny + local[:, 1]) * nx + local[:, 2]
+        b, r, g = self.config.box, self.config.ratio, self.config.ghost
+        global_fine = torch.stack((
+            b.z0 * r - g + local[:, 0],
+            b.y0 * r - g + local[:, 1],
+            b.x0 * r - g + local[:, 2],
+        ), dim=1)
+        if self.config.ghost_interpolation == "injection":
+            donor = torch.div(global_fine, r, rounding_mode="floor")
+            return _GhostSamplingPlan(
+                target_flat, donor[:, 0], donor[:, 1], donor[:, 2],
+            )
+
+        # Coarse cell centres are at i+1/2.  Express a fine cell centre in
+        # the corresponding coarse-index coordinate before linear blending.
+        continuous = (global_fine.to(self.fine_f.dtype) + 0.5) / r - 0.5
+        lower = torch.floor(continuous).to(torch.long)
+        weight = continuous - lower.to(continuous.dtype)
+        upper = lower + 1
+        return _GhostSamplingPlan(
+            target_flat,
+            lower[:, 0], lower[:, 1], lower[:, 2],
+            upper[:, 0], upper[:, 1], upper[:, 2],
+            weight[:, 0], weight[:, 1], weight[:, 2],
+        )
+
+    def _fill_ghost(self, parent_time_state: torch.Tensor) -> None:
+        plan = self._ghost_sampling_plan
+        if self.config.ghost_interpolation == "injection":
+            sampled = parent_time_state[:, plan.z0, plan.y0, plan.x0]
+        else:
+            assert all(value is not None for value in (
+                plan.z1, plan.y1, plan.x1, plan.wz, plan.wy, plan.wx,
+            ))
+            z1, y1, x1 = plan.z1, plan.y1, plan.x1
+            wz, wy, wx = plan.wz, plan.wy, plan.wx
+            assert z1 is not None and y1 is not None and x1 is not None
+            assert wz is not None and wy is not None and wx is not None
+            wx = wx.unsqueeze(0)
+            wy = wy.unsqueeze(0)
+            wz = wz.unsqueeze(0)
+            v00 = torch.lerp(
+                parent_time_state[:, plan.z0, plan.y0, plan.x0],
+                parent_time_state[:, plan.z0, plan.y0, x1], wx,
+            )
+            v01 = torch.lerp(
+                parent_time_state[:, plan.z0, y1, plan.x0],
+                parent_time_state[:, plan.z0, y1, x1], wx,
+            )
+            v10 = torch.lerp(
+                parent_time_state[:, z1, plan.y0, plan.x0],
+                parent_time_state[:, z1, plan.y0, x1], wx,
+            )
+            v11 = torch.lerp(
+                parent_time_state[:, z1, y1, plan.x0],
+                parent_time_state[:, z1, y1, x1], wx,
+            )
+            sampled = torch.lerp(
+                torch.lerp(v00, v01, wy),
+                torch.lerp(v10, v11, wy),
+                wz,
+            )
+        sampled = rescale_nonequilibrium(
+            sampled[:, None, None, :],
+            tau_source=self.config.tau_coarse,
+            tau_target=self.config.tau_fine,
+            spatial_ratio=float(self.config.ratio),
+        )[:, 0, 0, :]
+        self.fine_f.reshape(self.fine_f.shape[0], -1)[:, plan.target_flat] = sampled
 
     def _restrict_physical(self) -> torch.Tensor:
         restricted = restrict_populations_2to1(self.fine_physical)
-        return rescale_nonequilibrium(
+        restricted = rescale_nonequilibrium(
             restricted,
             tau_source=self.config.tau_fine,
             tau_target=self.config.tau_coarse,
             spatial_ratio=1.0 / self.config.ratio,
             regularize=self.config.regularize_restriction,
         )
+        self.last_restriction_positivity = None
+        if self.config.enforce_transfer_positivity:
+            restricted, diagnostic = limit_nonequilibrium_for_positivity(restricted)
+            self.last_restriction_positivity = diagnostic
+            if not all(math.isfinite(value) for value in (
+                diagnostic.minimum_population_before,
+                diagnostic.minimum_population_after,
+                diagnostic.minimum_alpha,
+            )):
+                raise FloatingPointError("non-finite fine-to-coarse AMR restriction")
+        return restricted
 
     def _replace_without_reflux(self, restricted: torch.Tensor) -> PopulationRefluxLedger:
         b = self.config.box
@@ -335,6 +460,14 @@ class StaticBlockAMR3D:
             report.residual,
             report.limited_directions,
             report.raw_kinetic_mismatch,
+            (
+                self.last_restriction_positivity.limited_fraction
+                if self.last_restriction_positivity is not None else 0.0
+            ),
+            (
+                self.last_restriction_positivity.minimum_alpha
+                if self.last_restriction_positivity is not None else 1.0
+            ),
         )
         return self.last_reflux
 
@@ -542,6 +675,14 @@ class NestedStaticBlockAMR3D:
             report.residual,
             report.limited_directions,
             report.raw_kinetic_mismatch,
+            (
+                interface.last_restriction_positivity.limited_fraction
+                if interface.last_restriction_positivity is not None else 0.0
+            ),
+            (
+                interface.last_restriction_positivity.minimum_alpha
+                if interface.last_restriction_positivity is not None else 1.0
+            ),
         )
         interface.last_reflux = ledger
         ledgers[interface_index] = ledger
