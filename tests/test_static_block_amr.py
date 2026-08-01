@@ -209,6 +209,31 @@ def test_transfer_positivity_limits_amplified_restriction_before_parent_use() ->
     assert diagnostic.minimum_alpha < 1.0
 
 
+def test_transfer_positivity_also_limits_coarse_to_fine_ghosts() -> None:
+    config = StaticBlockAMRConfig(
+        BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
+        tau_coarse=0.5002,
+        enforce_transfer_positivity=True,
+    )
+    equilibrium = _uniform_equilibrium((8, 9, 11)).float()
+    solver = StaticBlockAMR3D(equilibrium.clone(), config)
+    parent = equilibrium.clone()
+    parent[0] -= 2.0
+    parent[1] += 1.0
+    parent[2] += 1.0
+
+    solver._reset_prolongation_positivity()
+    solver._fill_ghost(parent)
+
+    plan = solver._ghost_sampling_plan
+    ghost = solver.fine_f.reshape(19, -1)[:, plan.target_flat]
+    assert float(ghost.min()) >= 0.0
+    diagnostic = solver.last_prolongation_positivity
+    assert diagnostic is not None
+    assert diagnostic.limited_fraction > 0.0
+    assert diagnostic.minimum_alpha < 1.0
+
+
 def test_uniform_moving_equilibrium_survives_nested_step_exactly() -> None:
     coarse = _uniform_equilibrium((8, 9, 11))
     solver = StaticBlockAMR3D(coarse.clone(), _config())

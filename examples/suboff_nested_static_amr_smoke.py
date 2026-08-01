@@ -1024,6 +1024,12 @@ def run(args: argparse.Namespace) -> dict:
                         ledger.restriction_limited_fraction
                     ),
                     "restriction_minimum_alpha": ledger.restriction_minimum_alpha,
+                    "prolongation_limited_fraction": (
+                        ledger.prolongation_limited_fraction
+                    ),
+                    "prolongation_minimum_alpha": (
+                        ledger.prolongation_minimum_alpha
+                    ),
                     "raw_mass_mismatch": raw_mismatch_moments[index][0],
                     "raw_momentum_mismatch_norm": raw_mismatch_moments[index][1],
                 }
@@ -1134,10 +1140,12 @@ def run(args: argparse.Namespace) -> dict:
             maximum_transfer_limited_fraction[index] = max(
                 maximum_transfer_limited_fraction[index],
                 ledger.restriction_limited_fraction,
+                ledger.prolongation_limited_fraction,
             )
             minimum_transfer_alpha[index] = min(
                 minimum_transfer_alpha[index],
                 ledger.restriction_minimum_alpha,
+                ledger.prolongation_minimum_alpha,
             )
             maximum_raw_mass_mismatch[index] = max(
                 maximum_raw_mass_mismatch[index],

@@ -1451,6 +1451,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      and `1a3ee1bf3c732b1d01c9942774e3d4b5b3de16f881863fc1345f1fbcf896778d`.
      Together with the 16- and 24-cell cases, this rules out transverse
      interface displacement alone as a production remedy.
+161. Transfer positivity is now genuinely bidirectional.  The existing
+     `enforce_transfer_positivity` option limits both fine-to-coarse
+     restriction and coarse-to-fine initial/ghost prolongation while retaining
+     the conserved density and momentum of each transferred state.  Every
+     reflux ledger and health record reports the prolongation-limited fraction
+     and minimum non-equilibrium scale separately; the aggregate transfer gate
+     uses the worst value from either direction.  Fifty-seven focused
+     single/nested AMR, SUBOFF smoke and startup-health tests pass.  This closes
+     a semantic and safety gap but does not retroactively admit any trajectory.
 
 ## Rejected candidates
 
