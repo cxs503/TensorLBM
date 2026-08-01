@@ -19,23 +19,25 @@ import time
 from pathlib import Path
 
 import torch
-
 from suboff_experimental_resistance import (
     MODEL_LENGTH_M,
     experimental_point,
     force_scale_newton,
     smooth_ramp_factor,
 )
-from tensorlbm.cumulant import collide_cumulant_d3q19
+
 from tensorlbm.boundaries3d import far_field_bc_3d
+from tensorlbm.checkpoint_io import atomic_torch_save
 from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
+from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
-from tensorlbm.drag_pressure import get_near_wall_3d
+from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
+from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.population_positivity import limit_nonequilibrium_for_positivity
 from tensorlbm.solver3d import stream3d
@@ -49,9 +51,15 @@ from tensorlbm.static_block_amr import (
     StaticBlockAMRConfig,
 )
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
-from tensorlbm.suboff_static_amr import build_fine_suboff_mask, plan_suboff_static_amr
-from tensorlbm.turbulence import collide_smagorinsky_mrt3d, collide_wale_mrt3d
-from tensorlbm.wall_model import bfl_wall_function_3d
+from tensorlbm.suboff_static_amr import (
+    build_fine_suboff_mask,
+    plan_suboff_static_amr,
+)
+from tensorlbm.turbulence import (
+    collide_smagorinsky_mrt3d,
+    collide_wale_mrt3d,
+)
+from tensorlbm.wall_model import WallStressDiagnostics, bfl_wall_function_3d
 
 
 def _appendage_halfway_links(
@@ -113,6 +121,20 @@ def _sponge(
 
 
 def run(args: argparse.Namespace) -> dict:
+    if not 0 <= args.warmup_steps < args.steps:
+        raise ValueError("warmup-steps must lie in [0, steps)")
+    if args.wall_diagnostic_interval < 1:
+        raise ValueError("wall-diagnostic-interval must be positive")
+    if args.stress_exchange_distance < 0.0:
+        raise ValueError("stress-exchange-distance must be non-negative")
+    if min(args.report_interval, args.average_window) < 1:
+        raise ValueError("report-interval and average-window must be positive")
+    if args.checkpoint_interval < 0:
+        raise ValueError("checkpoint-interval must be non-negative")
+    if args.resume and not args.checkpoint:
+        raise ValueError("resume requires --checkpoint")
+    if min(args.error_target, args.drift_target, args.force_observer_target) < 0.0:
+        raise ValueError("acceptance targets must be non-negative")
     device = torch.device(args.device)
     if device.type == "cuda":
         torch.cuda.set_device(device)
@@ -184,6 +206,21 @@ def run(args: argparse.Namespace) -> dict:
             length=args.hull_length * 2.0, device=device,
         )
     fine_near = get_near_wall_3d(fine_solid_g)
+    if args.hull_type == "bare_hull":
+        fine_surface = SurfaceMesh.from_suboff(
+            fine_solid_g, fine_near, *fine_center,
+            args.hull_length * 2.0, args.hull_length * 2.0 / (2.0 * 8.57),
+            config=config,
+        )
+        fine_area_weight = torch.full_like(
+            fine_near,
+            float(fine_geometry["wetted_area_lu2"])
+            / max(float(fine_near.sum().item()), 1.0),
+            dtype=amr.fine_f.dtype,
+        )
+    else:
+        fine_surface = SurfaceMesh.from_gradient(fine_solid_g, fine_near)
+        fine_area_weight = None
     fine_solid_q = fine_solid_g.unsqueeze(0).expand_as(amr.fine_f)
     fine_indices = fine_solid_g.nonzero(as_tuple=False)
     z_min, y_min, x_min = (
@@ -200,7 +237,6 @@ def run(args: argparse.Namespace) -> dict:
         device=device,
     )
 
-    coarse_free = equilibrium3d(rho, ux, zero, zero, device=device)
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     if args.sponge_inlet:
         sponge_faces = ("x-",) + sponge_faces
@@ -209,8 +245,23 @@ def run(args: argparse.Namespace) -> dict:
         device=device, faces=sponge_faces,
     )
     force_samples: list[tuple[float, float, float]] = []
+    wall_diagnostic_samples: list[WallStressDiagnostics] = []
     positivity_fractions: list[float] = []
     current_step = 0
+    history: list[dict] = []
+    recent_forces: list[float] = []
+    recent_bfl_pressure: list[float] = []
+    recent_wall_shear: list[float] = []
+    force_history: list[float] = []
+    bfl_total_history: list[float] = []
+    pressure_history: list[float] = []
+    wall_shear_history: list[float] = []
+    wall_y_plus_min_history: list[float] = []
+    wall_y_plus_mean_history: list[float] = []
+    wall_y_plus_max_history: list[float] = []
+    wall_rejected_fraction_history: list[float] = []
+    maximum_positivity_limited_fraction = 0.0
+    maximum_reflux_population_residual = 0.0
 
     def advance(
         f: torch.Tensor, tau: float, level: int, substep: int,
@@ -256,13 +307,31 @@ def run(args: argparse.Namespace) -> dict:
         post_collision = torch.where(fine_solid_q, before, collided)
         out = stream3d(post_collision)
         activation = smooth_ramp_factor(current_step, args.ramp_steps)
-        out, friction, pressure = bfl_wall_function_3d(
+        collect_wall_diagnostics = (
+            current_step > args.warmup_steps
+            and current_step % args.wall_diagnostic_interval == 0
+        )
+        wall_result = bfl_wall_function_3d(
             out, post_collision, fine_solid_g, 2.0 * nu_coarse,
             bfl_mask, bfl_q, y_val=args.wall_distance,
             wall_law=args.wall_law, near_mask=fine_near,
             bfl_wall_mode="wall_model_slip", wall_activation=activation,
+            stress_exchange_distance=(
+                args.stress_exchange_distance
+                if args.stress_exchange_distance > 0.0 else None
+            ),
+            wall_normals=(
+                fine_surface.nx_n, fine_surface.ny_n, fine_surface.nz_n,
+            ),
+            area_weight=fine_area_weight,
             apply_wall_stress=not args.diagnostic_uncoupled_wall_stress,
+            return_wall_diagnostics=collect_wall_diagnostics,
         )
+        if collect_wall_diagnostics:
+            out, friction, pressure, wall_diagnostics = wall_result
+            wall_diagnostic_samples.append(wall_diagnostics)
+        else:
+            out, friction, pressure = wall_result
         if not args.disable_positivity_limiter:
             out, diagnostic = limit_nonequilibrium_for_positivity(out)
             positivity_fractions.append(diagnostic.limited_fraction)
@@ -277,13 +346,124 @@ def run(args: argparse.Namespace) -> dict:
         rho_water=args.rho_water, dx_m=dx_fine_m,
         speed_mps=point.speed_mps, lattice_speed=args.lattice_speed,
     )
+    checkpoint = Path(args.checkpoint) if args.checkpoint else None
+    checkpoint_signature = {
+        "coarse_shape_zyx": list(shape),
+        "hull_type": args.hull_type,
+        "speed_knots": args.speed_knots,
+        "hull_length": args.hull_length,
+        "center_x_fraction": args.center_x_fraction,
+        "refinement_box": vars(plan.box),
+        "wall_margin": args.wall_margin,
+        "wake_cells": args.wake_cells,
+        "cv_margin": args.cv_margin,
+        "reflux_enabled": not args.disable_reflux,
+        "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
+        "positivity_limiter_enabled": not args.disable_positivity_limiter,
+        "warmup_steps": args.warmup_steps,
+        "report_interval": args.report_interval,
+        "average_window": args.average_window,
+        "ramp_steps": args.ramp_steps,
+        "lattice_speed": args.lattice_speed,
+        "resolved_reynolds": args.resolved_reynolds,
+        "nu_water": args.nu_water,
+        "rho_water": args.rho_water,
+        "cs_smag": args.cs_smag,
+        "cw_wale": args.cw_wale,
+        "les_model": args.les_model,
+        "collision_model": args.collision_model,
+        "wall_law": args.wall_law,
+        "wall_distance": args.wall_distance,
+        "stress_exchange_distance": args.stress_exchange_distance,
+        "wall_diagnostic_interval": args.wall_diagnostic_interval,
+        "sponge_width": args.sponge_width,
+        "sponge_strength": args.sponge_strength,
+        "sponge_inlet": args.sponge_inlet,
+        "far_field_mode": args.far_field_mode,
+    }
+
+    if args.resume:
+        assert checkpoint is not None
+        state = torch.load(checkpoint, map_location=device, weights_only=True)
+        if state.get("configuration") != checkpoint_signature:
+            raise ValueError("checkpoint configuration does not match static-AMR run")
+        current_step = int(state["step"])
+        if current_step >= args.steps:
+            raise ValueError("checkpoint already reached or exceeded requested steps")
+        amr.coarse_f = state["coarse_populations"].to(device=device)
+        amr.fine_f = state["fine_populations"].to(device=device)
+        force_history = state["force_history"].tolist()
+        bfl_total_history = state["bfl_total_history"].tolist()
+        pressure_history = state["pressure_history"].tolist()
+        wall_shear_history = state["wall_shear_history"].tolist()
+        recent_forces = state["recent_forces"].tolist()
+        recent_bfl_pressure = state["recent_bfl_pressure"].tolist()
+        recent_wall_shear = state["recent_wall_shear"].tolist()
+        wall_y_plus_min_history = state["wall_y_plus_min_history"].tolist()
+        wall_y_plus_mean_history = state["wall_y_plus_mean_history"].tolist()
+        wall_y_plus_max_history = state["wall_y_plus_max_history"].tolist()
+        wall_rejected_fraction_history = state[
+            "wall_rejected_fraction_history"
+        ].tolist()
+        maximum_positivity_limited_fraction = float(
+            state["maximum_positivity_limited_fraction"],
+        )
+        maximum_reflux_population_residual = float(
+            state["maximum_reflux_population_residual"],
+        )
+        history = list(state["history"])
+
+    def save_checkpoint(step: int) -> None:
+        if checkpoint is None:
+            return
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        atomic_torch_save({
+            "schema": "tensorlbm-suboff-static-amr-checkpoint-v2",
+            "configuration": checkpoint_signature,
+            "step": step,
+            "coarse_populations": amr.coarse_f.detach().cpu(),
+            "fine_populations": amr.fine_f.detach().cpu(),
+            "force_history": torch.tensor(force_history, dtype=torch.float64),
+            "bfl_total_history": torch.tensor(
+                bfl_total_history, dtype=torch.float64,
+            ),
+            "pressure_history": torch.tensor(pressure_history, dtype=torch.float64),
+            "wall_shear_history": torch.tensor(
+                wall_shear_history, dtype=torch.float64,
+            ),
+            "recent_forces": torch.tensor(recent_forces, dtype=torch.float64),
+            "recent_bfl_pressure": torch.tensor(
+                recent_bfl_pressure, dtype=torch.float64,
+            ),
+            "recent_wall_shear": torch.tensor(
+                recent_wall_shear, dtype=torch.float64,
+            ),
+            "wall_y_plus_min_history": torch.tensor(
+                wall_y_plus_min_history, dtype=torch.float64,
+            ),
+            "wall_y_plus_mean_history": torch.tensor(
+                wall_y_plus_mean_history, dtype=torch.float64,
+            ),
+            "wall_y_plus_max_history": torch.tensor(
+                wall_y_plus_max_history, dtype=torch.float64,
+            ),
+            "wall_rejected_fraction_history": torch.tensor(
+                wall_rejected_fraction_history, dtype=torch.float64,
+            ),
+            "maximum_positivity_limited_fraction": (
+                maximum_positivity_limited_fraction
+            ),
+            "maximum_reflux_population_residual": (
+                maximum_reflux_population_residual
+            ),
+            "history": history,
+        }, checkpoint)
+
     started = time.time()
-    history: list[dict] = []
-    recent_forces: list[float] = []
-    recent_bfl_pressure: list[float] = []
-    recent_wall_shear: list[float] = []
-    for current_step in range(1, args.steps + 1):
+    start_step = current_step
+    for current_step in range(start_step + 1, args.steps + 1):
         force_samples.clear()
+        wall_diagnostic_samples.clear()
         positivity_fractions.clear()
         ledger = amr.step(advance)
         pressure = sum(item[0] for item in force_samples) / len(force_samples)
@@ -291,6 +471,42 @@ def run(args: argparse.Namespace) -> dict:
         cv_force = sum(item[2] for item in force_samples) / len(force_samples)
         resistance = cv_force * scale
         bfl_resistance = (pressure + friction) * scale
+        maximum_positivity_limited_fraction = max(
+            maximum_positivity_limited_fraction,
+            max(positivity_fractions, default=0.0),
+        )
+        maximum_reflux_population_residual = max(
+            maximum_reflux_population_residual,
+            float(ledger.residual.abs().max().item()),
+        )
+        if current_step > args.warmup_steps:
+            force_history.append(resistance)
+            bfl_total_history.append(bfl_resistance)
+            pressure_history.append(pressure * scale)
+            wall_shear_history.append(friction * scale)
+        if wall_diagnostic_samples:
+            finite_y_min = [
+                diagnostic.y_plus_min for diagnostic in wall_diagnostic_samples
+                if diagnostic.y_plus_min is not None
+            ]
+            finite_y_mean = [
+                diagnostic.y_plus_mean for diagnostic in wall_diagnostic_samples
+                if diagnostic.y_plus_mean is not None
+            ]
+            finite_y_max = [
+                diagnostic.y_plus_max for diagnostic in wall_diagnostic_samples
+                if diagnostic.y_plus_max is not None
+            ]
+            if finite_y_mean:
+                wall_y_plus_min_history.append(min(finite_y_min))
+                wall_y_plus_mean_history.append(
+                    sum(finite_y_mean) / len(finite_y_mean),
+                )
+                wall_y_plus_max_history.append(max(finite_y_max))
+            wall_rejected_fraction_history.append(max(
+                diagnostic.rejected_fraction
+                for diagnostic in wall_diagnostic_samples
+            ))
         recent_forces.append(resistance)
         recent_bfl_pressure.append(pressure * scale)
         recent_wall_shear.append(friction * scale)
@@ -298,7 +514,10 @@ def run(args: argparse.Namespace) -> dict:
             recent_forces.pop(0)
             recent_bfl_pressure.pop(0)
             recent_wall_shear.pop(0)
-        if not bool(torch.isfinite(amr.coarse_f).all()) or not bool(torch.isfinite(amr.fine_f).all()):
+        if (
+            not bool(torch.isfinite(amr.coarse_f).all())
+            or not bool(torch.isfinite(amr.fine_f).all())
+        ):
             raise FloatingPointError(f"non-finite population at step {current_step}")
         if current_step % args.report_interval == 0 or current_step == args.steps:
             mean_force = sum(recent_forces) / len(recent_forces)
@@ -314,6 +533,9 @@ def run(args: argparse.Namespace) -> dict:
                 ),
                 "error_pct": abs(mean_force - point.resistance_n) / point.resistance_n * 100.0,
                 "reflux_mass_residual": ledger.mass_residual,
+                "reflux_max_population_residual": float(
+                    ledger.residual.abs().max().item()
+                ),
                 "maximum_positivity_limited_fraction": max(
                     positivity_fractions, default=0.0,
                 ),
@@ -324,15 +546,60 @@ def run(args: argparse.Namespace) -> dict:
                 f"exp={point.resistance_n:.3f} N err={row['error_pct']:.2f}% "
                 f"reflux={ledger.mass_residual:.3e}", flush=True,
             )
+        if (
+            checkpoint is not None and args.checkpoint_interval
+            and current_step % args.checkpoint_interval == 0
+        ):
+            save_checkpoint(current_step)
 
-    mean_force = sum(recent_forces) / len(recent_forces)
+    mean_force = sum(force_history) / len(force_history)
+    mean_bfl_total = sum(bfl_total_history) / len(bfl_total_history)
+    mean_pressure = sum(pressure_history) / len(pressure_history)
+    mean_wall_shear = sum(wall_shear_history) / len(wall_shear_history)
+    force_stationarity = assess_force_stationarity(
+        force_history,
+        block_size=max(1, len(force_history) // 8),
+    )
+    reference_error_pct = (
+        abs(mean_force - point.resistance_n) / point.resistance_n * 100.0
+    )
+    force_observer_difference_pct = (
+        abs(mean_bfl_total - mean_force) / max(abs(mean_force), 1e-30) * 100.0
+    )
+    maximum_rejected_fraction = max(
+        wall_rejected_fraction_history, default=0.0,
+    )
+    wall_sampling_acceptable = (
+        bool(wall_rejected_fraction_history)
+        and maximum_rejected_fraction <= 0.01
+    )
+    limiter_acceptable = maximum_positivity_limited_fraction <= 1e-3
+    reflux_acceptable = maximum_reflux_population_residual <= 1e-6
+    finite = (
+        bool(torch.isfinite(amr.coarse_f).all())
+        and bool(torch.isfinite(amr.fine_f).all())
+        and math.isfinite(mean_force)
+    )
+    single_grid_admitted = (
+        finite
+        and not args.diagnostic_uncoupled_wall_stress
+        and reference_error_pct <= args.error_target
+        and force_stationarity.meets(args.drift_target)
+        and force_observer_difference_pct <= args.force_observer_target
+        and limiter_acceptable
+        and reflux_acceptable
+        and wall_sampling_acceptable
+    )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30 if device.type == "cuda" else None
     )
     rho_c, ux_c, uy_c, uz_c = macroscopic3d(amr.coarse_f)
     result = {
-        "schema": "tensorlbm-suboff-static-amr-v1",
-        "status": "grid_candidate_not_yet_validated",
+        "schema": "tensorlbm-suboff-static-amr-v2",
+        "status": (
+            "single_grid_candidate" if single_grid_admitted
+            else "single_grid_rejected"
+        ),
         "configuration": {
             "device": str(device), "coarse_shape_zyx": list(shape),
             "coarse_hull_length_cells": args.hull_length,
@@ -341,6 +608,11 @@ def run(args: argparse.Namespace) -> dict:
             "refinement_box": vars(plan.box), "tau_coarse": tau_coarse,
             "tau_fine": amr.config.tau_fine, "physical_reynolds": physical_re,
             "collision_reynolds": collision_re, "steps": args.steps,
+            "warmup_steps": args.warmup_steps,
+            "report_interval": args.report_interval,
+            "report_average_window": args.average_window,
+            "resumed_from_step": start_step,
+            "checkpoint_path": str(checkpoint) if checkpoint else None,
             "reflux_enabled": amr.config.reflux,
             "reflux_method": "face_local_post_collision_kinetic_flux",
             "les_model": args.les_model,
@@ -349,11 +621,19 @@ def run(args: argparse.Namespace) -> dict:
                 args.cw_wale if args.les_model == "wale" else args.cs_smag
             ),
             "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
+            "wall_law": args.wall_law,
+            "wall_distance": args.wall_distance,
+            "stress_exchange_distance": (
+                args.stress_exchange_distance
+                if args.stress_exchange_distance > 0.0 else None
+            ),
+            "wall_diagnostic_interval": args.wall_diagnostic_interval,
             "positivity_limiter_enabled": not args.disable_positivity_limiter,
             "far_field_mode": args.far_field_mode,
             "sponge_width": args.sponge_width,
             "sponge_strength": args.sponge_strength,
             "sponge_inlet_enabled": args.sponge_inlet,
+            "wall_activation_ramp_steps": args.ramp_steps,
         },
         "mesh": {
             "coarse_cells": plan.coarse_cells,
@@ -368,26 +648,69 @@ def run(args: argparse.Namespace) -> dict:
         "result": {
             "mean_resistance_n": mean_force,
             "mean_bfl_pressure_n_diagnostic": (
-                sum(recent_bfl_pressure) / len(recent_bfl_pressure)
+                mean_pressure
             ),
             "mean_wall_shear_n_diagnostic": (
-                sum(recent_wall_shear) / len(recent_wall_shear)
+                mean_wall_shear
             ),
+            "mean_bfl_link_plus_wall_stress_n_diagnostic": mean_bfl_total,
+            "force_observer_difference_pct": force_observer_difference_pct,
             "experimental_resistance_n": point.resistance_n,
-            "error_pct": abs(mean_force - point.resistance_n) / point.resistance_n * 100.0,
+            "error_pct": reference_error_pct,
+            "force_stationarity": force_stationarity.to_dict(),
+            "maximum_positivity_limited_fraction": (
+                maximum_positivity_limited_fraction
+            ),
+            "maximum_reflux_population_residual": (
+                maximum_reflux_population_residual
+            ),
+            "wall_stress_applicability": {
+                "samples": len(wall_y_plus_mean_history),
+                "y_plus_min": min(wall_y_plus_min_history, default=None),
+                "y_plus_mean": (
+                    sum(wall_y_plus_mean_history) / len(wall_y_plus_mean_history)
+                    if wall_y_plus_mean_history else None
+                ),
+                "y_plus_max": max(wall_y_plus_max_history, default=None),
+                "maximum_rejected_fraction": maximum_rejected_fraction,
+            },
             "coarse_density_min_max": [float(rho_c.min()), float(rho_c.max())],
             "coarse_speed_max": float(torch.sqrt(ux_c**2 + uy_c**2 + uz_c**2).max()),
+            "finite": finite,
         },
         "history": history,
         "elapsed_s": time.time() - started,
         "claim_boundary": (
-            "Static-AMR execution candidate only. Force-observer verification, "
-            "three-grid convergence and time-window convergence remain mandatory."
+            "Single-grid static-AMR candidate only. Three-grid/domain "
+            "convergence and paired AFF-1/AFF-8 validation remain mandatory."
         ),
+        "acceptance": {
+            "force_error_target_pct": args.error_target,
+            "stationarity_target_pct": args.drift_target,
+            "force_observer_target_pct": args.force_observer_target,
+            "maximum_limiter_fraction": 1e-3,
+            "maximum_reflux_population_residual": 1e-6,
+            "maximum_exchange_rejected_fraction": 0.01,
+            "force_target_met": reference_error_pct <= args.error_target,
+            "stationarity_target_met": force_stationarity.meets(
+                args.drift_target,
+            ),
+            "force_observer_target_met": (
+                force_observer_difference_pct <= args.force_observer_target
+            ),
+            "limiter_target_met": limiter_acceptable,
+            "reflux_target_met": reflux_acceptable,
+            "wall_sampling_target_met": wall_sampling_acceptable,
+            "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
+            "single_grid_admitted": single_grid_admitted,
+            "physical_validation": False,
+        },
     }
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    if checkpoint is not None:
+        save_checkpoint(args.steps)
     print(f"wrote {output}; peak={peak_gib} GiB", flush=True)
     return result
 
@@ -409,6 +732,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--diagnostic-uncoupled-wall-stress", action="store_true")
     p.add_argument("--disable-positivity-limiter", action="store_true")
     p.add_argument("--steps", type=int, default=5000)
+    p.add_argument("--warmup-steps", type=int, default=2500)
     p.add_argument("--report-interval", type=int, default=100)
     p.add_argument("--average-window", type=int, default=500)
     p.add_argument("--ramp-steps", type=int, default=1000)
@@ -426,9 +750,17 @@ def parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--wall-law", choices=("log", "reichardt", "musker"), default="reichardt")
     p.add_argument("--wall-distance", type=float, default=0.5)
+    p.add_argument("--stress-exchange-distance", type=float, default=0.0)
+    p.add_argument("--wall-diagnostic-interval", type=int, default=50)
+    p.add_argument("--checkpoint", default=None)
+    p.add_argument("--checkpoint-interval", type=int, default=500)
+    p.add_argument("--resume", action="store_true")
     p.add_argument("--sponge-width", type=int, default=12)
     p.add_argument("--sponge-strength", type=float, default=0.2)
     p.add_argument("--sponge-inlet", action="store_true")
+    p.add_argument("--error-target", type=float, default=5.0)
+    p.add_argument("--drift-target", type=float, default=1.0)
+    p.add_argument("--force-observer-target", type=float, default=1.0)
     p.add_argument(
         "--far-field-mode",
         choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),

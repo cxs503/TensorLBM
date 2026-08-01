@@ -230,6 +230,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     because `exchange_distance/L` is fixed; the two `Cf` values differ by
     about 1.56%.  This is strong grid-consistency evidence, but v2 provenance
     remains below the formal v3 multi-grid gate, whose rerun chain is active.
+37. The static-AMR SUBOFF runner is upgraded from an execution demo to a
+    resumable single-grid evidence producer.  Atomic checkpoints now preserve
+    coarse/fine populations, force histories, wall `y+`/rejection histories,
+    limiter maximum, per-population reflux residual and reporting history under
+    a complete configuration identity.  The fine hull uses analytical SUBOFF
+    normals, wetted-area wall traction and optional exchange-location stress.
+    Admission now gates experimental error, force stationarity, CV/BFL
+    agreement, positivity, reflux and wall sampling while keeping physical
+    validation false.  A 4→6-step CPU save/resume composition test passes with
+    `5.46e-12` reflux residual and correctly rejects its unphysical tiny-grid
+    resistance.
 
 ## Rejected candidates
 
