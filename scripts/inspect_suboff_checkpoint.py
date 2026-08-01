@@ -25,6 +25,7 @@ from suboff_experimental_resistance import (  # noqa: E402
     force_scale_newton,
 )
 
+from tensorlbm.force_convergence import assess_force_stationarity  # noqa: E402
 from tensorlbm.yplus_guide import (  # noqa: E402
     estimate_exchange_yplus,
     plan_exchange_yplus_refinement,
@@ -173,6 +174,10 @@ def audit_checkpoint(state: dict) -> dict:
         )
 
     current_mean = float(force_history.mean())
+    stationarity = assess_force_stationarity(
+        force_history.tolist(),
+        block_size=max(1, force_history.numel() // 8),
+    )
     wall_exchange_prior = None
     wall_refinement_plan = None
     exchange_distance = configuration.get("stress_exchange_distance")
@@ -273,6 +278,7 @@ def audit_checkpoint(state: dict) -> dict:
                 / point.resistance_n
                 * 100.0
             ),
+            "force_stationarity": stationarity.to_dict(),
             "admission_warning": (
                 "This is an in-progress checkpoint diagnostic, not a "
                 "grid/time-converged CFD result."
