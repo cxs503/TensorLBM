@@ -137,6 +137,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     ledger; more than 1% rejected exchange samples fails admission.  This
     prevents an integrated-force match from hiding an invalid wall-law region
     or geometry-intersection sampling error.
+24. The L512 first-cell flat-plate run at collision `Re=2e4` completed with
+    `Cf=0.00606261`, 29.34% above ITTC-1957.  It was exceptionally stationary
+    (0.00277% eight-block range), required no positivity limiting, and its CV
+    versus BFL-plus-stress totals differed by only 0.0599%.  This is strong
+    negative evidence rather than numerical noise: paired with L256
+    `Cf=0.0052118`, refinement while holding `y=0.5` lattice cells changes the
+    physical sampling height and increases the wall stress.  The first-cell
+    formulation is rejected as grid dependent; the replacement campaign fixes
+    `y/L` with L256/exchange=3 and L512/exchange=6.
 
 ## Rejected candidates
 
