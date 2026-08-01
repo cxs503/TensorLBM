@@ -94,3 +94,10 @@ The sequence is monotonic; a three-point fit gives observed order 3.739,
 The extrapolated value is about 0.272% below ITTC.  The stored evidence labels
 this only a mathematical fit (`physical_validation=false`); the active v3
 reruns must reproduce it before the case-specific convergence gate can pass.
+
+The v3 L256 rerun has completed and reproduces the v2 friction coefficient
+exactly at the reported precision (`0.004597289308156069`).  Its expanded
+configuration records `sponge_width/L=24/256`, `cv_margin/L=6/256`, and all
+other identity fields.  The case-specific aggregator now checks these two
+scaled numerical lengths in addition to domain and exchange-height ratios.
+V3 L384 and L512 remain required before formal admission.

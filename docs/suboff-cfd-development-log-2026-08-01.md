@@ -261,6 +261,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     lacks the expanded configuration identity.  The generic CLI now names its
     gate `mathematical_fit_admitted`, never bare `admitted`; only the active v3
     case-specific aggregator may issue a formal convergence admission.
+40. V3 L256 completed and reproduces the v2 result exactly at reported
+    precision (`Cf=0.004597289308156069`) while persisting the expanded
+    provenance.  The flat-plate aggregator now also checks
+    `sponge_width/L` and `cv_margin/L`; the active sequence uses 24/36/48 and
+    6/9/12 at L256/L384/L512.  This prevents different relative sponge or
+    force-observer placement from masquerading as spatial convergence.
 
 ## Rejected candidates
 
