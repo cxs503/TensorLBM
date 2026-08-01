@@ -318,9 +318,11 @@ def wall_function(
     decoupling the wall shear stress from the bulk relaxation time.  The
     body force decelerates the tangential velocity component:
 
-        F = -(τ_w / dy) · û
+        F = -τ_w A/V · û
 
-    where ``τ_w = u_tau²`` and ``û`` is the unit tangential velocity vector.
+    where ``τ_w = u_tau²``, ``û`` is the unit tangential velocity vector,
+    and a unit lattice boundary control volume has ``A/V=1``.  Wall distance
+    already enters the wall-law solve and must not divide the traction again.
 
     Because ``u_tau`` and ``y_plus`` are pre-computed by the caller, this
     function can be combined with any turbulence model (RANS, LES, etc.)
@@ -364,9 +366,9 @@ def wall_function(
     # Wall shear stress from pre-computed u_tau
     tau_w = u_tau * u_tau
 
-    # Body force on near-wall cells: F = -(τ_w / dy) · û
+    # Body force on unit near-wall control volumes: F = -τ_w A/V · û.
     inv_umag = 1.0 / u_mag
-    coef = -(tau_w / y_val) * near.to(f.dtype)
+    coef = -tau_w * near.to(f.dtype)
     fx = coef * (ux * inv_umag)
     fy = coef * (uy * inv_umag)
     fz = coef * (uz * inv_umag)
