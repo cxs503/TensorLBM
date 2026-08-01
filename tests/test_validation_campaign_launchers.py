@@ -15,6 +15,7 @@ ROOT = Path(__file__).parents[1]
     (
         ("run_suboff_v8_equivalent_level.sh", "L90"),
         ("run_suboff_nested_v3_equivalent_level.sh", "L90"),
+        ("run_suboff_nested_v4_continuation_level.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
         ("run_flat_plate_v4_equivalent_level.sh", "L256"),
@@ -43,3 +44,43 @@ def test_campaign_launcher_preflight_imports_current_checkout(
     assert completed.returncode == 0, completed.stderr
     imported = Path(completed.stdout.strip()).resolve()
     assert imported == (ROOT / "src" / "tensorlbm" / "__init__.py").resolve()
+
+
+def test_nested_v4_launcher_expands_audited_l150_continuation(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_nested_v4_continuation_level.sh"),
+            "L150",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert "--regularize-restriction" in arguments
+    assert "--enforce-transfer-positivity" in arguments
+    assert arguments[arguments.index("--ghost-interpolation") + 1] == "trilinear"
+    assert arguments[arguments.index("--inner-wall-margin") + 1] == "8"
+    assert arguments[arguments.index("--resolved-reynolds-start") + 1] == "2000"
+    assert arguments[arguments.index("--viscosity-ramp-start-step") + 1] == "500"
+    assert arguments[arguments.index("--viscosity-ramp-end-step") + 1] == "1000"
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v4-equivalent-l150-20k.json" in output
