@@ -561,6 +561,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     now explicitly checks report, wall-diagnostic and surface sampling
     intervals per fine-hull resolution, preventing nominally similar but
     temporally inequivalent records from entering one Richardson fit.
+70. Canonical sphere validation is upgraded to schema v3.  It retains the
+    complete force history but reports an explicit tail window whose duration
+    is measured in sphere-diameter convective times (minimum five by default),
+    so startup samples are never silently mixed into a settled mean.  A v2
+    checkpoint may be continued only with an explicit migration flag, exact
+    shared-physics identity, and a persisted SHA-256 of the source checkpoint;
+    the migration policy and source step remain in every subsequent v3
+    checkpoint/result.  Numerical-quality admission is separated from the 5%
+    drag-reference gate, matching the SUBOFF grid-convergence contract.
 
 ## Rejected candidates
 
