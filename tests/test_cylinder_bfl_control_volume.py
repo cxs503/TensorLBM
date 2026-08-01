@@ -4,9 +4,13 @@ import math
 import subprocess
 import sys
 
+import pytest
+
 from tensorlbm.cylinder_bfl_control_volume import (
     CYLINDER_RE100_CD_REFERENCE,
+    CYLINDER_RE100_ST_REFERENCE,
     CylinderBFLControlVolumeConfig,
+    estimate_strouhal_from_lift,
     run_cylinder_bfl_control_volume,
 )
 
@@ -14,6 +18,7 @@ from tensorlbm.cylinder_bfl_control_volume import (
 def test_cylinder_reference_and_tau() -> None:
     cfg = CylinderBFLControlVolumeConfig(radius=10, reynolds=100, lattice_speed=0.05)
     assert CYLINDER_RE100_CD_REFERENCE == 1.33
+    assert CYLINDER_RE100_ST_REFERENCE == 0.164
     assert math.isclose(cfg.tau, 0.53)
 
 
@@ -27,6 +32,18 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
     assert result["finite"] is True
     assert math.isfinite(result["cd_control_volume"])
     assert math.isfinite(result["cd_bfl_link"])
+    assert result["drag_stationarity"]["sufficiently_sampled"] is False
+
+
+def test_strouhal_estimator_recovers_synthetic_lift_frequency() -> None:
+    speed, diameter, target = 0.08, 20.0, 0.16
+    frequency = target * speed / diameter
+    lift = [math.sin(2.0 * math.pi * frequency * step) for step in range(20000)]
+    estimated, cycles = estimate_strouhal_from_lift(
+        lift, lattice_speed=speed, diameter=diameter,
+    )
+    assert estimated == pytest.approx(target, rel=0.02)
+    assert cycles == pytest.approx(12.8, rel=0.02)
 
 
 def test_cylinder_cli_help() -> None:
