@@ -115,6 +115,11 @@ def parser() -> argparse.ArgumentParser:
         help="filter fine-to-coarse transfer to resolved second-order stress",
     )
     result.add_argument(
+        "--regularize-prolongation",
+        action="store_true",
+        help="filter coarse-to-fine ghost transfer to resolved second-order stress",
+    )
+    result.add_argument(
         "--ghost-interpolation",
         choices=("injection", "trilinear"),
         default="injection",
@@ -325,6 +330,7 @@ def run(args: argparse.Namespace) -> dict:
         outer_plan.box,
         tau_coarse=tau_coarse,
         regularize_restriction=args.regularize_restriction,
+        regularize_prolongation=args.regularize_prolongation,
         ghost_interpolation=args.ghost_interpolation,
         enforce_transfer_positivity=args.enforce_transfer_positivity,
         interface_filter_width=args.interface_filter_width,
@@ -334,6 +340,7 @@ def run(args: argparse.Namespace) -> dict:
         nested_plan.box_in_outer_allocated_coordinates,
         tau_coarse=outer_amr_config.tau_fine,
         regularize_restriction=args.regularize_restriction,
+        regularize_prolongation=args.regularize_prolongation,
         ghost_interpolation=args.ghost_interpolation,
         enforce_transfer_positivity=args.enforce_transfer_positivity,
         interface_filter_width=args.interface_filter_width,
@@ -482,6 +489,7 @@ def run(args: argparse.Namespace) -> dict:
         "sponge_strength": args.sponge_strength,
         "far_field_mode": args.far_field_mode,
         "regularize_restriction": args.regularize_restriction,
+        "regularize_prolongation": args.regularize_prolongation,
         "ghost_interpolation": args.ghost_interpolation,
         "enforce_transfer_positivity": args.enforce_transfer_positivity,
         "interface_filter_width": args.interface_filter_width,
@@ -611,6 +619,7 @@ def run(args: argparse.Namespace) -> dict:
         stored_configuration = state.get("configuration")
         legacy_v3_signature = dict(checkpoint_signature)
         legacy_v3_signature.pop("regularize_restriction")
+        legacy_v3_signature.pop("regularize_prolongation")
         legacy_v3_signature.pop("ghost_interpolation")
         legacy_v3_signature.pop("enforce_transfer_positivity")
         legacy_v3_signature.pop("interface_filter_width")
@@ -624,6 +633,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("viscosity_ramp_end_step")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
+            and not args.regularize_prolongation
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
             and args.interface_filter_width == 0
@@ -638,6 +648,7 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_signature.pop("hull_type")
         legacy_v2_without_new_transfer = dict(legacy_v2_signature)
         legacy_v2_without_new_transfer.pop("regularize_restriction")
+        legacy_v2_without_new_transfer.pop("regularize_prolongation")
         legacy_v2_without_new_transfer.pop("ghost_interpolation")
         legacy_v2_without_new_transfer.pop("enforce_transfer_positivity")
         legacy_v2_without_new_transfer.pop("interface_filter_width")
@@ -652,6 +663,7 @@ def run(args: argparse.Namespace) -> dict:
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
+            and not args.regularize_prolongation
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
             and args.interface_filter_width == 0

@@ -24,6 +24,7 @@ def _args(
     resume: bool = False,
     hull_type: str = "bare_hull",
     regularize_restriction: bool = False,
+    regularize_prolongation: bool = False,
     ghost_interpolation: str = "injection",
     enforce_transfer_positivity: bool = False,
     disable_wall_stress: bool = False,
@@ -61,6 +62,8 @@ def _args(
         values.append("--resume")
     if regularize_restriction:
         values.append("--regularize-restriction")
+    if regularize_prolongation:
+        values.append("--regularize-prolongation")
     if enforce_transfer_positivity:
         values.append("--enforce-transfer-positivity")
     if disable_wall_stress:
@@ -144,6 +147,15 @@ def test_nested_smoke_can_regularize_both_restriction_interfaces(
     assert result["configuration"]["regularize_restriction"] is True
     assert result["result"]["finite"] is True
     assert max(result["result"]["maximum_reflux_residual_by_interface"]) < 1e-6
+
+
+def test_nested_smoke_can_regularize_both_prolongation_interfaces(
+    tmp_path: Path,
+) -> None:
+    result = MODULE.run(_args(tmp_path, steps=1, regularize_prolongation=True))
+
+    assert result["configuration"]["regularize_prolongation"] is True
+    assert result["result"]["finite"] is True
 
 
 def test_nested_smoke_can_use_cell_centered_trilinear_ghosts(tmp_path: Path) -> None:
@@ -262,6 +274,7 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"]["schema_version"] = 2
     state["configuration"].pop("hull_type")
     state["configuration"].pop("regularize_restriction")
+    state["configuration"].pop("regularize_prolongation")
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
     state["configuration"].pop("interface_filter_width")
@@ -289,6 +302,7 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     checkpoint = tmp_path / "nested-smoke.ckpt"
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     state["configuration"].pop("regularize_restriction")
+    state["configuration"].pop("regularize_prolongation")
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
     state["configuration"].pop("interface_filter_width")

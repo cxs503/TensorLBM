@@ -30,6 +30,7 @@ def _record(length: int, resistance: float) -> dict:
             "omega_bulk": 1.0,
             "kbc_max_iterations": 12,
             "regularize_restriction": True,
+            "regularize_prolongation": True,
             "ghost_interpolation": "trilinear",
             "enforce_transfer_positivity": True,
             "interface_filter_width": 4,

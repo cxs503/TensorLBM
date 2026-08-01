@@ -27,6 +27,7 @@ class AMRInterfaceValidationConfig:
     pulse_radius: float = 2.5
     steps: int = 24
     device: str = "cpu"
+    regularize_prolongation: bool = False
     interface_filter_width: int = 0
     interface_filter_strength: float = 0.0
 
@@ -125,6 +126,7 @@ def run_amr_interface_validation(
         StaticBlockAMRConfig(
             config.box,
             tau_coarse=config.tau_coarse,
+            regularize_prolongation=config.regularize_prolongation,
             interface_filter_width=config.interface_filter_width,
             interface_filter_strength=config.interface_filter_strength,
         ),
@@ -234,6 +236,7 @@ def run_amr_interface_validation(
             "pulse_radius": config.pulse_radius,
             "steps": config.steps,
             "device": config.device,
+            "regularize_prolongation": config.regularize_prolongation,
             "interface_filter_width": config.interface_filter_width,
             "interface_filter_strength": config.interface_filter_strength,
             "reflux_method": "face_local_conserved_moment_flux",

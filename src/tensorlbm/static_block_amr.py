@@ -79,6 +79,7 @@ class StaticBlockAMRConfig:
     reflux: bool = True
     maximum_reflux_correction_fraction: float = 0.2
     regularize_restriction: bool = False
+    regularize_prolongation: bool = False
     ghost_interpolation: str = "injection"
     enforce_transfer_positivity: bool = False
     interface_filter_width: int = 0
@@ -184,6 +185,7 @@ def _sample_parent_with_ghost(
         tau_source=config.tau_coarse,
         tau_target=config.tau_fine,
         spatial_ratio=float(r),
+        regularize=config.regularize_prolongation,
     )
 
 
@@ -384,6 +386,7 @@ class StaticBlockAMR3D:
             ),
             tau_target=(self.config.tau_fine if tau_target is None else tau_target),
             spatial_ratio=float(self.config.ratio),
+            regularize=self.config.regularize_prolongation,
         )[:, 0, 0, :]
         self.fine_f.reshape(self.fine_f.shape[0], -1)[:, plan.target_flat] = sampled
 
