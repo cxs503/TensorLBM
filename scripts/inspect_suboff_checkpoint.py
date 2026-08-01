@@ -93,6 +93,21 @@ def _difference_report(
     }
 
 
+def _finite_history_reduction(
+    state: dict,
+    name: str,
+    reduction: str,
+) -> float | None:
+    value = state.get(name)
+    if not isinstance(value, torch.Tensor) or value.numel() == 0:
+        return None
+    finite = value.detach().cpu().to(torch.float64)
+    finite = finite[torch.isfinite(finite)]
+    if finite.numel() == 0:
+        return None
+    return float(getattr(finite, reduction)())
+
+
 def audit_checkpoint(state: dict) -> dict:
     configuration = state.get("configuration")
     if not isinstance(configuration, dict):
@@ -124,6 +139,12 @@ def audit_checkpoint(state: dict) -> dict:
     if force_history.shape != bfl_history.shape or force_history.numel() == 0:
         raise ValueError("checkpoint force histories must be non-empty and aligned")
     history_closure = _difference_report(force_history, bfl_history)
+    pressure_history = state["pressure_history"].detach().cpu().to(torch.float64)
+    wall_shear_history = state["wall_shear_history"].detach().cpu().to(torch.float64)
+    if pressure_history.shape != force_history.shape:
+        raise ValueError("checkpoint pressure history is not aligned")
+    if wall_shear_history.shape != force_history.shape:
+        raise ValueError("checkpoint wall-shear history is not aligned")
 
     primary = _group_sample_means(_sample_tensor(state, "paired_primary_cv_samples"))
     bfl = _group_sample_means(_sample_tensor(state, "paired_bfl_total_samples"))
@@ -163,6 +184,42 @@ def audit_checkpoint(state: dict) -> dict:
         "warmup_steps": int(configuration["warmup_steps"]),
         "post_warmup_history_steps": force_history.numel(),
         "sampled_coarse_steps": primary_values.numel(),
+        "force_decomposition": {
+            "mean_bfl_link_pressure_n": float(pressure_history.mean()),
+            "mean_modeled_wall_shear_n": float(wall_shear_history.mean()),
+            "mean_bfl_link_plus_wall_shear_n": float(bfl_history.mean()),
+            "mean_cv_minus_modeled_wall_shear_n": (
+                float(force_history.mean() - wall_shear_history.mean())
+            ),
+        },
+        "wall_model_applicability": {
+            "minimum_observed_y_plus": _finite_history_reduction(
+                state, "wall_y_plus_min_history", "min",
+            ),
+            "mean_observed_y_plus": _finite_history_reduction(
+                state, "wall_y_plus_mean_history", "mean",
+            ),
+            "maximum_observed_y_plus": _finite_history_reduction(
+                state, "wall_y_plus_max_history", "max",
+            ),
+            "maximum_rejected_sample_fraction": _finite_history_reduction(
+                state, "wall_rejected_fraction_history", "max",
+            ),
+        },
+        "numerical_quality": {
+            "maximum_positivity_limited_fraction": state.get(
+                "maximum_positivity_limited_fraction",
+            ),
+            "maximum_reflux_population_residual": state.get(
+                "maximum_reflux_population_residual",
+            ),
+            "maximum_reflux_limited_directions": state.get(
+                "maximum_reflux_limited_directions",
+            ),
+            "maximum_raw_kinetic_mismatch": state.get(
+                "maximum_raw_kinetic_mismatch",
+            ),
+        },
         "observer_closure": {
             "history_cv_vs_bfl": history_closure,
             "sampled_cv_vs_bfl": _difference_report(
