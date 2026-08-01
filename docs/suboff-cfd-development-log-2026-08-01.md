@@ -1252,6 +1252,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      wall stress, BFL and control-volume forces remain bitwise on the v8 path.
      The v9 L120 time-history A/B is queued behind the active one-level L150
      run and uses distinct checkpoints.
+141. AMR interface filtering is now geometrically isolated from every
+     independent control-volume force observer.  A common half-open-box
+     clearance assessment accounts for the physical ghost boundary, filter
+     width and the radius-one D3Q19/D3Q27 streaming source stencil; the nested
+     SUBOFF runner fails closed during preflight if any primary or auxiliary
+     flux surface can sample a filtered cell.  Exact L90 planning finds only
+     three cells between the largest auxiliary CV and the physical fine-block
+     interface, so its largest force-admissible filter is width two.  The
+     active width-four L90 experiment remains a stability-only A/B and cannot
+     be promoted as force evidence.  The guard, planning provenance and public
+     API are covered by 69 focused AMR/SUBOFF regression tests.
 
 ## Rejected candidates
 

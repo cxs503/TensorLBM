@@ -20,6 +20,9 @@ from suboff_experimental_resistance import (
     smooth_ramp_factor,
 )
 
+from tensorlbm.amr_interface_filter import (
+    assess_interface_filter_control_volume_clearance,
+)
 from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.checkpoint_io import atomic_torch_save
 from tensorlbm.control_volume_force import (
@@ -310,6 +313,88 @@ def run(args: argparse.Namespace) -> dict:
         config=geometry_config,
         device=device,
     )
+    physical_re = point.speed_mps * MODEL_LENGTH_M / args.nu_water
+    initial_tau_by_level = continuation.tau_by_level(
+        0,
+        lattice_speed=args.lattice_speed,
+        root_hull_length=args.hull_length,
+        levels=3,
+    )
+    tau_coarse = initial_tau_by_level[0]
+    outer_amr_config = StaticBlockAMRConfig(
+        outer_plan.box,
+        tau_coarse=tau_coarse,
+        regularize_restriction=args.regularize_restriction,
+        ghost_interpolation=args.ghost_interpolation,
+        enforce_transfer_positivity=args.enforce_transfer_positivity,
+        interface_filter_width=args.interface_filter_width,
+        interface_filter_strength=args.interface_filter_strength,
+    )
+    inner_amr_config = StaticBlockAMRConfig(
+        nested_plan.box_in_outer_allocated_coordinates,
+        tau_coarse=outer_amr_config.tau_fine,
+        regularize_restriction=args.regularize_restriction,
+        ghost_interpolation=args.ghost_interpolation,
+        enforce_transfer_positivity=args.enforce_transfer_positivity,
+        interface_filter_width=args.interface_filter_width,
+        interface_filter_strength=args.interface_filter_strength,
+    )
+
+    # Derive force-observer geometry before allocating the hierarchy so that
+    # preflight mode catches a CV whose radius-one streaming flux stencil
+    # would sample the interface filter.  Fine masks omit the AMR ghost shell.
+    nested_indices = nested_solid.nonzero(as_tuple=False)
+    ghost = inner_amr_config.ghost
+    z_min, y_min, x_min = (
+        int(nested_indices[:, axis].min().item()) + ghost for axis in range(3)
+    )
+    z_max, y_max, x_max = (
+        int(nested_indices[:, axis].max().item()) + 1 + ghost
+        for axis in range(3)
+    )
+    finest_shape = tuple(int(size) + 2 * ghost for size in nested_solid.shape)
+
+    def control_volume_bounds(margin: int) -> tuple[int, int, int, int, int, int]:
+        return (
+            x_min - margin, x_max + margin,
+            y_min - margin, y_max + margin,
+            z_min - margin, z_max + margin,
+        )
+
+    control_volume_bounds_by_margin = {
+        margin: control_volume_bounds(margin)
+        for margin in (args.cv_margin, *auxiliary_margins)
+    }
+    control_volume_clearance = []
+    for role, margin in (
+        ("primary", args.cv_margin),
+        ("auxiliary", auxiliary_margins[0]),
+        ("auxiliary", auxiliary_margins[1]),
+    ):
+        bounds = control_volume_bounds_by_margin[margin]
+        assessment = assess_interface_filter_control_volume_clearance(
+            finest_shape,
+            bounds_xyz=bounds,
+            ghost=ghost,
+            filter_width=args.interface_filter_width,
+        )
+        record = {
+            "role": role,
+            "margin_cells": margin,
+            "bounds_xyz_half_open": list(bounds),
+        } | assessment.to_dict()
+        control_volume_clearance.append(record)
+        if not assessment.flux_stencil_outside_filter:
+            required = args.interface_filter_width + (
+                assessment.required_streaming_source_guard_cells
+            )
+            raise ValueError(
+                f"control-volume margin {margin} leaves only "
+                f"{assessment.minimum_physical_interface_clearance_cells} "
+                "cells from the physical AMR interface; its streaming flux "
+                f"stencil requires at least {required} cells to remain "
+                "outside the interface filter",
+            )
     estimated_peak_gib = nested_plan.estimated_peak_gib(
         args.memory_bytes_per_cell,
     )
@@ -342,6 +427,12 @@ def run(args: argparse.Namespace) -> dict:
         "cuda_memory_preflight": (
             memory_budget.to_dict() if memory_budget is not None else None
         ),
+        "control_volume_interface_clearance": {
+            "interface_filter_width_cells": args.interface_filter_width,
+            "streaming_stencil_radius_cells": 1,
+            "all_flux_stencils_outside_filter": True,
+            "volumes": control_volume_clearance,
+        },
     }
     if args.preflight_only:
         return {
@@ -351,32 +442,6 @@ def run(args: argparse.Namespace) -> dict:
             "planning": planning,
         }
 
-    physical_re = point.speed_mps * MODEL_LENGTH_M / args.nu_water
-    initial_tau_by_level = continuation.tau_by_level(
-        0,
-        lattice_speed=args.lattice_speed,
-        root_hull_length=args.hull_length,
-        levels=3,
-    )
-    tau_coarse = initial_tau_by_level[0]
-    outer_amr_config = StaticBlockAMRConfig(
-        outer_plan.box,
-        tau_coarse=tau_coarse,
-        regularize_restriction=args.regularize_restriction,
-        ghost_interpolation=args.ghost_interpolation,
-        enforce_transfer_positivity=args.enforce_transfer_positivity,
-        interface_filter_width=args.interface_filter_width,
-        interface_filter_strength=args.interface_filter_strength,
-    )
-    inner_amr_config = StaticBlockAMRConfig(
-        nested_plan.box_in_outer_allocated_coordinates,
-        tau_coarse=outer_amr_config.tau_fine,
-        regularize_restriction=args.regularize_restriction,
-        ghost_interpolation=args.ghost_interpolation,
-        enforce_transfer_positivity=args.enforce_transfer_positivity,
-        interface_filter_width=args.interface_filter_width,
-        interface_filter_strength=args.interface_filter_strength,
-    )
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, args.lattice_speed)
     zero = torch.zeros_like(rho)
@@ -497,31 +562,13 @@ def run(args: argparse.Namespace) -> dict:
             calibration_factor=bare_area_diagnostics.calibration_factor,
             boundary_mask=near,
         )
-    indices = finest_solid.nonzero(as_tuple=False)
-    z_min, y_min, x_min = (
-        int(indices[:, axis].min().item()) for axis in range(3)
-    )
-    z_max, y_max, x_max = (
-        int(indices[:, axis].max().item()) + 1 for axis in range(3)
-    )
     def build_control_volume(margin: int) -> torch.Tensor:
-        bounds = (
-            x_min - margin, x_max + margin, nx_f,
-            y_min - margin, y_max + margin, ny_f,
-            z_min - margin, z_max + margin, nz_f,
-        )
-        for lower, upper, size in zip(
-            bounds[0::3], bounds[1::3], bounds[2::3], strict=True,
-        ):
-            if lower <= 1 or upper >= size - 1:
-                raise ValueError(
-                    f"control-volume margin {margin} reaches the nested interface",
-                )
+        x0, x1, y0, y1, z0, z1 = control_volume_bounds_by_margin[margin]
         return box_control_volume(
             finest_solid.shape,
-            x0=x_min - margin, x1=x_max + margin,
-            y0=y_min - margin, y1=y_max + margin,
-            z0=z_min - margin, z1=z_max + margin,
+            x0=x0, x1=x1,
+            y0=y0, y1=y1,
+            z0=z0, z1=z1,
             device=device,
         )
 

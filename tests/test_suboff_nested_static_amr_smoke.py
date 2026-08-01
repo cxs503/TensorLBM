@@ -96,6 +96,23 @@ def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
     assert result["planning"]["total_allocated_cells"] > 0
     assert result["planning"]["memory_estimate_bytes_per_cell"] == 742.0
     assert result["planning"]["wall_buffer_finest_cells"] == 6
+    clearance = result["planning"]["control_volume_interface_clearance"]
+    assert clearance["all_flux_stencils_outside_filter"] is True
+    assert len(clearance["volumes"]) == 3
+
+
+def test_nested_preflight_rejects_cv_flux_stencil_inside_interface_filter(
+    tmp_path: Path,
+) -> None:
+    args = _args(
+        tmp_path,
+        preflight=True,
+        interface_filter_width=3,
+        interface_filter_strength=0.2,
+    )
+
+    with pytest.raises(ValueError, match="streaming flux stencil requires"):
+        MODULE.run(args)
 
 
 def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:

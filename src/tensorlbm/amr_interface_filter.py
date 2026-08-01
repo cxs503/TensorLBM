@@ -9,10 +9,89 @@ empirical body force or geometry modification is introduced.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 import torch
 
 from .amr_population_transfer import regularize_nonequilibrium_second_order
+
+
+@dataclass(frozen=True)
+class InterfaceFilterControlVolumeClearance:
+    """Geometric separation between a box CV stencil and an AMR filter.
+
+    ``minimum_physical_interface_clearance_cells`` counts cells between the
+    physical fine-block boundary and the half-open control-volume box.  The
+    streaming force observer also samples source cells immediately outside
+    that box, so the usable guard is reduced by both the filter width and the
+    streaming stencil radius.
+    """
+
+    minimum_physical_interface_clearance_cells: int
+    minimum_unfiltered_source_guard_cells: int
+    required_streaming_source_guard_cells: int
+    flux_stencil_outside_filter: bool
+
+    def to_dict(self) -> dict[str, int | bool]:
+        return {
+            "minimum_physical_interface_clearance_cells": (
+                self.minimum_physical_interface_clearance_cells
+            ),
+            "minimum_unfiltered_source_guard_cells": (
+                self.minimum_unfiltered_source_guard_cells
+            ),
+            "required_streaming_source_guard_cells": (
+                self.required_streaming_source_guard_cells
+            ),
+            "flux_stencil_outside_filter": self.flux_stencil_outside_filter,
+        }
+
+
+def assess_interface_filter_control_volume_clearance(
+    shape: tuple[int, int, int],
+    *,
+    bounds_xyz: tuple[int, int, int, int, int, int],
+    ghost: int,
+    filter_width: int,
+    streaming_stencil_radius: int = 1,
+) -> InterfaceFilterControlVolumeClearance:
+    """Assess whether a Cartesian CV flux stencil is outside a filter shell.
+
+    ``shape`` is ordered ``(nz, ny, nx)`` while ``bounds_xyz`` is the
+    half-open box ``(x0, x1, y0, y1, z0, z1)``.  A radius-one streaming
+    stencil is required by D3Q19/D3Q27 control-volume momentum fluxes.
+    """
+    if ghost < 1:
+        raise ValueError("ghost width must be positive")
+    if filter_width < 0:
+        raise ValueError("filter width must be non-negative")
+    if streaming_stencil_radius < 0:
+        raise ValueError("streaming stencil radius must be non-negative")
+    if len(shape) != 3 or min(shape) <= 2 * ghost:
+        raise ValueError("shape must contain a physical fine-block interior")
+
+    x0, x1, y0, y1, z0, z1 = bounds_xyz
+    bounds_by_storage_axis = ((z0, z1), (y0, y1), (x0, x1))
+    clearances: list[int] = []
+    for size, (lower, upper) in zip(
+        shape, bounds_by_storage_axis, strict=True,
+    ):
+        if not ghost <= lower < upper <= size - ghost:
+            raise ValueError(
+                "control-volume bounds must lie in the physical fine block",
+            )
+        clearances.extend((lower - ghost, size - ghost - upper))
+
+    minimum_clearance = min(clearances)
+    unfiltered_source_guard = minimum_clearance - filter_width
+    return InterfaceFilterControlVolumeClearance(
+        minimum_physical_interface_clearance_cells=minimum_clearance,
+        minimum_unfiltered_source_guard_cells=unfiltered_source_guard,
+        required_streaming_source_guard_cells=streaming_stencil_radius,
+        flux_stencil_outside_filter=(
+            unfiltered_source_guard >= streaming_stencil_radius
+        ),
+    )
 
 
 def interface_shell_blend(
@@ -114,4 +193,9 @@ def damp_interface_nonequilibrium(
     return f - blend.unsqueeze(0) * kinetic_residual
 
 
-__all__ = ["damp_interface_nonequilibrium", "interface_shell_blend"]
+__all__ = [
+    "InterfaceFilterControlVolumeClearance",
+    "assess_interface_filter_control_volume_clearance",
+    "damp_interface_nonequilibrium",
+    "interface_shell_blend",
+]

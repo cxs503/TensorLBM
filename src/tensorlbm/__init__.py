@@ -641,6 +641,8 @@ from .general_sim import (
 )
 from .lbm_step import LBMStepExecutor
 from .amr_interface_filter import (
+    InterfaceFilterControlVolumeClearance,
+    assess_interface_filter_control_volume_clearance,
     damp_interface_nonequilibrium,
     interface_shell_blend,
 )
@@ -762,6 +764,8 @@ __all__ = [
     "plan_nested_suboff_static_amr",
     "plan_suboff_static_amr",
     "assess_suboff_nested_convergence",
+    "InterfaceFilterControlVolumeClearance",
+    "assess_interface_filter_control_volume_clearance",
     "ControlVolumeForceResult",
     "NestedControlVolumeAssessment",
     "assess_nested_control_volume_invariance",
