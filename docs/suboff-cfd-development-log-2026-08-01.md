@@ -343,6 +343,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     positivity and exchange gates, while all physical identities and scaled
     domain/sponge/CV/exchange lengths match.  The committed convergence artifact
     records SHA-256 hashes of the three full remote source JSON files.
+48. The AFF-1 conserved-moment production grid sequence is launched at coarse
+    L90/L120/L150 (effective fine L180/L240/L300).  Their coarse domains are
+    exactly 5L by 1L by 1L; wall margins are L/15, wake refinement is 5L/6,
+    sponge width is L/10, fine CV margin is L/30 and exchange height is
+    3L_f/256.  Steps/warmup/statistical window/ramp also scale with fine
+    resolution as 33.333/16.667/4.167/4.167 per fine-length cell.  The largest
+    allocation is estimated below 18 GiB, and each grid has an independent
+    checkpoint.  The convergence CLI now records source SHA-256 hashes just as
+    the admitted flat-plate chain does.
 
 ## Rejected candidates
 
