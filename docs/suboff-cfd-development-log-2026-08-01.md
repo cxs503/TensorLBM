@@ -1433,6 +1433,24 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      density plus refined velocity RMS.  Interface density RMS rises by 0.40%,
      so the method is pulse-admitted for a strict SUBOFF A/B but remains
      non-default until that high-Re test passes.
+159. The 20,000-step one-level L150 run completes but is rejected.  Mean
+     control-volume resistance is `101.4449 N`, `16.07%` above the `87.4 N`
+     experiment, and the sampling window remains strongly nonstationary
+     (`39.53%` block range, `19.97%` half-mean drift, `33.41%` linear trend).
+     The primary/auxiliary control volumes agree within `0.10%` and the BFL
+     link observer differs by only `0.166%`, but surface-pressure-plus-wall
+     stress differs from the control volume by `72.78%`.  The complete result
+     is frozen with canonical SHA-256
+     `a60af351102aea2f835e3a3b83e2e23f03c034ddf899e7df3dbdab700351576c`;
+     the queued v9 L120 run now tests quadratic surface-pressure extrapolation.
+160. Moving both hierarchy interfaces to provide 32 finest transverse cells
+     is also rejected.  Its speed and population-floor onset is step 1440,
+     earlier than the unfiltered baseline's step 1560 floor, and limiter use
+     reaches `8.3268e-5`.  Log/checkpoint SHA-256 values are
+     `4920cd64fdd6ee1ababb372f1122b21fc48ca5ec9464486b09ff028fb25e36e4`
+     and `1a3ee1bf3c732b1d01c9942774e3d4b5b3de16f881863fc1345f1fbcf896778d`.
+     Together with the 16- and 24-cell cases, this rules out transverse
+     interface displacement alone as a production remedy.
 
 ## Rejected candidates
 

@@ -1,0 +1,35 @@
+{
+  "schema": "tensorlbm-single-grid-evidence-v1",
+  "candidate": "suboff-v8-equivalent-l150-20k",
+  "status": "single_grid_rejected",
+  "result": {
+    "mean_resistance_n": 101.44491920641131,
+    "experimental_resistance_n": 87.4,
+    "error_pct": 16.069701609166252,
+    "stationarity_relative_range_pct": 39.53080811898518,
+    "stationarity_half_mean_drift_pct": 19.965586694893148,
+    "stationarity_linear_trend_pct": 33.40999496893814,
+    "control_volume_to_bfl_link_difference_pct": 0.1662454097305108,
+    "auxiliary_control_volume_difference_pct": {
+      "5": 0.07845279927145546,
+      "15": 0.09953930357577397
+    },
+    "surface_to_control_volume_difference_pct": 72.77566524780902
+  },
+  "acceptance": {
+    "force_target_met": false,
+    "stationarity_target_met": false,
+    "bfl_vs_control_volume_diagnostic_target_met": true,
+    "nested_control_volume_target_met": true,
+    "surface_observer_target_met": false,
+    "duration_target_met": true,
+    "single_grid_admitted": false,
+    "physical_validation": false
+  },
+  "artifacts": {
+    "canonical_result": "results/suboff-v8-equivalent-l150-20k.json",
+    "canonical_result_sha256": "a60af351102aea2f835e3a3b83e2e23f03c034ddf899e7df3dbdab700351576c",
+    "remote_result_sha256": "ed6d18a7d829c8be76c0427a9bcb6bad7a3e98e0d3ca0c84d2adf9163de8de5d",
+    "remote_log_sha256": "7f6d0f1eb991906de50cfc9dc361aa14abdc095bb252403ee2b7cdac1088b448"
+  }
+}
