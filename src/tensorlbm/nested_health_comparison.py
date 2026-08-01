@@ -36,12 +36,28 @@ def _metrics(record: dict[str, Any]) -> dict[str, float | int | bool | None]:
         abs(float(interface["maximum_reflux_residual"]))
         for interface in interfaces
     ]
+    raw_mass_mismatch = [
+        abs(float(interface["raw_mass_mismatch"]))
+        for interface in interfaces
+        if interface.get("raw_mass_mismatch") is not None
+    ]
+    raw_momentum_mismatch = [
+        float(interface["raw_momentum_mismatch_norm"])
+        for interface in interfaces
+        if interface.get("raw_momentum_mismatch_norm") is not None
+    ]
     return {
         "step": int(record["step"]),
         "target_reynolds_reached": bool(record.get("target_reynolds_reached")),
         "maximum_speed": max(speeds) if speeds else None,
         "minimum_population": min(populations) if populations else None,
         "maximum_reflux_residual": max(reflux) if reflux else None,
+        "maximum_raw_mass_mismatch": (
+            max(raw_mass_mismatch) if raw_mass_mismatch else None
+        ),
+        "maximum_raw_momentum_mismatch": (
+            max(raw_momentum_mismatch) if raw_momentum_mismatch else None
+        ),
         "maximum_collision_limited_fraction": record.get(
             "maximum_collision_limited_fraction",
         ),
@@ -87,6 +103,10 @@ def compare_nested_health(
     candidate_speeds = values("candidate", "maximum_speed")
     baseline_populations = values("baseline", "minimum_population")
     candidate_populations = values("candidate", "minimum_population")
+    baseline_raw_mass = values("baseline", "maximum_raw_mass_mismatch")
+    candidate_raw_mass = values("candidate", "maximum_raw_mass_mismatch")
+    baseline_raw_momentum = values("baseline", "maximum_raw_momentum_mismatch")
+    candidate_raw_momentum = values("candidate", "maximum_raw_momentum_mismatch")
     latest = aligned[-1]
 
     def first_step(
@@ -118,6 +138,18 @@ def compare_nested_health(
         "candidate_maximum_speed": max(candidate_speeds),
         "baseline_minimum_population": min(baseline_populations),
         "candidate_minimum_population": min(candidate_populations),
+        "baseline_maximum_raw_mass_mismatch": (
+            max(baseline_raw_mass) if baseline_raw_mass else None
+        ),
+        "candidate_maximum_raw_mass_mismatch": (
+            max(candidate_raw_mass) if candidate_raw_mass else None
+        ),
+        "baseline_maximum_raw_momentum_mismatch": (
+            max(baseline_raw_momentum) if baseline_raw_momentum else None
+        ),
+        "candidate_maximum_raw_momentum_mismatch": (
+            max(candidate_raw_momentum) if candidate_raw_momentum else None
+        ),
         "latest_candidate_to_baseline_speed_ratio": latest[
             "candidate_to_baseline_speed_ratio"
         ],

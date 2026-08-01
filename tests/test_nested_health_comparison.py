@@ -13,6 +13,8 @@ def _record(
     speed: float,
     population: float,
     limiter: float = 0.0,
+    raw_mass_mismatch: float | None = None,
+    raw_momentum_mismatch: float | None = None,
 ) -> dict:
     return {
         "step": step,
@@ -23,7 +25,11 @@ def _record(
             "maximum_speed": speed,
             "minimum_population": population,
         }],
-        "interfaces": [{"maximum_reflux_residual": 1.0e-10 * step}],
+        "interfaces": [{
+            "maximum_reflux_residual": 1.0e-10 * step,
+            "raw_mass_mismatch": raw_mass_mismatch,
+            "raw_momentum_mismatch_norm": raw_momentum_mismatch,
+        }],
     }
 
 
@@ -88,6 +94,22 @@ def test_comparison_reports_aligned_instability_onset() -> None:
         "baseline": 2,
         "candidate": None,
     }
+
+
+def test_comparison_reports_raw_conserved_interface_mismatch() -> None:
+    baseline = [_record(1, 0.08, 0.02, raw_mass_mismatch=0.2)]
+    candidate = [_record(
+        1, 0.08, 0.02,
+        raw_mass_mismatch=0.1,
+        raw_momentum_mismatch=0.03,
+    )]
+
+    comparison = compare_nested_health(baseline, candidate)
+
+    assert comparison["baseline_maximum_raw_mass_mismatch"] == 0.2
+    assert comparison["candidate_maximum_raw_mass_mismatch"] == 0.1
+    assert comparison["baseline_maximum_raw_momentum_mismatch"] is None
+    assert comparison["candidate_maximum_raw_momentum_mismatch"] == 0.03
 
 
 def test_comparison_requires_a_common_step() -> None:
