@@ -241,6 +241,18 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     validation false.  A 4→6-step CPU save/resume composition test passes with
     `5.46e-12` reflux residual and correctly rejects its unphysical tiny-grid
     resistance.
+38. Wall traction now uses a reusable orientation-aware BFL surface measure,
+    `N_axial/(|nx|+|ny|+|nz|)`, instead of uniformly spreading analytical area
+    over nodes.  Axis-aligned and 45-degree manufactured patches pass exactly;
+    calibration preserves a declared total without flattening local weights.
+    AFF-1 uses analytical normals/area.  AFF-8 calibrates a gradient-based bare
+    proxy and applies the same factor to hull+sail+stern planes, adding their
+    area explicitly.  A coarse L24 composition probe gives 179.79 bare and
+    195.41 full square lattice units with zero unweighted active nodes.  Direct
+    checkpoint/result schema v4 prevents old uniform-area histories from
+    resuming into the new force sequence.  The common stationarity assessor
+    also now fails closed, rather than dividing by zero, when only one complete
+    time block exists.
 
 ## Rejected candidates
 

@@ -7,9 +7,12 @@ and a persistent linear trend.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 import math
-from collections.abc import Sequence
+from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 @dataclass(frozen=True)
@@ -73,6 +76,16 @@ def assess_force_stationarity(
     if scale <= 1e-30:
         scale = 1e-30
     relative_range = (max(blocks) - min(blocks)) / scale * 100.0
+    if len(blocks) == 1:
+        return ForceStationarityReport(
+            sample_count=len(values), block_size=block_size,
+            block_count=1, mean=mean, block_means=blocks,
+            relative_range_pct=relative_range,
+            half_mean_drift_pct=math.inf,
+            linear_trend_pct=math.inf,
+            standard_error_pct=math.inf,
+            finite=finite, sufficiently_sampled=False,
+        )
     split = len(blocks) // 2
     early = sum(blocks[:split]) / split
     late_count = len(blocks) - split

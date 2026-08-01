@@ -100,6 +100,12 @@ surface, and records exchange `y+`, rejected samples, CV/BFL observer
 difference, force stationarity, positivity limiting and maximum per-population
 reflux residual.
 
+Local wall area is orientation-aware rather than uniformly divided among
+nodes.  Axial BFL face projections determine each patch area; the analytical
+bare-hull area calibrates only the total.  For a full appendage geometry the
+bare calibration factor is applied unchanged to the sail and stern-plane
+surface proxy, so their added area enters wall shear explicitly.
+
 A save-at-step-4/resume-to-step-6 CPU composition test verifies that force and
 wall histories continue without reset; its maximum reflux residual is
 `5.46e-12`, force-observer difference 0.198%, and all states remain finite.
