@@ -781,6 +781,21 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     L512 waiter 4016750 follows L384.  Thus sphere, cylinder and flat-plate
     validation form one deterministic GPU queue with no polling race or
     resource contention.
+95. The active v8 L90 checkpoints provide the first long-tail production audit
+    of the laboratory-frame correction.  At step 7500, across all 3000
+    post-warmup steps, primary CV and BFL-plus-wall-stress means are 110.754 N
+    and 110.859 N, a 0.0943% difference; the stepwise residual has 0.107 N RMS
+    and 0.180 N maximum magnitude.  At the 100 explicitly paired coarse steps,
+    adding the measured numerical momentum source reduces the mean CV/BFL
+    difference from 0.0929% to 0.00134%.  Auxiliary CV margins 3/6/9 agree to
+    within 0.057%, while the independent surface-pressure integration remains
+    9.99% above the CV and is therefore diagnostic only.  The same
+    checkpoint's incomplete-tail resistance is 110.754 N, 26.72% above the
+    87.4 N experiment: conservation is now demonstrated, but physical and
+    statistical convergence are not.  A reusable checkpoint auditor groups
+    fine substeps by coarse step and reports history, raw/source-corrected,
+    nested-CV and surface-observer closure without promoting an in-progress
+    checkpoint to validated CFD evidence.
 
 ## Rejected candidates
 
