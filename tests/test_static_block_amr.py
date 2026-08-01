@@ -133,6 +133,53 @@ def test_restriction_regularization_is_an_explicit_common_option() -> None:
     assert abs(ledger.mass_residual) < 1e-12
 
 
+def test_prolongation_regularization_removes_only_coarse_ghost_modes() -> None:
+    equilibrium = _uniform_equilibrium((8, 9, 11))
+    c = C19.to(dtype=equilibrium.dtype)
+    moments = torch.stack((
+        torch.ones(19, dtype=equilibrium.dtype),
+        c[:, 0], c[:, 1], c[:, 2],
+        c[:, 0].square(), c[:, 1].square(), c[:, 2].square(),
+        c[:, 0] * c[:, 1], c[:, 0] * c[:, 2], c[:, 1] * c[:, 2],
+    ))
+    _, _, right = torch.linalg.svd(moments, full_matrices=True)
+    kinetic_mode = right[-1] / torch.linalg.vector_norm(right[-1])
+    perturbed_parent = equilibrium + 1.0e-3 * kinetic_mode[:, None, None, None]
+    box = BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5)
+    raw = StaticBlockAMR3D(
+        equilibrium.clone(),
+        StaticBlockAMRConfig(box, tau_coarse=0.56),
+    )
+    regularized = StaticBlockAMR3D(
+        equilibrium.clone(),
+        StaticBlockAMRConfig(
+            box, tau_coarse=0.56, regularize_prolongation=True,
+        ),
+    )
+    reference = regularized.fine_f.clone()
+
+    raw._fill_ghost(perturbed_parent)
+    regularized._fill_ghost(perturbed_parent)
+    plan = raw._ghost_sampling_plan
+    raw_ghost = raw.fine_f.reshape(19, -1)[:, plan.target_flat]
+    regularized_ghost = regularized.fine_f.reshape(19, -1)[:, plan.target_flat]
+    reference_ghost = reference.reshape(19, -1)[:, plan.target_flat]
+
+    assert torch.linalg.vector_norm(raw_ghost - reference_ghost) > 1.0e-3
+    torch.testing.assert_close(
+        regularized_ghost, reference_ghost, rtol=0.0, atol=2.0e-8,
+    )
+    torch.testing.assert_close(
+        raw_ghost.sum(dim=0), regularized_ghost.sum(dim=0),
+        rtol=0.0, atol=2.0e-8,
+    )
+    torch.testing.assert_close(
+        torch.einsum("qn,qd->dn", raw_ghost, c),
+        torch.einsum("qn,qd->dn", regularized_ghost, c),
+        rtol=0.0, atol=2.0e-8,
+    )
+
+
 def test_transfer_positivity_limits_amplified_restriction_before_parent_use() -> None:
     config = StaticBlockAMRConfig(
         BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),

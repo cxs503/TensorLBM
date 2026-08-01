@@ -88,6 +88,10 @@ restriction_filter=()
 if [[ ${TENSORLBM_REGULARIZE_RESTRICTION:-0} == 1 ]]; then
   restriction_filter=(--regularize-restriction)
 fi
+prolongation_filter=()
+if [[ ${TENSORLBM_REGULARIZE_PROLONGATION:-0} == 1 ]]; then
+  prolongation_filter=(--regularize-prolongation)
+fi
 ghost_interpolation=${TENSORLBM_GHOST_INTERPOLATION:-injection}
 if [[ $ghost_interpolation != injection && $ghost_interpolation != trilinear ]]; then
   echo "TENSORLBM_GHOST_INTERPOLATION must be injection or trilinear" >&2
@@ -138,4 +142,4 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --interface-filter-strength "$interface_filter_strength" \
   --checkpoint "$checkpoint" --checkpoint-interval "$checkpoint_interval" \
   --output "$output" "${restriction_filter[@]}" \
-  "${transfer_positivity[@]}" "${resume[@]}"
+  "${prolongation_filter[@]}" "${transfer_positivity[@]}" "${resume[@]}"
