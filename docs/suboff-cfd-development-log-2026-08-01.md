@@ -1240,6 +1240,18 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      and `89ac1b2f12fbe66d35489c50ffb4aa2ba8e8e0ab587ff3ba666688b5b6c3c010`.
      Its released GPU automatically starts the L120 nested continuation
      baseline with 80-step health cadence.
+140. The failed third observer is isolated without changing the flow solution.
+     Re-evaluating the final L120 checkpoint with the original first-node
+     surface pressure gives 75.15 N pressure drag, versus a 15.04 N BFL
+     pressure mean.  Exact quadratic wall-normal extrapolation reduces the
+     final snapshot to 18.87 N with the near-wall reference and 17.19 N with
+     the inlet free-stream reference.  A manufactured quadratic pressure field
+     confirms the three-point extrapolation recovers the analytical wall value
+     exactly.  The v9 campaign therefore changes only this independent
+     observer to inlet-reference quadratic extrapolation; collision, boundary,
+     wall stress, BFL and control-volume forces remain bitwise on the v8 path.
+     The v9 L120 time-history A/B is queued behind the active one-level L150
+     run and uses distinct checkpoints.
 
 ## Rejected candidates
 
