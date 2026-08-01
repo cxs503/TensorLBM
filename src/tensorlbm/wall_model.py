@@ -7,12 +7,29 @@ Provides:
 - :func:`apply_wall_model_bounce_back` — apply wall model with moving-wall BC.
 """
 from __future__ import annotations
+from dataclasses import dataclass
 import torch
 import torch.nn.functional as F
 from .propeller_benchmark import moving_wall_bounce_back_3d
 
 KAPPA = 0.41
 B_CONST = 5.0
+
+
+@dataclass(frozen=True)
+class WallStressDiagnostics:
+    """Runtime evidence for wall-stress applicability and sample quality."""
+
+    mode: str
+    requested_nodes: int
+    active_nodes: int
+    rejected_fraction: float
+    wall_distance_mean: float | None
+    y_plus_min: float | None
+    y_plus_mean: float | None
+    y_plus_max: float | None
+    u_tau_mean: float | None
+    shear_force: tuple[float, float, float]
 
 
 # ---------------------------------------------------------------------------
@@ -967,7 +984,11 @@ def bfl_wall_function_3d(
     wall_normals: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
     area_weight: torch.Tensor | None = None,
     apply_wall_stress: bool = True,
-) -> tuple[torch.Tensor, float, float]:
+    return_wall_diagnostics: bool = False,
+) -> (
+    tuple[torch.Tensor, float, float]
+    | tuple[torch.Tensor, float, float, WallStressDiagnostics]
+):
     """Mature BFL + wall function with Guo forcing (literature-recommended).
 
     Implements the architecture from ``docs/WALL_FUNCTION_SURVEY.md``:
@@ -1017,7 +1038,9 @@ def bfl_wall_function_3d(
             exchange location.  No population assimilation is performed.
 
     Returns:
-        ``(f_corrected, drag_friction_x, drag_pressure_x)``.
+        ``(f_corrected, drag_friction_x, drag_pressure_x)``.  When
+        ``return_wall_diagnostics`` is true, a fourth applicability and
+        exchange-sample diagnostic object is returned.
     """
     from .d3q19 import macroscopic3d
     from .bfl_d3q19 import bouzidi_bounce_back_d3q19
@@ -1097,6 +1120,24 @@ def bfl_wall_function_3d(
             activation=wall_activation,
             solid_mask=solid,
         )
+        if return_wall_diagnostics:
+            requested = int((near & fluid_boundary_mask.any(dim=0)).sum().item())
+            active = wall_diagnostics.boundary_nodes
+            diagnostics = WallStressDiagnostics(
+                mode="spalding_exchange_assimilation",
+                requested_nodes=requested,
+                active_nodes=active,
+                rejected_fraction=(
+                    (requested - active) / requested if requested else 0.0
+                ),
+                wall_distance_mean=None,
+                y_plus_min=None,
+                y_plus_mean=wall_diagnostics.mean_y2_plus,
+                y_plus_max=None,
+                u_tau_mean=wall_diagnostics.mean_u_tau,
+                shear_force=wall_diagnostics.shear_force,
+            )
+            return f, wall_diagnostics.shear_force[0], bfl_force[0], diagnostics
         return f, wall_diagnostics.shear_force[0], bfl_force[0]
 
     # ── Step 2: Compute macroscopic fields ──
@@ -1180,6 +1221,50 @@ def bfl_wall_function_3d(
     # shear is supplied separately by the Guo stress above.
     drag_pres = bfl_force[0]
 
+    if return_wall_diagnostics:
+        requested_mask = near
+        if stress_exchange_distance is not None:
+            requested_mask = near & fluid_boundary_mask.any(dim=0)
+        requested = int(requested_mask.sum().item())
+        active = int(stress_near.sum().item())
+        active_u_tau = u_tau[stress_near]
+        if active:
+            distance_field = torch.as_tensor(
+                stress_y, device=f.device, dtype=f.dtype,
+            ).expand_as(stress_near)
+            active_distance = distance_field[stress_near]
+            active_y_plus = active_distance * active_u_tau / nu
+            wall_distance_mean = float(active_distance.mean().item())
+            y_plus_min = float(active_y_plus.min().item())
+            y_plus_mean = float(active_y_plus.mean().item())
+            y_plus_max = float(active_y_plus.max().item())
+            u_tau_mean = float(active_u_tau.mean().item())
+        else:
+            wall_distance_mean = None
+            y_plus_min = y_plus_mean = y_plus_max = u_tau_mean = None
+        shear_components = tuple(float(value.item()) for value in (
+            (tau_w * (ut_x * inv_utan) * traction_area * wall_activation).sum(),
+            (tau_w * (ut_y * inv_utan) * traction_area * wall_activation).sum(),
+            (tau_w * (ut_z * inv_utan) * traction_area * wall_activation).sum(),
+        ))
+        diagnostics = WallStressDiagnostics(
+            mode=(
+                "exchange_location_guo"
+                if stress_exchange_distance is not None else "boundary_node_guo"
+            ),
+            requested_nodes=requested,
+            active_nodes=active,
+            rejected_fraction=(
+                (requested - active) / requested if requested else 0.0
+            ),
+            wall_distance_mean=wall_distance_mean,
+            y_plus_min=y_plus_min,
+            y_plus_mean=y_plus_mean,
+            y_plus_max=y_plus_max,
+            u_tau_mean=u_tau_mean,
+            shear_force=shear_components,
+        )
+        return f, drag_fric, drag_pres, diagnostics
     return f, drag_fric, drag_pres
 
 
@@ -1285,4 +1370,5 @@ __all__ = [
     "guo_body_force_d3q27",
     "bfl_wall_function_3d",
     "bfl_wall_function_d3q27",
+    "WallStressDiagnostics",
 ]
