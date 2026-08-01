@@ -1,0 +1,55 @@
+{
+  "schema": "tensorlbm-nested-sgs-sensitivity-evidence-v1",
+  "status": "numerically_healthy_not_physically_admitted",
+  "common_configuration": {
+    "hull_type": "bare_hull",
+    "hull_length_cells": 90,
+    "finest_hull_length_cells": 360,
+    "steps": 2400,
+    "convective_times": 1.6,
+    "resolved_reynolds": 100000,
+    "collision_model": "cumulant_smagorinsky"
+  },
+  "candidates": [
+    {
+      "name": "suboff-nested-v20-l90-cs010-2400",
+      "cs_smag": 0.1,
+      "minimum_population": 0.014662375673651695,
+      "maximum_speed": 0.09095793217420578,
+      "mean_eddy_to_molecular_viscosity_ratio_by_level": [
+        0.13791983943869462,
+        2.024037350707279,
+        0.8914303109038245
+      ],
+      "result_sha256": "0c3df44a0981fb0435b14c70aefaca7e308aa64e3d390c3b29687e8341940345",
+      "checkpoint_sha256": "42b720791c70d0521f6ff0dc16cf4eb90589ed654f79f908f5070129c9b104d0"
+    },
+    {
+      "name": "suboff-nested-v21-l90-cs015-2400",
+      "cs_smag": 0.15,
+      "minimum_population": 0.015589737333357334,
+      "maximum_speed": 0.08966030925512314,
+      "mean_eddy_to_molecular_viscosity_ratio_by_level": [
+        0.20454789919948604,
+        2.676494042526595,
+        1.3878768323713084
+      ],
+      "result_sha256": "1aaa35883750bfc4994cd9ac15f73c5bfea0b800ddeb61c4c224a9d944f8a8a3",
+      "checkpoint_sha256": "511b9fe90a2f06bddacbf448ba2b315336735e0ce885b7bc77b71fe7362e3765"
+    },
+    {
+      "name": "suboff-nested-v22-l90-cs020-2400",
+      "cs_smag": 0.2,
+      "minimum_population": 0.015754777938127518,
+      "maximum_speed": 0.08940444141626358,
+      "mean_eddy_to_molecular_viscosity_ratio_by_level": [
+        0.270219961789962,
+        3.0615304389953013,
+        1.6209577653744447
+      ],
+      "result_sha256": "1faea557bb150701119b006ab2c5f1fac21f4e244b68d97182b95be7b4c3fd0e",
+      "checkpoint_sha256": "cbb3c3fcd51974f65ac6e73264aad3520d6129a9d0ff6217d6c62685ef95a08b"
+    }
+  ],
+  "conclusion": "All three coefficients cross the historical instability interval without collision, transfer, or reflux limiting. Stability improves only marginally above Cs=0.10 while mean SGS viscosity rises materially, reaching 3.06 times molecular viscosity on the first refined level for Cs=0.20. Cs=0.10 remains the least-dissipative Smagorinsky continuation candidate; no coefficient is a physical resistance result at 2400 steps."
+}
