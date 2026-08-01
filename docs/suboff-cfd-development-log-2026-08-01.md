@@ -1285,6 +1285,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      with identical mass drift; combined with the force-safe width-two,
      strength-1.0 kinetic filter it remains admitted, slightly improves
      refined-region velocity error, and changes refined density RMS by 0.23%.
+144. The legacy uncontinued nested L90 v3 trajectory finishes all 12000 steps
+     and is retained only as negative evidence.  Its 7500-step mean is
+     96.7900 N (10.74% high), but block means span 93.73%, the adjusted 95%
+     confidence half-width is 25.60%, the surface observer differs by 25.84%,
+     and positivity limiting reaches 0.6001% without cadence-resolved health
+     provenance.  It therefore fails independently of reference proximity.
+     Result/log SHA-256 values are
+     `73660fae62d4930db6d65e99eeb30f558d1ac21c7263f4df7ab4653a51e667ad`
+     and `ceb8745b7b48e921fa9e9627773357535ec177081074146a24b9e1ff44cd0ddf`.
 
 ## Rejected candidates
 
