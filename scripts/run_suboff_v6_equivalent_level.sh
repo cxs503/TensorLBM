@@ -3,6 +3,7 @@ set -euo pipefail
 
 usage() {
   echo "usage: $0 L90|L120|L150 PHYSICAL_GPU [RESULT_DIR] [WAIT_FOR_PID]" >&2
+  echo "       SUBOFF_HULL_TYPE=bare_hull|full (default: bare_hull)" >&2
   exit 2
 }
 
@@ -11,6 +12,11 @@ level=${1#L}
 gpu=$2
 result_dir=${3:-results/amr_campaign_20260801}
 wait_for_pid=${4:-}
+hull_type=${SUBOFF_HULL_TYPE:-bare_hull}
+if [[ "$hull_type" != bare_hull && "$hull_type" != full ]]; then
+  echo "SUBOFF_HULL_TYPE must be bare_hull or full" >&2
+  exit 2
+fi
 
 case "$level" in
   90)
@@ -45,8 +51,12 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 mkdir -p "$result_dir"
 python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
-checkpoint="$result_dir/suboff-v6-equivalent-l${level}-${steps%000}k.ckpt"
-output="$result_dir/suboff-v6-equivalent-l${level}-${steps%000}k.json"
+variant=
+if [[ "$hull_type" == full ]]; then
+  variant=-aff8
+fi
+checkpoint="$result_dir/suboff-v6${variant}-equivalent-l${level}-${steps%000}k.ckpt"
+output="$result_dir/suboff-v6${variant}-equivalent-l${level}-${steps%000}k.json"
 resume=()
 if [[ -f "$checkpoint" ]]; then
   resume=(--resume)
@@ -54,7 +64,7 @@ fi
 
 export CUDA_VISIBLE_DEVICES=$gpu
 exec "$python" examples/suboff_static_amr_resistance.py \
-  --device cuda:0 --hull-type bare_hull --speed-knots 5.92 \
+  --device cuda:0 --hull-type "$hull_type" --speed-knots 5.92 \
   --nx "$nx" --ny "$cross" --nz "$cross" --hull-length "$level" \
   --center-x-fraction 0.3 --wall-margin "$wall" --wake-cells "$wake" \
   --cv-margin "$cv" --aux-cv-margins "$aux" \

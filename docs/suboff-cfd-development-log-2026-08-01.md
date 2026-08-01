@@ -629,6 +629,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     AFF-1 records remain backward-compatible because diameter is reconstructed
     unambiguously from the recorded fine hull length; this preserves the
     already-running exact AFF-1 campaign without weakening future AFF-8 claims.
+78. The exact SUBOFF launcher also supports the paired AFF-8 sequence through
+    `SUBOFF_HULL_TYPE=full`.  It retains the identical L90/L120/L150 mesh and
+    duration ratios, writes variant-isolated `suboff-v6-aff8-*` artifacts and
+    activates the measured appendage-resolution/area gates.  The default stays
+    AFF-1, so the already queued L150 command and its checkpoint names are
+    unchanged.  AFF-8 execution remains deliberately behind the AFF-1 result
+    review rather than competing for the three occupied production GPUs.
 
 ## Rejected candidates
 
