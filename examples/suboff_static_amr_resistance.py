@@ -35,6 +35,7 @@ from tensorlbm.control_volume_force import (
 from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.drag_pressure import get_near_wall_3d
+from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.population_positivity import limit_nonequilibrium_for_positivity
 from tensorlbm.solver3d import stream3d
@@ -221,11 +222,20 @@ def run(args: argparse.Namespace) -> dict:
 
         if level == 0:
             out = stream3d(collide(f))
-            out = far_field_bc_3d(out, u_in=args.lattice_speed)
+            if args.far_field_mode == "non_equilibrium_extrapolation":
+                out = non_equilibrium_far_field_bc_3d(
+                    out, u_in=args.lattice_speed,
+                )
+            else:
+                out = far_field_bc_3d(out, u_in=args.lattice_speed)
             if args.sponge_width > 0 and args.sponge_strength > 0.0:
                 out = apply_equilibrium_difference_sponge(
                     out, sponge,
                     velocity_target=(args.lattice_speed, 0.0, 0.0),
+                )
+            if args.far_field_mode == "non_equilibrium_extrapolation":
+                return non_equilibrium_far_field_bc_3d(
+                    out, u_in=args.lattice_speed,
                 )
             return far_field_bc_3d(out, u_in=args.lattice_speed)
 
@@ -327,6 +337,7 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
             "positivity_limiter_enabled": not args.disable_positivity_limiter,
+            "far_field_mode": args.far_field_mode,
         },
         "mesh": {
             "coarse_cells": plan.coarse_cells,
@@ -401,6 +412,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument("--sponge-width", type=int, default=12)
     p.add_argument("--sponge-strength", type=float, default=0.2)
+    p.add_argument(
+        "--far-field-mode",
+        choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),
+        default="non_equilibrium_extrapolation",
+    )
     p.add_argument("--output", required=True)
     return p
 
