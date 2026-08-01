@@ -207,6 +207,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     5.132% above Schiller–Naumann.  The late window is not substituted for the
     declared full window; it identifies a small residual spatial/model bias
     for the running R15 point to resolve.
+34. Flat-plate checkpoint/result schema v3 expands restart identity to include
+    domain/plate proportions, ramp, sponge, control-volume margin, LES
+    constant, positivity policy and wall diagnostic cadence.  The new
+    multi-grid assessor accepts at least three individually admitted v3 runs
+    only after exact configuration identity, invariant domain ratios and
+    invariant exchange-height/plate-length ratio.  Existing v2 runs are
+    retained as development evidence but fail formal provenance rather than
+    being retroactively relabelled.
 
 ## Rejected candidates
 
