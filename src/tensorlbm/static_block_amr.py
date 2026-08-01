@@ -22,6 +22,10 @@ from dataclasses import dataclass
 
 import torch
 
+from .amr_interface_filter import (
+    damp_interface_nonequilibrium,
+    interface_shell_blend,
+)
 from .amr_population_transfer import rescale_nonequilibrium
 from .fixed_nested_transfer import restrict_populations_2to1
 from .kinetic_flux_register import (
@@ -77,6 +81,8 @@ class StaticBlockAMRConfig:
     regularize_restriction: bool = False
     ghost_interpolation: str = "injection"
     enforce_transfer_positivity: bool = False
+    interface_filter_width: int = 0
+    interface_filter_strength: float = 0.0
 
     def __post_init__(self) -> None:
         if not isinstance(self.box, BoxRegion):
@@ -89,6 +95,16 @@ class StaticBlockAMRConfig:
         if not 0.0 < self.maximum_reflux_correction_fraction <= 1.0:
             raise ValueError(
                 "maximum_reflux_correction_fraction must lie in (0,1]",
+            )
+        if self.interface_filter_width < 0:
+            raise ValueError("interface_filter_width must be non-negative")
+        if not 0.0 <= self.interface_filter_strength <= 1.0:
+            raise ValueError("interface_filter_strength must lie in [0,1]")
+        if (self.interface_filter_width == 0) != (
+            self.interface_filter_strength == 0.0
+        ):
+            raise ValueError(
+                "interface filter width and strength must both be zero or positive",
             )
 
     @property
@@ -185,6 +201,14 @@ class StaticBlockAMR3D:
         self.coarse_f = coarse_f
         self.config = config
         self.fine_f = _sample_parent_with_ghost(coarse_f, config)
+        self._interface_filter_blend = interface_shell_blend(
+            self.fine_f.shape[1:],
+            ghost=config.ghost,
+            width=config.interface_filter_width,
+            strength=config.interface_filter_strength,
+            device=self.fine_f.device,
+            dtype=self.fine_f.dtype,
+        )
         self._ghost_sampling_plan = self._build_ghost_sampling_plan()
         self.last_restriction_positivity: PositivityDiagnostics | None = None
         physical_shape = self.physical_fine_shape
@@ -380,6 +404,12 @@ class StaticBlockAMR3D:
                 raise FloatingPointError("non-finite fine-to-coarse AMR restriction")
         return restricted
 
+    def _filter_fine_interface(self, populations: torch.Tensor) -> torch.Tensor:
+        return damp_interface_nonequilibrium(
+            populations,
+            self._interface_filter_blend,
+        )
+
     def _replace_without_reflux(self, restricted: torch.Tensor) -> PopulationRefluxLedger:
         b = self.config.box
         old_patch = self.coarse_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1]
@@ -457,6 +487,7 @@ class StaticBlockAMR3D:
                 advance(self.fine_f, tau_fine, 1, substep),
                 self.fine_f.shape, require_flux_state=self.config.reflux,
             )
+            fine_new = self._filter_fine_interface(fine_new)
             if fine_post is not None:
                 observed = observe_kinetic_interface_transfer(
                     fine_post, self.fine_interface_links,
@@ -683,6 +714,7 @@ class NestedStaticBlockAMR3D:
                 assert unpacked_post is not None
                 fine_post = unpacked_post
 
+            fine_new = interface._filter_fine_interface(fine_new)
             interface.fine_f = fine_new
             observed = observe_kinetic_interface_transfer(
                 fine_post,

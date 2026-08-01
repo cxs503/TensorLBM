@@ -122,6 +122,18 @@ def parser() -> argparse.ArgumentParser:
         action="store_true",
         help="limit fine-to-coarse populations before parent replacement",
     )
+    result.add_argument(
+        "--interface-filter-width",
+        type=int,
+        default=0,
+        help="physical fine cells damped next to every AMR interface; 0 disables",
+    )
+    result.add_argument(
+        "--interface-filter-strength",
+        type=float,
+        default=0.0,
+        help="maximum moment-preserving non-equilibrium damping in [0,1]",
+    )
     result.add_argument("--minimum-convective-times", type=float, default=8.0)
     result.add_argument(
         "--minimum-target-reynolds-convective-times",
@@ -202,6 +214,12 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("health interval must be non-negative")
     if not args.lattice_speed < args.maximum_health_speed < 1.0:
         raise ValueError("maximum health speed must lie between inlet speed and one")
+    if (args.interface_filter_width == 0) != (
+        args.interface_filter_strength == 0.0
+    ):
+        raise ValueError(
+            "interface filter width and strength must both be zero or positive",
+        )
     resolved_reynolds_start = (
         args.resolved_reynolds
         if args.resolved_reynolds_start == 0.0
@@ -347,6 +365,8 @@ def run(args: argparse.Namespace) -> dict:
         regularize_restriction=args.regularize_restriction,
         ghost_interpolation=args.ghost_interpolation,
         enforce_transfer_positivity=args.enforce_transfer_positivity,
+        interface_filter_width=args.interface_filter_width,
+        interface_filter_strength=args.interface_filter_strength,
     )
     inner_amr_config = StaticBlockAMRConfig(
         nested_plan.box_in_outer_allocated_coordinates,
@@ -354,6 +374,8 @@ def run(args: argparse.Namespace) -> dict:
         regularize_restriction=args.regularize_restriction,
         ghost_interpolation=args.ghost_interpolation,
         enforce_transfer_positivity=args.enforce_transfer_positivity,
+        interface_filter_width=args.interface_filter_width,
+        interface_filter_strength=args.interface_filter_strength,
     )
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, args.lattice_speed)
@@ -397,6 +419,8 @@ def run(args: argparse.Namespace) -> dict:
         "regularize_restriction": args.regularize_restriction,
         "ghost_interpolation": args.ghost_interpolation,
         "enforce_transfer_positivity": args.enforce_transfer_positivity,
+        "interface_filter_width": args.interface_filter_width,
+        "interface_filter_strength": args.interface_filter_strength,
     }
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
@@ -542,6 +566,8 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("regularize_restriction")
         legacy_v3_signature.pop("ghost_interpolation")
         legacy_v3_signature.pop("enforce_transfer_positivity")
+        legacy_v3_signature.pop("interface_filter_width")
+        legacy_v3_signature.pop("interface_filter_strength")
         legacy_v3_signature.pop("wall_stress_enabled")
         legacy_v3_signature.pop("collision_model")
         legacy_v3_signature.pop("kbc_max_iterations")
@@ -553,6 +579,8 @@ def run(args: argparse.Namespace) -> dict:
             not args.regularize_restriction
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
+            and args.interface_filter_width == 0
+            and args.interface_filter_strength == 0.0
             and not args.disable_wall_stress
             and args.collision_model == "cumulant_smagorinsky"
             and resolved_reynolds_start == args.resolved_reynolds
@@ -565,6 +593,8 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop("regularize_restriction")
         legacy_v2_without_new_transfer.pop("ghost_interpolation")
         legacy_v2_without_new_transfer.pop("enforce_transfer_positivity")
+        legacy_v2_without_new_transfer.pop("interface_filter_width")
+        legacy_v2_without_new_transfer.pop("interface_filter_strength")
         legacy_v2_without_new_transfer.pop("wall_stress_enabled")
         legacy_v2_without_new_transfer.pop("collision_model")
         legacy_v2_without_new_transfer.pop("kbc_max_iterations")
@@ -577,6 +607,8 @@ def run(args: argparse.Namespace) -> dict:
             and not args.regularize_restriction
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
+            and args.interface_filter_width == 0
+            and args.interface_filter_strength == 0.0
             and not args.disable_wall_stress
             and args.collision_model == "cumulant_smagorinsky"
             and resolved_reynolds_start == args.resolved_reynolds
@@ -867,6 +899,8 @@ def run(args: argparse.Namespace) -> dict:
                     rel_tol=1.0e-12,
                     abs_tol=0.0,
                 ),
+                "maximum_collision_limited_fraction": maximum_limiter_fraction,
+                "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
                 "levels": level_health,
                 "interfaces": interface_health,
                 "finest_peak_speed_context": finest_peak_context,
