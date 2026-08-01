@@ -145,6 +145,51 @@ class PopulationRefluxLedger:
         return float(self.residual.sum().item())
 
 
+def _merge_reflux_ledgers(
+    previous: PopulationRefluxLedger,
+    current: PopulationRefluxLedger,
+) -> PopulationRefluxLedger:
+    """Accumulate repeated child-interface advances over one root step."""
+    raw = None
+    if previous.raw_kinetic_mismatch is not None:
+        if current.raw_kinetic_mismatch is None:
+            raise RuntimeError("nested reflux ledger lost raw kinetic mismatch")
+        raw = previous.raw_kinetic_mismatch + current.raw_kinetic_mismatch
+    elif current.raw_kinetic_mismatch is not None:
+        raw = current.raw_kinetic_mismatch
+    return PopulationRefluxLedger(
+        replacement_mismatch=(
+            previous.replacement_mismatch + current.replacement_mismatch
+        ),
+        applied_shell_correction=(
+            previous.applied_shell_correction
+            + current.applied_shell_correction
+        ),
+        shell_cells=previous.shell_cells + current.shell_cells,
+        residual=previous.residual + current.residual,
+        limited_directions=(
+            previous.limited_directions + current.limited_directions
+        ),
+        raw_kinetic_mismatch=raw,
+        restriction_limited_fraction=max(
+            previous.restriction_limited_fraction,
+            current.restriction_limited_fraction,
+        ),
+        restriction_minimum_alpha=min(
+            previous.restriction_minimum_alpha,
+            current.restriction_minimum_alpha,
+        ),
+        prolongation_limited_fraction=max(
+            previous.prolongation_limited_fraction,
+            current.prolongation_limited_fraction,
+        ),
+        prolongation_minimum_alpha=min(
+            previous.prolongation_minimum_alpha,
+            current.prolongation_minimum_alpha,
+        ),
+    )
+
+
 @dataclass(frozen=True)
 class _GhostSamplingPlan:
     target_flat: torch.Tensor
@@ -834,6 +879,9 @@ class NestedStaticBlockAMR3D:
             interface._maximum_prolongation_limited_fraction,
             interface._minimum_prolongation_alpha,
         )
+        previous_ledger = ledgers[interface_index]
+        if previous_ledger is not None:
+            ledger = _merge_reflux_ledgers(previous_ledger, ledger)
         interface.last_reflux = ledger
         ledgers[interface_index] = ledger
         return interface.coarse_f, coarse_post

@@ -11,6 +11,7 @@ from tensorlbm.static_block_amr import (
     AMRAdvanceResult,
     NestedStaticBlockAMR3D,
     StaticBlockAMRConfig,
+    _merge_reflux_ledgers,
 )
 
 
@@ -175,6 +176,48 @@ def test_nested_hierarchy_reports_cell_savings() -> None:
     assert len(hierarchy.level_populations) == 3
     assert hierarchy.total_allocated_cells < hierarchy.uniform_finest_equivalent_cells
     assert 0.0 < hierarchy.cell_saving_fraction < 1.0
+
+
+def test_repeated_child_ledgers_accumulate_over_the_root_step() -> None:
+    from tensorlbm.static_block_amr import PopulationRefluxLedger
+
+    first = PopulationRefluxLedger(
+        torch.tensor([1.0]),
+        torch.tensor([0.75]),
+        4,
+        torch.tensor([0.25]),
+        1,
+        torch.tensor([2.0]),
+        0.1,
+        0.8,
+        0.2,
+        0.7,
+    )
+    second = PopulationRefluxLedger(
+        torch.tensor([3.0]),
+        torch.tensor([2.5]),
+        5,
+        torch.tensor([0.5]),
+        2,
+        torch.tensor([4.0]),
+        0.3,
+        0.6,
+        0.1,
+        0.9,
+    )
+
+    merged = _merge_reflux_ledgers(first, second)
+
+    torch.testing.assert_close(merged.replacement_mismatch, torch.tensor([4.0]))
+    torch.testing.assert_close(merged.applied_shell_correction, torch.tensor([3.25]))
+    torch.testing.assert_close(merged.residual, torch.tensor([0.75]))
+    torch.testing.assert_close(merged.raw_kinetic_mismatch, torch.tensor([6.0]))
+    assert merged.shell_cells == 9
+    assert merged.limited_directions == 3
+    assert merged.restriction_limited_fraction == 0.3
+    assert merged.restriction_minimum_alpha == 0.6
+    assert merged.prolongation_limited_fraction == 0.2
+    assert merged.prolongation_minimum_alpha == 0.7
 
 
 def test_restore_level_populations_relinks_nested_parent_state() -> None:

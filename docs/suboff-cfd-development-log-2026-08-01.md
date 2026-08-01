@@ -1493,6 +1493,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Spatial interpolation order alone is therefore ruled out.  The released
      GPU runs the factorial combination of stream-link-local reflux and the
      newly bidirectional transfer-positivity guard.
+166. Nested reflux diagnostics now accumulate every child-interface invocation
+     over a complete root step.  Previously the inner interface, which advances
+     twice per root step in a three-level 2:1 hierarchy, overwrote its first
+     ledger with the second.  Requested/applied corrections, residual and raw
+     mismatch now sum in consistent root-step inventory units, while transfer
+     limiter fractions and alphas retain the worst invocation.  Fifty-one
+     focused single/nested runtime and SUBOFF tests pass.  The solver had always
+     applied both corrections; this change makes health evidence match that
+     actual subcycling rather than silently reporting only its final half.
 
 ## Rejected candidates
 
