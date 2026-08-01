@@ -69,6 +69,7 @@ from tensorlbm.turbulence import (
     collide_wale_mrt3d,
 )
 from tensorlbm.wall_model import (
+    WALL_TRACTION_SOURCE_SCHEME,
     WallStressDiagnostics,
     bfl_wall_function_3d,
     physical_wall_lattice_viscosity,
@@ -481,6 +482,7 @@ def run(args: argparse.Namespace) -> dict:
             args.maximum_reflux_correction_fraction
         ),
         "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
+        "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
         "positivity_limiter_enabled": not args.disable_positivity_limiter,
         "warmup_steps": args.warmup_steps,
         "report_interval": args.report_interval,
