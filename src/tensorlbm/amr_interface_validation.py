@@ -86,7 +86,9 @@ def _rms(field: torch.Tensor, mask: torch.Tensor) -> float:
     return float(torch.sqrt(field[mask].square().mean()).item())
 
 
-def _interface_shell(shape: tuple[int, int, int], box: BoxRegion, device: torch.device) -> torch.Tensor:
+def _interface_shell(
+    shape: tuple[int, int, int], box: BoxRegion, device: torch.device,
+) -> torch.Tensor:
     shell = torch.zeros(shape, dtype=torch.bool, device=device)
     shell[
         box.z0 - 1:box.z1 + 1,
