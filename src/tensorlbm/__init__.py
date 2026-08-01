@@ -699,6 +699,7 @@ from .flat_plate_wall_model import (
     ittc_1957_friction_coefficient,
     run_flat_plate_wall_model,
 )
+from .flat_plate_convergence import assess_flat_plate_convergence
 
 __all__ = [
     "__version__",
@@ -760,6 +761,7 @@ __all__ = [
     "FlatPlateWallModelConfig",
     "ittc_1957_friction_coefficient",
     "run_flat_plate_wall_model",
+    "assess_flat_plate_convergence",
     # D2Q9 lattice
     "C",
     "W",
