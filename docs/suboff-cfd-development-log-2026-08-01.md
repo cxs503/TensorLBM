@@ -1550,6 +1550,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      and `6bd506193372e2da75b536c57e7de49686710dddef967e25fbafe043ab543ebb`.
      The safety feature remains enabled, but cannot be credited with stability.
      GPU3 now supplies the `C_s=0.15` counterpart to the `C_s=0.10` SGS test.
+172. The D3Q19 cumulant module now exposes the exact local Smagorinsky
+     `tau_eff` field used by collision.  This permits checkpoint-level audits
+     of added subgrid viscosity and effective Reynolds-number distribution for
+     the `C_s=0.10/0.15` candidates, instead of describing them only by an input
+     coefficient.  Unit tests verify equilibrium returns the molecular tau,
+     non-equilibrium stress can only increase tau, and invalid states fail
+     closed.  Stability alone will not promote a coefficient without this
+     dissipation audit and subsequent force/grid sensitivity.
 
 ## Rejected candidates
 
