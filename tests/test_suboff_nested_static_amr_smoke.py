@@ -292,7 +292,7 @@ def test_nested_smoke_dispatches_gradient_sgs_as_diagnostic(
 
     assert result["configuration"]["collision_model"] == collision_model
     assert result["configuration"][coefficient_key] == coefficient
-    assert result["acceptance"]["collision_viscosity_target_met"] is False
+    assert result["acceptance"]["collision_viscosity_target_met"] is True
     assert result["acceptance"]["single_grid_candidate"] is False
     assert result["result"]["finite"] is True
 

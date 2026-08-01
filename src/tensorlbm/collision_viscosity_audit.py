@@ -23,15 +23,18 @@ class CollisionViscosityAuditConfig:
     fit_start_step: int = 20
     maximum_relative_error_pct: float = 2.0
     kbc_max_iterations: int = 12
+    wale_cw: float = 0.5
+    vreman_cv: float = 0.025
     device: str = "cpu"
     dtype: str = "float64"
 
     def validate(self) -> None:
         if self.collision_model not in {
-            "bgk", "cumulant", "entropic_kbc", "natural_kbc",
+            "bgk", "cumulant", "cumulant_wale", "cumulant_vreman",
+            "entropic_kbc", "natural_kbc",
         }:
             raise ValueError(
-                "collision_model must be bgk, cumulant, entropic_kbc or natural_kbc",
+                "unsupported collision_model",
             )
         if not 0.5 < self.tau < 2.0:
             raise ValueError("tau must lie in (0.5,2)")
@@ -45,6 +48,10 @@ class CollisionViscosityAuditConfig:
             raise ValueError("maximum_relative_error_pct must be positive")
         if self.kbc_max_iterations < 1:
             raise ValueError("kbc_max_iterations must be positive")
+        if not 0.0 <= self.wale_cw <= 1.0:
+            raise ValueError("wale_cw must lie in [0,1]")
+        if not 0.0 <= self.vreman_cv <= 0.2:
+            raise ValueError("vreman_cv must lie in [0,0.2]")
         if self.dtype not in {"float32", "float64"}:
             raise ValueError("dtype must be float32 or float64")
 
@@ -60,6 +67,14 @@ def _collide(
             populations,
             tau=config.tau,
             C_s=0.0,
+        )
+    if config.collision_model == "cumulant_wale":
+        return collide_cumulant_d3q19(
+            populations, tau=config.tau, C_w=config.wale_cw,
+        )
+    if config.collision_model == "cumulant_vreman":
+        return collide_cumulant_d3q19(
+            populations, tau=config.tau, C_v=config.vreman_cv,
         )
     if config.collision_model == "natural_kbc":
         return collide_natural_kbc_d3q19(populations, config.tau)
