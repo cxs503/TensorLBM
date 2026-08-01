@@ -28,6 +28,7 @@ from tensorlbm.control_volume_force import (
     box_control_volume,
     observe_control_volume_force,
 )
+from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.drag_pressure import (
     SurfaceMesh,
@@ -304,7 +305,9 @@ def run_case(args: argparse.Namespace) -> dict:
         boundary_speed = args.lattice_speed
         f_step_old = f.clone()
         f_pre_collision = f_step_old
-        if args.les_model == "wale":
+        if args.collision_model == "cumulant_smagorinsky":
+            f = collide_cumulant_d3q19(f, tau=tau, C_s=args.cs_smag)
+        elif args.les_model == "wale":
             f = collide_wale_mrt3d(f, tau=tau, C_w=args.cw_wale)
         else:
             f = collide_smagorinsky_mrt3d(f, tau=tau, C_s=args.cs_smag)
@@ -461,9 +464,13 @@ def run_case(args: argparse.Namespace) -> dict:
             "resolved_reynolds_number": resolved_re,
             "collision_nu_lu": collision_nu_lu, "tau": tau,
             "collision": (
-                f"D3Q19 MRT+WALE(Cw={args.cw_wale})"
-                if args.les_model == "wale" else
-                f"D3Q19 MRT+Smagorinsky(Cs={args.cs_smag})"
+                f"D3Q19 cumulant+Smagorinsky(Cs={args.cs_smag})"
+                if args.collision_model == "cumulant_smagorinsky" else
+                (
+                    f"D3Q19 MRT+WALE(Cw={args.cw_wale})"
+                    if args.les_model == "wale" else
+                    f"D3Q19 MRT+Smagorinsky(Cs={args.cs_smag})"
+                )
             ),
             "wall_treatment": f"{args.wall_law}(y={args.wall_distance})",
             "pressure_force_method": (
@@ -572,6 +579,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cs-smag", type=float, default=0.05)
     p.add_argument("--cw-wale", type=float, default=0.5)
     p.add_argument("--les-model", choices=("wale", "smagorinsky"), default="wale")
+    p.add_argument(
+        "--collision-model",
+        choices=("mrt_les", "cumulant_smagorinsky"),
+        default="mrt_les",
+    )
     p.add_argument(
         "--resolved-reynolds", type=float, default=0.0,
         help="Optional bulk-flow Re for wall-model sensitivity; 0 uses physical Re.",

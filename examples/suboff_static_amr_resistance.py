@@ -26,6 +26,7 @@ from suboff_experimental_resistance import (
     force_scale_newton,
     smooth_ramp_factor,
 )
+from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.control_volume_force import (
     box_control_volume,
@@ -203,6 +204,10 @@ def run(args: argparse.Namespace) -> dict:
 
     def advance(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
         def collide(state: torch.Tensor) -> torch.Tensor:
+            if args.collision_model == "cumulant_smagorinsky":
+                return collide_cumulant_d3q19(
+                    state, tau=tau, C_s=args.cs_smag,
+                )
             if args.les_model == "wale":
                 return collide_wale_mrt3d(state, tau, C_w=args.cw_wale)
             return collide_smagorinsky_mrt3d(state, tau, C_s=args.cs_smag)
@@ -293,6 +298,7 @@ def run(args: argparse.Namespace) -> dict:
             "collision_reynolds": collision_re, "steps": args.steps,
             "reflux_enabled": amr.config.reflux,
             "les_model": args.les_model,
+            "collision_model": args.collision_model,
             "les_constant": (
                 args.cw_wale if args.les_model == "wale" else args.cs_smag
             ),
@@ -353,6 +359,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cs-smag", type=float, default=0.05)
     p.add_argument("--cw-wale", type=float, default=0.5)
     p.add_argument("--les-model", choices=("wale", "smagorinsky"), default="wale")
+    p.add_argument(
+        "--collision-model",
+        choices=("mrt_les", "cumulant_smagorinsky"),
+        default="mrt_les",
+    )
     p.add_argument("--wall-law", choices=("log", "reichardt", "musker"), default="reichardt")
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument("--sponge-width", type=int, default=12)
