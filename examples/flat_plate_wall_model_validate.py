@@ -32,6 +32,7 @@ def main() -> None:
     parser.add_argument("--wall-law", choices=("log", "reichardt", "musker"), default="log")
     parser.add_argument("--cs-smag", type=float, default=0.05)
     parser.add_argument("--disable-positivity-limiter", action="store_true")
+    parser.add_argument("--report-interval", type=int, default=1000)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     result = run_flat_plate_wall_model(FlatPlateWallModelConfig(
@@ -45,6 +46,7 @@ def main() -> None:
         cv_margin=args.cv_margin, wall_law=args.wall_law,
         smagorinsky_cs=args.cs_smag,
         positivity_limiter=not args.disable_positivity_limiter,
+        report_interval=args.report_interval,
         device=args.device,
     ))
     output = Path(args.output)

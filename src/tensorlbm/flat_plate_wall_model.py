@@ -42,6 +42,7 @@ class FlatPlateWallModelConfig:
     wall_law: str = "log"
     smagorinsky_cs: float = 0.05
     positivity_limiter: bool = True
+    report_interval: int = 1000
     device: str = "cpu"
 
     @property
@@ -74,6 +75,8 @@ class FlatPlateWallModelConfig:
             raise ValueError("unsupported wall law")
         if not 0.0 <= self.smagorinsky_cs < 0.5:
             raise ValueError("smagorinsky_cs must lie in [0,0.5)")
+        if self.report_interval < 0:
+            raise ValueError("report_interval must be non-negative")
 
 
 def _halfway_links(solid: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -176,6 +179,18 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             bfl_total_history.append(friction + bfl_force)
         if not bool(torch.isfinite(f).all()):
             raise FloatingPointError(f"flat-plate benchmark diverged at step {step}")
+        if config.report_interval and step % config.report_interval == 0:
+            recent = friction_history[-min(len(friction_history), config.report_interval):]
+            recent_cf = (
+                sum(recent) / len(recent)
+                / (0.5 * config.lattice_speed**2 * 2.0 * config.plate_length * config.nz)
+                if recent else math.nan
+            )
+            print(
+                f"flat_plate step={step}/{config.steps} recent_Cf={recent_cf:.7f} "
+                f"max_limited={maximum_limited_fraction:.3e}",
+                flush=True,
+            )
 
     area = 2.0 * config.plate_length * config.nz
     denominator = 0.5 * config.lattice_speed**2 * area
@@ -209,6 +224,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             "wall_law": config.wall_law, "device": config.device,
             "smagorinsky_cs": config.smagorinsky_cs,
             "positivity_limiter": config.positivity_limiter,
+            "report_interval": config.report_interval,
         },
         "result": {
             "friction_coefficient": cf,
