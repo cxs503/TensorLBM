@@ -89,6 +89,9 @@
     "cell_saving_fraction": 0.9876090149176955,
     "memory_estimate_bytes_per_cell": 943.0,
     "estimated_peak_gib": 20.30884151905775,
+    "stress_exchange_distance_cells": 1.0,
+    "stress_exchange_distance_over_finest_length": 0.001388888888888889,
+    "estimated_exchange_y_plus": 693.9707216210123,
     "cuda_memory_preflight": null,
     "control_volume_interface_clearance": {
       "interface_filter_width_cells": 0,
