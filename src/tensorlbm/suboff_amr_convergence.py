@@ -96,6 +96,8 @@ def assess_suboff_amr_convergence(
         for field in (
             *_IDENTITY_FIELDS,
             "aux_cv_margins",
+            "report_interval",
+            "wall_diagnostic_interval",
             "surface_force_interval",
         )
     )
@@ -177,6 +179,7 @@ def assess_suboff_amr_convergence(
         ]
         for field in (
             "steps", "warmup_steps", "average_window", "ramp_steps",
+            "report_interval", "wall_diagnostic_interval",
             "surface_force_interval",
         )
     }

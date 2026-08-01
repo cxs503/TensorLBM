@@ -552,6 +552,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     whose confidence interval is wider than the requested tolerance.  Six
     focused stationarity tests and 15 sphere/cylinder/flat/SUBOFF integration
     tests pass under the revised common contract.
+69. The clean v6 three-grid campaign uses an exactly scalable integer design,
+    not rounded near-equivalents.  For coarse hull lengths L90/L120/L150:
+    auxiliary CV margins are `3,9`/`4,12`/`5,15`, surface-force intervals are
+    30/40/50, wall-diagnostic intervals are 60/80/100, primary CV margins are
+    6/8/10, and sponge widths are 18/24/30.  Domain, wake, ramp, warmup,
+    averaging and total steps scale 3:4:5 as well.  The convergence assessor
+    now explicitly checks report, wall-diagnostic and surface sampling
+    intervals per fine-hull resolution, preventing nominally similar but
+    temporally inequivalent records from entering one Richardson fit.
 
 ## Rejected candidates
 
