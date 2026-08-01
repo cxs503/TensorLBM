@@ -19,6 +19,7 @@ _IDENTITY_FIELDS = (
     "nu_water",
     "cs_smag",
     "wall_law",
+    "wall_traction_source_scheme",
     "sponge_strength",
     "far_field_mode",
     "collision_model",

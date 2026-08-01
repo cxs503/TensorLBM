@@ -30,6 +30,9 @@ def _record(length: int) -> dict[str, object]:
             "smagorinsky_cs": 0.05,
             "positivity_limiter": True,
             "link_force_frame": "laboratory_after_wall_activation",
+            "wall_traction_source_scheme": (
+                "mass_conservative_post_collision_guo_v2"
+            ),
         },
         "result": {
             "friction_coefficient": reference + 0.5 / length**2,
@@ -66,6 +69,16 @@ def test_legacy_schema_or_changed_exchange_ratio_fails_provenance() -> None:
     assert assess_flat_plate_convergence(changed_time)[
         "configuration_identity"
     ]["time_ratio_invariant"] is False
+
+
+def test_pre_correction_wall_source_rejects_sequence() -> None:
+    records = [_record(length) for length in (256.0, 384.0, 512.0)]
+    records[1]["configuration"].pop("wall_traction_source_scheme")
+
+    result = assess_flat_plate_convergence(records)
+
+    assert result["configuration_identity"]["required_fields_present"] is False
+    assert result["admitted"] is False
 
 
 def test_flat_plate_convergence_assessor_is_public() -> None:

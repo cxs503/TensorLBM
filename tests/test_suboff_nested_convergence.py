@@ -19,6 +19,9 @@ def _record(length: int, resistance: float) -> dict:
             "nu_water": 1.004e-6,
             "cs_smag": 0.05,
             "wall_law": "musker",
+            "wall_traction_source_scheme": (
+                "mass_conservative_post_collision_guo_v2"
+            ),
             "stress_exchange_distance": (3.0 / 256.0) * finest,
             "inner_wall_margin": length / 15.0,
             "inner_wake_cells": 2.0 * length / 15.0,
@@ -121,6 +124,19 @@ def test_nested_convergence_fails_if_scaled_exchange_distance_changes() -> None:
     result = assess_suboff_nested_convergence(changed)
 
     assert result["configuration_identity"]["scaled_configuration_invariant"] is False
+
+
+def test_nested_convergence_rejects_pre_correction_wall_source() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90.0, 120.0, 150.0)
+    ]
+    records[0]["configuration"].pop("wall_traction_source_scheme")
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["configuration_identity"]["required_fields_present"] is False
+    assert result["admitted"] is False
     assert result["physical_validation"] is False
 
 
