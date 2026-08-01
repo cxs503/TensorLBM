@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from tensorlbm.amr_interface_filter import (
+    assess_interface_filter_control_volume_clearance,
     damp_interface_nonequilibrium,
     interface_shell_blend,
 )
@@ -166,3 +167,49 @@ def test_interface_filter_is_publicly_exported() -> None:
 
     assert tensorlbm.damp_interface_nonequilibrium is damp_interface_nonequilibrium
     assert tensorlbm.interface_shell_blend is interface_shell_blend
+    assert (
+        tensorlbm.assess_interface_filter_control_volume_clearance
+        is assess_interface_filter_control_volume_clearance
+    )
+
+
+def test_control_volume_flux_stencil_requires_one_unfiltered_source_cell() -> None:
+    safe = assess_interface_filter_control_volume_clearance(
+        (40, 50, 60),
+        bounds_xyz=(6, 54, 6, 44, 6, 34),
+        ghost=1,
+        filter_width=4,
+    )
+    touching = assess_interface_filter_control_volume_clearance(
+        (40, 50, 60),
+        bounds_xyz=(5, 55, 5, 45, 5, 35),
+        ghost=1,
+        filter_width=4,
+    )
+
+    assert safe.minimum_physical_interface_clearance_cells == 5
+    assert safe.minimum_unfiltered_source_guard_cells == 1
+    assert safe.flux_stencil_outside_filter is True
+    assert touching.minimum_unfiltered_source_guard_cells == 0
+    assert touching.flux_stencil_outside_filter is False
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    (
+        {"ghost": 0, "filter_width": 1},
+        {"ghost": 1, "filter_width": -1},
+        {"ghost": 1, "filter_width": 1, "streaming_stencil_radius": -1},
+        {"ghost": 1, "filter_width": 1, "bounds_xyz": (0, 8, 2, 8, 2, 8)},
+    ),
+)
+def test_invalid_control_volume_filter_clearance_fails_closed(kwargs: dict) -> None:
+    options = {
+        "shape": (10, 10, 10),
+        "bounds_xyz": (2, 8, 2, 8, 2, 8),
+        "ghost": 1,
+        "filter_width": 1,
+    }
+    options.update(kwargs)
+    with pytest.raises(ValueError):
+        assess_interface_filter_control_volume_clearance(**options)
