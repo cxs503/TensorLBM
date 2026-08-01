@@ -3,12 +3,14 @@ from __future__ import annotations
 import pytest
 import torch
 
+from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.kinetic_flux_register import (
     KineticInterfaceTransfer,
     apply_face_local_reflux,
     build_kinetic_interface_links,
     observe_kinetic_interface_transfer,
+    project_onto_conserved_moments,
 )
 
 
@@ -22,7 +24,11 @@ def test_each_diagonal_link_is_counted_once() -> None:
     inside = _box((8, 9, 10))
     links = build_kinetic_interface_links(inside, q=19)
     for direction in range(1, 19):
-        assert not bool((links.outgoing_origins[direction] & links.incoming_origins[direction]).any())
+        crossings = (
+            links.outgoing_origins[direction]
+            & links.incoming_origins[direction]
+        )
+        assert not bool(crossings.any())
     # The same origin/direction cannot be duplicated by crossing two faces.
     assert links.outgoing_origins.dtype is torch.bool
 
@@ -47,6 +53,23 @@ def test_fine_substep_volume_scaling_matches_coarse_inventory_units() -> None:
     assert integrated.incoming.item() == pytest.approx(1.0)
 
 
+def test_reflux_projection_preserves_only_conserved_moments() -> None:
+    torch.manual_seed(19)
+    mismatch = torch.randn(19, dtype=torch.float64)
+    projected = project_onto_conserved_moments(mismatch)
+    c = C19.to(dtype=mismatch.dtype)
+
+    assert projected.sum().item() == pytest.approx(
+        mismatch.sum().item(), abs=2e-14,
+    )
+    assert torch.allclose(
+        (projected[:, None] * c).sum(dim=0),
+        (mismatch[:, None] * c).sum(dim=0),
+        rtol=0.0, atol=2e-14,
+    )
+    assert not torch.allclose(projected, mismatch)
+
+
 def test_reflux_is_local_to_exterior_interface_links_and_conservative() -> None:
     shape = (8, 9, 10)
     inside = _box(shape)
@@ -69,6 +92,14 @@ def test_reflux_is_local_to_exterior_interface_links_and_conservative() -> None:
     changed = (corrected - before).abs().sum(dim=0) > 0.0
     assert not bool(changed[inside].any())
     assert bool(changed.any())
+    c = C19.to(dtype=corrected.dtype)
+    expected_momentum = (
+        (fine.net_outgoing - base.net_outgoing)[:, None] * c
+    ).sum(dim=0)
+    actual_momentum = (
+        (corrected - before).sum(dim=(1, 2, 3))[:, None] * c
+    ).sum(dim=0)
+    assert torch.allclose(actual_momentum, expected_momentum, atol=2e-14)
 
 
 def test_reflux_limiter_exposes_unapplied_residual() -> None:

@@ -298,14 +298,30 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     state remained finite (`rho=0.912..1.059`, maximum speed 0.225), the
     hidden historical population-reflux residual reached 25.79, the positivity
     limiter reached 0.295%, and instantaneous control-volume resistance ranged
-    from about -1592 to 1854 N versus the 87.4 N experiment.  The cause exposed
-    a one-sided reflux guard: removal was capped but positive injection was
-    unbounded.  Reflux corrections are now symmetrically limited to 20% of
+    from about -1592 to 1854 N versus the 87.4 N experiment.  The audit also
+    exposed a one-sided reflux guard that could amplify such an instability:
+    removal was capped but positive injection was unbounded.  Reflux
+    corrections are now symmetrically limited to 20% of
     local directional inventory; unapplied corrections remain explicit
     residuals and therefore cannot pass conservation.  V3 checkpoints/results
     additionally retain requested/applied peaks and limited-direction counts.
-    The strengthened AMR groups pass 25 tests, and an exact-physics 1500-step
-    diagnostic rerun is active before changing refinement-box placement.
+    The strengthened AMR groups pass 25 tests.  Its safety rerun exposed
+    `raw request=159.93`, four limited directions and residual 25.99 by the
+    step-750 checkpoint, so it too was stopped and retained as negative
+    evidence rather than used for resistance averaging.
+45. Static AMR reflux now projects the raw Q-population flux mismatch onto the
+    four collision invariants (mass and three momentum components) before a
+    bounded face-local correction.  It no longer injects non-conserved stress
+    and higher-order kinetic modes merely because coarse and fine collision
+    states represent them differently.  FP32 lattice weights receive an
+    algebraic moment-closure correction, and randomized D3Q19 tests recover all
+    four requested moments at state precision.  The updated 100-step uniform-
+    fine comparison uses 72.27% fewer cells, has `4.07e-7` relative mass drift,
+    `1.46e-11` maximum conserved-moment reflux residual, no limited directions,
+    6.30% lower refined-region density error and only 3.55% velocity-error
+    regression versus uniform coarse; it passes the existing 5% interface
+    gate.  The raw kinetic mismatch and projected correction are both retained
+    as diagnostics.  An exact AFF-1 1000-step conserved-moment rerun is active.
 
 ## Rejected candidates
 

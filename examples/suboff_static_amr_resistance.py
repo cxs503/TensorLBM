@@ -288,6 +288,7 @@ def run(args: argparse.Namespace) -> dict:
     maximum_reflux_requested_correction = 0.0
     maximum_reflux_applied_correction = 0.0
     maximum_reflux_limited_directions = 0
+    maximum_raw_kinetic_mismatch = 0.0
 
     def advance(
         f: torch.Tensor, tau: float, level: int, substep: int,
@@ -385,6 +386,7 @@ def run(args: argparse.Namespace) -> dict:
         "wake_cells": args.wake_cells,
         "cv_margin": args.cv_margin,
         "reflux_enabled": not args.disable_reflux,
+        "reflux_method": "face_local_conserved_moment_flux",
         "maximum_reflux_correction_fraction": (
             args.maximum_reflux_correction_fraction
         ),
@@ -452,6 +454,9 @@ def run(args: argparse.Namespace) -> dict:
         maximum_reflux_limited_directions = int(
             state["maximum_reflux_limited_directions"],
         )
+        maximum_raw_kinetic_mismatch = float(
+            state["maximum_raw_kinetic_mismatch"],
+        )
         history = list(state["history"])
 
     def save_checkpoint(step: int) -> None:
@@ -506,6 +511,7 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_reflux_limited_directions": (
                 maximum_reflux_limited_directions
             ),
+            "maximum_raw_kinetic_mismatch": maximum_raw_kinetic_mismatch,
             "history": history,
         }, checkpoint)
 
@@ -539,6 +545,12 @@ def run(args: argparse.Namespace) -> dict:
         )
         maximum_reflux_limited_directions = max(
             maximum_reflux_limited_directions, ledger.limited_directions,
+        )
+        if ledger.raw_kinetic_mismatch is None:
+            raise RuntimeError("AMR ledger omitted raw kinetic mismatch")
+        maximum_raw_kinetic_mismatch = max(
+            maximum_raw_kinetic_mismatch,
+            float(ledger.raw_kinetic_mismatch.abs().max().item()),
         )
         if current_step > args.warmup_steps:
             force_history.append(resistance)
@@ -604,6 +616,9 @@ def run(args: argparse.Namespace) -> dict:
                     ledger.applied_shell_correction.abs().max().item()
                 ),
                 "reflux_limited_directions": ledger.limited_directions,
+                "raw_kinetic_mismatch_max": float(
+                    ledger.raw_kinetic_mismatch.abs().max().item()
+                ),
                 "maximum_positivity_limited_fraction": max(
                     positivity_fractions, default=0.0,
                 ),
@@ -684,7 +699,7 @@ def run(args: argparse.Namespace) -> dict:
             "report_average_window": args.average_window,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
-            "reflux_method": "face_local_post_collision_kinetic_flux",
+            "reflux_method": "face_local_conserved_moment_flux",
             "les_constant": (
                 args.cw_wale if args.les_model == "wale" else args.cs_smag
             ),
@@ -736,6 +751,7 @@ def run(args: argparse.Namespace) -> dict:
             "maximum_reflux_limited_directions": (
                 maximum_reflux_limited_directions
             ),
+            "maximum_raw_kinetic_mismatch": maximum_raw_kinetic_mismatch,
             "wall_stress_applicability": {
                 "samples": len(wall_y_plus_mean_history),
                 "y_plus_min": min(wall_y_plus_min_history, default=None),
