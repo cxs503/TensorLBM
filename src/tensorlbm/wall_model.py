@@ -651,7 +651,7 @@ def wall_function_d3q27(
 
     D3Q27 analogue of :func:`wall_function_3d`.  Uses the D3Q27 velocity
     vectors and lattice weights (8/27, 2/27, 1/54, 1/216) for the Guo
-    body-force correction ``(1 + c·u/cs²)``, and computes drag as
+    mass-conservative body-force correction, and computes drag as
     integrated wall shear (friction) + surface pressure (form).
 
     With D3Q27 + CUMULANT collision the pressure drag is naturally near
@@ -678,7 +678,7 @@ def wall_function_d3q27(
     from .d3q27 import macroscopic27, C as C27
 
     device = f.device
-    c = C27.to(device).float()
+    c = C27.to(device=device, dtype=f.dtype)
     cx = c[:, 0].view(27, 1, 1, 1)
     cy = c[:, 1].view(27, 1, 1, 1)
     cz = c[:, 2].view(27, 1, 1, 1)
@@ -772,7 +772,12 @@ def wall_function_d3q27(
     ).view(27, 1, 1, 1)
     cs2 = 1.0 / 3.0
     cu = cx * ux + cy * uy + cz * uz
-    forcing = w27 * (1.0 + cu / cs2) * (cx * fx + cy * fy + cz * fz) / cs2
+    ci_dot_force = cx * fx + cy * fy + cz * fz
+    u_dot_force = ux * fx + uy * fy + uz * fz
+    forcing = w27 * (
+        (ci_dot_force - u_dot_force) / cs2
+        + cu * ci_dot_force / cs2**2
+    )
     f = f + forcing
 
     drag_fric = float((tau_w * (ut_x * inv_utan) * near.to(f.dtype)).sum().item())
@@ -792,7 +797,7 @@ def wall_function_d3q27(
 #   3. Wall-surface momentum exchange for drag (Yu et al. 2003)
 #
 # Key improvements over the legacy wall_function_3d:
-#   - Uses **Guo forcing** (1 + c·u/cs²) correction, not simple forcing
+#   - Uses a mass-conservative Guo source, not simple forcing
 #   - Combines BFL (geometric accuracy) + wall function (turbulence)
 #   - Force magnitude: −τ_w*A/V on the boundary control volume
 #   - Uses tangential velocity for curved walls
@@ -812,12 +817,14 @@ def guo_body_force_d3q19(
 
     Implements the full Guo forcing scheme (Guo et al. 2002):
 
-        F_i = w_i · (1 + c_i·u / cs²) · (c_i·F) / cs²
+        F_i = w_i [(c_i-u)·F/cs² + (c_i·u)(c_i·F)/cs⁴]
 
-    The ``(1 + c_i·u / cs²)`` velocity-correction term is **essential** for
-    correct force application at non-trivial velocities.  Without it, the
-    force is applied as "simple forcing" (``w_i · 3 · c_i·F``), which
-    introduces an O(u²) error in the momentum transfer.
+    Both velocity terms are essential.  In particular, omitting
+    ``-w_i u·F/cs²`` preserves the requested first moment but creates a
+    spurious zeroth moment (mass source) whenever velocity and force are not
+    orthogonal.  This wall kernel is applied as a post-collision operator
+    split, so it intentionally injects the requested traction impulse exactly
+    rather than multiplying it by a collision-dependent half-step factor.
 
     This is the recommended forcing scheme for wall functions, as used by
     OpenLB and described in the wall-function survey
@@ -835,11 +842,16 @@ def guo_body_force_d3q19(
     Returns:
         Updated distribution, same shape as *f*.
     """
-    from .d3q19 import C as C_LAT, W as W_LAT
+    from .d3q19 import C as C_LAT
 
     device = f.device
-    c = C_LAT.to(device).float()
-    w = W_LAT.to(device).float()
+    c = C_LAT.to(device=device, dtype=f.dtype)
+    weights_by_squared_speed = torch.tensor(
+        (1.0 / 3.0, 1.0 / 18.0, 1.0 / 36.0),
+        device=device,
+        dtype=f.dtype,
+    )
+    w = weights_by_squared_speed[c.square().sum(dim=1).to(torch.long)]
     q = 19
 
     cx = c[:, 0].view(q, 1, 1, 1)
@@ -853,7 +865,10 @@ def guo_body_force_d3q19(
     # c_i · F  (force projection)
     cu_f = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
 
-    forcing = w_view * (1.0 + cu_u / cs2) * cu_f / cs2
+    u_dot_f = (ux * fx + uy * fy + uz * fz).unsqueeze(0)
+    forcing = w_view * (
+        (cu_f - u_dot_f) / cs2 + cu_u * cu_f / cs2**2
+    )
     return f + forcing
 
 
@@ -870,11 +885,16 @@ def guo_body_force_d3q27(
 
     D3Q27 analogue of :func:`guo_body_force_d3q19`.
     """
-    from .d3q27 import C as C27, W as W27
+    from .d3q27 import C as C27
 
     device = f.device
-    c = C27.to(device).float()
-    w = W27.to(device).float()
+    c = C27.to(device=device, dtype=f.dtype)
+    weights_by_squared_speed = torch.tensor(
+        (8.0 / 27.0, 2.0 / 27.0, 1.0 / 54.0, 1.0 / 216.0),
+        device=device,
+        dtype=f.dtype,
+    )
+    w = weights_by_squared_speed[c.square().sum(dim=1).to(torch.long)]
     q = 27
 
     cx = c[:, 0].view(q, 1, 1, 1)
@@ -886,7 +906,10 @@ def guo_body_force_d3q27(
     cu_u = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
     cu_f = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
 
-    forcing = w_view * (1.0 + cu_u / cs2) * cu_f / cs2
+    u_dot_f = (ux * fx + uy * fy + uz * fz).unsqueeze(0)
+    forcing = w_view * (
+        (cu_f - u_dot_f) / cs2 + cu_u * cu_f / cs2**2
+    )
     return f + forcing
 
 
