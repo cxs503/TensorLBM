@@ -166,6 +166,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     timestamp and gates only paired means; every-step primary history remains
     the resistance/time-stationarity observer.  Sparse and dense temporal
     averages are never mixed again.
+28. The R14 sphere completed at `Cd=1.155887`, 5.88% above the
+    Schiller–Naumann reference, with only 0.00310% CV/BFL disagreement.  It
+    continues the monotone R8→R12→R14 spatial trend, but fails both the 5%
+    drag gate and 1% stationarity gate (1.45% block range, 1.39% trend).  The
+    final block is lower at 1.14977, so the saved state is extended from 5000
+    to 8000 steps before risking the estimated ~22.7 GiB R16 allocation.
 
 ## Rejected candidates
 
