@@ -3,9 +3,9 @@ from __future__ import annotations
 import math
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
+import torch
 
 from tensorlbm.cylinder_bfl_control_volume import (
     CYLINDER_RE100_CD_REFERENCE,
@@ -29,11 +29,13 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
         reynolds=20, lattice_speed=0.04, steps=4, warmup_steps=2,
         ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
     )
-    result = run_cylinder_bfl_control_volume(cfg)["result"]
+    artifact = run_cylinder_bfl_control_volume(cfg)
+    result = artifact["result"]
     assert result["finite"] is True
     assert math.isfinite(result["cd_control_volume"])
     assert math.isfinite(result["cd_bfl_link"])
     assert result["drag_stationarity"]["sufficiently_sampled"] is False
+    assert artifact["schema"] == "tensorlbm-cylinder-bfl-control-volume-v2"
 
 
 def test_strouhal_estimator_recovers_synthetic_lift_frequency() -> None:
@@ -55,15 +57,16 @@ def test_cylinder_cli_help() -> None:
     assert "--far-field-mode" in completed.stdout
 
 
-def test_cylinder_checkpoint_can_resume(tmp_path: Path) -> None:
+def test_cylinder_checkpoint_can_resume(tmp_path) -> None:
     checkpoint = tmp_path / "cylinder.ckpt"
-    common = dict(
-        nx=48, ny=36, nz=3, radius=4, center_x_fraction=0.35,
-        reynolds=20, lattice_speed=0.04, warmup_steps=2,
-        ramp_steps=2, sponge_width=3, cv_margin=2,
-        report_interval=0, checkpoint_interval=2,
-        checkpoint_path=str(checkpoint), device="cpu",
-    )
+    common = {
+        "nx": 48, "ny": 36, "nz": 3, "radius": 4,
+        "center_x_fraction": 0.35, "reynolds": 20,
+        "lattice_speed": 0.04, "warmup_steps": 2,
+        "ramp_steps": 2, "sponge_width": 3, "cv_margin": 2,
+        "report_interval": 0, "checkpoint_interval": 2,
+        "checkpoint_path": str(checkpoint), "device": "cpu",
+    }
     run_cylinder_bfl_control_volume(CylinderBFLControlVolumeConfig(
         **common, steps=4,
     ))
@@ -71,5 +74,11 @@ def test_cylinder_checkpoint_can_resume(tmp_path: Path) -> None:
         **common, steps=6, resume=True,
     ))
     assert checkpoint.exists()
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    assert state["schema"] == "tensorlbm-cylinder-checkpoint-v2"
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
+    with pytest.raises(ValueError, match="configuration"):
+        run_cylinder_bfl_control_volume(CylinderBFLControlVolumeConfig(
+            **(common | {"sponge_width": 4}), steps=6, resume=True,
+        ))
