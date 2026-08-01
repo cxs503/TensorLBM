@@ -570,6 +570,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     the migration policy and source step remain in every subsequent v3
     checkpoint/result.  Numerical-quality admission is separated from the 5%
     drag-reference gate, matching the SUBOFF grid-convergence contract.
+71. Exact L120 and L150 production configurations complete real CUDA
+    allocation and two-step composition smokes at 7.89 and 15.34 GiB peak,
+    respectively.  Both fit the live-memory guard on the available 24 GiB
+    devices; volumetric scaling places L180 beyond the safe budget.  The clean
+    L90 (`12000` steps) and L120 (`16000` steps) v6 records now run concurrently
+    with every spatial and temporal parameter in the 3:4 ratio.  L150
+    (`20000` steps) is queued for the GPU released by the sphere benchmark.
 
 ## Rejected candidates
 
