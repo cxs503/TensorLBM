@@ -10,6 +10,7 @@ import torch
 from .bfl_d3q19 import compute_q_cylinder_d3q19, bouzidi_bounce_back_d3q19
 from .boundaries3d import far_field_bc_3d
 from .control_volume_force import box_control_volume, observe_control_volume_force
+from .checkpoint_io import atomic_torch_save
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
@@ -183,7 +184,7 @@ def run_cylinder_bfl_control_volume(
         if checkpoint is None:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({
+        atomic_torch_save({
             "schema": "tensorlbm-cylinder-checkpoint-v1",
             "configuration": {
                 "shape_zyx": list(shape), "radius": config.radius,

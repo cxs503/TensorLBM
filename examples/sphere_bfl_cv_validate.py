@@ -29,7 +29,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--sponge-inlet", action="store_true")
     p.add_argument("--cv-margin", type=int, default=5)
     p.add_argument("--report-interval", type=int, default=500)
-    p.add_argument("--checkpoint-interval", type=int, default=500)
+    p.add_argument("--checkpoint-interval", type=int, default=2000)
     p.add_argument("--checkpoint", default=None)
     p.add_argument("--resume", action="store_true")
     p.add_argument(
