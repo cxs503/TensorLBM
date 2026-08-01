@@ -682,3 +682,39 @@ class TestKBCDiagnostics:
             f"KBC Cd={cd_kbc:.2f} vs BGK Cd={cd_bgk:.2f} (ratio={ratio:.3f}); "
             f"expected ratio < 2.0 after h-relaxation fix"
         )
+
+
+class TestNaturalKBCExperimental:
+    def test_natural_kbc_preserves_macroscopic_state_and_positivity(self):
+        from tensorlbm.entropic_kbc import collide_natural_kbc_d3q19
+
+        f = _state_19().to(dtype=torch.float64)
+        before = macroscopic3d(f)
+        post = collide_natural_kbc_d3q19(f, tau=0.8)
+        after = macroscopic3d(post)
+
+        assert float(post.min()) > 0.0
+        for actual, expected in zip(after, before, strict=True):
+            torch.testing.assert_close(actual, expected, rtol=0.0, atol=3.0e-8)
+
+    def test_natural_kbc_has_no_material_entropy_increase(self):
+        from tensorlbm.d3q19 import W
+        from tensorlbm.entropic_kbc import (
+            collide_natural_kbc_d3q19,
+            discrete_entropy,
+        )
+
+        f = _state_19().to(dtype=torch.float64)
+        weights = W.to(dtype=f.dtype).view(19, 1, 1, 1)
+        post = collide_natural_kbc_d3q19(f, tau=0.8)
+        entropy_change = discrete_entropy(post, weights) - discrete_entropy(
+            f, weights,
+        )
+
+        assert float(entropy_change.max()) < 1.0e-7
+
+    def test_natural_kbc_rejects_invalid_tau(self):
+        from tensorlbm.entropic_kbc import collide_natural_kbc_d3q19
+
+        with pytest.raises(ValueError, match="tau"):
+            collide_natural_kbc_d3q19(_state_19(), tau=0.5)
