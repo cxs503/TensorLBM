@@ -18,6 +18,7 @@ ROOT = Path(__file__).parents[1]
         ("run_suboff_nested_v3_equivalent_level.sh", "L90"),
         ("run_suboff_nested_v4_continuation_level.sh", "L90"),
         ("run_suboff_nested_v10_scaled_level.sh", "L90"),
+        ("run_suboff_nested_v11_scaled_wall_level.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_domain_width.sh", "W30"),
@@ -467,3 +468,43 @@ def test_nested_v10_launcher_scales_all_inner_physical_locations(
     assert arguments[arguments.index("--wall-shear-ramp-steps") + 1] == "5000"
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-nested-v10-equivalent-l150-20k.json" in output
+
+
+@pytest.mark.parametrize(
+    ("level", "exchange"),
+    (("L90", "4.21875"), ("L120", "5.625"), ("L150", "7.03125")),
+)
+def test_nested_v11_launcher_scales_flat_plate_wall_exchange(
+    tmp_path: Path,
+    level: str,
+    exchange: str,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_nested_v11_scaled_wall_level.sh"),
+            level,
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == exchange
+    output = arguments[arguments.index("--output") + 1]
+    assert f"suboff-nested-v11-equivalent-l{level[1:]}" in output
