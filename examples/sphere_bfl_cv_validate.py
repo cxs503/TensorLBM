@@ -21,6 +21,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--radius", type=float, default=8.0)
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--lattice-speed", type=float, default=0.06)
+    p.add_argument(
+        "--collision-model",
+        choices=("cumulant_d3q19_cs0", "natural_kbc_d3q19"),
+        default="cumulant_d3q19_cs0",
+    )
     p.add_argument("--steps", type=int, default=3000)
     p.add_argument("--warmup-steps", type=int, default=1500)
     p.add_argument("--ramp-steps", type=int, default=500)
@@ -62,6 +67,7 @@ def main() -> None:
             args.minimum_statistics_convective_times
         ),
         far_field_mode=args.far_field_mode, device=args.device,
+        collision_model=args.collision_model,
     )
     result = run_sphere_bfl_control_volume(config)
     output = Path(args.output)
