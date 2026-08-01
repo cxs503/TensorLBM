@@ -26,6 +26,7 @@ def _args(
     ghost_interpolation: str = "injection",
     enforce_transfer_positivity: bool = False,
     disable_wall_stress: bool = False,
+    collision_model: str = "cumulant_smagorinsky",
 ):
     values = [
         "--device", "cpu",
@@ -41,6 +42,8 @@ def _args(
         "--resolved-reynolds", "2000", "--sponge-width", "3",
         "--memory-bytes-per-cell", "742",
         "--ghost-interpolation", ghost_interpolation,
+        "--collision-model", collision_model,
+        "--kbc-max-iterations", "4",
         "--output", str(tmp_path / "nested-smoke.json"),
         "--checkpoint", str(tmp_path / "nested-smoke.ckpt"),
         "--checkpoint-interval", "1",
@@ -159,6 +162,17 @@ def test_wall_stress_can_be_disabled_only_as_nonphysical_diagnostic(
     assert result["acceptance"]["single_grid_candidate"] is False
 
 
+def test_nested_smoke_dispatches_entropic_kbc_collision(tmp_path: Path) -> None:
+    result = MODULE.run(_args(
+        tmp_path,
+        steps=1,
+        collision_model="entropic_kbc",
+    ))
+
+    assert result["configuration"]["collision_model"] == "entropic_kbc"
+    assert result["result"]["finite"] is True
+
+
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
@@ -169,6 +183,8 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
     state["configuration"].pop("wall_stress_enabled")
+    state["configuration"].pop("collision_model")
+    state["configuration"].pop("kbc_max_iterations")
     state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
     torch.save(state, checkpoint)
 
@@ -188,6 +204,8 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
     state["configuration"].pop("wall_stress_enabled")
+    state["configuration"].pop("collision_model")
+    state["configuration"].pop("kbc_max_iterations")
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
