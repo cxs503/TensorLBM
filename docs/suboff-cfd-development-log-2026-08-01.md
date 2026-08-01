@@ -522,6 +522,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     identity.  Experiment error, stationarity, numerical-source, duration and
     three-grid gates are unchanged, so this does not promote the still-
     oscillatory L90 run.
+66. Enlarging the L90 outer domain from `450x90x90` to `540x135x135`
+    increases measured peak allocation from about 3.33 to 8.68 GiB but does
+    not remove the low-frequency force mode.  Its post-warmup block means span
+    48.99--220.95 N, stationarity range is 144%, CV mean is 119.31 N and the
+    run is rejected.  Nested CVs still agree within 0.031% and numerical
+    momentum source is only 0.073%, so neither AMR conservation nor simple
+    transverse blockage explains the oscillation.  The normal-domain slow-
+    ramp history is extended in v5 to eight convective times for diagnosis,
+    while a clean v6 12000-step run now repeats the identical evolution under
+    the conservative CV/surface admission contract.
 
 ## Rejected candidates
 
