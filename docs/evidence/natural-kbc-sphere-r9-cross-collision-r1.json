@@ -1,0 +1,56 @@
+{
+  "schema": "tensorlbm-cross-collision-validation-evidence-v1",
+  "case": "sphere_re100_r9",
+  "status": "nonlinear_collision_fidelity_admitted",
+  "configuration_identity": {
+    "shape_zyx": [144, 144, 216],
+    "radius_cells": 9.0,
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "steps": 7200,
+    "warmup_steps": 4800,
+    "statistics_window_steps": 2400,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "matched_except_collision": true
+  },
+  "natural_kbc": {
+    "cd_control_volume": 1.1652017741491727,
+    "cd_bfl_link": 1.1652783141427132,
+    "observer_difference_pct": 0.006568818829374297,
+    "stationarity_relative_range_pct": 0.022241546834674605,
+    "numerical_quality_admitted": true,
+    "single_grid_reference_error_pct": 6.729741751754761,
+    "single_grid_physical_validation": false
+  },
+  "cumulant_cs0": {
+    "cd_control_volume": 1.1651454753520416,
+    "cd_bfl_link": 1.1651978113948824,
+    "observer_difference_pct": 0.004491803293920456,
+    "stationarity_relative_range_pct": 0.024532980258310823,
+    "numerical_quality_admitted": true,
+    "single_grid_reference_error_pct": 6.724584914362265,
+    "single_grid_physical_validation": false
+  },
+  "comparison": {
+    "control_volume_cd_relative_difference_pct": 0.004831911406949694,
+    "maximum_allowed_cross_collision_difference_pct": 1.0,
+    "target_met": true
+  },
+  "related_cumulant_grid_convergence": {
+    "path": "results/sphere-v3-grid-convergence-r1.json",
+    "admitted": true,
+    "extrapolated_cd": 1.1429362714521736,
+    "extrapolated_reference_error_pct": 4.690274077103348,
+    "scope": "The cumulant grid sequence validates the canonical sphere implementation. It is not substituted for a natural-KBC three-grid sequence."
+  },
+  "artifacts": {
+    "natural_kbc_result": "results/sphere-v3-natural-kbc-equivalent-r9-7200.json",
+    "natural_kbc_canonical_result_sha256": "af0798e750a081d38a53fc86fd70b8a16fe0e0894b12e4955b109a37f62cc28b",
+    "natural_kbc_semantic_json_sha256": "c959c63368335c04a981d7f8daad12b8c01b4d10606e1d8603680aba5e312df9",
+    "natural_kbc_remote_result_sha256": "9441ab622a35d5390bb6729a2bad1b574b52fa23c82a752c6d55ac5367daca7d",
+    "natural_kbc_remote_checkpoint_sha256": "899cbb0fa59990b05dc64822c78670f09de881ae0e6835ce950ee26c66b36bcb",
+    "cumulant_result": "results/sphere-v3-equivalent-r9-7200.json",
+    "cumulant_result_sha256": "ffa38acaac6189aaf92c270c341ab501317b6d0b517781923f3b0750f5ef848b"
+  },
+  "claim_boundary": "This result admits the nonlinear natural-KBC collision path on the matched Re=100 sphere at R=9. It does not admit the coarse sphere as a standalone physical result and does not validate SUBOFF resistance."
+}
