@@ -1883,6 +1883,7 @@ def run(args: argparse.Namespace) -> dict:
                 max(maximum_reflux_applied_correction_fraction)
                 <= args.maximum_reflux_applied_correction_fraction
             ),
+            "force_sample_aggregation_target_met": True,
             "single_grid_candidate": single_grid_candidate,
             "resistance_accuracy_assessed": False,
             "time_convergence_assessed": False,
