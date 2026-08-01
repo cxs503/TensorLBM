@@ -1,0 +1,32 @@
+{
+  "schema": "tensorlbm-suboff-nested-instability-evidence-v1",
+  "status": "rejected",
+  "configuration": {
+    "coarse_hull_length_cells": 120,
+    "target_resolved_reynolds": 100000,
+    "resolved_reynolds_start": 3000,
+    "viscosity_ramp_steps": [400, 800],
+    "regularize_restriction": true,
+    "regularize_prolongation": false,
+    "interface_filter_width": 0
+  },
+  "failure": {
+    "step": 1840,
+    "maximum_speed": 0.15866918861865997,
+    "minimum_population": 1.862645149230957e-9,
+    "maximum_collision_limited_fraction": 0.000005250997689561017,
+    "finest_peak_cells_from_allocated_boundary": 4,
+    "maximum_reflux_residual": 1.1920928955078125e-7
+  },
+  "provenance": {
+    "log": "suboff-nested-v4-l120-rejected-interface-step1840.log",
+    "log_sha256": "79e475b8322f55f7ad80795b083cf92cef24b6480fb25740236556cad934c9f5",
+    "checkpoint": "suboff-nested-v4-l120-rejected-preinstability-step1000.ckpt",
+    "checkpoint_sha256": "d3cebcedd2cbacdfcb1528b9d2529aa984b541973c859f0d464e895ddb314f0d"
+  },
+  "force_evidence_eligible": false,
+  "notes": [
+    "The instability reproduces the L90 finest-interface mode at the scaled resolution.",
+    "The exact-PID job was stopped after the positivity floor and collision limiter activated."
+  ]
+}

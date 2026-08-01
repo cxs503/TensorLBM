@@ -1306,6 +1306,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      below a 24-GiB RTX 3090 budget but intentionally close enough that the
      runtime memory guard remains mandatory.  Earlier constant-inner-margin
      runs are stability evidence only, never formal grid convergence members.
+146. The unfiltered continued L120 baseline reproduces the finest-interface
+     failure at step 1840: peak lattice speed reaches `0.15867`, the minimum
+     population reaches the `1.8626e-9` positivity floor, collision limiting
+     activates, and the peak lies four cells from the allocated boundary.
+     Its exact-PID process was stopped; log/checkpoint SHA-256 values are
+     `79e475b8322f55f7ad80795b083cf92cef24b6480fb25740236556cad934c9f5`
+     and `d3cebcedd2cbacdfcb1528b9d2529aa984b541973c859f0d464e895ddb314f0d`.
+     The released GPU now runs the full v10 scaled L90 configuration with
+     regularized restriction and prolongation plus the force-safe width-two,
+     strength-1.0 kinetic filter.  It may continue to 12000 steps only if its
+     60-step health cadence survives the known 1400--2400 instability window.
 
 ## Rejected candidates
 
