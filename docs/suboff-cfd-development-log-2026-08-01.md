@@ -839,6 +839,18 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     multi-level mechanism required by the y+ plan, but does not yet admit a
     curved-wall SUBOFF surface shell; geometry ownership and force closure on
     the added interface remain mandatory integration evidence.
+99. SUBOFF now has a matching second-level geometry planner.  Its inner box is
+    expressed in the allocated outer-level coordinates (including the ghost
+    layer), fails if the requested wall/wake margin is clipped, and regenerates
+    analytical CAD at 4x coarse resolution rather than repeating level-1
+    voxels.  An exact L150 AFF-1 planning probe with four parent-cell wall
+    margin and eight-cell wake allocates an 86x86x634 L2 physical block,
+    increases the complete hierarchy to 25,231,128 cells, predicts 22.16 GiB
+    peak by the measured 943 B/cell model, and resolves hull length/diameter as
+    600/70.01 cells while retaining 97.66% savings versus a uniform 4x domain.
+    The analytical L2 body contains 1,830,129 cells.  This fits the intended
+    high-memory GPU class on paper, but an actual CUDA preflight remains
+    mandatory because the empirical estimate is not an allocation guarantee.
 
 ## Rejected candidates
 

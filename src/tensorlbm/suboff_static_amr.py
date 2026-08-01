@@ -200,6 +200,26 @@ class SuboffStaticAMRPlan:
         return self.total_allocated_cells * bytes_per_cell / 2**30
 
 
+@dataclass(frozen=True)
+class SuboffNestedStaticAMRPlan:
+    """Second near-body 2:1 block inside a :class:`SuboffStaticAMRPlan`."""
+
+    outer: SuboffStaticAMRPlan
+    ratio: int
+    ghost: int
+    box_in_outer_allocated_coordinates: BoxRegion
+    fine_physical_shape: tuple[int, int, int]
+    additional_allocated_cells: int
+    total_allocated_cells: int
+    uniform_finest_cells: int
+    cell_saving_fraction: float
+    effective_hull_length_cells: float
+    effective_diameter_cells: float
+
+    def estimated_peak_gib(self, bytes_per_cell: float = 943.0) -> float:
+        return self.total_allocated_cells * bytes_per_cell / 2**30
+
+
 def plan_suboff_static_amr(
     solid_coarse: torch.Tensor,
     *,
@@ -286,14 +306,142 @@ def build_fine_suboff_mask(
     )
 
 
+def plan_nested_suboff_static_amr(
+    outer: SuboffStaticAMRPlan,
+    outer_fine_solid: torch.Tensor,
+    *,
+    wall_margin: int = 3,
+    wake_cells: int = 0,
+    ratio: int = 2,
+    ghost: int = 1,
+) -> SuboffNestedStaticAMRPlan:
+    """Plan a conservative second block around the exact outer-level hull.
+
+    The returned box is expressed in the *allocated* outer fine grid,
+    including its ghost layer, exactly as required by
+    :class:`~tensorlbm.static_block_amr.NestedStaticBlockAMR3D`.
+    """
+    if outer_fine_solid.ndim != 3 or outer_fine_solid.dtype is not torch.bool:
+        raise ValueError("outer_fine_solid must be a 3-D boolean tensor")
+    if tuple(outer_fine_solid.shape) != outer.fine_physical_shape:
+        raise ValueError("outer_fine_solid does not match the outer plan")
+    if ratio != 2 or ghost != 1:
+        raise ValueError("the production runtime currently supports ratio=2, ghost=1")
+    if wall_margin < 2 or wake_cells < 0:
+        raise ValueError("wall_margin must be >=2 and wake_cells non-negative")
+    indices = outer_fine_solid.nonzero(as_tuple=False)
+    if indices.numel() == 0:
+        raise ValueError("outer_fine_solid contains no SUBOFF cells")
+
+    z_min, y_min, x_min = (
+        int(indices[:, axis].min().item()) + ghost for axis in range(3)
+    )
+    z_max, y_max, x_max = (
+        int(indices[:, axis].max().item()) + 1 + ghost for axis in range(3)
+    )
+    parent_shape = tuple(size + 2 * ghost for size in outer.fine_physical_shape)
+    nz, ny, nx = parent_shape
+    coordinates = (
+        x_min - wall_margin,
+        x_max + wall_margin + wake_cells,
+        y_min - wall_margin,
+        y_max + wall_margin,
+        z_min - wall_margin,
+        z_max + wall_margin,
+    )
+    x0, x1, y0, y1, z0, z1 = coordinates
+    if not (
+        0 < x0 < x1 < nx - 1
+        and 0 < y0 < y1 < ny - 1
+        and 0 < z0 < z1 < nz - 1
+    ):
+        raise ValueError(
+            "outer block lacks the requested interior margin for a nested block",
+        )
+    box = BoxRegion(x0, x1, y0, y1, z0, z1)
+    fine_shape = (
+        (z1 - z0) * ratio,
+        (y1 - y0) * ratio,
+        (x1 - x0) * ratio,
+    )
+    allocated_shape = tuple(size + 2 * ghost for size in fine_shape)
+    additional_cells = math.prod(allocated_shape)
+    total = outer.total_allocated_cells + additional_cells
+    uniform = outer.coarse_cells * (outer.ratio * ratio) ** 3
+    effective_length = outer.coarse_hull_length * outer.ratio * ratio
+    return SuboffNestedStaticAMRPlan(
+        outer=outer,
+        ratio=ratio,
+        ghost=ghost,
+        box_in_outer_allocated_coordinates=box,
+        fine_physical_shape=fine_shape,
+        additional_allocated_cells=additional_cells,
+        total_allocated_cells=total,
+        uniform_finest_cells=uniform,
+        cell_saving_fraction=1.0 - total / uniform,
+        effective_hull_length_cells=effective_length,
+        effective_diameter_cells=effective_length / 8.57,
+    )
+
+
+def build_nested_fine_suboff_mask(
+    plan: SuboffNestedStaticAMRPlan,
+    *,
+    hull_type: str,
+    coarse_center: tuple[float, float, float],
+    config: SuboffConfig | None = None,
+    device: torch.device | str = "cpu",
+) -> tuple[torch.Tensor, dict]:
+    """Regenerate exact CAD on the second nested level without voxel repeat."""
+    if config is None:
+        config = SuboffConfig()
+    outer = plan.outer
+    outer_ratio = outer.ratio
+    inner_ratio = plan.ratio
+    ghost = plan.ghost
+    box = plan.box_in_outer_allocated_coordinates
+    cx, cy, cz = coarse_center
+
+    def local_center(coarse_value: float, outer_origin: int, inner_origin: int) -> float:
+        global_parent_origin = (
+            outer_origin * outer_ratio + inner_origin - ghost
+        )
+        return (
+            coarse_value * outer_ratio * inner_ratio
+            - global_parent_origin * inner_ratio
+        )
+
+    local_cx = local_center(cx, outer.box.x0, box.x0)
+    local_cy = local_center(cy, outer.box.y0, box.y0)
+    local_cz = local_center(cz, outer.box.z0, box.z0)
+    nz_f, ny_f, nx_f = plan.fine_physical_shape
+    length = plan.effective_hull_length_cells
+    return build_suboff_mask(
+        hull_type,
+        nx_f,
+        ny_f,
+        nz_f,
+        cx=local_cx,
+        cy=local_cy,
+        cz=local_cz,
+        length=length,
+        radius=config.r_over_l * length,
+        config=config,
+        device=device,
+    )
+
+
 __all__ = [
     "MIN_ABSOLUTE_REFERENCE_APPENDAGE_THICKNESS_CELLS",
     "MIN_ABSOLUTE_REFERENCE_DIAMETER_CELLS",
     "MIN_CONVERGENCE_APPENDAGE_THICKNESS_CELLS",
     "MIN_CONVERGENCE_DIAMETER_CELLS",
     "SuboffGeometryResolution",
+    "SuboffNestedStaticAMRPlan",
     "SuboffStaticAMRPlan",
     "assess_suboff_geometry_resolution",
+    "build_nested_fine_suboff_mask",
     "build_fine_suboff_mask",
+    "plan_nested_suboff_static_amr",
     "plan_suboff_static_amr",
 ]
