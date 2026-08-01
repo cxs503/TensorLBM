@@ -225,6 +225,17 @@ class StaticBlockAMR3D:
                 device=fine_solid.device,
             )
             self.fine_solid_with_ghost[g:-g, g:-g, g:-g] = fine_solid
+            protected = self.fine_solid_with_ghost.clone()
+            protected[1:] |= self.fine_solid_with_ghost[:-1]
+            protected[:-1] |= self.fine_solid_with_ghost[1:]
+            protected[:, 1:] |= self.fine_solid_with_ghost[:, :-1]
+            protected[:, :-1] |= self.fine_solid_with_ghost[:, 1:]
+            protected[:, :, 1:] |= self.fine_solid_with_ghost[:, :, :-1]
+            protected[:, :, :-1] |= self.fine_solid_with_ghost[:, :, 1:]
+            if bool((protected & (self._interface_filter_blend > 0.0)).any()):
+                raise ValueError(
+                    "interface filter overlaps the solid or its near-wall fluid",
+                )
         else:
             self.fine_solid = None
             self.fine_solid_with_ghost = None
