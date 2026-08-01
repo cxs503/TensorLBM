@@ -50,14 +50,14 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     resumed = module.run(resumed_args)
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
 
-    assert first["schema"] == "tensorlbm-suboff-static-amr-v3"
+    assert first["schema"] == "tensorlbm-suboff-static-amr-v4"
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
     assert resumed["acceptance"]["physical_validation"] is False
     assert resumed["geometry"]["surface_area_weighting"][
         "calibrated_area"
     ] == pytest.approx(resumed["geometry"]["wetted_area_lu2"], rel=1e-6)
-    assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v3"
+    assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v4"
     assert state["step"] == 6
     assert len(state["force_history"]) == 4
     assert len(state["wall_y_plus_mean_history"]) == 4
@@ -66,3 +66,10 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert state["maximum_reflux_applied_correction"] >= 0.0
     assert state["maximum_reflux_limited_directions"] == 0
     assert state["maximum_raw_kinetic_mismatch"] >= 0.0
+    assert resumed["configuration"]["wall_viscosity_basis"] == "physical_reynolds"
+    assert resumed["configuration"]["wall_model_reynolds"] == pytest.approx(
+        resumed["configuration"]["physical_reynolds"],
+    )
+    assert resumed["configuration"]["wall_nu_fine"] < 0.01 * (
+        2.0 * (resumed["configuration"]["tau_coarse"] - 0.5) / 3.0
+    )
