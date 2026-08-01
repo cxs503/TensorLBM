@@ -27,6 +27,10 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--sponge-width", type=int, default=16)
     p.add_argument("--sponge-strength", type=float, default=0.2)
     p.add_argument("--cv-margin", type=int, default=5)
+    p.add_argument("--report-interval", type=int, default=500)
+    p.add_argument("--checkpoint-interval", type=int, default=500)
+    p.add_argument("--checkpoint", default=None)
+    p.add_argument("--resume", action="store_true")
     p.add_argument(
         "--far-field-mode",
         choices=("non_equilibrium_extrapolation", "legacy_hard_equilibrium"),
@@ -44,6 +48,9 @@ def main() -> None:
         steps=args.steps, warmup_steps=args.warmup_steps,
         ramp_steps=args.ramp_steps, sponge_width=args.sponge_width,
         sponge_strength=args.sponge_strength, cv_margin=args.cv_margin,
+        report_interval=args.report_interval,
+        checkpoint_interval=args.checkpoint_interval,
+        checkpoint_path=args.checkpoint, resume=args.resume,
         far_field_mode=args.far_field_mode, device=args.device,
     )
     result = run_sphere_bfl_control_volume(config)
