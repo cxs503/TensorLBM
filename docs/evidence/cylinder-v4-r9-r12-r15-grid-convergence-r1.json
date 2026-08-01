@@ -1,0 +1,123 @@
+{
+  "schema": "tensorlbm-cylinder-grid-convergence-v1",
+  "radii_cells": [
+    9.0,
+    12.0,
+    15.0
+  ],
+  "diameters_cells": [
+    18.0,
+    24.0,
+    30.0
+  ],
+  "cd_control_volume": [
+    1.4472501372001216,
+    1.4461494896785114,
+    1.435706587575468
+  ],
+  "strouhal": [
+    0.1734554103120994,
+    0.17379242781061208,
+    0.17379441447831273
+  ],
+  "configuration_identity": {
+    "v4_schema": true,
+    "required_fields_present": true,
+    "identity_fields_equal": true,
+    "spanwise_cells_invariant": true,
+    "domain_over_radius": {
+      "y": [
+        40.0,
+        40.0,
+        40.0
+      ],
+      "x": [
+        40.0,
+        40.0,
+        40.0
+      ]
+    },
+    "scaled_spatial_parameters": {
+      "cv_margin_over_radius": [
+        0.6666666666666666,
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "sponge_width_over_radius": [
+        2.0,
+        2.0,
+        2.0
+      ]
+    },
+    "time_steps_over_radius": {
+      "steps": [
+        6000.0,
+        6000.0,
+        6000.0
+      ],
+      "warmup_steps": [
+        3500.0,
+        3500.0,
+        3500.0
+      ],
+      "ramp_steps": [
+        50.0,
+        50.0,
+        50.0
+      ],
+      "statistics_window_steps_resolved": [
+        2500.0,
+        2500.0,
+        2500.0
+      ],
+      "report_interval": [
+        50.0,
+        50.0,
+        50.0
+      ]
+    },
+    "scaled_configuration_invariant": true,
+    "references_invariant": true,
+    "admitted": true
+  },
+  "drag_spatial_convergence": {
+    "monotonic": true,
+    "observed_order": 0.10000000000022827,
+    "extrapolated_value": 1.227122710564919,
+    "finest_discretisation_error_pct": 16.997801052392326,
+    "relative_fit_rms_pct": 0.20956699850023336,
+    "admitted": false
+  },
+  "strouhal_spatial_convergence": {
+    "monotonic": true,
+    "observed_order": 7.999999999993491,
+    "extrapolated_value": 0.17381367756262897,
+    "finest_discretisation_error_pct": 0.01108260557302753,
+    "relative_fit_rms_pct": 0.006539458317163274,
+    "admitted": true
+  },
+  "reference": {
+    "cd": 1.33,
+    "strouhal": 0.164,
+    "cd_extrapolated_error_pct": 7.735134543991061,
+    "strouhal_extrapolated_error_pct": 5.983949733310344,
+    "maximum_error_pct": 5.0
+  },
+  "source_numerical_quality_admitted": true,
+  "physical_validation": false,
+  "admitted": false,
+  "sources": [
+    {
+      "path": "results/cylinder-v4-equivalent-r9-54000.json",
+      "sha256": "313ee8efaa57fc09803cc8f0ce639f2de3df17573bf066de5ae940cd0723e4cd"
+    },
+    {
+      "path": "results/cylinder-v4-equivalent-r12-72000.json",
+      "sha256": "19996d2070dc298bbf4ef34d606f624d0ba03d52f1bc6ee6378977e948e77688"
+    },
+    {
+      "path": "results/cylinder-v4-equivalent-r15-90000.json",
+      "sha256": "a08d2ecd6d1c52c667954b90b52b4c1a298207e7f87e49a43b1eb4de30334b87"
+    }
+  ]
+}
