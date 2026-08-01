@@ -9,6 +9,7 @@ from tensorlbm.kinetic_flux_register import (
     KineticInterfaceTransfer,
     apply_face_local_reflux,
     build_kinetic_interface_links,
+    conserved_population_moments,
     observe_kinetic_interface_transfer,
     project_onto_conserved_moments,
 )
@@ -68,6 +69,27 @@ def test_reflux_projection_preserves_only_conserved_moments() -> None:
         rtol=0.0, atol=2e-14,
     )
     assert not torch.allclose(projected, mismatch)
+
+
+def test_population_inventory_moments_are_explicit() -> None:
+    inventory = torch.zeros(19, dtype=torch.float64)
+    inventory[0] = 2.0
+    inventory[1] = 3.0
+    inventory[2] = 1.0
+
+    mass, momentum = conserved_population_moments(inventory)
+
+    assert mass.item() == pytest.approx(6.0)
+    torch.testing.assert_close(
+        momentum, torch.tensor([2.0, 0.0, 0.0], dtype=torch.float64),
+    )
+
+
+def test_population_inventory_moments_reject_invalid_vectors() -> None:
+    with pytest.raises(ValueError, match="D3Q19 or D3Q27"):
+        conserved_population_moments(torch.zeros(9))
+    with pytest.raises(TypeError, match="floating"):
+        conserved_population_moments(torch.zeros(19, dtype=torch.int64))
 
 
 def test_reflux_is_local_to_exterior_interface_links_and_conservative() -> None:
