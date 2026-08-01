@@ -38,6 +38,7 @@ class SphereBFLControlVolumeConfig:
     sponge_width: int = 18
     sponge_strength: float = 0.2
     cv_margin: int = 8
+    far_field_mode: str = "non_equilibrium_extrapolation"
     device: str = "cpu"
 
     @property
@@ -58,6 +59,10 @@ class SphereBFLControlVolumeConfig:
         cx = self.nx * self.center_x_fraction
         if min(cx, self.nx - cx, self.ny / 2, self.nz / 2) <= self.radius + self.cv_margin + 2:
             raise ValueError("sphere/control volume does not fit the domain")
+        if self.far_field_mode not in {
+            "non_equilibrium_extrapolation", "legacy_hard_equilibrium",
+        }:
+            raise ValueError("unknown far_field_mode")
 
 
 def _ramp(step: int, steps: int) -> float:
@@ -110,14 +115,20 @@ def run_sphere_bfl_control_volume(
     )
     forces: list[float] = []
     bfl_forces: list[float] = []
+
+    def apply_outer(state: torch.Tensor) -> torch.Tensor:
+        if config.far_field_mode == "non_equilibrium_extrapolation":
+            return non_equilibrium_far_field_bc_3d(
+                state, u_in=config.lattice_speed,
+            )
+        return far_field_bc_3d(state, u_in=config.lattice_speed)
+
     for step in range(1, config.steps + 1):
         old = f
         collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
         post = torch.where(solid_q, old, collided)
         f = stream3d(post)
-        f = non_equilibrium_far_field_bc_3d(
-            f, u_in=config.lattice_speed,
-        )
+        f = apply_outer(f)
         rho_post, ux_post, uy_post, uz_post = macroscopic3d(post)
         activation = _ramp(step, config.ramp_steps)
         wall_velocity = (
@@ -133,9 +144,7 @@ def run_sphere_bfl_control_volume(
         f = apply_equilibrium_difference_sponge(
             f, sigma, velocity_target=(config.lattice_speed, 0.0, 0.0),
         )
-        f = non_equilibrium_far_field_bc_3d(
-            f, u_in=config.lattice_speed,
-        )
+        f = apply_outer(f)
         cv_force = float(observe_control_volume_force(
             old, f, post, cv, solid=solid,
         ).force_on_body[0].item())
@@ -158,6 +167,7 @@ def run_sphere_bfl_control_volume(
             "reynolds": config.reynolds, "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
             "device": config.device,
+            "far_field_mode": config.far_field_mode,
         },
         "result": {
             "cd_control_volume": cd,
