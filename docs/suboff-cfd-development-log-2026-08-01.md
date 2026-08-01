@@ -24,7 +24,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
    `L=120, U_lu=0.06`, so this is not a settled resistance result.
 6. R=8 sphere, Re=100, D=16 cells: `Cd_CV=1.38065`,
    `Cd_BFL=1.38067`, observer difference 0.0017%, correlation error 26.5%.
-   R=12 and higher resolutions are required before curved-wall admission.
+   Increasing only the resolution to D=24 gave `Cd=1.36671` (25.2% error).
+   Keeping D=16 but increasing transverse width from 4D to 8D gave
+   `Cd=1.19869` (9.8% error), proving domain blockage was dominant.
+7. An incoming-only non-equilibrium extrapolation boundary is implemented
+   separately from the legacy hard-equilibrium boundary.  It is not promoted
+   until the same wide-domain sphere case demonstrates lower reflection/error.
+8. A periodic-span cylinder benchmark now uses the same BFL and independent
+   control-volume observer; physical Re=100 runs remain required.
 
 ## Rejected candidates
 
