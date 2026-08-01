@@ -11,9 +11,9 @@ def _record(coarse_length: float) -> dict[str, object]:
     fine_length = 2.0 * coarse_length
     resistance = 100.0 + 500.0 / fine_length**2
     return {
-        "schema": "tensorlbm-suboff-static-amr-v3",
+        "schema": "tensorlbm-suboff-static-amr-v4",
         "configuration": {
-            "schema_version": 3,
+            "schema_version": 4,
             "hull_type": "bare_hull",
             "speed_knots": 5.92,
             "center_x_fraction": 0.3,
@@ -27,6 +27,7 @@ def _record(coarse_length: float) -> dict[str, object]:
             "collision_model": "cumulant_smagorinsky",
             "wall_law": "musker",
             "wall_distance": 0.5,
+            "wall_viscosity_basis": "physical_reynolds",
             "sponge_strength": 0.2,
             "sponge_inlet": False,
             "far_field_mode": "non_equilibrium_extrapolation",
@@ -79,10 +80,10 @@ def test_equivalent_monotonic_sequence_is_admitted(
 
 
 def test_wrong_schema_fails_provenance(records: list[dict[str, object]]) -> None:
-    records[0]["schema"] = "tensorlbm-suboff-static-amr-v2"
+    records[0]["schema"] = "tensorlbm-suboff-static-amr-v3"
     result = assess_suboff_amr_convergence(records)
 
-    assert result["configuration_identity"]["v3_schema"] is False
+    assert result["configuration_identity"]["v4_schema"] is False
     assert result["admitted"] is False
 
 

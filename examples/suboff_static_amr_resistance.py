@@ -61,7 +61,11 @@ from tensorlbm.turbulence import (
     collide_smagorinsky_mrt3d,
     collide_wale_mrt3d,
 )
-from tensorlbm.wall_model import WallStressDiagnostics, bfl_wall_function_3d
+from tensorlbm.wall_model import (
+    WallStressDiagnostics,
+    bfl_wall_function_3d,
+    physical_wall_lattice_viscosity,
+)
 
 
 def _appendage_halfway_links(
@@ -172,6 +176,9 @@ def run(args: argparse.Namespace) -> dict:
     physical_re = point.speed_mps * MODEL_LENGTH_M / args.nu_water
     collision_re = args.resolved_reynolds or physical_re
     nu_coarse = args.lattice_speed * args.hull_length / collision_re
+    wall_nu_fine = physical_wall_lattice_viscosity(
+        args.lattice_speed, args.hull_length * 2.0, physical_re,
+    )
     tau_coarse = 0.5 + 3.0 * nu_coarse
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, args.lattice_speed)
@@ -344,7 +351,7 @@ def run(args: argparse.Namespace) -> dict:
             and current_step % args.wall_diagnostic_interval == 0
         )
         wall_result = bfl_wall_function_3d(
-            out, post_collision, fine_solid_g, 2.0 * nu_coarse,
+            out, post_collision, fine_solid_g, wall_nu_fine,
             bfl_mask, bfl_q, y_val=args.wall_distance,
             wall_law=args.wall_law, near_mask=fine_near,
             bfl_wall_mode="wall_model_slip", wall_activation=activation,
@@ -380,7 +387,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     checkpoint = Path(args.checkpoint) if args.checkpoint else None
     checkpoint_signature = {
-        "schema_version": 3,
+        "schema_version": 4,
         "coarse_shape_zyx": list(shape),
         "hull_type": args.hull_type,
         "speed_knots": args.speed_knots,
@@ -419,6 +426,7 @@ def run(args: argparse.Namespace) -> dict:
         "far_field_mode": args.far_field_mode,
         "boundary_treatment": "bfl_wall_model",
         "refinement_ratio": plan.ratio,
+        "wall_viscosity_basis": "physical_reynolds",
     }
 
     if args.resume:
@@ -469,7 +477,7 @@ def run(args: argparse.Namespace) -> dict:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-suboff-static-amr-checkpoint-v3",
+            "schema": "tensorlbm-suboff-static-amr-checkpoint-v4",
             "configuration": checkpoint_signature,
             "step": step,
             "coarse_populations": amr.coarse_f.detach().cpu(),
@@ -688,7 +696,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     rho_c, ux_c, uy_c, uz_c = macroscopic3d(amr.coarse_f)
     result = {
-        "schema": "tensorlbm-suboff-static-amr-v3",
+        "schema": "tensorlbm-suboff-static-amr-v4",
         "status": (
             "single_grid_candidate" if single_grid_admitted
             else "single_grid_rejected"
@@ -701,6 +709,8 @@ def run(args: argparse.Namespace) -> dict:
             "tau_coarse": tau_coarse,
             "tau_fine": amr.config.tau_fine, "physical_reynolds": physical_re,
             "collision_reynolds": collision_re, "steps": args.steps,
+            "wall_model_reynolds": physical_re,
+            "wall_nu_fine": wall_nu_fine,
             "report_average_window": args.average_window,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,

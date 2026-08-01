@@ -19,7 +19,7 @@ from .sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_sponge_sigma_3d,
 )
-from .wall_model import bfl_wall_function_3d
+from .wall_model import bfl_wall_function_3d, physical_wall_lattice_viscosity
 
 
 def ittc_1957_friction_coefficient(reynolds: float) -> float:
@@ -57,7 +57,9 @@ class FlatPlateWallModelConfig:
 
     @property
     def wall_nu(self) -> float:
-        return self.lattice_speed * self.plate_length / self.reynolds
+        return physical_wall_lattice_viscosity(
+            self.lattice_speed, self.plate_length, self.reynolds,
+        )
 
     @property
     def collision_nu(self) -> float:

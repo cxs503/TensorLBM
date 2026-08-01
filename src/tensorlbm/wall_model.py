@@ -16,6 +16,25 @@ KAPPA = 0.41
 B_CONST = 5.0
 
 
+def physical_wall_lattice_viscosity(
+    lattice_speed: float,
+    characteristic_length_cells: float,
+    physical_reynolds: float,
+) -> float:
+    """Return wall-law viscosity at the physical, not collision, Reynolds.
+
+    A collision operator may intentionally use a smaller resolved Reynolds
+    number for lattice stability.  That numerical viscosity must not leak into
+    wall stress, whose nondimensional law is tied to the physical Reynolds
+    number.
+    """
+    if min(lattice_speed, characteristic_length_cells, physical_reynolds) <= 0.0:
+        raise ValueError(
+            "speed, characteristic length and Reynolds must be positive",
+        )
+    return lattice_speed * characteristic_length_cells / physical_reynolds
+
+
 @dataclass(frozen=True)
 class WallStressDiagnostics:
     """Runtime evidence for wall-stress applicability and sample quality."""
@@ -1371,4 +1390,5 @@ __all__ = [
     "bfl_wall_function_3d",
     "bfl_wall_function_d3q27",
     "WallStressDiagnostics",
+    "physical_wall_lattice_viscosity",
 ]
