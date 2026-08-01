@@ -112,6 +112,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     stationarity gates (1.67% block range, 1.61% trend).  R14 is running with
     checkpoints; extrapolated R16 peak memory (~22.7 GiB) is deferred until
     R14 establishes the remaining resolution trend.
+21. Extending the 16.7D-wide cylinder to 60,000 steps changed the diagnosis:
+    the full post-10k mean `Cd=1.35881` is only 2.17% high and `St=0.17364`
+    is 5.88% high, with 0.00055% force-observer disagreement over 21.7 cycles.
+    It is still rejected because early blocks rise from ~1.225 while the final
+    four settle near 1.45 (20.6% trend over the admitted window).  A 25D-wide
+    rerun uses a 30k warmup to separate long startup from residual blockage.
 
 ## Rejected candidates
 
