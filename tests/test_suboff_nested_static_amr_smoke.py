@@ -29,6 +29,8 @@ def _args(
     disable_wall_stress: bool = False,
     collision_model: str = "cumulant_smagorinsky",
     omega_bulk: float = 1.0,
+    interface_filter_width: int = 0,
+    interface_filter_strength: float = 0.0,
 ):
     values = [
         "--device", "cpu",
@@ -47,6 +49,8 @@ def _args(
         "--collision-model", collision_model,
         "--kbc-max-iterations", "4",
         "--omega-bulk", str(omega_bulk),
+        "--interface-filter-width", str(interface_filter_width),
+        "--interface-filter-strength", str(interface_filter_strength),
         "--output", str(tmp_path / "nested-smoke.json"),
         "--checkpoint", str(tmp_path / "nested-smoke.ckpt"),
         "--checkpoint-interval", "1",
@@ -152,6 +156,8 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     assert health["collision_resolved_reynolds"] == 2000.0
     assert len(health["collision_tau_by_level"]) == 3
     assert health["target_reynolds_reached"] is True
+    assert health["maximum_collision_limited_fraction"] == 0.0
+    assert health["maximum_wall_sample_rejected_fraction"] == 0.0
     assert [record["finite"] for record in health["levels"]] == [True, True, True]
     assert len(health["interfaces"]) == 2
     assert health["finest_peak_speed_context"] is not None
@@ -191,6 +197,21 @@ def test_nested_smoke_records_independent_bulk_relaxation(tmp_path: Path) -> Non
     assert result["result"]["finite"] is True
 
 
+def test_nested_smoke_can_filter_both_physical_interface_shells(
+    tmp_path: Path,
+) -> None:
+    result = MODULE.run(_args(
+        tmp_path,
+        steps=1,
+        interface_filter_width=1,
+        interface_filter_strength=0.2,
+    ))
+
+    assert result["configuration"]["interface_filter_width"] == 1
+    assert result["configuration"]["interface_filter_strength"] == 0.2
+    assert result["result"]["finite"] is True
+
+
 def test_nested_smoke_uses_smooth_resolved_viscosity_continuation(
     tmp_path: Path,
 ) -> None:
@@ -226,6 +247,8 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("regularize_restriction")
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
+    state["configuration"].pop("interface_filter_width")
+    state["configuration"].pop("interface_filter_strength")
     state["configuration"].pop("wall_stress_enabled")
     state["configuration"].pop("collision_model")
     state["configuration"].pop("kbc_max_iterations")
@@ -251,6 +274,8 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("regularize_restriction")
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
+    state["configuration"].pop("interface_filter_width")
+    state["configuration"].pop("interface_filter_strength")
     state["configuration"].pop("wall_stress_enabled")
     state["configuration"].pop("collision_model")
     state["configuration"].pop("kbc_max_iterations")
