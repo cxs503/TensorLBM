@@ -25,6 +25,7 @@ def _args(
     regularize_restriction: bool = False,
     ghost_interpolation: str = "injection",
     enforce_transfer_positivity: bool = False,
+    disable_wall_stress: bool = False,
 ):
     values = [
         "--device", "cpu",
@@ -52,6 +53,8 @@ def _args(
         values.append("--regularize-restriction")
     if enforce_transfer_positivity:
         values.append("--enforce-transfer-positivity")
+    if disable_wall_stress:
+        values.append("--disable-wall-stress")
     return MODULE.parser().parse_args(values)
 
 
@@ -147,6 +150,15 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     )
 
 
+def test_wall_stress_can_be_disabled_only_as_nonphysical_diagnostic(
+    tmp_path: Path,
+) -> None:
+    result = MODULE.run(_args(tmp_path, steps=1, disable_wall_stress=True))
+
+    assert result["configuration"]["disable_wall_stress"] is True
+    assert result["acceptance"]["single_grid_candidate"] is False
+
+
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
@@ -156,6 +168,7 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("regularize_restriction")
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
+    state["configuration"].pop("wall_stress_enabled")
     state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
     torch.save(state, checkpoint)
 
@@ -174,6 +187,7 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("regularize_restriction")
     state["configuration"].pop("ghost_interpolation")
     state["configuration"].pop("enforce_transfer_positivity")
+    state["configuration"].pop("wall_stress_enabled")
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))

@@ -130,6 +130,11 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--nu-water", type=float, default=1.004e-6)
     result.add_argument("--cs-smag", type=float, default=0.05)
     result.add_argument("--wall-law", choices=("musker", "reichardt", "log"), default="musker")
+    result.add_argument(
+        "--disable-wall-stress",
+        action="store_true",
+        help="diagnostic only: retain BFL impermeability but omit wall-stress forcing",
+    )
     result.add_argument("--stress-exchange-distance", type=float, default=1.0)
     result.add_argument("--sponge-width", type=int, default=24)
     result.add_argument("--sponge-strength", type=float, default=0.3)
@@ -317,6 +322,7 @@ def run(args: argparse.Namespace) -> dict:
         "nu_water": args.nu_water,
         "cs_smag": args.cs_smag,
         "wall_law": args.wall_law,
+        "wall_stress_enabled": not args.disable_wall_stress,
         "stress_exchange_distance": args.stress_exchange_distance,
         "wall_diagnostic_interval": args.wall_diagnostic_interval,
         "sponge_width": args.sponge_width,
@@ -470,10 +476,12 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("regularize_restriction")
         legacy_v3_signature.pop("ghost_interpolation")
         legacy_v3_signature.pop("enforce_transfer_positivity")
+        legacy_v3_signature.pop("wall_stress_enabled")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
+            and not args.disable_wall_stress
             and stored_configuration == legacy_v3_signature
         )
         legacy_v2_signature = dict(checkpoint_signature)
@@ -483,11 +491,13 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop("regularize_restriction")
         legacy_v2_without_new_transfer.pop("ghost_interpolation")
         legacy_v2_without_new_transfer.pop("enforce_transfer_positivity")
+        legacy_v2_without_new_transfer.pop("wall_stress_enabled")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
             and args.ghost_interpolation == "injection"
             and not args.enforce_transfer_positivity
+            and not args.disable_wall_stress
             and stored_configuration == legacy_v2_without_new_transfer
         )
         if (
@@ -622,6 +632,7 @@ def run(args: argparse.Namespace) -> dict:
             stress_exchange_distance=args.stress_exchange_distance,
             wall_normals=(surface.nx_n, surface.ny_n, surface.nz_n),
             area_weight=area_weight,
+            apply_wall_stress=not args.disable_wall_stress,
             return_wall_diagnostics=collect_wall_diagnostics,
         )
         if collect_wall_diagnostics:
@@ -1002,6 +1013,7 @@ def run(args: argparse.Namespace) -> dict:
         and reference_error_pct is not None
         and reference_error_pct <= 5.0
         and geometry_resolution.absolute_reference_resolved
+        and not args.disable_wall_stress
     )
     peak_gib = (
         torch.cuda.max_memory_allocated(device) / 2**30
