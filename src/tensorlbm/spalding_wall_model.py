@@ -172,8 +172,16 @@ def sample_wall_exchange_velocity(
     *,
     exchange_distance: float,
     boundary_mask: torch.Tensor | None = None,
+    fluid_mask: torch.Tensor | None = None,
 ) -> WallExchangeSamples:
-    """Sample velocity sparsely at a wall-normal exchange location ``y2``."""
+    """Sample velocity sparsely at a wall-normal exchange location ``y2``.
+
+    Samples outside the domain, or whose trilinear interpolation stencil
+    contains non-fluid values when ``fluid_mask`` is supplied, are excluded
+    from the returned boundary mask.  The caller can therefore fail closed at
+    concave corners and geometry intersections instead of consuming a
+    clipped or solid-contaminated velocity.
+    """
     if exchange_distance <= 0.0:
         raise ValueError("exchange_distance must be positive")
     ux, uy, uz = velocity
@@ -190,6 +198,9 @@ def sample_wall_exchange_velocity(
         if boundary_mask.shape != boundary.shape or boundary_mask.dtype is not torch.bool:
             raise ValueError("boundary_mask must be bool with the spatial grid shape")
         boundary = boundary & boundary_mask
+    if fluid_mask is not None:
+        if fluid_mask.shape != boundary.shape or fluid_mask.dtype is not torch.bool:
+            raise ValueError("fluid_mask must be bool with the spatial grid shape")
     indices = boundary.nonzero(as_tuple=False)
     if not indices.numel():
         empty = torch.empty(0, device=ux.device, dtype=ux.dtype)
@@ -220,6 +231,28 @@ def sample_wall_exchange_velocity(
         sample_z, sample_y, sample_x = (
             sample_z[valid], sample_y[valid], sample_x[valid]
         )
+        indices = indices[valid]
+    if fluid_mask is not None and sample_x.numel():
+        fluid_fraction = _sample_sparse_trilinear(
+            fluid_mask.to(device=ux.device, dtype=ux.dtype),
+            sample_z, sample_y, sample_x,
+        )
+        valid_fluid_support = fluid_fraction >= 1.0 - 1e-6
+        if not bool(valid_fluid_support.all()):
+            invalid_indices = indices[~valid_fluid_support]
+            boundary = boundary.clone()
+            boundary[
+                invalid_indices[:, 0], invalid_indices[:, 1], invalid_indices[:, 2]
+            ] = False
+            y1, y2 = y1[valid_fluid_support], y2[valid_fluid_support]
+            nxb, nyb, nzb = (
+                nxb[valid_fluid_support], nyb[valid_fluid_support],
+                nzb[valid_fluid_support],
+            )
+            sample_z, sample_y, sample_x = (
+                sample_z[valid_fluid_support], sample_y[valid_fluid_support],
+                sample_x[valid_fluid_support],
+            )
     return WallExchangeSamples(
         boundary, y1, y2, nxb, nyb, nzb,
         _sample_sparse_trilinear(ux, sample_z, sample_y, sample_x),
@@ -248,6 +281,7 @@ def apply_spalding_exchange_wall_model(
     nonequilibrium_scale: float = 0.5,
     area_weight: torch.Tensor | None = None,
     activation: float = 1.0,
+    solid_mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, SpaldingWallDiagnostics]:
     """Assimilate a Spalding-modelled boundary velocity after curved BFL."""
     if exchange_distance <= 0.0:
@@ -262,6 +296,7 @@ def apply_spalding_exchange_wall_model(
     samples = sample_wall_exchange_velocity(
         (ux, uy, uz), fluid_boundary_mask, q_field,
         (nx_n, ny_n, nz_n), exchange_distance=exchange_distance,
+        fluid_mask=(~solid_mask if solid_mask is not None else None),
     )
     boundary = samples.boundary
     count = int(boundary.sum().item())

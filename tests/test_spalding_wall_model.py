@@ -87,6 +87,20 @@ def test_exchange_velocity_excludes_points_outside_domain() -> None:
     assert samples.velocity_x.numel() == 0
 
 
+def test_exchange_velocity_excludes_solid_contaminated_stencil() -> None:
+    mask, q, normals, cell = _flat_boundary()
+    zero = torch.zeros(q.shape[1:])
+    fluid = torch.ones(q.shape[1:], dtype=torch.bool)
+    # y2=2 from a y1=.5 boundary node at y=3 samples y=4.5.
+    fluid[cell[0], 5, cell[2]] = False
+    samples = sample_wall_exchange_velocity(
+        (zero, zero, zero), mask, q, normals,
+        exchange_distance=2.0, fluid_mask=fluid,
+    )
+    assert not bool(samples.boundary.any())
+    assert samples.velocity_x.numel() == 0
+
+
 def test_zero_flow_is_unchanged_and_has_zero_shear() -> None:
     mask, q, normals, _ = _flat_boundary()
     shape = q.shape[1:]
