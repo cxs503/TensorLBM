@@ -201,3 +201,43 @@ def test_real_mrt_stream_subcycling_preserves_global_mass_and_momentum() -> None
     assert actual_mass == pytest.approx(float(reference_mass), abs=1e-4)
     assert torch.allclose(actual_momentum, reference_momentum, atol=1e-4, rtol=0.0)
     assert abs(ledger.mass_residual) < 1e-4
+
+
+def test_face_local_interface_remains_finite_over_repeated_pulse_crossing() -> None:
+    """A smooth convected perturbation may cross the interface repeatedly."""
+    shape = (12, 14, 18)
+    z, y, x = torch.meshgrid(
+        torch.arange(shape[0]), torch.arange(shape[1]), torch.arange(shape[2]),
+        indexing="ij",
+    )
+    rho = 1.0 + 1e-3 * torch.exp(
+        -((x - 5.0) ** 2 + (y - 7.0) ** 2 + (z - 6.0) ** 2) / 8.0,
+    )
+    ux = torch.full(shape, 0.03)
+    zero = torch.zeros(shape)
+    coarse = equilibrium3d(rho, ux, zero, zero)
+    solver = StaticBlockAMR3D(
+        coarse,
+        StaticBlockAMRConfig(
+            BoxRegion(x0=6, x1=13, y0=3, y1=11, z0=3, z1=9),
+            tau_coarse=0.56,
+        ),
+    )
+    initial_mass = float(solver.coarse_f.sum())
+    maximum_residual = 0.0
+
+    def advance(
+        state: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
+        del level, substep
+        post = collide_mrt3d(state, tau=tau)
+        return AMRAdvanceResult(stream3d(post), post)
+
+    for _ in range(50):
+        ledger = solver.step(advance)
+        maximum_residual = max(maximum_residual, abs(ledger.mass_residual))
+    final_mass = float(solver.coarse_f.sum())
+    assert bool(torch.isfinite(solver.coarse_f).all())
+    assert float(solver.coarse_f.min()) > 0.0
+    assert abs(final_mass - initial_mass) / initial_mass < 3e-7
+    assert maximum_residual < 2e-10
