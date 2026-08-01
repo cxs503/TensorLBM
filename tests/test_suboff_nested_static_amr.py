@@ -42,6 +42,10 @@ def test_nested_plan_uses_outer_allocated_coordinates_and_saves_cells() -> None:
     assert plan.effective_diameter_cells == 320.0 / 8.57
     assert plan.total_allocated_cells < plan.uniform_finest_cells
     assert plan.cell_saving_fraction > 0.9
+    assert plan.wall_buffer_parent_cells == 3
+    assert plan.wall_buffer_finest_cells == 6
+    assert plan.downstream_buffer_parent_cells == 7
+    assert plan.downstream_buffer_finest_cells == 14
 
 
 def test_second_level_regenerates_exact_cad_and_contains_complete_hull() -> None:

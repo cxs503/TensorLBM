@@ -105,6 +105,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --steps "$steps" --warmup-steps "$warmup" \
   --statistics-window-steps "$statistics" --ramp-steps "$ramp" \
   --report-interval "$report" --wall-diagnostic-interval "$wall_diagnostic" \
+  --health-interval "$report" --maximum-health-speed 0.3 \
   --minimum-convective-times 8 \
   --minimum-statistics-convective-times 5 \
   --lattice-speed 0.06 --resolved-reynolds 100000 \

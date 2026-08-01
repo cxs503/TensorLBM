@@ -80,6 +80,7 @@ def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
     assert result["physical_validation"] is False
     assert result["planning"]["total_allocated_cells"] > 0
     assert result["planning"]["memory_estimate_bytes_per_cell"] == 742.0
+    assert result["planning"]["wall_buffer_finest_cells"] == 6
 
 
 def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:
