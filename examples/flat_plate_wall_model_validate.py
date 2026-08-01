@@ -33,6 +33,9 @@ def main() -> None:
     parser.add_argument("--cs-smag", type=float, default=0.05)
     parser.add_argument("--disable-positivity-limiter", action="store_true")
     parser.add_argument("--report-interval", type=int, default=1000)
+    parser.add_argument("--checkpoint-interval", type=int, default=2000)
+    parser.add_argument("--checkpoint", default=None)
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     result = run_flat_plate_wall_model(FlatPlateWallModelConfig(
@@ -47,6 +50,8 @@ def main() -> None:
         smagorinsky_cs=args.cs_smag,
         positivity_limiter=not args.disable_positivity_limiter,
         report_interval=args.report_interval,
+        checkpoint_interval=args.checkpoint_interval,
+        checkpoint_path=args.checkpoint, resume=args.resume,
         device=args.device,
     ))
     output = Path(args.output)

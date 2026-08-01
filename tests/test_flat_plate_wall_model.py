@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import pytest
 
@@ -31,3 +32,22 @@ def test_short_flat_plate_composition_is_finite() -> None:
     assert math.isfinite(result["friction_coefficient"])
     assert result["drag_stationarity"]["sufficiently_sampled"] is False
     assert math.isfinite(result["maximum_positivity_limited_fraction"])
+
+
+def test_flat_plate_checkpoint_can_resume(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "flat.ckpt"
+    common = dict(
+        nx=64, ny=32, nz=3, plate_length=24,
+        plate_start_fraction=0.25, reynolds=2e4,
+        resolved_reynolds=2e3, lattice_speed=0.04,
+        warmup_steps=2, ramp_steps=2, sponge_width=3,
+        cv_margin=3, report_interval=0, checkpoint_interval=2,
+        checkpoint_path=str(checkpoint), device="cpu",
+    )
+    run_flat_plate_wall_model(FlatPlateWallModelConfig(**common, steps=4))
+    resumed = run_flat_plate_wall_model(FlatPlateWallModelConfig(
+        **common, steps=6, resume=True,
+    ))
+    assert checkpoint.exists()
+    assert resumed["configuration"]["resumed_from_step"] == 4
+    assert resumed["result"]["finite"] is True
