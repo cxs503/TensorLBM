@@ -742,6 +742,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     about 41.7 N apart.  Numerical-source pairing begins only after the step
     4500 warmup, so this checkpoint is conservation evidence, not an admitted
     drag mean; the run continues unchanged into its declared tail.
+90. Closure remains valid through the large startup oscillation rather than
+    only near one favourable crossing.  At steps 3375 and 3750 the CV forces
+    are -176.448 N and 211.348 N, while BFL plus wall stress gives -176.384 N
+    and 211.464 N: absolute residuals 0.064 N and 0.116 N.  This sign-changing
+    test rules out accidental relative agreement at step 3000 and isolates the
+    remaining oscillation as flow/boundary physics to be time-averaged, not a
+    broken force observer.
 
 ## Rejected candidates
 
