@@ -863,6 +863,15 @@ def run(args: argparse.Namespace) -> dict:
             "level_populations": [
                 level.detach().cpu() for level in hierarchy.level_populations
             ],
+            "level_solid_masks": [
+                None,
+                *[
+                    None if interface.fine_solid_with_ghost is None else (
+                        interface.fine_solid_with_ghost.detach().cpu()
+                    )
+                    for interface in hierarchy.interfaces
+                ],
+            ],
             "step_records": step_records,
             "maximum_limiter_fraction": maximum_limiter_fraction,
             "maximum_reflux_residual": maximum_reflux_residual,
@@ -910,8 +919,20 @@ def run(args: argparse.Namespace) -> dict:
         else:
             sgs_coefficients = {
                 "cumulant_smagorinsky": {"C_s": args.cs_smag},
-                "cumulant_wale": {"C_w": args.wale_cw},
-                "cumulant_vreman": {"C_v": args.vreman_cv},
+                "cumulant_wale": {
+                    "C_w": args.wale_cw,
+                    "solid_mask": (
+                        hierarchy.interfaces[level - 1].fine_solid_with_ghost
+                        if level > 0 else None
+                    ),
+                },
+                "cumulant_vreman": {
+                    "C_v": args.vreman_cv,
+                    "solid_mask": (
+                        hierarchy.interfaces[level - 1].fine_solid_with_ghost
+                        if level > 0 else None
+                    ),
+                },
             }[args.collision_model]
             post = collide_cumulant_d3q19(
                 state, tau=tau, omega_b=args.omega_bulk, **sgs_coefficients,
@@ -1592,6 +1613,10 @@ def run(args: argparse.Namespace) -> dict:
             "resolved_wall_shear_ramp_steps": wall_shear_ramp_steps,
             "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
             "checkpoint_interval": args.checkpoint_interval,
+            "gradient_sgs_solid_velocity": [0.0, 0.0, 0.0],
+            "gradient_sgs_uses_finest_solid_mask": (
+                args.collision_model in {"cumulant_wale", "cumulant_vreman"}
+            ),
             "resumed_from_step": resumed_from_step,
             "resumed_legacy_v2_checkpoint": resumed_legacy_v2_checkpoint,
             "resumed_legacy_v3_checkpoint": resumed_legacy_v3_checkpoint,

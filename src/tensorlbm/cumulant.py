@@ -362,6 +362,8 @@ def collide_cumulant_d3q19(
     C_s: float = 0.0,
     C_w: float = 0.0,
     C_v: float = 0.0,
+    solid_mask: torch.Tensor | None = None,
+    wall_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0),
 ) -> torch.Tensor:
     """Cumulant LBM collision step for the D3Q19 lattice.
 
@@ -398,6 +400,10 @@ def collide_cumulant_d3q19(
         C_s:        Smagorinsky constant (0 = disabled, 0.1 = typical).
         C_w:        WALE constant (0 = disabled, 0.5 = typical).
         C_v:        Vreman constant (0 = disabled, 0.025 = typical).
+        solid_mask:  Optional stationary/moving-solid mask used only by
+                     gradient SGS models.  Solid-side macroscopic velocities
+                     are replaced by ``wall_velocity`` before differentiation.
+        wall_velocity: Cartesian lattice velocity imposed inside the mask.
 
         At most one SGS coefficient may be non-zero.  WALE and Vreman use
         velocity-gradient invariants and are useful alternatives when the
@@ -412,6 +418,14 @@ def collide_cumulant_d3q19(
         raise ValueError("SGS coefficients must be non-negative")
     if sum(value > 0.0 for value in (C_s, C_w, C_v)) > 1:
         raise ValueError("only one SGS model may be active")
+    if len(wall_velocity) != 3 or not all(math.isfinite(v) for v in wall_velocity):
+        raise ValueError("wall_velocity must contain three finite values")
+    if solid_mask is not None and (
+        solid_mask.shape != f.shape[1:]
+        or solid_mask.dtype is not torch.bool
+        or solid_mask.device != f.device
+    ):
+        raise ValueError("solid_mask must be bool with the population spatial shape")
 
     device = f.device
     cs2 = 1.0 / 3.0
@@ -444,6 +458,15 @@ def collide_cumulant_d3q19(
     if C_w > 0.0:
         from .turbulence import _nu_t_to_tau_eff, _wale_nu_t_3d  # noqa: PLC0415
 
+        if solid_mask is not None:
+            ux, uy, uz = (
+                torch.where(solid_mask, torch.as_tensor(
+                    velocity, dtype=f.dtype, device=f.device,
+                ), component)
+                for component, velocity in zip(
+                    (ux, uy, uz), wall_velocity, strict=True,
+                )
+            )
         tau_eff = _nu_t_to_tau_eff(
             tau, _wale_nu_t_3d(ux, uy, uz, C_w),
         )
@@ -451,6 +474,15 @@ def collide_cumulant_d3q19(
     elif C_v > 0.0:
         from .turbulence import _nu_t_to_tau_eff, _vreman_nu_t_3d  # noqa: PLC0415
 
+        if solid_mask is not None:
+            ux, uy, uz = (
+                torch.where(solid_mask, torch.as_tensor(
+                    velocity, dtype=f.dtype, device=f.device,
+                ), component)
+                for component, velocity in zip(
+                    (ux, uy, uz), wall_velocity, strict=True,
+                )
+            )
         tau_eff = _nu_t_to_tau_eff(
             tau, _vreman_nu_t_3d(ux, uy, uz, C_v),
         )
@@ -516,6 +548,8 @@ def gradient_sgs_effective_tau_d3q19(
     tau: float,
     model: str,
     coefficient: float,
+    solid_mask: torch.Tensor | None = None,
+    wall_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0),
 ) -> torch.Tensor:
     """Return the local WALE or Vreman relaxation time used by collision.
 
@@ -532,8 +566,25 @@ def gradient_sgs_effective_tau_d3q19(
         raise ValueError("coefficient must be non-negative")
     if model not in {"wale", "vreman"}:
         raise ValueError("model must be wale or vreman")
+    if len(wall_velocity) != 3 or not all(math.isfinite(v) for v in wall_velocity):
+        raise ValueError("wall_velocity must contain three finite values")
+    if solid_mask is not None and (
+        solid_mask.shape != f.shape[1:]
+        or solid_mask.dtype is not torch.bool
+        or solid_mask.device != f.device
+    ):
+        raise ValueError("solid_mask must be bool with the population spatial shape")
     rho, ux, uy, uz = macroscopic3d(f)
     del rho
+    if solid_mask is not None:
+        ux, uy, uz = (
+            torch.where(solid_mask, torch.as_tensor(
+                velocity, dtype=f.dtype, device=f.device,
+            ), component)
+            for component, velocity in zip(
+                (ux, uy, uz), wall_velocity, strict=True,
+            )
+        )
     from .turbulence import (  # noqa: PLC0415
         _nu_t_to_tau_eff,
         _vreman_nu_t_3d,
@@ -554,6 +605,8 @@ def summarize_gradient_sgs_effective_tau_d3q19(
     model: str,
     coefficient: float,
     chunk_cells: int = 262_144,
+    solid_mask: torch.Tensor | None = None,
+    wall_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0),
 ) -> dict[str, float]:
     """Summarize WALE/Vreman relaxation in z-slabs with edge-safe halos.
 
@@ -569,6 +622,12 @@ def summarize_gradient_sgs_effective_tau_d3q19(
         raise ValueError("chunk_cells must be positive")
     if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
         raise ValueError("f must have shape (19,nz,ny,nx)")
+    if solid_mask is not None and (
+        solid_mask.shape != f.shape[1:]
+        or solid_mask.dtype is not torch.bool
+        or solid_mask.device != f.device
+    ):
+        raise ValueError("solid_mask must be bool with the population spatial shape")
     nz, ny, nx = f.shape[1:]
     planes_per_chunk = max(1, chunk_cells // (ny * nx))
     minimum = math.inf
@@ -584,6 +643,11 @@ def summarize_gradient_sgs_effective_tau_d3q19(
             tau=tau,
             model=model,
             coefficient=coefficient,
+            solid_mask=(
+                None if solid_mask is None
+                else solid_mask[halo_start:halo_stop]
+            ),
+            wall_velocity=wall_velocity,
         )
         effective = effective_with_halo[
             start - halo_start:stop - halo_start
