@@ -1,21 +1,24 @@
 """Finite flat-plate external-flow benchmark for the BFL wall-stress model."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from pathlib import Path
 
 import torch
 
-from .control_volume_force import box_control_volume, observe_control_volume_force
 from .checkpoint_io import atomic_torch_save
+from .control_volume_force import box_control_volume, observe_control_volume_force
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import C, equilibrium3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
 from .population_positivity import limit_nonequilibrium_for_positivity
 from .solver3d import stream3d
-from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
+from .sponge_layer import (
+    apply_equilibrium_difference_sponge,
+    build_sponge_sigma_3d,
+)
 from .wall_model import bfl_wall_function_3d
 
 
@@ -161,11 +164,18 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         state = torch.load(checkpoint, map_location=device, weights_only=True)
         expected = {
             "shape_zyx": list(shape), "plate_length": config.plate_length,
+            "plate_start_fraction": config.plate_start_fraction,
             "reynolds": config.reynolds,
             "resolved_reynolds": config.resolved_reynolds,
             "lattice_speed": config.lattice_speed, "wall_law": config.wall_law,
             "stress_exchange_distance": config.stress_exchange_distance,
             "wall_diagnostic_interval": config.wall_diagnostic_interval,
+            "ramp_steps": config.ramp_steps,
+            "sponge_width": config.sponge_width,
+            "sponge_strength": config.sponge_strength,
+            "cv_margin": config.cv_margin,
+            "smagorinsky_cs": config.smagorinsky_cs,
+            "positivity_limiter": config.positivity_limiter,
         }
         if state.get("configuration") != expected:
             raise ValueError("checkpoint configuration does not match flat-plate run")
@@ -189,15 +199,22 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-flat-plate-checkpoint-v2",
+            "schema": "tensorlbm-flat-plate-checkpoint-v3",
             "configuration": {
                 "shape_zyx": list(shape), "plate_length": config.plate_length,
+                "plate_start_fraction": config.plate_start_fraction,
                 "reynolds": config.reynolds,
                 "resolved_reynolds": config.resolved_reynolds,
                 "lattice_speed": config.lattice_speed,
                 "wall_law": config.wall_law,
                 "stress_exchange_distance": config.stress_exchange_distance,
                 "wall_diagnostic_interval": config.wall_diagnostic_interval,
+                "ramp_steps": config.ramp_steps,
+                "sponge_width": config.sponge_width,
+                "sponge_strength": config.sponge_strength,
+                "cv_margin": config.cv_margin,
+                "smagorinsky_cs": config.smagorinsky_cs,
+                "positivity_limiter": config.positivity_limiter,
             },
             "step": step,
             "populations": f.detach().cpu(),
@@ -329,13 +346,19 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         and exchange_sampling_acceptable
     )
     return {
-        "schema": "tensorlbm-flat-plate-wall-model-v2",
+        "schema": "tensorlbm-flat-plate-wall-model-v3",
         "configuration": {
             "shape_zyx": list(shape), "plate_length": config.plate_length,
+            "plate_start_fraction": config.plate_start_fraction,
             "reynolds": config.reynolds,
             "resolved_reynolds": config.resolved_reynolds,
+            "lattice_speed": config.lattice_speed,
             "wall_nu": config.wall_nu, "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
+            "ramp_steps": config.ramp_steps,
+            "sponge_width": config.sponge_width,
+            "sponge_strength": config.sponge_strength,
+            "cv_margin": config.cv_margin,
             "wall_law": config.wall_law, "device": config.device,
             "stress_exchange_distance": config.stress_exchange_distance,
             "smagorinsky_cs": config.smagorinsky_cs,

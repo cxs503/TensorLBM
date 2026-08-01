@@ -71,3 +71,18 @@ Mean exchange `y+` was 563 (range 533–808).  It passes the fail-closed
 single-grid schema.  It is not yet a grid-converged wall-model validation;
 the declared L256/L384/L512 sequence holds `exchange_distance/plate_length`
 fixed at `3/256`.
+
+## Multi-grid provenance gate
+
+Checkpoint/result schema v3 records every variable needed to establish an
+equivalent refinement sequence: domain shape, plate placement, lattice speed,
+startup ramp, sponge width/strength, control-volume margin, collision
+viscosity/LES constant, positivity policy, wall law, and diagnostic cadence.
+Changing any of these invalidates restart identity.
+
+`assess_flat_plate_convergence` accepts only three or more individually
+admitted v3 records.  It verifies equal physics/numerics, invariant domain
+proportions and invariant `exchange_distance/plate_length` before fitting the
+observed order and extrapolated `Cf`.  Earlier v2 campaign files remain useful
+development evidence but fail this formal provenance gate; they are never
+silently promoted to a v3 grid-convergence claim.
