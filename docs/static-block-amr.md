@@ -14,11 +14,14 @@ far-field domain; one strictly interior fine block owns the geometry and wake.
 - time-interpolated coarse data on a one-cell fine ghost layer;
 - non-equilibrium rescaling across levels;
 - population-wise conservative restriction; and
-- exact population-inventory correction on the adjacent coarse shell.
+- population-proportional inventory correction on the adjacent coarse shell,
+  with a positivity-oriented per-step depletion limiter.
 
-The current correction distributes each population mismatch uniformly over
-the coarse shell.  It conserves global mass and momentum to roundoff, but it
-is not yet a face-local flux register.  Unsteady interface-sensitive cases
+The current correction distributes each population mismatch in proportion to
+the corresponding shell population.  It conserves global mass and momentum
+to roundoff while the limiter is inactive; a correction that would remove
+more than 20% of a directional inventory is limited and reported as a reflux
+residual.  It is not yet a face-local flux register.  Unsteady interface-sensitive cases
 must therefore be checked against a uniformly refined reference before this
 runtime is described as fully adaptive production AMR.
 
