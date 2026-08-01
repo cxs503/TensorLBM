@@ -269,6 +269,12 @@ def test_mature_wall_solver_implements_finite_distinct_musker_law() -> None:
     with pytest.raises(ValueError, match="wall_law"):
         _solve_wall_law(speed, 1e-5, 0.5, "unknown", near)
 
+    high_y_plus = _solve_wall_law(
+        speed.float(), 5e-7, 0.5, "musker", near,
+    )
+    assert torch.isfinite(high_y_plus).all()
+    assert high_y_plus.item() > 0.0
+
 
 def test_bfl_link_normal_recovers_flat_wall_direction() -> None:
     masks = torch.zeros((19, 3, 3, 3), dtype=torch.bool)
