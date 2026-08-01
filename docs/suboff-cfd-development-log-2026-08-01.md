@@ -621,6 +621,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     windows are exact multiples of 3:4:5.  Each level may wait on the exact PID
     of its predecessor and then `exec` in place, permitting a deterministic
     one-GPU queue while preserving distinct checkpoints and source records.
+77. The SUBOFF three-grid assessor now consumes the geometry-resolution gate.
+    Every AFF-8 member must carry measured v6 component evidence and pass the
+    convergence-member threshold, while the finest member must also pass the
+    absolute-reference threshold.  Missing AFF-8 geometry evidence therefore
+    fails closed even if an older result labels itself numerically converged.
+    AFF-1 records remain backward-compatible because diameter is reconstructed
+    unambiguously from the recorded fine hull length; this preserves the
+    already-running exact AFF-1 campaign without weakening future AFF-8 claims.
 
 ## Rejected candidates
 

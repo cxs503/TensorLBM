@@ -71,7 +71,7 @@ def _record(coarse_length: float) -> dict[str, object]:
 
 @pytest.fixture
 def records() -> list[dict[str, object]]:
-    return [_record(length) for length in (60.0, 90.0, 120.0)]
+    return [_record(length) for length in (90.0, 120.0, 150.0)]
 
 
 def test_equivalent_monotonic_sequence_is_admitted(
@@ -122,6 +122,43 @@ def test_rejected_source_run_fails_final_admission(
 
     assert result["source_numerical_quality_admitted"] is False
     assert result["admitted"] is False
+
+
+def test_underresolved_coarse_member_fails_geometry_admission() -> None:
+    underresolved = [_record(length) for length in (60.0, 90.0, 120.0)]
+    result = assess_suboff_amr_convergence(underresolved)
+
+    assert result["geometry_resolution"][
+        "source_convergence_members_admitted"
+    ] is False
+    assert result["admitted"] is False
+
+
+def test_aff8_requires_measured_component_resolution(
+    records: list[dict[str, object]],
+) -> None:
+    for record in records:
+        record["configuration"]["hull_type"] = "full"
+    missing = assess_suboff_amr_convergence(records)
+    assert missing["geometry_resolution"]["admitted"] is False
+
+    for index, record in enumerate(records):
+        absolute = index == len(records) - 1
+        record["geometry"] = {
+            "geometry_resolution": {
+                "convergence_member_resolved": True,
+                "absolute_reference_resolved": absolute,
+            },
+        }
+        record["acceptance"][
+            "geometry_convergence_member_target_met"
+        ] = True
+        record["acceptance"][
+            "absolute_reference_geometry_target_met"
+        ] = absolute
+    measured = assess_suboff_amr_convergence(records)
+    assert measured["geometry_resolution"]["admitted"] is True
+    assert measured["admitted"] is True
 
 
 def test_requires_three_records(records: list[dict[str, object]]) -> None:
