@@ -478,6 +478,25 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     active four-time L90 boundary runs remain sensitivity evidence only even
     if a late force window passes; a selected v5 candidate will be extended to
     at least six convective times before any three-grid sequence is assessed.
+62. Both U=0.06 wider-sponge L90 sensitivities completed and are rejected.
+    Without inlet damping the post-warmup CV mean is 96.25 N but its eight
+    blocks span 0.96--202.35 N, CV/BFL differs by 54.5%, and maximum speed is
+    0.205.  With inlet damping the mean is 106.98 N, blocks span
+    -24.38--178.52 N, observer difference is 50.0%, and maximum speed falls to
+    0.146.  Inlet damping reduces the velocity excursion but neither option is
+    stationary; matching the tow value during an oscillation is again not
+    accepted.  GPU capacity released by these runs now executes a v5 L90
+    candidate with a two-convective-time body ramp, three-time warmup and six
+    total convective times so the numerical-source and three-observer ledgers
+    can distinguish startup forcing from force-accounting error.
+63. The matched-duration U=0.04 all-face-damped sensitivity is also rejected.
+    Lower Mach reduces maximum speed to 0.076 and eliminates positivity
+    limiting, but the post-warmup mean remains 112.37 N, its eight blocks span
+    16.07--193.77 N, and CV/BFL differs by 69.3%.  Its late 1125-step window
+    crosses 87.4 N and then falls below it before returning, so lower Mach has
+    changed the oscillation amplitude/phase rather than produced a stationary
+    solution.  This also rules out positivity limiting as the sole cause of
+    the observer split.
 
 ## Rejected candidates
 
