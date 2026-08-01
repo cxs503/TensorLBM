@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+import subprocess
+import sys
 
 from tensorlbm.cylinder_bfl_control_volume import (
     CYLINDER_RE100_CD_REFERENCE,
@@ -25,3 +27,11 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
     assert result["finite"] is True
     assert math.isfinite(result["cd_control_volume"])
     assert math.isfinite(result["cd_bfl_link"])
+
+
+def test_cylinder_cli_help() -> None:
+    completed = subprocess.run(
+        [sys.executable, "examples/cylinder_bfl_cv_validate.py", "--help"],
+        check=True, capture_output=True, text=True,
+    )
+    assert "--far-field-mode" in completed.stdout
