@@ -54,6 +54,8 @@ def _record(coarse_length: float) -> dict[str, object]:
             "warmup_steps": fine_length * 50.0 / 3.0,
             "average_window": fine_length * 25.0 / 6.0,
             "ramp_steps": fine_length * 25.0 / 6.0,
+            "report_interval": fine_length * 25.0 / 12.0,
+            "wall_diagnostic_interval": fine_length / 3.0,
             "surface_force_interval": fine_length / 12.0,
         },
         "result": {
