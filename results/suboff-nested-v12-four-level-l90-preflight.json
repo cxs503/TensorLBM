@@ -1,0 +1,149 @@
+{
+  "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
+  "status": "preflight_only",
+  "physical_validation": false,
+  "planning": {
+    "outer_box": {
+      "x0": 84,
+      "x1": 262,
+      "y0": 34,
+      "y1": 57,
+      "z0": 34,
+      "z1": 57
+    },
+    "inner_box_in_outer_allocated_coordinates": {
+      "x0": 5,
+      "x1": 214,
+      "y0": 5,
+      "y1": 42,
+      "z0": 5,
+      "z1": 42
+    },
+    "refinement_boxes_in_parent_allocated_coordinates": [
+      {
+        "x0": 84,
+        "x1": 262,
+        "y0": 34,
+        "y1": 57,
+        "z0": 34,
+        "z1": 57
+      },
+      {
+        "x0": 5,
+        "x1": 214,
+        "y0": 5,
+        "y1": 42,
+        "z0": 5,
+        "z1": 42
+      },
+      {
+        "x0": 4,
+        "x1": 417,
+        "y0": 3,
+        "y1": 72,
+        "z0": 3,
+        "z1": 72
+      }
+    ],
+    "refinement_depth": 3,
+    "level_count": 4,
+    "outer_fine_shape": [
+      46,
+      46,
+      356
+    ],
+    "nested_fine_shape": [
+      74,
+      74,
+      418
+    ],
+    "fine_physical_shapes_by_level": [
+      [
+        46,
+        46,
+        356
+      ],
+      [
+        74,
+        74,
+        418
+      ],
+      [
+        138,
+        138,
+        826
+      ]
+    ],
+    "allocated_cells_by_level": [
+      3645000,
+      824832,
+      2425920,
+      16228800
+    ],
+    "wall_buffer_parent_cells": 13,
+    "wall_buffer_finest_cells": 26,
+    "downstream_buffer_parent_cells": 39,
+    "downstream_buffer_finest_cells": 78,
+    "total_allocated_cells": 23124552,
+    "uniform_finest_cells": 1866240000,
+    "cell_saving_fraction": 0.9876090149176955,
+    "memory_estimate_bytes_per_cell": 943.0,
+    "estimated_peak_gib": 20.30884151905775,
+    "cuda_memory_preflight": null,
+    "control_volume_interface_clearance": {
+      "interface_filter_width_cells": 0,
+      "streaming_stencil_radius_cells": 1,
+      "all_flux_stencils_outside_filter": true,
+      "volumes": [
+        {
+          "role": "primary",
+          "margin_cells": 16,
+          "bounds_xyz_half_open": [
+            11,
+            764,
+            11,
+            128,
+            11,
+            128
+          ],
+          "minimum_physical_interface_clearance_cells": 10,
+          "minimum_unfiltered_source_guard_cells": 10,
+          "required_streaming_source_guard_cells": 1,
+          "flux_stencil_outside_filter": true
+        },
+        {
+          "role": "auxiliary",
+          "margin_cells": 8,
+          "bounds_xyz_half_open": [
+            19,
+            756,
+            19,
+            120,
+            19,
+            120
+          ],
+          "minimum_physical_interface_clearance_cells": 18,
+          "minimum_unfiltered_source_guard_cells": 18,
+          "required_streaming_source_guard_cells": 1,
+          "flux_stencil_outside_filter": true
+        },
+        {
+          "role": "auxiliary",
+          "margin_cells": 24,
+          "bounds_xyz_half_open": [
+            3,
+            772,
+            3,
+            136,
+            3,
+            136
+          ],
+          "minimum_physical_interface_clearance_cells": 2,
+          "minimum_unfiltered_source_guard_cells": 2,
+          "required_streaming_source_guard_cells": 1,
+          "flux_stencil_outside_filter": true
+        }
+      ]
+    }
+  }
+}
