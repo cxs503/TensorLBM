@@ -1521,6 +1521,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      The option remains experimental and is withheld from production defaults.
      GPU2 now repeats the slow-Re candidate with bidirectional transfer health,
      root-step ledger accumulation and the new applied-correction gate enabled.
+169. The exact cylinder Re=100 R9 member completes 54,000 steps with a
+     22,500-step statistics window spanning `13.01` shedding cycles.  It is a
+     numerically admitted coarse-grid convergence source: drag block range is
+     `0.665%` and independent BFL/control-volume drag differs by only
+     `0.00042%`.  Its `Cd=1.44725` and `St=0.173455` miss the declared
+     single-grid references by `8.82%` and `5.77%`, respectively, so it is not
+     individually admitted.  R12 started automatically; R12/R15 and the
+     extrapolated sequence, not a changed reference, determine final physical
+     validation.  Canonical R9 SHA-256 is
+     `313ee8efaa57fc09803cc8f0ce639f2de3df17573bf066de5ae940cd0723e4cd`.
 
 ## Rejected candidates
 
