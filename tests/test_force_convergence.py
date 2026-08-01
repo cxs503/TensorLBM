@@ -22,6 +22,19 @@ def test_reference_crossing_does_not_hide_oscillation() -> None:
     assert not report.meets(5.0)
 
 
+def test_resolved_periodic_force_can_converge_in_mean() -> None:
+    samples = [
+        value
+        for block in range(100)
+        for value in [8.0 if block % 2 == 0 else 12.0] * 10
+    ]
+    report = assess_force_stationarity(samples, block_size=10)
+
+    assert report.relative_range_pct == pytest.approx(40.0)
+    assert report.confidence95_half_width_pct < 5.0
+    assert report.meets(5.0)
+
+
 def test_monotone_force_history_reports_trend_and_half_drift() -> None:
     samples = [float(index) for index in range(400)]
     report = assess_force_stationarity(samples, block_size=100)
