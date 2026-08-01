@@ -648,6 +648,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     validation.  Its launcher is superseded by
     `scripts/run_suboff_v7_equivalent_level.sh`, whose artifact names also
     carry v7.  Fifty-eight focused CAD, area, AMR and convergence tests pass.
+80. The first fresh exact sphere member, R9 on 216x144x144, completes 7200
+    steps with an eight-convective-time tail.  Tail mean Cd is 1.165145 by the
+    control volume and 1.165198 by BFL (0.00449% observer difference); the 95%
+    confidence half-width is 0.00721%, early/late drift is 0.0125%, and trend
+    is 0.0227%.  It therefore passes every numerical-quality gate but, as
+    expected for the coarse member, is 6.72% above Schiller-Naumann and fails
+    the standalone 5% reference gate.  It is retained for Richardson fitting,
+    not discarded or tuned.  The exact R12 successor started automatically on
+    the same GPU, with R15 waiting on its exact PID.
 
 ## Rejected candidates
 
