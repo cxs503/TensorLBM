@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 
 import torch
 
@@ -38,6 +39,15 @@ def limit_nonequilibrium_for_positivity(
         from .d3q27 import C, W
     minimum_before = float(f.min().item())
     total = int(f[0].numel())
+    if not math.isfinite(minimum_before):
+        return f, PositivityDiagnostics(
+            limited_cells=0,
+            total_cells=total,
+            limited_fraction=0.0,
+            minimum_alpha=math.nan,
+            minimum_population_before=minimum_before,
+            minimum_population_after=minimum_before,
+        )
     if minimum_before >= floor:
         return f, PositivityDiagnostics(
             limited_cells=0,
