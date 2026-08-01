@@ -615,6 +615,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     GPU explicitly and can wait for one exact predecessor PID before replacing
     it.  This makes the queued L150 takeover reproducible without polling or
     terminating unrelated GPU work.
+76. The fresh sphere R9/R12/R15 validation sequence is likewise encoded in
+    `scripts/run_sphere_v3_equivalent_level.sh`.  Domain dimensions, radius,
+    CV margin, sponge, ramp, warmup, reporting, checkpoint and tail-statistics
+    windows are exact multiples of 3:4:5.  Each level may wait on the exact PID
+    of its predecessor and then `exec` in place, permitting a deterministic
+    one-GPU queue while preserving distinct checkpoints and source records.
 
 ## Rejected candidates
 
