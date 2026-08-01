@@ -27,6 +27,7 @@ def _arguments(tmp_path: Path, *, steps: int, resume: bool = False):
         "--nx", "80", "--ny", "40", "--nz", "40",
         "--hull-length", "24", "--center-x-fraction", "0.35",
         "--wall-margin", "4", "--wake-cells", "8", "--cv-margin", "3",
+        "--aux-cv-margins", "2,4", "--surface-force-interval", "1",
         "--steps", str(steps), "--warmup-steps", "2",
         "--report-interval", "2", "--average-window", "2",
         "--ramp-steps", "2", "--resolved-reynolds", "2000",
@@ -50,14 +51,14 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     resumed = module.run(resumed_args)
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
 
-    assert first["schema"] == "tensorlbm-suboff-static-amr-v4"
+    assert first["schema"] == "tensorlbm-suboff-static-amr-v5"
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
     assert resumed["acceptance"]["physical_validation"] is False
     assert resumed["geometry"]["surface_area_weighting"][
         "calibrated_area"
     ] == pytest.approx(resumed["geometry"]["wetted_area_lu2"], rel=1e-6)
-    assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v4"
+    assert state["schema"] == "tensorlbm-suboff-static-amr-checkpoint-v5"
     assert state["step"] == 6
     assert len(state["force_history"]) == 4
     assert len(state["wall_y_plus_mean_history"]) == 4
@@ -66,6 +67,12 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert state["maximum_reflux_applied_correction"] >= 0.0
     assert state["maximum_reflux_limited_directions"] == 0
     assert state["maximum_raw_kinetic_mismatch"] >= 0.0
+    assert len(state["paired_primary_cv_samples"]) == 8
+    assert set(state["auxiliary_cv_samples"]) == {2, 4}
+    assert len(state["surface_pressure_samples"]) == 4
+    assert resumed["result"]["nested_control_volume_invariance"][
+        "auxiliary_count"
+    ] == 2
     assert resumed["configuration"]["wall_viscosity_basis"] == "physical_reynolds"
     assert resumed["configuration"]["wall_model_reynolds"] == pytest.approx(
         resumed["configuration"]["physical_reynolds"],

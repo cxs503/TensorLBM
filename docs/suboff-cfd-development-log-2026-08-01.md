@@ -447,6 +447,22 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     faces, and (c) all-face damping at lattice speed 0.04 with time/ramp/window
     increased by 1.5 to preserve non-dimensional duration.  Only a stationary,
     force-consistent candidate will seed the next three-grid sequence.
+59. The production runner now records three independent force-observation
+    families instead of relying on one disputed total.  Schema v5 samples the
+    primary CV and at least two geometrically nested CVs on the identical fine
+    substep, integrates pressure independently on the analytical SUBOFF
+    surface using the calibrated BFL area weights, and retains BFL link
+    pressure plus coupled wall shear.  Checkpoints persist every paired sample
+    and its complete configuration.  Admission fails closed unless two
+    auxiliary CVs agree with the primary CV, analytical-surface total agrees
+    with the BFL total, and the existing BFL/CV, stationarity, positivity,
+    reflux, wall-sampling and experiment gates all pass.  The three-grid
+    convergence assessor accepts only v5 records and additionally enforces
+    scaled auxiliary-CV and sampling-interval equivalence.  Seven focused
+    production/resume/convergence tests pass.  This instrumentation will
+    distinguish AMR inventory-placement error from a real pressure/acoustic
+    transient without selecting whichever observer happens to match the tow
+    value.
 
 ## Rejected candidates
 

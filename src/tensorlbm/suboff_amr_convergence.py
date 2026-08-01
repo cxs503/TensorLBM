@@ -26,6 +26,7 @@ _IDENTITY_FIELDS = (
     "wall_law",
     "wall_distance",
     "wall_viscosity_basis",
+    "pressure_reference",
     "sponge_strength",
     "sponge_inlet",
     "far_field_mode",
@@ -69,7 +70,7 @@ def assess_suboff_amr_convergence(
     schema_valid = True
     single_grid_admitted = True
     for record in records:
-        schema_valid &= record.get("schema") == "tensorlbm-suboff-static-amr-v4"
+        schema_valid &= record.get("schema") == "tensorlbm-suboff-static-amr-v5"
         configuration = record.get("configuration")
         result = record.get("result")
         acceptance = record.get("acceptance")
@@ -90,7 +91,11 @@ def assess_suboff_amr_convergence(
     required_fields_present = all(
         field in configuration
         for _, _, configuration, _, _ in parsed
-        for field in _IDENTITY_FIELDS
+        for field in (
+            *_IDENTITY_FIELDS,
+            "aux_cv_margins",
+            "surface_force_interval",
+        )
     )
     identity_fields_equal = required_fields_present and all(
         configuration.get(field) == baseline.get(field)
@@ -147,6 +152,20 @@ def assess_suboff_amr_convergence(
             )
         ],
     }
+    auxiliary_margin_counts = [
+        len(configuration["aux_cv_margins"])
+        for _, _, configuration, _, _ in parsed
+    ]
+    if len(set(auxiliary_margin_counts)) == 1:
+        for index in range(auxiliary_margin_counts[0]):
+            mesh_ratios[f"aux_cv_margin_{index}_over_fine_length"] = [
+                float(configuration["aux_cv_margins"][index]) / resolution
+                for resolution, (_, _, configuration, _, _) in zip(
+                    resolutions, parsed, strict=True,
+                )
+            ]
+    else:
+        mesh_ratios["aux_cv_margin_count_mismatch"] = [math.inf]
     time_ratios = {
         field: [
             float(configuration[field]) / resolution
@@ -154,7 +173,10 @@ def assess_suboff_amr_convergence(
                 resolutions, parsed, strict=True,
             )
         ]
-        for field in ("steps", "warmup_steps", "average_window", "ramp_steps")
+        for field in (
+            "steps", "warmup_steps", "average_window", "ramp_steps",
+            "surface_force_interval",
+        )
     }
     ratio_values = (
         fine_to_coarse
@@ -210,7 +232,7 @@ def assess_suboff_amr_convergence(
         "fine_hull_resolutions": resolutions,
         "mean_resistances_n": resistance_values,
         "configuration_identity": {
-            "v4_schema": schema_valid,
+            "v5_schema": schema_valid,
             "required_fields_present": required_fields_present,
             "identity_fields_equal": identity_fields_equal,
             "fine_to_coarse_ratios": fine_to_coarse,
