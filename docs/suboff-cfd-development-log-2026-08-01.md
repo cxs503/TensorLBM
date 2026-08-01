@@ -1128,6 +1128,34 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Re=100000” without changing wall-law physical Reynolds or silently
      mismatching interface physics.  Forty-two focused continuation, AMR and
      runner tests pass.
+129. A matched L90 continuation pilot validates the startup path through the
+     target collision Reynolds number.  It runs at Re=5000 through root step
+     300, follows the raised-cosine inverse-Re schedule to Re=100000 at step
+     600, and remains finite through step 700.  Across 28 health snapshots the
+     maximum speed is 0.089989, density remains in 0.914403--1.041628, both
+     transfer interfaces have zero limited cells, the collision positivity
+     limiter remains inactive, and maximum reflux residual is
+     `5.820766e-11`.  This is startup-stability evidence, not a drag result:
+     the 3000-step wall ramp is intentionally incomplete and the last force
+     closure error is 49.96%.  Immutable log/JSON SHA-256 values are
+     `a78e4683bf81157a2ad6c0e20aa1229b1558b30b4f977b16b41d2e7a1ed25e76`
+     and `220a77d7c3433395a4ac1867b742c5b802d86f6805ad979f88a71b86775660e7`.
+130. Force admission is now continuation-aware.  Wall-activated samples whose
+     instantaneous collision Reynolds number differs from the requested
+     target cannot enter force closure, stationarity, experimental-error or
+     duration statistics.  Output separately records wall-activated and
+     target-Re sample counts plus an explicit target-Re-reached flag.  Health
+     records persist instantaneous Reynolds, the full level tau chain and the
+     target-Re flag, making a resumed ramp independently auditable.
+131. A 12000-step L90 production continuation is active on the released Wuxi
+     GPU.  It preserves the verified Re=5000-to-100000 startup, fully activates
+     the Musker wall source by step 3000, warms through step 4500, and reserves
+     7500 target-Re steps (five convective times) for statistics.  Its first
+     health snapshot at step 60 is finite with peak speed 0.060803 and no
+     collision, restriction or reflux limiting.  In parallel, the L150 fixed
+     Re=2000 diagnostic remains clean through step 250 with peak speed 0.07044
+     and zero transfer limiting; this run only determines a safe high-
+     resolution startup state and is not eligible for resistance validation.
 
 ## Rejected candidates
 
