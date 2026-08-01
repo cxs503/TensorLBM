@@ -15,13 +15,10 @@ Groves, N.C., Huang, T.T., Chang, M.S. (1989).
 """
 from __future__ import annotations
 
-import math
-
 import torch
 
 from .d3q19 import C as C3D
 from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask
-
 
 # ---------------------------------------------------------------------------
 # PyTorch implementation of the normalised SUBOFF radius profile
@@ -144,6 +141,7 @@ def compute_q_suboff(
     config: SuboffConfig | None = None,
     device: torch.device | str = "cpu",
     n_bisect: int = 10,
+    solid_mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the BFL fractional-distance field *q* for a SUBOFF hull (D3Q19).
 
@@ -169,6 +167,9 @@ def compute_q_suboff(
         PyTorch device.
     n_bisect : int
         Number of bisection iterations (10 → ~1/1024 lu precision).
+    solid_mask : torch.Tensor, optional
+        Existing boolean SUBOFF mask with shape ``(nz, ny, nx)``.  Reusing the
+        solver's CAD mask avoids a second full-domain geometry construction.
 
     Returns
     -------
@@ -189,16 +190,23 @@ def compute_q_suboff(
     c = C3D.to(device)  # (19, 3)
 
     # ---- Build solid mask once (on device) ----
-    hull_type_enum = SuboffHullType(hull_type)
-    solid, _stats = build_suboff_mask(
-        hull_type_enum,
-        nx=nx, ny=ny, nz=nz,
-        cx=cx, cy=cy, cz=cz,
-        length=hull_length,
-        config=config,
-        device=str(device),
-    )
-    solid = solid.to(device)
+    if solid_mask is None:
+        hull_type_enum = SuboffHullType(hull_type)
+        solid, _stats = build_suboff_mask(
+            hull_type_enum,
+            nx=nx, ny=ny, nz=nz,
+            cx=cx, cy=cy, cz=cz,
+            length=hull_length,
+            config=config,
+            device=str(device),
+        )
+        solid = solid.to(device)
+    else:
+        if solid_mask.shape != (nz, ny, nx) or solid_mask.dtype != torch.bool:
+            raise ValueError(
+                "solid_mask must be boolean with shape (nz, ny, nx)",
+            )
+        solid = solid_mask.to(device=device)
 
     fluid_boundary_mask = torch.zeros(
         (19, nz, ny, nx), dtype=torch.bool, device=device,
@@ -235,9 +243,12 @@ def compute_q_suboff(
         n_cells = idx.shape[0]
 
         # Fluid cell coordinates (float)
-        k_f = idx[:, 0].to(dtype=torch.float64, device=device)
-        j_f = idx[:, 1].to(dtype=torch.float64, device=device)
-        i_f = idx[:, 2].to(dtype=torch.float64, device=device)
+        # Ten bisections only resolve q to about 1e-3 lattice units, so FP32
+        # coordinates retain ample margin while avoiding very slow consumer-
+        # GPU FP64 execution during geometry preprocessing.
+        k_f = idx[:, 0].to(dtype=torch.float32, device=device)
+        j_f = idx[:, 1].to(dtype=torch.float32, device=device)
+        i_f = idx[:, 2].to(dtype=torch.float32, device=device)
 
         endpoint_in_main_body = _inside_hull(
             i_f + dcx, j_f + dcy, k_f + dcz,
@@ -245,8 +256,8 @@ def compute_q_suboff(
         )
 
         # ---- Bisection on boundary cells only ----
-        t_lo = torch.zeros(n_cells, dtype=torch.float64, device=device)
-        t_hi = torch.ones(n_cells, dtype=torch.float64, device=device)
+        t_lo = torch.zeros(n_cells, dtype=torch.float32, device=device)
+        t_hi = torch.ones(n_cells, dtype=torch.float32, device=device)
 
         for _ in range(n_bisect):
             t_mid = (t_lo + t_hi) * 0.5
