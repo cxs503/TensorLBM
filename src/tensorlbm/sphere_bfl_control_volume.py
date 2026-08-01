@@ -141,7 +141,9 @@ def run_sphere_bfl_control_volume(
             "lattice_speed": config.lattice_speed,
             "sponge_inlet": config.sponge_inlet,
         }
-        if state.get("configuration") != expected:
+        stored_configuration = dict(state.get("configuration", {}))
+        stored_configuration.setdefault("sponge_inlet", False)
+        if stored_configuration != expected:
             raise ValueError("checkpoint configuration does not match sphere run")
         f = state["populations"].to(device=device)
         start_step = int(state["step"])
