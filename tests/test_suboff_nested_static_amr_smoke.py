@@ -150,6 +150,7 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     assert [record["finite"] for record in health["levels"]] == [True, True, True]
     assert len(health["interfaces"]) == 2
     assert health["finest_peak_speed_context"] is not None
+    assert "bfl_link_count" in health["finest_peak_speed_context"]
     assert all(
         "restriction_minimum_alpha" in record
         for record in health["interfaces"]

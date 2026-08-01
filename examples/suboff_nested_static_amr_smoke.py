@@ -824,6 +824,8 @@ def run(args: argparse.Namespace) -> dict:
             finest_peak_context = None
             if finest_peak_index is not None:
                 peak_z, peak_y, peak_x = finest_peak_index
+                peak_links = bfl_mask[:, peak_z, peak_y, peak_x]
+                peak_q = bfl_q[:, peak_z, peak_y, peak_x][peak_links]
                 finest_peak_context = {
                     "near_wall": bool(near[peak_z, peak_y, peak_x]),
                     "solid": bool(finest_solid[peak_z, peak_y, peak_x]),
@@ -834,6 +836,18 @@ def run(args: argparse.Namespace) -> dict:
                         nz_f - 1 - peak_z,
                         ny_f - 1 - peak_y,
                         nx_f - 1 - peak_x,
+                    ),
+                    "body_bbox_relative_zyx": [
+                        peak_z - z_min,
+                        peak_y - y_min,
+                        peak_x - x_min,
+                    ],
+                    "bfl_link_count": int(peak_links.sum()),
+                    "minimum_bfl_q": (
+                        float(peak_q.min()) if peak_q.numel() else None
+                    ),
+                    "maximum_bfl_q": (
+                        float(peak_q.max()) if peak_q.numel() else None
                     ),
                 }
             health_records.append({
