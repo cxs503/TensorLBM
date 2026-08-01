@@ -916,6 +916,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      the residual 0.3007-point miss is therefore spatial/model bias, not mean
      uncertainty.  Exact R15 has automatically started from a fresh state and
      the cylinder sequence remains PID-gated behind it.
+105. Extending the L150 three-level CUDA smoke from one to 20 fully activated
+     root steps remains finite and positive at the same 15.010 GiB peak.  The
+     maximum source-corrected force-observer difference is 0.00206%, maximum
+     outer/inner reflux residuals are 1.86e-9/7.45e-9, and no reflux direction,
+     population or wall sample is limited/rejected.  Mean y+ stays near 1100.
+     Startup force decays from 13.27 kN to 3.00 kN, demonstrating why this
+     deliberately impulse-started integration test cannot be interpreted as
+     resistance; its sole admission remains multi-level stability,
+     conservation, wall ownership and allocation.  A production nested run
+     must add a long smooth activation, checkpoint/restart and the same
+     convective-time statistics used by v8 before any accuracy comparison.
 
 ## Rejected candidates
 
