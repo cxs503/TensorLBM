@@ -18,7 +18,12 @@ def _record(length: int) -> dict[str, object]:
             "lattice_speed": 0.06,
             "wall_law": "musker",
             "stress_exchange_distance": 3.0 * length / 256.0,
-            "ramp_steps": 2000,
+            "steps": 125.0 * length,
+            "warmup_steps": 62.5 * length,
+            "ramp_steps": 8.0 * length,
+            "statistics_window_steps_resolved": 62.5 * length,
+            "report_interval": 4.0 * length,
+            "wall_diagnostic_interval": length / 4.0,
             "sponge_width": 3 * length // 32,
             "sponge_strength": 0.2,
             "cv_margin": 3 * length // 128,
@@ -53,9 +58,14 @@ def test_legacy_schema_or_changed_exchange_ratio_fails_provenance() -> None:
     changed[1]["configuration"]["stress_exchange_distance"] = 3.0
     changed_margin = deepcopy(records)
     changed_margin[1]["configuration"]["cv_margin"] = 8
+    changed_time = deepcopy(records)
+    changed_time[1]["configuration"]["statistics_window_steps_resolved"] += 1
     assert assess_flat_plate_convergence(records)["admitted"] is False
     assert assess_flat_plate_convergence(changed)["admitted"] is False
     assert assess_flat_plate_convergence(changed_margin)["admitted"] is False
+    assert assess_flat_plate_convergence(changed_time)[
+        "configuration_identity"
+    ]["time_ratio_invariant"] is False
 
 
 def test_flat_plate_convergence_assessor_is_public() -> None:
