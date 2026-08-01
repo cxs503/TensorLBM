@@ -142,6 +142,7 @@ def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -
 
     assert preflight["planning"]["refinement_depth"] == 3
     assert preflight["planning"]["level_count"] == 4
+    assert preflight["planning"]["force_samples_per_root_step"] == 8
     assert len(preflight["planning"]["allocated_cells_by_level"]) == 4
     assert len(preflight["planning"]["fine_physical_shapes_by_level"]) == 3
     assert preflight["planning"]["stress_exchange_distance_cells"] == 1.0
@@ -162,6 +163,7 @@ def test_four_level_preflight_and_runtime_use_deepest_geometry(tmp_path: Path) -
     )
     assert result["geometry"]["geometry_owner_level"] == 3
     assert result["geometry"]["force_owner_level"] == 3
+    assert result["configuration"]["force_samples_per_root_step"] == 8
     assert len(result["result"]["maximum_reflux_residual_by_interface"]) == 3
     assert len(checkpoint["level_populations"]) == 4
     assert len(checkpoint["level_solid_masks"]) == 4
