@@ -187,6 +187,17 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
     stationarity = assess_force_stationarity(
         cf_history, block_size=max(1, len(cf_history) // 8),
     )
+    reference_error = abs(cf - cf_reference) / cf_reference * 100.0
+    observer_difference = (
+        abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1e-30) * 100.0
+    )
+    limiter_acceptable = maximum_limited_fraction <= 1e-3
+    admitted = (
+        reference_error <= 5.0
+        and stationarity.meets(1.0)
+        and observer_difference <= 1.0
+        and limiter_acceptable
+    )
     return {
         "schema": "tensorlbm-flat-plate-wall-model-v1",
         "configuration": {
@@ -202,15 +213,24 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
         "result": {
             "friction_coefficient": cf,
             "ittc_1957_reference": cf_reference,
-            "reference_error_pct": abs(cf - cf_reference) / cf_reference * 100.0,
+            "reference_error_pct": reference_error,
             "control_volume_total_force": cv_mean,
             "bfl_link_plus_wall_stress_force": bfl_mean,
-            "total_force_observer_difference_pct": (
-                abs(cv_mean - bfl_mean) / max(abs(cv_mean), 1e-30) * 100.0
-            ),
+            "total_force_observer_difference_pct": observer_difference,
             "drag_stationarity": stationarity.to_dict(),
             "maximum_positivity_limited_fraction": maximum_limited_fraction,
             "finite": math.isfinite(cf),
+        },
+        "acceptance": {
+            "friction_error_target_pct": 5.0,
+            "stationarity_target_pct": 1.0,
+            "force_observer_target_pct": 1.0,
+            "maximum_limiter_fraction": 1e-3,
+            "friction_target_met": reference_error <= 5.0,
+            "stationarity_target_met": stationarity.meets(1.0),
+            "force_observer_target_met": observer_difference <= 1.0,
+            "limiter_target_met": limiter_acceptable,
+            "admitted": admitted,
         },
     }
 

@@ -206,6 +206,13 @@ def run_cylinder_bfl_control_volume(
         cy_history, lattice_speed=config.lattice_speed,
         diameter=2.0 * config.radius,
     )
+    reference_error = abs(cd - CYLINDER_RE100_CD_REFERENCE) / CYLINDER_RE100_CD_REFERENCE * 100.0
+    strouhal_error = (
+        abs(strouhal - CYLINDER_RE100_ST_REFERENCE)
+        / CYLINDER_RE100_ST_REFERENCE * 100.0
+        if math.isfinite(strouhal) else math.inf
+    )
+    observer_difference = abs(cd - cd_bfl) / max(abs(cd), 1e-30) * 100.0
     return {
         "schema": "tensorlbm-cylinder-bfl-control-volume-v1",
         "configuration": {
@@ -216,21 +223,33 @@ def run_cylinder_bfl_control_volume(
         },
         "result": {
             "cd_control_volume": cd, "cd_bfl_link": cd_bfl,
-            "observer_difference_pct": abs(cd - cd_bfl) / abs(cd) * 100.0,
+            "observer_difference_pct": observer_difference,
             "cd_reference": CYLINDER_RE100_CD_REFERENCE,
-            "reference_error_pct": abs(cd - CYLINDER_RE100_CD_REFERENCE)
-            / CYLINDER_RE100_CD_REFERENCE * 100.0,
+            "reference_error_pct": reference_error,
             "mean_lift_coefficient": sum(cy_history) / len(cy_history),
             "strouhal": strouhal,
             "strouhal_reference": CYLINDER_RE100_ST_REFERENCE,
-            "strouhal_reference_error_pct": (
-                abs(strouhal - CYLINDER_RE100_ST_REFERENCE)
-                / CYLINDER_RE100_ST_REFERENCE * 100.0
-                if math.isfinite(strouhal) else math.inf
-            ),
+            "strouhal_reference_error_pct": strouhal_error,
             "shedding_cycles_observed": shedding_cycles,
             "drag_stationarity": stationarity.to_dict(),
             "finite": math.isfinite(cd),
+        },
+        "acceptance": {
+            "drag_error_target_pct": 5.0,
+            "strouhal_error_target_pct": 5.0,
+            "stationarity_target_pct": 1.0,
+            "force_observer_target_pct": 1.0,
+            "minimum_shedding_cycles": 8.0,
+            "drag_target_met": reference_error <= 5.0,
+            "strouhal_target_met": strouhal_error <= 5.0,
+            "stationarity_target_met": stationarity.meets(1.0),
+            "force_observer_target_met": observer_difference <= 1.0,
+            "cycle_target_met": shedding_cycles >= 8.0,
+            "admitted": (
+                reference_error <= 5.0 and strouhal_error <= 5.0
+                and stationarity.meets(1.0) and observer_difference <= 1.0
+                and shedding_cycles >= 8.0
+            ),
         },
     }
 
