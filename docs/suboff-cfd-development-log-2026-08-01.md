@@ -1603,6 +1603,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      `2b559bd7e7ba7e437f178659212f094ddec0ecc1df5cc81e7fb750ac6381a450`.
      The new kernel remains experimental until stronger entropy, canonical-flow
      and AMR tests pass; it is not yet enabled in SUBOFF.
+178. The nested SUBOFF runner can now execute `natural_kbc` explicitly as a
+     diagnostic collision path.  It remains excluded from
+     `collision_viscosity_target_met` and therefore cannot become a physical
+     candidate or convergence source.  Seventy-two focused nested-runner,
+     KBC, viscosity and entropy tests pass.  This enables a fail-closed L90
+     interface experiment once a GPU is released without weakening admission.
 
 ## Rejected candidates
 
