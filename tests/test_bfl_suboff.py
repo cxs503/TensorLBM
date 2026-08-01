@@ -256,6 +256,20 @@ def test_d3q27_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     )
 
 
+def test_mature_wall_solver_implements_finite_distinct_musker_law() -> None:
+    from tensorlbm.wall_model import _solve_wall_law
+
+    speed = torch.tensor([0.06], dtype=torch.float64)
+    near = torch.tensor([True])
+    musker = _solve_wall_law(speed, 1e-5, 0.5, "musker", near)
+    log = _solve_wall_law(speed, 1e-5, 0.5, "log", near)
+    assert torch.isfinite(musker).all()
+    assert musker.item() > 0.0
+    assert musker.item() != pytest.approx(log.item(), rel=1e-5)
+    with pytest.raises(ValueError, match="wall_law"):
+        _solve_wall_law(speed, 1e-5, 0.5, "unknown", near)
+
+
 def test_bfl_link_normal_recovers_flat_wall_direction() -> None:
     masks = torch.zeros((19, 3, 3, 3), dtype=torch.bool)
     cell = (1, 1, 1)
