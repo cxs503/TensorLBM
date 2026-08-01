@@ -997,6 +997,8 @@ def bfl_wall_function_3d(
     use_guo: bool = True,
     bfl_wall_mode: str = "stationary",
     wall_activation: float = 1.0,
+    wall_normal_activation: float | None = None,
+    wall_shear_activation: float | None = None,
     exchange_distance: float = 3.0,
     stress_exchange_distance: float | None = None,
     nonequilibrium_scale: float = 0.5,
@@ -1051,6 +1053,10 @@ def bfl_wall_function_3d(
             BFL remains fully active.  It also ramps wall shear.  This avoids
             blending a valid reflected population with the non-physical
             population streamed out of a solid cell.
+        wall_normal_activation: Optional independent activation for BFL
+            no-penetration.  Defaults to ``wall_activation``.
+        wall_shear_activation: Optional independent activation for wall-law
+            traction.  Defaults to ``wall_activation``.
         stress_exchange_distance: Optional wall-normal sampling distance for
             the stress law.  BFL remains a slip/no-penetration boundary; only
             the velocity and distance used to evaluate ``u_tau`` move to this
@@ -1076,6 +1082,18 @@ def bfl_wall_function_3d(
         )
     if not 0.0 <= wall_activation <= 1.0:
         raise ValueError("wall_activation must be in [0,1]")
+    normal_activation = (
+        wall_activation
+        if wall_normal_activation is None else wall_normal_activation
+    )
+    shear_activation = (
+        wall_activation
+        if wall_shear_activation is None else wall_shear_activation
+    )
+    if not 0.0 <= normal_activation <= 1.0:
+        raise ValueError("wall_normal_activation must be in [0,1]")
+    if not 0.0 <= shear_activation <= 1.0:
+        raise ValueError("wall_shear_activation must be in [0,1]")
     if stress_exchange_distance is not None and stress_exchange_distance <= 0.0:
         raise ValueError("stress_exchange_distance must be positive")
 
@@ -1104,15 +1122,15 @@ def bfl_wall_function_3d(
             # BFL enforces no penetration and the stress model owns shear.
             if bfl_wall_mode == "wall_model_slip":
                 wall_velocity = (
-                    ux_pre - wall_activation * u_dot_n_pre * slip_nx,
-                    uy_pre - wall_activation * u_dot_n_pre * slip_ny,
-                    uz_pre - wall_activation * u_dot_n_pre * slip_nz,
+                    ux_pre - normal_activation * u_dot_n_pre * slip_nx,
+                    uy_pre - normal_activation * u_dot_n_pre * slip_ny,
+                    uz_pre - normal_activation * u_dot_n_pre * slip_nz,
                 )
             else:
                 wall_velocity = (
-                    (1.0 - wall_activation) * ux_pre,
-                    (1.0 - wall_activation) * uy_pre,
-                    (1.0 - wall_activation) * uz_pre,
+                    (1.0 - normal_activation) * ux_pre,
+                    (1.0 - normal_activation) * uy_pre,
+                    (1.0 - normal_activation) * uz_pre,
                 )
             wall_density = rho_pre
         f, bfl_force = bouzidi_bounce_back_d3q19(
@@ -1122,7 +1140,7 @@ def bfl_wall_function_3d(
             # handled by the relative wall velocity above.
             boundary_fraction=(
                 1.0 if bfl_wall_mode in {"wall_model_slip", "spalding_exchange"}
-                else wall_activation
+                else normal_activation
             ),
             return_force=True,
             # During smooth body insertion, wall-frame force removes the
@@ -1130,7 +1148,7 @@ def bfl_wall_function_3d(
             # samples are taken after activation reaches one, where the
             # laboratory-frame impulse closes the fixed control volume.
             force_frame=(
-                "laboratory" if wall_activation >= 1.0 else "wall"
+                "laboratory" if normal_activation >= 1.0 else "wall"
             ),
         )
     else:
@@ -1143,7 +1161,7 @@ def bfl_wall_function_3d(
             exchange_distance=exchange_distance,
             nonequilibrium_scale=nonequilibrium_scale,
             area_weight=area_weight,
-            activation=wall_activation,
+            activation=shear_activation,
             solid_mask=solid,
         )
         if return_wall_diagnostics:
@@ -1220,7 +1238,7 @@ def bfl_wall_function_3d(
         if area_weight.shape != near.shape:
             raise ValueError("area_weight must have the spatial grid shape")
         traction_area = near_f * area_weight.to(device=f.device, dtype=f.dtype)
-    coef = -tau_w * traction_area * wall_activation
+    coef = -tau_w * traction_area * shear_activation
 
     fx = coef * (ut_x * inv_utan)
     fy = coef * (ut_y * inv_utan)
@@ -1239,7 +1257,7 @@ def bfl_wall_function_3d(
     # ── Step 6: Compute drag ──
     # Friction drag = integrated wall shear (from τ_w)
     drag_fric = float((
-        tau_w * (ut_x * inv_utan) * traction_area * wall_activation
+        tau_w * (ut_x * inv_utan) * traction_area * shear_activation
     ).sum().item())
 
     # Laboratory-frame boundary impulse from link momentum exchange.  This is
@@ -1273,9 +1291,9 @@ def bfl_wall_function_3d(
             wall_distance_mean = None
             y_plus_min = y_plus_mean = y_plus_max = u_tau_mean = None
         shear_components = tuple(float(value.item()) for value in (
-            (tau_w * (ut_x * inv_utan) * traction_area * wall_activation).sum(),
-            (tau_w * (ut_y * inv_utan) * traction_area * wall_activation).sum(),
-            (tau_w * (ut_z * inv_utan) * traction_area * wall_activation).sum(),
+            (tau_w * (ut_x * inv_utan) * traction_area * shear_activation).sum(),
+            (tau_w * (ut_y * inv_utan) * traction_area * shear_activation).sum(),
+            (tau_w * (ut_z * inv_utan) * traction_area * shear_activation).sum(),
         ))
         diagnostics = WallStressDiagnostics(
             mode=(

@@ -51,6 +51,8 @@ def _record(length: int, resistance: float) -> dict:
             "warmup_steps": 50.0 * length,
             "statistics_window_steps": 250.0 * length / 3.0,
             "ramp_steps": 100.0 * length / 3.0,
+            "resolved_wall_normal_ramp_steps": 100.0 * length / 3.0,
+            "resolved_wall_shear_ramp_steps": 100.0 * length / 3.0,
             "report_interval": 25.0 * length / 6.0,
             "wall_diagnostic_interval": 2.0 * length / 3.0,
             "surface_force_interval": length / 3.0,

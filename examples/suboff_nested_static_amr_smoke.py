@@ -98,6 +98,18 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--warmup-steps", type=int, default=0)
     result.add_argument("--statistics-window-steps", type=int, default=0)
     result.add_argument("--ramp-steps", type=int, default=0)
+    result.add_argument(
+        "--wall-normal-ramp-steps",
+        type=int,
+        default=-1,
+        help="BFL no-penetration ramp; -1 reuses --ramp-steps",
+    )
+    result.add_argument(
+        "--wall-shear-ramp-steps",
+        type=int,
+        default=-1,
+        help="wall-law traction ramp; -1 reuses --ramp-steps",
+    )
     result.add_argument("--report-interval", type=int, default=1)
     result.add_argument("--wall-diagnostic-interval", type=int, default=1)
     result.add_argument(
@@ -221,6 +233,19 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("checkpoint interval must be non-negative")
     if args.health_interval < 0:
         raise ValueError("health interval must be non-negative")
+    if args.ramp_steps < 0 or min(
+        args.wall_normal_ramp_steps,
+        args.wall_shear_ramp_steps,
+    ) < -1:
+        raise ValueError("wall ramp steps must be non-negative or -1")
+    wall_normal_ramp_steps = (
+        args.ramp_steps
+        if args.wall_normal_ramp_steps == -1 else args.wall_normal_ramp_steps
+    )
+    wall_shear_ramp_steps = (
+        args.ramp_steps
+        if args.wall_shear_ramp_steps == -1 else args.wall_shear_ramp_steps
+    )
     if not args.lattice_speed < args.maximum_health_speed < 1.0:
         raise ValueError("maximum health speed must lie between inlet speed and one")
     if (args.interface_filter_width == 0) != (
@@ -471,6 +496,8 @@ def run(args: argparse.Namespace) -> dict:
         "auxiliary_cv_margins": list(auxiliary_margins),
         "surface_force_interval": args.surface_force_interval,
         "ramp_steps": args.ramp_steps,
+        "wall_normal_ramp_steps": wall_normal_ramp_steps,
+        "wall_shear_ramp_steps": wall_shear_ramp_steps,
         "lattice_speed": args.lattice_speed,
         "resolved_reynolds": args.resolved_reynolds,
         "resolved_reynolds_start": resolved_reynolds_start,
@@ -634,6 +661,8 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v3_signature.pop("resolved_reynolds_start")
         legacy_v3_signature.pop("viscosity_ramp_start_step")
         legacy_v3_signature.pop("viscosity_ramp_end_step")
+        legacy_v3_signature.pop("wall_normal_ramp_steps")
+        legacy_v3_signature.pop("wall_shear_ramp_steps")
         resumed_legacy_v3_checkpoint = (
             not args.regularize_restriction
             and not args.regularize_prolongation
@@ -644,6 +673,8 @@ def run(args: argparse.Namespace) -> dict:
             and not args.disable_wall_stress
             and args.collision_model == "cumulant_smagorinsky"
             and resolved_reynolds_start == args.resolved_reynolds
+            and wall_normal_ramp_steps == args.ramp_steps
+            and wall_shear_ramp_steps == args.ramp_steps
             and stored_configuration == legacy_v3_signature
         )
         legacy_v2_signature = dict(checkpoint_signature)
@@ -663,6 +694,8 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_without_new_transfer.pop("resolved_reynolds_start")
         legacy_v2_without_new_transfer.pop("viscosity_ramp_start_step")
         legacy_v2_without_new_transfer.pop("viscosity_ramp_end_step")
+        legacy_v2_without_new_transfer.pop("wall_normal_ramp_steps")
+        legacy_v2_without_new_transfer.pop("wall_shear_ramp_steps")
         resumed_legacy_v2_checkpoint = (
             args.hull_type == "bare_hull"
             and not args.regularize_restriction
@@ -674,6 +707,8 @@ def run(args: argparse.Namespace) -> dict:
             and not args.disable_wall_stress
             and args.collision_model == "cumulant_smagorinsky"
             and resolved_reynolds_start == args.resolved_reynolds
+            and wall_normal_ramp_steps == args.ramp_steps
+            and wall_shear_ramp_steps == args.ramp_steps
             and stored_configuration == legacy_v2_without_new_transfer
         )
         if (
@@ -814,7 +849,12 @@ def run(args: argparse.Namespace) -> dict:
 
         post_collision = torch.where(finest_solid_q, before, collided)
         out = stream3d(post_collision)
-        activation = smooth_ramp_factor(current_step, args.ramp_steps)
+        normal_activation = smooth_ramp_factor(
+            current_step, wall_normal_ramp_steps,
+        )
+        shear_activation = smooth_ramp_factor(
+            current_step, wall_shear_ramp_steps,
+        )
         collect_wall_diagnostics = (
             current_step % args.wall_diagnostic_interval == 0
         )
@@ -828,7 +868,9 @@ def run(args: argparse.Namespace) -> dict:
             wall_law=args.wall_law,
             near_mask=near,
             bfl_wall_mode="wall_model_slip",
-            wall_activation=activation,
+            wall_activation=1.0,
+            wall_normal_activation=normal_activation,
+            wall_shear_activation=shear_activation,
             stress_exchange_distance=args.stress_exchange_distance,
             wall_normals=(surface.nx_n, surface.ny_n, surface.nz_n),
             area_weight=area_weight,
@@ -980,8 +1022,11 @@ def run(args: argparse.Namespace) -> dict:
                 "step": current_step,
                 "collision_resolved_reynolds": instantaneous_reynolds,
                 "collision_tau_by_level": list(instantaneous_tau_by_level),
-                "wall_activation": smooth_ramp_factor(
-                    current_step, args.ramp_steps,
+                "wall_normal_activation": smooth_ramp_factor(
+                    current_step, wall_normal_ramp_steps,
+                ),
+                "wall_shear_activation": smooth_ramp_factor(
+                    current_step, wall_shear_ramp_steps,
                 ),
                 "target_reynolds_reached": math.isclose(
                     instantaneous_reynolds,
@@ -1105,7 +1150,9 @@ def run(args: argparse.Namespace) -> dict:
                 sum(wall_distances) / len(wall_distances)
                 if wall_distances else None
             ),
-            "wall_fully_activated": current_step >= args.ramp_steps,
+            "wall_fully_activated": current_step >= max(
+                wall_normal_ramp_steps, wall_shear_ramp_steps,
+            ),
             "surface_pressure_plus_wall_stress_n": None,
         }
         if current_step % args.surface_force_interval == 0:
@@ -1369,6 +1416,8 @@ def run(args: argparse.Namespace) -> dict:
                 ),
             ],
             "initial_tau_by_level": list(initial_tau_by_level),
+            "resolved_wall_normal_ramp_steps": wall_normal_ramp_steps,
+            "resolved_wall_shear_ramp_steps": wall_shear_ramp_steps,
             "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
             "checkpoint_interval": args.checkpoint_interval,
             "resumed_from_step": resumed_from_step,

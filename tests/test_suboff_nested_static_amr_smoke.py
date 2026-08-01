@@ -184,7 +184,8 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
     health = result["result"]["population_health"][0]
     assert health["collision_resolved_reynolds"] == 2000.0
     assert len(health["collision_tau_by_level"]) == 3
-    assert health["wall_activation"] == 1.0
+    assert health["wall_normal_activation"] == 1.0
+    assert health["wall_shear_activation"] == 1.0
     assert health["target_reynolds_reached"] is True
     assert health["maximum_collision_limited_fraction"] == 0.0
     assert health["maximum_wall_sample_rejected_fraction"] == 0.0
@@ -277,6 +278,25 @@ def test_nested_smoke_uses_smooth_resolved_viscosity_continuation(
     )
 
 
+def test_nested_smoke_records_independent_wall_activation_ramps(
+    tmp_path: Path,
+) -> None:
+    args = _args(tmp_path, steps=2)
+    args.ramp_steps = 4
+    args.wall_normal_ramp_steps = 1
+    args.wall_shear_ramp_steps = 4
+    args.health_interval = 1
+
+    result = MODULE.run(args)
+
+    health = result["result"]["population_health"][-1]
+    assert health["wall_normal_activation"] == 1.0
+    assert health["wall_shear_activation"] == pytest.approx(0.5)
+    assert result["configuration"]["resolved_wall_normal_ramp_steps"] == 1
+    assert result["configuration"]["resolved_wall_shear_ramp_steps"] == 4
+    assert result["result"]["steps"][-1]["wall_fully_activated"] is False
+
+
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
@@ -296,6 +316,8 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("resolved_reynolds_start")
     state["configuration"].pop("viscosity_ramp_start_step")
     state["configuration"].pop("viscosity_ramp_end_step")
+    state["configuration"].pop("wall_normal_ramp_steps")
+    state["configuration"].pop("wall_shear_ramp_steps")
     state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
     torch.save(state, checkpoint)
 
@@ -324,6 +346,8 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("resolved_reynolds_start")
     state["configuration"].pop("viscosity_ramp_start_step")
     state["configuration"].pop("viscosity_ramp_end_step")
+    state["configuration"].pop("wall_normal_ramp_steps")
+    state["configuration"].pop("wall_shear_ramp_steps")
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))

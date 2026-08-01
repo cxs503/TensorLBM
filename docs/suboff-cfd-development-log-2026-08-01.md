@@ -1364,6 +1364,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      The released GPU now runs a matched L90 diagnostic with wall stress
      disabled.  This trajectory is deliberately nonphysical and can establish
      causality only; it is excluded from every resistance acceptance path.
+152. D3Q19 BFL wall startup now supports independent no-penetration and
+     wall-shear activation while preserving the legacy single-ramp behavior by
+     default.  The nested runner exposes separate ramp durations, records both
+     activation fractions at health cadence, checkpoints their resolved values,
+     requires both to finish before force sampling is eligible, and treats both
+     as scaled time parameters in three-grid convergence.  Unit tests verify
+     that full normal impermeability can coexist with zero applied shear and
+     that invalid activation fractions fail closed.  This is a diagnostic and
+     startup-control capability, not a change to already running trajectories.
 
 ## Rejected candidates
 

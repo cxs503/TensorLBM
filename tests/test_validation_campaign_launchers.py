@@ -142,6 +142,8 @@ def test_nested_v10_launcher_scales_all_inner_physical_locations(
     fake_python.chmod(0o755)
     env = os.environ.copy()
     env["TENSORLBM_PYTHON"] = str(fake_python)
+    env["TENSORLBM_WALL_NORMAL_RAMP_STEPS"] = "0"
+    env["TENSORLBM_WALL_SHEAR_RAMP_STEPS"] = "5000"
     completed = subprocess.run(
         [
             "bash",
@@ -170,5 +172,7 @@ def test_nested_v10_launcher_scales_all_inner_physical_locations(
     assert "--regularize-prolongation" in arguments
     assert arguments[arguments.index("--interface-filter-width") + 1] == "2"
     assert arguments[arguments.index("--interface-filter-strength") + 1] == "1.0"
+    assert arguments[arguments.index("--wall-normal-ramp-steps") + 1] == "0"
+    assert arguments[arguments.index("--wall-shear-ramp-steps") + 1] == "5000"
     output = arguments[arguments.index("--output") + 1]
     assert "suboff-nested-v10-equivalent-l150-20k.json" in output

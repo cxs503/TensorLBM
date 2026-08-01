@@ -271,6 +271,66 @@ def test_wall_model_startup_ramps_relative_normal_velocity_not_bfl_population() 
     assert pressure == pytest.approx(0.0, abs=2e-9)
 
 
+def test_wall_normal_and_shear_activation_are_independent() -> None:
+    from tensorlbm.wall_model import bfl_wall_function_3d
+
+    shape = (3, 3, 3)
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.04, dtype=torch.float64)
+    uy = torch.full(shape, 0.03, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f_prev = equilibrium3d(rho, ux, uy, zero)
+    masks = torch.zeros_like(f_prev, dtype=torch.bool)
+    q = torch.full_like(f_prev, 0.5)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    near = torch.zeros(shape, dtype=torch.bool)
+    cell = (1, 1, 1)
+    near[cell] = True
+    for direction in (3, 7, 10, 15, 17):
+        masks[(direction,) + cell] = True
+
+    out, friction, _ = bfl_wall_function_3d(
+        f_prev.clone(), f_prev, solid, 0.02, masks, q,
+        near_mask=near,
+        bfl_wall_mode="wall_model_slip",
+        wall_activation=0.0,
+        wall_normal_activation=1.0,
+        wall_shear_activation=0.0,
+    )
+
+    assert not torch.allclose(
+        out[(slice(None),) + cell], f_prev[(slice(None),) + cell], atol=1e-14,
+    )
+    assert friction == pytest.approx(0.0, abs=1e-14)
+
+
+@pytest.mark.parametrize(
+    ("keyword", "message"),
+    (
+        ("wall_normal_activation", "wall_normal_activation"),
+        ("wall_shear_activation", "wall_shear_activation"),
+    ),
+)
+def test_independent_wall_activation_rejects_out_of_range(
+    keyword: str,
+    message: str,
+) -> None:
+    from tensorlbm.wall_model import bfl_wall_function_3d
+
+    shape = (3, 3, 3)
+    rho = torch.ones(shape)
+    zero = torch.zeros(shape)
+    f = equilibrium3d(rho, zero, zero, zero)
+    options = {keyword: 1.1}
+
+    with pytest.raises(ValueError, match=message):
+        bfl_wall_function_3d(
+            f.clone(), f, torch.zeros(shape, dtype=torch.bool), 0.02,
+            torch.zeros_like(f, dtype=torch.bool), torch.full_like(f, 0.5),
+            **options,
+        )
+
+
 def test_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     """Wall distance affects u_tau, but must not multiply integrated force."""
     from tensorlbm.d3q19 import C as C19
