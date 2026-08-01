@@ -232,6 +232,7 @@ def run(args: argparse.Namespace) -> dict:
             bfl_mask, bfl_q, y_val=args.wall_distance,
             wall_law=args.wall_law, near_mask=fine_near,
             bfl_wall_mode="wall_model_slip", wall_activation=activation,
+            apply_wall_stress=not args.diagnostic_uncoupled_wall_stress,
         )
         cv_force = float(observe_control_volume_force(
             before, out, post_collision, fine_cv, solid=fine_solid_g,
@@ -302,6 +303,7 @@ def run(args: argparse.Namespace) -> dict:
             "les_constant": (
                 args.cw_wale if args.les_model == "wale" else args.cs_smag
             ),
+            "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
         },
         "mesh": {
             "coarse_cells": plan.coarse_cells,
@@ -348,6 +350,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--wake-cells", type=int, default=50)
     p.add_argument("--cv-margin", type=int, default=8)
     p.add_argument("--disable-reflux", action="store_true")
+    p.add_argument("--diagnostic-uncoupled-wall-stress", action="store_true")
     p.add_argument("--steps", type=int, default=5000)
     p.add_argument("--report-interval", type=int, default=100)
     p.add_argument("--average-window", type=int, default=500)
