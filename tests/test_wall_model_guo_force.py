@@ -5,8 +5,13 @@ import pytest
 import torch
 
 from tensorlbm.d3q19 import C as C19
+from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.d3q27 import C as C27
-from tensorlbm.wall_function_common import _apply_body_force
+from tensorlbm.wall_function_common import (
+    _apply_body_force,
+    _near_wall_mask,
+    wall_function,
+)
 from tensorlbm.wall_model import guo_body_force_d3q19, guo_body_force_d3q27
 
 
@@ -88,3 +93,37 @@ def test_solver_agnostic_wall_source_uses_the_same_moment_contract(
         source.sum(dim=0), torch.zeros(shape, dtype=dtype),
         rtol=0.0, atol=2.0e-18,
     )
+
+
+def test_precomputed_wall_traction_is_not_divided_by_wall_distance_again() -> None:
+    shape = (2, 4, 5)
+    dtype = torch.float64
+    rho = torch.ones(shape, dtype=dtype)
+    ux = torch.full(shape, 0.04, dtype=dtype)
+    zero = torch.zeros(shape, dtype=dtype)
+    state = equilibrium3d(rho, ux, zero, zero)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    solid[:, 0, :] = True
+    near = _near_wall_mask(solid)
+    u_tau = torch.full(shape, 0.01, dtype=dtype)
+    y_plus = torch.full(shape, 50.0, dtype=dtype)
+
+    corrected = wall_function(
+        state.clone(), solid, u_tau, y_plus,
+        lattice="D3Q19", y_val=0.5,
+        rho=rho, ux=ux, uy=zero, uz=zero,
+    )
+    corrected_other_y = wall_function(
+        state.clone(), solid, u_tau, y_plus,
+        lattice="D3Q19", y_val=2.0,
+        rho=rho, ux=ux, uy=zero, uz=zero,
+    )
+    source = corrected - state
+    injected_x_momentum = torch.einsum(
+        "i,izyx->", C19[:, 0].to(dtype=dtype), source,
+    )
+
+    assert float(injected_x_momentum) == pytest.approx(
+        -0.01**2 * int(near.sum()), abs=2.0e-15,
+    )
+    torch.testing.assert_close(corrected, corrected_other_y)

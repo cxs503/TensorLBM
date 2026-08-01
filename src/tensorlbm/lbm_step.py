@@ -437,7 +437,9 @@ class LBMStepExecutor:
         # Wall shear stress and body force (same formula as wall_function)
         tau_w = self.u_tau * self.u_tau
         near_f = self._near_wall.to(f.dtype)
-        coef = -(tau_w / self._y_val) * near_f
+        # Unit lattice wall area / boundary-cell volume is one.  y_val has
+        # already entered the wall-law solve and must not scale traction again.
+        coef = -tau_w * near_f
         inv_umag = 1.0 / self.u_mag
         fx = coef * (ux * inv_umag)
         fy = coef * (uy * inv_umag)
