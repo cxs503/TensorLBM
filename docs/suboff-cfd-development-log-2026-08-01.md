@@ -1076,6 +1076,58 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      admission evidence.  All three remain explicit physics/numerics options,
      old unfiltered checkpoints have a narrow baseline-only migration path,
      and 36 focused transfer/hierarchy/runner tests pass.
+123. The matched transfer-stabilised L150 A/B confirms that exchange repair is
+     necessary but not sufficient.  Trilinear shell interpolation, second-
+     order restriction filtering and pre-replacement positivity keep L0/L1
+     populations non-negative, yet L2 still reaches peak speed 0.439 at step
+     200 and 0.895 at step 250.  L120 behaves similarly.  Both diagnostics are
+     stopped and retained; their force histories are not used.  Per-interface
+     limiter fraction/minimum alpha and reflux residual are now emitted at the
+     same cadence as per-level population health.
+124. Doubling the inner transverse buffer from 8 to 16 finest cells does not
+     change the pre-instability trajectory: L150 reaches peak speed 0.438 at
+     step 200 and 0.893 at step 250.  An L90 run with the same expanded buffer
+     finishes 700 steps only because positivity repeatedly clips the state;
+     it first exceeds the 0.3 weakly-compressible speed gate at step 200 and
+     reaches transfer-limiter fractions 0.39%/0.76%, so it is rejected.  The
+     planner now persists exact wall/downstream buffer thickness in parent and
+     finest cells rather than leaving “enough margin” implicit.
+125. Peak-speed localisation shows the causal path.  Through step 150 the L2
+     maximum lies on a near-wall fluid node at the bow.  At step 200 the peak
+     has propagated into the near-tail/wake region, 33--34 cells from the
+     allocated boundary, where it reaches 0.796.  Disabling wall-stress Guo
+     forcing changes that value only from 0.79636 to 0.79671; therefore the
+     instability is driven by BFL impermeability/startup plus insufficient
+     resolved collision dissipation, not the wall-law shear source or a
+     coarse/fine boundary placed too close to the body.
+126. A fail-closed speed gate is added to the health cadence and future
+     production launchers enable it.  The limit is explicit (default 0.3,
+     versus inlet 0.06), and a violation names the exact root step after
+     persisting the level/interface health line.  A read-only nested checkpoint
+     auditor independently loads all hierarchy tensors on CPU; the active
+     unfiltered L90 checkpoint at step 1500 is finite but has already limited
+     0.6001% of cells, with peak speeds 0.176/0.150/0.167 and therefore remains
+     ineligible despite later force recovery.
+127. Collision isolation rejects several tempting labels.  Raising Smagorinsky
+     `Cs` from 0.05 to 0.15 barely changes the step-200 peak (0.796 to 0.786).
+     Entropic KBC with eight gamma iterations is worse and crosses the gate at
+     step 75 (0.561).  Reducing the cumulant bulk relaxation rate to 0.5 crosses
+     at step 175 (0.396).  Lower resolved Reynolds supplies the missing shear
+     diffusion monotonically: Re=20000 still peaks at 0.615 by step 200,
+     Re=10000 recovers to 0.122 at step 200 but jumps to 0.609 at step 225,
+     while Re=5000 remains clean through step 225 with peak 0.0783, density
+     0.925--1.041 and zero collision/transfer limiting.  This is stability
+     evidence only; permanent Re=5000 is not accepted as the target physics.
+128. Static and arbitrary-depth AMR now accept an optional instantaneous tau
+     pair/chain.  Every collision call, coarse-to-fine ghost reconstruction
+     and fine-to-coarse non-equilibrium rescaling uses the same validated
+     convective chain; inconsistent dynamic tau values fail before advancing.
+     A common continuation schedule ramps inverse Reynolds number with a
+     raised-cosine profile and zero endpoint derivatives.  This enables the
+     production strategy “safe Re=5000 startup, then gradual return to
+     Re=100000” without changing wall-law physical Reynolds or silently
+     mismatching interface physics.  Forty-two focused continuation, AMR and
+     runner tests pass.
 
 ## Rejected candidates
 
