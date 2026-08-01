@@ -36,6 +36,7 @@ from tensorlbm.drag_pressure import (
     get_near_wall_3d,
 )
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
+from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.sponge_layer import (
@@ -437,12 +438,14 @@ def run_case(args: argparse.Namespace) -> dict:
     f_final = sum(all_f[-window:]) / window if window else math.nan
     predicted_n = (p_final + f_final) * force_scale
     error_pct = abs(predicted_n - point.resistance_n) / point.resistance_n * 100.0
-    recent = [x["predicted_resistance_n"] for x in snapshots[-3:]]
-    recent_mean = sum(recent) / len(recent) if recent else 0.0
-    drift_pct = (
-        (max(recent) - min(recent)) / abs(recent_mean) * 100.0
-        if len(recent) >= 3 and abs(recent_mean) > 1e-12 else math.inf
+    force_stationarity = assess_force_stationarity(
+        [
+            (pressure + friction) * force_scale
+            for pressure, friction in zip(all_p[-window:], all_f[-window:])
+        ],
+        block_size=args.report_interval,
     )
+    drift_pct = force_stationarity.relative_range_pct
     finite = not diverged and math.isfinite(predicted_n)
     reference_area_m2 = float(geometry["wetted_area_lu2"]) * dx_m**2
     dynamic_pressure_area = (
@@ -535,6 +538,7 @@ def run_case(args: argparse.Namespace) -> dict:
             "experimental_resistance_n": point.resistance_n,
             "error_pct": error_pct,
             "last_three_block_drift_pct": drift_pct,
+            "force_stationarity": force_stationarity.to_dict(),
             "finite": finite, "diverged": diverged,
         },
         "coefficients": {
@@ -555,8 +559,8 @@ def run_case(args: argparse.Namespace) -> dict:
             "force_error_target_pct": args.error_target,
             "steady_drift_target_pct": args.drift_target,
             "force_target_met": error_pct <= args.error_target,
-            "steady_target_met": drift_pct <= args.drift_target,
-            "admitted": error_pct <= args.error_target and drift_pct <= args.drift_target and finite,
+            "steady_target_met": force_stationarity.meets(args.drift_target),
+            "admitted": error_pct <= args.error_target and force_stationarity.meets(args.drift_target) and finite,
             "claim_boundary": "One grid/time candidate; grid and time convergence plus paired AFF-1/AFF-8 ratio are required for physical validation.",
         },
     }
