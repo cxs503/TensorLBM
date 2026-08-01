@@ -56,6 +56,26 @@ class CylinderBFLControlVolumeConfig:
     def tau(self) -> float:
         return 0.5 + 3.0 * self.nu
 
+    @property
+    def domain_clearance_diameters(self) -> dict[str, float]:
+        """Far-field centre distances in cylinder diameters."""
+        diameter = 2.0 * self.radius
+        cx = self.nx * self.center_x_fraction
+        return {
+            "upstream_center_distance": cx / diameter,
+            "downstream_center_distance": (self.nx - cx) / diameter,
+            "lateral_center_distance": (self.ny / 2.0) / diameter,
+        }
+
+    @property
+    def domain_reference_adequate(self) -> bool:
+        clearance = self.domain_clearance_diameters
+        return (
+            clearance["upstream_center_distance"] >= 5.0
+            and clearance["downstream_center_distance"] >= 10.0
+            and clearance["lateral_center_distance"] >= 10.0
+        )
+
     def validate(self) -> None:
         if min(self.nx, self.ny) < 16 or self.nz < 1:
             raise ValueError("cylinder domain is too small")
@@ -180,7 +200,7 @@ def run_cylinder_bfl_control_volume(
     start_step = 0
     checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
     checkpoint_signature = {
-        "schema_version": 3,
+        "schema_version": 4,
         "shape_zyx": list(shape),
         "radius": config.radius,
         "center_x_fraction": config.center_x_fraction,
@@ -195,7 +215,7 @@ def run_cylinder_bfl_control_volume(
         "cv_margin": config.cv_margin,
         "far_field_mode": config.far_field_mode,
         "periodic_axes": ["z"],
-        "statistics_window_steps": config.statistics_window_steps,
+        "link_force_frame": "laboratory_after_wall_activation",
     }
     if config.resume:
         assert checkpoint is not None
@@ -215,7 +235,7 @@ def run_cylinder_bfl_control_volume(
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-cylinder-checkpoint-v3",
+            "schema": "tensorlbm-cylinder-checkpoint-v4",
             "configuration": checkpoint_signature,
             "step": step,
             "populations": f.detach().cpu(),
@@ -318,12 +338,17 @@ def run_cylinder_bfl_control_volume(
         and observer_difference <= 1.0
         and shedding_cycles >= config.minimum_shedding_cycles
     )
+    domain_clearance_diameters = config.domain_clearance_diameters
+    domain_reference_adequate = config.domain_reference_adequate
+    numerical_quality_admitted = (
+        numerical_quality_admitted and domain_reference_adequate
+    )
     final_rho, final_ux, final_uy, final_uz = macroscopic3d(f)
     final_speed = torch.sqrt(
         final_ux.square() + final_uy.square() + final_uz.square()
     )
     return {
-        "schema": "tensorlbm-cylinder-bfl-control-volume-v3",
+        "schema": "tensorlbm-cylinder-bfl-control-volume-v4",
         "configuration": checkpoint_signature | {
             "tau": config.tau,
             "steps": config.steps, "warmup_steps": config.warmup_steps,
@@ -333,7 +358,11 @@ def run_cylinder_bfl_control_volume(
             "report_interval": config.report_interval,
             "checkpoint_interval": config.checkpoint_interval,
             "statistics_window_steps_resolved": statistics_window,
+            "statistics_window_steps_requested": (
+                config.statistics_window_steps
+            ),
             "minimum_shedding_cycles": config.minimum_shedding_cycles,
+            "domain_clearance_diameters": domain_clearance_diameters,
         },
         "result": {
             "cd_control_volume": cd, "cd_bfl_link": cd_bfl,
@@ -367,6 +396,7 @@ def run_cylinder_bfl_control_volume(
             "cycle_target_met": (
                 shedding_cycles >= config.minimum_shedding_cycles
             ),
+            "domain_reference_target_met": domain_reference_adequate,
             "numerical_quality_admitted": numerical_quality_admitted,
             "admitted": (
                 reference_error <= 5.0 and strouhal_error <= 5.0

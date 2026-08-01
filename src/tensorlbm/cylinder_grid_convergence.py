@@ -13,10 +13,10 @@ if TYPE_CHECKING:
 _IDENTITY_FIELDS = (
     "schema_version", "center_x_fraction", "reynolds", "lattice_speed",
     "collision_model", "sponge_strength", "sponge_inlet", "far_field_mode",
-    "periodic_axes", "minimum_shedding_cycles",
+    "periodic_axes", "minimum_shedding_cycles", "link_force_frame",
 )
 _TIME_FIELDS = (
-    "steps", "warmup_steps", "ramp_steps", "statistics_window_steps",
+    "steps", "warmup_steps", "ramp_steps", "statistics_window_steps_resolved",
     "report_interval",
 )
 
@@ -39,7 +39,7 @@ def assess_cylinder_grid_convergence(
     schema_valid = True
     source_quality = True
     for record in records:
-        schema_valid &= record.get("schema") == "tensorlbm-cylinder-bfl-control-volume-v3"
+        schema_valid &= record.get("schema") == "tensorlbm-cylinder-bfl-control-volume-v4"
         configuration = record.get("configuration")
         result = record.get("result")
         acceptance = record.get("acceptance")
@@ -159,7 +159,7 @@ def assess_cylinder_grid_convergence(
         "cd_control_volume": cd_values,
         "strouhal": st_values,
         "configuration_identity": {
-            "v3_schema": schema_valid,
+            "v4_schema": schema_valid,
             "required_fields_present": required_present,
             "identity_fields_equal": identity_equal,
             "spanwise_cells_invariant": spanwise_invariant,

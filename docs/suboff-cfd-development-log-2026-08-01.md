@@ -749,6 +749,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     test rules out accidental relative agreement at step 3000 and isolates the
     remaining oscillation as flow/boundary physics to be time-averaged, not a
     broken force observer.
+91. Cylinder validation is prepared as a fresh v4 R9/R12/R15 sequence rather
+    than reusing the rejected D32 legacy record.  Checkpoint identity now
+    excludes the analysis-only tail choice, output records the requested and
+    resolved tails, and force-frame provenance is explicit.  Absolute Re=100
+    admission requires at least 5D upstream, 10D downstream and 10D lateral
+    centre distance; the exact launcher uses 40R x 40R domains, giving
+    6D/14D/10D.  For radii 9/12/15 it scales steps 54000/72000/90000, warmup
+    31500/42000/52500 and tails 22500/30000/37500 exactly 3:4:5.  Each tail
+    spans about 12.3 expected shedding cycles, exceeding the eight-cycle gate.
+    Thirteen cylinder/convergence/launcher tests pass.  The sequence is queued
+    behind the exact sphere chain and therefore does not contend for its GPU.
 
 ## Rejected candidates
 

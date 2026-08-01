@@ -25,6 +25,19 @@ def test_cylinder_reference_and_tau() -> None:
     assert math.isclose(cfg.tau, 0.53)
 
 
+def test_reference_domain_requires_unconfined_clearance() -> None:
+    compact = CylinderBFLControlVolumeConfig(radius=12, nx=320, ny=200)
+    unconfined = CylinderBFLControlVolumeConfig(radius=12, nx=480, ny=480)
+
+    assert compact.domain_reference_adequate is False
+    assert unconfined.domain_clearance_diameters == {
+        "upstream_center_distance": 6.0,
+        "downstream_center_distance": 14.0,
+        "lateral_center_distance": 10.0,
+    }
+    assert unconfined.domain_reference_adequate is True
+
+
 def test_short_periodic_cylinder_composition_is_finite() -> None:
     cfg = CylinderBFLControlVolumeConfig(
         nx=56, ny=40, nz=3, radius=4, center_x_fraction=0.35,
@@ -37,7 +50,11 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
     assert math.isfinite(result["cd_control_volume"])
     assert math.isfinite(result["cd_bfl_link"])
     assert result["drag_stationarity"]["sufficiently_sampled"] is False
-    assert artifact["schema"] == "tensorlbm-cylinder-bfl-control-volume-v3"
+    assert artifact["schema"] == "tensorlbm-cylinder-bfl-control-volume-v4"
+    assert artifact["configuration"]["link_force_frame"] == (
+        "laboratory_after_wall_activation"
+    )
+    assert artifact["acceptance"]["domain_reference_target_met"] is False
 
 
 def test_strouhal_estimator_recovers_synthetic_lift_frequency() -> None:
@@ -79,9 +96,10 @@ def test_cylinder_checkpoint_can_resume(tmp_path) -> None:
     ))
     assert checkpoint.exists()
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
-    assert state["schema"] == "tensorlbm-cylinder-checkpoint-v3"
+    assert state["schema"] == "tensorlbm-cylinder-checkpoint-v4"
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
+    assert resumed["configuration"]["statistics_window_steps_requested"] == 0
     with pytest.raises(ValueError, match="configuration"):
         run_cylinder_bfl_control_volume(CylinderBFLControlVolumeConfig(
             **(common | {"sponge_width": 4}), steps=6, resume=True,
