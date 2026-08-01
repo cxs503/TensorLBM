@@ -714,7 +714,7 @@ def run(args: argparse.Namespace) -> dict:
         pre_gradient_sgs_signature.pop("wale_cw")
         pre_gradient_sgs_signature.pop("vreman_cv")
         resumed_pre_gradient_sgs_checkpoint = (
-            args.collision_model == "cumulant_smagorinsky"
+            args.collision_model not in {"cumulant_wale", "cumulant_vreman"}
             and stored_configuration == pre_gradient_sgs_signature
         )
         legacy_v3_signature = dict(checkpoint_signature)
