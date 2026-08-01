@@ -543,6 +543,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     conservation, observer and duration gates even if each is not yet within
     5% of experiment; only the extrapolated grid sequence may make the final
     experimental-accuracy claim.
+68. Time convergence now distinguishes unsteady load amplitude from precision
+    of the mean.  Equal-duration batch range remains reported, while admission
+    uses early/late drift, linear trend and a two-sided 95% Student-t half-width
+    computed from independent batch means.  This avoids the incorrect rule
+    that a physically periodic force must have less than 1% instantaneous
+    block range, while still rejecting a short reference crossing or a mean
+    whose confidence interval is wider than the requested tolerance.  Six
+    focused stationarity tests and 15 sphere/cylinder/flat/SUBOFF integration
+    tests pass under the revised common contract.
 
 ## Rejected candidates
 
