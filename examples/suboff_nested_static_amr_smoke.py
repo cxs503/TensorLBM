@@ -560,6 +560,7 @@ def run(args: argparse.Namespace) -> dict:
         ],
         "refinement_depth": refinement_depth,
         "level_count": level_count,
+        "force_samples_per_root_step": 2**refinement_depth,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
         "nested_fine_shape": list(nested_plan.fine_physical_shape),
         "fine_physical_shapes_by_level": [
@@ -629,6 +630,7 @@ def run(args: argparse.Namespace) -> dict:
         "cv_margin": args.cv_margin,
         "auxiliary_cv_margins": list(auxiliary_margins),
         "surface_force_interval": args.surface_force_interval,
+        "force_samples_per_root_step": 2**refinement_depth,
         "ramp_steps": args.ramp_steps,
         "wall_normal_ramp_steps": wall_normal_ramp_steps,
         "wall_shear_ramp_steps": wall_shear_ramp_steps,
@@ -1379,16 +1381,21 @@ def run(args: argparse.Namespace) -> dict:
                 maximum_raw_momentum_mismatch[index],
                 raw_mismatch_moments[index][1],
             )
-        cv_mean = sum(item["cv"] for item in force_samples) / 4.0
-        bfl_mean = sum(item["bfl"] for item in force_samples) / 4.0
-        pressure_mean = sum(item["pressure"] for item in force_samples) / 4.0
-        friction_mean = sum(item["friction"] for item in force_samples) / 4.0
-        source_mean = sum(item["source"] for item in force_samples) / 4.0
+        sample_count = float(len(force_samples))
+        cv_mean = sum(item["cv"] for item in force_samples) / sample_count
+        bfl_mean = sum(item["bfl"] for item in force_samples) / sample_count
+        pressure_mean = (
+            sum(item["pressure"] for item in force_samples) / sample_count
+        )
+        friction_mean = (
+            sum(item["friction"] for item in force_samples) / sample_count
+        )
+        source_mean = sum(item["source"] for item in force_samples) / sample_count
         auxiliary_means = (
             {
                 margin: sum(
                     item["auxiliary"][margin] for item in force_samples
-                ) / 4.0
+                ) / sample_count
                 for margin in auxiliary_margins
             }
             if current_step % args.surface_force_interval == 0 else None
@@ -1737,6 +1744,7 @@ def run(args: argparse.Namespace) -> dict:
             "checkpoint_path": str(args.checkpoint) if args.checkpoint else None,
             "checkpoint_interval": args.checkpoint_interval,
             "gradient_sgs_solid_velocity": [0.0, 0.0, 0.0],
+            "force_samples_per_root_step": 2**refinement_depth,
             "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
             "gradient_sgs_uses_finest_solid_mask": (
                 args.collision_model in {"cumulant_wale", "cumulant_vreman"}
