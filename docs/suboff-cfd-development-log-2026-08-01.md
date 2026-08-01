@@ -1174,6 +1174,19 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      assessment has SHA-256
      `369f65b998332b9a73bcd407dbfd9acd92a1a6d7866b9f776e3949691768961d`;
      by contract this status makes no resistance-accuracy claim.
+134. The L150 fixed-Re=2000 startup diagnostic completes 700 steps and passes
+     the same strict startup assessment.  Across 28 snapshots its peak speed
+     is 0.0726924, density stays in 0.936876--1.049194, minimum population is
+     0.0167503, both AMR interfaces remain un-limited and maximum health-cadence
+     reflux residual is `5.820766e-11`.  Log, result and assessment SHA-256
+     values are respectively
+     `cc4960c9ee16c1e88ccdf10b2148194cc75dd7111b717356fcc73e76c6b4de54`,
+     `0681d2c6a0c45417a62ceec69deef9ba639b5c00265085358762a0e8f84c9faa`
+     and `904cb845c1a1ee0f4b1617a6b8b5fea8dc68ed2446a3aa8f8771972a472c5a11`.
+     The queued L150 v4 production run then starts on that released GPU with
+     Re=2000 through step 500, continuation to Re=100000 at step 1000, a
+     5000-step wall ramp and health checks every 100 steps.  Low-Re force from
+     the diagnostic remains explicitly excluded from physical validation.
 
 ## Rejected candidates
 
