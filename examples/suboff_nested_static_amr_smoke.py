@@ -76,6 +76,7 @@ from tensorlbm.wall_model import (
     bfl_wall_function_3d,
     physical_wall_lattice_viscosity,
 )
+from tensorlbm.yplus_guide import estimate_exchange_yplus
 
 
 def parser() -> argparse.ArgumentParser:
@@ -526,6 +527,11 @@ def run(args: argparse.Namespace) -> dict:
     estimated_peak_gib = finest_plan.estimated_peak_gib(
         args.memory_bytes_per_cell,
     )
+    estimated_exchange_y_plus = estimate_exchange_yplus(
+        physical_reynolds=physical_re,
+        characteristic_length_cells=finest_plan.effective_hull_length_cells,
+        exchange_distance_cells=args.stress_exchange_distance,
+    )
     memory_budget = require_cuda_memory_budget(
         device,
         estimated_peak_gib=estimated_peak_gib,
@@ -561,6 +567,12 @@ def run(args: argparse.Namespace) -> dict:
         "cell_saving_fraction": finest_plan.cell_saving_fraction,
         "memory_estimate_bytes_per_cell": args.memory_bytes_per_cell,
         "estimated_peak_gib": estimated_peak_gib,
+        "stress_exchange_distance_cells": args.stress_exchange_distance,
+        "stress_exchange_distance_over_finest_length": (
+            args.stress_exchange_distance
+            / finest_plan.effective_hull_length_cells
+        ),
+        "estimated_exchange_y_plus": estimated_exchange_y_plus,
         "cuda_memory_preflight": (
             memory_budget.to_dict() if memory_budget is not None else None
         ),
