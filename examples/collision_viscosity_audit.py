@@ -16,14 +16,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--collision-model",
-        choices=("bgk", "cumulant", "entropic_kbc", "natural_kbc"),
+        choices=(
+            "bgk", "cumulant", "cumulant_wale", "cumulant_vreman",
+            "entropic_kbc", "natural_kbc",
+        ),
         required=True,
     )
     parser.add_argument("--tau", type=float, default=0.8)
     parser.add_argument("--wavelength-cells", type=int, default=32)
     parser.add_argument("--steps", type=int, default=200)
     parser.add_argument("--fit-start-step", type=int, default=20)
+    parser.add_argument("--maximum-relative-error-pct", type=float, default=2.0)
     parser.add_argument("--kbc-max-iterations", type=int, default=12)
+    parser.add_argument("--wale-cw", type=float, default=0.5)
+    parser.add_argument("--vreman-cv", type=float, default=0.025)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", choices=("float32", "float64"), default="float64")
     parser.add_argument("--output", required=True)
@@ -34,7 +40,10 @@ def main() -> None:
         wavelength_cells=args.wavelength_cells,
         steps=args.steps,
         fit_start_step=args.fit_start_step,
+        maximum_relative_error_pct=args.maximum_relative_error_pct,
         kbc_max_iterations=args.kbc_max_iterations,
+        wale_cw=args.wale_cw,
+        vreman_cv=args.vreman_cv,
         device=args.device,
         dtype=args.dtype,
     ))

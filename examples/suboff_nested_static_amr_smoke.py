@@ -1497,7 +1497,9 @@ def run(args: argparse.Namespace) -> dict:
         force_stationarity is not None and force_stationarity.meets(1.0)
     )
     collision_viscosity_acceptable = (
-        args.collision_model == "cumulant_smagorinsky"
+        args.collision_model in {
+            "cumulant_smagorinsky", "cumulant_wale", "cumulant_vreman",
+        }
     )
     auxiliary_cv_difference_pct = None
     nested_cv_acceptable = False
