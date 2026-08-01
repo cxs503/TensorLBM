@@ -94,6 +94,11 @@ def test_nested_v4_launcher_expands_audited_l150_continuation(
         arguments.index("--maximum-reflux-applied-correction-fraction") + 1
     ] == "0.001"
     assert arguments[arguments.index("--cs-smag") + 1] == "0.05"
+    assert arguments[arguments.index("--collision-model") + 1] == (
+        "cumulant_smagorinsky"
+    )
+    assert arguments[arguments.index("--wale-cw") + 1] == "0.5"
+    assert arguments[arguments.index("--vreman-cv") + 1] == "0.025"
     assert arguments[
         arguments.index("--minimum-target-reynolds-convective-times") + 1
     ] == "7.5"

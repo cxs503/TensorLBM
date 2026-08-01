@@ -205,9 +205,17 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--rho-water", type=float, default=998.2)
     result.add_argument("--nu-water", type=float, default=1.004e-6)
     result.add_argument("--cs-smag", type=float, default=0.05)
+    result.add_argument("--wale-cw", type=float, default=0.5)
+    result.add_argument("--vreman-cv", type=float, default=0.025)
     result.add_argument(
         "--collision-model",
-        choices=("cumulant_smagorinsky", "entropic_kbc", "natural_kbc"),
+        choices=(
+            "cumulant_smagorinsky",
+            "cumulant_wale",
+            "cumulant_vreman",
+            "entropic_kbc",
+            "natural_kbc",
+        ),
         default="cumulant_smagorinsky",
     )
     result.add_argument("--kbc-max-iterations", type=int, default=12)
@@ -277,6 +285,10 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("maximum health speed must lie between inlet speed and one")
     if not 0.0 <= args.cs_smag <= 0.3:
         raise ValueError("cs_smag must lie in [0,0.3]")
+    if not 0.0 <= args.wale_cw <= 1.0:
+        raise ValueError("wale_cw must lie in [0,1]")
+    if not 0.0 <= args.vreman_cv <= 0.2:
+        raise ValueError("vreman_cv must lie in [0,0.2]")
     if not 0.0 <= args.minimum_health_population < 1.0:
         raise ValueError("minimum health population must lie in [0,1)")
     if not 0.0 <= args.maximum_positivity_limited_fraction <= 1.0:
@@ -545,6 +557,8 @@ def run(args: argparse.Namespace) -> dict:
         "rho_water": args.rho_water,
         "nu_water": args.nu_water,
         "cs_smag": args.cs_smag,
+        "wale_cw": args.wale_cw,
+        "vreman_cv": args.vreman_cv,
         "collision_model": args.collision_model,
         "kbc_max_iterations": args.kbc_max_iterations,
         "omega_bulk": args.omega_bulk,
@@ -679,6 +693,7 @@ def run(args: argparse.Namespace) -> dict:
     resumed_from_step = 0
     resumed_legacy_v2_checkpoint = False
     resumed_legacy_v3_checkpoint = False
+    resumed_pre_gradient_sgs_checkpoint = False
     force_samples: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
@@ -695,7 +710,16 @@ def run(args: argparse.Namespace) -> dict:
     if args.resume:
         state = torch.load(args.checkpoint, map_location=device, weights_only=True)
         stored_configuration = state.get("configuration")
+        pre_gradient_sgs_signature = dict(checkpoint_signature)
+        pre_gradient_sgs_signature.pop("wale_cw")
+        pre_gradient_sgs_signature.pop("vreman_cv")
+        resumed_pre_gradient_sgs_checkpoint = (
+            args.collision_model == "cumulant_smagorinsky"
+            and stored_configuration == pre_gradient_sgs_signature
+        )
         legacy_v3_signature = dict(checkpoint_signature)
+        legacy_v3_signature.pop("wale_cw")
+        legacy_v3_signature.pop("vreman_cv")
         legacy_v3_signature.pop("regularize_restriction")
         legacy_v3_signature.pop("regularize_prolongation")
         legacy_v3_signature.pop("reflux_correction_stencil")
@@ -737,6 +761,8 @@ def run(args: argparse.Namespace) -> dict:
         legacy_v2_signature["schema_version"] = 2
         legacy_v2_signature.pop("hull_type")
         legacy_v2_without_new_transfer = dict(legacy_v2_signature)
+        legacy_v2_without_new_transfer.pop("wale_cw")
+        legacy_v2_without_new_transfer.pop("vreman_cv")
         legacy_v2_without_new_transfer.pop("regularize_restriction")
         legacy_v2_without_new_transfer.pop("regularize_prolongation")
         legacy_v2_without_new_transfer.pop("reflux_correction_stencil")
@@ -779,6 +805,7 @@ def run(args: argparse.Namespace) -> dict:
         )
         if (
             stored_configuration != checkpoint_signature
+            and not resumed_pre_gradient_sgs_checkpoint
             and not resumed_legacy_v3_checkpoint
             and not resumed_legacy_v2_checkpoint
         ):
@@ -881,11 +908,13 @@ def run(args: argparse.Namespace) -> dict:
         elif args.collision_model == "natural_kbc":
             post = collide_natural_kbc_d3q19(state, tau=tau)
         else:
+            sgs_coefficients = {
+                "cumulant_smagorinsky": {"C_s": args.cs_smag},
+                "cumulant_wale": {"C_w": args.wale_cw},
+                "cumulant_vreman": {"C_v": args.vreman_cv},
+            }[args.collision_model]
             post = collide_cumulant_d3q19(
-                state,
-                tau=tau,
-                omega_b=args.omega_bulk,
-                C_s=args.cs_smag,
+                state, tau=tau, omega_b=args.omega_bulk, **sgs_coefficients,
             )
         post, diagnostic = limit_nonequilibrium_for_positivity(post)
         require_finite_limiter(diagnostic, level=level, stage="post_collision")
@@ -1564,6 +1593,9 @@ def run(args: argparse.Namespace) -> dict:
             "resumed_from_step": resumed_from_step,
             "resumed_legacy_v2_checkpoint": resumed_legacy_v2_checkpoint,
             "resumed_legacy_v3_checkpoint": resumed_legacy_v3_checkpoint,
+            "resumed_pre_gradient_sgs_checkpoint": (
+                resumed_pre_gradient_sgs_checkpoint
+            ),
         },
         "planning": planning | {"measured_peak_allocated_gib": peak_gib},
         "geometry": nested_geometry | {

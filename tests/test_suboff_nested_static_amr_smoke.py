@@ -31,6 +31,8 @@ def _args(
     disable_wall_stress: bool = False,
     collision_model: str = "cumulant_smagorinsky",
     omega_bulk: float = 1.0,
+    wale_cw: float = 0.5,
+    vreman_cv: float = 0.025,
     interface_filter_width: int = 0,
     interface_filter_strength: float = 0.0,
 ):
@@ -52,6 +54,8 @@ def _args(
         "--collision-model", collision_model,
         "--kbc-max-iterations", "4",
         "--omega-bulk", str(omega_bulk),
+        "--wale-cw", str(wale_cw),
+        "--vreman-cv", str(vreman_cv),
         "--interface-filter-width", str(interface_filter_width),
         "--interface-filter-strength", str(interface_filter_strength),
         "--output", str(tmp_path / "nested-smoke.json"),
@@ -266,6 +270,33 @@ def test_nested_smoke_dispatches_natural_kbc_as_diagnostic(tmp_path: Path) -> No
     assert result["result"]["finite"] is True
 
 
+@pytest.mark.parametrize(
+    ("collision_model", "coefficient_key", "coefficient"),
+    (
+        ("cumulant_wale", "wale_cw", 0.5),
+        ("cumulant_vreman", "vreman_cv", 0.025),
+    ),
+)
+def test_nested_smoke_dispatches_gradient_sgs_as_diagnostic(
+    tmp_path: Path,
+    collision_model: str,
+    coefficient_key: str,
+    coefficient: float,
+) -> None:
+    result = MODULE.run(_args(
+        tmp_path,
+        steps=1,
+        collision_model=collision_model,
+        **{coefficient_key: coefficient},
+    ))
+
+    assert result["configuration"]["collision_model"] == collision_model
+    assert result["configuration"][coefficient_key] == coefficient
+    assert result["acceptance"]["collision_viscosity_target_met"] is False
+    assert result["acceptance"]["single_grid_candidate"] is False
+    assert result["result"]["finite"] is True
+
+
 def test_nested_smoke_records_independent_bulk_relaxation(tmp_path: Path) -> None:
     result = MODULE.run(_args(tmp_path, steps=1, omega_bulk=0.5))
 
@@ -376,6 +407,8 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("interface_filter_strength")
     state["configuration"].pop("wall_stress_enabled")
     state["configuration"].pop("collision_model")
+    state["configuration"].pop("wale_cw")
+    state["configuration"].pop("vreman_cv")
     state["configuration"].pop("kbc_max_iterations")
     state["configuration"].pop("omega_bulk")
     state["configuration"].pop("resolved_reynolds_start")
@@ -410,6 +443,8 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("interface_filter_strength")
     state["configuration"].pop("wall_stress_enabled")
     state["configuration"].pop("collision_model")
+    state["configuration"].pop("wale_cw")
+    state["configuration"].pop("vreman_cv")
     state["configuration"].pop("kbc_max_iterations")
     state["configuration"].pop("omega_bulk")
     state["configuration"].pop("resolved_reynolds_start")
