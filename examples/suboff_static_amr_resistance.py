@@ -682,6 +682,7 @@ def run(args: argparse.Namespace) -> dict:
                 amr.fine_f, fine_surface, 1.0,
                 extrap=args.surface_pressure_extrapolation,
                 p0_method=args.pressure_reference, solid=fine_solid_g,
+                fluid_boundary_mask=bfl_mask, q_field=bfl_q,
             )[0]
             surface_pressure_samples.append((current_step, surface_pressure))
             surface_total_samples.append(
@@ -1180,7 +1181,7 @@ def parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--surface-pressure-extrapolation",
-        choices=("none", "linear", "quadratic"),
+        choices=("none", "linear", "quadratic", "bfl_quadratic"),
         default="none",
         help="wall-normal extrapolation used only by the surface-pressure observer",
     )

@@ -20,7 +20,10 @@ Usage:
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
+
 import torch
+
 from .d3q19 import macroscopic3d
 
 
@@ -141,7 +144,8 @@ class SurfaceMesh:
         dA = 1.0 (default; consistent with from_sphere / from_cylinder).
         """
         import numpy as np
-        from .suboff_cad import suboff_radius_profile, SuboffConfig
+
+        from .suboff_cad import SuboffConfig, suboff_radius_profile
 
         if config is None:
             config = SuboffConfig()
@@ -481,8 +485,248 @@ def _shift_along_normal_dominant(field, mesh, steps):
     return result
 
 
+@dataclass(frozen=True)
+class BFLWallPressureDiagnostics:
+    """Coverage of link-wise wall-pressure reconstruction."""
+
+    boundary_cells: int
+    requested_links: int
+    usable_links: int
+    fallback_cells: int
+    minimum_active_q: float
+    maximum_active_q: float
+
+
+def _sample_at_offset_no_wrap(
+    field: torch.Tensor,
+    offset_zyx: tuple[int, int, int],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return ``field[index + offset]`` and an in-domain validity mask."""
+    if field.ndim != 3:
+        raise ValueError("field must have shape (nz,ny,nx)")
+    out = torch.zeros_like(field)
+    valid = torch.zeros(field.shape, dtype=torch.bool, device=field.device)
+    target: list[slice] = []
+    source: list[slice] = []
+    for size, offset in zip(field.shape, offset_zyx, strict=True):
+        if abs(offset) >= size:
+            return out, valid
+        if offset > 0:
+            target.append(slice(0, size - offset))
+            source.append(slice(offset, size))
+        elif offset < 0:
+            target.append(slice(-offset, size))
+            source.append(slice(0, size + offset))
+        else:
+            target.append(slice(None))
+            source.append(slice(None))
+    target_index = tuple(target)
+    source_index = tuple(source)
+    out[target_index] = field[source_index]
+    valid[target_index] = True
+    return out, valid
+
+
+def reconstruct_bfl_wall_pressure(
+    pressure: torch.Tensor,
+    mesh: SurfaceMesh,
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor,
+    *,
+    solid: torch.Tensor,
+) -> tuple[torch.Tensor, BFLWallPressureDiagnostics]:
+    """Reconstruct pressure at BFL intersections using their actual ``q``.
+
+    For a boundary link directed from the fluid node toward the solid, the
+    next two samples are taken in the opposite (fluid) direction.  A
+    quadratic through samples at link coordinates 0, 1 and 2 is evaluated at
+    the wall coordinate ``-q``::
+
+        p_w = (q+1)(q+2)/2 p_1 - q(q+2) p_2 + q(q+1)/2 p_3.
+
+    Link estimates at the same boundary cell are averaged with their positive
+    normal-alignment weights.  Invalid stencils never wrap across a physical
+    domain face and fall back to the local fluid pressure, with coverage
+    reported explicitly.
+    """
+    from .d3q19 import C
+
+    if pressure.ndim != 3:
+        raise ValueError("pressure must have shape (nz,ny,nx)")
+    expected = (19, *pressure.shape)
+    if fluid_boundary_mask.shape != expected:
+        raise ValueError("fluid_boundary_mask must have shape (19,nz,ny,nx)")
+    if q_field.shape != expected:
+        raise ValueError("q_field must have shape (19,nz,ny,nx)")
+    if solid.shape != pressure.shape or solid.dtype is not torch.bool:
+        raise ValueError("solid must be bool with shape (nz,ny,nx)")
+    if mesh.near.shape != pressure.shape:
+        raise ValueError("surface mesh must share the pressure grid")
+
+    device = pressure.device
+    boundary_mask = fluid_boundary_mask.to(device=device, dtype=torch.bool)
+    q = q_field.to(device=device, dtype=pressure.dtype)
+    solid_device = solid.to(device=device)
+    near = mesh.near.to(device=device, dtype=torch.bool)
+    active = boundary_mask & near.unsqueeze(0)
+    active_q = q[active]
+    if active_q.numel() and (
+        not bool(torch.isfinite(active_q).all())
+        or bool(((active_q <= 0.0) | (active_q > 1.0)).any())
+    ):
+        raise ValueError("active BFL q values must be finite and lie in (0,1]")
+
+    normals = tuple(
+        component.to(device=device, dtype=pressure.dtype)
+        for component in (mesh.nx_n, mesh.ny_n, mesh.nz_n)
+    )
+    weighted_pressure = torch.zeros_like(pressure)
+    weight_sum = torch.zeros_like(pressure)
+    usable_links = 0
+    c = C.to(device=device)
+    for direction in range(1, 19):
+        link = active[direction]
+        if not bool(link.any()):
+            continue
+        cx, cy, cz = (int(value) for value in c[direction].tolist())
+        offset_one = (-cz, -cy, -cx)
+        offset_two = (-2 * cz, -2 * cy, -2 * cx)
+        p2, valid2 = _sample_at_offset_no_wrap(pressure, offset_one)
+        p3, valid3 = _sample_at_offset_no_wrap(pressure, offset_two)
+        solid2, _ = _sample_at_offset_no_wrap(solid_device, offset_one)
+        solid3, _ = _sample_at_offset_no_wrap(solid_device, offset_two)
+        usable = link & valid2 & valid3 & ~solid2 & ~solid3
+        if not bool(usable.any()):
+            continue
+        q_link = q[direction]
+        wall = (
+            0.5 * (q_link + 1.0) * (q_link + 2.0) * pressure
+            - q_link * (q_link + 2.0) * p2
+            + 0.5 * q_link * (q_link + 1.0) * p3
+        )
+        link_length = math.sqrt(cx * cx + cy * cy + cz * cz)
+        alignment = -(
+            cx * normals[0] + cy * normals[1] + cz * normals[2]
+        ) / link_length
+        weight = torch.where(
+            usable,
+            alignment.clamp_min(0.0),
+            torch.zeros_like(alignment),
+        )
+        weighted_pressure += weight * wall
+        weight_sum += weight
+        usable_links += int((weight > 0.0).sum().item())
+
+    boundary_cells = near & active.any(dim=0)
+    reconstructed = torch.where(
+        weight_sum > 0.0,
+        weighted_pressure / weight_sum.clamp_min(torch.finfo(pressure.dtype).tiny),
+        pressure,
+    )
+    diagnostics = BFLWallPressureDiagnostics(
+        boundary_cells=int(boundary_cells.sum().item()),
+        requested_links=int(active.sum().item()),
+        usable_links=usable_links,
+        fallback_cells=int((boundary_cells & (weight_sum <= 0.0)).sum().item()),
+        minimum_active_q=(float(active_q.min().item()) if active_q.numel() else math.nan),
+        maximum_active_q=(float(active_q.max().item()) if active_q.numel() else math.nan),
+    )
+    return reconstructed, diagnostics
+
+
+def integrate_bfl_projected_pressure(
+    pressure: torch.Tensor,
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor,
+    *,
+    solid: torch.Tensor,
+) -> tuple[tuple[float, float, float], BFLWallPressureDiagnostics]:
+    """Integrate pressure on axial BFL crossing faces.
+
+    Each axial fluid-to-solid link represents one unit projected lattice face.
+    Its body-force contribution is ``p_wall * c`` because the body outward
+    normal is opposite the link direction.  Opposite face counts cancel a
+    constant pressure exactly on every closed voxel body; unlike a calibrated
+    nodal surface area, this is a discrete finite-volume identity.
+    """
+    from .d3q19 import C
+
+    if pressure.ndim != 3:
+        raise ValueError("pressure must have shape (nz,ny,nx)")
+    expected = (19, *pressure.shape)
+    if fluid_boundary_mask.shape != expected or q_field.shape != expected:
+        raise ValueError("BFL mask and q field must have shape (19,nz,ny,nx)")
+    if solid.shape != pressure.shape or solid.dtype is not torch.bool:
+        raise ValueError("solid must be bool with shape (nz,ny,nx)")
+    device = pressure.device
+    boundary = fluid_boundary_mask.to(device=device, dtype=torch.bool)
+    q = q_field.to(device=device, dtype=pressure.dtype)
+    solid_device = solid.to(device=device)
+    c = C.to(device=device)
+    force = torch.zeros(3, dtype=pressure.dtype, device=device)
+    axial_active: list[torch.Tensor] = []
+    axial_q_values: list[torch.Tensor] = []
+    fallback_mask = torch.zeros_like(pressure, dtype=torch.bool)
+    usable_links = 0
+    for direction in range(1, 19):
+        cx, cy, cz = (int(value) for value in c[direction].tolist())
+        if abs(cx) + abs(cy) + abs(cz) != 1:
+            continue
+        link = boundary[direction]
+        if not bool(link.any()):
+            continue
+        q_link = q[direction]
+        active_q = q_link[link]
+        if (
+            not bool(torch.isfinite(active_q).all())
+            or bool(((active_q <= 0.0) | (active_q > 1.0)).any())
+        ):
+            raise ValueError("active BFL q values must be finite and lie in (0,1]")
+        offset_one = (-cz, -cy, -cx)
+        offset_two = (-2 * cz, -2 * cy, -2 * cx)
+        p2, valid2 = _sample_at_offset_no_wrap(pressure, offset_one)
+        p3, valid3 = _sample_at_offset_no_wrap(pressure, offset_two)
+        solid2, _ = _sample_at_offset_no_wrap(solid_device, offset_one)
+        solid3, _ = _sample_at_offset_no_wrap(solid_device, offset_two)
+        usable = link & valid2 & valid3 & ~solid2 & ~solid3
+        wall = (
+            0.5 * (q_link + 1.0) * (q_link + 2.0) * pressure
+            - q_link * (q_link + 2.0) * p2
+            + 0.5 * q_link * (q_link + 1.0) * p3
+        )
+        wall = torch.where(usable, wall, pressure)
+        link_pressure_sum = wall[link].sum()
+        force += link_pressure_sum * torch.tensor(
+            (cx, cy, cz), dtype=pressure.dtype, device=device,
+        )
+        axial_active.append(link)
+        axial_q_values.append(active_q)
+        fallback_mask |= link & ~usable
+        usable_links += int(usable.sum().item())
+    if axial_active:
+        active_stack = torch.stack(axial_active)
+        active_any = active_stack.any(dim=0)
+        active_q = torch.cat(axial_q_values)
+    else:
+        active_stack = torch.zeros(
+            (0, *pressure.shape), dtype=torch.bool, device=device,
+        )
+        active_any = torch.zeros_like(pressure, dtype=torch.bool)
+        active_q = torch.empty(0, dtype=pressure.dtype, device=device)
+    diagnostics = BFLWallPressureDiagnostics(
+        boundary_cells=int(active_any.sum().item()),
+        requested_links=int(active_stack.sum().item()),
+        usable_links=usable_links,
+        fallback_cells=int(fallback_mask.sum().item()),
+        minimum_active_q=(float(active_q.min().item()) if active_q.numel() else math.nan),
+        maximum_active_q=(float(active_q.max().item()) if active_q.numel() else math.nan),
+    )
+    return tuple(float(value.item()) for value in force), diagnostics
+
+
 def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall',
-                              solid=None, p0_inlet_width=5):
+                              solid=None, p0_inlet_width=5,
+                              fluid_boundary_mask=None, q_field=None):
     """Pressure drag: 3D force vector from pressure × normal × dA.
 
     F = -Σ (p_wall - p_0) · n · dA  (force on wall, negative of fluid force)
@@ -491,13 +735,15 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
 
     Parameters
     ----------
-    extrap : {'none', 'linear', 'quadratic'}
+    extrap : {'none', 'linear', 'quadratic', 'bfl_quadratic'}
         Wall-pressure extrapolation from near-wall cells along the dominant
         normal direction::
 
             'none'      → p_wall = p1                 (cell 1, current)
             'linear'    → p_wall = 2·p1 - p2          (1st-order extrap)
             'quadratic' → p_wall = 3·p1 - 3·p2 + p3   (2nd-order extrap)
+            'bfl_quadratic' → link-wise quadratic reconstruction at each
+                              Bouzidi intersection using its actual q value
 
         where p1 is the pressure at the near-wall cell, p2/p3 are pressures
         1/2 cells further into the fluid along the dominant normal axis.
@@ -570,8 +816,20 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
         p2 = _shift_along_normal_dominant(p_corr, mesh, steps=1)
         p3 = _shift_along_normal_dominant(p_corr, mesh, steps=2)
         p_wall = 3.0 * p_corr - 3.0 * p2 + p3
+    elif extrap == 'bfl_quadratic':
+        if solid is None or fluid_boundary_mask is None or q_field is None:
+            raise ValueError(
+                "solid, fluid_boundary_mask and q_field are required for "
+                "extrap='bfl_quadratic'",
+            )
+        p_wall, _ = reconstruct_bfl_wall_pressure(
+            p_corr, mesh, fluid_boundary_mask, q_field, solid=solid,
+        )
     else:
-        raise ValueError(f"extrap must be 'none', 'linear', or 'quadratic', got '{extrap}'")
+        raise ValueError(
+            "extrap must be 'none', 'linear', 'quadratic', or "
+            f"'bfl_quadratic'; got '{extrap}'",
+        )
 
     mask = mask_float * mesh.dA
     fpx = -(p_wall * mesh.nx_n * mask).sum()
