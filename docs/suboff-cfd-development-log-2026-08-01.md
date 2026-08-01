@@ -436,6 +436,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     observer nevertheless now subtracts populations locally before reduction,
     which is better conditioned, but no accuracy claim is attached to that
     mechanical improvement.  AMR substep/CV placement remains under audit.
+58. The first v4 L90 production segment completed at 6000 steps and is
+    rejected despite several windows crossing the tow value.  Its post-3000
+    mean is 102.45 N (17.2% high), but block means span 2.86--153.63 N with
+    46.2% trend; CV/BFL disagreement is 39.3% and maximum speed reaches 0.231.
+    Wall shear remains near 80 N, so pressure/acoustic oscillation dominates.
+    The unfinished L120/L150 copies with identical damping were stopped rather
+    than extrapolated.  Three L90 boundary sensitivities now isolate (a) wider
+    0.2L, strength-0.3 sponge without inlet damping, (b) the same sponge on all
+    faces, and (c) all-face damping at lattice speed 0.04 with time/ramp/window
+    increased by 1.5 to preserve non-dimensional duration.  Only a stationary,
+    force-consistent candidate will seed the next three-grid sequence.
 
 ## Rejected candidates
 
