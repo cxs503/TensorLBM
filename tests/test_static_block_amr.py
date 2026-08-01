@@ -51,6 +51,23 @@ def test_convective_tau_scaling() -> None:
         )
 
 
+def test_single_interface_accepts_a_convectively_scaled_dynamic_tau_pair() -> None:
+    solver = StaticBlockAMR3D(_uniform_equilibrium((8, 9, 11)), _config())
+    observed: list[float] = []
+
+    def identity(
+        f: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
+        del level, substep
+        observed.append(tau)
+        return AMRAdvanceResult(f.clone(), f.clone())
+
+    solver.step(identity, tau_pair=(0.58, 0.66))
+    assert observed == pytest.approx([0.58, 0.66, 0.66])
+    with pytest.raises(ValueError, match="convective scaling"):
+        solver.step(identity, tau_pair=(0.58, 0.65))
+
+
 def test_restriction_regularization_is_an_explicit_common_option() -> None:
     config = StaticBlockAMRConfig(
         BoxRegion(x0=3, x1=7, y0=2, y1=6, z0=2, z1=5),
