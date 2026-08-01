@@ -371,6 +371,7 @@ def run(args: argparse.Namespace) -> dict:
     )
     checkpoint = Path(args.checkpoint) if args.checkpoint else None
     checkpoint_signature = {
+        "schema_version": 3,
         "coarse_shape_zyx": list(shape),
         "hull_type": args.hull_type,
         "speed_knots": args.speed_knots,
@@ -403,6 +404,8 @@ def run(args: argparse.Namespace) -> dict:
         "sponge_strength": args.sponge_strength,
         "sponge_inlet": args.sponge_inlet,
         "far_field_mode": args.far_field_mode,
+        "boundary_treatment": "bfl_wall_model",
+        "refinement_ratio": plan.ratio,
     }
 
     if args.resume:
@@ -441,7 +444,7 @@ def run(args: argparse.Namespace) -> dict:
             return
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         atomic_torch_save({
-            "schema": "tensorlbm-suboff-static-amr-checkpoint-v2",
+            "schema": "tensorlbm-suboff-static-amr-checkpoint-v3",
             "configuration": checkpoint_signature,
             "step": step,
             "coarse_populations": amr.coarse_f.detach().cpu(),
@@ -623,43 +626,30 @@ def run(args: argparse.Namespace) -> dict:
     )
     rho_c, ux_c, uy_c, uz_c = macroscopic3d(amr.coarse_f)
     result = {
-        "schema": "tensorlbm-suboff-static-amr-v2",
+        "schema": "tensorlbm-suboff-static-amr-v3",
         "status": (
             "single_grid_candidate" if single_grid_admitted
             else "single_grid_rejected"
         ),
-        "configuration": {
-            "device": str(device), "coarse_shape_zyx": list(shape),
+        "configuration": checkpoint_signature | {
+            "device": str(device),
             "coarse_hull_length_cells": args.hull_length,
             "fine_hull_length_cells": args.hull_length * 2.0,
             "fine_diameter_cells": plan.effective_diameter_cells,
-            "refinement_box": vars(plan.box), "tau_coarse": tau_coarse,
+            "tau_coarse": tau_coarse,
             "tau_fine": amr.config.tau_fine, "physical_reynolds": physical_re,
             "collision_reynolds": collision_re, "steps": args.steps,
-            "warmup_steps": args.warmup_steps,
-            "report_interval": args.report_interval,
             "report_average_window": args.average_window,
             "resumed_from_step": start_step,
             "checkpoint_path": str(checkpoint) if checkpoint else None,
-            "reflux_enabled": amr.config.reflux,
             "reflux_method": "face_local_post_collision_kinetic_flux",
-            "les_model": args.les_model,
-            "collision_model": args.collision_model,
             "les_constant": (
                 args.cw_wale if args.les_model == "wale" else args.cs_smag
             ),
-            "wall_stress_coupled": not args.diagnostic_uncoupled_wall_stress,
-            "wall_law": args.wall_law,
-            "wall_distance": args.wall_distance,
             "stress_exchange_distance": (
                 args.stress_exchange_distance
                 if args.stress_exchange_distance > 0.0 else None
             ),
-            "wall_diagnostic_interval": args.wall_diagnostic_interval,
-            "positivity_limiter_enabled": not args.disable_positivity_limiter,
-            "far_field_mode": args.far_field_mode,
-            "sponge_width": args.sponge_width,
-            "sponge_strength": args.sponge_strength,
             "sponge_inlet_enabled": args.sponge_inlet,
             "wall_activation_ramp_steps": args.ramp_steps,
         },

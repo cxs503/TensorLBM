@@ -274,6 +274,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     than the R14 8000-step late window and is not mixed into an observed-order
     fit.  It is retained for a later equal-time resume rather than using an
     unsafe ~22.7 GiB R16 run on a 23.69 GiB device.
+42. Production static-AMR evidence is promoted to schema v3 and now persists
+    the complete physical, boundary, collision, wall, refinement and scaled
+    domain identity needed for a legitimate grid sequence.  The reusable
+    `suboff_amr_convergence` assessor rejects mixed AFF variants, speeds,
+    physics, wall laws, domain ratios, refinement margins, exchange heights or
+    non-dimensional run times before fitting
+    `R(N)=R_inf+a N^-p`.  Final admission requires all three single-grid gates,
+    monotonic spatial convergence, acceptable fit/discretisation error and an
+    extrapolated resistance within the experimental tolerance.  Six focused
+    assessor tests and the full static-AMR/interface group pass; the active
+    exploratory AFF-1 v2 run remains diagnostic and cannot enter this v3 gate.
 
 ## Rejected candidates
 
