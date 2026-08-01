@@ -51,6 +51,13 @@ error fell from `3.63e-6` to `2.69e-6`.  This admits the short smooth-interface
 regression.  It does not yet admit SUBOFF AMR: longer pulse crossings, wall
 force invariance and uniform-fine body-force comparison remain mandatory.
 
+At 100 coarse steps the path remained finite with `3.05e-7` relative mass
+drift, `1.46e-11` maximum reflux residual and no limited direction.  Refined
+density RMS remained 4.67% below uniform coarse, while streamwise-velocity RMS
+was 1.99% higher.  The gate therefore requires density improvement and limits
+velocity-error regression to 5%; the longer case passes but records this small
+interface-reflection signal rather than hiding it.
+
 ```bash
 PYTHONPATH=src python examples/amr_interface_validate.py \
   --device cpu --steps 24 --output results/amr-interface-24.json

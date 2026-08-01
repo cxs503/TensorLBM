@@ -174,12 +174,24 @@ def run_amr_interface_validation(
         metrics["density_rms_refined_amr"]
         <= metrics["density_rms_refined_coarse"]
     )
+    density_error_ratio = (
+        metrics["density_rms_refined_amr"]
+        / max(metrics["density_rms_refined_coarse"], 1e-30)
+    )
+    velocity_error_ratio = (
+        metrics["velocity_x_rms_refined_amr"]
+        / max(metrics["velocity_x_rms_refined_coarse"], 1e-30)
+    )
+    velocity_not_materially_worse = velocity_error_ratio <= 1.05
+    metrics["refined_to_coarse_density_error_ratio"] = density_error_ratio
+    metrics["refined_to_coarse_velocity_x_error_ratio"] = velocity_error_ratio
     admitted = (
         finite
         and metrics["minimum_population"] > 0.0
         and metrics["relative_mass_drift"] <= 1e-5
         and metrics["maximum_reflux_population_residual"] <= 1e-6
         and refined_improves_density
+        and velocity_not_materially_worse
     )
     return {
         "schema": "tensorlbm-amr-interface-validation-v1",
@@ -204,6 +216,10 @@ def run_amr_interface_validation(
             "relative_mass_drift_target": 1e-5,
             "maximum_reflux_population_residual": 1e-6,
             "refined_region_improves_density": refined_improves_density,
+            "maximum_velocity_error_ratio": 1.05,
+            "refined_region_velocity_not_materially_worse": (
+                velocity_not_materially_worse
+            ),
             "admitted": admitted,
         },
     }
