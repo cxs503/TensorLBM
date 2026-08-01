@@ -30,3 +30,4 @@ def test_short_flat_plate_composition_is_finite() -> None:
     assert result["finite"] is True
     assert math.isfinite(result["friction_coefficient"])
     assert result["drag_stationarity"]["sufficiently_sampled"] is False
+    assert math.isfinite(result["maximum_positivity_limited_fraction"])

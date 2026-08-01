@@ -30,6 +30,8 @@ def main() -> None:
     parser.add_argument("--sponge-strength", type=float, default=0.2)
     parser.add_argument("--cv-margin", type=int, default=6)
     parser.add_argument("--wall-law", choices=("log", "reichardt", "musker"), default="log")
+    parser.add_argument("--cs-smag", type=float, default=0.05)
+    parser.add_argument("--disable-positivity-limiter", action="store_true")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     result = run_flat_plate_wall_model(FlatPlateWallModelConfig(
@@ -40,7 +42,10 @@ def main() -> None:
         lattice_speed=args.lattice_speed, steps=args.steps,
         warmup_steps=args.warmup_steps, ramp_steps=args.ramp_steps,
         sponge_width=args.sponge_width, sponge_strength=args.sponge_strength,
-        cv_margin=args.cv_margin, wall_law=args.wall_law, device=args.device,
+        cv_margin=args.cv_margin, wall_law=args.wall_law,
+        smagorinsky_cs=args.cs_smag,
+        positivity_limiter=not args.disable_positivity_limiter,
+        device=args.device,
     ))
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
