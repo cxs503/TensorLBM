@@ -26,6 +26,7 @@ def test_short_uniform_fine_interface_comparison_is_finite() -> None:
     assert math.isfinite(metrics["refined_to_coarse_velocity_x_error_ratio"])
     assert metrics["maximum_raw_kinetic_mismatch"] >= 0.0
     assert metrics["maximum_conserved_moment_correction"] >= 0.0
+    assert metrics["maximum_applied_correction_fraction"] >= 0.0
 
 
 def test_amr_interface_validation_is_public() -> None:

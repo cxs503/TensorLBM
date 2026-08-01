@@ -192,6 +192,7 @@ def test_repeated_child_ledgers_accumulate_over_the_root_step() -> None:
         0.8,
         0.2,
         0.7,
+        0.04,
     )
     second = PopulationRefluxLedger(
         torch.tensor([3.0]),
@@ -204,6 +205,7 @@ def test_repeated_child_ledgers_accumulate_over_the_root_step() -> None:
         0.6,
         0.1,
         0.9,
+        0.07,
     )
 
     merged = _merge_reflux_ledgers(first, second)
@@ -218,6 +220,7 @@ def test_repeated_child_ledgers_accumulate_over_the_root_step() -> None:
     assert merged.restriction_minimum_alpha == 0.6
     assert merged.prolongation_limited_fraction == 0.2
     assert merged.prolongation_minimum_alpha == 0.7
+    assert merged.maximum_applied_correction_fraction == 0.07
 
 
 def test_restore_level_populations_relinks_nested_parent_state() -> None:

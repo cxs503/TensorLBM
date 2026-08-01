@@ -40,6 +40,7 @@ def _record(length: int, resistance: float) -> dict:
             "maximum_health_speed": 0.3,
             "minimum_health_population": 1.0e-8,
             "maximum_positivity_limited_fraction": 1.0e-6,
+            "maximum_reflux_applied_correction_fraction": 1.0e-3,
             "minimum_convective_times": 8.0,
             "minimum_target_reynolds_convective_times": 7.5,
             "minimum_statistics_convective_times": 5.0,

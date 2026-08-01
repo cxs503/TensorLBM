@@ -144,6 +144,7 @@ def run_amr_interface_validation(
     maximum_limited_directions = 0
     maximum_raw_kinetic_mismatch = 0.0
     maximum_requested_correction = 0.0
+    maximum_applied_correction_fraction = 0.0
     for _ in range(config.steps):
         coarse_baseline = _advance_periodic(
             coarse_baseline, config.tau_coarse,
@@ -176,6 +177,10 @@ def run_amr_interface_validation(
             maximum_requested_correction,
             float(ledger.replacement_mismatch.abs().max().item()),
         )
+        maximum_applied_correction_fraction = max(
+            maximum_applied_correction_fraction,
+            ledger.maximum_applied_correction_fraction,
+        )
 
     reference_coarse = restrict_populations_2to1(uniform_fine)
     rho_reference, ux_reference, _, _ = macroscopic3d(reference_coarse)
@@ -206,6 +211,9 @@ def run_amr_interface_validation(
         "maximum_reflux_population_residual": maximum_reflux_residual,
         "maximum_raw_kinetic_mismatch": maximum_raw_kinetic_mismatch,
         "maximum_conserved_moment_correction": maximum_requested_correction,
+        "maximum_applied_correction_fraction": (
+            maximum_applied_correction_fraction
+        ),
         "maximum_limited_directions": maximum_limited_directions,
         "finite": finite,
     }

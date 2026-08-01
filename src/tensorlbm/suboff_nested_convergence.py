@@ -35,6 +35,7 @@ _IDENTITY_FIELDS = (
     "maximum_health_speed",
     "minimum_health_population",
     "maximum_positivity_limited_fraction",
+    "maximum_reflux_applied_correction_fraction",
     "minimum_convective_times",
     "minimum_target_reynolds_convective_times",
     "minimum_statistics_convective_times",

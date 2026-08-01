@@ -91,6 +91,9 @@ def test_nested_v4_launcher_expands_audited_l150_continuation(
     assert arguments[arguments.index("--interface-filter-width") + 1] == "0"
     assert arguments[arguments.index("--interface-filter-strength") + 1] == "0"
     assert arguments[
+        arguments.index("--maximum-reflux-applied-correction-fraction") + 1
+    ] == "0.001"
+    assert arguments[
         arguments.index("--minimum-target-reynolds-convective-times") + 1
     ] == "7.5"
     output = arguments[arguments.index("--output") + 1]

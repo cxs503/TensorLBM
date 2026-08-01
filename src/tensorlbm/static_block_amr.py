@@ -139,6 +139,7 @@ class PopulationRefluxLedger:
     restriction_minimum_alpha: float = 1.0
     prolongation_limited_fraction: float = 0.0
     prolongation_minimum_alpha: float = 1.0
+    maximum_applied_correction_fraction: float = 0.0
 
     @property
     def mass_residual(self) -> float:
@@ -186,6 +187,10 @@ def _merge_reflux_ledgers(
         prolongation_minimum_alpha=min(
             previous.prolongation_minimum_alpha,
             current.prolongation_minimum_alpha,
+        ),
+        maximum_applied_correction_fraction=max(
+            previous.maximum_applied_correction_fraction,
+            current.maximum_applied_correction_fraction,
         ),
     )
 
@@ -644,6 +649,7 @@ class StaticBlockAMR3D:
             ),
             self._maximum_prolongation_limited_fraction,
             self._minimum_prolongation_alpha,
+            report.maximum_applied_correction_fraction,
         )
         return self.last_reflux
 
@@ -878,6 +884,7 @@ class NestedStaticBlockAMR3D:
             ),
             interface._maximum_prolongation_limited_fraction,
             interface._minimum_prolongation_alpha,
+            report.maximum_applied_correction_fraction,
         )
         previous_ledger = ledgers[interface_index]
         if previous_ledger is not None:

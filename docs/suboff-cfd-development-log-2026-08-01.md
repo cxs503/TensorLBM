@@ -1502,6 +1502,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      focused single/nested runtime and SUBOFF tests pass.  The solver had always
      applied both corrections; this change makes health evidence match that
      actual subcycling rather than silently reporting only its final half.
+167. Reflux health now records the maximum fraction by which any corrected
+     direction's actual interface inventory is changed.  The matched pulse
+     baselines require only `1.1562e-6` (legacy exterior-cell stencil) and
+     `4.8261e-6` (crossing-link stencil), whereas a small final residual can
+     otherwise conceal a much larger applied correction.  Production nested
+     runs default to a fail-closed `1e-3` ceiling, persist per-interface maxima
+     in checkpoints/results and include the threshold in convergence identity.
+     Eighty-six focused interface, runtime, launcher and convergence tests pass.
 
 ## Rejected candidates
 

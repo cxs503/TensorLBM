@@ -219,6 +219,10 @@ def test_health_cadence_records_both_interface_ledgers(tmp_path: Path) -> None:
         "prolongation_minimum_alpha" in record
         for record in health["interfaces"]
     )
+    assert all(
+        "maximum_applied_correction_fraction" in record
+        for record in health["interfaces"]
+    )
     assert result["acceptance"]["population_health_target_met"] is True
     assert result["result"]["maximum_observed_speed"] < 0.3
     assert result["result"]["minimum_observed_population"] > 1.0e-8
@@ -326,6 +330,17 @@ def test_nested_health_population_floor_fails_during_run(tmp_path: Path) -> None
         MODULE.run(args)
 
 
+def test_nested_health_reflux_correction_gate_fails_during_run(
+    tmp_path: Path,
+) -> None:
+    args = _args(tmp_path, steps=1)
+    args.health_interval = 1
+    args.maximum_reflux_applied_correction_fraction = 1.0e-20
+
+    with pytest.raises(FloatingPointError, match="reflux-correction gate"):
+        MODULE.run(args)
+
+
 def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
@@ -350,6 +365,7 @@ def test_bare_hull_can_resume_exact_legacy_v2_signature(tmp_path: Path) -> None:
     state["configuration"].pop("wall_shear_ramp_steps")
     state["configuration"].pop("minimum_health_population")
     state["configuration"].pop("maximum_positivity_limited_fraction")
+    state["configuration"].pop("maximum_reflux_applied_correction_fraction")
     state["schema"] = "tensorlbm-suboff-nested-amr-smoke-checkpoint-v2"
     torch.save(state, checkpoint)
 
@@ -383,6 +399,7 @@ def test_baseline_can_resume_v3_checkpoint_before_transfer_options(
     state["configuration"].pop("wall_shear_ramp_steps")
     state["configuration"].pop("minimum_health_population")
     state["configuration"].pop("maximum_positivity_limited_fraction")
+    state["configuration"].pop("maximum_reflux_applied_correction_fraction")
     torch.save(state, checkpoint)
 
     resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
