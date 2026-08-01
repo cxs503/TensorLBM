@@ -20,10 +20,13 @@ def main() -> None:
     checkpoint = Path(args.checkpoint)
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
     populations = state.get("level_populations")
+    solid_masks = state.get("level_solid_masks")
     health = state.get("health_records")
     configuration = state.get("configuration")
     if not isinstance(populations, list) or not populations:
         raise ValueError("checkpoint has no nested level_populations")
+    if not isinstance(solid_masks, list) or len(solid_masks) != len(populations):
+        raise ValueError("checkpoint has no complete level_solid_masks")
     if not isinstance(health, list) or not health:
         raise ValueError("checkpoint has no health records with collision tau")
     if not isinstance(configuration, dict):
@@ -48,8 +51,11 @@ def main() -> None:
             model=model,
             coefficient=coefficient,
             chunk_cells=args.chunk_cells,
+            solid_mask=solid_mask,
         )
-        for value, tau in zip(populations, tau_by_level, strict=True)
+        for value, tau, solid_mask in zip(
+            populations, tau_by_level, solid_masks, strict=True,
+        )
     ]
     result = {
         "schema": "tensorlbm-nested-gradient-sgs-checkpoint-audit-v1",
