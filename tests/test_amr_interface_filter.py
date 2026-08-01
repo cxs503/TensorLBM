@@ -8,6 +8,7 @@ from tensorlbm.amr_interface_filter import (
     interface_shell_blend,
 )
 from tensorlbm.d3q19 import C, equilibrium3d, macroscopic3d
+from tensorlbm.d3q27 import equilibrium27, macroscopic27
 
 
 def _perturbed_population() -> torch.Tensor:
@@ -108,3 +109,23 @@ def test_population_momentum_is_directly_unchanged() -> None:
     before = torch.einsum("qzyx,qd->dzyx", f, c)
     after = torch.einsum("qzyx,qd->dzyx", filtered, c)
     assert torch.allclose(after, before, rtol=0.0, atol=3.0e-15)
+
+
+def test_d3q27_filter_preserves_macroscopic_state() -> None:
+    torch.manual_seed(19)
+    shape = (10, 12, 14)
+    rho = torch.full(shape, 1.02, dtype=torch.float64)
+    ux = torch.full(shape, 0.03, dtype=torch.float64)
+    uy = torch.full(shape, -0.004, dtype=torch.float64)
+    uz = torch.full(shape, 0.002, dtype=torch.float64)
+    f = equilibrium27(rho, ux, uy, uz)
+    f += 1.0e-5 * torch.randn_like(f)
+    blend = interface_shell_blend(
+        shape, ghost=1, width=2, strength=0.25,
+        device=f.device, dtype=f.dtype,
+    )
+    before = macroscopic27(f)
+    after = macroscopic27(damp_interface_nonequilibrium(f, blend))
+
+    for actual, expected in zip(after, before, strict=True):
+        assert torch.allclose(actual, expected, rtol=0.0, atol=3.0e-15)
