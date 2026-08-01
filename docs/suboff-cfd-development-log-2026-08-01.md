@@ -1355,6 +1355,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      checkpoints and final results.  This prevents a small corrected residual
      from hiding a large recurring coarse/fine transfer imbalance; 53 focused
      flux-register, AMR runtime and SUBOFF tests pass.
+151. The L150 continuation baseline reaches the same failure at step 2400,
+     when wall activation is approximately 47%: peak speed is 0.21156, the
+     minimum population reaches the positivity floor, and the peak is three
+     cells from the finest allocated boundary.  Log/checkpoint SHA-256 values
+     are `697d3fd2308c73b03665f84ebfc846841be5d3bdcaa41553887b8d03888fbaec`
+     and `204227e2a7ac7a04a440f9287af3dfd11a301f88e488a748030f0c2ec4661716`.
+     The released GPU now runs a matched L90 diagnostic with wall stress
+     disabled.  This trajectory is deliberately nonphysical and can establish
+     causality only; it is excluded from every resistance acceptance path.
 
 ## Rejected candidates
 
