@@ -27,15 +27,23 @@ from suboff_experimental_resistance import (
     smooth_ramp_factor,
 )
 from tensorlbm.boundaries3d import far_field_bc_3d
+from tensorlbm.control_volume_force import (
+    box_control_volume,
+    observe_control_volume_force,
+)
 from tensorlbm.d3q19 import C as C19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.drag_pressure import get_near_wall_3d
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
 from tensorlbm.solver3d import stream3d
+from tensorlbm.sponge_layer import (
+    apply_equilibrium_difference_sponge,
+    build_sponge_sigma_3d,
+)
 from tensorlbm.static_block_amr import StaticBlockAMR3D, StaticBlockAMRConfig
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import build_fine_suboff_mask, plan_suboff_static_amr
-from tensorlbm.turbulence import collide_smagorinsky_mrt3d
+from tensorlbm.turbulence import collide_smagorinsky_mrt3d, collide_wale_mrt3d
 from tensorlbm.wall_model import bfl_wall_function_3d
 
 
@@ -132,7 +140,10 @@ def run(args: argparse.Namespace) -> dict:
     coarse_f = equilibrium3d(rho, ux, zero, zero, device=device)
     amr = StaticBlockAMR3D(
         coarse_f,
-        StaticBlockAMRConfig(plan.box, tau_coarse=tau_coarse),
+        StaticBlockAMRConfig(
+            plan.box, tau_coarse=tau_coarse,
+            reflux=not args.disable_reflux,
+        ),
         fine_solid=fine_solid,
     )
     fine_solid_g = amr.fine_solid_with_ghost
@@ -167,22 +178,47 @@ def run(args: argparse.Namespace) -> dict:
         )
     fine_near = get_near_wall_3d(fine_solid_g)
     fine_solid_q = fine_solid_g.unsqueeze(0).expand_as(amr.fine_f)
+    fine_indices = fine_solid_g.nonzero(as_tuple=False)
+    z_min, y_min, x_min = (
+        int(fine_indices[:, axis].min().item()) for axis in range(3)
+    )
+    z_max, y_max, x_max = (
+        int(fine_indices[:, axis].max().item()) + 1 for axis in range(3)
+    )
+    fine_cv = box_control_volume(
+        fine_solid_g.shape,
+        x0=x_min - args.cv_margin, x1=x_max + args.cv_margin,
+        y0=y_min - args.cv_margin, y1=y_max + args.cv_margin,
+        z0=z_min - args.cv_margin, z1=z_max + args.cv_margin,
+        device=device,
+    )
 
     coarse_free = equilibrium3d(rho, ux, zero, zero, device=device)
-    sponge = _sponge(shape, args.sponge_width, args.sponge_strength, device)
-    force_samples: list[tuple[float, float]] = []
+    sponge = build_sponge_sigma_3d(
+        shape, width=args.sponge_width, max_strength=args.sponge_strength,
+        device=device,
+    )
+    force_samples: list[tuple[float, float, float]] = []
     current_step = 0
 
     def advance(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+        def collide(state: torch.Tensor) -> torch.Tensor:
+            if args.les_model == "wale":
+                return collide_wale_mrt3d(state, tau, C_w=args.cw_wale)
+            return collide_smagorinsky_mrt3d(state, tau, C_s=args.cs_smag)
+
         if level == 0:
-            out = stream3d(collide_smagorinsky_mrt3d(f, tau, C_s=args.cs_smag))
+            out = stream3d(collide(f))
             out = far_field_bc_3d(out, u_in=args.lattice_speed)
             if args.sponge_width > 0 and args.sponge_strength > 0.0:
-                out = (1.0 - sponge) * out + sponge * coarse_free
+                out = apply_equilibrium_difference_sponge(
+                    out, sponge,
+                    velocity_target=(args.lattice_speed, 0.0, 0.0),
+                )
             return far_field_bc_3d(out, u_in=args.lattice_speed)
 
         before = f
-        collided = collide_smagorinsky_mrt3d(f, tau, C_s=args.cs_smag)
+        collided = collide(f)
         post_collision = torch.where(fine_solid_q, before, collided)
         out = stream3d(post_collision)
         activation = smooth_ramp_factor(current_step, args.ramp_steps)
@@ -192,7 +228,10 @@ def run(args: argparse.Namespace) -> dict:
             wall_law=args.wall_law, near_mask=fine_near,
             bfl_wall_mode="wall_model_slip", wall_activation=activation,
         )
-        force_samples.append((pressure, friction))
+        cv_force = float(observe_control_volume_force(
+            before, out, post_collision, fine_cv, solid=fine_solid_g,
+        ).force_on_body[0].item())
+        force_samples.append((pressure, friction, cv_force))
         return out
 
     dx_fine_m = MODEL_LENGTH_M / (2.0 * args.hull_length)
@@ -208,7 +247,9 @@ def run(args: argparse.Namespace) -> dict:
         ledger = amr.step(advance)
         pressure = sum(item[0] for item in force_samples) / len(force_samples)
         friction = sum(item[1] for item in force_samples) / len(force_samples)
-        resistance = (pressure + friction) * scale
+        cv_force = sum(item[2] for item in force_samples) / len(force_samples)
+        resistance = cv_force * scale
+        bfl_resistance = (pressure + friction) * scale
         recent_forces.append(resistance)
         if len(recent_forces) > args.average_window:
             recent_forces.pop(0)
@@ -220,6 +261,10 @@ def run(args: argparse.Namespace) -> dict:
                 "step": current_step,
                 "instantaneous_resistance_n": resistance,
                 "window_resistance_n": mean_force,
+                "instantaneous_bfl_link_plus_wall_stress_n": bfl_resistance,
+                "instantaneous_force_observer_difference_n": (
+                    bfl_resistance - resistance
+                ),
                 "error_pct": abs(mean_force - point.resistance_n) / point.resistance_n * 100.0,
                 "reflux_mass_residual": ledger.mass_residual,
             }
@@ -246,6 +291,11 @@ def run(args: argparse.Namespace) -> dict:
             "refinement_box": vars(plan.box), "tau_coarse": tau_coarse,
             "tau_fine": amr.config.tau_fine, "physical_reynolds": physical_re,
             "collision_reynolds": collision_re, "steps": args.steps,
+            "reflux_enabled": amr.config.reflux,
+            "les_model": args.les_model,
+            "les_constant": (
+                args.cw_wale if args.les_model == "wale" else args.cs_smag
+            ),
         },
         "mesh": {
             "coarse_cells": plan.coarse_cells,
@@ -290,6 +340,8 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--center-x-fraction", type=float, default=0.35)
     p.add_argument("--wall-margin", type=int, default=8)
     p.add_argument("--wake-cells", type=int, default=50)
+    p.add_argument("--cv-margin", type=int, default=8)
+    p.add_argument("--disable-reflux", action="store_true")
     p.add_argument("--steps", type=int, default=5000)
     p.add_argument("--report-interval", type=int, default=100)
     p.add_argument("--average-window", type=int, default=500)
@@ -299,10 +351,12 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nu-water", type=float, default=1.004e-6)
     p.add_argument("--rho-water", type=float, default=998.2)
     p.add_argument("--cs-smag", type=float, default=0.05)
+    p.add_argument("--cw-wale", type=float, default=0.5)
+    p.add_argument("--les-model", choices=("wale", "smagorinsky"), default="wale")
     p.add_argument("--wall-law", choices=("log", "reichardt", "musker"), default="reichardt")
     p.add_argument("--wall-distance", type=float, default=0.5)
     p.add_argument("--sponge-width", type=int, default=12)
-    p.add_argument("--sponge-strength", type=float, default=1.0)
+    p.add_argument("--sponge-strength", type=float, default=0.2)
     p.add_argument("--output", required=True)
     return p
 

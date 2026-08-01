@@ -94,6 +94,34 @@ def test_without_reflux_replacement_changes_inventory() -> None:
     assert ledger.shell_cells == 0
 
 
+def test_reflux_is_population_proportional_and_does_not_create_negatives() -> None:
+    coarse = _uniform_equilibrium((8, 9, 11)).float()
+    solver = StaticBlockAMR3D(coarse, _config(reflux=True))
+
+    def drain_fine(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+        del tau, substep
+        return f if level == 0 else f * 0.999
+
+    ledger = solver.step(drain_fine)
+    assert float(solver.coarse_f.min()) > 0.0
+    assert ledger.limited_directions == 0
+    assert abs(ledger.mass_residual) < 2e-5
+
+
+def test_extreme_reflux_is_limited_and_exposes_residual() -> None:
+    coarse = _uniform_equilibrium((8, 9, 11)).float()
+    solver = StaticBlockAMR3D(coarse, _config(reflux=True))
+
+    def inflate_fine(f: torch.Tensor, tau: float, level: int, substep: int) -> torch.Tensor:
+        del tau, substep
+        return f if level == 0 else f * 10.0
+
+    ledger = solver.step(inflate_fine)
+    assert float(solver.coarse_f.min()) >= 0.0
+    assert ledger.limited_directions > 0
+    assert torch.count_nonzero(ledger.residual).item() > 0
+
+
 def test_local_block_saves_cells_against_uniform_refinement() -> None:
     coarse = _uniform_equilibrium((8, 9, 11))
     solver = StaticBlockAMR3D(coarse, _config())
