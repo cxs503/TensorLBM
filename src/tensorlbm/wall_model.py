@@ -953,7 +953,7 @@ def bfl_wall_function_3d(
 
     - Uses **Guo forcing** ``(1 + c·u/cs²)`` correction (not simple forcing)
     - Combines BFL (geometric accuracy) + wall function (turbulence)
-    - Force magnitude: ``−τ_w/dy`` (per unit volume, correct for Guo)
+    - Force magnitude: ``−τ_w A/V`` on each boundary control volume
     - Uses tangential velocity for curved walls
 
     Args:
@@ -1136,13 +1136,19 @@ def bfl_wall_function_d3q27(
     wall_law: str = "reichardt",
     near_mask: torch.Tensor | None = None,
     apply_bfl: bool = True,
+    area_weight: torch.Tensor | None = None,
+    wall_activation: float = 1.0,
+    apply_wall_stress: bool = True,
 ) -> tuple[torch.Tensor, float, float]:
     """D3Q27 variant of :func:`bfl_wall_function_3d`.
 
     Uses D3Q27 Guo forcing with the correct lattice weights
     (8/27, 2/27, 1/54, 1/216).
     """
-    from .d3q27 import macroscopic27, C as C27
+    from .d3q27 import macroscopic27
+
+    if not 0.0 <= wall_activation <= 1.0:
+        raise ValueError("wall_activation must be in [0,1]")
 
     fluid = ~solid
     if near_mask is not None:
@@ -1179,15 +1185,26 @@ def bfl_wall_function_d3q27(
 
     # ── Step 5: Apply Guo body force ──
     near_f = near.to(f.dtype)
-    coef = -(tau_w / y_val) * near_f
+    if area_weight is None:
+        traction_area = near_f
+    else:
+        if area_weight.shape != near.shape:
+            raise ValueError("area_weight must have the spatial grid shape")
+        traction_area = near_f * area_weight.to(device=f.device, dtype=f.dtype)
+    # Integrated wall traction is tau_w*A.  The lattice control-volume
+    # volume is one, and y_val has already entered the wall-law solve.
+    coef = -tau_w * traction_area * wall_activation
     fx = coef * (ut_x * inv_utan)
     fy = coef * (ut_y * inv_utan)
     fz = coef * (ut_z * inv_utan)
 
-    f = guo_body_force_d3q27(f, fx, fy, fz, ux, uy, uz)
+    if apply_wall_stress:
+        f = guo_body_force_d3q27(f, fx, fy, fz, ux, uy, uz)
 
     # ── Step 6: Compute drag ──
-    drag_fric = float((tau_w * (ut_x * inv_utan) * near_f).sum().item())
+    drag_fric = float((
+        tau_w * (ut_x * inv_utan) * traction_area * wall_activation
+    ).sum().item())
     p = (rho - 1.0) / 3.0
     sp = torch.roll(solid, 1, dims=2)
     sm = torch.roll(solid, -1, dims=2)
