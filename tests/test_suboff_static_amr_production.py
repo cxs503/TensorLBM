@@ -55,6 +55,7 @@ def test_static_amr_checkpoint_resumes_complete_evidence_ledger(
     assert resumed["configuration"]["resumed_from_step"] == 4
     assert resumed["result"]["finite"] is True
     assert resumed["acceptance"]["physical_validation"] is False
+    assert resumed["acceptance"]["duration_target_met"] is False
     assert resumed["geometry"]["surface_area_weighting"][
         "calibrated_area"
     ] == pytest.approx(resumed["geometry"]["wetted_area_lu2"], rel=1e-6)
