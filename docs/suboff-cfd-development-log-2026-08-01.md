@@ -825,6 +825,20 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     100--1000 engineering target.  This is a quantitative design requirement
     for the post-campaign surface-shell refinement, not a reason to alter the
     active three-grid trajectories.
+98. The conservative static-block runtime now supports an arbitrary strictly
+    nested sequence of 2:1 blocks instead of only one parent/child interface.
+    A three-level step advances L0/L1/L2 exactly 1/2/4 times, time-interpolates
+    every child ghost layer, rescales non-equilibrium stress at each level,
+    restricts finest-to-coarsest, and applies an independent face-local kinetic
+    reflux ledger at both interfaces.  Mixed replacement-only/conservative
+    hierarchies and broken tau chains fail closed.  A 50-root-step D3Q19 MRT
+    non-equilibrium test remains finite and positive with 6.00e-8 relative
+    root mass drift and 1.82e-12 maximum reflux residual; exact scheduling,
+    uniform moving equilibrium, cell savings and checkpoint-level state
+    relinking have dedicated regressions.  This establishes the common
+    multi-level mechanism required by the y+ plan, but does not yet admit a
+    curved-wall SUBOFF surface shell; geometry ownership and force closure on
+    the added interface remain mandatory integration evidence.
 
 ## Rejected candidates
 

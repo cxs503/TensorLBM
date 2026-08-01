@@ -16,7 +16,7 @@ problem-specific physical boundaries without teaching this module about them.
 """
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 import torch
@@ -372,10 +372,233 @@ class StaticBlockAMR3D:
         return self.last_reflux
 
 
+class NestedStaticBlockAMR3D:
+    """Conservative hierarchy of strictly nested 2:1 static blocks.
+
+    Each configuration describes one parent-to-child interface in the parent
+    level's allocated coordinates.  A two-interface hierarchy therefore
+    advances level 0 once, level 1 twice and level 2 four times per root step.
+    Every interface retains the same time-interpolated ghost fill,
+    non-equilibrium scaling, fine-volume restriction and face-local kinetic
+    reflux contract as :class:`StaticBlockAMR3D`.
+
+    This runtime deliberately requires reflux on every interface.  A nested
+    production calculation must not silently mix conservative and
+    replacement-only levels.
+    """
+
+    def __init__(
+        self,
+        coarse_f: torch.Tensor,
+        configs: Sequence[StaticBlockAMRConfig],
+        *,
+        fine_solids: Sequence[torch.Tensor | None] | None = None,
+    ) -> None:
+        if not configs:
+            raise ValueError("nested AMR requires at least one fine-level configuration")
+        if any(not config.reflux for config in configs):
+            raise ValueError("nested AMR requires reflux on every interface")
+        if fine_solids is None:
+            fine_solids = [None] * len(configs)
+        if len(fine_solids) != len(configs):
+            raise ValueError("fine_solids must have one entry per interface")
+
+        self.interfaces: list[StaticBlockAMR3D] = []
+        parent = coarse_f
+        previous_tau_fine: float | None = None
+        for level, (config, fine_solid) in enumerate(
+            zip(configs, fine_solids, strict=True),
+        ):
+            if (
+                previous_tau_fine is not None
+                and abs(config.tau_coarse - previous_tau_fine) > 1.0e-12
+            ):
+                raise ValueError(
+                    f"interface {level} tau_coarse must equal its parent tau_fine",
+                )
+            interface = StaticBlockAMR3D(
+                parent, config, fine_solid=fine_solid,
+            )
+            self.interfaces.append(interface)
+            parent = interface.fine_f
+            previous_tau_fine = config.tau_fine
+        self.last_reflux: tuple[PopulationRefluxLedger, ...] | None = None
+
+    @property
+    def coarse_f(self) -> torch.Tensor:
+        return self.interfaces[0].coarse_f
+
+    @coarse_f.setter
+    def coarse_f(self, value: torch.Tensor) -> None:
+        _validate_parent_and_box(value, self.interfaces[0].config)
+        self.interfaces[0].coarse_f = value
+
+    @property
+    def finest_f(self) -> torch.Tensor:
+        return self.interfaces[-1].fine_f
+
+    @property
+    def level_populations(self) -> tuple[torch.Tensor, ...]:
+        return (self.coarse_f,) + tuple(
+            interface.fine_f for interface in self.interfaces
+        )
+
+    @property
+    def total_allocated_cells(self) -> int:
+        return sum(int(level[0].numel()) for level in self.level_populations)
+
+    @property
+    def uniform_finest_equivalent_cells(self) -> int:
+        ratio = self.interfaces[0].config.ratio
+        return int(self.coarse_f[0].numel() * ratio ** (3 * len(self.interfaces)))
+
+    @property
+    def cell_saving_fraction(self) -> float:
+        return 1.0 - self.total_allocated_cells / self.uniform_finest_equivalent_cells
+
+    def restore_level_populations(
+        self,
+        populations: Sequence[torch.Tensor],
+    ) -> None:
+        """Restore all hierarchy levels while preserving shared parent state."""
+        expected = self.level_populations
+        if len(populations) != len(expected):
+            raise ValueError("checkpoint must contain one population tensor per level")
+        for level, (value, template) in enumerate(
+            zip(populations, expected, strict=True),
+        ):
+            if not isinstance(value, torch.Tensor) or value.shape != template.shape:
+                raise ValueError(f"checkpoint level {level} has the wrong shape")
+            if value.dtype != template.dtype or value.device != template.device:
+                raise ValueError(
+                    f"checkpoint level {level} must preserve dtype and device",
+                )
+        self.interfaces[0].coarse_f = populations[0]
+        for level, interface in enumerate(self.interfaces):
+            interface.fine_f = populations[level + 1]
+            if level + 1 < len(self.interfaces):
+                self.interfaces[level + 1].coarse_f = interface.fine_f
+
+    def _advance_interface(
+        self,
+        interface_index: int,
+        advance: Advance3D,
+        coarse_substep: int,
+        ledgers: list[PopulationRefluxLedger | None],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        interface = self.interfaces[interface_index]
+        config = interface.config
+        coarse_old = interface.coarse_f.clone()
+        coarse_new, coarse_post = interface._unpack_advance(
+            advance(
+                interface.coarse_f,
+                config.tau_coarse,
+                interface_index,
+                coarse_substep,
+            ),
+            interface.coarse_f.shape,
+            require_flux_state=True,
+        )
+        assert coarse_post is not None
+        interface.coarse_f = coarse_new
+        coarse_transfer = observe_kinetic_interface_transfer(
+            coarse_post, interface.coarse_interface_links,
+        )
+        fine_transfer: KineticInterfaceTransfer | None = None
+
+        for local_substep in range(config.ratio):
+            child_substep = (
+                local_substep
+                if coarse_substep < 0
+                else coarse_substep * config.ratio + local_substep
+            )
+            alpha_start = local_substep / config.ratio
+            parent_start = torch.lerp(
+                coarse_old, interface.coarse_f, alpha_start,
+            )
+            interface._fill_ghost(parent_start)
+
+            if interface_index + 1 < len(self.interfaces):
+                child = self.interfaces[interface_index + 1]
+                child.coarse_f = interface.fine_f
+                fine_new, fine_post = self._advance_interface(
+                    interface_index + 1,
+                    advance,
+                    child_substep,
+                    ledgers,
+                )
+            else:
+                fine_new, unpacked_post = interface._unpack_advance(
+                    advance(
+                        interface.fine_f,
+                        config.tau_fine,
+                        interface_index + 1,
+                        child_substep,
+                    ),
+                    interface.fine_f.shape,
+                    require_flux_state=True,
+                )
+                assert unpacked_post is not None
+                fine_post = unpacked_post
+
+            interface.fine_f = fine_new
+            observed = observe_kinetic_interface_transfer(
+                fine_post,
+                interface.fine_interface_links,
+                cell_volume=1.0 / config.ratio**3,
+            )
+            fine_transfer = (
+                observed if fine_transfer is None else fine_transfer + observed
+            )
+            alpha_end = (local_substep + 1) / config.ratio
+            parent_end = torch.lerp(coarse_old, interface.coarse_f, alpha_end)
+            interface._fill_ghost(parent_end)
+
+        if fine_transfer is None:
+            raise RuntimeError("nested AMR omitted fine interface transfer")
+        restricted = interface._restrict_physical()
+        box = config.box
+        interface.coarse_f[
+            :, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1
+        ] = restricted
+        interface.coarse_f, report = apply_face_local_reflux(
+            interface.coarse_f,
+            interface.coarse_interface_links,
+            coarse_transfer,
+            fine_transfer,
+            maximum_correction_fraction=config.maximum_reflux_correction_fraction,
+        )
+        ledger = PopulationRefluxLedger(
+            report.requested_inventory_correction,
+            report.applied_inventory_correction,
+            report.corrected_links,
+            report.residual,
+            report.limited_directions,
+            report.raw_kinetic_mismatch,
+        )
+        interface.last_reflux = ledger
+        ledgers[interface_index] = ledger
+        return interface.coarse_f, coarse_post
+
+    def step(self, advance: Advance3D) -> tuple[PopulationRefluxLedger, ...]:
+        """Advance the complete hierarchy by one root-grid time step."""
+        ledgers: list[PopulationRefluxLedger | None] = [
+            None for _ in self.interfaces
+        ]
+        self._advance_interface(0, advance, -1, ledgers)
+        if any(ledger is None for ledger in ledgers):
+            raise RuntimeError("nested AMR did not produce every reflux ledger")
+        self.last_reflux = tuple(
+            ledger for ledger in ledgers if ledger is not None
+        )
+        return self.last_reflux
+
+
 __all__ = [
     "Advance3D",
     "AMRAdvanceResult",
     "PopulationRefluxLedger",
+    "NestedStaticBlockAMR3D",
     "StaticBlockAMR3D",
     "StaticBlockAMRConfig",
     "convective_refined_tau",
