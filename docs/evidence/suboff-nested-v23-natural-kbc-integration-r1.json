@@ -1,0 +1,56 @@
+{
+  "schema": "tensorlbm-nested-integration-candidate-evidence-v1",
+  "candidate": "suboff-nested-v23-l90-natural-kbc-2400",
+  "status": "continued_as_diagnostic_not_physically_admitted",
+  "configuration": {
+    "hull_type": "bare_hull",
+    "hull_length_cells": 90,
+    "finest_hull_length_cells": 360,
+    "steps": 2400,
+    "convective_times": 1.6,
+    "resolved_reynolds": 100000,
+    "collision_model": "natural_kbc",
+    "smagorinsky_coefficient": 0.0,
+    "wall_ramp_steps": 3000
+  },
+  "health": {
+    "finite": true,
+    "minimum_observed_population": 0.015741484239697456,
+    "maximum_observed_speed": 0.0854182094335556,
+    "maximum_collision_limited_fraction": 0.0,
+    "maximum_transfer_limited_fraction_by_interface": [0.0, 0.0],
+    "maximum_reflux_applied_correction_fraction_by_interface": [
+      2.570054959960544e-07,
+      2.596467822968407e-07
+    ],
+    "reflux_applied_correction_fraction_limit": 0.001
+  },
+  "admission": {
+    "population_health_target_met": true,
+    "reflux_applied_correction_target_met": true,
+    "collision_viscosity_target_met_in_runner": false,
+    "integration_smoke_admitted": false,
+    "fully_activated_steps_assessed": 0,
+    "resistance_accuracy_assessed": false,
+    "time_convergence_assessed": false,
+    "grid_convergence_assessed": false
+  },
+  "independent_collision_evidence": {
+    "tau_0_8_shear_wave_relative_error_pct": 0.0517,
+    "tau_0_5002_shear_wave_relative_error_pct": 1.770,
+    "note": "Molecular viscosity recovery is independently admitted, but nonlinear canonical-flow validation is still required before the runner collision gate is promoted."
+  },
+  "continuation": {
+    "checkpoint_copied_to": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-12k.ckpt",
+    "target_steps": 12000,
+    "target_convective_times": 8.0,
+    "remote_pid_at_successful_launch": 1562468
+  },
+  "artifacts": {
+    "remote_result": "results/amr_campaign_20260801/suboff-nested-v23-l90-natural-kbc-2400.json",
+    "remote_result_sha256": "866e4a045dba59b720f14264f5bb5a25e419389db067d53341745b9da1392f45",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v23-l90-natural-kbc-2400.ckpt",
+    "remote_checkpoint_sha256": "98fb46b5f5ac6ece78a21b25d181bfdcccf5df2e7e1022411ff83bcb2349f75a"
+  },
+  "conclusion": "Natural KBC crossed the historical instability interval without SGS viscosity or positivity limiting and with substantially smaller interface corrections than the stable Smagorinsky candidates. The 2400-step pilot is not a resistance result; the 12k continuation tests long-time nonlinear behavior and force statistics."
+}
