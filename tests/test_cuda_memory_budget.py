@@ -5,7 +5,9 @@ import torch
 
 from tensorlbm.cuda_memory_budget import (
     assess_cuda_memory_budget,
+    assess_cuda_runtime_reserve,
     require_cuda_memory_budget,
+    require_cuda_runtime_reserve,
 )
 
 
@@ -30,6 +32,26 @@ def test_cpu_run_needs_no_cuda_preflight() -> None:
     assert require_cuda_memory_budget(
         torch.device("cpu"), estimated_peak_gib=1.0,
     ) is None
+    assert require_cuda_runtime_reserve(torch.device("cpu")) is None
+
+
+def test_post_allocation_reserve_is_measured_not_estimated() -> None:
+    gib = 2**30
+    admitted = assess_cuda_runtime_reserve(
+        free_bytes=2 * gib,
+        total_bytes=24 * gib,
+        required_reserve_gib=1.0,
+    )
+    rejected = assess_cuda_runtime_reserve(
+        free_bytes=gib // 12,
+        total_bytes=24 * gib,
+        required_reserve_gib=1.0,
+    )
+
+    assert admitted.admitted is True
+    assert admitted.free_gib == pytest.approx(2.0)
+    assert rejected.admitted is False
+    assert rejected.free_gib == pytest.approx(1.0 / 12.0)
 
 
 @pytest.mark.parametrize(

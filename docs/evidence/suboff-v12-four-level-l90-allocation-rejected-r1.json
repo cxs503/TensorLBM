@@ -1,0 +1,44 @@
+{
+  "schema": "tensorlbm-suboff-four-level-allocation-probe-v1",
+  "status": "rejected_before_timestep_one",
+  "configuration": {
+    "effective_hull_length_cells": 720.0,
+    "deep_wall_margin_parent_cells": 13,
+    "deep_wake_cells_parent": 26,
+    "cv_margin_finest_cells": 16,
+    "auxiliary_cv_margins_finest_cells": [
+      8,
+      24
+    ],
+    "total_allocated_cells": 23124552,
+    "memory_model_bytes_per_cell": 943.0,
+    "predicted_peak_gib": 20.30884151905775
+  },
+  "measured_cuda_inventory": {
+    "device_total_mib": 24258,
+    "device_used_mib": 24175,
+    "device_free_mib": 83,
+    "solver_compute_process_mib": 23912,
+    "implied_solver_bytes_per_allocated_cell": 1084.2825976477295,
+    "required_runtime_reserve_mib": 1024
+  },
+  "action": {
+    "terminated_pid": 1595731,
+    "termination_scope": "TensorLBM v12 allocation probe only",
+    "checkpoint_created": false,
+    "gpu_free_mib_after_termination": 23998
+  },
+  "correction": {
+    "new_memory_model_bytes_per_cell": 1100.0,
+    "new_deep_wall_margin_parent_cells": 7,
+    "new_deep_wake_cells_parent": 14,
+    "new_cv_margin_finest_cells": 8,
+    "new_auxiliary_cv_margins_finest_cells": [
+      4,
+      12
+    ],
+    "post_persistent_allocation_runtime_reserve_gate": true
+  },
+  "physical_validation": false,
+  "scope_limit": "This is allocation evidence only. It establishes neither timestep stability nor resistance accuracy."
+}
