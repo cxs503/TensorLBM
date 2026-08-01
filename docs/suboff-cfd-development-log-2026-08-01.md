@@ -377,6 +377,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
     changed-sponge rejection tests pass.  The already-running D32/80k process
     remains isolated on its loaded v1 code and is treated as diagnostic; future
     formal cylinder sequences use v2 rather than retroactively relabelling it.
+52. The L120 AFF-1 run exposed a backend edge case in the positivity limiter
+    after step 1750: an empty selected-cell tensor reached `alpha.min()` and
+    raised even though the flow had not produced NaN.  Empty selections are
+    now an explicit identity operation (`limited_cells=0`, `alpha=1`), and
+    non-finite floors are rejected before comparison.  The limiter plus static-
+    AMR regression group passes six tests.  The production run resumes from its
+    atomic step-1500 checkpoint with unchanged physical identity; the lost 250
+    transient steps are recomputed rather than reconstructed.
 
 ## Rejected candidates
 
