@@ -11,9 +11,9 @@ def _record(coarse_length: float) -> dict[str, object]:
     fine_length = 2.0 * coarse_length
     resistance = 100.0 + 500.0 / fine_length**2
     return {
-        "schema": "tensorlbm-suboff-static-amr-v4",
+        "schema": "tensorlbm-suboff-static-amr-v5",
         "configuration": {
-            "schema_version": 4,
+            "schema_version": 5,
             "hull_type": "bare_hull",
             "speed_knots": 5.92,
             "center_x_fraction": 0.3,
@@ -28,6 +28,7 @@ def _record(coarse_length: float) -> dict[str, object]:
             "wall_law": "musker",
             "wall_distance": 0.5,
             "wall_viscosity_basis": "physical_reynolds",
+            "pressure_reference": "near_wall",
             "sponge_strength": 0.2,
             "sponge_inlet": False,
             "far_field_mode": "non_equilibrium_extrapolation",
@@ -46,12 +47,14 @@ def _record(coarse_length: float) -> dict[str, object]:
             "wall_margin": coarse_length / 15.0,
             "wake_cells": coarse_length * 5.0 / 6.0,
             "cv_margin": fine_length / 30.0,
+            "aux_cv_margins": [fine_length / 45.0, fine_length / 22.5],
             "stress_exchange_distance": fine_length * 3.0 / 256.0,
             "sponge_width": coarse_length / 10.0,
             "steps": fine_length * 100.0 / 3.0,
             "warmup_steps": fine_length * 50.0 / 3.0,
             "average_window": fine_length * 25.0 / 6.0,
             "ramp_steps": fine_length * 25.0 / 6.0,
+            "surface_force_interval": fine_length / 12.0,
         },
         "result": {
             "mean_resistance_n": resistance,
@@ -83,7 +86,7 @@ def test_wrong_schema_fails_provenance(records: list[dict[str, object]]) -> None
     records[0]["schema"] = "tensorlbm-suboff-static-amr-v3"
     result = assess_suboff_amr_convergence(records)
 
-    assert result["configuration_identity"]["v4_schema"] is False
+    assert result["configuration_identity"]["v5_schema"] is False
     assert result["admitted"] is False
 
 
