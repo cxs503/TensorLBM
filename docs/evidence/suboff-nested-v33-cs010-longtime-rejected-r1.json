@@ -60,6 +60,20 @@
     "The very high measured exchange y+ supports the active L720 near-wall refinement study but is not itself an accuracy correction."
   ],
   "component_inference": "The legacy run's wall-shear component is already 91.56 percent of the total experimental resistance, while its pressure component is 48.46 percent of the total experiment. This points to pressure recovery, effective outer-flow Reynolds number, geometry resolution and AMR-interface sensitivity as the next causal checks; it does not authorize subtracting either component empirically.",
+  "ittc_component_scale_audit": {
+    "scope": "diagnostic_only_not_a_cfd_correction",
+    "physical_reynolds": 13213381.41322709,
+    "physical_speed_mps": 3.04550848,
+    "physical_wetted_area_m2": 5.991511906325,
+    "ittc_1957_friction_coefficient": 0.0028598900844421984,
+    "ittc_1957_friction_resistance_n": 79.32187377597819,
+    "cfd_wall_shear_n": 80.02495390995847,
+    "cfd_wall_shear_vs_ittc_pct": 0.8863634966137169,
+    "experimental_total_minus_ittc_friction_n": 8.078126224021815,
+    "cfd_pressure_n": 42.35667757071555,
+    "cfd_pressure_over_inferred_residual": 5.243379020837786,
+    "interpretation": "The wall-model shear scale is already consistent with the independent ITTC friction line. The dominant excess is the directly computed pressure contribution; the inferred residual is not substituted into the solver or reported as CFD."
+  },
   "required_follow_up": [
     "Use v13 with the corrected wall source for the clean no-inlet-sponge baseline.",
     "Compare v13 against the concurrently running corrected-source v14 inlet-sponge trajectory.",
