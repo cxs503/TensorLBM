@@ -685,6 +685,21 @@ class TestKBCDiagnostics:
 
 
 class TestNaturalKBCExperimental:
+    def test_tensor_tau_kernel_matches_validated_scalar_wrapper(self):
+        from tensorlbm.entropic_kbc import (
+            _collide_natural_kbc_d3q19_unchecked,
+            collide_natural_kbc_d3q19,
+        )
+
+        f = _state_19()
+        tau = 0.500324
+        expected = collide_natural_kbc_d3q19(f, tau)
+        actual = _collide_natural_kbc_d3q19_unchecked(
+            f, torch.tensor(tau, dtype=f.dtype),
+        )
+
+        torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
+
     def test_natural_kbc_preserves_macroscopic_state_and_positivity(self):
         from tensorlbm.entropic_kbc import collide_natural_kbc_d3q19
 

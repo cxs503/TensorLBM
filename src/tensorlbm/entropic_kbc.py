@@ -389,7 +389,7 @@ def _natural_kbc_gamma(
     feq: torch.Tensor,
     shear_delta: torch.Tensor,
     higher_delta: torch.Tensor,
-    beta: float,
+    beta: float | torch.Tensor,
 ) -> torch.Tensor:
     """Approximate KBC gamma with an admissible positivity-domain clamp."""
     inverse_equilibrium = feq.clamp_min(1.0e-30).reciprocal()
@@ -425,25 +425,16 @@ def _natural_kbc_gamma(
     return torch.minimum(torch.maximum(gamma, lower), upper)
 
 
-def collide_natural_kbc_d3q19(
+def _collide_natural_kbc_d3q19_unchecked(
     f: torch.Tensor,
-    tau: float,
+    tau: float | torch.Tensor,
 ) -> torch.Tensor:
-    """Experimental natural-moment KBC collision with fixed shear viscosity.
+    """Natural-KBC tensor kernel after caller-side contract validation.
 
-    This follows ``f' = f - 2*beta*Delta_s - beta*gamma*Delta_h`` with
-    ``beta = 1/(2*tau)``. The deviatoric second-order projection is the shear
-    part; bulk and higher-order residuals form ``Delta_h``. The analytical
-    entropic scalar-product approximation supplies gamma and is clamped to the
-    population positivity interval.
-
-    The kernel remains experimental until independent viscosity, entropy and
-    flow benchmarks pass; it does not replace :func:`collide_kbc_d3q19`.
+    Keeping the relaxation time as a tensor-compatible argument allows a
+    compiled executor to reuse one graph throughout a viscosity ramp instead
+    of specializing and recompiling once per Python float value.
     """
-    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
-        raise ValueError("f must have shape (19,nz,ny,nx)")
-    if tau <= 0.5:
-        raise ValueError(f"tau must be > 0.5, got {tau}")
     rho, ux, uy, uz = macroscopic3d(f)
     feq = equilibrium3d(rho, ux, uy, uz)
     shear_delta, bulk_delta, higher_delta = _kbc_decompose(
@@ -464,6 +455,28 @@ def collide_natural_kbc_d3q19(
         - 2.0 * beta * shear_delta
         - beta * gamma.unsqueeze(0) * remaining_delta
     )
+
+
+def collide_natural_kbc_d3q19(
+    f: torch.Tensor,
+    tau: float,
+) -> torch.Tensor:
+    """Experimental natural-moment KBC collision with fixed shear viscosity.
+
+    This follows ``f' = f - 2*beta*Delta_s - beta*gamma*Delta_h`` with
+    ``beta = 1/(2*tau)``. The deviatoric second-order projection is the shear
+    part; bulk and higher-order residuals form ``Delta_h``. The analytical
+    entropic scalar-product approximation supplies gamma and is clamped to the
+    population positivity interval.
+
+    The kernel remains experimental until independent viscosity, entropy and
+    flow benchmarks pass; it does not replace :func:`collide_kbc_d3q19`.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    if tau <= 0.5:
+        raise ValueError(f"tau must be > 0.5, got {tau}")
+    return _collide_natural_kbc_d3q19_unchecked(f, tau)
 
 
 __all__ = [
