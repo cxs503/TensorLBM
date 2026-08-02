@@ -4,7 +4,10 @@ import copy
 
 import pytest
 
-from tensorlbm.cylinder_domain_convergence import assess_cylinder_domain_convergence
+from tensorlbm.cylinder_domain_convergence import (
+    assess_cylinder_domain_convergence,
+    assess_cylinder_streamwise_clearance_pair,
+)
 
 
 def _record(width_diameters: float) -> dict[str, object]:
@@ -98,3 +101,50 @@ def test_rejected_source_quality_rejects_sequence(
 def test_requires_three_records(records: list[dict[str, object]]) -> None:
     with pytest.raises(ValueError, match="at least three"):
         assess_cylinder_domain_convergence(records[:2])
+
+
+def _streamwise_candidate(baseline: dict[str, object]) -> dict[str, object]:
+    candidate = copy.deepcopy(baseline)
+    candidate["configuration"]["shape_zyx"][2] = 540
+    candidate["configuration"]["center_x_fraction"] = 1.0 / 3.0
+    candidate["configuration"]["domain_clearance_diameters"].update({
+        "upstream_center_distance": 10.0,
+        "downstream_center_distance": 20.0,
+    })
+    candidate["result"]["cd_control_volume"] = 1.34
+    candidate["result"]["strouhal"] = 0.165
+    return candidate
+
+
+def test_streamwise_pair_is_causal_but_never_domain_converged() -> None:
+    baseline = _record(20.0)
+    candidate = _streamwise_candidate(baseline)
+    result = assess_cylinder_streamwise_clearance_pair(baseline, candidate)
+
+    assert result["status"] == "causal_pair_admitted"
+    assert result["acceptance"]["both_streamwise_clearances_expanded"] is True
+    assert result["acceptance"]["transverse_domain_invariant"] is True
+    assert result["acceptance"]["domain_convergence_assessed"] is False
+    assert result["physical_validation"] is False
+
+
+def test_streamwise_pair_rejects_changed_lateral_domain() -> None:
+    baseline = _record(20.0)
+    candidate = _streamwise_candidate(baseline)
+    candidate["configuration"]["shape_zyx"][1] = 540
+    result = assess_cylinder_streamwise_clearance_pair(baseline, candidate)
+
+    assert result["acceptance"]["transverse_domain_invariant"] is False
+    assert result["acceptance"]["causal_pair_admitted"] is False
+
+
+def test_streamwise_pair_rejects_unexpanded_downstream() -> None:
+    baseline = _record(20.0)
+    candidate = _streamwise_candidate(baseline)
+    candidate["configuration"]["domain_clearance_diameters"][
+        "downstream_center_distance"
+    ] = 14.0
+    result = assess_cylinder_streamwise_clearance_pair(baseline, candidate)
+
+    assert result["acceptance"]["recorded_clearances_match_shape"] is False
+    assert result["acceptance"]["causal_pair_admitted"] is False
