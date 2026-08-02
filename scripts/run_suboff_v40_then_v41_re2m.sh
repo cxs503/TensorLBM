@@ -25,7 +25,7 @@ done
 python=${TENSORLBM_PYTHON:-/srv/tensor/operator-a/anaconda3/envs/ftw-env/bin/python}
 result_dir=results/amr_campaign_20260801
 v40=$result_dir/suboff-nested-v40-re1m-mixed-fp64compute-l90-3k.json
-schedule=results/collision-viscosity-natural-kbc-suboff-re2m-mixed-r2.json
+schedule=results/collision-viscosity-natural-kbc-suboff-re2m-mixed-exactweights-r2.json
 [[ -f $v40 ]] || { echo "missing SUBOFF v40 result" >&2; exit 4; }
 [[ -f $schedule ]] || { echo "missing Re2M viscosity schedule" >&2; exit 4; }
 
@@ -65,6 +65,10 @@ if schedule.get("dtype") != "float32" or schedule.get(
     "natural_kbc_compute_dtype"
 ) != "float64":
     raise SystemExit("Re2M viscosity certificate precision mismatch")
+if schedule.get("d3q19_weight_precision_scheme") != (
+    "rational_binary64_cast_to_runtime_dtype_v1"
+):
+    raise SystemExit("Re2M viscosity certificate weight precision mismatch")
 expected = [0.5000081, 0.5000162, 0.5000324, 0.5000648]
 if len(schedule.get("taus", [])) != len(expected) or any(
     not math.isclose(float(actual), target, rel_tol=0.0, abs_tol=1.0e-12)
