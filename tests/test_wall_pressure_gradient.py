@@ -66,6 +66,36 @@ def test_rank_deficient_neighbourhood_fails_closed() -> None:
     assert result.rejected_fraction == 1.0
 
 
+def test_periodic_thin_axis_keeps_boundary_planes_valid() -> None:
+    shape = (3, 5, 7)
+    z, y, x = torch.meshgrid(
+        *(torch.arange(size, dtype=torch.float64) for size in shape),
+        indexing="ij",
+    )
+    pressure = 2.0 * x + 3.0 * y
+    solid = torch.zeros(shape, dtype=torch.bool)
+    active = torch.zeros_like(solid)
+    active[:, 2, 1:-1] = True
+    nx = torch.zeros(shape, dtype=torch.float64)
+    ny = torch.zeros(shape, dtype=torch.float64)
+    nz = torch.zeros(shape, dtype=torch.float64)
+    ny[active] = 1.0
+
+    result = sample_wall_tangential_pressure_gradient(
+        pressure,
+        solid,
+        active,
+        (nx, ny, nz),
+        periodic_axes=(0,),
+    )
+
+    assert result.valid_nodes == result.requested_nodes
+    torch.testing.assert_close(
+        result.magnitude,
+        torch.full_like(result.magnitude, 2.0),
+    )
+
+
 def test_pressure_gradient_aggregate_uses_exact_counts() -> None:
     result = aggregate_wall_pressure_gradient_summaries(
         [

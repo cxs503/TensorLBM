@@ -281,6 +281,7 @@ def run_flat_plate_wall_model(config: FlatPlateWallModelConfig) -> dict[str, obj
             wall_law=config.wall_law,
             stress_exchange_distance=config.stress_exchange_distance,
             return_wall_diagnostics=collect_wall_diagnostics,
+            pressure_gradient_periodic_axes=(0,),
         )
         if collect_wall_diagnostics:
             f, friction, bfl_force, wall_diagnostics = wall_result
