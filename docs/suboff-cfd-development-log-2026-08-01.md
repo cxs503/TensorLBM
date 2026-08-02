@@ -1846,7 +1846,10 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      profile statistics, checkpoint/resume and an exact global momentum-budget
      wall-force observer.  Acceptance requires positive finite populations,
      friction velocity within 2% of `u_tau^2=G H/2`, and below 1% recent block
-     range.  CPU checkpoint/mismatch tests and a 32x18x16 compiled-GPU probe
+     range.  Plane-resolved fluctuation, TKE and Reynolds-shear diagnostics
+     also require late crossflow RMS above `0.1 u_tau`, preventing a relaminarized
+     field from passing only the global momentum balance.  CPU
+     checkpoint/mismatch tests and a 32x18x16 compiled-GPU probe
      pass.  The Re_tau=180 128x64x64 run is active on otherwise idle GPU 4;
      its first two 500-step blocks remain positive with mass drift below
      `2e-6`, while force stationarity is not yet claimed.
