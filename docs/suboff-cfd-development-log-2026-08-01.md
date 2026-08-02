@@ -1878,6 +1878,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      12000 and 13000 its TKE reaches `O(u_tau^2)`, crossflow RMS reaches
      `0.65 u_tau`, and Reynolds shear begins growing, so its naturally emerging
      transition is allowed to proceed through the predefined warmup.
+209. The channel reference now has an independent DNS-profile assessor for the
+     public Moser-Kim-Mansour Re_tau=178.12 mean-velocity data.  It symmetrizes
+     the two walls, uses the actual halfway-wall distance, interpolates DNS in
+     y+, records immutable source hashes and requires `U+` RMS error at most
+     one in addition to the source run's momentum, stationarity, positivity and
+     3-D fluctuation gates.  The remote reference file SHA-256 is
+     `f54c86e30a869798f140aa004c1e167cd13a6280e988d2794d72ca2be8b5fc82`;
+     a synthetic exact-profile regression passes.
 
 ## Rejected candidates
 
