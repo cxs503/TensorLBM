@@ -4,8 +4,52 @@ import pytest
 
 from tensorlbm.wall_resolved_channel3d import (
     WallResolvedChannel3DConfig,
+    _initial_velocity,
     run_wall_resolved_channel3d,
 )
+import torch
+
+
+def test_spectral_initialization_is_deterministic_solenoidal_and_no_slip() -> None:
+    config = WallResolvedChannel3DConfig(
+        nx=24,
+        ny=18,
+        nz=20,
+        re_tau=40.0,
+        u_tau=0.01,
+        steps=2,
+        warmup_steps=0,
+        collision_model="cumulant",
+        compile_natural_kbc=False,
+        initialization_mode="spectral_solenoidal",
+        perturbation_fraction=0.75,
+        spectral_mode_count=24,
+        spectral_max_wavenumber=3,
+        device="cpu",
+    )
+    first = _initial_velocity(config, torch.device("cpu"))
+    second = _initial_velocity(config, torch.device("cpu"))
+    for left, right in zip(first[1:4], second[1:4]):
+        assert torch.equal(left, right)
+    solid, ux, uy, uz, diagnostics = first
+    assert torch.count_nonzero(ux[solid]) == 0
+    assert torch.count_nonzero(uy[solid]) == 0
+    assert torch.count_nonzero(uz[solid]) == 0
+    assert diagnostics["total_rms_over_u_tau"] == pytest.approx(0.75, rel=2e-6)
+    assert diagnostics["maximum_plane_mean_over_u_tau"] < 1e-5
+    # The central-difference divergence converges to the analytic zero; the
+    # residual is normalized by the perturbation velocity per lattice cell.
+    base_y = torch.arange(config.ny, dtype=ux.dtype)[None, :, None]
+    distance = torch.minimum(base_y - 0.5, config.height + 0.5 - base_y).clamp_min(0.0)
+    from tensorlbm.spalding_wall_model import spalding_u_plus_from_y_plus
+    base = spalding_u_plus_from_y_plus(distance * config.u_tau / config.nu) * config.u_tau
+    px = ux - base.expand_as(ux)
+    divergence = (
+        0.5 * (torch.roll(px, -1, 2) - torch.roll(px, 1, 2))[:, 2:-2]
+        + 0.5 * (uy[:, 3:-1] - uy[:, 1:-3])
+        + 0.5 * (torch.roll(uz, -1, 0) - torch.roll(uz, 1, 0))[:, 2:-2]
+    )
+    assert float(torch.sqrt(divergence.square().mean())) < 2e-4 * config.u_tau
 
 
 def test_channel_configuration_encodes_exact_momentum_balance(tmp_path) -> None:
@@ -38,6 +82,9 @@ def test_channel_configuration_encodes_exact_momentum_balance(tmp_path) -> None:
     assert len(result["reports"]) == 2
     assert "crossflow_rms_over_u_tau" in result["reports"][0]
     assert "sustained_three_dimensional_fluctuations" in result["acceptance"]
+    assert "minimum_two_eddy_turnover_statistics" in result["acceptance"]
+    assert "stationarity_half_window_drift_below_2pct" in result["acceptance"]
+    assert "domain_supports_full_dns_statistics" in result["acceptance"]
     assert config.output.exists()
     assert config.checkpoint.exists()
 
