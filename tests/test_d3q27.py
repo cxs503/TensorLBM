@@ -25,6 +25,7 @@ from tensorlbm import (
     stream27,
     zou_he_inlet_velocity_27,
 )
+from tensorlbm.d3q27 import W_EXACT64
 from tensorlbm.d3q27_sphere_flow import SphereFlowD3Q27Config
 
 # ---------------------------------------------------------------------------
@@ -56,6 +57,16 @@ class TestD3Q27Lattice:
 # ---------------------------------------------------------------------------
 
 class TestEquilibrium27:
+    def test_float64_equilibrium_uses_unrounded_weights(self) -> None:
+        rho = torch.ones((3, 4, 3), dtype=torch.float64)
+        zero = torch.zeros_like(rho)
+        equilibrium = equilibrium27(rho, zero, zero, zero)
+
+        torch.testing.assert_close(
+            equilibrium[:, 0, 0, 0], W_EXACT64, rtol=0.0, atol=0.0,
+        )
+        assert not torch.equal(W27.double(), W_EXACT64)
+
     def test_roundtrip_zero_velocity(self) -> None:
         nz, ny, nx = 4, 5, 6
         rho = torch.ones((nz, ny, nx))

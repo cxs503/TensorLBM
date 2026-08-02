@@ -39,8 +39,8 @@ import torch
 from .d3q19 import W_EXACT64 as W19
 from .d3q19 import C as C19
 from .d3q19 import equilibrium3d, macroscopic3d
+from .d3q27 import W_EXACT64 as W27
 from .d3q27 import C as C27
-from .d3q27 import W as W27
 from .d3q27 import equilibrium27, macroscopic27
 
 _CS2 = 1.0 / 3.0  # lattice speed of sound squared
