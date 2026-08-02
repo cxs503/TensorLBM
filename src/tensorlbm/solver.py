@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import functools
+import functools  # retained for compatibility; internal cache functions use explicit dicts
 from typing import Any, cast
 
 import torch
@@ -40,12 +40,27 @@ def _invert_d2q9() -> list[list[float]]:
 
 _M_D2Q9_INV_DATA = _invert_d2q9()
 
+# Manual dict caches keyed by (device_str, dtype) to avoid the multi-GPU
+# collision that @functools.cache causes when torch.device objects with the
+# same type but different indices hash identically (e.g. "cuda" vs "cuda:0").
+_mrt_matrix_cache: dict[tuple[str, torch.dtype], tuple[torch.Tensor, torch.Tensor]] = {}
+_bgk_matrix_cache: dict[tuple[str, torch.dtype], tuple[torch.Tensor, torch.Tensor]] = {}
 
-@functools.cache
+
 def _get_d2q9_mrt_matrices(device: torch.device, dtype: torch.dtype = torch.float32) -> tuple[torch.Tensor, torch.Tensor]:
-    matrix = torch.tensor(_M_D2Q9_DATA, dtype=dtype, device=device)
-    matrix_inv = torch.tensor(_M_D2Q9_INV_DATA, dtype=dtype, device=device)
-    return matrix, matrix_inv
+    """Return cached (M, M_inv) for D2Q9 MRT, keyed by (str(device), dtype).
+
+    Uses an explicit string key so that cuda:0, cuda:1, … are cached
+    independently — ``@functools.cache`` on a ``torch.device`` argument
+    is unsafe in multi-GPU settings because devices with the same type
+    but different indices can collide in the hash.
+    """
+    key = (str(device), dtype)
+    if key not in _mrt_matrix_cache:
+        matrix = torch.tensor(_M_D2Q9_DATA, dtype=dtype, device=device)
+        matrix_inv = torch.tensor(_M_D2Q9_INV_DATA, dtype=dtype, device=device)
+        _mrt_matrix_cache[key] = (matrix, matrix_inv)
+    return _mrt_matrix_cache[key]
 
 
 def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -154,12 +169,19 @@ _A_EQ_DATA = [
 ]
 
 
-@functools.cache
 def _get_bgk_matrices(device: torch.device, dtype: torch.dtype) -> tuple[torch.Tensor, torch.Tensor]:
-    """Cached M_macro (3×9) and A_eq (9×6) matrices for matmul-based BGK."""
-    M_macro = torch.tensor(_M_MACRO_DATA, dtype=dtype, device=device)
-    A_eq = torch.tensor(_A_EQ_DATA, dtype=dtype, device=device)
-    return M_macro, A_eq
+    """Return cached (M_macro, A_eq) for matmul-based BGK, keyed by (str(device), dtype).
+
+    Uses an explicit string key to avoid the multi-GPU cache collision that
+    ``@functools.cache`` causes when ``torch.device`` objects with different
+    indices hash identically.
+    """
+    key = (str(device), dtype)
+    if key not in _bgk_matrix_cache:
+        M_macro = torch.tensor(_M_MACRO_DATA, dtype=dtype, device=device)
+        A_eq = torch.tensor(_A_EQ_DATA, dtype=dtype, device=device)
+        _bgk_matrix_cache[key] = (M_macro, A_eq)
+    return _bgk_matrix_cache[key]
 
 
 def collide_bgk_matmul(f: torch.Tensor, tau: float) -> torch.Tensor:
