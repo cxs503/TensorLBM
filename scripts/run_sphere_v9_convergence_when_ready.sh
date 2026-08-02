@@ -19,7 +19,8 @@ while :; do
     if [[ $command_line != *sphere-v9-natural-kbc-corrected-bfl-no-inlet* \
        && $command_line != *run_cylinder_v7_then_sphere_v9_r9* \
        && $command_line != *run_suboff_v30_then_sphere_v9_r12* \
-       && $command_line != *run_channel_r3_then_sphere_v9_r15* ]]; then
+       && $command_line != *run_channel_r3_then_sphere_v9_r15* \
+       && $command_line != *run_channel_then_mixed_pilot_then_sphere_r15* ]]; then
       echo "PID $pid is not an owned corrected-sphere queue/run" >&2
       exit 3
     fi
