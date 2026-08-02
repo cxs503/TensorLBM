@@ -20,9 +20,14 @@ for source in (ROOT / "src", ROOT / "examples"):
 from suboff_experimental_resistance import (  # noqa: E402
     MODEL_LENGTH_M,
     experimental_point,
+    force_scale_newton,
 )
 
-from tensorlbm.drag_pressure import SurfaceMesh, get_near_wall_3d  # noqa: E402
+from tensorlbm.drag_pressure import (  # noqa: E402
+    SurfaceMesh,
+    drag_pressure_integration,
+    get_near_wall_3d,
+)
 from tensorlbm.interpolated_bc_suboff import (  # noqa: E402
     compute_q_suboff,
     refine_q_suboff_appendages,
@@ -304,6 +309,45 @@ def inspect_checkpoint(
         y_plus_upper_bound=y_plus_upper_bound,
         minimum_y_plus_in_range_fraction=minimum_y_plus_in_range_fraction,
     )
+    surface.dA = area_weight
+    scale = force_scale_newton(
+        rho_water=float(configuration["rho_water"]),
+        dx_m=MODEL_LENGTH_M / finest_length,
+        speed_mps=point.speed_mps,
+        lattice_speed=float(configuration["lattice_speed"]),
+    )
+    step_records = state.get("step_records", [])
+    latest_record = step_records[-1] if step_records else None
+    latest_cv = float(latest_record["cv_resistance_n"]) if isinstance(latest_record, dict) else None
+    latest_wall_shear = (
+        float(latest_record["wall_shear_n"]) if isinstance(latest_record, dict) else None
+    )
+    pressure_observers = {}
+    for pressure_reference in ("near_wall", "far_field", "inlet"):
+        for reconstruction in ("none", "linear", "quadratic", "bfl_quadratic"):
+            pressure_n = (
+                drag_pressure_integration(
+                    finest,
+                    surface,
+                    1.0,
+                    extrap=reconstruction,
+                    p0_method=pressure_reference,
+                    solid=solid,
+                    fluid_boundary_mask=bfl_mask,
+                    q_field=bfl_q,
+                )[0]
+                * scale
+            )
+            total_n = pressure_n + latest_wall_shear if latest_wall_shear is not None else None
+            pressure_observers[f"{pressure_reference}:{reconstruction}"] = {
+                "pressure_resistance_n": pressure_n,
+                "pressure_plus_wall_shear_n": total_n,
+                "total_vs_control_volume_difference_pct": (
+                    abs(total_n - latest_cv) / max(abs(latest_cv), 1.0e-30) * 100.0
+                    if total_n is not None and latest_cv is not None
+                    else None
+                ),
+            }
     return {
         "schema": "tensorlbm-nested-suboff-wall-checkpoint-audit-v1",
         "status": "diagnostic_only",
@@ -323,6 +367,14 @@ def inspect_checkpoint(
         ),
         "surface_area_weighting": asdict(area_diagnostics),
         "wall_exchange": asdict(diagnostics),
+        "instantaneous_surface_pressure_audit": {
+            "control_volume_resistance_n": latest_cv,
+            "wall_shear_resistance_n": latest_wall_shear,
+            "observers": pressure_observers,
+            "selection_policy": (
+                "direct observer sensitivity only; no selection by experimental resistance"
+            ),
+        },
         "population_state_advanced": False,
     }
 
