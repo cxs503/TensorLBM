@@ -146,6 +146,14 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--cv-margin", type=int, default=4)
     result.add_argument("--aux-cv-margins", default="2,6")
     result.add_argument("--surface-force-interval", type=int, default=50)
+    result.add_argument(
+        "--enable-rejected-surface-pressure-diagnostic",
+        action="store_true",
+        help=(
+            "opt in to the non-conservative density-pressure surface observer; "
+            "it is retained only for forensic comparison and never gates acceptance"
+        ),
+    )
     result.add_argument("--steps", type=int, default=2)
     result.add_argument("--warmup-steps", type=int, default=0)
     result.add_argument("--statistics-window-steps", type=int, default=0)
@@ -2025,7 +2033,10 @@ def run(args: argparse.Namespace) -> dict:
             "surface_pressure_plus_wall_stress_n": None,
             "surface_pressure_observer_status": "rejected_diagnostic_only",
         }
-        if current_step % args.surface_force_interval == 0:
+        if (
+            args.enable_rejected_surface_pressure_diagnostic
+            and current_step % args.surface_force_interval == 0
+        ):
             surface_pressure = drag_pressure_integration(
                 hierarchy.finest_f,
                 surface,
@@ -2536,7 +2547,9 @@ def run(args: argparse.Namespace) -> dict:
                     surface_observer_difference_pct
                 ),
                 "surface_pressure_observer_scope": (
-                    "rejected_diagnostic_only_not_an_acceptance_gate"
+                    "enabled_rejected_diagnostic_only_not_an_acceptance_gate"
+                    if args.enable_rejected_surface_pressure_diagnostic
+                    else "disabled_rejected_diagnostic_not_an_acceptance_gate"
                 ),
                 "wall_exchange": {
                     "samples": len(wall_records),

@@ -36,6 +36,7 @@ def _args(
     interface_filter_width: int = 0,
     interface_filter_strength: float = 0.0,
     sponge_inlet: bool = False,
+    enable_rejected_surface_pressure: bool = False,
     deep_wall_margin: int = 0,
     deep_wake_cells: int = 0,
 ):
@@ -82,6 +83,8 @@ def _args(
         values.append("--disable-wall-stress")
     if sponge_inlet:
         values.append("--sponge-inlet")
+    if enable_rejected_surface_pressure:
+        values.append("--enable-rejected-surface-pressure-diagnostic")
     return MODULE.parser().parse_args(values)
 
 
@@ -127,9 +130,9 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["result"]["statistics"]["target_reynolds_convective_times"] > 0
     assert result["result"]["statistics"]["fully_physical_convective_times"] > 0
     assert result["result"]["statistics"]["auxiliary_cv_difference_pct"] is not None
-    assert result["result"]["statistics"]["surface_observer_difference_pct"] is not None
+    assert result["result"]["statistics"]["surface_observer_difference_pct"] is None
     assert result["result"]["statistics"]["surface_pressure_observer_scope"] == (
-        "rejected_diagnostic_only_not_an_acceptance_gate"
+        "disabled_rejected_diagnostic_not_an_acceptance_gate"
     )
     assert result["acceptance"]["surface_observer_used_for_acceptance"] is False
     assert result["acceptance"]["conservative_force_observer_target_met"] is True
@@ -181,6 +184,23 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     boundary_audit = result["result"]["open_boundary_population_delta_audit"]
     assert boundary_audit["samples"] == 2
     assert boundary_audit["finite"] is True
+
+
+def test_rejected_surface_pressure_observer_requires_explicit_opt_in(
+    tmp_path: Path,
+) -> None:
+    result = MODULE.run(_args(
+        tmp_path,
+        steps=1,
+        enable_rejected_surface_pressure=True,
+    ))
+
+    statistics = result["result"]["statistics"]
+    assert statistics["surface_observer_difference_pct"] is not None
+    assert statistics["surface_pressure_observer_scope"] == (
+        "enabled_rejected_diagnostic_only_not_an_acceptance_gate"
+    )
+    assert result["acceptance"]["surface_observer_used_for_acceptance"] is False
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
