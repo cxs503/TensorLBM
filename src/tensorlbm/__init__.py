@@ -708,6 +708,10 @@ from .sphere_domain_sensitivity import (
     assess_sphere_domain_convergence,
     assess_sphere_domain_sensitivity_pair,
 )
+from .resistance_component_audit import (
+    ResistanceComponentAudit,
+    audit_resistance_components,
+)
 from .wall_exchange_yplus import (
     WallExchangeYPlusAggregate,
     WallExchangeYPlusSummary,
@@ -813,6 +817,8 @@ __all__ = [
     "spalding_y_plus",
     "assess_sphere_domain_sensitivity_pair",
     "assess_sphere_domain_convergence",
+    "ResistanceComponentAudit",
+    "audit_resistance_components",
     "assess_sphere_inlet_sponge_pair",
     "WallExchangeYPlusAggregate",
     "WallExchangeYPlusSummary",
