@@ -285,6 +285,22 @@ def grid_quality_metrics(
      'blockage_ratio': 0.009, 'blockage_ok': True,
      'quality_tier': 'recommended'}
     """
+    for name, value in (("nx", nx), ("ny", ny), ("nz", nz)):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"{name} must be a positive integer")
+    for name, value in (
+        ("hull_length", hull_length),
+        ("u_in", u_in),
+        ("re", re),
+    ):
+        if not math.isfinite(value) or value <= 0.0:
+            raise ValueError(f"{name} must be finite and positive")
+    if re <= 100.0:
+        raise ValueError("re must exceed 100 for the ITTC-1957 estimate")
+    if hull_radius is not None and (
+        not math.isfinite(hull_radius) or hull_radius <= 0.0
+    ):
+        raise ValueError("hull_radius must be finite and positive")
     nu = u_in * hull_length / re
     # All geometric inputs are already lattice-cell counts.  The lattice
     # spacing is one; ``nx`` is the domain length, not the hull resolution.
@@ -294,10 +310,7 @@ def grid_quality_metrics(
     y = 0.5
 
     # y+
-    if re < 1e5:
-        cf = 0.0
-    else:
-        cf = 0.075 / (math.log10(re) - 2.0) ** 2
+    cf = 0.075 / (math.log10(re) - 2.0) ** 2
     u_tau = u_in * math.sqrt(max(cf, 1e-12) / 2.0)
     y_plus_est = y * u_tau / nu
 
