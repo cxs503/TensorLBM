@@ -89,6 +89,19 @@
     "chunked_allocation_queue_wrapper_pid": 1642900,
     "chunked_allocation_probe_pid": 1642901,
     "chunked_allocation_probe_status": "queued_after_aff8_probe",
+    "geometrically_similar_l120_multigpu_probe": {
+      "pid": 1657511,
+      "waits_for_re200k_pilot_pid": 1654405,
+      "physical_gpu_count": 3,
+      "logical_level_devices": ["cuda:0", "cuda:0", "cuda:1", "cuda:2"],
+      "memory_model_bytes_per_cell": 900.0,
+      "calibrated_l90_peak_bytes_per_cell": 777.7103300061777,
+      "memory_model_safety_margin_pct": 15.724323225423383,
+      "collision_chunk_cells": 262144,
+      "wall_force_direction_chunk": 4,
+      "low_memory_wall_macroscopic": true,
+      "status": "queued_fail_closed"
+    },
     "production_l120_launch_allowed": false,
     "reason": "Cross-device numerics now pass exactly, but the geometrically similar deepest L120 level still needs a measured per-device runtime-memory admission before physical launch."
   },
