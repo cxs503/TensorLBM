@@ -272,9 +272,9 @@ def grid_quality_metrics(
     *y_plus_est*: Estimated first-cell y+ (ITTC-1957 → u_tau)
     *y_plus_regime*: ``log_law`` / ``buffer`` / ``transition`` / ``viscous``
     *blockage_ratio*: hull cross-section / (ny × nz), smaller is better
-    *blockage_ok*: True if blockage < 5%
+    *blockage_ok*: True if blockage < 2%
     *domain_aspect*: nx / max(ny, nz), ≥ 2 recommended for external flow
-    *cells_per_hull_length*: nx / (hull_length / dx) ≡ nx, coarser → smaller y+
+    *cells_per_hull_length*: hull length in lattice cells
     *pressure_settle_time*: estimated steps for pressure to reach steady state
     *quality_tier*: ``recommended`` / ``acceptable`` / ``marginal`` / ``poor``
 
@@ -286,8 +286,12 @@ def grid_quality_metrics(
      'quality_tier': 'recommended'}
     """
     nu = u_in * hull_length / re
-    dx = hull_length / nx
-    y = 0.5 * dx
+    # All geometric inputs are already lattice-cell counts.  The lattice
+    # spacing is one; ``nx`` is the domain length, not the hull resolution.
+    # The previous hull_length/nx factor mixed these two meanings and
+    # underpredicted first-cell y+ while overpredicting blockage.
+    dx = 1.0
+    y = 0.5
 
     # y+
     if re < 1e5:
@@ -310,7 +314,7 @@ def grid_quality_metrics(
     # SUBOFF diameter ≈ hull_length / 8.57
     r_hull = hull_radius if hull_radius is not None else hull_length / (2 * 8.57)
     hull_area = math.pi * r_hull ** 2
-    domain_area = (ny * dx) * (nz * dx)
+    domain_area = ny * nz
     blockage = hull_area / max(domain_area, 1e-12)
 
     # Domain aspect ratio
@@ -321,13 +325,18 @@ def grid_quality_metrics(
     domain_crossings = 3  # pressure waves need ~3 domain crossings to settle
     pressure_steps = domain_crossings * nx / sound_speed
 
-    # Quality tier — primary: y+ regime, secondary: domain adequacy
-    # For slender bodies (L/D > 5), blockage up to 10% is acceptable
-    if yp_regime == "log_law" and domain_aspect >= 2.0:
+    # Quality tier combines the wall-model regime and domain adequacy.  The
+    # two-percent blockage target is a preflight gate, not an empirical drag
+    # correction; formal domain convergence still needs multiple CFD boxes.
+    if (
+        yp_regime == "log_law"
+        and domain_aspect >= 2.0
+        and blockage < 0.02
+    ):
         tier = "recommended"
-    elif yp_regime == "log_law":
+    elif yp_regime == "log_law" and blockage < 0.05:
         tier = "acceptable"
-    elif yp_regime == "buffer":
+    elif yp_regime == "buffer" or blockage < 0.10:
         tier = "marginal"
     else:
         tier = "poor"
@@ -337,14 +346,17 @@ def grid_quality_metrics(
         "y_plus_regime": yp_regime,
         "blockage_ratio": blockage,
         "blockage_pct": blockage * 100,
-        "blockage_ok": blockage < 0.05,
+        "blockage_ok": blockage < 0.02,
         "domain_aspect": domain_aspect,
         "domain_aspect_ok": domain_aspect >= 2.0,
-        "cells_per_hull_length": nx,
+        "cells_per_hull_length": hull_length,
+        "streamwise_domain_lengths": nx / hull_length,
+        "transverse_domain_diameters": min(ny, nz) / (2.0 * r_hull),
         "pressure_settle_steps_est": int(pressure_steps),
         "quality_tier": tier,
         "parameters": {"nx": nx, "ny": ny, "nz": nz, "hull_length": hull_length,
                        "u_in": u_in, "re": re, "dx": dx, "y_first": y,
+                       "dx_lu": dx, "y_first_lu": y,
                        "nu": nu, "u_tau_est": u_tau},
     }
 
