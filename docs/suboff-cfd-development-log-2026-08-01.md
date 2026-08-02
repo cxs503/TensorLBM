@@ -1767,6 +1767,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      threshold is asserted until matched domain/grid families establish one.
      Thirteen focused aggregation and sphere tests plus the recursive SUBOFF
      composition test pass.
+199. The nested SUBOFF frozen-checkpoint auditor now compares twelve
+     co-temporal surface-pressure observers: near-wall/far-field/inlet pressure
+     references crossed with cell, linear, quadratic and actual-q BFL
+     reconstruction.  Every observer uses the same calibrated BFL surface-area
+     field and the same saved wall-shear term, and is compared only to the
+     co-temporal control-volume force.  The audit explicitly forbids selecting
+     an observer by proximity to experiment.
 
 ## Rejected candidates
 
