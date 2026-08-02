@@ -5,6 +5,7 @@ import copy
 import pytest
 
 from tensorlbm.sphere_domain_sensitivity import (
+    assess_sphere_domain_convergence,
     assess_sphere_domain_sensitivity_pair,
 )
 
@@ -90,3 +91,40 @@ def test_sphere_domain_pair_rejects_changed_numerics() -> None:
 def test_sphere_domain_pair_requires_exactly_two_records() -> None:
     with pytest.raises(ValueError, match="exactly two"):
         assess_sphere_domain_sensitivity_pair([_record(16.0, 1.1756)])
+
+
+def test_sphere_three_domain_sequence_converges_without_reference_claim() -> None:
+    result = assess_sphere_domain_convergence([
+        _record(16.0, 1.1756),
+        _record(20.0, 1.1700),
+        _record(24.0, 1.1680),
+    ])
+
+    assert result["domain_convergence"]["drag_monotonic"] is True
+    assert result["domain_convergence"]["finest_drag_change_pct"] < 1.0
+    assert result["domain_convergence"]["admitted"] is True
+    assert result["reference"]["admitted"] is False
+    assert result["physical_validation"] is False
+
+
+def test_sphere_three_domain_sequence_can_physically_admit_direct_drag() -> None:
+    result = assess_sphere_domain_convergence([
+        _record(16.0, 1.11),
+        _record(20.0, 1.10),
+        _record(24.0, 1.095),
+    ])
+
+    assert result["domain_convergence"]["admitted"] is True
+    assert result["reference"]["admitted"] is True
+    assert result["physical_validation"] is True
+
+
+def test_sphere_three_domain_sequence_rejects_nonmonotonic_drag() -> None:
+    result = assess_sphere_domain_convergence([
+        _record(16.0, 1.17),
+        _record(20.0, 1.16),
+        _record(24.0, 1.165),
+    ])
+
+    assert result["domain_convergence"]["drag_monotonic"] is False
+    assert result["domain_convergence"]["admitted"] is False
