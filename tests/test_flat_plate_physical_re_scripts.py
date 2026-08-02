@@ -53,3 +53,5 @@ def test_physical_re_level_only_reuses_validated_complete_result() -> None:
     assert 'configuration.get("plate_length"' in source
     assert 'configuration.get("reynolds"' in source
     assert 'observations.get("finite") is True' in source
+    assert 'flock -n 9' in source
+    assert "already has a live writer" in source
