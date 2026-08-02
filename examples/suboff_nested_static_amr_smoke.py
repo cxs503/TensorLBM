@@ -68,6 +68,9 @@ from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_sponge_sigma_3d,
 )
+from tensorlbm.spalding_wall_model import (
+    assess_wall_exchange_interface_clearance,
+)
 from tensorlbm.static_block_amr import (
     AMRAdvanceResult,
     NestedStaticBlockAMR3D,
@@ -497,6 +500,19 @@ def run(args: argparse.Namespace) -> dict:
         finest_geometry = deep_geometry
     finest_plan = refinement_plans[-1]
     finest_planning_solid = planning_solids[-1]
+    wall_exchange_interface_clearance = (
+        assess_wall_exchange_interface_clearance(
+            exchange_distance_cells=args.stress_exchange_distance,
+            available_buffer_cells=finest_plan.wall_buffer_finest_cells,
+        )
+    )
+    if not wall_exchange_interface_clearance.admitted:
+        raise ValueError(
+            "wall exchange requires "
+            f"{wall_exchange_interface_clearance.required_buffer_cells} "
+            "finest cells including trilinear support, but the refinement "
+            f"block provides {finest_plan.wall_buffer_finest_cells}",
+        )
     refinement_depth = len(refinement_plans)
     level_count = refinement_depth + 1
     if args.level_devices:
@@ -659,6 +675,9 @@ def run(args: argparse.Namespace) -> dict:
         "allocated_cells_by_level": list(finest_plan.allocated_cells_by_level),
         "wall_buffer_parent_cells": finest_plan.wall_buffer_parent_cells,
         "wall_buffer_finest_cells": finest_plan.wall_buffer_finest_cells,
+        "wall_exchange_interface_clearance": (
+            wall_exchange_interface_clearance.to_dict()
+        ),
         "downstream_buffer_parent_cells": (
             finest_plan.downstream_buffer_parent_cells
         ),
