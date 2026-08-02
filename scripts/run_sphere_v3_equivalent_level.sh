@@ -40,16 +40,44 @@ cd "$root"
 mkdir -p "$result_dir"
 python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
 collision_model=${TENSORLBM_COLLISION_MODEL:-cumulant_d3q19_cs0}
+collision_chunk_cells=${TENSORLBM_COLLISION_CHUNK_CELLS:-0}
+[[ $collision_chunk_cells =~ ^[0-9]+$ ]] || {
+  echo "TENSORLBM_COLLISION_CHUNK_CELLS must be non-negative" >&2
+  exit 2
+}
+compile_natural_kbc=()
+if [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} == 1 ]]; then
+  [[ $collision_model == natural_kbc_d3q19 ]] || {
+    echo "TENSORLBM_COMPILE_NATURAL_KBC requires natural_kbc_d3q19" >&2
+    exit 2
+  }
+  compile_natural_kbc=(--compile-natural-kbc)
+elif [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} != 0 ]]; then
+  echo "TENSORLBM_COMPILE_NATURAL_KBC must be 0 or 1" >&2
+  exit 2
+fi
 case "$collision_model" in
   cumulant_d3q19_cs0) variant= ;;
   natural_kbc_d3q19) variant=-natural-kbc ;;
   *) echo "unsupported TENSORLBM_COLLISION_MODEL: $collision_model" >&2; exit 2 ;;
 esac
+sponge_inlet=()
+if [[ ${TENSORLBM_SPONGE_INLET:-0} == 1 ]]; then
+  sponge_inlet=(--sponge-inlet)
+elif [[ ${TENSORLBM_SPONGE_INLET:-0} != 0 ]]; then
+  echo "TENSORLBM_SPONGE_INLET must be 0 or 1" >&2
+  exit 2
+fi
 export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
 if [[ ${TENSORLBM_PREFLIGHT_ONLY:-0} == 1 ]]; then
   exec "$python" -c 'import tensorlbm; print(tensorlbm.__file__)'
 fi
-stem="$result_dir/sphere-v3${variant}-equivalent-r${radius}-${steps}"
+generation=${TENSORLBM_SPHERE_GENERATION:-v3}
+[[ $generation =~ ^v[0-9]+$ ]] || {
+  echo "TENSORLBM_SPHERE_GENERATION must match vN" >&2
+  exit 2
+}
+stem="$result_dir/sphere-${generation}${variant}-equivalent-r${radius}-${steps}"
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
   resume=(--resume)
@@ -60,8 +88,11 @@ exec "$python" examples/sphere_bfl_cv_validate.py \
   --device cuda:0 --nx "$nx" --ny "$cross" --nz "$cross" \
   --radius "$radius" --reynolds 100 --lattice-speed 0.06 \
   --collision-model "$collision_model" \
+  --collision-chunk-cells "$collision_chunk_cells" \
+  "${compile_natural_kbc[@]}" \
   --steps "$steps" --warmup-steps "$warmup" --ramp-steps "$ramp" \
   --sponge-width "$sponge" --sponge-strength 0.2 --cv-margin "$cv" \
+  "${sponge_inlet[@]}" \
   --report-interval "$report" --checkpoint-interval "$checkpoint_interval" \
   --checkpoint "$stem.ckpt" --statistics-window-steps "$statistics" \
   --minimum-statistics-convective-times 5 \
