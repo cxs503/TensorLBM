@@ -37,20 +37,20 @@ reconstructed by interpolation:
 
 ```
 q < 0.5  (linear):
-    f_bc = 2q · f_i(x_s) + (1 − 2q) · f_i(x_b)
+    f_bc = 2q · f_i*(x_f) + (1 − 2q) · f_i*(x_f − c_i)
 
 q ≥ 0.5  (quadratic):
-    f_bc = f_i(x_s) / (2q) + (2q − 1)/(2q) · f_opp(x_f)
+    f_bc = f_i*(x_f) / (2q) + (2q − 1)/(2q) · f_opp*(x_f)
 ```
 
 where:
-- `f_i(x_s)` = post-stream value at the solid cell (= feq with NoDynamics)
-- `f_i(x_b)` = post-collision value at the cell *behind* the fluid node
+- `f_i*(x_f)` = outgoing post-collision population at the boundary-fluid node
+- `f_i*(x_f − c_i)` = outgoing post-collision population at the cell *behind* the fluid node
   (`x_b = x_f − c_i`)
-- `f_opp(x_f)` = post-collision value of the opposite direction at the
+- `f_opp*(x_f)` = post-collision value of the opposite direction at the
   fluid node
 
-At **q = 0.5** both branches reduce to `f_bc = f_i(x_s)`, reproducing
+At **q = 0.5** both branches reduce to `f_bc = f_i*(x_f)`, reproducing
 standard halfway bounce-back.
 
 ### 2.2 Timing
@@ -76,6 +76,9 @@ q = (distance from fluid node centre to wall) / |c_i|
 ```
 
 For D3Q19 face directions |c_i| = 1, for edge directions |c_i| = √2.
+If the intersection is parameterized as `x(t)=x_f+t c_i`, the neighbouring
+node is already at `t=1`, so `q=t_wall`; dividing that ray parameter by
+`|c_i|` a second time is incorrect.
 
 ---
 
@@ -457,5 +460,5 @@ not be used as a second volume divisor.
 |------|----------|-----|----------|------|
 | Poiseuille channel | Flat walls | 10 | Cf = exact (parabolic) | 28 |
 | Couette flow | Flat walls | 10 | Cf = 2ν/(H·u_top) | 29 |
-| Cylinder (BFL) | Curved | 100 | Cd ≈ 1.33 | 30 |
+| Cylinder (BFL) | Curved | 100 | Cd ≈ 1.35 (Henderson 1995 Table I fit) | 30 |
 | Cylinder (BFL+WF) | Curved | 1000 | Cd ≈ 0.46–0.50 | 31 |
