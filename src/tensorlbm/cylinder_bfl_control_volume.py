@@ -28,7 +28,16 @@ from .planar_d3q19 import (
 from .solver3d import stream3d
 from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
 
-CYLINDER_RE100_CD_REFERENCE = 1.33
+# Henderson (1995), DOI 10.1063/1.868459, Table I unsteady-wake fits
+# evaluated at Re=100.  The two terms are independently reproducible from
+# Eq. (3)/(4): C_Df=2.5818/Re^0.4369 and
+# C_Dp=1.4114-0.2668*Re^0.1648*exp(-3.375e-3*Re).
+CYLINDER_RE100_VISCOUS_CD_REFERENCE = 0.3452411832993384
+CYLINDER_RE100_PRESSURE_CD_REFERENCE = 1.0047587444752417
+CYLINDER_RE100_CD_REFERENCE = (
+    CYLINDER_RE100_VISCOUS_CD_REFERENCE
+    + CYLINDER_RE100_PRESSURE_CD_REFERENCE
+)
 CYLINDER_RE100_ST_REFERENCE = 0.164
 
 
@@ -432,6 +441,11 @@ def run_cylinder_bfl_control_volume(
             "cd_control_volume": cd, "cd_bfl_link": cd_bfl,
             "observer_difference_pct": observer_difference,
             "cd_reference": CYLINDER_RE100_CD_REFERENCE,
+            "cd_reference_components": {
+                "viscous": CYLINDER_RE100_VISCOUS_CD_REFERENCE,
+                "pressure": CYLINDER_RE100_PRESSURE_CD_REFERENCE,
+                "source": "Henderson (1995), DOI 10.1063/1.868459, Table I",
+            },
             "reference_error_pct": reference_error,
             "mean_lift_coefficient": sum(cy_history) / len(cy_history),
             "strouhal": strouhal,
@@ -488,7 +502,9 @@ def run_cylinder_bfl_control_volume(
 
 __all__ = [
     "CYLINDER_RE100_CD_REFERENCE",
+    "CYLINDER_RE100_PRESSURE_CD_REFERENCE",
     "CYLINDER_RE100_ST_REFERENCE",
+    "CYLINDER_RE100_VISCOUS_CD_REFERENCE",
     "CylinderBFLControlVolumeConfig",
     "estimate_strouhal_from_lift",
     "run_cylinder_bfl_control_volume",
