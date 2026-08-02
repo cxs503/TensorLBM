@@ -301,6 +301,9 @@ def test_checkpoint_before_y_plus_distribution_gate_can_resume(
     MODULE.run(_args(tmp_path, steps=1))
     checkpoint = tmp_path / "nested-smoke.ckpt"
     state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"].pop(
+        "wall_exchange_distance_over_length_target",
+    )
     state["configuration"].pop("wall_model_y_plus_lower_bound")
     state["configuration"].pop("wall_model_y_plus_upper_bound")
     state["configuration"].pop(
@@ -523,7 +526,7 @@ def test_nested_smoke_records_independent_bulk_relaxation(tmp_path: Path) -> Non
     assert result["result"]["finite"] is True
 
 
-def test_nested_single_grid_gate_requires_flat_plate_wall_scaling(
+def test_nested_single_grid_gate_uses_declared_wall_exchange_family(
     tmp_path: Path,
 ) -> None:
     unscaled = MODULE.run(_args(tmp_path, steps=1))
@@ -532,12 +535,21 @@ def test_nested_single_grid_gate_requires_flat_plate_wall_scaling(
     scaled_args.checkpoint = tmp_path / "scaled.ckpt"
     scaled_args.output = tmp_path / "scaled.json"
     scaled = MODULE.run(scaled_args)
+    custom_args = _args(tmp_path, steps=1)
+    custom_args.wall_exchange_distance_over_length_target = 1.0 / 96.0
+    custom_args.checkpoint = tmp_path / "custom.ckpt"
+    custom_args.output = tmp_path / "custom.json"
+    custom = MODULE.run(custom_args)
 
     assert unscaled["acceptance"]["wall_exchange_scaling_target_met"] is False
     assert scaled["acceptance"]["wall_exchange_scaling_target_met"] is True
     assert scaled["configuration"][
         "stress_exchange_distance_over_finest_length"
     ] == pytest.approx(3.0 / 256.0)
+    assert custom["acceptance"]["wall_exchange_scaling_target_met"] is True
+    assert custom["acceptance"][
+        "wall_exchange_distance_over_finest_length_target"
+    ] == pytest.approx(1.0 / 96.0)
 
 
 def test_nested_smoke_can_filter_both_physical_interface_shells(
