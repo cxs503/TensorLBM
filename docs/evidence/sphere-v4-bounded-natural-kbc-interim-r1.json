@@ -1,6 +1,6 @@
 {
   "schema": "tensorlbm-sphere-v4-grid-family-interim-v1",
-  "status": "r9_complete_r12_r15_active",
+  "status": "r9_r12_complete_r15_active",
   "physical_validation": false,
   "common_configuration": {
     "reynolds": 100.0,
@@ -41,13 +41,45 @@
     "numerical_quality_admitted": true,
     "physical_drag_admitted": false
   },
-  "active_family": {
-    "r12": {
-      "shape_zyx": [192, 192, 288],
-      "radius_cells": 12.0,
-      "steps": 9600,
-      "statistics_samples": 3200
+  "completed_r12": {
+    "shape_zyx": [192, 192, 288],
+    "radius_cells": 12.0,
+    "steps": 9600,
+    "statistics_samples": 3200,
+    "statistics_convective_times": 8.0,
+    "cd_control_volume": 1.1605229155338193,
+    "cd_bfl_link": 1.1605501771863724,
+    "observer_difference_pct": 0.0023490835198750853,
+    "cd_reference_schiller_naumann": 1.0917310910948732,
+    "reference_error_pct": 6.3011693080899835,
+    "stationarity": {
+      "relative_range_pct": 0.019962092436787877,
+      "half_mean_drift_pct": 0.01007633122572041,
+      "linear_trend_pct": 0.018322411026017518,
+      "confidence95_half_width_pct": 0.005889853602863118,
+      "effective_sample_count": 3.5081145470000212
     },
+    "measured_peak_allocated_gib": 9.278931617736816,
+    "runtime_seconds": 2278.098915418843,
+    "seconds_per_step": 0.23730197035612946,
+    "collision_execution": {
+      "calls": 460800,
+      "input_shape_qzyx": [19, 4, 192, 288],
+      "torch_dynamo_process_unique_graphs": 1,
+      "minimum_tau": 0.5432,
+      "maximum_tau": 0.5432
+    },
+    "numerical_quality_admitted": true,
+    "physical_drag_admitted": false
+  },
+  "completed_pair": {
+    "radii_cells": [9.0, 12.0],
+    "cd_control_volume": [1.1756139078050105, 1.1605229155338193],
+    "monotonic_toward_reference": true,
+    "r9_to_r12_change_pct_of_r12": 1.3003614206316367,
+    "formal_grid_convergence_assessed": false
+  },
+  "active_family": {
     "r15": {
       "shape_zyx": [240, 240, 360],
       "radius_cells": 15.0,
@@ -56,13 +88,16 @@
     }
   },
   "decision": [
-    "The R9 trajectory passes duration, stationarity and independent force-observer gates but misses the five-percent drag target, so it is not physically admitted alone.",
-    "The bounded compiled collision path reuses exactly one graph over 129600 slab calls and holds peak allocation to 3.91 GiB.",
-    "No grid-convergence conclusion is allowed until the matching R12 and R15 members complete."
+    "The R9 and R12 trajectories pass duration, stationarity and independent force-observer gates but both miss the five-percent drag target, so neither is physically admitted alone.",
+    "The bounded compiled collision path reuses exactly one graph in each completed member; R12 executes 460800 slab calls at 0.2373 seconds per physical step.",
+    "Drag decreases monotonically toward the reference from R9 to R12, but no grid order or extrapolated accuracy is claimed before R15 completes."
   ],
   "provenance": {
     "r9_result": "results/sphere_natural_kbc_validation/sphere-v4-natural-kbc-equivalent-r9-7200.json",
     "r9_result_sha256": "e92e3273994577cb296bc8876cb952a375d2f004287b525d93b6c540aa5ca66b",
-    "r9_checkpoint_sha256": "d5711840d0f0f3af7dbde2007cfa6e13fb037114ddd72f7400511c399932927e"
+    "r9_checkpoint_sha256": "d5711840d0f0f3af7dbde2007cfa6e13fb037114ddd72f7400511c399932927e",
+    "r12_result": "results/sphere_natural_kbc_validation/sphere-v4-natural-kbc-equivalent-r12-9600.json",
+    "r12_result_sha256": "50c11bd07c1480f42090144a43af130ecec4084cc12eb16d3989a2551ca9872e",
+    "r12_checkpoint_sha256": "7cd3972c646ed9beef7cfb52c001c7b1f610da447e2d657f8645a6463c4c3e56"
   }
 }
