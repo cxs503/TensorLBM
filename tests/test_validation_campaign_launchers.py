@@ -782,6 +782,50 @@ def test_cylinder_r18_extends_the_same_scaled_grid_family(
     assert arguments[arguments.index("--cv-margin") + 1] == "12"
 
 
+def test_cylinder_v8_changes_only_registered_streamwise_clearance(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_cylinder_v8_streamwise_clearance.sh"),
+            "GPU-test",
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--nx") + 1] == "540"
+    assert arguments[arguments.index("--ny") + 1] == "360"
+    assert arguments[arguments.index("--radius") + 1] == "9"
+    assert arguments[arguments.index("--center-x-fraction") + 1] == (
+        "0.3333333333333333"
+    )
+    assert arguments[arguments.index("--collision-model") + 1] == (
+        "planar_cumulant_d2q9"
+    )
+    assert arguments[arguments.index("--lattice-speed") + 1] == "0.03"
+    assert arguments[arguments.index("--steps") + 1] == "108000"
+    assert arguments[arguments.index("--warmup-steps") + 1] == "63000"
+    assert arguments[arguments.index("--statistics-window-steps") + 1] == (
+        "45000"
+    )
+
+
 def test_nested_v10_launcher_scales_all_inner_physical_locations(
     tmp_path: Path,
 ) -> None:
