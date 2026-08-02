@@ -33,16 +33,18 @@ C = torch.tensor(
     dtype=torch.int64,
 )
 
-W = torch.tensor(
-    [
-        1 / 3,
-        1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18,
-        1 / 36, 1 / 36, 1 / 36, 1 / 36,
-        1 / 36, 1 / 36, 1 / 36, 1 / 36,
-        1 / 36, 1 / 36, 1 / 36, 1 / 36,
-    ],
-    dtype=torch.float32,
+_W_VALUES = (
+    1 / 3,
+    1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18,
+    1 / 36, 1 / 36, 1 / 36, 1 / 36,
+    1 / 36, 1 / 36, 1 / 36, 1 / 36,
+    1 / 36, 1 / 36, 1 / 36, 1 / 36,
 )
+W = torch.tensor(_W_VALUES, dtype=torch.float32)
+# Retain exact binary64 representations of the rational Python literals for
+# high-Re float64 collision audits.  Casting the public float32 W to double
+# cannot recover the bits already lost at module import.
+W_EXACT64 = torch.tensor(_W_VALUES, dtype=torch.float64)
 
 OPPOSITE = torch.tensor(
     [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17],
@@ -56,8 +58,11 @@ def _c_on(device: torch.device) -> torch.Tensor:
 
 
 @functools.cache
-def _w_on(device: torch.device) -> torch.Tensor:
-    return W.to(device)
+def _w_on(
+    device: torch.device,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
+    return W_EXACT64.to(device=device, dtype=dtype)
 
 
 def equilibrium3d(
@@ -90,7 +95,7 @@ def equilibrium3d(
     if device is None:
         device = rho.device
     c = _c_on(device)
-    w = _w_on(device).view(19, 1, 1, 1)
+    w = _w_on(device, rho.dtype).view(19, 1, 1, 1)
 
     u_sq = ux * ux + uy * uy + uz * uz
     cu = (
