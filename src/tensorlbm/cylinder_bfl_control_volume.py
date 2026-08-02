@@ -21,6 +21,10 @@ from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
+from .planar_d3q19 import (
+    collide_planar_cumulant_d3q19,
+    maximum_planar_plane_spread,
+)
 from .solver3d import stream3d
 from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
 
@@ -99,7 +103,9 @@ class CylinderBFLControlVolumeConfig:
         }:
             raise ValueError("unknown far_field_mode")
         if self.collision_model not in {
-            "cumulant_d3q19_cs0", "natural_kbc_d3q19",
+            "cumulant_d3q19_cs0",
+            "natural_kbc_d3q19",
+            "planar_cumulant_d2q9",
         }:
             raise ValueError("unknown collision_model")
         if self.collision_chunk_cells < 0:
@@ -297,7 +303,11 @@ def run_cylinder_bfl_control_volume(
             else:
                 collided = natural_kbc_executor(f, config.tau)
         else:
-            collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
+            collided = (
+                collide_planar_cumulant_d3q19(f, config.tau)
+                if config.collision_model == "planar_cumulant_d2q9"
+                else collide_cumulant_d3q19(f, config.tau, C_s=0.0)
+            )
         post = torch.where(solid_q, old, collided)
         f = apply_outer(stream3d(post))
         rho_post, ux_post, uy_post, uz_post = macroscopic3d(post)
@@ -384,8 +394,23 @@ def run_cylinder_bfl_control_volume(
     final_speed = torch.sqrt(
         final_ux.square() + final_uy.square() + final_uz.square()
     )
-    invocation_elapsed_seconds = time.perf_counter() - invocation_started
+    maximum_plane_spread = maximum_planar_plane_spread(f)
+    planar_mode = config.collision_model == "planar_cumulant_d2q9"
+    planar_extrusion_target_met = (
+        not planar_mode or maximum_plane_spread <= 1.0e-6
+    )
+    numerical_quality_admitted = (
+        numerical_quality_admitted and planar_extrusion_target_met
+    )
     steps_advanced = config.steps - start_step
+    collision_execution = natural_kbc_executor.diagnostics()
+    if planar_mode:
+        collision_execution = {
+            "mode": "d2q9_cumulant_embedded_in_d3q19_storage",
+            "collision_calls": steps_advanced,
+            "maximum_final_d2q9_marginal_plane_spread": maximum_plane_spread,
+        }
+    invocation_elapsed_seconds = time.perf_counter() - invocation_started
     return {
         "schema": "tensorlbm-cylinder-bfl-control-volume-v4",
         "configuration": checkpoint_signature | {
@@ -420,8 +445,11 @@ def run_cylinder_bfl_control_volume(
             ],
             "relative_mass_drift": float(final_rho.mean().item() - 1.0),
             "maximum_speed": float(final_speed.max().item()),
+            "maximum_final_d2q9_marginal_plane_spread": (
+                maximum_plane_spread
+            ),
             "finite": math.isfinite(cd),
-            "collision_execution": natural_kbc_executor.diagnostics(),
+            "collision_execution": collision_execution,
         },
         "runtime": {
             "invocation_elapsed_seconds": invocation_elapsed_seconds,
@@ -442,6 +470,10 @@ def run_cylinder_bfl_control_volume(
                 shedding_cycles >= config.minimum_shedding_cycles
             ),
             "domain_reference_target_met": domain_reference_adequate,
+            "planar_extrusion_target": 1.0e-6,
+            "planar_extrusion_target_met": (
+                planar_extrusion_target_met
+            ),
             "numerical_quality_admitted": numerical_quality_admitted,
             "admitted": (
                 reference_error <= 5.0 and strouhal_error <= 5.0
