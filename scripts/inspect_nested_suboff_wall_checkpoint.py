@@ -48,6 +48,9 @@ from tensorlbm.surface_area_weights import bfl_surface_area_weights  # noqa: E40
 from tensorlbm.spalding_wall_model import (  # noqa: E402
     sample_wall_exchange_velocity,
 )
+from tensorlbm.pressure_gradient_wall_model import (  # noqa: E402
+    solve_pressure_gradient_equilibrium_wall_shear,
+)
 from tensorlbm.two_point_wall_diagnostics import (  # noqa: E402
     estimate_two_point_log_slope_friction_velocity,
     summarize_two_point_log_slope,
@@ -56,6 +59,9 @@ from tensorlbm.wall_checkpoint_diagnostics import (  # noqa: E402
     diagnose_bfl_wall_exchange_state,
 )
 from tensorlbm.wall_model import physical_wall_lattice_viscosity  # noqa: E402
+from tensorlbm.wall_pressure_gradient import (  # noqa: E402
+    sample_wall_tangential_pressure_gradient,
+)
 
 
 def parser() -> argparse.ArgumentParser:
@@ -318,7 +324,7 @@ def inspect_checkpoint(
         y_plus_upper_bound=y_plus_upper_bound,
         minimum_y_plus_in_range_fraction=minimum_y_plus_in_range_fraction,
     )
-    _, velocity_x, velocity_y, velocity_z = macroscopic3d(finest)
+    density, velocity_x, velocity_y, velocity_z = macroscopic3d(finest)
     exchange_distance = float(configuration["stress_exchange_distance"])
     inner_samples = sample_wall_exchange_velocity(
         (velocity_x, velocity_y, velocity_z),
@@ -428,6 +434,120 @@ def inspect_checkpoint(
     two_point_diagnostic["covered_shear_force_x_n"] = (
         float(two_point_shear_x_lu.item()) * scale
     )
+
+    # Evaluate the pressure-gradient ODE candidate on the same frozen field.
+    # This is a sensitivity observer only: it neither changes populations nor
+    # replaces the production Musker traction.  The candidate deliberately
+    # reports nodes requiring reverse shear as separated until the published
+    # pressure-gradient velocity-scale extension is independently implemented.
+    pressure_gradient_samples = sample_wall_tangential_pressure_gradient(
+        (density - 1.0) / 3.0,
+        solid,
+        inner_samples.boundary,
+        (surface.nx_n, surface.ny_n, surface.nz_n),
+    )
+    normal_velocity = (
+        inner_samples.velocity_x * inner_samples.normal_x
+        + inner_samples.velocity_y * inner_samples.normal_y
+        + inner_samples.velocity_z * inner_samples.normal_z
+    )
+    tangent = torch.stack((
+        inner_samples.velocity_x - normal_velocity * inner_samples.normal_x,
+        inner_samples.velocity_y - normal_velocity * inner_samples.normal_y,
+        inner_samples.velocity_z - normal_velocity * inner_samples.normal_z,
+    ), dim=1)
+    candidate_speed = torch.linalg.vector_norm(tangent, dim=1)
+    tangent_direction = tangent / candidate_speed[:, None].clamp_min(
+        torch.finfo(candidate_speed.dtype).tiny,
+    )
+    active_density = density[inner_samples.boundary]
+    signed_pressure_acceleration = (
+        pressure_gradient_samples.vector * tangent_direction
+    ).sum(dim=1) / active_density.clamp_min(
+        torch.finfo(active_density.dtype).tiny,
+    )
+    signed_pressure_acceleration = torch.where(
+        pressure_gradient_samples.valid,
+        signed_pressure_acceleration,
+        torch.full_like(signed_pressure_acceleration, torch.nan),
+    )
+    pressure_acceleration_magnitude = (
+        pressure_gradient_samples.magnitude
+        / active_density.clamp_min(torch.finfo(active_density.dtype).tiny)
+    )
+    pressure_acceleration_magnitude = torch.where(
+        pressure_gradient_samples.valid,
+        pressure_acceleration_magnitude,
+        torch.full_like(pressure_acceleration_magnitude, torch.nan),
+    )
+    candidate_area = area_weight[inner_samples.boundary]
+    candidate_tangent_x = tangent_direction[:, 0]
+    total_candidate_area = candidate_area.sum().clamp_min(
+        torch.finfo(candidate_area.dtype).tiny,
+    )
+    candidate_diagnostic = {}
+    for eddy_viscosity_model in ("van_driest", "duprat"):
+        candidate = solve_pressure_gradient_equilibrium_wall_shear(
+            candidate_speed,
+            inner_samples.y2,
+            signed_pressure_acceleration,
+            wall_nu,
+            pressure_gradient_magnitude_acceleration=(
+                pressure_acceleration_magnitude
+            ),
+            eddy_viscosity_model=eddy_viscosity_model,
+        )
+        attached_area_fraction = float(
+            (candidate_area * candidate.attached).sum().div(
+                total_candidate_area,
+            ).item(),
+        )
+        separated_area_fraction = float(
+            (candidate_area * candidate.separated).sum().div(
+                total_candidate_area,
+            ).item(),
+        )
+        candidate_shear_x_lu = (
+            candidate.shear_stress_over_density
+            * candidate_tangent_x
+            * candidate_area
+        ).sum()
+        attached_friction_velocity = candidate.friction_velocity[
+            candidate.attached
+        ]
+        candidate_diagnostic[eddy_viscosity_model] = {
+            "scope": "diagnostic_only_not_a_force_correction",
+            "scheme": (
+                "attached_pressure_gradient_equilibrium_ode_"
+                f"{eddy_viscosity_model}_v1"
+            ),
+            "requested_nodes": int(candidate_speed.numel()),
+            "finite_gradient_nodes": pressure_gradient_samples.valid_nodes,
+            "attached_nodes": int(candidate.attached.sum().item()),
+            "separated_nodes": int(candidate.separated.sum().item()),
+            "attached_area_fraction": attached_area_fraction,
+            "separated_area_fraction": separated_area_fraction,
+            "unresolved_area_fraction": max(
+                0.0, 1.0 - attached_area_fraction - separated_area_fraction,
+            ),
+            "attached_shear_force_x_lu": float(candidate_shear_x_lu.item()),
+            "attached_shear_force_x_n": (
+                float(candidate_shear_x_lu.item()) * scale
+            ),
+            "shear_force_vs_production_wall_law_ratio": (
+                float(candidate_shear_x_lu.item())
+                / max(abs(float(diagnostics.shear_force[0])), 1.0e-30)
+            ),
+            "maximum_attached_speed_residual_lu": (
+                float(candidate.residual[candidate.attached].abs().max().item())
+                if bool(candidate.attached.any()) else None
+            ),
+            "mean_attached_friction_velocity_lu": (
+                float(attached_friction_velocity.mean().item())
+                if attached_friction_velocity.numel() else None
+            ),
+            "reverse_shear_force_modelled": False,
+        }
     step_records = state.get("step_records", [])
     latest_record = step_records[-1] if step_records else None
     latest_cv = float(latest_record["cv_resistance_n"]) if isinstance(latest_record, dict) else None
@@ -551,6 +671,7 @@ def inspect_checkpoint(
         "surface_area_weighting": asdict(area_diagnostics),
         "wall_exchange": asdict(diagnostics),
         "two_point_log_slope_diagnostic": two_point_diagnostic,
+        "pressure_gradient_ode_candidate": candidate_diagnostic,
         "instantaneous_surface_pressure_audit": {
             "control_volume_resistance_n": latest_cv,
             "wall_shear_resistance_n": latest_wall_shear,
