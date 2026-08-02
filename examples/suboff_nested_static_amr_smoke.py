@@ -2027,6 +2027,10 @@ def run(args: argparse.Namespace) -> dict:
             "cv_resistance_n": cv_mean * scale,
             "bfl_plus_wall_stress_n": bfl_mean * scale,
             "bfl_pressure_n": pressure_mean * scale,
+            "conservative_bfl_link_impulse_n": pressure_mean * scale,
+            "bfl_pressure_field_status": (
+                "deprecated_alias_for_conservative_link_impulse_not_pressure"
+            ),
             "wall_shear_n": friction_mean * scale,
             "numerical_source_n": source_mean * scale,
             "source_corrected_cv_n": corrected * scale,
@@ -2101,7 +2105,7 @@ def run(args: argparse.Namespace) -> dict:
             print(
                 f"nested smoke step={current_step}/{args.steps} "
                 f"Rt={step_records[-1]['cv_resistance_n']:.3f} N "
-                f"Rp={step_records[-1]['bfl_pressure_n']:.3f} N "
+                f"Rlink={step_records[-1]['bfl_pressure_n']:.3f} N "
                 f"Rf={step_records[-1]['wall_shear_n']:.3f} N "
                 f"closure={step_records[-1]['source_corrected_observer_difference_pct']:.5f}%",
                 flush=True,
@@ -2342,6 +2346,9 @@ def run(args: argparse.Namespace) -> dict:
             experimental_total=point.resistance_n,
             friction_reference=friction_reference,
         ).to_dict()
+        resistance_component_audit["pressure_input_status"] = (
+            "deprecated_link_impulse_alias_not_physical_pressure"
+        )
         mean_source = sum(
             record["numerical_source_n"] for record in selected_records
         ) / len(selected_records)
@@ -2475,6 +2482,9 @@ def run(args: argparse.Namespace) -> dict:
             "link_force_decomposition_scheme": (
                 "actual_population_impulse_geometry_projection_v1"
             ),
+            "conservative_force_observer_scheme": (
+                "fixed_control_volume_plus_laboratory_bfl_link_impulse_v1"
+            ),
             "appendage_link_scheme": (
                 SUBOFF_APPENDAGE_LINK_SCHEME
                 if args.hull_type == "full"
@@ -2579,8 +2589,13 @@ def run(args: argparse.Namespace) -> dict:
                 "mean_resistance_n": mean_resistance,
                 "mean_bfl_plus_wall_stress_n": mean_bfl,
                 "mean_bfl_pressure_n": mean_bfl_pressure,
+                "mean_conservative_bfl_link_impulse_n": mean_bfl_pressure,
+                "mean_bfl_pressure_field_status": (
+                    "deprecated_alias_for_conservative_link_impulse_not_pressure"
+                ),
                 "mean_wall_shear_n": mean_wall_shear,
                 "bfl_pressure_fraction": pressure_fraction,
+                "conservative_bfl_link_impulse_fraction": pressure_fraction,
                 "wall_shear_fraction": wall_shear_fraction,
                 "resistance_component_audit": resistance_component_audit,
                 "mean_numerical_source_n": mean_source,
