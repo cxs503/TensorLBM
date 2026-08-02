@@ -53,9 +53,9 @@
 | `nscbc` | D2Q9 | `IMPLEMENTATION_ONLY` | 无测试；简化单特征松弛，非完整 NSCBC | `WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE` |
 | `nscbc` | D3Q19 | `IMPLEMENTATION_ONLY` | 同上 | 同上 |
 | `nscbc` | D3Q27 | `NO_IMPLEMENTATION` | — | `WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE` |
-| `bouzidi_interpolated` | D2Q9 | `MECHANICS_TESTED` | `test_interpolated_bc.py`：shape、finite、halfway-q=standard BB、linear/quad branch；无物理验证 | `WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE` |
-| `bouzidi_interpolated` | D3Q19 | `MECHANICS_TESTED` | 同上 + `compute_q_sphere`；`sphere_bouzidi.py` benchmark 报告 ~13% Cd 误差但**不是测试**；无可执行物理验证 | 同上 |
-| `bouzidi_interpolated` | D3Q27 | `NO_IMPLEMENTATION` | — | `WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE` |
+| `bouzidi_interpolated` | D2Q9 | `MECHANICS_TESTED` | `test_interpolated_bc.py` + `test_bfl_fractional_distance.py`：halfway/linear/quadratic 重构与解析对角 q；无物理验证 | `WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE` |
+| `bouzidi_interpolated` | D3Q19 | `MECHANICS_TESTED` | 解析对角 q、标量/向量实现等价、平面 D2Q9 曲壁算子链等价；修正后的球体物理重算待完成 | 同上 |
+| `bouzidi_interpolated` | D3Q27 | `MECHANICS_TESTED` | `bouzidi_bounce_back_3d_common` + `compute_q_sphere_27`；halfway/分支机械测试与解析体对角 q；无物理验证 | 同上 |
 
 ## 实现状态等级
 

@@ -146,15 +146,16 @@ def test_bouzidi_d2q9_is_mechanics_tested() -> None:
 
 
 def test_bouzidi_d3q19_is_mechanics_tested_not_physics_validated() -> None:
-    """sphere_bouzidi.py benchmark is NOT a test; only mechanics tests exist."""
+    """Corrected operator-chain tests do not replace a sphere physical rerun."""
     cap = boundary_capability_matrix()["bouzidi_interpolated"]["D3Q19"]
     assert cap.implementation_status == "MECHANICS_TESTED"
-    assert "not a test" in cap.verification_evidence.lower() or "not trusted" in cap.verification_evidence.lower()
+    assert "physical rerun pending" in cap.verification_evidence.lower()
 
 
-def test_bouzidi_d3q27_has_no_implementation() -> None:
+def test_bouzidi_d3q27_is_mechanics_tested_not_physics_validated() -> None:
     cap = boundary_capability_matrix()["bouzidi_interpolated"]["D3Q27"]
-    assert cap.implementation_status == "NO_IMPLEMENTATION"
+    assert cap.implementation_status == "MECHANICS_TESTED"
+    assert "body-diagonal q" in cap.verification_evidence
 
 
 # ---------------------------------------------------------------------------
@@ -209,8 +210,8 @@ def test_require_raises_for_physics_validated_combination() -> None:
         )
 
 
-def test_require_raises_for_no_implementation() -> None:
-    with pytest.raises(BoundaryConditionWithheldError, match="WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE"):
+def test_require_d3q27_bouzidi_still_withholds_complete_composition() -> None:
+    with pytest.raises(BoundaryConditionWithheldError, match="WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE"):
         require_boundary_condition_capability(
             "bouzidi_interpolated", "D3Q27", "mrt", "single_phase", "torch_cpu",
         )
