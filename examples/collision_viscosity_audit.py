@@ -34,6 +34,11 @@ def main() -> None:
     parser.add_argument("--vreman-cv", type=float, default=0.025)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", choices=("float32", "float64"), default="float64")
+    parser.add_argument(
+        "--natural-kbc-compute-dtype",
+        choices=("storage", "float64"),
+        default="storage",
+    )
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
     result = run_collision_viscosity_audit(CollisionViscosityAuditConfig(
@@ -50,6 +55,7 @@ def main() -> None:
         vreman_cv=args.vreman_cv,
         device=args.device,
         dtype=args.dtype,
+        natural_kbc_compute_dtype=args.natural_kbc_compute_dtype,
     ))
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

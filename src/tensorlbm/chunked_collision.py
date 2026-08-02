@@ -23,8 +23,16 @@ class NaturalKBCCollisionExecutor:
     dynamic graph can serve the full ramp and every z slab.
     """
 
-    def __init__(self, *, compile_enabled: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        compile_enabled: bool = False,
+        compute_dtype: str = "storage",
+    ) -> None:
+        if compute_dtype not in {"storage", "float64"}:
+            raise ValueError("compute_dtype must be storage or float64")
         self.compile_enabled = bool(compile_enabled)
+        self.compute_dtype = compute_dtype
         self._compiled: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] | None = None
         self._call_count = 0
         self._shape_signatures: set[tuple[str, str, tuple[int, ...]]] = set()
@@ -48,8 +56,14 @@ class NaturalKBCCollisionExecutor:
         ))
         self._minimum_tau = min(self._minimum_tau, tau)
         self._maximum_tau = max(self._maximum_tau, tau)
+        compute_populations = (
+            populations.to(torch.float64)
+            if self.compute_dtype == "float64"
+            else populations
+        )
         if not self.compile_enabled:
-            return collide_natural_kbc_d3q19(populations, tau)
+            result = collide_natural_kbc_d3q19(compute_populations, tau)
+            return result.to(dtype=populations.dtype)
         if self._compiled is None:
             self._compiled = torch.compile(
                 _collide_natural_kbc_d3q19_unchecked,
@@ -57,8 +71,9 @@ class NaturalKBCCollisionExecutor:
                 fullgraph=False,
                 mode="reduce-overhead",
             )
-        tau_tensor = populations.new_tensor(tau)
-        return self._compiled(populations, tau_tensor)
+        tau_tensor = compute_populations.new_tensor(tau)
+        result = self._compiled(compute_populations, tau_tensor)
+        return result.to(dtype=populations.dtype)
 
     def diagnostics(self) -> dict[str, object]:
         """Return auditable execution and process-level compile counters."""
@@ -71,6 +86,8 @@ class NaturalKBCCollisionExecutor:
                 pass
         return {
             "compile_enabled": self.compile_enabled,
+            "storage_dtype_policy": "preserve_input",
+            "compute_dtype": self.compute_dtype,
             "collision_calls": self._call_count,
             "input_signatures": [
                 {

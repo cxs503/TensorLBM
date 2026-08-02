@@ -57,6 +57,22 @@ def test_planar_cylinder_tau_recovers_viscosity_in_float32() -> None:
     assert result["result"]["relative_error_pct"] < 0.5
 
 
+def test_mixed_precision_natural_kbc_recovers_near_half_tau() -> None:
+    result = run_collision_viscosity_audit(CollisionViscosityAuditConfig(
+        collision_model="natural_kbc",
+        tau=0.5000162,
+        wavelength_cells=16,
+        transverse_cells=3,
+        amplitude=0.02,
+        steps=1200,
+        fit_start_step=100,
+        maximum_relative_error_pct=5.0,
+        dtype="float32",
+        natural_kbc_compute_dtype="float64",
+    ))
+    assert result["acceptance"]["admitted"] is True
+
+
 def test_collision_viscosity_audit_rejects_invalid_configuration() -> None:
     with pytest.raises(ValueError, match="collision_model"):
         CollisionViscosityAuditConfig(collision_model="mrt").validate()
