@@ -31,6 +31,7 @@ from tensorlbm.control_volume_force import (
     observe_control_volume_force,
 )
 from tensorlbm.cuda_memory_budget import (
+    plan_hierarchy_device_memory,
     require_cuda_memory_budget,
     require_cuda_runtime_reserve,
 )
@@ -94,6 +95,14 @@ from tensorlbm.yplus_guide import (
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--device", default="cpu")
+    result.add_argument(
+        "--level-devices",
+        default="",
+        help=(
+            "optional comma-separated owner device for every hierarchy level; "
+            "for four levels, for example cuda:0,cuda:0,cuda:1,cuda:2"
+        ),
+    )
     result.add_argument(
         "--hull-type", choices=("bare_hull", "full"), default="bare_hull",
     )
@@ -451,6 +460,24 @@ def run(args: argparse.Namespace) -> dict:
     finest_planning_solid = planning_solids[-1]
     refinement_depth = len(refinement_plans)
     level_count = refinement_depth + 1
+    if args.level_devices:
+        level_devices = tuple(
+            torch.device(value.strip())
+            for value in args.level_devices.split(",")
+            if value.strip()
+        )
+        if len(level_devices) != level_count:
+            raise ValueError(
+                "level-devices must contain exactly one device per hierarchy level",
+            )
+        if level_devices[0] != device:
+            raise ValueError("the first level device must equal --device")
+    else:
+        level_devices = (device,) * level_count
+    for level_device in dict.fromkeys(level_devices):
+        if level_device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(level_device)
+    finest_device = level_devices[-1]
     force_averager = UniformSubcycleAverager(refinement_depth)
     physical_re = point.speed_mps * MODEL_LENGTH_M / args.nu_water
     initial_tau_by_level = continuation.tau_by_level(
@@ -550,12 +577,26 @@ def run(args: argparse.Namespace) -> dict:
         characteristic_length_cells=finest_plan.effective_hull_length_cells,
         requested_exchange_distance_cells=args.stress_exchange_distance,
     )
-    memory_budget = require_cuda_memory_budget(
-        device,
-        estimated_peak_gib=estimated_peak_gib,
-        reserve_gib=1.0,
-        label="SUBOFF nested static-AMR smoke",
+    device_memory_plan = plan_hierarchy_device_memory(
+        finest_plan.allocated_cells_by_level,
+        level_devices,
+        bytes_per_cell=args.memory_bytes_per_cell,
     )
+    device_memory_preflight = []
+    for allocation in device_memory_plan:
+        budget = require_cuda_memory_budget(
+            torch.device(allocation.device),
+            estimated_peak_gib=allocation.estimated_peak_gib,
+            reserve_gib=1.0,
+            label=(
+                "SUBOFF nested static-AMR levels "
+                + ",".join(str(value) for value in allocation.level_indices)
+            ),
+        )
+        device_memory_preflight.append(
+            allocation.to_dict()
+            | {"cuda_budget": budget.to_dict() if budget is not None else None},
+        )
     planning = {
         "outer_box": vars(outer_plan.box),
         "inner_box_in_outer_allocated_coordinates": vars(
@@ -586,6 +627,8 @@ def run(args: argparse.Namespace) -> dict:
         "cell_saving_fraction": finest_plan.cell_saving_fraction,
         "memory_estimate_bytes_per_cell": args.memory_bytes_per_cell,
         "estimated_peak_gib": estimated_peak_gib,
+        "level_devices": [str(value) for value in level_devices],
+        "device_memory_preflight": device_memory_preflight,
         "stress_exchange_distance_cells": args.stress_exchange_distance,
         "stress_exchange_distance_over_finest_length": (
             args.stress_exchange_distance
@@ -602,7 +645,8 @@ def run(args: argparse.Namespace) -> dict:
             else "analytic_axisymmetric_bisection_v1"
         ),
         "cuda_memory_preflight": (
-            memory_budget.to_dict() if memory_budget is not None else None
+            device_memory_preflight[0]["cuda_budget"]
+            if len(device_memory_preflight) == 1 else None
         ),
         "control_volume_interface_clearance": {
             "interface_filter_width_cells": args.interface_filter_width,
@@ -665,6 +709,7 @@ def run(args: argparse.Namespace) -> dict:
             "planning": planning,
         }
 
+    finest_planning_solid = finest_planning_solid.to(device=finest_device)
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, args.lattice_speed)
     zero = torch.zeros_like(rho)
@@ -674,6 +719,7 @@ def run(args: argparse.Namespace) -> dict:
         fine_solids=(None,) * (refinement_depth - 1) + (
             finest_planning_solid,
         ),
+        fine_devices=level_devices[1:],
     )
     checkpoint_signature = {
         "schema_version": 3,
@@ -747,7 +793,7 @@ def run(args: argparse.Namespace) -> dict:
     finest_length = finest_plan.effective_hull_length_cells
     bfl_mask, bfl_q = compute_q_suboff(
         nx_f, ny_f, nz_f, *finest_center, finest_length,
-        hull_type=args.hull_type, config=geometry_config, device=device,
+        hull_type=args.hull_type, config=geometry_config, device=finest_device,
         solid_mask=finest_solid,
     )
     appendage_boundary_links = 0
@@ -757,7 +803,7 @@ def run(args: argparse.Namespace) -> dict:
         bare_solid, _ = build_suboff_mask(
             "bare_hull", nx_f, ny_f, nz_f,
             cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
-            length=finest_length, config=geometry_config, device=device,
+            length=finest_length, config=geometry_config, device=finest_device,
         )
         bfl_q, appendage_link_diagnostics = refine_q_suboff_appendages(
             bfl_mask,
@@ -792,13 +838,13 @@ def run(args: argparse.Namespace) -> dict:
         with_sail_solid, _ = build_suboff_mask(
             "with_sail", nx_f, ny_f, nz_f,
             cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
-            length=finest_length, config=geometry_config, device=device,
+            length=finest_length, config=geometry_config, device=finest_device,
         )
         bare_near = get_near_wall_3d(bare_solid)
         bare_surface = SurfaceMesh.from_gradient(bare_solid, bare_near)
         bare_bfl_mask, _ = compute_q_suboff(
             nx_f, ny_f, nz_f, *finest_center, finest_length,
-            hull_type="bare_hull", config=geometry_config, device=device,
+            hull_type="bare_hull", config=geometry_config, device=finest_device,
             solid_mask=bare_solid,
         )
         _, bare_area_diagnostics = bfl_surface_area_weights(
@@ -820,7 +866,7 @@ def run(args: argparse.Namespace) -> dict:
             x0=x0, x1=x1,
             y0=y0, y1=y1,
             z0=z0, z1=z1,
-            device=device,
+            device=finest_device,
         )
 
     control_volume = build_control_volume(args.cv_margin)
@@ -837,14 +883,27 @@ def run(args: argparse.Namespace) -> dict:
         device=device,
         faces=tuple(sponge_faces),
     )
-    runtime_memory_reserve = require_cuda_runtime_reserve(
-        device,
-        required_reserve_gib=1.0,
-        label="SUBOFF nested static-AMR smoke",
+    runtime_memory_reserves = []
+    for allocation in device_memory_plan:
+        reserve = require_cuda_runtime_reserve(
+            torch.device(allocation.device),
+            required_reserve_gib=1.0,
+            label=(
+                "SUBOFF nested static-AMR levels "
+                + ",".join(str(value) for value in allocation.level_indices)
+            ),
+        )
+        runtime_memory_reserves.append({
+            "device": allocation.device,
+            "level_indices": list(allocation.level_indices),
+            "cuda_reserve": reserve.to_dict() if reserve is not None else None,
+        })
+    planning["cuda_runtime_reserve_after_persistent_allocation_by_device"] = (
+        runtime_memory_reserves
     )
     planning["cuda_runtime_reserve_after_persistent_allocation"] = (
-        runtime_memory_reserve.to_dict()
-        if runtime_memory_reserve is not None else None
+        runtime_memory_reserves[0]["cuda_reserve"]
+        if len(runtime_memory_reserves) == 1 else None
     )
     wall_nu = physical_wall_lattice_viscosity(
         args.lattice_speed, finest_length, physical_re,
@@ -875,7 +934,7 @@ def run(args: argparse.Namespace) -> dict:
     health_records: list[dict] = []
 
     if args.resume:
-        state = torch.load(args.checkpoint, map_location=device, weights_only=True)
+        state = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
         stored_configuration = state.get("configuration")
         pre_inlet_sponge_signature = dict(checkpoint_signature)
         pre_inlet_sponge_signature.pop("sponge_inlet")
@@ -995,8 +1054,12 @@ def run(args: argparse.Namespace) -> dict:
         if current_step >= args.steps:
             raise ValueError("checkpoint already reached or exceeded requested steps")
         hierarchy.restore_level_populations([
-            populations.to(device=device)
-            for populations in state["level_populations"]
+            populations.to(device=template.device)
+            for populations, template in zip(
+                state["level_populations"],
+                hierarchy.level_populations,
+                strict=True,
+            )
         ])
         step_records = list(state["step_records"])
         maximum_limiter_fraction = float(state["maximum_limiter_fraction"])
@@ -1831,9 +1894,14 @@ def run(args: argparse.Namespace) -> dict:
         and collision_viscosity_acceptable
         and wall_exchange_scaling_acceptable
     )
+    peak_gib_by_device = {
+        str(level_device): torch.cuda.max_memory_allocated(level_device) / 2**30
+        for level_device in dict.fromkeys(level_devices)
+        if level_device.type == "cuda"
+    }
     peak_gib = (
-        torch.cuda.max_memory_allocated(device) / 2**30
-        if device.type == "cuda" else None
+        next(iter(peak_gib_by_device.values()))
+        if len(peak_gib_by_device) == 1 else None
     )
     return {
         "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
@@ -1887,7 +1955,10 @@ def run(args: argparse.Namespace) -> dict:
                 resumed_pre_inlet_sponge_checkpoint
             ),
         },
-        "planning": planning | {"measured_peak_allocated_gib": peak_gib},
+        "planning": planning | {
+            "measured_peak_allocated_gib": peak_gib,
+            "measured_peak_allocated_gib_by_device": peak_gib_by_device,
+        },
         "geometry": finest_geometry | {
             "resolution": geometry_resolution_output,
             "area_weighting": vars(area_diagnostics),

@@ -6,9 +6,28 @@ import torch
 from tensorlbm.cuda_memory_budget import (
     assess_cuda_memory_budget,
     assess_cuda_runtime_reserve,
+    plan_hierarchy_device_memory,
     require_cuda_memory_budget,
     require_cuda_runtime_reserve,
 )
+
+
+def test_hierarchy_memory_is_aggregated_per_owning_device() -> None:
+    plan = plan_hierarchy_device_memory(
+        (100, 20, 40, 200),
+        ("cuda:0", "cuda:0", "cuda:1", "cuda:2"),
+        bytes_per_cell=1024.0,
+    )
+
+    assert [entry.device for entry in plan] == ["cuda:0", "cuda:1", "cuda:2"]
+    assert [entry.level_indices for entry in plan] == [(0, 1), (2,), (3,)]
+    assert [entry.allocated_cells for entry in plan] == [120, 40, 200]
+    assert plan[-1].estimated_peak_gib == pytest.approx(200 / 2**20)
+
+
+def test_hierarchy_memory_rejects_an_incomplete_assignment() -> None:
+    with pytest.raises(ValueError, match="one entry per level"):
+        plan_hierarchy_device_memory((100, 20), ("cpu",), bytes_per_cell=1000)
 
 
 def test_memory_budget_accounts_for_live_free_memory_and_reserve() -> None:

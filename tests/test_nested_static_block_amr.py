@@ -221,6 +221,38 @@ def test_nested_hierarchy_reports_cell_savings() -> None:
     assert 0.0 < hierarchy.cell_saving_fraction < 1.0
 
 
+def test_nested_hierarchy_accepts_an_explicit_device_per_fine_level() -> None:
+    hierarchy = NestedStaticBlockAMR3D(
+        _equilibrium((12, 12, 14)),
+        _configs(),
+        fine_devices=("cpu", torch.device("cpu")),
+    )
+
+    assert hierarchy.level_devices == (
+        torch.device("cpu"),
+        torch.device("cpu"),
+        torch.device("cpu"),
+    )
+
+    def identity(
+        state: torch.Tensor, tau: float, level: int, substep: int,
+    ) -> AMRAdvanceResult:
+        del tau, level, substep
+        return AMRAdvanceResult(state.clone(), state.clone())
+
+    ledgers = hierarchy.step(identity)
+    assert all(abs(ledger.mass_residual) < 1.0e-12 for ledger in ledgers)
+
+
+def test_nested_hierarchy_rejects_incomplete_device_ownership() -> None:
+    with pytest.raises(ValueError, match="fine_devices"):
+        NestedStaticBlockAMR3D(
+            _equilibrium((12, 12, 14)),
+            _configs(),
+            fine_devices=("cpu",),
+        )
+
+
 def test_repeated_child_ledgers_accumulate_over_the_root_step() -> None:
     from tensorlbm.static_block_amr import PopulationRefluxLedger
 
