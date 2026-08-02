@@ -47,6 +47,7 @@ from tensorlbm.drag_pressure import (
     SurfaceMesh,
     drag_pressure_integration,
     get_near_wall_3d,
+    integrate_bfl_projected_pressure,
 )
 from tensorlbm.entropic_kbc import (
     collide_kbc_d3q19,
@@ -154,6 +155,20 @@ def parser() -> argparse.ArgumentParser:
             "opt in to the non-conservative density-pressure surface observer; "
             "it is retained only for forensic comparison and never gates acceptance"
         ),
+    )
+    result.add_argument(
+        "--enable-projected-bfl-pressure-diagnostic",
+        action="store_true",
+        help=(
+            "record an independent finite-volume pressure observer on axial "
+            "BFL crossing faces; diagnostic only until canonical validation"
+        ),
+    )
+    result.add_argument(
+        "--projected-bfl-pressure-reconstruction",
+        choices=("local", "linear", "quadratic"),
+        default="linear",
+        help="wall-pressure reconstruction order for the projected BFL observer",
     )
     result.add_argument("--steps", type=int, default=2)
     result.add_argument("--warmup-steps", type=int, default=0)
@@ -878,6 +893,12 @@ def run(args: argparse.Namespace) -> dict:
         "cv_margin": args.cv_margin,
         "auxiliary_cv_margins": list(auxiliary_margins),
         "surface_force_interval": args.surface_force_interval,
+        "projected_bfl_pressure_diagnostic": (
+            args.enable_projected_bfl_pressure_diagnostic
+        ),
+        "projected_bfl_pressure_reconstruction": (
+            args.projected_bfl_pressure_reconstruction
+        ),
         "force_samples_per_root_step": force_averager.expected_samples,
         "ramp_steps": args.ramp_steps,
         "wall_normal_ramp_steps": wall_normal_ramp_steps,
@@ -2141,7 +2162,46 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "surface_pressure_plus_wall_stress_n": None,
             "surface_pressure_observer_status": "rejected_diagnostic_only",
+            "projected_bfl_pressure_n": None,
+            "projected_bfl_pressure_plus_wall_stress_n": None,
+            "projected_bfl_pressure_diagnostics": None,
+            "projected_bfl_pressure_observer_status": (
+                "candidate_diagnostic_only_not_an_acceptance_gate"
+            ),
         }
+        if (
+            args.enable_projected_bfl_pressure_diagnostic
+            and current_step % args.surface_force_interval == 0
+        ):
+            # The isothermal D3Q19 pressure is c_s^2 (rho-rho_infinity).
+            # Removing the unit far-field density also avoids subtracting two
+            # large directional sums; a closed projected body is invariant to
+            # this constant by construction.
+            projected_pressure_field = (
+                hierarchy.finest_f.sum(dim=0) - 1.0
+            ) / 3.0
+            projected_force, projected_diagnostics = (
+                integrate_bfl_projected_pressure(
+                    projected_pressure_field,
+                    bfl_mask,
+                    bfl_q,
+                    solid=finest_solid,
+                    reconstruction=args.projected_bfl_pressure_reconstruction,
+                )
+            )
+            projected_pressure_x = projected_force[0]
+            record["projected_bfl_pressure_n"] = (
+                projected_pressure_x * scale
+            )
+            record["projected_bfl_pressure_plus_wall_stress_n"] = (
+                (projected_pressure_x + friction_mean) * scale
+            )
+            record["projected_bfl_pressure_diagnostics"] = {
+                **asdict(projected_diagnostics),
+                "reconstruction": args.projected_bfl_pressure_reconstruction,
+                "pressure_definition": "cs2_times_rho_minus_unit_far_field",
+                "force_surface": "axial_bfl_projected_faces",
+            }
         if (
             args.enable_rejected_surface_pressure_diagnostic
             and current_step % args.surface_force_interval == 0
@@ -2438,6 +2498,9 @@ def run(args: argparse.Namespace) -> dict:
     nested_cv_acceptable = False
     surface_observer_difference_pct = None
     surface_observer_acceptable = False
+    projected_bfl_observer_difference_pct = None
+    projected_bfl_mean_pressure_n = None
+    projected_bfl_mean_total_n = None
     if selected_records and mean_resistance is not None:
         auxiliary_records = [
             record for record in selected_records
@@ -2480,6 +2543,27 @@ def run(args: argparse.Namespace) -> dict:
                 * 100.0
             )
             surface_observer_acceptable = surface_observer_difference_pct <= 5.0
+        projected_records = [
+            record for record in selected_records
+            if record["projected_bfl_pressure_plus_wall_stress_n"] is not None
+        ]
+        if projected_records:
+            projected_bfl_mean_pressure_n = sum(
+                record["projected_bfl_pressure_n"]
+                for record in projected_records
+            ) / len(projected_records)
+            projected_bfl_mean_total_n = sum(
+                record["projected_bfl_pressure_plus_wall_stress_n"]
+                for record in projected_records
+            ) / len(projected_records)
+            paired_corrected_cv_mean = sum(
+                record["source_corrected_cv_n"] for record in projected_records
+            ) / len(projected_records)
+            projected_bfl_observer_difference_pct = (
+                abs(projected_bfl_mean_total_n - paired_corrected_cv_mean)
+                / max(abs(paired_corrected_cv_mean), 1.0e-30)
+                * 100.0
+            )
     single_grid_candidate = (
         admitted
         and duration_acceptable
@@ -2673,6 +2757,22 @@ def run(args: argparse.Namespace) -> dict:
                     if args.enable_rejected_surface_pressure_diagnostic
                     else "disabled_rejected_diagnostic_not_an_acceptance_gate"
                 ),
+                "projected_bfl_pressure_observer": {
+                    "scope": (
+                        "candidate_diagnostic_only_not_an_acceptance_gate"
+                    ),
+                    "enabled": args.enable_projected_bfl_pressure_diagnostic,
+                    "reconstruction": (
+                        args.projected_bfl_pressure_reconstruction
+                    ),
+                    "mean_pressure_n": projected_bfl_mean_pressure_n,
+                    "mean_pressure_plus_wall_stress_n": (
+                        projected_bfl_mean_total_n
+                    ),
+                    "source_corrected_cv_difference_pct": (
+                        projected_bfl_observer_difference_pct
+                    ),
+                },
                 "wall_exchange": {
                     "samples": len(wall_records),
                     "mean_distance_cells": (
