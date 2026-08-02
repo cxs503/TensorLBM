@@ -16,7 +16,8 @@
       4,
       12
     ],
-    "stress_exchange_distance_cells": 1.0
+    "stress_exchange_distance_cells": 1.0,
+    "appendage_link_scheme": "continuous_parametric_bisection_v1"
   },
   "geometry_resolution": {
     "diameter_cells": 84.01400233372229,
@@ -27,7 +28,7 @@
     "sail_max_thickness_cells": 11,
     "vertical_fin_max_thickness_cells": 11,
     "horizontal_fin_max_thickness_cells": 11,
-    "appendage_boundary_links_requiring_halfway_fallback": 63662,
+    "appendage_boundary_links": 63662,
     "convergence_member_resolved": true,
     "absolute_reference_resolved": true
   },
@@ -63,12 +64,12 @@
   },
   "decision": [
     "The L720 AFF-8 voxel geometry is directly resolved by the declared diameter and appendage-thickness gates.",
-    "The appendages expose 63662 voxel boundary links; their halfway treatment is explicit evidence, not an analytical-intersection accuracy claim.",
+    "The appendages expose 63662 voxel boundary links. Production runs use the continuous DARPA sail/fin parameter equations with 12-step link bisection rather than the legacy q=0.5 fallback.",
     "The predicted allocation fits only narrowly on a 24 GiB GPU. No AFF-8 timestep may be claimed until the measured post-allocation reserve gate passes on an otherwise free supported GPU.",
     "AFF-8 resistance accuracy, time convergence and grid convergence remain unassessed."
   ],
   "source": {
     "path": "results/suboff-nested-v12-aff8-four-level-l90-preflight.json",
-    "sha256": "9988c6731f4c5d4c00880c82e4d5e3a0d8596e65472e4eef635c39ff78d88e85"
+    "sha256": "e10b5e28cc5ae63abbbd43998ce1befd10f9f24632f24ef0f95f76aa4ffe04d7"
   }
 }

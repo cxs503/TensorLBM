@@ -147,7 +147,11 @@ def test_nested_aff8_preflight_measures_appendage_resolution(
 
     resolution = result["planning"]["geometry_resolution"]
     assert resolution["hull_type"] == "full"
-    assert resolution["appendage_halfway_links"] > 0
+    assert resolution["appendage_boundary_links"] > 0
+    assert resolution["appendage_halfway_links"] == 0
+    assert resolution["appendage_link_scheme"] == (
+        "continuous_parametric_bisection_v1"
+    )
     assert resolution["sail_only_cells"] > 0
     assert resolution["fin_only_cells"] > 0
 
@@ -262,7 +266,11 @@ def test_nested_aff8_smoke_records_appendage_resolution(tmp_path: Path) -> None:
 
     resolution = result["geometry"]["resolution"]
     assert resolution["hull_type"] == "full"
-    assert result["geometry"]["appendage_halfway_links"] > 0
+    assert result["geometry"]["appendage_boundary_links"] > 0
+    assert result["geometry"]["appendage_halfway_links"] == 0
+    assert result["geometry"]["appendage_link_intersection"][
+        "target_links"
+    ] == result["geometry"]["appendage_boundary_links"]
     assert resolution["sail_only_cells"] > 0
     assert resolution["fin_only_cells"] > 0
     assert result["physical_validation"] is False

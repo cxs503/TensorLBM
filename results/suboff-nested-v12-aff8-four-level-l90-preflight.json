@@ -101,6 +101,7 @@
       "maximum_exchange_y_plus_estimate": 1042.5652285918359
     },
     "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
+    "appendage_link_scheme": "continuous_parametric_bisection_v1",
     "cuda_memory_preflight": null,
     "control_volume_interface_clearance": {
       "interface_filter_width_cells": 0,
@@ -168,13 +169,15 @@
       "sail_max_thickness_cells": 11,
       "vertical_fin_max_thickness_cells": 11,
       "horizontal_fin_max_thickness_cells": 11,
-      "appendage_halfway_links": 63662,
+      "appendage_halfway_links": 0,
       "minimum_convergence_diameter_cells": 16.0,
       "minimum_absolute_reference_diameter_cells": 24.0,
       "minimum_convergence_appendage_thickness_cells": 3,
       "minimum_absolute_reference_appendage_thickness_cells": 4,
       "convergence_member_resolved": true,
-      "absolute_reference_resolved": true
+      "absolute_reference_resolved": true,
+      "appendage_boundary_links": 63662,
+      "appendage_link_scheme": "continuous_parametric_bisection_v1"
     }
   }
 }

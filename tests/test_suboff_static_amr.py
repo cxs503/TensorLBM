@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 
 from tensorlbm.interpolated_bc_suboff import compute_q_suboff
-from tensorlbm.suboff_cad import build_suboff_mask
+from tensorlbm.suboff_cad import build_suboff_mask, suboff_appendage_triangles
 from tensorlbm.suboff_static_amr import (
     apply_suboff_appendage_halfway_links,
     assess_suboff_geometry_resolution,
@@ -177,3 +177,19 @@ def test_geometry_only_appendage_link_count_matches_runtime_treatment() -> None:
 
     assert preflight_count > 0
     assert runtime_count == preflight_count
+
+
+def test_aff8_appendage_triangle_mesh_translates_to_solver_center() -> None:
+    length = 80.0
+    local = suboff_appendage_triangles(length)
+    center = (60.0, 20.0, 21.0)
+    translated = suboff_appendage_triangles(length, center=center)
+
+    assert local.shape[0] > 0
+    assert translated.shape == local.shape
+    shift = torch.from_numpy(translated - local)
+    assert torch.allclose(
+        shift,
+        torch.tensor(center, dtype=shift.dtype)
+        - torch.tensor((length / 2.0, 0.0, 0.0), dtype=shift.dtype),
+    )
