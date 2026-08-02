@@ -11,11 +11,14 @@ import torch
 from .bfl_d3q19 import bouzidi_bounce_back_d3q19
 from .boundaries3d import far_field_bc_3d, sphere_mask
 from .checkpoint_io import atomic_torch_save
+from .chunked_collision import (
+    NaturalKBCCollisionExecutor,
+    collide_in_z_chunks,
+)
 from .control_volume_force import box_control_volume, observe_control_volume_force
 from .cuda_memory_budget import require_cuda_memory_budget
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
-from .entropic_kbc import collide_natural_kbc_d3q19
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
 from .interpolated_bc import compute_q_sphere
@@ -54,6 +57,8 @@ class SphereBFLControlVolumeConfig:
     statistics_window_steps: int = 0
     minimum_statistics_convective_times: float = 5.0
     collision_model: str = "cumulant_d3q19_cs0"
+    collision_chunk_cells: int = 0
+    compile_natural_kbc: bool = False
     device: str = "cpu"
 
     @property
@@ -84,6 +89,10 @@ class SphereBFLControlVolumeConfig:
             "cumulant_d3q19_cs0", "natural_kbc_d3q19",
         }:
             raise ValueError("unknown collision_model")
+        if self.collision_chunk_cells < 0:
+            raise ValueError("collision_chunk_cells must be non-negative")
+        if self.compile_natural_kbc and self.collision_model != "natural_kbc_d3q19":
+            raise ValueError("compiled natural KBC requires natural_kbc_d3q19")
         if self.report_interval < 0 or self.checkpoint_interval < 0:
             raise ValueError("report/checkpoint intervals must be non-negative")
         if not 0 <= self.statistics_window_steps <= self.steps - self.warmup_steps:
@@ -177,6 +186,8 @@ def run_sphere_bfl_control_volume(
         "reynolds": config.reynolds,
         "lattice_speed": config.lattice_speed,
         "collision_model": config.collision_model,
+        "collision_chunk_cells": config.collision_chunk_cells,
+        "compile_natural_kbc": config.compile_natural_kbc,
         "warmup_steps": config.warmup_steps,
         "ramp_steps": config.ramp_steps,
         "sponge_width": config.sponge_width,
@@ -191,6 +202,10 @@ def run_sphere_bfl_control_volume(
         assert checkpoint is not None
         state = torch.load(checkpoint, map_location=device, weights_only=True)
         source_configuration = state.get("configuration")
+        if isinstance(source_configuration, dict):
+            source_configuration = dict(source_configuration)
+            source_configuration.setdefault("collision_chunk_cells", 0)
+            source_configuration.setdefault("compile_natural_kbc", False)
         if source_configuration != checkpoint_signature:
             shared_target = {
                 key: value for key, value in checkpoint_signature.items()
@@ -245,10 +260,20 @@ def run_sphere_bfl_control_volume(
         return far_field_bc_3d(state, u_in=config.lattice_speed)
 
     dynamic_area = 0.5 * config.lattice_speed**2 * math.pi * config.radius**2
+    natural_kbc_executor = NaturalKBCCollisionExecutor(
+        compile_enabled=config.compile_natural_kbc,
+    )
     for step in range(start_step + 1, config.steps + 1):
         old = f
         if config.collision_model == "natural_kbc_d3q19":
-            collided = collide_natural_kbc_d3q19(f, config.tau)
+            if config.collision_chunk_cells:
+                collided = collide_in_z_chunks(
+                    f,
+                    lambda slab: natural_kbc_executor(slab, config.tau),
+                    chunk_cells=config.collision_chunk_cells,
+                )
+            else:
+                collided = natural_kbc_executor(f, config.tau)
         else:
             collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
         post = torch.where(solid_q, old, collided)
@@ -343,6 +368,7 @@ def run_sphere_bfl_control_volume(
             "reference_error_pct": reference_error,
             "drag_stationarity": stationarity.to_dict(),
             "finite": math.isfinite(cd),
+            "collision_execution": natural_kbc_executor.diagnostics(),
         },
         "acceptance": {
             "drag_error_target_pct": 5.0,
