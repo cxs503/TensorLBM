@@ -60,6 +60,7 @@ from tensorlbm.interpolated_bc_suboff import (
     refine_q_suboff_appendages,
 )
 from tensorlbm.kinetic_flux_register import conserved_population_moments
+from tensorlbm.open_boundary_audit import audit_open_boundary_history
 from tensorlbm.population_health import inspect_population_health
 from tensorlbm.population_positivity import (
     PositivityDiagnostics,
@@ -2016,6 +2017,16 @@ def run(args: argparse.Namespace) -> dict:
     finite = all(
         bool(torch.isfinite(level).all()) for level in hierarchy.level_populations
     )
+    open_boundary_history = [
+        record["open_boundary_population_delta"]
+        for record in health_records
+        if record.get("open_boundary_population_delta") is not None
+    ]
+    open_boundary_audit = audit_open_boundary_history(
+        open_boundary_history,
+        reference_mass=float(math.prod(shape)),
+        reference_momentum=float(math.prod(shape)) * args.lattice_speed,
+    )
     geometry_resolution = assess_suboff_geometry_resolution(
         finest_solid,
         hull_type=args.hull_type,
@@ -2412,6 +2423,9 @@ def run(args: argparse.Namespace) -> dict:
             "collision_execution": natural_kbc_executor.diagnostics(),
             "finite": finite,
             "population_health": health_records,
+            "open_boundary_population_delta_audit": (
+                open_boundary_audit.to_dict()
+            ),
             "maximum_observed_speed": maximum_observed_speed,
             "minimum_observed_population": minimum_observed_population,
             "minimum_observed_density": minimum_observed_density,

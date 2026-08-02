@@ -165,6 +165,9 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert len(boundary_delta["stages"]) == 2
     assert boundary_delta["finite"] is True
     assert len(boundary_delta["momentum_delta"]) == 3
+    boundary_audit = result["result"]["open_boundary_population_delta_audit"]
+    assert boundary_audit["samples"] == 2
+    assert boundary_audit["finite"] is True
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
