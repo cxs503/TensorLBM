@@ -1,0 +1,59 @@
+{
+  "schema": "tensorlbm-suboff-collision-viscosity-evidence-v1",
+  "status": "mixed_precision_re2m_schedule_admitted",
+  "physical_validation": false,
+  "case": "SUBOFF L90 four-level Natural-KBC configured Re=2000000",
+  "audit_configuration": {
+    "taus_by_level": [0.5000081, 0.5000162, 0.5000324, 0.5000648],
+    "wavelength_cells": 16,
+    "transverse_cells": 3,
+    "amplitude": 0.02,
+    "steps": 12000,
+    "fit_start_step": 1000,
+    "maximum_relative_error_pct": 5.0,
+    "population_storage_dtype": "float32",
+    "natural_kbc_compute_dtype": "float64"
+  },
+  "result": {
+    "target_kinematic_viscosity_by_level": [
+      2.699999999985122e-06,
+      5.4000000000072506e-06,
+      1.0800000000014501e-05,
+      2.1599999999991997e-05
+    ],
+    "recovered_kinematic_viscosity_by_level": [
+      2.817050252185336e-06,
+      5.553915428030317e-06,
+      1.1021092630113468e-05,
+      2.1960817553758314e-05
+    ],
+    "relative_error_pct_by_level": [
+      4.3351945259577445,
+      2.8502857041270317,
+      2.0471539823950895,
+      1.6704516378076426
+    ],
+    "minimum_population_by_level": [
+      0.02617640420794487,
+      0.026185844093561172,
+      0.026203425601124763,
+      0.02623576670885086
+    ],
+    "admitted_by_level": [true, true, true, true]
+  },
+  "acceptance": {
+    "all_levels_recover_configured_viscosity": true,
+    "configured_reynolds_sequence_admitted": true,
+    "flow_solution_validated": false
+  },
+  "artifacts": {
+    "viscosity_schedule": "results/collision-viscosity-natural-kbc-suboff-re2m-mixed-r1.json",
+    "viscosity_schedule_sha256": "f67484f5cec18463333d702e8cd904a55a1b91d9785c0c897e17ed3b9e9288bc"
+  },
+  "decision": {
+    "permit_re2m_runtime_candidate_after_re1m_health_gate": true,
+    "permit_unassessed_re4m": false,
+    "root_level_margin_to_5pct_gate_percentage_points": 0.6648054740422555
+  },
+  "prohibition": "This shear-wave audit certifies collision-viscosity recovery only. It does not validate SUBOFF resistance, wall stress, time convergence or grid convergence."
+}
