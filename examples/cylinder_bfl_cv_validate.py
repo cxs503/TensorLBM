@@ -27,6 +27,8 @@ def parser() -> argparse.ArgumentParser:
         choices=("cumulant_d3q19_cs0", "natural_kbc_d3q19"),
         default="cumulant_d3q19_cs0",
     )
+    p.add_argument("--collision-chunk-cells", type=int, default=0)
+    p.add_argument("--compile-natural-kbc", action="store_true")
     p.add_argument("--steps", type=int, default=8000)
     p.add_argument("--warmup-steps", type=int, default=4000)
     p.add_argument("--ramp-steps", type=int, default=500)
@@ -66,6 +68,8 @@ def main() -> None:
         minimum_shedding_cycles=args.minimum_shedding_cycles,
         far_field_mode=args.far_field_mode, device=args.device,
         collision_model=args.collision_model,
+        collision_chunk_cells=args.collision_chunk_cells,
+        compile_natural_kbc=args.compile_natural_kbc,
     )
     result = run_cylinder_bfl_control_volume(config)
     output = Path(args.output)
