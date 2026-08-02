@@ -1819,6 +1819,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      canonical adverse-pressure-gradient case and reverse-shear model pass.
      Audit hashes and ratios are frozen in
      `docs/evidence/pressure-gradient-ode-wall-candidate-ab-r1.json`.
+203. A geometry-indexed wall pressure-gradient vector filter now provides an
+     exact exponential update in physical root steps, so changing diagnostic
+     cadence does not change decay for piecewise-constant evidence.  Invalid
+     samples immediately clear state, new samples initialize without stale
+     history, and a versioned checkpoint persists the mean vectors and valid
+     mask with configuration matching.  It remains disconnected from force;
+     its time scale must be set by an independent adverse-gradient benchmark,
+     not SUBOFF resistance.  Five focused tests cover cadence invariance,
+     invalidation/re-entry, exact restart, mismatch rejection and empty state.
 
 ## Rejected candidates
 
