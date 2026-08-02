@@ -210,6 +210,12 @@ def run_wall_resolved_channel3d(
             "checkpoint": str(config.checkpoint),
             "resume": False,
         }
+        stored_steps = int(stored.get("steps", -1))
+        if config.steps < max(stored_steps, int(state["step"])):
+            raise ValueError("channel continuation cannot reduce total steps")
+        # Extending the terminal step is a trajectory continuation, not a
+        # physics change.  Every other configuration field remains exact.
+        stored["steps"] = config.steps
         if stored != expected:
             raise ValueError("channel checkpoint configuration mismatch")
         f = state["populations"].to(device=device)
