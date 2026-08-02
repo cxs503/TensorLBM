@@ -27,6 +27,12 @@ case "$radius" in
     ;;
   *) usage ;;
 esac
+nx=${TENSORLBM_SPHERE_NX:-$nx}
+cross=${TENSORLBM_SPHERE_CROSS:-$cross}
+if [[ ! $nx =~ ^[1-9][0-9]*$ || ! $cross =~ ^[1-9][0-9]*$ ]]; then
+  echo "TENSORLBM_SPHERE_NX and TENSORLBM_SPHERE_CROSS must be positive integers" >&2
+  exit 2
+fi
 
 if [[ -n "$wait_for_pid" ]]; then
   [[ "$wait_for_pid" =~ ^[0-9]+$ ]] || usage
@@ -92,7 +98,12 @@ generation=${TENSORLBM_SPHERE_GENERATION:-v3}
   echo "TENSORLBM_SPHERE_GENERATION must match vN" >&2
   exit 2
 }
-stem="$result_dir/sphere-${generation}${variant}-equivalent-r${radius}-${steps}"
+campaign_label=${TENSORLBM_SPHERE_CAMPAIGN_LABEL:-equivalent}
+[[ $campaign_label =~ ^[a-z0-9][a-z0-9-]*$ ]] || {
+  echo "TENSORLBM_SPHERE_CAMPAIGN_LABEL must be a lowercase slug" >&2
+  exit 2
+}
+stem="$result_dir/sphere-${generation}${variant}-${campaign_label}-r${radius}-${steps}"
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
   resume=(--resume)
