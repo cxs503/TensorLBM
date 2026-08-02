@@ -61,6 +61,21 @@ def test_equivalent_drag_and_shedding_sequence_is_admitted(
     assert result["physical_validation"] is True
 
 
+def test_legacy_eager_execution_defaults_are_normalized(
+    records: list[dict[str, object]],
+) -> None:
+    for record in records:
+        record["configuration"].pop("collision_chunk_cells")
+        record["configuration"].pop("compile_natural_kbc")
+
+    result = assess_cylinder_grid_convergence(records)
+
+    assert result["configuration_identity"][
+        "legacy_execution_defaults_normalized"
+    ] == 3
+    assert result["configuration_identity"]["admitted"] is True
+
+
 def test_changed_periodic_span_rejects_sequence(records: list[dict[str, object]]) -> None:
     records[1]["configuration"]["shape_zyx"][0] = 4
     result = assess_cylinder_grid_convergence(records)
