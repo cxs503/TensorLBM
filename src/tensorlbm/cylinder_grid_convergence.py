@@ -39,6 +39,7 @@ def assess_cylinder_grid_convergence(
     parsed = []
     schema_valid = True
     source_quality = True
+    legacy_execution_defaults_normalized = 0
     for record in records:
         schema_valid &= record.get("schema") == "tensorlbm-cylinder-bfl-control-volume-v4"
         configuration = record.get("configuration")
@@ -48,6 +49,14 @@ def assess_cylinder_grid_convergence(
             raise ValueError("each record needs configuration and result mappings")
         if not isinstance(acceptance, dict):
             raise ValueError("each record needs an acceptance mapping")
+        configuration = dict(configuration)
+        if (
+            "collision_chunk_cells" not in configuration
+            or "compile_natural_kbc" not in configuration
+        ):
+            legacy_execution_defaults_normalized += 1
+            configuration.setdefault("collision_chunk_cells", 0)
+            configuration.setdefault("compile_natural_kbc", False)
         radius = float(configuration["radius"])
         parsed.append((
             radius, float(result["cd_control_volume"]),
@@ -162,6 +171,9 @@ def assess_cylinder_grid_convergence(
         "configuration_identity": {
             "v4_schema": schema_valid,
             "required_fields_present": required_present,
+            "legacy_execution_defaults_normalized": (
+                legacy_execution_defaults_normalized
+            ),
             "identity_fields_equal": identity_equal,
             "spanwise_cells_invariant": spanwise_invariant,
             "domain_over_radius": domain_ratios,
