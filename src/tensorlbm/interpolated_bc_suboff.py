@@ -321,13 +321,16 @@ def refine_q_suboff_appendages(
     center: tuple[float, float, float],
     length: float,
     n_bisect: int = 12,
+    inplace: bool = False,
 ) -> tuple[torch.Tensor, SuboffAppendageLinkDiagnostics]:
     """Replace AFF-8 halfway links by continuous parametric intersections.
 
     The endpoint mask and the bisection predicate share the DARPA sail and
     swept-NACA fin equations.  Every selected link starts at a fluid lattice
     node and ends in an appendage-only solid node, so bisection yields the
-    first fluid-to-solid fraction without an empirical q correction.
+    first fluid-to-solid fraction without an empirical q correction.  The
+    default preserves ``q_field``; production preprocessors that own a fresh
+    field may set ``inplace=True`` to avoid cloning a full Q-by-volume tensor.
     """
     if (
         fluid_boundary_mask.ndim != 4
@@ -352,8 +355,10 @@ def refine_q_suboff_appendages(
     if length <= 0.0:
         raise ValueError("length must be positive")
 
+    if not isinstance(inplace, bool):
+        raise ValueError("inplace must be a bool")
     appendage_only = solid & ~bare_hull
-    refined = q_field.clone()
+    refined = q_field if inplace else q_field.clone()
     all_values: list[torch.Tensor] = []
     target_links = 0
     for direction in range(1, 19):

@@ -117,3 +117,27 @@ def test_full_suboff_appendage_links_use_continuous_bisection_q() -> None:
     assert int(selected.sum()) == diagnostics.target_links
     assert torch.any(exact_q[selected] != 0.5)
     assert torch.equal(exact_q[~selected], halfway_q[~selected])
+
+
+def test_appendage_q_can_update_a_fresh_production_field_in_place() -> None:
+    nx, ny, nz, length = 120, 50, 50, 80.0
+    center = (60.0, 25.0, 25.0)
+    full = build_suboff_mask(
+        "full", nx, ny, nz,
+        cx=center[0], cy=center[1], cz=center[2], length=length,
+    )[0]
+    bare = build_suboff_mask(
+        "bare_hull", nx, ny, nz,
+        cx=center[0], cy=center[1], cz=center[2], length=length,
+    )[0]
+    mask, q = compute_q_suboff(
+        nx, ny, nz, *center, length,
+        hull_type="full", solid_mask=full,
+    )
+
+    refined, diagnostics = refine_q_suboff_appendages(
+        mask, q, full, bare, center=center, length=length, inplace=True,
+    )
+
+    assert refined.data_ptr() == q.data_ptr()
+    assert diagnostics.target_links > 0
