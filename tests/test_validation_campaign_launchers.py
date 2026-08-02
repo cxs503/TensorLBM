@@ -1247,6 +1247,42 @@ def test_sphere_v5_w20_r9_is_memory_bounded_domain_pilot(
     assert "sphere-v5-natural-kbc-domain-w20-r9-7200" in output
 
 
+def test_sphere_v5_w24_r9_is_third_domain_member(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_sphere_v5_domain_w24_r9.sh"),
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--radius") + 1] == "9"
+    assert arguments[arguments.index("--nx") + 1] == "216"
+    assert arguments[arguments.index("--ny") + 1] == "216"
+    assert arguments[arguments.index("--nz") + 1] == "216"
+    output = arguments[arguments.index("--output") + 1]
+    assert "sphere-v5-natural-kbc-domain-w24-r9-7200" in output
+
+
 def test_sphere_v6_r9_is_matched_no_inlet_sponge_ab(
     tmp_path: Path,
 ) -> None:
