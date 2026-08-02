@@ -172,6 +172,22 @@ def test_nested_convergence_requires_all_observer_gates() -> None:
     assert result["physical_validation"] is False
 
 
+def test_conservative_force_observer_supersedes_rejected_surface_pressure() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+    for record in records:
+        record["acceptance"]["surface_observer_target_met"] = False
+        record["acceptance"]["surface_observer_used_for_acceptance"] = False
+        record["acceptance"]["conservative_force_observer_target_met"] = True
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["source_numerical_quality_admitted"] is True
+    assert result["physical_validation"] is True
+
+
 def test_nested_convergence_rejects_unscaled_wall_exchange_gate() -> None:
     records = [
         _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
