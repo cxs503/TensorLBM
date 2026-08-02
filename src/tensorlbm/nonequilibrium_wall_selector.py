@@ -74,6 +74,105 @@ class NonequilibriumWallSelector:
         self._enter_count = None
         self._exit_count = None
 
+    def state_dict(self) -> dict[str, object]:
+        """Return a CPU checkpoint without exposing mutable selector state.
+
+        The configuration is part of the state contract: restoring temporal
+        hysteresis with different thresholds or observation counts would
+        silently change which wall nodes are selected after a restart.
+        Uninitialised selectors are serialised explicitly so a checkpoint
+        taken before the first diagnostic observation remains reproducible.
+        """
+        initialized = self._active is not None
+        return {
+            "schema": "tensorlbm-nonequilibrium-wall-selector-v1",
+            "configuration": {
+                "enter_threshold": self.enter_threshold,
+                "exit_threshold": self.exit_threshold,
+                "enter_observations": self.enter_observations,
+                "exit_observations": self.exit_observations,
+                "minimum_u_tau": self.minimum_u_tau,
+                "y_plus_lower_bound": self.y_plus_lower_bound,
+                "y_plus_upper_bound": self.y_plus_upper_bound,
+            },
+            "initialized": initialized,
+            "active": (
+                self._active.detach().to(device="cpu").clone()
+                if initialized else None
+            ),
+            "enter_count": (
+                self._enter_count.detach().to(device="cpu").clone()
+                if initialized else None
+            ),
+            "exit_count": (
+                self._exit_count.detach().to(device="cpu").clone()
+                if initialized else None
+            ),
+        }
+
+    def load_state_dict(
+        self,
+        state: dict[str, object],
+        *,
+        device: torch.device | str | None = None,
+    ) -> None:
+        """Restore an exact hysteresis state, failing closed on mismatch."""
+        if state.get("schema") != "tensorlbm-nonequilibrium-wall-selector-v1":
+            raise ValueError("unsupported non-equilibrium wall selector state")
+        expected_configuration = {
+            "enter_threshold": self.enter_threshold,
+            "exit_threshold": self.exit_threshold,
+            "enter_observations": self.enter_observations,
+            "exit_observations": self.exit_observations,
+            "minimum_u_tau": self.minimum_u_tau,
+            "y_plus_lower_bound": self.y_plus_lower_bound,
+            "y_plus_upper_bound": self.y_plus_upper_bound,
+        }
+        if state.get("configuration") != expected_configuration:
+            raise ValueError("selector checkpoint configuration mismatch")
+        initialized = state.get("initialized")
+        if not isinstance(initialized, bool):
+            raise ValueError("selector checkpoint lacks initialized flag")
+        if not initialized:
+            if any(state.get(key) is not None for key in (
+                "active", "enter_count", "exit_count",
+            )):
+                raise ValueError("uninitialised selector checkpoint contains state")
+            self.reset()
+            return
+        active = state.get("active")
+        enter_count = state.get("enter_count")
+        exit_count = state.get("exit_count")
+        if not all(isinstance(value, torch.Tensor) for value in (
+            active, enter_count, exit_count,
+        )):
+            raise ValueError("initialised selector checkpoint lacks tensors")
+        assert isinstance(active, torch.Tensor)
+        assert isinstance(enter_count, torch.Tensor)
+        assert isinstance(exit_count, torch.Tensor)
+        if active.dtype is not torch.bool:
+            raise ValueError("selector active state must be boolean")
+        if enter_count.dtype not in (torch.int16, torch.int32, torch.int64):
+            raise ValueError("selector entry count must be integral")
+        if exit_count.dtype not in (torch.int16, torch.int32, torch.int64):
+            raise ValueError("selector exit count must be integral")
+        if not (active.shape == enter_count.shape == exit_count.shape):
+            raise ValueError("selector checkpoint tensors must share a shape")
+        if bool((enter_count < 0).any()) or bool((exit_count < 0).any()):
+            raise ValueError("selector checkpoint counters must be non-negative")
+        if bool((enter_count > self.enter_observations).any()):
+            raise ValueError("selector entry counter exceeds configured limit")
+        if bool((exit_count > self.exit_observations).any()):
+            raise ValueError("selector exit counter exceeds configured limit")
+        target = torch.device(device) if device is not None else active.device
+        self._active = active.detach().to(device=target).clone()
+        self._enter_count = enter_count.detach().to(
+            device=target, dtype=torch.int32,
+        ).clone()
+        self._exit_count = exit_count.detach().to(
+            device=target, dtype=torch.int32,
+        ).clone()
+
     def update(
         self,
         signed_pressure_gradient_parameter: torch.Tensor,
@@ -109,8 +208,10 @@ class NonequilibriumWallSelector:
         device = signed_pressure_gradient_parameter.device
         if self._active is None:
             self._active = torch.zeros(shape, dtype=torch.bool, device=device)
-            self._enter_count = torch.zeros(shape, dtype=torch.int16, device=device)
-            self._exit_count = torch.zeros(shape, dtype=torch.int16, device=device)
+            # Int32 avoids observation-counter overflow in long campaigns and
+            # has identical cost significance next to the population fields.
+            self._enter_count = torch.zeros(shape, dtype=torch.int32, device=device)
+            self._exit_count = torch.zeros(shape, dtype=torch.int32, device=device)
         elif self._active.shape != shape or self._active.device != device:
             raise ValueError("selector state shape/device changed; call reset first")
         assert self._enter_count is not None
