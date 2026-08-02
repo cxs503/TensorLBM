@@ -2,6 +2,8 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/notebooks/quickstart.ipynb)
+
 > **A CPU-first PyTorch Lattice Boltzmann platform for reproducible CFD research.**
 > D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
@@ -122,6 +124,7 @@ PYTHONPATH=src python examples/sphere_flow_3d.py \
   --nx 60 --ny 30 --nz 30 --radius 4 --n-steps 50 --output-interval 25 \
   --run-name smoke --overwrite
 ```
+
 
 ## Run the ship CAD-to-flow workflow
 
