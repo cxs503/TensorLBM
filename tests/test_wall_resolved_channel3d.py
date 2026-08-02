@@ -31,6 +31,10 @@ def test_channel_configuration_encodes_exact_momentum_balance(tmp_path) -> None:
     )
     result = run_wall_resolved_channel3d(config)
     assert result["statistics"]["profile_samples"] == 2
+    assert len(result["statistics"]["mean_velocity_profiles_xyz"]) == 3
+    assert len(
+        result["statistics"]["reynolds_stress_profiles_uu_vv_ww_uv"],
+    ) == 4
     assert len(result["reports"]) == 2
     assert "crossflow_rms_over_u_tau" in result["reports"][0]
     assert "sustained_three_dimensional_fluctuations" in result["acceptance"]

@@ -149,8 +149,9 @@ def _save_checkpoint(
     *,
     step: int,
     populations: torch.Tensor,
-    profile_sum: torch.Tensor,
+    moment_profile_sum: torch.Tensor,
     profile_samples: int,
+    statistics_reset_step: int,
     reports: list[dict[str, float | int | bool]],
     block_start_step: int,
     block_start_momentum_x: float,
@@ -167,8 +168,9 @@ def _save_checkpoint(
             },
             "step": step,
             "populations": populations.detach().to(device="cpu"),
-            "profile_sum": profile_sum.detach().to(device="cpu"),
+            "moment_profile_sum": moment_profile_sum.detach().to(device="cpu"),
             "profile_samples": profile_samples,
+            "statistics_reset_step": statistics_reset_step,
             "reports": reports,
             "block_start_step": block_start_step,
             "block_start_momentum_x": block_start_momentum_x,
@@ -186,15 +188,22 @@ def run_wall_resolved_channel3d(
     solid, initial_ux, initial_uy, initial_uz = _initial_velocity(config, device)
     fluid = ~solid
     solid_q = solid.unsqueeze(0)
-    profile_sum = torch.zeros(config.ny, device=device, dtype=torch.float64)
+    # Rows: U,V,W, uu_raw,vv_raw,ww_raw,uv_raw; central moments are formed
+    # only after the full statistical mean is available.
+    moment_profile_sum = torch.zeros(
+        (7, config.ny), device=device, dtype=torch.float64,
+    )
     profile_samples = 0
+    statistics_reset_step = 0
     reports: list[dict[str, float | int | bool]] = []
     start_step = 0
     if config.resume and config.checkpoint.exists():
         state = torch.load(config.checkpoint, map_location="cpu", weights_only=True)
         if state.get("schema") != "tensorlbm-wall-resolved-channel3d-checkpoint-v1":
             raise ValueError("unsupported channel checkpoint")
-        stored = state.get("configuration")
+        stored = dict(state.get("configuration", {}))
+        stored.setdefault("random_noise_fraction", 0.0)
+        stored.setdefault("seed", 20260802)
         expected = {
             **asdict(config),
             "output": str(config.output),
@@ -204,8 +213,16 @@ def run_wall_resolved_channel3d(
         if stored != expected:
             raise ValueError("channel checkpoint configuration mismatch")
         f = state["populations"].to(device=device)
-        profile_sum = state["profile_sum"].to(device=device)
-        profile_samples = int(state["profile_samples"])
+        if "moment_profile_sum" in state:
+            moment_profile_sum = state["moment_profile_sum"].to(device=device)
+            profile_samples = int(state["profile_samples"])
+            statistics_reset_step = int(state.get("statistics_reset_step", 0))
+        else:
+            # v1 checkpoints before Reynolds-stress accumulation contain only
+            # U sums.  Mixing those with a shorter second-moment window would
+            # invent central moments, so all statistics restart explicitly.
+            profile_samples = 0
+            statistics_reset_step = int(state["step"])
         reports = list(state["reports"])
         start_step = int(state["step"])
         block_start_step = int(state["block_start_step"])
@@ -250,8 +267,16 @@ def run_wall_resolved_channel3d(
         f = bounce_back_cells_3d(streamed, solid, f_pre=post)
 
         if step > config.warmup_steps and step % config.sample_interval == 0:
-            _, sample_ux, _, _ = macroscopic3d_low_memory(f)
-            profile_sum += sample_ux.mean(dim=(0, 2)).to(dtype=torch.float64)
+            _, sample_ux, sample_uy, sample_uz = macroscopic3d_low_memory(f)
+            moment_profile_sum += torch.stack((
+                sample_ux.mean(dim=(0, 2)),
+                sample_uy.mean(dim=(0, 2)),
+                sample_uz.mean(dim=(0, 2)),
+                sample_ux.square().mean(dim=(0, 2)),
+                sample_uy.square().mean(dim=(0, 2)),
+                sample_uz.square().mean(dim=(0, 2)),
+                (sample_ux * sample_uy).mean(dim=(0, 2)),
+            )).to(dtype=torch.float64)
             profile_samples += 1
         if step % config.report_interval == 0 or step == config.steps:
             rho_now, ux_now, uy_now, uz_now = macroscopic3d_low_memory(f)
@@ -316,8 +341,9 @@ def run_wall_resolved_channel3d(
                 config,
                 step=step,
                 populations=f,
-                profile_sum=profile_sum,
+                moment_profile_sum=moment_profile_sum,
                 profile_samples=profile_samples,
+                statistics_reset_step=statistics_reset_step,
                 reports=reports,
                 block_start_step=block_start_step,
                 block_start_momentum_x=block_start_momentum,
@@ -325,7 +351,14 @@ def run_wall_resolved_channel3d(
 
     if not profile_samples:
         raise RuntimeError("channel collected no profile samples")
-    mean_profile = profile_sum / profile_samples
+    raw_moments = moment_profile_sum / profile_samples
+    mean_velocity_profiles = raw_moments[:3]
+    reynolds_stress_profiles = torch.stack((
+        raw_moments[3] - mean_velocity_profiles[0].square(),
+        raw_moments[4] - mean_velocity_profiles[1].square(),
+        raw_moments[5] - mean_velocity_profiles[2].square(),
+        raw_moments[6] - mean_velocity_profiles[0] * mean_velocity_profiles[1],
+    ))
     recent = reports[-3:]
     recent_u_tau = [float(item["measured_friction_velocity"]) for item in recent]
     recent_mean = sum(recent_u_tau) / len(recent_u_tau)
@@ -354,7 +387,12 @@ def run_wall_resolved_channel3d(
         },
         "statistics": {
             "profile_samples": profile_samples,
-            "mean_velocity_profile": mean_profile.tolist(),
+            "statistics_reset_step": statistics_reset_step,
+            "mean_velocity_profile": mean_velocity_profiles[0].tolist(),
+            "mean_velocity_profiles_xyz": mean_velocity_profiles.tolist(),
+            "reynolds_stress_profiles_uu_vv_ww_uv": (
+                reynolds_stress_profiles.tolist()
+            ),
             "recent_friction_velocity_mean": recent_mean,
             "recent_friction_velocity_range_fraction": recent_range_fraction,
             "recent_friction_velocity_error_pct": mean_error_pct,
