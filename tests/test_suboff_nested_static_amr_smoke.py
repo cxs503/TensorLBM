@@ -597,6 +597,26 @@ def test_nested_smoke_supports_float64_natural_kbc_compute(
     assert result["result"]["finite"] is True
 
 
+def test_nested_smoke_supports_float64_population_storage(
+    tmp_path: Path,
+) -> None:
+    args = _args(
+        tmp_path,
+        steps=1,
+        collision_model="natural_kbc",
+    )
+    args.population_storage_dtype = "float64"
+    args.collision_chunk_cells = 512
+
+    result = MODULE.run(args)
+
+    assert result["configuration"]["population_storage_dtype"] == "float64"
+    signatures = result["result"]["collision_execution"]["input_signatures"]
+    assert signatures
+    assert {item["dtype"] for item in signatures} == {"torch.float64"}
+    assert result["result"]["finite"] is True
+
+
 @pytest.mark.parametrize(
     ("collision_model", "coefficient_key", "coefficient"),
     (
