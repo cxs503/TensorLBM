@@ -72,6 +72,26 @@
     "midbody_vs_ittc_global_friction_velocity_difference_pct": 14.60298192384217,
     "interpretation": "The excess wall stress is broad: 75.6% comes from the low-pressure-gradient midbody, where sampled tangential speed remains about 93% of freestream. A bow/stern-only pressure-gradient correction cannot remove the global bias. The ITTC comparison is diagnostic because its friction velocity is a hull-global reference, not a local target."
   },
+  "two_point_log_slope_audit_v36": {
+    "source": "results/amr_campaign_20260801/suboff-nested-v36-equivalent-l90-3180k-wall-audit-r11.json",
+    "source_sha256": "20e9caaa167e89223f81b9085f201a50624b66e802c435bd238c4fdee3bb59f7",
+    "inner_distance_mean_cells": 1.0775457620620728,
+    "outer_distance_mean_cells": 2.0,
+    "inner_tangential_speed_mean_lu": 0.0532246008515358,
+    "outer_tangential_speed_mean_lu": 0.056034915149211884,
+    "requested_samples": 147738,
+    "valid_samples": 133940,
+    "rejected_fraction": 0.09339506423533553,
+    "valid_area_fraction": 0.9091346263885498,
+    "median_friction_velocity_lu": 0.001836571900639683,
+    "mean_friction_velocity_lu": 0.002128798281773925,
+    "percentile95_friction_velocity_lu": 0.005630713631398975,
+    "maximum_friction_velocity_lu": 0.010417137295007706,
+    "covered_shear_force_n": 93.906299561209,
+    "current_wall_shear_force_n": 96.67127294964884,
+    "force_correction_admitted": false,
+    "interpretation": "The one-to-two-cell velocity slope is too noisy and non-monotone for a force law. Despite a lower mean u_tau, its high-tail squared contribution produces 93.9 N on only 90.9% of area. It remains a read-only resolved-gradient diagnostic."
+  },
   "acceptance": {
     "control_volume_primary_force_retained": true,
     "laboratory_frame_total_link_impulse_retained_as_conservative_observer": true,
@@ -80,6 +100,7 @@
     "total_link_impulse_may_be_labeled_physical_pressure": false,
     "normal_projection_may_be_labeled_physical_pressure": false,
     "tangential_projection_may_be_labeled_physical_wall_shear": false,
+    "two_point_log_slope_force_model_admitted": false,
     "density_surface_pressure_used_for_acceptance": false,
     "component_selected_by_experimental_resistance": false
   },
@@ -102,5 +123,5 @@
     "v36_result": "results/amr_campaign_20260801/suboff-nested-v36-equivalent-l90-3180k.json",
     "v36_result_sha256": "32aa74312971158d54fdd671c137500fedf813fd13e40fc720b476fde9b0555e"
   },
-  "conclusion": "The actual population impulse is conservative, but it is the small residual of a +295.6 kN stationary BFL interpolation impulse and a -295.6 kN moving-wall population correction. Even after every link receives a geometry or BFL fallback normal, its normal and tangential projections remain large cancelling diagnostics. The independent axial audit also shows that excess modeled shear is distributed across the midbody rather than confined to high-pressure-gradient bow/stern regions. Therefore TensorLBM retains the fixed control-volume force as primary and the total laboratory-frame link impulse as its conservative observer; none of these link subcomponents is accepted as a physical pressure/shear decomposition, and no experimental resistance was used to choose a component."
+  "conclusion": "The actual population impulse is conservative, but it is the small residual of a +295.6 kN stationary BFL interpolation impulse and a -295.6 kN moving-wall population correction. Even after every link receives a geometry or BFL fallback normal, its normal and tangential projections remain large cancelling diagnostics. The independent axial audit shows that excess modeled shear is distributed across the midbody rather than confined to high-pressure-gradient bow/stern regions, while the two-point resolved slope is too noisy and incomplete to replace the wall law. Therefore TensorLBM retains the fixed control-volume force as primary and the total laboratory-frame link impulse as its conservative observer; none of these link subcomponents or rejected slope estimates is accepted as a physical pressure/shear correction, and no experimental resistance was used to choose a component."
 }
