@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
 
 import torch
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 @dataclass(frozen=True)
@@ -30,6 +34,64 @@ class CUDARuntimeReserve:
 
     def to_dict(self) -> dict[str, float | bool]:
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class HierarchyDeviceAllocation:
+    """Conservative persistent-memory assignment for hierarchy levels."""
+
+    device: str
+    level_indices: tuple[int, ...]
+    allocated_cells: int
+    estimated_peak_gib: float
+
+    def to_dict(self) -> dict[str, str | int | float | list[int]]:
+        return {
+            "device": self.device,
+            "level_indices": list(self.level_indices),
+            "allocated_cells": self.allocated_cells,
+            "estimated_peak_gib": self.estimated_peak_gib,
+        }
+
+
+def plan_hierarchy_device_memory(
+    allocated_cells_by_level: Sequence[int],
+    level_devices: Sequence[torch.device | str],
+    *,
+    bytes_per_cell: float,
+) -> tuple[HierarchyDeviceAllocation, ...]:
+    """Aggregate a per-level hierarchy memory model by execution device.
+
+    The estimate remains deliberately conservative: levels sharing a device
+    retain the same empirical bytes-per-cell coefficient and are summed.  A
+    distributed hierarchy can therefore be admitted per GPU without hiding
+    the impossible aggregate allocation behind total cluster memory.
+    """
+    if len(allocated_cells_by_level) != len(level_devices) or not level_devices:
+        raise ValueError("cells and devices must contain one entry per level")
+    if bytes_per_cell <= 0.0:
+        raise ValueError("bytes_per_cell must be positive")
+    levels_by_device: dict[str, list[int]] = {}
+    cells_by_device: dict[str, int] = {}
+    for level, (cells, raw_device) in enumerate(
+        zip(allocated_cells_by_level, level_devices, strict=True),
+    ):
+        if isinstance(cells, bool) or int(cells) != cells or cells <= 0:
+            raise ValueError("every hierarchy level must contain positive cells")
+        device = str(torch.device(raw_device))
+        levels_by_device.setdefault(device, []).append(level)
+        cells_by_device[device] = cells_by_device.get(device, 0) + int(cells)
+    return tuple(
+        HierarchyDeviceAllocation(
+            device=device,
+            level_indices=tuple(levels),
+            allocated_cells=cells_by_device[device],
+            estimated_peak_gib=(
+                cells_by_device[device] * bytes_per_cell / 2**30
+            ),
+        )
+        for device, levels in levels_by_device.items()
+    )
 
 
 def assess_cuda_memory_budget(
@@ -130,8 +192,10 @@ def require_cuda_runtime_reserve(
 __all__ = [
     "CUDAMemoryBudget",
     "CUDARuntimeReserve",
+    "HierarchyDeviceAllocation",
     "assess_cuda_memory_budget",
     "assess_cuda_runtime_reserve",
+    "plan_hierarchy_device_memory",
     "require_cuda_memory_budget",
     "require_cuda_runtime_reserve",
 ]
