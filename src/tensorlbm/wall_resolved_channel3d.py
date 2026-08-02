@@ -40,6 +40,7 @@ class WallResolvedChannel3DConfig:
     output: Path = Path("results/canonical_wall/channel3d.json")
     checkpoint: Path = Path("results/canonical_wall/channel3d.ckpt")
     resume: bool = False
+    reset_statistics_on_resume: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output", Path(self.output))
@@ -165,6 +166,7 @@ def _save_checkpoint(
                 "output": str(config.output),
                 "checkpoint": str(config.checkpoint),
                 "resume": False,
+                "reset_statistics_on_resume": False,
             },
             "step": step,
             "populations": populations.detach().to(device="cpu"),
@@ -204,11 +206,13 @@ def run_wall_resolved_channel3d(
         stored = dict(state.get("configuration", {}))
         stored.setdefault("random_noise_fraction", 0.0)
         stored.setdefault("seed", 20260802)
+        stored.setdefault("reset_statistics_on_resume", False)
         expected = {
             **asdict(config),
             "output": str(config.output),
             "checkpoint": str(config.checkpoint),
             "resume": False,
+            "reset_statistics_on_resume": False,
         }
         stored_steps = int(stored.get("steps", -1))
         if config.steps < max(stored_steps, int(state["step"])):
@@ -227,6 +231,10 @@ def run_wall_resolved_channel3d(
             # v1 checkpoints before Reynolds-stress accumulation contain only
             # U sums.  Mixing those with a shorter second-moment window would
             # invent central moments, so all statistics restart explicitly.
+            profile_samples = 0
+            statistics_reset_step = int(state["step"])
+        if config.reset_statistics_on_resume:
+            moment_profile_sum.zero_()
             profile_samples = 0
             statistics_reset_step = int(state["step"])
         reports = list(state["reports"])
@@ -382,6 +390,8 @@ def run_wall_resolved_channel3d(
             **asdict(config),
             "output": str(config.output),
             "checkpoint": str(config.checkpoint),
+            "resume": False,
+            "reset_statistics_on_resume": False,
         },
         "derived": {
             "height": config.height,
