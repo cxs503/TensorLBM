@@ -53,6 +53,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --resolved-reynolds-start 100000 \
   --viscosity-ramp-start-step 0 --viscosity-ramp-end-step 0 \
   --collision-model natural_kbc --collision-chunk-cells 262144 \
+  --wall-force-direction-chunk 4 \
   --cs-smag 0 --wall-law musker --stress-exchange-distance 1.0 \
   --sponge-width 18 --sponge-strength 0.3 \
   --far-field-mode non_equilibrium_extrapolation \
