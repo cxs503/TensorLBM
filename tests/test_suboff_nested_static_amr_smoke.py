@@ -169,6 +169,13 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert pressure_gradient["scope"] == (
         "diagnostic_only_not_a_force_correction"
     )
+    wall_shear_profile = result["result"]["steps"][0][
+        "wall_shear_axial_profile"
+    ]
+    assert wall_shear_profile is not None
+    assert sum(
+        item["absolute_shear_x_fraction"] for item in wall_shear_profile
+    ) == pytest.approx(1.0)
     assert result["planning"]["cuda_persistent_allocated_gib_by_device"] == {}
     statistics = result["result"]["statistics"]
     assert statistics["mean_bfl_pressure_n"] is not None

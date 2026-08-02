@@ -62,6 +62,7 @@ class WallStressDiagnostics:
     pressure_gradient_parameter_max: float | None = None
     pressure_gradient_summary: dict[str, float | int | str | None] | None = None
     pressure_gradient_axial_profile: list[dict[str, float | int]] | None = None
+    wall_shear_axial_profile: list[dict[str, float | int]] | None = None
     link_force_decomposition: dict[str, object] | None = None
 
 
@@ -1459,6 +1460,24 @@ def bfl_wall_function_3d(
             (tau_w * (ut_y * inv_utan) * traction_area * shear_activation).sum(),
             (tau_w * (ut_z * inv_utan) * traction_area * shear_activation).sum(),
         ))
+        wall_shear_axial_profile = None
+        if active:
+            from .wall_shear_profile import summarize_axial_wall_shear
+
+            active_indices = stress_near.nonzero(as_tuple=False)
+            wall_shear_axial_profile = summarize_axial_wall_shear(
+                active_indices[:, 2],
+                (
+                    tau_w
+                    * (ut_x * inv_utan)
+                    * traction_area
+                    * shear_activation
+                )[stress_near],
+                traction_area[stress_near],
+                active_y_plus,
+                u_tan_mag[stress_near],
+                active_u_tau,
+            )
         from .wall_exchange_yplus import summarize_wall_exchange_yplus
         y_plus_summary = (
             summarize_wall_exchange_yplus(
@@ -1589,6 +1608,7 @@ def bfl_wall_function_3d(
             pressure_gradient_parameter_max=pressure_gradient_parameter_max,
             pressure_gradient_summary=pressure_gradient_summary,
             pressure_gradient_axial_profile=pressure_gradient_axial_profile,
+            wall_shear_axial_profile=wall_shear_axial_profile,
             link_force_decomposition=link_force_decomposition,
         )
         return f, drag_fric, drag_pres, diagnostics
