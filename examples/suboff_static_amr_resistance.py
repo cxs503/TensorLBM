@@ -44,7 +44,11 @@ from tensorlbm.drag_pressure import (
 )
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
-from tensorlbm.interpolated_bc_suboff import compute_q_suboff
+from tensorlbm.interpolated_bc_suboff import (
+    SUBOFF_APPENDAGE_LINK_SCHEME,
+    compute_q_suboff,
+    refine_q_suboff_appendages,
+)
 from tensorlbm.population_positivity import limit_nonequilibrium_for_positivity
 from tensorlbm.solver3d import stream3d
 from tensorlbm.sponge_layer import (
@@ -58,7 +62,6 @@ from tensorlbm.static_block_amr import (
 )
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import (
-    apply_suboff_appendage_halfway_links,
     assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
     plan_suboff_static_amr,
@@ -210,17 +213,24 @@ def run(args: argparse.Namespace) -> dict:
         solid_mask=fine_solid_g,
     )
     appendage_links = 0
+    appendage_link_diagnostics = None
+    bare_solid = None
     if args.hull_type == "full":
-        appendage_links = apply_suboff_appendage_halfway_links(
-            fine_solid_g,
+        bare_solid, _ = build_suboff_mask(
+            "bare_hull", nx_f, ny_f, nz_f,
+            cx=fine_center[0], cy=fine_center[1], cz=fine_center[2],
+            length=args.hull_length * 2.0, config=config, device=device,
+        )
+        bfl_q, appendage_link_diagnostics = refine_q_suboff_appendages(
             bfl_mask,
             bfl_q,
+            fine_solid_g,
+            bare_solid,
             center=fine_center,
             length=args.hull_length * 2.0,
-            config=config,
         )
+        appendage_links = appendage_link_diagnostics.target_links
     fine_near = get_near_wall_3d(fine_solid_g)
-    bare_solid = None
     with_sail_solid = None
     if args.hull_type == "bare_hull":
         fine_surface = SurfaceMesh.from_suboff(
@@ -236,11 +246,7 @@ def run(args: argparse.Namespace) -> dict:
         )
     else:
         fine_surface = SurfaceMesh.from_gradient(fine_solid_g, fine_near)
-        bare_solid, _ = build_suboff_mask(
-            "bare_hull", nx_f, ny_f, nz_f,
-            cx=fine_center[0], cy=fine_center[1], cz=fine_center[2],
-            length=args.hull_length * 2.0, config=config, device=device,
-        )
+        assert bare_solid is not None
         with_sail_solid, _ = build_suboff_mask(
             "with_sail", nx_f, ny_f, nz_f,
             cx=fine_center[0], cy=fine_center[1], cz=fine_center[2],
@@ -509,6 +515,10 @@ def run(args: argparse.Namespace) -> dict:
         "refinement_ratio": plan.ratio,
         "wall_viscosity_basis": "physical_reynolds",
     }
+    if args.hull_type == "full":
+        checkpoint_signature["appendage_link_scheme"] = (
+            SUBOFF_APPENDAGE_LINK_SCHEME
+        )
 
     if args.resume:
         assert checkpoint is not None
@@ -992,8 +1002,17 @@ def run(args: argparse.Namespace) -> dict:
             ),
         },
         "geometry": fine_geometry | {
-            "appendage_halfway_links": appendage_links,
-            "geometry_resolution": geometry_resolution.to_dict(),
+            "appendage_boundary_links": appendage_links,
+            "appendage_halfway_links": 0,
+            "appendage_link_intersection": (
+                appendage_link_diagnostics.to_dict()
+                if appendage_link_diagnostics is not None else None
+            ),
+            "geometry_resolution": geometry_resolution.to_dict() | ({
+                "appendage_boundary_links": appendage_links,
+                "appendage_halfway_links": 0,
+                "appendage_link_scheme": SUBOFF_APPENDAGE_LINK_SCHEME,
+            } if args.hull_type == "full" else {}),
             "force_integration_area_scope": args.hull_type,
             "force_integration_calibrated_area_lu2": (
                 surface_area_diagnostics.calibrated_area
