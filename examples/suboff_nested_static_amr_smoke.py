@@ -897,6 +897,14 @@ def run(args: argparse.Namespace) -> dict:
         device=device,
         faces=tuple(sponge_faces),
     )
+    persistent_allocated_gib_by_device = {
+        str(level_device): torch.cuda.memory_allocated(level_device) / 2**30
+        for level_device in dict.fromkeys(level_devices)
+        if level_device.type == "cuda"
+    }
+    planning["cuda_persistent_allocated_gib_by_device"] = (
+        persistent_allocated_gib_by_device
+    )
     runtime_memory_reserves = []
     for allocation in device_memory_plan:
         reserve = require_cuda_runtime_reserve(
