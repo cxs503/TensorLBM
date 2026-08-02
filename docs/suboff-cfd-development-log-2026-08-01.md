@@ -1759,6 +1759,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      ITTC error before admitting the family.  It is not queued until an L512
      allocation can be made without conflicting with the pending three-GPU
      SUBOFF L120 probe.
+198. Open-boundary histories now have a common grid-normalized audit.  It
+     reports cumulative and maximum mass mutation relative to initial domain
+     mass, vector momentum mutation relative to initial far-field momentum,
+     finite coverage and maximum per-face closure residual.  Future sphere and
+     nested SUBOFF results persist this summary; no universal acceptance
+     threshold is asserted until matched domain/grid families establish one.
+     Thirteen focused aggregation and sphere tests plus the recursive SUBOFF
+     composition test pass.
 
 ## Rejected candidates
 

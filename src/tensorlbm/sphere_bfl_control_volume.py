@@ -23,6 +23,7 @@ from .d3q19 import equilibrium3d, macroscopic3d
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
 from .interpolated_bc import compute_q_sphere
+from .open_boundary_audit import audit_open_boundary_history
 from .solver3d import stream3d
 from .sponge_layer import apply_equilibrium_difference_sponge, build_sponge_sigma_3d
 
@@ -399,6 +400,11 @@ def run_sphere_bfl_control_volume(
     )
     invocation_elapsed_seconds = time.perf_counter() - invocation_started
     steps_advanced = config.steps - start_step
+    open_boundary_audit = audit_open_boundary_history(
+        open_boundary_history,
+        reference_mass=float(math.prod(shape)),
+        reference_momentum=float(math.prod(shape)) * config.lattice_speed,
+    )
     return {
         "schema": "tensorlbm-sphere-bfl-control-volume-v3",
         "configuration": checkpoint_signature | {
@@ -426,6 +432,9 @@ def run_sphere_bfl_control_volume(
             "finite": math.isfinite(cd),
             "collision_execution": natural_kbc_executor.diagnostics(),
             "open_boundary_population_delta": open_boundary_history,
+            "open_boundary_population_delta_audit": (
+                open_boundary_audit.to_dict()
+            ),
         },
         "runtime": {
             "invocation_elapsed_seconds": invocation_elapsed_seconds,
