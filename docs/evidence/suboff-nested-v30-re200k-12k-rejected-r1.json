@@ -1,0 +1,85 @@
+{
+  "schema": "tensorlbm-suboff-long-run-evidence-v1",
+  "status": "physical_candidate_rejected",
+  "physical_validation": false,
+  "selection_by_experimental_resistance": false,
+  "case": "SUBOFF AFF-1 four-level L90/effective-L720, Natural-KBC collision Re=200000, physical-Re Musker wall stress, 12000 root steps",
+  "configuration": {
+    "hull_type": "bare_hull",
+    "speed_knots": 5.92,
+    "coarse_hull_length_cells": 90,
+    "finest_hull_length_cells": 720,
+    "resolved_reynolds": 200000.0,
+    "physical_reynolds": 13213381.41322709,
+    "root_steps": 12000,
+    "warmup_steps": 4500,
+    "statistics_window_steps": 7500,
+    "wall_law": "musker",
+    "stress_exchange_distance_cells": 1.0
+  },
+  "force_statistics": {
+    "mean_control_volume_resistance_n": 118.23590305327102,
+    "mean_conservative_link_plus_wall_stress_n": 119.02535318512066,
+    "mean_conservative_link_impulse_n": 22.09229661739269,
+    "mean_wall_shear_n": 96.93305656772782,
+    "mean_numerical_source_n": 0.7888320746052853,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 35.28135360786157,
+    "maximum_source_corrected_observer_difference_pct": 0.05085350884783799,
+    "auxiliary_cv_difference_pct": {
+      "margin_4": 0.23927158521655448,
+      "margin_12": 0.25985712782664305
+    }
+  },
+  "stationarity": {
+    "statistics_samples": 7500,
+    "sampling_convective_times": 5.0,
+    "target_reynolds_convective_times": 7.000666666666666,
+    "half_mean_drift_pct": 0.12028437483566186,
+    "linear_trend_pct": 0.2147553676456746,
+    "confidence95_half_width_pct": 0.06693310822336061,
+    "integrated_autocorrelation_time_steps": 2254.521026322382,
+    "effective_sample_count": 3.326648947796306,
+    "registered_stationarity_gate_met": true,
+    "registered_duration_gate_met": false
+  },
+  "wall_and_population_health": {
+    "minimum_population": 0.005144039168953896,
+    "maximum_speed": 0.07050196081399918,
+    "mean_y_plus": 823.196495300293,
+    "minimum_y_plus": 2.109210968017578,
+    "maximum_y_plus": 1287.2691650390625,
+    "y_plus_in_range_fraction": 0.917404540470292,
+    "population_health_gate_met": true,
+    "wall_exchange_applicability_gate_met": true,
+    "reflux_gate_met": true,
+    "nested_control_volume_gate_met": true
+  },
+  "rejection_reasons": [
+    "The registered target-Reynolds duration is 7.0007 convective times, below the required 7.5; block stationarity does not waive this preregistered duration gate.",
+    "The mean direct control-volume resistance is 35.28% above the independent 87.4 N experiment.",
+    "The legacy density/nodal surface-pressure diagnostic differs by 26.46% and remains explicitly rejected; it cannot replace the conservative control-volume load.",
+    "This process predates the exact-binary64 D3Q19 weight contract, so its Natural-KBC collision viscosity is not admitted by the current exact-weight certificate even though the population trajectory is healthy.",
+    "Only one spatial resolution is present, so grid convergence is unassessed."
+  ],
+  "decision": {
+    "integration_smoke_admitted": true,
+    "population_and_amr_health_admitted": true,
+    "force_stationarity_gate_met": true,
+    "duration_gate_met": false,
+    "collision_viscosity_gate_met": false,
+    "reference_accuracy_gate_met": false,
+    "grid_convergence_assessed": false,
+    "single_grid_physical_candidate": false,
+    "empirical_component_correction_permitted": false
+  },
+  "artifacts": {
+    "remote_result": "results/amr_campaign_20260801/suboff-nested-v30-equivalent-l90-12k.json",
+    "result_sha256": "918e07ce26b20136efc80ee21d06415e7836157099987fae3609453d23a10544",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v30-equivalent-l90-12k.ckpt",
+    "checkpoint_sha256": "0ab916c59baf11626dbffb981ac94d66b259c14463eea431a11053f19f7391ef",
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v30-re200k-long-l90-12k.wait.log",
+    "log_sha256": "bba38bcb4250fc3f4c3960470aec03e86e40fbd7c744bfbf3159bf7d57191a9b"
+  },
+  "conclusion": "The 12000-step trajectory establishes a healthy and highly stationary Re=200000 integration result, but it does not establish physical resistance accuracy. Its direct CFD load remains 35.28% high, the target-Re duration gate is short, the process lacks the later exact-weight viscosity contract, and no grid sequence exists. The result is retained as a rejected long-time baseline; no experimental interpolation or component subtraction is applied."
+}
