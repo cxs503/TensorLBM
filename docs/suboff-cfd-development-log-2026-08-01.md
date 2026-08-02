@@ -1751,6 +1751,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      `fd7aceb7a29cae5efa49b49a8dc7f71b5eba4aee98ae1bd1ec8b85607f22a4fb`
      and `1755212d914d8abc32e0475236f7328e4e9ec66eb7cbbd26821803535cc74617`.
      This admits L256 only; L384 is running and grid convergence remains open.
+197. A fail-closed v5 flat-plate convergence launcher now waits for explicit
+     owned PID lists, requires all L256/L384/L512 corrected-source result files
+     and invokes the existing provenance-aware spatial fit.  The assessor
+     verifies wall-source identity, exchange/domain/numerical/time ratios,
+     three single-grid admissions, observed order, fit residual and extrapolated
+     ITTC error before admitting the family.  It is not queued until an L512
+     allocation can be made without conflicting with the pending three-GPU
+     SUBOFF L120 probe.
 
 ## Rejected candidates
 
