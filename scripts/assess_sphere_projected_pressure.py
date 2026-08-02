@@ -117,6 +117,7 @@ def assess(result_path: Path, checkpoint_path: Path) -> dict[str, object]:
         "configuration": {
             "radius_cells": configuration["radius"],
             "reynolds": configuration["reynolds"],
+            "lattice_speed": configuration["lattice_speed"],
             "statistics_window_steps": statistics_window,
             "sample_interval_steps": configuration[
                 "projected_pressure_interval"
