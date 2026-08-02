@@ -521,6 +521,7 @@ def test_wall_diagnostics_include_actual_bfl_link_force_decomposition() -> None:
     ny_n = torch.zeros(shape, dtype=torch.float64)
     nz_n = torch.zeros(shape, dtype=torch.float64)
     ny_n[:, 1, :] = 1.0
+    ny_n[1, 1, 2] = 0.0
 
     _, _, pressure, diagnostics = bfl_wall_function_3d(
         f.clone(),
@@ -538,6 +539,12 @@ def test_wall_diagnostics_include_actual_bfl_link_force_decomposition() -> None:
     decomposition = diagnostics.link_force_decomposition
     assert decomposition is not None
     assert decomposition["active_links"] == int(masks.sum().item())
+    assert decomposition["coverage_fraction"] == pytest.approx(1.0)
+    completion = decomposition["normal_completion"]
+    assert completion["scheme"] == "geometry_normal_with_bfl_link_fallback_v1"
+    assert completion["fallback_nodes"] == 1
+    assert completion["fallback_links"] == 5
+    assert completion["unresolved_nodes"] == 0
     total = decomposition["total_force"]
     normal = decomposition["normal_force"]
     tangential = decomposition["tangential_force"]
