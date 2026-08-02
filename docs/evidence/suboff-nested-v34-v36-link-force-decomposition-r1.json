@@ -54,6 +54,24 @@
     "maximum_relative_component_closure_error": 3.282686024818598e-7,
     "maximum_relative_normal_tangential_closure_error": 7.618982831778642e-5
   },
+  "axial_wall_shear_audit_v36": {
+    "source": "results/amr_campaign_20260801/suboff-nested-v36-equivalent-l90-3180k-wall-audit-r9.json",
+    "source_sha256": "a8c62dba8dfda28bd42fdb188fb3a69209f4a738d5d0b49d2becc3a11ff62ba9",
+    "total_wall_shear_lu": 1.0268821040244065,
+    "bow_0_to_20pct_shear_fraction": 0.18962189894861037,
+    "midbody_20_to_80pct_shear_fraction": 0.756182679143798,
+    "stern_80_to_100pct_shear_fraction": 0.05419542190759158,
+    "bow_area_weighted_median_tangential_speed_lu": 0.05523615619256423,
+    "midbody_area_weighted_median_tangential_speed_lu": 0.05581844945974505,
+    "stern_area_weighted_median_tangential_speed_lu": 0.03730036926231653,
+    "bow_area_weighted_median_friction_velocity_lu": 0.0025772329537994926,
+    "midbody_area_weighted_median_friction_velocity_lu": 0.0026002005241406124,
+    "stern_area_weighted_median_friction_velocity_lu": 0.001810309639032619,
+    "ittc57_global_friction_coefficient": 0.0028598900844421984,
+    "ittc57_implied_global_friction_velocity_lu": 0.0022688768481334454,
+    "midbody_vs_ittc_global_friction_velocity_difference_pct": 14.60298192384217,
+    "interpretation": "The excess wall stress is broad: 75.6% comes from the low-pressure-gradient midbody, where sampled tangential speed remains about 93% of freestream. A bow/stern-only pressure-gradient correction cannot remove the global bias. The ITTC comparison is diagnostic because its friction velocity is a hull-global reference, not a local target."
+  },
   "acceptance": {
     "control_volume_primary_force_retained": true,
     "laboratory_frame_total_link_impulse_retained_as_conservative_observer": true,
@@ -84,5 +102,5 @@
     "v36_result": "results/amr_campaign_20260801/suboff-nested-v36-equivalent-l90-3180k.json",
     "v36_result_sha256": "32aa74312971158d54fdd671c137500fedf813fd13e40fc720b476fde9b0555e"
   },
-  "conclusion": "The actual population impulse is conservative, but it is the small residual of a +295.6 kN stationary BFL interpolation impulse and a -295.6 kN moving-wall population correction. Even after every link receives a geometry or BFL fallback normal, its normal and tangential projections remain large cancelling diagnostics. Therefore TensorLBM retains the fixed control-volume force as primary and the total laboratory-frame link impulse as its conservative observer; none of these link subcomponents is accepted as a physical pressure/shear decomposition, and no experimental resistance was used to choose a component."
+  "conclusion": "The actual population impulse is conservative, but it is the small residual of a +295.6 kN stationary BFL interpolation impulse and a -295.6 kN moving-wall population correction. Even after every link receives a geometry or BFL fallback normal, its normal and tangential projections remain large cancelling diagnostics. The independent axial audit also shows that excess modeled shear is distributed across the midbody rather than confined to high-pressure-gradient bow/stern regions. Therefore TensorLBM retains the fixed control-volume force as primary and the total laboratory-frame link impulse as its conservative observer; none of these link subcomponents is accepted as a physical pressure/shear decomposition, and no experimental resistance was used to choose a component."
 }
