@@ -1710,6 +1710,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      step-16000 warmup and contains no settled friction statistics.  Artifact
      SHA-256 is
      `347f638160a093449bc820babc60f1673457009f9deb2c5a3d8b17bc37cee183`.
+192. The incoming-only non-equilibrium far-field boundary now optionally
+     returns a population-delta ledger for every applied face and for the final
+     combined boundary mutation.  It records exact mass/momentum injected by
+     boundary reconstruction, update counts, finiteness and face-sum closure;
+     the default no-diagnostic numerical path is unchanged.  Fixed-point,
+     outgoing-population, extrapolation, exact delta-closure, sponge and sphere
+     sensitivity tests pass.  This creates the missing observable needed to
+     distinguish open-boundary forcing from interior CFD resistance.
 
 ## Rejected candidates
 
