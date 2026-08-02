@@ -59,8 +59,8 @@
     "flow_solution_validated": false
   },
   "artifacts": {
-    "four_level_schedule": "results/collision-viscosity-natural-kbc-suboff-re4m-mixed-exactweights-r1.json",
-    "four_level_schedule_sha256": "ef8407856c8ba89f28ae081aeac5fe53f63f9366dedc3e1c70dccb0c7a4e559e",
+    "four_level_schedule": "results/collision-viscosity-natural-kbc-suboff-re4m-mixed-exactweights-r2.json",
+    "four_level_schedule_sha256": "9fd90285ac9833e72094ff183780fb0dce184e3624d4ecdc8cbd19b5f39d14ab",
     "exact_weights_float64_root_control_sha256": "96779128a5537584a16ffce1d76d34a1626f571255e5cf16d017b12cfe0e06bd",
     "exact_weights_mixed_root_control_sha256": "27e3419fe7a30b475096d82002aec6d120306160f3de0b608a301c6dbf1d27ae"
   },
