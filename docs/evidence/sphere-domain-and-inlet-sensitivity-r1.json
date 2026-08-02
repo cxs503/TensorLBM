@@ -1,0 +1,59 @@
+{
+  "schema": "tensorlbm-sphere-domain-and-boundary-sensitivity-evidence-v1",
+  "status": "matched_pairs_complete_third_domain_and_no_inlet_grid_active",
+  "physical_validation": false,
+  "baseline": {
+    "reynolds": 100.0,
+    "radius_cells": 9.0,
+    "shape_zyx": [144, 144, 216],
+    "transverse_width_diameters": 8.0,
+    "collision_model": "natural_kbc_d3q19",
+    "compile_natural_kbc": true,
+    "sponge_inlet": true,
+    "cd_control_volume": 1.1756139078050105,
+    "reference_error_pct": 7.683468703452704
+  },
+  "transverse_domain_pair": {
+    "expanded_shape_zyx": [180, 180, 216],
+    "expanded_width_diameters": 10.0,
+    "expanded_cd_control_volume": 1.1679163767099288,
+    "expanded_reference_error_pct": 6.978392961095484,
+    "drag_change_pct": 0.6590823836862392,
+    "configuration_identity_admitted": true,
+    "source_numerical_quality_admitted": true,
+    "within_one_percent_sensitivity": true,
+    "domain_convergence_claimed": false,
+    "next": "The W24R/12D third member is active on the same GPU and resolution."
+  },
+  "inlet_sponge_pair": {
+    "disabled_cd_control_volume": 1.1652471892456109,
+    "enabled_cd_control_volume": 1.1756139078050105,
+    "disabled_reference_error_pct": 6.733901667764173,
+    "enabled_reference_error_pct": 7.683468703452704,
+    "drag_change_pct": 0.8818131948400766,
+    "configuration_identity_admitted": true,
+    "source_numerical_quality_admitted": true,
+    "within_one_percent_sensitivity": true,
+    "open_boundary_validation_claimed": false,
+    "reproducibility": {
+      "legacy_no_inlet_natural_kbc_cd": 1.1652017741491727,
+      "current_vs_legacy_relative_difference_pct": 0.0038975062757798907
+    },
+    "next": "The current-code no-inlet R12 member is queued behind the third domain member."
+  },
+  "decision": [
+    "Both one-variable effects are measurable and smaller than one percent at R9.",
+    "Neither pair is promoted to domain or open-boundary validation.",
+    "The result closest to Schiller-Naumann is not selected empirically.",
+    "Complete W16/W20/W24 domain convergence and the no-inlet grid family before changing the curved-wall operator."
+  ],
+  "provenance": {
+    "baseline_result_sha256": "e92e3273994577cb296bc8876cb952a375d2f004287b525d93b6c540aa5ca66b",
+    "w20_result_sha256": "7fefc1421d8921bbd70ef516f18407ee05f96c929bafb0de1280231d6797bb13",
+    "no_inlet_result_sha256": "959bcae7c0c8d428a875373fed2b25e0d060bc00d6755cc4f2e37873bce7141e",
+    "domain_pair_result": "results/sphere_domain_sensitivity/sphere-v5-natural-kbc-r9-w16-w20-sensitivity.json",
+    "inlet_pair_result": "results/sphere_boundary_sensitivity/sphere-v6-natural-kbc-r9-inlet-sponge-sensitivity.json",
+    "domain_pair_module": "src/tensorlbm/sphere_domain_sensitivity.py",
+    "inlet_pair_module": "src/tensorlbm/sphere_boundary_sensitivity.py"
+  }
+}
