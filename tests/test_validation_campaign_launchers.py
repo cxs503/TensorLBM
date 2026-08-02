@@ -739,6 +739,47 @@ def test_cylinder_launcher_names_natural_kbc_variant_separately(
     assert "cylinder-v4-natural-kbc-equivalent-r9-54000.json" in output
 
 
+def test_cylinder_r18_extends_the_same_scaled_grid_family(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_cylinder_v4_equivalent_level.sh"),
+            "R18",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--nx") + 1] == "720"
+    assert arguments[arguments.index("--ny") + 1] == "720"
+    assert arguments[arguments.index("--radius") + 1] == "18"
+    assert arguments[arguments.index("--steps") + 1] == "108000"
+    assert arguments[arguments.index("--warmup-steps") + 1] == "63000"
+    assert arguments[arguments.index("--statistics-window-steps") + 1] == (
+        "45000"
+    )
+    assert arguments[arguments.index("--sponge-width") + 1] == "36"
+    assert arguments[arguments.index("--cv-margin") + 1] == "12"
+
+
 def test_nested_v10_launcher_scales_all_inner_physical_locations(
     tmp_path: Path,
 ) -> None:

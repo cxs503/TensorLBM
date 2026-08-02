@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 R9|R12|R15 PHYSICAL_GPU [RESULT_DIR] [WAIT_FOR_PID]" >&2
+  echo "usage: $0 R9|R12|R15|R18 PHYSICAL_GPU [RESULT_DIR] [WAIT_FOR_PID]" >&2
   exit 2
 }
 
@@ -25,6 +25,10 @@ case "$radius" in
     domain=600; steps=90000; warmup=52500; ramp=750
     sponge=30; cv=10; report=750; checkpoint_interval=7500; statistics=37500
     ;;
+  18)
+    domain=720; steps=108000; warmup=63000; ramp=900
+    sponge=36; cv=12; report=900; checkpoint_interval=9000; statistics=45000
+    ;;
   *) usage ;;
 esac
 
@@ -38,7 +42,18 @@ fi
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 mkdir -p "$result_dir"
-python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
+if [[ -n ${TENSORLBM_PYTHON:-} ]]; then
+  python=$TENSORLBM_PYTHON
+elif [[ -x $root/.venv/bin/python ]]; then
+  python=$root/.venv/bin/python
+elif [[ -x /home/wxsc/anaconda3/envs/ftw-env/bin/python ]]; then
+  python=/home/wxsc/anaconda3/envs/ftw-env/bin/python
+elif command -v python3 >/dev/null 2>&1; then
+  python=$(command -v python3)
+else
+  echo "no Python interpreter found; set TENSORLBM_PYTHON" >&2
+  exit 127
+fi
 collision_model=${TENSORLBM_COLLISION_MODEL:-cumulant_d3q19_cs0}
 case "$collision_model" in
   cumulant_d3q19_cs0) variant= ;;
