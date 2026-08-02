@@ -20,6 +20,7 @@ from .control_volume_force import box_control_volume, observe_control_volume_for
 from .cuda_memory_budget import require_cuda_memory_budget
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
+from .drag_pressure import integrate_bfl_projected_pressure
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
 from .interpolated_bc import compute_q_sphere
@@ -61,6 +62,8 @@ class SphereBFLControlVolumeConfig:
     collision_model: str = "cumulant_d3q19_cs0"
     collision_chunk_cells: int = 0
     compile_natural_kbc: bool = False
+    projected_pressure_interval: int = 0
+    projected_pressure_reconstruction: str = "linear"
     device: str = "cpu"
 
     @property
@@ -97,6 +100,12 @@ class SphereBFLControlVolumeConfig:
             raise ValueError("compiled natural KBC requires natural_kbc_d3q19")
         if self.report_interval < 0 or self.checkpoint_interval < 0:
             raise ValueError("report/checkpoint intervals must be non-negative")
+        if self.projected_pressure_interval < 0:
+            raise ValueError("projected_pressure_interval must be non-negative")
+        if self.projected_pressure_reconstruction not in {
+            "local", "linear", "quadratic",
+        }:
+            raise ValueError("unknown projected_pressure_reconstruction")
         if not 0 <= self.statistics_window_steps <= self.steps - self.warmup_steps:
             raise ValueError(
                 "statistics_window_steps must be zero or fit after warmup",
@@ -179,6 +188,7 @@ def run_sphere_bfl_control_volume(
     )
     forces: list[float] = []
     bfl_forces: list[float] = []
+    projected_pressure_samples: list[dict[str, object]] = []
     open_boundary_history: list[dict[str, object]] = []
     start_step = 0
     checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
@@ -244,6 +254,17 @@ def run_sphere_bfl_control_volume(
         forces = state["drag_force_history"].tolist()
         bfl_forces = state["bfl_drag_history"].tolist()
         open_boundary_history = list(state.get("open_boundary_history", []))
+        projected_pressure_samples = list(
+            state.get("projected_pressure_samples", []),
+        )
+        if (
+            config.projected_pressure_interval > 0
+            and start_step > config.warmup_steps
+            and "projected_pressure_samples" not in state
+        ):
+            raise ValueError(
+                "checkpoint lacks requested projected-pressure history",
+            )
         if start_step >= config.steps:
             raise ValueError("checkpoint already reached or exceeded requested steps")
 
@@ -259,6 +280,7 @@ def run_sphere_bfl_control_volume(
             "drag_force_history": torch.tensor(forces, dtype=torch.float64),
             "bfl_drag_history": torch.tensor(bfl_forces, dtype=torch.float64),
             "open_boundary_history": open_boundary_history,
+            "projected_pressure_samples": projected_pressure_samples,
             "migration_provenance": migration_provenance,
         }, checkpoint)
 
@@ -357,6 +379,27 @@ def run_sphere_bfl_control_volume(
         cv_force = float(observe_control_volume_force(
             old, f, post, cv, solid=solid,
         ).force_on_body[0].item())
+        if (
+            config.projected_pressure_interval > 0
+            and step > config.warmup_steps
+            and step % config.projected_pressure_interval == 0
+        ):
+            pressure = (f.sum(dim=0) - 1.0) / 3.0
+            projected_force, projected_diagnostics = (
+                integrate_bfl_projected_pressure(
+                    pressure,
+                    bfl_mask,
+                    bfl_q,
+                    solid=solid,
+                    reconstruction=config.projected_pressure_reconstruction,
+                )
+            )
+            projected_pressure_samples.append({
+                "step": step,
+                "pressure_force_x": projected_force[0],
+                "paired_control_volume_force_x": cv_force,
+                "diagnostics": asdict(projected_diagnostics),
+            })
         if step > config.warmup_steps:
             forces.append(cv_force)
             bfl_forces.append(bfl_force[0])
@@ -409,6 +452,52 @@ def run_sphere_bfl_control_volume(
         reference_mass=float(math.prod(shape)),
         reference_momentum=float(math.prod(shape)) * config.lattice_speed,
     )
+    statistics_start_step = config.steps - statistics_window + 1
+    selected_projected_samples = [
+        sample for sample in projected_pressure_samples
+        if int(sample["step"]) >= statistics_start_step
+    ]
+    projected_pressure_observer: dict[str, object] = {
+        "scope": "candidate_diagnostic_only_not_an_acceptance_gate",
+        "enabled": config.projected_pressure_interval > 0,
+        "used_for_acceptance": False,
+        "sample_interval_steps": config.projected_pressure_interval,
+        "reconstruction": config.projected_pressure_reconstruction,
+        "samples": len(selected_projected_samples),
+        "mean_pressure_force": None,
+        "paired_control_volume_mean_force": None,
+        "mean_force_difference_pct": None,
+        "minimum_usable_link_fraction": None,
+        "maximum_fallback_cells": None,
+    }
+    if selected_projected_samples:
+        projected_mean = sum(
+            float(sample["pressure_force_x"])
+            for sample in selected_projected_samples
+        ) / len(selected_projected_samples)
+        projected_paired_cv_mean = sum(
+            float(sample["paired_control_volume_force_x"])
+            for sample in selected_projected_samples
+        ) / len(selected_projected_samples)
+        usable_fractions = [
+            float(sample["diagnostics"]["usable_links"])
+            / max(float(sample["diagnostics"]["requested_links"]), 1.0)
+            for sample in selected_projected_samples
+        ]
+        projected_pressure_observer.update({
+            "mean_pressure_force": projected_mean,
+            "paired_control_volume_mean_force": projected_paired_cv_mean,
+            "mean_force_difference_pct": (
+                abs(projected_mean - projected_paired_cv_mean)
+                / max(abs(projected_paired_cv_mean), 1.0e-30)
+                * 100.0
+            ),
+            "minimum_usable_link_fraction": min(usable_fractions),
+            "maximum_fallback_cells": max(
+                int(sample["diagnostics"]["fallback_cells"])
+                for sample in selected_projected_samples
+            ),
+        })
     return {
         "schema": "tensorlbm-sphere-bfl-control-volume-v3",
         "configuration": checkpoint_signature | {
@@ -420,6 +509,10 @@ def run_sphere_bfl_control_volume(
             "report_interval": config.report_interval,
             "checkpoint_interval": config.checkpoint_interval,
             "statistics_window_steps_resolved": statistics_window,
+            "projected_pressure_interval": config.projected_pressure_interval,
+            "projected_pressure_reconstruction": (
+                config.projected_pressure_reconstruction
+            ),
             "statistics_convective_times": statistics_convective_times,
             "minimum_statistics_convective_times": (
                 config.minimum_statistics_convective_times
@@ -439,6 +532,7 @@ def run_sphere_bfl_control_volume(
             "open_boundary_population_delta_audit": (
                 open_boundary_audit.to_dict()
             ),
+            "projected_bfl_pressure_observer": projected_pressure_observer,
         },
         "runtime": {
             "invocation_elapsed_seconds": invocation_elapsed_seconds,
