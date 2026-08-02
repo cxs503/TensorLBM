@@ -21,6 +21,7 @@ ROOT = Path(__file__).parents[1]
         ("run_suboff_nested_v11_scaled_wall_level.sh", "L90"),
         ("run_suboff_nested_v12_four_level_l90.sh", "L90"),
         ("run_suboff_nested_v13_mass_conservative_l90.sh", "L90"),
+        ("run_suboff_nested_v16_aff8_allocation_probe.sh", "L90"),
         ("run_sphere_v3_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_equivalent_level.sh", "R9"),
         ("run_cylinder_v4_domain_width.sh", "W30"),
