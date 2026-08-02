@@ -1,0 +1,75 @@
+{
+  "schema": "tensorlbm-sphere-corrected-bfl-convergence-evidence-v1",
+  "status": "admitted",
+  "physical_validation": true,
+  "case": "Re=100 sphere with corrected BFL population reconstruction, Natural-KBC and independent control-volume force",
+  "configuration_identity": {
+    "radii_cells": [9.0, 12.0, 15.0],
+    "diameters_cells": [18.0, 24.0, 30.0],
+    "domain_over_radius_zyx": [16.0, 16.0, 24.0],
+    "cv_margin_over_radius": 0.6666666666666666,
+    "sponge_width_over_radius": 2.0,
+    "steps_over_radius": 800.0,
+    "warmup_steps_over_radius": 533.3333333333334,
+    "statistics_steps_over_radius": 266.6666666666667,
+    "statistics_convective_times": 8.0,
+    "lattice_speed": 0.06,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "sponge_inlet": false,
+    "scaled_configuration_invariant": true
+  },
+  "grid_sequence": {
+    "cd_control_volume": [
+      1.1434036287517093,
+      1.133166744622093,
+      1.1296920913906643
+    ],
+    "monotonic": true,
+    "observed_order": 3.1819353059791755,
+    "extrapolated_cd": 1.1263318506968232,
+    "finest_discretisation_error_pct": 0.2983348727785904,
+    "relative_fit_rms_pct": 0.0,
+    "spatial_convergence_admitted": true
+  },
+  "reference": {
+    "schiller_naumann_cd": 1.0917310910948732,
+    "extrapolated_error_pct": 3.169348192442667,
+    "maximum_error_pct": 5.0,
+    "reference_target_met": true
+  },
+  "r12_member": {
+    "cd_control_volume": 1.133166744622093,
+    "cd_bfl_link": 1.1331949899466744,
+    "force_observer_difference_pct": 0.0024926009093988047,
+    "reference_error_pct": 3.7954083991200505,
+    "drag_block_range_pct": 0.019272482850557857,
+    "half_mean_drift_pct": 0.009787583212636647,
+    "duration_target_met": true,
+    "stationarity_target_met": true,
+    "force_observer_target_met": true,
+    "numerical_quality_admitted": true,
+    "d3q19_weight_precision_scheme": "rational_binary64_cast_to_runtime_dtype_v1"
+  },
+  "acceptance": {
+    "all_source_runs_numerically_admitted": true,
+    "configuration_identity_admitted": true,
+    "spatial_convergence_admitted": true,
+    "reference_accuracy_admitted": true,
+    "physical_validation": true,
+    "corrected_bfl_common_module_admitted": true,
+    "control_volume_primary_force_admitted": true,
+    "conservative_bfl_link_observer_admitted": true,
+    "projected_density_pressure_observer_admitted": false
+  },
+  "precision_note": "D3Q19 float32 lattice weights are bitwise unchanged by the later exact-binary64 source-weight contract. R12 records the exact scheme explicitly; the R9/R15 float32 runtime behavior is compatibility-frozen and unchanged.",
+  "artifacts": {
+    "remote_convergence": "results/sphere_bfl_corrected/sphere-v9-natural-kbc-corrected-bfl-r9-r12-r15-convergence.json",
+    "convergence_sha256": "87cf48422eec0034c4e6ebb247766ef5396afe01bf742fb2cbbd321b201da025",
+    "r9_result_sha256": "55baba0a995408b9eaea25e99d58a929814ddccc34b73456478105ab72e30cc8",
+    "r12_result_sha256": "61902f5a70d3cef5a2c3d4ac492ba58436e274fdcd393c3331a3c17afdeb2349",
+    "r12_checkpoint_sha256": "d058fe5bb67adf5c6bafd3da5332bd26a9a28456d3b0bab6afeb4705def02052",
+    "r15_result_sha256": "eb4d8e2b11b4efac25912ab29a47db6bbac2b1ace4ea6be12d1729b6a9c8f1e1",
+    "watcher_log_sha256": "716060eef42d3106dc0956bb24564ab8dfe0ff042cf2dc45040ace22f747c83e"
+  },
+  "conclusion": "All three configuration-equivalent source runs independently pass duration, stationarity, force-observer and reference gates. Drag decreases monotonically with resolution at observed order 3.182; the extrapolated coefficient is 3.169% from the independent Schiller-Naumann reference and the finest estimated discretisation error is 0.298%. The corrected BFL mechanics and independent control-volume force are admitted as common physical modules for this canonical tier."
+}
