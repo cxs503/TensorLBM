@@ -45,6 +45,18 @@
     "allocation_path_admitted": true,
     "short_physics_status": "not_assessed_one_root_step"
   },
+  "diagnostic_low_memory_wall_path": {
+    "paired_direction_macroscopic_fields": true,
+    "guo_force_direction_chunk_size": 4,
+    "persistent_allocated_gib": 3.3859481811523438,
+    "measured_peak_allocated_gib": 12.59660005569458,
+    "additional_peak_reduction_pct": 13.8979879783049,
+    "effective_peak_bytes_per_total_allocated_cell": 777.7103300061777,
+    "finite": true,
+    "maximum_positivity_limited_fraction": 0.0,
+    "production_default": false,
+    "reason": "The paired-direction moment algebra passes unit equivalence but changes large-grid wall samples at floating-point roundoff level; a long-time statistical A/B is required before promotion."
+  },
   "sources": [
     {
       "path": "/tmp/tensorlbm-v17-local/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1.json",
@@ -53,6 +65,14 @@
     {
       "path": "/tmp/tensorlbm-v17-local/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1.ckpt",
       "sha256": "03076601c5ddb20f29590a4c403c4cb22d63dbd7d93fc1cc76f0fadc2d499506"
+    },
+    {
+      "path": "/tmp/tensorlbm-v17-local-r3/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1.json",
+      "sha256": "a957dc183e51b8471c0266610ae0304240413a9f357d0b7885a7810312e0f723"
+    },
+    {
+      "path": "/tmp/tensorlbm-v17-local-r3/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1.ckpt",
+      "sha256": "6f450e711767e922467f00c28948356f5d2f927c1edcc00dbea535685679ceca"
     }
   ],
   "decision": [
