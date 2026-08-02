@@ -1,0 +1,59 @@
+{
+  "schema": "tensorlbm-suboff-wall-exchange-ab-final-v1",
+  "status": "rejected",
+  "physical_validation": false,
+  "comparison_scope": "direct matched CFD sensitivity; no empirical force correction",
+  "experiment_resistance_n": 87.4,
+  "baseline_v23": {
+    "stress_exchange_distance_cells": 1.0,
+    "mean_resistance_n": 115.9034471100953,
+    "mean_pressure_resistance_n": 22.88774303923646,
+    "mean_wall_shear_resistance_n": 93.74175608009118,
+    "reference_error_pct": 32.61263971406784,
+    "mean_y_plus": 807.8160894775391,
+    "maximum_y_plus": 1301.3016357421875,
+    "surface_observer_difference_pct": 26.670939383980492,
+    "sampling_convective_times": 1.0,
+    "force_relative_range_pct": 7.057980920004324,
+    "force_half_mean_drift_pct": 3.622411387287938,
+    "result_sha256": "9bf5838c1e346b21942ef37019aaaf5284cd783c59cf9c750faf219facf12f63",
+    "checkpoint_sha256": "72a1e03953b7b09a6f41c64e71e20c7bcd6ea1dcb76f9878e3079a1cb16c4445"
+  },
+  "scaled_exchange_v29": {
+    "stress_exchange_distance_cells": 8.4375,
+    "mean_resistance_n": 111.38225003479728,
+    "mean_pressure_resistance_n": 31.05148214303027,
+    "mean_wall_shear_resistance_n": 81.0667862123987,
+    "reference_error_pct": 27.4396453487383,
+    "mean_y_plus": 5919.97224609375,
+    "maximum_y_plus": 6729.7958984375,
+    "surface_observer_difference_pct": 19.757333117286198,
+    "sampling_convective_times": 1.0,
+    "force_relative_range_pct": 5.758549860513849,
+    "force_half_mean_drift_pct": 3.165391498938334,
+    "result_sha256": "b509b79f395927232cb18402ad7e3ae4b98401de3fd0d1b0d4d656993d0337c3",
+    "checkpoint_sha256": "13313554c3e7e5543b06df68a57f4c0bf13dcb5a40b15a8607d62f6f3ab949c4"
+  },
+  "signed_effects_relative_to_v23_pct": {
+    "total_resistance": -3.9008305516602837,
+    "pressure_resistance": 35.66860694738973,
+    "wall_shear_resistance": -13.521156843768988,
+    "mean_y_plus": 632.8366348734816
+  },
+  "rejection_reasons": [
+    "Only one sampling convective time is available; neither trajectory is stationary or time converged.",
+    "The scaled exchange produces mean y+ 5919.97 and maximum y+ 6729.80, far outside the declared 30-1000 wall-model policy.",
+    "The final resistance remains 27.44% above experiment and the surface observer differs by 19.76%.",
+    "The scaled exchange changes pressure and shear in opposite directions and is a model sensitivity, not an accuracy calibration.",
+    "No grid convergence is assessed and natural KBC remains outside the production collision-viscosity gate."
+  ],
+  "admission": {
+    "integration_only": true,
+    "time_convergence": false,
+    "grid_convergence": false,
+    "wall_model_applicability": false,
+    "reference_accuracy": false,
+    "surface_force_observer": false,
+    "accepted_physical_candidate": false
+  }
+}

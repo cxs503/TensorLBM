@@ -1725,6 +1725,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      incur no diagnostic reductions between health samples.  The recursive
      two-interface smoke test verifies both stages and finite three-component
      momentum evidence.
+194. The completed v29/v23 exchange-height A/B remains rejected.  Increasing
+     the exchange distance from 1.0 to 8.4375 cells lowers total resistance by
+     3.90%, but does so through a 35.67% pressure increase and 13.52% shear
+     decrease.  Mean `y+` rises from 807.82 to 5919.97, far outside policy;
+     v29 is still 27.44% above experiment, has a 19.76% surface-observer
+     mismatch and only one sampling convective time.  The apparent reference
+     improvement is therefore a rejected model sensitivity, not calibration.
+     Immutable result/checkpoint hashes are recorded in
+     `docs/evidence/suboff-v23-v29-wall-exchange-ab-final-r1.json`.
 
 ## Rejected candidates
 
