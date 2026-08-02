@@ -39,7 +39,11 @@ from tensorlbm.drag_pressure import (
 )
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
-from tensorlbm.interpolated_bc_suboff import compute_q_suboff
+from tensorlbm.interpolated_bc_suboff import (
+    SUBOFF_APPENDAGE_LINK_SCHEME,
+    compute_q_suboff,
+    refine_q_suboff_appendages,
+)
 from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
@@ -223,6 +227,8 @@ def run_case(args: argparse.Namespace) -> dict:
     wall_area_weight = None
     surface_area_diagnostics = None
     appendage_links = 0
+    appendage_link_diagnostics = None
+    bare = None
     if args.boundary in {"bfl_wall", "bfl_wall_model", "bfl_spalding"}:
         print(f"{tag} building BFL link-distance field", flush=True)
         bfl_mask, bfl_q = compute_q_suboff(
@@ -230,29 +236,24 @@ def run_case(args: argparse.Namespace) -> dict:
             hull_type=args.hull_type, config=SuboffConfig(), device=device,
         )
         if args.hull_type == "full":
-            # The analytical q solver describes the axisymmetric main body.
-            # Retain those sub-cell distances and use half-way bounce-back for
-            # sail/control-surface links, whose geometry is voxelised.
             bare, _ = build_suboff_mask(
                 "bare_hull", args.nx, args.ny, args.nz,
                 cx=cx, cy=cy, cz=cz, length=length_lu, radius=radius_lu,
                 config=SuboffConfig(), device=device,
             )
-            from tensorlbm.d3q19 import C as C19
-            for direction in range(1, 19):
-                dcx, dcy, dcz = (int(v) for v in C19[direction].tolist())
-                full_nb = torch.roll(
-                    solid, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
-                )
-                bare_nb = torch.roll(
-                    bare, shifts=(-dcz, -dcy, -dcx), dims=(0, 1, 2),
-                )
-                use_halfway = bfl_mask[direction] & full_nb & ~bare_nb
-                appendage_links += int(use_halfway.sum().item())
-                bfl_q[direction][use_halfway] = 0.5
+            bfl_q, appendage_link_diagnostics = refine_q_suboff_appendages(
+                bfl_mask,
+                bfl_q,
+                solid,
+                bare,
+                center=(cx, cy, cz),
+                length=length_lu,
+            )
+            appendage_links = appendage_link_diagnostics.target_links
             print(
                 f"{tag} BFL links={int(bfl_mask.sum().item())} "
-                f"appendage_halfway_links={appendage_links}", flush=True,
+                f"appendage_boundary_links={appendage_links} "
+                f"scheme={SUBOFF_APPENDAGE_LINK_SCHEME}", flush=True,
             )
         else:
             print(f"{tag} BFL links={int(bfl_mask.sum().item())}", flush=True)
@@ -269,6 +270,7 @@ def run_case(args: argparse.Namespace) -> dict:
                 )
             )
         else:
+            assert bare is not None
             bare_near = get_near_wall_3d(bare)
             bare_surface = SurfaceMesh.from_gradient(bare, bare_near)
             bare_bfl_mask, _ = compute_q_suboff(
@@ -449,6 +451,10 @@ def run_case(args: argparse.Namespace) -> dict:
         ),
         "wall_diagnostic_interval": args.wall_diagnostic_interval,
     }
+    if args.hull_type == "full" and bfl_mask is not None:
+        checkpoint_signature["appendage_link_scheme"] = (
+            SUBOFF_APPENDAGE_LINK_SCHEME
+        )
     start_step = 0
     if args.resume:
         assert checkpoint is not None
@@ -879,9 +885,18 @@ def run_case(args: argparse.Namespace) -> dict:
             "average_window": window,
             "surface_force_interval": args.surface_force_interval,
             "wall_diagnostic_interval": args.wall_diagnostic_interval,
+            "appendage_link_scheme": (
+                SUBOFF_APPENDAGE_LINK_SCHEME
+                if args.hull_type == "full" and bfl_mask is not None else None
+            ),
         },
         "geometry": geometry | {
-            "appendage_halfway_links": appendage_links,
+            "appendage_boundary_links": appendage_links,
+            "appendage_halfway_links": 0,
+            "appendage_link_intersection": (
+                appendage_link_diagnostics.to_dict()
+                if appendage_link_diagnostics is not None else None
+            ),
             "surface_area_weighting": (
                 vars(surface_area_diagnostics)
                 if surface_area_diagnostics is not None else None
