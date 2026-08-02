@@ -1,0 +1,65 @@
+{
+  "schema": "tensorlbm-suboff-compiled-throughput-gate-v1",
+  "status": "step750_partial_gate_passed",
+  "physical_validation": false,
+  "comparison_step": 750,
+  "common_configuration": {
+    "levels": 4,
+    "root_hull_length_cells": 90.0,
+    "finest_hull_length_cells": 720.0,
+    "collision_model": "natural_kbc",
+    "collision_resolved_reynolds_at_step": 7152.480567610421,
+    "collision_tau_by_level": [
+      0.5022649484814207,
+      0.5045298969628413,
+      0.5090597939256827,
+      0.5181195878513654
+    ],
+    "target_resolved_reynolds": 200000.0,
+    "collision_chunk_cells": 262144
+  },
+  "eager_v18": {
+    "compile_natural_kbc": false,
+    "low_memory_wall_macroscopic": false,
+    "sponge_inlet": false,
+    "process_start": "2026-08-02T09:44:44+08:00",
+    "step750_checkpoint_time": "2026-08-02T11:06:04+08:00",
+    "elapsed_to_step750_seconds": 4880.0,
+    "root_minimum_population": 0.008576823398470879,
+    "root_maximum_speed": 0.06569699943065643,
+    "reported_resistance_n_rounded": 233.395,
+    "maximum_collision_limited_fraction": 0.0,
+    "finite": true
+  },
+  "compiled_v23": {
+    "compile_natural_kbc": true,
+    "low_memory_wall_macroscopic": true,
+    "sponge_inlet": true,
+    "process_start": "2026-08-02T10:32:00+08:00",
+    "step750_checkpoint_time": "2026-08-02T11:11:34+08:00",
+    "elapsed_to_step750_seconds": 2374.0,
+    "root_minimum_population": 0.008572537451982498,
+    "root_maximum_speed": 0.06571090221405029,
+    "reported_resistance_n_rounded": 233.439,
+    "maximum_collision_limited_fraction": 0.0,
+    "finite": true
+  },
+  "throughput": {
+    "elapsed_speedup": 2.055602358887953,
+    "scope": "end-to-end process start through atomic step750 checkpoint",
+    "strict_performance_ab": false,
+    "reason": "The candidate also enables the independently tested low-memory wall macro and the physically required inlet sponge; the comparison demonstrates useful end-to-end throughput, not attribution to compilation alone."
+  },
+  "decision": [
+    "The compiled candidate reaches the same ramp Reynolds and checkpoint step in 48.65 percent of the eager elapsed time while remaining finite and limiter-free.",
+    "The rounded step750 resistance differs by only 0.044 N, but neither trajectory has reached target Reynolds, full wall activation or an admissible statistics window.",
+    "Continue v23 through target Reynolds and retain v25 Re=500000 as the next causal pressure-response pilot."
+  ],
+  "provenance": {
+    "compiled_checkpoint": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-3k.ckpt",
+    "compiled_checkpoint_sha256_at_step750": "30de5da8ba70ecab1e3f2c4bdd2d19da751ecd607004afffb5df4cf875d40ae4",
+    "eager_checkpoint": "results/amr_campaign_20260801/suboff-nested-v18-equivalent-l90-3k.ckpt",
+    "eager_checkpoint_sha256_at_step750": "1901ef791888213ef53dcd2cee64c7dc69a0b72bf7da07c7282a8f1f91903354",
+    "kernel_evidence": "docs/evidence/natural-kbc-tensor-tau-compile-r1.json"
+  }
+}
