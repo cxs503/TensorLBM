@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import functools
+import functools  # retained for compatibility; internal cache functions use explicit dicts
 from typing import Any
 
 import torch
@@ -13,6 +13,10 @@ _stream3d_cache: dict[
     tuple[Any, ...],
     tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
 ] = {}
+
+# Manual dict cache keyed by (device_str, dtype) — avoids the multi-GPU
+# collision that @functools.cache causes for torch.device arguments.
+_mrt3d_matrix_cache: dict[tuple[str, torch.dtype], tuple[torch.Tensor, torch.Tensor]] = {}
 
 def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
     """Compute and return (M, M_inv) as nested Python lists (float64 precision)."""
@@ -54,11 +58,21 @@ def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
 _M_D3Q19_DATA, _M_D3Q19_INV_DATA = _build_d3q19_mrt_matrices()
 
 
-@functools.cache
-def _get_d3q19_mrt_matrices(device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
-    matrix = torch.tensor(_M_D3Q19_DATA, dtype=torch.float32, device=device)
-    matrix_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=torch.float32, device=device)
-    return matrix, matrix_inv
+def _get_d3q19_mrt_matrices(device: torch.device, dtype: torch.dtype = torch.float32) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return cached (M, M_inv) for D3Q19 MRT, keyed by (str(device), dtype).
+
+    Uses an explicit string key so that cuda:0, cuda:1, … are cached
+    independently — ``@functools.cache`` on a ``torch.device`` argument
+    is unsafe in multi-GPU settings because devices with the same type
+    but different indices can collide in the hash.
+    """
+    key = (str(device), dtype)
+    if key not in _mrt3d_matrix_cache:
+        matrix = torch.tensor(_M_D3Q19_DATA, dtype=dtype, device=device)
+        matrix_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=dtype, device=device)
+        _mrt3d_matrix_cache[key] = (matrix, matrix_inv)
+    return _mrt3d_matrix_cache[key]
+
 
 
 def collide_bgk3d(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -194,6 +208,62 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     return out
 
 
+def stream3d_index_select(f: torch.Tensor) -> torch.Tensor:
+    """Streaming step for D3Q19 using a cached advanced-index gather.
+
+    Compared to :func:`stream3d` (which uses per-direction ``torch.roll``),
+    this variant pre-computes and caches four integer index tensors of shape
+    ``(19, nz, ny, nx)``.  The single advanced-index gather is more
+    GPU-friendly and avoids 18 separate roll dispatches, at the cost of
+    higher memory for the index tensors (~6 × 19 × N int64 bytes).  For
+    large grids (≥10 M cells) prefer :func:`stream3d` to save memory.
+
+    Index tensors are cached per ``(nz, ny, nx, device_type, device_index)``
+    so they are only allocated once per unique grid shape and device.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+
+    Returns:
+        Streamed tensor of the same shape.
+    """
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    device = f.device
+    cache_key = (nz, ny, nx, device.type, device.index)
+
+    if cache_key not in _stream3d_cache:
+        c_np = C.numpy()  # (19, 3) — cx, cy, cz
+        # Pull scheme: out[q](r) = f[q](r - c_q)
+        # For each direction q: src_z = (z - cz_q) % nz, etc.
+        z_base = torch.arange(nz, device=device)   # (nz,)
+        y_base = torch.arange(ny, device=device)   # (ny,)
+        x_base = torch.arange(nx, device=device)   # (nx,)
+
+        q_idx_list, z_idx_list, y_idx_list, x_idx_list = [], [], [], []
+        for q in range(19):
+            cxq, cyq, czq = int(c_np[q, 0]), int(c_np[q, 1]), int(c_np[q, 2])
+            z_src = (z_base - czq) % nz   # (nz,)
+            y_src = (y_base - cyq) % ny   # (ny,)
+            x_src = (x_base - cxq) % nx   # (nx,)
+            # broadcast to (nz, ny, nx) then prepend q-dim
+            z_idx = z_src.view(nz, 1, 1).expand(nz, ny, nx)
+            y_idx = y_src.view(1, ny, 1).expand(nz, ny, nx)
+            x_idx = x_src.view(1, 1, nx).expand(nz, ny, nx)
+            q_idx_list.append(torch.full((nz, ny, nx), q, dtype=torch.int64, device=device))
+            z_idx_list.append(z_idx)
+            y_idx_list.append(y_idx)
+            x_idx_list.append(x_idx)
+
+        q_idx = torch.stack(q_idx_list, dim=0)   # (19, nz, ny, nx)
+        z_idx = torch.stack(z_idx_list, dim=0)   # (19, nz, ny, nx)
+        y_idx = torch.stack(y_idx_list, dim=0)   # (19, nz, ny, nx)
+        x_idx = torch.stack(x_idx_list, dim=0)   # (19, nz, ny, nx)
+        _stream3d_cache[cache_key] = (q_idx, z_idx, y_idx, x_idx)
+
+    q_idx, z_idx, y_idx, x_idx = _stream3d_cache[cache_key]
+    return f[q_idx, z_idx, y_idx, x_idx]
+
+
 def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     """Redistribute mass uniformly to correct global mass drift (3-D).
 
@@ -311,5 +381,6 @@ __all__ = [
     "collide_rlbm3d",
     "collide_trt3d",
     "stream3d",
+    "stream3d_index_select",
     "correct_mass3d",
 ]
