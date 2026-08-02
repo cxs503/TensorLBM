@@ -28,7 +28,7 @@ def main() -> None:
     parser.add_argument("--collision-model", choices=("natural_kbc", "cumulant"), default="natural_kbc")
     parser.add_argument("--collision-chunk-cells", type=int, default=262144)
     parser.add_argument("--no-compile-natural-kbc", action="store_true")
-    parser.add_argument("--perturbation-fraction", type=float, default=0.05)
+    parser.add_argument("--perturbation-fraction", type=float, default=1.0)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")

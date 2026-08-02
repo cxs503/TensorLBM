@@ -1861,6 +1861,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      Collision choice is therefore rejected as the principal cylinder bias;
      no natural-KBC fine-grid sequence is launched.  Immutable hashes are in
      `docs/evidence/cylinder-v5-natural-kbc-r9-collision-hypothesis-rejected-r1.json`.
+207. The first Re_tau=180 3-D channel is stopped at its exact step-30000
+     checkpoint and rejected: despite positive populations and `1.23e-7` mass
+     drift, crossflow RMS decays to `0.00327 u_tau`, TKE to `2.86e-10`, and the
+     momentum-budget friction velocity is 29.91% low.  It is a relaminarized
+     reference, not wall-model evidence.  The common initializer now permits
+     `O(u_tau)` perturbations and uses streamwise streaks plus a smooth
+     cross-plane streamfunction; a cumulant/strong-perturbation follow-up passed
+     its GPU probe and is running.  r1 hashes are frozen in
+     `docs/evidence/channel3d-retau180-natural-kbc-weak-perturbation-rejected-r1.json`.
 
 ## Rejected candidates
 
