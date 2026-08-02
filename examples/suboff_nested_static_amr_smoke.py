@@ -47,7 +47,11 @@ from tensorlbm.entropic_kbc import (
 )
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
-from tensorlbm.interpolated_bc_suboff import compute_q_suboff
+from tensorlbm.interpolated_bc_suboff import (
+    SUBOFF_APPENDAGE_LINK_SCHEME,
+    compute_q_suboff,
+    refine_q_suboff_appendages,
+)
 from tensorlbm.kinetic_flux_register import conserved_population_moments
 from tensorlbm.population_health import inspect_population_health
 from tensorlbm.population_positivity import (
@@ -67,7 +71,6 @@ from tensorlbm.static_block_amr import (
 from tensorlbm.subcycled_force import UniformSubcycleAverager
 from tensorlbm.suboff_cad import SuboffConfig, build_suboff_mask
 from tensorlbm.suboff_static_amr import (
-    apply_suboff_appendage_halfway_links,
     assess_suboff_geometry_resolution,
     build_fine_suboff_mask,
     build_nested_fine_suboff_mask,
@@ -593,6 +596,11 @@ def run(args: argparse.Namespace) -> dict:
             estimated_bfl_exchange_y_plus_bounds
         ),
         "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
+        "appendage_link_scheme": (
+            SUBOFF_APPENDAGE_LINK_SCHEME
+            if args.hull_type == "full"
+            else "analytic_axisymmetric_bisection_v1"
+        ),
         "cuda_memory_preflight": (
             memory_budget.to_dict() if memory_budget is not None else None
         ),
@@ -640,7 +648,16 @@ def run(args: argparse.Namespace) -> dict:
             with_sail=planning_with_sail_solid,
             appendage_halfway_links=planning_appendage_links,
         )
-        planning["geometry_resolution"] = planning_resolution.to_dict()
+        planning_resolution_output = planning_resolution.to_dict()
+        if args.hull_type == "full":
+            planning_resolution_output["appendage_boundary_links"] = (
+                planning_appendage_links
+            )
+            planning_resolution_output["appendage_halfway_links"] = 0
+            planning_resolution_output["appendage_link_scheme"] = (
+                SUBOFF_APPENDAGE_LINK_SCHEME
+            )
+        planning["geometry_resolution"] = planning_resolution_output
         return {
             "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
             "status": "preflight_only",
@@ -714,6 +731,10 @@ def run(args: argparse.Namespace) -> dict:
     if refinement_depth > 2:
         checkpoint_signature["refinement_depth"] = refinement_depth
         checkpoint_signature["deep_box"] = vars(refinement_boxes[-1])
+    if args.hull_type == "full":
+        checkpoint_signature["appendage_link_scheme"] = (
+            SUBOFF_APPENDAGE_LINK_SCHEME
+        )
     finest_solid = hierarchy.interfaces[-1].fine_solid_with_ghost
     assert finest_solid is not None
     finest_solid_q = finest_solid.unsqueeze(0).expand_as(hierarchy.finest_f)
@@ -729,18 +750,25 @@ def run(args: argparse.Namespace) -> dict:
         hull_type=args.hull_type, config=geometry_config, device=device,
         solid_mask=finest_solid,
     )
-    appendage_halfway_links = 0
+    appendage_boundary_links = 0
+    appendage_link_diagnostics = None
+    bare_solid = None
     if args.hull_type == "full":
-        appendage_halfway_links = apply_suboff_appendage_halfway_links(
-            finest_solid,
+        bare_solid, _ = build_suboff_mask(
+            "bare_hull", nx_f, ny_f, nz_f,
+            cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
+            length=finest_length, config=geometry_config, device=device,
+        )
+        bfl_q, appendage_link_diagnostics = refine_q_suboff_appendages(
             bfl_mask,
             bfl_q,
+            finest_solid,
+            bare_solid,
             center=finest_center,
             length=finest_length,
-            config=geometry_config,
         )
+        appendage_boundary_links = appendage_link_diagnostics.target_links
     near = get_near_wall_3d(finest_solid)
-    bare_solid = None
     with_sail_solid = None
     if args.hull_type == "bare_hull":
         surface = SurfaceMesh.from_suboff(
@@ -759,11 +787,7 @@ def run(args: argparse.Namespace) -> dict:
         )
     else:
         surface = SurfaceMesh.from_gradient(finest_solid, near)
-        bare_solid, _ = build_suboff_mask(
-            "bare_hull", nx_f, ny_f, nz_f,
-            cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
-            length=finest_length, config=geometry_config, device=device,
-        )
+        assert bare_solid is not None
         with_sail_solid, _ = build_suboff_mask(
             "with_sail", nx_f, ny_f, nz_f,
             cx=finest_center[0], cy=finest_center[1], cz=finest_center[2],
@@ -1605,8 +1629,17 @@ def run(args: argparse.Namespace) -> dict:
         center_yz=(finest_center[1], finest_center[2]),
         bare_hull=bare_solid,
         with_sail=with_sail_solid,
-        appendage_halfway_links=appendage_halfway_links,
+        appendage_halfway_links=appendage_boundary_links,
     )
+    geometry_resolution_output = geometry_resolution.to_dict()
+    if args.hull_type == "full":
+        geometry_resolution_output["appendage_boundary_links"] = (
+            appendage_boundary_links
+        )
+        geometry_resolution_output["appendage_halfway_links"] = 0
+        geometry_resolution_output["appendage_link_scheme"] = (
+            SUBOFF_APPENDAGE_LINK_SCHEME
+        )
     maximum_observed_speed = (
         max(
             float(level["maximum_speed"])
@@ -1832,6 +1865,11 @@ def run(args: argparse.Namespace) -> dict:
             "gradient_sgs_solid_velocity": [0.0, 0.0, 0.0],
             "force_samples_per_root_step": force_averager.expected_samples,
             "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
+            "appendage_link_scheme": (
+                SUBOFF_APPENDAGE_LINK_SCHEME
+                if args.hull_type == "full"
+                else "analytic_axisymmetric_bisection_v1"
+            ),
             "gradient_sgs_uses_finest_solid_mask": (
                 args.collision_model in {"cumulant_wale", "cumulant_vreman"}
             ),
@@ -1850,9 +1888,14 @@ def run(args: argparse.Namespace) -> dict:
         },
         "planning": planning | {"measured_peak_allocated_gib": peak_gib},
         "geometry": finest_geometry | {
-            "resolution": geometry_resolution.to_dict(),
+            "resolution": geometry_resolution_output,
             "area_weighting": vars(area_diagnostics),
-            "appendage_halfway_links": appendage_halfway_links,
+            "appendage_boundary_links": appendage_boundary_links,
+            "appendage_halfway_links": 0,
+            "appendage_link_intersection": (
+                appendage_link_diagnostics.to_dict()
+                if appendage_link_diagnostics is not None else None
+            ),
             "geometry_owner_level": refinement_depth,
             "force_owner_level": refinement_depth,
         },

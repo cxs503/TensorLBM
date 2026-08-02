@@ -15,10 +15,31 @@ Groves, N.C., Huang, T.T., Chang, M.S. (1989).
 """
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass
+
 import torch
 
 from .d3q19 import C as C3D
-from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask
+from .suboff_cad import (
+    SuboffConfig,
+    SuboffHullType,
+    build_suboff_mask,
+    suboff_appendages_contain_points,
+)
+
+SUBOFF_APPENDAGE_LINK_SCHEME = "continuous_parametric_bisection_v1"
+
+
+@dataclass(frozen=True, slots=True)
+class SuboffAppendageLinkDiagnostics:
+    scheme: str
+    target_links: int
+    n_bisect: int
+    minimum_q: float | None
+    maximum_q: float | None
+
+    def to_dict(self) -> dict[str, str | int | float | None]:
+        return asdict(self)
 
 # ---------------------------------------------------------------------------
 # PyTorch implementation of the normalised SUBOFF radius profile
@@ -291,4 +312,102 @@ def compute_q_suboff(
     return fluid_boundary_mask, q_field
 
 
-__all__ = ["compute_q_suboff"]
+def refine_q_suboff_appendages(
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor,
+    solid: torch.Tensor,
+    bare_hull: torch.Tensor,
+    *,
+    center: tuple[float, float, float],
+    length: float,
+    n_bisect: int = 12,
+) -> tuple[torch.Tensor, SuboffAppendageLinkDiagnostics]:
+    """Replace AFF-8 halfway links by continuous parametric intersections.
+
+    The endpoint mask and the bisection predicate share the DARPA sail and
+    swept-NACA fin equations.  Every selected link starts at a fluid lattice
+    node and ends in an appendage-only solid node, so bisection yields the
+    first fluid-to-solid fraction without an empirical q correction.
+    """
+    if (
+        fluid_boundary_mask.ndim != 4
+        or fluid_boundary_mask.shape[0] != 19
+        or fluid_boundary_mask.dtype is not torch.bool
+        or q_field.shape != fluid_boundary_mask.shape
+        or not q_field.is_floating_point()
+        or solid.shape != fluid_boundary_mask.shape[1:]
+        or bare_hull.shape != solid.shape
+        or solid.dtype is not torch.bool
+        or bare_hull.dtype is not torch.bool
+        or not (
+            fluid_boundary_mask.device
+            == q_field.device == solid.device == bare_hull.device
+        )
+    ):
+        raise ValueError("SUBOFF link fields must be matching device tensors")
+    if bool((bare_hull & ~solid).any()):
+        raise ValueError("bare_hull must be a subset of full solid")
+    if n_bisect < 1:
+        raise ValueError("n_bisect must be positive")
+    if length <= 0.0:
+        raise ValueError("length must be positive")
+
+    appendage_only = solid & ~bare_hull
+    refined = q_field.clone()
+    all_values: list[torch.Tensor] = []
+    target_links = 0
+    for direction in range(1, 19):
+        cx, cy, cz = (int(value) for value in C3D[direction].tolist())
+        target_neighbor = torch.roll(
+            appendage_only,
+            shifts=(-cz, -cy, -cx),
+            dims=(0, 1, 2),
+        )
+        selected = fluid_boundary_mask[direction] & target_neighbor
+        indices = selected.nonzero(as_tuple=False)
+        if not indices.numel():
+            continue
+        target_links += int(indices.shape[0])
+        z0 = indices[:, 0].to(q_field.dtype)
+        y0 = indices[:, 1].to(q_field.dtype)
+        x0 = indices[:, 2].to(q_field.dtype)
+        lower = torch.zeros_like(x0)
+        upper = torch.ones_like(x0)
+        for _ in range(n_bisect):
+            midpoint = 0.5 * (lower + upper)
+            inside = suboff_appendages_contain_points(
+                x0 + midpoint * cx,
+                y0 + midpoint * cy,
+                z0 + midpoint * cz,
+                center=center,
+                length=length,
+            )
+            upper = torch.where(inside, midpoint, upper)
+            lower = torch.where(inside, lower, midpoint)
+        values = (0.5 * (lower + upper)).clamp(1.0e-6, 1.0)
+        refined[
+            direction, indices[:, 0], indices[:, 1], indices[:, 2]
+        ] = values
+        all_values.append(values)
+
+    if all_values:
+        values = torch.cat(all_values)
+        minimum_q = float(values.min())
+        maximum_q = float(values.max())
+    else:
+        minimum_q = maximum_q = None
+    return refined, SuboffAppendageLinkDiagnostics(
+        scheme=SUBOFF_APPENDAGE_LINK_SCHEME,
+        target_links=target_links,
+        n_bisect=n_bisect,
+        minimum_q=minimum_q,
+        maximum_q=maximum_q,
+    )
+
+
+__all__ = [
+    "SUBOFF_APPENDAGE_LINK_SCHEME",
+    "SuboffAppendageLinkDiagnostics",
+    "compute_q_suboff",
+    "refine_q_suboff_appendages",
+]

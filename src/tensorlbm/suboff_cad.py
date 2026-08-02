@@ -416,6 +416,142 @@ def suboff_hull_mask(
     return mask
 
 
+def suboff_sail_contains_points(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    z: torch.Tensor,
+    *,
+    center: tuple[float, float, float],
+    length: float,
+) -> torch.Tensor:
+    """Evaluate the continuous DARPA sail predicate at arbitrary points."""
+    if x.shape != y.shape or x.shape != z.shape:
+        raise ValueError("point coordinate tensors must have matching shapes")
+    if length <= 0.0:
+        raise ValueError("length must be positive")
+    cx, cy, cz = center
+    ftlu = _ft_per_lu(length)
+    x_ft = (x - (cx - length / 2.0)) * ftlu
+    y_ft = (y - cy) * ftlu
+    z_ft = (z - cz) * ftlu
+    zmax = _SAIL_ZMAX
+    y_tmp = _SAIL_YTMP
+
+    m1 = (x_ft > _SAIL_X1_START) & (x_ft < _SAIL_X1_END)
+    d1 = 3.0720 * (x_ft - _SAIL_X1_START)
+    c1 = 1.0 - (d1 - 1.0).pow(4) * (4.0 * d1 + 1.0)
+    b1 = (1.0 / 3.0) * d1.square() * (d1 - 1.0).pow(3)
+    a1 = 2.0 * d1 * (d1 - 1.0).pow(4)
+    half1 = zmax * torch.sqrt(
+        torch.clamp(2.094759 * a1 + 0.2071781 * b1 + c1, min=0.0),
+    )
+    body1 = (
+        (z_ft <= y_tmp) & (z_ft > 0.0)
+        & (y_ft > -half1) & (y_ft < half1) & m1
+    )
+    cap_half1 = torch.sqrt(torch.clamp(
+        half1.square() - (2.0 * (z_ft - y_tmp)).square(), min=0.0,
+    ))
+    cap1 = (
+        (z_ft > y_tmp) & (z_ft < y_tmp + half1 / 2.0)
+        & (y_ft > -cap_half1) & (y_ft < cap_half1) & m1
+    )
+
+    m2 = (x_ft > _SAIL_X1_END) & (x_ft <= _SAIL_X2_END)
+    body2 = (
+        (z_ft <= y_tmp) & (z_ft > 0.0)
+        & (y_ft > -zmax) & (y_ft < zmax) & m2
+    )
+    cap_half2 = torch.sqrt(torch.clamp(
+        zmax**2 - (2.0 * (z_ft - y_tmp)).square(), min=0.0,
+    ))
+    cap2 = (
+        (z_ft > y_tmp) & (z_ft < y_tmp + zmax / 2.0)
+        & (y_ft > -cap_half2) & (y_ft < cap_half2) & m2
+    )
+
+    m3 = (x_ft <= _SAIL_X3_END) & (x_ft > _SAIL_X2_END)
+    e3 = (_SAIL_X3_END - x_ft) / 0.6822917
+    f3 = e3 - 1.0
+    half3 = zmax * (
+        2.238361 * e3 * f3.pow(4)
+        + 3.106529 * e3.square() * f3.pow(3)
+        + 1.0 - f3.pow(4) * (4.0 * e3 + 1.0)
+    )
+    body3 = (
+        (z_ft <= y_tmp) & (z_ft > 0.0)
+        & (y_ft > -half3) & (y_ft < half3) & m3
+    )
+    cap_half3 = torch.sqrt(torch.clamp(
+        half3.square() - (2.0 * (z_ft - y_tmp)).square(), min=0.0,
+    ))
+    cap3 = (
+        (z_ft > y_tmp) & (z_ft < y_tmp + half3 / 2.0)
+        & (y_ft > -cap_half3) & (y_ft < cap_half3) & m3
+    )
+    return body1 | cap1 | body2 | cap2 | body3 | cap3
+
+
+def suboff_fins_contain_points(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    z: torch.Tensor,
+    *,
+    center: tuple[float, float, float],
+    length: float,
+) -> torch.Tensor:
+    """Evaluate the continuous swept NACA cruciform-fin predicate."""
+    if x.shape != y.shape or x.shape != z.shape:
+        raise ValueError("point coordinate tensors must have matching shapes")
+    if length <= 0.0:
+        raise ValueError("length must be positive")
+    cx, cy, cz = center
+    ftlu = _ft_per_lu(length)
+    x_ft = (x - (cx - length / 2.0)) * ftlu
+    y_ft = (y - cy).abs() * ftlu
+    z_ft = (z - cz).abs() * ftlu
+
+    y_chord = _FIN_SWEEP_K * y_ft + _FIN_SWEEP_C
+    z_chord = _FIN_SWEEP_K * z_ft + _FIN_SWEEP_C
+    s_y = (x_ft - _FIN_H) / y_chord + 1.0
+    s_z = (x_ft - _FIN_H) / z_chord + 1.0
+
+    def naca_half_thickness(s: torch.Tensor) -> torch.Tensor:
+        a, b, c, d, e = _NACA_COEFFS
+        return (
+            a * torch.sqrt(torch.clamp(s, min=0.0))
+            - b * s - c * s.square() + d * s.pow(3) - e * s.pow(4)
+        )
+
+    z_half = naca_half_thickness(s_y)
+    y_half = naca_half_thickness(s_z)
+    fins_y = (
+        (y_ft > _FIN_R_INNER) & (y_ft < _FIN_R_OUTER)
+        & (z_ft < z_half) & (s_y > 0.0) & (s_y < 1.0)
+    )
+    fins_z = (
+        (z_ft > _FIN_R_INNER) & (z_ft < _FIN_R_OUTER)
+        & (y_ft < y_half) & (s_z > 0.0) & (s_z < 1.0)
+    )
+    return fins_y | fins_z
+
+
+def suboff_appendages_contain_points(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    z: torch.Tensor,
+    *,
+    center: tuple[float, float, float],
+    length: float,
+) -> torch.Tensor:
+    """Evaluate the union of continuous AFF-8 sail and fin geometry."""
+    return suboff_sail_contains_points(
+        x, y, z, center=center, length=length,
+    ) | suboff_fins_contain_points(
+        x, y, z, center=center, length=length,
+    )
+
+
 def _add_sail_mask(
     mask: torch.Tensor,
     nx: int,
@@ -1375,6 +1511,37 @@ def _build_suboff_triangles(
         _real_fin_triangles(triangles, length)
 
     return triangles
+
+
+def suboff_appendage_triangles(
+    length: float,
+    *,
+    center: tuple[float, float, float] | None = None,
+) -> np.ndarray:
+    """Return the continuous AFF-8 sail/fin CAD triangles.
+
+    The local mesh coordinate has its bow at ``x=0`` and its body axis at
+    ``y=z=0``.  Supplying a solver-grid ``center`` translates the mesh so the
+    hull midpoint and transverse/vertical axis coincide with that center.
+    The bare axisymmetric body is deliberately excluded because it already
+    has an analytic link-intersection routine.
+    """
+    if length <= 0.0 or not math.isfinite(length):
+        raise ValueError("length must be finite and positive")
+    triangles: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
+    _real_sail_triangles(triangles, length)
+    _real_fin_triangles(triangles, length)
+    result = np.asarray(triangles, dtype=np.float64)
+    if result.ndim != 3 or result.shape[1:] != (3, 3):
+        raise RuntimeError("SUBOFF appendage tessellation is malformed")
+    if center is not None:
+        if len(center) != 3 or not all(math.isfinite(value) for value in center):
+            raise ValueError("center must contain three finite coordinates")
+        result = result.copy()
+        result[..., 0] += center[0] - length / 2.0
+        result[..., 1] += center[1]
+        result[..., 2] += center[2]
+    return result
 
 
 # ---------------------------------------------------------------------------
