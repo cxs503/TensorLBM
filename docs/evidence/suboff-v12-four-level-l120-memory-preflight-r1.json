@@ -33,6 +33,23 @@
     "finest_diameter_cells": 112.01866977829638,
     "absolute_reference_geometry_resolved": true
   },
+  "geometrically_similar_l90_to_l120_candidate": {
+    "source": "/tmp/suboff-aff1-v12-four-level-l120-similar-preflight.json",
+    "sha256": "fb9f5830b8ac1e75ad490b782c36b5d41cd0d035c72ea451a7e159e80eb824c6",
+    "scale_ratio_from_l90": 1.3333333333333333,
+    "inner_wall_margin_parent_cells": 11,
+    "inner_wake_cells": 16,
+    "deep_wall_margin_parent_cells": 9,
+    "deep_wake_cells": 19,
+    "primary_cv_margin_cells": 11,
+    "auxiliary_cv_margin_cells": [5, 16],
+    "allocated_cells_by_level": [8640000, 1949696, 6056960, 23981952],
+    "total_allocated_cells": 40628608,
+    "estimated_peak_gib": 41.62217378616333,
+    "deepest_device_estimated_peak_gib": 24.568426609039307,
+    "three_24_gib_gpu_level_partition_admitted": false,
+    "reason": "The deepest level alone exceeds one 24 GiB device before the mandatory 1 GiB runtime reserve."
+  },
   "proposed_level_device_partition": [
     {
       "logical_device": "cuda:0",
@@ -64,6 +81,7 @@
   "limitations": [
     "This artifact assesses geometry, observer clearance and memory only.",
     "The tighter block is not yet a member of an admitted grid-convergence family.",
+    "A tight-block L120 result requires either an L90 interface-extent sensitivity study or spatial decomposition of the deepest level.",
     "No resistance accuracy claim is made."
   ]
 }
