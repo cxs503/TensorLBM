@@ -42,6 +42,8 @@ fi
 
 physical_re=13213381.41322709
 stem="$result_dir/flat-plate-v6-physical-re13p213m-l${length}-${steps}"
+exec 9>"$stem.lock"
+flock 9
 if [[ -f "$stem.json" ]]; then
   "$python" - "$stem.json" "$length" "$steps" "$physical_re" <<'PY'
 import json
@@ -67,11 +69,6 @@ if not valid:
     raise SystemExit("existing physical-Re flat-plate result is incompatible")
 PY
   exit 0
-fi
-exec 9>"$stem.lock"
-if ! flock -n 9; then
-  echo "physical-Re flat-plate member already has a live writer: $stem" >&2
-  exit 3
 fi
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
