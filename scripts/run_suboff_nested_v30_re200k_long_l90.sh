@@ -6,7 +6,7 @@ usage() {
   exit 2
 }
 
-[[ $# -ge 2 && $# -le 5 ]] || usage
+[[ $# -ge 2 && $# -le 6 ]] || usage
 [[ $1 == L90 ]] || usage
 level=$1
 gpu=$2
