@@ -1694,6 +1694,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      byte-equivalent saved populations after inspection.  This allows the
      active long flat-plate trajectory to test selector false positives without
      restarting it under newly loaded code.
+190. The first active flat-plate audit exposed a diagnostic boundary-condition
+     defect: only the middle of three periodic spanwise planes had a full-rank
+     pressure-gradient stencil.  The common fluid-only least-squares sampler
+     now accepts explicit periodic spatial axes and wraps neighbour indices;
+     flat-plate runtime/audit paths declare periodic z while SUBOFF keeps the
+     non-periodic default.  Thirty-five focused wall, BFL, flat-plate and
+     checkpoint tests pass, including full coverage on a three-plane periodic
+     manufactured field.
 
 ## Rejected candidates
 

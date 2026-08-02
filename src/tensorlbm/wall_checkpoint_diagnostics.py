@@ -30,6 +30,7 @@ def diagnose_bfl_wall_exchange_state(
     y_plus_lower_bound: float = 30.0,
     y_plus_upper_bound: float = 1000.0,
     minimum_y_plus_in_range_fraction: float = 0.9,
+    pressure_gradient_periodic_axes: tuple[int, ...] = (),
 ) -> WallStressDiagnostics:
     """Diagnose a frozen wall state without BFL, forcing, or time advance.
 
@@ -86,6 +87,7 @@ def diagnose_bfl_wall_exchange_state(
         y_plus_lower_bound=y_plus_lower_bound,
         y_plus_upper_bound=y_plus_upper_bound,
         minimum_y_plus_in_range_fraction=(minimum_y_plus_in_range_fraction),
+        pressure_gradient_periodic_axes=pressure_gradient_periodic_axes,
     )
     return diagnostics
 

@@ -99,6 +99,7 @@ def inspect_checkpoint(
         y_plus_lower_bound=y_plus_lower_bound,
         y_plus_upper_bound=y_plus_upper_bound,
         minimum_y_plus_in_range_fraction=(minimum_y_plus_in_range_fraction),
+        pressure_gradient_periodic_axes=(0,),
     )
     return {
         "schema": "tensorlbm-flat-plate-wall-checkpoint-audit-v1",

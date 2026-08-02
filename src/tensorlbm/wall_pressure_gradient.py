@@ -171,6 +171,8 @@ def sample_wall_tangential_pressure_gradient(
     solid: torch.Tensor,
     active: torch.Tensor,
     normals: tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    *,
+    periodic_axes: tuple[int, ...] = (),
 ) -> WallTangentialPressureGradientSamples:
     """Fit a local 3-D pressure gradient using only fluid neighbours.
 
@@ -192,6 +194,10 @@ def sample_wall_tangential_pressure_gradient(
     devices.update(component.device for component in normals)
     if len(devices) != 1:
         raise ValueError("pressure and wall geometry tensors must share a device")
+    if any(axis not in (0, 1, 2) for axis in periodic_axes):
+        raise ValueError("periodic axes must use spatial indices 0, 1 or 2")
+    if len(set(periodic_axes)) != len(periodic_axes):
+        raise ValueError("periodic axes must be unique")
 
     indices = active.nonzero(as_tuple=False)
     requested = int(indices.shape[0])
@@ -212,14 +218,11 @@ def sample_wall_tangential_pressure_gradient(
         )
 
     nz, ny, nx = pressure.shape
-    interior = (
-        (indices[:, 0] > 0)
-        & (indices[:, 0] < nz - 1)
-        & (indices[:, 1] > 0)
-        & (indices[:, 1] < ny - 1)
-        & (indices[:, 2] > 0)
-        & (indices[:, 2] < nx - 1)
-    )
+    sizes = (nz, ny, nx)
+    interior = torch.ones(requested, dtype=torch.bool, device=pressure.device)
+    for axis, size in enumerate(sizes):
+        if axis not in periodic_axes:
+            interior &= (indices[:, axis] > 0) & (indices[:, axis] < size - 1)
     selected = interior.nonzero(as_tuple=False).flatten()
     if not int(selected.numel()):
         return WallTangentialPressureGradientSamples(
@@ -242,6 +245,8 @@ def sample_wall_tangential_pressure_gradient(
         dtype=torch.long,
     )
     neighbours = centers[:, None, :] + offsets_zyx[None, :, :]
+    for axis in periodic_axes:
+        neighbours[:, :, axis].remainder_(sizes[axis])
     z, y, x = neighbours.unbind(dim=2)
     neighbour_pressure = pressure[z, y, x]
     center_pressure = pressure[centers[:, 0], centers[:, 1], centers[:, 2]]

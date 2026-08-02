@@ -1052,6 +1052,7 @@ def bfl_wall_function_3d(
     y_plus_lower_bound: float = 30.0,
     y_plus_upper_bound: float = 1000.0,
     minimum_y_plus_in_range_fraction: float = 0.9,
+    pressure_gradient_periodic_axes: tuple[int, ...] = (),
 ) -> (
     tuple[torch.Tensor, float, float]
     | tuple[torch.Tensor, float, float, WallStressDiagnostics]
@@ -1363,6 +1364,7 @@ def bfl_wall_function_3d(
                 solid,
                 stress_near,
                 (nx_n, ny_n, nz_n),
+                periodic_axes=pressure_gradient_periodic_axes,
             )
             if gradient_samples.valid_nodes:
                 valid_gradient = gradient_samples.valid
