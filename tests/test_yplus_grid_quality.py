@@ -40,3 +40,27 @@ def test_grid_quality_rejects_high_blockage_from_recommended_tier() -> None:
     assert metrics["blockage_ratio"] > 0.05
     assert metrics["blockage_ok"] is False
     assert metrics["quality_tier"] != "recommended"
+
+
+@pytest.mark.parametrize(
+    "override",
+    (
+        {"nx": 0},
+        {"ny": True},
+        {"hull_length": 0.0},
+        {"u_in": float("nan")},
+        {"re": 100.0},
+        {"hull_radius": -1.0},
+    ),
+)
+def test_grid_quality_rejects_invalid_inputs(override) -> None:
+    arguments = {
+        "nx": 450,
+        "ny": 90,
+        "nz": 90,
+        "hull_length": 90.0,
+        "u_in": 0.06,
+        "re": 13_213_381.41322709,
+    } | override
+    with pytest.raises(ValueError):
+        grid_quality_metrics(**arguments)
