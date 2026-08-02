@@ -10,7 +10,8 @@ from tensorlbm.collision_viscosity_audit import (
 
 @pytest.mark.parametrize(
     "collision_model", (
-        "bgk", "cumulant", "cumulant_wale", "cumulant_vreman", "natural_kbc",
+        "bgk", "cumulant", "planar_cumulant_d2q9",
+        "cumulant_wale", "cumulant_vreman", "natural_kbc",
     ),
 )
 def test_audited_collision_recovers_target_viscosity(
