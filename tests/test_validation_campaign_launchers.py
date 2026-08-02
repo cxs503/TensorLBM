@@ -1086,6 +1086,50 @@ def test_v29_re200k_pilot_changes_only_scaled_wall_location(
     assert "suboff-nested-v29-equivalent-l90-3k" in output
 
 
+def test_v30_re200k_long_run_continues_v23_with_suboff_exchange_family(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    seed = tmp_path / "suboff-nested-v23-equivalent-l90-3k.ckpt"
+    seed.touch()
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_nested_v30_re200k_long_l90.sh"),
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--steps") + 1] == "12000"
+    assert arguments[arguments.index("--resolved-reynolds") + 1] == "200000"
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == "1.0"
+    assert arguments[
+        arguments.index("--wall-exchange-distance-over-length-target") + 1
+    ] == "0.0013888888888888889"
+    assert "--compile-natural-kbc" in arguments
+    assert "--sponge-inlet" in arguments
+    assert "--resume" in arguments
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v30-equivalent-l90-12k" in output
+
+
 def test_sphere_v4_launcher_locks_bounded_compiled_family(
     tmp_path: Path,
 ) -> None:

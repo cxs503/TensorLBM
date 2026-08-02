@@ -303,6 +303,12 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--stress-exchange-distance", type=float, default=1.0)
     result.add_argument(
+        "--wall-exchange-distance-over-length-target",
+        type=float,
+        default=3.0 / 256.0,
+        help="validation-family exchange-height ratio held fixed across grids",
+    )
+    result.add_argument(
         "--wall-model-y-plus-lower-bound", type=float, default=30.0,
     )
     result.add_argument(
@@ -345,6 +351,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("grid, hull length and steps must be positive")
     if args.stress_exchange_distance <= 0.0:
         raise ValueError("stress exchange distance must be positive")
+    if args.wall_exchange_distance_over_length_target <= 0.0:
+        raise ValueError("wall-exchange distance ratio target must be positive")
     if not (
         0.0 <= args.wall_model_y_plus_lower_bound
         < args.wall_model_y_plus_upper_bound
@@ -839,6 +847,9 @@ def run(args: argparse.Namespace) -> dict:
         "wall_stress_enabled": not args.disable_wall_stress,
         "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
         "stress_exchange_distance": args.stress_exchange_distance,
+        "wall_exchange_distance_over_length_target": (
+            args.wall_exchange_distance_over_length_target
+        ),
         "wall_model_y_plus_lower_bound": args.wall_model_y_plus_lower_bound,
         "wall_model_y_plus_upper_bound": args.wall_model_y_plus_upper_bound,
         "minimum_wall_model_y_plus_in_range_fraction": (
@@ -1045,6 +1056,9 @@ def run(args: argparse.Namespace) -> dict:
             stored_configuration == pre_collision_chunk_signature
         )
         pre_y_plus_distribution_signature = dict(checkpoint_signature)
+        pre_y_plus_distribution_signature.pop(
+            "wall_exchange_distance_over_length_target",
+        )
         pre_y_plus_distribution_signature.pop("wall_model_y_plus_lower_bound")
         pre_y_plus_distribution_signature.pop("wall_model_y_plus_upper_bound")
         pre_y_plus_distribution_signature.pop(
@@ -2033,7 +2047,10 @@ def run(args: argparse.Namespace) -> dict:
     )
     wall_exchange_ratio = args.stress_exchange_distance / finest_length
     wall_exchange_scaling_acceptable = math.isclose(
-        wall_exchange_ratio, 3.0 / 256.0, rel_tol=0.0, abs_tol=1.0e-12,
+        wall_exchange_ratio,
+        args.wall_exchange_distance_over_length_target,
+        rel_tol=0.0,
+        abs_tol=1.0e-12,
     )
     auxiliary_cv_difference_pct = None
     nested_cv_acceptable = False
@@ -2301,7 +2318,9 @@ def run(args: argparse.Namespace) -> dict:
             "wall_exchange_y_plus_applicability_target_met": (
                 wall_y_plus_applicability_acceptable
             ),
-            "wall_exchange_distance_over_finest_length_target": 3.0 / 256.0,
+            "wall_exchange_distance_over_finest_length_target": (
+                args.wall_exchange_distance_over_length_target
+            ),
             "minimum_population_target": args.minimum_health_population,
             "positivity_limited_fraction_target": (
                 args.maximum_positivity_limited_fraction
