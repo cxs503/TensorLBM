@@ -1325,7 +1325,7 @@ def bfl_wall_function_3d(
         uy[samples.boundary] = samples.velocity_y
         uz[samples.boundary] = samples.velocity_z
         stress_y = torch.full_like(local_ux, stress_exchange_distance)
-        stress_y[samples.boundary] = samples.y2
+        stress_y[samples.boundary] = samples.y2.to(stress_y)
 
     # ── Step 3: Compute wall normal and tangential velocity ──
     u_dot_n = ux * nx_n + uy * ny_n + uz * nz_n
