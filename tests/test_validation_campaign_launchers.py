@@ -1081,3 +1081,46 @@ def test_sphere_v4_convergence_assessor_uses_only_matching_family(
     assert arguments[arguments.index("--output") + 1].endswith(
         "sphere-v4-natural-kbc-r9-r12-r15-convergence.json"
     )
+
+
+def test_cylinder_r18_assessor_extends_matching_grid_family(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    for radius, steps in ((9, 54000), (12, 72000), (15, 90000), (18, 108000)):
+        (tmp_path / (
+            f"cylinder-v4-equivalent-r{radius}-{steps}.json"
+        )).write_text("{}\n", encoding="utf-8")
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT
+                / "scripts"
+                / "run_cylinder_v4_r18_convergence_assess.sh"
+            ),
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    inputs = arguments[1:5]
+    assert len(inputs) == 4
+    assert all("cylinder-v4-equivalent-r" in value for value in inputs)
+    assert arguments[arguments.index("--output") + 1].endswith(
+        "cylinder-v4-r9-r12-r15-r18-convergence.json"
+    )
