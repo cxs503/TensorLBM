@@ -30,6 +30,7 @@ def _args(
     enforce_transfer_positivity: bool = False,
     disable_wall_stress: bool = False,
     collision_model: str = "cumulant_smagorinsky",
+    natural_kbc_compute_dtype: str = "storage",
     omega_bulk: float = 1.0,
     wale_cw: float = 0.5,
     vreman_cv: float = 0.025,
@@ -59,6 +60,7 @@ def _args(
         "--ghost-interpolation", ghost_interpolation,
         "--reflux-correction-stencil", reflux_correction_stencil,
         "--collision-model", collision_model,
+        "--natural-kbc-compute-dtype", natural_kbc_compute_dtype,
         "--kbc-max-iterations", "4",
         "--omega-bulk", str(omega_bulk),
         "--wale-cw", str(wale_cw),
@@ -574,6 +576,24 @@ def test_nested_smoke_runs_natural_kbc_with_bounded_collision_memory(
     assert result["planning"]["collision_chunk_cells"] == 512
     assert result["planning"]["wall_force_direction_chunk"] == 4
     assert result["planning"]["low_memory_wall_macroscopic"] is False
+    assert result["result"]["finite"] is True
+
+
+def test_nested_smoke_supports_float64_natural_kbc_compute(
+    tmp_path: Path,
+) -> None:
+    args = _args(
+        tmp_path,
+        steps=1,
+        collision_model="natural_kbc",
+        natural_kbc_compute_dtype="float64",
+    )
+    args.collision_chunk_cells = 512
+
+    result = MODULE.run(args)
+
+    assert result["configuration"]["natural_kbc_compute_dtype"] == "float64"
+    assert result["result"]["collision_execution"]["compute_dtype"] == "float64"
     assert result["result"]["finite"] is True
 
 

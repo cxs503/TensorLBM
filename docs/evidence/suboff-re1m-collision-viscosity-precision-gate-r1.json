@@ -1,0 +1,77 @@
+{
+  "schema": "tensorlbm-suboff-collision-viscosity-precision-evidence-v1",
+  "status": "float32_storage_compute_rejected_mixed_fp64_compute_admitted",
+  "physical_validation": false,
+  "case": "SUBOFF nested L90 four-level Natural-KBC target Re=1000000",
+  "audit_configuration": {
+    "taus_by_level": [0.5000162, 0.5000324, 0.5000648, 0.5001296],
+    "wavelength_cells": 16,
+    "transverse_cells": 3,
+    "amplitude": 0.02,
+    "steps": 12000,
+    "fit_start_step": 1000,
+    "maximum_relative_error_pct": 5.0,
+    "storage_dtype": "float32"
+  },
+  "native_float32_compute": {
+    "status": "rejected",
+    "recovered_viscosity_by_level": [
+      1.8638094118463303e-06,
+      8.489480077535005e-06,
+      2.1206603962725586e-05,
+      4.345455483525142e-05
+    ],
+    "target_viscosity_by_level": [
+      5.4000000000072506e-06,
+      1.0800000000014501e-05,
+      2.1599999999991997e-05,
+      4.3199999999983994e-05
+    ],
+    "relative_error_pct_by_level": [
+      65.48501089178097,
+      21.39370298589254,
+      1.821277950308136,
+      0.5892473038600005
+    ],
+    "admitted_by_level": [false, false, true, true],
+    "artifact_sha256": "f1fffc1ca5b73388c10cc4cbfd7c6b9d68bf53b1139a576d268a9f9934cc8183"
+  },
+  "float64_storage_and_compute_control": {
+    "status": "admitted",
+    "relative_error_pct_by_level": [
+      2.8363747128933268,
+      2.0635850736414496,
+      1.6765525714064915,
+      1.4843573666358645
+    ],
+    "admitted_by_level": [true, true, true, true],
+    "artifact_sha256": "ad35aae86f2ce63fb8d5c561e32a624e55023afab214e9e6c2f13d9bdc9768ed"
+  },
+  "float32_storage_float64_collision_compute": {
+    "status": "admitted",
+    "recovered_viscosity_by_level": [
+      5.553915428030317e-06,
+      1.1021092630113468e-05,
+      2.1960817553758314e-05,
+      4.3839588007645665e-05
+    ],
+    "relative_error_pct_by_level": [
+      2.8502857041270317,
+      2.0471539823950895,
+      1.6704516378076426,
+      1.4805277955136753
+    ],
+    "admitted_by_level": [true, true, true, true],
+    "artifact_sha256": "17f6d618346bece66b2f6c27d1bd2b817d837407f73100846bfc50d3486aa8df"
+  },
+  "decision": {
+    "treat_v37_as_true_re1m_physical_member": false,
+    "retain_v37_as_stability_and_force_trajectory": true,
+    "launch_native_float32_re2m": false,
+    "terminated_only_registered_re2m_queue_pid": 1841921,
+    "v37_solver_pid_untouched": 1818767,
+    "next_high_re_path": "fresh mixed-precision collision run with float32 storage and float64 Natural-KBC slab compute",
+    "resume_native_float32_checkpoint_into_mixed_precision": false
+  },
+  "prohibition": "Configured Reynolds number is not a recovered collision Reynolds number unless every level's tau passes the registered viscosity schedule audit."
+}

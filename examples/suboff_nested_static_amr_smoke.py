@@ -295,6 +295,15 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     result.add_argument(
+        "--natural-kbc-compute-dtype",
+        choices=("storage", "float64"),
+        default="storage",
+        help=(
+            "compute natural-KBC collision in storage precision or float64; "
+            "the latter casts the collided slabs back to storage precision"
+        ),
+    )
+    result.add_argument(
         "--wall-force-direction-chunk",
         type=int,
         default=4,
@@ -390,6 +399,13 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("collision chunk cells must be non-negative")
     if args.compile_natural_kbc and args.collision_model != "natural_kbc":
         raise ValueError("compiled natural KBC requires --collision-model natural_kbc")
+    if (
+        args.natural_kbc_compute_dtype != "storage"
+        and args.collision_model != "natural_kbc"
+    ):
+        raise ValueError(
+            "float64 natural-KBC compute requires --collision-model natural_kbc",
+        )
     if not 1 <= args.wall_force_direction_chunk <= 19:
         raise ValueError("wall force direction chunk must lie in [1,19]")
     if not 0.0 < args.omega_bulk <= 2.0:
@@ -718,6 +734,8 @@ def run(args: argparse.Namespace) -> dict:
         "force_samples_per_root_step": force_averager.expected_samples,
         "collision_chunk_cells": args.collision_chunk_cells,
         "compile_natural_kbc": args.compile_natural_kbc,
+        "natural_kbc_compute_dtype": args.natural_kbc_compute_dtype,
+        "population_storage_dtype": "float32",
         "wall_force_direction_chunk": args.wall_force_direction_chunk,
         "low_memory_wall_macroscopic": args.low_memory_wall_macroscopic,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
@@ -867,6 +885,8 @@ def run(args: argparse.Namespace) -> dict:
         "kbc_max_iterations": args.kbc_max_iterations,
         "collision_chunk_cells": args.collision_chunk_cells,
         "compile_natural_kbc": args.compile_natural_kbc,
+        "natural_kbc_compute_dtype": args.natural_kbc_compute_dtype,
+        "population_storage_dtype": "float32",
         "omega_bulk": args.omega_bulk,
         "wall_law": args.wall_law,
         "wall_stress_enabled": not args.disable_wall_stress,
@@ -1076,6 +1096,10 @@ def run(args: argparse.Namespace) -> dict:
         if isinstance(stored_configuration, dict):
             stored_configuration = dict(stored_configuration)
             stored_configuration.setdefault("compile_natural_kbc", False)
+            stored_configuration.setdefault(
+                "natural_kbc_compute_dtype", "storage",
+            )
+            stored_configuration.setdefault("population_storage_dtype", "float32")
         pre_collision_chunk_signature = dict(checkpoint_signature)
         pre_collision_chunk_signature.pop("collision_chunk_cells")
         resumed_pre_collision_chunk_checkpoint = (
@@ -1311,6 +1335,7 @@ def run(args: argparse.Namespace) -> dict:
 
     natural_kbc_executor = NaturalKBCCollisionExecutor(
         compile_enabled=args.compile_natural_kbc,
+        compute_dtype=args.natural_kbc_compute_dtype,
     )
 
     def collide(state: torch.Tensor, tau: float, level: int) -> torch.Tensor:
@@ -2491,6 +2516,7 @@ def run(args: argparse.Namespace) -> dict:
                     levels=level_count,
                 ),
             ],
+            "population_storage_dtype": "float32",
             "initial_tau_by_level": list(initial_tau_by_level),
             "resolved_wall_normal_ramp_steps": wall_normal_ramp_steps,
             "resolved_wall_shear_ramp_steps": wall_shear_ramp_steps,
