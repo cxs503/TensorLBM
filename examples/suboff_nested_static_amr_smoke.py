@@ -268,6 +268,11 @@ def parser() -> argparse.ArgumentParser:
         help="D3Q19 directions per bounded-memory Guo wall-source chunk",
     )
     result.add_argument(
+        "--low-memory-wall-macroscopic",
+        action="store_true",
+        help="use paired-direction D3Q19 moments inside the wall kernel",
+    )
+    result.add_argument(
         "--omega-bulk",
         type=float,
         default=1.0,
@@ -630,6 +635,7 @@ def run(args: argparse.Namespace) -> dict:
         "force_samples_per_root_step": force_averager.expected_samples,
         "collision_chunk_cells": args.collision_chunk_cells,
         "wall_force_direction_chunk": args.wall_force_direction_chunk,
+        "low_memory_wall_macroscopic": args.low_memory_wall_macroscopic,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
         "nested_fine_shape": list(nested_plan.fine_physical_shape),
         "fine_physical_shapes_by_level": [
@@ -1303,6 +1309,7 @@ def run(args: argparse.Namespace) -> dict:
             apply_wall_stress=not args.disable_wall_stress,
             return_wall_diagnostics=collect_wall_diagnostics,
             guo_direction_chunk_size=args.wall_force_direction_chunk,
+            use_low_memory_macroscopic=args.low_memory_wall_macroscopic,
         )
         if collect_wall_diagnostics:
             out, friction, pressure, diagnostics = wall_result

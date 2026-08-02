@@ -171,6 +171,13 @@ if [[ ! $wall_force_direction_chunk =~ ^[1-9][0-9]*$ ]] \
   echo "TENSORLBM_WALL_FORCE_DIRECTION_CHUNK must be in [1,19]" >&2
   exit 2
 fi
+low_memory_wall_macroscopic=()
+if [[ ${TENSORLBM_LOW_MEMORY_WALL_MACROSCOPIC:-0} == 1 ]]; then
+  low_memory_wall_macroscopic=(--low-memory-wall-macroscopic)
+elif [[ ${TENSORLBM_LOW_MEMORY_WALL_MACROSCOPIC:-0} != 0 ]]; then
+  echo "TENSORLBM_LOW_MEMORY_WALL_MACROSCOPIC must be 0 or 1" >&2
+  exit 2
+fi
 case "$collision_model" in
   cumulant_smagorinsky|cumulant_wale|cumulant_vreman|entropic_kbc|natural_kbc) ;;
   *) echo "unsupported TENSORLBM_COLLISION_MODEL: $collision_model" >&2; exit 2 ;;
@@ -229,6 +236,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --collision-model "$collision_model" \
   --collision-chunk-cells "$collision_chunk_cells" \
   --wall-force-direction-chunk "$wall_force_direction_chunk" \
+  "${low_memory_wall_macroscopic[@]}" \
   --cs-smag "$cs_smag" --wale-cw "$wale_cw" --vreman-cv "$vreman_cv" \
   --wall-law musker --stress-exchange-distance "$stress_exchange_distance" \
   --sponge-width "$sponge" --sponge-strength 0.3 \
