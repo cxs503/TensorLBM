@@ -1321,6 +1321,45 @@ def test_sphere_v6_r9_is_matched_no_inlet_sponge_ab(
     assert "sphere-v6-natural-kbc-no-inlet-sponge-r9-7200" in output
 
 
+def test_sphere_v7_no_inlet_family_preserves_equivalent_r12_scaling(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_sphere_v7_no_inlet_family_level.sh"),
+            "R12",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--radius") + 1] == "12"
+    assert arguments[arguments.index("--nx") + 1] == "288"
+    assert arguments[arguments.index("--ny") + 1] == "192"
+    assert arguments[arguments.index("--steps") + 1] == "9600"
+    assert "--compile-natural-kbc" in arguments
+    assert "--sponge-inlet" not in arguments
+    output = arguments[arguments.index("--output") + 1]
+    assert "sphere-v7-natural-kbc-no-inlet-equivalent-r12-9600" in output
+
+
 def test_sphere_v4_convergence_assessor_uses_only_matching_family(
     tmp_path: Path,
 ) -> None:
