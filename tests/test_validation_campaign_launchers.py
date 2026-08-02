@@ -206,6 +206,55 @@ def test_mass_conservative_l90_launcher_can_form_clean_inlet_sponge_pair(
     assert "suboff-nested-v14-equivalent-l90-12k.json" in output
 
 
+def test_l120_multigpu_probe_preserves_geometric_similarity_and_memory_gates(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT
+                / "scripts"
+                / "run_suboff_nested_v20_l120_multigpu_allocation_probe.sh"
+            ),
+            "GPU-a,GPU-b,GPU-c",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--level-devices") + 1] == (
+        "cuda:0,cuda:0,cuda:1,cuda:2"
+    )
+    assert arguments[arguments.index("--hull-length") + 1] == "120"
+    assert arguments[arguments.index("--inner-wall-margin") + 1] == "11"
+    assert arguments[arguments.index("--inner-wake-cells") + 1] == "16"
+    assert arguments[arguments.index("--deep-wall-margin") + 1] == "9"
+    assert arguments[arguments.index("--deep-wake-cells") + 1] == "19"
+    assert arguments[arguments.index("--cv-margin") + 1] == "11"
+    assert arguments[arguments.index("--aux-cv-margins") + 1] == "5,16"
+    assert arguments[arguments.index("--memory-bytes-per-cell") + 1] == "900"
+    assert arguments[arguments.index("--collision-chunk-cells") + 1] == (
+        "262144"
+    )
+    assert "--low-memory-wall-macroscopic" in arguments
+
+
 def test_flat_plate_v5_uses_a_distinct_checkpoint_generation(
     tmp_path: Path,
 ) -> None:
