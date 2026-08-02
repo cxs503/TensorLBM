@@ -1,6 +1,6 @@
 {
   "schema": "tensorlbm-suboff-aff8-four-level-preflight-evidence-v1",
-  "status": "geometry_admitted_allocation_requires_runtime_probe",
+  "status": "geometry_admitted_conservative_probe_rejected_bounded_probe_queued",
   "physical_validation": false,
   "configuration": {
     "hull_type": "full",
@@ -57,6 +57,24 @@
     "post_persistent_allocation_one_gib_reserve_gate_required": true,
     "runtime_allocation_assessed": false
   },
+  "runtime_probe_history": {
+    "v16_1100_bytes_per_cell": {
+      "status": "rejected_before_allocation",
+      "estimated_peak_gib": 21.88311740756035,
+      "required_reserve_gib": 1.0,
+      "live_free_gib": 21.67,
+      "reason": "The live device could not satisfy estimated peak plus the mandatory reserve. No population hierarchy was allocated."
+    },
+    "v21_bounded_memory": {
+      "pid": 1659676,
+      "waits_for_l120_probe_pid": 1657511,
+      "memory_model_bytes_per_cell": 900.0,
+      "collision_chunk_cells": 262144,
+      "wall_force_direction_chunk": 4,
+      "low_memory_wall_macroscopic": true,
+      "status": "queued_fail_closed"
+    }
+  },
   "control_volume": {
     "all_flux_stencils_outside_interface": true,
     "minimum_primary_clearance_cells": 6,
@@ -65,7 +83,7 @@
   "decision": [
     "The L720 AFF-8 voxel geometry is directly resolved by the declared diameter and appendage-thickness gates.",
     "The appendages expose 63662 voxel boundary links. Production runs use the continuous DARPA sail/fin parameter equations with 12-step link bisection rather than the legacy q=0.5 fallback.",
-    "The predicted allocation fits only narrowly on a 24 GiB GPU. No AFF-8 timestep may be claimed until the measured post-allocation reserve gate passes on an otherwise free supported GPU.",
+    "The original 1100 B/cell probe correctly rejected the live 21.67 GiB free-memory state before allocation. A separately identified 900 B/cell bounded-memory probe is queued from measured L90 evidence and still retains the runtime reserve gate.",
     "AFF-8 resistance accuracy, time convergence and grid convergence remain unassessed."
   ],
   "source": {
