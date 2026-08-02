@@ -24,8 +24,6 @@ Hot-path invariants
 """
 from __future__ import annotations
 
-import math
-
 import torch
 
 from .d3q19 import OPPOSITE as _OPP19
@@ -58,13 +56,13 @@ def bouzidi_bounce_back_3d_common(
 ) -> torch.Tensor:
     """Apply the BFL interpolated bounce-back for one direction in 3-D.
 
-    Works for both D3Q19 and D3Q27 by selecting the appropriate OPPOSITE
-    direction mapping.  The interpolation formula is identical:
+    Works for both D3Q19 and D3Q27 by selecting the appropriate velocity and
+    opposite-direction mappings.  The interpolation formula is identical:
 
     - If *q* < 0.5: linear interpolation
-      ``f_bc = 2*q*f_opp + (1 - 2*q)*f_prev[direction]``
+      ``f_bc = 2*q*f_prev[d](x) + (1 - 2*q)*f_prev[d](x-c_d)``
     - If *q* ≥ 0.5: quadratic interpolation
-      ``f_bc = f_opp / (2*q) + (2*q - 1) / (2*q) * f_prev[opp]``
+      ``f_bc = f_prev[d] / (2*q) + (2*q - 1) / (2*q) * f_prev[opp]``
 
     Args:
         f: Post-stream distribution tensor, shape ``(Q, nz, ny, nx)``
@@ -87,8 +85,10 @@ def bouzidi_bounce_back_3d_common(
     lattice_u = lattice.upper()
     if lattice_u == "D3Q19":
         opp_list = _OPP19_LIST
+        velocities = _C19
     elif lattice_u == "D3Q27":
         opp_list = _OPP27_LIST
+        velocities = _C27
     else:
         raise ValueError(
             f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}"
@@ -101,16 +101,27 @@ def bouzidi_bounce_back_3d_common(
     mask_lin = q_cell < 0.5
     mask_quad = ~mask_lin
 
-    f_opp = f[opp][fluid_nodes]
     fp_opp = f_prev[opp][fluid_nodes]
     fp_d = f_prev[direction][fluid_nodes]
+    dcx, dcy, dcz = (
+        int(value) for value in velocities[direction].tolist()
+    )
+    fp_d_upstream = torch.roll(
+        f_prev[direction], shifts=(dcz, dcy, dcx), dims=(0, 1, 2),
+    )[fluid_nodes]
 
     # Linear interpolation (q < 0.5)
-    f_bc_lin = 2.0 * q_cell * f_opp + (1.0 - 2.0 * q_cell) * fp_d
+    f_bc_lin = (
+        2.0 * q_cell * fp_d
+        + (1.0 - 2.0 * q_cell) * fp_d_upstream
+    )
 
     # Quadratic interpolation (q >= 0.5)
     safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
-    f_bc_quad = f_opp / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    f_bc_quad = (
+        fp_d / (2.0 * safe_q)
+        + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    )
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
@@ -208,9 +219,8 @@ def compute_q_sphere_27(
         t1 = (-b_coef - sqrt_disc) / (2.0 * a_coef)
         t2 = (-b_coef + sqrt_disc) / (2.0 * a_coef)
 
-        link_len = math.sqrt(a_coef)
-        q1 = t1 / link_len
-        q2 = t2 / link_len
+        q1 = t1
+        q2 = t2
 
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)

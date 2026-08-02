@@ -134,7 +134,7 @@ def bfl_bounce_back_common(
     Returns:
         Updated distribution tensor, same shape as *f*.
     """
-    Q, _, _, _ = _lattice_params(lattice)
+    Q, velocities, _, _ = _lattice_params(lattice)
     if f.shape[0] != Q:
         raise ValueError(
             f"f has {f.shape[0]} directions but lattice {lattice!r} expects {Q}"
@@ -142,10 +142,20 @@ def bfl_bounce_back_common(
 
     opp_tensor = (_OPP19 if Q == 19 else _OPP27).to(f.device)
 
-    # Gather per-direction quantities (full-size, no advanced indexing)
-    f_opp_all = f[opp_tensor]        # f[opp[d]]  — post-stream opposite
+    # Gather post-collision populations.  For q<1/2, BFL also needs the
+    # outgoing population one lattice node upstream (x-c_d).
     fp_opp_all = f_prev[opp_tensor]  # f_prev[opp[d]]
     fp_d_all = f_prev                # f_prev[d]
+    fp_d_upstream_all = torch.stack([
+        torch.roll(
+            f_prev[direction],
+            shifts=tuple(
+                int(value) for value in velocities[direction, [2, 1, 0]].tolist()
+            ),
+            dims=(0, 1, 2),
+        )
+        for direction in range(Q)
+    ])
 
     q = q_field
     mask = fluid_boundary_mask
@@ -153,13 +163,16 @@ def bfl_bounce_back_common(
     mask_lin = (q < 0.5) & mask               # linear regime
     mask_quad = (~mask_lin) & mask            # quadratic regime
 
-    # Linear: f_bc = 2q·f_opp + (1-2q)·fp_d
-    f_bc_lin = 2.0 * q * f_opp_all + (1.0 - 2.0 * q) * fp_d_all
+    # Linear: f_bc = 2q·fp_d(x) + (1-2q)·fp_d(x-c_d)
+    f_bc_lin = 2.0 * q * fp_d_all + (1.0 - 2.0 * q) * fp_d_upstream_all
 
-    # Quadratic: f_bc = f_opp/(2q) + (2q-1)/(2q)·fp_opp
+    # Quadratic: f_bc = fp_d/(2q) + (2q-1)/(2q)·fp_opp
     safe_q = torch.where(mask_quad, q, torch.ones_like(q))
     inv_2q = 1.0 / (2.0 * safe_q)
-    f_bc_quad = f_opp_all * inv_2q + (2.0 * safe_q - 1.0) * inv_2q * fp_opp_all
+    f_bc_quad = (
+        fp_d_all * inv_2q
+        + (2.0 * safe_q - 1.0) * inv_2q * fp_opp_all
+    )
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
@@ -342,9 +355,10 @@ def compute_q_cylinder_common(
         t1 = (-b_coef - sqrt_disc) / (2.0 * a_coef)
         t2 = (-b_coef + sqrt_disc) / (2.0 * a_coef)
 
-        link_len = math.sqrt(a_coef)
-        q1 = t1 / link_len
-        q2 = t2 / link_len
+        # The neighbour is x+c=x+1*c, so the ray parameter itself is the
+        # fractional BFL link distance even when c is diagonal.
+        q1 = t1
+        q2 = t2
 
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
@@ -434,9 +448,8 @@ def compute_q_sphere_common(
         t1 = (-b_coef - sqrt_disc) / (2.0 * a_coef)
         t2 = (-b_coef + sqrt_disc) / (2.0 * a_coef)
 
-        link_len = math.sqrt(a_coef)
-        q1 = t1 / link_len
-        q2 = t2 / link_len
+        q1 = t1
+        q2 = t2
 
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
