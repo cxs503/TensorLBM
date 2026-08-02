@@ -42,6 +42,32 @@ fi
 
 physical_re=13213381.41322709
 stem="$result_dir/flat-plate-v6-physical-re13p213m-l${length}-${steps}"
+if [[ -f "$stem.json" ]]; then
+  "$python" - "$stem.json" "$length" "$steps" "$physical_re" <<'PY'
+import json
+import math
+import sys
+from pathlib import Path
+
+result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+configuration = result.get("configuration", {})
+observations = result.get("result", {})
+valid = (
+    result.get("schema") == "tensorlbm-flat-plate-wall-model-v4"
+    and int(configuration.get("plate_length", -1)) == int(sys.argv[2])
+    and int(configuration.get("steps", -1)) == int(sys.argv[3])
+    and math.isclose(
+        float(configuration.get("reynolds", math.nan)),
+        float(sys.argv[4]),
+        rel_tol=1.0e-14,
+    )
+    and observations.get("finite") is True
+)
+if not valid:
+    raise SystemExit("existing physical-Re flat-plate result is incompatible")
+PY
+  exit 0
+fi
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
   resume=(--resume)

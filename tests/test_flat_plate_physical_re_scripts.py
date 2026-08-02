@@ -43,3 +43,13 @@ def test_physical_re_level_preflight_uses_project_source(tmp_path: Path) -> None
         env=environment,
     )
     assert str(ROOT / "src" / "tensorlbm") in completed.stdout
+
+
+def test_physical_re_level_only_reuses_validated_complete_result() -> None:
+    source = (
+        ROOT / "scripts" / "run_flat_plate_physical_re_level.sh"
+    ).read_text(encoding="utf-8")
+    assert 'result.get("schema") == "tensorlbm-flat-plate-wall-model-v4"' in source
+    assert 'configuration.get("plate_length"' in source
+    assert 'configuration.get("reynolds"' in source
+    assert 'observations.get("finite") is True' in source
