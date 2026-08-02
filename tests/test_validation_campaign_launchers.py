@@ -952,6 +952,10 @@ def test_compiled_production_launchers_lock_corrected_boundary_and_memory_path(
     assert "--low-memory-wall-macroscopic" in arguments
     assert arguments[arguments.index("--collision-chunk-cells") + 1] == "262144"
     assert arguments[arguments.index("--resolved-reynolds") + 1] == resolved_reynolds
+    expected_exchange = "8.4375" if generation == "v24" else "1.0"
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
+        expected_exchange
+    )
     output = arguments[arguments.index("--output") + 1]
     assert f"suboff-nested-{generation}-equivalent-l90-{int(steps) // 1000}k" in output
 
