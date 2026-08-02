@@ -58,11 +58,13 @@ from tensorlbm.interpolated_bc_suboff import (
     refine_q_suboff_appendages,
 )
 from tensorlbm.kinetic_flux_register import conserved_population_moments
+from tensorlbm.hydrodynamics import ittc57_friction_coefficient
 from tensorlbm.population_health import inspect_population_health
 from tensorlbm.population_positivity import (
     PositivityDiagnostics,
     limit_nonequilibrium_for_positivity,
 )
+from tensorlbm.resistance_component_audit import audit_resistance_components
 from tensorlbm.solver3d import stream3d
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
@@ -1990,6 +1992,7 @@ def run(args: argparse.Namespace) -> dict:
     mean_wall_shear = None
     pressure_fraction = None
     wall_shear_fraction = None
+    resistance_component_audit = None
     mean_source = None
     reference_error_pct = None
     wall_records = [
@@ -2024,6 +2027,26 @@ def run(args: argparse.Namespace) -> dict:
         ) / len(selected_records)
         pressure_fraction = mean_bfl_pressure / max(abs(mean_bfl), 1.0e-30)
         wall_shear_fraction = mean_wall_shear / max(abs(mean_bfl), 1.0e-30)
+        friction_reference = None
+        if args.hull_type == "bare_hull":
+            wetted_area_m2 = (
+                float(finest_geometry["wetted_area_lu2"])
+                * (MODEL_LENGTH_M / finest_length) ** 2
+            )
+            friction_reference = (
+                0.5
+                * args.rho_water
+                * point.speed_mps**2
+                * wetted_area_m2
+                * ittc57_friction_coefficient(physical_re)
+            )
+        resistance_component_audit = audit_resistance_components(
+            total_resistance=mean_resistance,
+            pressure_resistance=mean_bfl_pressure,
+            wall_shear_resistance=mean_wall_shear,
+            experimental_total=point.resistance_n,
+            friction_reference=friction_reference,
+        ).to_dict()
         mean_source = sum(
             record["numerical_source_n"] for record in selected_records
         ) / len(selected_records)
@@ -2259,6 +2282,7 @@ def run(args: argparse.Namespace) -> dict:
                 "mean_wall_shear_n": mean_wall_shear,
                 "bfl_pressure_fraction": pressure_fraction,
                 "wall_shear_fraction": wall_shear_fraction,
+                "resistance_component_audit": resistance_component_audit,
                 "mean_numerical_source_n": mean_source,
                 "experimental_resistance_n": point.resistance_n,
                 "reference_error_pct": reference_error_pct,

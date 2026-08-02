@@ -143,6 +143,12 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert statistics["bfl_pressure_fraction"] + statistics[
         "wall_shear_fraction"
     ] == pytest.approx(1.0)
+    component_audit = statistics["resistance_component_audit"]
+    assert component_audit["scope"] == "diagnostic_only_not_a_cfd_correction"
+    assert component_audit["friction_reference"] is not None
+    assert component_audit["component_sum"] == pytest.approx(
+        statistics["mean_bfl_plus_wall_stress_n"],
+    )
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
