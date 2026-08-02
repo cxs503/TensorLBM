@@ -1774,6 +1774,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      field and the same saved wall-shear term, and is compared only to the
      co-temporal control-volume force.  The audit explicitly forbids selecting
      an observer by proximity to experiment.
+200. The common non-equilibrium wall selector now has a versioned, exact
+     checkpoint contract for its temporal hysteresis.  Entry/exit counters,
+     active nodes and every selection threshold are persisted; incompatible
+     restart configuration, impossible counters and malformed state fail
+     closed.  Counters use 32-bit integers to avoid overflow in long campaigns,
+     and returned state tensors are detached copies.  Fourteen focused
+     selector, solid-aware pressure-gradient and wall-checkpoint tests pass.
+     This does not wire an unvalidated stress correction into production.
 
 ## Rejected candidates
 
