@@ -274,6 +274,53 @@ def test_nested_launcher_routes_optional_inlet_sponge(tmp_path: Path) -> None:
     assert "--sponge-inlet" in completed.stdout.splitlines()
 
 
+def test_nested_launcher_can_extend_an_identical_checkpoint(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    seed = tmp_path / "v12-l90-3k.ckpt"
+    seed.write_bytes(b"nested continuation provenance fixture")
+    result_dir = tmp_path / "continued"
+    env = os.environ.copy()
+    env.update({
+        "TENSORLBM_PYTHON": str(fake_python),
+        "TENSORLBM_CAMPAIGN_GENERATION": "v12",
+        "TENSORLBM_STEPS": "12000",
+        "TENSORLBM_CONTINUE_FROM_CHECKPOINT": str(seed),
+    })
+
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_suboff_nested_v3_equivalent_level.sh"),
+            "L90",
+            "0",
+            str(result_dir),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--steps") + 1] == "12000"
+    assert "--resume" in arguments
+    checkpoint = arguments[arguments.index("--checkpoint") + 1]
+    output = arguments[arguments.index("--output") + 1]
+    assert checkpoint.endswith("suboff-nested-v12-equivalent-l90-12k.ckpt")
+    assert output.endswith("suboff-nested-v12-equivalent-l90-12k.json")
+    assert Path(checkpoint).read_bytes() == seed.read_bytes()
+
+
 def test_suboff_v9_launcher_uses_quadratic_inlet_pressure_observer(
     tmp_path: Path,
 ) -> None:

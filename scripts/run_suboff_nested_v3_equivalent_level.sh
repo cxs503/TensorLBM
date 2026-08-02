@@ -103,6 +103,14 @@ if [[ ! $campaign_generation =~ ^v[0-9]+$ ]]; then
 fi
 checkpoint="$result_dir/suboff-nested-${campaign_generation}${variant}-equivalent-l${level}-${steps%000}k.ckpt"
 output="$result_dir/suboff-nested-${campaign_generation}${variant}-equivalent-l${level}-${steps%000}k.json"
+seed_checkpoint=${TENSORLBM_CONTINUE_FROM_CHECKPOINT:-}
+if [[ -n "$seed_checkpoint" && ! -f "$checkpoint" ]]; then
+  if [[ ! -f "$seed_checkpoint" ]]; then
+    echo "continuation seed checkpoint does not exist: $seed_checkpoint" >&2
+    exit 2
+  fi
+  cp --reflink=auto -- "$seed_checkpoint" "$checkpoint"
+fi
 resume=()
 if [[ -f "$checkpoint" ]]; then
   resume=(--resume)
