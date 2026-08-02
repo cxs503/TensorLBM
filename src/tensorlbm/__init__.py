@@ -703,6 +703,12 @@ from .spalding_wall_model import (
     spalding_u_plus_from_y_plus,
     spalding_y_plus,
 )
+from .wall_exchange_yplus import (
+    WallExchangeYPlusAggregate,
+    WallExchangeYPlusSummary,
+    aggregate_wall_exchange_yplus_summaries,
+    summarize_wall_exchange_yplus,
+)
 from .sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_anisotropic_sponge_sigma_3d,
@@ -800,6 +806,10 @@ __all__ = [
     "solve_spalding_friction_velocity",
     "spalding_u_plus_from_y_plus",
     "spalding_y_plus",
+    "WallExchangeYPlusAggregate",
+    "WallExchangeYPlusSummary",
+    "aggregate_wall_exchange_yplus_summaries",
+    "summarize_wall_exchange_yplus",
     "apply_equilibrium_difference_sponge",
     "build_anisotropic_sponge_sigma_3d",
     "build_sponge_sigma_3d",

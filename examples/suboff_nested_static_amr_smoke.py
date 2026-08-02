@@ -88,6 +88,9 @@ from tensorlbm.suboff_static_amr import (
 )
 from tensorlbm.surface_area_weights import bfl_surface_area_weights
 from tensorlbm.viscosity_continuation import ResolvedReynoldsContinuation
+from tensorlbm.wall_exchange_yplus import (
+    aggregate_wall_exchange_yplus_summaries,
+)
 from tensorlbm.wall_model import (
     WALL_TRACTION_SOURCE_SCHEME,
     bfl_wall_function_3d,
@@ -299,6 +302,17 @@ def parser() -> argparse.ArgumentParser:
         help="diagnostic only: retain BFL impermeability but omit wall-stress forcing",
     )
     result.add_argument("--stress-exchange-distance", type=float, default=1.0)
+    result.add_argument(
+        "--wall-model-y-plus-lower-bound", type=float, default=30.0,
+    )
+    result.add_argument(
+        "--wall-model-y-plus-upper-bound", type=float, default=1000.0,
+    )
+    result.add_argument(
+        "--minimum-wall-model-y-plus-in-range-fraction",
+        type=float,
+        default=0.9,
+    )
     result.add_argument("--sponge-width", type=int, default=24)
     result.add_argument("--sponge-strength", type=float, default=0.3)
     result.add_argument(
@@ -331,6 +345,13 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("grid, hull length and steps must be positive")
     if args.stress_exchange_distance <= 0.0:
         raise ValueError("stress exchange distance must be positive")
+    if not (
+        0.0 <= args.wall_model_y_plus_lower_bound
+        < args.wall_model_y_plus_upper_bound
+    ):
+        raise ValueError("wall-model y+ bounds must be ordered and non-negative")
+    if not 0.0 <= args.minimum_wall_model_y_plus_in_range_fraction <= 1.0:
+        raise ValueError("minimum wall-model y+ in-range fraction must lie in [0,1]")
     if args.deep_wall_margin != 0 and args.deep_wall_margin < 2:
         raise ValueError("deep wall margin must be 0 or at least two")
     if args.deep_wake_cells < 0 or (
@@ -1352,6 +1373,11 @@ def run(args: argparse.Namespace) -> dict:
             return_wall_diagnostics=collect_wall_diagnostics,
             guo_direction_chunk_size=args.wall_force_direction_chunk,
             use_low_memory_macroscopic=args.low_memory_wall_macroscopic,
+            y_plus_lower_bound=args.wall_model_y_plus_lower_bound,
+            y_plus_upper_bound=args.wall_model_y_plus_upper_bound,
+            minimum_y_plus_in_range_fraction=(
+                args.minimum_wall_model_y_plus_in_range_fraction
+            ),
         )
         if collect_wall_diagnostics:
             out, friction, pressure, diagnostics = wall_result
@@ -1362,12 +1388,14 @@ def run(args: argparse.Namespace) -> dict:
             minimum_y_plus = diagnostics.y_plus_min
             maximum_y_plus = diagnostics.y_plus_max
             mean_wall_distance = diagnostics.wall_distance_mean
+            y_plus_summary = diagnostics.y_plus_summary
         else:
             out, friction, pressure = wall_result
             mean_y_plus = None
             minimum_y_plus = None
             maximum_y_plus = None
             mean_wall_distance = None
+            y_plus_summary = None
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
         require_finite_limiter(positivity, level=level, stage="post_wall")
@@ -1416,6 +1444,7 @@ def run(args: argparse.Namespace) -> dict:
             "y_plus_min": minimum_y_plus,
             "y_plus_max": maximum_y_plus,
             "wall_distance": mean_wall_distance,
+            "y_plus_summary": y_plus_summary,
             "auxiliary": auxiliary_forces,
         })
         return AMRAdvanceResult(out, post_collision)
@@ -1455,6 +1484,16 @@ def run(args: argparse.Namespace) -> dict:
                 sample for sample in force_samples
                 if sample["y_plus"] is not None
             ]
+            diagnostic_y_plus_summaries = [
+                sample["y_plus_summary"] for sample in force_samples
+                if sample["y_plus_summary"] is not None
+            ]
+            diagnostic_y_plus_aggregate = (
+                aggregate_wall_exchange_yplus_summaries(
+                    diagnostic_y_plus_summaries,
+                ).to_dict()
+                if diagnostic_y_plus_summaries else None
+            )
             wall_exchange_health = {
                 "force_samples_observed": len(force_samples),
                 "force_samples_expected": force_averager.expected_samples,
@@ -1487,6 +1526,7 @@ def run(args: argparse.Namespace) -> dict:
                     )
                     if diagnostic_force_samples else None
                 ),
+                "y_plus_distribution": diagnostic_y_plus_aggregate,
             }
             interface_health = [
                 {
@@ -1697,6 +1737,16 @@ def run(args: argparse.Namespace) -> dict:
             item["wall_distance"] for item in force_samples
             if item["wall_distance"] is not None
         ]
+        y_plus_summaries = [
+            item["y_plus_summary"] for item in force_samples
+            if item["y_plus_summary"] is not None
+        ]
+        y_plus_aggregate = (
+            aggregate_wall_exchange_yplus_summaries(
+                y_plus_summaries,
+            ).to_dict()
+            if y_plus_summaries else None
+        )
         record = {
             "step": current_step,
             "collision_resolved_reynolds": instantaneous_reynolds,
@@ -1729,6 +1779,7 @@ def run(args: argparse.Namespace) -> dict:
                 sum(wall_distances) / len(wall_distances)
                 if wall_distances else None
             ),
+            "wall_y_plus_distribution": y_plus_aggregate,
             "wall_fully_activated": current_step >= max(
                 wall_normal_ramp_steps, wall_shear_ramp_steps,
             ),
@@ -1915,6 +1966,20 @@ def run(args: argparse.Namespace) -> dict:
         record for record in selected_records
         if record["mean_y_plus"] is not None
     ]
+    wall_y_plus_distributions = [
+        record["wall_y_plus_distribution"] for record in wall_records
+        if record.get("wall_y_plus_distribution") is not None
+    ]
+    wall_y_plus_distribution = (
+        aggregate_wall_exchange_yplus_summaries(
+            wall_y_plus_distributions,
+        ).to_dict()
+        if wall_y_plus_distributions else None
+    )
+    wall_y_plus_applicability_acceptable = (
+        wall_y_plus_distribution is not None
+        and bool(wall_y_plus_distribution["admitted"])
+    )
     if selected_records:
         cv_values = [record["cv_resistance_n"] for record in selected_records]
         mean_resistance = sum(cv_values) / len(cv_values)
@@ -2013,6 +2078,7 @@ def run(args: argparse.Namespace) -> dict:
         and population_health_acceptable
         and collision_viscosity_acceptable
         and wall_exchange_scaling_acceptable
+        and wall_y_plus_applicability_acceptable
     )
     peak_gib_by_device = {
         str(level_device): torch.cuda.max_memory_allocated(level_device) / 2**30
@@ -2188,6 +2254,7 @@ def run(args: argparse.Namespace) -> dict:
                         max(record["maximum_y_plus"] for record in wall_records)
                         if wall_records else None
                     ),
+                    "y_plus_distribution": wall_y_plus_distribution,
                 },
             },
         },
@@ -2211,6 +2278,9 @@ def run(args: argparse.Namespace) -> dict:
             "collision_viscosity_target_met": collision_viscosity_acceptable,
             "wall_exchange_scaling_target_met": (
                 wall_exchange_scaling_acceptable
+            ),
+            "wall_exchange_y_plus_applicability_target_met": (
+                wall_y_plus_applicability_acceptable
             ),
             "wall_exchange_distance_over_finest_length_target": 3.0 / 256.0,
             "minimum_population_target": args.minimum_health_population,
