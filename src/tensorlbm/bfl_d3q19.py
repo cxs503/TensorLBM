@@ -358,9 +358,13 @@ def bouzidi_bounce_back_d3q19(
                 frame_link_fx = exchange_diff * uwx[mask]
                 frame_link_fy = exchange_diff * uwy[mask]
                 frame_link_fz = exchange_diff * uwz[mask]
-            link_fx = interpolation_link_fx + moving_link_fx + frame_link_fx
-            link_fy = interpolation_link_fy + moving_link_fy + frame_link_fy
-            link_fz = interpolation_link_fz + moving_link_fz + frame_link_fz
+            # Preserve the original conservative population-impulse reduction
+            # exactly; the component sums below are an independent ledger and
+            # may differ by floating-point reduction roundoff only.
+            exchange_sum = fp_d + f_bc
+            link_fx = float(dcx) * exchange_sum + frame_link_fx
+            link_fy = float(dcy) * exchange_sum + frame_link_fy
+            link_fz = float(dcz) * exchange_sum + frame_link_fz
             link_fx = boundary_fraction * link_fx
             link_fy = boundary_fraction * link_fy
             link_fz = boundary_fraction * link_fz
