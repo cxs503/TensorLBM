@@ -1,6 +1,6 @@
 {
   "schema": "tensorlbm-sphere-domain-and-boundary-sensitivity-evidence-v1",
-  "status": "domain_convergence_pass_no_inlet_grid_active",
+  "status": "domain_convergence_pass_no_inlet_r9_r12_complete_r15_queued",
   "physical_validation": false,
   "baseline": {
     "reynolds": 100.0,
@@ -53,7 +53,16 @@
       "legacy_no_inlet_natural_kbc_cd": 1.1652017741491727,
       "current_vs_legacy_relative_difference_pct": 0.0038975062757798907
     },
-    "next": "The current-code no-inlet R12 member is queued behind the third domain member."
+    "no_inlet_grid": {
+      "r9_cd": 1.1652471892456109,
+      "r12_cd": 1.1499305291972999,
+      "r9_to_r12_change_pct": 1.3319639455961465,
+      "r12_reference_error_pct": 5.330931634827742,
+      "r12_observer_difference_pct": 0.0022712409769286295,
+      "r12_numerical_quality_admitted": true,
+      "formal_grid_convergence_assessed": false
+    },
+    "next": "The current-code no-inlet R15 member is queued behind v29 on GPU4."
   },
   "decision": [
     "Both one-variable effects are measurable and smaller than one percent at R9.",
@@ -67,6 +76,7 @@
     "w20_result_sha256": "7fefc1421d8921bbd70ef516f18407ee05f96c929bafb0de1280231d6797bb13",
     "w24_result_sha256": "aff7e71b6b359494ac3fd3a157b6f52bd9aed08a64ffe57590422e5a920be670",
     "no_inlet_result_sha256": "959bcae7c0c8d428a875373fed2b25e0d060bc00d6755cc4f2e37873bce7141e",
+    "no_inlet_r12_result_sha256": "90fb29e4b499dee8af889db03400a9a33fbc51e6bb1dff97975b11f3d940a224",
     "domain_pair_result": "results/sphere_domain_sensitivity/sphere-v5-natural-kbc-r9-w16-w20-sensitivity.json",
     "domain_convergence_result": "results/sphere_domain_sensitivity/sphere-v5-natural-kbc-r9-w16-w20-w24-convergence.json",
     "inlet_pair_result": "results/sphere_boundary_sensitivity/sphere-v6-natural-kbc-r9-inlet-sponge-sensitivity.json",
