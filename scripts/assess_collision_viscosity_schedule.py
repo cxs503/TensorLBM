@@ -13,6 +13,7 @@ from tensorlbm.collision_viscosity_audit import (
     CollisionViscosityAuditConfig,
     run_collision_viscosity_audit,
 )
+from tensorlbm.d3q19 import WEIGHT_PRECISION_SCHEME
 
 JsonValue = None | bool | int | float | str | list["JsonValue"] | dict[str, "JsonValue"]
 
@@ -79,6 +80,7 @@ def assess(
         "collision_model": collision_model,
         "dtype": dtype,
         "natural_kbc_compute_dtype": natural_kbc_compute_dtype,
+        "d3q19_weight_precision_scheme": WEIGHT_PRECISION_SCHEME,
         "taus": taus,
         "audits": audits,
         "acceptance": {

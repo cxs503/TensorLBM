@@ -26,6 +26,9 @@ def test_audited_collision_recovers_target_viscosity(
 
     assert result["acceptance"]["admitted"] is True
     assert result["result"]["relative_error_pct"] < 2.0
+    assert result["d3q19_weight_precision_scheme"] == (
+        "rational_binary64_cast_to_runtime_dtype_v1"
+    )
 
 
 def test_float64_equilibrium_uses_unrounded_lattice_weights() -> None:
