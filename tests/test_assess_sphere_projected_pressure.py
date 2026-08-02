@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 import torch
 
-
 ROOT = Path(__file__).parents[1]
 PATH = ROOT / "scripts" / "assess_sphere_projected_pressure.py"
 SPEC = importlib.util.spec_from_file_location("assess_sphere_projected", PATH)
