@@ -1371,6 +1371,25 @@ def bfl_wall_function_3d(
                     * gradient_samples.magnitude[valid_gradient]
                     / (active_density * active_tau_w).clamp_min(1.0e-30)
                 )
+                active_tangent_direction = torch.stack((
+                    ut_x[stress_near][valid_gradient],
+                    ut_y[stress_near][valid_gradient],
+                    ut_z[stress_near][valid_gradient],
+                ), dim=1)
+                active_tangent_direction = (
+                    active_tangent_direction
+                    / torch.linalg.vector_norm(
+                        active_tangent_direction, dim=1, keepdim=True,
+                    ).clamp_min(1.0e-30)
+                )
+                signed_pressure_gradient_parameter = (
+                    active_distance[valid_gradient]
+                    * (
+                        gradient_samples.vector[valid_gradient]
+                        * active_tangent_direction
+                    ).sum(dim=1)
+                    / (active_density * active_tau_w).clamp_min(1.0e-30)
+                )
         else:
             wall_distance_mean = None
             y_plus_min = y_plus_mean = y_plus_max = u_tau_mean = None
@@ -1397,6 +1416,9 @@ def bfl_wall_function_3d(
             finite_parameter = pressure_gradient_parameter[
                 torch.isfinite(pressure_gradient_parameter)
             ]
+            finite_signed_parameter = signed_pressure_gradient_parameter[
+                torch.isfinite(signed_pressure_gradient_parameter)
+            ]
             quantiles = torch.quantile(
                 finite_parameter.to(dtype=torch.float64),
                 torch.tensor(
@@ -1416,6 +1438,21 @@ def bfl_wall_function_3d(
             valid_gradient_nodes = int(finite_parameter.numel())
             le_one_samples = int((finite_parameter <= 1.0).sum().item())
             gt_ten_samples = int((finite_parameter > 10.0).sum().item())
+            signed_quantiles = torch.quantile(
+                finite_signed_parameter.to(dtype=torch.float64),
+                torch.tensor(
+                    (0.05, 0.5, 0.95),
+                    device=finite_signed_parameter.device,
+                    dtype=torch.float64,
+                ),
+            )
+            adverse_samples = int((finite_signed_parameter > 0.0).sum().item())
+            strong_adverse_samples = int(
+                (finite_signed_parameter > 1.0).sum().item(),
+            )
+            strong_favourable_samples = int(
+                (finite_signed_parameter < -1.0).sum().item(),
+            )
             pressure_gradient_summary = {
                 "requested_samples": requested_gradient_nodes,
                 "valid_samples": valid_gradient_nodes,
@@ -1434,6 +1471,22 @@ def bfl_wall_function_3d(
                 "gt_ten_samples": gt_ten_samples,
                 "fraction_le_one": le_one_samples / valid_gradient_nodes,
                 "fraction_gt_ten": gt_ten_samples / valid_gradient_nodes,
+                "signed_minimum": float(finite_signed_parameter.min().item()),
+                "signed_percentile05": float(signed_quantiles[0].item()),
+                "signed_median": float(signed_quantiles[1].item()),
+                "signed_mean": float(finite_signed_parameter.mean().item()),
+                "signed_percentile95": float(signed_quantiles[2].item()),
+                "signed_maximum": float(finite_signed_parameter.max().item()),
+                "adverse_samples": adverse_samples,
+                "strong_adverse_samples": strong_adverse_samples,
+                "strong_favourable_samples": strong_favourable_samples,
+                "adverse_fraction": adverse_samples / valid_gradient_nodes,
+                "strong_adverse_fraction": (
+                    strong_adverse_samples / valid_gradient_nodes
+                ),
+                "strong_favourable_fraction": (
+                    strong_favourable_samples / valid_gradient_nodes
+                ),
                 "gradient_scheme": "fluid_only_weighted_least_squares_26",
             }
         else:

@@ -35,6 +35,11 @@ def test_fluid_only_fit_recovers_linear_tangential_gradient() -> None:
     assert result.valid_nodes == result.requested_nodes
     expected = torch.full_like(result.magnitude, (2.0**2 + 5.0**2) ** 0.5)
     torch.testing.assert_close(result.magnitude, expected)
+    expected_vector = torch.tensor(
+        (2.0, 0.0, 5.0),
+        dtype=result.vector.dtype,
+    ).expand_as(result.vector)
+    torch.testing.assert_close(result.vector, expected_vector)
 
 
 def test_rank_deficient_neighbourhood_fails_closed() -> None:
