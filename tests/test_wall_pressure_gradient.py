@@ -5,6 +5,7 @@ import torch
 from tensorlbm.wall_pressure_gradient import (
     aggregate_wall_pressure_gradient_summaries,
     sample_wall_tangential_pressure_gradient,
+    summarize_axial_pressure_gradient,
 )
 
 
@@ -97,3 +98,18 @@ def test_pressure_gradient_aggregate_uses_exact_counts() -> None:
     assert result.mean == 3.0
     assert result.fraction_le_one == 4 / 12
     assert result.fraction_gt_ten == 3 / 12
+
+
+def test_axial_profile_retains_signed_regimes() -> None:
+    profile = summarize_axial_pressure_gradient(
+        torch.tensor((0.0, 1.0, 8.0, 9.0)),
+        torch.tensor((2.0, 4.0, 3.0, 5.0)),
+        torch.tensor((2.0, 3.0, -2.0, -3.0)),
+        bins=2,
+    )
+
+    assert len(profile) == 2
+    assert profile[0]["strong_adverse_fraction"] == 1.0
+    assert profile[0]["strong_favourable_fraction"] == 0.0
+    assert profile[1]["strong_adverse_fraction"] == 0.0
+    assert profile[1]["strong_favourable_fraction"] == 1.0
