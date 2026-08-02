@@ -24,7 +24,7 @@ def _json_safe(value: object) -> JsonValue:
         return {str(key): _json_safe(item) for key, item in value.items()}
     if isinstance(value, list):
         return [_json_safe(item) for item in value]
-    if value is None or isinstance(value, (bool, int, float, str)):
+    if value is None or isinstance(value, bool | int | float | str):
         return value
     raise TypeError(f"unsupported JSON value type: {type(value).__name__}")
 
@@ -39,6 +39,7 @@ def assess(
     steps: int,
     fit_start_step: int,
     maximum_relative_error_pct: float,
+    minimum_fitted_log_decay: float = 0.0,
     device: str,
     dtype: str,
     natural_kbc_compute_dtype: str = "storage",
@@ -58,6 +59,7 @@ def assess(
             steps=steps,
             fit_start_step=fit_start_step,
             maximum_relative_error_pct=maximum_relative_error_pct,
+            minimum_fitted_log_decay=minimum_fitted_log_decay,
             device=device,
             dtype=dtype,
             natural_kbc_compute_dtype=natural_kbc_compute_dtype,
@@ -81,6 +83,7 @@ def assess(
         "audits": audits,
         "acceptance": {
             "maximum_relative_error_pct": maximum_relative_error_pct,
+            "minimum_fitted_log_decay": minimum_fitted_log_decay,
             "all_levels_recover_configured_viscosity": all_admitted,
             "configured_reynolds_sequence_admitted": all_admitted,
             "flow_solution_validated": False,
@@ -109,6 +112,7 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=12000)
     parser.add_argument("--fit-start-step", type=int, default=1000)
     parser.add_argument("--maximum-relative-error-pct", type=float, default=5.0)
+    parser.add_argument("--minimum-fitted-log-decay", type=float, default=0.0)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dtype", choices=("float32", "float64"), default="float32")
     parser.add_argument(
@@ -127,6 +131,7 @@ def main() -> None:
         steps=args.steps,
         fit_start_step=args.fit_start_step,
         maximum_relative_error_pct=args.maximum_relative_error_pct,
+        minimum_fitted_log_decay=args.minimum_fitted_log_decay,
         device=args.device,
         dtype=args.dtype,
         natural_kbc_compute_dtype=args.natural_kbc_compute_dtype,
