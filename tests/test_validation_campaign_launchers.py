@@ -954,3 +954,45 @@ def test_compiled_production_launchers_lock_corrected_boundary_and_memory_path(
     assert arguments[arguments.index("--resolved-reynolds") + 1] == resolved_reynolds
     output = arguments[arguments.index("--output") + 1]
     assert f"suboff-nested-{generation}-equivalent-l90-{int(steps) // 1000}k" in output
+
+
+def test_generic_compiled_reynolds_pilot_records_generation_and_target(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT
+                / "scripts"
+                / "run_suboff_nested_compiled_reynolds_pilot.sh"
+            ),
+            "v25",
+            "500000",
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--resolved-reynolds") + 1] == "500000"
+    assert "--compile-natural-kbc" in arguments
+    assert "--sponge-inlet" in arguments
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v25-equivalent-l90-3k" in output
