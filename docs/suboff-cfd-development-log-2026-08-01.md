@@ -1894,6 +1894,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      30000-50000 statistics window.  The DNS assessor also checks MKM
      `uu,vv,ww,uv` component RMS errors; the public Reynolds-stress file hash is
      `61f282379b80192ac8eba087aabdc41e891e854926161db866ca23fbf9111608`.
+211. The 3-D channel checkpoint contract now permits only a monotone increase
+     of the terminal step while requiring every geometry, Reynolds, collision,
+     forcing, sampling and path field to remain identical.  Reducing steps or
+     changing physics fails closed.  This allows an under-converged 50000-step
+     reference to continue to 100000 without discarding its turbulent state;
+     three CPU tests cover normal execution, mismatch rejection and steps-only
+     extension.
 
 ## Rejected candidates
 
