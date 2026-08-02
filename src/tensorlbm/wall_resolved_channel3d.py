@@ -225,6 +225,20 @@ def run_wall_resolved_channel3d(
         if step % config.report_interval == 0 or step == config.steps:
             rho_now, ux_now, uy_now, uz_now = macroscopic3d_low_memory(f)
             speed = torch.sqrt(ux_now.square() + uy_now.square() + uz_now.square())
+            plane_mean_ux = ux_now.mean(dim=(0, 2), keepdim=True)
+            plane_mean_uy = uy_now.mean(dim=(0, 2), keepdim=True)
+            plane_mean_uz = uz_now.mean(dim=(0, 2), keepdim=True)
+            fluctuation_x = ux_now - plane_mean_ux
+            fluctuation_y = uy_now - plane_mean_uy
+            fluctuation_z = uz_now - plane_mean_uz
+            crossflow_rms = torch.sqrt(
+                (fluctuation_y[fluid].square() + fluctuation_z[fluid].square()).mean(),
+            )
+            turbulent_kinetic_energy = 0.5 * (
+                fluctuation_x[fluid].square()
+                + fluctuation_y[fluid].square()
+                + fluctuation_z[fluid].square()
+            ).mean()
             momentum = _fluid_momentum_x(f, fluid)
             block_steps = step - block_start_step
             body_impulse_per_step = config.body_force_acceleration * fluid_cells
@@ -239,6 +253,16 @@ def run_wall_resolved_channel3d(
                 "finite": bool(torch.isfinite(f).all().item()),
                 "minimum_population": float(f.min().item()),
                 "maximum_speed": float(speed[fluid].max().item()),
+                "crossflow_rms": float(crossflow_rms.item()),
+                "crossflow_rms_over_u_tau": float(
+                    crossflow_rms.item() / config.u_tau,
+                ),
+                "turbulent_kinetic_energy": float(
+                    turbulent_kinetic_energy.item(),
+                ),
+                "reynolds_shear_xy": float(
+                    (-(fluctuation_x * fluctuation_y)[fluid].mean()).item(),
+                ),
                 "mass_drift_fraction": (
                     float(f[:, fluid].sum().item()) - initial_mass
                 ) / initial_mass,
@@ -279,6 +303,9 @@ def run_wall_resolved_channel3d(
         / max(abs(recent_mean), 1.0e-30)
     )
     mean_error_pct = (recent_mean - config.u_tau) / config.u_tau * 100.0
+    recent_crossflow_ratio = sum(
+        float(item["crossflow_rms_over_u_tau"]) for item in recent
+    ) / len(recent)
     result: dict[str, object] = {
         "schema": "tensorlbm-wall-resolved-channel3d-result-v1",
         "configuration": {
@@ -300,6 +327,7 @@ def run_wall_resolved_channel3d(
             "recent_friction_velocity_mean": recent_mean,
             "recent_friction_velocity_range_fraction": recent_range_fraction,
             "recent_friction_velocity_error_pct": mean_error_pct,
+            "recent_crossflow_rms_over_u_tau": recent_crossflow_ratio,
         },
         "reports": reports,
         "collision_execution": collision.diagnostics(),
@@ -310,6 +338,9 @@ def run_wall_resolved_channel3d(
             ) > 0.0,
             "friction_velocity_error_below_2pct": abs(mean_error_pct) <= 2.0,
             "recent_range_below_1pct": recent_range_fraction <= 0.01,
+            "sustained_three_dimensional_fluctuations": (
+                recent_crossflow_ratio >= 0.1
+            ),
         },
     }
     result["physical_validation"] = all(result["acceptance"].values())
