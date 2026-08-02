@@ -1687,6 +1687,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      into a production runner; it must first pass zero-gradient flat-plate and
      adverse-gradient canonical validation.  Ten focused selector, gradient
      and checkpoint-diagnostic tests pass.
+189. A read-only finite-flat-plate checkpoint auditor now reconstructs the
+     halfway BFL links, two-sided plate normals and exact wall viscosity, then
+     reuses the same frozen-state wall diagnostic as SUBOFF.  Its manufactured
+     uniform-flow test reports zero tangential pressure gradient and verifies
+     byte-equivalent saved populations after inspection.  This allows the
+     active long flat-plate trajectory to test selector false positives without
+     restarting it under newly loaded code.
 
 ## Rejected candidates
 
