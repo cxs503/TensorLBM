@@ -1886,6 +1886,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      3-D fluctuation gates.  The remote reference file SHA-256 is
      `f54c86e30a869798f140aa004c1e167cd13a6280e988d2794d72ca2be8b5fc82`;
      a synthetic exact-profile regression passes.
+210. Channel statistics now accumulate plane profiles of `U,V,W,uu,vv,ww,uv`
+     and form central Reynolds stresses only after the common averaging window.
+     Resume from a legacy U-only checkpoint explicitly resets all profile
+     statistics rather than mixing unequal first/second-moment windows; the
+     active r2 therefore retains its step-30000 flow but uses a clean
+     30000-50000 statistics window.  The DNS assessor also checks MKM
+     `uu,vv,ww,uv` component RMS errors; the public Reynolds-stress file hash is
+     `61f282379b80192ac8eba087aabdc41e891e854926161db866ca23fbf9111608`.
 
 ## Rejected candidates
 
