@@ -443,6 +443,7 @@ def test_nested_smoke_runs_natural_kbc_with_bounded_collision_memory(
     assert result["configuration"]["collision_chunk_cells"] == 512
     assert result["planning"]["collision_chunk_cells"] == 512
     assert result["planning"]["wall_force_direction_chunk"] == 4
+    assert result["planning"]["low_memory_wall_macroscopic"] is False
     assert result["result"]["finite"] is True
 
 

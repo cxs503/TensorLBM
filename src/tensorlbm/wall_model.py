@@ -1035,6 +1035,7 @@ def bfl_wall_function_3d(
     area_weight: torch.Tensor | None = None,
     apply_wall_stress: bool = True,
     guo_direction_chunk_size: int = 19,
+    use_low_memory_macroscopic: bool = False,
     return_wall_diagnostics: bool = False,
 ) -> (
     tuple[torch.Tensor, float, float]
@@ -1098,7 +1099,12 @@ def bfl_wall_function_3d(
         exchange-sample diagnostic object is returned.
     """
     from .bfl_d3q19 import bouzidi_bounce_back_d3q19
-    from .d3q19 import macroscopic3d_low_memory as macroscopic3d
+    from .d3q19 import macroscopic3d, macroscopic3d_low_memory
+
+    recover_macroscopic = (
+        macroscopic3d_low_memory
+        if use_low_memory_macroscopic else macroscopic3d
+    )
 
     if near_mask is not None:
         near = near_mask
@@ -1139,7 +1145,7 @@ def bfl_wall_function_3d(
         wall_velocity = None
         wall_density = None
         if bfl_wall_mode in {"wall_model_slip", "spalding_exchange"}:
-            rho_pre, ux_pre, uy_pre, uz_pre = macroscopic3d(f_prev)
+            rho_pre, ux_pre, uy_pre, uz_pre = recover_macroscopic(f_prev)
             slip_nx, slip_ny, slip_nz = compute_bfl_link_normal(
                 fluid_boundary_mask,
             )
@@ -1215,7 +1221,7 @@ def bfl_wall_function_3d(
         return f, wall_diagnostics.shear_force[0], bfl_force[0]
 
     # ── Step 2: Compute macroscopic fields ──
-    rho, ux, uy, uz = macroscopic3d(f)
+    rho, ux, uy, uz = recover_macroscopic(f)
     local_ux, local_uy, local_uz = ux, uy, uz
     stress_near = near
     stress_y: float | torch.Tensor = y_val
