@@ -215,6 +215,13 @@ def test_bfl_link_force_decomposition_closes_flat_wall_impulse() -> None:
     assert decomposition.undecomposed_links == 0
     assert decomposition.coverage_fraction == pytest.approx(1.0)
     assert decomposition.unresolved_force == pytest.approx((0.0, 0.0, 0.0))
+    assert decomposition.stationary_interpolation_force == pytest.approx(force)
+    assert decomposition.moving_wall_population_correction_force == pytest.approx(
+        (0.0, 0.0, 0.0),
+    )
+    assert decomposition.frame_correction_force == pytest.approx(
+        (0.0, 0.0, 0.0),
+    )
     assert decomposition.total_force == pytest.approx(force, abs=1e-14)
     assert decomposition.normal_force[0] == pytest.approx(0.0, abs=1e-14)
     assert decomposition.tangential_force[0] == pytest.approx(force[0], abs=1e-14)
@@ -222,6 +229,7 @@ def test_bfl_link_force_decomposition_closes_flat_wall_impulse() -> None:
     assert decomposition.tangential_force[1] == pytest.approx(0.0, abs=1e-14)
     assert decomposition.maximum_closure_error == pytest.approx(0.0, abs=1e-14)
     assert decomposition.maximum_relative_closure_error == pytest.approx(0.0)
+    assert decomposition.maximum_component_closure_error == pytest.approx(0.0)
 
 
 def test_bfl_link_force_decomposition_requires_normals_and_force() -> None:
@@ -553,7 +561,14 @@ def test_wall_diagnostics_include_actual_bfl_link_force_decomposition() -> None:
         assert total[component] == pytest.approx(
             normal[component] + tangential[component], abs=1e-12,
         )
+        assert total[component] == pytest.approx(
+            decomposition["stationary_interpolation_force"][component]
+            + decomposition["moving_wall_population_correction_force"][component]
+            + decomposition["frame_correction_force"][component],
+            abs=1e-12,
+        )
     assert decomposition["maximum_closure_error"] < 1.0e-12
+    assert decomposition["maximum_component_closure_error"] < 1.0e-12
 
 
 def test_exchange_location_requires_positive_distance() -> None:

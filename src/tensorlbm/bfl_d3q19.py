@@ -23,8 +23,13 @@ class BFLLinkForceDecomposition:
     normal_force: tuple[float, float, float]
     tangential_force: tuple[float, float, float]
     unresolved_force: tuple[float, float, float]
+    stationary_interpolation_force: tuple[float, float, float]
+    moving_wall_population_correction_force: tuple[float, float, float]
+    frame_correction_force: tuple[float, float, float]
     maximum_closure_error: float
     maximum_relative_closure_error: float
+    maximum_component_closure_error: float
+    maximum_relative_component_closure_error: float
 
 
 def compute_q_cylinder_d3q19(
@@ -258,6 +263,15 @@ def bouzidi_bounce_back_d3q19(
     unresolved_force_x = torch.zeros_like(force_x)
     unresolved_force_y = torch.zeros_like(force_x)
     unresolved_force_z = torch.zeros_like(force_x)
+    interpolation_force_x = torch.zeros_like(force_x)
+    interpolation_force_y = torch.zeros_like(force_x)
+    interpolation_force_z = torch.zeros_like(force_x)
+    moving_correction_force_x = torch.zeros_like(force_x)
+    moving_correction_force_y = torch.zeros_like(force_x)
+    moving_correction_force_z = torch.zeros_like(force_x)
+    frame_correction_force_x = torch.zeros_like(force_x)
+    frame_correction_force_y = torch.zeros_like(force_x)
+    frame_correction_force_z = torch.zeros_like(force_x)
     active_force_links = 0
     decomposed_links = 0
     
@@ -300,6 +314,7 @@ def bouzidi_bounce_back_d3q19(
             fp_d / (2.0 * safe_q)
             + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
         )
+        f_bc_stationary = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
         if wall_velocity is not None:
             uwx, uwy, uwz = wall_velocity
@@ -323,19 +338,29 @@ def bouzidi_bounce_back_d3q19(
             # Laboratory-frame discrete momentum exchange is the population
             # impulse that exactly closes a fixed control-volume balance:
             # c_d*f_d - c_opp*f_opp = c_d*(f_d+f_opp).
-            exchange_sum = fp_d + f_bc
-            link_fx = float(dcx) * exchange_sum
-            link_fy = float(dcy) * exchange_sum
-            link_fz = float(dcz) * exchange_sum
+            stationary_exchange = fp_d + f_bc_stationary
+            moving_exchange = f_bc - f_bc_stationary
+            interpolation_link_fx = float(dcx) * stationary_exchange
+            interpolation_link_fy = float(dcy) * stationary_exchange
+            interpolation_link_fz = float(dcz) * stationary_exchange
+            moving_link_fx = float(dcx) * moving_exchange
+            moving_link_fy = float(dcy) * moving_exchange
+            moving_link_fz = float(dcz) * moving_exchange
+            frame_link_fx = torch.zeros_like(interpolation_link_fx)
+            frame_link_fy = torch.zeros_like(interpolation_link_fy)
+            frame_link_fz = torch.zeros_like(interpolation_link_fz)
             if force_frame == "wall" and wall_velocity is not None:
                 # Galilean-invariant momentum exchange in the moving-wall
                 # frame.  This is a useful physical diagnostic for a genuinely
                 # moving body, but it does not equal the laboratory-frame
                 # population impulse when u_w is an artificial slip closure.
                 exchange_diff = f_bc - fp_d
-                link_fx = link_fx + exchange_diff * uwx[mask]
-                link_fy = link_fy + exchange_diff * uwy[mask]
-                link_fz = link_fz + exchange_diff * uwz[mask]
+                frame_link_fx = exchange_diff * uwx[mask]
+                frame_link_fy = exchange_diff * uwy[mask]
+                frame_link_fz = exchange_diff * uwz[mask]
+            link_fx = interpolation_link_fx + moving_link_fx + frame_link_fx
+            link_fy = interpolation_link_fy + moving_link_fy + frame_link_fy
+            link_fz = interpolation_link_fz + moving_link_fz + frame_link_fz
             link_fx = boundary_fraction * link_fx
             link_fy = boundary_fraction * link_fy
             link_fz = boundary_fraction * link_fz
@@ -343,6 +368,33 @@ def bouzidi_bounce_back_d3q19(
             force_y = force_y + link_fy.sum()
             force_z = force_z + link_fz.sum()
             if return_force_decomposition:
+                interpolation_force_x += (
+                    boundary_fraction * interpolation_link_fx.sum()
+                )
+                interpolation_force_y += (
+                    boundary_fraction * interpolation_link_fy.sum()
+                )
+                interpolation_force_z += (
+                    boundary_fraction * interpolation_link_fz.sum()
+                )
+                moving_correction_force_x += (
+                    boundary_fraction * moving_link_fx.sum()
+                )
+                moving_correction_force_y += (
+                    boundary_fraction * moving_link_fy.sum()
+                )
+                moving_correction_force_z += (
+                    boundary_fraction * moving_link_fz.sum()
+                )
+                frame_correction_force_x += (
+                    boundary_fraction * frame_link_fx.sum()
+                )
+                frame_correction_force_y += (
+                    boundary_fraction * frame_link_fy.sum()
+                )
+                frame_correction_force_z += (
+                    boundary_fraction * frame_link_fz.sum()
+                )
                 assert force_normals is not None
                 local_normals = tuple(
                     component.to(device=f.device, dtype=f.dtype)[mask]
@@ -441,6 +493,21 @@ def bouzidi_bounce_back_d3q19(
                 float(unresolved_force_y.item()),
                 float(unresolved_force_z.item()),
             )
+            stationary_interpolation_force = (
+                float(interpolation_force_x.item()),
+                float(interpolation_force_y.item()),
+                float(interpolation_force_z.item()),
+            )
+            moving_wall_population_correction_force = (
+                float(moving_correction_force_x.item()),
+                float(moving_correction_force_y.item()),
+                float(moving_correction_force_z.item()),
+            )
+            frame_correction_force = (
+                float(frame_correction_force_x.item()),
+                float(frame_correction_force_y.item()),
+                float(frame_correction_force_z.item()),
+            )
             closure = max(
                 abs(total - normal - tangential - unresolved)
                 for total, normal, tangential, unresolved in zip(
@@ -458,6 +525,26 @@ def bouzidi_bounce_back_d3q19(
                 *(abs(value) for value in unresolved_force),
                 torch.finfo(f.dtype).tiny,
             )
+            component_closure = max(
+                abs(total - stationary - moving - frame)
+                for total, stationary, moving, frame in zip(
+                    total_force,
+                    stationary_interpolation_force,
+                    moving_wall_population_correction_force,
+                    frame_correction_force,
+                    strict=True,
+                )
+            )
+            component_scale = max(
+                *(abs(value) for value in total_force),
+                *(abs(value) for value in stationary_interpolation_force),
+                *(
+                    abs(value)
+                    for value in moving_wall_population_correction_force
+                ),
+                *(abs(value) for value in frame_correction_force),
+                torch.finfo(f.dtype).tiny,
+            )
             return f_out, total_force, BFLLinkForceDecomposition(
                 force_frame=force_frame,
                 active_links=active_force_links,
@@ -471,8 +558,17 @@ def bouzidi_bounce_back_d3q19(
                 normal_force=normal_force,
                 tangential_force=tangential_force,
                 unresolved_force=unresolved_force,
+                stationary_interpolation_force=stationary_interpolation_force,
+                moving_wall_population_correction_force=(
+                    moving_wall_population_correction_force
+                ),
+                frame_correction_force=frame_correction_force,
                 maximum_closure_error=closure,
                 maximum_relative_closure_error=closure / closure_scale,
+                maximum_component_closure_error=component_closure,
+                maximum_relative_component_closure_error=(
+                    component_closure / component_scale
+                ),
             )
         return f_out, total_force
     return f_out
