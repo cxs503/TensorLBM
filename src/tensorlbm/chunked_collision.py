@@ -1,8 +1,8 @@
 """Bounded-memory execution for strictly cell-local collision operators."""
 from __future__ import annotations
 
-from collections.abc import Callable
 import math
+from collections.abc import Callable
 
 import torch
 
@@ -26,6 +26,10 @@ class NaturalKBCCollisionExecutor:
     def __init__(self, *, compile_enabled: bool = False) -> None:
         self.compile_enabled = bool(compile_enabled)
         self._compiled: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] | None = None
+        self._call_count = 0
+        self._shape_signatures: set[tuple[str, str, tuple[int, ...]]] = set()
+        self._minimum_tau = math.inf
+        self._maximum_tau = -math.inf
 
     def __call__(self, populations: torch.Tensor, tau: float) -> torch.Tensor:
         if (
@@ -36,6 +40,14 @@ class NaturalKBCCollisionExecutor:
             raise ValueError("populations must have shape (19,nz,ny,nx)")
         if not math.isfinite(tau) or tau <= 0.5:
             raise ValueError("tau must be finite and greater than 0.5")
+        self._call_count += 1
+        self._shape_signatures.add((
+            str(populations.device),
+            str(populations.dtype),
+            tuple(populations.shape),
+        ))
+        self._minimum_tau = min(self._minimum_tau, tau)
+        self._maximum_tau = max(self._maximum_tau, tau)
         if not self.compile_enabled:
             return collide_natural_kbc_d3q19(populations, tau)
         if self._compiled is None:
@@ -47,6 +59,35 @@ class NaturalKBCCollisionExecutor:
             )
         tau_tensor = populations.new_tensor(tau)
         return self._compiled(populations, tau_tensor)
+
+    def diagnostics(self) -> dict[str, object]:
+        """Return auditable execution and process-level compile counters."""
+        unique_graphs = None
+        if self.compile_enabled and self._compiled is not None:
+            try:
+                from torch._dynamo.utils import counters
+                unique_graphs = int(counters["stats"]["unique_graphs"])
+            except (ImportError, KeyError, TypeError, ValueError):
+                pass
+        return {
+            "compile_enabled": self.compile_enabled,
+            "collision_calls": self._call_count,
+            "input_signatures": [
+                {
+                    "device": device,
+                    "dtype": dtype,
+                    "shape_qzyx": list(shape),
+                }
+                for device, dtype, shape in sorted(self._shape_signatures)
+            ],
+            "minimum_tau": (
+                self._minimum_tau if self._call_count else None
+            ),
+            "maximum_tau": (
+                self._maximum_tau if self._call_count else None
+            ),
+            "torch_dynamo_process_unique_graphs": unique_graphs,
+        }
 
 
 def collide_in_z_chunks(

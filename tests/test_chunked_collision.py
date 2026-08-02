@@ -90,6 +90,16 @@ def test_compiled_executor_passes_tensor_tau_and_reuses_callable() -> None:
     compiler.assert_called_once()
     assert [float(value) for value in calls] == pytest.approx([0.73, 0.71])
     assert all(value.ndim == 0 and value.dtype == state.dtype for value in calls)
+    diagnostics = executor.diagnostics()
+    assert diagnostics["compile_enabled"] is True
+    assert diagnostics["collision_calls"] == 2
+    assert diagnostics["minimum_tau"] == pytest.approx(0.71)
+    assert diagnostics["maximum_tau"] == pytest.approx(0.73)
+    assert diagnostics["input_signatures"] == [{
+        "device": "cpu",
+        "dtype": "torch.float32",
+        "shape_qzyx": list(state.shape),
+    }]
 
 
 @pytest.mark.parametrize("tau", (0.5, float("nan"), float("inf")))
