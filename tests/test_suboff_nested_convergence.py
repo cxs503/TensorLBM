@@ -22,6 +22,7 @@ def _record(length: int, resistance: float) -> dict:
             "wall_traction_source_scheme": (
                 "mass_conservative_post_collision_guo_v2"
             ),
+            "appendage_link_scheme": "analytic_axisymmetric_bisection_v1",
             "stress_exchange_distance": (3.0 / 256.0) * finest,
             "inner_wall_margin": length / 15.0,
             "inner_wake_cells": 2.0 * length / 15.0,
