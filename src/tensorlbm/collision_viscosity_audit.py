@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 import torch
 
 from .cumulant import collide_cumulant_d3q19
-from .d3q19 import equilibrium3d, macroscopic3d
+from .d3q19 import WEIGHT_PRECISION_SCHEME, equilibrium3d, macroscopic3d
 from .entropic_kbc import collide_kbc_d3q19, collide_natural_kbc_d3q19
 from .planar_d3q19 import collide_planar_cumulant_d3q19
 from .solver3d import collide_bgk3d, stream3d
@@ -174,6 +174,7 @@ def run_collision_viscosity_audit(
     )
     return {
         "schema": "tensorlbm-collision-viscosity-audit-v1",
+        "d3q19_weight_precision_scheme": WEIGHT_PRECISION_SCHEME,
         "configuration": asdict(config),
         "result": {
             "target_kinematic_viscosity": target_viscosity,
