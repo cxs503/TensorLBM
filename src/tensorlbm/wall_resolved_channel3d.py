@@ -33,7 +33,7 @@ class WallResolvedChannel3DConfig:
     collision_model: str = "natural_kbc"
     collision_chunk_cells: int = 262144
     compile_natural_kbc: bool = True
-    perturbation_fraction: float = 0.05
+    perturbation_fraction: float = 1.0
     device: str = "cuda"
     output: Path = Path("results/canonical_wall/channel3d.json")
     checkpoint: Path = Path("results/canonical_wall/channel3d.ckpt")
@@ -77,8 +77,8 @@ class WallResolvedChannel3DConfig:
             raise ValueError("collision_model must be natural_kbc or cumulant")
         if self.compile_natural_kbc and self.collision_model != "natural_kbc":
             raise ValueError("compiled collision requires natural_kbc")
-        if not 0.0 <= self.perturbation_fraction <= 0.2:
-            raise ValueError("perturbation_fraction must lie in [0,0.2]")
+        if not 0.0 <= self.perturbation_fraction <= 2.0:
+            raise ValueError("perturbation_fraction must lie in [0,2]")
         if self.tau <= 0.5:
             raise ValueError("derived relaxation time must exceed 0.5")
 
@@ -91,13 +91,23 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
     y_plus = distance * config.u_tau / config.nu
     base = spalding_u_plus_from_y_plus(y_plus) * config.u_tau
     phase_x = 2.0 * math.pi * x / config.nx
-    phase_y = math.pi * distance / (0.5 * config.height)
+    wall_coordinate = (y - 0.5).clamp(0.0, float(config.height))
+    phase_y = math.pi * wall_coordinate / config.height
     phase_z = 2.0 * math.pi * z / config.nz
     amplitude = config.perturbation_fraction * config.u_tau
     ux = base.expand(config.nz, config.ny, config.nx).clone()
-    ux += amplitude * torch.sin(phase_x) * torch.sin(phase_y) * torch.sin(phase_z)
-    uy = amplitude * torch.cos(phase_x) * torch.sin(phase_y) * torch.sin(phase_z)
-    uz = -amplitude * torch.sin(phase_x) * torch.sin(phase_y) * torch.cos(phase_z)
+    # A streamwise-independent streak plus a cross-plane streamfunction.
+    # The latter is discretely smooth, vanishes at both walls and is
+    # divergence-free in the continuous y-z plane.
+    ux += amplitude * torch.sin(phase_y) * torch.cos(phase_z)
+    uy = (
+        amplitude * torch.sin(phase_x) * torch.sin(phase_y).square()
+        * torch.cos(phase_z)
+    )
+    uz = (
+        -amplitude * (config.nz / config.height) * torch.sin(phase_x)
+        * torch.sin(2.0 * phase_y) * torch.sin(phase_z)
+    )
     solid = torch.zeros(
         (config.nz, config.ny, config.nx), dtype=torch.bool, device=device,
     )
