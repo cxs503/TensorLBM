@@ -141,6 +141,9 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     ]
     assert link_decomposition["samples"] > 0
     assert link_decomposition["maximum_relative_closure_error"] < 1.0e-4
+    assert link_decomposition[
+        "maximum_relative_component_closure_error"
+    ] < 1.0e-4
     assert link_decomposition["minimum_coverage_fraction"] == pytest.approx(1.0)
     assert link_decomposition["normal_completion"][
         "maximum_unresolved_nodes"

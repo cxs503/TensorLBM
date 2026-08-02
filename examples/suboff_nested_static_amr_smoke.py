@@ -1982,11 +1982,42 @@ def run(args: argparse.Namespace) -> dict:
                     * scale
                     for axis in range(3)
                 ],
+                "mean_stationary_interpolation_force_n": [
+                    sum(
+                        item["stationary_interpolation_force"][axis]
+                        for item in link_force_samples
+                    )
+                    / len(link_force_samples)
+                    * scale
+                    for axis in range(3)
+                ],
+                "mean_moving_wall_population_correction_force_n": [
+                    sum(
+                        item["moving_wall_population_correction_force"][axis]
+                        for item in link_force_samples
+                    )
+                    / len(link_force_samples)
+                    * scale
+                    for axis in range(3)
+                ],
+                "mean_frame_correction_force_n": [
+                    sum(
+                        item["frame_correction_force"][axis]
+                        for item in link_force_samples
+                    )
+                    / len(link_force_samples)
+                    * scale
+                    for axis in range(3)
+                ],
                 "maximum_closure_error_n": max(
                     item["maximum_closure_error"] for item in link_force_samples
                 ) * scale,
                 "maximum_relative_closure_error": max(
                     item["maximum_relative_closure_error"]
+                    for item in link_force_samples
+                ),
+                "maximum_relative_component_closure_error": max(
+                    item["maximum_relative_component_closure_error"]
                     for item in link_force_samples
                 ),
             }
