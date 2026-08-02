@@ -5,7 +5,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import torch
-import torch_sdaa
+try:  # Optional accelerator plugin.
+    import torch_sdaa  # type: ignore # noqa: F401
+except ModuleNotFoundError:  # pragma: no cover - depends on environment
+    torch_sdaa = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -50,7 +53,7 @@ def configure_cpu_threads(device: torch.device | str, num_threads: int | None = 
 def is_sdaa_available() -> bool:
     """Return whether the SDAA backend is available."""
     try:
-        return bool(torch.sdaa.is_available())
+        return bool(hasattr(torch, "sdaa") and torch.sdaa.is_available())
     except Exception:
         return False
 
