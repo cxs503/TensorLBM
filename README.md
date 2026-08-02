@@ -2,17 +2,28 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.
+> **A CPU-first PyTorch Lattice Boltzmann platform for reproducible CFD research.**
+> D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
-## Documentation / 文档
+```bash
+# 30-second quick-start: lid-driven cavity at Re=400
+pip install -e .
+PYTHONPATH=src python examples/cylinder_flow.py --nx 128 --ny 48 --re 200 --n-steps 500
+```
 
-- **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
-  Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
-- **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
-- **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
-- **[Accuracy-recommendation evidence gate](docs/accuracy_recommendation_evidence_gate.md)** – fail-closed physical-evidence admission before an accuracy recommendation.
-- **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
-- **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
+```python
+# Minimal Python API — copy-paste and run
+import torch
+from tensorlbm import equilibrium, macroscopic, collide_bgk, stream
+
+ny, nx = 64, 128
+f = equilibrium(torch.ones(ny, nx), torch.zeros(ny, nx), torch.zeros(ny, nx))
+for _ in range(200):
+    f = collide_bgk(f.unsqueeze(0).expand(9,-1,-1), tau=0.6)
+    f = stream(f)
+```
+
+---
 
 ## What TensorLBM provides
 
@@ -29,7 +40,7 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 - **Thermal LBM**: double-distribution-function model (D2Q9+D2Q5 / D3Q19+D3Q7) with Boussinesq buoyancy
 - **Conjugate heat transfer (CHT)**: coupled fluid–solid heat conduction with interface boundary conditions
 - **Aeroacoustics**: Ffowcs Williams–Hawkings (FWH) far-field solver, SPL spectrum, and OASPL computation
-- **AI turbulence models**: MLP eddy-viscosity model, Transformer-based self-supervised flow model, DNS-to-LES data pipeline, AI-embedded LBM collision
+- **AI turbulence models**: MLP eddy-viscosity, FNO2d neural operator, Transformer-based self-supervised flow model, DNS-to-LES data pipeline, AI-embedded LBM collision
 - Boundary conditions: bounce-back, **Zou/He** inlet-velocity and outlet-pressure BCs, Bouzidi interpolated bounce-back, **moving-wall** (Ladd 1994), **far-field**, **sponge/absorbing-layer** outlet BC, **rough-wall** (equivalent sand-grain), JONSWAP irregular-wave inlet
 - **Turbulent inlet profiles**: log-law, power-law, parabolic, Blasius, Womersley, synthetic turbulence 2D, DFSEM, Digital Filter Method
 - **Turbulence statistics**: `TurbulenceStatsAccumulator`, Reynolds stresses, turbulence intensity, turbulence length scale
@@ -52,6 +63,16 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 4. **Fast feedback loops**: smoke tests and CI on push/PR.
 5. **CPU-first defaults, GPU-ready shape**: default to CPU, but keep interfaces ready for device scaling.
 6. **Multi-backend**: PyTorch is the default; Paddle and MindSpore backends are selectable at runtime.
+
+## Documentation / 文档
+
+- **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
+  Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
+- **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
+- **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
+- **[Accuracy-recommendation evidence gate](docs/accuracy_recommendation_evidence_gate.md)** – fail-closed physical-evidence admission before an accuracy recommendation.
+- **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
+- **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
 
 ## Installation
 
