@@ -16,6 +16,8 @@ _IDENTITY_FIELDS = (
     "reynolds",
     "lattice_speed",
     "collision_model",
+    "collision_chunk_cells",
+    "compile_natural_kbc",
     "sponge_strength",
     "sponge_inlet",
     "far_field_mode",
@@ -43,7 +45,7 @@ def assess_sphere_grid_convergence(
     minimum_order: float = 0.5,
     maximum_extrapolated_reference_error_pct: float = 5.0,
 ) -> dict[str, object]:
-    """Assess three or more equivalent sphere-v3 grid records."""
+    """Assess three or more equivalent sphere grid records."""
     if len(records) < 3:
         raise ValueError("sphere grid convergence requires at least three records")
     parsed = []

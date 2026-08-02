@@ -20,6 +20,8 @@ def _record(radius: float) -> dict[str, object]:
             "reynolds": 100.0,
             "lattice_speed": 0.06,
             "collision_model": "cumulant_d3q19_cs0",
+            "collision_chunk_cells": 0,
+            "compile_natural_kbc": False,
             "warmup_steps": 320.0 * radius,
             "ramp_steps": 80.0 * radius,
             "sponge_width": 2.0 * radius,
@@ -68,6 +70,16 @@ def test_rejected_source_quality_rejects_sequence(records: list[dict[str, object
     result = assess_sphere_grid_convergence(rejected)
 
     assert result["source_numerical_quality_admitted"] is False
+    assert result["admitted"] is False
+
+
+def test_changed_collision_execution_rejects_sequence(
+    records: list[dict[str, object]],
+) -> None:
+    records[1]["configuration"]["compile_natural_kbc"] = True
+    result = assess_sphere_grid_convergence(records)
+
+    assert result["configuration_identity"]["identity_fields_equal"] is False
     assert result["admitted"] is False
 
 
