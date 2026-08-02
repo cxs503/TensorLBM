@@ -29,6 +29,8 @@ def main() -> None:
     parser.add_argument("--collision-chunk-cells", type=int, default=262144)
     parser.add_argument("--no-compile-natural-kbc", action="store_true")
     parser.add_argument("--perturbation-fraction", type=float, default=1.0)
+    parser.add_argument("--random-noise-fraction", type=float, default=0.5)
+    parser.add_argument("--seed", type=int, default=20260802)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
@@ -48,6 +50,8 @@ def main() -> None:
         collision_chunk_cells=args.collision_chunk_cells,
         compile_natural_kbc=not args.no_compile_natural_kbc,
         perturbation_fraction=args.perturbation_fraction,
+        random_noise_fraction=args.random_noise_fraction,
+        seed=args.seed,
         device=args.device,
         output=args.output,
         checkpoint=args.checkpoint,

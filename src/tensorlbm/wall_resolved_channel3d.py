@@ -34,6 +34,8 @@ class WallResolvedChannel3DConfig:
     collision_chunk_cells: int = 262144
     compile_natural_kbc: bool = True
     perturbation_fraction: float = 1.0
+    random_noise_fraction: float = 0.5
+    seed: int = 20260802
     device: str = "cuda"
     output: Path = Path("results/canonical_wall/channel3d.json")
     checkpoint: Path = Path("results/canonical_wall/channel3d.ckpt")
@@ -79,6 +81,10 @@ class WallResolvedChannel3DConfig:
             raise ValueError("compiled collision requires natural_kbc")
         if not 0.0 <= self.perturbation_fraction <= 2.0:
             raise ValueError("perturbation_fraction must lie in [0,2]")
+        if not 0.0 <= self.random_noise_fraction <= 2.0:
+            raise ValueError("random_noise_fraction must lie in [0,2]")
+        if isinstance(self.seed, bool) or self.seed < 0:
+            raise ValueError("seed must be a non-negative integer")
         if self.tau <= 0.5:
             raise ValueError("derived relaxation time must exceed 0.5")
 
@@ -108,6 +114,21 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
         -amplitude * (config.nz / config.height) * torch.sin(phase_x)
         * torch.sin(2.0 * phase_y) * torch.sin(phase_z)
     )
+    if config.random_noise_fraction:
+        generator = torch.Generator(device=device)
+        generator.manual_seed(config.seed)
+        noise = torch.randn(
+            (3, config.nz, config.ny, config.nx),
+            device=device,
+            dtype=ux.dtype,
+            generator=generator,
+        )
+        noise -= noise.mean(dim=(1, 3), keepdim=True)
+        taper = torch.sin(phase_y).expand(config.nz, config.ny, config.nx)
+        noise_amplitude = amplitude * config.random_noise_fraction
+        ux += noise_amplitude * taper * noise[0]
+        uy += noise_amplitude * taper * noise[1]
+        uz += noise_amplitude * taper * noise[2]
     solid = torch.zeros(
         (config.nz, config.ny, config.nx), dtype=torch.bool, device=device,
     )
