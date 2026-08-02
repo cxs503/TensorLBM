@@ -2098,6 +2098,7 @@ def run(args: argparse.Namespace) -> dict:
             "force_sample_aggregation": force_averager.provenance(
                 force_averager.expected_samples,
             ),
+            "collision_execution": natural_kbc_executor.diagnostics(),
             "finite": finite,
             "population_health": health_records,
             "maximum_observed_speed": maximum_observed_speed,
