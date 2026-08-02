@@ -47,6 +47,14 @@ def test_negative_collision_chunk_is_rejected() -> None:
         cfg.validate()
 
 
+def test_unknown_projected_pressure_reconstruction_is_rejected() -> None:
+    cfg = SphereBFLControlVolumeConfig(
+        projected_pressure_reconstruction="magic",
+    )
+    with pytest.raises(ValueError, match="projected_pressure_reconstruction"):
+        cfg.validate()
+
+
 def test_short_sphere_composition_is_finite() -> None:
     cfg = SphereBFLControlVolumeConfig(
         nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
@@ -95,6 +103,29 @@ def test_short_natural_kbc_sphere_composition_is_finite() -> None:
     assert result["acceptance"]["admitted"] is False
 
 
+def test_projected_pressure_is_paired_but_never_used_for_acceptance() -> None:
+    cfg = SphereBFLControlVolumeConfig(
+        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
+        reynolds=20.0, lattice_speed=0.04, steps=4, warmup_steps=2,
+        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        projected_pressure_interval=1,
+    )
+
+    result = run_sphere_bfl_control_volume(cfg)
+
+    observer = result["result"]["projected_bfl_pressure_observer"]
+    assert observer["enabled"] is True
+    assert observer["used_for_acceptance"] is False
+    assert observer["scope"] == (
+        "candidate_diagnostic_only_not_an_acceptance_gate"
+    )
+    assert observer["samples"] == 2
+    assert observer["mean_pressure_force"] is not None
+    assert observer["paired_control_volume_mean_force"] is not None
+    assert observer["mean_force_difference_pct"] is not None
+    assert observer["minimum_usable_link_fraction"] > 0.0
+
+
 def test_v3_checkpoint_requires_complete_physics_identity(tmp_path) -> None:
     checkpoint = tmp_path / "sphere.ckpt"
     base = SphereBFLControlVolumeConfig(
@@ -115,6 +146,26 @@ def test_v3_checkpoint_requires_complete_physics_identity(tmp_path) -> None:
         run_sphere_bfl_control_volume(
             replace(base, steps=4, resume=True, sponge_width=4),
         )
+
+
+def test_projected_pressure_history_survives_resume(tmp_path) -> None:
+    checkpoint = tmp_path / "sphere-projected.ckpt"
+    base = SphereBFLControlVolumeConfig(
+        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
+        reynolds=20.0, lattice_speed=0.04, steps=2, warmup_steps=1,
+        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        checkpoint_interval=1, checkpoint_path=str(checkpoint),
+        projected_pressure_interval=1,
+    )
+    run_sphere_bfl_control_volume(base)
+
+    resumed = run_sphere_bfl_control_volume(
+        replace(base, steps=4, resume=True),
+    )
+
+    observer = resumed["result"]["projected_bfl_pressure_observer"]
+    assert observer["samples"] == 3
+    assert observer["used_for_acceptance"] is False
 
 
 def test_pre_correction_bfl_checkpoint_is_rejected(tmp_path) -> None:
