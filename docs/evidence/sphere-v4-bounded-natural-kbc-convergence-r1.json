@@ -1,0 +1,94 @@
+{
+  "schema": "tensorlbm-sphere-v4-grid-family-assessment-v1",
+  "status": "spatial_convergence_pass_physical_reference_rejected",
+  "physical_validation": false,
+  "common_configuration": {
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "collision_model": "natural_kbc_d3q19",
+    "collision_chunk_cells": 262144,
+    "compile_natural_kbc": true,
+    "sponge_inlet": true,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "minimum_statistics_convective_times": 5.0,
+    "domain_over_radius_zyx": [16.0, 16.0, 24.0]
+  },
+  "members": [
+    {
+      "radius_cells": 9.0,
+      "diameter_cells": 18.0,
+      "cd_control_volume": 1.1756139078050105,
+      "reference_error_pct": 7.683468703452704,
+      "numerical_quality_admitted": true
+    },
+    {
+      "radius_cells": 12.0,
+      "diameter_cells": 24.0,
+      "cd_control_volume": 1.1605229155338193,
+      "reference_error_pct": 6.3011693080899835,
+      "numerical_quality_admitted": true
+    },
+    {
+      "radius_cells": 15.0,
+      "diameter_cells": 30.0,
+      "cd_control_volume": 1.1568767103819217,
+      "cd_bfl_link": 1.1568955820064082,
+      "observer_difference_pct": 0.0016312563229151963,
+      "reference_error_pct": 5.96718549269449,
+      "numerical_quality_admitted": true,
+      "stationarity": {
+        "samples": 4000,
+        "relative_range_pct": 0.019024404870274857,
+        "half_mean_drift_pct": 0.009527218344759444,
+        "linear_trend_pct": 0.017440642257592325,
+        "confidence95_half_width_pct": 0.005597821883351177,
+        "effective_sample_count": 3.4987428600915265
+      },
+      "runtime": {
+        "seconds": 5070.319067607867,
+        "seconds_per_step": 0.4225265889673222,
+        "measured_peak_allocated_gib": 18.09727191925049,
+        "collision_calls": 960000,
+        "collision_input_shape_qzyx": [19, 3, 240, 360],
+        "torch_dynamo_process_unique_graphs": 1
+      }
+    }
+  ],
+  "spatial_convergence": {
+    "configuration_invariant": true,
+    "monotonic": true,
+    "observed_order": 4.461821797078942,
+    "extrapolated_cd": 1.1547399533336506,
+    "finest_discretisation_error_pct": 0.1850422722538036,
+    "relative_fit_rms_pct": 0.0,
+    "admitted": true
+  },
+  "reference": {
+    "schiller_naumann_cd": 1.0917310910948732,
+    "extrapolated_error_pct": 5.771463573102716,
+    "maximum_error_pct": 5.0,
+    "admitted": false
+  },
+  "decision": {
+    "admit_spatial_convergence": true,
+    "admit_physical_accuracy": false,
+    "reasons": [
+      "All three members preserve scaled domain, time, sponge and control-volume parameters and pass independent force-observer quality gates.",
+      "The monotonic grid sequence has only 0.185 percent estimated finest-grid discretisation error.",
+      "The grid-extrapolated drag remains 5.771 percent above the declared reference, so additional body-resolution alone is not the leading uncertainty."
+    ],
+    "next": [
+      "Complete fixed-resolution transverse-domain sensitivity before changing the collision or BFL boundary.",
+      "If domain sensitivity is below one percent, isolate open-boundary and curved-wall systematic effects with matched A/B trajectories.",
+      "Do not alter or empirically correct the direct CFD drag to match the reference."
+    ]
+  },
+  "provenance": {
+    "r9_result_sha256": "e92e3273994577cb296bc8876cb952a375d2f004287b525d93b6c540aa5ca66b",
+    "r12_result_sha256": "50c11bd07c1480f42090144a43af130ecec4084cc12eb16d3989a2551ca9872e",
+    "r15_result_sha256": "ebf8d4492b4cce9d4cebdf585af80d1fe4aa561d68f4a0638c42d52d03e4d088",
+    "r15_checkpoint_sha256": "69945d478021da8ce516fc942497f02fea5d5aaa3725d40e0ad0088df1bb6568",
+    "convergence_result": "results/sphere_natural_kbc_validation/sphere-v4-natural-kbc-r9-r12-r15-convergence.json",
+    "convergence_result_sha256": "f0a443846a56d90104f47bef2fbe1c6661de73df81ada9f2316ecd8a627e7fc5"
+  }
+}
