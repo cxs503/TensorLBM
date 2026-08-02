@@ -76,12 +76,21 @@
     "two_gpu_equivalence_queue_wrapper_pid": 1644563,
     "two_gpu_equivalence_probe_pid": 1644564,
     "waits_for_exact_solver_pids": [1598778, 1644306],
-    "two_gpu_equivalence_probe_status": "queued",
+    "two_gpu_equivalence_probe_status": "passed",
+    "two_gpu_equivalence_result": {
+      "path": "results/amr_campaign_20260801/nested-amr-two-gpu-equivalence-r1.json",
+      "sha256": "5dedd212c4a1fc0429cd9f086e8f997e6f5a8232328abff150d53111c3585e08",
+      "steps": 12,
+      "maximum_absolute_difference": 0.0,
+      "maximum_reflux_residual": 3.410605131648481e-13,
+      "root_relative_mass_drift": 5.995124045711142e-08,
+      "admitted": true
+    },
     "chunked_allocation_queue_wrapper_pid": 1642900,
     "chunked_allocation_probe_pid": 1642901,
     "chunked_allocation_probe_status": "queued_after_aff8_probe",
     "production_l120_launch_allowed": false,
-    "reason": "Cross-device ghost fill, restriction and reflux must pass the independent one-device equivalence probe before a physical campaign is launched."
+    "reason": "Cross-device numerics now pass exactly, but the geometrically similar deepest L120 level still needs a measured per-device runtime-memory admission before physical launch."
   },
   "limitations": [
     "This artifact assesses geometry, observer clearance and memory only.",

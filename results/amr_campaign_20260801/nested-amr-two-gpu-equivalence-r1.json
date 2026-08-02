@@ -1,0 +1,24 @@
+{
+  "acceptance": {
+    "admitted": true,
+    "maximum_absolute_difference": 5e-06,
+    "maximum_reflux_residual": 5e-06,
+    "maximum_root_relative_mass_drift": 5e-06
+  },
+  "device_names": {
+    "cuda:0": "NVIDIA GeForce RTX 3090",
+    "cuda:1": "NVIDIA GeForce RTX 3090"
+  },
+  "distributed_level_devices": ["cuda:0", "cuda:1", "cuda:1", "cuda:0"],
+  "finite": true,
+  "level_maximum_absolute_difference": [0.0, 0.0, 0.0, 0.0],
+  "maximum_absolute_difference": 0.0,
+  "maximum_distributed_reflux_residual": 3.410605131648481e-13,
+  "maximum_reference_reflux_residual": 3.410605131648481e-13,
+  "reference_level_devices": ["cuda:0", "cuda:0", "cuda:0", "cuda:0"],
+  "root_relative_mass_drift": 5.995124045711142e-08,
+  "schema": "tensorlbm-nested-amr-multidevice-validation-v1",
+  "seed": 20260802,
+  "status": "pass",
+  "steps": 12
+}
