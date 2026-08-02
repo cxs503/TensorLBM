@@ -1870,6 +1870,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      cross-plane streamfunction; a cumulant/strong-perturbation follow-up passed
      its GPU probe and is running.  r1 hashes are frozen in
      `docs/evidence/channel3d-retau180-natural-kbc-weak-perturbation-rejected-r1.json`.
+208. The 3-D channel initializer additionally supports reproducible broadband
+     Gaussian perturbations with a fixed seed, plane-wise mean removal and a
+     smooth wall taper, alongside the solenoidal coherent modes.  This prevents
+     future references from being trapped in an exactly symmetric invariant
+     subspace.  The active cumulant/coherent r2 is not restarted: between steps
+     12000 and 13000 its TKE reaches `O(u_tau^2)`, crossflow RMS reaches
+     `0.65 u_tau`, and Reynolds shear begins growing, so its naturally emerging
+     transition is allowed to proceed through the predefined warmup.
 
 ## Rejected candidates
 
