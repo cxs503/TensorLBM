@@ -68,6 +68,11 @@ if not valid:
 PY
   exit 0
 fi
+exec 9>"$stem.lock"
+if ! flock -n 9; then
+  echo "physical-Re flat-plate member already has a live writer: $stem" >&2
+  exit 3
+fi
 resume=()
 if [[ -f "$stem.ckpt" ]]; then
   resume=(--resume)
