@@ -26,6 +26,10 @@
   },
   "force_statistics": {
     "mean_resistance_n": 122.23028073789499,
+    "mean_bfl_pressure_n": 42.35667757071555,
+    "mean_wall_shear_n": 80.02495390995847,
+    "mean_bfl_pressure_fraction": 0.34610322691607603,
+    "mean_wall_shear_fraction": 0.6538967730839184,
     "experimental_resistance_n": 87.4,
     "reference_error_pct": 39.85157979164185,
     "nested_control_volume_difference_pct": {
@@ -55,10 +59,13 @@
     "The mean resistance differs from the experiment by 39.85 percent.",
     "The very high measured exchange y+ supports the active L720 near-wall refinement study but is not itself an accuracy correction."
   ],
+  "component_inference": "The legacy run's wall-shear component is already 91.56 percent of the total experimental resistance, while its pressure component is 48.46 percent of the total experiment. This points to pressure recovery, effective outer-flow Reynolds number, geometry resolution and AMR-interface sensitivity as the next causal checks; it does not authorize subtracting either component empirically.",
   "required_follow_up": [
     "Use v13 with the corrected wall source for the clean no-inlet-sponge baseline.",
     "Compare v13 against the concurrently running corrected-source v14 inlet-sponge trajectory.",
-    "Do not combine v33 with corrected-source grid convergence."
+    "Do not combine v33 with corrected-source grid convergence.",
+    "Record pressure and wall-shear means separately in all corrected-source results.",
+    "After four-level long-time stability is established, test higher resolved collision Reynolds with viscosity continuation rather than tuning resistance."
   ],
   "remote_sources": [
     {
