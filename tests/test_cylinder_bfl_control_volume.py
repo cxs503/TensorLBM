@@ -62,6 +62,9 @@ def test_short_periodic_cylinder_composition_is_finite() -> None:
     assert artifact["configuration"]["link_force_frame"] == (
         "laboratory_after_wall_activation"
     )
+    assert artifact["configuration"]["bfl_link_fraction_convention"] == (
+        "ray_parameter_q_equals_t_v2"
+    )
     assert artifact["acceptance"]["domain_reference_target_met"] is False
 
 

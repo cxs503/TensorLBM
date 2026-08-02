@@ -184,6 +184,10 @@ def run_sphere_bfl_control_volume(
     checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
     checkpoint_signature = {
         "schema_version": 3,
+        "bfl_link_fraction_convention": "ray_parameter_q_equals_t_v2",
+        "bfl_population_reconstruction": (
+            "post_collision_outgoing_and_upstream_v2"
+        ),
         "shape_zyx": list(shape),
         "radius": config.radius,
         "center_x_fraction": config.center_x_fraction,
