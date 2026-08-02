@@ -1,0 +1,104 @@
+{
+  "schema": "tensorlbm-suboff-wall-exchange-ab-v1",
+  "status": "target_reynolds_checkpoint_scaled_exchange_rejected_by_yplus",
+  "physical_validation": false,
+  "common_configuration": {
+    "hull_type": "bare_hull",
+    "root_hull_length_cells": 90.0,
+    "finest_hull_length_cells": 720.0,
+    "levels": 4,
+    "collision_model": "natural_kbc",
+    "target_collision_reynolds": 200000.0,
+    "wall_law": "musker",
+    "sponge_inlet": true,
+    "compiled_collision": true,
+    "collision_chunk_cells": 262144,
+    "matched_except_stress_exchange_distance": true
+  },
+  "candidates": {
+    "v23_one_cell": {
+      "stress_exchange_distance_cells": 1.0,
+      "exchange_distance_over_length": 0.0013888888888888889
+    },
+    "v29_flat_plate_ratio": {
+      "stress_exchange_distance_cells": 8.4375,
+      "exchange_distance_over_length": 0.01171875,
+      "amr_interface_clearance_admitted": true
+    }
+  },
+  "checkpoint_sequence": [
+    {
+      "step": 375,
+      "collision_reynolds": 5047.278747355369,
+      "wall_activation": 0.1464466094067262,
+      "v23": {"total_n": 274.89764183560305, "pressure_n": 194.13891618361163, "shear_n": 16.371779540453378},
+      "v29": {"total_n": 272.1764908439957, "pressure_n": 195.5759708082229, "shear_n": 12.192712188334472}
+    },
+    {
+      "step": 750,
+      "collision_reynolds": 7152.480567610421,
+      "wall_activation": 0.5,
+      "v23": {"total_n": 233.43858275480562, "pressure_n": 199.9840193397126, "shear_n": 49.78156319238014},
+      "v29": {"total_n": 227.47322848268357, "pressure_n": 203.6823509329337, "shear_n": 40.28779462976652}
+    },
+    {
+      "step": 1125,
+      "collision_reynolds": 20690.267769609858,
+      "wall_activation": 0.8535533905932737,
+      "v23": {"total_n": 171.33591574020056, "pressure_n": 113.88698368009725, "shear_n": 76.84999684570657},
+      "v29": {"total_n": 166.16484777490842, "pressure_n": 118.35597542457633, "shear_n": 67.65308500625837}
+    },
+    {
+      "step": 1500,
+      "collision_reynolds": 200000.0,
+      "wall_activation": 1.0,
+      "v23": {
+        "total_n": 110.93981837820411,
+        "pressure_n": 24.918099927595566,
+        "shear_n": 86.66947361666,
+        "mean_exchange_distance_cells": 1.0775457620620728,
+        "minimum_y_plus": 1.5608088970184326,
+        "mean_y_plus": 772.3083801269531,
+        "maximum_y_plus": 1225.0411376953125
+      },
+      "v29": {
+        "total_n": 108.00609839564302,
+        "pressure_n": 28.84512812692957,
+        "shear_n": 79.80682556197638,
+        "mean_exchange_distance_cells": 8.4375,
+        "minimum_y_plus": 1.3948878049850464,
+        "mean_y_plus": 5882.978515625,
+        "maximum_y_plus": 6323.923828125
+      }
+    }
+  ],
+  "target_reynolds_effect": {
+    "scaled_vs_one_cell_total_pct": -2.6444247209417293,
+    "scaled_vs_one_cell_pressure_pct": 15.759741756974876,
+    "scaled_vs_one_cell_shear_pct": -7.91818360987997,
+    "scaled_total_reference_error_pct": 23.57677161972884,
+    "interpretation": "Moving the sample outward trades lower modelled shear for higher link pressure; it does not correct both components."
+  },
+  "decision": {
+    "admit_as_causal_ab": true,
+    "admit_scaled_exchange_wall_model": false,
+    "admit_physical_accuracy": false,
+    "reasons": [
+      "The measured mean y+ of 5883 and maximum of 6324 violate the declared 30 to 1000 wall-model policy.",
+      "The target-Reynolds total remains 23.58 percent above experiment.",
+      "The candidate reduces shear but increases pressure, so the total change is only 2.64 percent.",
+      "Neither target-Reynolds checkpoint is a stationary time-average."
+    ],
+    "next": [
+      "Allow v29 to complete for causal trajectory evidence but do not promote it to v30 or grid convergence.",
+      "Continue the one-cell v23 state in v30 and retain full measured y+ distribution gates.",
+      "Use additional local refinement if a lower exchange y+ is required; do not move the sample farther out to fit drag."
+    ]
+  },
+  "provenance": {
+    "v23_checkpoint": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-3k.ckpt",
+    "v29_checkpoint": "results/amr_campaign_20260801/suboff-nested-v29-equivalent-l90-3k.ckpt",
+    "checkpoints_mutable_until_each_run_completes": true,
+    "wall_exchange_policy": "docs/evidence/suboff-wall-exchange-yplus-policy-r1.json"
+  }
+}
