@@ -117,6 +117,24 @@ def test_v3_checkpoint_requires_complete_physics_identity(tmp_path) -> None:
         )
 
 
+def test_pre_correction_bfl_checkpoint_is_rejected(tmp_path) -> None:
+    checkpoint = tmp_path / "legacy-bfl.ckpt"
+    base = SphereBFLControlVolumeConfig(
+        nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
+        reynolds=20.0, lattice_speed=0.04, steps=2, warmup_steps=1,
+        ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        checkpoint_interval=1, checkpoint_path=str(checkpoint),
+    )
+    run_sphere_bfl_control_volume(base)
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    del state["configuration"]["bfl_link_fraction_convention"]
+    del state["configuration"]["bfl_population_reconstruction"]
+    torch.save(state, checkpoint)
+
+    with pytest.raises(ValueError, match="configuration"):
+        run_sphere_bfl_control_volume(replace(base, steps=4, resume=True))
+
+
 def test_v2_checkpoint_migration_is_explicit_and_hashed(tmp_path) -> None:
     checkpoint = tmp_path / "sphere-v2.ckpt"
     base = SphereBFLControlVolumeConfig(
