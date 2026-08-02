@@ -125,6 +125,21 @@ PYTHONPATH=src python examples/sphere_flow_3d.py \
   --run-name smoke --overwrite
 ```
 
+## Generate a lid-driven cavity demo GIF
+
+```bash
+PYTHONPATH=src python scripts/make_demo_gif.py --overwrite
+```
+
+This runs a 2000-step cavity simulation, saves one frame every 50 steps, and
+writes a GIF to:
+
+```text
+outputs/lid_driven_cavity/demo_gif/lid_driven_cavity_demo.gif
+```
+
+![Lid-driven cavity demo](outputs/lid_driven_cavity/demo_gif/lid_driven_cavity_demo.gif)
+
 
 ## Run the ship CAD-to-flow workflow
 
