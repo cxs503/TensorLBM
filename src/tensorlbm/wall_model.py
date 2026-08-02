@@ -38,7 +38,13 @@ def physical_wall_lattice_viscosity(
 
 @dataclass(frozen=True)
 class WallStressDiagnostics:
-    """Runtime evidence for wall-stress applicability and sample quality."""
+    """Runtime evidence for wall-stress applicability and sample quality.
+
+    The pressure-gradient parameter is ``y |grad_t p| / (rho u_tau^2)`` at
+    active exchange nodes.  It is diagnostic-only: large values flag regions
+    where an equilibrium wall law needs independent pressure-gradient
+    validation, but the parameter never alters force or populations.
+    """
 
     mode: str
     requested_nodes: int
@@ -51,6 +57,9 @@ class WallStressDiagnostics:
     u_tau_mean: float | None
     shear_force: tuple[float, float, float]
     y_plus_summary: dict[str, float | int | bool | None] | None = None
+    pressure_gradient_parameter_mean: float | None = None
+    pressure_gradient_parameter_p95: float | None = None
+    pressure_gradient_parameter_max: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -1340,9 +1349,57 @@ def bfl_wall_function_3d(
             y_plus_mean = float(active_y_plus.mean().item())
             y_plus_max = float(active_y_plus.max().item())
             u_tau_mean = float(active_u_tau.mean().item())
+            indices = stress_near.nonzero(as_tuple=False)
+            interior = (
+                (indices[:, 0] > 0)
+                & (indices[:, 0] < rho.shape[0] - 1)
+                & (indices[:, 1] > 0)
+                & (indices[:, 1] < rho.shape[1] - 1)
+                & (indices[:, 2] > 0)
+                & (indices[:, 2] < rho.shape[2] - 1)
+            )
+            pressure_gradient_parameter = None
+            if bool(interior.any()):
+                iz = indices[interior, 0]
+                iy = indices[interior, 1]
+                ix = indices[interior, 2]
+                pressure = (rho - 1.0) / 3.0
+                grad_x = 0.5 * (
+                    pressure[iz, iy, ix + 1] - pressure[iz, iy, ix - 1]
+                )
+                grad_y = 0.5 * (
+                    pressure[iz, iy + 1, ix] - pressure[iz, iy - 1, ix]
+                )
+                grad_z = 0.5 * (
+                    pressure[iz + 1, iy, ix] - pressure[iz - 1, iy, ix]
+                )
+                normal_x = nx_n[stress_near][interior]
+                normal_y = ny_n[stress_near][interior]
+                normal_z = nz_n[stress_near][interior]
+                normal_gradient = (
+                    grad_x * normal_x
+                    + grad_y * normal_y
+                    + grad_z * normal_z
+                )
+                tangent_x = grad_x - normal_gradient * normal_x
+                tangent_y = grad_y - normal_gradient * normal_y
+                tangent_z = grad_z - normal_gradient * normal_z
+                tangent_magnitude = torch.sqrt(
+                    tangent_x.square()
+                    + tangent_y.square()
+                    + tangent_z.square()
+                )
+                active_density = rho[stress_near][interior]
+                active_tau_w = active_u_tau[interior].square()
+                pressure_gradient_parameter = (
+                    active_distance[interior]
+                    * tangent_magnitude
+                    / (active_density * active_tau_w).clamp_min(1.0e-30)
+                )
         else:
             wall_distance_mean = None
             y_plus_min = y_plus_mean = y_plus_max = u_tau_mean = None
+            pressure_gradient_parameter = None
         shear_components = tuple(float(value.item()) for value in (
             (tau_w * (ut_x * inv_utan) * traction_area * shear_activation).sum(),
             (tau_w * (ut_y * inv_utan) * traction_area * shear_activation).sum(),
@@ -1360,6 +1417,21 @@ def bfl_wall_function_3d(
             ).to_dict()
             if active else None
         )
+        if pressure_gradient_parameter is not None:
+            pressure_gradient_parameter_mean = float(
+                pressure_gradient_parameter.mean().item(),
+            )
+            pressure_gradient_parameter_p95 = float(torch.quantile(
+                pressure_gradient_parameter.to(dtype=torch.float64),
+                0.95,
+            ).item())
+            pressure_gradient_parameter_max = float(
+                pressure_gradient_parameter.max().item(),
+            )
+        else:
+            pressure_gradient_parameter_mean = None
+            pressure_gradient_parameter_p95 = None
+            pressure_gradient_parameter_max = None
         diagnostics = WallStressDiagnostics(
             mode=(
                 "exchange_location_guo"
@@ -1377,6 +1449,11 @@ def bfl_wall_function_3d(
             u_tau_mean=u_tau_mean,
             shear_force=shear_components,
             y_plus_summary=y_plus_summary,
+            pressure_gradient_parameter_mean=(
+                pressure_gradient_parameter_mean
+            ),
+            pressure_gradient_parameter_p95=pressure_gradient_parameter_p95,
+            pressure_gradient_parameter_max=pressure_gradient_parameter_max,
         )
         return f, drag_fric, drag_pres, diagnostics
     return f, drag_fric, drag_pres

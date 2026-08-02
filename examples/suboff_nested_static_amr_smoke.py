@@ -1421,6 +1421,15 @@ def run(args: argparse.Namespace) -> dict:
             maximum_y_plus = diagnostics.y_plus_max
             mean_wall_distance = diagnostics.wall_distance_mean
             y_plus_summary = diagnostics.y_plus_summary
+            pressure_gradient_parameter_mean = (
+                diagnostics.pressure_gradient_parameter_mean
+            )
+            pressure_gradient_parameter_p95 = (
+                diagnostics.pressure_gradient_parameter_p95
+            )
+            pressure_gradient_parameter_max = (
+                diagnostics.pressure_gradient_parameter_max
+            )
         else:
             out, friction, pressure = wall_result
             mean_y_plus = None
@@ -1428,6 +1437,9 @@ def run(args: argparse.Namespace) -> dict:
             maximum_y_plus = None
             mean_wall_distance = None
             y_plus_summary = None
+            pressure_gradient_parameter_mean = None
+            pressure_gradient_parameter_p95 = None
+            pressure_gradient_parameter_max = None
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
         require_finite_limiter(positivity, level=level, stage="post_wall")
@@ -1477,6 +1489,11 @@ def run(args: argparse.Namespace) -> dict:
             "y_plus_max": maximum_y_plus,
             "wall_distance": mean_wall_distance,
             "y_plus_summary": y_plus_summary,
+            "pressure_gradient_parameter_mean": (
+                pressure_gradient_parameter_mean
+            ),
+            "pressure_gradient_parameter_p95": pressure_gradient_parameter_p95,
+            "pressure_gradient_parameter_max": pressure_gradient_parameter_max,
             "auxiliary": auxiliary_forces,
         })
         return AMRAdvanceResult(out, post_collision)
@@ -1526,6 +1543,10 @@ def run(args: argparse.Namespace) -> dict:
                 ).to_dict()
                 if diagnostic_y_plus_summaries else None
             )
+            pressure_gradient_samples = [
+                sample for sample in force_samples
+                if sample["pressure_gradient_parameter_mean"] is not None
+            ]
             wall_exchange_health = {
                 "force_samples_observed": len(force_samples),
                 "force_samples_expected": force_averager.expected_samples,
@@ -1559,6 +1580,28 @@ def run(args: argparse.Namespace) -> dict:
                     if diagnostic_force_samples else None
                 ),
                 "y_plus_distribution": diagnostic_y_plus_aggregate,
+                "pressure_gradient_parameter": {
+                    "observations": len(pressure_gradient_samples),
+                    "mean": (
+                        sum(
+                            sample["pressure_gradient_parameter_mean"]
+                            for sample in pressure_gradient_samples
+                        ) / len(pressure_gradient_samples)
+                        if pressure_gradient_samples else None
+                    ),
+                    "maximum_p95": (
+                        max(
+                            sample["pressure_gradient_parameter_p95"]
+                            for sample in pressure_gradient_samples
+                        ) if pressure_gradient_samples else None
+                    ),
+                    "maximum": (
+                        max(
+                            sample["pressure_gradient_parameter_max"]
+                            for sample in pressure_gradient_samples
+                        ) if pressure_gradient_samples else None
+                    ),
+                },
             }
             interface_health = [
                 {
@@ -1779,6 +1822,10 @@ def run(args: argparse.Namespace) -> dict:
             ).to_dict()
             if y_plus_summaries else None
         )
+        pressure_gradient_samples = [
+            item for item in force_samples
+            if item["pressure_gradient_parameter_mean"] is not None
+        ]
         record = {
             "step": current_step,
             "collision_resolved_reynolds": instantaneous_reynolds,
@@ -1812,6 +1859,25 @@ def run(args: argparse.Namespace) -> dict:
                 if wall_distances else None
             ),
             "wall_y_plus_distribution": y_plus_aggregate,
+            "wall_pressure_gradient_parameter_mean": (
+                sum(
+                    item["pressure_gradient_parameter_mean"]
+                    for item in pressure_gradient_samples
+                ) / len(pressure_gradient_samples)
+                if pressure_gradient_samples else None
+            ),
+            "wall_pressure_gradient_parameter_p95": (
+                max(
+                    item["pressure_gradient_parameter_p95"]
+                    for item in pressure_gradient_samples
+                ) if pressure_gradient_samples else None
+            ),
+            "wall_pressure_gradient_parameter_max": (
+                max(
+                    item["pressure_gradient_parameter_max"]
+                    for item in pressure_gradient_samples
+                ) if pressure_gradient_samples else None
+            ),
             "wall_fully_activated": current_step >= max(
                 wall_normal_ramp_steps, wall_shear_ramp_steps,
             ),
@@ -2013,6 +2079,10 @@ def run(args: argparse.Namespace) -> dict:
         wall_y_plus_distribution is not None
         and bool(wall_y_plus_distribution["admitted"])
     )
+    wall_pressure_gradient_records = [
+        record for record in wall_records
+        if record.get("wall_pressure_gradient_parameter_mean") is not None
+    ]
     if selected_records:
         cv_values = [record["cv_resistance_n"] for record in selected_records]
         mean_resistance = sum(cv_values) / len(cv_values)
@@ -2315,6 +2385,29 @@ def run(args: argparse.Namespace) -> dict:
                         if wall_records else None
                     ),
                     "y_plus_distribution": wall_y_plus_distribution,
+                    "pressure_gradient_parameter": {
+                        "samples": len(wall_pressure_gradient_records),
+                        "mean": (
+                            sum(
+                                record["wall_pressure_gradient_parameter_mean"]
+                                for record in wall_pressure_gradient_records
+                            ) / len(wall_pressure_gradient_records)
+                            if wall_pressure_gradient_records else None
+                        ),
+                        "maximum_p95": (
+                            max(
+                                record["wall_pressure_gradient_parameter_p95"]
+                                for record in wall_pressure_gradient_records
+                            ) if wall_pressure_gradient_records else None
+                        ),
+                        "maximum": (
+                            max(
+                                record["wall_pressure_gradient_parameter_max"]
+                                for record in wall_pressure_gradient_records
+                            ) if wall_pressure_gradient_records else None
+                        ),
+                        "scope": "diagnostic_only_not_a_force_correction",
+                    },
                 },
             },
         },

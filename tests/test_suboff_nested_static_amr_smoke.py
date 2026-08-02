@@ -136,6 +136,15 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["acceptance"][
         "wall_exchange_y_plus_applicability_target_met"
     ] is y_plus_distribution["admitted"]
+    pressure_gradient = result["result"]["statistics"]["wall_exchange"][
+        "pressure_gradient_parameter"
+    ]
+    assert pressure_gradient["samples"] > 0
+    assert pressure_gradient["mean"] >= 0.0
+    assert pressure_gradient["maximum"] >= pressure_gradient["mean"]
+    assert pressure_gradient["scope"] == (
+        "diagnostic_only_not_a_force_correction"
+    )
     assert result["planning"]["cuda_persistent_allocated_gib_by_device"] == {}
     statistics = result["result"]["statistics"]
     assert statistics["mean_bfl_pressure_n"] is not None
