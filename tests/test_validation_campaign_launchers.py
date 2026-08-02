@@ -128,6 +128,7 @@ def test_four_level_l90_launcher_preserves_physical_cv_and_fails_closed_memory(
     env.update({
         "TENSORLBM_PYTHON": str(fake_python),
         "TENSORLBM_RUN_PREFLIGHT_ONLY": "1",
+        "TENSORLBM_COMPILE_NATURAL_KBC": "1",
     })
     completed = subprocess.run(
         [
@@ -156,6 +157,7 @@ def test_four_level_l90_launcher_preserves_physical_cv_and_fails_closed_memory(
         "1.0"
     )
     assert arguments[arguments.index("--collision-model") + 1] == "natural_kbc"
+    assert "--compile-natural-kbc" in arguments
     assert "--preflight-only" in arguments
 
 
@@ -865,3 +867,90 @@ def test_nested_v11_launcher_scales_flat_plate_wall_exchange(
     assert arguments[arguments.index("--stress-exchange-distance") + 1] == exchange
     output = arguments[arguments.index("--output") + 1]
     assert f"suboff-nested-v11-equivalent-l{level[1:]}" in output
+
+
+def test_v22_compiled_allocation_probe_uses_tensor_tau_executor(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT
+                / "scripts"
+                / "run_suboff_nested_v22_compiled_allocation_probe.sh"
+            ),
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert "--compile-natural-kbc" in arguments
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v22-aff1-four-level-l90" in output
+
+
+@pytest.mark.parametrize(
+    ("launcher", "generation", "steps", "resolved_reynolds"),
+    (
+        ("run_suboff_nested_v23_re200k_compiled_l90.sh", "v23", "3000", "200000"),
+        ("run_suboff_nested_v24_compiled_long_l90.sh", "v24", "12000", "100000"),
+    ),
+)
+def test_compiled_production_launchers_lock_corrected_boundary_and_memory_path(
+    tmp_path: Path,
+    launcher: str,
+    generation: str,
+    steps: str,
+    resolved_reynolds: str,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / launcher),
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert "--compile-natural-kbc" in arguments
+    assert "--sponge-inlet" in arguments
+    assert "--low-memory-wall-macroscopic" in arguments
+    assert arguments[arguments.index("--collision-chunk-cells") + 1] == "262144"
+    assert arguments[arguments.index("--resolved-reynolds") + 1] == resolved_reynolds
+    output = arguments[arguments.index("--output") + 1]
+    assert f"suboff-nested-{generation}-equivalent-l90-{int(steps) // 1000}k" in output

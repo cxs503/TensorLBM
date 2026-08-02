@@ -2,10 +2,51 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import math
 
 import torch
 
+from .entropic_kbc import (
+    _collide_natural_kbc_d3q19_unchecked,
+    collide_natural_kbc_d3q19,
+)
+
 CellLocalCollision = Callable[[torch.Tensor], torch.Tensor]
+
+
+class NaturalKBCCollisionExecutor:
+    """Validated eager or graph-reusing natural-KBC execution.
+
+    Python floating-point relaxation times make ``torch.compile`` specialize
+    one graph per value, which is pathological during a viscosity ramp.  The
+    compiled path converts validated tau to a zero-dimensional tensor so one
+    dynamic graph can serve the full ramp and every z slab.
+    """
+
+    def __init__(self, *, compile_enabled: bool = False) -> None:
+        self.compile_enabled = bool(compile_enabled)
+        self._compiled: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] | None = None
+
+    def __call__(self, populations: torch.Tensor, tau: float) -> torch.Tensor:
+        if (
+            not isinstance(populations, torch.Tensor)
+            or populations.ndim != 4
+            or populations.shape[0] != 19
+        ):
+            raise ValueError("populations must have shape (19,nz,ny,nx)")
+        if not math.isfinite(tau) or tau <= 0.5:
+            raise ValueError("tau must be finite and greater than 0.5")
+        if not self.compile_enabled:
+            return collide_natural_kbc_d3q19(populations, tau)
+        if self._compiled is None:
+            self._compiled = torch.compile(
+                _collide_natural_kbc_d3q19_unchecked,
+                dynamic=True,
+                fullgraph=False,
+                mode="reduce-overhead",
+            )
+        tau_tensor = populations.new_tensor(tau)
+        return self._compiled(populations, tau_tensor)
 
 
 def collide_in_z_chunks(
@@ -47,4 +88,8 @@ def collide_in_z_chunks(
     return output
 
 
-__all__ = ["CellLocalCollision", "collide_in_z_chunks"]
+__all__ = [
+    "CellLocalCollision",
+    "NaturalKBCCollisionExecutor",
+    "collide_in_z_chunks",
+]

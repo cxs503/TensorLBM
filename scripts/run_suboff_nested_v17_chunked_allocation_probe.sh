@@ -21,7 +21,19 @@ cd "$root"
 mkdir -p "$result_dir"
 python=${TENSORLBM_PYTHON:-/home/wxsc/anaconda3/envs/ftw-env/bin/python}
 export PYTHONPATH="$root/src:$root/examples${PYTHONPATH:+:$PYTHONPATH}"
-stem="$result_dir/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1"
+generation=${TENSORLBM_CAMPAIGN_GENERATION:-v17}
+[[ $generation =~ ^v[0-9]+$ ]] || {
+  echo "TENSORLBM_CAMPAIGN_GENERATION must match vN" >&2
+  exit 2
+}
+compile_natural_kbc=()
+if [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} == 1 ]]; then
+  compile_natural_kbc=(--compile-natural-kbc)
+elif [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} != 0 ]]; then
+  echo "TENSORLBM_COMPILE_NATURAL_KBC must be 0 or 1" >&2
+  exit 2
+fi
+stem="$result_dir/suboff-nested-$generation-aff1-four-level-l90-chunked-allocation-r1"
 if [[ -f $stem.json ]]; then
   echo "chunked allocation result already exists: $stem.json" >&2
   exit 0
@@ -53,6 +65,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --resolved-reynolds-start 100000 \
   --viscosity-ramp-start-step 0 --viscosity-ramp-end-step 0 \
   --collision-model natural_kbc --collision-chunk-cells 262144 \
+  "${compile_natural_kbc[@]}" \
   --wall-force-direction-chunk 4 \
   --low-memory-wall-macroscopic \
   --cs-smag 0 --wall-law musker --stress-exchange-distance 1.0 \
