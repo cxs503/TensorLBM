@@ -1679,6 +1679,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      guard and temporal hysteresis rather than hard-coded axial zones.  Audit
      SHA-256 is
      `39931c82e1d3c0825746611c31cd3f982b9fdd559af47266785e978c002fdcdd`.
+188. A common non-equilibrium wall selector is implemented as a force-agnostic
+     state machine.  It requires persistent signed adverse-gradient evidence,
+     uses separate entry/exit thresholds, and immediately clears nodes with
+     invalid evidence, low friction velocity or out-of-policy `y+`.  The
+     selector deliberately has no wall-stress correction law and is not wired
+     into a production runner; it must first pass zero-gradient flat-plate and
+     adverse-gradient canonical validation.  Ten focused selector, gradient
+     and checkpoint-diagnostic tests pass.
 
 ## Rejected candidates
 
