@@ -45,5 +45,7 @@ def test_flat_plate_checkpoint_audit_is_read_only(tmp_path: Path) -> None:
     assert result["population_state_advanced"] is False
     assert result["wall_exchange"]["active_nodes"] > 0
     assert result["wall_exchange"]["pressure_gradient_parameter_max"] == 0.0
+    gradient = result["wall_exchange"]["pressure_gradient_summary"]
+    assert gradient["valid_samples"] == gradient["requested_samples"]
     restored = torch.load(checkpoint, map_location="cpu", weights_only=True)
     assert torch.equal(restored["populations"], populations)
