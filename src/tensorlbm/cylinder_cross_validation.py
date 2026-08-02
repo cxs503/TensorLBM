@@ -15,6 +15,7 @@ Design notes
 * ``status="diagnostic_only"`` and ``physical_validation=False`` on every
   result — this is a numerical cross-check, not a physical validation.
 """
+
 from __future__ import annotations
 
 import json
@@ -60,6 +61,7 @@ D2Q9_TURBULENCE_MODELS: list[str] = ["none", "Smagorinsky", "WALE", "Vreman"]
 # ---------------------------------------------------------------------------
 # Per-cell tau_eff collision wrappers
 # ---------------------------------------------------------------------------
+
 
 def _compute_tau_eff_field(
     f: torch.Tensor,
@@ -222,9 +224,7 @@ def _collide_rlbm_field(
     h_yy = cy * cy - cs2
     h_xy = cx * cy
     w_view = w.view(9, 1, 1)
-    fneq_reg = (9.0 / 2.0) * w_view * (
-        h_xx * pi_xx + h_yy * pi_yy + 2.0 * h_xy * pi_xy
-    )
+    fneq_reg = (9.0 / 2.0) * w_view * (h_xx * pi_xx + h_yy * pi_yy + 2.0 * h_xy * pi_xy)
 
     inv_tau_eff = (1.0 / tau_eff).unsqueeze(0)  # (1, ny, nx)
     return feq + (1.0 - inv_tau_eff) * fneq_reg
@@ -241,6 +241,7 @@ _COLLIDE_DISPATCH: dict[str, Any] = {
 # ---------------------------------------------------------------------------
 # Cylinder flow runner
 # ---------------------------------------------------------------------------
+
 
 def run_single_combination(
     collision_family: str,
@@ -345,7 +346,13 @@ def run_cross_validation_matrix(
     for cf in D2Q9_COLLISION_FAMILIES:
         for tm in D2Q9_TURBULENCE_MODELS:
             result = run_single_combination(
-                cf, tm, re=re, nx=nx, ny=ny, steps=steps, device=device,
+                cf,
+                tm,
+                re=re,
+                nx=nx,
+                ny=ny,
+                steps=steps,
+                device=device,
                 boundary_mode=boundary_mode,
             )
             results.append(result)

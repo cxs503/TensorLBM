@@ -27,7 +27,9 @@ def test_report_uses_wall_reaction_and_standard_open_water_definitions():
     assert report.advance_ratio == pytest.approx(0.5)
     assert report.kt == pytest.approx(2.0 / (2.0 * 0.01**2 * 4.0**4))
     assert report.kq == pytest.approx(3.0 / (2.0 * 0.01**2 * 4.0**5))
-    assert report.eta_o == pytest.approx(report.advance_ratio * report.kt / (2.0 * math.pi * report.kq))
+    assert report.eta_o == pytest.approx(
+        report.advance_ratio * report.kt / (2.0 * math.pi * report.kq)
+    )
 
 
 def test_report_handles_negative_rotation_with_positive_shaft_torque():

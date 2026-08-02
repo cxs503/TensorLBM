@@ -10,6 +10,7 @@ Verifies:
     - Static-droplet stability: a perturbed droplet remains finite over many steps
     - D3Q27 vs D3Q19 consistency: both lattices produce zero force for uniform density
 """
+
 from __future__ import annotations
 
 import pytest
@@ -32,8 +33,11 @@ DEVICE = torch.device("cpu")
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_two_component_27(
-    nz: int = 5, ny: int = 6, nx: int = 8,
+    nz: int = 5,
+    ny: int = 6,
+    nx: int = 8,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Equilibrium distributions for two D3Q27 components with different densities."""
     rho1 = torch.ones((nz, ny, nx), device=DEVICE)
@@ -43,7 +47,9 @@ def _make_two_component_27(
 
 
 def _make_single_component_27(
-    nz: int = 5, ny: int = 6, nx: int = 8,
+    nz: int = 5,
+    ny: int = 6,
+    nx: int = 8,
 ) -> torch.Tensor:
     """Equilibrium distribution for a single D3Q27 component."""
     rho = torch.ones((nz, ny, nx), device=DEVICE)
@@ -54,6 +60,7 @@ def _make_single_component_27(
 # ---------------------------------------------------------------------------
 # SC two-component force (D3Q27)
 # ---------------------------------------------------------------------------
+
 
 class TestSCTwoComponentForce27:
     def test_force_shape(self) -> None:
@@ -80,7 +87,12 @@ class TestSCTwoComponentForce27:
         rho1 = torch.ones((nz, ny, nx))
         rho2 = torch.full((nz, ny, nx), 0.5)
         Fx1, Fy1, Fz1, Fx2, Fy2, Fz2 = sc_two_component_force_27(
-            rho1, rho2, G_12=0.0, gx=0.01, gy=0.02, gz=0.03,
+            rho1,
+            rho2,
+            G_12=0.0,
+            gx=0.01,
+            gy=0.02,
+            gz=0.03,
         )
         # With G=0, only body force remains: F = rho * g
         assert torch.allclose(Fx1, rho1 * 0.01, atol=1e-6)
@@ -91,6 +103,7 @@ class TestSCTwoComponentForce27:
 # ---------------------------------------------------------------------------
 # SC two-component collision (D3Q27)
 # ---------------------------------------------------------------------------
+
 
 class TestSCTwoComponent27:
     def test_output_shape(self) -> None:
@@ -181,6 +194,7 @@ class TestSCTwoComponent27:
 # SC single-component collision (D3Q27)
 # ---------------------------------------------------------------------------
 
+
 class TestSCSingleComponent27:
     def test_output_shape(self) -> None:
         f = _make_single_component_27()
@@ -229,6 +243,7 @@ class TestSCSingleComponent27:
 # ---------------------------------------------------------------------------
 # Static droplet stability (D3Q27)
 # ---------------------------------------------------------------------------
+
 
 class TestStaticDroplet27:
     def test_droplet_remains_finite(self) -> None:

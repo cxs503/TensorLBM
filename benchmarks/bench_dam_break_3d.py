@@ -10,6 +10,7 @@ Usage::
     PYTHONPATH=src python benchmarks/bench_dam_break_3d.py --device cuda
     PYTHONPATH=src python benchmarks/bench_dam_break_3d.py --fast
 """
+
 from __future__ import annotations
 
 import argparse
@@ -65,22 +66,27 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="TensorLBM 3D dam-break benchmark (Koshizuka & Oka 1996)"
     )
-    parser.add_argument("--fast", action="store_true",
-                        help="Use reduced resolution for quick validation")
-    parser.add_argument("--model", default="sc", choices=["sc", "cg", "fe"],
-                        help="Multiphase model (default: cg)")
-    parser.add_argument("--device", default="cpu",
-                        help="Compute device (default: cpu)")
-    parser.add_argument("--output-root", default="/tmp/tensorlbm_dam3d",
-                        help="Output directory")
+    parser.add_argument(
+        "--fast", action="store_true", help="Use reduced resolution for quick validation"
+    )
+    parser.add_argument(
+        "--model", default="sc", choices=["sc", "cg", "fe"], help="Multiphase model (default: cg)"
+    )
+    parser.add_argument("--device", default="cpu", help="Compute device (default: cpu)")
+    parser.add_argument("--output-root", default="/tmp/tensorlbm_dam3d", help="Output directory")
     args = parser.parse_args()
 
     if args.fast:
         cfg = DamBreak3DConfig(
-            nx=80, ny=30, nz=30,
-            dam_width=30, fill_height=29,
-            model=args.model, gravity=5e-5,
-            n_steps=3000, output_interval=300,
+            nx=80,
+            ny=30,
+            nz=30,
+            dam_width=30,
+            fill_height=29,
+            model=args.model,
+            gravity=5e-5,
+            n_steps=3000,
+            output_interval=300,
             device=args.device,
             output_root=Path(args.output_root),
             run_name="bench_fast",
@@ -89,10 +95,15 @@ def main() -> None:
         )
     else:
         cfg = DamBreak3DConfig(
-            nx=161, ny=50, nz=50,
-            dam_width=61, fill_height=49,
-            model=args.model, gravity=5e-5,
-            n_steps=6000, output_interval=500,
+            nx=161,
+            ny=50,
+            nz=50,
+            dam_width=61,
+            fill_height=49,
+            model=args.model,
+            gravity=5e-5,
+            n_steps=6000,
+            output_interval=500,
             device=args.device,
             output_root=Path(args.output_root),
             run_name="bench_full",
@@ -103,9 +114,11 @@ def main() -> None:
     print("=" * 70)
     print("  3D DAM-BREAK BENCHMARK — Koshizuka & Oka (1996)")
     print("=" * 70)
-    print(f"  model={cfg.model}  device={cfg.device}  "
-          f"grid={cfg.nx}×{cfg.ny}×{cfg.nz}  "
-          f"steps={cfg.n_steps}  fast={args.fast}")
+    print(
+        f"  model={cfg.model}  device={cfg.device}  "
+        f"grid={cfg.nx}×{cfg.ny}×{cfg.nz}  "
+        f"steps={cfg.n_steps}  fast={args.fast}"
+    )
     print(f"  Water: {cfg.dam_width}×{cfg.fill_height}×{cfg.nz}")
 
     t0 = time.perf_counter()
@@ -126,9 +139,9 @@ def main() -> None:
     tol = 2.5 if args.fast else 1.5
     ok = math.isfinite(rmse) and rmse < tol
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  RESULTS")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     if front_series:
         final = front_series[-1]
         print(f"  Final: T*={final['t_star']:.3f}  X*={final['x_star']:.3f}")
@@ -138,7 +151,7 @@ def main() -> None:
     print(f"  Elapsed: {elapsed:.1f}s")
     flag = "✓ PASS" if ok else "✗ FAIL"
     print(f"  Status: {flag}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
     # Save report
     report = {

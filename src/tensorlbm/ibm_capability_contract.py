@@ -13,6 +13,7 @@ Audit scope (source files read, not docstring assertions):
     - ``tensorlbm/ibm_common.py`` – solver-agnostic common IBM interface
     - tests: ``test_ibm.py``, ``test_ibm3d.py``, ``test_ibm_common.py``
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -126,13 +127,15 @@ _RegistryEntry = tuple[str, str, str | None, str | None, str]
 _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
     "D3Q19": {
         "hat": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.ibm_common.ibm_direct_forcing_3d_common",
             "test_ibm_common.py: shape, force-conservation, equilibrium fixed-point, zero-force identity",
             "Direct-forcing IBM with 2-point hat kernel; Guo body-force correction via D3Q19 weights.",
         ),
         "4pt": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.ibm_common.ibm_direct_forcing_3d_common",
             "test_ibm_common.py: shape, force-conservation, equilibrium fixed-point",
             "Direct-forcing IBM with 4-point Peskin kernel; Guo body-force correction via D3Q19 weights.",
@@ -140,13 +143,15 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
     },
     "D3Q27": {
         "hat": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.ibm_common.ibm_direct_forcing_3d_common",
             "test_ibm_common.py: shape, force-conservation, equilibrium fixed-point, zero-force identity",
             "Direct-forcing IBM with 2-point hat kernel; Guo body-force correction via D3Q27 weights.",
         ),
         "4pt": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.ibm_common.ibm_direct_forcing_3d_common",
             "test_ibm_common.py: shape, force-conservation, equilibrium fixed-point",
             "Direct-forcing IBM with 4-point Peskin kernel; Guo body-force correction via D3Q27 weights.",
@@ -168,20 +173,25 @@ def _capability_for(lattice: str, kernel: str) -> IBMCapability:
     entry = lattice_map.get(kernel)
     if entry is None:
         return IBMCapability(
-            lattice=lattice, kernel=kernel,
+            lattice=lattice,
+            kernel=kernel,
             implementation_status=NO_IMPLEMENTATION,
             verification_level=VERIFICATION_NO_IMPLEMENTATION,
             status=WITHHELD_NO_IMPLEMENTATION,
-            entrypoint=None, test_evidence=None,
+            entrypoint=None,
+            test_evidence=None,
             note=f"No implementation found for IBM {lattice}/{kernel}.",
         )
     impl_status, verif_level, entrypoint, test_ev, note = entry
     return IBMCapability(
-        lattice=lattice, kernel=kernel,
+        lattice=lattice,
+        kernel=kernel,
         implementation_status=impl_status,
         verification_level=verif_level,
         status=_status_for(verif_level),
-        entrypoint=entrypoint, test_evidence=test_ev, note=note,
+        entrypoint=entrypoint,
+        test_evidence=test_ev,
+        note=note,
     )
 
 

@@ -11,6 +11,7 @@ CPU smoke (tiny grid, few steps):
 
 A real Cd run needs a larger grid on GPU.
 """
+
 from __future__ import annotations
 
 import math
@@ -37,8 +38,18 @@ def dilate3d(mask: torch.Tensor, k: int) -> torch.Tensor:
     return (d.squeeze(0).squeeze(0) > 0.5) & ~mask
 
 
-def run(nz=32, ny=32, nx=64, radius=5.0, band_thickness=3, u_in=0.1, tau_lbm=0.9,
-        n_steps=30, device="cpu", dtype=torch.float64):
+def run(
+    nz=32,
+    ny=32,
+    nx=64,
+    radius=5.0,
+    band_thickness=3,
+    u_in=0.1,
+    tau_lbm=0.9,
+    n_steps=30,
+    device="cpu",
+    dtype=torch.float64,
+):
     torch.manual_seed(0)
     cx, cy, cz = nx * 0.25, ny * 0.5, nz * 0.5
     solid = sphere_mask(nx, ny, nz, cx, cy, cz, radius, device=device)
@@ -50,8 +61,8 @@ def run(nz=32, ny=32, nx=64, radius=5.0, band_thickness=3, u_in=0.1, tau_lbm=0.9
     ux0 = torch.full((nz, ny, nx), u_in, dtype=dtype, device=device)
     ux0[solid] = 0.0
     f_lbm = equilibrium3d(rho0, ux0, torch.zeros_like(ux0), torch.zeros_like(ux0)).to(dtype)
-    cb = topo.band_coords                                   # (n_band, 3) in (z,y,x)
-    f_dg = f_lbm[:, cb[:, 0], cb[:, 1], cb[:, 2]]            # (Q, n_band)
+    cb = topo.band_coords  # (n_band, 3) in (z,y,x)
+    f_dg = f_lbm[:, cb[:, 0], cb[:, 1], cb[:, 2]]  # (Q, n_band)
     f_dg = f_dg.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(-1, -1, 2, 2, 2).contiguous()
 
     wall_mask = make_channel_wall_mask_3d(nz, ny, nx, solid, device=device)
@@ -62,8 +73,16 @@ def run(nz=32, ny=32, nx=64, radius=5.0, band_thickness=3, u_in=0.1, tau_lbm=0.9
 
     for step in range(1, n_steps + 1):
         f_lbm, f_dg = hybrid_step(
-            f_lbm, f_dg, C, W, ops, topo, tau_lbm=tau_lbm,
-            dt=1.0, n_substeps=10, opposite=opp,       # 3D ⇒ ≥10 sub-steps
+            f_lbm,
+            f_dg,
+            C,
+            W,
+            ops,
+            topo,
+            tau_lbm=tau_lbm,
+            dt=1.0,
+            n_substeps=10,
+            opposite=opp,  # 3D ⇒ ≥10 sub-steps
         )
         f_lbm = apply_simple_channel_boundaries_3d(f_lbm, u_in, wall_mask, solid)
         if step % 10 == 0:
@@ -75,7 +94,8 @@ def run(nz=32, ny=32, nx=64, radius=5.0, band_thickness=3, u_in=0.1, tau_lbm=0.9
             fx, fy, fz = compute_obstacle_forces_3d(f_lbm, solid)
             print(f"step {step:3d}: max|u|={ms:.4f}  drag={float(fx):.4f}")
             if not math.isfinite(ms) or ms > 5.0:
-                print("  -> UNSTABLE"); return False
+                print("  -> UNSTABLE")
+                return False
     return True
 
 

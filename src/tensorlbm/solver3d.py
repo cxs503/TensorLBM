@@ -18,6 +18,7 @@ _stream3d_cache: dict[
 # collision that @functools.cache causes for torch.device arguments.
 _mrt3d_matrix_cache: dict[tuple[str, torch.dtype], tuple[torch.Tensor, torch.Tensor]] = {}
 
+
 def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
     """Compute and return (M, M_inv) as nested Python lists (float64 precision)."""
     import numpy as np
@@ -58,7 +59,9 @@ def _build_d3q19_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
 _M_D3Q19_DATA, _M_D3Q19_INV_DATA = _build_d3q19_mrt_matrices()
 
 
-def _get_d3q19_mrt_matrices(device: torch.device, dtype: torch.dtype = torch.float32) -> tuple[torch.Tensor, torch.Tensor]:
+def _get_d3q19_mrt_matrices(
+    device: torch.device, dtype: torch.dtype = torch.float32
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Return cached (M, M_inv) for D3Q19 MRT, keyed by (str(device), dtype).
 
     Uses an explicit string key so that cuda:0, cuda:1, … are cached
@@ -72,7 +75,6 @@ def _get_d3q19_mrt_matrices(device: torch.device, dtype: torch.dtype = torch.flo
         matrix_inv = torch.tensor(_M_D3Q19_INV_DATA, dtype=dtype, device=device)
         _mrt3d_matrix_cache[key] = (matrix, matrix_inv)
     return _mrt3d_matrix_cache[key]
-
 
 
 def collide_bgk3d(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -178,25 +180,25 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     # D3Q19 velocity vectors: (cx, cy, cz) per direction
     # Pull scheme: out[q](x) = f[q](x - c_q) → shift by +c_q
     shifts = [
-        (0, 0, 0),       # 0: rest
-        (1, 0, 0),       # 1: +x
-        (-1, 0, 0),      # 2: -x
-        (0, 1, 0),       # 3: +y
-        (0, -1, 0),      # 4: -y
-        (0, 0, 1),       # 5: +z
-        (0, 0, -1),      # 6: -z
-        (1, 1, 0),       # 7: +x+y
-        (-1, -1, 0),     # 8: -x-y  (was -x+y — bug: must match C)
-        (1, -1, 0),      # 9: +x-y
-        (-1, 1, 0),      # 10: -x+y (was -x-y — bug: must match C)
-        (1, 0, 1),       # 11: +x+z
-        (-1, 0, -1),     # 12: -x-z (was -x+z — bug: must match C)
-        (1, 0, -1),      # 13: +x-z
-        (-1, 0, 1),      # 14: -x+z (was -x-z — bug: must match C)
-        (0, 1, 1),       # 15: +y+z
-        (0, -1, -1),     # 16: -y-z (was -y+z — bug: must match C)
-        (0, 1, -1),      # 17: +y-z
-        (0, -1, 1),      # 18: -y+z (was -y-z — bug: must match C)
+        (0, 0, 0),  # 0: rest
+        (1, 0, 0),  # 1: +x
+        (-1, 0, 0),  # 2: -x
+        (0, 1, 0),  # 3: +y
+        (0, -1, 0),  # 4: -y
+        (0, 0, 1),  # 5: +z
+        (0, 0, -1),  # 6: -z
+        (1, 1, 0),  # 7: +x+y
+        (-1, -1, 0),  # 8: -x-y  (was -x+y — bug: must match C)
+        (1, -1, 0),  # 9: +x-y
+        (-1, 1, 0),  # 10: -x+y (was -x-y — bug: must match C)
+        (1, 0, 1),  # 11: +x+z
+        (-1, 0, -1),  # 12: -x-z (was -x+z — bug: must match C)
+        (1, 0, -1),  # 13: +x-z
+        (-1, 0, 1),  # 14: -x+z (was -x-z — bug: must match C)
+        (0, 1, 1),  # 15: +y+z
+        (0, -1, -1),  # 16: -y-z (was -y+z — bug: must match C)
+        (0, 1, -1),  # 17: +y-z
+        (0, -1, 1),  # 18: -y+z (was -y-z — bug: must match C)
     ]
     # dims: (z, y, x) → roll dims = (3, 2, 1) for (x, y, z)
     out = torch.empty_like(f)
@@ -235,16 +237,16 @@ def stream3d_index_select(f: torch.Tensor) -> torch.Tensor:
         c_np = C.numpy()  # (19, 3) — cx, cy, cz
         # Pull scheme: out[q](r) = f[q](r - c_q)
         # For each direction q: src_z = (z - cz_q) % nz, etc.
-        z_base = torch.arange(nz, device=device)   # (nz,)
-        y_base = torch.arange(ny, device=device)   # (ny,)
-        x_base = torch.arange(nx, device=device)   # (nx,)
+        z_base = torch.arange(nz, device=device)  # (nz,)
+        y_base = torch.arange(ny, device=device)  # (ny,)
+        x_base = torch.arange(nx, device=device)  # (nx,)
 
         q_idx_list, z_idx_list, y_idx_list, x_idx_list = [], [], [], []
         for q in range(19):
             cxq, cyq, czq = int(c_np[q, 0]), int(c_np[q, 1]), int(c_np[q, 2])
-            z_src = (z_base - czq) % nz   # (nz,)
-            y_src = (y_base - cyq) % ny   # (ny,)
-            x_src = (x_base - cxq) % nx   # (nx,)
+            z_src = (z_base - czq) % nz  # (nz,)
+            y_src = (y_base - cyq) % ny  # (ny,)
+            x_src = (x_base - cxq) % nx  # (nx,)
             # broadcast to (nz, ny, nx) then prepend q-dim
             z_idx = z_src.view(nz, 1, 1).expand(nz, ny, nx)
             y_idx = y_src.view(1, ny, 1).expand(nz, ny, nx)
@@ -254,10 +256,10 @@ def stream3d_index_select(f: torch.Tensor) -> torch.Tensor:
             y_idx_list.append(y_idx)
             x_idx_list.append(x_idx)
 
-        q_idx = torch.stack(q_idx_list, dim=0)   # (19, nz, ny, nx)
-        z_idx = torch.stack(z_idx_list, dim=0)   # (19, nz, ny, nx)
-        y_idx = torch.stack(y_idx_list, dim=0)   # (19, nz, ny, nx)
-        x_idx = torch.stack(x_idx_list, dim=0)   # (19, nz, ny, nx)
+        q_idx = torch.stack(q_idx_list, dim=0)  # (19, nz, ny, nx)
+        z_idx = torch.stack(z_idx_list, dim=0)  # (19, nz, ny, nx)
+        y_idx = torch.stack(y_idx_list, dim=0)  # (19, nz, ny, nx)
+        x_idx = torch.stack(x_idx_list, dim=0)  # (19, nz, ny, nx)
         _stream3d_cache[cache_key] = (q_idx, z_idx, y_idx, x_idx)
 
     q_idx, z_idx, y_idx, x_idx = _stream3d_cache[cache_key]
@@ -278,6 +280,7 @@ def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     if current.abs() < 1e-30:
         return f
     return f * (target_mass / current)
+
 
 def collide_trt3d(
     f: torch.Tensor,
@@ -363,13 +366,17 @@ def collide_rlbm3d(f: torch.Tensor, tau: float) -> torch.Tensor:
     h_xz = cx * cz
     h_yz = cy * cz
     w_view = w.view(19, 1, 1, 1)
-    fneq_reg = (9.0 / 2.0) * w_view * (
-        h_xx * pi_xx
-        + h_yy * pi_yy
-        + h_zz * pi_zz
-        + 2.0 * h_xy * pi_xy
-        + 2.0 * h_xz * pi_xz
-        + 2.0 * h_yz * pi_yz
+    fneq_reg = (
+        (9.0 / 2.0)
+        * w_view
+        * (
+            h_xx * pi_xx
+            + h_yy * pi_yy
+            + h_zz * pi_zz
+            + 2.0 * h_xy * pi_xy
+            + 2.0 * h_xz * pi_xz
+            + 2.0 * h_yz * pi_yz
+        )
     )
 
     return feq + (1.0 - 1.0 / tau) * fneq_reg

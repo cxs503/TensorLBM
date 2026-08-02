@@ -1,4 +1,5 @@
 """Independent torchrun coverage for a 3-rank to 2-rank D3Q19 restart."""
+
 from __future__ import annotations
 
 import os
@@ -8,7 +9,7 @@ from pathlib import Path
 import torch
 
 
-_WORKER = r'''
+_WORKER = r"""
 import hashlib
 import json
 import sys
@@ -81,9 +82,9 @@ if rank == 0:
           "final_state_digest": trace[-1]["state_digest"], "owned_widths": [5, 5],
           "mismatch_all19_owned": trace[-1]["mismatch_all19_owned"]}, sort_keys=True), flush=True)
 dist.destroy_process_group()
-'''
+"""
 
-_LOAD_WORKER = r'''
+_LOAD_WORKER = r"""
 import sys
 import torch.distributed as dist
 from tensorlbm.multi_gpu import D3Q19GlooTransport
@@ -96,19 +97,28 @@ except RuntimeError as exc:
     dist.destroy_process_group()
     raise SystemExit(0)
 raise AssertionError("invalid source checkpoint set was accepted")
-'''
+"""
 
 
-def _torchrun(root: Path, ranks: int, worker: Path, *args: Path | str) -> subprocess.CompletedProcess[str]:
+def _torchrun(
+    root: Path, ranks: int, worker: Path, *args: Path | str
+) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(root / "src") + os.pathsep + env.get("PYTHONPATH", "")
     return subprocess.run(
         ["torchrun", "--standalone", f"--nproc_per_node={ranks}", str(worker), *map(str, args)],
-        cwd=root, env=env, text=True, capture_output=True, timeout=180, check=False,
+        cwd=root,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=180,
+        check=False,
     )
 
 
-def test_three_rank_checkpoint_repartitions_to_two_rank_restart_exactly_and_fails_closed(tmp_path: Path) -> None:
+def test_three_rank_checkpoint_repartitions_to_two_rank_restart_exactly_and_fails_closed(
+    tmp_path: Path,
+) -> None:
     root = Path(__file__).resolve().parents[1]
     worker, loader = tmp_path / "worker.py", tmp_path / "loader.py"
     worker.write_text(_WORKER)
@@ -117,7 +127,11 @@ def test_three_rank_checkpoint_repartitions_to_two_rank_restart_exactly_and_fail
     oracle, resumed = tmp_path / "oracle.pt", tmp_path / "resumed.pt"
 
     runs = {}
-    for mode, ranks, output in (("oracle2", 2, oracle), ("save3", 3, tmp_path / "unused.pt"), ("resume2", 2, resumed)):
+    for mode, ranks, output in (
+        ("oracle2", 2, oracle),
+        ("save3", 3, tmp_path / "unused.pt"),
+        ("resume2", 2, resumed),
+    ):
         run = _torchrun(root, ranks, worker, mode, checkpoint, output)
         assert run.returncode == 0, run.stdout + "\n" + run.stderr
         runs[mode] = run
@@ -133,7 +147,11 @@ def test_three_rank_checkpoint_repartitions_to_two_rank_restart_exactly_and_fail
     rank1 = checkpoint / "rank-1.pt"
     pristine = torch.load(rank1, weights_only=True)
     os.unlink(rank1)
-    for mutation, expected in (("missing", "missing"), ("generation", "generation"), ("digest", "digest")):
+    for mutation, expected in (
+        ("missing", "missing"),
+        ("generation", "generation"),
+        ("digest", "digest"),
+    ):
         if mutation != "missing":
             payload = dict(pristine)
             if mutation == "generation":

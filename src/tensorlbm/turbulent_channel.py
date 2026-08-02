@@ -5,6 +5,7 @@ A constant streamwise body force drives the channel and the resulting mean
 velocity profile is compared against the viscous sublayer and logarithmic law
 of the wall in wall units.
 """
+
 from __future__ import annotations
 
 import csv
@@ -277,9 +278,7 @@ def run_turbulent_channel(
 
     step_range = range(1, config.n_steps + 1)
     step_iter = (
-        _tqdm(step_range, desc="Turbulent channel", unit="step")
-        if _TQDM_AVAILABLE
-        else step_range
+        _tqdm(step_range, desc="Turbulent channel", unit="step") if _TQDM_AVAILABLE else step_range
     )
     for step in step_iter:
         f = collide_smagorinsky_bgk(
@@ -374,9 +373,7 @@ def run_turbulent_channel(
     metadata["averaging_samples"] = sample_count
     if roughness_damping_history:
         metadata["engineering_closure"]["rough_wall_runtime"] = {
-            "mean_damping": (
-                sum(roughness_damping_history) / len(roughness_damping_history)
-            ),
+            "mean_damping": (sum(roughness_damping_history) / len(roughness_damping_history)),
             "last_damping": roughness_damping_history[-1],
         }
     if turbulence_acc is not None and turbulence_acc.count > 0:

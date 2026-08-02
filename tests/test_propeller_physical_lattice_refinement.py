@@ -1,4 +1,5 @@
 """Physical-to-lattice contract for comparable propeller refinement."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -40,18 +41,22 @@ def test_fixed_physical_rotation_mapping_derives_all_lattice_units(tmp_path: Pat
 
 
 def test_physical_mapping_reports_tau_and_low_mach_violations_per_level(tmp_path: Path) -> None:
-    evidence = map_physical_propeller_refinement(PhysicalPropellerRefinementSpec(
-        diameter_m=1.0,
-        advance_speed_ms=1.0,
-        rotation_rps=1.0,
-        nu_m2s=1.0e-2,
-        diameter_lu_levels=(10, 20, 30),
-        steps_per_revolution=100,
-        tau_max=0.51,
-        output_root=tmp_path,
-    ))
+    evidence = map_physical_propeller_refinement(
+        PhysicalPropellerRefinementSpec(
+            diameter_m=1.0,
+            advance_speed_ms=1.0,
+            rotation_rps=1.0,
+            nu_m2s=1.0e-2,
+            diameter_lu_levels=(10, 20, 30),
+            steps_per_revolution=100,
+            tau_max=0.51,
+            output_root=tmp_path,
+        )
+    )
 
     violations = evidence["violations"]
     assert any(v["constraint"] == "tau_range" and v["level"] == "level_2" for v in violations)
     assert any(v["constraint"] == "low_mach" and v["level"] == "level_2" for v in violations)
-    assert all({"constraint", "level", "actual", "required", "operator"} <= set(v) for v in violations)
+    assert all(
+        {"constraint", "level", "actual", "required", "operator"} <= set(v) for v in violations
+    )

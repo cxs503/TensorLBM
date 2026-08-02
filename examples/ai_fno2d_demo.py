@@ -92,7 +92,9 @@ def _coord_channels(ny: int, nx: int, device: torch.device) -> tuple[torch.Tenso
     return x, y
 
 
-def run_lbm_case(case: FlowCase, *, nx: int, ny: int, n_steps: int, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+def run_lbm_case(
+    case: FlowCase, *, nx: int, ny: int, n_steps: int, device: torch.device
+) -> tuple[torch.Tensor, torch.Tensor]:
     cx_obs, cy_obs = nx * 0.25, ny * 0.5
     obstacle = cylinder_mask(nx, ny, cx_obs, cy_obs, case.radius, device=device)
     wall_mask = make_channel_wall_mask(ny, nx, obstacle, device=device)
@@ -277,8 +279,12 @@ def save_speed_table(path_csv: Path, path_txt: Path, speed: dict[str, float]) ->
     with path_csv.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
         writer.writerow(["method", "total_s", "avg_s_per_case", "n_cases"])
-        writer.writerow(["LBM simulation", speed["lbm_total_s"], speed["lbm_avg_s"], int(speed["n_cases"])])
-        writer.writerow(["FNO2d inference", speed["fno_total_s"], speed["fno_avg_s"], int(speed["n_cases"])])
+        writer.writerow(
+            ["LBM simulation", speed["lbm_total_s"], speed["lbm_avg_s"], int(speed["n_cases"])]
+        )
+        writer.writerow(
+            ["FNO2d inference", speed["fno_total_s"], speed["fno_avg_s"], int(speed["n_cases"])]
+        )
 
     lines = [
         "| Method | Total time (s) | Avg / case (s) | Cases |",

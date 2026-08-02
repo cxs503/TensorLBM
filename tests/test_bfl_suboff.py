@@ -6,6 +6,7 @@ bounce-back with ellipsoid-analytical q-values.
 
 Reports Ct_total at steps 200/400/600/800/1000.
 """
+
 from __future__ import annotations
 
 import math
@@ -29,8 +30,9 @@ OPP_LIST = [int(x) for x in OPP19.tolist()]
 def far_field_bc_19(f: torch.Tensor, u_in: float = 0.06) -> torch.Tensor:
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
     rho1 = torch.ones(nz, ny, nx, dtype=f.dtype, device=f.device)
-    feq = equilibrium3d(rho1, torch.full_like(rho1, u_in),
-                        torch.zeros_like(rho1), torch.zeros_like(rho1))
+    feq = equilibrium3d(
+        rho1, torch.full_like(rho1, u_in), torch.zeros_like(rho1), torch.zeros_like(rho1)
+    )
     f = f.clone()
     f[:, :, :, 0] = feq[:, :, :, 0]
     f[:, :, :, -1] = f[:, :, :, -2]
@@ -42,7 +44,9 @@ def far_field_bc_19(f: torch.Tensor, u_in: float = 0.06) -> torch.Tensor:
 
 
 def compute_forces_me(
-    f_post: torch.Tensor, f_pre: torch.Tensor, solid: torch.Tensor,
+    f_post: torch.Tensor,
+    f_pre: torch.Tensor,
+    solid: torch.Tensor,
     c_dev: torch.Tensor,
 ) -> float:
     """Momentum exchange drag force on solid."""
@@ -61,7 +65,9 @@ def compute_forces_me(
 def run_simulation(
     *,
     use_bfl: bool,
-    nx: int, ny: int, nz: int,
+    nx: int,
+    ny: int,
+    nz: int,
     hull_length: float,
     u_in: float = 0.06,
     re: float = 1e5,
@@ -76,14 +82,21 @@ def run_simulation(
     config = SuboffConfig()
 
     solid, _ = build_suboff_mask(
-        SuboffHullType.BARE_HULL, nx=nx, ny=ny, nz=nz,
-        cx=cx_g, cy=cy_g, cz=cz_g, length=hull_length,
-        device="cpu", config=config,
+        SuboffHullType.BARE_HULL,
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        cx=cx_g,
+        cy=cy_g,
+        cz=cz_g,
+        length=hull_length,
+        device="cpu",
+        config=config,
     )
     solid = solid.to(dev)
 
     S = _voxel_wetted_area(solid, 1.0)
-    dyn_p_S = 0.5 * 1.0 * u_in ** 2 * S
+    dyn_p_S = 0.5 * 1.0 * u_in**2 * S
     c_dev = C19.to(dev).float()[:19]
 
     bfl_mask = None
@@ -92,11 +105,17 @@ def run_simulation(
         print("  BFL suboff q-field...")
         t_q = time.time()
         bfl_mask, bfl_q = compute_q_suboff(
-            nx, ny, nz, cx_g, cy_g, cz_g, hull_length,
+            nx,
+            ny,
+            nz,
+            cx_g,
+            cy_g,
+            cz_g,
+            hull_length,
             device=dev,
         )
         n_links = int(bfl_mask.sum().item())
-        print(f"  Q-field: {n_links} links ({time.time()-t_q:.1f}s)")
+        print(f"  Q-field: {n_links} links ({time.time() - t_q:.1f}s)")
 
     rho0 = torch.ones(nz, ny, nx, device=dev)
     ux0 = torch.full((nz, ny, nx), u_in, device=dev)
@@ -105,8 +124,9 @@ def run_simulation(
     initial_mass = float(rho0.sum().item())
 
     label = "BFL" if use_bfl else "STAIRCASE"
-    print(f"\n=== {label}: Re={re:.0e} tau={tau:.4f} {nx}x{ny}x{nz} L={hull_length} "
-          f"Cs={cs_smag} ===")
+    print(
+        f"\n=== {label}: Re={re:.0e} tau={tau:.4f} {nx}x{ny}x{nz} L={hull_length} Cs={cs_smag} ==="
+    )
 
     results: dict[int, dict[str, float]] = {}
     t0 = time.time()
@@ -114,8 +134,9 @@ def run_simulation(
 
     for step in range(1, n_steps + 1):
         # Reset solid
-        f_eq = equilibrium3d(rho0, torch.zeros_like(rho0),
-                             torch.zeros_like(rho0), torch.zeros_like(rho0))
+        f_eq = equilibrium3d(
+            rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0)
+        )
         f[:, solid] = f_eq[:, solid]
 
         # Collide
@@ -149,14 +170,15 @@ def run_simulation(
         if step in (200, 400, 500, 600, 800, 1000):
             ct = sum(fx_samples[-50:]) / max(len(fx_samples[-50:]), 1) / dyn_p_S
             results[int(step)] = {"Ct_total": float(ct)}
-            print(f"  step {step:4d}: Ct={float(ct):.6f} ({time.time()-t0:.0f}s)")
+            print(f"  step {step:4d}: Ct={float(ct):.6f} ({time.time() - t0:.0f}s)")
 
-    print(f"  Done in {time.time()-t0:.1f}s")
+    print(f"  Done in {time.time() - t0:.1f}s")
     return results
 
 
 if __name__ == "__main__":
     import argparse
+
     p = argparse.ArgumentParser()
     p.add_argument("--device", default="cpu")
     p.add_argument("--nx", type=int, default=96)
@@ -178,14 +200,26 @@ if __name__ == "__main__":
 
     if not args.bfl_only:
         all_results["staircase"] = run_simulation(
-            use_bfl=False, nx=nx, ny=ny, nz=nz,
-            hull_length=hull_length, re=args.re, n_steps=args.steps, device=args.device,
+            use_bfl=False,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            hull_length=hull_length,
+            re=args.re,
+            n_steps=args.steps,
+            device=args.device,
         )
 
     if not args.staircase_only:
         all_results["bfl"] = run_simulation(
-            use_bfl=True, nx=nx, ny=ny, nz=nz,
-            hull_length=hull_length, re=args.re, n_steps=args.steps, device=args.device,
+            use_bfl=True,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            hull_length=hull_length,
+            re=args.re,
+            n_steps=args.steps,
+            device=args.device,
         )
 
     print("\n" + "=" * 70)
@@ -211,4 +245,6 @@ if __name__ == "__main__":
                 cb = all_results[k1][step]["Ct_total"]
                 delta = cs - cb
                 pct = delta / max(abs(cs), 1e-12) * 100
-                print(f"  step {step:4d}: stair={cs:.6f}  bfl={cb:.6f}  Δ={delta:.6f}  ({pct:+.1f}%)")
+                print(
+                    f"  step {step:4d}: stair={cs:.6f}  bfl={cb:.6f}  Δ={delta:.6f}  ({pct:+.1f}%)"
+                )

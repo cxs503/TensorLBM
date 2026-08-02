@@ -1,4 +1,5 @@
 """Unit tests for the pure LIQUID↔INTERFACE paired-link reference ledger."""
+
 from __future__ import annotations
 
 import torch
@@ -10,10 +11,9 @@ from tensorlbm.paired_link_mass_accounting import paired_liquid_interface_transf
 
 def _source_flags(flags: torch.Tensor) -> torch.Tensor:
     """Flags at x-c_q, consistent with D3Q19 pull streaming."""
-    return torch.stack([
-        flags.roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2))
-        for q in range(19)
-    ])
+    return torch.stack(
+        [flags.roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2)) for q in range(19)]
+    )
 
 
 def test_paired_link_ledger_is_exactly_conservative_for_arbitrary_populations() -> None:
@@ -72,10 +72,9 @@ def test_reference_transfer_matches_current_f_post_fill_formula_on_interface_sid
     flags[:, :, 3:] = LIQUID
 
     ledger = paired_liquid_interface_transfers(f_post, flags)
-    pulled = torch.stack([
-        f_post[q].roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2))
-        for q in range(19)
-    ])
+    pulled = torch.stack(
+        [f_post[q].roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2)) for q in range(19)]
+    )
     current_interface_delta = torch.where(
         (flags == INTERFACE).unsqueeze(0) & (_source_flags(flags) == LIQUID),
         pulled - f_post[OPPOSITE],

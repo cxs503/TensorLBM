@@ -16,6 +16,7 @@ Provides:
 - :func:`compute_drag_lift_coefficients` – drag and lift coefficients from force data.
 - :class:`RunningStats`                  – online accumulator for time-averaged statistics.
 """
+
 from __future__ import annotations
 
 import torch
@@ -95,7 +96,7 @@ def compute_recirculation_length(
     if ux.ndim == 2:
         ny, nx = ux.shape
         mid_y = ny // 2
-        centreline = ux[mid_y, :]         # (nx,)
+        centreline = ux[mid_y, :]  # (nx,)
         obs_line = obstacle_mask[mid_y, :]
     elif ux.ndim == 3:
         nz, ny, nx = ux.shape
@@ -296,18 +297,12 @@ def compute_lambda2_criterion(
 
     # S² + Ω² (symmetric): component-wise product of S and Ω matrices
     # M_ij = Σ_k (S_ik S_kj + Ω_ik Ω_kj)
-    m_xx = (s_xx * s_xx + s_xy * s_xy + s_xz * s_xz
-            - w_xy * w_xy - w_xz * w_xz)
-    m_yy = (s_xy * s_xy + s_yy * s_yy + s_yz * s_yz
-            - w_xy * w_xy - w_yz * w_yz)
-    m_zz = (s_xz * s_xz + s_yz * s_yz + s_zz * s_zz
-            - w_xz * w_xz - w_yz * w_yz)
-    m_xy = (s_xx * s_xy + s_xy * s_yy + s_xz * s_yz
-            + w_xy * s_xx - w_xy * s_yy - w_xz * w_yz)
-    m_xz = (s_xx * s_xz + s_xy * s_yz + s_xz * s_zz
-            + w_xz * s_xx - w_xy * w_yz - w_xz * s_zz)
-    m_yz = (s_xy * s_xz + s_yy * s_yz + s_yz * s_zz
-            + w_yz * s_yy - w_xy * w_xz - w_yz * s_zz)
+    m_xx = s_xx * s_xx + s_xy * s_xy + s_xz * s_xz - w_xy * w_xy - w_xz * w_xz
+    m_yy = s_xy * s_xy + s_yy * s_yy + s_yz * s_yz - w_xy * w_xy - w_yz * w_yz
+    m_zz = s_xz * s_xz + s_yz * s_yz + s_zz * s_zz - w_xz * w_xz - w_yz * w_yz
+    m_xy = s_xx * s_xy + s_xy * s_yy + s_xz * s_yz + w_xy * s_xx - w_xy * s_yy - w_xz * w_yz
+    m_xz = s_xx * s_xz + s_xy * s_yz + s_xz * s_zz + w_xz * s_xx - w_xy * w_yz - w_xz * s_zz
+    m_yz = s_xy * s_xz + s_yy * s_yz + s_yz * s_zz + w_yz * s_yy - w_xy * w_xz - w_yz * s_zz
 
     shape = ux.shape
     n = ux.numel()
@@ -315,9 +310,15 @@ def compute_lambda2_criterion(
     # Build batched (n, 3, 3) symmetric matrix for eigvalsh
     M = torch.stack(
         [
-            m_xx.reshape(n), m_xy.reshape(n), m_xz.reshape(n),
-            m_xy.reshape(n), m_yy.reshape(n), m_yz.reshape(n),
-            m_xz.reshape(n), m_yz.reshape(n), m_zz.reshape(n),
+            m_xx.reshape(n),
+            m_xy.reshape(n),
+            m_xz.reshape(n),
+            m_xy.reshape(n),
+            m_yy.reshape(n),
+            m_yz.reshape(n),
+            m_xz.reshape(n),
+            m_yz.reshape(n),
+            m_zz.reshape(n),
         ],
         dim=1,
     ).reshape(n, 3, 3)
@@ -773,7 +774,7 @@ def detect_strouhal(
         lag_max = int(min(n - 1, length_ref * sample_rate / (st_min * u_ref)))
         if lag_max <= lag_min + 1:
             return None
-        R_search = R[lag_min:lag_max + 1]
+        R_search = R[lag_min : lag_max + 1]
         peak_off = int(np.argmax(R_search))
         lag = lag_min + peak_off
         if R[lag] < 0.1:  # too weak — no clear periodicity
@@ -855,7 +856,7 @@ def compute_added_mass_2d(
     del fy_history
     x = motion_history.float()
     xdot = torch.gradient(x, spacing=1.0)[0]
-    design = torch.stack([-omega**2 * x, -omega * xdot], dim=1)
+    design = torch.stack([-(omega**2) * x, -omega * xdot], dim=1)
     solution = torch.linalg.lstsq(design, fx_history.float().unsqueeze(1)).solution.squeeze(1)
     scale = rho_ref * area if rho_ref * area != 0.0 else 1.0
     return float(solution[0].item() / scale), float(solution[1].item() / scale)
@@ -887,7 +888,7 @@ def compute_added_mass_3d(
     del fy_history, fz_history
     x = motion_x_history.float()
     xdot = torch.gradient(x, spacing=1.0)[0]
-    design = torch.stack([-omega**2 * x, -omega * xdot], dim=1)
+    design = torch.stack([-(omega**2) * x, -omega * xdot], dim=1)
     solution = torch.linalg.lstsq(design, fx_history.float().unsqueeze(1)).solution.squeeze(1)
     scale = rho_ref * volume if rho_ref * volume != 0.0 else 1.0
     return float(solution[0].item() / scale), float(solution[1].item() / scale)

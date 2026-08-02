@@ -8,6 +8,7 @@ Covers:
 - ``run_dg_lbm_sphere_flow`` end-to-end smoke run with artifact checks.
 - Resume-from-checkpoint behaviour.
 """
+
 from __future__ import annotations
 
 import json
@@ -231,10 +232,18 @@ class TestCollideDGLBM:
 class TestRunDGLBMSphereFlow:
     def _smoke_cfg(self, tmp_path: Path, **overrides) -> DGLBMConfig:
         kwargs: dict = {
-            "nx": 32, "ny": 16, "nz": 16,
-            "u_in": 0.05, "re": 50.0, "radius": 3.0, "dg_band": 3.0,
-            "n_steps": 4, "output_interval": 2,
-            "output_root": tmp_path, "run_name": "smoke", "overwrite": True,
+            "nx": 32,
+            "ny": 16,
+            "nz": 16,
+            "u_in": 0.05,
+            "re": 50.0,
+            "radius": 3.0,
+            "dg_band": 3.0,
+            "n_steps": 4,
+            "output_interval": 2,
+            "output_root": tmp_path,
+            "run_name": "smoke",
+            "overwrite": True,
         }
         kwargs.update(overrides)
         return DGLBMConfig(**kwargs)
@@ -279,10 +288,18 @@ class TestRunDGLBMSphereFlow:
         assert (run_dir1 / "checkpoint_f.pt").exists()
 
         cfg2 = DGLBMConfig(
-            nx=32, ny=16, nz=16,
-            u_in=0.05, re=50.0, radius=3.0, dg_band=3.0,
-            n_steps=6, output_interval=2,
-            output_root=tmp_path, run_name="second", overwrite=True,
+            nx=32,
+            ny=16,
+            nz=16,
+            u_in=0.05,
+            re=50.0,
+            radius=3.0,
+            dg_band=3.0,
+            n_steps=6,
+            output_interval=2,
+            output_root=tmp_path,
+            run_name="second",
+            overwrite=True,
             resume_checkpoint=run_dir1,
         )
         run_dir2 = run_dg_lbm_sphere_flow(cfg2)
@@ -294,7 +311,12 @@ class TestRunDGLBMSphereFlow:
         """dg_band > 0 is enforced by validate(); confirm validate catches it."""
         with pytest.raises(ValueError, match="dg_band"):
             DGLBMConfig(
-                nx=32, ny=16, nz=16,
-                u_in=0.05, re=50.0, radius=3.0, dg_band=0.0,
+                nx=32,
+                ny=16,
+                nz=16,
+                u_in=0.05,
+                re=50.0,
+                radius=3.0,
+                dg_band=0.0,
                 n_steps=2,
             ).validate()

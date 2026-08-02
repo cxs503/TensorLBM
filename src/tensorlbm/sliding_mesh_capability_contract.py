@@ -12,6 +12,7 @@ Audit scope (source files read, not docstring assertions):
     - callers: ``rotating_cylinder.py``, ``propeller_ibm.py``
     - tests: ``test_sliding_mesh_common.py``
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -32,7 +33,9 @@ BackendName = Literal["torch_cpu", "torch_cuda"]
 
 WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE = "WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE"
 WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE = "WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE"
-WITHHELD_NO_COUPLED_SLIDING_MESH_PHYSICS_CONTRACT = "WITHHELD_NO_COUPLED_SLIDING_MESH_PHYSICS_CONTRACT"
+WITHHELD_NO_COUPLED_SLIDING_MESH_PHYSICS_CONTRACT = (
+    "WITHHELD_NO_COUPLED_SLIDING_MESH_PHYSICS_CONTRACT"
+)
 WITHHELD_UNKNOWN_KIND = "WITHHELD_UNKNOWN_KIND"
 WITHHELD_UNKNOWN_LATTICE = "WITHHELD_UNKNOWN_LATTICE"
 WITHHELD_UNKNOWN_COLLISION = "WITHHELD_UNKNOWN_COLLISION"
@@ -42,10 +45,19 @@ WITHHELD_UNKNOWN_BACKEND = "WITHHELD_UNKNOWN_BACKEND"
 _AUDITED_KINDS: tuple[SlidingMeshKind, ...] = ("sliding_mesh_2d", "sliding_mesh_3d")
 _AUDITED_LATTICES: tuple[LatticeName, ...] = ("D2Q9", "D3Q19", "D3Q27")
 _AUDITED_COLLISIONS: tuple[CollisionFamily, ...] = (
-    "bgk", "mrt", "trt", "smagorinsky", "kbc", "cascaded",
+    "bgk",
+    "mrt",
+    "trt",
+    "smagorinsky",
+    "kbc",
+    "cascaded",
 )
 _AUDITED_PHYSICS: tuple[PhysicsName, ...] = (
-    "single_phase", "turbulence", "multiphase", "free_surface", "ibm",
+    "single_phase",
+    "turbulence",
+    "multiphase",
+    "free_surface",
+    "ibm",
 )
 _AUDITED_BACKENDS: tuple[BackendName, ...] = ("torch_cpu", "torch_cuda")
 
@@ -82,7 +94,6 @@ class SlidingMeshCapability:
 # --------------------------------------------------------------------------- #
 
 _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
-
     # ---- sliding_mesh_2d (D2Q9) -------------------------------------------
     ("sliding_mesh_2d", "D2Q9"): (
         "MECHANICS_TESTED",
@@ -101,7 +112,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         None,
         "No 2-D sliding-mesh implementation for D3Q27 (use sliding_mesh_3d)",
     ),
-
     # ---- sliding_mesh_3d (D3Q19 / D3Q27) ----------------------------------
     ("sliding_mesh_3d", "D2Q9"): (
         "NO_IMPLEMENTATION",
@@ -133,7 +143,9 @@ def _capability_for(kind: str, lattice: str) -> SlidingMeshCapability:
     detail = _IMPLEMENTATION_EVIDENCE.get((kind, lattice))
     if detail is None:
         return SlidingMeshCapability(
-            "NO_IMPLEMENTATION", WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE, None,
+            "NO_IMPLEMENTATION",
+            WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE,
+            None,
             "No implementation evidence registered for this combination.",
             f"{kind}/{lattice} is not in the audited implementation registry.",
         )
@@ -141,12 +153,18 @@ def _capability_for(kind: str, lattice: str) -> SlidingMeshCapability:
 
     if impl_status == "NO_IMPLEMENTATION":
         return SlidingMeshCapability(
-            impl_status, WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE, entrypoint, evidence,
+            impl_status,
+            WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE,
+            entrypoint,
+            evidence,
             f"{kind} has no audited {lattice} implementation.",
         )
 
     return SlidingMeshCapability(
-        impl_status, WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE, entrypoint, evidence,
+        impl_status,
+        WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE,
+        entrypoint,
+        evidence,
         "Implementation exists, but no complete collision × physics × backend composition "
         "has been verified as a production-ready contract. Mechanics tests "
         "do not establish composition correctness.",
@@ -156,10 +174,7 @@ def _capability_for(kind: str, lattice: str) -> SlidingMeshCapability:
 def sliding_mesh_capability_matrix() -> dict[str, dict[str, SlidingMeshCapability]]:
     """Return the complete audited sliding-mesh-kind × lattice capability matrix."""
     return {
-        kind: {
-            lattice: _capability_for(kind, lattice)
-            for lattice in _AUDITED_LATTICES
-        }
+        kind: {lattice: _capability_for(kind, lattice) for lattice in _AUDITED_LATTICES}
         for kind in _AUDITED_KINDS
     }
 
@@ -201,9 +216,7 @@ def require_sliding_mesh_capability(
     capability = sliding_mesh_capability_matrix()[kind][lattice]
 
     if capability.implementation_status == "NO_IMPLEMENTATION":
-        raise SlidingMeshWithheldError(
-            f"{capability.status}: {capability.note}"
-        )
+        raise SlidingMeshWithheldError(f"{capability.status}: {capability.note}")
 
     # Non-single-phase physics has no audited sliding-mesh coupling contract.
     if physics != "single_phase":
@@ -213,9 +226,7 @@ def require_sliding_mesh_capability(
         )
 
     if not capability.available:
-        raise SlidingMeshWithheldError(
-            f"{capability.status}: {capability.note}"
-        )
+        raise SlidingMeshWithheldError(f"{capability.status}: {capability.note}")
     return capability
 
 

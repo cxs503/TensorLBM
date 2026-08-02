@@ -18,6 +18,7 @@ The module does **not** modify any solver hot path.  It only provides
 reusable wall-function mechanics that a solver may call from its own
 boundary-condition step.
 """
+
 from __future__ import annotations
 
 import torch
@@ -32,9 +33,7 @@ _B_LOG = 5.0
 def _validate_lattice(lattice: str) -> str:
     """Return *lattice* if supported, else raise ValueError."""
     if lattice not in SUPPORTED_LATTICES:
-        raise ValueError(
-            f"Unsupported lattice {lattice!r}; supported: {SUPPORTED_LATTICES}"
-        )
+        raise ValueError(f"Unsupported lattice {lattice!r}; supported: {SUPPORTED_LATTICES}")
     return lattice
 
 
@@ -42,9 +41,11 @@ def _macroscopic(lattice: str, f: torch.Tensor):
     """Dispatch to the correct macroscopic function for *lattice*."""
     if lattice == "D3Q19":
         from .d3q19 import macroscopic3d
+
         return macroscopic3d(f)
     elif lattice == "D3Q27":
         from .d3q27 import macroscopic27
+
         return macroscopic27(f)
     raise ValueError(f"Unsupported lattice: {lattice!r}")
 
@@ -52,6 +53,7 @@ def _macroscopic(lattice: str, f: torch.Tensor):
 # ---------------------------------------------------------------------------
 # Wall-quantity computation helpers (lattice-agnostic)
 # ---------------------------------------------------------------------------
+
 
 def compute_u_tau(
     u_mag: torch.Tensor,
@@ -125,6 +127,7 @@ def compute_u_tau(
         turb = (y_plus > yp_thresh) & (u_mag > 1e-10)
         if bool(turb.any()):
             from math import log as _log, exp as _exp
+
             u_tau_g = u_tau_vis[turb].clone()
             um = u_mag[turb]
             for _ in range(8):
@@ -135,7 +138,9 @@ def compute_u_tau(
             u_tau[turb] = u_tau_g
         return u_tau
 
-    raise ValueError(f"Unknown wall_law {wall_law!r}; supported: 'log', 'reichardt', 'gradient', 'hybrid'")
+    raise ValueError(
+        f"Unknown wall_law {wall_law!r}; supported: 'log', 'reichardt', 'gradient', 'hybrid'"
+    )
 
 
 def compute_y_plus(
@@ -160,6 +165,7 @@ def compute_y_plus(
 # Near-wall mask computation
 # ---------------------------------------------------------------------------
 
+
 def _near_wall_mask(solid: torch.Tensor) -> torch.Tensor:
     """Identify fluid cells adjacent to solid cells (6-connected).
 
@@ -178,8 +184,8 @@ def _near_wall_mask(solid: torch.Tensor) -> torch.Tensor:
     # z-direction (no periodic wrap for 2-D simulations)
     if nz > 1:
         near[1:-1] |= (solid[2:] | solid[:-2]) & fluid[1:-1]
-        near[0]    |= solid[1] & fluid[0]
-        near[-1]   |= solid[-2] & fluid[-1]
+        near[0] |= solid[1] & fluid[0]
+        near[-1] |= solid[-2] & fluid[-1]
     return near
 
 
@@ -199,17 +205,17 @@ def _compute_wall_normal(
     gz = torch.zeros_like(sf)
 
     gx[:, :, 1:-1] = (sf[:, :, 2:] - sf[:, :, :-2]) * 0.5
-    gx[:, :, 0]    = sf[:, :, 1] - sf[:, :, 0]
-    gx[:, :, -1]   = sf[:, :, -1] - sf[:, :, -2]
+    gx[:, :, 0] = sf[:, :, 1] - sf[:, :, 0]
+    gx[:, :, -1] = sf[:, :, -1] - sf[:, :, -2]
 
     gy[:, 1:-1, :] = (sf[:, 2:, :] - sf[:, :-2, :]) * 0.5
-    gy[:, 0, :]    = sf[:, 1, :] - sf[:, 0, :]
-    gy[:, -1, :]   = sf[:, -1, :] - sf[:, -2, :]
+    gy[:, 0, :] = sf[:, 1, :] - sf[:, 0, :]
+    gy[:, -1, :] = sf[:, -1, :] - sf[:, -2, :]
 
     if nz > 1:
         gz[1:-1] = (sf[2:] - sf[:-2]) * 0.5
-        gz[0]    = sf[1] - sf[0]
-        gz[-1]   = sf[-1] - sf[-2]
+        gz[0] = sf[1] - sf[0]
+        gz[-1] = sf[-1] - sf[-2]
 
     nx_n = -gx
     ny_n = -gy
@@ -247,9 +253,11 @@ def _apply_body_force(
     """
     if lattice == "D3Q19":
         from .d3q19 import C as C_LAT, W as W_LAT
+
         q = 19
     elif lattice == "D3Q27":
         from .d3q27 import C as C_LAT, W as W_LAT
+
         q = 27
     else:
         raise ValueError(f"Unsupported lattice: {lattice!r}")
@@ -285,6 +293,7 @@ def _apply_body_force(
 # ---------------------------------------------------------------------------
 # Public wall_function interface
 # ---------------------------------------------------------------------------
+
 
 def wall_function(
     f: torch.Tensor,
@@ -475,7 +484,9 @@ def apply_wall_function(
     ut_z = uz - u_dot_n * nz_n
     u_tan_mag = torch.sqrt(ut_x * ut_x + ut_y * ut_y + ut_z * ut_z).clamp(min=1e-12)
     has_tan = u_tan_mag > 1e-10
-    u_tan_mag = torch.where(has_tan, u_tan_mag, torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12))
+    u_tan_mag = torch.where(
+        has_tan, u_tan_mag, torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
+    )
     ut_x = torch.where(has_tan, ut_x, ux)
     ut_y = torch.where(has_tan, ut_y, uy)
     ut_z = torch.where(has_tan, ut_z, uz)
@@ -500,9 +511,11 @@ def apply_wall_function(
     if n_bb > 0:
         if lattice == "D3Q19":
             from .d3q19 import OPPOSITE as OPP
+
             opp = OPP.to(f.device)
         else:
             from .d3q27 import OPPOSITE as OPP
+
             opp = OPP.to(f.device)
         bb_mask = use_bb.unsqueeze(0).expand_as(f)
         f = torch.where(bb_mask, f[opp], f)

@@ -64,6 +64,7 @@ from tensorlbm.wave_bc_common import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _has_item_call_in_source(func) -> bool:
     """Return True if the function source contains a ``.item()`` method call
     (GPU→CPU host sync) in executable code, excluding docstrings."""
@@ -73,15 +74,20 @@ def _has_item_call_in_source(func) -> bool:
     docstring_ranges: list[tuple[int, int]] = []
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if (node.body and isinstance(node.body[0], ast.Expr)
-                    and isinstance(node.body[0].value, ast.Constant)):
+            if (
+                node.body
+                and isinstance(node.body[0], ast.Expr)
+                and isinstance(node.body[0].value, ast.Constant)
+            ):
                 docstring_ranges.append(
                     (node.body[0].lineno, node.body[0].end_lineno or node.body[0].lineno)
                 )
     for node in ast.walk(tree):
-        if (isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute)
-                and node.func.attr == "item"):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "item"
+        ):
             # Check if this call is inside a docstring range
             line = node.lineno
             in_docstring = any(start <= line <= end for start, end in docstring_ranges)
@@ -131,6 +137,7 @@ def _wave_params_dict() -> dict:
 # 1. Bug identification: .item() host sync in hot path
 # ===========================================================================
 
+
 class TestBugIdentification:
     """Verify the original has .item() in the hot path and the common doesn't."""
 
@@ -159,9 +166,7 @@ class TestBugIdentification:
         """The .item() calls that build _D3Q19_INLET_OPP and _D3Q27_INLET_OPP
         are at module scope (import time), not inside BC functions — this is
         acceptable because they run once, not per time step."""
-        module_source = inspect.getsource(
-            __import__("tensorlbm.wave_bc_common", fromlist=["x"])
-        )
+        module_source = inspect.getsource(__import__("tensorlbm.wave_bc_common", fromlist=["x"]))
         # The module-level .item() calls are in list comprehensions that
         # build _D3Q19_INLET_OPP and _D3Q27_INLET_OPP.
         assert "_D3Q19_INLET_OPP" in module_source
@@ -188,6 +193,7 @@ class TestBugIdentification:
 # ===========================================================================
 # 2. Velocity profile equivalence
 # ===========================================================================
+
 
 class TestVelocityProfileEquivalence:
     """Verify _airy_wave_velocity_3d (common) == airy_wave_velocity_3d (original)."""
@@ -239,6 +245,7 @@ class TestVelocityProfileEquivalence:
 # 3. D3Q19 Zou-He inlet equivalence
 # ===========================================================================
 
+
 class TestD3Q19ZouHeEquivalence:
     """Verify original vs common Zou-He inlet produce identical outputs."""
 
@@ -289,9 +296,7 @@ class TestD3Q19ZouHeEquivalence:
                 f"Direction {k} at x=0 was modified (should be unchanged)"
             )
         # All directions at x>0 must be unchanged
-        assert torch.equal(f_common[:, :, :, 1:], f[:, :, :, 1:]), (
-            "Non-inlet cells were modified"
-        )
+        assert torch.equal(f_common[:, :, :, 1:], f[:, :, :, 1:]), "Non-inlet cells were modified"
 
     def test_zou_he_inlet_uniform_velocity(self) -> None:
         """With a uniform (scalar-like) velocity, the result should still match."""
@@ -352,6 +357,7 @@ class TestD3Q19ZouHeEquivalence:
 # 4. D3Q27 physical reasonableness (no original to compare)
 # ===========================================================================
 
+
 class TestD3Q27PhysicalReasonableness:
     """Verify D3Q27 Zou-He inlet is physically correct (no original reference)."""
 
@@ -367,17 +373,13 @@ class TestD3Q27PhysicalReasonableness:
         """All _D3Q27_CX0 must have cx = 0."""
         cx = C27[:, 0]
         for k in _D3Q27_CX0:
-            assert int(cx[k]) == 0, (
-                f"Direction {k} in _D3Q27_CX0 has cx={int(cx[k])} (not 0)"
-            )
+            assert int(cx[k]) == 0, f"Direction {k} in _D3Q27_CX0 has cx={int(cx[k])} (not 0)"
 
     def test_d3q27_cx_neg_dirs_are_cx_negative(self) -> None:
         """All _D3Q27_CX_NEG must have cx < 0."""
         cx = C27[:, 0]
         for k in _D3Q27_CX_NEG:
-            assert int(cx[k]) < 0, (
-                f"Direction {k} in _D3Q27_CX_NEG has cx={int(cx[k])} (not < 0)"
-            )
+            assert int(cx[k]) < 0, f"Direction {k} in _D3Q27_CX_NEG has cx={int(cx[k])} (not < 0)"
 
     def test_d3q27_direction_partition_complete(self) -> None:
         """The three direction lists must partition all 27 directions."""
@@ -407,9 +409,7 @@ class TestD3Q27PhysicalReasonableness:
         cx = C27[:, 0]
         for k, opp_k in zip(_D3Q27_INLET_DIRS, _D3Q27_INLET_OPP, strict=True):
             assert int(cx[k]) > 0, f"Direction {k} should have cx > 0"
-            assert int(cx[opp_k]) < 0, (
-                f"OPPOSITE[{k}] = {opp_k} has cx={int(cx[opp_k])} (not < 0)"
-            )
+            assert int(cx[opp_k]) < 0, f"OPPOSITE[{k}] = {opp_k} has cx={int(cx[opp_k])} (not < 0)"
 
     def test_d3q27_mass_conservation_at_inlet(self) -> None:
         """After Zou-He inlet, the total population at x=0 must equal the
@@ -459,8 +459,7 @@ class TestD3Q27PhysicalReasonableness:
         ux_actual = (f_new[:, :, :, 0] * cx.view(27, 1, 1)).sum(dim=0) / rho
 
         assert torch.allclose(ux_actual, ux_in, atol=1e-5, rtol=1e-4), (
-            f"Velocity prescription violated: max diff = "
-            f"{(ux_actual - ux_in).abs().max().item()}"
+            f"Velocity prescription violated: max diff = {(ux_actual - ux_in).abs().max().item()}"
         )
 
     def test_d3q27_nebb_formula_structure(self) -> None:
@@ -557,6 +556,7 @@ class TestD3Q27PhysicalReasonableness:
 # 5. Combination test: wave BC + collision complete cycle
 # ===========================================================================
 
+
 class TestWaveCollisionCombination:
     """Verify wave BC + BGK collision + streaming in a complete LBM cycle."""
 
@@ -567,8 +567,8 @@ class TestWaveCollisionCombination:
         tau = 0.6  # ν = (τ - 0.5)/3 ≈ 0.033
 
         wall_mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
-        wall_mask[:, 0, :] = True    # bottom wall (y=0)
-        wall_mask[:, -1, :] = True   # top wall (y=ny-1)
+        wall_mask[:, 0, :] = True  # bottom wall (y=0)
+        wall_mask[:, -1, :] = True  # top wall (y=ny-1)
         obstacle_mask = torch.zeros(nz, ny, nx, dtype=torch.bool)
 
         params = WaveParams(
@@ -601,6 +601,7 @@ class TestWaveCollisionCombination:
             f = wave_bc_3d(f, wave_params=params, lattice="D3Q19")
             # Bounce-back on walls
             from tensorlbm.boundaries3d import bounce_back_cells_3d
+
             f = bounce_back_cells_3d(f, wall_mask)
             f = bounce_back_cells_3d(f, obstacle_mask)
 
@@ -668,8 +669,9 @@ class TestWaveCollisionCombination:
         nz, ny, nx = 12, 8, 16
         # Pure equilibrium at rest (rho=1, u=0) — no transverse momentum
         rho0 = torch.ones(nz, ny, nx, dtype=torch.float32)
-        f = equilibrium3d(rho0, torch.zeros_like(rho0), torch.zeros_like(rho0),
-                          torch.zeros_like(rho0))
+        f = equilibrium3d(
+            rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0)
+        )
 
         step = 25
         params = WaveParams(
@@ -689,20 +691,25 @@ class TestWaveCollisionCombination:
 
         # Expected velocity from Airy theory
         ux_exp, uy_exp, uz_exp = orig_airy(
-            nz, ny, step=step, u_mean=0.05, wave_amp=0.02,
-            wave_period=200.0, wave_k=0.05, water_depth=float(nz),
-            z_bed=0.0, device=torch.device("cpu"),
+            nz,
+            ny,
+            step=step,
+            u_mean=0.05,
+            wave_amp=0.02,
+            wave_period=200.0,
+            wave_k=0.05,
+            water_depth=float(nz),
+            z_bed=0.0,
+            device=torch.device("cpu"),
         )
 
         # ux is exactly prescribed (Zou-He mass balance)
         assert torch.allclose(ux_in.squeeze(-1), ux_exp, atol=1e-6), (
-            f"Inlet ux mismatch: max diff = "
-            f"{(ux_in.squeeze(-1) - ux_exp).abs().max().item()}"
+            f"Inlet ux mismatch: max diff = {(ux_in.squeeze(-1) - ux_exp).abs().max().item()}"
         )
         # uy is zero (no lateral wave component) — exactly recovered
         assert torch.allclose(uy_in.squeeze(-1), uy_exp, atol=1e-6), (
-            f"Inlet uy mismatch: max diff = "
-            f"{(uy_in.squeeze(-1) - uy_exp).abs().max().item()}"
+            f"Inlet uy mismatch: max diff = {(uy_in.squeeze(-1) - uy_exp).abs().max().item()}"
         )
         # uz has the correct sign (negative = downward wave phase) and is non-zero
         # at depth.  The magnitude is ~1/3 of prescribed due to cx=0 directions
@@ -734,33 +741,33 @@ class TestWaveCollisionCombination:
 
         # Simple D3Q27 streaming via torch.roll
         shifts_27 = [
-            (0, 0, 0),       # 0: rest
-            (1, 0, 0),       # 1: +x
-            (-1, 0, 0),      # 2: -x
-            (0, 1, 0),       # 3: +y
-            (0, -1, 0),      # 4: -y
-            (0, 0, 1),       # 5: +z
-            (0, 0, -1),      # 6: -z
-            (1, 1, 0),       # 7: +x+y
-            (-1, 1, 0),      # 8: -x+y
-            (1, -1, 0),      # 9: +x-y
-            (-1, -1, 0),     # 10: -x-y
-            (1, 0, 1),       # 11: +x+z
-            (-1, 0, 1),      # 12: -x+z
-            (1, 0, -1),      # 13: +x-z
-            (-1, 0, -1),     # 14: -x-z
-            (0, 1, 1),       # 15: +y+z
-            (0, -1, 1),      # 16: -y+z
-            (0, 1, -1),      # 17: +y-z
-            (0, -1, -1),     # 18: -y-z
-            (1, 1, 1),       # 19: +x+y+z
-            (-1, 1, 1),      # 20: -x+y+z
-            (1, -1, 1),      # 21: +x-y+z
-            (-1, -1, 1),     # 22: -x-y+z
-            (1, 1, -1),      # 23: +x+y-z
-            (-1, 1, -1),     # 24: -x+y-z
-            (1, -1, -1),     # 25: +x-y-z
-            (-1, -1, -1),    # 26: -x-y-z
+            (0, 0, 0),  # 0: rest
+            (1, 0, 0),  # 1: +x
+            (-1, 0, 0),  # 2: -x
+            (0, 1, 0),  # 3: +y
+            (0, -1, 0),  # 4: -y
+            (0, 0, 1),  # 5: +z
+            (0, 0, -1),  # 6: -z
+            (1, 1, 0),  # 7: +x+y
+            (-1, 1, 0),  # 8: -x+y
+            (1, -1, 0),  # 9: +x-y
+            (-1, -1, 0),  # 10: -x-y
+            (1, 0, 1),  # 11: +x+z
+            (-1, 0, 1),  # 12: -x+z
+            (1, 0, -1),  # 13: +x-z
+            (-1, 0, -1),  # 14: -x-z
+            (0, 1, 1),  # 15: +y+z
+            (0, -1, 1),  # 16: -y+z
+            (0, 1, -1),  # 17: +y-z
+            (0, -1, -1),  # 18: -y-z
+            (1, 1, 1),  # 19: +x+y+z
+            (-1, 1, 1),  # 20: -x+y+z
+            (1, -1, 1),  # 21: +x-y+z
+            (-1, -1, 1),  # 22: -x-y+z
+            (1, 1, -1),  # 23: +x+y-z
+            (-1, 1, -1),  # 24: -x+y-z
+            (1, -1, -1),  # 25: +x-y-z
+            (-1, -1, -1),  # 26: -x-y-z
         ]
 
         def stream27(f: torch.Tensor) -> torch.Tensor:
@@ -801,8 +808,9 @@ class TestWaveCollisionCombination:
         nz, ny, nx = 10, 6, 12
         # Pure equilibrium at rest (rho=1, u=0) — no transverse momentum
         rho0 = torch.ones(nz, ny, nx, dtype=torch.float32)
-        f = equilibrium27(rho0, torch.zeros_like(rho0), torch.zeros_like(rho0),
-                          torch.zeros_like(rho0))
+        f = equilibrium27(
+            rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0)
+        )
 
         step = 25
         params = WaveParams(
@@ -820,20 +828,25 @@ class TestWaveCollisionCombination:
         rho_in, ux_in, uy_in, uz_in = macroscopic27(f_new[:, :, :, 0:1])
 
         ux_exp, uy_exp, uz_exp = orig_airy(
-            nz, ny, step=step, u_mean=0.05, wave_amp=0.02,
-            wave_period=200.0, wave_k=0.05, water_depth=float(nz),
-            z_bed=0.0, device=torch.device("cpu"),
+            nz,
+            ny,
+            step=step,
+            u_mean=0.05,
+            wave_amp=0.02,
+            wave_period=200.0,
+            wave_k=0.05,
+            water_depth=float(nz),
+            z_bed=0.0,
+            device=torch.device("cpu"),
         )
 
         # ux is exactly prescribed (Zou-He mass balance)
         assert torch.allclose(ux_in.squeeze(-1), ux_exp, atol=1e-6), (
-            f"D3Q27 inlet ux mismatch: max diff = "
-            f"{(ux_in.squeeze(-1) - ux_exp).abs().max().item()}"
+            f"D3Q27 inlet ux mismatch: max diff = {(ux_in.squeeze(-1) - ux_exp).abs().max().item()}"
         )
         # uy is zero (no lateral wave component) — exactly recovered
         assert torch.allclose(uy_in.squeeze(-1), uy_exp, atol=1e-6), (
-            f"D3Q27 inlet uy mismatch: max diff = "
-            f"{(uy_in.squeeze(-1) - uy_exp).abs().max().item()}"
+            f"D3Q27 inlet uy mismatch: max diff = {(uy_in.squeeze(-1) - uy_exp).abs().max().item()}"
         )
         # uz: correct sign, non-zero, positive fraction of prescribed
         uz_r = uz_in.squeeze(-1)
@@ -863,17 +876,29 @@ class TestWaveCollisionCombination:
 
         # Original full apply
         f_orig = apply_wave_inlet_3d(
-            f.clone(), step=15, wall_mask=wall_mask,
+            f.clone(),
+            step=15,
+            wall_mask=wall_mask,
             obstacle_mask=obstacle_mask,
-            u_mean=0.05, wave_amp=0.02, wave_period=200.0,
-            wave_k=0.05, water_depth=float(nz), z_bed=0.0,
+            u_mean=0.05,
+            wave_amp=0.02,
+            wave_period=200.0,
+            wave_k=0.05,
+            water_depth=float(nz),
+            z_bed=0.0,
         )
 
         # Common: wave_bc_3d (inlet + outlet) + bounce-back
         params = WaveParams(
-            step=15, u_mean=0.05, wave_amp=0.02, wave_period=200.0,
-            wave_k=0.05, water_depth=float(nz), z_bed=0.0,
-            rho_out=1.0, apply_outlet=True,
+            step=15,
+            u_mean=0.05,
+            wave_amp=0.02,
+            wave_period=200.0,
+            wave_k=0.05,
+            water_depth=float(nz),
+            z_bed=0.0,
+            rho_out=1.0,
+            apply_outlet=True,
         )
         f_common = wave_bc_3d(f.clone(), wave_params=params, lattice="D3Q19")
         f_common = bounce_back_cells_3d(f_common, wall_mask)
@@ -917,23 +942,36 @@ class TestWaveCollisionCombination:
         """
         nz, ny, nx = 12, 8, 16
         rho0 = torch.ones(nz, ny, nx, dtype=torch.float32)
-        f = equilibrium3d(rho0, torch.zeros_like(rho0), torch.zeros_like(rho0),
-                          torch.zeros_like(rho0))
+        f = equilibrium3d(
+            rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0)
+        )
         tau = 0.6
 
         step = 25  # fixed step for consistent wave phase
         ux_exp, uy_exp, uz_exp = orig_airy(
-            nz, ny, step=step, u_mean=0.05, wave_amp=0.02,
-            wave_period=200.0, wave_k=0.05, water_depth=float(nz),
-            z_bed=0.0, device=torch.device("cpu"),
+            nz,
+            ny,
+            step=step,
+            u_mean=0.05,
+            wave_amp=0.02,
+            wave_period=200.0,
+            wave_k=0.05,
+            water_depth=float(nz),
+            z_bed=0.0,
+            device=torch.device("cpu"),
         )
 
         # Track uz recovery ratio at the deepest cell
         ratios = []
         for cycle in range(20):
             params = WaveParams(
-                step=step, u_mean=0.05, wave_amp=0.02, wave_period=200.0,
-                wave_k=0.05, water_depth=float(nz), z_bed=0.0,
+                step=step,
+                u_mean=0.05,
+                wave_amp=0.02,
+                wave_period=200.0,
+                wave_k=0.05,
+                water_depth=float(nz),
+                z_bed=0.0,
                 apply_outlet=False,
             )
             # Apply BC, then collision (relaxes cx=0 directions)
@@ -957,6 +995,5 @@ class TestWaveCollisionCombination:
         )
         # Later cycles: should be closer to 1.0
         assert ratios[-1] > ratios[0], (
-            f"uz recovery did not improve: first={ratios[0]:.4f}, "
-            f"last={ratios[-1]:.4f}"
+            f"uz recovery did not improve: first={ratios[0]:.4f}, last={ratios[-1]:.4f}"
         )

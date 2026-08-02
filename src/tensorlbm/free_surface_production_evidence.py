@@ -4,6 +4,7 @@ This is an additive cold-path adapter.  It observes the detached evidence
 already published by ``free_surface_step`` / its topology transaction; it does
 not reconstruct, copy, or mutate populations.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -93,7 +94,9 @@ def _conversion_cells(conversion_evidence: object) -> tuple[CellConversion, ...]
 
 
 def extract_runtime_korner_evidence(
-    result: Mapping[str, object], *, event_id: str | None = None,
+    result: Mapping[str, object],
+    *,
+    event_id: str | None = None,
     provenance: str = "shaped_result_mapping_not_claimed_production",
 ) -> RuntimeKornerEvidence:
     """Extract only published facts from a result mapping.
@@ -136,10 +139,14 @@ def extract_runtime_korner_evidence(
         if isinstance(raw_sources, tuple) and isinstance(raw_destinations, tuple):
             parsed_sources = [_cell(value) for value in raw_sources]
             parsed_destinations = [_cell(value) for value in raw_destinations]
-            if all(cell is not None for cell in parsed_sources) and all(cell is not None for cell in parsed_destinations):
+            if all(cell is not None for cell in parsed_sources) and all(
+                cell is not None for cell in parsed_destinations
+            ):
                 sources = tuple(cell for cell in parsed_sources if cell is not None)
                 destinations = tuple(cell for cell in parsed_destinations if cell is not None)
-        replay_reference = raw_replay if isinstance(raw_replay, str) and raw_replay.strip() else None
+        replay_reference = (
+            raw_replay if isinstance(raw_replay, str) and raw_replay.strip() else None
+        )
         actual = bool(sources and destinations and replay_reference)
 
     return RuntimeKornerEvidence(
@@ -169,25 +176,40 @@ def observe_korner_runtime_evidence(evidence: RuntimeKornerEvidence) -> RuntimeK
         return RuntimeKornerObserverReport(
             WITHHELD_NO_POPULATION_TRANSFER,
             "actual f population-transfer source, destination, and replay evidence were not published",
-            False, False, evidence.event_id, evidence.provenance,
-            evidence.available_keys, None,
+            False,
+            False,
+            evidence.event_id,
+            evidence.provenance,
+            evidence.available_keys,
+            None,
         )
     if evidence.transaction is None:
         return RuntimeKornerObserverReport(
             WITHHELD_NO_POPULATION_TRANSFER,
             "actual f transfer was published without a complete RuntimeKornerEvidence R1 transaction",
-            False, False, evidence.event_id, evidence.provenance,
-            evidence.available_keys, None,
+            False,
+            False,
+            evidence.event_id,
+            evidence.provenance,
+            evidence.available_keys,
+            None,
         )
     contract = diagnose_korner_i_to_g_transaction(evidence.transaction)
     return RuntimeKornerObserverReport(
-        contract.status, contract.reason, contract.diagnostic_accepted,
-        contract.physical_accepted, contract.event_id, evidence.provenance,
-        evidence.available_keys, contract,
+        contract.status,
+        contract.reason,
+        contract.diagnostic_accepted,
+        contract.physical_accepted,
+        contract.event_id,
+        evidence.provenance,
+        evidence.available_keys,
+        contract,
     )
 
 
-def run_free_surface_step_with_observer(*args: Any, **kwargs: Any) -> tuple[tuple[Any, ...], RuntimeKornerObserverReport]:
+def run_free_surface_step_with_observer(
+    *args: Any, **kwargs: Any
+) -> tuple[tuple[Any, ...], RuntimeKornerObserverReport]:
     """Run the real production step and observe its published transaction result.
 
     The wrapper supplies otherwise optional capture dictionaries; it never

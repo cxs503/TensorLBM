@@ -8,6 +8,7 @@ Covers:
 - ``run_sphere_flow`` smoke run with output artifact checks.
 - Resume from checkpoint path.
 """
+
 from __future__ import annotations
 
 import json
@@ -132,9 +133,14 @@ class TestRunSphereFlow:
 
         # Second run: resume from that checkpoint, do 2 more steps.
         cfg2 = SphereFlowConfig(
-            nx=32, ny=16, nz=16,
-            u_in=0.05, re=50.0, radius=3.0,
-            n_steps=6, output_interval=2,
+            nx=32,
+            ny=16,
+            nz=16,
+            u_in=0.05,
+            re=50.0,
+            radius=3.0,
+            n_steps=6,
+            output_interval=2,
             output_root=tmp_path,
             run_name="second",
             overwrite=True,

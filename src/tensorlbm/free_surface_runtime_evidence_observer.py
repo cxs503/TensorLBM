@@ -6,6 +6,7 @@ contract.  It does not import or call a free-surface solver, topology mutation,
 or ownership ledger.  In particular, ``fill``, mass, flags, or intent fields
 are never used to invent an f-population transfer.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -69,7 +70,11 @@ def _conversions(value: object) -> tuple[CellConversion, ...]:
         item = _mapping(raw)
         if item is None:
             return ()
-        cell, before, after = _cell(item.get("cell")), _state(item.get("before")), _state(item.get("after"))
+        cell, before, after = (
+            _cell(item.get("cell")),
+            _state(item.get("before")),
+            _state(item.get("after")),
+        )
         if cell is None or before is None or after is None:
             return ()
         result.append(CellConversion(cell, before, after))
@@ -85,8 +90,16 @@ def _ownership(value: object) -> tuple[OwnershipEvidence, ...]:
         if item is None:
             return ()
         cell, state = _cell(item.get("cell")), _state(item.get("state"))
-        mass_owner, population_owner = item.get("independent_mass_owner"), item.get("population_owner")
-        if cell is None or state is None or not isinstance(mass_owner, str) or not isinstance(population_owner, str):
+        mass_owner, population_owner = (
+            item.get("independent_mass_owner"),
+            item.get("population_owner"),
+        )
+        if (
+            cell is None
+            or state is None
+            or not isinstance(mass_owner, str)
+            or not isinstance(population_owner, str)
+        ):
             return ()
         result.append(OwnershipEvidence(cell, state, mass_owner, population_owner))  # type: ignore[arg-type]
     return tuple(result)
@@ -119,7 +132,9 @@ def _roundoff(value: object) -> RoundoffResidualEvidence | None:
     return RoundoffResidualEvidence(residual, exact)  # type: ignore[arg-type]
 
 
-def transaction_input_from_runtime_evidence(evidence: RuntimeKornerEvidence | Mapping[str, object] | object) -> TransactionInput:
+def transaction_input_from_runtime_evidence(
+    evidence: RuntimeKornerEvidence | Mapping[str, object] | object,
+) -> TransactionInput:
     """Build a contract input without deriving any missing population evidence.
 
     Invalid substructures become absent/empty contract evidence rather than an
@@ -148,7 +163,9 @@ def transaction_input_from_runtime_evidence(evidence: RuntimeKornerEvidence | Ma
     )
 
 
-def observe_korner_runtime_evidence(evidence: RuntimeKornerEvidence | Mapping[str, object] | object) -> TransactionContractReport:
+def observe_korner_runtime_evidence(
+    evidence: RuntimeKornerEvidence | Mapping[str, object] | object,
+) -> TransactionContractReport:
     """Observe detached runtime evidence and always return a fail-closed report."""
     try:
         return diagnose_korner_i_to_g_transaction(transaction_input_from_runtime_evidence(evidence))

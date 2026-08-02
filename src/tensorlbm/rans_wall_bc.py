@@ -6,6 +6,7 @@ boundary values that OpenFOAM-style wall functions require.
 
 Ref: OpenFOAM nutkWallFunction, epsilonWallFunction, kqRWallFunction.
 """
+
 import torch
 
 # Standard k-ε constants (same as rans_ke.py)
@@ -41,7 +42,7 @@ def set_rans_wall_bc_k_epsilon(
     mask = near_wall & (u_tau > 1e-12)
 
     # k_wall = u_tau² / √C_μ
-    k_wall = (u_tau * u_tau) / (_C_MU ** 0.5)
+    k_wall = (u_tau * u_tau) / (_C_MU**0.5)
 
     # ε_wall = u_tau³ / (κ · y)
     eps_wall = (u_tau * u_tau * u_tau) / (_KAPPA * y_val)

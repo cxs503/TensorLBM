@@ -5,6 +5,7 @@ basic physics identities), NOT acoustic physics accuracy or FWH validation
 against experimental data.  They serve as the contract-test evidence recorded
 in ``acoustics_capability_contract``.
 """
+
 from __future__ import annotations
 
 import math
@@ -30,6 +31,7 @@ _REF_PRESSURE = 20.0e-6  # 20 µPa
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_simple_surface(
     n_src: int = 4,
     T: int = 64,
@@ -45,13 +47,15 @@ def _make_simple_surface(
     areas = torch.full((n_src,), 0.01)
     t = torch.arange(T, dtype=torch.float32) * dt
     pressure = pressure_amp * torch.sin(2.0 * math.pi * 500.0 * t).unsqueeze(0).expand(n_src, T)
-    return FWHSurface(positions=positions, normals=normals, areas=areas,
-                      pressure=pressure.clone(), dt=dt, c0=c0)
+    return FWHSurface(
+        positions=positions, normals=normals, areas=areas, pressure=pressure.clone(), dt=dt, c0=c0
+    )
 
 
 # ---------------------------------------------------------------------------
 # compute_fwh_far_field: shape, finite, causality
 # ---------------------------------------------------------------------------
+
 
 class TestFWHFarField:
     def test_output_shape(self) -> None:
@@ -87,9 +91,9 @@ class TestFWHFarField:
         # Allow a small margin for the near-field term (1/r²) which also
         # respects retarded time.
         assert delay_samples > 1
-        assert torch.allclose(
-            p_prime[0, :delay_samples], torch.zeros(delay_samples), atol=1e-30
-        ), f"Non-zero signal before propagation delay at sample {delay_samples}"
+        assert torch.allclose(p_prime[0, :delay_samples], torch.zeros(delay_samples), atol=1e-30), (
+            f"Non-zero signal before propagation delay at sample {delay_samples}"
+        )
 
     def test_multiple_observers(self) -> None:
         surface = _make_simple_surface(n_src=4, T=64)
@@ -127,6 +131,7 @@ class TestFWHFarField:
 # compute_spl_spectrum: shape, finite, Parseval, DC handling
 # ---------------------------------------------------------------------------
 
+
 class TestSPLSpectrum:
     def test_output_shape(self) -> None:
         T = 128
@@ -156,7 +161,7 @@ class TestSPLSpectrum:
         # eps clamp prevents -inf; floor is 10*log10(eps / p_ref²) ≈ 24.7 dB
         assert torch.isfinite(spl).all()
         eps = torch.finfo(torch.float32).eps
-        expected_floor = 10.0 * math.log10(eps / (_REF_PRESSURE ** 2))
+        expected_floor = 10.0 * math.log10(eps / (_REF_PRESSURE**2))
         assert spl[0, 0].item() == pytest.approx(expected_floor, rel=1e-3)
 
     def test_nfft_padding(self) -> None:
@@ -171,19 +176,24 @@ class TestSPLSpectrum:
 # extract_surface_pressure: shape, mean removal, 2D/3D
 # ---------------------------------------------------------------------------
 
+
 class TestExtractSurfacePressure:
     def test_2d_output_shape(self) -> None:
         T, ny, nx = 32, 10, 10
         rho_history = torch.ones(T, ny, nx) * 1.0
         # 4 surface points
-        surface_indices = torch.tensor([[2, 3], [2, 4], [3, 3], [3, 4]],
-                                       dtype=torch.long)
+        surface_indices = torch.tensor([[2, 3], [2, 4], [3, 3], [3, 4]], dtype=torch.long)
         surface_normals = torch.zeros(4, 3)
         surface_normals[:, 0] = 1.0
         surface_areas = torch.full((4,), 0.01)
         fwh_surface = extract_surface_pressure(
-            rho_history, surface_indices, surface_normals, surface_areas,
-            dt=1e-4, c0=343.0, physical_dx=0.01,
+            rho_history,
+            surface_indices,
+            surface_normals,
+            surface_areas,
+            dt=1e-4,
+            c0=343.0,
+            physical_dx=0.01,
         )
         assert fwh_surface.pressure.shape == (4, T)
         assert fwh_surface.positions.shape == (4, 3)
@@ -197,7 +207,10 @@ class TestExtractSurfacePressure:
         surface_normals[:, 0] = 1.0
         surface_areas = torch.full((2,), 0.01)
         fwh_surface = extract_surface_pressure(
-            rho_history, surface_indices, surface_normals, surface_areas,
+            rho_history,
+            surface_indices,
+            surface_normals,
+            surface_areas,
         )
         mean = fwh_surface.pressure.mean(dim=-1)
         assert torch.allclose(mean, torch.zeros_like(mean), atol=1e-6)
@@ -210,8 +223,13 @@ class TestExtractSurfacePressure:
         surface_normals[:, 0] = 1.0
         surface_areas = torch.full((2,), 0.001)
         fwh_surface = extract_surface_pressure(
-            rho_history, surface_indices, surface_normals, surface_areas,
-            dt=1e-4, c0=343.0, physical_dx=0.01,
+            rho_history,
+            surface_indices,
+            surface_normals,
+            surface_areas,
+            dt=1e-4,
+            c0=343.0,
+            physical_dx=0.01,
         )
         assert fwh_surface.pressure.shape == (2, T)
         assert fwh_surface.positions.shape == (2, 3)
@@ -227,7 +245,10 @@ class TestExtractSurfacePressure:
         surface_normals[:, 0] = 1.0
         surface_areas = torch.full((1,), 0.01)
         fwh_surface = extract_surface_pressure(
-            rho_history, surface_indices, surface_normals, surface_areas,
+            rho_history,
+            surface_indices,
+            surface_normals,
+            surface_areas,
         )
         # Mean density at this point = (31*2 + 1*3)/32 = 2.03125
         # Fluctuation at spike step = 3 - 2.03125 = 0.96875
@@ -239,6 +260,7 @@ class TestExtractSurfacePressure:
 # ---------------------------------------------------------------------------
 # oaspl: shape, finite, zero-pressure floor
 # ---------------------------------------------------------------------------
+
 
 class TestOASPL:
     def test_output_length_matches_observers(self) -> None:
@@ -278,6 +300,7 @@ class TestOASPL:
 # compute_fwh_result: wrapper integration
 # ---------------------------------------------------------------------------
 
+
 class TestFWHResultWrapper:
     def test_result_has_all_fields(self) -> None:
         surface = _make_simple_surface(n_src=4, T=64)
@@ -312,6 +335,7 @@ class TestFWHResultWrapper:
 # AcousticObserver defaults and label (lost: observer_defaults, observer_label)
 # ---------------------------------------------------------------------------
 
+
 def test_acoustic_observer_defaults():
     """AcousticObserver should default z=0.0 and label=''."""
     obs = AcousticObserver(x=10.0, y=0.0)
@@ -329,6 +353,7 @@ def test_acoustic_observer_label():
 # FWHSurface creation (lost: fwh_surface_creation)
 # ---------------------------------------------------------------------------
 
+
 def test_fwh_surface_creation():
     """FWHSurface should expose positions, normals, areas, pressure with
     correct shapes."""
@@ -342,6 +367,7 @@ def test_fwh_surface_creation():
 # ---------------------------------------------------------------------------
 # compute_fwh_far_field time-axis correctness (lost: time_axis)
 # ---------------------------------------------------------------------------
+
 
 def test_compute_fwh_far_field_time_axis():
     """The returned time axis must be [0, dt, 2*dt, ...] with correct spacing."""
@@ -358,6 +384,7 @@ def test_compute_fwh_far_field_time_axis():
 # compute_fwh_far_field nonzero output (lost: nonzero_output)
 # ---------------------------------------------------------------------------
 
+
 def test_compute_fwh_far_field_nonzero():
     """Far-field pressure should be non-trivially non-zero for a dipole
     source with a causal propagation path."""
@@ -373,6 +400,7 @@ def test_compute_fwh_far_field_nonzero():
 # compute_fwh_far_field dtype preservation (lost: dtype_preservation)
 # ---------------------------------------------------------------------------
 
+
 def test_compute_fwh_far_field_preserves_input_dtype():
     """If the input pressure is float64, the output should be float64."""
     surface = _make_simple_surface(n_src=4, T=20)
@@ -384,6 +412,7 @@ def test_compute_fwh_far_field_preserves_input_dtype():
 # ---------------------------------------------------------------------------
 # OASPL monotonicity (lost: oaspl_monotonicity)
 # ---------------------------------------------------------------------------
+
 
 def test_oaspl_louder_signal_higher_spl():
     """A louder signal (larger amplitude) should produce a higher OASPL."""

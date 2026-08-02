@@ -6,6 +6,7 @@ physics combination until it supplies the required coupling evidence.  In
 particular, successful shape/identity tests do not establish conservation,
 interface accuracy, or coupled-physics correctness.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,7 +14,9 @@ from typing import Literal, Mapping
 
 LatticeName = Literal["D2Q9", "D3Q19", "D3Q27"]
 PhysicsName = Literal["single_phase", "turbulence", "multiphase", "ibm", "curved_wall"]
-RefinementPath = Literal["adaptive_dynamic", "multigrid_static", "surface_shell", "multipatch_static", "common_module"]
+RefinementPath = Literal[
+    "adaptive_dynamic", "multigrid_static", "surface_shell", "multipatch_static", "common_module"
+]
 
 REQUIRED_FRONTEND_METADATA = (
     "subcycling",
@@ -33,12 +36,19 @@ WITHHELD_UNKNOWN_LATTICE = "WITHHELD_UNKNOWN_LATTICE"
 WITHHELD_UNKNOWN_PHYSICS = "WITHHELD_UNKNOWN_PHYSICS"
 
 _AUDITED_PATHS: tuple[RefinementPath, ...] = (
-    "adaptive_dynamic", "multigrid_static", "surface_shell", "multipatch_static",
+    "adaptive_dynamic",
+    "multigrid_static",
+    "surface_shell",
+    "multipatch_static",
     "common_module",
 )
 _AUDITED_LATTICES: tuple[LatticeName, ...] = ("D2Q9", "D3Q19", "D3Q27")
 _AUDITED_PHYSICS: tuple[PhysicsName, ...] = (
-    "single_phase", "turbulence", "multiphase", "ibm", "curved_wall",
+    "single_phase",
+    "turbulence",
+    "multiphase",
+    "ibm",
+    "curved_wall",
 )
 
 
@@ -67,7 +77,9 @@ class LocalRefinementCapability:
         return self.status == "AVAILABLE"
 
 
-def _capability_for(path: RefinementPath, lattice: LatticeName, physics: PhysicsName) -> LocalRefinementCapability:
+def _capability_for(
+    path: RefinementPath, lattice: LatticeName, physics: PhysicsName
+) -> LocalRefinementCapability:
     # The common_module path provides solver-agnostic refine/coarsen/halo
     # exchange for D3Q19 and D3Q27 via tensorlbm.amr_common.
     if path == "common_module":
@@ -76,54 +88,73 @@ def _capability_for(path: RefinementPath, lattice: LatticeName, physics: Physics
     # Paths other than common_module do not have D3Q27 mechanics.
     if lattice == "D3Q27":
         return LocalRefinementCapability(
-            "NO_IMPLEMENTATION", WITHHELD_NO_D3Q27_LOCAL_REFINEMENT, None, None,
+            "NO_IMPLEMENTATION",
+            WITHHELD_NO_D3Q27_LOCAL_REFINEMENT,
+            None,
+            None,
             "No D3Q27 local-refinement/AMR solver or exchange implementation was found "
             "for this path.  Use the common_module path for D3Q27 AMR mechanics.",
         )
 
     mechanics: dict[tuple[RefinementPath, LatticeName], tuple[str, str, str]] = {
         ("adaptive_dynamic", "D2Q9"): (
-            "AVAILABLE_MECHANICS_ONLY", "tensorlbm.adaptive_refinement.AdaptiveSolver2D",
+            "AVAILABLE_MECHANICS_ONLY",
+            "tensorlbm.adaptive_refinement.AdaptiveSolver2D",
             "FH helper (specific adaptive path; otherwise bilinear/block-average)",
         ),
         ("adaptive_dynamic", "D3Q19"): (
-            "AVAILABLE_MECHANICS_ONLY", "tensorlbm.adaptive_refinement.AdaptiveSolver3D",
+            "AVAILABLE_MECHANICS_ONLY",
+            "tensorlbm.adaptive_refinement.AdaptiveSolver3D",
             "FH helper (specific adaptive path; otherwise trilinear/block-average)",
         ),
         ("multigrid_static", "D3Q19"): (
-            "AVAILABLE_MECHANICS_ONLY", "tensorlbm.refinement.MultiGridSolver",
+            "AVAILABLE_MECHANICS_ONLY",
+            "tensorlbm.refinement.MultiGridSolver",
             "plain trilinear interpolation/block-average restriction",
         ),
         ("surface_shell", "D3Q19"): (
-            "AVAILABLE_MECHANICS_ONLY", "tensorlbm.surface_refinement.SurfaceRefinementSolver",
+            "AVAILABLE_MECHANICS_ONLY",
+            "tensorlbm.surface_refinement.SurfaceRefinementSolver",
             "plain interpolation/block-average via refinement/multipatch helpers",
         ),
         ("multipatch_static", "D3Q19"): (
-            "AVAILABLE_MECHANICS_ONLY", "tensorlbm.multipatch.MultiPatchSolver",
+            "AVAILABLE_MECHANICS_ONLY",
+            "tensorlbm.multipatch.MultiPatchSolver",
             "plain trilinear interpolation/block-average restriction",
         ),
     }
     detail = mechanics.get((path, lattice))
     if detail is None:
         return LocalRefinementCapability(
-            "NO_IMPLEMENTATION", WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE, None, None,
+            "NO_IMPLEMENTATION",
+            WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE,
+            None,
+            None,
             f"{path} has no audited {lattice} implementation.",
         )
     mechanics_status, entrypoint, exchange_scheme = detail
     if physics != "single_phase":
         return LocalRefinementCapability(
-            mechanics_status, WITHHELD_NO_COUPLED_AMR_PHYSICS_CONTRACT, entrypoint, exchange_scheme,
+            mechanics_status,
+            WITHHELD_NO_COUPLED_AMR_PHYSICS_CONTRACT,
+            entrypoint,
+            exchange_scheme,
             "The named physics exists elsewhere in the package, but this refinement path has no audited "
             "coupling, geometry-update, exchange, or conservation/evidence contract for it.",
         )
     return LocalRefinementCapability(
-        mechanics_status, WITHHELD_REQUIRED_METADATA_NOT_EMITTED, entrypoint, exchange_scheme,
+        mechanics_status,
+        WITHHELD_REQUIRED_METADATA_NOT_EMITTED,
+        entrypoint,
+        exchange_scheme,
         "Patch mechanics exist, but current paths do not emit all required frontend metadata or a "
         "flux/inventory ledger; they are not precision/physics validation claims.",
     )
 
 
-def _common_module_capability(lattice: LatticeName, physics: PhysicsName) -> LocalRefinementCapability:
+def _common_module_capability(
+    lattice: LatticeName, physics: PhysicsName
+) -> LocalRefinementCapability:
     """Capability for the solver-agnostic common AMR module.
 
     ``tensorlbm.amr_common`` provides ``refine``, ``coarsen``,
@@ -133,7 +164,10 @@ def _common_module_capability(lattice: LatticeName, physics: PhysicsName) -> Loc
     """
     if lattice not in ("D3Q19", "D3Q27"):
         return LocalRefinementCapability(
-            "NO_IMPLEMENTATION", WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE, None, None,
+            "NO_IMPLEMENTATION",
+            WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE,
+            None,
+            None,
             f"common_module has no audited {lattice} implementation. "
             "Supported lattices: D3Q19, D3Q27.",
         )
@@ -145,13 +179,19 @@ def _common_module_capability(lattice: LatticeName, physics: PhysicsName) -> Loc
     )
     if physics != "single_phase":
         return LocalRefinementCapability(
-            mechanics_status, WITHHELD_NO_COUPLED_AMR_PHYSICS_CONTRACT, entrypoint, exchange_scheme,
+            mechanics_status,
+            WITHHELD_NO_COUPLED_AMR_PHYSICS_CONTRACT,
+            entrypoint,
+            exchange_scheme,
             "The common AMR module provides solver-agnostic mechanics, but no audited "
             "coupling, geometry-update, exchange, or conservation/evidence contract exists "
             "for this physics combination.",
         )
     return LocalRefinementCapability(
-        mechanics_status, WITHHELD_REQUIRED_METADATA_NOT_EMITTED, entrypoint, exchange_scheme,
+        mechanics_status,
+        WITHHELD_REQUIRED_METADATA_NOT_EMITTED,
+        entrypoint,
+        exchange_scheme,
         "Common AMR module mechanics exist for "
         f"{lattice} (refine/coarsen/halo_exchange/AMRPatch3D), but current paths do not emit "
         "all required frontend metadata or a flux/inventory ledger; they are not "
@@ -159,11 +199,15 @@ def _common_module_capability(lattice: LatticeName, physics: PhysicsName) -> Loc
     )
 
 
-def local_refinement_capability_matrix() -> dict[RefinementPath, dict[LatticeName, dict[PhysicsName, LocalRefinementCapability]]]:
+def local_refinement_capability_matrix() -> dict[
+    RefinementPath, dict[LatticeName, dict[PhysicsName, LocalRefinementCapability]]
+]:
     """Return the complete audited local-refinement lattice/physics matrix."""
     return {
         path: {
-            lattice: {physics: _capability_for(path, lattice, physics) for physics in _AUDITED_PHYSICS}
+            lattice: {
+                physics: _capability_for(path, lattice, physics) for physics in _AUDITED_PHYSICS
+            }
             for lattice in _AUDITED_LATTICES
         }
         for path in _AUDITED_PATHS
@@ -186,11 +230,17 @@ def require_local_refinement_capability(
     be emitted/proven by the selected runtime.
     """
     if path not in _AUDITED_PATHS:
-        raise LocalRefinementWithheldError(f"{WITHHELD_UNKNOWN_PATH}: {path!r} is not an audited refinement path.")
+        raise LocalRefinementWithheldError(
+            f"{WITHHELD_UNKNOWN_PATH}: {path!r} is not an audited refinement path."
+        )
     if lattice not in _AUDITED_LATTICES:
-        raise LocalRefinementWithheldError(f"{WITHHELD_UNKNOWN_LATTICE}: {lattice!r} is not an audited lattice.")
+        raise LocalRefinementWithheldError(
+            f"{WITHHELD_UNKNOWN_LATTICE}: {lattice!r} is not an audited lattice."
+        )
     if physics not in _AUDITED_PHYSICS:
-        raise LocalRefinementWithheldError(f"{WITHHELD_UNKNOWN_PHYSICS}: {physics!r} is not an audited physics selection.")
+        raise LocalRefinementWithheldError(
+            f"{WITHHELD_UNKNOWN_PHYSICS}: {physics!r} is not an audited physics selection."
+        )
     if metadata is not None:
         missing = [key for key in REQUIRED_FRONTEND_METADATA if key not in metadata]
         if missing:
@@ -202,9 +252,16 @@ def require_local_refinement_capability(
 
 
 __all__ = [
-    "LocalRefinementCapability", "LocalRefinementWithheldError", "REQUIRED_FRONTEND_METADATA",
-    "WITHHELD_REQUIRED_METADATA_NOT_EMITTED", "WITHHELD_NO_COUPLED_AMR_PHYSICS_CONTRACT",
-    "WITHHELD_NO_D3Q27_LOCAL_REFINEMENT", "WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE",
-    "WITHHELD_UNKNOWN_PATH", "WITHHELD_UNKNOWN_LATTICE", "WITHHELD_UNKNOWN_PHYSICS",
-    "local_refinement_capability_matrix", "require_local_refinement_capability",
+    "LocalRefinementCapability",
+    "LocalRefinementWithheldError",
+    "REQUIRED_FRONTEND_METADATA",
+    "WITHHELD_REQUIRED_METADATA_NOT_EMITTED",
+    "WITHHELD_NO_COUPLED_AMR_PHYSICS_CONTRACT",
+    "WITHHELD_NO_D3Q27_LOCAL_REFINEMENT",
+    "WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE",
+    "WITHHELD_UNKNOWN_PATH",
+    "WITHHELD_UNKNOWN_LATTICE",
+    "WITHHELD_UNKNOWN_PHYSICS",
+    "local_refinement_capability_matrix",
+    "require_local_refinement_capability",
 ]
