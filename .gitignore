@@ -36,6 +36,7 @@ outputs/
 
 # Archived experiment scripts (ad-hoc debug / benchmark workers)
 /_*.py
+/test_*.py
 
 # artifacts/ directory — all benchmark run outputs land here
 artifacts/runs/
