@@ -1,6 +1,7 @@
 {
   "schema": "tensorlbm-flat-plate-grid-convergence-interim-v1",
-  "status": "two_admitted_grids_third_grid_running",
+  "status": "superseded_by_admitted_three_grid_assessment",
+  "superseded_by": "docs/evidence/flat-plate-v5-l256-l384-l512-convergence-r1.json",
   "physical_validation": false,
   "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
   "resolutions": [
