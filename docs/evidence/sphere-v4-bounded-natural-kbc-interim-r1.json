@@ -1,0 +1,68 @@
+{
+  "schema": "tensorlbm-sphere-v4-grid-family-interim-v1",
+  "status": "r9_complete_r12_r15_active",
+  "physical_validation": false,
+  "common_configuration": {
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "collision_model": "natural_kbc_d3q19",
+    "collision_chunk_cells": 262144,
+    "compile_natural_kbc": true,
+    "sponge_inlet": true,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "minimum_statistics_convective_times": 5.0
+  },
+  "completed_r9": {
+    "shape_zyx": [144, 144, 216],
+    "radius_cells": 9.0,
+    "steps": 7200,
+    "statistics_samples": 2400,
+    "statistics_convective_times": 8.0,
+    "cd_control_volume": 1.1756139078050105,
+    "cd_bfl_link": 1.1756309366298878,
+    "observer_difference_pct": 0.0014485048844907035,
+    "cd_reference_schiller_naumann": 1.0917310910948732,
+    "reference_error_pct": 7.683468703452704,
+    "stationarity": {
+      "relative_range_pct": 0.0226863433757792,
+      "half_mean_drift_pct": 0.011278418385085752,
+      "linear_trend_pct": 0.020780329513249856,
+      "confidence95_half_width_pct": 0.006665656738555371,
+      "effective_sample_count": 3.561417160368348
+    },
+    "measured_peak_allocated_gib": 3.9111833572387695,
+    "collision_execution": {
+      "calls": 129600,
+      "input_shape_qzyx": [19, 8, 144, 216],
+      "torch_dynamo_process_unique_graphs": 1,
+      "minimum_tau": 0.5324,
+      "maximum_tau": 0.5324
+    },
+    "numerical_quality_admitted": true,
+    "physical_drag_admitted": false
+  },
+  "active_family": {
+    "r12": {
+      "shape_zyx": [192, 192, 288],
+      "radius_cells": 12.0,
+      "steps": 9600,
+      "statistics_samples": 3200
+    },
+    "r15": {
+      "shape_zyx": [240, 240, 360],
+      "radius_cells": 15.0,
+      "steps": 12000,
+      "statistics_samples": 4000
+    }
+  },
+  "decision": [
+    "The R9 trajectory passes duration, stationarity and independent force-observer gates but misses the five-percent drag target, so it is not physically admitted alone.",
+    "The bounded compiled collision path reuses exactly one graph over 129600 slab calls and holds peak allocation to 3.91 GiB.",
+    "No grid-convergence conclusion is allowed until the matching R12 and R15 members complete."
+  ],
+  "provenance": {
+    "r9_result": "results/sphere_natural_kbc_validation/sphere-v4-natural-kbc-equivalent-r9-7200.json",
+    "r9_result_sha256": "e92e3273994577cb296bc8876cb952a375d2f004287b525d93b6c540aa5ca66b",
+    "r9_checkpoint_sha256": "d5711840d0f0f3af7dbde2007cfa6e13fb037114ddd72f7400511c399932927e"
+  }
+}
