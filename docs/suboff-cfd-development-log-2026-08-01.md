@@ -1828,6 +1828,18 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      its time scale must be set by an independent adverse-gradient benchmark,
      not SUBOFF resistance.  Five focused tests cover cadence invariance,
      invalidation/re-entry, exact restart, mismatch rejection and empty state.
+204. The existing 2-D body-force channel is explicitly rejected as an
+     independent turbulent wall reference.  From step 5000 to 50000 its peak
+     speed grows from `0.002282` to `0.020347`; the final three diagnostic
+     windows span 21.90% against a 1% stationarity limit, and its log-law RMS
+     error is 11.88.  Consequently the roughly -45% friction-velocity recovery
+     from both ODE candidates is withheld rather than attributed to the wall
+     model.  A new fail-closed assessor records source hashes, exact channel
+     momentum-balance shear, y+ sampling, stationarity and model error.  The
+     next acceptable reference must be a stationary 3-D periodic channel,
+     followed by a periodic-hill or equivalent adverse-gradient case.  Negative
+     evidence is frozen in
+     `docs/evidence/pressure-gradient-wall-channel-2d-reference-rejected-r1.json`.
 
 ## Rejected candidates
 
