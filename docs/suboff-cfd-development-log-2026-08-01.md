@@ -1702,6 +1702,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      non-periodic default.  Thirty-five focused wall, BFL, flat-plate and
      checkpoint tests pass, including full coverage on a three-plane periodic
      manufactured field.
+191. Re-auditing the active L256 flat plate at step 12288 gives 1536/1536
+     valid pressure-gradient samples and 100% exchange `y+` admission.  Over
+     the central `0.10-0.90` plate extent, bin medians remain below one; strong
+     exposure is localized to the finite leading/trailing edges.  The result is
+     an interim selector/diagnostic check only because it precedes the configured
+     step-16000 warmup and contains no settled friction statistics.  Artifact
+     SHA-256 is
+     `347f638160a093449bc820babc60f1673457009f9deb2c5a3d8b17bc37cee183`.
 
 ## Rejected candidates
 
