@@ -196,6 +196,10 @@ case "$collision_model" in
   *) echo "unsupported TENSORLBM_COLLISION_MODEL: $collision_model" >&2; exit 2 ;;
 esac
 stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1}
+wall_exchange_ratio_target=${TENSORLBM_WALL_EXCHANGE_DISTANCE_OVER_LENGTH_TARGET:-0.01171875}
+wall_y_plus_lower=${TENSORLBM_WALL_MODEL_Y_PLUS_LOWER_BOUND:-30}
+wall_y_plus_upper=${TENSORLBM_WALL_MODEL_Y_PLUS_UPPER_BOUND:-1000}
+wall_y_plus_minimum_fraction=${TENSORLBM_MINIMUM_WALL_MODEL_Y_PLUS_IN_RANGE_FRACTION:-0.9}
 memory_bytes_per_cell=${TENSORLBM_MEMORY_BYTES_PER_CELL:-742}
 level_devices=${TENSORLBM_LEVEL_DEVICES:-}
 run_preflight=()
@@ -253,6 +257,10 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   "${low_memory_wall_macroscopic[@]}" \
   --cs-smag "$cs_smag" --wale-cw "$wale_cw" --vreman-cv "$vreman_cv" \
   --wall-law musker --stress-exchange-distance "$stress_exchange_distance" \
+  --wall-exchange-distance-over-length-target "$wall_exchange_ratio_target" \
+  --wall-model-y-plus-lower-bound "$wall_y_plus_lower" \
+  --wall-model-y-plus-upper-bound "$wall_y_plus_upper" \
+  --minimum-wall-model-y-plus-in-range-fraction "$wall_y_plus_minimum_fraction" \
   --sponge-width "$sponge" --sponge-strength 0.3 \
   "${sponge_inlet[@]}" \
   --far-field-mode non_equilibrium_extrapolation \

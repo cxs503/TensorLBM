@@ -57,6 +57,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --wall-force-direction-chunk 4 --low-memory-wall-macroscopic \
   --cs-smag 0 --wall-law musker \
   --stress-exchange-distance 1.3333333333333333 \
+  --wall-exchange-distance-over-length-target 0.0013888888888888889 \
   --sponge-width 24 --sponge-strength 0.3 \
   --far-field-mode non_equilibrium_extrapolation \
   --memory-bytes-per-cell 900 \
