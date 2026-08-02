@@ -180,6 +180,17 @@ elif [[ ${TENSORLBM_LOW_MEMORY_WALL_MACROSCOPIC:-0} != 0 ]]; then
   echo "TENSORLBM_LOW_MEMORY_WALL_MACROSCOPIC must be 0 or 1" >&2
   exit 2
 fi
+compile_natural_kbc=()
+if [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} == 1 ]]; then
+  if [[ $collision_model != natural_kbc ]]; then
+    echo "TENSORLBM_COMPILE_NATURAL_KBC requires natural_kbc" >&2
+    exit 2
+  fi
+  compile_natural_kbc=(--compile-natural-kbc)
+elif [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} != 0 ]]; then
+  echo "TENSORLBM_COMPILE_NATURAL_KBC must be 0 or 1" >&2
+  exit 2
+fi
 case "$collision_model" in
   cumulant_smagorinsky|cumulant_wale|cumulant_vreman|entropic_kbc|natural_kbc) ;;
   *) echo "unsupported TENSORLBM_COLLISION_MODEL: $collision_model" >&2; exit 2 ;;
@@ -237,6 +248,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --viscosity-ramp-end-step "$viscosity_ramp_end" \
   --collision-model "$collision_model" \
   --collision-chunk-cells "$collision_chunk_cells" \
+  "${compile_natural_kbc[@]}" \
   --wall-force-direction-chunk "$wall_force_direction_chunk" \
   "${low_memory_wall_macroscopic[@]}" \
   --cs-smag "$cs_smag" --wale-cw "$wale_cw" --vreman-cv "$vreman_cv" \

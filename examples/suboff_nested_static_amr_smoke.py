@@ -25,7 +25,10 @@ from tensorlbm.amr_interface_filter import (
 )
 from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.checkpoint_io import atomic_torch_save
-from tensorlbm.chunked_collision import collide_in_z_chunks
+from tensorlbm.chunked_collision import (
+    NaturalKBCCollisionExecutor,
+    collide_in_z_chunks,
+)
 from tensorlbm.control_volume_force import (
     box_control_volume,
     fluid_momentum_change,
@@ -45,7 +48,6 @@ from tensorlbm.drag_pressure import (
 )
 from tensorlbm.entropic_kbc import (
     collide_kbc_d3q19,
-    collide_natural_kbc_d3q19,
 )
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
@@ -262,6 +264,14 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     result.add_argument(
+        "--compile-natural-kbc",
+        action="store_true",
+        help=(
+            "fuse natural-KBC cell-local work while passing tau as a tensor "
+            "so viscosity ramps reuse one dynamic graph"
+        ),
+    )
+    result.add_argument(
         "--wall-force-direction-chunk",
         type=int,
         default=4,
@@ -328,6 +338,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("KBC maximum iterations must be at least two")
     if args.collision_chunk_cells < 0:
         raise ValueError("collision chunk cells must be non-negative")
+    if args.compile_natural_kbc and args.collision_model != "natural_kbc":
+        raise ValueError("compiled natural KBC requires --collision-model natural_kbc")
     if not 1 <= args.wall_force_direction_chunk <= 19:
         raise ValueError("wall force direction chunk must lie in [1,19]")
     if not 0.0 < args.omega_bulk <= 2.0:
@@ -634,6 +646,7 @@ def run(args: argparse.Namespace) -> dict:
         "level_count": level_count,
         "force_samples_per_root_step": force_averager.expected_samples,
         "collision_chunk_cells": args.collision_chunk_cells,
+        "compile_natural_kbc": args.compile_natural_kbc,
         "wall_force_direction_chunk": args.wall_force_direction_chunk,
         "low_memory_wall_macroscopic": args.low_memory_wall_macroscopic,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
@@ -778,6 +791,7 @@ def run(args: argparse.Namespace) -> dict:
         "collision_model": args.collision_model,
         "kbc_max_iterations": args.kbc_max_iterations,
         "collision_chunk_cells": args.collision_chunk_cells,
+        "compile_natural_kbc": args.compile_natural_kbc,
         "omega_bulk": args.omega_bulk,
         "wall_law": args.wall_law,
         "wall_stress_enabled": not args.disable_wall_stress,
@@ -974,6 +988,9 @@ def run(args: argparse.Namespace) -> dict:
     if args.resume:
         state = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
         stored_configuration = state.get("configuration")
+        if isinstance(stored_configuration, dict):
+            stored_configuration = dict(stored_configuration)
+            stored_configuration.setdefault("compile_natural_kbc", False)
         pre_collision_chunk_signature = dict(checkpoint_signature)
         pre_collision_chunk_signature.pop("collision_chunk_cells")
         resumed_pre_collision_chunk_checkpoint = (
@@ -1194,6 +1211,10 @@ def run(args: argparse.Namespace) -> dict:
                 f"minimum_alpha={diagnostic.minimum_alpha}",
             )
 
+    natural_kbc_executor = NaturalKBCCollisionExecutor(
+        compile_enabled=args.compile_natural_kbc,
+    )
+
     def collide(state: torch.Tensor, tau: float, level: int) -> torch.Tensor:
         nonlocal maximum_limiter_fraction
         if args.collision_model == "entropic_kbc":
@@ -1217,11 +1238,11 @@ def run(args: argparse.Namespace) -> dict:
             if args.collision_chunk_cells:
                 post = collide_in_z_chunks(
                     state,
-                    lambda slab: collide_natural_kbc_d3q19(slab, tau=tau),
+                    lambda slab: natural_kbc_executor(slab, tau),
                     chunk_cells=args.collision_chunk_cells,
                 )
             else:
-                post = collide_natural_kbc_d3q19(state, tau=tau)
+                post = natural_kbc_executor(state, tau)
         else:
             sgs_coefficients = {
                 "cumulant_smagorinsky": {"C_s": args.cs_smag},
