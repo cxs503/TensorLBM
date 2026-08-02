@@ -45,6 +45,7 @@ W = torch.tensor(_W_VALUES, dtype=torch.float32)
 # high-Re float64 collision audits.  Casting the public float32 W to double
 # cannot recover the bits already lost at module import.
 W_EXACT64 = torch.tensor(_W_VALUES, dtype=torch.float64)
+WEIGHT_PRECISION_SCHEME = "rational_binary64_cast_to_runtime_dtype_v1"
 
 OPPOSITE = torch.tensor(
     [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17],
