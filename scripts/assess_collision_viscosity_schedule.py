@@ -14,6 +14,20 @@ from tensorlbm.collision_viscosity_audit import (
     run_collision_viscosity_audit,
 )
 
+JsonValue = None | bool | int | float | str | list["JsonValue"] | dict[str, "JsonValue"]
+
+
+def _json_safe(value: object) -> JsonValue:
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    raise TypeError(f"unsupported JSON value type: {type(value).__name__}")
+
 
 def assess(
     collision_model: str,
@@ -52,7 +66,7 @@ def assess(
         audits.append({
             "level": level,
             "configuration": asdict(config),
-            "result": result["result"],
+            "result": _json_safe(result["result"]),
             "admitted": bool(result["acceptance"]["admitted"]),
         })
     all_admitted = all(item["admitted"] for item in audits)

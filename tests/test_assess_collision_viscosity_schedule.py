@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import math
 from pathlib import Path
 
 import pytest
@@ -46,3 +47,25 @@ def test_schedule_rejects_duplicate_or_missing_taus() -> None:
         MODULE.assess("natural_kbc", [], **kwargs)
     with pytest.raises(ValueError, match="unique"):
         MODULE.assess("natural_kbc", [0.8, 0.8], **kwargs)
+
+
+def test_schedule_serializes_nonfinite_failed_audit_as_null(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(MODULE, "run_collision_viscosity_audit", lambda config: {
+        "result": {"recovered_kinematic_viscosity": math.nan, "finite": False},
+        "acceptance": {"admitted": False},
+    })
+    result = MODULE.assess(
+        "bgk", [0.8],
+        wavelength_cells=24,
+        transverse_cells=3,
+        amplitude=0.01,
+        steps=120,
+        fit_start_step=15,
+        maximum_relative_error_pct=2.0,
+        device="cpu",
+        dtype="float32",
+    )
+    assert result["status"] == "rejected"
+    assert result["audits"][0]["result"]["recovered_kinematic_viscosity"] is None
