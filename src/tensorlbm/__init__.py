@@ -693,8 +693,10 @@ from .control_volume_force import (
 )
 from .spalding_wall_model import (
     SpaldingWallDiagnostics,
+    WallExchangeInterfaceClearance,
     WallExchangeSamples,
     apply_spalding_exchange_wall_model,
+    assess_wall_exchange_interface_clearance,
     effective_bfl_wall_distance,
     sample_wall_exchange_velocity,
     solve_spalding_friction_velocity,
@@ -789,8 +791,10 @@ __all__ = [
     "observe_control_volume_force",
     "streaming_momentum_import",
     "SpaldingWallDiagnostics",
+    "WallExchangeInterfaceClearance",
     "WallExchangeSamples",
     "apply_spalding_exchange_wall_model",
+    "assess_wall_exchange_interface_clearance",
     "effective_bfl_wall_distance",
     "sample_wall_exchange_velocity",
     "solve_spalding_friction_velocity",
