@@ -1,6 +1,6 @@
 {
   "schema": "tensorlbm-suboff-collision-viscosity-evidence-v1",
-  "status": "mixed_precision_re4m_schedule_rejected",
+  "status": "superseded_legacy_float32_weight_precision_rejected",
   "physical_validation": false,
   "case": "SUBOFF L90 four-level Natural-KBC configured Re=4000000",
   "audit_configuration": {
@@ -64,12 +64,9 @@
     "materially_repairs_float32_storage_result": false
   },
   "decision": {
-    "launch_re4m_with_current_storage_policy": false,
-    "highest_current_admitted_schedule_reynolds": 2000000,
-    "next_precision_work": [
-      "wavelength-scaled shear-wave audit to isolate finite-wave-number truncation",
-      "then higher spatial resolution or a validated low-dissipation representation"
-    ]
+    "launch_re4m_with_legacy_weight_precision": false,
+    "superseded_by_exact_weight_precision": true,
+    "superseding_evidence": "docs/evidence/suboff-re4m-collision-viscosity-exact-weights-admitted-r1.json"
   },
-  "prohibition": "A longer decay window confirms a real root-level viscosity bias, while an all-float64 control rules out storage precision as its dominant cause. Re4M must not be launched until wavelength/resolution dependence is resolved."
+  "prohibition": "These rejected schedules used D3Q19 weights rounded to float32 before double collision. They remain valid negative evidence for that legacy precision scheme, but cannot reject the corrected exact-weight scheme."
 }
