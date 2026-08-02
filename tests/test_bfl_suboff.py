@@ -414,6 +414,9 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
     assert diagnostics.y_plus_summary is not None
     assert diagnostics.y_plus_summary["requested_samples"] == 21
     assert diagnostics.y_plus_summary["finite_samples"] == 21
+    assert diagnostics.pressure_gradient_parameter_mean == pytest.approx(0.0)
+    assert diagnostics.pressure_gradient_parameter_p95 == pytest.approx(0.0)
+    assert diagnostics.pressure_gradient_parameter_max == pytest.approx(0.0)
     assert diagnostics.shear_force[0] == pytest.approx(exchange_friction)
 
 
