@@ -5,6 +5,7 @@ self-supervised flow transformer.  SUBOFF reconstruction is optional and is
 queried explicitly with :func:`get_suboff_availability`; it never blocks this
 package's core imports.
 """
+
 from __future__ import annotations
 
 import importlib

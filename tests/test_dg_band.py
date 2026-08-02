@@ -5,12 +5,19 @@ the validated full-grid DG RHS element-wise.  Run CPU-only:
 
     CUDA_VISIBLE_DEVICES="" PYTHONPATH=src python -m pytest tests/test_dg_band.py -q
 """
+
 from __future__ import annotations
 
 import torch
 
 from tensorlbm.dg_advection import dg_rhs, get_ops
-from tensorlbm.dg_band import build_band_topology, dg_rhs_band, dg_advect_band, hybrid_advect, hybrid_step
+from tensorlbm.dg_band import (
+    build_band_topology,
+    dg_rhs_band,
+    dg_advect_band,
+    hybrid_advect,
+    hybrid_step,
+)
 from tensorlbm.d2q9 import C as C2D, W as W2D, OPPOSITE as OPP2D, equilibrium as eq2d
 from tensorlbm.d3q19 import C as C3D
 
@@ -167,6 +174,7 @@ class TestSolidWallBounceBack:
         ux_f = ux.view(1, n_band, 1, 1).expand(9, n_band, 2, 2)
         uy_f = uy.view(1, n_band, 1, 1).expand(9, n_band, 2, 2)
         from tensorlbm.dg_advection import equilibrium_dg
+
         f_dg = equilibrium_dg(rho_f, [ux_f, uy_f], C2D.to(DT), W2D.to(DT))
 
         def mass(fd: torch.Tensor) -> float:
@@ -175,8 +183,15 @@ class TestSolidWallBounceBack:
         m0 = mass(f_dg)
         for _ in range(40):
             f_dg = dg_advect_band(
-                f_dg, C2D.to(DT), ops, topo, ext_field=None, dt=1.0,
-                n_substeps=6, scheme="rk3", opposite=OPP2D.to(DT),
+                f_dg,
+                C2D.to(DT),
+                ops,
+                topo,
+                ext_field=None,
+                dt=1.0,
+                n_substeps=6,
+                scheme="rk3",
+                opposite=OPP2D.to(DT),
             )
         m1 = mass(f_dg)
         rel = abs(m1 - m0) / abs(m0)
@@ -189,7 +204,7 @@ class TestSolidWallBounceBack:
         solid = torch.zeros(5, 5, dtype=torch.bool)
         solid[2, 2] = True
         band = torch.zeros(5, 5, dtype=torch.bool)
-        band[2, 3] = True              # band cell immediately +x of the solid
+        band[2, 3] = True  # band cell immediately +x of the solid
         topo = build_band_topology(band, solid_mask=solid, periodic=False)
         # Grid dims are (y, x): axis 1 = x. The -x neighbour of the band cell is
         # the solid cell at (2, 2) → tagged type 2 (solid).
@@ -203,16 +218,18 @@ class TestHybridStepWithCollision:
     def _reconstruct_ux(self, f_lbm, f_dg, topo, ny, nx):
         from tensorlbm.d2q9 import macroscopic as mac2d
         from tensorlbm.dg_advection import macroscopic_dg
+
         rho_l, ux_l, uy_l = mac2d(f_lbm)
         rho_b, us_b = macroscopic_dg(f_dg, C2D.to(DT))
         ux_full = ux_l.clone()
-        mean_b = us_b[0].mean(dim=tuple(range(1, us_b[0].ndim)))   # (n_band,) cell-mean
+        mean_b = us_b[0].mean(dim=tuple(range(1, us_b[0].ndim)))  # (n_band,) cell-mean
         coords = topo.band_coords
         ux_full[coords[:, 0], coords[:, 1]] = mean_b
         return ux_full
 
     def test_stable_and_viscosity_matched(self) -> None:
         import math
+
         ny, nx = 24, 16
         band = torch.zeros(ny, nx, dtype=torch.bool)
         band[8:16, :] = True
@@ -220,32 +237,48 @@ class TestHybridStepWithCollision:
         ops = get_ops(degree=1, dx=1.0, dtype=DT)
 
         U0 = 0.01
-        yc = (torch.arange(ny, dtype=DT) + 0.5)
+        yc = torch.arange(ny, dtype=DT) + 0.5
         rho = torch.ones(ny, nx, dtype=DT)
         ux = (U0 * torch.sin(2 * math.pi * yc / ny)).view(ny, 1).expand(ny, nx)
         uy = torch.zeros(ny, nx, dtype=DT)
         f_lbm = eq2d(rho, ux, uy).to(DT)
         # Seed band DOFs (P0) from the band-cell LBM values.
         cb = topo.band_coords
-        f_dg = f_lbm[:, cb[:, 0], cb[:, 1]].unsqueeze(-1).unsqueeze(-1).expand(-1, -1, 2, 2).contiguous()
+        f_dg = (
+            f_lbm[:, cb[:, 0], cb[:, 1]]
+            .unsqueeze(-1)
+            .unsqueeze(-1)
+            .expand(-1, -1, 2, 2)
+            .contiguous()
+        )
 
         def amp_of() -> float:
             ux_full = self._reconstruct_ux(f_lbm, f_dg, topo, ny, nx)
-            return (ux_full.mean(dim=1) * torch.sin(2 * math.pi * yc / ny)).sum().item() * (2.0 / ny)
+            return (ux_full.mean(dim=1) * torch.sin(2 * math.pi * yc / ny)).sum().item() * (
+                2.0 / ny
+            )
 
         a0 = amp_of()
         tau_lbm = 0.9
         for _ in range(40):
             f_lbm, f_dg = hybrid_step(
-                f_lbm, f_dg, C2D.to(DT), W2D.to(DT), ops, topo,
-                tau_lbm=tau_lbm, dt=1.0, n_substeps=6, opposite=OPP2D.to(DT),
+                f_lbm,
+                f_dg,
+                C2D.to(DT),
+                W2D.to(DT),
+                ops,
+                topo,
+                tau_lbm=tau_lbm,
+                dt=1.0,
+                n_substeps=6,
+                opposite=OPP2D.to(DT),
             )
         a1 = amp_of()
         assert a1 > 0, "hybrid_step unstable (amp<=0)"
         k2 = (2 * math.pi / ny) ** 2
         nu_eff = -math.log(a1 / a0) / (k2 * 40)
-        nu_ext = (tau_lbm - 0.5) / 3.0          # exterior LBM viscosity
+        nu_ext = (tau_lbm - 0.5) / 3.0  # exterior LBM viscosity
         # Band uses τ_dg = τ_lbm − ½ ⇒ same viscosity; whole domain ≈ uniform.
         rel = abs(nu_eff - nu_ext) / nu_ext
-        assert rel < 0.25, f"hybrid ν_eff={nu_eff:.4f} vs {(tau_lbm-0.5)/3:.4f} (rel {rel:.0%})"
+        assert rel < 0.25, f"hybrid ν_eff={nu_eff:.4f} vs {(tau_lbm - 0.5) / 3:.4f} (rel {rel:.0%})"
         assert torch.isfinite(f_lbm).all() and torch.isfinite(f_dg).all()

@@ -33,6 +33,7 @@ References
 Worthington (1908) "A Study of Splashes"
 Truscott, Epps & Belden (2014) Annu. Rev. Fluid Mech. 46 355
 """
+
 from __future__ import annotations
 
 import csv
@@ -83,7 +84,7 @@ class MultiphaseWaterEntryConfig:
     model: WaterEntryModel2D = "cg"
     nx: int = 200
     ny: int = 160
-    nz: int = 80   # only used in 3-D mode
+    nz: int = 80  # only used in 3-D mode
     radius: float = 12.0
     water_level: int = 80
     clearance: int = 4
@@ -146,15 +147,21 @@ class MultiphaseWaterEntryConfig:
 # 2-D geometry helpers
 # ---------------------------------------------------------------------------
 
+
 def _circle_mask(
-    ny: int, nx: int, cx: float, cy: float, r: float, device: torch.device,
+    ny: int,
+    nx: int,
+    cx: float,
+    cy: float,
+    r: float,
+    device: torch.device,
 ) -> torch.Tensor:
     yy, xx = torch.meshgrid(
         torch.arange(ny, device=device, dtype=torch.float32),
         torch.arange(nx, device=device, dtype=torch.float32),
         indexing="ij",
     )
-    return (xx - cx) ** 2 + (yy - cy) ** 2 <= r ** 2
+    return (xx - cx) ** 2 + (yy - cy) ** 2 <= r**2
 
 
 def _wall_mask_2d(ny: int, nx: int, device: torch.device) -> torch.Tensor:
@@ -167,8 +174,13 @@ def _wall_mask_2d(ny: int, nx: int, device: torch.device) -> torch.Tensor:
 # 2-D initialisation helpers
 # ---------------------------------------------------------------------------
 
+
 def _smooth_profile_y(
-    ny: int, nx: int, water_level: float, width: float, device: torch.device,
+    ny: int,
+    nx: int,
+    water_level: float,
+    width: float,
+    device: torch.device,
 ) -> torch.Tensor:
     """tanh profile: 1.0 in water (y < water_level), 0.0 in air."""
     y = torch.arange(ny, dtype=torch.float32, device=device)
@@ -227,10 +239,16 @@ def _init_two_phase_sc_2d(
 # 3-D geometry helpers
 # ---------------------------------------------------------------------------
 
+
 def _sphere_mask_3d(
-    nz: int, ny: int, nx: int,
-    cx: float, cy: float, cz: float,
-    r: float, device: torch.device,
+    nz: int,
+    ny: int,
+    nx: int,
+    cx: float,
+    cy: float,
+    cz: float,
+    r: float,
+    device: torch.device,
 ) -> torch.Tensor:
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=device, dtype=torch.float32),
@@ -238,7 +256,7 @@ def _sphere_mask_3d(
         torch.arange(nx, device=device, dtype=torch.float32),
         indexing="ij",
     )
-    return (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2 <= r ** 2
+    return (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2 <= r**2
 
 
 def _wall_mask_3d(nz: int, ny: int, nx: int, device: torch.device) -> torch.Tensor:
@@ -282,8 +300,11 @@ def _init_two_phase_3d(
 # Force diagnostics
 # ---------------------------------------------------------------------------
 
+
 def _momentum_exchange_2d(
-    f1: torch.Tensor, f2: torch.Tensor, solid: torch.Tensor,
+    f1: torch.Tensor,
+    f2: torch.Tensor,
+    solid: torch.Tensor,
 ) -> tuple[float, float]:
     """Ladd momentum-exchange impact force on a 2-D solid obstacle."""
     device = f1.device
@@ -299,7 +320,9 @@ def _momentum_exchange_2d(
 
 
 def _momentum_exchange_3d(
-    f1: torch.Tensor, f2: torch.Tensor, solid: torch.Tensor,
+    f1: torch.Tensor,
+    f2: torch.Tensor,
+    solid: torch.Tensor,
 ) -> tuple[float, float, float]:
     device = f1.device
     f_total = f1 + f2
@@ -318,6 +341,7 @@ def _momentum_exchange_3d(
 # ---------------------------------------------------------------------------
 # Snapshot
 # ---------------------------------------------------------------------------
+
 
 def _save_snapshot_2d(
     run_dir: Path,
@@ -343,6 +367,7 @@ def _save_snapshot_2d(
 # Main runner
 # ---------------------------------------------------------------------------
 
+
 def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
     """Run the sphere/cylinder water-entry benchmark.
 
@@ -355,8 +380,10 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
     config.validate()
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
-        config.output_root, "sphere_water_entry",
-        config.resolved_run_name(), config.overwrite,
+        config.output_root,
+        "sphere_water_entry",
+        config.resolved_run_name(),
+        config.overwrite,
     )
 
     print(
@@ -378,11 +405,23 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
 
         if config.model == "cg":
             f1, f2 = _init_two_phase_cg_2d(
-                ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device,
+                ny,
+                nx,
+                config.water_level,
+                config.rho_water,
+                config.rho_air,
+                sphere,
+                device,
             )
         else:  # sc
             f1, f2 = _init_two_phase_sc_2d(
-                ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device,
+                ny,
+                nx,
+                config.water_level,
+                config.rho_water,
+                config.rho_air,
+                sphere,
+                device,
             )
 
         gy = -config.g
@@ -392,12 +431,22 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
                 A_surface = config.G * 0.04
                 # f1=red=heavy(water), f2=blue=light(air)
                 f1, f2 = color_gradient_step(
-                    f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=solid,
+                    f1,
+                    f2,
+                    tau=config.tau,
+                    A=A_surface,
+                    gy=gy,
+                    solid_mask=solid,
                 )
             else:  # sc
                 f1, f2 = collide_sc_two_component(
-                    f1, f2, G_12=config.G, tau1=config.tau, tau2=config.tau,
-                    gy=gy, solid_mask=solid,
+                    f1,
+                    f2,
+                    G_12=config.G,
+                    tau1=config.tau,
+                    tau2=config.tau,
+                    gy=gy,
+                    solid_mask=solid,
                 )
 
             f1 = stream(f1)
@@ -438,14 +487,26 @@ def run_multiphase_water_entry(config: MultiphaseWaterEntryConfig) -> Path:
         solid = wall | sphere
 
         f1, f2 = _init_two_phase_3d(
-            nz, ny, nx, config.water_level, config.rho_water, config.rho_air, sphere, device,
+            nz,
+            ny,
+            nx,
+            config.water_level,
+            config.rho_water,
+            config.rho_air,
+            sphere,
+            device,
         )
         gz = -config.g
 
         for step in range(1, config.n_steps + 1):
             f1, f2 = collide_sc_two_component_3d(
-                f1, f2, G_12=config.G, tau1=config.tau, tau2=config.tau,
-                gz=gz, solid_mask=solid,
+                f1,
+                f2,
+                G_12=config.G,
+                tau1=config.tau,
+                tau2=config.tau,
+                gz=gz,
+                solid_mask=solid,
             )
             f1 = stream3d(f1)
             f2 = stream3d(f2)

@@ -30,12 +30,16 @@ def _freeze(value: Any) -> Any:
     if value is None or isinstance(value, (str, int, float, bool, bytes)):
         return value
     if isinstance(value, Mapping):
-        return MappingProxyType({_require_text(key, "mapping key"): _freeze(item) for key, item in value.items()})
+        return MappingProxyType(
+            {_require_text(key, "mapping key"): _freeze(item) for key, item in value.items()}
+        )
     if isinstance(value, (list, tuple)):
         return tuple(_freeze(item) for item in value)
     if isinstance(value, (set, frozenset)):
         return frozenset(_freeze(item) for item in value)
-    raise TypeError(f"unsupported mutable or non-serializable evidence value: {type(value).__name__}")
+    raise TypeError(
+        f"unsupported mutable or non-serializable evidence value: {type(value).__name__}"
+    )
 
 
 def _immutable_mapping(value: Mapping[str, Any], name: str) -> Mapping[str, Any]:
@@ -182,7 +186,9 @@ class RunManifest:
             raise TypeError("validation_status must be a ValidationStatus")
         if not isinstance(self.validation_reason, str):
             raise TypeError("validation_reason must be a string")
-        object.__setattr__(self, "model_identity", _immutable_mapping(self.model_identity, "model_identity"))
+        object.__setattr__(
+            self, "model_identity", _immutable_mapping(self.model_identity, "model_identity")
+        )
         object.__setattr__(self, "config", _immutable_mapping(self.config, "config"))
         object.__setattr__(self, "environment", _immutable_mapping(self.environment, "environment"))
         artifacts = tuple(self.artifacts)
@@ -209,7 +215,10 @@ class RunManifest:
         if not all(isinstance(metric, MetricEvidence) for metric in self.metrics):
             return False
         artifact_ids = [artifact.artifact_id for artifact in self.artifacts]
-        if any(not isinstance(artifact_id, str) or not artifact_id.strip() for artifact_id in artifact_ids):
+        if any(
+            not isinstance(artifact_id, str) or not artifact_id.strip()
+            for artifact_id in artifact_ids
+        ):
             return False
         if len(set(artifact_ids)) != len(artifact_ids):
             return False

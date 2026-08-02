@@ -11,6 +11,7 @@ Tests cover:
 Synthetic data is generated with the free-space Green's function so that the
 true source positions are known exactly.
 """
+
 from __future__ import annotations
 
 import math
@@ -41,6 +42,7 @@ C0 = 343.0  # speed of sound [m/s]
 # ---------------------------------------------------------------------------
 # Helper: synthetic signal generation
 # ---------------------------------------------------------------------------
+
 
 def create_synthetic_signals(
     source_pos: torch.Tensor,
@@ -87,11 +89,9 @@ def create_synthetic_signals(
 
     for s in range(source_pos.shape[0]):
         r = (mic_positions.double() - source_pos[s].double()).norm(dim=1)
-        delay = (r / c0).unsqueeze(1)          # (M, 1)
-        amp = (1.0 / r).unsqueeze(1)           # (M, 1)
-        signals += amp * torch.sin(
-            2.0 * math.pi * freq * (t.unsqueeze(0) - delay)
-        )
+        delay = (r / c0).unsqueeze(1)  # (M, 1)
+        amp = (1.0 / r).unsqueeze(1)  # (M, 1)
+        signals += amp * torch.sin(2.0 * math.pi * freq * (t.unsqueeze(0) - delay))
 
     return signals
 
@@ -183,6 +183,7 @@ def _spot_size(pmap: torch.Tensor) -> int:
 # Test 1: DAS single source
 # ---------------------------------------------------------------------------
 
+
 def test_das_single_source():
     """DAS beamformer localises a single monopole source within 0.05 m.
 
@@ -191,8 +192,13 @@ def test_das_single_source():
     """
     source_pos = torch.tensor([0.5, 0.3, 0.0])
     array = _make_linear_array(
-        n_mics=8, spacing=0.1, y=2.0, dt=1e-4, n_samples=1024,
-        freq=1000.0, source_pos=source_pos,
+        n_mics=8,
+        spacing=0.1,
+        y=2.0,
+        dt=1e-4,
+        n_samples=1024,
+        freq=1000.0,
+        source_pos=source_pos,
     )
 
     cfg = BeamformingConfig(
@@ -211,14 +217,14 @@ def test_das_single_source():
 
     err = math.hypot(peak_x - 0.5, peak_y - 0.3)
     assert err < 0.05, (
-        f"DAS peak ({peak_x:.3f}, {peak_y:.3f}) is {err:.3f} m from true "
-        f"source (0.5, 0.3)"
+        f"DAS peak ({peak_x:.3f}, {peak_y:.3f}) is {err:.3f} m from true source (0.5, 0.3)"
     )
 
 
 # ---------------------------------------------------------------------------
 # Test 2: DAS two sources
 # ---------------------------------------------------------------------------
+
 
 def test_das_two_sources():
     """DAS finds both peaks for two well-separated incoherent sources.
@@ -238,10 +244,9 @@ def test_das_two_sources():
     )
     mic_positions[:, 1] = 2.0
 
-    signals = (
-        create_synthetic_signals(source1, mic_positions, freq1, dt, n_samples)
-        + create_synthetic_signals(source2, mic_positions, freq2, dt, n_samples)
-    )
+    signals = create_synthetic_signals(
+        source1, mic_positions, freq1, dt, n_samples
+    ) + create_synthetic_signals(source2, mic_positions, freq2, dt, n_samples)
     array = MicrophoneArray(positions=mic_positions, signals=signals, dt=dt)
 
     cfg = BeamformingConfig(
@@ -272,8 +277,7 @@ def test_das_two_sources():
     for sx, sy in sources:
         best = min(math.hypot(px - sx, py - sy) for px, py in peaks)
         assert best < 0.1, (
-            f"No peak within 0.1 m of source ({sx:.2f}, {sy:.2f}); "
-            f"detected peaks: {peaks}"
+            f"No peak within 0.1 m of source ({sx:.2f}, {sy:.2f}); detected peaks: {peaks}"
         )
 
     # Must find at least 2 distinct peaks
@@ -284,6 +288,7 @@ def test_das_two_sources():
 # Test 3: CLEAN-SC
 # ---------------------------------------------------------------------------
 
+
 def test_clean_sc():
     """CLEAN-SC localises the source and yields a cleaner map than DAS.
 
@@ -292,8 +297,13 @@ def test_clean_sc():
     """
     source_pos = torch.tensor([0.5, 0.3, 0.0])
     array = _make_linear_array(
-        n_mics=8, spacing=0.1, y=2.0, dt=1e-4, n_samples=1024,
-        freq=1000.0, source_pos=source_pos,
+        n_mics=8,
+        spacing=0.1,
+        y=2.0,
+        dt=1e-4,
+        n_samples=1024,
+        freq=1000.0,
+        source_pos=source_pos,
     )
 
     cfg = BeamformingConfig(
@@ -311,7 +321,11 @@ def test_clean_sc():
 
     das_map, x_grid, y_grid = compute_source_map(array, cfg)
     clean_map = clean_sc(
-        das_map, x_grid, y_grid, array, cfg,
+        das_map,
+        x_grid,
+        y_grid,
+        array,
+        cfg,
         n_iter=cfg.n_iter_clean,
         loop_gain=cfg.clean_loop_gain,
     )
@@ -320,22 +334,21 @@ def test_clean_sc():
     peak_x, peak_y = _find_peak(clean_map, x_grid, y_grid)
     err = math.hypot(peak_x - 0.5, peak_y - 0.3)
     assert err < 0.05, (
-        f"CLEAN-SC peak ({peak_x:.3f}, {peak_y:.3f}) is {err:.3f} m from "
-        f"true source (0.5, 0.3)"
+        f"CLEAN-SC peak ({peak_x:.3f}, {peak_y:.3f}) is {err:.3f} m from true source (0.5, 0.3)"
     )
 
     # --- Dynamic range should be higher (cleaner map) ---
     dr_das = _dynamic_range_db(das_map)
     dr_clean = _dynamic_range_db(clean_map)
     assert dr_clean > dr_das, (
-        f"CLEAN-SC dynamic range ({dr_clean:.2f} dB) not higher than "
-        f"DAS ({dr_das:.2f} dB)"
+        f"CLEAN-SC dynamic range ({dr_clean:.2f} dB) not higher than DAS ({dr_das:.2f} dB)"
     )
 
 
 # ---------------------------------------------------------------------------
 # Test 4: DAMAS
 # ---------------------------------------------------------------------------
+
 
 def test_damas():
     """DAMAS deconvolution localises the source and sharpens the map.
@@ -348,8 +361,13 @@ def test_damas():
     """
     source_pos = torch.tensor([0.5, 0.3, 0.0])
     array = _make_linear_array(
-        n_mics=16, spacing=0.1, y=2.0, dt=1e-4, n_samples=1024,
-        freq=2000.0, source_pos=source_pos,
+        n_mics=16,
+        spacing=0.1,
+        y=2.0,
+        dt=1e-4,
+        n_samples=1024,
+        freq=2000.0,
+        source_pos=source_pos,
     )
 
     cfg = BeamformingConfig(
@@ -371,21 +389,19 @@ def test_damas():
     peak_x, peak_y = _find_peak(damas_map, x_grid, y_grid)
     err = math.hypot(peak_x - 0.5, peak_y - 0.3)
     assert err < 0.05, (
-        f"DAMAS peak ({peak_x:.3f}, {peak_y:.3f}) is {err:.3f} m from "
-        f"true source (0.5, 0.3)"
+        f"DAMAS peak ({peak_x:.3f}, {peak_y:.3f}) is {err:.3f} m from true source (0.5, 0.3)"
     )
 
     # --- Spot size should be smaller (sharper map) ---
     ss_das = _spot_size(das_map)
     ss_damas = _spot_size(damas_map)
-    assert ss_damas < ss_das, (
-        f"DAMAS spot size ({ss_damas}) not smaller than DAS ({ss_das})"
-    )
+    assert ss_damas < ss_das, f"DAMAS spot size ({ss_damas}) not smaller than DAS ({ss_das})"
 
 
 # ---------------------------------------------------------------------------
 # Test 5: compute_source_map basic
 # ---------------------------------------------------------------------------
+
 
 def test_source_map_basic():
     """compute_source_map returns (power_map, x_grid, y_grid) with correct shapes.
@@ -396,8 +412,13 @@ def test_source_map_basic():
     # Source off broadside so the linear array can resolve it in x
     source_pos = torch.tensor([0.5, 0.3, 0.0])
     array = _make_linear_array(
-        n_mics=8, spacing=0.1, y=2.0, dt=1e-4, n_samples=1024,
-        freq=1000.0, source_pos=source_pos,
+        n_mics=8,
+        spacing=0.1,
+        y=2.0,
+        dt=1e-4,
+        n_samples=1024,
+        freq=1000.0,
+        source_pos=source_pos,
     )
 
     cfg = BeamformingConfig(
@@ -435,8 +456,7 @@ def test_source_map_basic():
     peak_x, peak_y = _find_peak(power_map, x_grid, y_grid)
     err = math.hypot(peak_x - 0.5, peak_y - 0.3)
     assert err < 0.1, (
-        f"Peak ({peak_x:.3f}, {peak_y:.3f}) is {err:.3f} m from true "
-        f"source (0.5, 0.3)"
+        f"Peak ({peak_x:.3f}, {peak_y:.3f}) is {err:.3f} m from true source (0.5, 0.3)"
     )
 
 
@@ -444,12 +464,18 @@ def test_source_map_basic():
 # Test 6: run_acoustic_beamforming end-to-end
 # ---------------------------------------------------------------------------
 
+
 def test_run_acoustic_beamforming():
     """run_acoustic_beamforming returns a fully populated BeamformingResult."""
     source_pos = torch.tensor([0.5, 0.3, 0.0])
     array = _make_linear_array(
-        n_mics=8, spacing=0.1, y=2.0, dt=1e-4, n_samples=1024,
-        freq=1000.0, source_pos=source_pos,
+        n_mics=8,
+        spacing=0.1,
+        y=2.0,
+        dt=1e-4,
+        n_samples=1024,
+        freq=1000.0,
+        source_pos=source_pos,
     )
 
     cfg = BeamformingConfig(
@@ -495,6 +521,7 @@ def test_run_acoustic_beamforming():
 # ---------------------------------------------------------------------------
 # Bonus: shading weights
 # ---------------------------------------------------------------------------
+
 
 def test_shading_weights():
     """Uniform / hamming / hann shading produce valid normalised weights."""

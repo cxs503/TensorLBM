@@ -9,6 +9,7 @@ Covers:
     - PorousDrainageConfig validation + short smoke run (SC and CG)
     - Analytical Poiseuille profile sanity check
 """
+
 from __future__ import annotations
 
 import math
@@ -39,6 +40,7 @@ DEVICE = torch.device("cpu")
 # Geometry helpers
 # ---------------------------------------------------------------------------
 
+
 class TestMakeRandomCylinderMedium:
     def test_shape(self) -> None:
         solid = make_random_cylinder_medium(30, 40, n_cylinders=5, r_min=2, r_max=4, seed=0)
@@ -67,8 +69,9 @@ class TestMakeRandomCylinderMedium:
         assert torch.equal(s1, s2)
 
     def test_device(self) -> None:
-        solid = make_random_cylinder_medium(20, 30, n_cylinders=2, r_min=2, r_max=3,
-                                            seed=0, device=DEVICE)
+        solid = make_random_cylinder_medium(
+            20, 30, n_cylinders=2, r_min=2, r_max=3, seed=0, device=DEVICE
+        )
         assert solid.device.type == "cpu"
 
 
@@ -98,6 +101,7 @@ class TestMakeTubeArrayMedium:
 # ---------------------------------------------------------------------------
 # Wall wettability
 # ---------------------------------------------------------------------------
+
 
 class TestApplyWallWettabilitySC:
     def test_shape_preserved(self) -> None:
@@ -157,10 +161,10 @@ class TestApplyWallWettabilitySC:
 # LaplaceTestConfig
 # ---------------------------------------------------------------------------
 
+
 class TestLaplaceTestConfig:
     def test_valid_config(self) -> None:
-        cfg = LaplaceTestConfig(nx=60, ny=60, bubble_radius=10.0, n_steps=2,
-                                output_interval=2)
+        cfg = LaplaceTestConfig(nx=60, ny=60, bubble_radius=10.0, n_steps=2, output_interval=2)
         cfg.validate()
 
     def test_invalid_small_domain(self) -> None:
@@ -202,11 +206,18 @@ class TestLaplaceTestConfig:
         """Short smoke run — check output dict keys and delta_p is positive."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = LaplaceTestConfig(
-                nx=40, ny=40, bubble_radius=8.0,
-                G_12=0.9, tau1=1.0, tau2=1.0,
-                rho_water=0.7, rho_gas=0.3,
-                n_steps=10, output_interval=10,
-                output_root=Path(tmpdir), overwrite=True,
+                nx=40,
+                ny=40,
+                bubble_radius=8.0,
+                G_12=0.9,
+                tau1=1.0,
+                tau2=1.0,
+                rho_water=0.7,
+                rho_gas=0.3,
+                n_steps=10,
+                output_interval=10,
+                output_root=Path(tmpdir),
+                overwrite=True,
             )
             result = run_laplace_test(cfg)
 
@@ -223,10 +234,10 @@ class TestLaplaceTestConfig:
 # CapillaryInvasionConfig
 # ---------------------------------------------------------------------------
 
+
 class TestCapillaryInvasionConfig:
     def test_valid_config(self) -> None:
-        cfg = CapillaryInvasionConfig(nx=60, ny=20, tube_width=10,
-                                      n_steps=2, output_interval=2)
+        cfg = CapillaryInvasionConfig(nx=60, ny=20, tube_width=10, n_steps=2, output_interval=2)
         cfg.validate()
 
     def test_invalid_small_domain(self) -> None:
@@ -258,10 +269,16 @@ class TestCapillaryInvasionConfig:
         """Short smoke run — check output dict keys."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = CapillaryInvasionConfig(
-                nx=60, ny=20, tube_width=12,
-                G_12=0.9, tau_water=1.0, tau_gas=1.0,
-                n_steps=10, output_interval=10,
-                output_root=Path(tmpdir), overwrite=True,
+                nx=60,
+                ny=20,
+                tube_width=12,
+                G_12=0.9,
+                tau_water=1.0,
+                tau_gas=1.0,
+                n_steps=10,
+                output_interval=10,
+                output_root=Path(tmpdir),
+                overwrite=True,
             )
             result = run_capillary_invasion(cfg)
 
@@ -272,6 +289,7 @@ class TestCapillaryInvasionConfig:
 # ---------------------------------------------------------------------------
 # TwoPhasePoiseuilleConfig
 # ---------------------------------------------------------------------------
+
 
 class TestTwoPhasePoiseuilleConfig:
     def test_valid_config(self) -> None:
@@ -308,11 +326,16 @@ class TestTwoPhasePoiseuilleConfig:
         """Short smoke run — check output dict keys."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = TwoPhasePoiseuilleConfig(
-                nx=4, ny=20,
-                tau_water=1.0, tau_gas=0.7,
-                G_x=5e-5, G_12=0.9,
-                n_steps=10, output_interval=10,
-                output_root=Path(tmpdir), overwrite=True,
+                nx=4,
+                ny=20,
+                tau_water=1.0,
+                tau_gas=0.7,
+                G_x=5e-5,
+                G_12=0.9,
+                n_steps=10,
+                output_interval=10,
+                output_root=Path(tmpdir),
+                overwrite=True,
             )
             result = run_two_phase_poiseuille(cfg)
 
@@ -326,6 +349,7 @@ class TestTwoPhasePoiseuilleConfig:
     def test_analytical_profile_no_slip(self) -> None:
         """Analytical profile must satisfy no-slip at walls."""
         from tensorlbm.porous_media import _two_phase_poiseuille_analytical  # noqa: PLC0415
+
         ny, half = 30, 15
         profile = _two_phase_poiseuille_analytical(
             ny, half, G_x=5e-5, nu_w=1 / 6, nu_g=1 / 12, mu_ratio=2.0
@@ -338,6 +362,7 @@ class TestTwoPhasePoiseuilleConfig:
     def test_analytical_profile_positive_interior(self) -> None:
         """Interior velocities must be non-negative (body force in +x)."""
         from tensorlbm.porous_media import _two_phase_poiseuille_analytical  # noqa: PLC0415
+
         ny, half = 20, 10
         profile = _two_phase_poiseuille_analytical(
             ny, half, G_x=5e-5, nu_w=1 / 6, nu_g=1 / 12, mu_ratio=2.0
@@ -350,15 +375,18 @@ class TestTwoPhasePoiseuilleConfig:
 # PorousDrainageConfig
 # ---------------------------------------------------------------------------
 
+
 class TestPorousDrainageConfig:
     def test_valid_config_random_cylinders(self) -> None:
-        cfg = PorousDrainageConfig(nx=60, ny=40, geometry="random_cylinders",
-                                   n_steps=2, output_interval=2)
+        cfg = PorousDrainageConfig(
+            nx=60, ny=40, geometry="random_cylinders", n_steps=2, output_interval=2
+        )
         cfg.validate()
 
     def test_valid_config_tube_array(self) -> None:
-        cfg = PorousDrainageConfig(nx=60, ny=40, geometry="tube_array",
-                                   n_steps=2, output_interval=2)
+        cfg = PorousDrainageConfig(
+            nx=60, ny=40, geometry="tube_array", n_steps=2, output_interval=2
+        )
         cfg.validate()
 
     def test_invalid_small_domain(self) -> None:
@@ -397,12 +425,28 @@ class TestPorousDrainageConfig:
     def test_invalid_model(self) -> None:
         cfg = PorousDrainageConfig.__new__(PorousDrainageConfig)
         for attr, val in [
-            ("nx", 60), ("ny", 40), ("geometry", "random_cylinders"), ("model", "xyz"),
-            ("tau_water", 1.0), ("tau_gas", 1.0), ("rho_water", 0.7), ("rho_gas", 0.3),
-            ("n_cylinders", 5), ("r_min", 3.0), ("r_max", 6.0), ("n_tubes", 3),
-            ("tube_width", 8), ("seed", 42), ("G_12", 0.9), ("G_ads_water", 0.3),
-            ("G_ads_gas", 0.0), ("n_steps", 10), ("output_interval", 10),
-            ("output_root", Path("outputs")), ("run_name", None), ("device", "cpu"),
+            ("nx", 60),
+            ("ny", 40),
+            ("geometry", "random_cylinders"),
+            ("model", "xyz"),
+            ("tau_water", 1.0),
+            ("tau_gas", 1.0),
+            ("rho_water", 0.7),
+            ("rho_gas", 0.3),
+            ("n_cylinders", 5),
+            ("r_min", 3.0),
+            ("r_max", 6.0),
+            ("n_tubes", 3),
+            ("tube_width", 8),
+            ("seed", 42),
+            ("G_12", 0.9),
+            ("G_ads_water", 0.3),
+            ("G_ads_gas", 0.0),
+            ("n_steps", 10),
+            ("output_interval", 10),
+            ("output_root", Path("outputs")),
+            ("run_name", None),
+            ("device", "cpu"),
             ("overwrite", False),
         ]:
             object.__setattr__(cfg, attr, val)
@@ -428,13 +472,23 @@ class TestPorousDrainageConfig:
         """SC model, random cylinders — short smoke run."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = PorousDrainageConfig(
-                nx=60, ny=40, geometry="random_cylinders",
-                n_cylinders=3, r_min=3.0, r_max=5.0, seed=99,
-                model="sc", G_12=0.9,
-                tau_water=1.0, tau_gas=1.0,
-                rho_water=0.7, rho_gas=0.3,
-                n_steps=5, output_interval=5,
-                output_root=Path(tmpdir), overwrite=True,
+                nx=60,
+                ny=40,
+                geometry="random_cylinders",
+                n_cylinders=3,
+                r_min=3.0,
+                r_max=5.0,
+                seed=99,
+                model="sc",
+                G_12=0.9,
+                tau_water=1.0,
+                tau_gas=1.0,
+                rho_water=0.7,
+                rho_gas=0.3,
+                n_steps=5,
+                output_interval=5,
+                output_root=Path(tmpdir),
+                overwrite=True,
             )
             result = run_porous_drainage(cfg)
 
@@ -451,13 +505,21 @@ class TestPorousDrainageConfig:
         """CG model, tube array — short smoke run."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = PorousDrainageConfig(
-                nx=60, ny=40, geometry="tube_array",
-                n_tubes=2, tube_width=8,
-                model="cg", G_12=0.9,
-                tau_water=1.0, tau_gas=1.0,
-                rho_water=0.7, rho_gas=0.3,
-                n_steps=5, output_interval=5,
-                output_root=Path(tmpdir), overwrite=True,
+                nx=60,
+                ny=40,
+                geometry="tube_array",
+                n_tubes=2,
+                tube_width=8,
+                model="cg",
+                G_12=0.9,
+                tau_water=1.0,
+                tau_gas=1.0,
+                rho_water=0.7,
+                rho_gas=0.3,
+                n_steps=5,
+                output_interval=5,
+                output_root=Path(tmpdir),
+                overwrite=True,
             )
             result = run_porous_drainage(cfg)
 
@@ -468,11 +530,16 @@ class TestPorousDrainageConfig:
         """S_water + S_gas should sum to 1 at each diagnostic step."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = PorousDrainageConfig(
-                nx=60, ny=40, geometry="tube_array",
-                n_tubes=2, tube_width=8,
-                model="cg",   # CG is more numerically stable for smoke tests
-                n_steps=5, output_interval=5,
-                output_root=Path(tmpdir), overwrite=True,
+                nx=60,
+                ny=40,
+                geometry="tube_array",
+                n_tubes=2,
+                tube_width=8,
+                model="cg",  # CG is more numerically stable for smoke tests
+                n_steps=5,
+                output_interval=5,
+                output_root=Path(tmpdir),
+                overwrite=True,
             )
             result = run_porous_drainage(cfg)
 

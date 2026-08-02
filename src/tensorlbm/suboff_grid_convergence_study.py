@@ -9,6 +9,7 @@ The study is a **diagnostic only**: it shows how the measured Ct candidate
 varies across grid resolutions, but does not assert that the solution has
 converged or that the Ct values are physically validated.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -33,13 +34,20 @@ _MIN_GRID_LEVELS = 3
 
 
 def _finite_positive(value: object, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or value <= 0.0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not isfinite(value)
+        or value <= 0.0
+    ):
         raise ValueError(f"{name} must be a finite positive scalar")
     return float(value)
 
 
 def _canonical_hash(payload: object) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode(
+        "utf-8"
+    )
     return sha256(encoded).hexdigest()
 
 
@@ -98,7 +106,9 @@ class GridConvergenceStudyConfig:
 
     def __post_init__(self) -> None:
         if not isinstance(self.grid_levels, tuple) or len(self.grid_levels) < _MIN_GRID_LEVELS:
-            raise ValueError(f"grid convergence study requires at least {_MIN_GRID_LEVELS} grid levels")
+            raise ValueError(
+                f"grid convergence study requires at least {_MIN_GRID_LEVELS} grid levels"
+            )
         if any(not isinstance(level, GridLevel) for level in self.grid_levels):
             raise TypeError("grid_levels must contain only GridLevel instances")
         if self.hull_type != "bare_hull":
@@ -176,14 +186,14 @@ def _run_one_level(
         direction=(1.0, 0.0, 0.0),
     )
 
-    campaign = run_suboff_full_wet_force_window_campaign(asset, flow_config, force_config=force_config)
+    campaign = run_suboff_full_wet_force_window_campaign(
+        asset, flow_config, force_config=force_config
+    )
 
     force_window = campaign["force_window"]
     ct = force_window["contract"]["Ct"]
     window_forces = force_window["window_forces"]
-    force_time_series = [
-        [float(v) for v in force] for force in window_forces
-    ]
+    force_time_series = [[float(v) for v in force] for force in window_forces]
     mean_force = [float(v) for v in campaign["sample_windows"]["mean_force"]]
     std_force = [float(v) for v in campaign["sample_windows"]["std_force"]]
 

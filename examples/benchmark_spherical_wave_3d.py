@@ -30,6 +30,7 @@
 ----
     PYTHONPATH=src python examples/benchmark_spherical_wave_3d.py --device cpu --steps 800
 """
+
 from __future__ import annotations
 
 import argparse
@@ -86,9 +87,7 @@ def run_spherical_wave_3d(
         torch.arange(nx, device=dev),
         indexing="ij",
     )
-    dist = torch.sqrt(
-        (xx.float() - cx) ** 2 + (yy.float() - cy) ** 2 + (zz.float() - cz) ** 2
-    )
+    dist = torch.sqrt((xx.float() - cx) ** 2 + (yy.float() - cy) ** 2 + (zz.float() - cz) ** 2)
 
     # 源区域: 填充球 (紧凑单极子源)
     source = dist < R0  # [nz, ny, nx]
@@ -111,7 +110,7 @@ def run_spherical_wave_3d(
     lam = 2 * math.pi * cs / omega
     k = omega / cs
     print("  三维球面波 (密度缩放源 + 高斯脉冲)")
-    print(f"  网格: {nx}x{ny}x{nz} ({nx*ny*nz/1e6:.1f}M 网格)")
+    print(f"  网格: {nx}x{ny}x{nz} ({nx * ny * nz / 1e6:.1f}M 网格)")
     print(f"  R0={R0}, delta_rho={delta_rho}, omega={omega}")
     print(f"  cs={cs:.4f}, lambda={lam:.1f}, k={k:.4f}")
     print(f"  脉冲: t0={pulse_t0}, sigma={pulse_sigma}")
@@ -125,7 +124,7 @@ def run_spherical_wave_3d(
 
         # --- 密度缩放源: 将 f 缩放到目标 rho, 保留速度 ---
         # 高斯包络正弦脉冲
-        env = math.exp(-((step - pulse_t0) / pulse_sigma) ** 2)
+        env = math.exp(-(((step - pulse_t0) / pulse_sigma) ** 2))
         rho_src_val = 1.0 + delta_rho * math.sin(omega * step) * env
 
         rho_cur, ux_cur, uy_cur, uz_cur = macroscopic3d(f)
@@ -232,9 +231,7 @@ def run_spherical_wave_3d(
 
 
 def main():
-    p = argparse.ArgumentParser(
-        description="三维球面波声学基准 (D3Q19 BGK, 密度缩放源 + 高斯脉冲)"
-    )
+    p = argparse.ArgumentParser(description="三维球面波声学基准 (D3Q19 BGK, 密度缩放源 + 高斯脉冲)")
     p.add_argument("--nx", type=int, default=120)
     p.add_argument("--ny", type=int, default=120)
     p.add_argument("--nz", type=int, default=120)

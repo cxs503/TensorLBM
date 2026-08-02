@@ -1,4 +1,5 @@
 """R1 contracts remain solver-independent and fail closed on link ownership."""
+
 from __future__ import annotations
 
 import pytest
@@ -81,8 +82,15 @@ def test_null_inputs_remain_diagnostic_only_without_throwing() -> None:
     from tensorlbm.marine_resistance_contract import build_resistance_force_contract
 
     contract = build_resistance_force_contract(
-        reference_area=None, length=None, rho=None, U=None, direction=None,
-        method=None, sample_phase=None, link_ownership=None, force=None,
+        reference_area=None,
+        length=None,
+        rho=None,
+        U=None,
+        direction=None,
+        method=None,
+        sample_phase=None,
+        link_ownership=None,
+        force=None,
     )
 
     assert contract.status == "diagnostic_only"

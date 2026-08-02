@@ -11,6 +11,7 @@ Combines:
 φ = +1 liquid, −1 solid.  Solid (φ<0): bounce-back (u=0).
 Phase change: solid (φ<0) with T>T_m → melts (φ↑), latent heat absorbed.
 """
+
 from __future__ import annotations
 import argparse, math, os, sys
 from pathlib import Path
@@ -24,10 +25,19 @@ if _SRC not in sys.path:
 from tensorlbm.d3q19 import C, W, OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 from benchmark_gallium_melting import (
-    C_D2Q5, W_D2Q5, equilibrium_thermal, collide_thermal_bgk, stream_thermal,
-    macroscopic_thermal, apply_temperature_bc, bounce_back_solid, apply_buoyancy,
-    compute_interface_velocity, rebuild_phi_from_interface,
-    _GV_FO, _GV_FLIQ,
+    C_D2Q5,
+    W_D2Q5,
+    equilibrium_thermal,
+    collide_thermal_bgk,
+    stream_thermal,
+    macroscopic_thermal,
+    apply_temperature_bc,
+    bounce_back_solid,
+    apply_buoyancy,
+    compute_interface_velocity,
+    rebuild_phi_from_interface,
+    _GV_FO,
+    _GV_FLIQ,
 )
 
 W_D2Q5_DEV = W_D2Q5.float()  # (5,)
@@ -52,8 +62,9 @@ def _laplacian(phi):
     return p_zm + p_zp + p_ym + p_yp + p_xm + p_xp - 6.0 * phi
 
 
-def stefan_phase_source(phi, temperature, *, cp, latent_heat,
-                        melting_temperature, rate=1.0, active_mask=None):
+def stefan_phase_source(
+    phi, temperature, *, cp, latent_heat, melting_temperature, rate=1.0, active_mask=None
+):
     """Return a locally enthalpy-conservative Stefan phase increment.
 
     ``delta_temperature`` is the sensible increment to add to the thermal
@@ -64,12 +75,11 @@ def stefan_phase_source(phi, temperature, *, cp, latent_heat,
     active = torch.ones_like(phi, dtype=torch.bool) if active_mask is None else active_mask
     superheat = torch.clamp(temperature - melting_temperature, min=0.0)
     subcool = torch.clamp(melting_temperature - temperature, min=0.0)
-    delta_phi = (2.0 * rate * cp / latent_heat) * torch.where(
-        phi < 0, superheat, -subcool)
-    delta_phi = torch.where(active, delta_phi.clamp(min=-1.0 - phi, max=1.0 - phi),
-                            torch.zeros_like(delta_phi))
-    return delta_phi, phase_increment_to_temperature(
-        delta_phi, cp=cp, latent_heat=latent_heat)
+    delta_phi = (2.0 * rate * cp / latent_heat) * torch.where(phi < 0, superheat, -subcool)
+    delta_phi = torch.where(
+        active, delta_phi.clamp(min=-1.0 - phi, max=1.0 - phi), torch.zeros_like(delta_phi)
+    )
+    return delta_phi, phase_increment_to_temperature(delta_phi, cp=cp, latent_heat=latent_heat)
 
 
 def phase_increment_to_temperature(delta_phi, *, cp, latent_heat):
@@ -82,8 +92,9 @@ def phase_increment_to_temperature(delta_phi, *, cp, latent_heat):
     return -latent_heat * delta_phi / (2.0 * cp)
 
 
-def conservative_phase_field_update(phi, *, ux, uy, mobility, interface_mobility,
-                                    interface_width, active_mask=None):
+def conservative_phase_field_update(
+    phi, *, ux, uy, mobility, interface_mobility, interface_width, active_mask=None
+):
     """Conservative CH transport plus conservative interface compression.
 
     The former Fakhari ``sign(phi)`` increment was a non-conservative source
@@ -95,8 +106,10 @@ def conservative_phase_field_update(phi, *, ux, uy, mobility, interface_mobility
 
     def divergence(fx, fy):
         out = torch.zeros_like(phi)
-        out[:, :, 1:] += fx[:, :, 1:]; out[:, :, :-1] -= fx[:, :, 1:]
-        out[:, 1:, :] += fy[:, 1:, :]; out[:, :-1, :] -= fy[:, 1:, :]
+        out[:, :, 1:] += fx[:, :, 1:]
+        out[:, :, :-1] -= fx[:, :, 1:]
+        out[:, 1:, :] += fy[:, 1:, :]
+        out[:, :-1, :] -= fy[:, 1:, :]
         return out
 
     face_x = active[:, :, 1:] & active[:, :, :-1]
@@ -105,26 +118,31 @@ def conservative_phase_field_update(phi, *, ux, uy, mobility, interface_mobility
     uy_face = 0.5 * (uy[:, 1:, :] + uy[:, :-1, :])
     phi_x = torch.where(ux_face >= 0, phi[:, :, :-1], phi[:, :, 1:])
     phi_y = torch.where(uy_face >= 0, phi[:, :-1, :], phi[:, 1:, :])
-    fx = torch.zeros_like(phi); fy = torch.zeros_like(phi)
+    fx = torch.zeros_like(phi)
+    fy = torch.zeros_like(phi)
     fx[:, :, 1:] = torch.where(face_x, ux_face * phi_x, torch.zeros_like(phi_x))
     fy[:, 1:, :] = torch.where(face_y, uy_face * phi_y, torch.zeros_like(phi_y))
     phi_next = phi - divergence(fx, fy)
 
     lap_phi = _laplacian(phi_next)
-    mu = -0.2 * phi_next + 0.2 * phi_next ** 3 - 0.1 * lap_phi
-    mux = mu[:, :, 1:] - mu[:, :, :-1]; muy = mu[:, 1:, :] - mu[:, :-1, :]
-    fx.zero_(); fy.zero_()
+    mu = -0.2 * phi_next + 0.2 * phi_next**3 - 0.1 * lap_phi
+    mux = mu[:, :, 1:] - mu[:, :, :-1]
+    muy = mu[:, 1:, :] - mu[:, :-1, :]
+    fx.zero_()
+    fy.zero_()
     fx[:, :, 1:] = torch.where(face_x, -mobility * mux, torch.zeros_like(mux))
     fy[:, 1:, :] = torch.where(face_y, -mobility * muy, torch.zeros_like(muy))
     phi_next = phi_next - divergence(fx, fy)
 
-    gx = torch.zeros_like(phi_next); gy = torch.zeros_like(phi_next)
+    gx = torch.zeros_like(phi_next)
+    gy = torch.zeros_like(phi_next)
     gx[:, :, 1:-1] = 0.5 * (phi_next[:, :, 2:] - phi_next[:, :, :-2])
     gy[:, 1:-1, :] = 0.5 * (phi_next[:, 2:, :] - phi_next[:, :-2, :])
     norm = torch.sqrt(gx * gx + gy * gy + 1e-12)
     qx = interface_mobility * (1.0 - phi_next * phi_next) * gx / norm / interface_width
     qy = interface_mobility * (1.0 - phi_next * phi_next) * gy / norm / interface_width
-    fx.zero_(); fy.zero_()
+    fx.zero_()
+    fy.zero_()
     fx[:, :, 1:] = torch.where(face_x, 0.5 * (qx[:, :, 1:] + qx[:, :, :-1]), torch.zeros_like(mux))
     fy[:, 1:, :] = torch.where(face_y, 0.5 * (qy[:, 1:, :] + qy[:, :-1, :]), torch.zeros_like(muy))
     phi_next = phi_next - divergence(fx, fy)
@@ -133,8 +151,8 @@ def conservative_phase_field_update(phi, *, ux, uy, mobility, interface_mobility
 
 
 def phase_field_update_with_energy_closure(
-        phi, *, ux, uy, mobility, interface_mobility, interface_width,
-        cp, latent_heat, active_mask=None):
+    phi, *, ux, uy, mobility, interface_mobility, interface_width, cp, latent_heat, active_mask=None
+):
     """Apply PF fluxes with their matching local latent-energy transfer.
 
     A conservative Cahn--Hilliard update conserves *global* phase volume, but
@@ -143,18 +161,38 @@ def phase_field_update_with_energy_closure(
     increment preserves ``cp*T + L*(phi+1)/2`` before thermal transport.
     """
     phi_next = conservative_phase_field_update(
-        phi, ux=ux, uy=uy, mobility=mobility,
-        interface_mobility=interface_mobility, interface_width=interface_width,
-        active_mask=active_mask)
-    return phi_next, phase_increment_to_temperature(
-        phi_next - phi, cp=cp, latent_heat=latent_heat)
+        phi,
+        ux=ux,
+        uy=uy,
+        mobility=mobility,
+        interface_mobility=interface_mobility,
+        interface_width=interface_width,
+        active_mask=active_mask,
+    )
+    return phi_next, phase_increment_to_temperature(phi_next - phi, cp=cp, latent_heat=latent_heat)
 
 
-def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
-                   T_hot=1.0, T_cold=0.0, T_melt=0.148, T_init=None,
-                   cp=1.0, L_latent=18.52, beta=0.1, gy=-0.001875,
-                   u_clamp=0.15, k_melt=1.0, steps=8000, device="cpu",
-                   log_every=1000, quiet=False):
+def run_gallium_pf(
+    nx=40,
+    ny=56,
+    nz=1,
+    tau=0.506,
+    tau_T=0.8,
+    T_hot=1.0,
+    T_cold=0.0,
+    T_melt=0.148,
+    T_init=None,
+    cp=1.0,
+    L_latent=18.52,
+    beta=0.1,
+    gy=-0.001875,
+    u_clamp=0.15,
+    k_melt=1.0,
+    steps=8000,
+    device="cpu",
+    log_every=1000,
+    quiet=False,
+):
     dev = torch.device(device)
     nu = (tau - 0.5) / 3.0
     alpha = (tau_T - 0.5) / 3.0
@@ -163,7 +201,7 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
     deltaT = T_hot - T_cold
     T_ref = T_melt
     g_mag = abs(gy)
-    Ra = g_mag * beta * deltaT * nx ** 3 / (nu * alpha)
+    Ra = g_mag * beta * deltaT * nx**3 / (nu * alpha)
     Fo_factor = alpha / (nx * nx)
     if T_init is None:
         T_init = T_cold
@@ -176,8 +214,10 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
 
     # Wall mask
     wall_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=dev)
-    wall_mask[:, :, 0] = True; wall_mask[:, :, -1] = True
-    wall_mask[:, 0, :] = True; wall_mask[:, -1, :] = True
+    wall_mask[:, :, 0] = True
+    wall_mask[:, :, -1] = True
+    wall_mask[:, 0, :] = True
+    wall_mask[:, -1, :] = True
     # Only vertical wall values are prescribed phase values.  Horizontal faces
     # are zero-flux PF faces, not reset ghost cells: resetting them would be a
     # hidden phase source.  Face fluxes below close at both kinds of wall.
@@ -188,7 +228,9 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
     _, j_idx, i_idx = torch.meshgrid(
         torch.arange(nz, device=dev, dtype=torch.float32),
         torch.arange(ny, device=dev, dtype=torch.float32),
-        torch.arange(nx, device=dev, dtype=torch.float32), indexing="ij")
+        torch.arange(nx, device=dev, dtype=torch.float32),
+        indexing="ij",
+    )
 
     # Initial: all solid (φ=-1), hot wall liquid (φ=+1)
     phi = -torch.ones((nz, ny, nx), device=dev, dtype=torch.float32)
@@ -197,8 +239,9 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
     # Temperature: subcooled solid, hot wall
     T_field = torch.full((nz, ny, nx), float(T_init), device=dev, dtype=torch.float32)
     T_field[:, :, 0] = T_hot
-    T_field = T_field + 0.002 * torch.sin(math.pi * j_idx / max(ny - 1, 1)) * \
-              torch.sin(math.pi * i_idx / max(nx - 1, 1))
+    T_field = T_field + 0.002 * torch.sin(math.pi * j_idx / max(ny - 1, 1)) * torch.sin(
+        math.pi * i_idx / max(nx - 1, 1)
+    )
 
     rho0 = torch.ones((nz, ny, nx), device=dev)
     u0 = torch.zeros_like(rho0)
@@ -209,12 +252,14 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
     if not quiet:
         print(f"\n{'─' * 72}")
         print(f"  Gallium melting — PF (Cahn-Hilliard + anti-diffusion) + thermal")
-        print(f"  Grid: {nx} × {ny} × {nz}  Fo_final ≈ {Fo_factor*steps:.4f}")
+        print(f"  Grid: {nx} × {ny} × {nz}  Fo_final ≈ {Fo_factor * steps:.4f}")
         print(f"  Pr={Pr:.4f}  Ra={Ra:.2f}  Ste={Ste:.4f}  (physical Ste≈0.046)")
         print(f"  T_hot={T_hot} T_cold={T_cold} T_m={T_melt} cp={cp} L={L_latent}")
         print(f"  PF: A={A_coef} B={B_coef} κ={kappa_ch} W={W_ac} α_ac={alpha_ac} M={M_mob:.4f}")
         print(f"{'─' * 72}")
-        print(f"  {'step':>6s} {'Fo':>8s} {'f_liq':>7s} {'s_top':>6s} {'s_mid':>6s} {'s_bot':>6s} {'u_max':>8s} {'T_min':>6s} {'T_max':>6s}")
+        print(
+            f"  {'step':>6s} {'Fo':>8s} {'f_liq':>7s} {'s_top':>6s} {'s_mid':>6s} {'s_bot':>6s} {'u_max':>8s} {'T_min':>6s} {'T_max':>6s}"
+        )
 
     history = []
     with torch.no_grad():
@@ -248,8 +293,14 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
             # for thermal energy so clipping cannot create an energy mismatch.
             T_cur = macroscopic_thermal(g)
             delta_phi, latent_temperature = stefan_phase_source(
-                phi, T_cur, cp=cp, latent_heat=L_latent,
-                melting_temperature=T_melt, rate=k_melt, active_mask=phase_active)
+                phi,
+                T_cur,
+                cp=cp,
+                latent_heat=L_latent,
+                melting_temperature=T_melt,
+                rate=k_melt,
+                active_mask=phase_active,
+            )
             phi = phi + delta_phi
             g = g + w_d2q5_view * latent_temperature.unsqueeze(0)
             g = apply_temperature_bc(g, T_hot, T_cold)
@@ -258,13 +309,19 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
             # It redistributes φ but has no net source, protecting the Stefan
             # phase increment and its associated latent-energy bookkeeping.
             phi, pf_temperature = phase_field_update_with_energy_closure(
-                phi, ux=ux.clamp(-0.5, 0.5), uy=uy.clamp(-0.5, 0.5),
-                mobility=M_mob, interface_mobility=alpha_ac,
-                interface_width=W_ac, cp=cp, latent_heat=L_latent,
-                active_mask=phase_active)
+                phi,
+                ux=ux.clamp(-0.5, 0.5),
+                uy=uy.clamp(-0.5, 0.5),
+                mobility=M_mob,
+                interface_mobility=alpha_ac,
+                interface_width=W_ac,
+                cp=cp,
+                latent_heat=L_latent,
+                active_mask=phase_active,
+            )
             g = g + w_d2q5_view * pf_temperature.unsqueeze(0)
             g = apply_temperature_bc(g, T_hot, T_cold)
-            phi[:, :, 0] = 1.0    # hot wall = liquid
+            phi[:, :, 0] = 1.0  # hot wall = liquid
             phi[:, :, -1] = -1.0  # cold wall = solid
 
             # === 6. NaN guard ===
@@ -280,19 +337,31 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
                 s_per = ((1.0 + phi) / 2.0)[0].sum(dim=1)
                 n20 = max(ny // 5, 1)
                 s_top = float(s_per[-n20:].mean().item())
-                s_mid = float(s_per[ny // 2 - n20 // 2: ny // 2 + n20 // 2].mean().item())
+                s_mid = float(s_per[ny // 2 - n20 // 2 : ny // 2 + n20 // 2].mean().item())
                 s_bot = float(s_per[:n20].mean().item())
                 rho_d, ux_d, uy_d, _ = macroscopic3d(f)
-                u_mag = torch.sqrt(ux_d ** 2 + uy_d ** 2)
+                u_mag = torch.sqrt(ux_d**2 + uy_d**2)
                 liq_mask = ~solid_mask
                 u_max = float(u_mag[liq_mask].max().item()) if liq_mask.any() else 0.0
                 Fo = Fo_factor * step
-                history.append({"step": step, "Fo": Fo, "f_liq": f_l,
-                                "s_top": s_top, "s_mid": s_mid, "s_bot": s_bot,
-                                "u_max": u_max, "T_min": float(T_d.min().item()),
-                                "T_max": float(T_d.max().item())})
+                history.append(
+                    {
+                        "step": step,
+                        "Fo": Fo,
+                        "f_liq": f_l,
+                        "s_top": s_top,
+                        "s_mid": s_mid,
+                        "s_bot": s_bot,
+                        "u_max": u_max,
+                        "T_min": float(T_d.min().item()),
+                        "T_max": float(T_d.max().item()),
+                    }
+                )
                 if not quiet:
-                    print(f"  {step:6d} {Fo:8.4f} {f_l:7.4f} {s_top:6.2f} {s_mid:6.2f} {s_bot:6.2f} {u_max:8.5f} {float(T_d.min().item()):6.3f} {float(T_d.max().item()):6.3f}", flush=True)
+                    print(
+                        f"  {step:6d} {Fo:8.4f} {f_l:7.4f} {s_top:6.2f} {s_mid:6.2f} {s_bot:6.2f} {u_max:8.5f} {float(T_d.min().item()):6.3f} {float(T_d.max().item()):6.3f}",
+                        flush=True,
+                    )
 
     # Final
     T_final = macroscopic_thermal(g)
@@ -301,25 +370,44 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
     s_per_f = ((1.0 + phi) / 2.0)[0].sum(dim=1)
     n20 = max(ny // 5, 1)
     s_top_f = float(s_per_f[-n20:].mean().item())
-    s_mid_f = float(s_per_f[ny // 2 - n20 // 2: ny // 2 + n20 // 2].mean().item())
+    s_mid_f = float(s_per_f[ny // 2 - n20 // 2 : ny // 2 + n20 // 2].mean().item())
     s_bot_f = float(s_per_f[:n20].mean().item())
-    u_mag_f = torch.sqrt(ux_f ** 2 + uy_f ** 2)
+    u_mag_f = torch.sqrt(ux_f**2 + uy_f**2)
     liq_mask = ~(wall_mask | (phi < 0))
     u_max_final = float(u_mag_f[liq_mask].max().item()) if liq_mask.any() else 0.0
     Fo_final = Fo_factor * steps
     if not quiet:
         print(f"\n{'─' * 72}")
-        print(f"  Final f_l={f_l_final:.4f}  s_top={s_top_f:.2f} s_mid={s_mid_f:.2f} s_bot={s_bot_f:.2f}")
+        print(
+            f"  Final f_l={f_l_final:.4f}  s_top={s_top_f:.2f} s_mid={s_mid_f:.2f} s_bot={s_bot_f:.2f}"
+        )
         print(f"  Deformation={s_top_f - s_bot_f:.2f}  u_max={u_max_final:.6f}  Fo={Fo_final:.4f}")
         print(f"  Pr={Pr:.4f} Ra={Ra:.2f} Ste={Ste:.4f}")
         print(f"{'─' * 72}")
-    return {"step": steps, "f_liq": f_l_final, "s_top": s_top_f, "s_mid": s_mid_f,
-            "s_bot": s_bot_f, "deformation": s_top_f - s_bot_f, "u_max": u_max_final,
-            "Fo": Fo_final, "T_field": T_final.detach().cpu().numpy(),
-            "phi_field": phi.detach().cpu().numpy(),
-            "ux_field": ux_f.detach().cpu().numpy(), "uy_field": uy_f.detach().cpu().numpy(),
-            "history": history, "nu": nu, "alpha": alpha, "Pr": Pr, "Ra": Ra, "Ste": Ste,
-            "nx": nx, "ny": ny, "nz": nz, "Fo_factor": Fo_factor}
+    return {
+        "step": steps,
+        "f_liq": f_l_final,
+        "s_top": s_top_f,
+        "s_mid": s_mid_f,
+        "s_bot": s_bot_f,
+        "deformation": s_top_f - s_bot_f,
+        "u_max": u_max_final,
+        "Fo": Fo_final,
+        "T_field": T_final.detach().cpu().numpy(),
+        "phi_field": phi.detach().cpu().numpy(),
+        "ux_field": ux_f.detach().cpu().numpy(),
+        "uy_field": uy_f.detach().cpu().numpy(),
+        "history": history,
+        "nu": nu,
+        "alpha": alpha,
+        "Pr": Pr,
+        "Ra": Ra,
+        "Ste": Ste,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "Fo_factor": Fo_factor,
+    }
 
 
 def main():
@@ -340,11 +428,23 @@ def main():
     p.add_argument("--device", default="cpu")
     p.add_argument("--log-every", type=int, default=1000)
     args = p.parse_args()
-    r = run_gallium_pf(nx=args.nx, ny=args.ny, nz=args.nz, tau=args.tau, tau_T=args.tau_T,
-                       T_hot=args.T_hot, T_cold=args.T_cold, T_melt=args.T_melt,
-                       L_latent=args.L_latent, beta=args.beta, gy=args.gy,
-                       u_clamp=args.u_clamp, steps=args.steps, device=args.device,
-                       log_every=args.log_every)
+    r = run_gallium_pf(
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau=args.tau,
+        tau_T=args.tau_T,
+        T_hot=args.T_hot,
+        T_cold=args.T_cold,
+        T_melt=args.T_melt,
+        L_latent=args.L_latent,
+        beta=args.beta,
+        gy=args.gy,
+        u_clamp=args.u_clamp,
+        steps=args.steps,
+        device=args.device,
+        log_every=args.log_every,
+    )
     ok = True
     s_mean = (r["s_top"] + r["s_mid"] + r["s_bot"]) / 3.0
     if s_mean > 2.0:
@@ -376,7 +476,9 @@ def main():
         if int(mask.sum()) >= 2:
             lbm_at = np.interp(_GV_FO[mask], lbm_fo, lbm_fl)
             mape = float(np.mean(np.abs(lbm_at - _GV_FLIQ[mask]) / _GV_FLIQ[mask]) * 100)
-            print(f"\n  Gau-Viskanta MAPE = {mape:.1f}% ({int(mask.sum())} pts, Fo≤{lbm_fo.max():.3f})")
+            print(
+                f"\n  Gau-Viskanta MAPE = {mape:.1f}% ({int(mask.sum())} pts, Fo≤{lbm_fo.max():.3f})"
+            )
             if mape < 20.0:
                 print(f"  ✓ PASS  quantitative match  (MAPE < 20%)")
             else:

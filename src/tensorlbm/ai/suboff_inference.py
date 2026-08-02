@@ -3,6 +3,7 @@
 Encapsulates the prediction (test37) and error analysis workflows
 as callable library functions.
 """
+
 from __future__ import annotations
 
 import csv
@@ -33,13 +34,15 @@ from .suboff_utils import (
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class SuboffPredictConfig:
     """Configuration for SUBOFF inference (test37-style)."""
-    checkpoint_path: str = ""       # Path to model checkpoint
-    data_dir: str = ""              # NPY snapshot directory (suboff8/p,ux,uy,uz)
-    snap_idx: int = 55              # Snapshot index (relative to test set start)
-    test_set_offset: int = 1250     # Test set starts at this index
+
+    checkpoint_path: str = ""  # Path to model checkpoint
+    data_dir: str = ""  # NPY snapshot directory (suboff8/p,ux,uy,uz)
+    snap_idx: int = 55  # Snapshot index (relative to test set start)
+    test_set_offset: int = 1250  # Test set starts at this index
     batch_size: int = 1
     device: str = field(default_factory=default_suboff_device)
 
@@ -47,6 +50,7 @@ class SuboffPredictConfig:
 @dataclass(frozen=True)
 class SuboffErrorConfig:
     """Configuration for SUBOFF error analysis."""
+
     checkpoint_path: str = ""
     data_dir: str = ""
     n_points: int = 5000
@@ -56,13 +60,14 @@ class SuboffErrorConfig:
 
 # ── NPY file reading ─────────────────────────────────────────────────────────
 
+
 def _read_test_file1(path: str) -> np.ndarray:
     """Read NPY file, crop to [49:149, :, 49:149], flatten per XY slice (100 slices of 5000)."""
     file = np.load(path).astype(np.float32)
     file = file[49:149, :, 49:149]
     result = np.empty(500_000, dtype=np.float32)
     for i in range(100):
-        result[i * 5000:(i + 1) * 5000] = file[:, :, i].flatten()
+        result[i * 5000 : (i + 1) * 5000] = file[:, :, i].flatten()
     return result
 
 
@@ -79,11 +84,12 @@ def _read_test_file3(path: str) -> np.ndarray:
     file = file[49:149, :, 49:149]
     result = np.empty(500_000, dtype=np.float32)
     for i in range(50):
-        result[i * 10000:(i + 1) * 10000] = file[:, i, :].flatten()
+        result[i * 10000 : (i + 1) * 10000] = file[:, i, :].flatten()
     return result
 
 
 # ── Prediction ───────────────────────────────────────────────────────────────
+
 
 def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
     """Run SUBOFF flow-field reconstruction prediction (test37-style).
@@ -131,56 +137,86 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
     ux1 = _read_test_file1(path2 + filename)
     uy1 = _read_test_file1(path3 + filename)
     uz1 = _read_test_file1(path4 + filename)
-    test_data1 = torch.cat([
-        torch.as_tensor(press1, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(ux1, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(uy1, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(uz1, dtype=torch.float32).unsqueeze(-1),
-    ], dim=-1).unsqueeze(0)  # [1, 500000, 4]
+    test_data1 = torch.cat(
+        [
+            torch.as_tensor(press1, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(ux1, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(uy1, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(uz1, dtype=torch.float32).unsqueeze(-1),
+        ],
+        dim=-1,
+    ).unsqueeze(0)  # [1, 500000, 4]
 
     press2 = _read_test_file2(path1 + filename)
     ux2 = _read_test_file2(path2 + filename)
     uy2 = _read_test_file2(path3 + filename)
     uz2 = _read_test_file2(path4 + filename)
-    u = np.sqrt(ux2 ** 2 + uy2 ** 2 + uz2 ** 2).reshape(-1, 1)
-    result1 = np.concatenate([
-        press2.reshape(-1, 1), ux2.reshape(-1, 1),
-        uy2.reshape(-1, 1), uz2.reshape(-1, 1), u,
-    ], axis=1)  # [500000, 5]
+    u = np.sqrt(ux2**2 + uy2**2 + uz2**2).reshape(-1, 1)
+    result1 = np.concatenate(
+        [
+            press2.reshape(-1, 1),
+            ux2.reshape(-1, 1),
+            uy2.reshape(-1, 1),
+            uz2.reshape(-1, 1),
+            u,
+        ],
+        axis=1,
+    )  # [500000, 5]
 
-    test_data2 = torch.cat([
-        torch.as_tensor(press2, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(ux2, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(uy2, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(uz2, dtype=torch.float32).unsqueeze(-1),
-    ], dim=-1).unsqueeze(0)  # [1, 500000, 4]
+    test_data2 = torch.cat(
+        [
+            torch.as_tensor(press2, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(ux2, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(uy2, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(uz2, dtype=torch.float32).unsqueeze(-1),
+        ],
+        dim=-1,
+    ).unsqueeze(0)  # [1, 500000, 4]
 
     press3 = _read_test_file3(path1 + filename)
     ux3 = _read_test_file3(path2 + filename)
     uy3 = _read_test_file3(path3 + filename)
     uz3 = _read_test_file3(path4 + filename)
-    test_data3 = torch.cat([
-        torch.as_tensor(press3, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(ux3, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(uy3, dtype=torch.float32).unsqueeze(-1),
-        torch.as_tensor(uz3, dtype=torch.float32).unsqueeze(-1),
-    ], dim=-1).unsqueeze(0)  # [1, 500000, 4]
+    test_data3 = torch.cat(
+        [
+            torch.as_tensor(press3, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(ux3, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(uy3, dtype=torch.float32).unsqueeze(-1),
+            torch.as_tensor(uz3, dtype=torch.float32).unsqueeze(-1),
+        ],
+        dim=-1,
+    ).unsqueeze(0)  # [1, 500000, 4]
 
-    test_data = torch.cat([
-        test_data1.unsqueeze(0), test_data2.unsqueeze(0), test_data3.unsqueeze(0),
-    ], dim=0)  # [3, 1, 500000, 4]
+    test_data = torch.cat(
+        [
+            test_data1.unsqueeze(0),
+            test_data2.unsqueeze(0),
+            test_data3.unsqueeze(0),
+        ],
+        dim=0,
+    )  # [3, 1, 500000, 4]
 
     # Prepare dataset and loader
     from .suboff_dataset import CylinderDatasetMultiRe14
+
     tw = 1
     test_dataset = CylinderDatasetMultiRe14(test_data, tw, push_forward=0)
     test_loader = DataLoader(test_dataset, batch_size=cfg.batch_size, shuffle=False, drop_last=True)
 
     # Position coordinates
     from .suboff_coord import coord_ori27, coord_ori28, coord_ori28_addition
-    pos_all1 = repeat(torch.as_tensor(coord_ori27(), dtype=torch.float32), "n d -> b n d", b=cfg.batch_size)
-    pos_all2 = repeat(torch.as_tensor(coord_ori28(), dtype=torch.float32), "n d -> b n d", b=cfg.batch_size)
-    pos_all3 = repeat(torch.as_tensor(coord_ori28_addition(), dtype=torch.float32), "n d -> b n d", b=cfg.batch_size)
+
+    pos_all1 = repeat(
+        torch.as_tensor(coord_ori27(), dtype=torch.float32), "n d -> b n d", b=cfg.batch_size
+    )
+    pos_all2 = repeat(
+        torch.as_tensor(coord_ori28(), dtype=torch.float32), "n d -> b n d", b=cfg.batch_size
+    )
+    pos_all3 = repeat(
+        torch.as_tensor(coord_ori28_addition(), dtype=torch.float32),
+        "n d -> b n d",
+        b=cfg.batch_size,
+    )
 
     pos_all1 = _move_to_device(pos_all1, device)
     pos_all2 = _move_to_device(pos_all2, device)
@@ -200,14 +236,14 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
         num1 = random.randint(0, 99)
         num2 = random.randint(0, 99)
         num3 = random.randint(0, 49)
-        x1 = x1[:, :, num1 * 5000:(num1 + 1) * 5000, :]
-        x2 = x2[:, :, num2 * 5000:(num2 + 1) * 5000, :]
-        x3 = x3[:, :, num3 * 10000:(num3 + 1) * 10000, :]
+        x1 = x1[:, :, num1 * 5000 : (num1 + 1) * 5000, :]
+        x2 = x2[:, :, num2 * 5000 : (num2 + 1) * 5000, :]
+        x3 = x3[:, :, num3 * 10000 : (num3 + 1) * 10000, :]
         x = torch.cat((x1, x2, x3), dim=2)
 
-        pos1 = pos_all1[:, num1 * 5000:(num1 + 1) * 5000, :]
-        pos2 = pos_all2[:, num2 * 5000:(num2 + 1) * 5000, :]
-        pos3 = pos_all3[:, num3 * 10000:(num3 + 1) * 10000, :]
+        pos1 = pos_all1[:, num1 * 5000 : (num1 + 1) * 5000, :]
+        pos2 = pos_all2[:, num2 * 5000 : (num2 + 1) * 5000, :]
+        pos3 = pos_all3[:, num3 * 10000 : (num3 + 1) * 10000, :]
         input_pos = torch.cat((pos1, pos2, pos3), dim=1)
 
         # Save input data for visualization
@@ -217,12 +253,18 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
         ux_in = x_visu[0, 0, :, 1]
         uy_in = x_visu[0, 0, :, 2]
         uz_in = x_visu[0, 0, :, 3]
-        u_in = np.sqrt(ux_in ** 2 + uy_in ** 2 + uz_in ** 2).reshape(-1, 1)
-        input_data = np.concatenate([
-            input_pos_visu[0, :, :],
-            p_in.reshape(-1, 1), ux_in.reshape(-1, 1),
-            uy_in.reshape(-1, 1), uz_in.reshape(-1, 1), u_in,
-        ], axis=1)  # [20000, 8]
+        u_in = np.sqrt(ux_in**2 + uy_in**2 + uz_in**2).reshape(-1, 1)
+        input_data = np.concatenate(
+            [
+                input_pos_visu[0, :, :],
+                p_in.reshape(-1, 1),
+                ux_in.reshape(-1, 1),
+                uy_in.reshape(-1, 1),
+                uz_in.reshape(-1, 1),
+                u_in,
+            ],
+            axis=1,
+        )  # [20000, 8]
 
         x, y = x.to(device), y.to(device)
 
@@ -246,11 +288,17 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
     ux_pred = pred_np[0, :, 1]
     uy_pred = pred_np[0, :, 2]
     uz_pred = pred_np[0, :, 3]
-    u_pred = np.sqrt(ux_pred ** 2 + uy_pred ** 2 + uz_pred ** 2).reshape(-1, 1)
-    result2 = np.concatenate([
-        p_pred.reshape(-1, 1), ux_pred.reshape(-1, 1),
-        uy_pred.reshape(-1, 1), uz_pred.reshape(-1, 1), u_pred,
-    ], axis=1)  # [500000, 5]
+    u_pred = np.sqrt(ux_pred**2 + uy_pred**2 + uz_pred**2).reshape(-1, 1)
+    result2 = np.concatenate(
+        [
+            p_pred.reshape(-1, 1),
+            ux_pred.reshape(-1, 1),
+            uy_pred.reshape(-1, 1),
+            uz_pred.reshape(-1, 1),
+            u_pred,
+        ],
+        axis=1,
+    )  # [500000, 5]
 
     # Error
     result_error = result2 - result1
@@ -263,14 +311,15 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
 
     # Coordinates
     from .suboff_coord import coord_ori28
+
     coords = coord_ori28()
 
     return {
-        "coords": coords,           # [500000, 3]
-        "real": result1,             # [500000, 5]
-        "pred": result2,             # [500000, 5]
-        "error": result_error,       # [500000, 5]
-        "input": input_data,         # [20000, 8] or None
+        "coords": coords,  # [500000, 3]
+        "real": result1,  # [500000, 5]
+        "pred": result2,  # [500000, 5]
+        "error": result_error,  # [500000, 5]
+        "input": input_data,  # [20000, 8] or None
         "mape": mape,
         "rel_l2_avg": float(np.mean(all_avg_loss)) * 1e4,
         "mse_avg": float(np.mean(torch_avg_loss)) * 1e4,
@@ -280,6 +329,7 @@ def predict_suboff(cfg: SuboffPredictConfig | None = None) -> dict[str, Any]:
 
 
 # ── Error analysis ───────────────────────────────────────────────────────────
+
 
 def error_analysis_suboff(cfg: SuboffErrorConfig | None = None) -> dict[str, Any]:
     """Run per-snapshot per-channel error analysis.
@@ -355,7 +405,10 @@ def error_analysis_suboff(cfg: SuboffErrorConfig | None = None) -> dict[str, Any
     summary = {}
     for cn in ch_names:
         vals = [e["channels"][cn]["rel_l2"] for e in all_errors]
-        summary[cn] = {"rel_l2_mean": round(float(np.mean(vals)), 6), "rel_l2_max": round(float(np.max(vals)), 6)}
+        summary[cn] = {
+            "rel_l2_mean": round(float(np.mean(vals)), 6),
+            "rel_l2_max": round(float(np.max(vals)), 6),
+        }
 
     return {
         "status": "ok",

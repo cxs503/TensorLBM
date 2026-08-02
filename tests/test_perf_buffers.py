@@ -9,6 +9,7 @@ implementation is written.  The buffer module must:
 * Provide macroscopic field buffers (rho, ux, uy, uz, u_mag).
 * Provide wall-function buffers (u_tau, y_plus).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -20,6 +21,7 @@ from tensorlbm.perf_buffers import LBMStepBuffer
 # ---------------------------------------------------------------------------
 # Construction and shape contracts
 # ---------------------------------------------------------------------------
+
 
 class TestLBMStepBufferConstruction:
     """LBMStepBuffer allocates correctly-shaped tensors for each lattice."""
@@ -60,21 +62,18 @@ class TestLBMStepBufferConstruction:
         assert buf.rho.dtype == torch.float32
 
     def test_custom_dtype(self):
-        buf = LBMStepBuffer.for_lattice(
-            "D3Q19", nz=4, ny=6, nx=8, dtype=torch.float64
-        )
+        buf = LBMStepBuffer.for_lattice("D3Q19", nz=4, ny=6, nx=8, dtype=torch.float64)
         assert buf.feq.dtype == torch.float64
 
     def test_device(self):
-        buf = LBMStepBuffer.for_lattice(
-            "D3Q19", nz=4, ny=6, nx=8, device=torch.device("cpu")
-        )
+        buf = LBMStepBuffer.for_lattice("D3Q19", nz=4, ny=6, nx=8, device=torch.device("cpu"))
         assert buf.feq.device.type == "cpu"
 
 
 # ---------------------------------------------------------------------------
 # Buffer reuse — no per-step allocation
 # ---------------------------------------------------------------------------
+
 
 class TestLBMStepBufferReuse:
     """Buffers are persistent objects that can be written to repeatedly."""
@@ -100,6 +99,7 @@ class TestLBMStepBufferReuse:
 # ---------------------------------------------------------------------------
 # Macroscopic computation into pre-allocated buffers
 # ---------------------------------------------------------------------------
+
 
 class TestBufferMacroscopic:
     """compute_macroscopic_into writes rho/ux/uy/uz into buffer fields."""

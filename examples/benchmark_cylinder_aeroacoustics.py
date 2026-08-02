@@ -39,6 +39,7 @@ Run
 
 For better frequency resolution use --steps 10000 (≈8 shedding cycles).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -61,6 +62,7 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
+
 
 def _ascii_vorticity(
     ux: torch.Tensor,
@@ -100,8 +102,10 @@ def _ascii_vorticity(
             row.append(chars[idx])
         print("|" + "".join(row) + "|")
     print("+" + "-" * width + "+")
-    print(f"  ω_z range: [{float(omega.min()):.4f}, {float(omega.max()):.4f}]   "
-          f"'{chars[0]}'=−max  '{chars[nlev // 2]}'=0  '{chars[-1]}'=+max")
+    print(
+        f"  ω_z range: [{float(omega.min()):.4f}, {float(omega.max()):.4f}]   "
+        f"'{chars[0]}'=−max  '{chars[nlev // 2]}'=0  '{chars[-1]}'=+max"
+    )
 
 
 def _fft_peak(
@@ -174,9 +178,7 @@ def _compute_force(
         czq = int(c_dev[q, 2].item())
         # torch.roll(solid, shifts=(czq, cyq, cxq))[z,y,x]
         #   = solid[z-czq, y-cyq, x-cxq]  → neighbour in direction −c_q
-        neighbour_is_solid = torch.roll(
-            solid, shifts=(czq, cyq, cxq), dims=(0, 1, 2)
-        )
+        neighbour_is_solid = torch.roll(solid, shifts=(czq, cyq, cxq), dims=(0, 1, 2))
         boundary = solid & ~neighbour_is_solid
         if boundary.any():
             fsum = f[q][boundary].sum()
@@ -189,6 +191,7 @@ def _compute_force(
 # --------------------------------------------------------------------------- #
 # Cylinder aeroacoustics benchmark
 # --------------------------------------------------------------------------- #
+
 
 def run_cylinder_aeroacoustics(
     nx: int = 400,
@@ -220,7 +223,7 @@ def run_cylinder_aeroacoustics(
     Ma = U_in / cs
 
     # --- Monitors -----------------------------------------------------------
-    near_wake = (cx + 2 * R + 2, cy)          # (x, y) — just behind cylinder
+    near_wake = (cx + 2 * R + 2, cy)  # (x, y) — just behind cylinder
     # Far-field distances perpendicular to flow (θ=90°, max acoustic directivity)
     max_r_y = min(cy, ny - 1 - cy)  # max distance staying in bounds
     far_r = [r for r in [20, 30, 40] if r <= max_r_y]
@@ -276,14 +279,15 @@ def run_cylinder_aeroacoustics(
     print(f"  Cylinder: centre=({cx},{cy})  R={R}  D={D}")
     print(f"  Re={Re:.0f}  U={U_in:.4f}  ν={nu:.5f}  τ={tau:.4f}  Ma={Ma:.4f}")
     print(f"  c_s={cs:.4f}  St_ref=0.164 (Williamson 1988)")
-    print(f"  Steps={steps}  Ramp={ramp_steps}  Inlet=equilibrium  "
-          f"Outlet=zero-grad  y=periodic")
+    print(f"  Steps={steps}  Ramp={ramp_steps}  Inlet=equilibrium  Outlet=zero-grad  y=periodic")
     print(f"  Near-wake monitor: ({near_wake[0]},{near_wake[1]})")
     for r, pt in zip(far_r, far_pts):
         print(f"  Far-field monitor r={r}: ({pt[0]},{pt[1]})  θ=90°")
     print(f"{'─' * 64}")
-    print(f"  {'step':>6s}  {'umax':>8s}  {'p_nw':>12s}  {'p_ff':>12s}  "
-          f"{'Cd_me':>8s}  {'Cd_p':>8s}  {'Cl':>8s}")
+    print(
+        f"  {'step':>6s}  {'umax':>8s}  {'p_nw':>12s}  {'p_ff':>12s}  "
+        f"{'Cd_me':>8s}  {'Cd_p':>8s}  {'Cl':>8s}"
+    )
     print(f"{'─' * 64}")
 
     # --- Time loop ----------------------------------------------------------
@@ -346,14 +350,17 @@ def run_cylinder_aeroacoustics(
             umax = float(ux.abs().max())
             p_nw = nw_hist[-1]
             p_ff = ff_hists[far_r[-1]][-1]
-            cd_me = 2.0 * fx_hist[-1] / (1.0 * U_in ** 2 * D) if fx_hist else 0.0
-            cl = 2.0 * fy_hist[-1] / (1.0 * U_in ** 2 * D) if fy_hist else 0.0
+            cd_me = 2.0 * fx_hist[-1] / (1.0 * U_in**2 * D) if fx_hist else 0.0
+            cl = 2.0 * fy_hist[-1] / (1.0 * U_in**2 * D) if fy_hist else 0.0
             # Pressure-drag estimate from front/back pressure difference
             p_front = float(rho[0, front_pt[1], front_pt[0]].item()) - 1.0
             p_back = float(rho[0, back_pt[1], back_pt[0]].item()) - 1.0
-            cd_p = 2.0 * (p_front - p_back) * cs2 / (U_in ** 2)
-            print(f"  {step:6d}  {umax:8.4f}  {p_nw:12.6e}  {p_ff:12.6e}  "
-                  f"{cd_me:8.4f}  {cd_p:8.4f}  {cl:8.4f}", flush=True)
+            cd_p = 2.0 * (p_front - p_back) * cs2 / (U_in**2)
+            print(
+                f"  {step:6d}  {umax:8.4f}  {p_nw:12.6e}  {p_ff:12.6e}  "
+                f"{cd_me:8.4f}  {cd_p:8.4f}  {cl:8.4f}",
+                flush=True,
+            )
 
     # ===================================================================== #
     # Analysis
@@ -370,7 +377,7 @@ def run_cylinder_aeroacoustics(
     fx_arr = np.array(fx_hist)
     fy_arr = np.array(fy_hist)
     ftrans = int(transient_frac * len(fx_arr))
-    denom = 1.0 * U_in ** 2 * D
+    denom = 1.0 * U_in**2 * D
     cd_arr = 2.0 * fx_arr / denom
     cl_arr = 2.0 * fy_arr / denom
     # Use 50% transient discard for force stats (forces are noisier)
@@ -409,7 +416,7 @@ def run_cylinder_aeroacoustics(
     print(f"    Blockage D/ny = {blockage:.2f}")
     print(f"    St (blockage-corrected)     = {St_corr:.4f}  (error {St_corr_err:.1f}%)")
     if f_cl > 0:
-        print(f"    Shedding frequency (Cl)     = {f_cl:.6e} / step  (T = {1.0/f_cl:.0f} steps)")
+        print(f"    Shedding frequency (Cl)     = {f_cl:.6e} / step  (T = {1.0 / f_cl:.0f} steps)")
 
     print(f"\n  Drag / lift coefficients (Re={Re:.0f}):")
     print(f"    Cd_mean  = {cd_mean:.4f}   (literature ≈ 1.33)")
@@ -422,15 +429,13 @@ def run_cylinder_aeroacoustics(
     # LBM pressure: p' = c_s² · δρ = δρ / 3
     print(f"\n  Curle far-field pressure (θ=90°, sin θ=1):")
     print(f"    p'_Curle(r) = ρ₀U²D / (4πr) = {U_in**2 * D / (4 * math.pi):.6e} / r")
-    print(f"  {'r':>6s}  {'δρ_lbm':>14s}  {'p_lbm':>14s}  "
-          f"{'p_Curle':>14s}  {'ratio':>8s}")
+    print(f"  {'r':>6s}  {'δρ_lbm':>14s}  {'p_lbm':>14s}  {'p_Curle':>14s}  {'ratio':>8s}")
     for r in far_r:
         p_lbm_drho = ff_amps[r]
         p_lbm_press = p_lbm_drho * cs2
-        p_curle = (1.0 * U_in ** 2 * D) / (4.0 * math.pi * r) * math.sin(math.pi / 2)
+        p_curle = (1.0 * U_in**2 * D) / (4.0 * math.pi * r) * math.sin(math.pi / 2)
         ratio = p_lbm_press / p_curle if p_curle > 0 else float("inf")
-        print(f"  {r:6d}  {p_lbm_drho:14.6e}  {p_lbm_press:14.6e}  "
-              f"{p_curle:14.6e}  {ratio:8.2f}")
+        print(f"  {r:6d}  {p_lbm_drho:14.6e}  {p_lbm_press:14.6e}  {p_curle:14.6e}  {ratio:8.2f}")
 
     # --- Pressure decay -----------------------------------------------------
     print(f"\n  Pressure decay (perpendicular to flow, θ=90°):")
@@ -447,22 +452,27 @@ def run_cylinder_aeroacoustics(
 
     # --- Vorticity snapshot -------------------------------------------------
     rho, ux, uy, uz = macroscopic3d(f)
-    _ascii_vorticity(ux, uy, width=80, height=20,
-                     title=f"Vorticity ω_z at step {steps}")
+    _ascii_vorticity(ux, uy, width=80, height=20, title=f"Vorticity ω_z at step {steps}")
 
     # --- Verdict ------------------------------------------------------------
     # Primary: uncorrected St from Cl FFT (blockage correction unreliable for D/ny > 10%)
     st_pass = St_err < 10.0
-    print(f"\n  Strouhal validation:  {'PASS' if st_pass else 'FAIL'}  "
-          f"(St_cl={St_cl:.4f}, error {St_err:.1f}% "
-          f"{'<' if st_pass else '>='} 10%)")
+    print(
+        f"\n  Strouhal validation:  {'PASS' if st_pass else 'FAIL'}  "
+        f"(St_cl={St_cl:.4f}, error {St_err:.1f}% "
+        f"{'<' if st_pass else '>='} 10%)"
+    )
     if blockage > 0.10:
-        print(f"  Note: blockage {blockage:.0%} > 10%, correction unreliable, using uncorrected St.")
+        print(
+            f"  Note: blockage {blockage:.0%} > 10%, correction unreliable, using uncorrected St."
+        )
     r_last = far_r[-1]
     p_curle_last = (1.0 * U_in**2 * D) / (4 * math.pi * r_last)
     ratio_last = ff_amps[r_last] * cs2 / p_curle_last
-    print(f"  Curle comparison:     LBM/Curle ratio at r={r_last} is "
-          f"{ratio_last:.1f}×  (near-field → expect > 1)")
+    print(
+        f"  Curle comparison:     LBM/Curle ratio at r={r_last} is "
+        f"{ratio_last:.1f}×  (near-field → expect > 1)"
+    )
 
     return {
         "St_lbm": St_lbm,
@@ -505,10 +515,16 @@ def main() -> None:
     print("=" * 64)
 
     run_cylinder_aeroacoustics(
-        nx=args.nx, ny=args.ny, nz=args.nz,
-        cx=args.cx, cy=args.cy, R=args.R,
-        U_in=args.U, Re=args.Re,
-        steps=args.steps, device=args.device,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        cx=args.cx,
+        cy=args.cy,
+        R=args.R,
+        U_in=args.U,
+        Re=args.Re,
+        steps=args.steps,
+        device=args.device,
         log_every=args.log_every,
     )
 

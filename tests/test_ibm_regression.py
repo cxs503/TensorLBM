@@ -15,6 +15,7 @@
    - IBM + D3Q19 BGK 碰撞完整循环（稳定性 + 动量一致性）
    - IBM + D3Q27 BGK 碰撞完整循环
 """
+
 from __future__ import annotations
 
 import math
@@ -45,8 +46,9 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d
 # =========================================================================== #
 
 
-def _make_sphere_mask(nz: int, ny: int, nx: int, cx: float, cy: float,
-                       cz: float, r: float) -> torch.Tensor:
+def _make_sphere_mask(
+    nz: int, ny: int, nx: int, cx: float, cy: float, cz: float, r: float
+) -> torch.Tensor:
     """生成球形固体 mask，True 表示固体内部。"""
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, dtype=torch.float32),
@@ -146,9 +148,7 @@ class TestBugIdentification:
 
         # 复现内部计算
         m = mask.bool()
-        pad = torch.nn.functional.pad(
-            m.unsqueeze(0).unsqueeze(0).float(), (1, 1, 1, 1, 1, 1)
-        )
+        pad = torch.nn.functional.pad(m.unsqueeze(0).unsqueeze(0).float(), (1, 1, 1, 1, 1, 1))
         fluid_neighbours = (
             (1 - pad[:, :, 1:-1, 1:-1, 2:])
             + (1 - pad[:, :, 1:-1, 1:-1, :-2])
@@ -161,8 +161,7 @@ class TestBugIdentification:
         # BUG: squeeze() 在 nz=1 时移除了 z 维度
         # 期望形状: (1, 5, 5)，实际形状: (5, 5)
         assert fluid_neighbours.shape == (ny, nx), (
-            f"Squeeze bug: expected (5,5) due to nz=1 squeeze, "
-            f"got {tuple(fluid_neighbours.shape)}"
+            f"Squeeze bug: expected (5,5) due to nz=1 squeeze, got {tuple(fluid_neighbours.shape)}"
         )
         # 正确形状应该是 (1, 5, 5) 但 squeeze() 错误地移除了 z 维
         assert fluid_neighbours.shape != (nz, ny, nx), (
@@ -215,8 +214,16 @@ class TestBugIdentification:
         u_target_z = torch.tensor([0.05, 0.0, 0.1, -0.05, 0.15], dtype=torch.float32)
 
         fx, fy, fz = ibm_direct_forcing_3d(
-            ux, uy, uz, marker_x, marker_y, marker_z,
-            u_target_x, u_target_y, u_target_z, kernel="hat",
+            ux,
+            uy,
+            uz,
+            marker_x,
+            marker_y,
+            marker_z,
+            u_target_x,
+            u_target_y,
+            u_target_z,
+            kernel="hat",
         )
 
         # 力守恒：网格总力 = 标记总力（因为 u_interpolated=0，标记力 = u_target）
@@ -242,8 +249,16 @@ class TestBugIdentification:
         u_target_z = torch.tensor([0.0, 0.05], dtype=torch.float32)
 
         fx, fy, fz = ibm_direct_forcing_3d(
-            ux, uy, uz, marker_x, marker_y, marker_z,
-            u_target_x, u_target_y, u_target_z, kernel="4pt",
+            ux,
+            uy,
+            uz,
+            marker_x,
+            marker_y,
+            marker_z,
+            u_target_x,
+            u_target_y,
+            u_target_z,
+            kernel="4pt",
         )
         assert abs(fx.sum().item() - u_target_x.sum().item()) < 1e-4
         assert abs(fy.sum().item() - u_target_y.sum().item()) < 1e-4
@@ -266,8 +281,16 @@ class TestBugIdentification:
         u_target_z = torch.tensor([0.0], dtype=torch.float32)
 
         fx, fy, fz = ibm_direct_forcing_3d(
-            ux, uy, uz, marker_x, marker_y, marker_z,
-            u_target_x, u_target_y, u_target_z, kernel="hat",
+            ux,
+            uy,
+            uz,
+            marker_x,
+            marker_y,
+            marker_z,
+            u_target_x,
+            u_target_y,
+            u_target_z,
+            kernel="hat",
         )
         assert fx.abs().max().item() < 1e-5, "Zero-force identity violated (fx)"
         assert fy.abs().max().item() < 1e-5, "Zero-force identity violated (fy)"
@@ -292,12 +315,28 @@ class TestBugIdentification:
         u_target_z = torch.tensor([0.05, 0.0, 0.1, -0.05, 0.15], dtype=torch.float32)
 
         fx_orig, fy_orig, fz_orig = ibm_direct_forcing_3d(
-            ux, uy, uz, marker_x, marker_y, marker_z,
-            u_target_x, u_target_y, u_target_z, kernel=kernel,
+            ux,
+            uy,
+            uz,
+            marker_x,
+            marker_y,
+            marker_z,
+            u_target_x,
+            u_target_y,
+            u_target_z,
+            kernel=kernel,
         )
         fx_vec, fy_vec, fz_vec = ibm_direct_forcing_3d_vec(
-            ux, uy, uz, marker_x, marker_y, marker_z,
-            u_target_x, u_target_y, u_target_z, kernel=kernel,
+            ux,
+            uy,
+            uz,
+            marker_x,
+            marker_y,
+            marker_z,
+            u_target_x,
+            u_target_y,
+            u_target_z,
+            kernel=kernel,
         )
 
         torch.testing.assert_close(fx_orig, fx_vec, rtol=1e-5, atol=1e-6)
@@ -334,12 +373,25 @@ class TestEquivalence:
         ut_z = torch.full((mx.shape[0],), 0.0, dtype=torch.float32)
 
         fx_manual, fy_manual, fz_manual = ibm_direct_forcing_3d(
-            ux, uy, uz, mx, my, mz, ut_x, ut_y, ut_z, kernel="hat",
+            ux,
+            uy,
+            uz,
+            mx,
+            my,
+            mz,
+            ut_x,
+            ut_y,
+            ut_z,
+            kernel="hat",
         )
 
         # 公共接口
         force_common, f_corrected = ibm_direct_forcing_3d_common(
-            f, mask, u_target, lattice="D3Q19", kernel="hat",
+            f,
+            mask,
+            u_target,
+            lattice="D3Q19",
+            kernel="hat",
         )
 
         torch.testing.assert_close(force_common[0], fx_manual, rtol=1e-5, atol=1e-6)
@@ -359,17 +411,32 @@ class TestEquivalence:
         ut_z = torch.zeros(mx.shape[0], dtype=torch.float32)
 
         fx, fy, fz = ibm_direct_forcing_3d(
-            ux, uy, uz, mx, my, mz, ut_x, ut_y, ut_z, kernel="hat",
+            ux,
+            uy,
+            uz,
+            mx,
+            my,
+            mz,
+            ut_x,
+            ut_y,
+            ut_z,
+            kernel="hat",
         )
         f_manual_corrected = ibm_apply_body_force_3d(f, fx, fy, fz)
 
         force_common, f_common_corrected = ibm_direct_forcing_3d_common(
-            f, mask, torch.zeros(3, dtype=torch.float32),
-            lattice="D3Q19", kernel="hat",
+            f,
+            mask,
+            torch.zeros(3, dtype=torch.float32),
+            lattice="D3Q19",
+            kernel="hat",
         )
 
         torch.testing.assert_close(
-            f_common_corrected, f_manual_corrected, rtol=1e-5, atol=1e-6,
+            f_common_corrected,
+            f_manual_corrected,
+            rtol=1e-5,
+            atol=1e-6,
         )
 
     def test_d3q19_4pt_equivalence(self):
@@ -385,13 +452,25 @@ class TestEquivalence:
         ut_z = torch.zeros(mx.shape[0], dtype=torch.float32)
 
         fx, fy, fz = ibm_direct_forcing_3d(
-            ux, uy, uz, mx, my, mz, ut_x, ut_y, ut_z, kernel="4pt",
+            ux,
+            uy,
+            uz,
+            mx,
+            my,
+            mz,
+            ut_x,
+            ut_y,
+            ut_z,
+            kernel="4pt",
         )
         f_manual = ibm_apply_body_force_3d(f, fx, fy, fz)
 
         force_c, f_c = ibm_direct_forcing_3d_common(
-            f, mask, torch.zeros(3, dtype=torch.float32),
-            lattice="D3Q19", kernel="4pt",
+            f,
+            mask,
+            torch.zeros(3, dtype=torch.float32),
+            lattice="D3Q19",
+            kernel="4pt",
         )
 
         torch.testing.assert_close(force_c[0], fx, rtol=1e-5, atol=1e-6)
@@ -406,8 +485,11 @@ class TestEquivalence:
         f = _make_uniform_flow_f27(nz, ny, nx, ux0=0.1)
 
         force, f_corrected = ibm_direct_forcing_3d_common(
-            f, mask, torch.zeros(3, dtype=torch.float32),
-            lattice="D3Q27", kernel="hat",
+            f,
+            mask,
+            torch.zeros(3, dtype=torch.float32),
+            lattice="D3Q27",
+            kernel="hat",
         )
 
         # 力守恒：网格总力 = 标记总力
@@ -456,7 +538,11 @@ class TestEquivalence:
         fz_grid[4, 4, 4] = 0.1
 
         f_corrected = ibm_apply_body_force_3d_common(
-            f, fx_grid, fy_grid, fz_grid, lattice="D3Q27",
+            f,
+            fx_grid,
+            fy_grid,
+            fz_grid,
+            lattice="D3Q27",
         )
 
         rho_before, ux_b, uy_b, uz_b = macroscopic27(f)
@@ -484,7 +570,11 @@ class TestEquivalence:
         fz_grid[4, 4, 4] = 0.1
 
         f_corrected = ibm_apply_body_force_3d_common(
-            f, fx_grid, fy_grid, fz_grid, lattice="D3Q19",
+            f,
+            fx_grid,
+            fy_grid,
+            fz_grid,
+            lattice="D3Q19",
         )
 
         rho_b, ux_b, uy_b, uz_b = macroscopic3d(f)
@@ -513,12 +603,18 @@ class TestEquivalence:
         f27 = _make_uniform_flow_f27(nz, ny, nx, ux0)
 
         force19, _ = ibm_direct_forcing_3d_common(
-            f19, mask, torch.zeros(3, dtype=torch.float32),
-            lattice="D3Q19", kernel="hat",
+            f19,
+            mask,
+            torch.zeros(3, dtype=torch.float32),
+            lattice="D3Q19",
+            kernel="hat",
         )
         force27, _ = ibm_direct_forcing_3d_common(
-            f27, mask, torch.zeros(3, dtype=torch.float32),
-            lattice="D3Q27", kernel="hat",
+            f27,
+            mask,
+            torch.zeros(3, dtype=torch.float32),
+            lattice="D3Q27",
+            kernel="hat",
         )
 
         # 力应精确匹配（因为速度场相同，IBM核相同）
@@ -532,8 +628,11 @@ class TestEquivalence:
         f = _make_uniform_flow_f19(nz, ny, nx, ux0=0.1)
 
         force, f_corrected = ibm_direct_forcing_3d_common(
-            f, mask, torch.zeros(3, dtype=torch.float32),
-            lattice="D3Q19", kernel="hat",
+            f,
+            mask,
+            torch.zeros(3, dtype=torch.float32),
+            lattice="D3Q19",
+            kernel="hat",
         )
         assert force.abs().max().item() == 0.0
         torch.testing.assert_close(f_corrected, f, rtol=0, atol=0)
@@ -547,12 +646,18 @@ class TestEquivalence:
         mx, my, mz = derive_surface_markers_3d(mask)
 
         force_derived, f_derived = ibm_direct_forcing_3d_common(
-            f, mask, torch.zeros(3, dtype=torch.float32),
-            lattice="D3Q19", kernel="hat",
+            f,
+            mask,
+            torch.zeros(3, dtype=torch.float32),
+            lattice="D3Q19",
+            kernel="hat",
         )
         force_explicit, f_explicit = ibm_direct_forcing_3d_common(
-            f, mask, torch.zeros(3, dtype=torch.float32),
-            lattice="D3Q19", kernel="hat",
+            f,
+            mask,
+            torch.zeros(3, dtype=torch.float32),
+            lattice="D3Q19",
+            kernel="hat",
             markers=(mx, my, mz),
         )
 
@@ -586,7 +691,11 @@ class TestCombination:
         for step in range(5):
             # 1. IBM 直接强迫 + Guo 修正
             force, f = ibm_direct_forcing_3d_common(
-                f, mask, u_target, lattice="D3Q19", kernel="hat",
+                f,
+                mask,
+                u_target,
+                lattice="D3Q19",
+                kernel="hat",
             )
             forces_history.append(force.abs().sum().item())
 
@@ -614,7 +723,11 @@ class TestCombination:
 
         for step in range(5):
             force, f = ibm_direct_forcing_3d_common(
-                f, mask, u_target, lattice="D3Q27", kernel="hat",
+                f,
+                mask,
+                u_target,
+                lattice="D3Q27",
+                kernel="hat",
             )
             f = collide_bgk27(f, tau)
 
@@ -635,7 +748,11 @@ class TestCombination:
 
         # IBM 修正
         force, f_corrected = ibm_direct_forcing_3d_common(
-            f, mask, u_target, lattice="D3Q19", kernel="hat",
+            f,
+            mask,
+            u_target,
+            lattice="D3Q19",
+            kernel="hat",
         )
 
         # 修正后动量
@@ -647,8 +764,7 @@ class TestCombination:
         delta_px = px_after - px_before
 
         assert abs(delta_px - force_integral) < 1e-4, (
-            f"Momentum consistency: Δpx={delta_px:.6f}, "
-            f"∫Fx={force_integral:.6f}"
+            f"Momentum consistency: Δpx={delta_px:.6f}, ∫Fx={force_integral:.6f}"
         )
 
     def test_d3q27_ibm_momentum_consistency(self):
@@ -662,7 +778,11 @@ class TestCombination:
         px_before = (rho_b * ux_b).sum().item()
 
         force, f_corrected = ibm_direct_forcing_3d_common(
-            f, mask, u_target, lattice="D3Q27", kernel="hat",
+            f,
+            mask,
+            u_target,
+            lattice="D3Q27",
+            kernel="hat",
         )
 
         rho_a, ux_a, uy_a, uz_a = macroscopic27(f_corrected)
@@ -672,8 +792,7 @@ class TestCombination:
         delta_px = px_after - px_before
 
         assert abs(delta_px - force_integral) < 1e-4, (
-            f"D3Q27 Momentum consistency: Δpx={delta_px:.6f}, "
-            f"∫Fx={force_integral:.6f}"
+            f"D3Q27 Momentum consistency: Δpx={delta_px:.6f}, ∫Fx={force_integral:.6f}"
         )
 
     def test_ibm_collision_order_invariance_force(self):
@@ -690,7 +809,11 @@ class TestCombination:
         # 路径A：先IBM后碰撞
         f_a = f0.clone()
         force_a, f_a = ibm_direct_forcing_3d_common(
-            f_a, mask, u_target, lattice="D3Q19", kernel="hat",
+            f_a,
+            mask,
+            u_target,
+            lattice="D3Q19",
+            kernel="hat",
         )
         f_a = collide_bgk3d(f_a, tau)
 
@@ -698,7 +821,11 @@ class TestCombination:
         f_b = f0.clone()
         f_b = collide_bgk3d(f_b, tau)
         force_b, f_b = ibm_direct_forcing_3d_common(
-            f_b, mask, u_target, lattice="D3Q19", kernel="hat",
+            f_b,
+            mask,
+            u_target,
+            lattice="D3Q19",
+            kernel="hat",
         )
 
         # 力不同（因为速度场不同），但都应有限
@@ -719,14 +846,17 @@ class TestCombination:
         u_target = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)
 
         force, _ = ibm_direct_forcing_3d_common(
-            f, mask, u_target, lattice="D3Q19", kernel="hat",
+            f,
+            mask,
+            u_target,
+            lattice="D3Q19",
+            kernel="hat",
         )
 
         # x方向总力应为负（阻力方向与来流相反）
         total_fx = force[0].sum().item()
         assert total_fx < 0, (
-            f"Drag direction: total Fx={total_fx:.6f} should be negative "
-            f"(opposing flow)"
+            f"Drag direction: total Fx={total_fx:.6f} should be negative (opposing flow)"
         )
 
     def test_d3q27_ibm_drag_direction(self):
@@ -737,10 +867,12 @@ class TestCombination:
         u_target = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32)
 
         force, _ = ibm_direct_forcing_3d_common(
-            f, mask, u_target, lattice="D3Q27", kernel="hat",
+            f,
+            mask,
+            u_target,
+            lattice="D3Q27",
+            kernel="hat",
         )
 
         total_fx = force[0].sum().item()
-        assert total_fx < 0, (
-            f"D3Q27 drag direction: total Fx={total_fx:.6f} should be negative"
-        )
+        assert total_fx < 0, f"D3Q27 drag direction: total Fx={total_fx:.6f} should be negative"

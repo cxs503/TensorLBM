@@ -20,6 +20,7 @@ band, heterogeneous neighbours).  When the band is the whole domain and the
 domain is periodic, :func:`dg_rhs_band` reproduces :func:`dg_rhs` element-wise —
 the gate test for the packed operator.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -58,7 +59,7 @@ class BandTopology:
     nbr_plus: torch.Tensor
     ext_minus_idx: torch.Tensor
     ext_plus_idx: torch.Tensor
-    nbr_type_minus: torch.Tensor       # (ndim, n_band) int8: 0=band,1=exterior,2=solid
+    nbr_type_minus: torch.Tensor  # (ndim, n_band) int8: 0=band,1=exterior,2=solid
     nbr_type_plus: torch.Tensor
     periodic: bool = True
 
@@ -98,7 +99,7 @@ def build_band_topology(
     ndim = len(shape)
     device = band_mask.device
 
-    coords = torch.nonzero(band_mask, as_tuple=False)          # (n_band, ndim)
+    coords = torch.nonzero(band_mask, as_tuple=False)  # (n_band, ndim)
     n_band = coords.shape[0]
     grid_to_band = torch.full(shape, -1, dtype=torch.long, device=device)
     grid_to_band[tuple(coords.t())] = torch.arange(n_band, device=device)
@@ -160,11 +161,11 @@ def build_band_topology(
 
 def _neighbour_face_value(
     f_dg: torch.Tensor,
-    nbr_idx: torch.Tensor,        # (n_band,) band index or -1
-    ext_flat_idx: torch.Tensor,   # (n_band,) flat grid index for exterior lookup
+    nbr_idx: torch.Tensor,  # (n_band,) band index or -1
+    ext_flat_idx: torch.Tensor,  # (n_band,) flat grid index for exterior lookup
     ext_field: torch.Tensor | None,  # (Q, Ncell) exterior P0 values or None
-    gather_node: int,             # node index along this axis to read from a band nbr
-    node_axis: int,               # position of this axis's node dim in f_dg
+    gather_node: int,  # node index along this axis to read from a band nbr
+    node_axis: int,  # position of this axis's node dim in f_dg
 ) -> torch.Tensor:
     """Face-trace value supplied by the neighbour of every band cell.
 
@@ -174,20 +175,20 @@ def _neighbour_face_value(
     """
     n_band = f_dg.shape[1]
     is_band = nbr_idx >= 0
-    safe_idx = nbr_idx.clamp(min=0)                               # (n_band,)
+    safe_idx = nbr_idx.clamp(min=0)  # (n_band,)
 
     # Band-neighbour face value: gather along the cell axis, then pick the
     # neighbour's far-face node (node_axis is an absolute axis index, already
     # past Q and n_band).
-    band_val = f_dg.index_select(1, safe_idx)                     # (Q, n_band, *nodes)
-    band_val = band_val.select(node_axis, gather_node)            # → (Q, n_band, *other_nodes)
+    band_val = f_dg.index_select(1, safe_idx)  # (Q, n_band, *nodes)
+    band_val = band_val.select(node_axis, gather_node)  # → (Q, n_band, *other_nodes)
 
     if ext_field is None:
         # No exterior possible (band == whole domain); every neighbour is band.
         return band_val
 
     # Exterior P0 value: (Q, Ncell) → gather (Q, n_band) → broadcast over nodes.
-    ext_val = ext_field.index_select(1, ext_flat_idx)             # (Q, n_band)
+    ext_val = ext_field.index_select(1, ext_flat_idx)  # (Q, n_band)
     # Reshape to broadcast against band_val's node axes.
     ext_shape = [ext_val.shape[0], ext_val.shape[1]] + [1] * (band_val.ndim - 2)
     ext_val = ext_val.view(ext_shape).expand_as(band_val)
@@ -196,7 +197,9 @@ def _neighbour_face_value(
     return torch.where(mask, band_val, ext_val)
 
 
-def _override_face(face_val: torch.Tensor, bb_val: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+def _override_face(
+    face_val: torch.Tensor, bb_val: torch.Tensor, mask: torch.Tensor
+) -> torch.Tensor:
     """Override *face_val* with *bb_val* where the per-band *mask* is True."""
     shape = [1, mask.shape[0]] + [1] * (face_val.ndim - 2)
     m = mask.to(face_val.dtype).view(shape)
@@ -241,12 +244,12 @@ def dg_rhs_band(
     letters = "abcdefghijklmnopqrst"
 
     rhs = torch.zeros_like(f_dg)
-    for v in range(ndim):                                  # v=0:x, 1:y, 2:z
+    for v in range(ndim):  # v=0:x, 1:y, 2:z
         c_axis = velocities[:, v].to(f_dg.dtype)
         if c_axis.abs().max().item() == 0.0:
             continue
-        node_axis = n_dims - 1 - v                          # px (last), py, pz
-        g = ndim - 1 - v                                    # grid dim: x, y, z
+        node_axis = n_dims - 1 - v  # px (last), py, pz
+        g = ndim - 1 - v  # grid dim: x, y, z
         nonzero = c_axis.abs() > 0.0
         sub = f_dg[nonzero]
         c_sub = c_axis[nonzero]
@@ -261,16 +264,14 @@ def dg_rhs_band(
         vol = torch.einsum(f"vu,{''.join(ins)}->{''.join(outs)}", ops.Ax, sub)
 
         # --- Surface term: upwind face traces from neighbours ---
-        inner_left = sub.select(node_axis, 0)        # u_e[0]
+        inner_left = sub.select(node_axis, 0)  # u_e[0]
         inner_right = sub.select(node_axis, n_node - 1)
         nbr_m = topo.nbr_minus[g]
         nbr_p = topo.nbr_plus[g]
         left_ext = _neighbour_face_value(
             sub, nbr_m, topo.ext_minus_idx[g], ext_sub, n_node - 1, node_axis
-        )                                              # neighbour's far-face node
-        right_ext = _neighbour_face_value(
-            sub, nbr_p, topo.ext_plus_idx[g], ext_sub, 0, node_axis
-        )
+        )  # neighbour's far-face node
+        right_ext = _neighbour_face_value(sub, nbr_p, topo.ext_plus_idx[g], ext_sub, 0, node_axis)
         # --- Solid-wall bounce-back ghost (half-way, no-slip) ---
         # For a solid neighbour, the inflow population i sees the band's own
         # f[OPPOSITE[i]] at the shared face node (the reflected population).
@@ -278,7 +279,7 @@ def dg_rhs_band(
         # restrict to the active velocities on this axis.
         if opposite is not None:
             opp = opposite.to(f_dg.device)
-            solid_m = topo.nbr_type_minus[g] == 2      # (n_band,)
+            solid_m = topo.nbr_type_minus[g] == 2  # (n_band,)
             solid_p = topo.nbr_type_plus[g] == 2
             if bool(solid_m.any()):
                 bb_left = f_dg.index_select(0, opp).select(node_axis, n_node - 1)[nonzero]
@@ -294,7 +295,9 @@ def dg_rhs_band(
         fl_r = ops.face_lift[:, 1]
         shape = [1] * sub.ndim
         shape[node_axis] = n_node
-        surf = fl_l.view(shape) * uL.unsqueeze(node_axis) + fl_r.view(shape) * uR.unsqueeze(node_axis)
+        surf = fl_l.view(shape) * uL.unsqueeze(node_axis) + fl_r.view(shape) * uR.unsqueeze(
+            node_axis
+        )
 
         c_view = c_sub.view([c_sub.shape[0]] + [1] * (sub.ndim - 1))
         rhs_sub = c_view * vol - c_view * surf
@@ -442,20 +445,20 @@ def write_back_exports(
     Q = f_lbm.shape[0]
     shape = f_lbm.shape[1:]
     N = int(torch.tensor(shape).prod().item())
-    flb = f_lbm.reshape(Q, N).clone()                   # work in flat grid indices
+    flb = f_lbm.reshape(Q, N).clone()  # work in flat grid indices
 
-    for g in range(ndim):                               # grid dim (0=z .. ndim-1=x)
-        v = ndim - 1 - g                                # velocity column (x⇒cx)
+    for g in range(ndim):  # grid dim (0=z .. ndim-1=x)
+        v = ndim - 1 - g  # velocity column (x⇒cx)
         comp = velocities[:, v].to(f_dg.dtype)
-        node_axis = n_dims - ndim + g                   # node axis for this grid dim
+        node_axis = n_dims - ndim + g  # node axis for this grid dim
         for sgn, nbr_arr, ext_arr, type_arr, nidx in (
             (+1, topo.nbr_plus[g], topo.ext_plus_idx[g], topo.nbr_type_plus[g], n_node - 1),
             (-1, topo.nbr_minus[g], topo.ext_minus_idx[g], topo.nbr_type_minus[g], 0),
         ):
-            outflow = ((comp * sgn) > 0)                # (Q,) populations leaving the band
+            outflow = (comp * sgn) > 0  # (Q,) populations leaving the band
             if not outflow.any():
                 continue
-            ext_face = type_arr == 1                    # exterior (not band, not solid)
+            ext_face = type_arr == 1  # exterior (not band, not solid)
             if not bool(ext_face.any()):
                 continue
             out_q = torch.nonzero(outflow, as_tuple=False).squeeze(-1)
@@ -463,11 +466,11 @@ def write_back_exports(
 
             # DG face trace at node nidx along node_axis, averaged over transverse nodes.
             sub = f_dg.index_select(0, out_q).index_select(1, b_idx)  # (Qo, Nb, *nodes)
-            face_vals = sub.select(node_axis, nidx)     # (Qo, Nb, *transverse_nodes)
+            face_vals = sub.select(node_axis, nidx)  # (Qo, Nb, *transverse_nodes)
             transverse = [ax for ax in range(face_vals.ndim) if ax >= 2]
-            trace = face_vals.mean(dim=transverse)      # (Qo, Nb)
+            trace = face_vals.mean(dim=transverse)  # (Qo, Nb)
 
-            tgt = ext_arr[b_idx]                        # (Nb,) flat exterior indices
+            tgt = ext_arr[b_idx]  # (Nb,) flat exterior indices
             # Scatter flb[out_q, tgt] = trace (advanced-index assignment).
             rows = out_q.view(-1, 1).expand_as(trace)
             cols = tgt.view(1, -1).expand_as(trace)
@@ -475,7 +478,9 @@ def write_back_exports(
     return flb.reshape(Q, *shape)
 
 
-def project_band_to_lbm(f_lbm: torch.Tensor, f_dg: torch.Tensor, topo: BandTopology) -> torch.Tensor:
+def project_band_to_lbm(
+    f_lbm: torch.Tensor, f_dg: torch.Tensor, topo: BandTopology
+) -> torch.Tensor:
     """Write each band cell's P0 (nodal mean) into the LBM field at its grid cell.
 
     The band cells are "holes" in *f_lbm* (the band evolves *f_dg*).  Projecting
@@ -486,9 +491,9 @@ def project_band_to_lbm(f_lbm: torch.Tensor, f_dg: torch.Tensor, topo: BandTopol
     high-order polynomial in *f_dg*; this only fills the P0 view.)
     """
     node_axes = tuple(range(2, f_dg.ndim))
-    mean = f_dg.mean(dim=node_axes)                       # (Q, n_band)
+    mean = f_dg.mean(dim=node_axes)  # (Q, n_band)
     cb = topo.band_coords
-    idx = tuple(cb[:, k] for k in range(topo.ndim))       # (z,y,x) or (y,x)
+    idx = tuple(cb[:, k] for k in range(topo.ndim))  # (z,y,x) or (y,x)
     f_lbm = f_lbm.clone()
     f_lbm[(slice(None),) + idx] = mean
     return f_lbm
@@ -516,27 +521,27 @@ def compute_dg_solid_force(
     """
     ndim = topo.ndim
     n_dims = f_dg.ndim
-    node_axes = tuple(range(2, n_dims))                    # all nodal axes of f_dg
-    cell_mean = f_dg.mean(dim=node_axes)                   # (Q, n_band) centre value
+    node_axes = tuple(range(2, n_dims))  # all nodal axes of f_dg
+    cell_mean = f_dg.mean(dim=node_axes)  # (Q, n_band) centre value
     force = torch.zeros(ndim, dtype=f_dg.dtype, device=f_dg.device)
 
-    for g in range(ndim):                                  # grid axis (0=z..ndim-1=x)
-        v = ndim - 1 - g                                   # velocity column along axis g
+    for g in range(ndim):  # grid axis (0=z..ndim-1=x)
+        v = ndim - 1 - g  # velocity column along axis g
         for sgn, type_arr in (
             (+1, topo.nbr_type_plus[g]),
             (-1, topo.nbr_type_minus[g]),
         ):
-            solid = type_arr == 2                          # (n_band,)
+            solid = type_arr == 2  # (n_band,)
             if not bool(solid.any()):
                 continue
-            outflow = (velocities[:, v].to(f_dg.dtype) * sgn) > 0   # (Q,)
+            outflow = (velocities[:, v].to(f_dg.dtype) * sgn) > 0  # (Q,)
             if not bool(outflow.any()):
                 continue
             b_idx = torch.nonzero(solid, as_tuple=False).squeeze(-1)
             q_idx = torch.nonzero(outflow, as_tuple=False).squeeze(-1)
             cm = cell_mean.index_select(0, q_idx).index_select(1, b_idx)  # (Qo, Nb)
-            per_vel = cm.sum(dim=1)                        # (Qo,) sum over solid band cells
-            c_alpha = velocities[q_idx].to(f_dg.dtype)     # (Qo, ndim)
+            per_vel = cm.sum(dim=1)  # (Qo,) sum over solid band cells
+            c_alpha = velocities[q_idx].to(f_dg.dtype)  # (Qo, ndim)
             force += 2.0 * (c_alpha * per_vel.unsqueeze(1)).sum(dim=0)
     return force
 
@@ -638,12 +643,20 @@ def hybrid_step(
     ext_field = f_lbm.reshape(Q, int(torch.tensor(shape).prod().item()))
     tau_dg = tau_lbm - 0.5
     f_dg = dg_lbm_step_band(
-        f_dg, velocities, weights, tau_dg, ops, topo, ext_field,
-        dt, n_substeps, scheme, opposite,
+        f_dg,
+        velocities,
+        weights,
+        tau_dg,
+        ops,
+        topo,
+        ext_field,
+        dt,
+        n_substeps,
+        scheme,
+        opposite,
     )
 
     # 3. Stream exterior.  4. Write-back DG traces.
     f_lbm = stream_fn(f_lbm)
     f_lbm = write_back_exports(f_lbm, f_dg, velocities, ops, topo)
     return f_lbm, f_dg
-

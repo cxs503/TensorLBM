@@ -5,6 +5,7 @@ It only names the minimum production evidence a later writer must publish for
 one of the three mutually exclusive ownership models.  Every R1 outcome is
 withheld, including a complete future-shaped evidence record.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -35,17 +36,29 @@ class IToGPolicyEvidenceReport:
 
 _POLICY_REQUIREMENTS: dict[IToGPopulationPolicy, tuple[str, ...]] = {
     IToGPopulationPolicy.EXPLICIT_BOUNDARY_RECONSTRUCTION: (
-        "operator_id", "source_cells", "reconstructed_cells",
-        "qwise_reconstruction", "boundary_state", "replay_reference",
+        "operator_id",
+        "source_cells",
+        "reconstructed_cells",
+        "qwise_reconstruction",
+        "boundary_state",
+        "replay_reference",
     ),
     IToGPopulationPolicy.CONSERVATIVE_PARTITION_TRANSFER: (
-        "operator_id", "source_cells", "destination_cells",
-        "qwise_transfer_map", "partition_weights", "momentum_treatment",
+        "operator_id",
+        "source_cells",
+        "destination_cells",
+        "qwise_transfer_map",
+        "partition_weights",
+        "momentum_treatment",
         "replay_reference",
     ),
     IToGPopulationPolicy.GAS_BOUNDARY_RESERVOIR: (
-        "operator_id", "source_cells", "reservoir_id",
-        "qwise_reservoir_debit", "reservoir_accounting", "boundary_state",
+        "operator_id",
+        "source_cells",
+        "reservoir_id",
+        "qwise_reservoir_debit",
+        "reservoir_accounting",
+        "boundary_state",
         "replay_reference",
     ),
 }
@@ -59,7 +72,8 @@ def _cells(value: object) -> bool:
     if not isinstance(value, tuple) or not value:
         return False
     return all(
-        isinstance(cell, tuple) and len(cell) == 3
+        isinstance(cell, tuple)
+        and len(cell) == 3
         and all(isinstance(part, int) and not isinstance(part, bool) for part in cell)
         for cell in value
     )
@@ -86,7 +100,8 @@ def _fields(evidence: object) -> tuple[str | None, bool, Mapping[str, object] | 
 
 
 def evaluate_i_to_g_policy_evidence(
-    policy: IToGPopulationPolicy | object, evidence: object,
+    policy: IToGPopulationPolicy | object,
+    evidence: object,
 ) -> IToGPolicyEvidenceReport:
     """Withhold one policy unless its own minimum *production* evidence exists.
 
@@ -112,7 +127,12 @@ def evaluate_i_to_g_policy_evidence(
     else:
         reason = "R1 never authorizes or implements an f ownership policy"
     return IToGPolicyEvidenceReport(
-        policy, WITHHELD_MISSING_POLICY_EVIDENCE, False, missing_tuple, reason, provenance,
+        policy,
+        WITHHELD_MISSING_POLICY_EVIDENCE,
+        False,
+        missing_tuple,
+        reason,
+        provenance,
     )
 
 

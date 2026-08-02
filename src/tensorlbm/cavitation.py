@@ -32,6 +32,7 @@ Shan, X., & Chen, H. (1993). Lattice Boltzmann model for simulating flows
     with multiple phases and components. *Phys. Rev. E* 47, 1815.
 Sukop, M. C., & Thorne, D. T. (2006). *Lattice Boltzmann Modeling*. Springer.
 """
+
 from __future__ import annotations
 
 import csv
@@ -51,13 +52,14 @@ __all__ = [
 ]
 
 # Physical reference values (lattice units)
-_RHO_L = 2.65    # liquid reference density (SC at G≈−5.5)
-_RHO_V = 0.038   # vapour reference density (SC at G≈−5.5)
+_RHO_L = 2.65  # liquid reference density (SC at G≈−5.5)
+_RHO_V = 0.038  # vapour reference density (SC at G≈−5.5)
 
 
 # ---------------------------------------------------------------------------
 # Pseudopotential and source term
 # ---------------------------------------------------------------------------
+
 
 def psi_cavitation(
     rho: torch.Tensor,
@@ -118,8 +120,9 @@ def schnerr_sauer_source(
 
     # Bubble radius from vapour fraction
     n_nuc_lu = max(n_nuc * 1e-30, 1e-20)  # rescale to lattice units (very small)
-    r_b = (alpha_v / (alpha_l.clamp(min=1e-6)) * (3.0 / (4.0 * math.pi * n_nuc_lu + 1e-40))
-           ) ** (1.0 / 3.0)
+    r_b = (alpha_v / (alpha_l.clamp(min=1e-6)) * (3.0 / (4.0 * math.pi * n_nuc_lu + 1e-40))) ** (
+        1.0 / 3.0
+    )
     r_b = r_b.clamp(min=1e-6, max=0.5)
 
     # Driving pressure p − p_sat
@@ -129,9 +132,7 @@ def schnerr_sauer_source(
     # Mass-transfer term (Rayleigh–Plesset simplified)
     rho_l_val = rho_l.item() if hasattr(rho_l, "item") else float(rho_l)
     inner = 2.0 / 3.0 * dp_mag / rho_l_val
-    base_rate = (rho_l * rho_v / rho.clamp(min=1e-4)
-                 * 3.0 / r_b.clamp(min=1e-6)
-                 * torch.sqrt(inner))
+    base_rate = rho_l * rho_v / rho.clamp(min=1e-4) * 3.0 / r_b.clamp(min=1e-6) * torch.sqrt(inner)
 
     # Sign: evaporation (p < p_sat) or condensation (p > p_sat)
     m_dot = torch.where(dp < 0, c_vap * alpha_l * base_rate, -c_cond * alpha_v * base_rate)
@@ -191,6 +192,7 @@ def apply_cavitation_force(
     uy_eff = uy + u_shift * Fy / rho.clamp(min=1e-4)
 
     from .d2q9 import equilibrium as feq  # noqa: PLC0415
+
     f_eq_forced = feq(rho + m_dot * tau, ux_eff, uy_eff)
 
     # Blend: full BGK with modified eq
@@ -201,6 +203,7 @@ def apply_cavitation_force(
 # Configuration and runner
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class CavitationConfig:
     """Configuration for a 2-D cavitation flow simulation."""
@@ -208,15 +211,15 @@ class CavitationConfig:
     nx: int = 256
     ny: int = 128
     # Shan–Chen coupling
-    G: float = -5.5            # SC interaction strength (induces phase separation)
+    G: float = -5.5  # SC interaction strength (induces phase separation)
     # Initial conditions
-    rho_init: float = 1.5      # mean initial density (between rho_l and rho_v)
+    rho_init: float = 1.5  # mean initial density (between rho_l and rho_v)
     # Nozzle / constriction geometry: narrow throat at x=x_throat with width h_throat
-    throat_x: float = 0.35     # throat x position (fraction of nx)
-    throat_height: float = 0.3 # throat height (fraction of ny)
+    throat_x: float = 0.35  # throat x position (fraction of nx)
+    throat_height: float = 0.3  # throat height (fraction of ny)
     # Inlet conditions
-    u_in: float = 0.04         # inlet velocity (l.u.)
-    re: float = 500.0          # Reynolds number
+    u_in: float = 0.04  # inlet velocity (l.u.)
+    re: float = 500.0  # Reynolds number
     # Simulation
     n_steps: int = 5000
     output_interval: int = 500
@@ -277,22 +280,28 @@ def run_cavitation_flow(
     configure_logging(run_dir)
     save_config_json(asdict(cfg), run_dir / "config.json")
 
-    _logger.info("Cavitation flow: nx=%d ny=%d G=%.2f Re=%.1f device=%s",
-                 cfg.nx, cfg.ny, cfg.G, cfg.re, cfg.device)
+    _logger.info(
+        "Cavitation flow: nx=%d ny=%d G=%.2f Re=%.1f device=%s",
+        cfg.nx,
+        cfg.ny,
+        cfg.G,
+        cfg.re,
+        cfg.device,
+    )
 
     nx, ny = cfg.nx, cfg.ny
 
     # Build nozzle walls: channel with top/bottom walls and a symmetric constriction
     solid = torch.zeros(ny, nx, dtype=torch.bool, device=device)
-    solid[0, :] = True   # bottom wall
+    solid[0, :] = True  # bottom wall
     solid[-1, :] = True  # top wall
 
     # Converging-diverging nozzle throat block
     x_t = int(cfg.throat_x * nx)
     h_half = int(0.5 * (1 - cfg.throat_height) * ny / 2)
     if h_half > 0:
-        solid[:h_half, max(0, x_t - 5):x_t + 5] = True   # bottom block
-        solid[ny - h_half:, max(0, x_t - 5):x_t + 5] = True  # top block
+        solid[:h_half, max(0, x_t - 5) : x_t + 5] = True  # bottom block
+        solid[ny - h_half :, max(0, x_t - 5) : x_t + 5] = True  # top block
 
     # Init: uniform density + inlet velocity
     rho = torch.full((ny, nx), cfg.rho_init, device=device)
@@ -303,6 +312,7 @@ def run_cavitation_flow(
     f = equilibrium(rho, ux0, uy0)
 
     import matplotlib  # noqa: PLC0415
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt  # noqa: PLC0415
 
@@ -327,7 +337,7 @@ def run_cavitation_flow(
             im0 = axes[0].imshow(rho_pp.cpu().numpy(), origin="lower", cmap="Blues")
             axes[0].set_title(f"Density – step {step + 1}")
             plt.colorbar(im0, ax=axes[0])
-            speed = torch.sqrt(ux_pp ** 2 + uy_pp ** 2)
+            speed = torch.sqrt(ux_pp**2 + uy_pp**2)
             im1 = axes[1].imshow(speed.cpu().numpy(), origin="lower", cmap="hot")
             axes[1].set_title("Velocity |u|")
             plt.colorbar(im1, ax=axes[1])

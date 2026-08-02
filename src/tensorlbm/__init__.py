@@ -545,7 +545,13 @@ from .cumulant import (
     collide_cumulant_d3q27,
 )
 from .cumulant_smag import collide_cumulant_smag_d3q27
-from .yplus_guide import DragMonitor, estimate_yplus, yplus_recommendation, grid_quality_metrics, recommend_grid
+from .yplus_guide import (
+    DragMonitor,
+    estimate_yplus,
+    yplus_recommendation,
+    grid_quality_metrics,
+    recommend_grid,
+)
 from .streamlines import (
     Streamline,
     trace_streamlines_2d,

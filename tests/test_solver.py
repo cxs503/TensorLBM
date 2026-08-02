@@ -23,6 +23,7 @@ from tensorlbm.cylinder_flow import CylinderFlowConfig, compute_vorticity
 # Shape / basic sanity tests
 # ---------------------------------------------------------------------------
 
+
 def test_stream_and_collide_preserve_shape() -> None:
     rho = torch.ones((10, 12), dtype=torch.float32)
     ux = torch.zeros_like(rho)
@@ -56,6 +57,7 @@ def test_channel_boundaries_returns_valid_tensor() -> None:
 # Mass conservation under periodic streaming
 # ---------------------------------------------------------------------------
 
+
 def test_stream_conserves_mass_periodic() -> None:
     """Streaming on a periodic domain must not change total mass."""
     rho = torch.rand((10, 12), dtype=torch.float32) + 0.5
@@ -73,6 +75,7 @@ def test_stream_conserves_mass_periodic() -> None:
 # ---------------------------------------------------------------------------
 # BGK collision conserves mass and momentum
 # ---------------------------------------------------------------------------
+
 
 def test_collide_bgk_conserves_mass_and_momentum() -> None:
     rho = torch.rand((8, 10), dtype=torch.float32) + 0.5
@@ -92,6 +95,7 @@ def test_collide_bgk_conserves_mass_and_momentum() -> None:
 # ---------------------------------------------------------------------------
 # MRT collision
 # ---------------------------------------------------------------------------
+
 
 def test_collide_mrt_preserves_shape() -> None:
     rho = torch.ones((10, 12), dtype=torch.float32)
@@ -131,6 +135,7 @@ def test_collide_mrt_at_equilibrium_is_identity() -> None:
 # Vorticity
 # ---------------------------------------------------------------------------
 
+
 def test_compute_vorticity_rigid_rotation() -> None:
     """For solid-body rotation ux = -ω·y, uy = ω·x the vorticity is 2ω."""
     ny, nx = 20, 20
@@ -151,6 +156,7 @@ def test_compute_vorticity_rigid_rotation() -> None:
 # ---------------------------------------------------------------------------
 # CylinderFlowConfig.validate() error paths
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize(
     "overrides,match",
@@ -190,6 +196,7 @@ def test_cylinder_config_validate_tau_too_small() -> None:
 # ---------------------------------------------------------------------------
 # Zou/He inlet boundary condition
 # ---------------------------------------------------------------------------
+
 
 def test_zou_he_inlet_prescribes_velocity() -> None:
     """After Zou/He inlet update, macroscopic ux at x=0 must equal u_in."""
@@ -239,6 +246,7 @@ def test_stabilize_outlet_backflow_clamps_negative_ux() -> None:
 # ---------------------------------------------------------------------------
 # compute_obstacle_forces
 # ---------------------------------------------------------------------------
+
 
 def test_compute_obstacle_forces_empty_mask_is_zero() -> None:
     """Forces on an empty obstacle must be exactly zero."""

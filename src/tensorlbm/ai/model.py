@@ -5,6 +5,7 @@ a 2-D LBM velocity field to a non-negative eddy viscosity.  The output
 non-negativity is enforced via :class:`torch.nn.Softplus` so the trained
 model is safe to plug into ``τ_eff = τ + 3 ν_t`` collision operators.
 """
+
 from __future__ import annotations
 
 import json
@@ -22,7 +23,7 @@ class ModelArch:
     in_features: int = 3
     hidden_features: int = 16
     n_hidden_layers: int = 2
-    activation: str = "tanh"   # "tanh" or "relu"
+    activation: str = "tanh"  # "tanh" or "relu"
 
 
 def _activation(name: str) -> nn.Module:
@@ -94,6 +95,7 @@ class EddyViscosityMLP(nn.Module):
 # ---------------------------------------------------------------------------
 # Persistence
 # ---------------------------------------------------------------------------
+
 
 def save_model(model: EddyViscosityMLP, path: str | Path) -> Path:
     """Serialize a model to a tensor-only ``.pt`` file plus JSON metadata."""

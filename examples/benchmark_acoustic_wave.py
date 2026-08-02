@@ -12,6 +12,7 @@ perturbation travel?"
 Analytical: cs = 1/sqrt(3) ≈ 0.5774 (D2Q9/D3Q19 isothermal speed of sound)
 LBM numerical sound speed is typically ~3-4% higher due to weak compressibility.
 """
+
 from __future__ import annotations
 import argparse, math, os, sys
 import numpy as np
@@ -25,9 +26,9 @@ from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
-def run_acoustic_wave(nx=400, ny=4, nz=1, tau=0.8,
-                      delta=0.01, pulse_x=None, pulse_sigma=5.0,
-                      steps=170, device="cpu"):
+def run_acoustic_wave(
+    nx=400, ny=4, nz=1, tau=0.8, delta=0.01, pulse_x=None, pulse_sigma=5.0, steps=170, device="cpu"
+):
     dev = torch.device(device)
     cs = 1.0 / math.sqrt(3.0)
 
@@ -39,7 +40,7 @@ def run_acoustic_wave(nx=400, ny=4, nz=1, tau=0.8,
 
     # Gaussian density pulse
     x_coords = torch.arange(nx, device=dev).float()
-    rho_pulse = 1.0 + delta * torch.exp(-((x_coords - pulse_x) / pulse_sigma) ** 2)
+    rho_pulse = 1.0 + delta * torch.exp(-(((x_coords - pulse_x) / pulse_sigma) ** 2))
     rho_3d = rho_pulse.view(1, 1, nx).expand(nz, ny, nx)
     f = equilibrium3d(rho_3d, u0, u0.clone(), u0.clone(), device=dev)
 
@@ -64,7 +65,7 @@ def run_acoustic_wave(nx=400, ny=4, nz=1, tau=0.8,
 
     # Cross-correlation between consecutive profiles
     print(f"\n  {'step1->step2':>12s}  {'shift':>6s}  {'c_lbm':>8s}  {'err%':>6s}  status")
-    print(f"  {'-'*50}")
+    print(f"  {'-' * 50}")
 
     speeds = []
     steps_list = sorted(profiles.keys())
@@ -76,10 +77,10 @@ def run_acoustic_wave(nx=400, ny=4, nz=1, tau=0.8,
         start = int(pulse_x)
         end = min(nx, int(pulse_x + cs * s2 + 50))
         p1_r = p1[start:end]
-        p2_r = p2[start:end + 20]
+        p2_r = p2[start : end + 20]
         if len(p1_r) < 5:
             continue
-        corr = np.correlate(p2_r, p1_r, mode='full')
+        corr = np.correlate(p2_r, p1_r, mode="full")
         shift = np.argmax(corr) - len(p1_r) + 1
         dt = s2 - s1
         c = shift / dt
@@ -114,9 +115,16 @@ def main():
     print("=" * 60)
     print("  ACOUSTIC WAVE PROPAGATION BENCHMARK (sound speed)")
     print("=" * 60)
-    run_acoustic_wave(nx=args.nx, ny=args.ny, nz=args.nz, tau=args.tau,
-                      delta=args.delta, pulse_sigma=args.pulse_sigma,
-                      steps=args.steps, device=args.device)
+    run_acoustic_wave(
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau=args.tau,
+        delta=args.delta,
+        pulse_sigma=args.pulse_sigma,
+        steps=args.steps,
+        device=args.device,
+    )
 
 
 if __name__ == "__main__":

@@ -9,15 +9,18 @@ Uses the verified phase-field + Fakhari anti-diffusion framework:
   - Variable density (pressure difference drives flow naturally)
   - Gas mass conservation: p_gas = p_gas0·(V0/V)^γ
 """
+
 import sys, math, torch, numpy as np
-sys.path.insert(0, '/root/TensorLBM_test/src')
+
+sys.path.insert(0, "/root/TensorLBM_test/src")
 from tensorlbm.d3q19 import equilibrium3d, C as C3D, W as W3D
 from tensorlbm.solver3d import stream3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
 
 
-def run_piston_compression(nx=32, ny=64, nz=32, n_steps=2000,
-                           device='sdaa:0', u_piston=0.02, gamma=1.4):
+def run_piston_compression(
+    nx=32, ny=64, nz=32, n_steps=2000, device="sdaa:0", u_piston=0.02, gamma=1.4
+):
     """Simulate piston compression in a closed container.
 
     Args:
@@ -28,7 +31,7 @@ def run_piston_compression(nx=32, ny=64, nz=32, n_steps=2000,
     dev = torch.device(device)
     cs2 = 1.0 / 3.0
     rho_liq = 1.0
-    rho_gas0 = 1.0       # initial gas density = liquid (no density contrast initially)
+    rho_gas0 = 1.0  # initial gas density = liquid (no density contrast initially)
     tau_f = 0.8
     tau_g = 0.55
     A_coef, B_coef, kappa = 0.2, 0.2, 0.1
@@ -47,19 +50,24 @@ def run_piston_compression(nx=32, ny=64, nz=32, n_steps=2000,
     cx3d = c[:, 0].view(19, 1, 1, 1)
     cy3d = c[:, 1].view(19, 1, 1, 1)
     cz3d = c[:, 2].view(19, 1, 1, 1)
-    opp = torch.tensor([0,2,1,4,3,6,5,8,7,10,9,12,11,14,13,16,15,18,17], device=dev)
+    opp = torch.tensor(
+        [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17], device=dev
+    )
 
     zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=dev), torch.arange(ny, device=dev),
-        torch.arange(nx, device=dev), indexing='ij')
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
+    )
 
     # Solid walls (all sides except bottom = piston)
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=dev)
-    solid[:, -1, :] = True   # top wall (closed)
-    solid[:, :, 0] = True    # left
-    solid[:, :, -1] = True   # right
-    solid[0, :, :] = True    # front
-    solid[-1, :, :] = True   # back
+    solid[:, -1, :] = True  # top wall (closed)
+    solid[:, :, 0] = True  # left
+    solid[:, :, -1] = True  # right
+    solid[0, :, :] = True  # front
+    solid[-1, :, :] = True  # back
     # Bottom wall is the piston (also solid, but with velocity)
     solid[:, 0, :] = True
     fluid_mask = ~solid
@@ -71,16 +79,25 @@ def run_piston_compression(nx=32, ny=64, nz=32, n_steps=2000,
 
     # Initialize f: uniform density, zero velocity
     rho_init = torch.ones(nz, ny, nx, device=dev)
-    f = equilibrium3d(rho_init, torch.zeros_like(rho_init),
-                      torch.zeros_like(rho_init), torch.zeros_like(rho_init), device=dev)
-    g = _init_g_equilibrium(phi, torch.zeros_like(phi), torch.zeros_like(phi),
-                             torch.zeros_like(phi), c, w)
+    f = equilibrium3d(
+        rho_init,
+        torch.zeros_like(rho_init),
+        torch.zeros_like(rho_init),
+        torch.zeros_like(rho_init),
+        device=dev,
+    )
+    g = _init_g_equilibrium(
+        phi, torch.zeros_like(phi), torch.zeros_like(phi), torch.zeros_like(phi), c, w
+    )
 
-    print(f'=== Piston Compression ===', flush=True)
-    print(f'Grid: {nx}×{ny}×{nz}  Interface at y={y_gas_start}', flush=True)
-    print(f'Piston velocity: u={u_piston} (upward)', flush=True)
-    print(f'V0_gas={V0_gas:.0f} cells  p_gas0={p_gas0:.4f}  γ={gamma}', flush=True)
-    print(f'Expected compression: {n_steps} steps × {u_piston} = {n_steps*u_piston*nx*nz:.0f} cells', flush=True)
+    print(f"=== Piston Compression ===", flush=True)
+    print(f"Grid: {nx}×{ny}×{nz}  Interface at y={y_gas_start}", flush=True)
+    print(f"Piston velocity: u={u_piston} (upward)", flush=True)
+    print(f"V0_gas={V0_gas:.0f} cells  p_gas0={p_gas0:.4f}  γ={gamma}", flush=True)
+    print(
+        f"Expected compression: {n_steps} steps × {u_piston} = {n_steps * u_piston * nx * nz:.0f} cells",
+        flush=True,
+    )
     print(flush=True)
 
     ts, ps_lbm, ps_ana, vs_lbm = [], [], [], []
@@ -111,19 +128,28 @@ def run_piston_compression(nx=32, ny=64, nz=32, n_steps=2000,
         ux_post = (f * cx3d).sum(0) / rho_post.clamp(min=1e-6)
         uy_post = (f * cy3d).sum(0) / rho_post.clamp(min=1e-6)
         uz_post = (f * cz3d).sum(0) / rho_post.clamp(min=1e-6)
-        feq_new = equilibrium3d(rho_field.clamp(min=1e-6, max=5.0),
-                                ux_post.clamp(-0.5, 0.5),
-                                uy_post.clamp(-0.5, 0.5),
-                                uz_post.clamp(-0.5, 0.5), device=dev)
-        feq_old = equilibrium3d(rho_post.clamp(min=1e-6, max=5.0),
-                                ux_post.clamp(-0.5, 0.5),
-                                uy_post.clamp(-0.5, 0.5),
-                                uz_post.clamp(-0.5, 0.5), device=dev)
+        feq_new = equilibrium3d(
+            rho_field.clamp(min=1e-6, max=5.0),
+            ux_post.clamp(-0.5, 0.5),
+            uy_post.clamp(-0.5, 0.5),
+            uz_post.clamp(-0.5, 0.5),
+            device=dev,
+        )
+        feq_old = equilibrium3d(
+            rho_post.clamp(min=1e-6, max=5.0),
+            ux_post.clamp(-0.5, 0.5),
+            uy_post.clamp(-0.5, 0.5),
+            uz_post.clamp(-0.5, 0.5),
+            device=dev,
+        )
         f = f - feq_old + feq_new
-        feq = equilibrium3d(rho_field.clamp(min=1e-6, max=5.0),
-                            ux_post.clamp(-0.5, 0.5),
-                            uy_post.clamp(-0.5, 0.5),
-                            uz_post.clamp(-0.5, 0.5), device=dev)
+        feq = equilibrium3d(
+            rho_field.clamp(min=1e-6, max=5.0),
+            ux_post.clamp(-0.5, 0.5),
+            uy_post.clamp(-0.5, 0.5),
+            uz_post.clamp(-0.5, 0.5),
+            device=dev,
+        )
         f = f - (f - feq) / tau_f
         f = f.clamp(min=0.0, max=5.0)
 
@@ -131,12 +157,24 @@ def run_piston_compression(nx=32, ny=64, nz=32, n_steps=2000,
         ux_s = ux.clamp(-0.5, 0.5)
         uy_s = uy.clamp(-0.5, 0.5)
         uz_s = uz.clamp(-0.5, 0.5)
-        dphi_dx = torch.where(ux_s > 0, phi - torch.roll(phi, 1, dims=2),
-                              torch.roll(phi, -1, dims=2) - phi) * ux_s
-        dphi_dy = torch.where(uy_s > 0, phi - torch.roll(phi, 1, dims=1),
-                              torch.roll(phi, -1, dims=1) - phi) * uy_s
-        dphi_dz = torch.where(uz_s > 0, phi - torch.roll(phi, 1, dims=0),
-                              torch.roll(phi, -1, dims=0) - phi) * uz_s
+        dphi_dx = (
+            torch.where(
+                ux_s > 0, phi - torch.roll(phi, 1, dims=2), torch.roll(phi, -1, dims=2) - phi
+            )
+            * ux_s
+        )
+        dphi_dy = (
+            torch.where(
+                uy_s > 0, phi - torch.roll(phi, 1, dims=1), torch.roll(phi, -1, dims=1) - phi
+            )
+            * uy_s
+        )
+        dphi_dz = (
+            torch.where(
+                uz_s > 0, phi - torch.roll(phi, 1, dims=0), torch.roll(phi, -1, dims=0) - phi
+            )
+            * uz_s
+        )
         phi_adv = phi - (dphi_dx + dphi_dy + dphi_dz)
 
         lap_phi = _laplacian_3d(phi_adv)
@@ -192,12 +230,14 @@ def run_piston_compression(nx=32, ny=64, nz=32, n_steps=2000,
             ps_ana.append(p_ana)
             vs_lbm.append(V_gas)
 
-            print(f'step {step:4d}: V_gas={V_gas:.0f} V_ana={V_ana:.0f} '
-                  f'p_gas={p_gas:.4f} p_ana={p_ana:.4f} '
-                  f'ratio_lbm={ratio_lbm:.3f} ratio_ana={ratio_ana:.3f} '
-                  f'err={err:.1f}% '
-                  f'ρ=[{rho_min:.3f},{rho_max:.3f}] φ=[{phi_min:.2f},{phi_max:.2f}]',
-                  flush=True)
+            print(
+                f"step {step:4d}: V_gas={V_gas:.0f} V_ana={V_ana:.0f} "
+                f"p_gas={p_gas:.4f} p_ana={p_ana:.4f} "
+                f"ratio_lbm={ratio_lbm:.3f} ratio_ana={ratio_ana:.3f} "
+                f"err={err:.1f}% "
+                f"ρ=[{rho_min:.3f},{rho_max:.3f}] φ=[{phi_min:.2f},{phi_max:.2f}]",
+                flush=True,
+            )
 
     return np.array(ts), np.array(ps_lbm), np.array(ps_ana), np.array(vs_lbm)
 
@@ -213,40 +253,53 @@ def _init_g_equilibrium(phi, ux, uy, uz, c, w):
 
 
 def _laplacian_3d(field):
-    return (torch.roll(field, 1, dims=0) + torch.roll(field, -1, dims=0)
-            + torch.roll(field, 1, dims=1) + torch.roll(field, -1, dims=1)
-            + torch.roll(field, 1, dims=2) + torch.roll(field, -1, dims=2)
-            - 6.0 * field)
+    return (
+        torch.roll(field, 1, dims=0)
+        + torch.roll(field, -1, dims=0)
+        + torch.roll(field, 1, dims=1)
+        + torch.roll(field, -1, dims=1)
+        + torch.roll(field, 1, dims=2)
+        + torch.roll(field, -1, dims=2)
+        - 6.0 * field
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
-    p = argparse.ArgumentParser(description='Piston compression: phase-field LBM')
-    p.add_argument('--nx', type=int, default=32)
-    p.add_argument('--ny', type=int, default=64)
-    p.add_argument('--nz', type=int, default=32)
-    p.add_argument('--steps', type=int, default=2000)
-    p.add_argument('--device', default='sdaa:0')
-    p.add_argument('--u-piston', type=float, default=0.02, help='Piston upward velocity')
-    p.add_argument('--gamma', type=float, default=1.4, help='Adiabatic index')
+
+    p = argparse.ArgumentParser(description="Piston compression: phase-field LBM")
+    p.add_argument("--nx", type=int, default=32)
+    p.add_argument("--ny", type=int, default=64)
+    p.add_argument("--nz", type=int, default=32)
+    p.add_argument("--steps", type=int, default=2000)
+    p.add_argument("--device", default="sdaa:0")
+    p.add_argument("--u-piston", type=float, default=0.02, help="Piston upward velocity")
+    p.add_argument("--gamma", type=float, default=1.4, help="Adiabatic index")
     g = p.parse_args()
 
-    print('='*60)
-    print('Running piston compression...')
+    print("=" * 60)
+    print("Running piston compression...")
     ts, ps_lbm, ps_ana, vs_lbm = run_piston_compression(
-        g.nx, g.ny, g.nz, g.steps, g.device, g.u_piston, g.gamma)
+        g.nx, g.ny, g.nz, g.steps, g.device, g.u_piston, g.gamma
+    )
     print()
 
-    print('='*60)
-    print('=== COMPRESSION SUMMARY ===')
-    print(f'{"":12s} {"p_initial":>10s} {"p_final_lbm":>12s} {"p_final_ana":>12s} {"ratio_lbm":>10s} {"ratio_ana":>10s} {"err":>6s}')
+    print("=" * 60)
+    print("=== COMPRESSION SUMMARY ===")
+    print(
+        f"{'':12s} {'p_initial':>10s} {'p_final_lbm':>12s} {'p_final_ana':>12s} {'ratio_lbm':>10s} {'ratio_ana':>10s} {'err':>6s}"
+    )
     p0 = ps_lbm[0]
-    print(f'{"Value":12s} {p0:10.4f} {ps_lbm[-1]:12.4f} {ps_ana[-1]:12.4f} '
-          f'{ps_lbm[-1]/p0:10.3f} {ps_ana[-1]/p0:10.3f} '
-          f'{abs(ps_lbm[-1]/p0 - ps_ana[-1]/p0)/(ps_ana[-1]/p0)*100:6.1f}%')
+    print(
+        f"{'Value':12s} {p0:10.4f} {ps_lbm[-1]:12.4f} {ps_ana[-1]:12.4f} "
+        f"{ps_lbm[-1] / p0:10.3f} {ps_ana[-1] / p0:10.3f} "
+        f"{abs(ps_lbm[-1] / p0 - ps_ana[-1] / p0) / (ps_ana[-1] / p0) * 100:6.1f}%"
+    )
     print()
 
     # MAPE
     mape = np.mean(np.abs(ps_lbm - ps_ana) / ps_ana) * 100
-    print(f'Pressure MAPE: {mape:.1f}%')
-    print(f'Volume: V0={vs_lbm[0]:.0f} → V_final={vs_lbm[-1]:.0f} (compression ratio={vs_lbm[0]/vs_lbm[-1]:.2f})')
+    print(f"Pressure MAPE: {mape:.1f}%")
+    print(
+        f"Volume: V0={vs_lbm[0]:.0f} → V_final={vs_lbm[-1]:.0f} (compression ratio={vs_lbm[0] / vs_lbm[-1]:.2f})"
+    )

@@ -13,6 +13,7 @@ turbulence physics correctness.  A small sphere-flow integration test
 exercises the operator inside a stream–collide–boundary loop to confirm
 end-to-end finiteness and drag-force computation.
 """
+
 from __future__ import annotations
 
 import math
@@ -34,6 +35,7 @@ from tensorlbm.turbulence import collide_dynamic_smagorinsky_mrt27
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_d3q27_state(seed: int = 99) -> torch.Tensor:
     """Build a small D3Q27 equilibrium distribution with mild shear."""
     torch.manual_seed(seed)
@@ -48,6 +50,7 @@ def _make_d3q27_state(seed: int = 99) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Contract tests — operator algebra
 # ---------------------------------------------------------------------------
+
 
 def test_dyn_smag_mrt27_shape() -> None:
     f = _make_d3q27_state()
@@ -99,9 +102,7 @@ def test_dyn_smag_mrt27_relaxes_non_equilibrium() -> None:
 def test_dyn_smag_mrt27_accepts_mrt_rates() -> None:
     """MRT relaxation rates should be accepted as keyword arguments."""
     f = _make_d3q27_state()
-    fout = collide_dynamic_smagorinsky_mrt27(
-        f, tau=0.7, s_e=1.19, s_eps=1.4, s_q=1.2
-    )
+    fout = collide_dynamic_smagorinsky_mrt27(f, tau=0.7, s_e=1.19, s_eps=1.4, s_q=1.2)
     assert fout.shape == f.shape
     assert torch.isfinite(fout).all()
 
@@ -109,9 +110,7 @@ def test_dyn_smag_mrt27_accepts_mrt_rates() -> None:
 def test_dyn_smag_mrt27_s_pi_defaults_to_s_e() -> None:
     """s_pi=None should default to s_e without error."""
     f = _make_d3q27_state()
-    fout = collide_dynamic_smagorinsky_mrt27(
-        f, tau=0.7, s_e=1.19, s_eps=1.4, s_q=1.2, s_pi=None
-    )
+    fout = collide_dynamic_smagorinsky_mrt27(f, tau=0.7, s_e=1.19, s_eps=1.4, s_q=1.2, s_pi=None)
     assert torch.isfinite(fout).all()
 
 
@@ -133,6 +132,7 @@ def test_dyn_smag_mrt27_filter_width_accepted() -> None:
 # Consistency: dynamic MRT27 vs dynamic BGK27 on equilibrium
 # ---------------------------------------------------------------------------
 
+
 def test_dyn_smag_mrt27_consistent_with_bgk27_on_equilibrium() -> None:
     """Both dynamic D3Q27 variants should leave equilibrium unchanged."""
     from tensorlbm.turbulence import collide_dynamic_smagorinsky_bgk27
@@ -153,6 +153,7 @@ def test_dyn_smag_mrt27_consistent_with_bgk27_on_equilibrium() -> None:
 # ---------------------------------------------------------------------------
 # Integration: mini sphere flow with dynamic Smagorinsky MRT D3Q27
 # ---------------------------------------------------------------------------
+
 
 def test_dyn_smag_mrt27_sphere_flow_finite() -> None:
     """A few stream–collide–boundary steps past a sphere must stay finite.

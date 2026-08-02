@@ -9,6 +9,7 @@ Verifies:
     - DamBreakConfig validation
     - MultiphaseWaterEntryConfig validation
 """
+
 from __future__ import annotations
 
 import pytest
@@ -41,6 +42,7 @@ DEVICE = torch.device("cpu")
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_two_component_2d(ny: int = 20, nx: int = 24) -> tuple[torch.Tensor, torch.Tensor]:
     """Uniform-density equilibrium distributions for two components."""
     rho1 = torch.ones((ny, nx), device=DEVICE)
@@ -50,7 +52,9 @@ def _make_two_component_2d(ny: int = 20, nx: int = 24) -> tuple[torch.Tensor, to
 
 
 def _make_two_component_3d(
-    nz: int = 6, ny: int = 8, nx: int = 10,
+    nz: int = 6,
+    ny: int = 8,
+    nx: int = 10,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     rho1 = torch.ones((nz, ny, nx), device=DEVICE)
     rho2 = torch.full((nz, ny, nx), 0.5, device=DEVICE)
@@ -61,6 +65,7 @@ def _make_two_component_3d(
 # ---------------------------------------------------------------------------
 # Pseudopotential functions
 # ---------------------------------------------------------------------------
+
 
 class TestPseudopotentials:
     def test_psi_linear_identity(self) -> None:
@@ -82,6 +87,7 @@ class TestPseudopotentials:
 # ---------------------------------------------------------------------------
 # SC two-component force
 # ---------------------------------------------------------------------------
+
 
 class TestSCTwoComponentForce:
     def test_force_shape(self) -> None:
@@ -105,6 +111,7 @@ class TestSCTwoComponentForce:
 # ---------------------------------------------------------------------------
 # SC two-component collision (2-D)
 # ---------------------------------------------------------------------------
+
 
 class TestSCTwoComponent2D:
     def test_output_shape(self) -> None:
@@ -143,6 +150,7 @@ class TestSCTwoComponent2D:
 # SC single-component (2-D)
 # ---------------------------------------------------------------------------
 
+
 class TestSCSingleComponent2D:
     def test_output_shape(self) -> None:
         ny, nx = 16, 20
@@ -165,6 +173,7 @@ class TestSCSingleComponent2D:
 # ---------------------------------------------------------------------------
 # Color-Gradient (2-D)
 # ---------------------------------------------------------------------------
+
 
 class TestColorGradient2D:
     def test_output_shape(self) -> None:
@@ -197,6 +206,7 @@ class TestColorGradient2D:
 # Free-Energy (2-D)
 # ---------------------------------------------------------------------------
 
+
 class TestFreeEnergy2D:
     def test_output_shape(self) -> None:
         ny, nx = 16, 20
@@ -226,6 +236,7 @@ class TestFreeEnergy2D:
 # SC two-component force (3-D)
 # ---------------------------------------------------------------------------
 
+
 class TestSCTwoComponentForce3D:
     def test_force_shape(self) -> None:
         nz, ny, nx = 6, 8, 10
@@ -248,6 +259,7 @@ class TestSCTwoComponentForce3D:
 # ---------------------------------------------------------------------------
 # SC two-component collision (3-D)
 # ---------------------------------------------------------------------------
+
 
 class TestSCTwoComponent3D:
     def test_output_shape(self) -> None:
@@ -277,6 +289,7 @@ class TestSCTwoComponent3D:
 # Config validation
 # ---------------------------------------------------------------------------
 
+
 class TestDamBreakConfig:
     def test_valid_config(self) -> None:
         cfg = DamBreakConfig(nx=50, ny=30, dam_width=15, n_steps=2, output_interval=2)
@@ -305,7 +318,12 @@ class TestMultiphaseWaterEntryConfig:
 
     def test_valid_config_with_model(self) -> None:
         cfg = MultiphaseWaterEntryConfig(
-            nx=50, ny=50, water_level=25, n_steps=2, output_interval=2, model="cg",
+            nx=50,
+            ny=50,
+            water_level=25,
+            n_steps=2,
+            output_interval=2,
+            model="cg",
         )
         cfg.validate()
 
@@ -343,13 +361,14 @@ class TestMultiphaseWaterEntryConfig:
 # solid_mask skips collision
 # ---------------------------------------------------------------------------
 
+
 class TestSolidMask:
     """Verify that solid cells are not modified by collision steps."""
 
     def test_sc_two_component_solid_not_modified(self) -> None:
         ny, nx = 12, 16
         solid = torch.zeros((ny, nx), dtype=torch.bool)
-        solid[0, :] = True   # bottom wall
+        solid[0, :] = True  # bottom wall
 
         rho1 = torch.ones((ny, nx)) * 0.5
         rho2 = torch.ones((ny, nx)) * 0.5
@@ -370,7 +389,7 @@ class TestSolidMask:
     def test_cg_solid_not_modified(self) -> None:
         ny, nx = 12, 16
         solid = torch.zeros((ny, nx), dtype=torch.bool)
-        solid[-1, :] = True   # top wall
+        solid[-1, :] = True  # top wall
 
         rho1 = torch.ones((ny, nx)) * 0.6
         rho2 = torch.ones((ny, nx)) * 0.4

@@ -6,6 +6,7 @@ replays a rejected experimental proposal only through the caller's explicit
 legacy callback, and reports the pre-existing strict failure evidence without
 altering the numerical gate or solver state.
 """
+
 from __future__ import annotations
 
 import copy
@@ -87,7 +88,11 @@ def _validate_inputs(
     states_equal: StateComparator[StateT] | None,
     fingerprint_state: StateFingerprint[StateT] | None,
 ) -> None:
-    if isinstance(requested_steps, bool) or not isinstance(requested_steps, int) or requested_steps <= 0:
+    if (
+        isinstance(requested_steps, bool)
+        or not isinstance(requested_steps, int)
+        or requested_steps <= 0
+    ):
         raise ValueError("requested_steps must be a positive integer")
     if not isinstance(policy, IToGStrictFailurePolicy):
         raise ValueError("policy must be an IToGStrictFailurePolicy")
@@ -95,7 +100,9 @@ def _validate_inputs(
         raise ValueError("allow_experimental_fallback must be bool")
     fallback = policy is IToGStrictFailurePolicy.SKIP_EXPERIMENTAL_PROPOSAL
     if fallback != allow_experimental_fallback:
-        raise ValueError("experimental fallback requires both explicit policy and allow_experimental_fallback=True")
+        raise ValueError(
+            "experimental fallback requires both explicit policy and allow_experimental_fallback=True"
+        )
     if fallback and legacy_step is None:
         raise ValueError("experimental fallback requires legacy_step")
     if not callable(strict_step):
@@ -133,9 +140,13 @@ def _require_unchanged_prestate(
             states_equal(committed_snapshot, immutable_baseline),
         )
     except Exception as error:
-        raise RuntimeError(f"states_equal failed while verifying {callback_name} callback isolation") from error
+        raise RuntimeError(
+            f"states_equal failed while verifying {callback_name} callback isolation"
+        ) from error
     if not all(type(result) is bool for result in comparisons):
-        raise RuntimeError(f"states_equal must return bool while verifying {callback_name} callback isolation")
+        raise RuntimeError(
+            f"states_equal must return bool while verifying {callback_name} callback isolation"
+        )
     if not all(comparisons):
         raise RuntimeError(f"{callback_name} callback mutated campaign prestate")
     try:
@@ -145,16 +156,22 @@ def _require_unchanged_prestate(
             fingerprint_state(immutable_baseline),
         )
     except Exception as error:
-        raise RuntimeError(f"fingerprint_state failed while verifying {callback_name} callback isolation") from error
+        raise RuntimeError(
+            f"fingerprint_state failed while verifying {callback_name} callback isolation"
+        ) from error
     if fingerprints != expected_fingerprints:
         raise RuntimeError(f"{callback_name} callback caused state fingerprint mutation")
     if fallback_input is not None:
         if expected_fallback_fingerprint is None:
-            raise RuntimeError("fallback fingerprint is required while verifying legacy callback isolation")
+            raise RuntimeError(
+                "fallback fingerprint is required while verifying legacy callback isolation"
+            )
         try:
             fallback_fingerprint = fingerprint_state(fallback_input)
         except Exception as error:
-            raise RuntimeError("fingerprint_state failed while verifying legacy callback isolation") from error
+            raise RuntimeError(
+                "fingerprint_state failed while verifying legacy callback isolation"
+            ) from error
         if fallback_fingerprint != expected_fallback_fingerprint:
             raise RuntimeError("legacy callback caused fallback input fingerprint mutation")
 
@@ -178,7 +195,9 @@ def _isolated_snapshot(
     return isolated
 
 
-def _diagnostic(step: int, error: TopologyTransactionError, capture: dict[str, object]) -> IToGFailureDiagnostic:
+def _diagnostic(
+    step: int, error: TopologyTransactionError, capture: dict[str, object]
+) -> IToGFailureDiagnostic:
     evidence = capture.get("strict_failure_evidence")
     diagnostic = IToGFailureDiagnostic(
         step=step,
@@ -188,7 +207,9 @@ def _diagnostic(step: int, error: TopologyTransactionError, capture: dict[str, o
         residual_audit=audit_failed_i_to_g_residual(evidence),
     )
     if diagnostic.strict_replay.status != "STRICT_FAILURE_REPLAYED_EXACT":
-        raise RuntimeError("strict failure evidence is unavailable or does not replay exactly") from error
+        raise RuntimeError(
+            "strict failure evidence is unavailable or does not replay exactly"
+        ) from error
     return diagnostic
 
 
@@ -222,8 +243,14 @@ def run_i_to_g_policy_campaign(
     deep-copied candidate. This wrapper itself neither imports nor invokes the solver.
     """
     _validate_inputs(
-        requested_steps, strict_step, policy, allow_experimental_fallback, legacy_step, snapshot_state,
-        states_equal, fingerprint_state,
+        requested_steps,
+        strict_step,
+        policy,
+        allow_experimental_fallback,
+        legacy_step,
+        snapshot_state,
+        states_equal,
+        fingerprint_state,
     )
     assert snapshot_state is not None
     assert states_equal is not None
@@ -237,7 +264,9 @@ def run_i_to_g_policy_campaign(
         prestate = state
         committed_snapshot = _isolated_snapshot(prestate, snapshot_state, "committed snapshot")
         immutable_baseline = _isolated_snapshot(prestate, snapshot_state, "immutable baseline")
-        strict_input = _isolated_snapshot(committed_snapshot, snapshot_state, "strict proposal state")
+        strict_input = _isolated_snapshot(
+            committed_snapshot, snapshot_state, "strict proposal state"
+        )
         try:
             expected_fingerprints = (
                 fingerprint_state(prestate),
@@ -245,11 +274,18 @@ def run_i_to_g_policy_campaign(
                 fingerprint_state(immutable_baseline),
             )
         except Exception as error:
-            raise RuntimeError("fingerprint_state failed while recording pre-attempt state") from error
+            raise RuntimeError(
+                "fingerprint_state failed while recording pre-attempt state"
+            ) from error
         if expected_fingerprints[1:] != (expected_fingerprints[0], expected_fingerprints[0]):
             raise RuntimeError("snapshot isolation changed the pre-attempt state fingerprint")
         _require_unchanged_prestate(
-            prestate, committed_snapshot, immutable_baseline, expected_fingerprints, states_equal, fingerprint_state,
+            prestate,
+            committed_snapshot,
+            immutable_baseline,
+            expected_fingerprints,
+            states_equal,
+            fingerprint_state,
         )
         capture: dict[str, object] = {}
         attempted.append(step)
@@ -257,7 +293,12 @@ def run_i_to_g_policy_campaign(
             candidate = strict_step(strict_input, capture)
         except TopologyTransactionError as error:
             _require_unchanged_prestate(
-                prestate, committed_snapshot, immutable_baseline, expected_fingerprints, states_equal, fingerprint_state,
+                prestate,
+                committed_snapshot,
+                immutable_baseline,
+                expected_fingerprints,
+                states_equal,
+                fingerprint_state,
             )
             if policy is IToGStrictFailurePolicy.RAISE:
                 raise
@@ -265,15 +306,30 @@ def run_i_to_g_policy_campaign(
             last_failure = diagnostic
             if policy is IToGStrictFailurePolicy.STOP_AND_REPORT:
                 return IToGPolicyCampaignReport(
-                    STOPPED_AND_REPORTED, None, False, requested_steps, len(attempted), len(committed),
-                    state, IToGCampaignLedger(tuple(attempted), tuple(committed), tuple(fallback_steps)), diagnostic,
+                    STOPPED_AND_REPORTED,
+                    None,
+                    False,
+                    requested_steps,
+                    len(attempted),
+                    len(committed),
+                    state,
+                    IToGCampaignLedger(tuple(attempted), tuple(committed), tuple(fallback_steps)),
+                    diagnostic,
                 )
             assert legacy_step is not None
-            fallback_input = _isolated_snapshot(committed_snapshot, snapshot_state, "fallback prestate")
+            fallback_input = _isolated_snapshot(
+                committed_snapshot, snapshot_state, "fallback prestate"
+            )
             expected_fallback_fingerprint = fingerprint_state(fallback_input)
             _require_unchanged_prestate(
-                prestate, committed_snapshot, immutable_baseline, expected_fingerprints, states_equal, fingerprint_state,
-                fallback_input=fallback_input, expected_fallback_fingerprint=expected_fallback_fingerprint,
+                prestate,
+                committed_snapshot,
+                immutable_baseline,
+                expected_fingerprints,
+                states_equal,
+                fingerprint_state,
+                fallback_input=fallback_input,
+                expected_fallback_fingerprint=expected_fallback_fingerprint,
                 callback_name="legacy",
             )
             # This is intentionally a legacy re-run of the exact prestate, not
@@ -282,20 +338,34 @@ def run_i_to_g_policy_campaign(
                 fallback_candidate = legacy_step(fallback_input)
             except BaseException:
                 _require_unchanged_prestate(
-                    prestate, committed_snapshot, immutable_baseline, expected_fingerprints, states_equal, fingerprint_state,
-                    fallback_input=fallback_input, expected_fallback_fingerprint=expected_fallback_fingerprint,
+                    prestate,
+                    committed_snapshot,
+                    immutable_baseline,
+                    expected_fingerprints,
+                    states_equal,
+                    fingerprint_state,
+                    fallback_input=fallback_input,
+                    expected_fallback_fingerprint=expected_fallback_fingerprint,
                     callback_name="legacy",
                 )
                 raise
             _require_unchanged_prestate(
-                prestate, committed_snapshot, immutable_baseline, expected_fingerprints, states_equal, fingerprint_state,
-                fallback_input=fallback_input, expected_fallback_fingerprint=expected_fallback_fingerprint,
+                prestate,
+                committed_snapshot,
+                immutable_baseline,
+                expected_fingerprints,
+                states_equal,
+                fingerprint_state,
+                fallback_input=fallback_input,
+                expected_fallback_fingerprint=expected_fallback_fingerprint,
                 callback_name="legacy",
             )
             try:
                 state = copy.deepcopy(fallback_candidate)
             except Exception as deepcopy_error:
-                raise RuntimeError("legacy candidate must support deepcopy isolation before publication") from deepcopy_error
+                raise RuntimeError(
+                    "legacy candidate must support deepcopy isolation before publication"
+                ) from deepcopy_error
             if state is fallback_candidate:
                 raise RuntimeError("legacy candidate deepcopy did not return an independent state")
             committed.append(step)
@@ -303,18 +373,34 @@ def run_i_to_g_policy_campaign(
             continue
         except BaseException:
             _require_unchanged_prestate(
-                prestate, committed_snapshot, immutable_baseline, expected_fingerprints, states_equal, fingerprint_state,
+                prestate,
+                committed_snapshot,
+                immutable_baseline,
+                expected_fingerprints,
+                states_equal,
+                fingerprint_state,
             )
             raise
         _require_unchanged_prestate(
-            prestate, committed_snapshot, immutable_baseline, expected_fingerprints, states_equal, fingerprint_state,
+            prestate,
+            committed_snapshot,
+            immutable_baseline,
+            expected_fingerprints,
+            states_equal,
+            fingerprint_state,
         )
         state = candidate
         committed.append(step)
 
     fallback_status = FALLBACK_NOT_PHYSICAL if fallback_steps else None
     return IToGPolicyCampaignReport(
-        WITHHELD, fallback_status, False, requested_steps, len(attempted), len(committed), state,
+        WITHHELD,
+        fallback_status,
+        False,
+        requested_steps,
+        len(attempted),
+        len(committed),
+        state,
         IToGCampaignLedger(tuple(attempted), tuple(committed), tuple(fallback_steps)),
         last_failure if fallback_steps else None,
     )
