@@ -78,6 +78,8 @@ if [[ -n ${TENSORLBM_PYTHON:-} ]]; then
   python=$TENSORLBM_PYTHON
 elif [[ -x $root/.venv/bin/python ]]; then
   python=$root/.venv/bin/python
+elif [[ -x /home/wxsc/anaconda3/envs/ftw-env/bin/python ]]; then
+  python=/home/wxsc/anaconda3/envs/ftw-env/bin/python
 elif command -v python3 >/dev/null 2>&1; then
   python=$(command -v python3)
 else

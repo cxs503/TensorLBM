@@ -22,7 +22,18 @@ fi
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 mkdir -p "$result_dir"
-python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
+if [[ -n ${TENSORLBM_PYTHON:-} ]]; then
+  python=$TENSORLBM_PYTHON
+elif [[ -x $root/.venv/bin/python ]]; then
+  python=$root/.venv/bin/python
+elif [[ -x /home/wxsc/anaconda3/envs/ftw-env/bin/python ]]; then
+  python=/home/wxsc/anaconda3/envs/ftw-env/bin/python
+elif command -v python3 >/dev/null 2>&1; then
+  python=$(command -v python3)
+else
+  echo "no Python interpreter found; set TENSORLBM_PYTHON" >&2
+  exit 127
+fi
 export PYTHONPATH="$root/src:$root/examples${PYTHONPATH:+:$PYTHONPATH}"
 if [[ ${TENSORLBM_PREFLIGHT_ONLY:-0} == 1 ]]; then
   exec "$python" -c 'import tensorlbm; print(tensorlbm.__file__)'
