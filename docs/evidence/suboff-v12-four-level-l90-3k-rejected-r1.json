@@ -62,6 +62,16 @@
     "maximum_y_plus": 1278.0477294921875,
     "scaling_gate_met": false
   },
+  "component_scale_audit": {
+    "scope": "diagnostic_only_not_a_cfd_correction",
+    "ittc_1957_friction_resistance_n": 79.32187377597819,
+    "mean_cfd_wall_shear_n": 95.36570107419372,
+    "wall_shear_vs_ittc_pct": 20.226233363481438,
+    "experimental_total_minus_ittc_friction_n": 8.078126224021815,
+    "mean_cfd_pressure_n": 30.791966959816904,
+    "cfd_pressure_over_inferred_residual": 3.81177096097499,
+    "interpretation": "Both components are high in the underscaled one-cell exchange pilot. The comparison diagnoses scale; neither ITTC friction nor the inferred residual replaces a CFD component."
+  },
   "decision": {
     "admit_as_four_level_integration": true,
     "admit_to_time_convergence": false,
