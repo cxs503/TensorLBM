@@ -4,6 +4,7 @@ This module provides a curated subset intended for long-term compatibility.
 For experimental features and rapid-evolution interfaces, use
 ``tensorlbm.experimental``.
 """
+
 from __future__ import annotations
 
 from ._version import __version__
@@ -79,4 +80,3 @@ __all__ = [
     "legacy_snapshot_image_path",
     "write_legacy_snapshot_alias",
 ]
-

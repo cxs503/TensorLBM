@@ -15,6 +15,7 @@ Usage:
     python -m tensorlbm.kbc_diagnostic
     python -m tensorlbm.kbc_diagnostic --steps 20 --nx 16
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,9 +48,11 @@ from .solver3d import collide_bgk3d, stream3d
 # Instrumented KBC collision (captures intermediate state)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class KBCStepDiagnostic:
     """Per-step diagnostic snapshot."""
+
     step: int
     gamma_min: float
     gamma_max: float
@@ -131,6 +134,7 @@ def _instrumented_kbc_collision(
 # Main diagnostic runner
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class KBCDiagnosticConfig:
     nx: int = 16
@@ -159,7 +163,7 @@ class KBCDiagnosticReport:
 def _schiller_naumann(re: float) -> float:
     if re < 1e-6:
         return 100.0
-    return 24.0 / re * (1.0 + 0.15 * re ** 0.687)
+    return 24.0 / re * (1.0 + 0.15 * re**0.687)
 
 
 def run_kbc_diagnostic(config: KBCDiagnosticConfig | None = None) -> KBCDiagnosticReport:
@@ -182,7 +186,7 @@ def run_kbc_diagnostic(config: KBCDiagnosticConfig | None = None) -> KBCDiagnost
     p = _lattice_constants(C, W, dev, torch.float32)
 
     ref_cd = _schiller_naumann(re)
-    area = math.pi * radius ** 2
+    area = math.pi * radius**2
 
     # --- KBC run ---
     rho0 = torch.ones(nz, ny, nx, device=dev)
@@ -217,10 +221,12 @@ def run_kbc_diagnostic(config: KBCDiagnosticConfig | None = None) -> KBCDiagnost
         # Force (before bounce-back)
         fx_kbc, _, _ = compute_obstacle_forces_3d(f_kbc, mask)
         fx_kbc_val = float(fx_kbc.item())
-        cd_kbc = fx_kbc_val / (0.5 * u_in ** 2 * area) if u_in > 0 else None
+        cd_kbc = fx_kbc_val / (0.5 * u_in**2 * area) if u_in > 0 else None
 
         # Boundaries
-        f_kbc = apply_simple_channel_boundaries_3d(f_kbc, u_in=u_in, wall_mask=wall_mask, obstacle_mask=mask)
+        f_kbc = apply_simple_channel_boundaries_3d(
+            f_kbc, u_in=u_in, wall_mask=wall_mask, obstacle_mask=mask
+        )
 
         # Macros
         rho_kbc, ux_kbc, _, _ = macroscopic3d(f_kbc)
@@ -233,7 +239,9 @@ def run_kbc_diagnostic(config: KBCDiagnosticConfig | None = None) -> KBCDiagnost
         # H-theorem check
         H_violation = H_after_kbc > H_before_kbc + 1e-10
         H_violation_count = int(H_violation.sum().item())
-        H_violation_max = float((H_after_kbc - H_before_kbc).max().item()) if H_violation_count > 0 else 0.0
+        H_violation_max = (
+            float((H_after_kbc - H_before_kbc).max().item()) if H_violation_count > 0 else 0.0
+        )
 
         # Admissibility check
         below = int((gamma < gamma_lower - 1e-8).sum().item())
@@ -273,17 +281,21 @@ def run_kbc_diagnostic(config: KBCDiagnosticConfig | None = None) -> KBCDiagnost
         f_bgk = stream3d(f_bgk)
         fx_bgk, _, _ = compute_obstacle_forces_3d(f_bgk, mask)
         fx_bgk_val = float(fx_bgk.item())
-        cd_bgk = fx_bgk_val / (0.5 * u_in ** 2 * area) if u_in > 0 else None
-        f_bgk = apply_simple_channel_boundaries_3d(f_bgk, u_in=u_in, wall_mask=wall_mask, obstacle_mask=mask)
+        cd_bgk = fx_bgk_val / (0.5 * u_in**2 * area) if u_in > 0 else None
+        f_bgk = apply_simple_channel_boundaries_3d(
+            f_bgk, u_in=u_in, wall_mask=wall_mask, obstacle_mask=mask
+        )
 
-        bgk_steps_data.append({
-            "step": step,
-            "fx": fx_bgk_val,
-            "Cd": cd_bgk,
-            "f_min": float(f_bgk.min().item()),
-            "f_max": float(f_bgk.max().item()),
-            "neg_count": int((f_bgk < 0).sum().item()),
-        })
+        bgk_steps_data.append(
+            {
+                "step": step,
+                "fx": fx_bgk_val,
+                "Cd": cd_bgk,
+                "f_min": float(f_bgk.min().item()),
+                "f_max": float(f_bgk.max().item()),
+                "neg_count": int((f_bgk < 0).sum().item()),
+            }
+        )
 
         if not torch.isfinite(f_kbc).all():
             break
@@ -293,12 +305,12 @@ def run_kbc_diagnostic(config: KBCDiagnosticConfig | None = None) -> KBCDiagnost
     # Final Cd (average of last half)
     kbc_final_cd = None
     if kbc_steps_data:
-        late = [s["Cd"] for s in kbc_steps_data[len(kbc_steps_data)//2:] if s["Cd"] is not None]
+        late = [s["Cd"] for s in kbc_steps_data[len(kbc_steps_data) // 2 :] if s["Cd"] is not None]
         kbc_final_cd = sum(late) / len(late) if late else kbc_steps_data[-1]["Cd"]
 
     bgk_final_cd = None
     if bgk_steps_data:
-        late = [s["Cd"] for s in bgk_steps_data[len(bgk_steps_data)//2:] if s["Cd"] is not None]
+        late = [s["Cd"] for s in bgk_steps_data[len(bgk_steps_data) // 2 :] if s["Cd"] is not None]
         bgk_final_cd = sum(late) / len(late) if late else bgk_steps_data[-1]["Cd"]
 
     # --- Findings ---
@@ -321,7 +333,7 @@ def run_kbc_diagnostic(config: KBCDiagnosticConfig | None = None) -> KBCDiagnost
                 f"{last['gamma_above_admissibility']} above natural bounds"
             )
         if kbc_final_cd is not None and bgk_final_cd is not None:
-            ratio = kbc_final_cd / bgk_final_cd if bgk_final_cd != 0 else float('inf')
+            ratio = kbc_final_cd / bgk_final_cd if bgk_final_cd != 0 else float("inf")
             findings.append(
                 f"Cd RATIO KBC/BGK = {ratio:.2f} (KBC={kbc_final_cd:.2f}, BGK={bgk_final_cd:.2f}, ref={ref_cd:.2f})"
             )
@@ -331,12 +343,12 @@ def run_kbc_diagnostic(config: KBCDiagnosticConfig | None = None) -> KBCDiagnost
         if h_peak > 1e-10 and h_last < 0.1 * h_peak:
             findings.append(
                 f"H-MODE DECAYED: h_norm peaked at {h_peak:.6e} then decayed to {h_last:.6e} "
-                f"(ratio={h_last/h_peak:.2f}) — h is being relaxed, contradicting f*=feq+γ·s+h"
+                f"(ratio={h_last / h_peak:.2f}) — h is being relaxed, contradicting f*=feq+γ·s+h"
             )
         elif h_peak > 1e-10:
             findings.append(
                 f"H-MODE RETAINED: h_norm peaked at {h_peak:.6e}, last={h_last:.6e} "
-                f"(ratio={h_last/h_peak:.2f}) — h is NOT relaxed by KBC collision"
+                f"(ratio={h_last / h_peak:.2f}) — h is NOT relaxed by KBC collision"
             )
 
     return KBCDiagnosticReport(
@@ -370,12 +382,19 @@ def main():
     parser.add_argument("--u-in", type=float, default=0.05, help="Inlet velocity")
     parser.add_argument("--re", type=float, default=100.0, help="Reynolds number")
     parser.add_argument("--device", type=str, default="cpu", help="Device")
-    parser.add_argument("--output", type=str, default="kbc_diagnostic_report.json", help="Output JSON path")
+    parser.add_argument(
+        "--output", type=str, default="kbc_diagnostic_report.json", help="Output JSON path"
+    )
     args = parser.parse_args()
 
     config = KBCDiagnosticConfig(
-        nx=args.nx, ny=args.ny, nz=args.nz,
-        steps=args.steps, u_in=args.u_in, re=args.re, device=args.device,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        steps=args.steps,
+        u_in=args.u_in,
+        re=args.re,
+        device=args.device,
     )
     report = run_kbc_diagnostic(config)
 
@@ -389,29 +408,39 @@ def main():
     print(f"BGK final Cd: {report.bgk_final_Cd}")
     print()
     print("Per-step KBC summary:")
-    print(f"{'Step':>4} {'gamma_min':>10} {'gamma_max':>10} {'gamma_mean':>10} "
-          f"{'f_min':>12} {'f_max':>10} {'neg#':>6} {'H_bef':>10} {'H_aft':>10} "
-          f"{'H_viol':>6} {'fx':>10} {'Cd':>8}")
+    print(
+        f"{'Step':>4} {'gamma_min':>10} {'gamma_max':>10} {'gamma_mean':>10} "
+        f"{'f_min':>12} {'f_max':>10} {'neg#':>6} {'H_bef':>10} {'H_aft':>10} "
+        f"{'H_viol':>6} {'fx':>10} {'Cd':>8}"
+    )
     for s in report.kbc_steps:
-        print(f"{s['step']:4d} {s['gamma_min']:10.4f} {s['gamma_max']:10.4f} {s['gamma_mean']:10.4f} "
-              f"{s['f_min_after']:12.6e} {s['f_max_after']:10.4f} {s['neg_count_after']:6d} "
-              f"{s['H_before']:10.4e} {s['H_after']:10.4e} {s['H_violation_count']:6d} "
-              f"{s['fx']:10.4f} {str(s['Cd']):>8s}")
+        print(
+            f"{s['step']:4d} {s['gamma_min']:10.4f} {s['gamma_max']:10.4f} {s['gamma_mean']:10.4f} "
+            f"{s['f_min_after']:12.6e} {s['f_max_after']:10.4f} {s['neg_count_after']:6d} "
+            f"{s['H_before']:10.4e} {s['H_after']:10.4e} {s['H_violation_count']:6d} "
+            f"{s['fx']:10.4f} {str(s['Cd']):>8s}"
+        )
 
     print()
     print("Per-step BGK summary:")
     print(f"{'Step':>4} {'f_min':>12} {'f_max':>10} {'neg#':>6} {'fx':>10} {'Cd':>8}")
     for s in report.bgk_steps:
-        print(f"{s['step']:4d} {s['f_min']:12.6e} {s['f_max']:10.4f} {s['neg_count']:6d} "
-              f"{s['fx']:10.4f} {str(s['Cd']):>8s}")
+        print(
+            f"{s['step']:4d} {s['f_min']:12.6e} {s['f_max']:10.4f} {s['neg_count']:6d} "
+            f"{s['fx']:10.4f} {str(s['Cd']):>8s}"
+        )
 
     print()
     print("Decomposition norms (KBC):")
-    print(f"{'Step':>4} {'s_norm':>12} {'k_norm':>12} {'h_norm':>12} "
-          f"{'below_adm':>10} {'above_adm':>10}")
+    print(
+        f"{'Step':>4} {'s_norm':>12} {'k_norm':>12} {'h_norm':>12} "
+        f"{'below_adm':>10} {'above_adm':>10}"
+    )
     for s in report.kbc_steps:
-        print(f"{s['step']:4d} {s['s_norm']:12.6e} {s['k_norm']:12.6e} {s['h_norm']:12.6e} "
-              f"{s['gamma_below_admissibility']:10d} {s['gamma_above_admissibility']:10d}")
+        print(
+            f"{s['step']:4d} {s['s_norm']:12.6e} {s['k_norm']:12.6e} {s['h_norm']:12.6e} "
+            f"{s['gamma_below_admissibility']:10d} {s['gamma_above_admissibility']:10d}"
+        )
 
     print()
     print("Findings:")

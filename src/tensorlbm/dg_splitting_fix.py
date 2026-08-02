@@ -8,6 +8,7 @@ Replaces the unstable MOL approach in dg_lbm_step_band with Strang splitting:
 This eliminates the Δt_sub < 2τ constraint that caused NaN for τ_dg < 0.06
 at high Reynolds numbers.
 """
+
 import math
 import torch
 from .dg_advection import collide_bgk_dg, _Ops
@@ -39,9 +40,17 @@ def dg_lbm_step_band_split(
     f = f_dg
     for _ in range(n_substeps):
         f = collide_bgk_dg(f, velocities, weights, tau, dt_sub)
-        f = _advect_band(f, velocities, ops, topo, ext_field,
-                         dt=dt_sub, n_substeps=1, scheme=scheme,
-                         opposite=opposite)
+        f = _advect_band(
+            f,
+            velocities,
+            ops,
+            topo,
+            ext_field,
+            dt=dt_sub,
+            n_substeps=1,
+            scheme=scheme,
+            opposite=opposite,
+        )
         f = f.clamp(min=0.0)
     return f
 
@@ -75,4 +84,6 @@ def positivity_preserving_limiter(
     theta = ((cell_mean - epsilon) / (cell_mean - f_min + 1e-12)).clamp(0, 1)
     # Broadcast theta to nodal shape and apply
     theta_b = theta.reshape(*theta.shape, *([1] * len(node_axes)))
-    return cell_mean.reshape(*cell_mean.shape, *([1] * len(node_axes))) + theta_b * (f_dg - cell_mean.reshape(*cell_mean.shape, *([1] * len(node_axes))))
+    return cell_mean.reshape(*cell_mean.shape, *([1] * len(node_axes))) + theta_b * (
+        f_dg - cell_mean.reshape(*cell_mean.shape, *([1] * len(node_axes)))
+    )

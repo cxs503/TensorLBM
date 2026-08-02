@@ -1,4 +1,5 @@
 """Tests for tensorlbm.conjugate_ht – conjugate heat transfer."""
+
 from __future__ import annotations
 
 import torch
@@ -6,6 +7,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_state(ny: int = 16, nx: int = 24, device: str = "cpu"):
     """Build a minimal CHTState for testing."""
@@ -33,6 +35,7 @@ def _make_state(ny: int = 16, nx: int = 24, device: str = "cpu"):
 # CHTConfig
 # ---------------------------------------------------------------------------
 
+
 def test_cht_config_defaults():
     from tensorlbm.conjugate_ht import CHTConfig
 
@@ -54,6 +57,7 @@ def test_cht_config_custom():
 # CHTState
 # ---------------------------------------------------------------------------
 
+
 def test_cht_state_shapes():
     state = _make_state(ny=12, nx=16)
     assert state.f.shape == (9, 12, 16)
@@ -65,6 +69,7 @@ def test_cht_state_shapes():
 # ---------------------------------------------------------------------------
 # cht_solid_diffusion_step
 # ---------------------------------------------------------------------------
+
 
 def test_solid_diffusion_step_shape():
     from tensorlbm.conjugate_ht import cht_solid_diffusion_step
@@ -124,6 +129,7 @@ def test_solid_diffusion_step_q_source():
 # apply_cht_interface
 # ---------------------------------------------------------------------------
 
+
 def test_apply_cht_interface_shape():
     from tensorlbm.conjugate_ht import apply_cht_interface
 
@@ -143,8 +149,8 @@ def test_apply_cht_interface_temperature_continuity():
     from tensorlbm.conjugate_ht import apply_cht_interface
 
     ny, nx = 12, 12
-    T_fluid = torch.zeros(ny, nx)    # cold fluid
-    T_solid = torch.ones(ny, nx)     # hot solid
+    T_fluid = torch.zeros(ny, nx)  # cold fluid
+    T_solid = torch.ones(ny, nx)  # hot solid
     mask_solid = torch.zeros(ny, nx, dtype=torch.bool)
     mask_solid[5:7, 5:7] = True
 
@@ -177,6 +183,7 @@ def test_apply_cht_interface_k_ratio_effect():
 # ---------------------------------------------------------------------------
 # run_conjugate_ht_2d – smoke test
 # ---------------------------------------------------------------------------
+
 
 def test_run_conjugate_ht_2d_runs():
     """A very short CHT run should complete without error."""

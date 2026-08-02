@@ -81,7 +81,11 @@ def test_diagnostics_keep_phi_integral_f_mass_and_g_sum_separate():
     [
         (torch.zeros((18, 3, 4, 5)), torch.zeros((19, 3, 4, 5)), "19"),
         (torch.zeros((19, 3, 4, 5)), torch.zeros((19, 3, 4, 4)), "same shape"),
-        (torch.zeros((19, 3, 4, 5), dtype=torch.float32), torch.zeros((19, 3, 4, 5), dtype=torch.float64), "dtype"),
+        (
+            torch.zeros((19, 3, 4, 5), dtype=torch.float32),
+            torch.zeros((19, 3, 4, 5), dtype=torch.float64),
+            "dtype",
+        ),
     ],
 )
 def test_state_rejects_invalid_distribution_shape_device_or_dtype(f, g, message):

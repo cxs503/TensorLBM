@@ -1,4 +1,5 @@
 """CAD and geometry namespace for grouped imports."""
+
 from __future__ import annotations
 
 from ..offshore_cad import (

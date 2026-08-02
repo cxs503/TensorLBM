@@ -1,4 +1,5 @@
 """Fail-closed bridge from the public full-wet runner to the real-state observer."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,7 +26,10 @@ class _PublicResultWithoutPopulations:
 
 def _composition() -> ModelComposition:
     return ModelComposition(
-        lattice="D3Q19", collision="MRT", turbulence=None, forcing=(),
+        lattice="D3Q19",
+        collision="MRT",
+        turbulence=None,
+        forcing=(),
         boundaries=("zou_he_channel", "stationary_bounce_back"),
         physics_modules={"single_phase": "incompressible"},
     )
@@ -37,8 +41,12 @@ def _inputs() -> tuple[GeometryAsset, FullyWettedFlowConfig]:
     asset = GeometryAsset(mask, "production-window-tiny", (2.0, 2.0, 2.0), "lattice", "test")
     config = FullyWettedFlowConfig(
         geometry=VoxelBodyGeometry(mask, "production-window-tiny", origin=(2.0, 2.0, 2.0)),
-        composition=_composition(), device_spec=DeviceSpec("cpu", "float32"), shape=tuple(mask.shape),
-        tau=0.6, inlet_velocity=0.03, steps=1,
+        composition=_composition(),
+        device_spec=DeviceSpec("cpu", "float32"),
+        shape=tuple(mask.shape),
+        tau=0.6,
+        inlet_velocity=0.03,
+        steps=1,
     )
     return asset, config
 
@@ -46,9 +54,13 @@ def _inputs() -> tuple[GeometryAsset, FullyWettedFlowConfig]:
 def test_adapter_withholds_when_mocked_public_result_has_no_population_state() -> None:
     asset, config = _inputs()
     fake = _PublicResultWithoutPopulations(
-        density=torch.ones(config.shape), velocity=torch.zeros((3, *config.shape)),
-        force=(0.0, 0.0, 0.0), reaction=(0.0, 0.0, 0.0), moment=(0.0, 0.0, 0.0),
-        status="COMPLETED", evidence={"force": {"kind": "diagnostic"}},
+        density=torch.ones(config.shape),
+        velocity=torch.zeros((3, *config.shape)),
+        force=(0.0, 0.0, 0.0),
+        reaction=(0.0, 0.0, 0.0),
+        moment=(0.0, 0.0, 0.0),
+        status="COMPLETED",
+        evidence={"force": {"kind": "diagnostic"}},
     )
 
     result = run_suboff_full_wet_production_window(asset, config, runner=lambda _: fake)
@@ -75,8 +87,13 @@ def test_actual_tiny_full_wet_runner_smoke_is_withheld_not_synthetic() -> None:
 def test_actual_population_export_is_consumed_as_measured_candidate() -> None:
     asset, config = _inputs()
     config = FullyWettedFlowConfig(
-        geometry=config.geometry, composition=config.composition, device_spec=config.device_spec,
-        shape=config.shape, tau=config.tau, inlet_velocity=config.inlet_velocity, steps=config.steps,
+        geometry=config.geometry,
+        composition=config.composition,
+        device_spec=config.device_spec,
+        shape=config.shape,
+        tau=config.tau,
+        inlet_velocity=config.inlet_velocity,
+        steps=config.steps,
         capture_population_steps=(1,),
     )
 

@@ -90,7 +90,9 @@ class PerformanceArtifact:
                 raise ValueError(f"{name} must be finite and > 0")
         if self.p95_step_seconds < self.median_step_seconds:
             raise ValueError("p95_step_seconds must be >= median_step_seconds")
-        if self.peak_memory_bytes is not None and (not _is_int(self.peak_memory_bytes) or self.peak_memory_bytes < 0):
+        if self.peak_memory_bytes is not None and (
+            not _is_int(self.peak_memory_bytes) or self.peak_memory_bytes < 0
+        ):
             raise ValueError("peak_memory_bytes must be None or a non-negative integer")
 
 

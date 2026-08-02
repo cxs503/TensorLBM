@@ -15,6 +15,7 @@ Audit scope (source files read, not docstring assertions):
     - ``tensorlbm/sixdof_common.py`` – common 6-DOF rigid-body step
     - tests: ``test_fsi_common.py``
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -98,13 +99,15 @@ _RegistryEntry = tuple[str, str, str | None, str | None, str]
 _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
     "D3Q19": {
         "one_way_explicit": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.fsi_common.fsi_step",
             "test_fsi_common.py: shape, zero-flow identity, force-reaction sign, composition consistency",
             "Explicit one-step FSI: IBM direct-forcing (D3Q19) + Symplectic-Euler 6-DOF; reaction force = −Σ IBM fluid force.",
         ),
         "two_way_explicit": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.fsi_common.fsi_step",
             "test_fsi_common.py: shape, finite, two-way re-pass consistency",
             "Explicit two-step FSI: IBM direct-forcing (D3Q19) + 6-DOF advance + second IBM pass with advanced body velocity.",
@@ -112,13 +115,15 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
     },
     "D3Q27": {
         "one_way_explicit": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.fsi_common.fsi_step",
             "test_fsi_common.py: shape, zero-flow identity, force-reaction sign, composition consistency",
             "Explicit one-step FSI: IBM direct-forcing (D3Q27) + Symplectic-Euler 6-DOF; reaction force = −Σ IBM fluid force.",
         ),
         "two_way_explicit": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.fsi_common.fsi_step",
             "test_fsi_common.py: shape, finite, two-way re-pass consistency",
             "Explicit two-step FSI: IBM direct-forcing (D3Q27) + 6-DOF advance + second IBM pass with advanced body velocity.",
@@ -140,20 +145,25 @@ def _capability_for(lattice: str, coupling: str) -> FSICapability:
     entry = lattice_map.get(coupling)
     if entry is None:
         return FSICapability(
-            lattice=lattice, coupling=coupling,
+            lattice=lattice,
+            coupling=coupling,
             implementation_status=NO_IMPLEMENTATION,
             verification_level=VERIFICATION_NO_IMPLEMENTATION,
             status=WITHHELD_NO_IMPLEMENTATION,
-            entrypoint=None, test_evidence=None,
+            entrypoint=None,
+            test_evidence=None,
             note=f"No implementation found for FSI {lattice}/{coupling}.",
         )
     impl_status, verif_level, entrypoint, test_ev, note = entry
     return FSICapability(
-        lattice=lattice, coupling=coupling,
+        lattice=lattice,
+        coupling=coupling,
         implementation_status=impl_status,
         verification_level=verif_level,
         status=_status_for(verif_level),
-        entrypoint=entrypoint, test_evidence=test_ev, note=note,
+        entrypoint=entrypoint,
+        test_evidence=test_ev,
+        note=note,
     )
 
 

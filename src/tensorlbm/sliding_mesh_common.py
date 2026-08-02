@@ -25,6 +25,7 @@ Hot-path invariants
 * No GPU→CPU syncs (``.item()``, ``float(tensor)``) inside the step path.
 * The rotation and interpolation are fully tensorised.
 """
+
 from __future__ import annotations
 
 import math
@@ -50,6 +51,7 @@ RotationAxis = Literal["x", "y", "z"]
 # --------------------------------------------------------------------------- #
 # Configuration
 # --------------------------------------------------------------------------- #
+
 
 @dataclass(frozen=True)
 class SlidingMeshParams:
@@ -87,6 +89,7 @@ class SlidingMeshParams:
 # --------------------------------------------------------------------------- #
 # 3-D velocity-field rotation
 # --------------------------------------------------------------------------- #
+
 
 def rotate_velocity_field_3d(
     ux: torch.Tensor,
@@ -138,6 +141,7 @@ def rotate_velocity_field_3d(
 # --------------------------------------------------------------------------- #
 # 3-D interface interpolation
 # --------------------------------------------------------------------------- #
+
 
 def interpolate_interface_3d(
     f_inner: torch.Tensor,
@@ -220,6 +224,7 @@ def interpolate_interface_3d(
 # 3-D sliding-mesh BC application
 # --------------------------------------------------------------------------- #
 
+
 def apply_sliding_mesh_bc_3d(
     f: torch.Tensor,
     interface_mask: torch.Tensor,
@@ -293,9 +298,7 @@ def apply_sliding_mesh_bc_3d(
     elif lattice_u == "D3Q27":
         f_eq = equilibrium27(rho, u_eq_x, u_eq_y, u_eq_z)
     else:
-        raise ValueError(
-            f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}"
-        )
+        raise ValueError(f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}")
 
     mask_exp = interface_mask.unsqueeze(0).expand(nq, -1, -1, -1)
     omega_relax = 1.0 / tau
@@ -306,6 +309,7 @@ def apply_sliding_mesh_bc_3d(
 # --------------------------------------------------------------------------- #
 # Unified dispatch: sliding_mesh_step
 # --------------------------------------------------------------------------- #
+
 
 def sliding_mesh_step(
     f: torch.Tensor,
@@ -366,8 +370,7 @@ def sliding_mesh_step(
             lattice = "D3Q27"
         else:
             raise ValueError(
-                f"Cannot auto-detect lattice from f.shape[0]={q}; "
-                f"expected 19 (D3Q19) or 27 (D3Q27)"
+                f"Cannot auto-detect lattice from f.shape[0]={q}; expected 19 (D3Q19) or 27 (D3Q27)"
             )
 
     lattice_u = lattice.upper()

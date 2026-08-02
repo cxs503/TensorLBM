@@ -29,6 +29,7 @@ require ~20 000 steps for Re = 1000 to converge; the BFS reattachment length
 is sensitive to grid resolution; the rotating-cylinder lift needs ~6 000 steps
 at Re = 200 to reach its mean value.  Use ``--full`` for converged results.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -50,18 +51,19 @@ GHIA_RMSE_TOL_QUICK = 0.050  # 5% – quick mode uses coarser grids
 
 # Backward-facing step: Armaly et al. (1983), 2:1 expansion, uniform inlet
 # Primary reattachment length x_r* = (x_r – x_step) / h
-REF_BFS_RE100_XR = 3.0    # expected ~3 (range 2.5 – 3.5 in literature)
-REF_BFS_RE200_XR = 5.5    # expected ~5.5 (range 5 – 6)
+REF_BFS_RE100_XR = 3.0  # expected ~3 (range 2.5 – 3.5 in literature)
+REF_BFS_RE200_XR = 5.5  # expected ~5.5 (range 5 – 6)
 
 # Rotating cylinder: Mittal & Kumar (2003), Re = 200
 # Mean lift coefficient at quasi-steady state
-REF_ROT_ALPHA1_CL = 2.1   # α = 1.0 (time-averaged, unsteady)
-REF_ROT_ALPHA2_CL = 4.2   # α = 2.0 (steady state)
+REF_ROT_ALPHA1_CL = 2.1  # α = 1.0 (time-averaged, unsteady)
+REF_ROT_ALPHA2_CL = 4.2  # α = 2.0 (steady state)
 
 
 # ---------------------------------------------------------------------------
 # Helpers (mirrored from bench_marine.py)
 # ---------------------------------------------------------------------------
+
 
 def _header(title: str) -> None:
     bar = "=" * 70
@@ -87,6 +89,7 @@ def _section(title: str) -> None:
 # ---------------------------------------------------------------------------
 # Benchmark 1 – Lid-driven cavity
 # ---------------------------------------------------------------------------
+
 
 def bench_cavity(output_root: Path, full: bool, device: str = "cpu") -> dict[str, object]:
     """Run lid-driven cavity at Re = 100, 400, 1000 and compare vs Ghia (1982)."""
@@ -151,15 +154,17 @@ def bench_cavity(output_root: Path, full: bool, device: str = "cpu") -> dict[str
         print(f"  {'RMSE u/u_lid (vert. centreline)':<40} {rmse_u:.5f}  (tol<{tol:.4f})  {u_flag}")
         print(f"  {'RMSE v/u_lid (horiz. centreline)':<40} {rmse_v:.5f}  (tol<{tol:.4f})  {v_flag}")
 
-        results.append({
-            "re": re_int,
-            "rmse_u": rmse_u,
-            "rmse_v": rmse_v,
-            "tol": tol,
-            "ok": ok_u and ok_v,
-            "elapsed_s": elapsed,
-            "run_dir": str(run_dir),
-        })
+        results.append(
+            {
+                "re": re_int,
+                "rmse_u": rmse_u,
+                "rmse_v": rmse_v,
+                "tol": tol,
+                "ok": ok_u and ok_v,
+                "elapsed_s": elapsed,
+                "run_dir": str(run_dir),
+            }
+        )
 
     print("\n  Reference: Ghia, Ghia & Shin, J. Comput. Phys. 48 (1982)")
     elapsed_total = time.perf_counter() - t0_total
@@ -176,6 +181,7 @@ def bench_cavity(output_root: Path, full: bool, device: str = "cpu") -> dict[str
 # ---------------------------------------------------------------------------
 # Benchmark 2 – Backward-facing step
 # ---------------------------------------------------------------------------
+
 
 def bench_bfs(output_root: Path, full: bool, device: str = "cpu") -> dict[str, object]:
     """Run 2-D BFS at Re = 100 and 200; compare reattachment length vs Armaly (1983)."""
@@ -228,15 +234,17 @@ def bench_bfs(output_root: Path, full: bool, device: str = "cpu") -> dict[str, o
         _section(f"Re = {re_int}  (steps={steps_map[re_int]},  elapsed={elapsed:.1f} s)")
         _row("xr* = (x_r - x_step) / h", xr_star, ref, tol_pct)
 
-        results.append({
-            "re": re_int,
-            "xr_star_sim": xr_star,
-            "xr_star_ref": ref,
-            "error_pct": err_pct,
-            "ok": ok,
-            "elapsed_s": elapsed,
-            "run_dir": str(run_dir),
-        })
+        results.append(
+            {
+                "re": re_int,
+                "xr_star_sim": xr_star,
+                "xr_star_ref": ref,
+                "error_pct": err_pct,
+                "ok": ok,
+                "elapsed_s": elapsed,
+                "run_dir": str(run_dir),
+            }
+        )
 
     print("\n  Reference: Armaly, Durst, Pereira & Schönung, J. Fluid Mech. 127 (1983)")
     elapsed_total = time.perf_counter() - t0_total
@@ -254,7 +262,10 @@ def bench_bfs(output_root: Path, full: bool, device: str = "cpu") -> dict[str, o
 # Benchmark 3 – Rotating cylinder (Magnus effect)
 # ---------------------------------------------------------------------------
 
-def bench_rotating_cylinder(output_root: Path, full: bool, device: str = "cpu") -> dict[str, object]:
+
+def bench_rotating_cylinder(
+    output_root: Path, full: bool, device: str = "cpu"
+) -> dict[str, object]:
     """Run rotating cylinder at Re = 200 with α = 1 and 2; compare Cl vs Mittal (2003)."""
     from tensorlbm import RotatingCylinderConfig, run_rotating_cylinder
 
@@ -314,16 +325,18 @@ def bench_rotating_cylinder(output_root: Path, full: bool, device: str = "cpu") 
         _row(f"Cl_mean (spin ratio α={alpha})", cl_mean, cl_ref, tol_pct)
         print(f"  {'Cd_mean':<40} {cd_mean:.4f}")
 
-        results.append({
-            "spin_ratio": alpha,
-            "cl_mean_sim": cl_mean,
-            "cl_mean_ref": cl_ref,
-            "cd_mean": cd_mean,
-            "error_pct": err_pct,
-            "ok": ok,
-            "elapsed_s": elapsed,
-            "run_dir": str(run_dir),
-        })
+        results.append(
+            {
+                "spin_ratio": alpha,
+                "cl_mean_sim": cl_mean,
+                "cl_mean_ref": cl_ref,
+                "cd_mean": cd_mean,
+                "error_pct": err_pct,
+                "ok": ok,
+                "elapsed_s": elapsed,
+                "run_dir": str(run_dir),
+            }
+        )
 
     print("\n  Reference: Mittal & Kumar, J. Fluid Mech. 476 (2003)")
     elapsed_total = time.perf_counter() - t0_total
@@ -379,12 +392,12 @@ def _summary(results: dict[str, dict[str, object]]) -> None:
 # CLI entry point
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="TensorLBM single-phase accuracy benchmark suite"
-    )
+    parser = argparse.ArgumentParser(description="TensorLBM single-phase accuracy benchmark suite")
     parser.add_argument(
-        "--full", action="store_true",
+        "--full",
+        action="store_true",
         help="Use production-quality grid sizes and step counts",
     )
     parser.add_argument(

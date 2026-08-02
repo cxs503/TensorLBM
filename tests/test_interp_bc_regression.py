@@ -6,6 +6,7 @@ Tests three dimensions:
    D3Q27 (common-only) physical reasonableness.
 3. Combination — interpolated BC + BGK collision end-to-end.
 """
+
 from __future__ import annotations
 
 import math
@@ -37,6 +38,7 @@ from tensorlbm.interpolated_bc_common import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_f_pair_3d(
     nz: int = 6, ny: int = 6, nx: int = 6, seed: int = 42
@@ -91,6 +93,7 @@ def _make_f_pair_27(
 # ===========================================================================
 # 1. BUG IDENTIFICATION
 # ===========================================================================
+
 
 class TestBouzidiBounceBack3DBugs:
     """Verify the FIXED bouzidi_bounce_back_3d sets f[opp] (unknown pop).
@@ -180,7 +183,8 @@ class TestBouzidiBounceBack3DBugs:
         # Verify it's NOT an assignment (no = after it on the same logical line)
         lines = source.split("\n")
         dead_lines = [
-            ln for ln in lines
+            ln
+            for ln in lines
             if "f[direction][fluid_nodes]" in ln and "=" not in ln.split("f[direction]")[0]
         ]
         # At least one dead expression line exists
@@ -190,6 +194,7 @@ class TestBouzidiBounceBack3DBugs:
 # ===========================================================================
 # 2. EQUIVALENCE: original D3Q19 vs common D3Q19
 # ===========================================================================
+
 
 class TestBouzidiEquivalenceD3Q19:
     """Verify original bouzidi_bounce_back_3d == common D3Q19, bit-identical."""
@@ -209,7 +214,7 @@ class TestBouzidiEquivalenceD3Q19:
         )
         assert torch.equal(f_orig, f_comm), (
             f"Mismatch at direction={direction}, q={q_val}: "
-            f"max_diff={ (f_orig - f_comm).abs().max().item()}"
+            f"max_diff={(f_orig - f_comm).abs().max().item()}"
         )
 
     def test_all_19_directions_sweep(self) -> None:
@@ -269,6 +274,7 @@ class TestBouzidiEquivalenceD3Q19:
 # 2b. D3Q27 physical reasonableness (common-only, no original to compare)
 # ===========================================================================
 
+
 class TestBouzidiD3Q27PhysicalReasonableness:
     """D3Q27 is common-module-only; verify physical reasonableness."""
 
@@ -285,13 +291,17 @@ class TestBouzidiD3Q27PhysicalReasonableness:
         for direction in range(27):
             opp = int(OPP27[direction].item())
             f_out = bouzidi_bounce_back_3d_common(
-                f.clone(), f_prev.clone(), fluid_nodes, q,
-                direction=direction, lattice="D3Q27",
+                f.clone(),
+                f_prev.clone(),
+                fluid_nodes,
+                q,
+                direction=direction,
+                lattice="D3Q27",
             )
             # At q=0.5, f_out[opp] = f[opp] (unchanged)
-            assert torch.allclose(
-                f_out[opp][fluid_nodes], f[opp][fluid_nodes], atol=1e-5
-            ), f"q=0.5 bounce-back failed for direction {direction}"
+            assert torch.allclose(f_out[opp][fluid_nodes], f[opp][fluid_nodes], atol=1e-5), (
+                f"q=0.5 bounce-back failed for direction {direction}"
+            )
 
     def test_output_finite_all_directions(self) -> None:
         """All outputs must be finite for all 27 directions."""
@@ -300,8 +310,12 @@ class TestBouzidiD3Q27PhysicalReasonableness:
             for q_val in [0.01, 0.25, 0.5, 0.75, 0.99]:
                 q = torch.full(f.shape[1:], q_val)
                 f_out = bouzidi_bounce_back_3d_common(
-                    f.clone(), f_prev.clone(), fluid_nodes, q,
-                    direction=direction, lattice="D3Q27",
+                    f.clone(),
+                    f_prev.clone(),
+                    fluid_nodes,
+                    q,
+                    direction=direction,
+                    lattice="D3Q27",
                 )
                 assert torch.isfinite(f_out).all(), f"Non-finite at dir={direction}, q={q_val}"
 
@@ -347,6 +361,7 @@ class TestBouzidiD3Q27PhysicalReasonableness:
         # (both include all face and edge directions)
         c19 = C3D  # (19, 3)
         from tensorlbm.d3q27 import C as C27
+
         c27 = C27  # (27, 3)
 
         # Find matching directions
@@ -365,6 +380,7 @@ class TestBouzidiD3Q27PhysicalReasonableness:
 # ===========================================================================
 # 3. COMBINATION: interpolated BC + collision
 # ===========================================================================
+
 
 class TestInterpolatedBCWithCollision:
     """Combination test: interpolated BC applied after BGK collision."""
@@ -404,7 +420,10 @@ class TestInterpolatedBCWithCollision:
             if mask[d].any():
                 q_d = q_field[d].clone()
                 f_post = bouzidi_bounce_back_3d(
-                    f_post, f_prev, mask[d], q_d,
+                    f_post,
+                    f_prev,
+                    mask[d],
+                    q_d,
                     direction=d,
                 )
         assert torch.isfinite(f_post).all()
@@ -438,8 +457,12 @@ class TestInterpolatedBCWithCollision:
         for direction in [1, 5, 10, 15, 20, 25]:
             q = torch.full(f.shape[1:], 0.4)
             f_post = bouzidi_bounce_back_3d_common(
-                f_post, f_prev, fluid_nodes, q,
-                direction=direction, lattice="D3Q27",
+                f_post,
+                f_prev,
+                fluid_nodes,
+                q,
+                direction=direction,
+                lattice="D3Q27",
             )
         assert torch.isfinite(f_post).all()
 
@@ -454,8 +477,12 @@ class TestInterpolatedBCWithCollision:
                 q = torch.full(f.shape[1:], 0.3 + 0.05 * step)
                 q = q.clamp(0.01, 0.99)
                 f = bouzidi_bounce_back_3d_common(
-                    f, f_prev, fluid_nodes, q,
-                    direction=direction, lattice="D3Q19",
+                    f,
+                    f_prev,
+                    fluid_nodes,
+                    q,
+                    direction=direction,
+                    lattice="D3Q19",
                 )
             assert torch.isfinite(f).all(), f"Non-finite at step {step}"
             # Mass should not explode

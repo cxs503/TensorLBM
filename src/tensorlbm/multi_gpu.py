@@ -41,6 +41,7 @@ References
 Succi S., et al. (2001) "Lattice Boltzmann for distributed and large-scale
 simulations." *Comput. Phys. Commun.* 134(3).
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -58,6 +59,7 @@ from tensorlbm.d3q19 import C
 # Domain decomposition
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DomainDecomposition:
     """Describes how the global domain is split across devices.
@@ -69,6 +71,7 @@ class DomainDecomposition:
         slabs:      List of ``(x_start, x_end)`` tuples for each device.
                     Automatically computed from *devices* and *nx_global*.
     """
+
     devices: list[str]
     nx_global: int
     overlap: int = 1
@@ -81,7 +84,7 @@ class DomainDecomposition:
     def _compute_slabs(self) -> list[tuple[int, int]]:
         n = len(self.devices)
         base = self.nx_global // n
-        rem  = self.nx_global % n
+        rem = self.nx_global % n
         slabs = []
         start = 0
         for i in range(n):
@@ -124,6 +127,7 @@ class DomainDecomposition:
 # Halo exchange
 # ---------------------------------------------------------------------------
 
+
 def halo_exchange_2d(
     slabs: list[torch.Tensor],
     decomp: DomainDecomposition,
@@ -144,13 +148,13 @@ def halo_exchange_2d(
     ov = decomp.overlap
     for i in range(len(slabs) - 1):
         # Right ghost of slab i ← interior right of slab i+1
-        right_of_i     = slabs[i][:, :, -ov - 1:-1]   # interior right of i
-        left_ghost_ip1 = slabs[i + 1][:, :, :ov]       # left ghost of i+1
+        right_of_i = slabs[i][:, :, -ov - 1 : -1]  # interior right of i
+        left_ghost_ip1 = slabs[i + 1][:, :, :ov]  # left ghost of i+1
         left_ghost_ip1.copy_(right_of_i.contiguous().to(left_ghost_ip1.device))
 
         # Left ghost of slab i ← interior left of slab i+1
-        left_of_ip1  = slabs[i + 1][:, :, ov:2 * ov]  # interior left of i+1
-        right_ghost_i = slabs[i][:, :, -ov:]            # right ghost of i
+        left_of_ip1 = slabs[i + 1][:, :, ov : 2 * ov]  # interior left of i+1
+        right_ghost_i = slabs[i][:, :, -ov:]  # right ghost of i
         right_ghost_i.copy_(left_of_ip1.contiguous().to(right_ghost_i.device))
 
     return slabs
@@ -175,8 +179,8 @@ def halo_exchange_3d(
         right = slabs[(i + 1) % n_slabs]
         left_ghost = slab[:, :, :, :ov]
         right_ghost = slab[:, :, :, -ov:]
-        left_ghost.copy_(left[:, :, :, -2 * ov:-ov].contiguous().to(left_ghost.device))
-        right_ghost.copy_(right[:, :, :, ov:2 * ov].contiguous().to(right_ghost.device))
+        left_ghost.copy_(left[:, :, :, -2 * ov : -ov].contiguous().to(left_ghost.device))
+        right_ghost.copy_(right[:, :, :, ov : 2 * ov].contiguous().to(right_ghost.device))
 
     return slabs
 
@@ -184,6 +188,7 @@ def halo_exchange_3d(
 # ---------------------------------------------------------------------------
 # Multi-GPU 2-D solver
 # ---------------------------------------------------------------------------
+
 
 class MultiGPUSolver2D:
     """Multi-GPU D2Q9 LBM solver using x-axis domain decomposition.
@@ -221,9 +226,7 @@ class MultiGPUSolver2D:
                 nx_global=nx,
                 overlap=decomp.overlap,
             )
-        assert decomp.nx_global == nx, (
-            f"decomp.nx_global ({decomp.nx_global}) != nx ({nx})"
-        )
+        assert decomp.nx_global == nx, f"decomp.nx_global ({decomp.nx_global}) != nx ({nx})"
         self.decomp = decomp
         self.ny = ny
         self._step_count = 0
@@ -282,7 +285,7 @@ class MultiGPUSolver2D:
             x0g_local = ov if x0 > 0 else 0
             x1g_local = slab.shape[2] - ov if x1 < nx else slab.shape[2]
             local_width = x1 - x0
-            f_out[:, :, x0:x1] = slab[:, :, x0g_local:x0g_local + local_width].cpu()
+            f_out[:, :, x0:x1] = slab[:, :, x0g_local : x0g_local + local_width].cpu()
         return f_out
 
     @property
@@ -293,6 +296,7 @@ class MultiGPUSolver2D:
 # ---------------------------------------------------------------------------
 # Multi-GPU 3-D solver
 # ---------------------------------------------------------------------------
+
 
 class MultiGPUSolver3D:
     """Multi-GPU D3Q19 LBM solver using x-axis domain decomposition.
@@ -367,13 +371,14 @@ class MultiGPUSolver3D:
         for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
             x0g_local = ov
             local_width = x1 - x0
-            f_out[:, :, :, x0:x1] = slab[:, :, :, x0g_local:x0g_local + local_width].cpu()
+            f_out[:, :, :, x0:x1] = slab[:, :, :, x0g_local : x0g_local + local_width].cpu()
         return f_out
 
 
 # ---------------------------------------------------------------------------
 # Device-agnostic multi-device 3-D solver (common module)
 # ---------------------------------------------------------------------------
+
 
 class MultiDeviceSolver3D:
     """Device-agnostic multi-device D3Q19 LBM solver via x-axis decomposition.
@@ -436,11 +441,11 @@ class MultiDeviceSolver3D:
     ) -> None:
         q, nz, ny, nx = f_global.shape
         if q != 19:
-            raise ValueError(
-                f"MultiDeviceSolver3D requires D3Q19 populations, got {q}"
-            )
+            raise ValueError(f"MultiDeviceSolver3D requires D3Q19 populations, got {q}")
         self.decomp = DomainDecomposition(
-            devices=devices, nx_global=nx, overlap=overlap,
+            devices=devices,
+            nx_global=nx,
+            overlap=overlap,
         )
         self.nz = nz
         self.ny = ny
@@ -511,7 +516,7 @@ class MultiDeviceSolver3D:
         ov = self.decomp.overlap
         total: torch.Tensor | None = None
         for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
-            owned = slab[:, :, :, ov:ov + (x1 - x0)]
+            owned = slab[:, :, :, ov : ov + (x1 - x0)]
             local = self.force_fn(owned).detach().cpu()
             total = local.clone() if total is None else total + local
         assert total is not None
@@ -527,7 +532,7 @@ class MultiDeviceSolver3D:
         for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
             x0g_local = ov
             local_width = x1 - x0
-            f_out[:, :, :, x0:x1] = slab[:, :, :, x0g_local:x0g_local + local_width].cpu()
+            f_out[:, :, :, x0:x1] = slab[:, :, :, x0g_local : x0g_local + local_width].cpu()
         return f_out
 
     def gather_macroscopic(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -551,7 +556,7 @@ class MultiDeviceSolver3D:
         uz_out = torch.zeros((nz, ny, nx), dtype=dtype)
         for slab, (x0, x1) in zip(self.slabs, self._x_ranges):
             # Extract owned interior (strip ghosts)
-            owned = slab[:, :, :, ov:ov + (x1 - x0)]
+            owned = slab[:, :, :, ov : ov + (x1 - x0)]
             rho, ux, uy, uz = macroscopic3d(owned)
             rho_out[:, :, x0:x1] = rho.cpu()
             ux_out[:, :, x0:x1] = ux.cpu()
@@ -567,6 +572,7 @@ class MultiDeviceSolver3D:
 # ---------------------------------------------------------------------------
 # Convenience: auto-detect and use all available GPUs
 # ---------------------------------------------------------------------------
+
 
 def auto_decompose(
     f_global: torch.Tensor,
@@ -622,6 +628,7 @@ def auto_decompose(
 # Two-rank CPU/Gloo D3Q19 transport
 # ---------------------------------------------------------------------------
 
+
 class D3Q19GlooTransport:
     """One-rank-per-x-slab D3Q19 transport for an initialized Gloo PG.
 
@@ -658,7 +665,9 @@ class D3Q19GlooTransport:
         """Return a SHA-256 digest bound to the checkpoint identity and state."""
         digest = hashlib.sha256()
         digest.update(b"tensorlbm-d3q19-gloo-checkpoint-v1\0")
-        digest.update(f"{rank}:{world_size}:{step}:{tuple(f_owned.shape)}:{f_owned.dtype}".encode("ascii"))
+        digest.update(
+            f"{rank}:{world_size}:{step}:{tuple(f_owned.shape)}:{f_owned.dtype}".encode("ascii")
+        )
         digest.update(f_owned.detach().contiguous().numpy().tobytes())
         return digest.hexdigest()
 
@@ -672,7 +681,9 @@ class D3Q19GlooTransport:
             digest.update(f"{rank}:{member_digest};".encode("ascii"))
         return digest.hexdigest()
 
-    def save_checkpoint(self, checkpoint_dir: os.PathLike[str] | str, f_owned: torch.Tensor, *, step: int) -> None:
+    def save_checkpoint(
+        self, checkpoint_dir: os.PathLike[str] | str, f_owned: torch.Tensor, *, step: int
+    ) -> None:
         """Save verified rank-local owned state for a later same-world restart.
 
         All ranks must call this with the same directory.  This is not a
@@ -737,7 +748,10 @@ class D3Q19GlooTransport:
                 self._check_owned(owned)
             except (TypeError, ValueError) as exc:
                 raise RuntimeError("D3Q19 checkpoint owned state validation failed") from exc
-            if self._checkpoint_digest(owned, expected_rank, self.world_size, payload["step"]) != payload["digest"]:
+            if (
+                self._checkpoint_digest(owned, expected_rank, self.world_size, payload["step"])
+                != payload["digest"]
+            ):
                 raise RuntimeError("D3Q19 checkpoint digest validation failed")
             payloads.append(payload)
         steps = {payload["step"] for payload in payloads}
@@ -765,7 +779,11 @@ class D3Q19GlooTransport:
         validates every source member before concatenating source-owned slabs in
         source rank order and making a balanced target x-slab assignment.
         """
-        if not isinstance(source_world_size, int) or isinstance(source_world_size, bool) or source_world_size < 2:
+        if (
+            not isinstance(source_world_size, int)
+            or isinstance(source_world_size, bool)
+            or source_world_size < 2
+        ):
             raise ValueError("source_world_size must be an integer of at least two")
         checkpoint_dir = os.fspath(checkpoint_dir)
         payloads: list[dict[object, object]] = []
@@ -773,11 +791,15 @@ class D3Q19GlooTransport:
         for expected_rank in range(source_world_size):
             target = os.path.join(checkpoint_dir, f"rank-{expected_rank}.pt")
             if not os.path.isfile(target):
-                raise RuntimeError(f"D3Q19 repartition checkpoint missing rank-local file: {target}")
+                raise RuntimeError(
+                    f"D3Q19 repartition checkpoint missing rank-local file: {target}"
+                )
             try:
                 payload = torch.load(target, map_location="cpu", weights_only=True)
             except Exception as exc:
-                raise RuntimeError(f"D3Q19 repartition checkpoint cannot be decoded: {target}") from exc
+                raise RuntimeError(
+                    f"D3Q19 repartition checkpoint cannot be decoded: {target}"
+                ) from exc
             if not isinstance(payload, dict) or set(payload) != expected_keys:
                 raise RuntimeError("D3Q19 repartition checkpoint has an invalid payload schema")
             owned = payload["owned"]
@@ -792,12 +814,19 @@ class D3Q19GlooTransport:
                 or not isinstance(payload["digest"], str)
                 or not isinstance(owned, torch.Tensor)
             ):
-                raise RuntimeError("D3Q19 repartition checkpoint identity or metadata validation failed")
+                raise RuntimeError(
+                    "D3Q19 repartition checkpoint identity or metadata validation failed"
+                )
             try:
                 self._check_owned(owned)
             except (TypeError, ValueError) as exc:
-                raise RuntimeError("D3Q19 repartition checkpoint owned state validation failed") from exc
-            if self._checkpoint_digest(owned, expected_rank, source_world_size, payload["step"]) != payload["digest"]:
+                raise RuntimeError(
+                    "D3Q19 repartition checkpoint owned state validation failed"
+                ) from exc
+            if (
+                self._checkpoint_digest(owned, expected_rank, source_world_size, payload["step"])
+                != payload["digest"]
+            ):
                 raise RuntimeError("D3Q19 repartition checkpoint digest validation failed")
             payloads.append(payload)
         steps = {payload["step"] for payload in payloads}
@@ -886,7 +915,7 @@ class D3Q19GlooTransport:
         owned_widths = [int(item.item()) for item in widths]
         max_width = max(owned_widths)
         packed = torch.zeros((*f_owned.shape[:-1], max_width), dtype=f_owned.dtype)
-        packed[..., :f_owned.shape[-1]] = f_owned
+        packed[..., : f_owned.shape[-1]] = f_owned
         gathered = [torch.empty_like(packed) for _ in range(self.world_size)]
         dist.all_gather(gathered, packed)
         full = torch.cat(
@@ -903,7 +932,11 @@ class D3Q19GlooTransport:
             out[q] = torch.roll(padded[q], shifts=(cz, cy, cx), dims=(0, 1, 2))[..., 1:-1]
         return out
 
-    def step(self, f_owned: torch.Tensor, collide_fn: Callable[[torch.Tensor], torch.Tensor] | None = None) -> torch.Tensor:
+    def step(
+        self,
+        f_owned: torch.Tensor,
+        collide_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
+    ) -> torch.Tensor:
         """Execute collision -> Gloo transport -> validation -> stream."""
         self._check_owned(f_owned)
         post_collision = f_owned if collide_fn is None else collide_fn(f_owned)

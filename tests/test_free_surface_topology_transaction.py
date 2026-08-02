@@ -1,4 +1,5 @@
 """TDD contract for the detached D3Q19 free-surface topology transaction."""
+
 from __future__ import annotations
 
 import inspect
@@ -25,7 +26,9 @@ def _state() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, to
     fill[centre] = 1.0
     for q in range(1, 19):
         dz, dy, dx = int(C[q, 2]), int(C[q, 1]), int(C[q, 0])
-        source = tuple((index - delta) % extent for index, delta, extent in zip(centre, (dz, dy, dx), shape))
+        source = tuple(
+            (index - delta) % extent for index, delta, extent in zip(centre, (dz, dy, dx), shape)
+        )
         flags[source] = INTERFACE
         fill[source] = 0.5
     solid = torch.zeros(shape, dtype=torch.bool)
@@ -48,11 +51,25 @@ def _build(f, fill, flags, mass, solid):
     to_iface, to_liq, to_gas, recv_new = _masks(flags, fill, solid)
     zero = torch.zeros_like(fill)
     return build_topology_transaction(
-        f, fill, flags, mass, to_iface=to_iface, to_liq=to_liq, to_gas=to_gas,
-        recv_new=recv_new, redistribution_increment=zero, rho_liquid=1.0, rho_gas=1.0,
-        solid_mask=solid, gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE,
+        f,
+        fill,
+        flags,
+        mass,
+        to_iface=to_iface,
+        to_liq=to_liq,
+        to_gas=to_gas,
+        recv_new=recv_new,
+        redistribution_increment=zero,
+        rho_liquid=1.0,
+        rho_gas=1.0,
+        solid_mask=solid,
+        gas_flag=GAS,
+        liquid_flag=LIQUID,
+        interface_flag=INTERFACE,
         solid_flag=SOLID,
-        ux=zero, uy=zero, uz=zero,
+        ux=zero,
+        uy=zero,
+        uz=zero,
     )
 
 
@@ -92,7 +109,15 @@ def test_invalid_candidate_fails_closed_without_input_pollution(kind: str) -> No
 
 def _direct_lg(flags: torch.Tensor) -> int:
     liquid = flags == LIQUID
-    return sum(int((liquid & (flags.roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), dims=(0, 1, 2)) == GAS)).sum()) for q in range(1, 19))
+    return sum(
+        int(
+            (
+                liquid
+                & (flags.roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), dims=(0, 1, 2)) == GAS)
+            ).sum()
+        )
+        for q in range(1, 19)
+    )
 
 
 def test_actual_step_builds_once_and_returns_builder_candidate(monkeypatch) -> None:
@@ -118,7 +143,9 @@ def test_actual_step_builds_once_and_returns_builder_candidate(monkeypatch) -> N
 def test_freeze_topology_does_not_invoke_transaction(monkeypatch) -> None:
     import tensorlbm.free_surface_lbm as module
 
-    monkeypatch.setattr(module, "build_topology_transaction", lambda *args, **kwargs: pytest.fail("called"))
+    monkeypatch.setattr(
+        module, "build_topology_transaction", lambda *args, **kwargs: pytest.fail("called")
+    )
     f, fill, flags, mass, solid = _state()
     free_surface_step(f, fill, flags, solid, mass=mass, freeze_topology=True)
 
@@ -138,8 +165,13 @@ def test_builder_failure_is_atomic_and_does_not_append_runtime_step(monkeypatch)
 
     with pytest.raises(TopologyTransactionError, match="injected builder failure"):
         free_surface_step(
-            f, fill, flags, solid, mass=mass,
-            runtime_ledger=runtime_ledger, mass_ledger=mass_ledger,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            runtime_ledger=runtime_ledger,
+            mass_ledger=mass_ledger,
         )
 
     for actual, expected in zip((f, fill, flags, mass), before):
@@ -182,7 +214,13 @@ def test_real_topology_campaign_matches_baseline_conversion_contract() -> None:
     f, fill, flags, mass, solid = _state()
     for _ in range(10):
         f, fill, flags, mass, _ = free_surface_step(
-            f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=1.0e-3,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            rho_gas=1.0e-3,
             paired_liquid_interface_debit=True,
         )
         assert _direct_lg(flags) == 0

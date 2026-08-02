@@ -10,6 +10,7 @@ The :func:`train_eddy_viscosity_model` function accepts an optional
 ``backend="mindspore"`` (or set ``TENSORLBM_BACKEND`` in the environment)
 to train with a non-PyTorch framework while keeping the same API.
 """
+
 from __future__ import annotations
 
 import copy
@@ -49,13 +50,14 @@ class TrainConfig:
 # Helpers – backend-agnostic
 # ---------------------------------------------------------------------------
 
+
 def _to_numpy(x: object) -> np.ndarray:
     """Convert any tensor / array to a numpy array."""
     if isinstance(x, np.ndarray):
         return x
-    if hasattr(x, "asnumpy"):          # MindSpore
+    if hasattr(x, "asnumpy"):  # MindSpore
         return x.asnumpy()
-    if hasattr(x, "numpy"):            # torch / paddle
+    if hasattr(x, "numpy"):  # torch / paddle
         try:
             return x.detach().cpu().numpy()
         except Exception:
@@ -91,7 +93,7 @@ def _iter_minibatches_np(
     rng: np.random.RandomState,
 ) -> list[np.ndarray]:
     perm = rng.permutation(n)
-    return [perm[i: i + batch_size] for i in range(0, n, batch_size)]
+    return [perm[i : i + batch_size] for i in range(0, n, batch_size)]
 
 
 def _build_scheduler_ops(ops: object, optimizer: object, cfg: TrainConfig) -> object | None:
@@ -109,6 +111,7 @@ def _build_scheduler_ops(ops: object, optimizer: object, cfg: TrainConfig) -> ob
 # Original torch-only helpers (kept for internal use by the torch path)
 # ---------------------------------------------------------------------------
 
+
 def _r2_score(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
     var = torch.var(y_true, unbiased=False)
     if float(var) <= 0.0:
@@ -118,10 +121,12 @@ def _r2_score(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
 
 
 def _iter_minibatches(
-    n: int, batch_size: int, generator: torch.Generator,
+    n: int,
+    batch_size: int,
+    generator: torch.Generator,
 ) -> list[torch.Tensor]:
     perm = torch.randperm(n, generator=generator)
-    return [perm[i: i + batch_size] for i in range(0, n, batch_size)]
+    return [perm[i : i + batch_size] for i in range(0, n, batch_size)]
 
 
 def _build_scheduler(
@@ -142,6 +147,7 @@ def _build_scheduler(
 # ---------------------------------------------------------------------------
 # Multi-backend training implementation
 # ---------------------------------------------------------------------------
+
 
 def _train_with_backend(
     features_np: np.ndarray,
@@ -165,8 +171,8 @@ def _train_with_backend(
     # --- convert to backend tensors ---
     x_train = ops.to_device(ops.tensor(x_tr_np), cfg.device)
     y_train = ops.to_device(ops.tensor(y_tr_np), cfg.device)
-    x_val   = ops.to_device(ops.tensor(x_val_np), cfg.device)
-    y_val   = ops.to_device(ops.tensor(y_val_np), cfg.device)
+    x_val = ops.to_device(ops.tensor(x_val_np), cfg.device)
+    y_val = ops.to_device(ops.tensor(y_val_np), cfg.device)
 
     # --- feature normalisation stats (backend-specific) ---
     ops.manual_seed(cfg.seed)
@@ -183,12 +189,12 @@ def _train_with_backend(
         feature_std_np,
         device=cfg.device,
     )
-    loss_fn   = ops.mse_loss_fn()
+    loss_fn = ops.mse_loss_fn()
     optimizer = ops.adam_optimizer(model, cfg.learning_rate)
     scheduler = _build_scheduler_ops(ops, optimizer, cfg)
 
     rng = np.random.RandomState(int(cfg.seed))
-    n_train   = len(x_tr_np)
+    n_train = len(x_tr_np)
     batch_size = max(1, min(int(cfg.batch_size), n_train))
     history: list[dict[str, float]] = []
     best_state_np: dict[str, np.ndarray] = {}
@@ -222,7 +228,7 @@ def _train_with_backend(
         val_true_np = _to_numpy(y_val)
         val_mse = float(np.mean((val_pred_np - val_true_np) ** 2))
         val_mae = float(np.mean(np.abs(val_pred_np - val_true_np)))
-        val_r2  = _r2_score_np(val_pred_np, val_true_np)
+        val_r2 = _r2_score_np(val_pred_np, val_true_np)
 
         current_lr = ops.get_lr(optimizer)
         metrics = {
@@ -263,6 +269,7 @@ def _train_with_backend(
         "activation": str(cfg.activation),
     }
     import json
+
     meta = {
         "arch": arch_dict,
         "normalization": {
@@ -299,6 +306,7 @@ def _train_with_backend(
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def train_eddy_viscosity_model(
     dataset: EddyViscosityDataset | str | Path,
     out_path: str | Path,
@@ -331,7 +339,7 @@ def train_eddy_viscosity_model(
         raise ValueError(f"Dataset is too small to train ({len(dataset)} samples).")
 
     features_np = _to_numpy(dataset.features)
-    targets_np  = _to_numpy(dataset.targets)
+    targets_np = _to_numpy(dataset.targets)
     out_path = Path(out_path)
 
     with using_backend(backend_name):
@@ -343,8 +351,8 @@ def train_eddy_viscosity_model(
             train_ds, val_ds = dataset.split(cfg.val_fraction, seed=cfg.seed)
             x_train = train_ds.features.to(device)
             y_train = train_ds.targets.to(device)
-            x_val   = val_ds.features.to(device)
-            y_val   = val_ds.targets.to(device)
+            x_val = val_ds.features.to(device)
+            y_val = val_ds.targets.to(device)
 
             torch.manual_seed(int(cfg.seed))
             arch = ModelArch(
@@ -355,15 +363,15 @@ def train_eddy_viscosity_model(
             )
             model = EddyViscosityMLP(arch).to(device)
             feature_mean = x_train.mean(dim=0)
-            feature_std  = x_train.std(dim=0, unbiased=False).clamp_min(1e-6)
+            feature_std = x_train.std(dim=0, unbiased=False).clamp_min(1e-6)
             model.set_feature_stats(feature_mean, feature_std)
             optimizer = optim.Adam(model.parameters(), lr=float(cfg.learning_rate))
-            loss_fn   = nn.MSELoss()
+            loss_fn = nn.MSELoss()
             scheduler = _build_scheduler(optimizer, int(cfg.epochs), str(cfg.lr_scheduler))
 
             generator = torch.Generator(device="cpu").manual_seed(int(cfg.seed))
             history: list[dict[str, float]] = []
-            n_train    = x_train.shape[0]
+            n_train = x_train.shape[0]
             batch_size = max(1, min(int(cfg.batch_size), n_train))
             best_state = copy.deepcopy(model.state_dict())
             best_epoch = 0
@@ -385,7 +393,8 @@ def train_eddy_viscosity_model(
                     loss.backward()
                     if cfg.gradient_clip_norm is not None:
                         torch.nn.utils.clip_grad_norm_(
-                            model.parameters(), max_norm=float(cfg.gradient_clip_norm),
+                            model.parameters(),
+                            max_norm=float(cfg.gradient_clip_norm),
                         )
                     optimizer.step()
                     epoch_loss += float(loss.detach()) * xb.shape[0]
@@ -399,7 +408,7 @@ def train_eddy_viscosity_model(
                     val_pred = model(x_val)
                     val_mse = float(loss_fn(val_pred, y_val).detach())
                     val_mae = float(torch.mean(torch.abs(val_pred - y_val)).detach())
-                    val_r2  = _r2_score(val_pred, y_val)
+                    val_r2 = _r2_score(val_pred, y_val)
                 current_lr = float(optimizer.param_groups[0]["lr"])
                 met = {
                     "epoch": int(epoch),

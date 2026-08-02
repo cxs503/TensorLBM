@@ -9,6 +9,7 @@ Runs the full pipeline:
 and prints a concise summary suitable for CI logs.  See
 ``docs/ai_turbulence.md`` for the design overview.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,9 +41,12 @@ def main() -> None:
 
     result = run_ai_les_pipeline(
         work_dir=Path(args.work_dir),
-        nx=args.nx, ny=args.ny,
-        tau=args.tau, c_s=args.c_s,
-        data_steps=args.data_steps, sample_every=args.sample_every,
+        nx=args.nx,
+        ny=args.ny,
+        tau=args.tau,
+        c_s=args.c_s,
+        data_steps=args.data_steps,
+        sample_every=args.sample_every,
         val_steps=args.val_steps,
         train_config=TrainConfig(
             epochs=args.epochs,
@@ -62,8 +66,7 @@ def main() -> None:
         "db_path": str(result.db_path),
         "dataset_path": str(result.dataset_path),
         "model_path": str(result.model_path),
-        "ids": {"run": result.run_id, "dataset": result.dataset_id,
-                "model": result.model_id},
+        "ids": {"run": result.run_id, "dataset": result.dataset_id, "model": result.model_id},
         "n_samples": result.n_samples,
         "data_source": result.data_source,
         "n_snapshots": result.n_snapshots,

@@ -1,4 +1,5 @@
 """Tests for the offshore_cad module."""
+
 from __future__ import annotations
 
 import pytest
@@ -38,7 +39,9 @@ def test_semi_sub_mask_shape():
     from tensorlbm.offshore_cad import semi_sub_mask
 
     mask = semi_sub_mask(
-        80, 80, 80,
+        80,
+        80,
+        80,
         pontoon_length=40.0,
         pontoon_width=8.0,
         pontoon_height=6.0,
@@ -57,7 +60,7 @@ def test_build_offshore_mask_dict_keys():
     assert "stats" in result
     stats = result["stats"]
     assert stats["solid_cells"] > 0
-    assert stats["solid_cells"] + stats["fluid_cells"] == 40 ** 3
+    assert stats["solid_cells"] + stats["fluid_cells"] == 40**3
 
 
 def test_all_structure_types():
@@ -98,5 +101,5 @@ def test_generate_previews_returns_figure():
     fig = generate_offshore_previews("spar", nx=40, ny=40, nz=60)
     assert isinstance(fig, mfig.Figure)
     import matplotlib.pyplot as plt
-    plt.close(fig)
 
+    plt.close(fig)

@@ -3,6 +3,7 @@
 The independent oracle below reads the production lattice descriptor directly,
 but does not use the production stencil helpers under test.
 """
+
 from __future__ import annotations
 
 import pytest

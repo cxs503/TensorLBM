@@ -1,4 +1,5 @@
 """Tests for the 3D porous-media module."""
+
 from __future__ import annotations
 
 import tempfile
@@ -78,18 +79,21 @@ class TestPorousDrainageConfig3D:
 
     def test_validate_bad_dims(self) -> None:
         import pytest
+
         cfg = PorousDrainageConfig3D(nz=4, ny=4, nx=4)
         with pytest.raises(ValueError, match="nz, ny, nx"):
             cfg.validate()
 
     def test_validate_bad_tau(self) -> None:
         import pytest
+
         cfg = PorousDrainageConfig3D(tau_water=0.4)
         with pytest.raises(ValueError, match="tau"):
             cfg.validate()
 
     def test_validate_bad_medium(self) -> None:
         import pytest
+
         cfg = PorousDrainageConfig3D(medium="invalid")
         with pytest.raises(ValueError, match="medium"):
             cfg.validate()
@@ -103,6 +107,7 @@ class TestRunPorousDrainage3D:
     def test_smoke_random_spheres(self) -> None:
         """Short smoke test with random_spheres medium."""
         import math as _math
+
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = PorousDrainageConfig3D(
                 nz=16,

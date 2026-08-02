@@ -28,7 +28,16 @@ def test_moving_wall_correction_is_applied_only_to_solid_boundary_nodes():
     f = torch.arange(19 * nz * ny * nx, dtype=torch.float32).reshape(19, nz, ny, nx)
 
     result = _MAGNUS.apply_moving_bounceback(
-        f, solid, OPPOSITE, C, W, omega_eff=0.02, cx=2.0, cy=2.0, yy=yy, xx=xx,
+        f,
+        solid,
+        OPPOSITE,
+        C,
+        W,
+        omega_eff=0.02,
+        cx=2.0,
+        cy=2.0,
+        yy=yy,
+        xx=xx,
     )
 
     # (3, 3) is inside the disk but not on its fluid-facing boundary.  It has
@@ -56,8 +65,16 @@ def test_moving_wall_bounceback_uses_each_fluid_solid_link_and_fluid_density():
     f[0, 0, 1, 1] = 2.0
     yy, xx = torch.meshgrid(torch.arange(5), torch.arange(5), indexing="ij")
     result = _MAGNUS.apply_moving_bounceback(
-        f, solid, OPPOSITE, C, W, omega_eff=0.1, cx=2.0, cy=1.0,
-        yy=yy.unsqueeze(0).float(), xx=xx.unsqueeze(0).float(),
+        f,
+        solid,
+        OPPOSITE,
+        C,
+        W,
+        omega_eff=0.1,
+        cx=2.0,
+        cy=1.0,
+        yy=yy.unsqueeze(0).float(),
+        xx=xx.unsqueeze(0).float(),
     )
 
     # At x_s=(2,2), u_wall=(-0.1, 0), rho_fluid=2, and the returned
@@ -76,8 +93,15 @@ def test_momentum_exchange_includes_moving_wall_impulse():
     f[0, 0, 1, 1] = 2.0
     yy, xx = torch.meshgrid(torch.arange(5), torch.arange(5), indexing="ij")
     force = _MAGNUS.compute_force_momentum_exchange(
-        f, solid, C, W, omega_eff=0.1, cx=2.0, cy=1.0,
-        yy=yy.unsqueeze(0).float(), xx=xx.unsqueeze(0).float(),
+        f,
+        solid,
+        C,
+        W,
+        omega_eff=0.1,
+        cx=2.0,
+        cy=1.0,
+        yy=yy.unsqueeze(0).float(),
+        xx=xx.unsqueeze(0).float(),
     )
     # Link impulse on the solid: 2*c*f_q + 6*c*w*rho_f*(c.u_wall),
     # where c=(1,1,0), u_wall=(-0.1,0), rho_f=2.

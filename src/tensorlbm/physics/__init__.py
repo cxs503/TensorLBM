@@ -1,4 +1,5 @@
 """Physics/collision namespace for grouped imports."""
+
 from __future__ import annotations
 
 from ..multiphase import (

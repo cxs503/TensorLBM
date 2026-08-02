@@ -20,6 +20,7 @@ Directions with cx > 0 (unknown at x=0 inlet):
 Directions with cx < 0 (unknown at x=nx-1 outlet):
   2, 8, 10, 12, 14, 20, 22, 24, 26
 """
+
 from __future__ import annotations
 
 import torch
@@ -34,11 +35,11 @@ from .d3q27 import equilibrium27
 
 # Directions with cx > 0 (unknown at x=0 inlet) and their cx<0 opposites
 _D3Q27_INLET_DIRS: list[int] = [1, 7, 9, 11, 13, 19, 21, 23, 25]
-_D3Q27_INLET_OPP: list[int] = [2, 8, 10, 12, 14, 20, 22, 24, 26]   # OPPOSITE[inlet]
+_D3Q27_INLET_OPP: list[int] = [2, 8, 10, 12, 14, 20, 22, 24, 26]  # OPPOSITE[inlet]
 
 # Directions with cx < 0 (unknown at x=nx-1 outlet) and their cx>0 opposites
 _D3Q27_OUTLET_DIRS: list[int] = [2, 8, 10, 12, 14, 20, 22, 24, 26]
-_D3Q27_OUTLET_OPP: list[int] = [1, 7, 9, 11, 13, 19, 21, 23, 25]   # OPPOSITE[outlet]
+_D3Q27_OUTLET_OPP: list[int] = [1, 7, 9, 11, 13, 19, 21, 23, 25]  # OPPOSITE[outlet]
 
 
 def bounce_back_cells_27(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -89,23 +90,33 @@ def zou_he_inlet_velocity_27(
 
     # cx=0 directions: 0, 3, 4, 5, 6, 15, 16, 17, 18
     sum_cx0 = (
-        f[0, :, :, 0] + f[3, :, :, 0] + f[4, :, :, 0]
-        + f[5, :, :, 0] + f[6, :, :, 0]
-        + f[15, :, :, 0] + f[16, :, :, 0]
-        + f[17, :, :, 0] + f[18, :, :, 0]
+        f[0, :, :, 0]
+        + f[3, :, :, 0]
+        + f[4, :, :, 0]
+        + f[5, :, :, 0]
+        + f[6, :, :, 0]
+        + f[15, :, :, 0]
+        + f[16, :, :, 0]
+        + f[17, :, :, 0]
+        + f[18, :, :, 0]
     )
     # cx<0 directions: 2, 8, 10, 12, 14, 20, 22, 24, 26
     sum_cx_neg = (
-        f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0]
-        + f[12, :, :, 0] + f[14, :, :, 0]
-        + f[20, :, :, 0] + f[22, :, :, 0]
-        + f[24, :, :, 0] + f[26, :, :, 0]
+        f[2, :, :, 0]
+        + f[8, :, :, 0]
+        + f[10, :, :, 0]
+        + f[12, :, :, 0]
+        + f[14, :, :, 0]
+        + f[20, :, :, 0]
+        + f[22, :, :, 0]
+        + f[24, :, :, 0]
+        + f[26, :, :, 0]
     )
 
     rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_in)  # (nz, ny)
 
     # Wrap to 3-D to satisfy equilibrium27 which expects (nz, ny, nx)
-    rho3 = rho.unsqueeze(-1)          # (nz, ny, 1)
+    rho3 = rho.unsqueeze(-1)  # (nz, ny, 1)
     ux3 = torch.full_like(rho3, u_in)
     uy3 = torch.full_like(rho3, uy_in)
     uz3 = torch.full_like(rho3, uz_in)
@@ -140,21 +151,31 @@ def zou_he_outlet_pressure_27(f: torch.Tensor, rho_out: float = 1.0) -> torch.Te
     device = f.device
 
     sum_cx0 = (
-        f[0, :, :, -1] + f[3, :, :, -1] + f[4, :, :, -1]
-        + f[5, :, :, -1] + f[6, :, :, -1]
-        + f[15, :, :, -1] + f[16, :, :, -1]
-        + f[17, :, :, -1] + f[18, :, :, -1]
+        f[0, :, :, -1]
+        + f[3, :, :, -1]
+        + f[4, :, :, -1]
+        + f[5, :, :, -1]
+        + f[6, :, :, -1]
+        + f[15, :, :, -1]
+        + f[16, :, :, -1]
+        + f[17, :, :, -1]
+        + f[18, :, :, -1]
     )
     sum_cx_pos = (
-        f[1, :, :, -1] + f[7, :, :, -1] + f[9, :, :, -1]
-        + f[11, :, :, -1] + f[13, :, :, -1]
-        + f[19, :, :, -1] + f[21, :, :, -1]
-        + f[23, :, :, -1] + f[25, :, :, -1]
+        f[1, :, :, -1]
+        + f[7, :, :, -1]
+        + f[9, :, :, -1]
+        + f[11, :, :, -1]
+        + f[13, :, :, -1]
+        + f[19, :, :, -1]
+        + f[21, :, :, -1]
+        + f[23, :, :, -1]
+        + f[25, :, :, -1]
     )
     ux_out = -1.0 + (sum_cx0 + 2.0 * sum_cx_pos) / rho_out
 
     rho_field = torch.full_like(f[0, :, :, -1], rho_out)  # (nz, ny)
-    ux_field = ux_out                                       # (nz, ny)
+    ux_field = ux_out  # (nz, ny)
     uy_field = torch.zeros_like(rho_field)
     uz_field = torch.zeros_like(rho_field)
 
@@ -196,9 +217,9 @@ def make_channel_wall_mask_27(
         Boolean tensor of shape ``(nz, ny, nx)``.
     """
     wall_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    wall_mask[:, 0, :] = True   # bottom (y=0)
+    wall_mask[:, 0, :] = True  # bottom (y=0)
     wall_mask[:, -1, :] = True  # top    (y=ny-1)
-    wall_mask[0, :, :] = True   # front  (z=0)
+    wall_mask[0, :, :] = True  # front  (z=0)
     wall_mask[-1, :, :] = True  # back   (z=nz-1)
     wall_mask[obstacle_mask] = False
     return wall_mask
@@ -220,16 +241,19 @@ def far_field_bc_27(
     """
     rho1 = torch.ones((f.shape[1], f.shape[2], f.shape[3]), dtype=f.dtype, device=f.device)
     feq = equilibrium27(
-        rho1, torch.full_like(rho1, u_in), torch.full_like(rho1, uy),
-        torch.full_like(rho1, uz), device=f.device,
+        rho1,
+        torch.full_like(rho1, u_in),
+        torch.full_like(rho1, uy),
+        torch.full_like(rho1, uz),
+        device=f.device,
     )
     f = f.clone()
-    f[:, :, :, 0] = feq[:, :, :, 0]          # inlet (free stream)
-    f[:, :, :, -1] = f[:, :, :, -2]          # outlet (zero gradient)
-    f[:, 0, :, :] = feq[:, 0, :, :]          # y- lateral
-    f[:, -1, :, :] = feq[:, -1, :, :]        # y+ lateral
-    f[:, :, 0, :] = feq[:, :, 0, :]          # z- lateral
-    f[:, :, -1, :] = feq[:, :, -1, :]        # z+ lateral
+    f[:, :, :, 0] = feq[:, :, :, 0]  # inlet (free stream)
+    f[:, :, :, -1] = f[:, :, :, -2]  # outlet (zero gradient)
+    f[:, 0, :, :] = feq[:, 0, :, :]  # y- lateral
+    f[:, -1, :, :] = feq[:, -1, :, :]  # y+ lateral
+    f[:, :, 0, :] = feq[:, :, 0, :]  # z- lateral
+    f[:, :, -1, :] = feq[:, :, -1, :]  # z+ lateral
     if obstacle_mask is not None:
         f = bounce_back_cells_27(f, obstacle_mask)
     return f

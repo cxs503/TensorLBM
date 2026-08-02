@@ -3,6 +3,7 @@
 This module only classifies supplied observations.  It neither calls a solver
 nor converts legacy cell-reset force estimates into link-owned traction.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,7 +15,12 @@ Vector3 = tuple[float, float, float]
 
 
 def _positive(value: object, name: str, diagnostics: list[str]) -> float | None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(float(value)) or value <= 0.0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not isfinite(float(value))
+        or value <= 0.0
+    ):
         diagnostics.append(f"{name}: missing or not finite positive")
         return None
     return float(value)
@@ -24,7 +30,12 @@ def _vector(value: object, name: str, diagnostics: list[str]) -> Vector3 | None:
     if not isinstance(value, (tuple, list)) or len(value) != 3:
         diagnostics.append(f"{name}: missing or not a 3-vector")
         return None
-    if any(isinstance(component, bool) or not isinstance(component, (int, float)) or not isfinite(float(component)) for component in value):
+    if any(
+        isinstance(component, bool)
+        or not isinstance(component, (int, float))
+        or not isfinite(float(component))
+        for component in value
+    ):
         diagnostics.append(f"{name}: components must be finite numbers")
         return None
     vector = tuple(float(component) for component in value)
@@ -69,9 +80,15 @@ class ResistanceForceContract:
 
 
 def build_resistance_force_contract(
-    *, reference_area: float | None, length: float | None, rho: float | None,
-    U: float | None, direction: Vector3 | None, method: str | None,
-    sample_phase: str | None, link_ownership: Mapping[str, Any] | None,
+    *,
+    reference_area: float | None,
+    length: float | None,
+    rho: float | None,
+    U: float | None,
+    direction: Vector3 | None,
+    method: str | None,
+    sample_phase: str | None,
+    link_ownership: Mapping[str, Any] | None,
     force: Vector3 | None,
 ) -> ResistanceForceContract:
     """Classify one force observation; incomplete ownership always fails closed.
@@ -95,10 +112,19 @@ def build_resistance_force_contract(
     ownership = _complete_ownership(link_ownership, diagnostics)
 
     Ct: float | None = None
-    if not diagnostics and area is not None and density is not None and speed is not None and resolved_force is not None and resolved_direction is not None:
+    if (
+        not diagnostics
+        and area is not None
+        and density is not None
+        and speed is not None
+        and resolved_force is not None
+        and resolved_direction is not None
+    ):
         norm = sqrt(sum(component * component for component in resolved_direction))
         unit_direction = tuple(component / norm for component in resolved_direction)
-        axial_force = sum(component * axis for component, axis in zip(resolved_force, unit_direction))
+        axial_force = sum(
+            component * axis for component, axis in zip(resolved_force, unit_direction)
+        )
         Ct = axial_force / (0.5 * density * speed * speed * area)
         # Link ownership makes this a traceable measured coefficient candidate,
         # not a reference/convergence/uncertainty-backed physical validation.
@@ -110,10 +136,19 @@ def build_resistance_force_contract(
         validated = False
 
     return ResistanceForceContract(
-        reference_area=area, length=resolved_length, rho=density, U=speed,
-        direction=resolved_direction, method=method, sample_phase=sample_phase,
-        link_ownership=ownership, force=resolved_force, status=status, Ct=Ct,
-        validated=validated, diagnostics=tuple(diagnostics),
+        reference_area=area,
+        length=resolved_length,
+        rho=density,
+        U=speed,
+        direction=resolved_direction,
+        method=method,
+        sample_phase=sample_phase,
+        link_ownership=ownership,
+        force=resolved_force,
+        status=status,
+        Ct=Ct,
+        validated=validated,
+        diagnostics=tuple(diagnostics),
     )
 
 

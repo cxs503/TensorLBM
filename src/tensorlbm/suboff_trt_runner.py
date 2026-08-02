@@ -20,6 +20,7 @@ solver hot path.  The evidence is deliberately ``diagnostic_only`` — real
 force/Ct observations from an actual D3Q27+TRT+far-field loop, but no
 physical validation claim is made.
 """
+
 from __future__ import annotations
 
 import json
@@ -73,6 +74,7 @@ _VALID_MODELS = {"none", "smagorinsky", "wale", "vreman"}
 # D3Q27 bounce-back (uses D3Q27 OPPOSITE, not D3Q19)
 # ---------------------------------------------------------------------------
 
+
 def _bounce_back_cells_27(
     f: torch.Tensor,
     mask: torch.Tensor,
@@ -91,6 +93,7 @@ def _bounce_back_cells_27(
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SuboffTrtConfig:
@@ -130,8 +133,7 @@ class SuboffTrtConfig:
             raise ValueError("tau must be > 0.5")
         if self.turbulence_model not in _VALID_MODELS:
             raise ValueError(
-                f"turbulence_model must be one of {_VALID_MODELS}, "
-                f"got '{self.turbulence_model}'"
+                f"turbulence_model must be one of {_VALID_MODELS}, got '{self.turbulence_model}'"
             )
         if self.mass_correction_interval < 1:
             raise ValueError("mass_correction_interval must be >= 1")
@@ -155,6 +157,7 @@ class SuboffTrtConfig:
 # ---------------------------------------------------------------------------
 # Evidence
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SuboffTrtEvidence:
@@ -228,6 +231,7 @@ class SuboffTrtEvidence:
 # Collision: TRT × SGS for D3Q27
 # ---------------------------------------------------------------------------
 
+
 def _collide_trt_sgs_27(
     f: torch.Tensor,
     *,
@@ -253,7 +257,11 @@ def _collide_trt_sgs_27(
     """
     if turbulence_model == "none":
         return collide_advanced_3d(
-            "D3Q27", "TRT", f, tau=tau, lambda_trt=lambda_trt,
+            "D3Q27",
+            "TRT",
+            f,
+            tau=tau,
+            lambda_trt=lambda_trt,
         )
 
     # --- Compute macroscopic variables and equilibrium ---
@@ -296,6 +304,7 @@ def _collide_trt_sgs_27(
 # D3Q27 far-field boundary condition
 # ---------------------------------------------------------------------------
 
+
 def _far_field_bc_27(
     f: torch.Tensor,
     u_in: float,
@@ -316,12 +325,12 @@ def _far_field_bc_27(
         torch.zeros_like(rho1),
     )
     f = f.clone()
-    f[:, :, :, 0] = feq[:, :, :, 0]       # inlet (free stream)
-    f[:, :, :, -1] = f[:, :, :, -2]        # outlet (zero gradient)
-    f[:, 0, :, :] = feq[:, 0, :, :]        # y- lateral
-    f[:, -1, :, :] = feq[:, -1, :, :]      # y+ lateral
-    f[:, :, 0, :] = feq[:, :, 0, :]        # z- lateral
-    f[:, :, -1, :] = feq[:, :, -1, :]      # z+ lateral
+    f[:, :, :, 0] = feq[:, :, :, 0]  # inlet (free stream)
+    f[:, :, :, -1] = f[:, :, :, -2]  # outlet (zero gradient)
+    f[:, 0, :, :] = feq[:, 0, :, :]  # y- lateral
+    f[:, -1, :, :] = feq[:, -1, :, :]  # y+ lateral
+    f[:, :, 0, :] = feq[:, :, 0, :]  # z- lateral
+    f[:, :, -1, :] = feq[:, :, -1, :]  # z+ lateral
     if obstacle_mask is not None:
         f = _bounce_back_cells_27(f, obstacle_mask)
     return f
@@ -330,6 +339,7 @@ def _far_field_bc_27(
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
+
 
 def run_suboff_trt_sgs(
     config: SuboffTrtConfig | None = None,
@@ -371,7 +381,7 @@ def run_suboff_trt_sgs(
     # Wetted area and dynamic pressure for Ct normalization
     wetted_area = _voxel_wetted_area(solid, 1.0)
     rho_lu = 1.0
-    dynamic_pressure = 0.5 * rho_lu * config.u_in ** 2 * wetted_area
+    dynamic_pressure = 0.5 * rho_lu * config.u_in**2 * wetted_area
 
     # --- 2. Initialize populations ---
     rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
@@ -419,13 +429,15 @@ def run_suboff_trt_sgs(
 
         # Record Ct
         ct = fx / dynamic_pressure if dynamic_pressure > 0 else 0.0
-        ct_series.append({
-            "step": step,
-            "fx": fx,
-            "fy": fy,
-            "fz": fz,
-            "ct": ct,
-        })
+        ct_series.append(
+            {
+                "step": step,
+                "fx": fx,
+                "fy": fy,
+                "fz": fz,
+                "ct": ct,
+            }
+        )
 
         # Runtime finiteness checks
         completed_steps = step
@@ -487,6 +499,7 @@ def run_suboff_trt_sgs(
 # ---------------------------------------------------------------------------
 # Campaign: run multiple configs (optionally in parallel)
 # ---------------------------------------------------------------------------
+
 
 def run_suboff_trt_sgs_campaign(
     configs: list[SuboffTrtConfig],

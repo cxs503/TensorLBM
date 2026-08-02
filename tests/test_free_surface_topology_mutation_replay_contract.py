@@ -1,4 +1,5 @@
 """Cold same-order topology mutation replay-contract tests."""
+
 from __future__ import annotations
 
 import inspect
@@ -41,13 +42,24 @@ def _inputs() -> dict[str, Any]:
     to_gas[2, 2, 2] = True
     return {
         "f": equilibrium3d(torch.ones(shape), zero, zero, zero),
-        "fill": fill, "flags": flags, "mass": mass,
-        "to_iface": torch.zeros_like(solid), "to_liq": torch.zeros_like(solid),
-        "to_gas": to_gas, "recv_new": torch.zeros_like(solid),
-        "redistribution_increment": zero, "rho_liquid": 1.0, "rho_gas": 1.0,
-        "solid_mask": solid, "gas_flag": GAS, "liquid_flag": LIQUID,
-        "interface_flag": INTERFACE, "solid_flag": SOLID,
-        "ux": zero, "uy": zero, "uz": zero,
+        "fill": fill,
+        "flags": flags,
+        "mass": mass,
+        "to_iface": torch.zeros_like(solid),
+        "to_liq": torch.zeros_like(solid),
+        "to_gas": to_gas,
+        "recv_new": torch.zeros_like(solid),
+        "redistribution_increment": zero,
+        "rho_liquid": 1.0,
+        "rho_gas": 1.0,
+        "solid_mask": solid,
+        "gas_flag": GAS,
+        "liquid_flag": LIQUID,
+        "interface_flag": INTERFACE,
+        "solid_flag": SOLID,
+        "ux": zero,
+        "uy": zero,
+        "uz": zero,
     }
 
 
@@ -70,7 +82,9 @@ def test_complete_capture_replays_exactly_and_exposes_no_mutable_phase_evidence(
 
 
 @pytest.mark.parametrize("tamper", ("delete", "replace", "fill"))
-def test_tampering_a_caller_owned_compatibility_view_cannot_change_audit_evidence(tamper: str) -> None:
+def test_tampering_a_caller_owned_compatibility_view_cannot_change_audit_evidence(
+    tamper: str,
+) -> None:
     plan = build_topology_transaction(**_inputs(), capture_replay_stages=True)
     exposed = plan.replay_stages
     assert exposed is not None
@@ -78,7 +92,12 @@ def test_tampering_a_caller_owned_compatibility_view_cannot_change_audit_evidenc
         del exposed["clamp"]
     elif tamper == "replace":
         f, fill, flags, mass = exposed["clamp"]
-        exposed["clamp"] = (torch.zeros_like(f), torch.zeros_like(fill), torch.zeros_like(flags), torch.zeros_like(mass))
+        exposed["clamp"] = (
+            torch.zeros_like(f),
+            torch.zeros_like(fill),
+            torch.zeros_like(flags),
+            torch.zeros_like(mass),
+        )
     else:
         exposed["clamp"][3].fill_(123.0)
     _assert_exact(audit_topology_mutation_replay(plan.replay_evidence))
@@ -90,8 +109,12 @@ def test_tampered_serialized_evidence_is_withheld() -> None:
     assert evidence is not None
     tampered = ReplayEvidence(
         evidence.invocation_payload[:-1] + bytes([evidence.invocation_payload[-1] ^ 1]),
-        evidence.invocation_sha256, evidence.phase_payload, evidence.phase_sha256,
-        evidence.candidate_payload, evidence.candidate_sha256, evidence.tensor_records,
+        evidence.invocation_sha256,
+        evidence.phase_payload,
+        evidence.phase_sha256,
+        evidence.candidate_payload,
+        evidence.candidate_sha256,
+        evidence.tensor_records,
     )
     assert audit_topology_mutation_replay(tampered).status == WITHHELD
 
@@ -101,9 +124,13 @@ def test_publicly_forged_hash_matching_evidence_is_withheld() -> None:
     evidence = plan.replay_evidence
     assert evidence is not None
     forged = ReplayEvidence(
-        evidence.invocation_payload, evidence.invocation_sha256,
-        evidence.phase_payload, evidence.phase_sha256,
-        evidence.candidate_payload, evidence.candidate_sha256, evidence.tensor_records,
+        evidence.invocation_payload,
+        evidence.invocation_sha256,
+        evidence.phase_payload,
+        evidence.phase_sha256,
+        evidence.candidate_payload,
+        evidence.candidate_sha256,
+        evidence.tensor_records,
     )
     assert audit_topology_mutation_replay(forged).status == WITHHELD
 
@@ -129,7 +156,8 @@ def test_b_and_c_actual_builder_capture_replays_all_phases_exactly() -> None:
     )
 
     report = run_free_surface_closure_experiment(
-        enable_i_to_g_ownership_closure=True, capture_replay_stages=True,
+        enable_i_to_g_ownership_closure=True,
+        capture_replay_stages=True,
     )
     for case_id, requested_steps in (
         ("B_forced_conversion_deterministic", 3),
@@ -162,7 +190,9 @@ def test_b_and_c_actual_builder_capture_replays_all_phases_exactly() -> None:
             "WITHHELD_NOT_REPRESENTABLE",
             "WITHHELD_NOT_REPRESENTABLE",
         ]
-        assert all(candidate.full_phase_replay_compatible is False for candidate in residual.candidates)
+        assert all(
+            candidate.full_phase_replay_compatible is False for candidate in residual.candidates
+        )
         successful = result.steps[:-1]
         assert len(successful) == 2
         for step in successful:
@@ -186,14 +216,24 @@ def test_b_and_c_without_capture_remain_withheld(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(solver, "build_topology_transaction", capture)
     f, fill, flags, solid = _conversion_state()
     _run_case(
-        "B_forced_conversion_deterministic", f, fill, flags, solid, 3, False, True,
+        "B_forced_conversion_deterministic",
+        f,
+        fill,
+        flags,
+        solid,
+        3,
+        False,
+        True,
         enable_i_to_g_ownership_closure=True,
     )
     assert captures and all(item is None for item in captures)
     from tensorlbm.free_surface_closure_experiment import run_free_surface_closure_experiment
+
     report = run_free_surface_closure_experiment()
     assert all(step.replay_evidence is None for case in report.cases for step in case.steps)
-    assert all(step.strict_failure_replay_evidence is None for case in report.cases for step in case.steps)
+    assert all(
+        step.strict_failure_replay_evidence is None for case in report.cases for step in case.steps
+    )
     assert audit_topology_mutation_replay(None).status == WITHHELD
     assert audit_strict_failure_replay(None).status == WITHHELD
 
@@ -240,13 +280,23 @@ def test_strict_failure_capture_freezes_preinvocation_state_and_isolates_adversa
     received: dict[str, torch.Tensor] = {}
 
     def adversarial_builder(
-        flags: torch.Tensor, mass: torch.Tensor, *, to_gas: torch.Tensor,
-        to_liq: torch.Tensor, solid_mask: torch.Tensor, **_: object,
+        flags: torch.Tensor,
+        mass: torch.Tensor,
+        *,
+        to_gas: torch.Tensor,
+        to_liq: torch.Tensor,
+        solid_mask: torch.Tensor,
+        **_: object,
     ) -> object:
-        received.update({
-            "flags": flags, "mass": mass, "to_gas": to_gas,
-            "to_liq": to_liq, "solid_mask": solid_mask,
-        })
+        received.update(
+            {
+                "flags": flags,
+                "mass": mass,
+                "to_gas": to_gas,
+                "to_liq": to_liq,
+                "solid_mask": solid_mask,
+            }
+        )
         flags.fill_(SOLID)
         mass.fill_(123.0)
         to_gas.fill_(False)
@@ -277,7 +327,9 @@ def test_strict_failure_capture_freezes_preinvocation_state_and_isolates_adversa
     assert "evidence" not in replay_capture
     evidence = replay_capture["strict_failure_evidence"]
     restored = restore_strict_failure_invocation(evidence)
-    assert all(torch.equal(restored[name], before[name]) for name in ("flags", "mass", "solid_mask"))
+    assert all(
+        torch.equal(restored[name], before[name]) for name in ("flags", "mass", "solid_mask")
+    )
     assert torch.equal(restored["to_gas"], before["flags"] == INTERFACE)
     assert torch.equal(restored["to_liq"], torch.zeros_like(before["solid_mask"]))
     report = audit_strict_failure_replay(evidence)
@@ -293,8 +345,10 @@ def test_opt_in_builder_clones_preserve_successful_i_to_g_numeric_result() -> No
     normal = solver.free_surface_step(**baseline, enable_i_to_g_ownership_closure=True)
     replay_capture: dict[str, object] = {}
     captured_result = solver.free_surface_step(
-        **captured, enable_i_to_g_ownership_closure=True,
-        capture_replay_stages=True, replay_capture=replay_capture,
+        **captured,
+        enable_i_to_g_ownership_closure=True,
+        capture_replay_stages=True,
+        replay_capture=replay_capture,
     )
     assert all(torch.equal(left, right) for left, right in zip(normal[:4], captured_result[:4]))
     assert torch.equal(normal[4], captured_result[4])
@@ -311,15 +365,29 @@ def test_default_capture_false_preserves_builder_input_identity(
     original = solver.build_i_to_g_ownership_transaction
 
     def record_builder(
-        flags: torch.Tensor, mass: torch.Tensor, *, to_gas: torch.Tensor,
-        to_liq: torch.Tensor, solid_mask: torch.Tensor, **kwargs: object,
+        flags: torch.Tensor,
+        mass: torch.Tensor,
+        *,
+        to_gas: torch.Tensor,
+        to_liq: torch.Tensor,
+        solid_mask: torch.Tensor,
+        **kwargs: object,
     ) -> object:
-        received.update({
-            "flags": flags, "mass": mass, "to_gas": to_gas,
-            "to_liq": to_liq, "solid_mask": solid_mask,
-        })
+        received.update(
+            {
+                "flags": flags,
+                "mass": mass,
+                "to_gas": to_gas,
+                "to_liq": to_liq,
+                "solid_mask": solid_mask,
+            }
+        )
         return original(
-            flags, mass, to_gas=to_gas, to_liq=to_liq, solid_mask=solid_mask,
+            flags,
+            mass,
+            to_gas=to_gas,
+            to_liq=to_liq,
+            solid_mask=solid_mask,
             **kwargs,
         )
 

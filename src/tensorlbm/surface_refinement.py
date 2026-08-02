@@ -14,6 +14,7 @@ Usage:
     for step in range(n_steps):
         solver.step(collide_fn, stream_fn, boundary_fn)
 """
+
 from __future__ import annotations
 
 import torch
@@ -26,6 +27,7 @@ from .refinement import BoxRegion, _coarse_to_fine_3d, _fine_to_coarse_3d
 # ---------------------------------------------------------------------------
 # Surface extraction
 # ---------------------------------------------------------------------------
+
 
 def surface_mask(mask: torch.Tensor) -> torch.Tensor:
     """Extract surface cells (mask cells with at least one fluid neighbor).
@@ -49,7 +51,7 @@ def surface_shell_mask(mask: torch.Tensor, margin: int = 3) -> torch.Tensor:
         return surf
     # 3D dilation via convolution
     ksize = 2 * margin + 1
-    kernel = torch.ones((1, 1, ksize, ksize, ksize), device=mask.device) / (ksize ** 3)
+    kernel = torch.ones((1, 1, ksize, ksize, ksize), device=mask.device) / (ksize**3)
     padded = surf.float().unsqueeze(0).unsqueeze(0)
     dilated = (F.conv3d(padded, kernel, padding=margin) > 0.01).squeeze(0).squeeze(0)
     return dilated.bool()
@@ -74,11 +76,13 @@ def refined_bounding_box(refined_mask: torch.Tensor, pad: int = 2) -> BoxRegion:
 # 3-Level solver (L0 → L1 2× → L2 4×)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Level3:
     """One level of the 3-level solver."""
-    f: torch.Tensor          # (19, nz, ny, nx)
-    mask: torch.Tensor       # obstacle mask at this level
+
+    f: torch.Tensor  # (19, nz, ny, nx)
+    mask: torch.Tensor  # obstacle mask at this level
     wall_mask: torch.Tensor  # wall mask at this level
     offset: tuple[int, int, int, int, int, int]  # (z0,z1,y0,y1,x0,x1) in parent coords
     parent: Level3 | None = None
@@ -141,11 +145,11 @@ class SurfaceRefinementSolver:
         nf1_z = (L1_box.z1 - L1_box.z0) * 2
 
         # L1 mask at 2× (upsample from coarse)
-        mask_L1_c = mask_L0[L1_box.z0:L1_box.z1, L1_box.y0:L1_box.y1, L1_box.x0:L1_box.x1]
+        mask_L1_c = mask_L0[L1_box.z0 : L1_box.z1, L1_box.y0 : L1_box.y1, L1_box.x0 : L1_box.x1]
         mask_L1 = mask_L1_c.repeat_interleave(2, 0).repeat_interleave(2, 1).repeat_interleave(2, 2)
         wall_L1 = _make_wall_3d(nf1_z, nf1_y, nf1_x, mask_L1, device=mask_L0.device)
         f_L1 = _coarse_to_fine_3d(
-            f_L0[:, L1_box.z0:L1_box.z1, L1_box.y0:L1_box.y1, L1_box.x0:L1_box.x1], 2
+            f_L0[:, L1_box.z0 : L1_box.z1, L1_box.y0 : L1_box.y1, L1_box.x0 : L1_box.x1], 2
         )
 
         # --- L2: surface shell only ---
@@ -157,23 +161,36 @@ class SurfaceRefinementSolver:
         nf2_y = (L2_box.y1 - L2_box.y0) * 4
         nf2_z = (L2_box.z1 - L2_box.z0) * 4
 
-        mask_L2_c = mask_L1_c[L2_box.z0:L2_box.z1, L2_box.y0:L2_box.y1, L2_box.x0:L2_box.x1]
+        mask_L2_c = mask_L1_c[L2_box.z0 : L2_box.z1, L2_box.y0 : L2_box.y1, L2_box.x0 : L2_box.x1]
         # Upsample to L2 resolution: L1 coarse → 2× (L1 fine) → 2× again (L2 fine) = 4×
         mask_L2 = mask_L2_c.repeat_interleave(4, 0).repeat_interleave(4, 1).repeat_interleave(4, 2)
         wall_L2 = _make_wall_3d(nf2_z, nf2_y, nf2_x, mask_L2, device=mask_L0.device)
         f_L2 = _coarse_to_fine_3d(
-            f_L1[:, L2_box.z0 * 2:L2_box.z1 * 2, L2_box.y0 * 2:L2_box.y1 * 2, L2_box.x0 * 2:L2_box.x1 * 2], 2
+            f_L1[
+                :,
+                L2_box.z0 * 2 : L2_box.z1 * 2,
+                L2_box.y0 * 2 : L2_box.y1 * 2,
+                L2_box.x0 * 2 : L2_box.x1 * 2,
+            ],
+            2,
         )
 
         # Build levels
-        l0 = Level3(f=f_L0, mask=mask_L0, wall_mask=wall_L0,
-                     offset=(0, nz_c, 0, ny_c, 0, nx_c))
-        l1 = Level3(f=f_L1, mask=mask_L1, wall_mask=wall_L1,
-                     offset=(L1_box.z0, L1_box.z1, L1_box.y0, L1_box.y1, L1_box.x0, L1_box.x1),
-                     parent=l0)
-        l2 = Level3(f=f_L2, mask=mask_L2, wall_mask=wall_L2,
-                     offset=(L2_box.z0, L2_box.z1, L2_box.y0, L2_box.y1, L2_box.x0, L2_box.x1),
-                     parent=l1)
+        l0 = Level3(f=f_L0, mask=mask_L0, wall_mask=wall_L0, offset=(0, nz_c, 0, ny_c, 0, nx_c))
+        l1 = Level3(
+            f=f_L1,
+            mask=mask_L1,
+            wall_mask=wall_L1,
+            offset=(L1_box.z0, L1_box.z1, L1_box.y0, L1_box.y1, L1_box.x0, L1_box.x1),
+            parent=l0,
+        )
+        l2 = Level3(
+            f=f_L2,
+            mask=mask_L2,
+            wall_mask=wall_L2,
+            offset=(L2_box.z0, L2_box.z1, L2_box.y0, L2_box.y1, L2_box.x0, L2_box.x1),
+            parent=l1,
+        )
         l1.parent = l0
         l2.parent = l1
 
@@ -191,6 +208,7 @@ class SurfaceRefinementSolver:
         # Offsets are in parent's COARSE coordinates — convert to parent's FINE coordinates
         r = fine.ratio_to_parent
         from .multipatch import inject_full_3d
+
         inject_full_3d(coarse.f, fine.f, cz0 * r, cz1 * r, cy0 * r, cy1 * r, cx0 * r, cx1 * r, r)
 
     def _restrict_down(self, child: Level3) -> None:
@@ -200,8 +218,9 @@ class SurfaceRefinementSolver:
         r = child.ratio_to_parent
         avg = _fine_to_coarse_3d(child.f, r)
         # Convert to parent fine coordinates
-        parent.f[:, cz0 * r + 1:cz1 * r - 1, cy0 * r + 1:cy1 * r - 1, cx0 * r + 1:cx1 * r - 1] = \
-            avg[:, 1:-1, 1:-1, 1:-1]
+        parent.f[
+            :, cz0 * r + 1 : cz1 * r - 1, cy0 * r + 1 : cy1 * r - 1, cx0 * r + 1 : cx1 * r - 1
+        ] = avg[:, 1:-1, 1:-1, 1:-1]
 
     def step(self, collide_fn, stream_fn, boundary_fn) -> None:
         """One coarse time step with all sub-steps."""

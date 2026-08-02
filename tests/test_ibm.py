@@ -1,4 +1,5 @@
 """Tests for the Immersed Boundary Method (IBM) module."""
+
 from __future__ import annotations
 
 import pytest
@@ -119,12 +120,8 @@ class TestIBMForceSpread:
         fx_grid, fy_grid = ibm_force_spread(
             marker_fx, marker_fy, marker_x, marker_y, ny, nx, kernel="hat"
         )
-        assert float(fx_grid.sum().item()) == pytest.approx(
-            float(marker_fx.sum().item()), abs=1e-5
-        )
-        assert float(fy_grid.sum().item()) == pytest.approx(
-            float(marker_fy.sum().item()), abs=1e-5
-        )
+        assert float(fx_grid.sum().item()) == pytest.approx(float(marker_fx.sum().item()), abs=1e-5)
+        assert float(fy_grid.sum().item()) == pytest.approx(float(marker_fy.sum().item()), abs=1e-5)
 
     def test_output_shape(self) -> None:
         ny, nx = 16, 16
@@ -133,7 +130,8 @@ class TestIBMForceSpread:
             torch.tensor([0.0]),
             torch.tensor([8.0]),
             torch.tensor([8.0]),
-            ny, nx,
+            ny,
+            nx,
         )
         assert fx_grid.shape == (ny, nx)
         assert fy_grid.shape == (ny, nx)
@@ -145,7 +143,8 @@ class TestIBMForceSpread:
             torch.zeros(3),
             torch.tensor([4.0, 8.0, 12.0]),
             torch.tensor([4.0, 8.0, 12.0]),
-            ny, nx,
+            ny,
+            nx,
         )
         assert torch.allclose(fx_grid, torch.zeros((ny, nx)), atol=1e-7)
         assert torch.allclose(fy_grid, torch.zeros((ny, nx)), atol=1e-7)

@@ -1,4 +1,5 @@
 """Tests for JONSWAP wave-boundary helpers."""
+
 from __future__ import annotations
 
 import torch
