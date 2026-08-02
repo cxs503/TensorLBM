@@ -7,7 +7,7 @@ Provides:
 - :func:`apply_wall_model_bounce_back` — apply wall model with moving-wall BC.
 """
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import torch
 import torch.nn.functional as F
 from .propeller_benchmark import moving_wall_bounce_back_3d
@@ -62,6 +62,7 @@ class WallStressDiagnostics:
     pressure_gradient_parameter_max: float | None = None
     pressure_gradient_summary: dict[str, float | int | str | None] | None = None
     pressure_gradient_axial_profile: list[dict[str, float | int]] | None = None
+    link_force_decomposition: dict[str, object] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -1163,6 +1164,7 @@ def bfl_wall_function_3d(
         nx_n, ny_n, nz_n = wall_normals
 
     # ── Step 1: BFL interpolated bounce-back (post-stream) ──
+    link_force_decomposition = None
     if apply_bfl and fluid_boundary_mask is not None:
         wall_velocity = None
         wall_density = None
@@ -1191,7 +1193,7 @@ def bfl_wall_function_3d(
                     (1.0 - normal_activation) * uz_pre,
                 )
             wall_density = rho_pre
-        f, bfl_force = bouzidi_bounce_back_d3q19(
+        bfl_result = bouzidi_bounce_back_d3q19(
             f, f_prev, fluid_boundary_mask, q_field,
             wall_velocity=wall_velocity, wall_density=wall_density,
             # Never interpolate with streamed-from-solid data.  Startup is
@@ -1208,7 +1210,14 @@ def bfl_wall_function_3d(
             force_frame=(
                 "laboratory" if normal_activation >= 1.0 else "wall"
             ),
+            force_normals=(nx_n, ny_n, nz_n),
+            return_force_decomposition=return_wall_diagnostics,
         )
+        if return_wall_diagnostics:
+            f, bfl_force, link_diagnostics = bfl_result
+            link_force_decomposition = asdict(link_diagnostics)
+        else:
+            f, bfl_force = bfl_result
     else:
         bfl_force = (0.0, 0.0, 0.0)
 
@@ -1244,6 +1253,7 @@ def bfl_wall_function_3d(
                 u_tau_mean=wall_diagnostics.mean_u_tau,
                 shear_force=wall_diagnostics.shear_force,
                 y_plus_summary=wall_diagnostics.y_plus_summary,
+                link_force_decomposition=link_force_decomposition,
             )
             return f, wall_diagnostics.shear_force[0], bfl_force[0], diagnostics
         return f, wall_diagnostics.shear_force[0], bfl_force[0]
@@ -1535,6 +1545,7 @@ def bfl_wall_function_3d(
             pressure_gradient_parameter_max=pressure_gradient_parameter_max,
             pressure_gradient_summary=pressure_gradient_summary,
             pressure_gradient_axial_profile=pressure_gradient_axial_profile,
+            link_force_decomposition=link_force_decomposition,
         )
         return f, drag_fric, drag_pres, diagnostics
     return f, drag_fric, drag_pres

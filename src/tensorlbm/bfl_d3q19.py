@@ -4,9 +4,27 @@ Extends compute_q_circle from D2Q9 to D3Q19 by computing q for all
 directions with c_z=0 (8 directions) and setting q=0.5 for z-containing
 directions (10 directions, no intersection with extruded cylinder).
 """
+from dataclasses import dataclass
 import math
 import torch
 from .d3q19 import C, W
+
+
+@dataclass(frozen=True)
+class BFLLinkForceDecomposition:
+    """Geometry-normal and tangential parts of the actual link impulse."""
+
+    force_frame: str
+    active_links: int
+    decomposed_links: int
+    undecomposed_links: int
+    coverage_fraction: float
+    total_force: tuple[float, float, float]
+    normal_force: tuple[float, float, float]
+    tangential_force: tuple[float, float, float]
+    unresolved_force: tuple[float, float, float]
+    maximum_closure_error: float
+    maximum_relative_closure_error: float
 
 
 def compute_q_cylinder_d3q19(
@@ -166,7 +184,17 @@ def bouzidi_bounce_back_d3q19(
     boundary_fraction: float = 1.0,
     return_force: bool = False,
     force_frame: str = "laboratory",
-) -> torch.Tensor | tuple[torch.Tensor, tuple[float, float, float]]:
+    force_normals: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
+    return_force_decomposition: bool = False,
+) -> (
+    torch.Tensor
+    | tuple[torch.Tensor, tuple[float, float, float]]
+    | tuple[
+        torch.Tensor,
+        tuple[float, float, float],
+        BFLLinkForceDecomposition,
+    ]
+):
     """Apply BFL interpolated bounce-back for ALL D3Q19 directions.
     
     Per-direction q-values (not per-cell). Uses OPPOSITE array.
@@ -189,6 +217,13 @@ def bouzidi_bounce_back_d3q19(
             returns the Galilean-invariant moving-wall-frame diagnostic.  A
             numerical tangential slip velocity is not a physical body motion,
             so stationary-body force validation must use ``"laboratory"``.
+        force_normals: Optional outward unit-normal fields ``(nx, ny, nz)``.
+            Required with ``return_force_decomposition``.  The diagnostic
+            projects the *actual population impulse* after any moving-wall
+            correction; it does not reconstruct pressure from density.
+        return_force_decomposition: Return a third result containing the
+            geometry-normal and tangential link-impulse sums.  This is a
+            diagnostic decomposition, not by itself a pressure/shear model.
     
     Returns:
         Updated distribution tensor.
@@ -200,12 +235,31 @@ def bouzidi_bounce_back_d3q19(
         raise ValueError("boundary_fraction must be in [0,1]")
     if force_frame not in {"laboratory", "wall"}:
         raise ValueError("force_frame must be 'laboratory' or 'wall'")
+    if return_force_decomposition and not return_force:
+        raise ValueError("force decomposition requires return_force=True")
+    if return_force_decomposition and force_normals is None:
+        raise ValueError("force_normals are required for force decomposition")
+    if force_normals is not None and any(
+        component.shape != f.shape[1:] for component in force_normals
+    ):
+        raise ValueError("force_normals must share the spatial grid shape")
     opp = OPPOSITE.to(f.device)
     weights = W.to(device=f.device, dtype=f.dtype)
     f_out = f.clone()
     force_x = torch.zeros((), device=f.device, dtype=f.dtype)
     force_y = torch.zeros_like(force_x)
     force_z = torch.zeros_like(force_x)
+    normal_force_x = torch.zeros_like(force_x)
+    normal_force_y = torch.zeros_like(force_x)
+    normal_force_z = torch.zeros_like(force_x)
+    tangential_force_x = torch.zeros_like(force_x)
+    tangential_force_y = torch.zeros_like(force_x)
+    tangential_force_z = torch.zeros_like(force_x)
+    unresolved_force_x = torch.zeros_like(force_x)
+    unresolved_force_y = torch.zeros_like(force_x)
+    unresolved_force_z = torch.zeros_like(force_x)
+    active_force_links = 0
+    decomposed_links = 0
     
     for d in range(1, 19):  # skip rest
         opp_d = int(opp[d].item())
@@ -282,9 +336,75 @@ def bouzidi_bounce_back_d3q19(
                 link_fx = link_fx + exchange_diff * uwx[mask]
                 link_fy = link_fy + exchange_diff * uwy[mask]
                 link_fz = link_fz + exchange_diff * uwz[mask]
-            force_x = force_x + boundary_fraction * link_fx.sum()
-            force_y = force_y + boundary_fraction * link_fy.sum()
-            force_z = force_z + boundary_fraction * link_fz.sum()
+            link_fx = boundary_fraction * link_fx
+            link_fy = boundary_fraction * link_fy
+            link_fz = boundary_fraction * link_fz
+            force_x = force_x + link_fx.sum()
+            force_y = force_y + link_fy.sum()
+            force_z = force_z + link_fz.sum()
+            if return_force_decomposition:
+                assert force_normals is not None
+                local_normals = tuple(
+                    component.to(device=f.device, dtype=f.dtype)[mask]
+                    for component in force_normals
+                )
+                normal_magnitude = torch.sqrt(sum(
+                    component * component for component in local_normals
+                ))
+                if not bool(torch.isfinite(normal_magnitude).all()):
+                    raise ValueError(
+                        "force_normals must be finite on active links",
+                    )
+                valid_normal = normal_magnitude > 1.0e-12
+                unit_normals = tuple(
+                    torch.where(
+                        valid_normal,
+                        component / normal_magnitude.clamp_min(1.0e-12),
+                        torch.zeros_like(component),
+                    )
+                    for component in local_normals
+                )
+                normal_scalar = (
+                    link_fx * unit_normals[0]
+                    + link_fy * unit_normals[1]
+                    + link_fz * unit_normals[2]
+                )
+                normal_components = tuple(
+                    normal_scalar * component for component in unit_normals
+                )
+                tangential_components = (
+                    torch.where(
+                        valid_normal,
+                        link_fx - normal_components[0],
+                        torch.zeros_like(link_fx),
+                    ),
+                    torch.where(
+                        valid_normal,
+                        link_fy - normal_components[1],
+                        torch.zeros_like(link_fy),
+                    ),
+                    torch.where(
+                        valid_normal,
+                        link_fz - normal_components[2],
+                        torch.zeros_like(link_fz),
+                    ),
+                )
+                unresolved_components = (
+                    torch.where(valid_normal, torch.zeros_like(link_fx), link_fx),
+                    torch.where(valid_normal, torch.zeros_like(link_fy), link_fy),
+                    torch.where(valid_normal, torch.zeros_like(link_fz), link_fz),
+                )
+                normal_force_x += normal_components[0].sum()
+                normal_force_y += normal_components[1].sum()
+                normal_force_z += normal_components[2].sum()
+                tangential_force_x += tangential_components[0].sum()
+                tangential_force_y += tangential_components[1].sum()
+                tangential_force_z += tangential_components[2].sum()
+                unresolved_force_x += unresolved_components[0].sum()
+                unresolved_force_y += unresolved_components[1].sum()
+                unresolved_force_z += unresolved_components[2].sum()
+                active_force_links += int(mask.sum().item())
+                decomposed_links += int(valid_normal.sum().item())
 
         # Set f[opp_d] (the UNKNOWN population, from solid toward fluid),
         # NOT f[d] (the known population, from fluid toward solid).
@@ -300,9 +420,59 @@ def bouzidi_bounce_back_d3q19(
         f_out[opp_d] = target
     
     if return_force:
-        return f_out, (
+        total_force = (
             float(force_x.item()),
             float(force_y.item()),
             float(force_z.item()),
         )
+        if return_force_decomposition:
+            normal_force = (
+                float(normal_force_x.item()),
+                float(normal_force_y.item()),
+                float(normal_force_z.item()),
+            )
+            tangential_force = (
+                float(tangential_force_x.item()),
+                float(tangential_force_y.item()),
+                float(tangential_force_z.item()),
+            )
+            unresolved_force = (
+                float(unresolved_force_x.item()),
+                float(unresolved_force_y.item()),
+                float(unresolved_force_z.item()),
+            )
+            closure = max(
+                abs(total - normal - tangential - unresolved)
+                for total, normal, tangential, unresolved in zip(
+                    total_force,
+                    normal_force,
+                    tangential_force,
+                    unresolved_force,
+                    strict=True,
+                )
+            )
+            closure_scale = max(
+                *(abs(value) for value in total_force),
+                *(abs(value) for value in normal_force),
+                *(abs(value) for value in tangential_force),
+                *(abs(value) for value in unresolved_force),
+                torch.finfo(f.dtype).tiny,
+            )
+            return f_out, total_force, BFLLinkForceDecomposition(
+                force_frame=force_frame,
+                active_links=active_force_links,
+                decomposed_links=decomposed_links,
+                undecomposed_links=active_force_links - decomposed_links,
+                coverage_fraction=(
+                    decomposed_links / active_force_links
+                    if active_force_links else 1.0
+                ),
+                total_force=total_force,
+                normal_force=normal_force,
+                tangential_force=tangential_force,
+                unresolved_force=unresolved_force,
+                maximum_closure_error=closure,
+                maximum_relative_closure_error=closure / closure_scale,
+            )
+        return f_out, total_force
     return f_out
