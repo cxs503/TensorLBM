@@ -1043,3 +1043,41 @@ def test_sphere_v4_launcher_locks_bounded_compiled_family(
     assert "--sponge-inlet" in arguments
     output = arguments[arguments.index("--output") + 1]
     assert "sphere-v4-natural-kbc-equivalent-r15-12000" in output
+
+
+def test_sphere_v4_convergence_assessor_uses_only_matching_family(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    for radius, steps in ((9, 7200), (12, 9600), (15, 12000)):
+        (tmp_path / (
+            f"sphere-v4-natural-kbc-equivalent-r{radius}-{steps}.json"
+        )).write_text("{}\n", encoding="utf-8")
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_sphere_v4_convergence_assess.sh"),
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    inputs = arguments[1:4]
+    assert all("sphere-v4-natural-kbc-equivalent" in value for value in inputs)
+    assert arguments[arguments.index("--output") + 1].endswith(
+        "sphere-v4-natural-kbc-r9-r12-r15-convergence.json"
+    )
