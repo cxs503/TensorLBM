@@ -102,6 +102,14 @@ def test_nested_smoke_can_include_upstream_sponge(
     assert result["configuration"]["sponge_inlet"] is True
 
 
+def test_wall_exchange_cannot_reach_fine_interface(tmp_path: Path) -> None:
+    args = _args(tmp_path, preflight=True)
+    args.stress_exchange_distance = 6.0
+
+    with pytest.raises(ValueError, match="wall exchange requires"):
+        MODULE.run(args)
+
+
 def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) -> None:
     result = MODULE.run(_args(tmp_path))
 

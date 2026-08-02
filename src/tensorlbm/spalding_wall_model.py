@@ -14,6 +14,7 @@ nodes.  D3Q19 and D3Q27 are supported.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import torch
@@ -149,6 +150,49 @@ def _equilibrium_sparse(
     cu = c[:, 0, None] * ux + c[:, 1, None] * uy + c[:, 2, None] * uz
     u2 = ux.square() + uy.square() + uz.square()
     return w[:, None] * rho[None, :] * (1.0 + 3.0 * cu + 4.5 * cu.square() - 1.5 * u2)
+
+
+@dataclass(frozen=True)
+class WallExchangeInterfaceClearance:
+    exchange_distance_cells: float
+    available_buffer_cells: int
+    interpolation_radius_cells: int
+    required_buffer_cells: int
+    remaining_clearance_cells: int
+    admitted: bool
+
+    def to_dict(self) -> dict[str, float | int | bool]:
+        return {
+            "exchange_distance_cells": self.exchange_distance_cells,
+            "available_buffer_cells": self.available_buffer_cells,
+            "interpolation_radius_cells": self.interpolation_radius_cells,
+            "required_buffer_cells": self.required_buffer_cells,
+            "remaining_clearance_cells": self.remaining_clearance_cells,
+            "admitted": self.admitted,
+        }
+
+
+def assess_wall_exchange_interface_clearance(
+    *,
+    exchange_distance_cells: float,
+    available_buffer_cells: int,
+    interpolation_radius_cells: int = 1,
+) -> WallExchangeInterfaceClearance:
+    """Fail closed when a wall sample can touch an AMR interface stencil."""
+    if not math.isfinite(exchange_distance_cells) or exchange_distance_cells <= 0.0:
+        raise ValueError("exchange_distance_cells must be finite and positive")
+    if available_buffer_cells < 0 or interpolation_radius_cells < 0:
+        raise ValueError("buffer and interpolation radius must be non-negative")
+    required = math.ceil(exchange_distance_cells) + interpolation_radius_cells
+    remaining = available_buffer_cells - required
+    return WallExchangeInterfaceClearance(
+        exchange_distance_cells=exchange_distance_cells,
+        available_buffer_cells=available_buffer_cells,
+        interpolation_radius_cells=interpolation_radius_cells,
+        required_buffer_cells=required,
+        remaining_clearance_cells=remaining,
+        admitted=remaining >= 0,
+    )
 
 
 @dataclass(frozen=True)
@@ -352,7 +396,9 @@ __all__ = [
     "SPALDING_A",
     "SPALDING_KAPPA",
     "SpaldingWallDiagnostics",
+    "WallExchangeInterfaceClearance",
     "WallExchangeSamples",
+    "assess_wall_exchange_interface_clearance",
     "apply_spalding_exchange_wall_model",
     "effective_bfl_wall_distance",
     "solve_spalding_friction_velocity",

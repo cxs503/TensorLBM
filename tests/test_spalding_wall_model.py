@@ -6,6 +6,7 @@ import torch
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.spalding_wall_model import (
     apply_spalding_exchange_wall_model,
+    assess_wall_exchange_interface_clearance,
     effective_bfl_wall_distance,
     sample_wall_exchange_velocity,
     solve_spalding_friction_velocity,
@@ -30,6 +31,27 @@ def test_spalding_inverse_round_trip() -> None:
     u_plus = torch.tensor([0.0, 1.0, 5.0, 12.0, 22.0], dtype=torch.float64)
     recovered = spalding_u_plus_from_y_plus(spalding_y_plus(u_plus))
     assert torch.allclose(recovered, u_plus, atol=2e-10, rtol=0.0)
+
+
+def test_exchange_interface_clearance_accounts_for_trilinear_support() -> None:
+    assessment = assess_wall_exchange_interface_clearance(
+        exchange_distance_cells=8.4375,
+        available_buffer_cells=14,
+    )
+
+    assert assessment.required_buffer_cells == 10
+    assert assessment.remaining_clearance_cells == 4
+    assert assessment.admitted is True
+
+
+def test_exchange_interface_clearance_fails_closed() -> None:
+    assessment = assess_wall_exchange_interface_clearance(
+        exchange_distance_cells=8.4375,
+        available_buffer_cells=9,
+    )
+
+    assert assessment.remaining_clearance_cells == -1
+    assert assessment.admitted is False
 
 
 def test_friction_velocity_recovers_manufactured_spalding_state() -> None:
