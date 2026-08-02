@@ -38,6 +38,10 @@ python=${TENSORLBM_PYTHON:-/home/wxsc/anaconda3/envs/ftw-env/bin/python}
 export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
 export CUDA_VISIBLE_DEVICES=$gpu
 result_dir=results/amr_campaign_20260801
+stem=${TENSORLBM_SUBOFF_STEM:-$stem}
+stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1.0}
+wall_exchange_ratio_target=${TENSORLBM_WALL_EXCHANGE_RATIO_TARGET:-0.0013888888888888889}
+wall_y_plus_upper_bound=${TENSORLBM_WALL_Y_PLUS_UPPER_BOUND:-1000}
 
 exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --device cuda:0 --level-devices "" --hull-type bare_hull --speed-knots 5.92 \
@@ -60,9 +64,10 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --compile-natural-kbc --natural-kbc-compute-dtype float64 \
   --wall-force-direction-chunk 4 --low-memory-wall-macroscopic \
   --cs-smag 0 --wale-cw 0.5 --vreman-cv 0.025 \
-  --wall-law musker --stress-exchange-distance 1.0 \
-  --wall-exchange-distance-over-length-target 0.0013888888888888889 \
-  --wall-model-y-plus-lower-bound 30 --wall-model-y-plus-upper-bound 1000 \
+  --wall-law musker --stress-exchange-distance "$stress_exchange_distance" \
+  --wall-exchange-distance-over-length-target "$wall_exchange_ratio_target" \
+  --wall-model-y-plus-lower-bound 30 \
+  --wall-model-y-plus-upper-bound "$wall_y_plus_upper_bound" \
   --minimum-wall-model-y-plus-in-range-fraction 0.9 \
   --sponge-width 18 --sponge-strength 0.3 --sponge-inlet \
   --far-field-mode non_equilibrium_extrapolation --memory-bytes-per-cell 1300 \
