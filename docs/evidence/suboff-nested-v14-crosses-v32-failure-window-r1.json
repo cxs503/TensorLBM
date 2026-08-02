@@ -1,6 +1,6 @@
 {
   "schema": "tensorlbm-suboff-nested-stability-comparison-v1",
-  "status": "stable_through_previous_failure_step",
+  "status": "completed_stable_stationary_but_inaccurate",
   "physical_validation": false,
   "comparison_step": 6720,
   "common_configuration": {
@@ -52,12 +52,35 @@
     "sponge_inlet_signature_present": true,
     "force_samples_per_root_step_signature_present": false
   },
+  "completed_v14": {
+    "steps": 12000,
+    "mean_resistance_n": 122.71323678342979,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 40.40416107943911,
+    "stationarity": {
+      "relative_range_pct": 0.06222117762435457,
+      "half_mean_drift_pct": 0.03623580479271408,
+      "linear_trend_pct": 0.054235253795135226,
+      "confidence95_half_width_pct": 0.01881994416404645,
+      "target_pct": 1.0,
+      "target_met": true
+    },
+    "measured_peak_allocated_gib": 4.68605899810791,
+    "finite": true,
+    "integration_smoke_pass": true,
+    "physical_accuracy_admitted": false,
+    "remote_result": {
+      "path": "results/amr_campaign_20260801/suboff-nested-v14-equivalent-l90-12k.json",
+      "sha256": "9e697d178409e9659d361e0a995cdc54037fed1ed6b209f4d4c62fb97cce6e8f"
+    }
+  },
   "interpretation": [
     "The corrected-source plus inlet-sponge v14 trajectory remains healthy at the exact root step where legacy v32 crossed the population floor.",
     "The root-grid speed spike is absent, while intermediate and finest levels remain comparable to v32's healthy values.",
     "This comparison changes both the wall-traction source and inlet sponge, so it does not isolate which change supplies the stability improvement.",
     "The concurrently running corrected-source v13 trajectory without inlet sponge is the required causal A/B baseline.",
-    "The v14 checkpoint predates explicit force-sample-count provenance; its three-level force arithmetic is useful diagnostically but is not admitted to a future convergence set without that metadata."
+    "The v14 checkpoint predates explicit force-sample-count provenance; its three-level force arithmetic is useful diagnostically but is not admitted to a future convergence set without that metadata.",
+    "The completed trajectory is highly stationary, so extending the same three-level Re=100000 configuration is not a credible route from 122.71 N to the 87.4 N experiment."
   ],
   "provenance": {
     "v14_log_sha256_at_audit": "2c42a92686375320f359c9a9617284cbef003cd6ba5a717697e31c08e9104f82",
