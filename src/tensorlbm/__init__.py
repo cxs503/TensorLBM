@@ -704,7 +704,10 @@ from .spalding_wall_model import (
     spalding_y_plus,
 )
 from .sphere_boundary_sensitivity import assess_sphere_inlet_sponge_pair
-from .sphere_domain_sensitivity import assess_sphere_domain_sensitivity_pair
+from .sphere_domain_sensitivity import (
+    assess_sphere_domain_convergence,
+    assess_sphere_domain_sensitivity_pair,
+)
 from .wall_exchange_yplus import (
     WallExchangeYPlusAggregate,
     WallExchangeYPlusSummary,
@@ -809,6 +812,7 @@ __all__ = [
     "spalding_u_plus_from_y_plus",
     "spalding_y_plus",
     "assess_sphere_domain_sensitivity_pair",
+    "assess_sphere_domain_convergence",
     "assess_sphere_inlet_sponge_pair",
     "WallExchangeYPlusAggregate",
     "WallExchangeYPlusSummary",
