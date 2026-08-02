@@ -1,0 +1,83 @@
+{
+  "schema": "tensorlbm-nested-suboff-wall-checkpoint-audit-v1",
+  "status": "diagnostic_only",
+  "physical_validation": false,
+  "source_path": "results/amr_campaign_20260801/suboff-nested-v20-equivalent-l90-12k.ckpt",
+  "source_schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v3",
+  "source_step": 12000,
+  "device": "cuda:0",
+  "hull_type": "bare_hull",
+  "level_count": 3,
+  "finest_population_shape": [
+    19,
+    76,
+    76,
+    420
+  ],
+  "finest_hull_length_cells": 360.0,
+  "physical_reynolds": 13213381.41322709,
+  "wall_lattice_viscosity": 1.6347064634324101e-06,
+  "stress_exchange_distance_cells": 1.0,
+  "surface_area_weighting": {
+    "boundary_nodes": 37110,
+    "unweighted_nodes": 0,
+    "raw_area": 41639.0,
+    "calibrated_area": 40922.828125,
+    "calibration_factor": 0.9828004995316891
+  },
+  "wall_exchange": {
+    "mode": "exchange_location_guo",
+    "requested_nodes": 37110,
+    "active_nodes": 37110,
+    "rejected_fraction": 0.0,
+    "wall_distance_mean": 1.0673763751983643,
+    "y_plus_min": 12.484467506408691,
+    "y_plus_mean": 1503.0030517578125,
+    "y_plus_max": 2455.570068359375,
+    "u_tau_mean": 0.002304319990798831,
+    "shear_force": [
+      0.22134247422218323,
+      0.0015316236531361938,
+      0.0003962918999604881
+    ],
+    "y_plus_summary": {
+      "requested_samples": 37110,
+      "finite_samples": 37110,
+      "minimum_y_plus": 12.484467506408691,
+      "percentile05_y_plus": 973.4434600830078,
+      "median_y_plus": 1507.2406005859375,
+      "mean_y_plus": 1503.0030517578125,
+      "percentile95_y_plus": 1939.355285644531,
+      "maximum_y_plus": 2455.570068359375,
+      "lower_bound_y_plus": 30.0,
+      "upper_bound_y_plus": 1000.0,
+      "below_range_samples": 2,
+      "in_range_samples": 1929,
+      "above_range_samples": 35179,
+      "finite_fraction": 1.0,
+      "in_range_fraction": 0.05198059822150364,
+      "minimum_in_range_fraction": 0.9,
+      "admitted": false
+    },
+    "pressure_gradient_parameter_mean": 27.18914794921875,
+    "pressure_gradient_parameter_p95": 81.73016815185542,
+    "pressure_gradient_parameter_max": 260970.34375,
+    "pressure_gradient_summary": {
+      "requested_samples": 37110,
+      "valid_samples": 37110,
+      "rejected_fraction": 0.0,
+      "minimum": 0.008395835757255554,
+      "percentile05": 0.8640948295593261,
+      "median": 4.5035741329193115,
+      "mean": 27.18914794921875,
+      "percentile95": 81.73016815185542,
+      "maximum": 260970.34375,
+      "le_one_samples": 2387,
+      "gt_ten_samples": 12251,
+      "fraction_le_one": 0.06432228509835623,
+      "fraction_gt_ten": 0.3301266504985179,
+      "gradient_scheme": "fluid_only_weighted_least_squares_26"
+    }
+  },
+  "population_state_advanced": false
+}

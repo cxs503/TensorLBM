@@ -1639,6 +1639,29 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      and `4966bf7cb81819a4058595c6bdd024a87b807f3b9f69aec2ae843964fc820d43`.
      GPU2 now runs the viscosity-correct natural-KBC L90 diagnostic, still
      excluded from physical acceptance pending nonlinear evidence.
+183. A read-only nested-checkpoint wall auditor now reconstructs the exact
+     SUBOFF CAD, BFL links, analytical normals and calibrated surface-area
+     weights, then evaluates the frozen finest-level population field without
+     BFL application, forcing or time advance.  This permits wall-model
+     applicability audits across checkpoint generations without mixing old and
+     new wall-source dynamics in a resumed trajectory.
+184. The tangential pressure-gradient diagnostic no longer uses Cartesian
+     central differences that can sample arbitrary solid-node populations.
+     A common 26-neighbour, inverse-distance-weighted least-squares module uses
+     fluid neighbours only, projects the fitted gradient onto the wall tangent
+     plane and fails closed on rank-deficient stencils.  Linear-field recovery,
+     solid-value isolation, rank-deficiency and exact count aggregation tests
+     pass together with the wall-force and nested-runner regressions.
+185. The corrected-source v23 step-3000 checkpoint has 91.82% of exchange-node
+     samples in the declared `30 <= y+ <= 1000` range, versus 5.20% for the
+     pre-source-correction v20 step-12000 state.  With the solid-aware gradient,
+     v23's pressure-gradient parameter has median `0.9701`; 51.04% of nodes are
+     at or below one and 29.84% exceed ten.  This is diagnostic-only evidence
+     that a spatially selective non-equilibrium wall treatment is needed; it is
+     not a force correction or physical validation.  Versioned audit SHA-256
+     values are `d4a66eabd569976d3a4d17f8c31c7609a4703b523a77facf1240f3b96898902d`
+     for v23 and `c217b4ff8572bf8e8a218cc4e3aa90fe51623957e460dabe8e84907f100a4b99`
+     for v20.
 
 ## Rejected candidates
 
