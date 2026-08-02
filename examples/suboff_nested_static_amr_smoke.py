@@ -1470,6 +1470,7 @@ def run(args: argparse.Namespace) -> dict:
                 diagnostics.pressure_gradient_parameter_max
             )
             pressure_gradient_summary = diagnostics.pressure_gradient_summary
+            wall_shear_axial_profile = diagnostics.wall_shear_axial_profile
             link_force_decomposition = diagnostics.link_force_decomposition
         else:
             out, friction, pressure = wall_result
@@ -1482,6 +1483,7 @@ def run(args: argparse.Namespace) -> dict:
             pressure_gradient_parameter_p95 = None
             pressure_gradient_parameter_max = None
             pressure_gradient_summary = None
+            wall_shear_axial_profile = None
             link_force_decomposition = None
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
@@ -1538,6 +1540,7 @@ def run(args: argparse.Namespace) -> dict:
             "pressure_gradient_parameter_p95": pressure_gradient_parameter_p95,
             "pressure_gradient_parameter_max": pressure_gradient_parameter_max,
             "pressure_gradient_summary": pressure_gradient_summary,
+            "wall_shear_axial_profile": wall_shear_axial_profile,
             "link_force_decomposition": link_force_decomposition,
             "auxiliary": auxiliary_forces,
         })
@@ -1910,6 +1913,10 @@ def run(args: argparse.Namespace) -> dict:
             ).to_dict()
             if pressure_gradient_summaries else None
         )
+        wall_shear_profiles = [
+            item["wall_shear_axial_profile"] for item in force_samples
+            if item["wall_shear_axial_profile"] is not None
+        ]
         link_force_samples = [
             item["link_force_decomposition"] for item in force_samples
             if item["link_force_decomposition"] is not None
@@ -2078,6 +2085,9 @@ def run(args: argparse.Namespace) -> dict:
                 ) if pressure_gradient_samples else None
             ),
             "wall_pressure_gradient_distribution": pressure_gradient_aggregate,
+            "wall_shear_axial_profile": (
+                wall_shear_profiles[-1] if wall_shear_profiles else None
+            ),
             "bfl_link_force_decomposition": link_force_aggregate,
             "wall_fully_activated": current_step >= max(
                 wall_normal_ramp_steps, wall_shear_ramp_steps,
