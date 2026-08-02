@@ -1718,6 +1718,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      outgoing-population, extrapolation, exact delta-closure, sponge and sphere
      sensitivity tests pass.  This creates the missing observable needed to
      distinguish open-boundary forcing from interior CFD resistance.
+193. The nested SUBOFF runner records the open-boundary ledger at health
+     cadence for both reconstruction stages: immediately after streaming and
+     after the sponge source.  Per-step health output includes the two stage
+     records plus their combined mass/momentum population delta; normal runs
+     incur no diagnostic reductions between health samples.  The recursive
+     two-interface smoke test verifies both stages and finite three-component
+     momentum evidence.
 
 ## Rejected candidates
 

@@ -52,6 +52,7 @@ def _args(
         "--aux-cv-margins", "1,3", "--surface-force-interval", "1",
         "--warmup-steps", "0", "--statistics-window-steps", str(steps),
         "--report-interval", "1", "--wall-diagnostic-interval", "1",
+        "--health-interval", "1",
         "--resolved-reynolds", "2000", "--sponge-width", "3",
         "--memory-bytes-per-cell", "742",
         "--ghost-interpolation", ghost_interpolation,
@@ -158,6 +159,12 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert component_audit["component_sum"] == pytest.approx(
         statistics["mean_bfl_plus_wall_stress_n"],
     )
+    boundary_delta = result["result"]["population_health"][0][
+        "open_boundary_population_delta"
+    ]
+    assert len(boundary_delta["stages"]) == 2
+    assert boundary_delta["finite"] is True
+    assert len(boundary_delta["momentum_delta"]) == 3
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
