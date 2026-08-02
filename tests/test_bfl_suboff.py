@@ -506,6 +506,11 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
     assert diagnostics.pressure_gradient_parameter_p95 == pytest.approx(0.0)
     assert diagnostics.pressure_gradient_parameter_max == pytest.approx(0.0)
     assert diagnostics.shear_force[0] == pytest.approx(exchange_friction)
+    assert diagnostics.wall_shear_axial_profile is not None
+    assert sum(
+        item["signed_shear_x_sum_lu"]
+        for item in diagnostics.wall_shear_axial_profile
+    ) == pytest.approx(exchange_friction)
     assert diagnostics.link_force_decomposition is None
 
 
