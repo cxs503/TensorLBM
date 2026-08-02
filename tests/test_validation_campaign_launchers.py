@@ -1173,6 +1173,44 @@ def test_sphere_v4_launcher_locks_bounded_compiled_family(
     assert "sphere-v4-natural-kbc-equivalent-r15-12000" in output
 
 
+def test_sphere_v5_w20_changes_only_transverse_domain_label(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(ROOT / "scripts" / "run_sphere_v5_domain_w20_r12.sh"),
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--radius") + 1] == "12"
+    assert arguments[arguments.index("--nx") + 1] == "288"
+    assert arguments[arguments.index("--ny") + 1] == "240"
+    assert arguments[arguments.index("--nz") + 1] == "240"
+    assert "--compile-natural-kbc" in arguments
+    assert "--sponge-inlet" in arguments
+    output = arguments[arguments.index("--output") + 1]
+    assert "sphere-v5-natural-kbc-domain-w20-r12-9600" in output
+
+
 def test_sphere_v4_convergence_assessor_uses_only_matching_family(
     tmp_path: Path,
 ) -> None:
