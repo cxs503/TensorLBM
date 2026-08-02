@@ -67,6 +67,8 @@ _w_corner = 1.0 / 216.0
 
 _W_DATA = [_w_rest] + [_w_face] * 6 + [_w_edge] * 12 + [_w_corner] * 8
 W = torch.tensor(_W_DATA, dtype=torch.float32)
+W_EXACT64 = torch.tensor(_W_DATA, dtype=torch.float64)
+WEIGHT_PRECISION_SCHEME = "rational_binary64_cast_to_runtime_dtype_v1"
 
 
 def _build_opposite() -> torch.Tensor:
@@ -335,8 +337,11 @@ def _c_on(device: torch.device) -> torch.Tensor:
 
 
 @functools.cache
-def _w_on(device: torch.device) -> torch.Tensor:
-    return W.to(device)
+def _w_on(
+    device: torch.device,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
+    return W_EXACT64.to(device=device, dtype=dtype)
 
 
 def equilibrium27(
@@ -365,8 +370,8 @@ def equilibrium27(
     """
     if device is None:
         device = rho.device
-    c = _c_on(device).float()
-    w = _w_on(device).view(27, 1, 1, 1)
+    c = _c_on(device).to(dtype=rho.dtype)
+    w = _w_on(device, rho.dtype).view(27, 1, 1, 1)
 
     cx = c[:, 0].view(27, 1, 1, 1)
     cy = c[:, 1].view(27, 1, 1, 1)
@@ -396,7 +401,7 @@ def macroscopic27(
     """
     if device is None:
         device = f.device
-    c = _c_on(device).float()
+    c = _c_on(device).to(dtype=f.dtype)
     cx = c[:, 0].view(27, 1, 1, 1)
     cy = c[:, 1].view(27, 1, 1, 1)
     cz = c[:, 2].view(27, 1, 1, 1)
