@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -127,6 +128,7 @@ def run_sphere_bfl_control_volume(
     config: SphereBFLControlVolumeConfig,
 ) -> dict[str, object]:
     """Run the canonical benchmark and return a machine-readable result."""
+    invocation_started = time.perf_counter()
     config.validate()
     device = torch.device(config.device)
     if device.type == "cuda":
@@ -343,6 +345,8 @@ def run_sphere_bfl_control_volume(
         and observer_difference <= 1.0
         and duration_acceptable
     )
+    invocation_elapsed_seconds = time.perf_counter() - invocation_started
+    steps_advanced = config.steps - start_step
     return {
         "schema": "tensorlbm-sphere-bfl-control-volume-v3",
         "configuration": checkpoint_signature | {
@@ -369,6 +373,11 @@ def run_sphere_bfl_control_volume(
             "drag_stationarity": stationarity.to_dict(),
             "finite": math.isfinite(cd),
             "collision_execution": natural_kbc_executor.diagnostics(),
+        },
+        "runtime": {
+            "invocation_elapsed_seconds": invocation_elapsed_seconds,
+            "steps_advanced": steps_advanced,
+            "seconds_per_step": invocation_elapsed_seconds / steps_advanced,
         },
         "acceptance": {
             "drag_error_target_pct": 5.0,
