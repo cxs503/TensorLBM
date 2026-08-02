@@ -120,6 +120,12 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["result"]["statistics"]["auxiliary_cv_difference_pct"] is not None
     assert result["result"]["statistics"]["surface_observer_difference_pct"] is not None
     assert result["result"]["statistics"]["wall_exchange"]["mean_distance_cells"] > 0.0
+    statistics = result["result"]["statistics"]
+    assert statistics["mean_bfl_pressure_n"] is not None
+    assert statistics["mean_wall_shear_n"] is not None
+    assert statistics["bfl_pressure_fraction"] + statistics[
+        "wall_shear_fraction"
+    ] == pytest.approx(1.0)
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:

@@ -1836,6 +1836,10 @@ def run(args: argparse.Namespace) -> dict:
     force_stationarity = None
     mean_resistance = None
     mean_bfl = None
+    mean_bfl_pressure = None
+    mean_wall_shear = None
+    pressure_fraction = None
+    wall_shear_fraction = None
     mean_source = None
     reference_error_pct = None
     wall_records = [
@@ -1848,6 +1852,14 @@ def run(args: argparse.Namespace) -> dict:
         mean_bfl = sum(
             record["bfl_plus_wall_stress_n"] for record in selected_records
         ) / len(selected_records)
+        mean_bfl_pressure = sum(
+            record["bfl_pressure_n"] for record in selected_records
+        ) / len(selected_records)
+        mean_wall_shear = sum(
+            record["wall_shear_n"] for record in selected_records
+        ) / len(selected_records)
+        pressure_fraction = mean_bfl_pressure / max(abs(mean_bfl), 1.0e-30)
+        wall_shear_fraction = mean_wall_shear / max(abs(mean_bfl), 1.0e-30)
         mean_source = sum(
             record["numerical_source_n"] for record in selected_records
         ) / len(selected_records)
@@ -2062,6 +2074,10 @@ def run(args: argparse.Namespace) -> dict:
                 "sampling_convective_times": sampling_convective_times,
                 "mean_resistance_n": mean_resistance,
                 "mean_bfl_plus_wall_stress_n": mean_bfl,
+                "mean_bfl_pressure_n": mean_bfl_pressure,
+                "mean_wall_shear_n": mean_wall_shear,
+                "bfl_pressure_fraction": pressure_fraction,
+                "wall_shear_fraction": wall_shear_fraction,
                 "mean_numerical_source_n": mean_source,
                 "experimental_resistance_n": point.resistance_n,
                 "reference_error_pct": reference_error_pct,

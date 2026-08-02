@@ -72,8 +72,10 @@
   ],
   "runtime_gate": {
     "required_free_reserve_gib_per_device": 1.0,
-    "two_gpu_equivalence_queue_wrapper_pid": 1640017,
-    "two_gpu_equivalence_probe_pid": 1640018,
+    "superseded_two_gpu_queue_pids": [1640017, 1640018],
+    "two_gpu_equivalence_queue_wrapper_pid": 1644563,
+    "two_gpu_equivalence_probe_pid": 1644564,
+    "waits_for_exact_solver_pids": [1598778, 1644306],
     "two_gpu_equivalence_probe_status": "queued",
     "chunked_allocation_queue_wrapper_pid": 1642900,
     "chunked_allocation_probe_pid": 1642901,
