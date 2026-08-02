@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import time
 from pathlib import Path
 
 import torch
@@ -322,6 +323,7 @@ def parser() -> argparse.ArgumentParser:
 
 
 def run(args: argparse.Namespace) -> dict:
+    invocation_started = time.perf_counter()
     if min(args.nx, args.ny, args.nz, args.hull_length, args.steps) <= 0:
         raise ValueError("grid, hull length and steps must be positive")
     if args.stress_exchange_distance <= 0.0:
@@ -2002,6 +2004,8 @@ def run(args: argparse.Namespace) -> dict:
         next(iter(peak_gib_by_device.values()))
         if len(peak_gib_by_device) == 1 else None
     )
+    invocation_elapsed_seconds = time.perf_counter() - invocation_started
+    root_steps_advanced = args.steps - start_step
     return {
         "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
         "status": (
@@ -2060,6 +2064,13 @@ def run(args: argparse.Namespace) -> dict:
         "planning": planning | {
             "measured_peak_allocated_gib": peak_gib,
             "measured_peak_allocated_gib_by_device": peak_gib_by_device,
+        },
+        "runtime": {
+            "invocation_elapsed_seconds": invocation_elapsed_seconds,
+            "root_steps_advanced": root_steps_advanced,
+            "seconds_per_root_step": (
+                invocation_elapsed_seconds / root_steps_advanced
+            ),
         },
         "geometry": finest_geometry | {
             "resolution": geometry_resolution_output,
