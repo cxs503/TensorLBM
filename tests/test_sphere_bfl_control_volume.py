@@ -67,6 +67,9 @@ def test_short_sphere_composition_is_finite() -> None:
     assert len(boundary_history) == 4
     assert all(len(record["stages"]) == 2 for record in boundary_history)
     assert all(record["finite"] for record in boundary_history)
+    boundary_audit = measured["open_boundary_population_delta_audit"]
+    assert boundary_audit["samples"] == 4
+    assert boundary_audit["finite"] is True
 
 
 def test_short_natural_kbc_sphere_composition_is_finite() -> None:
