@@ -1662,6 +1662,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      values are `d4a66eabd569976d3a4d17f8c31c7609a4703b523a77facf1240f3b96898902d`
      for v23 and `c217b4ff8572bf8e8a218cc4e3aa90fe51623957e460dabe8e84907f100a4b99`
      for v20.
+186. The fluid-only gradient sampler now retains the tangential gradient
+     vector and projects it onto the local exchange-velocity direction.  The
+     signed v23 audit is nearly balanced at the median (`-0.00625`) rather than
+     uniformly adverse: 21.16% of samples have a signed parameter above one,
+     while 15.62% are below minus one.  Any non-equilibrium closure must
+     therefore preserve sign and be activated locally; a global shear multiplier
+     is rejected.  The CPU-reproducible signed audit SHA-256 is
+     `b484a9e7218711bba51755823de9a365210e408d01415d50d690fef5d1b31e19`.
 
 ## Rejected candidates
 
