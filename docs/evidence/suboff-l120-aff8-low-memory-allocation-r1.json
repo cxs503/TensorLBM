@@ -1,0 +1,103 @@
+{
+  "schema": "tensorlbm-suboff-low-memory-allocation-evidence-v1",
+  "candidate": "directional-effective-bfl-wall-distance",
+  "status": "allocation_admitted_physics_not_assessed",
+  "physical_validation": false,
+  "implementation": {
+    "module": "src/tensorlbm/spalding_wall_model.py",
+    "function": "effective_bfl_wall_distance",
+    "before": "materialize projection, weight and q-weight tensors with shape Q x nz x ny x nx",
+    "after": "accumulate numerator and denominator one lattice direction at a time",
+    "mathematical_change": false,
+    "peak_temporary_complexity_before": "O(Q*nz*ny*nx)",
+    "peak_temporary_complexity_after": "O(nz*ny*nx)",
+    "d3q19_d3q27_vector_reference_tests_passed": 2,
+    "spalding_wall_model_tests_passed": 13
+  },
+  "l120_aff1_before": {
+    "status": "cuda_out_of_memory",
+    "failing_stage": "effective_bfl_wall_distance projection broadcast",
+    "requested_allocation_gib": 1.7,
+    "free_memory_gib": 1.06,
+    "pytorch_allocated_gib": 19.14,
+    "pytorch_reserved_unallocated_gib": 2.9,
+    "process_memory_gib": 22.37
+  },
+  "l120_aff1_after": {
+    "hull_type": "bare_hull",
+    "levels": 4,
+    "coarse_hull_length_cells": 120,
+    "finest_hull_length_cells": 960,
+    "finest_population_shape_zyx": [150, 150, 1036],
+    "finest_total_cells": 23310000,
+    "finest_solid_cells": 7490989,
+    "diameter_cells": 112.01866977829638,
+    "absolute_geometry_resolution_met": true,
+    "peak_allocated_gib_by_owner_device": {
+      "cuda:0": 7.361020088195801,
+      "cuda:1": 3.9756293296813965,
+      "cuda:2": 21.41701364517212
+    },
+    "root_steps_advanced": 1,
+    "seconds_per_root_step": 27.157058101845905,
+    "finite": true,
+    "maximum_speed": 0.06001070514321327,
+    "minimum_population": 0.02307034656405449,
+    "maximum_positivity_limited_fraction": 0.0,
+    "minimum_link_force_normal_coverage_fraction": 1.0,
+    "allocation_admitted": true,
+    "integration_smoke_admitted": false,
+    "integration_failure_reason": "one startup step cannot satisfy activation, duration, stationarity or conservative-force gates"
+  },
+  "l90_aff8_after": {
+    "hull_type": "full",
+    "levels": 4,
+    "coarse_hull_length_cells": 90,
+    "finest_hull_length_cells": 720,
+    "diameter_cells": 84.01400233372229,
+    "sail_max_thickness_cells": 11,
+    "horizontal_fin_max_thickness_cells": 11,
+    "vertical_fin_max_thickness_cells": 11,
+    "appendage_boundary_links": 63662,
+    "appendage_link_scheme": "continuous_parametric_bisection_v1",
+    "absolute_geometry_resolution_met": true,
+    "peak_allocated_gib": 16.684783458709717,
+    "root_steps_advanced": 1,
+    "seconds_per_root_step": 16.300855217967182,
+    "finite": true,
+    "maximum_speed": 0.060019783675670624,
+    "minimum_population": 0.023070432245731354,
+    "maximum_positivity_limited_fraction": 0.0,
+    "minimum_link_force_normal_coverage_fraction": 1.0,
+    "allocation_admitted": true,
+    "integration_smoke_admitted": false,
+    "integration_failure_reason": "one startup step cannot satisfy activation, duration, stationarity or conservative-force gates"
+  },
+  "resource_safety": {
+    "first_aff8_retry_blocked_by_nonproject_gpu1_process": true,
+    "nonproject_process_modified_or_terminated": false,
+    "successful_aff8_device": "physical GPU2",
+    "shared_gpu_jobs_serialized": true
+  },
+  "acceptance": {
+    "low_memory_equivalence_tests_met": true,
+    "l120_allocation_target_met": true,
+    "aff8_allocation_target_met": true,
+    "population_health_target_met": true,
+    "geometry_resolution_target_met": true,
+    "resistance_accuracy_assessed": false,
+    "time_convergence_assessed": false,
+    "grid_convergence_assessed": false
+  },
+  "artifacts": {
+    "l120_oom_log_sha256": "9a7e14b65910f476c3fe75cbb350f2881ab974fa43fc2dec3bcc8a70eb8a238d",
+    "l120_pass_log_sha256": "5b343dff5550d76a141e0348f8e48427d3014109efbb78aeaaa12a5888c8e12f",
+    "l120_result_sha256": "ed60ab0fd9f2d412286ddf9283d9afeec1779ba9810f3f1bae11bc1b52464dc5",
+    "l120_checkpoint_sha256": "076a2931a70631779a91121fe96b31b6c3ad8640b5b4ff7e124bdf3266e51db7",
+    "aff8_resource_rejection_log_sha256": "6b37fcfc43b3be7b734a4ab5fc9bab407c73c4fc4af0579c3b784def5a2fe628",
+    "aff8_pass_log_sha256": "ce2c7c5c298fb6fed4e4d343d91619d7b04d42be5a0d2d7781a6a8ed11efaf56",
+    "aff8_result_sha256": "ef2bb89145ef22bd26aa6fb46dfe3bd76f8ee69dcd59a593d4b60074c84af15c",
+    "aff8_checkpoint_sha256": "d15f0e8155f8325b437181d0ff3ca15f0b6bb503f09fcdc74bacb9e578a60b30"
+  },
+  "conclusion": "The direction-wise wall-distance reduction removes the L120 allocation blocker without changing its D3Q19/D3Q27 result. AFF-1 L120 now fits with a measured 21.42-GiB deepest-level peak, and the fully appended AFF-8 L90 case fits in 16.68 GiB with resolved 11-cell appendage thickness. These are allocation and one-step health results only; neither is a resistance result."
+}
