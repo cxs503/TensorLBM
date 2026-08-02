@@ -25,7 +25,7 @@ done
 python=${TENSORLBM_PYTHON:-/home/wxsc/anaconda3/envs/ftw-env/bin/python}
 result_dir=results/amr_campaign_20260801
 v40=$result_dir/suboff-nested-v40-re1m-mixed-fp64compute-l90-3k.json
-schedule=results/collision-viscosity-natural-kbc-suboff-re2m-mixed-r1.json
+schedule=results/collision-viscosity-natural-kbc-suboff-re2m-mixed-r2.json
 [[ -f $v40 ]] || { echo "missing SUBOFF v40 result" >&2; exit 4; }
 [[ -f $schedule ]] || { echo "missing Re2M viscosity schedule" >&2; exit 4; }
 
@@ -57,6 +57,10 @@ if not schedule.get("acceptance", {}).get(
     "all_levels_recover_configured_viscosity"
 ):
     raise SystemExit("Re2M collision viscosity is not certified")
+if float(schedule.get("acceptance", {}).get(
+    "minimum_fitted_log_decay", 0.0
+)) < 0.004:
+    raise SystemExit("Re2M viscosity certificate lacks a resolved decay signal")
 if schedule.get("dtype") != "float32" or schedule.get(
     "natural_kbc_compute_dtype"
 ) != "float64":
