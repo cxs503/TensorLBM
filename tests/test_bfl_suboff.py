@@ -411,6 +411,9 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
     assert diagnostics.wall_distance_mean == pytest.approx(2.0)
     assert diagnostics.y_plus_min is not None and diagnostics.y_plus_min > 0.0
     assert diagnostics.y_plus_max is not None
+    assert diagnostics.y_plus_summary is not None
+    assert diagnostics.y_plus_summary["requested_samples"] == 21
+    assert diagnostics.y_plus_summary["finite_samples"] == 21
     assert diagnostics.shear_force[0] == pytest.approx(exchange_friction)
 
 

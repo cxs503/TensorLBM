@@ -128,6 +128,14 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["result"]["statistics"]["auxiliary_cv_difference_pct"] is not None
     assert result["result"]["statistics"]["surface_observer_difference_pct"] is not None
     assert result["result"]["statistics"]["wall_exchange"]["mean_distance_cells"] > 0.0
+    y_plus_distribution = result["result"]["statistics"]["wall_exchange"][
+        "y_plus_distribution"
+    ]
+    assert y_plus_distribution["requested_sample_exposures"] > 0
+    assert y_plus_distribution["finite_fraction"] == pytest.approx(1.0)
+    assert result["acceptance"][
+        "wall_exchange_y_plus_applicability_target_met"
+    ] is y_plus_distribution["admitted"]
     assert result["planning"]["cuda_persistent_allocated_gib_by_device"] == {}
     statistics = result["result"]["statistics"]
     assert statistics["mean_bfl_pressure_n"] is not None
