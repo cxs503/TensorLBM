@@ -115,6 +115,11 @@ def test_underresolved_aff8_records_component_and_area_evidence(
         "bare_hull_wetted_area_lu2"
     ]
     assert resolution["hull_type"] == "full"
+    assert geometry["appendage_boundary_links"] > 0
+    assert geometry["appendage_halfway_links"] == 0
+    assert geometry["appendage_link_intersection"]["scheme"] == (
+        "continuous_parametric_bisection_v1"
+    )
     assert resolution["sail_only_cells"] >= 0
     assert resolution["fin_only_cells"] >= 0
     assert resolution["absolute_reference_resolved"] is False
