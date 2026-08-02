@@ -53,15 +53,23 @@
     "short_under_resolved_schedule": "results/collision-viscosity-natural-kbc-suboff-re4m-mixed-r1.json",
     "short_under_resolved_schedule_sha256": "cbfc82a0b4796de038733ff5bbb009228b8d0a679cd70fde62c9e731dc36b688",
     "resolved_signal_schedule": "results/collision-viscosity-natural-kbc-suboff-re4m-mixed-r2.json",
-    "resolved_signal_schedule_sha256": "c08fa1411d475d23b4219fb18eb46b00a525566b4f2988eb82b1d3b9414e355f"
+    "resolved_signal_schedule_sha256": "c08fa1411d475d23b4219fb18eb46b00a525566b4f2988eb82b1d3b9414e355f",
+    "float64_storage_control": "results/collision-viscosity-natural-kbc-suboff-re4m-fp64storage-r1.json",
+    "float64_storage_control_sha256": "4fbf48ecc356264b0c0ccee83095f4ccf4dcf1ffb742783ba2375616f77fcb70"
+  },
+  "float64_storage_control": {
+    "root_relative_error_pct": 7.4666014308383115,
+    "root_fitted_log_amplitude_decay": 0.004922092097043772,
+    "all_levels_recover_configured_viscosity": false,
+    "materially_repairs_float32_storage_result": false
   },
   "decision": {
     "launch_re4m_with_current_storage_policy": false,
     "highest_current_admitted_schedule_reynolds": 2000000,
     "next_precision_work": [
-      "per-level float64 population storage on multiple GPUs",
-      "or a validated shifted/recentered population representation"
+      "wavelength-scaled shear-wave audit to isolate finite-wave-number truncation",
+      "then higher spatial resolution or a validated low-dissipation representation"
     ]
   },
-  "prohibition": "A longer decay window confirms that the root-level error is numerical precision bias, not an under-resolved measurement signal. Re4M must not be launched with float32 population storage."
+  "prohibition": "A longer decay window confirms a real root-level viscosity bias, while an all-float64 control rules out storage precision as its dominant cause. Re4M must not be launched until wavelength/resolution dependence is resolved."
 }
