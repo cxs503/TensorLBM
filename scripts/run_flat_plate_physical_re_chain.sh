@@ -27,3 +27,11 @@ for level in L256 L384 L512; do
   "$root/scripts/run_flat_plate_physical_re_level.sh" \
     "$level" "$gpu" "$result_dir"
 done
+
+python=${TENSORLBM_PYTHON:-/home/wxsc/anaconda3/envs/ftw-env/bin/python}
+export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
+exec "$python" examples/flat_plate_convergence_assess.py \
+  "$result_dir/flat-plate-v6-physical-re13p213m-l256-32000.json" \
+  "$result_dir/flat-plate-v6-physical-re13p213m-l384-48000.json" \
+  "$result_dir/flat-plate-v6-physical-re13p213m-l512-64000.json" \
+  --output "$result_dir/flat-plate-v6-physical-re13p213m-convergence.json"
