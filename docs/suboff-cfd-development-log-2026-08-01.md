@@ -1910,6 +1910,13 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      wall audit still rejects Duprat as a force replacement.  Immutable hashes
      are in
      `docs/evidence/flat-plate-v5-l256-l384-l512-convergence-admitted-r1.json`.
+213. A channel continuation may now explicitly reset only statistical moments
+     at a checkpoint while preserving populations, momentum history and all
+     physics.  The reset step is serialized and shown in the result; config
+     matching still treats the reset flag as a runtime action rather than a
+     trajectory change.  This supports a clean post-transient DNS window if a
+     longer continuation is needed.  Four CPU tests cover ordinary execution,
+     mismatch rejection, steps-only extension and statistics-only reset.
 
 ## Rejected candidates
 

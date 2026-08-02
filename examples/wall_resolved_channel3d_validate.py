@@ -34,6 +34,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--reset-statistics-on-resume", action="store_true")
     args = parser.parse_args()
     config = WallResolvedChannel3DConfig(
         nx=args.nx,
@@ -56,6 +57,7 @@ def main() -> None:
         output=args.output,
         checkpoint=args.checkpoint,
         resume=args.resume,
+        reset_statistics_on_resume=args.reset_statistics_on_resume,
     )
     run_wall_resolved_channel3d(config)
 
