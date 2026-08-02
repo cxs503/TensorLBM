@@ -259,14 +259,17 @@ def test_checkpoint_before_collision_chunk_option_can_resume(
     state["configuration"].pop("collision_chunk_cells")
     torch.save(state, checkpoint)
 
-    resumed = MODULE.run(_args(
+    resume_args = _args(
         tmp_path, steps=2, resume=True, collision_model="natural_kbc",
-    ))
+    )
+    resume_args.collision_chunk_cells = 512
+    resumed = MODULE.run(resume_args)
 
     assert resumed["configuration"][
         "resumed_pre_collision_chunk_checkpoint"
     ] is True
     assert resumed["configuration"]["resumed_from_step"] == 1
+    assert resumed["configuration"]["collision_chunk_cells"] == 512
 
 
 def test_checkpoint_without_mass_conservative_wall_source_is_rejected(

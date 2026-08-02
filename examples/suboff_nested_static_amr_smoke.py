@@ -954,8 +954,7 @@ def run(args: argparse.Namespace) -> dict:
         pre_collision_chunk_signature = dict(checkpoint_signature)
         pre_collision_chunk_signature.pop("collision_chunk_cells")
         resumed_pre_collision_chunk_checkpoint = (
-            args.collision_chunk_cells == 0
-            and stored_configuration == pre_collision_chunk_signature
+            stored_configuration == pre_collision_chunk_signature
         )
         pre_inlet_sponge_signature = dict(checkpoint_signature)
         pre_inlet_sponge_signature.pop("sponge_inlet")
