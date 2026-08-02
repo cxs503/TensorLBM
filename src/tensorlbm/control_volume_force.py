@@ -83,9 +83,12 @@ def fluid_momentum(
     # float32 populations in float64 to avoid cancellation at production
     # control-volume sizes.
     accumulator_dtype = torch.float64 if f.dtype == torch.float32 else f.dtype
-    inventory = f[:, owned].sum(dim=1, dtype=accumulator_dtype)
     c = _lattice_velocities(f.shape[0], f.device, accumulator_dtype)
-    return (inventory[:, None] * c).sum(dim=0)
+    momentum = torch.zeros(3, device=f.device, dtype=accumulator_dtype)
+    for direction in range(1, f.shape[0]):
+        inventory = f[direction][owned].sum(dtype=accumulator_dtype)
+        momentum = momentum + inventory * c[direction]
+    return momentum
 
 
 def fluid_momentum_change(
@@ -112,11 +115,16 @@ def fluid_momentum_change(
     )
     # Subtract locally before reduction.  Summing old/new inventories first
     # and then subtracting loses a small force beneath O(N-cell) float32 totals.
-    population_change = (f_new[:, owned] - f_old[:, owned]).sum(
-        dim=1, dtype=accumulator_dtype,
-    )
     c = _lattice_velocities(f_old.shape[0], f_old.device, accumulator_dtype)
-    return (population_change[:, None] * c).sum(dim=0)
+    momentum_change = torch.zeros(
+        3, device=f_old.device, dtype=accumulator_dtype,
+    )
+    for direction in range(1, f_old.shape[0]):
+        population_change = (
+            f_new[direction][owned] - f_old[direction][owned]
+        ).sum(dtype=accumulator_dtype)
+        momentum_change = momentum_change + population_change * c[direction]
+    return momentum_change
 
 
 def streaming_momentum_import(

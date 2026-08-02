@@ -6,6 +6,7 @@ import torch
 from tensorlbm.control_volume_force import (
     assess_nested_control_volume_invariance,
     box_control_volume,
+    fluid_momentum,
     fluid_momentum_change,
     observe_control_volume_force,
     streaming_momentum_import,
@@ -67,6 +68,34 @@ def test_large_float32_cv_accumulates_local_change_before_reduction() -> None:
         old, new, cv, periodic_axes=("z",),
     )[0]
     assert stable.item() == pytest.approx(float(expected), abs=1e-14)
+
+
+def test_directionwise_observers_match_q_wide_reference() -> None:
+    torch.manual_seed(20260802)
+    shape = (6, 7, 9)
+    old = 0.02 + torch.rand((19, *shape), dtype=torch.float64)
+    new = old + 1.0e-6 * torch.randn_like(old)
+    cv = box_control_volume(
+        shape, x0=2, x1=7, y0=2, y1=5, z0=2, z1=4,
+    )
+    solid = torch.zeros(shape, dtype=torch.bool)
+    solid[2, 3, 4] = True
+    owned = cv & ~solid
+    c = C.to(dtype=torch.float64)
+    inventory = old[:, owned].sum(dim=1)
+    change = (new[:, owned] - old[:, owned]).sum(dim=1)
+    expected_momentum = (inventory[:, None] * c).sum(dim=0)
+    expected_change = (change[:, None] * c).sum(dim=0)
+
+    actual_momentum = fluid_momentum(old, cv, solid=solid)
+    actual_change = fluid_momentum_change(old, new, cv, solid=solid)
+
+    torch.testing.assert_close(
+        actual_momentum, expected_momentum, rtol=0.0, atol=2.0e-14,
+    )
+    torch.testing.assert_close(
+        actual_change, expected_change, rtol=0.0, atol=2.0e-20,
+    )
 
 
 def test_single_population_crossing_has_exact_kinetic_flux() -> None:
