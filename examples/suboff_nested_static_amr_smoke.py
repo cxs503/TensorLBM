@@ -839,6 +839,11 @@ def run(args: argparse.Namespace) -> dict:
         "wall_stress_enabled": not args.disable_wall_stress,
         "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
         "stress_exchange_distance": args.stress_exchange_distance,
+        "wall_model_y_plus_lower_bound": args.wall_model_y_plus_lower_bound,
+        "wall_model_y_plus_upper_bound": args.wall_model_y_plus_upper_bound,
+        "minimum_wall_model_y_plus_in_range_fraction": (
+            args.minimum_wall_model_y_plus_in_range_fraction
+        ),
         "wall_diagnostic_interval": args.wall_diagnostic_interval,
         "sponge_width": args.sponge_width,
         "sponge_strength": args.sponge_strength,
@@ -1014,6 +1019,7 @@ def run(args: argparse.Namespace) -> dict:
     resumed_pre_gradient_sgs_checkpoint = False
     resumed_pre_inlet_sponge_checkpoint = False
     resumed_pre_collision_chunk_checkpoint = False
+    resumed_pre_y_plus_distribution_checkpoint = False
     force_samples: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
@@ -1037,6 +1043,15 @@ def run(args: argparse.Namespace) -> dict:
         pre_collision_chunk_signature.pop("collision_chunk_cells")
         resumed_pre_collision_chunk_checkpoint = (
             stored_configuration == pre_collision_chunk_signature
+        )
+        pre_y_plus_distribution_signature = dict(checkpoint_signature)
+        pre_y_plus_distribution_signature.pop("wall_model_y_plus_lower_bound")
+        pre_y_plus_distribution_signature.pop("wall_model_y_plus_upper_bound")
+        pre_y_plus_distribution_signature.pop(
+            "minimum_wall_model_y_plus_in_range_fraction",
+        )
+        resumed_pre_y_plus_distribution_checkpoint = (
+            stored_configuration == pre_y_plus_distribution_signature
         )
         pre_inlet_sponge_signature = dict(checkpoint_signature)
         pre_inlet_sponge_signature.pop("sponge_inlet")
@@ -1146,6 +1161,7 @@ def run(args: argparse.Namespace) -> dict:
         if (
             stored_configuration != checkpoint_signature
             and not resumed_pre_collision_chunk_checkpoint
+            and not resumed_pre_y_plus_distribution_checkpoint
             and not resumed_pre_inlet_sponge_checkpoint
             and not resumed_pre_gradient_sgs_checkpoint
             and not resumed_legacy_v3_checkpoint
@@ -2144,6 +2160,9 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "resumed_pre_collision_chunk_checkpoint": (
                 resumed_pre_collision_chunk_checkpoint
+            ),
+            "resumed_pre_y_plus_distribution_checkpoint": (
+                resumed_pre_y_plus_distribution_checkpoint
             ),
         },
         "planning": planning | {
