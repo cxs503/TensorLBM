@@ -50,8 +50,6 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --inner-wall-margin 8 --inner-wake-cells 12 \
   --deep-wall-margin 7 --deep-wake-cells 14 \
   --cv-margin 8 --aux-cv-margins 4,12 --surface-force-interval 30 \
-  --enable-projected-bfl-pressure-diagnostic \
-  --projected-bfl-pressure-reconstruction linear \
   --steps 3000 --warmup-steps 1500 --statistics-window-steps 1500 \
   --ramp-steps 1500 --wall-normal-ramp-steps 1500 --wall-shear-ramp-steps 1500 \
   --report-interval 375 --wall-diagnostic-interval 60 --health-interval 60 \
