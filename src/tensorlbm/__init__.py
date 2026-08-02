@@ -84,6 +84,10 @@ from .boundaries_d3q27 import (
     zou_he_outlet_pressure_27,
 )
 from .checkpoint import load_checkpoint, save_checkpoint
+from .chunked_collision import (
+    NaturalKBCCollisionExecutor,
+    collide_in_z_chunks,
+)
 from .config_io import load_config, load_config_json, load_config_yaml, save_config_json
 from .constants import D2Q9
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
@@ -759,6 +763,8 @@ __all__ = [
     "StaticBlockAMR3D",
     "StaticBlockAMRConfig",
     "convective_refined_tau",
+    "NaturalKBCCollisionExecutor",
+    "collide_in_z_chunks",
     "AMRInterfaceValidationConfig",
     "run_amr_interface_validation",
     "SpatialConvergenceAssessment",
