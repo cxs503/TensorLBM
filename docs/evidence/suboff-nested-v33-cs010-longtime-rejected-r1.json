@@ -1,0 +1,73 @@
+{
+  "schema": "tensorlbm-suboff-nested-longtime-evidence-v1",
+  "status": "rejected_physical_validation",
+  "physical_validation": false,
+  "configuration": {
+    "hull_type": "bare_hull",
+    "root_hull_length_cells": 90.0,
+    "finest_hull_length_cells": 360.0,
+    "steps": 12000,
+    "collision_model": "cumulant_smagorinsky",
+    "cs_smag": 0.1,
+    "stress_exchange_distance_cells": 4.21875,
+    "wall_traction_source_scheme_recorded": false,
+    "sponge_inlet_recorded": false
+  },
+  "numerical_stability": {
+    "finite": true,
+    "minimum_population": 0.013089876621961594,
+    "maximum_speed": 0.10754717141389847,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_reflux_applied_correction_fraction_by_interface": [
+      0.00010676134843379259,
+      0.00005693170169251971
+    ],
+    "stability_use_only": true
+  },
+  "force_statistics": {
+    "mean_resistance_n": 122.23028073789499,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 39.85157979164185,
+    "nested_control_volume_difference_pct": {
+      "margin_4": 0.048821196986114784,
+      "margin_12": 0.057715329299440385
+    },
+    "surface_observer_difference_pct": 6.476229388646781,
+    "stationarity": {
+      "half_mean_drift_pct": 2.763100260539095,
+      "linear_trend_pct": 8.915998307015517,
+      "confidence95_half_width_pct": 5.961077543297928,
+      "target_pct": 1.0,
+      "target_met": false
+    }
+  },
+  "wall_exchange": {
+    "samples": 125,
+    "mean_distance_cells": 4.21875,
+    "minimum_y_plus": 37.74481201171875,
+    "mean_y_plus": 5889.599532226563,
+    "maximum_y_plus": 7669.7080078125
+  },
+  "rejection_reasons": [
+    "The run predates the mass-conservative post-collision Guo wall-traction source and does not record that scheme, so its absolute resistance is legacy-physics evidence only.",
+    "All three stationarity measures exceed the one-percent target.",
+    "The surface-pressure observer differs from the independent control-volume force by more than five percent.",
+    "The mean resistance differs from the experiment by 39.85 percent.",
+    "The very high measured exchange y+ supports the active L720 near-wall refinement study but is not itself an accuracy correction."
+  ],
+  "required_follow_up": [
+    "Use v13 with the corrected wall source for the clean no-inlet-sponge baseline.",
+    "Compare v13 against the concurrently running corrected-source v14 inlet-sponge trajectory.",
+    "Do not combine v33 with corrected-source grid convergence."
+  ],
+  "remote_sources": [
+    {
+      "path": "results/amr_campaign_20260801/suboff-nested-v33-equivalent-l90-12k.json",
+      "sha256": "8ae2ecbe69a7b97bbe518737de2a7c266a4c4222ea504388923e1e24e6efe789"
+    },
+    {
+      "path": "results/amr_campaign_20260801/suboff-nested-v33-equivalent-l90-12k.ckpt",
+      "sha256": "d323fc9bbe12086b3d19a4d887d0016085cb1b4525ccb3bf9f9f7f06c1e4bafd"
+    }
+  ]
+}
