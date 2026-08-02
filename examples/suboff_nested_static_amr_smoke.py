@@ -1918,6 +1918,12 @@ def run(args: argparse.Namespace) -> dict:
                 "maximum_active_links": max(
                     item["active_links"] for item in link_force_samples
                 ),
+                "minimum_decomposed_links": min(
+                    item["decomposed_links"] for item in link_force_samples
+                ),
+                "maximum_undecomposed_links": max(
+                    item["undecomposed_links"] for item in link_force_samples
+                ),
                 "minimum_coverage_fraction": min(
                     item["coverage_fraction"] for item in link_force_samples
                 ),
