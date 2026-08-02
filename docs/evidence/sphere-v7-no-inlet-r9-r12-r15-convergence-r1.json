@@ -1,0 +1,81 @@
+{
+  "schema": "tensorlbm-sphere-grid-convergence-evidence-v1",
+  "candidate": "sphere-v7-natural-kbc-no-inlet-r9-r12-r15",
+  "status": "grid_and_reference_validation_admitted",
+  "physical_validation": true,
+  "configuration": {
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "collision_model": "natural_kbc_d3q19",
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "sponge_inlet": false,
+    "radius_cells": [9, 12, 15],
+    "domain_over_radius_zyx": [16.0, 16.0, 24.0],
+    "steps_over_radius": 800.0,
+    "warmup_steps_over_radius": 533.3333333333334,
+    "statistics_window_steps_over_radius": 266.6666666666667
+  },
+  "grid_sequence": {
+    "cd_control_volume": [
+      1.1652471892456109,
+      1.1499305291972999,
+      1.145983142450931
+    ],
+    "monotonic": true,
+    "observed_order": 4.220036369637816,
+    "extrapolated_cd": 1.14345967378555,
+    "finest_discretisation_error_pct": 0.2206871587370264,
+    "relative_fit_rms_pct": 0.0,
+    "spatial_convergence_admitted": true
+  },
+  "reference": {
+    "model": "Schiller-Naumann",
+    "cd": 1.0917310910948732,
+    "finest_grid_error_pct": 4.969360293810963,
+    "extrapolated_error_pct": 4.738216499705926,
+    "maximum_error_pct": 5.0,
+    "target_met": true
+  },
+  "finest_grid_time_and_force": {
+    "steps": 12000,
+    "statistics_samples": 4000,
+    "cd_control_volume": 1.145983142450931,
+    "cd_bfl_link": 1.1460054766754348,
+    "observer_difference_pct": 0.001948913878091665,
+    "relative_range_pct": 0.020490709246259516,
+    "half_mean_drift_pct": 0.010191054691663303,
+    "linear_trend_pct": 0.01874815672692953,
+    "confidence95_half_width_pct": 0.005985022627745526,
+    "duration_target_met": true,
+    "stationarity_target_met": true,
+    "force_observer_target_met": true,
+    "numerical_quality_admitted": true
+  },
+  "boundary_selection_provenance": {
+    "factorial_evidence": "docs/evidence/sphere-domain-and-inlet-sensitivity-r1.json",
+    "no_inlet_sponge_reason": "remove the measured upstream-sponge force bias while retaining the same non-equilibrium far-field reconstruction",
+    "selected_by_reference_proximity": false,
+    "factorial_effects_are_direct_signed_contrasts": true
+  },
+  "acceptance": {
+    "configuration_identity_admitted": true,
+    "source_numerical_quality_admitted": true,
+    "spatial_convergence_admitted": true,
+    "finest_single_grid_admitted": true,
+    "extrapolated_reference_error_target_met": true,
+    "physical_validation": true
+  },
+  "artifacts": {
+    "convergence_result": "results/sphere_boundary_sensitivity/sphere-v7-natural-kbc-no-inlet-r9-r12-r15-convergence.json",
+    "convergence_result_sha256": "0782f6ddcb938189a21b1c04cb8654a77bc1f5b9e29b072e3022a3669b335f1d",
+    "r9_result": "results/sphere_boundary_sensitivity/sphere-v6-natural-kbc-no-inlet-sponge-r9-7200.json",
+    "r9_result_sha256": "959bcae7c0c8d428a875373fed2b25e0d060bc00d6755cc4f2e37873bce7141e",
+    "r12_result": "results/sphere_boundary_sensitivity/sphere-v7-natural-kbc-no-inlet-equivalent-r12-9600.json",
+    "r12_result_sha256": "90fb29e4b499dee8af889db03400a9a33fbc51e6bb1dff97975b11f3d940a224",
+    "r15_result": "results/sphere_boundary_sensitivity/sphere-v7-natural-kbc-no-inlet-equivalent-r15-12000.json",
+    "r15_result_sha256": "6600777771a72565f162e870eb3ff4f51b388a2d23ae52969d5f088ca5242db3",
+    "r15_checkpoint_sha256": "84ccb94cfbb3747d148fbc200d7549a3a9bfade7b4e89abe5ae8580502431a06",
+    "r15_log_sha256": "f0b36ef86cc2f5e31fa17299511da8f85844570f71293a9366e42f7be6e2cce7"
+  },
+  "conclusion": "The no-inlet-sponge R9/R12/R15 sequence is configuration-equivalent, monotone and spatially converged. R15 independently passes duration, stationarity and force-observer gates, while the extrapolated Cd is within 4.74% of Schiller-Naumann. This closes the sphere validation tier without using the reference value to choose a grid or boundary cell."
+}
