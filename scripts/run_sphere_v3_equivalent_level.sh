@@ -38,7 +38,22 @@ fi
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$root"
 mkdir -p "$result_dir"
-python=${TENSORLBM_PYTHON:-$root/.venv/bin/python}
+if [[ -n ${TENSORLBM_PYTHON:-} ]]; then
+  python=$TENSORLBM_PYTHON
+elif [[ -x $root/.venv/bin/python ]]; then
+  python=$root/.venv/bin/python
+elif [[ -x /home/wxsc/anaconda3/envs/ftw-env/bin/python ]]; then
+  python=/home/wxsc/anaconda3/envs/ftw-env/bin/python
+elif command -v python3 >/dev/null 2>&1; then
+  python=$(command -v python3)
+else
+  echo "no Python interpreter found; set TENSORLBM_PYTHON" >&2
+  exit 127
+fi
+if [[ ! -x $python ]]; then
+  echo "TensorLBM Python is not executable: $python" >&2
+  exit 126
+fi
 collision_model=${TENSORLBM_COLLISION_MODEL:-cumulant_d3q19_cs0}
 collision_chunk_cells=${TENSORLBM_COLLISION_CHUNK_CELLS:-0}
 [[ $collision_chunk_cells =~ ^[0-9]+$ ]] || {
