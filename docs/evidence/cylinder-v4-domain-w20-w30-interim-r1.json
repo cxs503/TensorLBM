@@ -1,6 +1,7 @@
 {
   "schema": "tensorlbm-cylinder-domain-convergence-interim-v1",
-  "status": "in_progress_w30_stationary_w20_w40_extensions_active",
+  "status": "superseded_by_completed_three_domain_assessment",
+  "superseded_by": "docs/evidence/cylinder-v4-domain-w20-w30-w40-r9-63k-assessment-r1.json",
   "physical_validation": false,
   "fixed_resolution": {
     "radius_cells": 9.0,
