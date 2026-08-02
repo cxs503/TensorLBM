@@ -61,6 +61,7 @@ class WallStressDiagnostics:
     pressure_gradient_parameter_p95: float | None = None
     pressure_gradient_parameter_max: float | None = None
     pressure_gradient_summary: dict[str, float | int | str | None] | None = None
+    pressure_gradient_axial_profile: list[dict[str, float | int]] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -1352,6 +1353,7 @@ def bfl_wall_function_3d(
             u_tau_mean = float(active_u_tau.mean().item())
             pressure_gradient_parameter = None
             pressure_gradient_summary = None
+            pressure_gradient_axial_profile = None
             from .wall_pressure_gradient import (
                 sample_wall_tangential_pressure_gradient,
             )
@@ -1395,6 +1397,7 @@ def bfl_wall_function_3d(
             y_plus_min = y_plus_mean = y_plus_max = u_tau_mean = None
             pressure_gradient_parameter = None
             pressure_gradient_summary = None
+            pressure_gradient_axial_profile = None
         shear_components = tuple(float(value.item()) for value in (
             (tau_w * (ut_x * inv_utan) * traction_area * shear_activation).sum(),
             (tau_w * (ut_y * inv_utan) * traction_area * shear_activation).sum(),
@@ -1413,11 +1416,13 @@ def bfl_wall_function_3d(
             if active else None
         )
         if pressure_gradient_parameter is not None:
-            finite_parameter = pressure_gradient_parameter[
+            finite_parameter_mask = (
                 torch.isfinite(pressure_gradient_parameter)
-            ]
+                & torch.isfinite(signed_pressure_gradient_parameter)
+            )
+            finite_parameter = pressure_gradient_parameter[finite_parameter_mask]
             finite_signed_parameter = signed_pressure_gradient_parameter[
-                torch.isfinite(signed_pressure_gradient_parameter)
+                finite_parameter_mask
             ]
             quantiles = torch.quantile(
                 finite_parameter.to(dtype=torch.float64),
@@ -1489,11 +1494,21 @@ def bfl_wall_function_3d(
                 ),
                 "gradient_scheme": "fluid_only_weighted_least_squares_26",
             }
+            from .wall_pressure_gradient import summarize_axial_pressure_gradient
+
+            pressure_gradient_axial_profile = summarize_axial_pressure_gradient(
+                stress_near.nonzero(as_tuple=False)[valid_gradient, 2][
+                    finite_parameter_mask
+                ],
+                finite_parameter,
+                finite_signed_parameter,
+            )
         else:
             pressure_gradient_parameter_mean = None
             pressure_gradient_parameter_p95 = None
             pressure_gradient_parameter_max = None
             pressure_gradient_summary = None
+            pressure_gradient_axial_profile = None
         diagnostics = WallStressDiagnostics(
             mode=(
                 "exchange_location_guo"
@@ -1517,6 +1532,7 @@ def bfl_wall_function_3d(
             pressure_gradient_parameter_p95=pressure_gradient_parameter_p95,
             pressure_gradient_parameter_max=pressure_gradient_parameter_max,
             pressure_gradient_summary=pressure_gradient_summary,
+            pressure_gradient_axial_profile=pressure_gradient_axial_profile,
         )
         return f, drag_fric, drag_pres, diagnostics
     return f, drag_fric, drag_pres

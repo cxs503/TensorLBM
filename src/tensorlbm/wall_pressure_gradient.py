@@ -98,6 +98,74 @@ def aggregate_wall_pressure_gradient_summaries(
     )
 
 
+def summarize_axial_pressure_gradient(
+    axial_coordinate: torch.Tensor,
+    magnitude_parameter: torch.Tensor,
+    signed_parameter: torch.Tensor,
+    *,
+    bins: int = 20,
+) -> list[dict[str, float | int]]:
+    """Summarize pressure-gradient exposure along a body's lattice-x extent."""
+    if bins < 1:
+        raise ValueError("bins must be positive")
+    if not (axial_coordinate.ndim == magnitude_parameter.ndim == signed_parameter.ndim == 1):
+        raise ValueError("axial coordinate and parameters must be one-dimensional")
+    if not (axial_coordinate.numel() == magnitude_parameter.numel() == signed_parameter.numel()):
+        raise ValueError("axial coordinate and parameters must have equal lengths")
+    if not axial_coordinate.numel():
+        return []
+    finite = (
+        torch.isfinite(axial_coordinate)
+        & torch.isfinite(magnitude_parameter)
+        & torch.isfinite(signed_parameter)
+    )
+    coordinate = axial_coordinate[finite].to(dtype=torch.float64)
+    magnitude = magnitude_parameter[finite].to(dtype=torch.float64)
+    signed = signed_parameter[finite].to(dtype=torch.float64)
+    if not coordinate.numel():
+        return []
+    lower = coordinate.min()
+    upper = coordinate.max()
+    span = (upper - lower).clamp_min(1.0)
+    normalized = (coordinate - lower) / span
+    bin_index = torch.clamp((normalized * bins).to(torch.long), max=bins - 1)
+    result = []
+    for index in range(bins):
+        selected = bin_index == index
+        count = int(selected.sum().item())
+        if not count:
+            continue
+        local_magnitude = magnitude[selected]
+        local_signed = signed[selected]
+        magnitude_quantiles = torch.quantile(
+            local_magnitude,
+            torch.tensor((0.5, 0.95), device=coordinate.device, dtype=torch.float64),
+        )
+        signed_quantiles = torch.quantile(
+            local_signed,
+            torch.tensor((0.5, 0.95), device=coordinate.device, dtype=torch.float64),
+        )
+        result.append(
+            {
+                "bin": index,
+                "normalized_x_lower": index / bins,
+                "normalized_x_upper": (index + 1) / bins,
+                "sample_count": count,
+                "magnitude_median": float(magnitude_quantiles[0].item()),
+                "magnitude_percentile95": float(magnitude_quantiles[1].item()),
+                "signed_median": float(signed_quantiles[0].item()),
+                "signed_percentile95": float(signed_quantiles[1].item()),
+                "strong_adverse_fraction": float(
+                    (local_signed > 1.0).to(torch.float64).mean().item(),
+                ),
+                "strong_favourable_fraction": float(
+                    (local_signed < -1.0).to(torch.float64).mean().item(),
+                ),
+            }
+        )
+    return result
+
+
 def sample_wall_tangential_pressure_gradient(
     pressure: torch.Tensor,
     solid: torch.Tensor,
@@ -241,4 +309,5 @@ __all__ = [
     "WallTangentialPressureGradientSamples",
     "aggregate_wall_pressure_gradient_summaries",
     "sample_wall_tangential_pressure_gradient",
+    "summarize_axial_pressure_gradient",
 ]
