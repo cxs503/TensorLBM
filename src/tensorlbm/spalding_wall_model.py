@@ -97,14 +97,24 @@ def effective_bfl_wall_distance(
     if any(component.shape != q_field.shape[1:] for component in normals):
         raise ValueError("normal fields must have the spatial grid shape")
     c = C.to(device=q_field.device, dtype=q_field.dtype)
-    projection = (
-        c[:, 0, None, None, None] * nx_n
-        + c[:, 1, None, None, None] * ny_n
-        + c[:, 2, None, None, None] * nz_n
-    ).abs()
-    weights = projection * fluid_boundary_mask.to(q_field.dtype)
-    denominator = weights.sum(dim=0)
-    distance = (q_field * weights).sum(dim=0) / denominator.clamp_min(1e-12)
+    # Accumulate one direction at a time.  Broadcasting all Q projections and
+    # their weighted q values at once needs several Q×nz×ny×nx temporaries;
+    # on a four-level L120 hull that exceeded a 24-GiB GPU by 1.7 GiB.  The
+    # directional reduction is algebraically identical and has O(nz*ny*nx)
+    # peak temporary storage.
+    denominator = torch.zeros_like(q_field[0])
+    numerator = torch.zeros_like(denominator)
+    for direction in range(1, q_count):
+        boundary = fluid_boundary_mask[direction]
+        projection = (
+            c[direction, 0] * nx_n
+            + c[direction, 1] * ny_n
+            + c[direction, 2] * nz_n
+        ).abs()
+        weight = projection * boundary.to(dtype=q_field.dtype)
+        denominator.add_(weight)
+        numerator.add_(q_field[direction] * weight)
+    distance = numerator / denominator.clamp_min(1e-12)
     return torch.where(denominator > 0.0, distance.clamp_min(1e-4), torch.zeros_like(distance))
 
 
