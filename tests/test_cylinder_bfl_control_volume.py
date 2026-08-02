@@ -11,7 +11,9 @@ import torch
 
 from tensorlbm.cylinder_bfl_control_volume import (
     CYLINDER_RE100_CD_REFERENCE,
+    CYLINDER_RE100_PRESSURE_CD_REFERENCE,
     CYLINDER_RE100_ST_REFERENCE,
+    CYLINDER_RE100_VISCOUS_CD_REFERENCE,
     CylinderBFLControlVolumeConfig,
     estimate_strouhal_from_lift,
     run_cylinder_bfl_control_volume,
@@ -20,7 +22,13 @@ from tensorlbm.cylinder_bfl_control_volume import (
 
 def test_cylinder_reference_and_tau() -> None:
     cfg = CylinderBFLControlVolumeConfig(radius=10, reynolds=100, lattice_speed=0.05)
-    assert CYLINDER_RE100_CD_REFERENCE == 1.33
+    assert CYLINDER_RE100_CD_REFERENCE == pytest.approx(1.35, abs=1e-7)
+    assert CYLINDER_RE100_VISCOUS_CD_REFERENCE == pytest.approx(
+        2.5818 / 100.0**0.4369,
+    )
+    assert CYLINDER_RE100_PRESSURE_CD_REFERENCE == pytest.approx(
+        1.4114 - 0.2668 * 100.0**0.1648 * math.exp(-3.375e-3 * 100.0),
+    )
     assert CYLINDER_RE100_ST_REFERENCE == 0.164
     assert math.isclose(cfg.tau, 0.53)
 
