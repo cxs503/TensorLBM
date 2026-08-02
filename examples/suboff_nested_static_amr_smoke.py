@@ -11,6 +11,7 @@ import argparse
 import json
 import math
 import time
+from dataclasses import asdict
 from pathlib import Path
 
 import torch
@@ -1037,6 +1038,7 @@ def run(args: argparse.Namespace) -> dict:
     resumed_pre_collision_chunk_checkpoint = False
     resumed_pre_y_plus_distribution_checkpoint = False
     force_samples: list[dict] = []
+    open_boundary_diagnostics: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
     maximum_reflux_residual = [0.0] * refinement_depth
@@ -1358,10 +1360,25 @@ def run(args: argparse.Namespace) -> dict:
         if level < refinement_depth:
             out = stream3d(collided)
             if level == 0:
+                collect_open_boundary_diagnostics = (
+                    bool(args.health_interval)
+                    and current_step % args.health_interval == 0
+                    and args.far_field_mode == "non_equilibrium_extrapolation"
+                )
                 if args.far_field_mode == "non_equilibrium_extrapolation":
-                    out = non_equilibrium_far_field_bc_3d(
-                        out, u_in=args.lattice_speed,
+                    boundary_result = non_equilibrium_far_field_bc_3d(
+                        out,
+                        u_in=args.lattice_speed,
+                        return_diagnostics=collect_open_boundary_diagnostics,
                     )
+                    if collect_open_boundary_diagnostics:
+                        out, boundary_diagnostic = boundary_result
+                        open_boundary_diagnostics.append({
+                            "stage": "post_stream_pre_sponge",
+                            **asdict(boundary_diagnostic),
+                        })
+                    else:
+                        out = boundary_result
                 else:
                     out = far_field_bc_3d(out, u_in=args.lattice_speed)
                 out = apply_equilibrium_difference_sponge(
@@ -1370,9 +1387,19 @@ def run(args: argparse.Namespace) -> dict:
                     velocity_target=(args.lattice_speed, 0.0, 0.0),
                 )
                 if args.far_field_mode == "non_equilibrium_extrapolation":
-                    out = non_equilibrium_far_field_bc_3d(
-                        out, u_in=args.lattice_speed,
+                    boundary_result = non_equilibrium_far_field_bc_3d(
+                        out,
+                        u_in=args.lattice_speed,
+                        return_diagnostics=collect_open_boundary_diagnostics,
                     )
+                    if collect_open_boundary_diagnostics:
+                        out, boundary_diagnostic = boundary_result
+                        open_boundary_diagnostics.append({
+                            "stage": "post_sponge",
+                            **asdict(boundary_diagnostic),
+                        })
+                    else:
+                        out = boundary_result
                 else:
                     out = far_field_bc_3d(out, u_in=args.lattice_speed)
             return AMRAdvanceResult(out, collided)
@@ -1508,6 +1535,7 @@ def run(args: argparse.Namespace) -> dict:
     for step in range(start_step + 1, args.steps + 1):
         current_step = step
         force_samples.clear()
+        open_boundary_diagnostics.clear()
         instantaneous_reynolds = continuation.reynolds_at(current_step)
         instantaneous_tau_by_level = continuation.tau_by_level(
             current_step,
@@ -1691,6 +1719,23 @@ def run(args: argparse.Namespace) -> dict:
                 "maximum_collision_limited_fraction": maximum_limiter_fraction,
                 "maximum_wall_sample_rejected_fraction": maximum_rejected_fraction,
                 "wall_exchange": wall_exchange_health,
+                "open_boundary_population_delta": {
+                    "stages": open_boundary_diagnostics,
+                    "mass_delta": sum(
+                        record["mass_delta"]
+                        for record in open_boundary_diagnostics
+                    ),
+                    "momentum_delta": [
+                        sum(
+                            record["momentum_delta"][axis]
+                            for record in open_boundary_diagnostics
+                        )
+                        for axis in range(3)
+                    ],
+                    "finite": all(
+                        record["finite"] for record in open_boundary_diagnostics
+                    ),
+                } if open_boundary_diagnostics else None,
                 "levels": level_health,
                 "interfaces": interface_health,
                 "finest_peak_speed_context": finest_peak_context,
