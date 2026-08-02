@@ -85,6 +85,11 @@ for f in _*.py; do
     [[ -f "$f" ]] && move_file "$f" "$ARCHIVED_DIR"
 done
 
+# Root-level ad-hoc test scripts (keep canonical tests under tests/)
+for f in test_*.py; do
+    [[ -f "$f" ]] && move_file "$f" "$ARCHIVED_DIR"
+done
+
 # ── 3. git rm --cached for all moved files ───────────────────────────────────
 
 echo ""
@@ -93,12 +98,14 @@ echo "=== Step 3: Removing moved files from git index ==="
 if $DRY_RUN; then
     echo "[DRY-RUN] Would run: git rm --cached <all moved files>"
 else
-    # Gather paths that git is currently tracking in root
-    git ls-files --error-unmatch "*.json"   2>/dev/null | xargs -r git rm --cached --quiet || true
-    git ls-files --error-unmatch "*.log"    2>/dev/null | xargs -r git rm --cached --quiet || true
-    git ls-files --error-unmatch "*.npy"    2>/dev/null | xargs -r git rm --cached --quiet || true
-    git ls-files --error-unmatch "log_*.txt" 2>/dev/null | xargs -r git rm --cached --quiet || true
-    git ls-files --error-unmatch "_*.py"    2>/dev/null | xargs -r git rm --cached --quiet || true
+    # Gather paths that git is currently tracking in repository root only.
+    # (Avoid touching similarly named files in sub-directories.)
+    git ls-files | grep -E '^[^/]+\.json$' | xargs -r git rm --cached --quiet || true
+    git ls-files | grep -E '^[^/]+\.log$' | xargs -r git rm --cached --quiet || true
+    git ls-files | grep -E '^[^/]+\.npy$' | xargs -r git rm --cached --quiet || true
+    git ls-files | grep -E '^[^/]+$' | grep -E '^log_.*\.txt$' | xargs -r git rm --cached --quiet || true
+    git ls-files | grep -E '^[^/]+$' | grep -E '^_.*\.py$' | xargs -r git rm --cached --quiet || true
+    git ls-files | grep -E '^[^/]+$' | grep -E '^test_.*\.py$' | xargs -r git rm --cached --quiet || true
     echo "  Done — run 'git status' to review."
 fi
 
@@ -120,6 +127,7 @@ BLOCK=$(cat <<'EOF'
 
 # Archived experiment scripts
 /_*.py
+/test_*.py
 
 # artifacts/ directory (all benchmark outputs)
 artifacts/runs/
