@@ -4,6 +4,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
+import tensorlbm
 import torch
 
 from tensorlbm.chunked_collision import (
@@ -72,6 +73,11 @@ def test_natural_kbc_executor_eager_path_is_exact() -> None:
     actual = NaturalKBCCollisionExecutor()(state, 0.73)
 
     torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
+
+
+def test_bounded_collision_executor_is_part_of_public_api() -> None:
+    assert tensorlbm.NaturalKBCCollisionExecutor is NaturalKBCCollisionExecutor
+    assert tensorlbm.collide_in_z_chunks is collide_in_z_chunks
 
 
 def test_compiled_executor_passes_tensor_tau_and_reuses_callable() -> None:
