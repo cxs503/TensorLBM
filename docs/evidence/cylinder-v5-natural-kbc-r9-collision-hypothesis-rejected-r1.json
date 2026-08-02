@@ -1,0 +1,54 @@
+{
+  "schema": "tensorlbm-cylinder-collision-sensitivity-evidence-v1",
+  "status": "numerically_healthy_physical_validation_rejected",
+  "physical_validation": false,
+  "selection_by_reference_proximity": false,
+  "case": {
+    "reynolds": 100.0,
+    "radius_cells": 9.0,
+    "domain_width_over_radius": 40.0,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "sponge_inlet": false,
+    "steps": 54000,
+    "warmup_steps": 31500,
+    "statistics_window_steps": 22500
+  },
+  "cumulant_r9": {
+    "cd": 1.4472501372001216,
+    "cd_reference_error_pct": 8.815799789482824,
+    "strouhal": 0.1734554103120994,
+    "strouhal_reference_error_pct": 5.765494092743536
+  },
+  "natural_kbc_r9": {
+    "cd_control_volume": 1.44027432843031,
+    "cd_bfl_link": 1.440270203240233,
+    "force_observer_difference_pct": 0.0002864169690062091,
+    "cd_reference_error_pct": 8.291302889496977,
+    "strouhal": 0.17350117397097226,
+    "strouhal_reference_error_pct": 5.793398762787956,
+    "shedding_cycles": 13.012588047822918,
+    "drag_block_range_pct": 0.7139000317260523,
+    "finite": true,
+    "numerical_quality_admitted": true
+  },
+  "collision_change": {
+    "cd_fraction_pct": -0.48200436058049223,
+    "strouhal_fraction_pct": 0.026383529225468695,
+    "materially_repairs_cd_and_strouhal": false
+  },
+  "acceptance": {
+    "drag_error_below_5pct": false,
+    "strouhal_error_below_5pct": false,
+    "stationarity_below_1pct": true,
+    "force_observer_below_1pct": true,
+    "minimum_eight_cycles": true,
+    "natural_kbc_fine_grid_sequence_admitted": false
+  },
+  "artifacts": {
+    "result": "results/cylinder_collision_sensitivity/cylinder-v4-natural-kbc-equivalent-r9-54000.json",
+    "result_sha256": "9f88f0686bee7fc76eaa91e7d38ce2c188bf5884d88fdc4dfbab17f586752516",
+    "checkpoint_sha256": "b21818d49ae1dabbd0f49befab87147436b63c433e25957061510749e8ef252b",
+    "log_sha256": "c7979280d3082769a24a9e5c0ce152429ec79da57861eaf1da420c7a033cf017"
+  },
+  "conclusion": "Natural KBC changes R9 drag by only -0.482% and Strouhal by +0.026% relative to cumulant. Both observables remain outside their predeclared 5% targets despite healthy statistics and conservative force agreement. The collision-model hypothesis is rejected and no natural-KBC fine-grid family is launched; geometry, boundary/reference sensitivity must be investigated instead."
+}

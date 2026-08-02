@@ -1850,6 +1850,14 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      pass.  The Re_tau=180 128x64x64 run is active on otherwise idle GPU 4;
      its first two 500-step blocks remain positive with mass drift below
      `2e-6`, while force stationarity is not yet claimed.
+206. The natural-KBC R9 cylinder sensitivity completes with healthy numerical
+     quality but fails physical targets: `Cd=1.440274` (8.29% error) and
+     `St=0.173501` (5.79% error), over 13.01 shedding cycles with 0.714% block
+     range and 0.00029% force-observer mismatch.  Against configuration-matched
+     cumulant R9, natural KBC changes Cd by only -0.482% and St by +0.026%.
+     Collision choice is therefore rejected as the principal cylinder bias;
+     no natural-KBC fine-grid sequence is launched.  Immutable hashes are in
+     `docs/evidence/cylinder-v5-natural-kbc-r9-collision-hypothesis-rejected-r1.json`.
 
 ## Rejected candidates
 
