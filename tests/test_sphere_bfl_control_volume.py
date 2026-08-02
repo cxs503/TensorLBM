@@ -63,6 +63,12 @@ def test_short_sphere_composition_is_finite() -> None:
     assert result["acceptance"]["admitted"] is False
     assert result["schema"] == "tensorlbm-sphere-bfl-control-volume-v3"
     assert result["configuration"]["collision_model"] == "cumulant_d3q19_cs0"
+    assert result["configuration"]["bfl_link_fraction_convention"] == (
+        "ray_parameter_q_equals_t_v2"
+    )
+    assert result["configuration"]["bfl_population_reconstruction"] == (
+        "post_collision_outgoing_and_upstream_v2"
+    )
     boundary_history = measured["open_boundary_population_delta"]
     assert len(boundary_history) == 4
     assert all(len(record["stages"]) == 2 for record in boundary_history)
