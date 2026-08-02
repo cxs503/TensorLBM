@@ -92,3 +92,31 @@ def test_channel_checkpoint_allows_steps_only_extension(tmp_path) -> None:
         WallResolvedChannel3DConfig(steps=2, resume=True, **common),
     )
     assert result["reports"][-1]["step"] == 2
+
+
+def test_channel_resume_can_reset_statistics_without_resetting_flow(tmp_path) -> None:
+    common = dict(
+        nx=8,
+        ny=10,
+        nz=8,
+        re_tau=20.0,
+        u_tau=0.01,
+        warmup_steps=0,
+        sample_interval=1,
+        report_interval=1,
+        checkpoint_interval=1,
+        collision_model="cumulant",
+        compile_natural_kbc=False,
+        device="cpu",
+        output=tmp_path / "result.json",
+        checkpoint=tmp_path / "state.ckpt",
+    )
+    run_wall_resolved_channel3d(WallResolvedChannel3DConfig(steps=1, **common))
+    result = run_wall_resolved_channel3d(WallResolvedChannel3DConfig(
+        steps=2,
+        resume=True,
+        reset_statistics_on_resume=True,
+        **common,
+    ))
+    assert result["statistics"]["profile_samples"] == 1
+    assert result["statistics"]["statistics_reset_step"] == 1
