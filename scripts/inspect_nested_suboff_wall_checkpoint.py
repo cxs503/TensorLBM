@@ -27,6 +27,7 @@ from tensorlbm.drag_pressure import (  # noqa: E402
     SurfaceMesh,
     drag_pressure_integration,
     get_near_wall_3d,
+    integrate_bfl_projected_pressure,
 )
 from tensorlbm.interpolated_bc_suboff import (  # noqa: E402
     compute_q_suboff,
@@ -309,7 +310,6 @@ def inspect_checkpoint(
         y_plus_upper_bound=y_plus_upper_bound,
         minimum_y_plus_in_range_fraction=minimum_y_plus_in_range_fraction,
     )
-    surface.dA = area_weight
     scale = force_scale_newton(
         rho_water=float(configuration["rho_water"]),
         dx_m=MODEL_LENGTH_M / finest_length,
@@ -322,34 +322,105 @@ def inspect_checkpoint(
     latest_wall_shear = (
         float(latest_record["wall_shear_n"]) if isinstance(latest_record, dict) else None
     )
+    latest_bfl_pressure = (
+        float(latest_record["bfl_pressure_n"])
+        if isinstance(latest_record, dict)
+        else None
+    )
+    unit_area = near.to(device=target, dtype=area_weight.dtype)
+    area_policies = {
+        "unit_node_area": unit_area,
+        "calibrated_bfl_area": area_weight,
+    }
     pressure_observers = {}
-    for pressure_reference in ("near_wall", "far_field", "inlet"):
-        for reconstruction in ("none", "linear", "quadratic", "bfl_quadratic"):
-            pressure_n = (
-                drag_pressure_integration(
-                    finest,
-                    surface,
-                    1.0,
-                    extrap=reconstruction,
-                    p0_method=pressure_reference,
-                    solid=solid,
-                    fluid_boundary_mask=bfl_mask,
-                    q_field=bfl_q,
-                )[0]
-                * scale
-            )
-            total_n = pressure_n + latest_wall_shear if latest_wall_shear is not None else None
-            pressure_observers[f"{pressure_reference}:{reconstruction}"] = {
-                "pressure_resistance_n": pressure_n,
-                "pressure_plus_wall_shear_n": total_n,
-                "total_vs_control_volume_difference_pct": (
-                    abs(total_n - latest_cv) / max(abs(latest_cv), 1.0e-30) * 100.0
-                    if total_n is not None and latest_cv is not None
+    surface_closure = {}
+    for area_policy, local_area in area_policies.items():
+        surface.dA = local_area
+        weighted_normals = tuple(
+            component.to(device=target, dtype=local_area.dtype) * local_area
+            for component in (surface.nx_n, surface.ny_n, surface.nz_n)
+        )
+        surface_closure[area_policy] = {
+            "area_sum_lu2": float(local_area.sum().item()),
+            "signed_normal_area_sum_lu2": [
+                float(component.sum().item()) for component in weighted_normals
+            ],
+            "absolute_normal_projection_sum_lu2": [
+                float(component.abs().sum().item()) for component in weighted_normals
+            ],
+        }
+        policy_observers = {}
+        for pressure_reference in ("near_wall", "far_field", "inlet"):
+            for reconstruction in ("none", "linear", "quadratic", "bfl_quadratic"):
+                pressure_n = (
+                    drag_pressure_integration(
+                        finest,
+                        surface,
+                        1.0,
+                        extrap=reconstruction,
+                        p0_method=pressure_reference,
+                        solid=solid,
+                        fluid_boundary_mask=bfl_mask,
+                        q_field=bfl_q,
+                    )[0]
+                    * scale
+                )
+                total_n = (
+                    pressure_n + latest_wall_shear
+                    if latest_wall_shear is not None
                     else None
-                ),
-            }
+                )
+                policy_observers[f"{pressure_reference}:{reconstruction}"] = {
+                    "pressure_resistance_n": pressure_n,
+                    "pressure_plus_wall_shear_n": total_n,
+                    "total_vs_control_volume_difference_pct": (
+                        abs(total_n - latest_cv)
+                        / max(abs(latest_cv), 1.0e-30)
+                        * 100.0
+                        if total_n is not None and latest_cv is not None
+                        else None
+                    ),
+                }
+        pressure_observers[area_policy] = policy_observers
+    pressure_lu = (finest.sum(dim=0) - 1.0) / 3.0
+    projected_pressure_observers = {}
+    for reconstruction in ("local", "linear", "quadratic"):
+        projected_force_lu, projected_diagnostics = (
+            integrate_bfl_projected_pressure(
+                pressure_lu,
+                bfl_mask,
+                bfl_q,
+                solid=solid,
+                reconstruction=reconstruction,
+            )
+        )
+        projected_pressure_n = projected_force_lu[0] * scale
+        projected_total_n = (
+            projected_pressure_n + latest_wall_shear
+            if latest_wall_shear is not None
+            else None
+        )
+        projected_pressure_observers[reconstruction] = {
+            "pressure_resistance_n": projected_pressure_n,
+            "pressure_plus_wall_shear_n": projected_total_n,
+            "total_vs_control_volume_difference_pct": (
+                abs(projected_total_n - latest_cv)
+                / max(abs(latest_cv), 1.0e-30)
+                * 100.0
+                if projected_total_n is not None and latest_cv is not None
+                else None
+            ),
+            "runtime_momentum_exchange_difference_pct": (
+                abs(projected_pressure_n - latest_bfl_pressure)
+                / max(abs(latest_bfl_pressure), 1.0e-30)
+                * 100.0
+                if latest_bfl_pressure is not None
+                else None
+            ),
+            "diagnostics": asdict(projected_diagnostics),
+        }
     return {
-        "schema": "tensorlbm-nested-suboff-wall-checkpoint-audit-v1",
+        "schema": "tensorlbm-nested-suboff-wall-checkpoint-audit-v2",
         "status": "diagnostic_only",
         "physical_validation": False,
         "source_path": str(path),
@@ -370,7 +441,10 @@ def inspect_checkpoint(
         "instantaneous_surface_pressure_audit": {
             "control_volume_resistance_n": latest_cv,
             "wall_shear_resistance_n": latest_wall_shear,
+            "runtime_bfl_momentum_exchange_pressure_n": latest_bfl_pressure,
+            "surface_closure": surface_closure,
             "observers": pressure_observers,
+            "projected_bfl_pressure": projected_pressure_observers,
             "selection_policy": (
                 "direct observer sensitivity only; no selection by experimental resistance"
             ),

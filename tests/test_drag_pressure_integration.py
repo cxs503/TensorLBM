@@ -157,6 +157,41 @@ def test_projected_bfl_pressure_closes_constant_and_linear_cube_fields() -> None
     )
     assert force_linear == pytest.approx((-0.2, 0.0, 0.0), abs=1.0e-14)
 
+    force_linear_first_order, _ = integrate_bfl_projected_pressure(
+        linear,
+        boundary,
+        q_field,
+        solid=solid,
+        reconstruction="linear",
+    )
+    assert force_linear_first_order == pytest.approx(
+        (-0.2, 0.0, 0.0), abs=1.0e-14,
+    )
+    force_local, _ = integrate_bfl_projected_pressure(
+        linear,
+        boundary,
+        q_field,
+        solid=solid,
+        reconstruction="local",
+    )
+    assert force_local == pytest.approx((-0.4, 0.0, 0.0), abs=1.0e-14)
+
+
+def test_projected_bfl_pressure_rejects_unknown_reconstruction() -> None:
+    shape = (3, 3, 3)
+    pressure = torch.zeros(shape, dtype=torch.float64)
+    boundary = torch.zeros((19, *shape), dtype=torch.bool)
+    q_field = torch.full((19, *shape), 0.5, dtype=torch.float64)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    with pytest.raises(ValueError, match="reconstruction"):
+        integrate_bfl_projected_pressure(
+            pressure,
+            boundary,
+            q_field,
+            solid=solid,
+            reconstruction="cubic",
+        )
+
 
 def test_bfl_pressure_reconstruction_is_public() -> None:
     import tensorlbm

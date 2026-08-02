@@ -640,6 +640,7 @@ def integrate_bfl_projected_pressure(
     q_field: torch.Tensor,
     *,
     solid: torch.Tensor,
+    reconstruction: str = "quadratic",
 ) -> tuple[tuple[float, float, float], BFLWallPressureDiagnostics]:
     """Integrate pressure on axial BFL crossing faces.
 
@@ -648,6 +649,14 @@ def integrate_bfl_projected_pressure(
     normal is opposite the link direction.  Opposite face counts cancel a
     constant pressure exactly on every closed voxel body; unlike a calibrated
     nodal surface area, this is a discrete finite-volume identity.
+
+    ``reconstruction`` controls the wall value on a link whose first fluid
+    sample is a fractional distance ``q`` from the intersection.  ``local``
+    uses that first value unchanged, ``linear`` extrapolates through the first
+    two fluid samples, and ``quadratic`` (the historical default) uses three.
+    The selectable orders are primarily useful for verification because
+    high-order wall extrapolation can amplify an unresolved near-wall pressure
+    mode even when all population values remain finite.
     """
     from .d3q19 import C
 
@@ -658,6 +667,10 @@ def integrate_bfl_projected_pressure(
         raise ValueError("BFL mask and q field must have shape (19,nz,ny,nx)")
     if solid.shape != pressure.shape or solid.dtype is not torch.bool:
         raise ValueError("solid must be bool with shape (nz,ny,nx)")
+    if reconstruction not in {"local", "linear", "quadratic"}:
+        raise ValueError(
+            "reconstruction must be 'local', 'linear', or 'quadratic'",
+        )
     device = pressure.device
     boundary = fluid_boundary_mask.to(device=device, dtype=torch.bool)
     q = q_field.to(device=device, dtype=pressure.dtype)
@@ -688,12 +701,19 @@ def integrate_bfl_projected_pressure(
         p3, valid3 = _sample_at_offset_no_wrap(pressure, offset_two)
         solid2, _ = _sample_at_offset_no_wrap(solid_device, offset_one)
         solid3, _ = _sample_at_offset_no_wrap(solid_device, offset_two)
-        usable = link & valid2 & valid3 & ~solid2 & ~solid3
-        wall = (
-            0.5 * (q_link + 1.0) * (q_link + 2.0) * pressure
-            - q_link * (q_link + 2.0) * p2
-            + 0.5 * q_link * (q_link + 1.0) * p3
-        )
+        if reconstruction == "local":
+            usable = link
+            wall = pressure
+        elif reconstruction == "linear":
+            usable = link & valid2 & ~solid2
+            wall = (q_link + 1.0) * pressure - q_link * p2
+        else:
+            usable = link & valid2 & valid3 & ~solid2 & ~solid3
+            wall = (
+                0.5 * (q_link + 1.0) * (q_link + 2.0) * pressure
+                - q_link * (q_link + 2.0) * p2
+                + 0.5 * q_link * (q_link + 1.0) * p3
+            )
         wall = torch.where(usable, wall, pressure)
         link_pressure_sum = wall[link].sum()
         force += link_pressure_sum * torch.tensor(

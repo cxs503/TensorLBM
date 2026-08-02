@@ -1,0 +1,54 @@
+{
+  "schema": "tensorlbm-suboff-surface-pressure-observer-evidence-v1",
+  "candidate": "suboff-nested-v23-equivalent-l90-3k-frozen-checkpoint",
+  "status": "surface_pressure_reconstruction_rejected",
+  "physical_validation": false,
+  "source": {
+    "step": 3000,
+    "finest_hull_length_cells": 720,
+    "checkpoint": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-3k.ckpt",
+    "checkpoint_sha256": "72a1e03953b7b09a6f41c64e71e20c7bcd6ea1dcb76f9878e3079a1cb16c4445",
+    "audit": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-3k-wall-audit-r7.json",
+    "audit_sha256": "1344509425e3142dbb067d730307b7adfcff7bbd654b3625e11a164bee0cec04"
+  },
+  "area_audit": {
+    "boundary_nodes": 147738,
+    "raw_bfl_area_lu2": 165172.59375,
+    "calibrated_area_lu2": 163691.328125,
+    "calibration_factor": 0.9910320246454324,
+    "unit_area_signed_normal_x_sum_lu2": 49.28203582763672,
+    "calibrated_area_signed_normal_x_sum_lu2": -23.228002548217773,
+    "interpretation": "The total-area calibration is close to unity and both signed normal sums are small relative to the absolute x projection, so a globally inflated area is not the cause."
+  },
+  "co_temporal_force_n": {
+    "control_volume": 118.42881592133264,
+    "wall_shear": 96.63947649069786,
+    "runtime_bfl_momentum_exchange_pressure_label": 22.525112005104546,
+    "runtime_bfl_plus_wall_shear": 119.16458849580241,
+    "runtime_bfl_plus_wall_shear_vs_control_volume_pct": 0.6212783339474721,
+    "source_corrected_runtime_observer_difference_pct": 0.017076025481391727
+  },
+  "nodal_pressure_observers_n": {
+    "unit_area_near_wall_local": 52.65203523417106,
+    "unit_area_near_wall_bfl_quadratic": 35.28408219420066,
+    "calibrated_area_near_wall_local": 142.7042359014007,
+    "calibrated_area_near_wall_bfl_quadratic": 148.36148073027965
+  },
+  "projected_axial_bfl_pressure_observers_n": {
+    "local": 507.1521175656684,
+    "linear": 927.5850855090513,
+    "quadratic": 1462.849155467744,
+    "requested_links": 218470,
+    "usable_links": 218470,
+    "fallback_cells": 0
+  },
+  "acceptance": {
+    "control_volume_force_observer_retained": true,
+    "runtime_link_momentum_exchange_observer_retained": true,
+    "runtime_link_force_is_physical_pressure_decomposition": false,
+    "nodal_surface_pressure_observer_retained": false,
+    "projected_density_pressure_observer_retained": false,
+    "observer_selected_by_experimental_resistance": false
+  },
+  "conclusion": "Frozen-field crossings prove that neither total BFL area nor missing reconstruction coverage explains the mismatch. Density-pressure integration is dominated by an unresolved near-wall/axial pressure mode and becomes progressively worse with extrapolation order. The source-corrected control-volume and laboratory-frame link impulse remain the conservative force pair, but the link impulse must not be mislabeled as a physical pressure-only decomposition because the wall-model slip correction is included. Future decomposition must split the actual per-link population impulse into geometry-normal and tangential parts and validate that split independently; no experimental value was used to select an observer."
+}
