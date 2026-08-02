@@ -14,6 +14,7 @@ from tensorlbm.bfl_d3q19 import (
     bouzidi_bounce_back_d3q19,
     compute_q_cylinder_d3q19,
 )
+from tensorlbm.bfl_d3q19_vec import bouzidi_bounce_back_d3q19_vec
 from tensorlbm.interpolated_bc import compute_q_circle, compute_q_sphere
 from tensorlbm.interpolated_bc_common import compute_q_sphere_27
 from tensorlbm.interpolated_bc_ellipsoid import compute_q_ellipsoid
@@ -66,6 +67,10 @@ def test_vector_common_matches_admitted_d3q19_cylinder_bfl() -> None:
         streamed, previous, common_mask, common_q, lattice="D3Q19",
     )
     torch.testing.assert_close(common, reference, rtol=0.0, atol=0.0)
+    vector_specific = bouzidi_bounce_back_d3q19_vec(
+        streamed, previous, common_mask, common_q,
+    )
+    torch.testing.assert_close(vector_specific, reference, rtol=0.0, atol=0.0)
 
 
 def test_d3q27_body_diagonal_q_is_ray_fraction() -> None:
