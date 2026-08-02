@@ -172,12 +172,21 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["planning"]["cuda_persistent_allocated_gib_by_device"] == {}
     statistics = result["result"]["statistics"]
     assert statistics["mean_bfl_pressure_n"] is not None
+    assert statistics["mean_conservative_bfl_link_impulse_n"] == pytest.approx(
+        statistics["mean_bfl_pressure_n"],
+    )
+    assert statistics["mean_bfl_pressure_field_status"] == (
+        "deprecated_alias_for_conservative_link_impulse_not_pressure"
+    )
     assert statistics["mean_wall_shear_n"] is not None
     assert statistics["bfl_pressure_fraction"] + statistics[
         "wall_shear_fraction"
     ] == pytest.approx(1.0)
     component_audit = statistics["resistance_component_audit"]
     assert component_audit["scope"] == "diagnostic_only_not_a_cfd_correction"
+    assert component_audit["pressure_input_status"] == (
+        "deprecated_link_impulse_alias_not_physical_pressure"
+    )
     assert component_audit["friction_reference"] is not None
     assert component_audit["component_sum"] == pytest.approx(
         statistics["mean_bfl_plus_wall_stress_n"],
@@ -191,6 +200,10 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     boundary_audit = result["result"]["open_boundary_population_delta_audit"]
     assert boundary_audit["samples"] == 2
     assert boundary_audit["finite"] is True
+    step = result["result"]["steps"][0]
+    assert step["conservative_bfl_link_impulse_n"] == pytest.approx(
+        step["bfl_pressure_n"],
+    )
 
 
 def test_rejected_surface_pressure_observer_requires_explicit_opt_in(
