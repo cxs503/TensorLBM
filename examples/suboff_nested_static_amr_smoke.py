@@ -766,6 +766,7 @@ def run(args: argparse.Namespace) -> dict:
             bare_solid,
             center=finest_center,
             length=finest_length,
+            inplace=True,
         )
         appendage_boundary_links = appendage_link_diagnostics.target_links
     near = get_near_wall_3d(finest_solid)

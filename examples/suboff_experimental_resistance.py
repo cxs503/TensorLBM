@@ -248,6 +248,7 @@ def run_case(args: argparse.Namespace) -> dict:
                 bare,
                 center=(cx, cy, cz),
                 length=length_lu,
+                inplace=True,
             )
             appendage_links = appendage_link_diagnostics.target_links
             print(

@@ -228,6 +228,7 @@ def run(args: argparse.Namespace) -> dict:
             bare_solid,
             center=fine_center,
             length=args.hull_length * 2.0,
+            inplace=True,
         )
         appendage_links = appendage_link_diagnostics.target_links
     fine_near = get_near_wall_3d(fine_solid_g)
