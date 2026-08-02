@@ -1670,6 +1670,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      therefore preserve sign and be activated locally; a global shear multiplier
      is rejected.  The CPU-reproducible signed audit SHA-256 is
      `b484a9e7218711bba51755823de9a365210e408d01415d50d690fef5d1b31e19`.
+187. A geometry-agnostic 20-bin axial exposure profile localizes the signed
+     wall diagnostic without changing populations.  For v23, the largest
+     strong-adverse fractions occur over normalized hull-length intervals
+     `0.05-0.20` and `0.80-0.95`; `0.75-0.80` is predominantly favourable.
+     The first and last 5% contain large fractions of both signs, so a future
+     non-equilibrium selector must also use local flow direction, a low-shear
+     guard and temporal hysteresis rather than hard-coded axial zones.  Audit
+     SHA-256 is
+     `39931c82e1d3c0825746611c31cd3f982b9fdd559af47266785e978c002fdcdd`.
 
 ## Rejected candidates
 
