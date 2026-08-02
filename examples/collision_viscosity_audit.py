@@ -18,12 +18,14 @@ def main() -> None:
         "--collision-model",
         choices=(
             "bgk", "cumulant", "cumulant_wale", "cumulant_vreman",
-            "entropic_kbc", "natural_kbc",
+            "planar_cumulant_d2q9", "entropic_kbc", "natural_kbc",
         ),
         required=True,
     )
     parser.add_argument("--tau", type=float, default=0.8)
     parser.add_argument("--wavelength-cells", type=int, default=32)
+    parser.add_argument("--transverse-cells", type=int, default=4)
+    parser.add_argument("--amplitude", type=float, default=1.0e-3)
     parser.add_argument("--steps", type=int, default=200)
     parser.add_argument("--fit-start-step", type=int, default=20)
     parser.add_argument("--maximum-relative-error-pct", type=float, default=2.0)
@@ -38,6 +40,8 @@ def main() -> None:
         collision_model=args.collision_model,
         tau=args.tau,
         wavelength_cells=args.wavelength_cells,
+        transverse_cells=args.transverse_cells,
+        amplitude=args.amplitude,
         steps=args.steps,
         fit_start_step=args.fit_start_step,
         maximum_relative_error_pct=args.maximum_relative_error_pct,
