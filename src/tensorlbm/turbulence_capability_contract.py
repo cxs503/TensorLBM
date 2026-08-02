@@ -19,6 +19,7 @@ Audit scope (source files read, not docstring assertions):
       ``test_dynamic_smagorinsky.py``, ``test_turbulence_extensions.py``,
       ``test_turbulent_channel.py``
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -111,6 +112,7 @@ _AUDITED_COLLISIONS: tuple[str, ...] = ("BGK", "MRT", "CG", "N/A")
 # Error type
 # ---------------------------------------------------------------------------
 
+
 class TurbulenceWithheldError(NotImplementedError):
     """Raised when a turbulence capability request lacks physics validation."""
 
@@ -118,6 +120,7 @@ class TurbulenceWithheldError(NotImplementedError):
 # ---------------------------------------------------------------------------
 # Capability dataclass
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class TurbulenceCapability:
@@ -149,6 +152,7 @@ class TurbulenceCapability:
 # Hot-path allocation audit entry
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class HotPathAllocation:
     """Observation of a GPU→CPU sync or per-call allocation in a hot path."""
@@ -178,14 +182,16 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
     "smagorinsky": {
         "D2Q9": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_smagorinsky_bgk",
                 "test_marine.py: shape, finite, mass, momentum, equilibrium identity",
                 None,
                 "Standard Smagorinsky LES; non-equilibrium stress Frobenius norm → per-cell tau_eff.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_smagorinsky_mrt",
                 "test_phase4.py: shape, mass, momentum, finite",
                 None,
@@ -194,21 +200,24 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_smagorinsky_bgk3d",
                 "test_marine.py: shape, finite, mass, momentum, equilibrium identity",
                 None,
                 "D3Q19 BGK + Smagorinsky.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_smagorinsky_mrt3d",
                 "test_marine.py: shape, finite, mass, momentum, equilibrium identity",
                 None,
                 "D3Q19 MRT with per-cell stress rate override (modes 9-13). Used in suboff_resistance.py.",
             ),
             "CG": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.cg_advanced_collision.collide_cg_regularized_stress_3d(sgs_model='smagorinsky')",
                 "test_cg_sgs_coupling.py: shape, finite, mass, momentum, equilibrium identity, stability",
                 None,
@@ -219,14 +228,16 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_smagorinsky_bgk27",
                 "test_d3q27.py: shape, finite, equilibrium identity",
                 None,
                 "D3Q27 BGK + Smagorinsky.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_smagorinsky_mrt27",
                 "test_d3q27.py: mass conservation",
                 None,
@@ -234,7 +245,6 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # Dynamic Smagorinsky — 5 combinations (D2Q9 BGK, D3Q19 BGK/MRT,
     # D3Q27 BGK/MRT), all CONTRACT_TESTED
@@ -242,7 +252,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
     "dynamic_smagorinsky": {
         "D2Q9": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_dynamic_smagorinsky_bgk",
                 "test_dynamic_smagorinsky.py: shape, finite",
                 "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1147 "
@@ -252,7 +263,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_dynamic_smagorinsky_bgk3d",
                 "test_dynamic_smagorinsky.py: shape",
                 "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1211 "
@@ -260,7 +272,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "D3Q19 dynamic Smagorinsky.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_dynamic_smagorinsky_mrt3d",
                 "test_dynamic_smagorinsky.py: shape, finite, mass, momentum, equilibrium identity",
                 "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1297 "
@@ -271,7 +284,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_dynamic_smagorinsky_bgk27",
                 "test_dynamic_smagorinsky_extensions.py: shape, finite, mass, momentum, equilibrium identity",
                 "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1389 "
@@ -279,7 +293,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "D3Q27 BGK + dynamic Smagorinsky.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_dynamic_smagorinsky_mrt27",
                 "test_dynamic_smagorinsky_mrt27.py: shape, finite, mass, momentum, equilibrium identity, sphere flow",
                 "Global Cs reduction: float(torch.sqrt(...).item()) at turbulence.py:1476 "
@@ -289,14 +304,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # WALE — BGK only (D2Q9, D3Q19, D3Q27); no MRT variants
     # -----------------------------------------------------------------------
     "wale": {
         "D2Q9": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_wale_bgk",
                 "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
                 None,
@@ -305,14 +320,16 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_wale_bgk3d",
                 "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
                 None,
                 "D3Q19 BGK + WALE.",
             ),
             "CG": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.cg_advanced_collision.collide_cg_regularized_stress_3d(sgs_model='wale')",
                 "test_cg_sgs_coupling.py: shape, finite, mass, momentum, equilibrium identity, stability",
                 None,
@@ -323,7 +340,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_wale_bgk27",
                 "test_turbulence_extensions.py: shape, finite, mass, equilibrium identity",
                 None,
@@ -331,14 +349,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # Vreman — BGK only (D2Q9, D3Q19, D3Q27); no MRT variants
     # -----------------------------------------------------------------------
     "vreman": {
         "D2Q9": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_vreman_bgk",
                 "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
                 None,
@@ -347,14 +365,16 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_vreman_bgk3d",
                 "test_turbulence_extensions.py: shape, finite, mass, momentum, equilibrium identity",
                 None,
                 "D3Q19 BGK + Vreman.",
             ),
             "CG": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.cg_advanced_collision.collide_cg_regularized_stress_3d(sgs_model='vreman')",
                 "test_cg_sgs_coupling.py: shape, finite, mass, momentum, equilibrium identity, stability",
                 None,
@@ -365,7 +385,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.turbulence.collide_vreman_bgk27",
                 "test_turbulence_extensions.py: shape, finite, mass, equilibrium identity",
                 None,
@@ -373,14 +394,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # RANS k-epsilon — D3Q19 MRT only; IMPLEMENTED_ONLY (no tests)
     # -----------------------------------------------------------------------
     "rans_ke": {
         "D3Q19": {
             "MRT": (
-                IMPLEMENTED, VERIFICATION_IMPLEMENTED_ONLY,
+                IMPLEMENTED,
+                VERIFICATION_IMPLEMENTED_ONLY,
                 "tensorlbm.rans_ke.collide_rans_ke + KESolver",
                 None,
                 "mask.bool() allocation per call (rans_ke.py:394). "
@@ -391,14 +412,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # RANS Spalart-Allmaras — D3Q19 MRT only; IMPLEMENTED_ONLY (no tests)
     # -----------------------------------------------------------------------
     "rans_sa": {
         "D3Q19": {
             "MRT": (
-                IMPLEMENTED, VERIFICATION_IMPLEMENTED_ONLY,
+                IMPLEMENTED,
+                VERIFICATION_IMPLEMENTED_ONLY,
                 "tensorlbm.rans_ke.collide_rans_sa + SASolver",
                 None,
                 "collide_rans_sa uses nu_t.mean().item() scalar averaging (rans_ke.py:821), "
@@ -408,14 +429,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # k-omega SST — D2Q9 BGK only; IMPLEMENTED_ONLY (no tests)
     # -----------------------------------------------------------------------
     "komega_sst": {
         "D2Q9": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_IMPLEMENTED_ONLY,
+                IMPLEMENTED,
+                VERIFICATION_IMPLEMENTED_ONLY,
                 "tensorlbm.rans_ke.komega_sst_collision_d2q9 + KOmegaSSTSolver",
                 None,
                 None,
@@ -423,14 +444,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # DDES — D2Q9 BGK only; IMPLEMENTED_ONLY (no tests, no callers)
     # -----------------------------------------------------------------------
     "ddes": {
         "D2Q9": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_IMPLEMENTED_ONLY,
+                IMPLEMENTED,
+                VERIFICATION_IMPLEMENTED_ONLY,
                 "tensorlbm.ddes.apply_ddes_collision",
                 None,
                 None,
@@ -440,14 +461,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # Wall function — D3Q19 only; BENCHMARK_ONLY (examples, no unit tests)
     # -----------------------------------------------------------------------
     "wall_function": {
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_BENCHMARK_ONLY,
+                IMPLEMENTED,
+                VERIFICATION_BENCHMARK_ONLY,
                 "tensorlbm.wall_model.wall_function_3d",
                 "Examples: dg_flatplate_wallfn.py, dg_ship_wallfn.py, dg_suboff_wallfn.py. "
                 "Docstring claims SUBOFF AFF-8 Re=2M Ct_total 0.0040 vs experimental 0.004, "
@@ -459,14 +480,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # Wall distance FMM — D2Q9 and D3Q19; IMPLEMENTED_ONLY (no tests)
     # -----------------------------------------------------------------------
     "wall_distance": {
         "D2Q9": {
             "N/A": (
-                IMPLEMENTED, VERIFICATION_IMPLEMENTED_ONLY,
+                IMPLEMENTED,
+                VERIFICATION_IMPLEMENTED_ONLY,
                 "tensorlbm.wall_model.compute_wall_distance_fmm_2d",
                 None,
                 None,
@@ -475,7 +496,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q19": {
             "N/A": (
-                IMPLEMENTED, VERIFICATION_IMPLEMENTED_ONLY,
+                IMPLEMENTED,
+                VERIFICATION_IMPLEMENTED_ONLY,
                 "tensorlbm.wall_model.compute_wall_distance_fmm",
                 None,
                 None,
@@ -498,7 +520,7 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
         pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
         severity="SYNC",
         note="Global Cs reduction to Python float; GPU→CPU sync per collision step. "
-             "Architecturally inherent to the dynamic procedure (single global Cs).",
+        "Architecturally inherent to the dynamic procedure (single global Cs).",
     ),
     HotPathAllocation(
         function="collide_dynamic_smagorinsky_bgk3d",
@@ -531,7 +553,7 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
         pattern="float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())",
         severity="SYNC",
         note="Global Cs reduction to Python float; GPU→CPU sync per collision step. "
-             "Architecturally inherent to the dynamic procedure (single global Cs).",
+        "Architecturally inherent to the dynamic procedure (single global Cs).",
     ),
     HotPathAllocation(
         function="collide_rans_ke",
@@ -540,7 +562,7 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
         pattern="mask_3d = mask.bool()",
         severity="ALLOCATION",
         note="Allocates a new bool tensor every call when mask is provided. "
-             "Should be pre-computed by the caller.",
+        "Should be pre-computed by the caller.",
     ),
     HotPathAllocation(
         function="collide_rans_sa",
@@ -549,7 +571,7 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
         pattern="nu_eff = nu_lam + nu_t.mean().item()",
         severity="SYNC",
         note="GPU→CPU sync for scalar averaging of per-cell eddy viscosity. "
-             "Loses spatial variation; delegates to collide_smagorinsky_mrt3d(C_s=0.0).",
+        "Loses spatial variation; delegates to collide_smagorinsky_mrt3d(C_s=0.0).",
     ),
     HotPathAllocation(
         function="wall_function_3d",
@@ -582,6 +604,7 @@ _HOT_PATH_AUDIT: tuple[HotPathAllocation, ...] = (
 # Internal: determine fail-closed status from verification level
 # ---------------------------------------------------------------------------
 
+
 def _status_for(verification_level: str) -> str:
     if verification_level == VERIFICATION_NO_IMPLEMENTATION:
         return WITHHELD_NO_IMPLEMENTATION
@@ -595,6 +618,7 @@ def _status_for(verification_level: str) -> str:
 # ---------------------------------------------------------------------------
 # Internal: look up one capability
 # ---------------------------------------------------------------------------
+
 
 def _capability_for(family: str, lattice: str, collision: str) -> TurbulenceCapability:
     family_map = _REGISTRY.get(family, {})
@@ -633,6 +657,7 @@ def _capability_for(family: str, lattice: str, collision: str) -> TurbulenceCapa
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def turbulence_capability_matrix() -> dict[str, dict[str, dict[str, TurbulenceCapability]]]:
     """Return the complete audited turbulence family/lattice/collision matrix.

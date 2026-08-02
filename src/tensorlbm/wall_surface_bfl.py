@@ -25,6 +25,7 @@ Wall-surface momentum exchange:
         f_opp[wall] = f_bc = BFL-reconstructed value
   No /q factor — the BFL already accounts for the wall position.
 """
+
 from __future__ import annotations
 
 import torch

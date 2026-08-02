@@ -5,6 +5,7 @@ opt in to two or more ``capture_population_steps``, runs that production path
 once, and forwards its detached, post-stream/pre-bounce-back ``f`` snapshots to
 the production window adapter.  The output is an unvalidated diagnostic only.
 """
+
 from __future__ import annotations
 
 from hashlib import sha256
@@ -25,7 +26,9 @@ _POPULATION_SOURCE = "full_wet_opt_in_production_snapshot"
 
 
 def _canonical_hash(value: object) -> str:
-    return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
+    return sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    ).hexdigest()
 
 
 def _population_hash(snapshot: D3Q19PopulationSnapshot) -> str:
@@ -72,17 +75,24 @@ def run_suboff_full_wet_force_window_campaign(
     result = run_fully_wetted_flow(config)
     snapshots = result.population_snapshots
     if len(snapshots) < 2:
-        raise RuntimeError("production full-wet run returned fewer than two requested population snapshots")
+        raise RuntimeError(
+            "production full-wet run returned fewer than two requested population snapshots"
+        )
     if tuple(snapshot.step_index for snapshot in snapshots) != config.capture_population_steps:
         raise RuntimeError("production full-wet capture schedule was not fulfilled")
     if any(snapshot.sample_phase != "post_stream_pre_bounce_back" for snapshot in snapshots):
         raise RuntimeError("production full-wet snapshots have an unsupported sample phase")
 
     adapter_result = run_suboff_full_wet_production_window(
-        asset, config, force_config=force_config, runner=lambda _: result,
+        asset,
+        config,
+        force_config=force_config,
+        runner=lambda _: result,
     )
     if adapter_result["status"] != "measured_candidate" or adapter_result["force_window"] is None:
-        raise RuntimeError("production window adapter withheld the requested real population window")
+        raise RuntimeError(
+            "production window adapter withheld the requested real population window"
+        )
 
     force_window = adapter_result["force_window"]
     window_forces = tuple(
@@ -90,15 +100,20 @@ def run_suboff_full_wet_force_window_campaign(
         for force in force_window["window_forces"]
     )
     if len(window_forces) != len(snapshots):
-        raise RuntimeError("production adapter force record count does not match captured snapshots")
-    records = tuple({
-        "capture_step": snapshot.step_index,
-        "sample_phase": snapshot.sample_phase,
-        "ownership_hash": snapshot.ownership_hash,
-        "population_source": _POPULATION_SOURCE,
-        "population_sha256": _population_hash(snapshot),
-        "force_on_body": window_forces[index],
-    } for index, snapshot in enumerate(snapshots))
+        raise RuntimeError(
+            "production adapter force record count does not match captured snapshots"
+        )
+    records = tuple(
+        {
+            "capture_step": snapshot.step_index,
+            "sample_phase": snapshot.sample_phase,
+            "ownership_hash": snapshot.ownership_hash,
+            "population_source": _POPULATION_SOURCE,
+            "population_sha256": _population_hash(snapshot),
+            "force_on_body": window_forces[index],
+        }
+        for index, snapshot in enumerate(snapshots)
+    )
     mean_force = tuple(float(value) for value in force_window["observation"]["force"])
     std_force = tuple(_std_component(window_forces, component) for component in range(3))
     provenance = {

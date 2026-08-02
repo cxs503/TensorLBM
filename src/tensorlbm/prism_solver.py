@@ -9,6 +9,7 @@ profile, then injected back into LBM by replacing the near-wall velocity.
 
 No NS solve, no Newton iteration — just the exact viscous solution.
 """
+
 import torch
 import math
 import time
@@ -36,14 +37,15 @@ def _surface_cells(solid: torch.Tensor) -> tuple:
             if 0 <= kk < nz and 0 <= jj < ny and 0 <= ii2 < nx and solid[kk, jj, ii2]:
                 n[ax] += float(-sgn)
         norm = n.norm()
-        normals[i] = n / norm if norm > 0.5 else torch.tensor([1., 0., 0.])
+        normals[i] = n / norm if norm > 0.5 else torch.tensor([1.0, 0.0, 0.0])
     flat_idx = idx[:, 0] * ny * nx + idx[:, 1] * nx + idx[:, 2]
     return centres, normals, flat_idx.long()
 
 
 # ── Prism layer builder ──
-def build_prism(solid: torch.Tensor, n_layers: int = 5,
-                first_height: float = 0.02, growth: float = 1.15) -> dict:
+def build_prism(
+    solid: torch.Tensor, n_layers: int = 5, first_height: float = 0.02, growth: float = 1.15
+) -> dict:
     """Build prism layers outward from the solid surface.
 
     Returns:
@@ -65,8 +67,7 @@ def build_prism(solid: torch.Tensor, n_layers: int = 5,
         cum += h[k] / 2.0
         layer_c[k] = c0 + cum * n0
         cum += h[k] / 2.0
-    return {'centres': layer_c, 'heights': h, 'n_surface': N,
-            'surface_xyz': c0, 'surface_norm': n0}
+    return {"centres": layer_c, "heights": h, "n_surface": N, "surface_xyz": c0, "surface_norm": n0}
 
 
 # ── Runtime prism correction ──
@@ -74,19 +75,21 @@ class PrismCorrector:
     """Compute prism velocity from LBM u_tau and inject back."""
 
     def __init__(self, prism: dict, nu: float, device: torch.device):
-        self.prism = {k: v.to(device) if isinstance(v, torch.Tensor) else v
-                      for k, v in prism.items()}
+        self.prism = {
+            k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in prism.items()
+        }
         self.nu = nu
         self.device = device
-        self.N = prism['n_surface']
-        self.n_layers = len(prism['heights'])
+        self.N = prism["n_surface"]
+        self.n_layers = len(prism["heights"])
 
-    def correct_velocity(self, ux: torch.Tensor, uy: torch.Tensor,
-                          uz: torch.Tensor, u_tau: torch.Tensor) -> tuple:
+    def correct_velocity(
+        self, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor, u_tau: torch.Tensor
+    ) -> tuple:
         """Return (ux_corr, uy_corr, uz_corr) with prism-resolved wall velocity."""
         nz, ny, nx = ux.shape
-        c0 = self.prism['surface_xyz']
-        h = self.prism['heights']
+        c0 = self.prism["surface_xyz"]
+        h = self.prism["heights"]
         nu = self.nu
         N = self.N
 
@@ -127,11 +130,13 @@ class PrismCorrector:
 
         return ux_c, uy_c, uz_c
 
-    def inject_to_lbm(self, f: torch.Tensor, ux_c: torch.Tensor,
-                       uy_c: torch.Tensor, uz_c: torch.Tensor):
+    def inject_to_lbm(
+        self, f: torch.Tensor, ux_c: torch.Tensor, uy_c: torch.Tensor, uz_c: torch.Tensor
+    ):
         """Vectorized: rebuild equilibrium at all surface cells at once."""
         from .d3q19 import equilibrium3d
-        c0 = self.prism['surface_xyz']
+
+        c0 = self.prism["surface_xyz"]
         N = self.N
 
         # Gather corrected velocity at surface cells
@@ -165,9 +170,10 @@ class PrismCorrector:
 
 
 # ── Test ──
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
-    dev = sys.argv[1] if len(sys.argv) > 1 else 'cpu'
+
+    dev = sys.argv[1] if len(sys.argv) > 1 else "cpu"
     print(f"Prism layer test on {dev}")
 
     # Build cylinder
@@ -193,9 +199,10 @@ if __name__ == '__main__':
     uz = torch.zeros(nz, ny, nx)
     ut = torch.rand(nz, ny, nx) * 0.01
 
-    if dev.startswith('sdaa'):
+    if dev.startswith("sdaa"):
         import torch as _t
-        _t.sdaa.set_device(int(dev.split(':')[1]))
+
+        _t.sdaa.set_device(int(dev.split(":")[1]))
         ux, uy, uz, ut, solid = [t.to(dev) for t in [ux, uy, uz, ut, solid]]
 
     ux_c, uy_c, uz_c = corr.correct_velocity(ux, uy, uz, ut)

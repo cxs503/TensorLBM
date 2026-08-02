@@ -8,6 +8,7 @@ Tests verify:
   5. All 11 combinations are executable (CPU, tiny grid)
   6. SDAA smoke test (sdaa:0, tiny grid)
 """
+
 from __future__ import annotations
 
 import json
@@ -36,6 +37,7 @@ from tensorlbm.suboff_wallfn_fullgrid_runner import (
 # Small-grid config factory
 # --------------------------------------------------------------------------- #
 
+
 def _small_config(**overrides: Any) -> SuboffWallFnFullGridConfig:
     defaults: dict[str, Any] = dict(
         re=200.0,
@@ -56,6 +58,7 @@ def _small_config(**overrides: Any) -> SuboffWallFnFullGridConfig:
 # --------------------------------------------------------------------------- #
 # 1. Config validation
 # --------------------------------------------------------------------------- #
+
 
 class TestConfigValidation:
     def test_default_re_is_2e6(self) -> None:
@@ -139,7 +142,13 @@ class TestConfigValidation:
 
     def test_all_collision_families_present(self) -> None:
         assert set(COLLISION_FAMILIES) == {
-            "CUMULANT", "BGK", "MRT", "TRT", "CM", "KBC", "RLBM",
+            "CUMULANT",
+            "BGK",
+            "MRT",
+            "TRT",
+            "CM",
+            "KBC",
+            "RLBM",
         }
 
     def test_all_lattices_present(self) -> None:
@@ -149,6 +158,7 @@ class TestConfigValidation:
 # --------------------------------------------------------------------------- #
 # 2. Collision dispatch
 # --------------------------------------------------------------------------- #
+
 
 class TestCollisionDispatch:
     def _make_f_d3q19(self, shape=(4, 5, 6)) -> torch.Tensor:
@@ -202,6 +212,7 @@ class TestCollisionDispatch:
 # 3. Drag computation
 # --------------------------------------------------------------------------- #
 
+
 class TestDragComputation:
     def test_compute_drags_returns_floats(self) -> None:
         """Drag computation should return finite floats."""
@@ -220,6 +231,7 @@ class TestDragComputation:
 
         # Compute u_tau (will be near-zero at equilibrium, but function should work)
         from tensorlbm.wall_function_common import compute_u_tau
+
         u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
         u_tau = compute_u_tau(u_mag, nu=0.01, y_val=0.5, wall_law="log")
 
@@ -244,6 +256,7 @@ class TestDragComputation:
         f = equilibrium27(rho, ux, uy, uz)
 
         from tensorlbm.wall_function_common import compute_u_tau
+
         u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
         u_tau = compute_u_tau(u_mag, nu=0.01, y_val=0.5, wall_law="log")
 
@@ -257,6 +270,7 @@ class TestDragComputation:
 # --------------------------------------------------------------------------- #
 # 4. Runner produces valid artifact
 # --------------------------------------------------------------------------- #
+
 
 class TestRunnerArtifact:
     def test_run_produces_required_fields(self) -> None:
@@ -322,14 +336,13 @@ class TestRunnerArtifact:
         """Ct_total must equal Ct_fric + Ct_pres."""
         cfg = _small_config()
         artifact = run_suboff_wallfn_fullgrid(cfg)
-        assert artifact["Ct_total"] == pytest.approx(
-            artifact["Ct_fric"] + artifact["Ct_pres"]
-        )
+        assert artifact["Ct_total"] == pytest.approx(artifact["Ct_fric"] + artifact["Ct_pres"])
 
 
 # --------------------------------------------------------------------------- #
 # 5. All 11 combinations executable (CPU, tiny grid)
 # --------------------------------------------------------------------------- #
+
 
 class TestAllCombinations:
     """Smoke-test all 11 collision×lattice combinations on a tiny CPU grid."""
@@ -356,6 +369,7 @@ class TestAllCombinations:
 # --------------------------------------------------------------------------- #
 # 6. SDAA smoke test
 # --------------------------------------------------------------------------- #
+
 
 class TestSdaaSmokeTest:
     """Verify the runner works on SDAA hardware."""
@@ -410,7 +424,10 @@ class TestSdaaSmokeTest:
     )
     @pytest.mark.parametrize("lattice, collision", COMBINATIONS)
     def test_sdaa_all_combinations(
-        self, lattice: str, collision: str, sdaa_available: bool,
+        self,
+        lattice: str,
+        collision: str,
+        sdaa_available: bool,
     ) -> None:
         cfg = _small_config(
             lattice=lattice,

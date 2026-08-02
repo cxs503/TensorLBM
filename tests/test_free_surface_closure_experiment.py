@@ -1,4 +1,5 @@
 """Contract tests for the R1 dynamic-topology closure diagnostic experiment."""
+
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, is_dataclass
@@ -17,7 +18,9 @@ from tensorlbm.free_surface_closure_experiment import (
 )
 
 
-def test_real_step_matrix_records_independent_inventory_ledger_ownership_and_topology_evidence() -> None:
+def test_real_step_matrix_records_independent_inventory_ledger_ownership_and_topology_evidence() -> (
+    None
+):
     report = run_free_surface_closure_experiment()
 
     assert report.status == DIAGNOSTIC_NOT_PHYSICAL_CLOSURE
@@ -36,9 +39,13 @@ def test_real_step_matrix_records_independent_inventory_ledger_ownership_and_top
         assert len(case.mass_drift_curve) == case.requested_steps + 1
         assert len(case.inventory_drift_curve) == case.requested_steps + 1
         assert case.initial.independent_mass == pytest.approx(case.mass_drift_curve[0], abs=0.0)
-        assert case.initial.total_liquid_inventory == pytest.approx(case.inventory_drift_curve[0], abs=0.0)
+        assert case.initial.total_liquid_inventory == pytest.approx(
+            case.inventory_drift_curve[0], abs=0.0
+        )
         assert case.final.independent_mass == pytest.approx(case.mass_drift_curve[-1], abs=0.0)
-        assert case.final.total_liquid_inventory == pytest.approx(case.inventory_drift_curve[-1], abs=0.0)
+        assert case.final.total_liquid_inventory == pytest.approx(
+            case.inventory_drift_curve[-1], abs=0.0
+        )
         assert is_dataclass(case)
         with pytest.raises(FrozenInstanceError):
             case.status = "PASS"  # type: ignore[misc]
@@ -51,26 +58,44 @@ def test_real_step_matrix_records_independent_inventory_ledger_ownership_and_top
             assert step.abb_population_only is True
             assert step.topology_event_evidence_available in {True, False}
             assert {event.operator for event in step.topology_events} <= {
-                "conversion", "redistribution", "abb", "liquid_interface",
-                "clamp", "isolation", "boundary", "other",
+                "conversion",
+                "redistribution",
+                "abb",
+                "liquid_interface",
+                "clamp",
+                "isolation",
+                "boundary",
+                "other",
             }
             assert "abb_population_inventory_owner_withheld" in step.ownership_unresolved_categories
 
-    forced = next(case for case in report.cases if case.case_id == "B_forced_conversion_deterministic")
-    dynamic = next(case for case in report.cases if case.case_id == "C_dam_break_style_tiny_dynamic_topology")
+    forced = next(
+        case for case in report.cases if case.case_id == "B_forced_conversion_deterministic"
+    )
+    dynamic = next(
+        case for case in report.cases if case.case_id == "C_dam_break_style_tiny_dynamic_topology"
+    )
     assert any(
         event.operator == "conversion" and event.event_count > 0
-        for step in forced.steps for event in step.topology_events
+        for step in forced.steps
+        for event in step.topology_events
     )
     assert any(
         event.operator == "redistribution" and event.event_count > 0
-        for step in forced.steps for event in step.topology_events
+        for step in forced.steps
+        for event in step.topology_events
     )
     assert any(step.topology_event_evidence_available for step in forced.steps)
-    assert any(event.operator in {"conversion", "redistribution"} for step in dynamic.steps for event in step.topology_events)
+    assert any(
+        event.operator in {"conversion", "redistribution"}
+        for step in dynamic.steps
+        for event in step.topology_events
+    )
     assert all(
         event.operator != "other"
-        for case in report.cases for step in case.steps for event in step.topology_events
+        for case in report.cases
+        for step in case.steps
+        for event in step.topology_events
     )
 
 
@@ -93,7 +118,9 @@ def test_invalid_topology_is_fail_closed_with_retained_reason() -> None:
     f = equilibrium3d(torch.ones(shape), zero, zero, zero)
     solid = torch.zeros(shape, dtype=torch.bool)
 
-    report = run_free_surface_closure_experiment(extra_cases=(("invalid_topology", f, fill, flags, solid, 1, False, True),))
+    report = run_free_surface_closure_experiment(
+        extra_cases=(("invalid_topology", f, fill, flags, solid, 1, False, True),)
+    )
     case = report.cases[-1]
 
     assert case.status == FAILED_DIAGNOSTIC
@@ -117,7 +144,9 @@ def test_nonfinite_state_is_fail_closed_with_retained_reason() -> None:
     f[0, 0, 0, 0] = float("nan")
     solid = torch.zeros(shape, dtype=torch.bool)
 
-    report = run_free_surface_closure_experiment(extra_cases=(("nonfinite", f, fill, flags, solid, 1, True, True),))
+    report = run_free_surface_closure_experiment(
+        extra_cases=(("nonfinite", f, fill, flags, solid, 1, True, True),)
+    )
     case = report.cases[-1]
 
     assert case.status == FAILED_DIAGNOSTIC
@@ -147,11 +176,13 @@ def test_experiment_rejects_non_float32_field_bytes(bad_dtype: torch.dtype) -> N
     solid = torch.zeros(shape, dtype=torch.bool)
     bad_f = f.to(bad_dtype)
     with pytest.raises(ClosureExperimentError, match="float32"):
-        run_free_surface_closure_experiment(extra_cases=(("bad_dtype", bad_f, fill, flags, solid, 1, False, True),))
+        run_free_surface_closure_experiment(
+            extra_cases=(("bad_dtype", bad_f, fill, flags, solid, 1, False, True),)
+        )
     with pytest.raises(ClosureExperimentError, match="float32"):
-        run_free_surface_closure_experiment(extra_cases=(("bad_dtype", f, fill.to(bad_dtype), flags, solid, 1, False, True),))
-
-
+        run_free_surface_closure_experiment(
+            extra_cases=(("bad_dtype", f, fill.to(bad_dtype), flags, solid, 1, False, True),)
+        )
 
 
 @pytest.mark.parametrize("field_name", ["f", "fill", "flags", "solid"])
@@ -164,9 +195,20 @@ def test_experiment_rejects_sparse_case_fields(field_name: str) -> None:
     fields = {"f": f, "fill": fill, "flags": flags, "solid": solid}
     fields[field_name] = fields[field_name].to_sparse()
     with pytest.raises(ClosureExperimentError, match="dense strided"):
-        run_free_surface_closure_experiment(extra_cases=((
-            "sparse", fields["f"], fields["fill"], fields["flags"], fields["solid"], 1, False, True,
-        ),))
+        run_free_surface_closure_experiment(
+            extra_cases=(
+                (
+                    "sparse",
+                    fields["f"],
+                    fields["fill"],
+                    fields["flags"],
+                    fields["solid"],
+                    1,
+                    False,
+                    True,
+                ),
+            )
+        )
 
 
 def test_experiment_rejects_empty_spatial_domain() -> None:
@@ -175,7 +217,9 @@ def test_experiment_rejects_empty_spatial_domain() -> None:
     flags = torch.zeros((0, 0, 0), dtype=torch.int8)
     solid = torch.zeros((0, 0, 0), dtype=torch.bool)
     with pytest.raises(ClosureExperimentError, match="spatial dimensions"):
-        run_free_surface_closure_experiment(extra_cases=(("empty", f, fill, flags, solid, 1, False, True),))
+        run_free_surface_closure_experiment(
+            extra_cases=(("empty", f, fill, flags, solid, 1, False, True),)
+        )
 
 
 def test_experiment_rejects_non_tuple_extra_cases() -> None:
@@ -190,4 +234,6 @@ def test_experiment_rejects_nonpositive_requested_steps() -> None:
     flags = torch.full(shape, GAS, dtype=torch.int8)
     solid = torch.zeros(shape, dtype=torch.bool)
     with pytest.raises(ClosureExperimentError, match="positive"):
-        run_free_surface_closure_experiment(extra_cases=(("bad", f, fill, flags, solid, 0, False, True),))
+        run_free_surface_closure_experiment(
+            extra_cases=(("bad", f, fill, flags, solid, 0, False, True),)
+        )

@@ -6,6 +6,7 @@ These tests run without FastAPI and exercise the pure-Python/PyTorch modules:
 - sponge_bc         (absorbing outlet layer)
 - turbulence_stats  (Reynolds stresses, TKE, Tu)
 """
+
 from __future__ import annotations
 
 import pytest
@@ -16,6 +17,7 @@ import torch
 # synthetic_inflow
 # ---------------------------------------------------------------------------
 
+
 def test_dfsem_imports_from_tensorlbm() -> None:
     from tensorlbm import DFSEMInlet, DigitalFilterInlet  # noqa: F401
 
@@ -24,9 +26,17 @@ def test_dfsem_produces_finite_values() -> None:
     from tensorlbm import DFSEMInlet
 
     ny = 32
-    gen = DFSEMInlet(ny=ny, nz=1, u_mean=torch.full((ny, 1), 0.1),
-                      uu=1e-4, vv=1e-4, ww=1e-4, length_scale=4.0,
-                      n_eddies=50, seed=0)
+    gen = DFSEMInlet(
+        ny=ny,
+        nz=1,
+        u_mean=torch.full((ny, 1), 0.1),
+        uu=1e-4,
+        vv=1e-4,
+        ww=1e-4,
+        length_scale=4.0,
+        n_eddies=50,
+        seed=0,
+    )
     u, v, w = gen.sample()
     assert torch.isfinite(u).all()
     assert torch.isfinite(v).all()
@@ -36,8 +46,7 @@ def test_dfsem_produces_finite_values() -> None:
 def test_dfm_produces_finite_values() -> None:
     from tensorlbm import DigitalFilterInlet
 
-    gen = DigitalFilterInlet(ny=32, nz=1, uu=1e-4, vv=1e-4, ww=1e-4,
-                              length_scale=4.0, seed=0)
+    gen = DigitalFilterInlet(ny=32, nz=1, uu=1e-4, vv=1e-4, ww=1e-4, length_scale=4.0, seed=0)
     u, v, w = gen.sample()
     assert torch.isfinite(u).all()
     assert torch.isfinite(v).all()
@@ -48,8 +57,7 @@ def test_dfsem_stress_ordering() -> None:
     from tensorlbm import DFSEMInlet
 
     ny = 64
-    base_kwargs = dict(ny=ny, nz=1, u_mean=torch.full((ny, 1), 0.1),
-                       length_scale=4.0, n_eddies=100)
+    base_kwargs = dict(ny=ny, nz=1, u_mean=torch.full((ny, 1), 0.1), length_scale=4.0, n_eddies=100)
 
     gen_lo = DFSEMInlet(uu=1e-5, vv=1e-5, ww=1e-5, seed=42, **base_kwargs)
     gen_hi = DFSEMInlet(uu=1e-3, vv=1e-3, ww=1e-3, seed=42, **base_kwargs)
@@ -62,6 +70,7 @@ def test_dfsem_stress_ordering() -> None:
 # ---------------------------------------------------------------------------
 # roughness
 # ---------------------------------------------------------------------------
+
 
 def test_roughness_imports_from_tensorlbm() -> None:
     from tensorlbm import (  # noqa: F401
@@ -92,6 +101,7 @@ def test_roughness_smooth_zero_b() -> None:
 # ---------------------------------------------------------------------------
 # sponge_bc
 # ---------------------------------------------------------------------------
+
 
 def test_sponge_imports_from_tensorlbm() -> None:
     from tensorlbm import (  # noqa: F401
@@ -165,6 +175,7 @@ def test_target_sponge_3d_no_damping() -> None:
 # turbulence_stats
 # ---------------------------------------------------------------------------
 
+
 def test_turbstats_imports_from_tensorlbm() -> None:
     from tensorlbm import (  # noqa: F401
         TurbulenceStatsAccumulator,
@@ -205,7 +216,8 @@ def test_turbstats_reynolds_stresses_fn() -> None:
     ux_mean = torch.full((4, 4), 0.1)
     uy_mean = torch.zeros(4, 4)
     result = compute_reynolds_stresses(
-        ux_mean, uy_mean,
+        ux_mean,
+        uy_mean,
         ux_rms=torch.full((4, 4), 0.01),
         uy_rms=torch.full((4, 4), 0.005),
     )
@@ -233,8 +245,15 @@ def test_turbstats_accumulator_to_dict_complete() -> None:
     d = acc.to_dict()
 
     required_keys = {
-        "n_samples", "mean_u", "mean_v", "uu", "vv", "uv",
-        "tke", "skewness_u", "flatness_u",
+        "n_samples",
+        "mean_u",
+        "mean_v",
+        "uu",
+        "vv",
+        "uv",
+        "tke",
+        "skewness_u",
+        "flatness_u",
     }
     assert required_keys.issubset(d.keys())
 
@@ -246,9 +265,7 @@ def test_turbstats_3d_ww_nonzero() -> None:
     torch.manual_seed(5)
     for _ in range(5):
         uz = torch.rand(4, 4, 4) * 0.05
-        acc.update(torch.rand(4, 4, 4) * 0.1,
-                   torch.rand(4, 4, 4) * 0.02,
-                   uz)
+        acc.update(torch.rand(4, 4, 4) * 0.1, torch.rand(4, 4, 4) * 0.02, uz)
 
     assert acc.ww is not None
     assert (acc.ww >= 0).all()

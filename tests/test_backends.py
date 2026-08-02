@@ -11,6 +11,7 @@ and MindSpore may not be installed in every CI environment.  They verify:
 6. End-to-end: ``train_flow_transformer_self_supervised`` with backend="torch".
 7. ``backend`` key appears in all training results.
 """
+
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -24,6 +25,7 @@ import tensorlbm.backends as B
 # ---------------------------------------------------------------------------
 # Registry tests
 # ---------------------------------------------------------------------------
+
 
 def test_default_backend_torch(monkeypatch):
     monkeypatch.delenv("TENSORLBM_BACKEND", raising=False)
@@ -66,6 +68,7 @@ def test_using_backend_restores_previous_backend():
 # ---------------------------------------------------------------------------
 # Torch backend – tensor ops
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def ops():
@@ -139,21 +142,22 @@ def test_no_grad_context(ops):
 # Torch backend – model factories
 # ---------------------------------------------------------------------------
 
+
 def test_build_eddy_viscosity_mlp(ops):
     mean_np = np.zeros(3, dtype=np.float32)
-    std_np  = np.ones(3, dtype=np.float32)
+    std_np = np.ones(3, dtype=np.float32)
     model = ops.build_eddy_viscosity_mlp(3, 16, 2, "tanh", mean_np, std_np)
     # Forward pass
     x = torch.rand(10, 3)
     with torch.no_grad():
         out = model(x)
     assert out.shape == (10, 1)
-    assert (out >= 0).all()   # Softplus → non-negative
+    assert (out >= 0).all()  # Softplus → non-negative
 
 
 def test_build_flow_transformer(ops):
     model = ops.build_flow_transformer(2, 16, 2, 1, 32, 0.0, 64)
-    x = torch.rand(2, 4, 2)   # batch=2, tokens=4, features=2
+    x = torch.rand(2, 4, 2)  # batch=2, tokens=4, features=2
     ops.eval_mode(model)
     with torch.no_grad():
         out = model(x)
@@ -162,7 +166,7 @@ def test_build_flow_transformer(ops):
 
 def test_get_state_dict_numpy(ops):
     mean_np = np.zeros(3, dtype=np.float32)
-    std_np  = np.ones(3, dtype=np.float32)
+    std_np = np.ones(3, dtype=np.float32)
     model = ops.build_eddy_viscosity_mlp(3, 16, 2, "tanh", mean_np, std_np)
     sd = ops.get_state_dict_numpy(model)
     assert isinstance(sd, dict)
@@ -171,9 +175,9 @@ def test_get_state_dict_numpy(ops):
 
 def test_load_state_dict_numpy_roundtrip(ops, tmp_path):
     mean_np = np.zeros(3, dtype=np.float32)
-    std_np  = np.ones(3, dtype=np.float32)
-    model1  = ops.build_eddy_viscosity_mlp(3, 16, 2, "tanh", mean_np, std_np)
-    sd_np   = ops.get_state_dict_numpy(model1)
+    std_np = np.ones(3, dtype=np.float32)
+    model1 = ops.build_eddy_viscosity_mlp(3, 16, 2, "tanh", mean_np, std_np)
+    sd_np = ops.get_state_dict_numpy(model1)
 
     model2 = ops.build_eddy_viscosity_mlp(3, 16, 2, "tanh", mean_np, std_np)
     ops.load_state_dict_numpy(model2, sd_np)
@@ -192,12 +196,13 @@ def test_load_state_dict_numpy_roundtrip(ops, tmp_path):
 # Torch backend – train_step
 # ---------------------------------------------------------------------------
 
+
 def test_train_step(ops):
     mean_np = np.zeros(3, dtype=np.float32)
-    std_np  = np.ones(3, dtype=np.float32)
-    model   = ops.build_eddy_viscosity_mlp(3, 16, 2, "tanh", mean_np, std_np)
+    std_np = np.ones(3, dtype=np.float32)
+    model = ops.build_eddy_viscosity_mlp(3, 16, 2, "tanh", mean_np, std_np)
     loss_fn = ops.mse_loss_fn()
-    optim   = ops.adam_optimizer(model, 1e-3)
+    optim = ops.adam_optimizer(model, 1e-3)
     x = torch.rand(8, 3)
     y = torch.rand(8, 1) * 0.1
     loss = ops.train_step(model, loss_fn, optim, x, y, max_norm=1.0)
@@ -209,15 +214,17 @@ def test_train_step(ops):
 # End-to-end: train_eddy_viscosity_model with backend="torch"
 # ---------------------------------------------------------------------------
 
+
 def test_train_eddy_viscosity_model_torch_backend(tmp_path):
     from tensorlbm import (
         EddyViscosityDataset,
         TrainConfig,
         train_eddy_viscosity_model,
     )
+
     n = 200
     features = torch.rand(n, 3)
-    targets  = torch.rand(n, 1) * 0.01
+    targets = torch.rand(n, 1) * 0.01
     ds = EddyViscosityDataset(features=features, targets=targets, c_s=0.1)
     cfg = TrainConfig(epochs=2, batch_size=64, seed=0)
     out = tmp_path / "model_torch.pt"
@@ -232,6 +239,7 @@ def test_train_eddy_viscosity_model_torch_backend(tmp_path):
 def test_train_eddy_viscosity_model_uses_current_backend(tmp_path):
     """When backend kwarg is omitted, the current global backend is used."""
     from tensorlbm import EddyViscosityDataset, TrainConfig, train_eddy_viscosity_model
+
     B.set_backend("torch")
     n = 100
     ds = EddyViscosityDataset(
@@ -247,20 +255,19 @@ def test_train_eddy_viscosity_model_uses_current_backend(tmp_path):
 # End-to-end: train_flow_transformer_self_supervised with backend="torch"
 # ---------------------------------------------------------------------------
 
+
 def test_train_flow_transformer_torch_backend(tmp_path):
     from tensorlbm import (
         FlowTransformerArch,
         FlowTransformerTrainConfig,
         train_flow_transformer_self_supervised,
     )
+
     ny, nx = 8, 8
-    snapshots = [
-        (torch.rand(ny, nx), torch.rand(ny, nx))
-        for _ in range(4)
-    ]
+    snapshots = [(torch.rand(ny, nx), torch.rand(ny, nx)) for _ in range(4)]
     arch = FlowTransformerArch(d_model=8, n_heads=2, n_layers=1, ffn_dim=16, max_tokens=128)
-    cfg  = FlowTransformerTrainConfig(epochs=2, batch_size=2, seed=0)
-    out  = tmp_path / "transformer_torch.pt"
+    cfg = FlowTransformerTrainConfig(epochs=2, batch_size=2, seed=0)
+    out = tmp_path / "transformer_torch.pt"
     result = train_flow_transformer_self_supervised(
         snapshots, out, arch=arch, config=cfg, backend="torch"
     )
@@ -361,11 +368,9 @@ def test_load_flow_transformer_model_uses_metadata_backend(monkeypatch, tmp_path
     with path.open("wb") as fh:
         np.savez_compressed(fh, weight=np.array([1.0], dtype=np.float32))
     path.with_suffix(path.suffix + ".json").write_text(
-
-            '{"arch": {"in_features": 2, "d_model": 8, "n_heads": 2, '
-            '"n_layers": 1, "ffn_dim": 16, "dropout": 0.0, '
-            '"max_tokens": 32}, "backend": "paddle"}'
-
+        '{"arch": {"in_features": 2, "d_model": 8, "n_heads": 2, '
+        '"n_layers": 1, "ffn_dim": 16, "dropout": 0.0, '
+        '"max_tokens": 32}, "backend": "paddle"}'
     )
 
     B.set_backend("torch")
@@ -432,7 +437,9 @@ def test_reconstruct_flow_field_uses_model_backend(monkeypatch):
 # tensorlbm top-level re-exports
 # ---------------------------------------------------------------------------
 
+
 def test_top_level_get_set_backend():
     import tensorlbm
+
     tensorlbm.set_backend("torch")
     assert tensorlbm.get_backend() == "torch"

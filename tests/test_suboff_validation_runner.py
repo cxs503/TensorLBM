@@ -5,6 +5,7 @@ These tests verify the full chain end-to-end on a small grid:
   2. real run produces force/Ct time series
   3. measured_candidate evidence artifact is produced
 """
+
 from __future__ import annotations
 
 import json
@@ -29,6 +30,7 @@ from tensorlbm.wall_function_contract import (
 # Small-grid config factory
 # ---------------------------------------------------------------------------
 
+
 def _small_config(**overrides: Any) -> SuboffValidationConfig:
     defaults: dict[str, Any] = dict(
         nx=48,
@@ -49,6 +51,7 @@ def _small_config(**overrides: Any) -> SuboffValidationConfig:
 # ---------------------------------------------------------------------------
 # 1. Admission gate in real config
 # ---------------------------------------------------------------------------
+
 
 class TestAdmissionGateInRealConfig:
     """Verify the wall_function_admission gate behaves correctly in a real run."""
@@ -87,6 +90,7 @@ class TestAdmissionGateInRealConfig:
 # 2. Real run produces force/Ct time series
 # ---------------------------------------------------------------------------
 
+
 class TestForceCtTimeSeries:
     """Verify the real solver run produces force and Ct time series."""
 
@@ -106,8 +110,9 @@ class TestForceCtTimeSeries:
             assert isinstance(sample["fx"], float)
             assert isinstance(sample["fy"], float)
             assert isinstance(sample["fz"], float)
-            assert all(isinstance(sample[k], float) and abs(sample[k]) < 1e6
-                       for k in ("fx", "fy", "fz"))
+            assert all(
+                isinstance(sample[k], float) and abs(sample[k]) < 1e6 for k in ("fx", "fy", "fz")
+            )
 
     def test_ct_time_series_is_non_empty_and_finite(self) -> None:
         config = _small_config()
@@ -142,6 +147,7 @@ class TestForceCtTimeSeries:
 # ---------------------------------------------------------------------------
 # 3. measured_candidate evidence artifact
 # ---------------------------------------------------------------------------
+
 
 class TestMeasuredCandidateEvidence:
     """Verify the evidence artifact has the correct measured_candidate status."""

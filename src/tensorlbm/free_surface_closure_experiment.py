@@ -4,6 +4,7 @@ The experiment invokes the production :func:`free_surface_step` unchanged.  It
 never corrects mass, fill, or populations, and its immutable report is always a
 diagnostic observation rather than a physical/PV closure claim.
 """
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -104,17 +105,19 @@ class ClosureExperimentReport:
 
 def _direct_liquid_gas_links(flags: torch.Tensor) -> int:
     liquid = flags == LIQUID
-    gas_sources = torch.stack([
-        roll_from_pull_source(flags, q) == GAS for q in D3Q19_MOVING_Q
-    ])
+    gas_sources = torch.stack([roll_from_pull_source(flags, q) == GAS for q in D3Q19_MOVING_Q])
     return int((liquid.unsqueeze(0) & gas_sources).sum())
 
 
 def _finite(f: torch.Tensor, fill: torch.Tensor, mass: torch.Tensor) -> bool:
-    return bool(torch.isfinite(f).all() and torch.isfinite(fill).all() and torch.isfinite(mass).all())
+    return bool(
+        torch.isfinite(f).all() and torch.isfinite(fill).all() and torch.isfinite(mass).all()
+    )
 
 
-def _snapshot(f: torch.Tensor, fill: torch.Tensor, flags: torch.Tensor, mass: torch.Tensor) -> ClosureSnapshot:
+def _snapshot(
+    f: torch.Tensor, fill: torch.Tensor, flags: torch.Tensor, mass: torch.Tensor
+) -> ClosureSnapshot:
     return ClosureSnapshot(
         independent_mass=float(mass.sum()),
         total_liquid_inventory=float(total_liquid_inventory(f, fill, flags)),
@@ -152,14 +155,23 @@ def _conversion_state() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch
     fill[centre] = 1.0
     for q in D3Q19_MOVING_Q:
         dz, dy, dx = int(C[q, 2]), int(C[q, 1]), int(C[q, 0])
-        cell = tuple((index - delta) % extent for index, delta, extent in zip(centre, (dz, dy, dx), shape))
+        cell = tuple(
+            (index - delta) % extent for index, delta, extent in zip(centre, (dz, dy, dx), shape)
+        )
         flags[cell] = INTERFACE
         fill[cell] = 0.5
     zero = torch.zeros(shape)
-    return equilibrium3d(torch.ones(shape), zero, zero, zero), fill, flags, torch.zeros(shape, dtype=torch.bool)
+    return (
+        equilibrium3d(torch.ones(shape), zero, zero, zero),
+        fill,
+        flags,
+        torch.zeros(shape, dtype=torch.bool),
+    )
 
 
-def _event_summary(runtime_record: dict[str, object] | None) -> tuple[tuple[TopologyEvent, ...], bool, bool]:
+def _event_summary(
+    runtime_record: dict[str, object] | None,
+) -> tuple[tuple[TopologyEvent, ...], bool, bool]:
     if runtime_record is None:
         return (), False, False
     attribution = runtime_record.get("operator_attribution")
@@ -183,26 +195,43 @@ def _event_summary(runtime_record: dict[str, object] | None) -> tuple[tuple[Topo
         raw = next((item for item in raw_events if item.get("operator") == source_operator), None)
         if raw is None:
             continue
-        events.append(TopologyEvent(
-            operator=operator,
-            net_delta=float(raw.get("net_delta", 0.0)),
-            gross_magnitude=float(raw.get("gross_magnitude", 0.0)),
-            evidence_available=evidence_available and operator in {"conversion", "redistribution"},
-            population_only=operator == "abb",
-            event_count=count,
-        ))
+        events.append(
+            TopologyEvent(
+                operator=operator,
+                net_delta=float(raw.get("net_delta", 0.0)),
+                gross_magnitude=float(raw.get("gross_magnitude", 0.0)),
+                evidence_available=evidence_available
+                and operator in {"conversion", "redistribution"},
+                population_only=operator == "abb",
+                event_count=count,
+            )
+        )
     known = {
-        "conversion", "redistribution", "abb", "interface_paired_debit",
-        "clamp", "isolation", "boundary",
+        "conversion",
+        "redistribution",
+        "abb",
+        "interface_paired_debit",
+        "clamp",
+        "isolation",
+        "boundary",
     }
     for raw in raw_events:
         if raw.get("operator") not in known:
-            events.append(TopologyEvent(
-                operator="other", net_delta=float(raw.get("net_delta", 0.0)),
-                gross_magnitude=float(raw.get("gross_magnitude", 0.0)), evidence_available=False,
-                population_only=not bool(raw.get("tracked_mass", False)), event_count=0,
-            ))
-    return tuple(events), evidence_available, any(event.population_only and event.operator == "abb" for event in events)
+            events.append(
+                TopologyEvent(
+                    operator="other",
+                    net_delta=float(raw.get("net_delta", 0.0)),
+                    gross_magnitude=float(raw.get("gross_magnitude", 0.0)),
+                    evidence_available=False,
+                    population_only=not bool(raw.get("tracked_mass", False)),
+                    event_count=0,
+                )
+            )
+    return (
+        tuple(events),
+        evidence_available,
+        any(event.population_only and event.operator == "abb" for event in events),
+    )
 
 
 def _freeze_value(value: object) -> object:
@@ -224,7 +253,9 @@ def _freeze_mapping(value: dict[str, object] | None) -> tuple[tuple[str, object]
     return frozen
 
 
-def _validate_case_definition(definition: object) -> tuple[str, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int, bool, bool]:
+def _validate_case_definition(
+    definition: object,
+) -> tuple[str, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int, bool, bool]:
     if not isinstance(definition, tuple) or len(definition) != 8:
         raise ClosureExperimentError("each extra case must be an 8-item tuple")
     case_id, f, fill, flags, solid, requested_steps, freeze_topology, paired = definition
@@ -251,7 +282,11 @@ def _validate_case_definition(definition: object) -> tuple[str, torch.Tensor, to
         raise ClosureExperimentError("flags and solid must match fill shape")
     if flags.dtype != torch.int8 or solid.dtype != torch.bool:
         raise ClosureExperimentError("flags must be int8 and solid must be bool")
-    if isinstance(requested_steps, bool) or not isinstance(requested_steps, int) or requested_steps <= 0:
+    if (
+        isinstance(requested_steps, bool)
+        or not isinstance(requested_steps, int)
+        or requested_steps <= 0
+    ):
         raise ClosureExperimentError("requested steps must be a positive integer")
     if not isinstance(freeze_topology, bool) or not isinstance(paired, bool):
         raise ClosureExperimentError("freeze_topology and paired must be bool")
@@ -259,8 +294,15 @@ def _validate_case_definition(definition: object) -> tuple[str, torch.Tensor, to
 
 
 def _run_case(
-    case_id: str, f: torch.Tensor, fill: torch.Tensor, flags: torch.Tensor, solid: torch.Tensor,
-    requested_steps: int, freeze_topology: bool, paired: bool, enable_i_to_g_ownership_closure: bool,
+    case_id: str,
+    f: torch.Tensor,
+    fill: torch.Tensor,
+    flags: torch.Tensor,
+    solid: torch.Tensor,
+    requested_steps: int,
+    freeze_topology: bool,
+    paired: bool,
+    enable_i_to_g_ownership_closure: bool,
     capture_replay_stages: bool = False,
 ) -> ClosureCaseReport:
     f, fill, flags, solid = (field.clone() for field in (f, fill, flags, solid))
@@ -284,9 +326,17 @@ def _run_case(
         if failure_reason is None:
             try:
                 f, fill, flags, mass, _ = free_surface_step(
-                    f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=1.0e-3,
-                    freeze_topology=freeze_topology, runtime_ledger=runtime,
-                    ownership_ledger=ownership, inventory_reconciliation_ledger=inventory,
+                    f,
+                    fill,
+                    flags,
+                    solid,
+                    mass=mass,
+                    tau=1.0,
+                    rho_gas=1.0e-3,
+                    freeze_topology=freeze_topology,
+                    runtime_ledger=runtime,
+                    ownership_ledger=ownership,
+                    inventory_reconciliation_ledger=inventory,
                     paired_liquid_interface_debit=paired,
                     enable_i_to_g_ownership_closure=enable_i_to_g_ownership_closure,
                     capture_replay_stages=capture_replay_stages,
@@ -298,50 +348,75 @@ def _run_case(
         raw_steps = runtime.get("steps")
         record = raw_steps[-1] if isinstance(raw_steps, list) and raw_steps else None
         ownership_state = ownership.get("latest")
-        events, evidence_available, abb_population_only = _event_summary(record if isinstance(record, dict) else None)
+        events, evidence_available, abb_population_only = _event_summary(
+            record if isinstance(record, dict) else None
+        )
         unresolved = tuple(getattr(ownership_state, "unresolved_categories", ()))
-        reconciliation = None if not isinstance(record, dict) else float(record["residual_reconciliation"]["residual"])
+        reconciliation = (
+            None
+            if not isinstance(record, dict)
+            else float(record["residual_reconciliation"]["residual"])
+        )
         if failure_reason is None and not current.finite:
             failure_reason = "non-finite state after free_surface_step"
         if failure_reason is None and current.direct_liquid_gas_links:
-            failure_reason = f"direct LIQUID-GAS links after step: {current.direct_liquid_gas_links}"
+            failure_reason = (
+                f"direct LIQUID-GAS links after step: {current.direct_liquid_gas_links}"
+            )
         captured_replay_evidence = replay_capture.get("evidence")
         replay_evidence = (
-            captured_replay_evidence if failure_reason is None
-            and isinstance(captured_replay_evidence, ReplayEvidence) else None
+            captured_replay_evidence
+            if failure_reason is None and isinstance(captured_replay_evidence, ReplayEvidence)
+            else None
         )
         strict_failure_replay_evidence = replay_capture.get("strict_failure_evidence")
-        observations.append(ClosureStepEvidence(
-            step=number, independent_mass=current.independent_mass,
-            total_liquid_inventory=current.total_liquid_inventory, population_mass_sum=current.population_mass_sum,
-            tracked_independent_mass_drift=current.independent_mass - initial.independent_mass,
-            inventory_drift=current.total_liquid_inventory - initial.total_liquid_inventory,
-            inventory_reconciliation=_freeze_mapping(inventory if inventory else None),
-            runtime_ledger=_freeze_mapping(record if isinstance(record, dict) else None), ownership_ledger=_freeze_value(ownership_state),
-            ledger_reconciliation_residual=reconciliation, ownership_unresolved_categories=unresolved,
-            topology_events=events, topology_event_evidence_available=evidence_available,
-            abb_population_only=abb_population_only, direct_liquid_gas_links=current.direct_liquid_gas_links,
-            finite=current.finite, failure_reason=failure_reason,
-            replay_evidence=replay_evidence,
-            strict_failure_replay_evidence=strict_failure_replay_evidence,
-        ))
+        observations.append(
+            ClosureStepEvidence(
+                step=number,
+                independent_mass=current.independent_mass,
+                total_liquid_inventory=current.total_liquid_inventory,
+                population_mass_sum=current.population_mass_sum,
+                tracked_independent_mass_drift=current.independent_mass - initial.independent_mass,
+                inventory_drift=current.total_liquid_inventory - initial.total_liquid_inventory,
+                inventory_reconciliation=_freeze_mapping(inventory if inventory else None),
+                runtime_ledger=_freeze_mapping(record if isinstance(record, dict) else None),
+                ownership_ledger=_freeze_value(ownership_state),
+                ledger_reconciliation_residual=reconciliation,
+                ownership_unresolved_categories=unresolved,
+                topology_events=events,
+                topology_event_evidence_available=evidence_available,
+                abb_population_only=abb_population_only,
+                direct_liquid_gas_links=current.direct_liquid_gas_links,
+                finite=current.finite,
+                failure_reason=failure_reason,
+                replay_evidence=replay_evidence,
+                strict_failure_replay_evidence=strict_failure_replay_evidence,
+            )
+        )
         mass_curve.append(current.independent_mass)
         inventory_curve.append(current.total_liquid_inventory)
         if failure_reason is not None:
             break
     final = _snapshot(f, fill, flags, mass)
     return ClosureCaseReport(
-        case_id=case_id, requested_steps=requested_steps, freeze_topology=freeze_topology,
+        case_id=case_id,
+        requested_steps=requested_steps,
+        freeze_topology=freeze_topology,
         paired_liquid_interface_debit=paired,
         status=FAILED_DIAGNOSTIC if failure_reason is not None else WITHHELD,
-        physical_closure_claim=False, initial=initial, final=final,
-        mass_drift_curve=tuple(mass_curve), inventory_drift_curve=tuple(inventory_curve),
-        steps=tuple(observations), failure_reason=failure_reason,
+        physical_closure_claim=False,
+        initial=initial,
+        final=final,
+        mass_drift_curve=tuple(mass_curve),
+        inventory_drift_curve=tuple(inventory_curve),
+        steps=tuple(observations),
+        failure_reason=failure_reason,
     )
 
 
 def run_free_surface_closure_experiment(
-    *, extra_cases: tuple[tuple[str, Any, Any, Any, Any, int, bool, bool], ...] = (),
+    *,
+    extra_cases: tuple[tuple[str, Any, Any, Any, Any, int, bool, bool], ...] = (),
     enable_i_to_g_ownership_closure: bool = False,
     capture_replay_stages: bool = False,
 ) -> ClosureExperimentReport:

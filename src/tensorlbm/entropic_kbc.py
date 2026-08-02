@@ -30,6 +30,7 @@ References
 Karlin, Bösch, Chikatamarla (2014).
 *Multi-relaxation time lattice Boltzmann model for high Reynolds number flows.*
 """
+
 from __future__ import annotations
 
 import functools
@@ -46,6 +47,7 @@ _FACTOR = 9.0 / 2.0  # Hermite projection factor = 1 / (2 * cs^4)
 # ---------------------------------------------------------------------------
 # 1. Discrete entropy functional
 # ---------------------------------------------------------------------------
+
 
 def discrete_entropy(f: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
     """Compute the discrete Boltzmann entropy ``H(f) = Σ_i f_i ln(f_i / w_i)``.
@@ -64,6 +66,7 @@ def discrete_entropy(f: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # 2. KBC decomposition helpers
 # ---------------------------------------------------------------------------
+
 
 @functools.cache
 def _lattice_constants(
@@ -101,11 +104,23 @@ def _lattice_constants(
     Hd_yz = H_yz
 
     return {
-        "cx": cx, "cy": cy, "cz": cz, "w": w_v, "c_sq": c_sq,
-        "H_xx": H_xx, "H_yy": H_yy, "H_zz": H_zz,
-        "H_xy": H_xy, "H_xz": H_xz, "H_yz": H_yz,
-        "Hd_xx": Hd_xx, "Hd_yy": Hd_yy, "Hd_zz": Hd_zz,
-        "Hd_xy": Hd_xy, "Hd_xz": Hd_xz, "Hd_yz": Hd_yz,
+        "cx": cx,
+        "cy": cy,
+        "cz": cz,
+        "w": w_v,
+        "c_sq": c_sq,
+        "H_xx": H_xx,
+        "H_yy": H_yy,
+        "H_zz": H_zz,
+        "H_xy": H_xy,
+        "H_xz": H_xz,
+        "H_yz": H_yz,
+        "Hd_xx": Hd_xx,
+        "Hd_yy": Hd_yy,
+        "Hd_zz": Hd_zz,
+        "Hd_xy": Hd_xy,
+        "Hd_xz": Hd_xz,
+        "Hd_yz": Hd_yz,
     }
 
 
@@ -143,23 +158,31 @@ def _kbc_decompose(
     pi_dev_yz = pi_yz
 
     # Shear (deviatoric) projection: s = (9/2) w [Hd · Π_dev]
-    s = _FACTOR * w * (
-        p["Hd_xx"] * pi_dev_xx.unsqueeze(0)
-        + p["Hd_yy"] * pi_dev_yy.unsqueeze(0)
-        + p["Hd_zz"] * pi_dev_zz.unsqueeze(0)
-        + 2.0 * p["Hd_xy"] * pi_dev_xy.unsqueeze(0)
-        + 2.0 * p["Hd_xz"] * pi_dev_xz.unsqueeze(0)
-        + 2.0 * p["Hd_yz"] * pi_dev_yz.unsqueeze(0)
+    s = (
+        _FACTOR
+        * w
+        * (
+            p["Hd_xx"] * pi_dev_xx.unsqueeze(0)
+            + p["Hd_yy"] * pi_dev_yy.unsqueeze(0)
+            + p["Hd_zz"] * pi_dev_zz.unsqueeze(0)
+            + 2.0 * p["Hd_xy"] * pi_dev_xy.unsqueeze(0)
+            + 2.0 * p["Hd_xz"] * pi_dev_xz.unsqueeze(0)
+            + 2.0 * p["Hd_yz"] * pi_dev_yz.unsqueeze(0)
+        )
     )
 
     # Full second-order projection: f_neq^(2) = (9/2) w [H · Π]
-    f_neq_2 = _FACTOR * w * (
-        p["H_xx"] * pi_xx.unsqueeze(0)
-        + p["H_yy"] * pi_yy.unsqueeze(0)
-        + p["H_zz"] * pi_zz.unsqueeze(0)
-        + 2.0 * p["H_xy"] * pi_xy.unsqueeze(0)
-        + 2.0 * p["H_xz"] * pi_xz.unsqueeze(0)
-        + 2.0 * p["H_yz"] * pi_yz.unsqueeze(0)
+    f_neq_2 = (
+        _FACTOR
+        * w
+        * (
+            p["H_xx"] * pi_xx.unsqueeze(0)
+            + p["H_yy"] * pi_yy.unsqueeze(0)
+            + p["H_zz"] * pi_zz.unsqueeze(0)
+            + 2.0 * p["H_xy"] * pi_xy.unsqueeze(0)
+            + 2.0 * p["H_xz"] * pi_xz.unsqueeze(0)
+            + 2.0 * p["H_yz"] * pi_yz.unsqueeze(0)
+        )
     )
 
     # Kinetic (bulk/trace) part: k = f_neq^(2) - s
@@ -186,6 +209,7 @@ def kbc_decompose_d3q27(f_neq: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor
 # ---------------------------------------------------------------------------
 # 3. Entropy-condition γ-solve (vectorised bisection)
 # ---------------------------------------------------------------------------
+
 
 def solve_gamma_entropy(
     feq: torch.Tensor,
@@ -276,6 +300,7 @@ def solve_gamma_entropy(
 # 4. Full entropic KBC collision operators
 # ---------------------------------------------------------------------------
 
+
 def collide_kbc_d3q19(
     f: torch.Tensor,
     tau: float,
@@ -321,7 +346,10 @@ def collide_kbc_d3q19(
 
     # Initial guess: BGK retention factor γ₀ = 1 - 1/τ
     gamma_init = torch.full(
-        rho.shape, 1.0 - 1.0 / tau, device=device, dtype=dtype,
+        rho.shape,
+        1.0 - 1.0 / tau,
+        device=device,
+        dtype=dtype,
     )
 
     # Relax higher-order modes by the BGK factor (1 − 1/τ)
@@ -368,7 +396,10 @@ def collide_kbc_d3q27(
     s, k, h = _kbc_decompose(f_neq, p)
 
     gamma_init = torch.full(
-        rho.shape, 1.0 - 1.0 / tau, device=device, dtype=dtype,
+        rho.shape,
+        1.0 - 1.0 / tau,
+        device=device,
+        dtype=dtype,
     )
 
     # Relax higher-order modes by the BGK factor (1 − 1/τ)

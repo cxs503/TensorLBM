@@ -47,6 +47,7 @@ from .utils import get_reproducibility_metadata, prepare_run_dir, resolve_device
 # Cl vs α (linear region: Cl ≈ 2π·α for small α)
 # ---------------------------------------------------------------------------
 
+
 def reference_cl_cd(alpha_deg: float, re: float) -> dict[str, float]:
     """Approximate Cl and Cd for NACA 0012 from Sheldahl & Klimas (1981).
 
@@ -82,7 +83,10 @@ def reference_cl_cd(alpha_deg: float, re: float) -> dict[str, float]:
 # Airfoil geometry
 # ============================================================================
 
-def naca4_surface(xc: torch.Tensor, m: float, p: float, t: float) -> tuple[torch.Tensor, torch.Tensor]:
+
+def naca4_surface(
+    xc: torch.Tensor, m: float, p: float, t: float
+) -> tuple[torch.Tensor, torch.Tensor]:
     """NACA 4-digit airfoil surface coordinates.
 
     Parameters
@@ -101,21 +105,22 @@ def naca4_surface(xc: torch.Tensor, m: float, p: float, t: float) -> tuple[torch
     y_upper, y_lower : torch.Tensor, each shape (N,)
     """
     # Thickness distribution
-    yt = 5.0 * t * (
-        0.2969 * torch.sqrt(xc) - 0.1260 * xc
-        - 0.3516 * xc**2 + 0.2843 * xc**3 - 0.1015 * xc**4
+    yt = (
+        5.0
+        * t
+        * (0.2969 * torch.sqrt(xc) - 0.1260 * xc - 0.3516 * xc**2 + 0.2843 * xc**3 - 0.1015 * xc**4)
     )
     # Camber line
     if p > 0 and m > 0:
         yc = torch.where(
             xc < p,
             m * (xc / p**2) * (2.0 * p - xc),
-            m * ((1.0 - xc) / (1.0 - p)**2) * (1.0 + xc - 2.0 * p),
+            m * ((1.0 - xc) / (1.0 - p) ** 2) * (1.0 + xc - 2.0 * p),
         )
         dyc_dx = torch.where(
             xc < p,
             2.0 * m / p**2 * (p - xc),
-            2.0 * m / (1.0 - p)**2 * (p - xc),
+            2.0 * m / (1.0 - p) ** 2 * (p - xc),
         )
     else:
         yc = torch.zeros_like(xc)
@@ -220,6 +225,7 @@ def build_airfoil_mask(
 # Benchmark runner
 # ============================================================================
 
+
 @dataclass
 class AirfoilConfig:
     chord: float = 50.0
@@ -254,8 +260,14 @@ def run_airfoil_benchmark(config: AirfoilConfig) -> dict:
     torch.manual_seed(config.seed)
 
     mask = build_airfoil_mask(
-        config.nx, config.ny, config.chord, config.alpha_deg,
-        config.naca_m, config.naca_p, config.naca_t, device=device,
+        config.nx,
+        config.ny,
+        config.chord,
+        config.alpha_deg,
+        config.naca_m,
+        config.naca_p,
+        config.naca_t,
+        device=device,
     )
     wall_mask = make_channel_wall_mask(config.ny, config.nx, mask, device=device)
 
@@ -277,11 +289,14 @@ def run_airfoil_benchmark(config: AirfoilConfig) -> dict:
             f = collide_mrt(f, tau=config.tau)
         else:
             from .solver import collide_bgk
+
             f = collide_bgk(f, tau=config.tau)
         f = stream(f)
         fx, fy = compute_obstacle_forces(f, mask)
         f = apply_simple_channel_boundaries(
-            f, u_in=config.u_in, wall_mask=wall_mask,
+            f,
+            u_in=config.u_in,
+            wall_mask=wall_mask,
             obstacle_mask=torch.zeros_like(mask),
         )
         f = bounce_back_cells(f, mask)
@@ -306,16 +321,26 @@ def run_airfoil_benchmark(config: AirfoilConfig) -> dict:
     cl_err = abs(cl_mean - ref["cl"]) / max(abs(ref["cl"]), 1e-10) * 100
     cd_err = abs(cd_mean - ref["cd"]) / max(abs(ref["cd"]), 1e-10) * 100
 
-    print(f"  NACA {int(config.naca_m*100):04d} α={config.alpha_deg}° Re={config.re}")
+    print(f"  NACA {int(config.naca_m * 100):04d} α={config.alpha_deg}° Re={config.re}")
     print(f"  Cl={cl_mean:.4f} (ref {ref['cl']:.3f}, err {cl_err:.1f}%)")
     print(f"  Cd={cd_mean:.4f} (ref {ref['cd']:.4f}, err {cd_err:.1f}%)")
 
     return {
-        "cl_sim": cl_mean, "cd_sim": cd_mean,
-        "cl_ref": ref["cl"], "cd_ref": ref["cd"],
-        "cl_err_pct": cl_err, "cd_err_pct": cd_err,
-        "alpha_deg": config.alpha_deg, "re": config.re,
+        "cl_sim": cl_mean,
+        "cd_sim": cd_mean,
+        "cl_ref": ref["cl"],
+        "cd_ref": ref["cd"],
+        "cl_err_pct": cl_err,
+        "cd_err_pct": cd_err,
+        "alpha_deg": config.alpha_deg,
+        "re": config.re,
     }
 
 
-__all__ = ["AirfoilConfig", "naca4_surface", "build_airfoil_mask", "run_airfoil_benchmark", "reference_cl_cd"]
+__all__ = [
+    "AirfoilConfig",
+    "naca4_surface",
+    "build_airfoil_mask",
+    "run_airfoil_benchmark",
+    "reference_cl_cd",
+]

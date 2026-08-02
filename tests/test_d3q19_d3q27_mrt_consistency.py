@@ -3,6 +3,7 @@
 This deliberately checks the same *kind* of contract independently for each
 lattice.  It is not an accuracy benchmark or a D3Q19-vs-D3Q27 ranking.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -77,7 +78,9 @@ def test_mrt_perturbed_collision_conserves_local_density_and_momentum(
 ) -> None:
     _, f = _case_state(q, equilibrium)
     rho_before, ux_before, uy_before, uz_before = macroscopic(f)
-    momentum_before = torch.stack((rho_before * ux_before, rho_before * uy_before, rho_before * uz_before))
+    momentum_before = torch.stack(
+        (rho_before * ux_before, rho_before * uy_before, rho_before * uz_before)
+    )
 
     out = collision(f, tau=0.8)
     rho_after, ux_after, uy_after, uz_after = macroscopic(out)

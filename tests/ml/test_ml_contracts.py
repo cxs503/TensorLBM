@@ -75,7 +75,9 @@ def _signature() -> ModelSignature:
     )
 
 
-def _spec(dataset: DatasetManifest | None = None, backend: TrainingBackend = TrainingBackend.TORCH) -> TrainingSpec:
+def _spec(
+    dataset: DatasetManifest | None = None, backend: TrainingBackend = TrainingBackend.TORCH
+) -> TrainingSpec:
     return TrainingSpec(
         run_id="ml-run-001",
         dataset=dataset or _dataset(),
@@ -106,7 +108,9 @@ def test_pass_dataset_creates_torch_training_spec_but_never_trains() -> None:
     assert validate_model_artifact(artifact) is artifact
 
 
-def test_withheld_dataset_and_post_construction_evidence_tampering_are_rejected_at_use_time() -> None:
+def test_withheld_dataset_and_post_construction_evidence_tampering_are_rejected_at_use_time() -> (
+    None
+):
     with pytest.raises(ValueError, match="training ready"):
         validate_training_spec(_spec(_dataset(ValidationStatus.WITHHELD)))
 
@@ -125,7 +129,11 @@ def test_unsupported_backends_are_rejected(backend: TrainingBackend) -> None:
 
 def test_signature_requires_unique_nonempty_fields_and_complete_units() -> None:
     with pytest.raises(ValueError, match="unique"):
-        ModelSignature(inputs=("velocity", "velocity"), outputs=("closure",), units={"velocity": "m/s", "closure": "1"})
+        ModelSignature(
+            inputs=("velocity", "velocity"),
+            outputs=("closure",),
+            units={"velocity": "m/s", "closure": "1"},
+        )
     with pytest.raises(ValueError, match="non-empty"):
         ModelSignature(inputs=("",), outputs=("closure",), units={"": "m/s", "closure": "1"})
     with pytest.raises(ValueError, match="cover"):
@@ -167,20 +175,37 @@ def test_model_artifact_never_accepts_metrics_or_weights_and_has_no_completed_st
     with pytest.raises(TypeError):
         ModelArtifact.from_training_spec(spec, artifact_id="model-001", metrics={})
     with pytest.raises(TypeError):
-        ModelArtifact("model-001", "ml-run-001", _dataset(), _signature(), ModelArtifactStatus.NOT_TRAINED, weights=b"x")
+        ModelArtifact(
+            "model-001",
+            "ml-run-001",
+            _dataset(),
+            _signature(),
+            ModelArtifactStatus.NOT_TRAINED,
+            weights=b"x",
+        )
     assert {status.value for status in ModelArtifactStatus} == {"NOT_TRAINED", "REGISTERED"}
     with pytest.raises(ValueError, match="only declare"):
-        ModelArtifact("model-registered", "ml-run-001", _dataset(), _signature(), ModelArtifactStatus.REGISTERED)
+        ModelArtifact(
+            "model-registered",
+            "ml-run-001",
+            _dataset(),
+            _signature(),
+            ModelArtifactStatus.REGISTERED,
+        )
 
 
-def test_model_artifact_validator_rejects_post_construction_training_claim_or_bad_evidence() -> None:
+def test_model_artifact_validator_rejects_post_construction_training_claim_or_bad_evidence() -> (
+    None
+):
     artifact = ModelArtifact.from_training_spec(_spec(), artifact_id="model-001")
     object.__setattr__(artifact, "status", "TRAINED")
     with pytest.raises(ValueError, match="status"):
         validate_model_artifact(artifact)
 
     artifact = ModelArtifact.from_training_spec(_spec(), artifact_id="model-002")
-    object.__setattr__(artifact.dataset.products[0].run_manifest.artifacts[0], "payload", b'{"drag": 9.0}')
+    object.__setattr__(
+        artifact.dataset.products[0].run_manifest.artifacts[0], "payload", b'{"drag": 9.0}'
+    )
     with pytest.raises(ValueError, match="dataset"):
         validate_model_artifact(artifact)
 

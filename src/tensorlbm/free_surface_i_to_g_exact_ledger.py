@@ -12,6 +12,7 @@ path.  In particular, a ledger whose debit is redefined as a sum of rounded
 credits is reported separately from the donor's actual independent-mass state
 delta.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,7 +20,13 @@ import struct
 
 import torch
 
-from .core.d3q19_stencil import D3Q19_MOVING_Q, all_moving_neighbor_masks, moving_tensor_shifts, roll_from_pull_source, roll_to_neighbor
+from .core.d3q19_stencil import (
+    D3Q19_MOVING_Q,
+    all_moving_neighbor_masks,
+    moving_tensor_shifts,
+    roll_from_pull_source,
+    roll_to_neighbor,
+)
 
 
 WITHHELD_NOT_REPRESENTABLE = "WITHHELD_NOT_REPRESENTABLE"
@@ -94,7 +101,7 @@ def _as_float32_from_quanta(quanta: int) -> torch.Tensor | None:
     # A correction is representable only when it can first be represented as
     # binary32.  It is still not usable if a subsequent receiver addition rounds
     # it away; that state-mutation check is performed by the caller.
-    value = quanta * 2.0 ** -149
+    value = quanta * 2.0**-149
     candidate = torch.tensor(value, dtype=torch.float32)
     if not bool(torch.isfinite(candidate)) or _scalar_quanta(candidate) != quanta:
         return None
@@ -128,7 +135,12 @@ def diagnose_i_to_g_exact_ledger(
         raise ValueError("I→G exact ledger fields must share one spatial shape")
     if mass.dtype != torch.float32:
         raise ValueError("I→G exact ledger accepts float32 mass only")
-    if flags.dtype != torch.int8 or to_gas.dtype != torch.bool or to_liq.dtype != torch.bool or solid_mask.dtype != torch.bool:
+    if (
+        flags.dtype != torch.int8
+        or to_gas.dtype != torch.bool
+        or to_liq.dtype != torch.bool
+        or solid_mask.dtype != torch.bool
+    ):
         raise ValueError("I→G exact ledger requires int8 flags and bool masks")
     if not bool(torch.isfinite(mass).all()):
         raise ValueError("I→G exact ledger requires finite mass")
@@ -161,23 +173,30 @@ def diagnose_i_to_g_exact_ledger(
         for raw in torch.nonzero(field != 0, as_tuple=False).tolist():
             z, y, x = (int(item) for item in raw)
             index = (z, y, x)
-            receiver_exact_incoming[index] = receiver_exact_incoming.get(index, 0) + _float32_quanta(float(field[index]))
+            receiver_exact_incoming[index] = receiver_exact_incoming.get(
+                index, 0
+            ) + _float32_quanta(float(field[index]))
     local_residuals = {
         index: exact - _float32_quanta(float(receiver_increment[index]))
         for index, exact in receiver_exact_incoming.items()
     }
     receiver_aggregation_nonzero_count = sum(residual != 0 for residual in local_residuals.values())
-    receiver_aggregation_max_abs_quanta = max((abs(residual) for residual in local_residuals.values()), default=0)
+    receiver_aggregation_max_abs_quanta = max(
+        (abs(residual) for residual in local_residuals.values()), default=0
+    )
 
     donor_state_debit = -debit_field.sum()
     receiver_increment_credit = receiver_increment.sum()
     operation_residual = donor_state_debit + receiver_increment_credit
 
     method_a = LedgerMethodReport(
-        status=DIAGNOSTIC_ONLY_NOT_STATE_CONSERVATION if legal_receivers else WITHHELD_NOT_REPRESENTABLE,
+        status=DIAGNOSTIC_ONLY_NOT_STATE_CONSERVATION
+        if legal_receivers
+        else WITHHELD_NOT_REPRESENTABLE,
         reason=(
             "debit is redefined as exact sum of rounded link credits; it does not equal the donor state mutation"
-            if legal_receivers else "no legal local receiver or donor phase is invalid"
+            if legal_receivers
+            else "no legal local receiver or donor phase is invalid"
         ),
         debit_quanta=-rounded_credit_quanta,
         credit_quanta=rounded_credit_quanta,
@@ -187,10 +206,13 @@ def diagnose_i_to_g_exact_ledger(
         float32_residual=0.0,
     )
     method_b = LedgerMethodReport(
-        status=DIAGNOSTIC_ONLY_NOT_STATE_CONSERVATION if legal_receivers else WITHHELD_NOT_REPRESENTABLE,
+        status=DIAGNOSTIC_ONLY_NOT_STATE_CONSERVATION
+        if legal_receivers
+        else WITHHELD_NOT_REPRESENTABLE,
         reason=(
             "integer binary32-quanta aggregation is exact only for diagnostic records, not float32 state mutation"
-            if legal_receivers else "no legal local receiver or donor phase is invalid"
+            if legal_receivers
+            else "no legal local receiver or donor phase is invalid"
         ),
         debit_quanta=-rounded_credit_quanta,
         credit_quanta=rounded_credit_quanta,
@@ -222,10 +244,16 @@ def diagnose_i_to_g_exact_ledger(
                 donor_value = mass[z, y, x].reshape(1)
                 each_credit = credit_per_link[z, y, x].reshape(1)
                 links_for_donor = int(receiver_count[z, y, x])
-                residual = _scalar_quanta(donor_value) - links_for_donor * _scalar_quanta(each_credit)
+                residual = _scalar_quanta(donor_value) - links_for_donor * _scalar_quanta(
+                    each_credit
+                )
                 correction = _as_float32_from_quanta(residual)
                 dz, dy, dx = moving_tensor_shifts()[D3Q19_MOVING_Q.index(q)]
-                receiver = ((z - dz) % mass.shape[0], (y - dy) % mass.shape[1], (x - dx) % mass.shape[2])
+                receiver = (
+                    (z - dz) % mass.shape[0],
+                    (y - dy) % mass.shape[1],
+                    (x - dx) % mass.shape[2],
+                )
                 if correction is None:
                     c_reason = "per-donor residual is not representable as float32"
                     break
@@ -258,7 +286,9 @@ def diagnose_i_to_g_exact_ledger(
             candidate_mass = mass + corrected
             candidate_mass = torch.where(donor, torch.zeros_like(candidate_mass), candidate_mass)
             if _tensor_quanta(candidate_mass) != _tensor_quanta(mass):
-                c_reason = "actual detached float32 state mutation has non-exact independent-mass residual"
+                c_reason = (
+                    "actual detached float32 state mutation has non-exact independent-mass residual"
+                )
     # The observer intentionally does not receive the same-step legacy
     # redistribution increment or replay the later clamp/conversion/halo stages.
     # A local success therefore cannot prove the complete solver state mutation.
@@ -273,7 +303,9 @@ def diagnose_i_to_g_exact_ledger(
         credit_quanta=stored_receiver_quanta if c_reason is not None else donor_quanta,
         residual_quanta=(-donor_quanta + stored_receiver_quanta if c_reason is not None else 0),
         float32_debit=float(donor_state_debit),
-        float32_credit=float(receiver_increment_credit if c_reason is not None else -donor_state_debit),
+        float32_credit=float(
+            receiver_increment_credit if c_reason is not None else -donor_state_debit
+        ),
         float32_residual=float(operation_residual if c_reason is not None else 0.0),
     )
     overall = WITHHELD_NOT_REPRESENTABLE

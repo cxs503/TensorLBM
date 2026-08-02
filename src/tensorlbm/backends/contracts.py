@@ -1,4 +1,5 @@
 """Framework-free contracts for the R1 cold-path backend boundary."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -59,14 +60,25 @@ class BackendCapabilities:
             raise ValueError("backend_id must be a BackendId")
         if not isinstance(self.support, BackendSupport):
             raise ValueError("support must be a BackendSupport")
-        object.__setattr__(self, "supported_devices", _string_tuple(self.supported_devices, "supported_devices"))
-        object.__setattr__(self, "supported_dtypes", _string_tuple(self.supported_dtypes, "supported_dtypes"))
+        object.__setattr__(
+            self, "supported_devices", _string_tuple(self.supported_devices, "supported_devices")
+        )
+        object.__setattr__(
+            self, "supported_dtypes", _string_tuple(self.supported_dtypes, "supported_dtypes")
+        )
         object.__setattr__(self, "notes", _nonempty_string(self.notes, "notes"))
-        if self.backend_id in {BackendId.PADDLE, BackendId.MINDSPORE} and self.support is BackendSupport.SUPPORTED:
+        if (
+            self.backend_id in {BackendId.PADDLE, BackendId.MINDSPORE}
+            and self.support is BackendSupport.SUPPORTED
+        ):
             raise ValueError("only Torch may be marked SUPPORTED in R1")
-        if self.support is BackendSupport.NOT_SUPPORTED and (self.supported_devices or self.supported_dtypes):
+        if self.support is BackendSupport.NOT_SUPPORTED and (
+            self.supported_devices or self.supported_dtypes
+        ):
             raise ValueError("NOT_SUPPORTED backends must not declare supported devices or dtypes")
-        if self.support is BackendSupport.SUPPORTED and (not self.supported_devices or not self.supported_dtypes):
+        if self.support is BackendSupport.SUPPORTED and (
+            not self.supported_devices or not self.supported_dtypes
+        ):
             raise ValueError("SUPPORTED backends must declare devices and dtypes")
 
 

@@ -12,6 +12,7 @@ Aggregation rules:
 This module never modifies any numerical kernel or solver.  It only reads
 sub-contract matrices and translates vocabulary.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -74,6 +75,7 @@ MATRIX_VERSION = "cross-module-composition-matrix-r1"
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class CompositionStatus(str, Enum):
     """Overall disposition of a complete cross-module composition request."""
 
@@ -94,6 +96,7 @@ class SubContractStatus(str, Enum):
 # ---------------------------------------------------------------------------
 # Dataclasses
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class CompositionRequest:
@@ -173,14 +176,47 @@ class CompositionDecision:
 _ALIASES: dict[str, dict[str, str]] = {
     "lattice": {"d3q19": "d3q19", "d3q27": "d3q27"},
     "collision": {"mrt": "mrt", "cm": "cm", "cascaded": "cm", "kbc": "kbc", "entropic_kbc": "kbc"},
-    "turbulence": {"none": "none", "laminar": "none", "smagorinsky": "smagorinsky", "les": "smagorinsky"},
-    "multiphase": {"single_phase": "single_phase", "single-phase": "single_phase", "free_surface": "free_surface", "phase_field": "phase_field"},
-    "boundary": {"static_wall": "static_wall", "static-wall": "static_wall", "velocity_inlet": "velocity_inlet", "pressure_outlet": "pressure_outlet", "periodic": "periodic"},
-    "geometry": {"static_solid_mask": "static_solid_mask", "static-mask": "static_solid_mask", "voxel_mask": "static_solid_mask", "immersed_boundary": "immersed_boundary", "ibm": "immersed_boundary", "dynamic_geometry": "dynamic_geometry"},
-    "wall_treatment": {"bounce_back": "bounce_back", "bounce-back": "bounce_back", "wall_function": "wall_function", "bouzidi": "bouzidi"},
+    "turbulence": {
+        "none": "none",
+        "laminar": "none",
+        "smagorinsky": "smagorinsky",
+        "les": "smagorinsky",
+    },
+    "multiphase": {
+        "single_phase": "single_phase",
+        "single-phase": "single_phase",
+        "free_surface": "free_surface",
+        "phase_field": "phase_field",
+    },
+    "boundary": {
+        "static_wall": "static_wall",
+        "static-wall": "static_wall",
+        "velocity_inlet": "velocity_inlet",
+        "pressure_outlet": "pressure_outlet",
+        "periodic": "periodic",
+    },
+    "geometry": {
+        "static_solid_mask": "static_solid_mask",
+        "static-mask": "static_solid_mask",
+        "voxel_mask": "static_solid_mask",
+        "immersed_boundary": "immersed_boundary",
+        "ibm": "immersed_boundary",
+        "dynamic_geometry": "dynamic_geometry",
+    },
+    "wall_treatment": {
+        "bounce_back": "bounce_back",
+        "bounce-back": "bounce_back",
+        "wall_function": "wall_function",
+        "bouzidi": "bouzidi",
+    },
     "refinement": {"none": "none", "no_amr": "none", "no-amr": "none", "amr": "amr"},
     "backend": {"torch": "torch", "pytorch": "torch", "cuda": "cuda", "cpu": "cpu"},
-    "post_processing": {"none": "none", "acoustics": "acoustics", "fwh": "acoustics", "aeroacoustics": "acoustics"},
+    "post_processing": {
+        "none": "none",
+        "acoustics": "acoustics",
+        "fwh": "acoustics",
+        "aeroacoustics": "acoustics",
+    },
 }
 
 _KNOWN_VALUES: dict[str, frozenset[str]] = {
@@ -295,6 +331,7 @@ _TURBULENCE_TO_FAMILY = {"smagorinsky": "smagorinsky"}
 # Normalization
 # ---------------------------------------------------------------------------
 
+
 def _normalise_value(field: str, value: object) -> str:
     if not isinstance(value, str):
         return ""
@@ -314,77 +351,121 @@ def _coerce_request(candidate: CompositionRequest | Mapping[str, Any]) -> Compos
     else:
         raise TypeError("candidate must be CompositionRequest or a mapping")
     outputs = raw.get("outputs", ("rho", "velocity"))
-    if isinstance(outputs, str) or not isinstance(outputs, Sequence) or not all(isinstance(item, str) for item in outputs):
+    if (
+        isinstance(outputs, str)
+        or not isinstance(outputs, Sequence)
+        or not all(isinstance(item, str) for item in outputs)
+    ):
         raise ValueError("outputs must be a sequence of strings, not a single string")
     defaults = asdict(CompositionRequest(lattice="d3q19", collision="mrt"))
     return CompositionRequest(
-        **{field: _normalise_value(field, raw.get(field, defaults[field]))
-           for field in _SCALAR_FIELDS},
+        **{
+            field: _normalise_value(field, raw.get(field, defaults[field]))
+            for field in _SCALAR_FIELDS
+        },
         outputs=tuple(sorted({item.strip().lower() for item in outputs})),
     )
 
 
 def _hash(value: Any) -> str:
-    return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")).hexdigest()
+    return sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    ).hexdigest()
 
 
 # ---------------------------------------------------------------------------
 # Sub-contract query functions
 # ---------------------------------------------------------------------------
 
+
 def _query_collision_contract(req: CompositionRequest) -> SubContractResult:
     """Query advanced_collision_contract for lattice × collision."""
     lattice = _LATTICE_UPPER.get(req.lattice)
     collision = _COLLISION_UPPER.get(req.collision)
     if lattice is None:
-        return SubContractResult("advanced_collision_contract", "collision",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE",), (),
-            f"{req.lattice!r} is not in the collision contract lattice vocabulary.")
+        return SubContractResult(
+            "advanced_collision_contract",
+            "collision",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE",),
+            (),
+            f"{req.lattice!r} is not in the collision contract lattice vocabulary.",
+        )
     if collision is None:
-        return SubContractResult("advanced_collision_contract", "collision",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_COLLISION",), (),
-            f"{req.collision!r} is not in the collision contract family vocabulary.")
+        return SubContractResult(
+            "advanced_collision_contract",
+            "collision",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_COLLISION",),
+            (),
+            f"{req.collision!r} is not in the collision contract family vocabulary.",
+        )
     matrix = collision_capability_matrix()
     if lattice not in matrix or collision not in matrix[lattice]:
-        return SubContractResult("advanced_collision_contract", "collision",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE_OR_COLLISION",), (),
-            f"{lattice}/{collision} is not in the collision capability matrix.")
+        return SubContractResult(
+            "advanced_collision_contract",
+            "collision",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE_OR_COLLISION",),
+            (),
+            f"{lattice}/{collision} is not in the collision capability matrix.",
+        )
     cap = matrix[lattice][collision]
     if cap.available:
-        return SubContractResult("advanced_collision_contract", "collision",
-            SubContractStatus.ADMITTED, (), (), cap.note)
-    return SubContractResult("advanced_collision_contract", "collision",
-        SubContractStatus.WITHHELD, (cap.status,), (), cap.note)
+        return SubContractResult(
+            "advanced_collision_contract", "collision", SubContractStatus.ADMITTED, (), (), cap.note
+        )
+    return SubContractResult(
+        "advanced_collision_contract",
+        "collision",
+        SubContractStatus.WITHHELD,
+        (cap.status,),
+        (),
+        cap.note,
+    )
 
 
 def _query_general_capability_matrix(req: CompositionRequest) -> SubContractResult:
     """Query general_capability_matrix for the complete composition."""
     candidate = {
-        "lattice": req.lattice, "collision": req.collision,
-        "turbulence": req.turbulence, "multiphase": req.multiphase,
-        "boundary": req.boundary, "geometry": req.geometry,
-        "wall_treatment": req.wall_treatment, "refinement": req.refinement,
-        "backend": req.backend, "outputs": list(req.outputs),
+        "lattice": req.lattice,
+        "collision": req.collision,
+        "turbulence": req.turbulence,
+        "multiphase": req.multiphase,
+        "boundary": req.boundary,
+        "geometry": req.geometry,
+        "wall_treatment": req.wall_treatment,
+        "refinement": req.refinement,
+        "backend": req.backend,
+        "outputs": list(req.outputs),
     }
     assessment = _assess_gmc(candidate)
     codes = tuple(r.code for r in assessment.reasons)
     note = "; ".join(r.message for r in assessment.reasons) if assessment.reasons else "No reasons."
     if assessment.status is _GMCStatus.SUPPORTED:
-        return SubContractResult("general_capability_matrix", "composition",
-            SubContractStatus.ADMITTED, codes, (), note)
+        return SubContractResult(
+            "general_capability_matrix", "composition", SubContractStatus.ADMITTED, codes, (), note
+        )
     if assessment.status is _GMCStatus.WITHHELD:
-        return SubContractResult("general_capability_matrix", "composition",
-            SubContractStatus.WITHHELD, codes, (), note)
-    return SubContractResult("general_capability_matrix", "composition",
-        SubContractStatus.NOT_SUPPORTED, codes, (), note)
+        return SubContractResult(
+            "general_capability_matrix", "composition", SubContractStatus.WITHHELD, codes, (), note
+        )
+    return SubContractResult(
+        "general_capability_matrix", "composition", SubContractStatus.NOT_SUPPORTED, codes, (), note
+    )
 
 
 def _query_wall_function_contract(req: CompositionRequest) -> SubContractResult:
     """Query wall_function_contract (only when wall_treatment == wall_function)."""
     if req.wall_treatment != "wall_function":
-        return SubContractResult("wall_function_contract", "wall_treatment",
-            SubContractStatus.NOT_APPLICABLE, (), (),
-            "Wall function contract is not applicable when wall_treatment != 'wall_function'.")
+        return SubContractResult(
+            "wall_function_contract",
+            "wall_treatment",
+            SubContractStatus.NOT_APPLICABLE,
+            (),
+            (),
+            "Wall function contract is not applicable when wall_treatment != 'wall_function'.",
+        )
     lattice = _LATTICE_UPPER.get(req.lattice, req.lattice.upper())
     physics = _MULTIPHASE_TO_WALL_FN_PHYSICS.get(req.multiphase, req.multiphase)
     # LOG_LAW_BODY_FORCE uses MRT_SMAGORINSKY; other capabilities use BGK/MRT
@@ -393,23 +474,43 @@ def _query_wall_function_contract(req: CompositionRequest) -> SubContractResult:
     backend = "torch"
     wf_req = WallFunctionRequest(
         capability=WallFunctionCapability.LOG_LAW_BODY_FORCE,
-        lattice=lattice, physics=physics, collision=collision,
-        geometry=geometry, backend=backend,
+        lattice=lattice,
+        physics=physics,
+        collision=collision,
+        geometry=geometry,
+        backend=backend,
     )
     assessment = assess_wall_function(wf_req)
     if assessment.compatible:
-        return SubContractResult("wall_function_contract", "wall_treatment",
-            SubContractStatus.ADMITTED, (), (), assessment.note)
-    return SubContractResult("wall_function_contract", "wall_treatment",
-        SubContractStatus.WITHHELD, (assessment.status,), (), assessment.note)
+        return SubContractResult(
+            "wall_function_contract",
+            "wall_treatment",
+            SubContractStatus.ADMITTED,
+            (),
+            (),
+            assessment.note,
+        )
+    return SubContractResult(
+        "wall_function_contract",
+        "wall_treatment",
+        SubContractStatus.WITHHELD,
+        (assessment.status,),
+        (),
+        assessment.note,
+    )
 
 
 def _query_wall_function_admission(req: CompositionRequest) -> SubContractResult:
     """Query wall_function_admission (only when wall_treatment == wall_function)."""
     if req.wall_treatment != "wall_function":
-        return SubContractResult("wall_function_admission", "wall_treatment",
-            SubContractStatus.NOT_APPLICABLE, (), (),
-            "Wall function admission is not applicable when wall_treatment != 'wall_function'.")
+        return SubContractResult(
+            "wall_function_admission",
+            "wall_treatment",
+            SubContractStatus.NOT_APPLICABLE,
+            (),
+            (),
+            "Wall function admission is not applicable when wall_treatment != 'wall_function'.",
+        )
     lattice = _LATTICE_UPPER.get(req.lattice, req.lattice.upper())
     physics = _MULTIPHASE_TO_WALL_FN_PHYSICS.get(req.multiphase, req.multiphase)
     collision = "MRT_SMAGORINSKY" if req.collision == "mrt" else req.collision.upper()
@@ -419,19 +520,33 @@ def _query_wall_function_admission(req: CompositionRequest) -> SubContractResult
     free_surface = req.multiphase == "free_surface"
     run_req = WallFunctionRunRequest(
         capability=WallFunctionCapability.LOG_LAW_BODY_FORCE,
-        lattice=lattice, physics=physics, collision=collision,
-        geometry=geometry, backend=backend,
-        adaptive_mesh=adaptive_mesh, free_surface=free_surface,
+        lattice=lattice,
+        physics=physics,
+        collision=collision,
+        geometry=geometry,
+        backend=backend,
+        adaptive_mesh=adaptive_mesh,
+        free_surface=free_surface,
     )
     try:
         require_wall_function_run(run_req)
-        return SubContractResult("wall_function_admission", "wall_treatment",
-            SubContractStatus.ADMITTED, (), (),
-            "Wall function run admitted (implementation-only validation).")
+        return SubContractResult(
+            "wall_function_admission",
+            "wall_treatment",
+            SubContractStatus.ADMITTED,
+            (),
+            (),
+            "Wall function run admitted (implementation-only validation).",
+        )
     except WallFunctionCompatibilityError as exc:
-        return SubContractResult("wall_function_admission", "wall_treatment",
-            SubContractStatus.WITHHELD, ("WITHHELD_WALL_FUNCTION_RUN",), (),
-            str(exc))
+        return SubContractResult(
+            "wall_function_admission",
+            "wall_treatment",
+            SubContractStatus.WITHHELD,
+            ("WITHHELD_WALL_FUNCTION_RUN",),
+            (),
+            str(exc),
+        )
 
 
 def _query_wall_refinement_gate(req: CompositionRequest) -> SubContractResult:
@@ -439,150 +554,295 @@ def _query_wall_refinement_gate(req: CompositionRequest) -> SubContractResult:
     lattice = _LATTICE_UPPER.get(req.lattice)
     collision = _COLLISION_UPPER.get(req.collision)
     if lattice is None or collision is None:
-        return SubContractResult("wall_refinement_combination_gate", "wall×refinement",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE_OR_COLLISION",), (),
-            f"{req.lattice!r}/{req.collision!r} not in wall-refinement vocabulary.")
+        return SubContractResult(
+            "wall_refinement_combination_gate",
+            "wall×refinement",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE_OR_COLLISION",),
+            (),
+            f"{req.lattice!r}/{req.collision!r} not in wall-refinement vocabulary.",
+        )
     wr_lattice = WRLattice(lattice)
     wr_collision = WRCollisionFamily(collision)
     wr_wall = _WALL_TREATMENT_TO_WR.get(req.wall_treatment)
     if wr_wall is None:
-        return SubContractResult("wall_refinement_combination_gate", "wall×refinement",
-            SubContractStatus.NOT_APPLICABLE, (), (),
-            f"wall_treatment={req.wall_treatment!r} not in wall-refinement vocabulary.")
+        return SubContractResult(
+            "wall_refinement_combination_gate",
+            "wall×refinement",
+            SubContractStatus.NOT_APPLICABLE,
+            (),
+            (),
+            f"wall_treatment={req.wall_treatment!r} not in wall-refinement vocabulary.",
+        )
     wr_refinement = _REFINEMENT_TO_WR.get(req.refinement, RefinementType.NONE)
     wr_geometry = _GEOMETRY_TO_WR_KIND.get(req.geometry, GeometryKind.PLANAR_STATIC)
     wr_physics = _MULTIPHASE_TO_WR_PHYSICS.get(req.multiphase, PhysicsModel.SINGLE_PHASE)
     combination = WallRefinementCombination(
-        lattice=wr_lattice, collision=wr_collision,
-        wall_treatment=wr_wall, refinement=wr_refinement,
+        lattice=wr_lattice,
+        collision=wr_collision,
+        wall_treatment=wr_wall,
+        refinement=wr_refinement,
         geometry_ownership=GeometryOwnership.SINGLE_LEVEL,
-        geometry_kind=wr_geometry, physics=wr_physics,
+        geometry_kind=wr_geometry,
+        physics=wr_physics,
     )
     decision = assess_wall_refinement_combination(combination)
     if decision.status is GateStatus.ALLOWED:
-        return SubContractResult("wall_refinement_combination_gate", "wall×refinement",
-            SubContractStatus.ADMITTED, (), (), "Baseline wall/refinement combination allowed.")
-    return SubContractResult("wall_refinement_combination_gate", "wall×refinement",
-        SubContractStatus.WITHHELD, decision.reasons, decision.missing_required_evidence,
-        "; ".join(decision.reasons) if decision.reasons else "Combination withheld.")
+        return SubContractResult(
+            "wall_refinement_combination_gate",
+            "wall×refinement",
+            SubContractStatus.ADMITTED,
+            (),
+            (),
+            "Baseline wall/refinement combination allowed.",
+        )
+    return SubContractResult(
+        "wall_refinement_combination_gate",
+        "wall×refinement",
+        SubContractStatus.WITHHELD,
+        decision.reasons,
+        decision.missing_required_evidence,
+        "; ".join(decision.reasons) if decision.reasons else "Combination withheld.",
+    )
 
 
 def _query_amr_contract(req: CompositionRequest) -> SubContractResult:
     """Query amr_capability_contract (only when refinement != none)."""
     if req.refinement == "none":
-        return SubContractResult("amr_capability_contract", "refinement",
-            SubContractStatus.NOT_APPLICABLE, (), (),
-            "AMR contract is not applicable when refinement == 'none'.")
+        return SubContractResult(
+            "amr_capability_contract",
+            "refinement",
+            SubContractStatus.NOT_APPLICABLE,
+            (),
+            (),
+            "AMR contract is not applicable when refinement == 'none'.",
+        )
     path = _REFINEMENT_TO_AMR_PATH.get(req.refinement)
     if path is None:
-        return SubContractResult("amr_capability_contract", "refinement",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_REFINEMENT_PATH",), (),
-            f"{req.refinement!r} is not in the AMR contract path vocabulary.")
+        return SubContractResult(
+            "amr_capability_contract",
+            "refinement",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_REFINEMENT_PATH",),
+            (),
+            f"{req.refinement!r} is not in the AMR contract path vocabulary.",
+        )
     lattice = _LATTICE_UPPER.get(req.lattice)
     if lattice is None:
-        return SubContractResult("amr_capability_contract", "refinement",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE",), (),
-            f"{req.lattice!r} is not in the AMR contract lattice vocabulary.")
+        return SubContractResult(
+            "amr_capability_contract",
+            "refinement",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE",),
+            (),
+            f"{req.lattice!r} is not in the AMR contract lattice vocabulary.",
+        )
     physics = _MULTIPHASE_TO_AMR_PHYSICS.get(req.multiphase, req.multiphase)
     matrix = local_refinement_capability_matrix()
     if path not in matrix:
-        return SubContractResult("amr_capability_contract", "refinement",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_PATH",), (),
-            f"{path!r} is not in the AMR capability matrix.")
+        return SubContractResult(
+            "amr_capability_contract",
+            "refinement",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_PATH",),
+            (),
+            f"{path!r} is not in the AMR capability matrix.",
+        )
     if lattice not in matrix[path]:
-        return SubContractResult("amr_capability_contract", "refinement",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE",), (),
-            f"{lattice!r} is not in the AMR capability matrix for path {path!r}.")
+        return SubContractResult(
+            "amr_capability_contract",
+            "refinement",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE",),
+            (),
+            f"{lattice!r} is not in the AMR capability matrix for path {path!r}.",
+        )
     if physics not in matrix[path][lattice]:
-        return SubContractResult("amr_capability_contract", "refinement",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_PHYSICS",), (),
-            f"{physics!r} is not in the AMR capability matrix for {path}/{lattice}.")
+        return SubContractResult(
+            "amr_capability_contract",
+            "refinement",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_PHYSICS",),
+            (),
+            f"{physics!r} is not in the AMR capability matrix for {path}/{lattice}.",
+        )
     cap = matrix[path][lattice][physics]
     if cap.available:
-        return SubContractResult("amr_capability_contract", "refinement",
-            SubContractStatus.ADMITTED, (), (), cap.note)
+        return SubContractResult(
+            "amr_capability_contract", "refinement", SubContractStatus.ADMITTED, (), (), cap.note
+        )
     # Collect missing required metadata
     missing = tuple(REQUIRED_FRONTEND_METADATA)
-    return SubContractResult("amr_capability_contract", "refinement",
-        SubContractStatus.WITHHELD, (cap.status,), missing, cap.note)
+    return SubContractResult(
+        "amr_capability_contract",
+        "refinement",
+        SubContractStatus.WITHHELD,
+        (cap.status,),
+        missing,
+        cap.note,
+    )
 
 
 def _query_boundary_contract(req: CompositionRequest) -> SubContractResult:
     """Query boundary_capability_contract for boundary × lattice × physics."""
     kind = _BOUNDARY_TO_KIND.get(req.boundary)
     if kind is None:
-        return SubContractResult("boundary_capability_contract", "boundary",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_BOUNDARY",), (),
-            f"{req.boundary!r} is not in the boundary contract vocabulary.")
+        return SubContractResult(
+            "boundary_capability_contract",
+            "boundary",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_BOUNDARY",),
+            (),
+            f"{req.boundary!r} is not in the boundary contract vocabulary.",
+        )
     lattice = _LATTICE_UPPER.get(req.lattice)
     if lattice is None:
-        return SubContractResult("boundary_capability_contract", "boundary",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE",), (),
-            f"{req.lattice!r} is not in the boundary contract lattice vocabulary.")
+        return SubContractResult(
+            "boundary_capability_contract",
+            "boundary",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE",),
+            (),
+            f"{req.lattice!r} is not in the boundary contract lattice vocabulary.",
+        )
     matrix = boundary_capability_matrix()
     if kind not in matrix:
-        return SubContractResult("boundary_capability_contract", "boundary",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_BOUNDARY",), (),
-            f"{kind!r} is not in the boundary capability matrix.")
+        return SubContractResult(
+            "boundary_capability_contract",
+            "boundary",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_BOUNDARY",),
+            (),
+            f"{kind!r} is not in the boundary capability matrix.",
+        )
     if lattice not in matrix[kind]:
-        return SubContractResult("boundary_capability_contract", "boundary",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE",), (),
-            f"{lattice!r} is not in the boundary capability matrix for {kind!r}.")
+        return SubContractResult(
+            "boundary_capability_contract",
+            "boundary",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE",),
+            (),
+            f"{lattice!r} is not in the boundary capability matrix for {kind!r}.",
+        )
     cap = matrix[kind][lattice]
     if cap.implementation_status == "NO_IMPLEMENTATION":
-        return SubContractResult("boundary_capability_contract", "boundary",
-            SubContractStatus.NOT_SUPPORTED, (cap.status,), (), cap.note)
+        return SubContractResult(
+            "boundary_capability_contract",
+            "boundary",
+            SubContractStatus.NOT_SUPPORTED,
+            (cap.status,),
+            (),
+            cap.note,
+        )
     # Check physics coupling
     physics = _MULTIPHASE_TO_BOUNDARY_PHYSICS.get(req.multiphase, req.multiphase)
     if physics != "single_phase":
-        return SubContractResult("boundary_capability_contract", "boundary",
-            SubContractStatus.WITHHELD, ("WITHHELD_NO_COUPLED_BC_PHYSICS_CONTRACT",), (),
-            f"{physics!r} has no audited boundary-condition coupling contract.")
+        return SubContractResult(
+            "boundary_capability_contract",
+            "boundary",
+            SubContractStatus.WITHHELD,
+            ("WITHHELD_NO_COUPLED_BC_PHYSICS_CONTRACT",),
+            (),
+            f"{physics!r} has no audited boundary-condition coupling contract.",
+        )
     # Implementation exists but no complete composition evidence
-    return SubContractResult("boundary_capability_contract", "boundary",
-        SubContractStatus.WITHHELD, (cap.status,), (), cap.note)
+    return SubContractResult(
+        "boundary_capability_contract",
+        "boundary",
+        SubContractStatus.WITHHELD,
+        (cap.status,),
+        (),
+        cap.note,
+    )
 
 
 def _query_turbulence_contract(req: CompositionRequest) -> SubContractResult:
     """Query turbulence_capability_contract for turbulence × lattice × collision."""
     if req.turbulence == "none":
-        return SubContractResult("turbulence_capability_contract", "turbulence",
-            SubContractStatus.NOT_APPLICABLE, (), (),
-            "No turbulence model requested.")
+        return SubContractResult(
+            "turbulence_capability_contract",
+            "turbulence",
+            SubContractStatus.NOT_APPLICABLE,
+            (),
+            (),
+            "No turbulence model requested.",
+        )
     family = _TURBULENCE_TO_FAMILY.get(req.turbulence)
     if family is None:
-        return SubContractResult("turbulence_capability_contract", "turbulence",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_TURBULENCE_FAMILY",), (),
-            f"{req.turbulence!r} is not in the turbulence contract family vocabulary.")
+        return SubContractResult(
+            "turbulence_capability_contract",
+            "turbulence",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_TURBULENCE_FAMILY",),
+            (),
+            f"{req.turbulence!r} is not in the turbulence contract family vocabulary.",
+        )
     lattice = _LATTICE_UPPER.get(req.lattice)
     if lattice is None:
-        return SubContractResult("turbulence_capability_contract", "turbulence",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE",), (),
-            f"{req.lattice!r} is not in the turbulence contract lattice vocabulary.")
+        return SubContractResult(
+            "turbulence_capability_contract",
+            "turbulence",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE",),
+            (),
+            f"{req.lattice!r} is not in the turbulence contract lattice vocabulary.",
+        )
     collision = _COLLISION_TO_TURBULENCE.get(req.collision)
     if collision is None:
-        return SubContractResult("turbulence_capability_contract", "turbulence",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_COLLISION",), (),
-            f"{req.collision!r} is not in the turbulence contract collision vocabulary.")
+        return SubContractResult(
+            "turbulence_capability_contract",
+            "turbulence",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_COLLISION",),
+            (),
+            f"{req.collision!r} is not in the turbulence contract collision vocabulary.",
+        )
     matrix = turbulence_capability_matrix()
     if family not in matrix:
-        return SubContractResult("turbulence_capability_contract", "turbulence",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_FAMILY",), (),
-            f"{family!r} is not in the turbulence capability matrix.")
+        return SubContractResult(
+            "turbulence_capability_contract",
+            "turbulence",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_FAMILY",),
+            (),
+            f"{family!r} is not in the turbulence capability matrix.",
+        )
     if lattice not in matrix[family]:
-        return SubContractResult("turbulence_capability_contract", "turbulence",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_LATTICE",), (),
-            f"{lattice!r} is not in the turbulence capability matrix for {family!r}.")
+        return SubContractResult(
+            "turbulence_capability_contract",
+            "turbulence",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_LATTICE",),
+            (),
+            f"{lattice!r} is not in the turbulence capability matrix for {family!r}.",
+        )
     if collision not in matrix[family][lattice]:
-        return SubContractResult("turbulence_capability_contract", "turbulence",
-            SubContractStatus.NOT_SUPPORTED, ("UNKNOWN_COLLISION",), (),
-            f"{collision!r} is not in the turbulence capability matrix for {family}/{lattice}.")
+        return SubContractResult(
+            "turbulence_capability_contract",
+            "turbulence",
+            SubContractStatus.NOT_SUPPORTED,
+            ("UNKNOWN_COLLISION",),
+            (),
+            f"{collision!r} is not in the turbulence capability matrix for {family}/{lattice}.",
+        )
     cap = matrix[family][lattice][collision]
     if cap.available:
-        return SubContractResult("turbulence_capability_contract", "turbulence",
-            SubContractStatus.ADMITTED, (), (), cap.note)
-    return SubContractResult("turbulence_capability_contract", "turbulence",
-        SubContractStatus.WITHHELD, (cap.status,), (), cap.note)
+        return SubContractResult(
+            "turbulence_capability_contract",
+            "turbulence",
+            SubContractStatus.ADMITTED,
+            (),
+            (),
+            cap.note,
+        )
+    return SubContractResult(
+        "turbulence_capability_contract",
+        "turbulence",
+        SubContractStatus.WITHHELD,
+        (cap.status,),
+        (),
+        cap.note,
+    )
 
 
 def _query_acoustics_contract(req: CompositionRequest) -> SubContractResult:
@@ -595,21 +855,36 @@ def _query_acoustics_contract(req: CompositionRequest) -> SubContractResult:
     inherited from the acoustics capability contract.
     """
     if req.post_processing != "acoustics":
-        return SubContractResult("acoustics_capability_contract", "post_processing",
-            SubContractStatus.NOT_APPLICABLE, (), (),
-            "Acoustics contract is not applicable when post_processing != 'acoustics'.")
+        return SubContractResult(
+            "acoustics_capability_contract",
+            "post_processing",
+            SubContractStatus.NOT_APPLICABLE,
+            (),
+            (),
+            "Acoustics contract is not applicable when post_processing != 'acoustics'.",
+        )
     # Acoustics is lattice-agnostic for FWH/SPL/OASPL; surface_pressure_extraction
     # supports D2Q9/D3Q19/D3Q27.  Query the N/A (lattice-agnostic) entry for the
     # FWH far-field function as the representative post-processing capability.
     matrix = acoustics_capability_matrix()
     cap = matrix["fwh_far_field"]["N/A"]
     if cap.implementation_status == "IMPLEMENTED":
-        return SubContractResult("acoustics_capability_contract", "post_processing",
-            SubContractStatus.WITHHELD, (cap.status,), (),
-            cap.note)
-    return SubContractResult("acoustics_capability_contract", "post_processing",
-        SubContractStatus.NOT_SUPPORTED, (cap.status,), (),
-        cap.note)
+        return SubContractResult(
+            "acoustics_capability_contract",
+            "post_processing",
+            SubContractStatus.WITHHELD,
+            (cap.status,),
+            (),
+            cap.note,
+        )
+    return SubContractResult(
+        "acoustics_capability_contract",
+        "post_processing",
+        SubContractStatus.NOT_SUPPORTED,
+        (cap.status,),
+        (),
+        cap.note,
+    )
 
 
 def _query_accuracy_recommendation(
@@ -618,23 +893,38 @@ def _query_accuracy_recommendation(
 ) -> SubContractResult:
     """Query accuracy_recommendation (only when physical accuracy evidence is provided)."""
     if evidence is None:
-        return SubContractResult("accuracy_recommendation", "physical_accuracy",
-            SubContractStatus.NOT_APPLICABLE, (), (),
-            "No physical accuracy evidence provided; accuracy dimension not assessed.")
+        return SubContractResult(
+            "accuracy_recommendation",
+            "physical_accuracy",
+            SubContractStatus.NOT_APPLICABLE,
+            (),
+            (),
+            "No physical accuracy evidence provided; accuracy dimension not assessed.",
+        )
     recommendation = recommend_by_physical_accuracy(evidence)
     if recommendation.status == "RECOMMENDED_FROM_PHYSICAL_ACCURACY_EVIDENCE":
-        return SubContractResult("accuracy_recommendation", "physical_accuracy",
-            SubContractStatus.ADMITTED, (), (),
-            f"Recommended candidate: {recommendation.recommended_candidate_id}")
-    return SubContractResult("accuracy_recommendation", "physical_accuracy",
-        SubContractStatus.WITHHELD, tuple(recommendation.reason_codes),
+        return SubContractResult(
+            "accuracy_recommendation",
+            "physical_accuracy",
+            SubContractStatus.ADMITTED,
+            (),
+            (),
+            f"Recommended candidate: {recommendation.recommended_candidate_id}",
+        )
+    return SubContractResult(
+        "accuracy_recommendation",
+        "physical_accuracy",
+        SubContractStatus.WITHHELD,
+        tuple(recommendation.reason_codes),
         tuple(recommendation.missing_requirements),
-        "No physical accuracy evidence sufficient for recommendation.")
+        "No physical accuracy evidence sufficient for recommendation.",
+    )
 
 
 # ---------------------------------------------------------------------------
 # Aggregation
 # ---------------------------------------------------------------------------
+
 
 def assess_composition(
     candidate: CompositionRequest | Mapping[str, Any],

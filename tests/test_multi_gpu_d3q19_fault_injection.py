@@ -1,4 +1,5 @@
 """Three-rank fault injection: corrupted received D3Q19 ghosts must fail closed."""
+
 from __future__ import annotations
 
 import os
@@ -6,7 +7,7 @@ import subprocess
 from pathlib import Path
 
 
-_WORKER = r'''
+_WORKER = r"""
 import os
 import torch
 import torch.distributed as dist
@@ -31,7 +32,7 @@ if rank == 0:
     print("D3Q19_GLOO_CORRUPT_GHOST_REJECTED", flush=True)
     raise SystemExit(17)
 dist.destroy_process_group()
-'''
+"""
 
 
 def test_torchrun_gloo_corrupt_ghost_exits_nonzero(tmp_path: Path) -> None:

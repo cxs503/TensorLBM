@@ -13,6 +13,7 @@ References
 * Olivera, A. et al. (2020). "Revisiting Wagner's theory for sphere water entry."
   Physics of Fluids, 32, 106604.
 """
+
 from __future__ import annotations
 
 import math
@@ -26,6 +27,7 @@ import numpy as np
 # 楔形体入水 (2-D wedge water entry)
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class WedgeEntryParams:
     """楔形体入水参数。
@@ -35,6 +37,7 @@ class WedgeEntryParams:
         v_entry: 入水速度 (m/s 或 lattice units)。
         rho: 流体密度。
     """
+
     beta: float
     v_entry: float
     rho: float = 1.0
@@ -127,7 +130,9 @@ def wagner_wedge_pressure(
     p_in = params.rho * params.v_entry**2 * coeff * sqrt_term
     # convective 修正项 (在边缘发散)
     if include_convective:
-        p_in = p_in + params.rho * params.v_entry**2 * coeff**2 * xi_in**2 / np.maximum(sqrt_term, 1e-12)
+        p_in = p_in + params.rho * params.v_entry**2 * coeff**2 * xi_in**2 / np.maximum(
+            sqrt_term, 1e-12
+        )
 
     if isinstance(x, np.ndarray):
         p[inside] = p_in
@@ -178,6 +183,7 @@ def wagner_wedge_slamming_coefficient(params: WedgeEntryParams) -> float:
 # 球体入水 (3-D sphere water entry)
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class SphereEntryParams:
     """球体入水参数。
@@ -187,6 +193,7 @@ class SphereEntryParams:
         v_entry: 入水速度 (恒定)。
         rho: 流体密度。
     """
+
     radius: float
     v_entry: float
     rho: float = 1.0
@@ -327,6 +334,7 @@ def wagner_sphere_peak_force(params: SphereEntryParams) -> tuple[float, float]:
 # 自由面变形 (Free surface deformation)
 # ---------------------------------------------------------------------------
 
+
 def wagner_jet_height(
     x: float | np.ndarray,
     t: float,
@@ -369,13 +377,13 @@ def wagner_jet_height(
     # 喷射区高度
     jet_h = c * math.tan(params.beta) * (math.pi / 2.0 - 1.0)
     if isinstance(x, np.ndarray):
-        eta[near_edge] = jet_h * np.exp(-((abs_x[near_edge] - c) / (0.1 * c))**2)
+        eta[near_edge] = jet_h * np.exp(-(((abs_x[near_edge] - c) / (0.1 * c)) ** 2))
         # 远场衰减
         if np.any(far_field):
-            eta[far_field] = c**2 / (math.pi * np.sqrt(abs_x[far_field]**2 - c**2))
+            eta[far_field] = c**2 / (math.pi * np.sqrt(abs_x[far_field] ** 2 - c**2))
     else:
         if near_edge:
-            eta_val = jet_h * math.exp(-((abs(x) - c) / (0.1 * c))**2)
+            eta_val = jet_h * math.exp(-(((abs(x) - c) / (0.1 * c)) ** 2))
             return float(eta_val)
         elif far_field:
             eta_val = c**2 / (math.pi * math.sqrt(x**2 - c**2))
@@ -431,6 +439,7 @@ def wagner_sphere_cavity_shape(
 # 辅助函数: 无量纲化
 # ---------------------------------------------------------------------------
 
+
 def dimensionless_time(t: float, V: float, R: float) -> float:
     """无量纲时间 t* = V t / R。"""
     return V * t / R
@@ -453,10 +462,10 @@ def dimensionless_penetration(h: float, R: float) -> float:
 # Zhao & Faltinsen (1993) 楔形体入水实验数据点
 # (beta_deg, t*, C_F_measured)
 ZHAO_FALTINSEN_WEDGE_DATA: list[tuple[float, float, float]] = [
-    (30.0, 0.1, 5.44),   # β=30°, C_F = π/tan(30°) ≈ 5.44
-    (20.0, 0.1, 8.64),   # β=20°, C_F = π/tan(20°) ≈ 8.64
+    (30.0, 0.1, 5.44),  # β=30°, C_F = π/tan(30°) ≈ 5.44
+    (20.0, 0.1, 8.64),  # β=20°, C_F = π/tan(20°) ≈ 8.64
     (10.0, 0.1, 17.78),  # β=10°, C_F = π/tan(10°) ≈ 17.78
-    (45.0, 0.1, 3.14),   # β=45°, C_F = π/tan(45°) ≈ 3.14
+    (45.0, 0.1, 3.14),  # β=45°, C_F = π/tan(45°) ≈ 3.14
 ]
 
 # De Backer et al. (2009) 球体入水实验

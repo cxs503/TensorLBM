@@ -177,6 +177,31 @@ PYTHONPATH=src python examples/ai_dns_case.py
 PYTHONPATH=src python examples/ai_turbulence_pipeline.py
 ```
 
+## FNO2d surrogate benchmark
+
+Train a Fourier Neural Operator to replace per-query LBM simulation and
+benchmark inference speed against direct simulation (default: 64 × 64 grid,
+100 training cases, 25 epochs — runs in ~5 minutes on CPU):
+
+```bash
+PYTHONPATH=src python examples/ai_fno2d_demo.py
+```
+
+Pre-generated benchmark artifacts are in
+[`docs/benchmarks/ai_fno2d/`](docs/benchmarks/ai_fno2d/):
+
+| Metric | Value |
+|---|---|
+| FNO2d final val MSE | ~2 × 10⁻⁴ |
+| LBM avg / case (64² grid, 60 steps) | 0.41 s |
+| FNO2d inference avg / case | 0.0021 s |
+| **Speedup** | **~195×** |
+
+![FNO2d loss curve](docs/benchmarks/ai_fno2d/loss_curve.png)
+
+> The surrogate trades a small accuracy loss for roughly 200× faster evaluation
+> — useful for parameter sweeps and real-time design-space exploration.
+
 ## Batch parameter scan
 
 ```bash

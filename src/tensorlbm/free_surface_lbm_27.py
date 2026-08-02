@@ -15,6 +15,7 @@ Cell types: GAS / INTERFACE / LIQUID / SOLID
 
 References: Körner et al. (2005), waLBerla free_surface/
 """
+
 from __future__ import annotations
 
 import torch
@@ -84,18 +85,20 @@ def _assert_no_direct_liquid_gas_links_27(flags: torch.Tensor) -> None:
     except ValueError as error:
         if "direct phase link" not in str(error):
             raise
-        raise ValueError(
-            f"{error}; insert INTERFACE cells between LIQUID and GAS"
-        ) from None
+        raise ValueError(f"{error}; insert INTERFACE cells between LIQUID and GAS") from None
 
 
 # ===========================================================================
 # Initialization
 # ===========================================================================
 
+
 def init_fill_rectangular_27(
-    nz: int, ny: int, nx: int,
-    column_width: int, column_height: int,
+    nz: int,
+    ny: int,
+    nx: int,
+    column_width: int,
+    column_height: int,
     device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Initialize fill field for rectangular liquid column (dam-break IC)."""
@@ -118,7 +121,8 @@ def init_fill_rectangular_27(
 
 
 def init_flags_from_fill_27(
-    fill: torch.Tensor, solid_mask: torch.Tensor,
+    fill: torch.Tensor,
+    solid_mask: torch.Tensor,
 ) -> torch.Tensor:
     """Set flags from fill and create the required D3Q27 interface envelope.
 
@@ -137,7 +141,9 @@ def init_flags_from_fill_27(
 
 
 def init_mass_from_fill_27(
-    fill: torch.Tensor, flags: torch.Tensor, rho_liquid: float = 1.0,
+    fill: torch.Tensor,
+    flags: torch.Tensor,
+    rho_liquid: float = 1.0,
 ) -> torch.Tensor:
     """Initialize mass field: mass = fill * rho_liquid for liquid/interface."""
     mass = torch.zeros_like(fill)
@@ -147,7 +153,9 @@ def init_mass_from_fill_27(
 
 
 def total_liquid_inventory_27(
-    f: torch.Tensor, fill: torch.Tensor, flags: torch.Tensor,
+    f: torch.Tensor,
+    fill: torch.Tensor,
+    flags: torch.Tensor,
     rho_liquid: float = 1.0,
 ) -> torch.Tensor:
     """Return liquid inventory (population density for LIQUID + fill mass for INTERFACE)."""
@@ -162,9 +170,13 @@ def total_liquid_inventory_27(
 # Helper: init new cells with neighbor-averaged velocity
 # ===========================================================================
 
+
 def _init_new_27(
-    f: torch.Tensor, flags: torch.Tensor, mask: torch.Tensor,
-    rho_init: float, device: torch.device,
+    f: torch.Tensor,
+    flags: torch.Tensor,
+    mask: torch.Tensor,
+    rho_init: float,
+    device: torch.device,
     ux: torch.Tensor | None = None,
     uy: torch.Tensor | None = None,
     uz: torch.Tensor | None = None,
@@ -191,21 +203,25 @@ def _init_new_27(
 # Interface normal computation (for mass redistribution)
 # ===========================================================================
 
+
 def _compute_interface_normal_27(
-    flags: torch.Tensor, mass: torch.Tensor, rho: torch.Tensor,
+    flags: torch.Tensor,
+    mass: torch.Tensor,
+    rho: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute interface normal n = -∇fill / |∇fill| (points from liquid to gas)."""
     fill = mass / rho.clamp(min=1e-6)
     grad_x = 0.5 * (fill.roll(-1, dims=2) - fill.roll(1, dims=2))
     grad_y = 0.5 * (fill.roll(-1, dims=1) - fill.roll(1, dims=1))
     grad_z = 0.5 * (fill.roll(-1, dims=0) - fill.roll(1, dims=0))
-    mag = (grad_x ** 2 + grad_y ** 2 + grad_z ** 2).sqrt().clamp(min=1e-10)
+    mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
     return -grad_x / mag, -grad_y / mag, -grad_z / mag
 
 
 # ===========================================================================
 # MRT collision with per-cell effective relaxation time (SGS support)
 # ===========================================================================
+
 
 def _collide_mrt27_with_tau_eff(
     f: torch.Tensor,
@@ -248,26 +264,26 @@ def _collide_mrt27_with_tau_eff(
 
     s_fixed = torch.tensor(
         [
-            0.0,   # 0  mass
-            0.0,   # 1  jx
-            0.0,   # 2  jy
-            0.0,   # 3  jz
-            s_e,   # 4  energy
-            0.0,   # 5  Nxx  – overridden below
-            0.0,   # 6  Nyy  – overridden below
-            0.0,   # 7  Pxy  – overridden below
-            0.0,   # 8  Pxz  – overridden below
-            0.0,   # 9  Pyz  – overridden below
-            s_q,   # 10
-            s_q,   # 11
-            s_q,   # 12
-            s_q,   # 13
-            s_q,   # 14
-            s_q,   # 15
-            s_q,   # 16
-            s_q,   # 17
-            s_q,   # 18
-            s_eps, # 19
+            0.0,  # 0  mass
+            0.0,  # 1  jx
+            0.0,  # 2  jy
+            0.0,  # 3  jz
+            s_e,  # 4  energy
+            0.0,  # 5  Nxx  – overridden below
+            0.0,  # 6  Nyy  – overridden below
+            0.0,  # 7  Pxy  – overridden below
+            0.0,  # 8  Pxz  – overridden below
+            0.0,  # 9  Pyz  – overridden below
+            s_q,  # 10
+            s_q,  # 11
+            s_q,  # 12
+            s_q,  # 13
+            s_q,  # 14
+            s_q,  # 15
+            s_q,  # 16
+            s_q,  # 17
+            s_q,  # 18
+            s_eps,  # 19
             s_pi,  # 20
             s_pi,  # 21
             s_pi,  # 22
@@ -301,9 +317,9 @@ def _compute_tau_eff_sgs(
     turbulence module functions so that both lattices share identical
     SGS physics.
     """
-    if sgs_model == 'smagorinsky':
+    if sgs_model == "smagorinsky":
         return _smagorinsky_tau(tau, _neq_stress_norm_27(f_neq), rho, C_s)
-    elif sgs_model == 'wale':
+    elif sgs_model == "wale":
         nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
         return _nu_t_to_tau_eff(tau, nu_t)
     else:  # vreman
@@ -315,6 +331,7 @@ def _compute_tau_eff_sgs(
 # Core timestep — full Körner model (D3Q27)
 # ===========================================================================
 
+
 def free_surface_step_27(
     f: torch.Tensor,
     fill: torch.Tensor,
@@ -322,12 +339,17 @@ def free_surface_step_27(
     solid_mask: torch.Tensor,
     mass: torch.Tensor | None = None,
     tau: float = 1.0,
-    gx: float = 0.0, gy: float = 0.0, gz: float = 0.0,
-    rho_liquid: float = 1.0, rho_gas: float = 1.0,
-    surface_tension: float = 0.0, C_s: float = 0.0,
-    sgs_model: str = 'smagorinsky',
-    free_slip_y: bool = False, y_wall_mask: torch.Tensor | None = None,
-    collision: str = 'bgk',
+    gx: float = 0.0,
+    gy: float = 0.0,
+    gz: float = 0.0,
+    rho_liquid: float = 1.0,
+    rho_gas: float = 1.0,
+    surface_tension: float = 0.0,
+    C_s: float = 0.0,
+    sgs_model: str = "smagorinsky",
+    free_slip_y: bool = False,
+    y_wall_mask: torch.Tensor | None = None,
+    collision: str = "bgk",
     mass_ledger: dict | None = None,
     freeze_topology: bool = False,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -373,11 +395,9 @@ def free_surface_step_27(
         Tuple ``(f, fill, flags, mass, df)`` where ``df`` is the wall
         shear stress diagnostic (0.0 if wall function not used).
     """
-    _VALID_SGS = ('smagorinsky', 'wale', 'vreman')
+    _VALID_SGS = ("smagorinsky", "wale", "vreman")
     if sgs_model not in _VALID_SGS:
-        raise ValueError(
-            f"sgs_model must be one of {_VALID_SGS}, got {sgs_model!r}"
-        )
+        raise ValueError(f"sgs_model must be one of {_VALID_SGS}, got {sgs_model!r}")
     device = f.device
     _assert_no_direct_liquid_gas_links_27(flags)
     c_dev = _C.to(device).float()
@@ -389,9 +409,9 @@ def free_surface_step_27(
     mass_start_value = float(mass.sum())
 
     if mass_ledger is not None:
-        mass_ledger['start'] = mass_start_value
-        mass_ledger['interface_start'] = float(mass[flags == INTERFACE].sum())
-        mass_ledger['liquid_start'] = float(mass[flags == LIQUID].sum())
+        mass_ledger["start"] = mass_start_value
+        mass_ledger["interface_start"] = float(mass[flags == INTERFACE].sum())
+        mass_ledger["liquid_start"] = float(mass[flags == LIQUID].sum())
 
     # ---- 1. Macroscopic + collision ----
     rho, ux, uy, uz = macroscopic27(f)
@@ -402,19 +422,28 @@ def free_surface_step_27(
     feq = equilibrium27(rho_s, ux_eq, uy_eq, uz_eq)
 
     # For non-BGK: set gas cells to small equilibrium (prevent NaN)
-    if collision != 'bgk':
+    if collision != "bgk":
         feq_gas = equilibrium27(
             torch.full_like(rho_s, rho_gas),
-            torch.zeros_like(rho_s), torch.zeros_like(rho_s), torch.zeros_like(rho_s),
+            torch.zeros_like(rho_s),
+            torch.zeros_like(rho_s),
+            torch.zeros_like(rho_s),
         )
         f_collide = torch.where(non_gas.unsqueeze(0), f, feq_gas)
     else:
         f_collide = f
 
-    if collision == 'mrt':
+    if collision == "mrt":
         if C_s > 0:
             tau_eff = _compute_tau_eff_sgs(
-                tau, sgs_model, f_collide - feq, rho_s, ux, uy, uz, C_s,
+                tau,
+                sgs_model,
+                f_collide - feq,
+                rho_s,
+                ux,
+                uy,
+                uz,
+                C_s,
             )
             f = _collide_mrt27_with_tau_eff(f_collide, feq, tau_eff, device)
         else:
@@ -422,7 +451,14 @@ def free_surface_step_27(
     else:  # bgk
         if C_s > 0:
             tau_eff = _compute_tau_eff_sgs(
-                tau, sgs_model, f_collide - feq, rho_s, ux, uy, uz, C_s,
+                tau,
+                sgs_model,
+                f_collide - feq,
+                rho_s,
+                ux,
+                uy,
+                uz,
+                C_s,
             )
             f = f_collide - (f_collide - feq) / tau_eff.unsqueeze(0)
         else:
@@ -453,7 +489,7 @@ def free_surface_step_27(
         grad_x = 0.5 * (fill_field.roll(-1, dims=2) - fill_field.roll(1, dims=2))
         grad_y = 0.5 * (fill_field.roll(-1, dims=1) - fill_field.roll(1, dims=1))
         grad_z = 0.5 * (fill_field.roll(-1, dims=0) - fill_field.roll(1, dims=0))
-        mag = (grad_x ** 2 + grad_y ** 2 + grad_z ** 2).sqrt().clamp(min=1e-10)
+        mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
         nx, ny_n, nz_n = -grad_x / mag, -grad_y / mag, -grad_z / mag
         kappa = 0.5 * (
             (nx.roll(-1, dims=2) - nx.roll(1, dims=2))
@@ -470,7 +506,7 @@ def free_surface_step_27(
     f = f.clamp(min=0.0, max=rho_liquid * 3.0)
 
     # Remove NaN for non-BGK
-    if collision != 'bgk':
+    if collision != "bgk":
         f = torch.nan_to_num(f, nan=0.0, posinf=0.0, neginf=0.0)
 
     # Preserve post-collision outgoing populations for ABB
@@ -487,10 +523,9 @@ def free_surface_step_27(
     # ---- 2c. Anti-bounce-back for interface cells (gas pressure) ----
     iface_abb = flags == INTERFACE
     # Build neighbor_flags for all 27 directions (pull-source flags)
-    neighbor_flags = torch.stack([
-        flags.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
-        for sx, sy, sz in _C27_SHIFTS
-    ])  # (27, nz, ny, nx)
+    neighbor_flags = torch.stack(
+        [flags.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2) for sx, sy, sz in _C27_SHIFTS]
+    )  # (27, nz, ny, nx)
     need_abb = iface_abb.unsqueeze(0) & (neighbor_flags == GAS)
     # Standard Körner ABB: f_q(x) = f_eq_gas + f_eq_gas[opp] - f_post[opp]
     rho_g_field = torch.full_like(rho, float(rho_gas))
@@ -498,7 +533,7 @@ def free_surface_step_27(
     f_abb = f_eq_gas + f_eq_gas[_OPP.to(device)] - f_post[_OPP.to(device)]
     abb_delta = torch.where(need_abb, f_abb - f, torch.zeros_like(f))
     if mass_ledger is not None:
-        mass_ledger['abb_population_delta'] = float(abb_delta.sum())
+        mass_ledger["abb_population_delta"] = float(abb_delta.sum())
     f = torch.where(need_abb, f_abb, f)
 
     # ---- 3. Wall BCs ----
@@ -514,7 +549,9 @@ def free_surface_step_27(
     from_iface = iface_27 & (neighbor_flags == INTERFACE)
     mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
     mass_delta_interface = torch.where(
-        from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f),
+        from_iface,
+        (f - f_opp_nb) * 0.5,
+        torch.zeros_like(f),
     )
     mass_delta = (mass_delta_liquid + mass_delta_interface).sum(0)
     mass = torch.where(~solid_mask, mass + mass_delta, mass)
@@ -522,20 +559,20 @@ def free_surface_step_27(
     fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
 
     if mass_ledger is not None:
-        mass_ledger['exchange'] = mass_after_exchange_value
-        mass_ledger['exchange_liquid_delta'] = float(mass_delta_liquid.sum())
-        mass_ledger['exchange_interface_delta'] = float(mass_delta_interface.sum())
+        mass_ledger["exchange"] = mass_after_exchange_value
+        mass_ledger["exchange_liquid_delta"] = float(mass_delta_liquid.sum())
+        mass_ledger["exchange_interface_delta"] = float(mass_delta_interface.sum())
 
     # Diagnostic mode: skip topology conversion
     df = torch.tensor(0.0, device=device, dtype=f.dtype)
     if freeze_topology:
         if mass_ledger is not None:
-            mass_ledger['redistribution'] = mass_after_exchange_value
-            mass_ledger['clamp'] = mass_after_exchange_value
-            mass_ledger['conversion'] = mass_after_exchange_value
-            mass_ledger['isolation'] = mass_after_exchange_value
-            mass_ledger['boundary'] = float(mass.sum())
-            mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
+            mass_ledger["redistribution"] = mass_after_exchange_value
+            mass_ledger["clamp"] = mass_after_exchange_value
+            mass_ledger["conversion"] = mass_after_exchange_value
+            mass_ledger["isolation"] = mass_after_exchange_value
+            mass_ledger["boundary"] = float(mass.sum())
+            mass_ledger["fill_mass_final"] = float((fill * rho_liquid).sum())
         return f, fill, flags, mass, df
 
     gas_mask = flags == GAS
@@ -548,9 +585,8 @@ def free_surface_step_27(
     to_gas = (interface_mask | liquid_mask) & (fill <= 0.01) & (~solid_mask)
 
     # ---- 5a. Körner mass redistribution (excess → interface neighbors) ----
-    excess = (
-        torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass))
-        + torch.where(to_gas, mass, torch.zeros_like(mass))
+    excess = torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass)) + torch.where(
+        to_gas, mass, torch.zeros_like(mass)
     )
     # Existing interface cells receive first
     recv_iface = interface_mask & ~to_liq & ~to_gas
@@ -565,10 +601,9 @@ def free_surface_step_27(
     excess_per_nb = excess / n_recv
 
     # Aggregate every D3Q27 receiver contribution, then commit once
-    redistribution_increment = torch.stack([
-        roll_to_neighbor_27(excess_per_nb, q) * recv_mask
-        for q in D3Q27_MOVING_Q
-    ]).sum(dim=0)
+    redistribution_increment = torch.stack(
+        [roll_to_neighbor_27(excess_per_nb, q) * recv_mask for q in D3Q27_MOVING_Q]
+    ).sum(dim=0)
     mass = mass + redistribution_increment
     mass_after_redistribution = float(mass.sum())
 
@@ -595,9 +630,7 @@ def free_surface_step_27(
 
     # ---- 5c. Halo boundary (gas cells adjacent to liquid/interface → INTERFACE) ----
     shifted_flags = torch.stack(all_moving_neighbor_masks_27(flags))
-    is_neighbor = (
-        (shifted_flags == LIQUID) | (shifted_flags == INTERFACE)
-    ).any(dim=0)
+    is_neighbor = ((shifted_flags == LIQUID) | (shifted_flags == INTERFACE)).any(dim=0)
     to_i = ((gas_mask | to_gas) & is_neighbor & ~solid_mask) | recv_new
     f = _init_new_27(f, flags, to_i, rho_gas, device, ux, uy, uz)
     flags = torch.where(to_i, torch.full_like(flags, INTERFACE), flags)
@@ -622,13 +655,13 @@ def free_surface_step_27(
     mass_after_isolation = float(mass.sum())
 
     if mass_ledger is not None:
-        mass_ledger['redistribution'] = mass_after_redistribution
-        mass_ledger['clamp'] = mass_after_clamp
-        mass_ledger['conversion'] = mass_after_conversion
-        mass_ledger['isolation'] = mass_after_isolation
-        mass_ledger['boundary'] = float(mass.sum())
-        mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
-        mass_ledger['end'] = float(mass.sum())
-        mass_ledger['mass_drift'] = float(mass.sum()) - mass_start_value
+        mass_ledger["redistribution"] = mass_after_redistribution
+        mass_ledger["clamp"] = mass_after_clamp
+        mass_ledger["conversion"] = mass_after_conversion
+        mass_ledger["isolation"] = mass_after_isolation
+        mass_ledger["boundary"] = float(mass.sum())
+        mass_ledger["fill_mass_final"] = float((fill * rho_liquid).sum())
+        mass_ledger["end"] = float(mass.sum())
+        mass_ledger["mass_drift"] = float(mass.sum()) - mass_start_value
 
     return f, fill, flags, mass, df

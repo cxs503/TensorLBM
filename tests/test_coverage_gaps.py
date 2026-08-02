@@ -16,6 +16,7 @@ Modules covered:
 - multiphase3d                     – collide_sc_single_component_3d
                                      (entire function + solid_mask branch)
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # unit_converter – missing validation errors and tau > 2.0 warning
 # ---------------------------------------------------------------------------
+
 
 class TestLBMUnitConverterAdditionalValidation:
     """Cover the three remaining ValueError guards in LBMUnitConverter.__init__."""
@@ -97,6 +99,7 @@ class TestLBMUnitConverterAdditionalValidation:
 # ---------------------------------------------------------------------------
 # config_io – load_config_yaml (entirely uncovered), load_config_json gaps
 # ---------------------------------------------------------------------------
+
 
 @dataclasses.dataclass
 class _CfgSimple:
@@ -215,6 +218,7 @@ class TestLoadConfigJsonAdditionalBranches:
 # ai/model – _activation branches (relu / gelu / invalid) + wrong feature count
 # ---------------------------------------------------------------------------
 
+
 class TestActivationBranches:
     def test_relu_activation_creates_relu_module(self) -> None:
         import torch.nn as nn
@@ -269,6 +273,7 @@ class TestActivationBranches:
 # ---------------------------------------------------------------------------
 # ai/dataset – shape errors, mask mismatch, empty multi, invalid split fraction
 # ---------------------------------------------------------------------------
+
 
 class TestStrainRateTensor2dShapeError:
     def test_1d_input_raises(self) -> None:
@@ -339,6 +344,7 @@ class TestEddyViscosityDatasetSplit:
 # ai/train – _r2_score zero-variance, load dataset from Path, too-small dataset
 # ---------------------------------------------------------------------------
 
+
 class TestR2ScoreZeroVariance:
     def test_zero_variance_returns_zero(self) -> None:
         from tensorlbm.ai.train import _r2_score
@@ -380,6 +386,7 @@ class TestTrainEddyViscosityModel:
 # ---------------------------------------------------------------------------
 # ai/database – get_model_record missing ID, _rows_to_dicts malformed JSON
 # ---------------------------------------------------------------------------
+
 
 class TestGetModelRecordMissingId:
     def _make_conn(self) -> sqlite3.Connection:
@@ -426,6 +433,7 @@ class TestRowsToDictsMalformedJson:
 # ai/pipeline – AIPipelineResult.to_dict and no-snapshot fallback
 # ---------------------------------------------------------------------------
 
+
 class TestAIPipelineResultToDict:
     def test_to_dict_returns_dict_with_string_paths(self, tmp_path: Path) -> None:
         from tensorlbm.ai.pipeline import AIPipelineResult
@@ -462,7 +470,7 @@ class TestRunLesSmokeTestNoSnapshotFallback:
             ny=8,
             tau=0.8,
             c_s=0.1,
-            n_steps=3,      # only 3 steps
+            n_steps=3,  # only 3 steps
             sample_every=10,  # would need step 9; never satisfied
             seed=0,
             device=torch.device("cpu"),
@@ -476,12 +484,11 @@ class TestRunLesSmokeTestNoSnapshotFallback:
 # multiphase3d – collide_sc_single_component_3d (full body + solid_mask branch)
 # ---------------------------------------------------------------------------
 
+
 class TestCollideSCSingleComponent3d:
     """The entire collide_sc_single_component_3d function was uncovered."""
 
-    def _make_f(
-        self, nz: int = 4, ny: int = 4, nx: int = 4
-    ) -> torch.Tensor:
+    def _make_f(self, nz: int = 4, ny: int = 4, nx: int = 4) -> torch.Tensor:
         from tensorlbm.d3q19 import equilibrium3d
 
         rho = torch.ones(nz, ny, nx)

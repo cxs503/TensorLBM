@@ -78,6 +78,7 @@ def test_channel_wall_mask_3d_has_walls() -> None:
 # Mass conservation under periodic streaming (3D)
 # ---------------------------------------------------------------------------
 
+
 def test_stream3d_conserves_mass_periodic() -> None:
     nz, ny, nx = 4, 6, 8
     rho = torch.rand((nz, ny, nx), dtype=torch.float32) + 0.5
@@ -93,6 +94,7 @@ def test_stream3d_conserves_mass_periodic() -> None:
 # ---------------------------------------------------------------------------
 # MRT collision for D3Q19
 # ---------------------------------------------------------------------------
+
 
 def test_collide_mrt3d_preserves_shape() -> None:
     nz, ny, nx = 4, 6, 8
@@ -136,6 +138,7 @@ def test_collide_mrt3d_at_equilibrium_is_identity() -> None:
 # Zou/He 3D inlet
 # ---------------------------------------------------------------------------
 
+
 def test_zou_he_inlet_3d_prescribes_velocity() -> None:
     nz, ny, nx = 6, 8, 12
     rho0 = torch.ones((nz, ny, nx))
@@ -171,6 +174,7 @@ def test_zou_he_channel_3d_returns_valid_tensor() -> None:
 # ---------------------------------------------------------------------------
 # SphereFlowConfig.validate() error paths
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize(
     "overrides,match",

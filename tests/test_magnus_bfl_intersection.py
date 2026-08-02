@@ -21,5 +21,5 @@ def test_circle_link_fraction_uses_actual_circle_intersection_not_sdf_chord():
     # This diagonal link from (15,12) in direction (-1,-1) enters the circle
     # centred at (10,10), R=5.  The exact first root is (14-sqrt(164))/4.
     got = _MAGNUS.circle_link_fraction(x, y, cxq=-1, cyq=-1, cx=10.0, cy=10.0, R=5.0)
-    expected = torch.tensor((14.0 - 164.0 ** 0.5) / 4.0)
+    expected = torch.tensor((14.0 - 164.0**0.5) / 4.0)
     assert torch.allclose(got, expected.expand_as(got), atol=1e-6)

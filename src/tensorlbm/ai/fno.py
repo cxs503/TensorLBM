@@ -32,6 +32,7 @@ Architecture overview
 
 All tensors are ``(batch, channels, ny, nx)`` throughout.
 """
+
 from __future__ import annotations
 
 import json
@@ -47,6 +48,7 @@ import torch.nn.functional as F
 # ---------------------------------------------------------------------------
 # Architecture hyper-parameters
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class FNO2dArch:
@@ -80,6 +82,7 @@ class FNO2dArch:
 # ---------------------------------------------------------------------------
 # Spectral convolution layer
 # ---------------------------------------------------------------------------
+
 
 class SpectralConv2d(nn.Module):
     """Global convolution in Fourier space (one Fourier layer).
@@ -125,7 +128,7 @@ class SpectralConv2d(nn.Module):
 
         ``x`` is a complex tensor; ``w`` stores real/imag in the last dim.
         """
-        w_c = torch.view_as_complex(w)   # (in_c, out_c, modes_y, modes_x)
+        w_c = torch.view_as_complex(w)  # (in_c, out_c, modes_y, modes_x)
         # einsum: b i y x, i o y x -> b o y x
         return torch.einsum("biyx,ioyx->boyx", x, w_c)
 
@@ -139,26 +142,29 @@ class SpectralConv2d(nn.Module):
             ``(B, out_channels, ny, nx)`` real tensor.
         """
         batch, _, ny, nx = x.shape
-        x_ft = torch.fft.rfft2(x, norm="ortho")   # (B, in_c, ny, nx//2+1) complex
+        x_ft = torch.fft.rfft2(x, norm="ortho")  # (B, in_c, ny, nx//2+1) complex
 
         # Zero-initialised output in Fourier space
         out_ft = torch.zeros(
-            batch, self.out_channels, ny, nx // 2 + 1,
-            dtype=x_ft.dtype, device=x.device,
+            batch,
+            self.out_channels,
+            ny,
+            nx // 2 + 1,
+            dtype=x_ft.dtype,
+            device=x.device,
         )
 
         # Retain only the low-frequency corner of the Fourier spectrum
         my, mx = self.modes_y, self.modes_x
-        out_ft[:, :, :my, :mx] = self._complex_mul2d(
-            x_ft[:, :, :my, :mx], self.weight
-        )
+        out_ft[:, :, :my, :mx] = self._complex_mul2d(x_ft[:, :, :my, :mx], self.weight)
 
-        return torch.fft.irfft2(out_ft, s=(ny, nx), norm="ortho")   # (B, out_c, ny, nx)
+        return torch.fft.irfft2(out_ft, s=(ny, nx), norm="ortho")  # (B, out_c, ny, nx)
 
 
 # ---------------------------------------------------------------------------
 # FNO2d main model
 # ---------------------------------------------------------------------------
+
 
 def _get_activation(name: str) -> Callable[[torch.Tensor], torch.Tensor]:
     name = name.lower()
@@ -197,15 +203,13 @@ class FNO2d(nn.Module):
         self.lift = nn.Conv2d(a.in_channels, a.width, kernel_size=1)
 
         # Fourier layers
-        self.spectral = nn.ModuleList([
-            SpectralConv2d(a.width, a.width, a.modes_y, a.modes_x)
-            for _ in range(a.n_layers)
-        ])
+        self.spectral = nn.ModuleList(
+            [SpectralConv2d(a.width, a.width, a.modes_y, a.modes_x) for _ in range(a.n_layers)]
+        )
         # Pointwise (local) bypass per Fourier layer
-        self.pointwise = nn.ModuleList([
-            nn.Conv2d(a.width, a.width, kernel_size=1)
-            for _ in range(a.n_layers)
-        ])
+        self.pointwise = nn.ModuleList(
+            [nn.Conv2d(a.width, a.width, kernel_size=1) for _ in range(a.n_layers)]
+        )
 
         # Projection MLP Q: width → mlp_hidden → out_channels
         self.proj = nn.Sequential(
@@ -224,19 +228,20 @@ class FNO2d(nn.Module):
             Output tensor of shape ``(B, out_channels, ny, nx)``.
         """
         # Lifting
-        x = self.lift(x)   # (B, width, ny, nx)
+        x = self.lift(x)  # (B, width, ny, nx)
 
         # Fourier layers
         for spec, pw in zip(self.spectral, self.pointwise):
             x = self._act(spec(x) + pw(x))
 
         # Projection
-        return self.proj(x)   # (B, out_channels, ny, nx)
+        return self.proj(x)  # (B, out_channels, ny, nx)
 
 
 # ---------------------------------------------------------------------------
 # Persistence helpers
 # ---------------------------------------------------------------------------
+
 
 def save_fno2d(model: FNO2d, path: str | Path) -> Path:
     """Serialize a :class:`FNO2d` to a ``.pt`` file plus JSON metadata.

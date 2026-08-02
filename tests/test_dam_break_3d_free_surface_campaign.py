@@ -1,4 +1,5 @@
 """Long free-surface caller campaign ledger regression."""
+
 from __future__ import annotations
 
 import json
@@ -6,17 +7,29 @@ import json
 import pytest
 
 from tensorlbm.dam_break_3d import (
-    DamBreak3DConfig, _linear_drift_slope, _topology_drift_violates,
-    _topology_event, run_dam_break_3d,
+    DamBreak3DConfig,
+    _linear_drift_slope,
+    _topology_drift_violates,
+    _topology_event,
+    run_dam_break_3d,
 )
 
 
 def test_free_surface_dam_break_caller_writes_a_101_step_quality_curve(tmp_path) -> None:
     """The real public caller must retain state and publish every step's budget."""
     config = DamBreak3DConfig(
-        nx=32, ny=16, nz=16, dam_width=10, fill_height=8,
-        model="fs", n_steps=101, output_interval=101,
-        gravity=0.0, A=0.0, output_root=tmp_path, run_name="fs_101",
+        nx=32,
+        ny=16,
+        nz=16,
+        dam_width=10,
+        fill_height=8,
+        model="fs",
+        n_steps=101,
+        output_interval=101,
+        gravity=0.0,
+        A=0.0,
+        output_root=tmp_path,
+        run_name="fs_101",
         # This telemetry regression exercises all 101 steps; strict campaign
         # defaults are tested separately and may intentionally fail closed.
         free_surface_topology_normalized_drift_tolerance=1.0,
@@ -32,14 +45,29 @@ def test_free_surface_dam_break_caller_writes_a_101_step_quality_curve(tmp_path)
     assert metadata["free_surface_quality_gate"]["topology_changed"] is True
 
     required = {
-        "mass_drift", "unexplained_residual", "paired_residual", "directLG",
-        "conversion", "redistribution", "finite", "flags_finite",
-        "time", "initial_mass", "instantaneous_mass_drift", "cumulative_drift",
-        "relative_cumulative_drift", "cumulative_drift_average_rate",
-        "relative_cumulative_drift_average_rate", "cumulative_drift_slope",
-        "relative_cumulative_drift_slope", "drift_slope_window_steps",
-        "conversion_redistribution_normalized_drift", "topology_event",
-        "topology_count_changed", "liquid_cell_delta", "interface_cell_delta",
+        "mass_drift",
+        "unexplained_residual",
+        "paired_residual",
+        "directLG",
+        "conversion",
+        "redistribution",
+        "finite",
+        "flags_finite",
+        "time",
+        "initial_mass",
+        "instantaneous_mass_drift",
+        "cumulative_drift",
+        "relative_cumulative_drift",
+        "cumulative_drift_average_rate",
+        "relative_cumulative_drift_average_rate",
+        "cumulative_drift_slope",
+        "relative_cumulative_drift_slope",
+        "drift_slope_window_steps",
+        "conversion_redistribution_normalized_drift",
+        "topology_event",
+        "topology_count_changed",
+        "liquid_cell_delta",
+        "interface_cell_delta",
     }
     assert all(required <= record.keys() for record in curve)
     assert all(record["directLG"] == 0 and record["finite"] for record in curve)
@@ -58,8 +86,15 @@ def test_free_surface_dam_break_caller_writes_a_101_step_quality_curve(tmp_path)
 
 def test_free_surface_caller_fails_closed_when_accounting_tolerance_is_exceeded(tmp_path) -> None:
     config = DamBreak3DConfig(
-        nx=32, ny=16, nz=16, dam_width=10, fill_height=8,
-        model="fs", n_steps=10, output_root=tmp_path, run_name="fs_fail_closed",
+        nx=32,
+        ny=16,
+        nz=16,
+        dam_width=10,
+        fill_height=8,
+        model="fs",
+        n_steps=10,
+        output_root=tmp_path,
+        run_name="fs_fail_closed",
         free_surface_unexplained_tolerance=0.0,
     )
     with pytest.raises(RuntimeError, match="quality gate fail-closed"):
@@ -68,11 +103,20 @@ def test_free_surface_caller_fails_closed_when_accounting_tolerance_is_exceeded(
 
 def test_free_surface_caller_fails_closed_on_topology_normalized_drift(tmp_path) -> None:
     config = DamBreak3DConfig(
-        nx=32, ny=16, nz=16, dam_width=10, fill_height=8,
-        model="fs", n_steps=10, output_root=tmp_path, run_name="fs_topology_fail_closed",
+        nx=32,
+        ny=16,
+        nz=16,
+        dam_width=10,
+        fill_height=8,
+        model="fs",
+        n_steps=10,
+        output_root=tmp_path,
+        run_name="fs_topology_fail_closed",
         free_surface_topology_normalized_drift_tolerance=0.0,
     )
-    with pytest.raises(RuntimeError, match="topology-event conversion/redistribution-normalized drift"):
+    with pytest.raises(
+        RuntimeError, match="topology-event conversion/redistribution-normalized drift"
+    ):
         run_dam_break_3d(config)
 
 

@@ -12,6 +12,7 @@ Applications:
 The tracker operates in *lattice units* internally and optionally converts
 results to physical units when a scale factor is supplied.
 """
+
 from __future__ import annotations
 
 import math
@@ -26,15 +27,17 @@ import torch.nn.functional as F
 # Data containers
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ParticleState:
     """State of a single tracked particle."""
+
     pid: int
-    x: float          # current x position (lattice units)
-    y: float          # current y position
-    z: float = 0.0    # z (for 3-D fields)
-    vx: float = 0.0   # particle velocity x
-    vy: float = 0.0   # particle velocity y
+    x: float  # current x position (lattice units)
+    y: float  # current y position
+    z: float = 0.0  # z (for 3-D fields)
+    vx: float = 0.0  # particle velocity x
+    vy: float = 0.0  # particle velocity y
     vz: float = 0.0
     age: float = 0.0  # time steps alive
     status: Literal["active", "deposited", "escaped"] = "active"
@@ -45,6 +48,7 @@ class ParticleState:
 @dataclass
 class ParticleTrackResult:
     """Result for a single particle."""
+
     pid: int
     trajectory_x: list[float] = field(default_factory=list)
     trajectory_y: list[float] = field(default_factory=list)
@@ -58,8 +62,9 @@ class ParticleTrackResult:
 # Bilinear interpolation of velocity at a point
 # ---------------------------------------------------------------------------
 
+
 def _interp_velocity_2d(
-    ux: torch.Tensor,   # (ny, nx)
+    ux: torch.Tensor,  # (ny, nx)
     uy: torch.Tensor,
     x: float,
     y: float,
@@ -89,17 +94,18 @@ def _interp_velocity_2d(
 # Core tracker
 # ---------------------------------------------------------------------------
 
+
 def track_particles(
-    ux: torch.Tensor,           # (ny, nx) time-averaged x-velocity field
-    uy: torch.Tensor,           # (ny, nx) time-averaged y-velocity field
+    ux: torch.Tensor,  # (ny, nx) time-averaged x-velocity field
+    uy: torch.Tensor,  # (ny, nx) time-averaged y-velocity field
     obstacle_mask: torch.Tensor,  # (ny, nx) bool – True = solid
-    injection_x: list[float],   # injection x coordinates (lattice)
-    injection_y: list[float],   # injection y coordinates (lattice)
+    injection_x: list[float],  # injection x coordinates (lattice)
+    injection_y: list[float],  # injection y coordinates (lattice)
     n_steps: int = 2000,
-    dt: float = 0.5,            # time step in lattice units
-    stokes_number: float = 0.0, # St = 0 → massless (follows flow exactly)
+    dt: float = 0.5,  # time step in lattice units
+    stokes_number: float = 0.0,  # St = 0 → massless (follows flow exactly)
     record_every: int = 10,
-    dx_phys: float = 1.0,       # m per lattice cell (for output conversion)
+    dx_phys: float = 1.0,  # m per lattice cell (for output conversion)
 ) -> list[ParticleTrackResult]:
     """Track particles through the 2-D velocity field.
 
@@ -230,6 +236,7 @@ def track_particles(
 # ---------------------------------------------------------------------------
 # Deposition map
 # ---------------------------------------------------------------------------
+
 
 def build_deposition_map(
     results: list[ParticleTrackResult],

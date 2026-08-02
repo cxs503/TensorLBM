@@ -8,6 +8,7 @@ Tests verify:
   5. Full runner produces machine-readable artifact with required fields
   6. Campaign function produces 4 artifacts
 """
+
 from __future__ import annotations
 
 import json
@@ -33,6 +34,7 @@ from tensorlbm.suboff_trt_runner import (
 # Small-grid config factory (CPU, fast tests)
 # ---------------------------------------------------------------------------
 
+
 def _small_config(**overrides: Any) -> SuboffTrtConfig:
     defaults: dict[str, Any] = dict(
         nx=32,
@@ -52,6 +54,7 @@ def _small_config(**overrides: Any) -> SuboffTrtConfig:
 # ---------------------------------------------------------------------------
 # 1. Config validation
 # ---------------------------------------------------------------------------
+
 
 class TestSuboffTrtConfig:
     """Verify configuration validation and derived physics parameters."""
@@ -98,12 +101,14 @@ class TestSuboffTrtConfig:
 # 2. TRT+none collision via collide_advanced_3d
 # ---------------------------------------------------------------------------
 
+
 class TestTrtNoneCollision:
     """Verify TRT+none uses collide_advanced_3d unified dispatch."""
 
     def test_trt_none_preserves_mass(self) -> None:
         """TRT collision must conserve mass (zeroth moment)."""
         from tensorlbm.d3q27 import equilibrium27
+
         nz, ny, nx = 8, 8, 8
         rho = torch.ones(nz, ny, nx)
         ux = torch.full((nz, ny, nx), 0.05)
@@ -119,6 +124,7 @@ class TestTrtNoneCollision:
     def test_trt_none_equilibrium_is_fixed_point(self) -> None:
         """At equilibrium, TRT collision must return the same distribution."""
         from tensorlbm.d3q27 import equilibrium27
+
         nz, ny, nx = 6, 6, 6
         rho = torch.ones(nz, ny, nx)
         ux = torch.full((nz, ny, nx), 0.03)
@@ -133,6 +139,7 @@ class TestTrtNoneCollision:
 # 3. TRT+SGS collision
 # ---------------------------------------------------------------------------
 
+
 class TestTrtSgsCollision:
     """Verify TRT+SGS collision with per-cell effective tau."""
 
@@ -140,6 +147,7 @@ class TestTrtSgsCollision:
     def test_sgs_preserves_mass(self, model: str) -> None:
         """TRT+SGS collision must conserve mass."""
         from tensorlbm.d3q27 import equilibrium27
+
         nz, ny, nx = 8, 8, 8
         rho = torch.ones(nz, ny, nx)
         ux = torch.full((nz, ny, nx), 0.05)
@@ -158,6 +166,7 @@ class TestTrtSgsCollision:
     def test_sgs_output_is_finite(self, model: str) -> None:
         """TRT+SGS collision must produce finite output."""
         from tensorlbm.d3q27 import equilibrium27
+
         nz, ny, nx = 8, 8, 8
         rho = torch.ones(nz, ny, nx)
         ux = torch.full((nz, ny, nx), 0.05)
@@ -175,6 +184,7 @@ class TestTrtSgsCollision:
             _neq_stress_norm_27,
             _smagorinsky_tau,
         )
+
         nz, ny, nx = 8, 8, 8
         rho = torch.ones(nz, ny, nx)
         ux = torch.full((nz, ny, nx), 0.05)
@@ -195,19 +205,25 @@ class TestTrtSgsCollision:
 # 4. D3Q27 far-field boundary condition
 # ---------------------------------------------------------------------------
 
+
 class TestFarFieldBC27:
     """Verify D3Q27 far-field boundary condition."""
 
     def test_inlet_set_to_free_stream(self) -> None:
         """Inlet plane must be free-stream equilibrium."""
         from tensorlbm.d3q27 import equilibrium27
+
         nz, ny, nx = 6, 6, 8
         u_in = 0.05
         f = torch.randn(27, nz, ny, nx)
         f = _far_field_bc_27(f, u_in=u_in)
         rho_fs = torch.ones(nz, ny, nx)
-        feq = equilibrium27(rho_fs, torch.full_like(rho_fs, u_in),
-                            torch.zeros_like(rho_fs), torch.zeros_like(rho_fs))
+        feq = equilibrium27(
+            rho_fs,
+            torch.full_like(rho_fs, u_in),
+            torch.zeros_like(rho_fs),
+            torch.zeros_like(rho_fs),
+        )
         assert torch.allclose(f[:, :, :, 0], feq[:, :, :, 0], atol=1e-6)
 
     def test_outlet_zero_gradient(self) -> None:
@@ -220,13 +236,18 @@ class TestFarFieldBC27:
     def test_lateral_faces_set_to_free_stream(self) -> None:
         """All four lateral faces must be free-stream equilibrium."""
         from tensorlbm.d3q27 import equilibrium27
+
         nz, ny, nx = 6, 8, 8
         u_in = 0.05
         f = torch.randn(27, nz, ny, nx)
         f = _far_field_bc_27(f, u_in=u_in)
         rho_fs = torch.ones(nz, ny, nx)
-        feq = equilibrium27(rho_fs, torch.full_like(rho_fs, u_in),
-                            torch.zeros_like(rho_fs), torch.zeros_like(rho_fs))
+        feq = equilibrium27(
+            rho_fs,
+            torch.full_like(rho_fs, u_in),
+            torch.zeros_like(rho_fs),
+            torch.zeros_like(rho_fs),
+        )
         # y- and y+
         assert torch.allclose(f[:, 0, :, :], feq[:, 0, :, :], atol=1e-6)
         assert torch.allclose(f[:, -1, :, :], feq[:, -1, :, :], atol=1e-6)
@@ -238,6 +259,7 @@ class TestFarFieldBC27:
 # ---------------------------------------------------------------------------
 # 5. Full runner produces valid artifact
 # ---------------------------------------------------------------------------
+
 
 class TestSuboffTrtRunner:
     """Verify the full runner produces a machine-readable artifact."""
@@ -251,10 +273,19 @@ class TestSuboffTrtRunner:
 
         # Required top-level fields
         required_fields = {
-            "schema", "status", "physical_validation", "Re",
-            "collision", "turbulence_model", "Ct", "finite",
-            "steps_completed", "boundary_type", "device",
-            "reference_Ct", "reference_source",
+            "schema",
+            "status",
+            "physical_validation",
+            "Re",
+            "collision",
+            "turbulence_model",
+            "Ct",
+            "finite",
+            "steps_completed",
+            "boundary_type",
+            "device",
+            "reference_Ct",
+            "reference_source",
         }
         for field in required_fields:
             assert field in artifact, f"Missing required field: {field}"
@@ -297,6 +328,7 @@ class TestSuboffTrtRunner:
 # 6. Campaign function
 # ---------------------------------------------------------------------------
 
+
 class TestSuboffTrtCampaign:
     """Verify the campaign function produces 4 artifacts."""
 
@@ -304,8 +336,14 @@ class TestSuboffTrtCampaign:
         """Campaign must produce one artifact per combination."""
         configs = [
             SuboffTrtConfig(
-                nx=32, ny=16, nz=16, n_steps=3, u_in=0.05,
-                re=200.0, hull_length=19.2, device="cpu",
+                nx=32,
+                ny=16,
+                nz=16,
+                n_steps=3,
+                u_in=0.05,
+                re=200.0,
+                hull_length=19.2,
+                device="cpu",
                 turbulence_model=model,
             )
             for model in ["none", "smagorinsky", "wale", "vreman"]

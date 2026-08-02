@@ -62,6 +62,7 @@ References
   Alexiades, V. & Solomon, A.D. (1993) *Mathematical Modeling of Melting and Freezing*
   Fakhari, M. & Bolster, D. (2017) *J. Comput. Phys.* 343 647–669
 """
+
 from __future__ import annotations
 
 import argparse
@@ -252,18 +253,21 @@ def step_allen_cahn(
 
     # Laplacian (6-neighbour stencil; for nz=1, ny=1 this reduces to 1-D in x)
     lap_phi = (
-        torch.roll(phi, 1, dims=0) + torch.roll(phi, -1, dims=0)
-        + torch.roll(phi, 1, dims=1) + torch.roll(phi, -1, dims=1)
-        + torch.roll(phi, 1, dims=2) + torch.roll(phi, -1, dims=2)
+        torch.roll(phi, 1, dims=0)
+        + torch.roll(phi, -1, dims=0)
+        + torch.roll(phi, 1, dims=1)
+        + torch.roll(phi, -1, dims=1)
+        + torch.roll(phi, 1, dims=2)
+        + torch.roll(phi, -1, dims=2)
         - 6.0 * phi
     )
 
     phi_new = (
         phi
-        - (ux_s * dphi_dx + uy_s * dphi_dy)              # advection
-        + M_mob * lap_phi                                 # diffusion
-        + 4.0 * phi * (1.0 - phi * phi) / (W_ac * W_ac)   # interface forcing
-        - 2.0 * freeze                                    # freezing source
+        - (ux_s * dphi_dx + uy_s * dphi_dy)  # advection
+        + M_mob * lap_phi  # diffusion
+        + 4.0 * phi * (1.0 - phi * phi) / (W_ac * W_ac)  # interface forcing
+        - 2.0 * freeze  # freezing source
     )
     return phi_new.clamp(-1.0, 1.0)
 
@@ -408,9 +412,9 @@ def run_stefan_freezing(
     Returns a dict with diagnostics, history, and final fields.
     """
     dev = torch.device(device)
-    nu = (tau - 0.5) / 3.0        # D3Q19, cs²=1/3  (not physically relevant — no flow)
-    kappa = (tau_T - 0.5) / 3.0   # D2Q5,  cs²=1/3
-    alpha = kappa                 # thermal diffusivity (same in solid & liquid)
+    nu = (tau - 0.5) / 3.0  # D3Q19, cs²=1/3  (not physically relevant — no flow)
+    kappa = (tau_T - 0.5) / 3.0  # D2Q5,  cs²=1/3
+    alpha = kappa  # thermal diffusivity (same in solid & liquid)
 
     # Stefan number and analytical λ
     Ste = cp * (T_freeze - T_left) / L_latent
@@ -459,16 +463,20 @@ def run_stefan_freezing(
         print(f"  Stefan freezing  —  D3Q19 BGK + D2Q5 thermal + Stefan condition")
         print(f"  Grid: {nx} × {ny} × {nz}  (1-D in x)")
         print(f"  τ = {tau:.4f}   τ_T = {tau_T:.4f}   ν = {nu:.6f}   α = {alpha:.6f}")
-        print(f"  T_left = {T_left}   T_right = {T_right}   T_freeze = {T_freeze}   T_init = {T_init}")
+        print(
+            f"  T_left = {T_left}   T_right = {T_right}   T_freeze = {T_freeze}   T_init = {T_init}"
+        )
         print(f"  cp = {cp}   L_latent = {L_latent}   Ste = {Ste:.4f}")
         print(f"  λ (Stefan root) = {lam:.6f}")
         print(f"  k_freeze = {k_freeze}   M_mob = {M_mob}   W_ac = {W_ac}")
         print(f"  s({steps}) = {s_ana_final:.2f}  (analytical, 2·λ·√(α·t))")
         print(f"  Steps: {steps}   Device: {device}")
         print(f"{'─' * 64}")
-        print(f"  {'step':>6s}   {'s_lbm':>8s}   {'s_ana':>8s}   {'err%':>6s}   "
-              f"{'T_min':>7s} {'T_max':>7s} {'phi_min':>8s}")
-        print(f"  {'─'*6}   {'─'*8}   {'─'*8}   {'─'*6}   {'─'*7} {'─'*7} {'─'*8}")
+        print(
+            f"  {'step':>6s}   {'s_lbm':>8s}   {'s_ana':>8s}   {'err%':>6s}   "
+            f"{'T_min':>7s} {'T_max':>7s} {'phi_min':>8s}"
+        )
+        print(f"  {'─' * 6}   {'─' * 8}   {'─' * 8}   {'─' * 6}   {'─' * 7} {'─' * 7} {'─' * 8}")
 
     history: list[dict] = []
 
@@ -541,8 +549,8 @@ def run_stefan_freezing(
                 phi_1d[i] = 1.0
             else:
                 phi_1d[i] = d  # linear transition −1 → +1
-        phi[:, :, 0] = -1.0    # left wall: solid (ice)
-        phi[:, :, -1] = 1.0    # right wall: liquid
+        phi[:, :, 0] = -1.0  # left wall: solid (ice)
+        phi[:, :, -1] = 1.0  # right wall: liquid
 
         # Latent heat release: freezing (Δφ < 0) releases heat into g
         delta_phi = phi - phi_old
@@ -573,18 +581,23 @@ def run_stefan_freezing(
             T_min = float(T.min().item())
             T_max = float(T.max().item())
             phi_min = float(phi.min().item())
-            history.append({
-                "step": step,
-                "s_lbm": s_lbm,
-                "s_ana": s_ana,
-                "err": err,
-                "T_min": T_min,
-                "T_max": T_max,
-                "phi_min": phi_min,
-            })
+            history.append(
+                {
+                    "step": step,
+                    "s_lbm": s_lbm,
+                    "s_ana": s_ana,
+                    "err": err,
+                    "T_min": T_min,
+                    "T_max": T_max,
+                    "phi_min": phi_min,
+                }
+            )
             if not quiet:
-                print(f"  {step:6d}   {s_lbm:8.2f}   {s_ana:8.2f}   {err:6.2f}   "
-                      f"{T_min:7.3f} {T_max:7.3f} {phi_min:8.4f}", flush=True)
+                print(
+                    f"  {step:6d}   {s_lbm:8.2f}   {s_ana:8.2f}   {err:6.2f}   "
+                    f"{T_min:7.3f} {T_max:7.3f} {phi_min:8.4f}",
+                    flush=True,
+                )
 
     # --- Final fields -------------------------------------------------------
     T_final = macroscopic_thermal(g)
@@ -667,6 +680,7 @@ def save_plots(result: dict, out_path: str) -> None:
     """Save a 4-panel figure: T profile, φ profile, interface history, error."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
@@ -689,10 +703,12 @@ def save_plots(result: dict, out_path: str) -> None:
     ax = axes[0, 0]
     ax.plot(x, T_prof, "b-", lw=2, label="LBM")
     ax.plot(x, T_ana, "r--", lw=2, label="Analytical")
-    ax.axvline(result["s_lbm"], color="b", ls=":", alpha=0.5,
-               label=f"s_lbm = {result['s_lbm']:.1f}")
-    ax.axvline(result["s_ana"], color="r", ls=":", alpha=0.5,
-               label=f"s_ana = {result['s_ana']:.1f}")
+    ax.axvline(
+        result["s_lbm"], color="b", ls=":", alpha=0.5, label=f"s_lbm = {result['s_lbm']:.1f}"
+    )
+    ax.axvline(
+        result["s_ana"], color="r", ls=":", alpha=0.5, label=f"s_ana = {result['s_ana']:.1f}"
+    )
     ax.set_xlabel("x (lattice cells)")
     ax.set_ylabel("T")
     ax.set_title(f"Temperature profile  (step {result['step']})")
@@ -703,8 +719,9 @@ def save_plots(result: dict, out_path: str) -> None:
     ax = axes[0, 1]
     ax.plot(x, phi_field, "g-", lw=2)
     ax.axhline(0, color="k", ls="--", alpha=0.3)
-    ax.axvline(result["s_lbm"], color="b", ls=":", alpha=0.5,
-               label=f"interface = {result['s_lbm']:.1f}")
+    ax.axvline(
+        result["s_lbm"], color="b", ls=":", alpha=0.5, label=f"interface = {result['s_lbm']:.1f}"
+    )
     ax.set_xlabel("x (lattice cells)")
     ax.set_ylabel("φ")
     ax.set_title("Phase field  (φ = +1 liquid,  φ = −1 solid)")
@@ -757,35 +774,46 @@ def save_plots(result: dict, out_path: str) -> None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Stefan freezing benchmark "
-                    "(D3Q19 BGK + D2Q5 thermal + Allen-Cahn phase field).",
+        "(D3Q19 BGK + D2Q5 thermal + Allen-Cahn phase field).",
     )
     p.add_argument("--nx", type=int, default=200, help="x grid size (default 200)")
     p.add_argument("--ny", type=int, default=1, help="y grid size (default 1, 1-D)")
     p.add_argument("--nz", type=int, default=1, help="z grid size (default 1, 1-D)")
     p.add_argument("--tau", type=float, default=0.8, help="Momentum relaxation time")
     p.add_argument("--tau-T", type=float, default=0.8, help="Thermal relaxation time")
-    p.add_argument("--T-left", type=float, default=-1.0,
-                   help="Left wall temperature (cold, default −1.0)")
-    p.add_argument("--T-right", type=float, default=0.0,
-                   help="Right wall temperature (default 0.0 = T_freeze)")
-    p.add_argument("--T-freeze", type=float, default=0.0,
-                   help="Freezing / melting temperature (default 0.0)")
-    p.add_argument("--T-init", type=float, default=None,
-                   help="Initial liquid temperature (default = T_freeze, one-phase)")
+    p.add_argument(
+        "--T-left", type=float, default=-1.0, help="Left wall temperature (cold, default −1.0)"
+    )
+    p.add_argument(
+        "--T-right", type=float, default=0.0, help="Right wall temperature (default 0.0 = T_freeze)"
+    )
+    p.add_argument(
+        "--T-freeze", type=float, default=0.0, help="Freezing / melting temperature (default 0.0)"
+    )
+    p.add_argument(
+        "--T-init",
+        type=float,
+        default=None,
+        help="Initial liquid temperature (default = T_freeze, one-phase)",
+    )
     p.add_argument("--cp", type=float, default=1.0, help="Specific heat capacity")
-    p.add_argument("--L-latent", type=float, default=1.0,
-                   help="Latent heat of fusion (default 1.0)")
-    p.add_argument("--k-freeze", type=float, default=1.0,
-                   help="Freezing rate coefficient (default 1.0)")
-    p.add_argument("--M-mob", type=float, default=0.001,
-                   help="Allen-Cahn mobility (default 0.01)")
-    p.add_argument("--W-ac", type=float, default=4.0,
-                   help="Allen-Cahn interface width parameter (default 16.0)")
+    p.add_argument(
+        "--L-latent", type=float, default=1.0, help="Latent heat of fusion (default 1.0)"
+    )
+    p.add_argument(
+        "--k-freeze", type=float, default=1.0, help="Freezing rate coefficient (default 1.0)"
+    )
+    p.add_argument("--M-mob", type=float, default=0.001, help="Allen-Cahn mobility (default 0.01)")
+    p.add_argument(
+        "--W-ac",
+        type=float,
+        default=4.0,
+        help="Allen-Cahn interface width parameter (default 16.0)",
+    )
     p.add_argument("--steps", type=int, default=2000, help="Simulation steps")
     p.add_argument("--device", default="cpu", help="Device: cpu / cuda / sdaa")
     p.add_argument("--log-every", type=int, default=200, help="Log interval")
-    p.add_argument("--output", default="outputs/stefan_freezing.png",
-                   help="Output plot path")
+    p.add_argument("--output", default="outputs/stefan_freezing.png", help="Output plot path")
     return p
 
 
@@ -798,13 +826,22 @@ def main() -> None:
     print("=" * 64)
 
     result = run_stefan_freezing(
-        nx=args.nx, ny=args.ny, nz=args.nz,
-        tau=args.tau, tau_T=args.tau_T,
-        T_left=args.T_left, T_right=args.T_right, T_freeze=args.T_freeze,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau=args.tau,
+        tau_T=args.tau_T,
+        T_left=args.T_left,
+        T_right=args.T_right,
+        T_freeze=args.T_freeze,
         T_init=args.T_init,
-        cp=args.cp, L_latent=args.L_latent,
-        k_freeze=args.k_freeze, M_mob=args.M_mob, W_ac=args.W_ac,
-        steps=args.steps, device=args.device,
+        cp=args.cp,
+        L_latent=args.L_latent,
+        k_freeze=args.k_freeze,
+        M_mob=args.M_mob,
+        W_ac=args.W_ac,
+        steps=args.steps,
+        device=args.device,
         log_every=args.log_every,
     )
 

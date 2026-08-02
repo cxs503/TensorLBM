@@ -10,6 +10,7 @@ Tests cover:
 
 These tests do NOT modify existing D3Q19 free-surface code.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -31,20 +32,24 @@ from tensorlbm.boundaries_d3q27 import bounce_back_cells_27
 # Stencil module tests
 # ---------------------------------------------------------------------------
 
+
 class TestD3Q27Stencil:
     """Tests for the D3Q27 stencil bridge module."""
 
     def test_import(self):
         from tensorlbm.core.d3q27_stencil import D3Q27_MOVING_Q
+
         assert D3Q27_MOVING_Q == tuple(range(1, 27))
 
     def test_moving_tensor_shifts_count(self):
         from tensorlbm.core.d3q27_stencil import moving_tensor_shifts_27
+
         shifts = moving_tensor_shifts_27()
         assert len(shifts) == 26
 
     def test_moving_tensor_shifts_match_C(self):
         from tensorlbm.core.d3q27_stencil import moving_tensor_shifts_27
+
         shifts = moving_tensor_shifts_27()
         for i, q in enumerate(range(1, 27)):
             dz, dy, dx = shifts[i]
@@ -54,6 +59,7 @@ class TestD3Q27Stencil:
 
     def test_roll_from_pull_source(self):
         from tensorlbm.core.d3q27_stencil import roll_from_pull_source_27
+
         field = torch.arange(5 * 5 * 5, dtype=torch.float32).reshape(5, 5, 5)
         # q=1 is (1,0,0) → shift (dz=0, dy=0, dx=1)
         rolled = roll_from_pull_source_27(field, 1)
@@ -63,14 +69,17 @@ class TestD3Q27Stencil:
 
     def test_roll_to_neighbor(self):
         from tensorlbm.core.d3q27_stencil import roll_to_neighbor_27
+
         field = torch.arange(5 * 5 * 5, dtype=torch.float32).reshape(5, 5, 5)
         rolled = roll_to_neighbor_27(field, 1)
         # roll_to_neighbor is the inverse of roll_from_pull_source
         from tensorlbm.core.d3q27_stencil import roll_from_pull_source_27
+
         assert torch.equal(roll_from_pull_source_27(rolled, 1), field)
 
     def test_all_moving_neighbor_masks_count(self):
         from tensorlbm.core.d3q27_stencil import all_moving_neighbor_masks_27
+
         mask = torch.zeros(6, 6, 6, dtype=torch.bool)
         mask[3, 3, 3] = True
         masks = all_moving_neighbor_masks_27(mask)
@@ -78,6 +87,7 @@ class TestD3Q27Stencil:
 
     def test_all_moving_neighbor_masks_correct(self):
         from tensorlbm.core.d3q27_stencil import all_moving_neighbor_masks_27
+
         mask = torch.zeros(7, 7, 7, dtype=torch.bool)
         mask[3, 3, 3] = True
         masks = all_moving_neighbor_masks_27(mask)
@@ -92,6 +102,7 @@ class TestD3Q27Stencil:
 
     def test_assert_no_direct_phase_links_clean(self):
         from tensorlbm.core.d3q27_stencil import assert_no_direct_phase_links_27
+
         flags = torch.full((5, 5, 5), 0, dtype=torch.int8)  # all GAS
         flags[2, 2, 2] = 1  # one LIQUID
         # Surround with INTERFACE on all 26 D3Q27 moving neighbors
@@ -106,6 +117,7 @@ class TestD3Q27Stencil:
 
     def test_assert_no_direct_phase_links_violation(self):
         from tensorlbm.core.d3q27_stencil import assert_no_direct_phase_links_27
+
         flags = torch.full((5, 5, 5), 0, dtype=torch.int8)  # all GAS
         flags[2, 2, 2] = 1  # LIQUID
         flags[2, 2, 3] = 0  # direct GAS neighbor (no INTERFACE)
@@ -117,11 +129,13 @@ class TestD3Q27Stencil:
 # Initialization tests
 # ---------------------------------------------------------------------------
 
+
 class TestFreeSurface27Init:
     """Tests for D3Q27 free-surface initialization helpers."""
 
     def test_init_fill_rectangular(self):
         from tensorlbm.free_surface_lbm_27 import init_fill_rectangular_27
+
         fill, solid = init_fill_rectangular_27(8, 8, 10, 4, 6, torch.device("cpu"))
         assert fill.shape == (8, 8, 10)
         assert solid.shape == (8, 8, 10)
@@ -137,8 +151,12 @@ class TestFreeSurface27Init:
         from tensorlbm.free_surface_lbm_27 import (
             init_fill_rectangular_27,
             init_flags_from_fill_27,
-            GAS, LIQUID, INTERFACE, SOLID,
+            GAS,
+            LIQUID,
+            INTERFACE,
+            SOLID,
         )
+
         fill, solid = init_fill_rectangular_27(8, 8, 10, 4, 6, torch.device("cpu"))
         flags = init_flags_from_fill_27(fill, solid)
         # Interior liquid cells should be LIQUID
@@ -147,6 +165,7 @@ class TestFreeSurface27Init:
         assert (flags[solid] == SOLID).all()
         # No direct LIQUID-GAS links
         from tensorlbm.core.d3q27_stencil import assert_no_direct_phase_links_27
+
         assert_no_direct_phase_links_27(flags, LIQUID, GAS, "init")
 
     def test_init_mass_from_fill(self):
@@ -154,8 +173,10 @@ class TestFreeSurface27Init:
             init_fill_rectangular_27,
             init_flags_from_fill_27,
             init_mass_from_fill_27,
-            LIQUID, INTERFACE,
+            LIQUID,
+            INTERFACE,
         )
+
         fill, solid = init_fill_rectangular_27(8, 8, 10, 4, 6, torch.device("cpu"))
         flags = init_flags_from_fill_27(fill, solid)
         mass = init_mass_from_fill_27(fill, flags, rho_liquid=1.0)
@@ -171,6 +192,7 @@ class TestFreeSurface27Init:
 # Core free_surface_step_27 tests
 # ---------------------------------------------------------------------------
 
+
 class TestFreeSurfaceStep27:
     """Tests for the D3Q27 free-surface step."""
 
@@ -181,20 +203,36 @@ class TestFreeSurfaceStep27:
             init_flags_from_fill_27,
             init_mass_from_fill_27,
         )
-        fill, solid = init_fill_rectangular_27(nz, ny, nx, nx - 2, liquid_height, torch.device("cpu"))
+
+        fill, solid = init_fill_rectangular_27(
+            nz, ny, nx, nx - 2, liquid_height, torch.device("cpu")
+        )
         flags = init_flags_from_fill_27(fill, solid)
         mass = init_mass_from_fill_27(fill, flags, rho_liquid=1.0)
         # Initialize f with equilibrium at rest
         rho_field = torch.where(flags == 1, torch.tensor(1.0), torch.tensor(0.0))
         rho_field = torch.where(flags == 2, fill, rho_field)
-        f = equilibrium27(rho_field, torch.zeros_like(rho_field), torch.zeros_like(rho_field), torch.zeros_like(rho_field))
+        f = equilibrium27(
+            rho_field,
+            torch.zeros_like(rho_field),
+            torch.zeros_like(rho_field),
+            torch.zeros_like(rho_field),
+        )
         return f, fill, flags, solid, mass, rho_gas
 
     def test_step_returns_correct_shapes(self):
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
+
         f, fill, flags, solid, mass, rho_gas = self._make_static_column()
         f_out, fill_out, flags_out, mass_out, df = free_surface_step_27(
-            f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, rho_gas=rho_gas,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            gz=0.0,
+            rho_gas=rho_gas,
         )
         assert f_out.shape == (27, *flags.shape)
         assert fill_out.shape == flags.shape
@@ -203,9 +241,17 @@ class TestFreeSurfaceStep27:
 
     def test_step_finite(self):
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
+
         f, fill, flags, solid, mass, rho_gas = self._make_static_column()
         f_out, fill_out, flags_out, mass_out, df = free_surface_step_27(
-            f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, rho_gas=rho_gas,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            gz=0.0,
+            rho_gas=rho_gas,
         )
         assert torch.isfinite(f_out).all()
         assert torch.isfinite(mass_out).all()
@@ -220,11 +266,21 @@ class TestFreeSurfaceStep27:
         by default.  We check that the drift is bounded, not zero.
         """
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
-        f, fill, flags, solid, mass, rho_gas = self._make_static_column(nz=10, ny=10, nx=10, liquid_height=6)
+
+        f, fill, flags, solid, mass, rho_gas = self._make_static_column(
+            nz=10, ny=10, nx=10, liquid_height=6
+        )
         initial_mass = float(mass.sum())
         for _ in range(5):
             f, fill, flags, mass, _ = free_surface_step_27(
-                f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, rho_gas=rho_gas,
+                f,
+                fill,
+                flags,
+                solid,
+                mass=mass,
+                tau=1.0,
+                gz=0.0,
+                rho_gas=rho_gas,
             )
         final_mass = float(mass.sum())
         # Mass drift is expected in the Körner model; check it's bounded
@@ -236,26 +292,48 @@ class TestFreeSurfaceStep27:
     def test_static_column_stable_velocities(self):
         """A static water column with no gravity should have near-zero velocity."""
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
-        f, fill, flags, solid, mass, rho_gas = self._make_static_column(nz=10, ny=10, nx=10, liquid_height=6)
+
+        f, fill, flags, solid, mass, rho_gas = self._make_static_column(
+            nz=10, ny=10, nx=10, liquid_height=6
+        )
         for _ in range(3):
             f, fill, flags, mass, _ = free_surface_step_27(
-                f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, rho_gas=rho_gas,
+                f,
+                fill,
+                flags,
+                solid,
+                mass=mass,
+                tau=1.0,
+                gz=0.0,
+                rho_gas=rho_gas,
             )
         rho, ux, uy, uz = macroscopic27(f)
         # Check velocities in liquid region are small
         liquid = flags == 1
         if liquid.any():
-            u_max = float((ux[liquid].abs().max() + uy[liquid].abs().max() + uz[liquid].abs().max()))
+            u_max = float(
+                (ux[liquid].abs().max() + uy[liquid].abs().max() + uz[liquid].abs().max())
+            )
             assert u_max < 0.5, f"Velocity too large in liquid: {u_max}"
 
     def test_dam_break_flows(self):
         """Dam break: water column should start moving under gravity."""
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
-        f, fill, flags, solid, mass, rho_gas = self._make_static_column(nz=10, ny=10, nx=12, liquid_height=6)
+
+        f, fill, flags, solid, mass, rho_gas = self._make_static_column(
+            nz=10, ny=10, nx=12, liquid_height=6
+        )
         # Apply gravity in -y direction (dam collapses)
         for _ in range(5):
             f, fill, flags, mass, _ = free_surface_step_27(
-                f, fill, flags, solid, mass=mass, tau=1.0, gy=-0.001, rho_gas=rho_gas,
+                f,
+                fill,
+                flags,
+                solid,
+                mass=mass,
+                tau=1.0,
+                gy=-0.001,
+                rho_gas=rho_gas,
             )
         rho, ux, uy, uz = macroscopic27(f)
         liquid = flags == 1
@@ -267,36 +345,70 @@ class TestFreeSurfaceStep27:
         """After a step, no direct LIQUID-GAS links should exist."""
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
         from tensorlbm.core.d3q27_stencil import assert_no_direct_phase_links_27
+
         f, fill, flags, solid, mass, rho_gas = self._make_static_column()
         f, fill, flags, mass, _ = free_surface_step_27(
-            f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, rho_gas=rho_gas,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            gz=0.0,
+            rho_gas=rho_gas,
         )
         assert_no_direct_phase_links_27(flags, 1, 0, "post-step")
 
     def test_smagorinsky_option(self):
         """free_surface_step_27 should accept C_s > 0 for Smagorinsky SGS."""
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
+
         f, fill, flags, solid, mass, rho_gas = self._make_static_column()
         f_out, fill_out, flags_out, mass_out, df = free_surface_step_27(
-            f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, C_s=0.1, rho_gas=rho_gas,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            gz=0.0,
+            C_s=0.1,
+            rho_gas=rho_gas,
         )
         assert torch.isfinite(f_out).all()
 
     def test_mrt_collision_option(self):
         """free_surface_step_27 should accept collision='mrt'."""
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
+
         f, fill, flags, solid, mass, rho_gas = self._make_static_column()
         f_out, fill_out, flags_out, mass_out, df = free_surface_step_27(
-            f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, collision='mrt', rho_gas=rho_gas,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            gz=0.0,
+            collision="mrt",
+            rho_gas=rho_gas,
         )
         assert torch.isfinite(f_out).all()
 
     def test_fill_bounded(self):
         """Fill field should remain in [0, 1] after a step."""
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
+
         f, fill, flags, solid, mass, rho_gas = self._make_static_column()
         f, fill, flags, mass, _ = free_surface_step_27(
-            f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, rho_gas=rho_gas,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            gz=0.0,
+            rho_gas=rho_gas,
         )
         assert bool((fill >= 0).all())
         assert bool((fill <= 1).all())
@@ -304,9 +416,17 @@ class TestFreeSurfaceStep27:
     def test_mass_non_negative(self):
         """Mass field should remain non-negative after a step."""
         from tensorlbm.free_surface_lbm_27 import free_surface_step_27
+
         f, fill, flags, solid, mass, rho_gas = self._make_static_column()
         f, fill, flags, mass, _ = free_surface_step_27(
-            f, fill, flags, solid, mass=mass, tau=1.0, gz=0.0, rho_gas=rho_gas,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            gz=0.0,
+            rho_gas=rho_gas,
         )
         assert bool((mass >= 0).all())
 
@@ -314,6 +434,7 @@ class TestFreeSurfaceStep27:
 # ---------------------------------------------------------------------------
 # Multi-step stability test
 # ---------------------------------------------------------------------------
+
 
 class TestFreeSurface27Stability:
     """Longer-run stability tests."""
@@ -326,24 +447,40 @@ class TestFreeSurface27Stability:
             init_mass_from_fill_27,
             free_surface_step_27,
         )
+
         nz, ny, nx = 12, 12, 12
         fill, solid = init_fill_rectangular_27(nz, ny, nx, 6, 8, torch.device("cpu"))
         flags = init_flags_from_fill_27(fill, solid)
         mass = init_mass_from_fill_27(fill, flags, rho_liquid=1.0)
         rho_field = torch.where(flags == 1, torch.tensor(1.0), torch.tensor(0.0))
         rho_field = torch.where(flags == 2, fill, rho_field)
-        f = equilibrium27(rho_field, torch.zeros_like(rho_field), torch.zeros_like(rho_field), torch.zeros_like(rho_field))
+        f = equilibrium27(
+            rho_field,
+            torch.zeros_like(rho_field),
+            torch.zeros_like(rho_field),
+            torch.zeros_like(rho_field),
+        )
         for _ in range(20):
             f, fill, flags, mass, _ = free_surface_step_27(
-                f, fill, flags, solid, mass=mass, tau=1.0, gy=-0.001,
+                f,
+                fill,
+                flags,
+                solid,
+                mass=mass,
+                tau=1.0,
+                gy=-0.001,
             )
             assert torch.isfinite(f).all(), "f has non-finite values"
             assert torch.isfinite(mass).all(), "mass has non-finite values"
         # Mass should not have drifted catastrophically
-        initial = float(init_mass_from_fill_27(
-            init_fill_rectangular_27(nz, ny, nx, 6, 8, torch.device("cpu"))[0],
-            init_flags_from_fill_27(*init_fill_rectangular_27(nz, ny, nx, 6, 8, torch.device("cpu"))[:2]),
-            rho_liquid=1.0,
-        ).sum())
+        initial = float(
+            init_mass_from_fill_27(
+                init_fill_rectangular_27(nz, ny, nx, 6, 8, torch.device("cpu"))[0],
+                init_flags_from_fill_27(
+                    *init_fill_rectangular_27(nz, ny, nx, 6, 8, torch.device("cpu"))[:2]
+                ),
+                rho_liquid=1.0,
+            ).sum()
+        )
         final = float(mass.sum())
         assert abs(final - initial) < initial * 0.5, f"Mass drift too large: {initial} → {final}"

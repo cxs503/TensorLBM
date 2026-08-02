@@ -17,6 +17,7 @@ Usage:
       f = solver.step(f)
       ct = solver.drag_coefficient()
 """
+
 import torch
 import torch.nn.functional as F
 import math, time
@@ -27,13 +28,14 @@ from typing import Optional
 @dataclass
 class PrismLayerData:
     """Packed prism layer data for FDM."""
+
     n_surface: int
     n_layers: int
-    layer_heights: torch.Tensor         # (n_layers,)
-    surface_centers: torch.Tensor       # (n_surface, 2) in Cartesian grid coords
-    surface_normals: torch.Tensor       # (n_surface, 2)
-    layer_mask: torch.Tensor            # (nz, ny, nx) bool — which cells are prism
-    band_indices: tuple                 # flat indices for prism cells
+    layer_heights: torch.Tensor  # (n_layers,)
+    surface_centers: torch.Tensor  # (n_surface, 2) in Cartesian grid coords
+    surface_normals: torch.Tensor  # (n_surface, 2)
+    layer_mask: torch.Tensor  # (nz, ny, nx) bool — which cells are prism
+    band_indices: tuple  # flat indices for prism cells
 
     def to(self, device):
         self.layer_heights = self.layer_heights.to(device)
@@ -68,8 +70,9 @@ class FDMBoundaryStep:
         prism layer cells as a source term in the NS momentum equation.
         """
         # Placeholder: in production, use wallfn's tau_w
-        return torch.zeros(self.prism.n_layers, self.prism.n_surface, 2,
-                          device=f_lbm.device, dtype=f_lbm.dtype)
+        return torch.zeros(
+            self.prism.n_layers, self.prism.n_surface, 2, device=f_lbm.device, dtype=f_lbm.dtype
+        )
 
     def step(self, u_prism: torch.Tensor, u_lbm_wall: torch.Tensor):
         """Advance prism layer velocities one time step.
@@ -88,9 +91,9 @@ class FDMBoundaryStep:
         # Wall-normal gradient: (u_{k+1} - u_{k-1}) / (h_k + h_{k-1})
         # For simplicity, use uniform spacing approximation
         # Real implementation would use anisotropic stencils
-        up = torch.roll(u_prism, -1, dims=0)   # u_{k+1}
-        u0 = u_prism                            # u_k
-        um = torch.roll(u_prism, 1, dims=0)    # u_{k-1}
+        up = torch.roll(u_prism, -1, dims=0)  # u_{k+1}
+        u0 = u_prism  # u_k
+        um = torch.roll(u_prism, 1, dims=0)  # u_{k-1}
 
         # Laplacian: (up - 2*u0 + um) / h_avg²
         h_avg = (h[0] + h[-1]) / 2.0  # average spacing
@@ -108,9 +111,15 @@ class FDMBoundaryStep:
 class HybridSolver:
     """Combined LBM + prism-layer FDM solver for wall-bounded flows."""
 
-    def __init__(self, solid: torch.Tensor, n_prism_layers: int = 3,
-                 nu: float = 2.4e-6, device: str = 'sdaa:0',
-                 u_in: float = 0.06, re: float = 2e6):
+    def __init__(
+        self,
+        solid: torch.Tensor,
+        n_prism_layers: int = 3,
+        nu: float = 2.4e-6,
+        device: str = "sdaa:0",
+        u_in: float = 0.06,
+        re: float = 2e6,
+    ):
         self.device = torch.device(device)
         self.nu = nu
         self.u_in = u_in
@@ -119,25 +128,30 @@ class HybridSolver:
 
         # Build prism mesh
         from .prism_layer import generate_prism_layers
-        cpu_solid = solid.cpu() if solid.device != torch.device('cpu') else solid
-        prism_mesh = generate_prism_layers(cpu_solid, n_layers=n_prism_layers,
-                                           first_height=0.05, growth=1.2)
+
+        cpu_solid = solid.cpu() if solid.device != torch.device("cpu") else solid
+        prism_mesh = generate_prism_layers(
+            cpu_solid, n_layers=n_prism_layers, first_height=0.05, growth=1.2
+        )
         self.prism = PrismLayerData(
             n_surface=prism_mesh.n_surface,
             n_layers=prism_mesh.n_layers,
             layer_heights=prism_mesh.layer_heights,
             surface_centers=prism_mesh.surface_centers,
             surface_normals=prism_mesh.surface_normals,
-            layer_mask=prism_mesh.band_mask if hasattr(prism_mesh, 'band_mask') else torch.zeros(solid.shape, dtype=torch.bool),
-            band_indices=prism_mesh.band_indices if hasattr(prism_mesh, 'band_indices') else (),
+            layer_mask=prism_mesh.band_mask
+            if hasattr(prism_mesh, "band_mask")
+            else torch.zeros(solid.shape, dtype=torch.bool),
+            band_indices=prism_mesh.band_indices if hasattr(prism_mesh, "band_indices") else (),
         ).to(self.device)
 
         # FDM step for prism layer
         self.fdm = FDMBoundaryStep(self.prism, nu=nu, dt=0.5)
 
         # Initialize prism velocity
-        u_init = torch.full((n_prism_layers, self.prism.n_surface, 2),
-                           u_in, device=self.device, dtype=torch.float32)
+        u_init = torch.full(
+            (n_prism_layers, self.prism.n_surface, 2), u_in, device=self.device, dtype=torch.float32
+        )
         u_init[0] = 0.0  # wall no-slip
         self.u_prism = u_init
 
@@ -146,6 +160,7 @@ class HybridSolver:
     def init_lbm(self):
         """Initialize LBM distribution on the Cartesian grid."""
         from .d3q19 import equilibrium3d
+
         r0 = torch.ones(self.nz, self.ny, self.nx, device=self.device)
         u0 = torch.full((self.nz, self.ny, self.nx), self.u_in, device=self.device)
         u0[self.solid] = 0.0
@@ -166,6 +181,7 @@ class HybridSolver:
 
         # 2. Extract near-wall LBM velocity for prism boundary condition
         from .d3q19 import macroscopic3d
+
         rho, ux, uy, uz = macroscopic3d(f)
         u_lbm = torch.stack([ux, uy], dim=-1)  # (nz, ny, nx, 2)
         # At surface cells, get LBM velocity as Dirichlet BC for prism
@@ -176,7 +192,7 @@ class HybridSolver:
             cx = int(self.prism.surface_centers[i, 0])
             cy = int(self.prism.surface_centers[i, 1])
             if 0 <= cx < self.nx and 0 <= cy < self.ny:
-                u_wall[i] = u_lbm[max(0, ndim-2)//2, cy, cx]
+                u_wall[i] = u_lbm[max(0, ndim - 2) // 2, cy, cx]
 
         # 3. FDM prism layer step
         self.u_prism = self.fdm.step(self.u_prism, u_wall)
@@ -190,9 +206,10 @@ class HybridSolver:
 
 
 # ── Test ──
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
-    dev = sys.argv[1] if len(sys.argv) > 1 else 'cpu'
+
+    dev = sys.argv[1] if len(sys.argv) > 1 else "cpu"
     print(f"Testing HybridSolver on {dev}...")
 
     # Build a simple cylinder mask
@@ -201,7 +218,7 @@ if __name__ == '__main__':
     for i in range(nx):
         for j in range(ny):
             for k in range(nz):
-                if (j - ny/2)**2 + (k - nz/2)**2 < (D/2)**2:
+                if (j - ny / 2) ** 2 + (k - nz / 2) ** 2 < (D / 2) ** 2:
                     solid[k, j, i] = True
 
     solver = HybridSolver(solid, n_prism_layers=3, nu=0.01, device=dev)
@@ -215,5 +232,5 @@ if __name__ == '__main__':
     for step in range(10):
         f = solver.step(f, tau=tau)
     elapsed = time.time() - t0
-    print(f"10 steps: {elapsed:.1f}s ({elapsed/10*1000:.0f}ms/step)")
+    print(f"10 steps: {elapsed:.1f}s ({elapsed / 10 * 1000:.0f}ms/step)")
     print("Hybrid LBM+Prism-FDM prototype: OK")

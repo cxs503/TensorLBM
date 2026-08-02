@@ -25,8 +25,10 @@ class DoubleWellFreeEnergy:
         solid_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Return ``mu = -A phi + B phi³ - kappa laplacian(phi)``."""
-        return -self.A * phi + self.B * phi**3 - self.kappa * laplacian_3d(
-            phi, boundary=boundary, solid_mask=solid_mask
+        return (
+            -self.A * phi
+            + self.B * phi**3
+            - self.kappa * laplacian_3d(phi, boundary=boundary, solid_mask=solid_mask)
         )
 
 

@@ -51,6 +51,7 @@ signature must match
 
     vof_step_fn(f, phi, tau, **vof_kwargs) -> (f, phi)
 """
+
 from __future__ import annotations
 
 import torch
@@ -215,14 +216,20 @@ def lbm_step_correct(
 
         # 4. Streaming
         from .solver3d import stream3d
+
         f = stream3d(f)
 
         # 5. Wall function (replaces BB, applied after streaming)
         from .wall_function_common import apply_wall_function
+
         if nu is None:
             nu = (tau - 0.5) / 3.0
         f, _diag = apply_wall_function(
-            f, solid, near_mask, nu=nu, y_val=y_val,
+            f,
+            solid,
+            near_mask,
+            nu=nu,
+            y_val=y_val,
             lattice=lattice,
         )
 
@@ -232,9 +239,7 @@ def lbm_step_correct(
     elif wall_treatment == "bfl":
         # BFL mode: collide → NoDynamics → BB → stream → BC → BFL
         if bfl_mask is None or bfl_q is None:
-            raise ValueError(
-                "bfl_mask and bfl_q must be provided when wall_treatment='bfl'"
-            )
+            raise ValueError("bfl_mask and bfl_q must be provided when wall_treatment='bfl'")
 
         # 4. Half-way bounce-back at solid (BEFORE streaming)
         if bounce_back_fn is not None:
@@ -246,6 +251,7 @@ def lbm_step_correct(
 
         # 5. Streaming
         from .solver3d import stream3d
+
         f = stream3d(f)
 
         # 6. Far-field BC
@@ -253,9 +259,14 @@ def lbm_step_correct(
 
         # 7. BFL interpolated bounce-back (replaces half-way BB at boundary)
         from .bfl_common import bfl_bounce_back_common
+
         f = bfl_bounce_back_common(
-            f, f_pre_stream, bfl_mask, bfl_q,
-            lattice=lattice, wall_correction=bfl_wall_correction,
+            f,
+            f_pre_stream,
+            bfl_mask,
+            bfl_q,
+            lattice=lattice,
+            wall_correction=bfl_wall_correction,
         )
 
     else:
@@ -268,6 +279,7 @@ def lbm_step_correct(
 
         # 5. Streaming
         from .solver3d import stream3d
+
         f = stream3d(f)
 
         # 6. Far-field BC (without obstacle_mask → don't touch solid)
@@ -283,9 +295,7 @@ def lbm_step_correct(
     # ----------------------------------------------------------------
     if thermal_step_fn is not None:
         if thermal_g is None:
-            raise ValueError(
-                "thermal_g must be provided when thermal_step_fn is given"
-            )
+            raise ValueError("thermal_g must be provided when thermal_step_fn is given")
         kw = dict(thermal_kwargs or {})
         kw.setdefault("mask", solid)
         f, thermal_g, T = thermal_step_fn(f, thermal_g, **kw)

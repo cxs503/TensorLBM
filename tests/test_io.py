@@ -1,4 +1,5 @@
 """Tests for io.py: save_vtk and save_hdf5."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -252,10 +253,12 @@ class TestSaveHdf5:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         import sys
+
         h5py_backup = sys.modules.pop("h5py", None)
         monkeypatch.setitem(sys.modules, "h5py", None)  # type: ignore[arg-type]
         try:
             from tensorlbm.io import save_hdf5 as _save_hdf5
+
             with pytest.raises(ImportError, match="h5py"):
                 _save_hdf5(tmp_path / "x.h5", step=0, ux=torch.zeros(2, 2), uy=torch.zeros(2, 2))
         finally:

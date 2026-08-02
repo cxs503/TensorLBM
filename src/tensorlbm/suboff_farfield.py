@@ -4,6 +4,7 @@ This module is deliberately solver-agnostic: it reports geometric and
 convective observability requirements, but never applies or changes a boundary
 condition.  Lengths are lattice cells and convection times are lattice steps.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -60,8 +61,14 @@ def _finite_positive(value: object, name: str) -> float:
 
 
 def build_suboff_far_field_metadata(
-    *, nx: int, ny: int, nz: int, hull_length: float, u_in: float,
-    hull_center_x: float, transient_steps: int | None = None,
+    *,
+    nx: int,
+    ny: int,
+    nz: int,
+    hull_length: float,
+    u_in: float,
+    hull_center_x: float,
+    transient_steps: int | None = None,
 ) -> dict[str, object]:
     """Calculate and validate physical-domain distances and convection times.
 
@@ -142,7 +149,7 @@ def validate_suboff_far_field_metadata(metadata: Mapping[str, object]) -> None:
         try:
             actual = float(distances[key])  # type: ignore[index]
         except (KeyError, TypeError, ValueError) as exc:
-            raise ValueError(f"missing {key.replace('_', '-') } distance metadata") from exc
+            raise ValueError(f"missing {key.replace('_', '-')} distance metadata") from exc
         if not isfinite(actual) or actual <= 0.0:
             raise ValueError(f"{key.replace('_', '-')} distance must be positive")
         if abs(actual - expected_distance) > 1e-9:
@@ -156,7 +163,9 @@ def validate_suboff_far_field_metadata(metadata: Mapping[str, object]) -> None:
 
 
 def assess_outlet_distance_sensitivity(
-    *, baseline: Mapping[str, object], candidate: Mapping[str, object],
+    *,
+    baseline: Mapping[str, object],
+    candidate: Mapping[str, object],
     tolerances: OutletSensitivityTolerances,
 ) -> OutletSensitivityResult:
     """Apply an all-metrics, non-finite-is-failure outlet-distance gate."""
@@ -181,7 +190,9 @@ def assess_outlet_distance_sensitivity(
             continue
         difference = abs(observed - reference)
         passed = difference <= tolerance
-        metric_results[metric] = OutletMetricResult(reference, observed, tolerance, difference, passed)
+        metric_results[metric] = OutletMetricResult(
+            reference, observed, tolerance, difference, passed
+        )
         if not passed:
             reasons.append(f"{metric} difference {difference:g} exceeds tolerance {tolerance:g}")
     return OutletSensitivityResult(not reasons, metric_results, tuple(reasons))

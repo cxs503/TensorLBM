@@ -45,7 +45,9 @@ def test_runner_records_only_available_mrt_and_explicitly_skips_withheld_familie
 
     withheld = [item for item in evidence.combinations if item.status == "SKIPPED_WITHHELD"]
     assert len(withheld) == 4
-    assert all(item.probes == () and item.withheld_reason.startswith("WITHHELD_") for item in withheld)
+    assert all(
+        item.probes == () and item.withheld_reason.startswith("WITHHELD_") for item in withheld
+    )
 
 
 def test_runner_is_reproducible_and_writer_emits_machine_readable_hashable_json(tmp_path) -> None:

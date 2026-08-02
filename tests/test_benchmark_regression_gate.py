@@ -1,4 +1,5 @@
 """Unit tests for fail-closed benchmark regression-gate manifests."""
+
 from __future__ import annotations
 
 import json
@@ -51,7 +52,9 @@ def test_gate_passes_only_with_completed_finite_status_artifacts_and_physics(tmp
 
 def test_gate_fails_closed_for_incomplete_or_nonfinite_or_missing_artifact(tmp_path):
     case_dir = _complete_case(tmp_path)
-    _write_json(case_dir / "run_status.json", _completed_status(metrics={"pass": True, "residual": None}))
+    _write_json(
+        case_dir / "run_status.json", _completed_status(metrics={"pass": True, "residual": None})
+    )
     report = evaluate_regression_gate(
         tmp_path,
         {
@@ -71,9 +74,13 @@ def test_gate_fails_closed_for_incomplete_or_nonfinite_or_missing_artifact(tmp_p
 
 def test_gate_rejects_false_physics_and_partial_completion(tmp_path):
     case_dir = _complete_case(tmp_path)
-    _write_json(case_dir / "run_status.json", {
-        **_completed_status(), "completed_steps": 9,
-    })
+    _write_json(
+        case_dir / "run_status.json",
+        {
+            **_completed_status(),
+            "completed_steps": 9,
+        },
+    )
     report = evaluate_regression_gate(
         tmp_path,
         {"case": {"run_dir": "case", "physics": {"pass": False}}},
@@ -120,10 +127,13 @@ def test_gate_uses_completed_run_status_metrics_as_explicit_physics_result(tmp_p
 
 def test_gate_does_not_turn_failed_checkpoint_status_metrics_into_a_pass(tmp_path):
     case_dir = _complete_case(tmp_path)
-    _write_json(case_dir / "run_status.json", {
-        **_completed_status(metrics={"pass": False, "amplitude": 0.0}),
-        "state": "FAILED",
-    })
+    _write_json(
+        case_dir / "run_status.json",
+        {
+            **_completed_status(metrics={"pass": False, "amplitude": 0.0}),
+            "state": "FAILED",
+        },
+    )
     report = evaluate_regression_gate(
         tmp_path,
         {"case": {"run_dir": "case", "physics": {"status_metrics": True}}},

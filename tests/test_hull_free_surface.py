@@ -1,4 +1,5 @@
 """Smoke tests for the hull free-surface benchmark."""
+
 from __future__ import annotations
 
 from tensorlbm.hull_free_surface import HullFreeSurfaceConfig, run_hull_free_surface

@@ -21,6 +21,7 @@ modifying their hot paths.  SGS models are selected via the ``sgs_model``
 parameter (Smagorinsky/WALE/Vreman) and the ``C_s`` constant, which is
 interpreted as the model-appropriate constant (C_s, C_w, or C_V).
 """
+
 from __future__ import annotations
 
 import json
@@ -55,9 +56,9 @@ SgsModel = Literal["none", "smagorinsky", "wale", "vreman"]
 
 # SGS model constants (defaults from the turbulence module)
 _SGS_CONSTANTS = {
-    "smagorinsky": 0.1,    # C_s
-    "wale": 0.5,            # C_w
-    "vreman": 0.025,        # C_V
+    "smagorinsky": 0.1,  # C_s
+    "wale": 0.5,  # C_w
+    "vreman": 0.025,  # C_V
 }
 
 
@@ -144,7 +145,9 @@ def _run_d3q19(
 
     # Initialize geometry
     fill, solid = init_fill_rectangular(
-        nz, ny, nx,
+        nz,
+        ny,
+        nx,
         column_width=float(config.dam_width),
         column_height=float(config.fill_height),
         device=device,
@@ -169,7 +172,10 @@ def _run_d3q19(
 
     for _step in range(config.n_steps):
         f, fill, flags, mass, _df = free_surface_step(
-            f, fill, flags, solid,
+            f,
+            fill,
+            flags,
+            solid,
             mass=mass,
             tau=config.tau,
             gy=gy,
@@ -183,9 +189,7 @@ def _run_d3q19(
     front = _find_front_position(flags)
     mass_drift = float(mass.sum().item()) - initial_mass
     finite = bool(
-        torch.isfinite(f).all()
-        and torch.isfinite(fill).all()
-        and torch.isfinite(mass).all()
+        torch.isfinite(f).all() and torch.isfinite(fill).all() and torch.isfinite(mass).all()
     )
 
     return {
@@ -209,7 +213,9 @@ def _run_d3q27(
 
     # Initialize geometry
     fill, solid = init_fill_rectangular_27(
-        nz, ny, nx,
+        nz,
+        ny,
+        nx,
         column_width=int(config.dam_width),
         column_height=int(config.fill_height),
         device=device,
@@ -231,7 +237,10 @@ def _run_d3q27(
 
     for _step in range(config.n_steps):
         f, fill, flags, mass, _df = free_surface_step_27(
-            f, fill, flags, solid,
+            f,
+            fill,
+            flags,
+            solid,
             mass=mass,
             tau=config.tau,
             gy=gy,
@@ -245,9 +254,7 @@ def _run_d3q27(
     front = _find_front_position(flags)
     mass_drift = float(mass.sum().item()) - initial_mass
     finite = bool(
-        torch.isfinite(f).all()
-        and torch.isfinite(fill).all()
-        and torch.isfinite(mass).all()
+        torch.isfinite(f).all() and torch.isfinite(fill).all() and torch.isfinite(mass).all()
     )
 
     return {

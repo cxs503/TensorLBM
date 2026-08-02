@@ -36,6 +36,7 @@ _KP505_REFERENCE: dict[float, tuple[float, float]] = {
     1.1: (0.040, 0.015),
 }
 
+
 def _summarize_kp505_context(
     results: list[dict[str, object]],
     rpm: float,
@@ -55,11 +56,18 @@ def _summarize_kp505_context(
         kt_ref, kq_ref = _KP505_REFERENCE[j_closest]
         kt_err = abs(kt_sim - kt_ref) / max(abs(kt_ref), 1e-10) * 100
         kq_err = abs(kq_sim - kq_ref) / max(abs(kq_ref), 1e-10) * 100
-        matches.append({
-            "j_sim": j_sim, "j_ref": j_closest,
-            "kt_sim": kt_sim, "kt_ref": kt_ref, "kt_err_pct": kt_err,
-            "kq_sim": kq_sim, "kq_ref": kq_ref, "kq_err_pct": kq_err,
-        })
+        matches.append(
+            {
+                "j_sim": j_sim,
+                "j_ref": j_closest,
+                "kt_sim": kt_sim,
+                "kt_ref": kt_ref,
+                "kt_err_pct": kt_err,
+                "kq_sim": kq_sim,
+                "kq_ref": kq_ref,
+                "kq_err_pct": kq_err,
+            }
+        )
         kt_errs.append(kt_err)
         kq_errs.append(kq_err)
 
@@ -74,7 +82,7 @@ def _summarize_kp505_context(
 
 
 def _header(title: str) -> None:
-    print(f"\n{'='*70}\n  {title}\n{'='*70}")
+    print(f"\n{'=' * 70}\n  {title}\n{'=' * 70}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -94,7 +102,9 @@ def main(argv: list[str] | None = None) -> int:
             geometry=PropellerGeometryConfig(n_blades=args.blades, diameter=32.0),
             inflow_velocities=(0.005, 0.010),
             rpm=0.00001,
-            nx=60, ny=30, nz=30,
+            nx=60,
+            ny=30,
+            nz=30,
             tau=0.8,
             smagorinsky_cs=0.0,
             n_revolutions=1,
@@ -126,18 +136,24 @@ def main(argv: list[str] | None = None) -> int:
         _header("KP505 Reference Context (not validation)")
         matches = context["matches"]
         print("  Informational nearest-reference comparison only; no pass/fail claim.")
-        print(f"\n  {'J':>6s}  {'KT_sim':>8s}  {'KT_ref':>8s}  {'err%':>7s}  "
-              f"{'KQ_sim':>8s}  {'KQ_ref':>8s}  {'err%':>7s}")
-        print(f"  {'-'*62}")
+        print(
+            f"\n  {'J':>6s}  {'KT_sim':>8s}  {'KT_ref':>8s}  {'err%':>7s}  "
+            f"{'KQ_sim':>8s}  {'KQ_ref':>8s}  {'err%':>7s}"
+        )
+        print(f"  {'-' * 62}")
         for m in matches:  # type: ignore[assignment]
             d = dict(m)  # type: ignore[arg-type]
-            print(f"  {float(d['j_sim']):6.3f}  {float(d['kt_sim']):8.4f}  "
-                  f"{float(d['kt_ref']):8.3f}  {float(d['kt_err_pct']):6.1f}%  "
-                  f"{float(d['kq_sim']):8.4f}  {float(d['kq_ref']):8.3f}  "
-                  f"{float(d['kq_err_pct']):6.1f}%")
-        print(f"  {'='*62}")
-        print(f"  KT context RMSE={float(context['kt_rmse_pct']):.1f}%  "
-              f"KQ context RMSE={float(context['kq_rmse_pct']):.1f}%")
+            print(
+                f"  {float(d['j_sim']):6.3f}  {float(d['kt_sim']):8.4f}  "
+                f"{float(d['kt_ref']):8.3f}  {float(d['kt_err_pct']):6.1f}%  "
+                f"{float(d['kq_sim']):8.4f}  {float(d['kq_ref']):8.3f}  "
+                f"{float(d['kq_err_pct']):6.1f}%"
+            )
+        print(f"  {'=' * 62}")
+        print(
+            f"  KT context RMSE={float(context['kt_rmse_pct']):.1f}%  "
+            f"KQ context RMSE={float(context['kq_rmse_pct']):.1f}%"
+        )
 
     return 0
 

@@ -1,4 +1,5 @@
 """Tests for actuator disk module."""
+
 from __future__ import annotations
 
 import torch
@@ -32,11 +33,16 @@ def test_apply_actuator_disk() -> None:
 def test_actuator_disk_benchmark_runs() -> None:
     """Minimal smoke test — one speed, few steps."""
     cfg = ActuatorDiskConfig(
-        diameter=32.0, rpm_lu=0.002,
+        diameter=32.0,
+        rpm_lu=0.002,
         inflow_velocities=(0.04,),
-        nx=80, ny=40, nz=40,
-        tau=0.58, smagorinsky_cs=0.0,
-        n_steps=100, warmup_steps=30,
+        nx=80,
+        ny=40,
+        nz=40,
+        tau=0.58,
+        smagorinsky_cs=0.0,
+        n_steps=100,
+        warmup_steps=30,
         device="cpu",
         output_root=Path("/tmp/ad_test"),
         overwrite=True,

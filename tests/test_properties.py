@@ -7,6 +7,7 @@ Tests that fundamental physical invariants hold for arbitrary inputs:
 - D3Q27 weights sum to 1
 - D3Q27 equilibrium roundtrip
 """
+
 from __future__ import annotations
 
 import pytest
@@ -33,6 +34,7 @@ except ImportError:
 
     class HealthCheck:
         too_slow = object()
+
 
 import torch
 
@@ -112,6 +114,7 @@ def test_d3q27_c_symmetry() -> None:
 # ---------------------------------------------------------------------------
 # D3Q27 collision + streaming invariant property tests
 # ---------------------------------------------------------------------------
+
 
 def test_d3q27_bgk_conserves_mass() -> None:
     """D3Q27 BGK must conserve total mass."""

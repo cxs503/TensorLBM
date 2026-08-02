@@ -4,6 +4,7 @@ These tests verify operator algebra (shape, zero-flow identity, force-reaction
 sign, composition consistency, D3Q19/D3Q27 parity), NOT FSI physics
 correctness or moving-body validation.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -26,10 +27,8 @@ from tensorlbm.sixdof_common import RigidBodyState
 
 
 def _solid_mask(nz: int, ny: int, nx: int, cx: int, cy: int, cz: int, r: int) -> torch.Tensor:
-    iz, iy, ix = torch.meshgrid(
-        torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij"
-    )
-    return (((ix - cx).float() ** 2 + (iy - cy).float() ** 2 + (iz - cz).float() ** 2) <= r ** 2)
+    iz, iy, ix = torch.meshgrid(torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij")
+    return ((ix - cx).float() ** 2 + (iy - cy).float() ** 2 + (iz - cz).float() ** 2) <= r**2
 
 
 def _make_body(gravity: tuple[float, float, float] = (0.0, 0.0, 0.0)) -> SixDOFBody:
@@ -42,10 +41,13 @@ def _make_body(gravity: tuple[float, float, float] = (0.0, 0.0, 0.0)) -> SixDOFB
 
 
 class TestFSIStepShape:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_result_shapes(self, lattice, q, equilibrium) -> None:
         nz, ny, nx = 10, 10, 10
         rho = torch.ones((nz, ny, nx))
@@ -87,10 +89,13 @@ class TestFSIStepShape:
 
 
 class TestFSIZeroFlowIdentity:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_zero_flow_zero_target_no_force(self, lattice, q, equilibrium) -> None:
         """In zero flow with a stationary body (zero velocity), the IBM force
         should be zero (target = 0, interpolated = 0), so the body should not
@@ -120,10 +125,13 @@ class TestFSIZeroFlowIdentity:
 
 
 class TestFSIForceReactionSign:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_reaction_force_is_negative_of_fluid_force(self, lattice, q, equilibrium) -> None:
         """The force on the body should be the negative of the total IBM force
         on the fluid (Newton's third law)."""
@@ -179,9 +187,7 @@ class TestFSICompositionConsistency:
             f, mask, state.vel.to(f.dtype), lattice="D3Q19"
         )
         fx_manual = float(force_fluid[0].sum().item())
-        force_body_manual = torch.tensor(
-            [-fx_manual, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=torch.float64
-        )
+        force_body_manual = torch.tensor([-fx_manual, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=torch.float64)
         state_manual = rigid_body_step(state, force_body_manual, dt, body=body)
 
         # FSI step.
@@ -217,7 +223,12 @@ class TestFSITwoWayExplicit:
         )
         body = _make_body(gravity=(0.0, 0.0, 0.0))
         result = fsi_step(
-            f, state, mask, body=body, lattice=lattice, dt=1.0,
+            f,
+            state,
+            mask,
+            body=body,
+            lattice=lattice,
+            dt=1.0,
             coupling="two_way_explicit",
         )
         assert torch.isfinite(result.f_updated).all()

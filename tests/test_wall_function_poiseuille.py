@@ -16,13 +16,14 @@ Approaches tested:
 
 Usage: PYTHONPATH=src python tests/test_wall_function_poiseuille.py
 """
+
 from __future__ import annotations
 import sys
 import math
 import torch
 import numpy as np
 
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C, W
 from tensorlbm.solver3d import stream3d, collide_bgk3d
@@ -105,8 +106,7 @@ def run_poiseuille_wallfn_with_bb(device, n_steps=3000, y_val=0.5):
             f[q] = torch.where(sm[q], f_pre[q], f[q])
         f = bounce_back_cells_3d(f, solid)
         # Wall function (gradient law) — adds body force to near-wall fluid cells
-        f, drag_f, drag_p = wall_function_3d(f, solid, nu, y_val=y_val,
-                                               wall_law="gradient")
+        f, drag_f, drag_p = wall_function_3d(f, solid, nu, y_val=y_val, wall_law="gradient")
         # Guo body force (driving force)
         for q in range(19):
             f[q] = f[q] + w[q] * 3 * c[q, 0] * G
@@ -165,8 +165,7 @@ def run_poiseuille_wallfn_only(device, n_steps=3000, y_val=0.5):
         for q in range(19):
             f[q] = torch.where(sm[q], f_pre[q], f[q])
         # NO bounce-back — wall function provides wall shear
-        f, drag_f, drag_p = wall_function_3d(f, solid, nu, y_val=y_val,
-                                               wall_law="gradient")
+        f, drag_f, drag_p = wall_function_3d(f, solid, nu, y_val=y_val, wall_law="gradient")
         # Guo body force (driving force)
         for q in range(19):
             f[q] = f[q] + w[q] * 3 * c[q, 0] * G
@@ -192,7 +191,7 @@ def run_poiseuille_wallfn_only_y1(device, n_steps=3000):
 
 
 def main():
-    device = 'sdaa:0' if torch.sdaa.is_available() else 'cpu'
+    device = "sdaa:0" if torch.sdaa.is_available() else "cpu"
     print(f"Device: {device}")
     print(f"SDAA device count: {torch.sdaa.device_count()}")
     print()
@@ -257,5 +256,5 @@ def main():
         print(f"  {name:30s}: {err:8.4f}%  {status}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

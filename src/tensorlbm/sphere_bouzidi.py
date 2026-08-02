@@ -66,7 +66,14 @@ def run_sphere_bouzidi(config: SphereBouzidiConfig) -> dict:
 
     # Pre-compute Bouzidi boundary data
     fluid_bc, q_field = compute_q_sphere(
-        config.nx, config.ny, config.nz, cx, cy, cz, config.radius, device=device,
+        config.nx,
+        config.ny,
+        config.nz,
+        cx,
+        cy,
+        cz,
+        config.radius,
+        device=device,
     )
 
     rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
@@ -93,7 +100,9 @@ def run_sphere_bouzidi(config: SphereBouzidiConfig) -> dict:
 
         # Channel BC without obstacle bounce-back
         f = apply_zou_he_channel_boundaries_3d(
-            f, u_in=config.u_in, wall_mask=wall,
+            f,
+            u_in=config.u_in,
+            wall_mask=wall,
             obstacle_mask=torch.zeros_like(mask),
         )
 

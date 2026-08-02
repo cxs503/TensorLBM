@@ -5,6 +5,7 @@ checkpoint.  The resulting manifest has the schema consumed by
 :mod:`tensorlbm.suboff_segmented_run`; its Ct block sums are deliberately
 ``None`` until a completed campaign records real measurements.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -15,10 +16,22 @@ from typing import Any
 
 _MANIFEST_SCHEMA = "suboff-d3q27-segmented-run-v1"
 _CHECKPOINT_FORMAT = "suboff-d3q27-cumulant-xslab-v1"
-_REQUIRED_METADATA = frozenset((
-    "format", "nx", "ny", "nz", "hull_length", "re", "u_in", "y_val",
-    "world_size", "rank", "nx_local", "q",
-))
+_REQUIRED_METADATA = frozenset(
+    (
+        "format",
+        "nx",
+        "ny",
+        "nz",
+        "hull_length",
+        "re",
+        "u_in",
+        "y_val",
+        "world_size",
+        "rank",
+        "nx_local",
+        "q",
+    )
+)
 
 
 def _mapping(value: object, label: str) -> Mapping[str, Any]:
@@ -51,12 +64,16 @@ def _positive_finite(value: object, label: str) -> float:
 
 def _checkpoint_template(value: object) -> str:
     if not isinstance(value, str) or not value or "{end_step}" not in value:
-        raise ValueError("checkpoint_path_template must be a safe relative path containing {end_step}")
+        raise ValueError(
+            "checkpoint_path_template must be a safe relative path containing {end_step}"
+        )
     try:
         rendered_zero = value.format(end_step=0)
         rendered_one = value.format(end_step=1)
     except (KeyError, IndexError, ValueError) as exc:
-        raise ValueError("checkpoint_path_template must contain only a valid {end_step} placeholder") from exc
+        raise ValueError(
+            "checkpoint_path_template must contain only a valid {end_step} placeholder"
+        ) from exc
     for rendered in (rendered_zero, rendered_one):
         path = Path(rendered)
         if path.is_absolute() or ".." in path.parts or path == Path("."):
@@ -78,7 +95,9 @@ def _validated_metadata(value: object) -> tuple[dict[str, object], int]:
     if rank != 0:
         # The current evaluator's campaign metadata is the rank-zero canonical
         # record and checks all rank artifacts against it.
-        raise ValueError("checkpoint_metadata.rank must be 0 for the evaluator-compatible campaign manifest")
+        raise ValueError(
+            "checkpoint_metadata.rank must be 0 for the evaluator-compatible campaign manifest"
+        )
     if rank >= world_size:
         raise ValueError("checkpoint_metadata.rank must be less than world_size")
     nx = _integer(metadata["nx"], "checkpoint_metadata.nx", minimum=1)
@@ -93,7 +112,10 @@ def _validated_metadata(value: object) -> tuple[dict[str, object], int]:
 
 
 def build_suboff_segmented_campaign_manifest(
-    static_config: Mapping[str, object], *, segment_steps: int, segment_count: int,
+    static_config: Mapping[str, object],
+    *,
+    segment_steps: int,
+    segment_count: int,
 ) -> dict[str, object]:
     """Build an evaluator-compatible, non-executing segmented campaign plan.
 
@@ -142,13 +164,15 @@ def build_suboff_segmented_campaign_manifest(
         segments.append({"start_step": start, "end_step": end, "checkpoint": checkpoint})
         first = max(start + 1, ct_start)
         if first <= end:
-            blocks.append({
-                "first_sample_step": first,
-                "last_sample_step": end,
-                "friction_sum": None,
-                "pressure_sum": None,
-                "drag_samples": end - first + 1,
-            })
+            blocks.append(
+                {
+                    "first_sample_step": first,
+                    "last_sample_step": end,
+                    "friction_sum": None,
+                    "pressure_sum": None,
+                    "drag_samples": end - first + 1,
+                }
+            )
     if not blocks:
         raise ValueError("campaign has no wholly post-gate Ct samples")
 

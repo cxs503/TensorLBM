@@ -52,6 +52,7 @@ Run
 ---
     PYTHONPATH=src python examples/benchmark_turek_hron.py --device cpu --steps 5000
 """
+
 from __future__ import annotations
 
 import argparse
@@ -76,8 +77,10 @@ from tensorlbm.ibm import ibm_delta_hat, ibm_delta_4pt
 # Helpers
 # ---------------------------------------------------------------------------
 
-def cylinder_markers(n_markers: int, R: float, cx: float, cy: float,
-                     cz: float, device: torch.device):
+
+def cylinder_markers(
+    n_markers: int, R: float, cx: float, cy: float, cz: float, device: torch.device
+):
     """Lagrangian marker points on a circular cylinder cross-section."""
     theta = torch.linspace(0.0, 2.0 * math.pi, n_markers + 1, device=device)[:-1]
     mx = cx + R * torch.cos(theta)
@@ -87,8 +90,12 @@ def cylinder_markers(n_markers: int, R: float, cx: float, cy: float,
 
 
 def interpolate_velocity_markers(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
-    marker_x: torch.Tensor, marker_y: torch.Tensor, marker_z: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    marker_x: torch.Tensor,
+    marker_y: torch.Tensor,
+    marker_z: torch.Tensor,
     kernel: str = "4pt",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Vectorized velocity interpolation at Lagrangian markers (3D).
@@ -196,8 +203,7 @@ def apply_inlet_velocity(f: torch.Tensor, u_in: float) -> torch.Tensor:
     return f
 
 
-def apply_outlet_sponge(f: torch.Tensor, u_in: float,
-                         sponge_width: int) -> torch.Tensor:
+def apply_outlet_sponge(f: torch.Tensor, u_in: float, sponge_width: int) -> torch.Tensor:
     """Sponge layer at outlet: relax distributions toward equilibrium.
 
     A quadratic ramp blends the current distribution with the target
@@ -252,6 +258,7 @@ def compute_vorticity_z(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
 # Discrete elastic beam (biharmonic / Laplacian operator)
 # ---------------------------------------------------------------------------
 
+
 def compute_beam_forces(
     pos_x: torch.Tensor,
     pos_y: torch.Tensor,
@@ -290,10 +297,10 @@ def compute_beam_forces(
     if N < 4:
         # Too few nodes for biharmonic stencil; use Laplacian fallback
         if N >= 3:
-            fx[1:N - 1] = -k_b * (2.0 * pos_x[1:N - 1] - pos_x[0:N - 2] - pos_x[2:N])
-            fy[1:N - 1] = -k_b * (2.0 * pos_y[1:N - 1] - pos_y[0:N - 2] - pos_y[2:N])
-            fx[1:N - 1] -= c_b * (2.0 * vel_x[1:N - 1] - vel_x[0:N - 2] - vel_x[2:N])
-            fy[1:N - 1] -= c_b * (2.0 * vel_y[1:N - 1] - vel_y[0:N - 2] - vel_y[2:N])
+            fx[1 : N - 1] = -k_b * (2.0 * pos_x[1 : N - 1] - pos_x[0 : N - 2] - pos_x[2:N])
+            fy[1 : N - 1] = -k_b * (2.0 * pos_y[1 : N - 1] - pos_y[0 : N - 2] - pos_y[2:N])
+            fx[1 : N - 1] -= c_b * (2.0 * vel_x[1 : N - 1] - vel_x[0 : N - 2] - vel_x[2:N])
+            fy[1 : N - 1] -= c_b * (2.0 * vel_y[1 : N - 1] - vel_y[0 : N - 2] - vel_y[2:N])
         return fx, fy
 
     # --- Ghost nodes ---
@@ -321,27 +328,31 @@ def compute_beam_forces(
     # In padded array, real node i is at index i+1, so:
     # B[1:N-1] = px[0:N-2] - 4*px[1:N-1] + 6*px[2:N] - 4*px[3:N+1] + px[4:N+2]
     bend_x = (
-        px[0:N - 2] - 4.0 * px[1:N - 1] + 6.0 * px[2:N]
-        - 4.0 * px[3:N + 1] + px[4:N + 2]
+        px[0 : N - 2] - 4.0 * px[1 : N - 1] + 6.0 * px[2:N] - 4.0 * px[3 : N + 1] + px[4 : N + 2]
     )
     bend_y = (
-        py[0:N - 2] - 4.0 * py[1:N - 1] + 6.0 * py[2:N]
-        - 4.0 * py[3:N + 1] + py[4:N + 2]
+        py[0 : N - 2] - 4.0 * py[1 : N - 1] + 6.0 * py[2:N] - 4.0 * py[3 : N + 1] + py[4 : N + 2]
     )
     damp_x = (
-        pvx[0:N - 2] - 4.0 * pvx[1:N - 1] + 6.0 * pvx[2:N]
-        - 4.0 * pvx[3:N + 1] + pvx[4:N + 2]
+        pvx[0 : N - 2]
+        - 4.0 * pvx[1 : N - 1]
+        + 6.0 * pvx[2:N]
+        - 4.0 * pvx[3 : N + 1]
+        + pvx[4 : N + 2]
     )
     damp_y = (
-        pvy[0:N - 2] - 4.0 * pvy[1:N - 1] + 6.0 * pvy[2:N]
-        - 4.0 * pvy[3:N + 1] + pvy[4:N + 2]
+        pvy[0 : N - 2]
+        - 4.0 * pvy[1 : N - 1]
+        + 6.0 * pvy[2:N]
+        - 4.0 * pvy[3 : N + 1]
+        + pvy[4 : N + 2]
     )
 
     # The biharmonic operator is positive at a positive deflection maximum;
     # -k*B is restoring.  Its velocity counterpart must have the same sign
     # for damping, not the former anti-damping sign.
-    fx[1:N - 1] = -k_b * bend_x - c_b * damp_x
-    fy[1:N - 1] = -k_b * bend_y - c_b * damp_y
+    fx[1 : N - 1] = -k_b * bend_x - c_b * damp_x
+    fy[1 : N - 1] = -k_b * bend_y - c_b * damp_y
 
     # Node 0: clamped, force = 0
     # Node N-1: free end, bending force = 0 (only external IBM force)
@@ -352,6 +363,7 @@ def compute_beam_forces(
 # ---------------------------------------------------------------------------
 # Main simulation
 # ---------------------------------------------------------------------------
+
 
 def run_turek_hron_benchmark(
     device: str = "cpu",
@@ -379,9 +391,9 @@ def run_turek_hron_benchmark(
     dev = torch.device(device)
     nz = 1
     D = 2.0 * R
-    cx0 = 60.0           # cylinder centre x
-    cy0 = ny * 0.5       # cylinder centre y  (=50)
-    cz0 = 0.0            # single z-layer
+    cx0 = 60.0  # cylinder centre x
+    cy0 = ny * 0.5  # cylinder centre y  (=50)
+    cz0 = 0.0  # single z-layer
 
     # --- Lattice viscosity / relaxation -------------------------------
     nu_lat = (tau - 0.5) / 3.0
@@ -392,9 +404,9 @@ def run_turek_hron_benchmark(
     L_node = beam_L / n_seg
     rho_f = 1.0
     rho_solid = rho_s * rho_f
-    m_node = rho_solid * beam_h * L_node          # mass per node
-    k_b = E_bend                                   # bending stiffness
-    c_b = c_bend                                   # damping coefficient
+    m_node = rho_solid * beam_h * L_node  # mass per node
+    k_b = E_bend  # bending stiffness
+    c_b = c_bend  # damping coefficient
 
     # Expected vortex shedding (Strouhal ≈ 0.2 for cylinder at Re~100-600)
     St_ref = 0.2
@@ -402,17 +414,16 @@ def run_turek_hron_benchmark(
     T_shed = 1.0 / f_shed if f_shed > 0 else float("inf")
 
     # --- IBM markers: cylinder (fixed) + beam (elastic) ---------------
-    mx_cyl, my_cyl, mz_cyl = cylinder_markers(
-        n_cyl_markers, R, cx0, cy0, cz0, dev
-    )
+    mx_cyl, my_cyl, mz_cyl = cylinder_markers(n_cyl_markers, R, cx0, cy0, cz0, dev)
     ds_cyl = 2.0 * math.pi * R / n_cyl_markers
 
     # Beam nodes: from cylinder trailing edge, extending downstream
-    beam_x0 = cx0 + R          # trailing edge x
-    beam_y0 = cy0              # trailing edge y
+    beam_x0 = cx0 + R  # trailing edge x
+    beam_y0 = cy0  # trailing edge y
     beam_pos_x = torch.tensor(
         [beam_x0 + i * L_node for i in range(beam_N)],
-        dtype=torch.float32, device=dev,
+        dtype=torch.float32,
+        device=dev,
     )
     beam_pos_y = torch.full((beam_N,), beam_y0, dtype=torch.float32, device=dev)
     beam_vel_x = torch.zeros(beam_N, dtype=torch.float32, device=dev)
@@ -459,12 +470,15 @@ def run_turek_hron_benchmark(
     print(f"  弹性梁:     L={beam_L}  h={beam_h}  N={beam_N}节点  L_node={L_node:.4f}", flush=True)
     print(f"  材料:       ρ_s={rho_s}  E_bend={E_bend}  m_node={m_node:.4f}", flush=True)
     print(f"  弹簧:       k_b={k_b:.1f}  c_b={c_b:.1f}", flush=True)
-    print(f"  子步进:     n_sub={n_substeps}  dt_sub={1.0/n_substeps:.4f}", flush=True)
+    print(f"  子步进:     n_sub={n_substeps}  dt_sub={1.0 / n_substeps:.4f}", flush=True)
     print(f"  渐升:       ramp_steps={ramp_steps}", flush=True)
     print(f"  IBM松弛:   ibm_relax={ibm_relax}", flush=True)
     print(f"  预期:       St≈{St_ref}  f_shed={f_shed:.6f}  T≈{T_shed:.0f}步", flush=True)
-    print(f"  IBM:        圆柱标记={n_cyl_markers}(ds={ds_cyl:.3f})  "
-          f"梁标记={beam_N}(ds={L_node:.3f})  总标记={n_total}", flush=True)
+    print(
+        f"  IBM:        圆柱标记={n_cyl_markers}(ds={ds_cyl:.3f})  "
+        f"梁标记={beam_N}(ds={L_node:.3f})  总标记={n_total}",
+        flush=True,
+    )
     print(f"  内核:       '{kernel}'", flush=True)
     print(f"  运行:       步数={n_steps}  设备={device}", flush=True)
     print("=" * 70, flush=True)
@@ -478,12 +492,14 @@ def run_turek_hron_benchmark(
 
         # --- 1. 宏观场 (碰撞前) ---------------------------------------
         rho, ux, uy, uz = macroscopic3d(f)
-        if not (torch.isfinite(f).all().item()
-                and torch.isfinite(rho).all().item()
-                and torch.isfinite(beam_pos_x).all().item()
-                and torch.isfinite(beam_pos_y).all().item()
-                and torch.isfinite(beam_vel_x).all().item()
-                and torch.isfinite(beam_vel_y).all().item()):
+        if not (
+            torch.isfinite(f).all().item()
+            and torch.isfinite(rho).all().item()
+            and torch.isfinite(beam_pos_x).all().item()
+            and torch.isfinite(beam_pos_y).all().item()
+            and torch.isfinite(beam_vel_x).all().item()
+            and torch.isfinite(beam_vel_y).all().item()
+        ):
             numerical_failure = f"step {step}: non-finite fluid or beam state"
             print(f"  [数值失败] {numerical_failure}", flush=True)
             break
@@ -496,8 +512,13 @@ def run_turek_hron_benchmark(
 
         # 插值梁节点处的流体速度 (用于松弛目标 + 流体力计算)
         u_mx_b, u_my_b, _ = interpolate_velocity_markers(
-            ux, uy, uz, beam_pos_x, beam_pos_y,
-            torch.full_like(beam_pos_x, cz0), kernel=kernel,
+            ux,
+            uy,
+            uz,
+            beam_pos_x,
+            beam_pos_y,
+            torch.full_like(beam_pos_x, cz0),
+            kernel=kernel,
         )
 
         # 松弛目标速度: u_target = alpha*v_beam + (1-alpha)*u_interp
@@ -506,19 +527,32 @@ def run_turek_hron_benchmark(
         u_tgt_by = ibm_relax * beam_vel_y + (1.0 - ibm_relax) * u_my_b
 
         # 目标速度: 圆柱=0 (固定), 梁=松弛目标
-        u_t_x = torch.cat([
-            torch.zeros(n_cyl_markers, device=dev, dtype=torch.float32),
-            u_tgt_bx,
-        ], dim=0)
-        u_t_y = torch.cat([
-            torch.zeros(n_cyl_markers, device=dev, dtype=torch.float32),
-            u_tgt_by,
-        ], dim=0)
+        u_t_x = torch.cat(
+            [
+                torch.zeros(n_cyl_markers, device=dev, dtype=torch.float32),
+                u_tgt_bx,
+            ],
+            dim=0,
+        )
+        u_t_y = torch.cat(
+            [
+                torch.zeros(n_cyl_markers, device=dev, dtype=torch.float32),
+                u_tgt_by,
+            ],
+            dim=0,
+        )
         u_t_z = torch.zeros(n_total, device=dev, dtype=torch.float32)
 
         fx_grid, fy_grid, fz_grid = ibm_direct_forcing_3d_vec(
-            ux, uy, uz, mx_all, my_all, mz_all,
-            u_t_x, u_t_y, u_t_z,
+            ux,
+            uy,
+            uz,
+            mx_all,
+            my_all,
+            mz_all,
+            u_t_x,
+            u_t_y,
+            u_t_z,
             kernel=kernel,
         )
 
@@ -537,9 +571,11 @@ def run_turek_hron_benchmark(
         if step % 100 == 0:
             f = correct_mass3d(f, initial_mass)
 
-        if not (torch.isfinite(f).all().item()
-                and torch.isfinite(fx_grid).all().item()
-                and torch.isfinite(fy_grid).all().item()):
+        if not (
+            torch.isfinite(f).all().item()
+            and torch.isfinite(fx_grid).all().item()
+            and torch.isfinite(fy_grid).all().item()
+        ):
             numerical_failure = f"step {step}: non-finite IBM force or post-boundary distribution"
             print(f"  [数值失败] {numerical_failure}", flush=True)
             break
@@ -557,8 +593,13 @@ def run_turek_hron_benchmark(
         dt_sub = 1.0 / n_sub
         for _ in range(n_sub):
             F_int_x, F_int_y = compute_beam_forces(
-                beam_pos_x, beam_pos_y, beam_vel_x, beam_vel_y,
-                k_b, c_b, beam_N,
+                beam_pos_x,
+                beam_pos_y,
+                beam_vel_x,
+                beam_vel_y,
+                k_b,
+                c_b,
+                beam_N,
             )
             F_total_x = F_hydro_x + F_int_x
             F_total_y = F_hydro_y + F_int_y
@@ -582,10 +623,12 @@ def run_turek_hron_benchmark(
         beam_vel_x[0] = 0.0
         beam_vel_y[0] = 0.0
 
-        if not (torch.isfinite(beam_pos_x).all().item()
-                and torch.isfinite(beam_pos_y).all().item()
-                and torch.isfinite(beam_vel_x).all().item()
-                and torch.isfinite(beam_vel_y).all().item()):
+        if not (
+            torch.isfinite(beam_pos_x).all().item()
+            and torch.isfinite(beam_pos_y).all().item()
+            and torch.isfinite(beam_vel_x).all().item()
+            and torch.isfinite(beam_vel_y).all().item()
+        ):
             numerical_failure = f"step {step}: non-finite beam state after structural update"
             print(f"  [数值失败] {numerical_failure}", flush=True)
             break
@@ -609,13 +652,16 @@ def run_turek_hron_benchmark(
                 f"  步 {step:5d}:  梁尖y={tip_y:+.4f}  vy={tip_vy:+.5f}  "
                 f"Fy={fy_total:+.5f}  探针uy={uy_probe:+.5f}  "
                 f"ρ∈[{float(rho.min()):.4f},{float(rho.max()):.4f}]  "
-                f"{time.time()-t0:.0f}秒",
+                f"{time.time() - t0:.0f}秒",
                 flush=True,
             )
 
     dt_total = time.time() - t0
     print("=" * 70, flush=True)
-    print(f"  仿真完成: {dt_total:.1f}秒  ({dt_total/max(len(tip_y_hist), 1)*1e3:.1f} 毫秒/步)", flush=True)
+    print(
+        f"  仿真完成: {dt_total:.1f}秒  ({dt_total / max(len(tip_y_hist), 1) * 1e3:.1f} 毫秒/步)",
+        flush=True,
+    )
 
     # ===================================================================
     # 分析
@@ -665,8 +711,10 @@ def run_turek_hron_benchmark(
     print(f"     梁尖振幅 A_y = {A_tip:.4f} 格子单位", flush=True)
     oscillation_ok = A_tip > 0.005
     osc_err = 0.0 if oscillation_ok else (0.005 - A_tip) / 0.005 * 100
-    print(f"     检查: {'通过' if oscillation_ok else '未通过'}  "
-          f"(A_y > 0.005, 误差={osc_err:.1f}%)", flush=True)
+    print(
+        f"     检查: {'通过' if oscillation_ok else '未通过'}  (A_y > 0.005, 误差={osc_err:.1f}%)",
+        flush=True,
+    )
 
     # 2. 振幅范围
     print(f"  2. 梁尖振幅范围:", flush=True)
@@ -695,26 +743,37 @@ def run_turek_hron_benchmark(
         freq_err = 100.0
         freq_ok = False
     print(f"     比值   = {freq_ratio:.4f}  (≈1.0表示频率锁定)", flush=True)
-    print(f"     检查: {'通过' if freq_ok else '未通过'}  "
-          f"(|f_tip/f_shed−1|={abs(freq_ratio-1.0) if not math.isnan(freq_ratio) else 1.0:.3f}, "
-          f"误差={freq_err:.1f}%)", flush=True)
+    print(
+        f"     检查: {'通过' if freq_ok else '未通过'}  "
+        f"(|f_tip/f_shed−1|={abs(freq_ratio - 1.0) if not math.isnan(freq_ratio) else 1.0:.3f}, "
+        f"误差={freq_err:.1f}%)",
+        flush=True,
+    )
 
     # --- 综合评估 ---
-    finite_metrics = (numerical_failure is None and n_completed == n_steps
-                      and all(np.isfinite(a).all() for a in
-                              (tip_y_arr, tip_x_arr, uy_arr, fy_arr))
-                      and all(math.isfinite(v) for v in
-                              (A_tip, f_tip, f_shed_meas, St_meas, freq_ratio)))
-    print(f"  数值完整性检查: {'通过' if finite_metrics else '未通过'}"
-          f"  ({numerical_failure or '所有状态和指标均为有限值'})", flush=True)
+    finite_metrics = (
+        numerical_failure is None
+        and n_completed == n_steps
+        and all(np.isfinite(a).all() for a in (tip_y_arr, tip_x_arr, uy_arr, fy_arr))
+        and all(math.isfinite(v) for v in (A_tip, f_tip, f_shed_meas, St_meas, freq_ratio))
+    )
+    print(
+        f"  数值完整性检查: {'通过' if finite_metrics else '未通过'}"
+        f"  ({numerical_failure or '所有状态和指标均为有限值'})",
+        flush=True,
+    )
     all_pass = finite_metrics and oscillation_ok and amp_ok and freq_ok
     print(flush=True)
-    print(f"  周期振荡检查: {'通过' if oscillation_ok else '未通过'} "
-          f"(A_y={A_tip:.4f} > 0.005)", flush=True)
-    print(f"  振幅范围检查: {'通过' if amp_ok else '未通过'} "
-          f"(A_y={A_tip:.4f}, 目标=[{A_target_low},{A_target_high}])", flush=True)
-    print(f"  频率匹配检查: {'通过' if freq_ok else '未通过'} "
-          f"(误差={freq_err:.1f}%)", flush=True)
+    print(
+        f"  周期振荡检查: {'通过' if oscillation_ok else '未通过'} (A_y={A_tip:.4f} > 0.005)",
+        flush=True,
+    )
+    print(
+        f"  振幅范围检查: {'通过' if amp_ok else '未通过'} "
+        f"(A_y={A_tip:.4f}, 目标=[{A_target_low},{A_target_high}])",
+        flush=True,
+    )
+    print(f"  频率匹配检查: {'通过' if freq_ok else '未通过'} (误差={freq_err:.1f}%)", flush=True)
     print(flush=True)
     print(f"  总体结果: {'通过 ✓' if all_pass else '未通过 ✗'}", flush=True)
     print("=" * 70, flush=True)
@@ -730,13 +789,22 @@ def run_turek_hron_benchmark(
         w = csv.writer(fh)
         w.writerow(["step", "tip_y", "tip_x", "tip_vy", "Fy_beam", "uy_probe"])
         for i in range(n_completed):
-            w.writerow([i + 1, tip_y_hist[i], tip_x_hist[i],
-                        tip_vy_hist[i], fy_beam_hist[i], uy_probe_hist[i]])
+            w.writerow(
+                [
+                    i + 1,
+                    tip_y_hist[i],
+                    tip_x_hist[i],
+                    tip_vy_hist[i],
+                    fy_beam_hist[i],
+                    uy_probe_hist[i],
+                ]
+            )
     print(f"  已保存: {csv_path}", flush=True)
 
     # 图表
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
@@ -746,8 +814,7 @@ def run_turek_hron_benchmark(
         axes[0].set_ylabel("梁尖y位移 (格子单位)")
         axes[0].set_title("Turek-Hron FSI2: 弹性梁尖端横向位移")
         axes[0].axhline(0, color="k", linewidth=0.5)
-        axes[0].axvline(n_trans, color="r", linestyle="--", linewidth=0.5,
-                        label="瞬态结束")
+        axes[0].axvline(n_trans, color="r", linestyle="--", linewidth=0.5, label="瞬态结束")
         axes[0].legend(fontsize=8)
 
         axes[1].plot(uy_arr, "g-", linewidth=0.8)
@@ -773,9 +840,14 @@ def run_turek_hron_benchmark(
         vmax = max(abs(vort.min()), abs(vort.max()))
         vmax = max(vmax, 1e-6) * 0.8
         fig2, ax2 = plt.subplots(figsize=(12, 4))
-        im = ax2.imshow(vort, origin="lower", cmap="RdBu_r",
-                        vmin=-vmax, vmax=vmax,
-                        extent=(0.0, float(nx), 0.0, float(ny)))
+        im = ax2.imshow(
+            vort,
+            origin="lower",
+            cmap="RdBu_r",
+            vmin=-vmax,
+            vmax=vmax,
+            extent=(0.0, float(nx), 0.0, float(ny)),
+        )
         plt.colorbar(im, ax=ax2, label=r"$\omega_z$")
         ax2.plot(cx0, cy0, "ko", markersize=5, label="圆柱中心")
         bx = beam_pos_x.cpu().numpy()
@@ -783,8 +855,7 @@ def run_turek_hron_benchmark(
         ax2.plot(bx, by, "r.-", markersize=3, linewidth=1, label="弹性梁")
         ax2.set_xlabel("x")
         ax2.set_ylabel("y")
-        ax2.set_title(f"涡量场 (步 {n_steps})  St={St_meas:.3f}  "
-                      f"A={A_tip:.4f}")
+        ax2.set_title(f"涡量场 (步 {n_steps})  St={St_meas:.3f}  A={A_tip:.4f}")
         ax2.legend(fontsize=8)
         plt.tight_layout()
         vort_path = os.path.join(output_dir, "turek_hron_vorticity.png")
@@ -797,15 +868,15 @@ def run_turek_hron_benchmark(
         y_spec = np.abs(np.fft.rfft(tip_y_ss - tip_y_ss.mean(), n=n_fft))
         uy_spec = np.abs(np.fft.rfft(uy_ss - uy_ss.mean(), n=n_fft))
         ax3a.semilogy(freqs, y_spec, "b-", linewidth=0.8)
-        ax3a.axvline(f_tip, color="r", linestyle="--", linewidth=0.8,
-                     label=f"f_tip={f_tip:.6f}")
+        ax3a.axvline(f_tip, color="r", linestyle="--", linewidth=0.8, label=f"f_tip={f_tip:.6f}")
         ax3a.set_ylabel("|FFT(梁尖y)|")
         ax3a.set_title("梁尖位移频谱")
         ax3a.legend(fontsize=8)
 
         ax3b.semilogy(freqs, uy_spec, "g-", linewidth=0.8)
-        ax3b.axvline(f_shed_meas, color="r", linestyle="--", linewidth=0.8,
-                     label=f"f_shed={f_shed_meas:.6f}")
+        ax3b.axvline(
+            f_shed_meas, color="r", linestyle="--", linewidth=0.8, label=f"f_shed={f_shed_meas:.6f}"
+        )
         ax3b.set_ylabel(r"|FFT($u_y$)|")
         ax3b.set_xlabel("频率 (周/步)")
         ax3b.set_title("尾流速度频谱")
@@ -843,46 +914,47 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Turek-Hron FSI2基准: 圆柱+弹性梁在通道流中的流固耦合"
     )
-    parser.add_argument("--device", default="cpu",
-                        help="设备: cpu / cuda / sdaa:N")
-    parser.add_argument("--steps", type=int, default=5000,
-                        help="LBM时间步数")
+    parser.add_argument("--device", default="cpu", help="设备: cpu / cuda / sdaa:N")
+    parser.add_argument("--steps", type=int, default=5000, help="LBM时间步数")
     parser.add_argument("--nx", type=int, default=300, help="网格x方向")
     parser.add_argument("--ny", type=int, default=100, help="网格y方向")
-    parser.add_argument("--R", type=float, default=5.0,
-                        help="圆柱半径 (格子单位)")
-    parser.add_argument("--u-in", dest="u_in", type=float, default=0.1,
-                        help="入口速度 (格子单位)")
-    parser.add_argument("--tau", type=float, default=0.53,
-                        help="BGK松弛时间 τ (ν=(τ−0.5)/3, Re=100时τ=0.53)")
-    parser.add_argument("--beam-L", dest="beam_L", type=float, default=35.0,
-                        help="梁长度 (格子单位)")
-    parser.add_argument("--beam-h", dest="beam_h", type=float, default=2.0,
-                        help="梁厚度 (格子单位)")
-    parser.add_argument("--beam-N", dest="beam_N", type=int, default=20,
-                        help="梁节点数")
-    parser.add_argument("--rho-s", dest="rho_s", type=float,
-                        default=10.0, help="密度比 ρ_s/ρ_f")
-    parser.add_argument("--E-bend", dest="E_bend", type=float,
-                        default=1e4, help="弯曲刚度 k_b")
-    parser.add_argument("--c-bend", dest="c_bend", type=float,
-                        default=100.0, help="弯曲阻尼系数 c_b")
-    parser.add_argument("--n-cyl-markers", dest="n_cyl_markers",
-                        type=int, default=32, help="圆柱表面IBM标记数")
-    parser.add_argument("--sponge-width", dest="sponge_width",
-                        type=int, default=40, help="出口海绵层宽度")
-    parser.add_argument("--n-substeps", dest="n_substeps",
-                        type=int, default=50, help="结构更新子步数")
-    parser.add_argument("--ramp-steps", dest="ramp_steps",
-                        type=int, default=500, help="入口流速渐升步数")
-    parser.add_argument("--ibm-relax", dest="ibm_relax",
-                        type=float, default=0.5, help="IBM耦合松弛因子(0-1)")
-    parser.add_argument("--kernel", default="4pt", choices=["hat", "4pt"],
-                        help="IBM delta内核")
-    parser.add_argument("--output-interval", dest="output_interval",
-                        type=int, default=500, help="打印间隔 (步)")
-    parser.add_argument("--output-dir", dest="output_dir",
-                        default="outputs", help="输出目录")
+    parser.add_argument("--R", type=float, default=5.0, help="圆柱半径 (格子单位)")
+    parser.add_argument("--u-in", dest="u_in", type=float, default=0.1, help="入口速度 (格子单位)")
+    parser.add_argument(
+        "--tau", type=float, default=0.53, help="BGK松弛时间 τ (ν=(τ−0.5)/3, Re=100时τ=0.53)"
+    )
+    parser.add_argument(
+        "--beam-L", dest="beam_L", type=float, default=35.0, help="梁长度 (格子单位)"
+    )
+    parser.add_argument(
+        "--beam-h", dest="beam_h", type=float, default=2.0, help="梁厚度 (格子单位)"
+    )
+    parser.add_argument("--beam-N", dest="beam_N", type=int, default=20, help="梁节点数")
+    parser.add_argument("--rho-s", dest="rho_s", type=float, default=10.0, help="密度比 ρ_s/ρ_f")
+    parser.add_argument("--E-bend", dest="E_bend", type=float, default=1e4, help="弯曲刚度 k_b")
+    parser.add_argument(
+        "--c-bend", dest="c_bend", type=float, default=100.0, help="弯曲阻尼系数 c_b"
+    )
+    parser.add_argument(
+        "--n-cyl-markers", dest="n_cyl_markers", type=int, default=32, help="圆柱表面IBM标记数"
+    )
+    parser.add_argument(
+        "--sponge-width", dest="sponge_width", type=int, default=40, help="出口海绵层宽度"
+    )
+    parser.add_argument(
+        "--n-substeps", dest="n_substeps", type=int, default=50, help="结构更新子步数"
+    )
+    parser.add_argument(
+        "--ramp-steps", dest="ramp_steps", type=int, default=500, help="入口流速渐升步数"
+    )
+    parser.add_argument(
+        "--ibm-relax", dest="ibm_relax", type=float, default=0.5, help="IBM耦合松弛因子(0-1)"
+    )
+    parser.add_argument("--kernel", default="4pt", choices=["hat", "4pt"], help="IBM delta内核")
+    parser.add_argument(
+        "--output-interval", dest="output_interval", type=int, default=500, help="打印间隔 (步)"
+    )
+    parser.add_argument("--output-dir", dest="output_dir", default="outputs", help="输出目录")
     args = parser.parse_args()
 
     run_turek_hron_benchmark(

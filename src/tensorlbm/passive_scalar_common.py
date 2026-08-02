@@ -36,6 +36,7 @@ Shi, B., & Guo, Z. (2009).
     Lattice Boltzmann model for nonlinear convection-diffusion equations.
     *Phys. Rev. E* 79, 016701.
 """
+
 from __future__ import annotations
 
 import functools

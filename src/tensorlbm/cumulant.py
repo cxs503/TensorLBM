@@ -49,6 +49,7 @@ Lycett-Brown, D., & Luo, K. H. (2016).
     eddy simulation of compressible flow at high Reynolds numbers.
     *Physical Review E*, 94(5), 053313.
 """
+
 from __future__ import annotations
 
 import torch
@@ -60,6 +61,7 @@ from .d3q27 import equilibrium27, macroscopic27
 # ---------------------------------------------------------------------------
 # D2Q9 cumulant collision
 # ---------------------------------------------------------------------------
+
 
 def collide_cumulant_d2q9(
     f: torch.Tensor,
@@ -106,14 +108,14 @@ def collide_cumulant_d2q9(
     f0, f1, f2, f3, f4, f5, f6, f7, f8 = (f[i] for i in range(9))
 
     m00 = rho
-    m10 = rho * ux   # = f1 - f3 + f5 - f6 - f7 + f8
-    m01 = rho * uy   # = f2 - f4 + f5 + f6 - f7 - f8
+    m10 = rho * ux  # = f1 - f3 + f5 - f6 - f7 + f8
+    m01 = rho * uy  # = f2 - f4 + f5 + f6 - f7 - f8
     m20 = f1 + f3 + f5 + f6 + f7 + f8
     m02 = f2 + f4 + f5 + f6 + f7 + f8
-    m11 = f5 - f6 + f7 - f8             # = Σ cx cy f
-    m21 = f5 + f6 - f7 - f8             # = Σ cx² cy f  (cx²=1 for all corners; cy: +,+,−,−)
-    m12 = f5 - f6 - f7 + f8             # = Σ cx cy² f  (cy²=1 for all corners; cx: +,−,−,+)
-    m22 = f5 + f6 + f7 + f8             # = Σ cx² cy² f
+    m11 = f5 - f6 + f7 - f8  # = Σ cx cy f
+    m21 = f5 + f6 - f7 - f8  # = Σ cx² cy f  (cx²=1 for all corners; cy: +,+,−,−)
+    m12 = f5 - f6 - f7 + f8  # = Σ cx cy² f  (cy²=1 for all corners; cx: +,−,−,+)
+    m22 = f5 + f6 + f7 + f8  # = Σ cx² cy² f
 
     # ------------------------------------------------------------------
     # Central moments  κ_{pq} = Σ_i f_i (cx_i − ux)^p (cy_i − uy)^q
@@ -131,9 +133,15 @@ def collide_cumulant_d2q9(
     k11 = m11 - ux * uy * m00
     k21 = m21 - uy * m20 - 2.0 * ux * m11 + 2.0 * ux2 * uy * m00
     k12 = m12 - ux * m02 - 2.0 * uy * m11 + 2.0 * ux * uy2 * m00
-    k22 = (m22 - 2.0 * ux * m12 - 2.0 * uy * m21
-           + ux2 * m02 + 4.0 * ux * uy * m11 + uy2 * m20
-           - 3.0 * ux2 * uy2 * m00)
+    k22 = (
+        m22
+        - 2.0 * ux * m12
+        - 2.0 * uy * m21
+        + ux2 * m02
+        + 4.0 * ux * uy * m11
+        + uy2 * m20
+        - 3.0 * ux2 * uy2 * m00
+    )
 
     # ------------------------------------------------------------------
     # Equilibrium central moments (Maxwell-Boltzmann):
@@ -150,14 +158,20 @@ def collide_cumulant_d2q9(
     f5e, f6e, f7e, f8e = feq[5], feq[6], feq[7], feq[8]
     f1e, f3e, f2e, f4e = feq[1], feq[3], feq[2], feq[4]
     m22_eq_v = f5e + f6e + f7e + f8e
-    m21_eq_v = f5e + f6e - f7e - f8e   # physical m21 = Σ cx² cy feq
-    m12_eq_v = f5e - f6e - f7e + f8e   # physical m12 = Σ cx cy² feq
+    m21_eq_v = f5e + f6e - f7e - f8e  # physical m21 = Σ cx² cy feq
+    m12_eq_v = f5e - f6e - f7e + f8e  # physical m12 = Σ cx cy² feq
     m11_eq_v = f5e - f6e + f7e - f8e
     m20_eq_v = f1e + f3e + m22_eq_v
     m02_eq_v = f2e + f4e + m22_eq_v
-    k22_eq = (m22_eq_v - 2.0 * ux * m12_eq_v - 2.0 * uy * m21_eq_v
-              + ux2 * m02_eq_v + 4.0 * ux * uy * m11_eq_v + uy2 * m20_eq_v
-              - 3.0 * ux2 * uy2 * rho)
+    k22_eq = (
+        m22_eq_v
+        - 2.0 * ux * m12_eq_v
+        - 2.0 * uy * m21_eq_v
+        + ux2 * m02_eq_v
+        + 4.0 * ux * uy * m11_eq_v
+        + uy2 * m20_eq_v
+        - 3.0 * ux2 * uy2 * rho
+    )
 
     # ------------------------------------------------------------------
     # Relaxation in central-moment space
@@ -165,19 +179,19 @@ def collide_cumulant_d2q9(
     # Shear / off-diagonal stress: relax at omega
     k20_s = k20 - omega * (k20 - k20_eq)
     k02_s = k02 - omega * (k02 - k02_eq)
-    k11_s = k11 - omega * k11            # k11_eq = 0
+    k11_s = k11 - omega * k11  # k11_eq = 0
 
     # Bulk mode (trace): relax at omega_b independently then redistribute
-    T_eq = k20_eq + k02_eq              # = 2 ρ/3
-    T    = k20    + k02
-    T_s  = T - omega_b * (T - T_eq)
+    T_eq = k20_eq + k02_eq  # = 2 ρ/3
+    T = k20 + k02
+    T_s = T - omega_b * (T - T_eq)
     delta = 0.5 * (T_s - (k20_s + k02_s))
     k20_s = k20_s + delta
     k02_s = k02_s + delta
 
     # Ghost (non-hydrodynamic) modes
-    k21_s = k21 - omega_3 * k21         # k21_eq = 0
-    k12_s = k12 - omega_3 * k12         # k12_eq = 0
+    k21_s = k21 - omega_3 * k21  # k21_eq = 0
+    k12_s = k12 - omega_3 * k12  # k12_eq = 0
     k22_s = k22 - omega_4 * (k22 - k22_eq)
 
     # ------------------------------------------------------------------
@@ -197,9 +211,15 @@ def collide_cumulant_d2q9(
     m11_s = k11_s + ux * uy * m00
     m21_s = k21_s + uy * m20_s + 2.0 * ux * m11_s - 2.0 * ux2 * uy * m00
     m12_s = k12_s + ux * m02_s + 2.0 * uy * m11_s - 2.0 * ux * uy2 * m00
-    m22_s = (k22_s + 2.0 * ux * m12_s + 2.0 * uy * m21_s
-             - ux2 * m02_s - 4.0 * ux * uy * m11_s - uy2 * m20_s
-             + 3.0 * ux2 * uy2 * m00)
+    m22_s = (
+        k22_s
+        + 2.0 * ux * m12_s
+        + 2.0 * uy * m21_s
+        - ux2 * m02_s
+        - 4.0 * ux * uy * m11_s
+        - uy2 * m20_s
+        + 3.0 * ux2 * uy2 * m00
+    )
 
     # ------------------------------------------------------------------
     # Recover populations from raw moments (exact D2Q9 inverse)
@@ -229,6 +249,7 @@ def collide_cumulant_d2q9(
 # ---------------------------------------------------------------------------
 # D3Q27 cumulant collision
 # ---------------------------------------------------------------------------
+
 
 def collide_cumulant_d3q27(
     f: torch.Tensor,
@@ -274,7 +295,8 @@ def collide_cumulant_d3q27(
     # ---- Strain rate tensor from fneq (2nd Hermite moment) ------------
     # Π_αβ = Σ_i c_iα c_iβ fneq_i
     from .d3q27 import C as C27  # noqa: PLC0415
-    c = C27.to(device).float()   # (27, 3)
+
+    c = C27.to(device).float()  # (27, 3)
     cx = c[:, 0].view(27, 1, 1, 1)
     cy = c[:, 1].view(27, 1, 1, 1)
     cz = c[:, 2].view(27, 1, 1, 1)
@@ -289,8 +311,7 @@ def collide_cumulant_d3q27(
     # ---- Relaxation rate: scalar or per-cell Smagorinsky LES ----------
     if C_s > 0.0:
         # Smagorinsky: tau_eff = 0.5*(tau + sqrt(tau² + 18*C_s²*|Π|/ρ))
-        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2
-                   + 2.0*(pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
+        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
         rho_safe = rho.clamp(min=1e-12)
         tau_eff = 0.5 * (tau + torch.sqrt(tau * tau + 18.0 * C_s * C_s * pi_norm / rho_safe))
         omega = 1.0 / tau_eff  # per-cell tensor
@@ -314,16 +335,14 @@ def collide_cumulant_d3q27(
     # (i.e., replace physical modes with relaxed values, keep rest at omega_even)
 
     # Regularized non-equilibrium reconstructed from relaxed Π
-    w27 = (
-        torch.tensor(
-            [8/27]                          # (0,0,0)
-            + [2/27] * 6                    # 6 face centres
-            + [1/54] * 12                   # 12 edge centres
-            + [1/216] * 8,                  # 8 corners
-            dtype=f.dtype, device=device,
-        )
-        .view(27, 1, 1, 1)
-    )
+    w27 = torch.tensor(
+        [8 / 27]  # (0,0,0)
+        + [2 / 27] * 6  # 6 face centres
+        + [1 / 54] * 12  # 12 edge centres
+        + [1 / 216] * 8,  # 8 corners
+        dtype=f.dtype,
+        device=device,
+    ).view(27, 1, 1, 1)
 
     h_xx = cx * cx - cs2
     h_yy = cy * cy - cs2
@@ -333,16 +352,32 @@ def collide_cumulant_d3q27(
     h_yz = cy * cz
 
     # Hermite reconstruction from 2nd-order stress tensor only
-    fneq_reg = (4.5 * w27 * (
-        h_xx * pi_xx_s + h_yy * pi_yy_s + h_zz * pi_zz_s
-        + 2.0 * h_xy * pi_xy_s + 2.0 * h_xz * pi_xz_s + 2.0 * h_yz * pi_yz_s
-    ))
+    fneq_reg = (
+        4.5
+        * w27
+        * (
+            h_xx * pi_xx_s
+            + h_yy * pi_yy_s
+            + h_zz * pi_zz_s
+            + 2.0 * h_xy * pi_xy_s
+            + 2.0 * h_xz * pi_xz_s
+            + 2.0 * h_yz * pi_yz_s
+        )
+    )
 
     # Higher-order fneq relaxed separately
-    fneq_ho = fneq - (4.5 * w27 * (
-        h_xx * pi_xx + h_yy * pi_yy + h_zz * pi_zz
-        + 2.0 * h_xy * pi_xy + 2.0 * h_xz * pi_xz + 2.0 * h_yz * pi_yz
-    ))
+    fneq_ho = fneq - (
+        4.5
+        * w27
+        * (
+            h_xx * pi_xx
+            + h_yy * pi_yy
+            + h_zz * pi_zz
+            + 2.0 * h_xy * pi_xy
+            + 2.0 * h_xz * pi_xz
+            + 2.0 * h_yz * pi_yz
+        )
+    )
     fneq_ho_s = (1.0 - omega_even) * fneq_ho
 
     return feq + fneq_reg + fneq_ho_s
@@ -351,6 +386,7 @@ def collide_cumulant_d3q27(
 # ---------------------------------------------------------------------------
 # D3Q19 cumulant collision
 # ---------------------------------------------------------------------------
+
 
 def collide_cumulant_d3q19(
     f: torch.Tensor,
@@ -412,7 +448,8 @@ def collide_cumulant_d3q19(
     # ---- Strain rate tensor from fneq (2nd Hermite moment) ------------
     # Π_αβ = Σ_i c_iα c_iβ fneq_i
     from .d3q19 import C as C19  # noqa: PLC0415
-    c = C19.to(device).float()   # (19, 3)
+
+    c = C19.to(device).float()  # (19, 3)
     cx = c[:, 0].view(19, 1, 1, 1)
     cy = c[:, 1].view(19, 1, 1, 1)
     cz = c[:, 2].view(19, 1, 1, 1)
@@ -427,8 +464,7 @@ def collide_cumulant_d3q19(
     # ---- Relaxation rate: scalar or per-cell Smagorinsky LES ----------
     if C_s > 0.0:
         # Smagorinsky: tau_eff = 0.5*(tau + sqrt(tau² + 18*C_s²*|Π|/ρ))
-        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2
-                   + 2.0*(pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
+        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
         rho_safe = rho.clamp(min=1e-12)
         tau_eff = 0.5 * (tau + torch.sqrt(tau * tau + 18.0 * C_s * C_s * pi_norm / rho_safe))
         omega = 1.0 / tau_eff  # per-cell tensor
@@ -447,15 +483,13 @@ def collide_cumulant_d3q19(
     pi_yz_s = pi_yz - omega * pi_yz
 
     # ---- D3Q19 weights (rest 1/3, face 1/18, edge 1/36) --------------
-    w19 = (
-        torch.tensor(
-            [1.0 / 3.0]                       # (0,0,0)
-            + [1.0 / 18.0] * 6                # 6 face centres
-            + [1.0 / 36.0] * 12,              # 12 edge centres
-            dtype=f.dtype, device=device,
-        )
-        .view(19, 1, 1, 1)
-    )
+    w19 = torch.tensor(
+        [1.0 / 3.0]  # (0,0,0)
+        + [1.0 / 18.0] * 6  # 6 face centres
+        + [1.0 / 36.0] * 12,  # 12 edge centres
+        dtype=f.dtype,
+        device=device,
+    ).view(19, 1, 1, 1)
 
     h_xx = cx * cx - cs2
     h_yy = cy * cy - cs2
@@ -465,16 +499,32 @@ def collide_cumulant_d3q19(
     h_yz = cy * cz
 
     # Hermite reconstruction from 2nd-order stress tensor only
-    fneq_reg = (4.5 * w19 * (
-        h_xx * pi_xx_s + h_yy * pi_yy_s + h_zz * pi_zz_s
-        + 2.0 * h_xy * pi_xy_s + 2.0 * h_xz * pi_xz_s + 2.0 * h_yz * pi_yz_s
-    ))
+    fneq_reg = (
+        4.5
+        * w19
+        * (
+            h_xx * pi_xx_s
+            + h_yy * pi_yy_s
+            + h_zz * pi_zz_s
+            + 2.0 * h_xy * pi_xy_s
+            + 2.0 * h_xz * pi_xz_s
+            + 2.0 * h_yz * pi_yz_s
+        )
+    )
 
     # Higher-order fneq relaxed separately
-    fneq_ho = fneq - (4.5 * w19 * (
-        h_xx * pi_xx + h_yy * pi_yy + h_zz * pi_zz
-        + 2.0 * h_xy * pi_xy + 2.0 * h_xz * pi_xz + 2.0 * h_yz * pi_yz
-    ))
+    fneq_ho = fneq - (
+        4.5
+        * w19
+        * (
+            h_xx * pi_xx
+            + h_yy * pi_yy
+            + h_zz * pi_zz
+            + 2.0 * h_xy * pi_xy
+            + 2.0 * h_xz * pi_xz
+            + 2.0 * h_yz * pi_yz
+        )
+    )
     fneq_ho_s = (1.0 - omega_even) * fneq_ho
 
     return feq + fneq_reg + fneq_ho_s

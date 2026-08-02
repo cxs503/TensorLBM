@@ -6,6 +6,7 @@ Run CPU-only so they never contend with GPU jobs:
 
     CUDA_VISIBLE_DEVICES="" PYTHONPATH=src python -m pytest tests/test_dg_advection.py -q
 """
+
 from __future__ import annotations
 
 import math
@@ -90,9 +91,7 @@ class TestP0Equivalence:
 
         axis_aligned = [1, 2, 3, 4]  # D2Q9 dirs (1,0),(0,1),(-1,0),(0,-1)
         vel = C2D.to(DT)
-        advected = dg_advect(
-            f_dg, vel, ops, ndim_spatial=2, dt=1.0, n_substeps=1, scheme="euler"
-        )
+        advected = dg_advect(f_dg, vel, ops, ndim_spatial=2, dt=1.0, n_substeps=1, scheme="euler")
         got = cell_means_from_nodal(advected, node_axes)
 
         expected = stream(f_lbm)
@@ -131,16 +130,16 @@ def _advect_periodic_1d(nx: int, degree: int, n_periods: float = 1.0) -> float:
     # Node positions: cell i, node k at x = i*dx + dx/2*(1+r_k).
     r = torch.tensor(lobatto_nodes(degree), dtype=DT)
     i_idx = torch.arange(nx, dtype=DT).view(nx, 1)
-    x_node = i_idx * dx + (dx / 2.0) * (1.0 + r.view(1, -1))     # (nx, n_node)
+    x_node = i_idx * dx + (dx / 2.0) * (1.0 + r.view(1, -1))  # (nx, n_node)
     x_node = x_node % L
-    f = torch.sin(x_node).unsqueeze(0)                            # (1, nx, n_node)
+    f = torch.sin(x_node).unsqueeze(0)  # (1, nx, n_node)
 
-    vel = torch.tensor([[1.0]], dtype=DT)                        # scalar, c=1
+    vel = torch.tensor([[1.0]], dtype=DT)  # scalar, c=1
     cfl = 0.2
     dt_step = cfl * dx
     T = n_periods * L
     n_steps = int(round(T / dt_step))
-    dt_step = T / n_steps                                         # exact total time
+    dt_step = T / n_steps  # exact total time
     for _ in range(n_steps):
         f = dg_advect(f, vel, ops, ndim_spatial=1, dt=dt_step, n_substeps=1, scheme="rk3")
 
@@ -200,13 +199,11 @@ class TestConservation:
 
         ops = get_ops(degree=1, dx=1.0, dtype=DT)
         f_dg = nodal_from_mean(f_lbm, ops, (3, 4))
-        mass0 = f_dg.sum(dim=(1, 2, 3, 4))     # per-velocity total
+        mass0 = f_dg.sum(dim=(1, 2, 3, 4))  # per-velocity total
 
         vel = C2D.to(DT)
         for _ in range(40):
-            f_dg = dg_advect(
-                f_dg, vel, ops, ndim_spatial=2, dt=0.25, n_substeps=1, scheme="rk3"
-            )
+            f_dg = dg_advect(f_dg, vel, ops, ndim_spatial=2, dt=0.25, n_substeps=1, scheme="rk3")
         mass1 = f_dg.sum(dim=(1, 2, 3, 4))
         drift = ((mass1 - mass0).abs() / mass0.abs().clamp(min=1e-30)).max().item()
         # SSP-RK3 conserves a conserved quantity exactly in exact arithmetic;
@@ -227,8 +224,9 @@ class TestConservation:
         f_dg = nodal_from_mean(f_lbm, ops, (3, 4))
 
         c = C2D.to(DT)
+
         def momentum(fd: torch.Tensor) -> torch.Tensor:
-            flat = fd.sum(dim=(1, 2, 3, 4))           # per-velocity total mass
+            flat = fd.sum(dim=(1, 2, 3, 4))  # per-velocity total mass
             return (c * flat.unsqueeze(1)).sum(dim=0)
 
         p0 = momentum(f_dg)
@@ -264,7 +262,7 @@ class TestShearWaveViscosity:
         ops = get_ops(degree=1, dx=1.0, dtype=DT)
         r = torch.tensor(lobatto_nodes(1), dtype=DT)
         j = torch.arange(ny, dtype=DT).view(ny, 1)
-        y_node = (j + 0.5 * (1.0 + r.view(1, -1))) % ny          # (ny, 2)
+        y_node = (j + 0.5 * (1.0 + r.view(1, -1))) % ny  # (ny, 2)
         ux_node = U0 * torch.sin(2.0 * math.pi * y_node / ny)
         rho = torch.ones(ny, nx, 2, 2, dtype=DT)
         ux = ux_node.view(ny, 1, 2, 1).expand(ny, nx, 2, 2)
@@ -274,13 +272,20 @@ class TestShearWaveViscosity:
         vel = C2D.to(DT)
         for _ in range(n_steps):
             f_dg = dg_lbm_step(
-                f_dg, vel, W2D.to(DT), ops, tau=tau,
-                ndim_spatial=2, dt=1.0, n_substeps=6, scheme="rk3",
+                f_dg,
+                vel,
+                W2D.to(DT),
+                ops,
+                tau=tau,
+                ndim_spatial=2,
+                dt=1.0,
+                n_substeps=6,
+                scheme="rk3",
             )
 
         rho_o, us = macroscopic_dg(f_dg, vel)
-        ux_mean = us[0].mean(dim=(2, 3))                       # (ny, nx)
-        yc = (torch.arange(ny, dtype=DT) + 0.5)
+        ux_mean = us[0].mean(dim=(2, 3))  # (ny, nx)
+        yc = torch.arange(ny, dtype=DT) + 0.5
         amp = (ux_mean.mean(dim=1) * torch.sin(2 * math.pi * yc / ny)).sum().item() * (2.0 / ny)
 
         assert amp > 0, f"τ={tau}: unstable (amp={amp}) — scheme diverged"
@@ -304,13 +309,13 @@ def _advect_periodic_3d(n: int, degree: int, vel: tuple[float, float, float]) ->
     ops = get_ops(degree=degree, dx=dx, dtype=DT)
     r = torch.tensor(lobatto_nodes(degree), dtype=DT)
     i = torch.arange(n, dtype=DT).view(n, 1)
-    pos = (i * dx + (dx / 2.0) * (1.0 + r.view(1, -1))) % L          # (n, n_node)
+    pos = (i * dx + (dx / 2.0) * (1.0 + r.view(1, -1))) % L  # (n, n_node)
     nn = degree + 1
     xb = pos.view(1, 1, n, 1, 1, nn).expand(n, n, n, nn, nn, nn)
     yb = pos.view(1, n, 1, 1, nn, 1).expand(n, n, n, nn, nn, nn)
     zb = pos.view(n, 1, 1, nn, 1, 1).expand(n, n, n, nn, nn, nn)
     f = (torch.sin(xb) * torch.sin(yb) * torch.sin(zb)).unsqueeze(0)  # (1,nz,ny,nx,pz,py,px)
-    v = torch.tensor([list(vel)], dtype=DT)                          # (1,3)
+    v = torch.tensor([list(vel)], dtype=DT)  # (1,3)
     # Time step: one full period along the dominant axis (c=1 ⇒ T=2π).
     # 3D dimension-by-dimension DG has a CFL bound ~1/3 of the 1D limit, so use
     # a conservative CFL well inside the stability region.
@@ -321,12 +326,12 @@ def _advect_periodic_3d(n: int, degree: int, vel: tuple[float, float, float]) ->
     dt = T / nsteps
     for _ in range(nsteps):
         f = dg_advect(f, v, ops, ndim_spatial=3, dt=dt, n_substeps=1, scheme="rk3")
-    exact = (torch.sin(xb) * torch.sin(yb) * torch.sin(zb))
+    exact = torch.sin(xb) * torch.sin(yb) * torch.sin(zb)
     wlob = torch.tensor(_lobatto_weights(degree), dtype=DT)
-    w3 = wlob[:, None, None] * wlob[None, :, None] * wlob[None, None, :]   # (nn,nn,nn)
+    w3 = wlob[:, None, None] * wlob[None, :, None] * wlob[None, None, :]  # (nn,nn,nn)
     err2 = (((f.squeeze(0) - exact) ** 2) * w3.view(1, 1, 1, nn, nn, nn)).sum().item()
     err2 *= (dx / 2.0) ** 3
-    return math.sqrt(err2 / (L ** 3))
+    return math.sqrt(err2 / (L**3))
 
 
 class Test3DAdvection:
@@ -346,7 +351,7 @@ class Test3DAdvection:
         torch.manual_seed(7)
         n = 10
         ops = get_ops(degree=1, dx=1.0, dtype=DT)
-        f = (0.5 + 0.4 * torch.rand(1, n, n, n, 2, 2, 2, dtype=DT))
+        f = 0.5 + 0.4 * torch.rand(1, n, n, n, 2, 2, 2, dtype=DT)
         v = torch.tensor([[1.0, 0.5, -0.5]], dtype=DT)
         m0 = f.sum().item()
         for _ in range(20):
@@ -366,8 +371,8 @@ class Test3DDGLBMViscosity:
         ops = get_ops(degree=1, dx=1.0, dtype=DT)
         r = torch.tensor(lobatto_nodes(1), dtype=DT)
         j = torch.arange(n, dtype=DT).view(n, 1)
-        y_node = (j + 0.5 * (1.0 + r.view(1, -1))) % n               # (n, 2)
-        uxn = U0 * torch.sin(2.0 * math.pi * y_node / n)             # (n, 2)
+        y_node = (j + 0.5 * (1.0 + r.view(1, -1))) % n  # (n, 2)
+        uxn = U0 * torch.sin(2.0 * math.pi * y_node / n)  # (n, 2)
         rho = torch.ones(n, n, n, 2, 2, 2, dtype=DT)
         ux = uxn.view(1, n, 1, 2, 1, 1).expand(n, n, n, 2, 2, 2)
         uy = torch.zeros_like(ux)
@@ -376,18 +381,22 @@ class Test3DDGLBMViscosity:
 
         for _ in range(n_steps):
             f = dg_lbm_step(
-                f, C3D.to(DT), W3D.to(DT), ops, tau=tau,
-                ndim_spatial=3, dt=1.0, n_substeps=8, scheme="rk3",
+                f,
+                C3D.to(DT),
+                W3D.to(DT),
+                ops,
+                tau=tau,
+                ndim_spatial=3,
+                dt=1.0,
+                n_substeps=8,
+                scheme="rk3",
             )
         rho_o, us = macroscopic_dg(f, C3D.to(DT))
-        ux_mean = us[0].mean(dim=(0, 2, 3, 4, 5))                    # keep ny (avg nz,nx,pz,py,px)
-        yc = (torch.arange(n, dtype=DT) + 0.5)
+        ux_mean = us[0].mean(dim=(0, 2, 3, 4, 5))  # keep ny (avg nz,nx,pz,py,px)
+        yc = torch.arange(n, dtype=DT) + 0.5
         amp = (ux_mean * torch.sin(2 * math.pi * yc / n)).sum().item() * (2.0 / n)
         assert amp > 0, f"τ={tau}: unstable (amp={amp})"
         k = 2.0 * math.pi / n
         nu_eff = -math.log(amp / U0) / (k * k * n_steps)
         rel = abs(nu_eff - tau / 3.0) / (tau / 3.0)
-        assert rel < 0.10, f"τ={tau}: 3D ν_eff={nu_eff:.4f} vs τ/3={tau/3.0:.4f}"
-
-
-
+        assert rel < 0.10, f"τ={tau}: 3D ν_eff={nu_eff:.4f} vs τ/3={tau / 3.0:.4f}"

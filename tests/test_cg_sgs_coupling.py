@@ -10,6 +10,7 @@ pattern: ``C_s=0`` ⇒ pure collision, no eddy viscosity).
 
 TDD: this file was written RED before the implementation was GREEN.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -36,8 +37,13 @@ _SGS_MODELS = ["smagorinsky", "wale", "vreman"]
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_cg_state(
-    nz: int = 4, ny: int = 6, nx: int = 8, u_mag: float = 0.03, rho_ratio: float = 2.0,
+    nz: int = 4,
+    ny: int = 6,
+    nx: int = 8,
+    u_mag: float = 0.03,
+    rho_ratio: float = 2.0,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Two-component CG equilibrium with a density ratio and small velocity."""
     torch.manual_seed(42)
@@ -50,7 +56,10 @@ def _make_cg_state(
 
 
 def _make_uniform_cg_state(
-    nz: int = 4, ny: int = 6, nx: int = 8, u_mag: float = 0.03,
+    nz: int = 4,
+    ny: int = 6,
+    nx: int = 8,
+    u_mag: float = 0.03,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Uniform-density CG equilibrium with uniform velocity (identity test)."""
     rho_r = torch.full((nz, ny, nx), 0.6)
@@ -62,11 +71,14 @@ def _make_uniform_cg_state(
 
 
 def _make_droplet_cg_state(
-    nz: int = 12, ny: int = 12, nx: int = 12, radius: float = 4.0, rho_ratio: float = 3.0,
+    nz: int = 12,
+    ny: int = 12,
+    nx: int = 12,
+    radius: float = 4.0,
+    rho_ratio: float = 3.0,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Spherical droplet of red phase inside blue phase (zero velocity)."""
-    zz, yy, xx = torch.meshgrid(
-        torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij")
+    zz, yy, xx = torch.meshgrid(torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij")
     cx, cy, cz = nz // 2, ny // 2, nx // 2
     r = torch.sqrt((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2)
     inside = r < radius
@@ -80,11 +92,13 @@ def _make_droplet_cg_state(
 # Parameter acceptance
 # ---------------------------------------------------------------------------
 
+
 class TestParameterAcceptance:
     """The sgs_model parameter must exist on both public CG stress adapters."""
 
-    @pytest.mark.parametrize("func", [
-        collide_cg_regularized_stress_3d, collide_cg_central_stress_3d])
+    @pytest.mark.parametrize(
+        "func", [collide_cg_regularized_stress_3d, collide_cg_central_stress_3d]
+    )
     @pytest.mark.parametrize("sgs_model", _SGS_MODELS)
     def test_accepts_sgs_model(self, func, sgs_model):
         f_r, f_b = _make_cg_state()
@@ -95,8 +109,9 @@ class TestParameterAcceptance:
         assert red.shape == f_r.shape
         assert blue.shape == f_b.shape
 
-    @pytest.mark.parametrize("func", [
-        collide_cg_regularized_stress_3d, collide_cg_central_stress_3d])
+    @pytest.mark.parametrize(
+        "func", [collide_cg_regularized_stress_3d, collide_cg_central_stress_3d]
+    )
     def test_invalid_sgs_model_raises(self, func):
         f_r, f_b = _make_cg_state()
         with pytest.raises(ValueError, match="sgs_model"):
@@ -107,34 +122,46 @@ class TestParameterAcceptance:
 # Default behaviour unchanged
 # ---------------------------------------------------------------------------
 
+
 class TestDefaultUnchanged:
     """Default call (no sgs_model, C_s=0) must equal the pre-SGS scalar-tau path."""
 
-    @pytest.mark.parametrize("func", [
-        collide_cg_regularized_stress_3d, collide_cg_central_stress_3d])
+    @pytest.mark.parametrize(
+        "func", [collide_cg_regularized_stress_3d, collide_cg_central_stress_3d]
+    )
     def test_default_equals_explicit_smagorinsky_zero_cs(self, func):
         f_r, f_b = _make_cg_state()
         default = func(f_r.clone(), f_b.clone(), tau=0.85)
         explicit = func(
-            f_r.clone(), f_b.clone(), tau=0.85,
-            sgs_model="smagorinsky", C_s=0.0,
+            f_r.clone(),
+            f_b.clone(),
+            tau=0.85,
+            sgs_model="smagorinsky",
+            C_s=0.0,
         )
         torch.testing.assert_close(default[0], explicit[0])
         torch.testing.assert_close(default[1], explicit[1])
 
-    @pytest.mark.parametrize("func", [
-        collide_cg_regularized_stress_3d, collide_cg_central_stress_3d])
+    @pytest.mark.parametrize(
+        "func", [collide_cg_regularized_stress_3d, collide_cg_central_stress_3d]
+    )
     def test_default_equals_sgs_none(self, func):
         """sgs_model='smagorinsky' with C_s=0 is a no-op (scalar tau)."""
         f_r, f_b = _make_cg_state()
         ref = func(f_r.clone(), f_b.clone(), tau=0.85)
         wale_zero = func(
-            f_r.clone(), f_b.clone(), tau=0.85,
-            sgs_model="wale", C_w=0.0,
+            f_r.clone(),
+            f_b.clone(),
+            tau=0.85,
+            sgs_model="wale",
+            C_w=0.0,
         )
         vreman_zero = func(
-            f_r.clone(), f_b.clone(), tau=0.85,
-            sgs_model="vreman", C_V=0.0,
+            f_r.clone(),
+            f_b.clone(),
+            tau=0.85,
+            sgs_model="vreman",
+            C_V=0.0,
         )
         torch.testing.assert_close(ref[0], wale_zero[0], atol=1e-6, rtol=1e-6)
         torch.testing.assert_close(ref[1], wale_zero[1], atol=1e-6, rtol=1e-6)
@@ -145,6 +172,7 @@ class TestDefaultUnchanged:
 # ---------------------------------------------------------------------------
 # WALE coupling contract
 # ---------------------------------------------------------------------------
+
 
 class TestWALECoupling:
     def test_shape(self):
@@ -184,8 +212,7 @@ class TestWALECoupling:
     def test_central_stress_variant(self):
         """Central-stress adapter also accepts WALE."""
         f_r, f_b = _make_cg_state()
-        red, blue = collide_cg_central_stress_3d(
-            f_r, f_b, tau=0.8, sgs_model="wale", s_bulk=1.3)
+        red, blue = collide_cg_central_stress_3d(f_r, f_b, tau=0.8, sgs_model="wale", s_bulk=1.3)
         assert torch.isfinite(red).all()
         assert torch.isfinite(blue).all()
 
@@ -193,6 +220,7 @@ class TestWALECoupling:
 # ---------------------------------------------------------------------------
 # Vreman coupling contract
 # ---------------------------------------------------------------------------
+
 
 class TestVremanCoupling:
     def test_shape(self):
@@ -230,8 +258,7 @@ class TestVremanCoupling:
 
     def test_central_stress_variant(self):
         f_r, f_b = _make_cg_state()
-        red, blue = collide_cg_central_stress_3d(
-            f_r, f_b, tau=0.8, sgs_model="vreman", s_bulk=1.3)
+        red, blue = collide_cg_central_stress_3d(f_r, f_b, tau=0.8, sgs_model="vreman", s_bulk=1.3)
         assert torch.isfinite(red).all()
         assert torch.isfinite(blue).all()
 
@@ -240,30 +267,35 @@ class TestVremanCoupling:
 # Smagorinsky coupling contract (C_s > 0)
 # ---------------------------------------------------------------------------
 
+
 class TestSmagorinskyCoupling:
     def test_shape(self):
         f_r, f_b = _make_cg_state()
         red, blue = collide_cg_regularized_stress_3d(
-            f_r, f_b, tau=0.8, sgs_model="smagorinsky", C_s=0.1)
+            f_r, f_b, tau=0.8, sgs_model="smagorinsky", C_s=0.1
+        )
         assert red.shape == f_r.shape
 
     def test_finite(self):
         f_r, f_b = _make_cg_state()
         red, blue = collide_cg_regularized_stress_3d(
-            f_r, f_b, tau=0.8, sgs_model="smagorinsky", C_s=0.1)
+            f_r, f_b, tau=0.8, sgs_model="smagorinsky", C_s=0.1
+        )
         assert torch.isfinite(red).all()
 
     def test_mass_conservation(self):
         f_r, f_b = _make_cg_state()
         mass_before = (f_r + f_b).sum()
         red, blue = collide_cg_regularized_stress_3d(
-            f_r, f_b, tau=0.8, sgs_model="smagorinsky", C_s=0.1)
+            f_r, f_b, tau=0.8, sgs_model="smagorinsky", C_s=0.1
+        )
         assert torch.allclose((red + blue).sum(), mass_before, atol=1e-4)
 
     def test_equilibrium_identity(self):
         f_r, f_b = _make_uniform_cg_state()
         red, blue = collide_cg_regularized_stress_3d(
-            f_r, f_b, tau=0.8, sgs_model="smagorinsky", C_s=0.1)
+            f_r, f_b, tau=0.8, sgs_model="smagorinsky", C_s=0.1
+        )
         torch.testing.assert_close(red, f_r, atol=1e-5, rtol=1e-5)
         torch.testing.assert_close(blue, f_b, atol=1e-5, rtol=1e-5)
 
@@ -277,13 +309,15 @@ class TestSmagorinskyCoupling:
         f_b = f_b + 1e-3 * torch.randn_like(f_b)
         ref, _ = collide_cg_regularized_stress_3d(f_r.clone(), f_b.clone(), tau=0.8)
         sgs, _ = collide_cg_regularized_stress_3d(
-            f_r.clone(), f_b.clone(), tau=0.8, sgs_model="smagorinsky", C_s=0.15)
+            f_r.clone(), f_b.clone(), tau=0.8, sgs_model="smagorinsky", C_s=0.15
+        )
         assert not torch.equal(ref, sgs)
 
 
 # ---------------------------------------------------------------------------
 # Stability: static droplet with streaming
 # ---------------------------------------------------------------------------
+
 
 class TestStability:
     @pytest.mark.parametrize("sgs_model", _SGS_MODELS)
@@ -296,7 +330,8 @@ class TestStability:
             kwargs["C_s"] = 0.1
         for _ in range(20):
             f_r, f_b = collide_cg_regularized_stress_3d(
-                f_r, f_b, tau=0.9, A=0.04, beta=0.7, **kwargs)
+                f_r, f_b, tau=0.9, A=0.04, beta=0.7, **kwargs
+            )
             f_r = stream3d(f_r)
             f_b = stream3d(f_b)
         assert torch.isfinite(f_r).all()
@@ -310,7 +345,8 @@ class TestStability:
         mass0 = (f_r + f_b).sum()
         for _ in range(15):
             f_r, f_b = collide_cg_regularized_stress_3d(
-                f_r, f_b, tau=0.95, A=0.04, beta=0.7, sgs_model=sgs_model)
+                f_r, f_b, tau=0.95, A=0.04, beta=0.7, sgs_model=sgs_model
+            )
             f_r = stream3d(f_r)
             f_b = stream3d(f_b)
         assert torch.isfinite(f_r).all()
@@ -321,6 +357,7 @@ class TestStability:
 # ---------------------------------------------------------------------------
 # Capability contract matrix
 # ---------------------------------------------------------------------------
+
 
 class TestCapabilityContractCGSGS:
     def test_matrix_includes_cg_collision_type(self):

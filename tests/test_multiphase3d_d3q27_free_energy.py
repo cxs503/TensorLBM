@@ -8,6 +8,7 @@ Verifies:
       bounded over many collision+stream steps
     - D3Q27 vs D3Q19 structural parity: same algorithmic pattern, 27 directions
 """
+
 from __future__ import annotations
 
 import pytest
@@ -30,8 +31,11 @@ DEVICE = torch.device("cpu")
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_fe_state_27(
-    nz: int = 5, ny: int = 6, nx: int = 8,
+    nz: int = 5,
+    ny: int = 6,
+    nx: int = 8,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Equilibrium f and a random-phase g for D3Q27 free-energy tests."""
     rho = torch.ones((nz, ny, nx), device=DEVICE)
@@ -45,6 +49,7 @@ def _make_fe_state_27(
 # ---------------------------------------------------------------------------
 # init_free_energy_g_3d_27
 # ---------------------------------------------------------------------------
+
 
 class TestInitFreeEnergyG27:
     def test_output_shape(self) -> None:
@@ -81,14 +86,15 @@ class TestInitFreeEnergyG27:
         w = W27.to(DEVICE).view(27, 1, 1, 1)
         cx = c[:, 0].view(27, 1, 1, 1)
         cu = cx * ux.unsqueeze(0)
-        u_sq = (ux ** 2).unsqueeze(0)
-        expected = w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+        u_sq = (ux**2).unsqueeze(0)
+        expected = w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
         assert torch.allclose(g, expected, atol=1e-6)
 
 
 # ---------------------------------------------------------------------------
 # free_energy_step_3d_27 — basic properties
 # ---------------------------------------------------------------------------
+
 
 class TestFreeEnergyStep27Basic:
     def test_output_shapes(self) -> None:
@@ -132,6 +138,7 @@ class TestFreeEnergyStep27Basic:
 # free_energy_step_3d_27 — reference formula match
 # ---------------------------------------------------------------------------
 
+
 class TestFreeEnergyStep27ReferenceFormula:
     def test_matches_reference_formula(self) -> None:
         """The D3Q27 step must match the explicit reference formula."""
@@ -146,17 +153,32 @@ class TestFreeEnergyStep27ReferenceFormula:
         # The production step obtains the order parameter from g's zeroth moment.
         phi = g.sum(dim=0)
         kwargs = dict(
-            tau_f=0.9, tau_g=0.8, A=0.11, B=0.13, kappa=0.02,
-            Gamma=0.4, gx=0.001, gy=-0.002, gz=0.003,
+            tau_f=0.9,
+            tau_g=0.8,
+            A=0.11,
+            B=0.13,
+            kappa=0.02,
+            Gamma=0.4,
+            gx=0.001,
+            gy=-0.002,
+            gz=0.003,
         )
         got_f, got_g = free_energy_step_3d_27(f, g, **kwargs)
 
         # Chemical potential (periodic 7-point Laplacian)
-        mu = -kwargs["A"] * phi + kwargs["B"] * phi ** 3 - kwargs["kappa"] * (
-            torch.roll(phi, 1, 2) + torch.roll(phi, -1, 2)
-            + torch.roll(phi, 1, 1) + torch.roll(phi, -1, 1)
-            + torch.roll(phi, 1, 0) + torch.roll(phi, -1, 0)
-            - 6.0 * phi
+        mu = (
+            -kwargs["A"] * phi
+            + kwargs["B"] * phi**3
+            - kwargs["kappa"]
+            * (
+                torch.roll(phi, 1, 2)
+                + torch.roll(phi, -1, 2)
+                + torch.roll(phi, 1, 1)
+                + torch.roll(phi, -1, 1)
+                + torch.roll(phi, 1, 0)
+                + torch.roll(phi, -1, 0)
+                - 6.0 * phi
+            )
         )
         grad_x = 0.5 * (torch.roll(mu, -1, 2) - torch.roll(mu, 1, 2))
         grad_y = 0.5 * (torch.roll(mu, -1, 1) - torch.roll(mu, 1, 1))
@@ -179,11 +201,10 @@ class TestFreeEnergyStep27ReferenceFormula:
             + cv[:, 1].view(27, 1, 1, 1) * uy
             + cv[:, 2].view(27, 1, 1, 1) * uz
         )
-        u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
-        expected_g_eq = (
-            w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
-            + w * kwargs["Gamma"] * (csq / (1.0 / 3.0) - 3.0) * mu.unsqueeze(0)
-        )
+        u_sq = (ux**2 + uy**2 + uz**2).unsqueeze(0)
+        expected_g_eq = w * phi.unsqueeze(0) * (
+            1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq
+        ) + w * kwargs["Gamma"] * (csq / (1.0 / 3.0) - 3.0) * mu.unsqueeze(0)
         expected_g = g - (g - expected_g_eq) / kwargs["tau_g"]
 
         assert torch.equal(got_f, expected_f)
@@ -193,6 +214,7 @@ class TestFreeEnergyStep27ReferenceFormula:
 # ---------------------------------------------------------------------------
 # free_energy_step_3d_27 — uniform phase stability
 # ---------------------------------------------------------------------------
+
 
 class TestFreeEnergyStep27UniformPhase:
     def test_uniform_phi_stable(self) -> None:
@@ -232,6 +254,7 @@ class TestFreeEnergyStep27UniformPhase:
 # free_energy_step_3d_27 — SGS model option
 # ---------------------------------------------------------------------------
 
+
 class TestFreeEnergyStep27SGS:
     def test_smagorinsky_finite(self) -> None:
         f, g = _make_fe_state_27()
@@ -261,12 +284,17 @@ class TestFreeEnergyStep27SGS:
 # free_energy_step_3d_27 — buoyancy option
 # ---------------------------------------------------------------------------
 
+
 class TestFreeEnergyStep27Buoyancy:
     def test_buoyancy_finite(self) -> None:
         """Boussinesq buoyancy with rho_heavy/rho_light should be finite."""
         f, g = _make_fe_state_27()
         f_out, g_out = free_energy_step_3d_27(
-            f, g, gz=-1e-4, rho_heavy=1.0, rho_light=0.5,
+            f,
+            g,
+            gz=-1e-4,
+            rho_heavy=1.0,
+            rho_light=0.5,
         )
         assert torch.isfinite(f_out).all()
         assert torch.isfinite(g_out).all()
@@ -275,6 +303,7 @@ class TestFreeEnergyStep27Buoyancy:
 # ---------------------------------------------------------------------------
 # Static droplet stability (D3Q27 free-energy)
 # ---------------------------------------------------------------------------
+
 
 class TestStaticDroplet27FreeEnergy:
     def test_droplet_remains_finite(self) -> None:
@@ -285,7 +314,9 @@ class TestStaticDroplet27FreeEnergy:
         # Match interface_width to the free-energy parameters:
         #   width = sqrt(2*kappa/A) = sqrt(2*0.02/0.04) = 1.0
         phi = initialize_static_droplet(
-            (nz, ny, nx), radius=6.0, interface_width=1.0,
+            (nz, ny, nx),
+            radius=6.0,
+            interface_width=1.0,
         )
 
         rho = torch.ones_like(phi)
@@ -295,7 +326,14 @@ class TestStaticDroplet27FreeEnergy:
 
         for _ in range(50):
             f, g = free_energy_step_3d_27(
-                f, g, tau_f=1.0, tau_g=0.7, A=0.04, B=0.04, kappa=0.02, Gamma=0.5,
+                f,
+                g,
+                tau_f=1.0,
+                tau_g=0.7,
+                A=0.04,
+                B=0.04,
+                kappa=0.02,
+                Gamma=0.5,
             )
             f = stream27(f)
             g = stream27(g)
@@ -315,7 +353,9 @@ class TestStaticDroplet27FreeEnergy:
 
         nz, ny, nx = 20, 20, 20
         phi = initialize_static_droplet(
-            (nz, ny, nx), radius=5.0, interface_width=1.0,
+            (nz, ny, nx),
+            radius=5.0,
+            interface_width=1.0,
         )
 
         rho = torch.ones_like(phi)
@@ -326,7 +366,14 @@ class TestStaticDroplet27FreeEnergy:
         phi0 = g.sum()
         for _ in range(50):
             f, g = free_energy_step_3d_27(
-                f, g, tau_f=1.0, tau_g=0.7, A=0.04, B=0.04, kappa=0.02, Gamma=0.5,
+                f,
+                g,
+                tau_f=1.0,
+                tau_g=0.7,
+                A=0.04,
+                B=0.04,
+                kappa=0.02,
+                Gamma=0.5,
             )
             f = stream27(f)
             g = stream27(g)
@@ -339,6 +386,7 @@ class TestStaticDroplet27FreeEnergy:
 # ---------------------------------------------------------------------------
 # D3Q27 vs D3Q19 structural parity
 # ---------------------------------------------------------------------------
+
 
 class TestD3Q27VsD3Q19Parity:
     def test_both_lattices_zero_force_for_uniform_phi(self) -> None:
@@ -370,6 +418,7 @@ class TestD3Q27VsD3Q19Parity:
         # D3Q19
         from tensorlbm.d3q19 import C as C19
         from tensorlbm.d3q19 import W as W19
+
         c19 = C19.float()
         w19 = W19.float()
         csq19 = c19[:, 0] ** 2 + c19[:, 1] ** 2 + c19[:, 2] ** 2

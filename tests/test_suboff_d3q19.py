@@ -1,4 +1,5 @@
 """Regression tests for D3Q19 SUBOFF drag bookkeeping."""
+
 from __future__ import annotations
 
 import importlib.util

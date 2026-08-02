@@ -63,7 +63,9 @@ def test_initializer_validates_tensor_geometry_parameters():
 
 
 def test_laplace_style_diagnostic_is_explicitly_withheld_without_pressure_field():
-    phi = initialize_static_droplet((25, 25, 25), radius=4.0, interface_width=1.0, dtype=torch.float64)
+    phi = initialize_static_droplet(
+        (25, 25, 25), radius=4.0, interface_width=1.0, dtype=torch.float64
+    )
     result = diagnose_static_droplet(phi, DoubleWellFreeEnergy(A=0.1, B=0.1, kappa=0.02))
 
     assert result.status == "diagnostic_only"

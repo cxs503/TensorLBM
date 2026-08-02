@@ -10,6 +10,7 @@ RED phase: the probe module does not exist yet, so these tests fail on import.
 GREEN phase: after creating ``tensorlbm.d3q27_composition_evidence``, all
 tests pass and the machine-readable artifact is produced.
 """
+
 from __future__ import annotations
 
 import json
@@ -30,18 +31,22 @@ from tensorlbm.d3q27_composition_evidence import (
 # Probe existence and version
 # ---------------------------------------------------------------------------
 
+
 def test_probe_version_is_declared() -> None:
     assert D3Q27_COMPOSITION_EVIDENCE_VERSION == "d3q27-composition-evidence-r1"
 
 
 def test_expected_source_hash_matches_existing_audit() -> None:
     """The source hash must match the one already locked by the consistency audit."""
-    assert EXPECTED_SOURCE_SHA256 == "4b1b55bf7b2aae49857f22d261e75666765764f5eeeb37050f105a17bafc10b5"
+    assert (
+        EXPECTED_SOURCE_SHA256 == "4b1b55bf7b2aae49857f22d261e75666765764f5eeeb37050f105a17bafc10b5"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Probe execution and machine-readable artifact
 # ---------------------------------------------------------------------------
+
 
 def test_probe_returns_machine_readable_artifact() -> None:
     artifact = run_d3q27_mrt_composition_probe()
@@ -68,6 +73,7 @@ def test_probe_config_is_reproducible() -> None:
 # ---------------------------------------------------------------------------
 # Five component-level checks (all must PASS)
 # ---------------------------------------------------------------------------
+
 
 def test_check_equilibrium_fixed_point_passes() -> None:
     artifact = run_d3q27_mrt_composition_probe()
@@ -124,6 +130,7 @@ def test_check_source_hash_passes() -> None:
 # All checks pass → component_contract tier
 # ---------------------------------------------------------------------------
 
+
 def test_all_checks_pass_yields_component_contract_tier() -> None:
     artifact = run_d3q27_mrt_composition_probe()
 
@@ -135,6 +142,7 @@ def test_all_checks_pass_yields_component_contract_tier() -> None:
 # ---------------------------------------------------------------------------
 # WITHHELD complete composition aspects
 # ---------------------------------------------------------------------------
+
 
 def test_withheld_composition_aspects_are_documented() -> None:
     artifact = run_d3q27_mrt_composition_probe()
@@ -168,6 +176,7 @@ def test_capability_matrix_cross_reference_is_honest() -> None:
 # Artifact integrity
 # ---------------------------------------------------------------------------
 
+
 def test_artifact_has_sha256_self_hash() -> None:
     artifact = run_d3q27_mrt_composition_probe()
     assert "artifact_sha256" in artifact
@@ -187,6 +196,7 @@ def test_artifact_is_json_serializable() -> None:
 # Probe is deterministic across repeated calls
 # ---------------------------------------------------------------------------
 
+
 def test_probe_is_deterministic_across_calls() -> None:
     a1 = run_d3q27_mrt_composition_probe()
     a2 = run_d3q27_mrt_composition_probe()
@@ -198,6 +208,7 @@ def test_probe_is_deterministic_across_calls() -> None:
 # ---------------------------------------------------------------------------
 # Documentation artifact exists
 # ---------------------------------------------------------------------------
+
 
 def test_documentation_artifact_is_present() -> None:
     document = Path(__file__).parents[1] / "docs" / "d3q27_composition_evidence_r1.md"

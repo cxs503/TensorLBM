@@ -10,9 +10,7 @@ from tensorlbm.phasefield.ch_validation import (
 def test_uniform_phase_has_zero_periodic_capillary_force():
     phi = torch.full((3, 4, 5), 0.25, dtype=torch.float32)
 
-    force_x, force_y, force_z = uniform_phase_capillary_force(
-        phi, A=0.1, B=0.1, kappa=0.02
-    )
+    force_x, force_y, force_z = uniform_phase_capillary_force(phi, A=0.1, B=0.1, kappa=0.02)
 
     assert torch.count_nonzero(force_x) == 0
     assert torch.count_nonzero(force_y) == 0

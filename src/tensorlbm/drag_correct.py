@@ -11,6 +11,7 @@ Two independent methods that should give the same result:
 Both methods require knowing which directions cross the wall for each
 individual near-wall cell — the wall normal varies across the surface.
 """
+
 import torch
 from typing import Tuple
 
@@ -87,9 +88,11 @@ def momentum_exchange_drag(
 
         # Direction i crosses from fluid INTO solid if c_i · n < 0
         # (normal points from solid TO fluid, so INTO solid means opposite)
-        c_dot_n = (ci_x * wall_normal[:, :, :, 0]
-                 + ci_y * wall_normal[:, :, :, 1]
-                 + ci_z * wall_normal[:, :, :, 2])
+        c_dot_n = (
+            ci_x * wall_normal[:, :, :, 0]
+            + ci_y * wall_normal[:, :, :, 1]
+            + ci_z * wall_normal[:, :, :, 2]
+        )
 
         # Link crosses from fluid into solid
         crossing = (c_dot_n < -0.01) & near
@@ -122,6 +125,7 @@ def pressure_integration_drag(
         drag_pressure_x: float.
     """
     from .d3q19 import macroscopic3d
+
     rho, _, _, _ = macroscopic3d(f)
     p = (rho - 1.0) / 3.0
 
@@ -160,21 +164,23 @@ def total_drag_bounce_back(
     wall_n = get_wall_normal(solid, near)
 
     from .d3q19 import C
+
     fx_m, fy_m, fz_m = momentum_exchange_drag(f, solid, near, wall_n, C)
     fx_p = pressure_integration_drag(f, solid, near, wall_n)
 
     return {
-        'Fx_momentum': fx_m,
-        'Fy_momentum': fy_m,
-        'Fz_momentum': fz_m,
-        'Fx_pressure': fx_p,
-        'ratio': fx_m / fx_p if abs(fx_p) > 1e-10 else float('inf'),
+        "Fx_momentum": fx_m,
+        "Fy_momentum": fy_m,
+        "Fz_momentum": fz_m,
+        "Fx_pressure": fx_p,
+        "ratio": fx_m / fx_p if abs(fx_p) > 1e-10 else float("inf"),
     }
 
 
 # ── Test ──
-if __name__ == '__main__':
+if __name__ == "__main__":
     import time
+
     print("Drag computation module compiled OK.")
     print("Key fix: wall-normal aware momentum exchange + pressure integration.")
     print("Previous: uniform sum over 9 pairs → over-counted + wrong sign.")

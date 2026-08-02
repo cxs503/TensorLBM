@@ -17,6 +17,7 @@ Shan & Chen (1993) Phys. Rev. E 47 1815
 Shan & Chen (1994) Phys. Rev. E 49 2941
 Qian (1992) for D3Q27 lattice weights
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -49,9 +50,7 @@ _VALID_SGS_MODELS = ("smagorinsky", "wale", "vreman")
 def _validate_sgs_model(sgs_model: str) -> None:
     """Validate the SGS model selector, raising ValueError if unknown."""
     if sgs_model not in _VALID_SGS_MODELS:
-        raise ValueError(
-            f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}"
-        )
+        raise ValueError(f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}")
 
 
 def _compute_tau_eff(
@@ -75,6 +74,7 @@ def _compute_tau_eff(
     # vreman
     return _nu_t_to_tau_eff(tau, _vreman_nu_t_3d(ux, uy, uz, C_s))
 
+
 _CS2 = 1.0 / 3.0
 
 # Cache for SC neighbour-sum gather indices keyed by (nz, ny, nx, device_type, device_index)
@@ -92,6 +92,7 @@ def _w_on_27(device: torch.device) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Shan-Chen neighborhood sum for D3Q27
 # ---------------------------------------------------------------------------
+
 
 def _sc_neighbor_weighted_sum_27(
     psi: torch.Tensor,
@@ -118,8 +119,8 @@ def _sc_neighbor_weighted_sum_27(
 
     device = psi.device
     nz, ny, nx = psi.shape[-3], psi.shape[-2], psi.shape[-1]
-    c = _c_on_27(device)   # (27, 3)  int64
-    w = _w_on_27(device)   # (27,)    float32
+    c = _c_on_27(device)  # (27, 3)  int64
+    w = _w_on_27(device)  # (27,)    float32
 
     # Build and cache gather index tensors (one-time cost per unique shape/device)
     cache_key = (nz, ny, nx, device.type, device.index)
@@ -138,7 +139,7 @@ def _sc_neighbor_weighted_sum_27(
 
     z_idx, y_idx, x_idx = _sc27_cache[cache_key]
     # psi_shifts: (27, nz, ny, nx) – all shifted copies gathered in one operation
-    psi_shifts = psi[z_idx, y_idx, x_idx]   # advanced-index gather, no Python loop
+    psi_shifts = psi[z_idx, y_idx, x_idx]  # advanced-index gather, no Python loop
 
     # w * c components: (27, 1, 1, 1) for broadcasting over (nz, ny, nx)
     cx_float = c[:, 0].float().view(27, 1, 1, 1)
@@ -146,15 +147,16 @@ def _sc_neighbor_weighted_sum_27(
     cz_float = c[:, 2].float().view(27, 1, 1, 1)
     w_4d = w.view(27, 1, 1, 1)
 
-    Fx = (w_4d * cx_float * psi_shifts).sum(0)   # (nz, ny, nx)
-    Fy = (w_4d * cy_float * psi_shifts).sum(0)   # (nz, ny, nx)
-    Fz = (w_4d * cz_float * psi_shifts).sum(0)   # (nz, ny, nx)
+    Fx = (w_4d * cx_float * psi_shifts).sum(0)  # (nz, ny, nx)
+    Fy = (w_4d * cy_float * psi_shifts).sum(0)  # (nz, ny, nx)
+    Fz = (w_4d * cz_float * psi_shifts).sum(0)  # (nz, ny, nx)
     return Fx, Fy, Fz
 
 
 # ---------------------------------------------------------------------------
 # Shan-Chen two-component (D3Q27)
 # ---------------------------------------------------------------------------
+
 
 def sc_two_component_force_27(
     rho1: torch.Tensor,
@@ -164,8 +166,7 @@ def sc_two_component_force_27(
     gy: float = 0.0,
     gz: float = 0.0,
     solid_mask: torch.Tensor | None = None,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor,
-           torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Shan-Chen interaction + body forces for two D3Q27 components.
 
     Args:
@@ -240,7 +241,13 @@ def collide_sc_two_component_27(
     rho2, ux2, uy2, uz2 = macroscopic27(f2)
 
     Fx1, Fy1, Fz1, Fx2, Fy2, Fz2 = sc_two_component_force_27(
-        rho1, rho2, G_12, gx, gy, gz, solid_mask,
+        rho1,
+        rho2,
+        G_12,
+        gx,
+        gy,
+        gz,
+        solid_mask,
     )
 
     rho1_s = torch.clamp(rho1, min=1e-12)
@@ -249,11 +256,29 @@ def collide_sc_two_component_27(
     if use_guo:
         # --- Guo forcing (second-order, waLBerla pattern) ---
         f1_out, f2_out = _bgk_collision_guo_27(
-            f1, f2, rho1, rho2, ux1, uy1, uz1, ux2, uy2, uz2,
-            Fx1, Fy1, Fz1, Fx2, Fy2, Fz2,
-            tau1, tau2, device,
-            C_s=C_s, sgs_model=sgs_model,
-            rho1_s=rho1_s, rho2_s=rho2_s,
+            f1,
+            f2,
+            rho1,
+            rho2,
+            ux1,
+            uy1,
+            uz1,
+            ux2,
+            uy2,
+            uz2,
+            Fx1,
+            Fy1,
+            Fz1,
+            Fx2,
+            Fy2,
+            Fz2,
+            tau1,
+            tau2,
+            device,
+            C_s=C_s,
+            sgs_model=sgs_model,
+            rho1_s=rho1_s,
+            rho2_s=rho2_s,
         )
     else:
         # --- Velocity-shift (first-order, original TensorLBM) ---
@@ -271,10 +296,24 @@ def collide_sc_two_component_27(
         )
         if C_s > 0.0:
             tau_eff1 = _compute_tau_eff(
-                sgs_model, tau1, f1 - feq1, rho1_s, ux1, uy1, uz1, C_s,
+                sgs_model,
+                tau1,
+                f1 - feq1,
+                rho1_s,
+                ux1,
+                uy1,
+                uz1,
+                C_s,
             )
             tau_eff2 = _compute_tau_eff(
-                sgs_model, tau2, f2 - feq2, rho2_s, ux2, uy2, uz2, C_s,
+                sgs_model,
+                tau2,
+                f2 - feq2,
+                rho2_s,
+                ux2,
+                uy2,
+                uz2,
+                C_s,
             )
             f1_out = f1 - (f1 - feq1) / tau_eff1.unsqueeze(0)
             f2_out = f2 - (f2 - feq2) / tau_eff2.unsqueeze(0)
@@ -363,10 +402,24 @@ def _bgk_collision_guo_27(
     # Compute per-cell effective relaxation time if SGS is enabled
     if C_s > 0.0:
         tau_eff1 = _compute_tau_eff(
-            sgs_model, tau1, f1 - feq1, rho1_s, ux1, uy1, uz1, C_s,
+            sgs_model,
+            tau1,
+            f1 - feq1,
+            rho1_s,
+            ux1,
+            uy1,
+            uz1,
+            C_s,
         )
         tau_eff2 = _compute_tau_eff(
-            sgs_model, tau2, f2 - feq2, rho2_s, ux2, uy2, uz2, C_s,
+            sgs_model,
+            tau2,
+            f2 - feq2,
+            rho2_s,
+            ux2,
+            uy2,
+            uz2,
+            C_s,
         )
         # Broadcast (nz, ny, nx) → (1, nz, ny, nx) for division over 27 dirs
         tau_eff1_b = tau_eff1.unsqueeze(0)
@@ -384,13 +437,21 @@ def _bgk_collision_guo_27(
 
     # Guo correction term for component 1
     cu1 = cx * ux1.unsqueeze(0) + cy * uy1.unsqueeze(0) + cz * uz1.unsqueeze(0)
-    term_a1 = (cx - ux1.unsqueeze(0)) * Fx1.unsqueeze(0) + (cy - uy1.unsqueeze(0)) * Fy1.unsqueeze(0) + (cz - uz1.unsqueeze(0)) * Fz1.unsqueeze(0)
+    term_a1 = (
+        (cx - ux1.unsqueeze(0)) * Fx1.unsqueeze(0)
+        + (cy - uy1.unsqueeze(0)) * Fy1.unsqueeze(0)
+        + (cz - uz1.unsqueeze(0)) * Fz1.unsqueeze(0)
+    )
     term_b1 = cu1 * (cx * Fx1.unsqueeze(0) + cy * Fy1.unsqueeze(0) + cz * Fz1.unsqueeze(0))
     delta_f1 = guo_factor1 * w * (term_a1 / cs2 + term_b1 / cs4)
 
     # Guo correction term for component 2
     cu2 = cx * ux2.unsqueeze(0) + cy * uy2.unsqueeze(0) + cz * uz2.unsqueeze(0)
-    term_a2 = (cx - ux2.unsqueeze(0)) * Fx2.unsqueeze(0) + (cy - uy2.unsqueeze(0)) * Fy2.unsqueeze(0) + (cz - uz2.unsqueeze(0)) * Fz2.unsqueeze(0)
+    term_a2 = (
+        (cx - ux2.unsqueeze(0)) * Fx2.unsqueeze(0)
+        + (cy - uy2.unsqueeze(0)) * Fy2.unsqueeze(0)
+        + (cz - uz2.unsqueeze(0)) * Fz2.unsqueeze(0)
+    )
     term_b2 = cu2 * (cx * Fx2.unsqueeze(0) + cy * Fy2.unsqueeze(0) + cz * Fz2.unsqueeze(0))
     delta_f2 = guo_factor2 * w * (term_a2 / cs2 + term_b2 / cs4)
 
@@ -400,6 +461,7 @@ def _bgk_collision_guo_27(
 # ---------------------------------------------------------------------------
 # Shan-Chen single-component (D3Q27)
 # ---------------------------------------------------------------------------
+
 
 def collide_sc_single_component_27(
     f: torch.Tensor,
@@ -450,7 +512,14 @@ def collide_sc_single_component_27(
     )
     if C_s > 0.0:
         tau_eff = _compute_tau_eff(
-            sgs_model, tau, f - feq, rho_s, ux, uy, uz, C_s,
+            sgs_model,
+            tau,
+            f - feq,
+            rho_s,
+            ux,
+            uy,
+            uz,
+            C_s,
         )
         f_out = f - (f - feq) / tau_eff.unsqueeze(0)
     else:
@@ -479,6 +548,7 @@ __all__ = [
     "psi_carnahan_starling",
     "psi_peng_robinson",
 ]
+
 
 def init_free_energy_g_3d_27(
     phi: torch.Tensor,
@@ -512,8 +582,8 @@ def init_free_energy_g_3d_27(
     cy = c[:, 1].float().view(27, 1, 1, 1)
     cz = c[:, 2].float().view(27, 1, 1, 1)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
-    u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
-    return w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+    u_sq = (ux**2 + uy**2 + uz**2).unsqueeze(0)
+    return w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
 
 
 def free_energy_step_3d_27(
@@ -531,7 +601,7 @@ def free_energy_step_3d_27(
     rho_heavy: float | None = None,
     rho_light: float | None = None,
     C_s: float = 0.0,
-    sgs_model: str = 'smagorinsky',
+    sgs_model: str = "smagorinsky",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy two-phase step for D3Q27.
 
@@ -575,11 +645,9 @@ def free_energy_step_3d_27(
     Returns:
         Updated ``(f, g)`` after one collision step.
     """
-    _VALID_SGS_MODELS = ('smagorinsky', 'wale', 'vreman')
+    _VALID_SGS_MODELS = ("smagorinsky", "wale", "vreman")
     if sgs_model not in _VALID_SGS_MODELS:
-        raise ValueError(
-            f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}"
-        )
+        raise ValueError(f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}")
     device = f.device
     c = _c_on_27(device)
     w = _w_on_27(device)
@@ -600,9 +668,7 @@ def free_energy_step_3d_27(
         rho_eff = rho
 
     # Chemical potential and Korteweg force (lattice-agnostic, periodic stencil)
-    mu = DoubleWellFreeEnergy(A=A, B=B, kappa=kappa).chemical_potential(
-        phi, boundary="periodic"
-    )
+    mu = DoubleWellFreeEnergy(A=A, B=B, kappa=kappa).chemical_potential(phi, boundary="periodic")
     force_x, force_y, force_z = force_minus_phi_grad_mu(phi, mu, boundary="periodic")
     Fx = force_x + rho_eff * gx
     Fy = force_y + rho_eff * gy
@@ -616,11 +682,14 @@ def free_energy_step_3d_27(
     # Collision for f (BGK with Korteweg + buoyancy force)
     feq = equilibrium27(rho, ux_eq, uy_eq, uz_eq)
     if C_s > 0.0:
-        if sgs_model == 'smagorinsky':
+        if sgs_model == "smagorinsky":
             tau_eff = _smagorinsky_tau(
-                tau_f, _neq_stress_norm_27(f - feq), rho_s, C_s,
+                tau_f,
+                _neq_stress_norm_27(f - feq),
+                rho_s,
+                C_s,
             )
-        elif sgs_model == 'wale':
+        elif sgs_model == "wale":
             nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
             tau_eff = _nu_t_to_tau_eff(tau_f, nu_t)
         else:  # vreman
@@ -632,9 +701,9 @@ def free_energy_step_3d_27(
 
     # Equilibrium for g  (D=3, cs²=1/3 → diff_factor = 3|c|² − 3)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
-    u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
-    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
-    c_sq = cx ** 2 + cy ** 2 + cz ** 2
+    u_sq = (ux**2 + uy**2 + uz**2).unsqueeze(0)
+    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
+    c_sq = cx**2 + cy**2 + cz**2
     diff_factor = c_sq / _CS2 - 3.0  # = 3|c|² − 3;  Σ_i wᵢ diff_factor = 0
     geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
     geq = geq_adv + geq_diff

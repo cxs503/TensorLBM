@@ -1,4 +1,5 @@
 """TDD coverage for fail-closed D3Q27 SUBOFF checkpoint campaigns."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,21 +13,35 @@ from tensorlbm.suboff_segmented_run import evaluate_suboff_segmented_run
 def _metadata(rank: int = 0) -> dict[str, object]:
     return {
         "format": "suboff-d3q27-cumulant-xslab-v1",
-        "nx": 96, "ny": 48, "nz": 48, "hull_length": 206.0,
-        "re": 2_000_000.0, "u_in": 0.06, "y_val": 0.5,
-        "world_size": 1, "rank": rank, "nx_local": 96, "q": 27,
+        "nx": 96,
+        "ny": 48,
+        "nz": 48,
+        "hull_length": 206.0,
+        "re": 2_000_000.0,
+        "u_in": 0.06,
+        "y_val": 0.5,
+        "world_size": 1,
+        "rank": rank,
+        "nx_local": 96,
+        "q": 27,
     }
 
 
 def _checkpoint(directory: Path, step: int, metadata: dict[str, object] | None = None) -> None:
     directory.mkdir(parents=True, exist_ok=True)
-    torch.save({
-        "metadata": _metadata() if metadata is None else metadata,
-        "step": step,
-        "owned_populations": torch.ones((27, 48, 48, 96)),
-        "target_mass": 1.0, "mass_cadence": 100,
-        "friction_sum": 0.0, "pressure_sum": 0.0, "drag_samples": 0,
-    }, directory / "rank0000.pt")
+    torch.save(
+        {
+            "metadata": _metadata() if metadata is None else metadata,
+            "step": step,
+            "owned_populations": torch.ones((27, 48, 48, 96)),
+            "target_mass": 1.0,
+            "mass_cadence": 100,
+            "friction_sum": 0.0,
+            "pressure_sum": 0.0,
+            "drag_samples": 0,
+        },
+        directory / "rank0000.pt",
+    )
 
 
 def _manifest(tmp_path: Path) -> dict[str, object]:
@@ -48,10 +63,20 @@ def _manifest(tmp_path: Path) -> dict[str, object]:
             {"start_step": 100, "end_step": 200, "checkpoint": "step-200"},
         ],
         "blocks": [
-            {"first_sample_step": 81, "last_sample_step": 100,
-             "friction_sum": 20.0, "pressure_sum": 10.0, "drag_samples": 20},
-            {"first_sample_step": 101, "last_sample_step": 200,
-             "friction_sum": 100.0, "pressure_sum": 50.0, "drag_samples": 100},
+            {
+                "first_sample_step": 81,
+                "last_sample_step": 100,
+                "friction_sum": 20.0,
+                "pressure_sum": 10.0,
+                "drag_samples": 20,
+            },
+            {
+                "first_sample_step": 101,
+                "last_sample_step": 200,
+                "friction_sum": 100.0,
+                "pressure_sum": 50.0,
+                "drag_samples": 100,
+            },
         ],
     }
 
@@ -68,16 +93,33 @@ def test_evaluator_validates_checkpoints_and_combines_only_post_warmup_blocks(tm
     assert result.ct_total == pytest.approx(0.75)
 
 
-@pytest.mark.parametrize("mutation, reason", [
-    (lambda m: m["segments"].__setitem__(1, {"start_step": 101, "end_step": 200, "checkpoint": "step-200"}),
-     "continuous"),
-    (lambda m: m["segments"].__setitem__(1, {"start_step": 99, "end_step": 200, "checkpoint": "step-200"}),
-     "continuous"),
-    (lambda m: m["segments"].__setitem__(1, {"start_step": 100, "end_step": 200, "checkpoint": "missing"}),
-     "missing checkpoint"),
-    (lambda m: m["far_field"].update({"transient_steps_satisfy_outlet_convection": False}),
-     "outlet convection"),
-])
+@pytest.mark.parametrize(
+    "mutation, reason",
+    [
+        (
+            lambda m: m["segments"].__setitem__(
+                1, {"start_step": 101, "end_step": 200, "checkpoint": "step-200"}
+            ),
+            "continuous",
+        ),
+        (
+            lambda m: m["segments"].__setitem__(
+                1, {"start_step": 99, "end_step": 200, "checkpoint": "step-200"}
+            ),
+            "continuous",
+        ),
+        (
+            lambda m: m["segments"].__setitem__(
+                1, {"start_step": 100, "end_step": 200, "checkpoint": "missing"}
+            ),
+            "missing checkpoint",
+        ),
+        (
+            lambda m: m["far_field"].update({"transient_steps_satisfy_outlet_convection": False}),
+            "outlet convection",
+        ),
+    ],
+)
 def test_evaluator_fails_closed_for_broken_campaign_chain(tmp_path, mutation, reason):
     manifest = _manifest(tmp_path)
     mutation(manifest)
@@ -117,10 +159,15 @@ def test_evaluator_rejects_partial_warmup_block_instead_of_silently_combining_it
 
 def test_evaluator_rejects_overlapping_blocks_and_rank_population_shape_mismatch(tmp_path):
     manifest = _manifest(tmp_path)
-    manifest["blocks"].append({
-        "first_sample_step": 100, "last_sample_step": 120,
-        "friction_sum": 21.0, "pressure_sum": 10.5, "drag_samples": 21,
-    })
+    manifest["blocks"].append(
+        {
+            "first_sample_step": 100,
+            "last_sample_step": 120,
+            "friction_sum": 21.0,
+            "pressure_sum": 10.5,
+            "drag_samples": 21,
+        }
+    )
     with pytest.raises(ValueError, match="overlap"):
         evaluate_suboff_segmented_run(manifest, root=tmp_path)
 

@@ -20,6 +20,7 @@ Usage
 >>> from tensorlbm.adjoint import adjoint_sensitivity
 >>> result = adjoint_sensitivity(rho, ux, uy, obstacle_mask, objective="drag")
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -35,51 +36,64 @@ ObjectiveType = Literal["drag", "lift", "pressure_loss", "mixing_uniformity"]
 # Objective functions (differentiable w.r.t. field tensors)
 # ---------------------------------------------------------------------------
 
-def _objective_drag(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
-                    mask: torch.Tensor, cs2: float = 1.0 / 3.0) -> torch.Tensor:
+
+def _objective_drag(
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    mask: torch.Tensor,
+    cs2: float = 1.0 / 3.0,
+) -> torch.Tensor:
     """Drag proxy: integral of pressure × surface-normal-x over obstacle."""
     p = cs2 * (rho - rho.mean())
     # surface cells: solid neighboured by fluid in x-direction
     surf_right = mask & (~F.pad(mask, (0, 1, 0, 0))[:, 1:])
-    surf_left  = mask & (~F.pad(mask, (1, 0, 0, 0))[:, :-1])
+    surf_left = mask & (~F.pad(mask, (1, 0, 0, 0))[:, :-1])
     drag = (p * surf_right.float()).sum() - (p * surf_left.float()).sum()
     return drag
 
 
-def _objective_lift(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
-                    mask: torch.Tensor, cs2: float = 1.0 / 3.0) -> torch.Tensor:
+def _objective_lift(
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    mask: torch.Tensor,
+    cs2: float = 1.0 / 3.0,
+) -> torch.Tensor:
     """Lift proxy: integral of pressure × surface-normal-y over obstacle."""
     p = cs2 * (rho - rho.mean())
-    surf_top    = mask & (~F.pad(mask, (0, 0, 0, 1))[:1 + mask.shape[0] - 1, :])
+    surf_top = mask & (~F.pad(mask, (0, 0, 0, 1))[: 1 + mask.shape[0] - 1, :])
     surf_bottom = mask & (~F.pad(mask, (0, 0, 1, 0))[1:, :])
     # trim to same shape
     h = mask.shape[0]
-    surf_top    = mask & ~(torch.roll(mask, -1, dims=0))
+    surf_top = mask & ~(torch.roll(mask, -1, dims=0))
     surf_bottom = mask & ~(torch.roll(mask, 1, dims=0))
     lift = (p * surf_top.float()).sum() - (p * surf_bottom.float()).sum()
     return lift
 
 
 def _objective_pressure_loss(
-    rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
-    mask: torch.Tensor, cs2: float = 1.0 / 3.0
+    rho: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    mask: torch.Tensor,
+    cs2: float = 1.0 / 3.0,
 ) -> torch.Tensor:
     """Total pressure loss: inlet stagnation pressure minus outlet mean."""
     ny, nx = rho.shape
     p = cs2 * rho
-    p_in  = p[:, :max(1, nx // 10)].mean()
-    p_out = p[:, min(nx - nx // 10, nx - 1):].mean()
+    p_in = p[:, : max(1, nx // 10)].mean()
+    p_out = p[:, min(nx - nx // 10, nx - 1) :].mean()
     return p_in - p_out
 
 
 def _objective_mixing(
-    rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor,
-    mask: torch.Tensor, **kwargs
+    rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, mask: torch.Tensor, **kwargs
 ) -> torch.Tensor:
     """Mixing uniformity: negative coefficient of variation of |u| at outlet."""
     ny, nx = rho.shape
-    u_mag = torch.sqrt(ux ** 2 + uy ** 2 + 1e-12)
-    outlet = u_mag[:, -max(1, nx // 10):]
+    u_mag = torch.sqrt(ux**2 + uy**2 + 1e-12)
+    outlet = u_mag[:, -max(1, nx // 10) :]
     cv = outlet.std() / (outlet.mean() + 1e-12)
     return cv  # minimise → negative objective
 
@@ -96,13 +110,16 @@ _OBJECTIVES = {
 # Boundary node extraction
 # ---------------------------------------------------------------------------
 
+
 def _extract_boundary_nodes(mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """Return y, x indices of obstacle surface nodes."""
     # surface = solid & has ≥1 fluid neighbour
     fluid = (~mask).float()
     neigh = (
-        torch.roll(fluid, 1, 0) + torch.roll(fluid, -1, 0)
-        + torch.roll(fluid, 1, 1) + torch.roll(fluid, -1, 1)
+        torch.roll(fluid, 1, 0)
+        + torch.roll(fluid, -1, 0)
+        + torch.roll(fluid, 1, 1)
+        + torch.roll(fluid, -1, 1)
     )
     surface = mask & (neigh > 0)
     ys, xs = torch.where(surface)
@@ -112,6 +129,7 @@ def _extract_boundary_nodes(mask: torch.Tensor) -> tuple[torch.Tensor, torch.Ten
 # ---------------------------------------------------------------------------
 # Adjoint sensitivity
 # ---------------------------------------------------------------------------
+
 
 def adjoint_sensitivity(
     rho: torch.Tensor,
@@ -164,8 +182,8 @@ def adjoint_sensitivity(
 
     # Make fields differentiable
     rho_d = rho.clone().detach().requires_grad_(True)
-    ux_d  = ux.clone().detach().requires_grad_(True)
-    uy_d  = uy.clone().detach().requires_grad_(True)
+    ux_d = ux.clone().detach().requires_grad_(True)
+    uy_d = uy.clone().detach().requires_grad_(True)
 
     J = obj_fn(rho_d, ux_d, uy_d, obstacle_mask)
     J_val = float(J.item())
@@ -174,8 +192,8 @@ def adjoint_sensitivity(
     J.backward()
 
     dJ_drho = rho_d.grad  # (ny, nx)
-    dJ_dux  = ux_d.grad
-    dJ_duy  = uy_d.grad
+    dJ_dux = ux_d.grad
+    dJ_duy = uy_d.grad
 
     if dJ_drho is None:
         dJ_drho = torch.zeros_like(rho)
@@ -236,12 +254,10 @@ def adjoint_sensitivity(
         sens_x.append(sx)
         sens_y.append(sy)
 
-    grad_norm = float(
-        (sum(s ** 2 for s in sens_x) + sum(s ** 2 for s in sens_y)) ** 0.5
-    )
+    grad_norm = float((sum(s**2 for s in sens_x) + sum(s**2 for s in sens_y)) ** 0.5)
 
     # Most sensitive node
-    magnitudes = [math.sqrt(sx ** 2 + sy ** 2) for sx, sy in zip(sens_x, sens_y)]
+    magnitudes = [math.sqrt(sx**2 + sy**2) for sx, sy in zip(sens_x, sens_y)]
     if magnitudes:
         idx_max = max(range(len(magnitudes)), key=lambda i: magnitudes[i])
         most_sensitive = {

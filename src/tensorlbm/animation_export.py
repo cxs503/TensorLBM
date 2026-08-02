@@ -19,6 +19,7 @@ Dependencies
   if absent the function falls back to GIF.
 
 """
+
 from __future__ import annotations
 
 import logging
@@ -41,6 +42,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Frame discovery
 # ---------------------------------------------------------------------------
+
 
 def frames_from_png_dir(
     job_dir: Path,
@@ -86,6 +88,7 @@ def frames_from_png_dir(
 # ---------------------------------------------------------------------------
 # GIF builder
 # ---------------------------------------------------------------------------
+
 
 def gif_from_frames(
     frames: list[Path],
@@ -137,6 +140,7 @@ def gif_from_frames(
 # MP4 builder (ffmpeg)
 # ---------------------------------------------------------------------------
 
+
 def mp4_from_frames(
     frames: list[Path],
     output_path: Path,
@@ -161,9 +165,7 @@ def mp4_from_frames(
         RuntimeError: If ffmpeg is not found or encoding fails.
     """
     if shutil.which("ffmpeg") is None:
-        raise RuntimeError(
-            "ffmpeg not found on PATH.  Install ffmpeg or use fmt='gif' instead."
-        )
+        raise RuntimeError("ffmpeg not found on PATH.  Install ffmpeg or use fmt='gif' instead.")
     if not frames:
         raise ValueError("frames list is empty")
 
@@ -176,15 +178,22 @@ def mp4_from_frames(
         for i, src in enumerate(frames):
             dst = tmp / f"frame_{i:05d}.png"
             import shutil as _shutil  # noqa: PLC0415
+
             _shutil.copy2(src, dst)
 
         cmd = [
-            "ffmpeg", "-y",
-            "-framerate", str(fps),
-            "-i", str(tmp / "frame_%05d.png"),
-            "-c:v", "libx264",
-            "-crf", str(crf),
-            "-pix_fmt", "yuv420p",
+            "ffmpeg",
+            "-y",
+            "-framerate",
+            str(fps),
+            "-i",
+            str(tmp / "frame_%05d.png"),
+            "-c:v",
+            "libx264",
+            "-crf",
+            str(crf),
+            "-pix_fmt",
+            "yuv420p",
             str(output_path),
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -198,6 +207,7 @@ def mp4_from_frames(
 # ---------------------------------------------------------------------------
 # High-level API
 # ---------------------------------------------------------------------------
+
 
 def create_animation(
     job_dir: Path | str,

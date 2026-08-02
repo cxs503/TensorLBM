@@ -68,11 +68,18 @@ def test_suboff_resistance_adaptive_mesh_quantitative_metrics() -> None:
 
 
 def test_suboff_runtime_reports_closed_per_step_momentum_operator_budget() -> None:
-    observation = run_suboff_resistance_runtime(SuboffResistanceBenchmarkConfig(
-        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
-        momentum_budget_diagnostic=True, momentum_budget_interval=1,
-    ))
+    observation = run_suboff_resistance_runtime(
+        SuboffResistanceBenchmarkConfig(
+            base_length_lu=20.0,
+            max_length_lu=20.0,
+            max_iterations=1,
+            lbm_steps=10,
+            lbm_warmup_steps=0,
+            lbm_sample_interval=2,
+            momentum_budget_diagnostic=True,
+            momentum_budget_interval=1,
+        )
+    )
     budget = observation["conservation"]["source_attribution"]["momentum"]["per_step_budget"]
     assert budget["status"] == "measured"
     assert budget["units"] == "lattice momentum per time step (rho_lu * dx_lu^4 / dt_lu)"
@@ -105,42 +112,82 @@ def test_suboff_runtime_reports_closed_per_step_momentum_operator_budget() -> No
     assert ledger["streaming"]["expected"] == "zero_global_population_momentum_delta"
     assert max(abs(value) for value in budget["samples"][0]["streaming"]) < 1.0e-9
     assert ledger["wall_impulse"]["fluid_momentum_change"] == budget["samples"][0]["wall_exchange"]
-    assert ledger["solid_impulse"]["fluid_momentum_change"] == budget["samples"][0]["solid_exchange"]
+    assert (
+        ledger["solid_impulse"]["fluid_momentum_change"] == budget["samples"][0]["solid_exchange"]
+    )
     for impulse in (ledger["wall_impulse"], ledger["solid_impulse"]):
-        reaction = impulse["reaction_on_wall"] if "reaction_on_wall" in impulse else impulse["reaction_on_solid"]
+        reaction = (
+            impulse["reaction_on_wall"]
+            if "reaction_on_wall" in impulse
+            else impulse["reaction_on_solid"]
+        )
         assert reaction == [-value for value in impulse["fluid_momentum_change"]]
     cumulative = budget["cumulative_sampled"]
-    explained = [sum(cumulative[name][axis] for name in (
-        "collision", "streaming", "inlet_boundary", "outlet_boundary", "wall_exchange",
-        "solid_exchange", "unexplained_residual",
-    )) for axis in range(3)]
-    assert max(abs(cumulative["fluid_momentum_delta"][axis] - explained[axis])
-               for axis in range(3)) < 1.0e-9
-    attribution = observation["conservation"]["source_attribution"]["momentum"]["operator_attribution"]
+    explained = [
+        sum(
+            cumulative[name][axis]
+            for name in (
+                "collision",
+                "streaming",
+                "inlet_boundary",
+                "outlet_boundary",
+                "wall_exchange",
+                "solid_exchange",
+                "unexplained_residual",
+            )
+        )
+        for axis in range(3)
+    ]
+    assert (
+        max(abs(cumulative["fluid_momentum_delta"][axis] - explained[axis]) for axis in range(3))
+        < 1.0e-9
+    )
+    attribution = observation["conservation"]["source_attribution"]["momentum"][
+        "operator_attribution"
+    ]
     assert attribution["status"] == "measured"
     assert attribution["dominant_operator"] in {
-        "collision", "inlet_boundary", "outlet_boundary", "wall_exchange", "solid_exchange",
+        "collision",
+        "inlet_boundary",
+        "outlet_boundary",
+        "wall_exchange",
+        "solid_exchange",
     }
 
 
 def test_suboff_runtime_default_disables_operator_budget() -> None:
-    observation = run_suboff_resistance_runtime(SuboffResistanceBenchmarkConfig(
-        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
-    ))
+    observation = run_suboff_resistance_runtime(
+        SuboffResistanceBenchmarkConfig(
+            base_length_lu=20.0,
+            max_length_lu=20.0,
+            max_iterations=1,
+            lbm_steps=10,
+            lbm_warmup_steps=0,
+            lbm_sample_interval=2,
+        )
+    )
     momentum = observation["conservation"]["source_attribution"]["momentum"]
     assert momentum["per_step_budget"] is None
     assert momentum["operator_budget"]["status"] == "disabled"
     assert momentum["operator_attribution"] == {
-        "status": "withheld", "reason": "operator_budget_disabled"}
+        "status": "withheld",
+        "reason": "operator_budget_disabled",
+    }
 
 
 def test_suboff_runtime_operator_budget_samples_without_claiming_closure() -> None:
-    observation = run_suboff_resistance_runtime(SuboffResistanceBenchmarkConfig(
-        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
-        momentum_budget_diagnostic=True, momentum_budget_interval=3,
-    ))
+    observation = run_suboff_resistance_runtime(
+        SuboffResistanceBenchmarkConfig(
+            base_length_lu=20.0,
+            max_length_lu=20.0,
+            max_iterations=1,
+            lbm_steps=10,
+            lbm_warmup_steps=0,
+            lbm_sample_interval=2,
+            momentum_budget_diagnostic=True,
+            momentum_budget_interval=3,
+        )
+    )
     momentum = observation["conservation"]["source_attribution"]["momentum"]
     budget = momentum["operator_budget"]
     assert budget["coverage"] == "sampled"
@@ -163,16 +210,27 @@ def test_suboff_operator_budget_reductions_only_run_for_samples(monkeypatch) -> 
 
     monkeypatch.setattr(suboff_resistance, "_lattice_momentum", counted)
     config = SuboffResistanceBenchmarkConfig(
-        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
-        momentum_budget_diagnostic=True, momentum_budget_interval=3,
+        base_length_lu=20.0,
+        max_length_lu=20.0,
+        max_iterations=1,
+        lbm_steps=10,
+        lbm_warmup_steps=0,
+        lbm_sample_interval=2,
+        momentum_budget_diagnostic=True,
+        momentum_budget_interval=3,
     )
     run_suboff_resistance_benchmark(config)
     assert calls == 1 + 8 * 4  # initial snapshot plus eight reductions/sample
 
     calls = 0
-    run_suboff_resistance_benchmark(SuboffResistanceBenchmarkConfig(
-        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
-    ))
+    run_suboff_resistance_benchmark(
+        SuboffResistanceBenchmarkConfig(
+            base_length_lu=20.0,
+            max_length_lu=20.0,
+            max_iterations=1,
+            lbm_steps=10,
+            lbm_warmup_steps=0,
+            lbm_sample_interval=2,
+        )
+    )
     assert calls == 0

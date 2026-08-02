@@ -23,6 +23,7 @@ Validation:
 Run:
     PYTHONPATH=src python examples/benchmark_acoustic_superposition.py --device cpu --steps 1000
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,6 +46,7 @@ from tensorlbm.solver3d import stream3d  # noqa: E402
 # --------------------------------------------------------------------------- #
 # Single simulation
 # --------------------------------------------------------------------------- #
+
 
 def _collide_linear_acoustic_bgk(g: torch.Tensor, tau: float) -> torch.Tensor:
     """Collide the population perturbation about ``rho=1, u=0``.
@@ -179,6 +181,7 @@ def _run_simulation(
 # Superposition benchmark
 # --------------------------------------------------------------------------- #
 
+
 def run_superposition_benchmark(
     nx: int = 300,
     ny: int = 300,
@@ -206,20 +209,19 @@ def run_superposition_benchmark(
     # All within the interior (away from sponge layer at edges, width=50)
     margin = 5
     raw_pts = [
-        (cx, cy),           # 0: 中心, 两源之间
-        (cx, cy - 40),      # 1: 上方
-        (cx, cy + 40),      # 2: 下方
-        (cx - 60, cy),      # 3: A左侧远处
-        (cx + 60, cy),      # 4: B右侧远处
-        (cx - 30, cy - 40), # 5: A上方
-        (cx + 30, cy + 40), # 6: B下方
-        (cx - 15, cy - 50), # 7: A与中心之间偏上
-        (cx + 15, cy + 50), # 8: B与中心之间偏下
-        (cx, cy - 80),      # 9: 远上方
+        (cx, cy),  # 0: 中心, 两源之间
+        (cx, cy - 40),  # 1: 上方
+        (cx, cy + 40),  # 2: 下方
+        (cx - 60, cy),  # 3: A左侧远处
+        (cx + 60, cy),  # 4: B右侧远处
+        (cx - 30, cy - 40),  # 5: A上方
+        (cx + 30, cy + 40),  # 6: B下方
+        (cx - 15, cy - 50),  # 7: A与中心之间偏上
+        (cx + 15, cy + 50),  # 8: B与中心之间偏下
+        (cx, cy - 80),  # 9: 远上方
     ]
     monitor_pts = [
-        (max(margin, min(nx - 1 - margin, mx)),
-         max(margin, min(ny - 1 - margin, my)))
+        (max(margin, min(nx - 1 - margin, mx)), max(margin, min(ny - 1 - margin, my)))
         for mx, my in raw_pts
     ]
     monitor_names = [f"({mx},{my})" for mx, my in monitor_pts]
@@ -241,21 +243,54 @@ def run_superposition_benchmark(
     # --- Run three simulations ----------------------------------------------
     print("\n▶ 运行模拟1: 仅源A")
     p_a = _run_simulation(
-        nx, ny, nz, tau, delta_rho, omega, steps, device,
-        use_a=True, use_b=False, monitor_pts=monitor_pts,
-        log_every=log_every, log_label="[A]  ")
+        nx,
+        ny,
+        nz,
+        tau,
+        delta_rho,
+        omega,
+        steps,
+        device,
+        use_a=True,
+        use_b=False,
+        monitor_pts=monitor_pts,
+        log_every=log_every,
+        log_label="[A]  ",
+    )
 
     print("\n▶ 运行模拟2: 仅源B")
     p_b = _run_simulation(
-        nx, ny, nz, tau, delta_rho, omega, steps, device,
-        use_a=False, use_b=True, monitor_pts=monitor_pts,
-        log_every=log_every, log_label="[B]  ")
+        nx,
+        ny,
+        nz,
+        tau,
+        delta_rho,
+        omega,
+        steps,
+        device,
+        use_a=False,
+        use_b=True,
+        monitor_pts=monitor_pts,
+        log_every=log_every,
+        log_label="[B]  ",
+    )
 
     print("\n▶ 运行模拟3: 源A+B同时")
     p_ab = _run_simulation(
-        nx, ny, nz, tau, delta_rho, omega, steps, device,
-        use_a=True, use_b=True, monitor_pts=monitor_pts,
-        log_every=log_every, log_label="[A+B]")
+        nx,
+        ny,
+        nz,
+        tau,
+        delta_rho,
+        omega,
+        steps,
+        device,
+        use_a=True,
+        use_b=True,
+        monitor_pts=monitor_pts,
+        log_every=log_every,
+        log_label="[A+B]",
+    )
 
     # ===================================================================== #
     # Analysis: linearity check  p(A+B) vs p(A)+p(B)
@@ -316,18 +351,14 @@ def run_superposition_benchmark(
     print(f"  最大相对误差: {max_err:.4f}%  平均相对误差: {avg_err:.4f}%  (目标 < 1%)")
 
     # --- Wave generation sanity check ---------------------------------------
-    max_signal = max(
-        float(np.max(np.abs(pab_arr[i]))) for i in range(n_mon)
-    )
+    max_signal = max(float(np.max(np.abs(pab_arr[i]))) for i in range(n_mon))
     gen_ok = max_signal > 1e-8
-    print(f"\n  波动生成检查: max|p|={max_signal:.6e}  "
-          f"{'PASS' if gen_ok else 'FAIL'}")
+    print(f"\n  波动生成检查: max|p|={max_signal:.6e}  {'PASS' if gen_ok else 'FAIL'}")
 
     # --- Summary ------------------------------------------------------------
     print("\n" + "=" * 70)
     print(f"  总体结果: {'PASS' if all_pass else 'FAIL'}")
-    print(f"    线性叠加: {'PASS' if all_pass else 'FAIL'}"
-          f"  (最大误差 {max_err:.4f}%, 目标 < 1%)")
+    print(f"    线性叠加: {'PASS' if all_pass else 'FAIL'}  (最大误差 {max_err:.4f}%, 目标 < 1%)")
     print("=" * 70)
 
     return {
@@ -339,8 +370,7 @@ def run_superposition_benchmark(
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(
-        description="声源叠加线性度基准测试 (D3Q19 BGK)")
+    p = argparse.ArgumentParser(description="声源叠加线性度基准测试 (D3Q19 BGK)")
     p.add_argument("--nx", type=int, default=300)
     p.add_argument("--ny", type=int, default=300)
     p.add_argument("--nz", type=int, default=1)

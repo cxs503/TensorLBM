@@ -25,6 +25,7 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d
 # Device-availability helpers
 # --------------------------------------------------------------------------- #
 
+
 def _sdaa_available() -> bool:
     return hasattr(torch, "sdaa") and torch.sdaa.is_available()
 
@@ -33,24 +34,32 @@ def _sdaa_count() -> int:
     return torch.sdaa.device_count() if _sdaa_available() else 0
 
 
-skip_no_sdaa = pytest.mark.skipif(
-    not _sdaa_available(), reason="no SDAA backend available"
-)
-skip_few_sdaa = pytest.mark.skipif(
-    _sdaa_count() < 2, reason="fewer than 2 SDAA devices"
-)
-skip_few_sdaa4 = pytest.mark.skipif(
-    _sdaa_count() < 4, reason="fewer than 4 SDAA devices"
-)
+skip_no_sdaa = pytest.mark.skipif(not _sdaa_available(), reason="no SDAA backend available")
+skip_few_sdaa = pytest.mark.skipif(_sdaa_count() < 2, reason="fewer than 2 SDAA devices")
+skip_few_sdaa4 = pytest.mark.skipif(_sdaa_count() < 4, reason="fewer than 4 SDAA devices")
 
 
 # D3Q19 velocity set (for reference pull-stream in tests)
 D3Q19_C = (
     (0, 0, 0),
-    (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1),
-    (1, 1, 0), (-1, -1, 0), (1, -1, 0), (-1, 1, 0),
-    (1, 0, 1), (-1, 0, -1), (1, 0, -1), (-1, 0, 1),
-    (0, 1, 1), (0, -1, -1), (0, 1, -1), (0, -1, 1),
+    (1, 0, 0),
+    (-1, 0, 0),
+    (0, 1, 0),
+    (0, -1, 0),
+    (0, 0, 1),
+    (0, 0, -1),
+    (1, 1, 0),
+    (-1, -1, 0),
+    (1, -1, 0),
+    (-1, 1, 0),
+    (1, 0, 1),
+    (-1, 0, -1),
+    (1, 0, -1),
+    (-1, 0, 1),
+    (0, 1, 1),
+    (0, -1, -1),
+    (0, 1, -1),
+    (0, -1, 1),
 )
 
 
@@ -75,6 +84,7 @@ def _equilibrium_global(nz: int, ny: int, nx: int, u: float, device: str, dtype:
 # 1. DomainDecomposition — device-agnostic
 # --------------------------------------------------------------------------- #
 
+
 class TestDomainDecompositionDeviceAgnostic:
     """DomainDecomposition must accept arbitrary device strings."""
 
@@ -95,14 +105,18 @@ class TestDomainDecompositionDeviceAgnostic:
 
     def test_from_devices_sdaa(self):
         dd = DomainDecomposition.from_devices(
-            [0, 1, 2], nx_global=9, device_type="sdaa",
+            [0, 1, 2],
+            nx_global=9,
+            device_type="sdaa",
         )
         assert dd.devices == ["sdaa:0", "sdaa:1", "sdaa:2"]
         assert dd.slabs == [(0, 3), (3, 6), (6, 9)]
 
     def test_from_devices_cpu(self):
         dd = DomainDecomposition.from_devices(
-            [0, 1], nx_global=8, device_type="cpu",
+            [0, 1],
+            nx_global=8,
+            device_type="cpu",
         )
         assert dd.devices == ["cpu", "cpu"]
 
@@ -115,6 +129,7 @@ class TestDomainDecompositionDeviceAgnostic:
 # --------------------------------------------------------------------------- #
 # 2. auto_decompose — SDAA detection
 # --------------------------------------------------------------------------- #
+
 
 class TestAutoDecomposeSdaa:
     """auto_decompose must detect SDAA when CUDA is unavailable."""
@@ -150,6 +165,7 @@ class TestAutoDecomposeSdaa:
 # 3. halo_exchange_3d — cross-SDAA communication
 # --------------------------------------------------------------------------- #
 
+
 @skip_few_sdaa
 class TestHaloExchange3DCrossSdaa:
     """halo_exchange_3d must copy ghost planes between SDAA devices."""
@@ -161,33 +177,34 @@ class TestHaloExchange3DCrossSdaa:
         s0 = torch.randn(19, nz, ny, nx_local + 2 * ov, device="sdaa:0")
         s1 = torch.randn(19, nz, ny, nx_local + 2 * ov, device="sdaa:1")
         dd = DomainDecomposition(
-            devices=["sdaa:0", "sdaa:1"], nx_global=2 * nx_local, overlap=ov,
+            devices=["sdaa:0", "sdaa:1"],
+            nx_global=2 * nx_local,
+            overlap=ov,
         )
         slabs = [s0, s1]
         halo_exchange_3d(slabs, dd)
 
         # Right ghost of s0 must equal interior-left of s1
-        expected_right_ghost = s1[:, :, :, ov:2 * ov].to("sdaa:0")
+        expected_right_ghost = s1[:, :, :, ov : 2 * ov].to("sdaa:0")
         assert torch.equal(slabs[0][:, :, :, -ov:], expected_right_ghost)
 
         # Left ghost of s1 must equal interior-right of s0
-        expected_left_ghost = s0[:, :, :, -2 * ov:-ov].to("sdaa:1")
+        expected_left_ghost = s0[:, :, :, -2 * ov : -ov].to("sdaa:1")
         assert torch.equal(slabs[1][:, :, :, :ov], expected_left_ghost)
 
     def test_three_sdaa_slabs_periodic_ring(self):
         ov = 1
         nz, ny, nx_local = 2, 3, 4
         devices = ["sdaa:0", "sdaa:1", "sdaa:2"]
-        slabs = [
-            torch.randn(19, nz, ny, nx_local + 2 * ov, device=d)
-            for d in devices
-        ]
+        slabs = [torch.randn(19, nz, ny, nx_local + 2 * ov, device=d) for d in devices]
         dd = DomainDecomposition(
-            devices=devices, nx_global=3 * nx_local, overlap=ov,
+            devices=devices,
+            nx_global=3 * nx_local,
+            overlap=ov,
         )
         # snapshot interior-right and interior-left before exchange
-        right_interiors = [s[:, :, :, -2 * ov:-ov].clone() for s in slabs]
-        left_interiors = [s[:, :, :, ov:2 * ov].clone() for s in slabs]
+        right_interiors = [s[:, :, :, -2 * ov : -ov].clone() for s in slabs]
+        left_interiors = [s[:, :, :, ov : 2 * ov].clone() for s in slabs]
 
         halo_exchange_3d(slabs, dd)
 
@@ -202,6 +219,7 @@ class TestHaloExchange3DCrossSdaa:
 # --------------------------------------------------------------------------- #
 # 4. MultiDeviceSolver3D — contracts
 # --------------------------------------------------------------------------- #
+
 
 class TestMultiDeviceSolver3DContracts:
     """The common multi-device solver class must accept functions + device list."""
@@ -230,9 +248,11 @@ class TestMultiDeviceSolver3DContracts:
 
     def test_step_returns_aggregated_force_with_force_fn(self):
         f = _equilibrium_global(3, 4, 8, 0.0, "cpu", torch.float64)
+
         # force_fn returns total mass of the slab (sum of all populations)
         def force_fn(slab):
             return slab.sum().reshape(1)
+
         solver = MultiDeviceSolver3D(
             f_global=f,
             devices=["cpu", "cpu"],
@@ -277,6 +297,7 @@ class TestMultiDeviceSolver3DContracts:
 # 5. MultiDeviceSolver3D — equivalence with monolithic solver
 # --------------------------------------------------------------------------- #
 
+
 class TestMultiDeviceSolver3DEquivalence:
     """Multi-card periodic stream must match monolithic periodic stream."""
 
@@ -304,7 +325,8 @@ class TestMultiDeviceSolver3DEquivalence:
 
         mismatch = (actual != expected).sum(dim=(1, 2, 3))
         assert torch.equal(
-            mismatch, torch.zeros(19, dtype=mismatch.dtype),
+            mismatch,
+            torch.zeros(19, dtype=mismatch.dtype),
         ), f"directions with mismatches: {mismatch.tolist()}"
 
     def test_multi_card_with_bgk_collision_matches_monolithic(self):
@@ -368,6 +390,7 @@ class TestMultiDeviceSolver3DEquivalence:
 # --------------------------------------------------------------------------- #
 # 6. SDAA cross-device integration
 # --------------------------------------------------------------------------- #
+
 
 @skip_few_sdaa
 class TestMultiDeviceSolver3DSdaaIntegration:
@@ -465,6 +488,7 @@ class TestMultiDeviceSolver3DSdaaIntegration:
 # --------------------------------------------------------------------------- #
 # 7. SUBOFF-scale validation (480×240×240 on 4 or 8 cards)
 # --------------------------------------------------------------------------- #
+
 
 @skip_few_sdaa4
 class TestSuboffScaleMultiCardValidation:

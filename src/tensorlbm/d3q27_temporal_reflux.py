@@ -17,6 +17,7 @@ sum of all owner corrections is zero direction-by-direction (hence for mass
 and all D3Q27 momentum moments).  Equal splitting is temporal bookkeeping,
 not a claim about an intra-step physical flux profile.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -69,14 +70,19 @@ def _validate_flux(packet: D3Q27InterfaceFluxPacket, *, name: str) -> None:
         raise ValueError(f"{name}.flux must be finite")
 
 
-def _validate_fine_packets(fine_packets: Sequence[D3Q27InterfaceFluxPacket]) -> tuple[D3Q27InterfaceFluxPacket, D3Q27InterfaceFluxPacket]:
+def _validate_fine_packets(
+    fine_packets: Sequence[D3Q27InterfaceFluxPacket],
+) -> tuple[D3Q27InterfaceFluxPacket, D3Q27InterfaceFluxPacket]:
     if not isinstance(fine_packets, Sequence) or len(fine_packets) != 2:
         raise ValueError("fine_packets must contain exactly two fine substep packets")
     first, second = fine_packets
     _validate_flux(first, name="fine_packets[0]")
     _validate_flux(second, name="fine_packets[1]")
     substeps = (first.substep, second.substep)
-    if any(isinstance(value, bool) or not isinstance(value, int) for value in substeps) or set(substeps) != _SUBSTEPS:
+    if (
+        any(isinstance(value, bool) or not isinstance(value, int) for value in substeps)
+        or set(substeps) != _SUBSTEPS
+    ):
         raise ValueError("fine_packets must provide exactly substeps 0 and 1")
     ordered = {first.substep: first, second.substep: second}
     return ordered[0], ordered[1]
@@ -98,7 +104,11 @@ def reflux_d3q27_2to1(
     if coarse_packet.substep is not None:
         raise ValueError("coarse_packet.substep must be None for the full coarse step")
     fine_0, fine_1 = _validate_fine_packets(fine_packets)
-    if any(packet.flux.dtype != coarse_packet.flux.dtype or packet.flux.device != coarse_packet.flux.device for packet in (fine_0, fine_1)):
+    if any(
+        packet.flux.dtype != coarse_packet.flux.dtype
+        or packet.flux.device != coarse_packet.flux.device
+        for packet in (fine_0, fine_1)
+    ):
         raise ValueError("coarse and fine packet fluxes must share dtype and device")
 
     fine_total = fine_0.flux + fine_1.flux
