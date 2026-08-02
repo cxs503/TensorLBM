@@ -1,0 +1,70 @@
+{
+  "schema": "tensorlbm-cylinder-low-mach-causal-evidence-v1",
+  "status": "causal_pair_admitted_compressibility_hypothesis_rejected",
+  "physical_validation": false,
+  "selection_by_reference_proximity": false,
+  "intervention": {
+    "baseline_lattice_speed": 0.06,
+    "candidate_lattice_speed": 0.03,
+    "baseline_lattice_mach": 0.10392304845413264,
+    "candidate_lattice_mach": 0.05196152422706632,
+    "collision_model_both": "natural_kbc_d3q19",
+    "reynolds_both": 100.0,
+    "radius_cells_both": 9.0,
+    "domain_shape_zyx_both": [3, 360, 360],
+    "convective_time_relative_errors": {
+      "steps": 0.0,
+      "warmup_steps": 0.0,
+      "ramp_steps": 0.0,
+      "statistics_window_steps": 0.0
+    }
+  },
+  "baseline_high_mach": {
+    "cd_control_volume": 1.44027432843031,
+    "strouhal": 0.17350117397097226,
+    "result": "results/cylinder_collision_sensitivity/cylinder-v4-natural-kbc-equivalent-r9-54000.json",
+    "result_sha256": "9f88f0686bee7fc76eaa91e7d38ce2c188bf5884d88fdc4dfbab17f586752516"
+  },
+  "candidate_low_mach": {
+    "cd_control_volume": 1.434148719986525,
+    "cd_bfl_link": 1.434144791043617,
+    "force_observer_difference_pct": 0.0002739564491026954,
+    "strouhal": 0.1735916865442018,
+    "shedding_cycles_observed": 13.019376490815134,
+    "drag_block_range_pct": 0.46528710638352005,
+    "drag_half_mean_drift_pct": 0.16960311701513656,
+    "density_min_max": [0.9952595829963684, 1.0025501251220703],
+    "maximum_speed": 0.04173167794942856,
+    "finite": true,
+    "numerical_quality_admitted": true,
+    "result": "results/cylinder_collision_sensitivity/cylinder-v6-natural-kbc-mach003-r9-108000.json",
+    "result_sha256": "25b03f7a9a6e332670523615c4e0bc69aa2e0db737fadf777eebd4614d22f269",
+    "checkpoint_sha256": "48ec0e40b05c2b5ed64ac70913fd69b0be015f87a739d6d0a9ed3509e1966897",
+    "log_sha256": "c66ec5ec25d208180b3f2afea982e795e7f90a79852127ed4978f8ad4e5cbbd6"
+  },
+  "effect": {
+    "cd_change_pct": -0.42530845151290686,
+    "strouhal_change_pct": 0.05216827711187477,
+    "henderson_re100_cd_reference": 1.3499999277745802,
+    "baseline_cd_reference_error_pct": 6.686992998921365,
+    "candidate_cd_reference_error_pct": 6.2332442010319715,
+    "cd_reference_error_change_percentage_points": -0.4537487978893937,
+    "materially_repairs_cd_and_strouhal": false
+  },
+  "acceptance": {
+    "physical_configuration_identity_admitted": true,
+    "convective_time_equivalence_admitted": true,
+    "both_numerically_healthy": true,
+    "causal_pair_admitted": true,
+    "candidate_drag_error_below_5pct": false,
+    "candidate_strouhal_error_below_5pct": false,
+    "grid_convergence_assessed": false,
+    "physical_validation": false
+  },
+  "artifacts": {
+    "causal_assessment": "results/cylinder_collision_sensitivity/cylinder-v5-v6-mach-causal-assessment-r1.json",
+    "causal_assessment_sha256": "cedf6d686f9dfeb87521ec2de75803ff2d203a22c2d13cf00ec9bfa126a7aa67"
+  },
+  "provenance_note": "The low-Mach result was produced before the repository reference constant was corrected from 1.33 to the directly reproduced Henderson value 1.35. Raw result fields are preserved; all errors in this evidence were recomputed from the primary-source fit.",
+  "conclusion": "Halving lattice Mach changes drag by only -0.425 percent while preserving all numerical quality gates. Compressibility is not the dominant source of the remaining 6.23 percent drag excess. The next registered causal case changes only the collision dimensional reduction to exact embedded D2Q9."
+}
