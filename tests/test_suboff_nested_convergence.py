@@ -188,6 +188,21 @@ def test_conservative_force_observer_supersedes_rejected_surface_pressure() -> N
     assert result["physical_validation"] is True
 
 
+def test_legacy_result_can_prove_conservative_observer_from_recorded_closure() -> None:
+    records = [
+        _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
+        for length in (90, 120, 150)
+    ]
+    for record in records:
+        record["acceptance"]["surface_observer_target_met"] = False
+        record["result"]["maximum_source_corrected_observer_difference_pct"] = 0.05
+
+    result = assess_suboff_nested_convergence(records)
+
+    assert result["source_numerical_quality_admitted"] is True
+    assert result["physical_validation"] is True
+
+
 def test_nested_convergence_rejects_unscaled_wall_exchange_gate() -> None:
     records = [
         _record(length, 88.0 + 200000.0 / (4.0 * length) ** 2)
