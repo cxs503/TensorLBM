@@ -18,6 +18,12 @@ def test_physical_re_flat_plate_scripts_are_valid_shell() -> None:
             check=True,
         )
 
+    chain = (
+        ROOT / "scripts" / "run_flat_plate_physical_re_chain.sh"
+    ).read_text(encoding="utf-8")
+    assert "flat_plate_convergence_assess.py" in chain
+    assert "flat-plate-v6-physical-re13p213m-convergence.json" in chain
+
 
 def test_physical_re_level_preflight_uses_project_source(tmp_path: Path) -> None:
     environment = os.environ | {
