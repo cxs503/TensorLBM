@@ -265,21 +265,24 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
     ("bouzidi_interpolated", "D2Q9"): (
         "MECHANICS_TESTED",
         "tensorlbm.interpolated_bc.bouzidi_bounce_back / compute_q_circle",
-        "test_interpolated_bc.py: shape, finite, halfway-q=standard BB, "
-        "linear/quad branch; no physical validation",
+        "test_interpolated_bc.py and test_bfl_fractional_distance.py: "
+        "halfway/linear/quadratic reconstruction and analytic diagonal q; "
+        "no physical validation",
     ),
     ("bouzidi_interpolated", "D3Q19"): (
         "MECHANICS_TESTED",
         "tensorlbm.interpolated_bc.bouzidi_bounce_back_3d / compute_q_sphere / "
         "tensorlbm.interpolated_bc_ellipsoid.compute_q_ellipsoid",
-        "test_interpolated_bc.py: shape, finite, halfway-q, compute_q_sphere; "
-        "sphere_bouzidi.py benchmark reports ~13% Cd error but is NOT a test; "
-        "no executable physical validation",
+        "test_bfl_fractional_distance.py and test_planar_d3q19.py: analytic "
+        "diagonal q, scalar/vector equivalence and planar curved-wall chain; "
+        "corrected sphere physical rerun pending",
     ),
     ("bouzidi_interpolated", "D3Q27"): (
-        "NO_IMPLEMENTATION",
-        None,
-        "No Bouzidi interpolated bounce-back implementation for D3Q27",
+        "MECHANICS_TESTED",
+        "tensorlbm.interpolated_bc_common.bouzidi_bounce_back_3d_common / "
+        "compute_q_sphere_27",
+        "test_interp_bc_regression.py and test_bfl_fractional_distance.py: "
+        "halfway/branch mechanics and analytic body-diagonal q; no physical validation",
     ),
 }
 
