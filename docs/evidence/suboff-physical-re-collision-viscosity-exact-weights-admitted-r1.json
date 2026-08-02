@@ -1,0 +1,77 @@
+{
+  "schema": "tensorlbm-suboff-collision-viscosity-evidence-v1",
+  "status": "mixed_precision_physical_re_exact_weights_admitted",
+  "physical_validation": false,
+  "case": "SUBOFF model experiment at 5.92 kn and Re=13213381.41322709",
+  "physical_mapping": {
+    "speed_knots": 5.92,
+    "speed_mps": 3.04550848,
+    "model_length_m": 4.356,
+    "kinematic_viscosity_m2_s": 1.004e-06,
+    "reynolds": 13213381.41322709
+  },
+  "weight_precision_scheme": "rational_binary64_cast_to_runtime_dtype_v1",
+  "audit_configuration": {
+    "taus_by_level": [
+      0.5000012260298475,
+      0.5000024520596952,
+      0.5000049041193902,
+      0.5000098082387806
+    ],
+    "wavelength_cells": 16,
+    "transverse_cells": 3,
+    "amplitude": 0.02,
+    "steps": 80000,
+    "fit_start_step": 6000,
+    "maximum_relative_error_pct": 5.0,
+    "minimum_fitted_log_decay": 0.004,
+    "population_storage_dtype": "float32",
+    "natural_kbc_compute_dtype": "float64"
+  },
+  "result": {
+    "target_kinematic_viscosity_by_level": [
+      4.0867661584472376e-07,
+      8.17353231726455e-07,
+      1.6347064634159025e-06,
+      3.2694129268688124e-06
+    ],
+    "recovered_kinematic_viscosity_by_level": [
+      4.12142021622429e-07,
+      8.284844698040461e-07,
+      1.6572342260177028e-06,
+      3.313586330263981e-06
+    ],
+    "relative_error_pct_by_level": [
+      0.847957931368872,
+      1.3618638362852158,
+      1.3780922205890107,
+      1.3511111744907165
+    ],
+    "fitted_log_amplitude_decay_by_level": [
+      0.00470325350899087,
+      0.009454441152132852,
+      0.018911909681168397,
+      0.037813752826775876
+    ],
+    "decay_signal_admitted_by_level": [true, true, true, true],
+    "viscosity_admitted_by_level": [true, true, true, true]
+  },
+  "acceptance": {
+    "all_levels_have_resolved_decay_signal": true,
+    "all_levels_recover_configured_viscosity": true,
+    "configured_physical_reynolds_admitted": true,
+    "flow_solution_validated": false
+  },
+  "artifacts": {
+    "viscosity_schedule": "results/collision-viscosity-natural-kbc-suboff-re13p213m-mixed-exactweights-r1.json",
+    "viscosity_schedule_sha256": "ff8a515926e552571b3426ef19c1ea062ca0cc06cda480bc0b83c2429f03d2ed"
+  },
+  "decision": {
+    "permit_physical_re_runtime_candidate_after_re8m_health_gate": true,
+    "require_stepwise_re1m_re2m_re4m_re8m_health_chain": true,
+    "resistance_accuracy_assessed": false,
+    "time_convergence_assessed": false,
+    "grid_convergence_assessed": false
+  },
+  "prohibition": "This certificate proves collision-viscosity recovery at the experiment's Reynolds number only. It does not predetermine resistance agreement or replace the queued stepwise flow-health gates."
+}
