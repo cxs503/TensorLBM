@@ -813,6 +813,8 @@ def guo_body_force_d3q19(
     ux: torch.Tensor,
     uy: torch.Tensor,
     uz: torch.Tensor,
+    *,
+    direction_chunk_size: int = 19,
 ) -> torch.Tensor:
     """Apply a Guo body-force correction to a D3Q19 distribution.
 
@@ -853,24 +855,27 @@ def guo_body_force_d3q19(
         dtype=f.dtype,
     )
     w = weights_by_squared_speed[c.square().sum(dim=1).to(torch.long)]
-    q = 19
-
-    cx = c[:, 0].view(q, 1, 1, 1)
-    cy = c[:, 1].view(q, 1, 1, 1)
-    cz = c[:, 2].view(q, 1, 1, 1)
-    w_view = w.view(q, 1, 1, 1)
-
+    if (
+        isinstance(direction_chunk_size, bool)
+        or not 1 <= direction_chunk_size <= 19
+    ):
+        raise ValueError("direction_chunk_size must be an integer in [1,19]")
     cs2 = 1.0 / 3.0
-    # c_i · u  (velocity correction term)
-    cu_u = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
-    # c_i · F  (force projection)
-    cu_f = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
-
     u_dot_f = (ux * fx + uy * fy + uz * fz).unsqueeze(0)
-    forcing = w_view * (
-        (cu_f - u_dot_f) / cs2 + cu_u * cu_f / cs2**2
-    )
-    return f + forcing
+    output = torch.empty_like(f)
+    for start in range(0, 19, direction_chunk_size):
+        stop = min(start + direction_chunk_size, 19)
+        cx = c[start:stop, 0].view(-1, 1, 1, 1)
+        cy = c[start:stop, 1].view(-1, 1, 1, 1)
+        cz = c[start:stop, 2].view(-1, 1, 1, 1)
+        w_view = w[start:stop].view(-1, 1, 1, 1)
+        cu_u = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
+        cu_f = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
+        forcing = w_view * (
+            (cu_f - u_dot_f) / cs2 + cu_u * cu_f / cs2**2
+        )
+        output[start:stop] = f[start:stop] + forcing
+    return output
 
 
 def guo_body_force_d3q27(
@@ -1029,6 +1034,7 @@ def bfl_wall_function_3d(
     wall_normals: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
     area_weight: torch.Tensor | None = None,
     apply_wall_stress: bool = True,
+    guo_direction_chunk_size: int = 19,
     return_wall_diagnostics: bool = False,
 ) -> (
     tuple[torch.Tensor, float, float]
@@ -1091,8 +1097,8 @@ def bfl_wall_function_3d(
         ``return_wall_diagnostics`` is true, a fourth applicability and
         exchange-sample diagnostic object is returned.
     """
-    from .d3q19 import macroscopic3d
     from .bfl_d3q19 import bouzidi_bounce_back_d3q19
+    from .d3q19 import macroscopic3d_low_memory as macroscopic3d
 
     if near_mask is not None:
         near = near_mask
@@ -1272,6 +1278,7 @@ def bfl_wall_function_3d(
         if use_guo:
             f = guo_body_force_d3q19(
                 f, fx, fy, fz, local_ux, local_uy, local_uz,
+                direction_chunk_size=guo_direction_chunk_size,
             )
         else:
             # Legacy simple forcing (ibm_apply_body_force_3d)
