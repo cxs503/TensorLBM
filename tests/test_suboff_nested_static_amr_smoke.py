@@ -617,6 +617,27 @@ def test_nested_smoke_supports_float64_population_storage(
     assert result["result"]["finite"] is True
 
 
+def test_float64_population_checkpoint_resumes_without_downcast(
+    tmp_path: Path,
+) -> None:
+    initial_args = _args(
+        tmp_path, steps=1, collision_model="natural_kbc",
+    )
+    initial_args.population_storage_dtype = "float64"
+    MODULE.run(initial_args)
+
+    resume_args = _args(
+        tmp_path, steps=2, resume=True, collision_model="natural_kbc",
+    )
+    resume_args.population_storage_dtype = "float64"
+    resumed = MODULE.run(resume_args)
+
+    assert resumed["configuration"]["resumed_from_step"] == 1
+    assert resumed["configuration"]["population_storage_dtype"] == "float64"
+    signatures = resumed["result"]["collision_execution"]["input_signatures"]
+    assert {item["dtype"] for item in signatures} == {"torch.float64"}
+
+
 @pytest.mark.parametrize(
     ("collision_model", "coefficient_key", "coefficient"),
     (
