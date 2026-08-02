@@ -1782,6 +1782,43 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      and returned state tensors are detached copies.  Fourteen focused
      selector, solid-aware pressure-gradient and wall-checkpoint tests pass.
      This does not wire an unvalidated stress correction into production.
+201. A force-disconnected pressure-gradient equilibrium ODE wall-model
+     candidate now retains the local signed streamwise pressure-gradient term
+     and integrates a Van-Driest-damped mixing-length closure to the exchange
+     location.  Vectorised bisection recovers non-negative attached wall shear;
+     nodes that require reverse shear are explicitly reported as separated
+     instead of being clipped into the equilibrium law.  The implementation
+     follows the public thin-boundary-layer architecture described by Duprat
+     et al. (2011, DOI `10.1063/1.3529358`).  The candidate provides both a
+     classic Van-Driest closure and the published Duprat scale
+     `u_tau_p=sqrt(u_tau^2+u_p^2)`, including its `alpha`, `y*`, `A+=18` and
+     `beta=0.78` mixing-length terms; the two are retained for frozen-field
+     A/B audits.  An exact cross-code test reproduces both reference eddy-
+     viscosity values from the open-source `libWallModelledLES` Duprat test to
+     floating-point tolerance (upstream commit
+     `495d497ffd2665376c9031e4612f406073d5fd48`).  TensorLBM's kernel is an
+     independent tensor implementation of the published equation; no upstream
+     source was copied.  The ODE source retains the signed gradient
+     projected along local flow, while `u_p` separately consumes the full
+     tangential-gradient magnitude, matching the public implementation.
+     Nine tests cover that comparison, the exact
+     laminar pressure-gradient solution,
+     a generated zero-gradient turbulent state, signed monotonic response,
+     Duprat attachment through zero-shear scaling, separation, non-finite
+     isolation and invalid solver configuration.  It remains outside every
+     production force path pending canonical adverse-gradient validation and
+     a reverse-shear treatment.
+202. Frozen-field A/B audits reject both ODE candidates as production force
+     replacements while retaining the common kernel.  On the L512 flat-plate
+     centre, Duprat preserves 100% attached coverage but predicts 92.06% of the
+     admitted Musker shear; over SUBOFF it preserves 99.78% attached area yet
+     predicts 125.59% of frozen Musker shear.  The `u_tau`-only Van-Driest
+     variant falsely separates 35.72% of SUBOFF area.  Thus Duprat repairs the
+     attachment structure but not force equivalence.  No coefficient was
+     selected against SUBOFF experiment; both remain diagnostic until a
+     canonical adverse-pressure-gradient case and reverse-shear model pass.
+     Audit hashes and ratios are frozen in
+     `docs/evidence/pressure-gradient-ode-wall-candidate-ab-r1.json`.
 
 ## Rejected candidates
 
