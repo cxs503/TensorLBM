@@ -1,0 +1,68 @@
+{
+  "schema": "tensorlbm-suboff-memory-preflight-evidence-v1",
+  "status": "single_gpu_rejected_multigpu_candidate",
+  "physical_validation": false,
+  "case": "DARPA SUBOFF AFF-1 four-level equivalent L120",
+  "source_commit": "f7a87e1",
+  "conservative_memory_bytes_per_cell": 1100.0,
+  "baseline": {
+    "source": "/tmp/suboff-aff1-v12-four-level-l120-preflight.json",
+    "sha256": "3d9fdefc9dd725bc7657fdf45388afbcc1851c1cee9e004b735fd11b1893cab4",
+    "allocated_cells_by_level": [8640000, 1949696, 4570560, 21150720],
+    "total_allocated_cells": 36310976,
+    "estimated_peak_gib": 37.198954820632935,
+    "single_24_gib_gpu_admitted": false
+  },
+  "tight_observer_safe_candidate": {
+    "source": "/tmp/suboff-aff1-v12-four-level-l120-tight-preflight.json",
+    "sha256": "38b4203d6b53dc83dd2dfbdc6a7f66e08842df18040ced1d5b1ec8b8b27d1abf",
+    "inner_wall_margin_parent_cells": 6,
+    "inner_wake_cells": 8,
+    "deep_wall_margin_parent_cells": 4,
+    "deep_wake_cells": 8,
+    "primary_cv_margin_cells": 4,
+    "auxiliary_cv_margin_cells": [2, 6],
+    "minimum_cv_to_physical_interface_clearance_cells": [4, 6, 2],
+    "required_streaming_source_guard_cells": 1,
+    "all_flux_stencils_outside_interface": true,
+    "allocated_cells_by_level": [8640000, 1949696, 3697344, 17354304],
+    "total_allocated_cells": 31641344,
+    "estimated_peak_gib": 32.415127754211426,
+    "single_24_gib_gpu_admitted": false,
+    "finest_hull_length_cells": 960.0,
+    "finest_diameter_cells": 112.01866977829638,
+    "absolute_reference_geometry_resolved": true
+  },
+  "proposed_level_device_partition": [
+    {
+      "logical_device": "cuda:0",
+      "level_indices": [0, 1],
+      "allocated_cells": 10589696,
+      "estimated_peak_gib": 10.848665237426758
+    },
+    {
+      "logical_device": "cuda:1",
+      "level_indices": [2],
+      "allocated_cells": 3697344,
+      "estimated_peak_gib": 3.787761926651001
+    },
+    {
+      "logical_device": "cuda:2",
+      "level_indices": [3],
+      "allocated_cells": 17354304,
+      "estimated_peak_gib": 17.778700590133667
+    }
+  ],
+  "runtime_gate": {
+    "required_free_reserve_gib_per_device": 1.0,
+    "two_gpu_equivalence_probe_pid": 1640017,
+    "two_gpu_equivalence_probe_status": "queued",
+    "production_l120_launch_allowed": false,
+    "reason": "Cross-device ghost fill, restriction and reflux must pass the independent one-device equivalence probe before a physical campaign is launched."
+  },
+  "limitations": [
+    "This artifact assesses geometry, observer clearance and memory only.",
+    "The tighter block is not yet a member of an admitted grid-convergence family.",
+    "No resistance accuracy claim is made."
+  ]
+}
