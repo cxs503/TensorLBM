@@ -63,12 +63,24 @@ def test_short_natural_kbc_cylinder_composition_is_finite() -> None:
         reynolds=20, lattice_speed=0.04, steps=4, warmup_steps=2,
         ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
         collision_model="natural_kbc_d3q19",
+        collision_chunk_cells=56 * 40,
     )
 
     artifact = run_cylinder_bfl_control_volume(cfg)
 
     assert artifact["result"]["finite"] is True
     assert artifact["configuration"]["collision_model"] == "natural_kbc_d3q19"
+    assert artifact["result"]["collision_execution"]["collision_calls"] == 12
+
+
+def test_compiled_cylinder_collision_requires_natural_kbc() -> None:
+    with pytest.raises(ValueError, match="natural_kbc"):
+        CylinderBFLControlVolumeConfig(compile_natural_kbc=True).validate()
+
+
+def test_negative_cylinder_collision_chunk_is_rejected() -> None:
+    with pytest.raises(ValueError, match="collision_chunk_cells"):
+        CylinderBFLControlVolumeConfig(collision_chunk_cells=-1).validate()
 
 
 def test_unknown_cylinder_collision_model_is_rejected() -> None:
@@ -95,6 +107,8 @@ def test_cylinder_cli_help() -> None:
         env=os.environ | {"PYTHONPATH": str(source_root)},
     )
     assert "--far-field-mode" in completed.stdout
+    assert "--collision-chunk-cells" in completed.stdout
+    assert "--compile-natural-kbc" in completed.stdout
 
 
 def test_cylinder_checkpoint_can_resume(tmp_path) -> None:

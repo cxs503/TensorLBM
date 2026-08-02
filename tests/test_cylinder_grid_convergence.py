@@ -19,6 +19,8 @@ def _record(radius: float) -> dict[str, object]:
             "reynolds": 100.0,
             "lattice_speed": 0.06,
             "collision_model": "cumulant_d3q19_cs0",
+            "collision_chunk_cells": 0,
+            "compile_natural_kbc": False,
             "warmup_steps": 1000.0 * radius,
             "ramp_steps": 50.0 * radius,
             "sponge_width": 2.0 * radius,

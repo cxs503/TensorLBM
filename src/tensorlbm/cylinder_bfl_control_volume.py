@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -10,11 +11,14 @@ import torch
 from .bfl_d3q19 import bouzidi_bounce_back_d3q19, compute_q_cylinder_d3q19
 from .boundaries3d import far_field_bc_3d
 from .checkpoint_io import atomic_torch_save
+from .chunked_collision import (
+    NaturalKBCCollisionExecutor,
+    collide_in_z_chunks,
+)
 from .control_volume_force import box_control_volume, observe_control_volume_force
 from .cuda_memory_budget import require_cuda_memory_budget
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
-from .entropic_kbc import collide_natural_kbc_d3q19
 from .external_open_boundary import non_equilibrium_far_field_bc_3d
 from .force_convergence import assess_force_stationarity
 from .solver3d import stream3d
@@ -48,6 +52,8 @@ class CylinderBFLControlVolumeConfig:
     statistics_window_steps: int = 0
     minimum_shedding_cycles: float = 8.0
     collision_model: str = "cumulant_d3q19_cs0"
+    collision_chunk_cells: int = 0
+    compile_natural_kbc: bool = False
     device: str = "cpu"
 
     @property
@@ -96,6 +102,10 @@ class CylinderBFLControlVolumeConfig:
             "cumulant_d3q19_cs0", "natural_kbc_d3q19",
         }:
             raise ValueError("unknown collision_model")
+        if self.collision_chunk_cells < 0:
+            raise ValueError("collision_chunk_cells must be non-negative")
+        if self.compile_natural_kbc and self.collision_model != "natural_kbc_d3q19":
+            raise ValueError("compiled natural KBC requires natural_kbc_d3q19")
         if self.report_interval < 0 or self.checkpoint_interval < 0:
             raise ValueError("report/checkpoint intervals must be non-negative")
         if not 0 <= self.statistics_window_steps <= self.steps - self.warmup_steps:
@@ -157,6 +167,7 @@ def estimate_strouhal_from_lift(
 def run_cylinder_bfl_control_volume(
     config: CylinderBFLControlVolumeConfig,
 ) -> dict[str, object]:
+    invocation_started = time.perf_counter()
     config.validate()
     device = torch.device(config.device)
     if device.type == "cuda":
@@ -213,6 +224,8 @@ def run_cylinder_bfl_control_volume(
         "reynolds": config.reynolds,
         "lattice_speed": config.lattice_speed,
         "collision_model": config.collision_model,
+        "collision_chunk_cells": config.collision_chunk_cells,
+        "compile_natural_kbc": config.compile_natural_kbc,
         "warmup_steps": config.warmup_steps,
         "ramp_steps": config.ramp_steps,
         "sponge_width": config.sponge_width,
@@ -226,7 +239,12 @@ def run_cylinder_bfl_control_volume(
     if config.resume:
         assert checkpoint is not None
         state = torch.load(checkpoint, map_location=device, weights_only=True)
-        if state.get("configuration") != checkpoint_signature:
+        source_configuration = state.get("configuration")
+        if isinstance(source_configuration, dict):
+            source_configuration = dict(source_configuration)
+            source_configuration.setdefault("collision_chunk_cells", 0)
+            source_configuration.setdefault("compile_natural_kbc", False)
+        if source_configuration != checkpoint_signature:
             raise ValueError("checkpoint configuration does not match cylinder run")
         f = state["populations"].to(device=device)
         start_step = int(state["step"])
@@ -264,10 +282,20 @@ def run_cylinder_bfl_control_volume(
             },
         )
 
+    natural_kbc_executor = NaturalKBCCollisionExecutor(
+        compile_enabled=config.compile_natural_kbc,
+    )
     for step in range(start_step + 1, config.steps + 1):
         old = f
         if config.collision_model == "natural_kbc_d3q19":
-            collided = collide_natural_kbc_d3q19(f, config.tau)
+            if config.collision_chunk_cells:
+                collided = collide_in_z_chunks(
+                    f,
+                    lambda slab: natural_kbc_executor(slab, config.tau),
+                    chunk_cells=config.collision_chunk_cells,
+                )
+            else:
+                collided = natural_kbc_executor(f, config.tau)
         else:
             collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
         post = torch.where(solid_q, old, collided)
@@ -356,6 +384,8 @@ def run_cylinder_bfl_control_volume(
     final_speed = torch.sqrt(
         final_ux.square() + final_uy.square() + final_uz.square()
     )
+    invocation_elapsed_seconds = time.perf_counter() - invocation_started
+    steps_advanced = config.steps - start_step
     return {
         "schema": "tensorlbm-cylinder-bfl-control-volume-v4",
         "configuration": checkpoint_signature | {
@@ -391,6 +421,12 @@ def run_cylinder_bfl_control_volume(
             "relative_mass_drift": float(final_rho.mean().item() - 1.0),
             "maximum_speed": float(final_speed.max().item()),
             "finite": math.isfinite(cd),
+            "collision_execution": natural_kbc_executor.diagnostics(),
+        },
+        "runtime": {
+            "invocation_elapsed_seconds": invocation_elapsed_seconds,
+            "steps_advanced": steps_advanced,
+            "seconds_per_step": invocation_elapsed_seconds / steps_advanced,
         },
         "acceptance": {
             "drag_error_target_pct": 5.0,
