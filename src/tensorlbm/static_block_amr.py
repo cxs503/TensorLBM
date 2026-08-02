@@ -229,6 +229,8 @@ def _validate_parent_and_box(f: torch.Tensor, config: StaticBlockAMRConfig) -> N
 def _sample_parent_with_ghost(
     parent: torch.Tensor,
     config: StaticBlockAMRConfig,
+    *,
+    target_device: torch.device | str | None = None,
 ) -> torch.Tensor:
     """Piecewise-constant parent sampling on fine physical+ghost coordinates."""
     b, r, g = config.box, config.ratio, config.ghost
@@ -239,6 +241,8 @@ def _sample_parent_with_ghost(
     y_c = torch.div(y_f, r, rounding_mode="floor")
     x_c = torch.div(x_f, r, rounding_mode="floor")
     sampled = parent[:, z_c[:, None, None], y_c[None, :, None], x_c[None, None, :]]
+    if target_device is not None:
+        sampled = sampled.to(device=target_device)
     return rescale_nonequilibrium(
         sampled,
         tau_source=config.tau_coarse,
@@ -257,11 +261,19 @@ class StaticBlockAMR3D:
         config: StaticBlockAMRConfig,
         *,
         fine_solid: torch.Tensor | None = None,
+        fine_device: torch.device | str | None = None,
     ) -> None:
         _validate_parent_and_box(coarse_f, config)
         self.coarse_f = coarse_f
         self.config = config
-        self.fine_f = _sample_parent_with_ghost(coarse_f, config)
+        self.fine_device = torch.device(
+            coarse_f.device if fine_device is None else fine_device,
+        )
+        self.fine_f = _sample_parent_with_ghost(
+            coarse_f,
+            config,
+            target_device=self.fine_device,
+        )
         self.last_prolongation_positivity: PositivityDiagnostics | None = None
         self._maximum_prolongation_limited_fraction = 0.0
         self._minimum_prolongation_alpha = 1.0
@@ -284,8 +296,8 @@ class StaticBlockAMR3D:
         if fine_solid is not None:
             if fine_solid.shape != physical_shape or fine_solid.dtype is not torch.bool:
                 raise ValueError("fine_solid must be bool with the physical fine shape")
-            if fine_solid.device != coarse_f.device:
-                raise ValueError("fine_solid and coarse populations must share a device")
+            if fine_solid.device != self.fine_f.device:
+                raise ValueError("fine_solid and fine populations must share a device")
             self.fine_solid = fine_solid
             g = config.ghost
             self.fine_solid_with_ghost = torch.zeros(
@@ -314,7 +326,7 @@ class StaticBlockAMR3D:
         b = config.box
         coarse_owned[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = True
         fine_owned = torch.zeros(
-            self.fine_f.shape[1:], dtype=torch.bool, device=coarse_f.device,
+            self.fine_f.shape[1:], dtype=torch.bool, device=self.fine_f.device,
         )
         g = config.ghost
         fine_owned[g:-g, g:-g, g:-g] = True
@@ -380,22 +392,22 @@ class StaticBlockAMR3D:
     def _build_ghost_sampling_plan(self) -> _GhostSamplingPlan:
         """Cache the non-overlapping one-cell shell and its parent donors."""
         _, nz, ny, nx = self.fine_f.shape
-        device = self.fine_f.device
+        donor_device = self.coarse_f.device
         regions = (
             (
-                torch.tensor((0, nz - 1), device=device),
-                torch.arange(ny, device=device),
-                torch.arange(nx, device=device),
+                torch.tensor((0, nz - 1), device=donor_device),
+                torch.arange(ny, device=donor_device),
+                torch.arange(nx, device=donor_device),
             ),
             (
-                torch.arange(1, nz - 1, device=device),
-                torch.tensor((0, ny - 1), device=device),
-                torch.arange(nx, device=device),
+                torch.arange(1, nz - 1, device=donor_device),
+                torch.tensor((0, ny - 1), device=donor_device),
+                torch.arange(nx, device=donor_device),
             ),
             (
-                torch.arange(1, nz - 1, device=device),
-                torch.arange(1, ny - 1, device=device),
-                torch.tensor((0, nx - 1), device=device),
+                torch.arange(1, nz - 1, device=donor_device),
+                torch.arange(1, ny - 1, device=donor_device),
+                torch.tensor((0, nx - 1), device=donor_device),
             ),
         )
         coordinates = [
@@ -403,7 +415,9 @@ class StaticBlockAMR3D:
             for z, y, x in regions
         ]
         local = torch.cat(coordinates, dim=0)
-        target_flat = (local[:, 0] * ny + local[:, 1]) * nx + local[:, 2]
+        target_flat = (
+            (local[:, 0] * ny + local[:, 1]) * nx + local[:, 2]
+        ).to(device=self.fine_f.device)
         b, r, g = self.config.box, self.config.ratio, self.config.ghost
         global_fine = torch.stack((
             b.z0 * r - g + local[:, 0],
@@ -471,6 +485,7 @@ class StaticBlockAMR3D:
                 torch.lerp(v10, v11, wy),
                 wz,
             )
+        sampled = sampled.to(device=self.fine_f.device)
         sampled = rescale_nonequilibrium(
             sampled[:, None, None, :],
             tau_source=(
@@ -514,7 +529,7 @@ class StaticBlockAMR3D:
                 diagnostic.minimum_alpha,
             )):
                 raise FloatingPointError("non-finite fine-to-coarse AMR restriction")
-        return restricted
+        return restricted.to(device=self.coarse_f.device)
 
     def _filter_fine_interface(self, populations: torch.Tensor) -> torch.Tensor:
         return damp_interface_nonequilibrium(
@@ -675,6 +690,7 @@ class NestedStaticBlockAMR3D:
         configs: Sequence[StaticBlockAMRConfig],
         *,
         fine_solids: Sequence[torch.Tensor | None] | None = None,
+        fine_devices: Sequence[torch.device | str | None] | None = None,
     ) -> None:
         if not configs:
             raise ValueError("nested AMR requires at least one fine-level configuration")
@@ -684,12 +700,16 @@ class NestedStaticBlockAMR3D:
             fine_solids = [None] * len(configs)
         if len(fine_solids) != len(configs):
             raise ValueError("fine_solids must have one entry per interface")
+        if fine_devices is None:
+            fine_devices = [None] * len(configs)
+        if len(fine_devices) != len(configs):
+            raise ValueError("fine_devices must have one entry per interface")
 
         self.interfaces: list[StaticBlockAMR3D] = []
         parent = coarse_f
         previous_tau_fine: float | None = None
-        for level, (config, fine_solid) in enumerate(
-            zip(configs, fine_solids, strict=True),
+        for level, (config, fine_solid, fine_device) in enumerate(
+            zip(configs, fine_solids, fine_devices, strict=True),
         ):
             if (
                 previous_tau_fine is not None
@@ -699,7 +719,10 @@ class NestedStaticBlockAMR3D:
                     f"interface {level} tau_coarse must equal its parent tau_fine",
                 )
             interface = StaticBlockAMR3D(
-                parent, config, fine_solid=fine_solid,
+                parent,
+                config,
+                fine_solid=fine_solid,
+                fine_device=fine_device,
             )
             self.interfaces.append(interface)
             parent = interface.fine_f
@@ -724,6 +747,11 @@ class NestedStaticBlockAMR3D:
         return (self.coarse_f,) + tuple(
             interface.fine_f for interface in self.interfaces
         )
+
+    @property
+    def level_devices(self) -> tuple[torch.device, ...]:
+        """Execution device owning each canonical hierarchy level."""
+        return tuple(level.device for level in self.level_populations)
 
     @property
     def total_allocated_cells(self) -> int:
@@ -851,6 +879,11 @@ class NestedStaticBlockAMR3D:
 
         if fine_transfer is None:
             raise RuntimeError("nested AMR omitted fine interface transfer")
+        if fine_transfer.outgoing.device != coarse_transfer.outgoing.device:
+            fine_transfer = KineticInterfaceTransfer(
+                fine_transfer.outgoing.to(coarse_transfer.outgoing.device),
+                fine_transfer.incoming.to(coarse_transfer.incoming.device),
+            )
         restricted = interface._restrict_physical(
             tau_source=tau_fine,
             tau_target=tau_coarse,

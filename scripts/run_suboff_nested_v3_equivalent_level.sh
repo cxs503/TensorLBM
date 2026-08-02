@@ -2,8 +2,9 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: $0 L90|L120|L150 PHYSICAL_GPU [RESULT_DIR] [WAIT_FOR_PID]" >&2
+  echo "usage: $0 L90|L120|L150 PHYSICAL_GPU_OR_GPU_LIST [RESULT_DIR] [WAIT_FOR_PID]" >&2
   echo "       SUBOFF_HULL_TYPE=bare_hull|full (default: bare_hull)" >&2
+  echo "       TENSORLBM_LEVEL_DEVICES=cuda:0,cuda:0,cuda:1,cuda:2" >&2
   exit 2
 }
 
@@ -160,6 +161,7 @@ case "$collision_model" in
 esac
 stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1}
 memory_bytes_per_cell=${TENSORLBM_MEMORY_BYTES_PER_CELL:-742}
+level_devices=${TENSORLBM_LEVEL_DEVICES:-}
 run_preflight=()
 if [[ ${TENSORLBM_RUN_PREFLIGHT_ONLY:-0} == 1 ]]; then
   run_preflight=(--preflight-only)
@@ -184,7 +186,8 @@ fi
 
 export CUDA_VISIBLE_DEVICES=$gpu
 exec "$python" examples/suboff_nested_static_amr_smoke.py \
-  --device cuda:0 --hull-type "$hull_type" --speed-knots 5.92 \
+  --device cuda:0 --level-devices "$level_devices" \
+  --hull-type "$hull_type" --speed-knots 5.92 \
   --nx "$nx" --ny "$cross" --nz "$cross" --hull-length "$level" \
   --center-x-fraction 0.3 \
   --outer-wall-margin "$outer_wall" --outer-wake-cells "$outer_wake" \
