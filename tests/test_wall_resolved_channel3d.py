@@ -37,6 +37,9 @@ def test_spectral_initialization_is_deterministic_solenoidal_and_no_slip() -> No
     assert torch.count_nonzero(uz[solid]) == 0
     assert diagnostics["total_rms_over_u_tau"] == pytest.approx(0.75, rel=2e-6)
     assert diagnostics["maximum_plane_mean_over_u_tau"] < 1e-5
+    assert diagnostics[
+        "interior_discrete_divergence_rms_over_u_tau_per_cell"
+    ] < 2e-4
     # The central-difference divergence converges to the analytic zero; the
     # residual is normalized by the perturbation velocity per lattice cell.
     base_y = torch.arange(config.ny, dtype=ux.dtype)[None, :, None]

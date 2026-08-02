@@ -260,6 +260,17 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
         uy.mean(dim=(0, 2)).abs().max(),
         uz.mean(dim=(0, 2)).abs().max(),
     ))
+    interior_divergence = (
+        0.5 * (
+            torch.roll(perturbation_x, -1, 2)
+            - torch.roll(perturbation_x, 1, 2)
+        )[:, 2:-2]
+        + 0.5 * (uy[:, 3:-1] - uy[:, 1:-3])
+        + 0.5 * (
+            torch.roll(uz, -1, 0) - torch.roll(uz, 1, 0)
+        )[:, 2:-2]
+    )
+    divergence_rms = torch.sqrt(interior_divergence.square().mean())
     initialization_diagnostics = {
         "mode": config.initialization_mode,
         "construction": (
@@ -275,6 +286,16 @@ def _initial_velocity(config: WallResolvedChannel3DConfig, device: torch.device)
         ),
         "maximum_plane_mean_over_u_tau": float(
             plane_mean_max.max().item() / config.u_tau,
+        ),
+        "component_rms_maximum_to_minimum_ratio": float(
+            component_rms.max().item()
+            / component_rms.min().clamp_min(1.0e-30).item()
+        ),
+        "interior_discrete_divergence_rms_over_u_tau_per_cell": float(
+            divergence_rms.item() / config.u_tau
+        ),
+        "interior_discrete_divergence_maximum_over_u_tau_per_cell": float(
+            interior_divergence.abs().max().item() / config.u_tau
         ),
         "wall_maximum_speed": float(torch.sqrt(
             ux[solid].square() + uy[solid].square() + uz[solid].square(),
