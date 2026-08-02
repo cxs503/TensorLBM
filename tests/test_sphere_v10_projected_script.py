@@ -14,3 +14,11 @@ def test_sphere_projected_pressure_runner_is_valid_and_diagnostic() -> None:
     assert "--projected-pressure-interval 30" in source
     assert "--projected-pressure-reconstruction linear" in source
     assert "--radius 9" in source
+
+
+def test_projected_pressure_assessment_watcher_is_valid_shell() -> None:
+    path = ROOT / "scripts" / "run_sphere_projected_assess_when_ready.sh"
+    subprocess.run(["bash", "-n", str(path)], check=True)
+    source = path.read_text(encoding="utf-8")
+    assert "assess_sphere_projected_pressure.py" in source
+    assert "sphere-v10-projected-linear-r9-assessment.json" in source
