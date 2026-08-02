@@ -9,6 +9,7 @@ Benchmark (NASA NACA 0012 rime, Ruff & Wright):
   T=−10 °C (rime, full freezing), t=360 s, AoA=4°.
   Validate: ice shape profile (leading-edge horn) vs NASA IRT / LEWICE.
 """
+
 from __future__ import annotations
 import argparse, math, os, sys
 from pathlib import Path
@@ -24,8 +25,7 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d
 from hull_fs_pf_mrt import _init_g_equilibrium, _laplacian_3d
 
 
-def naca0012_mask(nx, ny, nz, chord_frac=0.4, aoa_deg=4.0,
-                  cx_frac=0.3, cy_frac=0.5, dev=None):
+def naca0012_mask(nx, ny, nz, chord_frac=0.4, aoa_deg=4.0, cx_frac=0.3, cy_frac=0.5, dev=None):
     """NACA 0012 airfoil solid mask (2-D, nz=1).
 
     Thickness distribution (NACA 4-digit, t=0.12):
@@ -42,30 +42,49 @@ def naca0012_mask(nx, ny, nz, chord_frac=0.4, aoa_deg=4.0,
     cos_a, sin_a = math.cos(aoa), math.sin(aoa)
 
     zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=dev), torch.arange(ny, device=dev),
-        torch.arange(nx, device=dev), indexing="ij")
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
+    )
     dx = xx.float() - cx0
     dy = yy.float() - cy0
     # rotate to airfoil-aligned coords
-    xr = (dx * cos_a + dy * sin_a) / chord        # normalized chord [0,1]
-    yr = (-dx * sin_a + dy * cos_a) / chord       # normalized thickness
+    xr = (dx * cos_a + dy * sin_a) / chord  # normalized chord [0,1]
+    yr = (-dx * sin_a + dy * cos_a) / chord  # normalized thickness
     xclamp = xr.clamp(0.0, 1.0)
-    yt = 5.0 * t * (0.2969 * torch.sqrt(xclamp) - 0.126 * xclamp
-                    - 0.3516 * xclamp ** 2 + 0.2843 * xclamp ** 3
-                    - 0.1015 * xclamp ** 4)
+    yt = (
+        5.0
+        * t
+        * (
+            0.2969 * torch.sqrt(xclamp)
+            - 0.126 * xclamp
+            - 0.3516 * xclamp**2
+            + 0.2843 * xclamp**3
+            - 0.1015 * xclamp**4
+        )
+    )
     inside = (xr >= 0.0) & (xr <= 1.0) & (yr.abs() <= yt)
     return inside
 
 
-def run_aircraft_icing(nx=200, ny=100, nz=1, u_in=0.06, tau=0.55,
-                       chord_frac=0.4, aoa_deg=4.0, steps=2000,
-                       device="cpu", log_every=500):
+def run_aircraft_icing(
+    nx=200,
+    ny=100,
+    nz=1,
+    u_in=0.06,
+    tau=0.55,
+    chord_frac=0.4,
+    aoa_deg=4.0,
+    steps=2000,
+    device="cpu",
+    log_every=500,
+):
     """Phase 1: NACA 0012 + air flow (no icing yet)."""
     dev = torch.device(device)
     solid = naca0012_mask(nx, ny, nz, chord_frac, aoa_deg, dev=dev)
     n_solid = int(solid.sum().item())
-    print(f"  NACA 0012: chord={nx*chord_frac:.0f} cells, AoA={aoa_deg}°, "
-          f"solid cells={n_solid}")
+    print(f"  NACA 0012: chord={nx * chord_frac:.0f} cells, AoA={aoa_deg}°, solid cells={n_solid}")
 
     rho0 = torch.ones((nz, ny, nx), device=dev)
     u0 = torch.full((nz, ny, nx), u_in, device=dev)
@@ -86,8 +105,10 @@ def run_aircraft_icing(nx=200, ny=100, nz=1, u_in=0.06, tau=0.55,
     collision_count = torch.zeros((nz, ny, nx), device=dev, dtype=torch.float32)
     ice_threshold = 1.1  # droplets per cell to freeze (ρ_water/ρ_ice=1000/917)
 
-    print(f"  Flow: u_in={u_in}, tau={tau}, Re≈{u_in*nx*chord_frac/((tau-0.5)/3):.0f}, "
-          f"steps={steps}")
+    print(
+        f"  Flow: u_in={u_in}, tau={tau}, Re≈{u_in * nx * chord_frac / ((tau - 0.5) / 3):.0f}, "
+        f"steps={steps}"
+    )
     print(f"  {'step':>6s} {'u_max':>8s} {'rho_min':>8s} {'rho_max':>8s} {'cd':>8s} {'cl':>8s}")
 
     history = []
@@ -112,7 +133,9 @@ def run_aircraft_icing(nx=200, ny=100, nz=1, u_in=0.06, tau=0.55,
         # === Lagrangian droplet particles (3D) ===
         rho, ux, uy, uz = macroscopic3d(f)
         # Seed new droplets at inlet (random y, z)
-        new_y = torch.randint(0, ny, (n_droplets_per_step,), device=dev).float()  # full y (physical)
+        new_y = torch.randint(
+            0, ny, (n_droplets_per_step,), device=dev
+        ).float()  # full y (physical)
         new_z = torch.randint(0, nz, (n_droplets_per_step,), device=dev).float()
         new_x = torch.zeros(n_droplets_per_step, device=dev)
         droplets.append(torch.stack([new_x, new_y, new_z], dim=1))
@@ -132,7 +155,7 @@ def run_aircraft_icing(nx=200, ny=100, nz=1, u_in=0.06, tau=0.55,
         zi2 = all_d[:, 2].long().clamp(0, nz - 1)
         nbr_ice = torch.zeros_like(ice_mask)
         for _ax, _sgn in [(2, 1), (2, -1), (1, 1), (1, -1), (0, 1), (0, -1)]:
-            nbr_ice |= (torch.roll(ice_mask, _sgn, dims=_ax) & ~ice_mask)
+            nbr_ice |= torch.roll(ice_mask, _sgn, dims=_ax) & ~ice_mask
         # Droplet hits ice (entered solid) → freeze at upstream fluid cell
         in_ice = ice_mask[zi2, yi2, xi2]
         hit = in_ice
@@ -155,9 +178,14 @@ def run_aircraft_icing(nx=200, ny=100, nz=1, u_in=0.06, tau=0.55,
                 if new_ice.any():
                     ice_mask = ice_mask | new_ice
                     collision_count[new_ice] = 0
-        in_bounds = ((all_d[:, 0] >= 0) & (all_d[:, 0] < nx) &
-                     (all_d[:, 1] >= 0) & (all_d[:, 1] < ny) &
-                     (all_d[:, 2] >= 0) & (all_d[:, 2] < nz))
+        in_bounds = (
+            (all_d[:, 0] >= 0)
+            & (all_d[:, 0] < nx)
+            & (all_d[:, 1] >= 0)
+            & (all_d[:, 1] < ny)
+            & (all_d[:, 2] >= 0)
+            & (all_d[:, 2] < nz)
+        )
         keep = ~hit & in_bounds
         all_d = all_d[keep]
         droplets = [all_d] if len(all_d) > 0 else []
@@ -171,31 +199,44 @@ def run_aircraft_icing(nx=200, ny=100, nz=1, u_in=0.06, tau=0.55,
             fluid = ~solid
             surf = torch.zeros_like(solid)
             for _ax, _sgn in [(2, 1), (2, -1), (1, 1), (1, -1), (0, 1), (0, -1)]:
-                surf |= (solid & torch.roll(fluid, _sgn, dims=_ax))
+                surf |= solid & torch.roll(fluid, _sgn, dims=_ax)
             df = (f_pre - f) * surf.unsqueeze(0).float()
             fx = float((df * c[:, 0].view(19, 1, 1, 1)).sum().item())
             fy = -float((df * c[:, 1].view(19, 1, 1, 1)).sum().item())  # y-up: flip sign
             rho_ref = 1.0
-            q = 0.5 * rho_ref * u_in ** 2
+            q = 0.5 * rho_ref * u_in**2
             chord = nx * chord_frac
             cd = fx / (q * chord * nz)
             cl = fy / (q * chord * nz)
             u_max = float(ux.abs().max().item())
             n_ice = int(ice_mask.sum().item()) - n_solid
             n_droplets = len(all_d)
-            print(f"  {step:6d} {u_max:8.4f} {float(rho.min().item()):8.3f} "
-                  f"{float(rho.max().item()):8.3f} {cd:8.4f} {cl:8.4f} "
-                  f"ice={n_ice} drops={n_droplets}", flush=True)
+            print(
+                f"  {step:6d} {u_max:8.4f} {float(rho.min().item()):8.3f} "
+                f"{float(rho.max().item()):8.3f} {cd:8.4f} {cl:8.4f} "
+                f"ice={n_ice} drops={n_droplets}",
+                flush=True,
+            )
             history.append({"step": step, "cd": cd, "cl": cl, "u_max": u_max})
 
-    return {"f": f, "solid": solid, "ice_mask": ice_mask,
-            "original_solid": original_solid, "history": history,
-            "nx": nx, "ny": ny, "nz": nz, "u_in": u_in, "chord": nx * chord_frac}
+    return {
+        "f": f,
+        "solid": solid,
+        "ice_mask": ice_mask,
+        "original_solid": original_solid,
+        "history": history,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "u_in": u_in,
+        "chord": nx * chord_frac,
+    }
 
 
 def save_plot(result, out_path="outputs/aircraft_icing_flow.png"):
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
@@ -206,21 +247,38 @@ def save_plot(result, out_path="outputs/aircraft_icing_flow.png"):
     rho, ux, uy, _ = macroscopic3d(f)
     fig, axes = plt.subplots(1, 2, figsize=(16, 5), constrained_layout=True)
     ax = axes[0]
-    im = ax.imshow(ux[0].detach().cpu().numpy(), origin="lower", cmap="RdBu_r",
-                   extent=[0, result["nx"], 0, result["ny"]], vmin=-0.1, vmax=0.15)
-    ax.contour(solid[0].detach().cpu().numpy().T, levels=[0.5], colors="k", linewidths=2,
-               extent=[0, result["nx"], 0, result["ny"]])
+    im = ax.imshow(
+        ux[0].detach().cpu().numpy(),
+        origin="lower",
+        cmap="RdBu_r",
+        extent=[0, result["nx"], 0, result["ny"]],
+        vmin=-0.1,
+        vmax=0.15,
+    )
+    ax.contour(
+        solid[0].detach().cpu().numpy().T,
+        levels=[0.5],
+        colors="k",
+        linewidths=2,
+        extent=[0, result["nx"], 0, result["ny"]],
+    )
     ax.set_title(f"u_x  (NACA 0012, AoA={4}°)")
-    ax.set_xlabel("x"); ax.set_ylabel("y")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
     plt.colorbar(im, ax=ax)
     ax = axes[1]
-    spd = torch.sqrt(ux ** 2 + uy ** 2)[0].detach().cpu().numpy()
-    im = ax.imshow(spd, origin="lower", cmap="viridis",
-                   extent=[0, result["nx"], 0, result["ny"]])
-    ax.contour(solid[0].detach().cpu().numpy().T, levels=[0.5], colors="w", linewidths=2,
-               extent=[0, result["nx"], 0, result["ny"]])
+    spd = torch.sqrt(ux**2 + uy**2)[0].detach().cpu().numpy()
+    im = ax.imshow(spd, origin="lower", cmap="viridis", extent=[0, result["nx"], 0, result["ny"]])
+    ax.contour(
+        solid[0].detach().cpu().numpy().T,
+        levels=[0.5],
+        colors="w",
+        linewidths=2,
+        extent=[0, result["nx"], 0, result["ny"]],
+    )
     ax.set_title("speed")
-    ax.set_xlabel("x"); ax.set_ylabel("y")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
     plt.colorbar(im, ax=ax)
     p = Path(out_path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -246,9 +304,18 @@ def main():
     print("=" * 64)
     print("  AIRCRAFT ICING — NACA 0012 (Phase 1: flow field)")
     print("=" * 64)
-    r = run_aircraft_icing(nx=args.nx, ny=args.ny, nz=args.nz, u_in=args.u_in,
-                           tau=args.tau, chord_frac=args.chord_frac, aoa_deg=args.aoa,
-                           steps=args.steps, device=args.device, log_every=args.log_every)
+    r = run_aircraft_icing(
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        u_in=args.u_in,
+        tau=args.tau,
+        chord_frac=args.chord_frac,
+        aoa_deg=args.aoa,
+        steps=args.steps,
+        device=args.device,
+        log_every=args.log_every,
+    )
     save_plot(r, args.output)
     h = r["history"]
     if h:

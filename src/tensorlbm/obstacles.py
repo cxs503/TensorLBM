@@ -71,11 +71,7 @@ def wigley_hull_mask(
     z_norm = (zz - z_waterline) / draft  # range [-1, 0] inside draft (keel→WL)
 
     # Wigley half-beam (non-negative inside the hull envelope)
-    half_beam = (
-        (beam / 2.0)
-        * (1.0 - x_norm ** 2)
-        * (1.0 - z_norm ** 2)
-    )
+    half_beam = (beam / 2.0) * (1.0 - x_norm**2) * (1.0 - z_norm**2)
 
     # Valid hull domain: within hull length and draft
     in_length = x_norm.abs() <= 1.0

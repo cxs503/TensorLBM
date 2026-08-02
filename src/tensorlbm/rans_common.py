@@ -17,6 +17,7 @@ Hot-path invariants
 * No per-call ``mask.bool()`` allocation — masks are pre-computed by the
   caller.
 """
+
 from __future__ import annotations
 
 import torch
@@ -38,6 +39,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # D3Q19
 # ---------------------------------------------------------------------------
+
 
 def collide_rans_bgk3d(
     f: torch.Tensor,
@@ -115,12 +117,29 @@ def collide_rans_mrt3d(
     dm = m - m_eq
 
     s_fixed = torch.tensor(
-        [0.0, s_e, s_eps,
-         0.0, s_q, 0.0, s_q, 0.0, s_q,
-         0.0, 0.0, 0.0, 0.0, 0.0,
-         s_pi, s_pi,
-         1.0, 1.0, 1.0],
-        dtype=f.dtype, device=device,
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
     )
     m_star = m - s_fixed.unsqueeze(1) * dm
     # Override stress modes 9–13 with the per-cell RANS rate
@@ -132,6 +151,7 @@ def collide_rans_mrt3d(
 # ---------------------------------------------------------------------------
 # D3Q27
 # ---------------------------------------------------------------------------
+
 
 def collide_rans_bgk27(
     f: torch.Tensor,
@@ -206,26 +226,26 @@ def collide_rans_mrt27(
 
     s_fixed = torch.tensor(
         [
-            0.0,   # 0  mass
-            0.0,   # 1  jx
-            0.0,   # 2  jy
-            0.0,   # 3  jz
-            s_e,   # 4  energy
-            0.0,   # 5  Nxx  – overridden below
-            0.0,   # 6  Nyy  – overridden below
-            0.0,   # 7  Pxy  – overridden below
-            0.0,   # 8  Pxz  – overridden below
-            0.0,   # 9  Pyz  – overridden below
-            s_q,   # 10
-            s_q,   # 11
-            s_q,   # 12
-            s_q,   # 13
-            s_q,   # 14
-            s_q,   # 15
-            s_q,   # 16
-            s_q,   # 17
-            s_q,   # 18
-            s_eps, # 19
+            0.0,  # 0  mass
+            0.0,  # 1  jx
+            0.0,  # 2  jy
+            0.0,  # 3  jz
+            s_e,  # 4  energy
+            0.0,  # 5  Nxx  – overridden below
+            0.0,  # 6  Nyy  – overridden below
+            0.0,  # 7  Pxy  – overridden below
+            0.0,  # 8  Pxz  – overridden below
+            0.0,  # 9  Pyz  – overridden below
+            s_q,  # 10
+            s_q,  # 11
+            s_q,  # 12
+            s_q,  # 13
+            s_q,  # 14
+            s_q,  # 15
+            s_q,  # 16
+            s_q,  # 17
+            s_q,  # 18
+            s_eps,  # 19
             s_pi,  # 20
             s_pi,  # 21
             s_pi,  # 22
@@ -234,7 +254,8 @@ def collide_rans_mrt27(
             s_pi,  # 25
             s_pi,  # 26
         ],
-        dtype=f.dtype, device=device,
+        dtype=f.dtype,
+        device=device,
     )
     m_star = m - s_fixed.unsqueeze(1) * dm
     # Override stress modes 5–9 with the per-cell RANS rate
@@ -246,6 +267,7 @@ def collide_rans_mrt27(
 # ---------------------------------------------------------------------------
 # Unified dispatch
 # ---------------------------------------------------------------------------
+
 
 def collide_rans_3d(
     lattice: str,
@@ -286,9 +308,7 @@ def collide_rans_3d(
     elif lattice_u == "D3Q27":
         expected_q = 27
     else:
-        raise ValueError(
-            f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}"
-        )
+        raise ValueError(f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}")
 
     if f.ndim != 4 or f.shape[0] != expected_q:
         raise ValueError(
@@ -305,6 +325,4 @@ def collide_rans_3d(
             return collide_rans_mrt3d(f, tau, nu_t, **rates)
         return collide_rans_mrt27(f, tau, nu_t, **rates)
 
-    raise ValueError(
-        f"collision must be 'BGK' or 'MRT', got {collision!r}"
-    )
+    raise ValueError(f"collision must be 'BGK' or 'MRT', got {collision!r}")

@@ -20,6 +20,7 @@ reconciled bulk-liquid inventory state (or an explicitly specified population
 update) needed to enact this paired debit.  This helper reports the required
 term but makes no solver correction.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -49,15 +50,16 @@ class PairedLiquidInterfaceTransfer:
 def _pull_from_source(field: torch.Tensor) -> torch.Tensor:
     """Return D3Q19 values at ``x-c_q`` for scalar or population fields."""
     if field.ndim == 3:
-        return torch.stack([
-            field.roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2))
-            for q in range(19)
-        ])
+        return torch.stack(
+            [field.roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2)) for q in range(19)]
+        )
     if field.ndim == 4 and field.shape[0] == 19:
-        return torch.stack([
-            field[q].roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2))
-            for q in range(19)
-        ])
+        return torch.stack(
+            [
+                field[q].roll((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])), (0, 1, 2))
+                for q in range(19)
+            ]
+        )
     raise ValueError("field must have shape (nz, ny, nx) or (19, nz, ny, nx)")
 
 
@@ -66,7 +68,8 @@ def _source_flags(flags: torch.Tensor) -> torch.Tensor:
 
 
 def paired_liquid_interface_transfers(
-    f_post: torch.Tensor, flags: torch.Tensor,
+    f_post: torch.Tensor,
+    flags: torch.Tensor,
 ) -> PairedLiquidInterfaceTransfer:
     """Build the frozen-topology LIQUID↔INTERFACE paired-link mass ledger.
 
@@ -88,15 +91,19 @@ def paired_liquid_interface_transfers(
     source_flags = _source_flags(flags)
     link_mask = (flags == INTERFACE).unsqueeze(0) & (source_flags == LIQUID)
     pulled = _pull_from_source(f_post)
-    transfer = torch.where(link_mask, pulled - f_post[OPPOSITE.to(f_post.device)], torch.zeros_like(f_post))
+    transfer = torch.where(
+        link_mask, pulled - f_post[OPPOSITE.to(f_post.device)], torch.zeros_like(f_post)
+    )
     interface_delta = transfer.sum(dim=0)
 
     # Scatter each target-x contribution to source s=x-c_q.  For a tensor at
     # target x, ``roll(-c_q)`` has value target(x+c_q) at source x.
-    bulk_delta = -torch.stack([
-        transfer[q].roll((-int(C[q, 2]), -int(C[q, 1]), -int(C[q, 0])), (0, 1, 2))
-        for q in range(19)
-    ]).sum(dim=0)
+    bulk_delta = -torch.stack(
+        [
+            transfer[q].roll((-int(C[q, 2]), -int(C[q, 1]), -int(C[q, 0])), (0, 1, 2))
+            for q in range(19)
+        ]
+    ).sum(dim=0)
     total_delta = interface_delta + bulk_delta
     return PairedLiquidInterfaceTransfer(
         link_mask=link_mask,

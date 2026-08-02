@@ -31,6 +31,7 @@ He, X., Chen, S., & Doolen, G. D. (1998).
     A novel thermal model for the lattice Boltzmann method in incompressible
     limit. *J. Comput. Phys.* 146(1), 282–300.
 """
+
 from __future__ import annotations
 
 import functools
@@ -378,19 +379,21 @@ def conjugate_ht_step(
     # --- Solid diffusion step ---
     if ndim == 2:
         kernel = torch.tensor(
-            [[0.0, 1.0, 0.0],
-             [1.0, -4.0, 1.0],
-             [0.0, 1.0, 0.0]],
-            dtype=T_solid.dtype, device=T_solid.device,
+            [[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]],
+            dtype=T_solid.dtype,
+            device=T_solid.device,
         ).view(1, 1, 3, 3)
         T_4d = T_solid.unsqueeze(0).unsqueeze(0)
         lap = F.conv2d(T_4d, kernel, padding=1).squeeze(0).squeeze(0)
     elif ndim == 3:
         # 3-D 7-point Laplacian
         lap = (
-            torch.roll(T_solid, 1, 0) + torch.roll(T_solid, -1, 0)
-            + torch.roll(T_solid, 1, 1) + torch.roll(T_solid, -1, 1)
-            + torch.roll(T_solid, 1, 2) + torch.roll(T_solid, -1, 2)
+            torch.roll(T_solid, 1, 0)
+            + torch.roll(T_solid, -1, 0)
+            + torch.roll(T_solid, 1, 1)
+            + torch.roll(T_solid, -1, 1)
+            + torch.roll(T_solid, 1, 2)
+            + torch.roll(T_solid, -1, 2)
             - 6.0 * T_solid
         )
     else:
@@ -408,14 +411,18 @@ def conjugate_ht_step(
         neighbour_kernel = torch.ones(1, 1, 3, 3, device=mask_solid.device, dtype=torch.float32)
         neighbour_kernel[0, 0, 1, 1] = 0.0
         solid_4d = solid_f.unsqueeze(0).unsqueeze(0)
-        neighbour_solid = F.conv2d(solid_4d, neighbour_kernel, padding=1).squeeze(0).squeeze(0) > 0.0
+        neighbour_solid = (
+            F.conv2d(solid_4d, neighbour_kernel, padding=1).squeeze(0).squeeze(0) > 0.0
+        )
     else:
         neighbour_solid = (
-            (torch.roll(solid_f, 1, 0) + torch.roll(solid_f, -1, 0)
-             + torch.roll(solid_f, 1, 1) + torch.roll(solid_f, -1, 1)
-             + torch.roll(solid_f, 1, 2) + torch.roll(solid_f, -1, 2))
-            > 0.0
-        )
+            torch.roll(solid_f, 1, 0)
+            + torch.roll(solid_f, -1, 0)
+            + torch.roll(solid_f, 1, 1)
+            + torch.roll(solid_f, -1, 1)
+            + torch.roll(solid_f, 1, 2)
+            + torch.roll(solid_f, -1, 2)
+        ) > 0.0
 
     is_interface_fluid = neighbour_solid & ~mask_solid
     is_interface_solid = neighbour_solid & mask_solid
@@ -523,8 +530,10 @@ def thermal_fixed_temp_mask_3d(
     """
     T_field = torch.full_like(g[0], T_fixed)
     geq = thermal_equilibrium_3d(
-        T_field, torch.zeros_like(T_field),
-        torch.zeros_like(T_field), torch.zeros_like(T_field),
+        T_field,
+        torch.zeros_like(T_field),
+        torch.zeros_like(T_field),
+        torch.zeros_like(T_field),
     )
     return torch.where(mask.unsqueeze(0), geq, g)
 
@@ -563,11 +572,11 @@ def nusselt_hot_wall_3d(
         # Forward difference: ∂T/∂x ≈ (T[1] - T[0]) at x=0
         # Nu = -∂T/∂x * L / ΔT (hot wall, heat flows into fluid → Nu > 0)
         # grad = T[0] - T[1] = -∂T/∂x, so Nu = grad * L / ΔT
-        grad = (T[:, :, 0] - T[:, :, 1])  # = -∂T/∂x at x=0
+        grad = T[:, :, 0] - T[:, :, 1]  # = -∂T/∂x at x=0
     elif wall == "x+":
         # Backward difference: ∂T/∂x ≈ (T[-1] - T[-2]) at x=nx-1
         # For cold wall: grad = T[-1] - T[-2] = -∂T/∂x, Nu = grad * L / ΔT
-        grad = (T[:, :, -1] - T[:, :, -2])
+        grad = T[:, :, -1] - T[:, :, -2]
     else:
         raise ValueError(f"wall must be x- or x+, got {wall!r}")
     # Nu = -∂T/∂n * L / ΔT; grad already = -∂T/∂n, so no extra minus
@@ -607,8 +616,10 @@ def nusselt_cylinder_3d(
     # Find interface fluid cells (fluid cells adjacent to solid)
     solid_f = solid.float()
     neighbour_solid = (
-        torch.roll(solid_f, 1, 2) + torch.roll(solid_f, -1, 2)
-        + torch.roll(solid_f, 1, 1) + torch.roll(solid_f, -1, 1)
+        torch.roll(solid_f, 1, 2)
+        + torch.roll(solid_f, -1, 2)
+        + torch.roll(solid_f, 1, 1)
+        + torch.roll(solid_f, -1, 1)
     ) > 0.0
     is_interface = neighbour_solid & ~solid
     if not is_interface.any():
@@ -616,7 +627,7 @@ def nusselt_cylinder_3d(
     # Temperature gradient magnitude at interface (central diff approx)
     dTdx = (torch.roll(T, -1, 2) - torch.roll(T, 1, 2)) / 2.0
     dTdy = (torch.roll(T, -1, 1) - torch.roll(T, 1, 1)) / 2.0
-    grad_mag = torch.sqrt(dTdx ** 2 + dTdy ** 2)
+    grad_mag = torch.sqrt(dTdx**2 + dTdy**2)
     # Only interface cells
     grad_interface = grad_mag[is_interface]
     nu = float((grad_interface * D / dT).mean().item())
@@ -646,15 +657,17 @@ def heat_flux_at_interface_3d(
     solid_f = solid.float()
     # Fluid cells adjacent to solid
     nb_solid = (
-        torch.roll(solid_f, 1, 2) + torch.roll(solid_f, -1, 2)
-        + torch.roll(solid_f, 1, 1) + torch.roll(solid_f, -1, 1)
+        torch.roll(solid_f, 1, 2)
+        + torch.roll(solid_f, -1, 2)
+        + torch.roll(solid_f, 1, 1)
+        + torch.roll(solid_f, -1, 1)
     ) > 0.0
     is_fluid_int = nb_solid & ~solid
     is_solid_int = nb_solid & solid
     # Gradients
     dTdx = (torch.roll(T, -1, 2) - torch.roll(T, 1, 2)) / 2.0
     dTdy = (torch.roll(T, -1, 1) - torch.roll(T, 1, 1)) / 2.0
-    grad_mag = torch.sqrt(dTdx ** 2 + dTdy ** 2)
+    grad_mag = torch.sqrt(dTdx**2 + dTdy**2)
     q_f = float((alpha_f * grad_mag[is_fluid_int]).mean().item()) if is_fluid_int.any() else 0.0
     q_s = float((alpha_s * grad_mag[is_solid_int]).mean().item()) if is_solid_int.any() else 0.0
     err = abs(q_f - q_s) / max(abs(q_f + q_s) / 2.0, 1e-12) if (q_f + q_s) > 0 else 0.0
@@ -695,9 +708,9 @@ def run_thermal_cavity_common(
     # Lattice parameters from Ra, Pr
     tau_T = 0.8
     alpha = (tau_T - 0.5) / 3.0  # thermal diffusivity
-    nu = alpha * Pr              # kinematic viscosity
-    tau = 3.0 * nu + 0.5         # momentum relaxation time
-    beta = Ra * nu * alpha / (L ** 3 * delta_T)
+    nu = alpha * Pr  # kinematic viscosity
+    tau = 3.0 * nu + 0.5  # momentum relaxation time
+    beta = Ra * nu * alpha / (L**3 * delta_T)
 
     # Wall mask (all 6 faces)
     wall = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
@@ -740,13 +753,18 @@ def run_thermal_cavity_common(
         # NEGATIVE, reversing the buoyancy direction (hot fluid sinks!).
         # Correct Guo forcing: Delta_f = (1-1/(2*tau)) * w*3*cy*F_y, applied
         # to the POST-collision distribution.
-        f_pre = f.clone()                       # save pre-collision for BB
-        f = collide_bgk3d(f, tau)                # collision first
-        guo_factor = 1.0 - 1.0 / (2.0 * tau)    # Guo (2002) forcing factor
-        f_buoy = apply_buoyancy_3d(              # compute force increment
-            f, T, T_ref=0.5, beta=beta, g_y=-1.0, lattice="D3Q19",
+        f_pre = f.clone()  # save pre-collision for BB
+        f = collide_bgk3d(f, tau)  # collision first
+        guo_factor = 1.0 - 1.0 / (2.0 * tau)  # Guo (2002) forcing factor
+        f_buoy = apply_buoyancy_3d(  # compute force increment
+            f,
+            T,
+            T_ref=0.5,
+            beta=beta,
+            g_y=-1.0,
+            lattice="D3Q19",
         )
-        f = f + guo_factor * (f_buoy - f)        # add scaled force post-collision
+        f = f + guo_factor * (f_buoy - f)  # add scaled force post-collision
 
         # Bounce-back + streaming (use pre-collision f for half-way BB)
         f = bounce_back_cells_3d(f, wall, f_pre=f_pre)
@@ -773,7 +791,9 @@ def run_thermal_cavity_common(
         "nusselt_history": nu_hist,
         "Ra": Ra,
         "Pr": Pr,
-        "nx": nx, "ny": ny, "nz": nz,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
         "n_steps": n_steps,
         "T_field": T_final.cpu(),
     }
@@ -817,10 +837,7 @@ def run_conjugate_ht_common(
     )
     block_x0, block_x1 = nx * 0.35, nx * 0.35 + D_block
     block_y0, block_y1 = ny * 0.5 - D_block / 2, ny * 0.5 + D_block / 2
-    solid_block = (
-        (xx >= block_x0) & (xx < block_x1)
-        & (yy >= block_y0) & (yy < block_y1)
-    )
+    solid_block = (xx >= block_x0) & (xx < block_x1) & (yy >= block_y0) & (yy < block_y1)
     solid = solid_block.unsqueeze(0).expand(nz, ny, nx).clone()
 
     # Channel walls (top/bottom)
@@ -881,7 +898,9 @@ def run_conjugate_ht_common(
         "Pr": Pr,
         "alpha_s": alpha_s,
         "alpha_f": alpha_f,
-        "nx": nx, "ny": ny, "nz": nz,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
         "n_steps": n_steps,
         "T_field": T_final.cpu(),
     }
@@ -929,7 +948,7 @@ def run_heated_cylinder_common(
         torch.arange(nx, device=device, dtype=torch.float32),
         indexing="ij",
     )
-    circle = (xx - cx) ** 2 + (yy - cy) ** 2 <= R ** 2
+    circle = (xx - cx) ** 2 + (yy - cy) ** 2 <= R**2
     solid = circle.unsqueeze(0).expand(nz, ny, nx).clone()
 
     from .d3q19 import equilibrium3d, macroscopic3d
@@ -954,7 +973,12 @@ def run_heated_cylinder_common(
     for step in range(n_steps):
         # Momentum step via common lbm_step_correct
         f = lbm_step_correct(
-            f, collide_bgk3d, tau, solid, u_in, far_field_fn,
+            f,
+            collide_bgk3d,
+            tau,
+            solid,
+            u_in,
+            far_field_fn,
         )
         # Thermal step
         rho, ux, uy, uz = macroscopic3d(f)
@@ -984,7 +1008,9 @@ def run_heated_cylinder_common(
         "Re": Re,
         "Pr": Pr,
         "D": D,
-        "nx": nx, "ny": ny, "nz": nz,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
         "n_steps": n_steps,
         "T_field": T_final.cpu(),
     }
@@ -1022,7 +1048,7 @@ def run_rayleigh_benard_common(
     alpha = (tau_T - 0.5) / 3.0
     nu = alpha * Pr
     tau = 3.0 * nu + 0.5
-    beta = Ra * nu * alpha / (H ** 3 * delta_T)
+    beta = Ra * nu * alpha / (H**3 * delta_T)
 
     # Wall mask: only top and bottom (no-slip)
     wall = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
@@ -1093,7 +1119,9 @@ def run_rayleigh_benard_common(
         "Pr": Pr,
         "Ra_critical": 1708.0,
         "convection_detected": convection_detected,
-        "nx": nx, "ny": ny, "nz": nz,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
         "n_steps": n_steps,
         "T_field": T_final.cpu(),
     }

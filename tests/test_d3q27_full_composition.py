@@ -12,6 +12,7 @@ RED phase: the probe module does not exist yet, so these tests fail on import.
 GREEN phase: after creating ``tensorlbm.d3q27_full_composition_test``, all
 tests pass and the machine-readable artifact is produced.
 """
+
 from __future__ import annotations
 
 import json
@@ -41,6 +42,7 @@ from tensorlbm.d3q27_full_composition_test import (
 # Probe existence and version
 # ---------------------------------------------------------------------------
 
+
 def test_probe_version_is_declared() -> None:
     assert D3Q27_FULL_COMPOSITION_VERSION == "d3q27-full-composition-evidence-r1"
 
@@ -48,6 +50,7 @@ def test_probe_version_is_declared() -> None:
 # ---------------------------------------------------------------------------
 # Probe execution and machine-readable artifact
 # ---------------------------------------------------------------------------
+
 
 def test_probe_returns_machine_readable_artifact() -> None:
     artifact = run_d3q27_full_composition_probe()
@@ -74,6 +77,7 @@ def test_probe_config_is_reproducible() -> None:
 # 1. Bounce-back wall composition checks
 # ---------------------------------------------------------------------------
 
+
 def test_check_bounce_back_involution_passes() -> None:
     artifact = run_d3q27_full_composition_probe()
     check = artifact["checks"]["bounce_back_involution"]
@@ -98,6 +102,7 @@ def test_check_bounce_back_momentum_reflection_passes() -> None:
 # ---------------------------------------------------------------------------
 # 2. Equilibrium + collision + streaming one-step composition checks
 # ---------------------------------------------------------------------------
+
 
 def test_check_full_step_shape_passes() -> None:
     artifact = run_d3q27_full_composition_probe()
@@ -130,6 +135,7 @@ def test_check_full_step_finite_passes() -> None:
 # 3. Macroscopic recovery composition checks
 # ---------------------------------------------------------------------------
 
+
 def test_check_macroscopic_roundtrip_passes() -> None:
     artifact = run_d3q27_full_composition_probe()
     check = artifact["checks"]["macroscopic_roundtrip"]
@@ -154,6 +160,7 @@ def test_check_macroscopic_mass_after_step_passes() -> None:
 # ---------------------------------------------------------------------------
 # 4. Wall-link force extraction composition checks
 # ---------------------------------------------------------------------------
+
 
 def test_check_force_empty_zero_passes() -> None:
     artifact = run_d3q27_full_composition_probe()
@@ -187,6 +194,7 @@ def test_check_force_drag_sign_passes() -> None:
 # Determinism
 # ---------------------------------------------------------------------------
 
+
 def test_check_determinism_passes() -> None:
     artifact = run_d3q27_full_composition_probe()
     check = artifact["checks"]["determinism"]
@@ -197,6 +205,7 @@ def test_check_determinism_passes() -> None:
 # ---------------------------------------------------------------------------
 # All checks pass → composition_contract tier
 # ---------------------------------------------------------------------------
+
 
 def test_all_checks_pass_yields_composition_contract_tier() -> None:
     artifact = run_d3q27_full_composition_probe()
@@ -209,6 +218,7 @@ def test_all_checks_pass_yields_composition_contract_tier() -> None:
 # ---------------------------------------------------------------------------
 # WITHHELD physical validation
 # ---------------------------------------------------------------------------
+
 
 def test_withheld_physical_validation_is_documented() -> None:
     artifact = run_d3q27_full_composition_probe()
@@ -243,6 +253,7 @@ def test_capability_matrix_cross_reference_is_honest() -> None:
 # Artifact integrity
 # ---------------------------------------------------------------------------
 
+
 def test_artifact_has_sha256_self_hash() -> None:
     artifact = run_d3q27_full_composition_probe()
     assert "artifact_sha256" in artifact
@@ -261,6 +272,7 @@ def test_artifact_is_json_serializable() -> None:
 # Probe is deterministic across repeated calls
 # ---------------------------------------------------------------------------
 
+
 def test_probe_is_deterministic_across_calls() -> None:
     a1 = run_d3q27_full_composition_probe()
     a2 = run_d3q27_full_composition_probe()
@@ -271,6 +283,7 @@ def test_probe_is_deterministic_across_calls() -> None:
 # ---------------------------------------------------------------------------
 # Documentation artifact exists
 # ---------------------------------------------------------------------------
+
 
 def test_documentation_artifact_is_present() -> None:
     document = Path(__file__).parents[1] / "docs" / "d3q27_full_composition_evidence_r1.md"

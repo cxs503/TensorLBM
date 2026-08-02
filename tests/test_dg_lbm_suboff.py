@@ -6,6 +6,7 @@ Covers:
 - ``run_dg_lbm_suboff_flow`` end-to-end smoke run with artefact checks.
 - Resume-from-checkpoint behaviour.
 """
+
 from __future__ import annotations
 
 import json
@@ -40,9 +41,14 @@ class TestDGLBMSuboffConfig:
 
     def test_run_name_default_contains_hull_type(self) -> None:
         cfg = DGLBMSuboffConfig(
-            nx=40, ny=20, nz=20,
-            re=200.0, u_in=0.06, hull_length=24.0,
-            dg_band=4.0, n_steps=10,
+            nx=40,
+            ny=20,
+            nz=20,
+            re=200.0,
+            u_in=0.06,
+            hull_length=24.0,
+            dg_band=4.0,
+            n_steps=10,
         )
         name = cfg.resolved_run_name()
         assert "re200" in name
@@ -84,7 +90,7 @@ class TestBuildDGHullBandMask:
             indexing="ij",
         )
         r2 = (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2
-        return r2 <= 5.0 ** 2
+        return r2 <= 5.0**2
 
     def test_band_excludes_solid(self) -> None:
         solid = self._sphere_solid()
@@ -126,12 +132,19 @@ class TestBuildDGHullBandMask:
 class TestRunDGLBMSuboffFlow:
     def _smoke_cfg(self, tmp_path: Path, **overrides) -> DGLBMSuboffConfig:
         kwargs: dict = {
-            "nx": 48, "ny": 24, "nz": 24,
-            "u_in": 0.05, "re": 100.0,
-            "hull_length": 28.0, "hull_type": "bare_hull",
+            "nx": 48,
+            "ny": 24,
+            "nz": 24,
+            "u_in": 0.05,
+            "re": 100.0,
+            "hull_length": 28.0,
+            "hull_type": "bare_hull",
             "dg_band": 3.0,
-            "n_steps": 4, "output_interval": 2,
-            "output_root": tmp_path, "run_name": "smoke", "overwrite": True,
+            "n_steps": 4,
+            "output_interval": 2,
+            "output_root": tmp_path,
+            "run_name": "smoke",
+            "overwrite": True,
         }
         kwargs.update(overrides)
         return DGLBMSuboffConfig(**kwargs)
@@ -176,11 +189,19 @@ class TestRunDGLBMSuboffFlow:
         assert (run_dir1 / "checkpoint_f.pt").exists()
 
         cfg2 = DGLBMSuboffConfig(
-            nx=48, ny=24, nz=24,
-            u_in=0.05, re=100.0,
-            hull_length=28.0, hull_type="bare_hull", dg_band=3.0,
-            n_steps=6, output_interval=2,
-            output_root=tmp_path, run_name="second", overwrite=True,
+            nx=48,
+            ny=24,
+            nz=24,
+            u_in=0.05,
+            re=100.0,
+            hull_length=28.0,
+            hull_type="bare_hull",
+            dg_band=3.0,
+            n_steps=6,
+            output_interval=2,
+            output_root=tmp_path,
+            run_name="second",
+            overwrite=True,
             resume_checkpoint=run_dir1,
         )
         run_dir2 = run_dg_lbm_suboff_flow(cfg2)

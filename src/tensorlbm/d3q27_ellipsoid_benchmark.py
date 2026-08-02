@@ -92,12 +92,20 @@ def run_ellipsoid_benchmark_d3q27(config: EllipsoidD3Q27Config) -> dict:
     torch.manual_seed(config.seed)
 
     mask = build_ellipsoid_mask(
-        config.nx, config.ny, config.nz,
-        config.semi_major_a, config.semi_minor_b,
-        config.alpha_deg, device=device,
+        config.nx,
+        config.ny,
+        config.nz,
+        config.semi_major_a,
+        config.semi_minor_b,
+        config.alpha_deg,
+        device=device,
     )
     wall_mask = make_channel_wall_mask_27(
-        config.nz, config.ny, config.nx, mask, device=device,
+        config.nz,
+        config.ny,
+        config.nx,
+        mask,
+        device=device,
     )
 
     rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
@@ -115,10 +123,14 @@ def run_ellipsoid_benchmark_d3q27(config: EllipsoidD3Q27Config) -> dict:
     fy_list: list[float] = []
     fz_list: list[float] = []
 
-    print(f"D3Q27 Ellipsoid: a/b={config.a_b_ratio:.1f} "
-          f"α={config.alpha_deg}° Re={config.re} tau={config.tau:.4f}")
-    print(f"  Grid: {config.nx}×{config.ny}×{config.nz}  "
-          f"steps={config.n_steps}  Cs={config.smagorinsky_cs}")
+    print(
+        f"D3Q27 Ellipsoid: a/b={config.a_b_ratio:.1f} "
+        f"α={config.alpha_deg}° Re={config.re} tau={config.tau:.4f}"
+    )
+    print(
+        f"  Grid: {config.nx}×{config.ny}×{config.nz}  "
+        f"steps={config.n_steps}  Cs={config.smagorinsky_cs}"
+    )
     print(f"  D={diam:.0f} lu  u_in={config.u_in}  device={device}")
 
     for step in range(1, config.n_steps + 1):
@@ -129,6 +141,7 @@ def run_ellipsoid_benchmark_d3q27(config: EllipsoidD3Q27Config) -> dict:
             f = collide_mrt27(f, tau=config.tau)
         else:
             from .d3q27 import collide_bgk27
+
             f = collide_bgk27(f, tau=config.tau)
 
         f = stream27(f)
@@ -137,7 +150,10 @@ def run_ellipsoid_benchmark_d3q27(config: EllipsoidD3Q27Config) -> dict:
         fx, fy, fz = compute_obstacle_forces_27(f, mask)
 
         f = apply_zou_he_channel_boundaries_27(
-            f, u_in=config.u_in, wall_mask=wall_mask, obstacle_mask=mask,
+            f,
+            u_in=config.u_in,
+            wall_mask=wall_mask,
+            obstacle_mask=mask,
         )
 
         if step % 200 == 0:
@@ -153,8 +169,7 @@ def run_ellipsoid_benchmark_d3q27(config: EllipsoidD3Q27Config) -> dict:
             cd_mean = sum(fx_list[-500:]) / n_samples / dyn_pressure
             cl_mean = sum(fy_list[-500:]) / n_samples / dyn_pressure
             cz_mean = sum(fz_list[-500:]) / n_samples / dyn_pressure
-            print(f"  step {step:5d}: Cd={cd_mean:.4f}  Cl={cl_mean:.4f}  "
-                  f"Cz={cz_mean:.4f}")
+            print(f"  step {step:5d}: Cd={cd_mean:.4f}  Cl={cl_mean:.4f}  Cz={cz_mean:.4f}")
 
     n_total = max(len(fx_list), 1)
     cd_mean = sum(fx_list) / n_total / dyn_pressure
@@ -165,9 +180,13 @@ def run_ellipsoid_benchmark_d3q27(config: EllipsoidD3Q27Config) -> dict:
     cd_err = abs(cd_mean - ref["cd"]) / max(abs(ref["cd"]), 1e-10) * 100
 
     stats = ellipsoid_statistics(
-        config.nx, config.ny, config.nz,
-        config.semi_major_a, config.semi_minor_b,
-        config.alpha_deg, device=device,
+        config.nx,
+        config.ny,
+        config.nz,
+        config.semi_major_a,
+        config.semi_minor_b,
+        config.alpha_deg,
+        device=device,
     )
 
     print(f"\n  D3Q27 Results: 6:1 prolate spheroid  α={config.alpha_deg}°")
@@ -176,11 +195,16 @@ def run_ellipsoid_benchmark_d3q27(config: EllipsoidD3Q27Config) -> dict:
     print(f"  D={diam:.0f} lu  Re={config.re}  a/b={config.a_b_ratio:.1f}")
 
     return {
-        "cd_sim": cd_mean, "cl_sim": cl_mean, "cz_sim": cz_mean,
-        "cd_ref": ref["cd"], "cl_ref": ref["cl"],
+        "cd_sim": cd_mean,
+        "cl_sim": cl_mean,
+        "cz_sim": cz_mean,
+        "cd_ref": ref["cd"],
+        "cl_ref": ref["cl"],
         "cd_err_pct": cd_err,
-        "alpha_deg": config.alpha_deg, "re": config.re,
-        "a_b_ratio": config.a_b_ratio, "diameter_lu": diam,
+        "alpha_deg": config.alpha_deg,
+        "re": config.re,
+        "a_b_ratio": config.a_b_ratio,
+        "diameter_lu": diam,
         "lattice": "D3Q27",
         "geometry": stats,
     }

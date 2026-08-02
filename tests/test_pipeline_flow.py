@@ -1,4 +1,5 @@
 """Tests for the pipeline-flow benchmark."""
+
 from __future__ import annotations
 
 import json

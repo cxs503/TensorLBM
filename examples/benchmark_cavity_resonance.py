@@ -59,6 +59,7 @@ formula).  Corner cells where two walls meet are handled by reading
 from the pre-bounce distribution, so diagonal populations that are
 unknown at both walls are swapped — the standard corner treatment.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -72,9 +73,7 @@ import torch
 # --------------------------------------------------------------------------- #
 # Make tensorlbm importable when running from the repo root.
 # --------------------------------------------------------------------------- #
-_SRC = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-)
+_SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
@@ -91,8 +90,8 @@ torch.set_num_threads(_DEFAULT_THREADS)
 # Constants
 # =========================================================================== #
 
-CS2 = 1.0 / 3.0          # lattice sound speed squared
-CS = math.sqrt(CS2)      # c_s = 1/√3 ≈ 0.5774
+CS2 = 1.0 / 3.0  # lattice sound speed squared
+CS = math.sqrt(CS2)  # c_s = 1/√3 ≈ 0.5774
 
 # =========================================================================== #
 # D3Q19 bounce-back direction tables
@@ -112,24 +111,22 @@ CS = math.sqrt(CS2)      # c_s = 1/√3 ≈ 0.5774
 
 # Left wall (x=0): unknown dirs have cx > 0
 _LEFT_UNKNOWN = [1, 7, 9, 11, 13]
-_LEFT_KNOWN   = [2, 8, 10, 12, 14]   # OPPOSITE[_LEFT_UNKNOWN]
+_LEFT_KNOWN = [2, 8, 10, 12, 14]  # OPPOSITE[_LEFT_UNKNOWN]
 
 # Right wall (x=nx-1): unknown dirs have cx < 0
 _RIGHT_UNKNOWN = [2, 8, 10, 12, 14]
-_RIGHT_KNOWN   = [1, 7, 9, 11, 13]   # OPPOSITE[_RIGHT_UNKNOWN]
+_RIGHT_KNOWN = [1, 7, 9, 11, 13]  # OPPOSITE[_RIGHT_UNKNOWN]
 
 # Bottom wall (y=0): unknown dirs have cy > 0
 _BOTTOM_UNKNOWN = [3, 7, 10, 15, 17]
-_BOTTOM_KNOWN   = [4, 8, 9, 16, 18]  # OPPOSITE[_BOTTOM_UNKNOWN]
+_BOTTOM_KNOWN = [4, 8, 9, 16, 18]  # OPPOSITE[_BOTTOM_UNKNOWN]
 
 # Top wall (y=ny-1): unknown dirs have cy < 0
 _TOP_UNKNOWN = [4, 8, 9, 16, 18]
-_TOP_KNOWN   = [3, 7, 10, 15, 17]    # OPPOSITE[_TOP_UNKNOWN]
+_TOP_KNOWN = [3, 7, 10, 15, 17]  # OPPOSITE[_TOP_UNKNOWN]
 
 
-def apply_bounce_back_2d(
-    f: torch.Tensor, nx: int, ny: int, nz: int = 1
-) -> torch.Tensor:
+def apply_bounce_back_2d(f: torch.Tensor, nx: int, ny: int, nz: int = 1) -> torch.Tensor:
     """Apply half-way bounce-back at the four walls of a 2-D cavity (D3Q19).
 
     After streaming with periodic BCs (torch.roll), the unknown populations
@@ -159,6 +156,7 @@ def apply_bounce_back_2d(
 # FFT analysis
 # =========================================================================== #
 
+
 def find_dominant_frequency(
     signal: np.ndarray, n_steps: int
 ) -> tuple[float, int, float, np.ndarray]:
@@ -172,11 +170,11 @@ def find_dominant_frequency(
     (frequency, peak_bin, interpolation_offset, spectrum)
     """
     sig = np.asarray(signal, dtype=np.float64)
-    sig = sig - np.mean(sig)                     # remove DC
+    sig = sig - np.mean(sig)  # remove DC
     window = np.hanning(len(sig))
     sig_w = sig * window
     spectrum = np.abs(np.fft.rfft(sig_w))
-    spectrum[0] = 0.0                             # exclude DC
+    spectrum[0] = 0.0  # exclude DC
     k_max = int(np.argmax(spectrum))
     # Parabolic interpolation around the peak
     p = 0.0
@@ -194,6 +192,7 @@ def find_dominant_frequency(
 # =========================================================================== #
 # ASCII visualisation
 # =========================================================================== #
+
 
 def ascii_plot_1d(
     y_num: np.ndarray,
@@ -278,9 +277,7 @@ def ascii_plot_spectrum(
     span = ymax
 
     # Resample to *width* columns
-    idx = np.minimum(
-        (np.arange(width) * n_bins / width).astype(int), n_bins - 1
-    )
+    idx = np.minimum((np.arange(width) * n_bins / width).astype(int), n_bins - 1)
     mags_s = mags[idx]
 
     f_ana_col = min(int(f_ana / f_max * width), width - 1)
@@ -314,6 +311,7 @@ def ascii_plot_spectrum(
 # =========================================================================== #
 # Main simulation
 # =========================================================================== #
+
 
 def run_mode(
     mode: str = "11",
@@ -380,9 +378,7 @@ def run_mode(
 
     # ---- Initial condition ----
     if mode == "11":
-        rho_2d = 1.0 + delta * torch.cos(math.pi * xx / Lx) * torch.cos(
-            math.pi * yy / Ly
-        )
+        rho_2d = 1.0 + delta * torch.cos(math.pi * xx / Lx) * torch.cos(math.pi * yy / Ly)
     else:
         rho_2d = 1.0 + delta * torch.cos(2.0 * math.pi * xx / Lx)
 
@@ -433,8 +429,7 @@ def run_mode(
     # than a full macroscopic3d call on a 200×200 grid.
     rho_monitor[0] = f[:, 0, my, mx].sum().double()
     print(
-        f"  {0:>6}  {rho_monitor[0].item():14.10f}  "
-        f"{(rho_monitor[0] - 1.0).item():14.10f}",
+        f"  {0:>6}  {rho_monitor[0].item():14.10f}  {(rho_monitor[0] - 1.0).item():14.10f}",
         flush=True,
     )
 
@@ -481,12 +476,8 @@ def run_mode(
     # ======================================================================= #
     # Use the full time series (skip t=0 to avoid the initial transient)
     signal = rho_monitor[1:]  # shape (n_steps,)
-    f_dom, k_max, p_interp, spectrum = find_dominant_frequency(
-        signal, n_steps
-    )
-    error_pct = (
-        abs(f_dom - f_ana) / f_ana * 100.0 if f_ana > 0 else float("inf")
-    )
+    f_dom, k_max, p_interp, spectrum = find_dominant_frequency(signal, n_steps)
+    error_pct = abs(f_dom - f_ana) / f_ana * 100.0 if f_ana > 0 else float("inf")
 
     # ======================================================================= #
     # Results
@@ -547,19 +538,12 @@ def run_mode(
 # CLI
 # =========================================================================== #
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="2D cavity resonance benchmark (D3Q19 BGK LBM)"
-    )
-    parser.add_argument(
-        "--nx", type=int, default=200, help="Grid size in x (default 200)"
-    )
-    parser.add_argument(
-        "--ny", type=int, default=200, help="Grid size in y (default 200)"
-    )
-    parser.add_argument(
-        "--nz", type=int, default=1, help="Grid size in z (default 1, 2-D)"
-    )
+    parser = argparse.ArgumentParser(description="2D cavity resonance benchmark (D3Q19 BGK LBM)")
+    parser.add_argument("--nx", type=int, default=200, help="Grid size in x (default 200)")
+    parser.add_argument("--ny", type=int, default=200, help="Grid size in y (default 200)")
+    parser.add_argument("--nz", type=int, default=1, help="Grid size in z (default 1, 2-D)")
     parser.add_argument(
         "--tau",
         type=float,
@@ -646,8 +630,7 @@ def main() -> None:
             all_pass = all_pass and r["pass"]
         else:
             print(
-                f"  模式 {r['mode']}:  ✗ FAIL "
-                f"({r.get('error', 'unknown')})",
+                f"  模式 {r['mode']}:  ✗ FAIL ({r.get('error', 'unknown')})",
                 flush=True,
             )
             all_pass = False

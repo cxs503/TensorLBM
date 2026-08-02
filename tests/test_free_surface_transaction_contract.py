@@ -1,4 +1,5 @@
 """R1 fail-closed contract tests for detached Körner I→G diagnostics."""
+
 from __future__ import annotations
 
 from tensorlbm.free_surface_transaction_contract import (
@@ -21,12 +22,8 @@ def _complete_input(**changes: object) -> TransactionInput:
         "event_id": "step-17/i-to-g-0",
         "lattice": D3Q19,
         "conversions": (CellConversion((3, 4, 5), CellState.I, CellState.G),),
-        "donor_ownership": (
-            OwnershipEvidence((3, 4, 5), CellState.I, "independent_mass", "f"),
-        ),
-        "receiver_ownership": (
-            OwnershipEvidence((3, 4, 6), CellState.I, "independent_mass", "f"),
-        ),
+        "donor_ownership": (OwnershipEvidence((3, 4, 5), CellState.I, "independent_mass", "f"),),
+        "receiver_ownership": (OwnershipEvidence((3, 4, 6), CellState.I, "independent_mass", "f"),),
         "population_transfer": PopulationTransferEvidence(
             actual_f_population_transfer=True,
             source_cells=((3, 4, 5),),
@@ -78,7 +75,9 @@ def test_nonzero_roundoff_residual_cannot_be_promoted_to_exact_closure() -> None
 def test_receiver_ownership_must_exactly_bind_actual_population_transfer_destinations() -> None:
     report = diagnose_korner_i_to_g_transaction(
         _complete_input(
-            receiver_ownership=(OwnershipEvidence((99, 99, 99), CellState.I, "independent_mass", "f"),)
+            receiver_ownership=(
+                OwnershipEvidence((99, 99, 99), CellState.I, "independent_mass", "f"),
+            )
         )
     )
 

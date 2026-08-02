@@ -141,7 +141,9 @@ def run_evidence_gated_field_dataset_flow_reconstruction(
     try:
         materialized = materialize_torch_field_dataset(spec, dataset, payloads)
         if len(materialized.train) < 2:
-            raise ValueError("dataset requires at least 2 train snapshots for multi-snapshot execution")
+            raise ValueError(
+                "dataset requires at least 2 train snapshots for multi-snapshot execution"
+            )
         if dataset.training_input_fingerprint() != materialized.training_input_fingerprint:
             raise ValueError("dataset changed while processing")
         first = materialized.train[0].snapshot
@@ -155,9 +157,14 @@ def run_evidence_gated_field_dataset_flow_reconstruction(
         )
         if not isinstance(trainer_metadata, dict):
             raise ValueError("trainer returned invalid metadata")
-        if trainer_metadata.get("family") != "flow_transformer_ssl" or trainer_metadata.get("backend") != "torch":
+        if (
+            trainer_metadata.get("family") != "flow_transformer_ssl"
+            or trainer_metadata.get("backend") != "torch"
+        ):
             raise ValueError("trainer return family/backend mismatch")
-        if "n_snapshots" in trainer_metadata and trainer_metadata["n_snapshots"] != len(materialized.train):
+        if "n_snapshots" in trainer_metadata and trainer_metadata["n_snapshots"] != len(
+            materialized.train
+        ):
             raise ValueError("trainer return snapshot count mismatch")
         if "grid" in trainer_metadata and trainer_metadata["grid"] != list(grid):
             raise ValueError("trainer return grid mismatch")
@@ -169,7 +176,9 @@ def run_evidence_gated_field_dataset_flow_reconstruction(
             "schema": "tensorlbm.dataset-training-provenance.r1",
             "training_spec": {"run_id": spec.run_id},
             "dataset_fingerprint": materialized.training_input_fingerprint,
-            "splits": {split: _split_provenance(materialized, split) for split in ("train", "val", "test")},
+            "splits": {
+                split: _split_provenance(materialized, split) for split in ("train", "val", "test")
+            },
             "trainer": {
                 "family": metadata["family"],
                 "backend": metadata["backend"],
@@ -185,7 +194,9 @@ def run_evidence_gated_field_dataset_flow_reconstruction(
             "smoke_only": True,
         }
         provenance["provenance_sha256"] = _canonical_sha256(provenance)
-        provenance_path.write_text(json.dumps(provenance, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        provenance_path.write_text(
+            json.dumps(provenance, sort_keys=True, separators=(",", ":")), encoding="utf-8"
+        )
         written = json.loads(provenance_path.read_text(encoding="utf-8"))
         claimed = written.pop("provenance_sha256", None)
         if claimed != _canonical_sha256(written):

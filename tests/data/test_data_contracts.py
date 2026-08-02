@@ -89,7 +89,9 @@ def test_pass_runtime_evidence_can_create_traceable_training_ready_dataset():
     )
 
 
-@pytest.mark.parametrize("status", [ValidationStatus.WITHHELD, ValidationStatus.FAIL, ValidationStatus.NOT_APPLICABLE])
+@pytest.mark.parametrize(
+    "status", [ValidationStatus.WITHHELD, ValidationStatus.FAIL, ValidationStatus.NOT_APPLICABLE]
+)
 def test_non_pass_runtime_statuses_cannot_be_training_ready(status):
     product = _product(_manifest(status), quality_status=status)
     dataset = _dataset(product)
@@ -129,7 +131,9 @@ def test_dataset_rejects_duplicate_products_unknown_or_overlapping_splits():
     with pytest.raises(ValueError, match="unknown"):
         _dataset(product, splits={"train": ("unknown",), "val": (), "test": ()})
     with pytest.raises(ValueError, match="overlap"):
-        _dataset(product, splits={"train": ("velocity-field",), "val": ("velocity-field",), "test": ()})
+        _dataset(
+            product, splits={"train": ("velocity-field",), "val": ("velocity-field",), "test": ()}
+        )
     with pytest.raises(ValueError, match="train"):
         _dataset(product, splits={"train": (), "val": ("velocity-field",), "test": ()})
     second = _product(product_id="pressure-field")
@@ -137,8 +141,12 @@ def test_dataset_rejects_duplicate_products_unknown_or_overlapping_splits():
         _dataset(product, second, splits={"train": ("velocity-field",), "val": (), "test": ()})
 
 
-def test_dataset_training_ready_revalidates_product_status_and_evidence_after_construction() -> None:
-    withheld = _product(_manifest(ValidationStatus.WITHHELD), quality_status=ValidationStatus.WITHHELD)
+def test_dataset_training_ready_revalidates_product_status_and_evidence_after_construction() -> (
+    None
+):
+    withheld = _product(
+        _manifest(ValidationStatus.WITHHELD), quality_status=ValidationStatus.WITHHELD
+    )
     dataset = _dataset(withheld)
     object.__setattr__(withheld, "quality_status", ValidationStatus.PASS)
     with pytest.raises(ValueError, match="velocity-field"):

@@ -61,6 +61,7 @@ k-omega SST (3D):
   collide_rans_komega_sst (3D) is entirely NEW — no original to compare.
   → Verify physical reasonableness (finite, mass conservation, per-cell nu_t).
 """
+
 from __future__ import annotations
 
 import inspect
@@ -87,6 +88,7 @@ DEVICE = torch.device("cpu")
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _f3d19(nz=4, ny=6, nx=8, u_mag=0.04, seed=42):
     """Deterministic D3Q19 equilibrium distribution."""
@@ -143,6 +145,7 @@ def _non_equilibrium_f3d27(nz=4, ny=6, nx=8, seed=42):
 # Part 1: Original bug identification (source-level)
 # ===========================================================================
 
+
 class TestOriginalBugIdentification:
     """Document and verify the known bugs in the original implementation.
 
@@ -155,9 +158,12 @@ class TestOriginalBugIdentification:
     def original_rans_ke_source(self):
         """Load the original rans_ke.py source from git history."""
         import subprocess
+
         result = subprocess.run(
             ["git", "show", "2341767^:src/tensorlbm/rans_ke.py"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
             cwd=str(__import__("pathlib").Path(__file__).resolve().parent.parent),
         )
         return result.stdout
@@ -184,6 +190,7 @@ class TestOriginalBugIdentification:
     def test_fixed_sa_no_scalar_averaging(self):
         """The fixed collide_rans_sa must NOT contain .mean().item() in code."""
         from tensorlbm.rans_ke import collide_rans_sa
+
         src = inspect.getsource(collide_rans_sa)
         # Check executable code (not docstring) for the buggy patterns
         # Strip docstring by checking only lines that aren't inside triple-quotes
@@ -196,13 +203,19 @@ class TestOriginalBugIdentification:
     def test_fixed_ke_no_mask_bool_allocation(self):
         """The fixed collide_rans_ke must NOT contain mask.bool()."""
         from tensorlbm.rans_ke import collide_rans_ke
+
         src = inspect.getsource(collide_rans_ke)
         assert ".bool()" not in src
 
     def test_fixed_common_no_host_sync(self):
         """Common collision functions must have no GPU→CPU sync patterns."""
-        for func in [collide_rans_bgk3d, collide_rans_mrt3d,
-                     collide_rans_bgk27, collide_rans_mrt27, collide_rans_3d]:
+        for func in [
+            collide_rans_bgk3d,
+            collide_rans_mrt3d,
+            collide_rans_bgk27,
+            collide_rans_mrt27,
+            collide_rans_3d,
+        ]:
             src = inspect.getsource(func)
             for pat in (".item()", "float(", "bool(tensor"):
                 assert pat not in src, f"{func.__name__}: found '{pat}'"
@@ -211,6 +224,7 @@ class TestOriginalBugIdentification:
 # ===========================================================================
 # Part 2: k-epsilon MRT equivalence (correct part)
 # ===========================================================================
+
 
 class TestKeMrtEquivalence:
     """Verify that the original collide_rans_ke MRT collision logic is
@@ -269,9 +283,29 @@ class TestKeMrtEquivalence:
         dm = m - m_eq
         s_e, s_eps, s_q, s_pi = 1.19, 1.4, 1.2, 1.19
         s_fixed = torch.tensor(
-            [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q, 0, 0, 0, 0, 0,
-             s_pi, s_pi, 1.0, 1.0, 1.0],
-            dtype=f.dtype, device=device,
+            [
+                0.0,
+                s_e,
+                s_eps,
+                0.0,
+                s_q,
+                0.0,
+                s_q,
+                0.0,
+                s_q,
+                0,
+                0,
+                0,
+                0,
+                0,
+                s_pi,
+                s_pi,
+                1.0,
+                1.0,
+                1.0,
+            ],
+            dtype=f.dtype,
+            device=device,
         )
         m_star_orig = m - s_fixed.unsqueeze(1) * dm
         for k in (9, 10, 11, 12, 13):
@@ -309,8 +343,7 @@ class TestKeMrtEquivalence:
         # Run collide_rans_ke (which delegates to common)
         solver1 = KESolver(nu=0.01)
         solver1.initialize(ux, uy, uz)
-        out_via_rans_ke = collide_rans_ke(f, TAU, solver1, lattice="D3Q19",
-                                          collision="MRT")
+        out_via_rans_ke = collide_rans_ke(f, TAU, solver1, lattice="D3Q19", collision="MRT")
 
         # Reproduce: same solver state, same nu_t, call common directly
         solver2 = KESolver(nu=0.01)
@@ -326,6 +359,7 @@ class TestKeMrtEquivalence:
 # ===========================================================================
 # Part 3: SA equivalence (bug-fixed original vs common)
 # ===========================================================================
+
 
 class TestSaEquivalence:
     """Verify that the FIXED SA collision (per-cell nu_t) matches the common
@@ -424,6 +458,7 @@ class TestSaEquivalence:
 # Part 4: k-omega SST (new 3D feature, no original to compare)
 # ===========================================================================
 
+
 class TestKOmegaSstNewFeature:
     """k-omega SST 3D collision is NEW in the common module — no original
     3D implementation existed.  Verify physical reasonableness.
@@ -431,8 +466,7 @@ class TestKOmegaSstNewFeature:
 
     @pytest.mark.parametrize(
         ("lattice", "collision"),
-        [("D3Q19", "BGK"), ("D3Q19", "MRT"),
-         ("D3Q27", "BGK"), ("D3Q27", "MRT")],
+        [("D3Q19", "BGK"), ("D3Q19", "MRT"), ("D3Q27", "BGK"), ("D3Q27", "MRT")],
     )
     def test_sst_3d_finite_and_mass(self, lattice, collision):
         """SST 3D collision produces finite output with mass conservation."""
@@ -446,8 +480,15 @@ class TestKOmegaSstNewFeature:
         wall_dist = torch.full((nz, ny, nx), 5.0)
         solver = KOmegaSSTSolver(mask=mask, nu_lbm=0.01)
         out = collide_rans_komega_sst(
-            f, solver, ux, uy, uz, tau=TAU, wall_dist=wall_dist,
-            lattice=lattice, collision=collision,
+            f,
+            solver,
+            ux,
+            uy,
+            uz,
+            tau=TAU,
+            wall_dist=wall_dist,
+            lattice=lattice,
+            collision=collision,
         )
         assert out.shape == f.shape
         assert torch.isfinite(out).all()
@@ -490,6 +531,7 @@ class TestKOmegaSstNewFeature:
 # Part 5: Combination tests — full collide→stream→boundary loop
 # ===========================================================================
 
+
 class TestRansCombinationLoop:
     """RANS + BGK/MRT × D3Q19/D3Q27 full collide→stream loop.
 
@@ -498,8 +540,7 @@ class TestRansCombinationLoop:
 
     @pytest.mark.parametrize(
         ("lattice", "collision"),
-        [("D3Q19", "BGK"), ("D3Q19", "MRT"),
-         ("D3Q27", "BGK"), ("D3Q27", "MRT")],
+        [("D3Q19", "BGK"), ("D3Q19", "MRT"), ("D3Q27", "BGK"), ("D3Q27", "MRT")],
     )
     def test_multi_step_finite_and_mass(self, lattice, collision):
         """Run 5 collide→stream steps; verify finite + mass conservation."""
@@ -519,14 +560,11 @@ class TestRansCombinationLoop:
         rho_final, _, _, _ = macro(f)
         mass_final = rho_final.sum().item()
         # Periodic streaming conserves mass; collision conserves mass
-        assert abs(mass_final - mass0) < 1e-3, (
-            f"mass drift: {mass_final - mass0}"
-        )
+        assert abs(mass_final - mass0) < 1e-3, f"mass drift: {mass_final - mass0}"
 
     @pytest.mark.parametrize(
         ("lattice", "collision"),
-        [("D3Q19", "BGK"), ("D3Q19", "MRT"),
-         ("D3Q27", "BGK"), ("D3Q27", "MRT")],
+        [("D3Q19", "BGK"), ("D3Q19", "MRT"), ("D3Q27", "BGK"), ("D3Q27", "MRT")],
     )
     def test_multi_step_momentum_stable(self, lattice, collision):
         """Momentum must remain bounded over multiple steps."""
@@ -557,8 +595,7 @@ class TestRansCombinationLoop:
         mass0 = rho0.sum().item()
 
         for _ in range(3):
-            f = collide_rans_ke(f, TAU, solver, lattice="D3Q19",
-                                collision=collision)
+            f = collide_rans_ke(f, TAU, solver, lattice="D3Q19", collision=collision)
             f = stream3d(f)
 
         assert torch.isfinite(f).all()
@@ -581,8 +618,7 @@ class TestRansCombinationLoop:
         mass0 = rho0.sum().item()
 
         for _ in range(3):
-            f = collide_rans_sa(f, TAU, solver, wall_dist,
-                                lattice="D3Q19", collision=collision)
+            f = collide_rans_sa(f, TAU, solver, wall_dist, lattice="D3Q19", collision=collision)
             f = stream3d(f)
 
         assert torch.isfinite(f).all()
@@ -606,8 +642,15 @@ class TestRansCombinationLoop:
 
         for _ in range(3):
             f = collide_rans_komega_sst(
-                f, solver, ux, uy, uz, tau=TAU, wall_dist=wall_dist,
-                lattice="D3Q19", collision=collision,
+                f,
+                solver,
+                ux,
+                uy,
+                uz,
+                tau=TAU,
+                wall_dist=wall_dist,
+                lattice="D3Q19",
+                collision=collision,
             )
             f = stream3d(f)
 
@@ -638,4 +681,5 @@ class TestRansCombinationLoop:
 # Helper for D3Q27 streaming (imported lazily to avoid hard dependency)
 def _stream27(f):
     from tensorlbm.d3q27 import stream27
+
     return stream27(f)

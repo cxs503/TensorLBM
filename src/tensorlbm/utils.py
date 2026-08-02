@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import torch
+
 try:  # Optional accelerator plugin.
     import torch_sdaa  # type: ignore # noqa: F401
 except ModuleNotFoundError:  # pragma: no cover - depends on environment
@@ -58,7 +59,6 @@ def is_sdaa_available() -> bool:
         return False
 
 
-
 def default_device_name() -> str:
     """Return the preferred accelerator device name for this host."""
     if is_sdaa_available():
@@ -68,7 +68,6 @@ def default_device_name() -> str:
     return "cpu"
 
 
-
 def synchronize_device(device: torch.device | str) -> None:
     """Synchronize the active accelerator stream for timing-critical code."""
     resolved = device if isinstance(device, torch.device) else torch.device(device)
@@ -76,7 +75,6 @@ def synchronize_device(device: torch.device | str) -> None:
         torch.sdaa.synchronize()
     elif resolved.type == "cuda":
         torch.cuda.synchronize(resolved)
-
 
 
 def resolve_device(device_name: str) -> torch.device:

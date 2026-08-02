@@ -14,6 +14,7 @@ The evidence is deliberately a ``measured_candidate`` — the run produces
 real force/Ct observations from an actual D3Q19+MRT+bounce-back loop, but
 no physical validation, convergence, or steady-state claim is made.
 """
+
 from __future__ import annotations
 
 import json
@@ -48,6 +49,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SuboffValidationConfig:
@@ -100,6 +102,7 @@ class SuboffValidationConfig:
 # ---------------------------------------------------------------------------
 # Evidence
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SuboffValidationEvidence:
@@ -161,6 +164,7 @@ class SuboffValidationEvidence:
 # Runner
 # ---------------------------------------------------------------------------
 
+
 def _admission_record(config: SuboffValidationConfig) -> dict[str, Any]:
     """Execute the cold-path admission gate and return a record.
 
@@ -181,15 +185,17 @@ def _admission_record(config: SuboffValidationConfig) -> dict[str, Any]:
             ),
         }
 
-    record = require_wall_function_run(WallFunctionRunRequest(
-        capability=WallFunctionCapability.LOG_LAW_BODY_FORCE,
-        lattice=config.lattice,
-        physics="single_phase_incompressible",
-        collision="MRT_SMAGORINSKY",
-        geometry="static_voxel_solid",
-        backend="torch",
-        free_surface=config.free_surface,
-    ))
+    record = require_wall_function_run(
+        WallFunctionRunRequest(
+            capability=WallFunctionCapability.LOG_LAW_BODY_FORCE,
+            lattice=config.lattice,
+            physics="single_phase_incompressible",
+            collision="MRT_SMAGORINSKY",
+            geometry="static_voxel_solid",
+            backend="torch",
+            free_surface=config.free_surface,
+        )
+    )
     return {
         "status": "admitted",
         "capability": WallFunctionCapability.LOG_LAW_BODY_FORCE.value,
@@ -216,11 +222,9 @@ def _pressure_drag_x(
     rho, _, _, _ = macroscopic3d(f)
     p = (rho - 1.0) / 3.0
     fluid = ~solid
-    sp = torch.roll(solid, 1, dims=2)   # solid neighbour in -x
+    sp = torch.roll(solid, 1, dims=2)  # solid neighbour in -x
     sm = torch.roll(solid, -1, dims=2)  # solid neighbour in +x
-    return float(
-        (p * (sm.to(f.dtype) - sp.to(f.dtype)) * fluid.to(f.dtype)).sum().item()
-    )
+    return float((p * (sm.to(f.dtype) - sp.to(f.dtype)) * fluid.to(f.dtype)).sum().item())
 
 
 def run_suboff_d3q19_mrt_validation(
@@ -262,13 +266,17 @@ def run_suboff_d3q19_mrt_validation(
     )
     solid = solid.to(device)
     wall_mask = make_channel_wall_mask_3d(
-        config.nz, config.ny, config.nx, solid, device=device,
+        config.nz,
+        config.ny,
+        config.nx,
+        solid,
+        device=device,
     )
 
     # Wetted area and dynamic pressure for Ct normalization
     wetted_area = _voxel_wetted_area(solid, 1.0)
     rho_lu = 1.0
-    dynamic_pressure = 0.5 * rho_lu * config.u_in ** 2 * wetted_area
+    dynamic_pressure = 0.5 * rho_lu * config.u_in**2 * wetted_area
 
     # --- 3. Initialize populations ---
     rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)
@@ -317,23 +325,27 @@ def run_suboff_d3q19_mrt_validation(
             f = correct_mass3d(f, initial_mass)
 
         # Record force time series
-        force_series.append({
-            "step": step,
-            "fx": fx,
-            "fy": fy,
-            "fz": fz,
-        })
+        force_series.append(
+            {
+                "step": step,
+                "fx": fx,
+                "fy": fy,
+                "fz": fz,
+            }
+        )
 
         # Record Ct time series
         ct = fx / dynamic_pressure if dynamic_pressure > 0 else 0.0
         ct_fric = df / dynamic_pressure if dynamic_pressure > 0 else 0.0
         ct_pres = dp / dynamic_pressure if dynamic_pressure > 0 else 0.0
-        ct_series.append({
-            "step": step,
-            "ct": ct,
-            "ct_fric": ct_fric,
-            "ct_pres": ct_pres,
-        })
+        ct_series.append(
+            {
+                "step": step,
+                "ct": ct,
+                "ct_fric": ct_fric,
+                "ct_pres": ct_pres,
+            }
+        )
 
         # Runtime finiteness checks
         completed_steps = step

@@ -26,6 +26,7 @@ Latva-Kokko & Rothman (2005) Phys. Rev. E 71 056702
 Swift et al. (1995) Phys. Rev. Lett. 75 830
 Swift et al. (1996) Phys. Rev. E 54 5041
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -58,6 +59,7 @@ def _w_on(device: torch.device) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Pseudopotential functions (for SCMP)
 # ---------------------------------------------------------------------------
+
 
 def psi_linear(rho: torch.Tensor) -> torch.Tensor:
     """Linear pseudopotential ψ(ρ) = ρ."""
@@ -120,10 +122,7 @@ def psi_carnahan_starling(rho: torch.Tensor) -> torch.Tensor:
     eta_c = torch.clamp(eta_1, min=1e-8)
 
     # Carnahan-Starling pressure
-    p = (
-        rho_c * RT * (1.0 + eta + eta ** 2 - eta ** 3) / (eta_c ** 3)
-        - a * rho_c ** 2
-    )
+    p = rho_c * RT * (1.0 + eta + eta**2 - eta**3) / (eta_c**3) - a * rho_c**2
 
     # ψ = √(2(p − ρ·cs²)/cs²)  — standard SCMP pseudopotential from EOS
     p_ideal = rho_c * cs2
@@ -155,12 +154,9 @@ def psi_peng_robinson(rho: torch.Tensor) -> torch.Tensor:
     rho_c = torch.clamp(rho, min=1e-12)
     one_m_bp = 1.0 - b_val * rho_c
     denom1 = torch.clamp(one_m_bp, min=1e-8)
-    denom2 = torch.clamp(1.0 + 2.0 * b_val * rho_c - b_val ** 2 * rho_c ** 2, min=1e-8)
+    denom2 = torch.clamp(1.0 + 2.0 * b_val * rho_c - b_val**2 * rho_c**2, min=1e-8)
 
-    p = (
-        rho_c * RT / denom1
-        - a_val * rho_c ** 2 / denom2
-    )
+    p = rho_c * RT / denom1 - a_val * rho_c**2 / denom2
     p_ideal = rho_c * cs2
     p_diff = torch.clamp(p - p_ideal, min=0.0)
     psi_val = torch.sqrt(2.0 * p_diff / cs2)
@@ -170,6 +166,7 @@ def psi_peng_robinson(rho: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Shan-Chen neighborhood sum (shared by SCMC and SCMP)
 # ---------------------------------------------------------------------------
+
 
 def _sc_neighbor_weighted_sum(
     psi: torch.Tensor,
@@ -200,8 +197,8 @@ def _sc_neighbor_weighted_sum(
 
     device = psi.device
     ny, nx = psi.shape[-2], psi.shape[-1]
-    c = _c_on(device)   # (9, 2)  int64
-    w = _w_on(device)   # (9,)    float32
+    c = _c_on(device)  # (9, 2)  int64
+    w = _w_on(device)  # (9,)    float32
 
     # Build and cache gather index tensors (one-time cost per unique shape/device)
     cache_key = (ny, nx, device.type, device.index)
@@ -218,21 +215,22 @@ def _sc_neighbor_weighted_sum(
 
     y_idx, x_idx = _sc2d_cache[cache_key]
     # psi_shifts: (9, ny, nx) – all shifted copies gathered in one operation
-    psi_shifts = psi[y_idx, x_idx]   # advanced-index gather, no Python loop
+    psi_shifts = psi[y_idx, x_idx]  # advanced-index gather, no Python loop
 
     # w * cx and w * cy: (9, 1, 1) for broadcasting over (ny, nx)
     cx_float = c[:, 0].float().view(9, 1, 1)
     cy_float = c[:, 1].float().view(9, 1, 1)
     w_3d = w.view(9, 1, 1)
 
-    Fx = (w_3d * cx_float * psi_shifts).sum(0)   # (ny, nx)
-    Fy = (w_3d * cy_float * psi_shifts).sum(0)   # (ny, nx)
+    Fx = (w_3d * cx_float * psi_shifts).sum(0)  # (ny, nx)
+    Fy = (w_3d * cy_float * psi_shifts).sum(0)  # (ny, nx)
     return Fx, Fy
 
 
 # ---------------------------------------------------------------------------
 # Model 1 – Shan-Chen Two-Component (SCMC)
 # ---------------------------------------------------------------------------
+
 
 def sc_two_component_force(
     rho1: torch.Tensor,
@@ -340,6 +338,7 @@ def collide_sc_two_component(
 # Model 2 – Shan-Chen Single-Component (SCMP)
 # ---------------------------------------------------------------------------
 
+
 def sc_single_component_force(
     rho: torch.Tensor,
     G: float,
@@ -419,6 +418,7 @@ def collide_sc_single_component(
 # Phase field:         φ = (ρ_r − ρ_b) / (ρ_r + ρ_b)  ∈ [−1, 1]
 # Interface normal:    n̂ = ∇φ / |∇φ|  (computed via central differences)
 
+
 def _grad_phase_field(
     rho_r: torch.Tensor,
     rho_b: torch.Tensor,
@@ -438,7 +438,7 @@ def _grad_phase_field(
     dphi_dx = 0.5 * (torch.roll(phi, -1, dims=-1) - torch.roll(phi, 1, dims=-1))
     dphi_dy = 0.5 * (torch.roll(phi, -1, dims=-2) - torch.roll(phi, 1, dims=-2))
 
-    mag = torch.sqrt(dphi_dx ** 2 + dphi_dy ** 2)
+    mag = torch.sqrt(dphi_dx**2 + dphi_dy**2)
     mag_safe = torch.clamp(mag, min=1e-12)
     nx_hat = dphi_dx / mag_safe
     ny_hat = dphi_dy / mag_safe
@@ -485,7 +485,7 @@ def color_gradient_step(
 
     # --- 1. Total distribution and macroscopic quantities ---
     f_total = f_r + f_b
-    rho_r = f_r.sum(dim=0)   # (ny, nx)
+    rho_r = f_r.sum(dim=0)  # (ny, nx)
     rho_b = f_b.sum(dim=0)
     rho = rho_r + rho_b
     rho_s = torch.clamp(rho, min=1e-12)
@@ -520,7 +520,7 @@ def color_gradient_step(
     ci_dot_n = cx * nhat_x.unsqueeze(0) + cy * nhat_y.unsqueeze(0)  # (9,ny,nx)
     B_iso = torch.tensor(1.0 / 3.0, device=device)
     w_view = w.view(9, 1, 1)
-    perturbation = (A / 2.0) * mag.unsqueeze(0) * w_view * (ci_dot_n ** 2 - B_iso)
+    perturbation = (A / 2.0) * mag.unsqueeze(0) * w_view * (ci_dot_n**2 - B_iso)
     f_post = f_post + perturbation
 
     # --- 4. Recoloring step (Latva-Kokko & Rothman 2005) ---
@@ -557,8 +557,10 @@ def color_gradient_step(
 def _laplacian_2d(field: torch.Tensor) -> torch.Tensor:
     """2D Laplacian via second-order central differences (periodic)."""
     lap = (
-        torch.roll(field, 1, dims=-1) + torch.roll(field, -1, dims=-1)
-        + torch.roll(field, 1, dims=-2) + torch.roll(field, -1, dims=-2)
+        torch.roll(field, 1, dims=-1)
+        + torch.roll(field, -1, dims=-1)
+        + torch.roll(field, 1, dims=-2)
+        + torch.roll(field, -1, dims=-2)
         - 4.0 * field
     )
     return lap
@@ -626,7 +628,7 @@ def free_energy_step(
         rho_eff = rho
 
     # Chemical potential: μ = −Aφ + Bφ³ − κ∇²φ
-    mu = -A * phi + B * phi ** 3 - kappa * _laplacian_2d(phi)
+    mu = -A * phi + B * phi**3 - kappa * _laplacian_2d(phi)
 
     # Korteweg (capillary) body force: F_cap = −φ ∇μ
     grad_mu_x = 0.5 * (torch.roll(mu, -1, dims=-1) - torch.roll(mu, 1, dims=-1))
@@ -649,13 +651,13 @@ def free_energy_step(
     # We use the correction: geq_i = w_i φ feq_factor_i + Γ w_i (c_i²/cs² - D) μ
     # where D = spatial dimension = 2, so that Σ geq_i = φ.
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0)
-    u_sq = (ux ** 2 + uy ** 2).unsqueeze(0)
+    u_sq = (ux**2 + uy**2).unsqueeze(0)
     # Advection part: same form as feq for rho=phi
-    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
     # Diffusion part: Γ w_i (|c_i|² − D cs²) μ / cs⁴
     # |c_i|²/cs² for D2Q9: 0 for rest (i=0), 1 for face (i=1-4), 2 for diagonal (i=5-8)
-    c_sq = (cx ** 2 + cy ** 2)  # |c_i|²
-    diff_factor = (c_sq / _CS2 - 2.0)  # anisotropic, sums to 0 over w_i
+    c_sq = cx**2 + cy**2  # |c_i|²
+    diff_factor = c_sq / _CS2 - 2.0  # anisotropic, sums to 0 over w_i
     geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
     geq = geq_adv + geq_diff
     g_out = g - (g - geq) / tau_g
@@ -689,8 +691,8 @@ def init_free_energy_g(
     cx = c[:, 0].float().view(9, 1, 1)
     cy = c[:, 1].float().view(9, 1, 1)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0)
-    u_sq = (ux ** 2 + uy ** 2).unsqueeze(0)
-    return w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+    u_sq = (ux**2 + uy**2).unsqueeze(0)
+    return w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
 
 
 # ---------------------------------------------------------------------------

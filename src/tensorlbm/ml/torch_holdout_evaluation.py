@@ -14,7 +14,10 @@ from typing import Any, Mapping
 
 from tensorlbm.data import FieldDatasetR2
 from tensorlbm.ml.contracts import TaskKind, TrainingBackend, TrainingSpec
-from tensorlbm.ml.torch_dataset_materialize import FieldSnapshotReference, materialize_torch_field_dataset
+from tensorlbm.ml.torch_dataset_materialize import (
+    FieldSnapshotReference,
+    materialize_torch_field_dataset,
+)
 
 
 _ALLOWED_SPLITS = ("val", "test")
@@ -67,7 +70,9 @@ def _require_compatible_spec(spec: TrainingSpec) -> None:
         raise ValueError("holdout data evaluation requires FIELD_RECONSTRUCTION")
 
 
-def _finite_summary(values: Any) -> tuple[int, int, float | None, float | None, float | None, float | None]:
+def _finite_summary(
+    values: Any,
+) -> tuple[int, int, float | None, float | None, float | None, float | None]:
     """Summarize a CPU adapter value through its basic Python representation only."""
     flattened: list[float] = []
 
@@ -84,7 +89,14 @@ def _finite_summary(values: Any) -> tuple[int, int, float | None, float | None, 
     nonfinite = len(flattened) - count
     if not finite:
         return count, nonfinite, None, None, None, None
-    return count, nonfinite, min(finite), max(finite), fsum(finite) / count, fsum(abs(value) for value in finite) / count
+    return (
+        count,
+        nonfinite,
+        min(finite),
+        max(finite),
+        fsum(finite) / count,
+        fsum(abs(value) for value in finite) / count,
+    )
 
 
 def _selected_evidence(reference: FieldSnapshotReference) -> HoldoutSampleEvidence:
@@ -111,7 +123,9 @@ def evaluate_evidence_gated_holdout(
 ) -> HoldoutEvaluationRecord:
     """Return selected val/test field-quality summaries after full evidence materialization."""
     if split not in _ALLOWED_SPLITS:
-        raise ValueError("split must be val or test; train is never eligible for holdout data evaluation")
+        raise ValueError(
+            "split must be val or test; train is never eligible for holdout data evaluation"
+        )
     _require_compatible_spec(spec)
     if not isinstance(dataset, FieldDatasetR2):
         raise TypeError("dataset must be a FieldDatasetR2")
@@ -161,9 +175,15 @@ def evaluate_evidence_gated_holdout(
         sample_count=len(selected),
         sample_ids=tuple(reference.sample_id for reference in selected),
         group_ids=MappingProxyType({item.sample_id: item.group_id for item in evidence}),
-        source_case_ids=MappingProxyType({item.sample_id: item.source_case_id for item in evidence}),
-        source_trajectory_ids=MappingProxyType({item.sample_id: item.source_trajectory_id for item in evidence}),
-        field_blob_hashes=MappingProxyType({item.sample_id: item.field_blob_hash for item in evidence}),
+        source_case_ids=MappingProxyType(
+            {item.sample_id: item.source_case_id for item in evidence}
+        ),
+        source_trajectory_ids=MappingProxyType(
+            {item.sample_id: item.source_trajectory_id for item in evidence}
+        ),
+        field_blob_hashes=MappingProxyType(
+            {item.sample_id: item.field_blob_hash for item in evidence}
+        ),
         samples=tuple(evidence),
         grid_shapes=tuple(item.grid_shape for item in evidence),
         component_finite_counts=MappingProxyType(finite_counts),

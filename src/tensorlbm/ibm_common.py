@@ -46,6 +46,7 @@ Public contract
 ``compute_ibm_drag_from_markers(marker_fx, marker_fy, marker_fz, dpS)``
     Drag/lift coefficients from IBM marker forces (momentum exchange).
 """
+
 from __future__ import annotations
 
 import math
@@ -195,13 +196,15 @@ def derive_surface_markers_3d(
     # Pad with False (fluid) so border solid cells still count as surface.
     pad = torch.nn.functional.pad(m.unsqueeze(0).unsqueeze(0).float(), (1, 1, 1, 1, 1, 1))
     fluid_neighbours = (
-        (1 - pad[:, :, 1:-1, 1:-1, 2:])       # +x
-        + (1 - pad[:, :, 1:-1, 1:-1, :-2])    # -x
-        + (1 - pad[:, :, 1:-1, 2:, 1:-1])     # +y
-        + (1 - pad[:, :, 1:-1, :-2, 1:-1])    # -y
-        + (1 - pad[:, :, 2:, 1:-1, 1:-1])     # +z
-        + (1 - pad[:, :, :-2, 1:-1, 1:-1])    # -z
-    ).squeeze()  # (nz, ny, nx)
+        (
+            (1 - pad[:, :, 1:-1, 1:-1, 2:])  # +x
+            + (1 - pad[:, :, 1:-1, 1:-1, :-2])  # -x
+            + (1 - pad[:, :, 1:-1, 2:, 1:-1])  # +y
+            + (1 - pad[:, :, 1:-1, :-2, 1:-1])  # -y
+            + (1 - pad[:, :, 2:, 1:-1, 1:-1])  # +z
+            + (1 - pad[:, :, :-2, 1:-1, 1:-1])  # -z
+        ).squeeze()
+    )  # (nz, ny, nx)
     surface = m & (fluid_neighbours > 0)
     if not surface.any():
         empty = torch.zeros(0, dtype=torch.float32, device=mask.device)
@@ -271,8 +274,11 @@ def ibm_apply_body_force_3d_common(
     guo_factor = 1.0
     if tau is not None:
         guo_factor = 1.0 - 1.0 / (2.0 * tau)
-    forcing = w_view * 3.0 * guo_factor * (
-        cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0) + cz * fz_grid.unsqueeze(0)
+    forcing = (
+        w_view
+        * 3.0
+        * guo_factor
+        * (cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0) + cz * fz_grid.unsqueeze(0))
     )
     return f + forcing
 
@@ -384,9 +390,7 @@ def ibm_direct_forcing_3d_common(
 
     # 3. Zero markers → zero force, f unchanged.
     if marker_x.shape[0] == 0:
-        zero_force = torch.zeros(
-            (3, nz, ny, nx), dtype=f.dtype, device=f.device
-        )
+        zero_force = torch.zeros((3, nz, ny, nx), dtype=f.dtype, device=f.device)
         return zero_force, f.clone()
 
     # 4. Resolve per-marker target velocity.
@@ -835,11 +839,13 @@ def ibm_step_correct(
         # 4b. Interpolate velocity at marker positions
         try:
             from .ibm_vec import ibm_velocity_interpolate_3d_vec
+
             u_mx, u_my, u_mz = ibm_velocity_interpolate_3d_vec(
                 ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name
             )
         except Exception:
             from .ibm import ibm_velocity_interpolate_3d
+
             u_mx, u_my, u_mz = ibm_velocity_interpolate_3d(
                 ux, uy, uz, marker_x, marker_y, marker_z, kernel=kernel_name
             )
@@ -865,9 +871,16 @@ def ibm_step_correct(
 
         # 4e. Spread force to Eulerian grid (vectorized)
         fx_grid, fy_grid, fz_grid = _ibm_force_spread_3d_vec(
-            marker_fx, marker_fy, marker_fz,
-            marker_x, marker_y, marker_z,
-            nz, ny, nx, kernel=kernel_name,
+            marker_fx,
+            marker_fy,
+            marker_fz,
+            marker_x,
+            marker_y,
+            marker_z,
+            nz,
+            ny,
+            nx,
+            kernel=kernel_name,
         )
 
         # 4f. Apply Guo body-force correction (with (1−1/2τ) factor)
@@ -878,9 +891,11 @@ def ibm_step_correct(
     # ---- 5. Streaming ----
     if lattice_name == "D3Q19":
         from .solver3d import stream3d
+
         f = stream3d(f)
     else:
         from .d3q27 import stream27_roll
+
         f = stream27_roll(f)
 
     # ---- 6. Far-field BC ----

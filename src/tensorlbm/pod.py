@@ -24,6 +24,7 @@ Sirovich, L. (1987). "Turbulence and the dynamics of coherent structures."
 Lumley, J.L. (1967). "The structure of inhomogeneous turbulent flows."
     *Atmospheric Turbulence and Radio Wave Propagation*, 166–178.
 """
+
 from __future__ import annotations
 
 import math
@@ -42,6 +43,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class PODResult:
@@ -86,6 +88,7 @@ class PODResult:
 # ---------------------------------------------------------------------------
 # Core computation
 # ---------------------------------------------------------------------------
+
 
 def compute_pod(
     snapshots: torch.Tensor | list[torch.Tensor],
@@ -171,8 +174,8 @@ def compute_pod(
     modes = modes_flat.reshape(n_modes_actual, *spatial_shape)
 
     sigma = S[:k_max]
-    total_energy = float((S ** 2).sum()) + 1e-30
-    energy_frac = [(float(s ** 2) / total_energy) for s in sigma]
+    total_energy = float((S**2).sum()) + 1e-30
+    energy_frac = [(float(s**2) / total_energy) for s in sigma]
     cumulative = []
     cum = 0.0
     for ef in energy_frac:
@@ -201,6 +204,7 @@ def compute_pod(
 # ---------------------------------------------------------------------------
 # Reconstruction helpers
 # ---------------------------------------------------------------------------
+
 
 def reconstruct_field(
     result: PODResult,

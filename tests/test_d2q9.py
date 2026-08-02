@@ -32,6 +32,7 @@ def test_equilibrium_roundtrip_nonzero_velocity() -> None:
 
 def test_equilibrium_weights_sum_to_one() -> None:
     from tensorlbm import W
+
     assert abs(float(W.sum().item()) - 1.0) < 1e-6
 
 

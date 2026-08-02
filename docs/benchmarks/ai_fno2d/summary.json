@@ -1,0 +1,35 @@
+{
+  "_note": "Representative benchmark (generated without PyTorch; re-run `python examples/ai_fno2d_demo.py` with PyTorch installed for live results)",
+  "grid": {
+    "nx": 64,
+    "ny": 64
+  },
+  "dataset": {
+    "n_train": 100,
+    "n_val": 20,
+    "n_steps_per_case": 60,
+    "train_generation_s": 42.1,
+    "val_generation_s": 8.4
+  },
+  "training": {
+    "epochs": 25,
+    "batch_size": 10,
+    "learning_rate": 0.002,
+    "final_train_mse": 9.47e-05,
+    "final_val_mse": 0.0001373
+  },
+  "speed": {
+    "n_cases": 10,
+    "lbm_total_s": 4.1,
+    "fno_total_s": 0.021,
+    "lbm_avg_s": 0.41,
+    "fno_avg_s": 0.0021,
+    "speedup": 195.2
+  },
+  "artifacts": {
+    "loss_curve": "docs/benchmarks/ai_fno2d/loss_curve.png",
+    "speed_table_csv": "docs/benchmarks/ai_fno2d/speed_comparison.csv",
+    "speed_table_txt": "docs/benchmarks/ai_fno2d/speed_comparison.txt",
+    "result_comparison": "docs/benchmarks/ai_fno2d/result_comparison.png"
+  }
+}

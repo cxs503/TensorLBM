@@ -28,6 +28,7 @@ Public API
 - :func:`generate_offshore_previews`– matplotlib multi-view figure.
 - :func:`export_offshore_stl`       – ASCII STL surface mesh export.
 """
+
 from __future__ import annotations
 
 import math
@@ -579,6 +580,7 @@ def generate_offshore_previews(
     projections of the offshore structure voxel mask.
     """
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -683,12 +685,18 @@ def export_offshore_stl(
                 # +X face
                 if not padded[ix + 2, iy + 1, iz + 1]:
                     _write_stl_facet(
-                        lines, (1, 0, 0),
-                        (x + 1, y, z), (x + 1, y + 1, z + 1), (x + 1, y + 1, z),
+                        lines,
+                        (1, 0, 0),
+                        (x + 1, y, z),
+                        (x + 1, y + 1, z + 1),
+                        (x + 1, y + 1, z),
                     )
                     _write_stl_facet(
-                        lines, (1, 0, 0),
-                        (x + 1, y, z), (x + 1, y, z + 1), (x + 1, y + 1, z + 1),
+                        lines,
+                        (1, 0, 0),
+                        (x + 1, y, z),
+                        (x + 1, y, z + 1),
+                        (x + 1, y + 1, z + 1),
                     )
                 # -Y face
                 if not padded[ix + 1, iy, iz + 1]:
@@ -697,12 +705,18 @@ def export_offshore_stl(
                 # +Y face
                 if not padded[ix + 1, iy + 2, iz + 1]:
                     _write_stl_facet(
-                        lines, (0, 1, 0),
-                        (x, y + 1, z), (x + 1, y + 1, z + 1), (x + 1, y + 1, z),
+                        lines,
+                        (0, 1, 0),
+                        (x, y + 1, z),
+                        (x + 1, y + 1, z + 1),
+                        (x + 1, y + 1, z),
                     )
                     _write_stl_facet(
-                        lines, (0, 1, 0),
-                        (x, y + 1, z), (x, y + 1, z + 1), (x + 1, y + 1, z + 1),
+                        lines,
+                        (0, 1, 0),
+                        (x, y + 1, z),
+                        (x, y + 1, z + 1),
+                        (x + 1, y + 1, z + 1),
                     )
                 # -Z face
                 if not padded[ix + 1, iy + 1, iz]:
@@ -711,12 +725,18 @@ def export_offshore_stl(
                 # +Z face
                 if not padded[ix + 1, iy + 1, iz + 2]:
                     _write_stl_facet(
-                        lines, (0, 0, 1),
-                        (x, y, z + 1), (x + 1, y, z + 1), (x + 1, y + 1, z + 1),
+                        lines,
+                        (0, 0, 1),
+                        (x, y, z + 1),
+                        (x + 1, y, z + 1),
+                        (x + 1, y + 1, z + 1),
                     )
                     _write_stl_facet(
-                        lines, (0, 0, 1),
-                        (x, y, z + 1), (x + 1, y + 1, z + 1), (x, y + 1, z + 1),
+                        lines,
+                        (0, 0, 1),
+                        (x, y, z + 1),
+                        (x + 1, y + 1, z + 1),
+                        (x, y + 1, z + 1),
                     )
 
     lines.append(f"endsolid {struct_type.value}")

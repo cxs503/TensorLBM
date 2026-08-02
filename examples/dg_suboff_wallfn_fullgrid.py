@@ -13,6 +13,7 @@ Each run: Re=2e6, u_in=0.06, y_val=0.5, wall_law="log", 1000 steps.
 Usage:
     PYTHONPATH=src python examples/dg_suboff_wallfn_fullgrid.py
 """
+
 from __future__ import annotations
 
 import json
@@ -27,29 +28,106 @@ from pathlib import Path
 
 SPECS: list[dict] = [
     # D3Q27 (7 cards: sdaa:0-6)
-    {"lattice": "D3Q27", "collision": "CUMULANT", "device": "sdaa:0",
-     "nx": 384, "ny": 192, "nz": 192, "hull_length": 192.0},
-    {"lattice": "D3Q27", "collision": "BGK", "device": "sdaa:1",
-     "nx": 384, "ny": 192, "nz": 192, "hull_length": 192.0},
-    {"lattice": "D3Q27", "collision": "MRT", "device": "sdaa:2",
-     "nx": 320, "ny": 160, "nz": 160, "hull_length": 160.0},
-    {"lattice": "D3Q27", "collision": "TRT", "device": "sdaa:3",
-     "nx": 320, "ny": 160, "nz": 160, "hull_length": 160.0},
-    {"lattice": "D3Q27", "collision": "CM", "device": "sdaa:4",
-     "nx": 256, "ny": 128, "nz": 128, "hull_length": 128.0},
-    {"lattice": "D3Q27", "collision": "KBC", "device": "sdaa:5",
-     "nx": 256, "ny": 128, "nz": 128, "hull_length": 128.0},
-    {"lattice": "D3Q27", "collision": "RLBM", "device": "sdaa:6",
-     "nx": 384, "ny": 192, "nz": 192, "hull_length": 192.0},
+    {
+        "lattice": "D3Q27",
+        "collision": "CUMULANT",
+        "device": "sdaa:0",
+        "nx": 384,
+        "ny": 192,
+        "nz": 192,
+        "hull_length": 192.0,
+    },
+    {
+        "lattice": "D3Q27",
+        "collision": "BGK",
+        "device": "sdaa:1",
+        "nx": 384,
+        "ny": 192,
+        "nz": 192,
+        "hull_length": 192.0,
+    },
+    {
+        "lattice": "D3Q27",
+        "collision": "MRT",
+        "device": "sdaa:2",
+        "nx": 320,
+        "ny": 160,
+        "nz": 160,
+        "hull_length": 160.0,
+    },
+    {
+        "lattice": "D3Q27",
+        "collision": "TRT",
+        "device": "sdaa:3",
+        "nx": 320,
+        "ny": 160,
+        "nz": 160,
+        "hull_length": 160.0,
+    },
+    {
+        "lattice": "D3Q27",
+        "collision": "CM",
+        "device": "sdaa:4",
+        "nx": 256,
+        "ny": 128,
+        "nz": 128,
+        "hull_length": 128.0,
+    },
+    {
+        "lattice": "D3Q27",
+        "collision": "KBC",
+        "device": "sdaa:5",
+        "nx": 256,
+        "ny": 128,
+        "nz": 128,
+        "hull_length": 128.0,
+    },
+    {
+        "lattice": "D3Q27",
+        "collision": "RLBM",
+        "device": "sdaa:6",
+        "nx": 384,
+        "ny": 192,
+        "nz": 192,
+        "hull_length": 192.0,
+    },
     # D3Q19 (4 cards: sdaa:7-10)
-    {"lattice": "D3Q19", "collision": "CUMULANT", "device": "sdaa:7",
-     "nx": 384, "ny": 192, "nz": 192, "hull_length": 192.0},
-    {"lattice": "D3Q19", "collision": "BGK", "device": "sdaa:8",
-     "nx": 384, "ny": 192, "nz": 192, "hull_length": 192.0},
-    {"lattice": "D3Q19", "collision": "MRT", "device": "sdaa:9",
-     "nx": 320, "ny": 160, "nz": 160, "hull_length": 160.0},
-    {"lattice": "D3Q19", "collision": "RLBM", "device": "sdaa:10",
-     "nx": 384, "ny": 192, "nz": 192, "hull_length": 192.0},
+    {
+        "lattice": "D3Q19",
+        "collision": "CUMULANT",
+        "device": "sdaa:7",
+        "nx": 384,
+        "ny": 192,
+        "nz": 192,
+        "hull_length": 192.0,
+    },
+    {
+        "lattice": "D3Q19",
+        "collision": "BGK",
+        "device": "sdaa:8",
+        "nx": 384,
+        "ny": 192,
+        "nz": 192,
+        "hull_length": 192.0,
+    },
+    {
+        "lattice": "D3Q19",
+        "collision": "MRT",
+        "device": "sdaa:9",
+        "nx": 320,
+        "ny": 160,
+        "nz": 160,
+        "hull_length": 160.0,
+    },
+    {
+        "lattice": "D3Q19",
+        "collision": "RLBM",
+        "device": "sdaa:10",
+        "nx": 384,
+        "ny": 192,
+        "nz": 192,
+        "hull_length": 192.0,
+    },
 ]
 
 
@@ -59,6 +137,7 @@ def _run_single(spec: dict) -> dict:
         SuboffWallFnFullGridConfig,
         run_suboff_wallfn_fullgrid,
     )
+
     cfg = SuboffWallFnFullGridConfig(
         re=2_000_000.0,
         lattice=spec["lattice"],
@@ -87,9 +166,11 @@ def main() -> None:
     print(f"Launching {len(SPECS)} combinations in parallel...")
     for s in SPECS:
         cells = s["nx"] * s["ny"] * s["nz"] / 1e6
-        print(f"  {s['lattice']:6s} {s['collision']:8s} → {s['device']}  "
-              f"grid={s['nx']}×{s['ny']}×{s['nz']} ({cells:.1f}M) "
-              f"hull={s['hull_length']:.0f}")
+        print(
+            f"  {s['lattice']:6s} {s['collision']:8s} → {s['device']}  "
+            f"grid={s['nx']}×{s['ny']}×{s['nz']} ({cells:.1f}M) "
+            f"hull={s['hull_length']:.0f}"
+        )
 
     # Run all combinations in parallel using multiprocessing
     # Each process pins to its own SDAA card via the device string
@@ -106,8 +187,9 @@ def main() -> None:
         finite = artifact["finite"]
         steps = artifact["steps_completed"]
         runtime = artifact.get("runtime_seconds", 0)
-        print(f"  {name:25s}: Ct_total={ct:.6f}  finite={finite}  "
-              f"steps={steps}  time={runtime:.1f}s")
+        print(
+            f"  {name:25s}: Ct_total={ct:.6f}  finite={finite}  steps={steps}  time={runtime:.1f}s"
+        )
 
     # Write combined summary artifact
     summary = {
@@ -123,19 +205,21 @@ def main() -> None:
         "combinations": [],
     }
     for spec, artifact in zip(SPECS, results):
-        summary["combinations"].append({
-            "lattice": spec["lattice"],
-            "collision": spec["collision"],
-            "device": spec["device"],
-            "grid": {"nx": spec["nx"], "ny": spec["ny"], "nz": spec["nz"]},
-            "hull_length": spec["hull_length"],
-            "Ct_fric": artifact["Ct_fric"],
-            "Ct_pres": artifact["Ct_pres"],
-            "Ct_total": artifact["Ct_total"],
-            "finite": artifact["finite"],
-            "steps_completed": artifact["steps_completed"],
-            "runtime_seconds": artifact.get("runtime_seconds", 0),
-        })
+        summary["combinations"].append(
+            {
+                "lattice": spec["lattice"],
+                "collision": spec["collision"],
+                "device": spec["device"],
+                "grid": {"nx": spec["nx"], "ny": spec["ny"], "nz": spec["nz"]},
+                "hull_length": spec["hull_length"],
+                "Ct_fric": artifact["Ct_fric"],
+                "Ct_pres": artifact["Ct_pres"],
+                "Ct_total": artifact["Ct_total"],
+                "finite": artifact["finite"],
+                "steps_completed": artifact["steps_completed"],
+                "runtime_seconds": artifact.get("runtime_seconds", 0),
+            }
+        )
     summary_path = out_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, sort_keys=True, indent=2))
     print(f"\nSummary written to {summary_path}")

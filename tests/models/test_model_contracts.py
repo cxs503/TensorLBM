@@ -68,7 +68,10 @@ def test_d3q19_korner_and_d3q27_phase_field_are_cross_model():
 
 
 def test_same_korner_with_different_collision_is_same_formulation():
-    assert CompatibilityGate.classify(_korner(collision="MRT"), _korner(collision="BGK")) is ComparisonClass.SAME_FORMULATION
+    assert (
+        CompatibilityGate.classify(_korner(collision="MRT"), _korner(collision="BGK"))
+        is ComparisonClass.SAME_FORMULATION
+    )
 
 
 def test_identical_all_fields_is_identical_composition():

@@ -1,4 +1,5 @@
 """Tests for postprocess.py: extract_velocity_profile, compute_pressure_coefficient, q_criterion."""
+
 from __future__ import annotations
 
 import pytest
@@ -435,4 +436,3 @@ class TestRunningStats:
         assert stats.count == 0
         with pytest.raises(RuntimeError):
             _ = stats.mean
-

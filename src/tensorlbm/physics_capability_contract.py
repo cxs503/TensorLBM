@@ -16,6 +16,7 @@ Audit scope (source files read, not docstring assertions):
     - tests: ``test_thermal_common.py``, ``test_porous_media_common.py``,
       ``test_non_newtonian_common.py``, ``test_passive_scalar_common.py``
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -94,6 +95,7 @@ _AUDITED_COLLISIONS: tuple[str, ...] = ("BGK", "MRT", "N/A")
 # Error type
 # ---------------------------------------------------------------------------
 
+
 class PhysicsWithheldError(NotImplementedError):
     """Raised when a physics capability request lacks physics validation."""
 
@@ -101,6 +103,7 @@ class PhysicsWithheldError(NotImplementedError):
 # ---------------------------------------------------------------------------
 # Capability dataclass
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class PhysicsCapability:
@@ -143,7 +146,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
     "thermal": {
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.thermal_common.thermal_step",
                 "test_thermal_common.py: shape, finite, temperature conservation, "
                 "equilibrium identity, buoyancy, CHT",
@@ -151,7 +155,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "Buoyancy (Boussinesq) coupling via Guo force scheme.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.thermal_common.thermal_step (momentum MRT is caller's choice)",
                 "test_thermal_common.py: thermal_step composes with any collision",
                 "Thermal step is collision-agnostic; caller provides MRT-collided f. "
@@ -160,7 +165,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.thermal_common.thermal_step",
                 "test_thermal_common.py: shape, finite, temperature conservation, "
                 "equilibrium identity, buoyancy",
@@ -168,21 +174,22 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "Buoyancy coupling supports D3Q27 via apply_buoyancy_3d.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.thermal_common.thermal_step (momentum MRT is caller's choice)",
                 "test_thermal_common.py: thermal_step composes with any collision",
                 "Thermal step is collision-agnostic; caller provides MRT-collided f.",
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # Conjugate heat transfer — fluid-solid interface
     # -----------------------------------------------------------------------
     "conjugate_ht": {
         "D3Q19": {
             "N/A": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.thermal_common.conjugate_ht_step",
                 "test_thermal_common.py: CHT shape, interface coupling, "
                 "solid diffusion, heat conservation",
@@ -192,7 +199,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "N/A": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.thermal_common.conjugate_ht_step",
                 "test_thermal_common.py: CHT shape, interface coupling, "
                 "solid diffusion, heat conservation",
@@ -201,14 +209,14 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # Porous media — partial bounce-back (Dardis & McCloskey)
     # -----------------------------------------------------------------------
     "porous_media": {
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.porous_media_common.porous_media_step",
                 "test_porous_media_common.py: shape, mass conservation, "
                 "porosity=1 no-op, porosity=0 full bounce-back",
@@ -216,7 +224,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "Collision-agnostic; call after any collision.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.porous_media_common.porous_media_step",
                 "test_porous_media_common.py: shape, mass conservation",
                 "Partial bounce-back is collision-agnostic; works with MRT.",
@@ -224,28 +233,30 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.porous_media_common.porous_media_step",
                 "test_porous_media_common.py: shape, mass conservation, "
                 "porosity=1 no-op, porosity=0 full bounce-back",
                 "Partial bounce-back porous media for D3Q27.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.porous_media_common.porous_media_step",
                 "test_porous_media_common.py: shape, mass conservation",
                 "Partial bounce-back is collision-agnostic; works with MRT.",
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # Non-Newtonian — power-law / Carreau / Bingham tau_eff
     # -----------------------------------------------------------------------
     "non_newtonian": {
         "D2Q9": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
                 "test_non_newtonian_common.py: tau_eff per-cell, >0.5, "
                 "power-law, Carreau, Bingham, zero-shear baseline",
@@ -255,7 +266,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
                 "test_non_newtonian_common.py: tau_eff per-cell, >0.5, "
                 "power-law, Carreau, Bingham, zero-shear baseline",
@@ -263,7 +275,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "3-D strain rate from velocity gradients.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
                 "test_non_newtonian_common.py: tau_eff per-cell, >0.5",
                 "tau_eff is collision-agnostic; caller uses it in MRT stress modes.",
@@ -271,28 +284,30 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
                 "test_non_newtonian_common.py: tau_eff per-cell, >0.5, "
                 "power-law, Carreau, Bingham, zero-shear baseline",
                 "Non-Newtonian tau_eff for D3Q27 via _nu_t_to_tau_eff.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.non_newtonian_common.non_newtonian_tau_eff",
                 "test_non_newtonian_common.py: tau_eff per-cell, >0.5",
                 "tau_eff is collision-agnostic; caller uses it in MRT stress modes.",
             ),
         },
     },
-
     # -----------------------------------------------------------------------
     # Passive scalar — D3Q7 advection-diffusion
     # -----------------------------------------------------------------------
     "passive_scalar": {
         "D3Q19": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.passive_scalar_common.passive_scalar_step",
                 "test_passive_scalar_common.py: shape, finite, scalar conservation, "
                 "equilibrium identity, source term",
@@ -300,7 +315,8 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
                 "Velocity from D3Q19 momentum distribution.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.passive_scalar_common.passive_scalar_step",
                 "test_passive_scalar_common.py: shape, scalar conservation",
                 "Scalar step is collision-agnostic; caller provides MRT-collided f.",
@@ -308,14 +324,16 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
         },
         "D3Q27": {
             "BGK": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.passive_scalar_common.passive_scalar_step",
                 "test_passive_scalar_common.py: shape, finite, scalar conservation, "
                 "equilibrium identity, source term",
                 "D3Q7 passive scalar with D3Q27 momentum.",
             ),
             "MRT": (
-                IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+                IMPLEMENTED,
+                VERIFICATION_CONTRACT_TESTED,
                 "tensorlbm.passive_scalar_common.passive_scalar_step",
                 "test_passive_scalar_common.py: shape, scalar conservation",
                 "Scalar step is collision-agnostic; caller provides MRT-collided f.",
@@ -329,6 +347,7 @@ _REGISTRY: dict[str, dict[str, dict[str, _RegistryEntry]]] = {
 # Public query API
 # ---------------------------------------------------------------------------
 
+
 def physics_capability_matrix() -> list[PhysicsCapability]:
     """Return the full audited capability matrix as a list of dataclasses."""
     result: list[PhysicsCapability] = []
@@ -339,30 +358,34 @@ def physics_capability_matrix() -> list[PhysicsCapability]:
             for collision in _AUDITED_COLLISIONS:
                 entry = collision_map.get(collision)
                 if entry is None:
-                    result.append(PhysicsCapability(
-                        family=family,
-                        lattice=lattice,
-                        collision=collision,
-                        implementation_status=NO_IMPLEMENTATION,
-                        verification_level=VERIFICATION_NO_IMPLEMENTATION,
-                        status=WITHHELD_NO_IMPLEMENTATION,
-                        entrypoint=None,
-                        test_evidence=None,
-                        note="No implementation found for this combination.",
-                    ))
+                    result.append(
+                        PhysicsCapability(
+                            family=family,
+                            lattice=lattice,
+                            collision=collision,
+                            implementation_status=NO_IMPLEMENTATION,
+                            verification_level=VERIFICATION_NO_IMPLEMENTATION,
+                            status=WITHHELD_NO_IMPLEMENTATION,
+                            entrypoint=None,
+                            test_evidence=None,
+                            note="No implementation found for this combination.",
+                        )
+                    )
                 else:
                     impl, verif, entrypoint, evidence, note = entry
-                    result.append(PhysicsCapability(
-                        family=family,
-                        lattice=lattice,
-                        collision=collision,
-                        implementation_status=impl,
-                        verification_level=verif,
-                        status=WITHHELD_NO_PHYSICS_VALIDATION,
-                        entrypoint=entrypoint,
-                        test_evidence=evidence,
-                        note=note,
-                    ))
+                    result.append(
+                        PhysicsCapability(
+                            family=family,
+                            lattice=lattice,
+                            collision=collision,
+                            implementation_status=impl,
+                            verification_level=verif,
+                            status=WITHHELD_NO_PHYSICS_VALIDATION,
+                            entrypoint=entrypoint,
+                            test_evidence=evidence,
+                            note=note,
+                        )
+                    )
     return result
 
 
@@ -389,14 +412,11 @@ def require_physics_capability(
         raise PhysicsWithheldError(f"Unknown physics family: {family!r}")
     collision_map = lattice_map.get(lattice)
     if collision_map is None:
-        raise PhysicsWithheldError(
-            f"Family {family!r} has no entry for lattice {lattice!r}"
-        )
+        raise PhysicsWithheldError(f"Family {family!r} has no entry for lattice {lattice!r}")
     entry = collision_map.get(collision)
     if entry is None:
         raise PhysicsWithheldError(
-            f"Family {family!r} / lattice {lattice!r} has no entry for "
-            f"collision {collision!r}"
+            f"Family {family!r} / lattice {lattice!r} has no entry for collision {collision!r}"
         )
     impl, verif, entrypoint, evidence, note = entry
     return PhysicsCapability(

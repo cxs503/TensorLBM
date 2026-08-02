@@ -11,12 +11,13 @@ not a numerical approximation during drag calculation.
 Usage:
   # Preprocessing (once)
   mesh = SurfaceMesh.from_cylinder(solid, cx, cy, R)
-  
+
   # During simulation (every step)
   cd_p, cl = drag_pressure_integration(f, mesh, dpS)
   cd_f = drag_friction_integration(f, mesh, dpS, nu)
   cd_tot, cd_p, cd_f = drag_total(f, mesh, dpS, nu)
 """
+
 from __future__ import annotations
 
 import math
@@ -26,22 +27,22 @@ from .d3q19 import macroscopic3d
 
 class SurfaceMesh:
     """Precomputed surface mesh with normals.
-    
+
     Attributes:
         near: Near-wall boolean mask (nz, ny, nx)
         nx_n, ny_n, nz_n: Surface normal components (nz, ny, nx), normalized
         dA: Surface area element per cell (nz, ny, nx), default 1.0
     """
-    
+
     def __init__(self, near, nx_n, ny_n, nz_n, dA=None):
         self.near = near
         self.nx_n = nx_n
         self.ny_n = ny_n
         self.nz_n = nz_n
         self.dA = dA if dA is not None else torch.ones_like(near, dtype=torch.float32)
-    
+
     @classmethod
-    def from_cylinder(cls, solid, near, cx, cy, R, axis='z', cz=None):
+    def from_cylinder(cls, solid, near, cx, cy, R, axis="z", cz=None):
         """Analytical normal for 2D extruded cylinder.
 
         The cylinder cross-section lies in the plane perpendicular to *axis*;
@@ -58,29 +59,32 @@ class SurfaceMesh:
         nz, ny, nx = solid.shape
         device = solid.device
 
-        if axis == 'z':
+        if axis == "z":
             yy, xx = torch.meshgrid(
                 torch.arange(ny, device=device, dtype=torch.float32),
                 torch.arange(nx, device=device, dtype=torch.float32),
-                indexing='ij')
+                indexing="ij",
+            )
             nx_n = ((xx - cx) / R).unsqueeze(0).expand(nz, ny, nx)
             ny_n = ((yy - cy) / R).unsqueeze(0).expand(nz, ny, nx)
             nz_n = torch.zeros_like(nx_n)
-        elif axis == 'y':
+        elif axis == "y":
             cz_c = cz if cz is not None else nz / 2.0
             zz, xx = torch.meshgrid(
                 torch.arange(nz, device=device, dtype=torch.float32),
                 torch.arange(nx, device=device, dtype=torch.float32),
-                indexing='ij')
+                indexing="ij",
+            )
             nx_n = ((xx - cx) / R).unsqueeze(1).expand(nz, ny, nx)
             nz_n = ((zz - cz_c) / R).unsqueeze(1).expand(nz, ny, nx)
             ny_n = torch.zeros_like(nx_n)
-        elif axis == 'x':
+        elif axis == "x":
             cz_c = cz if cz is not None else nz / 2.0
             zz, yy = torch.meshgrid(
                 torch.arange(nz, device=device, dtype=torch.float32),
                 torch.arange(ny, device=device, dtype=torch.float32),
-                indexing='ij')
+                indexing="ij",
+            )
             ny_n = ((yy - cy) / R).unsqueeze(2).expand(nz, ny, nx)
             nz_n = ((zz - cz_c) / R).unsqueeze(2).expand(nz, ny, nx)
             nx_n = torch.zeros_like(ny_n)
@@ -92,11 +96,11 @@ class SurfaceMesh:
         ny_n = ny_n / norm * near.float()
         nz_n = nz_n / norm * near.float()
         return cls(near, nx_n, ny_n, nz_n)
-    
+
     @classmethod
     def from_sphere(cls, solid, near, cx, cy, cz, R):
         """Analytical normal for 3D sphere.
-        
+
         n = ((x-cx)/R, (y-cy)/R, (z-cz)/R) at each near-wall cell.
         dA = 1.0 (default; 1/max|n| overestimates staircase area).
         """
@@ -106,7 +110,8 @@ class SurfaceMesh:
             torch.arange(nz, device=device, dtype=torch.float32),
             torch.arange(ny, device=device, dtype=torch.float32),
             torch.arange(nx, device=device, dtype=torch.float32),
-            indexing='ij')
+            indexing="ij",
+        )
         nx_n = (xx - cx) / R
         ny_n = (yy - cy) / R
         nz_n = (zz - cz) / R
@@ -115,7 +120,7 @@ class SurfaceMesh:
         ny_n = ny_n / norm * near.float()
         nz_n = nz_n / norm * near.float()
         return cls(near, nx_n, ny_n, nz_n)
-    
+
     @classmethod
     def from_suboff(cls, solid, near, cx, cy, cz, length, radius, config=None):
         """Analytical outward normal for SUBOFF axisymmetric bare hull.
@@ -153,7 +158,8 @@ class SurfaceMesh:
             torch.arange(nz, device=device, dtype=torch.float32),
             torch.arange(ny, device=device, dtype=torch.float32),
             torch.arange(nx, device=device, dtype=torch.float32),
-            indexing='ij')
+            indexing="ij",
+        )
 
         x_bow = cx - length / 2.0
         xi_t = (xx - x_bow) / length  # 0 at bow, 1 at stern
@@ -166,13 +172,12 @@ class SurfaceMesh:
         dr_dxi = (r_plus - r_minus) / (2.0 * eps)
 
         # dr/dx in lattice units = (dr/dxi) * R_max / L
-        dr_dx = torch.tensor(
-            dr_dxi * radius / length, device=device, dtype=torch.float32)
+        dr_dx = torch.tensor(dr_dxi * radius / length, device=device, dtype=torch.float32)
 
         # Azimuthal angle components
         dy = yy - cy
         dz = zz - cz
-        r_cell = torch.sqrt(dy ** 2 + dz ** 2).clamp(min=1e-10)
+        r_cell = torch.sqrt(dy**2 + dz**2).clamp(min=1e-10)
         cos_theta = dy / r_cell
         sin_theta = dz / r_cell
 
@@ -191,7 +196,7 @@ class SurfaceMesh:
         ny_n = torch.where(outside, torch.zeros_like(ny_n), ny_n)
         nz_n = torch.where(outside, torch.zeros_like(nz_n), nz_n)
 
-        norm = torch.sqrt(nx_n ** 2 + ny_n ** 2 + nz_n ** 2).clamp(min=1e-10)
+        norm = torch.sqrt(nx_n**2 + ny_n**2 + nz_n**2).clamp(min=1e-10)
         near_f = near.float()
         nx_n = nx_n / norm * near_f
         ny_n = ny_n / norm * near_f
@@ -201,7 +206,7 @@ class SurfaceMesh:
     @classmethod
     def from_ellipsoid(cls, solid, near, cx, cy, cz, a, b, c):
         """Analytical normal for 3D ellipsoid.
-        
+
         Ellipsoid: (x/a)² + (y/b)² + (z/c)² = 1
         Normal: n = (x/a², y/b², z/c²) / |n|
         """
@@ -211,7 +216,8 @@ class SurfaceMesh:
             torch.arange(nz, device=device, dtype=torch.float32),
             torch.arange(ny, device=device, dtype=torch.float32),
             torch.arange(nx, device=device, dtype=torch.float32),
-            indexing='ij')
+            indexing="ij",
+        )
         nx_n = (xx - cx) / (a * a)
         ny_n = (yy - cy) / (b * b)
         nz_n = (zz - cz) / (c * c)
@@ -220,7 +226,7 @@ class SurfaceMesh:
         ny_n = ny_n / norm * near.float()
         nz_n = nz_n / norm * near.float()
         return cls(near, nx_n, ny_n, nz_n)
-    
+
     @classmethod
     def from_naca(cls, solid, near, x_le, y_c, chord, m=0.04, p=0.40, t=0.12):
         """Analytical normal for NACA 4-digit airfoil (2D extruded).
@@ -255,7 +261,8 @@ class SurfaceMesh:
             torch.arange(nz, device=device, dtype=torch.float32),
             torch.arange(ny, device=device, dtype=torch.float32),
             torch.arange(nx, device=device, dtype=torch.float32),
-            indexing='ij')
+            indexing="ij",
+        )
         # NACA x coordinate (normalized 0-1)
         xc = (xx - x_le) / chord
         xc = xc.clamp(min=1e-6, max=1.0)
@@ -264,24 +271,28 @@ class SurfaceMesh:
         # y_camber_lattice = y_c + camber(x) * chord
         camber = torch.where(
             xc < p,
-            (m / (p ** 2)) * (2.0 * p * xc - xc ** 2),
-            (m / ((1.0 - p) ** 2)) * ((1.0 - 2.0 * p) + 2.0 * p * xc - xc ** 2),
+            (m / (p**2)) * (2.0 * p * xc - xc**2),
+            (m / ((1.0 - p) ** 2)) * ((1.0 - 2.0 * p) + 2.0 * p * xc - xc**2),
         )
         y_camber_lattice = y_c + camber * chord
 
         # --- Thickness derivative dy_t/dx ---
-        dydx_t = 5.0 * t * (
-            0.2969 / (2.0 * torch.sqrt(xc))
-            - 0.1260
-            - 0.7032 * xc
-            + 0.8529 * xc ** 2
-            - 0.4060 * xc ** 3
+        dydx_t = (
+            5.0
+            * t
+            * (
+                0.2969 / (2.0 * torch.sqrt(xc))
+                - 0.1260
+                - 0.7032 * xc
+                + 0.8529 * xc**2
+                - 0.4060 * xc**3
+            )
         )
 
         # --- Camber line derivative dy_camber/dx ---
         dydx_camber = torch.where(
             xc < p,
-            (m / (p ** 2)) * (2.0 * p - 2.0 * xc),
+            (m / (p**2)) * (2.0 * p - 2.0 * xc),
             (m / ((1.0 - p) ** 2)) * (2.0 * p - 2.0 * xc),
         )
 
@@ -302,10 +313,11 @@ class SurfaceMesh:
         ny_n = ny_n / norm * near.float()
         nz_n = nz_n / norm * near.float()
         return cls(near, nx_n, ny_n, nz_n)
-    
+
     @classmethod
-    def from_stl(cls, solid, near, vertices, faces, face_normals, origin, spacing,
-                 dA_method="none"):
+    def from_stl(
+        cls, solid, near, vertices, faces, face_normals, origin, spacing, dA_method="none"
+    ):
         """STL-derived surface normals for arbitrary geometry.
 
         Thin wrapper around :func:`tensorlbm.stl_geometry.SurfaceMesh_from_stl`
@@ -321,55 +333,61 @@ class SurfaceMesh:
         from .stl_geometry import SurfaceMesh_from_stl
 
         return SurfaceMesh_from_stl(
-            solid, near, vertices, faces, face_normals, origin, spacing,
+            solid,
+            near,
+            vertices,
+            faces,
+            face_normals,
+            origin,
+            spacing,
             dA_method=dA_method,
         )
 
     @classmethod
     def from_gradient(cls, solid, near):
         """Generic normal from gradient of solid mask (for arbitrary geometry).
-        
+
         dA = |∇solid| (gradient magnitude) accounts for surface orientation:
         face-aligned dA=1, diagonal dA=√2, curved dA varies.
         """
         nx_grad = torch.zeros_like(solid, dtype=torch.float32)
         ny_grad = torch.zeros_like(solid, dtype=torch.float32)
         nz_grad = torch.zeros_like(solid, dtype=torch.float32)
-        
+
         nx_grad[:, :, 1:-1] = (solid[:, :, 2:].float() - solid[:, :, :-2].float()) / 2
         ny_grad[:, 1:-1, :] = (solid[:, 2:, :].float() - solid[:, :-2, :].float()) / 2
         nz_grad[1:-1, :, :] = (solid[2:, :, :].float() - solid[:-2, :, :].float()) / 2
-        
+
         nx_n = -nx_grad * near.float()
         ny_n = -ny_grad * near.float()
         nz_n = -nz_grad * near.float()
-        
+
         norm = torch.sqrt(nx_n**2 + ny_n**2 + nz_n**2).clamp(min=1e-10)
         # dA = 1.0 (surface area per cell, default)
         # Note: |∇solid| via central difference gives 0.5 for face-aligned
         # walls (wrong by 2×). Use dA=1.0 for all cells.
-        return cls(near, nx_n/norm, ny_n/norm, nz_n/norm)
-    
+        return cls(near, nx_n / norm, ny_n / norm, nz_n / norm)
+
     @classmethod
     def from_square_prism(cls, solid, near, cx, cy, D):
         """Analytical normal for 2D square prism (axis-aligned).
-        
+
         Front face: n=(-1,0), Back: n=(1,0), Top: n=(0,-1), Bottom: n=(0,1)
         """
         nz, ny, nx = solid.shape
         device = solid.device
         nx_n = torch.zeros(nz, ny, nx, dtype=torch.float32, device=device)
         ny_n = torch.zeros(nz, ny, nx, dtype=torch.float32, device=device)
-        
+
         # Front face (x = cx-1, solid at cx): normal = (-1, 0)
-        nx_n[:, :, cx-1] = -1.0
+        nx_n[:, :, cx - 1] = -1.0
         # Back face (x = cx+D, solid at cx+D-1): normal = (1, 0)
-        nx_n[:, :, cx+D] = 1.0
+        nx_n[:, :, cx + D] = 1.0
         # Bottom face (y = cy-D//2-1): normal = (0, -1)
-        ny_n[:, cy-D//2-1, :] = -1.0
+        ny_n[:, cy - D // 2 - 1, :] = -1.0
         # Top face (y = cy+D//2): normal = (0, 1)
-        ny_n[:, cy+D//2, :] = 1.0
-        
+        ny_n[:, cy + D // 2, :] = 1.0
+
         # Only keep near-wall cells
         nx_n = nx_n * near.float()
         ny_n = ny_n * near.float()
@@ -377,7 +395,7 @@ class SurfaceMesh:
         return cls(near, nx_n, ny_n, nz_n)
 
 
-def get_near_wall_2d(solid, axis='z'):
+def get_near_wall_2d(solid, axis="z"):
     """Near-wall mask for 2D extruded geometries.
 
     Detects fluid cells adjacent to solid cells in the 2D cross-section
@@ -394,21 +412,27 @@ def get_near_wall_2d(solid, axis='z'):
     nz, ny, nx = solid.shape
     fluid = ~solid
     near = torch.zeros_like(solid)
-    if axis == 'z':
+    if axis == "z":
         for z in range(nz):
-            s = solid[z]; f = fluid[z]; n = torch.zeros_like(s)
+            s = solid[z]
+            f = fluid[z]
+            n = torch.zeros_like(s)
             n[:, 1:-1] |= (s[:, 2:] | s[:, :-2]) & f[:, 1:-1]
             n[1:-1, :] |= (s[2:, :] | s[:-2, :]) & f[1:-1, :]
             near[z] = n
-    elif axis == 'y':
+    elif axis == "y":
         for y in range(ny):
-            s = solid[:, y, :]; f = fluid[:, y, :]; n = torch.zeros_like(s)
+            s = solid[:, y, :]
+            f = fluid[:, y, :]
+            n = torch.zeros_like(s)
             n[:, 1:-1] |= (s[:, 2:] | s[:, :-2]) & f[:, 1:-1]
             n[1:-1, :] |= (s[2:, :] | s[:-2, :]) & f[1:-1, :]
             near[:, y, :] = n
-    elif axis == 'x':
+    elif axis == "x":
         for x in range(nx):
-            s = solid[:, :, x]; f = fluid[:, :, x]; n = torch.zeros_like(s)
+            s = solid[:, :, x]
+            f = fluid[:, :, x]
+            n = torch.zeros_like(s)
             n[:, 1:-1] |= (s[:, 2:] | s[:, :-2]) & f[:, 1:-1]
             n[1:-1, :] |= (s[2:, :] | s[:-2, :]) & f[1:-1, :]
             near[:, :, x] = n
@@ -445,7 +469,9 @@ def _shift_along_normal_dominant(field, mesh, steps):
     # Bug 32: device sync
     _dev = field.device
     if nx_n.device != _dev:
-        nx_n = nx_n.to(_dev); ny_n = ny_n.to(_dev); nz_n = nz_n.to(_dev)
+        nx_n = nx_n.to(_dev)
+        ny_n = ny_n.to(_dev)
+        nz_n = nz_n.to(_dev)
     abs_nx = nx_n.abs()
     abs_ny = ny_n.abs()
     abs_nz = nz_n.abs()
@@ -458,11 +484,11 @@ def _shift_along_normal_dominant(field, mesh, steps):
     # Six shifted copies.
     # +x direction (nx_n>0): sample at i+steps → roll by -steps in dims=2
     fx_pos = torch.roll(field, -steps, dims=2)
-    fx_neg = torch.roll(field,  steps, dims=2)
+    fx_neg = torch.roll(field, steps, dims=2)
     fy_pos = torch.roll(field, -steps, dims=1)
-    fy_neg = torch.roll(field,  steps, dims=1)
+    fy_neg = torch.roll(field, steps, dims=1)
     fz_pos = torch.roll(field, -steps, dims=0)
-    fz_neg = torch.roll(field,  steps, dims=0)
+    fz_neg = torch.roll(field, steps, dims=0)
 
     x_pos_mask = dom_x & (nx_n > 0)
     x_neg_mask = dom_x & (nx_n < 0)
@@ -481,8 +507,9 @@ def _shift_along_normal_dominant(field, mesh, steps):
     return result
 
 
-def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall',
-                              solid=None, p0_inlet_width=5):
+def drag_pressure_integration(
+    f, mesh, dpS, extrap="none", p0_method="near_wall", solid=None, p0_inlet_width=5
+):
     """Pressure drag: 3D force vector from pressure × normal × dA.
 
     F = -Σ (p_wall - p_0) · n · dA  (force on wall, negative of fluid force)
@@ -533,23 +560,23 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
         mask_float = mask_float.to(p.device)
     if solid is not None and solid.device != p.device:
         solid = solid.to(p.device)
-    if p0_method == 'near_wall':
+    if p0_method == "near_wall":
         n_p0 = mask_float.sum().clamp(min=1.0)
         p0 = (p * mask_float).sum() / n_p0
-    elif p0_method == 'far_field':
+    elif p0_method == "far_field":
         # Bulk fluid cells (fluid but NOT near-wall) — stable free-stream ref
         if solid is None:
             raise ValueError("solid mask required for p0_method='far_field'")
         far_mask = (~solid).float() * (1.0 - mask_float)
         n_p0 = far_mask.sum().clamp(min=1.0)
         p0 = (p * far_mask).sum() / n_p0
-    elif p0_method == 'domain_avg':
+    elif p0_method == "domain_avg":
         if solid is None:
             raise ValueError("solid mask required for p0_method='domain_avg'")
         fluid_mask = (~solid).float()
         n_p0 = fluid_mask.sum().clamp(min=1.0)
         p0 = (p * fluid_mask).sum() / n_p0
-    elif p0_method == 'inlet':
+    elif p0_method == "inlet":
         if solid is None:
             raise ValueError("solid mask required for p0_method='inlet'")
         inlet_mask = (~solid).float()
@@ -557,16 +584,18 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
         n_p0 = inlet_mask.sum().clamp(min=1.0)
         p0 = (p * inlet_mask).sum() / n_p0
     else:
-        raise ValueError(f"p0_method must be 'near_wall', 'far_field', "
-                         f"'domain_avg', or 'inlet', got '{p0_method}'")
+        raise ValueError(
+            f"p0_method must be 'near_wall', 'far_field', "
+            f"'domain_avg', or 'inlet', got '{p0_method}'"
+        )
     p_corr = p - p0
 
-    if extrap == 'none':
+    if extrap == "none":
         p_wall = p_corr
-    elif extrap == 'linear':
+    elif extrap == "linear":
         p2 = _shift_along_normal_dominant(p_corr, mesh, steps=1)
         p_wall = 2.0 * p_corr - p2
-    elif extrap == 'quadratic':
+    elif extrap == "quadratic":
         p2 = _shift_along_normal_dominant(p_corr, mesh, steps=1)
         p3 = _shift_along_normal_dominant(p_corr, mesh, steps=2)
         p_wall = 3.0 * p_corr - 3.0 * p2 + p3
@@ -580,7 +609,7 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
     return float(fpx.item() / dpS), float(fpy.item() / dpS), float(fpz.item() / dpS)
 
 
-def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard'):
+def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula="standard"):
     """Friction drag via 3D wall shear stress.
 
     Multiple friction formulas are supported via the *formula* parameter.
@@ -622,16 +651,16 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
     rho, ux, uy, uz = macroscopic3d(f)
     nx, ny, nz = mesh.nx_n, mesh.ny_n, mesh.nz_n
     u_dot_n = ux * nx + uy * ny + uz * nz
-    ut_x = ux - u_dot_n * nx   # u_1 tangential (near-wall cell)
+    ut_x = ux - u_dot_n * nx  # u_1 tangential (near-wall cell)
     ut_y = uy - u_dot_n * ny
     ut_z = uz - u_dot_n * nz
 
-    if formula == 'standard':
+    if formula == "standard":
         # τ = 2ν · u_1  (1st-order forward difference, Δn=0.5)
         tau_x = 2.0 * nu * ut_x
         tau_y = 2.0 * nu * ut_y
         tau_z = 2.0 * nu * ut_z
-    elif formula == 'bfl':
+    elif formula == "bfl":
         # τ = ν · u_1 / q  (BFL corrected; q=0.5 → standard)
         if q_wall is None:
             raise ValueError("formula='bfl' requires q_wall tensor")
@@ -639,7 +668,7 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
         tau_x = nu * ut_x * inv_q
         tau_y = nu * ut_y * inv_q
         tau_z = nu * ut_z * inv_q
-    elif formula == 'bfl_lagrange':
+    elif formula == "bfl_lagrange":
         # τ = ν·(3·u_1 − u_2/3) / (2·q)  [2nd-order Lagrange with BFL wall distance]
         # Reduces to 'lagrange' when q=0.5: τ = ν·(3·u_1 − u_2/3).
         # Combines non-uniform-grid 2nd-order accuracy (Lagrange) with the
@@ -653,18 +682,18 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
         tau_x = nu * (3.0 * ut_x - ut2_x / 3.0) * inv_2q
         tau_y = nu * (3.0 * ut_y - ut2_y / 3.0) * inv_2q
         tau_z = nu * (3.0 * ut_z - ut2_z / 3.0) * inv_2q
-    elif formula in ('2nd_order', 'central', 'lagrange'):
+    elif formula in ("2nd_order", "central", "lagrange"):
         # Need u_2: tangential velocity at second cell from wall.
         # Shift velocity one cell along dominant normal into the fluid.
         ut2_x = _shift_along_normal_dominant(ut_x, mesh, steps=1)
         ut2_y = _shift_along_normal_dominant(ut_y, mesh, steps=1)
         ut2_z = _shift_along_normal_dominant(ut_z, mesh, steps=1)
-        if formula == '2nd_order':
+        if formula == "2nd_order":
             # τ = ν·(3·u_1 − u_2)  [task-specified 2nd-order forward diff]
             tau_x = nu * (3.0 * ut_x - ut2_x)
             tau_y = nu * (3.0 * ut_y - ut2_y)
             tau_z = nu * (3.0 * ut_z - ut2_z)
-        elif formula == 'central':
+        elif formula == "central":
             # τ = ν·u_2  [task-specified central/forward diff, Δn=0.5]
             tau_x = nu * ut2_x
             tau_y = nu * ut2_y
@@ -690,7 +719,7 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
 
 def drag_total(f, mesh, dpS, nu):
     """Total drag = pressure + friction (3D).
-    
+
     Returns: (Cd_total_x, Cd_p_x, Cd_f_x) — x-component only.
     For full 3D force, call drag_pressure_integration and drag_friction_integration directly.
     """

@@ -15,39 +15,40 @@ Based on verified phase-field + Fakhari framework:
   - Surface tension via chemical potential force: F = μ·∇φ
   - Gas mass conservation
 """
+
 import sys, math, torch, numpy as np
-sys.path.insert(0, '/root/TensorLBM_test/src')
+
+sys.path.insert(0, "/root/TensorLBM_test/src")
 from tensorlbm.d3q19 import equilibrium3d, C as C3D, W as W3D
 from tensorlbm.solver3d import stream3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
 
 
-def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000,
-                        device='sdaa:0'):
+def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000, device="sdaa:0"):
     """Bhaga & Weber Case B: Eo=10, Mo=0.001, Re_ref=7."""
     dev = torch.device(device)
     cs2 = 1.0 / 3.0
 
     # Physical parameters (LBM units)
     rho_liq = 1.0
-    rho_gas0 = 0.1        # density ratio 10:1
-    R0 = 10.0             # bubble radius (d=20)
-    d = 2 * R0            # diameter
-    gz = 0.001            # gravity
-    sigma = 0.036         # surface tension (Eo=10)
-    nu_l = 0.0849         # liquid viscosity (Mo=0.001)
+    rho_gas0 = 0.1  # density ratio 10:1
+    R0 = 10.0  # bubble radius (d=20)
+    d = 2 * R0  # diameter
+    gz = 0.001  # gravity
+    sigma = 0.036  # surface tension (Eo=10)
+    nu_l = 0.0849  # liquid viscosity (Mo=0.001)
     tau_f = 3.0 * nu_l + 0.5  # = 0.7547
     tau_g = 0.55
-    gamma = 1.4           # adiabatic index
+    gamma = 1.4  # adiabatic index
 
     # Cahn-Hilliard / Fakhari surface tension parameters
-    W = 4.0               # interface width
-    Beta = 12.0 * sigma / W   # = 0.108
+    W = 4.0  # interface width
+    Beta = 12.0 * sigma / W  # = 0.108
     k_grad = 1.5 * sigma * W  # = 0.216
-    A_coef = Beta          # double-well coefficient
+    A_coef = Beta  # double-well coefficient
     B_coef = Beta
-    kappa_ch = k_grad      # gradient penalty
-    alpha_ac = 0.02        # Fakhari anti-diffusion
+    kappa_ch = k_grad  # gradient penalty
+    alpha_ac = 0.02  # Fakhari anti-diffusion
 
     # Dimensionless numbers
     Eo = gz * (rho_liq - rho_gas0) * d**2 / sigma
@@ -60,7 +61,7 @@ def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000,
     p_inf = rho_liq * cs2
 
     # Bubble initial position (lower quarter)
-    cx_b, cy_b, cz_b = nx//2, ny//4, nz//2
+    cx_b, cy_b, cz_b = nx // 2, ny // 4, nz // 2
 
     # Lattice
     c = C3D.to(dev).float()
@@ -68,37 +69,51 @@ def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000,
     cx3d = c[:, 0].view(19, 1, 1, 1)
     cy3d = c[:, 1].view(19, 1, 1, 1)
     cz3d = c[:, 2].view(19, 1, 1, 1)
-    opp = torch.tensor([0,2,1,4,3,6,5,8,7,10,9,12,11,14,13,16,15,18,17], device=dev)
+    opp = torch.tensor(
+        [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17], device=dev
+    )
 
     zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=dev), torch.arange(ny, device=dev),
-        torch.arange(nx, device=dev), indexing='ij')
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
+    )
 
     solid = torch.zeros(nz, ny, nx, dtype=torch.bool, device=dev)
-    solid[:, 0, :] = True; solid[:, -1, :] = True
-    solid[:, :, 0] = True; solid[:, :, -1] = True
-    solid[0, :, :] = True; solid[-1, :, :] = True
+    solid[:, 0, :] = True
+    solid[:, -1, :] = True
+    solid[:, :, 0] = True
+    solid[:, :, -1] = True
+    solid[0, :, :] = True
+    solid[-1, :, :] = True
     fluid_mask = ~solid
 
     # Phase field: -1 (gas) inside bubble, +1 (liquid) outside
-    dist = torch.sqrt((xx - cx_b)**2 + (yy - cy_b)**2 + (zz - cz_b)**2)
+    dist = torch.sqrt((xx - cx_b) ** 2 + (yy - cy_b) ** 2 + (zz - cz_b) ** 2)
     phi = torch.tanh((dist - R0) / (W * 0.5))
 
     # Initialize f: uniform density
     rho_init = torch.ones(nz, ny, nx, device=dev)
-    f = equilibrium3d(rho_init, torch.zeros_like(rho_init),
-                      torch.zeros_like(rho_init), torch.zeros_like(rho_init), device=dev)
-    g = _init_g_equilibrium(phi, torch.zeros_like(phi), torch.zeros_like(phi),
-                             torch.zeros_like(phi), c, w)
+    f = equilibrium3d(
+        rho_init,
+        torch.zeros_like(rho_init),
+        torch.zeros_like(rho_init),
+        torch.zeros_like(rho_init),
+        device=dev,
+    )
+    g = _init_g_equilibrium(
+        phi, torch.zeros_like(phi), torch.zeros_like(phi), torch.zeros_like(phi), c, w
+    )
 
     # Actual initial gas volume
     V0 = float((phi < 0).float().mul(fluid_mask.float()).sum())
 
-    print(f'=== Bhaga & Weber Case B ===', flush=True)
-    print(f'Eo={Eo:.2f}  Mo={Mo:.6f}  Re_ref={Re_ref:.1f}  v_ref={v_ref:.5f}', flush=True)
-    print(f'Grid: {nx}×{ny}×{nz}  R0={R0}  d={d}', flush=True)
-    print(f'ρ_l={rho_liq} ρ_g={rho_gas0} σ={sigma} ν_l={nu_l:.4f} τ={tau_f:.4f}', flush=True)
-    print(f'gz={gz}  V0={V0:.0f}', flush=True)
+    print(f"=== Bhaga & Weber Case B ===", flush=True)
+    print(f"Eo={Eo:.2f}  Mo={Mo:.6f}  Re_ref={Re_ref:.1f}  v_ref={v_ref:.5f}", flush=True)
+    print(f"Grid: {nx}×{ny}×{nz}  R0={R0}  d={d}", flush=True)
+    print(f"ρ_l={rho_liq} ρ_g={rho_gas0} σ={sigma} ν_l={nu_l:.4f} τ={tau_f:.4f}", flush=True)
+    print(f"gz={gz}  V0={V0:.0f}", flush=True)
     print(flush=True)
 
     ts, cy_track, v_track, R_track = [], [], [], []
@@ -130,19 +145,28 @@ def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000,
         uz_post = (f * cz3d).sum(0) / rho_post.clamp(min=1e-6)
 
         # Density replacement
-        feq_new = equilibrium3d(rho_field.clamp(min=1e-6, max=5.0),
-                                ux_post.clamp(-0.5, 0.5),
-                                uy_post.clamp(-0.5, 0.5),
-                                uz_post.clamp(-0.5, 0.5), device=dev)
-        feq_old = equilibrium3d(rho_post.clamp(min=1e-6, max=5.0),
-                                ux_post.clamp(-0.5, 0.5),
-                                uy_post.clamp(-0.5, 0.5),
-                                uz_post.clamp(-0.5, 0.5), device=dev)
+        feq_new = equilibrium3d(
+            rho_field.clamp(min=1e-6, max=5.0),
+            ux_post.clamp(-0.5, 0.5),
+            uy_post.clamp(-0.5, 0.5),
+            uz_post.clamp(-0.5, 0.5),
+            device=dev,
+        )
+        feq_old = equilibrium3d(
+            rho_post.clamp(min=1e-6, max=5.0),
+            ux_post.clamp(-0.5, 0.5),
+            uy_post.clamp(-0.5, 0.5),
+            uz_post.clamp(-0.5, 0.5),
+            device=dev,
+        )
         f = f - feq_old + feq_new
-        feq = equilibrium3d(rho_field.clamp(min=1e-6, max=5.0),
-                            ux_post.clamp(-0.5, 0.5),
-                            uy_post.clamp(-0.5, 0.5),
-                            uz_post.clamp(-0.5, 0.5), device=dev)
+        feq = equilibrium3d(
+            rho_field.clamp(min=1e-6, max=5.0),
+            ux_post.clamp(-0.5, 0.5),
+            uy_post.clamp(-0.5, 0.5),
+            uz_post.clamp(-0.5, 0.5),
+            device=dev,
+        )
         f = f - (f - feq) / tau_f
 
         # Guo body forces: gravity (liquid) + surface tension (interface)
@@ -165,19 +189,31 @@ def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000,
         Fz = Fz_st
 
         cu_force = cx3d * Fx.unsqueeze(0) + cy3d * Fy.unsqueeze(0) + cz3d * Fz.unsqueeze(0)
-        f = f + (1.0 - 0.5/tau_f) * w * cu_force / cs2
+        f = f + (1.0 - 0.5 / tau_f) * w * cu_force / cs2
         f = f.clamp(min=0.0, max=5.0)
 
         # === 6. Phase field update (FD Cahn-Hilliard + anti-diffusion) ===
         ux_s = ux.clamp(-0.5, 0.5)
         uy_s = uy.clamp(-0.5, 0.5)
         uz_s = uz.clamp(-0.5, 0.5)
-        dphi_dx = torch.where(ux_s > 0, phi - torch.roll(phi, 1, dims=2),
-                              torch.roll(phi, -1, dims=2) - phi) * ux_s
-        dphi_dy = torch.where(uy_s > 0, phi - torch.roll(phi, 1, dims=1),
-                              torch.roll(phi, -1, dims=1) - phi) * uy_s
-        dphi_dz = torch.where(uz_s > 0, phi - torch.roll(phi, 1, dims=0),
-                              torch.roll(phi, -1, dims=0) - phi) * uz_s
+        dphi_dx = (
+            torch.where(
+                ux_s > 0, phi - torch.roll(phi, 1, dims=2), torch.roll(phi, -1, dims=2) - phi
+            )
+            * ux_s
+        )
+        dphi_dy = (
+            torch.where(
+                uy_s > 0, phi - torch.roll(phi, 1, dims=1), torch.roll(phi, -1, dims=1) - phi
+            )
+            * uy_s
+        )
+        dphi_dz = (
+            torch.where(
+                uz_s > 0, phi - torch.roll(phi, 1, dims=0), torch.roll(phi, -1, dims=0) - phi
+            )
+            * uz_s
+        )
         phi_adv = phi - (dphi_dx + dphi_dy + dphi_dz)
 
         lap_phi_adv = _laplacian_3d(phi_adv)
@@ -204,9 +240,12 @@ def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000,
                 v_bubble = float(uy[gas_mask].mean())
                 # Equivalent radius from volume
                 V_now = float(gas_mask.sum())
-                R_now = (3.0 * V_now / (4.0 * math.pi)) ** (1.0/3.0)
+                R_now = (3.0 * V_now / (4.0 * math.pi)) ** (1.0 / 3.0)
             else:
-                cy_bubble = 0; v_bubble = 0; R_now = 0; V_now = 0
+                cy_bubble = 0
+                v_bubble = 0
+                R_now = 0
+                V_now = 0
 
             # Reynolds number
             Re_now = rho_liq * abs(v_bubble) * d / nu_l if v_bubble != 0 else 0
@@ -221,10 +260,12 @@ def run_bhaga_benchmark(nx=48, ny=96, nz=48, n_steps=6000,
             v_track.append(v_bubble)
             R_track.append(R_now)
 
-            print(f'step {step:4d}: cy={cy_bubble:.1f} v={v_bubble:+.5f} '
-                  f'Re={Re_now:.2f}/{Re_ref:.0f} R={R_now:.2f} V={V_now:.0f} '
-                  f'ρ=[{rho_min:.3f},{rho_max:.3f}] φ=[{phi_min:.2f},{phi_max:.2f}]',
-                  flush=True)
+            print(
+                f"step {step:4d}: cy={cy_bubble:.1f} v={v_bubble:+.5f} "
+                f"Re={Re_now:.2f}/{Re_ref:.0f} R={R_now:.2f} V={V_now:.0f} "
+                f"ρ=[{rho_min:.3f},{rho_max:.3f}] φ=[{phi_min:.2f},{phi_max:.2f}]",
+                flush=True,
+            )
 
     return np.array(ts), np.array(cy_track), np.array(v_track), np.array(R_track)
 
@@ -240,30 +281,36 @@ def _init_g_equilibrium(phi, ux, uy, uz, c, w):
 
 
 def _laplacian_3d(field):
-    return (torch.roll(field, 1, dims=0) + torch.roll(field, -1, dims=0)
-            + torch.roll(field, 1, dims=1) + torch.roll(field, -1, dims=1)
-            + torch.roll(field, 1, dims=2) + torch.roll(field, -1, dims=2)
-            - 6.0 * field)
+    return (
+        torch.roll(field, 1, dims=0)
+        + torch.roll(field, -1, dims=0)
+        + torch.roll(field, 1, dims=1)
+        + torch.roll(field, -1, dims=1)
+        + torch.roll(field, 1, dims=2)
+        + torch.roll(field, -1, dims=2)
+        - 6.0 * field
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
-    p = argparse.ArgumentParser(description='Bhaga & Weber bubble rise benchmark')
-    p.add_argument('--nx', type=int, default=48)
-    p.add_argument('--ny', type=int, default=96)
-    p.add_argument('--nz', type=int, default=48)
-    p.add_argument('--steps', type=int, default=6000)
-    p.add_argument('--device', default='sdaa:0')
+
+    p = argparse.ArgumentParser(description="Bhaga & Weber bubble rise benchmark")
+    p.add_argument("--nx", type=int, default=48)
+    p.add_argument("--ny", type=int, default=96)
+    p.add_argument("--nz", type=int, default=48)
+    p.add_argument("--steps", type=int, default=6000)
+    p.add_argument("--device", default="sdaa:0")
     g = p.parse_args()
 
-    print('='*60)
+    print("=" * 60)
     ts, cy, v, R = run_bhaga_benchmark(g.nx, g.ny, g.nz, g.steps, g.device)
     print()
-    print('='*60)
-    print('=== BHAGA & WEBER CASE B SUMMARY ===')
-    print(f'Eo=10.0  Mo=0.001  Re_ref=7.0')
-    print(f'Bubble: cy {cy[0]:.1f} → {cy[-1]:.1f} (rise {cy[-1]-cy[0]:.1f} cells)')
+    print("=" * 60)
+    print("=== BHAGA & WEBER CASE B SUMMARY ===")
+    print(f"Eo=10.0  Mo=0.001  Re_ref=7.0")
+    print(f"Bubble: cy {cy[0]:.1f} → {cy[-1]:.1f} (rise {cy[-1] - cy[0]:.1f} cells)")
     v_final = v[-1]
     Re_final = 1.0 * abs(v_final) * 20.0 / 0.0849
-    print(f'Terminal velocity: v={v_final:.5f} (ref={0.02970:.5f})')
-    print(f'Reynolds: Re={Re_final:.2f} (ref=7.0, error={abs(Re_final-7.0)/7.0*100:.1f}%)')
+    print(f"Terminal velocity: v={v_final:.5f} (ref={0.02970:.5f})")
+    print(f"Reynolds: Re={Re_final:.2f} (ref=7.0, error={abs(Re_final - 7.0) / 7.0 * 100:.1f}%)")

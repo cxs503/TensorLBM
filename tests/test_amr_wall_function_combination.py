@@ -5,6 +5,7 @@ wall-function module (wall_function_common) can be combined in a single
 simulation step, and that the wall×refinement combination gate provides a
 clear admission path for this combination.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -64,6 +65,7 @@ def _q_for(lattice: str) -> int:
 # Gate: common_wf + AMR admission path
 # ---------------------------------------------------------------------------
 
+
 class TestGateCombinationPath:
     """The wall×refinement gate has a clear admission path for common modules."""
 
@@ -105,6 +107,7 @@ class TestGateCombinationPath:
 # Functional combination: AMR refine + wall function
 # ---------------------------------------------------------------------------
 
+
 class TestAmrWallFunctionCombination:
     """AMR refine/coarsen and wall_function can be used together."""
 
@@ -131,8 +134,12 @@ class TestAmrWallFunctionCombination:
 
         # Step 3: Apply wall function on the fine grid
         f_fine_corrected = wall_function(
-            f_fine, mask_fine, u_tau, y_plus,
-            lattice=lattice, nu=0.02,
+            f_fine,
+            mask_fine,
+            u_tau,
+            y_plus,
+            lattice=lattice,
+            nu=0.02,
         )
         assert f_fine_corrected.shape == f_fine.shape
         assert torch.isfinite(f_fine_corrected).all()
@@ -153,8 +160,13 @@ class TestAmrWallFunctionCombination:
         f_fine = refine(f, lattice=lattice, tau_c=1.0, tau_f=0.75, ratio=2)
         box = BoxRegion(0, 4, 0, 3, 0, 4)
         patch = AMRPatch3D(
-            f=f_fine, box=box, ratio=2, level=1,
-            parent_level=0, tau=0.75, lattice=lattice,
+            f=f_fine,
+            box=box,
+            ratio=2,
+            level=1,
+            parent_level=0,
+            tau=0.75,
+            lattice=lattice,
         )
 
         # Apply wall function on the patch
@@ -168,8 +180,12 @@ class TestAmrWallFunctionCombination:
         y_plus = compute_y_plus(u_tau, nu=0.02, y_val=0.5)
 
         patch.f = wall_function(
-            patch.f, mask_fine, u_tau, y_plus,
-            lattice=lattice, nu=0.02,
+            patch.f,
+            mask_fine,
+            u_tau,
+            y_plus,
+            lattice=lattice,
+            nu=0.02,
         )
         assert patch.f.shape == (q, 8, 12, 16)
         assert torch.isfinite(patch.f).all()
@@ -192,8 +208,12 @@ class TestAmrWallFunctionCombination:
         y_plus = compute_y_plus(u_tau, nu=0.02, y_val=0.5)
 
         f_corrected = wall_function(
-            f, mask[:4, :6, :8], u_tau[:4, :6, :8], y_plus[:4, :6, :8],
-            lattice=lattice, nu=0.02,
+            f,
+            mask[:4, :6, :8],
+            u_tau[:4, :6, :8],
+            y_plus[:4, :6, :8],
+            lattice=lattice,
+            nu=0.02,
         )
         f_fine = refine(f_corrected, lattice=lattice, tau_c=1.0, tau_f=0.75, ratio=2)
 
@@ -202,8 +222,13 @@ class TestAmrWallFunctionCombination:
         interior_before = f_fine[:, r:-r, r:-r, r:-r].clone()
 
         halo_exchange(
-            f_fine, parent_f, box=box, ratio=r,
-            lattice=lattice, tau_p=1.0, tau_c=0.75,
+            f_fine,
+            parent_f,
+            box=box,
+            ratio=r,
+            lattice=lattice,
+            tau_p=1.0,
+            tau_c=0.75,
         )
         # Interior should be preserved
         assert torch.equal(f_fine[:, r:-r, r:-r, r:-r], interior_before)

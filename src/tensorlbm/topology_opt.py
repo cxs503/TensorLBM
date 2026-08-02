@@ -55,6 +55,7 @@ Borrvall, T. & Petersson, J. (2003). Topology optimisation of fluids in
 Sigmund, O. (2007). Morphology-based black and white filters for topology
     optimisation. *Struct. Multidisc. Optim.* 33, 401–424.
 """
+
 from __future__ import annotations
 
 import math
@@ -78,41 +79,45 @@ __all__ = [
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class TopOptConfig:
     """Configuration for density-based topology optimisation."""
+
     # Grid
     nx: int = 80
     ny: int = 40
     # Volume fraction target
-    vf_target: float = 0.4             # max fraction of domain that may be solid
+    vf_target: float = 0.4  # max fraction of domain that may be solid
     # Brinkman penalisation
-    alpha_max: float = 2.5e4           # large penalisation for solid
-    q_simp: float = 0.01               # SIMP convexity parameter
+    alpha_max: float = 2.5e4  # large penalisation for solid
+    q_simp: float = 0.01  # SIMP convexity parameter
     # Density filter
-    r_min: float = 2.0                 # filter radius in grid cells
+    r_min: float = 2.0  # filter radius in grid cells
     # Optimisation
     n_iter: int = 80
-    oc_eta: float = 0.5                # OC move exponent
-    move_limit: float = 0.2            # max change per iteration
+    oc_eta: float = 0.5  # OC move exponent
+    move_limit: float = 0.2  # max change per iteration
     # Tolerance for convergence
     tol: float = 1e-3
     # Objective
-    objective: str = "pressure_drop"   # "pressure_drop" | "flow_uniformity"
+    objective: str = "pressure_drop"  # "pressure_drop" | "flow_uniformity"
     # Re (used to set LBM τ)
     re: float = 100.0
-    nu_lb: float | None = None         # if None, inferred from Re and nx
+    nu_lb: float | None = None  # if None, inferred from Re and nx
 
 
 # ---------------------------------------------------------------------------
 # Result
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class TopOptResult:
     """Output of a topology optimisation run."""
-    density: list[list[float]]         # final design (ny, nx) ∈ [0, 1]
-    objective_history: list[float]     # objective value vs iteration
+
+    density: list[list[float]]  # final design (ny, nx) ∈ [0, 1]
+    objective_history: list[float]  # objective value vs iteration
     volume_fraction_history: list[float]
     converged: bool
     n_iterations: int
@@ -123,6 +128,7 @@ class TopOptResult:
 # ---------------------------------------------------------------------------
 # Brinkman penalisation
 # ---------------------------------------------------------------------------
+
 
 def brinkman_alpha(
     rho_mat: torch.Tensor,
@@ -140,6 +146,7 @@ def brinkman_alpha(
 # Density filter
 # ---------------------------------------------------------------------------
 
+
 def density_filter(
     rho_mat: torch.Tensor,
     r_min: float = 2.0,
@@ -155,14 +162,14 @@ def density_filter(
     cx, cy = r, r
     for i in range(kernel_size):
         for j in range(kernel_size):
-            dist = math.sqrt((i - cx)**2 + (j - cy)**2)
+            dist = math.sqrt((i - cx) ** 2 + (j - cy) ** 2)
             if dist <= r_min:
                 kernel[i, j] = max(r_min - dist, 0.0)
 
     kernel = kernel / kernel.sum()
     k = kernel.unsqueeze(0).unsqueeze(0)
 
-    rho_f = rho_mat.float().unsqueeze(0).unsqueeze(0)   # (1, 1, ny, nx)
+    rho_f = rho_mat.float().unsqueeze(0).unsqueeze(0)  # (1, 1, ny, nx)
     filtered = F.conv2d(rho_f, k.float(), padding=r)
     return filtered.squeeze().to(rho_mat.dtype)
 
@@ -170,6 +177,7 @@ def density_filter(
 # ---------------------------------------------------------------------------
 # Sensitivity computation (adjoint via autograd)
 # ---------------------------------------------------------------------------
+
 
 def _lbm_objective_proxy(
     ux: torch.Tensor,
@@ -192,8 +200,8 @@ def _lbm_objective_proxy(
         cs2 = 1.0 / 3.0
         p = cs2 * rho
         ny, nx = p.shape
-        p_in  = p[:, :max(1, nx // 10)].mean()
-        p_out = p[:, max(0, nx - nx // 10):].mean()
+        p_in = p[:, : max(1, nx // 10)].mean()
+        p_out = p[:, max(0, nx - nx // 10) :].mean()
         return (p_in - p_out) + 0.01 * drag_proxy
 
     elif objective == "flow_uniformity":
@@ -219,7 +227,7 @@ def compute_sensitivity(
     Returns a (ny, nx) sensitivity tensor.
     """
     rho_var = rho_mat.detach().requires_grad_(True).clone()
-    alpha_fn = lambda r: brinkman_alpha(r, cfg.alpha_max, cfg.q_simp)   # noqa: E731
+    alpha_fn = lambda r: brinkman_alpha(r, cfg.alpha_max, cfg.q_simp)  # noqa: E731
 
     J = _lbm_objective_proxy(ux, uy, rho, rho_var, alpha_fn, cfg.objective)
     J.backward()
@@ -231,6 +239,7 @@ def compute_sensitivity(
 # ---------------------------------------------------------------------------
 # Optimality criteria update
 # ---------------------------------------------------------------------------
+
 
 def oc_update(
     rho_mat: torch.Tensor,
@@ -270,6 +279,7 @@ def oc_update(
 # Simple LBM flow solver for optimisation
 # ---------------------------------------------------------------------------
 
+
 def _lbm_step_brinkman(
     f: torch.Tensor,
     rho_mat: torch.Tensor,
@@ -297,7 +307,8 @@ def _lbm_step_brinkman(
     for q in range(9):
         f_stream[q] = torch.roll(
             torch.roll(f_out[q], _CX[q], dims=1),
-            _CY[q], dims=0,
+            _CY[q],
+            dims=0,
         )
 
     return f_stream, rho, ux, uy
@@ -316,7 +327,7 @@ def _run_lbm_for_topopt(
     if cfg.nu_lb is not None:
         nu_lb = cfg.nu_lb
     else:
-        u_lb = 0.05   # lattice inlet velocity
+        u_lb = 0.05  # lattice inlet velocity
         nu_lb = u_lb * nx / cfg.re
         nu_lb = max(min(nu_lb, 0.3), 1e-4)
 
@@ -330,6 +341,7 @@ def _run_lbm_for_topopt(
     ux_init = torch.full((ny, nx), u_inlet, dtype=torch.float64)
     uy_init = torch.zeros(ny, nx, dtype=torch.float64)
     from tensorlbm.d2q9 import equilibrium
+
     f = equilibrium(rho_init, ux_init, uy_init)
 
     for _ in range(n_steps):
@@ -355,6 +367,7 @@ def _run_lbm_for_topopt(
 # Main optimisation loop
 # ---------------------------------------------------------------------------
 
+
 def run_topology_optimisation(cfg: TopOptConfig) -> TopOptResult:
     """Run the full density-based topology optimisation.
 
@@ -377,7 +390,7 @@ def run_topology_optimisation(cfg: TopOptConfig) -> TopOptResult:
         rho_filt = density_filter(rho_mat, cfg.r_min)
 
         # 3. Compute objective
-        alpha_fn = lambda r: brinkman_alpha(r, cfg.alpha_max, cfg.q_simp)   # noqa: E731
+        alpha_fn = lambda r: brinkman_alpha(r, cfg.alpha_max, cfg.q_simp)  # noqa: E731
         rho_var = rho_filt.requires_grad_(True)
         J = _lbm_objective_proxy(ux, uy, rho, rho_var, alpha_fn, cfg.objective)
         J.backward()

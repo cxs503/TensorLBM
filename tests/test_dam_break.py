@@ -19,11 +19,17 @@ from tensorlbm import DamBreakConfig, run_dam_break
 class TestDamBreakConfigValidation:
     def _base(self, **overrides: object) -> DamBreakConfig:
         kwargs: dict = {
-            "nx": 40, "ny": 24, "dam_width": 10,
+            "nx": 40,
+            "ny": 24,
+            "dam_width": 10,
             "model": "cg",
-            "rho_heavy": 0.8, "rho_light": 0.4,
-            "G": 0.9, "tau": 1.0, "g": 5e-5,
-            "n_steps": 4, "output_interval": 4,
+            "rho_heavy": 0.8,
+            "rho_light": 0.4,
+            "G": 0.9,
+            "tau": 1.0,
+            "g": 5e-5,
+            "n_steps": 4,
+            "output_interval": 4,
         }
         kwargs.update(overrides)
         return DamBreakConfig(**kwargs)
@@ -91,11 +97,17 @@ class TestRunDamBreakSmoke:
 
     def _cfg(self, tmp_path: Path, model: str, **kwargs: object) -> DamBreakConfig:
         base: dict = {
-            "nx": 32, "ny": 20, "dam_width": 8,
+            "nx": 32,
+            "ny": 20,
+            "dam_width": 8,
             "model": model,
-            "rho_heavy": 0.8, "rho_light": 0.4,
-            "G": 0.9, "tau": 1.0, "g": 5e-5,
-            "n_steps": 4, "output_interval": 4,
+            "rho_heavy": 0.8,
+            "rho_light": 0.4,
+            "G": 0.9,
+            "tau": 1.0,
+            "g": 5e-5,
+            "n_steps": 4,
+            "output_interval": 4,
             "output_root": tmp_path,
             "run_name": f"smoke_{model}",
             "overwrite": True,
@@ -153,9 +165,12 @@ class TestRunDamBreakSmoke:
     def test_unknown_model_raises(self, tmp_path: Path) -> None:
         """An unsupported model string must raise ValueError at runtime."""
         cfg = DamBreakConfig(
-            nx=32, ny=20, dam_width=8,
+            nx=32,
+            ny=20,
+            dam_width=8,
             model="unknown",  # type: ignore[arg-type]
-            n_steps=2, output_interval=2,
+            n_steps=2,
+            output_interval=2,
             output_root=tmp_path,
             run_name="unknown_model_test",
             overwrite=True,
@@ -172,12 +187,14 @@ class TestRunDamBreakSmoke:
 class TestWallMask:
     def test_shape(self) -> None:
         from tensorlbm.dam_break import _wall_mask
+
         mask = _wall_mask(ny=20, nx=32, device=torch.device("cpu"))
         assert mask.shape == (20, 32)
         assert mask.dtype == torch.bool
 
     def test_borders_are_true(self) -> None:
         from tensorlbm.dam_break import _wall_mask
+
         mask = _wall_mask(ny=20, nx=32, device=torch.device("cpu"))
         assert mask[0, :].all(), "bottom row"
         assert mask[-1, :].all(), "top row"
@@ -186,6 +203,7 @@ class TestWallMask:
 
     def test_interior_is_false(self) -> None:
         from tensorlbm.dam_break import _wall_mask
+
         mask = _wall_mask(ny=20, nx=32, device=torch.device("cpu"))
         assert not mask[1:-1, 1:-1].any()
 
@@ -193,23 +211,27 @@ class TestWallMask:
 class TestSmoothProfile:
     def test_shape(self) -> None:
         from tensorlbm.dam_break import _smooth_profile
+
         prof = _smooth_profile(nx=32, dam_width=10, width=3.0, device=torch.device("cpu"))
         assert prof.shape == (1, 32)
 
     def test_values_in_range(self) -> None:
         from tensorlbm.dam_break import _smooth_profile
+
         prof = _smooth_profile(nx=32, dam_width=10, width=3.0, device=torch.device("cpu"))
         assert (prof >= 0.0).all()
         assert (prof <= 1.0).all()
 
     def test_high_inside_dam(self) -> None:
         from tensorlbm.dam_break import _smooth_profile
+
         prof = _smooth_profile(nx=64, dam_width=20, width=2.0, device=torch.device("cpu"))
         # Well inside the dam the profile should be close to 1
         assert float(prof[0, 5].item()) > 0.9
 
     def test_low_outside_dam(self) -> None:
         from tensorlbm.dam_break import _smooth_profile
+
         prof = _smooth_profile(nx=64, dam_width=20, width=2.0, device=torch.device("cpu"))
         # Well outside the dam the profile should be close to 0
         assert float(prof[0, 50].item()) < 0.1
@@ -218,6 +240,7 @@ class TestSmoothProfile:
 class TestFindFrontX:
     def test_returns_float(self) -> None:
         from tensorlbm.dam_break import _find_front_x
+
         ny, nx = 12, 32
         rho_heavy = torch.zeros((ny, nx))
         rho_heavy[:, :16] = 0.8
@@ -227,6 +250,7 @@ class TestFindFrontX:
 
     def test_no_heavy_phase_returns_zero(self) -> None:
         from tensorlbm.dam_break import _find_front_x
+
         ny, nx = 12, 32
         rho_heavy = torch.zeros((ny, nx))
         rho_light = torch.ones((ny, nx)) * 0.8
@@ -235,6 +259,7 @@ class TestFindFrontX:
 
     def test_full_heavy_phase_returns_last_column(self) -> None:
         from tensorlbm.dam_break import _find_front_x
+
         ny, nx = 12, 32
         rho_heavy = torch.ones((ny, nx)) * 0.8
         rho_light = torch.zeros((ny, nx))

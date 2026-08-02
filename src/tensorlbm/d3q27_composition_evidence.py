@@ -25,6 +25,7 @@ This module never imports or executes streaming, boundary conditions,
 geometry masks, force observation, or output pipelines.  Those are the
 WITHHELD composition aspects documented in the artifact.
 """
+
 from __future__ import annotations
 
 import hashlib

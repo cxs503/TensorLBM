@@ -1,4 +1,5 @@
 """TDD specification for the pure free-surface inventory reference ledger."""
+
 from __future__ import annotations
 
 import pytest

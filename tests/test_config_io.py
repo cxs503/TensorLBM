@@ -1,4 +1,5 @@
 """Tests for config_io.py: load_config from YAML/TOML with env overrides."""
+
 from __future__ import annotations
 
 import dataclasses
@@ -208,6 +209,7 @@ class TestNonDataclass:
 # ---------------------------------------------------------------------------
 # Phase 6: JSON config round-trip tests
 # ---------------------------------------------------------------------------
+
 
 class TestSaveLoadConfigJson:
     def test_cylinder_flow_config_round_trip(self, tmp_path: Path) -> None:

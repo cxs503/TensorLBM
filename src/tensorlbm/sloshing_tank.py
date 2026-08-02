@@ -5,6 +5,7 @@ light upper gas layer. Gravity acts in the negative-y direction while a
 harmonic horizontal body force excites standing-wave sloshing. The measured
 oscillation frequency is compared with the Faltinsen natural-frequency model.
 """
+
 from __future__ import annotations
 
 import csv
@@ -174,9 +175,7 @@ def _save_snapshot(
     rho_water: torch.Tensor,
     rho_air: torch.Tensor,
 ) -> None:
-    phase = (
-        rho_water / torch.clamp(rho_water + rho_air, min=1e-12)
-    ).detach().cpu().numpy()
+    phase = (rho_water / torch.clamp(rho_water + rho_air, min=1e-12)).detach().cpu().numpy()
     fig, ax = plt.subplots(figsize=(8, 4), constrained_layout=True)
     image = ax.imshow(phase, origin="lower", cmap="Blues", vmin=0.0, vmax=1.0)
     plt.colorbar(image, ax=ax, fraction=0.03, label="Water phase fraction")

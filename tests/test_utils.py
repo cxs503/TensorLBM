@@ -1,4 +1,5 @@
 """Tests for utils.py: device helpers, run dirs, and reproducibility metadata."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

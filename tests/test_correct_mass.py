@@ -1,4 +1,5 @@
 """Tests for correct_mass and correct_mass3d functions."""
+
 import pytest
 import torch
 
@@ -12,6 +13,7 @@ from tensorlbm import equilibrium as equilibrium2d
 # ---------------------------------------------------------------------------
 # correct_mass (D2Q9)
 # ---------------------------------------------------------------------------
+
 
 class TestCorrectMass2D:
     """Tests for correct_mass in 2D (D2Q9)."""
@@ -48,6 +50,7 @@ class TestCorrectMass2D:
     def test_preserves_velocity_field(self) -> None:
         """After correction, macroscopic velocity should be unchanged."""
         from tensorlbm import macroscopic
+
         rho = torch.ones((10, 12), dtype=torch.float32) * 2.0
         ux = torch.ones_like(rho) * 0.1
         uy = torch.ones_like(rho) * 0.05
@@ -86,6 +89,7 @@ class TestCorrectMass2D:
 # ---------------------------------------------------------------------------
 # correct_mass3d (D3Q19)
 # ---------------------------------------------------------------------------
+
 
 class TestCorrectMass3D:
     """Tests for correct_mass3d in 3D (D3Q19)."""
@@ -141,6 +145,7 @@ class TestCorrectMass3D:
 # ---------------------------------------------------------------------------
 # correct_mass27 (D3Q27)
 # ---------------------------------------------------------------------------
+
 
 class TestCorrectMass27:
     """Tests for correct_mass27 in 3D (D3Q27)."""

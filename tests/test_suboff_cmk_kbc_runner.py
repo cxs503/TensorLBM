@@ -8,6 +8,7 @@ Tests verify:
   5. All 9 combinations are executable (CPU, tiny grid)
   6. SDAA smoke test (sdaa:0, tiny grid)
 """
+
 from __future__ import annotations
 
 import json
@@ -32,6 +33,7 @@ from tensorlbm.suboff_cmk_kbc_runner import (
 # Small-grid config factory
 # ---------------------------------------------------------------------------
 
+
 def _small_config(**overrides: Any) -> SuboffCmkKbcConfig:
     defaults: dict[str, Any] = dict(
         re=200.0,
@@ -52,6 +54,7 @@ def _small_config(**overrides: Any) -> SuboffCmkKbcConfig:
 # ---------------------------------------------------------------------------
 # 1. Config validation
 # ---------------------------------------------------------------------------
+
 
 class TestConfigValidation:
     def test_default_re_is_2e6(self) -> None:
@@ -105,6 +108,7 @@ class TestConfigValidation:
 # ---------------------------------------------------------------------------
 # 2. SGS tau_eff computation
 # ---------------------------------------------------------------------------
+
 
 class TestSgsTauEff:
     def _make_f(self, shape=(4, 5, 6)) -> torch.Tensor:
@@ -164,6 +168,7 @@ class TestSgsTauEff:
 # 3. Collision with SGS
 # ---------------------------------------------------------------------------
 
+
 class TestCollideWithSgs:
     def _make_f(self, shape=(4, 5, 6)) -> torch.Tensor:
         rho = torch.ones(shape)
@@ -175,7 +180,9 @@ class TestCollideWithSgs:
     @pytest.mark.parametrize("collision", ["CM", "CUMULANT", "KBC"])
     @pytest.mark.parametrize("sgs", ["smagorinsky", "wale", "vreman"])
     def test_collide_preserves_shape_and_finite(
-        self, collision: str, sgs: str,
+        self,
+        collision: str,
+        sgs: str,
     ) -> None:
         f = self._make_f()
         cfg = _small_config(collision=collision, turbulence_model=sgs)
@@ -195,6 +202,7 @@ class TestCollideWithSgs:
 # ---------------------------------------------------------------------------
 # 4. Runner produces valid artifact
 # ---------------------------------------------------------------------------
+
 
 class TestRunnerArtifact:
     def test_run_produces_required_fields(self) -> None:
@@ -252,6 +260,7 @@ class TestRunnerArtifact:
 # 5. All 9 combinations executable (CPU, tiny grid)
 # ---------------------------------------------------------------------------
 
+
 class TestAllNineCombinations:
     """Smoke-test all 9 collision×SGS combinations on a tiny CPU grid."""
 
@@ -277,6 +286,7 @@ class TestAllNineCombinations:
 # ---------------------------------------------------------------------------
 # 6. SDAA smoke test
 # ---------------------------------------------------------------------------
+
 
 class TestSdaaSmokeTest:
     """Verify the runner works on SDAA hardware."""
@@ -311,7 +321,10 @@ class TestSdaaSmokeTest:
     )
     @pytest.mark.parametrize("collision,sgs", COMBINATIONS)
     def test_sdaa_all_combinations(
-        self, collision: str, sgs: str, sdaa_available: bool,
+        self,
+        collision: str,
+        sgs: str,
+        sdaa_available: bool,
     ) -> None:
         cfg = _small_config(
             collision=collision,

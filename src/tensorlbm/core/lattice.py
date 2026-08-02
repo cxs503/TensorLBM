@@ -35,10 +35,24 @@ def _opposites(directions: tuple[Direction, ...]) -> tuple[int, ...]:
 
 _D3Q19_DIRECTIONS: tuple[Direction, ...] = (
     (0, 0, 0),
-    (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1),
-    (1, 1, 0), (-1, -1, 0), (1, -1, 0), (-1, 1, 0),
-    (1, 0, 1), (-1, 0, -1), (1, 0, -1), (-1, 0, 1),
-    (0, 1, 1), (0, -1, -1), (0, 1, -1), (0, -1, 1),
+    (1, 0, 0),
+    (-1, 0, 0),
+    (0, 1, 0),
+    (0, -1, 0),
+    (0, 0, 1),
+    (0, 0, -1),
+    (1, 1, 0),
+    (-1, -1, 0),
+    (1, -1, 0),
+    (-1, 1, 0),
+    (1, 0, 1),
+    (-1, 0, -1),
+    (1, 0, -1),
+    (-1, 0, 1),
+    (0, 1, 1),
+    (0, -1, -1),
+    (0, 1, -1),
+    (0, -1, 1),
 )
 D3Q19 = LatticeDescriptor(
     q=19,
@@ -55,10 +69,13 @@ D3Q27 = LatticeDescriptor(
     q=27,
     directions=_D3Q27_DIRECTIONS,
     weights=tuple(
-        8.0 / 27.0 if direction == (0, 0, 0) else
-        2.0 / 27.0 if sum(component * component for component in direction) == 1 else
-        1.0 / 54.0 if sum(component * component for component in direction) == 2 else
-        1.0 / 216.0
+        8.0 / 27.0
+        if direction == (0, 0, 0)
+        else 2.0 / 27.0
+        if sum(component * component for component in direction) == 1
+        else 1.0 / 54.0
+        if sum(component * component for component in direction) == 2
+        else 1.0 / 216.0
         for direction in _D3Q27_DIRECTIONS
     ),
     opposite=_opposites(_D3Q27_DIRECTIONS),

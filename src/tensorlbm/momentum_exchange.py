@@ -36,6 +36,7 @@ Yu, D.; Mei, R.; Luo, L.-S.; Shyy, W. (2003). "Viscous flow computation
 Caiazzo, A. (2007). "Analysis of correction in Galilean-invariant LBM."
     *J. Comput. Phys.* 225(2).
 """
+
 from __future__ import annotations
 
 import torch
@@ -250,7 +251,7 @@ def momentum_exchange_bfl(
         f_opp_solid = torch.roll(f[opp_i], (-dk, -dj, -di), dims=(0, 1, 2))
 
         # Weight by 1/q at each crossing cell
-        weight = (crossing.float() * inv_q)
+        weight = crossing.float() * inv_q
         contrib = ((f[i] + f_opp_solid) * weight).sum()
         fx = fx + float(ci[0].item()) * contrib
         fy = fy + float(ci[1].item()) * contrib
@@ -291,8 +292,8 @@ def momentum_exchange_stress(
         ``(fx, fy, fz)`` — friction drag coefficient components.
     """
     from .drag_pressure import drag_friction_integration
-    return drag_friction_integration(f, mesh, dpS, nu, q_wall=q_wall,
-                                     formula=formula)
+
+    return drag_friction_integration(f, mesh, dpS, nu, q_wall=q_wall, formula=formula)
 
 
 # ---------------------------------------------------------------------------
@@ -343,9 +344,15 @@ def momentum_exchange_pressure_friction(
         f, mesh, dpS, nu, q_wall=q_wall, formula=friction_formula
     )
     return {
-        "cd_p_x": px, "cd_p_y": py, "cd_p_z": pz,
-        "cd_f_x": fx, "cd_f_y": fy, "cd_f_z": fz,
-        "cd_tot_x": px + fx, "cd_tot_y": py + fy, "cd_tot_z": pz + fz,
+        "cd_p_x": px,
+        "cd_p_y": py,
+        "cd_p_z": pz,
+        "cd_f_x": fx,
+        "cd_f_y": fy,
+        "cd_f_z": fz,
+        "cd_tot_x": px + fx,
+        "cd_tot_y": py + fy,
+        "cd_tot_z": pz + fz,
     }
 
 
@@ -399,15 +406,21 @@ def compare_all_methods(
         cd_bfl = float("nan")
 
     # Stress integration (friction only)
-    cd_stress = momentum_exchange_stress(
-        f, mesh, dpS, nu, formula=friction_formula, q_wall=q_wall
-    )[0]
+    cd_stress = momentum_exchange_stress(f, mesh, dpS, nu, formula=friction_formula, q_wall=q_wall)[
+        0
+    ]
 
     # Pressure + friction
     pf = momentum_exchange_pressure_friction(
-        f, mesh, dpS, nu,
-        extrap=extrap, p0_method=p0_method, solid=solid,
-        friction_formula=friction_formula, q_wall=q_wall,
+        f,
+        mesh,
+        dpS,
+        nu,
+        extrap=extrap,
+        p0_method=p0_method,
+        solid=solid,
+        friction_formula=friction_formula,
+        q_wall=q_wall,
     )
 
     return {

@@ -3,6 +3,7 @@
 Checkpoint save/load, device detection, model construction, and loss functions
 shared by training, fine-tuning, and inference modules.
 """
+
 from __future__ import annotations
 
 import os
@@ -14,6 +15,7 @@ import torch
 
 # ── Device helpers ──────────────────────────────────────────────────────────
 
+
 def default_suboff_device() -> str:
     """Return the best available device string for SUBOFF models.
 
@@ -21,6 +23,7 @@ def default_suboff_device() -> str:
     """
     try:
         import torch_sdaa  # noqa: F401
+
         if torch.sdaa.is_available():
             return "sdaa:0"
     except ImportError:
@@ -36,6 +39,7 @@ def _move_to_device(obj, device: torch.device):
 
 
 # ── Model construction ──────────────────────────────────────────────────────
+
 
 def build_suboff_model(device: torch.device | str | None = None):
     """Build the SUBOFF Encoder-Decoder reconstruction model.
@@ -79,6 +83,7 @@ def build_suboff_model(device: torch.device | str | None = None):
 
 # ── Loss ─────────────────────────────────────────────────────────────────────
 
+
 def pointwise_rel_loss(x: torch.Tensor, y: torch.Tensor, p: int = 2) -> torch.Tensor:
     """Pointwise relative L-p loss between prediction and target.
 
@@ -96,15 +101,18 @@ def pointwise_rel_loss(x: torch.Tensor, y: torch.Tensor, p: int = 2) -> torch.Te
     else:
         diff = (x - y).pow(p)
     # Relative: diff / |y|^p (unnormalized, denominator = 1 in original code)
-    diff = diff.sum(dim=-1)   # sum over channels
-    diff = diff.mean(dim=1)   # mean over points
-    diff = diff.mean()        # mean over batch
+    diff = diff.sum(dim=-1)  # sum over channels
+    diff = diff.mean(dim=1)  # mean over points
+    diff = diff.mean()  # mean over batch
     return diff
 
 
 # ── Checkpoint ───────────────────────────────────────────────────────────────
 
-def save_checkpoint(state: dict, save_path: str, is_best: bool = False, max_keep: int | None = None):
+
+def save_checkpoint(
+    state: dict, save_path: str, is_best: bool = False, max_keep: int | None = None
+):
     """Save a training checkpoint.
 
     Args:
@@ -158,7 +166,9 @@ def load_checkpoint(ckpt_path: str, map_location=None) -> dict:
             ckpt_path = os.path.join(ckpt_path, name)
         else:
             # Fallback: find latest .ckpt by modification time
-            ckpts = sorted(Path(ckpt_path).glob("*.ckpt"), key=lambda p: p.stat().st_mtime, reverse=True)
+            ckpts = sorted(
+                Path(ckpt_path).glob("*.ckpt"), key=lambda p: p.stat().st_mtime, reverse=True
+            )
             if ckpts:
                 ckpt_path = str(ckpts[0])
             else:
@@ -177,8 +187,10 @@ def ensure_dir(dir_name: str):
 
 # ── Coordinate helpers ───────────────────────────────────────────────────────
 
-def get_suboff_coords(n_points: int | None = None, coord_name: str = "ori27",
-                      data_dir: str | None = None) -> torch.Tensor:
+
+def get_suboff_coords(
+    n_points: int | None = None, coord_name: str = "ori27", data_dir: str | None = None
+) -> torch.Tensor:
     """Get SUBOFF position coordinates.
 
     Args:

@@ -8,6 +8,7 @@ JSON with windowed statistics.
 Usage:
     PYTHONPATH=src python examples/suboff_convergence_study.py [--device sdaa:0] [--steps 100000]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -61,11 +62,17 @@ def run(
     cx, cy, cz = nx * 0.35, ny / 2.0, nz / 2.0
     solid, _ = build_suboff_mask(
         hull_type=SuboffHullType.BARE_HULL,
-        nx=nx, ny=ny, nz=nz, cx=cx, cy=cy, cz=cz,
-        length=hull_length, device=device,
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        length=hull_length,
+        device=device,
     )
     S = _voxel_wetted_area(solid, 1.0)
-    dpS = 0.5 * 1.0 * u_in ** 2 * S
+    dpS = 0.5 * 1.0 * u_in**2 * S
 
     rho0 = torch.ones(nz, ny, nx, device=device)
     ux0 = torch.full((nz, ny, nx), u_in, device=device)
@@ -96,7 +103,9 @@ def run(
     report_interval = max(1000, n_steps // 20)  # ~20 reports
     checkpoint_interval = 5000
 
-    print(f"{'step':>7} {'Ct_fric':>9} {'Ct_pres':>9} {'Ct_avg':>9} {'Ct_std':>9} {'Δ5%':>9} {'Conv?':<6}")
+    print(
+        f"{'step':>7} {'Ct_fric':>9} {'Ct_pres':>9} {'Ct_avg':>9} {'Ct_std':>9} {'Δ5%':>9} {'Conv?':<6}"
+    )
     print("-" * 75)
 
     with open(csv_path, "a") as csv_file:
@@ -113,7 +122,7 @@ def run(
                 drag_pres.append(dp)
                 cf = df / dpS
                 cp = dp / dpS
-                csv_file.write(f"{step},{cf:.8f},{cp:.8f},{cf+cp:.8f}\n")
+                csv_file.write(f"{step},{cf:.8f},{cp:.8f},{cf + cp:.8f}\n")
 
             if not torch.isfinite(f).all():
                 print(f"\nDIVERGED at step {step}")
@@ -145,17 +154,22 @@ def run(
                 eta = (n_steps - step) / max(rate, 1e-6)
                 conv = "✓" if abs(change) < 0.01 and std_t < 0.001 else ""
 
-                print(f"{step:7d} {avg_f:9.5f} {avg_p:9.5f} {avg_t:9.5f} {std_t:9.5f} {change:9.5f} {conv:<6} "
-                      f"({elapsed:.0f}s ETA {eta:.0f}s)")
+                print(
+                    f"{step:7d} {avg_f:9.5f} {avg_p:9.5f} {avg_t:9.5f} {std_t:9.5f} {change:9.5f} {conv:<6} "
+                    f"({elapsed:.0f}s ETA {eta:.0f}s)"
+                )
 
             # Checkpoint
             if step % checkpoint_interval == 0:
-                torch.save({
-                    "step": step,
-                    "f": f.cpu(),
-                    "drag_fric": drag_fric,
-                    "drag_pres": drag_pres,
-                }, ckpt_path.with_suffix(".tmp"))
+                torch.save(
+                    {
+                        "step": step,
+                        "f": f.cpu(),
+                        "drag_fric": drag_fric,
+                        "drag_pres": drag_pres,
+                    },
+                    ckpt_path.with_suffix(".tmp"),
+                )
                 ckpt_path.with_suffix(".tmp").rename(ckpt_path)
                 print(f"  [checkpoint saved at step {step}]")
 
@@ -188,7 +202,9 @@ def run(
             "Ct_total_avg": (avg_f + avg_p) / dpS,
             "Ct_total_last_window": late_t,
             "Ct_total_last_std": std_t,
-            "convergence_5pct_change": (late_t - (sum(drag_fric[:-win]) + sum(drag_pres[:-win])) / max(n - win, 1) / dpS),
+            "convergence_5pct_change": (
+                late_t - (sum(drag_fric[:-win]) + sum(drag_pres[:-win])) / max(n - win, 1) / dpS
+            ),
             "elapsed_s": time.time() - t0,
             "diverged": not bool(torch.isfinite(f).all().item()),
         }
@@ -210,9 +226,16 @@ if __name__ == "__main__":
     p.add_argument("--warmup", type=int, default=5000)
     p.add_argument("--output", default="/tmp/suboff_100k")
     args = p.parse_args()
-    sys.exit(run(
-        nx=args.nx, ny=args.ny, nz=args.nz,
-        hull_length=args.hull_length,
-        C_s=args.cs, n_steps=args.steps, warmup=args.warmup,
-        device_str=args.device, output_dir=args.output,
-    ))
+    sys.exit(
+        run(
+            nx=args.nx,
+            ny=args.ny,
+            nz=args.nz,
+            hull_length=args.hull_length,
+            C_s=args.cs,
+            n_steps=args.steps,
+            warmup=args.warmup,
+            device_str=args.device,
+            output_dir=args.output,
+        )
+    )

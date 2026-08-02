@@ -4,6 +4,7 @@ This module deliberately has no population or solver dependency.  It defines
 ownership for the liquid inventory represented by bulk LIQUID density plus
 INTERFACE mass and records only zero-sum internal transactions.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -59,7 +60,10 @@ class InventoryState:
         return float((self.bulk_liquid + self.interface_mass).sum())
 
     def validate(self) -> None:
-        if self.flags.shape != self.bulk_liquid.shape or self.flags.shape != self.interface_mass.shape:
+        if (
+            self.flags.shape != self.bulk_liquid.shape
+            or self.flags.shape != self.interface_mass.shape
+        ):
             raise InventoryTopologyError("flags and inventory fields must have identical shapes")
         liquid = self.flags == LIQUID
         interface = self.flags == INTERFACE
@@ -69,7 +73,6 @@ class InventoryState:
             raise InventoryTopologyError("inventory must be owned by its declared cell phase")
         if bool((self.bulk_liquid < 0).any()) or bool((self.interface_mass < 0).any()):
             raise InventoryTopologyError("inventory cannot be negative")
-
 
 
 @dataclass
@@ -93,8 +96,11 @@ class InventoryLedger:
 
 
 def _replace(
-    state: InventoryState, *, flags: torch.Tensor | None = None,
-    bulk: torch.Tensor | None = None, interface: torch.Tensor | None = None,
+    state: InventoryState,
+    *,
+    flags: torch.Tensor | None = None,
+    bulk: torch.Tensor | None = None,
+    interface: torch.Tensor | None = None,
 ) -> InventoryState:
     return InventoryState.from_fields(
         state.flags if flags is None else flags,
@@ -122,7 +128,10 @@ def apply_frozen_step(
     current = state
     ledger = InventoryLedger.start(state)
     for liquid_index, interface_index, amount in link_exchanges:
-        if int(current.flags[liquid_index]) != LIQUID or int(current.flags[interface_index]) != INTERFACE:
+        if (
+            int(current.flags[liquid_index]) != LIQUID
+            or int(current.flags[interface_index]) != INTERFACE
+        ):
             raise InventoryTopologyError("link exchange requires a LIQUID and INTERFACE endpoint")
         bulk = current.bulk_liquid.clone()
         interface = current.interface_mass.clone()
@@ -135,12 +144,18 @@ def apply_frozen_step(
     pending: dict[int, float] = {}
     for index, target in conversions:
         if target != LIQUID or int(current.flags[index]) != INTERFACE:
-            raise InventoryTopologyError("only INTERFACE to LIQUID conversion is defined by this reference")
+            raise InventoryTopologyError(
+                "only INTERFACE to LIQUID conversion is defined by this reference"
+            )
         owned = float(current.interface_mass[index])
         if owned < current.rho_liquid:
             raise InventoryTopologyError("conversion requires at least rho_liquid inventory")
         overflow = owned - current.rho_liquid
-        flags, bulk, interface = current.flags.clone(), current.bulk_liquid.clone(), current.interface_mass.clone()
+        flags, bulk, interface = (
+            current.flags.clone(),
+            current.bulk_liquid.clone(),
+            current.interface_mass.clone(),
+        )
         flags[index] = LIQUID
         bulk[index] = current.rho_liquid
         interface[index] = 0.0
@@ -154,7 +169,9 @@ def apply_frozen_step(
             raise InventoryTopologyError("redistribution requires overflow owned by a conversion")
         total = sum(amount for _, amount in receivers)
         if abs(total - pending[donor]) > 1.0e-6:
-            raise InventoryTopologyError("overflow must be redistributed exactly; no clamp or global rescale")
+            raise InventoryTopologyError(
+                "overflow must be redistributed exactly; no clamp or global rescale"
+            )
         interface = current.interface_mass.clone()
         for receiver, amount in receivers:
             if int(current.flags[receiver]) != INTERFACE:
@@ -167,7 +184,9 @@ def apply_frozen_step(
     if pending:
         raise InventoryTopologyError("overflow requires an explicit redistribution transaction")
     if bool((current.interface_mass > current.rho_liquid).any()):
-        raise InventoryTopologyError("interface mass overflow requires an explicit conversion transaction")
+        raise InventoryTopologyError(
+            "interface mass overflow requires an explicit conversion transaction"
+        )
     if abs(current.total - ledger.start_total) > 1.0e-6:
         raise InventoryTopologyError("closed transaction sequence is not conservative")
     return current, ledger
@@ -177,11 +196,31 @@ def solver_mapping_gaps(solver_ledger: Mapping[str, float]) -> list[SolverMappin
     """Name unowned solver effects that cannot map to this pure ledger."""
     gaps: list[SolverMappingGap] = []
     if solver_ledger.get("exchange_liquid_delta", 0.0):
-        gaps.append(SolverMappingGap("unpaired_liquid_interface_exchange", "solver records only the interface endpoint; no bulk-liquid debit is exposed"))
+        gaps.append(
+            SolverMappingGap(
+                "unpaired_liquid_interface_exchange",
+                "solver records only the interface endpoint; no bulk-liquid debit is exposed",
+            )
+        )
     if solver_ledger.get("abb_population_delta", 0.0):
-        gaps.append(SolverMappingGap("abb_population_inventory_ownership", "ABB changes populations but provides no declared inventory owner"))
+        gaps.append(
+            SolverMappingGap(
+                "abb_population_inventory_ownership",
+                "ABB changes populations but provides no declared inventory owner",
+            )
+        )
     if "conversion" in solver_ledger:
-        gaps.append(SolverMappingGap("conversion_transaction_ownership", "solver exposes only aggregate post-conversion mass, not per-cell conversion ownership"))
+        gaps.append(
+            SolverMappingGap(
+                "conversion_transaction_ownership",
+                "solver exposes only aggregate post-conversion mass, not per-cell conversion ownership",
+            )
+        )
     if "redistribution" in solver_ledger:
-        gaps.append(SolverMappingGap("redistribution_transaction_ownership", "solver exposes only aggregate redistribution mass, not donor/receiver transfers"))
+        gaps.append(
+            SolverMappingGap(
+                "redistribution_transaction_ownership",
+                "solver exposes only aggregate redistribution mass, not donor/receiver transfers",
+            )
+        )
     return gaps

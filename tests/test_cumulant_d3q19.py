@@ -10,6 +10,7 @@ advanced-collision contract tests.  They verify:
 * ``collide_advanced_3d("D3Q19", "CUMULANT", ...)`` dispatches correctly.
 * A short sphere-flow smoke run completes without error.
 """
+
 from __future__ import annotations
 
 import pytest

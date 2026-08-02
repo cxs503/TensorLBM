@@ -4,6 +4,7 @@ The functions in this module have no solver, geometry-builder, or benchmark
 runtime dependencies.  They can therefore be used by hull cases independently
 of the SUBOFF benchmark implementation.
 """
+
 from __future__ import annotations
 
 import math

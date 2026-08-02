@@ -19,9 +19,12 @@ def test_x_slab_wetted_area_matches_global_mask_without_cut_faces():
 
     global_area = _voxel_wetted_area(mask, 1.0)
     slab_area = sum(
-        voxel_wetted_area_x_slab(mask[:, :, start:end], 1.0,
-                                 has_left_neighbor=start > 0,
-                                 has_right_neighbor=end < mask.shape[2])
+        voxel_wetted_area_x_slab(
+            mask[:, :, start:end],
+            1.0,
+            has_left_neighbor=start > 0,
+            has_right_neighbor=end < mask.shape[2],
+        )
         for start, end in ((0, 4), (4, 8), (8, 12))
     )
 

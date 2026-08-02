@@ -23,6 +23,7 @@ Public API
 - :func:`generate_hull_previews`   – render multi-view matplotlib figure.
 - :func:`export_hull_stl`          – write a simple ASCII STL file.
 """
+
 from __future__ import annotations
 
 import math
@@ -124,9 +125,9 @@ def _kvlcc2_half_beam(xi: np.ndarray, zeta: np.ndarray) -> np.ndarray:
     zeta_c = np.clip(zeta, 0.0, 1.0)
     xi_c = np.clip(np.abs(xi), 0.0, 1.0)
     # Superellipse longitude: very blunt ends
-    lon = np.where(xi_c < 1.0, (1.0 - xi_c ** 2) ** 0.28, 0.0)
+    lon = np.where(xi_c < 1.0, (1.0 - xi_c**2) ** 0.28, 0.0)
     # Nearly-U vertical section (small vert exponent = very flat keel)
-    vert = np.where(zeta_c > 0.0, zeta_c ** 0.14, 0.0)
+    vert = np.where(zeta_c > 0.0, zeta_c**0.14, 0.0)
     hb = lon * vert
     return np.where(in_hull, np.clip(hb, 0.0, 1.0), 0.0)
 
@@ -424,6 +425,7 @@ def generate_hull_previews(
     matplotlib.figure.Figure
     """
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -446,8 +448,7 @@ def generate_hull_previews(
     cmap = plt.get_cmap("RdYlGn", len(stations))
     for i, (xi_val, ys, zs) in enumerate(zip(stations, y_sects, z_sects, strict=True)):
         color = cmap(i / max(len(stations) - 1, 1))
-        ax.plot(ys * (beam / 2), zs * draft, color=color, linewidth=1.0,
-                label=f"ξ={xi_val:.2f}")
+        ax.plot(ys * (beam / 2), zs * draft, color=color, linewidth=1.0, label=f"ξ={xi_val:.2f}")
         ax.plot(-ys * (beam / 2), zs * draft, color=color, linewidth=1.0)
     ax.set_xlim(-beam / 2 * 1.1, beam / 2 * 1.1)
     ax.set_ylim(0, draft * 1.1)
@@ -462,8 +463,14 @@ def generate_hull_previews(
     ax.set_ylabel("Half-breadth (normalised)")
     xi_arr, hb_arr = generate_hull_waterplane(hull_type)
     x_plot = xi_arr * (length / 2)
-    ax.fill_between(x_plot, hb_arr * (beam / 2), -(hb_arr * (beam / 2)),
-                    alpha=0.35, color="#4472C4", label="Waterplane area")
+    ax.fill_between(
+        x_plot,
+        hb_arr * (beam / 2),
+        -(hb_arr * (beam / 2)),
+        alpha=0.35,
+        color="#4472C4",
+        label="Waterplane area",
+    )
     ax.plot(x_plot, hb_arr * (beam / 2), "b-", linewidth=1.5)
     ax.plot(x_plot, -hb_arr * (beam / 2), "b-", linewidth=1.5)
     ax.axhline(0, color="gray", linewidth=0.5, linestyle="--")
@@ -478,8 +485,9 @@ def generate_hull_previews(
     xi_arr2, draft_arr = generate_hull_sideprofile(hull_type)
     x_plot2 = xi_arr2 * (length / 2)
     keel_z = draft_arr * draft
-    ax.fill_between(x_plot2, keel_z, np.zeros_like(keel_z),
-                    alpha=0.35, color="#70AD47", label="Hull envelope")
+    ax.fill_between(
+        x_plot2, keel_z, np.zeros_like(keel_z), alpha=0.35, color="#70AD47", label="Hull envelope"
+    )
     ax.plot(x_plot2, keel_z, "g-", linewidth=1.5, label="Keel line")
     ax.axhline(0, color="#4472C4", linewidth=1.5, linestyle="-", label="Waterline")
     ax.set_xlim(-length / 2 * 1.05, length / 2 * 1.05)
@@ -540,9 +548,9 @@ def export_hull_stl(
     HB = fn(XI.ravel(), ZETA.ravel()).reshape(n_long, n_vert)
 
     # Physical coordinates: x ∈ [0, L], y = half-beam, z ∈ [0, T]
-    X = (XI + 1.0) / 2.0 * length         # [0, L]
-    Y = HB * (beam / 2.0)                  # half-beam
-    Z = ZETA * draft                        # [0, T]
+    X = (XI + 1.0) / 2.0 * length  # [0, L]
+    Y = HB * (beam / 2.0)  # half-beam
+    Z = ZETA * draft  # [0, T]
 
     triangles: list[tuple[tuple, tuple, tuple]] = []
 
@@ -554,10 +562,10 @@ def export_hull_stl(
     # Starboard hull surface triangles
     for i in range(n_long - 1):
         for k in range(n_vert - 1):
-            p00 = np.array([X[i, k],     Y[i, k],     Z[i, k]])
-            p10 = np.array([X[i+1, k],   Y[i+1, k],   Z[i+1, k]])
-            p01 = np.array([X[i, k+1],   Y[i, k+1],   Z[i, k+1]])
-            p11 = np.array([X[i+1, k+1], Y[i+1, k+1], Z[i+1, k+1]])
+            p00 = np.array([X[i, k], Y[i, k], Z[i, k]])
+            p10 = np.array([X[i + 1, k], Y[i + 1, k], Z[i + 1, k]])
+            p01 = np.array([X[i, k + 1], Y[i, k + 1], Z[i, k + 1]])
+            p11 = np.array([X[i + 1, k + 1], Y[i + 1, k + 1], Z[i + 1, k + 1]])
             triangles.append((p00, p10, p11))
             triangles.append((p00, p11, p01))
 
@@ -594,6 +602,7 @@ def export_hull_stl(
 # Convenience: theoretical Cb values (analytical)
 # ---------------------------------------------------------------------------
 
+
 def theoretical_block_coefficient(hull_type: ShipHullType | str) -> float:
     """Return the theoretical (analytical) block coefficient for a hull form.
 
@@ -615,6 +624,7 @@ def theoretical_block_coefficient(hull_type: ShipHullType | str) -> float:
 # ---------------------------------------------------------------------------
 # Hull statistics helper
 # ---------------------------------------------------------------------------
+
 
 def hull_statistics(
     hull_type: ShipHullType | str,
@@ -676,6 +686,7 @@ def hull_statistics(
 # Full-workflow helper: build mask + compute Cb
 # ---------------------------------------------------------------------------
 
+
 def build_hull_mask(
     hull_type: ShipHullType | str,
     nx: int,
@@ -715,11 +726,10 @@ def build_hull_mask(
 
     if hull_type == ShipHullType.WIGLEY:
         from .obstacles import wigley_hull_mask
+
         mask = wigley_hull_mask(nx, ny, nz, cx, cy, cz_keel, length, beam, draft, dev)
     else:
-        mask = _make_hull_mask(
-            hull_type, nx, ny, nz, cx, cy, cz_keel, length, beam, draft, dev
-        )
+        mask = _make_hull_mask(hull_type, nx, ny, nz, cx, cy, cz_keel, length, beam, draft, dev)
 
     cb_numerical = hull_block_coefficient(mask, beam=beam, draft=draft, length=length)
     stats_theo = hull_statistics(hull_type, length, beam, draft)
@@ -732,9 +742,15 @@ def build_hull_mask(
         "solid_cells": solid,
         "fluid_cells": total - solid,
         "total_cells": total,
-        "nx": nx, "ny": ny, "nz": nz,
-        "cx": cx, "cy": cy, "cz_keel": cz_keel,
-        "length": length, "beam": beam, "draft": draft,
+        "nx": nx,
+        "ny": ny,
+        "nz": nz,
+        "cx": cx,
+        "cy": cy,
+        "cz_keel": cz_keel,
+        "length": length,
+        "beam": beam,
+        "draft": draft,
     }
     return mask, stats
 
@@ -742,6 +758,7 @@ def build_hull_mask(
 # ---------------------------------------------------------------------------
 # Froude / Reynolds helpers for ship CAD workflow
 # ---------------------------------------------------------------------------
+
 
 def ship_lbm_parameters(
     length_m: float,
@@ -776,12 +793,12 @@ def ship_lbm_parameters(
     re_phys = speed_ms * length_m / nu_m2s
     fr_phys = speed_ms / math.sqrt(g_phys * length_m)
 
-    dx = length_m / lbm_length          # m per cell
-    dt = lbm_speed * dx / speed_ms       # s per step
+    dx = length_m / lbm_length  # m per cell
+    dt = lbm_speed * dx / speed_ms  # s per step
 
     lbm_nu = lbm_speed * lbm_length / re_phys
     tau = 3.0 * lbm_nu + 0.5
-    ma = lbm_speed / (1.0 / 3.0 ** 0.5)
+    ma = lbm_speed / (1.0 / 3.0**0.5)
 
     return {
         "re_physical": round(re_phys, 2),

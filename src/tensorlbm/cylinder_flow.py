@@ -260,7 +260,11 @@ def _backend_equilibrium(ops: object, rho, ux, uy, *, device: str):
     cy = ops.reshape(c[:, 1], (9, 1, 1))
     u_sq = ux * ux + uy * uy
     cu = cx * ux + cy * uy
-    return weights * ops.unsqueeze(rho, 0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * ops.unsqueeze(u_sq, 0))
+    return (
+        weights
+        * ops.unsqueeze(rho, 0)
+        * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * ops.unsqueeze(u_sq, 0))
+    )
 
 
 def _backend_macroscopic(ops: object, f, *, device: str):
@@ -349,14 +353,18 @@ def _run_cylinder_flow_backend(
     if config.use_compile:
         raise ValueError("use_compile is only supported on the torch backend")
     if config.collision != "bgk":
-        raise ValueError("Only bgk collision is currently supported on non-torch cylinder-flow backends")
+        raise ValueError(
+            "Only bgk collision is currently supported on non-torch cylinder-flow backends"
+        )
     unsupported = {
         "synthetic_inflow": synthetic_inflow,
         "sponge_layer": sponge_layer,
         "outlet_control": outlet_control,
         "turbulence_statistics": turbulence_statistics,
     }
-    enabled = [name for name, settings in unsupported.items() if _non_torch_feature_enabled(settings)]
+    enabled = [
+        name for name, settings in unsupported.items() if _non_torch_feature_enabled(settings)
+    ]
     if enabled:
         names = ", ".join(sorted(enabled))
         raise ValueError(f"{names} are currently only supported on the torch backend")
@@ -460,9 +468,7 @@ def _run_cylinder_flow_backend(
 
     step_range = range(start_step, config.n_steps + 1)
     step_iter = (
-        _tqdm(step_range, desc="Cylinder flow", unit="step")
-        if _TQDM_AVAILABLE
-        else step_range
+        _tqdm(step_range, desc="Cylinder flow", unit="step") if _TQDM_AVAILABLE else step_range
     )
     for step in step_iter:
         f = _backend_collide_bgk(ops, f, config.tau, device=device)
@@ -844,9 +850,7 @@ def run_cylinder_flow(
 
     step_range = range(start_step, config.n_steps + 1)
     step_iter = (
-        _tqdm(step_range, desc="Cylinder flow", unit="step")
-        if _TQDM_AVAILABLE
-        else step_range
+        _tqdm(step_range, desc="Cylinder flow", unit="step") if _TQDM_AVAILABLE else step_range
     )
     for step in step_iter:
         f = _collide(f)

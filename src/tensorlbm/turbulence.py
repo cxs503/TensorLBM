@@ -74,6 +74,7 @@ from .solver3d import _get_d3q19_mrt_matrices
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _neq_stress_norm_2d(f_neq: torch.Tensor) -> torch.Tensor:
     """Frobenius norm of the 2-D non-equilibrium stress tensor per cell.
 
@@ -98,7 +99,7 @@ def _neq_stress_norm_2d(f_neq: torch.Tensor) -> torch.Tensor:
     pi_yy = (cy * cy * f_neq).sum(0)
     pi_xy = (cx * cy * f_neq).sum(0)
 
-    return torch.sqrt(pi_xx ** 2 + pi_yy ** 2 + 2.0 * pi_xy ** 2)
+    return torch.sqrt(pi_xx**2 + pi_yy**2 + 2.0 * pi_xy**2)
 
 
 def _neq_stress_norm_3d(f_neq: torch.Tensor) -> torch.Tensor:
@@ -130,10 +131,7 @@ def _neq_stress_norm_3d(f_neq: torch.Tensor) -> torch.Tensor:
     pi_xz = (cx * cz * f_neq).sum(0)
     pi_yz = (cy * cz * f_neq).sum(0)
 
-    return torch.sqrt(
-        pi_xx ** 2 + pi_yy ** 2 + pi_zz ** 2
-        + 2.0 * (pi_xy ** 2 + pi_xz ** 2 + pi_yz ** 2)
-    )
+    return torch.sqrt(pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2))
 
 
 def _smagorinsky_tau(
@@ -159,13 +157,14 @@ def _smagorinsky_tau(
         Effective :math:`\\tau_{eff}` tensor with the same shape as *rho*.
     """
     rho_safe = torch.clamp(rho, min=1e-12)
-    discriminant = tau ** 2 + 18.0 * C_s ** 2 * pi_norm / rho_safe
+    discriminant = tau**2 + 18.0 * C_s**2 * pi_norm / rho_safe
     return 0.5 * (tau + torch.sqrt(torch.clamp(discriminant, min=0.0)))
 
 
 # ---------------------------------------------------------------------------
 # Public collision operators
 # ---------------------------------------------------------------------------
+
 
 def collide_smagorinsky_bgk(
     f: torch.Tensor,
@@ -344,24 +343,41 @@ def collide_smagorinsky_mrt3d(
     s_nu_field = 1.0 / tau_eff  # (nz, ny, nx)
 
     nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
-    f_flat = f.reshape(19, -1)      # (19, N)
+    f_flat = f.reshape(19, -1)  # (19, N)
     feq_flat = feq.reshape(19, -1)  # (19, N)
     s_nu_flat = s_nu_field.reshape(-1)  # (N,)
 
-    m = M @ f_flat               # (19, N)
-    m_eq = M @ feq_flat          # (19, N)
-    dm = m - m_eq                # (19, N)
+    m = M @ f_flat  # (19, N)
+    m_eq = M @ feq_flat  # (19, N)
+    dm = m - m_eq  # (19, N)
 
     # Build m_star using broadcasting to avoid allocating a full (19, N) s_vec.
     # Fixed-rate modes use s_fixed[:, None] broadcast; stress modes 9-13 use
     # the per-cell Smagorinsky rate.
     s_fixed = torch.tensor(
-        [0.0, s_e, s_eps,
-         0.0, s_q, 0.0, s_q, 0.0, s_q,
-         0.0, 0.0, 0.0, 0.0, 0.0,
-         s_pi, s_pi,
-         1.0, 1.0, 1.0],
-        dtype=f.dtype, device=device,
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
     )  # (19,)
     m_star = m - s_fixed.unsqueeze(1) * dm  # (19, N) via broadcast
     # Override stress modes 9-13 with the spatially varying Smagorinsky rate
@@ -395,10 +411,7 @@ def _neq_stress_norm_27(f_neq: torch.Tensor) -> torch.Tensor:
     pi_xz = (cx * cz * f_neq).sum(0)
     pi_yz = (cy * cz * f_neq).sum(0)
 
-    return torch.sqrt(
-        pi_xx ** 2 + pi_yy ** 2 + pi_zz ** 2
-        + 2.0 * (pi_xy ** 2 + pi_xz ** 2 + pi_yz ** 2)
-    )
+    return torch.sqrt(pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2))
 
 
 def collide_smagorinsky_bgk27(
@@ -481,26 +494,26 @@ def collide_smagorinsky_mrt27(
     # Fixed relaxation rates for non-stress modes
     s_fixed = torch.tensor(
         [
-            0.0,   # 0  mass
-            0.0,   # 1  jx
-            0.0,   # 2  jy
-            0.0,   # 3  jz
-            s_e,   # 4  energy
-            0.0,   # 5  Nxx  – overridden below
-            0.0,   # 6  Nyy  – overridden below
-            0.0,   # 7  Pxy  – overridden below
-            0.0,   # 8  Pxz  – overridden below
-            0.0,   # 9  Pyz  – overridden below
-            s_q,   # 10
-            s_q,   # 11
-            s_q,   # 12
-            s_q,   # 13
-            s_q,   # 14
-            s_q,   # 15
-            s_q,   # 16
-            s_q,   # 17
-            s_q,   # 18
-            s_eps, # 19
+            0.0,  # 0  mass
+            0.0,  # 1  jx
+            0.0,  # 2  jy
+            0.0,  # 3  jz
+            s_e,  # 4  energy
+            0.0,  # 5  Nxx  – overridden below
+            0.0,  # 6  Nyy  – overridden below
+            0.0,  # 7  Pxy  – overridden below
+            0.0,  # 8  Pxz  – overridden below
+            0.0,  # 9  Pyz  – overridden below
+            s_q,  # 10
+            s_q,  # 11
+            s_q,  # 12
+            s_q,  # 13
+            s_q,  # 14
+            s_q,  # 15
+            s_q,  # 16
+            s_q,  # 17
+            s_q,  # 18
+            s_eps,  # 19
             s_pi,  # 20
             s_pi,  # 21
             s_pi,  # 22
@@ -522,6 +535,7 @@ def collide_smagorinsky_mrt27(
 # ---------------------------------------------------------------------------
 # Velocity-gradient helpers (shared by WALE and Vreman)
 # ---------------------------------------------------------------------------
+
 
 def _velocity_gradients_2d(
     ux: torch.Tensor,
@@ -547,9 +561,15 @@ def _velocity_gradients_3d(
     uy: torch.Tensor,
     uz: torch.Tensor,
 ) -> tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor,
-    torch.Tensor, torch.Tensor, torch.Tensor,
-    torch.Tensor, torch.Tensor, torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
 ]:
     """Velocity-gradient tensor for a 3-D field via central differences.
 
@@ -560,6 +580,7 @@ def _velocity_gradients_3d(
         ``(g11, g12, g13, g21, g22, g23, g31, g32, g33)``
         where ``g_ij = ∂u_i/∂x_j``.
     """
+
     def _cd(u: torch.Tensor, dim: int) -> torch.Tensor:
         return 0.5 * (torch.roll(u, -1, dims=dim) - torch.roll(u, 1, dims=dim))
 
@@ -578,6 +599,7 @@ def _velocity_gradients_3d(
 # ---------------------------------------------------------------------------
 # WALE eddy-viscosity helpers
 # ---------------------------------------------------------------------------
+
 
 def _wale_nu_t_2d(
     ux: torch.Tensor,
@@ -616,20 +638,18 @@ def _wale_nu_t_2d(
     Sd_11 = g2_11 - tr_g2 * 0.5
     Sd_22 = g2_22 - tr_g2 * 0.5
     Sd_12 = 0.5 * (g2_12 + g2_21)
-    Sd_norm2 = Sd_11 ** 2 + Sd_22 ** 2 + 2.0 * Sd_12 ** 2
+    Sd_norm2 = Sd_11**2 + Sd_22**2 + 2.0 * Sd_12**2
 
     # Strain-rate norm: ||S||² where S_ij = (g_ij + g_ji)/2
     S_12 = 0.5 * (g12 + g21)
-    S_norm2 = g11 ** 2 + g22 ** 2 + 2.0 * S_12 ** 2
+    S_norm2 = g11**2 + g22**2 + 2.0 * S_12**2
 
     eps = 1e-30
     numerator = torch.clamp(Sd_norm2, min=0.0) ** 1.5
     denominator = (
-        torch.clamp(S_norm2, min=0.0) ** 2.5
-        + torch.clamp(Sd_norm2, min=0.0) ** 1.25
-        + eps
+        torch.clamp(S_norm2, min=0.0) ** 2.5 + torch.clamp(Sd_norm2, min=0.0) ** 1.25 + eps
     )
-    return (C_w ** 2) * numerator / denominator
+    return (C_w**2) * numerator / denominator
 
 
 def _wale_nu_t_3d(
@@ -661,32 +681,25 @@ def _wale_nu_t_3d(
     Sd_12 = 0.5 * (g2_12 + g2_21)
     Sd_13 = 0.5 * (g2_13 + g2_31)
     Sd_23 = 0.5 * (g2_23 + g2_32)
-    Sd_norm2 = (
-        Sd_11 ** 2 + Sd_22 ** 2 + Sd_33 ** 2
-        + 2.0 * (Sd_12 ** 2 + Sd_13 ** 2 + Sd_23 ** 2)
-    )
+    Sd_norm2 = Sd_11**2 + Sd_22**2 + Sd_33**2 + 2.0 * (Sd_12**2 + Sd_13**2 + Sd_23**2)
 
     S_12 = 0.5 * (g12 + g21)
     S_13 = 0.5 * (g13 + g31)
     S_23 = 0.5 * (g23 + g32)
-    S_norm2 = (
-        g11 ** 2 + g22 ** 2 + g33 ** 2
-        + 2.0 * (S_12 ** 2 + S_13 ** 2 + S_23 ** 2)
-    )
+    S_norm2 = g11**2 + g22**2 + g33**2 + 2.0 * (S_12**2 + S_13**2 + S_23**2)
 
     eps = 1e-30
     numerator = torch.clamp(Sd_norm2, min=0.0) ** 1.5
     denominator = (
-        torch.clamp(S_norm2, min=0.0) ** 2.5
-        + torch.clamp(Sd_norm2, min=0.0) ** 1.25
-        + eps
+        torch.clamp(S_norm2, min=0.0) ** 2.5 + torch.clamp(Sd_norm2, min=0.0) ** 1.25 + eps
     )
-    return (C_w ** 2) * numerator / denominator
+    return (C_w**2) * numerator / denominator
 
 
 # ---------------------------------------------------------------------------
 # Vreman eddy-viscosity helpers
 # ---------------------------------------------------------------------------
+
 
 def _vreman_nu_t_2d(
     ux: torch.Tensor,
@@ -722,8 +735,8 @@ def _vreman_nu_t_2d(
     beta_22 = g12 * g12 + g22 * g22
     beta_12 = g11 * g12 + g21 * g22
 
-    A_alpha = g11 ** 2 + g12 ** 2 + g21 ** 2 + g22 ** 2
-    B_beta = beta_11 * beta_22 - beta_12 ** 2
+    A_alpha = g11**2 + g12**2 + g21**2 + g22**2
+    B_beta = beta_11 * beta_22 - beta_12**2
 
     eps = 1e-30
     return C_V * torch.sqrt(torch.clamp(B_beta, min=0.0) / (A_alpha + eps))
@@ -746,15 +759,14 @@ def _vreman_nu_t_3d(
     beta_13 = g11 * g13 + g21 * g23 + g31 * g33
     beta_23 = g12 * g13 + g22 * g23 + g32 * g33
 
-    A_alpha = (
-        g11 ** 2 + g12 ** 2 + g13 ** 2
-        + g21 ** 2 + g22 ** 2 + g23 ** 2
-        + g31 ** 2 + g32 ** 2 + g33 ** 2
-    )
+    A_alpha = g11**2 + g12**2 + g13**2 + g21**2 + g22**2 + g23**2 + g31**2 + g32**2 + g33**2
     B_beta = (
-        beta_11 * beta_22 - beta_12 ** 2
-        + beta_11 * beta_33 - beta_13 ** 2
-        + beta_22 * beta_33 - beta_23 ** 2
+        beta_11 * beta_22
+        - beta_12**2
+        + beta_11 * beta_33
+        - beta_13**2
+        + beta_22 * beta_33
+        - beta_23**2
     )
 
     eps = 1e-30
@@ -780,6 +792,7 @@ def _nu_t_to_tau_eff(tau: float, nu_t: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # WALE collision operators
 # ---------------------------------------------------------------------------
+
 
 def collide_wale_bgk(
     f: torch.Tensor,
@@ -868,6 +881,7 @@ def collide_wale_bgk27(
 # Vreman collision operators
 # ---------------------------------------------------------------------------
 
+
 def collide_vreman_bgk(
     f: torch.Tensor,
     tau: float,
@@ -952,6 +966,7 @@ def collide_vreman_bgk27(
 # WALE MRT collision operators (D3Q19, D3Q27)
 # -----------------------------------------------------------------------
 
+
 def collide_wale_mrt3d(
     f: torch.Tensor,
     tau: float,
@@ -1001,12 +1016,29 @@ def collide_wale_mrt3d(
     dm = m - m_eq
 
     s_fixed = torch.tensor(
-        [0.0, s_e, s_eps,
-         0.0, s_q, 0.0, s_q, 0.0, s_q,
-         0.0, 0.0, 0.0, 0.0, 0.0,
-         s_pi, s_pi,
-         1.0, 1.0, 1.0],
-        dtype=f.dtype, device=device,
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
     )
     m_star = m - s_fixed.unsqueeze(1) * dm
     for k in (9, 10, 11, 12, 13):
@@ -1061,13 +1093,36 @@ def collide_wale_mrt27(
 
     s_fixed = torch.tensor(
         [
-            0.0, 0.0, 0.0, 0.0, s_e,
-            0.0, 0.0, 0.0, 0.0, 0.0,
-            s_q, s_q, s_q, s_q, s_q, s_q, s_q, s_q, s_q,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_e,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
             s_eps,
-            s_pi, s_pi, s_pi, s_pi, s_pi, s_pi, s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
         ],
-        dtype=f.dtype, device=device,
+        dtype=f.dtype,
+        device=device,
     )
     m_star = m - s_fixed.unsqueeze(1) * dm
     for k in (5, 6, 7, 8, 9):
@@ -1078,6 +1133,7 @@ def collide_wale_mrt27(
 # -----------------------------------------------------------------------
 # Vreman MRT collision operators (D3Q19, D3Q27)
 # -----------------------------------------------------------------------
+
 
 def collide_vreman_mrt3d(
     f: torch.Tensor,
@@ -1125,12 +1181,29 @@ def collide_vreman_mrt3d(
     dm = m - m_eq
 
     s_fixed = torch.tensor(
-        [0.0, s_e, s_eps,
-         0.0, s_q, 0.0, s_q, 0.0, s_q,
-         0.0, 0.0, 0.0, 0.0, 0.0,
-         s_pi, s_pi,
-         1.0, 1.0, 1.0],
-        dtype=f.dtype, device=device,
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
     )
     m_star = m - s_fixed.unsqueeze(1) * dm
     for k in (9, 10, 11, 12, 13):
@@ -1185,13 +1258,36 @@ def collide_vreman_mrt27(
 
     s_fixed = torch.tensor(
         [
-            0.0, 0.0, 0.0, 0.0, s_e,
-            0.0, 0.0, 0.0, 0.0, 0.0,
-            s_q, s_q, s_q, s_q, s_q, s_q, s_q, s_q, s_q,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_e,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
+            s_q,
             s_eps,
-            s_pi, s_pi, s_pi, s_pi, s_pi, s_pi, s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
+            s_pi,
         ],
-        dtype=f.dtype, device=device,
+        dtype=f.dtype,
+        device=device,
     )
     m_star = m - s_fixed.unsqueeze(1) * dm
     for k in (5, 6, 7, 8, 9):
@@ -1564,12 +1660,29 @@ def collide_dynamic_smagorinsky_mrt3d(
     dm = m - m_eq
 
     s_fixed = torch.tensor(
-        [0.0, s_e, s_eps,
-         0.0, s_q, 0.0, s_q, 0.0, s_q,
-         0.0, 0.0, 0.0, 0.0, 0.0,
-         s_pi, s_pi,
-         1.0, 1.0, 1.0],
-        dtype=f.dtype, device=device,
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
     )
     m_star = m - s_fixed.unsqueeze(1) * dm
     for k in (9, 10, 11, 12, 13):
@@ -1745,26 +1858,26 @@ def collide_dynamic_smagorinsky_mrt27(
     # Fixed relaxation rates for non-stress modes
     s_fixed = torch.tensor(
         [
-            0.0,   # 0  mass
-            0.0,   # 1  jx
-            0.0,   # 2  jy
-            0.0,   # 3  jz
-            s_e,   # 4  energy
-            0.0,   # 5  Nxx  – overridden below
-            0.0,   # 6  Nyy  – overridden below
-            0.0,   # 7  Pxy  – overridden below
-            0.0,   # 8  Pxz  – overridden below
-            0.0,   # 9  Pyz  – overridden below
-            s_q,   # 10
-            s_q,   # 11
-            s_q,   # 12
-            s_q,   # 13
-            s_q,   # 14
-            s_q,   # 15
-            s_q,   # 16
-            s_q,   # 17
-            s_q,   # 18
-            s_eps, # 19
+            0.0,  # 0  mass
+            0.0,  # 1  jx
+            0.0,  # 2  jy
+            0.0,  # 3  jz
+            s_e,  # 4  energy
+            0.0,  # 5  Nxx  – overridden below
+            0.0,  # 6  Nyy  – overridden below
+            0.0,  # 7  Pxy  – overridden below
+            0.0,  # 8  Pxz  – overridden below
+            0.0,  # 9  Pyz  – overridden below
+            s_q,  # 10
+            s_q,  # 11
+            s_q,  # 12
+            s_q,  # 13
+            s_q,  # 14
+            s_q,  # 15
+            s_q,  # 16
+            s_q,  # 17
+            s_q,  # 18
+            s_eps,  # 19
             s_pi,  # 20
             s_pi,  # 21
             s_pi,  # 22

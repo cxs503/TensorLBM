@@ -1,4 +1,5 @@
 """Tests for propeller CAD geometry module."""
+
 from __future__ import annotations
 
 import torch
@@ -40,8 +41,12 @@ def test_propeller_statistics() -> None:
 def test_masks_at_different_angles() -> None:
     """Ensure different rotation angles produce valid masks."""
     cfg = GENERIC_PRESET
-    mask0 = build_propeller_mask(nx=60, ny=30, nz=30, cx=21, cy=15, cz=15, config=cfg, angle_deg=0.0)
-    mask45 = build_propeller_mask(nx=60, ny=30, nz=30, cx=21, cy=15, cz=15, config=cfg, angle_deg=45.0)
+    mask0 = build_propeller_mask(
+        nx=60, ny=30, nz=30, cx=21, cy=15, cz=15, config=cfg, angle_deg=0.0
+    )
+    mask45 = build_propeller_mask(
+        nx=60, ny=30, nz=30, cx=21, cy=15, cz=15, config=cfg, angle_deg=45.0
+    )
     s0 = mask0.sum().item()
     s45 = mask45.sum().item()
     # Should be roughly similar (same geometry, rotated)

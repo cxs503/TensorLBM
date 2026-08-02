@@ -115,9 +115,12 @@ def yplus_recommendation(
 # Grid quality metrics — blockage ratio, domain scales, pressure convergence
 # ---------------------------------------------------------------------------
 
+
 def grid_quality_metrics(
     *,
-    nx: int, ny: int, nz: int,
+    nx: int,
+    ny: int,
+    nz: int,
     hull_length: float,
     u_in: float = 0.06,
     re: float = 2e6,
@@ -172,7 +175,7 @@ def grid_quality_metrics(
     # Blockage ratio: hull cross-section / domain cross-section
     # SUBOFF diameter ≈ hull_length / 8.57
     r_hull = hull_radius if hull_radius is not None else hull_length / (2 * 8.57)
-    hull_area = math.pi * r_hull ** 2
+    hull_area = math.pi * r_hull**2
     domain_area = (ny * dx) * (nz * dx)
     blockage = hull_area / max(domain_area, 1e-12)
 
@@ -206,9 +209,18 @@ def grid_quality_metrics(
         "cells_per_hull_length": nx,
         "pressure_settle_steps_est": int(pressure_steps),
         "quality_tier": tier,
-        "parameters": {"nx": nx, "ny": ny, "nz": nz, "hull_length": hull_length,
-                       "u_in": u_in, "re": re, "dx": dx, "y_first": y,
-                       "nu": nu, "u_tau_est": u_tau},
+        "parameters": {
+            "nx": nx,
+            "ny": ny,
+            "nz": nz,
+            "hull_length": hull_length,
+            "u_in": u_in,
+            "re": re,
+            "dx": dx,
+            "y_first": y,
+            "nu": nu,
+            "u_tau_est": u_tau,
+        },
     }
 
 
@@ -257,6 +269,7 @@ def recommend_grid(
 # ---------------------------------------------------------------------------
 # Extend DragMonitor with y+ tracking
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DragMonitor:
@@ -316,9 +329,11 @@ class DragMonitor:
 
         sf = _std(self._fric, af) if n > 1 else 0.0
         sp = _std(self._pres, ap) if n > 1 else 0.0
-        st = math.sqrt(
-            sum((self._fric[i] + self._pres[i] - at) ** 2 for i in range(n)) / (n - 1)
-        ) if n > 1 else 0.0
+        st = (
+            math.sqrt(sum((self._fric[i] + self._pres[i] - at) ** 2 for i in range(n)) / (n - 1))
+            if n > 1
+            else 0.0
+        )
 
         win_n = max(1, int(n * self.window_frac))
         if win_n < 2:
@@ -362,8 +377,7 @@ class DragMonitor:
         """Return Ct components averaged over the *last* `window` samples (sliding window)."""
         n = min(window, len(self._fric))
         if n == 0:
-            return {"Ct_fric_slide": 0.0, "Ct_pres_slide": 0.0,
-                    "Ct_total_slide": 0.0, "n_slide": 0}
+            return {"Ct_fric_slide": 0.0, "Ct_pres_slide": 0.0, "Ct_total_slide": 0.0, "n_slide": 0}
         af = sum(self._fric[-n:]) / n
         ap = sum(self._pres[-n:]) / n
         return {

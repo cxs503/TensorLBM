@@ -38,6 +38,7 @@ Peskin, C. S. (2002). The immersed boundary method. *Acta Numerica* 11, 479.
 Ol, M. V. et al. (2009). Comparison of laminar deep-stall pitch-plunge
     kinematics for various speeds and pitch rates. *AIAA J.* 47, 2577.
 """
+
 from __future__ import annotations
 
 import csv
@@ -66,6 +67,7 @@ __all__ = [
 # Motion law protocols
 # ---------------------------------------------------------------------------
 
+
 class MotionLaw(Protocol):
     """Interface for a time-varying boundary motion law."""
 
@@ -87,10 +89,11 @@ class PitchPlungeMotion:
 
     All quantities are in lattice units.
     """
-    A_h: float = 20.0           # plunge amplitude (lattice cells)
+
+    A_h: float = 20.0  # plunge amplitude (lattice cells)
     A_alpha: float = math.radians(15.0)  # pitch amplitude (radians)
-    alpha0: float = 0.0         # mean pitch angle (radians)
-    f_red: float = 0.002        # reduced frequency (cycles per step)
+    alpha0: float = 0.0  # mean pitch angle (radians)
+    f_red: float = 0.002  # reduced frequency (cycles per step)
     phase_shift: float = math.pi / 2.0  # phase between pitch and plunge (rad)
 
     def position(self, step: int) -> tuple[float, float, float]:
@@ -109,23 +112,23 @@ class PitchPlungeMotion:
 @dataclass
 class OscillatingCylinderMotion:
     """Transverse sinusoidal oscillation of a cylinder (VIV benchmark)."""
-    A_y: float = 10.0         # transverse amplitude (lattice cells)
-    f_osc: float = 0.001      # oscillation frequency (cycles/step)
+
+    A_y: float = 10.0  # transverse amplitude (lattice cells)
+    f_osc: float = 0.001  # oscillation frequency (cycles/step)
 
     def position(self, step: int) -> tuple[float, float, float]:
         y_shift = self.A_y * math.sin(2.0 * math.pi * self.f_osc * step)
         return 0.0, y_shift, 0.0
 
     def velocity(self, step: int, dt: float = 1.0) -> tuple[float, float, float]:
-        vy = self.A_y * 2.0 * math.pi * self.f_osc * math.cos(
-            2.0 * math.pi * self.f_osc * step
-        )
+        vy = self.A_y * 2.0 * math.pi * self.f_osc * math.cos(2.0 * math.pi * self.f_osc * step)
         return 0.0, vy, 0.0
 
 
 # ---------------------------------------------------------------------------
 # Marker-point geometry helpers
 # ---------------------------------------------------------------------------
+
 
 def _airfoil_markers(
     n_markers: int,
@@ -139,8 +142,7 @@ def _airfoil_markers(
     # Parametric NACA 0012 (approximate)
     xi = 0.5 * (1.0 - torch.cos(t))  # chord-wise parameter [0,1]
     c5 = thickness_ratio / 0.20
-    yt = c5 * (0.2969 * xi.sqrt() - 0.1260 * xi - 0.3516 * xi ** 2
-               + 0.2843 * xi ** 3 - 0.1015 * xi ** 4)
+    yt = c5 * (0.2969 * xi.sqrt() - 0.1260 * xi - 0.3516 * xi**2 + 0.2843 * xi**3 - 0.1015 * xi**4)
     # Upper and lower surfaces
     x_top = xi * chord + cx - chord / 2.0
     y_top = yt * chord + cy
@@ -197,20 +199,21 @@ def update_moving_boundary(
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class MovingBoundaryConfig:
     """Configuration for the oscillating airfoil (pitch-plunge) benchmark."""
 
     nx: int = 512
     ny: int = 256
-    u_in: float = 0.05          # inlet velocity (l.u.)
-    re: float = 500.0           # Reynolds number based on chord
-    chord: float = 60.0         # airfoil chord length (lattice cells)
-    n_markers: int = 120        # number of surface Lagrangian markers
+    u_in: float = 0.05  # inlet velocity (l.u.)
+    re: float = 500.0  # Reynolds number based on chord
+    chord: float = 60.0  # airfoil chord length (lattice cells)
+    n_markers: int = 120  # number of surface Lagrangian markers
     # Pitch-plunge parameters
-    A_h_frac: float = 0.25      # plunge amplitude / chord
-    A_alpha_deg: float = 15.0   # pitch amplitude (degrees)
-    f_red: float = 0.0015       # reduced frequency (cycles/step)
+    A_h_frac: float = 0.25  # plunge amplitude / chord
+    A_alpha_deg: float = 15.0  # pitch amplitude (degrees)
+    f_red: float = 0.0015  # reduced frequency (cycles/step)
     phase_shift_deg: float = 90.0  # pitch–plunge phase (degrees)
     # Geometry type: 'airfoil' or 'cylinder'
     geom: str = "airfoil"
@@ -241,6 +244,7 @@ class MovingBoundaryConfig:
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
+
 
 def run_oscillating_airfoil(
     cfg: MovingBoundaryConfig | None = None,
@@ -279,8 +283,14 @@ def run_oscillating_airfoil(
     configure_logging(run_dir)
     save_config_json(asdict(cfg), run_dir / "config.json")
 
-    _logger.info("Oscillating airfoil: nx=%d ny=%d Re=%.1f geom=%s device=%s",
-                 cfg.nx, cfg.ny, cfg.re, cfg.geom, cfg.device)
+    _logger.info(
+        "Oscillating airfoil: nx=%d ny=%d Re=%.1f geom=%s device=%s",
+        cfg.nx,
+        cfg.ny,
+        cfg.re,
+        cfg.geom,
+        cfg.device,
+    )
 
     nx, ny = cfg.nx, cfg.ny
     cx_pivot = nx * 0.35
@@ -298,10 +308,18 @@ def run_oscillating_airfoil(
     A_h = cfg.A_h_frac * cfg.chord
     A_alpha = math.radians(cfg.A_alpha_deg)
     phase = math.radians(cfg.phase_shift_deg)
-    motion = PitchPlungeMotion(
-        A_h=A_h, A_alpha=A_alpha, f_red=cfg.f_red, phase_shift=phase,
-    ) if cfg.geom == "airfoil" else OscillatingCylinderMotion(
-        A_y=A_h, f_osc=cfg.f_red,
+    motion = (
+        PitchPlungeMotion(
+            A_h=A_h,
+            A_alpha=A_alpha,
+            f_red=cfg.f_red,
+            phase_shift=phase,
+        )
+        if cfg.geom == "airfoil"
+        else OscillatingCylinderMotion(
+            A_y=A_h,
+            f_osc=cfg.f_red,
+        )
     )
 
     # Init flow
@@ -311,6 +329,7 @@ def run_oscillating_airfoil(
     f = equilibrium(rho, ux0, uy0)
 
     import matplotlib  # noqa: PLC0415
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt  # noqa: PLC0415
 
@@ -323,8 +342,13 @@ def run_oscillating_airfoil(
         _, y_shift, angle = motion.position(step)
         vx_m, vy_m, omega = motion.velocity(step)
         xs_new, ys_new = update_moving_boundary(
-            xs0.to(device), ys0.to(device), cx_pivot, cy_pivot,
-            0.0, y_shift, angle,
+            xs0.to(device),
+            ys0.to(device),
+            cx_pivot,
+            cy_pivot,
+            0.0,
+            y_shift,
+            angle,
         )
         dx = xs_new - cx_pivot
         dy = ys_new - cy_pivot
@@ -334,12 +358,22 @@ def run_oscillating_airfoil(
         # IBM force
         rho_f, ux_f, uy_f = macroscopic(f)
         u_interp_x, u_interp_y = ibm_velocity_interpolate(
-            ux_f, uy_f, xs_new, ys_new, nx, ny,
+            ux_f,
+            uy_f,
+            xs_new,
+            ys_new,
+            nx,
+            ny,
         )
         F_ibm_x = vx_sfc - u_interp_x
         F_ibm_y = vy_sfc - u_interp_y
         Fx_field, Fy_field = ibm_force_spread(
-            F_ibm_x, F_ibm_y, xs_new, ys_new, nx, ny,
+            F_ibm_x,
+            F_ibm_y,
+            xs_new,
+            ys_new,
+            nx,
+            ny,
         )
 
         # BGK with body force
@@ -351,7 +385,7 @@ def run_oscillating_airfoil(
 
         if (step + 1) % cfg.output_interval == 0 or step == cfg.n_steps - 1:
             rho_pp, ux_pp, uy_pp = macroscopic(f)
-            speed = torch.sqrt(ux_pp ** 2 + uy_pp ** 2)
+            speed = torch.sqrt(ux_pp**2 + uy_pp**2)
 
             fig, ax = plt.subplots(figsize=(8, 4))
             ax.imshow(speed.cpu().numpy(), origin="lower", cmap="RdBu_r")
@@ -361,7 +395,7 @@ def run_oscillating_airfoil(
             plt.close(fig)
 
             # Lift & drag from IBM reaction force
-            dyn_q = rho_f.mean() * cfg.u_in ** 2 * cfg.chord + 1e-12
+            dyn_q = rho_f.mean() * cfg.u_in**2 * cfg.chord + 1e-12
             Cl = float((-Fy_field.sum() * 2.0 / dyn_q).item())
             Cd = float((-Fx_field.sum() * 2.0 / dyn_q).item())
             steps_out.append(step + 1)
