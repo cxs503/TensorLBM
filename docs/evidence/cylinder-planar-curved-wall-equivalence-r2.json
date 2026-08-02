@@ -1,0 +1,30 @@
+{
+  "schema": "tensorlbm-cylinder-planar-reduction-audit-v2",
+  "status": "end_to_end_operator_equivalence_admitted",
+  "physical_validation": false,
+  "extends": "cylinder-planar-collision-reduction-audit-r1.json",
+  "operators_compared": [
+    "D2Q9 cumulant collision versus embedded planar D3Q19 collision",
+    "D2Q9 pull streaming versus D3Q19 pull streaming with identical z planes",
+    "corrected analytic circle q field versus specialized extruded-cylinder q field",
+    "corrected scalar D2Q9 BFL versus specialized D3Q19 BFL followed by D2Q9 marginalization"
+  ],
+  "manufactured_case": {
+    "grid_xy": [13, 13],
+    "extruded_z_planes": 3,
+    "circle_center_xy": [6.0, 6.0],
+    "radius": 2.0,
+    "lattice_speed": 0.03,
+    "tau": 0.68,
+    "dtype": "float64"
+  },
+  "acceptance": {
+    "relative_tolerance": 2e-14,
+    "absolute_tolerance": 2e-15,
+    "collision_stream_curved_wall_marginal_equivalence": true,
+    "planar_mode_is_exact_d2q9_for_registered_operator_chain": true,
+    "physical_cylinder_accuracy_claimed": false
+  },
+  "test": "tests/test_planar_d3q19.py::test_planar_collision_stream_and_curved_wall_match_d2q9",
+  "next_case": "The running Re=100, R=9, Mach=0.052 long cylinder changes only natural KBC D3Q19 to embedded planar D2Q9 cumulant; its physical result remains subject to force, time and reference gates."
+}
