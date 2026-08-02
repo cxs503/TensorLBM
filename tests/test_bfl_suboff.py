@@ -437,6 +437,47 @@ def test_exchange_location_requires_positive_distance() -> None:
         )
 
 
+def test_exchange_diagnostics_measure_tangential_pressure_gradient() -> None:
+    from tensorlbm.wall_model import bfl_wall_function_3d
+
+    shape = (3, 8, 7)
+    x = torch.arange(shape[2], dtype=torch.float64).view(1, 1, -1)
+    rho = (1.0 + 1.0e-3 * x).expand(shape).clone()
+    ux = torch.full(shape, 0.03, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f = equilibrium3d(rho, ux, zero, zero)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    solid[:, 0, :] = True
+    near = torch.zeros(shape, dtype=torch.bool)
+    near[:, 1, :] = True
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    masks[4, :, 1, :] = True
+    nx = torch.zeros(shape, dtype=torch.float64)
+    ny = torch.zeros(shape, dtype=torch.float64)
+    nz = torch.zeros(shape, dtype=torch.float64)
+    ny[:, 1, :] = 1.0
+
+    _, _, _, diagnostics = bfl_wall_function_3d(
+        f.clone(), f, solid, 1.0e-3, masks, q,
+        near_mask=near,
+        apply_bfl=False,
+        wall_normals=(nx, ny, nz),
+        wall_law="reichardt",
+        stress_exchange_distance=2.0,
+        return_wall_diagnostics=True,
+    )
+
+    assert diagnostics.pressure_gradient_parameter_mean is not None
+    assert diagnostics.pressure_gradient_parameter_mean > 0.0
+    assert diagnostics.pressure_gradient_parameter_p95 is not None
+    assert diagnostics.pressure_gradient_parameter_p95 > 0.0
+    assert diagnostics.pressure_gradient_parameter_max is not None
+    assert diagnostics.pressure_gradient_parameter_max >= (
+        diagnostics.pressure_gradient_parameter_p95
+    )
+
+
 def test_d3q27_guo_wall_source_momentum_equals_reported_wall_traction() -> None:
     """D3Q27 uses the same area/volume traction contract as D3Q19."""
     from tensorlbm.d3q27 import C as C27, equilibrium27
