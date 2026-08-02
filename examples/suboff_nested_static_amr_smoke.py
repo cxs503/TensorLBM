@@ -25,6 +25,7 @@ from tensorlbm.amr_interface_filter import (
 )
 from tensorlbm.boundaries3d import far_field_bc_3d
 from tensorlbm.checkpoint_io import atomic_torch_save
+from tensorlbm.chunked_collision import collide_in_z_chunks
 from tensorlbm.control_volume_force import (
     box_control_volume,
     fluid_momentum_change,
@@ -252,6 +253,15 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--kbc-max-iterations", type=int, default=12)
     result.add_argument(
+        "--collision-chunk-cells",
+        type=int,
+        default=0,
+        help=(
+            "bounded-memory z-slab size for cell-local KBC collision; "
+            "0 keeps whole-level collision"
+        ),
+    )
+    result.add_argument(
         "--omega-bulk",
         type=float,
         default=1.0,
@@ -305,6 +315,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("memory bytes per cell must be positive")
     if args.kbc_max_iterations < 2:
         raise ValueError("KBC maximum iterations must be at least two")
+    if args.collision_chunk_cells < 0:
+        raise ValueError("collision chunk cells must be non-negative")
     if not 0.0 < args.omega_bulk <= 2.0:
         raise ValueError("bulk relaxation rate must lie in (0,2]")
     if args.checkpoint_interval < 0:
@@ -608,6 +620,7 @@ def run(args: argparse.Namespace) -> dict:
         "refinement_depth": refinement_depth,
         "level_count": level_count,
         "force_samples_per_root_step": force_averager.expected_samples,
+        "collision_chunk_cells": args.collision_chunk_cells,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
         "nested_fine_shape": list(nested_plan.fine_physical_shape),
         "fine_physical_shapes_by_level": [
@@ -749,6 +762,7 @@ def run(args: argparse.Namespace) -> dict:
         "vreman_cv": args.vreman_cv,
         "collision_model": args.collision_model,
         "kbc_max_iterations": args.kbc_max_iterations,
+        "collision_chunk_cells": args.collision_chunk_cells,
         "omega_bulk": args.omega_bulk,
         "wall_law": args.wall_law,
         "wall_stress_enabled": not args.disable_wall_stress,
@@ -920,6 +934,7 @@ def run(args: argparse.Namespace) -> dict:
     resumed_legacy_v3_checkpoint = False
     resumed_pre_gradient_sgs_checkpoint = False
     resumed_pre_inlet_sponge_checkpoint = False
+    resumed_pre_collision_chunk_checkpoint = False
     force_samples: list[dict] = []
     step_records: list[dict] = []
     maximum_limiter_fraction = 0.0
@@ -936,6 +951,12 @@ def run(args: argparse.Namespace) -> dict:
     if args.resume:
         state = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
         stored_configuration = state.get("configuration")
+        pre_collision_chunk_signature = dict(checkpoint_signature)
+        pre_collision_chunk_signature.pop("collision_chunk_cells")
+        resumed_pre_collision_chunk_checkpoint = (
+            args.collision_chunk_cells == 0
+            and stored_configuration == pre_collision_chunk_signature
+        )
         pre_inlet_sponge_signature = dict(checkpoint_signature)
         pre_inlet_sponge_signature.pop("sponge_inlet")
         resumed_pre_inlet_sponge_checkpoint = (
@@ -1043,6 +1064,7 @@ def run(args: argparse.Namespace) -> dict:
         )
         if (
             stored_configuration != checkpoint_signature
+            and not resumed_pre_collision_chunk_checkpoint
             and not resumed_pre_inlet_sponge_checkpoint
             and not resumed_pre_gradient_sgs_checkpoint
             and not resumed_legacy_v3_checkpoint
@@ -1153,13 +1175,31 @@ def run(args: argparse.Namespace) -> dict:
     def collide(state: torch.Tensor, tau: float, level: int) -> torch.Tensor:
         nonlocal maximum_limiter_fraction
         if args.collision_model == "entropic_kbc":
-            post = collide_kbc_d3q19(
-                state,
-                tau=tau,
-                max_iter=args.kbc_max_iterations,
-            )
+            if args.collision_chunk_cells:
+                post = collide_in_z_chunks(
+                    state,
+                    lambda slab: collide_kbc_d3q19(
+                        slab,
+                        tau=tau,
+                        max_iter=args.kbc_max_iterations,
+                    ),
+                    chunk_cells=args.collision_chunk_cells,
+                )
+            else:
+                post = collide_kbc_d3q19(
+                    state,
+                    tau=tau,
+                    max_iter=args.kbc_max_iterations,
+                )
         elif args.collision_model == "natural_kbc":
-            post = collide_natural_kbc_d3q19(state, tau=tau)
+            if args.collision_chunk_cells:
+                post = collide_in_z_chunks(
+                    state,
+                    lambda slab: collide_natural_kbc_d3q19(slab, tau=tau),
+                    chunk_cells=args.collision_chunk_cells,
+                )
+            else:
+                post = collide_natural_kbc_d3q19(state, tau=tau)
         else:
             sgs_coefficients = {
                 "cumulant_smagorinsky": {"C_s": args.cs_smag},
@@ -1953,6 +1993,9 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "resumed_pre_inlet_sponge_checkpoint": (
                 resumed_pre_inlet_sponge_checkpoint
+            ),
+            "resumed_pre_collision_chunk_checkpoint": (
+                resumed_pre_collision_chunk_checkpoint
             ),
         },
         "planning": planning | {

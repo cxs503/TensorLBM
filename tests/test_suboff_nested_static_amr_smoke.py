@@ -248,6 +248,27 @@ def test_nested_suboff_checkpoint_restores_all_levels(tmp_path: Path) -> None:
     assert bool(checkpoint_state["level_solid_masks"][2].any())
 
 
+def test_checkpoint_before_collision_chunk_option_can_resume(
+    tmp_path: Path,
+) -> None:
+    MODULE.run(_args(
+        tmp_path, steps=1, collision_model="natural_kbc",
+    ))
+    checkpoint = tmp_path / "nested-smoke.ckpt"
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"].pop("collision_chunk_cells")
+    torch.save(state, checkpoint)
+
+    resumed = MODULE.run(_args(
+        tmp_path, steps=2, resume=True, collision_model="natural_kbc",
+    ))
+
+    assert resumed["configuration"][
+        "resumed_pre_collision_chunk_checkpoint"
+    ] is True
+    assert resumed["configuration"]["resumed_from_step"] == 1
+
+
 def test_checkpoint_without_mass_conservative_wall_source_is_rejected(
     tmp_path: Path,
 ) -> None:
@@ -398,6 +419,19 @@ def test_nested_smoke_dispatches_natural_kbc_as_diagnostic(tmp_path: Path) -> No
     assert result["configuration"]["collision_model"] == "natural_kbc"
     assert result["acceptance"]["collision_viscosity_target_met"] is False
     assert result["acceptance"]["single_grid_candidate"] is False
+    assert result["result"]["finite"] is True
+
+
+def test_nested_smoke_runs_natural_kbc_with_bounded_collision_memory(
+    tmp_path: Path,
+) -> None:
+    args = _args(tmp_path, steps=1, collision_model="natural_kbc")
+    args.collision_chunk_cells = 512
+
+    result = MODULE.run(args)
+
+    assert result["configuration"]["collision_chunk_cells"] == 512
+    assert result["planning"]["collision_chunk_cells"] == 512
     assert result["result"]["finite"] is True
 
 

@@ -155,6 +155,11 @@ cs_smag=${TENSORLBM_CS_SMAG:-0.05}
 wale_cw=${TENSORLBM_WALE_CW:-0.5}
 vreman_cv=${TENSORLBM_VREMAN_CV:-0.025}
 collision_model=${TENSORLBM_COLLISION_MODEL:-cumulant_smagorinsky}
+collision_chunk_cells=${TENSORLBM_COLLISION_CHUNK_CELLS:-0}
+[[ $collision_chunk_cells =~ ^[0-9]+$ ]] || {
+  echo "TENSORLBM_COLLISION_CHUNK_CELLS must be a non-negative integer" >&2
+  exit 2
+}
 case "$collision_model" in
   cumulant_smagorinsky|cumulant_wale|cumulant_vreman|entropic_kbc|natural_kbc) ;;
   *) echo "unsupported TENSORLBM_COLLISION_MODEL: $collision_model" >&2; exit 2 ;;
@@ -211,6 +216,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --viscosity-ramp-start-step "$viscosity_ramp_start" \
   --viscosity-ramp-end-step "$viscosity_ramp_end" \
   --collision-model "$collision_model" \
+  --collision-chunk-cells "$collision_chunk_cells" \
   --cs-smag "$cs_smag" --wale-cw "$wale_cw" --vreman-cv "$vreman_cv" \
   --wall-law musker --stress-exchange-distance "$stress_exchange_distance" \
   --sponge-width "$sponge" --sponge-strength 0.3 \
