@@ -23,6 +23,7 @@ class CollisionViscosityAuditConfig:
     steps: int = 200
     fit_start_step: int = 20
     maximum_relative_error_pct: float = 2.0
+    minimum_fitted_log_decay: float = 0.0
     kbc_max_iterations: int = 12
     wale_cw: float = 0.5
     vreman_cv: float = 0.025
@@ -49,6 +50,8 @@ class CollisionViscosityAuditConfig:
             raise ValueError("fit_start_step must lie inside the trajectory")
         if self.maximum_relative_error_pct <= 0.0:
             raise ValueError("maximum_relative_error_pct must be positive")
+        if self.minimum_fitted_log_decay < 0.0:
+            raise ValueError("minimum_fitted_log_decay must be non-negative")
         if self.kbc_max_iterations < 1:
             raise ValueError("kbc_max_iterations must be positive")
         if not 0.0 <= self.wale_cw <= 1.0:
@@ -158,11 +161,17 @@ def run_collision_viscosity_audit(
     relative_error_pct = (
         abs(recovered_viscosity - target_viscosity) / target_viscosity * 100.0
     )
+    fitted_log_decay = -slope * float(steps[-1] - steps[0])
     finite = bool(torch.isfinite(populations).all()) and all(
         math.isfinite(value)
         for value in (slope, recovered_viscosity, relative_error_pct)
     )
-    admitted = finite and relative_error_pct <= config.maximum_relative_error_pct
+    decay_signal_admitted = fitted_log_decay >= config.minimum_fitted_log_decay
+    admitted = (
+        finite
+        and relative_error_pct <= config.maximum_relative_error_pct
+        and decay_signal_admitted
+    )
     return {
         "schema": "tensorlbm-collision-viscosity-audit-v1",
         "configuration": asdict(config),
@@ -171,6 +180,7 @@ def run_collision_viscosity_audit(
             "recovered_kinematic_viscosity": recovered_viscosity,
             "relative_error_pct": relative_error_pct,
             "decay_slope_per_step": slope,
+            "fitted_log_amplitude_decay": fitted_log_decay,
             "initial_fitted_amplitude": samples[0][1],
             "final_amplitude": samples[-1][1],
             "minimum_population": float(populations.min().item()),
@@ -178,6 +188,8 @@ def run_collision_viscosity_audit(
         },
         "acceptance": {
             "maximum_relative_error_pct": config.maximum_relative_error_pct,
+            "minimum_fitted_log_decay": config.minimum_fitted_log_decay,
+            "decay_signal_admitted": decay_signal_admitted,
             "admitted": admitted,
         },
     }
