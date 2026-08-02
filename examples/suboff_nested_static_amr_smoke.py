@@ -1730,6 +1730,8 @@ def run(args: argparse.Namespace) -> dict:
             print(
                 f"nested smoke step={current_step}/{args.steps} "
                 f"Rt={step_records[-1]['cv_resistance_n']:.3f} N "
+                f"Rp={step_records[-1]['bfl_pressure_n']:.3f} N "
+                f"Rf={step_records[-1]['wall_shear_n']:.3f} N "
                 f"closure={step_records[-1]['source_corrected_observer_difference_pct']:.5f}%",
                 flush=True,
             )
