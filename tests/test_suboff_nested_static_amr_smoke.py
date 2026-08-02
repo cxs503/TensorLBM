@@ -120,6 +120,7 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["result"]["statistics"]["auxiliary_cv_difference_pct"] is not None
     assert result["result"]["statistics"]["surface_observer_difference_pct"] is not None
     assert result["result"]["statistics"]["wall_exchange"]["mean_distance_cells"] > 0.0
+    assert result["planning"]["cuda_persistent_allocated_gib_by_device"] == {}
     statistics = result["result"]["statistics"]
     assert statistics["mean_bfl_pressure_n"] is not None
     assert statistics["mean_wall_shear_n"] is not None
