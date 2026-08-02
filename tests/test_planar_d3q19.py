@@ -4,14 +4,21 @@ import pytest
 import torch
 
 from tensorlbm.cumulant import collide_cumulant_d2q9
+from tensorlbm.bfl_d3q19 import (
+    bouzidi_bounce_back_d3q19,
+    compute_q_cylinder_d3q19,
+)
 from tensorlbm.d2q9 import C as C2, equilibrium
 from tensorlbm.d3q19 import C as C3
+from tensorlbm.interpolated_bc import bouzidi_bounce_back, compute_q_circle
 from tensorlbm.planar_d3q19 import (
     collide_planar_cumulant_d3q19,
     lift_d2q9_to_d3q19,
     marginalize_d3q19_to_d2q9,
     maximum_planar_plane_spread,
 )
+from tensorlbm.solver import stream
+from tensorlbm.solver3d import stream3d
 
 
 def _state() -> torch.Tensor:
@@ -59,3 +66,45 @@ def test_planar_plane_spread_detects_broken_extrusion() -> None:
 def test_planar_collision_rejects_invalid_tau() -> None:
     with pytest.raises(ValueError, match="tau"):
         collide_planar_cumulant_d3q19(lift_d2q9_to_d3q19(_state()), 0.5)
+
+
+def test_planar_collision_stream_and_curved_wall_match_d2q9() -> None:
+    ny = nx = 13
+    rho = torch.ones((ny, nx), dtype=torch.float64)
+    ux = torch.full_like(rho, 0.03)
+    uy = torch.zeros_like(rho)
+    d2 = equilibrium(rho, ux, uy)
+    d3 = lift_d2q9_to_d3q19(
+        d2[:, None].expand(-1, 3, -1, -1).clone(),
+    )
+    tau = 0.68
+    d2_post = collide_cumulant_d2q9(d2, tau)
+    d3_post = collide_planar_cumulant_d3q19(d3, tau)
+    d2_streamed = stream(d2_post)
+    d3_streamed = stream3d(d3_post)
+
+    d2_mask, d2_q = compute_q_circle(
+        nx, ny, 6.0, 6.0, 2.0, torch.device("cpu"),
+    )
+    for direction in range(1, 9):
+        d2_streamed = bouzidi_bounce_back(
+            d2_streamed,
+            d2_post,
+            d2_mask[direction],
+            d2_q[direction],
+            direction,
+        )
+    d3_mask, d3_q = compute_q_cylinder_d3q19(
+        nx, ny, 3, 6.0, 6.0, 2.0, torch.device("cpu"),
+    )
+    d3_streamed = bouzidi_bounce_back_d3q19(
+        d3_streamed, d3_post, d3_mask, d3_q,
+    )
+
+    marginal = marginalize_d3q19_to_d2q9(d3_streamed)
+    torch.testing.assert_close(
+        marginal,
+        d2_streamed[:, None].expand_as(marginal),
+        rtol=2e-14,
+        atol=2e-15,
+    )
