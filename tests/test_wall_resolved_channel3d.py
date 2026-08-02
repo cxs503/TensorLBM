@@ -62,5 +62,33 @@ def test_channel_checkpoint_configuration_mismatch_fails_closed(tmp_path) -> Non
     run_wall_resolved_channel3d(WallResolvedChannel3DConfig(steps=1, **common))
     with pytest.raises(ValueError, match="configuration"):
         run_wall_resolved_channel3d(
-            WallResolvedChannel3DConfig(steps=2, resume=True, **common),
+            WallResolvedChannel3DConfig(
+                steps=2,
+                resume=True,
+                **(common | {"re_tau": 21.0}),
+            ),
         )
+
+
+def test_channel_checkpoint_allows_steps_only_extension(tmp_path) -> None:
+    common = dict(
+        nx=8,
+        ny=10,
+        nz=8,
+        re_tau=20.0,
+        u_tau=0.01,
+        warmup_steps=0,
+        sample_interval=1,
+        report_interval=1,
+        checkpoint_interval=1,
+        collision_model="cumulant",
+        compile_natural_kbc=False,
+        device="cpu",
+        output=tmp_path / "result.json",
+        checkpoint=tmp_path / "state.ckpt",
+    )
+    run_wall_resolved_channel3d(WallResolvedChannel3DConfig(steps=1, **common))
+    result = run_wall_resolved_channel3d(
+        WallResolvedChannel3DConfig(steps=2, resume=True, **common),
+    )
+    assert result["reports"][-1]["step"] == 2
