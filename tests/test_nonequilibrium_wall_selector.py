@@ -75,3 +75,64 @@ def test_selector_requires_reset_before_shape_change() -> None:
         assert "reset" in str(error)
     else:
         raise AssertionError("selector accepted an implicit state resize")
+
+
+def test_selector_checkpoint_preserves_temporal_hysteresis() -> None:
+    original = NonequilibriumWallSelector(
+        enter_observations=3,
+        exit_observations=2,
+    )
+    original.update(*_state(2.0))
+    original.update(*_state(2.0))
+    state = original.state_dict()
+
+    # Returned tensors are detached copies, not mutable views of live state.
+    assert isinstance(state["enter_count"], torch.Tensor)
+    state["enter_count"].zero_()
+    active, diagnostics = original.update(*_state(2.0))
+    assert bool(active.item())
+    assert diagnostics.newly_activated_nodes == 1
+
+    restored = NonequilibriumWallSelector(
+        enter_observations=3,
+        exit_observations=2,
+    )
+    # Restore the actual two-observation state and cross the entry threshold.
+    original.reset()
+    original.update(*_state(2.0))
+    original.update(*_state(2.0))
+    restored.load_state_dict(original.state_dict())
+    active, diagnostics = restored.update(*_state(2.0))
+    assert bool(active.item())
+    assert diagnostics.newly_activated_nodes == 1
+
+
+def test_selector_checkpoint_rejects_configuration_and_counter_mismatch() -> None:
+    source = NonequilibriumWallSelector(enter_observations=3)
+    source.update(*_state(2.0))
+    state = source.state_dict()
+
+    incompatible = NonequilibriumWallSelector(enter_observations=4)
+    try:
+        incompatible.load_state_dict(state)
+    except ValueError as error:
+        assert "configuration" in str(error)
+    else:
+        raise AssertionError("selector accepted incompatible configuration")
+
+    corrupt = source.state_dict()
+    assert isinstance(corrupt["enter_count"], torch.Tensor)
+    corrupt["enter_count"].fill_(4)
+    try:
+        source.load_state_dict(corrupt)
+    except ValueError as error:
+        assert "exceeds" in str(error)
+    else:
+        raise AssertionError("selector accepted an impossible counter")
+
+
+def test_uninitialised_selector_checkpoint_round_trip() -> None:
+    source = NonequilibriumWallSelector()
+    restored = NonequilibriumWallSelector()
+    restored.load_state_dict(source.state_dict())
+    assert restored.active is None
