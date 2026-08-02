@@ -35,6 +35,7 @@
     "bfl_common.compute_q_sphere_common",
     "interpolated_bc_common.compute_q_sphere_27",
     "interpolated_bc_ellipsoid.compute_q_ellipsoid",
+    "bfl_d3q19_vec.bouzidi_bounce_back_d3q19_vec",
     "legacy scalar D2Q9/D3Q19 and common vector/scalar BFL reconstruction"
   ],
   "unaffected_current_cylinder_path": {
