@@ -1,4 +1,5 @@
 """Tests for dynamic Smagorinsky turbulence closures."""
+
 from __future__ import annotations
 
 import torch
@@ -41,6 +42,7 @@ def test_dynamic_smagorinsky_output_finite() -> None:
 # ---------------------------------------------------------------------------
 # D3Q19 MRT contract tests (shape, finite, mass, momentum, equilibrium identity)
 # ---------------------------------------------------------------------------
+
 
 def test_dynamic_smagorinsky_mrt3d_shape() -> None:
     rho = torch.ones((4, 6, 8))
@@ -89,7 +91,6 @@ def test_dynamic_smagorinsky_mrt3d_momentum_conservation() -> None:
 def test_dynamic_smagorinsky_mrt3d_equilibrium_is_identity() -> None:
     """At equilibrium (zero non-equilibrium) collision is identity."""
     rho = torch.ones((4, 6, 8))
-    f = equilibrium3d(rho, torch.zeros_like(rho), torch.zeros_like(rho),
-                      torch.zeros_like(rho))
+    f = equilibrium3d(rho, torch.zeros_like(rho), torch.zeros_like(rho), torch.zeros_like(rho))
     fout = collide_dynamic_smagorinsky_mrt3d(f, tau=0.7)
     assert torch.allclose(fout, f, atol=1e-5)

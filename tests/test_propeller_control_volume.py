@@ -1,4 +1,5 @@
 """Control-volume momentum-budget contracts for actual propeller samples."""
+
 from __future__ import annotations
 
 import pytest
@@ -21,34 +22,36 @@ def test_d3q19_cv_x_momentum_includes_diagonal_populations() -> None:
 
 
 def test_control_volume_budget_reports_every_term_and_sign_convention() -> None:
-    report = _summarize_control_volume_cross_check([
-        {
-            "fluid_momentum_delta_x": 1.0,
-            "wall_me_load_x": 0.9,
-            "open_face_momentum_flux_x": 0.2,
-            "collision_momentum_contribution_x": 0.1,
-            "streaming_momentum_contribution_x": 0.0,
-            "fixed_channel_wall_momentum_contribution_x": 0.0,
-            "moving_mask_reset_momentum_contribution_x": 0.3,
-            "wall_momentum_contribution_x": 0.4,
-            "wall_reaction_x": -0.4,
-            "budget_residual_x": 0.0,
-            "open_faces_available": True,
-        },
-        {
-            "fluid_momentum_delta_x": 1.2,
-            "wall_me_load_x": 1.0,
-            "open_face_momentum_flux_x": 0.3,
-            "collision_momentum_contribution_x": 0.1,
-            "streaming_momentum_contribution_x": 0.0,
-            "fixed_channel_wall_momentum_contribution_x": 0.0,
-            "moving_mask_reset_momentum_contribution_x": 0.2,
-            "wall_momentum_contribution_x": 0.6,
-            "wall_reaction_x": -0.6,
-            "budget_residual_x": 0.0,
-            "open_faces_available": True,
-        },
-    ])
+    report = _summarize_control_volume_cross_check(
+        [
+            {
+                "fluid_momentum_delta_x": 1.0,
+                "wall_me_load_x": 0.9,
+                "open_face_momentum_flux_x": 0.2,
+                "collision_momentum_contribution_x": 0.1,
+                "streaming_momentum_contribution_x": 0.0,
+                "fixed_channel_wall_momentum_contribution_x": 0.0,
+                "moving_mask_reset_momentum_contribution_x": 0.3,
+                "wall_momentum_contribution_x": 0.4,
+                "wall_reaction_x": -0.4,
+                "budget_residual_x": 0.0,
+                "open_faces_available": True,
+            },
+            {
+                "fluid_momentum_delta_x": 1.2,
+                "wall_me_load_x": 1.0,
+                "open_face_momentum_flux_x": 0.3,
+                "collision_momentum_contribution_x": 0.1,
+                "streaming_momentum_contribution_x": 0.0,
+                "fixed_channel_wall_momentum_contribution_x": 0.0,
+                "moving_mask_reset_momentum_contribution_x": 0.2,
+                "wall_momentum_contribution_x": 0.6,
+                "wall_reaction_x": -0.6,
+                "budget_residual_x": 0.0,
+                "open_faces_available": True,
+            },
+        ]
+    )
 
     assert report["available"] is True
     assert report["status"] == "comparable"
@@ -92,13 +95,16 @@ def test_control_volume_torque_diagnostic_is_withheld_for_mixed_samples() -> Non
         "budget_residual_x": 0.0,
         "open_faces_available": True,
     }
-    report = _summarize_control_volume_cross_check([
-        common | {
-            "wall_fluid_torque_impulse_x": 2.0,
-            "wall_reaction_torque_x": -2.0,
-        },
-        common,
-    ])
+    report = _summarize_control_volume_cross_check(
+        [
+            common
+            | {
+                "wall_fluid_torque_impulse_x": 2.0,
+                "wall_reaction_torque_x": -2.0,
+            },
+            common,
+        ]
+    )
 
     assert report["status"] == "comparable"
     assert report["same_operator_torque_action_reaction"] == {
@@ -111,11 +117,15 @@ def test_control_volume_torque_diagnostic_is_withheld_for_mixed_samples() -> Non
 
 
 def test_control_volume_budget_is_withheld_when_open_faces_are_unavailable() -> None:
-    report = _summarize_control_volume_cross_check([{
-        "fluid_momentum_delta_x": 1.0,
-        "wall_me_load_x": 0.9,
-        "open_faces_available": False,
-    }])
+    report = _summarize_control_volume_cross_check(
+        [
+            {
+                "fluid_momentum_delta_x": 1.0,
+                "wall_me_load_x": 0.9,
+                "open_faces_available": False,
+            }
+        ]
+    )
 
     assert report["available"] is False
     assert report["status"] == "withheld"
@@ -139,12 +149,21 @@ def test_moving_wall_operator_reports_its_exact_fluid_impulse_and_body_reaction(
     zero = torch.zeros_like(mask, dtype=torch.float64)
 
     after, reaction = moving_wall_bounce_back_3d_with_reaction(
-        f, mask, zero, zero, zero, origin=(0.0, 0.0, 0.0),
+        f,
+        mask,
+        zero,
+        zero,
+        zero,
+        origin=(0.0, 0.0, 0.0),
     )
 
-    assert torch.allclose(reaction.fluid_impulse, torch.tensor([-0.2, 0.0, 0.0], dtype=torch.float64))
+    assert torch.allclose(
+        reaction.fluid_impulse, torch.tensor([-0.2, 0.0, 0.0], dtype=torch.float64)
+    )
     assert torch.allclose(reaction.body_reaction, -reaction.fluid_impulse)
     assert reaction.action_reaction_signed_residual_norm == pytest.approx(0.0)
     assert reaction.action_reaction_absolute_residual_norm == pytest.approx(0.0)
     assert reaction.action_reaction_relative_residual == pytest.approx(0.0)
-    assert _d3q19_momentum_x(after) - _d3q19_momentum_x(f) == pytest.approx(reaction.fluid_impulse[0].item())
+    assert _d3q19_momentum_x(after) - _d3q19_momentum_x(f) == pytest.approx(
+        reaction.fluid_impulse[0].item()
+    )

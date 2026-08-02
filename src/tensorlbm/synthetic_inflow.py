@@ -64,6 +64,7 @@ References
   for the reproduction of inlet flow conditions for LES." Flow Turbul. Combust.
   91 519.
 """
+
 from __future__ import annotations
 
 import math
@@ -76,9 +77,14 @@ import torch
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _cholesky_decompose(
-    uu: float, vv: float, ww: float,
-    uv: float = 0.0, uw: float = 0.0, vw: float = 0.0,
+    uu: float,
+    vv: float,
+    ww: float,
+    uv: float = 0.0,
+    uw: float = 0.0,
+    vw: float = 0.0,
 ) -> torch.Tensor:
     """Return the lower-triangular Cholesky factor of the 3×3 Reynolds stress tensor.
 
@@ -95,9 +101,7 @@ def _cholesky_decompose(
         Lower-triangular 3×3 float Tensor L such that L @ L.T ≈ R.
     """
     eps = 1e-12
-    R = torch.tensor(
-        [[uu, uv, uw], [uv, vv, vw], [uw, vw, ww]], dtype=torch.float64
-    )
+    R = torch.tensor([[uu, uv, uw], [uv, vv, vw], [uw, vw, ww]], dtype=torch.float64)
     for _ in range(20):
         try:
             L = torch.linalg.cholesky(R)
@@ -108,14 +112,15 @@ def _cholesky_decompose(
             R[2, 2] += eps
             eps *= 10.0
     # Fallback: diagonal-only
-    return torch.diag(torch.sqrt(torch.clamp(
-        torch.tensor([uu, vv, ww], dtype=torch.float32), min=0.0
-    )))
+    return torch.diag(
+        torch.sqrt(torch.clamp(torch.tensor([uu, vv, ww], dtype=torch.float32), min=0.0))
+    )
 
 
 # ---------------------------------------------------------------------------
 # Divergence-Free Synthetic Eddy Method (DFSEM)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DFSEMInlet:
@@ -144,7 +149,7 @@ class DFSEMInlet:
 
     ny: int
     nz: int
-    u_mean: torch.Tensor         # (ny, nz)
+    u_mean: torch.Tensor  # (ny, nz)
     uu: float = 1e-4
     vv: float = 1e-4
     ww: float = 1e-4
@@ -159,9 +164,9 @@ class DFSEMInlet:
     def __post_init__(self) -> None:
         self._rng = torch.Generator(device=self.device)
         self._rng.manual_seed(self.seed)
-        self._L = _cholesky_decompose(
-            self.uu, self.vv, self.ww, self.uv, self.uw, self.vw
-        ).to(self.device)
+        self._L = _cholesky_decompose(self.uu, self.vv, self.ww, self.uv, self.uw, self.vw).to(
+            self.device
+        )
         self._sigma = self.length_scale
         # Volume of the virtual box that contains the eddies
         self._vol = float(self.ny * max(self.nz, 1)) * (2.0 * self._sigma) ** 2
@@ -169,7 +174,7 @@ class DFSEMInlet:
         self._c = math.sqrt(self._vol / self.n_eddies)
         # Initialise eddy positions uniformly inside the box
         self._pos_y, self._pos_z = self._init_eddies()
-        self._eps = self._rand_signs()       # ±1 intensities (n_eddies, 3)
+        self._eps = self._rand_signs()  # ±1 intensities (n_eddies, 3)
 
     # ------------------------------------------------------------------
 
@@ -177,10 +182,8 @@ class DFSEMInlet:
         """Randomly position eddies within the virtual box."""
         y0, y1 = -self._sigma, float(self.ny) + self._sigma
         z0, z1 = -self._sigma, float(max(self.nz, 1)) + self._sigma
-        py = (y1 - y0) * torch.rand(self.n_eddies, generator=self._rng,
-                                     device=self.device) + y0
-        pz = (z1 - z0) * torch.rand(self.n_eddies, generator=self._rng,
-                                     device=self.device) + z0
+        py = (y1 - y0) * torch.rand(self.n_eddies, generator=self._rng, device=self.device) + y0
+        pz = (z1 - z0) * torch.rand(self.n_eddies, generator=self._rng, device=self.device) + z0
         return py, pz
 
     def _rand_signs(self) -> torch.Tensor:
@@ -192,10 +195,10 @@ class DFSEMInlet:
 
     def _eddy_kernel(
         self,
-        y_grid: torch.Tensor,   # (ny, nz)
-        z_grid: torch.Tensor,   # (ny, nz)
-        py: torch.Tensor,       # (n_eddies,)
-        pz: torch.Tensor,       # (n_eddies,)
+        y_grid: torch.Tensor,  # (ny, nz)
+        z_grid: torch.Tensor,  # (ny, nz)
+        py: torch.Tensor,  # (n_eddies,)
+        pz: torch.Tensor,  # (n_eddies,)
     ) -> torch.Tensor:
         """Divergence-free tent kernel summed over all eddies.
 
@@ -205,8 +208,8 @@ class DFSEMInlet:
         """
         sigma = self._sigma
         # Distance from each eddy centre: broadcast (n_eddies, ny, nz)
-        dy = y_grid.unsqueeze(0) - py.view(-1, 1, 1)   # (N, ny, nz)
-        dz = z_grid.unsqueeze(0) - pz.view(-1, 1, 1)   # (N, ny, nz)
+        dy = y_grid.unsqueeze(0) - py.view(-1, 1, 1)  # (N, ny, nz)
+        dz = z_grid.unsqueeze(0) - pz.view(-1, 1, 1)  # (N, ny, nz)
 
         # Tent function φ(r) = max(0, 1 − |r|/σ)
         phi_y = torch.clamp(1.0 - dy.abs() / sigma, min=0.0)
@@ -217,8 +220,16 @@ class DFSEMInlet:
         # f_x is set from dφ/dz (streamwise component from z-gradient)
         sign_dy = torch.sign(dy)
         sign_dz = torch.sign(dz)
-        dphi_dy = -sign_dy * phi_z / sigma.real if isinstance(sigma, torch.Tensor) else -sign_dy * phi_z / sigma
-        dphi_dz = -sign_dz * phi_y / sigma.real if isinstance(sigma, torch.Tensor) else -sign_dz * phi_y / sigma
+        dphi_dy = (
+            -sign_dy * phi_z / sigma.real
+            if isinstance(sigma, torch.Tensor)
+            else -sign_dy * phi_z / sigma
+        )
+        dphi_dz = (
+            -sign_dz * phi_y / sigma.real
+            if isinstance(sigma, torch.Tensor)
+            else -sign_dz * phi_y / sigma
+        )
 
         # eps: (N, 3)
         eps = self._eps  # (N, 3)
@@ -261,14 +272,13 @@ class DFSEMInlet:
         # Advect eddies by mean convection velocity (simplest: use domain mean)
         u_conv = float(self.u_mean.mean().item())
         dt = 1.0  # one time step per sample call
-        self._pos_y += u_conv * 0.0 * dt   # eddies only move in x; no y-shift
+        self._pos_y += u_conv * 0.0 * dt  # eddies only move in x; no y-shift
         # Re-seed eddies that left the virtual box (periodically)
         y0, y1 = -self._sigma, float(self.ny) + self._sigma
         outside = (self._pos_y < y0) | (self._pos_y > y1)
         n_out = int(outside.sum().item())
         if n_out > 0:
-            new_y = (y1 - y0) * torch.rand(n_out, generator=self._rng,
-                                             device=self.device) + y0
+            new_y = (y1 - y0) * torch.rand(n_out, generator=self._rng, device=self.device) + y0
             new_z_range_lo = -self._sigma
             new_z_range_hi = float(max(self.nz, 1)) + self._sigma
             new_z = (new_z_range_hi - new_z_range_lo) * torch.rand(
@@ -294,6 +304,7 @@ class DFSEMInlet:
 # ---------------------------------------------------------------------------
 # Digital Filter Method (DFM)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DigitalFilterInlet:
@@ -332,9 +343,9 @@ class DigitalFilterInlet:
     def __post_init__(self) -> None:
         self._rng = torch.Generator(device=self.device)
         self._rng.manual_seed(self.seed)
-        self._L = _cholesky_decompose(
-            self.uu, self.vv, self.ww, self.uv, self.uw, self.vw
-        ).to(self.device)
+        self._L = _cholesky_decompose(self.uu, self.vv, self.ww, self.uv, self.uw, self.vw).to(
+            self.device
+        )
         # Build separable Gaussian filter kernel
         self._b = self._build_filter()
 
@@ -344,10 +355,9 @@ class DigitalFilterInlet:
         """Gaussian filter coefficients of half-width ``ceil(2σ)``."""
         sigma = self.length_scale
         half_w = max(1, int(math.ceil(2.0 * sigma)))
-        r = torch.arange(-half_w, half_w + 1, dtype=torch.float32,
-                          device=self.device)
+        r = torch.arange(-half_w, half_w + 1, dtype=torch.float32, device=self.device)
         g = torch.exp(-math.pi * r**2 / (sigma**2))
-        return g / g.sum()   # (2*half_w+1,)
+        return g / g.sum()  # (2*half_w+1,)
 
     def _filter1d(self, x: torch.Tensor) -> torch.Tensor:
         """Apply 1-D Gaussian filter along each spatial axis of ``x``."""
@@ -383,12 +393,9 @@ class DigitalFilterInlet:
         """
         ny, nz = self.ny, max(self.nz, 1)
         # Draw three independent Gaussian random fields
-        noise = torch.randn(3, ny, nz, generator=self._rng,
-                             device=self.device)
+        noise = torch.randn(3, ny, nz, generator=self._rng, device=self.device)
         # Apply spatial filter to each component
-        filtered = torch.stack([
-            self._filter1d(noise[i]) for i in range(3)
-        ], dim=0)  # (3, ny, nz)
+        filtered = torch.stack([self._filter1d(noise[i]) for i in range(3)], dim=0)  # (3, ny, nz)
 
         # Normalise to unit variance (filter sum ≈ 1, but variances can drift)
         std = filtered.std(dim=(1, 2), keepdim=True).clamp(min=1e-10)
@@ -396,7 +403,7 @@ class DigitalFilterInlet:
 
         # Scale by Cholesky factor
         flat = filtered.view(3, -1)
-        scaled = self._L @ flat   # (3, N)
+        scaled = self._L @ flat  # (3, N)
         result = scaled.view(3, ny, nz)
 
         return result[0], result[1], result[2]
@@ -411,6 +418,7 @@ class DigitalFilterInlet:
 # ---------------------------------------------------------------------------
 # Convenience: apply fluctuations to Zou/He inlet
 # ---------------------------------------------------------------------------
+
 
 def apply_dfsem_inlet_2d(
     f: torch.Tensor,
@@ -441,10 +449,9 @@ def apply_dfsem_inlet_2d(
 
     f_new = f.clone()
     for j in range(ny):
-        f_j = f_new[:, j:j+1, :]
-        f_j = zou_he_inlet_velocity(f_j, float(u_in_vec[j].item()),
-                                     float(uy_in_vec[j].item()))
-        f_new[:, j:j+1, :] = f_j
+        f_j = f_new[:, j : j + 1, :]
+        f_j = zou_he_inlet_velocity(f_j, float(u_in_vec[j].item()), float(uy_in_vec[j].item()))
+        f_new[:, j : j + 1, :] = f_j
     return f_new
 
 

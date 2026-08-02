@@ -4,6 +4,7 @@ This diagnostic runner deliberately calls only the kernels that the public
 advanced-collision contract marks AVAILABLE.  It records small deterministic
 single-node probes; it does not make accuracy, physics, or ranking claims.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -108,7 +109,9 @@ def _max_abs(value: torch.Tensor) -> float:
     return float(value.abs().max().item())
 
 
-def _state(lattice: str) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+def _state(
+    lattice: str,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     rho = torch.tensor(
         [[[1.00, 1.01, 0.99], [1.02, 0.98, 1.00]], [[1.01, 0.99, 1.00], [1.00, 1.02, 0.98]]],
         dtype=torch.float32,
@@ -120,7 +123,9 @@ def _state(lattice: str) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torc
     return equilibrium(rho, ux, uy, uz), rho, ux, uy, uz
 
 
-def _macroscopic(lattice: str, f: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+def _macroscopic(
+    lattice: str, f: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     return macroscopic3d(f) if lattice == "D3Q19" else macroscopic27(f)
 
 
@@ -134,7 +139,9 @@ def _non_equilibrium(lattice: str) -> torch.Tensor:
     return f + perturbation
 
 
-def _probe_available_kernel(lattice: Literal["D3Q19", "D3Q27"], family: str = "MRT") -> tuple[ConsistencyProbeResult, ...]:
+def _probe_available_kernel(
+    lattice: Literal["D3Q19", "D3Q27"], family: str = "MRT"
+) -> tuple[ConsistencyProbeResult, ...]:
     """Run deterministic consistency probes for one AVAILABLE kernel cell."""
     equilibrium_state, _, _, _, _ = _state(lattice)
     equilibrium_post = collide_advanced_3d(lattice, family, equilibrium_state, tau=0.8)
@@ -149,18 +156,28 @@ def _probe_available_kernel(lattice: Literal["D3Q19", "D3Q27"], family: str = "M
     finite = bool(torch.isfinite(after_population).all().item())
     probes = (
         ConsistencyProbeResult(
-            "equilibrium_fixed_point", "PASS" if fixed_error <= _PROBE_TOLERANCE else "FAIL",
-            fixed_error, _PROBE_TOLERANCE, bool(torch.isfinite(equilibrium_post).all().item()),
+            "equilibrium_fixed_point",
+            "PASS" if fixed_error <= _PROBE_TOLERANCE else "FAIL",
+            fixed_error,
+            _PROBE_TOLERANCE,
+            bool(torch.isfinite(equilibrium_post).all().item()),
             "post-collision equilibrium minus input equilibrium",
         ),
         ConsistencyProbeResult(
-            "mass_momentum_collision_invariants", "PASS" if invariant_error <= _PROBE_TOLERANCE else "FAIL",
-            invariant_error, _PROBE_TOLERANCE, finite,
+            "mass_momentum_collision_invariants",
+            "PASS" if invariant_error <= _PROBE_TOLERANCE else "FAIL",
+            invariant_error,
+            _PROBE_TOLERANCE,
+            finite,
             "maximum difference across rho, ux, uy, uz recovered before and after collision",
         ),
         ConsistencyProbeResult(
-            "finite_non_equilibrium", "PASS" if finite else "FAIL", 0.0 if finite else float("inf"),
-            0.0, finite, "all post-collision non-equilibrium populations are finite",
+            "finite_non_equilibrium",
+            "PASS" if finite else "FAIL",
+            0.0 if finite else float("inf"),
+            0.0,
+            finite,
+            "all post-collision non-equilibrium populations are finite",
         ),
     )
     return probes
@@ -179,20 +196,38 @@ def run_collision_matrix_cross_validation() -> CollisionMatrixCrossValidationEvi
         for family in ("MRT", "CM", "KBC", "CUMULANT"):
             capability = matrix[lattice][family]
             if not capability.available:
-                combinations.append(CollisionCombinationEvidence(
-                    lattice, family, "SKIPPED_WITHHELD", capability.entrypoint,
-                    capability.status, (), (),
-                ))
+                combinations.append(
+                    CollisionCombinationEvidence(
+                        lattice,
+                        family,
+                        "SKIPPED_WITHHELD",
+                        capability.entrypoint,
+                        capability.status,
+                        (),
+                        (),
+                    )
+                )
                 continue
             probes = _probe_available_kernel(lattice, family)
-            combinations.append(CollisionCombinationEvidence(
-                lattice, family, "PASS" if all(item.status == "PASS" for item in probes) else "FAIL",
-                capability.entrypoint, None, probes, _source_provenance(lattice),
-            ))
+            combinations.append(
+                CollisionCombinationEvidence(
+                    lattice,
+                    family,
+                    "PASS" if all(item.status == "PASS" for item in probes) else "FAIL",
+                    capability.entrypoint,
+                    None,
+                    probes,
+                    _source_provenance(lattice),
+                )
+            )
     return CollisionMatrixCrossValidationEvidence(
         EVIDENCE_SCHEMA_VERSION,
         "tensorlbm.collision_matrix_cross_validation.run_collision_matrix_cross_validation",
-        torch.__version__, "torch.float32", "cpu", _PROBE_SHAPE, tuple(combinations),
+        torch.__version__,
+        "torch.float32",
+        "cpu",
+        _PROBE_SHAPE,
+        tuple(combinations),
     )
 
 
@@ -200,15 +235,23 @@ def write_collision_matrix_evidence(path: str | Path) -> Path:
     """Write canonical JSON evidence with a hash of its hash-free payload."""
     output = Path(path)
     payload = run_collision_matrix_cross_validation().to_dict()
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode(
+        "utf-8"
+    )
     payload["canonical_payload_sha256"] = sha256(canonical).hexdigest()
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
+    output.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8"
+    )
     return output
 
 
 __all__ = [
-    "EVIDENCE_SCHEMA_VERSION", "SourceProvenance", "ConsistencyProbeResult",
-    "CollisionCombinationEvidence", "CollisionMatrixCrossValidationEvidence",
-    "run_collision_matrix_cross_validation", "write_collision_matrix_evidence",
+    "EVIDENCE_SCHEMA_VERSION",
+    "SourceProvenance",
+    "ConsistencyProbeResult",
+    "CollisionCombinationEvidence",
+    "CollisionMatrixCrossValidationEvidence",
+    "run_collision_matrix_cross_validation",
+    "write_collision_matrix_evidence",
 ]

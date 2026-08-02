@@ -41,10 +41,13 @@ class TestBGKRegistration:
         assert cap.available
         assert cap.entrypoint == "tensorlbm.solver3d.collide_bgk3d"
 
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_common_bgk_dispatch_equilibrium_fixed_point(self, lattice, q, equilibrium) -> None:
         rho = torch.ones((2, 3, 4))
         zero = torch.zeros_like(rho)
@@ -68,10 +71,13 @@ class TestTRTRegistration:
         assert cap.available
         assert cap.entrypoint == "tensorlbm.solver3d.collide_trt3d"
 
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_common_trt_dispatch_equilibrium_fixed_point(self, lattice, q, equilibrium) -> None:
         rho = torch.ones((2, 3, 4))
         zero = torch.zeros_like(rho)
@@ -95,10 +101,13 @@ class TestRLBMRegistration:
         assert cap.available
         assert cap.entrypoint == "tensorlbm.solver3d.collide_rlbm3d"
 
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_common_rlbm_dispatch_equilibrium_fixed_point(self, lattice, q, equilibrium) -> None:
         rho = torch.ones((2, 3, 4))
         zero = torch.zeros_like(rho)
@@ -108,11 +117,16 @@ class TestRLBMRegistration:
         assert torch.allclose(out, f, atol=2e-5)
 
 
-@pytest.mark.parametrize("lattice,q,equilibrium", [
-    ("D3Q19", 19, equilibrium3d),
-    ("D3Q27", 27, equilibrium27),
-])
-def test_common_mrt_dispatch_is_executable_and_equilibrium_fixed_point(lattice, q, equilibrium) -> None:
+@pytest.mark.parametrize(
+    "lattice,q,equilibrium",
+    [
+        ("D3Q19", 19, equilibrium3d),
+        ("D3Q27", 27, equilibrium27),
+    ],
+)
+def test_common_mrt_dispatch_is_executable_and_equilibrium_fixed_point(
+    lattice, q, equilibrium
+) -> None:
     rho = torch.ones((2, 3, 4))
     zero = torch.zeros_like(rho)
     f = equilibrium(rho, zero, zero, zero)

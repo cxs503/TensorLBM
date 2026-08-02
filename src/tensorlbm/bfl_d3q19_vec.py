@@ -21,6 +21,7 @@ Vectorization key:
   opp is an involution (opp[opp[d]] = d), so for each output direction e:
     f_out[e] = where(mask[opp[e]], f_bc[opp[e]], f[e])
 """
+
 from __future__ import annotations
 
 import torch
@@ -64,15 +65,15 @@ def bouzidi_bounce_back_d3q19_vec(
     # f_opp_all[d]  = f[opp[d]]      — post-stream opposite
     # fp_opp_all[d] = f_prev[opp[d]] — pre-stream opposite
     # fp_d_all[d]   = f_prev[d]      — pre-stream same direction
-    f_opp_all = f[opp]        # (19, nz, ny, nx)
+    f_opp_all = f[opp]  # (19, nz, ny, nx)
     fp_opp_all = f_prev[opp]  # (19, nz, ny, nx)
-    fp_d_all = f_prev         # (19, nz, ny, nx)
+    fp_d_all = f_prev  # (19, nz, ny, nx)
 
-    q = q_field                               # (19, nz, ny, nx)
-    mask = fluid_boundary_mask                 # (19, nz, ny, nx)
+    q = q_field  # (19, nz, ny, nx)
+    mask = fluid_boundary_mask  # (19, nz, ny, nx)
 
-    mask_lin = (q < 0.5) & mask                # linear regime
-    mask_quad = (~mask_lin) & mask             # quadratic regime
+    mask_lin = (q < 0.5) & mask  # linear regime
+    mask_quad = (~mask_lin) & mask  # quadratic regime
 
     # Linear: f_bc = 2q·f_opp + (1-2q)·fp_d
     f_bc_lin = 2.0 * q * f_opp_all + (1.0 - 2.0 * q) * fp_d_all
@@ -92,8 +93,8 @@ def bouzidi_bounce_back_d3q19_vec(
     # Scatter: for each output direction e, set f_out[e] = f_bc[opp[e]]
     # where mask[opp[e]] is True.
     # Since opp is an involution: d = opp[e], so mask_for_e = mask[opp].
-    mask_for_e = mask[opp]     # (19, nz, ny, nx)
-    f_bc_for_e = f_bc[opp]     # (19, nz, ny, nx)
+    mask_for_e = mask[opp]  # (19, nz, ny, nx)
+    f_bc_for_e = f_bc[opp]  # (19, nz, ny, nx)
 
     return torch.where(mask_for_e, f_bc_for_e, f)
 

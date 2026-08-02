@@ -42,6 +42,7 @@ __all__ = [
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PropellerGeometryConfig:
     """Parametric propeller geometry configuration.
@@ -139,6 +140,7 @@ GENERIC_PRESET = PropellerGeometryConfig(
 # Radial distribution helpers (normalised to [0, 1])
 # ---------------------------------------------------------------------------
 
+
 def _chord_frac(r_frac: torch.Tensor, hub_frac: float) -> torch.Tensor:
     """Elliptic chord distribution c(r)/c_max vs r/R."""
     x_norm = (r_frac - 0.7) / 0.8
@@ -164,19 +166,14 @@ def _naca4_half_thickness(xc_norm: torch.Tensor) -> torch.Tensor:
         y_t/c = (t/c) · 5 · (0.2969√x − 0.1260x − 0.3516x² + 0.2843x³ − 0.1015x⁴)
     """
     x = torch.clamp(xc_norm, 0.0, 1.0)
-    shape = (
-        0.2969 * torch.sqrt(x)
-        - 0.1260 * x
-        - 0.3516 * x**2
-        + 0.2843 * x**3
-        - 0.1015 * x**4
-    )
+    shape = 0.2969 * torch.sqrt(x) - 0.1260 * x - 0.3516 * x**2 + 0.2843 * x**3 - 0.1015 * x**4
     return 5.0 * shape
 
 
 # ---------------------------------------------------------------------------
 # Voxelisation
 # ---------------------------------------------------------------------------
+
 
 def build_propeller_mask(
     nx: int,
@@ -286,18 +283,15 @@ def build_propeller_mask(
             chordwise_pos = arc_dist / half_chord.clamp(min=1e-6)
 
             # NACA thickness shape, clamped to [0,1]
-            thickness_frac_local = _naca4_half_thickness(
-                chordwise_pos.clamp(0.0, 1.0)
-            )
+            thickness_frac_local = _naca4_half_thickness(chordwise_pos.clamp(0.0, 1.0))
             # Scale by max thickness AND ensure minimum 2 lu for voxel capture
             local_half_thickness = torch.maximum(
                 t_max_local * thickness_frac_local,
                 torch.tensor(2.0, device=r_ann.device, dtype=r_ann.dtype),
             )
 
-            cell_inside = (
-                (arc_dist < half_chord)
-                & (torch.abs(dx_ann - x0_blade) < local_half_thickness)
+            cell_inside = (arc_dist < half_chord) & (
+                torch.abs(dx_ann - x0_blade) < local_half_thickness
             )
 
             # Also include cells within 1 lu of the blade (for thin sections)
@@ -318,6 +312,7 @@ def build_propeller_mask(
 # ---------------------------------------------------------------------------
 # Statistics
 # ---------------------------------------------------------------------------
+
 
 def propeller_statistics(
     config: PropellerGeometryConfig,

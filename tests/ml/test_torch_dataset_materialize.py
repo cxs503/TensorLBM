@@ -74,7 +74,9 @@ def _field_product(index: int, values: np.ndarray) -> tuple[FieldDataProductR2, 
         ),
         component_labels=("u_x", "u_y"),
     )
-    return FieldDataProductR2(f"product-{index}", _run(index), "metrics", (array,), {"fixture": index}), payload
+    return FieldDataProductR2(
+        f"product-{index}", _run(index), "metrics", (array,), {"fixture": index}
+    ), payload
 
 
 def _dataset() -> tuple[FieldDatasetR2, dict[str, Mapping[str, bytes]]]:
@@ -84,7 +86,11 @@ def _dataset() -> tuple[FieldDatasetR2, dict[str, Mapping[str, bytes]]]:
         values = np.full((2, 3, 2), index, dtype=np.float32)
         product, payload = _field_product(index, values)
         sample_id = f"sample-{split}"
-        samples.append(FieldSampleRefR2(sample_id, product, f"group-{split}", f"case-{split}", f"trajectory-{split}"))
+        samples.append(
+            FieldSampleRefR2(
+                sample_id, product, f"group-{split}", f"case-{split}", f"trajectory-{split}"
+            )
+        )
         payloads[sample_id] = {"velocity": payload}
     return (
         FieldDatasetR2(
@@ -99,7 +105,14 @@ def _dataset() -> tuple[FieldDatasetR2, dict[str, Mapping[str, bytes]]]:
     )
 
 
-def _spec(dataset: FieldDatasetR2, *, dataset_id: str | None = None, version: str | None = None, task: TaskKind = TaskKind.FIELD_RECONSTRUCTION, backend: TrainingBackend = TrainingBackend.TORCH) -> TrainingSpec:
+def _spec(
+    dataset: FieldDatasetR2,
+    *,
+    dataset_id: str | None = None,
+    version: str | None = None,
+    task: TaskKind = TaskKind.FIELD_RECONSTRUCTION,
+    backend: TrainingBackend = TrainingBackend.TORCH,
+) -> TrainingSpec:
     products = tuple(
         FieldProduct(
             sample.product.product_id,
@@ -135,7 +148,9 @@ def test_materializes_all_splits_as_cpu_float32_snapshot_references() -> None:
     record = materialize_torch_field_dataset(_spec(dataset), dataset, payloads)
 
     assert record.training_input_fingerprint == dataset.training_input_fingerprint()
-    assert record.split_ids == MappingProxyType({"train": ("sample-train",), "val": ("sample-val",), "test": ("sample-test",)})
+    assert record.split_ids == MappingProxyType(
+        {"train": ("sample-train",), "val": ("sample-val",), "test": ("sample-test",)}
+    )
     assert record.split_counts == MappingProxyType({"train": 1, "val": 1, "test": 1})
     assert tuple(sample.sample_id for sample in record.train) == ("sample-train",)
     assert tuple(sample.sample_id for sample in record.val) == ("sample-val",)
@@ -206,23 +221,32 @@ def test_freezes_outer_and_inner_payload_mappings_before_materialization(monkeyp
     [
         (lambda payloads: payloads.pop("sample-test"), "missing sample_id"),
         (lambda payloads: payloads.update({"unknown": {"velocity": b"x"}}), "unknown sample_id"),
-        (lambda payloads: payloads["sample-train"].update({"unexpected": b"x"}), "unknown array_id"),
+        (
+            lambda payloads: payloads["sample-train"].update({"unexpected": b"x"}),
+            "unknown array_id",
+        ),
         (lambda payloads: payloads.__setitem__("sample-train", {}), "missing array_id"),
     ],
 )
-def test_rejects_missing_or_unknown_sample_or_array_payloads_before_any_materializer_call(monkeypatch, mutate, match: str) -> None:
+def test_rejects_missing_or_unknown_sample_or_array_payloads_before_any_materializer_call(
+    monkeypatch, mutate, match: str
+) -> None:
     import tensorlbm.ml.torch_dataset_materialize as adapter
 
     dataset, payloads = _dataset()
     mutate(payloads)
     called: list[str] = []
-    monkeypatch.setattr(adapter, "materialize_torch_velocity_snapshots", lambda *args: called.append("called"))
+    monkeypatch.setattr(
+        adapter, "materialize_torch_velocity_snapshots", lambda *args: called.append("called")
+    )
     with pytest.raises(ValueError, match=match):
         adapter.materialize_torch_field_dataset(_spec(dataset), dataset, payloads)
     assert called == []
 
 
-def test_dataset_mutation_during_payload_freeze_is_revalidated_before_snapshot_materialization() -> None:
+def test_dataset_mutation_during_payload_freeze_is_revalidated_before_snapshot_materialization() -> (
+    None
+):
     from tensorlbm.ml.torch_dataset_materialize import materialize_torch_field_dataset
 
     dataset, payloads = _dataset()
@@ -243,8 +267,9 @@ def test_dataset_mutation_during_payload_freeze_is_revalidated_before_snapshot_m
     assert tuple(ref.sample_id for ref in record.train) == ("sample-val",)
 
 
-
-def test_dataset_mutation_during_materialization_is_rejected_before_later_samples(monkeypatch) -> None:
+def test_dataset_mutation_during_materialization_is_rejected_before_later_samples(
+    monkeypatch,
+) -> None:
     import tensorlbm.ml.torch_dataset_materialize as adapter
 
     dataset, payloads = _dataset()
@@ -263,7 +288,9 @@ def test_dataset_mutation_during_materialization_is_rejected_before_later_sample
     assert called == ["product-1"]
 
 
-def test_bad_payload_does_not_materialize_later_samples_or_return_partial_record(monkeypatch) -> None:
+def test_bad_payload_does_not_materialize_later_samples_or_return_partial_record(
+    monkeypatch,
+) -> None:
     import tensorlbm.ml.torch_dataset_materialize as adapter
 
     dataset, payloads = _dataset()
@@ -281,7 +308,9 @@ def test_bad_payload_does_not_materialize_later_samples_or_return_partial_record
     assert called == ["product-1"]
 
 
-def test_adapter_delegates_to_existing_materializer_and_has_no_direct_torch_or_training_api() -> None:
+def test_adapter_delegates_to_existing_materializer_and_has_no_direct_torch_or_training_api() -> (
+    None
+):
     source = Path("src/tensorlbm/ml/torch_dataset_materialize.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     imports = {
@@ -303,5 +332,13 @@ def test_adapter_delegates_to_existing_materializer_and_has_no_direct_torch_or_t
     assert "torch" not in imports
     assert "materialize_torch_velocity_snapshots" in calls
     lowered = source.lower()
-    for forbidden in ("trainer", "optimizer", "cuda", "sdaa", "train_flow_transformer", ".to(", "uri"):
+    for forbidden in (
+        "trainer",
+        "optimizer",
+        "cuda",
+        "sdaa",
+        "train_flow_transformer",
+        ".to(",
+        "uri",
+    ):
         assert forbidden not in lowered

@@ -58,6 +58,7 @@ _SENSITIVITY_MATCH_TOL = 1.0e-12
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PropellerBenchmarkConfig:
     """Configuration for the propeller open-water benchmark.
@@ -109,7 +110,10 @@ class PropellerBenchmarkConfig:
             raise ValueError("warmup_steps must be >= 0")
         if self.sample_window_steps < 1:
             raise ValueError("sample_window_steps must be >= 1")
-        if not math.isfinite(self.window_convergence_rel_tol) or self.window_convergence_rel_tol <= 0:
+        if (
+            not math.isfinite(self.window_convergence_rel_tol)
+            or self.window_convergence_rel_tol <= 0
+        ):
             raise ValueError("window_convergence_rel_tol must be finite and > 0")
         if not self.inflow_velocities:
             raise ValueError("inflow_velocities must not be empty")
@@ -166,6 +170,7 @@ class PropellerBenchmarkConfig:
 # ============================================================================
 # 3-D moving-wall bounce-back (Ladd 1994, extended to D3Q19)
 # ============================================================================
+
 
 @dataclass(frozen=True)
 class MovingWallReaction3D:
@@ -230,12 +235,29 @@ def moving_wall_bounce_back_3d(
     """
     device = f.device
     c = torch.tensor(
-        [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0],
-         [0, 0, 1], [0, 0, -1],
-         [1, 1, 0], [-1, -1, 0], [1, -1, 0], [-1, 1, 0],
-         [1, 0, 1], [-1, 0, -1], [1, 0, -1], [-1, 0, 1],
-         [0, 1, 1], [0, -1, -1], [0, 1, -1], [0, -1, 1]],
-        dtype=f.dtype, device=device,
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [-1, 0, 0],
+            [0, 1, 0],
+            [0, -1, 0],
+            [0, 0, 1],
+            [0, 0, -1],
+            [1, 1, 0],
+            [-1, -1, 0],
+            [1, -1, 0],
+            [-1, 1, 0],
+            [1, 0, 1],
+            [-1, 0, -1],
+            [1, 0, -1],
+            [-1, 0, 1],
+            [0, 1, 1],
+            [0, -1, -1],
+            [0, 1, -1],
+            [0, -1, 1],
+        ],
+        dtype=f.dtype,
+        device=device,
     )
     w = W.to(device).to(f.dtype)
     cx = c[:, 0].view(19, 1, 1, 1)
@@ -250,9 +272,13 @@ def moving_wall_bounce_back_3d(
 
 
 def moving_wall_bounce_back_3d_with_reaction(
-    f: torch.Tensor, mask: torch.Tensor,
-    ux_w: torch.Tensor, uy_w: torch.Tensor, uz_w: torch.Tensor,
-    *, origin: tuple[float, float, float],
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    ux_w: torch.Tensor,
+    uy_w: torch.Tensor,
+    uz_w: torch.Tensor,
+    *,
+    origin: tuple[float, float, float],
 ) -> tuple[torch.Tensor, MovingWallReaction3D]:
     """Apply the moving-wall operator and record its same-operator reaction.
 
@@ -269,9 +295,12 @@ def moving_wall_bounce_back_3d_with_reaction(
     zz, yy, xx = torch.meshgrid(
         torch.arange(nz, device=f.device, dtype=f.dtype),
         torch.arange(ny, device=f.device, dtype=f.dtype),
-        torch.arange(nx, device=f.device, dtype=f.dtype), indexing="ij",
+        torch.arange(nx, device=f.device, dtype=f.dtype),
+        indexing="ij",
     )
-    positions = torch.stack((xx[mask] - origin[0], yy[mask] - origin[1], zz[mask] - origin[2]), dim=1)
+    positions = torch.stack(
+        (xx[mask] - origin[0], yy[mask] - origin[1], zz[mask] - origin[2]), dim=1
+    )
     cell_impulses = masked_delta.T @ c
     fluid_torque = torch.cross(positions, cell_impulses, dim=1).sum(dim=0)
     body_reaction = -fluid_impulse
@@ -283,7 +312,9 @@ def moving_wall_bounce_back_3d_with_reaction(
     torque_residual = fluid_torque + body_torque
     torque_signed_norm = float(torch.linalg.vector_norm(torque_residual).item())
     torque_absolute_norm = float(torch.linalg.vector_norm(torque_residual.abs()).item())
-    torque_relative = torque_absolute_norm / max(float(torch.linalg.vector_norm(fluid_torque).item()), 1e-30)
+    torque_relative = torque_absolute_norm / max(
+        float(torch.linalg.vector_norm(fluid_torque).item()), 1e-30
+    )
     return after, MovingWallReaction3D(
         fluid_impulse=fluid_impulse,
         fluid_torque_impulse=fluid_torque,
@@ -302,8 +333,13 @@ def moving_wall_bounce_back_3d_with_reaction(
 # KT/KQ computation with physical-scale conversion
 # ============================================================================
 
+
 def _compute_kt_kq(
-    fx: float, mx: float, u_in: float, rpm: float, diameter: float,
+    fx: float,
+    mx: float,
+    u_in: float,
+    rpm: float,
+    diameter: float,
     rho_ref: float = 1.0,
 ) -> tuple[float, float, float, float]:
     """Compute lattice-scaled thrust and torque coefficients."""
@@ -318,9 +354,15 @@ def _compute_kt_kq(
 
 
 def _convert_to_physical_kt_kq(
-    kt_lu: float, kq_lu: float, j_val: float,
-    rpm_lu: float, d_lu: float, u_lu: float,
-    d_phys: float, u_phys: float, rho_phys: float,
+    kt_lu: float,
+    kq_lu: float,
+    j_val: float,
+    rpm_lu: float,
+    d_lu: float,
+    u_lu: float,
+    d_phys: float,
+    u_phys: float,
+    rho_phys: float,
 ) -> tuple[float, float, float]:
     """Convert lattice-scaled KT/KQ to physical-scaled values.
 
@@ -339,24 +381,29 @@ def _relative_change(previous: float, current: float) -> float:
 
 
 def _summarize_windows(
-    samples: list[dict[str, float | int]], *, window_steps: int,
-    transient_discard_steps: int, convergence_rel_tol: float,
+    samples: list[dict[str, float | int]],
+    *,
+    window_steps: int,
+    transient_discard_steps: int,
+    convergence_rel_tol: float,
 ) -> dict[str, object]:
     """Summarize complete post-discard windows against a strict KT/KQ criterion."""
     retained = [sample for sample in samples if int(sample["step"]) > transient_discard_steps]
     complete_count = len(retained) // window_steps
     windows: list[dict[str, float | int]] = []
     for index in range(complete_count):
-        chunk = retained[index * window_steps:(index + 1) * window_steps]
-        windows.append({
-            "index": index,
-            "step_start": int(chunk[0]["step"]),
-            "step_end": int(chunk[-1]["step"]),
-            "n_samples": len(chunk),
-            "j_mean": sum(float(s["j"]) for s in chunk) / len(chunk),
-            "kt_mean": sum(float(s["kt"]) for s in chunk) / len(chunk),
-            "kq_mean": sum(float(s["kq"]) for s in chunk) / len(chunk),
-        })
+        chunk = retained[index * window_steps : (index + 1) * window_steps]
+        windows.append(
+            {
+                "index": index,
+                "step_start": int(chunk[0]["step"]),
+                "step_end": int(chunk[-1]["step"]),
+                "n_samples": len(chunk),
+                "j_mean": sum(float(s["j"]) for s in chunk) / len(chunk),
+                "kt_mean": sum(float(s["kt"]) for s in chunk) / len(chunk),
+                "kq_mean": sum(float(s["kq"]) for s in chunk) / len(chunk),
+            }
+        )
     if len(windows) < 2:
         convergence: dict[str, object] = {
             "available": False,
@@ -417,10 +464,14 @@ class PhysicalPropellerRefinementSpec:
 
     def validate(self) -> None:
         positive = {
-            "diameter_m": self.diameter_m, "advance_speed_ms": self.advance_speed_ms,
-            "rotation_rps": self.rotation_rps, "nu_m2s": self.nu_m2s,
-            "rho_kgm3": self.rho_kgm3, "tau_min": self.tau_min,
-            "tau_max": self.tau_max, "low_mach_max": self.low_mach_max,
+            "diameter_m": self.diameter_m,
+            "advance_speed_ms": self.advance_speed_ms,
+            "rotation_rps": self.rotation_rps,
+            "nu_m2s": self.nu_m2s,
+            "rho_kgm3": self.rho_kgm3,
+            "tau_min": self.tau_min,
+            "tau_max": self.tau_max,
+            "low_mach_max": self.low_mach_max,
         }
         for name, value in positive.items():
             if not math.isfinite(value) or value <= 0:
@@ -465,41 +516,87 @@ def map_physical_propeller_refinement(spec: PhysicalPropellerRefinementSpec) -> 
         j_lu = u_lu / (rpm_lu * diameter_lu)
         name = f"level_{index}"
         level = {
-            "name": name, "diameter_lu": diameter_lu, "dx_m": dx_m, "dt_s": dt_s,
-            "rpm_lu": rpm_lu, "u_lu": u_lu, "nu_lu": nu_lu, "tau": tau,
+            "name": name,
+            "diameter_lu": diameter_lu,
+            "dx_m": dx_m,
+            "dt_s": dt_s,
+            "rpm_lu": rpm_lu,
+            "u_lu": u_lu,
+            "nu_lu": nu_lu,
+            "tau": tau,
             "steps_per_revolution": spec.steps_per_revolution,
             "angular_increment_degrees": 360.0 / spec.steps_per_revolution,
-            "tip_ma": tip_ma, "re_d_lu": re_lu, "j_lu": j_lu,
-            "re_d_preserved": _same(re_lu, physical_re), "j_preserved": _same(j_lu, physical_j),
+            "tip_ma": tip_ma,
+            "re_d_lu": re_lu,
+            "j_lu": j_lu,
+            "re_d_preserved": _same(re_lu, physical_re),
+            "j_preserved": _same(j_lu, physical_j),
         }
         levels.append(level)
         if not spec.tau_min <= tau <= spec.tau_max:
-            violations.append({"constraint": "tau_range", "level": name, "actual": tau,
-                               "required": [spec.tau_min, spec.tau_max], "operator": "BGK/MRT relaxation"})
+            violations.append(
+                {
+                    "constraint": "tau_range",
+                    "level": name,
+                    "actual": tau,
+                    "required": [spec.tau_min, spec.tau_max],
+                    "operator": "BGK/MRT relaxation",
+                }
+            )
         if tip_ma >= spec.low_mach_max:
-            violations.append({"constraint": "low_mach", "level": name, "actual": tip_ma,
-                               "required": f"< {spec.low_mach_max}", "operator": "moving-wall bounce-back"})
+            violations.append(
+                {
+                    "constraint": "low_mach",
+                    "level": name,
+                    "actual": tip_ma,
+                    "required": f"< {spec.low_mach_max}",
+                    "operator": "moving-wall bounce-back",
+                }
+            )
         if reference_tip_ma is None:
             reference_tip_ma = tip_ma
         elif not _same(tip_ma, reference_tip_ma):
-            violations.append({"constraint": "tip_mach_preservation", "level": name, "actual": tip_ma,
-                               "required": reference_tip_ma, "operator": "fixed-N moving-mask sampling"})
+            violations.append(
+                {
+                    "constraint": "tip_mach_preservation",
+                    "level": name,
+                    "actual": tip_ma,
+                    "required": reference_tip_ma,
+                    "operator": "fixed-N moving-mask sampling",
+                }
+            )
     evidence: dict[str, object] = {
         "name": "propeller_physical_to_lattice_three_level_refinement",
         "status": "fail_closed" if violations else "feasible",
-        "physical_case": {"diameter_m": spec.diameter_m, "advance_speed_ms": spec.advance_speed_ms,
-                          "rotation_rps": spec.rotation_rps, "nu_m2s": spec.nu_m2s,
-                          "re_d": physical_re, "advance_ratio_j": physical_j},
-        "mapping_contract": {"dx": "D / D_lu", "dt": "1 / (n_phys * steps_per_revolution)",
-                             "nu_lu": "nu_phys * dt / dx^2", "rpm_lu": "n_phys * dt",
-                             "tip_ma": "pi * D_lu / (sqrt(3) * steps_per_revolution)",
-                             "exact_rotation_sampling": True},
-        "levels": levels, "violations": violations,
-        "campaign": {"status": "not_run" if violations else "eligible_for_execution",
-                     "reason": "physical_lattice_constraints_incompatible" if violations else "all_constraints_satisfied"},
-        "metric_convergence": {"status": "withheld" if violations else "not_run",
-                               "reason": "fail_closed_no_kt_kq_generated" if violations else "campaign_not_executed",
-                               "kt_kq_eta_differences": None},
+        "physical_case": {
+            "diameter_m": spec.diameter_m,
+            "advance_speed_ms": spec.advance_speed_ms,
+            "rotation_rps": spec.rotation_rps,
+            "nu_m2s": spec.nu_m2s,
+            "re_d": physical_re,
+            "advance_ratio_j": physical_j,
+        },
+        "mapping_contract": {
+            "dx": "D / D_lu",
+            "dt": "1 / (n_phys * steps_per_revolution)",
+            "nu_lu": "nu_phys * dt / dx^2",
+            "rpm_lu": "n_phys * dt",
+            "tip_ma": "pi * D_lu / (sqrt(3) * steps_per_revolution)",
+            "exact_rotation_sampling": True,
+        },
+        "levels": levels,
+        "violations": violations,
+        "campaign": {
+            "status": "not_run" if violations else "eligible_for_execution",
+            "reason": "physical_lattice_constraints_incompatible"
+            if violations
+            else "all_constraints_satisfied",
+        },
+        "metric_convergence": {
+            "status": "withheld" if violations else "not_run",
+            "reason": "fail_closed_no_kt_kq_generated" if violations else "campaign_not_executed",
+            "kt_kq_eta_differences": None,
+        },
     }
     path = spec.output_root / "propeller_owt" / "physical_lattice_refinement.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -521,7 +618,11 @@ def _spatial_level_contract(config: PropellerBenchmarkConfig) -> dict[str, objec
     if config.sampling_steps is not None:
         raise ValueError("spatial refinement requires sampling_steps=None")
     sampled = config.n_revolutions * steps
-    for label, rotations in (("warmup_steps", config.warmup_steps * config.rpm), ("sample_window_steps", config.sample_window_steps * config.rpm), ("total sampling steps", sampled * config.rpm)):
+    for label, rotations in (
+        ("warmup_steps", config.warmup_steps * config.rpm),
+        ("sample_window_steps", config.sample_window_steps * config.rpm),
+        ("total sampling steps", sampled * config.rpm),
+    ):
         if not _is_exact_integer(rotations):
             raise ValueError(f"{label} must contain an exact whole number of rotations")
     if config.tip_ma >= LOW_MACH_TIP_GATE:
@@ -529,14 +630,21 @@ def _spatial_level_contract(config: PropellerBenchmarkConfig) -> dict[str, objec
     d_lu = config.geometry.diameter
     extents = [config.nx / d_lu, config.ny / d_lu, config.nz / d_lu]
     return {
-        "diameter_lu": d_lu, "cell_size_m": config.model_diameter_m / d_lu,
-        "domain_cells": [config.nx, config.ny, config.nz], "domain_per_diameter": extents,
+        "diameter_lu": d_lu,
+        "cell_size_m": config.model_diameter_m / d_lu,
+        "domain_cells": [config.nx, config.ny, config.nz],
+        "domain_per_diameter": extents,
         "domain_physical_m": [extent * config.model_diameter_m for extent in extents],
-        "steps_per_revolution": steps, "angular_increment_degrees": config.angular_increment_degrees,
-        "warmup_steps": config.warmup_steps, "sample_window_steps": config.sample_window_steps,
-        "sampled_steps": sampled, "complete_rotations": sampled * config.rpm,
-        "complete_windows": sampled // config.sample_window_steps, "tip_ma": config.tip_ma,
-        "re_d": config.re_d, "advance_ratios": [u / (config.rpm * d_lu) for u in config.inflow_velocities],
+        "steps_per_revolution": steps,
+        "angular_increment_degrees": config.angular_increment_degrees,
+        "warmup_steps": config.warmup_steps,
+        "sample_window_steps": config.sample_window_steps,
+        "sampled_steps": sampled,
+        "complete_rotations": sampled * config.rpm,
+        "complete_windows": sampled // config.sample_window_steps,
+        "tip_ma": config.tip_ma,
+        "re_d": config.re_d,
+        "advance_ratios": [u / (config.rpm * d_lu) for u in config.inflow_velocities],
     }
 
 
@@ -544,14 +652,18 @@ def _same(a: float, b: float) -> bool:
     return math.isclose(a, b, rel_tol=0.0, abs_tol=_SENSITIVITY_MATCH_TOL)
 
 
-def _persist_spatial_evidence(config: PropellerBenchmarkConfig, evidence: dict[str, object]) -> None:
+def _persist_spatial_evidence(
+    config: PropellerBenchmarkConfig, evidence: dict[str, object]
+) -> None:
     path = config.output_root / "propeller_owt" / "resolution_sensitivity.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     evidence["artifact"] = str(path)
     path.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
 
 
-def run_propeller_resolution_sensitivity(configs: tuple[PropellerBenchmarkConfig, ...], *, level_names: tuple[str, ...] | None = None) -> dict[str, object]:
+def run_propeller_resolution_sensitivity(
+    configs: tuple[PropellerBenchmarkConfig, ...], *, level_names: tuple[str, ...] | None = None
+) -> dict[str, object]:
     """Assess true voxel refinement and fail closed before incompatible runs.
 
     Direct voxelisation means increasing ``diameter_lu`` is spatial refinement
@@ -571,33 +683,103 @@ def run_propeller_resolution_sensitivity(configs: tuple[PropellerBenchmarkConfig
     if any(b <= a for a, b in zip(diameters, diameters[1:])):
         raise ValueError("spatial resolution must strictly refine: diameter_lu must increase")
     reference, ref_contract = configs[0], contracts[0]
-    geometry_fields = ("n_blades", "hub_diameter_ratio", "hub_length_ratio", "pitch_ratio_07", "blade_area_ratio", "skew_deg", "rake_ratio", "max_thickness_ratio")
-    geometry_matched = all(getattr(c.geometry, field) == getattr(reference.geometry, field) for c in configs[1:] for field in geometry_fields) and all(_same(c.model_diameter_m, reference.model_diameter_m) for c in configs[1:])
+    geometry_fields = (
+        "n_blades",
+        "hub_diameter_ratio",
+        "hub_length_ratio",
+        "pitch_ratio_07",
+        "blade_area_ratio",
+        "skew_deg",
+        "rake_ratio",
+        "max_thickness_ratio",
+    )
+    geometry_matched = all(
+        getattr(c.geometry, field) == getattr(reference.geometry, field)
+        for c in configs[1:]
+        for field in geometry_fields
+    ) and all(_same(c.model_diameter_m, reference.model_diameter_m) for c in configs[1:])
     domain_matched = all(
-        all(_same(float(value), float(ref_value)) for value, ref_value in zip(
-            list(contract["domain_per_diameter"]), list(ref_contract["domain_per_diameter"]),
-        ))
+        all(
+            _same(float(value), float(ref_value))
+            for value, ref_value in zip(
+                list(contract["domain_per_diameter"]),
+                list(ref_contract["domain_per_diameter"]),
+            )
+        )
         for contract in contracts[1:]
     )
-    j_matched = all(list(contract["advance_ratios"]) == list(ref_contract["advance_ratios"]) for contract in contracts[1:])
-    re_matched = all(_same(float(contract["re_d"]), float(ref_contract["re_d"])) for contract in contracts[1:])
-    mach_matched = all(_same(float(contract["tip_ma"]), float(ref_contract["tip_ma"])) for contract in contracts[1:])
-    temporal_matched = all(contract["steps_per_revolution"] == ref_contract["steps_per_revolution"] and _same(float(contract["angular_increment_degrees"]), float(ref_contract["angular_increment_degrees"])) and contract["warmup_steps"] == ref_contract["warmup_steps"] and contract["sample_window_steps"] == ref_contract["sample_window_steps"] and contract["sampled_steps"] == ref_contract["sampled_steps"] for contract in contracts[1:])
-    comparable = geometry_matched and domain_matched and j_matched and re_matched and mach_matched and temporal_matched
-    levels = [{"name": name, **contract, "campaign_status": "not_run", "same_operator_force_torque_check": {"status": "withheld", "reason": "campaign_not_executed"}} for name, contract in zip(names, contracts)]
+    j_matched = all(
+        list(contract["advance_ratios"]) == list(ref_contract["advance_ratios"])
+        for contract in contracts[1:]
+    )
+    re_matched = all(
+        _same(float(contract["re_d"]), float(ref_contract["re_d"])) for contract in contracts[1:]
+    )
+    mach_matched = all(
+        _same(float(contract["tip_ma"]), float(ref_contract["tip_ma"]))
+        for contract in contracts[1:]
+    )
+    temporal_matched = all(
+        contract["steps_per_revolution"] == ref_contract["steps_per_revolution"]
+        and _same(
+            float(contract["angular_increment_degrees"]),
+            float(ref_contract["angular_increment_degrees"]),
+        )
+        and contract["warmup_steps"] == ref_contract["warmup_steps"]
+        and contract["sample_window_steps"] == ref_contract["sample_window_steps"]
+        and contract["sampled_steps"] == ref_contract["sampled_steps"]
+        for contract in contracts[1:]
+    )
+    comparable = (
+        geometry_matched
+        and domain_matched
+        and j_matched
+        and re_matched
+        and mach_matched
+        and temporal_matched
+    )
+    levels = [
+        {
+            "name": name,
+            **contract,
+            "campaign_status": "not_run",
+            "same_operator_force_torque_check": {
+                "status": "withheld",
+                "reason": "campaign_not_executed",
+            },
+        }
+        for name, contract in zip(names, contracts)
+    ]
     evidence: dict[str, object] = {
-        "name": "propeller_open_water_spatial_refinement", "status": "withheld",
-        "reason": "eligible_for_execution" if comparable else "incomparable_voxel_refinement_contract",
-        "comparison_basis": {"kind": "same_physical_geometry_true_spatial_refinement", "geometry_matched": geometry_matched, "physical_domain_matched": domain_matched, "advance_ratios_matched": j_matched, "re_d_matched": re_matched, "low_mach_matched": mach_matched, "exact_rotation_time_sampling_matched": temporal_matched, "levels": contracts},
+        "name": "propeller_open_water_spatial_refinement",
+        "status": "withheld",
+        "reason": "eligible_for_execution"
+        if comparable
+        else "incomparable_voxel_refinement_contract",
+        "comparison_basis": {
+            "kind": "same_physical_geometry_true_spatial_refinement",
+            "geometry_matched": geometry_matched,
+            "physical_domain_matched": domain_matched,
+            "advance_ratios_matched": j_matched,
+            "re_d_matched": re_matched,
+            "low_mach_matched": mach_matched,
+            "exact_rotation_time_sampling_matched": temporal_matched,
+            "levels": contracts,
+        },
         "levels": levels,
-        "metric_convergence": {"status": "withheld", "reason": "incomparable_or_unexecuted", "kt_kq_eta_differences": None},
+        "metric_convergence": {
+            "status": "withheld",
+            "reason": "incomparable_or_unexecuted",
+            "kt_kq_eta_differences": None,
+        },
     }
     _persist_spatial_evidence(configs[0], evidence)
     return evidence
 
 
 def _d3q19_momentum_x(
-    distributions: torch.Tensor, region: torch.Tensor | None = None,
+    distributions: torch.Tensor,
+    region: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Return CV x momentum as ``Σ_i C[i, 0] f_i`` over all 19 directions."""
     if distributions.shape[0] != 19:
@@ -607,7 +789,9 @@ def _d3q19_momentum_x(
     return density.sum() if region is None else density[region].sum()
 
 
-def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]]) -> dict[str, object]:
+def _summarize_control_volume_cross_check(
+    samples: list[dict[str, float | int]],
+) -> dict[str, object]:
     """Summarize sampled discrete streamwise CV momentum terms.
 
     CV contributions use positive-x as fluid momentum gained. ``wall_reaction_x``
@@ -645,9 +829,9 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
         "wall_fluid_torque_impulse_x",
         "wall_reaction_torque_x",
     )
-    missing_torque_fields = sorted({
-        field for sample in samples for field in torque_fields if field not in sample
-    })
+    missing_torque_fields = sorted(
+        {field for sample in samples for field in torque_fields if field not in sample}
+    )
     if missing_torque_fields:
         # Historical force-only samples predate same-operator torque output.
         # Do not infer torque from force or substitute zero: that would turn an
@@ -692,8 +876,12 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
         "collision_momentum_contribution_x_mean": mean("collision_momentum_contribution_x"),
         "streaming_momentum_contribution_x_mean": mean("streaming_momentum_contribution_x"),
         "open_face_momentum_flux_x_mean": mean("open_face_momentum_flux_x"),
-        "fixed_channel_wall_momentum_contribution_x_mean": mean("fixed_channel_wall_momentum_contribution_x"),
-        "moving_mask_reset_momentum_contribution_x_mean": mean("moving_mask_reset_momentum_contribution_x"),
+        "fixed_channel_wall_momentum_contribution_x_mean": mean(
+            "fixed_channel_wall_momentum_contribution_x"
+        ),
+        "moving_mask_reset_momentum_contribution_x_mean": mean(
+            "moving_mask_reset_momentum_contribution_x"
+        ),
         "wall_momentum_contribution_x_mean": wall_cv,
         "wall_reaction_x_mean": wall_reaction,
         "wall_me_load_x_mean": wall_me,
@@ -728,7 +916,8 @@ def _summarize_control_volume_cross_check(samples: list[dict[str, float | int]])
 
 
 def _max_sample_field(
-    results: list[dict[str, object]], field: str,
+    results: list[dict[str, object]],
+    field: str,
 ) -> float:
     """Return a finite maximum across actual post-warmup campaign samples."""
     values = [
@@ -757,20 +946,26 @@ def _resolution_level_summary(name: str, summary: dict[str, object]) -> dict[str
         "temporal_angular_resolution": config["temporal_angular_resolution"],
         "resolution": {
             "diameter_lu": config["diameter_lu"],
-            "nx": config["nx"], "ny": config["ny"], "nz": config["nz"],
+            "nx": config["nx"],
+            "ny": config["ny"],
+            "nz": config["nz"],
         },
         "action_reaction_residual": {
             "force_absolute_max": _max_sample_field(
-                results, "wall_action_reaction_absolute_residual_norm",
+                results,
+                "wall_action_reaction_absolute_residual_norm",
             ),
             "torque_absolute_max": _max_sample_field(
-                results, "wall_torque_action_reaction_absolute_residual_norm",
+                results,
+                "wall_torque_action_reaction_absolute_residual_norm",
             ),
             "force_relative_max": _max_sample_field(
-                results, "wall_action_reaction_relative_residual",
+                results,
+                "wall_action_reaction_relative_residual",
             ),
             "torque_relative_max": _max_sample_field(
-                results, "wall_torque_action_reaction_relative_residual",
+                results,
+                "wall_torque_action_reaction_relative_residual",
             ),
         },
     }
@@ -780,14 +975,17 @@ def _require_resolution_sensitivity_contract(
     configs: tuple[PropellerBenchmarkConfig, ...],
 ) -> dict[str, object]:
     """Reject non-grid changes before executing an expensive comparison."""
+
     def exact_steps_per_revolution(config: PropellerBenchmarkConfig) -> int:
         """Return a true integer period, never a rounded angular surrogate."""
         steps = config.steps_per_revolution
         actual_increment = config.angular_increment_degrees
         claimed_increment = 360.0 / steps
         if not math.isclose(
-            config.rpm, 1.0 / steps,
-            rel_tol=_SENSITIVITY_MATCH_TOL, abs_tol=_SENSITIVITY_MATCH_TOL,
+            config.rpm,
+            1.0 / steps,
+            rel_tol=_SENSITIVITY_MATCH_TOL,
+            abs_tol=_SENSITIVITY_MATCH_TOL,
         ):
             raise ValueError(
                 "resolution sensitivity rpm must be the reciprocal of an integer "
@@ -799,10 +997,13 @@ def _require_resolution_sensitivity_contract(
         return steps
 
     def require_complete_rotation_schedule(
-        config: PropellerBenchmarkConfig, steps: int,
+        config: PropellerBenchmarkConfig,
+        steps: int,
     ) -> None:
         if config.sampling_steps is not None:
-            raise ValueError("resolution sensitivity requires sampling_steps=None; derive samples from complete revolutions")
+            raise ValueError(
+                "resolution sensitivity requires sampling_steps=None; derive samples from complete revolutions"
+            )
         # This campaign policy uses whole rotations for each temporal interval.
         if config.sample_window_steps % steps:
             raise ValueError(
@@ -823,12 +1024,16 @@ def _require_resolution_sensitivity_contract(
             )
 
     if len(configs) not in (2, 3):
-        raise ValueError("resolution sensitivity requires a two- or three-level coarse-to-fine sequence")
+        raise ValueError(
+            "resolution sensitivity requires a two- or three-level coarse-to-fine sequence"
+        )
     baseline = configs[0]
     baseline.validate()
     baseline_steps = exact_steps_per_revolution(baseline)
     require_complete_rotation_schedule(baseline, baseline_steps)
-    base_j = tuple(v / (baseline.rpm * baseline.geometry.diameter) for v in baseline.inflow_velocities)
+    base_j = tuple(
+        v / (baseline.rpm * baseline.geometry.diameter) for v in baseline.inflow_velocities
+    )
     base_window_revs = baseline.sample_window_steps / baseline_steps
     base_warmup_revs = baseline.warmup_steps / baseline_steps
     levels: list[dict[str, object]] = []
@@ -836,14 +1041,22 @@ def _require_resolution_sensitivity_contract(
         config.validate()
         steps = exact_steps_per_revolution(config)
         require_complete_rotation_schedule(config, steps)
-        j_values = tuple(v / (config.rpm * config.geometry.diameter) for v in config.inflow_velocities)
-        same = lambda a, b: math.isclose(a, b, rel_tol=_SENSITIVITY_MATCH_TOL, abs_tol=_SENSITIVITY_MATCH_TOL)
+        j_values = tuple(
+            v / (config.rpm * config.geometry.diameter) for v in config.inflow_velocities
+        )
+        same = lambda a, b: math.isclose(
+            a, b, rel_tol=_SENSITIVITY_MATCH_TOL, abs_tol=_SENSITIVITY_MATCH_TOL
+        )
         if len(j_values) != len(base_j) or not all(same(a, b) for a, b in zip(j_values, base_j)):
             raise ValueError("resolution sensitivity requires matched advance ratios J")
         if not same(config.re_d, baseline.re_d):
-            raise ValueError("resolution sensitivity requires matched Re_D; adjust nu/tau safely before comparing grids")
+            raise ValueError(
+                "resolution sensitivity requires matched Re_D; adjust nu/tau safely before comparing grids"
+            )
         if config.tip_ma > LOW_MACH_TIP_GATE:
-            raise ValueError(f"resolution sensitivity withheld: tip Mach exceeds low-Mach gate {LOW_MACH_TIP_GATE}")
+            raise ValueError(
+                f"resolution sensitivity withheld: tip Mach exceeds low-Mach gate {LOW_MACH_TIP_GATE}"
+            )
         if not same(config.tip_ma, baseline.tip_ma):
             raise ValueError("resolution sensitivity requires matched tip Mach")
         # The moving geometry advances once per lattice update.  Dimensionless
@@ -857,28 +1070,40 @@ def _require_resolution_sensitivity_contract(
         angular_increment = config.angular_increment_degrees
         baseline_angular_increment = baseline.angular_increment_degrees
         if not same(angular_increment, baseline_angular_increment):
-            raise ValueError(
-                "resolution sensitivity requires matched angular_increment_degrees"
-            )
+            raise ValueError("resolution sensitivity requires matched angular_increment_degrees")
         if config.n_revolutions != baseline.n_revolutions:
-            raise ValueError("resolution sensitivity requires the same sampled number of complete revolutions")
+            raise ValueError(
+                "resolution sensitivity requires the same sampled number of complete revolutions"
+            )
         window_revs = config.sample_window_steps / steps
         warmup_revs = config.warmup_steps / steps
         if not same(window_revs, base_window_revs):
-            raise ValueError("resolution sensitivity requires matched complete-window duration in revolutions")
+            raise ValueError(
+                "resolution sensitivity requires matched complete-window duration in revolutions"
+            )
         if not same(warmup_revs, base_warmup_revs):
-            raise ValueError("resolution sensitivity requires matched warmup duration in revolutions")
-        levels.append({
-            "level_index": index, "advance_ratios": list(j_values), "tip_ma": config.tip_ma,
-            "re_d": config.re_d, "steps_per_revolution": steps,
-            "angular_increment_degrees": config.angular_increment_degrees,
-            "sampled_revolutions": config.n_revolutions, "warmup_revolutions": warmup_revs,
-            "window_revolutions": window_revs,
-            "complete_windows": config.n_revolutions / window_revs,
-        })
+            raise ValueError(
+                "resolution sensitivity requires matched warmup duration in revolutions"
+            )
+        levels.append(
+            {
+                "level_index": index,
+                "advance_ratios": list(j_values),
+                "tip_ma": config.tip_ma,
+                "re_d": config.re_d,
+                "steps_per_revolution": steps,
+                "angular_increment_degrees": config.angular_increment_degrees,
+                "sampled_revolutions": config.n_revolutions,
+                "warmup_revolutions": warmup_revs,
+                "window_revolutions": window_revs,
+                "complete_windows": config.n_revolutions / window_revs,
+            }
+        )
         if index:
             previous = configs[index - 1]
-            if not (config.nx > previous.nx and config.ny > previous.ny and config.nz > previous.nz):
+            if not (
+                config.nx > previous.nx and config.ny > previous.ny and config.nz > previous.nz
+            ):
                 raise ValueError(
                     "resolution sensitivity levels must be strictly coarse-to-fine in nx, ny, and nz"
                 )
@@ -886,7 +1111,9 @@ def _require_resolution_sensitivity_contract(
 
 
 def _legacy_run_propeller_resolution_sensitivity(
-    configs: tuple[PropellerBenchmarkConfig, ...], *, level_names: tuple[str, ...] | None = None,
+    configs: tuple[PropellerBenchmarkConfig, ...],
+    *,
+    level_names: tuple[str, ...] | None = None,
 ) -> dict[str, object]:
     """Legacy two-domain comparator retained privately; not convergence evidence.
 
@@ -896,7 +1123,9 @@ def _legacy_run_propeller_resolution_sensitivity(
     every level, plus changes at matching J relative to the first level.
     """
     if len(configs) not in (2, 3):
-        raise ValueError("resolution sensitivity requires a two- or three-level coarse-to-fine sequence")
+        raise ValueError(
+            "resolution sensitivity requires a two- or three-level coarse-to-fine sequence"
+        )
     if level_names is None:
         level_names = tuple(f"level_{index}" for index in range(len(configs)))
     if len(level_names) != len(configs) or len(set(level_names)) != len(level_names):
@@ -905,8 +1134,7 @@ def _legacy_run_propeller_resolution_sensitivity(
 
     summaries = [run_propeller_benchmark(config) for config in configs]
     levels = [
-        _resolution_level_summary(name, summary)
-        for name, summary in zip(level_names, summaries)
+        _resolution_level_summary(name, summary) for name, summary in zip(level_names, summaries)
     ]
     baseline_results = summaries[0]["results"]
     assert isinstance(baseline_results, list)
@@ -924,17 +1152,24 @@ def _legacy_run_propeller_resolution_sensitivity(
             if not math.isclose(current_j, baseline_j, rel_tol=1e-12, abs_tol=1e-12):
                 matched_j = False
                 continue
-            changes_from_baseline.append({
-                "level": level_name,
-                "j_actual": current_j,
-                "kt_relative_change": _relative_change(float(baseline["kt"]), float(current["kt"])),
-                "kq_relative_change": _relative_change(float(baseline["kq"]), float(current["kq"])),
-                "eta_o_relative_change": _relative_change(float(baseline["eta_o"]), float(current["eta_o"])),
-            })
+            changes_from_baseline.append(
+                {
+                    "level": level_name,
+                    "j_actual": current_j,
+                    "kt_relative_change": _relative_change(
+                        float(baseline["kt"]), float(current["kt"])
+                    ),
+                    "kq_relative_change": _relative_change(
+                        float(baseline["kq"]), float(current["kq"])
+                    ),
+                    "eta_o_relative_change": _relative_change(
+                        float(baseline["eta_o"]), float(current["eta_o"])
+                    ),
+                }
+            )
     tip_machs = [float(level["tip_ma"]) for level in levels]
     low_mach_matched = all(tip_ma <= LOW_MACH_TIP_GATE for tip_ma in tip_machs) and all(
-        math.isclose(tip_ma, tip_machs[0], rel_tol=1e-12, abs_tol=1e-12)
-        for tip_ma in tip_machs[1:]
+        math.isclose(tip_ma, tip_machs[0], rel_tol=1e-12, abs_tol=1e-12) for tip_ma in tip_machs[1:]
     )
     all_window_converged = all(
         bool(status["convergence"].get("window_converged", False))
@@ -969,8 +1204,11 @@ def _legacy_run_propeller_resolution_sensitivity(
 # Single-speed simulation
 # ============================================================================
 
+
 def _run_single_speed(
-    *, config: PropellerBenchmarkConfig, u_in: float,
+    *,
+    config: PropellerBenchmarkConfig,
+    u_in: float,
 ) -> dict[str, object]:
     """Run a single inflow-velocity simulation and return results."""
     device = resolve_device(config.device)
@@ -985,8 +1223,15 @@ def _run_single_speed(
     # Re-voxelize at each physical azimuth.  The solver advances these masks;
     # this is deliberately not a static-mask surrogate campaign.
     previous_mask = build_propeller_mask(
-        nx=nx, ny=ny, nz=nz, cx=cx, cy=cy, cz=cz,
-        angle_deg=0.0, config=geo, device=str(device),
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        cx=cx,
+        cy=cy,
+        cz=cz,
+        angle_deg=0.0,
+        config=geo,
+        device=str(device),
     )
 
     rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
@@ -995,7 +1240,11 @@ def _run_single_speed(
     f = equilibrium3d(rho0, ux0, torch.zeros_like(rho0), torch.zeros_like(rho0), device=device)
 
     steps_per_rev = config.steps_per_revolution
-    n_sampling = config.sampling_steps if config.sampling_steps is not None else config.n_revolutions * steps_per_rev
+    n_sampling = (
+        config.sampling_steps
+        if config.sampling_steps is not None
+        else config.n_revolutions * steps_per_rev
+    )
     n_total = config.warmup_steps + n_sampling
 
     fx_samples: list[float] = []
@@ -1007,8 +1256,15 @@ def _run_single_speed(
     for step in range(1, n_total + 1):
         azimuth_deg = math.degrees((step * config.omega) % (2.0 * math.pi))
         mask = build_propeller_mask(
-            nx=nx, ny=ny, nz=nz, cx=cx, cy=cy, cz=cz,
-            angle_deg=azimuth_deg, config=geo, device=str(device),
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            cx=cx,
+            cy=cy,
+            cz=cz,
+            angle_deg=azimuth_deg,
+            config=geo,
+            device=str(device),
         )
         wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=device)
         ux_w, uy_w, uz_w = rotating_wall_velocity_3d(mask, cx, cy, cz, config.omega)
@@ -1031,13 +1287,14 @@ def _run_single_speed(
         open_face_mask[1:-1, 1:-1, 0] = True
         open_face_mask[1:-1, 1:-1, -1] = True
         f = apply_zou_he_channel_boundaries_3d(
-            f, u_in=u_in, wall_mask=wall_mask,
+            f,
+            u_in=u_in,
+            wall_mask=wall_mask,
             obstacle_mask=torch.zeros_like(mask),
         )
         momentum_after_boundary = _d3q19_momentum_x(f)
-        open_face_delta = (
-            _d3q19_momentum_x(f, open_face_mask)
-            - _d3q19_momentum_x(f_before_boundary, open_face_mask)
+        open_face_delta = _d3q19_momentum_x(f, open_face_mask) - _d3q19_momentum_x(
+            f_before_boundary, open_face_mask
         )
         fixed_channel_wall_delta = (
             momentum_after_boundary - momentum_after_streaming - open_face_delta
@@ -1045,7 +1302,12 @@ def _run_single_speed(
 
         momentum_before_wall = momentum_after_boundary
         f, wall_reaction = moving_wall_bounce_back_3d_with_reaction(
-            f, mask, ux_w, uy_w, uz_w, origin=(float(cx), float(cy), float(cz)),
+            f,
+            mask,
+            ux_w,
+            uy_w,
+            uz_w,
+            origin=(float(cx), float(cy), float(cz)),
         )
         momentum_after_wall = _d3q19_momentum_x(f)
 
@@ -1055,8 +1317,11 @@ def _run_single_speed(
         momentum_before_reset = momentum_after_wall
         if bool(released.any()):
             equilibrium = equilibrium3d(
-                torch.ones_like(rho0), torch.full_like(rho0, u_in),
-                torch.zeros_like(rho0), torch.zeros_like(rho0), device=device,
+                torch.ones_like(rho0),
+                torch.full_like(rho0, u_in),
+                torch.zeros_like(rho0),
+                torch.zeros_like(rho0),
+                device=device,
             )
             f[:, released] = equilibrium[:, released]
         momentum_after_reset = _d3q19_momentum_x(f)
@@ -1066,15 +1331,21 @@ def _run_single_speed(
             fx_value = float(fx.item())
             mx_value = float(mx.item())
             kt_sample, kq_sample, j_sample, _ = _compute_kt_kq(
-                fx_value, mx_value, u_in=u_in, rpm=config.rpm, diameter=D,
+                fx_value,
+                mx_value,
+                u_in=u_in,
+                rpm=config.rpm,
+                diameter=D,
             )
             fx_samples.append(fx_value)
             mx_samples.append(mx_value)
-            me_samples.append({
-                "step": step,
-                "fx_me_lu": fx_value,
-                "mx_me_lu": mx_value,
-            })
+            me_samples.append(
+                {
+                    "step": step,
+                    "fx_me_lu": fx_value,
+                    "mx_me_lu": mx_value,
+                }
+            )
             collision_delta = momentum_after_collision - momentum_start
             streaming_delta = momentum_after_streaming - momentum_after_collision
             # Use the link-wise population-delta accumulator emitted by the same
@@ -1084,46 +1355,66 @@ def _run_single_speed(
             moving_wall_delta = wall_reaction.fluid_impulse[0]
             wall_cv_reaction_residual = moving_wall_delta + wall_reaction.body_reaction[0]
             wall_cv_reaction_abs = wall_cv_reaction_residual.abs()
-            wall_cv_reaction_relative = wall_cv_reaction_abs / wall_reaction.fluid_impulse[0].abs().clamp_min(1e-30)
+            wall_cv_reaction_relative = wall_cv_reaction_abs / wall_reaction.fluid_impulse[
+                0
+            ].abs().clamp_min(1e-30)
             reset_delta = momentum_after_reset - momentum_before_reset
             fluid_delta = momentum_after_reset - momentum_start
-            budget_sum = collision_delta + streaming_delta + open_face_delta + fixed_channel_wall_delta + moving_wall_delta + reset_delta
+            budget_sum = (
+                collision_delta
+                + streaming_delta
+                + open_face_delta
+                + fixed_channel_wall_delta
+                + moving_wall_delta
+                + reset_delta
+            )
             budget_residual = fluid_delta - budget_sum
-            campaign_samples.append({
-                "step": step,
-                "azimuth_deg": azimuth_deg,
-                "j": j_sample,
-                "kt": kt_sample,
-                "kq": kq_sample,
-                "fx_me_lu": fx_value,
-                "mx_me_lu": mx_value,
-                "fluid_momentum_delta_x": float(fluid_delta.item()),
-                "collision_momentum_contribution_x": float(collision_delta.item()),
-                "streaming_momentum_contribution_x": float(streaming_delta.item()),
-                "open_face_momentum_flux_x": float(open_face_delta.item()),
-                "fixed_channel_wall_momentum_contribution_x": float(fixed_channel_wall_delta.item()),
-                "moving_mask_reset_momentum_contribution_x": float(reset_delta.item()),
-                "wall_momentum_contribution_x": float(moving_wall_delta.item()),
-                "wall_reaction_x": float(wall_reaction.body_reaction[0].item()),
-                "wall_fluid_impulse_x": float(wall_reaction.fluid_impulse[0].item()),
-                "wall_fluid_torque_impulse_x": float(wall_reaction.fluid_torque_impulse[0].item()),
-                "wall_reaction_torque_x": float(wall_reaction.body_reaction_torque[0].item()),
-                "wall_action_reaction_signed_residual_norm": float(wall_cv_reaction_residual.item()),
-                "wall_action_reaction_absolute_residual_norm": float(wall_cv_reaction_abs.item()),
-                "wall_action_reaction_relative_residual": float(wall_cv_reaction_relative.item()),
-                "wall_torque_action_reaction_signed_residual_norm": wall_reaction.torque_action_reaction_signed_residual_norm,
-                "wall_torque_action_reaction_absolute_residual_norm": wall_reaction.torque_action_reaction_absolute_residual_norm,
-                "wall_torque_action_reaction_relative_residual": wall_reaction.torque_action_reaction_relative_residual,
-                "wall_me_load_x": fx_value,
-                "budget_residual_x": float(budget_residual.item()),
-                "open_faces_available": True,
-            })
+            campaign_samples.append(
+                {
+                    "step": step,
+                    "azimuth_deg": azimuth_deg,
+                    "j": j_sample,
+                    "kt": kt_sample,
+                    "kq": kq_sample,
+                    "fx_me_lu": fx_value,
+                    "mx_me_lu": mx_value,
+                    "fluid_momentum_delta_x": float(fluid_delta.item()),
+                    "collision_momentum_contribution_x": float(collision_delta.item()),
+                    "streaming_momentum_contribution_x": float(streaming_delta.item()),
+                    "open_face_momentum_flux_x": float(open_face_delta.item()),
+                    "fixed_channel_wall_momentum_contribution_x": float(
+                        fixed_channel_wall_delta.item()
+                    ),
+                    "moving_mask_reset_momentum_contribution_x": float(reset_delta.item()),
+                    "wall_momentum_contribution_x": float(moving_wall_delta.item()),
+                    "wall_reaction_x": float(wall_reaction.body_reaction[0].item()),
+                    "wall_fluid_impulse_x": float(wall_reaction.fluid_impulse[0].item()),
+                    "wall_fluid_torque_impulse_x": float(
+                        wall_reaction.fluid_torque_impulse[0].item()
+                    ),
+                    "wall_reaction_torque_x": float(wall_reaction.body_reaction_torque[0].item()),
+                    "wall_action_reaction_signed_residual_norm": float(
+                        wall_cv_reaction_residual.item()
+                    ),
+                    "wall_action_reaction_absolute_residual_norm": float(
+                        wall_cv_reaction_abs.item()
+                    ),
+                    "wall_action_reaction_relative_residual": float(
+                        wall_cv_reaction_relative.item()
+                    ),
+                    "wall_torque_action_reaction_signed_residual_norm": wall_reaction.torque_action_reaction_signed_residual_norm,
+                    "wall_torque_action_reaction_absolute_residual_norm": wall_reaction.torque_action_reaction_absolute_residual_norm,
+                    "wall_torque_action_reaction_relative_residual": wall_reaction.torque_action_reaction_relative_residual,
+                    "wall_me_load_x": fx_value,
+                    "budget_residual_x": float(budget_residual.item()),
+                    "open_faces_available": True,
+                }
+            )
 
         if step % 2000 == 0 or step == n_total:
             elapsed = time.perf_counter() - t_start
             pct = 100 * step / n_total
-            print(f"  u_in={u_in:.3f}  step {step}/{n_total} ({pct:.0f}%)  "
-                  f"elapsed={elapsed:.1f}s")
+            print(f"  u_in={u_in:.3f}  step {step}/{n_total} ({pct:.0f}%)  elapsed={elapsed:.1f}s")
 
     fx_mean = sum(fx_samples) / max(len(fx_samples), 1)
     mx_mean = sum(mx_samples) / max(len(mx_samples), 1)
@@ -1131,8 +1422,14 @@ def _run_single_speed(
 
     # Physical-scale conversion
     kt_phys, kq_phys, n_phys_rps = _convert_to_physical_kt_kq(
-        kt, kq, j_actual, config.rpm, D, u_in,
-        d_phys=config.model_diameter_m, u_phys=config.model_speed_ms,
+        kt,
+        kq,
+        j_actual,
+        config.rpm,
+        D,
+        u_in,
+        d_phys=config.model_diameter_m,
+        u_phys=config.model_speed_ms,
         rho_phys=config.model_rho_kgm3,
     )
 
@@ -1147,13 +1444,20 @@ def _run_single_speed(
     re_d = config.rpm * D * D / config.nu
 
     return {
-        "u_in": u_in, "j_actual": j_actual,
-        "fx_mean_lu": fx_mean, "mx_mean_lu": mx_mean,
-        "kt": kt, "kq": kq, "eta_o": eta,
+        "u_in": u_in,
+        "j_actual": j_actual,
+        "fx_mean_lu": fx_mean,
+        "mx_mean_lu": mx_mean,
+        "kt": kt,
+        "kq": kq,
+        "eta_o": eta,
         "kt_over_j2": kt / max(j_actual**2, 1e-10),
         "kq_over_j2": kq / max(j_actual**2, 1e-10),
-        "kt_phys": kt_phys, "kq_phys": kq_phys, "n_phys_rps": n_phys_rps,
-        "re_d": re_d, "steps": n_total,
+        "kt_phys": kt_phys,
+        "kq_phys": kq_phys,
+        "n_phys_rps": n_phys_rps,
+        "re_d": re_d,
+        "steps": n_total,
         "sampling_steps": len(fx_samples),
         "transient_discard_steps": config.warmup_steps,
         "dynamic_geometry": True,
@@ -1170,6 +1474,7 @@ def _run_single_speed(
 # Main benchmark runner
 # ============================================================================
 
+
 def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, object]:
     """Run propeller open-water benchmark over multiple inflow velocities."""
     config.validate()
@@ -1179,19 +1484,24 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
     tip_ma = config.tip_ma
     print(f"Propeller Open-Water Benchmark (fixed-RPM variable-inflow)")
     print(f"  Device:     {device}     Blades: {config.geometry.n_blades}")
-    print(f"  Diameter:   {config.geometry.diameter} lu   "
-          f"P/D(0.7R): {config.geometry.pitch_ratio_07:.3f}")
-    print(f"  Domain:     {config.nx}x{config.ny}x{config.nz}   "
-          f"tau: {config.tau:.3f}  Cs: {config.smagorinsky_cs:.2f}")
-    print(f"  RPM:        {config.rpm:.2e}  omega={config.omega:.2e}  "
-          f"tip Ma={tip_ma:.4f}")
+    print(
+        f"  Diameter:   {config.geometry.diameter} lu   "
+        f"P/D(0.7R): {config.geometry.pitch_ratio_07:.3f}"
+    )
+    print(
+        f"  Domain:     {config.nx}x{config.ny}x{config.nz}   "
+        f"tau: {config.tau:.3f}  Cs: {config.smagorinsky_cs:.2f}"
+    )
+    print(f"  RPM:        {config.rpm:.2e}  omega={config.omega:.2e}  tip Ma={tip_ma:.4f}")
     j_vals = [v / (config.rpm * config.geometry.diameter) for v in config.inflow_velocities]
     print(f"  J range:    {[f'{j:.1f}' for j in j_vals]}")
     print()
 
     run_dir = prepare_run_dir(
-        config.output_root, "propeller_owt",
-        config.resolved_run_name, config.overwrite,
+        config.output_root,
+        "propeller_owt",
+        config.resolved_run_name,
+        config.overwrite,
     )
     config.save(run_dir / "config.json")
     print(f"Run directory: {run_dir}\n")
@@ -1199,17 +1509,19 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
     results: list[dict[str, object]] = []
     for u_in in config.inflow_velocities:
         j_est = u_in / (config.rpm * config.geometry.diameter)
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"  u_in = {u_in:.3f} (J approx {j_est:.1f})")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         result = _run_single_speed(config=config, u_in=u_in)
         results.append(result)
         kt_p = result.get("kt_phys", float("nan"))
         kq_p = result.get("kq_phys", float("nan"))
         n_p = result.get("n_phys_rps", 0.0)
-        print(f"  -> KT_lu={float(result['kt']):.0f}  KT_phys={float(kt_p):.4f}  "
-              f"10KQ_phys={10 * float(kq_p):.4f}  "
-              f"n={float(n_p):.2f}rps  eta={float(result['eta_o']):.4f}\n")
+        print(
+            f"  -> KT_lu={float(result['kt']):.0f}  KT_phys={float(kt_p):.4f}  "
+            f"10KQ_phys={10 * float(kq_p):.4f}  "
+            f"n={float(n_p):.2f}rps  eta={float(result['eta_o']):.4f}\n"
+        )
 
     # Write CSV
     csv_path = run_dir / "open_water.csv"
@@ -1217,14 +1529,17 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
         writer = csv.writer(fh)
         writer.writerow(["J", "KT_lu", "KT_phys", "10KQ_phys", "eta_o", "n_phys_rps", "Re_D"])
         for r in results:
-            writer.writerow([
-                f"{float(r['j_actual']):.4f}", f"{float(r['kt']):.1f}",
-                f"{float(r.get('kt_phys', 0)):.6f}",
-                f"{10 * float(r.get('kq_phys', 0)):.6f}",
-                f"{float(r['eta_o']):.4f}",
-                f"{float(r.get('n_phys_rps', 0)):.3f}",
-                f"{float(r['re_d']):.1f}",
-            ])
+            writer.writerow(
+                [
+                    f"{float(r['j_actual']):.4f}",
+                    f"{float(r['kt']):.1f}",
+                    f"{float(r.get('kt_phys', 0)):.6f}",
+                    f"{10 * float(r.get('kq_phys', 0)):.6f}",
+                    f"{float(r['eta_o']):.4f}",
+                    f"{float(r.get('n_phys_rps', 0)):.3f}",
+                    f"{float(r['re_d']):.1f}",
+                ]
+            )
 
     # Summary
     kt_p_vals = [float(r.get("kt_phys", 0)) for r in results]  # type: ignore[arg-type]
@@ -1236,11 +1551,13 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
         assert isinstance(window_report, dict)
         convergence = window_report["convergence"]
         assert isinstance(convergence, dict)
-        per_j_window_status.append({
-            "j_actual": float(result["j_actual"]),
-            "complete_window_count": len(window_report["windows"]),
-            "convergence": convergence,
-        })
+        per_j_window_status.append(
+            {
+                "j_actual": float(result["j_actual"]),
+                "complete_window_count": len(window_report["windows"]),
+                "convergence": convergence,
+            }
+        )
     campaign_converged = all(
         bool(status["convergence"].get("window_converged", False))
         for status in per_j_window_status
@@ -1255,9 +1572,13 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
             "pitch_ratio_07": config.geometry.pitch_ratio_07,
             "ae_a0": config.geometry.blade_area_ratio,
             "tip_ma": tip_ma,
-            "nx": config.nx, "ny": config.ny, "nz": config.nz,
-            "tau": config.tau, "cs": config.smagorinsky_cs,
-            "rpm": config.rpm, "nu_lattice": config.nu,
+            "nx": config.nx,
+            "ny": config.ny,
+            "nz": config.nz,
+            "tau": config.tau,
+            "cs": config.smagorinsky_cs,
+            "rpm": config.rpm,
+            "nu_lattice": config.nu,
             "re_d": config.re_d,
             "n_revolutions": config.n_revolutions,
             "temporal_angular_resolution": {
@@ -1265,12 +1586,14 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
                 "angular_increment_degrees": config.angular_increment_degrees,
                 "sampling_steps_requested": config.sampling_steps,
                 "sampling_steps_executed": (
-                    config.sampling_steps if config.sampling_steps is not None
+                    config.sampling_steps
+                    if config.sampling_steps is not None
                     else config.n_revolutions * config.steps_per_revolution
                 ),
                 "sampled_revolutions_executed": (
                     (config.sampling_steps * config.rpm)
-                    if config.sampling_steps is not None else float(config.n_revolutions)
+                    if config.sampling_steps is not None
+                    else float(config.n_revolutions)
                 ),
                 "warmup_revolutions": config.warmup_steps * config.rpm,
                 "window_revolutions": config.sample_window_steps * config.rpm,
@@ -1300,20 +1623,24 @@ def run_propeller_benchmark(config: PropellerBenchmarkConfig) -> dict[str, objec
     metadata_path.write_text(json.dumps(summary, indent=2, default=str) + "\n", encoding="utf-8")
 
     # Print summary
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print("  Open-Water Results")
-    print(f"{'='*70}")
-    print(f"  {'J':>6s}  {'KT_phys':>10s}  {'10KQ_phys':>10s}  "
-          f"{'eta':>8s}  {'n(rps)':>8s}  {'Re_D':>8s}")
-    print(f"  {'-'*60}")
+    print(f"{'=' * 70}")
+    print(
+        f"  {'J':>6s}  {'KT_phys':>10s}  {'10KQ_phys':>10s}  "
+        f"{'eta':>8s}  {'n(rps)':>8s}  {'Re_D':>8s}"
+    )
+    print(f"  {'-' * 60}")
     for r in results:
-        print(f"  {float(r['j_actual']):6.2f}  "
-              f"{float(r.get('kt_phys', 0)):10.6f}  "
-              f"{10 * float(r.get('kq_phys', 0)):10.6f}  "
-              f"{float(r['eta_o']):8.4f}  "
-              f"{float(r.get('n_phys_rps', 0)):8.3f}  "
-              f"{float(r['re_d']):8.0f}")
-    print(f"  {'='*60}")
+        print(
+            f"  {float(r['j_actual']):6.2f}  "
+            f"{float(r.get('kt_phys', 0)):10.6f}  "
+            f"{10 * float(r.get('kq_phys', 0)):10.6f}  "
+            f"{float(r['eta_o']):8.4f}  "
+            f"{float(r.get('n_phys_rps', 0)):8.3f}  "
+            f"{float(r['re_d']):8.0f}"
+        )
+    print(f"  {'=' * 60}")
     print(f"  max eta = {max(eta_vals):.4f} at J = {j_vals[eta_vals.index(max(eta_vals))]:.2f}")
     print(f"\n  CSV:  {csv_path}")
     print(f"  JSON: {metadata_path}")

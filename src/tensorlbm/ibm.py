@@ -38,6 +38,7 @@ Guo, Z., Zheng, C., & Shi, B. (2002). Discrete lattice effects on the
     forcing term in the lattice Boltzmann method.
     *Phys. Rev. E* 65, 046308.
 """
+
 from __future__ import annotations
 
 import math
@@ -530,7 +531,9 @@ def ibm_apply_body_force_3d(
     cy = c[:, 1].view(19, 1, 1, 1)
     cz = c[:, 2].view(19, 1, 1, 1)
     w_view = w.view(19, 1, 1, 1)
-    forcing = w_view * 3.0 * (
-        cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0) + cz * fz_grid.unsqueeze(0)
+    forcing = (
+        w_view
+        * 3.0
+        * (cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0) + cz * fz_grid.unsqueeze(0))
     )
     return f + forcing

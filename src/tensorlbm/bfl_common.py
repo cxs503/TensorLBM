@@ -51,6 +51,7 @@ Bouzidi, M., Firdaouss, M., & Lallemand, P. (2001).
 "Momentum transfer of a Boltzmann-lattice fluid with boundaries."
 *Physics of Fluids*, 13(11), 3452–3459.
 """
+
 from __future__ import annotations
 
 import math
@@ -96,9 +97,7 @@ def _lattice_params(lattice: str):
         return 19, _C19, _W19, _OPP19_LIST
     if lattice_u == "D3Q27":
         return 27, _C27, _W27, _OPP27_LIST
-    raise ValueError(
-        f"Unsupported lattice {lattice!r}; supported: {SUPPORTED_LATTICES}"
-    )
+    raise ValueError(f"Unsupported lattice {lattice!r}; supported: {SUPPORTED_LATTICES}")
 
 
 # --------------------------------------------------------------------------- #
@@ -136,22 +135,20 @@ def bfl_bounce_back_common(
     """
     Q, _, _, _ = _lattice_params(lattice)
     if f.shape[0] != Q:
-        raise ValueError(
-            f"f has {f.shape[0]} directions but lattice {lattice!r} expects {Q}"
-        )
+        raise ValueError(f"f has {f.shape[0]} directions but lattice {lattice!r} expects {Q}")
 
     opp_tensor = (_OPP19 if Q == 19 else _OPP27).to(f.device)
 
     # Gather per-direction quantities (full-size, no advanced indexing)
-    f_opp_all = f[opp_tensor]        # f[opp[d]]  — post-stream opposite
+    f_opp_all = f[opp_tensor]  # f[opp[d]]  — post-stream opposite
     fp_opp_all = f_prev[opp_tensor]  # f_prev[opp[d]]
-    fp_d_all = f_prev                # f_prev[d]
+    fp_d_all = f_prev  # f_prev[d]
 
     q = q_field
     mask = fluid_boundary_mask
 
-    mask_lin = (q < 0.5) & mask               # linear regime
-    mask_quad = (~mask_lin) & mask            # quadratic regime
+    mask_lin = (q < 0.5) & mask  # linear regime
+    mask_quad = (~mask_lin) & mask  # quadratic regime
 
     # Linear: f_bc = 2q·f_opp + (1-2q)·fp_d
     f_bc_lin = 2.0 * q * f_opp_all + (1.0 - 2.0 * q) * fp_d_all
@@ -214,9 +211,7 @@ def bfl_moving_wall_correction(
     cs2 = 1.0 / 3.0
 
     # correction[i] = 2*rho*w[i]*(c[i]·u_w)/cs2 = 6*rho*w[i]*(c[i]·u_w)
-    c_dot_u = (
-        c[:, 0] * u_wall[0] + c[:, 1] * u_wall[1] + c[:, 2] * u_wall[2]
-    )  # (Q,)
+    c_dot_u = c[:, 0] * u_wall[0] + c[:, 1] * u_wall[1] + c[:, 2] * u_wall[2]  # (Q,)
     correction_dir = 6.0 * rho_w * w * c_dot_u  # (Q,)
 
     # wall_correction[d] = correction[opp[d]]
@@ -315,9 +310,9 @@ def compute_q_cylinder_common(
             continue  # pure axis direction
 
         dist_nb = (coord1 + dv1 - c1) ** 2 + (coord2 + dv2 - c2) ** 2
-        nb_is_solid = dist_nb <= radius ** 2
+        nb_is_solid = dist_nb <= radius**2
         dist_self = (coord1 - c1) ** 2 + (coord2 - c2) ** 2
-        self_is_fluid = dist_self > radius ** 2
+        self_is_fluid = dist_self > radius**2
         boundary = self_is_fluid & nb_is_solid
 
         if not boundary.any():
@@ -325,13 +320,13 @@ def compute_q_cylinder_common(
 
         d1 = coord1 - c1
         d2 = coord2 - c2
-        a_coef = dv1 ** 2 + dv2 ** 2
+        a_coef = dv1**2 + dv2**2
         if a_coef < 1e-10:
             continue
         b_coef = 2.0 * (dv1 * d1 + dv2 * d2)
-        c_coef = d1 ** 2 + d2 ** 2 - radius ** 2
+        c_coef = d1**2 + d2**2 - radius**2
 
-        discriminant = b_coef ** 2 - 4.0 * a_coef * c_coef
+        discriminant = b_coef**2 - 4.0 * a_coef * c_coef
         safe_disc = torch.where(
             boundary & (discriminant >= 0.0),
             discriminant,
@@ -349,11 +344,15 @@ def compute_q_cylinder_common(
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
 
-        q_val = torch.where(
-            valid1 & valid2,
-            torch.min(q1, q2),
-            torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
-        ).clamp(1e-6, 1.0).float()
+        q_val = (
+            torch.where(
+                valid1 & valid2,
+                torch.min(q1, q2),
+                torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
+            )
+            .clamp(1e-6, 1.0)
+            .float()
+        )
 
         boundary_3d = boundary.unsqueeze(bdim).expand(nz, ny, nx)
         q_val_3d = q_val.unsqueeze(bdim).expand(nz, ny, nx)
@@ -408,9 +407,9 @@ def compute_q_sphere_common(
             continue
 
         dist_nb = (xx + dcx - cx) ** 2 + (yy + dcy - cy) ** 2 + (zz + dcz - cz) ** 2
-        nb_is_solid = dist_nb <= radius ** 2
+        nb_is_solid = dist_nb <= radius**2
         dist_self = (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2
-        self_is_fluid = dist_self > radius ** 2
+        self_is_fluid = dist_self > radius**2
         boundary = self_is_fluid & nb_is_solid
 
         if not boundary.any():
@@ -419,11 +418,11 @@ def compute_q_sphere_common(
         dx = xx - cx
         dy = yy - cy
         dz_v = zz - cz
-        a_coef = dcx ** 2 + dcy ** 2 + dcz ** 2
+        a_coef = dcx**2 + dcy**2 + dcz**2
         b_coef = 2.0 * (dcx * dx + dcy * dy + dcz * dz_v)
-        c_coef = dx ** 2 + dy ** 2 + dz_v ** 2 - radius ** 2
+        c_coef = dx**2 + dy**2 + dz_v**2 - radius**2
 
-        discriminant = b_coef ** 2 - 4.0 * a_coef * c_coef
+        discriminant = b_coef**2 - 4.0 * a_coef * c_coef
         safe_disc = torch.where(
             boundary & (discriminant >= 0.0),
             discriminant,
@@ -441,11 +440,15 @@ def compute_q_sphere_common(
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
 
-        q_val = torch.where(
-            valid1 & valid2,
-            torch.min(q1, q2),
-            torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
-        ).clamp(1e-6, 1.0).float()
+        q_val = (
+            torch.where(
+                valid1 & valid2,
+                torch.min(q1, q2),
+                torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
+            )
+            .clamp(1e-6, 1.0)
+            .float()
+        )
 
         fluid_boundary_mask[d] = boundary
         q_field[d] = torch.where(boundary, q_val, q_field[d])
@@ -595,9 +598,12 @@ def compute_q_stl_common(
 
             # Triangle bbox overlap with ray bbox
             overlap = (
-                (tri_max[:, 0] >= rmin[0] - 1) & (tri_min[:, 0] <= rmax[0] + 1) &
-                (tri_max[:, 1] >= rmin[1] - 1) & (tri_min[:, 1] <= rmax[1] + 1) &
-                (tri_max[:, 2] >= rmin[2] - 1) & (tri_min[:, 2] <= rmax[2] + 1)
+                (tri_max[:, 0] >= rmin[0] - 1)
+                & (tri_min[:, 0] <= rmax[0] + 1)
+                & (tri_max[:, 1] >= rmin[1] - 1)
+                & (tri_min[:, 1] <= rmax[1] + 1)
+                & (tri_max[:, 2] >= rmin[2] - 1)
+                & (tri_min[:, 2] <= rmax[2] + 1)
             )
             cand = np.where(overlap)[0]
             if cand.size == 0:
@@ -617,11 +623,13 @@ def compute_q_stl_common(
                     v2 = verts_np[faces_np[ti, 2]]
                     e1 = v1 - v0
                     e2 = v2 - v0
-                    pv = np.array([
-                        dyr * e2[2] - dzr * e2[1],
-                        dzr * e2[0] - dxr * e2[2],
-                        dxr * e2[1] - dyr * e2[0],
-                    ])
+                    pv = np.array(
+                        [
+                            dyr * e2[2] - dzr * e2[1],
+                            dzr * e2[0] - dxr * e2[2],
+                            dxr * e2[1] - dyr * e2[0],
+                        ]
+                    )
                     det = e1 @ pv
                     if abs(det) < 1e-12:
                         continue
@@ -710,6 +718,7 @@ def compute_q_generic_common(
 # These helpers compute the true normal distance analytically for sphere and
 # cylinder, and via a robust fallback for arbitrary solids.
 # --------------------------------------------------------------------------- #
+
 
 def compute_q_wall_sphere(
     near: torch.Tensor,
@@ -837,7 +846,7 @@ def compute_q_wall_generic(
     gy[:, 1:-1, :] = (solid_f[:, 2:, :] - solid_f[:, :-2, :]) / 2.0
     gz[1:-1, :, :] = (solid_f[2:, :, :] - solid_f[:-2, :, :]) / 2.0
 
-    grad_mag = torch.sqrt(gx ** 2 + gy ** 2 + gz ** 2).clamp(min=1e-6)
+    grad_mag = torch.sqrt(gx**2 + gy**2 + gz**2).clamp(min=1e-6)
     # For face-aligned walls: grad_mag = 0.5, so q_wall = 0.5/0.5 = 1.0
     # But we want q_wall = 0.5 for face-aligned walls.
     # Actually: the normal distance for a face-aligned wall is 0.5 (half-way).
@@ -922,8 +931,12 @@ def bfl_step(
 
     # 5. BFL interpolated bounce-back
     f = bfl_bounce_back_common(
-        f, f_pre_stream, fluid_boundary_mask, q_field,
-        lattice=lattice, wall_correction=wall_correction,
+        f,
+        f_pre_stream,
+        fluid_boundary_mask,
+        q_field,
+        lattice=lattice,
+        wall_correction=wall_correction,
     )
 
     # 6. Mass correction

@@ -20,6 +20,7 @@ Three small tables are managed:
 Only :mod:`sqlite3` from the Python standard library is used so this works
 out-of-the-box with no extra dependency.
 """
+
 from __future__ import annotations
 
 import json
@@ -69,6 +70,7 @@ def _now() -> str:
 # Connection helpers
 # ---------------------------------------------------------------------------
 
+
 def connect(db_path: str | Path) -> sqlite3.Connection:
     """Open (and if needed create) a SQLite database file."""
     p = Path(db_path)
@@ -83,6 +85,7 @@ def connect(db_path: str | Path) -> sqlite3.Connection:
 # ---------------------------------------------------------------------------
 # CRUD helpers
 # ---------------------------------------------------------------------------
+
 
 def insert_run(
     conn: sqlite3.Connection,
@@ -173,27 +176,31 @@ def _rows_to_dicts(rows: list[sqlite3.Row]) -> list[dict[str, Any]]:
 
 def list_runs(conn: sqlite3.Connection, limit: int = 50) -> list[dict[str, Any]]:
     rows = conn.execute(
-        "SELECT * FROM runs ORDER BY id DESC LIMIT ?", (int(limit),),
+        "SELECT * FROM runs ORDER BY id DESC LIMIT ?",
+        (int(limit),),
     ).fetchall()
     return _rows_to_dicts(rows)
 
 
 def list_datasets(conn: sqlite3.Connection, limit: int = 50) -> list[dict[str, Any]]:
     rows = conn.execute(
-        "SELECT * FROM datasets ORDER BY id DESC LIMIT ?", (int(limit),),
+        "SELECT * FROM datasets ORDER BY id DESC LIMIT ?",
+        (int(limit),),
     ).fetchall()
     return _rows_to_dicts(rows)
 
 
 def list_models(conn: sqlite3.Connection, limit: int = 50) -> list[dict[str, Any]]:
     rows = conn.execute(
-        "SELECT * FROM models ORDER BY id DESC LIMIT ?", (int(limit),),
+        "SELECT * FROM models ORDER BY id DESC LIMIT ?",
+        (int(limit),),
     ).fetchall()
     return _rows_to_dicts(rows)
 
 
 def get_model_record(
-    conn: sqlite3.Connection, model_id: int,
+    conn: sqlite3.Connection,
+    model_id: int,
 ) -> dict[str, Any] | None:
     row = conn.execute("SELECT * FROM models WHERE id=?", (int(model_id),)).fetchone()
     if row is None:
@@ -204,6 +211,7 @@ def get_model_record(
 # ---------------------------------------------------------------------------
 # Convenience class
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class LBMDatabase:

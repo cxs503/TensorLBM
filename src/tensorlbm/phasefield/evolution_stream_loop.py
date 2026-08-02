@@ -160,9 +160,7 @@ def collision_then_adapter_stream(
         )
         current = FreeEnergyCollisionOnlyState(f=streamed.f, g=streamed.g)
         step_states.append(current)
-        crossing = adapter_stream_boundary_crossing(
-            post_collision_g, boundary=config.boundary
-        )
+        crossing = adapter_stream_boundary_crossing(post_collision_g, boundary=config.boundary)
         diagnostics.append(
             _diagnostic(
                 step,

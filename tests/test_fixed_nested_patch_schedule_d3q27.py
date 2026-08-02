@@ -1,4 +1,5 @@
 """Tests for the pure fixed 2:1 D3Q27 nested-patch schedule descriptor."""
+
 from __future__ import annotations
 
 import pytest
@@ -32,7 +33,10 @@ def test_small_aligned_patch_has_explicit_ownership_six_faces_and_two_substeps()
     # Six disjoint slabs cover the coarse patch except for the refined volume.
     owned = schedule.coarse_owned_extents
     assert len(owned) == 6
-    assert sum(extent.volume for extent in owned) + schedule.coarse_coverage.volume == schedule.coarse_extent.volume
+    assert (
+        sum(extent.volume for extent in owned) + schedule.coarse_coverage.volume
+        == schedule.coarse_extent.volume
+    )
     for index, first in enumerate(owned):
         for second in owned[index + 1 :]:
             assert not first.overlaps(second)
@@ -50,7 +54,9 @@ def test_small_aligned_patch_has_explicit_ownership_six_faces_and_two_substeps()
     assert all(face.coarse_face_extent.volume == 16 for face in faces)
     assert all(face.fine_face_extent.volume == 64 for face in faces)
 
-    assert [(substep.index, substep.time_start, substep.time_end) for substep in schedule.fine_substeps] == [
+    assert [
+        (substep.index, substep.time_start, substep.time_end) for substep in schedule.fine_substeps
+    ] == [
         (0, 0.0, 0.5),
         (1, 0.5, 1.0),
     ]
@@ -63,11 +69,17 @@ def test_small_aligned_patch_has_explicit_ownership_six_faces_and_two_substeps()
     [
         (CellExtent3D((0, 0, 0), (8, 8, 8)), CellExtent3D((5, 4, 4), (12, 12, 12)), "aligned"),
         (CellExtent3D((0, 0, 0), (8, 8, 8)), CellExtent3D((4, 4, 4), (11, 12, 12)), "even"),
-        (CellExtent3D((0, 0, 0), (8, 8, 8)), CellExtent3D((0, 4, 4), (8, 12, 12)), "strictly inside"),
+        (
+            CellExtent3D((0, 0, 0), (8, 8, 8)),
+            CellExtent3D((0, 4, 4), (8, 12, 12)),
+            "strictly inside",
+        ),
         (CellExtent3D((0, 0, 0), (8, 8, 8)), CellExtent3D((12, 4, 4), (20, 12, 12)), "inside"),
     ],
 )
-def test_invalid_patch_geometry_is_rejected(coarse: CellExtent3D, fine: CellExtent3D, message: str) -> None:
+def test_invalid_patch_geometry_is_rejected(
+    coarse: CellExtent3D, fine: CellExtent3D, message: str
+) -> None:
     with pytest.raises(ValueError, match=message):
         FixedNestedPatchScheduleD3Q27(coarse, fine)
 

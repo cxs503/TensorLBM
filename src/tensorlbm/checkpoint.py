@@ -4,6 +4,7 @@ Supports saving and loading simulation state (distribution function tensor,
 current step, and arbitrary metadata) so that interrupted runs can be
 resumed without starting over.
 """
+
 from __future__ import annotations
 
 import json
@@ -48,9 +49,7 @@ def save_checkpoint(
     }
     if extra:
         meta.update(extra)
-    (run_dir / _META_FILE).write_text(
-        json.dumps(meta, indent=2) + "\n", encoding="utf-8"
-    )
+    (run_dir / _META_FILE).write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     return run_dir
 
 
@@ -94,9 +93,7 @@ def load_checkpoint(
         loaded_meta = json.loads(meta_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise ValueError(f"Checkpoint metadata is not valid JSON: {meta_path}") from exc
-    if not isinstance(loaded_meta, dict) or not all(
-        isinstance(key, str) for key in loaded_meta
-    ):
+    if not isinstance(loaded_meta, dict) or not all(isinstance(key, str) for key in loaded_meta):
         raise ValueError(f"Checkpoint metadata must be a JSON object with string keys: {meta_path}")
     meta = cast("dict[str, object]", loaded_meta)
     format_version = meta.get("format_version", 0)

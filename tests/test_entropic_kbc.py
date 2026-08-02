@@ -9,6 +9,7 @@ These tests exercise:
   6. collide_kbc_d3q19 / collide_kbc_d3q27 conservation and H-theorem
   7. Contract registration (KBC AVAILABLE for both lattices)
 """
+
 from __future__ import annotations
 
 import math
@@ -23,6 +24,7 @@ from tensorlbm.d3q27 import C as C27, W as W27, equilibrium27, macroscopic27
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _state_19(seed: int = 19) -> torch.Tensor:
     torch.manual_seed(seed)
@@ -47,6 +49,7 @@ def _state_27(seed: int = 27) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # 1. Discrete entropy functional
 # ---------------------------------------------------------------------------
+
 
 class TestDiscreteEntropy:
     """H(f) = Σ_i f_i ln(f_i / w_i)."""
@@ -89,6 +92,7 @@ class TestDiscreteEntropy:
 # ---------------------------------------------------------------------------
 # 2. KBC decomposition: f_neq = k + s + h
 # ---------------------------------------------------------------------------
+
 
 class TestKBCDecomposition:
     """f_neq = k + s + h where s = shear (deviatoric), k = kinetic (bulk), h = higher-order."""
@@ -176,6 +180,7 @@ class TestKBCDecomposition:
 # ---------------------------------------------------------------------------
 # 3. Gamma solver (entropy minimisation)
 # ---------------------------------------------------------------------------
+
 
 class TestGammaSolver:
     """Per-cell nonlinear gamma solve via bisection."""
@@ -281,6 +286,7 @@ class TestGammaSolver:
 # 4. collide_kbc_d3q19 / collide_kbc_d3q27
 # ---------------------------------------------------------------------------
 
+
 class TestCollideKBC:
     """Full entropic KBC collision operators."""
 
@@ -384,6 +390,7 @@ class TestCollideKBC:
 # 5. Contract registration
 # ---------------------------------------------------------------------------
 
+
 class TestKBCContractRegistration:
     """KBC must be registered as AVAILABLE in the advanced collision contract."""
 
@@ -441,6 +448,7 @@ class TestKBCContractRegistration:
 # 6. Stability: short cylinder/sphere flow run
 # ---------------------------------------------------------------------------
 
+
 class TestKBCStability:
     """KBC must remain stable for a short flow simulation."""
 
@@ -488,6 +496,7 @@ class TestKBCStability:
 # 7. KBC diagnostics: root-cause tests for admissibility-domain and h-relaxation
 # ---------------------------------------------------------------------------
 
+
 class TestKBCDiagnostics:
     """Diagnostic tests reproducing the two KBC root-cause bugs.
 
@@ -530,14 +539,25 @@ class TestKBCDiagnostics:
 
         # Reference: well-converged gamma (gamma_init inside domain, many iters)
         gamma_ref = solve_gamma_entropy(
-            feq, s, h, w,
-            torch.zeros_like(rho), max_iter=100, tol=1e-12,
+            feq,
+            s,
+            h,
+            w,
+            torch.zeros_like(rho),
+            max_iter=100,
+            tol=1e-12,
         )
 
         # Bug trigger: gamma_init far outside domain, limited iterations
         gamma_init_bad = torch.full_like(rho, 1000.0)
         gamma_test = solve_gamma_entropy(
-            feq, s, h, w, gamma_init_bad, max_iter=10, tol=1e-12,
+            feq,
+            s,
+            h,
+            w,
+            gamma_init_bad,
+            max_iter=10,
+            tol=1e-12,
         )
 
         # With the fix, the domain is not expanded, so 10 iterations suffice.
@@ -565,7 +585,12 @@ class TestKBCDiagnostics:
 
         gamma_init_bad = torch.full_like(rho, 1000.0)
         gamma = solve_gamma_entropy(
-            feq, s, h, w, gamma_init_bad, max_iter=10,
+            feq,
+            s,
+            h,
+            w,
+            gamma_init_bad,
+            max_iter=10,
         )
         f_post = feq + gamma.unsqueeze(0) * s + h
         assert (f_post > 0).all(), (
@@ -597,7 +622,7 @@ class TestKBCDiagnostics:
         assert h_post_max < 0.1 * h_pre_max, (
             f"Higher-order modes not relaxed at tau=1.0: "
             f"h_post={h_post_max:.6e} vs h_pre={h_pre_max:.6e} "
-            f"(retained fraction={h_post_max/h_pre_max:.4f}, expected ~0)"
+            f"(retained fraction={h_post_max / h_pre_max:.4f}, expected ~0)"
         )
 
     def test_higher_order_modes_relaxed_at_tau08(self):
@@ -652,8 +677,7 @@ class TestKBCDiagnostics:
             nu = u_in * 2.0 * radius / re
             tau = 3.0 * nu + 0.5
             dev = torch.device("cpu")
-            mask = sphere_mask(nx, ny, nz, nx * 0.5, ny * 0.5, nz * 0.5,
-                               radius, device=dev)
+            mask = sphere_mask(nx, ny, nz, nx * 0.5, ny * 0.5, nz * 0.5, radius, device=dev)
             wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=dev)
             f = equilibrium3d(
                 torch.ones(nz, ny, nx, device=dev),
@@ -668,12 +692,15 @@ class TestKBCDiagnostics:
                 f = stream3d(f)
                 fx, _, _ = compute_obstacle_forces_3d(f, mask)
                 f = apply_simple_channel_boundaries_3d(
-                    f, u_in=u_in, wall_mask=wall_mask, obstacle_mask=mask,
+                    f,
+                    u_in=u_in,
+                    wall_mask=wall_mask,
+                    obstacle_mask=mask,
                 )
                 fx_list.append(float(fx.item()))
             fx_mean = sum(fx_list) / len(fx_list)
-            area = math.pi * radius ** 2
-            return fx_mean / (0.5 * u_in ** 2 * area)
+            area = math.pi * radius**2
+            return fx_mean / (0.5 * u_in**2 * area)
 
         cd_bgk = _run(collide_bgk3d)
         cd_kbc = _run(collide_kbc_d3q19)

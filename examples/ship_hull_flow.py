@@ -55,39 +55,63 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Hull
     parser.add_argument(
-        "--hull-length", dest="hull_length", type=float, default=80.0,
+        "--hull-length",
+        dest="hull_length",
+        type=float,
+        default=80.0,
         help="Wigley hull length L in lattice units",
     )
     parser.add_argument(
-        "--hull-beam", dest="hull_beam", type=float, default=8.0,
+        "--hull-beam",
+        dest="hull_beam",
+        type=float,
+        default=8.0,
         help="Maximum beam B in lattice units",
     )
     parser.add_argument(
-        "--hull-draft", dest="hull_draft", type=float, default=12.0,
+        "--hull-draft",
+        dest="hull_draft",
+        type=float,
+        default=12.0,
         help="Hull draft T in lattice units",
     )
 
     # Turbulence
     parser.add_argument(
-        "--cs", dest="smagorinsky_cs", type=float, default=0.1,
+        "--cs",
+        dest="smagorinsky_cs",
+        type=float,
+        default=0.1,
         help="Smagorinsky constant (0 to disable LES)",
     )
 
     # Wave inlet
     parser.add_argument(
-        "--wave-amp", dest="wave_amp", type=float, default=0.0,
+        "--wave-amp",
+        dest="wave_amp",
+        type=float,
+        default=0.0,
         help="Airy wave horizontal velocity amplitude at free surface (0 = steady inlet)",
     )
     parser.add_argument(
-        "--wave-period", dest="wave_period", type=float, default=200.0,
+        "--wave-period",
+        dest="wave_period",
+        type=float,
+        default=200.0,
         help="Wave period in LBM time steps",
     )
     parser.add_argument(
-        "--wave-k", dest="wave_k", type=float, default=0.05,
+        "--wave-k",
+        dest="wave_k",
+        type=float,
+        default=0.05,
         help="Wave number k = 2π/λ (1/lattice spacing)",
     )
     parser.add_argument(
-        "--water-depth", dest="water_depth", type=float, default=0.0,
+        "--water-depth",
+        dest="water_depth",
+        type=float,
+        default=0.0,
         help="Water depth in lattice units (0 = use nz)",
     )
 
@@ -112,15 +136,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Override deterministic run folder name",
     )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
-    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu",
-                        help="Execution device")
+    parser.add_argument(
+        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
+    )
     parser.add_argument(
         "--export-stl",
         action="store_true",
         help="Also export the CAD hull as ASCII STL",
     )
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Replace output directory if it already exists")
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Replace output directory if it already exists"
+    )
     return parser
 
 

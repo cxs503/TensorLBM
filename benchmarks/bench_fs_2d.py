@@ -5,6 +5,7 @@ Domain: ny=200, nx=600; liquid column width=120, height=198.
 500 timesteps, tau=0.8, gy=-5e-5.
 T = t * sqrt(g/a), Z = front_x / a.
 """
+
 from __future__ import annotations
 
 import math
@@ -17,7 +18,10 @@ import torch_sdaa
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from tensorlbm.free_surface_lbm_2d import (
-    GAS, LIQUID, INTERFACE, SOLID,
+    GAS,
+    LIQUID,
+    INTERFACE,
+    SOLID,
     init_fill_rectangular_2d,
     init_flags_from_fill_2d,
     free_surface_step_2d,
@@ -31,14 +35,14 @@ REF_Z = [1.0, 1.1, 1.4, 1.8, 2.2, 2.7, 3.1, 3.5, 3.8, 4.1]
 
 # ---------- Simulation parameters ----------
 NY, NX = 200, 600
-COL_WIDTH  = 120.0
-COL_HEIGHT = float(NY - 2)   # domain height minus top/bottom walls
+COL_WIDTH = 120.0
+COL_HEIGHT = float(NY - 2)  # domain height minus top/bottom walls
 TAU = 0.8
-GY  = -5e-5
+GY = -5e-5
 RHO_LIQ = 1.0
 RHO_GAS = 0.01
 N_STEPS = 500
-DEVICE  = "sdaa" if torch.sdaa.is_available() else "cpu"
+DEVICE = "sdaa" if torch.sdaa.is_available() else "cpu"
 
 A = COL_WIDTH
 G_ABS = abs(GY)
@@ -50,7 +54,7 @@ T_TARGETS = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
 def find_front_x(flags, _fill):
     """Rightmost column (0-based) with liquid or interface."""
     active = (flags[1:-1, :] == LIQUID) | (flags[1:-1, :] == INTERFACE)
-    cols  = active.any(dim=0).nonzero(as_tuple=False)
+    cols = active.any(dim=0).nonzero(as_tuple=False)
     return 0 if cols.numel() == 0 else int(cols[-1].item())
 
 
@@ -84,14 +88,16 @@ def main():
     fill, solid = init_fill_rectangular_2d(NY, NX, COL_WIDTH, COL_HEIGHT, DEVICE)
     flags = init_flags_from_fill_2d(fill, solid)
 
-    rho0 = torch.where(flags == LIQUID,
-                       torch.full_like(fill, RHO_LIQ),
-                       torch.full_like(fill, RHO_GAS))
+    rho0 = torch.where(
+        flags == LIQUID, torch.full_like(fill, RHO_LIQ), torch.full_like(fill, RHO_GAS)
+    )
     f = equilibrium(rho0, torch.zeros_like(fill), torch.zeros_like(fill))
 
-    print(f"  Init cells: L={int((flags==LIQUID).sum())}  "
-          f"I={int((flags==INTERFACE).sum())}  "
-          f"G={int((flags==GAS).sum())}  S={int((flags==SOLID).sum())}")
+    print(
+        f"  Init cells: L={int((flags == LIQUID).sum())}  "
+        f"I={int((flags == INTERFACE).sum())}  "
+        f"G={int((flags == GAS).sum())}  S={int((flags == SOLID).sum())}"
+    )
     print(f"  Init front : x={find_front_x(flags, fill)}")
     print()
 
@@ -101,9 +107,14 @@ def main():
 
     for step in range(1, N_STEPS + 1):
         f, fill, flags = free_surface_step_2d(
-            f, fill, flags, solid,
-            tau=TAU, gy=GY,
-            rho_liquid=RHO_LIQ, rho_gas=RHO_GAS,
+            f,
+            fill,
+            flags,
+            solid,
+            tau=TAU,
+            gy=GY,
+            rho_liquid=RHO_LIQ,
+            rho_gas=RHO_GAS,
         )
         if torch.isnan(f).any():
             print(f"  STOP: NaN at step {step}")
@@ -135,8 +146,8 @@ def main():
         print(f"  {Tt:6.2f}  {Zs:8.4f}  {Zr:8.4f}  {err:8.4f}  {note}")
 
     valid = [e for e in errors if not math.isnan(e)]
-    mae  = sum(valid) / len(valid)
-    rmse = math.sqrt(sum(e*e for e in valid) / len(valid))
+    mae = sum(valid) / len(valid)
+    rmse = math.sqrt(sum(e * e for e in valid) / len(valid))
     print()
     print(f"  MAE  = {mae:.4f}")
     print(f"  RMSE = {rmse:.4f}")
@@ -150,9 +161,11 @@ def main():
     print(f"  {'step':>5s}  {'T':>10s}  {'Z':>10s}  {'front_x':>8s}")
     print("  " + "-" * 45)
     for i in range(0, len(T_vals), 50):
-        print(f"  {i:5d}  {T_vals[i]:10.4f}  {Z_vals[i]:10.4f}  {int(Z_vals[i]*A):8d}")
+        print(f"  {i:5d}  {T_vals[i]:10.4f}  {Z_vals[i]:10.4f}  {int(Z_vals[i] * A):8d}")
     # Always print final
-    print(f"  {len(T_vals)-1:5d}  {T_vals[-1]:10.4f}  {Z_vals[-1]:10.4f}  {int(Z_vals[-1]*A):8d}")
+    print(
+        f"  {len(T_vals) - 1:5d}  {T_vals[-1]:10.4f}  {Z_vals[-1]:10.4f}  {int(Z_vals[-1] * A):8d}"
+    )
 
     print()
     print("  Note: free-surface LBM (no air resistance) advances faster than")

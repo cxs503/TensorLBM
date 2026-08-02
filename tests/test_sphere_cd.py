@@ -1,16 +1,22 @@
 """Tests for sphere drag coefficient validation against Schiller-Naumann."""
+
 from __future__ import annotations
 
 import math
 import torch
-from tensorlbm.boundaries3d import apply_simple_channel_boundaries_3d, make_channel_wall_mask_3d, sphere_mask
+from tensorlbm.boundaries3d import (
+    apply_simple_channel_boundaries_3d,
+    make_channel_wall_mask_3d,
+    sphere_mask,
+)
 from tensorlbm.d3q19 import equilibrium3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.obstacles import compute_obstacle_forces_3d
 
 
-def _run_sphere_drag(re: float, nx: int = 80, ny: int = 40, nz: int = 40,
-                     steps: int = 400, device: str = "cpu") -> float:
+def _run_sphere_drag(
+    re: float, nx: int = 80, ny: int = 40, nz: int = 40, steps: int = 400, device: str = "cpu"
+) -> float:
     radius = max(4.0, nx * 0.08)
     u_in = 0.06
     nu = u_in * 2.0 * radius / re
@@ -31,7 +37,9 @@ def _run_sphere_drag(re: float, nx: int = 80, ny: int = 40, nz: int = 40,
         f = collide_bgk3d(f, tau=tau)
         f = stream3d(f)
         fx, _, _ = compute_obstacle_forces_3d(f, mask)
-        f = apply_simple_channel_boundaries_3d(f, u_in=u_in, wall_mask=wall_mask, obstacle_mask=mask)
+        f = apply_simple_channel_boundaries_3d(
+            f, u_in=u_in, wall_mask=wall_mask, obstacle_mask=mask
+        )
         if step > steps // 2:
             fx_list.append(float(fx.item()))
     fx_mean = sum(fx_list) / max(len(fx_list), 1)

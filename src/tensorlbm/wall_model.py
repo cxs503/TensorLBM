@@ -6,6 +6,7 @@ Provides:
 - :func:`compute_wall_slip_velocity` — log-law wall-function slip velocity.
 - :func:`apply_wall_model_bounce_back` — apply wall model with moving-wall BC.
 """
+
 from __future__ import annotations
 import torch
 import torch.nn.functional as F
@@ -18,6 +19,7 @@ B_CONST = 5.0
 # ---------------------------------------------------------------------------
 # Precise wall distance via iterative Eikonal (FMM-like)
 # ---------------------------------------------------------------------------
+
 
 def compute_wall_distance_fmm(
     mask: torch.Tensor,
@@ -65,15 +67,15 @@ def compute_wall_distance_fmm(
         d_prev = dist.clone()
 
         # Propagate from each face: x+, x-, y+, y-, z+, z-
-        padded = F.pad(dist.unsqueeze(0).unsqueeze(0), (1, 1, 1, 1, 1, 1), mode='replicate')
+        padded = F.pad(dist.unsqueeze(0).unsqueeze(0), (1, 1, 1, 1, 1, 1), mode="replicate")
         padded = padded.squeeze(0).squeeze(0)
 
-        xp = padded[1:-1, 1:-1, 2:]   + dx
-        xm = padded[1:-1, 1:-1, :-2]  + dx
-        yp = padded[1:-1, 2:,  1:-1]  + dx
-        ym = padded[1:-1, :-2, 1:-1]  + dx
-        zp = padded[2:,   1:-1, 1:-1] + dx
-        zm = padded[:-2,  1:-1, 1:-1] + dx
+        xp = padded[1:-1, 1:-1, 2:] + dx
+        xm = padded[1:-1, 1:-1, :-2] + dx
+        yp = padded[1:-1, 2:, 1:-1] + dx
+        ym = padded[1:-1, :-2, 1:-1] + dx
+        zp = padded[2:, 1:-1, 1:-1] + dx
+        zm = padded[:-2, 1:-1, 1:-1] + dx
 
         # Take minimum from all neighbours; solid cells stay at 0
         dist_new = torch.stack([dist, xp, xm, yp, ym, zp, zm], dim=0).min(dim=0).values
@@ -99,10 +101,12 @@ def compute_wall_distance_fmm_2d(
     return compute_wall_distance_fmm(mask, max_iter=max_iter, dx=dx)
 
 
-
 def compute_wall_slip_velocity(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
-    mask: torch.Tensor, nu: float,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    mask: torch.Tensor,
+    nu: float,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute slip velocity for solid cells adjacent to fluid.
 
@@ -176,7 +180,9 @@ def compute_wall_slip_velocity(
     # Laminar: sr=0 (full no-slip). Turbulent: sr=1 - u_tau^2 * y / (nu * u)
     sr_w = torch.zeros_like(u_mag_w)
     if turb_mask.any():
-        sr_w[turb_mask] = torch.clamp(1.0 - tau_w[turb_mask] * y_val / (nu * u_mag_w[turb_mask].clamp(min=1e-10)), 0.0, 1.0)
+        sr_w[turb_mask] = torch.clamp(
+            1.0 - tau_w[turb_mask] * y_val / (nu * u_mag_w[turb_mask].clamp(min=1e-10)), 0.0, 1.0
+        )
 
     # Apply slip ratio: u_slip = (1-slip_ratio)*u_tan → NO. The slip ratio represents
     # the FRACTION of the wall-normal velocity that slips. Effective wall velocity
@@ -194,8 +200,12 @@ def compute_wall_slip_velocity(
 
 
 def apply_wall_model_bounce_back(
-    f: torch.Tensor, mask: torch.Tensor,
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor, nu: float,
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    nu: float,
 ) -> torch.Tensor:
     ux_s, uy_s, uz_s = compute_wall_slip_velocity(ux, uy, uz, mask, nu)
     return moving_wall_bounce_back_3d(f, mask, ux_s, uy_s, uz_s)
@@ -208,9 +218,9 @@ def apply_wall_model_bounce_back(
 # von Kármán constant and log-law offset (smooth wall).
 _KAPPA = 0.41
 _B_LOG = 5.0
-_VD_A = 26.0          # van Driest damping constant
-_VD_CUT = 60.0        # apply damping below this y+
-_VD_MIN = 0.05        # minimum damping factor (5%)
+_VD_A = 26.0  # van Driest damping constant
+_VD_CUT = 60.0  # apply damping below this y+
+_VD_MIN = 0.05  # minimum damping factor (5%)
 
 
 def compute_wall_normal(
@@ -241,19 +251,19 @@ def compute_wall_normal(
 
     # x-direction (central difference interior, one-sided boundary)
     gx[:, :, 1:-1] = (sf[:, :, 2:] - sf[:, :, :-2]) * 0.5
-    gx[:, :, 0]    = sf[:, :, 1] - sf[:, :, 0]
-    gx[:, :, -1]   = sf[:, :, -1] - sf[:, :, -2]
+    gx[:, :, 0] = sf[:, :, 1] - sf[:, :, 0]
+    gx[:, :, -1] = sf[:, :, -1] - sf[:, :, -2]
 
     # y-direction
     gy[:, 1:-1, :] = (sf[:, 2:, :] - sf[:, :-2, :]) * 0.5
-    gy[:, 0, :]    = sf[:, 1, :] - sf[:, 0, :]
-    gy[:, -1, :]   = sf[:, -1, :] - sf[:, -2, :]
+    gy[:, 0, :] = sf[:, 1, :] - sf[:, 0, :]
+    gy[:, -1, :] = sf[:, -1, :] - sf[:, -2, :]
 
     # z-direction (only for genuine 3-D)
     if nz > 1:
         gz[1:-1] = (sf[2:] - sf[:-2]) * 0.5
-        gz[0]    = sf[1] - sf[0]
-        gz[-1]   = sf[-1] - sf[-2]
+        gz[0] = sf[1] - sf[0]
+        gz[-1] = sf[-1] - sf[-2]
 
     # Normal = -gradient (points from solid to fluid)
     nx_n = -gx
@@ -294,8 +304,8 @@ def _near_wall_mask_no_wrap(solid: torch.Tensor) -> torch.Tensor:
     # z-direction (no periodic wrap for 2-D simulations)
     if nz > 1:
         near[1:-1] |= (solid[2:] | solid[:-2]) & fluid[1:-1]
-        near[0]    |= solid[1] & fluid[0]
-        near[-1]   |= solid[-2] & fluid[-1]
+        near[0] |= solid[1] & fluid[0]
+        near[-1] |= solid[-2] & fluid[-1]
     return near
 
 
@@ -369,7 +379,7 @@ def wall_function_3d(
     # direction must use the tangential component, not the full magnitude.
     nx_n, ny_n, nz_n = compute_wall_normal(solid, near)
     u_dot_n = ux * nx_n + uy * ny_n + uz * nz_n
-    ut_x = ux - u_dot_n * nx_n   # tangential velocity components
+    ut_x = ux - u_dot_n * nx_n  # tangential velocity components
     ut_y = uy - u_dot_n * ny_n
     ut_z = uz - u_dot_n * nz_n
     u_tan_mag = torch.sqrt(ut_x * ut_x + ut_y * ut_y + ut_z * ut_z).clamp(min=1e-12)
@@ -410,9 +420,11 @@ def wall_function_3d(
         # Bug 8 fix: define y_plus and ut_vis BEFORE use, use OPPOSITE not i+9.
         ut_vis = torch.sqrt(nu * u_tan_mag / y_val).clamp(min=1e-12)
         y_plus = y_val * ut_vis / nu
-        w_bb = torch.where(y_plus < 5.0, torch.ones_like(y_plus),
-                 torch.where(y_plus < 30.0, 1.0 - (y_plus - 5.0) / 25.0,
-                             torch.zeros_like(y_plus)))
+        w_bb = torch.where(
+            y_plus < 5.0,
+            torch.ones_like(y_plus),
+            torch.where(y_plus < 30.0, 1.0 - (y_plus - 5.0) / 25.0, torch.zeros_like(y_plus)),
+        )
         w_bb = torch.where(near, w_bb, torch.zeros_like(w_bb))
         w_log = 1.0 - w_bb
 
@@ -427,7 +439,7 @@ def wall_function_3d(
                 if dst == i:
                     continue  # rest direction (0→0), skip
                 swap_val = f[i].clone()
-                f[i]  = f[i]  * (1.0 - w_bb) + f[dst] * w_bb
+                f[i] = f[i] * (1.0 - w_bb) + f[dst] * w_bb
                 f[dst] = f[dst] * (1.0 - w_bb) + swap_val * w_bb
 
         # ── 2. Body force operation (weighted by w_log) ──
@@ -450,10 +462,9 @@ def wall_function_3d(
             tau_w = u_tau_log * u_tau_log
             # Bug 23 fix: force = -tau_w (no Guo, no /y_val)
             coef = -tau_w * (w_log * near.to(f.dtype))
-            f = ibm_apply_body_force_3d(f,
-                coef * (ut_x * inv_utan),
-                coef * (ut_y * inv_utan),
-                coef * (ut_z * inv_utan))
+            f = ibm_apply_body_force_3d(
+                f, coef * (ut_x * inv_utan), coef * (ut_y * inv_utan), coef * (ut_z * inv_utan)
+            )
             drag_fric = float((tau_w * (ut_x * inv_utan) * (w_log * near.to(f.dtype))).sum().item())
         else:
             drag_fric = 0.0
@@ -475,9 +486,11 @@ def wall_function_3d(
         for _ in range(10):
             yp = (y_val * ut / nu).clamp(min=1e-6)
             # Musker profile
-            up = a1 * torch.arctan(a2 * yp - a3) \
-                 + 0.434 * torch.log((yp + 10.6) ** 9.6 / ((yp ** 2 - 8.15 * yp + 86) ** 2 + 1e-12)) \
-                 - 3.507
+            up = (
+                a1 * torch.arctan(a2 * yp - a3)
+                + 0.434 * torch.log((yp + 10.6) ** 9.6 / ((yp**2 - 8.15 * yp + 86) ** 2 + 1e-12))
+                - 3.507
+            )
             # Use y+=y for viscous sublayer (yp<3)
             viscous = yp < 3.0
             up = torch.where(viscous, yp, up)
@@ -494,11 +507,11 @@ def wall_function_3d(
         # ---- Pressure-gradient correction (Generalized Law of the Wall) ----
         dp_dx = None
         if dp_dx_correction:
-            p = (rho - 1.0) / 3.0                               # pressure field
-            p_plus  = torch.roll(p, -1, dims=2)                 # p[i+1]
-            p_minus = torch.roll(p,  1, dims=2)                 # p[i-1]
-            dp_dx = (p_plus - p_minus) / (2.0 * dx)             # central difference
-            dp_dx = dp_dx.clamp(max=1e6)                         # avoid extreme values
+            p = (rho - 1.0) / 3.0  # pressure field
+            p_plus = torch.roll(p, -1, dims=2)  # p[i+1]
+            p_minus = torch.roll(p, 1, dims=2)  # p[i-1]
+            dp_dx = (p_plus - p_minus) / (2.0 * dx)  # central difference
+            dp_dx = dp_dx.clamp(max=1e6)  # avoid extreme values
         # ----------------------------------------------------------------
 
         if bool(turb.any()):
@@ -515,7 +528,7 @@ def wall_function_3d(
                 fp = (lyp / _KAPPA + _B_LOG) + 1.0 / _KAPPA
                 if dp_dx_correction and dp_dx is not None:
                     dpx = dp_dx[turb]
-                    tau_w_iter = ut * ut                             # τ_w = u_tau²
+                    tau_w_iter = ut * ut  # τ_w = u_tau²
                     inv_tw = 1.0 / tau_w_iter.clamp(min=1e-12)
                     # u+_loglaw = lyp/κ + B
                     uplus_log = lyp / _KAPPA + _B_LOG
@@ -524,11 +537,14 @@ def wall_function_3d(
                     # Corrected residual f(u_tau) = u_tau·A·pg_factor - u_mag
                     fv = ut * uplus_log * pg_factor - um
                     # Derivative: f' = A + 1/κ + α·dp_dx·y/τ_w · (1/κ - A)
-                    fp = uplus_log + 1.0 / _KAPPA \
-                         + alpha_pg * dpx * y_val * inv_tw * (1.0 / _KAPPA - uplus_log)
+                    fp = (
+                        uplus_log
+                        + 1.0 / _KAPPA
+                        + alpha_pg * dpx * y_val * inv_tw * (1.0 / _KAPPA - uplus_log)
+                    )
                 ut = (ut - fv / fp.clamp(min=1e-10)).clamp(min=1e-12)
             u_tau[turb] = ut
-    tau_w = u_tau * u_tau                                  # wall shear (per area)
+    tau_w = u_tau * u_tau  # wall shear (per area)
 
     # ---- Van Driest damping (near-wall SGS correction) ----
     # Dampens eddy viscosity in the buffer/viscous sublayer,
@@ -561,8 +577,8 @@ def wall_function_3d(
 
         drag_fric = float((tau_w * (ut_x * inv_utan) * near.to(f.dtype)).sum().item())
     p = (rho - 1.0) / 3.0
-    sp = torch.roll(solid, 1, dims=2)    # solid at +x neighbour of F
-    sm = torch.roll(solid, -1, dims=2)   # solid at -x neighbour of F
+    sp = torch.roll(solid, 1, dims=2)  # solid at +x neighbour of F
+    sm = torch.roll(solid, -1, dims=2)  # solid at -x neighbour of F
     drag_pres = float((-p * (sp.to(f.dtype) - sm.to(f.dtype)) * fluid.to(f.dtype)).sum().item())
     return f, drag_fric, drag_pres
 
@@ -570,6 +586,7 @@ def wall_function_3d(
 # ---------------------------------------------------------------------------
 # Log-law wall function — D3Q27 lattice variant
 # ---------------------------------------------------------------------------
+
 
 def wall_function_d3q27(
     f: torch.Tensor,
@@ -700,7 +717,8 @@ def wall_function_d3q27(
     # D3Q27 Guo body force
     w27 = torch.tensor(
         [8 / 27] + [2 / 27] * 6 + [1 / 54] * 12 + [1 / 216] * 8,
-        dtype=f.dtype, device=device,
+        dtype=f.dtype,
+        device=device,
     ).view(27, 1, 1, 1)
     cs2 = 1.0 / 3.0
     cu = cx * ux + cy * uy + cz * uz
@@ -850,8 +868,7 @@ def _solve_wall_law(
     if wall_law == "gradient":
         # Direct velocity-gradient: τ_w = ν·u_tan / y_val
         tau_w = nu * u_tan_mag / y_val
-        return torch.where(near, torch.sqrt(tau_w.clamp(min=1e-30)),
-                           torch.zeros_like(tau_w))
+        return torch.where(near, torch.sqrt(tau_w.clamp(min=1e-30)), torch.zeros_like(tau_w))
 
     if wall_law == "hybrid":
         # Gradient for y+ <= 60, log-law for y+ > 60
@@ -989,6 +1006,7 @@ def bfl_wall_function_3d(
     else:
         # Legacy simple forcing (ibm_apply_body_force_3d)
         from .ibm import ibm_apply_body_force_3d
+
         f = ibm_apply_body_force_3d(f, fx, fy, fz)
 
     # ── Step 6: Compute drag ──

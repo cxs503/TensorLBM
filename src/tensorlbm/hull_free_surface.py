@@ -8,6 +8,7 @@ References
 Wigley (1934) Trans. Inst. Naval Archit. 76 57
 Gunstensen et al. (1991) Phys. Rev. A 43 4320
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -101,8 +102,11 @@ def run_hull_free_surface(config: HullFreeSurfaceConfig) -> dict[str, object]:
     # Wider beam for fuller hull forms
     beam_scale = {"wigley": 0.25, "series60": 0.32, "kcs": 0.35}.get(config.hull_type, 0.25)
     hull = hull_builder(
-        nx=nx, ny=ny, nz=nz,
-        cx=0.45 * nx, cy=0.5 * (ny - 1),
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        cx=0.45 * nx,
+        cy=0.5 * (ny - 1),
         cz_keel=1.0,  # hull starts near bottom
         length=max(6.0, 0.35 * nx),
         beam=max(3.0, beam_scale * ny),
@@ -135,7 +139,12 @@ def run_hull_free_surface(config: HullFreeSurfaceConfig) -> dict[str, object]:
     for step in range(1, config.n_steps + 1):
         # 1. CG collision
         f_r, f_b = color_gradient_step_3d(
-            f_r, f_b, tau=tau, A=0.005, beta=0.7, solid_mask=solid_mask,
+            f_r,
+            f_b,
+            tau=tau,
+            A=0.005,
+            beta=0.7,
+            solid_mask=solid_mask,
         )
         # 2. Stream
         f_r = stream3d(f_r)
@@ -166,4 +175,9 @@ def run_hull_free_surface(config: HullFreeSurfaceConfig) -> dict[str, object]:
         float((water_fraction[hull] > 0.5).float().mean().item()) if hull.any() else 0.0
     )
     mean_cd = float(sum(drag_samples) / len(drag_samples)) if drag_samples else 0.0
-    return {"mean_cd": mean_cd, "wetted_fraction": wetted_fraction, "hull_type": config.hull_type, "config": asdict(config)}
+    return {
+        "mean_cd": mean_cd,
+        "wetted_fraction": wetted_fraction,
+        "hull_type": config.hull_type,
+        "config": asdict(config),
+    }

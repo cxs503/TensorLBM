@@ -49,6 +49,7 @@ Wang, J., Wang, M., & Li, Z. (2007).
     "A lattice Boltzmann algorithm for fluid–solid conjugate heat transfer."
     *Int. J. Thermal Sciences* 46, 228–234.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -72,6 +73,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class CHTConfig:
@@ -103,10 +105,11 @@ class CHTConfig:
     T_cold:         Cold wall temperature.
     Q_source:       Volumetric heat source in solid [lattice units].
     """
+
     tau_f: float = 0.6
     kappa_f: float = 1.0 / 6.0
-    alpha_s: float = 0.5 / 6.0   # typically α_s < α_f for conduction-limited solid
-    k_ratio: float = 5.0          # k_s / k_f
+    alpha_s: float = 0.5 / 6.0  # typically α_s < α_f for conduction-limited solid
+    k_ratio: float = 5.0  # k_s / k_f
     beta: float = 2.0e-3
     T_ref: float = 0.5
     gravity: float = 2.0e-5
@@ -128,6 +131,7 @@ class CHTState:
         mask_solid: Boolean mask ``True`` where cells are solid, shape ``(ny, nx)``.
         step:  Current time-step counter.
     """
+
     f: torch.Tensor
     g: torch.Tensor
     T_s: torch.Tensor
@@ -138,6 +142,7 @@ class CHTState:
 # ---------------------------------------------------------------------------
 # Solid conduction step
 # ---------------------------------------------------------------------------
+
 
 def cht_solid_diffusion_step(
     T_s: torch.Tensor,
@@ -167,9 +172,7 @@ def cht_solid_diffusion_step(
     """
     # 2-D Laplacian via 2D convolution with 5-point stencil
     kernel = torch.tensor(
-        [[0.0, 1.0, 0.0],
-         [1.0, -4.0, 1.0],
-         [0.0, 1.0, 0.0]],
+        [[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]],
         dtype=T_s.dtype,
         device=T_s.device,
     ).view(1, 1, 3, 3)
@@ -186,6 +189,7 @@ def cht_solid_diffusion_step(
 # ---------------------------------------------------------------------------
 # Interface condition
 # ---------------------------------------------------------------------------
+
 
 def apply_cht_interface(
     T_fluid: torch.Tensor,
@@ -243,6 +247,7 @@ def apply_cht_interface(
 # Full CHT time loop
 # ---------------------------------------------------------------------------
 
+
 def run_conjugate_ht_2d(
     state: CHTState,
     cfg: CHTConfig,
@@ -290,8 +295,12 @@ def run_conjugate_ht_2d(
         stream_thermal,
     )
 
-    _collide = collide_fn if collide_fn is not None else (
-        lambda f, tau: collide_bgk(f, tau)  # noqa: B023
+    _collide = (
+        collide_fn
+        if collide_fn is not None
+        else (
+            lambda f, tau: collide_bgk(f, tau)  # noqa: B023
+        )
     )
     _stream = stream_fn if stream_fn is not None else stream
 
@@ -303,9 +312,7 @@ def run_conjugate_ht_2d(
         T_fluid = macroscopic_thermal(state.g)
 
         # Buoyancy coupling (Boussinesq)
-        state.f = apply_buoyancy_force(
-            state.f, T_fluid, cfg.T_ref, cfg.beta, cfg.gravity
-        )
+        state.f = apply_buoyancy_force(state.f, T_fluid, cfg.T_ref, cfg.beta, cfg.gravity)
         state.f = _collide(state.f, cfg.tau_f)
         state.f = _stream(state.f)
 
@@ -315,6 +322,7 @@ def run_conjugate_ht_2d(
         else:
             # Simple bounce-back: re-inject reversed distributions at solid cells
             from .boundaries import bounce_back_cells
+
             state.f = bounce_back_cells(state.f, state.mask_solid)
 
         # ---- 2. Fluid thermal: D2Q5 collide + stream ----
@@ -323,9 +331,7 @@ def run_conjugate_ht_2d(
         state.g = stream_thermal(state.g)
 
         # ---- 3. Solid conduction ----
-        state.T_s = cht_solid_diffusion_step(
-            state.T_s, state.mask_solid, cfg.alpha_s, cfg.Q_source
-        )
+        state.T_s = cht_solid_diffusion_step(state.T_s, state.mask_solid, cfg.alpha_s, cfg.Q_source)
 
         # ---- 4. Interface coupling ----
         T_fluid_new = macroscopic_thermal(state.g)

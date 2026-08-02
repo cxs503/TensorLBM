@@ -9,6 +9,7 @@ Run:
     cd /root/.hermes/marine-control/TensorLBM_dev/regress-amr-r1
     python -m pytest tests/test_amr_regression_equivalence.py -v
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,6 +31,7 @@ from tensorlbm.d3q27 import equilibrium27, macroscopic27
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_d3q19_field(nz=4, ny=4, nx=4, seed=42):
     """Create a physically plausible D3Q19 distribution."""
@@ -78,6 +80,7 @@ def _identity(x):
 # PART 1: Original bug identification
 # ===========================================================================
 
+
 class TestOriginalBugIdentification:
     """Identify known bugs in the original adaptive_refinement.py."""
 
@@ -125,8 +128,13 @@ class TestOriginalBugIdentification:
         # PyTorch boolean indexing requires exact shape match; raises IndexError
         with pytest.raises((RuntimeError, IndexError)):
             amr_common.halo_exchange(
-                patch_f, parent_f, box=box, ratio=ratio,
-                lattice="D3Q19", tau_p=1.0, tau_c=0.75,
+                patch_f,
+                parent_f,
+                box=box,
+                ratio=ratio,
+                lattice="D3Q19",
+                tau_p=1.0,
+                tau_c=0.75,
             )
 
     def test_bug2_halo_exchange_works_when_shapes_match(self):
@@ -138,16 +146,26 @@ class TestOriginalBugIdentification:
 
         # Should not raise
         amr_common.halo_exchange(
-            patch_f, parent_f, box=box, ratio=ratio,
-            lattice="D3Q19", tau_p=1.0, tau_c=0.75,
+            patch_f,
+            parent_f,
+            box=box,
+            ratio=ratio,
+            lattice="D3Q19",
+            tau_p=1.0,
+            tau_c=0.75,
         )
         # Verify border was overwritten (interior untouched)
         r = ratio
         interior_before = patch_f[:, r:-r, r:-r, r:-r].clone()
         # Re-run to confirm idempotent structure
         amr_common.halo_exchange(
-            patch_f, parent_f, box=box, ratio=ratio,
-            lattice="D3Q19", tau_p=1.0, tau_c=0.75,
+            patch_f,
+            parent_f,
+            box=box,
+            ratio=ratio,
+            lattice="D3Q19",
+            tau_p=1.0,
+            tau_c=0.75,
         )
         # Interior should be unchanged after second call (border overwritten, interior not)
         # Actually interior IS untouched, so it stays the same
@@ -179,6 +197,7 @@ class TestOriginalBugIdentification:
 # PART 2: Equivalence verification (original vs amr_common)
 # ===========================================================================
 
+
 class TestEquivalenceOriginalVsCommon:
     """Verify that amr_common produces identical output to adaptive_refinement
     for D3Q19 (the only lattice the original supports)."""
@@ -191,11 +210,14 @@ class TestEquivalenceOriginalVsCommon:
         # Original
         f_orig = ar._fh_coarse_to_fine_3d(f, tau_c, tau_f, ratio=2)
         # Common
-        f_common = amr_common.refine(f, lattice="D3Q19", tau_c=tau_c, tau_f=tau_f, ratio=2, use_fh=True)
+        f_common = amr_common.refine(
+            f, lattice="D3Q19", tau_c=tau_c, tau_f=tau_f, ratio=2, use_fh=True
+        )
 
         assert f_orig.shape == f_common.shape == (19, 8, 8, 8)
-        assert torch.allclose(f_orig, f_common, atol=1e-7), \
+        assert torch.allclose(f_orig, f_common, atol=1e-7), (
             "D3Q19 FH refine: original vs common mismatch"
+        )
 
     def test_refine_d3q19_plain_equivalence(self):
         """refine(use_fh=False) D3Q19: amr_common == original."""
@@ -210,11 +232,14 @@ class TestEquivalenceOriginalVsCommon:
         tau_f, tau_c = 0.75, 1.0
 
         f_orig = ar._fh_fine_to_coarse_3d(f_fine, tau_f, tau_c, ratio=2)
-        f_common = amr_common.coarsen(f_fine, lattice="D3Q19", tau_f=tau_f, tau_c=tau_c, ratio=2, use_fh=True)
+        f_common = amr_common.coarsen(
+            f_fine, lattice="D3Q19", tau_f=tau_f, tau_c=tau_c, ratio=2, use_fh=True
+        )
 
         assert f_orig.shape == f_common.shape == (19, 4, 4, 4)
-        assert torch.allclose(f_orig, f_common, atol=1e-7), \
+        assert torch.allclose(f_orig, f_common, atol=1e-7), (
             "D3Q19 FH coarsen: original vs common mismatch"
+        )
 
     def test_coarsen_d3q19_plain_equivalence(self):
         """coarsen(use_fh=False) D3Q19: amr_common == original."""
@@ -243,8 +268,7 @@ class TestEquivalenceOriginalVsCommon:
         assert rho_back.shape == rho_orig.shape
         # Known drift from align_corners=True trilinear on small grids
         max_diff = torch.max(torch.abs(rho_orig - rho_back)).item()
-        assert max_diff < 0.1, \
-            f"Density drift too large: {max_diff} (expected < 0.1 for 4³ grid)"
+        assert max_diff < 0.1, f"Density drift too large: {max_diff} (expected < 0.1 for 4³ grid)"
 
     def test_refine_coarsen_roundtrip_d3q27(self):
         """refine → coarsen roundtrip preserves density (D3Q27).
@@ -261,8 +285,7 @@ class TestEquivalenceOriginalVsCommon:
         rho_back, _, _, _ = macroscopic27(f_back)
         assert rho_back.shape == rho_orig.shape
         max_diff = torch.max(torch.abs(rho_orig - rho_back)).item()
-        assert max_diff < 0.1, \
-            f"D3Q27 density drift too large: {max_diff} (expected < 0.1)"
+        assert max_diff < 0.1, f"D3Q27 density drift too large: {max_diff} (expected < 0.1)"
 
     def test_halo_exchange_equivalence_with_solver_inject(self):
         """halo_exchange (common) produces same result as _inject_to_patch (original).
@@ -278,20 +301,31 @@ class TestEquivalenceOriginalVsCommon:
 
         # --- Common path: standalone halo_exchange ---
         f_patch_common = amr_common.refine(
-            parent_f[:, 1:4, 1:4, 1:4], lattice="D3Q19",
-            tau_c=tau_p, tau_f=tau_c, ratio=ratio,
+            parent_f[:, 1:4, 1:4, 1:4],
+            lattice="D3Q19",
+            tau_c=tau_p,
+            tau_f=tau_c,
+            ratio=ratio,
         )
         amr_common.halo_exchange(
-            f_patch_common, parent_f, box=box, ratio=ratio,
-            lattice="D3Q19", tau_p=tau_p, tau_c=tau_c,
+            f_patch_common,
+            parent_f,
+            box=box,
+            ratio=ratio,
+            lattice="D3Q19",
+            tau_p=tau_p,
+            tau_c=tau_c,
         )
 
         # --- Original path: replicate _inject_to_patch logic ---
         f_patch_orig = ar._fh_coarse_to_fine_3d(
-            parent_f[:, 1:4, 1:4, 1:4], tau_p, tau_c, ratio,
+            parent_f[:, 1:4, 1:4, 1:4],
+            tau_p,
+            tau_c,
+            ratio,
         )
         # Replicate _inject_to_patch
-        f_c = parent_f[:, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1]
+        f_c = parent_f[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1]
         f_up = ar._fh_coarse_to_fine_3d(f_c, tau_p, tau_c, ratio)
         nz_f, ny_f, nx_f = f_patch_orig.shape[1:]
         border = torch.ones((nz_f, ny_f, nx_f), dtype=torch.bool)
@@ -301,17 +335,21 @@ class TestEquivalenceOriginalVsCommon:
         fx = min(f_up.shape[3], nx_f)
         f_patch_orig[:, border[:fz, :fy, :fx]] = f_up[:, border[:fz, :fy, :fx]]
 
-        assert torch.allclose(f_patch_common, f_patch_orig, atol=1e-7), \
+        assert torch.allclose(f_patch_common, f_patch_orig, atol=1e-7), (
             "halo_exchange (common) vs _inject_to_patch (original) mismatch"
+        )
 
     def test_amr_patch3d_equivalence(self):
         """AMRPatch3D dataclass in amr_common has same fields as original."""
         from tensorlbm.adaptive_refinement import AMRPatch3D as OrigPatch
+
         f = _make_d3q19_field(nz=8, ny=8, nx=8)
         box = BoxRegion(0, 4, 0, 4, 0, 4)
 
         p_orig = OrigPatch(f=f, box=box, ratio=2, level=1, parent_level=0, tau=0.75)
-        p_common = amr_common.AMRPatch3D(f=f, box=box, ratio=2, level=1, parent_level=0, tau=0.75, lattice="D3Q19")
+        p_common = amr_common.AMRPatch3D(
+            f=f, box=box, ratio=2, level=1, parent_level=0, tau=0.75, lattice="D3Q19"
+        )
 
         assert p_orig.nz == p_common.nz == 8
         assert p_orig.ny == p_common.ny == 8
@@ -329,6 +367,7 @@ class TestEquivalenceOriginalVsCommon:
 # ===========================================================================
 # PART 3: Combination testing — AMR + collision complete loop
 # ===========================================================================
+
 
 class TestCombinationAMRCollision:
     """Test AMR refine/coarsen combined with collision operators."""
@@ -359,8 +398,9 @@ class TestCombinationAMRCollision:
         rho_orig, _, _, _ = macroscopic3d(f)
         rho_final, _, _, _ = macroscopic3d(f_coarse)
         max_diff = torch.max(torch.abs(rho_orig - rho_final)).item()
-        assert max_diff < 0.1, \
+        assert max_diff < 0.1, (
             f"Density drift after refine-collide-coarsen: {max_diff} (expected < 0.1)"
+        )
 
     def test_refine_collide_coarsen_loop_d3q27(self):
         """Full loop: refine → collide → coarsen (D3Q27)."""
@@ -377,8 +417,7 @@ class TestCombinationAMRCollision:
         rho_orig, _, _, _ = macroscopic27(f)
         rho_final, _, _, _ = macroscopic27(f_coarse)
         max_diff = torch.max(torch.abs(rho_orig - rho_final)).item()
-        assert max_diff < 0.1, \
-            f"D3Q27 density drift after loop: {max_diff} (expected < 0.1)"
+        assert max_diff < 0.1, f"D3Q27 density drift after loop: {max_diff} (expected < 0.1)"
 
     def test_multi_step_amr_loop_d3q19(self):
         """Multi-step AMR loop: refine, collide multiple steps, coarsen."""
@@ -406,19 +445,28 @@ class TestCombinationAMRCollision:
 
         # Create patch with matching shape
         f_patch = amr_common.refine(
-            parent_f[:, 1:5, 1:5, 1:5], lattice="D3Q19",
-            tau_c=1.0, tau_f=0.75, ratio=ratio,
+            parent_f[:, 1:5, 1:5, 1:5],
+            lattice="D3Q19",
+            tau_c=1.0,
+            tau_f=0.75,
+            ratio=ratio,
         )
         f_interior_before = f_patch[:, ratio:-ratio, ratio:-ratio, ratio:-ratio].clone()
 
         amr_common.halo_exchange(
-            f_patch, parent_f, box=box, ratio=ratio,
-            lattice="D3Q19", tau_p=1.0, tau_c=0.75,
+            f_patch,
+            parent_f,
+            box=box,
+            ratio=ratio,
+            lattice="D3Q19",
+            tau_p=1.0,
+            tau_c=0.75,
         )
 
         f_interior_after = f_patch[:, ratio:-ratio, ratio:-ratio, ratio:-ratio]
-        assert torch.allclose(f_interior_before, f_interior_after, atol=0), \
+        assert torch.allclose(f_interior_before, f_interior_after, atol=0), (
             "halo_exchange modified interior cells!"
+        )
 
     def test_amr_patch3d_lifecycle(self):
         """Full AMRPatch3D lifecycle: create, collide, halo exchange, coarsen."""
@@ -429,19 +477,32 @@ class TestCombinationAMRCollision:
 
         # Create patch
         f_fine = amr_common.refine(
-            parent_f[:, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1],
-            lattice="D3Q19", tau_c=tau_p, tau_f=tau_c, ratio=ratio,
+            parent_f[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1],
+            lattice="D3Q19",
+            tau_c=tau_p,
+            tau_f=tau_c,
+            ratio=ratio,
         )
         patch = amr_common.AMRPatch3D(
-            f=f_fine, box=box, ratio=ratio, level=1,
-            parent_level=0, tau=tau_c, lattice="D3Q19",
+            f=f_fine,
+            box=box,
+            ratio=ratio,
+            level=1,
+            parent_level=0,
+            tau=tau_c,
+            lattice="D3Q19",
         )
         assert patch.cells == 512
 
         # Halo exchange (inject parent into border)
         amr_common.halo_exchange(
-            patch.f, parent_f, box=box, ratio=ratio,
-            lattice="D3Q19", tau_p=tau_p, tau_c=tau_c,
+            patch.f,
+            parent_f,
+            box=box,
+            ratio=ratio,
+            lattice="D3Q19",
+            tau_p=tau_p,
+            tau_c=tau_c,
         )
 
         # Collide
@@ -449,12 +510,16 @@ class TestCombinationAMRCollision:
 
         # Coarsen back
         f_coarse = amr_common.coarsen(
-            patch.f, lattice="D3Q19", tau_f=tau_c, tau_c=tau_p, ratio=ratio,
+            patch.f,
+            lattice="D3Q19",
+            tau_f=tau_c,
+            tau_c=tau_p,
+            ratio=ratio,
         )
         assert f_coarse.shape == (19, 4, 4, 4)
 
         # Write back to parent
-        parent_f[:, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1] = f_coarse
+        parent_f[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1] = f_coarse
         rho, _, _, _ = macroscopic3d(parent_f)
         assert (rho > 0).all()
 
@@ -471,8 +536,11 @@ class TestCombinationAMRCollision:
 
         # Use amr_common.refine (would be D3Q27-compatible)
         f_patch = amr_common.refine(
-            f_coarse[:, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1],
-            lattice="D3Q19", tau_c=tau_c, tau_f=tau_f, ratio=ratio,
+            f_coarse[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1],
+            lattice="D3Q19",
+            tau_c=tau_c,
+            tau_f=tau_f,
+            ratio=ratio,
         )
 
         # Collide + stream + boundary
@@ -482,7 +550,7 @@ class TestCombinationAMRCollision:
 
         # Restrict back
         f_avg = amr_common.coarsen(f_patch, lattice="D3Q19", tau_f=tau_f, tau_c=tau_c)
-        f_coarse[:, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1] = f_avg
+        f_coarse[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1] = f_avg
 
         rho, _, _, _ = macroscopic3d(f_coarse)
         assert (rho > 0).all()
@@ -492,6 +560,7 @@ class TestCombinationAMRCollision:
 # ===========================================================================
 # PART 4: Edge cases and stress tests
 # ===========================================================================
+
 
 class TestEdgeCases:
     """Edge case tests for robustness."""
@@ -536,8 +605,9 @@ class TestEdgeCases:
             f = _make_d3q19_field(nz=4, ny=4, nx=4, seed=seed)
             f_orig = ar._fh_coarse_to_fine_3d(f, 1.0, 0.75, 2)
             f_common = amr_common.refine(f, lattice="D3Q19", tau_c=1.0, tau_f=0.75)
-            assert torch.allclose(f_orig, f_common, atol=1e-7), \
+            assert torch.allclose(f_orig, f_common, atol=1e-7), (
                 f"Equivalence failed for seed {seed}"
+            )
 
     def test_fh_rescaling_correctness(self):
         """FH rescaling: when tau_f == tau_c, FH should equal plain interpolation
@@ -547,8 +617,9 @@ class TestEdgeCases:
         f_fh = amr_common.refine(f, lattice="D3Q19", tau_c=1.0, tau_f=1.0, use_fh=True)
         f_plain = amr_common.refine(f, lattice="D3Q19", ratio=2, use_fh=False)
         # They should be identical because scale=1 means no rescaling
-        assert torch.allclose(f_fh, f_plain, atol=1e-7), \
+        assert torch.allclose(f_fh, f_plain, atol=1e-7), (
             "FH with tau_f==tau_c should equal plain interpolation"
+        )
 
 
 if __name__ == "__main__":
