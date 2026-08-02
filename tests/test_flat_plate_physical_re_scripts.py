@@ -12,6 +12,7 @@ def test_physical_re_flat_plate_scripts_are_valid_shell() -> None:
     for name in (
         "run_flat_plate_physical_re_level.sh",
         "run_flat_plate_physical_re_chain.sh",
+        "assess_flat_plate_physical_re_when_ready.sh",
     ):
         subprocess.run(
             ["bash", "-n", str(ROOT / "scripts" / name)],
