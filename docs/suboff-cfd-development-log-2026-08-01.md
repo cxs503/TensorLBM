@@ -1901,6 +1901,15 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      reference to continue to 100000 without discarding its turbulent state;
      three CPU tests cover normal execution, mismatch rejection and steps-only
      extension.
+212. The corrected-source flat-plate tier closes with admitted L256/L384/L512
+     results.  Cf increases monotonically from `0.00459427` through
+     `0.00465583` to `0.00466725`; observed order is 3.737, extrapolated Cf is
+     `0.00467317`, and its ITTC-1957 error is 0.306%.  L512 itself is 0.432%
+     from ITTC, has 0.000307% block range, 0.0477% force-observer mismatch, no
+     limiting, and 3072/3072 frozen wall samples inside y+=30-1000.  The final
+     wall audit still rejects Duprat as a force replacement.  Immutable hashes
+     are in
+     `docs/evidence/flat-plate-v5-l256-l384-l512-convergence-admitted-r1.json`.
 
 ## Rejected candidates
 
