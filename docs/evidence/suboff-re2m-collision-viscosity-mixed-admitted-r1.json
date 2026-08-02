@@ -11,6 +11,7 @@
     "steps": 12000,
     "fit_start_step": 1000,
     "maximum_relative_error_pct": 5.0,
+    "minimum_fitted_log_decay": 0.004,
     "population_storage_dtype": "float32",
     "natural_kbc_compute_dtype": "float64"
   },
@@ -33,6 +34,12 @@
       2.0471539823950895,
       1.6704516378076426
     ],
+    "fitted_log_amplitude_decay_by_level": [
+      0.004778670113088142,
+      0.009421319213584798,
+      0.018695501056199923,
+      0.03725297495907857
+    ],
     "minimum_population_by_level": [
       0.02617640420794487,
       0.026185844093561172,
@@ -47,8 +54,8 @@
     "flow_solution_validated": false
   },
   "artifacts": {
-    "viscosity_schedule": "results/collision-viscosity-natural-kbc-suboff-re2m-mixed-r1.json",
-    "viscosity_schedule_sha256": "f67484f5cec18463333d702e8cd904a55a1b91d9785c0c897e17ed3b9e9288bc"
+    "viscosity_schedule": "results/collision-viscosity-natural-kbc-suboff-re2m-mixed-r2.json",
+    "viscosity_schedule_sha256": "b6978b23d0afded1faae1863e93548ca807c5a5cc2a4ca7ea0ae46dd086e3d96"
   },
   "decision": {
     "permit_re2m_runtime_candidate_after_re1m_health_gate": true,
