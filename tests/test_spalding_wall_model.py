@@ -70,6 +70,46 @@ def test_flat_halfway_links_recover_half_cell_normal_distance() -> None:
     assert distance[cell].item() == pytest.approx(0.5)
 
 
+@pytest.mark.parametrize("q_count", (19, 27))
+def test_directional_wall_distance_matches_vectorized_reference(q_count: int) -> None:
+    generator = torch.Generator().manual_seed(41 + q_count)
+    shape = (3, 4, 5)
+    mask = torch.rand((q_count, *shape), generator=generator) > 0.72
+    mask[0] = False
+    q = 0.05 + 0.9 * torch.rand(
+        (q_count, *shape), generator=generator, dtype=torch.float64,
+    )
+    raw_normals = tuple(
+        torch.randn(shape, generator=generator, dtype=torch.float64)
+        for _ in range(3)
+    )
+    magnitude = torch.sqrt(sum(component.square() for component in raw_normals))
+    normals = tuple(component / magnitude for component in raw_normals)
+    if q_count == 19:
+        from tensorlbm.d3q19 import C
+    else:
+        from tensorlbm.d3q27 import C
+    c = C.to(dtype=q.dtype)
+    projection = (
+        c[:, 0, None, None, None] * normals[0]
+        + c[:, 1, None, None, None] * normals[1]
+        + c[:, 2, None, None, None] * normals[2]
+    ).abs()
+    weight = projection * mask.to(q.dtype)
+    denominator = weight.sum(dim=0)
+    expected = torch.where(
+        denominator > 0.0,
+        ((q * weight).sum(dim=0) / denominator.clamp_min(1.0e-12)).clamp_min(
+            1.0e-4,
+        ),
+        torch.zeros_like(denominator),
+    )
+
+    actual = effective_bfl_wall_distance(mask, q, normals)
+
+    torch.testing.assert_close(actual, expected, rtol=1.0e-14, atol=1.0e-14)
+
+
 def test_exchange_velocity_samples_linear_field_at_requested_wall_distance() -> None:
     mask, q, normals, cell = _flat_boundary()
     shape = q.shape[1:]
