@@ -1840,6 +1840,16 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      followed by a periodic-hill or equivalent adverse-gradient case.  Negative
      evidence is frozen in
      `docs/evidence/pressure-gradient-wall-channel-2d-reference-rejected-r1.json`.
+205. A replacement 3-D periodic wall-resolved channel now provides D3Q19
+     natural-KBC/cumulant collision, x/z periodicity, halfway y-wall reflection,
+     full mass-conservative Guo forcing, deterministic vortical initialization,
+     profile statistics, checkpoint/resume and an exact global momentum-budget
+     wall-force observer.  Acceptance requires positive finite populations,
+     friction velocity within 2% of `u_tau^2=G H/2`, and below 1% recent block
+     range.  CPU checkpoint/mismatch tests and a 32x18x16 compiled-GPU probe
+     pass.  The Re_tau=180 128x64x64 run is active on otherwise idle GPU 4;
+     its first two 500-step blocks remain positive with mass drift below
+     `2e-6`, while force stationarity is not yet claimed.
 
 ## Rejected candidates
 
