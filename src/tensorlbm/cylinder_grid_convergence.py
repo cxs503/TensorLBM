@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 
 _IDENTITY_FIELDS = (
     "schema_version", "center_x_fraction", "reynolds", "lattice_speed",
-    "collision_model", "sponge_strength", "sponge_inlet", "far_field_mode",
+    "collision_model", "collision_chunk_cells", "compile_natural_kbc",
+    "sponge_strength", "sponge_inlet", "far_field_mode",
     "periodic_axes", "minimum_shedding_cycles", "link_force_frame",
 )
 _TIME_FIELDS = (

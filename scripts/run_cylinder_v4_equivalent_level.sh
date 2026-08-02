@@ -55,6 +55,22 @@ else
   exit 127
 fi
 collision_model=${TENSORLBM_COLLISION_MODEL:-cumulant_d3q19_cs0}
+collision_chunk_cells=${TENSORLBM_COLLISION_CHUNK_CELLS:-0}
+[[ $collision_chunk_cells =~ ^[0-9]+$ ]] || {
+  echo "TENSORLBM_COLLISION_CHUNK_CELLS must be non-negative" >&2
+  exit 2
+}
+compile_natural_kbc=()
+if [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} == 1 ]]; then
+  [[ $collision_model == natural_kbc_d3q19 ]] || {
+    echo "TENSORLBM_COMPILE_NATURAL_KBC requires natural_kbc_d3q19" >&2
+    exit 2
+  }
+  compile_natural_kbc=(--compile-natural-kbc)
+elif [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} != 0 ]]; then
+  echo "TENSORLBM_COMPILE_NATURAL_KBC must be 0 or 1" >&2
+  exit 2
+fi
 case "$collision_model" in
   cumulant_d3q19_cs0) variant= ;;
   natural_kbc_d3q19) variant=-natural-kbc ;;
@@ -76,6 +92,8 @@ exec "$python" examples/cylinder_bfl_cv_validate.py \
   --radius "$radius" --center-x-fraction 0.30 \
   --reynolds 100 --lattice-speed 0.06 \
   --collision-model "$collision_model" \
+  --collision-chunk-cells "$collision_chunk_cells" \
+  "${compile_natural_kbc[@]}" \
   --steps "$steps" --warmup-steps "$warmup" --ramp-steps "$ramp" \
   --sponge-width "$sponge" --sponge-strength 0.2 --cv-margin "$cv" \
   --report-interval "$report" --checkpoint-interval "$checkpoint_interval" \
