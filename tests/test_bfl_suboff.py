@@ -184,6 +184,86 @@ def test_wall_model_slip_bfl_preserves_uniform_tangential_flow() -> None:
     assert stationary_force[0] > 0.0
 
 
+def test_bfl_link_force_decomposition_closes_flat_wall_impulse() -> None:
+    shape = (3, 3, 3)
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.06, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f_prev = equilibrium3d(rho, ux, zero, zero)
+    masks = torch.zeros_like(f_prev, dtype=torch.bool)
+    q = torch.full_like(f_prev, 0.5)
+    cell = (1, 1, 1)
+    for direction in (3, 7, 10):
+        masks[(direction,) + cell] = True
+    nx_n = torch.zeros(shape, dtype=torch.float64)
+    ny_n = torch.zeros(shape, dtype=torch.float64)
+    nz_n = torch.zeros(shape, dtype=torch.float64)
+    ny_n[cell] = 1.0
+
+    _, force, decomposition = bouzidi_bounce_back_d3q19(
+        f_prev.clone(),
+        f_prev,
+        masks,
+        q,
+        return_force=True,
+        force_normals=(nx_n, ny_n, nz_n),
+        return_force_decomposition=True,
+    )
+
+    assert decomposition.active_links == 3
+    assert decomposition.decomposed_links == 3
+    assert decomposition.undecomposed_links == 0
+    assert decomposition.coverage_fraction == pytest.approx(1.0)
+    assert decomposition.unresolved_force == pytest.approx((0.0, 0.0, 0.0))
+    assert decomposition.total_force == pytest.approx(force, abs=1e-14)
+    assert decomposition.normal_force[0] == pytest.approx(0.0, abs=1e-14)
+    assert decomposition.tangential_force[0] == pytest.approx(force[0], abs=1e-14)
+    assert decomposition.normal_force[1] == pytest.approx(force[1], abs=1e-14)
+    assert decomposition.tangential_force[1] == pytest.approx(0.0, abs=1e-14)
+    assert decomposition.maximum_closure_error == pytest.approx(0.0, abs=1e-14)
+    assert decomposition.maximum_relative_closure_error == pytest.approx(0.0)
+
+
+def test_bfl_link_force_decomposition_requires_normals_and_force() -> None:
+    f = torch.zeros((19, 2, 2, 2))
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    with pytest.raises(ValueError, match="return_force"):
+        bouzidi_bounce_back_d3q19(
+            f,
+            f,
+            masks,
+            q,
+            return_force_decomposition=True,
+        )
+    with pytest.raises(ValueError, match="force_normals"):
+        bouzidi_bounce_back_d3q19(
+            f,
+            f,
+            masks,
+            q,
+            return_force=True,
+            return_force_decomposition=True,
+        )
+
+    masks[1, 1, 1, 1] = True
+    _, force, decomposition = bouzidi_bounce_back_d3q19(
+        f,
+        f,
+        masks,
+        q,
+        return_force=True,
+        force_normals=(f[0], f[0], f[0]),
+        return_force_decomposition=True,
+    )
+    assert decomposition.active_links == 1
+    assert decomposition.decomposed_links == 0
+    assert decomposition.coverage_fraction == pytest.approx(0.0)
+    assert decomposition.unresolved_force == pytest.approx(force)
+    assert decomposition.maximum_closure_error == pytest.approx(0.0)
+    assert decomposition.maximum_relative_closure_error == pytest.approx(0.0)
+
+
 def test_moving_bfl_laboratory_force_closes_nonequilibrium_control_volume() -> None:
     """Wall-frame correction must not replace the conservative force ledger."""
     from tensorlbm.boundaries3d import sphere_mask
@@ -418,6 +498,55 @@ def test_exchange_location_wall_source_is_conservative_and_changes_stress() -> N
     assert diagnostics.pressure_gradient_parameter_p95 == pytest.approx(0.0)
     assert diagnostics.pressure_gradient_parameter_max == pytest.approx(0.0)
     assert diagnostics.shear_force[0] == pytest.approx(exchange_friction)
+    assert diagnostics.link_force_decomposition is None
+
+
+def test_wall_diagnostics_include_actual_bfl_link_force_decomposition() -> None:
+    from tensorlbm.wall_model import bfl_wall_function_3d
+
+    shape = (3, 5, 5)
+    rho = torch.ones(shape, dtype=torch.float64)
+    ux = torch.full(shape, 0.04, dtype=torch.float64)
+    zero = torch.zeros(shape, dtype=torch.float64)
+    f = equilibrium3d(rho, ux, zero, zero)
+    solid = torch.zeros(shape, dtype=torch.bool)
+    solid[:, 0, :] = True
+    near = torch.zeros(shape, dtype=torch.bool)
+    near[:, 1, :] = True
+    masks = torch.zeros_like(f, dtype=torch.bool)
+    q = torch.full_like(f, 0.5)
+    for direction in (4, 8, 9, 16, 18):
+        masks[direction, :, 1, :] = True
+    nx_n = torch.zeros(shape, dtype=torch.float64)
+    ny_n = torch.zeros(shape, dtype=torch.float64)
+    nz_n = torch.zeros(shape, dtype=torch.float64)
+    ny_n[:, 1, :] = 1.0
+
+    _, _, pressure, diagnostics = bfl_wall_function_3d(
+        f.clone(),
+        f,
+        solid,
+        1.0e-3,
+        masks,
+        q,
+        near_mask=near,
+        wall_normals=(nx_n, ny_n, nz_n),
+        bfl_wall_mode="wall_model_slip",
+        return_wall_diagnostics=True,
+    )
+
+    decomposition = diagnostics.link_force_decomposition
+    assert decomposition is not None
+    assert decomposition["active_links"] == int(masks.sum().item())
+    total = decomposition["total_force"]
+    normal = decomposition["normal_force"]
+    tangential = decomposition["tangential_force"]
+    assert total[0] == pytest.approx(pressure, abs=1e-12)
+    for component in range(3):
+        assert total[component] == pytest.approx(
+            normal[component] + tangential[component], abs=1e-12,
+        )
+    assert decomposition["maximum_closure_error"] < 1.0e-12
 
 
 def test_exchange_location_requires_positive_distance() -> None:

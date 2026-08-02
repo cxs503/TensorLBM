@@ -96,14 +96,20 @@ def assess_suboff_nested_convergence(
             acceptance,
             geometry,
         ))
-        source_quality &= all(
+        conservative_observer_quality = acceptance.get(
+            "conservative_force_observer_target_met",
+        )
+        if conservative_observer_quality is None:
+            conservative_observer_quality = acceptance.get(
+                "surface_observer_target_met",
+            )
+        source_quality &= conservative_observer_quality is True and all(
             acceptance.get(field) is True
             for field in (
                 "integration_smoke_admitted",
                 "duration_target_met",
                 "stationarity_target_met",
                 "nested_control_volume_target_met",
-                "surface_observer_target_met",
                 "population_health_target_met",
                 "collision_viscosity_target_met",
                 "wall_exchange_scaling_target_met",

@@ -128,6 +128,19 @@ def test_nested_suboff_smoke_closes_force_and_both_interfaces(tmp_path: Path) ->
     assert result["result"]["statistics"]["fully_physical_convective_times"] > 0
     assert result["result"]["statistics"]["auxiliary_cv_difference_pct"] is not None
     assert result["result"]["statistics"]["surface_observer_difference_pct"] is not None
+    assert result["result"]["statistics"]["surface_pressure_observer_scope"] == (
+        "rejected_diagnostic_only_not_an_acceptance_gate"
+    )
+    assert result["acceptance"]["surface_observer_used_for_acceptance"] is False
+    assert result["acceptance"]["conservative_force_observer_target_met"] is True
+    link_decomposition = result["result"]["steps"][0][
+        "bfl_link_force_decomposition"
+    ]
+    assert link_decomposition["samples"] > 0
+    assert link_decomposition["maximum_relative_closure_error"] < 1.0e-5
+    assert link_decomposition["scope"] == (
+        "diagnostic_population_impulse_not_pressure_shear"
+    )
     assert result["result"]["statistics"]["wall_exchange"]["mean_distance_cells"] > 0.0
     y_plus_distribution = result["result"]["statistics"]["wall_exchange"][
         "y_plus_distribution"

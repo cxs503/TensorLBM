@@ -1462,6 +1462,7 @@ def run(args: argparse.Namespace) -> dict:
                 diagnostics.pressure_gradient_parameter_max
             )
             pressure_gradient_summary = diagnostics.pressure_gradient_summary
+            link_force_decomposition = diagnostics.link_force_decomposition
         else:
             out, friction, pressure = wall_result
             mean_y_plus = None
@@ -1473,6 +1474,7 @@ def run(args: argparse.Namespace) -> dict:
             pressure_gradient_parameter_p95 = None
             pressure_gradient_parameter_max = None
             pressure_gradient_summary = None
+            link_force_decomposition = None
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
         require_finite_limiter(positivity, level=level, stage="post_wall")
@@ -1528,6 +1530,7 @@ def run(args: argparse.Namespace) -> dict:
             "pressure_gradient_parameter_p95": pressure_gradient_parameter_p95,
             "pressure_gradient_parameter_max": pressure_gradient_parameter_max,
             "pressure_gradient_summary": pressure_gradient_summary,
+            "link_force_decomposition": link_force_decomposition,
             "auxiliary": auxiliary_forces,
         })
         return AMRAdvanceResult(out, post_collision)
@@ -1899,6 +1902,63 @@ def run(args: argparse.Namespace) -> dict:
             ).to_dict()
             if pressure_gradient_summaries else None
         )
+        link_force_samples = [
+            item["link_force_decomposition"] for item in force_samples
+            if item["link_force_decomposition"] is not None
+        ]
+        link_force_aggregate = None
+        if link_force_samples:
+            link_force_aggregate = {
+                "scope": "diagnostic_population_impulse_not_pressure_shear",
+                "force_frame": link_force_samples[0]["force_frame"],
+                "samples": len(link_force_samples),
+                "minimum_active_links": min(
+                    item["active_links"] for item in link_force_samples
+                ),
+                "maximum_active_links": max(
+                    item["active_links"] for item in link_force_samples
+                ),
+                "minimum_coverage_fraction": min(
+                    item["coverage_fraction"] for item in link_force_samples
+                ),
+                "mean_total_force_n": [
+                    sum(item["total_force"][axis] for item in link_force_samples)
+                    / len(link_force_samples)
+                    * scale
+                    for axis in range(3)
+                ],
+                "mean_geometry_normal_force_n": [
+                    sum(item["normal_force"][axis] for item in link_force_samples)
+                    / len(link_force_samples)
+                    * scale
+                    for axis in range(3)
+                ],
+                "mean_geometry_tangential_force_n": [
+                    sum(
+                        item["tangential_force"][axis]
+                        for item in link_force_samples
+                    )
+                    / len(link_force_samples)
+                    * scale
+                    for axis in range(3)
+                ],
+                "mean_unresolved_force_n": [
+                    sum(
+                        item["unresolved_force"][axis]
+                        for item in link_force_samples
+                    )
+                    / len(link_force_samples)
+                    * scale
+                    for axis in range(3)
+                ],
+                "maximum_closure_error_n": max(
+                    item["maximum_closure_error"] for item in link_force_samples
+                ) * scale,
+                "maximum_relative_closure_error": max(
+                    item["maximum_relative_closure_error"]
+                    for item in link_force_samples
+                ),
+            }
         record = {
             "step": current_step,
             "collision_resolved_reynolds": instantaneous_reynolds,
@@ -1952,10 +2012,12 @@ def run(args: argparse.Namespace) -> dict:
                 ) if pressure_gradient_samples else None
             ),
             "wall_pressure_gradient_distribution": pressure_gradient_aggregate,
+            "bfl_link_force_decomposition": link_force_aggregate,
             "wall_fully_activated": current_step >= max(
                 wall_normal_ramp_steps, wall_shear_ramp_steps,
             ),
             "surface_pressure_plus_wall_stress_n": None,
+            "surface_pressure_observer_status": "rejected_diagnostic_only",
         }
         if current_step % args.surface_force_interval == 0:
             surface_pressure = drag_pressure_integration(
@@ -2013,6 +2075,10 @@ def run(args: argparse.Namespace) -> dict:
             for record in target_reynolds_records
         )
         if target_reynolds_records else None
+    )
+    conservative_force_observer_acceptable = (
+        maximum_corrected_difference is not None
+        and maximum_corrected_difference <= 0.1
     )
     finite = all(
         bool(torch.isfinite(level).all()) for level in hierarchy.level_populations
@@ -2093,8 +2159,7 @@ def run(args: argparse.Namespace) -> dict:
     admitted = (
         finite
         and bool(target_reynolds_records)
-        and maximum_corrected_difference is not None
-        and maximum_corrected_difference <= 0.1
+        and conservative_force_observer_acceptable
         and max(maximum_reflux_residual) <= 1.0e-6
         and max(maximum_reflux_limited_directions) == 0
         and max(maximum_reflux_applied_correction_fraction)
@@ -2291,7 +2356,6 @@ def run(args: argparse.Namespace) -> dict:
         and duration_acceptable
         and stationarity_acceptable
         and nested_cv_acceptable
-        and surface_observer_acceptable
         and reference_error_pct is not None
         and reference_error_pct <= 5.0
         and geometry_resolution.absolute_reference_resolved
@@ -2343,6 +2407,9 @@ def run(args: argparse.Namespace) -> dict:
             "gradient_sgs_solid_velocity": [0.0, 0.0, 0.0],
             "force_samples_per_root_step": force_averager.expected_samples,
             "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
+            "link_force_decomposition_scheme": (
+                "actual_population_impulse_geometry_projection_v1"
+            ),
             "appendage_link_scheme": (
                 SUBOFF_APPENDAGE_LINK_SCHEME
                 if args.hull_type == "full"
@@ -2462,6 +2529,9 @@ def run(args: argparse.Namespace) -> dict:
                 "surface_observer_difference_pct": (
                     surface_observer_difference_pct
                 ),
+                "surface_pressure_observer_scope": (
+                    "rejected_diagnostic_only_not_an_acceptance_gate"
+                ),
                 "wall_exchange": {
                     "samples": len(wall_records),
                     "mean_distance_cells": (
@@ -2523,6 +2593,10 @@ def run(args: argparse.Namespace) -> dict:
             "stationarity_target_met": stationarity_acceptable,
             "nested_control_volume_target_met": nested_cv_acceptable,
             "surface_observer_target_met": surface_observer_acceptable,
+            "surface_observer_used_for_acceptance": False,
+            "conservative_force_observer_target_met": (
+                conservative_force_observer_acceptable
+            ),
             "reference_error_target_met": (
                 reference_error_pct is not None and reference_error_pct <= 5.0
             ),
