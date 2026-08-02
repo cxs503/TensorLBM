@@ -1,0 +1,82 @@
+{
+  "schema": "tensorlbm-bfl-common-geometry-correction-v1",
+  "status": "common_geometry_and_population_reconstruction_corrected",
+  "physical_validation": false,
+  "defect": {
+    "ray_parameterization": "x(t) = x_fluid + t * c_i",
+    "neighbor_parameter": 1.0,
+    "correct_fraction": "q = t_intersection",
+    "old_fraction": "q = t_intersection / |c_i|",
+    "consequence": "axial links were unchanged, but diagonal BFL links were placed systematically too close to the fluid node",
+    "population_reconstruction": "legacy scalar D2Q9/D3Q19/D3Q27 routines used post-stream data from the solid direction; corrected routines use outgoing post-collision f_i(x) and, for q<0.5, f_i(x-c_i)"
+  },
+  "analytic_regressions": [
+    {
+      "geometry": "circle/sphere radius 2 centered at (4,4[,4])",
+      "fluid_node": "(6,6[,4])",
+      "direction": "(-1,-1[,0])",
+      "correct_q": 0.5857864376269049,
+      "old_q": 0.414213562373095,
+      "derivation": "sqrt(2) * (2 - t) = 2"
+    },
+    {
+      "geometry": "D3Q27 sphere radius 2 centered at (4,4,4)",
+      "fluid_node": "(6,6,6)",
+      "direction": "(-1,-1,-1)",
+      "correct_q": 0.8452994616207485,
+      "old_q": 0.4880338717125848,
+      "derivation": "sqrt(3) * (2 - t) = 2"
+    }
+  ],
+  "affected_common_modules": [
+    "interpolated_bc.compute_q_circle",
+    "interpolated_bc.compute_q_sphere",
+    "bfl_common.compute_q_cylinder_common",
+    "bfl_common.compute_q_sphere_common",
+    "interpolated_bc_common.compute_q_sphere_27",
+    "interpolated_bc_ellipsoid.compute_q_ellipsoid",
+    "legacy scalar D2Q9/D3Q19 and common vector/scalar BFL reconstruction"
+  ],
+  "unaffected_current_cylinder_path": {
+    "geometry_function": "bfl_d3q19.compute_q_cylinder_d3q19",
+    "already_used_q_equals_t": true,
+    "population_function": "bfl_d3q19.bouzidi_bounce_back_d3q19",
+    "already_used_post_collision_outgoing_and_upstream_populations": true
+  },
+  "sphere_r9_r12_r15_audit": {
+    "r9": {
+      "active_links": 5826,
+      "diagonal_links": 4308,
+      "diagonal_fraction": 0.7394438982009888,
+      "maximum_q_error": 0.2928932309150696,
+      "mean_absolute_q_error_all_active_links": 0.11758138984441757
+    },
+    "r12": {
+      "active_links": 10242,
+      "diagonal_links": 7596,
+      "diagonal_fraction": 0.7416520118713379,
+      "maximum_q_error": 0.2928932309150696,
+      "mean_absolute_q_error_all_active_links": 0.09737368673086166
+    },
+    "r15": {
+      "active_links": 16170,
+      "diagonal_links": 11916,
+      "diagonal_fraction": 0.7369202375411987,
+      "maximum_q_error": 0.2928932309150696,
+      "mean_absolute_q_error_all_active_links": 0.11197349429130554
+    }
+  },
+  "validation_policy": {
+    "prior_sphere_r9_r12_r15_physical_convergence_admitted": false,
+    "prior_raw_results_preserved": true,
+    "sphere_sequence_must_be_rerun": true,
+    "suboff_current_specialized_q_path_affected": false,
+    "cylinder_current_specialized_q_path_affected": false,
+    "selection_by_reference_proximity": false
+  },
+  "tests": {
+    "focused_bfl_and_canonical_compositions": 122,
+    "analytic_fraction_tests": 7,
+    "all_focused_tests_passed": true
+  }
+}
