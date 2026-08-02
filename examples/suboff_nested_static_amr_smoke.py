@@ -304,6 +304,15 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     result.add_argument(
+        "--population-storage-dtype",
+        choices=("float32", "float64"),
+        default="float32",
+        help=(
+            "population storage precision for every AMR level; float64 is a "
+            "high-Re precision path and requires an explicit memory budget"
+        ),
+    )
+    result.add_argument(
         "--wall-force-direction-chunk",
         type=int,
         default=4,
@@ -735,7 +744,7 @@ def run(args: argparse.Namespace) -> dict:
         "collision_chunk_cells": args.collision_chunk_cells,
         "compile_natural_kbc": args.compile_natural_kbc,
         "natural_kbc_compute_dtype": args.natural_kbc_compute_dtype,
-        "population_storage_dtype": "float32",
+        "population_storage_dtype": args.population_storage_dtype,
         "wall_force_direction_chunk": args.wall_force_direction_chunk,
         "low_memory_wall_macroscopic": args.low_memory_wall_macroscopic,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
@@ -844,7 +853,8 @@ def run(args: argparse.Namespace) -> dict:
         }
 
     finest_planning_solid = finest_planning_solid.to(device=finest_device)
-    rho = torch.ones(shape, device=device)
+    population_dtype = getattr(torch, args.population_storage_dtype)
+    rho = torch.ones(shape, device=device, dtype=population_dtype)
     ux = torch.full_like(rho, args.lattice_speed)
     zero = torch.zeros_like(rho)
     hierarchy = NestedStaticBlockAMR3D(
@@ -886,7 +896,7 @@ def run(args: argparse.Namespace) -> dict:
         "collision_chunk_cells": args.collision_chunk_cells,
         "compile_natural_kbc": args.compile_natural_kbc,
         "natural_kbc_compute_dtype": args.natural_kbc_compute_dtype,
-        "population_storage_dtype": "float32",
+        "population_storage_dtype": args.population_storage_dtype,
         "omega_bulk": args.omega_bulk,
         "wall_law": args.wall_law,
         "wall_stress_enabled": not args.disable_wall_stress,
@@ -1237,7 +1247,7 @@ def run(args: argparse.Namespace) -> dict:
         if current_step >= args.steps:
             raise ValueError("checkpoint already reached or exceeded requested steps")
         hierarchy.restore_level_populations([
-            populations.to(device=template.device)
+            populations.to(device=template.device, dtype=template.dtype)
             for populations, template in zip(
                 state["level_populations"],
                 hierarchy.level_populations,
@@ -2516,7 +2526,7 @@ def run(args: argparse.Namespace) -> dict:
                     levels=level_count,
                 ),
             ],
-            "population_storage_dtype": "float32",
+            "population_storage_dtype": args.population_storage_dtype,
             "initial_tau_by_level": list(initial_tau_by_level),
             "resolved_wall_normal_ramp_steps": wall_normal_ramp_steps,
             "resolved_wall_shear_ramp_steps": wall_shear_ramp_steps,
