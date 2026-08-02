@@ -78,12 +78,13 @@
     "The corrected-source plus inlet-sponge v14 trajectory remains healthy at the exact root step where legacy v32 crossed the population floor.",
     "The root-grid speed spike is absent, while intermediate and finest levels remain comparable to v32's healthy values.",
     "This comparison changes both the wall-traction source and inlet sponge, so it does not isolate which change supplies the stability improvement.",
-    "The concurrently running corrected-source v13 trajectory without inlet sponge is the required causal A/B baseline.",
+    "The corrected-source v13 trajectory without inlet sponge failed the population-health floor at root step 6660 while v14 remained healthy and later completed 12000 steps; the matched A/B evidence therefore identifies inlet damping as necessary for this long-time configuration.",
     "The v14 checkpoint predates explicit force-sample-count provenance; its three-level force arithmetic is useful diagnostically but is not admitted to a future convergence set without that metadata.",
     "The completed trajectory is highly stationary, so extending the same three-level Re=100000 configuration is not a credible route from 122.71 N to the 87.4 N experiment."
   ],
   "provenance": {
     "v14_log_sha256_at_audit": "2c42a92686375320f359c9a9617284cbef003cd6ba5a717697e31c08e9104f82",
-    "v32_evidence": "docs/evidence/suboff-nested-v32-natural-kbc-root-failure-r1.json"
+    "v32_evidence": "docs/evidence/suboff-nested-v32-natural-kbc-root-failure-r1.json",
+    "v13_no_inlet_sponge_evidence": "docs/evidence/suboff-nested-v13-no-inlet-sponge-rejected-r1.json"
   }
 }
