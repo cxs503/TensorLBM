@@ -145,6 +145,11 @@ deep_wake_cells=${TENSORLBM_DEEP_WAKE_CELLS:-0}
 cv_margin=${TENSORLBM_CV_MARGIN:-4}
 aux_cv_margins=${TENSORLBM_AUX_CV_MARGINS:-2,6}
 resolved_reynolds_start=${TENSORLBM_RESOLVED_REYNOLDS_START:-0}
+resolved_reynolds=${TENSORLBM_RESOLVED_REYNOLDS:-100000}
+[[ $resolved_reynolds =~ ^[1-9][0-9]*([.][0-9]+)?$ ]] || {
+  echo "TENSORLBM_RESOLVED_REYNOLDS must be positive" >&2
+  exit 2
+}
 viscosity_ramp_start=${TENSORLBM_VISCOSITY_RAMP_START_STEP:-0}
 viscosity_ramp_end=${TENSORLBM_VISCOSITY_RAMP_END_STEP:-0}
 health_interval=${TENSORLBM_HEALTH_INTERVAL:-$report}
@@ -211,7 +216,7 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   --minimum-convective-times 8 \
   --minimum-target-reynolds-convective-times 7.5 \
   --minimum-statistics-convective-times 5 \
-  --lattice-speed 0.06 --resolved-reynolds 100000 \
+  --lattice-speed 0.06 --resolved-reynolds "$resolved_reynolds" \
   --resolved-reynolds-start "$resolved_reynolds_start" \
   --viscosity-ramp-start-step "$viscosity_ramp_start" \
   --viscosity-ramp-end-step "$viscosity_ramp_end" \
