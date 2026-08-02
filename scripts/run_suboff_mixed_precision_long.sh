@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# != 2 ]]; then
-  echo "usage: $0 RE1M|RE2M PHYSICAL_GPU_UUID" >&2
+  echo "usage: $0 RE1M|RE2M|RE4M PHYSICAL_GPU_UUID" >&2
   exit 2
 fi
 case_name=$1
@@ -16,6 +16,10 @@ case "$case_name" in
   RE2M)
     resolved_reynolds=2000000
     stem=suboff-nested-v41-re2m-mixed-fp64compute-l90-3k
+    ;;
+  RE4M)
+    resolved_reynolds=4000000
+    stem=suboff-nested-v42-re4m-mixed-fp64compute-l90-3k
     ;;
   *) exit 2 ;;
 esac
