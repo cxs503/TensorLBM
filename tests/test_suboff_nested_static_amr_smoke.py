@@ -295,6 +295,32 @@ def test_checkpoint_before_collision_chunk_option_can_resume(
     assert resumed["configuration"]["collision_chunk_cells"] == 512
 
 
+def test_checkpoint_before_y_plus_distribution_gate_can_resume(
+    tmp_path: Path,
+) -> None:
+    MODULE.run(_args(tmp_path, steps=1))
+    checkpoint = tmp_path / "nested-smoke.ckpt"
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state["configuration"].pop("wall_model_y_plus_lower_bound")
+    state["configuration"].pop("wall_model_y_plus_upper_bound")
+    state["configuration"].pop(
+        "minimum_wall_model_y_plus_in_range_fraction",
+    )
+    for record in state["step_records"]:
+        record.pop("wall_y_plus_distribution", None)
+    torch.save(state, checkpoint)
+
+    resumed = MODULE.run(_args(tmp_path, steps=2, resume=True))
+
+    assert resumed["configuration"][
+        "resumed_pre_y_plus_distribution_checkpoint"
+    ] is True
+    assert resumed["configuration"]["resumed_from_step"] == 1
+    assert resumed["result"]["statistics"]["wall_exchange"][
+        "y_plus_distribution"
+    ] is not None
+
+
 def test_checkpoint_without_mass_conservative_wall_source_is_rejected(
     tmp_path: Path,
 ) -> None:
