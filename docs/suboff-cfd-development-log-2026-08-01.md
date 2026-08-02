@@ -1734,6 +1734,12 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      improvement is therefore a rejected model sensitivity, not calibration.
      Immutable result/checkpoint hashes are recorded in
      `docs/evidence/suboff-v23-v29-wall-exchange-ab-final-r1.json`.
+195. Future sphere runs now persist the same two-stage open-boundary population
+     delta at report cadence and through checkpoints/resume.  This adds no
+     force correction and does not alter the active R15 process; it equips the
+     next inlet-sponge/domain repeat to correlate Cd changes with boundary mass
+     and momentum injection.  Ten sphere composition, natural-KBC and explicit
+     checkpoint-migration tests pass.
 
 ## Rejected candidates
 

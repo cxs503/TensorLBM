@@ -52,6 +52,7 @@ def test_short_sphere_composition_is_finite() -> None:
         nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
         reynolds=20.0, lattice_speed=0.04, steps=4, warmup_steps=2,
         ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
+        report_interval=1,
     )
     result = run_sphere_bfl_control_volume(cfg)
     measured = result["result"]
@@ -62,6 +63,10 @@ def test_short_sphere_composition_is_finite() -> None:
     assert result["acceptance"]["admitted"] is False
     assert result["schema"] == "tensorlbm-sphere-bfl-control-volume-v3"
     assert result["configuration"]["collision_model"] == "cumulant_d3q19_cs0"
+    boundary_history = measured["open_boundary_population_delta"]
+    assert len(boundary_history) == 4
+    assert all(len(record["stages"]) == 2 for record in boundary_history)
+    assert all(record["finite"] for record in boundary_history)
 
 
 def test_short_natural_kbc_sphere_composition_is_finite() -> None:

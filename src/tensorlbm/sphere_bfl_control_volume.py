@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import math
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import torch
@@ -178,6 +178,7 @@ def run_sphere_bfl_control_volume(
     )
     forces: list[float] = []
     bfl_forces: list[float] = []
+    open_boundary_history: list[dict[str, object]] = []
     start_step = 0
     checkpoint = Path(config.checkpoint_path) if config.checkpoint_path else None
     checkpoint_signature = {
@@ -237,6 +238,7 @@ def run_sphere_bfl_control_volume(
         start_step = int(state["step"])
         forces = state["drag_force_history"].tolist()
         bfl_forces = state["bfl_drag_history"].tolist()
+        open_boundary_history = list(state.get("open_boundary_history", []))
         if start_step >= config.steps:
             raise ValueError("checkpoint already reached or exceeded requested steps")
 
@@ -251,14 +253,28 @@ def run_sphere_bfl_control_volume(
             "populations": f.detach().cpu(),
             "drag_force_history": torch.tensor(forces, dtype=torch.float64),
             "bfl_drag_history": torch.tensor(bfl_forces, dtype=torch.float64),
+            "open_boundary_history": open_boundary_history,
             "migration_provenance": migration_provenance,
         }, checkpoint)
 
-    def apply_outer(state: torch.Tensor) -> torch.Tensor:
+    def apply_outer(
+        state: torch.Tensor,
+        *,
+        collect_diagnostics: bool,
+        stage: str,
+        records: list[dict[str, object]],
+    ) -> torch.Tensor:
         if config.far_field_mode == "non_equilibrium_extrapolation":
-            return non_equilibrium_far_field_bc_3d(
-                state, u_in=config.lattice_speed,
+            result = non_equilibrium_far_field_bc_3d(
+                state,
+                u_in=config.lattice_speed,
+                return_diagnostics=collect_diagnostics,
             )
+            if collect_diagnostics:
+                state, diagnostics = result
+                records.append({"stage": stage, **asdict(diagnostics)})
+                return state
+            return result
         return far_field_bc_3d(state, u_in=config.lattice_speed)
 
     dynamic_area = 0.5 * config.lattice_speed**2 * math.pi * config.radius**2
@@ -266,6 +282,12 @@ def run_sphere_bfl_control_volume(
         compile_enabled=config.compile_natural_kbc,
     )
     for step in range(start_step + 1, config.steps + 1):
+        collect_boundary_diagnostics = (
+            bool(config.report_interval)
+            and step % config.report_interval == 0
+            and config.far_field_mode == "non_equilibrium_extrapolation"
+        )
+        step_boundary_records: list[dict[str, object]] = []
         old = f
         if config.collision_model == "natural_kbc_d3q19":
             if config.collision_chunk_cells:
@@ -280,7 +302,12 @@ def run_sphere_bfl_control_volume(
             collided = collide_cumulant_d3q19(f, config.tau, C_s=0.0)
         post = torch.where(solid_q, old, collided)
         f = stream3d(post)
-        f = apply_outer(f)
+        f = apply_outer(
+            f,
+            collect_diagnostics=collect_boundary_diagnostics,
+            stage="post_stream_pre_sponge",
+            records=step_boundary_records,
+        )
         rho_post, ux_post, uy_post, uz_post = macroscopic3d(post)
         activation = _ramp(step, config.ramp_steps)
         wall_velocity = (
@@ -296,7 +323,32 @@ def run_sphere_bfl_control_volume(
         f = apply_equilibrium_difference_sponge(
             f, sigma, velocity_target=(config.lattice_speed, 0.0, 0.0),
         )
-        f = apply_outer(f)
+        f = apply_outer(
+            f,
+            collect_diagnostics=collect_boundary_diagnostics,
+            stage="post_sponge",
+            records=step_boundary_records,
+        )
+        if collect_boundary_diagnostics:
+            open_boundary_history.append({
+                "step": step,
+                "stages": step_boundary_records,
+                "mass_delta": sum(
+                    float(record["mass_delta"])
+                    for record in step_boundary_records
+                ),
+                "momentum_delta": [
+                    sum(
+                        float(record["momentum_delta"][axis])
+                        for record in step_boundary_records
+                    )
+                    for axis in range(3)
+                ],
+                "finite": all(
+                    bool(record["finite"])
+                    for record in step_boundary_records
+                ),
+            })
         cv_force = float(observe_control_volume_force(
             old, f, post, cv, solid=solid,
         ).force_on_body[0].item())
@@ -373,6 +425,7 @@ def run_sphere_bfl_control_volume(
             "drag_stationarity": stationarity.to_dict(),
             "finite": math.isfinite(cd),
             "collision_execution": natural_kbc_executor.diagnostics(),
+            "open_boundary_population_delta": open_boundary_history,
         },
         "runtime": {
             "invocation_elapsed_seconds": invocation_elapsed_seconds,
