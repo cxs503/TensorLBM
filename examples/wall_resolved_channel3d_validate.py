@@ -28,8 +28,21 @@ def main() -> None:
     parser.add_argument("--collision-model", choices=("natural_kbc", "cumulant"), default="natural_kbc")
     parser.add_argument("--collision-chunk-cells", type=int, default=262144)
     parser.add_argument("--no-compile-natural-kbc", action="store_true")
+    parser.add_argument(
+        "--initialization-mode",
+        choices=("coherent", "spectral_solenoidal"),
+        default="spectral_solenoidal",
+    )
     parser.add_argument("--perturbation-fraction", type=float, default=1.0)
     parser.add_argument("--random-noise-fraction", type=float, default=0.5)
+    parser.add_argument("--spectral-mode-count", type=int, default=32)
+    parser.add_argument("--spectral-max-wavenumber", type=int, default=4)
+    parser.add_argument(
+        "--minimum-statistics-eddy-turnovers", type=float, default=2.0,
+    )
+    parser.add_argument(
+        "--stationarity-window-eddy-turnovers", type=float, default=1.0,
+    )
     parser.add_argument("--seed", type=int, default=20260802)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
@@ -50,8 +63,17 @@ def main() -> None:
         collision_model=args.collision_model,
         collision_chunk_cells=args.collision_chunk_cells,
         compile_natural_kbc=not args.no_compile_natural_kbc,
+        initialization_mode=args.initialization_mode,
         perturbation_fraction=args.perturbation_fraction,
         random_noise_fraction=args.random_noise_fraction,
+        spectral_mode_count=args.spectral_mode_count,
+        spectral_max_wavenumber=args.spectral_max_wavenumber,
+        minimum_statistics_eddy_turnovers=(
+            args.minimum_statistics_eddy_turnovers
+        ),
+        stationarity_window_eddy_turnovers=(
+            args.stationarity_window_eddy_turnovers
+        ),
         seed=args.seed,
         device=args.device,
         output=args.output,
