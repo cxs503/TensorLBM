@@ -65,6 +65,7 @@ class TestEquilibrium27:
         torch.testing.assert_close(
             equilibrium[:, 0, 0, 0], W_EXACT64, rtol=0.0, atol=0.0,
         )
+        assert torch.equal(W_EXACT64.float(), W27)
         assert not torch.equal(W27.double(), W_EXACT64)
 
     def test_roundtrip_zero_velocity(self) -> None:
