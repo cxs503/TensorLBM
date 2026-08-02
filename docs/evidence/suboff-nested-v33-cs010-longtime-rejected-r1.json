@@ -69,9 +69,9 @@
   ],
   "active_follow_up": {
     "campaign": "v18 AFF-1 four-level L90 resolved-Re 200000 pilot",
-    "queue_wrapper_pid": 1646314,
-    "pilot_pid": 1646315,
-    "waits_for_chunked_allocation_probe_pid": 1642901,
+    "superseded_failed_queue_pids": [1646314, 1646315],
+    "pilot_pid": 1654405,
+    "waited_for_aff8_probe_pid": 1654404,
     "collision_chunk_cells": 262144,
     "viscosity_continuation": {
       "resolved_reynolds_start": 5000.0,
@@ -79,7 +79,7 @@
       "start_step": 300,
       "end_step": 1500
     },
-    "status": "queued_fail_closed"
+    "status": "running_fail_closed"
   },
   "remote_sources": [
     {
