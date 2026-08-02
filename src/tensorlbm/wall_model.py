@@ -1163,6 +1163,48 @@ def bfl_wall_function_3d(
     else:
         nx_n, ny_n, nz_n = wall_normals
 
+    bfl_link_normals = None
+    force_normals_for_decomposition = (nx_n, ny_n, nz_n)
+    force_normal_completion = None
+    if apply_bfl and fluid_boundary_mask is not None and (
+        bfl_wall_mode in {"wall_model_slip", "spalding_exchange"}
+        or return_wall_diagnostics
+    ):
+        bfl_link_normals = compute_bfl_link_normal(fluid_boundary_mask)
+    if return_wall_diagnostics and apply_bfl and fluid_boundary_mask is not None:
+        active_boundary = fluid_boundary_mask.any(dim=0)
+        normal_magnitude = torch.sqrt(
+            nx_n.square() + ny_n.square() + nz_n.square(),
+        )
+        missing_geometry_normal = active_boundary & (normal_magnitude <= 1.0e-12)
+        assert bfl_link_normals is not None
+        link_normal_magnitude = torch.sqrt(sum(
+            component.square() for component in bfl_link_normals
+        ))
+        fallback = missing_geometry_normal & (link_normal_magnitude > 1.0e-12)
+        force_normals_for_decomposition = tuple(
+            torch.where(fallback, link_component.to(component), component)
+            for component, link_component in zip(
+                (nx_n, ny_n, nz_n),
+                bfl_link_normals,
+                strict=True,
+            )
+        )
+        force_normal_completion = {
+            "scheme": "geometry_normal_with_bfl_link_fallback_v1",
+            "active_boundary_nodes": int(active_boundary.sum().item()),
+            "geometry_normal_nodes": int(
+                (active_boundary & ~missing_geometry_normal).sum().item(),
+            ),
+            "fallback_nodes": int(fallback.sum().item()),
+            "fallback_links": int(
+                fluid_boundary_mask[:, fallback].sum().item(),
+            ),
+            "unresolved_nodes": int(
+                (missing_geometry_normal & ~fallback).sum().item(),
+            ),
+        }
+
     # ── Step 1: BFL interpolated bounce-back (post-stream) ──
     link_force_decomposition = None
     if apply_bfl and fluid_boundary_mask is not None:
@@ -1170,9 +1212,8 @@ def bfl_wall_function_3d(
         wall_density = None
         if bfl_wall_mode in {"wall_model_slip", "spalding_exchange"}:
             rho_pre, ux_pre, uy_pre, uz_pre = recover_macroscopic(f_prev)
-            slip_nx, slip_ny, slip_nz = compute_bfl_link_normal(
-                fluid_boundary_mask,
-            )
+            assert bfl_link_normals is not None
+            slip_nx, slip_ny, slip_nz = bfl_link_normals
             u_dot_n_pre = (
                 ux_pre * slip_nx + uy_pre * slip_ny + uz_pre * slip_nz
             )
@@ -1210,12 +1251,15 @@ def bfl_wall_function_3d(
             force_frame=(
                 "laboratory" if normal_activation >= 1.0 else "wall"
             ),
-            force_normals=(nx_n, ny_n, nz_n),
+            force_normals=force_normals_for_decomposition,
             return_force_decomposition=return_wall_diagnostics,
         )
         if return_wall_diagnostics:
             f, bfl_force, link_diagnostics = bfl_result
             link_force_decomposition = asdict(link_diagnostics)
+            link_force_decomposition["normal_completion"] = (
+                force_normal_completion
+            )
         else:
             f, bfl_force = bfl_result
     else:

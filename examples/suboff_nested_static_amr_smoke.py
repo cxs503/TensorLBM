@@ -1935,6 +1935,23 @@ def run(args: argparse.Namespace) -> dict:
                 "minimum_coverage_fraction": min(
                     item["coverage_fraction"] for item in link_force_samples
                 ),
+                "normal_completion": {
+                    "scheme": link_force_samples[0]["normal_completion"][
+                        "scheme"
+                    ],
+                    "maximum_fallback_nodes": max(
+                        item["normal_completion"]["fallback_nodes"]
+                        for item in link_force_samples
+                    ),
+                    "maximum_fallback_links": max(
+                        item["normal_completion"]["fallback_links"]
+                        for item in link_force_samples
+                    ),
+                    "maximum_unresolved_nodes": max(
+                        item["normal_completion"]["unresolved_nodes"]
+                        for item in link_force_samples
+                    ),
+                },
                 "mean_total_force_n": [
                     sum(item["total_force"][axis] for item in link_force_samples)
                     / len(link_force_samples)
