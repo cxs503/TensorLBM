@@ -1,0 +1,43 @@
+{
+  "schema": "tensorlbm-planar-d3q19-collision-audit-v1",
+  "status": "dimensional_reduction_mismatch_isolated_and_exact_mode_added",
+  "physical_validation": false,
+  "manufactured_state": {
+    "dtype": "float64",
+    "shape_ny_nx": [7, 9],
+    "mean_streamwise_velocity": 0.03,
+    "nonequilibrium_perturbation_scale": 0.0001,
+    "perturbation_constraints": "zero density and zero x/y momentum at every cell",
+    "d3_lift": "conditional D3Q19 weights within each common (cx,cy) marginal"
+  },
+  "existing_d3q19_cumulant_vs_d2q9_cumulant": [
+    {
+      "tau": 0.53,
+      "maximum_absolute_marginal_difference": 0.00012958202260715534,
+      "relative_l2_difference": 0.00012389358276161699
+    },
+    {
+      "tau": 0.68,
+      "maximum_absolute_marginal_difference": 0.00006879416300720198,
+      "relative_l2_difference": 0.0000659824598948425
+    },
+    {
+      "tau": 1.1,
+      "maximum_absolute_marginal_difference": 0.000013214185762167041,
+      "relative_l2_difference": 0.00001428737057794969
+    }
+  ],
+  "interpretation": "The generic D3Q19 cumulant collision does not preserve the exact D2Q9 collision manifold for non-equilibrium planar states because its out-of-plane ghost-mode reconstruction differs. This is a dimensional-composition effect, not a force correction.",
+  "new_common_mode": {
+    "module": "src/tensorlbm/planar_d3q19.py",
+    "collision": "planar_cumulant_d2q9",
+    "algorithm": "marginalize D3Q19 by (cx,cy), apply D2Q9 cumulant collision, lift with exact analytic conditional fractions",
+    "conserved_quantities": ["density", "x momentum", "y momentum"],
+    "added_z_momentum": 0.0,
+    "three_dimensional_use_prohibited": true,
+    "tests_passed": 17
+  },
+  "next_causal_case": "Re=100, Mach approximately 0.052, R=9 cylinder with identical domain, BFL, open boundary, control volume and time window; only collision dimensionality changes",
+  "selection_by_reference_proximity": false,
+  "implementation_commit": "dd9e7d0"
+}
