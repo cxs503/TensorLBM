@@ -38,6 +38,7 @@ def _args(
     interface_filter_strength: float = 0.0,
     sponge_inlet: bool = False,
     enable_rejected_surface_pressure: bool = False,
+    enable_projected_bfl_pressure: bool = False,
     deep_wall_margin: int = 0,
     deep_wake_cells: int = 0,
 ):
@@ -87,6 +88,8 @@ def _args(
         values.append("--sponge-inlet")
     if enable_rejected_surface_pressure:
         values.append("--enable-rejected-surface-pressure-diagnostic")
+    if enable_projected_bfl_pressure:
+        values.append("--enable-projected-bfl-pressure-diagnostic")
     return MODULE.parser().parse_args(values)
 
 
@@ -230,6 +233,32 @@ def test_rejected_surface_pressure_observer_requires_explicit_opt_in(
         "enabled_rejected_diagnostic_only_not_an_acceptance_gate"
     )
     assert result["acceptance"]["surface_observer_used_for_acceptance"] is False
+
+
+def test_projected_bfl_pressure_observer_is_independent_diagnostic(
+    tmp_path: Path,
+) -> None:
+    result = MODULE.run(_args(
+        tmp_path,
+        steps=1,
+        enable_projected_bfl_pressure=True,
+    ))
+
+    step = result["result"]["steps"][0]
+    assert step["projected_bfl_pressure_n"] is not None
+    assert step["projected_bfl_pressure_plus_wall_stress_n"] is not None
+    diagnostics = step["projected_bfl_pressure_diagnostics"]
+    assert diagnostics["requested_links"] > 0
+    assert diagnostics["usable_links"] > 0
+    assert diagnostics["reconstruction"] == "linear"
+    observer = result["result"]["statistics"][
+        "projected_bfl_pressure_observer"
+    ]
+    assert observer["enabled"] is True
+    assert observer["source_corrected_cv_difference_pct"] is not None
+    assert observer["scope"] == (
+        "candidate_diagnostic_only_not_an_acceptance_gate"
+    )
 
 
 def test_nested_suboff_preflight_does_not_claim_physics(tmp_path: Path) -> None:
