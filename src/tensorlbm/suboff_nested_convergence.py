@@ -100,9 +100,21 @@ def assess_suboff_nested_convergence(
             "conservative_force_observer_target_met",
         )
         if conservative_observer_quality is None:
-            conservative_observer_quality = acceptance.get(
-                "surface_observer_target_met",
+            maximum_conservative_difference = result.get(
+                "maximum_source_corrected_observer_difference_pct",
             )
+            if maximum_conservative_difference is not None:
+                maximum_conservative_difference = float(
+                    maximum_conservative_difference,
+                )
+                conservative_observer_quality = (
+                    math.isfinite(maximum_conservative_difference)
+                    and maximum_conservative_difference <= 0.1
+                )
+            else:
+                conservative_observer_quality = acceptance.get(
+                    "surface_observer_target_met",
+                )
         source_quality &= conservative_observer_quality is True and all(
             acceptance.get(field) is True
             for field in (
