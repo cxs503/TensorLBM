@@ -24,7 +24,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument(
         "--collision-model",
-        choices=("cumulant_d3q19_cs0", "natural_kbc_d3q19"),
+        choices=(
+            "cumulant_d3q19_cs0",
+            "natural_kbc_d3q19",
+            "planar_cumulant_d2q9",
+        ),
         default="cumulant_d3q19_cs0",
     )
     p.add_argument("--collision-chunk-cells", type=int, default=0)

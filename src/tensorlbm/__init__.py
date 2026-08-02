@@ -553,6 +553,12 @@ from .cumulant import (
     collide_cumulant_d3q27,
 )
 from .cumulant_smag import collide_cumulant_smag_d3q27
+from .planar_d3q19 import (
+    collide_planar_cumulant_d3q19,
+    lift_d2q9_to_d3q19,
+    marginalize_d3q19_to_d2q9,
+    maximum_planar_plane_spread,
+)
 from .yplus_guide import (
     DragMonitor,
     estimate_exchange_yplus,
@@ -1261,6 +1267,10 @@ __all__ = [
     "collide_cumulant_d2q9",
     "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
+    "collide_planar_cumulant_d3q19",
+    "lift_d2q9_to_d3q19",
+    "marginalize_d3q19_to_d2q9",
+    "maximum_planar_plane_spread",
     # Streamline / pathline tracing
     "Streamline",
     "trace_streamlines_2d",
