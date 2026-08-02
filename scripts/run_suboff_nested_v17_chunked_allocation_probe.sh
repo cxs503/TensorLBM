@@ -33,6 +33,7 @@ elif [[ ${TENSORLBM_COMPILE_NATURAL_KBC:-0} != 0 ]]; then
   echo "TENSORLBM_COMPILE_NATURAL_KBC must be 0 or 1" >&2
   exit 2
 fi
+stress_exchange_distance=${TENSORLBM_STRESS_EXCHANGE_DISTANCE:-1.0}
 stem="$result_dir/suboff-nested-$generation-aff1-four-level-l90-chunked-allocation-r1"
 if [[ -f $stem.json ]]; then
   echo "chunked allocation result already exists: $stem.json" >&2
@@ -68,7 +69,8 @@ exec "$python" examples/suboff_nested_static_amr_smoke.py \
   "${compile_natural_kbc[@]}" \
   --wall-force-direction-chunk 4 \
   --low-memory-wall-macroscopic \
-  --cs-smag 0 --wall-law musker --stress-exchange-distance 1.0 \
+  --cs-smag 0 --wall-law musker \
+  --stress-exchange-distance "$stress_exchange_distance" \
   --sponge-width 18 --sponge-strength 0.3 \
   --far-field-mode non_equilibrium_extrapolation \
   --memory-bytes-per-cell 1100 \

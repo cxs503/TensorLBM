@@ -907,6 +907,47 @@ def test_v22_compiled_allocation_probe_uses_tensor_tau_executor(
     assert "suboff-nested-v22-aff1-four-level-l90" in output
 
 
+def test_v28_allocation_probe_uses_scaled_wall_exchange(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT
+                / "scripts"
+                / "run_suboff_nested_v28_scaled_wall_allocation_probe.sh"
+            ),
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert "--compile-natural-kbc" in arguments
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
+        "8.4375"
+    )
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v28-aff1-four-level-l90" in output
+
+
 @pytest.mark.parametrize(
     ("launcher", "generation", "steps", "resolved_reynolds"),
     (
