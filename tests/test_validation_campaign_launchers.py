@@ -1043,6 +1043,49 @@ def test_generic_compiled_reynolds_pilot_records_generation_and_target(
     assert "suboff-nested-v25-equivalent-l90-3k" in output
 
 
+def test_v29_re200k_pilot_changes_only_scaled_wall_location(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT
+                / "scripts"
+                / "run_suboff_nested_v29_re200k_scaled_wall_l90.sh"
+            ),
+            "L90",
+            "0",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--resolved-reynolds") + 1] == "200000"
+    assert arguments[arguments.index("--stress-exchange-distance") + 1] == (
+        "8.4375"
+    )
+    assert "--compile-natural-kbc" in arguments
+    assert "--sponge-inlet" in arguments
+    output = arguments[arguments.index("--output") + 1]
+    assert "suboff-nested-v29-equivalent-l90-3k" in output
+
+
 def test_sphere_v4_launcher_locks_bounded_compiled_family(
     tmp_path: Path,
 ) -> None:
