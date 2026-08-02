@@ -106,6 +106,7 @@ from tensorlbm.wall_pressure_gradient import (
 from tensorlbm.yplus_guide import (
     estimate_bfl_exchange_yplus_bounds,
     estimate_exchange_yplus,
+    grid_quality_metrics,
 )
 
 
@@ -676,6 +677,14 @@ def run(args: argparse.Namespace) -> dict:
         characteristic_length_cells=finest_plan.effective_hull_length_cells,
         requested_exchange_distance_cells=args.stress_exchange_distance,
     )
+    root_external_domain_quality = grid_quality_metrics(
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        hull_length=args.hull_length,
+        u_in=args.lattice_speed,
+        re=physical_re,
+    )
     device_memory_plan = plan_hierarchy_device_memory(
         finest_plan.allocated_cells_by_level,
         level_devices,
@@ -744,6 +753,7 @@ def run(args: argparse.Namespace) -> dict:
         "estimated_bfl_exchange_y_plus_bounds": (
             estimated_bfl_exchange_y_plus_bounds
         ),
+        "root_external_domain_quality": root_external_domain_quality,
         "wall_traction_source_scheme": WALL_TRACTION_SOURCE_SCHEME,
         "appendage_link_scheme": (
             SUBOFF_APPENDAGE_LINK_SCHEME
