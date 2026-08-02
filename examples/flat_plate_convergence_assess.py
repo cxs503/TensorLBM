@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assess equivalent v3 flat-plate result files as one grid sequence."""
+"""Assess equivalent corrected-source flat-plate results as one grid sequence."""
 from __future__ import annotations
 
 import argparse
