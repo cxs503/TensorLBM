@@ -16,6 +16,7 @@ def test_resistance_component_audit_preserves_direct_observables() -> None:
 
     assert result.component_sum == pytest.approx(111.0)
     assert result.component_sum_vs_total_pct == pytest.approx(100.0 / 110.0)
+    assert result.total_reference_bias_pct == pytest.approx(25.0)
     assert result.total_reference_error_pct == pytest.approx(25.0)
     assert result.wall_shear_vs_friction_reference_pct == pytest.approx(7.5)
     assert result.inferred_experimental_residual == pytest.approx(8.0)
@@ -34,6 +35,18 @@ def test_resistance_component_audit_omits_nonpositive_inferred_residual() -> Non
 
     assert result.inferred_experimental_residual is None
     assert result.pressure_over_inferred_residual is None
+
+
+def test_resistance_component_reference_error_is_absolute() -> None:
+    result = audit_resistance_components(
+        total_resistance=9.0,
+        pressure_resistance=3.0,
+        wall_shear_resistance=6.0,
+        experimental_total=10.0,
+    )
+
+    assert result.total_reference_bias_pct == pytest.approx(-10.0)
+    assert result.total_reference_error_pct == pytest.approx(10.0)
 
 
 @pytest.mark.parametrize(

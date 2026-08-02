@@ -13,6 +13,7 @@ class ResistanceComponentAudit:
     experimental_total: float
     component_sum: float
     component_sum_vs_total_pct: float
+    total_reference_bias_pct: float
     total_reference_error_pct: float
     friction_reference: float | None
     wall_shear_vs_friction_reference_pct: float | None
@@ -67,6 +68,9 @@ def audit_resistance_components(
         if candidate_residual > 0.0:
             inferred_residual = candidate_residual
             pressure_over_residual = pressure_resistance / candidate_residual
+    total_reference_bias_pct = (
+        (total_resistance / experimental_total - 1.0) * 100.0
+    )
     return ResistanceComponentAudit(
         total_resistance=total_resistance,
         pressure_resistance=pressure_resistance,
@@ -76,9 +80,8 @@ def audit_resistance_components(
         component_sum_vs_total_pct=(
             (component_sum / max(abs(total_resistance), 1.0e-30) - 1.0) * 100.0
         ),
-        total_reference_error_pct=(
-            (total_resistance / experimental_total - 1.0) * 100.0
-        ),
+        total_reference_bias_pct=total_reference_bias_pct,
+        total_reference_error_pct=abs(total_reference_bias_pct),
         friction_reference=friction_reference,
         wall_shear_vs_friction_reference_pct=shear_scale_error,
         inferred_experimental_residual=inferred_residual,
