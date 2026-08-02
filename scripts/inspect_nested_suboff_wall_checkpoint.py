@@ -29,6 +29,7 @@ from tensorlbm.drag_pressure import (  # noqa: E402
     get_near_wall_3d,
     integrate_bfl_projected_pressure,
 )
+from tensorlbm.d3q19 import macroscopic3d  # noqa: E402
 from tensorlbm.interpolated_bc_suboff import (  # noqa: E402
     compute_q_suboff,
     refine_q_suboff_appendages,
@@ -44,6 +45,13 @@ from tensorlbm.suboff_static_amr import (  # noqa: E402
     plan_suboff_static_amr,
 )
 from tensorlbm.surface_area_weights import bfl_surface_area_weights  # noqa: E402
+from tensorlbm.spalding_wall_model import (  # noqa: E402
+    sample_wall_exchange_velocity,
+)
+from tensorlbm.two_point_wall_diagnostics import (  # noqa: E402
+    estimate_two_point_log_slope_friction_velocity,
+    summarize_two_point_log_slope,
+)
 from tensorlbm.wall_checkpoint_diagnostics import (  # noqa: E402
     diagnose_bfl_wall_exchange_state,
 )
@@ -310,11 +318,115 @@ def inspect_checkpoint(
         y_plus_upper_bound=y_plus_upper_bound,
         minimum_y_plus_in_range_fraction=minimum_y_plus_in_range_fraction,
     )
+    _, velocity_x, velocity_y, velocity_z = macroscopic3d(finest)
+    exchange_distance = float(configuration["stress_exchange_distance"])
+    inner_samples = sample_wall_exchange_velocity(
+        (velocity_x, velocity_y, velocity_z),
+        bfl_mask,
+        bfl_q,
+        (surface.nx_n, surface.ny_n, surface.nz_n),
+        exchange_distance=exchange_distance,
+        boundary_mask=near,
+        fluid_mask=~solid,
+    )
+    outer_samples = sample_wall_exchange_velocity(
+        (velocity_x, velocity_y, velocity_z),
+        bfl_mask,
+        bfl_q,
+        (surface.nx_n, surface.ny_n, surface.nz_n),
+        exchange_distance=2.0 * exchange_distance,
+        boundary_mask=near,
+        fluid_mask=~solid,
+    )
+
+    def dense_tangential_speed_and_distance(samples):
+        normal_velocity = (
+            samples.velocity_x * samples.normal_x
+            + samples.velocity_y * samples.normal_y
+            + samples.velocity_z * samples.normal_z
+        )
+        tangent_x = samples.velocity_x - normal_velocity * samples.normal_x
+        tangent_y = samples.velocity_y - normal_velocity * samples.normal_y
+        tangent_z = samples.velocity_z - normal_velocity * samples.normal_z
+        speed = torch.sqrt(
+            tangent_x.square() + tangent_y.square() + tangent_z.square(),
+        )
+        dense_speed = torch.full(
+            solid.shape,
+            torch.nan,
+            device=target,
+            dtype=finest.dtype,
+        )
+        dense_distance = torch.full_like(dense_speed, torch.nan)
+        dense_tangent_x = torch.full_like(dense_speed, torch.nan)
+        dense_speed[samples.boundary] = speed
+        dense_distance[samples.boundary] = samples.y2
+        dense_tangent_x[samples.boundary] = (
+            tangent_x / speed.clamp_min(torch.finfo(speed.dtype).tiny)
+        )
+        return dense_speed, dense_distance, dense_tangent_x
+
+    inner_speed, inner_distance, inner_tangent_x = (
+        dense_tangential_speed_and_distance(
+            inner_samples,
+        )
+    )
+    outer_speed, outer_distance, _ = dense_tangential_speed_and_distance(
+        outer_samples,
+    )
+    common_exchange = inner_samples.boundary & outer_samples.boundary
+    two_point_u_tau, two_point_valid = (
+        estimate_two_point_log_slope_friction_velocity(
+            inner_speed[common_exchange],
+            outer_speed[common_exchange],
+            inner_distance[common_exchange],
+            outer_distance[common_exchange],
+        )
+    )
+    two_point_summary = summarize_two_point_log_slope(
+        two_point_u_tau,
+        two_point_valid,
+    )
+    common_area = area_weight[common_exchange]
+    common_tangent_x = inner_tangent_x[common_exchange]
+    two_point_shear_x_lu = (
+        two_point_u_tau[two_point_valid].square()
+        * common_tangent_x[two_point_valid]
+        * common_area[two_point_valid]
+    ).sum()
+    two_point_area_coverage_fraction = (
+        common_area[two_point_valid].sum()
+        / common_area.sum().clamp_min(torch.finfo(common_area.dtype).tiny)
+    )
+    two_point_diagnostic = {
+        "scope": "diagnostic_only_not_a_force_correction",
+        "inner_requested_distance_cells": exchange_distance,
+        "outer_requested_distance_cells": 2.0 * exchange_distance,
+        "common_sample_nodes": int(common_exchange.sum().item()),
+        "inner_distance_mean_cells": float(
+            inner_distance[common_exchange].mean().item(),
+        ),
+        "outer_distance_mean_cells": float(
+            outer_distance[common_exchange].mean().item(),
+        ),
+        "inner_tangential_speed_mean_lu": float(
+            inner_speed[common_exchange].mean().item(),
+        ),
+        "outer_tangential_speed_mean_lu": float(
+            outer_speed[common_exchange].mean().item(),
+        ),
+        "valid_area_fraction": float(two_point_area_coverage_fraction.item()),
+        "covered_shear_force_x_lu": float(two_point_shear_x_lu.item()),
+        "friction_velocity": asdict(two_point_summary),
+    }
     scale = force_scale_newton(
         rho_water=float(configuration["rho_water"]),
         dx_m=MODEL_LENGTH_M / finest_length,
         speed_mps=point.speed_mps,
         lattice_speed=float(configuration["lattice_speed"]),
+    )
+    two_point_diagnostic["covered_shear_force_x_n"] = (
+        float(two_point_shear_x_lu.item()) * scale
     )
     step_records = state.get("step_records", [])
     latest_record = step_records[-1] if step_records else None
@@ -420,7 +532,7 @@ def inspect_checkpoint(
             "diagnostics": asdict(projected_diagnostics),
         }
     return {
-        "schema": "tensorlbm-nested-suboff-wall-checkpoint-audit-v2",
+        "schema": "tensorlbm-nested-suboff-wall-checkpoint-audit-v3",
         "status": "diagnostic_only",
         "physical_validation": False,
         "source_path": str(path),
@@ -438,6 +550,7 @@ def inspect_checkpoint(
         ),
         "surface_area_weighting": asdict(area_diagnostics),
         "wall_exchange": asdict(diagnostics),
+        "two_point_log_slope_diagnostic": two_point_diagnostic,
         "instantaneous_surface_pressure_audit": {
             "control_volume_resistance_n": latest_cv,
             "wall_shear_resistance_n": latest_wall_shear,
