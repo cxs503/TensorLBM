@@ -4,9 +4,9 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
-import tensorlbm
 import torch
 
+import tensorlbm
 from tensorlbm.chunked_collision import (
     NaturalKBCCollisionExecutor,
     collide_in_z_chunks,
@@ -85,6 +85,9 @@ def test_natural_kbc_executor_can_compute_in_float64_with_float32_storage() -> N
     assert actual.dtype == state.dtype
     torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
     assert executor.diagnostics()["compute_dtype"] == "float64"
+    assert executor.diagnostics()["d3q19_weight_precision_scheme"] == (
+        "rational_binary64_cast_to_runtime_dtype_v1"
+    )
 
 
 def test_natural_kbc_executor_rejects_unknown_compute_dtype() -> None:

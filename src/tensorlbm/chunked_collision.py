@@ -6,6 +6,7 @@ from collections.abc import Callable
 
 import torch
 
+from .d3q19 import WEIGHT_PRECISION_SCHEME
 from .entropic_kbc import (
     _collide_natural_kbc_d3q19_unchecked,
     collide_natural_kbc_d3q19,
@@ -88,6 +89,7 @@ class NaturalKBCCollisionExecutor:
             "compile_enabled": self.compile_enabled,
             "storage_dtype_policy": "preserve_input",
             "compute_dtype": self.compute_dtype,
+            "d3q19_weight_precision_scheme": WEIGHT_PRECISION_SCHEME,
             "collision_calls": self._call_count,
             "input_signatures": [
                 {

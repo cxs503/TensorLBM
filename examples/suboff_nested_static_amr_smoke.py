@@ -42,7 +42,7 @@ from tensorlbm.cuda_memory_budget import (
     require_cuda_runtime_reserve,
 )
 from tensorlbm.cumulant import collide_cumulant_d3q19
-from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q19 import WEIGHT_PRECISION_SCHEME, equilibrium3d
 from tensorlbm.drag_pressure import (
     SurfaceMesh,
     drag_pressure_integration,
@@ -745,6 +745,7 @@ def run(args: argparse.Namespace) -> dict:
         "compile_natural_kbc": args.compile_natural_kbc,
         "natural_kbc_compute_dtype": args.natural_kbc_compute_dtype,
         "population_storage_dtype": args.population_storage_dtype,
+        "d3q19_weight_precision_scheme": WEIGHT_PRECISION_SCHEME,
         "wall_force_direction_chunk": args.wall_force_direction_chunk,
         "low_memory_wall_macroscopic": args.low_memory_wall_macroscopic,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
@@ -897,6 +898,7 @@ def run(args: argparse.Namespace) -> dict:
         "compile_natural_kbc": args.compile_natural_kbc,
         "natural_kbc_compute_dtype": args.natural_kbc_compute_dtype,
         "population_storage_dtype": args.population_storage_dtype,
+        "d3q19_weight_precision_scheme": WEIGHT_PRECISION_SCHEME,
         "omega_bulk": args.omega_bulk,
         "wall_law": args.wall_law,
         "wall_stress_enabled": not args.disable_wall_stress,
@@ -2527,6 +2529,7 @@ def run(args: argparse.Namespace) -> dict:
                 ),
             ],
             "population_storage_dtype": args.population_storage_dtype,
+            "d3q19_weight_precision_scheme": WEIGHT_PRECISION_SCHEME,
             "initial_tau_by_level": list(initial_tau_by_level),
             "resolved_wall_normal_ramp_steps": wall_normal_ramp_steps,
             "resolved_wall_shear_ramp_steps": wall_shear_ramp_steps,
