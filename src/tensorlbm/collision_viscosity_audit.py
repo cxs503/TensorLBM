@@ -9,6 +9,7 @@ import torch
 from .cumulant import collide_cumulant_d3q19
 from .d3q19 import equilibrium3d, macroscopic3d
 from .entropic_kbc import collide_kbc_d3q19, collide_natural_kbc_d3q19
+from .planar_d3q19 import collide_planar_cumulant_d3q19
 from .solver3d import collide_bgk3d, stream3d
 
 
@@ -30,7 +31,8 @@ class CollisionViscosityAuditConfig:
 
     def validate(self) -> None:
         if self.collision_model not in {
-            "bgk", "cumulant", "cumulant_wale", "cumulant_vreman",
+            "bgk", "cumulant", "planar_cumulant_d2q9",
+            "cumulant_wale", "cumulant_vreman",
             "entropic_kbc", "natural_kbc",
         }:
             raise ValueError(
@@ -68,6 +70,8 @@ def _collide(
             tau=config.tau,
             C_s=0.0,
         )
+    if config.collision_model == "planar_cumulant_d2q9":
+        return collide_planar_cumulant_d3q19(populations, config.tau)
     if config.collision_model == "cumulant_wale":
         return collide_cumulant_d3q19(
             populations, tau=config.tau, C_w=config.wale_cw,
