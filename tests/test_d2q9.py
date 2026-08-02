@@ -41,6 +41,7 @@ def test_float64_equilibrium_uses_unrounded_weights() -> None:
     f = equilibrium(rho, zero, zero)
 
     torch.testing.assert_close(f[:, 0, 0], W_EXACT64, rtol=0.0, atol=0.0)
+    assert torch.equal(W_EXACT64.float(), W)
     assert not torch.equal(W.double(), W_EXACT64)
 
 

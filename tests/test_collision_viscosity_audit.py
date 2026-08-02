@@ -42,6 +42,7 @@ def test_float64_equilibrium_uses_unrounded_lattice_weights() -> None:
 
     assert W.dtype is torch.float32
     assert W_EXACT64.dtype is torch.float64
+    assert torch.equal(W_EXACT64.float(), W)
     torch.testing.assert_close(
         equilibrium[:, 0, 0, 0], W_EXACT64, rtol=0.0, atol=0.0,
     )
