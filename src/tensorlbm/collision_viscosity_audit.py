@@ -28,6 +28,7 @@ class CollisionViscosityAuditConfig:
     vreman_cv: float = 0.025
     device: str = "cpu"
     dtype: str = "float64"
+    natural_kbc_compute_dtype: str = "storage"
 
     def validate(self) -> None:
         if self.collision_model not in {
@@ -56,6 +57,17 @@ class CollisionViscosityAuditConfig:
             raise ValueError("vreman_cv must lie in [0,0.2]")
         if self.dtype not in {"float32", "float64"}:
             raise ValueError("dtype must be float32 or float64")
+        if self.natural_kbc_compute_dtype not in {"storage", "float64"}:
+            raise ValueError(
+                "natural_kbc_compute_dtype must be storage or float64",
+            )
+        if (
+            self.natural_kbc_compute_dtype != "storage"
+            and self.collision_model != "natural_kbc"
+        ):
+            raise ValueError(
+                "float64 natural-KBC compute requires collision_model=natural_kbc",
+            )
 
 
 def _collide(
@@ -81,7 +93,14 @@ def _collide(
             populations, tau=config.tau, C_v=config.vreman_cv,
         )
     if config.collision_model == "natural_kbc":
-        return collide_natural_kbc_d3q19(populations, config.tau)
+        compute_populations = (
+            populations.double()
+            if config.natural_kbc_compute_dtype == "float64"
+            else populations
+        )
+        return collide_natural_kbc_d3q19(
+            compute_populations, config.tau,
+        ).to(dtype=populations.dtype)
     return collide_kbc_d3q19(
         populations,
         config.tau,
