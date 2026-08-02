@@ -52,13 +52,13 @@ from tensorlbm.entropic_kbc import (
 )
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
+from tensorlbm.hydrodynamics import ittc57_friction_coefficient
 from tensorlbm.interpolated_bc_suboff import (
     SUBOFF_APPENDAGE_LINK_SCHEME,
     compute_q_suboff,
     refine_q_suboff_appendages,
 )
 from tensorlbm.kinetic_flux_register import conserved_population_moments
-from tensorlbm.hydrodynamics import ittc57_friction_coefficient
 from tensorlbm.population_health import inspect_population_health
 from tensorlbm.population_positivity import (
     PositivityDiagnostics,
@@ -66,12 +66,12 @@ from tensorlbm.population_positivity import (
 )
 from tensorlbm.resistance_component_audit import audit_resistance_components
 from tensorlbm.solver3d import stream3d
+from tensorlbm.spalding_wall_model import (
+    assess_wall_exchange_interface_clearance,
+)
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_sponge_sigma_3d,
-)
-from tensorlbm.spalding_wall_model import (
-    assess_wall_exchange_interface_clearance,
 )
 from tensorlbm.static_block_amr import (
     AMRAdvanceResult,
@@ -97,6 +97,9 @@ from tensorlbm.wall_model import (
     WALL_TRACTION_SOURCE_SCHEME,
     bfl_wall_function_3d,
     physical_wall_lattice_viscosity,
+)
+from tensorlbm.wall_pressure_gradient import (
+    aggregate_wall_pressure_gradient_summaries,
 )
 from tensorlbm.yplus_guide import (
     estimate_bfl_exchange_yplus_bounds,
@@ -1430,6 +1433,7 @@ def run(args: argparse.Namespace) -> dict:
             pressure_gradient_parameter_max = (
                 diagnostics.pressure_gradient_parameter_max
             )
+            pressure_gradient_summary = diagnostics.pressure_gradient_summary
         else:
             out, friction, pressure = wall_result
             mean_y_plus = None
@@ -1440,6 +1444,7 @@ def run(args: argparse.Namespace) -> dict:
             pressure_gradient_parameter_mean = None
             pressure_gradient_parameter_p95 = None
             pressure_gradient_parameter_max = None
+            pressure_gradient_summary = None
         before_positivity = out
         out, positivity = limit_nonequilibrium_for_positivity(out)
         require_finite_limiter(positivity, level=level, stage="post_wall")
@@ -1494,6 +1499,7 @@ def run(args: argparse.Namespace) -> dict:
             ),
             "pressure_gradient_parameter_p95": pressure_gradient_parameter_p95,
             "pressure_gradient_parameter_max": pressure_gradient_parameter_max,
+            "pressure_gradient_summary": pressure_gradient_summary,
             "auxiliary": auxiliary_forces,
         })
         return AMRAdvanceResult(out, post_collision)
@@ -1547,6 +1553,16 @@ def run(args: argparse.Namespace) -> dict:
                 sample for sample in force_samples
                 if sample["pressure_gradient_parameter_mean"] is not None
             ]
+            pressure_gradient_summaries = [
+                sample["pressure_gradient_summary"] for sample in force_samples
+                if sample["pressure_gradient_summary"] is not None
+            ]
+            pressure_gradient_aggregate = (
+                aggregate_wall_pressure_gradient_summaries(
+                    pressure_gradient_summaries,
+                ).to_dict()
+                if pressure_gradient_summaries else None
+            )
             wall_exchange_health = {
                 "force_samples_observed": len(force_samples),
                 "force_samples_expected": force_averager.expected_samples,
@@ -1601,6 +1617,7 @@ def run(args: argparse.Namespace) -> dict:
                             for sample in pressure_gradient_samples
                         ) if pressure_gradient_samples else None
                     ),
+                    "distribution": pressure_gradient_aggregate,
                 },
             }
             interface_health = [
@@ -1826,6 +1843,16 @@ def run(args: argparse.Namespace) -> dict:
             item for item in force_samples
             if item["pressure_gradient_parameter_mean"] is not None
         ]
+        pressure_gradient_summaries = [
+            item["pressure_gradient_summary"] for item in force_samples
+            if item["pressure_gradient_summary"] is not None
+        ]
+        pressure_gradient_aggregate = (
+            aggregate_wall_pressure_gradient_summaries(
+                pressure_gradient_summaries,
+            ).to_dict()
+            if pressure_gradient_summaries else None
+        )
         record = {
             "step": current_step,
             "collision_resolved_reynolds": instantaneous_reynolds,
@@ -1878,6 +1905,7 @@ def run(args: argparse.Namespace) -> dict:
                     for item in pressure_gradient_samples
                 ) if pressure_gradient_samples else None
             ),
+            "wall_pressure_gradient_distribution": pressure_gradient_aggregate,
             "wall_fully_activated": current_step >= max(
                 wall_normal_ramp_steps, wall_shear_ramp_steps,
             ),
@@ -2083,6 +2111,17 @@ def run(args: argparse.Namespace) -> dict:
         record for record in wall_records
         if record.get("wall_pressure_gradient_parameter_mean") is not None
     ]
+    wall_pressure_gradient_distributions = [
+        record["wall_pressure_gradient_distribution"]
+        for record in wall_pressure_gradient_records
+        if record.get("wall_pressure_gradient_distribution") is not None
+    ]
+    wall_pressure_gradient_distribution = (
+        aggregate_wall_pressure_gradient_summaries(
+            wall_pressure_gradient_distributions,
+        ).to_dict()
+        if wall_pressure_gradient_distributions else None
+    )
     if selected_records:
         cv_values = [record["cv_resistance_n"] for record in selected_records]
         mean_resistance = sum(cv_values) / len(cv_values)
@@ -2406,6 +2445,7 @@ def run(args: argparse.Namespace) -> dict:
                                 for record in wall_pressure_gradient_records
                             ) if wall_pressure_gradient_records else None
                         ),
+                        "distribution": wall_pressure_gradient_distribution,
                         "scope": "diagnostic_only_not_a_force_correction",
                     },
                 },
