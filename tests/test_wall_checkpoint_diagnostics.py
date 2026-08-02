@@ -51,6 +51,9 @@ def test_checkpoint_wall_diagnostic_is_read_only_and_reports_gradient() -> None:
     assert diagnostics.pressure_gradient_parameter_max >= (
         diagnostics.pressure_gradient_parameter_mean
     )
+    assert diagnostics.pressure_gradient_summary is not None
+    assert diagnostics.pressure_gradient_summary["valid_samples"] > 0
+    assert diagnostics.pressure_gradient_summary["signed_median"] > 0.0
 
 
 def test_checkpoint_wall_diagnostic_rejects_shape_mismatch() -> None:
