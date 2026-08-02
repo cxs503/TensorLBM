@@ -198,11 +198,11 @@ shear is computed from the log-law and applied as a body force.
 
 ### 5.1 Guo Forcing Scheme
 
-OpenLB uses the **Guo forcing scheme** (Guo et al. 2002) for wall
-function body forces:
+The production path uses the full **Guo forcing scheme** (Guo et al. 2002)
+for wall-function body forces:
 
 ```
-F_i = w_i · (1 + c_i·u/cs²) · (c_i·F) / cs²
+F_i = w_i [((c_i − u)·F)/cs² + (c_i·u)(c_i·F)/cs⁴]
 ```
 
 where:
@@ -212,10 +212,10 @@ where:
 - `cs² = 1/3` (lattice sound speed squared)
 - `F` = body force vector
 
-The **(1 + c_i·u/cs²) correction term** is essential.  Without it, the
-force is applied as "simple forcing" (w_i · 3 · c_i·F), which is only
-correct for u → 0.  At non-trivial velocities, simple forcing introduces
-an O(u²) error in the momentum transfer.
+Both velocity-dependent terms are essential.  Omitting the isotropic
+`−w_i(u·F)/cs²` term preserves the requested first moment but creates a
+spurious zeroth moment `(u·F)/cs²`.  TensorLBM regression tests therefore
+check both `ΣF_i=0` and `Σc_i F_i=F` for D3Q19 and D3Q27.
 
 ### 5.2 Timing: Post-Stream
 
@@ -286,8 +286,8 @@ method (IBM) with direct forcing:
 
 ### 7.2 Force Application
 
-- **Always use Guo forcing** for wall function body forces
-- The (1 + c·u/cs²) correction is essential for non-trivial velocities
+- **Always use the complete Guo forcing** for wall function body forces
+- Check both its zero mass moment and exact momentum moment
 - Simple forcing (w_i · 3 · c·F) is only correct for u → 0
 
 ### 7.3 τ_w Computation
@@ -320,35 +320,40 @@ The recommended architecture:
 
 ## 8. Current TensorLBM Implementation Audit
 
+The post-implementation moment audit is frozen in
+`docs/evidence/wall-traction-source-moment-audit-r1.json`; it reports 75
+passing wall/source regression tests.  Physical force accuracy still requires
+the separate geometry, flow and convergence benchmarks below.
+
 ### 8.1 What Exists
 
 | Module | What it does | Issues |
 |--------|-------------|--------|
-| `wall_model.py` | Log-law wall function (D3Q19/D3Q27) | Uses **simple forcing** (`ibm_apply_body_force_3d`), not Guo |
-| `wall_function_common.py` | Solver-agnostic wall function | Uses **Guo forcing** ✓, but force = −τ_w/dy (may be 2× too strong) |
-| `bfl_d3q19.py` | BFL for extruded geometries | Correct BFL formulas ✓ |
-| `bfl_boundary.py` | BFL + MEM with 1/q | 1/q factor may double-count |
-| `interpolated_bc.py` | BFL for 2D/3D (circle/sphere) | Correct formulas ✓ |
-| `wall_surface_bfl.py` | Wall-surface BFL + MEM | Correct approach ✓ |
-| `drag_momentum_wall.py` | Wall-surface MEM with BFL | Correct approach ✓ |
+| `wall_model.py` | D3Q19/D3Q27 BFL + wall stress | Full mass-conservative Guo source; exact traction impulse ✓ |
+| `wall_function_common.py` | Solver-agnostic wall function | Same `τ_w A/V` scaling and source moments ✓ |
+| `bfl_d3q19.py` | BFL for curved geometries | Interpolated reflection + laboratory-frame link impulse ✓ |
+| `control_volume_force.py` | Independent force observer | Fixed-volume momentum balance ✓ |
+| `wall_exchange_yplus.py` | Wall-model applicability | Time/subcycle-weighted y+ distribution and fail-closed gate ✓ |
+| `pressure_gradient_wall_model.py` | Non-equilibrium ODE candidates | Diagnostic only; not wired to production force |
 
 ### 8.2 Key Issues Found
 
-1. **`wall_model.py` uses simple forcing**: `ibm_apply_body_force_3d`
-   applies `w_i · 3 · (c_i · F)` without the (1 + c·u/cs²) correction.
-   This is incorrect for non-trivial velocities.
+1. **Resolved: incomplete Guo source.**  The former velocity-corrected source
+   omitted `−w_i(u·F)/cs²`.  The corrected source has zero mass moment and
+   exact requested momentum moment.
 
-2. **Force magnitude inconsistency**: `wall_model.py` uses `−τ_w` (Bug 23
-   fix), while `wall_function_common.py` uses `−τ_w/dy`.  The correct
-   magnitude depends on the forcing scheme:
-   - Simple forcing: F = −τ_w (force per unit area, no /dy)
-   - Guo forcing: F = −τ_w/dy (force per unit volume)
+2. **Resolved: double division by sampling distance.**  `τ_w A` is already
+   the integrated force assigned to a boundary control volume.  Its lattice
+   source is `τ_w A/V`; `y_val` is a wall-law sampling distance, not the
+   control-volume thickness.  Dividing by it again double-counts geometry.
 
-3. **No BFL + wall function combination**: The current code applies
-   either BFL or wall function, but not both together.
+3. **Resolved: BFL and wall stress ownership.**  Wall-model-slip BFL owns
+   no-penetration while the Guo source owns tangential traction.  The fixed
+   control-volume force remains the primary observer.
 
-4. **τ_w from grid-cell velocity**: The wall function uses the velocity
-   at the near-wall grid cell, not the BFL-interpolated wall velocity.
+4. **Open validation limit.**  Musker passes the zero-pressure-gradient flat
+   plate, but pressure-gradient ODE alternatives remain diagnostic after
+   failing independent channel-DNS and frozen-SUBOFF assessments.
 
 ---
 
@@ -389,20 +394,20 @@ def bfl_wall_function_3d(
     # 3. Solve wall law for u_τ
     u_tau = solve_wall_law(u_tan, nu, y_val, wall_law)
 
-    # 4. Apply Guo body force: F = −τ_w · û_tan
+    # 4. Apply Guo body force: F = −τ_w A/V · û_tan
     tau_w = u_tau ** 2
     F = guo_body_force(f, −tau_w * û_tan, ux, uy, uz)
 
-    # 5. Compute drag (wall-surface MEM + pressure)
-    drag_fric = wall_surface_mom_exchange(f, f_prev, ...)
-    drag_pres = pressure_integration(f, solid, ...)
+    # 5. Observe force independently
+    drag_primary = fixed_control_volume_momentum_balance(...)
+    drag_link_observer = laboratory_frame_bfl_link_impulse(...)
 
     return f, drag_fric, drag_pres
 ```
 
 ### 9.3 Guo Forcing (Corrected)
 
-The Guo forcing with the (1 + c·u/cs²) correction:
+The complete Guo forcing used by the post-collision operator split:
 
 ```python
 def guo_body_force_d3q19(f, Fx, Fy, Fz, ux, uy, uz):
@@ -411,25 +416,24 @@ def guo_body_force_d3q19(f, Fx, Fy, Fz, ux, uy, uz):
     cs2 = 1.0 / 3.0
     cu = cx*ux + cy*uy + cz*uz
     cF = cx*Fx + cy*Fy + cz*Fz
-    forcing = w * (1 + cu/cs2) * cF / cs2
+    uF = ux*Fx + uy*Fy + uz*Fz
+    forcing = w * ((cF - uF)/cs2 + cu*cF/cs2**2)
     return f + forcing
 ```
 
 ### 9.4 Force Magnitude
 
-With Guo forcing, the force is **per unit volume**:
+The wall model first computes integrated traction on each represented patch:
 ```
-F = −τ_w / dy · û_tan
+F_patch = −τ_w A · û_tan
 ```
-where dy = y_val (distance from cell centre to wall).
-
-With simple forcing (current `ibm_apply_body_force_3d`), the force is
-**per unit area**:
+It is then assigned to the owning lattice control volume:
 ```
-F = −τ_w · û_tan
+f_volume = F_patch / V = −τ_w (A/V) · û_tan
 ```
-
-The Guo forcing with /dy is the physically correct formulation.
+In lattice units `V=1`; `A` is the orientation-aware BFL area weight.
+The exchange distance `y_val` already enters the wall-law inversion and must
+not be used as a second volume divisor.
 
 ---
 
@@ -443,7 +447,7 @@ The Guo forcing with /dy is the physically correct formulation.
 | 4 | Use tangential velocity (not u_mag) for curved walls | **High** | Already fixed (Bug 7) |
 | 5 | Use wall-surface MEM for drag | **High** | Already exists |
 | 6 | Apply wall function post-stream | Medium | Implemented |
-| 7 | Force magnitude: −τ_w/dy with Guo, −τ_w with simple | **Critical** | Fixed |
+| 7 | Force magnitude: `−τ_w A/V`; no second `/y_val` | **Critical** | Fixed and moment-tested |
 
 ---
 
