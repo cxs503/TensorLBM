@@ -255,6 +255,48 @@ def test_l120_multigpu_probe_preserves_geometric_similarity_and_memory_gates(
     assert "--low-memory-wall-macroscopic" in arguments
 
 
+def test_aff8_bounded_probe_keeps_exact_geometry_and_fail_closed_memory(
+    tmp_path: Path,
+) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\"\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    env = os.environ.copy()
+    env["TENSORLBM_PYTHON"] = str(fake_python)
+    completed = subprocess.run(
+        [
+            "bash",
+            str(
+                ROOT
+                / "scripts"
+                / "run_suboff_nested_v21_aff8_bounded_allocation_probe.sh"
+            ),
+            "GPU-a",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    arguments = completed.stdout.splitlines()
+    assert arguments[arguments.index("--hull-type") + 1] == "full"
+    assert arguments[arguments.index("--deep-wall-margin") + 1] == "7"
+    assert arguments[arguments.index("--deep-wake-cells") + 1] == "14"
+    assert arguments[arguments.index("--memory-bytes-per-cell") + 1] == "900"
+    assert arguments[arguments.index("--collision-chunk-cells") + 1] == (
+        "262144"
+    )
+    assert "--low-memory-wall-macroscopic" in arguments
+
+
 def test_flat_plate_v5_uses_a_distinct_checkpoint_generation(
     tmp_path: Path,
 ) -> None:
