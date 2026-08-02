@@ -35,6 +35,18 @@ def test_unknown_collision_model_is_rejected() -> None:
         cfg.validate()
 
 
+def test_compiled_collision_requires_natural_kbc() -> None:
+    cfg = SphereBFLControlVolumeConfig(compile_natural_kbc=True)
+    with pytest.raises(ValueError, match="natural_kbc"):
+        cfg.validate()
+
+
+def test_negative_collision_chunk_is_rejected() -> None:
+    cfg = SphereBFLControlVolumeConfig(collision_chunk_cells=-1)
+    with pytest.raises(ValueError, match="collision_chunk_cells"):
+        cfg.validate()
+
+
 def test_short_sphere_composition_is_finite() -> None:
     cfg = SphereBFLControlVolumeConfig(
         nx=48, ny=32, nz=32, radius=4.0, center_x_fraction=0.35,
@@ -58,12 +70,14 @@ def test_short_natural_kbc_sphere_composition_is_finite() -> None:
         reynolds=20.0, lattice_speed=0.04, steps=4, warmup_steps=2,
         ramp_steps=2, sponge_width=3, cv_margin=2, device="cpu",
         collision_model="natural_kbc_d3q19",
+        collision_chunk_cells=512,
     )
 
     result = run_sphere_bfl_control_volume(cfg)
 
     assert result["result"]["finite"] is True
     assert result["configuration"]["collision_model"] == "natural_kbc_d3q19"
+    assert result["result"]["collision_execution"]["collision_calls"] == 128
     assert result["acceptance"]["admitted"] is False
 
 
