@@ -69,6 +69,45 @@ def test_mass_identity_covers_nonorthogonal_velocity_and_force() -> None:
     assert float(source.sum()) == pytest.approx(0.0, abs=1.0e-19)
 
 
+@pytest.mark.parametrize("chunk_size", (1, 4, 7, 19))
+def test_direction_chunked_guo_force_matches_whole_lattice(
+    chunk_size: int,
+) -> None:
+    torch.manual_seed(20260802)
+    shape = (3, 4, 5)
+    state = torch.randn((19, *shape), dtype=torch.float64)
+    fields = [torch.randn(shape, dtype=torch.float64) for _ in range(6)]
+    expected = guo_body_force_d3q19(state, *fields)
+
+    actual = guo_body_force_d3q19(
+        state,
+        *fields,
+        direction_chunk_size=chunk_size,
+    )
+
+    torch.testing.assert_close(actual, expected, rtol=0.0, atol=0.0)
+
+
+@pytest.mark.parametrize("chunk_size", (0, 20, True))
+def test_direction_chunked_guo_force_rejects_invalid_size(
+    chunk_size: int,
+) -> None:
+    shape = (1, 1, 1)
+    state = torch.zeros((19, *shape))
+    zero = torch.zeros(shape)
+    with pytest.raises(ValueError, match="direction_chunk_size"):
+        guo_body_force_d3q19(
+            state,
+            zero,
+            zero,
+            zero,
+            zero,
+            zero,
+            zero,
+            direction_chunk_size=chunk_size,
+        )
+
+
 @pytest.mark.parametrize(("q", "lattice"), ((19, "D3Q19"), (27, "D3Q27")))
 def test_solver_agnostic_wall_source_uses_the_same_moment_contract(
     q: int,

@@ -262,6 +262,12 @@ def parser() -> argparse.ArgumentParser:
         ),
     )
     result.add_argument(
+        "--wall-force-direction-chunk",
+        type=int,
+        default=4,
+        help="D3Q19 directions per bounded-memory Guo wall-source chunk",
+    )
+    result.add_argument(
         "--omega-bulk",
         type=float,
         default=1.0,
@@ -317,6 +323,8 @@ def run(args: argparse.Namespace) -> dict:
         raise ValueError("KBC maximum iterations must be at least two")
     if args.collision_chunk_cells < 0:
         raise ValueError("collision chunk cells must be non-negative")
+    if not 1 <= args.wall_force_direction_chunk <= 19:
+        raise ValueError("wall force direction chunk must lie in [1,19]")
     if not 0.0 < args.omega_bulk <= 2.0:
         raise ValueError("bulk relaxation rate must lie in (0,2]")
     if args.checkpoint_interval < 0:
@@ -621,6 +629,7 @@ def run(args: argparse.Namespace) -> dict:
         "level_count": level_count,
         "force_samples_per_root_step": force_averager.expected_samples,
         "collision_chunk_cells": args.collision_chunk_cells,
+        "wall_force_direction_chunk": args.wall_force_direction_chunk,
         "outer_fine_shape": list(outer_plan.fine_physical_shape),
         "nested_fine_shape": list(nested_plan.fine_physical_shape),
         "fine_physical_shapes_by_level": [
@@ -1293,6 +1302,7 @@ def run(args: argparse.Namespace) -> dict:
             area_weight=area_weight,
             apply_wall_stress=not args.disable_wall_stress,
             return_wall_diagnostics=collect_wall_diagnostics,
+            guo_direction_chunk_size=args.wall_force_direction_chunk,
         )
         if collect_wall_diagnostics:
             out, friction, pressure, diagnostics = wall_result

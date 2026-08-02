@@ -127,3 +127,35 @@ def macroscopic3d(
     uy = (f * c[:, 1].view(19, 1, 1, 1)).sum(dim=0) / rho_safe
     uz = (f * c[:, 2].view(19, 1, 1, 1)).sum(dim=0) / rho_safe
     return rho, ux, uy, uz
+
+
+def macroscopic3d_low_memory(
+    f: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Recover D3Q19 moments without a Q-wide broadcast temporary.
+
+    The standard vector expression is convenient but materialises
+    ``f * c_axis`` over all 19 directions for each momentum component.  This
+    algebraically equivalent paired-direction form uses only spatial fields
+    and is intended for memory-bound wall/geometry kernels on large grids.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    rho = f.sum(dim=0)
+    rho_safe = rho.clamp_min(1.0e-12)
+    p78 = f[7] - f[8]
+    p9_10 = f[9] - f[10]
+    p11_12 = f[11] - f[12]
+    p13_14 = f[13] - f[14]
+    p15_16 = f[15] - f[16]
+    p17_18 = f[17] - f[18]
+    ux = (
+        f[1] - f[2] + p78 + p9_10 + p11_12 + p13_14
+    ) / rho_safe
+    uy = (
+        f[3] - f[4] + p78 - p9_10 + p15_16 + p17_18
+    ) / rho_safe
+    uz = (
+        f[5] - f[6] + p11_12 - p13_14 + p15_16 - p17_18
+    ) / rho_safe
+    return rho, ux, uy, uz
