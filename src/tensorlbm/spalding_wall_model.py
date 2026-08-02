@@ -312,6 +312,7 @@ class SpaldingWallDiagnostics:
     mean_y2_plus: float
     mean_u_tau: float
     shear_force: tuple[float, float, float]
+    y_plus_summary: dict[str, float | int | bool | None] | None = None
 
 
 def apply_spalding_exchange_wall_model(
@@ -326,6 +327,9 @@ def apply_spalding_exchange_wall_model(
     area_weight: torch.Tensor | None = None,
     activation: float = 1.0,
     solid_mask: torch.Tensor | None = None,
+    y_plus_lower_bound: float = 30.0,
+    y_plus_upper_bound: float = 1000.0,
+    minimum_y_plus_in_range_fraction: float = 0.9,
 ) -> tuple[torch.Tensor, SpaldingWallDiagnostics]:
     """Assimilate a Spalding-modelled boundary velocity after curved BFL."""
     if exchange_distance <= 0.0:
@@ -346,7 +350,7 @@ def apply_spalding_exchange_wall_model(
     count = int(boundary.sum().item())
     if count == 0:
         zero = (0.0, 0.0, 0.0)
-        return f, SpaldingWallDiagnostics(0, 0.0, 0.0, 0.0, zero)
+        return f, SpaldingWallDiagnostics(0, 0.0, 0.0, 0.0, zero, None)
     nxb, nyb, nzb = samples.normal_x, samples.normal_y, samples.normal_z
     y1, y2 = samples.y1, samples.y2
     u2x, u2y, u2z = samples.velocity_x, samples.velocity_y, samples.velocity_z
@@ -355,6 +359,7 @@ def apply_spalding_exchange_wall_model(
     u2mag = torch.sqrt(t2x.square() + t2y.square() + t2z.square()).clamp_min(1e-20)
     tx, ty, tz = t2x / u2mag, t2y / u2mag, t2z / u2mag
     u_tau = solve_spalding_friction_velocity(u2mag, y2, nu)
+    y2_plus = y2 * u_tau / nu
     y1_plus = y1 * u_tau / nu
     u1 = spalding_u_plus_from_y_plus(y1_plus) * u_tau
 
@@ -381,13 +386,25 @@ def apply_spalding_exchange_wall_model(
         if area_weight.shape != boundary.shape:
             raise ValueError("area_weight must have the spatial grid shape")
         area = area_weight.to(device=f.device, dtype=f.dtype)[boundary]
-    shear = torch.stack(((tau_w * tx * area).sum(), (tau_w * ty * area).sum(), (tau_w * tz * area).sum()))
+    shear = torch.stack((
+        (tau_w * tx * area).sum(),
+        (tau_w * ty * area).sum(),
+        (tau_w * tz * area).sum(),
+    ))
+    from .wall_exchange_yplus import summarize_wall_exchange_yplus
+    y_plus_summary = summarize_wall_exchange_yplus(
+        y2_plus,
+        lower_bound=y_plus_lower_bound,
+        upper_bound=y_plus_upper_bound,
+        minimum_in_range_fraction=minimum_y_plus_in_range_fraction,
+    )
     diagnostics = SpaldingWallDiagnostics(
         boundary_nodes=count,
         mean_y1=float(y1.mean().item()),
-        mean_y2_plus=float((y2 * u_tau / nu).mean().item()),
+        mean_y2_plus=float(y2_plus.mean().item()),
         mean_u_tau=float(u_tau.mean().item()),
         shear_force=tuple(float(value) for value in shear.tolist()),
+        y_plus_summary=y_plus_summary.to_dict(),
     )
     return out, diagnostics
 

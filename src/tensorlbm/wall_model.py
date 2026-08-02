@@ -50,6 +50,7 @@ class WallStressDiagnostics:
     y_plus_max: float | None
     u_tau_mean: float | None
     shear_force: tuple[float, float, float]
+    y_plus_summary: dict[str, float | int | bool | None] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -1037,6 +1038,9 @@ def bfl_wall_function_3d(
     guo_direction_chunk_size: int = 19,
     use_low_memory_macroscopic: bool = False,
     return_wall_diagnostics: bool = False,
+    y_plus_lower_bound: float = 30.0,
+    y_plus_upper_bound: float = 1000.0,
+    minimum_y_plus_in_range_fraction: float = 0.9,
 ) -> (
     tuple[torch.Tensor, float, float]
     | tuple[torch.Tensor, float, float, WallStressDiagnostics]
@@ -1092,6 +1096,12 @@ def bfl_wall_function_3d(
             the stress law.  BFL remains a slip/no-penetration boundary; only
             the velocity and distance used to evaluate ``u_tau`` move to this
             exchange location.  No population assimilation is performed.
+        y_plus_lower_bound: Lower applicability bound recorded for measured
+            exchange-location ``y+`` values.
+        y_plus_upper_bound: Upper applicability bound recorded for measured
+            exchange-location ``y+`` values.
+        minimum_y_plus_in_range_fraction: Required fraction of finite active
+            samples inside the declared interval.
 
     Returns:
         ``(f_corrected, drag_friction_x, drag_pressure_x)``.  When
@@ -1199,6 +1209,11 @@ def bfl_wall_function_3d(
             area_weight=area_weight,
             activation=shear_activation,
             solid_mask=solid,
+            y_plus_lower_bound=y_plus_lower_bound,
+            y_plus_upper_bound=y_plus_upper_bound,
+            minimum_y_plus_in_range_fraction=(
+                minimum_y_plus_in_range_fraction
+            ),
         )
         if return_wall_diagnostics:
             requested = int(fluid_boundary_mask.any(dim=0).sum().item())
@@ -1216,6 +1231,7 @@ def bfl_wall_function_3d(
                 y_plus_max=None,
                 u_tau_mean=wall_diagnostics.mean_u_tau,
                 shear_force=wall_diagnostics.shear_force,
+                y_plus_summary=wall_diagnostics.y_plus_summary,
             )
             return f, wall_diagnostics.shear_force[0], bfl_force[0], diagnostics
         return f, wall_diagnostics.shear_force[0], bfl_force[0]
@@ -1332,6 +1348,18 @@ def bfl_wall_function_3d(
             (tau_w * (ut_y * inv_utan) * traction_area * shear_activation).sum(),
             (tau_w * (ut_z * inv_utan) * traction_area * shear_activation).sum(),
         ))
+        from .wall_exchange_yplus import summarize_wall_exchange_yplus
+        y_plus_summary = (
+            summarize_wall_exchange_yplus(
+                active_y_plus,
+                lower_bound=y_plus_lower_bound,
+                upper_bound=y_plus_upper_bound,
+                minimum_in_range_fraction=(
+                    minimum_y_plus_in_range_fraction
+                ),
+            ).to_dict()
+            if active else None
+        )
         diagnostics = WallStressDiagnostics(
             mode=(
                 "exchange_location_guo"
@@ -1348,6 +1376,7 @@ def bfl_wall_function_3d(
             y_plus_max=y_plus_max,
             u_tau_mean=u_tau_mean,
             shear_force=shear_components,
+            y_plus_summary=y_plus_summary,
         )
         return f, drag_fric, drag_pres, diagnostics
     return f, drag_fric, drag_pres
