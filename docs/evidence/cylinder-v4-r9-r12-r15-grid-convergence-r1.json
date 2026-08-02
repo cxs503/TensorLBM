@@ -106,6 +106,17 @@
   "source_numerical_quality_admitted": true,
   "physical_validation": false,
   "admitted": false,
+  "active_follow_up": {
+    "case": "R18 geometrically and temporally scaled continuation",
+    "pid": 1660818,
+    "waits_for_l120_multigpu_probe_pid": 1657511,
+    "radius_cells": 18.0,
+    "domain_cells": [3, 720, 720],
+    "steps": 108000,
+    "warmup_steps": 63000,
+    "statistics_window_steps": 45000,
+    "status": "queued"
+  },
   "sources": [
     {
       "path": "results/cylinder-v4-equivalent-r9-54000.json",
