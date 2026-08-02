@@ -55,7 +55,8 @@
   ],
   "runtime_gate": {
     "required_free_reserve_gib_per_device": 1.0,
-    "two_gpu_equivalence_probe_pid": 1640017,
+    "two_gpu_equivalence_queue_wrapper_pid": 1640017,
+    "two_gpu_equivalence_probe_pid": 1640018,
     "two_gpu_equivalence_probe_status": "queued",
     "production_l120_launch_allowed": false,
     "reason": "Cross-device ghost fill, restriction and reflux must pass the independent one-device equivalence probe before a physical campaign is launched."
