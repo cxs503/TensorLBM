@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class WallTangentialPressureGradientSamples:
     """Tangential-gradient magnitudes aligned with active wall nodes."""
 
+    vector: torch.Tensor
     magnitude: torch.Tensor
     valid: torch.Tensor
     requested_nodes: int
@@ -126,10 +127,16 @@ def sample_wall_tangential_pressure_gradient(
 
     indices = active.nonzero(as_tuple=False)
     requested = int(indices.shape[0])
+    vectors = torch.zeros(
+        (requested, 3),
+        dtype=pressure.dtype,
+        device=pressure.device,
+    )
     magnitudes = torch.zeros(requested, dtype=pressure.dtype, device=pressure.device)
     valid = torch.zeros(requested, dtype=torch.bool, device=pressure.device)
     if not requested:
         return WallTangentialPressureGradientSamples(
+            vectors,
             magnitudes,
             valid,
             requested,
@@ -148,6 +155,7 @@ def sample_wall_tangential_pressure_gradient(
     selected = interior.nonzero(as_tuple=False).flatten()
     if not int(selected.numel()):
         return WallTangentialPressureGradientSamples(
+            vectors,
             magnitudes,
             valid,
             requested,
@@ -212,6 +220,7 @@ def sample_wall_tangential_pressure_gradient(
         accepted = finite_normal & finite_gradient
         global_positions = selected[local_positions]
         accepted_positions = global_positions[accepted]
+        vectors[accepted_positions] = tangential[accepted]
         magnitudes[accepted_positions] = torch.linalg.vector_norm(
             tangential[accepted],
             dim=1,
@@ -219,6 +228,7 @@ def sample_wall_tangential_pressure_gradient(
         valid[accepted_positions] = True
 
     return WallTangentialPressureGradientSamples(
+        vector=vectors,
         magnitude=magnitudes,
         valid=valid,
         requested_nodes=requested,
