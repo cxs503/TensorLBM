@@ -28,6 +28,12 @@ def parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--collision-chunk-cells", type=int, default=0)
     p.add_argument("--compile-natural-kbc", action="store_true")
+    p.add_argument("--projected-pressure-interval", type=int, default=0)
+    p.add_argument(
+        "--projected-pressure-reconstruction",
+        choices=("local", "linear", "quadratic"),
+        default="linear",
+    )
     p.add_argument("--steps", type=int, default=3000)
     p.add_argument("--warmup-steps", type=int, default=1500)
     p.add_argument("--ramp-steps", type=int, default=500)
@@ -72,6 +78,10 @@ def main() -> None:
         collision_model=args.collision_model,
         collision_chunk_cells=args.collision_chunk_cells,
         compile_natural_kbc=args.compile_natural_kbc,
+        projected_pressure_interval=args.projected_pressure_interval,
+        projected_pressure_reconstruction=(
+            args.projected_pressure_reconstruction
+        ),
     )
     result = run_sphere_bfl_control_volume(config)
     output = Path(args.output)
