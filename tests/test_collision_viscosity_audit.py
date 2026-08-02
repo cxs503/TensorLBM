@@ -28,6 +28,23 @@ def test_audited_collision_recovers_target_viscosity(
     assert result["result"]["relative_error_pct"] < 2.0
 
 
+def test_float64_equilibrium_uses_unrounded_lattice_weights() -> None:
+    import torch
+
+    from tensorlbm.d3q19 import W_EXACT64, W, equilibrium3d
+
+    rho = torch.ones((3, 4, 3), dtype=torch.float64)
+    zero = torch.zeros_like(rho)
+    equilibrium = equilibrium3d(rho, zero, zero, zero)
+
+    assert W.dtype is torch.float32
+    assert W_EXACT64.dtype is torch.float64
+    torch.testing.assert_close(
+        equilibrium[:, 0, 0, 0], W_EXACT64, rtol=0.0, atol=0.0,
+    )
+    assert not torch.equal(W.double(), W_EXACT64)
+
+
 def test_current_kbc_is_withheld_when_viscosity_is_not_recovered() -> None:
     result = run_collision_viscosity_audit(CollisionViscosityAuditConfig(
         collision_model="entropic_kbc",
