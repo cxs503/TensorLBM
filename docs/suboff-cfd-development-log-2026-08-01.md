@@ -1740,6 +1740,17 @@ validation.  Primary acceptance remains the Liu & Huang AFF-1/AFF-8 tow data.
      next inlet-sponge/domain repeat to correlate Cd changes with boundary mass
      and momentum injection.  Ten sphere composition, natural-KBC and explicit
      checkpoint-migration tests pass.
+196. The mass-conservative v5 flat-plate L256 trajectory completes and passes
+     every declared single-grid gate.  Its friction coefficient is
+     `0.0045942685`, 1.989% below ITTC-1957; the 16000-step window has 0.171%
+     block range and 0.073% half-window drift.  The control-volume versus
+     BFL-plus-wall-stress difference is 0.0285%, no positivity limiting occurs,
+     and the final frozen-state audit has 1536/1536 valid wall samples with 100%
+     of `y+` inside 30-1000.  Result/checkpoint/audit SHA-256 values are
+     `788a88c2b3b86c88ae572a75aaca6834a1d886fddc9f1e0e9ab7efa056497056`,
+     `fd7aceb7a29cae5efa49b49a8dc7f71b5eba4aee98ae1bd1ec8b85607f22a4fb`
+     and `1755212d914d8abc32e0475236f7328e4e9ec66eb7cbbd26821803535cc74617`.
+     This admits L256 only; L384 is running and grid convergence remains open.
 
 ## Rejected candidates
 
