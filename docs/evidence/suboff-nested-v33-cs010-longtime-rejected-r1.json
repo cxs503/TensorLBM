@@ -67,6 +67,20 @@
     "Record pressure and wall-shear means separately in all corrected-source results.",
     "After four-level long-time stability is established, test higher resolved collision Reynolds with viscosity continuation rather than tuning resistance."
   ],
+  "active_follow_up": {
+    "campaign": "v18 AFF-1 four-level L90 resolved-Re 200000 pilot",
+    "queue_wrapper_pid": 1646314,
+    "pilot_pid": 1646315,
+    "waits_for_chunked_allocation_probe_pid": 1642901,
+    "collision_chunk_cells": 262144,
+    "viscosity_continuation": {
+      "resolved_reynolds_start": 5000.0,
+      "resolved_reynolds_target": 200000.0,
+      "start_step": 300,
+      "end_step": 1500
+    },
+    "status": "queued_fail_closed"
+  },
   "remote_sources": [
     {
       "path": "results/amr_campaign_20260801/suboff-nested-v33-equivalent-l90-12k.json",
