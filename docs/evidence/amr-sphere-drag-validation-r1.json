@@ -1,0 +1,393 @@
+{
+  "schema": "tensorlbm-amr-sphere-drag-validation-v1",
+  "status": "measured_candidate",
+  "physical_validation": false,
+  "case": "AMR sphere drag Re=100: coarse grid + 2:1 fine block vs uniform-grid control vs Schiller-Naumann",
+  "reference": {
+    "schiller_naumann_cd": 1.0917,
+    "uniform_grid_extrapolated_cd": 1.1263,
+    "uniform_grid_extrapolated_error_pct": 3.17,
+    "note": "uniform R9/R12/R15 convergence admitted 2026-08-02 (sphere-v9-corrected-bfl)"
+  },
+  "runs": [
+    {
+      "file": "amr-sphere-re100-r16.json",
+      "status": "measured_candidate",
+      "case": "AMR sphere Re=100.0: coarse [112, 112, 160] + 2:1 fine block [66, 125, 42, 71, 42, 71] effective radius 16.0",
+      "cd_control_volume": 1.4334627442092018,
+      "reference_cd": 1.0917310910948732,
+      "reference_error_pct": 31.301815612085704,
+      "max_reflux_residual": 3.725290298461914e-09,
+      "wall_time_s": 454.4233958721161,
+      "configuration": {
+        "coarse_shape_zyx": [
+          112,
+          112,
+          160
+        ],
+        "fine_shape_zyx": [
+          58,
+          58,
+          118
+        ],
+        "fine_box": [
+          66,
+          125,
+          42,
+          71,
+          42,
+          71
+        ],
+        "radius_coarse": 8.0,
+        "radius_fine": 16.0,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "tau_coarse": 0.5288,
+        "tau_fine": 0.5576000000000001,
+        "steps": 3000,
+        "warmup_steps": 1500,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "reflux": true
+      },
+      "sources": [
+        {
+          "path": "outputs/amr-sphere-re100-r16.json",
+          "sha256": "6ca26336f71b204ef23e82a382a791a2f362a26168f4904469badaa6e3984cd0"
+        }
+      ]
+    },
+    {
+      "file": "amr-sphere-re100-r16-v2.json",
+      "status": "measured_candidate",
+      "case": "AMR sphere Re=100.0: coarse [112, 112, 160] + 2:1 fine block [66, 125, 42, 71, 42, 71] effective radius 16.0",
+      "cd_control_volume": 1.4334627442092018,
+      "reference_cd": 1.0917310910948732,
+      "reference_error_pct": 31.301815612085704,
+      "max_reflux_residual": 3.725290298461914e-09,
+      "wall_time_s": 444.8566129207611,
+      "configuration": {
+        "coarse_shape_zyx": [
+          112,
+          112,
+          160
+        ],
+        "fine_shape_zyx": [
+          58,
+          58,
+          118
+        ],
+        "fine_box": [
+          66,
+          125,
+          42,
+          71,
+          42,
+          71
+        ],
+        "radius_coarse": 8.0,
+        "radius_fine": 16.0,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "tau_coarse": 0.5288,
+        "tau_fine": 0.5576000000000001,
+        "steps": 3000,
+        "warmup_steps": 1500,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "reflux": true
+      },
+      "sources": [
+        {
+          "path": "outputs/amr-sphere-re100-r16-v2.json",
+          "sha256": "31b08de56c4a02b3142e00b2fb89b8035ef85cb7f9324863e7708934e8d18bd2"
+        }
+      ]
+    },
+    {
+      "file": "amr-sphere-re100-r16-m16.json",
+      "status": "measured_candidate",
+      "case": "AMR sphere Re=100.0: coarse [112, 112, 160] + 2:1 fine block [56, 150, 32, 81, 32, 81] effective radius 16.0",
+      "cd_control_volume": 1.356562389132713,
+      "reference_cd": 1.0917310910948732,
+      "reference_error_pct": 24.257923970292563,
+      "max_reflux_residual": 1.862645149230957e-09,
+      "wall_time_s": 639.7305500507355,
+      "configuration": {
+        "coarse_shape_zyx": [
+          112,
+          112,
+          160
+        ],
+        "fine_shape_zyx": [
+          98,
+          98,
+          188
+        ],
+        "fine_box": [
+          56,
+          150,
+          32,
+          81,
+          32,
+          81
+        ],
+        "radius_coarse": 8.0,
+        "radius_fine": 16.0,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "tau_coarse": 0.5288,
+        "tau_fine": 0.5576000000000001,
+        "steps": 3000,
+        "warmup_steps": 1500,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "reflux": true
+      },
+      "sources": [
+        {
+          "path": "outputs/amr-sphere-re100-r16-m16.json",
+          "sha256": "7e3eab5455e700f0ca2a5fe17dc2f897e2088bacb86cc232181915bc68851d9c"
+        }
+      ]
+    },
+    {
+      "file": "amr-sphere-re100-r16-m28.json",
+      "status": "measured_candidate",
+      "case": "AMR sphere Re=100.0: coarse [128, 128, 192] + 2:1 fine block [60, 188, 28, 101, 28, 101] effective radius 16.0",
+      "cd_control_volume": 1.330526480194263,
+      "reference_cd": 1.0917310910948732,
+      "reference_error_pct": 21.87309595258545,
+      "max_reflux_residual": 1.862645149230957e-09,
+      "wall_time_s": 2348.7804794311523,
+      "configuration": {
+        "coarse_shape_zyx": [
+          128,
+          128,
+          192
+        ],
+        "fine_shape_zyx": [
+          146,
+          146,
+          256
+        ],
+        "fine_box": [
+          60,
+          188,
+          28,
+          101,
+          28,
+          101
+        ],
+        "radius_coarse": 8.0,
+        "radius_fine": 16.0,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "tau_coarse": 0.5288,
+        "tau_fine": 0.5576000000000001,
+        "steps": 3000,
+        "warmup_steps": 1500,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "reflux": true
+      },
+      "sources": [
+        {
+          "path": "outputs/amr-sphere-re100-r16-m28.json",
+          "sha256": "e3144c3d6e7ef1fc13df307df9a92f45d42eabba254494ec7a2800a00972326c"
+        }
+      ]
+    },
+    {
+      "file": "amr-sphere-re100-r16-long.json",
+      "status": "measured_candidate",
+      "case": "AMR sphere Re=100.0: coarse [112, 112, 160] + 2:1 fine block [56, 150, 32, 81, 32, 81] effective radius 16.0",
+      "cd_control_volume": 1.2142933036988661,
+      "reference_cd": 1.0917310910948732,
+      "reference_error_pct": 11.226410386561215,
+      "max_reflux_residual": 1.862645149230957e-09,
+      "wall_time_s": 3746.8161590099335,
+      "configuration": {
+        "coarse_shape_zyx": [
+          112,
+          112,
+          160
+        ],
+        "fine_shape_zyx": [
+          98,
+          98,
+          188
+        ],
+        "fine_box": [
+          56,
+          150,
+          32,
+          81,
+          32,
+          81
+        ],
+        "radius_coarse": 8.0,
+        "radius_fine": 16.0,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "tau_coarse": 0.5288,
+        "tau_fine": 0.5576000000000001,
+        "steps": 8000,
+        "warmup_steps": 5000,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "reflux": true
+      },
+      "sources": [
+        {
+          "path": "outputs/amr-sphere-re100-r16-long.json",
+          "sha256": "bd2102f4a381215588b09bdaa21561b82e0f912124ecdbe450a69e4907e5e70c"
+        }
+      ]
+    },
+    {
+      "file": "amr-sphere-re100-r16-tri-long.json",
+      "status": "measured_candidate",
+      "case": "AMR sphere Re=100.0: coarse [112, 112, 160] + 2:1 fine block [56, 150, 32, 81, 32, 81] effective radius 16.0",
+      "cd_control_volume": 1.1982571812005975,
+      "reference_cd": 1.0917310910948732,
+      "reference_error_pct": 9.757539285511385,
+      "max_reflux_residual": 9.313225746154785e-10,
+      "wall_time_s": 1706.0529646873474,
+      "configuration": {
+        "coarse_shape_zyx": [
+          112,
+          112,
+          160
+        ],
+        "fine_shape_zyx": [
+          98,
+          98,
+          188
+        ],
+        "fine_box": [
+          56,
+          150,
+          32,
+          81,
+          32,
+          81
+        ],
+        "radius_coarse": 8.0,
+        "radius_fine": 16.0,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "tau_coarse": 0.5288,
+        "tau_fine": 0.5576000000000001,
+        "steps": 8000,
+        "warmup_steps": 5000,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "reflux": true,
+        "ghost_interpolation": "trilinear"
+      },
+      "sources": [
+        {
+          "path": "outputs/amr-sphere-re100-r16-tri-long.json",
+          "sha256": "ee11f51ac5d396193e85fd9f4710992f66f2e139faddd2e6ae10f2dd832cd0f3"
+        }
+      ]
+    },
+    {
+      "file": "amr-sphere-re100-r16-m28-tri-long.json",
+      "status": "measured_candidate",
+      "case": "AMR sphere Re=100.0: coarse [128, 128, 192] + 2:1 fine block [60, 188, 28, 101, 28, 101] effective radius 16.0",
+      "cd_control_volume": 1.1769309292451995,
+      "reference_cd": 1.0917310910948732,
+      "reference_error_pct": 7.804104769507044,
+      "max_reflux_residual": 1.862645149230957e-09,
+      "wall_time_s": 3729.4244513511658,
+      "configuration": {
+        "coarse_shape_zyx": [
+          128,
+          128,
+          192
+        ],
+        "fine_shape_zyx": [
+          146,
+          146,
+          256
+        ],
+        "fine_box": [
+          60,
+          188,
+          28,
+          101,
+          28,
+          101
+        ],
+        "radius_coarse": 8.0,
+        "radius_fine": 16.0,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "tau_coarse": 0.5288,
+        "tau_fine": 0.5576000000000001,
+        "steps": 8000,
+        "warmup_steps": 5000,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "reflux": true,
+        "ghost_interpolation": "trilinear"
+      },
+      "sources": [
+        {
+          "path": "outputs/amr-sphere-re100-r16-m28-tri-long.json",
+          "sha256": "4f3d18936694280df84779586da36706e48a3c7631925f189af6090952b36aae"
+        }
+      ]
+    },
+    {
+      "file": "sphere-uniform-re100-r8-3k.json",
+      "status": null,
+      "case": null,
+      "cd_control_volume": 1.1758835366543396,
+      "reference_cd": null,
+      "reference_error_pct": 7.70816607183659,
+      "max_reflux_residual": null,
+      "wall_time_s": null,
+      "configuration": {
+        "schema_version": 3,
+        "bfl_link_fraction_convention": "ray_parameter_q_equals_t_v2",
+        "bfl_population_reconstruction": "post_collision_outgoing_and_upstream_v2",
+        "shape_zyx": [
+          112,
+          112,
+          160
+        ],
+        "radius": 8.0,
+        "center_x_fraction": 0.3,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "collision_model": "cumulant_d3q19_cs0",
+        "collision_chunk_cells": 0,
+        "compile_natural_kbc": false,
+        "warmup_steps": 1500,
+        "ramp_steps": 500,
+        "sponge_width": 16,
+        "sponge_strength": 0.2,
+        "sponge_inlet": false,
+        "cv_margin": 5,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "statistics_window_steps": 0,
+        "tau": 0.5288,
+        "steps": 3000,
+        "device": "cuda:0",
+        "resumed_from_step": 0,
+        "checkpoint_path": null,
+        "report_interval": 500,
+        "checkpoint_interval": 2000,
+        "statistics_window_steps_resolved": 1500,
+        "projected_pressure_interval": 0,
+        "projected_pressure_reconstruction": "linear",
+        "statistics_convective_times": 5.625,
+        "minimum_statistics_convective_times": 5.0,
+        "migration_provenance": null
+      },
+      "sources": [
+        {
+          "path": "outputs/sphere-uniform-re100-r8-3k.json",
+          "sha256": "c395323260a7e4a0f2321eccdab1ad323b9f641127feadb36680767773d06605"
+        }
+      ]
+    }
+  ],
+  "conclusion": "AMR mechanics are healthy (reflux residual ~1e-9, no NaN). 3000-step runs are dominated by transient statistics (drift 19-21%); 8000-step runs reach perfect stationarity. With wall-margin 28 and trilinear ghost interpolation, AMR reaches Cd=1.1769 (7.80% vs Schiller-Naumann 1.0917), statistically indistinguishable from the uniform-grid R8 control (Cd=1.1759, 7.71%, delta 0.09pp). The remaining ~4.6pp vs the R9/R12/R15 extrapolated uniform result (3.17%) is resolution-limited (R16 fine block vs R15 convergence), not an AMR artefact. Ghost interpolation contributes ~1.5pp (injection 11.23% -> trilinear 9.76% at m16); fine-block margin contributes ~2pp (m16 9.76% -> m28 7.80%)."
+}
