@@ -387,7 +387,115 @@
           "sha256": "c395323260a7e4a0f2321eccdab1ad323b9f641127feadb36680767773d06605"
         }
       ]
+    },
+    {
+      "file": "sphere-uniform-re100-r16-2k.json",
+      "status": null,
+      "case": null,
+      "cd_control_volume": 1.208661673753483,
+      "reference_cd": null,
+      "reference_error_pct": 10.710566330152114,
+      "max_reflux_residual": null,
+      "wall_time_s": null,
+      "configuration": {
+        "schema_version": 3,
+        "bfl_link_fraction_convention": "ray_parameter_q_equals_t_v2",
+        "bfl_population_reconstruction": "post_collision_outgoing_and_upstream_v2",
+        "shape_zyx": [
+          224,
+          224,
+          320
+        ],
+        "radius": 16.0,
+        "center_x_fraction": 0.3,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "collision_model": "cumulant_d3q19_cs0",
+        "collision_chunk_cells": 0,
+        "compile_natural_kbc": false,
+        "warmup_steps": 800,
+        "ramp_steps": 300,
+        "sponge_width": 16,
+        "sponge_strength": 0.2,
+        "sponge_inlet": false,
+        "cv_margin": 5,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "statistics_window_steps": 0,
+        "tau": 0.5576,
+        "steps": 2000,
+        "device": "cuda:0",
+        "resumed_from_step": 0,
+        "checkpoint_path": null,
+        "report_interval": 500,
+        "checkpoint_interval": 2000,
+        "statistics_window_steps_resolved": 1200,
+        "projected_pressure_interval": 0,
+        "projected_pressure_reconstruction": "linear",
+        "statistics_convective_times": 2.25,
+        "minimum_statistics_convective_times": 5.0,
+        "migration_provenance": null
+      },
+      "sources": [
+        {
+          "path": "outputs/sphere-uniform-re100-r16-2k.json",
+          "sha256": "d38dfaf756d4ea20b547f95ba4d335fb1855801eb654812b7b925ddac9fea277"
+        }
+      ]
+    },
+    {
+      "file": "sphere-uniform-re100-r16-8k.json",
+      "status": null,
+      "case": null,
+      "cd_control_volume": 1.1403114616188677,
+      "reference_cd": null,
+      "reference_error_pct": 4.449847670388708,
+      "max_reflux_residual": null,
+      "wall_time_s": null,
+      "configuration": {
+        "schema_version": 3,
+        "bfl_link_fraction_convention": "ray_parameter_q_equals_t_v2",
+        "bfl_population_reconstruction": "post_collision_outgoing_and_upstream_v2",
+        "shape_zyx": [
+          224,
+          224,
+          320
+        ],
+        "radius": 16.0,
+        "center_x_fraction": 0.3,
+        "reynolds": 100.0,
+        "lattice_speed": 0.06,
+        "collision_model": "cumulant_d3q19_cs0",
+        "collision_chunk_cells": 0,
+        "compile_natural_kbc": false,
+        "warmup_steps": 5000,
+        "ramp_steps": 500,
+        "sponge_width": 16,
+        "sponge_strength": 0.2,
+        "sponge_inlet": false,
+        "cv_margin": 5,
+        "far_field_mode": "non_equilibrium_extrapolation",
+        "statistics_window_steps": 3000,
+        "tau": 0.5576,
+        "steps": 8000,
+        "device": "cuda:0",
+        "resumed_from_step": 0,
+        "checkpoint_path": null,
+        "report_interval": 1000,
+        "checkpoint_interval": 2000,
+        "statistics_window_steps_resolved": 3000,
+        "projected_pressure_interval": 0,
+        "projected_pressure_reconstruction": "linear",
+        "statistics_convective_times": 5.625,
+        "minimum_statistics_convective_times": 5.0,
+        "migration_provenance": null
+      },
+      "sources": [
+        {
+          "path": "outputs/sphere-uniform-re100-r16-8k.json",
+          "sha256": "a18942a845b88c8ef6590f6a068029152b10bbbd22620bd19f9d603783164ae1"
+        }
+      ]
     }
   ],
-  "conclusion": "AMR mechanics are healthy (reflux residual ~1e-9, no NaN). 3000-step runs are dominated by transient statistics (drift 19-21%); 8000-step runs reach perfect stationarity. With wall-margin 28 and trilinear ghost interpolation, AMR reaches Cd=1.1769 (7.80% vs Schiller-Naumann 1.0917), statistically indistinguishable from the uniform-grid R8 control (Cd=1.1759, 7.71%, delta 0.09pp). The remaining ~4.6pp vs the R9/R12/R15 extrapolated uniform result (3.17%) is resolution-limited (R16 fine block vs R15 convergence), not an AMR artefact. Ghost interpolation contributes ~1.5pp (injection 11.23% -> trilinear 9.76% at m16); fine-block margin contributes ~2pp (m16 9.76% -> m28 7.80%)."
+  "conclusion": "AMR mechanics are healthy (reflux residual ~1e-9, no NaN). 3000-step runs are dominated by transient statistics (drift 19-21%); 8000-step runs reach perfect stationarity. Best AMR (m28+trilinear, 8.8M cells): Cd=1.1769, 7.80% vs Schiller-Naumann 1.0917. Uniform-grid R16 (16.1M cells, same 8000 steps): Cd=1.1403, 4.45% with drift 0.12% \u2014 the R16 fine block does NOT fully deliver R16 accuracy: AMR sits at uniform-R8 accuracy (7.71%) despite R16 resolution in the block. Interface error (ghost interpolation + block margin) consumes ~3.4pp of the expected 2x-resolution gain. Speed/memory: AMR m16 = 2.8x faster + 76% memory saving at 9.76% error; AMR m28 = 1.3x + 45% saving at 7.80%. The classic AMR value proposition (same accuracy, faster) is NOT yet demonstrated \u2014 reaching uniform-R16 accuracy (4.45%) requires two-level nested refinement (L2 hugging the sphere surface) or a larger fine block."
 }
