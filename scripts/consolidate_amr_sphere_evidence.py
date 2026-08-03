@@ -59,15 +59,18 @@ def main() -> None:
         "conclusion": (
             "AMR mechanics are healthy (reflux residual ~1e-9, no NaN). "
             "3000-step runs are dominated by transient statistics (drift 19-21%); "
-            "8000-step runs reach perfect stationarity. With wall-margin 28 and "
-            "trilinear ghost interpolation, AMR reaches Cd=1.1769 (7.80% vs "
-            "Schiller-Naumann 1.0917), statistically indistinguishable from the "
-            "uniform-grid R8 control (Cd=1.1759, 7.71%, delta 0.09pp). "
-            "The remaining ~4.6pp vs the R9/R12/R15 extrapolated uniform result "
-            "(3.17%) is resolution-limited (R16 fine block vs R15 convergence), "
-            "not an AMR artefact. Ghost interpolation contributes ~1.5pp "
-            "(injection 11.23% -> trilinear 9.76% at m16); fine-block margin "
-            "contributes ~2pp (m16 9.76% -> m28 7.80%)."
+            "8000-step runs reach perfect stationarity. Best AMR (m28+trilinear, "
+            "8.8M cells): Cd=1.1769, 7.80% vs Schiller-Naumann 1.0917. "
+            "Uniform-grid R16 (16.1M cells, same 8000 steps): Cd=1.1403, 4.45% "
+            "with drift 0.12% — the R16 fine block does NOT fully deliver R16 "
+            "accuracy: AMR sits at uniform-R8 accuracy (7.71%) despite R16 "
+            "resolution in the block. Interface error (ghost interpolation + "
+            "block margin) consumes ~3.4pp of the expected 2x-resolution gain. "
+            "Speed/memory: AMR m16 = 2.8x faster + 76% memory saving at 9.76% "
+            "error; AMR m28 = 1.3x + 45% saving at 7.80%. The classic AMR "
+            "value proposition (same accuracy, faster) is NOT yet demonstrated "
+            "— reaching uniform-R16 accuracy (4.45%) requires two-level nested "
+            "refinement (L2 hugging the sphere surface) or a larger fine block."
         ),
     }
     output = Path(args.output)
