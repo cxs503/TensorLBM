@@ -316,9 +316,19 @@ def build_control_volume(
 # Advance pieces shared by the static-block runners
 # ---------------------------------------------------------------------------
 
+def _collide(f: torch.Tensor, tau: float, collision: str) -> torch.Tensor:
+    """Dispatch D3Q19 collision operator by name."""
+    if collision == "cascaded":
+        from tensorlbm.cascaded_collision import collide_cascaded_d3q19
+        return collide_cascaded_d3q19(f, tau)
+    return collide_cumulant_d3q19(f, tau, C_s=0.0)
+
+
 def root_advance(
     f: torch.Tensor, tau: float,
     solid_q: torch.Tensor, sigma: torch.Tensor, lattice_speed: float,
+    *,
+    collision: str = "cumulant",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Root-level advance: collide, freeze coarse solid, stream, far-field + sponge.
 
@@ -328,7 +338,7 @@ def root_advance(
     returned.
     """
     before = f
-    collided = collide_cumulant_d3q19(f, tau, C_s=0.0)
+    collided = _collide(f, tau, collision)
     post_collision = torch.where(solid_q, before, collided)
     out = stream3d(post_collision)
     out = non_equilibrium_far_field_bc_3d(out, u_in=lattice_speed)
@@ -368,6 +378,7 @@ def fine_sphere_advance(
     sample_cv: bool = False,
     cv: torch.Tensor | None = None,
     solid_g: torch.Tensor | None = None,
+    collision: str = "cumulant",
 ) -> tuple[torch.Tensor, torch.Tensor, float | None]:
     """Fine-level advance: collide (freeze solid), stream, BFL, optional CV force.
 
@@ -375,7 +386,7 @@ def fine_sphere_advance(
     when ``sample_cv`` is true and ``None`` otherwise.
     """
     before = f
-    collided = collide_cumulant_d3q19(f, tau, C_s=0.0)
+    collided = _collide(f, tau, collision)
     post_collision = torch.where(solid_q, before, collided)
     out = stream3d(post_collision)
     out = bfl_sphere_advance(out, post_collision, bfl_mask, bfl_q, step, ramp_steps)
