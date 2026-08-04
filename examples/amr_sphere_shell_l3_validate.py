@@ -48,6 +48,7 @@ from tensorlbm.amr_shell_planning import plan_body_shell_box
 from tensorlbm.cascaded_collision import collide_cascaded_d3q19
 from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d
+from tensorlbm.d3q27 import equilibrium27
 from tensorlbm.evidence_io import common_schema_fields, write_evidence
 from tensorlbm.sphere_amr_common import (
     build_control_volume,
@@ -102,6 +103,13 @@ def parser() -> argparse.ArgumentParser:
         choices=("cumulant", "cascaded"),
         default="cumulant",
     )
+    p.add_argument(
+        "--lattice",
+        choices=("D3Q19", "D3Q27"),
+        default="D3Q19",
+        help="lattice stencil (D3Q19 keeps the legacy path; D3Q27 uses the "
+             "D3Q27 equilibrium/collision/stream/BFL kernels)",
+    )
     p.add_argument("--checkpoint", default=None, help="checkpoint .ckpt path")
     p.add_argument("--checkpoint-interval", type=int, default=0,
                    help="save every N root steps (0=off)")
@@ -126,6 +134,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     solid_coarse, solid_coarse_q = build_sphere_geometry(
         args.nx, args.ny, args.nz, cx, cy, cz, args.radius, device,
+        lattice=args.lattice,
     )
 
     # ---- L1 block: body-fitted shell (surface-proximity) + downstream wake,
@@ -144,13 +153,17 @@ def main() -> None:
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, args.lattice_speed)
     zero = torch.zeros_like(rho)
-    coarse_f = equilibrium3d(rho, ux, zero, zero, device=device)
+    if args.lattice == "D3Q27":
+        coarse_f = equilibrium27(rho, ux, zero, zero, device=device)
+    else:
+        coarse_f = equilibrium3d(rho, ux, zero, zero, device=device)
 
     # ------------------------------------------------------------------
     # level 1 (interface 0): L1 block, sphere at R*2
     # ------------------------------------------------------------------
     s1, fc1, radius1, l1 = build_fine_block_geometry(
         box1, (cx, cy, cz), args.radius, RATIO, GHOST, device,
+        lattice=args.lattice,
     )
     l1_solid, l1_solid_g, solid_q1, bfl_mask1, bfl_q1 = (
         l1.solid, l1.solid_g, l1.solid_q, l1.bfl_mask, l1.bfl_q,
@@ -166,6 +179,7 @@ def main() -> None:
     s1g = l1_solid_g.shape  # (nz, ny, nx) of the L1 with-ghost tensor
     box2, s2, fc2, l2 = build_l2_shell_geometry(
         c1_w, s1g, radius1, args.l2_margin, RATIO, GHOST, device,
+        lattice=args.lattice,
     )
     x0_2, x1_2, y0_2, y1_2, z0_2, z1_2 = (
         box2.x0, box2.x1, box2.y0, box2.y1, box2.z0, box2.z1,
@@ -183,6 +197,7 @@ def main() -> None:
     s2g = l2_solid_g.shape  # (nz, ny, nx) of the L2 with-ghost tensor
     box3, s3, fc3, l3 = build_l2_shell_geometry(
         c2_w, s2g, radius2, args.l2_margin, RATIO, GHOST, device,
+        lattice=args.lattice,
     )
     x0_3, x1_3, y0_3, y1_3, z0_3, z1_3 = (
         box3.x0, box3.x1, box3.y0, box3.y1, box3.z0, box3.z1,
@@ -260,7 +275,7 @@ def main() -> None:
             # root: coarse sphere frozen, far-field + sponge (patch-free region)
             out, post_collision, _collided = root_advance(
                 f, tau, solid_coarse_q, sigma, args.lattice_speed,
-                collision=args.collision,
+                collision=args.collision, lattice=args.lattice,
             )
             return AMRAdvanceResult(out, post_collision)
 
@@ -282,7 +297,7 @@ def main() -> None:
             step=current_step, ramp_steps=args.ramp_steps,
             sample_cv=(level_index == 3 and substep == 0),
             cv=cv, solid_g=solid_g,
-            collision=args.collision,
+            collision=args.collision, lattice=args.lattice,
         )
         if level_index == 3 and substep == 0:
             # one control-volume sample per root step, on the finest level
@@ -299,7 +314,7 @@ def main() -> None:
         shell_margin=args.shell_margin, wake_cells=args.wake_cells,
         l2_margin=args.l2_margin,
         ghost_interpolation=args.ghost_interpolation,
-        collision=args.collision, lattice="D3Q19",
+        collision=args.collision, lattice=args.lattice,
         tau_chain=[tau_coarse, config1.tau_fine, config2.tau_fine, tau_fine3],
         ratio=RATIO, ghost=GHOST,
     )
@@ -357,8 +372,13 @@ def main() -> None:
     reference_error = summary["reference_error_pct"]
     mean_force = summary["mean_force_lu"]
     stationarity_dict = summary["stationarity"]
+    schema_prefix = (
+        "sphere-shell-l3-amr-cv-v1"
+        if args.lattice == "D3Q19"
+        else "sphere-shell-l3-amr-cv-v1-d3q27"
+    )
     result = {
-        **common_schema_fields("sphere-shell-l3-amr-cv-v1"),
+        **common_schema_fields(schema_prefix),
         "case": (
             f"nested AMR sphere Re={args.reynolds}: coarse {list(shape)} + "
             f"L1 block {[x0, x1, y0, y1, z0, z1]} (R{args.radius * RATIO}) + "
@@ -369,6 +389,7 @@ def main() -> None:
         ),
         "configuration": {
             "coarse_shape_zyx": list(shape),
+            "lattice": args.lattice,
             "reynolds": args.reynolds,
             "lattice_speed": args.lattice_speed,
             "steps": args.steps,
