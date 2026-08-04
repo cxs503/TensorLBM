@@ -31,13 +31,10 @@ from tensorlbm.control_volume_force import (
     observe_control_volume_force,
 )
 from tensorlbm.cumulant import collide_cumulant_d3q19
-from tensorlbm.d3q19 import macroscopic3d
 from tensorlbm.evidence_io import stationarity_dict
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
 from tensorlbm.force_convergence import assess_force_stationarity
-from tensorlbm.interpolated_bc import compute_q_sphere
 from tensorlbm.refinement import BoxRegion
-from tensorlbm.solver3d import stream3d
 from tensorlbm.sphere_bfl_control_volume import schiller_naumann_cd
 from tensorlbm.sponge_layer import apply_equilibrium_difference_sponge
 
@@ -61,6 +58,64 @@ def ramp_activation(step: int, steps: int) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Lattice dispatch helpers (D3Q19 keeps the exact legacy code path; D3Q27
+# selects the D3Q27 kernel set).  The D3Q27 imports are lazy so that the
+# D3Q19-only callers pay no import cost.
+# ---------------------------------------------------------------------------
+
+def _q_channels(lattice: str) -> int:
+    """Number of population channels for a lattice name."""
+    if lattice == "D3Q27":
+        return 27
+    return 19
+
+
+def _equilibrium(
+    rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    device: torch.device, lattice: str,
+) -> torch.Tensor:
+    """Lattice-dispatched Maxwell-Boltzmann equilibrium."""
+    if lattice == "D3Q27":
+        from tensorlbm.d3q27 import equilibrium27
+        return equilibrium27(rho, ux, uy, uz, device=device)
+    from tensorlbm.d3q19 import equilibrium3d
+    return equilibrium3d(rho, ux, uy, uz, device=device)
+
+
+def _macroscopic(
+    f: torch.Tensor, lattice: str,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Lattice-dispatched macroscopic recovery ``(rho, ux, uy, uz)``."""
+    if lattice == "D3Q27":
+        from tensorlbm.d3q27 import macroscopic27
+        return macroscopic27(f)
+    from tensorlbm.d3q19 import macroscopic3d
+    return macroscopic3d(f)
+
+
+def _stream(f: torch.Tensor, lattice: str) -> torch.Tensor:
+    """Lattice-dispatched streaming."""
+    if lattice == "D3Q27":
+        from tensorlbm.d3q27 import stream27_roll
+        return stream27_roll(f)
+    from tensorlbm.solver3d import stream3d
+    return stream3d(f)
+
+
+def _compute_q_sphere(
+    nx: int, ny: int, nz: int,
+    cx: float, cy: float, cz: float,
+    radius: float, device: torch.device, lattice: str,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Lattice-dispatched spherical BFL q-field ``(mask, q)``."""
+    if lattice == "D3Q27":
+        from tensorlbm.interpolated_bc_common import compute_q_sphere_27
+        return compute_q_sphere_27(nx, ny, nz, cx, cy, cz, radius, device)
+    from tensorlbm.interpolated_bc import compute_q_sphere
+    return compute_q_sphere(nx, ny, nz, cx, cy, cz, radius, device)
+
+
+# ---------------------------------------------------------------------------
 # Geometry assembly
 # ---------------------------------------------------------------------------
 
@@ -68,16 +123,18 @@ def build_sphere_geometry(
     nx: int, ny: int, nz: int,
     cx: float, cy: float, cz: float,
     radius: float, device: torch.device,
+    lattice: str = "D3Q19",
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Coarse-grid sphere mask and its D3Q19 freeze mask ``(solid, solid_q)``.
+    """Coarse-grid sphere mask and its freeze mask ``(solid, solid_q)``.
 
-    ``solid`` has shape ``(nz, ny, nx)``; ``solid_q`` is the 19-channel
-    expansion used to freeze solid cells at their pre-collision state.
+    ``solid`` has shape ``(nz, ny, nx)``; ``solid_q`` is the
+    ``_q_channels(lattice)``-channel expansion used to freeze solid cells at
+    their pre-collision state.
     """
     solid = sphere_mask(nx, ny, nz, cx, cy, cz, radius, device=device)
     if not bool(solid.any()):
         raise ValueError("no sphere cells on the coarse grid")
-    solid_q = solid.unsqueeze(0).expand(19, nz, ny, nx).contiguous()
+    solid_q = solid.unsqueeze(0).expand(_q_channels(lattice), nz, ny, nx).contiguous()
     return solid, solid_q
 
 
@@ -87,6 +144,7 @@ def build_fine_sphere(
     radius: float,
     device: torch.device,
     ghost: int = 1,
+    lattice: str = "D3Q19",
 ) -> FineSphere:
     """Build the sphere mask + ghost freeze + BFL fields on one fine level.
 
@@ -102,10 +160,10 @@ def build_fine_sphere(
         dtype=torch.bool, device=device,
     )
     solid_g[ghost:-ghost, ghost:-ghost, ghost:-ghost] = solid
-    solid_q = solid_g.unsqueeze(0).expand(19, *solid_g.shape).contiguous()
-    bfl_mask, bfl_q = compute_q_sphere(
+    solid_q = solid_g.unsqueeze(0).expand(_q_channels(lattice), *solid_g.shape).contiguous()
+    bfl_mask, bfl_q = _compute_q_sphere(
         nx + 2 * ghost, ny + 2 * ghost, nz + 2 * ghost,
-        *fine_center, radius, device=device,
+        *fine_center, radius, device=device, lattice=lattice,
     )
     return FineSphere(solid, solid_g, solid_q, bfl_mask, bfl_q)
 
@@ -147,6 +205,7 @@ def build_fine_block_geometry(
     ratio: int,
     ghost: int = 1,
     device: torch.device = torch.device("cpu"),
+    lattice: str = "D3Q19",
 ) -> tuple[tuple[int, int, int], tuple[float, float, float], float, FineSphere]:
     """Assemble one fine block's geometry from its coarse box.
 
@@ -166,7 +225,9 @@ def build_fine_block_geometry(
         fine_center_l1(center[2], box.z0, ratio, ghost),
     )
     radius = radius_coarse * ratio
-    sphere = build_fine_sphere(shape, fine_center, radius, device, ghost=ghost)
+    sphere = build_fine_sphere(
+        shape, fine_center, radius, device, ghost=ghost, lattice=lattice,
+    )
     return shape, fine_center, radius, sphere
 
 
@@ -178,6 +239,7 @@ def build_l2_shell_geometry(
     ratio: int,
     ghost: int = 1,
     device: torch.device = torch.device("cpu"),
+    lattice: str = "D3Q19",
 ) -> tuple[BoxRegion, tuple[int, int, int], tuple[float, float, float], FineSphere]:
     """L2 surface-hugging shell geometry from the L1 with-ghost centre.
 
@@ -199,7 +261,9 @@ def build_l2_shell_geometry(
         fine_center_l2(c1_w[1], box2.y0, ratio, ghost),
         fine_center_l2(c1_w[2], box2.z0, ratio, ghost),
     )
-    sphere = build_fine_sphere(s2, fc2, radius1 * ratio, device, ghost=ghost)
+    sphere = build_fine_sphere(
+        s2, fc2, radius1 * ratio, device, ghost=ghost, lattice=lattice,
+    )
     return box2, s2, fc2, sphere
 
 
@@ -316,8 +380,14 @@ def build_control_volume(
 # Advance pieces shared by the static-block runners
 # ---------------------------------------------------------------------------
 
-def _collide(f: torch.Tensor, tau: float, collision: str) -> torch.Tensor:
-    """Dispatch D3Q19 collision operator by name."""
+def _collide(f: torch.Tensor, tau: float, collision: str, lattice: str) -> torch.Tensor:
+    """Dispatch collision operator by name and lattice."""
+    if lattice == "D3Q27":
+        if collision == "cascaded":
+            from tensorlbm.cascaded_collision import collide_cascaded_d3q27
+            return collide_cascaded_d3q27(f, tau)
+        from tensorlbm.cumulant import collide_cumulant_d3q27
+        return collide_cumulant_d3q27(f, tau, C_s=0.0)
     if collision == "cascaded":
         from tensorlbm.cascaded_collision import collide_cascaded_d3q19
         return collide_cascaded_d3q19(f, tau)
@@ -329,6 +399,7 @@ def root_advance(
     solid_q: torch.Tensor, sigma: torch.Tensor, lattice_speed: float,
     *,
     collision: str = "cumulant",
+    lattice: str = "D3Q19",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Root-level advance: collide, freeze coarse solid, stream, far-field + sponge.
 
@@ -338,9 +409,9 @@ def root_advance(
     returned.
     """
     before = f
-    collided = _collide(f, tau, collision)
+    collided = _collide(f, tau, collision, lattice)
     post_collision = torch.where(solid_q, before, collided)
-    out = stream3d(post_collision)
+    out = _stream(post_collision, lattice)
     out = non_equilibrium_far_field_bc_3d(out, u_in=lattice_speed)
     out = apply_equilibrium_difference_sponge(
         out, sigma, velocity_target=(lattice_speed, 0.0, 0.0),
@@ -349,19 +420,148 @@ def root_advance(
     return out, post_collision, collided
 
 
+def _bouzidi_bounce_back_d3q27(
+    f: torch.Tensor,
+    f_prev: torch.Tensor,
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor,
+    *,
+    wall_velocity: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None,
+    wall_density: torch.Tensor | None = None,
+    boundary_fraction: float = 1.0,
+    return_force: bool = False,
+) -> torch.Tensor | tuple[torch.Tensor, tuple[float, float, float]]:
+    """D3Q27 full-stencil Bouzidi BFL reconstruction (all 27 directions).
+
+    Mirrors ``tensorlbm.bfl_d3q19.bouzidi_bounce_back_d3q19`` exactly —
+    same linear (q < 0.5) / quadratic (q >= 0.5) interpolation, same
+    moving-wall population correction (cs² = 1/3, so the 6.0 / 3.0 factors
+    are lattice-independent) and the same laboratory-frame link momentum
+    exchange — but uses the D3Q27 OPPOSITE map, velocity set and weights,
+    looping over the 26 non-rest directions.  Kept module-private so the
+    read-only core library (``bfl_d3q19.py``) is untouched.
+    """
+    from tensorlbm.d3q27 import OPPOSITE, W, C
+    if wall_velocity is not None and wall_density is None:
+        raise ValueError("wall_density is required with wall_velocity")
+    if not 0.0 <= boundary_fraction <= 1.0:
+        raise ValueError("boundary_fraction must be in [0,1]")
+    opp = OPPOSITE.to(f.device)
+    weights = W.to(device=f.device, dtype=f.dtype)
+    f_out = f.clone()
+    force_x = torch.zeros((), device=f.device, dtype=f.dtype)
+    force_y = torch.zeros_like(force_x)
+    force_z = torch.zeros_like(force_x)
+
+    for d in range(1, 27):  # skip rest direction
+        opp_d = int(opp[d].item())
+
+        mask = fluid_boundary_mask[d]
+        if not mask.any():
+            continue
+
+        q_cell = q_field[d][mask]
+        mask_lin = q_cell < 0.5
+        mask_quad = ~mask_lin
+
+        fp_opp = f_prev[opp_d][mask]
+        fp_d = f_prev[d][mask]
+
+        dcx, dcy, dcz = (int(v) for v in C[d].tolist())
+        fp_d_upstream_field = torch.roll(
+            f_prev[d], shifts=(dcz, dcy, dcx), dims=(0, 1, 2),
+        )
+        fp_d_upstream = fp_d_upstream_field[mask]
+
+        # Wall closer than half-link: interpolate the two outgoing fluid
+        # populations at x_f and x_f-c_d.
+        f_bc_lin = (
+            2.0 * q_cell * fp_d
+            + (1.0 - 2.0 * q_cell) * fp_d_upstream
+        )
+
+        # Wall farther than half-link: interpolate outgoing and opposite
+        # post-collision populations at the boundary fluid node.
+        safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
+        f_bc_quad = (
+            fp_d / (2.0 * safe_q)
+            + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+        )
+        f_bc_stationary = torch.where(mask_lin, f_bc_lin, f_bc_quad)
+
+        if wall_velocity is not None:
+            assert wall_density is not None  # guaranteed by the guard above
+            uwx, uwy, uwz = wall_velocity
+            c_dot_uw = (
+                float(dcx) * uwx[mask]
+                + float(dcy) * uwy[mask]
+                + float(dcz) * uwz[mask]
+            )
+            rho_w = wall_density[mask]
+            moving_base = weights[d] * rho_w * c_dot_uw
+            # Same moving-wall correction as D3Q19 (cs² = 1/3): at q=.5 both
+            # branches reduce to f_opp = f_d - 6*w*rho*(c_d·u_wall).
+            f_bc_lin = f_bc_lin - 6.0 * moving_base
+            f_bc_quad = f_bc_quad - (3.0 / safe_q) * moving_base
+
+        f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
+
+        if return_force and boundary_fraction > 0.0:
+            # Laboratory-frame discrete momentum exchange: c_d*f_d - c_opp*f_opp
+            # = c_d*(f_d + f_opp) with the unknown population set to f_bc.
+            exchange_sum = fp_d + f_bc
+            link_fx = float(dcx) * exchange_sum
+            link_fy = float(dcy) * exchange_sum
+            link_fz = float(dcz) * exchange_sum
+            link_fx = boundary_fraction * link_fx
+            link_fy = boundary_fraction * link_fy
+            link_fz = boundary_fraction * link_fz
+            force_x = force_x + link_fx.sum()
+            force_y = force_y + link_fy.sum()
+            force_z = force_z + link_fz.sum()
+
+        # Set f[opp_d] (the UNKNOWN population, from solid toward fluid).
+        target = f_out[opp_d].clone()
+        if boundary_fraction == 1.0:
+            target[mask] = f_bc
+        elif boundary_fraction > 0.0:
+            target[mask] = (
+                (1.0 - boundary_fraction) * target[mask]
+                + boundary_fraction * f_bc
+            )
+        f_out[opp_d] = target
+
+    if return_force:
+        total_force = (
+            float(force_x.item()),
+            float(force_y.item()),
+            float(force_z.item()),
+        )
+        return f_out, total_force
+    return f_out
+
+
 def bfl_sphere_advance(
     out: torch.Tensor, post_collision: torch.Tensor,
     bfl_mask: torch.Tensor, bfl_q: torch.Tensor,
     step: int, ramp_steps: int,
+    lattice: str = "D3Q19",
 ) -> torch.Tensor:
     """Bouzidi BFL curved-wall reconstruction after streaming (ramped wall)."""
-    rho_post, ux_post, uy_post, uz_post = macroscopic3d(post_collision)
+    rho_post, ux_post, uy_post, uz_post = _macroscopic(post_collision, lattice)
     activation = ramp_activation(step, ramp_steps)
     wall_velocity = (
         (1.0 - activation) * ux_post,
         (1.0 - activation) * uy_post,
         (1.0 - activation) * uz_post,
     )
+    if lattice == "D3Q27":
+        out, _bfl_force = _bouzidi_bounce_back_d3q27(
+            out, post_collision, bfl_mask, bfl_q,
+            wall_velocity=wall_velocity, wall_density=rho_post,
+            return_force=True,
+        )
+        return out
     out, _bfl_force = bouzidi_bounce_back_d3q19(
         out, post_collision, bfl_mask, bfl_q,
         wall_velocity=wall_velocity, wall_density=rho_post,
@@ -379,6 +579,7 @@ def fine_sphere_advance(
     cv: torch.Tensor | None = None,
     solid_g: torch.Tensor | None = None,
     collision: str = "cumulant",
+    lattice: str = "D3Q19",
 ) -> tuple[torch.Tensor, torch.Tensor, float | None]:
     """Fine-level advance: collide (freeze solid), stream, BFL, optional CV force.
 
@@ -386,10 +587,12 @@ def fine_sphere_advance(
     when ``sample_cv`` is true and ``None`` otherwise.
     """
     before = f
-    collided = _collide(f, tau, collision)
+    collided = _collide(f, tau, collision, lattice)
     post_collision = torch.where(solid_q, before, collided)
-    out = stream3d(post_collision)
-    out = bfl_sphere_advance(out, post_collision, bfl_mask, bfl_q, step, ramp_steps)
+    out = _stream(post_collision, lattice)
+    out = bfl_sphere_advance(
+        out, post_collision, bfl_mask, bfl_q, step, ramp_steps, lattice=lattice,
+    )
     cv_force = None
     if sample_cv:
         cv_force = cv_force_from(before, out, post_collision, cv, solid_g)
@@ -441,6 +644,7 @@ def summarize_force_history(
 
 __all__ = [
     "FineSphere",
+    "_bouzidi_bounce_back_d3q27",
     "bfl_sphere_advance",
     "build_control_volume",
     "build_fine_block_geometry",
