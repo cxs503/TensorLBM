@@ -38,8 +38,6 @@ import argparse
 import json
 import math
 import time
-from dataclasses import asdict
-from pathlib import Path
 
 import torch
 
@@ -56,27 +54,23 @@ from tensorlbm.boundaries3d import (
     far_field_bc_3d,
     sphere_mask,
 )
-from tensorlbm.control_volume_force import (
-    box_control_volume,
-    observe_control_volume_force,
-)
+from tensorlbm.control_volume_force import observe_control_volume_force
 from tensorlbm.cumulant import collide_cumulant_d3q19
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
+from tensorlbm.evidence_io import common_schema_fields, write_evidence
 from tensorlbm.external_open_boundary import non_equilibrium_far_field_bc_3d
-from tensorlbm.force_convergence import assess_force_stationarity
 from tensorlbm.interpolated_bc import compute_q_sphere
 from tensorlbm.solver3d import stream3d
-from tensorlbm.sphere_bfl_control_volume import schiller_naumann_cd
+from tensorlbm.sphere_amr_common import (
+    build_control_volume,
+    build_sphere_geometry,
+    ramp_activation,
+    summarize_force_history,
+)
 from tensorlbm.sponge_layer import (
     apply_equilibrium_difference_sponge,
     build_sponge_sigma_3d,
 )
-
-
-def _ramp(step: int, steps: int) -> float:
-    if steps <= 0:
-        return 1.0
-    return min(1.0, step / steps)
 
 
 def parser() -> argparse.ArgumentParser:
@@ -146,9 +140,9 @@ def main() -> None:
 
     shape = (args.nz, args.ny, args.nx)
     cx, cy, cz = args.nx * 0.5, args.ny / 2.0, args.nz / 2.0
-    solid = sphere_mask(args.nx, args.ny, args.nz, cx, cy, cz,
-                        args.radius, device=device)
-    solid_q = solid.unsqueeze(0).expand(19, *shape).contiguous()
+    solid, solid_q = build_sphere_geometry(
+        args.nx, args.ny, args.nz, cx, cy, cz, args.radius, device,
+    )
     shape_q = (19, *shape)
 
     nu = args.lattice_speed * (2.0 * args.radius) / args.reynolds
@@ -170,15 +164,8 @@ def main() -> None:
     )
     solver = AdaptiveSolver3D(f, schedule=schedule, mask=solid)
 
-    cv = box_control_volume(
-        shape,
-        x0=int(math.floor(cx - args.radius)) - args.cv_margin,
-        x1=int(math.ceil(cx + args.radius)) + args.cv_margin + 1,
-        y0=int(math.floor(cy - args.radius)) - args.cv_margin,
-        y1=int(math.ceil(cy + args.radius)) + args.cv_margin + 1,
-        z0=int(math.floor(cz - args.radius)) - args.cv_margin,
-        z1=int(math.ceil(cz + args.radius)) + args.cv_margin + 1,
-        device=device,
+    cv = build_control_volume(
+        shape, (cx, cy, cz), args.radius, args.cv_margin, device,
     )
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
@@ -318,7 +305,7 @@ def main() -> None:
                     post = patch_post.get(id(p))
                     if post is not None:
                         rho_post, ux_post, uy_post, uz_post = macroscopic3d(post)
-                        activation = _ramp(current_step, args.ramp_steps)
+                        activation = ramp_activation(current_step, args.ramp_steps)
                         wall_velocity = (
                             (1.0 - activation) * ux_post,
                             (1.0 - activation) * uy_post,
@@ -433,31 +420,24 @@ def main() -> None:
                     f"patch diverged at step {current_step}"
                 )
 
+    summary = summarize_force_history(
+        forces, dynamic_area, args.reynolds, args.statistics_window_steps,
+    )
+    cd = summary["cd"]
+    reference = summary["reference_cd"]
+    reference_error = summary["reference_error_pct"]
+    mean_force = summary["mean_force_lu"]
+    stationarity_dict = summary["stationarity"]
     statistics_window = args.statistics_window_steps or len(forces)
     selected = forces[-statistics_window:]
     selected_cv = cv_forces[-statistics_window:]
     selected_bfl = bfl_forces[-statistics_window:]
-    mean_force = sum(selected) / len(selected)
     mean_cv_force = sum(selected_cv) / len(selected_cv)
     mean_bfl_force = sum(selected_bfl) / len(selected_bfl)
-    cd = mean_force / dynamic_area
     cd_cv_only = mean_cv_force / dynamic_area
     cd_bfl_only = mean_bfl_force / dynamic_area
-    reference = schiller_naumann_cd(args.reynolds)
-    cd_history = [f_ / dynamic_area for f_ in selected]
-    stationarity = assess_force_stationarity(
-        cd_history, block_size=max(1, len(cd_history) // 8),
-    )
-    stationarity_dict = (
-        asdict(stationarity)
-        if hasattr(stationarity, "__dataclass_fields__")
-        else stationarity
-    )
-    reference_error = abs(cd - reference) / reference * 100.0
     result = {
-        "schema": "tensorlbm-sphere-cellwise-amr-cv-v1",
-        "status": "measured_candidate",
-        "physical_validation": False,
+        **common_schema_fields("sphere-cellwise-amr-cv-v1"),
         "case": (
             f"cell-wise adaptive AMR sphere Re={args.reynolds}: coarse "
             f"{list(shape)} indicator={args.indicator} "
@@ -509,9 +489,7 @@ def main() -> None:
         },
         "artifacts": {"output": args.output},
     }
-    output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    write_evidence(result, args.output)
     print(json.dumps(result["result"], indent=2), flush=True)
 
 
