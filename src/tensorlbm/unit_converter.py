@@ -27,6 +27,7 @@ Usage example
     # Convert a result (lattice velocity) back to physical units
     u_phys_result = uc.lb_to_phys(u_inlet_lb)
 """
+
 from __future__ import annotations
 
 import math
@@ -102,9 +103,7 @@ class LBMUnitConverter:
         if nx <= 0:
             raise ValueError(f"nx must be positive, got {nx}")
         if not 0.0 < u_lb < _CS_LB:
-            raise ValueError(
-                f"u_lb must satisfy 0 < u_lb < cs_lb ({_CS_LB:.4f}), got {u_lb}"
-            )
+            raise ValueError(f"u_lb must satisfy 0 < u_lb < cs_lb ({_CS_LB:.4f}), got {u_lb}")
 
         self.re: float = float(re)
         self.l_phys: float = float(l_phys)
@@ -117,10 +116,10 @@ class LBMUnitConverter:
 
         # --- Lattice velocity and derived quantities ---
         self.u_lb: float = float(u_lb)
-        self.nu_lb: float = u_lb * nx / re          # Re = u_lb * nx / nu_lb
-        self.tau: float = 0.5 + self.nu_lb / (_CS_LB ** 2)  # BGK relaxation time
-        self.dt: float = u_lb * self.dx / u_phys    # physical time per lattice step
-        self.ma: float = u_lb / _CS_LB              # Mach number
+        self.nu_lb: float = u_lb * nx / re  # Re = u_lb * nx / nu_lb
+        self.tau: float = 0.5 + self.nu_lb / (_CS_LB**2)  # BGK relaxation time
+        self.dt: float = u_lb * self.dx / u_phys  # physical time per lattice step
+        self.ma: float = u_lb / _CS_LB  # Mach number
 
         # --- Consistency warning ---
         re_check = u_phys * l_phys / nu_phys

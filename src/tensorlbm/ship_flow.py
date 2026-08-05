@@ -4,6 +4,7 @@ This module provides a self-contained, parameterised runner for a Lattice
 Boltzmann simulation of viscous flow past a Wigley parabolic ship hull in a
 rectangular channel.
 """
+
 from __future__ import annotations
 
 import csv
@@ -105,9 +106,7 @@ class ShipHullFlowConfig:
         if self.hull_length <= 0.0 or self.hull_beam <= 0.0 or self.hull_draft <= 0.0:
             raise ValueError("hull_length, hull_beam, and hull_draft must be > 0")
         if self.tau <= 0.5:
-            raise ValueError(
-                f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/hull_length"
-            )
+            raise ValueError(f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/hull_length")
         if self.hull_length >= self.nx:
             raise ValueError("hull_length must be less than nx")
         if self.hull_beam >= self.ny:

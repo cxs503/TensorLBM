@@ -131,10 +131,15 @@ def diagnose_adapter_stream_phase_inventory_flux(
     initial = result.diagnostics[0]
     samples.append(
         PhaseInventoryFluxStep(
-            step=0, phi_integral=previous_phi, g_sum=previous_g,
-            phi_integral_change=0.0, g_sum_change=0.0,
-            stream_boundary_outgoing_g=0.0, stream_boundary_incoming_g=0.0,
-            stream_boundary_net_g=0.0, stream_boundary_crossing_status="initial_no_stream",
+            step=0,
+            phi_integral=previous_phi,
+            g_sum=previous_g,
+            phi_integral_change=0.0,
+            g_sum_change=0.0,
+            stream_boundary_outgoing_g=0.0,
+            stream_boundary_incoming_g=0.0,
+            stream_boundary_net_g=0.0,
+            stream_boundary_crossing_status="initial_no_stream",
             stream_boundary_scope="Initial returned-loop inventory; no adapter stream precedes it.",
         )
     )
@@ -143,7 +148,9 @@ def diagnose_adapter_stream_phase_inventory_flux(
         phi_integral = g_sum
         samples.append(
             PhaseInventoryFluxStep(
-                step=ledger.step, phi_integral=phi_integral, g_sum=g_sum,
+                step=ledger.step,
+                phi_integral=phi_integral,
+                g_sum=g_sum,
                 phi_integral_change=phi_integral - previous_phi,
                 g_sum_change=g_sum - previous_g,
                 stream_boundary_outgoing_g=ledger.stream_boundary_outgoing_g,
@@ -158,7 +165,10 @@ def diagnose_adapter_stream_phase_inventory_flux(
 
 
 __all__ = [
-    "ADAPTER_STREAM_DIAGNOSTIC_ONLY", "AdapterStreamBoundaryCrossing",
-    "PhaseInventoryFluxDiagnostic", "PhaseInventoryFluxStep",
-    "adapter_stream_boundary_crossing", "diagnose_adapter_stream_phase_inventory_flux",
+    "ADAPTER_STREAM_DIAGNOSTIC_ONLY",
+    "AdapterStreamBoundaryCrossing",
+    "PhaseInventoryFluxDiagnostic",
+    "PhaseInventoryFluxStep",
+    "adapter_stream_boundary_crossing",
+    "diagnose_adapter_stream_phase_inventory_flux",
 ]

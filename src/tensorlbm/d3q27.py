@@ -13,6 +13,7 @@ Lattice weights (Qian, 1992):
 - Edge-centre (|c|=√2):   w = 1/54  (×12)
 - Corner     (|c|=√3):    w = 1/216 (×8)
 """
+
 from __future__ import annotations
 
 import functools
@@ -156,7 +157,9 @@ def control_volume_momentum_balance27(
     incompressible propeller consistency result.
     """
     if populations_before.shape != populations_after.shape or populations_before.ndim < 1:
-        raise ValueError("populations_before and populations_after must have identical shape (27, ...)")
+        raise ValueError(
+            "populations_before and populations_after must have identical shape (27, ...)"
+        )
     if populations_before.shape[0] != 27:
         raise ValueError("population direction dimension must have length 27")
     if force_on_fluid.shape != (3,):
@@ -165,8 +168,11 @@ def control_volume_momentum_balance27(
         raise ValueError("max_lattice_speed must be finite and nonnegative")
     if not math.isfinite(low_mach_limit) or low_mach_limit <= 0.0:
         raise ValueError("low_mach_limit must be finite and positive")
-    if not (torch.isfinite(populations_before).all() and torch.isfinite(populations_after).all()
-            and torch.isfinite(force_on_fluid).all()):
+    if not (
+        torch.isfinite(populations_before).all()
+        and torch.isfinite(populations_after).all()
+        and torch.isfinite(force_on_fluid).all()
+    ):
         raise ValueError("populations and force_on_fluid must be finite")
 
     max_mach = max_lattice_speed * math.sqrt(3.0)
@@ -520,13 +526,17 @@ def collide_rlbm27(f: torch.Tensor, tau: float) -> torch.Tensor:
     h_xz = cx * cz
     h_yz = cy * cz
     w_view = w.view(27, 1, 1, 1)
-    fneq_reg = (9.0 / 2.0) * w_view * (
-        h_xx * pi_xx
-        + h_yy * pi_yy
-        + h_zz * pi_zz
-        + 2.0 * h_xy * pi_xy
-        + 2.0 * h_xz * pi_xz
-        + 2.0 * h_yz * pi_yz
+    fneq_reg = (
+        (9.0 / 2.0)
+        * w_view
+        * (
+            h_xx * pi_xx
+            + h_yy * pi_yy
+            + h_zz * pi_zz
+            + 2.0 * h_xy * pi_xy
+            + 2.0 * h_xz * pi_xz
+            + 2.0 * h_yz * pi_yz
+        )
     )
 
     return feq + (1.0 - 1.0 / tau) * fneq_reg
@@ -562,35 +572,35 @@ def _build_d3q27_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
 
     # Define raw moment vectors (length 27 each) in physical significance order
     raw_rows: list[np.ndarray] = [
-        np.ones(27),           # 0: mass
-        cx,                    # 1: jx
-        cy,                    # 2: jy
-        cz,                    # 3: jz
-        e2,                    # 4: energy e = |c|^2
-        3.0 * cx**2 - e2,      # 5: Nxx  (normal stress xx)
-        cy**2 - cz**2,         # 6: Nyy  (normal stress yy-zz)
-        cx * cy,               # 7: Pxy  (shear stress xy)
-        cx * cz,               # 8: Pxz  (shear stress xz)
-        cy * cz,               # 9: Pyz  (shear stress yz)
+        np.ones(27),  # 0: mass
+        cx,  # 1: jx
+        cy,  # 2: jy
+        cz,  # 3: jz
+        e2,  # 4: energy e = |c|^2
+        3.0 * cx**2 - e2,  # 5: Nxx  (normal stress xx)
+        cy**2 - cz**2,  # 6: Nyy  (normal stress yy-zz)
+        cx * cy,  # 7: Pxy  (shear stress xy)
+        cx * cz,  # 8: Pxz  (shear stress xz)
+        cy * cz,  # 9: Pyz  (shear stress yz)
         # 3rd-order raw moments
-        cx * e2,               # 10: qx
-        cy * e2,               # 11: qy
-        cz * e2,               # 12: qz
-        cx**2 * cy,            # 13
-        cx**2 * cz,            # 14
-        cy**2 * cx,            # 15
-        cy**2 * cz,            # 16
-        cz**2 * cx,            # 17
-        cz**2 * cy,            # 18
+        cx * e2,  # 10: qx
+        cy * e2,  # 11: qy
+        cz * e2,  # 12: qz
+        cx**2 * cy,  # 13
+        cx**2 * cz,  # 14
+        cy**2 * cx,  # 15
+        cy**2 * cz,  # 16
+        cz**2 * cx,  # 17
+        cz**2 * cy,  # 18
         # 4th-order raw moments
-        e2**2,                 # 19
-        cx**2 * e2,            # 20
-        cy**2 * e2,            # 21
-        cz**2 * e2,            # 22
-        cx**2 * cy**2,         # 23
-        cx**2 * cz**2,         # 24
-        cy**2 * cz**2,         # 25
-        cx * cy * cz,          # 26
+        e2**2,  # 19
+        cx**2 * e2,  # 20
+        cy**2 * e2,  # 21
+        cz**2 * e2,  # 22
+        cx**2 * cy**2,  # 23
+        cx**2 * cz**2,  # 24
+        cy**2 * cz**2,  # 25
+        cx * cy * cz,  # 26
     ]
 
     # Gram–Schmidt orthogonalisation to ensure full rank
@@ -672,26 +682,26 @@ def collide_mrt27(
     s_nu = 1.0 / tau
     s_vec = torch.tensor(
         [
-            0.0,   # 0  mass
-            0.0,   # 1  jx
-            0.0,   # 2  jy
-            0.0,   # 3  jz
-            s_e,   # 4  energy
+            0.0,  # 0  mass
+            0.0,  # 1  jx
+            0.0,  # 2  jy
+            0.0,  # 3  jz
+            s_e,  # 4  energy
             s_nu,  # 5  Nxx
             s_nu,  # 6  Nyy
             s_nu,  # 7  Pxy
             s_nu,  # 8  Pxz
             s_nu,  # 9  Pyz
-            s_q,   # 10 qx
-            s_q,   # 11 qy
-            s_q,   # 12 qz
-            s_q,   # 13
-            s_q,   # 14
-            s_q,   # 15
-            s_q,   # 16
-            s_q,   # 17
-            s_q,   # 18
-            s_eps, # 19 e²
+            s_q,  # 10 qx
+            s_q,  # 11 qy
+            s_q,  # 12 qz
+            s_q,  # 13
+            s_q,  # 14
+            s_q,  # 15
+            s_q,  # 16
+            s_q,  # 17
+            s_q,  # 18
+            s_eps,  # 19 e²
             s_pi,  # 20
             s_pi,  # 21
             s_pi,  # 22
@@ -734,7 +744,10 @@ def correct_mass27(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     if current.abs() < 1e-30:
         return f
     return f * (target_mass / current)
+
+
 _STREAM27_SHIFTS = None
+
 
 def _init_stream27_shifts():
     """Pre-compute D3Q27 streaming shifts as Python tuples (no host sync)."""
@@ -742,11 +755,13 @@ def _init_stream27_shifts():
     if _STREAM27_SHIFTS is not None:
         return
     from .d3q27 import C as C27
+
     shifts = [(0, 0, 0)]
     for q in range(1, 27):
         cx, cy, cz = C27[q].tolist()
         shifts.append((int(cx), int(cy), int(cz)))
     _STREAM27_SHIFTS = shifts
+
 
 def stream27_roll(f: torch.Tensor) -> torch.Tensor:
     """Memory-optimized D3Q27 streaming using torch.roll.
@@ -770,6 +785,7 @@ def stream27_roll(f: torch.Tensor) -> torch.Tensor:
         else:
             out[q] = torch.roll(f[q], shifts=(sz, sy, sx), dims=(0, 1, 2))
     return out
+
 
 # Backward-compatible alias
 stream27 = stream27_roll

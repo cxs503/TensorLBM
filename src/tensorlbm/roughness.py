@@ -28,17 +28,19 @@ References
 * Colebrook C.F. (1939) J. Inst. Civil Eng. 11 133.
 * Knopp T. *et al.* (2006) J. Comput. Phys. 220 179.
 """
+
 from __future__ import annotations
 
 import torch
 
-KAPPA: float = 0.41   # von Kármán constant
+KAPPA: float = 0.41  # von Kármán constant
 B_SMOOTH: float = 5.0  # smooth-wall additive constant
 
 
 # ---------------------------------------------------------------------------
 # Core roughness correction
 # ---------------------------------------------------------------------------
+
 
 def roughness_b_correction(ks_plus: torch.Tensor) -> torch.Tensor:
     """Compute additive constant correction ΔB due to wall roughness.
@@ -156,9 +158,7 @@ def compute_rough_wall_slip_velocity(
     # Laminar sub-layer correction: if y+ < 5, use viscous profile
     yplus_final = y_val * u_tau / nu
     is_viscous = yplus_final < 5.0
-    u_tau = torch.where(is_viscous,
-                         torch.sqrt(torch.clamp(nu * u_mag_w / y_val, min=1e-12)),
-                         u_tau)
+    u_tau = torch.where(is_viscous, torch.sqrt(torch.clamp(nu * u_mag_w / y_val, min=1e-12)), u_tau)
 
     tau_w = u_tau**2
     sr_w = torch.clamp(1.0 - tau_w * y_val / (nu * u_mag_w), 0.0, 1.0)
@@ -217,10 +217,7 @@ def apply_rough_wall_damping_2d(
         zeros = torch.zeros_like(rho_row)
         f_target = equilibrium(rho_row, zeros, zeros)
         beta = damping.view(1, 1, -1)
-        f_out[:, row : row + 1, :] = (
-            (1.0 - beta) * f_out[:, row : row + 1, :]
-            + beta * f_target
-        )
+        f_out[:, row : row + 1, :] = (1.0 - beta) * f_out[:, row : row + 1, :] + beta * f_target
         mean_damping.append(float(damping.mean().item()))
 
     return f_out, sum(mean_damping) / max(len(mean_damping), 1)

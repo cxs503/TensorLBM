@@ -47,32 +47,53 @@ from dataclasses import dataclass
 
 import torch
 
+
 def _strain_rate_magnitude(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """Compute strain-rate magnitude S = sqrt(2 S_ij S_ij)."""
     nz, ny, nx = ux.shape
     dx = 1.0
 
     # Velocity gradients (2nd order central difference)
-    dux_dx = (torch.cat([ux[..., 1:], ux[..., -1:]], dim=-1)
-              - torch.cat([ux[..., :1], ux[..., :-1]], dim=-1)) / (2 * dx)
-    dux_dy = (torch.cat([ux[:, 1:, :], ux[:, -1:, :]], dim=-2)
-              - torch.cat([ux[:, :1, :], ux[:, :-1, :]], dim=-2)) / (2 * dx)
-    dux_dz = (torch.cat([ux[1:, :, :], ux[-1:, :, :]], dim=-3)
-              - torch.cat([ux[:1, :, :], ux[:-1, :, :]], dim=-3)) / (2 * dx)
-    duy_dx = (torch.cat([uy[..., 1:], uy[..., -1:]], dim=-1)
-              - torch.cat([uy[..., :1], uy[..., :-1]], dim=-1)) / (2 * dx)
-    duy_dy = (torch.cat([uy[:, 1:, :], uy[:, -1:, :]], dim=-2)
-              - torch.cat([uy[:, :1, :], uy[:, :-1, :]], dim=-2)) / (2 * dx)
-    duy_dz = (torch.cat([uy[1:, :, :], uy[-1:, :, :]], dim=-3)
-              - torch.cat([uy[:1, :, :], uy[:-1, :, :]], dim=-3)) / (2 * dx)
-    duz_dx = (torch.cat([uz[..., 1:], uz[..., -1:]], dim=-1)
-              - torch.cat([uz[..., :1], uz[..., :-1]], dim=-1)) / (2 * dx)
-    duz_dy = (torch.cat([uz[:, 1:, :], uz[:, -1:, :]], dim=-2)
-              - torch.cat([uz[:, :1, :], uz[:, :-1, :]], dim=-2)) / (2 * dx)
-    duz_dz = (torch.cat([uz[1:, :, :], uz[-1:, :, :]], dim=-3)
-              - torch.cat([uz[:1, :, :], uz[:-1, :, :]], dim=-3)) / (2 * dx)
+    dux_dx = (
+        torch.cat([ux[..., 1:], ux[..., -1:]], dim=-1)
+        - torch.cat([ux[..., :1], ux[..., :-1]], dim=-1)
+    ) / (2 * dx)
+    dux_dy = (
+        torch.cat([ux[:, 1:, :], ux[:, -1:, :]], dim=-2)
+        - torch.cat([ux[:, :1, :], ux[:, :-1, :]], dim=-2)
+    ) / (2 * dx)
+    dux_dz = (
+        torch.cat([ux[1:, :, :], ux[-1:, :, :]], dim=-3)
+        - torch.cat([ux[:1, :, :], ux[:-1, :, :]], dim=-3)
+    ) / (2 * dx)
+    duy_dx = (
+        torch.cat([uy[..., 1:], uy[..., -1:]], dim=-1)
+        - torch.cat([uy[..., :1], uy[..., :-1]], dim=-1)
+    ) / (2 * dx)
+    duy_dy = (
+        torch.cat([uy[:, 1:, :], uy[:, -1:, :]], dim=-2)
+        - torch.cat([uy[:, :1, :], uy[:, :-1, :]], dim=-2)
+    ) / (2 * dx)
+    duy_dz = (
+        torch.cat([uy[1:, :, :], uy[-1:, :, :]], dim=-3)
+        - torch.cat([uy[:1, :, :], uy[:-1, :, :]], dim=-3)
+    ) / (2 * dx)
+    duz_dx = (
+        torch.cat([uz[..., 1:], uz[..., -1:]], dim=-1)
+        - torch.cat([uz[..., :1], uz[..., :-1]], dim=-1)
+    ) / (2 * dx)
+    duz_dy = (
+        torch.cat([uz[:, 1:, :], uz[:, -1:, :]], dim=-2)
+        - torch.cat([uz[:, :1, :], uz[:, :-1, :]], dim=-2)
+    ) / (2 * dx)
+    duz_dz = (
+        torch.cat([uz[1:, :, :], uz[-1:, :, :]], dim=-3)
+        - torch.cat([uz[:1, :, :], uz[:-1, :, :]], dim=-3)
+    ) / (2 * dx)
 
     # Strain rate tensor S_ij = 0.5 * (∂u_i/∂x_j + ∂u_j/∂x_i)
     S11 = dux_dx
@@ -83,9 +104,7 @@ def _strain_rate_magnitude(
     S23 = 0.5 * (duy_dz + duz_dy)
 
     # S = sqrt(2 * S_ij * S_ij)
-    S_mag = torch.sqrt(
-        2.0 * (S11**2 + S22**2 + S33**2 + 2*(S12**2 + S13**2 + S23**2))
-    )
+    S_mag = torch.sqrt(2.0 * (S11**2 + S22**2 + S33**2 + 2 * (S12**2 + S13**2 + S23**2)))
     return S_mag
 
 
@@ -155,7 +174,7 @@ class KESolver:
         # TI = sqrt(2/3 * k) / U  ≈ 1-5% for external flows
         u_mag = torch.sqrt(ux**2 + uy**2 + uz**2).mean().item()
         ti = 0.05  # 5% turbulence intensity
-        k_init = 1.5 * (ti * u_mag)**2
+        k_init = 1.5 * (ti * u_mag) ** 2
         k_init = max(k_init, k0)
 
         # eps = C_mu^{3/4} * k^{3/2} / L_turb
@@ -232,9 +251,9 @@ class KESolver:
         P_k = nu_t * S_mag * S_mag
 
         # ---- Step 1: half-step advection --------------------------------
-        self._k   = self._k   - (dt / 2.0) * self._advect_upwind(self._k,   ux, uy, uz)
+        self._k = self._k - (dt / 2.0) * self._advect_upwind(self._k, ux, uy, uz)
         self._eps = self._eps - (dt / 2.0) * self._advect_upwind(self._eps, ux, uy, uz)
-        self._k   = torch.clamp(self._k,   min=self.k_min)
+        self._k = torch.clamp(self._k, min=self.k_min)
         self._eps = torch.clamp(self._eps, min=self.eps_min)
 
         # ---- Step 2: full implicit diffusion + source -------------------
@@ -242,10 +261,10 @@ class KESolver:
         # dk/dt = diff_k + P_k - eps
         # Reuse nu_t computed above (from pre-advection state)
         nu_t = self.compute_nu_t(mask)
-        P_k  = nu_t * _strain_rate_magnitude(ux, uy, uz) ** 2
+        P_k = nu_t * _strain_rate_magnitude(ux, uy, uz) ** 2
 
-        diff_k = self._diffuse_scalar(self._k,   self.nu + nu_t / SIGMA_K)
-        diff_e = self._diffuse_scalar(self._eps,  self.nu + nu_t / SIGMA_E)
+        diff_k = self._diffuse_scalar(self._k, self.nu + nu_t / SIGMA_K)
+        diff_e = self._diffuse_scalar(self._eps, self.nu + nu_t / SIGMA_E)
 
         # Implicit decay for k: k^{n+1} = k^n + dt*(diff_k + Pk - eps)
         # To avoid negative k we use implicit treatment of the -eps term:
@@ -263,13 +282,13 @@ class KESolver:
         self._eps = torch.clamp(self._eps, min=self.eps_min)
 
         # ---- Step 3: half-step advection --------------------------------
-        self._k   = self._k   - (dt / 2.0) * self._advect_upwind(self._k,   ux, uy, uz)
+        self._k = self._k - (dt / 2.0) * self._advect_upwind(self._k, ux, uy, uz)
         self._eps = self._eps - (dt / 2.0) * self._advect_upwind(self._eps, ux, uy, uz)
-        self._k   = torch.clamp(self._k,   min=self.k_min)
+        self._k = torch.clamp(self._k, min=self.k_min)
         self._eps = torch.clamp(self._eps, min=self.eps_min)
 
         if mask is not None:
-            self._k[mask]   = self.k_min
+            self._k[mask] = self.k_min
             self._eps[mask] = self.eps_min
 
         return self.compute_nu_t(mask)
@@ -328,30 +347,27 @@ class KESolver:
         phi_xm = torch.cat([phi[..., :1], phi[..., :-1]], dim=-1)
         gamma_xp = torch.cat([gamma[..., 1:], gamma[..., -1:]], dim=-1)
         gamma_xm = torch.cat([gamma[..., :1], gamma[..., :-1]], dim=-1)
-        d2phi_dx2 = (
-            (gamma_xp + gamma) * (phi_xp - phi)
-            - (gamma + gamma_xm) * (phi - phi_xm)
-        ) / (2.0 * dx**2)
+        d2phi_dx2 = ((gamma_xp + gamma) * (phi_xp - phi) - (gamma + gamma_xm) * (phi - phi_xm)) / (
+            2.0 * dx**2
+        )
 
         # y-direction
         phi_yp = torch.cat([phi[:, 1:, :], phi[:, -1:, :]], dim=-2)
         phi_ym = torch.cat([phi[:, :1, :], phi[:, :-1, :]], dim=-2)
         gamma_yp = torch.cat([gamma[:, 1:, :], gamma[:, -1:, :]], dim=-2)
         gamma_ym = torch.cat([gamma[:, :1, :], gamma[:, :-1, :]], dim=-2)
-        d2phi_dy2 = (
-            (gamma_yp + gamma) * (phi_yp - phi)
-            - (gamma + gamma_ym) * (phi - phi_ym)
-        ) / (2.0 * dx**2)
+        d2phi_dy2 = ((gamma_yp + gamma) * (phi_yp - phi) - (gamma + gamma_ym) * (phi - phi_ym)) / (
+            2.0 * dx**2
+        )
 
         # z-direction
         phi_zp = torch.cat([phi[1:, :, :], phi[-1:, :, :]], dim=-3)
         phi_zm = torch.cat([phi[:1, :, :], phi[:-1, :, :]], dim=-3)
         gamma_zp = torch.cat([gamma[1:, :, :], gamma[-1:, :, :]], dim=-3)
         gamma_zm = torch.cat([gamma[:1, :, :], gamma[:-1, :, :]], dim=-3)
-        d2phi_dz2 = (
-            (gamma_zp + gamma) * (phi_zp - phi)
-            - (gamma + gamma_zm) * (phi - phi_zm)
-        ) / (2.0 * dx**2)
+        d2phi_dz2 = ((gamma_zp + gamma) * (phi_zp - phi) - (gamma + gamma_zm) * (phi - phi_zm)) / (
+            2.0 * dx**2
+        )
 
         return d2phi_dx2 + d2phi_dy2 + d2phi_dz2
 
@@ -359,6 +375,7 @@ class KESolver:
 # ============================================================================
 # LBM collision with RANS turbulence model
 # ============================================================================
+
 
 def collide_rans_ke(
     f: torch.Tensor,
@@ -403,9 +420,11 @@ def collide_rans_ke(
     lattice_u = lattice.upper()
     if lattice_u == "D3Q19":
         from .d3q19 import macroscopic3d
+
         _, ux, uy, uz = macroscopic3d(f)
     elif lattice_u == "D3Q27":
         from .d3q27 import macroscopic27
+
         _, ux, uy, uz = macroscopic27(f)
     else:
         raise ValueError(f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}")
@@ -423,13 +442,13 @@ def collide_rans_ke(
 # ============================================================================
 
 # SA model constants (Spalart & Allmaras 1992)
-_SA_CB1   = 0.1355
-_SA_CB2   = 0.622
+_SA_CB1 = 0.1355
+_SA_CB2 = 0.622
 _SA_SIGMA = 2.0 / 3.0
-_SA_CV1   = 7.1
-_SA_CW1   = _SA_CB1 / (_SA_SIGMA**2) + (1.0 + _SA_CB2) / _SA_SIGMA
-_SA_CW2   = 0.3
-_SA_CW3   = 2.0
+_SA_CV1 = 7.1
+_SA_CW1 = _SA_CB1 / (_SA_SIGMA**2) + (1.0 + _SA_CB2) / _SA_SIGMA
+_SA_CW2 = 0.3
+_SA_CW3 = 2.0
 _SA_KAPPA = 0.41
 
 
@@ -471,9 +490,7 @@ class SASolver:
         """
         nz, ny, nx = ux.shape
         val = nu_tilde_0 if nu_tilde_0 is not None else 3.0 * self.nu
-        self._nu_tilde = torch.full(
-            (nz, ny, nx), val, dtype=ux.dtype, device=ux.device
-        )
+        self._nu_tilde = torch.full((nz, ny, nx), val, dtype=ux.dtype, device=ux.device)
 
     def compute_nu_t(
         self,
@@ -526,10 +543,12 @@ class SASolver:
 
         # ---- Strang step 2: full diffusion + source ---------------------
         chi = nu_t / self.nu
-        fv2  = 1.0 - chi / (1.0 + chi * chi.clamp(min=1e-6).sqrt() * 0.0 + chi * _SA_CV1**3 / (chi**3 + _SA_CV1**3))
+        fv2 = 1.0 - chi / (
+            1.0 + chi * chi.clamp(min=1e-6).sqrt() * 0.0 + chi * _SA_CV1**3 / (chi**3 + _SA_CV1**3)
+        )
         # Simplified fv2: 1 - χ/(1+χ·fv1)
-        fv1  = chi**3 / (chi**3 + _SA_CV1**3)
-        fv2  = 1.0 - chi / (1.0 + chi * fv1).clamp(min=1e-10)
+        fv1 = chi**3 / (chi**3 + _SA_CV1**3)
+        fv2 = 1.0 - chi / (1.0 + chi * fv1).clamp(min=1e-10)
 
         # Vorticity magnitude (proxy for S̃)
         omega = self._vorticity_magnitude(ux, uy, uz)
@@ -547,7 +566,7 @@ class SASolver:
         )
         g = r + _SA_CW2 * (r**6 - r)
         fw = g * ((1.0 + _SA_CW3**6) / (g**6 + _SA_CW3**6)) ** (1.0 / 6.0)
-        dest = _SA_CW1 * fw * (nu_t / wall_dist.clamp(min=1e-10))**2
+        dest = _SA_CW1 * fw * (nu_t / wall_dist.clamp(min=1e-10)) ** 2
 
         # Diffusion: ∇·((ν + ν̃)/σ · ∇ν̃)
         gamma = (self.nu + nu_t) / _SA_SIGMA
@@ -609,20 +628,20 @@ class SASolver:
         """Variable-coefficient Laplacian: ∇·(γ ∇φ)."""
         phi_xp = torch.cat([phi[..., 1:], phi[..., -1:]], dim=-1)
         phi_xm = torch.cat([phi[..., :1], phi[..., :-1]], dim=-1)
-        g_xp   = torch.cat([gamma[..., 1:], gamma[..., -1:]], dim=-1)
-        g_xm   = torch.cat([gamma[..., :1], gamma[..., :-1]], dim=-1)
+        g_xp = torch.cat([gamma[..., 1:], gamma[..., -1:]], dim=-1)
+        g_xm = torch.cat([gamma[..., :1], gamma[..., :-1]], dim=-1)
         d2x = (g_xp + gamma) * (phi_xp - phi) - (gamma + g_xm) * (phi - phi_xm)
 
         phi_yp = torch.cat([phi[:, 1:, :], phi[:, -1:, :]], dim=-2)
         phi_ym = torch.cat([phi[:, :1, :], phi[:, :-1, :]], dim=-2)
-        g_yp   = torch.cat([gamma[:, 1:, :], gamma[:, -1:, :]], dim=-2)
-        g_ym   = torch.cat([gamma[:, :1, :], gamma[:, :-1, :]], dim=-2)
+        g_yp = torch.cat([gamma[:, 1:, :], gamma[:, -1:, :]], dim=-2)
+        g_ym = torch.cat([gamma[:, :1, :], gamma[:, :-1, :]], dim=-2)
         d2y = (g_yp + gamma) * (phi_yp - phi) - (gamma + g_ym) * (phi - phi_ym)
 
         phi_zp = torch.cat([phi[1:, :, :], phi[-1:, :, :]], dim=-3)
         phi_zm = torch.cat([phi[:1, :, :], phi[:-1, :, :]], dim=-3)
-        g_zp   = torch.cat([gamma[1:, :, :], gamma[-1:, :, :]], dim=-3)
-        g_zm   = torch.cat([gamma[:1, :, :], gamma[:-1, :, :]], dim=-3)
+        g_zp = torch.cat([gamma[1:, :, :], gamma[-1:, :, :]], dim=-3)
+        g_zm = torch.cat([gamma[:1, :, :], gamma[:-1, :, :]], dim=-3)
         d2z = (g_zp + gamma) * (phi_zp - phi) - (gamma + g_zm) * (phi - phi_zm)
 
         return (d2x + d2y + d2z) * 0.5  # factor 0.5 from central difference scaling
@@ -634,18 +653,30 @@ class SASolver:
         uz: torch.Tensor,
     ) -> torch.Tensor:
         """Vorticity magnitude ‖∇×u‖."""
-        duz_dy = (torch.cat([uz[:, 1:, :], uz[:, -1:, :]], dim=-2)
-                  - torch.cat([uz[:, :1, :], uz[:, :-1, :]], dim=-2)) * 0.5
-        duy_dz = (torch.cat([uy[1:, :, :], uy[-1:, :, :]], dim=-3)
-                  - torch.cat([uy[:1, :, :], uy[:-1, :, :]], dim=-3)) * 0.5
-        dux_dz = (torch.cat([ux[1:, :, :], ux[-1:, :, :]], dim=-3)
-                  - torch.cat([ux[:1, :, :], ux[:-1, :, :]], dim=-3)) * 0.5
-        duz_dx = (torch.cat([uz[..., 1:], uz[..., -1:]], dim=-1)
-                  - torch.cat([uz[..., :1], uz[..., :-1]], dim=-1)) * 0.5
-        duy_dx = (torch.cat([uy[..., 1:], uy[..., -1:]], dim=-1)
-                  - torch.cat([uy[..., :1], uy[..., :-1]], dim=-1)) * 0.5
-        dux_dy = (torch.cat([ux[:, 1:, :], ux[:, -1:, :]], dim=-2)
-                  - torch.cat([ux[:, :1, :], ux[:, :-1, :]], dim=-2)) * 0.5
+        duz_dy = (
+            torch.cat([uz[:, 1:, :], uz[:, -1:, :]], dim=-2)
+            - torch.cat([uz[:, :1, :], uz[:, :-1, :]], dim=-2)
+        ) * 0.5
+        duy_dz = (
+            torch.cat([uy[1:, :, :], uy[-1:, :, :]], dim=-3)
+            - torch.cat([uy[:1, :, :], uy[:-1, :, :]], dim=-3)
+        ) * 0.5
+        dux_dz = (
+            torch.cat([ux[1:, :, :], ux[-1:, :, :]], dim=-3)
+            - torch.cat([ux[:1, :, :], ux[:-1, :, :]], dim=-3)
+        ) * 0.5
+        duz_dx = (
+            torch.cat([uz[..., 1:], uz[..., -1:]], dim=-1)
+            - torch.cat([uz[..., :1], uz[..., :-1]], dim=-1)
+        ) * 0.5
+        duy_dx = (
+            torch.cat([uy[..., 1:], uy[..., -1:]], dim=-1)
+            - torch.cat([uy[..., :1], uy[..., :-1]], dim=-1)
+        ) * 0.5
+        dux_dy = (
+            torch.cat([ux[:, 1:, :], ux[:, -1:, :]], dim=-2)
+            - torch.cat([ux[:, :1, :], ux[:, :-1, :]], dim=-2)
+        ) * 0.5
 
         wx = duz_dy - duy_dz
         wy = dux_dz - duz_dx
@@ -654,12 +685,18 @@ class SASolver:
 
     def _grad_sq(self, phi: torch.Tensor) -> torch.Tensor:
         """Squared gradient magnitude ‖∇φ‖²."""
-        dx = (torch.cat([phi[..., 1:], phi[..., -1:]], dim=-1)
-              - torch.cat([phi[..., :1], phi[..., :-1]], dim=-1)) * 0.5
-        dy = (torch.cat([phi[:, 1:, :], phi[:, -1:, :]], dim=-2)
-              - torch.cat([phi[:, :1, :], phi[:, :-1, :]], dim=-2)) * 0.5
-        dz = (torch.cat([phi[1:, :, :], phi[-1:, :, :]], dim=-3)
-              - torch.cat([phi[:1, :, :], phi[:-1, :, :]], dim=-3)) * 0.5
+        dx = (
+            torch.cat([phi[..., 1:], phi[..., -1:]], dim=-1)
+            - torch.cat([phi[..., :1], phi[..., :-1]], dim=-1)
+        ) * 0.5
+        dy = (
+            torch.cat([phi[:, 1:, :], phi[:, -1:, :]], dim=-2)
+            - torch.cat([phi[:, :1, :], phi[:, :-1, :]], dim=-2)
+        ) * 0.5
+        dz = (
+            torch.cat([phi[1:, :, :], phi[-1:, :, :]], dim=-3)
+            - torch.cat([phi[:1, :, :], phi[:-1, :, :]], dim=-3)
+        ) * 0.5
         return dx**2 + dy**2 + dz**2
 
 
@@ -721,17 +758,16 @@ class KOmegaSSTSolver:
                 s13 = 0.5 * (dudz + dwdx)
                 s23 = 0.5 * (dvdz + dwdy)
                 return torch.sqrt(
-                    2.0 * (s11**2 + s22**2 + s33**2 + 2.0 * (s12**2 + s13**2 + s23**2))
-                    + 1e-20
+                    2.0 * (s11**2 + s22**2 + s33**2 + 2.0 * (s12**2 + s13**2 + s23**2)) + 1e-20
                 )
             # 2-D approximation for 3-D fields without uz
-            return torch.sqrt(2.0 * (dudx**2 + dvdy**2 + 0.5 * (dudy + dvdx)**2) + 1e-20)
+            return torch.sqrt(2.0 * (dudx**2 + dvdy**2 + 0.5 * (dudy + dvdx) ** 2) + 1e-20)
         else:
             dudx = torch.gradient(ux, dim=1)[0] / self.dx
             dudy = torch.gradient(ux, dim=0)[0] / self.dx
             dvdx = torch.gradient(uy, dim=1)[0] / self.dx
             dvdy = torch.gradient(uy, dim=0)[0] / self.dx
-            return torch.sqrt(2.0 * (dudx**2 + dvdy**2 + 0.5 * (dudy + dvdx)**2) + 1e-20)
+            return torch.sqrt(2.0 * (dudx**2 + dvdy**2 + 0.5 * (dudy + dvdx) ** 2) + 1e-20)
 
     def _blending_function(self, wall_dist: torch.Tensor) -> torch.Tensor:
         """Compute SST blending function F1 (inner=1, outer=0)."""
@@ -858,9 +894,11 @@ def collide_rans_sa(
     lattice_u = lattice.upper()
     if lattice_u == "D3Q19":
         from .d3q19 import macroscopic3d
+
         _, ux, uy, uz = macroscopic3d(f)
     elif lattice_u == "D3Q27":
         from .d3q27 import macroscopic27
+
         _, ux, uy, uz = macroscopic27(f)
     else:
         raise ValueError(f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}")
@@ -904,9 +942,7 @@ def komega_sst_collision_d2q9(
     tau = sst_solver.get_tau_eff()
 
     cu = C_X.view(9, 1, 1) * ux + C_Y.view(9, 1, 1) * uy
-    feq = rho * W.view(9, 1, 1) * (
-        1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * (ux**2 + uy**2)
-    )
+    feq = rho * W.view(9, 1, 1) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * (ux**2 + uy**2))
     f_new = f - (f - feq) / tau
 
     if mask is not None:

@@ -4,6 +4,7 @@ This module never imports or calls the runtime solver.  It only reconstructs a
 captured production transaction invocation through the detached transaction
 builder after verifying immutable serialized evidence bytes.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -42,10 +43,27 @@ _PHASES = (
     "solid_enforcement",
 )
 _REQUIRED_INPUTS = (
-    "f", "fill", "flags", "mass", "to_iface", "to_liq", "to_gas", "recv_new",
-    "redistribution_increment", "rho_liquid", "rho_gas", "solid_mask", "gas_flag",
-    "liquid_flag", "interface_flag", "solid_flag", "ux", "uy", "uz",
-    "i_to_g_increment", "i_to_g_ownership",
+    "f",
+    "fill",
+    "flags",
+    "mass",
+    "to_iface",
+    "to_liq",
+    "to_gas",
+    "recv_new",
+    "redistribution_increment",
+    "rho_liquid",
+    "rho_gas",
+    "solid_mask",
+    "gas_flag",
+    "liquid_flag",
+    "interface_flag",
+    "solid_flag",
+    "ux",
+    "uy",
+    "uz",
+    "i_to_g_increment",
+    "i_to_g_ownership",
 )
 _ALLOWED_INPUTS = frozenset(_REQUIRED_INPUTS)
 
@@ -84,10 +102,18 @@ class StrictFailureReplayReport:
     reason: str | None
 
 
-def _tensor_state(value: object) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | None:
-    if isinstance(value, Mapping) and all(isinstance(value.get(name), torch.Tensor) for name in _FIELDS):
+def _tensor_state(
+    value: object,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | None:
+    if isinstance(value, Mapping) and all(
+        isinstance(value.get(name), torch.Tensor) for name in _FIELDS
+    ):
         return tuple(value[name] for name in _FIELDS)  # type: ignore[return-value]
-    if isinstance(value, tuple) and len(value) == len(_FIELDS) and all(isinstance(item, torch.Tensor) for item in value):
+    if (
+        isinstance(value, tuple)
+        and len(value) == len(_FIELDS)
+        and all(isinstance(item, torch.Tensor) for item in value)
+    ):
         return value  # type: ignore[return-value]
     return None
 
@@ -96,7 +122,9 @@ def _exact_fields(
     actual: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
     expected: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
 ) -> tuple[str, ...]:
-    return tuple(name for name, left, right in zip(_FIELDS, actual, expected) if torch.equal(left, right))
+    return tuple(
+        name for name, left, right in zip(_FIELDS, actual, expected) if torch.equal(left, right)
+    )
 
 
 def _withheld(reason: str, missing: tuple[str, ...] = ()) -> TopologyMutationReplayReport:
@@ -113,11 +141,21 @@ def _withheld(reason: str, missing: tuple[str, ...] = ()) -> TopologyMutationRep
     )
 
 
-def _load_evidence(evidence: ReplayEvidence) -> tuple[dict[str, object], dict[str, object], tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]]:
+def _load_evidence(
+    evidence: ReplayEvidence,
+) -> tuple[
+    dict[str, object],
+    dict[str, object],
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+]:
     invocation = restore_replay_payload(evidence.invocation_payload, evidence.invocation_sha256)
     phases = restore_replay_payload(evidence.phase_payload, evidence.phase_sha256)
     candidate = restore_replay_payload(evidence.candidate_payload, evidence.candidate_sha256)
-    if not isinstance(invocation, dict) or not isinstance(phases, dict) or _tensor_state(candidate) is None:
+    if (
+        not isinstance(invocation, dict)
+        or not isinstance(phases, dict)
+        or _tensor_state(candidate) is None
+    ):
         raise TopologyTransactionError("WITHHELD: replay evidence schema is invalid")
     records = (
         _replay_tensor_records(invocation, "invocation")
@@ -125,7 +163,9 @@ def _load_evidence(evidence: ReplayEvidence) -> tuple[dict[str, object], dict[st
         + _replay_tensor_records(candidate, "candidate")
     )
     if records != evidence.tensor_records:
-        raise TopologyTransactionError("WITHHELD: replay tensor records do not match payload tensors")
+        raise TopologyTransactionError(
+            "WITHHELD: replay tensor records do not match payload tensors"
+        )
     return invocation, phases, _tensor_state(candidate)  # type: ignore[return-value]
 
 
@@ -146,15 +186,26 @@ def audit_topology_mutation_replay(evidence: object) -> TopologyMutationReplayRe
 
     unknown = tuple(sorted(set(captured_inputs) - _ALLOWED_INPUTS))
     missing = tuple(name for name in _REQUIRED_INPUTS if name not in captured_inputs)
-    pair_present = (captured_inputs.get("i_to_g_increment") is not None, captured_inputs.get("i_to_g_ownership") is not None)
+    pair_present = (
+        captured_inputs.get("i_to_g_increment") is not None,
+        captured_inputs.get("i_to_g_ownership") is not None,
+    )
     if unknown or missing or pair_present[0] != pair_present[1]:
-        reason = "captured invocation has unknown inputs" if unknown else "captured pre-state transaction inputs are incomplete or inconsistent"
+        reason = (
+            "captured invocation has unknown inputs"
+            if unknown
+            else "captured pre-state transaction inputs are incomplete or inconsistent"
+        )
         return _withheld(reason, missing)
-    if pair_present[1] and not isinstance(captured_inputs["i_to_g_ownership"], IToGOwnershipTransaction):
+    if pair_present[1] and not isinstance(
+        captured_inputs["i_to_g_ownership"], IToGOwnershipTransaction
+    ):
         return _withheld("captured I→G ownership has invalid schema")
 
     try:
-        captured_inputs["i_to_g_ownership"] = restore_i_to_g_ownership(captured_inputs["i_to_g_ownership"])
+        captured_inputs["i_to_g_ownership"] = restore_i_to_g_ownership(
+            captured_inputs["i_to_g_ownership"]
+        )
         plan = build_topology_transaction(**captured_inputs, capture_replay_stages=True)  # type: ignore[arg-type]
         replayed_final = (plan.f, plan.fill, plan.flags, plan.mass)
         replayed_phases = plan.replay_stages
@@ -169,16 +220,33 @@ def audit_topology_mutation_replay(evidence: object) -> TopologyMutationReplayRe
         expected = _tensor_state(expected_phases.get(name))
         actual = replayed_phases.get(name)
         if expected is None or actual is None:
-            reports.append(ReplayPhaseReport(name, ORDER_UNAVAILABLE_WITHHELD, _REQUIRED_INPUTS, (), (), "phase evidence schema is incomplete"))
+            reports.append(
+                ReplayPhaseReport(
+                    name,
+                    ORDER_UNAVAILABLE_WITHHELD,
+                    _REQUIRED_INPUTS,
+                    (),
+                    (),
+                    "phase evidence schema is incomplete",
+                )
+            )
             continue
         compared = _exact_fields(actual, expected)
-        reports.append(ReplayPhaseReport(
-            name,
-            AVAILABLE_REPLAYED_EXACT if compared == _FIELDS else ORDER_UNAVAILABLE_WITHHELD,
-            _REQUIRED_INPUTS, (), compared,
-            None if compared == _FIELDS else "captured phase-boundary tensors differ from production-builder replay",
-        ))
-    complete = final_compared == _FIELDS and all(item.status == AVAILABLE_REPLAYED_EXACT for item in reports)
+        reports.append(
+            ReplayPhaseReport(
+                name,
+                AVAILABLE_REPLAYED_EXACT if compared == _FIELDS else ORDER_UNAVAILABLE_WITHHELD,
+                _REQUIRED_INPUTS,
+                (),
+                compared,
+                None
+                if compared == _FIELDS
+                else "captured phase-boundary tensors differ from production-builder replay",
+            )
+        )
+    complete = final_compared == _FIELDS and all(
+        item.status == AVAILABLE_REPLAYED_EXACT for item in reports
+    )
     return TopologyMutationReplayReport(
         status=AVAILABLE_REPLAYED_EXACT if complete else WITHHELD,
         mutates_solver_state=False,
@@ -196,29 +264,55 @@ def audit_strict_failure_replay(evidence: object) -> StrictFailureReplayReport:
     withheld. This does not produce phase evidence or a final candidate.
     """
     if not isinstance(evidence, StrictFailureReplayEvidence):
-        return StrictFailureReplayReport(WITHHELD, False, False, None, None, "immutable strict failure evidence is required")
+        return StrictFailureReplayReport(
+            WITHHELD, False, False, None, None, "immutable strict failure evidence is required"
+        )
     if not is_trusted_strict_failure_evidence(evidence):
-        return StrictFailureReplayReport(WITHHELD, False, False, None, None, "strict failure evidence is not a trusted in-process capture")
+        return StrictFailureReplayReport(
+            WITHHELD,
+            False,
+            False,
+            None,
+            None,
+            "strict failure evidence is not a trusted in-process capture",
+        )
     try:
         invocation = restore_strict_failure_invocation(evidence)
         from .free_surface_topology_transaction import build_i_to_g_ownership_transaction
+
         build_i_to_g_ownership_transaction(**invocation)  # type: ignore[arg-type]
     except TopologyTransactionError as error:
         if type(error).__name__ == evidence.error_type and str(error) == evidence.error_message:
             return StrictFailureReplayReport(
-                STRICT_FAILURE_REPLAYED_EXACT, False, False,
-                evidence.error_type, evidence.error_message, None,
+                STRICT_FAILURE_REPLAYED_EXACT,
+                False,
+                False,
+                evidence.error_type,
+                evidence.error_message,
+                None,
             )
         return StrictFailureReplayReport(
-            WITHHELD, False, False, type(error).__name__, str(error),
+            WITHHELD,
+            False,
+            False,
+            type(error).__name__,
+            str(error),
             "detached builder rejection differs from captured strict failure",
         )
     except (RuntimeError, ValueError) as error:
         return StrictFailureReplayReport(
-            WITHHELD, False, False, type(error).__name__, str(error),
+            WITHHELD,
+            False,
+            False,
+            type(error).__name__,
+            str(error),
             "detached builder raised an unexpected error type",
         )
     return StrictFailureReplayReport(
-        WITHHELD, False, False, None, None,
+        WITHHELD,
+        False,
+        False,
+        None,
+        None,
         "detached builder unexpectedly produced a candidate",
     )

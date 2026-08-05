@@ -1,4 +1,5 @@
 """Tests for ellipsoid benchmark module."""
+
 from __future__ import annotations
 
 import math
@@ -16,7 +17,12 @@ from tensorlbm.ellipsoid_benchmark import (
 def test_build_ellipsoid_mask_zero_aoa() -> None:
     """Mask at α=0 should be symmetric about the centreline."""
     mask = build_ellipsoid_mask(
-        nx=60, ny=40, nz=40, a=24.0, b=8.0, alpha_deg=0.0,
+        nx=60,
+        ny=40,
+        nz=40,
+        a=24.0,
+        b=8.0,
+        alpha_deg=0.0,
     )
     assert mask.shape == (40, 40, 60)
     solid = mask.sum().item()
@@ -36,17 +42,28 @@ def test_build_ellipsoid_mask_zero_aoa() -> None:
         for i in range(1, 40):
             jr = int(2 * cy - j)
             ir = int(2 * cx - i)
-            assert slice_2d[j, i] == slice_2d[jr, ir], \
+            assert slice_2d[j, i] == slice_2d[jr, ir], (
                 f"symmetry broken at (j={j},i={i}) ↔ (jr={jr},ir={ir})"
+            )
 
 
 def test_build_ellipsoid_mask_with_aoa() -> None:
     """Mask at α=10° should be nose-up rotated."""
     mask_0 = build_ellipsoid_mask(
-        nx=60, ny=40, nz=40, a=24.0, b=8.0, alpha_deg=0.0,
+        nx=60,
+        ny=40,
+        nz=40,
+        a=24.0,
+        b=8.0,
+        alpha_deg=0.0,
     )
     mask_10 = build_ellipsoid_mask(
-        nx=60, ny=40, nz=40, a=24.0, b=8.0, alpha_deg=10.0,
+        nx=60,
+        ny=40,
+        nz=40,
+        a=24.0,
+        b=8.0,
+        alpha_deg=10.0,
     )
     # Masks should differ
     assert not torch.equal(mask_0, mask_10)
@@ -83,10 +100,15 @@ def test_reference_ellipsoid_cd() -> None:
 def test_ellipsoid_benchmark_runs() -> None:
     """Smoke test: minimal simulation should complete without NaN."""
     cfg = EllipsoidConfig(
-        semi_major_a=18.0, semi_minor_b=6.0,
-        alpha_deg=0.0, re=100,
-        nx=80, ny=36, nz=36,
-        n_steps=150, warmup_steps=50,
+        semi_major_a=18.0,
+        semi_minor_b=6.0,
+        alpha_deg=0.0,
+        re=100,
+        nx=80,
+        ny=36,
+        nz=36,
+        n_steps=150,
+        warmup_steps=50,
         smagorinsky_cs=0.1,
         device="cpu",
     )
@@ -102,10 +124,15 @@ def test_ellipsoid_benchmark_runs() -> None:
 def test_ellipsoid_cd_reasonable() -> None:
     """Cd at α=0 should be lower than equivalent sphere (streamlined)."""
     cfg = EllipsoidConfig(
-        semi_major_a=18.0, semi_minor_b=6.0,
-        alpha_deg=0.0, re=100,
-        nx=80, ny=36, nz=36,
-        n_steps=300, warmup_steps=150,
+        semi_major_a=18.0,
+        semi_minor_b=6.0,
+        alpha_deg=0.0,
+        re=100,
+        nx=80,
+        ny=36,
+        nz=36,
+        n_steps=300,
+        warmup_steps=150,
         smagorinsky_cs=0.1,
         device="cpu",
     )

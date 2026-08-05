@@ -1,4 +1,5 @@
 """TDD coverage for the pure one-step fixed-nested D3Q27 patch reference."""
+
 from __future__ import annotations
 
 import torch
@@ -42,8 +43,12 @@ def _uniform_inputs(schedule: FixedNestedPatchScheduleD3Q27) -> dict[str, object
     fine_packets: dict[FaceKey, tuple[D3Q27InterfaceFluxPacket, D3Q27InterfaceFluxPacket]] = {}
     for face in schedule.interface_faces:
         key = (face.axis, face.side)
-        coarse_shape = tuple(size for axis, size in enumerate(face.coarse_face_extent.shape) if axis != face.axis)
-        fine_shape = tuple(size for axis, size in enumerate(face.fine_face_extent.shape) if axis != face.axis)
+        coarse_shape = tuple(
+            size for axis, size in enumerate(face.coarse_face_extent.shape) if axis != face.axis
+        )
+        fine_shape = tuple(
+            size for axis, size in enumerate(face.fine_face_extent.shape) if axis != face.axis
+        )
         coarse = _equilibrium_face(coarse_shape)
         fine = _equilibrium_face(fine_shape)
         coarse_faces[key] = coarse
@@ -79,8 +84,12 @@ def test_closed_uniform_equilibrium_is_exact_through_one_coarse_and_two_fine_sub
     assert tuple(substep.time_end for substep in result.fine_substeps) == (0.5, 1.0)
     for key in _faces(schedule):
         assert torch.equal(result.coarse_incoming_faces[key], inputs["coarse_receivers"][key])
-        assert torch.equal(result.fine_substeps[0].incoming_faces[key], inputs["fine_receivers"][key][0])
-        assert torch.equal(result.fine_substeps[1].incoming_faces[key], inputs["fine_receivers"][key][1])
+        assert torch.equal(
+            result.fine_substeps[0].incoming_faces[key], inputs["fine_receivers"][key][0]
+        )
+        assert torch.equal(
+            result.fine_substeps[1].incoming_faces[key], inputs["fine_receivers"][key][1]
+        )
         reflux = result.reflux_by_face[key]
         assert torch.equal(reflux.mismatch, torch.zeros(27, dtype=torch.float64))
         assert torch.equal(reflux.coarse_correction, torch.zeros(27, dtype=torch.float64))
@@ -110,11 +119,18 @@ def test_nonuniform_packets_are_refluxed_to_a_conservative_interface_ledger() ->
         corrected_fine = reflux.corrected_fine_fluxes[0] + reflux.corrected_fine_fluxes[1]
         assert torch.allclose(reflux.corrected_coarse_flux, corrected_fine, rtol=0.0, atol=1e-14)
         assert torch.allclose(
-            (reflux.corrected_coarse_flux - corrected_fine).sum(), torch.tensor(0.0, dtype=torch.float64), rtol=0.0, atol=1e-14
+            (reflux.corrected_coarse_flux - corrected_fine).sum(),
+            torch.tensor(0.0, dtype=torch.float64),
+            rtol=0.0,
+            atol=1e-14,
         )
         assert torch.allclose(
-            ((reflux.corrected_coarse_flux - corrected_fine)[:, None] * C.to(dtype=torch.float64)).sum(dim=0),
-            torch.zeros(3, dtype=torch.float64), rtol=0.0, atol=1e-14,
+            (
+                (reflux.corrected_coarse_flux - corrected_fine)[:, None] * C.to(dtype=torch.float64)
+            ).sum(dim=0),
+            torch.zeros(3, dtype=torch.float64),
+            rtol=0.0,
+            atol=1e-14,
         )
         total_owner_correction += reflux.coarse_correction + sum(reflux.fine_corrections)
     assert torch.equal(total_owner_correction, torch.zeros_like(total_owner_correction))

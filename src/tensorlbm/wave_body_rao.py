@@ -33,6 +33,7 @@ References
 - Budal, K. & Falnes J. (1975). "A resonant point absorber of ocean waves",
   Nature 256, 478–479.
 """
+
 from __future__ import annotations
 
 import math
@@ -45,15 +46,17 @@ import torch
 # Hydrodynamic coefficients for a vertical circular cylinder (spar)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SparGeometry:
     """Vertical circular cylinder (spar buoy) parameters."""
-    radius: float          # R [m]
-    draft: float           # d [m] (positive downward from waterline)
-    mass: float            # m [kg]
-    iyy: float             # pitch moment of inertia [kg·m²]
-    rho_water: float = 1025.0   # water density [kg/m³]
-    g: float = 9.81            # gravity [m/s²]
+
+    radius: float  # R [m]
+    draft: float  # d [m] (positive downward from waterline)
+    mass: float  # m [kg]
+    iyy: float  # pitch moment of inertia [kg·m²]
+    rho_water: float = 1025.0  # water density [kg/m³]
+    g: float = 9.81  # gravity [m/s²]
 
     @property
     def waterplane_area(self) -> float:
@@ -165,6 +168,7 @@ def spar_pitch_excitation(omega: float, geo: SparGeometry) -> complex:
 # RAO computation
 # ---------------------------------------------------------------------------
 
+
 def compute_heave_rao(
     omega: float | torch.Tensor,
     geo: SparGeometry,
@@ -190,10 +194,7 @@ def compute_heave_rao(
         F3 = abs(spar_heave_excitation(w_val, geo))
         C33 = geo.C33
 
-        denom = math.sqrt(
-            (C33 - (geo.mass + A33) * w_val**2)**2
-            + (B33 * w_val)**2
-        )
+        denom = math.sqrt((C33 - (geo.mass + A33) * w_val**2) ** 2 + (B33 * w_val) ** 2)
         if denom > 1e-15:
             rao[i] = F3 / denom
         else:
@@ -225,10 +226,7 @@ def compute_pitch_rao(
         F5 = abs(spar_pitch_excitation(w_val, geo))
         C55 = geo.C55
 
-        denom = math.sqrt(
-            (C55 - (geo.iyy + A55) * w_val**2)**2
-            + (B55 * w_val)**2
-        )
+        denom = math.sqrt((C55 - (geo.iyy + A55) * w_val**2) ** 2 + (B55 * w_val) ** 2)
         if denom > 1e-15:
             rao[i] = F5 / denom
         else:
@@ -240,6 +238,7 @@ def compute_pitch_rao(
 # Utility: wave parameters
 # ---------------------------------------------------------------------------
 
+
 def deep_water_wave_number(omega: float, g: float = 9.81) -> float:
     """Deep-water dispersion: k = ω² / g."""
     return omega**2 / g
@@ -250,7 +249,7 @@ def finite_depth_wave_number(omega: float, depth: float, g: float = 9.81) -> flo
     k = omega**2 / g  # initial guess (deep water)
     for _ in range(50):
         f = omega**2 - g * k * math.tanh(k * depth)
-        fp = -g * (math.tanh(k * depth) + k * depth / math.cosh(k * depth)**2)
+        fp = -g * (math.tanh(k * depth) + k * depth / math.cosh(k * depth) ** 2)
         dk = -f / fp
         k += dk
         if abs(dk) < 1e-12 * k:

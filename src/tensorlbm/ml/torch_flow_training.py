@@ -37,7 +37,9 @@ def _sha256_file(path: Path) -> str:
 
 
 def _canonical_sha256(document: dict[str, object]) -> str:
-    return sha256(json.dumps(document, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    return sha256(
+        json.dumps(document, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def _output_paths(out: Path) -> tuple[Path, Path, Path]:
@@ -144,7 +146,9 @@ def run_evidence_gated_flow_reconstruction(
             "smoke_only": True,
         }
         provenance["provenance_sha256"] = _canonical_sha256(provenance)
-        provenance_path.write_text(json.dumps(provenance, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        provenance_path.write_text(
+            json.dumps(provenance, sort_keys=True, separators=(",", ":")), encoding="utf-8"
+        )
         written = json.loads(provenance_path.read_text(encoding="utf-8"))
         claimed = written.pop("provenance_sha256", None)
         if claimed != _canonical_sha256(written):

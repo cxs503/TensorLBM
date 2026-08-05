@@ -1,4 +1,5 @@
 """Tests for preprocess_geo.py and unit_converter.py."""
+
 from __future__ import annotations
 
 import struct
@@ -232,9 +233,7 @@ class TestRandomPorosityMask2D:
 
 class TestRandomPorosityMask3D:
     def test_output_shape(self) -> None:
-        mask = random_porosity_mask_3d(
-            nz=8, ny=10, nx=12, porosity=0.4, device=torch.device("cpu")
-        )
+        mask = random_porosity_mask_3d(nz=8, ny=10, nx=12, porosity=0.4, device=torch.device("cpu"))
         assert mask.shape == (8, 10, 12)
         assert mask.dtype == torch.bool
 
@@ -316,7 +315,7 @@ class TestComputeQGeneric3D:
         zz, yy, xx = torch.meshgrid(
             torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij"
         )
-        mask = (xx - 8.0) ** 2 + (yy - 8.0) ** 2 + (zz - 8.0) ** 2 <= 4.0 ** 2
+        mask = (xx - 8.0) ** 2 + (yy - 8.0) ** 2 + (zz - 8.0) ** 2 <= 4.0**2
         fb, q = compute_q_generic_3d(mask.bool(), device=torch.device("cpu"))
         assert fb.any()
         assert torch.isfinite(q).all()
@@ -343,7 +342,11 @@ class TestLBMUnitConverter:
         """High u_lb should trigger a Mach number warning."""
         with pytest.warns(UserWarning, match="Mach number"):
             LBMUnitConverter(
-                re=100.0, l_phys=1.0, u_phys=1.0, nu_phys=0.01, nx=100,
+                re=100.0,
+                l_phys=1.0,
+                u_phys=1.0,
+                nu_phys=0.01,
+                nx=100,
                 u_lb=0.35,  # Ma ≈ 0.61 > 0.1
             )
 
@@ -378,9 +381,7 @@ class TestLBMUnitConverter:
 
     def test_invalid_u_lb(self) -> None:
         with pytest.raises(ValueError):
-            LBMUnitConverter(
-                re=100.0, l_phys=1.0, u_phys=1.0, nu_phys=0.01, nx=100, u_lb=1.0
-            )
+            LBMUnitConverter(re=100.0, l_phys=1.0, u_phys=1.0, nu_phys=0.01, nx=100, u_lb=1.0)
 
     def test_time_conversion_round_trip(self) -> None:
         uc = LBMUnitConverter(re=100.0, l_phys=1.0, u_phys=1.0, nu_phys=0.01, nx=100)

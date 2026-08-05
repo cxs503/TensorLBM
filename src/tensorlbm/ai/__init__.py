@@ -5,6 +5,7 @@ self-supervised flow transformer.  SUBOFF reconstruction is optional and is
 queried explicitly with :func:`get_suboff_availability`; it never blocks this
 package's core imports.
 """
+
 from __future__ import annotations
 
 import importlib
@@ -29,6 +30,7 @@ from .dataset import (
     save_dataset_pt,
     strain_rate_tensor_2d,
 )
+from .fno import FNO2d, FNO2dArch, load_fno2d, save_fno2d
 from .inference import collide_ai_les_bgk, predict_nu_t_2d, predict_tau_eff_2d
 from .model import EddyViscosityMLP, load_model, save_model
 from .pipeline import AIPipelineResult, run_ai_dns_pipeline, run_ai_les_pipeline
@@ -68,6 +70,11 @@ __all__ = [
     "EddyViscosityMLP",
     "save_model",
     "load_model",
+    # FNO2d neural operator
+    "FNO2dArch",
+    "FNO2d",
+    "save_fno2d",
+    "load_fno2d",
     # train
     "TrainConfig",
     "train_eddy_viscosity_model",

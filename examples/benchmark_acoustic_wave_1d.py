@@ -58,6 +58,7 @@ References
 Latt, J. & Chopard, B. (2006) *Math. Comput. Simul.* 72 117–132
 Krüger, T. et al. (2017) *The Lattice Boltzmann Method*, Springer
 """
+
 from __future__ import annotations
 
 import argparse
@@ -71,9 +72,7 @@ import torch
 # --------------------------------------------------------------------------- #
 # Make tensorlbm importable when running from the repo root.
 # --------------------------------------------------------------------------- #
-_SRC = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-)
+_SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
@@ -84,17 +83,16 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 # Constants
 # =========================================================================== #
 
-CS2 = 1.0 / 3.0          # lattice speed of sound squared
-CS = math.sqrt(CS2)      # c_s = 1/√3 ≈ 0.5774
+CS2 = 1.0 / 3.0  # lattice speed of sound squared
+CS = math.sqrt(CS2)  # c_s = 1/√3 ≈ 0.5774
 
 
 # =========================================================================== #
 # Fourier-projection helper
 # =========================================================================== #
 
-def extract_amp_phase(
-    rho_1d: torch.Tensor, k: float, nx: int
-) -> tuple[float, float]:
+
+def extract_amp_phase(rho_1d: torch.Tensor, k: float, nx: int) -> tuple[float, float]:
     """Extract amplitude and phase of the k-mode via discrete Fourier projection.
 
     Given  ρ'(x) = ρ(x) − 1  and a known wavenumber *k*, project onto
@@ -121,6 +119,7 @@ def extract_amp_phase(
 # =========================================================================== #
 # ASCII visualisation
 # =========================================================================== #
+
 
 def ascii_plot_1d(
     y_num: np.ndarray,
@@ -183,6 +182,7 @@ def ascii_plot_1d(
 # Main simulation
 # =========================================================================== #
 
+
 def run_acoustic_wave_benchmark(
     nx: int = 200,
     ny: int = 4,
@@ -217,10 +217,10 @@ def run_acoustic_wave_benchmark(
     dev = torch.device(device)
     cs = CS
     cs2 = CS2
-    nu = (tau - 0.5) / 3.0               # LBM kinematic (shear) viscosity
-    lam = nx / 2.0                        # wavelength
-    k = 2.0 * math.pi / lam              # wavenumber
-    gamma_theory = nu * k * k            # Γ = ν_shear · k²  (see docstring)
+    nu = (tau - 0.5) / 3.0  # LBM kinematic (shear) viscosity
+    lam = nx / 2.0  # wavelength
+    k = 2.0 * math.pi / lam  # wavenumber
+    gamma_theory = nu * k * k  # Γ = ν_shear · k²  (see docstring)
 
     # ---- Grid ----
     xx = torch.arange(nx, device=dev, dtype=torch.float32)
@@ -262,14 +262,16 @@ def run_acoustic_wave_benchmark(
     print(flush=True)
     print("  Analytical solution (lossless + viscous attenuation):", flush=True)
     print("    ρ(x,t) = 1 + δ·exp(−Γt)·sin(k(x − c_s·t))", flush=True)
-    print(f"    Expected amplitude at t={n_steps}: "
-          f"{delta * math.exp(-gamma_theory * n_steps):.6f} "
-          f"({math.exp(-gamma_theory * n_steps)*100:.1f}% of δ)", flush=True)
+    print(
+        f"    Expected amplitude at t={n_steps}: "
+        f"{delta * math.exp(-gamma_theory * n_steps):.6f} "
+        f"({math.exp(-gamma_theory * n_steps) * 100:.1f}% of δ)",
+        flush=True,
+    )
     print(flush=True)
 
     # ---- Logging header ----
-    print(f"{'step':>6}  {'amp':>10}  {'phase':>9}  {'c_inferred':>10}  "
-          f"{'amp/δ':>9}", flush=True)
+    print(f"{'step':>6}  {'amp':>10}  {'phase':>9}  {'c_inferred':>10}  {'amp/δ':>9}", flush=True)
     print("-" * 72, flush=True)
 
     # ---- Data storage ----
@@ -284,8 +286,7 @@ def run_acoustic_wave_benchmark(
     times.append(0)
     amps.append(amp0)
     phases.append(phase0)
-    print(f"{'0':>6}  {amp0:10.6f}  {phase0:9.4f}  {'---':>10}  "
-          f"{amp0/delta:9.6f}", flush=True)
+    print(f"{'0':>6}  {amp0:10.6f}  {phase0:9.4f}  {'---':>10}  {amp0 / delta:9.6f}", flush=True)
 
     # ---- Time loop ----
     has_nan = False
@@ -322,8 +323,10 @@ def run_acoustic_wave_benchmark(
                     c_inf = -dphi / (k * dt) if dt > 0 else float("nan")
                 else:
                     c_inf = float("nan")
-                print(f"{step:>6}  {amp:10.6f}  {phase:9.4f}  "
-                      f"{c_inf:10.6f}  {amp/delta:9.6f}", flush=True)
+                print(
+                    f"{step:>6}  {amp:10.6f}  {phase:9.4f}  {c_inf:10.6f}  {amp / delta:9.6f}",
+                    flush=True,
+                )
 
         if has_nan:
             print(f"\n  ✗ NaN/Inf detected at step {step}!", flush=True)
@@ -349,18 +352,14 @@ def run_acoustic_wave_benchmark(
     # ---- Sound speed: linear fit of φ(t) ----
     # φ(t) = φ₀ − k·c_s·t  →  slope = −k·c_s  →  c_s = −slope / k
     A_mat = np.vstack([times_np, np.ones_like(times_np)]).T
-    slope_phase, intercept_phase = np.linalg.lstsq(
-        A_mat, phases_unwrapped, rcond=None
-    )[0]
+    slope_phase, intercept_phase = np.linalg.lstsq(A_mat, phases_unwrapped, rcond=None)[0]
     c_lbm = -slope_phase / k
     speed_error_pct = abs(c_lbm - cs) / cs * 100.0
 
     # ---- Attenuation: linear fit of log(A) vs t ----
     # A(t) = δ·exp(−Γ·t)  →  log A = log δ − Γ·t  →  slope = −Γ
     log_amps = np.log(np.maximum(amps_np, 1e-15))
-    slope_amp, intercept_amp = np.linalg.lstsq(
-        A_mat, log_amps, rcond=None
-    )[0]
+    slope_amp, intercept_amp = np.linalg.lstsq(A_mat, log_amps, rcond=None)[0]
     gamma_lbm = -slope_amp
 
     # ---- Alternative theoretical predictions for attenuation ----
@@ -373,13 +372,9 @@ def run_acoustic_wave_benchmark(
 
     # ---- Residuals for quality-of-fit ----
     phase_fit = slope_phase * times_np + intercept_phase
-    phase_residual = np.sqrt(
-        np.mean((phases_unwrapped - phase_fit) ** 2)
-    )
+    phase_residual = np.sqrt(np.mean((phases_unwrapped - phase_fit) ** 2))
     amp_fit = np.exp(slope_amp * times_np + intercept_amp)
-    amp_residual_rel = np.sqrt(
-        np.mean(((amps_np - amp_fit) / np.maximum(amps_np, 1e-15)) ** 2)
-    )
+    amp_residual_rel = np.sqrt(np.mean(((amps_np - amp_fit) / np.maximum(amps_np, 1e-15)) ** 2))
 
     # ======================================================================= #
     # Results
@@ -391,50 +386,40 @@ def run_acoustic_wave_benchmark(
     print(flush=True)
 
     # ---- Sound speed ----
-    print("  ┌─── Sound Speed ───────────────────────────────────────────┐",
-          flush=True)
-    print(f"  │  c_s  (theory)     = {cs:.6f}                        │",
-          flush=True)
-    print(f"  │  c_lbm (measured)  = {c_lbm:.6f}                        │",
-          flush=True)
-    print(f"  │  error             = {speed_error_pct:.2f} %                      │",
-          flush=True)
-    print(f"  │  threshold         = 5.00 %                       │",
-          flush=True)
-    print(f"  │  phase fit RMS     = {phase_residual:.4e} rad              │",
-          flush=True)
+    print("  ┌─── Sound Speed ───────────────────────────────────────────┐", flush=True)
+    print(f"  │  c_s  (theory)     = {cs:.6f}                        │", flush=True)
+    print(f"  │  c_lbm (measured)  = {c_lbm:.6f}                        │", flush=True)
+    print(f"  │  error             = {speed_error_pct:.2f} %                      │", flush=True)
+    print(f"  │  threshold         = 5.00 %                       │", flush=True)
+    print(f"  │  phase fit RMS     = {phase_residual:.4e} rad              │", flush=True)
     status = "✓ PASS" if speed_error_pct < 5.0 else "✗ FAIL"
-    print(f"  │  status            = {status}                        │",
-          flush=True)
-    print("  └──────────────────────────────────────────────────────────┘",
-          flush=True)
+    print(f"  │  status            = {status}                        │", flush=True)
+    print("  └──────────────────────────────────────────────────────────┘", flush=True)
     print(flush=True)
 
     # ---- Attenuation ----
-    print("  ┌─── Attenuation Rate ─────────────────────────────────────┐",
-          flush=True)
-    print(f"  │  Γ_lbm  (measured)      = {gamma_lbm:.6e} /step       │",
-          flush=True)
-    print(f"  │  Γ_full (ν·k²)          = {gamma_full:.6e} /step       │",
-          flush=True)
-    print(f"  │  ratio (meas / full)    = {gamma_lbm/gamma_full:.3f}                       │",
-          flush=True)
-    print(f"  │  Γ_shear_43 (2νk²/3)    = {gamma_shear_43:.6e} /step       │",
-          flush=True)
-    print(f"  │  ratio (meas / s43)     = {gamma_lbm/gamma_shear_43:.3f}                       │",
-          flush=True)
-    print(f"  │  Γ_shear_half (νk²/2)   = {gamma_shear_half:.6e} /step       │",
-          flush=True)
-    print(f"  │  ratio (meas / s_half)  = {gamma_lbm/gamma_shear_half:.3f}                       │",
-          flush=True)
+    print("  ┌─── Attenuation Rate ─────────────────────────────────────┐", flush=True)
+    print(f"  │  Γ_lbm  (measured)      = {gamma_lbm:.6e} /step       │", flush=True)
+    print(f"  │  Γ_full (ν·k²)          = {gamma_full:.6e} /step       │", flush=True)
+    print(
+        f"  │  ratio (meas / full)    = {gamma_lbm / gamma_full:.3f}                       │",
+        flush=True,
+    )
+    print(f"  │  Γ_shear_43 (2νk²/3)    = {gamma_shear_43:.6e} /step       │", flush=True)
+    print(
+        f"  │  ratio (meas / s43)     = {gamma_lbm / gamma_shear_43:.3f}                       │",
+        flush=True,
+    )
+    print(f"  │  Γ_shear_half (νk²/2)   = {gamma_shear_half:.6e} /step       │", flush=True)
+    print(
+        f"  │  ratio (meas / s_half)  = {gamma_lbm / gamma_shear_half:.3f}                       │",
+        flush=True,
+    )
     if gamma_lbm > 0:
         hl = math.log(2) / gamma_lbm
-        print(f"  │  half-life (measured)   = {hl:.1f} steps                  │",
-              flush=True)
-    print(f"  │  amp fit rel. RMS       = {amp_residual_rel:.4e}               │",
-          flush=True)
-    print("  └──────────────────────────────────────────────────────────┘",
-          flush=True)
+        print(f"  │  half-life (measured)   = {hl:.1f} steps                  │", flush=True)
+    print(f"  │  amp fit rel. RMS       = {amp_residual_rel:.4e}               │", flush=True)
+    print("  └──────────────────────────────────────────────────────────┘", flush=True)
     print(flush=True)
 
     # ---- Wave peak tracking (visual confirmation) ----
@@ -442,12 +427,10 @@ def run_acoustic_wave_benchmark(
     x_peak = ((math.pi / 2.0 - phases_unwrapped) / k) % nx
     # Theoretical peak position
     x_peak_theory = (math.pi / 2.0 / k + cs * times_np) % nx
-    peak_err = np.mean(np.abs(
-        np.minimum(np.abs(x_peak - x_peak_theory),
-                   nx - np.abs(x_peak - x_peak_theory))
-    ))
-    print(f"  Wave peak tracking: mean |Δx_peak| = {peak_err:.2f} cells",
-          flush=True)
+    peak_err = np.mean(
+        np.abs(np.minimum(np.abs(x_peak - x_peak_theory), nx - np.abs(x_peak - x_peak_theory)))
+    )
+    print(f"  Wave peak tracking: mean |Δx_peak| = {peak_err:.2f} cells", flush=True)
     print(f"  (phase-based speed is the primary measurement)", flush=True)
     print(flush=True)
 
@@ -455,13 +438,11 @@ def run_acoustic_wave_benchmark(
     passed = speed_error_pct < 5.0
     if passed:
         print("  ✓✓ PASS — Acoustic wave benchmark PASSED", flush=True)
-        print(f"     Sound speed error = {speed_error_pct:.2f}% < 5% threshold",
-              flush=True)
+        print(f"     Sound speed error = {speed_error_pct:.2f}% < 5% threshold", flush=True)
         print(f"     c_lbm = {c_lbm:.6f}  vs  c_s = {cs:.6f}", flush=True)
     else:
         print("  ✗ FAIL — Acoustic wave benchmark FAILED", flush=True)
-        print(f"     Sound speed error = {speed_error_pct:.2f}% >= 5% threshold",
-              flush=True)
+        print(f"     Sound speed error = {speed_error_pct:.2f}% >= 5% threshold", flush=True)
     print("=" * 72, flush=True)
 
     # ======================================================================= #
@@ -472,38 +453,39 @@ def run_acoustic_wave_benchmark(
     rho_final = rho[0, 0, :].cpu().numpy().astype(np.float64)
     x_arr = np.arange(nx, dtype=np.float64)
     # Analytical with theoretical c_s and Γ
-    rho_ana = 1.0 + delta * np.exp(-gamma_full * n_steps) * np.sin(
-        k * (x_arr - cs * n_steps)
-    )
+    rho_ana = 1.0 + delta * np.exp(-gamma_full * n_steps) * np.sin(k * (x_arr - cs * n_steps))
     print(flush=True)
-    print("  Final density profile  (█ = numerical,  · = analytical):",
-          flush=True)
+    print("  Final density profile  (█ = numerical,  · = analytical):", flush=True)
     ascii_plot_1d(
-        rho_final, rho_ana,
-        width=72, height=14,
+        rho_final,
+        rho_ana,
+        width=72,
+        height=14,
         title=f"ρ(x) at t = {n_steps}",
         x_max=nx,
     )
 
     # ---- Amplitude decay ----
     print(flush=True)
-    print("  Amplitude decay  (█ = measured,  · = A₀·exp(−Γ·t)):",
-          flush=True)
+    print("  Amplitude decay  (█ = measured,  · = A₀·exp(−Γ·t)):", flush=True)
     amp_theory_curve = delta * np.exp(-gamma_full * times_np)
     ascii_plot_1d(
-        amps_np, amp_theory_curve,
-        width=72, height=10,
+        amps_np,
+        amp_theory_curve,
+        width=72,
+        height=10,
         title="A(t) vs t",
         x_max=n_steps,
     )
 
     # ---- Phase evolution ----
     print(flush=True)
-    print("  Phase evolution  (█ = measured,  · = linear fit):",
-          flush=True)
+    print("  Phase evolution  (█ = measured,  · = linear fit):", flush=True)
     ascii_plot_1d(
-        phases_unwrapped, phase_fit,
-        width=72, height=10,
+        phases_unwrapped,
+        phase_fit,
+        width=72,
+        height=10,
         title="φ(t) vs t  (unwrapped)",
         x_max=n_steps,
     )
@@ -527,24 +509,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="1D acoustic wave propagation benchmark (D3Q19 BGK LBM)"
     )
-    parser.add_argument("--nx", type=int, default=200,
-                        help="Grid size in x (default 200)")
-    parser.add_argument("--ny", type=int, default=4,
-                        help="Grid size in y (default 4)")
-    parser.add_argument("--nz", type=int, default=1,
-                        help="Grid size in z (default 1)")
-    parser.add_argument("--tau", type=float, default=0.8,
-                        help="Relaxation time τ (default 0.8)")
-    parser.add_argument("--delta", type=float, default=0.01,
-                        help="Density perturbation amplitude δ (default 0.01)")
-    parser.add_argument("--steps", type=int, default=2000,
-                        help="Number of time steps (default 2000)")
-    parser.add_argument("--device", default="cpu",
-                        help="Device: 'cpu' or 'cuda' (default cpu)")
-    parser.add_argument("--log-every", type=int, default=100,
-                        help="Print interval (default 100)")
-    parser.add_argument("--measure-every", type=int, default=10,
-                        help="Measurement interval for post-fit (default 10)")
+    parser.add_argument("--nx", type=int, default=200, help="Grid size in x (default 200)")
+    parser.add_argument("--ny", type=int, default=4, help="Grid size in y (default 4)")
+    parser.add_argument("--nz", type=int, default=1, help="Grid size in z (default 1)")
+    parser.add_argument("--tau", type=float, default=0.8, help="Relaxation time τ (default 0.8)")
+    parser.add_argument(
+        "--delta", type=float, default=0.01, help="Density perturbation amplitude δ (default 0.01)"
+    )
+    parser.add_argument(
+        "--steps", type=int, default=2000, help="Number of time steps (default 2000)"
+    )
+    parser.add_argument("--device", default="cpu", help="Device: 'cpu' or 'cuda' (default cpu)")
+    parser.add_argument("--log-every", type=int, default=100, help="Print interval (default 100)")
+    parser.add_argument(
+        "--measure-every",
+        type=int,
+        default=10,
+        help="Measurement interval for post-fit (default 10)",
+    )
     args = parser.parse_args()
 
     run_acoustic_wave_benchmark(

@@ -9,6 +9,7 @@ Usage::
     PYTHONPATH=src python examples/backward_facing_step.py
     PYTHONPATH=src python examples/backward_facing_step.py --re 200 --n-steps 50000
 """
+
 from __future__ import annotations
 
 import argparse
@@ -20,30 +21,41 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run the 2D Backward-Facing Step benchmark (D2Q9 LBM)."
     )
-    parser.add_argument("--nx", type=int, default=400,
-                        help="Domain width in grid cells")
-    parser.add_argument("--ny", type=int, default=80,
-                        help="Domain height in grid cells")
-    parser.add_argument("--step-h", dest="step_h", type=int, default=40,
-                        help="Step height (ny//2 for 2:1 expansion)")
-    parser.add_argument("--x-step", dest="x_step", type=int, default=80,
-                        help="Pre-step solid length (upstream channel cells)")
-    parser.add_argument("--u-in", dest="u_in", type=float, default=0.05,
-                        help="Inlet velocity in lattice units")
-    parser.add_argument("--re", type=float, default=100.0,
-                        help="Reynolds number Re = u_in * step_h / nu")
-    parser.add_argument("--n-steps", dest="n_steps", type=int, default=30000,
-                        help="Number of simulation steps")
-    parser.add_argument("--output-interval", type=int, default=5000,
-                        help="Snapshot and diagnostic cadence")
-    parser.add_argument("--output-root", default="outputs",
-                        help="Output root directory")
-    parser.add_argument("--run-name", default=None,
-                        help="Override deterministic run folder name")
+    parser.add_argument("--nx", type=int, default=400, help="Domain width in grid cells")
+    parser.add_argument("--ny", type=int, default=80, help="Domain height in grid cells")
+    parser.add_argument(
+        "--step-h",
+        dest="step_h",
+        type=int,
+        default=40,
+        help="Step height (ny//2 for 2:1 expansion)",
+    )
+    parser.add_argument(
+        "--x-step",
+        dest="x_step",
+        type=int,
+        default=80,
+        help="Pre-step solid length (upstream channel cells)",
+    )
+    parser.add_argument(
+        "--u-in", dest="u_in", type=float, default=0.05, help="Inlet velocity in lattice units"
+    )
+    parser.add_argument(
+        "--re", type=float, default=100.0, help="Reynolds number Re = u_in * step_h / nu"
+    )
+    parser.add_argument(
+        "--n-steps", dest="n_steps", type=int, default=30000, help="Number of simulation steps"
+    )
+    parser.add_argument(
+        "--output-interval", type=int, default=5000, help="Snapshot and diagnostic cadence"
+    )
+    parser.add_argument("--output-root", default="outputs", help="Output root directory")
+    parser.add_argument("--run-name", default=None, help="Override deterministic run folder name")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Replace output directory if it already exists")
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Replace output directory if it already exists"
+    )
     return parser
 
 

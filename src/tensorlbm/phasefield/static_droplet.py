@@ -60,7 +60,9 @@ class StaticDropletDiagnosticResult:
 
 
 def _validate_shape(shape: Sequence[int]) -> tuple[int, int, int]:
-    if len(shape) != 3 or any(isinstance(size, bool) or not isinstance(size, int) or size <= 0 for size in shape):
+    if len(shape) != 3 or any(
+        isinstance(size, bool) or not isinstance(size, int) or size <= 0 for size in shape
+    ):
         raise ValueError("shape must contain three positive integer (z, y, x) sizes")
     return tuple(shape)  # type: ignore[return-value]
 
@@ -103,7 +105,12 @@ def initialize_static_droplet(
         interface_width = width
     elif width is not None and width != interface_width:
         raise ValueError("width and interface_width must agree when both are supplied")
-    if isinstance(radius, bool) or not isinstance(radius, Real) or not torch.isfinite(torch.tensor(radius)) or radius <= 0.0:
+    if (
+        isinstance(radius, bool)
+        or not isinstance(radius, Real)
+        or not torch.isfinite(torch.tensor(radius))
+        or radius <= 0.0
+    ):
         raise ValueError("radius must be a finite positive number")
     if (
         isinstance(interface_width, bool)
@@ -117,7 +124,12 @@ def initialize_static_droplet(
     if center is None:
         center_zyx = tuple((size - 1) * 0.5 for size in shape_zyx)
     else:
-        if len(center) != 3 or any(isinstance(value, bool) or not isinstance(value, Real) or not torch.isfinite(torch.tensor(value)) for value in center):
+        if len(center) != 3 or any(
+            isinstance(value, bool)
+            or not isinstance(value, Real)
+            or not torch.isfinite(torch.tensor(value))
+            for value in center
+        ):
             raise ValueError("center must contain three finite (z, y, x) coordinates")
         center_zyx = tuple(float(value) for value in center)
 
@@ -128,7 +140,9 @@ def initialize_static_droplet(
         + _periodic_delta(y, center_zyx[1], shape_zyx[1]) ** 2
         + _periodic_delta(x, center_zyx[2], shape_zyx[2]) ** 2
     )
-    return torch.tanh((float(radius) - torch.sqrt(distance_squared)) / (2.0**0.5 * float(interface_width)))
+    return torch.tanh(
+        (float(radius) - torch.sqrt(distance_squared)) / (2.0**0.5 * float(interface_width))
+    )
 
 
 def estimate_droplet_radius(phi: torch.Tensor) -> torch.Tensor:
@@ -148,7 +162,9 @@ def _periodic_center(phi: torch.Tensor) -> tuple[float, float, float]:
         weights = mask.sum(dim=tuple(index for index in range(3) if index != axis))
         coordinates = torch.arange(size, dtype=phi.dtype, device=phi.device)
         angles = 2.0 * torch.pi * coordinates / size
-        angle = torch.atan2((weights * torch.sin(angles)).sum(), (weights * torch.cos(angles)).sum())
+        angle = torch.atan2(
+            (weights * torch.sin(angles)).sum(), (weights * torch.cos(angles)).sum()
+        )
         result.append(float(torch.remainder(angle * size / (2.0 * torch.pi), size).item()))
     return tuple(result)  # type: ignore[return-value]
 
@@ -162,7 +178,9 @@ def periodic_chemical_potential_and_korteweg_force(
     return mu, force_minus_phi_grad_mu(phi, mu, boundary="periodic")
 
 
-def diagnose_static_droplet(phi: torch.Tensor, model: DoubleWellFreeEnergy) -> StaticDropletDiagnosticResult:
+def diagnose_static_droplet(
+    phi: torch.Tensor, model: DoubleWellFreeEnergy
+) -> StaticDropletDiagnosticResult:
     """Report geometry and force inventory while withholding Laplace acceptance.
 
     No thermodynamic pressure field is available in this scalar CH helper.
@@ -183,7 +201,11 @@ def diagnose_static_droplet(phi: torch.Tensor, model: DoubleWellFreeEnergy) -> S
         candidate_mean_curvature=2.0 / radius_value if radius_value > 0.0 else float("nan"),
     )
     force_diagnostic = KortewegForceDiagnostic(
-        net_force=(float(force_x.sum().item()), float(force_y.sum().item()), float(force_z.sum().item())),
+        net_force=(
+            float(force_x.sum().item()),
+            float(force_y.sum().item()),
+            float(force_z.sum().item()),
+        ),
         l2_norm=float(torch.linalg.vector_norm(force_norm).item()),
         max_norm=float(force_norm.max().item()),
         chemical_potential_min=float(mu.min().item()),
@@ -200,5 +222,9 @@ def diagnose_static_droplet(phi: torch.Tensor, model: DoubleWellFreeEnergy) -> S
         ),
     )
     return StaticDropletDiagnosticResult(
-        status="diagnostic_only", physical_acceptance=False, geometry=geometry, force=force_diagnostic, laplace=laplace
+        status="diagnostic_only",
+        physical_acceptance=False,
+        geometry=geometry,
+        force=force_diagnostic,
+        laplace=laplace,
     )

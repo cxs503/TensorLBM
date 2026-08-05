@@ -32,7 +32,9 @@ def _trained_artifacts(tmp_path: Path):
     spec, dataset, payloads = fixtures._inputs()
     arch, config = fixtures._mini_arch_and_config()
     path = tmp_path / "flow-smoke.npz"
-    run_evidence_gated_field_dataset_flow_reconstruction(spec, dataset, payloads, path, arch, config)
+    run_evidence_gated_field_dataset_flow_reconstruction(
+        spec, dataset, payloads, path, arch, config
+    )
     return spec, dataset, payloads, path
 
 
@@ -45,7 +47,9 @@ def _evaluate(tmp_path: Path, **kwargs):
     return evaluate_evidence_gated_flow_transformer_holdout(spec, dataset, payloads, path, **kwargs)
 
 
-def test_real_smoke_trained_model_evaluates_only_test_masked_velocity_tokens(tmp_path: Path) -> None:
+def test_real_smoke_trained_model_evaluates_only_test_masked_velocity_tokens(
+    tmp_path: Path,
+) -> None:
     record = _evaluate(tmp_path, mask_ratio=0.5, mask_seed=23)
 
     assert record.model_evaluation is True
@@ -88,41 +92,61 @@ def test_mask_selection_is_deterministic_nonzero_and_val_is_allowed(tmp_path: Pa
 
 
 @pytest.mark.parametrize("split", ("train", "", "TEST"))
-def test_rejects_train_or_invalid_split_before_artifact_loader(tmp_path: Path, monkeypatch, split: str) -> None:
+def test_rejects_train_or_invalid_split_before_artifact_loader(
+    tmp_path: Path, monkeypatch, split: str
+) -> None:
     import tensorlbm.ml.torch_flow_transformer_holdout_evaluation as evaluation
 
     fixtures = _training_fixtures()
     spec, dataset, payloads = fixtures._inputs()
     called: list[object] = []
-    monkeypatch.setattr(evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: called.append(args))
+    monkeypatch.setattr(
+        evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: called.append(args)
+    )
     with pytest.raises(ValueError, match="val or test"):
-        evaluation.evaluate_evidence_gated_flow_transformer_holdout(spec, dataset, payloads, tmp_path / "missing.npz", split=split)
+        evaluation.evaluate_evidence_gated_flow_transformer_holdout(
+            spec, dataset, payloads, tmp_path / "missing.npz", split=split
+        )
     assert called == []
 
 
 @pytest.mark.parametrize("mask_ratio", (0.0, -0.1, 1.1, float("inf"), float("nan"), True))
-def test_rejects_invalid_mask_ratio_before_artifact_loader(tmp_path: Path, monkeypatch, mask_ratio: float) -> None:
+def test_rejects_invalid_mask_ratio_before_artifact_loader(
+    tmp_path: Path, monkeypatch, mask_ratio: float
+) -> None:
     import tensorlbm.ml.torch_flow_transformer_holdout_evaluation as evaluation
 
     fixtures = _training_fixtures()
     spec, dataset, payloads = fixtures._inputs()
-    monkeypatch.setattr(evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: pytest.fail("loader called"))
+    monkeypatch.setattr(
+        evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: pytest.fail("loader called")
+    )
     with pytest.raises((TypeError, ValueError), match="mask_ratio"):
-        evaluation.evaluate_evidence_gated_flow_transformer_holdout(spec, dataset, payloads, tmp_path / "missing.npz", mask_ratio=mask_ratio)
+        evaluation.evaluate_evidence_gated_flow_transformer_holdout(
+            spec, dataset, payloads, tmp_path / "missing.npz", mask_ratio=mask_ratio
+        )
 
 
 @pytest.mark.parametrize("mask_seed", (True, 1.2, "0"))
-def test_rejects_invalid_mask_seed_before_artifact_loader(tmp_path: Path, monkeypatch, mask_seed: object) -> None:
+def test_rejects_invalid_mask_seed_before_artifact_loader(
+    tmp_path: Path, monkeypatch, mask_seed: object
+) -> None:
     import tensorlbm.ml.torch_flow_transformer_holdout_evaluation as evaluation
 
     fixtures = _training_fixtures()
     spec, dataset, payloads = fixtures._inputs()
-    monkeypatch.setattr(evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: pytest.fail("loader called"))
+    monkeypatch.setattr(
+        evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: pytest.fail("loader called")
+    )
     with pytest.raises((TypeError, ValueError), match="mask_seed"):
-        evaluation.evaluate_evidence_gated_flow_transformer_holdout(spec, dataset, payloads, tmp_path / "missing.npz", mask_seed=mask_seed)
+        evaluation.evaluate_evidence_gated_flow_transformer_holdout(
+            spec, dataset, payloads, tmp_path / "missing.npz", mask_seed=mask_seed
+        )
 
 
-@pytest.mark.parametrize("target", ("weights", "metadata", "provenance", "dataset_fingerprint", "split_ids", "blob_sha"))
+@pytest.mark.parametrize(
+    "target", ("weights", "metadata", "provenance", "dataset_fingerprint", "split_ids", "blob_sha")
+)
 def test_tampered_artifacts_reject_before_loader(tmp_path: Path, monkeypatch, target: str) -> None:
     import tensorlbm.ml.torch_flow_transformer_holdout_evaluation as evaluation
 
@@ -148,10 +172,11 @@ def test_tampered_artifacts_reject_before_loader(tmp_path: Path, monkeypatch, ta
             json.dumps(provenance, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
         provenance_path.write_text(json.dumps(provenance), encoding="utf-8")
-    monkeypatch.setattr(evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: pytest.fail("loader called"))
+    monkeypatch.setattr(
+        evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: pytest.fail("loader called")
+    )
     with pytest.raises(ValueError):
         evaluation.evaluate_evidence_gated_flow_transformer_holdout(spec, dataset, payloads, path)
-
 
 
 def test_artifact_swap_during_loader_is_rejected_after_load(tmp_path: Path, monkeypatch) -> None:
@@ -167,16 +192,22 @@ def test_artifact_swap_during_loader_is_rejected_after_load(tmp_path: Path, monk
         return real_loader(weights_bytes, arch)
 
     monkeypatch.setattr(evaluation, "_load_verified_cpu_model", swapping_loader)
-    record = evaluation.evaluate_evidence_gated_flow_transformer_holdout(spec, dataset, payloads, path)
+    record = evaluation.evaluate_evidence_gated_flow_transformer_holdout(
+        spec, dataset, payloads, path
+    )
     assert record.weights_sha256 == sha256(original).hexdigest()
 
 
-def test_cpu_model_required_nonfinite_prediction_and_toctou_fail_closed(tmp_path: Path, monkeypatch) -> None:
+def test_cpu_model_required_nonfinite_prediction_and_toctou_fail_closed(
+    tmp_path: Path, monkeypatch
+) -> None:
     import tensorlbm.ml.torch_flow_transformer_holdout_evaluation as evaluation
 
     spec, dataset, payloads, path = _trained_artifacts(tmp_path)
     real_loader = evaluation._load_verified_cpu_model
-    model = real_loader(path.read_bytes(), json.loads(Path(f"{path}.json").read_text(encoding="utf-8"))["arch"])
+    model = real_loader(
+        path.read_bytes(), json.loads(Path(f"{path}.json").read_text(encoding="utf-8"))["arch"]
+    )
     assert next(model.parameters()).device.type == "cpu"
 
     class NonfiniteModel(torch.nn.Module):
@@ -187,7 +218,9 @@ def test_cpu_model_required_nonfinite_prediction_and_toctou_fail_closed(tmp_path
         def forward(self, value):
             return torch.full_like(value, float("nan"))
 
-    monkeypatch.setattr(evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: NonfiniteModel())
+    monkeypatch.setattr(
+        evaluation, "_load_verified_cpu_model", lambda *args, **kwargs: NonfiniteModel()
+    )
     with pytest.raises(ValueError, match="non-finite"):
         evaluation.evaluate_evidence_gated_flow_transformer_holdout(spec, dataset, payloads, path)
 
@@ -206,7 +239,9 @@ def test_cpu_model_required_nonfinite_prediction_and_toctou_fail_closed(tmp_path
 
 
 def test_boundary_ast_forbids_trainer_writer_endpoint_and_full_field_reconstruction() -> None:
-    source = Path("src/tensorlbm/ml/torch_flow_transformer_holdout_evaluation.py").read_text(encoding="utf-8")
+    source = Path("src/tensorlbm/ml/torch_flow_transformer_holdout_evaluation.py").read_text(
+        encoding="utf-8"
+    )
     tree = ast.parse(source)
     names = {
         node.func.id if isinstance(node.func, ast.Name) else node.func.attr
@@ -214,7 +249,15 @@ def test_boundary_ast_forbids_trainer_writer_endpoint_and_full_field_reconstruct
         if isinstance(node, ast.Call) and isinstance(node.func, (ast.Name, ast.Attribute))
     }
     assert {"materialize_torch_field_dataset", "_load_verified_cpu_model"} <= names
-    forbidden = {"train_flow_transformer_self_supervised", "save_flow_transformer_model", "reconstruct_flow_field", "write_text", "write_bytes", "optimizer", "backward"}
+    forbidden = {
+        "train_flow_transformer_self_supervised",
+        "save_flow_transformer_model",
+        "reconstruct_flow_field",
+        "write_text",
+        "write_bytes",
+        "optimizer",
+        "backward",
+    }
     assert not names & forbidden
     assert "torch" in source
-    assert "torch.Generator(device=\"cpu\")" in source
+    assert 'torch.Generator(device="cpu")' in source

@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 # Post-processing: compute_vorticity_3d
 # ---------------------------------------------------------------------------
 
+
 class TestComputeVorticity3D:
     def test_output_shape(self) -> None:
         nz, ny, nx = 6, 8, 10
@@ -69,6 +70,7 @@ class TestComputeVorticity3D:
 # Post-processing: extract_wake_profile
 # ---------------------------------------------------------------------------
 
+
 class TestExtractWakeProfile:
     def test_2d_output_shape(self) -> None:
         ny, nx = 10, 20
@@ -87,6 +89,7 @@ class TestExtractWakeProfile:
 # Post-processing: compute_recirculation_length
 # ---------------------------------------------------------------------------
 
+
 class TestComputeRecirculationLength:
     def test_no_recirculation_gives_zero(self) -> None:
         ny, nx = 10, 20
@@ -100,6 +103,7 @@ class TestComputeRecirculationLength:
 # ---------------------------------------------------------------------------
 # Post-processing: compute_q_criterion
 # ---------------------------------------------------------------------------
+
 
 class TestComputeQCriterion:
     def test_output_shape(self) -> None:
@@ -125,6 +129,7 @@ class TestComputeQCriterion:
 # Post-processing: compute_pressure_coefficient
 # ---------------------------------------------------------------------------
 
+
 def test_compute_pressure_coefficient_scalar() -> None:
     rho = torch.full((4, 5, 6), 1.0)
     # At reference density with non-zero u_in, Cp should be 0
@@ -135,6 +140,7 @@ def test_compute_pressure_coefficient_scalar() -> None:
 # ---------------------------------------------------------------------------
 # Checkpoint: save and load
 # ---------------------------------------------------------------------------
+
 
 class TestCheckpoint:
     def test_round_trip(self, tmp_path: Path) -> None:
@@ -161,9 +167,11 @@ class TestCheckpoint:
 # Config I/O: save_config_json / load_config_json
 # ---------------------------------------------------------------------------
 
+
 class TestConfigIO:
     def test_cylinder_flow_config_round_trip(self, tmp_path: Path) -> None:
         from tensorlbm import CylinderFlowConfig
+
         cfg = CylinderFlowConfig(nx=64, ny=32, re=100.0, n_steps=20, run_name="test_io")
         path = tmp_path / "cfg.json"
         cfg.save(path)
@@ -175,6 +183,7 @@ class TestConfigIO:
 
     def test_sphere_flow_config_round_trip(self, tmp_path: Path) -> None:
         from tensorlbm import SphereFlowConfig
+
         cfg = SphereFlowConfig(nx=40, ny=20, nz=20, re=30.0, n_steps=5)
         path = tmp_path / "sphere_cfg.json"
         save_config_json(cfg, path)
@@ -192,6 +201,7 @@ class TestConfigIO:
 
     def test_json_is_valid(self, tmp_path: Path) -> None:
         from tensorlbm import CylinderFlowConfig
+
         cfg = CylinderFlowConfig(nx=32, re=50.0)
         path = tmp_path / "cfg.json"
         cfg.save(path)
@@ -203,6 +213,7 @@ class TestConfigIO:
 # ---------------------------------------------------------------------------
 # LidDrivenCavityConfig
 # ---------------------------------------------------------------------------
+
 
 class TestLidDrivenCavityConfig:
     def test_valid_config(self) -> None:
@@ -227,6 +238,7 @@ class TestLidDrivenCavityConfig:
 # ---------------------------------------------------------------------------
 # BackwardFacingStepConfig
 # ---------------------------------------------------------------------------
+
 
 class TestBackwardFacingStepConfig:
     def test_valid_config(self) -> None:

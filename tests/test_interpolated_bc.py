@@ -1,4 +1,5 @@
 """Tests for interpolated_bc.py: bouzidi_bounce_back."""
+
 from __future__ import annotations
 
 import torch
@@ -119,6 +120,7 @@ class TestBouzidiBounceBack:
 # ---------------------------------------------------------------------------
 # Phase 7: 3-D Bouzidi BC tests
 # ---------------------------------------------------------------------------
+
 
 class TestComputeQSphere:
     def test_returns_correct_shapes(self) -> None:

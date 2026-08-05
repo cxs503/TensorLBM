@@ -22,7 +22,9 @@ def test_wedge_wetted_halfwidth_and_coefficient_follow_wagner_formula() -> None:
     params = WedgeEntryParams(beta=math.radians(30.0), v_entry=0.05)
     c1 = wagner_wetted_halfwidth(10.0, params)
     assert wagner_wetted_halfwidth(20.0, params) == pytest.approx(2.0 * c1)
-    assert wagner_wedge_slamming_coefficient(params) == pytest.approx(math.pi / math.tan(params.beta))
+    assert wagner_wedge_slamming_coefficient(params) == pytest.approx(
+        math.pi / math.tan(params.beta)
+    )
 
 
 def test_wedge_added_mass_pressure_is_symmetric_and_zero_outside_wetted_region() -> None:

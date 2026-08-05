@@ -64,7 +64,11 @@ def test_hot_path_ast_contract_uses_only_direct_kernel_calls():
     measured_loop = next(
         node for node in ast.walk(function) if isinstance(node, ast.For) and node.target.id == "_"
     )
-    calls = [node.func.id for node in ast.walk(measured_loop) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)]
+    calls = [
+        node.func.id
+        for node in ast.walk(measured_loop)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    ]
     assert calls.count("collide_mrt3d") == 1
     assert calls.count("stream3d") == 1
 
@@ -80,8 +84,11 @@ def test_real_small_cpu_smoke_returns_finite_d3q19_mrt_artifact():
     assert artifact.collision == "MRT"
     assert artifact.device == "cpu"
     assert artifact.peak_memory_bytes is None
-    assert all(math.isfinite(value) and value > 0 for value in (
-        artifact.median_step_seconds,
-        artifact.p95_step_seconds,
-        artifact.mlups,
-    ))
+    assert all(
+        math.isfinite(value) and value > 0
+        for value in (
+            artifact.median_step_seconds,
+            artifact.p95_step_seconds,
+            artifact.mlups,
+        )
+    )

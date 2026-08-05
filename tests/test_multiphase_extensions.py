@@ -6,6 +6,7 @@ Verifies:
     - Free-Energy 3D: output shapes, total-density conservation, finite values,
       init_free_energy_g_3d shape and finite values
 """
+
 from __future__ import annotations
 
 import torch
@@ -25,8 +26,11 @@ DEVICE = torch.device("cpu")
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_two_component_3d(
-    nz: int = 5, ny: int = 6, nx: int = 8,
+    nz: int = 5,
+    ny: int = 6,
+    nx: int = 8,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Equilibrium distributions for two components with different densities."""
     rho1 = torch.ones((nz, ny, nx), device=DEVICE)
@@ -45,6 +49,7 @@ def _make_phase_field_3d(nz: int = 5, ny: int = 6, nx: int = 8) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Color-Gradient 3D
 # ---------------------------------------------------------------------------
+
 
 class TestColorGradient3D:
     def test_output_shape(self) -> None:
@@ -116,6 +121,7 @@ class TestColorGradient3D:
 # Free-Energy 3D (Phase-Field model)
 # ---------------------------------------------------------------------------
 
+
 class TestFreeEnergy3D:
     def test_init_g_shape(self) -> None:
         nz, ny, nx = 5, 6, 8
@@ -177,7 +183,11 @@ class TestFreeEnergy3D:
         f = equilibrium3d(rho, zero, zero, zero)
         g = init_free_energy_g_3d(phi)
         f_out, g_out = free_energy_step_3d(
-            f, g, gz=-1e-4, rho_heavy=2.0, rho_light=0.2,
+            f,
+            g,
+            gz=-1e-4,
+            rho_heavy=2.0,
+            rho_light=0.2,
         )
         assert torch.isfinite(f_out).all()
         assert torch.isfinite(g_out).all()

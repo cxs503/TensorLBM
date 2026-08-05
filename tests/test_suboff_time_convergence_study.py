@@ -6,6 +6,7 @@ a fixed grid (48×24×24), collects the measured Ct candidate per time level,
 and computes relative-change indicators — but deliberately withholds any
 convergence or physical-validation claim.
 """
+
 from __future__ import annotations
 
 import json
@@ -24,6 +25,7 @@ from tensorlbm.suboff_time_convergence_study import (
 # Small study config factory (fast test execution)
 # ---------------------------------------------------------------------------
 
+
 def _small_study_config() -> TimeConvergenceStudyConfig:
     """Four tiny time levels for fast test execution."""
     return TimeConvergenceStudyConfig(
@@ -39,6 +41,7 @@ def _small_study_config() -> TimeConvergenceStudyConfig:
 # ---------------------------------------------------------------------------
 # Config validation
 # ---------------------------------------------------------------------------
+
 
 def test_config_rejects_fewer_than_four_time_levels() -> None:
     with pytest.raises(ValueError, match="at least 4"):
@@ -121,6 +124,7 @@ def test_config_rejects_duplicate_level_ids() -> None:
 # Study execution
 # ---------------------------------------------------------------------------
 
+
 def test_study_runs_four_time_levels_and_produces_diagnostic_artifact() -> None:
     artifact = run_suboff_time_convergence_study(_small_study_config())
 
@@ -190,10 +194,12 @@ def test_study_capture_steps_correct() -> None:
     artifact = run_suboff_time_convergence_study(config)
 
     for level_record, time_level in zip(artifact["time_levels"], config.time_levels):
-        expected = list(range(
-            time_level.n_steps - time_level.capture_window + 1,
-            time_level.n_steps + 1,
-        ))
+        expected = list(
+            range(
+                time_level.n_steps - time_level.capture_window + 1,
+                time_level.n_steps + 1,
+            )
+        )
         assert level_record["capture_steps"] == expected
 
 
@@ -264,7 +270,8 @@ def test_study_artifact_is_json_serializable() -> None:
 def test_study_writes_machine_readable_artifact_file(tmp_path: Path) -> None:
     config = _small_study_config()
     artifact = run_suboff_time_convergence_study(
-        config, output_path=tmp_path / "time_convergence.json",
+        config,
+        output_path=tmp_path / "time_convergence.json",
     )
 
     artifact_path = tmp_path / "time_convergence.json"

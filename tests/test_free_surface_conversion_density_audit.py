@@ -1,4 +1,5 @@
 """Contracts for the cold cell-level conversion density representation audit."""
+
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
@@ -22,17 +23,26 @@ from tensorlbm.free_surface_topology_transaction import (
 I_TO_L = {
     "conversion_cells": (
         {
-            "cell": (1, 2, 3), "flag_before": 2, "flag_after": 1,
-            "fill_before": 0.75, "fill_after": 1.0,
-            "mass_before": 0.75, "mass_after": 1.0,
-            "population_before": 0.8, "population_after": 0.9,
+            "cell": (1, 2, 3),
+            "flag_before": 2,
+            "flag_after": 1,
+            "fill_before": 0.75,
+            "fill_after": 1.0,
+            "mass_before": 0.75,
+            "mass_after": 1.0,
+            "population_before": 0.8,
+            "population_after": 0.9,
         },
     ),
 }
 
 
 def _nested(value):
-    if isinstance(value, tuple) and value and all(isinstance(item, tuple) and len(item) == 2 for item in value):
+    if (
+        isinstance(value, tuple)
+        and value
+        and all(isinstance(item, tuple) and len(item) == 2 for item in value)
+    ):
         return {key: _nested(item) for key, item in value}
     return value
 
@@ -57,12 +67,15 @@ def test_synthetic_i_to_l_exact_representation_math_oracle() -> None:
 
 def test_actual_b_step_three_i_to_g_cells_sum_to_observed_conversion_inventory_delta() -> None:
     report = run_free_surface_closure_experiment()
-    step = next(case for case in report.cases if case.case_id == "B_forced_conversion_deterministic").steps[2]
+    step = next(
+        case for case in report.cases if case.case_id == "B_forced_conversion_deterministic"
+    ).steps[2]
     runtime = _nested(step.runtime_ledger)
     reconciliation = _nested(step.inventory_reconciliation)
     observed = reconciliation["stage_deltas"]["after_topology_conversion"]["total_liquid_inventory"]
     audit = build_conversion_density_audit(
-        runtime["conversion_evidence"], rho_liquid=1.0,
+        runtime["conversion_evidence"],
+        rho_liquid=1.0,
         observed_conversion_inventory_delta=observed,
     )
 
@@ -77,12 +90,15 @@ def test_actual_b_step_three_i_to_g_cells_sum_to_observed_conversion_inventory_d
 
 def test_actual_c_step_four_i_to_g_cells_report_conversion_sum_without_i_to_l_claim() -> None:
     report = run_free_surface_closure_experiment()
-    step = next(case for case in report.cases if case.case_id == "C_dam_break_style_tiny_dynamic_topology").steps[3]
+    step = next(
+        case for case in report.cases if case.case_id == "C_dam_break_style_tiny_dynamic_topology"
+    ).steps[3]
     runtime = _nested(step.runtime_ledger)
     reconciliation = _nested(step.inventory_reconciliation)
     observed = reconciliation["stage_deltas"]["after_topology_conversion"]["total_liquid_inventory"]
     audit = build_conversion_density_audit(
-        runtime["conversion_evidence"], rho_liquid=1.0,
+        runtime["conversion_evidence"],
+        rho_liquid=1.0,
         observed_conversion_inventory_delta=observed,
     )
 
@@ -93,7 +109,6 @@ def test_actual_c_step_four_i_to_g_cells_report_conversion_sum_without_i_to_l_cl
         audit.sum_cell_production_inventory_delta - observed,
     )
     assert not audit.cell_sum_matches_conversion_inventory_delta
-
 
 
 def test_actual_zero_independent_mass_delta_i_to_l_is_preserved_in_transaction_evidence() -> None:
@@ -110,12 +125,26 @@ def test_actual_zero_independent_mass_delta_i_to_l_is_preserved_in_transaction_e
     to_liq = empty.clone()
     to_liq[1, 1, 2] = True
     plan = build_topology_transaction(
-        f, fill, flags, mass,
-        to_iface=empty, to_liq=to_liq, to_gas=empty, recv_new=empty,
+        f,
+        fill,
+        flags,
+        mass,
+        to_iface=empty,
+        to_liq=to_liq,
+        to_gas=empty,
+        recv_new=empty,
         redistribution_increment=torch.zeros_like(mass),
-        rho_liquid=1.0, rho_gas=0.001, solid_mask=solid,
-        gas_flag=0, liquid_flag=1, interface_flag=2, solid_flag=3,
-        ux=zero, uy=zero, uz=zero, capture_evidence=True,
+        rho_liquid=1.0,
+        rho_gas=0.001,
+        solid_mask=solid,
+        gas_flag=0,
+        liquid_flag=1,
+        interface_flag=2,
+        solid_flag=3,
+        ux=zero,
+        uy=zero,
+        uz=zero,
+        capture_evidence=True,
     )
     evidence = plan.conversion_evidence
     assert evidence is not None
@@ -157,7 +186,12 @@ def test_no_audit_argument_preserves_solver_output_bitwise() -> None:
     normal = free_surface_step(f, fill, flags, solid, mass=fill.clone(), rho_gas=1.0e-3)
     audit_ledger: dict[str, object] = {}
     diagnosed = free_surface_step(
-        f, fill, flags, solid, mass=fill.clone(), rho_gas=1.0e-3,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=fill.clone(),
+        rho_gas=1.0e-3,
         conversion_density_audit_ledger=audit_ledger,
     )
     assert audit_ledger["status"] == DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE
@@ -170,14 +204,19 @@ def test_audit_ledger_is_atomic_when_transaction_build_fails(monkeypatch) -> Non
     from tensorlbm.free_surface_closure_experiment import _conversion_state
 
     monkeypatch.setattr(
-        module, "build_topology_transaction",
+        module,
+        "build_topology_transaction",
         lambda *args, **kwargs: (_ for _ in ()).throw(TopologyTransactionError("injected")),
     )
     f, fill, flags, solid = _conversion_state()
     ledger = {"nested": {"entries": ["unchanged"]}}
     with pytest.raises(TopologyTransactionError, match="injected"):
         free_surface_step(
-            f, fill, flags, solid, mass=fill.clone(),
+            f,
+            fill,
+            flags,
+            solid,
+            mass=fill.clone(),
             conversion_density_audit_ledger=ledger,
         )
     assert ledger == {"nested": {"entries": ["unchanged"]}}

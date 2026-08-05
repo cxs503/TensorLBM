@@ -18,6 +18,7 @@ CGNS references:
   SIDS (Standard Interface Data Structures): CGNS/SIDS 3.4
   File Mapping Manual: MLL 3.4
 """
+
 from __future__ import annotations
 
 import json
@@ -34,18 +35,20 @@ import torch
 # Data container
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CGNSExportConfig:
     """Configuration for CGNS export."""
+
     base_name: str = "TensorLBM_Base"
     zone_name: str = "Zone_1"
     simulation_type: str = "TimeAccurate"  # or "NonTimeAccurate"
     physical_dimension: int = 2
     cell_dimension: int = 2
-    reference_density: float = 1.0     # kg/m³
-    reference_velocity: float = 1.0    # m/s
-    reference_length: float = 1.0      # m
-    dx_phys: float = 1.0               # m per lattice cell
+    reference_density: float = 1.0  # kg/m³
+    reference_velocity: float = 1.0  # m/s
+    reference_length: float = 1.0  # m
+    dx_phys: float = 1.0  # m per lattice cell
     include_pressure: bool = True
     include_velocity: bool = True
     include_vorticity: bool = True
@@ -56,9 +59,11 @@ class CGNSExportConfig:
 # CGNS tree builder (HDF5 via h5py when available)
 # ---------------------------------------------------------------------------
 
+
 def _has_h5py() -> bool:
     try:
         import h5py  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -77,9 +82,9 @@ def _write_cgns_hdf5(
     import numpy as np
 
     ny, nx = rho.shape
-    rho_np  = rho.cpu().float().numpy()
-    ux_np   = ux.cpu().float().numpy()
-    uy_np   = uy.cpu().float().numpy()
+    rho_np = rho.cpu().float().numpy()
+    ux_np = ux.cpu().float().numpy()
+    uy_np = uy.cpu().float().numpy()
 
     # Physical coordinates
     x_coords = (torch.arange(nx, dtype=torch.float32) * cfg.dx_phys).numpy()
@@ -88,8 +93,9 @@ def _write_cgns_hdf5(
 
     # Derived quantities
     cs2 = 1.0 / 3.0
-    p_np = (cs2 * (rho_np - cfg.reference_density) *
-            cfg.reference_density * cfg.reference_velocity ** 2)
+    p_np = (
+        cs2 * (rho_np - cfg.reference_density) * cfg.reference_density * cfg.reference_velocity**2
+    )
 
     # Vorticity: ∂uy/∂x - ∂ux/∂y  (central differences)
     dvdx = np.gradient(uy_np * cfg.reference_velocity, cfg.dx_phys, axis=1)
@@ -201,6 +207,7 @@ def _write_fallback_npy(
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def export_cgns(
     rho: torch.Tensor,
     ux: torch.Tensor,
@@ -260,12 +267,14 @@ def export_cgns(
         "ny": ny,
         "files": files,
         "fields_exported": [
-            f for f, enabled in [
+            f
+            for f, enabled in [
                 ("Density", cfg.include_density),
                 ("Pressure", cfg.include_pressure),
                 ("VelocityX", cfg.include_velocity),
                 ("VelocityY", cfg.include_velocity),
                 ("VorticityZ", cfg.include_vorticity),
-            ] if enabled
+            ]
+            if enabled
         ],
     }

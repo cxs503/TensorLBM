@@ -31,6 +31,7 @@ Krüger et al. (2017) "The Lattice Boltzmann Method". Springer.
 Ladd (1994) "Numerical simulations of particulate suspensions via a
     discretized Boltzmann equation". *J. Fluid Mech.* 271, 285–309.
 """
+
 from __future__ import annotations
 
 import torch
@@ -43,13 +44,14 @@ __all__ = [
 ]
 
 # D2Q9 velocity vectors (matching tensorlbm.d2q9.C convention)
-_CX2D = torch.tensor([0, 1, 0, -1,  0,  1, -1, -1,  1], dtype=torch.float32)
-_CY2D = torch.tensor([0, 0, 1,  0, -1,  1,  1, -1, -1], dtype=torch.float32)
+_CX2D = torch.tensor([0, 1, 0, -1, 0, 1, -1, -1, 1], dtype=torch.float32)
+_CY2D = torch.tensor([0, 0, 1, 0, -1, 1, 1, -1, -1], dtype=torch.float32)
 
 
 def _feq_2d(rho: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     """Compute D2Q9 equilibrium distributions."""
     from .d2q9 import equilibrium  # noqa: PLC0415
+
     return equilibrium(rho, ux, uy)
 
 
@@ -104,7 +106,7 @@ def wss_from_fneq_2d(
 
     # Von-Mises-like wall shear stress magnitude
     # τ_w = √(σ_xy² + (σ_xx - σ_yy)²/4)
-    wss = torch.sqrt(sigma_xy ** 2 + ((sigma_xx - sigma_yy) / 2.0) ** 2)
+    wss = torch.sqrt(sigma_xy**2 + ((sigma_xx - sigma_yy) / 2.0) ** 2)
 
     # Zero out solid cells
     wss = wss * (~mask).float()
@@ -153,9 +155,7 @@ def wss_from_velocity_2d(
     s_xx = dux_dx
     s_yy = duy_dy
     s_xy = 0.5 * (dux_dy + duy_dx)
-    strain_mag = torch.sqrt(
-        torch.clamp(2.0 * (s_xx ** 2 + s_yy ** 2 + 2.0 * s_xy ** 2), min=0.0)
-    )
+    strain_mag = torch.sqrt(torch.clamp(2.0 * (s_xx**2 + s_yy**2 + 2.0 * s_xy**2), min=0.0))
 
     wss = nu * strain_mag * fluid
     return wss
@@ -189,6 +189,7 @@ def wss_from_fneq_3d(
     c = C3D.to(device).float()  # (19, 3)
 
     from .d3q19 import W as _W3D  # noqa: PLC0415,F401
+
     _W3D.to(device)  # kept for device validation only
     f_eq = eq3d(rho, ux, uy, uz)
     f_neq = f - f_eq  # (19, nz, ny, nx)
@@ -206,7 +207,7 @@ def wss_from_fneq_3d(
     # sigma_xx = prefactor * (f_neq * cx * cx).sum(0)
 
     # WSS magnitude: √(σ_xy² + σ_xz² + σ_yz²)
-    wss = torch.sqrt(sigma_xy ** 2 + sigma_xz ** 2 + sigma_yz ** 2)
+    wss = torch.sqrt(sigma_xy**2 + sigma_xz**2 + sigma_yz**2)
     wss = wss * (~mask).float()
     return wss
 
@@ -251,7 +252,7 @@ def wss_map_2d(
     }
 
     if normalise:
-        q_ref = 0.5 * rho_ref * u_ref ** 2 + 1e-30
+        q_ref = 0.5 * rho_ref * u_ref**2 + 1e-30
         cf = wss / q_ref
         result["cf_map"] = cf.cpu().tolist()
         result["cf_max"] = float(cf.max().item())

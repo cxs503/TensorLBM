@@ -47,7 +47,10 @@ def _product(index: int, status: ValidationStatus = ValidationStatus.PASS) -> Fi
         array_id=f"velocity-{index}",
         role=ArrayRole.FEATURE,
         shape=(2, 3),
-        axes=(AxisSpec("sample", AxisSemantic.SAMPLE, 2), AxisSpec("component", AxisSemantic.COMPONENT, 3)),
+        axes=(
+            AxisSpec("sample", AxisSemantic.SAMPLE, 2),
+            AxisSpec("component", AxisSemantic.COMPONENT, 3),
+        ),
         units="m/s",
         encoding=ArrayEncoding("NPY", "float32", MemoryOrder.C, ByteOrder.LITTLE),
         blob_ref=BlobRef(
@@ -68,7 +71,9 @@ def _product(index: int, status: ValidationStatus = ValidationStatus.PASS) -> Fi
     )
 
 
-def _ref(index: int, *, group: str | None = None, case: str | None = None, trajectory: str | None = None) -> FieldSampleRefR2:
+def _ref(
+    index: int, *, group: str | None = None, case: str | None = None, trajectory: str | None = None
+) -> FieldSampleRefR2:
     return FieldSampleRefR2(
         sample_id=f"sample-{index}",
         product=_product(index),
@@ -85,7 +90,12 @@ def _dataset(*samples: FieldSampleRefR2, splits=None, lineage=None) -> FieldData
         version="r2",
         task_name="field-reconstruction",
         samples=tuple(samples),
-        splits=splits or {"train": (samples[0].sample_id,), "val": (samples[1].sample_id,), "test": (samples[2].sample_id,)},
+        splits=splits
+        or {
+            "train": (samples[0].sample_id,),
+            "val": (samples[1].sample_id,),
+            "test": (samples[2].sample_id,),
+        },
         lineage=lineage if lineage is not None else {"curation": {"owner": "data-governance"}},
     )
 
@@ -102,13 +112,28 @@ def test_splits_reject_duplicate_unknown_overlap_unassigned_and_empty_train() ->
     with pytest.raises(ValueError, match="unique sample_id"):
         _dataset(one, one, three)
     with pytest.raises(ValueError, match="unknown"):
-        _dataset(one, two, three, splits={"train": ("missing",), "val": ("sample-2",), "test": ("sample-3",)})
+        _dataset(
+            one,
+            two,
+            three,
+            splits={"train": ("missing",), "val": ("sample-2",), "test": ("sample-3",)},
+        )
     with pytest.raises(ValueError, match="overlap"):
-        _dataset(one, two, three, splits={"train": ("sample-1",), "val": ("sample-1", "sample-2"), "test": ("sample-3",)})
+        _dataset(
+            one,
+            two,
+            three,
+            splits={"train": ("sample-1",), "val": ("sample-1", "sample-2"), "test": ("sample-3",)},
+        )
     with pytest.raises(ValueError, match="assign every"):
         _dataset(one, two, three, splits={"train": ("sample-1",), "val": (), "test": ()})
     with pytest.raises(ValueError, match="train"):
-        _dataset(one, two, three, splits={"train": (), "val": ("sample-1", "sample-2"), "test": ("sample-3",)})
+        _dataset(
+            one,
+            two,
+            three,
+            splits={"train": (), "val": ("sample-1", "sample-2"), "test": ("sample-3",)},
+        )
 
 
 @pytest.mark.parametrize("field", ["group_id", "source_case_id", "source_trajectory_id"])
@@ -122,7 +147,12 @@ def test_split_rejects_group_case_and_trajectory_leakage(field: str) -> None:
     first = _ref(1, **kwargs)
     second = _ref(2, **kwargs)
     with pytest.raises(ValueError, match=field):
-        _dataset(first, second, _ref(3), splits={"train": ("sample-1",), "val": ("sample-2",), "test": ("sample-3",)})
+        _dataset(
+            first,
+            second,
+            _ref(3),
+            splits={"train": ("sample-1",), "val": ("sample-2",), "test": ("sample-3",)},
+        )
 
 
 @pytest.mark.parametrize("field", ["group_id", "source_case_id", "source_trajectory_id"])
@@ -141,7 +171,9 @@ def test_product_gate_and_dataset_fields_are_revalidated_at_use_time() -> None:
         _product(1, ValidationStatus.WITHHELD)
 
     dataset = _dataset()
-    object.__setattr__(dataset.samples[0].product.run_manifest, "validation_status", ValidationStatus.WITHHELD)
+    object.__setattr__(
+        dataset.samples[0].product.run_manifest, "validation_status", ValidationStatus.WITHHELD
+    )
     with pytest.raises(ValueError, match="runtime evidence"):
         dataset.validate_for_use()
 
@@ -151,7 +183,11 @@ def test_product_gate_and_dataset_fields_are_revalidated_at_use_time() -> None:
         dataset.validate_for_use()
 
     dataset = _dataset()
-    object.__setattr__(dataset, "splits", {"train": ("sample-1",), "val": ("sample-1", "sample-2"), "test": ("sample-3",)})
+    object.__setattr__(
+        dataset,
+        "splits",
+        {"train": ("sample-1",), "val": ("sample-1", "sample-2"), "test": ("sample-3",)},
+    )
     with pytest.raises(ValueError, match="overlap"):
         dataset.validate_for_use()
 
@@ -164,7 +200,9 @@ def test_use_time_rejects_axis_encoding_and_blob_mutation() -> None:
     ):
         dataset = _dataset()
         array = dataset.samples[0].product.arrays[0]
-        target = {"axis": array.axes[0], "encoding": array.encoding, "blob": array.blob_ref}[target_name]
+        target = {"axis": array.axes[0], "encoding": array.encoding, "blob": array.blob_ref}[
+            target_name
+        ]
         object.__setattr__(target, attribute, value)
         with pytest.raises((TypeError, ValueError)):
             dataset.validate_for_use()
@@ -187,7 +225,6 @@ def test_fingerprint_binds_complete_run_and_array_encoding_closure() -> None:
     assert changed_encoding.training_input_fingerprint() != baseline_fingerprint
 
 
-
 def test_fingerprint_canonicalizes_legal_product_and_runtime_immutable_values() -> None:
     product_lineage = _product(1)
     object.__setattr__(product_lineage, "lineage", {"labels": frozenset({"one", "two"})})
@@ -196,7 +233,9 @@ def test_fingerprint_canonicalizes_legal_product_and_runtime_immutable_values() 
     assert dataset.training_input_fingerprint() == dataset.training_input_fingerprint()
 
     runtime_bytes = _dataset()
-    object.__setattr__(runtime_bytes.samples[0].product.run_manifest, "config", {"token": b"secret"})
+    object.__setattr__(
+        runtime_bytes.samples[0].product.run_manifest, "config", {"token": b"secret"}
+    )
     assert runtime_bytes.training_input_fingerprint() == runtime_bytes.training_input_fingerprint()
 
     with pytest.raises(TypeError, match="unsupported"):
@@ -220,7 +259,9 @@ def test_fingerprint_is_canonical_and_changes_for_bound_reference_or_split() -> 
     changed_ref = _dataset(_ref(1, group="changed-group"), _ref(2), _ref(3))
     assert baseline.training_input_fingerprint() != changed_ref.training_input_fingerprint()
 
-    changed_split = _dataset(splits={"train": ("sample-1", "sample-2"), "val": (), "test": ("sample-3",)})
+    changed_split = _dataset(
+        splits={"train": ("sample-1", "sample-2"), "val": (), "test": ("sample-3",)}
+    )
     assert baseline.training_input_fingerprint() != changed_split.training_input_fingerprint()
 
 
