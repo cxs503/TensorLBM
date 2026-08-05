@@ -6,6 +6,7 @@ fill, flags, or tracked mass.  ``OBSERVED_NOT_PHYSICAL_CLOSURE`` means exactly
 that: tracked-state ownership evidence exists; physical/PV closure is not
 claimed.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -100,7 +101,9 @@ def _phase(flag: object) -> str:
     return "OTHER"
 
 
-def _source(target: tuple[int, int, int], q: int, shape: tuple[int, int, int]) -> tuple[int, int, int]:
+def _source(
+    target: tuple[int, int, int], q: int, shape: tuple[int, int, int]
+) -> tuple[int, int, int]:
     # C is ordered (x, y, z), whereas field identities are (z, y, x).
     return (
         (target[0] - int(C[q, 2])) % shape[0],
@@ -118,8 +121,13 @@ def _liquid_interface_records(
     if mass_delta_liquid is None and liquid_interface_mask is None:
         return (), ()
     if mass_delta_liquid is None or liquid_interface_mask is None:
-        raise OwnershipLedgerError("L/I ownership requires both mass_delta_liquid and liquid_interface_mask")
-    if tuple(mass_delta_liquid.shape) != (19, *flags.shape) or liquid_interface_mask.shape != mass_delta_liquid.shape:
+        raise OwnershipLedgerError(
+            "L/I ownership requires both mass_delta_liquid and liquid_interface_mask"
+        )
+    if (
+        tuple(mass_delta_liquid.shape) != (19, *flags.shape)
+        or liquid_interface_mask.shape != mass_delta_liquid.shape
+    ):
         raise OwnershipLedgerError("L/I ownership facts must have shape (19, *flags.shape)")
 
     records: list[LiquidInterfaceTransferRecord] = []
@@ -136,20 +144,35 @@ def _liquid_interface_records(
             raise OwnershipLedgerError("L/I paired transfer requires a LIQUID source owner")
         credit = float(mass_delta_liquid[q, z, y, x])
         if paired:
-            records.append(LiquidInterfaceTransferRecord(
-                q, CellOwner(source, "LIQUID"), CellOwner(target, "INTERFACE"),
-                credit, -credit, 0.0, "PAIRED",
-            ))
+            records.append(
+                LiquidInterfaceTransferRecord(
+                    q,
+                    CellOwner(source, "LIQUID"),
+                    CellOwner(target, "INTERFACE"),
+                    credit,
+                    -credit,
+                    0.0,
+                    "PAIRED",
+                )
+            )
         else:
-            records.append(LiquidInterfaceTransferRecord(
-                q, CellOwner(source, source_phase), CellOwner(target, "INTERFACE"),
-                credit, None, None, "UNPAIRED/WITHHELD",
-            ))
+            records.append(
+                LiquidInterfaceTransferRecord(
+                    q,
+                    CellOwner(source, source_phase),
+                    CellOwner(target, "INTERFACE"),
+                    credit,
+                    None,
+                    None,
+                    "UNPAIRED/WITHHELD",
+                )
+            )
     return tuple(records), (() if paired else ("unpaired_liquid_interface_debit",))
 
 
 def _evidence_records(
-    evidence: Mapping[str, object] | None, flags: torch.Tensor,
+    evidence: Mapping[str, object] | None,
+    flags: torch.Tensor,
 ) -> tuple[tuple[RedistributionRecord, ...], tuple[ConversionRecord, ...], tuple[str, ...]]:
     if evidence is None:
         return (), (), ()
@@ -174,10 +197,14 @@ def _evidence_records(
             raise OwnershipLedgerError("redistribution receiver must be an INTERFACE owner")
         if donor_phase not in {"LIQUID", "INTERFACE"}:
             raise OwnershipLedgerError("redistribution donor must have a tracked-state owner")
-        redistributions.append(RedistributionRecord(
-            CellOwner(donor, donor_phase), CellOwner(receiver, "INTERFACE"),
-            float(raw.get("mass_delta", 0.0)), "OBSERVED_TRACKED_STATE",
-        ))
+        redistributions.append(
+            RedistributionRecord(
+                CellOwner(donor, donor_phase),
+                CellOwner(receiver, "INTERFACE"),
+                float(raw.get("mass_delta", 0.0)),
+                "OBSERVED_TRACKED_STATE",
+            )
+        )
     for raw in raw_cells:
         if not isinstance(raw, Mapping):
             raise OwnershipLedgerError("conversion evidence record must be a mapping")
@@ -185,16 +212,24 @@ def _evidence_records(
         after = _phase(raw.get("flag_after"))
         if before not in {"LIQUID", "INTERFACE"} or after not in {"LIQUID", "INTERFACE", "GAS"}:
             raise OwnershipLedgerError("conversion evidence has an invalid tracked-state owner")
-        conversions.append(ConversionRecord(
-            _cell(raw.get("cell"), "conversion cell"), before, after,
-            float(raw.get("mass_before", 0.0)), float(raw.get("mass_after", 0.0)),
-            float(raw.get("mass_delta", 0.0)), "OBSERVED_TRACKED_STATE",
-        ))
+        conversions.append(
+            ConversionRecord(
+                _cell(raw.get("cell"), "conversion cell"),
+                before,
+                after,
+                float(raw.get("mass_before", 0.0)),
+                float(raw.get("mass_after", 0.0)),
+                float(raw.get("mass_delta", 0.0)),
+                "OBSERVED_TRACKED_STATE",
+            )
+        )
     return tuple(redistributions), tuple(conversions), tuple(dict.fromkeys(unresolved))
 
 
 def build_ownership_ledger(
-    *, flags: torch.Tensor, mass_delta_liquid: torch.Tensor | None = None,
+    *,
+    flags: torch.Tensor,
+    mass_delta_liquid: torch.Tensor | None = None,
     liquid_interface_mask: torch.Tensor | None = None,
     paired_liquid_interface_debit: bool = False,
     conversion_evidence: Mapping[str, object] | None = None,
@@ -202,9 +237,14 @@ def build_ownership_ledger(
 ) -> OwnershipLedgerState:
     """Build an immutable, fail-closed ownership observation from step facts."""
     links, link_unresolved = _liquid_interface_records(
-        flags, mass_delta_liquid, liquid_interface_mask, paired_liquid_interface_debit,
+        flags,
+        mass_delta_liquid,
+        liquid_interface_mask,
+        paired_liquid_interface_debit,
     )
-    redistributions, conversions, evidence_unresolved = _evidence_records(conversion_evidence, flags)
+    redistributions, conversions, evidence_unresolved = _evidence_records(
+        conversion_evidence, flags
+    )
     abb = (ABBRecord(float(abb_population_delta), True, "WITHHELD"),)
     unresolved = list(link_unresolved) + list(evidence_unresolved)
     unresolved.append("abb_population_inventory_owner_withheld")

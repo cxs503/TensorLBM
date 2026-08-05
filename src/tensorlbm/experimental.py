@@ -2,6 +2,7 @@
 
 Symbols in this module may evolve faster than those in ``tensorlbm.api``.
 """
+
 from __future__ import annotations
 
 from .ai import (
@@ -59,4 +60,3 @@ __all__ = [
     "load_flow_transformer_model",
     "reconstruct_flow_field",
 ]
-

@@ -42,6 +42,7 @@ References
 * Ladd, A. J. C. (1994). J. Fluid Mech. 271, 285–309.
 * Schlichting, H., & Gersten, K. (2017). Boundary-Layer Theory (10th ed.).
 """
+
 from __future__ import annotations
 
 import csv
@@ -123,9 +124,7 @@ class SphereWaterEntryConfig:
         if self.v_entry <= 0.0 or self.re <= 0.0 or self.radius <= 0.0:
             raise ValueError("v_entry, re, and radius must be > 0")
         if self.tau <= 0.5:
-            raise ValueError(
-                f"Invalid tau={self.tau:.4f}; increase re or reduce v_entry/radius"
-            )
+            raise ValueError(f"Invalid tau={self.tau:.4f}; increase re or reduce v_entry/radius")
         if not (0.0 < self.sphere_z_frac < 1.0):
             raise ValueError("sphere_z_frac must be in (0, 1)")
         if 2.0 * self.radius >= min(self.nx, self.ny):
@@ -288,9 +287,7 @@ def run_sphere_water_entry(config: SphereWaterEntryConfig) -> Path:
     )
     for step in step_iter:
         v_actual = (
-            config.v_entry * min(step / config.n_ramp, 1.0)
-            if config.n_ramp > 0
-            else config.v_entry
+            config.v_entry * min(step / config.n_ramp, 1.0) if config.n_ramp > 0 else config.v_entry
         )
 
         if use_smagorinsky:

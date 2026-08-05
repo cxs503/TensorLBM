@@ -19,6 +19,7 @@ The per-cell features fed to the network are the three independent
 components ``(S_xx, S_yy, S_xy)``.  Solid / masked cells (e.g. the
 cylinder interior) can be excluded via the optional ``mask`` argument.
 """
+
 from __future__ import annotations
 
 import json
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # Strain-rate computation
 # ---------------------------------------------------------------------------
+
 
 def strain_rate_tensor_2d(
     ux: torch.Tensor,
@@ -83,6 +85,7 @@ def _strain_magnitude(
 # Sample extraction
 # ---------------------------------------------------------------------------
 
+
 def extract_les_samples_2d(
     ux: torch.Tensor,
     uy: torch.Tensor,
@@ -107,7 +110,7 @@ def extract_les_samples_2d(
     nu_t = (c_s * c_s) * s_mag  # Δ = 1 lattice unit
 
     feats = torch.stack([s_xx, s_yy, s_xy], dim=-1)  # (ny, nx, 3)
-    target = nu_t.unsqueeze(-1)                       # (ny, nx, 1)
+    target = nu_t.unsqueeze(-1)  # (ny, nx, 1)
 
     feats_flat = feats.reshape(-1, 3)
     target_flat = target.reshape(-1, 1)
@@ -115,8 +118,7 @@ def extract_les_samples_2d(
     if mask is not None:
         if mask.shape != ux.shape:
             raise ValueError(
-                f"mask shape {tuple(mask.shape)} must match velocity "
-                f"shape {tuple(ux.shape)}",
+                f"mask shape {tuple(mask.shape)} must match velocity shape {tuple(ux.shape)}",
             )
         keep = (~mask.reshape(-1)).nonzero(as_tuple=False).squeeze(-1)
         feats_flat = feats_flat.index_select(0, keep)
@@ -146,20 +148,24 @@ def extract_les_samples_2d_multi(
 # Persistence
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class EddyViscosityDataset:
     """In-memory dataset of (features, target) tensors plus metadata."""
 
-    features: torch.Tensor   # (N, 3)
-    targets: torch.Tensor    # (N, 1)
+    features: torch.Tensor  # (N, 3)
+    targets: torch.Tensor  # (N, 1)
     c_s: float = 0.1
     description: str = ""
 
     def __len__(self) -> int:
         return int(self.features.shape[0])
 
-    def split(self, val_fraction: float = 0.1, seed: int = 0) -> tuple[
-        EddyViscosityDataset, EddyViscosityDataset,
+    def split(
+        self, val_fraction: float = 0.1, seed: int = 0
+    ) -> tuple[
+        EddyViscosityDataset,
+        EddyViscosityDataset,
     ]:
         if not 0.0 < val_fraction < 1.0:
             raise ValueError("val_fraction must be in (0, 1)")

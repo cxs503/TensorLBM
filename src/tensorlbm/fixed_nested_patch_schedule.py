@@ -13,6 +13,7 @@ represented: D3Q27 exchange/reflux work is scheduled only for its six planar
 faces, which are the responsibilities of the existing planar-interface and
 2:1 temporal-reflux primitives.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -56,7 +57,10 @@ class CellExtent3D:
             raise TypeError("cell must be a three-component integer tuple")
         if any(isinstance(value, bool) or not isinstance(value, int) for value in cell):
             raise TypeError("cell must be a three-component integer tuple")
-        return all(low <= value < high for value, low, high in zip(cell, self.lower, self.upper, strict=True))
+        return all(
+            low <= value < high
+            for value, low, high in zip(cell, self.lower, self.upper, strict=True)
+        )
 
     def contains_extent(self, other: CellExtent3D) -> bool:
         return all(
@@ -118,10 +122,14 @@ class FixedNestedPatchScheduleD3Q27:
     fine_extent: CellExtent3D
 
     def __post_init__(self) -> None:
-        if not isinstance(self.coarse_extent, CellExtent3D) or not isinstance(self.fine_extent, CellExtent3D):
+        if not isinstance(self.coarse_extent, CellExtent3D) or not isinstance(
+            self.fine_extent, CellExtent3D
+        ):
             raise TypeError("coarse_extent and fine_extent must be CellExtent3D instances")
         if any(value % _RATIO for value in (*self.fine_extent.lower, *self.fine_extent.upper)):
-            raise ValueError("fine extent bounds must be aligned and even on the 2:1 coarse lattice")
+            raise ValueError(
+                "fine extent bounds must be aligned and even on the 2:1 coarse lattice"
+            )
         if any(size % _RATIO for size in self.fine_extent.shape):
             raise ValueError("fine extent dimensions must be even for a 2:1 ratio")
         coverage = self.coarse_coverage
@@ -134,10 +142,16 @@ class FixedNestedPatchScheduleD3Q27:
         ):
             raise ValueError("fine patch coverage must lie strictly inside the coarse extent")
         owned = self.coarse_owned_extents
-        if any(first.overlaps(second) for index, first in enumerate(owned) for second in owned[index + 1 :]):
+        if any(
+            first.overlaps(second)
+            for index, first in enumerate(owned)
+            for second in owned[index + 1 :]
+        ):
             raise ValueError("coarse ownership extents must not overlap")
         if sum(extent.volume for extent in owned) + coverage.volume != self.coarse_extent.volume:
-            raise ValueError("coarse ownership extents must exactly partition the non-refined coarse cells")
+            raise ValueError(
+                "coarse ownership extents must exactly partition the non-refined coarse cells"
+            )
 
     @property
     def refinement_ratio(self) -> int:
@@ -173,7 +187,9 @@ class FixedNestedPatchScheduleD3Q27:
         )
 
     def owns_coarse_cell(self, cell: tuple[int, int, int]) -> bool:
-        return self.coarse_extent.contains_cell(cell) and not self.coarse_coverage.contains_cell(cell)
+        return self.coarse_extent.contains_cell(cell) and not self.coarse_coverage.contains_cell(
+            cell
+        )
 
     def owns_fine_cell(self, cell: tuple[int, int, int]) -> bool:
         return self.fine_extent.contains_cell(cell)
@@ -197,7 +213,11 @@ class FixedNestedPatchScheduleD3Q27:
                     coarse_lower[axis] = r.upper[axis]
                     coarse_upper[axis] += 1
                     fine_lower[axis] = f.upper[axis] - 1
-                normal = (side if axis == 0 else 0, side if axis == 1 else 0, side if axis == 2 else 0)
+                normal = (
+                    side if axis == 0 else 0,
+                    side if axis == 1 else 0,
+                    side if axis == 2 else 0,
+                )
                 faces.append(
                     D3Q27PlanarInterfaceFace(
                         axis=axis,

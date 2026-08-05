@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import functools
+import functools  # retained for compatibility; internal cache functions use explicit dicts
 from typing import Any, cast
 
 import torch
@@ -40,12 +40,29 @@ def _invert_d2q9() -> list[list[float]]:
 
 _M_D2Q9_INV_DATA = _invert_d2q9()
 
+# Manual dict caches keyed by (device_str, dtype) to avoid the multi-GPU
+# collision that @functools.cache causes when torch.device objects with the
+# same type but different indices hash identically (e.g. "cuda" vs "cuda:0").
+_mrt_matrix_cache: dict[tuple[str, torch.dtype], tuple[torch.Tensor, torch.Tensor]] = {}
+_bgk_matrix_cache: dict[tuple[str, torch.dtype], tuple[torch.Tensor, torch.Tensor]] = {}
 
-@functools.cache
-def _get_d2q9_mrt_matrices(device: torch.device, dtype: torch.dtype = torch.float32) -> tuple[torch.Tensor, torch.Tensor]:
-    matrix = torch.tensor(_M_D2Q9_DATA, dtype=dtype, device=device)
-    matrix_inv = torch.tensor(_M_D2Q9_INV_DATA, dtype=dtype, device=device)
-    return matrix, matrix_inv
+
+def _get_d2q9_mrt_matrices(
+    device: torch.device, dtype: torch.dtype = torch.float32
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return cached (M, M_inv) for D2Q9 MRT, keyed by (str(device), dtype).
+
+    Uses an explicit string key so that cuda:0, cuda:1, … are cached
+    independently — ``@functools.cache`` on a ``torch.device`` argument
+    is unsafe in multi-GPU settings because devices with the same type
+    but different indices can collide in the hash.
+    """
+    key = (str(device), dtype)
+    if key not in _mrt_matrix_cache:
+        matrix = torch.tensor(_M_D2Q9_DATA, dtype=dtype, device=device)
+        matrix_inv = torch.tensor(_M_D2Q9_INV_DATA, dtype=dtype, device=device)
+        _mrt_matrix_cache[key] = (matrix, matrix_inv)
+    return _mrt_matrix_cache[key]
 
 
 def collide_bgk(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -82,16 +99,20 @@ def collide_bgk_fused(f: torch.Tensor, tau: float) -> torch.Tensor:
     u_sq = ux * ux + uy * uy
     inv_tau = 1.0 / tau
     coeff_f = 1.0 - inv_tau  # (1 - 1/tau)
-    coeff_eq = inv_tau        # 1/tau
+    coeff_eq = inv_tau  # 1/tau
 
     # cu_i = cx_i * ux + cy_i * uy for each direction i
     cx = c[:, 0].to(dtype)  # (9,)
     cy = c[:, 1].to(dtype)  # (9,)
-    wv = w                   # (9,) already in correct dtype
+    wv = w  # (9,) already in correct dtype
 
     # Compute all 9 directions at once: (9, ny, nx)
     cu = cx.view(9, 1, 1) * ux + cy.view(9, 1, 1) * uy
-    feq = wv.view(9, 1, 1) * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    feq = (
+        wv.view(9, 1, 1)
+        * rho.unsqueeze(0)
+        * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    )
 
     # Collision: f_new = f * (1 - 1/tau) + feq / tau
     return f * coeff_f + feq * coeff_eq
@@ -134,32 +155,41 @@ _M_MACRO_DATA = [
 # w=[4/9,1/9,1/9,1/9,1/9,1/36,1/36,1/36,1/36]
 _A_EQ_DATA = [
     # i=0: cx=0, cy=0, w=4/9
-    [4/9,    0,     0,    -2/3,   -2/3,    0   ],
+    [4 / 9, 0, 0, -2 / 3, -2 / 3, 0],
     # i=1: cx=1, cy=0, w=1/9
-    [1/9,    1/3,   0,     1/3,   -1/6,    0   ],
+    [1 / 9, 1 / 3, 0, 1 / 3, -1 / 6, 0],
     # i=2: cx=0, cy=1, w=1/9
-    [1/9,    0,     1/3,  -1/6,    1/3,    0   ],
+    [1 / 9, 0, 1 / 3, -1 / 6, 1 / 3, 0],
     # i=3: cx=-1, cy=0, w=1/9
-    [1/9,   -1/3,   0,     1/3,   -1/6,    0   ],
+    [1 / 9, -1 / 3, 0, 1 / 3, -1 / 6, 0],
     # i=4: cx=0, cy=-1, w=1/9
-    [1/9,    0,    -1/3,  -1/6,    1/3,    0   ],
+    [1 / 9, 0, -1 / 3, -1 / 6, 1 / 3, 0],
     # i=5: cx=1, cy=1, w=1/36
-    [1/36,   1/12,  1/12,  1/12,   1/12,   1/4 ],
+    [1 / 36, 1 / 12, 1 / 12, 1 / 12, 1 / 12, 1 / 4],
     # i=6: cx=-1, cy=1, w=1/36
-    [1/36,  -1/12,  1/12,  1/12,   1/12,  -1/4 ],
+    [1 / 36, -1 / 12, 1 / 12, 1 / 12, 1 / 12, -1 / 4],
     # i=7: cx=-1, cy=-1, w=1/36
-    [1/36,  -1/12, -1/12,  1/12,   1/12,   1/4 ],
+    [1 / 36, -1 / 12, -1 / 12, 1 / 12, 1 / 12, 1 / 4],
     # i=8: cx=1, cy=-1, w=1/36
-    [1/36,   1/12, -1/12,  1/12,   1/12,  -1/4 ],
+    [1 / 36, 1 / 12, -1 / 12, 1 / 12, 1 / 12, -1 / 4],
 ]
 
 
-@functools.cache
-def _get_bgk_matrices(device: torch.device, dtype: torch.dtype) -> tuple[torch.Tensor, torch.Tensor]:
-    """Cached M_macro (3×9) and A_eq (9×6) matrices for matmul-based BGK."""
-    M_macro = torch.tensor(_M_MACRO_DATA, dtype=dtype, device=device)
-    A_eq = torch.tensor(_A_EQ_DATA, dtype=dtype, device=device)
-    return M_macro, A_eq
+def _get_bgk_matrices(
+    device: torch.device, dtype: torch.dtype
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return cached (M_macro, A_eq) for matmul-based BGK, keyed by (str(device), dtype).
+
+    Uses an explicit string key to avoid the multi-GPU cache collision that
+    ``@functools.cache`` causes when ``torch.device`` objects with different
+    indices hash identically.
+    """
+    key = (str(device), dtype)
+    if key not in _bgk_matrix_cache:
+        M_macro = torch.tensor(_M_MACRO_DATA, dtype=dtype, device=device)
+        A_eq = torch.tensor(_A_EQ_DATA, dtype=dtype, device=device)
+        _bgk_matrix_cache[key] = (M_macro, A_eq)
+    return _bgk_matrix_cache[key]
 
 
 def collide_bgk_matmul(f: torch.Tensor, tau: float) -> torch.Tensor:
@@ -186,27 +216,30 @@ def collide_bgk_matmul(f: torch.Tensor, tau: float) -> torch.Tensor:
     M_macro, A_eq = _get_bgk_matrices(device, dtype)
 
     # Step 1: Macroscopic as matmul — moments = M_macro @ f_flat
-    f_flat = f.reshape(9, N)          # (9, N)
-    moments = M_macro @ f_flat        # (3, N) = [rho, jx, jy]
-    rho = moments[0]                  # (N,)
-    jx = moments[1]                   # (N,) = rho * ux
-    jy = moments[2]                   # (N,) = rho * uy
+    f_flat = f.reshape(9, N)  # (9, N)
+    moments = M_macro @ f_flat  # (3, N) = [rho, jx, jy]
+    rho = moments[0]  # (N,)
+    jx = moments[1]  # (N,) = rho * ux
+    jy = moments[2]  # (N,) = rho * uy
 
     # Step 2: Feature vector phi (elementwise, minimal ops)
     rho_safe = rho.clamp(min=1e-12)
-    ux = jx / rho_safe               # (N,)
-    uy = jy / rho_safe               # (N,)
-    phi = torch.stack([
-        rho,                          # phi[0] = rho
-        jx,                           # phi[1] = rho * ux
-        jy,                           # phi[2] = rho * uy
-        jx * ux,                      # phi[3] = rho * ux²
-        jy * uy,                      # phi[4] = rho * uy²
-        jx * uy,                      # phi[5] = rho * ux * uy
-    ], dim=0)                         # (6, N)
+    ux = jx / rho_safe  # (N,)
+    uy = jy / rho_safe  # (N,)
+    phi = torch.stack(
+        [
+            rho,  # phi[0] = rho
+            jx,  # phi[1] = rho * ux
+            jy,  # phi[2] = rho * uy
+            jx * ux,  # phi[3] = rho * ux²
+            jy * uy,  # phi[4] = rho * uy²
+            jx * uy,  # phi[5] = rho * ux * uy
+        ],
+        dim=0,
+    )  # (6, N)
 
     # Step 3: Equilibrium as matmul — feq_flat = A_eq @ phi
-    feq_flat = A_eq @ phi             # (9, N)
+    feq_flat = A_eq @ phi  # (9, N)
 
     # Step 4: Collision — f_new = f * (1-1/tau) + feq * (1/tau)
     inv_tau = 1.0 / tau

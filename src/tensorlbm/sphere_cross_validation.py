@@ -20,6 +20,7 @@ The output is a machine-readable JSON artifact with one entry per
 (lattice, collision_family, turbulence_model) combination, recording Cd,
 finiteness, steps completed, and the Schiller-Naumann reference Cd.
 """
+
 from __future__ import annotations
 
 import json
@@ -58,7 +59,13 @@ SCHEMA_VERSION = "tensorlbm.sphere-cross-validation/v1"
 
 LATTICES: tuple[str, ...] = ("D3Q19", "D3Q27")
 COLLISION_FAMILIES: tuple[str, ...] = (
-    "BGK", "TRT", "RLBM", "MRT", "CM", "CUMULANT", "KBC",
+    "BGK",
+    "TRT",
+    "RLBM",
+    "MRT",
+    "CM",
+    "CUMULANT",
+    "KBC",
 )
 TURBULENCE_MODELS: tuple[str, ...] = ("none", "Smagorinsky", "WALE")
 
@@ -66,6 +73,7 @@ TURBULENCE_MODELS: tuple[str, ...] = ("none", "Smagorinsky", "WALE")
 # ---------------------------------------------------------------------------
 # Public dataclasses
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class SphereCrossValidationConfig:
@@ -118,11 +126,12 @@ class SphereCrossValidationMatrix:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _schiller_naumann(re: float) -> float:
     """Schiller-Naumann drag correlation for a sphere."""
     if re < 1e-6:
         return 100.0
-    return 24.0 / re * (1.0 + 0.15 * re ** 0.687)
+    return 24.0 / re * (1.0 + 0.15 * re**0.687)
 
 
 def _equilibrium(
@@ -193,9 +202,7 @@ def _make_wall_mask(
     return make_channel_wall_mask_27(nz, ny, nx, obstacle_mask, device=device)
 
 
-def _compute_tau_eff_smagorinsky(
-    lattice: str, f: torch.Tensor, tau: float, cs: float
-) -> float:
+def _compute_tau_eff_smagorinsky(lattice: str, f: torch.Tensor, tau: float, cs: float) -> float:
     """Mean effective tau from the Smagorinsky non-equilibrium stress model."""
     rho, ux, uy, uz = _macroscopic(lattice, f)
     feq = _equilibrium(lattice, rho, ux, uy, uz, f.device)
@@ -208,9 +215,7 @@ def _compute_tau_eff_smagorinsky(
     return float(tau_eff.mean().item())
 
 
-def _compute_tau_eff_wale(
-    lattice: str, f: torch.Tensor, tau: float, cw: float
-) -> float:
+def _compute_tau_eff_wale(lattice: str, f: torch.Tensor, tau: float, cw: float) -> float:
     """Mean effective tau from the WALE eddy-viscosity model."""
     rho, ux, uy, uz = _macroscopic(lattice, f)
     nu_t = _wale_nu_t_3d(ux, uy, uz, cw)
@@ -221,6 +226,7 @@ def _compute_tau_eff_wale(
 # ---------------------------------------------------------------------------
 # Core runner
 # ---------------------------------------------------------------------------
+
 
 def _run_single_combination(
     config: SphereCrossValidationConfig,
@@ -271,9 +277,7 @@ def _run_single_combination(
         fx, _, _ = _compute_forces(lattice, f, mask)
 
         # Boundaries
-        f = _apply_boundaries(
-            lattice, f, u_in, wall_mask, mask, boundary_mode=config.boundary_mode
-        )
+        f = _apply_boundaries(lattice, f, u_in, wall_mask, mask, boundary_mode=config.boundary_mode)
 
         steps_completed = step
 
@@ -288,8 +292,8 @@ def _run_single_combination(
     cd: float | None
     if fx_list and finite:
         fx_mean = sum(fx_list) / len(fx_list)
-        area = math.pi * radius ** 2
-        cd = fx_mean / (0.5 * u_in ** 2 * area)
+        area = math.pi * radius**2
+        cd = fx_mean / (0.5 * u_in**2 * area)
         if not math.isfinite(cd):
             cd = None
             finite = False

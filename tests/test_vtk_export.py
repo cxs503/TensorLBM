@@ -1,4 +1,5 @@
 """Tests for tensorlbm.vtk_export – VTK file generation."""
+
 from __future__ import annotations
 
 import tempfile
@@ -9,6 +10,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_2d_fields(ny: int = 8, nx: int = 10):
     rho = torch.ones(ny, nx)
@@ -28,6 +30,7 @@ def _make_3d_fields(nz: int = 4, ny: int = 5, nx: int = 6):
 # ---------------------------------------------------------------------------
 # 2-D export
 # ---------------------------------------------------------------------------
+
 
 def test_export_vtk_2d_creates_file():
     from tensorlbm.vtk_export import export_vtk_2d
@@ -93,6 +96,7 @@ def test_export_vtk_2d_spacing():
 # 3-D export
 # ---------------------------------------------------------------------------
 
+
 def test_export_vtk_3d_creates_file():
     from tensorlbm.vtk_export import export_vtk_3d
 
@@ -131,6 +135,7 @@ def test_export_vtk_3d_q_criterion():
 # Q-criterion helper
 # ---------------------------------------------------------------------------
 
+
 def test_q_criterion_3d_shape():
     from tensorlbm.vtk_export import _q_criterion_3d
 
@@ -162,6 +167,7 @@ def test_q_criterion_solid_body_rotation_zero():
 # export_checkpoint_vtk with mocked checkpoint
 # ---------------------------------------------------------------------------
 
+
 def test_export_checkpoint_vtk_2d(tmp_path):
     """Export a synthetic 2-D checkpoint directory to VTK."""
     import torch
@@ -172,12 +178,14 @@ def test_export_checkpoint_vtk_2d(tmp_path):
     ckpt_dir = tmp_path / "ckpt"
     ckpt_dir.mkdir()
     from tensorlbm.d2q9 import equilibrium
+
     rho0 = torch.ones(8, 10)
     ux0 = torch.zeros(8, 10)
     uy0 = torch.zeros(8, 10)
     f = equilibrium(rho0, ux0, uy0)
     torch.save(f, ckpt_dir / "checkpoint_f.pt")
     import json
+
     (ckpt_dir / "checkpoint_meta.json").write_text(json.dumps({"step": 0}))
 
     out = export_checkpoint_vtk(ckpt_dir, tmp_path / "out.vtk")

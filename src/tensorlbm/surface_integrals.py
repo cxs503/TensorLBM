@@ -30,6 +30,7 @@ Functions
 :func:`moment_coefficients`
     Non-dimensionalise moment into Cl, Cm, Cn coefficients.
 """
+
 from __future__ import annotations
 
 import math
@@ -40,6 +41,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Mass / volume flow rate
 # ---------------------------------------------------------------------------
+
 
 def mass_flow_rate_2d(
     ux: torch.Tensor,
@@ -71,8 +73,8 @@ def mass_flow_rate_2d(
     ny, nx = ux.shape
     x_plane = max(0, min(nx - 1, x_plane))
     y0, y1 = (0, ny - 1) if y_range is None else y_range
-    ux_col = ux[y0:y1 + 1, x_plane]
-    rho_col = rho[y0:y1 + 1, x_plane]
+    ux_col = ux[y0 : y1 + 1, x_plane]
+    rho_col = rho[y0 : y1 + 1, x_plane]
     n_cells = ux_col.numel()
     vol_flow = float(ux_col.sum())
     mass_flow = float((rho_col * ux_col).sum())
@@ -112,12 +114,12 @@ def mass_flow_rate_3d(
     y0, y1 = (0, ny - 1) if y_range is None else y_range
     z0, z1 = (0, nz - 1) if z_range is None else z_range
 
-    ux_sl = ux[z0:z1 + 1, y0:y1 + 1, x_plane]
-    rho_sl = rho[z0:z1 + 1, y0:y1 + 1, x_plane]
+    ux_sl = ux[z0 : z1 + 1, y0 : y1 + 1, x_plane]
+    rho_sl = rho[z0 : z1 + 1, y0 : y1 + 1, x_plane]
 
     fluid = torch.ones_like(ux_sl, dtype=torch.bool)
     if mask is not None:
-        fluid = ~mask[z0:z1 + 1, y0:y1 + 1, x_plane]
+        fluid = ~mask[z0 : z1 + 1, y0 : y1 + 1, x_plane]
 
     n_cells = int(fluid.sum())
     vol_flow = float((ux_sl * fluid).sum())
@@ -134,6 +136,7 @@ def mass_flow_rate_3d(
 # ---------------------------------------------------------------------------
 # Area/volume averages
 # ---------------------------------------------------------------------------
+
 
 def area_average_2d(
     scalar: torch.Tensor,
@@ -155,10 +158,10 @@ def area_average_2d(
     ny, nx = scalar.shape
     x0, x1 = (0, nx - 1) if x_range is None else x_range
     y0, y1 = (0, ny - 1) if y_range is None else y_range
-    s = scalar[y0:y1 + 1, x0:x1 + 1]
+    s = scalar[y0 : y1 + 1, x0 : x1 + 1]
     fluid = torch.ones_like(s, dtype=torch.bool)
     if mask is not None:
-        fluid = ~mask[y0:y1 + 1, x0:x1 + 1]
+        fluid = ~mask[y0 : y1 + 1, x0 : x1 + 1]
     n = int(fluid.sum())
     vals = s[fluid]
     return {
@@ -190,10 +193,10 @@ def area_average_3d(
     x0, x1 = (0, nx - 1) if x_range is None else x_range
     y0, y1 = (0, ny - 1) if y_range is None else y_range
     z0, z1 = (0, nz - 1) if z_range is None else z_range
-    s = scalar[z0:z1 + 1, y0:y1 + 1, x0:x1 + 1]
+    s = scalar[z0 : z1 + 1, y0 : y1 + 1, x0 : x1 + 1]
     fluid = torch.ones_like(s, dtype=torch.bool)
     if mask is not None:
-        fluid = ~mask[z0:z1 + 1, y0:y1 + 1, x0:x1 + 1]
+        fluid = ~mask[z0 : z1 + 1, y0 : y1 + 1, x0 : x1 + 1]
     n = int(fluid.sum())
     vals = s[fluid]
     return {
@@ -207,6 +210,7 @@ def area_average_3d(
 # ---------------------------------------------------------------------------
 # Surface force integration
 # ---------------------------------------------------------------------------
+
 
 def surface_force_2d(
     f: torch.Tensor,
@@ -232,8 +236,8 @@ def surface_force_2d(
         Dictionary: ``fx``, ``fy`` (total forces in lattice units).
     """
     # D2Q9 velocity vectors and opposites
-    cx = torch.tensor([0, 1, 0, -1,  0,  1, -1, -1,  1], dtype=torch.float32, device=f.device)
-    cy = torch.tensor([0, 0, 1,  0, -1,  1,  1, -1, -1], dtype=torch.float32, device=f.device)
+    cx = torch.tensor([0, 1, 0, -1, 0, 1, -1, -1, 1], dtype=torch.float32, device=f.device)
+    cy = torch.tensor([0, 0, 1, 0, -1, 1, 1, -1, -1], dtype=torch.float32, device=f.device)
     opp = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.long, device=f.device)
 
     ny, nx = mask.shape
@@ -336,6 +340,7 @@ def surface_force_3d(
 # Surface moment (torque)
 # ---------------------------------------------------------------------------
 
+
 def surface_moment_2d(
     f: torch.Tensor,
     mask: torch.Tensor,
@@ -355,8 +360,8 @@ def surface_moment_2d(
     Returns:
         Dictionary: ``mz`` (moment about z-axis), ``fx``, ``fy``.
     """
-    cx = torch.tensor([0, 1, 0, -1,  0,  1, -1, -1,  1], dtype=torch.float32, device=f.device)
-    cy = torch.tensor([0, 0, 1,  0, -1,  1,  1, -1, -1], dtype=torch.float32, device=f.device)
+    cx = torch.tensor([0, 1, 0, -1, 0, 1, -1, -1, 1], dtype=torch.float32, device=f.device)
+    cy = torch.tensor([0, 0, 1, 0, -1, 1, 1, -1, -1], dtype=torch.float32, device=f.device)
     opp = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.long, device=f.device)
 
     ny, nx = mask.shape
@@ -476,14 +481,19 @@ def surface_moment_3d(
         mz_t += float(dmz.sum())
 
     return {
-        "fx": fx_t, "fy": fy_t, "fz": fz_t,
-        "mx": mx_t, "my": my_t, "mz": mz_t,
+        "fx": fx_t,
+        "fy": fy_t,
+        "fz": fz_t,
+        "mx": mx_t,
+        "my": my_t,
+        "mz": mz_t,
     }
 
 
 # ---------------------------------------------------------------------------
 # Pressure drop
 # ---------------------------------------------------------------------------
+
 
 def pressure_drop(
     rho: torch.Tensor,
@@ -524,6 +534,7 @@ def pressure_drop(
 # ---------------------------------------------------------------------------
 # Non-dimensionalisation helpers
 # ---------------------------------------------------------------------------
+
 
 def force_coefficients(
     fx: float,
@@ -629,6 +640,7 @@ __all__ = [
 # Force decomposition: pressure + viscous components
 # ---------------------------------------------------------------------------
 
+
 def surface_force_decomposed_2d(
     f: torch.Tensor,
     rho: torch.Tensor,
@@ -674,8 +686,8 @@ def surface_force_decomposed_2d(
     from .d2q9 import equilibrium as feq  # noqa: PLC0415
 
     device = f.device
-    cx = torch.tensor([0, 1, 0, -1,  0,  1, -1, -1,  1], dtype=torch.float32, device=device)
-    cy = torch.tensor([0, 0, 1,  0, -1,  1,  1, -1, -1], dtype=torch.float32, device=device)
+    cx = torch.tensor([0, 1, 0, -1, 0, 1, -1, -1, 1], dtype=torch.float32, device=device)
+    cy = torch.tensor([0, 0, 1, 0, -1, 1, 1, -1, -1], dtype=torch.float32, device=device)
     opp = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.long, device=device)
 
     ny, nx = mask.shape
@@ -687,7 +699,8 @@ def surface_force_decomposed_2d(
 
     # Prefactor for viscous stress tensor
     sigma_prefactor = -(1.0 - 0.5 / tau)
-    cx_b = cx.view(9, 1, 1); cy_b = cy.view(9, 1, 1)
+    cx_b = cx.view(9, 1, 1)
+    cy_b = cy.view(9, 1, 1)
     # σ_xx, σ_xy stress components at fluid cells
     sigma_xx = sigma_prefactor * (f_neq * cx_b * cx_b).sum(0)  # (ny, nx)
     sigma_yy = sigma_prefactor * (f_neq * cy_b * cy_b).sum(0)
@@ -703,14 +716,16 @@ def surface_force_decomposed_2d(
     y_f, x_f = torch.where(fluid)
 
     for q in range(1, 9):
-        dcx = int(cx[q].item()); dcy = int(cy[q].item())
+        dcx = int(cx[q].item())
+        dcy = int(cy[q].item())
         x_n = (x_f + dcx).clamp(0, nx - 1)
         y_n = (y_f + dcy).clamp(0, ny - 1)
         is_solid_nbr = mask[y_n, x_n]
         if not is_solid_nbr.any():
             continue
 
-        yf_ = y_f[is_solid_nbr]; xf_ = x_f[is_solid_nbr]
+        yf_ = y_f[is_solid_nbr]
+        xf_ = x_f[is_solid_nbr]
         q_opp = int(opp[q].item())
         # Total momentum exchange
         contrib = f[q, yf_, xf_] + f[q_opp, y_n[is_solid_nbr], x_n[is_solid_nbr]]
@@ -730,7 +745,7 @@ def surface_force_decomposed_2d(
     fy_viscous = fy_total - fy_pressure
 
     # Non-dimensionalise
-    q_dyn = 0.5 * rho_ref * u_ref ** 2 * area_ref
+    q_dyn = 0.5 * rho_ref * u_ref**2 * area_ref
     if q_dyn < 1e-30:
         q_dyn = 1.0
 

@@ -19,7 +19,9 @@ def _freeze(value: Any) -> Any:
     if value is None or isinstance(value, (str, int, float, bool, bytes)):
         return value
     if isinstance(value, Mapping):
-        return MappingProxyType({_require_text(key, "mapping key"): _freeze(item) for key, item in value.items()})
+        return MappingProxyType(
+            {_require_text(key, "mapping key"): _freeze(item) for key, item in value.items()}
+        )
     if isinstance(value, (list, tuple)):
         return tuple(_freeze(item) for item in value)
     if isinstance(value, (set, frozenset)):
@@ -74,7 +76,9 @@ class FieldProduct:
             raise TypeError("quality_status must be a ValidationStatus")
         if self.quality_status is not self.run_manifest.validation_status:
             raise ValueError("quality_status must equal run_manifest.validation_status")
-        if self.artifact_id not in {artifact.artifact_id for artifact in self.run_manifest.artifacts}:
+        if self.artifact_id not in {
+            artifact.artifact_id for artifact in self.run_manifest.artifacts
+        }:
             raise ValueError("artifact_id must reference an artifact in run_manifest")
         object.__setattr__(self, "lineage", _immutable_mapping(self.lineage, "lineage"))
 
@@ -90,10 +94,14 @@ class FieldProduct:
         except (TypeError, ValueError) as error:
             raise ValueError(f"product {self.product_id} has invalid runtime evidence") from error
         if self.quality_status is not self.run_manifest.validation_status:
-            raise ValueError(f"product {self.product_id} quality status no longer matches runtime validation")
+            raise ValueError(
+                f"product {self.product_id} quality status no longer matches runtime validation"
+            )
         if self.quality_status is not ValidationStatus.PASS:
             raise ValueError(f"product {self.product_id} is not PASS-gated")
-        if self.artifact_id not in {artifact.artifact_id for artifact in self.run_manifest.artifacts}:
+        if self.artifact_id not in {
+            artifact.artifact_id for artifact in self.run_manifest.artifacts
+        }:
             raise ValueError(f"product {self.product_id} artifact binding is no longer valid")
 
 
@@ -193,7 +201,9 @@ class DatasetManifest:
             except (TypeError, ValueError):
                 rejected.append(product.product_id)
         if rejected:
-            raise ValueError(f"dataset is not training ready; ineligible product_ids: {', '.join(rejected)}")
+            raise ValueError(
+                f"dataset is not training ready; ineligible product_ids: {', '.join(rejected)}"
+            )
 
 
 __all__ = ["DatasetManifest", "DatasetSampleRef", "FieldProduct"]

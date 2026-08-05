@@ -26,6 +26,7 @@ Reference: Palabos acoustic (josepedro/palabos_acoustic) uses the same
 density-source approach (initializeAtEquilibrium with oscillating rho) but
 only validates qualitatively.  This benchmark adds quantitative comparison.
 """
+
 from __future__ import annotations
 import argparse, math, os, sys
 import numpy as np
@@ -40,11 +41,22 @@ from tensorlbm.d3q19 import equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 
 
-def run_pulsating_sphere(nx=400, ny=400, nz=1, tau=0.55,
-                         R0=10.0, delta_rho=0.01, omega=0.1,
-                         steps=2000, device="cpu", log_every=500,
-                         sponge_width=100, sponge_strength=8.0,
-                         pulse_t0=80.0, pulse_sigma=40.0):
+def run_pulsating_sphere(
+    nx=400,
+    ny=400,
+    nz=1,
+    tau=0.55,
+    R0=10.0,
+    delta_rho=0.01,
+    omega=0.1,
+    steps=2000,
+    device="cpu",
+    log_every=500,
+    sponge_width=100,
+    sponge_strength=8.0,
+    pulse_t0=80.0,
+    pulse_sigma=40.0,
+):
     """Run pulsating cylinder acoustic benchmark.
 
     Returns dict with peak amplitudes, analytical reference, and pass/fail.
@@ -62,9 +74,12 @@ def run_pulsating_sphere(nx=400, ny=400, nz=1, tau=0.55,
     f = equilibrium3d(rho0, u0, u0.clone(), u0.clone(), device=dev)
 
     zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=dev), torch.arange(ny, device=dev),
-        torch.arange(nx, device=dev), indexing="ij")
-    dist = torch.sqrt((xx.float() - cx)**2 + (yy.float() - cy)**2)
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
+    )
+    dist = torch.sqrt((xx.float() - cx) ** 2 + (yy.float() - cy) ** 2)
 
     # Source region: filled circle (compact monopole source)
     source = dist < R0  # [nz, ny, nx]
@@ -78,9 +93,11 @@ def run_pulsating_sphere(nx=400, ny=400, nz=1, tau=0.55,
     dist_x = torch.minimum(xx, nx - 1 - xx)
     dist_y = torch.minimum(yy, ny - 1 - yy)
     dist_edge = torch.minimum(dist_x, dist_y).float()
-    damping = torch.where(dist_edge < sponge_width,
-                           torch.sin(math.pi * dist_edge / (2 * sponge_width))**2,
-                           torch.ones_like(dist_edge, device=dev))
+    damping = torch.where(
+        dist_edge < sponge_width,
+        torch.sin(math.pi * dist_edge / (2 * sponge_width)) ** 2,
+        torch.ones_like(dist_edge, device=dev),
+    )
     feq_target = equilibrium3d(rho0, u0, u0.clone(), u0.clone(), device=dev)
 
     margin = 3  # fixed-equilibrium boundary rows
@@ -104,18 +121,19 @@ def run_pulsating_sphere(nx=400, ny=400, nz=1, tau=0.55,
 
         # --- Density-scaling source: scale f to target rho, preserve velocity ---
         # Gaussian-envelope sinusoidal pulse
-        env = math.exp(-((step - pulse_t0) / pulse_sigma)**2)
+        env = math.exp(-(((step - pulse_t0) / pulse_sigma) ** 2))
         rho_src_val = 1.0 + delta_rho * math.sin(omega * step) * env
 
         rho_cur, ux_cur, uy_cur, uz_cur = macroscopic3d(f)
-        scale = torch.where(source,
-                            rho_src_val / rho_cur.clamp(min=1e-10),
-                            torch.ones_like(rho_cur))
+        scale = torch.where(
+            source, rho_src_val / rho_cur.clamp(min=1e-10), torch.ones_like(rho_cur)
+        )
         f = f * scale.unsqueeze(0)
 
         # --- Far-field BC: fixed equilibrium at outer rows ---
-        feq_b = equilibrium3d(rho0[:, :, 0:1], u0[:, :, 0:1],
-                               u0[:, :, 0:1], u0[:, :, 0:1], device=dev)
+        feq_b = equilibrium3d(
+            rho0[:, :, 0:1], u0[:, :, 0:1], u0[:, :, 0:1], u0[:, :, 0:1], device=dev
+        )
         f[:, :, 0:margin, :] = feq_b[:, :, 0:margin, :]
         f[:, :, -margin:, :] = feq_b[:, :, 0:margin, :]
         if nz > 1:
@@ -133,13 +151,16 @@ def run_pulsating_sphere(nx=400, ny=400, nz=1, tau=0.55,
 
         if step % log_every == 0 or step == steps:
             pvals = [p_ts[r][-1] for r in monitor_r]
-            print(f"  {step:6d}  {float((rho_sp-rho0).abs().max()):.6f}  "
-                  + "  ".join(f"{v:+.6f}" for v in pvals), flush=True)
+            print(
+                f"  {step:6d}  {float((rho_sp - rho0).abs().max()):.6f}  "
+                + "  ".join(f"{v:+.6f}" for v in pvals),
+                flush=True,
+            )
 
     # --- Analytical reference (Hankel function) ---
     h0_R0 = abs(hankel1(0, k * R0))
     print(f"\n  Analytical reference (Hankel):")
-    print(f"    k={k:.4f}, k*R0={k*R0:.4f}, |H0(kR0)|={h0_R0:.6f}")
+    print(f"    k={k:.4f}, k*R0={k * R0:.4f}, |H0(kR0)|={h0_R0:.6f}")
 
     # --- Peak amplitude at each monitor (time-gated: pulse passes before reflections) ---
     peaks = {}
@@ -200,9 +221,10 @@ def run_pulsating_sphere(nx=400, ny=400, nz=1, tau=0.55,
             near_decay_errs.append(abs(1 - lbm_ratio / h_ratio) * 100)
     near_ok = len(near_decay_errs) > 0 and max(near_decay_errs) < 10.0
     near_avg = sum(near_decay_errs) / len(near_decay_errs) if near_decay_errs else 0
-    checks.append(("Near-field spatial decay (r<60, err<10%)", near_ok,
-                   f"avg_err={near_avg:.1f}%"))
-    print(f"    [{'PASS' if near_ok else 'FAIL'}] Near-field spatial decay: avg_err={near_avg:.1f}% (r<60)")
+    checks.append(("Near-field spatial decay (r<60, err<10%)", near_ok, f"avg_err={near_avg:.1f}%"))
+    print(
+        f"    [{'PASS' if near_ok else 'FAIL'}] Near-field spatial decay: avg_err={near_avg:.1f}% (r<60)"
+    )
 
     # 4. Far-field absolute amplitude (r >= 80): informational
     #     ~25-30% low due to volume-source coupling (density-scaling source
@@ -226,7 +248,8 @@ def run_pulsating_sphere(nx=400, ny=400, nz=1, tau=0.55,
 
 def main():
     p = argparse.ArgumentParser(
-        description="Pulsating cylinder acoustic benchmark (density-scaling + pulse)")
+        description="Pulsating cylinder acoustic benchmark (density-scaling + pulse)"
+    )
     p.add_argument("--nx", type=int, default=400)
     p.add_argument("--ny", type=int, default=400)
     p.add_argument("--nz", type=int, default=1)
@@ -247,11 +270,21 @@ def main():
     print("  (density-scaling source + Gaussian pulse + time-gated measurement)")
     print("=" * 60)
     run_pulsating_sphere(
-        nx=args.nx, ny=args.ny, nz=args.nz, tau=args.tau,
-        R0=args.R0, delta_rho=args.delta_rho, omega=args.omega,
-        steps=args.steps, device=args.device, log_every=args.log_every,
-        sponge_width=args.sponge_width, sponge_strength=args.sponge_strength,
-        pulse_t0=args.pulse_t0, pulse_sigma=args.pulse_sigma)
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau=args.tau,
+        R0=args.R0,
+        delta_rho=args.delta_rho,
+        omega=args.omega,
+        steps=args.steps,
+        device=args.device,
+        log_every=args.log_every,
+        sponge_width=args.sponge_width,
+        sponge_strength=args.sponge_strength,
+        pulse_t0=args.pulse_t0,
+        pulse_sigma=args.pulse_sigma,
+    )
 
 
 if __name__ == "__main__":

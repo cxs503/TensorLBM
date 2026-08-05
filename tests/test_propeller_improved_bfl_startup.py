@@ -34,14 +34,21 @@ def test_bfl_startup_has_links_and_keeps_macroscopic_fields_finite():
 
 def test_momentum_exchange_diagnostic_does_not_change_bfl_evolution():
     kwargs = dict(
-        nx=64, ny=64, nz=64, n_steps=1, device="cpu",
-        mask_interval_deg=90.0, use_bfl=True,
+        nx=64,
+        ny=64,
+        nz=64,
+        n_steps=1,
+        device="cpu",
+        mask_interval_deg=90.0,
+        use_bfl=True,
     )
     without_diagnostic = _PROPELLER.run_improved_propeller(
-        **kwargs, collect_me_diagnostic=False,
+        **kwargs,
+        collect_me_diagnostic=False,
     )
     with_diagnostic = _PROPELLER.run_improved_propeller(
-        **kwargs, collect_me_diagnostic=True,
+        **kwargs,
+        collect_me_diagnostic=True,
     )
 
     assert torch.equal(without_diagnostic["f"], with_diagnostic["f"])

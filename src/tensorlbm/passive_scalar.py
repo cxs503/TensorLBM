@@ -30,6 +30,7 @@ He, X., Chen, S., & Doolen, G. D. (1998). A novel thermal model for the
     lattice Boltzmann method in incompressible limit.
     *J. Comput. Phys.* 146(1), 282–300.
 """
+
 from __future__ import annotations
 
 import csv
@@ -50,15 +51,16 @@ __all__ = [
 ]
 
 # D2Q5 lattice
-_CX5 = torch.tensor([0.0,  1.0,  0.0, -1.0,  0.0])
-_CY5 = torch.tensor([0.0,  0.0,  1.0,  0.0, -1.0])
-_W5 = torch.tensor([2.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0, 1.0/6.0])
+_CX5 = torch.tensor([0.0, 1.0, 0.0, -1.0, 0.0])
+_CY5 = torch.tensor([0.0, 0.0, 1.0, 0.0, -1.0])
+_W5 = torch.tensor([2.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0])
 _CS2_D2Q5 = 1.0 / 3.0
 
 
 # ---------------------------------------------------------------------------
 # Core LBM operators (D2Q5 scalar)
 # ---------------------------------------------------------------------------
+
 
 def equilibrium_scalar(
     c: torch.Tensor,
@@ -126,8 +128,8 @@ def stream_scalar(g: torch.Tensor) -> torch.Tensor:
     """
     g_new = torch.empty_like(g)
     g_new[0] = g[0]
-    g_new[1] = torch.roll(g[1], shifts=1, dims=1)   # +x
-    g_new[2] = torch.roll(g[2], shifts=1, dims=0)   # +y
+    g_new[1] = torch.roll(g[1], shifts=1, dims=1)  # +x
+    g_new[2] = torch.roll(g[2], shifts=1, dims=0)  # +y
     g_new[3] = torch.roll(g[3], shifts=-1, dims=1)  # -x
     g_new[4] = torch.roll(g[4], shifts=-1, dims=0)  # -y
     return g_new
@@ -175,24 +177,25 @@ def apply_scalar_dirichlet_bc(
 # Configuration and runner
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PassiveScalarConfig:
     """Configuration for a 2-D passive scalar transport simulation."""
 
     nx: int = 256
     ny: int = 128
-    u_in: float = 0.05          # inlet velocity (l.u.)
-    re: float = 100.0           # flow Reynolds number
-    diffusivity: float = 0.01   # scalar diffusivity D (l.u.)
+    u_in: float = 0.05  # inlet velocity (l.u.)
+    re: float = 100.0  # flow Reynolds number
+    diffusivity: float = 0.01  # scalar diffusivity D (l.u.)
     # Scalar source: circular patch at (src_cx, src_cy) with radius src_r
-    src_cx: float = 0.15        # source centre x (fraction of nx)
-    src_cy: float = 0.5         # source centre y (fraction of ny)
-    src_radius: float = 0.04    # source radius (fraction of nx)
-    src_strength: float = 0.1   # source emission rate (l.u. per step)
+    src_cx: float = 0.15  # source centre x (fraction of nx)
+    src_cy: float = 0.5  # source centre y (fraction of ny)
+    src_radius: float = 0.04  # source radius (fraction of nx)
+    src_strength: float = 0.1  # source emission rate (l.u. per step)
     # Obstacle: circular cylinder at (cx, cy)
     cyl_cx: float = 0.25
     cyl_cy: float = 0.5
-    cyl_radius: float = 0.06    # fraction of ny
+    cyl_radius: float = 0.06  # fraction of ny
     n_steps: int = 3000
     output_interval: int = 500
     output_root: Path = Path("outputs")
@@ -261,8 +264,14 @@ def run_passive_scalar_transport(
     configure_logging(run_dir)
     save_config_json(asdict(cfg), run_dir / "config.json")
 
-    _logger.info("Passive scalar: nx=%d ny=%d Re=%.1f D=%.4f device=%s",
-                 cfg.nx, cfg.ny, cfg.re, cfg.diffusivity, cfg.device)
+    _logger.info(
+        "Passive scalar: nx=%d ny=%d Re=%.1f D=%.4f device=%s",
+        cfg.nx,
+        cfg.ny,
+        cfg.re,
+        cfg.diffusivity,
+        cfg.device,
+    )
 
     nx, ny = cfg.nx, cfg.ny
 
@@ -281,7 +290,7 @@ def run_passive_scalar_transport(
     src_x = cfg.src_cx * nx
     src_y = cfg.src_cy * ny
     src_r = cfg.src_radius * nx
-    source_mask = ((xx - src_x) ** 2 + (yy - src_y) ** 2) < src_r ** 2
+    source_mask = ((xx - src_x) ** 2 + (yy - src_y) ** 2) < src_r**2
 
     # Init flow
     rho = torch.ones(ny, nx, device=device)
@@ -296,6 +305,7 @@ def run_passive_scalar_transport(
     g = equilibrium_scalar(c0, ux_init, uy_init)
 
     import matplotlib  # noqa: PLC0415
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt  # noqa: PLC0415
 
@@ -318,15 +328,13 @@ def run_passive_scalar_transport(
         # Zero flux at solid (bounce-back)
         g = bounce_back_cells(g, solid)
         # Inlet: zero scalar
-        g[:, :, 0] = equilibrium_scalar(
-            torch.zeros(ny, device=device), ux[:, 0], uy[:, 0]
-        )
+        g[:, :, 0] = equilibrium_scalar(torch.zeros(ny, device=device), ux[:, 0], uy[:, 0])
         g = stream_scalar(g)
 
         if (step + 1) % cfg.output_interval == 0 or step == cfg.n_steps - 1:
             c_pp = macroscopic_scalar(g)
             rho_pp, ux_pp, uy_pp = macroscopic(f)
-            speed = torch.sqrt(ux_pp ** 2 + uy_pp ** 2)
+            speed = torch.sqrt(ux_pp**2 + uy_pp**2)
 
             fig, axes = plt.subplots(1, 2, figsize=(10, 4))
             axes[0].imshow(speed.cpu().numpy(), origin="lower", cmap="RdBu_r")

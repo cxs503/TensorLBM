@@ -17,6 +17,7 @@ validated.
 This module composes existing cold-path runners and does **not** modify any
 solver hot path.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -47,20 +48,29 @@ _MIN_DOMAIN_LEVELS = 3
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _finite_positive(value: object, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or value <= 0.0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not isfinite(value)
+        or value <= 0.0
+    ):
         raise ValueError(f"{name} must be a finite positive scalar")
     return float(value)
 
 
 def _canonical_hash(payload: object) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode(
+        "utf-8"
+    )
     return sha256(encoded).hexdigest()
 
 
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True, slots=True)
 class DomainLevel:
@@ -131,8 +141,13 @@ class DomainConvergenceStudyConfig:
     hull_type: str = "bare_hull"
 
     def __post_init__(self) -> None:
-        if not isinstance(self.domain_levels, tuple) or len(self.domain_levels) < _MIN_DOMAIN_LEVELS:
-            raise ValueError(f"domain convergence study requires at least {_MIN_DOMAIN_LEVELS} domain levels")
+        if (
+            not isinstance(self.domain_levels, tuple)
+            or len(self.domain_levels) < _MIN_DOMAIN_LEVELS
+        ):
+            raise ValueError(
+                f"domain convergence study requires at least {_MIN_DOMAIN_LEVELS} domain levels"
+            )
         if any(not isinstance(level, DomainLevel) for level in self.domain_levels):
             raise TypeError("domain_levels must contain only DomainLevel instances")
         if self.hull_type != "bare_hull":
@@ -160,6 +175,7 @@ class DomainConvergenceStudyConfig:
 # Per-level execution
 # ---------------------------------------------------------------------------
 
+
 def _run_one_level(
     level: DomainLevel,
     config: DomainConvergenceStudyConfig,
@@ -185,9 +201,7 @@ def _run_one_level(
 
     # Extract Ct: mean over post-warmup steps
     ct_series = evidence.ct_time_series
-    post_warmup_cts = [
-        s["ct"] for s in ct_series if s["step"] > config.warmup
-    ]
+    post_warmup_cts = [s["ct"] for s in ct_series if s["step"] > config.warmup]
     if post_warmup_cts:
         ct_mean = sum(post_warmup_cts) / len(post_warmup_cts)
     else:
@@ -199,7 +213,9 @@ def _run_one_level(
     hull_radius = cad_config.r_over_l * config.hull_length
     hull_cross_section = pi * hull_radius * hull_radius
     domain_cross_section = level.ny * level.nz
-    blockage_ratio = hull_cross_section / domain_cross_section if domain_cross_section > 0 else float("inf")
+    blockage_ratio = (
+        hull_cross_section / domain_cross_section if domain_cross_section > 0 else float("inf")
+    )
 
     # Domain length in lattice units (dx = 1)
     domain_length_lu = float(level.nx)
@@ -231,6 +247,7 @@ def _run_one_level(
 # ---------------------------------------------------------------------------
 # Convergence indicator
 # ---------------------------------------------------------------------------
+
 
 def _compute_convergence_indicator(ct_values: list[float]) -> dict[str, Any]:
     """Compute relative-change indicators without claiming convergence."""
@@ -273,6 +290,7 @@ def _compute_convergence_indicator(ct_values: list[float]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Main runner
 # ---------------------------------------------------------------------------
+
 
 def run_suboff_domain_convergence_study(
     config: DomainConvergenceStudyConfig,

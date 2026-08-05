@@ -6,6 +6,7 @@ pressure history; it does not enter the timestep hot path and can be composed
 with any collision / turbulence / boundary configuration as a post-processing
 step.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -52,6 +53,7 @@ def test_matrix_covers_all_audited_functions_and_lattices() -> None:
 # FWH far-field: lattice-agnostic (N/A), implemented + contract-tested
 # ---------------------------------------------------------------------------
 
+
 class TestFWHFarFieldCapability:
     def test_na_implemented_and_contract_tested(self) -> None:
         cap = acoustics_capability_matrix()["fwh_far_field"]["N/A"]
@@ -72,6 +74,7 @@ class TestFWHFarFieldCapability:
 # SPL spectrum: lattice-agnostic (N/A), implemented + contract-tested
 # ---------------------------------------------------------------------------
 
+
 class TestSPLSpectrumCapability:
     def test_na_implemented_and_contract_tested(self) -> None:
         cap = acoustics_capability_matrix()["spl_spectrum"]["N/A"]
@@ -90,6 +93,7 @@ class TestSPLSpectrumCapability:
 # ---------------------------------------------------------------------------
 # Surface pressure extraction: lattice-specific (D2Q9, D3Q19, D3Q27)
 # ---------------------------------------------------------------------------
+
 
 class TestSurfacePressureExtractionCapability:
     @pytest.mark.parametrize("lattice", ["D2Q9", "D3Q19", "D3Q27"])
@@ -111,6 +115,7 @@ class TestSurfacePressureExtractionCapability:
 # OASPL: lattice-agnostic (N/A), implemented + contract-tested
 # ---------------------------------------------------------------------------
 
+
 class TestOASPLCapability:
     def test_na_implemented_and_contract_tested(self) -> None:
         cap = acoustics_capability_matrix()["oaspl"]["N/A"]
@@ -125,6 +130,7 @@ class TestOASPLCapability:
 # FWH result wrapper: lattice-agnostic (N/A), implemented + contract-tested
 # ---------------------------------------------------------------------------
 
+
 class TestFWHResultWrapperCapability:
     def test_na_implemented_and_contract_tested(self) -> None:
         cap = acoustics_capability_matrix()["fwh_result_wrapper"]["N/A"]
@@ -138,6 +144,7 @@ class TestFWHResultWrapperCapability:
 # ---------------------------------------------------------------------------
 # Fail-closed: no combination is physics-validated
 # ---------------------------------------------------------------------------
+
 
 def test_all_capabilities_fail_closed() -> None:
     matrix = acoustics_capability_matrix()
@@ -159,6 +166,7 @@ def test_contract_tested_does_not_imply_physics_validation() -> None:
 # Post-processing nature: not in timestep hot path
 # ---------------------------------------------------------------------------
 
+
 def test_all_hot_path_notes_are_none() -> None:
     """Acoustics is post-processing; no hot-path sync or allocation issues."""
     matrix = acoustics_capability_matrix()
@@ -175,7 +183,9 @@ def test_notes_mention_post_processing() -> None:
             if cap.implementation_status == "IMPLEMENTED":
                 note_lower = cap.note.lower()
                 assert "post-processing" in note_lower or "post processing" in note_lower, (
-                    func, lattice, cap.note
+                    func,
+                    lattice,
+                    cap.note,
                 )
 
 
@@ -187,13 +197,16 @@ def test_notes_mention_composability() -> None:
             if cap.implementation_status == "IMPLEMENTED":
                 note_lower = cap.note.lower()
                 assert "compos" in note_lower or "any collision" in note_lower, (
-                    func, lattice, cap.note
+                    func,
+                    lattice,
+                    cap.note,
                 )
 
 
 # ---------------------------------------------------------------------------
 # require_acoustics_capability always raises (fail-closed)
 # ---------------------------------------------------------------------------
+
 
 def test_require_always_raises_for_contract_tested() -> None:
     with pytest.raises(AcousticsWithheldError, match="WITHHELD_NO_PHYSICS_VALIDATION"):
@@ -209,6 +222,7 @@ def test_require_always_raises_for_no_implementation() -> None:
 # Unknown inputs rejected with stable machine-readable codes
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     ("function", "lattice", "withheld_code"),
     [
@@ -217,7 +231,9 @@ def test_require_always_raises_for_no_implementation() -> None:
     ],
 )
 def test_unknown_inputs_rejected_before_matrix_lookup(
-    function: str, lattice: str, withheld_code: str,
+    function: str,
+    lattice: str,
+    withheld_code: str,
 ) -> None:
     with pytest.raises(AcousticsWithheldError, match=withheld_code):
         require_acoustics_capability(function, lattice)  # type: ignore[arg-type]
@@ -226,6 +242,7 @@ def test_unknown_inputs_rejected_before_matrix_lookup(
 # ---------------------------------------------------------------------------
 # Post-processing audit
 # ---------------------------------------------------------------------------
+
 
 def test_post_processing_audit_returns_nonempty() -> None:
     audit = acoustics_post_processing_audit()

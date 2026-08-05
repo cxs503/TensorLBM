@@ -4,6 +4,7 @@ This module never invokes a solver.  It converts an already-produced checkpoint
 set into restart/status/progress/completion artifacts, and fails closed when the
 set cannot be independently audited.
 """
+
 from __future__ import annotations
 
 import csv
@@ -62,7 +63,9 @@ def _write_progress(path: Path, segments: list[dict[str, object]]) -> None:
     temporary = _temporary_path(path)
     try:
         with temporary.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=("end_step", "checkpoint", "checkpoint_set_complete"))
+            writer = csv.DictWriter(
+                handle, fieldnames=("end_step", "checkpoint", "checkpoint_set_complete")
+            )
             writer.writeheader()
             for segment in segments:
                 writer.writerow({**segment, "checkpoint_set_complete": "true"})
@@ -72,7 +75,10 @@ def _write_progress(path: Path, segments: list[dict[str, object]]) -> None:
 
 
 def materialize_suboff_campaign_lifecycle(
-    manifest: Mapping[str, object], *, checkpoint_root: str | Path, artifact_root: str | Path,
+    manifest: Mapping[str, object],
+    *,
+    checkpoint_root: str | Path,
+    artifact_root: str | Path,
 ) -> dict[str, object]:
     """Record an auditable checkpoint lifecycle without launching any compute.
 
@@ -88,20 +94,44 @@ def materialize_suboff_campaign_lifecycle(
         segments = _segments(manifest)
         audit = build_suboff_campaign_audit_artifact(manifest, root=root)
     except Exception as exc:
-        _atomic_json(destination / "run_status.json", {
-            "schema": _STATUS_SCHEMA, "status": "blocked", "checkpoint_set_complete": False,
-            "reason": str(exc), "updated_at": _utc_now(),
-        })
+        _atomic_json(
+            destination / "run_status.json",
+            {
+                "schema": _STATUS_SCHEMA,
+                "status": "blocked",
+                "checkpoint_set_complete": False,
+                "reason": str(exc),
+                "updated_at": _utc_now(),
+            },
+        )
         raise
 
     restart = segments[-1]["checkpoint"]
-    telemetry = {"schema": _STATUS_SCHEMA, "status": "completed", "ct": audit["ct"],
-                 "blocks": audit["blocks"], "updated_at": _utc_now()}
-    completed = {"schema": _STATUS_SCHEMA, "status": "completed", "checkpoint_set_complete": True,
-                 "restart_checkpoint": restart, "audit_artifact": audit, "updated_at": _utc_now()}
-    status = {"schema": _STATUS_SCHEMA, "status": "completed", "checkpoint_set_complete": True,
-              "restart_checkpoint": restart, "completed_manifest": "completed_manifest.json",
-              "progress": "progress.csv", "block_telemetry": "block_telemetry.json", "updated_at": _utc_now()}
+    telemetry = {
+        "schema": _STATUS_SCHEMA,
+        "status": "completed",
+        "ct": audit["ct"],
+        "blocks": audit["blocks"],
+        "updated_at": _utc_now(),
+    }
+    completed = {
+        "schema": _STATUS_SCHEMA,
+        "status": "completed",
+        "checkpoint_set_complete": True,
+        "restart_checkpoint": restart,
+        "audit_artifact": audit,
+        "updated_at": _utc_now(),
+    }
+    status = {
+        "schema": _STATUS_SCHEMA,
+        "status": "completed",
+        "checkpoint_set_complete": True,
+        "restart_checkpoint": restart,
+        "completed_manifest": "completed_manifest.json",
+        "progress": "progress.csv",
+        "block_telemetry": "block_telemetry.json",
+        "updated_at": _utc_now(),
+    }
     _write_progress(destination / "progress.csv", segments)
     _atomic_json(destination / "block_telemetry.json", telemetry)
     _atomic_json(destination / "completed_manifest.json", completed)

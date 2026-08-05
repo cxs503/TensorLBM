@@ -1,4 +1,5 @@
 """SUBOFF resistance benchmark with iterative voxel-refinement control."""
+
 from __future__ import annotations
 
 import math
@@ -94,8 +95,10 @@ class SuboffResistanceBenchmarkConfig:
             raise ValueError("max_iterations must be >= 1")
         if self.target_error_pct <= 0.0:
             raise ValueError("target_error_pct must be > 0")
-        if (not math.isfinite(self.numerics_max_coefficient_change_pct)
-                or self.numerics_max_coefficient_change_pct <= 0.0):
+        if (
+            not math.isfinite(self.numerics_max_coefficient_change_pct)
+            or self.numerics_max_coefficient_change_pct <= 0.0
+        ):
             raise ValueError("numerics_max_coefficient_change_pct must be finite and > 0")
         if not (0.0 < self.lbm_u_in < 0.15):
             raise ValueError("lbm_u_in must be in (0, 0.15)")
@@ -107,11 +110,15 @@ class SuboffResistanceBenchmarkConfig:
             raise ValueError("lbm_warmup_steps must be >= 0")
         if self.lbm_sample_interval < 1:
             raise ValueError("lbm_sample_interval must be >= 1")
-        if (not math.isfinite(self.conservation_max_relative_mass_drift)
-                or self.conservation_max_relative_mass_drift < 0.0):
+        if (
+            not math.isfinite(self.conservation_max_relative_mass_drift)
+            or self.conservation_max_relative_mass_drift < 0.0
+        ):
             raise ValueError("conservation_max_relative_mass_drift must be finite and >= 0")
-        if (not math.isfinite(self.conservation_max_relative_momentum_drift)
-                or self.conservation_max_relative_momentum_drift < 0.0):
+        if (
+            not math.isfinite(self.conservation_max_relative_momentum_drift)
+            or self.conservation_max_relative_momentum_drift < 0.0
+        ):
             raise ValueError("conservation_max_relative_momentum_drift must be finite and >= 0")
         if self.max_length_lu < 20.0:
             raise ValueError("max_length_lu must be >= 20")
@@ -128,24 +135,24 @@ class SuboffResistanceBenchmarkConfig:
         if self.adaptive_coarsen_threshold <= 0.0:
             raise ValueError("adaptive_coarsen_threshold must be > 0")
         if self.adaptive_coarsen_threshold >= self.adaptive_refine_threshold:
-            raise ValueError(
-                "adaptive_coarsen_threshold must be < adaptive_refine_threshold"
-            )
+            raise ValueError("adaptive_coarsen_threshold must be < adaptive_refine_threshold")
         if self.adaptive_max_patches < 1:
             raise ValueError("adaptive_max_patches must be >= 1")
         if self.momentum_budget_interval < 1:
             raise ValueError("momentum_budget_interval must be >= 1")
         if self.use_wall_model:
             # Cold-path admission: the loop below must not decide capability.
-            require_wall_function_run(WallFunctionRunRequest(
-                capability=WallFunctionCapability.MOVING_BOUNCE_BACK,
-                lattice="D3Q19",
-                physics="single_phase_incompressible",
-                collision="MRT_SMAGORINSKY",
-                geometry="static_voxel_solid",
-                backend="torch",
-                adaptive_mesh=self.use_adaptive_mesh,
-            ))
+            require_wall_function_run(
+                WallFunctionRunRequest(
+                    capability=WallFunctionCapability.MOVING_BOUNCE_BACK,
+                    lattice="D3Q19",
+                    physics="single_phase_incompressible",
+                    collision="MRT_SMAGORINSKY",
+                    geometry="static_voxel_solid",
+                    backend="torch",
+                    adaptive_mesh=self.use_adaptive_mesh,
+                )
+            )
 
     @property
     def resolved_radius_m(self) -> float:
@@ -196,8 +203,12 @@ def _scale_cd_to_physical(
 
 
 def _force_scale_factor(
-    rho_phys: float, u_phys: float, l_phys: float,
-    rho_lu: float, u_lu: float, l_lu: float,
+    rho_phys: float,
+    u_phys: float,
+    l_phys: float,
+    rho_lu: float,
+    u_lu: float,
+    l_lu: float,
 ) -> float:
     """Scale lattice force to physical force.
 
@@ -278,8 +289,8 @@ def _crop_central_region(tensor: torch.Tensor, crop_size: int) -> torch.Tensor:
     sx = (nx - crop_size) // 2
     sz = (max(z, crop_size) - crop_size) // 2
     if tensor.ndim == 3:
-        return tensor[sz:sz + crop_size, sy:sy + crop_size, sx:sx + crop_size]
-    return tensor[:, sy:sy + crop_size, sx:sx + crop_size]
+        return tensor[sz : sz + crop_size, sy : sy + crop_size, sx : sx + crop_size]
+    return tensor[:, sy : sy + crop_size, sx : sx + crop_size]
 
 
 def _lattice_momentum(f: torch.Tensor) -> torch.Tensor:
@@ -329,13 +340,17 @@ def _fluid_only_same_phase_control_volume_classification(
         step = sample["step"]
         if not isinstance(step, int):
             raise ValueError("operator sample step must be an int")
-        storage_samples.append({
-            "step": step,
-            "time_interval": {"start": f"retained_state[{step - 1}]",
-                              "end": f"retained_state[{step}]"},
-            "value": sample["fluid_only_storage_change"],
-            "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
-        })
+        storage_samples.append(
+            {
+                "step": step,
+                "time_interval": {
+                    "start": f"retained_state[{step - 1}]",
+                    "end": f"retained_state[{step}]",
+                },
+                "value": sample["fluid_only_storage_change"],
+                "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
+            }
+        )
     return {
         "status": "not_definable",
         "kind": "fluid_only_same_phase_discrete_control_volume_momentum_ledger",
@@ -350,18 +365,27 @@ def _fluid_only_same_phase_control_volume_classification(
             "wall_solid_overlap_cell_count": int(overlap.sum().item()),
             "solid_and_wall_excluded_from_storage": True,
         },
-        "storage": {"status": "measured", "samples": storage_samples,
-                    "meaning": "cell-centred fluid-mask population first-moment change only"},
+        "storage": {
+            "status": "measured",
+            "samples": storage_samples,
+            "meaning": "cell-centred fluid-mask population first-moment change only",
+        },
         "stream_ownership": {
             "status": "not_definable",
             "implementation": "stream3d periodic torch.roll over every population cell",
-            "missing_provenance": ["per_population_pre_stream_source_cell", "fluid_cv_crossing_link_classification"],
+            "missing_provenance": [
+                "per_population_pre_stream_source_cell",
+                "fluid_cv_crossing_link_classification",
+            ],
             "reason": "periodic_stream_has_no_recorded_source_target_link_ownership",
         },
         "zou_he_overwrite_ownership": {
             "status": "not_definable",
             "operators": ["zou_he_inlet_velocity_3d", "zou_he_outlet_pressure_3d"],
-            "missing_provenance": ["overwritten_population_link_owner", "fluid_cv_boundary_link_classification"],
+            "missing_provenance": [
+                "overwritten_population_link_owner",
+                "fluid_cv_boundary_link_classification",
+            ],
             "reason": "cell_plane_reconstruction_overwrites_populations_without_link_provenance",
         },
         "wall_solid_linkwise_exchange": {
@@ -370,7 +394,8 @@ def _fluid_only_same_phase_control_volume_classification(
             "reason": "cell_based_population_reset_has_no_fluid_solid_link_pairing",
         },
         "control_volume_residual": {
-            "status": "not_definable", "value": None,
+            "status": "not_definable",
+            "value": None,
             "reason": "required_link_owned_transport_and_boundary_impulse_terms_are_not_observable",
         },
         "prohibitions": [
@@ -440,39 +465,51 @@ def _same_time_control_volume_momentum_evidence(
                 "missing_terms": missing_terms,
                 "samples": [],
             }
-        samples.append({
-            "step": step,
-            "time_interval": {"start": f"retained_state[{step - 1}]",
-                              "end": f"retained_state[{step}]"},
-            "sample_phase": "post_complete_d3q19_bc_population_state",
-            "storage_change": {
-                "status": "measured",
-                "value": operator_sample["fluid_momentum_delta"],
-                "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
-            },
-            "measured_x_face_transport": {
-                "status": "measured",
-                "time_index": f"retained_state[{step}]",
-                "value": face_sample["net_outward"],
-                "units": "lattice momentum flux / force (rho_lu * dx_lu^4 / dt_lu^2)",
-                "sign_convention": "positive is net outward transport through x-normal faces",
-            },
-            "operator_state_deltas": {
-                "status": "measured",
-                "values": {name: operator_sample[name] for name in (
-                    "collision", "streaming", "inlet_boundary", "outlet_boundary",
-                    "wall_exchange", "solid_exchange", "unexplained_residual",
-                )},
-                "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
-                "meaning": "population-state deltas over the stated interval; not face-flux terms",
-            },
-            "control_volume_residual": {
-                "status": "withheld",
-                "value": None,
-                "reason": "required_control_volume_terms_unavailable",
-                "missing_terms": missing_terms,
-            },
-        })
+        samples.append(
+            {
+                "step": step,
+                "time_interval": {
+                    "start": f"retained_state[{step - 1}]",
+                    "end": f"retained_state[{step}]",
+                },
+                "sample_phase": "post_complete_d3q19_bc_population_state",
+                "storage_change": {
+                    "status": "measured",
+                    "value": operator_sample["fluid_momentum_delta"],
+                    "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
+                },
+                "measured_x_face_transport": {
+                    "status": "measured",
+                    "time_index": f"retained_state[{step}]",
+                    "value": face_sample["net_outward"],
+                    "units": "lattice momentum flux / force (rho_lu * dx_lu^4 / dt_lu^2)",
+                    "sign_convention": "positive is net outward transport through x-normal faces",
+                },
+                "operator_state_deltas": {
+                    "status": "measured",
+                    "values": {
+                        name: operator_sample[name]
+                        for name in (
+                            "collision",
+                            "streaming",
+                            "inlet_boundary",
+                            "outlet_boundary",
+                            "wall_exchange",
+                            "solid_exchange",
+                            "unexplained_residual",
+                        )
+                    },
+                    "units": "lattice momentum (rho_lu * dx_lu^3 / dt_lu)",
+                    "meaning": "population-state deltas over the stated interval; not face-flux terms",
+                },
+                "control_volume_residual": {
+                    "status": "withheld",
+                    "value": None,
+                    "reason": "required_control_volume_terms_unavailable",
+                    "missing_terms": missing_terms,
+                },
+            }
+        )
     return {
         "status": "measured" if full_per_step else "sampled",
         "kind": "same_discrete_time_layer_control_volume_momentum_evidence",
@@ -496,6 +533,7 @@ def _export_snapshot(
     """Export a single flow-field snapshot as 4 NPY files (p, ux, uy, uz)."""
     import os
     import numpy as np
+
     base = config.snapshot_dir
     dirs = (f"{base}/p", f"{base}/ux", f"{base}/uy", f"{base}/uz")
     rho, ux, uy, uz = macroscopic3d(f)
@@ -504,8 +542,7 @@ def _export_snapshot(
     uy_c = _crop_central_region(uy, config.snapshot_crop_size)
     uz_c = _crop_central_region(uz, config.snapshot_crop_size)
     idx = (step - config.snapshot_start_step) // config.snapshot_interval
-    for arr, d in [(rho_c, dirs[0]), (ux_c, dirs[1]),
-                    (uy_c, dirs[2]), (uz_c, dirs[3])]:
+    for arr, d in [(rho_c, dirs[0]), (ux_c, dirs[1]), (uy_c, dirs[2]), (uz_c, dirs[3])]:
         os.makedirs(d, exist_ok=True)
         np.save(os.path.join(d, f"{idx}.npy"), arr.cpu().numpy().astype(np.float32))
 
@@ -565,10 +602,9 @@ def _run_suboff_lbm_drag(
     # not an inference from a finite drag coefficient.
     initial_mass = float(f.sum().item())
     initial_rho, initial_ux, initial_uy, initial_uz = macroscopic3d(f)
-    initial_momentum = torch.stack(tuple(
-        (initial_rho * velocity).sum()
-        for velocity in (initial_ux, initial_uy, initial_uz)
-    ))
+    initial_momentum = torch.stack(
+        tuple((initial_rho * velocity).sum() for velocity in (initial_ux, initial_uy, initial_uz))
+    )
     initial_population_momentum = (
         _lattice_momentum(f) if config.momentum_budget_diagnostic else None
     )
@@ -619,8 +655,9 @@ def _run_suboff_lbm_drag(
         )
 
     for step in range(1, config.lbm_steps + 1):
-        sample_budget = (config.momentum_budget_diagnostic
-                         and (step - 1) % config.momentum_budget_interval == 0)
+        sample_budget = (
+            config.momentum_budget_diagnostic and (step - 1) % config.momentum_budget_interval == 0
+        )
         momentum_before = _lattice_momentum(f) if sample_budget else None
         fluid_mask = ~(wall_mask | mask)
         fluid_momentum_before = _masked_lattice_momentum(f, fluid_mask) if sample_budget else None
@@ -651,8 +688,11 @@ def _run_suboff_lbm_drag(
             if not config.use_wall_model:
                 f = bounce_back_cells_3d(f, mask)
             momentum_after_boundaries = _lattice_momentum(f)
-            assert (momentum_before is not None and momentum_after_collision is not None
-                    and momentum_after_stream is not None)
+            assert (
+                momentum_before is not None
+                and momentum_after_collision is not None
+                and momentum_after_stream is not None
+            )
             # Exact global first moments of the full retained population array
             # before and after each operator. This is an operator-domain ledger,
             # explicitly not a physical fluid control-volume balance.
@@ -661,18 +701,31 @@ def _run_suboff_lbm_drag(
             inlet_delta = momentum_after_inlet - momentum_after_solid_preboundary
             outlet_delta = momentum_after_outlet - momentum_after_inlet
             wall_delta = momentum_after_wall - momentum_after_outlet
-            solid_delta = (momentum_after_solid_preboundary - momentum_after_stream
-                           + momentum_after_boundaries - momentum_after_wall)
+            solid_delta = (
+                momentum_after_solid_preboundary
+                - momentum_after_stream
+                + momentum_after_boundaries
+                - momentum_after_wall
+            )
             total_delta = momentum_after_boundaries - momentum_before
             assert fluid_momentum_before is not None
             fluid_momentum_after = _masked_lattice_momentum(f, fluid_mask)
             fluid_only_storage_change = fluid_momentum_after - fluid_momentum_before
-            explained_delta = (collision_delta + streaming_delta + inlet_delta + outlet_delta
-                               + wall_delta + solid_delta)
+            explained_delta = (
+                collision_delta
+                + streaming_delta
+                + inlet_delta
+                + outlet_delta
+                + wall_delta
+                + solid_delta
+            )
             operator_deltas = {
-                "collision": collision_delta, "streaming": streaming_delta,
-                "inlet_boundary": inlet_delta, "outlet_boundary": outlet_delta,
-                "wall_exchange": wall_delta, "solid_exchange": solid_delta,
+                "collision": collision_delta,
+                "streaming": streaming_delta,
+                "inlet_boundary": inlet_delta,
+                "outlet_boundary": outlet_delta,
+                "wall_exchange": wall_delta,
+                "solid_exchange": solid_delta,
                 "unexplained_residual": total_delta - explained_delta,
             }
             for name, delta in operator_deltas.items():
@@ -683,69 +736,87 @@ def _run_suboff_lbm_drag(
             for name, values in face_flux.items():
                 face_flux_totals[name] += torch.tensor(values, dtype=torch.float64, device=device)
             face_flux_samples.append({"step": step, **face_flux})
-            momentum_budget_samples.append({
-                "step": step,
-                "fluid_momentum_delta": [float(value) for value in total_delta.cpu().tolist()],
-                "fluid_only_storage_change": [
-                    float(value) for value in fluid_only_storage_change.cpu().tolist()
-                ],
-                "face_flux": face_flux,
-                **{name: [float(value) for value in delta.cpu().tolist()]
-                   for name, delta in operator_deltas.items()},
-                "operator_domain_ledger": {
-                    "status": "measured",
-                    "domain": "entire retained D3Q19 population array",
-                    "sample_phase": "post_complete_d3q19_bc_population_state",
-                    "operator_identity": {
+            momentum_budget_samples.append(
+                {
+                    "step": step,
+                    "fluid_momentum_delta": [float(value) for value in total_delta.cpu().tolist()],
+                    "fluid_only_storage_change": [
+                        float(value) for value in fluid_only_storage_change.cpu().tolist()
+                    ],
+                    "face_flux": face_flux,
+                    **{
+                        name: [float(value) for value in delta.cpu().tolist()]
+                        for name, delta in operator_deltas.items()
+                    },
+                    "operator_domain_ledger": {
                         "status": "measured",
-                        "equation": (
-                            "fluid_momentum_delta = collision + streaming + inlet_boundary "
-                            "+ outlet_boundary + wall_exchange + solid_exchange "
-                            "+ unexplained_residual"
-                        ),
-                        "residual": [float(value) for value in operator_deltas[
-                            "unexplained_residual"].cpu().tolist()],
-                        "meaning": (
-                            "exact same-phase full-array population-momentum identity; "
-                            "not a physical control-volume closure"
-                        ),
+                        "domain": "entire retained D3Q19 population array",
+                        "sample_phase": "post_complete_d3q19_bc_population_state",
+                        "operator_identity": {
+                            "status": "measured",
+                            "equation": (
+                                "fluid_momentum_delta = collision + streaming + inlet_boundary "
+                                "+ outlet_boundary + wall_exchange + solid_exchange "
+                                "+ unexplained_residual"
+                            ),
+                            "residual": [
+                                float(value)
+                                for value in operator_deltas["unexplained_residual"].cpu().tolist()
+                            ],
+                            "meaning": (
+                                "exact same-phase full-array population-momentum identity; "
+                                "not a physical control-volume closure"
+                            ),
+                        },
+                        "streaming": {
+                            "fluid_momentum_change": [
+                                float(value) for value in streaming_delta.cpu().tolist()
+                            ],
+                            "implementation": "periodic torch.roll permutation",
+                            "expected": "zero_global_population_momentum_delta",
+                            "meaning": (
+                                "stream3d is a periodic population permutation; any nonzero "
+                                "floating-point reduction remainder is not a boundary flux"
+                            ),
+                        },
+                        "wall_impulse": {
+                            "fluid_momentum_change": [
+                                float(value) for value in wall_delta.cpu().tolist()
+                            ],
+                            "reaction_on_wall": [
+                                float(value) for value in (-wall_delta).cpu().tolist()
+                            ],
+                            "sign_convention": (
+                                "fluid_momentum_change is added to fluid; reaction_on_wall "
+                                "is the equal-and-opposite operator reaction"
+                            ),
+                            "scope": "bounce_back_cells_3d(wall_mask) over all retained populations",
+                        },
+                        "solid_impulse": {
+                            "fluid_momentum_change": [
+                                float(value) for value in solid_delta.cpu().tolist()
+                            ],
+                            "reaction_on_solid": [
+                                float(value) for value in (-solid_delta).cpu().tolist()
+                            ],
+                            "sign_convention": (
+                                "fluid_momentum_change is added to fluid; reaction_on_solid "
+                                "is the equal-and-opposite operator reaction"
+                            ),
+                            "scope": (
+                                "sum of all retained-population solid operators in this step "
+                                "(wall model when enabled and obstacle bounce-back when enabled)"
+                            ),
+                        },
                     },
-                    "streaming": {
-                        "fluid_momentum_change": [float(value) for value in streaming_delta.cpu().tolist()],
-                        "implementation": "periodic torch.roll permutation",
-                        "expected": "zero_global_population_momentum_delta",
-                        "meaning": (
-                            "stream3d is a periodic population permutation; any nonzero "
-                            "floating-point reduction remainder is not a boundary flux"
-                        ),
-                    },
-                    "wall_impulse": {
-                        "fluid_momentum_change": [float(value) for value in wall_delta.cpu().tolist()],
-                        "reaction_on_wall": [float(value) for value in (-wall_delta).cpu().tolist()],
-                        "sign_convention": (
-                            "fluid_momentum_change is added to fluid; reaction_on_wall "
-                            "is the equal-and-opposite operator reaction"
-                        ),
-                        "scope": "bounce_back_cells_3d(wall_mask) over all retained populations",
-                    },
-                    "solid_impulse": {
-                        "fluid_momentum_change": [float(value) for value in solid_delta.cpu().tolist()],
-                        "reaction_on_solid": [float(value) for value in (-solid_delta).cpu().tolist()],
-                        "sign_convention": (
-                            "fluid_momentum_change is added to fluid; reaction_on_solid "
-                            "is the equal-and-opposite operator reaction"
-                        ),
-                        "scope": (
-                            "sum of all retained-population solid operators in this step "
-                            "(wall model when enabled and obstacle bounce-back when enabled)"
-                        ),
-                    },
-                },
-            })
+                }
+            )
         else:
             # Preserve the established normal-path operator grouping exactly.
             f = apply_zou_he_channel_boundaries_3d(
-                f, u_in=config.lbm_u_in, wall_mask=wall_mask,
+                f,
+                u_in=config.lbm_u_in,
+                wall_mask=wall_mask,
                 obstacle_mask=torch.zeros_like(mask) if config.use_wall_model else mask,
             )
         # Record direct per-step state observations. A finite final drag alone
@@ -762,9 +833,9 @@ def _run_suboff_lbm_drag(
             density_min = min(density_min, float(rho_step.min().item()))
             density_max = max(density_max, float(rho_step.max().item()))
         mass = float(f.sum().item())
-        momentum = torch.stack(tuple(
-            (rho_step * velocity).sum() for velocity in (ux_step, uy_step, uz_step)
-        ))
+        momentum = torch.stack(
+            tuple((rho_step * velocity).sum() for velocity in (ux_step, uy_step, uz_step))
+        )
         momentum_norm = float(torch.linalg.vector_norm(momentum).item())
         final_mass = mass
         final_momentum_norm = momentum_norm
@@ -772,7 +843,8 @@ def _run_suboff_lbm_drag(
         abs_momentum_drift = abs(momentum_norm - initial_momentum_norm)
         max_abs_mass_drift = max(max_abs_mass_drift, abs_mass_drift)
         max_relative_mass_drift = max(
-            max_relative_mass_drift, abs_mass_drift / max(abs(initial_mass), 1.0e-30),
+            max_relative_mass_drift,
+            abs_mass_drift / max(abs(initial_mass), 1.0e-30),
         )
         max_abs_momentum_drift = max(max_abs_momentum_drift, abs_momentum_drift)
         max_relative_momentum_drift = max(
@@ -781,7 +853,12 @@ def _run_suboff_lbm_drag(
         )
         mass_sample_count += 1
         # --- snapshot export ---
-        if config.save_snapshots and step >= config.snapshot_start_step and step <= config.snapshot_end_step and (step - config.snapshot_start_step) % config.snapshot_interval == 0:
+        if (
+            config.save_snapshots
+            and step >= config.snapshot_start_step
+            and step <= config.snapshot_end_step
+            and (step - config.snapshot_start_step) % config.snapshot_interval == 0
+        ):
             _export_snapshot(f, step, config)
         if adaptive_solver is not None:
             adaptive_solver.coarse_f = f
@@ -795,28 +872,37 @@ def _run_suboff_lbm_drag(
         ):
             drag_samples.append(float(fx.item()))
 
-    sampled_indices = list(range(1, config.lbm_steps + 1, config.momentum_budget_interval)
-                           if config.momentum_budget_diagnostic else [])
-    full_budget_coverage = (config.momentum_budget_diagnostic
-                            and len(sampled_indices) == config.lbm_steps)
+    sampled_indices = list(
+        range(1, config.lbm_steps + 1, config.momentum_budget_interval)
+        if config.momentum_budget_diagnostic
+        else []
+    )
+    full_budget_coverage = (
+        config.momentum_budget_diagnostic and len(sampled_indices) == config.lbm_steps
+    )
     momentum_budget_summary: dict[str, object] = {
         "status": "measured" if config.momentum_budget_diagnostic else "disabled",
         "mode": "operator_state_snapshots" if config.momentum_budget_diagnostic else "disabled",
         "interval": config.momentum_budget_interval if config.momentum_budget_diagnostic else None,
         "sampled_step_indices": sampled_indices,
         "sample_count": len(sampled_indices),
-        "coverage": "full_per_step" if full_budget_coverage else (
-            "sampled" if config.momentum_budget_diagnostic else "disabled"),
+        "coverage": "full_per_step"
+        if full_budget_coverage
+        else ("sampled" if config.momentum_budget_diagnostic else "disabled"),
         "units": "lattice momentum per time step (rho_lu * dx_lu^4 / dt_lu)",
         "sign_convention": "positive component is momentum added to fluid along positive (x,y,z) lattice axis",
         "boundary_flux": {
             "status": "measured" if config.momentum_budget_diagnostic else "disabled",
-            "kind": "face_integrated_population_momentum_flux" if config.momentum_budget_diagnostic else None,
-            "sampling_state": "post_complete_d3q19_bc_population_state" if config.momentum_budget_diagnostic else None,
+            "kind": "face_integrated_population_momentum_flux"
+            if config.momentum_budget_diagnostic
+            else None,
+            "sampling_state": "post_complete_d3q19_bc_population_state"
+            if config.momentum_budget_diagnostic
+            else None,
             "samples": face_flux_samples,
-            "coverage": "full_per_step" if full_budget_coverage else (
-                "sampled" if config.momentum_budget_diagnostic else "disabled"
-            ),
+            "coverage": "full_per_step"
+            if full_budget_coverage
+            else ("sampled" if config.momentum_budget_diagnostic else "disabled"),
             "sample_sum": {
                 name: [float(value) for value in total.cpu().tolist()]
                 for name, total in face_flux_totals.items()
@@ -835,11 +921,16 @@ def _run_suboff_lbm_drag(
                 "reason": "face_flux_is_not_a_bc_population_delta",
             },
         },
-        "body_force": {"status": "unavailable", "reason": "no body-force operator is enabled in this SUBOFF loop"},
+        "body_force": {
+            "status": "unavailable",
+            "reason": "no body-force operator is enabled in this SUBOFF loop",
+        },
         "samples": momentum_budget_samples,
         "cumulative_sampled": {
-            **{name: [float(value) for value in total.cpu().tolist()]
-               for name, total in momentum_budget_totals.items()},
+            **{
+                name: [float(value) for value in total.cpu().tolist()]
+                for name, total in momentum_budget_totals.items()
+            },
         },
     }
     sampled_cumulative = momentum_budget_summary["cumulative_sampled"]
@@ -858,10 +949,14 @@ def _run_suboff_lbm_drag(
         }
     momentum_budget_summary["same_time_control_volume"] = (
         _same_time_control_volume_momentum_evidence(
-            momentum_budget_samples, face_flux_samples,
+            momentum_budget_samples,
+            face_flux_samples,
             full_per_step=full_budget_coverage,
-        ) if config.momentum_budget_diagnostic else {
-            "status": "disabled", "reason": "operator_budget_disabled",
+        )
+        if config.momentum_budget_diagnostic
+        else {
+            "status": "disabled",
+            "reason": "operator_budget_disabled",
         }
     )
     momentum_budget_summary["fluid_only_same_phase_control_volume"] = (
@@ -870,8 +965,11 @@ def _run_suboff_lbm_drag(
             wall_mask=wall_mask,
             solid_mask=mask,
             full_per_step=full_budget_coverage,
-        ) if config.momentum_budget_diagnostic else {
-            "status": "disabled", "reason": "operator_budget_disabled",
+        )
+        if config.momentum_budget_diagnostic
+        else {
+            "status": "disabled",
+            "reason": "operator_budget_disabled",
         }
     )
 
@@ -987,8 +1085,12 @@ def run_suboff_resistance_benchmark(
         )
         # Scale lattice force to physical force
         f_scale = _force_scale_factor(
-            config.rho_kgm3, config.speed_ms, config.length_m,
-            1.0, config.lbm_u_in, length_lu,
+            config.rho_kgm3,
+            config.speed_ms,
+            config.length_m,
+            1.0,
+            config.lbm_u_in,
+            length_lu,
         )
         resistance_sim_n = fx_lu * f_scale
         error_pct: float | None = None
@@ -1031,8 +1133,7 @@ def run_suboff_resistance_benchmark(
         prev_cd = cd_sim
         # A spatial convergence assertion needs three independently executed
         # grids: coarse/fine differences alone have no observed order or trend.
-        if (k >= 3 and error_pct is not None
-                and error_pct <= config.target_error_pct):
+        if k >= 3 and error_pct is not None and error_pct <= config.target_error_pct:
             break
 
     return {
@@ -1048,7 +1149,9 @@ def run_suboff_resistance_benchmark(
             "cd_analytical": cd_analytical,
             "resistance_analytical_n": resistance_analytical_n,
             "cd_richardson": richardson_cd if math.isfinite(richardson_cd) else None,
-            "re_lbm_analytical_cd": best_cd_lbm_re_analytical if math.isfinite(best_cd_lbm_re_analytical) else None,
+            "re_lbm_analytical_cd": best_cd_lbm_re_analytical
+            if math.isfinite(best_cd_lbm_re_analytical)
+            else None,
         },
         "simulated": {
             "cd": best_cd,
@@ -1079,32 +1182,49 @@ def _refinement_level_observation(iteration: dict[str, object], index: int) -> d
     grid = iteration.get("grid")
     if not isinstance(runtime, dict) or not isinstance(grid, dict):
         raise RuntimeError("SUBOFF refinement level has no runtime/grid evidence")
-    required = ("requested_steps", "completed_steps", "finite_population_checks",
-                "finite_density_checks", "density_min", "density_max")
+    required = (
+        "requested_steps",
+        "completed_steps",
+        "finite_population_checks",
+        "finite_density_checks",
+        "density_min",
+        "density_max",
+    )
     values = {name: runtime.get(name) for name in required}
-    numeric = all(isinstance(value, (int, float)) and not isinstance(value, bool)
-                  and math.isfinite(float(value)) for value in values.values())
-    finite_pass = (numeric
-                   and values["completed_steps"] == values["requested_steps"]
-                   and values["finite_population_checks"] == values["completed_steps"]
-                   and values["finite_density_checks"] == values["completed_steps"]
-                   and runtime.get("all_populations_finite") is True
-                   and runtime.get("all_densities_finite") is True
-                   and float(values["density_min"]) > 0.0
-                   and float(values["density_min"]) <= float(values["density_max"]))
+    numeric = all(
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        for value in values.values()
+    )
+    finite_pass = (
+        numeric
+        and values["completed_steps"] == values["requested_steps"]
+        and values["finite_population_checks"] == values["completed_steps"]
+        and values["finite_density_checks"] == values["completed_steps"]
+        and runtime.get("all_populations_finite") is True
+        and runtime.get("all_densities_finite") is True
+        and float(values["density_min"]) > 0.0
+        and float(values["density_min"]) <= float(values["density_max"])
+    )
     coefficient = iteration.get("cd")
     record: dict[str, object] = {
         "level": index + 1,
         "grid": dict(grid),
         "cell_size_m": iteration.get("cell_size_m"),
         "coefficient": coefficient,
-        "completion": {"requested_steps": values["requested_steps"],
-                       "completed_steps": values["completed_steps"],
-                       "pass": numeric and values["completed_steps"] == values["requested_steps"]},
-        "finite": {"pass": finite_pass,
-                   "population_checks": values["finite_population_checks"],
-                   "density_checks": values["finite_density_checks"],
-                   "density_min": values["density_min"], "density_max": values["density_max"]},
+        "completion": {
+            "requested_steps": values["requested_steps"],
+            "completed_steps": values["completed_steps"],
+            "pass": numeric and values["completed_steps"] == values["requested_steps"],
+        },
+        "finite": {
+            "pass": finite_pass,
+            "population_checks": values["finite_population_checks"],
+            "density_checks": values["finite_density_checks"],
+            "density_min": values["density_min"],
+            "density_max": values["density_max"],
+        },
     }
     canonical = json.dumps(record, sort_keys=True, separators=(",", ":"), allow_nan=False)
     record["evidence_sha256"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -1124,17 +1244,25 @@ def run_suboff_resistance_runtime(
     simulated = result.get("simulated")
     iterations = result.get("iterations")
     coefficient = simulated.get("cd") if isinstance(simulated, dict) else None
-    if not isinstance(iterations, list) or not iterations or not all(isinstance(item, dict) for item in iterations):
+    if (
+        not isinstance(iterations, list)
+        or not iterations
+        or not all(isinstance(item, dict) for item in iterations)
+    ):
         raise RuntimeError("SUBOFF runner returned no iteration evidence")
     typed_iterations = [item for item in iterations if isinstance(item, dict)]
-    refinement_levels = [_refinement_level_observation(item, index)
-                         for index, item in enumerate(typed_iterations)]
+    refinement_levels = [
+        _refinement_level_observation(item, index) for index, item in enumerate(typed_iterations)
+    ]
     final_iteration = typed_iterations[-1]
     runtime_evidence = final_iteration.get("runtime_evidence")
     if not isinstance(runtime_evidence, dict):
         raise RuntimeError("SUBOFF runner returned no runtime numerical evidence")
-    if (not isinstance(coefficient, (int, float)) or isinstance(coefficient, bool)
-            or not math.isfinite(float(coefficient))):
+    if (
+        not isinstance(coefficient, (int, float))
+        or isinstance(coefficient, bool)
+        or not math.isfinite(float(coefficient))
+    ):
         raise RuntimeError("SUBOFF runner returned no finite measured resistance coefficient")
     requested_steps = runtime_evidence.get("requested_steps")
     completed_steps = runtime_evidence.get("completed_steps")
@@ -1154,30 +1282,47 @@ def run_suboff_resistance_runtime(
     sampled_step_count = runtime_evidence.get("sampled_step_count")
     momentum_budget = runtime_evidence.get("momentum_budget")
     grid = final_iteration.get("grid")
-    numerical_fields = (requested_steps, completed_steps, population_checks, density_checks, density_min, density_max)
-    evidence_is_numeric = all(isinstance(value, (int, float)) and not isinstance(value, bool)
-                              and math.isfinite(float(value)) for value in numerical_fields)
-    final_level_numerics_pass = (evidence_is_numeric and requested_steps == config.lbm_steps
-                     and completed_steps == requested_steps and population_checks == completed_steps
-                     and density_checks == completed_steps
-                     and runtime_evidence.get("all_populations_finite") is True
-                     and runtime_evidence.get("all_densities_finite") is True
-                     and float(density_min) > 0.0 and float(density_min) <= float(density_max))
+    numerical_fields = (
+        requested_steps,
+        completed_steps,
+        population_checks,
+        density_checks,
+        density_min,
+        density_max,
+    )
+    evidence_is_numeric = all(
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        for value in numerical_fields
+    )
+    final_level_numerics_pass = (
+        evidence_is_numeric
+        and requested_steps == config.lbm_steps
+        and completed_steps == requested_steps
+        and population_checks == completed_steps
+        and density_checks == completed_steps
+        and runtime_evidence.get("all_populations_finite") is True
+        and runtime_evidence.get("all_densities_finite") is True
+        and float(density_min) > 0.0
+        and float(density_min) <= float(density_max)
+    )
     coefficient_changes_pct: list[float] = []
     coefficients: list[float] = []
     for level in refinement_levels:
         value = level.get("coefficient")
-        if (isinstance(value, (int, float)) and not isinstance(value, bool)
-                and math.isfinite(float(value))):
+        if (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(float(value))
+        ):
             coefficients.append(float(value))
         else:
             coefficients = []
             break
     if len(coefficients) == len(refinement_levels):
         for coarse, fine in zip(coefficients, coefficients[1:]):
-            coefficient_changes_pct.append(
-                abs(fine - coarse) / max(abs(fine), 1.0e-30) * 100.0
-            )
+            coefficient_changes_pct.append(abs(fine - coarse) / max(abs(fine), 1.0e-30) * 100.0)
     coefficient_change_pct = coefficient_changes_pct[-1] if coefficient_changes_pct else None
     observed_order: float | None = None
     if len(coefficients) >= 3:
@@ -1193,12 +1338,17 @@ def run_suboff_resistance_runtime(
         level["completion"]["pass"] is True and level["finite"]["pass"] is True
         for level in refinement_levels
     )
-    convergence_pass = (len(refinement_levels) >= 3 and levels_complete_finite
-                        and coefficient_change_pct is not None and math.isfinite(coefficient_change_pct)
-                        and coefficient_change_pct <= config.numerics_max_coefficient_change_pct)
+    convergence_pass = (
+        len(refinement_levels) >= 3
+        and levels_complete_finite
+        and coefficient_change_pct is not None
+        and math.isfinite(coefficient_change_pct)
+        and coefficient_change_pct <= config.numerics_max_coefficient_change_pct
+    )
     numerics_pass = final_level_numerics_pass and convergence_pass
-    domain_pass = (isinstance(grid, dict) and all(isinstance(grid.get(axis), int) and grid[axis] > 0
-                  for axis in ("nx", "ny", "nz")))
+    domain_pass = isinstance(grid, dict) and all(
+        isinstance(grid.get(axis), int) and grid[axis] > 0 for axis in ("nx", "ny", "nz")
+    )
     lattice_mach = config.lbm_u_in / math.sqrt(1.0 / 3.0)
     mach_pass = math.isfinite(lattice_mach) and lattice_mach < 0.25
     preflight_checks = {
@@ -1211,78 +1361,133 @@ def run_suboff_resistance_runtime(
     if not domain_pass or not mach_pass:
         raise RuntimeError("SUBOFF runner failed runtime preflight")
     conservation_fields = (
-        initial_mass, final_mass, max_abs_mass_drift, max_relative_mass_drift,
-        initial_momentum, final_momentum, max_abs_momentum_drift,
+        initial_mass,
+        final_mass,
+        max_abs_mass_drift,
+        max_relative_mass_drift,
+        initial_momentum,
+        final_momentum,
+        max_abs_momentum_drift,
         max_relative_momentum_drift,
     )
     conservation_is_numeric = all(
-        isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
         for value in conservation_fields
     )
     conservation_sampled = (
-        isinstance(mass_sample_count, int) and not isinstance(mass_sample_count, bool)
-        and isinstance(sampled_step_count, int) and not isinstance(sampled_step_count, bool)
-        and mass_sample_count == completed_steps + 1 and sampled_step_count == completed_steps
+        isinstance(mass_sample_count, int)
+        and not isinstance(mass_sample_count, bool)
+        and isinstance(sampled_step_count, int)
+        and not isinstance(sampled_step_count, bool)
+        and mass_sample_count == completed_steps + 1
+        and sampled_step_count == completed_steps
     )
     conservation_pass = (
-        conservation_is_numeric and conservation_sampled and float(initial_mass) > 0.0
-        and float(final_mass) > 0.0 and float(max_abs_mass_drift) >= 0.0
-        and float(max_relative_mass_drift) >= 0.0 and float(max_abs_momentum_drift) >= 0.0
+        conservation_is_numeric
+        and conservation_sampled
+        and float(initial_mass) > 0.0
+        and float(final_mass) > 0.0
+        and float(max_abs_mass_drift) >= 0.0
+        and float(max_relative_mass_drift) >= 0.0
+        and float(max_abs_momentum_drift) >= 0.0
         and float(max_relative_momentum_drift) >= 0.0
         and float(max_relative_mass_drift) <= config.conservation_max_relative_mass_drift
         and float(max_relative_momentum_drift) <= config.conservation_max_relative_momentum_drift
     )
-    mass_pass = (conservation_is_numeric
-                 and float(max_relative_mass_drift) <= config.conservation_max_relative_mass_drift)
-    momentum_pass = (conservation_is_numeric
-                     and float(max_relative_momentum_drift) <= config.conservation_max_relative_momentum_drift)
-    mass_normalized = (float(max_relative_mass_drift) / max(config.conservation_max_relative_mass_drift, 1.0e-30)
-                       if conservation_is_numeric else None)
-    momentum_normalized = (float(max_relative_momentum_drift) / max(config.conservation_max_relative_momentum_drift, 1.0e-30)
-                           if conservation_is_numeric else None)
+    mass_pass = (
+        conservation_is_numeric
+        and float(max_relative_mass_drift) <= config.conservation_max_relative_mass_drift
+    )
+    momentum_pass = (
+        conservation_is_numeric
+        and float(max_relative_momentum_drift) <= config.conservation_max_relative_momentum_drift
+    )
+    mass_normalized = (
+        float(max_relative_mass_drift) / max(config.conservation_max_relative_mass_drift, 1.0e-30)
+        if conservation_is_numeric
+        else None
+    )
+    momentum_normalized = (
+        float(max_relative_momentum_drift)
+        / max(config.conservation_max_relative_momentum_drift, 1.0e-30)
+        if conservation_is_numeric
+        else None
+    )
     if mass_normalized is None or momentum_normalized is None:
         dominant_channel, attribution_reason = "withheld", "non_finite_conservation_observation"
     elif math.isclose(mass_normalized, momentum_normalized, rel_tol=1.0e-12, abs_tol=0.0):
         dominant_channel, attribution_reason = "balanced", "equal_normalized_bound_utilization"
     elif mass_normalized > momentum_normalized:
         dominant_channel = "mass"
-        attribution_reason = "mass_bound_exceeded" if not mass_pass else "mass_is_larger_normalized_drift"
+        attribution_reason = (
+            "mass_bound_exceeded" if not mass_pass else "mass_is_larger_normalized_drift"
+        )
     else:
         dominant_channel = "momentum"
-        attribution_reason = "momentum_bound_exceeded" if not momentum_pass else "momentum_is_larger_normalized_drift"
-    budget_diagnostic = (isinstance(momentum_budget, dict)
-                         and momentum_budget.get("status") == "measured"
-                         and isinstance(momentum_budget.get("samples"), list))
-    budget_observed = (budget_diagnostic
-                       and momentum_budget.get("coverage") == "full_per_step"
-                       and len(momentum_budget["samples"]) == completed_steps)
+        attribution_reason = (
+            "momentum_bound_exceeded"
+            if not momentum_pass
+            else "momentum_is_larger_normalized_drift"
+        )
+    budget_diagnostic = (
+        isinstance(momentum_budget, dict)
+        and momentum_budget.get("status") == "measured"
+        and isinstance(momentum_budget.get("samples"), list)
+    )
+    budget_observed = (
+        budget_diagnostic
+        and momentum_budget.get("coverage") == "full_per_step"
+        and len(momentum_budget["samples"]) == completed_steps
+    )
     operator_attribution: dict[str, object]
     if not budget_diagnostic:
         operator_attribution = {"status": "withheld", "reason": "operator_budget_disabled"}
     else:
         cumulative = momentum_budget.get("cumulative_sampled")
         if not isinstance(cumulative, dict):
-            operator_attribution = {"status": "withheld", "reason": "momentum_budget_cumulative_unavailable"}
+            operator_attribution = {
+                "status": "withheld",
+                "reason": "momentum_budget_cumulative_unavailable",
+            }
         else:
-            channels = ("collision", "inlet_boundary", "outlet_boundary", "wall_exchange", "solid_exchange")
+            channels = (
+                "collision",
+                "inlet_boundary",
+                "outlet_boundary",
+                "wall_exchange",
+                "solid_exchange",
+            )
             norms: dict[str, float] = {}
             for channel in channels:
                 value = cumulative.get(channel)
-                if (not isinstance(value, list) or len(value) != 3
-                        or not all(isinstance(component, (int, float)) and math.isfinite(float(component))
-                                   for component in value)):
+                if (
+                    not isinstance(value, list)
+                    or len(value) != 3
+                    or not all(
+                        isinstance(component, (int, float)) and math.isfinite(float(component))
+                        for component in value
+                    )
+                ):
                     norms = {}
                     break
                 norms[channel] = math.sqrt(sum(float(component) ** 2 for component in value))
             if not norms:
-                operator_attribution = {"status": "withheld", "reason": "non_finite_operator_budget"}
+                operator_attribution = {
+                    "status": "withheld",
+                    "reason": "non_finite_operator_budget",
+                }
             else:
                 dominant_operator = max(norms, key=lambda channel: norms[channel])
                 operator_attribution = {
                     "status": "measured" if budget_observed else "sampled",
                     "dominant_operator": dominant_operator,
-                    "reason": ("largest_cumulative_operator_momentum_norm"
-                               if budget_observed else "largest_sampled_operator_momentum_norm"),
+                    "reason": (
+                        "largest_cumulative_operator_momentum_norm"
+                        if budget_observed
+                        else "largest_sampled_operator_momentum_norm"
+                    ),
                     "coverage": momentum_budget.get("coverage"),
                     "cumulative_norms": norms,
                     "boundary_flux": momentum_budget.get("boundary_flux"),
@@ -1303,39 +1508,62 @@ def run_suboff_resistance_runtime(
             "basis": "runner_simulated_cd",
             "status": "measured",
         },
-        "preflight": {"status": "measured", "pass": all(check["pass"] for check in preflight_checks.values()),
-                      "checks": preflight_checks},
-        "numerics": {"status": "measured", "pass": numerics_pass,
-                     "requested_steps": int(requested_steps), "completed_steps": int(completed_steps),
-                     "finite_population_checks": int(population_checks), "finite_density_checks": int(density_checks),
-                     "all_populations_finite": runtime_evidence["all_populations_finite"],
-                     "all_densities_finite": runtime_evidence["all_densities_finite"],
-                     "density_min": float(density_min), "density_max": float(density_max),
-                     "refinement_kind": "grid", "required_levels": 3,
-                     "refinement_levels": refinement_levels,
-                     "coefficient_change_pct": coefficient_change_pct,
-                     "coefficient_changes_pct": coefficient_changes_pct,
-                     "observed_order": observed_order,
-                     "monotonicity": {"status": "measured", "pass": monotonic,
-                                      "coefficient_sequence": coefficients},
-                     "convergence": {
-                        "pass": convergence_pass,
-                        "criterion": "three_or_more_complete_finite_grid_levels_and_final_coefficient_change_pct_at_or_below_limit",
-                        "coefficient_change_pct_limit": config.numerics_max_coefficient_change_pct,
-                         "observed_levels": len(refinement_levels),
-                         "levels_complete_finite": levels_complete_finite,
-                     }},
+        "preflight": {
+            "status": "measured",
+            "pass": all(check["pass"] for check in preflight_checks.values()),
+            "checks": preflight_checks,
+        },
+        "numerics": {
+            "status": "measured",
+            "pass": numerics_pass,
+            "requested_steps": int(requested_steps),
+            "completed_steps": int(completed_steps),
+            "finite_population_checks": int(population_checks),
+            "finite_density_checks": int(density_checks),
+            "all_populations_finite": runtime_evidence["all_populations_finite"],
+            "all_densities_finite": runtime_evidence["all_densities_finite"],
+            "density_min": float(density_min),
+            "density_max": float(density_max),
+            "refinement_kind": "grid",
+            "required_levels": 3,
+            "refinement_levels": refinement_levels,
+            "coefficient_change_pct": coefficient_change_pct,
+            "coefficient_changes_pct": coefficient_changes_pct,
+            "observed_order": observed_order,
+            "monotonicity": {
+                "status": "measured",
+                "pass": monotonic,
+                "coefficient_sequence": coefficients,
+            },
+            "convergence": {
+                "pass": convergence_pass,
+                "criterion": "three_or_more_complete_finite_grid_levels_and_final_coefficient_change_pct_at_or_below_limit",
+                "coefficient_change_pct_limit": config.numerics_max_coefficient_change_pct,
+                "observed_levels": len(refinement_levels),
+                "levels_complete_finite": levels_complete_finite,
+            },
+        },
         "conservation": {
             "status": "measured",
             "pass": conservation_pass,
             "initial_lattice_mass": float(initial_mass) if conservation_is_numeric else None,
             "final_lattice_mass": float(final_mass) if conservation_is_numeric else None,
             "max_abs_mass_drift": float(max_abs_mass_drift) if conservation_is_numeric else None,
-            "max_relative_mass_drift": float(max_relative_mass_drift) if conservation_is_numeric else None,
-            "initial_lattice_momentum_norm": float(initial_momentum) if conservation_is_numeric else None,
-            "final_lattice_momentum_norm": float(final_momentum) if conservation_is_numeric else None,
-            "max_abs_momentum_drift": float(max_abs_momentum_drift) if conservation_is_numeric else None,
-            "max_relative_momentum_drift": float(max_relative_momentum_drift) if conservation_is_numeric else None,
+            "max_relative_mass_drift": float(max_relative_mass_drift)
+            if conservation_is_numeric
+            else None,
+            "initial_lattice_momentum_norm": float(initial_momentum)
+            if conservation_is_numeric
+            else None,
+            "final_lattice_momentum_norm": float(final_momentum)
+            if conservation_is_numeric
+            else None,
+            "max_abs_momentum_drift": float(max_abs_momentum_drift)
+            if conservation_is_numeric
+            else None,
+            "max_relative_momentum_drift": float(max_relative_momentum_drift)
+            if conservation_is_numeric
+            else None,
             "mass_sample_count": mass_sample_count,
             "sampled_step_count": sampled_step_count,
             "max_relative_mass_drift_limit": config.conservation_max_relative_mass_drift,
@@ -1344,20 +1572,34 @@ def run_suboff_resistance_runtime(
                 "status": "measured" if conservation_is_numeric else "withheld",
                 "dominant_channel": dominant_channel,
                 "reason": attribution_reason,
-                "mass": {"max_relative_drift": float(max_relative_mass_drift) if conservation_is_numeric else None,
-                         "limit": config.conservation_max_relative_mass_drift, "pass": mass_pass,
-                         "normalized_bound_utilization": mass_normalized},
-                "momentum": {"max_relative_drift": float(max_relative_momentum_drift) if conservation_is_numeric else None,
-                             "limit": config.conservation_max_relative_momentum_drift, "pass": momentum_pass,
-                             "normalized_bound_utilization": momentum_normalized,
-                             "operator_budget": momentum_budget if budget_diagnostic else {
-                                 "status": "disabled", "reason": "operator_budget_disabled"},
-                             "per_step_budget": momentum_budget if budget_observed else None,
-                             "operator_attribution": operator_attribution},
+                "mass": {
+                    "max_relative_drift": float(max_relative_mass_drift)
+                    if conservation_is_numeric
+                    else None,
+                    "limit": config.conservation_max_relative_mass_drift,
+                    "pass": mass_pass,
+                    "normalized_bound_utilization": mass_normalized,
+                },
+                "momentum": {
+                    "max_relative_drift": float(max_relative_momentum_drift)
+                    if conservation_is_numeric
+                    else None,
+                    "limit": config.conservation_max_relative_momentum_drift,
+                    "pass": momentum_pass,
+                    "normalized_bound_utilization": momentum_normalized,
+                    "operator_budget": momentum_budget
+                    if budget_diagnostic
+                    else {"status": "disabled", "reason": "operator_budget_disabled"},
+                    "per_step_budget": momentum_budget if budget_observed else None,
+                    "operator_attribution": operator_attribution,
+                },
             },
         },
-        "physics": {"status": "withheld", "pass": False,
-                    "reason": "no_independent_physics_validation"},
+        "physics": {
+            "status": "withheld",
+            "pass": False,
+            "reason": "no_independent_physics_validation",
+        },
     }
 
 
@@ -1372,12 +1614,17 @@ def main() -> int:
     parser.add_argument("--device", default="cpu")
     args = parser.parse_args()
     config = SuboffResistanceBenchmarkConfig(
-        base_length_lu=args.base_length_lu, max_length_lu=args.max_length_lu,
-        max_iterations=3, lbm_steps=args.steps, lbm_warmup_steps=args.warmup_steps,
-        lbm_sample_interval=args.sample_interval, device=args.device,
+        base_length_lu=args.base_length_lu,
+        max_length_lu=args.max_length_lu,
+        max_iterations=3,
+        lbm_steps=args.steps,
+        lbm_warmup_steps=args.warmup_steps,
+        lbm_sample_interval=args.sample_interval,
+        device=args.device,
     )
-    print(json.dumps(run_suboff_resistance_runtime(config), indent=2, sort_keys=True,
-                     allow_nan=False))
+    print(
+        json.dumps(run_suboff_resistance_runtime(config), indent=2, sort_keys=True, allow_nan=False)
+    )
     return 0
 
 

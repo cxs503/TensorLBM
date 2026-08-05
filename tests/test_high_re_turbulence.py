@@ -14,6 +14,7 @@ These tests verify:
     - A JSON artifact is written to disk.
     - The target-grid (200×100, 500-step) matrix runs end-to-end.
 """
+
 from __future__ import annotations
 
 import json
@@ -42,6 +43,7 @@ TARGET_NX, TARGET_NY, TARGET_STEPS = 200, 100, 500
 # Dispatch table
 # ---------------------------------------------------------------------------
 
+
 def test_dispatch_table_completeness() -> None:
     """All 7 D2Q9 collision+turbulence combinations are registered."""
     expected = {
@@ -65,6 +67,7 @@ def test_dispatch_table_excludes_unavailable_mrt_sgs() -> None:
 # ---------------------------------------------------------------------------
 # Single-run contract
 # ---------------------------------------------------------------------------
+
 
 def test_single_run_returns_required_fields() -> None:
     """A single run returns a dict with all required machine-readable fields."""
@@ -115,6 +118,7 @@ def test_unsupported_combination_raises() -> None:
 # Re=1000 finiteness (small grid)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "collision, turbulence_model",
     sorted(COLLISION_DISPATCH.keys()),
@@ -133,14 +137,14 @@ def test_re1000_all_combinations_finite(
         steps=SMALL_STEPS,
     )
     assert result["finite"], (
-        f"Re=1000 {collision}/{turbulence_model}: "
-        f"Cd={result['Cd']}, St={result['Strouhal']}"
+        f"Re=1000 {collision}/{turbulence_model}: Cd={result['Cd']}, St={result['Strouhal']}"
     )
 
 
 # ---------------------------------------------------------------------------
 # Matrix run + artifact
 # ---------------------------------------------------------------------------
+
 
 def test_matrix_small_grid_result_count() -> None:
     """Matrix run on small grid produces exactly 14 results."""
@@ -163,7 +167,11 @@ def test_matrix_small_grid_schema() -> None:
         assert r["Re"] in (1000, 5000)
         assert r["collision"] in ("bgk", "mrt")
         assert r["turbulence_model"] in (
-            "none", "smagorinsky", "wale", "vreman", "dynsmag",
+            "none",
+            "smagorinsky",
+            "wale",
+            "vreman",
+            "dynsmag",
         )
         assert isinstance(r["Cd"], float)
         assert isinstance(r["Strouhal"], float)
@@ -196,14 +204,14 @@ def test_matrix_re1000_results_finite() -> None:
     assert len(re1000) == 7
     for r in re1000:
         assert r["finite"], (
-            f"Re=1000 {r['collision']}/{r['turbulence_model']}: "
-            f"Cd={r['Cd']}, St={r['Strouhal']}"
+            f"Re=1000 {r['collision']}/{r['turbulence_model']}: Cd={r['Cd']}, St={r['Strouhal']}"
         )
 
 
 # ---------------------------------------------------------------------------
 # Target-grid diagnostic (200×100, 500 steps)
 # ---------------------------------------------------------------------------
+
 
 def test_target_grid_matrix_end_to_end(tmp_path: Path) -> None:
     """Full diagnostic matrix at target grid (200×100, 500 steps).
@@ -224,9 +232,7 @@ def test_target_grid_matrix_end_to_end(tmp_path: Path) -> None:
 
     re1000 = [r for r in results if r["Re"] == 1000]
     finite_1000 = [r for r in re1000 if r["finite"]]
-    assert len(finite_1000) >= 5, (
-        f"Only {len(finite_1000)}/7 Re=1000 runs were finite"
-    )
+    assert len(finite_1000) >= 5, f"Only {len(finite_1000)}/7 Re=1000 runs were finite"
 
     # At least one Re=5000 result should be finite (SGS should help)
     re5000 = [r for r in results if r["Re"] == 5000]

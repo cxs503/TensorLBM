@@ -29,6 +29,7 @@ When Ste_l = 0 (T_right = T_freeze) this reduces to the one-phase case.
 Usage:
     PYTHONPATH=src python examples/benchmark_stefan_two_phase.py --device cpu --steps 2000
 """
+
 from __future__ import annotations
 
 import argparse
@@ -36,6 +37,7 @@ import math
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -197,9 +199,11 @@ def run_stefan_two_phase(
         print(f"  s({steps}) = {s_ana_final:.2f}  (analytical, 2·λ·√(α·t))")
         print(f"  Steps: {steps}   Device: {device}")
         print(f"{'─' * 64}")
-        print(f"  {'step':>6s}   {'s_lbm':>8s}   {'s_ana':>8s}   {'err%':>6s}   "
-              f"{'T_min':>7s} {'T_max':>7s}")
-        print(f"  {'─'*6}   {'─'*8}   {'─'*8}   {'─'*6}   {'─'*7} {'─'*7}")
+        print(
+            f"  {'step':>6s}   {'s_lbm':>8s}   {'s_ana':>8s}   {'err%':>6s}   "
+            f"{'T_min':>7s} {'T_max':>7s}"
+        )
+        print(f"  {'─' * 6}   {'─' * 8}   {'─' * 8}   {'─' * 6}   {'─' * 7} {'─' * 7}")
 
     history: list[dict] = []
     s_interface: float = 1.0
@@ -286,17 +290,22 @@ def run_stefan_two_phase(
             err = abs(s_lbm - s_ana) / max(s_ana, 1e-10) * 100
             T_min = float(T.min().item())
             T_max = float(T.max().item())
-            history.append({
-                "step": step,
-                "s_lbm": s_lbm,
-                "s_ana": s_ana,
-                "err": err,
-                "T_min": T_min,
-                "T_max": T_max,
-            })
+            history.append(
+                {
+                    "step": step,
+                    "s_lbm": s_lbm,
+                    "s_ana": s_ana,
+                    "err": err,
+                    "T_min": T_min,
+                    "T_max": T_max,
+                }
+            )
             if not quiet:
-                print(f"  {step:6d}   {s_lbm:8.2f}   {s_ana:8.2f}   {err:6.2f}   "
-                      f"{T_min:7.3f} {T_max:7.3f}", flush=True)
+                print(
+                    f"  {step:6d}   {s_lbm:8.2f}   {s_ana:8.2f}   {err:6.2f}   "
+                    f"{T_min:7.3f} {T_max:7.3f}",
+                    flush=True,
+                )
 
     # --- Final fields -------------------------------------------------------
     T_final = macroscopic_thermal(g)
@@ -446,7 +455,7 @@ def save_plots(result: dict, out_path: str) -> None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Two-phase Stefan solidification benchmark "
-                    "(D3Q19 BGK + D2Q5 thermal + Stefan condition).",
+        "(D3Q19 BGK + D2Q5 thermal + Stefan condition).",
     )
     p.add_argument("--nx", type=int, default=200)
     p.add_argument("--ny", type=int, default=1)
@@ -474,11 +483,18 @@ def main() -> None:
     print("=" * 64)
 
     result = run_stefan_two_phase(
-        nx=args.nx, ny=args.ny, nz=args.nz,
-        tau=args.tau, tau_T=args.tau_T,
-        T_left=args.T_left, T_right=args.T_right, T_freeze=args.T_freeze,
-        cp=args.cp, L_latent=args.L_latent,
-        steps=args.steps, device=args.device,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau=args.tau,
+        tau_T=args.tau_T,
+        T_left=args.T_left,
+        T_right=args.T_right,
+        T_freeze=args.T_freeze,
+        cp=args.cp,
+        L_latent=args.L_latent,
+        steps=args.steps,
+        device=args.device,
         log_every=args.log_every,
     )
 

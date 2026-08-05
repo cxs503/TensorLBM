@@ -8,6 +8,7 @@ Aggregation rules:
   - Any dimension WITHHELD (and none NOT_SUPPORTED) → WITHHELD
   - Any dimension NOT_SUPPORTED → NOT_SUPPORTED
 """
+
 from __future__ import annotations
 
 import pytest
@@ -26,6 +27,7 @@ from tensorlbm.cross_module_composition_matrix import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def baseline(**changes: str) -> CompositionRequest:
     """Return the R1 baseline request with optional overrides."""
@@ -59,6 +61,7 @@ def _by_contract(results: tuple[SubContractResult, ...], name: str) -> SubContra
 # ---------------------------------------------------------------------------
 # RED: baseline assessment
 # ---------------------------------------------------------------------------
+
 
 class TestBaseline:
     """The R1 baseline D3Q19/MRT single-phase static-wall configuration."""
@@ -121,6 +124,7 @@ class TestBaseline:
 # RED: D3Q27
 # ---------------------------------------------------------------------------
 
+
 class TestD3Q27:
     def test_d3q27_mrt_is_withheld(self) -> None:
         decision = assess_composition(baseline(lattice="d3q27"))
@@ -146,6 +150,7 @@ class TestD3Q27:
 # ---------------------------------------------------------------------------
 # RED: wall function
 # ---------------------------------------------------------------------------
+
 
 class TestWallFunction:
     def test_wall_function_is_withheld(self) -> None:
@@ -179,6 +184,7 @@ class TestWallFunction:
 # RED: AMR
 # ---------------------------------------------------------------------------
 
+
 class TestAMR:
     def test_amr_is_withheld(self) -> None:
         decision = assess_composition(baseline(refinement="amr"))
@@ -205,6 +211,7 @@ class TestAMR:
 # RED: turbulence
 # ---------------------------------------------------------------------------
 
+
 class TestTurbulence:
     def test_smagorinsky_is_withheld(self) -> None:
         decision = assess_composition(baseline(turbulence="smagorinsky"))
@@ -225,6 +232,7 @@ class TestTurbulence:
 # ---------------------------------------------------------------------------
 # RED: NOT_SUPPORTED
 # ---------------------------------------------------------------------------
+
 
 class TestNotSupported:
     def test_unknown_lattice_is_not_supported(self) -> None:
@@ -251,6 +259,7 @@ class TestNotSupported:
 # RED: non-single-phase
 # ---------------------------------------------------------------------------
 
+
 class TestNonSinglePhase:
     def test_free_surface_is_withheld(self) -> None:
         decision = assess_composition(baseline(multiphase="free_surface"))
@@ -270,6 +279,7 @@ class TestNonSinglePhase:
 # ---------------------------------------------------------------------------
 # RED: all sub-contracts queried
 # ---------------------------------------------------------------------------
+
 
 class TestAllSubContractsQueried:
     EXPECTED = {
@@ -303,10 +313,13 @@ class TestAllSubContractsQueried:
 # RED: reason codes and missing dimensions
 # ---------------------------------------------------------------------------
 
+
 class TestReasonCodesAndMissing:
     def test_withheld_results_contain_reason_codes(self) -> None:
         decision = assess_composition(baseline(wall_treatment="wall_function"))
-        withheld = [r for r in decision.sub_contract_results if r.status is SubContractStatus.WITHHELD]
+        withheld = [
+            r for r in decision.sub_contract_results if r.status is SubContractStatus.WITHHELD
+        ]
         assert len(withheld) > 0
         for r in withheld:
             assert len(r.reason_codes) > 0
@@ -320,9 +333,7 @@ class TestReasonCodesAndMissing:
         assert len(decision.missing_dimensions) > 0
 
     def test_missing_dimensions_are_reported_for_wall_function_amr(self) -> None:
-        decision = assess_composition(
-            baseline(wall_treatment="wall_function", refinement="amr")
-        )
+        decision = assess_composition(baseline(wall_treatment="wall_function", refinement="amr"))
         assert len(decision.missing_dimensions) > 0
         # Wall refinement gate reports cross-level evidence requirements
         assert any("wall_distance" in d or "y_plus" in d for d in decision.missing_dimensions)
@@ -331,6 +342,7 @@ class TestReasonCodesAndMissing:
 # ---------------------------------------------------------------------------
 # RED: normalization
 # ---------------------------------------------------------------------------
+
 
 class TestNormalization:
     def test_case_insensitive(self) -> None:
@@ -359,6 +371,7 @@ class TestNormalization:
 # ---------------------------------------------------------------------------
 # RED: to_dict
 # ---------------------------------------------------------------------------
+
 
 class TestToDict:
     def test_to_dict_is_json_ready(self) -> None:
@@ -389,6 +402,7 @@ class TestToDict:
 # ---------------------------------------------------------------------------
 # RED: matrix version
 # ---------------------------------------------------------------------------
+
 
 class TestMatrixVersion:
     def test_version_is_stable_string(self) -> None:

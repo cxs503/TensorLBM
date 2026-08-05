@@ -75,18 +75,40 @@ def _inputs() -> tuple[TrainingSpec, FieldDataProductR2, dict[str, bytes]]:
         component_labels=("u_x", "u_y"),
     )
     run = _run()
-    product = FieldDataProductR2("velocity-product", run, "metrics", (array,), {"source": "fixture"})
+    product = FieldDataProductR2(
+        "velocity-product", run, "metrics", (array,), {"source": "fixture"}
+    )
     field = FieldProduct(
-        "velocity-field", run, "metrics", "velocity", (2, 2, 2), "float32", "m/s", ValidationStatus.PASS, {}
+        "velocity-field",
+        run,
+        "metrics",
+        "velocity",
+        (2, 2, 2),
+        "float32",
+        "m/s",
+        ValidationStatus.PASS,
+        {},
     )
     dataset = DatasetManifest(
-        "torch-flow-dataset", "r1", (field,), "field-reconstruction", {"train": ("velocity-field",), "val": (), "test": ()}, {}
+        "torch-flow-dataset",
+        "r1",
+        (field,),
+        "field-reconstruction",
+        {"train": ("velocity-field",), "val": (), "test": ()},
+        {},
     )
-    signature = ModelSignature(inputs=("velocity",), outputs=("target",), units={"velocity": "m/s", "target": "m/s"})
+    signature = ModelSignature(
+        inputs=("velocity",), outputs=("target",), units={"velocity": "m/s", "target": "m/s"}
+    )
     object.__setattr__(signature, "outputs", ("velocity",))
     object.__setattr__(signature, "units", MappingProxyType({"velocity": "m/s"}))
     spec = TrainingSpec(
-        "torch-flow-smoke-r1", dataset, TaskKind.FIELD_RECONSTRUCTION, signature, TrainingBackend.TORCH, {"purpose": "smoke"}
+        "torch-flow-smoke-r1",
+        dataset,
+        TaskKind.FIELD_RECONSTRUCTION,
+        signature,
+        TrainingBackend.TORCH,
+        {"purpose": "smoke"},
     )
     return spec, product, {"velocity": payload}
 
@@ -129,13 +151,17 @@ def test_runs_real_cpu_smoke_training_and_writes_verified_evidence(tmp_path: Pat
     assert provenance["field_data"]["product_id"] == product.product_id
     assert provenance["field_data"]["blob_sha256"] == sha256(payloads["velocity"]).hexdigest()
     assert provenance["files"]["weights"]["sha256"] == sha256(out.read_bytes()).hexdigest()
-    assert provenance["files"]["metadata"]["sha256"] == sha256(metadata_path.read_bytes()).hexdigest()
+    assert (
+        provenance["files"]["metadata"]["sha256"] == sha256(metadata_path.read_bytes()).hexdigest()
+    )
     claimed = provenance.pop("provenance_sha256")
     canonical = json.dumps(provenance, sort_keys=True, separators=(",", ":")).encode("utf-8")
     assert claimed == sha256(canonical).hexdigest()
 
 
-def test_trainer_failure_never_returns_completed_record_or_provenance(tmp_path: Path, monkeypatch) -> None:
+def test_trainer_failure_never_returns_completed_record_or_provenance(
+    tmp_path: Path, monkeypatch
+) -> None:
     import tensorlbm.ml.torch_flow_training as training
 
     spec, product, payloads = _inputs()
@@ -154,7 +180,9 @@ def test_trainer_failure_never_returns_completed_record_or_provenance(tmp_path: 
     assert not Path(f"{out}.provenance.json").exists()
 
 
-def test_rejects_bad_payload_before_trainer_and_refuses_existing_output(tmp_path: Path, monkeypatch) -> None:
+def test_rejects_bad_payload_before_trainer_and_refuses_existing_output(
+    tmp_path: Path, monkeypatch
+) -> None:
     import tensorlbm.ml.torch_flow_training as training
 
     spec, product, payloads = _inputs()
@@ -168,16 +196,22 @@ def test_rejects_bad_payload_before_trainer_and_refuses_existing_output(tmp_path
 
     monkeypatch.setattr(training, "train_flow_transformer_self_supervised", unexpected)
     with pytest.raises(ValueError, match="payload"):
-        training.run_evidence_gated_flow_reconstruction(spec, product, {"velocity": b"bad"}, tmp_path / "bad.npz", arch, config)
+        training.run_evidence_gated_flow_reconstruction(
+            spec, product, {"velocity": b"bad"}, tmp_path / "bad.npz", arch, config
+        )
     assert called is False
     existing = tmp_path / "existing.npz"
     existing.write_bytes(b"do not overwrite")
     with pytest.raises(FileExistsError):
-        training.run_evidence_gated_flow_reconstruction(spec, product, payloads, existing, arch, config)
+        training.run_evidence_gated_flow_reconstruction(
+            spec, product, payloads, existing, arch, config
+        )
     assert called is False
 
 
-def test_non_cpu_device_is_rejected_before_trainer_and_leaves_no_output(tmp_path: Path, monkeypatch) -> None:
+def test_non_cpu_device_is_rejected_before_trainer_and_leaves_no_output(
+    tmp_path: Path, monkeypatch
+) -> None:
     import tensorlbm.ml.torch_flow_training as training
 
     spec, product, payloads = _inputs()
@@ -194,7 +228,9 @@ def test_non_cpu_device_is_rejected_before_trainer_and_leaves_no_output(tmp_path
         out = tmp_path / f"{device}.npz"
         rejected = replace(config, device=device)
         with pytest.raises(ValueError, match="device='cpu'"):
-            training.run_evidence_gated_flow_reconstruction(spec, product, payloads, out, arch, rejected)
+            training.run_evidence_gated_flow_reconstruction(
+                spec, product, payloads, out, arch, rejected
+            )
         assert not out.exists()
         assert not Path(f"{out}.json").exists()
         assert not Path(f"{out}.provenance.json").exists()
@@ -205,10 +241,15 @@ def test_writer_ast_delegates_to_existing_components_without_other_training_stac
     source = Path("src/tensorlbm/ml/torch_flow_training.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     imported = {
-        alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
     }
     imported.update(
-        node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.module is not None
+        node.module
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom) and node.module is not None
     )
     calls = {
         node.func.id if isinstance(node.func, ast.Name) else node.func.attr
@@ -219,6 +260,12 @@ def test_writer_ast_delegates_to_existing_components_without_other_training_stac
     assert "materialize_torch_velocity_snapshots" in calls
     assert "train_flow_transformer_self_supervised" in calls
     assert not any(token in source.lower() for token in ("paddle", "mindspore", "cuda", "sdaa"))
-    assert not any("optimizer" in name.lower() or name.lower().startswith("train_") for name in calls - {"train_flow_transformer_self_supervised"})
-    assert not any(isinstance(node, ast.ClassDef) and node.name != "TrainingExecutionRecord" for node in ast.walk(tree))
+    assert not any(
+        "optimizer" in name.lower() or name.lower().startswith("train_")
+        for name in calls - {"train_flow_transformer_self_supervised"}
+    )
+    assert not any(
+        isinstance(node, ast.ClassDef) and node.name != "TrainingExecutionRecord"
+        for node in ast.walk(tree)
+    )
     assert not imported & {"paddle", "mindspore"}

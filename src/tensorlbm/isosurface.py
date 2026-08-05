@@ -30,6 +30,7 @@ Lorensen, W.E. & Cline, H.E. (1987). "Marching cubes: A high resolution 3D
     surface construction algorithm." *ACM SIGGRAPH Computer Graphics* 21(4),
     163–169.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -47,6 +48,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class IsoContour2D:
@@ -103,20 +105,21 @@ class IsoSurface3D:
 # Edges: 0=bottom(j,j+1), 1=right(i+1,i), 2=top(j+1,j), 3=left(i,i+1)
 # Encoding: list of edge pairs that form line segments.
 _MS_EDGE_TABLE: dict[int, list[tuple[int, int]]] = {
-    0: [], 15: [],          # all below / all above
-    1: [(3, 0)],            # only bottom-left above
+    0: [],
+    15: [],  # all below / all above
+    1: [(3, 0)],  # only bottom-left above
     2: [(0, 1)],
     3: [(3, 1)],
     4: [(1, 2)],
-    5: [(3, 0), (1, 2)],    # ambiguous – use two segments
+    5: [(3, 0), (1, 2)],  # ambiguous – use two segments
     6: [(0, 2)],
     7: [(3, 2)],
     8: [(2, 3)],
     9: [(2, 0)],
-    10: [(0, 1), (2, 3)],   # ambiguous
+    10: [(0, 1), (2, 3)],  # ambiguous
     11: [(2, 1)],
     12: [(1, 3)],
-    13: [(0, 3)],            # corrected winding
+    13: [(0, 3)],  # corrected winding
     14: [(1, 0)],
 }
 
@@ -189,8 +192,7 @@ def marching_squares(
     field = field.float()
     ny, nx = field.shape
     if ny < 2 or nx < 2:
-        return IsoContour2D(segments=[], n_segments=0,
-                            iso_value=iso_value, field_name=field_name)
+        return IsoContour2D(segments=[], n_segments=0, iso_value=iso_value, field_name=field_name)
 
     dx = (x_range[1] - x_range[0]) / (nx - 1)
     dy = (y_range[1] - y_range[0]) / (ny - 1)
@@ -208,32 +210,30 @@ def marching_squares(
     for i in range(ny - 1):
         for j in range(nx - 1):
             # Corner values and coordinates
-            corner_vals = [
-                vals[i + dr][j + dc]
-                for (dr, dc) in _CORNERS
-            ]
-            corner_coords = [
-                (px(j + dc), py(i + dr))
-                for (dr, dc) in _CORNERS
-            ]
+            corner_vals = [vals[i + dr][j + dc] for (dr, dc) in _CORNERS]
+            corner_coords = [(px(j + dc), py(i + dr)) for (dr, dc) in _CORNERS]
             # Build 4-bit index
             idx = 0
             for bit, v in enumerate(corner_vals):
                 if v >= iso_value:
-                    idx |= (1 << bit)
+                    idx |= 1 << bit
 
             edge_pairs = _MS_EDGE_TABLE.get(idx, [])
-            for (ea, eb) in edge_pairs:
+            for ea, eb in edge_pairs:
                 ca0, ca1 = _EDGE_CORNERS[ea]
                 cb0, cb1 = _EDGE_CORNERS[eb]
                 pa = _interpolate_edge(
-                    corner_vals[ca0], corner_vals[ca1],
-                    corner_coords[ca0], corner_coords[ca1],
+                    corner_vals[ca0],
+                    corner_vals[ca1],
+                    corner_coords[ca0],
+                    corner_coords[ca1],
                     iso_value,
                 )
                 pb = _interpolate_edge(
-                    corner_vals[cb0], corner_vals[cb1],
-                    corner_coords[cb0], corner_coords[cb1],
+                    corner_vals[cb0],
+                    corner_vals[cb1],
+                    corner_coords[cb0],
+                    corner_coords[cb1],
                     iso_value,
                 )
                 segments.append([[pa[0], pa[1]], [pb[0], pb[1]]])
@@ -256,6 +256,7 @@ def marching_squares(
 # ---------------------------------------------------------------------------
 # 3-D Marching Cubes (lightweight centroid variant)
 # ---------------------------------------------------------------------------
+
 
 def marching_cubes_simple(
     field: torch.Tensor,
@@ -294,8 +295,9 @@ def marching_cubes_simple(
     field = field.float()
     nz, ny, nx = field.shape
     if nz < 2 or ny < 2 or nx < 2:
-        return IsoSurface3D(vertices=[], triangles=[], n_triangles=0,
-                            iso_value=iso_value, field_name=field_name)
+        return IsoSurface3D(
+            vertices=[], triangles=[], n_triangles=0, iso_value=iso_value, field_name=field_name
+        )
 
     dx = (x_range[1] - x_range[0]) / (nx - 1)
     dy = (y_range[1] - y_range[0]) / (ny - 1)
@@ -312,14 +314,29 @@ def marching_cubes_simple(
 
     # Cube corners: (dk, di, dj) offsets
     _CUBE_CORNERS = [
-        (0, 0, 0), (0, 0, 1), (0, 1, 1), (0, 1, 0),
-        (1, 0, 0), (1, 0, 1), (1, 1, 1), (1, 1, 0),
+        (0, 0, 0),
+        (0, 0, 1),
+        (0, 1, 1),
+        (0, 1, 0),
+        (1, 0, 0),
+        (1, 0, 1),
+        (1, 1, 1),
+        (1, 1, 0),
     ]
     # 12 cube edges: pairs of corner indices
     _CUBE_EDGES = [
-        (0, 1), (1, 2), (2, 3), (3, 0),   # bottom face
-        (4, 5), (5, 6), (6, 7), (7, 4),   # top face
-        (0, 4), (1, 5), (2, 6), (3, 7),   # verticals
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 0),  # bottom face
+        (4, 5),
+        (5, 6),
+        (6, 7),
+        (7, 4),  # top face
+        (0, 4),
+        (1, 5),
+        (2, 6),
+        (3, 7),  # verticals
     ]
 
     vals_np = field.tolist()
@@ -329,20 +346,14 @@ def marching_cubes_simple(
     for k in range(nz - 1):
         for i in range(ny - 1):
             for j in range(nx - 1):
-                cv = [
-                    vals_np[k + dk][i + di][j + dj]
-                    for (dk, di, dj) in _CUBE_CORNERS
-                ]
-                cc = [
-                    (px(j + dj), py(i + di), pz(k + dk))
-                    for (dk, di, dj) in _CUBE_CORNERS
-                ]
+                cv = [vals_np[k + dk][i + di][j + dj] for (dk, di, dj) in _CUBE_CORNERS]
+                cc = [(px(j + dj), py(i + di), pz(k + dk)) for (dk, di, dj) in _CUBE_CORNERS]
                 above = [v >= iso_value for v in cv]
                 if all(above) or not any(above):
                     continue  # no crossing
 
                 active_pts: list[tuple[float, float, float]] = []
-                for (ea, eb) in _CUBE_EDGES:
+                for ea, eb in _CUBE_EDGES:
                     if above[ea] != above[eb]:
                         va, vb = cv[ea], cv[eb]
                         ca, cb = cc[ea], cc[eb]
@@ -371,11 +382,13 @@ def marching_cubes_simple(
 
                 n_pts = len(active_pts)
                 for m in range(n_pts):
-                    triangles.append([
-                        base_idx,
-                        base_idx + 1 + m,
-                        base_idx + 1 + (m + 1) % n_pts,
-                    ])
+                    triangles.append(
+                        [
+                            base_idx,
+                            base_idx + 1 + m,
+                            base_idx + 1 + (m + 1) % n_pts,
+                        ]
+                    )
 
                 if len(vertices) >= max_vertices:
                     return IsoSurface3D(

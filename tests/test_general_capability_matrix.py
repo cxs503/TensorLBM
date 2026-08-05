@@ -1,4 +1,5 @@
 """Contract tests for the pure, fail-closed general capability matrix R1."""
+
 from __future__ import annotations
 
 from tensorlbm.general_capability_matrix import (
@@ -38,12 +39,14 @@ def test_cm_and_kbc_are_explicitly_withheld_not_advertised_from_legacy_names() -
 
 
 def test_wall_function_and_amr_candidates_are_withheld_as_unverified_compositions() -> None:
-    result = assess_capability({
-        "lattice": "D3Q19",
-        "collision": "MRT",
-        "wall_treatment": "wall_function",
-        "refinement": "amr",
-    })
+    result = assess_capability(
+        {
+            "lattice": "D3Q19",
+            "collision": "MRT",
+            "wall_treatment": "wall_function",
+            "refinement": "amr",
+        }
+    )
 
     assert result.status is CapabilityStatus.WITHHELD
     assert result.evidence_tier is EvidenceTier.NO_COMPOSITION_EVIDENCE
@@ -79,15 +82,21 @@ def test_unknown_values_in_every_field_are_not_supported_before_composition_asse
         result = assess_capability({"lattice": "d3q19", "collision": "mrt", field: value})
         assert result.status is CapabilityStatus.NOT_SUPPORTED
         assert result.evidence_tier is EvidenceTier.UNKNOWN_REQUEST
-        assert any(reason.code == "UNKNOWN_VALUE" and reason.field == field for reason in result.reasons)
+        assert any(
+            reason.code == "UNKNOWN_VALUE" and reason.field == field for reason in result.reasons
+        )
         assert not any(reason.code.startswith("WITHHELD_") for reason in result.reasons)
 
 
 def test_known_but_unverified_values_remain_withheld() -> None:
-    result = assess_capability({
-        "lattice": "d3q19", "collision": "mrt", "turbulence": "les",
-        "outputs": ["rho", "pressure"],
-    })
+    result = assess_capability(
+        {
+            "lattice": "d3q19",
+            "collision": "mrt",
+            "turbulence": "les",
+            "outputs": ["rho", "pressure"],
+        }
+    )
 
     assert result.status is CapabilityStatus.WITHHELD
     assert result.evidence_tier is EvidenceTier.NO_COMPOSITION_EVIDENCE
@@ -106,11 +115,16 @@ def test_component_registry_exposes_only_audited_collision_availability() -> Non
 # D3Q27 multiphase (Shan-Chen) component evidence
 # ---------------------------------------------------------------------------
 
+
 def test_shan_chen_is_known_multiphase_value() -> None:
     """shan_chen must be a recognised multiphase value, not an unknown request."""
-    result = assess_capability({
-        "lattice": "d3q19", "collision": "mrt", "multiphase": "shan_chen",
-    })
+    result = assess_capability(
+        {
+            "lattice": "d3q19",
+            "collision": "mrt",
+            "multiphase": "shan_chen",
+        }
+    )
     # It should be WITHHELD (unverified composition), NOT NOT_SUPPORTED (unknown).
     assert result.status is CapabilityStatus.WITHHELD
     assert result.evidence_tier is EvidenceTier.NO_COMPOSITION_EVIDENCE
@@ -123,14 +137,20 @@ def test_multiphase_component_registry_shows_shan_chen_available() -> None:
     assert "multiphase" in matrix
     assert "shan_chen" in matrix["multiphase"]
     assert matrix["multiphase"]["shan_chen"]["available"] is True
-    assert matrix["multiphase"]["shan_chen"]["evidence_tier"] == EvidenceTier.COMPONENT_CONTRACT.value
+    assert (
+        matrix["multiphase"]["shan_chen"]["evidence_tier"] == EvidenceTier.COMPONENT_CONTRACT.value
+    )
 
 
 def test_d3q27_shan_chen_multiphase_is_withheld_without_complete_composition() -> None:
     """D3Q27 + shan_chen must be WITHHELD (component exists, no full composition)."""
-    result = assess_capability({
-        "lattice": "d3q27", "collision": "mrt", "multiphase": "shan_chen",
-    })
+    result = assess_capability(
+        {
+            "lattice": "d3q27",
+            "collision": "mrt",
+            "multiphase": "shan_chen",
+        }
+    )
     assert result.status is CapabilityStatus.WITHHELD
     assert any(reason.code == "WITHHELD_D3Q27_COMPOSITION" for reason in result.reasons)
 

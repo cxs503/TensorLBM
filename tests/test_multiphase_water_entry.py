@@ -10,6 +10,7 @@ Covers:
 - ``run_multiphase_water_entry`` 3-D smoke run (SC two-component).
 - Output artifact contents (forces.csv, run_metadata.json, snapshots).
 """
+
 from __future__ import annotations
 
 import csv
@@ -79,7 +80,11 @@ class TestMultiphaseWaterEntryConfig:
 
     def test_sphere_center_2d(self) -> None:
         cfg = MultiphaseWaterEntryConfig(
-            nx=40, ny=40, water_level=10, clearance=2, radius=3.0,
+            nx=40,
+            ny=40,
+            water_level=10,
+            clearance=2,
+            radius=3.0,
         )
         cx, cy = cfg.sphere_center_2d
         assert cx == 20.0
@@ -88,7 +93,13 @@ class TestMultiphaseWaterEntryConfig:
 
     def test_sphere_center_3d(self) -> None:
         cfg = MultiphaseWaterEntryConfig(
-            mode="3d", nx=40, ny=30, nz=40, water_level=10, clearance=2, radius=3.0,
+            mode="3d",
+            nx=40,
+            ny=30,
+            nz=40,
+            water_level=10,
+            clearance=2,
+            radius=3.0,
         )
         cx, cy, cz = cfg.sphere_center_3d
         assert cx == 20.0
