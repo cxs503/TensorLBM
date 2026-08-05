@@ -75,6 +75,13 @@ GHOST = 1
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--device", default="cuda:0")
+    p.add_argument(
+        "--devices",
+        default=None,
+        help="comma-separated per-interface devices for L1,L2,L3 "
+        "(e.g. 'cuda:0,cuda:1,cuda:1'). Root runs on --device. "
+        "Omit to keep everything on --device.",
+    )
     p.add_argument("--nx", type=int, default=160)
     p.add_argument("--ny", type=int, default=112)
     p.add_argument("--nz", type=int, default=112)
@@ -159,10 +166,24 @@ def main() -> None:
         coarse_f = equilibrium3d(rho, ux, zero, zero, device=device)
 
     # ------------------------------------------------------------------
+    # device plan: root on --device; L1/L2/L3 on --devices when given
+    # ------------------------------------------------------------------
+    fine_devices = None
+    if args.devices:
+        device_list = [value.strip() for value in args.devices.split(",")]
+        if len(device_list) != 3:
+            raise ValueError("--devices must name exactly 3 devices (L1,L2,L3)")
+        fine_devices = [torch.device(value) for value in device_list]
+
+    device1 = fine_devices[0] if fine_devices else device
+    device2 = fine_devices[1] if fine_devices else device
+    device3 = fine_devices[2] if fine_devices else device
+
+    # ------------------------------------------------------------------
     # level 1 (interface 0): L1 block, sphere at R*2
     # ------------------------------------------------------------------
     s1, fc1, radius1, l1 = build_fine_block_geometry(
-        box1, (cx, cy, cz), args.radius, RATIO, GHOST, device,
+        box1, (cx, cy, cz), args.radius, RATIO, GHOST, device1,
         lattice=args.lattice,
     )
     l1_solid, l1_solid_g, solid_q1, bfl_mask1, bfl_q1 = (
@@ -178,7 +199,7 @@ def main() -> None:
     c1_w = tuple(value + GHOST for value in fc1)
     s1g = l1_solid_g.shape  # (nz, ny, nx) of the L1 with-ghost tensor
     box2, s2, fc2, l2 = build_l2_shell_geometry(
-        c1_w, s1g, radius1, args.l2_margin, RATIO, GHOST, device,
+        c1_w, s1g, radius1, args.l2_margin, RATIO, GHOST, device2,
         lattice=args.lattice,
     )
     x0_2, x1_2, y0_2, y1_2, z0_2, z1_2 = (
@@ -196,7 +217,7 @@ def main() -> None:
     c2_w = tuple(value + GHOST for value in fc2)
     s2g = l2_solid_g.shape  # (nz, ny, nx) of the L2 with-ghost tensor
     box3, s3, fc3, l3 = build_l2_shell_geometry(
-        c2_w, s2g, radius2, args.l2_margin, RATIO, GHOST, device,
+        c2_w, s2g, radius2, args.l2_margin, RATIO, GHOST, device3,
         lattice=args.lattice,
     )
     x0_3, x1_3, y0_3, y1_3, z0_3, z1_3 = (
@@ -228,6 +249,7 @@ def main() -> None:
         coarse_f,
         (config1, config2, config3),
         fine_solids=(l1_solid, l2_solid, l3_solid),
+        fine_devices=fine_devices,
     )
     level_shapes = distinct_level_shapes(amr.level_populations, 4)
 
@@ -235,7 +257,7 @@ def main() -> None:
     # control volume on the finest level (L3 with-ghost tensor)
     # ------------------------------------------------------------------
     cv = build_control_volume(
-        l3_solid_g.shape, fc3, radius3, args.cv_margin, device,
+        l3_solid_g.shape, fc3, radius3, args.cv_margin, device3,
     )
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
     sigma = build_sponge_sigma_3d(
