@@ -38,6 +38,7 @@ McKay, M.D., Beckman, R.J. & Conover, W.J. (1979). "Comparison of three
 Joe, S. & Kuo, F.Y. (2008). "Constructing Sobol sequences with better
     two-dimensional projections." *SIAM J. Sci. Comput.* 30(5), 2635–2654.
 """
+
 from __future__ import annotations
 
 import math
@@ -62,6 +63,7 @@ DoEMethod = Literal["latin_hypercube", "sobol", "full_factorial", "central_compo
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DoEVariable:
@@ -94,9 +96,7 @@ class DoEVariable:
                 f"DoE variable '{self.name}': low ({self.low}) must be < high ({self.high})"
             )
         if self.levels is not None and len(self.levels) < 2:
-            raise ValueError(
-                f"DoE variable '{self.name}': at least 2 discrete levels required"
-            )
+            raise ValueError(f"DoE variable '{self.name}': at least 2 discrete levels required")
 
 
 @dataclass
@@ -129,6 +129,7 @@ class DoEPlan:
 # ---------------------------------------------------------------------------
 # Latin Hypercube Sampling
 # ---------------------------------------------------------------------------
+
 
 def lhs(
     n_vars: int,
@@ -200,7 +201,7 @@ def lhs(
 # Dimension 0 is always the standard van der Corput sequence.
 # Higher dimensions use primitive polynomials from Joe & Kuo (2008) table.
 _SOBOL_DIRECTION_NUMS: list[list[int]] = [
-    [1 << (31 - k) for k in range(32)],                      # dim 0
+    [1 << (31 - k) for k in range(32)],  # dim 0
     [1 << 31, 1 << 30] + [1 << (31 - k) for k in range(2, 32)],  # dim 1
 ]
 
@@ -246,8 +247,38 @@ def sobol_sequence(
     list of length n_samples, each element a list of n_vars floats.
     """
     # Use shifted van der Corput with different prime-based bit scrambles per dim
-    _SCRAMBLERS = [1, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53,
-                   59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113]
+    _SCRAMBLERS = [
+        1,
+        3,
+        5,
+        7,
+        11,
+        13,
+        17,
+        19,
+        23,
+        29,
+        31,
+        37,
+        41,
+        43,
+        47,
+        53,
+        59,
+        61,
+        67,
+        71,
+        73,
+        79,
+        83,
+        89,
+        97,
+        101,
+        103,
+        107,
+        109,
+        113,
+    ]
 
     def _vdc(i: int, base: int = 2) -> float:
         x = 0.0
@@ -274,6 +305,7 @@ def sobol_sequence(
 # ---------------------------------------------------------------------------
 # Full factorial
 # ---------------------------------------------------------------------------
+
 
 def full_factorial(variables: list[DoEVariable]) -> list[list[float]]:
     """Generate all level combinations for a full factorial design.
@@ -306,6 +338,7 @@ def full_factorial(variables: list[DoEVariable]) -> list[list[float]]:
 # ---------------------------------------------------------------------------
 # Central Composite Design
 # ---------------------------------------------------------------------------
+
 
 def central_composite(
     n_vars: int,
@@ -377,6 +410,7 @@ def central_composite(
 # Main generator
 # ---------------------------------------------------------------------------
 
+
 def generate_doe(
     variables: list[DoEVariable],
     method: DoEMethod = "latin_hypercube",
@@ -434,9 +468,7 @@ def generate_doe(
     elif method == "central_composite":
         if n_vars < 2:
             raise ValueError("CCD requires at least 2 variables")
-        unit_matrix = central_composite(
-            n_vars, face_centred=face_centred, n_centre=n_centre
-        )
+        unit_matrix = central_composite(n_vars, face_centred=face_centred, n_centre=n_centre)
 
     else:
         raise ValueError(

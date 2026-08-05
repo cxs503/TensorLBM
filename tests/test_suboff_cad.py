@@ -8,6 +8,7 @@ Covers:
 - generate_suboff_previews returns a Figure.
 - export_suboff_stl writes a valid ASCII STL file.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -33,7 +34,7 @@ CPU = torch.device("cpu")
 # Small grid for speed
 NX, NY, NZ = 60, 40, 40
 LENGTH = 36.0  # lattice units (leaves head-room in the grid)
-RADIUS = LENGTH / (2.0 * 8.57)   # R/L = 1/(2*8.57): correct L/D ≈ 8.57
+RADIUS = LENGTH / (2.0 * 8.57)  # R/L = 1/(2*8.57): correct L/D ≈ 8.57
 
 
 # ---------------------------------------------------------------------------
@@ -120,8 +121,8 @@ def test_bare_hull_mask_axisymmetric() -> None:
     centre and tensor flip is equivalent to mirroring about that centre.
     """
     ny_odd, nz_odd = 41, 41
-    cy = ny_odd // 2   # = 20 → flip maps j to 40-j, |j-20| == |40-j-20|
-    cz = nz_odd // 2   # = 20
+    cy = ny_odd // 2  # = 20 → flip maps j to 40-j, |j-20| == |40-j-20|
+    cz = nz_odd // 2  # = 20
     mask = suboff_hull_mask(NX, ny_odd, nz_odd, NX / 2, float(cy), float(cz), LENGTH, RADIUS, CPU)
     m = mask.cpu()
     # Check port-starboard symmetry (flip y)
@@ -139,8 +140,11 @@ def test_bare_hull_mask_axisymmetric() -> None:
 def test_build_suboff_mask_shape(hull_type: SuboffHullType) -> None:
     mask, stats = build_suboff_mask(
         hull_type=hull_type,
-        nx=NX, ny=NY, nz=NZ,
-        length=LENGTH, radius=RADIUS,
+        nx=NX,
+        ny=NY,
+        nz=NZ,
+        length=LENGTH,
+        radius=RADIUS,
     )
     assert mask.shape == (NZ, NY, NX)
     assert mask.dtype == torch.bool
@@ -152,12 +156,19 @@ def test_build_suboff_mask_shape(hull_type: SuboffHullType) -> None:
 @pytest.mark.parametrize("hull_type", list(SuboffHullType))
 def test_build_suboff_mask_stats_keys(hull_type: SuboffHullType) -> None:
     """build_suboff_mask must return a stats dict with mandatory keys."""
-    _, stats = build_suboff_mask(hull_type=hull_type, nx=NX, ny=NY, nz=NZ,
-                                  length=LENGTH, radius=RADIUS)
+    _, stats = build_suboff_mask(
+        hull_type=hull_type, nx=NX, ny=NY, nz=NZ, length=LENGTH, radius=RADIUS
+    )
     required = {
-        "hull_type", "label", "L_D_ratio", "displacement_lu3",
-        "wetted_area_lu2", "prismatic_coefficient",
-        "solid_cells", "fluid_cells", "total_cells",
+        "hull_type",
+        "label",
+        "L_D_ratio",
+        "displacement_lu3",
+        "wetted_area_lu2",
+        "prismatic_coefficient",
+        "solid_cells",
+        "fluid_cells",
+        "total_cells",
     }
     for key in required:
         assert key in stats, f"Missing key '{key}' in stats for {hull_type}"
@@ -165,10 +176,8 @@ def test_build_suboff_mask_stats_keys(hull_type: SuboffHullType) -> None:
 
 def test_build_suboff_mask_full_has_more_solid() -> None:
     """Full model must have more solid cells than the bare hull."""
-    _, s_bare = build_suboff_mask("bare_hull", nx=NX, ny=NY, nz=NZ,
-                                   length=LENGTH, radius=RADIUS)
-    _, s_full = build_suboff_mask("full", nx=NX, ny=NY, nz=NZ,
-                                   length=LENGTH, radius=RADIUS)
+    _, s_bare = build_suboff_mask("bare_hull", nx=NX, ny=NY, nz=NZ, length=LENGTH, radius=RADIUS)
+    _, s_full = build_suboff_mask("full", nx=NX, ny=NY, nz=NZ, length=LENGTH, radius=RADIUS)
     assert s_full["solid_cells"] > s_bare["solid_cells"], (
         "Full model should have more solid cells than bare hull"
     )
@@ -176,10 +185,8 @@ def test_build_suboff_mask_full_has_more_solid() -> None:
 
 def test_build_suboff_mask_with_sail_more_than_bare() -> None:
     """With-sail model must have more solid cells than the bare hull."""
-    _, s_bare = build_suboff_mask("bare_hull", nx=NX, ny=NY, nz=NZ,
-                                   length=LENGTH, radius=RADIUS)
-    _, s_sail = build_suboff_mask("with_sail", nx=NX, ny=NY, nz=NZ,
-                                   length=LENGTH, radius=RADIUS)
+    _, s_bare = build_suboff_mask("bare_hull", nx=NX, ny=NY, nz=NZ, length=LENGTH, radius=RADIUS)
+    _, s_sail = build_suboff_mask("with_sail", nx=NX, ny=NY, nz=NZ, length=LENGTH, radius=RADIUS)
     assert s_sail["solid_cells"] > s_bare["solid_cells"]
 
 
@@ -193,8 +200,13 @@ def test_build_suboff_mask_auto_radius() -> None:
     """When radius is None, it is derived from config.r_over_l * length."""
     cfg = SuboffConfig()
     mask, stats = build_suboff_mask(
-        "bare_hull", nx=NX, ny=NY, nz=NZ,
-        length=LENGTH, radius=None, config=cfg,
+        "bare_hull",
+        nx=NX,
+        ny=NY,
+        nz=NZ,
+        length=LENGTH,
+        radius=None,
+        config=cfg,
     )
     assert stats["radius"] == pytest.approx(cfg.r_over_l * LENGTH, rel=1e-6)
     assert stats["solid_cells"] > 0
@@ -220,9 +232,17 @@ def test_suboff_statistics_supports_numpy_without_legacy_trapz(
 @pytest.mark.parametrize("hull_type", list(SuboffHullType))
 def test_suboff_statistics_keys(hull_type: SuboffHullType) -> None:
     stats = suboff_statistics(hull_type, LENGTH, RADIUS)
-    for key in ("hull_type", "label", "L_D_ratio", "r_over_l",
-                "bow_fraction", "stern_fraction",
-                "displacement_lu3", "wetted_area_lu2", "prismatic_coefficient"):
+    for key in (
+        "hull_type",
+        "label",
+        "L_D_ratio",
+        "r_over_l",
+        "bow_fraction",
+        "stern_fraction",
+        "displacement_lu3",
+        "wetted_area_lu2",
+        "prismatic_coefficient",
+    ):
         assert key in stats, f"Missing key '{key}'"
 
 
@@ -295,6 +315,7 @@ def test_generate_suboff_previews_figure(hull_type_str: str) -> None:
     fig = generate_suboff_previews(hull_type_str, length=100.0)
     try:
         import matplotlib.figure
+
         assert isinstance(fig, matplotlib.figure.Figure)
         assert len(fig.axes) == 3
     finally:
@@ -329,10 +350,12 @@ def test_export_suboff_stl_file_grows_with_full() -> None:
 
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
-        bare_stl = export_suboff_stl("bare_hull", length=100.0, n_axial=20, n_circ=16,
-                                      output_path=td / "bare.stl")
-        full_stl = export_suboff_stl("full", length=100.0, n_axial=20, n_circ=16,
-                                      output_path=td / "full.stl")
+        bare_stl = export_suboff_stl(
+            "bare_hull", length=100.0, n_axial=20, n_circ=16, output_path=td / "bare.stl"
+        )
+        full_stl = export_suboff_stl(
+            "full", length=100.0, n_axial=20, n_circ=16, output_path=td / "full.stl"
+        )
         assert full_stl.stat().st_size > bare_stl.stat().st_size, (
             "Full model STL should be larger than bare hull STL"
         )

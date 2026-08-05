@@ -28,6 +28,7 @@ Groves, N.C., Huang, T.T., Chang, M.S. (1989) "Geometric Characteristics of
 Liu, H.-L. & Huang, T.T. (1998) "Summary of DARPA SUBOFF experimental
   program data", CRDKNSWC/HD-1298-11.
 """
+
 from __future__ import annotations
 
 import math
@@ -127,6 +128,7 @@ POWERFLOW_XFLOW_BENCHMARK: dict[str, dict[str, float]] = {
 # Lattice-to-physical unit scaler
 # ---------------------------------------------------------------------------
 
+
 def scale_lattice_to_physical(
     *,
     length_m: float,
@@ -163,8 +165,9 @@ def scale_lattice_to_physical(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _q_ref(rho_ref: float, u_ref: float) -> float:
-    return 0.5 * rho_ref * u_ref ** 2 + 1e-30
+    return 0.5 * rho_ref * u_ref**2 + 1e-30
 
 
 def _hull_surface_cells(
@@ -194,7 +197,9 @@ def _hull_surface_cells(
     return (adj > 0) & fluid
 
 
-def _hull_surface_normals(mask: "torch.Tensor") -> "tuple[torch.Tensor, torch.Tensor, torch.Tensor]":
+def _hull_surface_normals(
+    mask: "torch.Tensor",
+) -> "tuple[torch.Tensor, torch.Tensor, torch.Tensor]":
     """Approximate outward-facing surface normals at hull surface cells (central-diff)."""
     import torch  # noqa: PLC0415
 
@@ -206,13 +211,14 @@ def _hull_surface_normals(mask: "torch.Tensor") -> "tuple[torch.Tensor, torch.Te
     gx[:, :, 1:-1] = (s[:, :, 2:] - s[:, :, :-2]) / 2.0
     gy[:, 1:-1, :] = (s[:, 2:, :] - s[:, :-2, :]) / 2.0
     gz[1:-1, :, :] = (s[2:, :, :] - s[:-2, :, :]) / 2.0
-    mag = torch.sqrt(gx ** 2 + gy ** 2 + gz ** 2).clamp(min=1e-12)
+    mag = torch.sqrt(gx**2 + gy**2 + gz**2).clamp(min=1e-12)
     return gx / mag, gy / mag, gz / mag
 
 
 # ---------------------------------------------------------------------------
 # 1. Resistance breakdown — CT = Cf + Cp
 # ---------------------------------------------------------------------------
+
 
 def resistance_breakdown_3d(
     f: torch.Tensor,
@@ -284,7 +290,7 @@ def resistance_breakdown_3d(
     nx_norm = torch.zeros_like(s)
     nx_norm[:, :, 1:-1] = (s[:, :, 2:] - s[:, :, :-2]) / 2.0
     mag = torch.sqrt(
-        nx_norm ** 2
+        nx_norm**2
         + ((s[:, 2:, :] - s[:, :-2, :]) / 2.0).new_zeros(nz, ny, nx) ** 2
         + ((s[2:, :, :] - s[:-2, :, :]) / 2.0).new_zeros(nz, ny, nx) ** 2
     ).clamp(min=1e-12)
@@ -329,6 +335,7 @@ def resistance_breakdown_3d(
 # 2. Pressure coefficient distribution along hull surface
 # ---------------------------------------------------------------------------
 
+
 def pressure_coefficient_hull_3d(
     rho: torch.Tensor,
     mask: torch.Tensor,
@@ -365,6 +372,7 @@ def pressure_coefficient_hull_3d(
     _nz, ny, nx = rho.shape
     q_ref = _q_ref(rho_ref, u_ref)
     import torch  # noqa: PLC0415
+
     surf = _hull_surface_cells(mask)
 
     x_over_L_list: list[float] = []
@@ -402,12 +410,16 @@ def pressure_coefficient_hull_3d(
             y_bot = int(y_indices.min().item())
             p_top_col = p_field[:, y_top, xi][surf[:, y_top, xi]]
             p_bot_col = p_field[:, y_bot, xi][surf[:, y_bot, xi]]
-            cp_top = float(
-                ((p_top_col.mean() - (rho_ref - 1.0) / 3.0) / q_ref).item()
-            ) if p_top_col.numel() > 0 else 0.0
-            cp_bot = float(
-                ((p_bot_col.mean() - (rho_ref - 1.0) / 3.0) / q_ref).item()
-            ) if p_bot_col.numel() > 0 else 0.0
+            cp_top = (
+                float(((p_top_col.mean() - (rho_ref - 1.0) / 3.0) / q_ref).item())
+                if p_top_col.numel() > 0
+                else 0.0
+            )
+            cp_bot = (
+                float(((p_bot_col.mean() - (rho_ref - 1.0) / 3.0) / q_ref).item())
+                if p_bot_col.numel() > 0
+                else 0.0
+            )
         else:
             cp_top = cp_bot = 0.0
         cp_top_list.append(cp_top)
@@ -427,6 +439,7 @@ def pressure_coefficient_hull_3d(
 # ---------------------------------------------------------------------------
 # 3. Skin-friction coefficient distribution along hull surface (3-D)
 # ---------------------------------------------------------------------------
+
 
 def skin_friction_hull_3d(
     f: torch.Tensor,
@@ -501,6 +514,7 @@ def skin_friction_hull_3d(
 # ---------------------------------------------------------------------------
 # 4. Boundary-layer parameters at cross-sectional stations
 # ---------------------------------------------------------------------------
+
 
 def boundary_layer_at_station(
     ux: torch.Tensor,
@@ -583,10 +597,10 @@ def boundary_layer_at_station(
         }
 
     # Integral parameters using trapezoidal rule (Δy = 1 lu)
-    u_bl = u_profile[:delta_idx + 1].cpu().float()
+    u_bl = u_profile[: delta_idx + 1].cpu().float()
     u_ratio = (u_bl / (u_inf + 1e-30)).clamp(0.0, 1.0)
 
-    delta_star = float(((1.0 - u_ratio)).sum().item())  # ∫(1 - u/U∞) dy
+    delta_star = float((1.0 - u_ratio).sum().item())  # ∫(1 - u/U∞) dy
     theta = float((u_ratio * (1.0 - u_ratio)).sum().item())  # ∫ (u/U∞)(1 - u/U∞) dy
     H = delta_star / max(theta, 1e-10)
 
@@ -610,6 +624,7 @@ def boundary_layer_at_station(
 # ---------------------------------------------------------------------------
 # 5. Axial-velocity cross-sections
 # ---------------------------------------------------------------------------
+
 
 def axial_cross_section_3d(
     ux: torch.Tensor,
@@ -643,6 +658,7 @@ def axial_cross_section_3d(
         x_over_L_stations = [0.2, 0.5, 0.8, 0.978]
 
     import torch  # noqa: PLC0415
+
     nz, ny, nx = ux.shape
     results = []
 
@@ -665,30 +681,36 @@ def axial_cross_section_3d(
         def _ds(t: torch.Tensor) -> torch.Tensor:
             if t.shape[0] > max_grid or t.shape[1] > max_grid:
                 sz = min(max_grid, min(t.shape[0], t.shape[1]))
-                return torch.nn.functional.interpolate(
-                    t.unsqueeze(0).unsqueeze(0).float(),
-                    size=(sz, sz),
-                    mode="bilinear",
-                    align_corners=False,
-                ).squeeze(0).squeeze(0)
+                return (
+                    torch.nn.functional.interpolate(
+                        t.unsqueeze(0).unsqueeze(0).float(),
+                        size=(sz, sz),
+                        mode="bilinear",
+                        align_corners=False,
+                    )
+                    .squeeze(0)
+                    .squeeze(0)
+                )
             return t
 
         u_n_ds = _ds(u_n)
         v_n_ds = _ds(v_n)
         w_n_ds = _ds(w_n)
 
-        speed = torch.sqrt(u_n_ds ** 2 + v_n_ds ** 2 + w_n_ds ** 2)
+        speed = torch.sqrt(u_n_ds**2 + v_n_ds**2 + w_n_ds**2)
         n_fluid = float(fluid.sum().item()) or 1.0
 
-        results.append({
-            "x_over_L": x_frac,
-            "shape": list(u_n_ds.shape),
-            "U_over_Uinf": u_n_ds.cpu().tolist(),
-            "V": v_n_ds.cpu().tolist(),
-            "W": w_n_ds.cpu().tolist(),
-            "speed_max": float(speed.max().item()),
-            "speed_mean": float(speed.sum().item() / n_fluid),
-        })
+        results.append(
+            {
+                "x_over_L": x_frac,
+                "shape": list(u_n_ds.shape),
+                "U_over_Uinf": u_n_ds.cpu().tolist(),
+                "V": v_n_ds.cpu().tolist(),
+                "W": w_n_ds.cpu().tolist(),
+                "speed_max": float(speed.max().item()),
+                "speed_mean": float(speed.sum().item() / n_fluid),
+            }
+        )
 
     return results
 
@@ -696,6 +718,7 @@ def axial_cross_section_3d(
 # ---------------------------------------------------------------------------
 # 6. Wake / propeller-plane profile (x/L = 0.978)
 # ---------------------------------------------------------------------------
+
 
 def wake_profile_3d(
     ux: torch.Tensor,
@@ -725,6 +748,7 @@ def wake_profile_3d(
         ``speed_deficit_max``.
     """
     import torch  # noqa: PLC0415
+
     nz, ny, nx = ux.shape
     xi = int(round(x_over_L * (nx - 1)))
     xi = max(0, min(xi, nx - 1))
@@ -792,6 +816,7 @@ def wake_profile_3d(
 # 7. Turbulent kinetic energy field
 # ---------------------------------------------------------------------------
 
+
 def tke_field_3d(
     ux: torch.Tensor,
     uy: torch.Tensor,
@@ -816,6 +841,7 @@ def tke_field_3d(
         Dictionary with keys ``tke`` (3-D list), ``tke_max``, ``tke_mean``.
     """
     import torch  # noqa: PLC0415
+
     if ux_mean is not None and uy_mean is not None and uz_mean is not None:
         up = ux - ux_mean
         vp = uy - uy_mean
@@ -823,17 +849,21 @@ def tke_field_3d(
     else:
         up, vp, wp = ux, uy, uz
 
-    tke = 0.5 * (up ** 2 + vp ** 2 + wp ** 2)
+    tke = 0.5 * (up**2 + vp**2 + wp**2)
     # Downsample for serialisation
     tke_ds = tke
     if tke.shape[0] > 32 or tke.shape[1] > 32 or tke.shape[2] > 32:
         sz = 32
-        tke_ds = torch.nn.functional.interpolate(
-            tke.unsqueeze(0).unsqueeze(0).float(),
-            size=(sz, sz, sz),
-            mode="trilinear",
-            align_corners=False,
-        ).squeeze(0).squeeze(0)
+        tke_ds = (
+            torch.nn.functional.interpolate(
+                tke.unsqueeze(0).unsqueeze(0).float(),
+                size=(sz, sz, sz),
+                mode="trilinear",
+                align_corners=False,
+            )
+            .squeeze(0)
+            .squeeze(0)
+        )
 
     return {
         "tke": tke_ds.cpu().tolist(),
@@ -846,6 +876,7 @@ def tke_field_3d(
 # ---------------------------------------------------------------------------
 # 8. y+ distribution over hull surface
 # ---------------------------------------------------------------------------
+
 
 def yplus_hull_3d(
     f: torch.Tensor,
@@ -904,18 +935,15 @@ def yplus_hull_3d(
         "x_over_L": x_over_L_list,
         "y_plus_mean": yp_mean_list,
         "y_plus_max": float(y_plus.max().item()),
-        "y_plus_global_mean": (
-            float(surf_yp.mean().item()) if surf_yp.numel() > 0 else 0.0
-        ),
-        "y_plus_global_max": (
-            float(surf_yp.max().item()) if surf_yp.numel() > 0 else 0.0
-        ),
+        "y_plus_global_mean": (float(surf_yp.mean().item()) if surf_yp.numel() > 0 else 0.0),
+        "y_plus_global_max": (float(surf_yp.max().item()) if surf_yp.numel() > 0 else 0.0),
     }
 
 
 # ---------------------------------------------------------------------------
 # 9. Quantitative comparison table
 # ---------------------------------------------------------------------------
+
 
 def build_comparison_table(
     *,

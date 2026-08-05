@@ -6,6 +6,7 @@ Tests three dimensions:
    D3Q27 (common-only) physical reasonableness.
 3. Combination — sliding mesh + collision end-to-end.
 """
+
 from __future__ import annotations
 
 import math
@@ -32,6 +33,7 @@ from tensorlbm.sliding_mesh_common import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_f_2d(ny: int = 8, nx: int = 10) -> torch.Tensor:
     rho = torch.ones(ny, nx)
@@ -61,6 +63,7 @@ def _make_f_27(nz: int = 4, ny: int = 8, nx: int = 10) -> torch.Tensor:
 # ===========================================================================
 # 1. BUG IDENTIFICATION
 # ===========================================================================
+
 
 class TestSlidingMeshBugs:
     """Identify pre-existing bugs in the original sliding_mesh.py."""
@@ -133,6 +136,7 @@ class TestSlidingMeshBugs:
 # ===========================================================================
 # 2. EQUIVALENCE: D2Q9 original vs common 3D
 # ===========================================================================
+
 
 class TestSlidingMeshEquivalence:
     """Verify D2Q9 original == common 3D (axis=z, single z-layer)."""
@@ -260,8 +264,16 @@ class TestSlidingMeshEquivalence:
         theta = 0.2
 
         f_out = apply_sliding_mesh_bc_3d(
-            f, mask, theta, omega, rho, tau,
-            axis="z", cx=nx / 2, cy=ny / 2, cz=nz / 2,
+            f,
+            mask,
+            theta,
+            omega,
+            rho,
+            tau,
+            axis="z",
+            cx=nx / 2,
+            cy=ny / 2,
+            cz=nz / 2,
             lattice="D3Q19",
         )
         assert torch.isfinite(f_out).all()
@@ -278,9 +290,15 @@ class TestSlidingMeshEquivalence:
         mask[1:3, 3:5, 3:7] = True
 
         f_out = sliding_mesh_step(
-            f, mask, omega=0.01,
-            theta=0.2, tau=1.0, axis="z",
-            cx=nx / 2, cy=ny / 2, cz=nz / 2,
+            f,
+            mask,
+            omega=0.01,
+            theta=0.2,
+            tau=1.0,
+            axis="z",
+            cx=nx / 2,
+            cy=ny / 2,
+            cz=nz / 2,
         )
         assert f_out.shape == f.shape
         assert torch.isfinite(f_out).all()
@@ -289,6 +307,7 @@ class TestSlidingMeshEquivalence:
 # ===========================================================================
 # 2b. D3Q27 physical reasonableness (common-only)
 # ===========================================================================
+
 
 class TestSlidingMeshD3Q27Reasonableness:
     """D3Q27 sliding mesh is common-module-only; verify physical reasonableness."""
@@ -302,8 +321,16 @@ class TestSlidingMeshD3Q27Reasonableness:
         mask[1:3, 3:5, 3:7] = True
 
         f_out = apply_sliding_mesh_bc_3d(
-            f, mask, theta=0.3, omega=0.01, rho=rho, tau=1.0,
-            axis="z", cx=nx / 2, cy=ny / 2, cz=nz / 2,
+            f,
+            mask,
+            theta=0.3,
+            omega=0.01,
+            rho=rho,
+            tau=1.0,
+            axis="z",
+            cx=nx / 2,
+            cy=ny / 2,
+            cz=nz / 2,
             lattice="D3Q27",
         )
         assert torch.isfinite(f_out).all()
@@ -316,9 +343,15 @@ class TestSlidingMeshD3Q27Reasonableness:
         mask[1:3, 3:5, 3:7] = True
 
         f_out = sliding_mesh_step(
-            f, mask, omega=0.01,
-            theta=0.2, tau=1.0, axis="z",
-            cx=nx / 2, cy=ny / 2, cz=nz / 2,
+            f,
+            mask,
+            omega=0.01,
+            theta=0.2,
+            tau=1.0,
+            axis="z",
+            cx=nx / 2,
+            cy=ny / 2,
+            cz=nz / 2,
         )
         assert f_out.shape == f.shape
         assert torch.isfinite(f_out).all()
@@ -333,13 +366,29 @@ class TestSlidingMeshD3Q27Reasonableness:
         mask[1:3, 3:5, 3:7] = True
 
         f19_out = apply_sliding_mesh_bc_3d(
-            f19, mask, theta=0.0, omega=0.01, rho=rho, tau=1.0,
-            axis="z", cx=nx / 2, cy=ny / 2, cz=nz / 2,
+            f19,
+            mask,
+            theta=0.0,
+            omega=0.01,
+            rho=rho,
+            tau=1.0,
+            axis="z",
+            cx=nx / 2,
+            cy=ny / 2,
+            cz=nz / 2,
             lattice="D3Q19",
         )
         f27_out = apply_sliding_mesh_bc_3d(
-            f27, mask, theta=0.0, omega=0.01, rho=rho, tau=1.0,
-            axis="z", cx=nx / 2, cy=ny / 2, cz=nz / 2,
+            f27,
+            mask,
+            theta=0.0,
+            omega=0.01,
+            rho=rho,
+            tau=1.0,
+            axis="z",
+            cx=nx / 2,
+            cy=ny / 2,
+            cz=nz / 2,
             lattice="D3Q27",
         )
         # Both should be finite
@@ -376,6 +425,7 @@ class TestSlidingMeshD3Q27Reasonableness:
 # ===========================================================================
 # 3. COMBINATION: sliding mesh + collision
 # ===========================================================================
+
 
 class TestSlidingMeshWithCollision:
     """Combination test: sliding mesh BC applied with BGK collision."""
@@ -428,9 +478,15 @@ class TestSlidingMeshWithCollision:
 
         # Sliding mesh step
         f = sliding_mesh_step(
-            f, mask, omega=omega,
-            theta=0.1, tau=tau, axis="z",
-            cx=nx / 2, cy=ny / 2, cz=nz / 2,
+            f,
+            mask,
+            omega=omega,
+            theta=0.1,
+            tau=tau,
+            axis="z",
+            cx=nx / 2,
+            cy=ny / 2,
+            cz=nz / 2,
         )
         assert torch.isfinite(f).all()
 
@@ -449,9 +505,15 @@ class TestSlidingMeshWithCollision:
 
         # Sliding mesh step
         f = sliding_mesh_step(
-            f, mask, omega=omega,
-            theta=0.1, tau=tau, axis="z",
-            cx=nx / 2, cy=ny / 2, cz=nz / 2,
+            f,
+            mask,
+            omega=omega,
+            theta=0.1,
+            tau=tau,
+            axis="z",
+            cx=nx / 2,
+            cy=ny / 2,
+            cz=nz / 2,
         )
         assert torch.isfinite(f).all()
 
@@ -469,9 +531,15 @@ class TestSlidingMeshWithCollision:
             f = self._bgk_collision_3d(f, tau, "D3Q19")
             theta += omega
             f = sliding_mesh_step(
-                f, mask, omega=omega,
-                theta=theta, tau=tau, axis="z",
-                cx=nx / 2, cy=ny / 2, cz=nz / 2,
+                f,
+                mask,
+                omega=omega,
+                theta=theta,
+                tau=tau,
+                axis="z",
+                cx=nx / 2,
+                cy=ny / 2,
+                cz=nz / 2,
             )
             assert torch.isfinite(f).all(), f"Non-finite at step {step}"
             mass = f.sum().item()

@@ -4,6 +4,7 @@ This module intentionally does not import, call, or mutate a free-surface
 solver, populations, phase fields, or PV state.  It only proves that explicitly
 provided interface and counterpart ledger deltas have a common net flux.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,7 +38,9 @@ def _require_tolerances(atol: float, rtol: float) -> None:
         try:
             numeric = float(value)
         except (TypeError, ValueError) as error:
-            raise FluxTransactionError(f"{name} tolerance must be finite and non-negative") from error
+            raise FluxTransactionError(
+                f"{name} tolerance must be finite and non-negative"
+            ) from error
         if numeric < 0.0 or numeric == float("inf") or numeric != numeric:
             raise FluxTransactionError(f"{name} tolerance must be finite and non-negative")
 
@@ -66,7 +69,11 @@ class CommonFluxTransaction:
         _require_tensor("counterpart", counterpart, interface.shape)
         _require_tensor("interface_delta", interface_delta, interface.shape)
         _require_tensor("counterpart_delta", counterpart_delta, interface.shape)
-        if interface.device != counterpart.device or interface.device != interface_delta.device or interface.device != counterpart_delta.device:
+        if (
+            interface.device != counterpart.device
+            or interface.device != interface_delta.device
+            or interface.device != counterpart_delta.device
+        ):
             raise FluxTransactionError("inventories and deltas must share one device")
         return PlannedCommonFlux(
             interface=interface.clone(),
@@ -117,11 +124,16 @@ class StagedCommonFlux:
     rtol: float
 
     def validate(self) -> "CommonFluxValidation":
-        if not bool(torch.isfinite(self.interface_candidate).all()) or not bool(torch.isfinite(self.counterpart_candidate).all()):
+        if not bool(torch.isfinite(self.interface_candidate).all()) or not bool(
+            torch.isfinite(self.counterpart_candidate).all()
+        ):
             raise FluxTransactionError("staged inventories must remain finite")
         residual = torch.abs(self.interface_flux + self.counterpart_flux)
         scale = torch.maximum(torch.abs(self.interface_flux), torch.abs(self.counterpart_flux))
-        tolerance = torch.as_tensor(self.atol, dtype=residual.dtype, device=residual.device) + self.rtol * scale
+        tolerance = (
+            torch.as_tensor(self.atol, dtype=residual.dtype, device=residual.device)
+            + self.rtol * scale
+        )
         return CommonFluxValidation(
             interface_candidate=self.interface_candidate.clone(),
             counterpart_candidate=self.counterpart_candidate.clone(),

@@ -7,6 +7,7 @@ Requires PaddlePaddle ≥ 2.4.  Install with::
 
 All public functions mirror :mod:`tensorlbm.backends.torch_backend` exactly.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -20,9 +21,11 @@ import numpy as np
 # Lazy import guard – paddle is only needed when this backend is active.
 # ---------------------------------------------------------------------------
 
+
 def _paddle():
     try:
         import paddle  # noqa: PLC0415
+
         return paddle
     except ImportError as exc:
         raise ImportError(
@@ -44,6 +47,7 @@ def _paddle_optim():
 # Constants
 # ---------------------------------------------------------------------------
 
+
 def pi() -> float:
     return math.pi
 
@@ -55,6 +59,7 @@ def float32_dtype():
 # ---------------------------------------------------------------------------
 # Tensor creation
 # ---------------------------------------------------------------------------
+
 
 def zeros(shape, dtype=None, device: str = "cpu"):
     pd = _paddle()
@@ -96,6 +101,7 @@ def meshgrid(*tensors, indexing: str = "ij"):
 # ---------------------------------------------------------------------------
 # Tensor operations
 # ---------------------------------------------------------------------------
+
 
 def stack(tensors, dim: int = 0):
     return _paddle().stack(list(tensors), axis=dim)
@@ -258,6 +264,7 @@ def no_grad():
 # Device scope helper
 # ---------------------------------------------------------------------------
 
+
 @contextlib.contextmanager
 def _device_scope(device: str):
     """Null context – Paddle uses global device selection."""
@@ -267,6 +274,7 @@ def _device_scope(device: str):
 # ---------------------------------------------------------------------------
 # NN helpers – activation
 # ---------------------------------------------------------------------------
+
 
 def _activation_layer(name: str):
     nn = _paddle_nn()
@@ -284,6 +292,7 @@ def _activation_layer(name: str):
 # EddyViscosityMLP (PaddlePaddle)
 # ---------------------------------------------------------------------------
 
+
 def build_eddy_viscosity_mlp(
     in_features: int,
     hidden_features: int,
@@ -298,9 +307,7 @@ def build_eddy_viscosity_mlp(
     nn = _paddle_nn()
 
     feature_mean = pd.to_tensor(feature_mean_np, dtype=pd.float32)
-    feature_std = pd.to_tensor(
-        np.maximum(feature_std_np, 1e-6), dtype=pd.float32
-    )
+    feature_std = pd.to_tensor(np.maximum(feature_std_np, 1e-6), dtype=pd.float32)
 
     class _EddyViscosityMLP(nn.Layer):  # type: ignore[name-defined]
         def __init__(self) -> None:
@@ -331,9 +338,7 @@ def build_eddy_viscosity_mlp(
 
         def forward(self, x):  # noqa: D401
             if x.shape[-1] != self.in_features:
-                raise ValueError(
-                    f"Expected {self.in_features} features, got {tuple(x.shape)}"
-                )
+                raise ValueError(f"Expected {self.in_features} features, got {tuple(x.shape)}")
             m = pd.cast(self.feature_mean, x.dtype)
             s = pd.cast(self.feature_std, x.dtype)
             return self.net((x - m) / s)
@@ -347,6 +352,7 @@ def build_eddy_viscosity_mlp(
 # ---------------------------------------------------------------------------
 # FlowFieldTransformer (PaddlePaddle)
 # ---------------------------------------------------------------------------
+
 
 def build_flow_transformer(
     in_features: int,
@@ -412,14 +418,13 @@ def build_flow_transformer(
 # Loss, optimizer, scheduler
 # ---------------------------------------------------------------------------
 
+
 def mse_loss_fn():
     return _paddle_nn().MSELoss()
 
 
 def adam_optimizer(model, lr: float):
-    return _paddle_optim().Adam(
-        parameters=model.parameters(), learning_rate=float(lr)
-    )
+    return _paddle_optim().Adam(parameters=model.parameters(), learning_rate=float(lr))
 
 
 def cosine_lr_scheduler(optimizer, T_max: int):
@@ -473,6 +478,7 @@ def backward(loss) -> None:
 # Model persistence
 # ---------------------------------------------------------------------------
 
+
 def get_state_dict_numpy(model) -> dict[str, np.ndarray]:
     """Return model state dict as dict of numpy arrays."""
     return {k: v.numpy() for k, v in model.state_dict().items()}
@@ -500,6 +506,7 @@ def compute_feature_stats(x_train) -> tuple[np.ndarray, np.ndarray]:
 # Model state helpers
 # ---------------------------------------------------------------------------
 
+
 def eval_mode(model) -> None:
     model.eval()
 
@@ -515,6 +522,7 @@ def is_training(model) -> bool:
 # ---------------------------------------------------------------------------
 # Unified training step (one minibatch)
 # ---------------------------------------------------------------------------
+
 
 def train_step(model, loss_fn, optimizer, x_batch, y_batch, max_norm: float | None) -> float:
     """Run one forward/backward/update step; return scalar loss."""

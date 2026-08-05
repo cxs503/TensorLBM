@@ -40,6 +40,7 @@ Körner, C., Thies, M., Thurey, E., & Rüde, U. (2005).
     Lattice Boltzmann simulation of free-surface flows.
     *J. Stat. Phys.* 121, 179–207.
 """
+
 from __future__ import annotations
 
 import functools
@@ -124,20 +125,20 @@ def vof_advect_upwind_3d(
     # x-direction (dim=2 in (nz,ny,nx) layout); in padded array dim=2
     dphi_dx = torch.where(
         ux > 0,
-        pad_phi[1:-1, 1:-1, 1:-1] - pad_phi[1:-1, 1:-1, 0:-2],    # backward
-        pad_phi[1:-1, 1:-1, 2:]   - pad_phi[1:-1, 1:-1, 1:-1],   # forward
+        pad_phi[1:-1, 1:-1, 1:-1] - pad_phi[1:-1, 1:-1, 0:-2],  # backward
+        pad_phi[1:-1, 1:-1, 2:] - pad_phi[1:-1, 1:-1, 1:-1],  # forward
     )
     # y-direction (dim=1)
     dphi_dy = torch.where(
         uy > 0,
         pad_phi[1:-1, 1:-1, 1:-1] - pad_phi[1:-1, 0:-2, 1:-1],
-        pad_phi[1:-1, 2:,   1:-1] - pad_phi[1:-1, 1:-1, 1:-1],
+        pad_phi[1:-1, 2:, 1:-1] - pad_phi[1:-1, 1:-1, 1:-1],
     )
     # z-direction (dim=0)
     dphi_dz = torch.where(
         uz > 0,
         pad_phi[1:-1, 1:-1, 1:-1] - pad_phi[0:-2, 1:-1, 1:-1],
-        pad_phi[2:,   1:-1, 1:-1] - pad_phi[1:-1, 1:-1, 1:-1],
+        pad_phi[2:, 1:-1, 1:-1] - pad_phi[1:-1, 1:-1, 1:-1],
     )
 
     phi_new = phi - (ux * dphi_dx + uy * dphi_dy + uz * dphi_dz)
@@ -189,15 +190,21 @@ def interface_compression_3d(
     # Divergence of F (central differences with replicate padding on ALL axes)
     # Fix: pad all 3 axes simultaneously so all terms have shape (nz, ny, nx)
     p5d_x = Fx.unsqueeze(0).unsqueeze(0)
-    pad_x = torch.nn.functional.pad(p5d_x, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
+    pad_x = (
+        torch.nn.functional.pad(p5d_x, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
+    )
     dFx_dx = (pad_x[1:-1, 1:-1, 2:] - pad_x[1:-1, 1:-1, 0:-2]) * 0.5
 
     p5d_y = Fy.unsqueeze(0).unsqueeze(0)
-    pad_y = torch.nn.functional.pad(p5d_y, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
+    pad_y = (
+        torch.nn.functional.pad(p5d_y, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
+    )
     dFy_dy = (pad_y[1:-1, 2:, 1:-1] - pad_y[1:-1, 0:-2, 1:-1]) * 0.5
 
     p5d_z = Fz.unsqueeze(0).unsqueeze(0)
-    pad_z = torch.nn.functional.pad(p5d_z, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
+    pad_z = (
+        torch.nn.functional.pad(p5d_z, (1, 1, 1, 1, 1, 1), mode="replicate").squeeze(0).squeeze(0)
+    )
     dFz_dz = (pad_z[2:, 1:-1, 1:-1] - pad_z[0:-2, 1:-1, 1:-1]) * 0.5
 
     return dFx_dx + dFy_dy + dFz_dz
@@ -208,9 +215,9 @@ def interface_compression_3d(
 # --------------------------------------------------------------------------- #
 
 
-def interface_normal_3d(phi: torch.Tensor) -> tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]:
+def interface_normal_3d(
+    phi: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Compute the interface normal ``n̂ = ∇φ / |∇φ|`` and its magnitude.
 
     Uses second-order **central** differences for the gradient.
@@ -227,7 +234,7 @@ def interface_normal_3d(phi: torch.Tensor) -> tuple[
     dphi_dy = (torch.roll(phi, shifts=-1, dims=1) - torch.roll(phi, shifts=1, dims=1)) * 0.5
     dphi_dz = (torch.roll(phi, shifts=-1, dims=0) - torch.roll(phi, shifts=1, dims=0)) * 0.5
 
-    mag = torch.sqrt(dphi_dx ** 2 + dphi_dy ** 2 + dphi_dz ** 2).clamp(min=1e-12)
+    mag = torch.sqrt(dphi_dx**2 + dphi_dy**2 + dphi_dz**2).clamp(min=1e-12)
     return dphi_dx / mag, dphi_dy / mag, dphi_dz / mag, mag
 
 
@@ -380,7 +387,7 @@ def guo_force_delta_3d(
     # = cF/cs^2 - (u·F)/cs^2 + cu*cF/cs^4
     uF = (ux * Fx + uy * Fy + uz * Fz).unsqueeze(0)  # (1, nz, ny, nx)
 
-    delta = (cF * inv_cs2 - uF * inv_cs2 + cu * cF * inv_cs4)
+    delta = cF * inv_cs2 - uF * inv_cs2 + cu * cF * inv_cs4
     coef = (1.0 - 1.0 / (2.0 * tau)) * w
     return coef * delta
 
@@ -524,15 +531,14 @@ def free_surface_vof_step(
         ``(f_updated, phi_updated)``.
     """
     # 1. Collision with forcing
-    f = free_surface_vof_collide_3d(
-        f, phi, tau, gx, gy, gz, sigma, rho_liquid, rho_gas, solid
-    )
+    f = free_surface_vof_collide_3d(f, phi, tau, gx, gy, gz, sigma, rho_liquid, rho_gas, solid)
 
     # 2. Streaming
     if stream_fn is not None:
         f = stream_fn(f)
     else:
         from .solver3d import stream3d
+
         f = stream3d(f)
 
     # 3. Bounce-back at solid walls
@@ -540,6 +546,7 @@ def free_surface_vof_step(
         f = bounce_back_fn(f, solid)
     elif solid is not None:
         from .boundaries3d import bounce_back_cells_3d
+
         f = bounce_back_cells_3d(f, solid)
 
     # 4. Extract post-stream velocity and advect phi
@@ -772,7 +779,7 @@ def front_position_3d(phi: torch.Tensor, threshold: float = 0.5) -> float:
     Returns:
         Front position in x (lattice units).
     """
-    fluid = (phi > threshold)
+    fluid = phi > threshold
     if not fluid.any():
         return 0.0
     # Max x index where fluid exists
@@ -806,7 +813,7 @@ def wave_height_at_wall_3d(
         col = phi[:, :, 1]  # first interior cell
     else:
         col = phi[:, :, -2]
-    fluid = (col > threshold)
+    fluid = col > threshold
     if not fluid.any():
         return 0.0
     y_mask = fluid.any(dim=0)  # (ny,)

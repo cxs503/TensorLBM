@@ -32,11 +32,14 @@ def test_rotational_wall_velocity_reverses_torque_with_omega_sign():
     positions = torch.tensor([[0.0, -1.0, 0.0], [0.0, 1.0, 0.0]], dtype=torch.float64)
 
     def torque_for(omega: float) -> torch.Tensor:
-        wall_velocity = torch.stack((
-            torch.zeros(2, dtype=torch.float64),
-            torch.zeros(2, dtype=torch.float64),
-            omega * positions[:, 1],
-        ), dim=1)
+        wall_velocity = torch.stack(
+            (
+                torch.zeros(2, dtype=torch.float64),
+                torch.zeros(2, dtype=torch.float64),
+                omega * positions[:, 1],
+            ),
+            dim=1,
+        )
         return moving_wall_linkwise_me_force_torque(
             outgoing, directions, weights, wall_velocity, positions, origin=(0.0, 0.0, 0.0)
         )[3]

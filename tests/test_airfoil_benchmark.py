@@ -1,4 +1,5 @@
 """Tests for airfoil benchmark module."""
+
 from __future__ import annotations
 
 import torch
@@ -40,8 +41,13 @@ def test_reference_cl_cd() -> None:
 def test_airfoil_benchmark_runs() -> None:
     """Minimal smoke test."""
     cfg = AirfoilConfig(
-        chord=30, alpha_deg=2.0, re=100,
-        nx=100, ny=40, n_steps=200, warmup_steps=50,
+        chord=30,
+        alpha_deg=2.0,
+        re=100,
+        nx=100,
+        ny=40,
+        n_steps=200,
+        warmup_steps=50,
         device="cpu",
     )
     result = run_airfoil_benchmark(cfg)

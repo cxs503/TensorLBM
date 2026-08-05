@@ -19,6 +19,7 @@ References:
 - Shu, Niu & Chew (2002) "Taylor-series expansion and least-squares
   lattice Boltzmann method"
 """
+
 import torch
 from typing import Optional
 
@@ -32,8 +33,7 @@ class FDLBMPrismSolver:
     elements.
     """
 
-    def __init__(self, prism: dict, velocities: torch.Tensor,
-                 tau: float, device: torch.device):
+    def __init__(self, prism: dict, velocities: torch.Tensor, tau: float, device: torch.device):
         """
         Args:
             prism: dict from generate_adaptive_prism()
@@ -41,22 +41,22 @@ class FDLBMPrismSolver:
             tau: relaxation time
             device: torch device
         """
-        self.prism = {k: v.to(device) if isinstance(v, torch.Tensor) else v
-                       for k, v in prism.items()}
+        self.prism = {
+            k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in prism.items()
+        }
         self.c = velocities.to(device).float()  # (19, 3)
         self.tau = tau
         self.device = device
 
-        self.n_layers = prism['layer_centres'].shape[0]
-        self.n_surface = prism['n_surface']
+        self.n_layers = prism["layer_centres"].shape[0]
+        self.n_surface = prism["n_surface"]
 
         # Distribution function: (19, n_layers, n_surface)
-        self.f = torch.zeros(19, self.n_layers, self.n_surface,
-                            device=device, dtype=torch.float32)
+        self.f = torch.zeros(19, self.n_layers, self.n_surface, device=device, dtype=torch.float32)
 
     def init_from_lbm(self, f_lbm: torch.Tensor, solid: torch.Tensor):
         """Initialize FD-LBM distribution from Cartesian LBM at interface."""
-        c0 = self.prism['surface_centres']
+        c0 = self.prism["surface_centres"]
         for i in range(self.n_surface):
             cx, cy, cz = int(c0[i, 0]), int(c0[i, 1]), int(c0[i, 2])
             if 0 <= cx < f_lbm.shape[3] and 0 <= cy < f_lbm.shape[2] and 0 <= cz < f_lbm.shape[1]:
@@ -66,6 +66,7 @@ class FDLBMPrismSolver:
     def _equilibrium(self, rho, ux, uy, uz):
         """Compute Maxwell-Boltzmann equilibrium for D3Q19."""
         from .d3q19 import equilibrium3d
+
         return equilibrium3d(rho, ux, uy, uz)
 
     def _macroscopic(self):
@@ -85,10 +86,10 @@ class FDLBMPrismSolver:
         Returns:
             gradient in wall-normal direction, same shape.
         """
-        h = self.prism['layer_heights']  # (n_layers, n_surface)
+        h = self.prism["layer_heights"]  # (n_layers, n_surface)
         # Central difference: (f_{k+1} - f_{k-1}) / (h_k + h_{k-1})
         up = torch.roll(field, -1, dims=0)  # f_{k+1}
-        dn = torch.roll(field, 1, dims=0)   # f_{k-1}
+        dn = torch.roll(field, 1, dims=0)  # f_{k-1}
         h_sum = h + torch.roll(h, 1, dims=0)  # h_k + h_{k-1}
         h_sum = h_sum.clamp(min=1e-10)
         return (up - dn) / h_sum
@@ -104,7 +105,7 @@ class FDLBMPrismSolver:
         - df/dn via wall-normal central difference
         - df/dt1, df/dt2 via small (neglected for now — prism is thin)
         """
-        normals = self.prism['surface_normals']  # (n_surface, 3)
+        normals = self.prism["surface_normals"]  # (n_surface, 3)
 
         # For each population i, project c_i onto the surface normal
         # c_i·n gives the wall-normal velocity component for this population
@@ -153,7 +154,7 @@ class FDLBMPrismSolver:
 
     def inject_interface_to_lbm(self, f_lbm: torch.Tensor):
         """Write prism interface distribution back to LBM."""
-        c0 = self.prism['surface_centres']
+        c0 = self.prism["surface_centres"]
         f_iface = self.get_interface_f()
         for i in range(self.n_surface):
             cx, cy, cz = int(c0[i, 0]), int(c0[i, 1]), int(c0[i, 2])

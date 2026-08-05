@@ -31,6 +31,7 @@ References
 VTK File Formats: https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
 Kitware (2006) "The VTK User's Guide", 11th ed.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -47,6 +48,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _pressure_from_rho(rho: torch.Tensor) -> torch.Tensor:
     """Lattice pressure p = (ρ − 1) / 3 (incompressible LBM, cs² = 1/3)."""
@@ -82,6 +84,7 @@ def _q_criterion_3d(
     Returns:
         Q field of shape ``(nz, ny, nx)``.
     """
+
     def _grad(v: torch.Tensor, dim: int) -> torch.Tensor:
         g = torch.zeros_like(v)
         slc_f = [slice(None)] * v.ndim
@@ -141,6 +144,7 @@ def _q_criterion_3d(
 # ---------------------------------------------------------------------------
 # ASCII VTK Legacy helpers
 # ---------------------------------------------------------------------------
+
 
 def _write_vtk_header_2d(
     nx: int,
@@ -210,6 +214,7 @@ def _vector_section(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def export_vtk_2d(
     rho: torch.Tensor,
@@ -342,6 +347,7 @@ def export_checkpoint_vtk(
     if f.ndim == 3:
         # 2-D: f shape (Q, ny, nx)
         from .d2q9 import macroscopic
+
         rho, ux, uy = macroscopic(f)
         return export_vtk_2d(rho, ux, uy, out, spacing=spacing, fields=fields)
 
@@ -350,9 +356,11 @@ def export_checkpoint_vtk(
         q = f.shape[0]
         if q == 19:
             from .d3q19 import macroscopic3d
+
             rho, ux, uy, uz = macroscopic3d(f)
         elif q == 27:
             from .d3q27 import macroscopic27
+
             rho, ux, uy, uz = macroscopic27(f)
         else:
             raise ValueError(f"Unsupported velocity set size Q={q}")

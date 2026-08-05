@@ -1,4 +1,5 @@
 """CLI to run a rotating-cylinder (Magnus effect) LBM simulation."""
+
 from __future__ import annotations
 
 import argparse

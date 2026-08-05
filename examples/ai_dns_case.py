@@ -1,4 +1,5 @@
 """DNS-data-driven AI turbulence case: LBM DNS -> train -> AI-LES embed."""
+
 from __future__ import annotations
 
 import json

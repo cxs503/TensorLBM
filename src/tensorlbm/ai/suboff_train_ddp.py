@@ -121,27 +121,39 @@ def train_ddp(
     rank, world_size, local_rank, device = _setup_ddp()
 
     if _is_main(rank):
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"DDP Training: {world_size} cards | mode={mode}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
     # ── Config ──
     if mode == "pretrain":
         cfg = SuboffTrainConfig(
-            lr=lr, iters=iters, batch_size=batch_size,
-            data_dir=data_dir, n_train=n_train, n_test=n_test,
-            ckpt_every=ckpt_every, log_dir=log_dir,
-            resume=resume, path_to_resume=path_to_resume,
+            lr=lr,
+            iters=iters,
+            batch_size=batch_size,
+            data_dir=data_dir,
+            n_train=n_train,
+            n_test=n_test,
+            ckpt_every=ckpt_every,
+            log_dir=log_dir,
+            resume=resume,
+            path_to_resume=path_to_resume,
             device=f"sdaa:{local_rank}",
         )
         ckpt_subdir = "model_ckpt14"
         log_prefix = "main14"
     else:
         cfg = SuboffFinetuneConfig(
-            lr=lr, iters=iters, batch_size=batch_size,
-            data_dir=data_dir, n_train=n_train, n_test=n_test,
-            ckpt_every=ckpt_every, log_dir=log_dir,
-            resume=resume, path_to_resume=path_to_resume,
+            lr=lr,
+            iters=iters,
+            batch_size=batch_size,
+            data_dir=data_dir,
+            n_train=n_train,
+            n_test=n_test,
+            ckpt_every=ckpt_every,
+            log_dir=log_dir,
+            resume=resume,
+            path_to_resume=path_to_resume,
             device=f"sdaa:{local_rank}",
         )
         ckpt_subdir = "model_ckpt38"
@@ -168,16 +180,26 @@ def train_ddp(
         train_dataset, test_dataset = _load_train_data_pretrain(cfg)
         # _load_train_data_pretrain returns loaders, not datasets
         # We need to rebuild with DistributedSampler
-        from .suboff_train import _load_multi_re_data, _load_npy_channel_ori27, _load_npy_channel, _load_npy_channel_ori28_addition
+        from .suboff_train import (
+            _load_multi_re_data,
+            _load_npy_channel_ori27,
+            _load_npy_channel,
+            _load_npy_channel_ori28_addition,
+        )
+
         train_data, test_data = _load_multi_re_data(
-            cfg.data_dir, cfg.n_train, cfg.n_test,
+            cfg.data_dir,
+            cfg.n_train,
+            cfg.n_test,
             [_load_npy_channel_ori27, _load_npy_channel, _load_npy_channel_ori28_addition],
         )
         train_dataset = CylinderDatasetMultiRe14(train_data, tw=1, push_forward=0)
         test_dataset = CylinderDatasetMultiRe14(test_data, tw=1, push_forward=0)
     else:
         train_data, test_data = _load_multi_re_data(
-            cfg.data_dir, cfg.n_train, cfg.n_test,
+            cfg.data_dir,
+            cfg.n_train,
+            cfg.n_test,
             [_load_npy_channel_ori27, _load_npy_channel, _load_npy_channel_ori28_addition],
         )
         train_dataset = CylinderDatasetMultiRe14(train_data, tw=1, push_forward=0)
@@ -186,9 +208,7 @@ def train_ddp(
     train_loader, train_sampler = _make_ddp_loader(
         train_dataset, cfg.batch_size, rank, world_size, shuffle=True
     )
-    test_loader, _ = _make_ddp_loader(
-        test_dataset, cfg.batch_size, rank, world_size, shuffle=False
-    )
+    test_loader, _ = _make_ddp_loader(test_dataset, cfg.batch_size, rank, world_size, shuffle=False)
 
     # ── Positions ──
     pos_all1, pos_all2, pos_all3 = _prepare_positions(cfg.batch_size, device)
@@ -196,12 +216,18 @@ def train_ddp(
     # ── Optimizer + Scheduler ──
     enc_optim = torch.optim.AdamW(
         list(encoder.parameters()) + list(decoder.parameters()),
-        lr=cfg.lr, weight_decay=1e-4,
+        lr=cfg.lr,
+        weight_decay=1e-4,
     )
     from torch.optim.lr_scheduler import OneCycleLR
+
     enc_scheduler = OneCycleLR(
-        enc_optim, max_lr=cfg.lr, total_steps=cfg.iters,
-        div_factor=1e4, pct_start=0.3, final_div_factor=1e4,
+        enc_optim,
+        max_lr=cfg.lr,
+        total_steps=cfg.iters,
+        div_factor=1e4,
+        pct_start=0.3,
+        final_div_factor=1e4,
     )
 
     mask_ratio_generator = _make_mask_ratio_generator(cfg)
@@ -246,9 +272,9 @@ def train_ddp(
         num1 = random.randint(0, 99)
         num2 = random.randint(0, 99)
         num3 = random.randint(0, 49)
-        x1 = x1[:, :, num1 * 5000:(num1 + 1) * 5000, :]
-        x2 = x2[:, :, num2 * 5000:(num2 + 1) * 5000, :]
-        x3 = x3[:, :, num3 * 10000:(num3 + 1) * 10000, :]
+        x1 = x1[:, :, num1 * 5000 : (num1 + 1) * 5000, :]
+        x2 = x2[:, :, num2 * 5000 : (num2 + 1) * 5000, :]
+        x3 = x3[:, :, num3 * 10000 : (num3 + 1) * 10000, :]
         temp = torch.cat((x1, x2, x3), dim=2)
 
         mask_rate = float(mask_ratio_generator.rvs(1)[0])
@@ -257,9 +283,9 @@ def train_ddp(
         x = temp[:, :, index, :]
         y = temp.squeeze(dim=1)
 
-        pos1 = pos_all1[:, num1 * 5000:(num1 + 1) * 5000, :]
-        pos2 = pos_all2[:, num2 * 5000:(num2 + 1) * 5000, :]
-        pos3 = pos_all3[:, num3 * 10000:(num3 + 1) * 10000, :]
+        pos1 = pos_all1[:, num1 * 5000 : (num1 + 1) * 5000, :]
+        pos2 = pos_all2[:, num2 * 5000 : (num2 + 1) * 5000, :]
+        pos3 = pos_all3[:, num3 * 10000 : (num3 + 1) * 10000, :]
         pos = torch.cat((pos1, pos2, pos3), dim=1)
         prop_pos = pos
         input_pos = pos[:, index, :]
@@ -284,7 +310,7 @@ def train_ddp(
 
         if _is_main(rank):
             pbar.set_description(
-                f"loss(1e-4):{loss_val*1e4:.3f}|mse(1e-4):{mse_val*1e4:.3f}|"
+                f"loss(1e-4):{loss_val * 1e4:.3f}|mse(1e-4):{mse_val * 1e4:.3f}|"
                 f"lr:{enc_optim.param_groups[0]['lr']:.3e}"
             )
             pbar.update(1)
@@ -307,9 +333,9 @@ def train_ddp(
                     num1 = random.randint(0, 99)
                     num2 = random.randint(0, 99)
                     num3 = random.randint(0, 49)
-                    x1 = x1[:, :, num1 * 5000:(num1 + 1) * 5000, :]
-                    x2 = x2[:, :, num2 * 5000:(num2 + 1) * 5000, :]
-                    x3 = x3[:, :, num3 * 10000:(num3 + 1) * 10000, :]
+                    x1 = x1[:, :, num1 * 5000 : (num1 + 1) * 5000, :]
+                    x2 = x2[:, :, num2 * 5000 : (num2 + 1) * 5000, :]
+                    x3 = x3[:, :, num3 * 10000 : (num3 + 1) * 10000, :]
                     temp = torch.cat((x1, x2, x3), dim=2)
                     mask_rate = float(mask_ratio_generator.rvs(1)[0])
                     num = math.ceil(int(temp.shape[-2]) * (1 - mask_rate))
@@ -317,9 +343,9 @@ def train_ddp(
                     x = temp[:, :, index, :]
                     y = temp.squeeze(dim=1)
 
-                    pos1 = pos_all1[:, num1 * 5000:(num1 + 1) * 5000, :]
-                    pos2 = pos_all2[:, num2 * 5000:(num2 + 1) * 5000, :]
-                    pos3 = pos_all3[:, num3 * 10000:(num3 + 1) * 10000, :]
+                    pos1 = pos_all1[:, num1 * 5000 : (num1 + 1) * 5000, :]
+                    pos2 = pos_all2[:, num2 * 5000 : (num2 + 1) * 5000, :]
+                    pos3 = pos_all3[:, num3 * 10000 : (num3 + 1) * 10000, :]
                     pos = torch.cat((pos1, pos2, pos3), dim=1)
                     prop_pos = pos
                     input_pos = pos[:, index, :]
@@ -345,15 +371,24 @@ def train_ddp(
                 best_loss = test_avg
                 if _is_main(rank):
                     # Save checkpoint (unwrap DDP)
-                    enc_state = encoder.module.state_dict() if world_size > 1 else encoder.state_dict()
-                    dec_state = decoder.module.state_dict() if world_size > 1 else decoder.state_dict()
+                    enc_state = (
+                        encoder.module.state_dict() if world_size > 1 else encoder.state_dict()
+                    )
+                    dec_state = (
+                        decoder.module.state_dict() if world_size > 1 else decoder.state_dict()
+                    )
                     save_checkpoint(
-                        enc_state, dec_state,
-                        enc_optim, enc_scheduler,
-                        n_iter, best_loss,
+                        enc_state,
+                        dec_state,
+                        enc_optim,
+                        enc_scheduler,
+                        n_iter,
+                        best_loss,
                         os.path.join(checkpoint_dir, f"model_checkpoint{n_iter}.ckpt"),
                     )
-                    print(f"[Rank 0] Saved checkpoint: model_checkpoint{n_iter}.ckpt (best={best_loss:.3f})")
+                    print(
+                        f"[Rank 0] Saved checkpoint: model_checkpoint{n_iter}.ckpt (best={best_loss:.3f})"
+                    )
 
             encoder.train()
             decoder.train()
@@ -364,10 +399,10 @@ def train_ddp(
     pbar.close()
 
     if _is_main(rank):
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Training complete: {n_iter} iters, best_loss(1e-4)={best_loss:.3f}")
         print(f"Checkpoints: {checkpoint_dir}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
     _cleanup_ddp()
     return {"best_loss_1e4": best_loss, "final_iter": n_iter, "checkpoint_dir": checkpoint_dir}

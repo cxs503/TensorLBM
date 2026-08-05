@@ -12,6 +12,7 @@ with the original manual-loop implementations, across:
 Also includes a performance comparison (MLUPS) between the executor and
 the manual loop.
 """
+
 from __future__ import annotations
 
 import time
@@ -100,6 +101,7 @@ def _make_mask() -> torch.Tensor:
 # 1. Macroscopic equivalence
 # ---------------------------------------------------------------------------
 
+
 class TestMacroscopicEquivalence:
     """_compute_macroscopic_inplace must match macroscopic3d/macroscopic27."""
 
@@ -107,8 +109,13 @@ class TestMacroscopicEquivalence:
     def test_macroscopic_allclose(self, lattice, Q):
         f = _make_f(Q)
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=0.6,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=0.6,
         )
         rho_e, ux_e, uy_e, uz_e = ex._compute_macroscopic_inplace(f)
 
@@ -127,6 +134,7 @@ class TestMacroscopicEquivalence:
 # 2. Equilibrium equivalence
 # ---------------------------------------------------------------------------
 
+
 class TestEquilibriumEquivalence:
     """_compute_equilibrium_inplace must match equilibrium3d/equilibrium27."""
 
@@ -134,8 +142,13 @@ class TestEquilibriumEquivalence:
     def test_equilibrium_allclose(self, lattice, Q):
         f = _make_f(Q)
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=0.6,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=0.6,
         )
         rho, ux, uy, uz = ex._compute_macroscopic_inplace(f)
         feq_e = ex._compute_equilibrium_inplace(rho, ux, uy, uz)
@@ -152,6 +165,7 @@ class TestEquilibriumEquivalence:
 # 3. BGK collision equivalence
 # ---------------------------------------------------------------------------
 
+
 class TestCollideBGKEquivalence:
     """_collide_bgk must match collide_bgk3d/collide_bgk27."""
 
@@ -160,8 +174,13 @@ class TestCollideBGKEquivalence:
     def test_collide_bgk_allclose(self, lattice, Q, tau):
         f = _make_f(Q)
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=tau,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=tau,
         )
         f_post_e = ex._collide_bgk(f)
 
@@ -179,6 +198,7 @@ class TestCollideBGKEquivalence:
 # 4. Streaming equivalence
 # ---------------------------------------------------------------------------
 
+
 class TestStreamEquivalence:
     """_stream_preallocated must match stream3d/stream27_roll."""
 
@@ -186,8 +206,13 @@ class TestStreamEquivalence:
     def test_stream_allclose(self, lattice, Q):
         f = _make_f(Q)
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=0.6,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=0.6,
         )
         f_streamed_e = ex._stream_preallocated(f)
         # Clone because _stream_preallocated writes into a reusable buffer
@@ -198,14 +223,13 @@ class TestStreamEquivalence:
         else:
             f_streamed_r = stream27_roll(f)
 
-        assert torch.allclose(f_streamed_e, f_streamed_r, atol=ATOL), (
-            f"stream mismatch ({lattice})"
-        )
+        assert torch.allclose(f_streamed_e, f_streamed_r, atol=ATOL), f"stream mismatch ({lattice})"
 
 
 # ---------------------------------------------------------------------------
 # 5. Wall function equivalence
 # ---------------------------------------------------------------------------
+
 
 class TestWallFunctionEquivalence:
     """_apply_wall_function must match the manual wall_function pipeline."""
@@ -218,9 +242,17 @@ class TestWallFunctionEquivalence:
         y_val = 0.5
 
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=0.6,
-            wall_fn=True, mask=mask, nu=nu, y_val=y_val,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=0.6,
+            wall_fn=True,
+            mask=mask,
+            nu=nu,
+            y_val=y_val,
         )
         # Compute macroscopic once
         rho, ux, uy, uz = ex._compute_macroscopic_inplace(f)
@@ -233,18 +265,22 @@ class TestWallFunctionEquivalence:
         u_tau = compute_u_tau(u_mag, nu, y_val, "log")
         y_plus = compute_y_plus(u_tau, nu, y_val)
         f_r = wall_function(
-            f.clone(), mask, u_tau, y_plus,
-            lattice=lattice, nu=nu, y_val=y_val,
+            f.clone(),
+            mask,
+            u_tau,
+            y_plus,
+            lattice=lattice,
+            nu=nu,
+            y_val=y_val,
         )
 
-        assert torch.allclose(f_e, f_r, atol=ATOL), (
-            f"wall_function mismatch ({lattice})"
-        )
+        assert torch.allclose(f_e, f_r, atol=ATOL), f"wall_function mismatch ({lattice})"
 
 
 # ---------------------------------------------------------------------------
 # 6. Full-step equivalence: BGK + stream + boundary
 # ---------------------------------------------------------------------------
+
 
 class TestFullStepEquivalence:
     """Full step() must match the manual collide→stream→boundary loop."""
@@ -274,16 +310,19 @@ class TestFullStepEquivalence:
         else:
             bfn = far_field_bc_27
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=tau,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=tau,
             boundary_fn=bfn,
             boundary_kwargs={"u_in": u_in, "obstacle_mask": mask},
         )
         f_ex, _ = ex.step(f0.clone())
 
-        assert torch.allclose(f_ex, f_ref, atol=ATOL), (
-            f"full step (farfield) mismatch ({lattice})"
-        )
+        assert torch.allclose(f_ex, f_ref, atol=ATOL), f"full step (farfield) mismatch ({lattice})"
 
     @pytest.mark.parametrize("lattice,Q", [("D3Q19", 19), ("D3Q27", 27)])
     def test_full_step_bgk_bounceback(self, lattice, Q):
@@ -309,8 +348,13 @@ class TestFullStepEquivalence:
         else:
             bfn = bounce_back_cells_27
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=tau,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=tau,
             boundary_fn=bfn,
             boundary_kwargs={"mask": mask},
         )
@@ -337,21 +381,19 @@ class TestFullStepEquivalence:
             f_ref = bounce_back_cells_3d(f_ref, mask)
             # Wall function pipeline
             rho, ux, uy, uz = macroscopic3d(f_ref)
-            u_mag = torch.sqrt(ux*ux + uy*uy + uz*uz).clamp(min=1e-12)
+            u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
             u_tau = compute_u_tau(u_mag, nu, y_val, "log")
             y_plus = compute_y_plus(u_tau, nu, y_val)
-            f_ref = wall_function(f_ref, mask, u_tau, y_plus,
-                                   lattice=lattice, nu=nu, y_val=y_val)
+            f_ref = wall_function(f_ref, mask, u_tau, y_plus, lattice=lattice, nu=nu, y_val=y_val)
         else:
             f_ref = collide_bgk27(f_ref, tau)
             f_ref = stream27_roll(f_ref)
             f_ref = bounce_back_cells_27(f_ref, mask)
             rho, ux, uy, uz = macroscopic27(f_ref)
-            u_mag = torch.sqrt(ux*ux + uy*uy + uz*uz).clamp(min=1e-12)
+            u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
             u_tau = compute_u_tau(u_mag, nu, y_val, "log")
             y_plus = compute_y_plus(u_tau, nu, y_val)
-            f_ref = wall_function(f_ref, mask, u_tau, y_plus,
-                                   lattice=lattice, nu=nu, y_val=y_val)
+            f_ref = wall_function(f_ref, mask, u_tau, y_plus, lattice=lattice, nu=nu, y_val=y_val)
 
         # --- Executor ---
         if lattice == "D3Q19":
@@ -359,17 +401,23 @@ class TestFullStepEquivalence:
         else:
             bfn = bounce_back_cells_27
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=tau,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=tau,
             boundary_fn=bfn,
             boundary_kwargs={"mask": mask},
-            wall_fn=True, mask=mask, nu=nu, y_val=y_val,
+            wall_fn=True,
+            mask=mask,
+            nu=nu,
+            y_val=y_val,
         )
         f_ex, _ = ex.step(f0.clone())
 
-        assert torch.allclose(f_ex, f_ref, atol=ATOL), (
-            f"full step (wall fn) mismatch ({lattice})"
-        )
+        assert torch.allclose(f_ex, f_ref, atol=ATOL), f"full step (wall fn) mismatch ({lattice})"
 
     @pytest.mark.parametrize("lattice,Q", [("D3Q19", 19), ("D3Q27", 27)])
     def test_full_step_mass_correction(self, lattice, Q):
@@ -386,14 +434,20 @@ class TestFullStepEquivalence:
             f_ref = correct_mass3d(f_ref, target_mass)
         else:
             from tensorlbm.d3q27 import correct_mass27
+
             f_ref = collide_bgk27(f_ref, tau)
             f_ref = stream27_roll(f_ref)
             f_ref = correct_mass27(f_ref, target_mass)
 
         # --- Executor ---
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=tau,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=tau,
             target_mass=target_mass,
         )
         f_ex, _ = ex.step(f0.clone())
@@ -407,13 +461,17 @@ class TestFullStepEquivalence:
 # 7. External collision operator equivalence (MRT, Cumulant)
 # ---------------------------------------------------------------------------
 
+
 class TestExternalCollisionEquivalence:
     """Executor with external collide_fn must match manual loop."""
 
-    @pytest.mark.parametrize("lattice,Q,collide_ref", [
-        ("D3Q19", 19, collide_mrt3d),
-        ("D3Q27", 27, collide_mrt27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,Q,collide_ref",
+        [
+            ("D3Q19", 19, collide_mrt3d),
+            ("D3Q27", 27, collide_mrt27),
+        ],
+    )
     def test_mrt_full_step(self, lattice, Q, collide_ref):
         f0 = _make_f(Q)
         tau = 0.6
@@ -435,21 +493,27 @@ class TestExternalCollisionEquivalence:
         else:
             bfn = bounce_back_cells_27
         ex = LBMStepExecutor(
-            lattice, collide_fn=collide_ref, device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=tau,
+            lattice,
+            collide_fn=collide_ref,
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=tau,
             boundary_fn=bfn,
             boundary_kwargs={"mask": mask},
         )
         f_ex, _ = ex.step(f0.clone())
 
-        assert torch.allclose(f_ex, f_ref, atol=ATOL), (
-            f"MRT full step mismatch ({lattice})"
-        )
+        assert torch.allclose(f_ex, f_ref, atol=ATOL), f"MRT full step mismatch ({lattice})"
 
-    @pytest.mark.parametrize("lattice,Q,collide_ref", [
-        ("D3Q19", 19, collide_cumulant_d3q19),
-        ("D3Q27", 27, collide_cumulant_d3q27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,Q,collide_ref",
+        [
+            ("D3Q19", 19, collide_cumulant_d3q19),
+            ("D3Q27", 27, collide_cumulant_d3q27),
+        ],
+    )
     def test_cumulant_full_step(self, lattice, Q, collide_ref):
         f0 = _make_f(Q)
         tau = 0.6
@@ -471,21 +535,25 @@ class TestExternalCollisionEquivalence:
         else:
             bfn = bounce_back_cells_27
         ex = LBMStepExecutor(
-            lattice, collide_fn=collide_ref, device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=tau,
+            lattice,
+            collide_fn=collide_ref,
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=tau,
             boundary_fn=bfn,
             boundary_kwargs={"mask": mask},
         )
         f_ex, _ = ex.step(f0.clone())
 
-        assert torch.allclose(f_ex, f_ref, atol=ATOL), (
-            f"Cumulant full step mismatch ({lattice})"
-        )
+        assert torch.allclose(f_ex, f_ref, atol=ATOL), f"Cumulant full step mismatch ({lattice})"
 
 
 # ---------------------------------------------------------------------------
 # 8. Multi-step equivalence
 # ---------------------------------------------------------------------------
+
 
 class TestMultiStepEquivalence:
     """Multiple steps must remain allclose (no error accumulation)."""
@@ -515,8 +583,13 @@ class TestMultiStepEquivalence:
         else:
             bfn = bounce_back_cells_27
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=NX, ny=NY, nz=NZ, tau=tau,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=NX,
+            ny=NY,
+            nz=NZ,
+            tau=tau,
             boundary_fn=bfn,
             boundary_kwargs={"mask": mask},
         )
@@ -530,6 +603,7 @@ class TestMultiStepEquivalence:
 # ---------------------------------------------------------------------------
 # 9. Performance comparison
 # ---------------------------------------------------------------------------
+
 
 class TestPerformance:
     """Compare MLUPS: executor vs manual loop."""
@@ -580,8 +654,13 @@ class TestPerformance:
 
         # --- Executor ---
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=nx, ny=ny, nz=nz, tau=tau,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            tau=tau,
             boundary_fn=bfn,
             boundary_kwargs={"mask": mask},
         )
@@ -604,9 +683,11 @@ class TestPerformance:
             f"performance test numerical mismatch ({lattice})"
         )
 
-        print(f"\n[{lattice}] Manual: {mlups_man:.1f} MLUPS, "
-              f"Executor: {mlups_ex:.1f} MLUPS, "
-              f"Speedup: {mlups_ex/mlups_man:.2f}x")
+        print(
+            f"\n[{lattice}] Manual: {mlups_man:.1f} MLUPS, "
+            f"Executor: {mlups_ex:.1f} MLUPS, "
+            f"Speedup: {mlups_ex / mlups_man:.2f}x"
+        )
 
     @pytest.mark.parametrize("lattice,Q", [("D3Q19", 19), ("D3Q27", 27)])
     def test_mlups_wall_function(self, lattice, Q):
@@ -656,11 +737,10 @@ class TestPerformance:
             f_man = stream_ref(f_man)
             f_man = bfn(f_man, mask)
             rho, ux, uy, uz = macro_ref(f_man)
-            u_mag = torch.sqrt(ux*ux + uy*uy + uz*uz).clamp(min=1e-12)
+            u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
             u_tau = compute_u_tau(u_mag, nu, y_val, "log")
             y_plus = compute_y_plus(u_tau, nu, y_val)
-            f_man = wall_function(f_man, mask, u_tau, y_plus,
-                                   lattice=lattice, nu=nu, y_val=y_val)
+            f_man = wall_function(f_man, mask, u_tau, y_plus, lattice=lattice, nu=nu, y_val=y_val)
         if DEVICE.type == "sdaa":
             torch.sdaa.synchronize()
         t0 = time.perf_counter()
@@ -669,11 +749,10 @@ class TestPerformance:
             f_man = stream_ref(f_man)
             f_man = bfn(f_man, mask)
             rho, ux, uy, uz = macro_ref(f_man)
-            u_mag = torch.sqrt(ux*ux + uy*uy + uz*uz).clamp(min=1e-12)
+            u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
             u_tau = compute_u_tau(u_mag, nu, y_val, "log")
             y_plus = compute_y_plus(u_tau, nu, y_val)
-            f_man = wall_function(f_man, mask, u_tau, y_plus,
-                                   lattice=lattice, nu=nu, y_val=y_val)
+            f_man = wall_function(f_man, mask, u_tau, y_plus, lattice=lattice, nu=nu, y_val=y_val)
         if DEVICE.type == "sdaa":
             torch.sdaa.synchronize()
         t_man = time.perf_counter() - t0
@@ -681,11 +760,19 @@ class TestPerformance:
 
         # --- Executor (with wall function, macroscopic reuse) ---
         ex = LBMStepExecutor(
-            lattice, collide_fn="bgk", device=DEVICE,
-            nx=nx, ny=ny, nz=nz, tau=tau,
+            lattice,
+            collide_fn="bgk",
+            device=DEVICE,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            tau=tau,
             boundary_fn=bfn,
             boundary_kwargs={"mask": mask},
-            wall_fn=True, mask=mask, nu=nu, y_val=y_val,
+            wall_fn=True,
+            mask=mask,
+            nu=nu,
+            y_val=y_val,
         )
         f_ex = f_init.clone()
         # Warmup
@@ -706,6 +793,8 @@ class TestPerformance:
             f"wall-fn performance test numerical mismatch ({lattice})"
         )
 
-        print(f"\n[{lattice} wall-fn] Manual: {mlups_man:.1f} MLUPS, "
-              f"Executor: {mlups_ex:.1f} MLUPS, "
-              f"Speedup: {mlups_ex/mlups_man:.2f}x")
+        print(
+            f"\n[{lattice} wall-fn] Manual: {mlups_man:.1f} MLUPS, "
+            f"Executor: {mlups_ex:.1f} MLUPS, "
+            f"Speedup: {mlups_ex / mlups_man:.2f}x"
+        )

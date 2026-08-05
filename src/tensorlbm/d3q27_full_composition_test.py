@@ -55,6 +55,7 @@ Checks (all D3Q27 MRT, float32, CPU, seed=31415, tau=0.8):
 This module never claims physical accuracy, long-time stability, or validation
 against a reference solution.  Those remain WITHHELD.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -79,8 +80,8 @@ D3Q27_FULL_COMPOSITION_VERSION = "d3q27-full-composition-evidence-r1"
 _PROBE_SHAPE = (8, 10, 12)
 _PROBE_SEED = 31415
 _PROBE_TAU = 0.8
-_TOL = 1e-5          # absolute tolerance for element-wise checks
-_REL_TOL = 1e-5      # relative tolerance for global-sum checks (float32)
+_TOL = 1e-5  # absolute tolerance for element-wise checks
+_REL_TOL = 1e-5  # relative tolerance for global-sum checks (float32)
 
 
 def _rel_tol(reference: float) -> float:
@@ -91,6 +92,7 @@ def _rel_tol(reference: float) -> float:
 # ---------------------------------------------------------------------------
 # Probe state construction
 # ---------------------------------------------------------------------------
+
 
 def _make_probe_state() -> tuple[
     torch.Tensor,  # feq_uniform  — uniform equilibrium (fixed-point tests)
@@ -145,9 +147,7 @@ def _make_probe_state() -> tuple[
     return feq_uniform, f_perturbed, obstacle_mask, wall_mask
 
 
-def _momentum_at_mask(
-    f: torch.Tensor, mask: torch.Tensor
-) -> torch.Tensor:
+def _momentum_at_mask(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """Total fluid momentum ``(3,)`` at cells selected by *mask*."""
     c = C27.to(device=f.device, dtype=f.dtype).float()
     mask_4d = mask.unsqueeze(0)
@@ -162,9 +162,8 @@ def _momentum_at_mask(
 # 1. Bounce-back wall composition checks
 # ---------------------------------------------------------------------------
 
-def _check_bounce_back_involution(
-    f: torch.Tensor, mask: torch.Tensor
-) -> dict[str, Any]:
+
+def _check_bounce_back_involution(f: torch.Tensor, mask: torch.Tensor) -> dict[str, Any]:
     """bounce_back(bounce_back(f)) == f."""
     f_bb = bounce_back_cells_27(f, mask)
     f_bb_bb = bounce_back_cells_27(f_bb, mask)
@@ -177,9 +176,7 @@ def _check_bounce_back_involution(
     }
 
 
-def _check_bounce_back_mass_conservation(
-    f: torch.Tensor, mask: torch.Tensor
-) -> dict[str, Any]:
+def _check_bounce_back_mass_conservation(f: torch.Tensor, mask: torch.Tensor) -> dict[str, Any]:
     """sum(bounce_back(f)) == sum(f)."""
     f_bb = bounce_back_cells_27(f, mask)
     mass_before = float(f.sum().item())
@@ -195,9 +192,7 @@ def _check_bounce_back_mass_conservation(
     }
 
 
-def _check_bounce_back_momentum_reflection(
-    f: torch.Tensor, mask: torch.Tensor
-) -> dict[str, Any]:
+def _check_bounce_back_momentum_reflection(f: torch.Tensor, mask: torch.Tensor) -> dict[str, Any]:
     """At solid cells, momentum_after == -momentum_before."""
     momentum_before = _momentum_at_mask(f, mask)
     f_bb = bounce_back_cells_27(f, mask)
@@ -217,6 +212,7 @@ def _check_bounce_back_momentum_reflection(
 # ---------------------------------------------------------------------------
 # 2. Equilibrium + collision + streaming one-step composition
 # ---------------------------------------------------------------------------
+
 
 def _check_full_step_shape(f: torch.Tensor) -> dict[str, Any]:
     """stream27(collide_mrt27(f, tau)) preserves shape."""
@@ -275,6 +271,7 @@ def _check_full_step_finite(f: torch.Tensor) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # 3. Macroscopic recovery composition
 # ---------------------------------------------------------------------------
+
 
 def _check_macroscopic_roundtrip(
     rho: torch.Tensor,
@@ -342,6 +339,7 @@ def _check_macroscopic_mass_after_step(f: torch.Tensor) -> dict[str, Any]:
 # 4. Wall-link force extraction composition
 # ---------------------------------------------------------------------------
 
+
 def _check_force_empty_zero(f: torch.Tensor, shape: tuple[int, ...]) -> dict[str, Any]:
     """Empty obstacle mask gives zero force."""
     empty_mask = torch.zeros(shape, dtype=torch.bool, device=f.device)
@@ -355,15 +353,11 @@ def _check_force_empty_zero(f: torch.Tensor, shape: tuple[int, ...]) -> dict[str
     }
 
 
-def _check_force_finite(
-    f: torch.Tensor, mask: torch.Tensor
-) -> dict[str, Any]:
+def _check_force_finite(f: torch.Tensor, mask: torch.Tensor) -> dict[str, Any]:
     """Non-empty obstacle gives finite force."""
     fx, fy, fz = compute_obstacle_forces_27(f, mask)
     all_finite = bool(
-        torch.isfinite(fx).item()
-        and torch.isfinite(fy).item()
-        and torch.isfinite(fz).item()
+        torch.isfinite(fx).item() and torch.isfinite(fy).item() and torch.isfinite(fz).item()
     )
     return {
         "status": "PASS" if all_finite else "FAIL",
@@ -375,9 +369,7 @@ def _check_force_finite(
     }
 
 
-def _check_force_momentum_balance(
-    f: torch.Tensor, mask: torch.Tensor
-) -> dict[str, Any]:
+def _check_force_momentum_balance(f: torch.Tensor, mask: torch.Tensor) -> dict[str, Any]:
     """Fluid momentum change from bounce-back == -force_on_solid.
 
     The momentum-exchange identity: after streaming, the force on the solid
@@ -404,7 +396,11 @@ def _check_force_momentum_balance(
         "tolerance": tol,
         "tolerance_type": "relative",
         "force_on_solid": [float(fx), float(fy), float(fz)],
-        "delta_momentum": [float(delta_momentum[0]), float(delta_momentum[1]), float(delta_momentum[2])],
+        "delta_momentum": [
+            float(delta_momentum[0]),
+            float(delta_momentum[1]),
+            float(delta_momentum[2]),
+        ],
         "description": "Δp_fluid from bounce-back == -F_solid (momentum-exchange identity)",
     }
 
@@ -424,9 +420,7 @@ def _check_force_drag_sign(shape: tuple[int, ...]) -> dict[str, Any]:
 
     obstacle = torch.zeros(shape, dtype=torch.bool)
     nz, ny, nx = shape
-    obstacle[nz // 2 - 1 : nz // 2 + 1,
-             ny // 2 - 1 : ny // 2 + 1,
-             nx // 2 - 1 : nx // 2 + 1] = True
+    obstacle[nz // 2 - 1 : nz // 2 + 1, ny // 2 - 1 : ny // 2 + 1, nx // 2 - 1 : nx // 2 + 1] = True
 
     fx, fy, fz = compute_obstacle_forces_27(f, obstacle)
     drag_positive = float(fx) > 0.0
@@ -442,9 +436,8 @@ def _check_force_drag_sign(shape: tuple[int, ...]) -> dict[str, Any]:
 # Determinism
 # ---------------------------------------------------------------------------
 
-def _check_determinism(
-    f: torch.Tensor, mask: torch.Tensor
-) -> dict[str, Any]:
+
+def _check_determinism(f: torch.Tensor, mask: torch.Tensor) -> dict[str, Any]:
     """Two runs on identical clones produce bitwise-identical measured values."""
     # Full step
     f1 = collide_mrt27(f.clone(), tau=_PROBE_TAU)
@@ -531,6 +524,7 @@ _CAPABILITY_MATRIX_XREF: dict[str, str] = {
 # Artifact assembly
 # ---------------------------------------------------------------------------
 
+
 def _compute_artifact_sha256(artifact: dict[str, Any]) -> str:
     """SHA-256 of the canonical JSON of the artifact (excluding the hash itself)."""
     payload = {k: v for k, v in artifact.items() if k != "artifact_sha256"}
@@ -565,8 +559,12 @@ def run_d3q27_full_composition_probe() -> dict[str, Any]:
     checks: dict[str, dict[str, Any]] = {
         # 1. Bounce-back wall composition
         "bounce_back_involution": _check_bounce_back_involution(f_perturbed, wall_mask),
-        "bounce_back_mass_conservation": _check_bounce_back_mass_conservation(f_perturbed, wall_mask),
-        "bounce_back_momentum_reflection": _check_bounce_back_momentum_reflection(f_perturbed, wall_mask),
+        "bounce_back_mass_conservation": _check_bounce_back_mass_conservation(
+            f_perturbed, wall_mask
+        ),
+        "bounce_back_momentum_reflection": _check_bounce_back_momentum_reflection(
+            f_perturbed, wall_mask
+        ),
         # 2. Equilibrium + collision + streaming
         "full_step_shape": _check_full_step_shape(f_perturbed),
         "full_step_mass_periodic": _check_full_step_mass_periodic(f_perturbed),

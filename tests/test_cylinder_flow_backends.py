@@ -9,7 +9,9 @@ from tensorlbm.backends import torch_backend
 from tensorlbm import cylinder_flow as cylinder_flow_mod
 
 
-def test_run_cylinder_flow_explicit_backend_switches_temporarily(monkeypatch, tmp_path: Path) -> None:
+def test_run_cylinder_flow_explicit_backend_switches_temporarily(
+    monkeypatch, tmp_path: Path
+) -> None:
     seen: list[str] = []
 
     def fake_run(*args, **kwargs):
@@ -53,4 +55,3 @@ def test_run_cylinder_flow_non_torch_backend_smoke(monkeypatch, tmp_path: Path) 
     assert metadata["runtime"]["backend"] == "paddle"
     assert (run_dir / "forces.csv").exists()
     assert (run_dir / "checkpoint_f.pt").exists()
-

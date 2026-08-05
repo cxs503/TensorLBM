@@ -6,6 +6,7 @@ nor performs collision, streaming, solver mutation, adaptive refinement, or
 SUBOFF integration.  Inputs are source/receiver face snapshots owned by the
 caller; returned tensors and corrections are likewise unapplied snapshots.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -51,7 +52,9 @@ def _face_keys(schedule: FixedNestedPatchScheduleD3Q27) -> tuple[FaceKey, ...]:
     return tuple((face.axis, face.side) for face in schedule.interface_faces)
 
 
-def _require_schedule_faces(name: str, values: Mapping[FaceKey, _T], keys: tuple[FaceKey, ...]) -> None:
+def _require_schedule_faces(
+    name: str, values: Mapping[FaceKey, _T], keys: tuple[FaceKey, ...]
+) -> None:
     if not isinstance(values, Mapping) or set(values) != set(keys):
         raise ValueError(f"{name} must contain exactly the six schedule interface faces")
 
@@ -109,7 +112,9 @@ def run_fixed_nested_patch_step_d3q27(
 
         coarse_source = coarse_outgoing_faces[key]
         coarse_target = coarse_receivers[key]
-        if not isinstance(coarse_source, torch.Tensor) or not isinstance(coarse_target, torch.Tensor):
+        if not isinstance(coarse_source, torch.Tensor) or not isinstance(
+            coarse_target, torch.Tensor
+        ):
             raise TypeError("coarse face entries must be torch.Tensor instances")
         fine_source_pair = cast(tuple[torch.Tensor, torch.Tensor], fine_sources)
         fine_target_pair = cast(tuple[torch.Tensor, torch.Tensor], fine_targets)
@@ -129,8 +134,12 @@ def run_fixed_nested_patch_step_d3q27(
     return FixedNestedPatchStepResultD3Q27(
         coarse_incoming_faces=coarse_incoming,
         fine_substeps=(
-            FinePatchSubstepResultD3Q27(substeps[0].index, substeps[0].time_start, substeps[0].time_end, fine_incoming[0]),
-            FinePatchSubstepResultD3Q27(substeps[1].index, substeps[1].time_start, substeps[1].time_end, fine_incoming[1]),
+            FinePatchSubstepResultD3Q27(
+                substeps[0].index, substeps[0].time_start, substeps[0].time_end, fine_incoming[0]
+            ),
+            FinePatchSubstepResultD3Q27(
+                substeps[1].index, substeps[1].time_start, substeps[1].time_end, fine_incoming[1]
+            ),
         ),
         reflux_by_face=reflux_by_face,
     )

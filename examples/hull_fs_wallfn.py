@@ -7,6 +7,7 @@ trick that brought SUBOFF from 320× to <1%.
 
     PYTHONPATH=src python examples/hull_fs_wallfn.py
 """
+
 from __future__ import annotations
 
 import math
@@ -48,8 +49,8 @@ def wall_function_cg_3d(f_r, f_b, solid, nu, y_val=0.5, wall_law="reichardt"):
     rho_r = f_r.sum(dim=0)
     rho_b = f_b.sum(dim=0)
     rho_total = (rho_r + rho_b).clamp(min=1e-12)
-    alpha_r = (rho_r / rho_total)          # water fraction
-    alpha_b = (rho_b / rho_total)          # air fraction
+    alpha_r = rho_r / rho_total  # water fraction
+    alpha_b = rho_b / rho_total  # air fraction
 
     # Log-law / Reichardt solve for u_tau
     ut = torch.sqrt(nu * u_mag / y_val).clamp(min=1e-12)
@@ -61,10 +62,11 @@ def wall_function_cg_3d(f_r, f_b, solid, nu, y_val=0.5, wall_law="reichardt"):
             )
             ut = (u_mag / up.clamp(min=1e-6)).clamp(min=1e-12)
     else:
-        yp = (y_val * ut / nu)
+        yp = y_val * ut / nu
         turb = (yp > 11.6) & near
         if bool(turb.any()):
-            ut_t = ut[turb].clone(); um_t = u_mag[turb]
+            ut_t = ut[turb].clone()
+            um_t = u_mag[turb]
             for _ in range(8):
                 lyp = torch.log(y_val * ut_t / nu)
                 fv = ut_t * (lyp / _KAPPA + _B_LOG) - um_t
@@ -77,15 +79,19 @@ def wall_function_cg_3d(f_r, f_b, solid, nu, y_val=0.5, wall_law="reichardt"):
     # Body force on near-wall cells (WATER-SIDE ONLY): F = -(τ_w/dy)·û
     inv_umag = 1.0 / u_mag
     # Only apply wall function to near-wall cells in the water phase
-    near_water = near & (rho_r > 0.5)   # water fraction > 0.5
+    near_water = near & (rho_r > 0.5)  # water fraction > 0.5
     coef = -(tau_w / y_val) * near_water.to(f_r.dtype)
     fx = coef * (ux * inv_umag)
     fy = coef * (uy * inv_umag)
     fz = coef * (uz * inv_umag)
 
     # Split force by phase density fraction (water gets almost all)
-    fx_r = fx * alpha_r; fy_r = fy * alpha_r; fz_r = fz * alpha_r
-    fx_b = fx * alpha_b; fy_b = fy * alpha_b; fz_b = fz * alpha_b
+    fx_r = fx * alpha_r
+    fy_r = fy * alpha_r
+    fz_r = fz * alpha_r
+    fx_b = fx * alpha_b
+    fy_b = fy * alpha_b
+    fz_b = fz * alpha_b
 
     f_r = ibm_apply_body_force_3d(f_r, fx_r, fy_r, fz_r)
     f_b = ibm_apply_body_force_3d(f_b, fx_b, fy_b, fz_b)
@@ -94,21 +100,40 @@ def wall_function_cg_3d(f_r, f_b, solid, nu, y_val=0.5, wall_law="reichardt"):
     drag_fric = float((tau_w * (ux * inv_umag) * near_water.to(f_r.dtype)).sum().item())
     # Pressure drag: use water-phase density only (avoid air ρ=0.1 contamination)
     p_water = (rho_r - 1.0) / 3.0  # gauge pressure from water phase
-    sp = torch.roll(solid, 1, dims=2); sm = torch.roll(solid, -1, dims=2)
+    sp = torch.roll(solid, 1, dims=2)
+    sm = torch.roll(solid, -1, dims=2)
     water_fluid = fluid & (rho_r > 0.5)
-    drag_pres = float((p_water * (sp.to(f_r.dtype) - sm.to(f_r.dtype)) * water_fluid.to(f_r.dtype)).sum().item())
+    drag_pres = float(
+        (p_water * (sp.to(f_r.dtype) - sm.to(f_r.dtype)) * water_fluid.to(f_r.dtype)).sum().item()
+    )
     return f_r, f_b, drag_fric, drag_pres
 
 
-def run(hull_type="wigley", nx=200, ny=80, nz=80, re=1000, u_in=0.05,
-        fill_fraction=0.55, n_steps=4000, warmup=1500, output_interval=500, device="cuda"):
+def run(
+    hull_type="wigley",
+    nx=200,
+    ny=80,
+    nz=80,
+    re=1000,
+    u_in=0.05,
+    fill_fraction=0.55,
+    n_steps=4000,
+    warmup=1500,
+    output_interval=500,
+    device="cuda",
+):
     fill_height = max(int(fill_fraction * nz), 1)
 
     hull = wigley_hull_mask(
-        nx=nx, ny=ny, nz=nz,
-        cx=int(0.4 * nx), cy=0.5 * (ny - 1),
-        cz_keel=1.0, length=max(6.0, 0.35 * nx),
-        beam=max(3.0, 0.25 * ny), draft=fill_height + 4,
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        cx=int(0.4 * nx),
+        cy=0.5 * (ny - 1),
+        cz_keel=1.0,
+        length=max(6.0, 0.35 * nx),
+        beam=max(3.0, 0.25 * ny),
+        draft=fill_height + 4,
         device=device,
     )
     solid_mask = hull.clone()
@@ -129,7 +154,7 @@ def run(hull_type="wigley", nx=200, ny=80, nz=80, re=1000, u_in=0.05,
     nu = u_in * max(1.0, 0.35 * nx) / max(re, 1e-6)
     tau = 3.0 * nu + 0.5
     S_wet = float((hull & water_mask).sum().item())  # underwater solid cells
-    dyn_p_S = 0.5 * u_in ** 2 * max(S_wet, 1.0)      # wetted-area normalization
+    dyn_p_S = 0.5 * u_in**2 * max(S_wet, 1.0)  # wetted-area normalization
 
     # Far-field equilibrium
     rho_r_fs = torch.where(water_mask, torch.ones_like(zero3), torch.full_like(zero3, 0.1))
@@ -146,11 +171,16 @@ def run(hull_type="wigley", nx=200, ny=80, nz=80, re=1000, u_in=0.05,
 
     for step in range(1, n_steps + 1):
         # 1. CG collision
-        f_r, f_b = color_gradient_step_3d(f_r, f_b, tau=tau, A=0.005, beta=0.7, solid_mask=solid_mask)
+        f_r, f_b = color_gradient_step_3d(
+            f_r, f_b, tau=tau, A=0.005, beta=0.7, solid_mask=solid_mask
+        )
         # 2. Stream
-        f_r = stream3d(f_r); f_b = stream3d(f_b)
+        f_r = stream3d(f_r)
+        f_b = stream3d(f_b)
         # 3. CG wall function (replaces bounce-back on hull)
-        f_r, f_b, df, dp = wall_function_cg_3d(f_r, f_b, solid_mask, nu, y_val=0.5, wall_law="reichardt")
+        f_r, f_b, df, dp = wall_function_cg_3d(
+            f_r, f_b, solid_mask, nu, y_val=0.5, wall_law="reichardt"
+        )
         # 4. Reset solid cells
         f_r = torch.where(solid_mask.unsqueeze(0), f_r_seq, f_r)
         f_b = torch.where(solid_mask.unsqueeze(0), f_b_seq, f_b)
@@ -158,52 +188,111 @@ def run(hull_type="wigley", nx=200, ny=80, nz=80, re=1000, u_in=0.05,
         rho_ir = torch.where(water_slice, torch.ones_like(water_slice, dtype=torch.float32), 0.1)
         rho_ib = torch.where(water_slice, 0.1, torch.ones_like(water_slice, dtype=torch.float32))
         ux_in = torch.where(water_slice, torch.full_like(rho_ir, u_in), torch.zeros_like(rho_ir))
-        f_r[:, :, :, 0] = equilibrium3d(rho_ir.unsqueeze(-1), ux_in.unsqueeze(-1),
-                                        torch.zeros_like(ux_in).unsqueeze(-1), torch.zeros_like(ux_in).unsqueeze(-1))[:, :, :, 0]
-        f_b[:, :, :, 0] = equilibrium3d(rho_ib.unsqueeze(-1), ux_in.unsqueeze(-1),
-                                        torch.zeros_like(ux_in).unsqueeze(-1), torch.zeros_like(ux_in).unsqueeze(-1))[:, :, :, 0]
-        f_r[:, :, :, -1] = f_r[:, :, :, -2]; f_b[:, :, :, -1] = f_b[:, :, :, -2]
-        f_r[:, 0, :] = f_r_fs[:, 0, :]; f_r[:, -1, :] = f_r_fs[:, -1, :]
-        f_b[:, 0, :] = f_b_fs[:, 0, :]; f_b[:, -1, :] = f_b_fs[:, -1, :]
-        f_r[0, :, :] = f_r_fs[0, :, :]; f_r[-1, :, :] = f_r_fs[-1, :, :]
-        f_b[0, :, :] = f_b_fs[0, :, :]; f_b[-1, :, :] = f_b_fs[-1, :, :]
+        f_r[:, :, :, 0] = equilibrium3d(
+            rho_ir.unsqueeze(-1),
+            ux_in.unsqueeze(-1),
+            torch.zeros_like(ux_in).unsqueeze(-1),
+            torch.zeros_like(ux_in).unsqueeze(-1),
+        )[:, :, :, 0]
+        f_b[:, :, :, 0] = equilibrium3d(
+            rho_ib.unsqueeze(-1),
+            ux_in.unsqueeze(-1),
+            torch.zeros_like(ux_in).unsqueeze(-1),
+            torch.zeros_like(ux_in).unsqueeze(-1),
+        )[:, :, :, 0]
+        f_r[:, :, :, -1] = f_r[:, :, :, -2]
+        f_b[:, :, :, -1] = f_b[:, :, :, -2]
+        f_r[:, 0, :] = f_r_fs[:, 0, :]
+        f_r[:, -1, :] = f_r_fs[:, -1, :]
+        f_b[:, 0, :] = f_b_fs[:, 0, :]
+        f_b[:, -1, :] = f_b_fs[:, -1, :]
+        f_r[0, :, :] = f_r_fs[0, :, :]
+        f_r[-1, :, :] = f_r_fs[-1, :, :]
+        f_b[0, :, :] = f_b_fs[0, :, :]
+        f_b[-1, :, :] = f_b_fs[-1, :, :]
 
         if step > warmup and math.isfinite(df):
-            fric.append(df); pres.append(dp)
+            fric.append(df)
+            pres.append(dp)
         if step % output_interval == 0 or step == n_steps:
-            cf = (sum(fric)/max(len(fric),1))/dyn_p_S if fric else 0.0
-            cp = (sum(pres)/max(len(pres),1))/dyn_p_S if pres else 0.0
+            cf = (sum(fric) / max(len(fric), 1)) / dyn_p_S if fric else 0.0
+            cp = (sum(pres) / max(len(pres), 1)) / dyn_p_S if pres else 0.0
             _, ux, uy, uz = macroscopic3d(f_r + f_b)
-            ms = float(torch.sqrt(ux*ux+uy*uy+uz*uz).max().item())
+            ms = float(torch.sqrt(ux * ux + uy * uy + uz * uz).max().item())
 
             # CV momentum integral (water region only): drag from far-field data,
             # avoids CG phase-density contamination near the hull.
             rho_water = f_r.sum(dim=0)  # water density
             # CV box around the hull, in the water region
-            x0 = int(0.2 * nx); x1 = int(0.65 * nx)
-            y0 = 2; y1 = ny - 3
-            z0 = 1; z1 = fill_height - 1
+            x0 = int(0.2 * nx)
+            x1 = int(0.65 * nx)
+            y0 = 2
+            y1 = ny - 3
+            z0 = 1
+            z1 = fill_height - 1
             # Inlet face (x=x0): momentum flux in
-            M_in = (rho_water[z0:z1+1, y0:y1+1, x0] * ux[z0:z1+1, y0:y1+1, x0]**2).sum().item()
+            M_in = (
+                (rho_water[z0 : z1 + 1, y0 : y1 + 1, x0] * ux[z0 : z1 + 1, y0 : y1 + 1, x0] ** 2)
+                .sum()
+                .item()
+            )
             # Outlet face (x=x1): momentum flux out
-            M_out = (rho_water[z0:z1+1, y0:y1+1, x1] * ux[z0:z1+1, y0:y1+1, x1]**2).sum().item()
+            M_out = (
+                (rho_water[z0 : z1 + 1, y0 : y1 + 1, x1] * ux[z0 : z1 + 1, y0 : y1 + 1, x1] ** 2)
+                .sum()
+                .item()
+            )
             # Lateral y faces: ux*uy cross-flux
-            M_y0 = (rho_water[z0:z1+1, y0, x0:x1+1] * ux[z0:z1+1, y0, x0:x1+1] * uy[z0:z1+1, y0, x0:x1+1]).sum().item()
-            M_y1 = (rho_water[z0:z1+1, y1, x0:x1+1] * ux[z0:z1+1, y1, x0:x1+1] * uy[z0:z1+1, y1, x0:x1+1]).sum().item()
+            M_y0 = (
+                (
+                    rho_water[z0 : z1 + 1, y0, x0 : x1 + 1]
+                    * ux[z0 : z1 + 1, y0, x0 : x1 + 1]
+                    * uy[z0 : z1 + 1, y0, x0 : x1 + 1]
+                )
+                .sum()
+                .item()
+            )
+            M_y1 = (
+                (
+                    rho_water[z0 : z1 + 1, y1, x0 : x1 + 1]
+                    * ux[z0 : z1 + 1, y1, x0 : x1 + 1]
+                    * uy[z0 : z1 + 1, y1, x0 : x1 + 1]
+                )
+                .sum()
+                .item()
+            )
             # z faces
-            M_z0 = (rho_water[z0, y0:y1+1, x0:x1+1] * ux[z0, y0:y1+1, x0:x1+1] * uz[z0, y0:y1+1, x0:x1+1]).sum().item()
-            M_z1 = (rho_water[z1, y0:y1+1, x0:x1+1] * ux[z1, y0:y1+1, x0:x1+1] * uz[z1, y0:y1+1, x0:x1+1]).sum().item()
+            M_z0 = (
+                (
+                    rho_water[z0, y0 : y1 + 1, x0 : x1 + 1]
+                    * ux[z0, y0 : y1 + 1, x0 : x1 + 1]
+                    * uz[z0, y0 : y1 + 1, x0 : x1 + 1]
+                )
+                .sum()
+                .item()
+            )
+            M_z1 = (
+                (
+                    rho_water[z1, y0 : y1 + 1, x0 : x1 + 1]
+                    * ux[z1, y0 : y1 + 1, x0 : x1 + 1]
+                    * uz[z1, y0 : y1 + 1, x0 : x1 + 1]
+                )
+                .sum()
+                .item()
+            )
             # Drag = momentum deficit = M_in - M_out - lateral fluxes
             cv_drag = M_in - M_out + M_y0 - M_y1 + M_z0 - M_z1
             cv_ct = cv_drag / dyn_p_S
 
-            print(f"  step={step:5d}  Cf={cf:.5f} Cp={cp:.5f} Ct_surface={cf+cp:.5f}  "
-                  f"Ct_CV={cv_ct:.5f}  max|u|={ms:.4f}  "
-                  f"{'UNSTABLE' if (not math.isfinite(ms) or ms > 0.5) else ''}")
+            print(
+                f"  step={step:5d}  Cf={cf:.5f} Cp={cp:.5f} Ct_surface={cf + cp:.5f}  "
+                f"Ct_CV={cv_ct:.5f}  max|u|={ms:.4f}  "
+                f"{'UNSTABLE' if (not math.isfinite(ms) or ms > 0.5) else ''}"
+            )
 
-    cf = (sum(fric)/max(len(fric),1))/dyn_p_S if fric else 0.0
-    cp = (sum(pres)/max(len(pres),1))/dyn_p_S if pres else 0.0
-    print(f"\nFinal: Cf(surface)={cf:.5f}  Cp(surface)={cp:.5f}  Ct(surface)={cf+cp:.5f}")
+    cf = (sum(fric) / max(len(fric), 1)) / dyn_p_S if fric else 0.0
+    cp = (sum(pres) / max(len(pres), 1)) / dyn_p_S if pres else 0.0
+    print(f"\nFinal: Cf(surface)={cf:.5f}  Cp(surface)={cp:.5f}  Ct(surface)={cf + cp:.5f}")
     print(f"  Use Ct_CV for reliable total drag (friction+pressure+wave).")
     return {"Cf": cf, "Cp": cp, "Ct": cf + cp}
 

@@ -49,7 +49,10 @@ from .free_surface_inventory_reconciliation import (
     inventory_stage_deltas,
 )
 
-GAS = 0; LIQUID = 1; INTERFACE = 2; SOLID = 3
+GAS = 0
+LIQUID = 1
+INTERFACE = 2
+SOLID = 3
 
 # D3Q19 velocity vectors and weights
 _C = C  # (19, 3)
@@ -57,7 +60,7 @@ _W = W
 KAPPA = 0.41
 B_CONST = 5.0
 # Opposite direction indices for D3Q19
-_OPP = torch.tensor([0,2,1,4,3,6,5,8,7,10,9,12,11,14,13,16,15,18,17])
+_OPP = torch.tensor([0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17])
 _C19_SHIFTS = [(int(C[q, 0]), int(C[q, 1]), int(C[q, 2])) for q in range(19)]
 
 
@@ -83,17 +86,26 @@ def _assert_no_direct_liquid_gas_links(flags):
     except ValueError as error:
         if "direct phase link" not in str(error):
             raise
-        raise ValueError(
-            f"{error}; insert INTERFACE cells between LIQUID and GAS"
-        ) from None
+        raise ValueError(f"{error}; insert INTERFACE cells between LIQUID and GAS") from None
 
 
-def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
-                           mass_after_redistribution, mass_after_clamp,
-                           mass_after_conversion, mass_after_isolation, mass_end,
-                           abb_population_delta, exchange_liquid_credit,
-                           exchange_interface_credit, exchange_bulk_debit,
-                           paired_liquid_interface_debit, conversion_evidence=None):
+def _append_runtime_ledger(
+    ledger,
+    *,
+    mass_start,
+    mass_after_exchange,
+    mass_after_redistribution,
+    mass_after_clamp,
+    mass_after_conversion,
+    mass_after_isolation,
+    mass_end,
+    abb_population_delta,
+    exchange_liquid_credit,
+    exchange_interface_credit,
+    exchange_bulk_debit,
+    paired_liquid_interface_debit,
+    conversion_evidence=None,
+):
     """Record a physical tracked-mass budget without correcting the solver.
 
     Reference convention: ``mass.sum()`` is lattice liquid mass.  ABB is a
@@ -266,24 +278,32 @@ def _append_runtime_ledger(ledger, *, mass_start, mass_after_exchange,
     steps.append(record)
     # A curve is append-only and retains the exact event identity used for each
     # point, so a long-run gate can cite an operator rather than a bare step.
-    ledger.setdefault("operator_curve", []).append({
-        "step": step_number,
-        "mass_drift": float(mass_drift),
-        "unexplained_residual": float(unexplained),
-        "sum_tracked_deltas": reconciliation["sum_tracked_deltas"],
-        "expected_drift": reconciliation["expected_drift"],
-        "reconciliation_residual": reconciliation["residual"],
-        "dominant_operator": attribution["dominant_operator"],
-        "dominant_event_id": attribution["dominant_event_id"],
-        "gross_activity_operator": attribution["gross_activity_operator"],
-        "attribution_reason": attribution["reason"],
-    })
+    ledger.setdefault("operator_curve", []).append(
+        {
+            "step": step_number,
+            "mass_drift": float(mass_drift),
+            "unexplained_residual": float(unexplained),
+            "sum_tracked_deltas": reconciliation["sum_tracked_deltas"],
+            "expected_drift": reconciliation["expected_drift"],
+            "reconciliation_residual": reconciliation["residual"],
+            "dominant_operator": attribution["dominant_operator"],
+            "dominant_event_id": attribution["dominant_event_id"],
+            "gross_activity_operator": attribution["gross_activity_operator"],
+            "attribution_reason": attribution["reason"],
+        }
+    )
     ledger.update(record)
 
 
 def _append_ownership_ledger(
-    ledger, *, flags, mass_delta_liquid, liquid_interface_mask,
-    paired_liquid_interface_debit, conversion_evidence, abb_population_delta,
+    ledger,
+    *,
+    flags,
+    mass_delta_liquid,
+    liquid_interface_mask,
+    paired_liquid_interface_debit,
+    conversion_evidence,
+    abb_population_delta,
 ):
     """Append cold tracked-state ownership evidence without solver feedback."""
     from .free_surface_ownership_ledger import build_ownership_ledger
@@ -328,17 +348,22 @@ def _append_inventory_reconciliation(ledger, stages):
 # Initialization
 # ===========================================================================
 
+
 def init_fill_rectangular(nz, ny, nx, column_width, column_height, device):
     """Initialize fill field for rectangular liquid column (dam-break IC)."""
     fill = torch.zeros((nz, ny, nx), dtype=torch.float32, device=device)
     solid = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
-    solid[:, 0, :] = True; solid[:, -1, :] = True
-    solid[:, :, 0] = True; solid[:, :, -1] = True
+    solid[:, 0, :] = True
+    solid[:, -1, :] = True
+    solid[:, :, 0] = True
+    solid[:, :, -1] = True
     cw, ch = int(column_width), int(column_height)
     fill[:, :ch, 1:cw] = 1.0
     fx, fy = column_width - cw, column_height - ch
-    if fx > 0 and cw < nx - 1: fill[:, :ch, cw] = fx
-    if fy > 0 and ch < ny - 1: fill[:, ch, 1:cw] = fy
+    if fx > 0 and cw < nx - 1:
+        fill[:, :ch, cw] = fx
+    if fy > 0 and ch < ny - 1:
+        fill[:, ch, 1:cw] = fy
     if fx > 0 and fy > 0 and cw < nx - 1 and ch < ny - 1:
         fill[:, ch, cw] = 0.5 * (fx + fy)
     return fill, solid
@@ -388,6 +413,7 @@ def total_liquid_inventory(f, fill, flags, rho_liquid=1.0):
 # Helper: init new cells with neighbor-averaged velocity
 # ===========================================================================
 
+
 def _init_new(f, flags, mask, rho_init, device, ux=None, uy=None, uz=None):
     """Init newly converted cells with neighbor-averaged velocity.
 
@@ -415,6 +441,7 @@ def _init_new(f, flags, mask, rho_init, device, ux=None, uy=None, uz=None):
 # Interface normal computation (for mass redistribution)
 # ===========================================================================
 
+
 def _compute_interface_normal(flags, mass, rho):
     """Compute interface normal n = -∇fill / |∇fill| (points from liquid to gas)."""
     fill = mass / rho.clamp(min=1e-6)
@@ -429,6 +456,7 @@ def _compute_interface_normal(flags, mass, rho):
 # ===========================================================================
 # MRT collision with per-cell effective relaxation time (SGS support)
 # ===========================================================================
+
 
 def _collide_mrt3d_with_tau_eff(
     f: torch.Tensor,
@@ -460,12 +488,29 @@ def _collide_mrt3d_with_tau_eff(
     dm = m - m_eq
 
     s_fixed = torch.tensor(
-        [0.0, s_e, s_eps,
-         0.0, s_q, 0.0, s_q, 0.0, s_q,
-         0.0, 0.0, 0.0, 0.0, 0.0,
-         s_pi, s_pi,
-         1.0, 1.0, 1.0],
-        dtype=f.dtype, device=device,
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
     )
     m_star = m - s_fixed.unsqueeze(1) * dm
     for k in (9, 10, 11, 12, 13):
@@ -477,15 +522,29 @@ def _collide_mrt3d_with_tau_eff(
 # Core timestep — full Körner model
 # ===========================================================================
 
+
 def free_surface_step(
-    f, fill, flags, solid_mask, mass=None,
-    tau=1.0, gx=0.0, gy=0.0, gz=0.0,
-    rho_liquid=1.0, rho_gas=1.0,
-    surface_tension=0.0, C_s=0.0, sgs_model='smagorinsky',
-    free_slip_y=False, y_wall_mask=None,
+    f,
+    fill,
+    flags,
+    solid_mask,
+    mass=None,
+    tau=1.0,
+    gx=0.0,
+    gy=0.0,
+    gz=0.0,
+    rho_liquid=1.0,
+    rho_gas=1.0,
+    surface_tension=0.0,
+    C_s=0.0,
+    sgs_model="smagorinsky",
+    free_slip_y=False,
+    y_wall_mask=None,
     bubble_pressure=None,
-    collision='bgk',
-    wall_function=False, near_mask=None, y_val=0.5,
+    collision="bgk",
+    wall_function=False,
+    near_mask=None,
+    y_val=0.5,
     wf_force_coef=None,
     mass_ledger=None,
     freeze_topology=False,
@@ -512,11 +571,9 @@ def free_surface_step(
         raise ValueError("capture_replay_stages must be bool")
     if replay_capture is not None and not isinstance(replay_capture, dict):
         raise ValueError("replay_capture must be a dict or None")
-    _VALID_SGS_MODELS = ('smagorinsky', 'wale', 'vreman')
+    _VALID_SGS_MODELS = ("smagorinsky", "wale", "vreman")
     if sgs_model not in _VALID_SGS_MODELS:
-        raise ValueError(
-            f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}"
-        )
+        raise ValueError(f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}")
 
     # Ledger output is transactional too: topology validation may fail after
     # ABB/exchange observations were calculated.  Accumulate into a detached
@@ -525,17 +582,23 @@ def free_surface_step(
     published_mass_ledger = mass_ledger
     mass_ledger = None if published_mass_ledger is None else deepcopy(published_mass_ledger)
     published_runtime_ledger = runtime_ledger
-    runtime_ledger = None if published_runtime_ledger is None else deepcopy(published_runtime_ledger)
+    runtime_ledger = (
+        None if published_runtime_ledger is None else deepcopy(published_runtime_ledger)
+    )
     published_ownership_ledger = ownership_ledger
-    ownership_ledger = None if published_ownership_ledger is None else deepcopy(published_ownership_ledger)
+    ownership_ledger = (
+        None if published_ownership_ledger is None else deepcopy(published_ownership_ledger)
+    )
     published_inventory_reconciliation_ledger = inventory_reconciliation_ledger
     inventory_reconciliation_ledger = (
-        None if published_inventory_reconciliation_ledger is None
+        None
+        if published_inventory_reconciliation_ledger is None
         else deepcopy(published_inventory_reconciliation_ledger)
     )
     published_conversion_density_audit_ledger = conversion_density_audit_ledger
     conversion_density_audit_ledger = (
-        None if published_conversion_density_audit_ledger is None
+        None
+        if published_conversion_density_audit_ledger is None
         else deepcopy(published_conversion_density_audit_ledger)
     )
     # Owners must be read from the pre-topology state.  This cold clone exists
@@ -560,11 +623,11 @@ def free_surface_step(
     # diagnostic allocation in production paths that do not request evidence.
     conversion_evidence = None
     if mass_ledger is not None:
-        mass_ledger['start'] = float(mass.sum())
-        mass_ledger['interface_start'] = float(mass[flags == INTERFACE].sum())
-        mass_ledger['liquid_start'] = float(mass[flags == LIQUID].sum())
-        mass_ledger['gas_start'] = float(mass[flags == GAS].sum())
-        mass_ledger['fill_mass_start'] = float((fill * rho_liquid).sum())
+        mass_ledger["start"] = float(mass.sum())
+        mass_ledger["interface_start"] = float(mass[flags == INTERFACE].sum())
+        mass_ledger["liquid_start"] = float(mass[flags == LIQUID].sum())
+        mass_ledger["gas_start"] = float(mass[flags == GAS].sum())
+        mass_ledger["fill_mass_start"] = float((fill * rho_liquid).sum())
 
     # ---- 1. Macroscopic + collision ----
     rho, ux, uy, uz = macroscopic3d(f)
@@ -575,29 +638,39 @@ def free_surface_step(
     feq = equilibrium3d(rho_s, ux_eq, uy_eq, uz_eq)
 
     # For advanced operators: set gas cells to small equilibrium (prevent NaN)
-    if collision != 'bgk':
-        feq_gas = equilibrium3d(torch.full_like(rho_s, rho_gas),
-                                torch.zeros_like(rho_s), torch.zeros_like(rho_s), torch.zeros_like(rho_s))
+    if collision != "bgk":
+        feq_gas = equilibrium3d(
+            torch.full_like(rho_s, rho_gas),
+            torch.zeros_like(rho_s),
+            torch.zeros_like(rho_s),
+            torch.zeros_like(rho_s),
+        )
         f_collide = torch.where(non_gas.unsqueeze(0), f, feq_gas)
     else:
         f_collide = f
 
-    if collision == 'kbc':
+    if collision == "kbc":
         from .advanced_collision_d3q19 import collide_kbc_d3q19
+
         f = collide_kbc_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
-    elif collision == 'cascaded':
+    elif collision == "cascaded":
         from .advanced_collision_d3q19 import collide_cascaded_d3q19
+
         f = collide_cascaded_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
-    elif collision == 'cumulant':
+    elif collision == "cumulant":
         from .advanced_collision_d3q19 import collide_cumulant_d3q19
+
         f = collide_cumulant_d3q19(f_collide, tau, C_s=C_s if C_s > 0 else 0.1)
-    elif collision == 'mrt':
+    elif collision == "mrt":
         if C_s > 0:
-            if sgs_model == 'smagorinsky':
+            if sgs_model == "smagorinsky":
                 tau_eff = _smagorinsky_tau(
-                    tau, _neq_stress_norm_3d(f_collide - feq), rho_s, C_s,
+                    tau,
+                    _neq_stress_norm_3d(f_collide - feq),
+                    rho_s,
+                    C_s,
                 )
-            elif sgs_model == 'wale':
+            elif sgs_model == "wale":
                 nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
                 tau_eff = _nu_t_to_tau_eff(tau, nu_t)
             else:  # vreman
@@ -606,14 +679,18 @@ def free_surface_step(
             f = _collide_mrt3d_with_tau_eff(f_collide, feq, tau_eff, device)
         else:
             from .solver3d import collide_mrt3d
+
             f = collide_mrt3d(f_collide, tau)
     else:  # bgk
         if C_s > 0:
-            if sgs_model == 'smagorinsky':
+            if sgs_model == "smagorinsky":
                 tau_eff = _smagorinsky_tau(
-                    tau, _neq_stress_norm_3d(f_collide - feq), rho_s, C_s,
+                    tau,
+                    _neq_stress_norm_3d(f_collide - feq),
+                    rho_s,
+                    C_s,
                 )
-            elif sgs_model == 'wale':
+            elif sgs_model == "wale":
                 nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
                 tau_eff = _nu_t_to_tau_eff(tau, nu_t)
             else:  # vreman
@@ -635,7 +712,7 @@ def free_surface_step(
         Fy = rho_liquid * gy * ng
         Fz = rho_liquid * gz * ng
         cu_force = cx * Fx.unsqueeze(0) + cy * Fy.unsqueeze(0) + cz * Fz.unsqueeze(0)
-        f = f + (1.0 - 0.5/tau) * w_dev * cu_force / cs2
+        f = f + (1.0 - 0.5 / tau) * w_dev * cu_force / cs2
 
     # Surface tension force (curvature correction, standard Körner)
     if surface_tension > 0:
@@ -649,25 +726,31 @@ def free_surface_step(
         grad_y = 0.5 * (fill_field.roll(-1, dims=1) - fill_field.roll(1, dims=1))
         grad_z = 0.5 * (fill_field.roll(-1, dims=0) - fill_field.roll(1, dims=0))
         mag = (grad_x**2 + grad_y**2 + grad_z**2).sqrt().clamp(min=1e-10)
-        nx, ny, nz = -grad_x/mag, -grad_y/mag, -grad_z/mag
-        kappa = 0.5 * ((nx.roll(-1, dims=2) - nx.roll(1, dims=2)) +
-                       (ny.roll(-1, dims=1) - ny.roll(1, dims=1)) +
-                       (nz.roll(-1, dims=0) - nz.roll(1, dims=0)))
+        nx, ny, nz = -grad_x / mag, -grad_y / mag, -grad_z / mag
+        kappa = 0.5 * (
+            (nx.roll(-1, dims=2) - nx.roll(1, dims=2))
+            + (ny.roll(-1, dims=1) - ny.roll(1, dims=1))
+            + (nz.roll(-1, dims=0) - nz.roll(1, dims=0))
+        )
         Fx_st = surface_tension * kappa * grad_x
         Fy_st = surface_tension * kappa * grad_y
         Fz_st = surface_tension * kappa * grad_z
         cu_st = cx * Fx_st.unsqueeze(0) + cy * Fy_st.unsqueeze(0) + cz * Fz_st.unsqueeze(0)
-        f = f + (1.0 - 0.5/tau) * w_dev * cu_st / cs2
+        f = f + (1.0 - 0.5 / tau) * w_dev * cu_st / cs2
 
     # Clamp f to non-negative (numerical stability, prevents negative rho → NaN)
     f = f.clamp(min=0.0, max=rho_liquid * 3.0)
 
     # Remove NaN for non-BGK
-    if collision != 'bgk':
+    if collision != "bgk":
         f = torch.nan_to_num(f, nan=0.0, posinf=0.0, neginf=0.0)
     if inventory_stages is not None:
         inventory_stages["after_collision_and_forcing"] = inventory_measurement(
-            f, fill, flags, mass, rho_liquid=rho_liquid,
+            f,
+            fill,
+            flags,
+            mass,
+            rho_liquid=rho_liquid,
         )
 
     # Preserve post-collision outgoing populations for anti-bounce-back (ABB).
@@ -681,24 +764,27 @@ def free_surface_step(
     f = _stream19_roll(f)
 
     # ---- 2b. Zero gas cells AFTER streaming (prevent mass leak into gas) ----
-    gas_mask_pre = (flags == GAS)
+    gas_mask_pre = flags == GAS
     f = torch.where(gas_mask_pre.unsqueeze(0), torch.zeros_like(f), f)
     if inventory_stages is not None:
         inventory_stages["after_stream_and_gas_zero"] = inventory_measurement(
-            f, fill, flags, mass, rho_liquid=rho_liquid,
+            f,
+            fill,
+            flags,
+            mass,
+            rho_liquid=rho_liquid,
         )
 
     # ---- 2c. Anti-bounce-back for interface cells (gas pressure) ----
     # Standard Körner: interface cells get f[q] = f[opp[q]] from gas directions
     # Vectorized: batch all 19 directions, reuse neighbor_flags in mass exchange
     # (no .any() sync — multicard-safe under TCCL; torch.where handles empty mask)
-    iface_abb = (flags == INTERFACE)
+    iface_abb = flags == INTERFACE
     # _stream19_roll is a pull stream: population q at x originated at
     # x-c[q].  Interface link classification must use that source cell.
-    neighbor_flags = torch.stack([
-        flags.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2)
-        for sx, sy, sz in _C19_SHIFTS
-    ])  # (19, nz, ny, nx)
+    neighbor_flags = torch.stack(
+        [flags.roll(sz, dims=0).roll(sy, dims=1).roll(sx, dims=2) for sx, sy, sz in _C19_SHIFTS]
+    )  # (19, nz, ny, nx)
     need_abb = iface_abb.unsqueeze(0) & (neighbor_flags == GAS)
     # Standard Körner ABB (pressure boundary) for a missing pull population:
     # f_q(x,t+dt) = f_q^eq(rho_g,u_g) + f_barq^eq(rho_g,u_g)
@@ -713,11 +799,13 @@ def free_surface_step(
         # This is a population (not tracked-liquid-mass) change.  Keeping it
         # separate makes a gas-pressure boundary source distinguishable from
         # the subsequent liquid/interface mass stencil.
-        mass_ledger['abb_population_delta'] = float(abb_delta.sum())
-        mass_ledger['abb_population_abs_delta'] = float(abb_delta.abs().sum())
+        mass_ledger["abb_population_delta"] = float(abb_delta.sum())
+        mass_ledger["abb_population_abs_delta"] = float(abb_delta.abs().sum())
     f = torch.where(need_abb, f_abb, f)
     if inventory_stages is not None:
-        inventory_stages["after_abb"] = inventory_measurement(f, fill, flags, mass, rho_liquid=rho_liquid)
+        inventory_stages["after_abb"] = inventory_measurement(
+            f, fill, flags, mass, rho_liquid=rho_liquid
+        )
 
     # ---- 3. Wall BCs ----
     f = bounce_back_cells_3d(f, solid_mask)
@@ -736,7 +824,8 @@ def free_surface_step(
         y_plus = y_val * u_tau / nu_lat
         turb = (y_plus > 11.6) & near_mask
         # Vectorized Newton: apply to ALL cells, then select with torch.where
-        ut = u_tau.clone(); um = u_mag
+        ut = u_tau.clone()
+        um = u_mag
         for _ in range(8):
             lyp = torch.log(y_val * ut / nu_lat)
             fv = ut * (lyp / KAPPA + B_CONST) - um
@@ -758,20 +847,24 @@ def free_surface_step(
         # Wall-function forcing: decoupled from tau when wf_force_coef is set
         # (at high Re, tau≈0.5 → standard Guo factor (1-0.5/tau)≈0, so the
         # wall force is never applied and the flow never decelerates).
-        wf_coef = wf_force_coef if wf_force_coef is not None else (1.0 - 0.5/tau)
+        wf_coef = wf_force_coef if wf_force_coef is not None else (1.0 - 0.5 / tau)
         forcing = wf_coef * w_dev * cu_force / cs2
         f = f + forcing
         f = f.clamp(min=0.0, max=rho_liquid * 3.0)  # prevent inf from wall function forcing
         df = (tau_w * near_mask.to(f.dtype)).sum()
     if inventory_stages is not None:
         inventory_stages["after_wall_boundary"] = inventory_measurement(
-            f, fill, flags, mass, rho_liquid=rho_liquid,
+            f,
+            fill,
+            flags,
+            mass,
+            rho_liquid=rho_liquid,
         )
 
     # ---- 4. Mass exchange (standard Körner, independent mass variable) ----
     # (no .any() sync — multicard-safe under TCCL; torch.where handles empty masks)
     rho_new = f.sum(dim=0)
-    iface_mask = (flags == INTERFACE)
+    iface_mask = flags == INTERFACE
     # neighbor_flags always computed in anti-bounce-back above (no None check)
     # For pull link q at x, the opposing outgoing population belongs to x
     # itself: f_bar(q)^*(x).  Sampling it at x-c_q mixes two different links.
@@ -781,22 +874,24 @@ def free_surface_step(
     from_gas = iface_19 & (neighbor_flags == GAS)
     from_iface = iface_19 & (neighbor_flags == INTERFACE)
     mass_delta_liquid = torch.where(from_liq, f - f_opp_nb, torch.zeros_like(f))
-    mass_delta_interface = torch.where(
-        from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f)
-    )
+    mass_delta_interface = torch.where(from_iface, (f - f_opp_nb) * 0.5, torch.zeros_like(f))
     # A L/I credit at interface target x is paired link-by-link with a debit
     # at its pull source x-c_q.  This uses only existing D3Q19 links; it is
     # neither a global rescale nor a topology mutation.
-    mass_delta_bulk_debit = -torch.stack([
-        mass_delta_liquid[q].roll((-sz, -sy, -sx), dims=(0, 1, 2))
-        for q, (sx, sy, sz) in enumerate(_C19_SHIFTS)
-    ]).sum(0)
+    mass_delta_bulk_debit = -torch.stack(
+        [
+            mass_delta_liquid[q].roll((-sz, -sy, -sx), dims=(0, 1, 2))
+            for q, (sx, sy, sz) in enumerate(_C19_SHIFTS)
+        ]
+    ).sum(0)
     mass_delta = (
-        mass_delta_liquid +
+        mass_delta_liquid
+        +
         # Gas is a pressure boundary, not a liquid-mass reservoir.  Adding
         # its reconstructed population here spuriously creates tracked liquid
         # mass in a quiescent closed column.
-        torch.zeros_like(f) + mass_delta_interface
+        torch.zeros_like(f)
+        + mass_delta_interface
     ).sum(0)
     if paired_liquid_interface_debit:
         valid_bulk_owner = flags == LIQUID
@@ -811,17 +906,21 @@ def free_surface_step(
     fill = torch.where(~solid_mask, (mass / rho_liquid).clamp(0.0, 1.0), fill)
     if inventory_stages is not None:
         inventory_stages["after_mass_exchange"] = inventory_measurement(
-            f, fill, flags, mass, rho_liquid=rho_liquid,
+            f,
+            fill,
+            flags,
+            mass,
+            rho_liquid=rho_liquid,
         )
     if mass_ledger is not None:
-        mass_ledger['exchange'] = float(mass.sum())
-        mass_ledger['exchange_liquid_delta'] = float(mass_delta_liquid.sum())
-        mass_ledger['exchange_interface_delta'] = float(mass_delta_interface.sum())
-        mass_ledger['exchange_bulk_debit'] = float(
+        mass_ledger["exchange"] = float(mass.sum())
+        mass_ledger["exchange_liquid_delta"] = float(mass_delta_liquid.sum())
+        mass_ledger["exchange_interface_delta"] = float(mass_delta_interface.sum())
+        mass_ledger["exchange_bulk_debit"] = float(
             mass_delta_bulk_debit.sum() if paired_liquid_interface_debit else 0.0
         )
-        mass_ledger['exchange_gas_delta'] = 0.0
-        mass_ledger['fill_mass_after_exchange'] = float((fill * rho_liquid).sum())
+        mass_ledger["exchange_gas_delta"] = 0.0
+        mass_ledger["fill_mass_after_exchange"] = float((fill * rho_liquid).sum())
 
     # Diagnostic mode: retain the post-stream/post-ABB populations and the
     # exchange result, but deliberately forbid flag conversion, redistribution
@@ -829,21 +928,23 @@ def free_surface_step(
     if freeze_topology:
         if mass_ledger is not None:
             frozen_total = float(mass.sum())
-            mass_ledger['redistribution'] = frozen_total
-            mass_ledger['clamp'] = frozen_total
-            mass_ledger['conversion'] = frozen_total
-            mass_ledger['isolation'] = frozen_total
-            mass_ledger['boundary'] = frozen_total
-            mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
+            mass_ledger["redistribution"] = frozen_total
+            mass_ledger["clamp"] = frozen_total
+            mass_ledger["conversion"] = frozen_total
+            mass_ledger["isolation"] = frozen_total
+            mass_ledger["boundary"] = frozen_total
+            mass_ledger["fill_mass_final"] = float((fill * rho_liquid).sum())
         if runtime_ledger is not None:
             _append_runtime_ledger(
-                runtime_ledger, mass_start=mass_start_value,
+                runtime_ledger,
+                mass_start=mass_start_value,
                 mass_after_exchange=mass_after_exchange_value,
                 mass_after_redistribution=mass_after_exchange_value,
                 mass_after_clamp=mass_after_exchange_value,
                 mass_after_conversion=mass_after_exchange_value,
                 mass_after_isolation=mass_after_exchange_value,
-                mass_end=float(mass.sum()), abb_population_delta=float(abb_delta.sum()),
+                mass_end=float(mass.sum()),
+                abb_population_delta=float(abb_delta.sum()),
                 exchange_liquid_credit=float(mass_delta_liquid.sum()),
                 exchange_interface_credit=float(mass_delta_interface.sum()),
                 exchange_bulk_debit=float(
@@ -855,7 +956,8 @@ def free_surface_step(
         if ownership_ledger is not None:
             assert ownership_flags is not None
             _append_ownership_ledger(
-                ownership_ledger, flags=ownership_flags,
+                ownership_ledger,
+                flags=ownership_flags,
                 mass_delta_liquid=mass_delta_liquid,
                 liquid_interface_mask=from_liq,
                 paired_liquid_interface_debit=paired_liquid_interface_debit,
@@ -865,16 +967,22 @@ def free_surface_step(
         if inventory_reconciliation_ledger is not None:
             assert inventory_stages is not None
             after_mass_exchange = inventory_stages["after_mass_exchange"]
-            _append_inventory_reconciliation(inventory_reconciliation_ledger, {
-                **inventory_stages,
-                "after_topology_redistribution": after_mass_exchange,
-                "after_topology_clamp": after_mass_exchange,
-                "after_topology_conversion": after_mass_exchange,
-                "after_topology_halo_isolation_boundary": after_mass_exchange,
-            })
+            _append_inventory_reconciliation(
+                inventory_reconciliation_ledger,
+                {
+                    **inventory_stages,
+                    "after_topology_redistribution": after_mass_exchange,
+                    "after_topology_clamp": after_mass_exchange,
+                    "after_topology_conversion": after_mass_exchange,
+                    "after_topology_halo_isolation_boundary": after_mass_exchange,
+                },
+            )
         if conversion_density_audit_ledger is not None:
             from .free_surface_conversion_density_audit import build_conversion_density_audit
-            conversion_density_audit_ledger["audit"] = build_conversion_density_audit(None, rho_liquid=rho_liquid)
+
+            conversion_density_audit_ledger["audit"] = build_conversion_density_audit(
+                None, rho_liquid=rho_liquid
+            )
             conversion_density_audit_ledger["status"] = "DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE"
         if published_mass_ledger is not None:
             published_mass_ledger.clear()
@@ -892,9 +1000,9 @@ def free_surface_step(
             published_inventory_reconciliation_ledger.clear()
             published_inventory_reconciliation_ledger.update(inventory_reconciliation_ledger)
         return f, fill, flags, mass, df
-    gas_mask = (flags == GAS)
-    interface_mask = (flags == INTERFACE)
-    liquid_mask = (flags == LIQUID)
+    gas_mask = flags == GAS
+    interface_mask = flags == INTERFACE
+    liquid_mask = flags == LIQUID
 
     # Gas → Interface (received mass from streaming)
     to_iface = gas_mask & (fill > 0.01) & (~solid_mask)
@@ -912,10 +1020,11 @@ def free_surface_step(
     # not alter its tensors, topology, or existing campaign ledgers.  Only the
     # opt-in proposal removes I→G mass from the legacy redistribution before it
     # stages its own all-or-nothing candidate.
-    redistribution_to_g = to_gas if not enable_i_to_g_ownership_closure else (to_gas & ~interface_mask)
-    excess = (
-        torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass))
-        + torch.where(redistribution_to_g, mass, torch.zeros_like(mass))
+    redistribution_to_g = (
+        to_gas if not enable_i_to_g_ownership_closure else (to_gas & ~interface_mask)
+    )
+    excess = torch.where(to_liq, mass - rho_liquid, torch.zeros_like(mass)) + torch.where(
+        redistribution_to_g, mass, torch.zeros_like(mass)
     )
     # Existing interface cells receive first.  If a converting interface has
     # none, promote its adjacent gas halo to receivers in this same step; a
@@ -945,7 +1054,8 @@ def free_surface_step(
             # Freeze before the builder receives any writable value.  The
             # capture also defines the exact detached strict-error replay.
             strict_failure_capture = capture_strict_failure_invocation(
-                builder_invocation, builder="i_to_g_ownership",
+                builder_invocation,
+                builder="i_to_g_ownership",
             )
         # Keep capture disabled on the legacy call path.  Opt-in replay capture
         # makes the builder a transactional boundary: it may not retain or
@@ -955,19 +1065,26 @@ def free_surface_step(
                 name: value.detach().clone() if isinstance(value, torch.Tensor) else value
                 for name, value in builder_invocation.items()
             }
-            if strict_failure_capture is not None else builder_invocation
+            if strict_failure_capture is not None
+            else builder_invocation
         )
         try:
             i_to_g_ownership = build_i_to_g_ownership_transaction(
-                builder_inputs["flags"], builder_inputs["mass"],
-                to_gas=builder_inputs["to_gas"], to_liq=builder_inputs["to_liq"],
-                solid_mask=builder_inputs["solid_mask"], gas_flag=GAS,
-                liquid_flag=LIQUID, interface_flag=INTERFACE, rho_liquid=rho_liquid,
+                builder_inputs["flags"],
+                builder_inputs["mass"],
+                to_gas=builder_inputs["to_gas"],
+                to_liq=builder_inputs["to_liq"],
+                solid_mask=builder_inputs["solid_mask"],
+                gas_flag=GAS,
+                liquid_flag=LIQUID,
+                interface_flag=INTERFACE,
+                rho_liquid=rho_liquid,
             )
         except TopologyTransactionError as error:
             if strict_failure_capture is not None:
                 replay_capture["strict_failure_evidence"] = publish_strict_failure_evidence(
-                    strict_failure_capture, error,
+                    strict_failure_capture,
+                    error,
                 )
             raise
     # Count receiving cells per donor over every moving D3Q19 link.
@@ -981,9 +1098,9 @@ def free_surface_step(
     # 18 times and leaves a transaction residual when conversion removes the
     # donor excess.  This preserves each link/mask contribution and topology;
     # only their deterministic same-dtype aggregation precedes one commit.
-    legacy_redistribution_increment = torch.stack([
-        roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q
-    ]).sum(dim=0)
+    legacy_redistribution_increment = torch.stack(
+        [roll_to_neighbor(excess_per_nb, q) * recv_mask for q in D3Q19_MOVING_Q]
+    ).sum(dim=0)
     redistribution_link_evidence = ()
     if runtime_ledger is not None or ownership_ledger is not None:
         links = []
@@ -991,9 +1108,20 @@ def free_surface_step(
         for q, shift in zip(D3Q19_MOVING_Q, moving_tensor_shifts()):
             dz, dy, dx = shift
             receiver_for_donor = roll_from_pull_source(recv_mask, q)
-            for donor in torch.nonzero((excess_per_nb != 0.0) & receiver_for_donor, as_tuple=False).tolist():
+            for donor in torch.nonzero(
+                (excess_per_nb != 0.0) & receiver_for_donor, as_tuple=False
+            ).tolist():
                 z, y, x = (int(value) for value in donor)
-                links.append({"donor": (z, y, x), "receiver": ((z - dz) % shape[0], (y - dy) % shape[1], (x - dx) % shape[2]), "shift": (dz, dy, dx), "mass_delta": float(excess_per_nb[z, y, x]), "event_id": "redistribution", "operator": "redistribution"})
+                links.append(
+                    {
+                        "donor": (z, y, x),
+                        "receiver": ((z - dz) % shape[0], (y - dy) % shape[1], (x - dx) % shape[2]),
+                        "shift": (dz, dy, dx),
+                        "mass_delta": float(excess_per_nb[z, y, x]),
+                        "event_id": "redistribution",
+                        "operator": "redistribution",
+                    }
+                )
         redistribution_link_evidence = tuple(links)
     # Publish I→G debit/credit paths through the same topology evidence
     # channel; each receiver is a declared surviving INTERFACE owner.
@@ -1002,14 +1130,29 @@ def free_surface_step(
         for link in (() if i_to_g_ownership is None else i_to_g_ownership.links)
     )
     plan = build_topology_transaction(
-        f, fill, flags, mass, to_iface=to_iface, to_liq=to_liq, to_gas=to_gas,
-        recv_new=recv_new, redistribution_increment=legacy_redistribution_increment,
+        f,
+        fill,
+        flags,
+        mass,
+        to_iface=to_iface,
+        to_liq=to_liq,
+        to_gas=to_gas,
+        recv_new=recv_new,
+        redistribution_increment=legacy_redistribution_increment,
         i_to_g_increment=None if i_to_g_ownership is None else i_to_g_ownership.receiver_increment,
-        rho_liquid=rho_liquid, rho_gas=rho_gas, solid_mask=solid_mask,
-        gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE, solid_flag=SOLID,
-        ux=ux, uy=uy, uz=uz,
+        rho_liquid=rho_liquid,
+        rho_gas=rho_gas,
+        solid_mask=solid_mask,
+        gas_flag=GAS,
+        liquid_flag=LIQUID,
+        interface_flag=INTERFACE,
+        solid_flag=SOLID,
+        ux=ux,
+        uy=uy,
+        uz=uz,
         capture_evidence=(
-            runtime_ledger is not None or ownership_ledger is not None
+            runtime_ledger is not None
+            or ownership_ledger is not None
             or conversion_density_audit_ledger is not None
         ),
         capture_inventory=(
@@ -1025,37 +1168,45 @@ def free_surface_step(
         replay_capture["evidence"] = plan.replay_evidence
     if inventory_reconciliation_ledger is not None:
         assert inventory_stages is not None and plan.inventory_stages is not None
-        _append_inventory_reconciliation(inventory_reconciliation_ledger, {
-            **inventory_stages,
-            **plan.inventory_stages,
-        })
+        _append_inventory_reconciliation(
+            inventory_reconciliation_ledger,
+            {
+                **inventory_stages,
+                **plan.inventory_stages,
+            },
+        )
     if conversion_density_audit_ledger is not None:
         from .free_surface_conversion_density_audit import build_conversion_density_audit
+
         conversion_density_audit_ledger["audit"] = build_conversion_density_audit(
-            plan.conversion_evidence, rho_liquid=rho_liquid,
+            plan.conversion_evidence,
+            rho_liquid=rho_liquid,
             observed_conversion_inventory_delta=(
-                None if plan.inventory_stages is None
+                None
+                if plan.inventory_stages is None
                 else plan.inventory_stages["after_topology_conversion"]["total_liquid_inventory"]
                 - plan.inventory_stages["after_topology_clamp"]["total_liquid_inventory"]
             ),
         )
         conversion_density_audit_ledger["status"] = "DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE"
     if mass_ledger is not None:
-        mass_ledger['redistribution'] = plan.mass_after_redistribution
-        mass_ledger['clamp'] = plan.mass_after_clamp
-        mass_ledger['conversion'] = plan.mass_after_conversion
-        mass_ledger['isolation'] = plan.mass_after_isolation
-        mass_ledger['boundary'] = float(mass.sum())
-        mass_ledger['fill_mass_final'] = float((fill * rho_liquid).sum())
+        mass_ledger["redistribution"] = plan.mass_after_redistribution
+        mass_ledger["clamp"] = plan.mass_after_clamp
+        mass_ledger["conversion"] = plan.mass_after_conversion
+        mass_ledger["isolation"] = plan.mass_after_isolation
+        mass_ledger["boundary"] = float(mass.sum())
+        mass_ledger["fill_mass_final"] = float((fill * rho_liquid).sum())
     if runtime_ledger is not None:
         _append_runtime_ledger(
-            runtime_ledger, mass_start=mass_start_value,
+            runtime_ledger,
+            mass_start=mass_start_value,
             mass_after_exchange=mass_after_exchange_value,
             mass_after_redistribution=plan.mass_after_redistribution,
             mass_after_clamp=plan.mass_after_clamp,
             mass_after_conversion=plan.mass_after_conversion,
             mass_after_isolation=plan.mass_after_isolation,
-            mass_end=float(mass.sum()), abb_population_delta=float(abb_delta.sum()),
+            mass_end=float(mass.sum()),
+            abb_population_delta=float(abb_delta.sum()),
             exchange_liquid_credit=float(mass_delta_liquid.sum()),
             exchange_interface_credit=float(mass_delta_interface.sum()),
             exchange_bulk_debit=float(
@@ -1067,7 +1218,8 @@ def free_surface_step(
     if ownership_ledger is not None:
         assert ownership_flags is not None
         _append_ownership_ledger(
-            ownership_ledger, flags=ownership_flags,
+            ownership_ledger,
+            flags=ownership_flags,
             mass_delta_liquid=mass_delta_liquid,
             liquid_interface_mask=from_liq,
             paired_liquid_interface_debit=paired_liquid_interface_debit,
@@ -1096,16 +1248,18 @@ def free_surface_step(
 def _redistribute_mass(mass, flags, mex, nx, ny, nz, c, device):
     """Redistribute excess mass to interface neighbors (vectorized)."""
     # Simple: distribute excess mass equally to interface neighbors
-    interface_mask = (flags == INTERFACE)
+    interface_mask = flags == INTERFACE
     # Count interface neighbours over every moving D3Q19 link.
     shifted_iface = torch.stack(all_moving_neighbor_masks(interface_mask))
     n_iface_neighbors = shifted_iface.sum(dim=0).clamp(min=1)
     # Excess mass to distribute (per neighbor)
     excess_per_neighbor = mex / n_iface_neighbors
     # Aggregate all D3Q19 link increments before the one mass-field commit.
-    redistribution_increment = torch.stack([
-        roll_to_neighbor(excess_per_neighbor, q) * roll_to_neighbor(interface_mask, q)
-        for q in D3Q19_MOVING_Q
-    ]).sum(dim=0)
+    redistribution_increment = torch.stack(
+        [
+            roll_to_neighbor(excess_per_neighbor, q) * roll_to_neighbor(interface_mask, q)
+            for q in D3Q19_MOVING_Q
+        ]
+    ).sum(dim=0)
     mass = mass + redistribution_increment
     return mass

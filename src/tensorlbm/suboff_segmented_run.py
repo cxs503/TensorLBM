@@ -5,6 +5,7 @@ checkpoint, or alter a boundary condition.  A Ct is produced only when a
 complete checkpoint chain and wholly post-transient/post-warmup sample blocks
 are present.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,10 +17,18 @@ import torch
 
 _MANIFEST_SCHEMA = "suboff-d3q27-segmented-run-v1"
 _CHECKPOINT_FORMAT = "suboff-d3q27-cumulant-xslab-v1"
-_REQUIRED_CHECKPOINT_FIELDS = frozenset((
-    "metadata", "step", "owned_populations", "target_mass", "mass_cadence",
-    "friction_sum", "pressure_sum", "drag_samples",
-))
+_REQUIRED_CHECKPOINT_FIELDS = frozenset(
+    (
+        "metadata",
+        "step",
+        "owned_populations",
+        "target_mass",
+        "mass_cadence",
+        "friction_sum",
+        "pressure_sum",
+        "drag_samples",
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -89,9 +98,16 @@ def _checkpoint_directory(root: Path, reference: object) -> Path:
     return resolved
 
 
-def _validate_checkpoint(directory: Path, *, expected_step: int,
-                         campaign_metadata: Mapping[str, Any], expected_ranks: tuple[int, ...]) -> None:
-    world_size = _integer(campaign_metadata.get("world_size"), "checkpoint_metadata.world_size", minimum=1)
+def _validate_checkpoint(
+    directory: Path,
+    *,
+    expected_step: int,
+    campaign_metadata: Mapping[str, Any],
+    expected_ranks: tuple[int, ...],
+) -> None:
+    world_size = _integer(
+        campaign_metadata.get("world_size"), "checkpoint_metadata.world_size", minimum=1
+    )
     if expected_ranks != tuple(range(world_size)):
         raise ValueError("expected_ranks must exactly cover checkpoint_metadata.world_size ranks")
     if campaign_metadata.get("format") != _CHECKPOINT_FORMAT:
@@ -112,12 +128,17 @@ def _validate_checkpoint(directory: Path, *, expected_step: int,
         expected_metadata["rank"] = rank
         if payload_map["metadata"] != expected_metadata:
             raise ValueError(f"checkpoint metadata mismatch: {checkpoint_file.name}")
-        if _integer(payload_map["step"], f"checkpoint {checkpoint_file.name} step") != expected_step:
+        if (
+            _integer(payload_map["step"], f"checkpoint {checkpoint_file.name} step")
+            != expected_step
+        ):
             raise ValueError(f"checkpoint step mismatch: {checkpoint_file.name}")
         if not isinstance(payload_map["owned_populations"], torch.Tensor):
             raise ValueError(f"checkpoint populations missing: {checkpoint_file.name}")
         populations = payload_map["owned_populations"]
-        nx_local = _integer(campaign_metadata.get("nx_local"), "checkpoint_metadata.nx_local", minimum=1)
+        nx_local = _integer(
+            campaign_metadata.get("nx_local"), "checkpoint_metadata.nx_local", minimum=1
+        )
         ny = _integer(campaign_metadata.get("ny"), "checkpoint_metadata.ny", minimum=1)
         nz = _integer(campaign_metadata.get("nz"), "checkpoint_metadata.nz", minimum=1)
         q = _integer(campaign_metadata.get("q"), "checkpoint_metadata.q", minimum=1)
@@ -125,11 +146,17 @@ def _validate_checkpoint(directory: Path, *, expected_step: int,
             raise ValueError(f"checkpoint population shape mismatch: {checkpoint_file.name}")
         for field in ("target_mass", "friction_sum", "pressure_sum"):
             _finite(payload_map[field], f"checkpoint {checkpoint_file.name} {field}")
-        _integer(payload_map["mass_cadence"], f"checkpoint {checkpoint_file.name} mass_cadence", minimum=1)
+        _integer(
+            payload_map["mass_cadence"],
+            f"checkpoint {checkpoint_file.name} mass_cadence",
+            minimum=1,
+        )
         _integer(payload_map["drag_samples"], f"checkpoint {checkpoint_file.name} drag_samples")
 
 
-def evaluate_suboff_segmented_run(manifest: Mapping[str, object], *, root: str | Path) -> SegmentedRunResult:
+def evaluate_suboff_segmented_run(
+    manifest: Mapping[str, object], *, root: str | Path
+) -> SegmentedRunResult:
     """Validate an interrupted-run campaign and reduce its eligible Ct blocks.
 
     ``segments`` must make one gap-free chain beginning at step zero. Every
@@ -145,11 +172,12 @@ def evaluate_suboff_segmented_run(manifest: Mapping[str, object], *, root: str |
     if not isinstance(expected_ranks_raw, list):
         raise ValueError("manifest requires expected_ranks")
     expected_ranks = tuple(
-        _integer(rank, f"expected_ranks[{index}]")
-        for index, rank in enumerate(expected_ranks_raw)
+        _integer(rank, f"expected_ranks[{index}]") for index, rank in enumerate(expected_ranks_raw)
     )
     far_field = _mapping(data.get("far_field"), "far_field")
-    required_transient = _integer(far_field.get("required_transient_steps"), "far_field.required_transient_steps")
+    required_transient = _integer(
+        far_field.get("required_transient_steps"), "far_field.required_transient_steps"
+    )
     if far_field.get("transient_steps_satisfy_outlet_convection") is not True:
         raise ValueError("outlet convection requirement is not satisfied")
     transient = _integer(data.get("transient_steps"), "transient_steps")
@@ -157,7 +185,9 @@ def evaluate_suboff_segmented_run(manifest: Mapping[str, object], *, root: str |
         raise ValueError("required transient/outlet convection is incomplete")
     warmup = _integer(data.get("warmup_steps"), "warmup_steps")
     sample_gate = max(transient, warmup)
-    denominator = _finite_positive(data.get("dynamic_pressure_wetted_area"), "dynamic_pressure_wetted_area")
+    denominator = _finite_positive(
+        data.get("dynamic_pressure_wetted_area"), "dynamic_pressure_wetted_area"
+    )
 
     segments = data.get("segments")
     if not isinstance(segments, list) or not segments:
@@ -170,9 +200,12 @@ def evaluate_suboff_segmented_run(manifest: Mapping[str, object], *, root: str |
         end = _integer(segment.get("end_step"), f"segment {index} end_step", minimum=1)
         if start != previous_end or end <= start:
             raise ValueError("segment step ranges must be continuous, ordered, and non-empty")
-        _validate_checkpoint(_checkpoint_directory(root_path, segment.get("checkpoint")),
-                             expected_step=end, campaign_metadata=campaign_metadata,
-                             expected_ranks=expected_ranks)
+        _validate_checkpoint(
+            _checkpoint_directory(root_path, segment.get("checkpoint")),
+            expected_step=end,
+            campaign_metadata=campaign_metadata,
+            expected_ranks=expected_ranks,
+        )
         previous_end = end
 
     blocks = data.get("blocks")
@@ -183,12 +216,16 @@ def evaluate_suboff_segmented_run(manifest: Mapping[str, object], *, root: str |
     previous_block_last = sample_gate
     for index, raw_block in enumerate(blocks):
         block = _mapping(raw_block, f"block {index}")
-        first = _integer(block.get("first_sample_step"), f"block {index} first_sample_step", minimum=1)
+        first = _integer(
+            block.get("first_sample_step"), f"block {index} first_sample_step", minimum=1
+        )
         last = _integer(block.get("last_sample_step"), f"block {index} last_sample_step", minimum=1)
         if last < first or last > previous_end:
             raise ValueError("Ct block sample range is outside the completed campaign")
         if first <= sample_gate:
-            raise ValueError("Ct block starts before warmup/transient gate; only wholly post-warmup blocks are allowed")
+            raise ValueError(
+                "Ct block starts before warmup/transient gate; only wholly post-warmup blocks are allowed"
+            )
         if first <= previous_block_last:
             raise ValueError("Ct blocks must be ordered and non-overlapping")
         count = _integer(block.get("drag_samples"), f"block {index} drag_samples", minimum=1)
@@ -203,5 +240,12 @@ def evaluate_suboff_segmented_run(manifest: Mapping[str, object], *, root: str |
         raise ValueError("Ct requires post-warmup drag samples")
     ct_friction = friction_sum / drag_samples / denominator
     ct_pressure = pressure_sum / drag_samples / denominator
-    return SegmentedRunResult(True, previous_end, len(blocks), drag_samples,
-                              ct_friction, ct_pressure, ct_friction + ct_pressure)
+    return SegmentedRunResult(
+        True,
+        previous_end,
+        len(blocks),
+        drag_samples,
+        ct_friction,
+        ct_pressure,
+        ct_friction + ct_pressure,
+    )

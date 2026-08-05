@@ -6,6 +6,7 @@ Covers:
     - TwoPhaseChannelCompareConfig: validation and short smoke run (SCMC + CG)
     - MultiphaseBenchmarkSuiteConfig: construction and minimal suite run
 """
+
 from __future__ import annotations
 
 import math
@@ -39,6 +40,7 @@ DEVICE = "cpu"
 # ---------------------------------------------------------------------------
 # StaticDropletConfig
 # ---------------------------------------------------------------------------
+
 
 class TestStaticDropletConfig:
     def test_valid_config(self) -> None:
@@ -79,8 +81,9 @@ class TestStaticDropletConfig:
             cfg.validate()
 
     def test_invalid_density_order_scmc(self) -> None:
-        cfg = StaticDropletConfig(nx=60, ny=60, radii=(10.0,),
-                                   scmc_rho_heavy=0.2, scmc_rho_light=0.8)
+        cfg = StaticDropletConfig(
+            nx=60, ny=60, radii=(10.0,), scmc_rho_heavy=0.2, scmc_rho_light=0.8
+        )
         with pytest.raises(ValueError, match="scmc_rho_heavy"):
             cfg.validate()
 
@@ -98,10 +101,13 @@ class TestStaticDropletConfig:
         """Short run — check output dict keys and sigma_eff is finite."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = StaticDropletConfig(
-                nx=40, ny=40,
+                nx=40,
+                ny=40,
                 radii=(8.0, 12.0),
-                n_steps=5, output_interval=5,
-                output_root=Path(tmpdir), overwrite=True,
+                n_steps=5,
+                output_interval=5,
+                output_root=Path(tmpdir),
+                overwrite=True,
                 device=DEVICE,
             )
             result = run_static_droplet(cfg)
@@ -125,6 +131,7 @@ class TestStaticDropletConfig:
 # ---------------------------------------------------------------------------
 # SpinodaleConfig
 # ---------------------------------------------------------------------------
+
 
 class TestSpinodaleConfig:
     def test_valid_config(self) -> None:
@@ -160,10 +167,16 @@ class TestSpinodaleConfig:
         """Short run — check output dict keys."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = SpinodaleConfig(
-                nx=16, ny=16,
-                G=-4.0, tau=1.0, rho0=0.7, noise_amp=0.05,
-                n_steps=5, output_interval=5,
-                output_root=Path(tmpdir), overwrite=True,
+                nx=16,
+                ny=16,
+                G=-4.0,
+                tau=1.0,
+                rho0=0.7,
+                noise_amp=0.05,
+                n_steps=5,
+                output_interval=5,
+                output_root=Path(tmpdir),
+                overwrite=True,
                 device=DEVICE,
             )
             result = run_spinodal_decomposition(cfg)
@@ -182,8 +195,13 @@ class TestSpinodaleConfig:
         """After any number of steps, rho_max ≥ rho_min."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = SpinodaleConfig(
-                nx=16, ny=16, n_steps=3, output_interval=3,
-                output_root=Path(tmpdir), overwrite=True, device=DEVICE,
+                nx=16,
+                ny=16,
+                n_steps=3,
+                output_interval=3,
+                output_root=Path(tmpdir),
+                overwrite=True,
+                device=DEVICE,
             )
             result = run_spinodal_decomposition(cfg)
         assert float(result["rho_liquid"]) >= float(result["rho_gas"])
@@ -252,9 +270,15 @@ class TestStaticDroplet3DConfig:
     def test_smoke_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = StaticDroplet3DConfig(
-                nx=20, ny=20, nz=20, radii=(4.0,),
-                n_steps=3, output_interval=3,
-                output_root=Path(tmpdir), overwrite=True, device=DEVICE,
+                nx=20,
+                ny=20,
+                nz=20,
+                radii=(4.0,),
+                n_steps=3,
+                output_interval=3,
+                output_root=Path(tmpdir),
+                overwrite=True,
+                device=DEVICE,
             )
             result = run_static_droplet_3d(cfg)
         assert "scmc" in result["results"]  # type: ignore[index]
@@ -274,8 +298,14 @@ class TestSpinodal3DConfig:
     def test_smoke_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = Spinodal3DConfig(
-                nx=16, ny=16, nz=16, n_steps=3, output_interval=3,
-                output_root=Path(tmpdir), overwrite=True, device=DEVICE,
+                nx=16,
+                ny=16,
+                nz=16,
+                n_steps=3,
+                output_interval=3,
+                output_root=Path(tmpdir),
+                overwrite=True,
+                device=DEVICE,
             )
             result = run_spinodal_decomposition_3d(cfg)
         assert "density_ratio" in result
@@ -285,6 +315,7 @@ class TestSpinodal3DConfig:
 # ---------------------------------------------------------------------------
 # TwoPhaseChannelCompareConfig
 # ---------------------------------------------------------------------------
+
 
 class TestTwoPhaseChannelCompareConfig:
     def test_valid_config(self) -> None:
@@ -326,10 +357,13 @@ class TestTwoPhaseChannelCompareConfig:
         """Short smoke run — check dict keys and finite errors."""
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = TwoPhaseChannelCompareConfig(
-                nx=4, ny=20,
+                nx=4,
+                ny=20,
                 G_x=5e-5,
-                n_steps=5, output_interval=5,
-                output_root=Path(tmpdir), overwrite=True,
+                n_steps=5,
+                output_interval=5,
+                output_root=Path(tmpdir),
+                overwrite=True,
                 device=DEVICE,
             )
             result = run_two_phase_channel_compare(cfg)
@@ -360,6 +394,7 @@ class TestTwoPhaseChannelCompareConfig:
 # MultiphaseBenchmarkSuiteConfig + suite smoke run
 # ---------------------------------------------------------------------------
 
+
 class TestMultiphaseBenchmarkSuiteConfig:
     def test_default_construction(self) -> None:
         cfg = MultiphaseBenchmarkSuiteConfig()
@@ -379,23 +414,45 @@ class TestMultiphaseBenchmarkSuiteConfig:
         with tempfile.TemporaryDirectory() as tmpdir:
             cfg = MultiphaseBenchmarkSuiteConfig(
                 droplet=StaticDropletConfig(
-                    nx=40, ny=40, radii=(8.0,),
-                    n_steps=5, output_interval=5,
+                    nx=40,
+                    ny=40,
+                    radii=(8.0,),
+                    n_steps=5,
+                    output_interval=5,
                 ),
                 spinodal=SpinodaleConfig(
-                    nx=16, ny=16, n_steps=5, output_interval=5,
+                    nx=16,
+                    ny=16,
+                    n_steps=5,
+                    output_interval=5,
                 ),
                 free_energy=FreeEnergyDropletConfig(
-                    nx=32, ny=32, radius=6.0, n_steps=5, output_interval=5,
+                    nx=32,
+                    ny=32,
+                    radius=6.0,
+                    n_steps=5,
+                    output_interval=5,
                 ),
                 poiseuille=TwoPhaseChannelCompareConfig(
-                    nx=4, ny=20, n_steps=5, output_interval=5,
+                    nx=4,
+                    ny=20,
+                    n_steps=5,
+                    output_interval=5,
                 ),
                 droplet_3d=StaticDroplet3DConfig(
-                    nx=20, ny=20, nz=20, radii=(4.0,), n_steps=3, output_interval=3,
+                    nx=20,
+                    ny=20,
+                    nz=20,
+                    radii=(4.0,),
+                    n_steps=3,
+                    output_interval=3,
                 ),
                 spinodal_3d=Spinodal3DConfig(
-                    nx=16, ny=16, nz=16, n_steps=3, output_interval=3,
+                    nx=16,
+                    ny=16,
+                    nz=16,
+                    n_steps=3,
+                    output_interval=3,
                 ),
                 output_root=Path(tmpdir),
                 device=DEVICE,
@@ -428,6 +485,7 @@ class TestMultiphaseBenchmarkSuiteConfig:
 # Optimisation regression tests
 # ---------------------------------------------------------------------------
 
+
 class TestColorGradientOptimisation:
     """Verify that the CG optimisations (no redundant rolls, no feq_unit alloc)
     do not change numerical results compared to a reference baseline."""
@@ -435,6 +493,7 @@ class TestColorGradientOptimisation:
     def test_cg_mass_conservation_after_opt(self) -> None:
         """CG total mass must still be conserved after the optimisation."""
         from tensorlbm import color_gradient_step, equilibrium, stream  # noqa: PLC0415
+
         ny, nx = 20, 24
         rho1 = torch.ones((ny, nx))
         rho2 = torch.full((ny, nx), 0.5)
@@ -454,6 +513,7 @@ class TestColorGradientOptimisation:
             equilibrium3d,
             stream3d,
         )
+
         nz, ny, nx = 5, 6, 8
         rho1 = torch.ones((nz, ny, nx))
         rho2 = torch.full((nz, ny, nx), 0.5)

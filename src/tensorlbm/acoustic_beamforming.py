@@ -43,6 +43,7 @@ Brooks, T. F. & Humphreys, W. M. (2006). A deconvolution approach for the
 Sijtsma, P. (2007). CLEAN based on spatial source coherence. *Int. J. Aeroacoust.*
     6, 357–374.
 """
+
 from __future__ import annotations
 
 import math
@@ -70,6 +71,7 @@ _C0_DEFAULT: float = 343.0
 # Data containers
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class MicrophoneArray:
     """Microphone positions and measured pressure signals.
@@ -83,8 +85,9 @@ class MicrophoneArray:
     dt:
         Time step between samples [s].
     """
-    positions: torch.Tensor       # (M, 3)
-    signals: torch.Tensor         # (M, N_t)
+
+    positions: torch.Tensor  # (M, 3)
+    signals: torch.Tensor  # (M, N_t)
     dt: float = 1e-4
 
     @property
@@ -99,27 +102,29 @@ class MicrophoneArray:
 @dataclass
 class BeamformingConfig:
     """Configuration for the beamforming analysis."""
+
     # Source scan grid
     scan_x: tuple[float, float, int] = (-1.0, 1.0, 20)  # (min, max, n_pts)
     scan_y: tuple[float, float, int] = (-1.0, 1.0, 20)
-    scan_z: float = 0.0                    # 2-D scan plane z-position [m]
+    scan_z: float = 0.0  # 2-D scan plane z-position [m]
     # Acoustic settings
-    c0: float = _C0_DEFAULT               # speed of sound [m/s]
+    c0: float = _C0_DEFAULT  # speed of sound [m/s]
     # Frequency band of interest
-    f_min: float = 100.0                   # Hz
-    f_max: float = 5000.0                  # Hz
+    f_min: float = 100.0  # Hz
+    f_max: float = 5000.0  # Hz
     # Window / shading
     shading: Literal["uniform", "hamming", "hann"] = "hann"
     # Algorithm
     method: Literal["das", "clean_sc", "damas"] = "das"
-    n_iter_clean: int = 10                 # iterations for CLEAN-SC / DAMAS
-    clean_loop_gain: float = 0.9           # CLEAN-SC loop gain
+    n_iter_clean: int = 10  # iterations for CLEAN-SC / DAMAS
+    clean_loop_gain: float = 0.9  # CLEAN-SC loop gain
 
 
 @dataclass
 class BeamformingResult:
     """Output of a beamforming analysis."""
-    source_map: list[list[float]]          # 2-D power map (n_y, n_x) in dB
+
+    source_map: list[list[float]]  # 2-D power map (n_y, n_x) in dB
     x_grid: list[float]
     y_grid: list[float]
     peak_x: float
@@ -133,6 +138,7 @@ class BeamformingResult:
 # ---------------------------------------------------------------------------
 # Utility: shading weights
 # ---------------------------------------------------------------------------
+
 
 def _shading_weights(n_mics: int, shading: str) -> torch.Tensor:
     """Return (n_mics,) real shading weights, normalised to unit sum."""
@@ -148,6 +154,7 @@ def _shading_weights(n_mics: int, shading: str) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # DAS beamformer (frequency domain)
 # ---------------------------------------------------------------------------
+
 
 def das_beamformer(
     array: MicrophoneArray,
@@ -181,23 +188,23 @@ def das_beamformer(
     dt = array.dt
 
     # FFT of all microphone signals
-    P = torch.fft.rfft(array.signals.double(), n=Nt, dim=1)   # (M, Nf)
-    freqs = torch.fft.rfftfreq(Nt, d=dt)                       # (Nf,)
+    P = torch.fft.rfft(array.signals.double(), n=Nt, dim=1)  # (M, Nf)
+    freqs = torch.fft.rfftfreq(Nt, d=dt)  # (Nf,)
 
     # Frequency band mask
     freq_mask = (freqs >= f_min) & (freqs <= f_max)
-    P_band = P[:, freq_mask]                         # (M, Nf_band)
-    freqs_band = freqs[freq_mask]                    # (Nf_band,)
+    P_band = P[:, freq_mask]  # (M, Nf_band)
+    freqs_band = freqs[freq_mask]  # (Nf_band,)
 
-    w = _shading_weights(M, shading).to(P.device)   # (M,)
+    w = _shading_weights(M, shading).to(P.device)  # (M,)
 
     # Source positions: (S, 3)
-    S_pos = source_positions.double()    # (S, 3)
-    mic_pos = array.positions.double()   # (M, 3)
+    S_pos = source_positions.double()  # (S, 3)
+    mic_pos = array.positions.double()  # (M, 3)
 
     # Distances r_ms: (S, M)
     diff = S_pos.unsqueeze(1) - mic_pos.unsqueeze(0)  # (S, M, 3)
-    r_ms = diff.norm(dim=2) + 1e-12                    # (S, M)
+    r_ms = diff.norm(dim=2) + 1e-12  # (S, M)
 
     power = torch.zeros(S_pos.shape[0], dtype=torch.float64)
 
@@ -206,24 +213,25 @@ def das_beamformer(
         k = 2.0 * math.pi * f_val / c0
 
         # Steering vector: e_m(s) = exp(-i k r_ms) / r_ms  (far-field normalised)
-        phase = -k * r_ms                         # (S, M)
+        phase = -k * r_ms  # (S, M)
         e = torch.exp(1j * torch.tensor(0.0, dtype=torch.float64) + 1j * phase)
         # NOTE: torch complex via polar
-        e = torch.polar(torch.ones_like(phase), phase)   # (S, M)
+        e = torch.polar(torch.ones_like(phase), phase)  # (S, M)
 
         # Weighted sum: b(s) = Σ_m w_m e_m*(s) P_m(f)
-        P_f = P_band[:, fi]                       # (M,) complex
+        P_f = P_band[:, fi]  # (M,) complex
         weighted = w.unsqueeze(0) * e.conj() * P_f.unsqueeze(0)  # (S, M)
-        b = weighted.sum(dim=1)                   # (S,) complex
+        b = weighted.sum(dim=1)  # (S,) complex
 
         power += b.abs() ** 2
 
-    return power   # (S,) total power in frequency band
+    return power  # (S,) total power in frequency band
 
 
 # ---------------------------------------------------------------------------
 # 2-D source map
 # ---------------------------------------------------------------------------
+
 
 def compute_source_map(
     array: MicrophoneArray,
@@ -242,9 +250,7 @@ def compute_source_map(
     xx, yy = torch.meshgrid(x_grid, y_grid, indexing="xy")  # (Nx, Ny)
     zz = torch.full_like(xx, cfg.scan_z)
 
-    source_pos = torch.stack([
-        xx.reshape(-1), yy.reshape(-1), zz.reshape(-1)
-    ], dim=1)   # (Nx*Ny, 3)
+    source_pos = torch.stack([xx.reshape(-1), yy.reshape(-1), zz.reshape(-1)], dim=1)  # (Nx*Ny, 3)
 
     power = das_beamformer(
         array,
@@ -253,15 +259,16 @@ def compute_source_map(
         f_max=cfg.f_max,
         c0=cfg.c0,
         shading=cfg.shading,
-    )   # (Nx*Ny,)
+    )  # (Nx*Ny,)
 
-    power_map = power.reshape(nx, ny).T   # (Ny, Nx)
+    power_map = power.reshape(nx, ny).T  # (Ny, Nx)
     return power_map, x_grid, y_grid
 
 
 # ---------------------------------------------------------------------------
 # CLEAN-SC
 # ---------------------------------------------------------------------------
+
 
 def clean_sc(
     power_map: torch.Tensor,
@@ -284,7 +291,7 @@ def clean_sc(
     dx = (x_grid[-1] - x_grid[0]) / max(len(x_grid) - 1, 1)
     psf_sigma = max(dx * 2.0, 1e-3)
 
-    xx, yy = torch.meshgrid(x_grid, y_grid, indexing="xy")   # (ny, nx)
+    xx, yy = torch.meshgrid(x_grid, y_grid, indexing="xy")  # (ny, nx)
 
     for _ in range(n_iter):
         peak_val = residual.max()
@@ -297,21 +304,20 @@ def clean_sc(
         y_peak = y_grid[peak_row]
 
         # Gaussian PSF centred at peak
-        psf = torch.exp(
-            -((xx - x_peak)**2 + (yy - y_peak)**2) / (2.0 * psf_sigma**2)
-        )
+        psf = torch.exp(-((xx - x_peak) ** 2 + (yy - y_peak) ** 2) / (2.0 * psf_sigma**2))
         psf = psf / psf.max()
 
         contribution = loop_gain * peak_val * psf
         clean_map += contribution
         residual = (residual - contribution).clamp(min=0.0)
 
-    return clean_map + residual * 0.1   # add residual floor
+    return clean_map + residual * 0.1  # add residual floor
 
 
 # ---------------------------------------------------------------------------
 # DAMAS (simplified iterative)
 # ---------------------------------------------------------------------------
+
 
 def damas_deconvolve(
     power_map: torch.Tensor,
@@ -330,16 +336,14 @@ def damas_deconvolve(
     sigma = 1.5
     # Build separable Gaussian kernel
     x = torch.arange(kernel_size, dtype=torch.float64) - kernel_size // 2
-    gauss_1d = torch.exp(-x**2 / (2 * sigma**2))
+    gauss_1d = torch.exp(-(x**2) / (2 * sigma**2))
     gauss_1d = gauss_1d / gauss_1d.sum()
     kernel = gauss_1d.unsqueeze(0) * gauss_1d.unsqueeze(1)
     kernel = kernel.unsqueeze(0).unsqueeze(0).float()
 
     for _ in range(n_iter):
         q_f = q.float().unsqueeze(0).unsqueeze(0)
-        Aq = torch.nn.functional.conv2d(
-            q_f, kernel, padding=kernel_size // 2
-        ).squeeze()
+        Aq = torch.nn.functional.conv2d(q_f, kernel, padding=kernel_size // 2).squeeze()
         q = (q + b.float() - Aq).clamp(min=0.0)
 
     return q.double()
@@ -348,6 +352,7 @@ def damas_deconvolve(
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
+
 
 def run_acoustic_beamforming(
     array: MicrophoneArray,
@@ -362,7 +367,11 @@ def run_acoustic_beamforming(
     # Apply post-processing method
     if cfg.method == "clean_sc":
         power_map = clean_sc(
-            power_map, x_grid, y_grid, array, cfg,
+            power_map,
+            x_grid,
+            y_grid,
+            array,
+            cfg,
             n_iter=cfg.n_iter_clean,
             loop_gain=cfg.clean_loop_gain,
         )
@@ -370,7 +379,7 @@ def run_acoustic_beamforming(
         power_map = damas_deconvolve(power_map, n_iter=cfg.n_iter_clean)
 
     # Convert to dB
-    p_ref = 20e-6   # 20 µPa reference
+    p_ref = 20e-6  # 20 µPa reference
     power_floor = max(float(power_map.max()) * 1e-10, (p_ref**2) * 1e-6)
     spl_map = 10.0 * torch.log10(power_map.clamp(min=power_floor) / p_ref**2)
 

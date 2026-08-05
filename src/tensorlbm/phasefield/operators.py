@@ -9,7 +9,9 @@ import torch
 BoundaryPolicy = Literal["periodic", "no_flux"]
 
 
-def _validate(field: torch.Tensor, boundary: BoundaryPolicy, solid_mask: torch.Tensor | None) -> None:
+def _validate(
+    field: torch.Tensor, boundary: BoundaryPolicy, solid_mask: torch.Tensor | None
+) -> None:
     if field.ndim != 3:
         raise ValueError("phase-field operators require a 3-D scalar tensor shaped (z, y, x)")
     if boundary not in ("periodic", "no_flux"):
@@ -19,11 +21,19 @@ def _validate(field: torch.Tensor, boundary: BoundaryPolicy, solid_mask: torch.T
             raise ValueError("solid_mask must be a bool tensor with the same (z, y, x) shape")
 
 
-def _neighbor(field: torch.Tensor, dim: int, direction: int, boundary: BoundaryPolicy, solid_mask: torch.Tensor | None) -> torch.Tensor:
+def _neighbor(
+    field: torch.Tensor,
+    dim: int,
+    direction: int,
+    boundary: BoundaryPolicy,
+    solid_mask: torch.Tensor | None,
+) -> torch.Tensor:
     rolled = torch.roll(field, shifts=-direction, dims=dim)
     if boundary == "periodic" and solid_mask is None:
         return rolled
-    source_mask = None if solid_mask is None else torch.roll(solid_mask, shifts=-direction, dims=dim)
+    source_mask = (
+        None if solid_mask is None else torch.roll(solid_mask, shifts=-direction, dims=dim)
+    )
     invalid = torch.zeros_like(field, dtype=torch.bool)
     if boundary == "no_flux":
         edge = [slice(None)] * 3
@@ -46,9 +56,15 @@ def central_gradient_3d(
     interior value at domain edges and at solid neighbours, never wraps them.
     """
     _validate(field, boundary, solid_mask)
-    grad_z = 0.5 * (_neighbor(field, 0, 1, boundary, solid_mask) - _neighbor(field, 0, -1, boundary, solid_mask))
-    grad_y = 0.5 * (_neighbor(field, 1, 1, boundary, solid_mask) - _neighbor(field, 1, -1, boundary, solid_mask))
-    grad_x = 0.5 * (_neighbor(field, 2, 1, boundary, solid_mask) - _neighbor(field, 2, -1, boundary, solid_mask))
+    grad_z = 0.5 * (
+        _neighbor(field, 0, 1, boundary, solid_mask) - _neighbor(field, 0, -1, boundary, solid_mask)
+    )
+    grad_y = 0.5 * (
+        _neighbor(field, 1, 1, boundary, solid_mask) - _neighbor(field, 1, -1, boundary, solid_mask)
+    )
+    grad_x = 0.5 * (
+        _neighbor(field, 2, 1, boundary, solid_mask) - _neighbor(field, 2, -1, boundary, solid_mask)
+    )
     if solid_mask is not None:
         zero = torch.zeros((), dtype=field.dtype, device=field.device)
         grad_x = torch.where(solid_mask, zero, grad_x)
@@ -77,5 +93,7 @@ def laplacian_3d(
         - 6.0 * field
     )
     if solid_mask is not None:
-        result = torch.where(solid_mask, torch.zeros((), dtype=field.dtype, device=field.device), result)
+        result = torch.where(
+            solid_mask, torch.zeros((), dtype=field.dtype, device=field.device), result
+        )
     return result

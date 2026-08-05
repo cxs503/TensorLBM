@@ -35,6 +35,7 @@ Setup (2D D3Q19 BGK):
   Top/bottom sponge (target equilibrium, width=50)
   Monitors   near-wake (x=310, y=100) + far-field at r=30,50,70 from TE
 """
+
 from __future__ import annotations
 import argparse, math, os, sys
 import numpy as np
@@ -54,7 +55,7 @@ CS2 = 1.0 / 3.0
 def build_plate_solid(nx, ny, x0, x1, y0, y1, dev):
     """Build solid mask for a rectangular flat plate."""
     solid = torch.zeros((ny, nx), dtype=torch.bool, device=dev)
-    solid[y0:y1+1, x0:x1+1] = True
+    solid[y0 : y1 + 1, x0 : x1 + 1] = True
     return solid
 
 
@@ -68,10 +69,20 @@ def bounce_back_solid(f, solid_mask):
     return f_bounced
 
 
-def run_te_noise(nx=500, ny=300, nz=1, tau=0.55,
-                 u_in=0.1, plate_x0=100, plate_x1=300,
-                 plate_y0=None, plate_y1=None,
-                 steps=8000, device="cpu", log_every=1000):
+def run_te_noise(
+    nx=500,
+    ny=300,
+    nz=1,
+    tau=0.55,
+    u_in=0.1,
+    plate_x0=100,
+    plate_x1=300,
+    plate_y0=None,
+    plate_y1=None,
+    steps=8000,
+    device="cpu",
+    log_every=1000,
+):
     # Default plate centered in y, thickness=20
     if plate_y0 is None:
         plate_y0 = ny // 2 - 10
@@ -129,13 +140,20 @@ def run_te_noise(nx=500, ny=300, nz=1, tau=0.55,
     dist_t = (ny - 1 - yy).float()
     dist_b = yy.float()
     dist_l = xx.float()
-    dr = torch.where(dist_r < sw, torch.sin(math.pi * dist_r / (2*sw))**2, torch.ones_like(dist_r))
-    dt_ = torch.where(dist_t < sw, torch.sin(math.pi * dist_t / (2*sw))**2, torch.ones_like(dist_t))
-    db = torch.where(dist_b < sw, torch.sin(math.pi * dist_b / (2*sw))**2, torch.ones_like(dist_b))
+    dr = torch.where(
+        dist_r < sw, torch.sin(math.pi * dist_r / (2 * sw)) ** 2, torch.ones_like(dist_r)
+    )
+    dt_ = torch.where(
+        dist_t < sw, torch.sin(math.pi * dist_t / (2 * sw)) ** 2, torch.ones_like(dist_t)
+    )
+    db = torch.where(
+        dist_b < sw, torch.sin(math.pi * dist_b / (2 * sw)) ** 2, torch.ones_like(dist_b)
+    )
     # Exclude left boundary (inlet)
-    damping = torch.minimum(dr.unsqueeze(0).expand(ny, -1),
-                            torch.minimum(dt_.unsqueeze(1).expand(-1, nx),
-                                          db.unsqueeze(1).expand(-1, nx)))
+    damping = torch.minimum(
+        dr.unsqueeze(0).expand(ny, -1),
+        torch.minimum(dt_.unsqueeze(1).expand(-1, nx), db.unsqueeze(1).expand(-1, nx)),
+    )
 
     # Initialize
     rho0 = torch.ones((nz, ny, nx), device=dev)
@@ -143,9 +161,9 @@ def run_te_noise(nx=500, ny=300, nz=1, tau=0.55,
     uy0 = torch.zeros_like(rho0)
     ux0[0][solid] = 0.0
     f = equilibrium3d(rho0, ux0, uy0, uy0.clone(), device=dev)
-    feq_target = equilibrium3d(rho0, torch.zeros_like(rho0),
-                                torch.zeros_like(rho0), torch.zeros_like(rho0),
-                                device=dev)
+    feq_target = equilibrium3d(
+        rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0), device=dev
+    )
 
     # Inlet BC
     rho_in = torch.ones((nz, ny, 1), device=dev)
@@ -189,8 +207,10 @@ def run_te_noise(nx=500, ny=300, nz=1, tau=0.55,
 
         if step % log_every == 0 or step == steps:
             drho_max = float((rho - rho0).abs().max())
-            print(f"  step {step:5d}/{steps}  |Δρ|_max={drho_max:.4e}  "
-                  f"p_wake={p_wake:+.4e}", flush=True)
+            print(
+                f"  step {step:5d}/{steps}  |Δρ|_max={drho_max:.4e}  p_wake={p_wake:+.4e}",
+                flush=True,
+            )
 
     # === FFT analysis ===
     print("\n" + "=" * 64, flush=True)
@@ -212,9 +232,9 @@ def run_te_noise(nx=500, ny=300, nz=1, tau=0.55,
     St_lbm = f_lbm * thickness / u_in
 
     print(f"  FFT 样本: {N} (跳过 {skip} 步)", flush=True)
-    print(f"  频率分辨率: {1.0/N:.6f}", flush=True)
+    print(f"  频率分辨率: {1.0 / N:.6f}", flush=True)
     print(f"  主峰: f={f_lbm:.6f}  St={St_lbm:.4f}  (预期 St={St_expected})", flush=True)
-    print(f"  误差: {abs(St_lbm - St_expected)/St_expected*100:.1f}%", flush=True)
+    print(f"  误差: {abs(St_lbm - St_expected) / St_expected * 100:.1f}%", flush=True)
 
     # === Far-field decay ===
     print(f"\n  远场压力衰减 (1/√r):", flush=True)
@@ -243,15 +263,25 @@ def run_te_noise(nx=500, ny=300, nz=1, tau=0.55,
     # 1. Vortex shedding detected
     osc_ok = fft_vals.max() > 1e-8
     checks.append(("尾缘涡脱落检测", osc_ok, f"amp_max={fft_vals.max():.2e}"))
-    print(f"    [{'PASS' if osc_ok else 'FAIL'}] 尾缘涡脱落: amp_max={fft_vals.max():.2e}", flush=True)
+    print(
+        f"    [{'PASS' if osc_ok else 'FAIL'}] 尾缘涡脱落: amp_max={fft_vals.max():.2e}", flush=True
+    )
 
     # 2. Strouhal number within 25%
     st_err = abs(St_lbm - St_expected) / St_expected * 100
     st_ok = st_err < 25.0
-    checks.append((f"Strouhal 数 (err<25%)", st_ok,
-                   f"St_lbm={St_lbm:.4f} vs St_ref={St_expected}, err={st_err:.1f}%"))
-    print(f"    [{'PASS' if st_ok else 'FAIL'}] Strouhal: St={St_lbm:.4f} vs {St_expected}, "
-          f"err={st_err:.1f}%", flush=True)
+    checks.append(
+        (
+            f"Strouhal 数 (err<25%)",
+            st_ok,
+            f"St_lbm={St_lbm:.4f} vs St_ref={St_expected}, err={st_err:.1f}%",
+        )
+    )
+    print(
+        f"    [{'PASS' if st_ok else 'FAIL'}] Strouhal: St={St_lbm:.4f} vs {St_expected}, "
+        f"err={st_err:.1f}%",
+        flush=True,
+    )
 
     # 3. Far-field decay ~ 1/√r (α ≈ -0.5)
     decay_ok = abs(alpha - (-0.5)) < 0.2
@@ -274,9 +304,16 @@ def main():
     p.add_argument("--device", default="cpu")
     p.add_argument("--log-every", type=int, default=1000)
     args = p.parse_args()
-    run_te_noise(nx=args.nx, ny=args.ny, nz=args.nz, tau=args.tau,
-                 u_in=args.u_in, steps=args.steps, device=args.device,
-                 log_every=args.log_every)
+    run_te_noise(
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau=args.tau,
+        u_in=args.u_in,
+        steps=args.steps,
+        device=args.device,
+        log_every=args.log_every,
+    )
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 This ledger tracks existing solver state ownership.  It is explicitly not a
 physical/PV closure or a solver mass correction.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -33,7 +34,9 @@ def test_link_records_pair_exactly_with_explicit_liquid_and_interface_owners() -
     flags, links, mask = _liquid_interface_fact()
 
     state = build_ownership_ledger(
-        flags=flags, mass_delta_liquid=links, liquid_interface_mask=mask,
+        flags=flags,
+        mass_delta_liquid=links,
+        liquid_interface_mask=mask,
         paired_liquid_interface_debit=True,
     )
 
@@ -58,7 +61,9 @@ def test_unpaired_liquid_interface_credit_is_explicitly_withheld() -> None:
     flags, links, mask = _liquid_interface_fact()
 
     state = build_ownership_ledger(
-        flags=flags, mass_delta_liquid=links, liquid_interface_mask=mask,
+        flags=flags,
+        mass_delta_liquid=links,
+        liquid_interface_mask=mask,
         paired_liquid_interface_debit=False,
     )
 
@@ -73,15 +78,24 @@ def test_redistribution_conversion_and_abb_remain_observed_not_physical_closure(
     flags, links, mask = _liquid_interface_fact()
     evidence = {
         "redistribution_links": ({"donor": (0, 0, 3), "receiver": (0, 0, 2), "mass_delta": 0.2},),
-        "conversion_cells": ({
-            "cell": (0, 0, 2), "flag_before": INTERFACE, "flag_after": LIQUID,
-            "mass_before": 1.2, "mass_after": 1.0, "mass_delta": -0.2,
-        },),
+        "conversion_cells": (
+            {
+                "cell": (0, 0, 2),
+                "flag_before": INTERFACE,
+                "flag_after": LIQUID,
+                "mass_before": 1.2,
+                "mass_after": 1.0,
+                "mass_delta": -0.2,
+            },
+        ),
     }
 
     state = build_ownership_ledger(
-        flags=flags, mass_delta_liquid=links, liquid_interface_mask=mask,
-        paired_liquid_interface_debit=True, conversion_evidence=evidence,
+        flags=flags,
+        mass_delta_liquid=links,
+        liquid_interface_mask=mask,
+        paired_liquid_interface_debit=True,
+        conversion_evidence=evidence,
         abb_population_delta=1.5,
     )
 
@@ -101,7 +115,9 @@ def test_paired_liquid_interface_owner_validation_fails_closed(kind: str) -> Non
     if kind == "missing":
         with pytest.raises(OwnershipLedgerError, match="requires both mass_delta_liquid"):
             build_ownership_ledger(
-                flags=flags, mass_delta_liquid=links, liquid_interface_mask=None,
+                flags=flags,
+                mass_delta_liquid=links,
+                liquid_interface_mask=None,
                 paired_liquid_interface_debit=True,
             )
         return
@@ -110,7 +126,9 @@ def test_paired_liquid_interface_owner_validation_fails_closed(kind: str) -> Non
 
     with pytest.raises(OwnershipLedgerError, match="LIQUID source owner"):
         build_ownership_ledger(
-            flags=flags, mass_delta_liquid=links, liquid_interface_mask=mask,
+            flags=flags,
+            mass_delta_liquid=links,
+            liquid_interface_mask=mask,
             paired_liquid_interface_debit=True,
         )
 
@@ -136,10 +154,16 @@ def test_ownership_only_request_captures_plan_evidence_without_runtime_ledger(mo
     original = solver.build_topology_transaction
     evidence = {
         "redistribution_links": (),
-        "conversion_cells": ({
-            "cell": (0, 0, 0), "flag_before": INTERFACE, "flag_after": LIQUID,
-            "mass_before": 0.5, "mass_after": 1.0, "mass_delta": 0.5,
-        },),
+        "conversion_cells": (
+            {
+                "cell": (0, 0, 0),
+                "flag_before": INTERFACE,
+                "flag_after": LIQUID,
+                "mass_before": 0.5,
+                "mass_after": 1.0,
+                "mass_delta": 0.5,
+            },
+        ),
     }
 
     def tracked(*args, **kwargs):
@@ -151,8 +175,14 @@ def test_ownership_only_request_captures_plan_evidence_without_runtime_ledger(mo
     f, fill, flags, solid = _runtime_state()
     ownership: dict[str, object] = {}
     solver.free_surface_step(
-        f, fill, flags, solid, mass=fill.clone(), rho_gas=0.001,
-        ownership_ledger=ownership, paired_liquid_interface_debit=True,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=fill.clone(),
+        rho_gas=0.001,
+        ownership_ledger=ownership,
+        paired_liquid_interface_debit=True,
     )
     assert isinstance(ownership, dict)
     state = ownership["steps"][-1]
@@ -163,16 +193,34 @@ def test_ownership_only_request_captures_plan_evidence_without_runtime_ledger(mo
 def test_ownership_build_failure_publishes_no_partial_ledgers(monkeypatch) -> None:
     import tensorlbm.free_surface_lbm as solver
 
-    monkeypatch.setattr(solver, "_append_ownership_ledger", lambda *args, **kwargs: (_ for _ in ()).throw(OwnershipLedgerError("injected")))
+    monkeypatch.setattr(
+        solver,
+        "_append_ownership_ledger",
+        lambda *args, **kwargs: (_ for _ in ()).throw(OwnershipLedgerError("injected")),
+    )
     f, fill, flags, solid = _runtime_state()
     runtime = {"sentinel": "runtime", "steps": [{"old": True}], "operator_curve": [{"old": True}]}
     ownership = {"sentinel": "ownership", "steps": [{"old": True}], "latest": {"old": True}}
-    expected_runtime = {"sentinel": "runtime", "steps": [{"old": True}], "operator_curve": [{"old": True}]}
-    expected_ownership = {"sentinel": "ownership", "steps": [{"old": True}], "latest": {"old": True}}
+    expected_runtime = {
+        "sentinel": "runtime",
+        "steps": [{"old": True}],
+        "operator_curve": [{"old": True}],
+    }
+    expected_ownership = {
+        "sentinel": "ownership",
+        "steps": [{"old": True}],
+        "latest": {"old": True},
+    }
     with pytest.raises(OwnershipLedgerError, match="injected"):
         solver.free_surface_step(
-            f, fill, flags, solid, mass=fill.clone(), rho_gas=0.001,
-            runtime_ledger=runtime, ownership_ledger=ownership,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=fill.clone(),
+            rho_gas=0.001,
+            runtime_ledger=runtime,
+            ownership_ledger=ownership,
             paired_liquid_interface_debit=True,
         )
     assert runtime == expected_runtime
@@ -188,9 +236,16 @@ def test_actual_step_appends_observed_ownership_state_without_mutating_runtime_s
     ownership: dict[str, object] = {}
 
     free_surface_step(
-        f, fill, flags, solid, mass=fill.clone(), rho_gas=0.001,
-        freeze_topology=freeze_topology, runtime_ledger=runtime,
-        ownership_ledger=ownership, paired_liquid_interface_debit=True,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=fill.clone(),
+        rho_gas=0.001,
+        freeze_topology=freeze_topology,
+        runtime_ledger=runtime,
+        ownership_ledger=ownership,
+        paired_liquid_interface_debit=True,
     )
 
     assert runtime["sentinel"] == "preserved"

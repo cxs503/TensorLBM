@@ -5,6 +5,7 @@ These mirror the D3Q19 contract tests in ``test_trt.py`` and
 (``collide_trt27``, ``collide_rlbm27``) that use the D3Q27 velocity set
 ``C``, weights ``W``, and opposite-direction map ``OPPOSITE``.
 """
+
 from __future__ import annotations
 
 import torch

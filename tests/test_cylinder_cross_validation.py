@@ -7,6 +7,7 @@ All combinations are diagnostic-only (status="diagnostic_only",
 physical_validation=False).  The grid is deliberately small (100×50,
 200 steps) so the full 4×4 matrix runs in a few minutes on CPU.
 """
+
 from __future__ import annotations
 
 import json
@@ -27,6 +28,7 @@ from tensorlbm.cylinder_cross_validation import (
 # Matrix dimension sanity
 # ---------------------------------------------------------------------------
 
+
 def test_collision_families_match_d2q9() -> None:
     """D2Q9 has exactly BGK, MRT, TRT, RLBM (no CM/CUMULANT/KBC)."""
     assert set(D2Q9_COLLISION_FAMILIES) == {"BGK", "MRT", "TRT", "RLBM"}
@@ -46,6 +48,7 @@ def test_matrix_is_4x4() -> None:
 # Single-combination interface
 # ---------------------------------------------------------------------------
 
+
 def test_single_combination_returns_dict_with_required_fields() -> None:
     """Each result must carry the machine-readable schema fields."""
     result = run_single_combination(
@@ -57,9 +60,13 @@ def test_single_combination_returns_dict_with_required_fields() -> None:
         steps=200,
     )
     required = {
-        "collision_family", "turbulence_model", "Cd",
-        "finite", "steps_completed",
-        "status", "physical_validation",
+        "collision_family",
+        "turbulence_model",
+        "Cd",
+        "finite",
+        "steps_completed",
+        "status",
+        "physical_validation",
     }
     assert required.issubset(result.keys()), f"missing keys: {required - set(result.keys())}"
 
@@ -84,27 +91,30 @@ def test_single_combination_status_diagnostic() -> None:
 # Full matrix
 # ---------------------------------------------------------------------------
 
+
 def test_full_matrix_has_16_entries(tmp_path: Path) -> None:
     artifact_path = tmp_path / "matrix.json"
     results = run_cross_validation_matrix(
-        re=100, nx=100, ny=50, steps=50,
+        re=100,
+        nx=100,
+        ny=50,
+        steps=50,
         artifact_path=str(artifact_path),
     )
     assert len(results) == 16
     # Every combination present
     seen = {(r["collision_family"], r["turbulence_model"]) for r in results}
-    expected = {
-        (cf, tm)
-        for cf in D2Q9_COLLISION_FAMILIES
-        for tm in D2Q9_TURBULENCE_MODELS
-    }
+    expected = {(cf, tm) for cf in D2Q9_COLLISION_FAMILIES for tm in D2Q9_TURBULENCE_MODELS}
     assert seen == expected
 
 
 def test_artifact_is_valid_json(tmp_path: Path) -> None:
     artifact_path = tmp_path / "matrix.json"
     run_cross_validation_matrix(
-        re=100, nx=100, ny=50, steps=50,
+        re=100,
+        nx=100,
+        ny=50,
+        steps=50,
         artifact_path=str(artifact_path),
     )
     data = json.loads(artifact_path.read_text())

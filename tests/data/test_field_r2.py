@@ -42,28 +42,56 @@ def _run(status: ValidationStatus = ValidationStatus.PASS) -> RunManifest:
     evidence = json.dumps({"drag": 1.25}).encode()
     artifact = ArtifactManifest.from_bytes("completed-run-metrics", "application/json", evidence)
     return RunManifest(
-        run_id="run-r2", model_identity={"case": "reference"}, config={"grid": 8},
-        code_sha=_CODE_SHA, environment={"backend": "recorded"}, artifacts=(artifact,),
+        run_id="run-r2",
+        model_identity={"case": "reference"},
+        config={"grid": 8},
+        code_sha=_CODE_SHA,
+        environment={"backend": "recorded"},
+        artifacts=(artifact,),
         metrics=(MetricEvidence("drag", 1.25, "1", artifact.artifact_id, "/drag"),),
-        validation_status=status, validation_reason="reviewed completed runtime evidence",
+        validation_status=status,
+        validation_reason="reviewed completed runtime evidence",
     )
 
 
-def _array(payload: bytes | None = None, *, encoding: ArrayEncoding | None = None, axes=None, components=None):
+def _array(
+    payload: bytes | None = None,
+    *,
+    encoding: ArrayEncoding | None = None,
+    axes=None,
+    components=None,
+):
     payload = payload if payload is not None else _payload()
-    blob = BlobRef("velocity-npy", "file:///absolute/velocity.npy", len(payload), hashlib.sha256(payload).hexdigest(), "application/x-npy")
+    blob = BlobRef(
+        "velocity-npy",
+        "file:///absolute/velocity.npy",
+        len(payload),
+        hashlib.sha256(payload).hexdigest(),
+        "application/x-npy",
+    )
     return ArrayManifestR2(
-        array_id="velocity", role=ArrayRole.FEATURE, shape=(2, 3),
-        axes=axes or (AxisSpec("sample", AxisSemantic.SAMPLE, 2), AxisSpec("component", AxisSemantic.COMPONENT, 3)),
-        units="m/s", encoding=encoding or ArrayEncoding.NPY_FLOAT32_C_LITTLE,
-        blob_ref=blob, component_labels=components or ("u", "v", "w"),
+        array_id="velocity",
+        role=ArrayRole.FEATURE,
+        shape=(2, 3),
+        axes=axes
+        or (
+            AxisSpec("sample", AxisSemantic.SAMPLE, 2),
+            AxisSpec("component", AxisSemantic.COMPONENT, 3),
+        ),
+        units="m/s",
+        encoding=encoding or ArrayEncoding.NPY_FLOAT32_C_LITTLE,
+        blob_ref=blob,
+        component_labels=components or ("u", "v", "w"),
     )
 
 
 def _product(array=None, run=None) -> FieldDataProductR2:
     return FieldDataProductR2(
-        product_id="r2-velocity", run_manifest=run or _run(), source_artifact_id="completed-run-metrics",
-        arrays=(array or _array(),), lineage={"source": {"campaign": "fixture"}},
+        product_id="r2-velocity",
+        run_manifest=run or _run(),
+        source_artifact_id="completed-run-metrics",
+        arrays=(array or _array(),),
+        lineage={"source": {"campaign": "fixture"}},
     )
 
 
@@ -106,24 +134,57 @@ def test_manifest_float32_cannot_accept_actual_float64_payload() -> None:
     ("axes", "shape", "components"),
     [
         ((AxisSpec("sample", AxisSemantic.SAMPLE, 2),), (2, 3), None),
-        ((AxisSpec("sample", AxisSemantic.SAMPLE, 2), AxisSpec("c", AxisSemantic.COMPONENT, 3)), (2, 3), ("u", "u", "w")),
+        (
+            (AxisSpec("sample", AxisSemantic.SAMPLE, 2), AxisSpec("c", AxisSemantic.COMPONENT, 3)),
+            (2, 3),
+            ("u", "u", "w"),
+        ),
         ((AxisSpec("sample", AxisSemantic.SAMPLE, 2),), (2,), ("u",)),
     ],
 )
 def test_axis_rank_and_component_contract_errors(axes, shape, components) -> None:
     payload = _payload(shape=shape)
-    blob = BlobRef("blob", "file:///absolute/blob.npy", len(payload), hashlib.sha256(payload).hexdigest(), "application/x-npy")
+    blob = BlobRef(
+        "blob",
+        "file:///absolute/blob.npy",
+        len(payload),
+        hashlib.sha256(payload).hexdigest(),
+        "application/x-npy",
+    )
     with pytest.raises(ValueError):
-        ArrayManifestR2("a", ArrayRole.FEATURE, shape, axes, "m/s", ArrayEncoding.NPY_FLOAT32_C_LITTLE, blob, components)
+        ArrayManifestR2(
+            "a",
+            ArrayRole.FEATURE,
+            shape,
+            axes,
+            "m/s",
+            ArrayEncoding.NPY_FLOAT32_C_LITTLE,
+            blob,
+            components,
+        )
 
 
 def test_object_dtype_npy_is_rejected_without_loading_or_pickle() -> None:
     payload = _payload("|O")
-    blob = BlobRef("object", "file:///absolute/object.npy", len(payload), hashlib.sha256(payload).hexdigest(), "application/x-npy")
+    blob = BlobRef(
+        "object",
+        "file:///absolute/object.npy",
+        len(payload),
+        hashlib.sha256(payload).hexdigest(),
+        "application/x-npy",
+    )
     array = ArrayManifestR2(
-        "object", ArrayRole.AUXILIARY, (2, 3),
-        (AxisSpec("sample", AxisSemantic.SAMPLE, 2), AxisSpec("component", AxisSemantic.COMPONENT, 3)),
-        "1", ArrayEncoding.NPY_FLOAT32_C_LITTLE, blob, ("a", "b", "c"),
+        "object",
+        ArrayRole.AUXILIARY,
+        (2, 3),
+        (
+            AxisSpec("sample", AxisSemantic.SAMPLE, 2),
+            AxisSpec("component", AxisSemantic.COMPONENT, 3),
+        ),
+        "1",
+        ArrayEncoding.NPY_FLOAT32_C_LITTLE,
+        blob,
+        ("a", "b", "c"),
     )
     with pytest.raises(ValueError, match="object"):
         array.verify_payload(payload)
@@ -176,13 +237,26 @@ def test_field_r2_production_boundary_is_stdlib_only_and_metadata_has_no_payload
             roots.update(alias.name.split(".")[0] for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             roots.add(node.module.split(".")[0])
-    assert roots <= {"__future__", "ast", "dataclasses", "enum", "hashlib", "os", "re", "types", "typing", "tensorlbm"}
+    assert roots <= {
+        "__future__",
+        "ast",
+        "dataclasses",
+        "enum",
+        "hashlib",
+        "os",
+        "re",
+        "types",
+        "typing",
+        "tensorlbm",
+    }
     lowered = source.lower()
     assert "torch" not in lowered
     assert "numpy" not in lowered
     assert "solver" not in lowered
     assert "timestep" not in lowered
-    field = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "BlobRef")
+    field = next(
+        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "BlobRef"
+    )
     assert all(
         not isinstance(item, ast.AnnAssign) or getattr(item.target, "id", None) != "payload"
         for item in field.body

@@ -14,6 +14,7 @@ Verifies:
     - Eddy viscosity is non-negative
     - Effective tau is always > 0.5
 """
+
 from __future__ import annotations
 
 import pytest
@@ -52,6 +53,7 @@ DEVICE = torch.device("cpu")
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _f2d(ny: int = 10, nx: int = 12, u_mag: float = 0.04) -> torch.Tensor:
     rho = torch.rand((ny, nx)) + 0.5
     ux = torch.rand_like(rho) * u_mag
@@ -78,6 +80,7 @@ def _f3d27(nz: int = 4, ny: int = 6, nx: int = 8, u_mag: float = 0.04) -> torch.
 # ---------------------------------------------------------------------------
 # Velocity-gradient / eddy-viscosity helpers
 # ---------------------------------------------------------------------------
+
 
 class TestNuTHelpers:
     def test_nonperiodic_derivative_is_exact_for_linear_field(self) -> None:
@@ -189,6 +192,7 @@ class TestNuTHelpers:
 # D2Q9 WALE
 # ---------------------------------------------------------------------------
 
+
 class TestWALE2D:
     def test_shape(self) -> None:
         f = _f2d()
@@ -230,6 +234,7 @@ class TestWALE2D:
 # D3Q19 WALE
 # ---------------------------------------------------------------------------
 
+
 class TestWALE3D19:
     def test_shape(self) -> None:
         f = _f3d19()
@@ -267,6 +272,7 @@ class TestWALE3D19:
 # D3Q27 WALE
 # ---------------------------------------------------------------------------
 
+
 class TestWALE3D27:
     def test_shape(self) -> None:
         f = _f3d27()
@@ -295,6 +301,7 @@ class TestWALE3D27:
 # ---------------------------------------------------------------------------
 # D2Q9 Vreman
 # ---------------------------------------------------------------------------
+
 
 class TestVreman2D:
     def test_shape(self) -> None:
@@ -337,6 +344,7 @@ class TestVreman2D:
 # D3Q19 Vreman
 # ---------------------------------------------------------------------------
 
+
 class TestVreman3D19:
     def test_shape(self) -> None:
         f = _f3d19()
@@ -374,6 +382,7 @@ class TestVreman3D19:
 # D3Q27 Vreman
 # ---------------------------------------------------------------------------
 
+
 class TestVreman3D27:
     def test_shape(self) -> None:
         f = _f3d27()
@@ -402,6 +411,7 @@ class TestVreman3D27:
 # ---------------------------------------------------------------------------
 # D3Q19 MRT + WALE
 # ---------------------------------------------------------------------------
+
 
 class TestWALEMRT3D19:
     def test_shape(self) -> None:
@@ -446,6 +456,7 @@ class TestWALEMRT3D19:
 # D3Q27 MRT + WALE
 # ---------------------------------------------------------------------------
 
+
 class TestWALEMRT3D27:
     def test_shape(self) -> None:
         f = _f3d27()
@@ -474,6 +485,7 @@ class TestWALEMRT3D27:
 # ---------------------------------------------------------------------------
 # D3Q19 MRT + Vreman
 # ---------------------------------------------------------------------------
+
 
 class TestVremanMRT3D19:
     def test_shape(self) -> None:
@@ -517,6 +529,7 @@ class TestVremanMRT3D19:
 # ---------------------------------------------------------------------------
 # D3Q27 MRT + Vreman
 # ---------------------------------------------------------------------------
+
 
 class TestVremanMRT3D27:
     def test_shape(self) -> None:

@@ -31,6 +31,7 @@ McLoughlin, T., Laramee, R. S., Peikert, R., Post, F. H., & Chen, M. (2010).
     Over two decades of integration-based, geometric flow visualization.
     *Computer Graphics Forum*, 29(6), 1807–1829.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -46,6 +47,7 @@ if TYPE_CHECKING:
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Streamline:
     """A single traced streamline (or pathline / streakline).
@@ -57,6 +59,7 @@ class Streamline:
         length:  Arc-length of the polyline in lattice units.
         steps:   Number of integration steps taken.
     """
+
     points: list[tuple[float, ...]] = field(default_factory=list)
     scalars: list[float] = field(default_factory=list)
     length: float = 0.0
@@ -67,10 +70,11 @@ class Streamline:
 # Bilinear / trilinear interpolation helpers
 # ---------------------------------------------------------------------------
 
+
 def _interp_2d(
     field_2d: torch.Tensor,  # shape (ny, nx)
-    x: torch.Tensor,         # (N,) float, in [0, nx-1]
-    y: torch.Tensor,         # (N,) float, in [0, ny-1]
+    x: torch.Tensor,  # (N,) float, in [0, nx-1]
+    y: torch.Tensor,  # (N,) float, in [0, ny-1]
 ) -> torch.Tensor:
     """Bilinear interpolation over a 2-D scalar field."""
     ny, nx = field_2d.shape
@@ -90,9 +94,9 @@ def _interp_2d(
 
 def _interp_3d(
     field_3d: torch.Tensor,  # shape (nz, ny, nx)
-    x: torch.Tensor,         # (N,) float, in [0, nx-1]
-    y: torch.Tensor,         # (N,) float, in [0, ny-1]
-    z: torch.Tensor,         # (N,) float, in [0, nz-1]
+    x: torch.Tensor,  # (N,) float, in [0, nx-1]
+    y: torch.Tensor,  # (N,) float, in [0, ny-1]
+    z: torch.Tensor,  # (N,) float, in [0, nz-1]
 ) -> torch.Tensor:
     """Trilinear interpolation over a 3-D scalar field."""
     nz, ny, nx = field_3d.shape
@@ -113,6 +117,7 @@ def _interp_3d(
 # ---------------------------------------------------------------------------
 # 2-D Streamline tracing
 # ---------------------------------------------------------------------------
+
 
 def trace_streamlines_2d(
     ux: torch.Tensor,
@@ -152,13 +157,31 @@ def trace_streamlines_2d(
 
     for x0, y0 in seeds:
         sl = _rk4_integrate_2d(
-            ux, uy, float(x0), float(y0),
-            step_size, max_steps, nx, ny, mask, scalar_field, forward=True,
+            ux,
+            uy,
+            float(x0),
+            float(y0),
+            step_size,
+            max_steps,
+            nx,
+            ny,
+            mask,
+            scalar_field,
+            forward=True,
         )
         if bidirectional:
             sl_back = _rk4_integrate_2d(
-                ux, uy, float(x0), float(y0),
-                step_size, max_steps, nx, ny, mask, scalar_field, forward=False,
+                ux,
+                uy,
+                float(x0),
+                float(y0),
+                step_size,
+                max_steps,
+                nx,
+                ny,
+                mask,
+                scalar_field,
+                forward=False,
             )
             # Reverse the backward segment and prepend it (excluding seed point)
             pts_back = list(reversed(sl_back.points[1:]))
@@ -265,6 +288,7 @@ def _vel_2d(
 # 3-D Streamline tracing
 # ---------------------------------------------------------------------------
 
+
 def trace_streamlines_3d(
     ux: torch.Tensor,
     uy: torch.Tensor,
@@ -297,13 +321,37 @@ def trace_streamlines_3d(
 
     for x0, y0, z0 in seeds:
         sl = _rk4_integrate_3d(
-            ux, uy, uz, float(x0), float(y0), float(z0),
-            step_size, max_steps, nx, ny, nz, mask, scalar_field, forward=True,
+            ux,
+            uy,
+            uz,
+            float(x0),
+            float(y0),
+            float(z0),
+            step_size,
+            max_steps,
+            nx,
+            ny,
+            nz,
+            mask,
+            scalar_field,
+            forward=True,
         )
         if bidirectional:
             sl_back = _rk4_integrate_3d(
-                ux, uy, uz, float(x0), float(y0), float(z0),
-                step_size, max_steps, nx, ny, nz, mask, scalar_field, forward=False,
+                ux,
+                uy,
+                uz,
+                float(x0),
+                float(y0),
+                float(z0),
+                step_size,
+                max_steps,
+                nx,
+                ny,
+                nz,
+                mask,
+                scalar_field,
+                forward=False,
             )
             pts_back = list(reversed(sl_back.points[1:]))
             sca_back = list(reversed(sl_back.scalars[1:]))
@@ -351,25 +399,37 @@ def _rk4_integrate_3d(
     for _ in range(max_steps):
         k1x, k1y, k1z = _vel_3d(ux, uy, uz, x, y, z, nx, ny, nz)
         k2x, k2y, k2z = _vel_3d(
-            ux, uy, uz,
+            ux,
+            uy,
+            uz,
             x + sign * 0.5 * h * k1x,
             y + sign * 0.5 * h * k1y,
             z + sign * 0.5 * h * k1z,
-            nx, ny, nz,
+            nx,
+            ny,
+            nz,
         )
         k3x, k3y, k3z = _vel_3d(
-            ux, uy, uz,
+            ux,
+            uy,
+            uz,
             x + sign * 0.5 * h * k2x,
             y + sign * 0.5 * h * k2y,
             z + sign * 0.5 * h * k2z,
-            nx, ny, nz,
+            nx,
+            ny,
+            nz,
         )
         k4x, k4y, k4z = _vel_3d(
-            ux, uy, uz,
+            ux,
+            uy,
+            uz,
             x + sign * h * k3x,
             y + sign * h * k3y,
             z + sign * h * k3z,
-            nx, ny, nz,
+            nx,
+            ny,
+            nz,
         )
 
         dx = sign * h * (k1x + 2.0 * k2x + 2.0 * k3x + k4x) / 6.0
@@ -434,9 +494,12 @@ def _vel_3d(
 # Seed-point generators
 # ---------------------------------------------------------------------------
 
+
 def seed_points_uniform_2d(
-    nx: int, ny: int,
-    n_x: int = 8, n_y: int = 8,
+    nx: int,
+    ny: int,
+    n_x: int = 8,
+    n_y: int = 8,
     x_range: tuple[float, float] | None = None,
     y_range: tuple[float, float] | None = None,
 ) -> list[tuple[float, float]]:
@@ -488,8 +551,12 @@ def seed_points_line_2d(
 
 
 def seed_points_uniform_3d(
-    nx: int, ny: int, nz: int,
-    n_x: int = 4, n_y: int = 4, n_z: int = 4,
+    nx: int,
+    ny: int,
+    nz: int,
+    n_x: int = 4,
+    n_y: int = 4,
+    n_z: int = 4,
     x_range: tuple[float, float] | None = None,
     y_range: tuple[float, float] | None = None,
     z_range: tuple[float, float] | None = None,
@@ -511,8 +578,10 @@ def seed_points_uniform_3d(
 
 def seed_points_line_3d(
     x_seed: float,
-    ny: int, nz: int,
-    n_y: int = 8, n_z: int = 8,
+    ny: int,
+    nz: int,
+    n_y: int = 8,
+    n_z: int = 8,
     y_range: tuple[float, float] | None = None,
     z_range: tuple[float, float] | None = None,
 ) -> list[tuple[float, float, float]]:
@@ -531,6 +600,7 @@ def seed_points_line_3d(
 # ---------------------------------------------------------------------------
 # Residence-time field (2-D)
 # ---------------------------------------------------------------------------
+
 
 def compute_residence_time_2d(
     ux: torch.Tensor,
@@ -581,6 +651,7 @@ def compute_residence_time_2d(
 # ---------------------------------------------------------------------------
 # Serialisation
 # ---------------------------------------------------------------------------
+
 
 def streamlines_to_dict(lines: list[Streamline]) -> dict:
     """Convert a list of streamlines to a JSON-serialisable dictionary.

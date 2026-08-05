@@ -1,4 +1,5 @@
 """Contract tests for the reusable, honestly scoped D3Q19 stress kernels."""
+
 import importlib.util
 import subprocess
 from pathlib import Path
@@ -24,14 +25,19 @@ def _state():
 def legacy_cg_module():
     """Load the base revision under a separate module name for exact replay."""
     source = subprocess.check_output(
-        ["git", "show", "10ac615daf0623685be217a197eabac6b7cf3786:src/tensorlbm/cg_advanced_collision.py"],
+        [
+            "git",
+            "show",
+            "10ac615daf0623685be217a197eabac6b7cf3786:src/tensorlbm/cg_advanced_collision.py",
+        ],
         text=True,
     )
     path = Path(__file__).with_name("_legacy_cg_advanced_collision.py")
     path.write_text(source)
     try:
         spec = importlib.util.spec_from_file_location(
-            "tensorlbm._legacy_cg_advanced_collision", path,
+            "tensorlbm._legacy_cg_advanced_collision",
+            path,
         )
         if spec is None or spec.loader is None:
             raise RuntimeError("could not load base CG collision module")
@@ -62,9 +68,13 @@ def test_legacy_cg_public_apis_are_bitwise_replays_of_base(dtype, name, kwargs, 
     red, blue = 0.61 * f, 0.39 * f
     call_kwargs = dict(tau=0.87, A=0.017, beta=0.63, gx=0.0012, gy=-0.0008, gz=0.0004)
     call_kwargs.update(kwargs)
-    baseline = getattr(legacy_cg_module, f"collide_cg_{name}_3d")(red.clone(), blue.clone(), **call_kwargs)
+    baseline = getattr(legacy_cg_module, f"collide_cg_{name}_3d")(
+        red.clone(), blue.clone(), **call_kwargs
+    )
     with pytest.warns(DeprecationWarning, match="WITHHELD"):
-        actual = getattr(extracted, f"collide_cg_{name}_3d")(red.clone(), blue.clone(), **call_kwargs)
+        actual = getattr(extracted, f"collide_cg_{name}_3d")(
+            red.clone(), blue.clone(), **call_kwargs
+        )
     assert torch.equal(actual[0], baseline[0])
     assert torch.equal(actual[1], baseline[1])
 
@@ -113,7 +123,9 @@ def test_common_stress_kernels_use_the_exact_caller_provided_equilibrium():
     ):
         expected = kernel(f_total, shifted_feq, tau=0.83, **kwargs)
         assert expected.shape == f_total.shape
-        torch.testing.assert_close(kernel(shifted_feq, shifted_feq, tau=0.83, **kwargs), shifted_feq)
+        torch.testing.assert_close(
+            kernel(shifted_feq, shifted_feq, tau=0.83, **kwargs), shifted_feq
+        )
 
 
 def test_common_mrt_name_delegates_to_unchanged_solver3d_baseline():

@@ -4,6 +4,7 @@ These tests verify operator algebra (shape, zero-force identity, constant-force
 momentum, DOF constraints, quaternion normalisation), NOT rigid-body physics
 correctness or fluid-structure coupling validation.
 """
+
 from __future__ import annotations
 
 import math
@@ -31,7 +32,9 @@ def _make_body(
 ) -> SixDOFBody:
     return SixDOFBody(
         mass=mass,
-        ixx=1.0, iyy=1.0, izz=1.0,
+        ixx=1.0,
+        iyy=1.0,
+        izz=1.0,
         gravity=gravity,
     )
 
@@ -204,7 +207,9 @@ class TestRigidBodyQuaternion:
         body = _make_body()
         force = torch.zeros(6, dtype=torch.float64)
         new_state = rigid_body_step(state, force, dt=0.01, body=body)
-        assert torch.allclose(new_state.quat, torch.tensor([1.0, 0.0, 0.0, 0.0], dtype=torch.float64), atol=1e-10)
+        assert torch.allclose(
+            new_state.quat, torch.tensor([1.0, 0.0, 0.0, 0.0], dtype=torch.float64), atol=1e-10
+        )
 
 
 # --------------------------------------------------------------------------- #

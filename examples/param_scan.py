@@ -20,6 +20,7 @@ Parallel mode (uses multiple CPU cores)::
         --output-root outputs/scan --parallel 4
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -39,8 +40,13 @@ from tensorlbm import CylinderFlowConfig, run_cylinder_flow
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Batch Re-scan for D2Q9 cylinder flow")
-    p.add_argument("--re", type=float, nargs="+", default=[20.0, 40.0, 80.0, 100.0],
-                   help="List of Reynolds numbers to simulate")
+    p.add_argument(
+        "--re",
+        type=float,
+        nargs="+",
+        default=[20.0, 40.0, 80.0, 100.0],
+        help="List of Reynolds numbers to simulate",
+    )
     p.add_argument("--nx", type=int, default=160)
     p.add_argument("--ny", type=int, default=60)
     p.add_argument("--radius", type=float, default=8.0)
@@ -119,6 +125,7 @@ def _save_summary(rows: list[dict], output_root: Path) -> Path:
 def _plot_summary(rows: list[dict], output_root: Path) -> None:
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
@@ -178,7 +185,7 @@ def main() -> None:
         # Sequential execution (original behaviour)
         for wargs in worker_args:
             re = wargs[0]
-            print(f"\n{'='*60}\n  Re = {re}\n{'='*60}")
+            print(f"\n{'=' * 60}\n  Re = {re}\n{'=' * 60}")
             row = _run_one(wargs)
             summary_rows.append(row)
             print(f"  → Cd={row['cd_mean']:.4f}  Cl_rms={row['cl_rms']:.4f}  St={row['strouhal']}")
@@ -204,10 +211,7 @@ def main() -> None:
                     }
                 summary_rows.append(row)
                 st = row["strouhal"]
-                print(
-                    f"  Re={re} → Cd={row['cd_mean']:.4f}  "
-                    f"Cl_rms={row['cl_rms']:.4f}  St={st}"
-                )
+                print(f"  Re={re} → Cd={row['cd_mean']:.4f}  Cl_rms={row['cl_rms']:.4f}  St={st}")
 
         # Sort rows by Re for consistent output
         summary_rows.sort(key=lambda r: float(r["re"]))  # type: ignore[arg-type]

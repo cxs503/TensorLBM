@@ -1,4 +1,5 @@
 """State-backed SUBOFF D3Q19 link-wise force observer tests."""
+
 from __future__ import annotations
 
 import pytest
@@ -78,7 +79,9 @@ def test_observer_reads_actual_population_not_a_synthetic_velocity_proxy() -> No
     baseline = observe_suboff_real_state_force_window(asset, [state])
     observed = observe_suboff_real_state_force_window(asset, [altered])
     expected_delta = -2.0 * 0.125 * C[q].to(torch.float64)
-    actual_delta = torch.tensor(observed.observation.force) - torch.tensor(baseline.observation.force)
+    actual_delta = torch.tensor(observed.observation.force) - torch.tensor(
+        baseline.observation.force
+    )
     assert actual_delta == pytest.approx(expected_delta)
 
 
@@ -89,7 +92,9 @@ def test_observer_reads_actual_population_not_a_synthetic_velocity_proxy() -> No
         (torch.zeros((19, 5, 5, 5), dtype=torch.int64), "floating-point"),
     ],
 )
-def test_observer_rejects_invalid_population_shape_and_dtype(bad_state: torch.Tensor, error: str) -> None:
+def test_observer_rejects_invalid_population_shape_and_dtype(
+    bad_state: torch.Tensor, error: str
+) -> None:
     with pytest.raises((TypeError, ValueError), match=error):
         observe_suboff_real_state_force_window(_asset(), [bad_state])
 

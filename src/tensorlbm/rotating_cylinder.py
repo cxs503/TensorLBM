@@ -15,6 +15,7 @@ implemented in :mod:`tensorlbm.cylinder_flow` and adds a **moving-wall
 bounce-back** boundary condition (Ladd 1994) so that the obstacle surface
 carries the prescribed tangential velocity ``u_w = ω × r``.
 """
+
 from __future__ import annotations
 
 import csv
@@ -99,10 +100,7 @@ class RotatingCylinderConfig:
         if self.run_name:
             return self.run_name
         re_label = str(int(self.re)) if float(self.re).is_integer() else f"{self.re:g}"
-        return (
-            f"nx{self.nx}_ny{self.ny}_re{re_label}_alpha{self.spin_ratio:g}"
-            f"_steps{self.n_steps}"
-        )
+        return f"nx{self.nx}_ny{self.ny}_re{re_label}_alpha{self.spin_ratio:g}_steps{self.n_steps}"
 
     def save(self, path: str | Path) -> Path:
         return save_config_json(self, path)
@@ -228,8 +226,7 @@ def run_rotating_cylinder(config: RotatingCylinderConfig) -> Path:
     cl_series: list[float] = []
 
     logger.info(
-        "Rotating cylinder device=%s NX=%s NY=%s tau=%.4f alpha=%.3f "
-        "omega=%.5f steps=%s",
+        "Rotating cylinder device=%s NX=%s NY=%s tau=%.4f alpha=%.3f omega=%.5f steps=%s",
         device,
         config.nx,
         config.ny,

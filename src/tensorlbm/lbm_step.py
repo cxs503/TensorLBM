@@ -22,6 +22,7 @@ Key optimisations (all internal to ``LBMStepExecutor``):
 Numerical equivalence: every internal optimised method produces results
 that are ``allclose(atol=1e-6)`` with the original standalone functions.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -139,9 +140,7 @@ class LBMStepExecutor:
         force_kwargs: dict[str, Any] | None = None,
     ):
         if lattice not in _LATTICE_Q:
-            raise ValueError(
-                f"Unsupported lattice {lattice!r}; supported: {list(_LATTICE_Q)}"
-            )
+            raise ValueError(f"Unsupported lattice {lattice!r}; supported: {list(_LATTICE_Q)}")
         self.lattice = lattice
         self.Q = _LATTICE_Q[lattice]
         self.device = device
@@ -152,10 +151,7 @@ class LBMStepExecutor:
         # -- Callbacks ---------------------------------------------------
         self._use_internal_bgk = isinstance(collide_fn, str) and collide_fn == "bgk"
         if not self._use_internal_bgk and not callable(collide_fn):
-            raise ValueError(
-                "collide_fn must be 'bgk' or a callable, got "
-                f"{collide_fn!r}"
-            )
+            raise ValueError(f"collide_fn must be 'bgk' or a callable, got {collide_fn!r}")
         self._collide_fn = collide_fn if not self._use_internal_bgk else None
         self._stream_fn = stream_fn  # None → internal
         self._boundary_fn = boundary_fn
@@ -166,9 +162,7 @@ class LBMStepExecutor:
         self._force_kwargs = force_kwargs or {}
 
         # -- Lattice constants -------------------------------------------
-        C, W, OPPOSITE, macro_fn, eq_fn = _get_lattice_constants(
-            lattice, device, dtype
-        )
+        C, W, OPPOSITE, macro_fn, eq_fn = _get_lattice_constants(lattice, device, dtype)
         self._macroscopic_fn = macro_fn
         self._equilibrium_fn = eq_fn
         self._C = C.to(device)
@@ -311,11 +305,11 @@ class LBMStepExecutor:
         # term = 1 + 3*cu + 4.5*cu² - 1.5*u_sq
         # Use self.out_stream as scratch (not needed during collide phase).
         scratch = self.out_stream
-        torch.mul(self._tmp_f, self._tmp_f, out=scratch)   # cu²
-        scratch.mul_(4.5)                                   # 4.5*cu²
-        scratch.add_(self._tmp_f, alpha=3.0)               # 4.5*cu² + 3*cu
-        scratch.add_(-1.5 * self.u_mag.unsqueeze(0))        # - 1.5*u_sq
-        scratch.add_(1.0)                                   # + 1
+        torch.mul(self._tmp_f, self._tmp_f, out=scratch)  # cu²
+        scratch.mul_(4.5)  # 4.5*cu²
+        scratch.add_(self._tmp_f, alpha=3.0)  # 4.5*cu² + 3*cu
+        scratch.add_(-1.5 * self.u_mag.unsqueeze(0))  # - 1.5*u_sq
+        scratch.add_(1.0)  # + 1
 
         # feq *= term  [in-place]
         self.feq.mul_(scratch)
@@ -521,9 +515,7 @@ class LBMStepExecutor:
     # Public: single timestep
     # ------------------------------------------------------------------
 
-    def step(
-        self, f: torch.Tensor
-    ) -> tuple[torch.Tensor, dict[str, Any]]:
+    def step(self, f: torch.Tensor) -> tuple[torch.Tensor, dict[str, Any]]:
         """Execute one LBM timestep.
 
         Returns ``(f_updated, diagnostics)`` where *diagnostics* is a dict
@@ -592,9 +584,7 @@ class LBMStepExecutor:
     # Public: run multiple steps
     # ------------------------------------------------------------------
 
-    def run(
-        self, f: torch.Tensor, n_steps: int
-    ) -> tuple[torch.Tensor, list[dict[str, Any]]]:
+    def run(self, f: torch.Tensor, n_steps: int) -> tuple[torch.Tensor, list[dict[str, Any]]]:
         """Execute *n_steps* timesteps, returning final *f* and diagnostics list."""
         diags: list[dict[str, Any]] = []
         for _ in range(n_steps):

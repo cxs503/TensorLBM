@@ -6,13 +6,10 @@ from typing import TYPE_CHECKING
 
 import torch
 
-# torch_sdaa is an optional vendor backend.  Importing TensorLBM on CUDA- or
-# CPU-only hosts must not require the SDAA runtime; requesting an SDAA device
-# is still rejected by ``resolve_device`` when the backend is unavailable.
-try:
-    import torch_sdaa  # noqa: F401
-except ImportError:
-    torch_sdaa = None
+try:  # Optional accelerator plugin.
+    import torch_sdaa  # type: ignore # noqa: F401
+except (ImportError, ModuleNotFoundError):  # pragma: no cover - depends on environment
+    torch_sdaa = None  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -57,10 +54,9 @@ def configure_cpu_threads(device: torch.device | str, num_threads: int | None = 
 def is_sdaa_available() -> bool:
     """Return whether the SDAA backend is available."""
     try:
-        return bool(torch.sdaa.is_available())
+        return bool(hasattr(torch, "sdaa") and torch.sdaa.is_available())
     except Exception:
         return False
-
 
 
 def default_device_name() -> str:
@@ -72,7 +68,6 @@ def default_device_name() -> str:
     return "cpu"
 
 
-
 def synchronize_device(device: torch.device | str) -> None:
     """Synchronize the active accelerator stream for timing-critical code."""
     resolved = device if isinstance(device, torch.device) else torch.device(device)
@@ -80,7 +75,6 @@ def synchronize_device(device: torch.device | str) -> None:
         torch.sdaa.synchronize()
     elif resolved.type == "cuda":
         torch.cuda.synchronize(resolved)
-
 
 
 def resolve_device(device_name: str) -> torch.device:

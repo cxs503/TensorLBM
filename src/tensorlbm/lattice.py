@@ -19,9 +19,7 @@ def equilibrium(rho: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
         ValueError: If rho and u are on different devices.
     """
     if rho.device != u.device:
-        raise ValueError(
-            f"rho and u must be on the same device (got {rho.device} and {u.device})"
-        )
+        raise ValueError(f"rho and u must be on the same device (got {rho.device} and {u.device})")
     c = D2Q9.c.to(device=rho.device, dtype=u.dtype)
     w = D2Q9.w.to(device=rho.device, dtype=u.dtype)
 
@@ -38,7 +36,5 @@ def stream(f_post_collision: torch.Tensor) -> torch.Tensor:
     """
     streamed = torch.empty_like(f_post_collision)
     for i, (cy, cx) in enumerate(_SHIFTS):
-        streamed[..., i] = torch.roll(
-            f_post_collision[..., i], shifts=(cy, cx), dims=(-2, -1)
-        )
+        streamed[..., i] = torch.roll(f_post_collision[..., i], shifts=(cy, cx), dims=(-2, -1))
     return streamed

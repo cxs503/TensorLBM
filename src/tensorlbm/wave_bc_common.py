@@ -20,6 +20,7 @@ Hot-path invariants
 * Direction-index lists are pre-computed Python lists (not ``.item()`` lookups).
 * The velocity-profile computation is shared across lattices.
 """
+
 from __future__ import annotations
 
 import math
@@ -67,6 +68,7 @@ _D3Q27_CX_NEG: list[int] = [2, 8, 10, 12, 14, 20, 22, 24, 26]
 # Wave parameter dataclass
 # --------------------------------------------------------------------------- #
 
+
 @dataclass(frozen=True)
 class WaveParams:
     """Parameters for the Airy linear-wave inlet boundary condition.
@@ -112,6 +114,7 @@ class WaveParams:
 # Shared velocity-profile computation (lattice-agnostic)
 # --------------------------------------------------------------------------- #
 
+
 def _airy_wave_velocity_3d(
     nz: int,
     ny: int,
@@ -154,6 +157,7 @@ def _airy_wave_velocity_3d(
 # D3Q19 Zou-He inlet with velocity profile (vectorised, no .item())
 # --------------------------------------------------------------------------- #
 
+
 def zou_he_inlet_velocity_profile_19(
     f: torch.Tensor,
     ux_in: torch.Tensor,
@@ -190,17 +194,14 @@ def zou_he_inlet_velocity_profile_19(
     f_new = f.clone()
     dirs = torch.tensor(_D3Q19_INLET_DIRS, device=f.device, dtype=torch.long)
     opps = torch.tensor(_D3Q19_INLET_OPP, device=f.device, dtype=torch.long)
-    f_new[dirs, :, :, 0] = (
-        feq[dirs, :, :, 0]
-        - feq[opps, :, :, 0]
-        + f[opps, :, :, 0]
-    )
+    f_new[dirs, :, :, 0] = feq[dirs, :, :, 0] - feq[opps, :, :, 0] + f[opps, :, :, 0]
     return f_new
 
 
 # --------------------------------------------------------------------------- #
 # D3Q27 Zou-He inlet with velocity profile (vectorised, no .item())
 # --------------------------------------------------------------------------- #
+
 
 def zou_he_inlet_velocity_profile_27(
     f: torch.Tensor,
@@ -236,17 +237,14 @@ def zou_he_inlet_velocity_profile_27(
     f_new = f.clone()
     dirs = torch.tensor(_D3Q27_INLET_DIRS, device=f.device, dtype=torch.long)
     opps = torch.tensor(_D3Q27_INLET_OPP, device=f.device, dtype=torch.long)
-    f_new[dirs, :, :, 0] = (
-        feq[dirs, :, :, 0]
-        - feq[opps, :, :, 0]
-        + f[opps, :, :, 0]
-    )
+    f_new[dirs, :, :, 0] = feq[dirs, :, :, 0] - feq[opps, :, :, 0] + f[opps, :, :, 0]
     return f_new
 
 
 # --------------------------------------------------------------------------- #
 # Unified dispatch: wave_bc_3d
 # --------------------------------------------------------------------------- #
+
 
 def wave_bc_3d(
     f: torch.Tensor,
@@ -286,9 +284,7 @@ def wave_bc_3d(
         wave_params = WaveParams()
 
     if face != "inlet_x":
-        raise ValueError(
-            f"Only face='inlet_x' is currently supported, got {face!r}"
-        )
+        raise ValueError(f"Only face='inlet_x' is currently supported, got {face!r}")
 
     # Determine lattice
     if lattice == "auto":
@@ -299,14 +295,11 @@ def wave_bc_3d(
             lattice = "D3Q27"
         else:
             raise ValueError(
-                f"Cannot auto-detect lattice from f.shape[0]={q}; "
-                f"expected 19 (D3Q19) or 27 (D3Q27)"
+                f"Cannot auto-detect lattice from f.shape[0]={q}; expected 19 (D3Q19) or 27 (D3Q27)"
             )
     lattice_u = lattice.upper()
     if lattice_u not in ("D3Q19", "D3Q27"):
-        raise ValueError(
-            f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}"
-        )
+        raise ValueError(f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}")
 
     expected_q = 19 if lattice_u == "D3Q19" else 27
     if f.ndim != 4 or f.shape[0] != expected_q:
@@ -319,7 +312,8 @@ def wave_bc_3d(
     device = f.device
 
     ux_in, uy_in, uz_in = _airy_wave_velocity_3d(
-        nz, ny,
+        nz,
+        ny,
         step=wave_params.step,
         u_mean=wave_params.u_mean,
         wave_amp=wave_params.wave_amp,
@@ -338,9 +332,11 @@ def wave_bc_3d(
     if wave_params.apply_outlet:
         if lattice_u == "D3Q19":
             from .boundaries3d import zou_he_outlet_pressure_3d
+
             f = zou_he_outlet_pressure_3d(f, rho_out=wave_params.rho_out)
         else:
             from .boundaries_d3q27 import zou_he_outlet_pressure_27
+
             f = zou_he_outlet_pressure_27(f, rho_out=wave_params.rho_out)
 
     return f

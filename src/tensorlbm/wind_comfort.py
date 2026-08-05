@@ -14,6 +14,7 @@ Reference thresholds follow:
   NEN 8100:2006            – Dutch standard (A = comfortable, D/E = dangerous)
   CIBSE AM14 (2015)        – Building effects comfort guide
 """
+
 from __future__ import annotations
 
 import math
@@ -27,17 +28,17 @@ from typing import Literal
 
 # Lawson LDDC criteria  (m/s)
 LAWSON_THRESHOLDS = {
-    "A_sitting":  2.5,
+    "A_sitting": 2.5,
     "B_standing": 4.0,
-    "C_walking":  6.0,
-    "D_running":  8.0,
+    "C_walking": 6.0,
+    "D_running": 8.0,
 }
 
 # NEN 8100 exceedance-probability limits
 NEN8100_THRESHOLDS = {
-    "A": {"speed": 5.0,  "max_exceed": 0.05},
-    "B": {"speed": 5.0,  "max_exceed": 0.10},
-    "C": {"speed": 5.0,  "max_exceed": 0.20},
+    "A": {"speed": 5.0, "max_exceed": 0.05},
+    "B": {"speed": 5.0, "max_exceed": 0.10},
+    "C": {"speed": 5.0, "max_exceed": 0.20},
     "D": {"speed": 10.0, "max_exceed": 0.05},
     "E": {"speed": 10.0, "max_exceed": 0.10},
 }
@@ -48,28 +49,30 @@ ComfortClass = Literal["A", "B", "C", "D", "E", "F_dangerous"]
 @dataclass
 class WindSensorPoint:
     """Wind statistics at a single sensor/probe location."""
+
     label: str
     x: float
     y: float
-    z: float = 1.5            # pedestrian height (m)
-    mean_speed: float = 0.0   # m/s
-    turbulence_intensity: float = 0.1   # I_u = σ_u / U_mean
+    z: float = 1.5  # pedestrian height (m)
+    mean_speed: float = 0.0  # m/s
+    turbulence_intensity: float = 0.1  # I_u = σ_u / U_mean
     # Weibull parameters for speed distribution (optional)
-    weibull_k: float = 2.0    # shape
+    weibull_k: float = 2.0  # shape
     weibull_c: float | None = None  # scale (defaults to 2*mean/sqrt(π))
 
 
 @dataclass
 class WindComfortResult:
     """Wind comfort assessment at a sensor point."""
+
     label: str
     x: float
     y: float
     z: float
     mean_speed: float
-    effective_gust_speed: float    # U_eff = U_mean * (1 + g * I_u), g≈3.5
-    exceedance_5ms: float          # P(U > 5 m/s)
-    exceedance_10ms: float         # P(U > 10 m/s)
+    effective_gust_speed: float  # U_eff = U_mean * (1 + g * I_u), g≈3.5
+    exceedance_5ms: float  # P(U > 5 m/s)
+    exceedance_10ms: float  # P(U > 10 m/s)
     lawson_category: str
     nen8100_class: ComfortClass
     is_comfortable: bool
@@ -80,6 +83,7 @@ class WindComfortResult:
 # ---------------------------------------------------------------------------
 # Statistics helpers
 # ---------------------------------------------------------------------------
+
 
 def _weibull_exceedance(u_threshold: float, k: float, c: float) -> float:
     """P(U > u_threshold) from Weibull(k, c) distribution."""
@@ -128,6 +132,7 @@ def _nen8100_class(exceed_5: float, exceed_10: float) -> ComfortClass:
 # Core assessment
 # ---------------------------------------------------------------------------
 
+
 def assess_wind_comfort(
     sensors: list[WindSensorPoint],
     gust_factor: float = 3.5,
@@ -152,7 +157,9 @@ def assess_wind_comfort(
     list[WindComfortResult]
     """
     class_order = ["A", "B", "C", "D", "E", "F_dangerous"]
-    threshold_idx = class_order.index(comfort_threshold_class) if comfort_threshold_class in class_order else 2
+    threshold_idx = (
+        class_order.index(comfort_threshold_class) if comfort_threshold_class in class_order else 2
+    )
 
     results: list[WindComfortResult] = []
 
@@ -162,8 +169,10 @@ def assess_wind_comfort(
         U_eff = U * (1.0 + gust_factor * Iu)
 
         # Weibull scale default
-        c = s.weibull_c if s.weibull_c is not None else (
-            U * 2.0 / math.sqrt(math.pi) if U > 0 else 1.0
+        c = (
+            s.weibull_c
+            if s.weibull_c is not None
+            else (U * 2.0 / math.sqrt(math.pi) if U > 0 else 1.0)
         )
         k = s.weibull_k
 
@@ -184,21 +193,23 @@ def assess_wind_comfort(
         if lawson_cat == "E_dangerous":
             notes_parts.append("Lawson dangerous: consider windbreaks or canopies")
 
-        results.append(WindComfortResult(
-            label=s.label,
-            x=s.x,
-            y=s.y,
-            z=s.z,
-            mean_speed=U,
-            effective_gust_speed=U_eff,
-            exceedance_5ms=exceed_5,
-            exceedance_10ms=exceed_10,
-            lawson_category=lawson_cat,
-            nen8100_class=nen_class,
-            is_comfortable=is_ok,
-            mitigation_suggested=suggest_mitigation,
-            notes="; ".join(notes_parts),
-        ))
+        results.append(
+            WindComfortResult(
+                label=s.label,
+                x=s.x,
+                y=s.y,
+                z=s.z,
+                mean_speed=U,
+                effective_gust_speed=U_eff,
+                exceedance_5ms=exceed_5,
+                exceedance_10ms=exceed_10,
+                lawson_category=lawson_cat,
+                nen8100_class=nen_class,
+                is_comfortable=is_ok,
+                mitigation_suggested=suggest_mitigation,
+                notes="; ".join(notes_parts),
+            )
+        )
 
     return results
 
@@ -206,6 +217,7 @@ def assess_wind_comfort(
 # ---------------------------------------------------------------------------
 # Aggregate summary
 # ---------------------------------------------------------------------------
+
 
 def wind_comfort_summary(results: list[WindComfortResult]) -> dict:
     """Return a summary dict suitable for JSON response."""
@@ -219,7 +231,10 @@ def wind_comfort_summary(results: list[WindComfortResult]) -> dict:
         c = r.nen8100_class
         class_counts[c] = class_counts.get(c, 0) + 1
 
-    worst = max(results, key=lambda r: class_order.index(r.nen8100_class) if r.nen8100_class in class_order else 0)
+    worst = max(
+        results,
+        key=lambda r: class_order.index(r.nen8100_class) if r.nen8100_class in class_order else 0,
+    )
     n_uncomfortable = sum(1 for r in results if not r.is_comfortable)
 
     return {

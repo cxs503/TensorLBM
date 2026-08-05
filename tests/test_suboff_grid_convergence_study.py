@@ -1,4 +1,5 @@
 """SUBOFF bare-hull grid convergence study (D3Q19+MRT, diagnostic only)."""
+
 from __future__ import annotations
 
 import json
@@ -27,6 +28,7 @@ def _small_study_config() -> GridConvergenceStudyConfig:
 # ---------------------------------------------------------------------------
 # Config validation
 # ---------------------------------------------------------------------------
+
 
 def test_config_rejects_fewer_than_three_grid_levels() -> None:
     with pytest.raises(ValueError, match="at least 3"):
@@ -70,6 +72,7 @@ def test_grid_level_validates_capture_steps() -> None:
 # ---------------------------------------------------------------------------
 # Study execution
 # ---------------------------------------------------------------------------
+
 
 def test_study_runs_three_grid_levels_and_produces_diagnostic_artifact() -> None:
     artifact = run_suboff_grid_convergence_study(_small_study_config())
@@ -164,7 +167,10 @@ def test_study_provenance_records_runner_and_model_identity() -> None:
     artifact = run_suboff_grid_convergence_study(_small_study_config())
 
     provenance = artifact["provenance"]
-    assert provenance["runner_api"] == "tensorlbm.suboff_full_wet_force_window_campaign.run_suboff_full_wet_force_window_campaign"
+    assert (
+        provenance["runner_api"]
+        == "tensorlbm.suboff_full_wet_force_window_campaign.run_suboff_full_wet_force_window_campaign"
+    )
     assert provenance["model_identity"]["lattice"] == "D3Q19"
     assert provenance["model_identity"]["collision"] == "MRT"
     assert provenance["model_identity"]["hull_type"] == "bare_hull"

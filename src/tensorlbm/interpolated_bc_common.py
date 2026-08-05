@@ -22,6 +22,7 @@ Hot-path invariants
 * No GPU→CPU syncs (``.item()``, ``float(tensor)``) inside the BC path.
 * The OPPOSITE array is looked up once at module load time.
 """
+
 from __future__ import annotations
 
 import torch
@@ -44,6 +45,7 @@ _OPP27_LIST: list[int] = [int(x) for x in _OPP27.tolist()]
 # --------------------------------------------------------------------------- #
 # Unified Bouzidi bounce-back for 3-D (D3Q19 / D3Q27)
 # --------------------------------------------------------------------------- #
+
 
 def bouzidi_bounce_back_3d_common(
     f: torch.Tensor,
@@ -90,9 +92,7 @@ def bouzidi_bounce_back_3d_common(
         opp_list = _OPP27_LIST
         velocities = _C27
     else:
-        raise ValueError(
-            f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}"
-        )
+        raise ValueError(f"lattice must be 'D3Q19' or 'D3Q27', got {lattice!r}")
 
     opp = opp_list[direction]
     f_out = f.clone()
@@ -137,6 +137,7 @@ def bouzidi_bounce_back_3d_common(
 # --------------------------------------------------------------------------- #
 # D3Q27 sphere q-field computation
 # --------------------------------------------------------------------------- #
+
 
 def compute_q_sphere_27(
     nx: int,
@@ -191,10 +192,10 @@ def compute_q_sphere_27(
             continue  # rest direction
 
         dist_nb = (xx + dcx - cx) ** 2 + (yy + dcy - cy) ** 2 + (zz + dcz - cz) ** 2
-        nb_is_solid = dist_nb <= radius ** 2
+        nb_is_solid = dist_nb <= radius**2
 
         dist_self = (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2
-        self_is_fluid = dist_self > radius ** 2
+        self_is_fluid = dist_self > radius**2
 
         boundary = self_is_fluid & nb_is_solid
 
@@ -204,11 +205,11 @@ def compute_q_sphere_27(
         dx = xx - cx
         dy = yy - cy
         dz = zz - cz
-        a_coef = dcx ** 2 + dcy ** 2 + dcz ** 2
+        a_coef = dcx**2 + dcy**2 + dcz**2
         b_coef = 2.0 * (dcx * dx + dcy * dy + dcz * dz)
-        c_coef = dx ** 2 + dy ** 2 + dz ** 2 - radius ** 2
+        c_coef = dx**2 + dy**2 + dz**2 - radius**2
 
-        discriminant = b_coef ** 2 - 4.0 * a_coef * c_coef
+        discriminant = b_coef**2 - 4.0 * a_coef * c_coef
         safe_disc = torch.where(
             boundary & (discriminant >= 0.0),
             discriminant,
@@ -225,11 +226,15 @@ def compute_q_sphere_27(
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
 
-        q_val = torch.where(
-            valid1 & valid2,
-            torch.min(q1, q2),
-            torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
-        ).clamp(1e-6, 1.0).float()
+        q_val = (
+            torch.where(
+                valid1 & valid2,
+                torch.min(q1, q2),
+                torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
+            )
+            .clamp(1e-6, 1.0)
+            .float()
+        )
 
         fluid_boundary_mask[d] = boundary
         q_field[d] = torch.where(boundary, q_val, q_field[d])

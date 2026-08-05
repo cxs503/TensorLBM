@@ -20,22 +20,30 @@ Reference:
   Fakhari, Mitchell, Leonardi (2017) "Role of the Rayleigh number in LBM..."
   Geier, Fakhari (2018) "A phase-field lattice Boltzmann model..."
 """
+
 from __future__ import annotations
 
 import torch
 from .d3q19 import C as C3D, W as W3D, OPPOSITE as OPP
 from .d3q19 import equilibrium3d, macroscopic3d
 
+
 # Phase-field equilibrium (4th order Hermite, following Fakhari 2017)
 def _phase_field_equilibrium(phi, ux, uy, uz, device):
     """Equilibrium distribution for the phase-field (g) LBE."""
     c = C3D.to(device).float()
     w = W3D.to(device).float()
-    cu = c[:, 0].view(19, 1, 1, 1) * ux.unsqueeze(0) + c[:, 1].view(19, 1, 1, 1) * uy.unsqueeze(0) + c[:, 2].view(19, 1, 1, 1) * uz.unsqueeze(0)
+    cu = (
+        c[:, 0].view(19, 1, 1, 1) * ux.unsqueeze(0)
+        + c[:, 1].view(19, 1, 1, 1) * uy.unsqueeze(0)
+        + c[:, 2].view(19, 1, 1, 1) * uz.unsqueeze(0)
+    )
     # 4th order: 1 + 3*cu + (9/2)*cu^2 - (3/2)*u^2 + (27/6)*cu^3 - (9/2)*u^2*cu
     u_sq = ux * ux + uy * uy + uz * uz
-    geq = w.view(19, 1, 1, 1) * phi.unsqueeze(0) * (
-        1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0)
+    geq = (
+        w.view(19, 1, 1, 1)
+        * phi.unsqueeze(0)
+        * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
     )
     return geq
 
@@ -51,9 +59,12 @@ def _interface_normal(phi, device):
     grad_y[:, 1:-1, :] = (phi[:, 2:, :] - phi[:, :-2, :]) * 0.5
     grad_z[1:-1, :, :] = (phi[2:, :, :] - phi[:-2, :, :]) * 0.5
     # Pad boundaries
-    grad_x[:, :, 0] = grad_x[:, :, 1]; grad_x[:, :, -1] = grad_x[:, :, -2]
-    grad_y[:, 0, :] = grad_y[:, 1, :]; grad_y[:, -1, :] = grad_y[:, -2, :]
-    grad_z[0, :, :] = grad_z[1, :, :]; grad_z[-1, :, :] = grad_z[-2, :, :]
+    grad_x[:, :, 0] = grad_x[:, :, 1]
+    grad_x[:, :, -1] = grad_x[:, :, -2]
+    grad_y[:, 0, :] = grad_y[:, 1, :]
+    grad_y[:, -1, :] = grad_y[:, -2, :]
+    grad_z[0, :, :] = grad_z[1, :, :]
+    grad_z[-1, :, :] = grad_z[-2, :, :]
 
     mag = torch.sqrt(grad_x**2 + grad_y**2 + grad_z**2).clamp(min=1e-12)
     return grad_x / mag, grad_y / mag, grad_z / mag
@@ -64,7 +75,7 @@ def allen_cahn_step(
     g: torch.Tensor,
     phi: torch.Tensor,
     rho_h: float = 1.0,
-    rho_l: float =0.001,
+    rho_l: float = 0.001,
     nu_h: float = 0.1,
     nu_l: float = 0.01,
     sigma: float = 0.001,
@@ -146,16 +157,35 @@ def allen_cahn_step(
     # M = mobility (small to prevent overshoot)
     M_mobility = 0.02
     source = M_mobility * (4.0 * phi * (1.0 - phi * phi)) / tau_phi
-    cu_src = c[:, 0].view(19, 1, 1, 1) * ux.unsqueeze(0) + c[:, 1].view(19, 1, 1, 1) * uy.unsqueeze(0) + c[:, 2].view(19, 1, 1, 1) * uz.unsqueeze(0)
+    cu_src = (
+        c[:, 0].view(19, 1, 1, 1) * ux.unsqueeze(0)
+        + c[:, 1].view(19, 1, 1, 1) * uy.unsqueeze(0)
+        + c[:, 2].view(19, 1, 1, 1) * uz.unsqueeze(0)
+    )
     S = w * source.unsqueeze(0) * (1.0 + cu_src / cs2)
     g = g - (g - geq) / tau_phi + (1.0 - 0.5 / tau_phi) * S
 
     # --- 8. Streaming (pull scheme via torch.roll) ---
     shifts = [
-        (0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0),
-        (0, 0, 1), (0, 0, -1), (1, 1, 0), (-1, 1, 0), (1, -1, 0),
-        (-1, -1, 0), (1, 0, 1), (-1, 0, 1), (1, 0, -1), (-1, 0, -1),
-        (0, 1, 1), (0, -1, 1), (0, 1, -1), (0, -1, -1),
+        (0, 0, 0),
+        (1, 0, 0),
+        (-1, 0, 0),
+        (0, 1, 0),
+        (0, -1, 0),
+        (0, 0, 1),
+        (0, 0, -1),
+        (1, 1, 0),
+        (-1, 1, 0),
+        (1, -1, 0),
+        (-1, -1, 0),
+        (1, 0, 1),
+        (-1, 0, 1),
+        (1, 0, -1),
+        (-1, 0, -1),
+        (0, 1, 1),
+        (0, -1, 1),
+        (0, 1, -1),
+        (0, -1, -1),
     ]
     f_new = torch.empty_like(f)
     g_new = torch.empty_like(g)
@@ -185,7 +215,9 @@ def allen_cahn_step(
 
 
 def initialize_allen_cahn(
-    nz: int, ny: int, nx: int,
+    nz: int,
+    ny: int,
+    nx: int,
     water_fraction: float = 0.5,
     rho_h: float = 1.0,
     rho_l: float = 0.001,
@@ -195,9 +227,7 @@ def initialize_allen_cahn(
 
     Water (phi=+1) fills the lower portion, air (phi=-1) the upper.
     """
-    zz, yy, xx = torch.meshgrid(
-        torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij"
-    )
+    zz, yy, xx = torch.meshgrid(torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij")
     # Water level
     z_water = int(nz * water_fraction)
     phi = torch.where(zz < z_water, 1.0, -1.0).to(device)

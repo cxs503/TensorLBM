@@ -1,4 +1,5 @@
 """Tests for adaptive mesh refinement (AMR) — adaptive_refinement.py."""
+
 from __future__ import annotations
 
 import pytest
@@ -28,6 +29,7 @@ from tensorlbm.refinement import BoxRegion
 # Upsampling / restriction helpers
 # ---------------------------------------------------------------------------
 
+
 class TestCoarseFine2D:
     def test_upsample_shape(self) -> None:
         f = torch.rand(9, 8, 10)
@@ -55,6 +57,7 @@ class TestCoarseFine2D:
 # ---------------------------------------------------------------------------
 # Error indicators — 2-D
 # ---------------------------------------------------------------------------
+
 
 class TestIndicators2D:
     def _make_f(self, ny: int = 8, nx: int = 10) -> tuple:
@@ -111,6 +114,7 @@ class TestIndicators2D:
 # Error indicators — 3-D
 # ---------------------------------------------------------------------------
 
+
 class TestIndicators3D:
     def _make_f3d(self, nz: int = 4, ny: int = 6, nx: int = 8) -> tuple:
         rho = torch.ones(nz, ny, nx)
@@ -151,10 +155,10 @@ class TestIndicators3D:
 # Cell marking
 # ---------------------------------------------------------------------------
 
+
 class TestMarkCells:
     def test_basic_marking(self) -> None:
-        ind = torch.tensor([[0.001, 0.01, 0.0001],
-                             [0.005, 0.02, 0.0000001]])
+        ind = torch.tensor([[0.001, 0.01, 0.0001], [0.005, 0.02, 0.0000001]])
         refine, coarsen = mark_cells_for_refinement(
             ind, refine_threshold=0.005, coarsen_threshold=0.001
         )
@@ -162,7 +166,7 @@ class TestMarkCells:
         assert coarsen.shape == ind.shape
         # 0.01, 0.02 > 0.005 → should be flagged for refinement
         assert bool(refine[0, 1])
-        assert bool(refine[1, 2]) is False   # 0.0000001 < 0.001 → coarsen not refine
+        assert bool(refine[1, 2]) is False  # 0.0000001 < 0.001 → coarsen not refine
         # 0.0001, 0.0000001 < 0.001 → should be flagged for coarsening
         assert bool(coarsen[0, 2])
 
@@ -187,6 +191,7 @@ class TestMarkCells:
 # ---------------------------------------------------------------------------
 # Box grouping helpers
 # ---------------------------------------------------------------------------
+
 
 class TestGroupBoxes2D:
     def test_empty_mask_returns_no_boxes(self) -> None:
@@ -230,6 +235,7 @@ class TestGroupBoxes3D:
 # AdaptationSchedule
 # ---------------------------------------------------------------------------
 
+
 class TestAdaptationSchedule:
     def test_adapts_at_interval(self) -> None:
         sch = AdaptationSchedule(interval=10, warmup=0)
@@ -250,6 +256,7 @@ class TestAdaptationSchedule:
 # AdaptiveSolver2D — unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestAdaptiveSolver2D:
     def _make_solver(self, ny: int = 16, nx: int = 24) -> AdaptiveSolver2D:
         rho = torch.ones(ny, nx)
@@ -257,7 +264,8 @@ class TestAdaptiveSolver2D:
         uy = torch.zeros(ny, nx)
         f = equilibrium(rho, ux, uy)
         sch = AdaptationSchedule(
-            interval=5, warmup=0,
+            interval=5,
+            warmup=0,
             refine_threshold=1e-4,
             coarsen_threshold=1e-8,
             max_patches=4,
@@ -350,17 +358,17 @@ class TestAdaptiveSolver2D:
 # AdaptiveSolver3D — unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestAdaptiveSolver3D:
-    def _make_solver(
-        self, nz: int = 6, ny: int = 8, nx: int = 10
-    ) -> AdaptiveSolver3D:
+    def _make_solver(self, nz: int = 6, ny: int = 8, nx: int = 10) -> AdaptiveSolver3D:
         rho = torch.ones(nz, ny, nx)
         ux = torch.full((nz, ny, nx), 0.05)
         uy = torch.zeros(nz, ny, nx)
         uz = torch.zeros(nz, ny, nx)
         f = equilibrium3d(rho, ux, uy, uz)
         sch = AdaptationSchedule(
-            interval=5, warmup=0,
+            interval=5,
+            warmup=0,
             refine_threshold=1e-4,
             coarsen_threshold=1e-8,
             max_patches=4,
@@ -425,6 +433,7 @@ class TestAdaptiveSolver3D:
 # Integration: end-to-end adapt+step cycle (2-D)
 # ---------------------------------------------------------------------------
 
+
 class TestEndToEnd2D:
     def test_multiple_adapt_step_cycles(self) -> None:
         """Simulate several adapt+step cycles and verify solver remains stable."""
@@ -437,7 +446,8 @@ class TestEndToEnd2D:
         f = equilibrium(rho, ux, uy)
 
         sch = AdaptationSchedule(
-            interval=5, warmup=0,
+            interval=5,
+            warmup=0,
             refine_threshold=1e-3,
             coarsen_threshold=1e-7,
             max_patches=4,
@@ -468,6 +478,7 @@ class TestEndToEnd2D:
 # ---------------------------------------------------------------------------
 # Public import check
 # ---------------------------------------------------------------------------
+
 
 def test_public_import() -> None:
     """Verify all AMR symbols are importable from the top-level package."""

@@ -3,6 +3,7 @@
 This module records observation semantics but does not calculate hydrodynamic
 loads and makes no physical-validation claim.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,7 +18,11 @@ def _triple(value: object, name: str) -> tuple[float, float, float]:
         raise ValueError(f"{name} must be an (x, y, z) tuple of length 3")
     result: list[float] = []
     for component in value:
-        if isinstance(component, bool) or not isinstance(component, (int, float)) or not isfinite(component):
+        if (
+            isinstance(component, bool)
+            or not isinstance(component, (int, float))
+            or not isfinite(component)
+        ):
             raise ValueError(f"{name} must contain finite numeric coordinates")
         result.append(float(component))
     return tuple(result)  # type: ignore[return-value]

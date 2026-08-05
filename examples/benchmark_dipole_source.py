@@ -32,6 +32,7 @@ Validation:
 Run:
     PYTHONPATH=src python examples/benchmark_dipole_source.py --device cpu --steps 1200
 """
+
 from __future__ import annotations
 
 import argparse
@@ -56,6 +57,7 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 # Helpers
 # --------------------------------------------------------------------------- #
 
+
 def _extract_amplitude(steps_arr, values, omega):
     """Extract the oscillation amplitude at frequency *omega* via a
     single-frequency DFT (projection onto sin/cos at the known frequency).
@@ -74,12 +76,13 @@ def _extract_amplitude(steps_arr, values, omega):
     N = len(t2)
     sin_proj = (2.0 / N) * np.sum(u2 * np.sin(omega * t2))
     cos_proj = (2.0 / N) * np.sum(u2 * np.cos(omega * t2))
-    return float(np.sqrt(sin_proj ** 2 + cos_proj ** 2))
+    return float(np.sqrt(sin_proj**2 + cos_proj**2))
 
 
 # --------------------------------------------------------------------------- #
 # Dipole source benchmark
 # --------------------------------------------------------------------------- #
+
 
 def run_dipole_source(
     nx: int = 300,
@@ -289,11 +292,7 @@ def run_dipole_source(
     dir_errors: list[float] = []
     for ang_deg in monitor_angles:
         expected = abs(math.cos(math.radians(ang_deg)))
-        measured = (
-            amplitudes[(directivity_r, ang_deg)] / ref_amp
-            if ref_amp > 1e-15
-            else 0.0
-        )
+        measured = amplitudes[(directivity_r, ang_deg)] / ref_amp if ref_amp > 1e-15 else 0.0
         err = abs(measured - expected)
         dir_errors.append(err)
         print(f"  {ang_deg:5d}°  {expected:8.4f}  {measured:10.4f}  {err * 100:7.2f}%")
@@ -319,10 +318,7 @@ def run_dipole_source(
     # ----------------------------------------------------------------------- #
     print("\n  --- 验证2: 径向衰减 (|H₁⁽¹⁾(kr)| 衰减) ---")
     print(f"  固定 θ=0°, 比较 |u_r(r,0°)| 衰减与 |H₁⁽¹⁾(kr)| 衰减")
-    print(
-        f"  {'r':>5s}  {'|H1(kr)|':>12s}  {'归一化H1':>10s}"
-        f"  {'归一化测量':>12s}  {'误差':>8s}"
-    )
+    print(f"  {'r':>5s}  {'|H1(kr)|':>12s}  {'归一化H1':>10s}  {'归一化测量':>12s}  {'误差':>8s}")
 
     h1_ref = abs(hankel1(1, k * monitor_r[0]))
     amp_ref = amplitudes[(monitor_r[0], 0)]
@@ -331,15 +327,10 @@ def run_dipole_source(
         h1_val = abs(hankel1(1, k * r))
         h1_norm = h1_val / h1_ref if h1_ref > 0 else 0.0
         measured_norm = amplitudes[(r, 0)] / amp_ref if amp_ref > 1e-15 else 0.0
-        err = (
-            abs(measured_norm - h1_norm) / h1_norm
-            if h1_norm > 1e-15
-            else 0.0
-        )
+        err = abs(measured_norm - h1_norm) / h1_norm if h1_norm > 1e-15 else 0.0
         decay_errors.append(err * 100)
         print(
-            f"  {r:4d}  {h1_val:12.6f}  {h1_norm:10.4f}  "
-            f"{measured_norm:12.4f}  {err * 100:7.2f}%"
+            f"  {r:4d}  {h1_val:12.6f}  {h1_norm:10.4f}  {measured_norm:12.4f}  {err * 100:7.2f}%"
         )
 
     decay_avg_err = float(np.mean(decay_errors))
@@ -353,13 +344,9 @@ def run_dipole_source(
     print("\n" + "=" * 64)
     all_pass = dir_pass and decay_pass
     print(f"  总体结果: {'PASS' if all_pass else 'FAIL'}")
+    print(f"    指向性:   {'PASS' if dir_pass else 'FAIL'}  (误差 {dir_avg_err:.2f}%, 目标 < 10%)")
     print(
-        f"    指向性:   {'PASS' if dir_pass else 'FAIL'}"
-        f"  (误差 {dir_avg_err:.2f}%, 目标 < 10%)"
-    )
-    print(
-        f"    径向衰减: {'PASS' if decay_pass else 'FAIL'}"
-        f"  (误差 {decay_avg_err:.2f}%, 目标 < 15%)"
+        f"    径向衰减: {'PASS' if decay_pass else 'FAIL'}  (误差 {decay_avg_err:.2f}%, 目标 < 15%)"
     )
     print("=" * 64)
 

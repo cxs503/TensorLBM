@@ -5,6 +5,7 @@ not rebuild populations, adjust mass/fill, execute a solver step, or assert a
 physical closure.  Missing evidence is explicitly withheld rather than turned
 into a synthetic zero observation.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -106,7 +107,9 @@ def _production_inventory(flag: int, fill_rho: float, population: float) -> floa
 
 
 def build_conversion_density_audit(
-    conversion_evidence: Mapping[str, object] | None, *, rho_liquid: float,
+    conversion_evidence: Mapping[str, object] | None,
+    *,
+    rho_liquid: float,
     observed_conversion_inventory_delta: float | None = None,
 ) -> ConversionDensityAudit:
     """Read actual sparse conversion evidence and report representation deltas.
@@ -118,11 +121,18 @@ def build_conversion_density_audit(
         return ConversionDensityAudit(
             status=DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE,
             withheld_reason=WITHHELD_MISSING_CONVERSION_EVIDENCE,
-            cells=(), conversion_inventory_delta=None,
-            sum_cell_production_inventory_delta=None, observed_conversion_inventory_delta=None,
-            cell_sum_inventory_residual=None, representation_switch_delta=None,
+            cells=(),
+            conversion_inventory_delta=None,
+            sum_cell_production_inventory_delta=None,
+            observed_conversion_inventory_delta=None,
+            cell_sum_inventory_residual=None,
+            representation_switch_delta=None,
             cell_sum_matches_conversion_inventory_delta=None,
-            i_to_l_count=0, i_to_g_count=0, l_to_g_count=0, g_to_i_count=0, other_count=0,
+            i_to_l_count=0,
+            i_to_g_count=0,
+            l_to_g_count=0,
+            g_to_i_count=0,
+            other_count=0,
             i_to_l_population_nominal_density_gap=None,
             i_to_l_population_nominal_density_gap_cells=0,
         )
@@ -130,7 +140,8 @@ def build_conversion_density_audit(
         raise ValueError("rho_liquid must be numeric")
     if observed_conversion_inventory_delta is not None:
         observed_conversion_inventory_delta = _number(
-            observed_conversion_inventory_delta, "observed_conversion_inventory_delta",
+            observed_conversion_inventory_delta,
+            "observed_conversion_inventory_delta",
         )
     raw_cells = conversion_evidence.get("conversion_cells")
     if not isinstance(raw_cells, Sequence) or isinstance(raw_cells, (str, bytes)):
@@ -147,39 +158,58 @@ def build_conversion_density_audit(
         mass_after = _number(raw.get("mass_after"), "mass_after")
         population_before = _number(raw.get("population_before"), "population_before")
         population_after = _number(raw.get("population_after"), "population_after")
-        fill_rho_before, fill_rho_after = fill_before * float(rho_liquid), fill_after * float(rho_liquid)
+        fill_rho_before, fill_rho_after = (
+            fill_before * float(rho_liquid),
+            fill_after * float(rho_liquid),
+        )
         production_before = _production_inventory(flag_before, fill_rho_before, population_before)
         production_after = _production_inventory(flag_after, fill_rho_after, population_after)
         classification = _classification(flag_before, flag_after)
-        population_gap = population_after - float(rho_liquid) if classification == "I_TO_L" else None
-        cells.append(ConversionDensityCell(
-            cell=_cell(raw.get("cell")), classification=classification,
-            flag_before=flag_before, flag_after=flag_after,
-            fill_rho_before=fill_rho_before, fill_rho_after=fill_rho_after,
-            independent_mass_before=mass_before, independent_mass_after=mass_after,
-            population_density_before=population_before, population_density_after=population_after,
-            production_inventory_before=production_before, production_inventory_after=production_after,
-            production_inventory_delta=production_after - production_before,
-            representation_switch_delta=production_after - fill_rho_before,
-            population_nominal_density_gap=population_gap,
-        ))
+        population_gap = (
+            population_after - float(rho_liquid) if classification == "I_TO_L" else None
+        )
+        cells.append(
+            ConversionDensityCell(
+                cell=_cell(raw.get("cell")),
+                classification=classification,
+                flag_before=flag_before,
+                flag_after=flag_after,
+                fill_rho_before=fill_rho_before,
+                fill_rho_after=fill_rho_after,
+                independent_mass_before=mass_before,
+                independent_mass_after=mass_after,
+                population_density_before=population_before,
+                population_density_after=population_after,
+                production_inventory_before=production_before,
+                production_inventory_after=production_after,
+                production_inventory_delta=production_after - production_before,
+                representation_switch_delta=production_after - fill_rho_before,
+                population_nominal_density_gap=population_gap,
+            )
+        )
 
     frozen_cells = tuple(cells)
     conversion_delta = sum(cell.production_inventory_delta for cell in frozen_cells)
     switch_delta = sum(cell.representation_switch_delta for cell in frozen_cells)
     cell_sum_residual = (
-        None if observed_conversion_inventory_delta is None
+        None
+        if observed_conversion_inventory_delta is None
         else conversion_delta - observed_conversion_inventory_delta
     )
-    groups = {name: tuple(cell for cell in frozen_cells if cell.classification == name)
-              for name in ("I_TO_L", "I_TO_G", "L_TO_G", "G_TO_I")}
+    groups = {
+        name: tuple(cell for cell in frozen_cells if cell.classification == name)
+        for name in ("I_TO_L", "I_TO_G", "L_TO_G", "G_TO_I")
+    }
     i_to_l_gaps = tuple(
-        cell.population_nominal_density_gap for cell in groups["I_TO_L"]
+        cell.population_nominal_density_gap
+        for cell in groups["I_TO_L"]
         if cell.population_nominal_density_gap is not None
     )
     return ConversionDensityAudit(
-        status=DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE, withheld_reason=None,
-        cells=frozen_cells, conversion_inventory_delta=conversion_delta,
+        status=DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE,
+        withheld_reason=None,
+        cells=frozen_cells,
+        conversion_inventory_delta=conversion_delta,
         sum_cell_production_inventory_delta=conversion_delta,
         observed_conversion_inventory_delta=observed_conversion_inventory_delta,
         cell_sum_inventory_residual=cell_sum_residual,
@@ -187,8 +217,10 @@ def build_conversion_density_audit(
         cell_sum_matches_conversion_inventory_delta=(
             True if cell_sum_residual is None else cell_sum_residual == 0.0
         ),
-        i_to_l_count=len(groups["I_TO_L"]), i_to_g_count=len(groups["I_TO_G"]),
-        l_to_g_count=len(groups["L_TO_G"]), g_to_i_count=len(groups["G_TO_I"]),
+        i_to_l_count=len(groups["I_TO_L"]),
+        i_to_g_count=len(groups["I_TO_G"]),
+        l_to_g_count=len(groups["L_TO_G"]),
+        g_to_i_count=len(groups["G_TO_I"]),
         other_count=len(frozen_cells) - sum(len(group) for group in groups.values()),
         i_to_l_population_nominal_density_gap=(sum(i_to_l_gaps) if i_to_l_gaps else 0.0),
         i_to_l_population_nominal_density_gap_cells=sum(gap != 0.0 for gap in i_to_l_gaps),

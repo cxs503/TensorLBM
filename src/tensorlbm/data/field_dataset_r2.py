@@ -30,7 +30,9 @@ def _freeze(value: Any) -> Any:
     if isinstance(value, bytes):
         raise TypeError("lineage must not contain payload bytes")
     if isinstance(value, Mapping):
-        return MappingProxyType({_text(key, "lineage key"): _freeze(item) for key, item in value.items()})
+        return MappingProxyType(
+            {_text(key, "lineage key"): _freeze(item) for key, item in value.items()}
+        )
     if isinstance(value, (tuple, list)):
         return tuple(_freeze(item) for item in value)
     raise TypeError(f"unsupported lineage value: {type(value).__name__}")
@@ -42,6 +44,7 @@ def _frozen_lineage(value: object) -> Mapping[str, Any]:
     frozen = _freeze(value)
     assert isinstance(frozen, Mapping)
     return frozen
+
 
 def _validate_field_product_current(product: FieldDataProductR2) -> None:
     """Recursively reconstruct nested field metadata after hostile mutation."""
@@ -83,6 +86,7 @@ def _validate_field_product_current(product: FieldDataProductR2) -> None:
         product.lineage,
     )
 
+
 @dataclass(frozen=True, slots=True)
 class FieldSampleRefR2:
     """A group-labelled reference to a PASS-gated field product, never field bytes."""
@@ -117,7 +121,9 @@ class FieldSampleRefR2:
         )
 
 
-def _validate_splits(samples: tuple[FieldSampleRefR2, ...], splits: object) -> Mapping[str, tuple[str, ...]]:
+def _validate_splits(
+    samples: tuple[FieldSampleRefR2, ...], splits: object
+) -> Mapping[str, tuple[str, ...]]:
     if not isinstance(splits, Mapping):
         raise TypeError("splits must be a mapping")
     expected = {"train", "val", "test"}
@@ -155,6 +161,7 @@ def _validate_splits(samples: tuple[FieldSampleRefR2, ...], splits: object) -> M
                 raise ValueError(f"{field} must not cross splits")
     return MappingProxyType(frozen)
 
+
 def _canonical_value(value: object) -> object:
     """Encode every immutable runtime/data metadata leaf deterministically without embedding bytes."""
     if value is None or isinstance(value, (str, int, float, bool)):
@@ -172,9 +179,12 @@ def _canonical_value(value: object) -> object:
         canonical_items = [_canonical_value(item) for item in value]
         return sorted(
             canonical_items,
-            key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":"), ensure_ascii=True),
+            key=lambda item: json.dumps(
+                item, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+            ),
         )
     raise TypeError(f"not canonical metadata: {type(value).__name__}")
+
 
 def _canonical_run(run: RunManifest) -> dict[str, object]:
     return {
@@ -215,6 +225,7 @@ def _canonical_encoding(array: ArrayManifestR2) -> dict[str, str]:
         "order": array.encoding.order.value,
         "byte_order": array.encoding.byte_order.value,
     }
+
 
 @dataclass(frozen=True, slots=True)
 class FieldDatasetR2:
@@ -280,7 +291,11 @@ class FieldDatasetR2:
                                 "shape": array.shape,
                                 "units": array.units,
                                 "axes": [
-                                    {"name": axis.name, "semantic": axis.semantic.value, "length": axis.length}
+                                    {
+                                        "name": axis.name,
+                                        "semantic": axis.semantic.value,
+                                        "length": axis.length,
+                                    }
                                     for axis in array.axes
                                 ],
                                 "component_labels": array.component_labels,
@@ -301,7 +316,9 @@ class FieldDatasetR2:
             ],
             "splits": {split: self.splits[split] for split in ("train", "val", "test")},
         }
-        encoded = json.dumps(_canonical_value(document), sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
+        encoded = json.dumps(
+            _canonical_value(document), sort_keys=True, separators=(",", ":"), ensure_ascii=True
+        ).encode("ascii")
         return sha256(encoded).hexdigest()
 
 

@@ -22,6 +22,7 @@ Public contract
 This module does **not** modify the solver hot path.  It wraps the existing
 ``sixdof.step_sixdof`` kernel and adds a uniform state container.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -117,17 +118,23 @@ def _coerce_force(force: object) -> FluidForcesMoments:
         t = force.detach().to(torch.float64)
         if t.shape == (6,):
             return FluidForcesMoments(
-                fx=float(t[0]), fy=float(t[1]), fz=float(t[2]),
-                mx=float(t[3]), my=float(t[4]), mz=float(t[5]),
+                fx=float(t[0]),
+                fy=float(t[1]),
+                fz=float(t[2]),
+                mx=float(t[3]),
+                my=float(t[4]),
+                mz=float(t[5]),
             )
         if t.shape == (3,):
             return FluidForcesMoments(
-                fx=float(t[0]), fy=float(t[1]), fz=float(t[2]),
-                mx=0.0, my=0.0, mz=0.0,
+                fx=float(t[0]),
+                fy=float(t[1]),
+                fz=float(t[2]),
+                mx=0.0,
+                my=0.0,
+                mz=0.0,
             )
-        raise ValueError(
-            f"force tensor must have shape (6,) or (3,); got {tuple(t.shape)}."
-        )
+        raise ValueError(f"force tensor must have shape (6,) or (3,); got {tuple(t.shape)}.")
     raise TypeError(
         f"force must be FluidForcesMoments or a torch.Tensor; got {type(force).__name__}."
     )

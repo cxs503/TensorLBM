@@ -127,7 +127,9 @@ def test_nested_metadata_and_manifest_mappings_are_immutable_snapshots() -> None
     with pytest.raises(FrozenInstanceError):
         manifest.run_id = "changed"  # type: ignore[misc]
     with pytest.raises(TypeError):
-        ArtifactManifest.from_bytes("mutable-leaf", "application/json", b"{}", {"leaf": bytearray(b"x")})
+        ArtifactManifest.from_bytes(
+            "mutable-leaf", "application/json", b"{}", {"leaf": bytearray(b"x")}
+        )
 
 
 @pytest.mark.parametrize("value", [True, float("nan"), float("inf"), float("-inf")])
@@ -145,9 +147,21 @@ def test_code_sha_requires_exact_lowercase_git_hex(code_sha: str) -> None:
 def test_metric_pointer_and_value_must_bind_to_json_artifact_payload() -> None:
     artifact = _artifact()
     with pytest.raises(ValueError, match="bound"):
-        validate_run_manifest(_manifest(metrics=(MetricEvidence("forged", 999.0, "1", artifact.artifact_id, "/missing"),)))
+        validate_run_manifest(
+            _manifest(
+                metrics=(MetricEvidence("forged", 999.0, "1", artifact.artifact_id, "/missing"),)
+            )
+        )
     with pytest.raises(ValueError, match="bound"):
-        validate_run_manifest(_manifest(metrics=(MetricEvidence("forged", 999.0, "1", artifact.artifact_id, "/accounting/mass_after"),)))
+        validate_run_manifest(
+            _manifest(
+                metrics=(
+                    MetricEvidence(
+                        "forged", 999.0, "1", artifact.artifact_id, "/accounting/mass_after"
+                    ),
+                )
+            )
+        )
 
 
 def test_large_json_integer_evidence_is_rejected_before_float_rounding_can_bind_it() -> None:
@@ -158,7 +172,9 @@ def test_large_json_integer_evidence_is_rejected_before_float_rounding_can_bind_
 
 
 @pytest.mark.parametrize("payload", [b'{"v":9007199254740993.0}', b'{"v":9.007199254740993e15}'])
-def test_large_json_decimal_or_exponent_evidence_is_rejected_before_float_rounding_can_bind_it(payload: bytes) -> None:
+def test_large_json_decimal_or_exponent_evidence_is_rejected_before_float_rounding_can_bind_it(
+    payload: bytes,
+) -> None:
     artifact = ArtifactManifest.from_bytes("large-decimal", "application/json", payload)
     metric = MetricEvidence("forged", float(9007199254740992), "1", "large-decimal", "/v")
     with pytest.raises(ValueError, match="bound"):

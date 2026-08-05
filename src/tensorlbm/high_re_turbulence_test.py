@@ -23,6 +23,7 @@ BGK               ✓            ✓             ✓            ✓            �
 MRT               ✓            ✓             —            —            —
 ================  ===========  ===========  ===========  ===========  ===========
 """
+
 from __future__ import annotations
 
 import json
@@ -73,6 +74,7 @@ TURBULENCE_LIST: tuple[str, ...] = ("none", "smagorinsky", "wale", "vreman", "dy
 # Strouhal number estimation
 # ---------------------------------------------------------------------------
 
+
 def _compute_strouhal(
     cl_series: list[float],
     diameter: float,
@@ -109,6 +111,7 @@ def _compute_strouhal(
 # ---------------------------------------------------------------------------
 # Single simulation
 # ---------------------------------------------------------------------------
+
 
 def run_high_re_cylinder(
     re: float,
@@ -160,7 +163,7 @@ def run_high_re_cylinder(
     ux0 = torch.full_like(rho0, u_in)
     f = equilibrium(rho0, ux0, torch.zeros_like(rho0), device=dev)
 
-    dyn_pressure = 0.5 * u_in ** 2 * diameter
+    dyn_pressure = 0.5 * u_in**2 * diameter
 
     cd_series: list[float] = []
     cl_series: list[float] = []
@@ -203,6 +206,7 @@ def run_high_re_cylinder(
 # ---------------------------------------------------------------------------
 # Full matrix
 # ---------------------------------------------------------------------------
+
 
 def _sanitize_for_json(
     results: list[dict[str, Any]],

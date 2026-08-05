@@ -10,6 +10,7 @@ using the entropic KBC collision operator.  They check:
 5. H-theorem: H(f*) <= H(f)
 6. Gamma is finite and bounded
 """
+
 from __future__ import annotations
 
 import math
@@ -31,6 +32,7 @@ from tensorlbm.entropic_kbc import (
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def small_grid():
@@ -71,6 +73,7 @@ def strong_neq_grid():
 # ---------------------------------------------------------------------------
 # 1. Decomposition identity
 # ---------------------------------------------------------------------------
+
 
 class TestKBCDecomposition:
     """Verify s + k + h == f_neq and projection correctness."""
@@ -127,6 +130,7 @@ class TestKBCDecomposition:
 # 2. Gamma solve: admissibility and convergence
 # ---------------------------------------------------------------------------
 
+
 class TestGammaSolve:
     """Verify gamma stays in admissibility domain and minimises H."""
 
@@ -149,9 +153,7 @@ class TestGammaSolve:
         gamma = solve_gamma_entropy(feq, s, h, w, gamma_init)
         f_star = feq + gamma.unsqueeze(0) * s + h
         min_val = f_star.min().item()
-        assert min_val >= -1e-10, (
-            f"Post-collision population is negative: min = {min_val}"
-        )
+        assert min_val >= -1e-10, f"Post-collision population is negative: min = {min_val}"
 
     def test_post_collision_positive_strong(self, strong_neq_grid):
         """f* should be non-negative even with strong non-equilibrium."""
@@ -215,17 +217,14 @@ class TestGammaSolve:
         # Check gamma is within natural bounds (allowing small tolerance)
         below = (gamma < gamma_lower_natural - 1e-8).sum().item()
         above = (gamma > gamma_upper_natural + 1e-8).sum().item()
-        assert below == 0, (
-            f"Gamma below natural admissibility lower bound in {below} cells"
-        )
-        assert above == 0, (
-            f"Gamma above natural admissibility upper bound in {above} cells"
-        )
+        assert below == 0, f"Gamma below natural admissibility lower bound in {below} cells"
+        assert above == 0, f"Gamma above natural admissibility upper bound in {above} cells"
 
 
 # ---------------------------------------------------------------------------
 # 3. Full collision operator
 # ---------------------------------------------------------------------------
+
 
 class TestCollideKBC:
     """Test the full collide_kbc_d3q19 operator."""
@@ -259,9 +258,7 @@ class TestCollideKBC:
         H_before = discrete_entropy(f, w)
         H_after = discrete_entropy(f_star, w)
         violation = (H_after > H_before + 1e-8).sum().item()
-        assert violation == 0, (
-            f"H-theorem violated in {violation} cells"
-        )
+        assert violation == 0, f"H-theorem violated in {violation} cells"
 
     def test_collision_positive_strong_neq(self, strong_neq_grid):
         """Even with strong non-equilibrium, populations should stay positive."""
@@ -269,14 +266,13 @@ class TestCollideKBC:
         tau = 0.6  # low tau → more aggressive relaxation
         f_star = collide_kbc_d3q19(f, tau=tau)
         min_val = f_star.min().item()
-        assert min_val >= -1e-10, (
-            f"Post-collision negative with strong neq: min = {min_val}"
-        )
+        assert min_val >= -1e-10, f"Post-collision negative with strong neq: min = {min_val}"
 
 
 # ---------------------------------------------------------------------------
 # 4. Root-cause tests: admissibility domain expansion bug
 # ---------------------------------------------------------------------------
+
 
 class TestAdmissibilityDomainBug:
     """Reproduce the root-cause bug: gamma_init expansion beyond natural admissibility.
@@ -332,9 +328,7 @@ class TestAdmissibilityDomainBug:
 
         gamma_init = torch.full(feq.shape[1:], 1.0 - 1.0 / tau, dtype=f.dtype)
         outside = ((gamma_init < gamma_lower_nat) | (gamma_init > gamma_upper_nat)).sum().item()
-        assert outside > 0, (
-            "Test case should have gamma_init outside natural admissibility domain"
-        )
+        assert outside > 0, "Test case should have gamma_init outside natural admissibility domain"
 
     def test_dH_sign_reversal_at_expanded_boundary(self, strong_neq_case):
         """dH/dgamma sign can reverse at expanded boundaries, breaking bisection."""
@@ -404,6 +398,7 @@ class TestAdmissibilityDomainBug:
 # 5. h-mode retention test
 # ---------------------------------------------------------------------------
 
+
 class TestHModeRetention:
     """Verify that the higher-order mode h is fully retained (not relaxed).
 
@@ -457,6 +452,7 @@ class TestHModeRetention:
 # 6. Sphere flow diagnostic test
 # ---------------------------------------------------------------------------
 
+
 class TestSphereFlowDiagnostic:
     """Run the KBC diagnostic on a tiny sphere flow and verify findings."""
 
@@ -466,6 +462,7 @@ class TestSphereFlowDiagnostic:
             KBCDiagnosticConfig,
             run_kbc_diagnostic,
         )
+
         config = KBCDiagnosticConfig(nx=12, ny=12, nz=12, steps=10)
         report = run_kbc_diagnostic(config)
         assert len(report.kbc_steps) == 10
@@ -473,9 +470,7 @@ class TestSphereFlowDiagnostic:
         assert report.reference_Cd > 0
         # KBC should show H-theorem violations (the bug)
         total_violations = sum(s["H_violation_count"] for s in report.kbc_steps)
-        assert total_violations > 0, (
-            "Expected H-theorem violations in KBC sphere flow diagnostic"
-        )
+        assert total_violations > 0, "Expected H-theorem violations in KBC sphere flow diagnostic"
 
     def test_kbc_h_mode_retained_in_sphere_flow(self):
         """h_norm should remain significant (not relaxed to zero) in sphere flow.
@@ -488,6 +483,7 @@ class TestSphereFlowDiagnostic:
             KBCDiagnosticConfig,
             run_kbc_diagnostic,
         )
+
         config = KBCDiagnosticConfig(nx=16, ny=16, nz=16, steps=20)
         report = run_kbc_diagnostic(config)
         h_norms = [s["h_norm"] for s in report.kbc_steps]
@@ -497,6 +493,6 @@ class TestSphereFlowDiagnostic:
         last = h_norms[-1]
         assert last > 0.1 * peak, (
             f"h_norm decayed too much: peak={peak:.6e}, last={last:.6e}, "
-            f"ratio={last/peak:.2f}. h-mode is being relaxed, which contradicts "
+            f"ratio={last / peak:.2f}. h-mode is being relaxed, which contradicts "
             f"the f*=feq+γ·s+h formula."
         )

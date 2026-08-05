@@ -7,6 +7,7 @@ Verifies that:
 4. The result artifact records which boundary mode was used
 5. Channel mode is still available (backward compatibility)
 """
+
 from __future__ import annotations
 
 import math
@@ -30,6 +31,7 @@ from tensorlbm.sphere_cross_validation import (
 # ---------------------------------------------------------------------------
 # far_field_bc_27 unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestFarFieldBC27:
     """Verify the D3Q27 far-field boundary condition."""
@@ -93,7 +95,9 @@ class TestFarFieldBC27:
         """Output must be finite."""
         nz, ny, nx = 6, 6, 10
         rho = torch.ones(nz, ny, nx)
-        f = equilibrium27(rho, torch.full_like(rho, 0.05), torch.zeros_like(rho), torch.zeros_like(rho))
+        f = equilibrium27(
+            rho, torch.full_like(rho, 0.05), torch.zeros_like(rho), torch.zeros_like(rho)
+        )
         f_out = far_field_bc_27(f, u_in=0.05)
         assert torch.isfinite(f_out).all().item()
 
@@ -101,6 +105,7 @@ class TestFarFieldBC27:
 # ---------------------------------------------------------------------------
 # far_field_bc_2d unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestFarFieldBC2d:
     """Verify the D2Q9 far-field boundary condition."""
@@ -118,7 +123,9 @@ class TestFarFieldBC2d:
         rho = torch.ones(ny, nx)
         f = equilibrium(rho, torch.zeros_like(rho), torch.zeros_like(rho))
         f_out = far_field_bc_2d(f, u_in=u_in)
-        feq_expected = equilibrium(torch.ones(ny, nx), torch.full_like(rho, u_in), torch.zeros_like(rho))
+        feq_expected = equilibrium(
+            torch.ones(ny, nx), torch.full_like(rho, u_in), torch.zeros_like(rho)
+        )
         assert torch.allclose(f_out[:, :, 0], feq_expected[:, :, 0])
 
 
@@ -126,13 +133,16 @@ class TestFarFieldBC2d:
 # far_field_bc_3d unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestFarFieldBC3d:
     """Verify the D3Q19 far-field boundary condition."""
 
     def test_far_field_bc_3d_preserves_shape(self) -> None:
         nz, ny, nx = 8, 8, 12
         rho = torch.ones(nz, ny, nx)
-        f = equilibrium3d(rho, torch.full_like(rho, 0.05), torch.zeros_like(rho), torch.zeros_like(rho))
+        f = equilibrium3d(
+            rho, torch.full_like(rho, 0.05), torch.zeros_like(rho), torch.zeros_like(rho)
+        )
         f_out = far_field_bc_3d(f, u_in=0.05)
         assert f_out.shape == f.shape == (19, nz, ny, nx)
 
@@ -140,6 +150,7 @@ class TestFarFieldBC3d:
 # ---------------------------------------------------------------------------
 # Sphere cross-validation boundary_mode tests
 # ---------------------------------------------------------------------------
+
 
 class TestSphereBoundaryMode:
     """Verify boundary_mode parameter in sphere cross-validation."""
@@ -149,9 +160,7 @@ class TestSphereBoundaryMode:
         assert config.boundary_mode == "farfield"
 
     def test_farfield_mode_produces_finite_result(self) -> None:
-        config = SphereCrossValidationConfig(
-            nx=12, ny=12, nz=12, steps=5, boundary_mode="farfield"
-        )
+        config = SphereCrossValidationConfig(nx=12, ny=12, nz=12, steps=5, boundary_mode="farfield")
         result = run_sphere_single(config, "D3Q19", "BGK", "none")
         assert result.finite
         assert result.Cd is not None
@@ -159,9 +168,7 @@ class TestSphereBoundaryMode:
         assert result.boundary_mode == "farfield"
 
     def test_channel_mode_produces_finite_result(self) -> None:
-        config = SphereCrossValidationConfig(
-            nx=12, ny=12, nz=12, steps=5, boundary_mode="channel"
-        )
+        config = SphereCrossValidationConfig(nx=12, ny=12, nz=12, steps=5, boundary_mode="channel")
         result = run_sphere_single(config, "D3Q19", "BGK", "none")
         assert result.finite
         assert result.Cd is not None
@@ -169,9 +176,7 @@ class TestSphereBoundaryMode:
         assert result.boundary_mode == "channel"
 
     def test_farfield_d3q27_produces_finite_result(self) -> None:
-        config = SphereCrossValidationConfig(
-            nx=12, ny=12, nz=12, steps=5, boundary_mode="farfield"
-        )
+        config = SphereCrossValidationConfig(nx=12, ny=12, nz=12, steps=5, boundary_mode="farfield")
         result = run_sphere_single(config, "D3Q27", "BGK", "none")
         assert result.finite
         assert result.Cd is not None
@@ -179,9 +184,7 @@ class TestSphereBoundaryMode:
         assert result.boundary_mode == "farfield"
 
     def test_channel_d3q27_produces_finite_result(self) -> None:
-        config = SphereCrossValidationConfig(
-            nx=12, ny=12, nz=12, steps=5, boundary_mode="channel"
-        )
+        config = SphereCrossValidationConfig(nx=12, ny=12, nz=12, steps=5, boundary_mode="channel")
         result = run_sphere_single(config, "D3Q27", "BGK", "none")
         assert result.finite
         assert result.Cd is not None
@@ -204,6 +207,7 @@ class TestSphereBoundaryMode:
 # ---------------------------------------------------------------------------
 # Cylinder cross-validation boundary_mode tests
 # ---------------------------------------------------------------------------
+
 
 class TestCylinderBoundaryMode:
     """Verify boundary_mode parameter in cylinder cross-validation."""

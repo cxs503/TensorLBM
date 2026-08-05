@@ -4,6 +4,7 @@ The contracts in this module deliberately contain no free-surface, phase-field,
 or solver state.  Tensor voxel fields always use ``(z, y, x)`` indexing while
 D3Q19 velocities are read from the authoritative ``d3q19.C`` in ``(x, y, z)``.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -23,13 +24,19 @@ def _origin_xyz(value: object) -> tuple[float, float, float]:
         raise ValueError("origin must be an (x, y, z) tuple of length 3")
     result: list[float] = []
     for coordinate in value:
-        if isinstance(coordinate, bool) or not isinstance(coordinate, (int, float)) or not isfinite(coordinate):
+        if (
+            isinstance(coordinate, bool)
+            or not isinstance(coordinate, (int, float))
+            or not isfinite(coordinate)
+        ):
             raise ValueError("origin must contain finite numeric coordinates")
         result.append(float(coordinate))
     return tuple(result)  # type: ignore[return-value]
 
 
-def _geometry_hash(mask: torch.Tensor, body_id: str, origin: tuple[float, float, float], units: str, source_id: str) -> str:
+def _geometry_hash(
+    mask: torch.Tensor, body_id: str, origin: tuple[float, float, float], units: str, source_id: str
+) -> str:
     """Return a stable provenance digest for the static geometry contract."""
     canonical = mask.detach().to(device="cpu", dtype=torch.uint8).contiguous()
     digest = sha256()
@@ -67,7 +74,11 @@ class GeometryAsset:
         source_id: str,
         source_hash: str | None = None,
     ) -> None:
-        if not isinstance(solid_mask, torch.Tensor) or solid_mask.ndim != 3 or solid_mask.dtype != torch.bool:
+        if (
+            not isinstance(solid_mask, torch.Tensor)
+            or solid_mask.ndim != 3
+            or solid_mask.dtype != torch.bool
+        ):
             raise ValueError("solid_mask must be a 3D bool torch.Tensor indexed (z, y, x)")
         if not isinstance(body_id, str) or not body_id:
             raise ValueError("body_id must be a non-empty string")
@@ -122,7 +133,11 @@ class D3Q19WallLinks:
             raise ValueError("wall-link coordinates must be int64")
         if self.owner_zyx.shape != (count, 3) or self.neighbor_zyx.shape != (count, 3):
             raise ValueError("wall-link coordinates must have shape (n, 3)")
-        if self.direction.dtype != torch.int64 or self.direction.ndim != 1 or bool(((self.direction < 1) | (self.direction > 18)).any()):
+        if (
+            self.direction.dtype != torch.int64
+            or self.direction.ndim != 1
+            or bool(((self.direction < 1) | (self.direction > 18)).any())
+        ):
             raise ValueError("direction must contain D3Q19 moving directions 1..18")
 
     @property
@@ -146,7 +161,11 @@ def compile_d3q19_wall_links(asset: GeometryAsset) -> D3Q19WallLinks:
     mask = asset.solid_mask
     shape = torch.tensor(mask.shape, dtype=torch.int64, device=mask.device)
     owners = mask.nonzero(as_tuple=False).to(dtype=torch.int64)
-    directions_zyx = C[1:].to(device=mask.device, dtype=torch.int64).index_select(1, _AXIS_ZYX_FROM_C_XYZ.to(mask.device))
+    directions_zyx = (
+        C[1:]
+        .to(device=mask.device, dtype=torch.int64)
+        .index_select(1, _AXIS_ZYX_FROM_C_XYZ.to(mask.device))
+    )
     owner_parts: list[torch.Tensor] = []
     neighbor_parts: list[torch.Tensor] = []
     direction_parts: list[torch.Tensor] = []
@@ -161,7 +180,9 @@ def compile_d3q19_wall_links(asset: GeometryAsset) -> D3Q19WallLinks:
         if bool(fluid.any()):
             owner_parts.append(owner[fluid])
             neighbor_parts.append(neighbor[fluid])
-            direction_parts.append(torch.full((int(fluid.sum().item()),), q, dtype=torch.int64, device=mask.device))
+            direction_parts.append(
+                torch.full((int(fluid.sum().item()),), q, dtype=torch.int64, device=mask.device)
+            )
     if owner_parts:
         owner_zyx = torch.cat(owner_parts)
         neighbor_zyx = torch.cat(neighbor_parts)
@@ -170,7 +191,9 @@ def compile_d3q19_wall_links(asset: GeometryAsset) -> D3Q19WallLinks:
         owner_zyx = torch.empty((0, 3), dtype=torch.int64, device=mask.device)
         neighbor_zyx = torch.empty((0, 3), dtype=torch.int64, device=mask.device)
         direction = torch.empty((0,), dtype=torch.int64, device=mask.device)
-    return D3Q19WallLinks(owner_zyx, neighbor_zyx, direction, asset.body_id, asset.source_hash or "")
+    return D3Q19WallLinks(
+        owner_zyx, neighbor_zyx, direction, asset.body_id, asset.source_hash or ""
+    )
 
 
 # A concise alias for consumers that do not need to mention the stencil twice.

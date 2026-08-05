@@ -10,6 +10,7 @@ Models:
   2: reichardt   Reichardt unified law
   3: gradient    u+ = y+ (linear)
 """
+
 import torch
 import torch.nn as nn
 import math
@@ -20,35 +21,47 @@ _B_LOG = 5.0
 
 # ── wall-law analytical functions (for training data) ──
 
+
 def _true_log(yp: torch.Tensor) -> torch.Tensor:
     return torch.log(yp.clamp(min=1e-6)) / _KAPPA + _B_LOG
 
+
 def _true_musker(yp: torch.Tensor) -> torch.Tensor:
     a1, a2, a3 = 5.424, 0.11976, 0.488
-    up = a1 * torch.arctan(a2 * yp - a3) \
-         + 0.434 * torch.log((yp + 10.6) ** 9.6 / ((yp ** 2 - 8.15 * yp + 86) ** 2 + 1e-12)) \
-         - 3.507
+    up = (
+        a1 * torch.arctan(a2 * yp - a3)
+        + 0.434 * torch.log((yp + 10.6) ** 9.6 / ((yp**2 - 8.15 * yp + 86) ** 2 + 1e-12))
+        - 3.507
+    )
     return torch.where(yp < 3.0, yp, up)
 
+
 def _true_reichardt(yp: torch.Tensor) -> torch.Tensor:
-    return torch.log1p(_KAPPA * yp) / _KAPPA \
-           + 7.8 * (1 - torch.exp(-yp / 11.0) - (yp / 11.0) * torch.exp(-yp / 3.0))
+    return torch.log1p(_KAPPA * yp) / _KAPPA + 7.8 * (
+        1 - torch.exp(-yp / 11.0) - (yp / 11.0) * torch.exp(-yp / 3.0)
+    )
+
 
 def _true_gradient(yp: torch.Tensor) -> torch.Tensor:
     return yp
+
 
 _TRUE_FNS = [_true_log, _true_musker, _true_reichardt, _true_gradient]
 
 
 # ── tiny MLP ──
 
+
 class _WallLawMLP(nn.Module):
     """log(y+) → u+.  177 params, <1 KB."""
+
     def __init__(self, hidden: int = 16):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(1, hidden), nn.ReLU(),
-            nn.Linear(hidden, 8), nn.ReLU(),
+            nn.Linear(1, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, 8),
+            nn.ReLU(),
             nn.Linear(8, 1),
         )
 
@@ -70,7 +83,9 @@ class _WallLawMLP(nn.Module):
         for _ in range(2000):
             pred = model(x_d)
             loss = nn.functional.mse_loss(pred, y_d)
-            opt.zero_grad(); loss.backward(); opt.step()
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
             if loss.item() < best_loss:
                 best_loss = loss.item()
                 best_state = copy.deepcopy(model.state_dict())
@@ -84,7 +99,8 @@ class _WallLawMLP(nn.Module):
 
 # ── public API ──
 
-_WALL_MODELS: dict[int, _WallLawMLP] = {}   # lazy init cache
+_WALL_MODELS: dict[int, _WallLawMLP] = {}  # lazy init cache
+
 
 def get_wall_model(wall_id: int, device: str = "cpu") -> _WallLawMLP:
     """Return pre-trained model for wall_id (0=log,1=musker,2=reichardt,3=gradient)."""
@@ -120,8 +136,9 @@ def neural_wall_u_tau(
     """
     # Gradient: u+ = y+ → u_tau = sqrt(nu * u / y) (analytic, no NN needed)
     if wall_law == "gradient":
-        ut = torch.where(near, torch.sqrt(nu * u_mag / y_val).clamp(min=1e-12),
-                         torch.zeros_like(u_mag))
+        ut = torch.where(
+            near, torch.sqrt(nu * u_mag / y_val).clamp(min=1e-12), torch.zeros_like(u_mag)
+        )
         return ut.clamp(min=1e-12)
 
     wl_id = _WALL_MAP.get(wall_law, 0)
