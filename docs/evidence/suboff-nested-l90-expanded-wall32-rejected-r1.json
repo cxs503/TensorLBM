@@ -1,0 +1,29 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "candidate": "suboff-nested-v11-l90-expanded-wall32-outer8",
+  "status": "rejected",
+  "configuration_delta": {
+    "outer_wall_margin_cells": 8,
+    "inner_wall_margin_cells": 16,
+    "finest_transverse_clearance_cells": 32,
+    "interface_filter_width": 0,
+    "regularize_prolongation": false
+  },
+  "comparison_to_unfiltered_l90_baseline": {
+    "candidate_first_speed_above_0_1_step": 1380,
+    "baseline_first_speed_above_0_1_step": 1500,
+    "candidate_first_speed_above_0_15_step": 1440,
+    "baseline_first_speed_above_0_15_step": 1560,
+    "candidate_population_at_or_below_1e_8_step": 1440,
+    "baseline_population_at_or_below_1e_8_step": 1560,
+    "candidate_maximum_collision_limited_fraction": 0.00008326808453815992,
+    "candidate_maximum_speed_through_step_1620": 0.19954614341259003
+  },
+  "artifacts": {
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v11-l90-rejected-expanded-wall32-step1620.log",
+    "remote_log_sha256": "4920cd64fdd6ee1ababb372f1122b21fc48ca5ec9464486b09ff028fb25e36e4",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v11-l90-expanded-wall32-outer8-2400.ckpt",
+    "remote_checkpoint_sha256": "1a3ee1bf3c732b1d01c9942774e3d4b5b3de16f881863fc1345f1fbcf896778d"
+  },
+  "conclusion": "A 32-cell finest transverse clearance does not delay the measured instability onset and is excluded from convergence and resistance claims."
+}

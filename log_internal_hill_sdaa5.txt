@@ -1,0 +1,46 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[hill SDAA:5] nx=400 ny=200 nz=4 Re=2800.0 H=40.0 nu=7.142857e-04 tau=0.502143 G=1.785714e-08 Cs=0.1 steps=20000
+[hill SDAA:5] solid=17992 near=2404
+[hill SDAA:5] init done (8.3s)
+[hill SDAA:5] step  2000: u_bulk=0.047701 [1268s]
+[hill SDAA:5] step  4000: u_bulk=0.047155 [2532s]
+[hill SDAA:5] step  6000: u_bulk=0.045579 [3812s]
+[hill SDAA:5] step  8000: u_bulk=0.044521 [4175s]
+[hill SDAA:5] step 10000: u_bulk=0.043551 [4319s]
+[hill SDAA:5] step 12000: u_bulk=0.042058 [4463s]
+[hill SDAA:5] step 14000: u_bulk=0.041379 [4575s]
+[hill SDAA:5] step 16000: u_bulk=0.040564 [4655s]
+[hill SDAA:5] step 18000: u_bulk=0.039475 [4736s]
+[hill SDAA:5] step 20000: u_bulk=0.038741 [4816s]
+
+[hill SDAA:5] === Results ===
+[hill SDAA:5] sep_x=210 reatt_x=251 xr/H=1.02 (ref~5.0)
+[hill SDAA:5] Time=4816s
+[hill SDAA:5] Saved to results_internal_hill_sdaa5.json
+_bulk=0.041379 [4926s]
+[hill SDAA:5] step 15000: u_bulk=0.040831 [4995s]
+[hill SDAA:5] step 16000: u_bulk=0.040564 [5064s]
+[hill SDAA:5] step 17000: u_bulk=0.040307 [5133s]
+[hill SDAA:5] step 18000: u_bulk=0.039475 [5202s]
+[hill SDAA:5] step 19000: u_bulk=0.039393 [5272s]
+[hill SDAA:5] step 20000: u_bulk=0.038741 [5341s]
+
+[hill SDAA:5] === Results ===
+[hill SDAA:5] sep_x=208 reatt_x=209 xr/H=0.03 (ref~5.0)
+[hill SDAA:5] Time=5341s
+[hill SDAA:5] Saved to results_internal_hill_sdaa5.json

@@ -2,6 +2,7 @@ import pytest
 import torch
 
 from tensorlbm import equilibrium, macroscopic
+from tensorlbm.d2q9 import W_EXACT64, W
 
 
 def test_equilibrium_roundtrip_zero_velocity() -> None:
@@ -31,8 +32,17 @@ def test_equilibrium_roundtrip_nonzero_velocity() -> None:
 
 
 def test_equilibrium_weights_sum_to_one() -> None:
-    from tensorlbm import W
     assert abs(float(W.sum().item()) - 1.0) < 1e-6
+
+
+def test_float64_equilibrium_uses_unrounded_weights() -> None:
+    rho = torch.ones((4, 5), dtype=torch.float64)
+    zero = torch.zeros_like(rho)
+    f = equilibrium(rho, zero, zero)
+
+    torch.testing.assert_close(f[:, 0, 0], W_EXACT64, rtol=0.0, atol=0.0)
+    assert torch.equal(W_EXACT64.float(), W)
+    assert not torch.equal(W.double(), W_EXACT64)
 
 
 def test_equilibrium_shape_mismatch_raises() -> None:

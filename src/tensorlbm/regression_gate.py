@@ -7,6 +7,7 @@ submitted, partial, or numerically invalid run for a benchmark success.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import csv
@@ -16,6 +17,11 @@ from pathlib import Path
 from typing import Any
 
 _TERMINAL_SUCCESS = {"PASSED", "COMPLETED"}
+MARINE_RESISTANCE_ARTIFACT_KIND = "marine_resistance_kpi"
+# v1 is the established detached canonical-gate contract. v2 is the new,
+# self-contained runtime contract and therefore requires binding evidence.
+MARINE_RESISTANCE_LEGACY_ARTIFACT_SCHEMA_VERSION = 1
+MARINE_RESISTANCE_RUNTIME_ARTIFACT_SCHEMA_VERSION = 2
 
 
 def _read_csv_rows(path: Path) -> list[dict[str, str]]:
@@ -218,6 +224,221 @@ def _physics_result(
     passed = result.get("pass") is True
     finite = _is_finite_json(result.get("metrics", {}))
     return {"pass": passed and finite, "reported_pass": passed, "finite_metrics": finite, "result": result}
+
+
+def _finite_number(value: Any) -> bool:
+    """Return true only for a finite JSON number (not a boolean)."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
+
+
+def _canonical_sha256(value: dict[str, Any]) -> str:
+    """Digest a JSON evidence record exactly as the producer does."""
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    ).hexdigest()
+
+
+def _marine_binding_errors(artifact: dict[str, Any], case: str) -> list[str]:
+    """Require canonical self-contained observation/provenance/reference evidence."""
+    binding = artifact.get("binding")
+    evidence = artifact.get("evidence")
+    if not isinstance(binding, dict) or not isinstance(evidence, dict):
+        return ["artifact requires canonical self-contained binding and evidence"]
+    observation = evidence.get("observation")
+    provenance = evidence.get("provenance")
+    reference = evidence.get("reference")
+    if not all(isinstance(item, dict) for item in (observation, provenance, reference)):
+        return ["artifact evidence requires observation, provenance, and reference objects"]
+    assert isinstance(observation, dict) and isinstance(provenance, dict) and isinstance(reference, dict)
+    try:
+        observation_digest = _canonical_sha256(observation)
+        provenance_digest = _canonical_sha256(provenance)
+        unsigned_reference = {key: value for key, value in reference.items() if key != "sha256"}
+        reference_digest = _canonical_sha256(unsigned_reference)
+    except (TypeError, ValueError):
+        return ["marine evidence is not canonical finite JSON"]
+    errors: list[str] = []
+    if binding.get("observation_sha256") != observation_digest:
+        errors.append("binding does not match canonical observation")
+    if binding.get("provenance_sha256") != provenance_digest:
+        errors.append("binding does not match canonical provenance")
+    if binding.get("reference_sha256") != reference_digest or reference.get("sha256") != reference_digest:
+        errors.append("binding does not match canonical reference")
+    if observation.get("schema") != "suboff-resistance-runtime-observation-v1" or observation.get("case") != case:
+        errors.append("observation schema or case is invalid")
+    # Runtime gate assertions must come from this hash-bound observation, not
+    # from the convenience copies at artifact top level. In particular, do not
+    # let a partial observation be upgraded by adding PASS fields later.
+    for section in ("completion", "preflight", "numerics", "resistance", "conservation", "physics"):
+        if not isinstance(observation.get(section), dict):
+            errors.append(f"bound observation requires {section} record")
+    if (provenance.get("schema") != "marine-run-provenance-v1"
+            or not isinstance(provenance.get("runner"), str) or not provenance["runner"]
+            or provenance.get("observation_sha256") != observation_digest):
+        errors.append("provenance does not bind canonical observation")
+    if (reference.get("schema") != "marine-reference-manifest-v1" or reference.get("case") != case
+            or not _finite_number(reference.get("coefficient")) or float(reference["coefficient"]) <= 0.0
+            or not isinstance(reference.get("source"), str) or not reference["source"]):
+        errors.append("reference manifest is invalid")
+    observed_resistance = observation.get("resistance")
+    if not isinstance(observed_resistance, dict):
+        return errors
+    # The observed coefficient is the sole v2 measurement. Top-level
+    # resistance is an unsigned display copy and is never consulted here.
+    coefficient = observed_resistance.get("coefficient")
+    if not _finite_number(coefficient):
+        errors.append("bound observation has no finite resistance coefficient")
+    return errors
+
+
+def _marine_artifact_contract_errors(artifact: dict[str, Any], case: str) -> list[str]:
+    """Select only an explicit legacy or self-contained runtime contract.
+
+    Schema v1 is the pre-binding canonical gate format.  Schema v2 is reserved
+    for runtime artifacts: its evidence/binding is mandatory, so an incomplete
+    or tampered v2 record cannot fall back to legacy verification.
+    """
+    version = artifact.get("schema_version")
+    has_binding = "binding" in artifact
+    has_evidence = "evidence" in artifact
+    if version == MARINE_RESISTANCE_LEGACY_ARTIFACT_SCHEMA_VERSION:
+        if has_binding or has_evidence:
+            return ["legacy schema_version 1 cannot contain runtime binding or evidence"]
+        return []
+    if version == MARINE_RESISTANCE_RUNTIME_ARTIFACT_SCHEMA_VERSION:
+        return _marine_binding_errors(artifact, case)
+    return ["unsupported marine resistance artifact schema_version"]
+
+
+def _marine_failure_row(name: str, errors: list[str]) -> dict[str, Any]:
+    return {
+        "case": name, "errors": errors,
+        "completion": {"pass": False}, "preflight": {"pass": False},
+        "numerics": {"pass": False}, "conservation": {"pass": False},
+        "resistance": {"pass": False}, "physics": {"pass": False}, "pass": False,
+    }
+
+
+def evaluate_marine_resistance_gate(artifacts_root: str | Path, cases: dict[str, Any]) -> dict[str, Any]:
+    """Fail closed on versioned marine-resistance KPI artifacts only.
+
+    Unlike the generic run-status gate, this refuses arbitrary JSON and requires
+    independent completion, preflight, numerical, conservation, resistance,
+    and physics evidence.  A finite resistance value or completed process alone
+    can therefore never be promoted to a physics pass.
+    """
+    root = Path(artifacts_root).resolve()
+    if not isinstance(cases, dict) or not cases:
+        return {"schema_version": 1, "gate": "marine_resistance", "artifacts_root": str(root),
+                "cases": [], "pass": False, "errors": ["cases must be a non-empty object"]}
+    report_cases: list[dict[str, Any]] = []
+    for name, spec in cases.items():
+        errors: list[str] = []
+        if not isinstance(name, str) or not isinstance(spec, dict):
+            errors.append("case name and specification must be objects")
+            report_cases.append(_marine_failure_row(str(name), errors))
+            continue
+        artifact_name = spec.get("artifact")
+        limits = {key: spec.get(key) for key in (
+            "max_relative_error_pct", "max_mass_relative_drift", "max_momentum_relative_drift")}
+        if not isinstance(artifact_name, str):
+            errors.append("artifact must be a relative path")
+        for limit_name, limit in limits.items():
+            if not _finite_number(limit) or float(limit) < 0.0:
+                errors.append(f"{limit_name} must be a finite number >= 0")
+        required_checks = spec.get("required_preflight_checks", [])
+        if not isinstance(required_checks, list) or not all(isinstance(item, str) and item for item in required_checks):
+            errors.append("required_preflight_checks must be a list of non-empty strings")
+        if errors:
+            report_cases.append(_marine_failure_row(name, errors))
+            continue
+        try:
+            artifact_path = _within_root(root, artifact_name)
+            artifact = _read_json(artifact_path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            errors.append(f"marine artifact unavailable: {exc}")
+            report_cases.append(_marine_failure_row(name, errors))
+            continue
+        if artifact.get("kind") != MARINE_RESISTANCE_ARTIFACT_KIND:
+            errors.append("artifact kind is not marine_resistance_kpi")
+        errors.extend(_marine_artifact_contract_errors(artifact, name))
+        if artifact.get("case") != name:
+            errors.append("artifact case does not match gate case")
+        if errors:
+            report_cases.append(_marine_failure_row(name, errors))
+            continue
+
+        # v2 facts are exclusively the hash-bound observation. Its top-level
+        # fields are producer convenience copies, not trusted gate evidence.
+        observation = (artifact.get("evidence", {}).get("observation")
+                       if artifact.get("schema_version") == MARINE_RESISTANCE_RUNTIME_ARTIFACT_SCHEMA_VERSION
+                       and isinstance(artifact.get("evidence"), dict) else None)
+        facts = observation if isinstance(observation, dict) else artifact
+        completion = facts.get("completion") if isinstance(facts.get("completion"), dict) else {}
+        requested, completed = completion.get("requested_steps"), completion.get("completed_steps")
+        completion_ok = (completion.get("state") in _TERMINAL_SUCCESS
+                         and isinstance(requested, int) and not isinstance(requested, bool) and requested >= 0
+                         and isinstance(completed, int) and not isinstance(completed, bool) and completed == requested)
+        preflight = facts.get("preflight") if isinstance(facts.get("preflight"), dict) else {}
+        checks = preflight.get("checks")
+        missing_checks = [item for item in required_checks if not isinstance(checks, dict)
+                          or not isinstance(checks.get(item), dict) or checks[item].get("pass") is not True]
+        if isinstance(checks, dict):
+            all_checks_pass = bool(checks) and all(
+                isinstance(check, dict) and check.get("pass") is True for check in checks.values()
+            )
+        else:
+            all_checks_pass = False
+        preflight_ok = preflight.get("pass") is True and all_checks_pass and not missing_checks
+        numerics = facts.get("numerics")
+        numerics_ok = isinstance(numerics, dict) and numerics.get("pass") is True and _is_finite_json(numerics)
+        conservation = facts.get("conservation") if isinstance(facts.get("conservation"), dict) else {}
+        # Runtime v2 observations record the maximum drift measured across all
+        # samples.  Retain v1 names only for legacy artifacts.
+        mass_drift = conservation.get("max_relative_mass_drift", conservation.get("mass_relative_drift"))
+        momentum_drift = conservation.get("max_relative_momentum_drift", conservation.get("momentum_relative_drift"))
+        conservation_ok = (conservation.get("pass") is True and _finite_number(mass_drift) and _finite_number(momentum_drift)
+                           and abs(float(mass_drift)) <= float(limits["max_mass_relative_drift"])
+                           and abs(float(momentum_drift)) <= float(limits["max_momentum_relative_drift"]))
+        resistance = facts.get("resistance") if isinstance(facts.get("resistance"), dict) else {}
+        coefficient, reference, reported_error_pct = (resistance.get("coefficient"), resistance.get("reference_coefficient"),
+                                                      resistance.get("relative_error_pct"))
+        computed_error_pct = None
+        coefficients_ok = (_finite_number(coefficient) and float(coefficient) > 0.0
+                           and _finite_number(reference) and float(reference) > 0.0)
+        if coefficients_ok:
+            computed_error_pct = abs(float(coefficient) - float(reference)) / float(reference) * 100.0
+        reported_error_ok = _finite_number(reported_error_pct) and float(reported_error_pct) >= 0.0
+        error_matches_coefficients = (computed_error_pct is not None and reported_error_ok
+                                      and math.isclose(float(reported_error_pct), computed_error_pct,
+                                                       rel_tol=1.0e-9, abs_tol=0.0))
+        if reported_error_ok and computed_error_pct is not None and not error_matches_coefficients:
+            errors.append("resistance relative_error_pct contradicts coefficients")
+        resistance_ok = (resistance.get("pass") is True and coefficients_ok and reported_error_ok
+                         and error_matches_coefficients and computed_error_pct is not None
+                         and computed_error_pct <= float(limits["max_relative_error_pct"]))
+        physics = facts.get("physics") if isinstance(facts.get("physics"), dict) else {}
+        physics_ok = physics.get("pass") is True and resistance_ok and conservation_ok
+        row = {
+            "case": name, "artifact": str(artifact_path.relative_to(root)), "errors": errors,
+            "completion": {"pass": completion_ok, "state": completion.get("state"), "requested_steps": requested, "completed_steps": completed},
+            "preflight": {"pass": preflight_ok, "missing_or_failed_checks": missing_checks},
+            "numerics": {"pass": numerics_ok},
+            "conservation": {"pass": conservation_ok, "mass_relative_drift": mass_drift, "momentum_relative_drift": momentum_drift},
+            "resistance": {
+                "pass": resistance_ok,
+                "coefficient": coefficient,
+                "reference_coefficient": reference,
+                "relative_error_pct": computed_error_pct,
+                "reported_relative_error_pct": reported_error_pct,
+            },
+            "physics": {"pass": physics_ok, "reported_pass": physics.get("pass")},
+        }
+        row["pass"] = all(bool(row[section]["pass"]) for section in
+                          ("completion", "preflight", "numerics", "conservation", "resistance", "physics"))
+        report_cases.append(row)
+    return {"schema_version": 1, "gate": "marine_resistance", "artifacts_root": str(root),
+            "cases": report_cases, "pass": bool(report_cases) and all(row["pass"] for row in report_cases)}
 
 
 def evaluate_regression_gate(artifacts_root: str | Path, cases: dict[str, Any]) -> dict[str, Any]:

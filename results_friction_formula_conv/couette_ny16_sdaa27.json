@@ -1,0 +1,22 @@
+{
+  "case": "couette_friction_formula_conv",
+  "device": "sdaa:27",
+  "grid": "80x16x4",
+  "tau": 1.0,
+  "nu": 0.16666666666666666,
+  "u_top": 0.05,
+  "H": 14,
+  "n_steps": 4000,
+  "warmup": 500,
+  "Cf_exact": 0.4761904761904761,
+  "Cf_mean_standard": 0.4756684539041348,
+  "Cf_err_pct_standard": 0.10962468013167195,
+  "Cf_mean_2nd_order": -1.379563863236756e-05,
+  "Cf_err_pct_2nd_order": 100.00289708411279,
+  "Cf_mean_central": 0.7135164529085158,
+  "Cf_err_pct_central": 49.83845511078835,
+  "Cf_mean_lagrange": 0.4756639361807278,
+  "Cf_err_pct_lagrange": 0.11057340204714997,
+  "elapsed_s": 201.30186581611633,
+  "finite": true
+}

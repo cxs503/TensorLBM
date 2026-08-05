@@ -1,0 +1,170 @@
+{
+  "description": "D2Q9 cylinder cross-validation: collision \u00d7 turbulence Cd matrix",
+  "lattice": "D2Q9",
+  "reynolds_number": 100,
+  "grid": {
+    "nx": 100,
+    "ny": 50
+  },
+  "steps": 200,
+  "status": "diagnostic_only",
+  "physical_validation": false,
+  "collision_families": [
+    "BGK",
+    "MRT",
+    "TRT",
+    "RLBM"
+  ],
+  "turbulence_models": [
+    "none",
+    "Smagorinsky",
+    "WALE",
+    "Vreman"
+  ],
+  "matrix": [
+    {
+      "collision_family": "BGK",
+      "turbulence_model": "none",
+      "Cd": 2.928984309240327,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "BGK",
+      "turbulence_model": "Smagorinsky",
+      "Cd": 2.973985710506153,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "BGK",
+      "turbulence_model": "WALE",
+      "Cd": 2.9321337137278642,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "BGK",
+      "turbulence_model": "Vreman",
+      "Cd": 2.939740570149842,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "MRT",
+      "turbulence_model": "none",
+      "Cd": 3.1093862798371803,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "MRT",
+      "turbulence_model": "Smagorinsky",
+      "Cd": 3.1415809583250422,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "MRT",
+      "turbulence_model": "WALE",
+      "Cd": 3.0988617684339994,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "MRT",
+      "turbulence_model": "Vreman",
+      "Cd": 3.118254977956436,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "TRT",
+      "turbulence_model": "none",
+      "Cd": 2.8085786073930428,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "TRT",
+      "turbulence_model": "Smagorinsky",
+      "Cd": 2.8709605420620936,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "TRT",
+      "turbulence_model": "WALE",
+      "Cd": 2.8042413264455357,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "TRT",
+      "turbulence_model": "Vreman",
+      "Cd": 2.821783981537739,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "RLBM",
+      "turbulence_model": "none",
+      "Cd": 3.106216830548955,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "RLBM",
+      "turbulence_model": "Smagorinsky",
+      "Cd": 3.142355098978567,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "RLBM",
+      "turbulence_model": "WALE",
+      "Cd": 3.094453436171666,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    },
+    {
+      "collision_family": "RLBM",
+      "turbulence_model": "Vreman",
+      "Cd": 3.116631104557833,
+      "finite": true,
+      "steps_completed": 200,
+      "status": "diagnostic_only",
+      "physical_validation": false
+    }
+  ]
+}

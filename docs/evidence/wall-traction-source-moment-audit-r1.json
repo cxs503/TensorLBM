@@ -1,0 +1,39 @@
+{
+  "schema": "tensorlbm-wall-traction-source-moment-audit-v1",
+  "status": "corrected_and_regression_tested",
+  "finding": "The previous velocity-corrected wall-traction source omitted the isotropic -w_i(u dot F)/cs^2 term. Its first moment was the requested force, but its zeroth moment was (u dot F)/cs^2 instead of zero.",
+  "secondary_finding": "The solver-agnostic wall path also divided the already-integrated wall traction by y_val a second time. It now uses the same unit lattice wall-area/control-volume scaling as the mature BFL wall path.",
+  "corrected_source": "w_i * ((c_i dot F - u dot F)/cs^2 + (c_i dot u)(c_i dot F)/cs^4)",
+  "operator_split": "post_collision_exact_traction_impulse",
+  "checkpoint_scheme": "mass_conservative_post_collision_guo_v2",
+  "manufactured_moment_tests": {
+    "lattices": [
+      "D3Q19",
+      "D3Q27"
+    ],
+    "velocity_force_alignment": "random including non-orthogonal components",
+    "dtype": "float64",
+    "zeroth_moment_target": 0.0,
+    "first_moment_target": "[Fx,Fy,Fz]",
+    "absolute_tolerance": 2e-18,
+    "result": "pass"
+  },
+  "regression_tests": {
+    "command": "wall-model moment/closure suites plus solver-agnostic wall_function_common and LBMStepExecutor regression suites",
+    "passed": 75,
+    "failed": 0
+  },
+  "corrected_common_paths": [
+    "wall_model.guobody_force_d3q19/d3q27",
+    "wall_function_common._apply_body_force",
+    "LBMStepExecutor._apply_body_force_inplace",
+    "legacy D3Q27 wall_function_d3q27 source"
+  ],
+  "campaign_policy": {
+    "pre_correction_resistance_results": "stability and diagnostic evidence only; not eligible for physical promotion",
+    "checkpoint_without_scheme": "rejected instead of silently resuming with changed wall physics",
+    "first_corrected_three_level_generation": "v13 baseline / v14 inlet-sponge A-B pair",
+    "first_corrected_four_level_generation": "v12 L90 wall-distance/refinement pilot"
+  },
+  "scope_limit": "Moment consistency removes a spurious mass source. It does not by itself validate the Musker law, local refinement, open boundaries, SUBOFF drag, or experimental agreement."
+}

@@ -1,0 +1,82 @@
+{
+  "title": "SUBOFF Collision Model Comparison — Re=1000",
+  "geometry": "SUBOFF bare hull, L=80, nx=200, ny=80, nz=80",
+  "parameters": {
+    "L": 80.0,
+    "nx": 200, "ny": 80, "nz": 80,
+    "u_in": 0.06,
+    "Re": 1000,
+    "tau": 0.5144,
+    "nu": 0.0048,
+    "n_steps": 5000,
+    "avg_window": 500,
+    "D": 9.334889148191365,
+    "radius": 4.667444574095683,
+    "n_solid": 4651,
+    "n_near": 2050,
+    "dpS": 4.2230043604847625,
+    "dpS_formula": "0.5*u_in^2*pi*D*L (wetted area)"
+  },
+  "reference": {
+    "name": "Blasius laminar flat plate",
+    "formula": "Cf = 1.328/sqrt(Re)",
+    "Cf_ref": 0.04199504732703608
+  },
+  "results": [
+    {
+      "model": "BGK",
+      "device": "sdaa:0",
+      "Cd_pressure": 0.006056,
+      "Cd_friction": 0.039562,
+      "Cd_total": 0.045617,
+      "Cf_numerical": 0.045617,
+      "error_pct": 8.6,
+      "time_per_step_ms": 96.4,
+      "elapsed_s": 482,
+      "finite": true
+    },
+    {
+      "model": "MRT",
+      "device": "sdaa:1",
+      "Cd_pressure": 0.006289,
+      "Cd_friction": 0.038036,
+      "Cd_total": 0.044325,
+      "Cf_numerical": 0.044325,
+      "error_pct": 5.5,
+      "time_per_step_ms": 161.5,
+      "elapsed_s": 807,
+      "finite": true
+    },
+    {
+      "model": "MRT+Smag(Cs=0.05)",
+      "device": "sdaa:2",
+      "Cd_pressure": 0.006297,
+      "Cd_friction": 0.037899,
+      "Cd_total": 0.044196,
+      "Cf_numerical": 0.044196,
+      "error_pct": 5.2,
+      "time_per_step_ms": 174.3,
+      "elapsed_s": 872,
+      "finite": true
+    },
+    {
+      "model": "Cumulant D3Q19",
+      "device": "sdaa:3",
+      "Cd_pressure": 0.006034,
+      "Cd_friction": 0.037477,
+      "Cd_total": 0.043512,
+      "Cf_numerical": 0.043512,
+      "error_pct": 3.6,
+      "time_per_step_ms": 125.9,
+      "elapsed_s": 630,
+      "finite": true
+    }
+  ],
+  "summary": {
+    "most_accurate": "Cumulant D3Q19 (3.6% error)",
+    "fastest": "BGK (96.4 ms/step)",
+    "best_accuracy_per_cost": "Cumulant D3Q19 (3.6% error at 125.9 ms/step)",
+    "all_stable": true,
+    "key_finding": "Cumulant gives the best accuracy (3.6%) and is 22% faster than MRT while being 2x more accurate than BGK. MRT+Smagorinsky provides marginal improvement over plain MRT (5.2% vs 5.5%) at 8% higher cost. At Re=1000 (laminar), the Smagorinsky LES model adds cost without significant benefit since the flow is not turbulent."
+  }
+}

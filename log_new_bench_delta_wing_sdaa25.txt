@@ -1,0 +1,35 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[delta_wing SDAA:25] chord=60.0 sweep=70.0° half_span=10.9 nx=200 ny=32 nz=80 u_in=0.08 Re=1000.0 nu=4.800000e-03 tau=0.514400 MRT+Smag(Cs=0.05) steps=10000
+[delta_wing SDAA:25] solid=2013 near=1774 planform=655.1 dpS=2.096469e+00
+[delta_wing SDAA:25] init done (0.5s) mass=512000.0
+[delta_wing SDAA:25] step=1000/10000 Cd=0.0000 Cl=0.000000 (75s, 0.075s/step)
+[delta_wing SDAA:25] step=2000/10000 Cd=0.0000 Cl=0.000000 (155s, 0.077s/step)
+[delta_wing SDAA:25] step=3000/10000 Cd=0.1838 Cl=-0.000884 (231s, 0.077s/step)
+[delta_wing SDAA:25] step=4000/10000 Cd=0.1835 Cl=-0.000882 (308s, 0.077s/step)
+[delta_wing SDAA:25] step=5000/10000 Cd=0.1834 Cl=-0.000881 (414s, 0.083s/step)
+[delta_wing SDAA:25] step=6000/10000 Cd=0.1833 Cl=-0.000881 (561s, 0.094s/step)
+[delta_wing SDAA:25] step=7000/10000 Cd=0.1833 Cl=-0.000880 (734s, 0.105s/step)
+[delta_wing SDAA:25] step=8000/10000 Cd=0.1833 Cl=-0.000880 (907s, 0.113s/step)
+[delta_wing SDAA:25] step=9000/10000 Cd=0.1833 Cl=-0.000880 (1079s, 0.120s/step)
+[delta_wing SDAA:25] step=10000/10000 Cd=0.1833 Cl=-0.000880 (1251s, 0.125s/step)
+
+[delta_wing SDAA:25] === FINAL ===
+[delta_wing SDAA:25] Cd_p=0.0575 Cd_f=0.1258 Cd_tot=0.1833
+[delta_wing SDAA:25] Cl=-0.000877 Cl_rms=0.000603 St=None
+[delta_wing SDAA:25] time=1251s (0.125s/step)
+[delta_wing SDAA:25] saved to results_new_bench_delta_wing_sdaa25.json

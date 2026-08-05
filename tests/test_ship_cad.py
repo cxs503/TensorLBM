@@ -211,6 +211,20 @@ def test_hull_statistics_wigley_analytical() -> None:
     assert abs(stats["Cp"] - 2.0 / 3.0) < 1e-3, f"Cp={stats['Cp']}"
 
 
+@pytest.mark.parametrize("hull_type", list(ShipHullType))
+def test_hull_statistics_runs_without_legacy_numpy_trapz(
+    monkeypatch: pytest.MonkeyPatch, hull_type: ShipHullType
+) -> None:
+    """Form-coefficient integration must work when NumPy's retired trapz is absent."""
+    monkeypatch.delattr(np, "trapz", raising=False)
+
+    stats = hull_statistics(hull_type, length=100.0, beam=16.0, draft=8.0)
+
+    for key in ("Cwp", "Cm", "Cp"):
+        assert math.isfinite(stats[key])
+        assert 0.0 < stats[key] <= 1.0
+
+
 def test_hull_statistics_lb_bt() -> None:
     """L/B and B/T ratios must match the input dimensions."""
     s = hull_statistics(ShipHullType.SERIES60, length=120.0, beam=20.0, draft=8.0)

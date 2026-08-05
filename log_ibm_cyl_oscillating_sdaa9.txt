@@ -1,0 +1,27 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_oscillating SDAA:9] Re=200 D=48 grid=640x256x4 u_in=0.1 nu=2.400000e-02 tau=0.572000 dpS=9.600000e-01
+[cyl_oscillating SDAA:9] collision=mrt_smag Cs=0.1 n_steps=8000 avg_window=2000
+[cyl_oscillating SDAA:9] solid cells: 7172
+[cyl_oscillating SDAA:9] near-wall cells: 544
+[cyl_oscillating SDAA:9] SurfaceMesh.from_cylinder built
+[cyl_oscillating SDAA:9] IBM markers: 94
+[cyl_oscillating SDAA:9] oscillating: A=4.80 f=0.2 u_max=4.8000
+[cyl_oscillating SDAA:9] init done (0.4s) mass=655360.0
+[cyl_oscillating SDAA:9] DIVERGED at step 3
+[cyl_oscillating SDAA:9] DONE  Cd_ibm=nan  Cd_p=nan  Cd_f=nan  Cd_tot=nan  Cl=nan  St=None  (ref=0.00, bb=0.00)  err=nan%  vs_bb=nan%  time=13s
+[cyl_oscillating SDAA:9] Results → results_ibm_common_cyl_oscillating_sdaa9.json

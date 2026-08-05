@@ -1,0 +1,63 @@
+{
+  "schema": "tensorlbm-suboff-wall-persistence-assessment-v1",
+  "status": "diagnostic_only",
+  "physical_validation": false,
+  "selection_by_experimental_resistance": false,
+  "case": "SUBOFF AFF-1 nested L90 / effective L720, Re=200000 wall-resolved collision continuation, physical-Re Musker wall stress",
+  "sources": {
+    "step3000_audit": {
+      "path": "docs/evidence/suboff-nested-v23-equivalent-l90-3k-wall-audit-r2.json",
+      "sha256": "b484a9e7218711bba51755823de9a365210e408d01415d50d690fef5d1b31e19"
+    },
+    "step6000_remote_audit": {
+      "path": "results/amr_campaign_20260801/suboff-nested-v30-step6000-wall-audit.json",
+      "sha256": "1d1c3ba947942c5e321945e71282ec76ba5ad124d15da1483263e502dbe3c332",
+      "source_checkpoint_sha256_at_inspection": "84ba9343789feb6459eb3e292904258b5b2f3ae07735eb9d70714e2d5728a50d"
+    }
+  },
+  "step3000": {
+    "wall_nodes": 147738,
+    "mean_y_plus": 821.9266357421875,
+    "median_y_plus": 809.7929077148438,
+    "y_plus_in_range_fraction": 0.9181930173685849,
+    "pressure_gradient_parameter_median": 0.9700718820095062,
+    "pressure_gradient_parameter_fraction_gt_ten": 0.2984134075187156,
+    "signed_parameter_median": -0.006252161227166653,
+    "strong_adverse_fraction": 0.21162463279589544,
+    "strong_favourable_fraction": 0.15623603947528733
+  },
+  "step6000": {
+    "wall_nodes": 147738,
+    "mean_y_plus": 823.0694580078125,
+    "median_y_plus": 810.7398071289062,
+    "y_plus_in_range_fraction": 0.9175026059646131,
+    "pressure_gradient_parameter_median": 0.9717235863208771,
+    "pressure_gradient_parameter_fraction_gt_ten": 0.2983795638224424,
+    "signed_parameter_median": -0.006325251189991832,
+    "strong_adverse_fraction": 0.2117667763202426,
+    "strong_favourable_fraction": 0.15627665191081508,
+    "control_volume_resistance_n": 118.1599948365339,
+    "wall_shear_resistance_n": 96.91154465631159,
+    "conservative_bfl_link_impulse_n": 22.031001653761862,
+    "two_point_valid_area_fraction": 0.9065825939178467,
+    "two_point_covered_shear_resistance_n": 94.05383019322895,
+    "two_point_median_friction_velocity_lu": 0.0018309209845028818,
+    "two_point_percentile95_friction_velocity_lu": 0.005644154082983732
+  },
+  "relative_change_step3000_to_step6000": {
+    "mean_y_plus_fraction": 0.0013904188231995288,
+    "median_y_plus_fraction": 0.001169310579336336,
+    "pressure_gradient_parameter_median_fraction": 0.0017026617738361205,
+    "strong_adverse_fraction": 0.0006716775947545422,
+    "strong_favourable_fraction": 0.0002599428125811654
+  },
+  "assessment": {
+    "wall_state_temporally_persistent_over_additional_steps": true,
+    "pressure_gradient_exposure_is_local_and_signed": true,
+    "global_wall_shear_multiplier_admitted": false,
+    "two_point_force_replacement_admitted": false,
+    "non_equilibrium_selector_canonical_validation_required": true,
+    "production_non_equilibrium_force_closure_admitted": false
+  },
+  "conclusion": "From step 3000 to step 6000 the y+ and signed pressure-gradient distributions change by about 0.2% or less in the reported central metrics. The broad wall-stress state is therefore persistent rather than a startup transient. About 21.18% of nodes show strong adverse exposure while 15.63% show strong favourable exposure, so a global multiplier remains invalid. The two-point slope retains only 90.66% area coverage and a broad upper tail; it remains diagnostic, not a force law. Canonical zero- and adverse-pressure-gradient validation is required before any selected non-equilibrium closure enters production."
+}

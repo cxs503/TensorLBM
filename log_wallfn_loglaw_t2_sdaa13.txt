@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] test=t2_log_p0fix use_wf=True wall_law=log y_val=1.0 p0_method=far_field nx=200 ny=80 nz=80 L=80.0 R=4.6674 D=9.3349 u_in=0.06 nu=2.400000e-06 tau=0.500007 Cs=0.05 dpS=4.223004e+00 Cf_ref=0.004054 n_steps=5000
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] solid cells: 4651  L/D=8.57
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] near-wall cells: 2050
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] |n| stats: min=1.000000 max=1.000000 mean=1.000000
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] init done (0.6s), initial_mass=1280000.0
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=500 Cd_p=0.008373 Cd_f=0.001497 Cd_tot=0.009870 (136s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=1000 Cd_p=0.002566 Cd_f=0.001507 Cd_tot=0.004072 (270s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=1500 Cd_p=-0.004819 Cd_f=0.001645 Cd_tot=-0.003174 (404s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=2000 Cd_p=-0.000657 Cd_f=0.002087 Cd_tot=0.001430 (538s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=2500 Cd_p=-0.000857 Cd_f=0.002461 Cd_tot=0.001604 (673s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=3000 Cd_p=0.000467 Cd_f=0.002456 Cd_tot=0.002923 (808s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=3500 Cd_p=-0.000844 Cd_f=0.002728 Cd_tot=0.001884 (943s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=4000 Cd_p=-0.002132 Cd_f=0.002900 Cd_tot=0.000769 (1078s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=4500 Cd_p=0.000194 Cd_f=0.002900 Cd_tot=0.003093 (1213s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] step=5000 Cd_p=-0.001215 Cd_f=0.003146 Cd_tot=0.001931 (1348s)
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] DONE Cd_p=-0.001215 Cd_f=0.003146 Cd_tot=0.001931 (ref Cf=0.004054) err=52.4% time=1348s
+[SDAA:13 T2-LOG Re=2e6 log y=1.0 p0=far_field] Results written to results_wallfn_loglaw/t2_log_re2e6_p0fix_sdaa13.json

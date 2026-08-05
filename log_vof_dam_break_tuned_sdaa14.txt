@@ -1,0 +1,35 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[DamBreak-tuned SDAA:14] Starting dam break: 200x100x4, col=50x50, rho_l=1.0, rho_g=0.5, gy=-0.0001, tau=0.6, steps=3000
+[DamBreak-tuned SDAA:14] target_phi_sum=4900.0
+[DamBreak-tuned SDAA:14] step=    0 front=  51.0 z*=1.020 t*=0.000 phi_sum=4900.0 (0.0s)
+[DamBreak-tuned SDAA:14] step=  200 front= 113.0 z*=2.260 t*=0.283 phi_sum=4900.0 (3.9s)
+[DamBreak-tuned SDAA:14] step=  400 front= 166.0 z*=3.320 t*=0.566 phi_sum=4900.0 (7.8s)
+[DamBreak-tuned SDAA:14] step=  600 front= 198.0 z*=3.960 t*=0.849 phi_sum=4900.0 (11.7s)
+[DamBreak-tuned SDAA:14] step=  800 front= 198.0 z*=3.960 t*=1.131 phi_sum=4900.0 (15.7s)
+[DamBreak-tuned SDAA:14] step= 1000 front= 198.0 z*=3.960 t*=1.414 phi_sum=4900.0 (19.6s)
+[DamBreak-tuned SDAA:14] step= 1200 front= 198.0 z*=3.960 t*=1.697 phi_sum=4900.0 (23.5s)
+[DamBreak-tuned SDAA:14] step= 1400 front= 198.0 z*=3.960 t*=1.980 phi_sum=4900.0 (27.3s)
+[DamBreak-tuned SDAA:14] step= 1600 front= 198.0 z*=3.960 t*=2.263 phi_sum=4900.0 (31.3s)
+[DamBreak-tuned SDAA:14] step= 1800 front= 198.0 z*=3.960 t*=2.546 phi_sum=4900.0 (35.1s)
+[DamBreak-tuned SDAA:14] step= 2000 front= 198.0 z*=3.960 t*=2.828 phi_sum=4900.0 (38.9s)
+[DamBreak-tuned SDAA:14] step= 2200 front= 198.0 z*=3.960 t*=3.111 phi_sum=4900.0 (42.7s)
+[DamBreak-tuned SDAA:14] step= 2400 front= 198.0 z*=3.960 t*=3.394 phi_sum=4900.0 (46.5s)
+[DamBreak-tuned SDAA:14] step= 2600 front= 198.0 z*=3.960 t*=3.677 phi_sum=4900.0 (50.3s)
+[DamBreak-tuned SDAA:14] step= 2800 front= 198.0 z*=3.960 t*=3.960 phi_sum=4900.0 (54.2s)
+[DamBreak-tuned SDAA:14] RESULT (best): z*_sim=3.960 z*_ref=3.917 error=1.1% step=1650 t*=2.333 PASS
+[DamBreak-tuned SDAA:14] RESULT (final): z*_sim=3.960 z*_ref=6.215 error=36.3%

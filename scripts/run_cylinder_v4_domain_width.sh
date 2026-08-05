@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "usage: $0 W20|W30|W40 PHYSICAL_GPU [RESULT_DIR] [WAIT_FOR_PID]" >&2
+  exit 2
+}
+
+[[ $# -ge 2 && $# -le 4 ]] || usage
+width=${1#W}
+gpu=$2
+result_dir=${3:-results/cylinder_domain_convergence}
+wait_for_pid=${4:-}
+
+# Keep diameter resolution, streamwise clearance, time horizon, collision,
+# and force observers fixed.  Only the lateral blockage ratio changes.
+radius=9
+diameter=$((2 * radius))
+nx=360
+steps=${TENSORLBM_STEPS:-54000}
+if [[ ! $steps =~ ^[1-9][0-9]*$ ]] || (( steps < 54000 )); then
+  echo "TENSORLBM_STEPS must be an integer >= 54000" >&2
+  exit 2
+fi
+case "$width" in
+  20) ny=$((20 * diameter)) ;;
+  30) ny=$((30 * diameter)) ;;
+  40) ny=$((40 * diameter)) ;;
+  *) usage ;;
+esac
+
+if [[ -n "$wait_for_pid" ]]; then
+  [[ "$wait_for_pid" =~ ^[0-9]+$ ]] || usage
+  while kill -0 "$wait_for_pid" 2>/dev/null; do
+    sleep 20
+  done
+fi
+
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$root"
+mkdir -p "$result_dir"
+if [[ -n ${TENSORLBM_PYTHON:-} ]]; then
+  python=$TENSORLBM_PYTHON
+elif [[ -x $root/.venv/bin/python ]]; then
+  python=$root/.venv/bin/python
+elif [[ -x /home/wxsc/anaconda3/envs/ftw-env/bin/python ]]; then
+  python=/home/wxsc/anaconda3/envs/ftw-env/bin/python
+elif command -v python3 >/dev/null 2>&1; then
+  python=$(command -v python3)
+else
+  echo "no Python interpreter found; set TENSORLBM_PYTHON" >&2
+  exit 127
+fi
+export PYTHONPATH="$root/src${PYTHONPATH:+:$PYTHONPATH}"
+if [[ ${TENSORLBM_PREFLIGHT_ONLY:-0} == 1 ]]; then
+  exec "$python" -c 'import tensorlbm; print(tensorlbm.__file__)'
+fi
+if (( steps % 1000 == 0 )); then
+  step_suffix="$((steps / 1000))k"
+else
+  step_suffix=$steps
+fi
+stem="$result_dir/cylinder-v4-domain-w${width}d-r9-${step_suffix}"
+seed_checkpoint=${TENSORLBM_CONTINUE_FROM_CHECKPOINT:-}
+if [[ -n "$seed_checkpoint" && ! -f "$stem.ckpt" ]]; then
+  if [[ ! -f "$seed_checkpoint" ]]; then
+    echo "continuation seed checkpoint does not exist: $seed_checkpoint" >&2
+    exit 2
+  fi
+  cp --reflink=auto -- "$seed_checkpoint" "$stem.ckpt"
+fi
+resume=()
+if [[ -f "$stem.ckpt" ]]; then
+  resume=(--resume)
+fi
+
+export CUDA_VISIBLE_DEVICES=$gpu
+exec "$python" examples/cylinder_bfl_cv_validate.py \
+  --device cuda:0 --nx "$nx" --ny "$ny" --nz 3 \
+  --radius "$radius" --center-x-fraction 0.30 \
+  --reynolds 100 --lattice-speed 0.06 \
+  --steps "$steps" --warmup-steps 31500 --ramp-steps 450 \
+  --sponge-width 18 --sponge-strength 0.2 --cv-margin 6 \
+  --report-interval 450 --checkpoint-interval 4500 \
+  --checkpoint "$stem.ckpt" --statistics-window-steps 22500 \
+  --minimum-shedding-cycles 8 \
+  --far-field-mode non_equilibrium_extrapolation \
+  --output "$stem.json" "${resume[@]}"

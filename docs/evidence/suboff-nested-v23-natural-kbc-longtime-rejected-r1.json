@@ -1,0 +1,61 @@
+{
+  "schema": "tensorlbm-nested-longtime-candidate-evidence-v1",
+  "candidate": "suboff-nested-v23-equivalent-l90-12k",
+  "status": "rejected_at_population_health_floor",
+  "configuration": {
+    "collision_model": "natural_kbc",
+    "smagorinsky_coefficient": 0.0,
+    "coarse_hull_length_cells": 90,
+    "finest_hull_length_cells": 360,
+    "stress_exchange_distance": 1.0,
+    "stress_exchange_distance_over_finest_length": 0.002777777777777778,
+    "target_resolved_reynolds": 100000,
+    "target_steps": 12000
+  },
+  "last_checkpoint": {
+    "step": 6750,
+    "all_levels_finite": true,
+    "minimum_population_by_level": [
+      0.013975327834486961,
+      0.01997775211930275,
+      0.02093098871409893
+    ],
+    "maximum_speed_by_level": [
+      0.08334232121706009,
+      0.0676715224981308,
+      0.07022232562303543
+    ],
+    "maximum_transfer_limited_fraction_by_interface": [0.0, 0.0]
+  },
+  "failure": {
+    "step": 6840,
+    "minimum_population": 9.999999717180685e-10,
+    "minimum_population_limit": 1e-8,
+    "failing_level": 0,
+    "failing_level_minimum_density": 0.8762936592102051,
+    "failing_level_maximum_speed": 0.13453662395477295,
+    "failing_level_maximum_speed_index_zyx": [48, 45, 9],
+    "location_interpretation": "The growing excursion is on the root grid nine cells from the upstream x- boundary, outside both refinement interfaces and inside the 18-cell upstream boundary region that had no sponge.",
+    "maximum_collision_limited_fraction": 8.23045267489712e-7,
+    "maximum_reflux_applied_correction_fraction_by_interface": [
+      1.187567818305979e-6,
+      2.098998521660178e-7
+    ],
+    "maximum_transfer_limited_fraction_by_interface": [0.0, 0.0]
+  },
+  "admission": {
+    "completed_target_steps": false,
+    "population_health_target_met": false,
+    "wall_exchange_scaling_target_met": false,
+    "time_statistics_assessed": false,
+    "grid_convergence_member": false,
+    "admitted": false
+  },
+  "artifacts": {
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-12k.ckpt",
+    "remote_checkpoint_sha256": "68fb9d69682d539b9fb68680f2bcbe54f87921473cbcace6b7556f6f0b31e21f",
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-12k.log",
+    "remote_log_sha256": "13519373322b5cddfc9d5aeacb12e40ecfaa8bd665b680a217a84f0bd58e97ef"
+  },
+  "conclusion": "Natural KBC greatly extended the stable interval but did not provide a 12k trajectory. The failure location points to upstream open-boundary treatment as a separate hypothesis; an inlet-sponge option is therefore implemented for an isolated A/B campaign."
+}

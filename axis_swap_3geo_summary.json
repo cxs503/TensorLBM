@@ -1,0 +1,91 @@
+{
+  "title": "y↔z Swap Verification on Cylinder, Sphere, and SUBOFF",
+  "date": "2026-07-26",
+  "devices": "SDAA 28-31",
+  "method": "MRT + Smagorinsky (Cs=0.05), D3Q19, NoDynamics + half-way BB + far-field BC",
+  "criterion": "Cd difference < 1%",
+
+  "benchmark_1_cylinder": {
+    "description": "Cylinder y↔z swap at D=96 (large domain)",
+    "parameters": {
+      "D": 96.0, "nx": 1200, "u_in": 0.08, "Re": 200.0,
+      "nu": 0.0384, "tau": 0.6152, "Cs": 0.05,
+      "n_steps": 10000, "warmup": 1000
+    },
+    "note": "Task spec says tau=0.5152 but correct LBM tau=3*nu+0.5=0.6152 for D=96,u_in=0.08,Re=200. Spec has a typo.",
+    "results": {
+      "axis_z": {
+        "device": "sdaa:28", "grid": "1200x400x4",
+        "bc_config": {"far_field_faces": ["y-","y+"], "periodic_faces": ["z-","z+"]},
+        "Cd_p": 1.170073, "Cd_f": 0.185719, "Cd_tot": 1.355792,
+        "elapsed_s": 2270, "finite": true
+      },
+      "axis_y": {
+        "device": "sdaa:29", "grid": "1200x4x400",
+        "bc_config": {"far_field_faces": ["z-","z+"], "periodic_faces": ["y-","y+"]},
+        "Cd_p": 1.169983, "Cd_f": 0.184567, "Cd_tot": 1.354551,
+        "elapsed_s": 2248, "finite": true
+      }
+    },
+    "Cd_tot_difference_pct": 0.0916,
+    "pass": true
+  },
+
+  "benchmark_2_sphere": {
+    "description": "Sphere y↔z swap (true 3D direction-agnostic)",
+    "parameters": {
+      "D": 40.0, "nx": 180, "ny": 180, "nz": 180,
+      "u_in": 0.08, "Re": 100.0, "nu": 0.032, "tau": 0.596,
+      "Cs": 0.05, "n_steps": 3000, "warmup": 300
+    },
+    "results": {
+      "standard": {
+        "device": "sdaa:30", "grid": "180x180x180",
+        "Cd_p": 0.637691, "Cd_f": 0.415950, "Cd_tot": 1.053641,
+        "elapsed_s": 2485, "finite": true
+      },
+      "swapped": {
+        "device": "sdaa:31", "grid": "180x180x180",
+        "Cd_p": 0.637691, "Cd_f": 0.415950, "Cd_tot": 1.053641,
+        "elapsed_s": 2485, "finite": true
+      }
+    },
+    "Cd_tot_difference_pct": 0.0,
+    "Cd_ref": 1.09,
+    "ref_name": "Henderson empirical",
+    "error_vs_ref_pct": 3.34,
+    "pass": true
+  },
+
+  "benchmark_3_suboff": {
+    "description": "SUBOFF axisymmetric body y↔z swap (direction-agnostic)",
+    "parameters": {
+      "L": 80.0, "nx": 200, "ny": 80, "nz": 80,
+      "u_in": 0.06, "Re": 1000.0, "nu": 0.0048, "tau": 0.5144,
+      "Cs": 0.05, "n_steps": 5000, "warmup": 500,
+      "R_max": 4.667, "L_D_ratio": 8.57
+    },
+    "results": {
+      "standard": {
+        "device": "sdaa:30", "grid": "200x80x80",
+        "Cd_p": 0.184734, "Cd_f": 1.335681, "Cd_tot": 1.520415,
+        "elapsed_s": 796, "finite": true
+      },
+      "swapped": {
+        "device": "sdaa:31", "grid": "200x80x80",
+        "Cd_p": 0.184734, "Cd_f": 1.335681, "Cd_tot": 1.520415,
+        "elapsed_s": 797, "finite": true
+      }
+    },
+    "Cd_tot_difference_pct": 0.0,
+    "pass": true
+  },
+
+  "summary": {
+    "all_pass": true,
+    "cylinder_diff_pct": 0.0916,
+    "sphere_diff_pct": 0.0,
+    "suboff_diff_pct": 0.0,
+    "conclusion": "All three geometries pass the y↔z swap verification with Cd difference < 1%. The verified modules (drag_pressure.py SurfaceMesh.from_cylinder/from_sphere/from_suboff, boundaries3d.py far_field_bc_3d, get_near_wall_2d/3d) are direction-agnostic. The cylinder shows a tiny 0.09% difference (floating-point asymmetry between z-periodic and y-periodic streaming), while sphere and SUBOFF show exactly 0.00% (swap produces identical mask for symmetric geometries)."
+  }
+}

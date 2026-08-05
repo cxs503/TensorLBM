@@ -1,0 +1,45 @@
+{
+  "schema": "tensorlbm-nested-smagorinsky-checkpoint-audit-v1",
+  "checkpoint": "results/amr_campaign_20260801/suboff-nested-v20-l90-cs010-2400.ckpt",
+  "step": 2400,
+  "cs_smag": 0.1,
+  "levels": [
+    {
+      "cell_count": 3645000.0,
+      "molecular_tau": 0.500162,
+      "effective_tau_minimum": 0.5001620054244995,
+      "effective_tau_mean": 0.5001843430139891,
+      "effective_tau_maximum": 0.508119523525238,
+      "molecular_kinematic_viscosity": 5.3999999999998494e-05,
+      "mean_eddy_kinematic_viscosity": 7.447671329689302e-06,
+      "maximum_eddy_kinematic_viscosity": 0.0026525078417460137,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.13791983943869462,
+      "maximum_eddy_to_molecular_viscosity_ratio": 49.120515587890516
+    },
+    {
+      "cell_count": 824832.0,
+      "molecular_tau": 0.500324,
+      "effective_tau_minimum": 0.5003248453140259,
+      "effective_tau_mean": 0.5009797881016291,
+      "effective_tau_maximum": 0.5045797228813171,
+      "molecular_kinematic_viscosity": 0.00010799999999999699,
+      "mean_eddy_kinematic_viscosity": 0.00021859603387638002,
+      "maximum_eddy_kinematic_viscosity": 0.0014185742937723826,
+      "mean_eddy_to_molecular_viscosity_ratio": 2.024037350707279,
+      "maximum_eddy_to_molecular_viscosity_ratio": 13.134947164559465
+    },
+    {
+      "cell_count": 2425920.0,
+      "molecular_tau": 0.500648,
+      "effective_tau_minimum": 0.5006500482559204,
+      "effective_tau_mean": 0.5012256468414656,
+      "effective_tau_maximum": 0.5041987299919128,
+      "molecular_kinematic_viscosity": 0.00021599999999999397,
+      "mean_eddy_kinematic_viscosity": 0.00019254894715522072,
+      "maximum_eddy_kinematic_viscosity": 0.0011835766639709533,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.8914303109038245,
+      "maximum_eddy_to_molecular_viscosity_ratio": 5.47952159245827
+    }
+  ],
+  "interpretation": "Cs=0.10 supplies enough dissipation to pass the historical instability interval, but by step 2400 the mean eddy viscosity is 2.02 times the molecular viscosity on the first refined level and 0.89 times on the finest level. This is an LES stability candidate, not a DNS-equivalent high-Re result; its resistance must be judged only after temporal and grid convergence and SGS sensitivity."
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "tensorlbm-collision-viscosity-audit-v1",
+  "configuration": {
+    "collision_model": "cumulant",
+    "tau": 0.5002,
+    "wavelength_cells": 64,
+    "transverse_cells": 4,
+    "amplitude": 0.001,
+    "steps": 800,
+    "fit_start_step": 80,
+    "maximum_relative_error_pct": 2.0,
+    "kbc_max_iterations": 12,
+    "device": "cpu",
+    "dtype": "float64"
+  },
+  "result": {
+    "target_kinematic_viscosity": 6.666666666665932e-05,
+    "recovered_kinematic_viscosity": 6.78077127641215e-05,
+    "relative_error_pct": 1.711569146193448,
+    "decay_slope_per_step": -6.535500979732193e-07,
+    "initial_fitted_amplitude": 0.0009997271818318971,
+    "final_amplitude": 0.0009987087381984636,
+    "minimum_population": 0.02769494625591123,
+    "finite": true
+  },
+  "acceptance": {
+    "maximum_relative_error_pct": 2.0,
+    "admitted": true
+  }
+}

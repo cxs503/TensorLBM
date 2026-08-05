@@ -1,0 +1,27 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Galloping-fix SDAA:10] m*=5.0 zeta=0.1 f_n=0.001000 m=2880.00 k=0.113698 c=3.619115 f_n_check=0.001000 zeta_check=0.100000
+[Galloping-fix SDAA:10] nx=300 ny=100 nz=4 D=24 Re=1000 u_in=0.1 nu=2.400000e-03 tau=0.507200 dpS=4.800000e-01
+[Galloping-fix SDAA:10] near-wall cells=384
+[Galloping-fix SDAA:10] SurfaceMesh.from_square_prism built
+[Galloping-fix SDAA:10] init done (0.3s)
+[Galloping-fix SDAA:10] step=2000/20000 Cd=-0.0512 Cl_rms=0.0208 disp_max=0.14 nan_count=0 (58s)
+[Galloping-fix SDAA:10] WARNING: force NaN at step 2935, skipping spring update (count=1)
+[Galloping-fix SDAA:10] DIVERGED at step 2935
+
+[Galloping-fix SDAA:10] === FINAL ===  A/D=0.0042 disp_rms/D=0.0027 Cd_mean=nan Cl_rms=nan St=0.08177172061328788 galloping=NO early_disp=0.14 late_disp=0.06 nan_count=1 time=85s
+[Galloping-fix SDAA:10] results saved to fsi_galloping_fix_sdaa10.json

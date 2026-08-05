@@ -1,0 +1,99 @@
+{
+  "schema": "tensorlbm-cylinder-domain-convergence-interim-v1",
+  "status": "superseded_by_completed_three_domain_assessment",
+  "superseded_by": "docs/evidence/cylinder-v4-domain-w20-w30-w40-r9-63k-assessment-r1.json",
+  "physical_validation": false,
+  "fixed_resolution": {
+    "radius_cells": 9.0,
+    "diameter_cells": 18.0,
+    "reynolds": 100.0
+  },
+  "lateral_width_diameters": [
+    20.0,
+    30.0
+  ],
+  "cd_control_volume": [
+    1.4472501372001216,
+    1.446143864982331
+  ],
+  "strouhal": [
+    0.1734554103120994,
+    0.1733289318307476
+  ],
+  "w20_to_w30_change_pct": {
+    "cd_control_volume": 0.07643960013234467,
+    "strouhal": 0.07291699989307421
+  },
+  "w30": {
+    "steps": 63000,
+    "resumed_from_step": 54000,
+    "cd_control_volume": 1.446143864982331,
+    "strouhal": 0.1733289318307476,
+    "observer_difference_pct": 0.00040808080838723303,
+    "drag_reference_error_pct": 8.73262142724293,
+    "strouhal_reference_error_pct": 5.688373067529021,
+    "shedding_cycles_observed": 12.999669887306071,
+    "drag_stationarity": {
+      "relative_range_pct": 0.0992971975728442,
+      "half_mean_drift_pct": 0.014519586407858023,
+      "linear_trend_pct": 0.014232961914315135,
+      "confidence95_half_width_pct": 0.031067488573039103,
+      "target_pct": 1.0,
+      "target_met": true
+    },
+    "numerical_quality_admitted": true
+  },
+  "w40_at_54000": {
+    "cd_control_volume": 1.4401804883498062,
+    "strouhal": 0.17331003467443645,
+    "observer_difference_pct": 0.00041337393288149246,
+    "linear_trend_pct": 1.6023416118940204,
+    "numerical_quality_admitted": false,
+    "extension_to_63000_pid": 1644050
+  },
+  "active_queue": {
+    "w20_extension_pid": 1644306,
+    "execution_order": ["W40-63000", "W20-63000"]
+  },
+  "reason": [
+    "A domain-convergence decision requires stationary 20D, 30D and 40D members.",
+    "The 30D continuation now passes every one-percent stationarity measure by a wide margin.",
+    "The 40D 54k member still fails the linear-trend gate and is actively extending from its exact checkpoint.",
+    "The independent control-volume and BFL link-force observers agree, so the current discrepancy is not hidden by choosing a preferred force observer."
+  ],
+  "required_follow_up": [
+    "Complete the active 40D and 20D 63k extensions.",
+    "Assess domain convergence only over the identical final 22500-step windows.",
+    "Keep the existing R9/R12/R15 grid-convergence rejection independent of this domain-size study."
+  ],
+  "sources": [
+    {
+      "path": "results/cylinder-v4-equivalent-r9-54000.json",
+      "sha256": "313ee8efaa57fc09803cc8f0ce639f2de3df17573bf066de5ae940cd0723e4cd"
+    },
+    {
+      "path": "results/cylinder-v4-domain-w30d-r9-54000.json",
+      "sha256": "f92711a0365434774fbc2b2d7aeb3b86b820c32c0d3f3697ff23b84c36982d4c"
+    },
+    {
+      "remote_checkpoint": "results/cylinder_domain_convergence/cylinder-v4-domain-w30d-r9-54k.ckpt",
+      "sha256": "fdff555de0b88b27880250931f391f95ae1af9720b9034a3a630dc4622ace5b8"
+    },
+    {
+      "remote_result": "results/cylinder_domain_convergence/cylinder-v4-domain-w30d-r9-63k.json",
+      "sha256": "e7e892ee6554a9472cbaff72b15b09c6c0acebdb5b1f006cd65dd60373f2dfdd"
+    },
+    {
+      "remote_checkpoint": "results/cylinder_domain_convergence/cylinder-v4-domain-w30d-r9-63k.ckpt",
+      "sha256": "cf653e7dcb32e5908f40cb9058a7b779cfebe9e8a999d1d62ec3734a81fc3a27"
+    },
+    {
+      "remote_result": "results/cylinder_domain_convergence/cylinder-v4-domain-w40d-r9-54k.json",
+      "sha256": "e21b65bfd689e4647c0efd55b3a4a9f9bc5b4562abd7d9bef7f8576faf075156"
+    },
+    {
+      "remote_checkpoint": "results/cylinder_domain_convergence/cylinder-v4-domain-w40d-r9-54k.ckpt",
+      "sha256": "eafd005aa167da3dca0deae2d36a3e5e591f0970b2d41d0b0666f5118abc9d96"
+    }
+  ]
+}

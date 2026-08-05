@@ -1,0 +1,53 @@
+{
+  "case": "SDAA:15 T4-P0CMP Re=1e5 log y=1.0 p0_compare",
+  "test": "t4_p0_compare",
+  "device": "sdaa:15",
+  "Re": 100000,
+  "model": "smag_wf",
+  "wall_law": "log",
+  "y_val": 1.0,
+  "p0_method": "far_field",
+  "L": 80.0,
+  "D": 9.334889148191365,
+  "radius": 4.667444574095683,
+  "L_D_ratio": 8.57,
+  "grid": "200x80x80",
+  "u_in": 0.06,
+  "nu": 4.8e-05,
+  "tau": 0.500144,
+  "Cs": 0.05,
+  "n_steps": 5000,
+  "steps_completed": 5000,
+  "n_solid": 4651,
+  "n_near": 2050,
+  "dpS": 4.2230043604847625,
+  "dpS_formula": "0.5*u_in^2*pi*D*L (wetted area)",
+  "normal_method": "from_suboff",
+  "Cd_pressure": -0.0011851486894105846,
+  "Cd_friction": 0.005971691643364367,
+  "Cd_total": 0.004786542953953788,
+  "Cf_ref": 0.008333333333333333,
+  "ref_name": "ITTC-1957 Cf=0.075/(log10(Re)-2)^2",
+  "error_pct": 42.561484552554546,
+  "finite": true,
+  "diverged": false,
+  "elapsed_s": 1427.6742596626282,
+  "avg_window": 500,
+  "p0_comparison": {
+    "near_wall": {
+      "method": "p0 = avg pressure at near-wall cells",
+      "Cd_p": -0.0011898345788345394
+    },
+    "far_field": {
+      "method": "p0 = avg pressure at fluid cells (not near-wall)",
+      "Cd_p": -0.0011851486894105846
+    },
+    "domain_avg": {
+      "method": "p0 = avg pressure over all fluid cells",
+      "Cd_p": -0.00118515622861121
+    },
+    "near_minus_far": 4.6858894239547744e-06,
+    "near_minus_dom": 4.678350223329434e-06,
+    "far_minus_dom": 7.539200625340109e-09
+  }
+}

@@ -1,8 +1,9 @@
 """TensorLBM – Propeller Open-Water Benchmark.
 
-Runs open-water propeller simulations at multiple inflow speeds
-and reports thrust/torque coefficients.  Compares against
-published KP505 reference data.
+Runs open-water propeller simulations at multiple inflow speeds and reports
+thrust/torque coefficients.  KP505 reference rows are emitted as context only:
+they are not a geometry-proven validation result and never produce a pass/fail
+verdict.
 
 Usage::
 
@@ -25,7 +26,7 @@ from tensorlbm.propeller_benchmark import (
 )
 from tensorlbm.propeller_cad import PropellerGeometryConfig
 
-# KP505 reference data (Fujisawa et al. 2000, SIMMAN 2008)
+# KP505 reference rows (Fujisawa et al. 2000, SIMMAN 2008); context only.
 _KP505_REFERENCE: dict[float, tuple[float, float]] = {
     0.1: (0.450, 0.065),
     0.3: (0.420, 0.061),
@@ -35,21 +36,13 @@ _KP505_REFERENCE: dict[float, tuple[float, float]] = {
     1.1: (0.040, 0.015),
 }
 
-_KT_TOL_PCT = 30.0
-_KQ_TOL_PCT = 30.0
-
-
-def _header(title: str) -> None:
-    print(f"\n{'='*70}\n  {title}\n{'='*70}")
-
-
-def _evaluate_kt_kq(
+def _summarize_kp505_context(
     results: list[dict[str, object]],
     rpm: float,
     diameter: float,
 ) -> dict[str, object]:
-    """Compare simulation KT/KQ against reference data."""
-    matches: list[dict[str, object]] = []
+    """Report nearest KP505 rows without claiming validation or a verdict."""
+    matches: list[dict[str, float]] = []
     kt_errs: list[float] = []
     kq_errs: list[float] = []
 
@@ -58,31 +51,30 @@ def _evaluate_kt_kq(
         j_sim = u_in / (rpm * diameter)
         kt_sim = float(r["kt"])
         kq_sim = float(r["kq"])
-
         j_closest = min(_KP505_REFERENCE.keys(), key=lambda j: abs(j - j_sim))
         kt_ref, kq_ref = _KP505_REFERENCE[j_closest]
-
         kt_err = abs(kt_sim - kt_ref) / max(abs(kt_ref), 1e-10) * 100
         kq_err = abs(kq_sim - kq_ref) / max(abs(kq_ref), 1e-10) * 100
-        ok = kt_err < _KT_TOL_PCT and kq_err < _KQ_TOL_PCT
-
         matches.append({
             "j_sim": j_sim, "j_ref": j_closest,
             "kt_sim": kt_sim, "kt_ref": kt_ref, "kt_err_pct": kt_err,
             "kq_sim": kq_sim, "kq_ref": kq_ref, "kq_err_pct": kq_err,
-            "ok": ok,
         })
         kt_errs.append(kt_err)
         kq_errs.append(kq_err)
 
     n = len(matches)
     return {
+        "claim_status": "context_only_not_validation",
         "matches": matches,
-        "n_pass": sum(1 for m in matches if m["ok"]),
-        "n_total": n,
+        "n_samples": n,
         "kt_rmse_pct": (sum(e**2 for e in kt_errs) / max(n, 1)) ** 0.5,
         "kq_rmse_pct": (sum(e**2 for e in kq_errs) / max(n, 1)) ** 0.5,
     }
+
+
+def _header(title: str) -> None:
+    print(f"\n{'='*70}\n  {title}\n{'='*70}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -130,27 +122,22 @@ def main(argv: list[str] | None = None) -> int:
 
     results_list = result.get("results", [])
     if isinstance(results_list, list) and results_list:
-        ev = _evaluate_kt_kq(results_list, cfg.rpm, geo.diameter)
-        _header("Validation vs KP505 Reference")
-        matches = ev["matches"]
+        context = _summarize_kp505_context(results_list, cfg.rpm, geo.diameter)
+        _header("KP505 Reference Context (not validation)")
+        matches = context["matches"]
+        print("  Informational nearest-reference comparison only; no pass/fail claim.")
         print(f"\n  {'J':>6s}  {'KT_sim':>8s}  {'KT_ref':>8s}  {'err%':>7s}  "
-              f"{'KQ_sim':>8s}  {'KQ_ref':>8s}  {'err%':>7s}  {'OK':>4s}")
-        print(f"  {'-'*68}")
+              f"{'KQ_sim':>8s}  {'KQ_ref':>8s}  {'err%':>7s}")
+        print(f"  {'-'*62}")
         for m in matches:  # type: ignore[assignment]
             d = dict(m)  # type: ignore[arg-type]
-            ok = "✓" if d["ok"] else "✗"  # type: ignore[index]
             print(f"  {float(d['j_sim']):6.3f}  {float(d['kt_sim']):8.4f}  "
                   f"{float(d['kt_ref']):8.3f}  {float(d['kt_err_pct']):6.1f}%  "
                   f"{float(d['kq_sim']):8.4f}  {float(d['kq_ref']):8.3f}  "
-                  f"{float(d['kq_err_pct']):6.1f}%  {ok:>4s}")
-        n_pass = int(ev["n_pass"])
-        n_total = int(ev["n_total"])
-        print(f"  {'='*68}")
-        print(f"  Pass: {n_pass}/{n_total}  "
-              f"KT RMSE={float(ev['kt_rmse_pct']):.1f}%  "
-              f"KQ RMSE={float(ev['kq_rmse_pct']):.1f}%")
-        if n_pass < n_total:
-            return 1
+                  f"{float(d['kq_err_pct']):6.1f}%")
+        print(f"  {'='*62}")
+        print(f"  KT context RMSE={float(context['kt_rmse_pct']):.1f}%  "
+              f"KQ context RMSE={float(context['kq_rmse_pct']):.1f}%")
 
     return 0
 

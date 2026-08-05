@@ -1,0 +1,31 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "candidate": "suboff-nested-v9-l90-expanded-wall24",
+  "status": "rejected",
+  "purpose": "Test whether increasing the transverse finest-level clearance from 16 to 24 cells removes the late nested-interface instability.",
+  "configuration_delta": {
+    "outer_wall_margin_cells": 6,
+    "inner_wall_margin_cells": 12,
+    "finest_transverse_clearance_cells": 24,
+    "interface_filter_width": 0,
+    "regularize_prolongation": false
+  },
+  "comparison_to_unfiltered_l90_baseline": {
+    "candidate_first_speed_above_0_1_step": 1380,
+    "baseline_first_speed_above_0_1_step": 1500,
+    "candidate_first_speed_above_0_15_step": 1440,
+    "baseline_first_speed_above_0_15_step": 1560,
+    "candidate_population_at_or_below_1e_8_step": 1440,
+    "baseline_population_at_or_below_1e_8_step": 1560,
+    "candidate_maximum_collision_limited_fraction": 0.00015635568235028877,
+    "candidate_maximum_speed_through_step_1860": 0.2231036275625229,
+    "baseline_maximum_speed_through_step_1860": 0.19061227142810822
+  },
+  "artifacts": {
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v9-l90-rejected-expanded-wall24-step1860.log",
+    "remote_log_sha256": "b75292f246205c9a2ea1a6d615218f1a7152573d132e1b6a54c59650f016fedc",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v9-l90-expanded-wall24-2400.ckpt",
+    "remote_checkpoint_sha256": "8e7d3d7221fe07f9aa3f9248c0e5c136111715c7fd5469e4710c63186c14777d"
+  },
+  "conclusion": "Increasing only the transverse finest-level clearance does not remove the failure and advances every measured onset threshold. The candidate is excluded from convergence and resistance claims."
+}

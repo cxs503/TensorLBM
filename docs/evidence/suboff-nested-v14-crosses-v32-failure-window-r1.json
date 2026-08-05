@@ -1,0 +1,90 @@
+{
+  "schema": "tensorlbm-suboff-nested-stability-comparison-v1",
+  "status": "completed_stable_stationary_but_inaccurate",
+  "physical_validation": false,
+  "comparison_step": 6720,
+  "common_configuration": {
+    "levels": 3,
+    "finest_hull_length_cells": 360.0,
+    "collision_model": "natural_kbc",
+    "stress_exchange_distance_cells": 4.21875,
+    "target_collision_reynolds": 100000.0
+  },
+  "rejected_v32": {
+    "wall_traction_source_scheme": null,
+    "sponge_inlet": false,
+    "minimum_population_by_level": [
+      9.999999717180685e-10,
+      0.01997576467692852,
+      0.02091909572482109
+    ],
+    "maximum_speed_by_level": [
+      0.27896830439567566,
+      0.06768274307250977,
+      0.07122903317213058
+    ],
+    "maximum_collision_limited_fraction": 0.00003978052126200274,
+    "failed_health_floor": true
+  },
+  "active_v14": {
+    "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
+    "sponge_inlet": true,
+    "minimum_population_by_level": [
+      0.015514214523136616,
+      0.01997394859790802,
+      0.020916815847158432
+    ],
+    "maximum_speed_by_level": [
+      0.06632738560438156,
+      0.06776750832796097,
+      0.07122474163770676
+    ],
+    "maximum_interface_applied_correction_fraction": 1.3710503310448985e-7,
+    "maximum_collision_limited_fraction": 0.0,
+    "finite": true,
+    "health_floor_met": true
+  },
+  "checkpoint": {
+    "step": 6750,
+    "path": "results/amr_campaign_20260801/suboff-nested-v14-equivalent-l90-12k.ckpt",
+    "sha256_at_audit": "4155003159fadd0155f49c71d2898abdadb294a5eb74823c0baf63e470e42f99",
+    "wall_source_signature_present": true,
+    "sponge_inlet_signature_present": true,
+    "force_samples_per_root_step_signature_present": false
+  },
+  "completed_v14": {
+    "steps": 12000,
+    "mean_resistance_n": 122.71323678342979,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 40.40416107943911,
+    "stationarity": {
+      "relative_range_pct": 0.06222117762435457,
+      "half_mean_drift_pct": 0.03623580479271408,
+      "linear_trend_pct": 0.054235253795135226,
+      "confidence95_half_width_pct": 0.01881994416404645,
+      "target_pct": 1.0,
+      "target_met": true
+    },
+    "measured_peak_allocated_gib": 4.68605899810791,
+    "finite": true,
+    "integration_smoke_pass": true,
+    "physical_accuracy_admitted": false,
+    "remote_result": {
+      "path": "results/amr_campaign_20260801/suboff-nested-v14-equivalent-l90-12k.json",
+      "sha256": "9e697d178409e9659d361e0a995cdc54037fed1ed6b209f4d4c62fb97cce6e8f"
+    }
+  },
+  "interpretation": [
+    "The corrected-source plus inlet-sponge v14 trajectory remains healthy at the exact root step where legacy v32 crossed the population floor.",
+    "The root-grid speed spike is absent, while intermediate and finest levels remain comparable to v32's healthy values.",
+    "This comparison changes both the wall-traction source and inlet sponge, so it does not isolate which change supplies the stability improvement.",
+    "The corrected-source v13 trajectory without inlet sponge failed the population-health floor at root step 6660 while v14 remained healthy and later completed 12000 steps; the matched A/B evidence therefore identifies inlet damping as necessary for this long-time configuration.",
+    "The v14 checkpoint predates explicit force-sample-count provenance; its three-level force arithmetic is useful diagnostically but is not admitted to a future convergence set without that metadata.",
+    "The completed trajectory is highly stationary, so extending the same three-level Re=100000 configuration is not a credible route from 122.71 N to the 87.4 N experiment."
+  ],
+  "provenance": {
+    "v14_log_sha256_at_audit": "2c42a92686375320f359c9a9617284cbef003cd6ba5a717697e31c08e9104f82",
+    "v32_evidence": "docs/evidence/suboff-nested-v32-natural-kbc-root-failure-r1.json",
+    "v13_no_inlet_sponge_evidence": "docs/evidence/suboff-nested-v13-no-inlet-sponge-rejected-r1.json"
+  }
+}

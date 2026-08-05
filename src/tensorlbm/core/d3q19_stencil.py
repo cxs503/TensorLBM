@@ -1,0 +1,90 @@
+"""Canonical tensor-coordinate traversal for the production D3Q19 lattice.
+
+The production lattice descriptor stores velocities in ``(x, y, z)`` order,
+while solver fields are indexed ``(z, y, x)``.  This module is the sole
+domain-neutral bridge between those two conventions for moving D3Q19 links.
+"""
+from __future__ import annotations
+
+import torch
+
+from ..d3q19 import C
+
+
+D3Q19_MOVING_Q = tuple(range(1, 19))
+
+
+def _validate_production_d3q19() -> None:
+    """Fail closed if the production descriptor no longer is D3Q19."""
+    if C.shape != (19, 3):
+        raise ValueError(f"production D3Q19 C must have shape (19, 3), got {tuple(C.shape)}")
+    if not torch.equal(C[0], torch.zeros(3, dtype=C.dtype, device=C.device)):
+        raise ValueError("production D3Q19 C[0] must be the rest direction")
+    if bool((C[1:].abs().sum(dim=1) == 0).any()):
+        raise ValueError("production D3Q19 moving directions must be nonzero")
+
+
+_validate_production_d3q19()
+_MOVING_TENSOR_SHIFTS = tuple(
+    (int(C[q, 2]), int(C[q, 1]), int(C[q, 0])) for q in D3Q19_MOVING_Q
+)
+
+
+def _require_field_3d(field: torch.Tensor) -> None:
+    if not isinstance(field, torch.Tensor):
+        raise TypeError(f"D3Q19 tensor field must be a torch.Tensor, got {type(field).__name__}")
+    if field.ndim != 3:
+        raise ValueError(f"D3Q19 tensor field must have exactly three dimensions (z, y, x), got {field.ndim}")
+
+
+def _require_moving_q(q: int) -> None:
+    if isinstance(q, bool) or not isinstance(q, int):
+        raise TypeError(f"D3Q19 moving q must be a non-bool int, got {type(q).__name__}")
+    if q not in D3Q19_MOVING_Q:
+        raise ValueError(f"D3Q19 moving q must be in [1, 18], got {q}")
+
+
+def moving_tensor_shifts() -> tuple[tuple[int, int, int], ...]:
+    """Return moving D3Q19 shifts in field order ``(dz, dy, dx)``."""
+    return _MOVING_TENSOR_SHIFTS
+
+
+def tensor_shift_for_q(q: int) -> tuple[int, int, int]:
+    """Return the pull-source tensor shift for one moving direction."""
+    _require_moving_q(q)
+    return _MOVING_TENSOR_SHIFTS[q - 1]
+
+
+def roll_from_pull_source(field: torch.Tensor, q: int) -> torch.Tensor:
+    """Roll a field from the periodic pull source for moving direction ``q``."""
+    _require_field_3d(field)
+    return torch.roll(field, shifts=tensor_shift_for_q(q), dims=(0, 1, 2))
+
+
+def roll_to_neighbor(field: torch.Tensor, q: int) -> torch.Tensor:
+    """Roll a donor field to its periodic neighbour along moving direction ``q``."""
+    _require_field_3d(field)
+    return torch.roll(field, shifts=tuple(-delta for delta in tensor_shift_for_q(q)), dims=(0, 1, 2))
+
+
+def all_moving_neighbor_masks(mask: torch.Tensor) -> tuple[torch.Tensor, ...]:
+    """Return the 18 periodic pull-source neighbour masks in q order."""
+    _require_field_3d(mask)
+    return tuple(roll_from_pull_source(mask, q) for q in D3Q19_MOVING_Q)
+
+
+def assert_no_direct_phase_links(
+    flags: torch.Tensor,
+    source_flag: int,
+    target_flag: int,
+    error_prefix: str,
+) -> None:
+    """Reject any moving D3Q19 link from ``source_flag`` to ``target_flag``."""
+    _require_field_3d(flags)
+    source = flags == source_flag
+    count = sum(
+        int((source & target).sum().item())
+        for target in all_moving_neighbor_masks(flags == target_flag)
+    )
+    if count:
+        raise ValueError(f"{error_prefix}: found {count} direct phase link(s)")

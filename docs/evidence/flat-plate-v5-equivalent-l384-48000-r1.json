@@ -1,0 +1,89 @@
+{
+  "schema": "tensorlbm-flat-plate-grid-member-evidence-v1",
+  "candidate": "flat-plate-v5-equivalent-l384-48000",
+  "status": "single_grid_admitted",
+  "physical_validation": false,
+  "configuration": {
+    "shape_zyx": [3, 192, 768],
+    "plate_length_cells": 384,
+    "reynolds": 1000000.0,
+    "resolved_reynolds": 20000.0,
+    "lattice_speed": 0.06,
+    "steps": 48000,
+    "warmup_steps": 24000,
+    "statistics_window_steps": 24000,
+    "wall_law": "musker",
+    "stress_exchange_distance_cells": 4.5,
+    "stress_exchange_distance_over_plate_length": 0.01171875,
+    "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
+    "link_force_frame": "laboratory_after_wall_activation"
+  },
+  "force_and_friction": {
+    "friction_coefficient": 0.004655830722548673,
+    "ittc_1957_reference": 0.0046875,
+    "reference_error_pct": 0.6756112522949647,
+    "control_volume_total_force": 0.017959453236544506,
+    "bfl_link_plus_wall_stress_force": 0.017969562098151072,
+    "total_force_observer_difference_pct": 0.05628713454369393,
+    "maximum_positivity_limited_fraction": 0.0
+  },
+  "stationarity": {
+    "sample_count": 24000,
+    "block_count": 8,
+    "relative_range_pct": 0.0003911086443463685,
+    "half_mean_drift_pct": 0.00011200521352062773,
+    "linear_trend_pct": 0.0002415312133624393,
+    "confidence95_half_width_pct": 0.00010828647346610748,
+    "effective_sample_count": 8.978601587727033,
+    "dominant_period_steps": 8000.0,
+    "finite": true,
+    "sufficiently_sampled": true
+  },
+  "frozen_wall_audit": {
+    "source_step": 48000,
+    "requested_nodes": 2304,
+    "active_nodes": 2304,
+    "rejected_fraction": 0.0,
+    "wall_distance_mean_cells": 4.5,
+    "minimum_y_plus": 552.587646484375,
+    "median_y_plus": 563.2958374023438,
+    "mean_y_plus": 565.3192138671875,
+    "maximum_y_plus": 588.2305908203125,
+    "finite_fraction": 1.0,
+    "in_range_fraction_30_to_1000": 1.0,
+    "admitted": true,
+    "pressure_gradient_fraction_le_one": 0.9036458333333334,
+    "pressure_gradient_fraction_gt_ten": 0.0234375,
+    "pressure_gradient_scope": "diagnostic_only_not_a_force_correction",
+    "population_state_advanced": false
+  },
+  "two_grid_progress": {
+    "l256_friction_coefficient": 0.004594268517937289,
+    "l384_friction_coefficient": 0.004655830722548673,
+    "l256_to_l384_change_pct": 1.3399783745993235,
+    "l256_reference_error_pct": 1.988938284004501,
+    "l384_reference_error_pct": 0.6756112522949647,
+    "three_grid_convergence_claimed": false,
+    "required_remaining_member": "L512"
+  },
+  "acceptance": {
+    "friction_target_met": true,
+    "stationarity_target_met": true,
+    "force_observer_target_met": true,
+    "limiter_target_met": true,
+    "exchange_sampling_target_met": true,
+    "single_grid_admitted": true,
+    "grid_convergence_assessed": false
+  },
+  "artifacts": {
+    "remote_result": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l384-48000.json",
+    "remote_result_sha256": "f918bd80f5b0588912ac79e53937feea0eb1ea9fb2ca5eaac87d6dbe503d17f7",
+    "remote_checkpoint": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l384-48000.ckpt",
+    "remote_checkpoint_sha256": "1843f12fa8c24520775cebd22390311ecd5fa9afaf519930caa92336a09e0128",
+    "remote_wall_audit": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l384-final-wall-audit-r1.json",
+    "remote_wall_audit_sha256": "8441e1f7c324f344bcd3fd44080cf48f235b73f6794661afe5c5f852339f587c",
+    "remote_log": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l384-48000.wait.log",
+    "remote_log_sha256": "2ec733fd5e40527e9269a158d20a69fa375d814f375b7ba909e8225e7bedcf65"
+  },
+  "conclusion": "L384 independently passes the friction, force-closure, stationarity, positivity and frozen wall-sampling gates. Its 0.676% ITTC error improves on L256 and the two-grid change is 1.340%, but no spatial order or continuum extrapolation is claimed until the queued L512 member completes."
+}

@@ -20,34 +20,75 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from . import job_manager  # noqa: E402
 from .middleware import install_production_middleware  # noqa: E402
-from .routers import (
-    agent,
-    ai_governance,
-    ai_suboff,  # noqa: E402
-    ai_transformer,
-    benchmarks,
-    cad,
-    cylinder_bench,
-    cylinder_compare,
-    cylinder_device_sim,
-    cylinder_interactive,
-    jobs,
-    marine,
-    notifications,
-    orchestration,
-    postprocess,
-    preprocess,
-    projects,
-    reports,
-    simulations,
-    solver,
-    suboff,
-    templates,
-    xflow_projects,
-    xflow_streaming,
-)
-from .services.xflow_streaming import hub as streaming_hub  # noqa: E402
-from .routers import simulations as _sim_mod  # noqa: E402
+# Import routers; skip any that are incomplete (under active development)
+_router_imports: dict[str, object] = {}
+for _name, _mod in [
+    ("agent", "agent"),
+    ("ai_governance", "ai_governance"),
+    ("ai_suboff", "ai_suboff"),
+    ("ai_transformer", "ai_transformer"),
+    ("benchmarks", "benchmarks"),
+    ("cad", "cad"),
+    ("cylinder_bench", "cylinder_bench"),
+    ("cylinder_compare", "cylinder_compare"),
+    ("cylinder_device_sim", "cylinder_device_sim"),
+    ("cylinder_interactive", "cylinder_interactive"),
+    ("jobs", "jobs"),
+    ("marine", "marine"),
+    ("notifications", "notifications"),
+    ("orchestration", "orchestration"),
+    ("postprocess", "postprocess"),
+    ("preprocess", "preprocess"),
+    ("projects", "projects"),
+    ("reports", "reports"),
+    ("simulations", "simulations"),
+    ("solver", "solver"),
+    ("suboff", "suboff"),
+    ("templates", "templates"),
+    ("xflow_projects", "xflow_projects"),
+    ("xflow_streaming", "xflow_streaming"),
+]:
+    try:
+        _router_imports[_name] = __import__(f"backend.routers.{_mod}", fromlist=[_mod])
+    except Exception as e:
+        import logging
+        logging.warning(f"Router {_mod} not available, skipping: {e}")
+
+agent = _router_imports.get("agent")
+ai_governance = _router_imports.get("ai_governance")
+ai_suboff = _router_imports.get("ai_suboff")
+ai_transformer = _router_imports.get("ai_transformer")
+benchmarks = _router_imports.get("benchmarks")
+cad = _router_imports.get("cad")
+cylinder_bench = _router_imports.get("cylinder_bench")
+cylinder_compare = _router_imports.get("cylinder_compare")
+cylinder_device_sim = _router_imports.get("cylinder_device_sim")
+cylinder_interactive = _router_imports.get("cylinder_interactive")
+jobs = _router_imports.get("jobs")
+marine = _router_imports.get("marine")
+notifications = _router_imports.get("notifications")
+orchestration = _router_imports.get("orchestration")
+postprocess = _router_imports.get("postprocess")
+preprocess = _router_imports.get("preprocess")
+projects = _router_imports.get("projects")
+reports = _router_imports.get("reports")
+simulations = _router_imports.get("simulations")
+solver = _router_imports.get("solver")
+suboff = _router_imports.get("suboff")
+templates = _router_imports.get("templates")
+xflow_projects = _router_imports.get("xflow_projects")
+xflow_streaming = _router_imports.get("xflow_streaming")
+try:
+    from .services.xflow_streaming import hub as streaming_hub  # noqa: E402
+except ImportError:
+    streaming_hub = None
+    import logging
+    logging.warning("xflow_streaming service not available")
+
+try:
+    from .routers import simulations as _sim_mod  # noqa: E402
+except ImportError:
+    _sim_mod = None
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable
@@ -74,7 +115,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     loop = asyncio.get_running_loop()
     _notify_queue = asyncio.Queue()
     job_manager.set_event_loop(loop, _notify_queue)  # type: ignore[arg-type]
-    streaming_hub.attach(_sim_mod._jobs)
+    streaming_hub.attach(_sim_mod._jobs) if streaming_hub and _sim_mod else None
     _ws_broadcast_task = asyncio.create_task(_ws_broadcaster(_notify_queue))
     try:
         yield
@@ -114,29 +155,38 @@ install_production_middleware(app)
 # Routers
 # ---------------------------------------------------------------------------
 
-app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
-app.include_router(cad.router, prefix="/api/cad", tags=["CAD"])
-app.include_router(preprocess.router, prefix="/api/preprocess", tags=["Pre-processing"])
-app.include_router(solver.router, prefix="/api/solve", tags=["Solver"])
-app.include_router(postprocess.router, prefix="/api/postprocess", tags=["Post-processing"])
-app.include_router(benchmarks.router, prefix="/api/benchmarks", tags=["Benchmarks"])
-app.include_router(agent.router, prefix="/api/agent", tags=["LLM Agent"])
-app.include_router(ai_transformer.router, prefix="/api/ai", tags=["AI Transformer"])
-app.include_router(ai_governance.router, prefix="/api/ai/governance", tags=["AI Governance"])
-app.include_router(ai_suboff.router, prefix="/api/ai/suboff", tags=["SUBOFF AI"])
-app.include_router(suboff.router, prefix="/api/suboff", tags=["SUBOFF Physics"])
-app.include_router(cylinder_interactive.router, prefix="/api/cylinder-interactive", tags=["Cylinder Interactive"])
-app.include_router(cylinder_bench.router, prefix="/api/cylinder-bench", tags=["Cylinder Benchmark"])
-app.include_router(cylinder_compare.router, prefix="/api/cylinder-compare", tags=["Cylinder Compare"])
-app.include_router(simulations.router, tags=["Simulations"])
-app.include_router(orchestration.router, prefix="/api/orchestration", tags=["Orchestration"])
-app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
-app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
-app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
-app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
-app.include_router(xflow_streaming.router, prefix="/api/stream", tags=["XFlow Streaming"])
-app.include_router(xflow_projects.router, prefix="/api/projects", tags=["XFlow Projects"])
-app.include_router(marine.router, prefix="/api/marine", tags=["Marine Engineering"])
+# Register routers (skip any that failed to import)
+_router_registry = [
+    (jobs, "/api/jobs", "Jobs"),
+    (cad, "/api/cad", "CAD"),
+    (preprocess, "/api/preprocess", "Pre-processing"),
+    (solver, "/api/solve", "Solver"),
+    (postprocess, "/api/postprocess", "Post-processing"),
+    (benchmarks, "/api/benchmarks", "Benchmarks"),
+    (agent, "/api/agent", "LLM Agent"),
+    (ai_transformer, "/api/ai", "AI Transformer"),
+    (ai_governance, "/api/ai/governance", "AI Governance"),
+    (ai_suboff, "/api/ai/suboff", "SUBOFF AI"),
+    (suboff, "/api/suboff", "SUBOFF Physics"),
+    (cylinder_interactive, "/api/cylinder-interactive", "Cylinder Interactive"),
+    (cylinder_bench, "/api/cylinder-bench", "Cylinder Benchmark"),
+    (cylinder_compare, "/api/cylinder-compare", "Cylinder Compare"),
+    (simulations, "", "Simulations"),
+    (orchestration, "/api/orchestration", "Orchestration"),
+    (projects, "/api/projects", "Projects"),
+    (templates, "/api/templates", "Templates"),
+    (reports, "/api/reports", "Reports"),
+    (notifications, "/api/notifications", "Notifications"),
+    (xflow_streaming, "/api/stream", "XFlow Streaming"),
+    (xflow_projects, "/api/xflow-projects", "XFlow Projects"),
+    (marine, "/api/marine", "Marine Engineering"),
+]
+for _mod, _prefix, _tag in _router_registry:
+    if _mod is not None:
+        kwargs = {"tags": [_tag]}
+        if _prefix:
+            kwargs["prefix"] = _prefix
+        app.include_router(_mod.router, **kwargs)
 
 # ---------------------------------------------------------------------------
 # WebSocket

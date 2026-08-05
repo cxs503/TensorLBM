@@ -1,0 +1,73 @@
+{
+  "schema": "tensorlbm-suboff-collision-viscosity-evidence-v1",
+  "status": "mixed_precision_re4m_exact_weights_admitted",
+  "physical_validation": false,
+  "case": "SUBOFF L90 four-level Natural-KBC configured Re=4000000",
+  "weight_precision_scheme": "rational_binary64_cast_to_runtime_dtype_v1",
+  "audit_configuration": {
+    "taus_by_level": [0.50000405, 0.5000081, 0.5000162, 0.5000324],
+    "wavelength_cells": 16,
+    "transverse_cells": 3,
+    "amplitude": 0.02,
+    "steps": 24000,
+    "fit_start_step": 2000,
+    "maximum_relative_error_pct": 5.0,
+    "minimum_fitted_log_decay": 0.004,
+    "population_storage_dtype": "float32",
+    "natural_kbc_compute_dtype": "float64"
+  },
+  "result": {
+    "target_kinematic_viscosity_by_level": [
+      1.3500000000110646e-06,
+      2.699999999985122e-06,
+      5.4000000000072506e-06,
+      1.0800000000014501e-05
+    ],
+    "recovered_kinematic_viscosity_by_level": [
+      1.37036657344943e-06,
+      2.7361633983720933e-06,
+      5.4673720814920315e-06,
+      1.093618824280794e-05
+    ],
+    "relative_error_pct_by_level": [
+      1.508635069496184,
+      1.3393851254507663,
+      1.2476311386053789,
+      1.2610022480857015
+    ],
+    "fitted_log_amplitude_decay_by_level": [
+      0.004649210487770144,
+      0.009282917297043784,
+      0.0185490248480236,
+      0.03710294899174838
+    ],
+    "decay_signal_admitted_by_level": [true, true, true, true],
+    "viscosity_admitted_by_level": [true, true, true, true]
+  },
+  "root_causal_controls": {
+    "legacy_mixed_float32_weights_error_pct": 7.430402155416605,
+    "legacy_all_float64_storage_but_float32_source_weights_error_pct": 7.4666014308383115,
+    "exact_weights_all_float64_storage_error_pct": 1.2915962763662765,
+    "exact_weights_mixed_storage_error_pct": 1.508635069496184,
+    "storage_precision_is_dominant_cause": false,
+    "source_weight_precision_is_dominant_cause": true
+  },
+  "acceptance": {
+    "all_levels_have_resolved_decay_signal": true,
+    "all_levels_recover_configured_viscosity": true,
+    "configured_reynolds_sequence_admitted": true,
+    "flow_solution_validated": false
+  },
+  "artifacts": {
+    "four_level_schedule": "results/collision-viscosity-natural-kbc-suboff-re4m-mixed-exactweights-r2.json",
+    "four_level_schedule_sha256": "9fd90285ac9833e72094ff183780fb0dce184e3624d4ecdc8cbd19b5f39d14ab",
+    "exact_weights_float64_root_control_sha256": "96779128a5537584a16ffce1d76d34a1626f571255e5cf16d017b12cfe0e06bd",
+    "exact_weights_mixed_root_control_sha256": "27e3419fe7a30b475096d82002aec6d120306160f3de0b608a301c6dbf1d27ae"
+  },
+  "decision": {
+    "permit_re4m_runtime_candidate_after_re2m_health_gate": true,
+    "permit_unassessed_higher_reynolds": false,
+    "require_weight_precision_scheme_in_checkpoint_and_result": true
+  },
+  "prohibition": "This certificate establishes collision-viscosity recovery only. It does not validate SUBOFF resistance, wall stress, time convergence or grid convergence."
+}

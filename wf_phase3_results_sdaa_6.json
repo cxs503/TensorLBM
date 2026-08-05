@@ -1,0 +1,16 @@
+{
+  "poiseuille_corrected_bb_shifted1x_yp": {
+    "u_max": 0.04999857395887375,
+    "u_err": 0.0028520822525079925,
+    "Cf": 2.1333937644958496,
+    "y_plus": 0.17320306243688877,
+    "config": "corrected-BB-shifted1x-yp"
+  },
+  "poiseuille_corrected_bb_shifted3x_yp": {
+    "u_max": 0.04999857395887375,
+    "u_err": 0.0028520822525079925,
+    "Cf": 2.1333937644958496,
+    "y_plus": 0.17320306243688877,
+    "config": "corrected-BB-shifted3x-yp"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "poiseuille": {
+    "case": "poiseuille",
+    "ny": 32,
+    "u_max": 0.05,
+    "nu": 0.02,
+    "tau": 0.56,
+    "F_analytical": 0.034133333333333335,
+    "Cf_analytical": 0.24000000000000002,
+    "forces": {
+      "mem_standard": 0.025482177734375,
+      "mem_galilean": 0.025482177734375,
+      "stress": 0.0019277672981843352,
+      "pressure": 0.0,
+      "virtual_work": -9.300064718331669e-09,
+      "ib": -0.09078288823366165
+    },
+    "forces_mean": {
+      "mem_standard": 0.01714804967244466,
+      "mem_galilean": 0.01714804967244466,
+      "stress": 0.0012883169324292491,
+      "pressure": 0.0,
+      "virtual_work": -2.112947243097333e-09,
+      "ib": -0.06136043940981229
+    }
+  }
+}

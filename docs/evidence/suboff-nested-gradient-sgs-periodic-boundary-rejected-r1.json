@@ -1,0 +1,35 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "status": "rejected_before_physical_assessment",
+  "candidates": [
+    {
+      "name": "suboff-nested-v24-l90-wale050-2400",
+      "collision_model": "cumulant_wale",
+      "coefficient": 0.5,
+      "last_completed_report_step": 420,
+      "remote_pid_terminated": 1555526,
+      "remote_log": "results/amr_campaign_20260801/suboff-nested-v24-l90-wale050-2400.log",
+      "remote_log_sha256": "828bdd969ad56fbdc8c0d6bad3b0793008d3c74be48329d14fcc909da4e144aa"
+    },
+    {
+      "name": "suboff-nested-v25-l90-vreman025-2400",
+      "collision_model": "cumulant_vreman",
+      "coefficient": 0.025,
+      "last_completed_report_step": 420,
+      "remote_pid_terminated": 1555527,
+      "remote_log": "results/amr_campaign_20260801/suboff-nested-v25-l90-vreman025-2400.log",
+      "remote_log_sha256": "92f92b98158c10379fcae420090f5fca1527a7edb40055a4707a00d5ee344886"
+    }
+  ],
+  "rejection_reason": {
+    "kind": "invalid_spatial_boundary_assumption",
+    "detail": "The inherited WALE/Vreman velocity-gradient helper used torch.roll on every dimension. That imposes a periodic connection between opposite faces of each independently allocated AMR level, creating nonphysical shear at open far-field and refinement-block boundaries.",
+    "numerical_health_at_stop": "Both candidates were finite and limiter-free, but numerical health cannot make a spatially invalid SGS operator physically admissible."
+  },
+  "corrective_action": {
+    "implementation": "Replace periodic roll differences with centered second-order interior differences and second-order one-sided physical-edge differences, including defined one- and two-cell behavior.",
+    "required_reproduction": true,
+    "reuse_of_partial_checkpoints_for_physics": false
+  },
+  "conclusion": "These partial trajectories are implementation-rejection evidence only and must never be used in force, stability, or SGS sensitivity claims."
+}

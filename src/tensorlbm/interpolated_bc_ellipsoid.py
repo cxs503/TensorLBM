@@ -136,10 +136,10 @@ def compute_q_ellipsoid(
         t1 = (-B_coef - sqrt_disc) / (2.0 * A_coef)
         t2 = (-B_coef + sqrt_disc) / (2.0 * A_coef)
 
-        # Normalise: q = t / |d| in lattice units
-        link_len = math.sqrt(dcx**2 + dcy**2 + dcz**2)
-        q1 = t1 / link_len
-        q2 = t2 / link_len
+        # The ray is p(t)=p0+t*d and reaches the lattice neighbour at t=1;
+        # therefore q=t for both axial and diagonal links.
+        q1 = t1
+        q2 = t2
 
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)

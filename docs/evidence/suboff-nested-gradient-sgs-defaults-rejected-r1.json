@@ -1,0 +1,65 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "status": "rejected",
+  "common_configuration": {
+    "hull_type": "bare_hull",
+    "hull_length_cells": 90,
+    "resolved_reynolds": 100000,
+    "gradient_boundary_treatment": "centered_interior_second_order_one_sided_edges",
+    "solid_side_velocity_treatment": "stationary_wall_from_checkpoint_mask",
+    "reflux_applied_correction_fraction_limit": 0.001
+  },
+  "candidates": [
+    {
+      "name": "suboff-nested-v28-l90-wale050-masked-2400",
+      "collision_model": "cumulant_wale",
+      "coefficient": 0.5,
+      "failure_step": 1440,
+      "minimum_population": 1.862645149230957e-09,
+      "maximum_speed": 0.16010281443595886,
+      "maximum_collision_limited_fraction": 9.893153937475266e-06,
+      "maximum_inner_reflux_applied_correction_fraction": 5.255517680780031e-05,
+      "inner_raw_mass_mismatch": 2.604236602783203,
+      "inner_raw_momentum_mismatch_norm": 0.2502163350582123,
+      "step1200_mean_eddy_to_molecular_viscosity_ratio_by_level": [
+        0.008728322341980881,
+        0.0801576225128197,
+        0.05300838420831116
+      ],
+      "remote_log": "results/amr_campaign_20260801/suboff-nested-v28-l90-wale050-masked-2400.log",
+      "remote_log_sha256": "0f86aed5a53b0555dc2051e269c5af2e254fd08e268b50396ad4a3098cfaf143",
+      "remote_checkpoint_sha256": "5dad71b16435802796ce3bbbe8d1423aa8594902043cf787364079af5d945c6e"
+    },
+    {
+      "name": "suboff-nested-v29-l90-vreman025-masked-2400",
+      "collision_model": "cumulant_vreman",
+      "coefficient": 0.025,
+      "failure_step": 1440,
+      "minimum_population": 1.862645149230957e-09,
+      "maximum_speed": 0.15790915489196777,
+      "maximum_collision_limited_fraction": 2.9267247065030997e-05,
+      "maximum_inner_reflux_applied_correction_fraction": 5.868415246368386e-05,
+      "inner_raw_mass_mismatch": 2.8138389587402344,
+      "inner_raw_momentum_mismatch_norm": 0.3260580599308014,
+      "step1200_mean_eddy_to_molecular_viscosity_ratio_by_level": [
+        0.004574881449665088,
+        0.0336720395602535,
+        0.02211002186274791
+      ],
+      "remote_log": "results/amr_campaign_20260801/suboff-nested-v29-l90-vreman025-masked-2400.log",
+      "remote_log_sha256": "45fcee341f066c20911a042f85be16d68455fb502699f011a82c4569a0e40c68",
+      "remote_checkpoint_sha256": "dd067c9dcffd06547046be1a4aa77a2cafd73d26e34ad9b402df5fb30f193885"
+    }
+  ],
+  "diagnosis": {
+    "population_health_failed_before_reflux_gate": true,
+    "transfer_limiters_active_before_failure": false,
+    "failure_matches_unstabilized_baseline_step": 1440,
+    "conclusion": "Correct boundary and solid treatment does not make the default WALE/Vreman coefficients strong enough for this near-zero molecular-viscosity trajectory. Their mean SGS viscosity remains well below the stable Cs=0.10 path, so a coefficient-cost scan is required."
+  },
+  "next_candidate": {
+    "name": "suboff-nested-v30-l90-wale100-masked-2400",
+    "coefficient": 1.0,
+    "reason": "WALE viscosity scales with Cw squared; Cw=1.0 raises the measured default-coefficient SGS viscosity by four while retaining an explicit audit of dissipation cost."
+  }
+}

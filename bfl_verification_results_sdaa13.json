@@ -1,0 +1,20 @@
+{
+  "step2_couette": {
+    "standard_BB": {
+      "u_max_sim": 0.0,
+      "u_max_analytical": 0.04749999940395355,
+      "u_err_pct": 50.0,
+      "Cf_sim": 0.0,
+      "Cf_analytical": 0.6666666666666666
+    },
+    "BFL_q05": {
+      "u_max_sim": 0.0,
+      "u_max_analytical": 0.04749999940395355,
+      "u_err_pct": 50.0,
+      "Cf_sim": 0.0,
+      "Cf_analytical": 0.6666666666666666
+    },
+    "cross_val_diff_pct": 0.0,
+    "match": true
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "schema": "tensorlbm-cylinder-legacy-v1-assessment-v1",
+  "status": "rejected_diagnostic",
+  "configuration": {
+    "shape_zyx": [3, 800, 640],
+    "radius": 16.0,
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "steps": 80000,
+    "warmup_steps": 40000,
+    "ramp_steps": 700,
+    "sponge_width": 54,
+    "sponge_strength": 0.2,
+    "sponge_inlet": false,
+    "cv_margin": 10,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "periodic_axes": ["z"],
+    "collision_model": "cumulant_d3q19_cs0",
+    "source_schema": "tensorlbm-cylinder-bfl-control-volume-v1",
+    "physical_validation": false
+  },
+  "full_post_warmup": {
+    "samples": 40000,
+    "cd": 1.365043667993935,
+    "cd_reference": 1.33,
+    "cd_error_pct": 2.634862255183082,
+    "strouhal": 0.1724994249066423,
+    "strouhal_reference": 0.164,
+    "strouhal_error_pct": 5.182576162586765,
+    "shedding_cycles": 12.93745686799817,
+    "stationarity_range_pct": 16.624481749402264,
+    "stationarity_trend_pct": 17.013084079260082,
+    "force_observer_difference_pct": 0.0006728767624370734,
+    "admitted": false
+  },
+  "late_windows": [
+    {
+      "samples": 30000,
+      "cd": 1.4080828363765852,
+      "cd_error_pct": 5.870889953126698,
+      "stationarity_range_pct": 7.899427167799866,
+      "stationarity_trend_pct": 7.169152751565516,
+      "strouhal": 0.17506645610631952,
+      "strouhal_error_pct": 6.747839089219214,
+      "shedding_cycles": 9.847488155980473,
+      "admitted": false
+    },
+    {
+      "samples": 20000,
+      "cd": 1.4313184736917455,
+      "cd_error_pct": 7.617930352762812,
+      "stationarity_range_pct": 1.7912908522186233,
+      "stationarity_trend_pct": 1.4938802259803903,
+      "strouhal": 0.17519338238316093,
+      "strouhal_error_pct": 6.825233160463977,
+      "shedding_cycles": 6.569751839368535,
+      "admitted": false
+    },
+    {
+      "samples": 15000,
+      "cd": 1.4352223574748733,
+      "cd_error_pct": 7.911455449238584,
+      "stationarity_range_pct": 0.7555209629733033,
+      "stationarity_trend_pct": 0.6101297070020901,
+      "strouhal": 0.17597826527965083,
+      "strouhal_error_pct": 7.303820292470011,
+      "shedding_cycles": 4.949388710990179,
+      "admitted": false
+    },
+    {
+      "samples": 10000,
+      "cd": 1.4370721652748106,
+      "cd_error_pct": 8.050538742466959,
+      "stationarity_range_pct": 0.38698806820827936,
+      "stationarity_trend_pct": 0.1454710720467793,
+      "strouhal": 0.16850403709014963,
+      "strouhal_error_pct": 2.746364079359528,
+      "shedding_cycles": 3.159450695440306,
+      "admitted": false
+    }
+  ],
+  "sources": [
+    {
+      "path": "/tmp/cylinder-re100-r16-ultrawide-80k.json",
+      "sha256": "4949d3b37a1ed84664b464b05c38137d8469eb12139eabf9ea23a9da53df138e"
+    },
+    {
+      "path": "/tmp/cylinder-re100-r16-ultrawide.ckpt",
+      "sha256": "2df47fb4bf95843480930c0cb9be74686a20e59f9ce47ad879cb4e2333ec2e0e"
+    }
+  ],
+  "claim_boundary": "Legacy v1 diagnostic only; settled drag and sufficient shedding-cycle accuracy do not overlap in one admitted window."
+}

@@ -1,0 +1,167 @@
+{
+  "schema": "tensorlbm-suboff-nested-amr-smoke-v1",
+  "status": "integration_smoke_pass",
+  "physical_validation": false,
+  "configuration": {
+    "device": "cuda:0",
+    "speed_knots": 5.92,
+    "nx": 600,
+    "ny": 120,
+    "nz": 120,
+    "hull_length": 120.0,
+    "center_x_fraction": 0.3,
+    "outer_wall_margin": 8,
+    "outer_wake_cells": 100,
+    "inner_wall_margin": 4,
+    "inner_wake_cells": 8,
+    "cv_margin": 4,
+    "steps": 1,
+    "ramp_steps": 0,
+    "lattice_speed": 0.06,
+    "resolved_reynolds": 100000.0,
+    "rho_water": 998.2,
+    "nu_water": 1.004e-06,
+    "cs_smag": 0.05,
+    "wall_law": "musker",
+    "stress_exchange_distance": 1.0,
+    "sponge_width": 24,
+    "sponge_strength": 0.3,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "output": "results/amr_campaign_20260801/suboff-nested-v1-l120-one-step.json",
+    "preflight_only": false,
+    "physical_reynolds": 13213381.41322709,
+    "finest_wall_nu": 2.17960861790988e-06,
+    "finest_hull_length_cells": 480.0,
+    "tau_by_level": [
+      0.500216,
+      0.500432,
+      0.500864
+    ]
+  },
+  "planning": {
+    "outer_box": {
+      "x0": 112,
+      "x1": 349,
+      "y0": 45,
+      "y1": 76,
+      "z0": 45,
+      "z1": 76
+    },
+    "inner_box_in_outer_allocated_coordinates": {
+      "x0": 13,
+      "x1": 270,
+      "y0": 13,
+      "y1": 50,
+      "z0": 13,
+      "z1": 50
+    },
+    "outer_fine_shape": [
+      62,
+      62,
+      474
+    ],
+    "nested_fine_shape": [
+      74,
+      74,
+      514
+    ],
+    "total_allocated_cells": 13570112,
+    "uniform_finest_cells": 552960000,
+    "cell_saving_fraction": 0.9754591435185185,
+    "estimated_peak_gib": 11.917777001857758,
+    "cuda_memory_preflight": {
+      "free_gib": 22.9119873046875,
+      "total_gib": 23.69110107421875,
+      "estimated_peak_gib": 11.917777001857758,
+      "reserve_gib": 1.0,
+      "headroom_gib": 9.994210302829742,
+      "admitted": true
+    },
+    "measured_peak_allocated_gib": 7.8082709312438965
+  },
+  "geometry": {
+    "hull_type": "bare_hull",
+    "label": "SUBOFF Bare Hull (AFF-1 inspired)",
+    "L_D_ratio": 8.57,
+    "r_over_l": 0.05834,
+    "bow_fraction": 0.233,
+    "stern_fraction": 0.252,
+    "displacement_lu3": 936579.56,
+    "wetted_area_lu2": 72751.7,
+    "wetted_area_scope": "bare_hull_surface_of_revolution",
+    "wetted_area_method": "profile_meridional_metric_quadrature",
+    "bare_hull_wetted_area_lu2": 72751.7,
+    "prismatic_coefficient": 0.7919,
+    "solid_cells": 933705,
+    "fluid_cells": 1880959,
+    "total_cells": 2814664,
+    "nx": 514,
+    "ny": 74,
+    "nz": 74,
+    "cx": 248.0,
+    "cy": 36.0,
+    "cz": 36.0,
+    "length": 480.0,
+    "radius": 28.004667444574096,
+    "resolution": {
+      "hull_type": "bare_hull",
+      "fine_hull_length_cells": 480.0,
+      "diameter_cells": 56.00933488914819,
+      "solid_cells": 933705,
+      "bare_hull_cells": 933705,
+      "sail_only_cells": 0,
+      "fin_only_cells": 0,
+      "sail_max_thickness_cells": null,
+      "vertical_fin_max_thickness_cells": null,
+      "horizontal_fin_max_thickness_cells": null,
+      "appendage_halfway_links": 0,
+      "minimum_convergence_diameter_cells": 16.0,
+      "minimum_absolute_reference_diameter_cells": 24.0,
+      "minimum_convergence_appendage_thickness_cells": 3,
+      "minimum_absolute_reference_appendage_thickness_cells": 4,
+      "convergence_member_resolved": true,
+      "absolute_reference_resolved": true
+    },
+    "area_weighting": {
+      "boundary_nodes": 65802,
+      "unweighted_nodes": 0,
+      "raw_area": 73743.15625,
+      "calibrated_area": 72751.6953125,
+      "calibration_factor": 0.9865552777990838
+    },
+    "geometry_owner_level": 2,
+    "force_owner_level": 2
+  },
+  "result": {
+    "steps": [
+      {
+        "step": 1,
+        "cv_resistance_n": 13221.171024043597,
+        "bfl_plus_wall_stress_n": 13220.577619169886,
+        "numerical_source_n": -0.6311953870368455,
+        "source_corrected_cv_n": 13220.53982865656,
+        "raw_observer_difference_pct": 0.004488292849640179,
+        "source_corrected_observer_difference_pct": 0.00028584697611275787,
+        "mean_y_plus": 1302.5571899414062
+      }
+    ],
+    "maximum_source_corrected_observer_difference_pct": 0.00028584697611275787,
+    "maximum_reflux_residual_by_interface": [
+      7.275957614183426e-12,
+      5.4569682106375694e-12
+    ],
+    "maximum_reflux_limited_directions_by_interface": [
+      0,
+      0
+    ],
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_wall_sample_rejected_fraction": 0.0,
+    "finite": true
+  },
+  "acceptance": {
+    "integration_smoke_admitted": true,
+    "resistance_accuracy_assessed": false,
+    "time_convergence_assessed": false,
+    "grid_convergence_assessed": false
+  }
+}

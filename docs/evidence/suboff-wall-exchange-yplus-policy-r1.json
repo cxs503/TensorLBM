@@ -1,0 +1,72 @@
+{
+  "schema": "tensorlbm-wall-exchange-yplus-policy-evidence-v1",
+  "status": "measured_yplus_gate_replaces_universal_flat_plate_ratio",
+  "physical_validation": false,
+  "case": {
+    "geometry": "DARPA SUBOFF AFF-1",
+    "physical_reynolds": 13213381.41322709,
+    "finest_hull_length_cells": 720.0,
+    "wall_law": "musker"
+  },
+  "one_cell_family": {
+    "exchange_distance_cells": 1.0,
+    "exchange_distance_over_length": 0.001388888888888889,
+    "ittc_prior_y_plus": 693.9707216210123,
+    "bfl_effective_prior_y_plus_bounds": [
+      693.9707216210123,
+      1040.9560824315186
+    ],
+    "v23_target_reynolds_measured": {
+      "step": 1500,
+      "minimum_y_plus": 1.5608088970184326,
+      "mean_y_plus": 772.3083801269531,
+      "maximum_y_plus": 1225.0411376953125
+    },
+    "declared_grid_family_ratio": 0.0013888888888888889,
+    "planned_l960_exchange_distance_cells": 1.3333333333333333,
+    "status": "continue_with_full_distribution_gate"
+  },
+  "flat_plate_ratio_transfer": {
+    "exchange_distance_cells": 8.4375,
+    "exchange_distance_over_length": 0.01171875,
+    "ittc_prior_y_plus": 5855.3779636772915,
+    "interface_clearance": {
+      "available_buffer_cells": 14,
+      "required_buffer_cells": 10,
+      "remaining_clearance_cells": 4,
+      "admitted": true
+    },
+    "status": "allocation_admitted_wall_model_applicability_rejected",
+    "reason": "AMR interpolation clearance is necessary but does not make an exchange point at estimated y+=5855 valid for the declared 30 to 1000 policy."
+  },
+  "common_module": {
+    "path": "src/tensorlbm/wall_exchange_yplus.py",
+    "diagnostics": [
+      "finite sample fraction",
+      "minimum, mean and maximum y+",
+      "5th, 50th and 95th percentiles",
+      "below-range, in-range and above-range node counts",
+      "count-weighted subcycle and time-window aggregation"
+    ],
+    "default_policy": {
+      "lower_y_plus": 30.0,
+      "upper_y_plus": 1000.0,
+      "minimum_in_range_fraction": 0.9
+    },
+    "fail_closed": true
+  },
+  "decision": [
+    "A validation family must declare its exchange-height ratio explicitly; 3/256 is not a universal wall-model constant.",
+    "Grid-family consistency and measured y+ applicability are independent mandatory gates.",
+    "The v29 8.4375-cell Re=200000 pilot continues as a causal A/B, but the redundant v24 long run was removed from the queue before GPU allocation.",
+    "The replacement v30 long trajectory continues v23 at one cell and Re=200000 through eight total convective times.",
+    "No wall distance is selected because it makes resistance closer to experiment."
+  ],
+  "provenance": {
+    "one_cell_result": "results/amr_campaign_20260801/suboff-nested-v12-equivalent-l90-3k.json",
+    "scaled_allocation_result": "results/amr_campaign_20260801/suboff-nested-v28-aff1-four-level-l90-chunked-allocation-r1.json",
+    "v23_component_evidence": "docs/evidence/suboff-v23-re200k-step1500-components-r1.json",
+    "implementation_commit": "c7f0af6",
+    "validation_family_commit": "a39ea36"
+  }
+}

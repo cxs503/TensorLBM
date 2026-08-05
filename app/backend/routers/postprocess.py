@@ -2330,7 +2330,7 @@ async def acoustics_spectrum(
         f_hi = fc * 2.0 ** (1.0 / 6.0)
         band = (freqs >= f_lo) & (freqs <= f_hi)
         if band.any():
-            p_band_rms = float(np.sqrt(np.trapz(psd[band], freqs[band])))
+            p_band_rms = float(np.sqrt(np.trapezoid(psd[band], freqs[band])))
             spl_band = 20.0 * np.log10(p_band_rms / p_ref + 1e-30)
             third_oct_spl.append({"fc_hz": fc, "spl_db": round(spl_band, 2)})
 

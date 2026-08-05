@@ -1,0 +1,60 @@
+{
+  "schema": "tensorlbm-wall-resolved-channel3d-transition-evidence-v1",
+  "status": "transition_stable_momentum_balance_recovered",
+  "physical_validation": false,
+  "case": {
+    "grid_nx_ny_nz": [400, 64, 132],
+    "re_tau": 180.0,
+    "u_tau": 0.003,
+    "collision_model": "cumulant",
+    "initialization_mode": "spectral_solenoidal",
+    "warmup_steps": 40000,
+    "statistics_steps_planned": 80000
+  },
+  "transition_reports": [
+    {
+      "step": 30000,
+      "minimum_population": 0.01489099022001028,
+      "crossflow_rms_over_u_tau": 2.5085072653988996,
+      "turbulent_kinetic_energy": 0.0000464760341856163,
+      "friction_velocity_error_pct": -10.86373889976486
+    },
+    {
+      "step": 34500,
+      "minimum_population": 0.010444539599120617,
+      "crossflow_rms_over_u_tau": 2.6426343247294426,
+      "turbulent_kinetic_energy": 0.0000462175376014784,
+      "friction_velocity_error_pct": -0.296367197882942
+    },
+    {
+      "step": 35000,
+      "minimum_population": 0.008437667973339558,
+      "maximum_speed": 0.11737608909606934,
+      "crossflow_rms_over_u_tau": 2.616986632347107,
+      "turbulent_kinetic_energy": 0.00004513489329838194,
+      "friction_velocity_error_pct": -0.18265576766751496
+    },
+    {
+      "step": 36000,
+      "minimum_population": 0.011587919667363167,
+      "maximum_speed": 0.09417395293712616,
+      "crossflow_rms_over_u_tau": 2.4762676718334355,
+      "turbulent_kinetic_energy": 0.00004125455961911939,
+      "friction_velocity_error_pct": -0.054268197408477555
+    }
+  ],
+  "decision": {
+    "population_health_through_transition": true,
+    "sustained_three_dimensional_fluctuations": true,
+    "momentum_balance_recovered_before_statistics": true,
+    "warmup_length_supported": true,
+    "physical_reference_admitted": false,
+    "reason": "The trajectory has recovered the imposed friction velocity after transition, but no formal post-warmup profile statistics exist yet. Admission still requires two eddy turnovers, stationarity, and MKM mean/Reynolds-stress profile gates."
+  },
+  "artifact": {
+    "path": "results/canonical_wall/channel3d-retau180-cumulant-spectral-fullbox-r3-step35000.ckpt",
+    "step": 35000,
+    "sha256": "0e75a386c3fb7b333ab4e2cf352b729ba66a1c33384568870c8af6e0354101f3"
+  },
+  "implementation_commit": "c525898"
+}

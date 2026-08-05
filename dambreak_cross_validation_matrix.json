@@ -1,0 +1,150 @@
+{
+  "status": "diagnostic_only",
+  "physical_validation": false,
+  "config": {
+    "nx": 24,
+    "ny": 12,
+    "nz": 12,
+    "dam_width": 8,
+    "fill_height": 8,
+    "n_steps": 50,
+    "tau": 0.8,
+    "gravity": 0.0001,
+    "rho_liquid": 1.0,
+    "rho_gas": 0.1,
+    "C_smag": 0.1,
+    "C_wale": 0.5,
+    "C_vreman": 0.025,
+    "device": "cpu"
+  },
+  "matrix": [
+    {
+      "lattice": "d3q19",
+      "collision": "bgk",
+      "sgs_model": "none",
+      "front_position": 22.0,
+      "mass_drift": 493.037841796875,
+      "finite": true
+    },
+    {
+      "lattice": "d3q19",
+      "collision": "bgk",
+      "sgs_model": "smagorinsky",
+      "front_position": 22.0,
+      "mass_drift": 493.1651611328125,
+      "finite": true
+    },
+    {
+      "lattice": "d3q19",
+      "collision": "bgk",
+      "sgs_model": "wale",
+      "front_position": 22.0,
+      "mass_drift": 491.1588134765625,
+      "finite": true
+    },
+    {
+      "lattice": "d3q19",
+      "collision": "bgk",
+      "sgs_model": "vreman",
+      "front_position": 22.0,
+      "mass_drift": 493.170654296875,
+      "finite": true
+    },
+    {
+      "lattice": "d3q19",
+      "collision": "mrt",
+      "sgs_model": "none",
+      "front_position": 22.0,
+      "mass_drift": 517.1759033203125,
+      "finite": true
+    },
+    {
+      "lattice": "d3q19",
+      "collision": "mrt",
+      "sgs_model": "smagorinsky",
+      "front_position": 22.0,
+      "mass_drift": 511.012451171875,
+      "finite": true
+    },
+    {
+      "lattice": "d3q19",
+      "collision": "mrt",
+      "sgs_model": "wale",
+      "front_position": 22.0,
+      "mass_drift": 510.1468505859375,
+      "finite": true
+    },
+    {
+      "lattice": "d3q19",
+      "collision": "mrt",
+      "sgs_model": "vreman",
+      "front_position": 22.0,
+      "mass_drift": 510.5201416015625,
+      "finite": true
+    },
+    {
+      "lattice": "d3q27",
+      "collision": "bgk",
+      "sgs_model": "none",
+      "front_position": 22.0,
+      "mass_drift": 492.5272216796875,
+      "finite": true
+    },
+    {
+      "lattice": "d3q27",
+      "collision": "bgk",
+      "sgs_model": "smagorinsky",
+      "front_position": 22.0,
+      "mass_drift": 493.5626220703125,
+      "finite": true
+    },
+    {
+      "lattice": "d3q27",
+      "collision": "bgk",
+      "sgs_model": "wale",
+      "front_position": 22.0,
+      "mass_drift": 491.822509765625,
+      "finite": true
+    },
+    {
+      "lattice": "d3q27",
+      "collision": "bgk",
+      "sgs_model": "vreman",
+      "front_position": 22.0,
+      "mass_drift": 493.4931640625,
+      "finite": true
+    },
+    {
+      "lattice": "d3q27",
+      "collision": "mrt",
+      "sgs_model": "none",
+      "front_position": 22.0,
+      "mass_drift": 515.9449462890625,
+      "finite": true
+    },
+    {
+      "lattice": "d3q27",
+      "collision": "mrt",
+      "sgs_model": "smagorinsky",
+      "front_position": 22.0,
+      "mass_drift": 506.97998046875,
+      "finite": true
+    },
+    {
+      "lattice": "d3q27",
+      "collision": "mrt",
+      "sgs_model": "wale",
+      "front_position": 22.0,
+      "mass_drift": 507.005615234375,
+      "finite": true
+    },
+    {
+      "lattice": "d3q27",
+      "collision": "mrt",
+      "sgs_model": "vreman",
+      "front_position": 22.0,
+      "mass_drift": 507.2138671875,
+      "finite": true
+    }
+  ]
+}

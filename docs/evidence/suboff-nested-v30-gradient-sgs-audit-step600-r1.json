@@ -1,0 +1,50 @@
+{
+  "schema": "tensorlbm-nested-gradient-sgs-checkpoint-audit-v1",
+  "checkpoint": "results/amr_campaign_20260801/suboff-nested-v30-l90-wale100-masked-2400.ckpt",
+  "step": 600,
+  "collision_model": "cumulant_wale",
+  "sgs_model": "wale",
+  "coefficient_name": "wale_cw",
+  "coefficient": 1.0,
+  "gradient_boundary_treatment": "centered_interior_second_order_one_sided_edges",
+  "solid_side_velocity_treatment": "checkpoint_mask_stationary_wall_velocity",
+  "levels": [
+    {
+      "cell_count": 3645000.0,
+      "molecular_tau": 0.500162,
+      "effective_tau_minimum": 0.5001620054244995,
+      "effective_tau_mean": 0.5001677567165248,
+      "effective_tau_maximum": 0.5103751420974731,
+      "molecular_kinematic_viscosity": 5.3999999999998494e-05,
+      "mean_eddy_kinematic_viscosity": 1.9189055082691198e-06,
+      "maximum_eddy_kinematic_viscosity": 0.0034043806991577164,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.03553528719016988,
+      "maximum_eddy_to_molecular_viscosity_ratio": 63.04408702144095
+    },
+    {
+      "cell_count": 824832.0,
+      "molecular_tau": 0.500324,
+      "effective_tau_minimum": 0.500324010848999,
+      "effective_tau_mean": 0.500404788099312,
+      "effective_tau_maximum": 0.5153318643569946,
+      "molecular_kinematic_viscosity": 0.00010799999999999699,
+      "mean_eddy_kinematic_viscosity": 2.692936643733379e-05,
+      "maximum_eddy_kinematic_viscosity": 0.005002621452331546,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.2493459855308754,
+      "maximum_eddy_to_molecular_viscosity_ratio": 46.320569003071164
+    },
+    {
+      "cell_count": 2425920.0,
+      "molecular_tau": 0.500648,
+      "effective_tau_minimum": 0.500648021697998,
+      "effective_tau_mean": 0.5007332572623077,
+      "effective_tau_maximum": 0.5259513854980469,
+      "molecular_kinematic_viscosity": 0.00021599999999999397,
+      "mean_eddy_kinematic_viscosity": 2.841908743589361e-05,
+      "maximum_eddy_kinematic_viscosity": 0.008434461832682297,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.13156984924025186,
+      "maximum_eddy_to_molecular_viscosity_ratio": 39.04843441056728
+    }
+  ],
+  "interpretation": "Doubling Cw from 0.5 to 1.0 produces the expected fourfold mean WALE viscosity. At target Reynolds the mean ratios exceed the Cs=0.10 Smagorinsky audit on the root and first refined levels, so stability alone cannot make this coefficient a preferred physical model. If it crosses the historical failure interval, a lower-bound coefficient search is required."
+}

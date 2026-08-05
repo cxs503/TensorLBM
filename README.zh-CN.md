@@ -12,6 +12,20 @@ TensorLBM 是一个以 CPU 为首要目标的 PyTorch 格子玻尔兹曼方法 (
 - **[开发工作流 / Development Workflow](docs/development_workflow.md)** – 环境配置、代码检查、平台启动与输出命名规范。
 - **[可观测性说明 / Observability Notes](docs/observability.md)** – 任务生命周期、输出 Schema 与故障排查清单。
 
+### Full-wet 实态 force/Ct 窗口诊断（R1）
+
+`tensorlbm.suboff_full_wet_force_window_campaign.run_suboff_full_wet_force_window_campaign`
+是冷路径诊断 runner。调用方必须在 `FullyWettedFlowConfig` 中显式提供至少两个递增的
+`capture_population_steps`；runner 只使用 full-wet 生产循环实际导出的
+`post_stream_pre_bounce_back` D3Q19 `f` 快照，并将同一次运行的快照送入 production
+link-force/Ct window adapter。它不重构、合成或重置 populations，也不修改 full-wet 热路径。
+
+返回 artifact 包含每个 capture step 的 link-force record、窗口 `count`、三分量
+`mean_force`/总体标准差 `std_force`，以及几何、snapshot、adapter 的 provenance hashes。
+结果固定为 `status="measured_candidate"`、`physical_validation=false`，并固定将
+`steady_state_status` 和 `diagnostic_status` 标为 `"diagnostic_withheld"`；这不是稳态、
+物理验证或精度声明。
+
 ## TensorLBM 提供的功能
 
 - `src/tensorlbm/__init__.py` 中精简、明确的公开 API

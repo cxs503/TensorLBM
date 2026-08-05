@@ -1,0 +1,69 @@
+{
+  "schema": "tensorlbm-cylinder-planar-collision-causal-evidence-v1",
+  "status": "causal_pair_admitted_planar_collision_hypothesis_rejected",
+  "physical_validation": false,
+  "case": "Re=100 low-Mach cylinder R9, Natural-KBC versus embedded planar D2Q9 cumulant",
+  "configuration_identity": {
+    "shape_zyx": [3, 360, 360],
+    "radius_cells": 9,
+    "lattice_speed": 0.03,
+    "lattice_mach": 0.05196152422706631,
+    "tau": 0.5162,
+    "steps": 108000,
+    "warmup_steps": 63000,
+    "statistics_window_steps": 45000,
+    "sampling_convective_times": 75.0,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "upstream_center_distance_diameters": 6.0,
+    "downstream_center_distance_diameters": 14.0,
+    "lateral_center_distance_diameters": 10.0
+  },
+  "baseline_natural_kbc": {
+    "cd_control_volume": 1.434148719986525,
+    "strouhal": 0.1735916865442018,
+    "cd_reference_error_pct": 6.2332442010319715,
+    "result_sha256": "25b03f7a9a6e332670523615c4e0bc69aa2e0db737fadf777eebd4614d22f269"
+  },
+  "candidate_planar_cumulant": {
+    "cd_control_volume": 1.441783033975685,
+    "cd_bfl_link": 1.4417831161875785,
+    "force_observer_difference_pct": 5.702098830251627e-06,
+    "strouhal": 0.17350940056573294,
+    "cd_reference_error_pct": 6.798748971224425,
+    "strouhal_reference_error_pct": 5.798414979105447,
+    "shedding_cycles_observed": 13.013205042429972,
+    "drag_block_range_pct": 0.44641293626422024,
+    "drag_half_mean_drift_pct": 0.14904132299685408,
+    "maximum_planar_extrusion_spread": 2.9802322387695312e-08,
+    "numerical_quality_admitted": true,
+    "result_sha256": "d361824b8e1bec3766fa3a134a58309525710b6325ad1a9c862454c49bb54e79",
+    "checkpoint_sha256": "acb31980acd99672f4411efe1323bd3fa9efb1f2dd33b16e7cdd9b3a21dca009",
+    "log_sha256": "14f99e387f10be5e6562ea3229b1930c0ba81a57cec9d0d5b9b0b7d229337352"
+  },
+  "effect": {
+    "cd_change_pct": 0.5323237320346896,
+    "strouhal_change_pct": -0.047402027197829266,
+    "cd_reference_error_change_percentage_points": 0.5655047701924536,
+    "materially_repairs_drag_or_shedding": false
+  },
+  "acceptance": {
+    "physical_configuration_identity_admitted": true,
+    "convective_time_equivalence_admitted": true,
+    "both_numerically_healthy": true,
+    "causal_pair_admitted": true,
+    "candidate_drag_error_below_5pct": false,
+    "candidate_strouhal_error_below_5pct": false,
+    "grid_convergence_assessed": false,
+    "physical_validation": false
+  },
+  "artifacts": {
+    "causal_assessment": "results/cylinder_collision_sensitivity/cylinder-v6-v7-planar-causal-assessment-r1.json",
+    "causal_assessment_sha256": "3b5bf2366651c81171ce82962d9663cce135f324a92e5e8c8a8a5b3c1a5fcfdf"
+  },
+  "decision": {
+    "retain_planar_collision_as_exact_quasi_2d_reference_path": true,
+    "attribute_remaining_error_to_collision_dimensionality": false,
+    "next_causal_intervention": "increase only upstream/downstream clearance while preserving the v7 transverse domain and time windows"
+  },
+  "prohibition": "The planar collision result is a causal diagnostic, not a reference-selected correction or a validated cylinder solution."
+}

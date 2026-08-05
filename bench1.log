@@ -1,0 +1,32 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[sdaa:20 4L+Cumulant Re=1000] nx=320 ny=120 nz=120 L=80.0 R=4.6674 D=9.3349 u_in=0.06 nu=4.800000e-03 tau=0.514400 collision=cumulant normal=from_suboff dpS=4.223004e+00 Cf_ref=0.041995 (Blasius Cf=1.328/sqrt(Re))
+[sdaa:20 4L+Cumulant Re=1000] solid cells: 4651  L/D=8.57
+[sdaa:20 4L+Cumulant Re=1000] near-wall cells: 2050
+[sdaa:20 4L+Cumulant Re=1000] init done (1.1s), initial_mass=4608000.0
+[sdaa:20 4L+Cumulant Re=1000] step=500 Cd_p=0.011682 Cd_f=0.071829 Cd_tot=0.083510 Cf_ref=0.041995 (201s)
+[sdaa:20 4L+Cumulant Re=1000] step=1000 Cd_p=0.005308 Cd_f=0.044645 Cd_tot=0.049953 Cf_ref=0.041995 (401s)
+[sdaa:20 4L+Cumulant Re=1000] step=1500 Cd_p=0.005068 Cd_f=0.039650 Cd_tot=0.044717 Cf_ref=0.041995 (600s)
+[sdaa:20 4L+Cumulant Re=1000] step=2000 Cd_p=0.005003 Cd_f=0.037899 Cd_tot=0.042901 Cf_ref=0.041995 (800s)
+[sdaa:20 4L+Cumulant Re=1000] step=2500 Cd_p=0.004971 Cd_f=0.037289 Cd_tot=0.042260 Cf_ref=0.041995 (1000s)
+[sdaa:20 4L+Cumulant Re=1000] step=3000 Cd_p=0.004933 Cd_f=0.037070 Cd_tot=0.042003 Cf_ref=0.041995 (1197s)
+[sdaa:20 4L+Cumulant Re=1000] step=3500 Cd_p=0.004904 Cd_f=0.036982 Cd_tot=0.041887 Cf_ref=0.041995 (1393s)
+[sdaa:20 4L+Cumulant Re=1000] step=4000 Cd_p=0.004886 Cd_f=0.036943 Cd_tot=0.041829 Cf_ref=0.041995 (1590s)
+[sdaa:20 4L+Cumulant Re=1000] step=4500 Cd_p=0.004876 Cd_f=0.036924 Cd_tot=0.041800 Cf_ref=0.041995 (1786s)
+[sdaa:20 4L+Cumulant Re=1000] step=5000 Cd_p=0.004871 Cd_f=0.036915 Cd_tot=0.041786 Cf_ref=0.041995 (1983s)
+[sdaa:20 4L+Cumulant Re=1000] DONE [OK] Cd_p=0.004871 Cd_f=0.036915 Cd_tot=0.041786 Cf=0.041786 (ref Cf=0.041995) err=0.5% time=1983s
+[sdaa:20 4L+Cumulant Re=1000] Results written to /root/TensorLBM_dev/artifacts/suboff_bench1_cumulant_sdaa20.json

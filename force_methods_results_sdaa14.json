@@ -1,0 +1,40 @@
+{
+  "poiseuille": {
+    "case": "poiseuille_bb_fix",
+    "grid": "128x34x4",
+    "u_max_target": 0.05,
+    "u_max_simulated": 0.0032045210245996714,
+    "u_max_error_pct": 93.59095795080066,
+    "nu": 0.02,
+    "tau": 0.56,
+    "F_analytical": 0.128,
+    "methods": {
+      "mem_standard": {
+        "mean": 0.006888749864366319,
+        "error_pct": 94.6181641677246
+      },
+      "mem_galilean": {
+        "mean": 0.006888749864366319,
+        "error_pct": 94.6181641677246
+      },
+      "stress": {
+        "mean": 0.006475639720964763,
+        "error_pct": 94.94090646725455
+      },
+      "pressure": {
+        "mean": 0.0,
+        "error_pct": 99.99999999921874
+      },
+      "virtual_work": {
+        "mean": 1.606402788567607e-10,
+        "error_pct": 99.99999987371852
+      },
+      "ib": {
+        "mean": -0.16157023244433932,
+        "error_pct": 226.22674409537268
+      }
+    },
+    "n_steps": 5000,
+    "elapsed_s": 125.13677906990051
+  }
+}

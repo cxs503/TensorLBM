@@ -1,0 +1,92 @@
+{
+  "schema": "tensorlbm-sphere-bfl-control-volume-v3",
+  "configuration": {
+    "schema_version": 3,
+    "shape_zyx": [
+      240,
+      240,
+      360
+    ],
+    "radius": 15.0,
+    "center_x_fraction": 0.3,
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "collision_model": "cumulant_d3q19_cs0",
+    "warmup_steps": 8000,
+    "ramp_steps": 1200,
+    "sponge_width": 30,
+    "sponge_strength": 0.2,
+    "sponge_inlet": false,
+    "cv_margin": 10,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "statistics_window_steps": 4000,
+    "tau": 0.554,
+    "steps": 12000,
+    "device": "cuda:0",
+    "resumed_from_step": 0,
+    "checkpoint_path": "/tmp/sphere-v3-equivalent-r15-12000.ckpt",
+    "report_interval": 600,
+    "checkpoint_interval": 1200,
+    "statistics_window_steps_resolved": 4000,
+    "statistics_convective_times": 8.0,
+    "minimum_statistics_convective_times": 5.0,
+    "migration_provenance": null
+  },
+  "result": {
+    "cd_control_volume": 1.145555836004353,
+    "cd_bfl_link": 1.145634265919151,
+    "observer_difference_pct": 0.006846450634092713,
+    "cd_reference_schiller_naumann": 1.0917310910948732,
+    "reference_error_pct": 4.930220028404622,
+    "drag_stationarity": {
+      "sample_count": 4000,
+      "block_size": 500,
+      "block_count": 8,
+      "mean": 1.1455558360043536,
+      "block_means": [
+        1.1457276906625489,
+        1.145633862827315,
+        1.145572517559997,
+        1.1455334449106471,
+        1.1455118928618233,
+        1.1454969269124993,
+        1.1454888066613949,
+        1.1454815456386023
+      ],
+      "relative_range_pct": 0.021486951243262,
+      "half_mean_drift_pct": 0.010657356691839686,
+      "linear_trend_pct": 0.019616532456633716,
+      "standard_error_pct": 0.0026553266996884326,
+      "confidence95_half_width_pct": 0.006279847644763144,
+      "autocorrelation_zero_crossing_lag": 1352,
+      "integrated_autocorrelation_time_steps": 1151.7178164908148,
+      "effective_sample_count": 3.4730729547864914,
+      "autocorrelation_standard_error_pct": 0.003838836351569303,
+      "dominant_period_steps": 2000.0,
+      "dominant_period_power_fraction": 0.3841466461642746,
+      "finite": true,
+      "sufficiently_sampled": true
+    },
+    "finite": true
+  },
+  "acceptance": {
+    "drag_error_target_pct": 5.0,
+    "stationarity_target_pct": 1.0,
+    "force_observer_target_pct": 1.0,
+    "drag_target_met": true,
+    "stationarity_target_met": true,
+    "force_observer_target_met": true,
+    "duration_target_met": true,
+    "numerical_quality_admitted": true,
+    "admitted": true
+  },
+  "measured_peak_allocated_gib": 18.715256690979004,
+  "cuda_memory_preflight": {
+    "free_gib": 23.28839111328125,
+    "total_gib": 23.56072998046875,
+    "estimated_peak_gib": 19.311904907226562,
+    "reserve_gib": 1.0,
+    "headroom_gib": 2.9764862060546875,
+    "admitted": true
+  }
+}

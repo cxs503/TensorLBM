@@ -1,0 +1,64 @@
+{
+  "schema": "tensorlbm-wall-resolved-channel3d-dns-evidence-v1",
+  "status": "numerically_admitted_dns_rejected",
+  "physical_validation": false,
+  "case": "periodic full-box wall-resolved channel at Re_tau=180",
+  "configuration": {
+    "domain_nx_ny_nz": [400, 64, 132],
+    "collision_model": "cumulant",
+    "initialization_mode": "spectral_solenoidal",
+    "steps": 120000,
+    "warmup_steps": 40000,
+    "statistics_steps": 80000,
+    "statistics_eddy_turnovers": 3.8709677419354835,
+    "dx_plus": 5.806451612903226,
+    "dz_plus": 5.806451612903226,
+    "streamwise_length_over_half_height": 12.903225806451612,
+    "spanwise_length_over_half_height": 4.258064516129032
+  },
+  "numerical_health": {
+    "finite": true,
+    "minimum_population_at_final_step": 0.016441738232970238,
+    "maximum_speed_at_final_step": 0.07525654137134552,
+    "collision_limited_fraction_at_final_step": 0.0,
+    "recent_friction_velocity_error_pct": -0.1910482479267553,
+    "instantaneous_friction_velocity_error_pct_at_final_step": 1.0092822725657016,
+    "stationarity_half_window_drift_fraction": 0.0007387256826622747,
+    "stationarity_friction_velocity_range_fraction": 0.028090457075671767,
+    "crossflow_rms_over_u_tau_at_final_step": 2.1012666014333568,
+    "all_registered_source_acceptance_gates_met": true
+  },
+  "dns_comparison": {
+    "reference": "Moser, Kim & Mansour, Physics of Fluids 11, 943-945 (1999)",
+    "dns_re_tau": 178.12,
+    "sample_count": 25,
+    "sample_range_y_plus_to_outer_fraction": [1.0, 0.8],
+    "u_plus_rms_error": 1.2034850252685325,
+    "maximum_allowed_u_plus_rms_error": 1.0,
+    "reynolds_stress_component_order": ["uu", "vv", "ww", "uv"],
+    "reynolds_stress_component_rms_error": [
+      1.2900889917434295,
+      1.2375283064932585,
+      2.84924879201927,
+      0.05188325816329434
+    ],
+    "maximum_allowed_component_rms_error": 1.0,
+    "mean_profile_gate_met": false,
+    "reynolds_stress_gate_met": false
+  },
+  "artifacts": {
+    "channel_result": "results/canonical_wall/channel3d-retau180-cumulant-spectral-fullbox-r3-120k.json",
+    "channel_result_sha256": "28ecbbdd9bea3eb1b84dc96267df4cc596f4aa091417d14f3e4bc37b845cd110",
+    "dns_assessment": "results/canonical_wall/channel3d-retau180-cumulant-spectral-fullbox-r3-dns-assessment.json",
+    "dns_assessment_sha256": "f179579f1790db9d9e936d7c6b54441cc56b32d0d62597cb124e565d885907b9",
+    "dns_mean_reference_sha256": "f54c86e30a869798f140aa004c1e167cd13a6280e988d2794d72ca2be8b5fc82",
+    "dns_reynolds_stress_reference_sha256": "61f282379b80192ac8eba087aabdc41e891e854926161db866ca23fbf9111608"
+  },
+  "decision": {
+    "accept_as_numerically_stable_long_run": true,
+    "accept_as_dns_validated_turbulence_solution": false,
+    "use_as_wall_model_validation_evidence": false,
+    "next_causal_target": "identify the excessive streamwise/spanwise normal stresses before changing wall-model or SUBOFF force calibration"
+  },
+  "prohibition": "Passing bulk momentum, positivity and stationarity gates cannot substitute for agreement with independent DNS mean and Reynolds-stress profiles."
+}

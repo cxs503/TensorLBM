@@ -1,0 +1,31 @@
+{
+  "case": "free_falling_sphere_Re100",
+  "device": "sdaa:27",
+  "grid": "120x120x120",
+  "D": 40,
+  "R": 20.0,
+  "Re": 100,
+  "nu": 0.004,
+  "tau": 0.512,
+  "m_star": 1.5,
+  "mass": 96000.0,
+  "g_lbm": 6.42062998577414e-06,
+  "n_steps": 15000,
+  "v_terminal": 0.08667491641125055,
+  "v_ref": 0.03,
+  "Cd_terminal": 0.0,
+  "Cd_stokes": 0.24,
+  "Cd_exp": 1.09,
+  "error_pct": 188.91638803750186,
+  "finite": true,
+  "elapsed_s": 3111.2943229675293,
+  "modules_used": [
+    "drag_pressure.get_near_wall_3d",
+    "drag_pressure.SurfaceMesh.from_sphere",
+    "lbm_step_correct.lbm_step_correct",
+    "fsi_common.fsi_step_drag",
+    "fsi_common.shift_solid_mask",
+    "sixdof_common.RigidBodyState",
+    "sixdof.SixDOFBody"
+  ]
+}

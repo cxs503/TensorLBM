@@ -1,0 +1,31 @@
+{
+  "case": "[Cyl-Re200-bfl SDAA:1]",
+  "mode": "bfl",
+  "device": "sdaa:1",
+  "Re": 200,
+  "D": 48.0,
+  "grid": "400x160x4",
+  "u_in": 0.08,
+  "nu": 0.0192,
+  "tau": 0.5576,
+  "n_steps": 8000,
+  "warmup": 2000,
+  "n_solid": 7172,
+  "n_near": 544,
+  "dpS": 0.6144000000000001,
+  "Cd_pressure": 1.4395384527839845,
+  "Cd_friction": 0.38028937718789013,
+  "Cd_total": 1.8198278299718835,
+  "Cl": -0.008232093845176933,
+  "Cd_ref": 1.3,
+  "error_pct": 39.986756151683345,
+  "bfl_stats": {
+    "n_links": 3424,
+    "q_min": 0.020016025751829147,
+    "q_max": 1.0,
+    "q_mean": 0.3919787108898163
+  },
+  "friction_formula": "nu*u_t/q",
+  "finite": true,
+  "elapsed_s": 321.66784381866455
+}
