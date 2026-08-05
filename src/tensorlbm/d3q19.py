@@ -33,16 +33,19 @@ C = torch.tensor(
     dtype=torch.int64,
 )
 
-W = torch.tensor(
-    [
-        1 / 3,
-        1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18,
-        1 / 36, 1 / 36, 1 / 36, 1 / 36,
-        1 / 36, 1 / 36, 1 / 36, 1 / 36,
-        1 / 36, 1 / 36, 1 / 36, 1 / 36,
-    ],
-    dtype=torch.float32,
+_W_VALUES = (
+    1 / 3,
+    1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18, 1 / 18,
+    1 / 36, 1 / 36, 1 / 36, 1 / 36,
+    1 / 36, 1 / 36, 1 / 36, 1 / 36,
+    1 / 36, 1 / 36, 1 / 36, 1 / 36,
 )
+W = torch.tensor(_W_VALUES, dtype=torch.float32)
+# Retain exact binary64 representations of the rational Python literals for
+# high-Re float64 collision audits.  Casting the public float32 W to double
+# cannot recover the bits already lost at module import.
+W_EXACT64 = torch.tensor(_W_VALUES, dtype=torch.float64)
+WEIGHT_PRECISION_SCHEME = "rational_binary64_cast_to_runtime_dtype_v1"
 
 OPPOSITE = torch.tensor(
     [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17],
@@ -56,8 +59,11 @@ def _c_on(device: torch.device) -> torch.Tensor:
 
 
 @functools.cache
-def _w_on(device: torch.device) -> torch.Tensor:
-    return W.to(device)
+def _w_on(
+    device: torch.device,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
+    return W_EXACT64.to(device=device, dtype=dtype)
 
 
 def equilibrium3d(
@@ -66,12 +72,17 @@ def equilibrium3d(
     uy: torch.Tensor,
     uz: torch.Tensor,
     device: torch.device | None = None,
+    *,
+    out: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Compute D3Q19 equilibrium distribution f_eq for rho and velocity fields.
 
     Args:
         rho: density field of shape (nz, ny, nx).
         ux, uy, uz: velocity components of shape (nz, ny, nx).
+        out: optional pre-allocated output tensor of shape (19, nz, ny, nx).
+            If provided, the result is written into this tensor in-place,
+            avoiding a new allocation.
 
     Returns:
         Tensor of shape (19, nz, ny, nx).
@@ -85,7 +96,7 @@ def equilibrium3d(
     if device is None:
         device = rho.device
     c = _c_on(device)
-    w = _w_on(device).view(19, 1, 1, 1)
+    w = _w_on(device, rho.dtype).view(19, 1, 1, 1)
 
     u_sq = ux * ux + uy * uy + uz * uz
     cu = (
@@ -93,7 +104,11 @@ def equilibrium3d(
         + c[:, 1].view(19, 1, 1, 1) * uy
         + c[:, 2].view(19, 1, 1, 1) * uz
     )
-    return w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    result = w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    if out is not None:
+        out.copy_(result)
+        return out
+    return result
 
 
 def macroscopic3d(
@@ -117,4 +132,36 @@ def macroscopic3d(
     ux = (f * c[:, 0].view(19, 1, 1, 1)).sum(dim=0) / rho_safe
     uy = (f * c[:, 1].view(19, 1, 1, 1)).sum(dim=0) / rho_safe
     uz = (f * c[:, 2].view(19, 1, 1, 1)).sum(dim=0) / rho_safe
+    return rho, ux, uy, uz
+
+
+def macroscopic3d_low_memory(
+    f: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Recover D3Q19 moments without a Q-wide broadcast temporary.
+
+    The standard vector expression is convenient but materialises
+    ``f * c_axis`` over all 19 directions for each momentum component.  This
+    algebraically equivalent paired-direction form uses only spatial fields
+    and is intended for memory-bound wall/geometry kernels on large grids.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    rho = f.sum(dim=0)
+    rho_safe = rho.clamp_min(1.0e-12)
+    p78 = f[7] - f[8]
+    p9_10 = f[9] - f[10]
+    p11_12 = f[11] - f[12]
+    p13_14 = f[13] - f[14]
+    p15_16 = f[15] - f[16]
+    p17_18 = f[17] - f[18]
+    ux = (
+        f[1] - f[2] + p78 + p9_10 + p11_12 + p13_14
+    ) / rho_safe
+    uy = (
+        f[3] - f[4] + p78 - p9_10 + p15_16 + p17_18
+    ) / rho_safe
+    uz = (
+        f[5] - f[6] + p11_12 - p13_14 + p15_16 - p17_18
+    ) / rho_safe
     return rho, ux, uy, uz

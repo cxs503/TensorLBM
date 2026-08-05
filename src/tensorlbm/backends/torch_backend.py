@@ -9,6 +9,7 @@ from __future__ import annotations
 import contextlib
 import copy
 import math
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+from ..core.lattice import D3Q19, LatticeDescriptor
+from ..models.contracts import ModelComposition
+from ..models.torch_execution import TorchD3Q19MRTPlan, compile_torch_d3q19_mrt_plan
+from .contracts import BackendCapabilities, BackendId, BackendSupport, DeviceSpec
 
 
 # ---------------------------------------------------------------------------
@@ -476,3 +482,51 @@ def train_step(
 # ---------------------------------------------------------------------------
 
 BACKEND_NAME: str = "torch"
+
+
+# R1 LBM binding: setup-only.  It deliberately does not participate in the
+# legacy AI backend dispatch above, and it never owns a solver step.
+_R1_CAPABILITIES = BackendCapabilities(
+    backend_id=BackendId.TORCH,
+    support=BackendSupport.SUPPORTED,
+    supported_devices=("cpu",),
+    supported_dtypes=("float32",),
+    notes="R1 supports the existing direct D3Q19 MRT PyTorch execution plan on CPU float32 only.",
+)
+_R1_DEVICE = DeviceSpec(device="cpu", dtype_name="float32")
+
+
+@dataclass(frozen=True, slots=True)
+class TorchBackend:
+    """Cold-path binder; stepping remains exclusively on ``TorchD3Q19MRTPlan``."""
+
+    @property
+    def capabilities(self) -> BackendCapabilities:
+        """Return the deliberately narrow, actually tested R1 support declaration."""
+        return _R1_CAPABILITIES
+
+    def validate_device(self, spec: DeviceSpec) -> None:
+        """Reject every device or dtype outside the R1 CPU float32 contract."""
+        if spec != _R1_DEVICE:
+            raise ValueError("Torch backend R1 supports only device='cpu', dtype_name='float32'")
+
+    def compile_d3q19_mrt(
+        self, composition: ModelComposition, tau: float, device_spec: DeviceSpec
+    ) -> TorchD3Q19MRTPlan:
+        """Bind validated cold-path metadata to the existing PyTorch-only MRT plan."""
+        self.validate_device(device_spec)
+        return compile_torch_d3q19_mrt_plan(composition, tau)
+
+
+def build_torch_lattice_constants(
+    descriptor: LatticeDescriptor, device_spec: DeviceSpec
+) -> dict[str, torch.Tensor]:
+    """Adapt the core D3Q19 tuple descriptor to CPU tensors during setup only."""
+    TorchBackend().validate_device(device_spec)
+    if descriptor != D3Q19:
+        raise ValueError("Torch backend R1 lattice constants support only the core D3Q19 descriptor")
+    return {
+        "directions": torch.tensor(descriptor.directions, dtype=torch.int64, device=device_spec.device),
+        "weights": torch.tensor(descriptor.weights, dtype=torch.float32, device=device_spec.device),
+        "opposite": torch.tensor(descriptor.opposite, dtype=torch.int64, device=device_spec.device),
+    }

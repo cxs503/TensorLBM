@@ -1,0 +1,62 @@
+{
+  "schema": "tensorlbm-suboff-resolved-reynolds-sensitivity-evidence-v1",
+  "candidate": "suboff-nested-v25-equivalent-l90-re500k-3k",
+  "status": "integration_stable_short_force_result_rejected",
+  "physical_validation": false,
+  "configuration": {
+    "hull_type": "bare_hull",
+    "coarse_hull_length_cells": 90,
+    "finest_hull_length_cells": 720,
+    "resolved_reynolds": 500000,
+    "physical_reynolds": 13213381.41322709,
+    "collision_model": "natural_kbc",
+    "stress_exchange_distance_cells": 1.0,
+    "steps": 3000,
+    "warmup_steps": 1500,
+    "statistics_window_steps": 1500,
+    "sampling_convective_times": 1.0
+  },
+  "health": {
+    "finite": true,
+    "population_health_target_met": true,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_wall_sample_rejected_fraction": 0.0,
+    "reflux_applied_correction_target_met": true,
+    "nested_control_volume_target_met": true,
+    "wall_y_plus_in_range_fraction": 0.9168069487877188,
+    "wall_y_plus_applicability_target_met": true,
+    "integration_smoke_admitted": true
+  },
+  "force_statistics": {
+    "mean_control_volume_resistance_n": 112.15094448767019,
+    "mean_conservative_link_impulse_alias_n": 18.34978186328243,
+    "mean_wall_shear_n": 94.56003439347352,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 28.31915845271188,
+    "wall_shear_vs_ittc57_reference_pct": 19.210540412258936,
+    "relative_range_pct": 7.250480451202574,
+    "half_mean_drift_pct": 4.149375174808263,
+    "linear_trend_pct": 6.55259058462851,
+    "confidence95_half_width_pct": 2.1557327252230407,
+    "source_corrected_force_closure_max_pct": 0.03323884756969749
+  },
+  "acceptance": {
+    "duration_target_met": false,
+    "target_reynolds_duration_target_met": false,
+    "stationarity_target_met": false,
+    "reference_error_target_met": false,
+    "collision_viscosity_target_met_in_runner": false,
+    "single_grid_candidate": false,
+    "time_convergence_assessed": false,
+    "grid_convergence_assessed": false
+  },
+  "artifacts": {
+    "remote_result": "results/amr_campaign_20260801/suboff-nested-v25-equivalent-l90-3k.json",
+    "remote_result_sha256": "2ec9668ef69f506455cb797d62dc55261550081737e4348d21441135cac3c756",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v25-equivalent-l90-3k.ckpt",
+    "remote_checkpoint_sha256": "c0c8a9fe17f4fcecfcc409e9e87025763c290e101fda53301173f12631012370",
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v25-re500k-compiled-l90-3k.wait.log",
+    "remote_log_sha256": "86e7310420843757a4a32db8e6201649dac183aa192efba2401dd4b9f9be23e1"
+  },
+  "conclusion": "Increasing only the collision resolved Reynolds to 500k preserves population and AMR health but does not make the force usable: the 1-convective-time window has a 6.55% trend and the mean remains 28.3% above experiment, with modeled wall shear still 19.2% above the ITTC friction reference. This is a causal sensitivity result, not a converged resistance member, and no force component is corrected toward experiment."
+}

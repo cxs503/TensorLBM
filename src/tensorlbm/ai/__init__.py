@@ -1,32 +1,13 @@
-"""AI sub-package for HPC + AI demonstration in TensorLBM.
+"""Torch-based AI utilities for TensorLBM flow and turbulence workflows.
 
-Implements the end-to-end pipeline
-
-    Agent → modelling/solving/post-processing
-          → dataset extraction
-          → SQLite persistence
-          → neural-network turbulence-model training
-          → AI-enhanced LBM collision (LES closure)
-
-All components are CPU-friendly and are exposed both as ordinary Python
-APIs and as platform agent tools.
-
-Multi-backend support
----------------------
-Set the active computation framework before importing (or at any point
-before training / inference):
-
-    import tensorlbm.backends as B
-    B.set_backend("paddle")    # or "mindspore"
-
-Or via environment variable::
-
-    TENSORLBM_BACKEND=paddle python my_script.py
-
-The LBM solver core still runs on PyTorch; only the AI sub-package uses
-the multi-backend dispatch.
+The core API covers datasets, turbulence closures, pipelines, and the
+self-supervised flow transformer.  SUBOFF reconstruction is optional and is
+queried explicitly with :func:`get_suboff_availability`; it never blocks this
+package's core imports.
 """
 from __future__ import annotations
+
+import importlib
 
 from ..backends import get_backend, set_backend  # re-export for convenience
 
@@ -118,54 +99,84 @@ from tensorlbm.ai.suboff_dataset import (
     read_multi_re_cylinder_data28,
     read_multi_re_cylinder_data28_addition,
 )
-# SUBOFF reconstruction — training, fine-tuning, inference, utilities
-try:
-    from .suboff_utils import (
-        build_suboff_model,
-        default_suboff_device,
-        ensure_dir,
-        get_suboff_coords,
-        load_checkpoint,
-        pointwise_rel_loss,
-        save_checkpoint,
-    )
-except ModuleNotFoundError as exc:
-    if exc.name != "tensorlbm.ai.suboff_utils":
-        raise
-    raise ImportError(
-        "tensorlbm.ai requires the optional SUBOFF dependency "
-        "tensorlbm.ai.suboff_utils, which is not installed."
-    ) from exc
-from .suboff_train import (
-    SuboffFinetuneConfig,
-    SuboffTrainConfig,
-    finetune_suboff,
-    train_suboff,
-)
-from .suboff_inference import (
-    SuboffErrorConfig,
-    SuboffPredictConfig,
-    error_analysis_suboff,
-    predict_suboff,
+
+_OPTIONAL_SUBOFF_MODULES = (
+    "tensorlbm.ai.suboff_utils",
+    "tensorlbm.ai.suboff_train",
+    "tensorlbm.ai.suboff_inference",
 )
 
+_OPTIONAL_SUBOFF_EXPORTS = {
+    # utilities
+    "build_suboff_model": "tensorlbm.ai.suboff_utils",
+    "default_suboff_device": "tensorlbm.ai.suboff_utils",
+    "ensure_dir": "tensorlbm.ai.suboff_utils",
+    "get_suboff_coords": "tensorlbm.ai.suboff_utils",
+    "load_checkpoint": "tensorlbm.ai.suboff_utils",
+    "pointwise_rel_loss": "tensorlbm.ai.suboff_utils",
+    "save_checkpoint": "tensorlbm.ai.suboff_utils",
+    # training
+    "SuboffTrainConfig": "tensorlbm.ai.suboff_train",
+    "train_suboff": "tensorlbm.ai.suboff_train",
+    "SuboffFinetuneConfig": "tensorlbm.ai.suboff_train",
+    "finetune_suboff": "tensorlbm.ai.suboff_train",
+    # inference
+    "SuboffPredictConfig": "tensorlbm.ai.suboff_inference",
+    "predict_suboff": "tensorlbm.ai.suboff_inference",
+    "SuboffErrorConfig": "tensorlbm.ai.suboff_inference",
+    "error_analysis_suboff": "tensorlbm.ai.suboff_inference",
+}
+
+
+def __getattr__(name: str):
+    """Load optional SUBOFF symbols only when callers explicitly request them."""
+    module_name = _OPTIONAL_SUBOFF_EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(importlib.import_module(module_name), name)
+    globals()[name] = value
+    return value
+
+
+def _load_optional_suboff_api() -> tuple[bool, str]:
+    """Check whether all optional SUBOFF modules can be imported.
+
+    Only a missing module that is part of the optional SUBOFF group is
+    converted into an unavailable result.  Missing transitive dependencies and
+    other import errors remain visible to callers.
+    """
+    for module_name in _OPTIONAL_SUBOFF_MODULES:
+        try:
+            importlib.import_module(module_name)
+        except ModuleNotFoundError as exc:
+            if exc.name == module_name:
+                return False, f"Optional SUBOFF module is not installed: {module_name}"
+            raise
+    return True, "Optional SUBOFF modules are importable."
+
+
+def get_suboff_availability() -> dict[str, str | bool]:
+    """Return the explicit availability state of optional SUBOFF support."""
+    available, reason = _load_optional_suboff_api()
+    return {
+        "available": available,
+        "status": "AVAILABLE" if available else "NOT_AVAILABLE",
+        "reason": reason,
+    }
+
+
 __all__ += [
-    # SUBOFF reconstruction — utilities
-    "build_suboff_model",
-    "default_suboff_device",
-    "ensure_dir",
-    "get_suboff_coords",
-    "load_checkpoint",
-    "pointwise_rel_loss",
-    "save_checkpoint",
-    # SUBOFF reconstruction — training
-    "SuboffTrainConfig",
-    "train_suboff",
-    "SuboffFinetuneConfig",
-    "finetune_suboff",
-    # SUBOFF reconstruction — inference
-    "SuboffPredictConfig",
-    "predict_suboff",
-    "SuboffErrorConfig",
-    "error_analysis_suboff",
+    "get_suboff_availability",
+    *_OPTIONAL_SUBOFF_EXPORTS,
+    # SUBOFF 3D surrogate modules
+    "encoder_module",
+    "decoder_module",
+    "attention_module",
+    "coord_ori27",
+    "coord_ori28",
+    "coord_ori28_addition",
+    "CylinderDatasetMultiRe14",
+    "read_multi_re_cylinder_data27",
+    "read_multi_re_cylinder_data28",
+    "read_multi_re_cylinder_data28_addition",
 ]

@@ -1,0 +1,33 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[KVLCC2-Re1000-bfl SDAA:15] nx=300 ny=120 nz=120 L=80.0 u_in=0.06 nu=4.800000e-03 tau=0.514400 Cs=0.05 Re=1000 use_bfl=True
+[KVLCC2-Re1000-bfl SDAA:15] solid cells: 30668  Cb_numerical=0.8874
+[KVLCC2-Re1000-bfl SDAA:15] dpS = 8.143008e+00 (D=draft=18.0)
+[KVLCC2-Re1000-bfl SDAA:15] near-wall cells: 14634
+[KVLCC2-Re1000-bfl SDAA:15] computing BFL q-values (generic voxelised)...
+[KVLCC2-Re1000-bfl SDAA:15] BFL q-field: 75076 links (0.1s) (q=0.5, generic voxelised)
+[KVLCC2-Re1000-bfl SDAA:15] init done (0.8s), initial_mass=4320000.0
+[KVLCC2-Re1000-bfl SDAA:15] step=1500 Cd_p=0.020359 Cd_f=0.133526 Cd_tot=0.153885 Cl=-0.000031 (1129s)
+[KVLCC2-Re1000-bfl SDAA:15] step=2000 Cd_p=0.019257 Cd_f=0.121674 Cd_tot=0.140931 Cl=0.000034 (1513s)
+[KVLCC2-Re1000-bfl SDAA:15] step=2500 Cd_p=0.019052 Cd_f=0.114476 Cd_tot=0.133528 Cl=-0.000013 (1898s)
+[KVLCC2-Re1000-bfl SDAA:15] step=3000 Cd_p=0.018918 Cd_f=0.109482 Cd_tot=0.128400 Cl=0.000023 (2280s)
+[KVLCC2-Re1000-bfl SDAA:15] step=3500 Cd_p=0.018794 Cd_f=0.105710 Cd_tot=0.124504 Cl=-0.000007 (2660s)
+[KVLCC2-Re1000-bfl SDAA:15] step=4000 Cd_p=0.018700 Cd_f=0.102754 Cd_tot=0.121454 Cl=0.000021 (3038s)
+[KVLCC2-Re1000-bfl SDAA:15] step=4500 Cd_p=0.018637 Cd_f=0.100373 Cd_tot=0.119010 Cl=0.000010 (3419s)
+[KVLCC2-Re1000-bfl SDAA:15] step=5000 Cd_p=0.018606 Cd_f=0.098456 Cd_tot=0.117063 Cl=0.000035 (3802s)
+[KVLCC2-Re1000-bfl SDAA:15] DONE Cd_p=0.018622 Cd_f=0.099415 Cd_tot=0.118036 Cl=0.000022 time=3802s
+[KVLCC2-Re1000-bfl SDAA:15] Results written to results_bfl_common/bfl_kvlcc2_sdaa15.json

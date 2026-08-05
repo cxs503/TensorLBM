@@ -1,0 +1,46 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re200_opt SDAA:0] cylinder Re=200 grid=1000x400x4 u_in=0.08 nu=1.920000e-02 tau=0.557600 dpS=6.144000e-01
+[cyl_re200_opt SDAA:0] collision=mrt_smag Cs=0.05 n_steps=5000 warmup=1000 avg_window=1000
+[cyl_re200_opt SDAA:0] blockage D/ny=12.0%
+[cyl_re200_opt SDAA:0] Cd_ref=1.300000 (Cd=1.30 (Re=200, Henderson 1997))
+[cyl_re200_opt SDAA:0] solid cells: 7172
+[cyl_re200_opt SDAA:0] near-wall cells: 544
+[cyl_re200_opt SDAA:0] SurfaceMesh normals: from_cylinder
+[cyl_re200_opt SDAA:0] init done (0.4s) mass=1600000.0
+[cyl_re200_opt SDAA:0] step=500/5000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (88s)
+[cyl_re200_opt SDAA:0] step=1000/5000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (176s)
+[cyl_re200_opt SDAA:0] step=1500/5000 Cd_p=1.077278 Cd_f=0.156592 Cd_tot=1.233870 (270s)
+[cyl_re200_opt SDAA:0] step=2000/5000 Cd_p=1.009634 Cd_f=0.146924 Cd_tot=1.156558 (365s)
+[cyl_re200_opt SDAA:0] step=2500/5000 Cd_p=0.968387 Cd_f=0.139864 Cd_tot=1.108250 (460s)
+[cyl_re200_opt SDAA:0] step=3000/5000 Cd_p=0.940177 Cd_f=0.134891 Cd_tot=1.075068 (555s)
+[cyl_re200_opt SDAA:0] step=3500/5000 Cd_p=0.933790 Cd_f=0.132336 Cd_tot=1.066126 (651s)
+[cyl_re200_opt SDAA:0] step=4000/5000 Cd_p=0.904498 Cd_f=0.129760 Cd_tot=1.034258 (747s)
+[cyl_re200_opt SDAA:0] step=4500/5000 Cd_p=0.898291 Cd_f=0.128115 Cd_tot=1.026406 (843s)
+[cyl_re200_opt SDAA:0] step=5000/5000 Cd_p=0.887313 Cd_f=0.126828 Cd_tot=1.014142 (938s)
+
+============================================================
+[cyl_re200_opt SDAA:0] FINAL RESULTS
+============================================================
+[cyl_re200_opt SDAA:0] Cd_p  = 0.892802
+[cyl_re200_opt SDAA:0] Cd_f  = 0.127472
+[cyl_re200_opt SDAA:0] Cd_tot= 1.020274
+[cyl_re200_opt SDAA:0] Cd_ref= 1.300000  err=21.5%
+[cyl_re200_opt SDAA:0] St    = None
+[cyl_re200_opt SDAA:0] time  = 938s (15.6 min)
+[cyl_re200_opt SDAA:0] finite= True
+[cyl_re200_opt SDAA:0] Results → results_optimize_bench/cyl_re200_sdaa0.json

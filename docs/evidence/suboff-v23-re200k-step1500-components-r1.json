@@ -1,0 +1,69 @@
+{
+  "schema": "tensorlbm-suboff-target-reynolds-component-checkpoint-v1",
+  "status": "target_reynolds_reached_statistics_not_converged",
+  "physical_validation": false,
+  "configuration": {
+    "hull_type": "bare_hull",
+    "root_hull_length_cells": 90.0,
+    "finest_hull_length_cells": 720.0,
+    "levels": 4,
+    "collision_model": "natural_kbc",
+    "target_collision_reynolds": 200000.0,
+    "stress_exchange_distance_cells": 1.0,
+    "stress_exchange_distance_over_finest_length": 0.001388888888888889,
+    "wall_law": "musker",
+    "sponge_inlet": true,
+    "compiled_collision": true,
+    "collision_chunk_cells": 262144
+  },
+  "checkpoint_observation": {
+    "step": 1500,
+    "target_reynolds_reached": true,
+    "wall_normal_activation": 1.0,
+    "wall_shear_activation": 1.0,
+    "control_volume_resistance_n": 110.93981837820411,
+    "bfl_pressure_n": 24.918099927595566,
+    "wall_shear_n": 86.66947361666,
+    "bfl_pressure_plus_wall_shear_n": 111.58757354425556,
+    "source_corrected_control_volume_n": 111.5763987618323,
+    "source_corrected_observer_difference_pct": 0.010015363954453047,
+    "mean_exchange_distance_cells": 1.0775457620620728,
+    "minimum_y_plus": 1.5608088970184326,
+    "mean_y_plus": 772.3083801269531,
+    "maximum_y_plus": 1225.0411376953125,
+    "minimum_root_population": 0.005582006648182869,
+    "maximum_root_speed": 0.06404920667409897,
+    "maximum_collision_limited_fraction": 0.0,
+    "maximum_wall_sample_rejected_fraction": 0.0
+  },
+  "reference_scale_audit": {
+    "scope": "diagnostic_only_not_a_cfd_correction",
+    "experimental_total_resistance_n": 87.4,
+    "instantaneous_control_volume_error_pct": 26.933430638677457,
+    "ittc_1957_friction_resistance_n": 79.32187377597819,
+    "instantaneous_wall_shear_vs_ittc_pct": 9.263018497814347,
+    "experimental_total_minus_ittc_friction_n": 8.078126224021815,
+    "instantaneous_pressure_over_inferred_residual": 3.0846385952099817
+  },
+  "decision": {
+    "admit_numerical_checkpoint": true,
+    "admit_time_convergence": false,
+    "admit_physical_accuracy": false,
+    "reasons": [
+      "This is the first fully activated target-Reynolds checkpoint, not a stationary statistics window.",
+      "The instantaneous control-volume resistance remains 26.93 percent above experiment.",
+      "The one-cell exchange location is geometrically underscaled and its measured y+ range crosses the broad 30 to 1000 wall-model policy bounds."
+    ],
+    "next": [
+      "Continue the trajectory through its declared target-Reynolds sampling window.",
+      "Compare the same checkpoint and final component means with the 8.4375-cell wall-exchange A/B trajectory.",
+      "Record the full measured y+ distribution in future trajectories and reject exchange policies whose active-node fraction does not meet the declared applicability gate.",
+      "Do not subtract ITTC friction or an inferred pressure residual from the CFD force."
+    ]
+  },
+  "provenance": {
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-3k.ckpt",
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v23-re200k-compiled-l90-3k.log",
+    "checkpoint_is_mutable_until_run_completion": true
+  }
+}

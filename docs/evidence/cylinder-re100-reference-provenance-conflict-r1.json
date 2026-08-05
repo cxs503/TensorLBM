@@ -1,0 +1,61 @@
+{
+  "schema": "tensorlbm-cylinder-reference-provenance-audit-v1",
+  "status": "numeric_reference_conflict_unresolved_fail_closed",
+  "physical_validation": false,
+  "case": "unconfined two-dimensional circular cylinder, Re=100",
+  "current_canonical_constants": {
+    "cd": 1.33,
+    "strouhal": 0.164,
+    "source_location": "src/tensorlbm/cylinder_bfl_control_volume.py"
+  },
+  "repository_conflicts": [
+    {
+      "path": "examples/cylinder_bfl_farfield.py",
+      "cd": 1.33,
+      "attribution": "Henderson (1995) / Williamson extrapolation"
+    },
+    {
+      "path": "examples/cylinder_farfield_bench.py",
+      "cd": 1.38,
+      "strouhal": 0.166,
+      "attribution": "Williamson (1988)"
+    },
+    {
+      "path": "docs/software_manual.md",
+      "cd_interval": [1.35, 1.41],
+      "strouhal": 0.166,
+      "attribution": "Zdravkovich (1997) and Williamson (1988)"
+    }
+  ],
+  "primary_metadata_verified": [
+    {
+      "title": "Details of the drag curve near the onset of vortex shedding",
+      "author": "Henderson",
+      "year": 1995,
+      "doi": "10.1063/1.868459",
+      "crossref_url": "https://api.crossref.org/works/10.1063%2F1.868459",
+      "numeric_re100_value_available_in_metadata": false
+    },
+    {
+      "title": "Defining a universal and continuous Strouhal-Reynolds number relationship for the laminar vortex shedding of a circular cylinder",
+      "author": "Williamson",
+      "year": 1988,
+      "doi": "10.1063/1.866978",
+      "crossref_url": "https://api.crossref.org/works/10.1063%2F1.866978",
+      "numeric_re100_value_available_in_metadata": false
+    }
+  ],
+  "access_audit": {
+    "date": "2026-08-02",
+    "crossref_metadata": "available",
+    "publisher_full_text": "closed/bot-gated",
+    "openalex_open_access_status": "closed with no repository full text"
+  },
+  "decision": {
+    "change_reference_to_make_current_cfd_pass": false,
+    "promote_alternative_repository_number": false,
+    "retain_raw_cfd_outputs": true,
+    "required_for_reference_admission": "Extract the Re=100 value and definition directly from an accessible primary table, curve, or author dataset; record averaging, confinement, two/three-dimensionality and uncertainty.",
+    "interim_policy": "Continue causal Mach/collision/dimensional-reduction tests against the unchanged nominal constants, but do not use repository disagreement to claim physical validation."
+  }
+}

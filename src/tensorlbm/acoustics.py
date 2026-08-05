@@ -281,13 +281,13 @@ def compute_spl_spectrum(
     if n_fft is None:
         n_fft = T
 
-    # Apply Hann window to reduce spectral leakage
-    window = torch.hann_window(min(n_fft, T), periodic=False)
     # Pad or truncate to n_fft
     sig = p_prime[:, :n_fft]
     if sig.shape[1] < n_fft:
         pad = torch.zeros(n_obs, n_fft - sig.shape[1])
         sig = torch.cat([sig, pad], dim=1)
+    # Apply Hann window to reduce spectral leakage (window length must match sig)
+    window = torch.hann_window(n_fft, periodic=False)
     sig = sig * window.unsqueeze(0)
 
     # Real FFT → one-sided PSD

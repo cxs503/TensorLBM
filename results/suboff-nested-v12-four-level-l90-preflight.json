@@ -1,0 +1,180 @@
+{
+  "schema": "tensorlbm-suboff-nested-amr-smoke-v3",
+  "status": "preflight_only",
+  "physical_validation": false,
+  "planning": {
+    "outer_box": {
+      "x0": 84,
+      "x1": 262,
+      "y0": 34,
+      "y1": 57,
+      "z0": 34,
+      "z1": 57
+    },
+    "inner_box_in_outer_allocated_coordinates": {
+      "x0": 5,
+      "x1": 214,
+      "y0": 5,
+      "y1": 42,
+      "z0": 5,
+      "z1": 42
+    },
+    "refinement_boxes_in_parent_allocated_coordinates": [
+      {
+        "x0": 84,
+        "x1": 262,
+        "y0": 34,
+        "y1": 57,
+        "z0": 34,
+        "z1": 57
+      },
+      {
+        "x0": 5,
+        "x1": 214,
+        "y0": 5,
+        "y1": 42,
+        "z0": 5,
+        "z1": 42
+      },
+      {
+        "x0": 10,
+        "x1": 399,
+        "y0": 9,
+        "y1": 66,
+        "z0": 9,
+        "z1": 66
+      }
+    ],
+    "refinement_depth": 3,
+    "level_count": 4,
+    "force_samples_per_root_step": 8,
+    "outer_fine_shape": [
+      46,
+      46,
+      356
+    ],
+    "nested_fine_shape": [
+      74,
+      74,
+      418
+    ],
+    "fine_physical_shapes_by_level": [
+      [
+        46,
+        46,
+        356
+      ],
+      [
+        74,
+        74,
+        418
+      ],
+      [
+        114,
+        114,
+        778
+      ]
+    ],
+    "allocated_cells_by_level": [
+      3645000,
+      824832,
+      2425920,
+      10495680
+    ],
+    "wall_buffer_parent_cells": 7,
+    "wall_buffer_finest_cells": 14,
+    "downstream_buffer_parent_cells": 21,
+    "downstream_buffer_finest_cells": 42,
+    "total_allocated_cells": 17391432,
+    "uniform_finest_cells": 1866240000,
+    "cell_saving_fraction": 0.9906810313786009,
+    "memory_estimate_bytes_per_cell": 1100.0,
+    "estimated_peak_gib": 17.816736549139023,
+    "stress_exchange_distance_cells": 1.0,
+    "stress_exchange_distance_over_finest_length": 0.001388888888888889,
+    "estimated_exchange_y_plus": 693.9707216210123,
+    "estimated_bfl_exchange_y_plus_bounds": {
+      "requested_exchange_distance_cells": 1.0,
+      "minimum_effective_exchange_distance_cells": 1.0,
+      "maximum_effective_exchange_distance_cells": 1.5,
+      "minimum_exchange_y_plus_estimate": 693.9707216210123,
+      "maximum_exchange_y_plus_estimate": 1040.9560824315186
+    },
+    "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
+    "cuda_memory_preflight": null,
+    "control_volume_interface_clearance": {
+      "interface_filter_width_cells": 0,
+      "streaming_stencil_radius_cells": 1,
+      "all_flux_stencils_outside_filter": true,
+      "volumes": [
+        {
+          "role": "primary",
+          "margin_cells": 8,
+          "bounds_xyz_half_open": [
+            7,
+            744,
+            7,
+            108,
+            7,
+            108
+          ],
+          "minimum_physical_interface_clearance_cells": 6,
+          "minimum_unfiltered_source_guard_cells": 6,
+          "required_streaming_source_guard_cells": 1,
+          "flux_stencil_outside_filter": true
+        },
+        {
+          "role": "auxiliary",
+          "margin_cells": 4,
+          "bounds_xyz_half_open": [
+            11,
+            740,
+            11,
+            104,
+            11,
+            104
+          ],
+          "minimum_physical_interface_clearance_cells": 10,
+          "minimum_unfiltered_source_guard_cells": 10,
+          "required_streaming_source_guard_cells": 1,
+          "flux_stencil_outside_filter": true
+        },
+        {
+          "role": "auxiliary",
+          "margin_cells": 12,
+          "bounds_xyz_half_open": [
+            3,
+            748,
+            3,
+            112,
+            3,
+            112
+          ],
+          "minimum_physical_interface_clearance_cells": 2,
+          "minimum_unfiltered_source_guard_cells": 2,
+          "required_streaming_source_guard_cells": 1,
+          "flux_stencil_outside_filter": true
+        }
+      ]
+    },
+    "geometry_resolution": {
+      "hull_type": "bare_hull",
+      "fine_hull_length_cells": 720.0,
+      "diameter_cells": 84.01400233372229,
+      "solid_cells": 3153517,
+      "bare_hull_cells": 3153517,
+      "sail_only_cells": 0,
+      "fin_only_cells": 0,
+      "sail_max_thickness_cells": null,
+      "vertical_fin_max_thickness_cells": null,
+      "horizontal_fin_max_thickness_cells": null,
+      "appendage_halfway_links": 0,
+      "minimum_convergence_diameter_cells": 16.0,
+      "minimum_absolute_reference_diameter_cells": 24.0,
+      "minimum_convergence_appendage_thickness_cells": 3,
+      "minimum_absolute_reference_appendage_thickness_cells": 4,
+      "convergence_member_resolved": true,
+      "absolute_reference_resolved": true
+    }
+  }
+}

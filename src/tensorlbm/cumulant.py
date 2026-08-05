@@ -51,9 +51,12 @@ Lycett-Brown, D., & Luo, K. H. (2016).
 """
 from __future__ import annotations
 
+import math
+
 import torch
 
 from .d2q9 import equilibrium, macroscopic
+from .d3q19 import equilibrium3d, macroscopic3d
 from .d3q27 import equilibrium27, macroscopic27
 
 # ---------------------------------------------------------------------------
@@ -86,7 +89,6 @@ def collide_cumulant_d2q9(
     Returns:
         Post-collision distribution tensor of shape ``(9, ny, nx)``.
     """
-    device = f.device
     omega = 1.0 / tau
     cs2 = 1.0 / 3.0
 
@@ -347,7 +349,438 @@ def collide_cumulant_d3q27(
     return feq + fneq_reg + fneq_ho_s
 
 
+# ---------------------------------------------------------------------------
+# D3Q19 cumulant collision
+# ---------------------------------------------------------------------------
+
+def collide_cumulant_d3q19(
+    f: torch.Tensor,
+    tau: float,
+    omega_b: float = 1.0,
+    omega_odd: float = 1.0,
+    omega_even: float = 1.0,
+    C_s: float = 0.0,
+    C_w: float = 0.0,
+    C_v: float = 0.0,
+    solid_mask: torch.Tensor | None = None,
+    wall_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> torch.Tensor:
+    """Cumulant LBM collision step for the D3Q19 lattice.
+
+    Implements the 3-D cumulant operator for the 19-direction lattice,
+    following the same regularized-reconstruction pattern as the D3Q27
+    cumulant (Geier *et al.*, 2015) but using the D3Q19 stencil (no corner
+    directions).
+
+    The D3Q19 lattice has 19 populations and 19 raw moments.  The
+    transformation chain is:
+
+    1. **Raw moments** – density *ρ*, momentum *j*, and the 2nd-order
+       stress tensor *Π*_{αβ} = Σ_i c_{iα} c_{iβ} f_i are extracted from
+       the populations via grouped summation (the 19×19 moment basis).
+    2. **Central-moment shift** – because *f*^{neq} = *f* − *f*^{eq}
+       carries zero momentum (Σ c_{iα} f^{neq}_i = 0), the 2nd-order
+       central moments coincide with the raw 2nd-order moments.  This is
+       the Galilean-invariant shift by the local velocity *u*.
+    3. **Cumulant relaxation** – the 2nd-order cumulants (which equal the
+       central moments at this order) are relaxed independently: shear
+       modes at *ω* = 1/*τ*, the bulk/trace mode at *ω_b*, and the
+       residual higher-order modes at *ω_even*.
+    4. **Inverse transform** – the relaxed stress tensor is projected back
+       onto the 2nd-order Hermite subspace and combined with the
+       relaxed higher-order residual to recover post-collision
+       populations.
+
+    Args:
+        f:          Distribution tensor, shape ``(19, nz, ny, nx)``.
+        tau:        Shear relaxation time τ > 0.5.
+        omega_b:    Bulk viscosity rate (default 1.0).
+        omega_odd:  Rate for odd-order ghost modes (default 1.0).
+        omega_even: Rate for even-order ghost modes ≥ 4 (default 1.0).
+        C_s:        Smagorinsky constant (0 = disabled, 0.1 = typical).
+        C_w:        WALE constant (0 = disabled, 0.5 = typical).
+        C_v:        Vreman constant (0 = disabled, 0.025 = typical).
+        solid_mask:  Optional stationary/moving-solid mask used only by
+                     gradient SGS models.  Solid-side macroscopic velocities
+                     are replaced by ``wall_velocity`` before differentiation.
+        wall_velocity: Cartesian lattice velocity imposed inside the mask.
+
+        At most one SGS coefficient may be non-zero.  WALE and Vreman use
+        velocity-gradient invariants and are useful alternatives when the
+        non-equilibrium-stress Smagorinsky closure is too dissipative near a
+        wall.  All three closures alter only the local shear relaxation time;
+        the cumulant/Hermite reconstruction and conserved moments are shared.
+
+    Returns:
+        Post-collision distribution tensor, shape ``(19, nz, ny, nx)``.
+    """
+    if min(C_s, C_w, C_v) < 0.0:
+        raise ValueError("SGS coefficients must be non-negative")
+    if sum(value > 0.0 for value in (C_s, C_w, C_v)) > 1:
+        raise ValueError("only one SGS model may be active")
+    if len(wall_velocity) != 3 or not all(math.isfinite(v) for v in wall_velocity):
+        raise ValueError("wall_velocity must contain three finite values")
+    if solid_mask is not None and (
+        solid_mask.shape != f.shape[1:]
+        or solid_mask.dtype is not torch.bool
+        or solid_mask.device != f.device
+    ):
+        raise ValueError("solid_mask must be bool with the population spatial shape")
+
+    device = f.device
+    cs2 = 1.0 / 3.0
+
+    # ---- Macroscopic fields -------------------------------------------
+    rho, ux, uy, uz = macroscopic3d(f)
+
+    # ---- Equilibrium distributions (for reference / back-transform) ---
+    feq = equilibrium3d(rho, ux, uy, uz)
+
+    # ---- Non-equilibrium part -----------------------------------------
+    fneq = f - feq
+
+    # ---- Strain rate tensor from fneq (2nd Hermite moment) ------------
+    # Π_αβ = Σ_i c_iα c_iβ fneq_i
+    from .d3q19 import C as C19  # noqa: PLC0415
+    c = C19.to(device=device, dtype=f.dtype)  # (19, 3)
+    cx = c[:, 0].view(19, 1, 1, 1)
+    cy = c[:, 1].view(19, 1, 1, 1)
+    cz = c[:, 2].view(19, 1, 1, 1)
+
+    pi_xx = (cx * cx * fneq).sum(0)
+    pi_yy = (cy * cy * fneq).sum(0)
+    pi_zz = (cz * cz * fneq).sum(0)
+    pi_xy = (cx * cy * fneq).sum(0)
+    pi_xz = (cx * cz * fneq).sum(0)
+    pi_yz = (cy * cz * fneq).sum(0)
+
+    # ---- Relaxation rate: scalar or per-cell SGS LES ------------------
+    if C_w > 0.0:
+        from .turbulence import _nu_t_to_tau_eff, _wale_nu_t_3d  # noqa: PLC0415
+
+        if solid_mask is not None:
+            ux, uy, uz = (
+                torch.where(solid_mask, torch.as_tensor(
+                    velocity, dtype=f.dtype, device=f.device,
+                ), component)
+                for component, velocity in zip(
+                    (ux, uy, uz), wall_velocity, strict=True,
+                )
+            )
+        tau_eff = _nu_t_to_tau_eff(
+            tau, _wale_nu_t_3d(ux, uy, uz, C_w),
+        )
+        omega = 1.0 / tau_eff
+    elif C_v > 0.0:
+        from .turbulence import _nu_t_to_tau_eff, _vreman_nu_t_3d  # noqa: PLC0415
+
+        if solid_mask is not None:
+            ux, uy, uz = (
+                torch.where(solid_mask, torch.as_tensor(
+                    velocity, dtype=f.dtype, device=f.device,
+                ), component)
+                for component, velocity in zip(
+                    (ux, uy, uz), wall_velocity, strict=True,
+                )
+            )
+        tau_eff = _nu_t_to_tau_eff(
+            tau, _vreman_nu_t_3d(ux, uy, uz, C_v),
+        )
+        omega = 1.0 / tau_eff
+    elif C_s > 0.0:
+        # Smagorinsky: tau_eff = 0.5*(tau + sqrt(tau² + 18*C_s²*|Π|/ρ))
+        pi_norm = (pi_xx**2 + pi_yy**2 + pi_zz**2
+                   + 2.0*(pi_xy**2 + pi_xz**2 + pi_yz**2)).sqrt()
+        rho_safe = rho.clamp(min=1e-12)
+        tau_eff = 0.5 * (tau + torch.sqrt(tau * tau + 18.0 * C_s * C_s * pi_norm / rho_safe))
+        omega = 1.0 / tau_eff  # per-cell tensor
+    else:
+        omega = 1.0 / tau  # scalar
+
+    # Bulk mode: trace of stress tensor
+    trace = pi_xx + pi_yy + pi_zz
+
+    # Relax shear/normal stress components
+    pi_xx_s = pi_xx - omega * pi_xx - (omega_b - omega) * trace / 3.0
+    pi_yy_s = pi_yy - omega * pi_yy - (omega_b - omega) * trace / 3.0
+    pi_zz_s = pi_zz - omega * pi_zz - (omega_b - omega) * trace / 3.0
+    pi_xy_s = pi_xy - omega * pi_xy
+    pi_xz_s = pi_xz - omega * pi_xz
+    pi_yz_s = pi_yz - omega * pi_yz
+
+    # ---- D3Q19 weights (rest 1/3, face 1/18, edge 1/36) --------------
+    w19 = (
+        torch.tensor(
+            [1.0 / 3.0]                       # (0,0,0)
+            + [1.0 / 18.0] * 6                # 6 face centres
+            + [1.0 / 36.0] * 12,              # 12 edge centres
+            dtype=f.dtype, device=device,
+        )
+        .view(19, 1, 1, 1)
+    )
+
+    h_xx = cx * cx - cs2
+    h_yy = cy * cy - cs2
+    h_zz = cz * cz - cs2
+    h_xy = cx * cy
+    h_xz = cx * cz
+    h_yz = cy * cz
+
+    # Hermite reconstruction from 2nd-order stress tensor only
+    fneq_reg = (4.5 * w19 * (
+        h_xx * pi_xx_s + h_yy * pi_yy_s + h_zz * pi_zz_s
+        + 2.0 * h_xy * pi_xy_s + 2.0 * h_xz * pi_xz_s + 2.0 * h_yz * pi_yz_s
+    ))
+
+    # Higher-order fneq relaxed separately
+    fneq_ho = fneq - (4.5 * w19 * (
+        h_xx * pi_xx + h_yy * pi_yy + h_zz * pi_zz
+        + 2.0 * h_xy * pi_xy + 2.0 * h_xz * pi_xz + 2.0 * h_yz * pi_yz
+    ))
+    fneq_ho_s = (1.0 - omega_even) * fneq_ho
+
+    return feq + fneq_reg + fneq_ho_s
+
+
+def gradient_sgs_effective_tau_d3q19(
+    f: torch.Tensor,
+    *,
+    tau: float,
+    model: str,
+    coefficient: float,
+    solid_mask: torch.Tensor | None = None,
+    wall_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> torch.Tensor:
+    """Return the local WALE or Vreman relaxation time used by collision.
+
+    The function exposes the production formula for audits and regression
+    tests.  Unlike the stress-local Smagorinsky diagnostic, gradient models
+    require a spatially coherent three-dimensional field; callers must not
+    flatten or independently chunk the domain without one-cell halos.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    if tau <= 0.5:
+        raise ValueError("tau must be greater than 0.5")
+    if coefficient < 0.0:
+        raise ValueError("coefficient must be non-negative")
+    if model not in {"wale", "vreman"}:
+        raise ValueError("model must be wale or vreman")
+    if len(wall_velocity) != 3 or not all(math.isfinite(v) for v in wall_velocity):
+        raise ValueError("wall_velocity must contain three finite values")
+    if solid_mask is not None and (
+        solid_mask.shape != f.shape[1:]
+        or solid_mask.dtype is not torch.bool
+        or solid_mask.device != f.device
+    ):
+        raise ValueError("solid_mask must be bool with the population spatial shape")
+    rho, ux, uy, uz = macroscopic3d(f)
+    del rho
+    if solid_mask is not None:
+        ux, uy, uz = (
+            torch.where(solid_mask, torch.as_tensor(
+                velocity, dtype=f.dtype, device=f.device,
+            ), component)
+            for component, velocity in zip(
+                (ux, uy, uz), wall_velocity, strict=True,
+            )
+        )
+    from .turbulence import (  # noqa: PLC0415
+        _nu_t_to_tau_eff,
+        _vreman_nu_t_3d,
+        _wale_nu_t_3d,
+    )
+
+    if model == "wale":
+        nu_t = _wale_nu_t_3d(ux, uy, uz, coefficient)
+    else:
+        nu_t = _vreman_nu_t_3d(ux, uy, uz, coefficient)
+    return _nu_t_to_tau_eff(tau, nu_t)
+
+
+def summarize_gradient_sgs_effective_tau_d3q19(
+    f: torch.Tensor,
+    *,
+    tau: float,
+    model: str,
+    coefficient: float,
+    chunk_cells: int = 262_144,
+    solid_mask: torch.Tensor | None = None,
+    wall_velocity: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> dict[str, float]:
+    """Summarize WALE/Vreman relaxation in z-slabs with edge-safe halos.
+
+    Gradient closures cannot be audited by flattening independent chunks:
+    doing so destroys spatial adjacency.  This routine retains complete x-y
+    planes and adds two neighbouring z-planes on either side of every slab.
+    One plane is sufficient for centred interior differences; the second is
+    required when a one-plane first/last slab contains a physical edge using
+    the second-order one-sided stencil.  The result therefore matches an
+    unchunked evaluation while peak memory stays bounded.
+    """
+    if chunk_cells < 1:
+        raise ValueError("chunk_cells must be positive")
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    if solid_mask is not None and (
+        solid_mask.shape != f.shape[1:]
+        or solid_mask.dtype is not torch.bool
+        or solid_mask.device != f.device
+    ):
+        raise ValueError("solid_mask must be bool with the population spatial shape")
+    nz, ny, nx = f.shape[1:]
+    planes_per_chunk = max(1, chunk_cells // (ny * nx))
+    minimum = math.inf
+    maximum = -math.inf
+    total = 0.0
+    count = 0
+    for start in range(0, nz, planes_per_chunk):
+        stop = min(start + planes_per_chunk, nz)
+        halo_start = max(0, start - 2)
+        halo_stop = min(nz, stop + 2)
+        effective_with_halo = gradient_sgs_effective_tau_d3q19(
+            f[:, halo_start:halo_stop],
+            tau=tau,
+            model=model,
+            coefficient=coefficient,
+            solid_mask=(
+                None if solid_mask is None
+                else solid_mask[halo_start:halo_stop]
+            ),
+            wall_velocity=wall_velocity,
+        )
+        effective = effective_with_halo[
+            start - halo_start:stop - halo_start
+        ]
+        minimum = min(minimum, float(effective.min().item()))
+        maximum = max(maximum, float(effective.max().item()))
+        total += float(effective.sum(dtype=torch.float64).item())
+        count += effective.numel()
+    mean = total / count
+    molecular_viscosity = (tau - 0.5) / 3.0
+    mean_eddy_viscosity = max(0.0, (mean - tau) / 3.0)
+    maximum_eddy_viscosity = max(0.0, (maximum - tau) / 3.0)
+    return {
+        "cell_count": float(count),
+        "molecular_tau": tau,
+        "effective_tau_minimum": minimum,
+        "effective_tau_mean": mean,
+        "effective_tau_maximum": maximum,
+        "molecular_kinematic_viscosity": molecular_viscosity,
+        "mean_eddy_kinematic_viscosity": mean_eddy_viscosity,
+        "maximum_eddy_kinematic_viscosity": maximum_eddy_viscosity,
+        "mean_eddy_to_molecular_viscosity_ratio": (
+            mean_eddy_viscosity / molecular_viscosity
+        ),
+        "maximum_eddy_to_molecular_viscosity_ratio": (
+            maximum_eddy_viscosity / molecular_viscosity
+        ),
+    }
+
+
+def smagorinsky_effective_tau_d3q19(
+    f: torch.Tensor,
+    *,
+    tau: float,
+    C_s: float,
+) -> torch.Tensor:
+    """Return the local D3Q19 Smagorinsky relaxation time used by collision.
+
+    This diagnostic mirrors the production collision formula so high-Re runs
+    can quantify how much subgrid viscosity is actually being introduced.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    if tau <= 0.5:
+        raise ValueError("tau must be greater than 0.5")
+    if C_s < 0.0:
+        raise ValueError("C_s must be non-negative")
+    if C_s == 0.0:
+        return torch.full(
+            f.shape[1:], tau, dtype=f.dtype, device=f.device,
+        )
+    rho, ux, uy, uz = macroscopic3d(f)
+    fneq = f - equilibrium3d(rho, ux, uy, uz)
+    from .d3q19 import C as C19  # noqa: PLC0415
+
+    c = C19.to(device=f.device, dtype=f.dtype)
+    cx = c[:, 0, None, None, None]
+    cy = c[:, 1, None, None, None]
+    cz = c[:, 2, None, None, None]
+    pi_xx = (cx.square() * fneq).sum(dim=0)
+    pi_yy = (cy.square() * fneq).sum(dim=0)
+    pi_zz = (cz.square() * fneq).sum(dim=0)
+    pi_xy = (cx * cy * fneq).sum(dim=0)
+    pi_xz = (cx * cz * fneq).sum(dim=0)
+    pi_yz = (cy * cz * fneq).sum(dim=0)
+    pi_norm = torch.sqrt(
+        pi_xx.square() + pi_yy.square() + pi_zz.square()
+        + 2.0 * (pi_xy.square() + pi_xz.square() + pi_yz.square())
+    )
+    return 0.5 * (
+        tau
+        + torch.sqrt(
+            tau * tau
+            + 18.0 * C_s * C_s * pi_norm / rho.clamp_min(1.0e-12)
+        )
+    )
+
+
+def summarize_smagorinsky_effective_tau_d3q19(
+    f: torch.Tensor,
+    *,
+    tau: float,
+    C_s: float,
+    chunk_cells: int = 262_144,
+) -> dict[str, float]:
+    """Summarize local SGS relaxation in bounded-memory spatial chunks."""
+    if chunk_cells < 1:
+        raise ValueError("chunk_cells must be positive")
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    flat = f.reshape(19, -1)
+    count = flat.shape[1]
+    minimum = math.inf
+    maximum = -math.inf
+    total = 0.0
+    for start in range(0, count, chunk_cells):
+        stop = min(start + chunk_cells, count)
+        effective = smagorinsky_effective_tau_d3q19(
+            flat[:, start:stop].reshape(19, 1, 1, stop - start),
+            tau=tau,
+            C_s=C_s,
+        )
+        minimum = min(minimum, float(effective.min().item()))
+        maximum = max(maximum, float(effective.max().item()))
+        total += float(effective.sum(dtype=torch.float64).item())
+    mean = total / count
+    molecular_viscosity = (tau - 0.5) / 3.0
+    mean_eddy_viscosity = max(0.0, (mean - tau) / 3.0)
+    maximum_eddy_viscosity = max(0.0, (maximum - tau) / 3.0)
+    return {
+        "cell_count": float(count),
+        "molecular_tau": tau,
+        "effective_tau_minimum": minimum,
+        "effective_tau_mean": mean,
+        "effective_tau_maximum": maximum,
+        "molecular_kinematic_viscosity": molecular_viscosity,
+        "mean_eddy_kinematic_viscosity": mean_eddy_viscosity,
+        "maximum_eddy_kinematic_viscosity": maximum_eddy_viscosity,
+        "mean_eddy_to_molecular_viscosity_ratio": (
+            mean_eddy_viscosity / molecular_viscosity
+        ),
+        "maximum_eddy_to_molecular_viscosity_ratio": (
+            maximum_eddy_viscosity / molecular_viscosity
+        ),
+    }
+
+
 __all__ = [
     "collide_cumulant_d2q9",
+    "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
+    "gradient_sgs_effective_tau_d3q19",
+    "summarize_gradient_sgs_effective_tau_d3q19",
+    "smagorinsky_effective_tau_d3q19",
+    "summarize_smagorinsky_effective_tau_d3q19",
 ]

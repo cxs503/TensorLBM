@@ -1,0 +1,34 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[Sph-Re100-bfl SDAA:13] nx=160 ny=120 nz=120 D=40 R=20.0 u_in=0.08 nu=3.200000e-02 tau=0.596000 Cs=0.05 dpS=4.021239e+00 Cd_ref=1.09 use_bfl=True
+[Sph-Re100-bfl SDAA:13] solid cells: 33371
+[Sph-Re100-bfl SDAA:13] near-wall cells: 4302
+[Sph-Re100-bfl SDAA:13] computing BFL q-values (analytical sphere)...
+[Sph-Re100-bfl SDAA:13] BFL q-field: 28722 links (2.8s) q=[0.0126, 1.0000] mean=0.3727
+  q_wall: n_near=4302 q_min=0.0369 q_max=0.7056 q_mean=0.3821
+[Sph-Re100-bfl SDAA:13] init done (3.2s), initial_mass=2304000.0
+[Sph-Re100-bfl SDAA:13] step=2000 Cd_p=0.751156 Cd_f=0.798235 Cd_tot=1.549391 Cl=-0.000700 (839s)
+[Sph-Re100-bfl SDAA:13] step=2500 Cd_p=0.743434 Cd_f=0.792993 Cd_tot=1.536427 Cl=-0.000700 (1046s)
+[Sph-Re100-bfl SDAA:13] step=3000 Cd_p=0.742769 Cd_f=0.790029 Cd_tot=1.532798 Cl=-0.000684 (1252s)
+[Sph-Re100-bfl SDAA:13] step=3500 Cd_p=0.740479 Cd_f=0.788420 Cd_tot=1.528899 Cl=-0.000587 (1459s)
+[Sph-Re100-bfl SDAA:13] step=4000 Cd_p=0.740584 Cd_f=0.787640 Cd_tot=1.528224 Cl=-0.000590 (1665s)
+[Sph-Re100-bfl SDAA:13] step=4500 Cd_p=0.739571 Cd_f=0.787173 Cd_tot=1.526743 Cl=-0.000561 (1873s)
+[Sph-Re100-bfl SDAA:13] step=5000 Cd_p=0.739969 Cd_f=0.786982 Cd_tot=1.526951 Cl=-0.000583 (2081s)
+[Sph-Re100-bfl SDAA:13] step=5500 Cd_p=0.739351 Cd_f=0.786841 Cd_tot=1.526192 Cl=-0.000563 (2288s)
+[Sph-Re100-bfl SDAA:13] step=6000 Cd_p=0.739800 Cd_f=0.786814 Cd_tot=1.526613 Cl=-0.000580 (2495s)
+[Sph-Re100-bfl SDAA:13] DONE Cd_p=0.741901 Cd_f=0.789458 Cd_tot=1.531360 Cl=-0.000616 (ref Cd=1.09) err=40.5% time=2495s
+[Sph-Re100-bfl SDAA:13] Results written to results_bfl_common/bfl_sphere_sdaa13.json

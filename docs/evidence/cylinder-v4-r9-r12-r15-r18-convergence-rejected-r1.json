@@ -1,0 +1,97 @@
+{
+  "schema": "tensorlbm-cylinder-grid-convergence-evidence-v1",
+  "candidate": "cylinder-v4-cumulant-r9-r12-r15-r18",
+  "status": "numerically_healthy_physical_validation_rejected",
+  "physical_validation": false,
+  "configuration": {
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "collision_model": "cumulant_d3q19_cs0",
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "sponge_inlet": false,
+    "radii_cells": [9, 12, 15, 18],
+    "diameters_cells": [18, 24, 30, 36],
+    "domain_width_over_radius": 40.0,
+    "steps_over_radius": 6000.0,
+    "warmup_steps_over_radius": 3500.0,
+    "statistics_window_steps_over_radius": 2500.0
+  },
+  "grid_sequence": {
+    "cd_control_volume": [
+      1.4472501372001216,
+      1.4461494896785114,
+      1.435706587575468,
+      1.4389523356221618
+    ],
+    "strouhal": [
+      0.1734554103120994,
+      0.17379242781061208,
+      0.17379441447831273,
+      0.1738933660228267
+    ],
+    "configuration_identity_admitted": true,
+    "drag_monotonic": false,
+    "drag_observed_order": 0.42652606710284025,
+    "drag_extrapolated_value": 1.4060155739778766,
+    "drag_finest_discretisation_error_pct": 2.342560228625428,
+    "drag_relative_fit_rms_pct": 0.19158148601732436,
+    "drag_spatial_convergence_admitted": false,
+    "strouhal_monotonic": true,
+    "strouhal_observed_order": 4.930305335294163,
+    "strouhal_extrapolated_value": 0.1738758634207532,
+    "strouhal_finest_discretisation_error_pct": 0.010066148187083963,
+    "strouhal_spatial_convergence_admitted": true
+  },
+  "reference": {
+    "cd": 1.33,
+    "strouhal": 0.164,
+    "cd_extrapolated_error_pct": 5.715456690065903,
+    "strouhal_extrapolated_error_pct": 6.021867939483655,
+    "maximum_error_pct": 5.0,
+    "drag_target_met": false,
+    "strouhal_target_met": false
+  },
+  "r18_time_and_force": {
+    "cd_control_volume": 1.4389523356221618,
+    "cd_bfl_link": 1.4389633216103517,
+    "observer_difference_pct": 0.0007634713060232554,
+    "reference_error_pct": 8.191904933997126,
+    "strouhal": 0.1738933660228267,
+    "strouhal_reference_error_pct": 6.032540257821158,
+    "shedding_cycles_observed": 13.042002451712003,
+    "relative_range_pct": 0.9802813918946841,
+    "half_mean_drift_pct": 0.2992113034968571,
+    "linear_trend_pct": 0.668907465634093,
+    "confidence95_half_width_pct": 0.27297103388550636,
+    "stationarity_target_met": true,
+    "cycle_target_met": true,
+    "force_observer_target_met": true,
+    "numerical_quality_admitted": true,
+    "single_grid_admitted": false
+  },
+  "acceptance": {
+    "source_numerical_quality_admitted": true,
+    "drag_spatial_convergence_admitted": false,
+    "strouhal_spatial_convergence_admitted": true,
+    "extrapolated_drag_reference_target_met": false,
+    "extrapolated_strouhal_reference_target_met": false,
+    "physical_validation": false
+  },
+  "causal_followup": {
+    "candidate": "natural_kbc_d3q19_no_inlet_r9",
+    "purpose": "separate collision-model bias from geometry and far-field bias before another expensive fine-grid sequence",
+    "remote_pid_at_launch": 1783283,
+    "selected_by_reference_proximity": false
+  },
+  "artifacts": {
+    "convergence_result": "results/cylinder_grid_convergence/cylinder-v4-r9-r12-r15-r18-convergence.json",
+    "convergence_result_sha256": "3aa8573db615eb1d5f698fe7666767040832714916348e3f056ea4c7ff4633bb",
+    "r18_result_sha256": "3827c101b31cd1abddf40770ca67d48b8ee3fc0b4b8c22fdf6cfbc6a35f2e692",
+    "r18_checkpoint_sha256": "9fc0618996efce54d381e965330c973e903659f775db6c311452bd2d3902c0a2",
+    "r18_log_sha256": "7ae3e39c9c2ac3a7fa5b862ed4eb5ecef1a0ee1782f0394974e7bcc81390f126",
+    "r9_result_sha256": "313ee8efaa57fc09803cc8f0ce639f2de3df17573bf066de5ae940cd0723e4cd",
+    "r12_result_sha256": "19996d2070dc298bbf4ef34d606f624d0ba03d52f1bc6ee6378977e948e77688",
+    "r15_result_sha256": "a08d2ecd6d1c52c667954b90b52b4c1a298207e7f87e49a43b1eb4de30334b87"
+  },
+  "conclusion": "The four-grid cylinder series is configuration-equivalent and each member is numerically healthy, but drag is non-monotone and the extrapolated drag and Strouhal remain outside their 5% references. No continuum or cylinder physical-validation claim is permitted. A low-cost R9 natural-KBC collision sensitivity is running before any further fine-grid allocation."
+}

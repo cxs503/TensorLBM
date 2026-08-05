@@ -1,0 +1,32 @@
+{
+  "case": "[SDAA:2 CYL Re=200 bfl_fix]",
+  "mode": "bfl_fix",
+  "device": "sdaa:2",
+  "Re": 200,
+  "D": 48,
+  "grid": "400x160x4",
+  "u_in": 0.08,
+  "nu": 0.0192,
+  "tau": 0.5576,
+  "Cs": 0.05,
+  "n_steps": 8000,
+  "warmup": 2000,
+  "n_solid": 7172,
+  "n_near": 544,
+  "dpS": 0.6144000000000001,
+  "Cd_pressure": 1.308948239473266,
+  "Cd_friction": 0.8294216504630948,
+  "Cd_total": 2.138369889936354,
+  "Cl": -0.0029280498371362087,
+  "Cd_ref": 1.3,
+  "error_pct": 64.48999153356569,
+  "bfl_stats": {
+    "n_links": 3424,
+    "q_min": 0.020016025751829147,
+    "q_max": 1.0,
+    "q_mean": 0.3919787108898163
+  },
+  "friction_formula": "nu*u_t/q",
+  "finite": true,
+  "elapsed_s": 455.24819588661194
+}

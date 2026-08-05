@@ -67,6 +67,8 @@ _w_corner = 1.0 / 216.0
 
 _W_DATA = [_w_rest] + [_w_face] * 6 + [_w_edge] * 12 + [_w_corner] * 8
 W = torch.tensor(_W_DATA, dtype=torch.float32)
+W_EXACT64 = torch.tensor(_W_DATA, dtype=torch.float64)
+WEIGHT_PRECISION_SCHEME = "rational_binary64_cast_to_runtime_dtype_v1"
 
 
 def _build_opposite() -> torch.Tensor:
@@ -335,8 +337,11 @@ def _c_on(device: torch.device) -> torch.Tensor:
 
 
 @functools.cache
-def _w_on(device: torch.device) -> torch.Tensor:
-    return W.to(device)
+def _w_on(
+    device: torch.device,
+    dtype: torch.dtype = torch.float32,
+) -> torch.Tensor:
+    return W_EXACT64.to(device=device, dtype=dtype)
 
 
 def equilibrium27(
@@ -345,6 +350,8 @@ def equilibrium27(
     uy: torch.Tensor,
     uz: torch.Tensor,
     device: torch.device | None = None,
+    *,
+    out: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Compute D3Q27 Maxwell-Boltzmann equilibrium distribution.
 
@@ -354,14 +361,17 @@ def equilibrium27(
         uy: y-velocity field, shape ``(nz, ny, nx)``.
         uz: z-velocity field, shape ``(nz, ny, nx)``.
         device: Target device (inferred from *rho* if *None*).
+        out: optional pre-allocated output tensor of shape ``(27, nz, ny, nx)``.
+            If provided, the result is written into this tensor in-place,
+            avoiding a new allocation.
 
     Returns:
         Equilibrium distribution of shape ``(27, nz, ny, nx)``.
     """
     if device is None:
         device = rho.device
-    c = _c_on(device).float()
-    w = _w_on(device).view(27, 1, 1, 1)
+    c = _c_on(device).to(dtype=rho.dtype)
+    w = _w_on(device, rho.dtype).view(27, 1, 1, 1)
 
     cx = c[:, 0].view(27, 1, 1, 1)
     cy = c[:, 1].view(27, 1, 1, 1)
@@ -369,7 +379,11 @@ def equilibrium27(
 
     u_sq = ux * ux + uy * uy + uz * uz
     cu = cx * ux + cy * uy + cz * uz
-    return w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    result = w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
+    if out is not None:
+        out.copy_(result)
+        return out
+    return result
 
 
 def macroscopic27(
@@ -387,7 +401,7 @@ def macroscopic27(
     """
     if device is None:
         device = f.device
-    c = _c_on(device).float()
+    c = _c_on(device).to(dtype=f.dtype)
     cx = c[:, 0].view(27, 1, 1, 1)
     cy = c[:, 1].view(27, 1, 1, 1)
     cz = c[:, 2].view(27, 1, 1, 1)
@@ -413,6 +427,109 @@ def collide_bgk27(f: torch.Tensor, tau: float) -> torch.Tensor:
     rho, ux, uy, uz = macroscopic27(f)
     feq = equilibrium27(rho, ux, uy, uz)
     return f - (f - feq) / tau
+
+
+def collide_trt27(
+    f: torch.Tensor,
+    tau_plus: float,
+    lambda_trt: float = 3.0 / 16.0,
+) -> torch.Tensor:
+    """Two-relaxation-time (TRT) collision step for D3Q27.
+
+    Uses two independent relaxation rates: *τ₊* controls the symmetric part
+    (sets viscosity ν = (τ₊ − ½) / 3) and *τ₋* controls the anti-symmetric
+    part (derived from the magic parameter Λ). Setting Λ = 3/16 eliminates
+    wall-placement errors in Poiseuille flow (Ginzburg 2008).
+
+    The symmetric/anti-symmetric decomposition uses the D3Q27
+    :data:`OPPOSITE` direction map, which pairs every direction with its
+    negation (including the 8 corner directions absent from D3Q19).
+
+    Reference
+    ---------
+    Ginzburg, I. (2008). Two-relaxation-time lattice Boltzmann scheme.
+    *Commun. Comput. Phys.* 3(2), 427–478.
+
+    Args:
+        f:           Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau_plus:    Symmetric relaxation time (τ₊ > 0.5).
+        lambda_trt:  Magic parameter Λ (default 3/16).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+
+    tau_minus = 0.5 + lambda_trt / (tau_plus - 0.5)
+
+    opp = OPPOSITE.to(f.device)
+    f_plus = 0.5 * (f + f[opp])
+    f_minus = 0.5 * (f - f[opp])
+    feq_plus = 0.5 * (feq + feq[opp])
+    feq_minus = 0.5 * (feq - feq[opp])
+
+    return f - (f_plus - feq_plus) / tau_plus - (f_minus - feq_minus) / tau_minus
+
+
+def collide_rlbm27(f: torch.Tensor, tau: float) -> torch.Tensor:
+    """Regularized BGK (RLBM) collision step for D3Q27.
+
+    Projects the non-equilibrium distribution onto the second-order Hermite
+    polynomial subspace before BGK relaxation, filtering out higher-order
+    ghost modes for improved stability at low viscosity (τ → 0.5).
+    See Latt & Chopard, *Math. Comput. Simul.* (2006).
+
+    The D3Q27 lattice has 4th-order isotropy (it includes the 8 corner
+    directions), so the second-order Hermite projection is exact for the
+    hydrodynamic stress tensor — the same projection formula as D3Q19,
+    applied with the D3Q27 weights and velocity set.
+
+    Args:
+        f:   Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Relaxation time (τ > 0.5). Kinematic viscosity ν = (τ − ½)/3.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    device = f.device
+    c = _c_on(device).to(f.dtype)
+    w = _w_on(device).to(f.dtype)
+
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    fneq = f - feq
+
+    cx = c[:, 0].view(27, 1, 1, 1)
+    cy = c[:, 1].view(27, 1, 1, 1)
+    cz = c[:, 2].view(27, 1, 1, 1)
+
+    # Second-order non-equilibrium moments Π_αβ
+    pi_xx = (cx * cx * fneq).sum(dim=0)
+    pi_yy = (cy * cy * fneq).sum(dim=0)
+    pi_zz = (cz * cz * fneq).sum(dim=0)
+    pi_xy = (cx * cy * fneq).sum(dim=0)
+    pi_xz = (cx * cz * fneq).sum(dim=0)
+    pi_yz = (cy * cz * fneq).sum(dim=0)
+
+    cs2 = 1.0 / 3.0
+    h_xx = cx * cx - cs2
+    h_yy = cy * cy - cs2
+    h_zz = cz * cz - cs2
+    h_xy = cx * cy
+    h_xz = cx * cz
+    h_yz = cy * cz
+    w_view = w.view(27, 1, 1, 1)
+    fneq_reg = (9.0 / 2.0) * w_view * (
+        h_xx * pi_xx
+        + h_yy * pi_yy
+        + h_zz * pi_zz
+        + 2.0 * h_xy * pi_xy
+        + 2.0 * h_xz * pi_xz
+        + 2.0 * h_yz * pi_yz
+    )
+
+    return feq + (1.0 - 1.0 / tau) * fneq_reg
 
 
 def _build_d3q27_mrt_matrices() -> tuple[list[list[float]], list[list[float]]]:
@@ -617,41 +734,47 @@ def correct_mass27(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     if current.abs() < 1e-30:
         return f
     return f * (target_mass / current)
+_STREAM27_SHIFTS = None
 
+def _init_stream27_shifts():
+    """Pre-compute D3Q27 streaming shifts as Python tuples (no host sync)."""
+    global _STREAM27_SHIFTS
+    if _STREAM27_SHIFTS is not None:
+        return
+    from .d3q27 import C as C27
+    shifts = [(0, 0, 0)]
+    for q in range(1, 27):
+        cx, cy, cz = C27[q].tolist()
+        shifts.append((int(cx), int(cy), int(cz)))
+    _STREAM27_SHIFTS = shifts
 
-def stream27(f: torch.Tensor) -> torch.Tensor:
-    """Periodic gather streaming for D3Q27.
+def stream27_roll(f: torch.Tensor) -> torch.Tensor:
+    """Memory-optimized D3Q27 streaming using torch.roll.
 
-    Index tensors are cached per (shape, device) to avoid re-allocation on
-    every call.
+    Uses pre-computed Python-tuple shifts (no .item() host sync)
+    and torch.empty_like (no per-step allocation). Eliminates the
+    4×[27,N] int64 index tensors that cause OOM on large grids.
 
     Args:
         f: Distribution tensor of shape ``(27, nz, ny, nx)``.
 
     Returns:
-        Streamed distribution of the same shape.
+        Streamed tensor of the same shape.
     """
-    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
-    device = f.device
-    c = _c_on(device)
+    _init_stream27_shifts()
+    out = torch.empty_like(f)
+    for q in range(27):
+        sx, sy, sz = _STREAM27_SHIFTS[q]
+        if sx == 0 and sy == 0 and sz == 0:
+            out[q] = f[q]
+        else:
+            out[q] = torch.roll(f[q], shifts=(sz, sy, sx), dims=(0, 1, 2))
+    return out
 
-    cache_key = (nz, ny, nx, device.type, device.index)
-    if cache_key not in _stream27_cache:
-        z_src = (torch.arange(nz, device=device).unsqueeze(0) - c[:, 2].unsqueeze(1)) % nz
-        y_src = (torch.arange(ny, device=device).unsqueeze(0) - c[:, 1].unsqueeze(1)) % ny
-        x_src = (torch.arange(nx, device=device).unsqueeze(0) - c[:, 0].unsqueeze(1)) % nx
-        q_idx = torch.arange(27, device=device).view(27, 1, 1, 1).expand(27, nz, ny, nx)
-        z_idx = z_src.unsqueeze(2).unsqueeze(3).expand(27, nz, ny, nx)
-        y_idx = y_src.unsqueeze(1).unsqueeze(3).expand(27, nz, ny, nx)
-        x_idx = x_src.unsqueeze(1).unsqueeze(2).expand(27, nz, ny, nx)
-        _stream27_cache[cache_key] = (q_idx, z_idx, y_idx, x_idx)
-
-    q_idx, z_idx, y_idx, x_idx = _stream27_cache[cache_key]
-    return f[q_idx, z_idx, y_idx, x_idx]
-
+# Backward-compatible alias
+stream27 = stream27_roll
 
 __all__ = [
-    "C",
     "W",
     "OPPOSITE",
     "PropellerLoadReport",
@@ -662,8 +785,11 @@ __all__ = [
     "equilibrium27",
     "macroscopic27",
     "collide_bgk27",
+    "collide_trt27",
+    "collide_rlbm27",
     "collide_mrt27",
     "stream27",
+    "stream27_roll",
     "correct_mass27",
     "_get_d3q27_mrt_matrices",
 ]

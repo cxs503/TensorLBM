@@ -1,0 +1,73 @@
+{
+  "schema": "tensorlbm-suboff-static-amr-longtime-evidence-v1",
+  "status": "rejected_nonstationary_legacy_wall_source",
+  "physical_validation": false,
+  "configuration": {
+    "hull_type": "bare_hull",
+    "coarse_hull_length_cells": 120.0,
+    "fine_hull_length_cells": 240.0,
+    "steps": 32000,
+    "resumed_from_step": 16000,
+    "total_convective_times": 16.0,
+    "sampling_convective_times": 13.0,
+    "collision_model": "cumulant_smagorinsky",
+    "stress_exchange_distance_cells": 2.8125,
+    "wall_traction_source_scheme_recorded": false
+  },
+  "force": {
+    "mean_resistance_n": 75.6413941796247,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 13.45378240317541,
+    "bfl_vs_control_volume_difference_pct": 0.1952412366323428,
+    "source_corrected_cv_vs_bfl_difference_pct": 0.00024055590392220007,
+    "surface_vs_control_volume_difference_pct": 26.220606097190007,
+    "nested_control_volume_maximum_difference_pct": 0.11162143203589066
+  },
+  "stationarity": {
+    "block_means_n": [
+      85.22531853320741,
+      86.1745052967042,
+      88.78341080007503,
+      92.25544102119613,
+      96.36643805052988,
+      98.05251922790862,
+      30.181498482198503,
+      28.092022025177073
+    ],
+    "relative_range_pct": 92.48969821549993,
+    "half_mean_drift_pct": 32.96680308023632,
+    "linear_trend_pct": 71.38725587398585,
+    "confidence95_half_width_pct": 32.122048951053834,
+    "target_pct": 1.0,
+    "target_met": false
+  },
+  "numerics": {
+    "finite": true,
+    "maximum_speed": 0.195343479514122,
+    "maximum_positivity_limited_fraction": 0.00004733796296296296,
+    "maximum_reflux_population_residual": 4.76837158203125e-7,
+    "maximum_reflux_limited_directions": 0
+  },
+  "wall_exchange": {
+    "minimum_y_plus": 21.162311553955078,
+    "mean_y_plus": 5771.37701171875,
+    "maximum_y_plus": 9548.44140625,
+    "maximum_rejected_fraction": 0.0
+  },
+  "decision": [
+    "The 16-convective-time extension disproves the earlier apparent agreement near step 16000: the eight block means collapse from roughly 85-98 N to 28-30 N.",
+    "Duration, nested-control-volume closure and BFL/control-volume closure do not compensate for the failed stationarity and surface-observer gates.",
+    "The result predates the mass-conservative wall-traction source signature and is excluded from corrected-source convergence.",
+    "No empirical interpolation or selected short window is used to move the mean toward the experiment."
+  ],
+  "sources": [
+    {
+      "path": "results/suboff-v9-equivalent-l120-32k-continuation.json",
+      "sha256": "0f429587c7453d748bf7437e0d704583f7b717ff414f5ee1f01111c1aa92b696"
+    },
+    {
+      "remote_checkpoint": "results/amr_campaign_20260801/suboff-v9-equivalent-l120-32k-continuation.ckpt",
+      "sha256": "479e3cde078687a1fcf08e314bd1e6f7cf0f22407afdfcb7e1c4f89ca81ad776"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re3900 SDAA:1] shape=cylinder D=48.0 nx=400 ny=160 nz=4 u_in=0.08 Re=3900.0 nu=9.846154e-04 tau=0.502954 collision=mrt_smag Cs=0.1 n_steps=20000
+[cyl_re3900 SDAA:1] solid=7172 near=544 dpS=6.144000e-01
+[cyl_re3900 SDAA:1] init done (0.5s) mass=256000.0
+[cyl_re3900 SDAA:1] step=500/20000 Cd=0.0000 Cl=0.000000 (61s, 0.122s/step)
+[cyl_re3900 SDAA:1] step=1000/20000 Cd=0.0000 Cl=0.000000 (86s, 0.086s/step)
+[cyl_re3900 SDAA:1] step=1500/20000 Cd=0.0000 Cl=0.000000 (110s, 0.073s/step)
+[cyl_re3900 SDAA:1] step=2000/20000 Cd=0.0000 Cl=0.000000 (133s, 0.066s/step)
+[cyl_re3900 SDAA:1] step=2500/20000 Cd=0.0000 Cl=0.000000 (167s, 0.067s/step)
+[cyl_re3900 SDAA:1] step=3000/20000 Cd=0.0000 Cl=0.000000 (202s, 0.067s/step)
+[cyl_re3900 SDAA:1] step=3500/20000 Cd=0.0000 Cl=0.000000 (237s, 0.068s/step)
+[cyl_re3900 SDAA:1] step=4000/20000 Cd=0.0000 Cl=0.000000 (271s, 0.068s/step)
+[cyl_re3900 SDAA:1] step=4500/20000 Cd=1.4084 Cl=1.049555 (306s, 0.068s/step)
+[cyl_re3900 SDAA:1] step=5000/20000 Cd=1.6711 Cl=1.692410 (368s, 0.074s/step)
+[cyl_re3900 SDAA:1] step=5500/20000 Cd=1.8909 Cl=1.369587 (518s, 0.094s/step)
+[cyl_re3900 SDAA:1] step=6000/20000 Cd=1.8881 Cl=-0.304911 (668s, 0.111s/step)
+[cyl_re3900 SDAA:1] step=6500/20000 Cd=2.3943 Cl=-1.593117 (819s, 0.126s/step)
+[cyl_re3900 SDAA:1] step=7000/20000 Cd=1.9251 Cl=0.780194 (970s, 0.139s/step)
+[cyl_re3900 SDAA:1] step=7500/20000 Cd=2.1037 Cl=1.230270 (1122s, 0.150s/step)
+[cyl_re3900 SDAA:1] step=8000/20000 Cd=1.9387 Cl=-1.064364 (1275s, 0.159s/step)
+[cyl_re3900 SDAA:1] DIVERGED at step 8475
+
+[cyl_re3900 SDAA:1] === FINAL RESULTS ===
+[cyl_re3900 SDAA:1] Cd_p   = 1.3358
+[cyl_re3900 SDAA:1] Cd_f   = 0.0170
+[cyl_re3900 SDAA:1] Cd_tot = 1.3528  (ref=0.98, err=38.0%)
+[cyl_re3900 SDAA:1] Cl     = 4.842330
+[cyl_re3900 SDAA:1] Cl_rms = 149.490252
+[cyl_re3900 SDAA:1] St     = 0.2682
+[cyl_re3900 SDAA:1] Recirc_len = 1.17D  (ref=1.4D, err=16.5%)
+[cyl_re3900 SDAA:1] time = 1421s (0.071s/step)
+[cyl_re3900 SDAA:1] results saved to results_new_bench_cyl_re3900_sdaa1.json

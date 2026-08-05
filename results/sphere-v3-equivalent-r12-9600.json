@@ -1,0 +1,86 @@
+{
+  "schema": "tensorlbm-sphere-bfl-control-volume-v3",
+  "configuration": {
+    "schema_version": 3,
+    "shape_zyx": [
+      192,
+      192,
+      288
+    ],
+    "radius": 12.0,
+    "center_x_fraction": 0.3,
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "collision_model": "cumulant_d3q19_cs0",
+    "warmup_steps": 6400,
+    "ramp_steps": 960,
+    "sponge_width": 24,
+    "sponge_strength": 0.2,
+    "sponge_inlet": false,
+    "cv_margin": 8,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "statistics_window_steps": 3200,
+    "tau": 0.5432,
+    "steps": 9600,
+    "device": "cuda:0",
+    "resumed_from_step": 0,
+    "checkpoint_path": "/tmp/sphere-v3-equivalent-r12-9600.ckpt",
+    "report_interval": 480,
+    "checkpoint_interval": 960,
+    "statistics_window_steps_resolved": 3200,
+    "statistics_convective_times": 8.0,
+    "minimum_statistics_convective_times": 5.0,
+    "migration_provenance": null
+  },
+  "result": {
+    "cd_control_volume": 1.1496003384397975,
+    "cd_bfl_link": 1.149663159271893,
+    "observer_difference_pct": 0.005464580167129397,
+    "cd_reference_schiller_naumann": 1.0917310910948732,
+    "reference_error_pct": 5.300686938107484,
+    "drag_stationarity": {
+      "sample_count": 3200,
+      "block_size": 400,
+      "block_count": 8,
+      "mean": 1.1496003384397977,
+      "block_means": [
+        1.1497768617726365,
+        1.1496837977620558,
+        1.1496191105431768,
+        1.1495806660135601,
+        1.149555359169305,
+        1.1495358535107447,
+        1.1495284853017622,
+        1.149522573445139
+      ],
+      "relative_range_pct": 0.022119715782488527,
+      "half_mean_drift_pct": 0.011268365342978858,
+      "linear_trend_pct": 0.020526398325988845,
+      "standard_error_pct": 0.00275706866639601,
+      "confidence95_half_width_pct": 0.006520467396026564,
+      "finite": true,
+      "sufficiently_sampled": true
+    },
+    "finite": true
+  },
+  "acceptance": {
+    "drag_error_target_pct": 5.0,
+    "stationarity_target_pct": 1.0,
+    "force_observer_target_pct": 1.0,
+    "drag_target_met": false,
+    "stationarity_target_met": true,
+    "force_observer_target_met": true,
+    "duration_target_met": true,
+    "numerical_quality_admitted": true,
+    "admitted": false
+  },
+  "measured_peak_allocated_gib": 9.598271369934082,
+  "cuda_memory_preflight": {
+    "free_gib": 23.28839111328125,
+    "total_gib": 23.56072998046875,
+    "estimated_peak_gib": 9.8876953125,
+    "reserve_gib": 1.0,
+    "headroom_gib": 12.40069580078125,
+    "admitted": true
+  }
+}

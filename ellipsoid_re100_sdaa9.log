@@ -1,0 +1,35 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+ellipsoid_re100_sdaa9 nx=120 ny=80 nz=80 u_in=0.05 nu=5.000000e-03 tau=0.515000 Cs=0.05 dpS=3.926991e-01 Cd_ref=0.47
+ellipsoid_re100_sdaa9 solid cells: 8309
+ellipsoid_re100_sdaa9 near-wall cells: 1934
+ellipsoid_re100_sdaa9 normal stats: nx_n=[-1.000, 1.000] ny_n=[-1.000, 1.000] nz_n=[-1.000, 1.000]
+ellipsoid_re100_sdaa9 |n| stats: min=1.000000 max=1.000000 mean=1.000000
+ellipsoid_re100_sdaa9 3D check: nx_n nonzero=634/1934 ny_n nonzero=1258/1934 nz_n nonzero=1258/1934
+ellipsoid_re100_sdaa9 init done (0.0s), initial_mass=768000.0
+ellipsoid_re100_sdaa9 step=500 Cd_p=0.6473 Cd_f=0.4818 Cd_tot=1.1291 Cl=-0.000242 (50s)
+ellipsoid_re100_sdaa9 step=1000 Cd_p=0.2764 Cd_f=0.3137 Cd_tot=0.5901 Cl=-0.000102 (101s)
+ellipsoid_re100_sdaa9 step=1500 Cd_p=0.2828 Cd_f=0.2999 Cd_tot=0.5827 Cl=-0.000075 (151s)
+ellipsoid_re100_sdaa9 step=2000 Cd_p=0.2800 Cd_f=0.2947 Cd_tot=0.5747 Cl=-0.000208 (201s)
+ellipsoid_re100_sdaa9 step=2500 Cd_p=0.2775 Cd_f=0.2921 Cd_tot=0.5696 Cl=-0.000307 (252s)
+ellipsoid_re100_sdaa9 step=3000 Cd_p=0.2753 Cd_f=0.2904 Cd_tot=0.5656 Cl=-0.000351 (302s)
+ellipsoid_re100_sdaa9 step=3500 Cd_p=0.2742 Cd_f=0.2894 Cd_tot=0.5637 Cl=-0.000333 (353s)
+ellipsoid_re100_sdaa9 step=4000 Cd_p=0.2738 Cd_f=0.2889 Cd_tot=0.5627 Cl=-0.000306 (403s)
+ellipsoid_re100_sdaa9 step=4500 Cd_p=0.2733 Cd_f=0.2886 Cd_tot=0.5619 Cl=-0.000313 (453s)
+ellipsoid_re100_sdaa9 step=5000 Cd_p=0.2732 Cd_f=0.2884 Cd_tot=0.5616 Cl=-0.000301 (504s)
+ellipsoid_re100_sdaa9 DONE Cd_p=0.2733 Cd_f=0.2885 Cd_tot=0.5617 Cl=-0.000307 (ref=0.4700) err=19.5% time=504s
+ellipsoid_re100_sdaa9 Results written to ellipsoid_re100_sdaa9.json

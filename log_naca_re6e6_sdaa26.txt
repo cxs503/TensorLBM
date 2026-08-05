@@ -1,0 +1,26 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[NACA SDAA:26] nx=600 ny=300 nz=4 chord=100.0 alpha=0.0° Re_target=6000000.0 Re_actual=600000 u_in=0.1 nu=1.666667e-05 tau=0.500050 y_val=1.0 wall_law=log dpS=2.000000e+00
+[NACA SDAA:26] solid cells=3276
+[NACA SDAA:26] near-wall=824
+[NACA SDAA:26] SurfaceMesh.from_naca built
+[NACA SDAA:26] init done (1.3s)
+[NACA SDAA:26] step=500/5000 Cd_p=-0.061185 Cd_f=0.002417 Cd=-0.058768 Cl=-0.001257 (62s)
+[NACA SDAA:26] DIVERGED at step 688
+
+[NACA SDAA:26] === FINAL ===  Cd_p=nan Cd_f=nan Cd=nan (ref=0.008) err=nan% Cl=nan St=None time=85s
+[NACA SDAA:26] saved to results_naca_re6e6_sdaa26.json

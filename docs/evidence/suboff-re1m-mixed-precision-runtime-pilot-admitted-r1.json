@@ -1,0 +1,51 @@
+{
+  "schema": "tensorlbm-suboff-mixed-precision-runtime-evidence-v1",
+  "status": "runtime_path_admitted",
+  "physical_validation": false,
+  "case": "SUBOFF AFF-1 L90 four-level Natural-KBC Re=1000000 mixed-precision pilot",
+  "precision_policy": {
+    "population_storage_dtype": "float32",
+    "collision_compute_dtype": "float64",
+    "collision_chunk_cells": 262144,
+    "compiled_collision": true,
+    "recovered_viscosity_all_levels_admitted": true,
+    "tau_by_level": [0.5000162, 0.5000324, 0.5000648, 0.5001296]
+  },
+  "runtime_observations": {
+    "root_steps_advanced": 180,
+    "seconds_per_root_step": 4.438117716955539,
+    "measured_peak_allocated_gib": 12.829380989074707,
+    "collision_calls": 94860,
+    "torch_dynamo_process_unique_graphs": 1
+  },
+  "numerical_health": {
+    "finite": true,
+    "minimum_observed_population": 0.007477462291717529,
+    "maximum_observed_speed": 0.07324149459600449,
+    "maximum_reflux_applied_correction_fraction": 4.4678022277366836e-06,
+    "population_health_target_met": true,
+    "target_reynolds_reached": true
+  },
+  "registered_limits": {
+    "maximum_seconds_per_root_step": 15.0,
+    "maximum_peak_allocated_gib": 22.0,
+    "maximum_health_speed": 0.3,
+    "maximum_reflux_applied_correction_fraction": 0.001
+  },
+  "artifacts": {
+    "pilot_result": "results/amr_campaign_20260801/suboff-nested-v39-re1m-mixed-fp64compute-l90-180.json",
+    "pilot_result_sha256": "963788f64fe63a14d4a42cc2dd6c94d598910ae19440d48af4997220edca0746",
+    "runtime_assessment": "results/amr_campaign_20260801/suboff-nested-v39-re1m-mixed-fp64compute-l90-180-runtime-assessment.json",
+    "runtime_assessment_sha256": "1c42f6c759da9fa1fce16956b9438d812568d28817ab5378f8858809cda04f65",
+    "pilot_log_sha256": "5c6522787f9246acb641cd86cd6fc7f560482fb778d7a12001cb73455533e237",
+    "collision_precision_evidence_sha256": "1b9f78bfbf0956f6361750de51450d7b5912957130b60f200d8fe736c18ecc2c"
+  },
+  "decision": {
+    "long_run_launch_admitted": true,
+    "launch_only_after_registered_gpu_owner_exits": true,
+    "resistance_accuracy_assessed": false,
+    "time_convergence_assessed": false,
+    "grid_convergence_assessed": false
+  },
+  "prohibition": "The pilot validates precision identity, numerical health, memory and throughput only; it cannot be cited as a converged resistance result."
+}

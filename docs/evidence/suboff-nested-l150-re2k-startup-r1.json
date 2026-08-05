@@ -1,0 +1,16 @@
+{
+  "status": "startup_stability_pass",
+  "startup_stability_pass": true,
+  "target_reynolds_reached": true,
+  "health_snapshots": 28,
+  "target_reynolds_steps": 700,
+  "all_levels_finite": true,
+  "minimum_population": 0.016750309616327286,
+  "minimum_density": 0.9368761777877808,
+  "maximum_density": 1.0491937398910522,
+  "maximum_speed": 0.07269237190485,
+  "maximum_reflux_residual": 5.820766091346741e-11,
+  "maximum_transfer_limited_fraction": 0.0,
+  "maximum_collision_limited_fraction": 0.0,
+  "failure_reasons": []
+}

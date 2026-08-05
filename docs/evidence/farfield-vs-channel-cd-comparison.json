@@ -1,0 +1,233 @@
+{
+  "schema_version": "tensorlbm.farfield-vs-channel-cd/v1",
+  "description": "Channel vs farfield boundary Cd comparison on large grids",
+  "sphere_reference_Cd": 1.0917310910948732,
+  "cylinder_reference_Cd": 1.33,
+  "sphere_config": {
+    "lattice": "D3Q19",
+    "collision_families": [
+      "BGK",
+      "MRT",
+      "CUMULANT"
+    ],
+    "grid": "80x80x80",
+    "steps": 200,
+    "Re": 100.0
+  },
+  "cylinder_config": {
+    "lattice": "D2Q9",
+    "collision_families": [
+      "BGK",
+      "MRT"
+    ],
+    "grid": "300x150",
+    "steps": 500,
+    "Re": 100.0
+  },
+  "sphere_results": [
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "BGK",
+      "turbulence_model": "none",
+      "boundary_type": "farfield",
+      "grid": "80x80x80",
+      "steps": 200,
+      "Cd": 1.3432985759210405,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct": 23.042989878933994,
+      "finite": true,
+      "steps_completed": 200
+    },
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "MRT",
+      "turbulence_model": "none",
+      "boundary_type": "farfield",
+      "grid": "80x80x80",
+      "steps": 200,
+      "Cd": 1.4227972297322455,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct": 30.32487957316974,
+      "finite": true,
+      "steps_completed": 200
+    },
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "CUMULANT",
+      "turbulence_model": "none",
+      "boundary_type": "farfield",
+      "grid": "80x80x80",
+      "steps": 200,
+      "Cd": 1.4385121244290566,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct": 31.76432696319057,
+      "finite": true,
+      "steps_completed": 200
+    },
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "BGK",
+      "turbulence_model": "none",
+      "boundary_type": "channel",
+      "grid": "80x80x80",
+      "steps": 200,
+      "Cd": 1.5215672626160295,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct": 39.37198226076744,
+      "finite": true,
+      "steps_completed": 200
+    },
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "MRT",
+      "turbulence_model": "none",
+      "boundary_type": "channel",
+      "grid": "80x80x80",
+      "steps": 200,
+      "Cd": 1.64820817128131,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct": 50.97199161272928,
+      "finite": true,
+      "steps_completed": 200
+    },
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "CUMULANT",
+      "turbulence_model": "none",
+      "boundary_type": "channel",
+      "grid": "80x80x80",
+      "steps": 200,
+      "Cd": 1.6632502910273228,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct": 52.34981439974248,
+      "finite": true,
+      "steps_completed": 200
+    }
+  ],
+  "cylinder_results": [
+    {
+      "case": "cylinder",
+      "lattice": "D2Q9",
+      "collision_family": "BGK",
+      "turbulence_model": "none",
+      "boundary_type": "farfield",
+      "grid": "300x150",
+      "steps": 500,
+      "Cd": 1.770746459398334,
+      "reference_Cd": 1.33,
+      "Cd_error_pct": 33.138831533709315,
+      "finite": true,
+      "steps_completed": 500
+    },
+    {
+      "case": "cylinder",
+      "lattice": "D2Q9",
+      "collision_family": "MRT",
+      "turbulence_model": "none",
+      "boundary_type": "farfield",
+      "grid": "300x150",
+      "steps": 500,
+      "Cd": 1.8261389897334435,
+      "reference_Cd": 1.33,
+      "Cd_error_pct": 37.303683438604764,
+      "finite": true,
+      "steps_completed": 500
+    },
+    {
+      "case": "cylinder",
+      "lattice": "D2Q9",
+      "collision_family": "BGK",
+      "turbulence_model": "none",
+      "boundary_type": "channel",
+      "grid": "300x150",
+      "steps": 500,
+      "Cd": 1.8270501780599822,
+      "reference_Cd": 1.33,
+      "Cd_error_pct": 37.3721938390964,
+      "finite": true,
+      "steps_completed": 500
+    },
+    {
+      "case": "cylinder",
+      "lattice": "D2Q9",
+      "collision_family": "MRT",
+      "turbulence_model": "none",
+      "boundary_type": "channel",
+      "grid": "300x150",
+      "steps": 500,
+      "Cd": 1.8900831804806382,
+      "reference_Cd": 1.33,
+      "Cd_error_pct": 42.11151732937128,
+      "finite": true,
+      "steps_completed": 500
+    }
+  ],
+  "comparisons": [
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "BGK",
+      "turbulence_model": "none",
+      "Cd_farfield": 1.3432985759210405,
+      "Cd_channel": 1.5215672626160295,
+      "Cd_delta_farfield_minus_channel": -0.17826868669498896,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct_farfield": 23.042989878933994,
+      "Cd_error_pct_channel": 39.37198226076744
+    },
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "MRT",
+      "turbulence_model": "none",
+      "Cd_farfield": 1.4227972297322455,
+      "Cd_channel": 1.64820817128131,
+      "Cd_delta_farfield_minus_channel": -0.22541094154906438,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct_farfield": 30.32487957316974,
+      "Cd_error_pct_channel": 50.97199161272928
+    },
+    {
+      "case": "sphere",
+      "lattice": "D3Q19",
+      "collision_family": "CUMULANT",
+      "turbulence_model": "none",
+      "Cd_farfield": 1.4385121244290566,
+      "Cd_channel": 1.6632502910273228,
+      "Cd_delta_farfield_minus_channel": -0.22473816659826618,
+      "reference_Cd": 1.0917310910948732,
+      "Cd_error_pct_farfield": 31.76432696319057,
+      "Cd_error_pct_channel": 52.34981439974248
+    },
+    {
+      "case": "cylinder",
+      "lattice": "D2Q9",
+      "collision_family": "BGK",
+      "turbulence_model": "none",
+      "Cd_farfield": 1.770746459398334,
+      "Cd_channel": 1.8270501780599822,
+      "Cd_delta_farfield_minus_channel": -0.05630371866164818,
+      "reference_Cd": 1.33,
+      "Cd_error_pct_farfield": 33.138831533709315,
+      "Cd_error_pct_channel": 37.3721938390964
+    },
+    {
+      "case": "cylinder",
+      "lattice": "D2Q9",
+      "collision_family": "MRT",
+      "turbulence_model": "none",
+      "Cd_farfield": 1.8261389897334435,
+      "Cd_channel": 1.8900831804806382,
+      "Cd_delta_farfield_minus_channel": -0.0639441907471947,
+      "reference_Cd": 1.33,
+      "Cd_error_pct_farfield": 37.303683438604764,
+      "Cd_error_pct_channel": 42.11151732937128
+    }
+  ]
+}

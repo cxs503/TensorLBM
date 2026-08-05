@@ -1,0 +1,67 @@
+{
+  "schema": "tensorlbm-flat-plate-convergence-v1",
+  "resolutions": [
+    256.0,
+    384.0,
+    512.0
+  ],
+  "friction_coefficients": [
+    0.004597289308156069,
+    0.004657755483262882,
+    0.004668966645854023
+  ],
+  "configuration_identity": {
+    "v3_schema": true,
+    "required_fields_present": true,
+    "identity_fields_equal": true,
+    "exchange_distance_over_length": [
+      0.01171875,
+      0.01171875,
+      0.01171875
+    ],
+    "exchange_ratio_invariant": true,
+    "domain_ratio_invariant": true,
+    "sponge_width_over_length": [
+      0.09375,
+      0.09375,
+      0.09375
+    ],
+    "cv_margin_over_length": [
+      0.0234375,
+      0.0234375,
+      0.0234375
+    ],
+    "numerical_length_ratio_invariant": true,
+    "reference_invariant": true,
+    "admitted": true
+  },
+  "spatial_convergence": {
+    "monotonic": true,
+    "observed_order": 3.738767805628102,
+    "extrapolated_friction_coefficient": 0.00467477047900156,
+    "finest_relative_error_pct": 0.1241522588885732,
+    "relative_fit_rms_pct": 0.0,
+    "admitted": true
+  },
+  "reference": {
+    "ittc_1957": 0.0046875,
+    "extrapolated_reference_error_pct": 0.27156311463338856,
+    "maximum_reference_error_pct": 5.0
+  },
+  "single_grid_runs_admitted": true,
+  "admitted": true,
+  "sources": [
+    {
+      "path": "results/amr_campaign_20260801/flat-plate-v3-l256-exchange3-musker-re20k.json",
+      "sha256": "a0a4fa99ec15ec5718e214a5ae1e56521e9984f5cf980c78f5d774826b757a38"
+    },
+    {
+      "path": "results/amr_campaign_20260801/flat-plate-v3-l384-exchange4p5-musker-re20k.json",
+      "sha256": "06593dfa12e995259e99e8e39201043241baedd1ff9b373591d2cda045bb4f5d"
+    },
+    {
+      "path": "results/amr_campaign_20260801/flat-plate-v3-l512-exchange6-musker-re20k.json",
+      "sha256": "46213920f4bbd609b3ea3dd608b5ee694cdbfcf4ebf2c5d7937a71240c22623a"
+    }
+  ]
+}

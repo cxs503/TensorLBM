@@ -1,0 +1,65 @@
+{
+  "schema": "tensorlbm-suboff-scaled-wall-allocation-gate-v1",
+  "status": "allocation_clearance_and_one_step_gate_passed",
+  "physical_validation": false,
+  "configuration": {
+    "levels": 4,
+    "finest_hull_length_cells": 720.0,
+    "total_allocated_cells": 17391432,
+    "stress_exchange_distance_cells": 8.4375,
+    "stress_exchange_distance_over_finest_length": 0.01171875,
+    "collision_model": "natural_kbc",
+    "collision_chunk_cells": 262144,
+    "compile_natural_kbc": true,
+    "low_memory_wall_macroscopic": true
+  },
+  "interface_clearance": {
+    "available_wall_buffer_finest_cells": 14,
+    "interpolation_radius_cells": 1,
+    "required_buffer_cells": 10,
+    "remaining_clearance_cells": 4,
+    "admitted": true
+  },
+  "one_root_step": {
+    "finite": true,
+    "minimum_observed_population": 0.023070435971021652,
+    "maximum_observed_speed": 0.060010235756635666,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_wall_sample_rejected_fraction": 0.0,
+    "maximum_reflux_applied_correction_fraction_by_interface": [
+      9.51885326117008e-9,
+      2.3584208364013648e-8,
+      1.662765747312278e-8
+    ],
+    "measured_peak_allocated_gib": 12.596677303314209,
+    "invocation_elapsed_seconds": 12.90138570102863
+  },
+  "compiled_collision": {
+    "calls": 527,
+    "unique_input_signatures": 6,
+    "input_shapes_qzyx": [
+      [19, 2, 116, 780],
+      [19, 3, 48, 358],
+      [19, 4, 76, 420],
+      [19, 6, 90, 450],
+      [19, 8, 76, 420],
+      [19, 15, 48, 358]
+    ],
+    "minimum_tau": 0.500162,
+    "maximum_tau": 0.501296,
+    "torch_dynamo_process_unique_graphs": 1,
+    "dynamic_shape_reuse_pass": true
+  },
+  "decision": [
+    "The physically scaled 8.4375-cell exchange location remains four finest cells clear of the interpolation-support guard at the AMR interface.",
+    "The complete bounded-memory four-level step remains finite without wall-sample rejection, positivity limiting or material reflux correction.",
+    "One compiled graph serves all six observed slab shapes and all four level relaxation times.",
+    "This gate authorizes the v24 long trajectory to start after the sphere R15 dependency; it does not assess drag accuracy or time convergence."
+  ],
+  "provenance": {
+    "remote_result": "results/amr_campaign_20260801/suboff-nested-v28-aff1-four-level-l90-chunked-allocation-r1.json",
+    "remote_result_sha256": "2d40f2f63b95b789573717b21665c330a796f4c3a3448dd17cf870c094a8ff86",
+    "remote_checkpoint_sha256": "54c2793782900491c2a6be79c75c92a43d7ed6e32191b4cadc2f6dd8f778425c",
+    "remote_log_sha256": "cf6a5180e459b8edca8f738d84b9547d9d8e90134ff855388fec643933d86220"
+  }
+}

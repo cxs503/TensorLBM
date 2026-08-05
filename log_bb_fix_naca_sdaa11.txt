@@ -1,0 +1,21 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[BBfix SDAA:11 NACA0012 Re=1000 6L] chord=100 nx=600 ny=300 nz=4 u_in=0.05 nu=0.005000 tau=0.515000 Cs=0.05 n_steps=10000
+[BBfix SDAA:11 NACA0012 Re=1000 6L] solid cells: 3228
+[BBfix SDAA:11 NACA0012 Re=1000 6L] near-wall cells: 816
+[BBfix SDAA:11 NACA0012 Re=1000 6L] mesh built
+[BBfix SDAA:11 NACA0012 Re=1000 6L] init done (0.0s), initial_mass=720000.0

@@ -1,0 +1,67 @@
+{
+  "schema": "tensorlbm-suboff-collision-viscosity-evidence-v1",
+  "status": "mixed_precision_re2m_schedule_admitted",
+  "physical_validation": false,
+  "case": "SUBOFF L90 four-level Natural-KBC configured Re=2000000",
+  "weight_precision_scheme": "rational_binary64_cast_to_runtime_dtype_v1",
+  "audit_configuration": {
+    "taus_by_level": [0.5000081, 0.5000162, 0.5000324, 0.5000648],
+    "wavelength_cells": 16,
+    "transverse_cells": 3,
+    "amplitude": 0.02,
+    "steps": 12000,
+    "fit_start_step": 1000,
+    "maximum_relative_error_pct": 5.0,
+    "minimum_fitted_log_decay": 0.004,
+    "population_storage_dtype": "float32",
+    "natural_kbc_compute_dtype": "float64"
+  },
+  "result": {
+    "target_kinematic_viscosity_by_level": [
+      2.699999999985122e-06,
+      5.4000000000072506e-06,
+      1.0800000000014501e-05,
+      2.1599999999991997e-05
+    ],
+    "recovered_kinematic_viscosity_by_level": [
+      2.7358483495308564e-06,
+      5.463867474690677e-06,
+      1.0940671426847255e-05,
+      2.1875342880993495e-05
+    ],
+    "relative_error_pct_by_level": [
+      1.3277166498493358,
+      1.1827310126544626,
+      1.3025132114126416,
+      1.2747355601925934
+    ],
+    "fitted_log_amplitude_decay_by_level": [
+      0.004640924219119855,
+      0.009268567425420893,
+      0.018559079492470733,
+      0.03710798100171115
+    ],
+    "minimum_population_by_level": [
+      0.026168253272771835,
+      0.02617778442800045,
+      0.02619534730911255,
+      0.0262275543063879
+    ],
+    "admitted_by_level": [true, true, true, true]
+  },
+  "acceptance": {
+    "all_levels_recover_configured_viscosity": true,
+    "configured_reynolds_sequence_admitted": true,
+    "flow_solution_validated": false
+  },
+  "artifacts": {
+    "viscosity_schedule": "results/collision-viscosity-natural-kbc-suboff-re2m-mixed-exactweights-r2.json",
+    "viscosity_schedule_sha256": "60dd3295a699bd91ff28077ad39789e5a189c3cba887828acaad39cb8f311e18"
+  },
+  "decision": {
+    "permit_re2m_runtime_candidate_after_re1m_health_gate": true,
+    "permit_unassessed_re4m": false,
+    "root_level_margin_to_5pct_gate_percentage_points": 3.6722833501506642
+  },
+  "prohibition": "This shear-wave audit certifies collision-viscosity recovery only. It does not validate SUBOFF resistance, wall stress, time convergence or grid convergence."
+}

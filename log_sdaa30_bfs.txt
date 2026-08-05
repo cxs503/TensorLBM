@@ -1,0 +1,46 @@
+=== SDAA:30 BFS BBfix ===
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:30 BFS-BBfix] nx=400 ny=20 nz=4 step_h=10 x_step=100 ER=2.0 u_in=0.05 nu=5.000000e-04 tau=0.501500 Re=1000.0 Cs=0.05 n_steps=10000
+[SDAA:30 BFS-BBfix] solid=19400 (0.5s)
+[SDAA:30 BFS-BBfix] inlet: u_max=0.07407 bulk=0.05
+[SDAA:30 BFS-BBfix] init done (0.5s)
+[SDAA:30 BFS-BBfix] step=500 xr/H=0.000 max|u|=0.0741 (15s)
+[SDAA:30 BFS-BBfix] step=1000 xr/H=0.100 max|u|=0.0741 (30s)
+[SDAA:30 BFS-BBfix] step=1500 xr/H=0.100 max|u|=0.0741 (45s)
+[SDAA:30 BFS-BBfix] step=2000 xr/H=0.100 max|u|=0.0741 (60s)
+[SDAA:30 BFS-BBfix] step=2500 xr/H=0.100 max|u|=0.0741 (75s)
+[SDAA:30 BFS-BBfix] step=3000 xr/H=0.100 max|u|=0.0741 (90s)
+[SDAA:30 BFS-BBfix] step=3500 xr/H=0.100 max|u|=0.0741 (105s)
+[SDAA:30 BFS-BBfix] step=4000 xr/H=0.100 max|u|=0.0741 (120s)
+[SDAA:30 BFS-BBfix] step=4500 xr/H=0.100 max|u|=0.0741 (135s)
+[SDAA:30 BFS-BBfix] step=5000 xr/H=0.100 max|u|=0.0741 (149s)
+[SDAA:30 BFS-BBfix] step=5500 xr/H=0.100 max|u|=0.0741 (164s)
+[SDAA:30 BFS-BBfix] step=6000 xr/H=0.100 max|u|=0.0741 (179s)
+[SDAA:30 BFS-BBfix] step=6500 xr/H=0.100 max|u|=0.0741 (194s)
+[SDAA:30 BFS-BBfix] step=7000 xr/H=0.100 max|u|=0.0741 (209s)
+[SDAA:30 BFS-BBfix] step=7500 xr/H=0.100 max|u|=0.0741 (224s)
+[SDAA:30 BFS-BBfix] step=8000 xr/H=0.100 max|u|=0.0741 (239s)
+[SDAA:30 BFS-BBfix] step=8500 xr/H=0.100 max|u|=0.0741 (254s)
+[SDAA:30 BFS-BBfix] step=9000 xr/H=0.100 max|u|=0.0741 (269s)
+[SDAA:30 BFS-BBfix] step=9500 xr/H=0.100 max|u|=0.0741 (283s)
+[SDAA:30 BFS-BBfix] step=10000 xr/H=0.100 max|u|=0.0741 (297s)
+
+[SDAA:30 BFS-BBfix] === FINAL ===
+[SDAA:30 BFS-BBfix] xr/H=0.100 (ref=6.0, err=98.3%) detection_y=1 (297s)
+[SDAA:30 BFS-BBfix] saved to results_grid_conv_bbfix/bfs_bbfix_sdaa30.json
+=== SDAA:30 DONE ===

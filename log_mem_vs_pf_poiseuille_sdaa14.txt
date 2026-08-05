@@ -1,0 +1,27 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[PoiseuilleMEMvsPF SDAA:14] nx=80 ny=12 nz=12 tau=1.0 nu=0.166667 G=6.666667e-04 u_max_exact=0.050000
+[PoiseuilleMEMvsPF SDAA:14] init done (0.3s)
+[PoiseuilleMEMvsPF SDAA:14] step=500 Cd_MEM=nan Cd_PF_f=nan (Cd_body=42.666667) u_max=0.049320 (7s)
+[PoiseuilleMEMvsPF SDAA:14] step=1000 Cd_MEM=42.665103 Cd_PF_f=39.820732 (Cd_body=42.666667) u_max=0.049332 (42s)
+[PoiseuilleMEMvsPF SDAA:14] step=1500 Cd_MEM=42.665559 Cd_PF_f=39.821178 (Cd_body=42.666667) u_max=0.049332 (76s)
+[PoiseuilleMEMvsPF SDAA:14] step=2000 Cd_MEM=42.665711 Cd_PF_f=39.821327 (Cd_body=42.666667) u_max=0.049332 (110s)
+[PoiseuilleMEMvsPF SDAA:14] step=2500 Cd_MEM=42.665787 Cd_PF_f=39.821402 (Cd_body=42.666667) u_max=0.049332 (144s)
+[PoiseuilleMEMvsPF SDAA:14] step=3000 Cd_MEM=42.665833 Cd_PF_f=39.821446 (Cd_body=42.666667) u_max=0.049332 (178s)
+
+[PoiseuilleMEMvsPF SDAA:14] === FINAL === u_max=0.049332(err=1.34%) Cd_MEM=42.665833(err=0.00%) Cd_PF_f=39.821446(err=6.67%) Cd_p=0.000000 |diff|=2.84438680 t=178s
+[PoiseuilleMEMvsPF SDAA:14] saved mem_vs_pf_poiseuille_sdaa14.json

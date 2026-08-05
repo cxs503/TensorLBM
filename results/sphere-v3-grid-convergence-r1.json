@@ -1,0 +1,112 @@
+{
+  "schema": "tensorlbm-sphere-grid-convergence-v1",
+  "radii_cells": [
+    9.0,
+    12.0,
+    15.0
+  ],
+  "diameters_cells": [
+    18.0,
+    24.0,
+    30.0
+  ],
+  "cd_control_volume": [
+    1.1651454753520416,
+    1.1496003384397975,
+    1.145555836004353
+  ],
+  "configuration_identity": {
+    "v3_schema": true,
+    "required_fields_present": true,
+    "identity_fields_equal": true,
+    "domain_over_radius": {
+      "z": [
+        16.0,
+        16.0,
+        16.0
+      ],
+      "y": [
+        16.0,
+        16.0,
+        16.0
+      ],
+      "x": [
+        24.0,
+        24.0,
+        24.0
+      ]
+    },
+    "scaled_spatial_parameters": {
+      "cv_margin_over_radius": [
+        0.6666666666666666,
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "sponge_width_over_radius": [
+        2.0,
+        2.0,
+        2.0
+      ]
+    },
+    "time_steps_over_radius": {
+      "steps": [
+        800.0,
+        800.0,
+        800.0
+      ],
+      "warmup_steps": [
+        533.3333333333334,
+        533.3333333333334,
+        533.3333333333334
+      ],
+      "ramp_steps": [
+        80.0,
+        80.0,
+        80.0
+      ],
+      "statistics_window_steps": [
+        266.6666666666667,
+        266.6666666666667,
+        266.6666666666667
+      ],
+      "report_interval": [
+        40.0,
+        40.0,
+        40.0
+      ]
+    },
+    "scaled_configuration_invariant": true,
+    "reference_invariant": true,
+    "admitted": true
+  },
+  "spatial_convergence": {
+    "monotonic": true,
+    "observed_order": 4.184399903010831,
+    "extrapolated_cd": 1.1429362714521736,
+    "finest_discretisation_error_pct": 0.22919602935087993,
+    "relative_fit_rms_pct": 0.0,
+    "admitted": true
+  },
+  "reference": {
+    "schiller_naumann_cd": 1.0917310910948732,
+    "extrapolated_error_pct": 4.690274077103348,
+    "maximum_error_pct": 5.0
+  },
+  "source_numerical_quality_admitted": true,
+  "physical_validation": true,
+  "admitted": true,
+  "sources": [
+    {
+      "path": "results/sphere-v3-equivalent-r9-7200.json",
+      "sha256": "ffa38acaac6189aaf92c270c341ab501317b6d0b517781923f3b0750f5ef848b"
+    },
+    {
+      "path": "results/sphere-v3-equivalent-r12-9600.json",
+      "sha256": "e0215d1a022475b825aea28b5f52412fa1836469acd49d148b7a5fc3f29394d4"
+    },
+    {
+      "path": "results/sphere-v3-equivalent-r15-12000.json",
+      "sha256": "ffe85ad751aebbefeae2d5cbd03308ed95521a4d6b9ae8b435ca81589752b609"
+    }
+  ]
+}

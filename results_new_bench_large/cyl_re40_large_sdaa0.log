@@ -1,0 +1,56 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[cyl_re40_large SDAA:0] cylinder Re=40 grid=800x320x4 u_in=0.08 nu=9.600000e-02 tau=0.788000 dpS=6.144000e-01
+[cyl_re40_large SDAA:0] collision=mrt Cs=None n_steps=10000 warmup=2000 avg_window=2000
+[cyl_re40_large SDAA:0] blockage D/ny=15.0%
+[cyl_re40_large SDAA:0] Cd_ref=1.500000 (Cd=1.50 (Re=40 steady))
+[cyl_re40_large SDAA:0] solid cells: 7172
+[cyl_re40_large SDAA:0] near-wall cells: 544
+[cyl_re40_large SDAA:0] SurfaceMesh.from_cylinder built
+[cyl_re40_large SDAA:0] init done (0.4s) mass=1024000.0
+[cyl_re40_large SDAA:0] step=500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (52s)
+[cyl_re40_large SDAA:0] step=1000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (103s)
+[cyl_re40_large SDAA:0] step=1500/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (155s)
+[cyl_re40_large SDAA:0] step=2000/10000 Cd_p=0.000000 Cd_f=0.000000 Cd_tot=0.000000 (207s)
+[cyl_re40_large SDAA:0] step=2500/10000 Cd_p=1.261588 Cd_f=0.484267 Cd_tot=1.745855 (263s)
+[cyl_re40_large SDAA:0] step=3000/10000 Cd_p=1.253281 Cd_f=0.479495 Cd_tot=1.732776 (320s)
+[cyl_re40_large SDAA:0] step=3500/10000 Cd_p=1.240685 Cd_f=0.474969 Cd_tot=1.715654 (376s)
+[cyl_re40_large SDAA:0] step=4000/10000 Cd_p=1.235040 Cd_f=0.471818 Cd_tot=1.706858 (433s)
+[cyl_re40_large SDAA:0] step=4500/10000 Cd_p=1.229750 Cd_f=0.469731 Cd_tot=1.699480 (490s)
+[cyl_re40_large SDAA:0] step=5000/10000 Cd_p=1.226829 Cd_f=0.468346 Cd_tot=1.695175 (546s)
+[cyl_re40_large SDAA:0] step=5500/10000 Cd_p=1.224557 Cd_f=0.467338 Cd_tot=1.691895 (603s)
+[cyl_re40_large SDAA:0] step=6000/10000 Cd_p=1.222658 Cd_f=0.466577 Cd_tot=1.689235 (659s)
+[cyl_re40_large SDAA:0] step=6500/10000 Cd_p=1.221486 Cd_f=0.466029 Cd_tot=1.687515 (715s)
+[cyl_re40_large SDAA:0] step=7000/10000 Cd_p=1.220225 Cd_f=0.465585 Cd_tot=1.685810 (771s)
+[cyl_re40_large SDAA:0] step=7500/10000 Cd_p=1.219691 Cd_f=0.465273 Cd_tot=1.684964 (827s)
+[cyl_re40_large SDAA:0] step=8000/10000 Cd_p=1.218474 Cd_f=0.464957 Cd_tot=1.683431 (883s)
+[cyl_re40_large SDAA:0] step=8500/10000 Cd_p=1.217783 Cd_f=0.464676 Cd_tot=1.682459 (939s)
+[cyl_re40_large SDAA:0] step=9000/10000 Cd_p=1.216410 Cd_f=0.464333 Cd_tot=1.680743 (996s)
+[cyl_re40_large SDAA:0] step=9500/10000 Cd_p=1.215686 Cd_f=0.464036 Cd_tot=1.679722 (1052s)
+[cyl_re40_large SDAA:0] step=10000/10000 Cd_p=1.214674 Cd_f=0.463743 Cd_tot=1.678417 (1108s)
+
+============================================================
+[cyl_re40_large SDAA:0] FINAL RESULTS
+============================================================
+[cyl_re40_large SDAA:0] Cd_p  = 1.216138
+[cyl_re40_large SDAA:0] Cd_f  = 0.464197
+[cyl_re40_large SDAA:0] Cd_tot= 1.680335
+[cyl_re40_large SDAA:0] Cd_ref= 1.500000  err=12.0%
+[cyl_re40_large SDAA:0] St    = 0.1477410903292616
+[cyl_re40_large SDAA:0] time  = 1108s (18.5 min)
+[cyl_re40_large SDAA:0] finite= True
+[cyl_re40_large SDAA:0] Results → results_new_bench_large/cyl_re40_large_sdaa0.json

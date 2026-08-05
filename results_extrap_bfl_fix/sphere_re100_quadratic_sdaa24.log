@@ -1,0 +1,37 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:24 Re=100 extrap=quadratic] extrap=quadratic nx=180 ny=180 nz=180 D=40 R=20.0 u_in=0.08 nu=3.200000e-02 tau=0.596000 Cs=0.05 dpS=4.021239e+00
+[SDAA:24 Re=100 extrap=quadratic] solid cells: 33371
+[SDAA:24 Re=100 extrap=quadratic] near-wall cells: 4302
+[SDAA:24 Re=100 extrap=quadratic] init done (0.5s), initial_mass=5832000.0
+[SDAA:24 Re=100 extrap=quadratic] step=200 Cd_p=2.4127 Cd_f=0.8540 Cd_tot=3.2667 Cl=-0.000000 (173s)
+[SDAA:24 Re=100 extrap=quadratic] step=400 Cd_p=0.6436 Cd_f=0.4907 Cd_tot=1.1342 Cl=-0.000232 (345s)
+[SDAA:24 Re=100 extrap=quadratic] step=600 Cd_p=0.6716 Cd_f=0.4533 Cd_tot=1.1249 Cl=-0.000028 (517s)
+[SDAA:24 Re=100 extrap=quadratic] step=800 Cd_p=0.6872 Cd_f=0.4444 Cd_tot=1.1316 Cl=-0.000015 (690s)
+[SDAA:24 Re=100 extrap=quadratic] step=1000 Cd_p=0.6861 Cd_f=0.4368 Cd_tot=1.1228 Cl=0.000004 (862s)
+[SDAA:24 Re=100 extrap=quadratic] step=1200 Cd_p=0.6829 Cd_f=0.4313 Cd_tot=1.1142 Cl=-0.000003 (1033s)
+[SDAA:24 Re=100 extrap=quadratic] step=1400 Cd_p=0.6790 Cd_f=0.4274 Cd_tot=1.1064 Cl=-0.000010 (1204s)
+[SDAA:24 Re=100 extrap=quadratic] step=1600 Cd_p=0.6755 Cd_f=0.4244 Cd_tot=1.0999 Cl=-0.000021 (1375s)
+[SDAA:24 Re=100 extrap=quadratic] step=1800 Cd_p=0.6726 Cd_f=0.4221 Cd_tot=1.0947 Cl=-0.000029 (1547s)
+[SDAA:24 Re=100 extrap=quadratic] step=2000 Cd_p=0.6712 Cd_f=0.4204 Cd_tot=1.0916 Cl=-0.000034 (1718s)
+[SDAA:24 Re=100 extrap=quadratic] step=2200 Cd_p=0.6713 Cd_f=0.4193 Cd_tot=1.0906 Cl=-0.000029 (1889s)
+[SDAA:24 Re=100 extrap=quadratic] step=2400 Cd_p=0.6667 Cd_f=0.4183 Cd_tot=1.0850 Cl=-0.000029 (2060s)
+[SDAA:24 Re=100 extrap=quadratic] step=2600 Cd_p=0.6628 Cd_f=0.4169 Cd_tot=1.0797 Cl=-0.000070 (2231s)
+[SDAA:24 Re=100 extrap=quadratic] step=2800 Cd_p=0.6638 Cd_f=0.4161 Cd_tot=1.0799 Cl=-0.000077 (2402s)
+[SDAA:24 Re=100 extrap=quadratic] step=3000 Cd_p=0.6630 Cd_f=0.4155 Cd_tot=1.0785 Cl=-0.000065 (2573s)
+[SDAA:24 Re=100 extrap=quadratic] DONE extrap=quadratic Cd_p=0.6634 Cd_f=0.4160 Cd_tot=1.0793 Cl=-0.000071 (ref=1.0900) err=1.0% time=2573s
+[SDAA:24 Re=100 extrap=quadratic] Results written to results_extrap_bfl_fix/sphere_re100_quadratic_sdaa24.json

@@ -1,0 +1,20 @@
+/usr/lib64/python3.11/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+--------------+--------------------------------------------
+ Host IP      | 172.17.0.2
+ PyTorch      | 2.7.1
+ Torch-SDAA   | 3.1.1a3+gite3971b9
+--------------+--------------------------------------------
+ SDAA Driver  | 3.1.0 (N/A)
+ SDAA Runtime | 3.1.0 (/opt/tecoai/lib64/libsdaart.so)
+ SDPTI        | 1.7.0 (/opt/tecoai/lib64/libsdpti.so)
+ TecoDNN      | 3.1.0 (/opt/tecoai/lib64/libtecodnn.so)
+ TecoBLAS     | 3.1.0 (/opt/tecoai/lib64/libtecoblas.so)
+ CustomDNN    | 3.1.0 (/opt/tecoai/lib64/libtecocustom.so)
+ TecoRAND     | 3.1.0 (/opt/tecoai/lib64/libtecorand.so)
+ TCCL         | 3.1.0 (/opt/tecoai/lib64/libtccl.so)
+--------------+--------------------------------------------
+[SDAA:25 SUBOFF L=160 Re=1000] nx=300 ny=120 nz=120 L=160 D=18.670 u_in=0.06 nu=9.600000e-03 tau=0.528800 Cs=0.05 dpS=1.689202e+01 Cf_ref=0.041995
+[SDAA:25 SUBOFF L=160 Re=1000] solid=37031 near=8014 (0.6s)
+[SDAA:25 SUBOFF L=160 Re=1000] init done (0.6s)
+[SDAA:25 SUBOFF L=160 Re=1000] step=500 Cd_p=0.016589 Cd_f[standard]=0.102976 Cd_f[2nd_order]=0.020240 Cd_f[central]=0.134224 Cd_f[lagrange]=0.109722 (338s)

@@ -5,7 +5,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import torch
-import torch_sdaa
+
+# torch_sdaa is an optional vendor backend.  Importing TensorLBM on CUDA- or
+# CPU-only hosts must not require the SDAA runtime; requesting an SDAA device
+# is still rejected by ``resolve_device`` when the backend is unavailable.
+try:
+    import torch_sdaa  # noqa: F401
+except ImportError:
+    torch_sdaa = None
 
 if TYPE_CHECKING:
     from pathlib import Path
