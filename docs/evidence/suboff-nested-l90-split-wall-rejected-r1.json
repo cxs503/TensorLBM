@@ -1,0 +1,25 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "candidate": "suboff-nested-v13-l90-split-wall-activation",
+  "status": "rejected",
+  "configuration_delta": {
+    "wall_normal_ramp_steps": 300,
+    "wall_shear_ramp_steps": 3000,
+    "baseline_shared_wall_ramp_steps": 3000
+  },
+  "failure": {
+    "step": 1560,
+    "wall_normal_activation": 1.0,
+    "wall_shear_activation": 0.5313952597646567,
+    "minimum_population": 1.862645149230957e-09,
+    "maximum_collision_limited_fraction": 0.00001937409312755573,
+    "maximum_speed": 0.175922229886055
+  },
+  "artifacts": {
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v13-l90-rejected-split-wall-step1560.log",
+    "remote_log_sha256": "b1fc4b14df1727943f144c11a79e86e8f2f468c1c66d059c804cc4b1915719e0",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v13-l90-split-wall-activation-2400.ckpt",
+    "remote_checkpoint_sha256": "669fca75f0bf60a09db28e4886b5d9b8f21304c5ba62de2644de08d9720d7069"
+  },
+  "conclusion": "Completing normal impermeability during the low-Re startup while retaining the long shear ramp does not delay the baseline population-floor onset. Simultaneous normal/shear ramping is not the root cause."
+}

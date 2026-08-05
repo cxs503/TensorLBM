@@ -1,0 +1,62 @@
+{
+  "schema": "tensorlbm-flat-plate-grid-convergence-interim-v1",
+  "status": "superseded_by_admitted_three_grid_assessment",
+  "superseded_by": "docs/evidence/flat-plate-v5-l256-l384-l512-convergence-r1.json",
+  "physical_validation": false,
+  "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
+  "resolutions": [
+    256.0,
+    384.0
+  ],
+  "friction_coefficients": [
+    0.004594268520611013,
+    0.004655830718656158
+  ],
+  "ittc_1957_reference": 0.0046875,
+  "reference_error_pct": [
+    1.9889382269650535,
+    0.6756113353352985
+  ],
+  "l256_to_l384_change_pct": 1.3222602316373278,
+  "single_grid_admission": [
+    true,
+    true
+  ],
+  "l384": {
+    "force_observer_difference_pct": 0.06389118273037118,
+    "maximum_positivity_limited_fraction": 0.0,
+    "stationarity": {
+      "relative_range_pct": 0.00039134338040735383,
+      "half_mean_drift_pct": 0.00011219332375548321,
+      "linear_trend_pct": 0.0002418029282847216,
+      "confidence95_half_width_pct": 0.00010832692195724996,
+      "target_pct": 1.0,
+      "target_met": true
+    },
+    "wall_exchange": {
+      "minimum_y_plus": 552.5821533203125,
+      "mean_y_plus": 565.3191701660156,
+      "maximum_y_plus": 588.2365112304688,
+      "maximum_rejected_fraction": 0.0
+    }
+  },
+  "decision": [
+    "Both corrected-source grids independently meet friction, stationarity, force-observer, limiter and exchange-sampling gates.",
+    "The two-grid change is reported only as an interim diagnostic; no observed order or extrapolated value is claimed from two resolutions.",
+    "The active L512 trajectory is required before the fail-closed three-grid assessment is run."
+  ],
+  "sources": [
+    {
+      "path": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l256-32000.json",
+      "sha256": "87327b71d584f29aa789d0b63926f7d9b5a0cdcafb0eb1eec2e831ddf4d43193"
+    },
+    {
+      "path": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l384-48000.json",
+      "sha256": "dceaa09ddb26436ce1d6996030229165ec2641a5c9571a2227ebecdf4a18c2a9"
+    },
+    {
+      "local_checkpoint": "/tmp/flat-plate-v5-equivalent-l384-48000.ckpt",
+      "sha256": "c21130d42f01e04e321a6c81c0c8b09c3fdaf72ae46b6b5b032bd5276080d949"
+    }
+  ]
+}

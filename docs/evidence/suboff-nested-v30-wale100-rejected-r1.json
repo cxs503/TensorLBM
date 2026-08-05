@@ -1,0 +1,42 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "candidate": "suboff-nested-v30-l90-wale100-masked-2400",
+  "status": "rejected",
+  "configuration_delta": {
+    "collision_model": "cumulant_wale",
+    "wale_cw": 1.0,
+    "baseline_wale_cw": 0.5,
+    "gradient_boundary_treatment": "centered_interior_second_order_one_sided_edges",
+    "solid_side_velocity_treatment": "stationary_wall_from_checkpoint_mask"
+  },
+  "failure": {
+    "step": 1500,
+    "baseline_wale_failure_step": 1440,
+    "minimum_population": 1.862645149230957e-09,
+    "maximum_speed": 0.17859598994255066,
+    "maximum_collision_limited_fraction": 0.0009641702941564438,
+    "inner_maximum_reflux_applied_correction_fraction": 0.00016056316962931305,
+    "inner_raw_mass_mismatch": 7.034332275390625,
+    "inner_raw_momentum_mismatch_norm": 0.9605453014373779,
+    "population_health_failed_before_reflux_gate": true
+  },
+  "sgs_cost_at_step1200": {
+    "mean_eddy_to_molecular_viscosity_ratio_by_level": [
+      0.03412029286886759,
+      0.3055751903934355,
+      0.19672798885248013
+    ],
+    "maximum_eddy_to_molecular_viscosity_ratio_by_level": [
+      81.97444861612433,
+      53.74208313741954,
+      30.64739888391465
+    ]
+  },
+  "artifacts": {
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v30-l90-wale100-masked-2400.log",
+    "remote_log_sha256": "4e7d5b15c3142bb8842363b510ab24496716b2e3c9913b5c809051aadfc25988",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v30-l90-wale100-masked-2400.ckpt",
+    "remote_checkpoint_sha256": "d8a3fdcac8c1d295b90c75556ee970cc1375fd25304bbb57d8420b33f126f949"
+  },
+  "conclusion": "A fourfold WALE-viscosity increase delays failure by only one 60-step health interval and produces a large positivity-limiter burst. Increasing Cw further is not pursued as a production remedy; the coefficient is rejected on both stability and dissipation-cost grounds."
+}

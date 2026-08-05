@@ -1,5 +1,31 @@
 from ._version import __version__
 from .backends import get_backend, set_backend
+from .amr_capability_contract import (
+    LocalRefinementCapability,
+    LocalRefinementWithheldError,
+    REQUIRED_FRONTEND_METADATA,
+    local_refinement_capability_matrix,
+    require_local_refinement_capability,
+)
+from .boundary_capability_contract import (
+    BoundaryConditionCapability,
+    BoundaryConditionWithheldError,
+    boundary_capability_matrix,
+    require_boundary_condition_capability,
+)
+from .turbulence_capability_contract import (
+    TurbulenceCapability,
+    TurbulenceWithheldError,
+    turbulence_capability_matrix,
+    require_turbulence_capability,
+    turbulence_hot_path_audit,
+)
+from .wall_function_contract import (
+    ValidationLevel,
+    WallFunctionCapability,
+    WallFunctionCompatibilityError,
+)
+from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
 from .adaptive_refinement import (
     AdaptationSchedule,
     AdaptiveSolver2D,
@@ -48,15 +74,20 @@ from .boundaries3d import (
     zou_he_outlet_pressure_3d,
     zou_he_outlet_pressure_z,
 )
-from .wall_model import wall_function_3d
+from .wall_model import wall_function_3d, wall_function_d3q27
 from .boundaries_d3q27 import (
     apply_zou_he_channel_boundaries_27,
     bounce_back_cells_27,
+    far_field_bc_27,
     make_channel_wall_mask_27,
     zou_he_inlet_velocity_27,
     zou_he_outlet_pressure_27,
 )
 from .checkpoint import load_checkpoint, save_checkpoint
+from .chunked_collision import (
+    NaturalKBCCollisionExecutor,
+    collide_in_z_chunks,
+)
 from .config_io import load_config, load_config_json, load_config_yaml, save_config_json
 from .constants import D2Q9
 from .cylinder_flow import CylinderFlowConfig, compute_vorticity, run_cylinder_flow
@@ -71,10 +102,60 @@ from .d3q27 import W as W27
 from .d3q27 import (
     collide_bgk27,
     collide_mrt27,
+    collide_rlbm27,
+    collide_trt27,
     correct_mass27,
     equilibrium27,
     macroscopic27,
     stream27,
+    stream27_roll,
+)
+from .free_surface_lbm_27 import (
+    free_surface_step_27,
+    init_fill_rectangular_27,
+    init_flags_from_fill_27,
+    init_mass_from_fill_27,
+    total_liquid_inventory_27,
+)
+from .advanced_collision_contract import (
+    CollisionCapability,
+    CollisionKernelWithheldError,
+    collide_advanced_3d,
+    collision_capability_matrix,
+)
+from .collision_viscosity_audit import (
+    CollisionViscosityAuditConfig,
+    run_collision_viscosity_audit,
+)
+from .wall_refinement_combination_gate import (
+    CollisionFamily as WallRefinementCollisionFamily,
+    CombinationEvidence,
+    CombinationGateDecision,
+    GateStatus as WallRefinementGateStatus,
+    GeometryKind,
+    GeometryOwnership,
+    Lattice as WallRefinementLattice,
+    PhysicsModel,
+    RefinementType,
+    WallRefinementCombination,
+    WallTreatment,
+    assess_wall_refinement_combination,
+)
+from .accuracy_recommendation import (
+    AccuracyRecommendation,
+    ConvergenceEvidence,
+    ErrorMetric,
+    KPIDefinition,
+    PhysicalAccuracyEvidence,
+    recommend_by_physical_accuracy,
+)
+from .cross_module_composition_matrix import (
+    CompositionDecision,
+    CompositionRequest,
+    CompositionStatus,
+    SubContractResult,
+    SubContractStatus,
+    assess_composition,
 )
 from .d3q27_sphere_flow import SphereFlowD3Q27Config, run_sphere_flow_d3q27
 from .dam_break import DamBreakConfig, run_dam_break
@@ -97,6 +178,7 @@ from .interpolated_bc import (
     compute_q_circle,
     compute_q_sphere,
 )
+from .interpolated_bc_suboff import compute_q_suboff
 from .acoustics import (
     AcousticObserver,
     FWHResult,
@@ -106,6 +188,14 @@ from .acoustics import (
     compute_spl_spectrum,
     extract_surface_pressure,
     oaspl,
+)
+from .acoustics_capability_contract import (
+    AcousticsCapability,
+    AcousticsWithheldError,
+    PostProcessingAudit,
+    acoustics_capability_matrix,
+    acoustics_post_processing_audit,
+    require_acoustics_capability,
 )
 from .conjugate_ht import (
     CHTConfig,
@@ -151,6 +241,13 @@ from .multiphase3d import (
     init_free_energy_g_3d,
     sc_two_component_force_3d,
 )
+from .multiphase3d_d3q27 import (
+    collide_sc_single_component_27,
+    collide_sc_two_component_27,
+    free_energy_step_3d_27,
+    init_free_energy_g_3d_27,
+    sc_two_component_force_27,
+)
 from .multiphase_benchmarks import (
     FreeEnergyDropletConfig,
     MultiphaseBenchmarkSuiteConfig,
@@ -178,6 +275,14 @@ from .obstacles import (
     compute_obstacle_forces_27,
     compute_obstacle_moments_3d,
     wigley_hull_mask,
+)
+from .momentum_exchange import (
+    momentum_exchange_standard,
+    momentum_exchange_galilean,
+    momentum_exchange_bfl,
+    momentum_exchange_stress,
+    momentum_exchange_pressure_friction,
+    compare_all_methods,
 )
 from .pipeline_flow import (
     PipelineFlowConfig,
@@ -272,7 +377,15 @@ from .rans_ke import (
     KESolver,
     KOmegaSSTSolver,
     collide_rans_ke,
+    collide_rans_komega_sst,
     komega_sst_collision_d2q9,
+)
+from .rans_common import (
+    collide_rans_3d,
+    collide_rans_bgk27,
+    collide_rans_bgk3d,
+    collide_rans_mrt27,
+    collide_rans_mrt3d,
 )
 from .ship_cad import (  # noqa: I001
     ShipHullType,
@@ -404,9 +517,13 @@ from .turbulence import (
     collide_vreman_bgk,
     collide_vreman_bgk3d,
     collide_vreman_bgk27,
+    collide_vreman_mrt3d,
+    collide_vreman_mrt27,
     collide_wale_bgk,
     collide_wale_bgk3d,
     collide_wale_bgk27,
+    collide_wale_mrt3d,
+    collide_wale_mrt27,
 )
 from .turbulent_channel import (
     TurbulentChannelConfig,
@@ -434,7 +551,24 @@ from .wave_bc import (
 )
 from .cumulant import (
     collide_cumulant_d2q9,
+    collide_cumulant_d3q19,
     collide_cumulant_d3q27,
+)
+from .cumulant_smag import collide_cumulant_smag_d3q27
+from .planar_d3q19 import (
+    collide_planar_cumulant_d3q19,
+    lift_d2q9_to_d3q19,
+    marginalize_d3q19_to_d2q9,
+    maximum_planar_plane_spread,
+)
+from .yplus_guide import (
+    DragMonitor,
+    estimate_exchange_yplus,
+    estimate_yplus,
+    grid_quality_metrics,
+    plan_exchange_yplus_refinement,
+    recommend_grid,
+    yplus_recommendation,
 )
 from .streamlines import (
     Streamline,
@@ -501,6 +635,7 @@ from .multi_gpu import (
     DomainDecomposition,
     MultiGPUSolver2D,
     MultiGPUSolver3D,
+    MultiDeviceSolver3D,
     halo_exchange_2d,
     halo_exchange_3d,
     auto_decompose,
@@ -520,6 +655,116 @@ from .general_sim import (
     PhysicsConfig,
     SolverConfig,
 )
+from .lbm_step import LBMStepExecutor
+from .amr_interface_filter import (
+    InterfaceFilterControlVolumeClearance,
+    assess_interface_filter_control_volume_clearance,
+    damp_interface_nonequilibrium,
+    interface_shell_blend,
+)
+from .static_block_amr import (
+    AMRAdvanceResult,
+    NestedStaticBlockAMR3D,
+    PopulationRefluxLedger,
+    StaticBlockAMR3D,
+    StaticBlockAMRConfig,
+    convective_refined_tau,
+)
+from .amr_interface_validation import (
+    AMRInterfaceValidationConfig,
+    run_amr_interface_validation,
+)
+from .spatial_convergence import (
+    SpatialConvergenceAssessment,
+    assess_spatial_convergence,
+)
+from .suboff_static_amr import (
+    SuboffGeometryResolution,
+    SuboffNestedStaticAMRPlan,
+    SuboffStaticAMRPlan,
+    apply_suboff_appendage_halfway_links,
+    assess_suboff_geometry_resolution,
+    build_nested_fine_suboff_mask,
+    build_fine_suboff_mask,
+    plan_nested_suboff_static_amr,
+    plan_suboff_static_amr,
+)
+from .suboff_nested_convergence import assess_suboff_nested_convergence
+from .control_volume_force import (
+    ControlVolumeForceResult,
+    NestedControlVolumeAssessment,
+    assess_nested_control_volume_invariance,
+    box_control_volume,
+    fluid_momentum,
+    observe_control_volume_force,
+    streaming_momentum_import,
+)
+from .spalding_wall_model import (
+    SpaldingWallDiagnostics,
+    WallExchangeInterfaceClearance,
+    WallExchangeSamples,
+    apply_spalding_exchange_wall_model,
+    assess_wall_exchange_interface_clearance,
+    effective_bfl_wall_distance,
+    sample_wall_exchange_velocity,
+    solve_spalding_friction_velocity,
+    spalding_u_plus_from_y_plus,
+    spalding_y_plus,
+)
+from .sphere_boundary_sensitivity import assess_sphere_inlet_sponge_pair
+from .sphere_boundary_factorial import assess_sphere_domain_inlet_factorial
+from .sphere_domain_sensitivity import (
+    assess_sphere_domain_convergence,
+    assess_sphere_domain_sensitivity_pair,
+)
+from .resistance_component_audit import (
+    ResistanceComponentAudit,
+    audit_resistance_components,
+)
+from .wall_exchange_yplus import (
+    WallExchangeYPlusAggregate,
+    WallExchangeYPlusSummary,
+    aggregate_wall_exchange_yplus_summaries,
+    summarize_wall_exchange_yplus,
+)
+from .sponge_layer import (
+    apply_equilibrium_difference_sponge,
+    build_anisotropic_sponge_sigma_3d,
+    build_sponge_sigma_3d,
+    smoothstep5,
+)
+from .population_positivity import (
+    PositivityDiagnostics,
+    limit_nonequilibrium_for_positivity,
+)
+from .sphere_bfl_control_volume import (
+    SphereBFLControlVolumeConfig,
+    run_sphere_bfl_control_volume,
+    schiller_naumann_cd,
+)
+from .external_open_boundary import non_equilibrium_far_field_bc_3d
+from .cylinder_bfl_control_volume import (
+    CYLINDER_RE100_CD_REFERENCE,
+    CYLINDER_RE100_ST_REFERENCE,
+    CylinderBFLControlVolumeConfig,
+    estimate_strouhal_from_lift,
+    run_cylinder_bfl_control_volume,
+)
+from .flat_plate_wall_model import (
+    FlatPlateWallModelConfig,
+    ittc_1957_friction_coefficient,
+    run_flat_plate_wall_model,
+)
+from .flat_plate_convergence import assess_flat_plate_convergence
+from .surface_area_weights import (
+    SurfaceAreaWeightDiagnostics,
+    bfl_surface_area_weights,
+)
+from .drag_pressure import (
+    BFLWallPressureDiagnostics,
+    integrate_bfl_projected_pressure,
+    reconstruct_bfl_wall_pressure,
+)
 
 __all__ = [
     "__version__",
@@ -536,6 +781,83 @@ __all__ = [
     "vorticity_indicator_3d",
     "gradient_indicator_3d",
     "mark_cells_for_refinement",
+    "damp_interface_nonequilibrium",
+    "interface_shell_blend",
+    "PopulationRefluxLedger",
+    "AMRAdvanceResult",
+    "NestedStaticBlockAMR3D",
+    "StaticBlockAMR3D",
+    "StaticBlockAMRConfig",
+    "convective_refined_tau",
+    "NaturalKBCCollisionExecutor",
+    "collide_in_z_chunks",
+    "AMRInterfaceValidationConfig",
+    "run_amr_interface_validation",
+    "SpatialConvergenceAssessment",
+    "assess_spatial_convergence",
+    "SuboffGeometryResolution",
+    "SuboffNestedStaticAMRPlan",
+    "SuboffStaticAMRPlan",
+    "apply_suboff_appendage_halfway_links",
+    "assess_suboff_geometry_resolution",
+    "build_nested_fine_suboff_mask",
+    "build_fine_suboff_mask",
+    "plan_nested_suboff_static_amr",
+    "plan_suboff_static_amr",
+    "assess_suboff_nested_convergence",
+    "InterfaceFilterControlVolumeClearance",
+    "assess_interface_filter_control_volume_clearance",
+    "ControlVolumeForceResult",
+    "NestedControlVolumeAssessment",
+    "assess_nested_control_volume_invariance",
+    "box_control_volume",
+    "fluid_momentum",
+    "observe_control_volume_force",
+    "streaming_momentum_import",
+    "SpaldingWallDiagnostics",
+    "WallExchangeInterfaceClearance",
+    "WallExchangeSamples",
+    "apply_spalding_exchange_wall_model",
+    "assess_wall_exchange_interface_clearance",
+    "effective_bfl_wall_distance",
+    "sample_wall_exchange_velocity",
+    "solve_spalding_friction_velocity",
+    "spalding_u_plus_from_y_plus",
+    "spalding_y_plus",
+    "assess_sphere_domain_sensitivity_pair",
+    "assess_sphere_domain_convergence",
+    "ResistanceComponentAudit",
+    "audit_resistance_components",
+    "assess_sphere_inlet_sponge_pair",
+    "assess_sphere_domain_inlet_factorial",
+    "WallExchangeYPlusAggregate",
+    "WallExchangeYPlusSummary",
+    "aggregate_wall_exchange_yplus_summaries",
+    "summarize_wall_exchange_yplus",
+    "apply_equilibrium_difference_sponge",
+    "build_anisotropic_sponge_sigma_3d",
+    "build_sponge_sigma_3d",
+    "smoothstep5",
+    "PositivityDiagnostics",
+    "limit_nonequilibrium_for_positivity",
+    "SphereBFLControlVolumeConfig",
+    "run_sphere_bfl_control_volume",
+    "schiller_naumann_cd",
+    "non_equilibrium_far_field_bc_3d",
+    "CYLINDER_RE100_CD_REFERENCE",
+    "CYLINDER_RE100_ST_REFERENCE",
+    "CylinderBFLControlVolumeConfig",
+    "estimate_strouhal_from_lift",
+    "run_cylinder_bfl_control_volume",
+    "FlatPlateWallModelConfig",
+    "ittc_1957_friction_coefficient",
+    "run_flat_plate_wall_model",
+    "assess_flat_plate_convergence",
+    "SurfaceAreaWeightDiagnostics",
+    "bfl_surface_area_weights",
+    "BFLWallPressureDiagnostics",
+    "integrate_bfl_projected_pressure",
+    "reconstruct_bfl_wall_pressure",
     # D2Q9 lattice
     "C",
     "W",
@@ -638,6 +960,13 @@ __all__ = [
     "compute_obstacle_forces_3d",
     "compute_obstacle_forces_27",
     "compute_obstacle_moments_3d",
+    # Momentum exchange variants
+    "momentum_exchange_standard",
+    "momentum_exchange_galilean",
+    "momentum_exchange_bfl",
+    "momentum_exchange_stress",
+    "momentum_exchange_pressure_friction",
+    "compare_all_methods",
     # Turbulence
     "collide_smagorinsky_bgk",
     "collide_smagorinsky_mrt",
@@ -720,6 +1049,10 @@ __all__ = [
     "color_gradient_step_3d",
     "init_free_energy_g_3d",
     "free_energy_step_3d",
+    # Multiphase models – D3Q27
+    "sc_two_component_force_27",
+    "collide_sc_two_component_27",
+    "collide_sc_single_component_27",
     # Multiphase benchmark suite
     "StaticDropletConfig",
     "run_static_droplet",
@@ -840,6 +1173,7 @@ __all__ = [
     "zou_he_outlet_pressure_27",
     "make_channel_wall_mask_27",
     "apply_zou_he_channel_boundaries_27",
+    "far_field_bc_27",
     # D3Q27 runner
     "SphereFlowD3Q27Config",
     "run_sphere_flow_d3q27",
@@ -854,6 +1188,8 @@ __all__ = [
     # Minimal D2Q9 scaffold
     "D2Q9",
     "LBMSimulation",
+    # Common timestep executor
+    "LBMStepExecutor",
     # Pre-processing geometry
     "poly_to_mask_2d",
     "poly_to_mask_and_q_2d",
@@ -931,7 +1267,12 @@ __all__ = [
     "reconstruct_flow_field",
     # Cumulant LBM
     "collide_cumulant_d2q9",
+    "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
+    "collide_planar_cumulant_d3q19",
+    "lift_d2q9_to_d3q19",
+    "marginalize_d3q19_to_d2q9",
+    "maximum_planar_plane_spread",
     # Streamline / pathline tracing
     "Streamline",
     "trace_streamlines_2d",
@@ -990,7 +1331,11 @@ __all__ = [
     "DomainDecomposition",
     "MultiGPUSolver2D",
     "MultiGPUSolver3D",
+    "MultiDeviceSolver3D",
     "halo_exchange_2d",
     "halo_exchange_3d",
     "auto_decompose",
+    # Collision physical-property audit
+    "CollisionViscosityAuditConfig",
+    "run_collision_viscosity_audit",
 ]

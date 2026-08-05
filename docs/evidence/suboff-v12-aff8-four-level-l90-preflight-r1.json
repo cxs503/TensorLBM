@@ -1,0 +1,93 @@
+{
+  "schema": "tensorlbm-suboff-aff8-four-level-preflight-evidence-v1",
+  "status": "geometry_admitted_conservative_probe_rejected_bounded_probe_queued",
+  "physical_validation": false,
+  "configuration": {
+    "hull_type": "full",
+    "root_hull_length_cells": 90.0,
+    "finest_hull_length_cells": 720.0,
+    "refinement_depth": 3,
+    "level_count": 4,
+    "force_samples_per_root_step": 8,
+    "deep_wall_margin_parent_cells": 7,
+    "deep_wake_cells_parent": 14,
+    "cv_margin_finest_cells": 8,
+    "auxiliary_cv_margins_finest_cells": [
+      4,
+      12
+    ],
+    "stress_exchange_distance_cells": 1.0,
+    "appendage_link_scheme": "continuous_parametric_bisection_v1"
+  },
+  "geometry_resolution": {
+    "diameter_cells": 84.01400233372229,
+    "solid_cells": 3190486,
+    "bare_hull_cells": 3153517,
+    "sail_only_cells": 19413,
+    "fin_only_cells": 17556,
+    "sail_max_thickness_cells": 11,
+    "vertical_fin_max_thickness_cells": 11,
+    "horizontal_fin_max_thickness_cells": 11,
+    "appendage_boundary_links": 63662,
+    "convergence_member_resolved": true,
+    "absolute_reference_resolved": true
+  },
+  "wall_exchange_preflight": {
+    "minimum_effective_exchange_distance_cells": 1.0,
+    "maximum_effective_exchange_distance_cells": 1.5,
+    "minimum_exchange_y_plus_estimate": 695.0434857278906,
+    "maximum_exchange_y_plus_estimate": 1042.5652285918359,
+    "measured_runtime_y_plus_still_required": true
+  },
+  "allocation": {
+    "allocated_cells_by_level": [
+      3645000,
+      962304,
+      3000480,
+      13752960
+    ],
+    "total_allocated_cells": 21360744,
+    "cell_increase_over_aff1_same_nominal_setup_pct": 22.823376476416662,
+    "uniform_finest_cells": 1866240000,
+    "cell_saving_fraction": 0.9885541280864197,
+    "memory_model_bytes_per_cell": 1100.0,
+    "predicted_peak_gib": 21.88311740756035,
+    "prediction_using_measured_aff1_bytes_per_cell_gib": 21.570439442999803,
+    "nominal_24gib_device_headroom_under_1100_model_gib": 1.8063357174396515,
+    "post_persistent_allocation_one_gib_reserve_gate_required": true,
+    "runtime_allocation_assessed": false
+  },
+  "runtime_probe_history": {
+    "v16_1100_bytes_per_cell": {
+      "status": "rejected_before_allocation",
+      "estimated_peak_gib": 21.88311740756035,
+      "required_reserve_gib": 1.0,
+      "live_free_gib": 21.67,
+      "reason": "The live device could not satisfy estimated peak plus the mandatory reserve. No population hierarchy was allocated."
+    },
+    "v21_bounded_memory": {
+      "pid": 1659676,
+      "waits_for_l120_probe_pid": 1657511,
+      "memory_model_bytes_per_cell": 900.0,
+      "collision_chunk_cells": 262144,
+      "wall_force_direction_chunk": 4,
+      "low_memory_wall_macroscopic": true,
+      "status": "queued_fail_closed"
+    }
+  },
+  "control_volume": {
+    "all_flux_stencils_outside_interface": true,
+    "minimum_primary_clearance_cells": 6,
+    "minimum_auxiliary_clearance_cells": 2
+  },
+  "decision": [
+    "The L720 AFF-8 voxel geometry is directly resolved by the declared diameter and appendage-thickness gates.",
+    "The appendages expose 63662 voxel boundary links. Production runs use the continuous DARPA sail/fin parameter equations with 12-step link bisection rather than the legacy q=0.5 fallback.",
+    "The original 1100 B/cell probe correctly rejected the live 21.67 GiB free-memory state before allocation. A separately identified 900 B/cell bounded-memory probe is queued from measured L90 evidence and still retains the runtime reserve gate.",
+    "AFF-8 resistance accuracy, time convergence and grid convergence remain unassessed."
+  ],
+  "source": {
+    "path": "results/suboff-nested-v12-aff8-four-level-l90-preflight.json",
+    "sha256": "e10b5e28cc5ae63abbbd43998ce1befd10f9f24632f24ef0f95f76aa4ffe04d7"
+  }
+}

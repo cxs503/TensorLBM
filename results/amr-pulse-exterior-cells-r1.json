@@ -1,0 +1,63 @@
+{
+  "schema": "tensorlbm-amr-interface-validation-v2",
+  "configuration": {
+    "shape_zyx": [
+      20,
+      24,
+      40
+    ],
+    "box": {
+      "x0": 14,
+      "x1": 28,
+      "y0": 5,
+      "y1": 19,
+      "z0": 4,
+      "z1": 16
+    },
+    "tau_coarse": 0.56,
+    "tau_fine": 0.6200000000000001,
+    "velocity_x": 0.04,
+    "perturbation": 0.001,
+    "pulse_radius": 2.5,
+    "steps": 24,
+    "device": "cpu",
+    "regularize_prolongation": false,
+    "reflux_correction_stencil": "exterior_cells",
+    "interface_filter_width": 0,
+    "interface_filter_strength": 0.0,
+    "reflux_method": "face_local_conserved_moment_flux"
+  },
+  "mesh": {
+    "allocated_cells": 42600,
+    "uniform_fine_cells": 153600,
+    "saving_fraction": 0.72265625
+  },
+  "result": {
+    "density_rms_global_amr": 3.5085413401247934e-06,
+    "density_rms_global_coarse": 4.176018137513893e-06,
+    "density_rms_refined_amr": 3.399188699404476e-06,
+    "density_rms_refined_coarse": 4.000978151452728e-06,
+    "density_rms_interface_amr": 2.660644440766191e-06,
+    "density_rms_interface_coarse": 3.6283579447626835e-06,
+    "velocity_x_rms_refined_amr": 1.2955464399055927e-06,
+    "velocity_x_rms_refined_coarse": 1.5242461586240097e-06,
+    "relative_mass_drift": 1.0172393588625148e-07,
+    "minimum_population": 0.024573450908064842,
+    "maximum_reflux_population_residual": 2.1827872842550278e-11,
+    "maximum_raw_kinetic_mismatch": 0.000133514404296875,
+    "maximum_conserved_moment_correction": 0.00025526684476062655,
+    "maximum_applied_correction_fraction": 1.1561978681129403e-06,
+    "maximum_limited_directions": 0,
+    "finite": true,
+    "refined_to_coarse_density_error_ratio": 0.8495894180702422,
+    "refined_to_coarse_velocity_x_error_ratio": 0.8499588026353485
+  },
+  "acceptance": {
+    "relative_mass_drift_target": 1e-05,
+    "maximum_reflux_population_residual": 1e-06,
+    "refined_region_improves_density": true,
+    "maximum_velocity_error_ratio": 1.05,
+    "refined_region_velocity_not_materially_worse": true,
+    "admitted": true
+  }
+}

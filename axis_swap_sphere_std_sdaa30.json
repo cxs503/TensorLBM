@@ -1,0 +1,22 @@
+{
+  "geometry": "sphere",
+  "variant": "standard",
+  "device": "sdaa:30",
+  "Re": 100.0,
+  "D": 40.0,
+  "grid": "180x180x180",
+  "u_in": 0.08,
+  "nu": 0.032,
+  "tau": 0.596,
+  "n_steps": 3000,
+  "n_solid": 33371,
+  "n_near": 4302,
+  "Cd_p_mean": 0.6376909568640985,
+  "Cd_f_mean": 0.4159500798933561,
+  "Cd_tot_mean": 1.0536410367574547,
+  "Cd_ref": 1.09,
+  "ref_name": "Henderson empirical",
+  "n_samples": 2700,
+  "finite": true,
+  "elapsed_s": 2485.4320130348206
+}

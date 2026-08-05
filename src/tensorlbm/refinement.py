@@ -64,13 +64,26 @@ class HullProximityRegion:
     margin: int = 3
 
     def expand_mask(self) -> torch.Tensor:
-        """Return boolean mask of cells to refine (coarse grid)."""
+        """Return boolean mask of cells to refine (coarse grid).
+
+        Dilates the solid mask outward by ``margin`` cells via repeated
+        3x3x3 binary erosion-free dilation (convolve with a box kernel and
+        threshold). Each pass grows the shell by one cell.
+        """
         m = self.mask.float()
         kernel = torch.ones((1, 1, 3, 3, 3), device=m.device) / 27.0
-        # Convolve to find cells near hull
+        passes = max(1, int(self.margin))
         padded = F.pad(m.unsqueeze(0).unsqueeze(0), (1, 1, 1, 1, 1, 1), mode='replicate')
         blurred = F.conv3d(padded, kernel).squeeze()
-        return blurred > 0.01
+        shell = blurred > 0.01
+        for _ in range(passes - 1):
+            padded = F.pad(
+                shell.float().unsqueeze(0).unsqueeze(0),
+                (1, 1, 1, 1, 1, 1), mode='replicate',
+            )
+            blurred = F.conv3d(padded, kernel).squeeze()
+            shell = blurred > 0.01
+        return shell
 
 
 @dataclass

@@ -1,0 +1,70 @@
+{
+  "schema": "tensorlbm-suboff-high-re-trajectory-evidence-v1",
+  "status": "numerically_healthy_physical_reynolds_rejected",
+  "physical_validation": false,
+  "case": "SUBOFF AFF-1 L90 four-level configured Re=1000000 v37",
+  "configuration": {
+    "steps": 3000,
+    "warmup_steps": 1500,
+    "statistics_window_steps": 1500,
+    "sampling_convective_times": 1.0,
+    "collision_model": "natural_kbc",
+    "population_storage_dtype": "float32",
+    "natural_kbc_compute_dtype": "storage",
+    "tau_by_level": [0.5000162, 0.5000324, 0.5000648, 0.5001296]
+  },
+  "numerical_health": {
+    "finite": true,
+    "minimum_observed_population": 0.004704877734184265,
+    "maximum_observed_speed": 0.0806918814778328,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_reflux_applied_correction_fraction_by_interface": [
+      6.58256908536714e-07,
+      1.0946349675577949e-06,
+      1.3270926046970999e-06
+    ],
+    "nested_control_volume_target_met": true,
+    "wall_y_plus_in_range_fraction": 0.914120368490165,
+    "peak_allocated_gib": 12.829380989074707,
+    "seconds_per_root_step": 3.1651153464893964
+  },
+  "force_trajectory": {
+    "mean_resistance_n": 112.04488397573394,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 28.19780775255599,
+    "mean_link_impulse_n": 17.880066774170025,
+    "mean_wall_shear_n": 94.92902283837181,
+    "auxiliary_cv_difference_pct": {
+      "4": 0.24519320091151645,
+      "12": 0.27190906139364024
+    },
+    "half_mean_drift_pct": 5.543983208587896,
+    "relative_block_range_pct": 9.16591677977729,
+    "effective_sample_count": 3.544274952298838,
+    "stationarity_target_met": false
+  },
+  "collision_viscosity": {
+    "all_levels_recover_configured_viscosity": false,
+    "relative_error_pct_by_level": [
+      65.48501089178097,
+      21.39370298589254,
+      1.821277950308136,
+      0.5892473038600005
+    ],
+    "certificate": "docs/evidence/suboff-re1m-collision-viscosity-precision-gate-r1.json"
+  },
+  "artifacts": {
+    "result": "results/amr_campaign_20260801/suboff-nested-v37-re1m-l90-3k.json",
+    "result_sha256": "e9e44871b30f13c4237c15b415a864c07944fb9381e54863e9d86615ea9f9e81",
+    "checkpoint_sha256": "4e3bca36fa7f757417221331d409845b9b0c0faa03bd829fc116c594aa0623ca",
+    "log_sha256": "9ea08cf3cbd7d27b2bdfca1b177150c43fdfe34c063367eebdb901c9209d595d"
+  },
+  "decision": {
+    "retain_as_stability_and_force_trajectory": true,
+    "accept_as_re1m_physical_member": false,
+    "accept_as_stationary_force_result": false,
+    "successor": "v40 float32 storage plus float64 Natural-KBC collision compute",
+    "successor_owner_pid": 1860482
+  },
+  "prohibition": "A configured Reynolds number with failed recovered-viscosity levels and nonstationary force statistics must not be reported as a physical Re=1M resistance result."
+}

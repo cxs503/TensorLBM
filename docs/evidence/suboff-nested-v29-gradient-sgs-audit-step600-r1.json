@@ -1,0 +1,49 @@
+{
+  "schema": "tensorlbm-nested-gradient-sgs-checkpoint-audit-v1",
+  "checkpoint": "results/amr_campaign_20260801/suboff-nested-v29-l90-vreman025-masked-2400.ckpt",
+  "step": 600,
+  "collision_model": "cumulant_vreman",
+  "sgs_model": "vreman",
+  "coefficient_name": "vreman_cv",
+  "coefficient": 0.025,
+  "gradient_boundary_treatment": "centered_interior_second_order_one_sided_edges",
+  "solid_side_velocity_treatment": "checkpoint_mask_stationary_wall_velocity",
+  "levels": [
+    {
+      "cell_count": 3645000.0,
+      "molecular_tau": 0.500162,
+      "effective_tau_minimum": 0.5001620054244995,
+      "effective_tau_mean": 0.5001627375274855,
+      "effective_tau_maximum": 0.5007501244544983,
+      "molecular_kinematic_viscosity": 5.3999999999998494e-05,
+      "mean_eddy_kinematic_viscosity": 2.4584249517604445e-07,
+      "maximum_eddy_kinematic_viscosity": 0.00019604148483276518,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.0045526387995565055,
+      "maximum_eddy_to_molecular_viscosity_ratio": 3.6303978672735306
+    },
+    {
+      "cell_count": 824832.0,
+      "molecular_tau": 0.500324,
+      "effective_tau_minimum": 0.5003240704536438,
+      "effective_tau_mean": 0.5003328235525971,
+      "effective_tau_maximum": 0.5008553266525269,
+      "molecular_kinematic_viscosity": 0.00010799999999999699,
+      "mean_eddy_kinematic_viscosity": 2.941184199041954e-06,
+      "maximum_eddy_kinematic_viscosity": 0.0001771088841756215,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.027233187028167,
+      "maximum_eddy_to_molecular_viscosity_ratio": 1.639897075700245
+    },
+    {
+      "cell_count": 2425920.0,
+      "molecular_tau": 0.500648,
+      "effective_tau_minimum": 0.500648021697998,
+      "effective_tau_mean": 0.50065788618435,
+      "effective_tau_maximum": 0.501614511013031,
+      "molecular_kinematic_viscosity": 0.00021599999999999397,
+      "mean_eddy_kinematic_viscosity": 3.2953947833499106e-06,
+      "maximum_eddy_kinematic_viscosity": 0.000322170337677008,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.015256457330324085,
+      "maximum_eddy_to_molecular_viscosity_ratio": 1.4915293410973007
+    }
+  ]
+}

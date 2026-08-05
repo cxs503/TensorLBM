@@ -33,9 +33,19 @@ from .d3q19 import equilibrium3d, macroscopic3d, C as C3D, OPPOSITE as OPP, W as
 from .solver3d import stream3d, correct_mass3d
 from .boundaries3d import far_field_bc_3d
 from .cg_advanced_collision import collide_cg_kbc_3d, collide_cg_cumulant_3d, collide_cg_cascaded_3d
-from .free_surface_lbm import free_surface_step, init_flags_from_fill, GAS, LIQUID, INTERFACE
+from .free_surface_lbm import (
+    free_surface_step,
+    init_flags_from_fill,
+    init_mass_from_fill,
+    GAS,
+    LIQUID,
+    INTERFACE,
+)
+from .core.d3q19_stencil import assert_no_direct_phase_links
 from .ship_cad import build_hull_mask, ShipHullType
-from .suboff_resistance import _ittc57_friction_coefficient, _voxel_wetted_area
+from .hydrodynamics import ittc57_friction_coefficient, voxel_wetted_area
+from .wall_function_admission import WallFunctionRunRequest, require_wall_function_run
+from .wall_function_contract import WallFunctionCapability
 
 KAPPA = 0.41
 B_CONST = 5.0
@@ -69,6 +79,23 @@ class HullFreeSurfaceV2Config:
     use_free_surface: bool = True   # False = double-body (viscous only)
     collision_model: str = "kbc"  # "kbc", "cumulant", "cascaded"
     form_factor: float = 1.15       # (1+k) for ITTC reference
+
+    def __post_init__(self) -> None:
+        if self.use_wall_function:
+            # Cold-path admission: this D3Q19 free-surface hull path uses a
+            # CG-KBC/cumulant/cascaded collision and (optionally) a Körner
+            # free-surface step.  Neither tuple is in the audited
+            # D3Q19/MRT-Smagorinsky/single-phase matrix, so public enabling
+            # fails closed before the solver loop.
+            require_wall_function_run(WallFunctionRunRequest(
+                capability=WallFunctionCapability.LOG_LAW_BODY_FORCE,
+                lattice="D3Q19",
+                physics="single_phase_incompressible",
+                collision=self.collision_model.upper(),
+                geometry="static_voxel_solid",
+                backend="torch",
+                free_surface=self.use_free_surface,
+            ))
 
 
 def _build_hull(cfg: HullFreeSurfaceV2Config, device: torch.device):
@@ -185,6 +212,24 @@ def _wave_resistance(f_r, f_b, water_mask, u_in, nx, ny, nz, S, device):
     return wave_amp
 
 
+def _record_topology_safety(f, fill, flags, mass, telemetry):
+    """Fail closed on caller-visible five-state topology safety only.
+
+    This intentionally does not interpret runtime-ledger data as a physical
+    pass.  It checks the returned fields and all 18 moving D3Q19 links before
+    subsequent caller logic observes the state.
+    """
+    finite = bool(
+        torch.isfinite(f).all()
+        and torch.isfinite(fill).all()
+        and torch.isfinite(mass).all()
+    )
+    if not finite:
+        raise RuntimeError("free-surface topology safety fail-closed: non-finite f/fill/mass")
+    assert_no_direct_phase_links(flags, LIQUID, GAS, "direct LIQUID-GAS D3Q19")
+    telemetry.append({"step": len(telemetry) + 1, "finite": True, "directLG": 0})
+
+
 def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
     """Run engineering free-surface ship hull resistance."""
     device = torch.device(cfg.device)
@@ -195,7 +240,7 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
     # Build hull
     solid, fill_height = _build_hull(cfg, device)
     fluid = ~solid
-    S = _voxel_wetted_area(solid, 1.0)
+    S = voxel_wetted_area(solid, dx=1.0)
     dyn_p_S = 0.5 * 1.0 * u_in**2 * S
 
     # Water mask
@@ -217,9 +262,14 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
         fill = torch.where(water_mask, torch.ones(nz, ny, nx, device=device), torch.zeros(nz, ny, nx, device=device))
         fill = fill.float()
         flags = init_flags_from_fill(fill, solid)
+        # The envelope is an initialization-only repair.  Thereafter flags and
+        # mass are solver-returned state and must never be reconstructed from
+        # fill in this caller.
+        mass = init_mass_from_fill(fill, flags, rho_liquid=1.0)
     else:
         fill = None
         flags = None
+        mass = None
 
     # Lattice parameters
     hull_length = max(6.0, 0.35 * nx)
@@ -240,7 +290,7 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
     opp = OPP.to(device)
 
     # ITTC reference
-    cf_ittc = _ittc57_friction_coefficient(cfg.re)
+    cf_ittc = ittc57_friction_coefficient(cfg.re)
     ct_ref = cf_ittc * cfg.form_factor
 
     print(f"=== Free-Surface {cfg.hull_type} ===", flush=True)
@@ -280,6 +330,7 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
     fric_list = []
     pres_list = []
     wave_list = []
+    topology_safety = []
     df, dp = 0.0, 0.0  # init for wall function
     t0 = __import__('time').time()
 
@@ -288,8 +339,9 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
         gz = g_lat if cfg.use_free_surface else 0.0
         if cfg.use_free_surface:
             # Free-surface: Körner model (sharp interface via fill function)
-            f_r, fill, flags = free_surface_step(
+            f_r, fill, flags, mass, _ = free_surface_step(
                 f_r, fill, flags, solid,
+                mass=mass,
                 tau=tau, gz=gz,
                 rho_liquid=1.0, rho_gas=0.001,
             )
@@ -323,16 +375,16 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
             r1 = torch.ones(nz2, ny2, nx2, dtype=f_r.dtype, device=f_r.device)
             feq = equilibrium3d(r1, torch.full_like(r1, u_in), torch.zeros_like(r1), torch.zeros_like(r1))
             f_r = f_r.clone()
-            # Inlet: set to equilibrium with u_in, restore water level
+            # This legacy far-field reset only updates populations.  It must
+            # not rewrite fill: fill/mass/flags are one coupled Körner state
+            # and are returned unchanged to the next solver step.
             f_r[:,:,:,0] = feq[:,:,:,0]
-            fill[:,:,0] = torch.where(water_mask[:,:,0], 1.0, 0.0)
             # Outlet: convective
             f_r[:,:,:,-1] = f_r[:,:,:,-2]
             # Side walls
             f_r[:,0,:,:] = feq[:,0,:,:]; f_r[:,-1,:,:] = feq[:,-1,:,:]
             f_r[:,:,0,:] = feq[:,:,0,:]; f_r[:,:,-1,:] = feq[:,:,-1,:]
-            # Reset flags at boundaries
-            flags = init_flags_from_fill(fill, solid)
+            _record_topology_safety(f_r, fill, flags, mass, topology_safety)
         else:
             # Double-body: bounce-back + far-field
             opp = OPP.to(device)
@@ -411,4 +463,10 @@ def run_hull_free_surface_v2(cfg: HullFreeSurfaceV2Config) -> dict:
         print(f"Cv (viscous)  = {cv:.5f} (ref={ct_ref:.5f}, ratio={cv/ct_ref:.2f}x)", flush=True)
     print(f"Time: {dt:.1f}s ({dt/cfg.n_steps*1000:.0f}ms/step)", flush=True)
 
-    return {"cf": cf, "ct_ref": ct_ref, "config": asdict(cfg)}
+    return {
+        "cf": cf,
+        "ct_ref": ct_ref,
+        "config": asdict(cfg),
+        "topology_safety": topology_safety,
+        "topology_safety_status": "topology safety only" if cfg.use_free_surface else "not applicable",
+    }
