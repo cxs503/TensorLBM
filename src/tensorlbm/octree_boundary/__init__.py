@@ -1,0 +1,98 @@
+"""Octree boundary layer of the hybrid AMR architecture.
+
+P1 geometry + P2 stepping + P3 body-fitted physics:
+
+* P1 (``geometry.py`` / ``topology.py`` / ``qfield.py``): shell cell mask,
+  Morton-encoded body-fitted octree leaves (depth 1-2, 2:1 balanced),
+  neighbour table with explicit cross-level donor/fanout registry,
+  interface-link registry, per-leaf BFL q-field and leaf statistics.
+* P2 (``stepping.py``): shell advance, time-lerped ghost fill, gather
+  streaming, restriction + kinetic-flux reflux ledger.
+* P3 (``bfl.py`` / ``force.py``): gather-based Bouzidi BFL on the leaves,
+  momentum-exchange force with per-leaf substep weights, and the
+  control-volume cross-validation with a fail-closed clearance gate.
+
+See ``docs/octree-boundary-design.md`` for the contract.
+"""
+from tensorlbm.octree_boundary.geometry import (
+    DOMAIN_OUT,
+    FANOUT,
+    SHELL_OUTSIDE,
+    SOLID,
+    OctreeGrid,
+    analytic_shell_volume,
+    build_octree_shell,
+    build_shell_cell_mask,
+    cell_saving_report,
+    morton_child,
+    morton_decode,
+    morton_decode_batch,
+    morton_encode,
+    morton_encode_batch,
+    morton_parent,
+    sphere_distance_field,
+)
+from tensorlbm.octree_boundary.qfield import (
+    compute_leaf_q_field,
+    compute_q_sphere_at_points,
+)
+from tensorlbm.octree_boundary.topology import (
+    build_interface_registry,
+    build_neighbor_table,
+    check_balance_21,
+    check_interface_links,
+    check_neighbor_symmetry,
+    check_no_dangling,
+    run_topology_checks,
+)
+from tensorlbm.octree_boundary.bfl import (
+    bfl_apply_gather,
+    bfl_ramp_wall_velocity,
+    leaf_force_weights,
+    leaf_macroscopic,
+    upstream_donor_table,
+)
+from tensorlbm.octree_boundary.force import (
+    ShellForceLedger,
+    build_shell_control_volume,
+    convert_leaf_force_to_l1,
+    substep_force_weights,
+)
+
+__all__ = [
+    "OctreeGrid",
+    "build_octree_shell",
+    "build_shell_cell_mask",
+    "sphere_distance_field",
+    "analytic_shell_volume",
+    "cell_saving_report",
+    "morton_encode",
+    "morton_decode",
+    "morton_encode_batch",
+    "morton_decode_batch",
+    "morton_parent",
+    "morton_child",
+    "compute_q_sphere_at_points",
+    "compute_leaf_q_field",
+    "build_neighbor_table",
+    "build_interface_registry",
+    "check_neighbor_symmetry",
+    "check_balance_21",
+    "check_no_dangling",
+    "check_interface_links",
+    "run_topology_checks",
+    "bfl_apply_gather",
+    "bfl_ramp_wall_velocity",
+    "leaf_force_weights",
+    "leaf_macroscopic",
+    "upstream_donor_table",
+    "ShellForceLedger",
+    "build_shell_control_volume",
+    "convert_leaf_force_to_l1",
+    "substep_force_weights",
+    "SHELL_OUTSIDE",
+    "SOLID",
+    "DOMAIN_OUT",
+    "FANOUT",
+]
+
