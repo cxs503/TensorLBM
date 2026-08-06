@@ -129,6 +129,7 @@ def bfl_apply_gather(
     wall_density: torch.Tensor | None = None,
     force_weights: torch.Tensor | None = None,
     return_force: bool = False,
+    q_min: float | None = None,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Gather-based Bouzidi BFL on the octree shell leaves.
 
@@ -179,6 +180,11 @@ def bfl_apply_gather(
         od = int(opp[d].item())
         idx = torch.nonzero(m, as_tuple=False).squeeze(1)
         qq = q_field[d, idx].to(torch.float64)
+        if q_min is not None:
+            # High-Re safeguard: clamp tiny q to avoid the 1/(2q) divergence in
+            # the quadratic branch. q_min=0 disables (keeps validated low-Re
+            # results bit-identical).
+            qq = torch.clamp(qq, min=float(q_min))
         fp_d = f_prev[d, idx].to(torch.float64)
         fp_opp = f_prev[od, idx].to(torch.float64)
 
@@ -232,7 +238,6 @@ def bfl_apply_gather(
             + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
         )
         f_bc = torch.where(lin, f_bc_lin, f_bc_quad)
-
         if wall_velocity is not None:
             uwx, uwy, uwz = wall_velocity
             c_d = c_vec[d]

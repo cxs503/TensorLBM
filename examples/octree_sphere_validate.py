@@ -112,7 +112,10 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--wall-margin", type=int, default=8)      # L1 box padding
     p.add_argument("--shell-margin", type=int, default=6)     # L1 shell margin
     p.add_argument("--wake-cells", type=int, default=32)      # L1 wake extent
-    p.add_argument("--bl-thickness", type=float, default=3.0)  # shell band
+    p.add_argument("--bl-thickness", type=float, default=None,
+                   help="Shell band thickness in L1 cells. Default None = "
+                        "R/2 (scaled with sphere radius; validated R6->3, "
+                        "R8->4 giving best accuracy).")
     p.add_argument("--d-max", type=int, default=1)
     p.add_argument("--collision", choices=("cumulant", "cascaded"),
                    default=None,
@@ -121,8 +124,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--les-model", choices=("wale", "smagorinsky"), default="wale")
     p.add_argument("--cs-smag", type=float, default=0.05)
     p.add_argument("--cw-wale", type=float, default=0.5)
+    p.add_argument(
+        "--q-min", type=float, default=None,
+        help="Clamp BFL q to this minimum (high-Re safeguard vs 1/(2q) "
+             "divergence). None = disabled (validated low-Re default).",
+    )
     p.add_argument("--ghost-interpolation", choices=("injection", "trilinear"),
                    default="injection")
+    p.add_argument("--ghost-fallback", choices=("on", "off"), default="on",
+                   help="solid-host fallback in build_ghost_plan (off = "
+                        "diagnostic: trilinear sample over frozen-solid cells)")
     p.add_argument("--report-interval", type=int, default=100)
     p.add_argument("--statistics-window-steps", type=int, default=0)
     p.add_argument("--interface-shift", type=float, default=0.0,
@@ -203,9 +214,12 @@ def run_case(
     # is evaluated at the with-ghost centre and sits one cell off).
     phys_center = (float(fc1[0] - GHOST), float(fc1[1] - GHOST), float(fc1[2] - GHOST))
     radius_l1 = radius1
+    bl_cells = args.bl_thickness if args.bl_thickness is not None else (
+        max(2.0, round(radius_l1 / 2.0))
+    )
     octree = build_octree_shell(
         s1, phys_center, radius_l1,
-        bl_thickness_cells=args.bl_thickness, d_max=args.d_max,
+        bl_thickness_cells=bl_cells, d_max=args.d_max,
         transition=1, device=device,
     )
     shell_band = octree.meta["delta_mask"]
@@ -214,7 +228,9 @@ def run_case(
         :, host[:, 0] + GHOST, host[:, 1] + GHOST, host[:, 2] + GHOST
     ].clone()
     leaf_weights = leaf_force_weights(octree)
-    ghost_plan = build_ghost_plan(octree, s1)
+    ghost_plan = build_ghost_plan(
+        octree, s1, solid_fallback=(args.ghost_fallback == "on"),
+    )
     dx_leaf = 2.0 ** (-octree.d_max)
     dt_leaf = dx_leaf  # convective scaling
 
@@ -305,6 +321,7 @@ def run_case(
             ghost_plan=ghost_plan_, ghost_vals=ghost_vals,
             wall_velocity=(uwx, uwy, uwz), wall_density=rho_w,
             force_weights=leaf_weights, return_force=True,
+            q_min=args.q_min,
         )
 
     def joint_mass() -> float:
