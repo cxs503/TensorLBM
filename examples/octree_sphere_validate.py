@@ -115,7 +115,12 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--bl-thickness", type=float, default=3.0)  # shell band
     p.add_argument("--d-max", type=int, default=1)
     p.add_argument("--collision", choices=("cumulant", "cascaded"),
-                   default="cumulant")
+                   default=None,
+                   help="Explicit collision (no LES). Omit to use LES dispatch "
+                        "(--les-model) for high-Re runs.")
+    p.add_argument("--les-model", choices=("wale", "smagorinsky"), default="wale")
+    p.add_argument("--cs-smag", type=float, default=0.05)
+    p.add_argument("--cw-wale", type=float, default=0.5)
     p.add_argument("--ghost-interpolation", choices=("injection", "trilinear"),
                    default="injection")
     p.add_argument("--report-interval", type=int, default=100)
@@ -130,10 +135,19 @@ def parser() -> argparse.ArgumentParser:
     return p
 
 
-def _collide_dispatch(f: torch.Tensor, tau: float, collision: str) -> torch.Tensor:
+def _collide_dispatch(f: torch.Tensor, tau: float, collision: str,
+                      les_model: str = "wale", cs_smag: float = 0.05,
+                      cw_wale: float = 0.5) -> torch.Tensor:
     if collision == "cascaded":
         return collide_cascaded_d3q19(f, tau)
-    return collide_cumulant_d3q19(f, tau, C_s=0.0)
+    if collision == "cumulant":
+        return collide_cumulant_d3q19(f, tau, C_s=0.0)
+    # LES dispatch (collision is None)
+    if les_model == "wale":
+        from tensorlbm.turbulence import collide_wale_mrt3d
+        return collide_wale_mrt3d(f, tau, C_w=cw_wale)
+    from tensorlbm.turbulence import collide_smagorinsky_mrt3d
+    return collide_smagorinsky_mrt3d(f, tau, C_s=cs_smag)
 
 
 def _schiller_naumann(reynolds: float) -> float:
@@ -260,7 +274,11 @@ def run_case(
             return AMRAdvanceResult(out, post_collision)
         if level == 1:
             before = f
-            collided = _collide_dispatch(f, tau, args.collision)
+            collided = _collide_dispatch(
+            f, tau, args.collision,
+            les_model=args.les_model, cs_smag=args.cs_smag,
+            cw_wale=args.cw_wale,
+        )
             post = torch.where(l1_solid_q, before, collided)
             out = stream3d(post)
             l1_posts.append(post[:, GHOST:-GHOST, GHOST:-GHOST, GHOST:-GHOST])
@@ -270,7 +288,11 @@ def run_case(
     def shell_advance(
         f: torch.Tensor, tau: float, level: int, substep: int,
     ) -> AMRAdvanceResult:
-        collided = _collide_dispatch(f.view(Q, 1, 1, -1), tau, args.collision)
+        collided = _collide_dispatch(
+            f.view(Q, 1, 1, -1), tau, args.collision,
+            les_model=args.les_model, cs_smag=args.cs_smag,
+            cw_wale=args.cw_wale,
+        )
         post = collided.view_as(f)
         return AMRAdvanceResult(post.clone(), post)
 

@@ -1,0 +1,20 @@
+{
+  "schema": "tensorlbm-octree-p3-control-r1",
+  "status": "measured_candidate",
+  "physical_validation": false,
+  "cases": {
+    "uniform_r6": {
+      "cd": 1.2705,
+      "err_pct": 16.4,
+      "steps": 8000,
+      "drift_pct": 0.006
+    },
+    "octree_r6": {
+      "cd": 1.2432,
+      "err_pct": 13.9,
+      "steps": 8000,
+      "drift_pct": 0.0
+    }
+  },
+  "conclusion": "Octree R6 (1.2432) beats uniform R6 (1.2705) by 2.1% at 94% memory saving"
+}
