@@ -160,6 +160,8 @@ class ShellGhostPlan:
 
 def build_ghost_plan(
     octree: OctreeGrid, l1_shape: tuple[int, int, int],
+    *,
+    solid_fallback: bool = True,
 ) -> ShellGhostPlan:
     """Build the ghost fill donor stencil for an octree shell.
 
@@ -167,6 +169,12 @@ def build_ghost_plan(
     (``(coords + 0.5) / 2^level``), so the sample positions are exact dyadic
     rationals and the trilinear weights are exact — matching the block AMR's
     ghost sampling bit for bit on the plane-degenerate topology.
+
+    ``solid_fallback``: when a ghost sample position falls inside an L1-solid
+    cell (the surface-straddling ring), replace the stencil with the leaf's
+    own covered host cell (``True``, the production behaviour) or keep the
+    trilinear sample over the frozen-solid cell (``False``, diagnostic mode
+    for the R8 drag-deficit investigation).
     """
     nz, ny, nx = l1_shape
     device = octree.leaf_morton.device
@@ -195,6 +203,14 @@ def build_ghost_plan(
     centers64 = (
         coords.to(torch.float64) + 0.5
     ) / (2.0 ** octree.leaf_level.to(torch.float64))[:, None]   # (n, 3) x,y,z
+    # The ghost cell sits at the SHELL_OUTSIDE neighbour position, i.e. the
+    # cell adjacent to leaf i along the *link* direction d_link
+    # (``x_i + c_vec[d_link] * dx``), and supplies the incoming population of
+    # direction ``opp[d_link]`` that streams from there into the leaf.  The
+    # position must use ``c_vec[d_link]`` (NOT ``c_vec[direction]`` — that is
+    # the mirrored, shell-interior point whose sampling decouples the shell
+    # boundary leaves from the exterior L1 flow; see the stream_gather /
+    # bfl_apply_gather donor conventions).
     p_xyz = centers64[leaf] + c_vec[d_link].to(torch.float64) * dx[:, None]
     p = p_xyz[:, [2, 1, 0]]                             # (z, y, x) world
     continuous = p - 0.5                                # coarse-index coords
@@ -206,6 +222,34 @@ def build_ghost_plan(
     lo = lo.clamp(torch.zeros_like(lo), bounds - 2)
     hi = hi.clamp(torch.ones_like(hi), bounds - 1)
     w = (continuous - lo.to(continuous.dtype)).clamp(0.0, 1.0)
+    if octree._solid is not None and bool(
+        (octree._solid[p[:, 0].floor().to(torch.int64).clamp(0, nz - 1),
+                       p[:, 1].floor().to(torch.int64).clamp(0, ny - 1),
+                       p[:, 2].floor().to(torch.int64).clamp(0, nx - 1)]).any()
+    ) and solid_fallback:
+        # Solid-host fallback: a ghost position can be fluid at leaf
+        # resolution yet fall inside an L1-solid cell (the surface-straddling
+        # ring — L1 cells whose centre is inside the sphere but whose outer
+        # part is outside).  The L1 field there is the frozen-collision core,
+        # not a fluid state; sample the leaf's own (covered) host cell
+        # instead, which holds the restricted leaf state — the same local
+        # band fluid the old mirror sampling happened to hit for these links.
+        cell_p = torch.stack((
+            p[:, 0].floor().to(torch.int64).clamp(0, nz - 1),
+            p[:, 1].floor().to(torch.int64).clamp(0, ny - 1),
+            p[:, 2].floor().to(torch.int64).clamp(0, nx - 1),
+        ), dim=1)
+        solid_host = octree._solid[
+            cell_p[:, 0], cell_p[:, 1], cell_p[:, 2],
+        ]
+        if bool(solid_host.any()):
+            lo = lo.clone()
+            hi = hi.clone()
+            w = w.clone()
+            host = octree.leaf_host_cell[leaf]          # (n, 3) (z, y, x)
+            lo[solid_host] = host[solid_host]
+            hi[solid_host] = host[solid_host]
+            w[solid_host] = 0.0
     volume = 2.0 ** (-3.0 * level_i.to(torch.float64))
     slot[direction, leaf] = torch.arange(
         n_link, dtype=torch.int64, device=device,
@@ -496,6 +540,7 @@ def step_octree_shell(
     *,
     tau_coarse: float,
     tau_fine: float | None = None,
+    tau_shell_override: float | None = None,
     l1_post: torch.Tensor | list[torch.Tensor] | None = None,
     shell_level: int = 1,
     reflux: bool = True,
@@ -522,6 +567,10 @@ def step_octree_shell(
         tau_coarse: L1 relaxation time (convective chain is derived from it).
         tau_fine: shell relaxation time; must equal
             ``convective_refined_tau(tau_coarse)`` when given.
+        tau_shell_override: diagnostic knob — force the shell's relaxation
+            time to this value (instead of the convective chain's fine value)
+            while keeping the chain's coarse value for the ghost-fill and
+            restriction rescales.  ``None`` = production convective chain.
         l1_post: L1 post-collision state (required when ``reflux=True``) used
             for the coarse-side transfer observation.
         shell_level: hierarchy level index passed to ``advance`` for the shell.
@@ -563,6 +612,9 @@ def step_octree_shell(
     taus = _tau_chain(tau_coarse, octree.d_max)
     if tau_fine is not None and abs(tau_fine - taus[1]) > 1.0e-12:
         raise ValueError("dynamic tau_fine must preserve convective scaling")
+    if tau_shell_override is not None:
+        taus = list(taus)
+        taus[1] = float(tau_shell_override)
     tau_shell = taus[1]
     if reflux and l1_post is None:
         raise TypeError(
