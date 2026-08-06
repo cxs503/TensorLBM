@@ -102,6 +102,7 @@ def morton_encode_batch(
     """
     level = torch.as_tensor(level, dtype=torch.int64)
     coords = torch.as_tensor(coords, dtype=torch.int64)
+    level = level.to(device=coords.device)
     n = coords.shape[0]
     x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
     width = int(level.max().item()) + k
@@ -539,7 +540,7 @@ def build_octree_shell(
         parts_centers.append(l2_centers)
 
     morton = torch.cat(parts_morton)
-    level = torch.cat(parts_level)
+    level = torch.cat(parts_level).to(device=morton.device)
     coords = torch.cat(parts_coords)
     centers64 = torch.cat(parts_centers)
     order = torch.argsort(morton, stable=True)

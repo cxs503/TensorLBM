@@ -115,6 +115,7 @@ class ShellForceLedger:
         control_volume: torch.Tensor,
         *,
         solid: torch.Tensor | None = None,
+        wall_mom_l1: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Observe the control-volume force once per root step (L1 units).
 
@@ -125,6 +126,24 @@ class ShellForceLedger:
         advances more than one substep per root step (the hybrid hierarchy
         advances ``ratio`` substeps), otherwise the import is undercounted
         by the missing substeps and the force is biased low.
+
+        **P3 CV fix (momentum decomposition, see ``scripts/diag_cv_components``
+        / ``scripts/diag_momentum_audit``):** ``f_new`` must be the live L1
+        tensor snapshot taken after the block's own advance and **before**
+        :func:`tensorlbm.octree_boundary.stepping.step_octree_shell` rewrites
+        it in place.  The shell's restriction and reflux corrections are the
+        internal bookkeeping that projects the leaf state (which already
+        carries the wall force) back onto the L1 grid — counting their
+        in-place momentum deltas as fluid momentum change double-counts the
+        wall transfer and overestimates the CV drag.  The wall force itself
+        is re-added explicitly via ``wall_mom_l1`` (the per-root-step leaf
+        MEM force in L1 units, :meth:`wall_momentum_l1`), which is the
+        physical momentum the shell injects into the L1 balance::
+
+            F_cv = import - dP_L1advance + wall_mom_l1
+
+        ``wall_mom_l1`` defaults to ``None`` (legacy behaviour: no explicit
+        wall term, ``f_new`` taken as-is).
         """
         if isinstance(f_post_collision, (list, tuple)):
             if len(f_post_collision) == 0:
@@ -136,9 +155,34 @@ class ShellForceLedger:
         result = observe_control_volume_force(
             f_old, f_new, f_post_collision, control_volume, solid=solid,
         )
-        self.cv_force = result.force_on_body.to(self._accum.dtype)
+        force = result.force_on_body
+        if wall_mom_l1 is not None:
+            w = torch.as_tensor(
+                wall_mom_l1, dtype=self._accum.dtype, device=self._accum.device,
+            )
+            if w.shape != (3,):
+                raise ValueError(f"wall_mom_l1 must be (3,), got {tuple(w.shape)}")
+            if not bool(torch.isfinite(w).all()):
+                raise FloatingPointError("non-finite wall_mom_l1")
+            force = force + w
+        self.cv_force = force.to(self._accum.dtype)
         self.cv_samples += 1
         return self.cv_force
+
+    def wall_momentum_l1(self, dx_leaf: float, dt_leaf: float) -> torch.Tensor:
+        """Per-root-step leaf wall force converted to L1 lattice units.
+
+        This is the momentum the shell wall injects into the L1 control
+        volume per root step (``mem_force`` is the substep-averaged MEM
+        force; the convective conversion
+        :func:`convert_leaf_force_to_l1` maps it into L1 units with the
+        same dynamic-area normalisation the CV uses, so ``Cd_cv == Cd_mem``
+        when the two closures agree).  Requires exactly ``2^d`` substeps
+        (see :attr:`mem_force`).
+        """
+        return convert_leaf_force_to_l1(
+            self.mem_force, dx_leaf, dt_leaf,
+        )
 
     def deviation_pct(
         self,

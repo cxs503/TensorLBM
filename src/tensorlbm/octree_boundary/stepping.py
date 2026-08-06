@@ -268,6 +268,17 @@ def fill_ghost(
     scale = tau_f / (
         (2.0 ** lev.to(torch.float64)) * taus[0]
     )
+    # The ghost cell is a virtual leaf-lattice neighbour, and stream_gather
+    # pulls *post-collision* populations from real leaf neighbours; the ghost
+    # must therefore supply its post-collision state too.  The rescaled
+    # sampled value is the ghost's pre-collision state, so relax its neq with
+    # the leaf's own relaxation time before injection.  Without this the
+    # interface over-injects the coarse neq by tau_f/(tau_f - 1) (~3.5x at
+    # tau_f = 0.7) and a spurious stress layer forms at the AMR interface
+    # (driven-Couette ux error ~1.2e-3 — see scripts/octree_analytic_check.py).
+    # Pure-equilibrium fields (neq = 0) are unaffected, so the P2 plane-shell
+    # equivalence to StaticBlockAMR3D is preserved bit for bit.
+    scale = scale * (1.0 - 1.0 / tau_f)
     return _rescale_nonequilibrium_per_cell(sampled, scale)
 
 
