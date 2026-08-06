@@ -23,6 +23,19 @@ step on the L1 block with a fail-closed clearance gate (the CV surface must
 not intersect the shell interface, the AMR interface filter shell or the
 body).
 
+P3 CV closure (``scripts/diag_cv_components.py`` / ``diag_momentum_audit.py``):
+the CV momentum change is sampled on a snapshot of the live L1 tensor taken
+right after the block's own advance and *before* ``step_octree_shell``'s
+in-place restriction/reflux rewrites, and the per-root-step leaf wall force
+(MEM, converted to L1 units) is re-added explicitly:
+
+``F_cv = import - dP_L1advance + wall_mom_l1``
+
+Counting the restriction + reflux deltas as fluid momentum change
+double-counts the wall transfer and overestimates Cd_cv (historically
+Cd_cv ~ 5-9 vs Cd_mem ~ 1.3); dropping them without the wall term reverses
+the sign.  The two closures then agree to the acceptance tolerance.
+
 Acceptance (design doc §4, P3):
   * Cd vs Schiller-Naumann (Re=100 -> 1.0917) within 2%;
   * MEM (leaf-lattice, substep-averaged) vs CV (L1 lattice) within 5%;
@@ -285,10 +298,27 @@ def run_case(
     joint_mass0 = joint_mass()
 
     for current_step in range(1, args.steps + 1):
+        # StaticBlockAMR3D.step() rebinds `fine_f` to a fresh tensor after
+        # each advance (streaming/collision return new tensors), so the
+        # cached ``l1_fine`` reference goes stale after the first root step.
+        # Re-fetch the live tensor before and after the step — otherwise the
+        # shell stepping, restriction/reflux and the CV observation all
+        # operate on a frozen pre-advance state and the wall never couples
+        # into the L1 flow field (CV force ~ 0, flow through the sphere).
+        l1_fine = amr.interfaces[0].fine_f
         l1_old_phys = l1_fine[:, GHOST:-GHOST, GHOST:-GHOST, GHOST:-GHOST].clone()
         l1_posts.clear()
         ledgers = amr.step(advance)
+        l1_fine = amr.interfaces[0].fine_f
         l1_f_phys = l1_fine[:, GHOST:-GHOST, GHOST:-GHOST, GHOST:-GHOST]
+        # P3 CV fix (scripts/diag_cv_components.py): snapshot the live L1
+        # tensor right after the block's own advance and BEFORE
+        # step_octree_shell rewrites it in place (restriction + reflux).
+        # The CV momentum change must exclude those in-place projection
+        # deltas (they double-count the wall transfer); the wall momentum is
+        # re-added explicitly from the force ledger (wall_momentum_l1), so
+        #   F_cv = import - dP_L1advance + wall_mom_l1.
+        l1_pre_shell = l1_f_phys.clone()
         shell_ledger = step_octree_shell(
             octree, shell_advance, l1_old_phys, l1_f_phys,
             tau_coarse=config1.tau_fine,
@@ -300,7 +330,8 @@ def run_case(
             max_reflux_residual, abs(shell_ledger.mass_residual),
         )
         ledger.observe_cv_force(
-            l1_old_phys, l1_f_phys, l1_posts, cv, solid=l1_solid_phys,
+            l1_old_phys, l1_pre_shell, l1_posts, cv, solid=l1_solid_phys,
+            wall_mom_l1=ledger.wall_momentum_l1(dx_leaf, dt_leaf),
         )
         if current_step > args.warmup_steps:
             mem_samples.append(float(ledger.mem_force[0].item()))
