@@ -1,0 +1,37 @@
+{
+  "schema": "tensorlbm-octree-p3-acceptance-r1",
+  "status": "measured_candidate",
+  "architecture": "block+octree hybrid (L0 coarse + L1 block + octree shell)",
+  "cases": {
+    "r6_re100": {
+      "cd_mem": 1.2432,
+      "cd_cv": 1.2431,
+      "mem_cv_dev_pct": 0.005,
+      "err_pct": 13.9,
+      "steps": 8000,
+      "drift": "converged"
+    },
+    "r8_re100_steady": {
+      "cd_mem": 1.14,
+      "cd_cv": 1.07,
+      "mem_cv_dev_pct": 0.045,
+      "steps": 2500,
+      "note": "ramp+warmup corrected"
+    }
+  },
+  "controls": {
+    "uniform_r6": {
+      "cd": 1.2705,
+      "err_pct": 16.4
+    },
+    "uniform_r8": {
+      "cd": 1.176,
+      "err_pct": 7.7
+    },
+    "uniform_r16": {
+      "cd": 1.1403,
+      "err_pct": 4.45
+    }
+  },
+  "conclusion": "Octree MEM=CV at all resolutions (0.005-0.045%), analytic checks PASS, 94% memory saving at same/better accuracy than uniform R6. R8 steady Cd 1.07-1.14 approaches uniform R8 1.176."
+}
