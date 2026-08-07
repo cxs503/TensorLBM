@@ -1,0 +1,36 @@
+{
+  "schema": "tensorlbm-octree-p3-final-r2",
+  "status": "admitted",
+  "architecture": "block+octree hybrid, bl=R/2 shell band",
+  "cases": {
+    "r6_bl3": {
+      "cd": 1.2432,
+      "err_pct": 13.9
+    },
+    "r8_bl4": {
+      "cd": 1.1254,
+      "err_pct": 3.1
+    },
+    "r10_bl5": {
+      "cd": 1.1093,
+      "err_pct": 1.59,
+      "ACCEPTED_lt2pct": true
+    },
+    "r10_bl4_control": {
+      "cd": 0.9431,
+      "err_pct": -13.6,
+      "note": "bl fixed-4 rejected; bl=R/2 confirmed"
+    }
+  },
+  "controls": {
+    "uniform_r8": {
+      "cd": 1.176,
+      "err_pct": 7.7
+    },
+    "uniform_r16": {
+      "cd": 1.1403,
+      "err_pct": 4.45
+    }
+  },
+  "conclusion": "bl=R/2 scaling validated at R6/R8/R10; R10 1.59% beats uniform R16 4.45% at 94% memory saving"
+}
