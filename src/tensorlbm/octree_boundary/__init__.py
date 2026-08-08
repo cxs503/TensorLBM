@@ -58,6 +58,26 @@ from tensorlbm.octree_boundary.force import (
     convert_leaf_force_to_l1,
     substep_force_weights,
 )
+from tensorlbm.octree_boundary.sharding import (
+    OctreeLeafShard,
+    refresh_octree_f_leaf,
+    shard_octree_shell,
+    shards_all_finite,
+    shards_f_leaf,
+    split_leaf_bounds,
+)
+from tensorlbm.octree_boundary.stepping import (
+    ShellGhostPlan,
+    build_ghost_plan,
+    build_plane_shell,
+    build_shell_coarse_links,
+    fill_ghost,
+    observe_shell_interface_transfer,
+    restrict_shell_to_block,
+    step_octree_shell,
+    step_octree_shell_sharded,
+    stream_gather,
+)
 
 __all__ = [
     "OctreeGrid",
@@ -90,9 +110,26 @@ __all__ = [
     "build_shell_control_volume",
     "convert_leaf_force_to_l1",
     "substep_force_weights",
+    "OctreeLeafShard",
+    "refresh_octree_f_leaf",
+    "shard_octree_shell",
+    "shards_all_finite",
+    "shards_f_leaf",
+    "split_leaf_bounds",
+    "ShellGhostPlan",
+    "build_ghost_plan",
+    "build_plane_shell",
+    "build_shell_coarse_links",
+    "fill_ghost",
+    "observe_shell_interface_transfer",
+    "restrict_shell_to_block",
+    "step_octree_shell",
+    "step_octree_shell_sharded",
+    "stream_gather",
     "SHELL_OUTSIDE",
     "SOLID",
     "DOMAIN_OUT",
     "FANOUT",
+    "REMOTE",
 ]
 

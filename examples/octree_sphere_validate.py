@@ -89,7 +89,7 @@ from tensorlbm.static_block_amr import (
     StaticBlockAMRConfig,
 )
 
-Q = 19
+Q = 19  # placeholder, set in main
 GHOST = 1
 RATIO = 2
 
@@ -103,6 +103,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--radius", type=float, default=6.0)
     p.add_argument("--reynolds", type=float, default=100.0)
     p.add_argument("--lattice-speed", type=float, default=0.06)
+    p.add_argument("--lattice", choices=("D3Q19", "D3Q27"), default="D3Q19",
+                   help="lattice stencil (D3Q19 default; D3Q27 for high-Re "
+                        "stability, requires cascaded/cumulant d3q27 kernels)")
     p.add_argument("--steps", type=int, default=1000)
     p.add_argument("--warmup-steps", type=int, default=300)
     p.add_argument("--ramp-steps", type=int, default=100)
@@ -129,6 +132,12 @@ def parser() -> argparse.ArgumentParser:
         help="Clamp BFL q to this minimum (high-Re safeguard vs 1/(2q) "
              "divergence). None = disabled (validated low-Re default).",
     )
+    p.add_argument(
+        "--no-moving-wall", action="store_true",
+        help="Disable BFL moving-wall ramp correction (fixed no-slip wall). "
+             "Stable at very high Re where the (3/q)*moving_base term "
+             "diverges as tau->0.5; correct for a stationary body.",
+    )
     p.add_argument("--ghost-interpolation", choices=("injection", "trilinear"),
                    default="injection")
     p.add_argument("--ghost-fallback", choices=("on", "off"), default="on",
@@ -148,7 +157,21 @@ def parser() -> argparse.ArgumentParser:
 
 def _collide_dispatch(f: torch.Tensor, tau: float, collision: str,
                       les_model: str = "wale", cs_smag: float = 0.05,
-                      cw_wale: float = 0.5) -> torch.Tensor:
+                      cw_wale: float = 0.5,
+                      lattice: str = "D3Q19") -> torch.Tensor:
+    if lattice == "D3Q27":
+        from tensorlbm.cascaded_collision import collide_cascaded_d3q27
+        from tensorlbm.cumulant import collide_cumulant_d3q27
+        if collision == "cascaded":
+            return collide_cascaded_d3q27(f, tau)
+        if collision == "cumulant":
+            return collide_cumulant_d3q27(f, tau, C_s=0.0)
+        # LES on D3Q27
+        if les_model == "wale":
+            from tensorlbm.turbulence import collide_wale_bgk27
+            return collide_wale_bgk27(f, tau, C_w=cw_wale)
+        from tensorlbm.turbulence import collide_smagorinsky_bgk27
+        return collide_smagorinsky_bgk27(f, tau, C_s=cs_smag)
     if collision == "cascaded":
         return collide_cascaded_d3q19(f, tau)
     if collision == "cumulant":
@@ -171,6 +194,8 @@ def run_case(
     label: str,
 ) -> dict:
     """One full hybrid run (L0 + L1 block + octree shell) for a sphere."""
+    global Q
+    Q = 27 if args.lattice == "D3Q27" else 19
     device = torch.device(args.device)
     shape = (args.nz, args.ny, args.nx)
     cx, cy, cz = (
@@ -185,6 +210,7 @@ def run_case(
     # ---- level 0 (root) ----------------------------------------------------
     solid_coarse, solid_coarse_q = build_sphere_geometry(
         args.nx, args.ny, args.nz, cx, cy, cz, radius_coarse, device,
+        lattice=args.lattice,
     )
     plan = plan_body_shell_box(
         solid_coarse, args.shell_margin, args.wake_cells, pad=args.wall_margin,
@@ -193,7 +219,11 @@ def run_case(
     rho = torch.ones(shape, device=device)
     ux = torch.full_like(rho, args.lattice_speed)
     zero = torch.zeros_like(rho)
-    coarse_f = equilibrium3d(rho, ux, zero, zero, device=device)
+    if args.lattice == "D3Q27":
+        from tensorlbm.d3q27 import equilibrium27
+        coarse_f = equilibrium27(rho, ux, zero, zero, device=device)
+    else:
+        coarse_f = equilibrium3d(rho, ux, zero, zero, device=device)
 
     # ---- level 1 (L1 rectangular block) ------------------------------------
     s1, fc1, radius1, _l1 = build_fine_block_geometry(
@@ -220,7 +250,7 @@ def run_case(
     octree = build_octree_shell(
         s1, phys_center, radius_l1,
         bl_thickness_cells=bl_cells, d_max=args.d_max,
-        transition=1, device=device,
+        transition=1, device=device, lattice=args.lattice,
     )
     shell_band = octree.meta["delta_mask"]
     host = octree.leaf_host_cell
@@ -285,7 +315,9 @@ def run_case(
         if level == 0:
             out, post_collision, _ = root_advance(
                 f, tau, solid_coarse_q, sigma, args.lattice_speed,
-                collision=args.collision,
+                collision=args.collision, lattice=args.lattice,
+                les_model=args.les_model, cs_smag=args.cs_smag,
+                cw_wale=args.cw_wale,
             )
             return AMRAdvanceResult(out, post_collision)
         if level == 1:
@@ -293,10 +325,14 @@ def run_case(
             collided = _collide_dispatch(
             f, tau, args.collision,
             les_model=args.les_model, cs_smag=args.cs_smag,
-            cw_wale=args.cw_wale,
+            cw_wale=args.cw_wale, lattice=args.lattice,
         )
             post = torch.where(l1_solid_q, before, collided)
-            out = stream3d(post)
+            if args.lattice == "D3Q27":
+                from tensorlbm.d3q27 import stream27_roll
+                out = stream27_roll(post)
+            else:
+                out = stream3d(post)
             l1_posts.append(post[:, GHOST:-GHOST, GHOST:-GHOST, GHOST:-GHOST])
             return AMRAdvanceResult(out, post)
         raise ValueError(f"unexpected hierarchy level {level}")
@@ -304,22 +340,53 @@ def run_case(
     def shell_advance(
         f: torch.Tensor, tau: float, level: int, substep: int,
     ) -> AMRAdvanceResult:
-        collided = _collide_dispatch(
-            f.view(Q, 1, 1, -1), tau, args.collision,
-            les_model=args.les_model, cs_smag=args.cs_smag,
-            cw_wale=args.cw_wale,
-        )
+        if args.collision is None and args.lattice == "D3Q27":
+            # LES on octree leaves via neighbour-table gathers (spatially
+            # correct; the regular-grid WALE roll semantics are wrong on SoA).
+            from tensorlbm.octree_boundary.les import leaf_les_collide
+            f4 = f.view(Q, 1, 1, -1)
+            if f4.numel() != octree.n_leaf * Q:
+                raise RuntimeError(
+                    f"shell_advance f numel {f4.numel()} != Q*n_leaf "
+                    f"{Q}*{octree.n_leaf}; f.shape={tuple(f.shape)} "
+                    f"f_leaf.shape={tuple(octree.f_leaf.shape)}",
+                )
+            collided = leaf_les_collide(
+                f4, tau,
+                octree.neighbor_table,
+                model="wale" if args.les_model == "wale" else "smagorinsky",
+                C_w=args.cw_wale, C_s=args.cs_smag,
+                dx=2.0 ** (-octree.d_max) * 0.5,
+            ).view(f.shape)
+            if not bool(torch.isfinite(collided).all()):
+                raise FloatingPointError(
+                    f"leaf LES produced non-finite populations at step "
+                    f"{current_step} substep {substep}",
+                )
+        else:
+            collided = _collide_dispatch(
+                f.view(Q, 1, 1, -1), tau, args.collision,
+                les_model=args.les_model, cs_smag=args.cs_smag,
+                cw_wale=args.cw_wale, lattice=args.lattice,
+            )
+            collided = collided.view_as(f)
         post = collided.view_as(f)
         return AMRAdvanceResult(post.clone(), post)
 
     def bfl_callback(octree_, out, post, ghost_plan_, ghost_vals, *, substep):
-        rho_w, uwx, uwy, uwz = bfl_ramp_wall_velocity(
-            octree_, post, current_step, args.ramp_steps,
-        )
+        if args.no_moving_wall:
+            wall_velocity = None
+            wall_density = None
+        else:
+            rho_w, uwx, uwy, uwz = bfl_ramp_wall_velocity(
+                octree_, post, current_step, args.ramp_steps,
+            )
+            wall_velocity = (uwx, uwy, uwz)
+            wall_density = rho_w
         return bfl_apply_gather(
             octree_, out, post,
             ghost_plan=ghost_plan_, ghost_vals=ghost_vals,
-            wall_velocity=(uwx, uwy, uwz), wall_density=rho_w,
+            wall_velocity=wall_velocity, wall_density=wall_density,
             force_weights=leaf_weights, return_force=True,
             q_min=args.q_min,
         )
@@ -496,6 +563,10 @@ def main() -> None:
             "bl_thickness": args.bl_thickness,
             "d_max": args.d_max,
             "collision": args.collision,
+            "les_model": args.les_model,
+            "cw_wale": args.cw_wale,
+            "cs_smag": args.cs_smag,
+            "q_min": args.q_min,
             "ghost_interpolation": args.ghost_interpolation,
             "statistics_window_steps": args.statistics_window_steps,
             "tau_coarse": 0.5 + 3.0 * args.lattice_speed * 2.0 * args.radius / args.reynolds,

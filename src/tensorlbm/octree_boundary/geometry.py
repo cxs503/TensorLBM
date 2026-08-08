@@ -44,6 +44,8 @@ SHELL_OUTSIDE = -1   # neighbour leaves the shell -> L1 block interface
 SOLID = -2           # neighbour is inside the body (solid / dropped leaf)
 DOMAIN_OUT = -3      # neighbour is outside the L1 block (should not happen)
 FANOUT = -4          # coarse -> fine cross-level link, consult interface_fanout
+REMOTE = -5          # sharded shell: source leaf lives on another device,
+                     # consult the shard's remote_pos table (sharding.py)
 
 # ---------------------------------------------------------------------------
 # Morton (Z-order) codec — uint64, 3 bits per level, root bit 1
@@ -449,13 +451,15 @@ def build_octree_shell(
         d_max: maximum leaf depth, 1 or 2 (P1 supports both; depth-2 leaves
             are only created where a depth-1 leaf is wall-adjacent).
         transition: extra cell band appended to the shell mask.
-        lattice: ``"D3Q19"`` (only Q=19 is supported in P1).
+        lattice: "D3Q19" or "D3Q27" (Q = 19 / 27 velocity stencil;
+            the neighbour table, q-field and bfl mask are built on the
+            lattice's velocity set).
 
     Returns:
         :class:`OctreeGrid` with topology, q-field and statistics filled in.
     """
-    if lattice != "D3Q19":
-        raise NotImplementedError("P1 octree shell supports D3Q19 only")
+    if lattice not in ("D3Q19", "D3Q27"):
+        raise ValueError(f"unsupported lattice {lattice!r} (D3Q19 or D3Q27)")
     if d_max not in (1, 2):
         raise ValueError(f"d_max must be 1 or 2, got {d_max}")
     nz, ny, nx = shape
@@ -465,9 +469,14 @@ def build_octree_shell(
     if not (radius > 0.0):
         raise ValueError(f"radius must be positive, got {radius}")
 
-    from tensorlbm.d3q19 import C, OPPOSITE
+    if lattice == "D3Q27":
+        from tensorlbm.d3q27 import C, OPPOSITE
 
-    Q = 19
+        Q = 27
+    else:
+        from tensorlbm.d3q19 import C, OPPOSITE
+
+        Q = 19
     c_vec = C.to(device)
     opp = OPPOSITE.to(device)
     k = _axis_bits(shape)

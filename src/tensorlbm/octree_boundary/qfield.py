@@ -20,9 +20,13 @@ if TYPE_CHECKING:
 
 
 def _lattice_params(lattice: str) -> tuple[int, torch.Tensor, torch.Tensor]:
-    """``(Q, C, OPPOSITE)`` for D3Q19 (P1 supports D3Q19 only)."""
+    """``(Q, C, OPPOSITE)`` for D3Q19 or D3Q27."""
+    if lattice == "D3Q27":
+        from tensorlbm.d3q27 import C, OPPOSITE
+
+        return 27, C, OPPOSITE
     if lattice != "D3Q19":
-        raise NotImplementedError("P1 octree shell q-field supports D3Q19 only")
+        raise ValueError(f"unsupported lattice {lattice!r} (D3Q19 or D3Q27)")
     from tensorlbm.d3q19 import C, OPPOSITE
 
     return 19, C, OPPOSITE
@@ -109,7 +113,11 @@ def compute_leaf_q_field(
     The per-leaf spacing is ``2^-level`` (L1 cell = 1).  The rest direction
     keeps the default ``q = 0.5`` with mask False.
     """
-    from tensorlbm.d3q19 import OPPOSITE  # noqa: F401  (import contract parity)
+    lattice = grid.meta.get("lattice", "D3Q19")
+    if lattice == "D3Q27":
+        from tensorlbm.d3q27 import OPPOSITE  # noqa: F401  (import contract parity)
+    else:
+        from tensorlbm.d3q19 import OPPOSITE  # noqa: F401  (import contract parity)
 
     Q = grid.Q
     n = grid.n_leaf
@@ -117,7 +125,7 @@ def compute_leaf_q_field(
     dx = 2.0 ** (-level.to(torch.float64))                 # (n,)
     mask, q = compute_q_sphere_at_points(
         grid.leaf_center, dx, center, radius,
-        device=grid.leaf_center.device, lattice=grid.meta.get("lattice", "D3Q19"),
+        device=grid.leaf_center.device, lattice=lattice,
     )
     grid.bfl_mask = mask.contiguous()
     grid.q_field = q.contiguous()
