@@ -1,51 +1,46 @@
 #!/usr/bin/env python3
-"""Hybrid octree-boundary sphere drag validation (P3 acceptance).
+"""Hybrid octree-boundary sphere drag validation — multi-GPU sharded shell.
 
-Hierarchy (design doc ``docs/octree-boundary-design.md`` §3.0):
+Same physics and output schema as ``octree_sphere_validate.py`` (L0 root +
+L1 ``NestedStaticBlockAMR3D`` block + octree boundary shell, P3 CV closure),
+with the shell leaves **sharded across ``--fine-devices``**:
 
-  level 0  L0 coarse global grid          — NestedStaticBlockAMR3D root,
-                                           far-field BC + sponge, frozen
-                                           coarse sphere (no BFL)
-  level 1  L1 rectangular fine block      — 2:1 nested block (BFL disabled:
-                                           the octree shell owns the wall),
-                                           frozen sphere at radius 2R
-  level 2  octree boundary shell          — body-fitted leaves embedded in
-                                           the L1 block, gather-based Bouzidi
-                                           BFL at leaf resolution (R*4)
+  level 0  L0 coarse global grid          — root device (``--device``)
+  level 1  L1 rectangular fine block      — root device
+  level 2  octree boundary shell          — Morton-split across fine devices
 
-Per root step the L1 block advances ``ratio`` substeps (NestedStaticBlock
-AMR3D), then the shell advances ``2^d_max`` lockstep substeps with
-time-lerped ghost fill, gather streaming, gather BFL and a per-leaf-weighted
-momentum-exchange force; the shell is restricted back into the covered L1
-cells and the kinetic-flux reflux ledger is applied on the L1 side
-(``step_octree_shell``).  The control-volume drag is observed once per root
-step on the L1 block with a fail-closed clearance gate (the CV surface must
-not intersect the shell interface, the AMR interface filter shell or the
-body).
+The shell is advanced with ``step_octree_shell_sharded`` (per-substep
+collision runs on each shard's own device; ghost fill, restriction, reflux
+interface transfers and the MEM force are reassembled on the root device in
+the global order).  See ``src/tensorlbm/octree_boundary/sharding.py`` for the
+bit-identity contract: on a fixed device type a sharded run reproduces the
+unsharded run bit for bit, and cross-device exchanges are exact copies.
 
-P3 CV closure (``scripts/diag_cv_components.py`` / ``diag_momentum_audit.py``):
-the CV momentum change is sampled on a snapshot of the live L1 tensor taken
-right after the block's own advance and *before* ``step_octree_shell``'s
-in-place restriction/reflux rewrites, and the per-root-step leaf wall force
-(MEM, converted to L1 units) is re-added explicitly:
+One shard (``--fine-devices cuda:0``) is therefore bit-identical to the
+unsharded ``step_octree_shell`` run on the same device; two shards must stay
+bitwise equal.  Leaf LES (``--lattice D3Q27 --les-model wale``) runs the MRT
+``leaf_les_collide`` on each shard's local neighbour table — cross-shard
+neighbours resolve through the REMOTE sentinel as missing (zero gradient on
+the Morton cut surface, a localised approximation that does not affect
+stability).
 
-``F_cv = import - dP_L1advance + wall_mom_l1``
+Example (dual GPU on the supercomputer, ``CUDA_VISIBLE_DEVICES=1,2``):
 
-Counting the restriction + reflux deltas as fluid momentum change
-double-counts the wall transfer and overestimates Cd_cv (historically
-Cd_cv ~ 5-9 vs Cd_mem ~ 1.3); dropping them without the wall term reverses
-the sign.  The two closures then agree to the acceptance tolerance.
+  PYTHONPATH=src python -u examples/octree_multigpu_validate.py \\
+      --device cuda:0 --fine-devices cuda:0,cuda:1 \\
+      --nx 96 --ny 64 --nz 64 --radius 6 --reynolds 100 \\
+      --steps 1000 --warmup-steps 300 --ramp-steps 100 --output out_2gpu.json
 
-Acceptance (design doc §4, P3):
-  * Cd vs Schiller-Naumann (Re=100 -> 1.0917) within 2%;
-  * MEM (leaf-lattice, substep-averaged) vs CV (L1 lattice) within 5%;
-  * interface-position invariance: shifting the shell/wall by one leaf cell
-    changes Cd by < 1% (``--check-invariance``).
+Equivalence check (single vs dual GPU, 50 steps, bitwise Cd):
 
-Example (CPU):
-  PYTHONPATH=src .venv/bin/python examples/octree_sphere_validate.py \
-      --device cpu --nx 96 --ny 64 --nz 64 --radius 6 --reynolds 100 \
-      --steps 1000 --warmup-steps 300 --ramp-steps 100 --output out.json
+  ... --fine-devices cuda:0    --steps 50 --warmup-steps 10 --output s1.json
+  ... --fine-devices cuda:0,cuda:1 --steps 50 --warmup-steps 10 --output s2.json
+
+High-Re dual-GPU stability (Re=1e4):
+
+  ... --fine-devices cuda:0,cuda:1 --reynolds 10000 --lattice D3Q27 \\
+      --les-model wale --q-min 0.2 --no-moving-wall \\
+      --steps 400 --warmup-steps 50 --ramp-steps 100 --output hi_re_2gpu.json
 """
 from __future__ import annotations
 
@@ -71,9 +66,13 @@ from tensorlbm.octree_boundary.force import (
     build_shell_control_volume,
 )
 from tensorlbm.octree_boundary.geometry import build_octree_shell
+from tensorlbm.octree_boundary.sharding import (
+    shard_octree_shell,
+    shards_all_finite,
+)
 from tensorlbm.octree_boundary.stepping import (
     build_ghost_plan,
-    step_octree_shell,
+    step_octree_shell_sharded,
 )
 from tensorlbm.solver3d import stream3d
 from tensorlbm.sphere_amr_common import (
@@ -97,6 +96,13 @@ RATIO = 2
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--device", default="cpu")
+    p.add_argument(
+        "--fine-devices", default=None,
+        help="comma-separated device list for the octree shell leaves "
+             "(e.g. 'cuda:0,cuda:1'); one shard per device, leaves split in "
+             "Morton order.  Default = the root --device (single shard, "
+             "bit-identical to the unsharded shell stepper).",
+    )
     p.add_argument("--nx", type=int, default=96)
     p.add_argument("--ny", type=int, default=64)
     p.add_argument("--nz", type=int, default=64)
@@ -151,6 +157,12 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--check-invariance", action="store_true",
                    help="also run with a one-leaf-cell shift and report the "
                         "Cd change (acceptance: < 1%)")
+    p.add_argument(
+        "--force-trace", action="store_true",
+        help="record the per-root-step streamwise MEM/CV force into the JSON "
+             "(full-precision float64 trace for bitwise single-vs-dual-GPU "
+             "equivalence checks).",
+    )
     p.add_argument("--output", required=True)
     return p
 
@@ -193,10 +205,11 @@ def run_case(
     center_offset: tuple[float, float, float],
     label: str,
 ) -> dict:
-    """One full hybrid run (L0 + L1 block + octree shell) for a sphere."""
+    """One full hybrid run (L0 + L1 block + sharded octree shell)."""
     global Q
     Q = 27 if args.lattice == "D3Q27" else 19
     device = torch.device(args.device)
+    fine_devices = [torch.device(d) for d in args.fine_devices]
     shape = (args.nz, args.ny, args.nx)
     cx, cy, cz = (
         args.nx * 0.5 + center_offset[0],
@@ -257,10 +270,23 @@ def run_case(
     octree.f_leaf = l1_fine[
         :, host[:, 0] + GHOST, host[:, 1] + GHOST, host[:, 2] + GHOST
     ].clone()
+    if len(fine_devices) > octree.n_leaf:
+        raise ValueError(
+            f"more fine devices ({len(fine_devices)}) than shell leaves "
+            f"({octree.n_leaf}) — reduce --fine-devices",
+        )
     leaf_weights = leaf_force_weights(octree)
     ghost_plan = build_ghost_plan(
         octree, s1, solid_fallback=(args.ghost_fallback == "on"),
     )
+    # ---- shard the shell across the fine devices ---------------------------
+    # One contiguous Morton slice per device; every leaf-local tensor moves to
+    # the shard device, the ghost plan's donor arrays stay on the root device.
+    shards = shard_octree_shell(
+        octree, fine_devices,
+        ghost_plan=ghost_plan, solid_fallback=(args.ghost_fallback == "on"),
+    )
+    shard_by_device = {shard.device: shard for shard in shards}
     dx_leaf = 2.0 ** (-octree.d_max)
     dt_leaf = dx_leaf  # convective scaling
 
@@ -302,6 +328,8 @@ def run_case(
     mem_samples: list[float] = []
     cv_samples: list[float] = []
     ledger = ShellForceLedger(octree)
+    mem_trace: list[float] = []
+    cv_trace: list[float] = []
     max_reflux_residual = 0.0
     joint_mass0: float | None = None
     joint_mass_end: float | None = None
@@ -323,10 +351,10 @@ def run_case(
         if level == 1:
             before = f
             collided = _collide_dispatch(
-            f, tau, args.collision,
-            les_model=args.les_model, cs_smag=args.cs_smag,
-            cw_wale=args.cw_wale, lattice=args.lattice,
-        )
+                f, tau, args.collision,
+                les_model=args.les_model, cs_smag=args.cs_smag,
+                cw_wale=args.cw_wale, lattice=args.lattice,
+            )
             post = torch.where(l1_solid_q, before, collided)
             if args.lattice == "D3Q27":
                 from tensorlbm.d3q27 import stream27_roll
@@ -340,20 +368,29 @@ def run_case(
     def shell_advance(
         f: torch.Tensor, tau: float, level: int, substep: int,
     ) -> AMRAdvanceResult:
+        # The sharded stepper calls this once per shard with the shard's own
+        # f_leaf tensor; resolve the shard by device so the LES neighbour
+        # gather uses the shard-local (REMOTE-rewritten) table.
+        shard = shard_by_device.get(f.device)
+        if shard is not None:
+            nt = shard.neighbor_table
+            n_leaf = shard.n_leaf
+        else:
+            nt = octree.neighbor_table
+            n_leaf = octree.n_leaf
         if args.collision is None and args.lattice == "D3Q27":
             # LES on octree leaves via neighbour-table gathers (spatially
             # correct; the regular-grid WALE roll semantics are wrong on SoA).
             from tensorlbm.octree_boundary.les import leaf_les_collide
             f4 = f.view(Q, 1, 1, -1)
-            if f4.numel() != octree.n_leaf * Q:
+            if f4.numel() != n_leaf * Q:
                 raise RuntimeError(
                     f"shell_advance f numel {f4.numel()} != Q*n_leaf "
-                    f"{Q}*{octree.n_leaf}; f.shape={tuple(f.shape)} "
-                    f"f_leaf.shape={tuple(octree.f_leaf.shape)}",
+                    f"{Q}*{n_leaf}; f.shape={tuple(f.shape)} "
+                    f"shard={shard.device if shard is not None else device}",
                 )
             collided = leaf_les_collide(
-                f4, tau,
-                octree.neighbor_table,
+                f4, tau, nt,
                 model="wale" if args.les_model == "wale" else "smagorinsky",
                 C_w=args.cw_wale, C_s=args.cs_smag,
                 dx=2.0 ** (-octree.d_max) * 0.5,
@@ -383,11 +420,16 @@ def run_case(
             )
             wall_velocity = (uwx, uwy, uwz)
             wall_density = rho_w
+        # shard facade exposes shard-local weights on the shard device; the
+        # plain octree falls back to the root-side global weights
+        fw = getattr(octree_, "force_weights", None)
+        if fw is None:
+            fw = leaf_weights
         return bfl_apply_gather(
             octree_, out, post,
             ghost_plan=ghost_plan_, ghost_vals=ghost_vals,
             wall_velocity=wall_velocity, wall_density=wall_density,
-            force_weights=leaf_weights, return_force=True,
+            force_weights=fw, return_force=True,
             q_min=args.q_min,
         )
 
@@ -405,28 +447,22 @@ def run_case(
 
     for current_step in range(1, args.steps + 1):
         # StaticBlockAMR3D.step() rebinds `fine_f` to a fresh tensor after
-        # each advance (streaming/collision return new tensors), so the
-        # cached ``l1_fine`` reference goes stale after the first root step.
-        # Re-fetch the live tensor before and after the step — otherwise the
-        # shell stepping, restriction/reflux and the CV observation all
-        # operate on a frozen pre-advance state and the wall never couples
-        # into the L1 flow field (CV force ~ 0, flow through the sphere).
+        # each advance, so the cached ``l1_fine`` reference goes stale after
+        # the first root step. Re-fetch the live tensor before and after the
+        # step — otherwise the shell stepping, restriction/reflux and the CV
+        # observation all operate on a frozen pre-advance state.
         l1_fine = amr.interfaces[0].fine_f
         l1_old_phys = l1_fine[:, GHOST:-GHOST, GHOST:-GHOST, GHOST:-GHOST].clone()
         l1_posts.clear()
         ledgers = amr.step(advance)
         l1_fine = amr.interfaces[0].fine_f
         l1_f_phys = l1_fine[:, GHOST:-GHOST, GHOST:-GHOST, GHOST:-GHOST]
-        # P3 CV fix (scripts/diag_cv_components.py): snapshot the live L1
-        # tensor right after the block's own advance and BEFORE
-        # step_octree_shell rewrites it in place (restriction + reflux).
-        # The CV momentum change must exclude those in-place projection
-        # deltas (they double-count the wall transfer); the wall momentum is
-        # re-added explicitly from the force ledger (wall_momentum_l1), so
-        #   F_cv = import - dP_L1advance + wall_mom_l1.
+        # P3 CV fix: snapshot the live L1 tensor right after the block's own
+        # advance and BEFORE the shell stepper rewrites it in place
+        # (restriction + reflux). F_cv = import - dP_L1advance + wall_mom_l1.
         l1_pre_shell = l1_f_phys.clone()
-        shell_ledger = step_octree_shell(
-            octree, shell_advance, l1_old_phys, l1_f_phys,
+        shell_ledger = step_octree_shell_sharded(
+            octree, shards, shell_advance, l1_old_phys, l1_f_phys,
             tau_coarse=config1.tau_fine,
             l1_post=l1_posts if config1.reflux else None,
             shell_level=1, ghost_plan=ghost_plan,
@@ -439,6 +475,10 @@ def run_case(
             l1_old_phys, l1_pre_shell, l1_posts, cv, solid=l1_solid_phys,
             wall_mom_l1=ledger.wall_momentum_l1(dx_leaf, dt_leaf),
         )
+        if args.force_trace:
+            mem_trace.append(float(ledger.mem_force[0].item()))
+            assert ledger.cv_force is not None
+            cv_trace.append(float(ledger.cv_force[0].item()))
         if current_step > args.warmup_steps:
             mem_samples.append(float(ledger.mem_force[0].item()))
             assert ledger.cv_force is not None
@@ -452,6 +492,10 @@ def run_case(
             raise FloatingPointError(
                 f"non-finite shell populations at step {current_step}",
             )
+        if not shards_all_finite(shards):
+            raise FloatingPointError(
+                f"non-finite shard populations at step {current_step}",
+            )
         if current_step % args.report_interval == 0 and mem_samples:
             recent_mem = mem_samples[-args.report_interval:]
             recent_cv = cv_samples[-args.report_interval:]
@@ -464,6 +508,7 @@ def run_case(
                 flush=True,
             )
 
+    wall_seconds = time.time() - started
     joint_mass_end = joint_mass()
     stats_window = args.statistics_window_steps or len(mem_samples)
     mem_mean = sum(mem_samples[-stats_window:]) / stats_window
@@ -482,9 +527,16 @@ def run_case(
         f"[{label}] final: Cd_mem={cd_mem:.6f} Cd_cv={cd_cv:.6f} "
         f"ref={reference:.6f} ref_err={cd_cv_error_pct:.3f}% "
         f"mem/cv={mem_cv_deviation_pct:.3f}% mass_drift={mass_drift:.2e} "
-        f"max_ref_res={max_reflux_residual:.2e}",
+        f"max_ref_res={max_reflux_residual:.2e} "
+        f"steps/s={args.steps/wall_seconds:.2f}",
         flush=True,
     )
+    if args.force_trace:
+        print(
+            f"[{label}] trace[0]={mem_trace[0]!r} trace[-1]={mem_trace[-1]!r} "
+            f"cd_mem={cd_mem!r} cd_cv={cd_cv!r}",
+            flush=True,
+        )
 
     return {
         "label": label,
@@ -512,6 +564,15 @@ def run_case(
         "radius_l1": radius_l1,
         "radius_leaf": radius_leaf,
         "center_offset_coarse": list(center_offset),
+        "fine_devices": [str(d) for d in fine_devices],
+        "n_shards": len(shards),
+        "perf": {
+            "steps_per_second": args.steps / wall_seconds,
+            "wall_seconds": wall_seconds,
+        },
+        "force_trace": (
+            {"mem_x": mem_trace, "cv_x": cv_trace} if args.force_trace else None
+        ),
     }
 
 
@@ -523,6 +584,19 @@ def main() -> None:
         raise ValueError("--interface-shift must be non-negative")
     if args.warmup_steps >= args.steps:
         raise ValueError("--warmup-steps must be < --steps")
+    # ---- --fine-devices parsing --------------------------------------------
+    if args.fine_devices is None:
+        args.fine_devices = [args.device]
+    else:
+        devices = [d.strip() for d in args.fine_devices.split(",") if d.strip()]
+        if not devices:
+            raise ValueError(
+                "--fine-devices must be a non-empty comma-separated device "
+                "list (e.g. 'cuda:0,cuda:1')",
+            )
+        args.fine_devices = devices
+    for d in args.fine_devices:
+        torch.device(d)   # raise early on malformed device strings
 
     base = run_case(args, (0.0, 0.0, 0.0), "base")
     runs = [base]
@@ -548,6 +622,7 @@ def main() -> None:
         "schema": "octree-hybrid-sphere-p3-v1",
         "configuration": {
             "device": args.device,
+            "fine_devices": [str(d) for d in args.fine_devices],
             "coarse_shape_zyx": [args.nz, args.ny, args.nx],
             "radius_coarse": args.radius,
             "reynolds": args.reynolds,
@@ -562,11 +637,13 @@ def main() -> None:
             "wake_cells": args.wake_cells,
             "bl_thickness": args.bl_thickness,
             "d_max": args.d_max,
+            "lattice": args.lattice,
             "collision": args.collision,
             "les_model": args.les_model,
             "cw_wale": args.cw_wale,
             "cs_smag": args.cs_smag,
             "q_min": args.q_min,
+            "no_moving_wall": args.no_moving_wall,
             "ghost_interpolation": args.ghost_interpolation,
             "statistics_window_steps": args.statistics_window_steps,
             "tau_coarse": 0.5 + 3.0 * args.lattice_speed * 2.0 * args.radius / args.reynolds,

@@ -48,6 +48,7 @@ import torch
 from tensorlbm.octree_boundary.geometry import (
     DOMAIN_OUT,
     FANOUT,
+    REMOTE,
     SHELL_OUTSIDE,
     SOLID,
 )
@@ -94,9 +95,14 @@ def leaf_macroscopic(
     octree: OctreeGrid, f_prev: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Per-leaf ``(rho, ux, uy, uz)`` from the pre-stream populations."""
-    from tensorlbm.d3q19 import macroscopic3d
+    if octree.Q == 27:
+        from tensorlbm.d3q27 import macroscopic27
 
-    rho, ux, uy, uz = macroscopic3d(f_prev.view(octree.Q, 1, 1, -1))
+        rho, ux, uy, uz = macroscopic27(f_prev.view(octree.Q, 1, 1, -1))
+    else:
+        from tensorlbm.d3q19 import macroscopic3d
+
+        rho, ux, uy, uz = macroscopic3d(f_prev.view(octree.Q, 1, 1, -1))
     return rho.view(-1), ux.view(-1), uy.view(-1), uz.view(-1)
 
 
@@ -130,11 +136,17 @@ def bfl_apply_gather(
     force_weights: torch.Tensor | None = None,
     return_force: bool = False,
     q_min: float | None = None,
+    link_sink=None,
 ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Gather-based Bouzidi BFL on the octree shell leaves.
 
     Args:
         octree: the shell (``bfl_mask``, ``q_field``, ``neighbor_table``).
+            For a sharded shell (:class:`~tensorlbm.octree_boundary.sharding.OctreeLeafShard`)
+            the facade must additionally expose ``remote_values`` (the filled
+            per-substep cross-shard value buffer) and ``remote_pos``/``fan_off``/
+            ``fan_len`` ((Q, n) int64 position tables); cross-shard upstream
+            donors then resolve through the ``REMOTE`` neighbour sentinel.
         f: post-stream populations ``(Q, n_leaf)`` (mutated copy returned).
         f_prev: pre-stream (post-collision) populations ``(Q, n_leaf)``.
         ghost_plan / ghost_vals: needed only when an upstream point of a
@@ -147,6 +159,14 @@ def bfl_apply_gather(
             applied to the returned force only.
         return_force: also return the ``(3,)`` float64 link momentum
             exchange of this substep (leaf lattice units).
+        q_min: clamp tiny BFL q values (high-Re safeguard).
+        link_sink: optional ``link_sink(d, idx, link)`` hook receiving every
+            per-link force contribution ``link`` (``(n_links_d, 3)`` float64,
+            already weight-scaled) together with the local leaf indices
+            ``idx``, for global-order assembly by the sharded stepper.  When
+            given, the per-direction in-place ``force`` accumulation is
+            skipped (the returned force is then all zeros and must not be
+            used).
 
     Returns:
         ``f_out`` or ``(f_out, force)``.  ``f_out[d]`` is only changed on
@@ -165,11 +185,24 @@ def bfl_apply_gather(
     device = f.device
     opp = octree._opp.to(device)
     c_vec = octree._c_vec.to(device)
-    from tensorlbm.d3q19 import W as _W19
+    if Q == 27:
+        from tensorlbm.d3q27 import W as _W
+    else:
+        from tensorlbm.d3q19 import W as _W19
+
+        _W = _W19
 
     mask = octree.bfl_mask
     q_field = octree.q_field
     nt = octree.neighbor_table
+    # sharded-shell facade hooks (absent on a plain OctreeGrid)
+    remote_values = getattr(octree, "remote_values", None)
+    remote_pos = getattr(octree, "remote_pos", None)
+    fan_off = getattr(octree, "fan_off", None)
+    fan_len = getattr(octree, "fan_len", None)
+    if link_sink is None:
+        # the sharded stepper installs a per-substep sink on the facade
+        link_sink = getattr(octree, "_link_sink", None)
     f_out = f.clone()
     force = torch.zeros(3, dtype=torch.float64, device=device)
 
@@ -194,6 +227,16 @@ def bfl_apply_gather(
         valid = up >= 0
         if bool(valid.any()):
             fp_up[valid] = f_prev[d, up[valid]].to(torch.float64)
+        if remote_values is not None and remote_pos is not None:
+            remote = up == REMOTE
+            if bool(remote.any()):
+                slots = remote_pos[od, idx[remote]]
+                if bool((slots < 0).any()):
+                    raise RuntimeError(
+                        "sharded BFL upstream point is REMOTE but has no "
+                        "remote slot (shard plan inconsistency)",
+                    )
+                fp_up[remote] = remote_values[slots].to(torch.float64)
         ghost = up == SHELL_OUTSIDE
         if bool(ghost.any()):
             if ghost_plan is None or ghost_vals is None:
@@ -214,6 +257,14 @@ def bfl_apply_gather(
                 fanout, as_tuple=False,
             ).squeeze(1).tolist():
                 leaf_i = int(idx[pos].item())
+                if remote_values is not None and fan_off is not None and fan_len is not None:
+                    off = int(fan_off[od, leaf_i].item())
+                    ln = int(fan_len[od, leaf_i].item())
+                    if ln > 0:
+                        fp_up[pos] = remote_values[off:off + ln].to(
+                            torch.float64,
+                        ).mean()
+                        continue
                 group = octree.interface_fanout.get((leaf_i, int(od)), [])
                 if group:
                     fp_up[pos] = f_prev[
@@ -247,7 +298,7 @@ def bfl_apply_gather(
                 + float(c_d[2].item()) * uwz[idx]
             )
             rho_w = wall_density[idx].to(torch.float64)
-            moving_base = float(_W19[d].item()) * rho_w * c_dot_uw
+            moving_base = float(_W[d].item()) * rho_w * c_dot_uw
             f_bc = torch.where(
                 lin,
                 f_bc - 6.0 * moving_base,
@@ -262,7 +313,10 @@ def bfl_apply_gather(
             link = exchange.unsqueeze(1) * c_vec[d].to(torch.float64)
             if force_weights is not None:
                 link = link * force_weights[idx].unsqueeze(1)
-            force += link.sum(dim=0)
+            if link_sink is not None:
+                link_sink(d, idx, link)
+            else:
+                force += link.sum(dim=0)
 
         f_out[od, idx] = f_bc.to(f.dtype)
 
