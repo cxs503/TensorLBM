@@ -51,6 +51,7 @@ from tensorlbm.kinetic_flux_register import (
 from tensorlbm.octree_boundary.geometry import (
     DOMAIN_OUT,
     FANOUT,
+    REMOTE,
     SHELL_OUTSIDE,
     SOLID,
     OctreeGrid,
@@ -88,13 +89,21 @@ def _rescale_nonequilibrium_per_cell(
     leaves of depth 1 and 2 live at different ratios to the L1 level).
 
     ``f`` has shape ``(Q, n)`` and ``scale`` shape ``(n,)``.  The equilibrium
-    decomposition uses the same D3Q19 functions and the same operation order
-    as ``rescale_nonequilibrium``, so for a constant scale the result is
-    bit-identical to it.
+    decomposition uses the lattice's macroscopic/equilibrium pair and the
+    same operation order as ``rescale_nonequilibrium``, so for a constant
+    scale the D3Q19 result is bit-identical to it.
     """
     q, n = f.shape
-    rho, ux, uy, uz = macroscopic3d(f.view(q, n, 1, 1))
-    feq = equilibrium3d(rho, ux, uy, uz).view(q, n)
+    if q == 19:
+        rho, ux, uy, uz = macroscopic3d(f.view(q, n, 1, 1))
+        feq = equilibrium3d(rho, ux, uy, uz).view(q, n)
+    elif q == 27:
+        from tensorlbm.d3q27 import equilibrium27, macroscopic27
+
+        rho, ux, uy, uz = macroscopic27(f.view(q, n, 1, 1))
+        feq = equilibrium27(rho, ux, uy, uz).view(q, n)
+    else:
+        raise ValueError(f"unsupported lattice Q={q} (D3Q19 or D3Q27)")
     return feq + scale.to(f.dtype).unsqueeze(0) * (f - feq)
 
 
@@ -277,6 +286,17 @@ def fill_ghost(
     ``parent_t`` is the L1 state at the current substep's time point (the
     caller forms ``lerp(l1_old, l1_f, alpha)``).  Returns ``(Q, n_ghost)``.
     """
+    return _fill_ghost_impl(octree.leaf_level, plan, parent_t, taus)
+
+
+def _fill_ghost_impl(
+    leaf_level: torch.Tensor,
+    plan: ShellGhostPlan,
+    parent_t: torch.Tensor,
+    taus: list[float],
+) -> torch.Tensor:
+    """Shared ghost-fill body; ``leaf_level`` is the (global or shard-local)
+    per-leaf level array indexed by ``plan.leaf``."""
     q = parent_t.shape[0]
     if plan.n_ghost == 0:
         return torch.empty(
@@ -305,10 +325,10 @@ def fill_ghost(
     sampled = torch.lerp(
         torch.lerp(v00, v01, wy), torch.lerp(v10, v11, wy), wz,
     )
-    lev = octree.leaf_level[plan.leaf]
+    lev = leaf_level[plan.leaf]
     tau_f = torch.tensor(
         taus, dtype=torch.float64, device=sampled.device,
-    )[lev]
+    )[lev.to(device=sampled.device)]
     scale = tau_f / (
         (2.0 ** lev.to(torch.float64)) * taus[0]
     )
@@ -509,6 +529,12 @@ def build_shell_coarse_links(
         solid = torch.zeros_like(covered)
     if solid.shape != covered.shape or solid.dtype is not torch.bool:
         raise ValueError("solid must be a boolean tensor with the covered shape")
+    if q == 19:
+        from tensorlbm.d3q19 import C
+    elif q == 27:
+        from tensorlbm.d3q27 import C
+    else:
+        raise ValueError(f"unsupported lattice Q={q} (D3Q19 or D3Q27)")
     c = C.to(covered.device)
     outgoing = torch.zeros(
         (q, *covered.shape), dtype=torch.bool, device=covered.device,
@@ -706,6 +732,443 @@ def step_octree_shell(
         # The L1 block of the hybrid hierarchy advances `ratio` substeps per
         # root step; the coarse-side transfer must count every one of them to
         # pair with the shell's `2^d` accumulated fine substeps.
+        if len(l1_post) == 0:
+            raise ValueError("l1_post sequence must not be empty")
+        coarse_transfer = observe_kinetic_interface_transfer(
+            l1_post[0], observation_links,
+        )
+        for post in l1_post[1:]:
+            coarse_transfer = coarse_transfer + observe_kinetic_interface_transfer(
+                post, observation_links,
+            )
+    else:
+        coarse_transfer = observe_kinetic_interface_transfer(
+            l1_post, observation_links,
+        )
+    l1_f, report = apply_face_local_reflux(
+        l1_f,
+        coarse_links,
+        coarse_transfer,
+        fine_transfer,
+        maximum_correction_fraction=maximum_reflux_correction_fraction,
+        correction_stencil=correction_stencil,
+    )
+    octree.meta["last_fine_transfer"] = fine_transfer
+    return PopulationRefluxLedger(
+        report.requested_inventory_correction,
+        report.applied_inventory_correction,
+        report.corrected_links,
+        report.residual,
+        report.limited_directions,
+        report.raw_kinetic_mismatch,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        report.maximum_applied_correction_fraction,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Multi-device shell stepping (fine_devices sharding)
+# ---------------------------------------------------------------------------
+
+
+def _stream_gather_shard(shard, populations, f_old, ghost_vals) -> torch.Tensor:
+    """Pull-stream one leaf shard through its REMOTE-rewritten neighbour table.
+
+    Semantics identical to :func:`stream_gather` per output element: in-shard
+    sources gather from ``populations``, cross-shard sources resolve through
+    the pre-filled ``shard.remote_buf``, ghost cells take ``ghost_vals``,
+    solid neighbours bounce back, fan-out groups average their (globally
+    ordered) group buffer — every per-element value matches the unsharded
+    gather, so the sharded state is bit-identical.
+    """
+    q, n = populations.shape
+    out = torch.empty_like(populations)
+    opp = shard.opp
+    nt = shard.neighbor_table
+    remote_buf = shard.remote_buf
+    remote_pos = shard.remote_pos
+    fan_off = shard.fan_off
+    fan_len = shard.fan_len
+    ghost_slot = shard.ghost_slot
+    for d in range(q):
+        src = nt[opp[d]]
+        valid = src >= 0
+        if bool(valid.any()):
+            out[d, valid] = populations[d, src[valid]]
+        remote_mask = src == REMOTE
+        if bool(remote_mask.any()):
+            slots = remote_pos[opp[d], remote_mask]
+            out[d, remote_mask] = remote_buf[slots]
+        ghost_mask = src == SHELL_OUTSIDE
+        if bool(ghost_mask.any()):
+            slots = ghost_slot[d, ghost_mask]
+            out[d, ghost_mask] = ghost_vals[d, slots]
+        solid_mask = src == SOLID
+        if bool(solid_mask.any()):
+            out[d, solid_mask] = populations[opp[d], solid_mask]
+        fanout_mask = src == FANOUT
+        if bool(fanout_mask.any()):
+            for i in torch.nonzero(
+                fanout_mask, as_tuple=False,
+            ).squeeze(1).tolist():
+                off = int(fan_off[opp[d], i].item())
+                ln = int(fan_len[opp[d], i].item())
+                if ln > 0:
+                    out[d, i] = remote_buf[off:off + ln].mean()
+                else:
+                    out[d, i] = f_old[d, i]
+        domain_mask = src == DOMAIN_OUT
+        if bool(domain_mask.any()):
+            raise RuntimeError(
+                "DOMAIN_OUT neighbour in shell streaming — the shell must be "
+                "fully embedded in the L1 block",
+            )
+    return out
+
+
+def _assemble_shell_transfer(
+    shards,
+    *,
+    q: int,
+    dtype: torch.dtype,
+    root_device: torch.device,
+) -> KineticInterfaceTransfer:
+    """Combine the per-shard interface-transfer observations on the root device.
+
+    Every link's value is scattered into a per-direction buffer at its global
+    row rank (the position it holds in the unsharded link/plan row order), so
+    the per-direction reductions reproduce the unsharded sums bit for bit.
+    """
+    outgoing = torch.zeros(q, dtype=dtype, device=root_device)
+    incoming = torch.zeros(q, dtype=dtype, device=root_device)
+    for d in range(1, q):
+        n_out = sum(
+            int((shard.link_dir == d).sum().item()) for shard in shards
+        )
+        if n_out:
+            buf = torch.zeros(n_out, dtype=dtype, device=root_device)
+            for shard in shards:
+                sel = shard.link_dir == d
+                if not bool(sel.any()):
+                    continue
+                # link_dir/link_leaf live on different devices (root vs shard);
+                # move the mask to the shard device before indexing
+                li = shard.link_leaf[sel.to(shard.device)]
+                vals = (
+                    shard.post_collision[d, li]
+                    * shard.leaf_volume[li].to(dtype)
+                )
+                buf[shard.out_rank[sel]] = vals.to(root_device)
+            outgoing[d] = buf.sum()
+        n_in = sum(
+            int((shard.ghost_plan.direction == d).sum().item())
+            for shard in shards
+        )
+        if n_in:
+            buf = torch.zeros(n_in, dtype=dtype, device=root_device)
+            for shard in shards:
+                gsel = shard.ghost_plan.direction == d
+                if not bool(gsel.any()):
+                    continue
+                vol = shard.ghost_plan.volume[gsel].to(dtype).to(shard.device)
+                gsel_dev = gsel.to(shard.device)
+                vals = shard.ghost_vals[d, gsel_dev] * vol
+                buf[shard.in_rank[gsel]] = vals.to(root_device)
+            incoming[d] = buf.sum()
+    return KineticInterfaceTransfer(outgoing, incoming)
+
+
+def _assemble_bfl_force(
+    shards,
+    records,
+    *,
+    q: int,
+    root_device: torch.device,
+) -> torch.Tensor:
+    """Global-order assembly of the per-substep MEM force.
+
+    ``records`` is a per-shard list of ``(d, idx_local, link)`` triples
+    emitted by the ``link_sink`` hook of :func:`bfl_apply_gather`.  Each
+    direction's per-link contributions are scattered into a global buffer at
+    their rank among the direction's boundary links (enum order) and summed
+    in the same order and dtype as the unsharded accumulation.
+    """
+    force = torch.zeros(3, dtype=torch.float64, device=root_device)
+    for d in range(1, q):
+        per_shard = [
+            (s, link)
+            for s, recs in enumerate(records)
+            for (dd, _idx, link) in recs
+            if dd == d
+        ]
+        if not per_shard:
+            continue
+        n_d = sum(int(link.shape[0]) for _s, link in per_shard)
+        buf = torch.zeros(n_d, 3, dtype=torch.float64, device=root_device)
+        for s, link in per_shard:
+            rank = shards[s].bfl_links[d][1]
+            buf[rank] = link.to(root_device)
+        force += buf.sum(dim=0)
+    return force
+
+
+def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
+    """Reassemble the global ghost plan from the per-shard slices.
+
+    Each shard's ``ghost_plan`` holds the rows of the global plan whose
+    leaves it owns, and ``ghost_rows`` records each row's position in the
+    global (unsharded) row order.  Scattering the slices back at those
+    positions reproduces the global plan row for row (the global row order is
+    direction-major — ``interface_links`` come from ``torch.nonzero`` — so a
+    plain per-shard concatenation would NOT recover it), letting the sharded
+    stepper run one ``_fill_ghost_impl`` over the full ghost batch.
+
+    This matters for bit-identity: the D3Q19 moment reductions inside
+    ``_rescale_nonequilibrium_per_cell`` are batch-order sensitive at the
+    1-ulp level, so a per-shard fill (smaller, differently ordered batches)
+    drifts one mantissa bit from the unsharded fill.  A single global-order
+    call reduces exactly the unsharded batch and is bit-identical.
+    """
+    if not shards:
+        raise ValueError("_merge_shard_ghost_plans requires at least one shard")
+    n_ghost = sum(int(s.ghost_plan.n_ghost) for s in shards)
+    dev = shards[0].ghost_plan.z0.device
+    q = int(shards[0].ghost_plan.slot.shape[0])
+    n_leaf = int(shards[-1].hi)
+    slot = torch.full((q, n_leaf), -1, dtype=torch.int64, device=dev)
+    if n_ghost == 0:
+        empty = torch.empty(0, dtype=torch.int64, device=dev)
+        empty64 = torch.empty(0, dtype=torch.float64, device=dev)
+        return ShellGhostPlan(
+            0, empty, empty, empty, empty, empty, empty, empty, empty,
+            empty64, empty64, empty64, empty64, slot,
+        )
+
+    def _scatter(name: str, dtype: torch.dtype, *, local_leaf: bool = False):
+        buf = torch.empty(n_ghost, dtype=dtype, device=dev)
+        for s in shards:
+            rows = s.ghost_rows
+            if rows.numel() == 0:
+                continue
+            vals = getattr(s.ghost_plan, name).to(device=dev)
+            if local_leaf:
+                vals = vals + s.lo        # shard-local leaf enum -> global
+            buf[rows] = vals
+        return buf
+
+    leaf = _scatter("leaf", torch.int64, local_leaf=True)
+    direction = _scatter("direction", torch.int64)
+    slot[direction, leaf] = torch.arange(n_ghost, dtype=torch.int64, device=dev)
+    return ShellGhostPlan(
+        n_ghost=n_ghost,
+        leaf=leaf,
+        direction=direction,
+        z0=_scatter("z0", torch.int64), y0=_scatter("y0", torch.int64),
+        x0=_scatter("x0", torch.int64), z1=_scatter("z1", torch.int64),
+        y1=_scatter("y1", torch.int64), x1=_scatter("x1", torch.int64),
+        wz=_scatter("wz", torch.float64), wy=_scatter("wy", torch.float64),
+        wx=_scatter("wx", torch.float64), volume=_scatter("volume", torch.float64),
+        slot=slot,
+    )
+
+
+def step_octree_shell_sharded(
+    octree: OctreeGrid,
+    shards: list,
+    advance: Advance3D,
+    l1_old: torch.Tensor,
+    l1_f: torch.Tensor,
+    *,
+    tau_coarse: float,
+    tau_fine: float | None = None,
+    tau_shell_override: float | None = None,
+    l1_post: torch.Tensor | list[torch.Tensor] | None = None,
+    shell_level: int = 1,
+    reflux: bool = True,
+    maximum_reflux_correction_fraction: float = 0.2,
+    correction_stencil: str = "exterior_cells",
+    ghost_plan: ShellGhostPlan | None = None,
+    coarse_links: KineticInterfaceLinks | None = None,
+    solid: torch.Tensor | None = None,
+    bfl_fn=None,
+    force_ledger=None,
+) -> PopulationRefluxLedger:
+    """Advance a device-sharded octree shell by one L1 root step.
+
+    Same contract as :func:`step_octree_shell`, with the leaf set split into
+    the :class:`~tensorlbm.octree_boundary.sharding.OctreeLeafShard` shards of
+    ``shards`` (one per fine device; the octree and the L0/L1 hierarchy stay
+    on the root device).  Per substep the ``advance`` callback runs once per
+    shard on the shard's own device (the dominant shell collision is the
+    parallelised workload), cross-shard neighbour/fan-out values are exchanged
+    through the precomputed request plans, and the ghost fill is computed as a
+    single full-batch call on the root device — the per-shard ghost plans are
+    reassembled into the global (unsharded) row order first, so the fill's
+    moment reductions see exactly the unsharded batch and stay bit-identical
+    — then the per-shard values are moved to the fine devices.  Every
+    state-affecting reduction (restriction, reflux interface transfers, the
+    MEM force) is assembled on the root device in global order, so on a fixed
+    device type a sharded run is bit-identical to the unsharded one.
+
+    ``ghost_plan`` is accepted for API symmetry with :func:`step_octree_shell`
+    but ignored: the per-shard ghost plans are baked into the shards at build
+    time (:func:`~tensorlbm.octree_boundary.sharding.shard_octree_shell`).
+
+    ``bfl_fn`` receives the per-shard facade as ``octree`` and must return
+    ``(f_out, force | None)``; the force is re-assembled in global order from
+    the per-link contributions (``bfl_apply_gather``'s ``link_sink`` hook) so
+    the returned per-shard force is ignored.
+    """
+    if not isinstance(octree, OctreeGrid):
+        raise TypeError("octree must be an OctreeGrid")
+    if not shards:
+        raise ValueError("step_octree_shell_sharded requires at least one shard")
+    if l1_old.shape != l1_f.shape:
+        raise ValueError("l1_old and l1_f must share shape")
+    l1_shape = tuple(l1_f.shape[1:])
+    if l1_shape != octree.meta["shape"]:
+        raise ValueError("L1 populations do not match the octree's block shape")
+    if correction_stencil not in ("exterior_cells", "crossing_links"):
+        raise ValueError(
+            "correction_stencil must be exterior_cells or crossing_links",
+        )
+    n_substeps = 1 << octree.d_max
+    taus = _tau_chain(tau_coarse, octree.d_max)
+    if tau_fine is not None and abs(tau_fine - taus[1]) > 1.0e-12:
+        raise ValueError("dynamic tau_fine must preserve convective scaling")
+    if tau_shell_override is not None:
+        taus = list(taus)
+        taus[1] = float(tau_shell_override)
+    tau_shell = taus[1]
+    if reflux and l1_post is None:
+        raise TypeError(
+            "reflux-enabled shell stepping requires l1_post (the L1 "
+            "post-collision/pre-stream state)",
+        )
+    if reflux and coarse_links is None:
+        covered = octree._shell_mask
+        if covered is None:
+            raise RuntimeError(
+                "octree carries no shell mask; pass coarse_links explicitly",
+            )
+        solid_mask = octree._solid if solid is None else solid
+        coarse_links = build_shell_coarse_links(
+            covered, solid_mask, q=octree.Q,
+        )
+    observation_links = None
+    if reflux:
+        if coarse_links is None:
+            raise RuntimeError(
+                "reflux bookkeeping lost the coarse interface links",
+            )
+        observation_links = build_shell_coarse_links(
+            coarse_links.inside, None, q=octree.Q,
+        )
+
+    root_device = octree.f_leaf.device
+    q = octree.Q
+    dtype = octree.f_leaf.dtype
+    # One global ghost plan reassembled from the per-shard slices in the
+    # unsharded row order, so the per-substep ghost fill runs as a single
+    # full-batch call whose moment reductions are bit-identical to the
+    # unsharded fill (a per-shard fill reduces smaller batches and drifts
+    # 1 ulp on the AMR-interface links).
+    merged_plan = _merge_shard_ghost_plans(shards)
+    fine_transfer: KineticInterfaceTransfer | None = None
+    for s in range(n_substeps):
+        alpha = s / n_substeps
+        parent_t = torch.lerp(l1_old, l1_f, alpha)
+        # 1. collision on the fine devices (the parallelised workload)
+        for shard in shards:
+            shard.populations, shard.post_collision = _unpack_shell_advance(
+                advance(shard.f_leaf, tau_shell, shell_level, s),
+                shard.f_leaf.shape,
+            )
+        # 2. ghost fill on the root device: ONE global-order call over the
+        # merged plan (batch order == unsharded), then scatter per shard
+        gv_global = _fill_ghost_impl(
+            octree.leaf_level, merged_plan, parent_t, taus,
+        )
+        for shard in shards:
+            shard.ghost_vals = gv_global[:, shard.ghost_rows].to(
+                device=shard.device,
+            )
+        # 3. cross-shard post-collision value exchange
+        for shard in shards:
+            for t, d_idx, j_idx, out_pos in shard.requests:
+                vals = shards[t].populations[d_idx, j_idx]
+                shard.remote_buf[out_pos] = vals.to(device=shard.device)
+        # 4. streaming per shard
+        for shard in shards:
+            shard.out = _stream_gather_shard(
+                shard, shard.populations, shard.f_leaf, shard.ghost_vals,
+            )
+        # 5. BFL per shard (force contributions captured for global assembly)
+        force_records: list[list] = [[] for _ in shards]
+        if bfl_fn is not None:
+            for idx_s, shard in enumerate(shards):
+                shard.remote_values = shard.remote_buf
+                shard._link_sink = (
+                    lambda d, idx, link, _s=idx_s: force_records[_s].append(
+                        (d, idx, link),
+                    )
+                )
+                result = bfl_fn(
+                    shard, shard.out, shard.post_collision,
+                    shard.ghost_plan, shard.ghost_vals, substep=s,
+                )
+                shard.out, _substep_force = result
+                shard._link_sink = None
+        # 6. reflux observation (assembled in global order on the root)
+        if reflux:
+            observed = _assemble_shell_transfer(
+                shards, q=q, dtype=dtype, root_device=root_device,
+            )
+            fine_transfer = (
+                observed if fine_transfer is None else fine_transfer + observed
+            )
+        # 7. force bookkeeping (one global force per substep, like unsharded)
+        if force_ledger is not None and bfl_fn is not None:
+            force_root = _assemble_bfl_force(
+                shards, force_records, q=q, root_device=root_device,
+            )
+            force_ledger.add_substep_force(force_root)
+        # 8. commit
+        for shard in shards:
+            shard.f_leaf = shard.out
+            shard.populations = None
+            shard.post_collision = None
+            shard.ghost_vals = None
+            shard.out = None
+            shard.remote_values = None
+
+    # ---- restriction + reflux on the root device (identical to unsharded) --
+    from tensorlbm.octree_boundary.sharding import refresh_octree_f_leaf
+
+    refresh_octree_f_leaf(octree, shards)
+    restricted, cells = restrict_shell_to_block(octree, octree.f_leaf, taus)
+    old_patch = l1_f[:, cells[:, 0], cells[:, 1], cells[:, 2]].clone()
+    l1_f[:, cells[:, 0], cells[:, 1], cells[:, 2]] = restricted
+    replacement_mismatch = old_patch.sum(dim=1) - restricted.sum(dim=1)
+    if not reflux:
+        return PopulationRefluxLedger(
+            replacement_mismatch,
+            torch.zeros_like(replacement_mismatch),
+            0,
+            replacement_mismatch,
+            0,
+            replacement_mismatch,
+        )
+    if fine_transfer is None:
+        raise RuntimeError("shell stepping omitted the fine interface transfer")
+    if l1_post is None or coarse_links is None or observation_links is None:
+        raise RuntimeError(
+            "reflux bookkeeping lost l1_post, coarse_links or observation_links",
+        )
+    if isinstance(l1_post, (tuple, list)):
         if len(l1_post) == 0:
             raise ValueError("l1_post sequence must not be empty")
         coarse_transfer = observe_kinetic_interface_transfer(
