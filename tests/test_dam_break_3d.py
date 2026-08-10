@@ -1,4 +1,5 @@
 """W9-04 contract tests for the dam-break 3D free-surface runner."""
+
 from __future__ import annotations
 
 import json
@@ -72,9 +73,11 @@ def test_fs_runner_does_not_rebuild_mass_from_fill_between_steps(tmp_path, monke
     assert seen_masses[0] is not None
     assert seen_masses[1] is not None
     assert injected_at
-    assert torch.allclose(seen_masses[1][injected_at[0]], torch.full_like(
-        seen_masses[1][injected_at[0]], 0.125
-    ), atol=1e-6)
+    assert torch.allclose(
+        seen_masses[1][injected_at[0]],
+        torch.full_like(seen_masses[1][injected_at[0]], 0.125),
+        atol=1e-6,
+    )
 
 
 def test_initial_envelope_repair_blocks_direct_liquid_gas_failure():

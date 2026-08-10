@@ -1,4 +1,5 @@
 """R1 contracts for actual-state free-surface inventory reconciliation."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,9 +25,13 @@ CANONICAL_STAGES = (
 
 
 def _nested(value):
-    if isinstance(value, tuple) and value and all(
-        isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str)
-        for item in value
+    if (
+        isinstance(value, tuple)
+        and value
+        and all(
+            isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str)
+            for item in value
+        )
     ):
         return {key: _nested(item) for key, item in value}
     return value
@@ -34,7 +39,9 @@ def _nested(value):
 
 def test_forced_step_three_separates_pre_topology_combined_from_conversion() -> None:
     report = run_free_surface_closure_experiment()
-    forced = next(case for case in report.cases if case.case_id == "B_forced_conversion_deterministic")
+    forced = next(
+        case for case in report.cases if case.case_id == "B_forced_conversion_deterministic"
+    )
     step = forced.steps[2]
     assert step.tracked_independent_mass_drift == pytest.approx(0.0, abs=2.0e-6)
     reconciliation = _nested(step.inventory_reconciliation)
@@ -47,15 +54,23 @@ def test_forced_step_three_separates_pre_topology_combined_from_conversion() -> 
     assert tuple(stages) == CANONICAL_STAGES
     assert "after_exchange" not in stages
     assert reconciliation["pre_topology_combined_total_liquid_inventory_delta"] == pytest.approx(
-        sum(deltas[name]["total_liquid_inventory"] for name in (
-            "after_collision_and_forcing", "after_stream_and_gas_zero", "after_abb",
-            "after_wall_boundary", "after_mass_exchange",
-        )), abs=2.0e-7,
+        sum(
+            deltas[name]["total_liquid_inventory"]
+            for name in (
+                "after_collision_and_forcing",
+                "after_stream_and_gas_zero",
+                "after_abb",
+                "after_wall_boundary",
+                "after_mass_exchange",
+            )
+        ),
+        abs=2.0e-7,
     )
     assert deltas["after_mass_exchange"]["total_liquid_inventory"] != pytest.approx(0.0, abs=2.0e-7)
     assert deltas["after_topology_conversion"]["total_liquid_inventory"] < 0.0
     assert reconciliation["observed_total_liquid_inventory_delta"] == pytest.approx(
-        reconciliation["sum_stage_total_liquid_inventory_delta"], abs=2.0e-7,
+        reconciliation["sum_stage_total_liquid_inventory_delta"],
+        abs=2.0e-7,
     )
 
 
@@ -67,20 +82,30 @@ def test_frozen_paired_off_on_have_stage_evidence_and_dynamic_case_reconciles() 
             reconciliation = _nested(step.inventory_reconciliation)
             assert reconciliation is not None
             assert reconciliation["status"] == "DIAGNOSTIC_WITHHELD_NOT_PHYSICAL_CLOSURE"
-            assert reconciliation["stage_deltas"]["after_topology_conversion"]["total_liquid_inventory"] == 0.0
+            assert (
+                reconciliation["stage_deltas"]["after_topology_conversion"][
+                    "total_liquid_inventory"
+                ]
+                == 0.0
+            )
     dynamic = cases["C_dam_break_style_tiny_dynamic_topology"]
     assert len(dynamic.steps) == 10
     for step in dynamic.steps:
         reconciliation = _nested(step.inventory_reconciliation)
         assert reconciliation is not None
         assert reconciliation["observed_total_liquid_inventory_delta"] == pytest.approx(
-            reconciliation["sum_stage_total_liquid_inventory_delta"], abs=2.0e-6,
+            reconciliation["sum_stage_total_liquid_inventory_delta"],
+            abs=2.0e-6,
         )
 
 
-def test_dynamic_step_four_has_positive_pre_topology_and_negative_conversion_without_conversion_only_claim() -> None:
+def test_dynamic_step_four_has_positive_pre_topology_and_negative_conversion_without_conversion_only_claim() -> (
+    None
+):
     report = run_free_surface_closure_experiment()
-    dynamic = next(case for case in report.cases if case.case_id == "C_dam_break_style_tiny_dynamic_topology")
+    dynamic = next(
+        case for case in report.cases if case.case_id == "C_dam_break_style_tiny_dynamic_topology"
+    )
     reconciliation = _nested(dynamic.steps[3].inventory_reconciliation)
     assert reconciliation is not None
     deltas = _nested(reconciliation["stage_deltas"])
@@ -89,7 +114,8 @@ def test_dynamic_step_four_has_positive_pre_topology_and_negative_conversion_wit
     assert reconciliation["pre_topology_combined_total_liquid_inventory_delta"] > 0.0
     assert deltas["after_topology_conversion"]["total_liquid_inventory"] < 0.0
     assert reconciliation["observed_total_liquid_inventory_delta"] == pytest.approx(
-        reconciliation["sum_stage_total_liquid_inventory_delta"], abs=2.0e-6,
+        reconciliation["sum_stage_total_liquid_inventory_delta"],
+        abs=2.0e-6,
     )
 
 
@@ -100,7 +126,12 @@ def test_no_diagnostic_has_bitwise_parity_with_cold_diagnostic() -> None:
     normal = free_surface_step(f, fill, flags, solid, mass=fill.clone(), rho_gas=1.0e-3)
     ledger: dict[str, object] = {}
     diagnosed = free_surface_step(
-        f, fill, flags, solid, mass=fill.clone(), rho_gas=1.0e-3,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=fill.clone(),
+        rho_gas=1.0e-3,
         inventory_reconciliation_ledger=ledger,
     )
     assert ledger
@@ -113,14 +144,20 @@ def test_inventory_ledger_is_atomic_when_transaction_build_fails(monkeypatch) ->
     from tensorlbm.free_surface_closure_experiment import _conversion_state
 
     monkeypatch.setattr(
-        module, "build_topology_transaction",
+        module,
+        "build_topology_transaction",
         lambda *args, **kwargs: (_ for _ in ()).throw(TopologyTransactionError("injected")),
     )
     f, fill, flags, solid = _conversion_state()
     ledger = {"nested": {"entries": ["unchanged"]}}
     with pytest.raises(TopologyTransactionError, match="injected"):
         free_surface_step(
-            f, fill, flags, solid, mass=fill.clone(), inventory_reconciliation_ledger=ledger,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=fill.clone(),
+            inventory_reconciliation_ledger=ledger,
         )
     assert ledger == {"nested": {"entries": ["unchanged"]}}
 

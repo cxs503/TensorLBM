@@ -1,0 +1,56 @@
+{
+  "schema": "tensorlbm-gradient-sgs-collision-viscosity-evidence-v1",
+  "status": "molecular_viscosity_recovery_admitted",
+  "purpose": "Verify that WALE and Vreman cumulant closures preserve the molecular viscosity on a laminar transverse shear mode where their modeled eddy viscosity should vanish.",
+  "cases": [
+    {
+      "collision_model": "cumulant_wale",
+      "coefficient": 0.5,
+      "tau": 0.8,
+      "target_kinematic_viscosity": 0.10000000000000002,
+      "recovered_kinematic_viscosity": 0.10005168382683657,
+      "relative_error_pct": 0.051683826836554356,
+      "admitted": true,
+      "artifact": "results/collision-viscosity-cumulant-wale-tau080-r1.json",
+      "artifact_sha256": "b202dd54cc0f9fe61a6eed4ae345d9e4fe31634251ae62927cd9963d15d546d7"
+    },
+    {
+      "collision_model": "cumulant_vreman",
+      "coefficient": 0.025,
+      "tau": 0.8,
+      "target_kinematic_viscosity": 0.10000000000000002,
+      "recovered_kinematic_viscosity": 0.10005168382683657,
+      "relative_error_pct": 0.051683826836554356,
+      "admitted": true,
+      "artifact": "results/collision-viscosity-cumulant-vreman-tau080-r1.json",
+      "artifact_sha256": "610fdad6a54f418f5f22378f4a270b39d3b851a44a4bb5824386eb323c655241"
+    },
+    {
+      "collision_model": "cumulant_wale",
+      "coefficient": 0.5,
+      "tau": 0.5002,
+      "target_kinematic_viscosity": 0.00006666666666665932,
+      "recovered_kinematic_viscosity": 0.00006780771275294893,
+      "relative_error_pct": 1.711569129434596,
+      "admitted": true,
+      "artifact": "results/collision-viscosity-cumulant-wale-high-re-r1.json",
+      "artifact_sha256": "f79dc45485fa140c17f1a1a1d5a37c08b1f5ba0d0eb764f51d864c80049d82e3"
+    },
+    {
+      "collision_model": "cumulant_vreman",
+      "coefficient": 0.025,
+      "tau": 0.5002,
+      "target_kinematic_viscosity": 0.00006666666666665932,
+      "recovered_kinematic_viscosity": 0.00006780771275294893,
+      "relative_error_pct": 1.711569129434596,
+      "admitted": true,
+      "artifact": "results/collision-viscosity-cumulant-vreman-high-re-r1.json",
+      "artifact_sha256": "52d06811b2eb96a5324c993ad4ab78d6e6615906909140d04c71f701412fd0ce"
+    }
+  ],
+  "acceptance": {
+    "maximum_relative_error_pct": 2.0,
+    "all_cases_admitted": true
+  },
+  "scope_limit": "This audit establishes molecular shear-viscosity recovery only. It does not validate nonlinear SGS energy transfer, near-wall scaling, SUBOFF resistance, or grid convergence."
+}

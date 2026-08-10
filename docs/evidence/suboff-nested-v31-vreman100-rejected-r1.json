@@ -1,0 +1,63 @@
+{
+  "schema": "tensorlbm-gradient-sgs-candidate-evidence-v1",
+  "candidate": "suboff-nested-v31-l90-vreman100-masked-2400",
+  "status": "rejected_at_population_health_floor",
+  "configuration": {
+    "collision_model": "cumulant_vreman",
+    "vreman_coefficient": 0.1,
+    "coarse_hull_length_cells": 90,
+    "stress_exchange_distance": 1.0,
+    "target_resolved_reynolds": 100000,
+    "target_steps": 2400,
+    "physical_boundary_gradients": true,
+    "finest_solid_velocity_masked": true
+  },
+  "last_checkpoint": {
+    "step": 1200,
+    "minimum_population_by_level": [
+      0.01698506996035576,
+      0.019803734496235847,
+      0.02033083513379097
+    ],
+    "maximum_speed_by_level": [
+      0.06646041572093964,
+      0.0685935840010643,
+      0.07078510522842407
+    ],
+    "maximum_transfer_limited_fraction_by_interface": [0.0, 0.0]
+  },
+  "failure": {
+    "step": 1500,
+    "wall_activation": 0.49999999999999994,
+    "minimum_population": 1.862645149230957e-9,
+    "minimum_population_limit": 1e-8,
+    "failing_level": 2,
+    "maximum_speed": 0.17115795612335205,
+    "cells_from_allocated_boundary": 3,
+    "near_wall": false,
+    "bfl_link_count": 0,
+    "maximum_collision_limited_fraction": 0.00019662643450732092,
+    "inner_interface_raw_mass_mismatch": 5.345050811767578,
+    "inner_interface_maximum_reflux_applied_correction_fraction": 0.00011505507427500561,
+    "reflux_applied_correction_fraction_limit": 0.001
+  },
+  "comparison": {
+    "vreman_coefficient_0_025_failure_step": 1440,
+    "vreman_coefficient_0_1_failure_step": 1500,
+    "delay_steps": 60,
+    "coefficient_increase_factor": 4.0
+  },
+  "admission": {
+    "completed_target_steps": false,
+    "population_health_target_met": false,
+    "material_collision_limiting_observed": true,
+    "admitted": false
+  },
+  "artifacts": {
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v31-l90-vreman-masked-2400.ckpt",
+    "remote_checkpoint_sha256": "8b04595887e18f36ee39357062e60c860549ba86dc4bea51a6603dadeba2ca3a",
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v31-l90-vreman100-masked-2400.log",
+    "remote_log_sha256": "771c249dc2d8d0b36b6312719db0793062e53e4316ca668975f81720a559cd0b"
+  },
+  "conclusion": "A fourfold Vreman coefficient increase delayed the historical failure by only 60 root steps and introduced material collision limiting. No further coefficient escalation is justified."
+}

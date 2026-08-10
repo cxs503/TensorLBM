@@ -1,0 +1,79 @@
+{
+  "schema": "tensorlbm-wall-resolved-channel3d-negative-evidence-v1",
+  "status": "rejected",
+  "physical_validation": false,
+  "case": {
+    "name": "channel3d-retau180-cumulant-strong-r2",
+    "re_tau": 180.0,
+    "grid_nx_ny_nz": [128, 64, 64],
+    "fluid_height_cells": 62,
+    "collision_model": "cumulant",
+    "initialization": "legacy coherent single-mode perturbation",
+    "terminal_step": 100000,
+    "statistics_reset_step": 30000,
+    "profile_samples": 7000
+  },
+  "source_acceptance": {
+    "population_health": true,
+    "positive_populations": true,
+    "terminal_friction_velocity_error_pct": -5.994430201987265,
+    "legacy_last_three_report_error_pct": -5.94842171526026,
+    "legacy_last_three_report_range_fraction": 0.0010032399462195924,
+    "crossflow_rms_over_u_tau": 2.943734327952067,
+    "minimum_population": 0.014821910299360752,
+    "mass_drift_fraction": -0.000013474987654080946
+  },
+  "dns_assessment": {
+    "reference": "Moser, Kim & Mansour, Physics of Fluids 11, 943-945 (1999)",
+    "mean_u_plus_rms_error": 1.0229351016497306,
+    "maximum_mean_u_plus_absolute_error": 1.3626095140520462,
+    "maximum_allowed_mean_u_plus_rms_error": 1.0,
+    "reynolds_stress_component_order": ["uu", "vv", "ww", "uv"],
+    "reynolds_stress_component_rms_error": [
+      0.4530965295263868,
+      1.0433005041812249,
+      5.884323923268662,
+      0.09633062574644279
+    ],
+    "maximum_allowed_component_rms_error": 1.0
+  },
+  "periodic_domain_audit": {
+    "streamwise_length_over_half_height": 4.129032258064516,
+    "spanwise_length_over_half_height": 2.064516129032258,
+    "mkm_streamwise_length_over_half_height": 12.566370614359172,
+    "mkm_spanwise_length_over_half_height": 4.1887902047863905,
+    "full_dns_statistics_domain_supported": false
+  },
+  "decision": {
+    "accepted": false,
+    "reasons": [
+      "The terminal friction velocity is 5.99 percent below the imposed momentum-balance target.",
+      "The mean velocity profile exceeds the independent DNS RMS threshold.",
+      "The spanwise Reynolds-stress RMS error is 5.88, indicating severe component bias from the coherent initialization and undersized periodic box.",
+      "The legacy three-report stationarity gate missed a slow eddy-turnover-scale drift and has been replaced by a physically scaled window.",
+      "The periodic box is smaller than the box underlying the full MKM DNS statistics in both homogeneous directions."
+    ],
+    "next_case": "band-limited discretely solenoidal initialization in a 400x64x132 full DNS box"
+  },
+  "artifacts": {
+    "result": {
+      "path": "results/canonical_wall/channel3d-retau180-cumulant-strong-r2.json",
+      "sha256": "7640cdac1e615c1a552eab184f38a3fdc958238ab18d7bd6911cc24c4a490e62"
+    },
+    "checkpoint": {
+      "path": "results/canonical_wall/channel3d-retau180-cumulant-strong-r2.ckpt",
+      "sha256": "ffe3f22a16db1898231c036769db08af2efff6b0b2c3eff76d020b8afcc7a928"
+    },
+    "dns_assessment": {
+      "path": "results/canonical_wall/channel3d-retau180-cumulant-strong-r2-dns-assessment.json",
+      "sha256": "29172f0bfc13a47945b2cbe654fea26c1fa1aa63d41a67828286f02fdd873d73"
+    },
+    "log": {
+      "path": "results/canonical_wall-channel3d-retau180-cumulant-strong-r2-resume50000-to100000-physical4.wait.log",
+      "sha256": "841770ab20cc564123ca3a20d8c1c9a3a19ee4f635187f767cfd72d15fdfe708"
+    },
+    "dns_mean_reference_sha256": "f54c86e30a869798f140aa004c1e167cd13a6280e988d2794d72ca2be8b5fc82",
+    "dns_reynolds_stress_reference_sha256": "61f282379b80192ac8eba087aabdc41e891e854926161db866ca23fbf9111608"
+  },
+  "corrective_implementation_commit": "1c2bdb2"
+}

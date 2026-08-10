@@ -6,6 +6,7 @@ adapter intentionally does not reconstruct populations from those fields.  It
 records the runner result and withholds the force window unless a future public
 result explicitly exposes a sequence through ``population_states``.
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
@@ -27,14 +28,22 @@ _WITHHELD = "WITHHELD_NO_POPULATION_STATE"
 
 
 def _canonical_hash(value: object) -> str:
-    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode(
+        "utf-8"
+    )
     return sha256(encoded).hexdigest()
 
 
 def _json_value(value: object) -> object:
     """Produce metadata only; tensor contents are never substituted for state."""
     if isinstance(value, torch.Tensor):
-        return {"tensor": {"shape": list(value.shape), "dtype": str(value.dtype), "device": str(value.device)}}
+        return {
+            "tensor": {
+                "shape": list(value.shape),
+                "dtype": str(value.dtype),
+                "device": str(value.device),
+            }
+        }
     if is_dataclass(value):
         return _json_value(asdict(value))
     if isinstance(value, Mapping):
@@ -124,7 +133,11 @@ def run_suboff_full_wet_production_window(
         "artifact_kind": "suboff_full_wet_production_window",
         "schema": "suboff-full-wet-production-window-r1",
         "runner": runner_metadata,
-        "geometry": {"body_id": asset.body_id, "source_hash": asset.source_hash, "shape_zyx": list(asset.solid_mask.shape)},
+        "geometry": {
+            "body_id": asset.body_id,
+            "source_hash": asset.source_hash,
+            "shape_zyx": list(asset.solid_mask.shape),
+        },
         "physical_validation": False,
     }
     if states is None:
@@ -133,7 +146,13 @@ def run_suboff_full_wet_production_window(
             "public_result_contract": "FullyWettedFlowResult exposes density, velocity, force, reaction, moment, status, evidence only",
             "prohibition": "no_population_reconstruction_or_synthetic_state",
         }
-        payload = {**common, "status": _WITHHELD, "window_status": _WITHHELD, "force_window": None, "provenance": provenance}
+        payload = {
+            **common,
+            "status": _WITHHELD,
+            "window_status": _WITHHELD,
+            "force_window": None,
+            "provenance": provenance,
+        }
         payload["provenance_hash"] = _canonical_hash(_json_value(payload))
         return payload
 
@@ -144,7 +163,13 @@ def run_suboff_full_wet_production_window(
         "state_count": len(states),
         "state_kind": "caller-produced_public_runner_population_sequence",
     }
-    payload = {**common, "status": "measured_candidate", "window_status": "MEASURED_REAL_POPULATION_STATE", "force_window": record, "provenance": provenance}
+    payload = {
+        **common,
+        "status": "measured_candidate",
+        "window_status": "MEASURED_REAL_POPULATION_STATE",
+        "force_window": record,
+        "provenance": provenance,
+    }
     payload["provenance_hash"] = _canonical_hash(_json_value(payload))
     return payload
 

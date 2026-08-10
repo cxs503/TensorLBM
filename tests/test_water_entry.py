@@ -71,9 +71,7 @@ class TestZouHeInletVelocityZ:
         uz_in = 0.06
         f_out = zou_he_inlet_velocity_z(f, uz_in=uz_in)
         _, _, _, uz_out = macroscopic3d(f_out)
-        assert torch.allclose(
-            uz_out[0, :, :], torch.full((ny, nx), uz_in), atol=2e-4
-        )
+        assert torch.allclose(uz_out[0, :, :], torch.full((ny, nx), uz_in), atol=2e-4)
 
     def test_zero_inlet_velocity(self) -> None:
         """uz_in=0 should not corrupt the distribution."""
@@ -112,9 +110,7 @@ class TestZouHeOutletPressureZ:
         rho_out = 1.0
         f_out = zou_he_outlet_pressure_z(f, rho_out=rho_out)
         rho_field, _, _, _ = macroscopic3d(f_out)
-        assert torch.allclose(
-            rho_field[-1, :, :], torch.full((ny, nx), rho_out), atol=1e-4
-        )
+        assert torch.allclose(rho_field[-1, :, :], torch.full((ny, nx), rho_out), atol=1e-4)
 
 
 # ---------------------------------------------------------------------------
@@ -165,14 +161,15 @@ class TestMakeTankWallMask3d:
 class TestApplyWaterEntryBoundaries3d:
     def test_preserves_shape_and_finite(self) -> None:
         nz, ny, nx = 12, 10, 10
-        obstacle = sphere_mask(nx, ny, nz, nx // 2, ny // 2, nz // 2, 2.0,
-                               device=torch.device("cpu"))
+        obstacle = sphere_mask(
+            nx, ny, nz, nx // 2, ny // 2, nz // 2, 2.0, device=torch.device("cpu")
+        )
         wall_mask = make_tank_wall_mask_3d(nz, ny, nx, obstacle, device=torch.device("cpu"))
         rho = torch.ones((nz, ny, nx))
         f = equilibrium3d(rho, torch.zeros_like(rho), torch.zeros_like(rho), torch.zeros_like(rho))
-        f_out = apply_water_entry_boundaries_3d(f, v_entry=0.05,
-                                                wall_mask=wall_mask,
-                                                obstacle_mask=obstacle)
+        f_out = apply_water_entry_boundaries_3d(
+            f, v_entry=0.05, wall_mask=wall_mask, obstacle_mask=obstacle
+        )
         assert f_out.shape == f.shape
         assert torch.isfinite(f_out).all()
 
@@ -185,10 +182,15 @@ class TestApplyWaterEntryBoundaries3d:
 class TestSphereWaterEntryConfig:
     def _default_kwargs(self) -> dict:
         return {
-            "nx": 32, "ny": 32, "nz": 64,
-            "radius": 4.0, "sphere_z_frac": 0.5,
-            "v_entry": 0.05, "re": 100.0,
-            "n_steps": 10, "output_interval": 5,
+            "nx": 32,
+            "ny": 32,
+            "nz": 64,
+            "radius": 4.0,
+            "sphere_z_frac": 0.5,
+            "v_entry": 0.05,
+            "re": 100.0,
+            "n_steps": 10,
+            "output_interval": 5,
         }
 
     def test_valid_config_does_not_raise(self) -> None:
@@ -250,11 +252,16 @@ class TestRunSphereWaterEntry:
     def test_smoke_run(self, tmp_path: Path) -> None:
         """A minimal smoke test: 5 steps, checks that output files exist."""
         cfg = SphereWaterEntryConfig(
-            nx=24, ny=24, nz=48,
-            radius=3.0, sphere_z_frac=0.5,
-            v_entry=0.05, re=60.0,
+            nx=24,
+            ny=24,
+            nz=48,
+            radius=3.0,
+            sphere_z_frac=0.5,
+            v_entry=0.05,
+            re=60.0,
             n_ramp=2,
-            n_steps=5, output_interval=5,
+            n_steps=5,
+            output_interval=5,
             output_root=tmp_path,
             run_name="smoke",
             overwrite=True,
@@ -273,10 +280,16 @@ class TestRunSphereWaterEntry:
     def test_smoke_run_with_smagorinsky(self, tmp_path: Path) -> None:
         """Smoke test with Smagorinsky LES enabled."""
         cfg = SphereWaterEntryConfig(
-            nx=24, ny=24, nz=48,
-            radius=3.0, sphere_z_frac=0.5,
-            v_entry=0.05, re=60.0, smagorinsky_cs=0.1,
-            n_steps=4, output_interval=4,
+            nx=24,
+            ny=24,
+            nz=48,
+            radius=3.0,
+            sphere_z_frac=0.5,
+            v_entry=0.05,
+            re=60.0,
+            smagorinsky_cs=0.1,
+            n_steps=4,
+            output_interval=4,
             output_root=tmp_path,
             run_name="smoke_les",
             overwrite=True,
@@ -286,12 +299,20 @@ class TestRunSphereWaterEntry:
 
     def test_forces_csv_has_correct_columns(self, tmp_path: Path) -> None:
         import csv as _csv
+
         cfg = SphereWaterEntryConfig(
-            nx=24, ny=24, nz=48,
-            radius=3.0, sphere_z_frac=0.5,
-            v_entry=0.05, re=60.0,
-            n_steps=3, output_interval=10,
-            output_root=tmp_path, run_name="csv_check", overwrite=True,
+            nx=24,
+            ny=24,
+            nz=48,
+            radius=3.0,
+            sphere_z_frac=0.5,
+            v_entry=0.05,
+            re=60.0,
+            n_steps=3,
+            output_interval=10,
+            output_root=tmp_path,
+            run_name="csv_check",
+            overwrite=True,
         )
         run_dir = run_sphere_water_entry(cfg)
         with (run_dir / "forces.csv").open(encoding="utf-8") as fh:
@@ -319,11 +340,26 @@ def test_sphere_water_entry_cli_smoke(tmp_path: Path) -> None:
     cmd = [
         sys.executable,
         str(repo_root / "examples" / "sphere_water_entry.py"),
-        "--nx", "24", "--ny", "24", "--nz", "48",
-        "--radius", "3", "--v-entry", "0.05", "--re", "60",
-        "--n-steps", "8", "--output-interval", "4",
-        "--output-root", str(output_root),
-        "--run-name", "smoke",
+        "--nx",
+        "24",
+        "--ny",
+        "24",
+        "--nz",
+        "48",
+        "--radius",
+        "3",
+        "--v-entry",
+        "0.05",
+        "--re",
+        "60",
+        "--n-steps",
+        "8",
+        "--output-interval",
+        "4",
+        "--output-root",
+        str(output_root),
+        "--run-name",
+        "smoke",
     ]
     subprocess.run(cmd, check=True, env=env, cwd=str(repo_root))
 

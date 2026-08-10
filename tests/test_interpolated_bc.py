@@ -1,4 +1,5 @@
 """Tests for interpolated_bc.py: bouzidi_bounce_back."""
+
 from __future__ import annotations
 
 import torch
@@ -65,11 +66,15 @@ class TestBouzidiBounceBack:
         opp = 3  # OPPOSITE[1] for D2Q9
 
         f_out = bouzidi_bounce_back(f, f_prev, fluid_nodes, q, direction=direction)
-        # At q=0.5: f_bc = 2*0.5*f_opp + 0 = f_opp (standard BB)
+        # At q=0.5 the unknown opposite population equals the outgoing
+        # post-collision population at the boundary-fluid node.
         assert torch.allclose(
-            f_out[direction][fluid_nodes],
-            f[opp][fluid_nodes],
+            f_out[opp][fluid_nodes],
+            f_prev[direction][fluid_nodes],
             atol=1e-5,
+        )
+        assert torch.equal(
+            f_out[direction][fluid_nodes], f[direction][fluid_nodes],
         )
 
     def test_linear_branch_q_less_than_half(self) -> None:
@@ -115,6 +120,7 @@ class TestBouzidiBounceBack:
 # ---------------------------------------------------------------------------
 # Phase 7: 3-D Bouzidi BC tests
 # ---------------------------------------------------------------------------
+
 
 class TestComputeQSphere:
     def test_returns_correct_shapes(self) -> None:
@@ -198,11 +204,15 @@ class TestBouzidiBounceBack3D:
         direction = 1
         opp = int(OPP3D[direction].item())
         f_out = bouzidi_bounce_back_3d(f, f_prev, fluid_nodes, q, direction=direction)
-        # At q=0.5: f_bc = 2*0.5*f_opp + 0 = f_opp
+        # At q=0.5 the unknown opposite population equals the outgoing
+        # post-collision population.
         assert torch.allclose(
-            f_out[direction][fluid_nodes],
-            f[opp][fluid_nodes],
+            f_out[opp][fluid_nodes],
+            f_prev[direction][fluid_nodes],
             atol=1e-5,
+        )
+        assert torch.equal(
+            f_out[direction][fluid_nodes], f[direction][fluid_nodes],
         )
 
     def test_with_compute_q_sphere_finite(self) -> None:

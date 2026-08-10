@@ -22,6 +22,7 @@ Key optimisations (all internal to ``LBMStepExecutor``):
 Numerical equivalence: every internal optimised method produces results
 that are ``allclose(atol=1e-6)`` with the original standalone functions.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -139,9 +140,7 @@ class LBMStepExecutor:
         force_kwargs: dict[str, Any] | None = None,
     ):
         if lattice not in _LATTICE_Q:
-            raise ValueError(
-                f"Unsupported lattice {lattice!r}; supported: {list(_LATTICE_Q)}"
-            )
+            raise ValueError(f"Unsupported lattice {lattice!r}; supported: {list(_LATTICE_Q)}")
         self.lattice = lattice
         self.Q = _LATTICE_Q[lattice]
         self.device = device
@@ -152,10 +151,7 @@ class LBMStepExecutor:
         # -- Callbacks ---------------------------------------------------
         self._use_internal_bgk = isinstance(collide_fn, str) and collide_fn == "bgk"
         if not self._use_internal_bgk and not callable(collide_fn):
-            raise ValueError(
-                "collide_fn must be 'bgk' or a callable, got "
-                f"{collide_fn!r}"
-            )
+            raise ValueError(f"collide_fn must be 'bgk' or a callable, got {collide_fn!r}")
         self._collide_fn = collide_fn if not self._use_internal_bgk else None
         self._stream_fn = stream_fn  # None → internal
         self._boundary_fn = boundary_fn
@@ -166,13 +162,23 @@ class LBMStepExecutor:
         self._force_kwargs = force_kwargs or {}
 
         # -- Lattice constants -------------------------------------------
-        C, W, OPPOSITE, macro_fn, eq_fn = _get_lattice_constants(
-            lattice, device, dtype
-        )
+        C, W, OPPOSITE, macro_fn, eq_fn = _get_lattice_constants(lattice, device, dtype)
         self._macroscopic_fn = macro_fn
         self._equilibrium_fn = eq_fn
         self._C = C.to(device)
-        self._W = W.to(device).to(dtype)
+        del W
+        weights_by_squared_speed = (
+            (1.0 / 3.0, 1.0 / 18.0, 1.0 / 36.0)
+            if self.Q == 19 else (
+                8.0 / 27.0, 2.0 / 27.0, 1.0 / 54.0, 1.0 / 216.0,
+            )
+        )
+        speed_weights = torch.tensor(
+            weights_by_squared_speed, device=device, dtype=dtype,
+        )
+        self._W = speed_weights[
+            self._C.square().sum(dim=1).to(torch.long)
+        ]
         self._OPPOSITE = OPPOSITE.to(device)
 
         # Pre-compute float lattice vectors and views (avoid per-step alloc)
@@ -299,11 +305,11 @@ class LBMStepExecutor:
         # term = 1 + 3*cu + 4.5*cu² - 1.5*u_sq
         # Use self.out_stream as scratch (not needed during collide phase).
         scratch = self.out_stream
-        torch.mul(self._tmp_f, self._tmp_f, out=scratch)   # cu²
-        scratch.mul_(4.5)                                   # 4.5*cu²
-        scratch.add_(self._tmp_f, alpha=3.0)               # 4.5*cu² + 3*cu
-        scratch.add_(-1.5 * self.u_mag.unsqueeze(0))        # - 1.5*u_sq
-        scratch.add_(1.0)                                   # + 1
+        torch.mul(self._tmp_f, self._tmp_f, out=scratch)  # cu²
+        scratch.mul_(4.5)  # 4.5*cu²
+        scratch.add_(self._tmp_f, alpha=3.0)  # 4.5*cu² + 3*cu
+        scratch.add_(-1.5 * self.u_mag.unsqueeze(0))  # - 1.5*u_sq
+        scratch.add_(1.0)  # + 1
 
         # feq *= term  [in-place]
         self.feq.mul_(scratch)
@@ -425,7 +431,9 @@ class LBMStepExecutor:
         # Wall shear stress and body force (same formula as wall_function)
         tau_w = self.u_tau * self.u_tau
         near_f = self._near_wall.to(f.dtype)
-        coef = -(tau_w / self._y_val) * near_f
+        # Unit lattice wall area / boundary-cell volume is one.  y_val has
+        # already entered the wall-law solve and must not scale traction again.
+        coef = -tau_w * near_f
         inv_umag = 1.0 / self.u_mag
         fx = coef * (ux * inv_umag)
         fy = coef * (uy * inv_umag)
@@ -450,7 +458,7 @@ class LBMStepExecutor:
         Same formula as
         :func:`tensorlbm.wall_function_common._apply_body_force`::
 
-            forcing = w * (1 + c·u/cs²) * (c·F) / cs²
+            forcing = w * ((c·F-u·F)/cs² + (c·u)(c·F)/cs⁴)
             f_new = f + forcing
 
         but reuses pre-computed ``(ux, uy, uz)`` instead of calling
@@ -468,14 +476,17 @@ class LBMStepExecutor:
         self.feq.addcmul_(self._cy_view, uy.unsqueeze(0))
         self.feq.addcmul_(self._cz_view, uz.unsqueeze(0))
 
-        # forcing = w * (1 + cu_u/cs²) * cu / cs²
-        # Write into out_stream as scratch, then add to f in-place
+        # Mass-conservative post-collision source.  Write into out_stream as
+        # scratch, then add to f in-place.
         scratch = self.out_stream
-        torch.mul(self.feq, 1.0 / cs2, out=scratch)  # cu_u / cs²
-        scratch.add_(1.0)  # 1 + cu_u / cs²
-        scratch.mul_(self._tmp_f)  # (1 + cu_u/cs²) * cu
-        scratch.mul_(self._w_view)  # w * (1 + cu_u/cs²) * cu
-        scratch.mul_(1.0 / cs2)  # w * (1 + cu_u/cs²) * cu / cs²
+        torch.mul(self.feq, self._tmp_f, out=scratch)
+        scratch.mul_(1.0 / cs2**2)
+        scratch.add_(self._tmp_f, alpha=1.0 / cs2)
+        torch.mul(ux, fx, out=self.u_mag)
+        self.u_mag.addcmul_(uy, fy)
+        self.u_mag.addcmul_(uz, fz)
+        scratch.sub_(self.u_mag.unsqueeze(0), alpha=1.0 / cs2)
+        scratch.mul_(self._w_view)
 
         # f += forcing  [in-place if f is not aliased with scratch]
         if f.data_ptr() == scratch.data_ptr():
@@ -504,9 +515,7 @@ class LBMStepExecutor:
     # Public: single timestep
     # ------------------------------------------------------------------
 
-    def step(
-        self, f: torch.Tensor
-    ) -> tuple[torch.Tensor, dict[str, Any]]:
+    def step(self, f: torch.Tensor) -> tuple[torch.Tensor, dict[str, Any]]:
         """Execute one LBM timestep.
 
         Returns ``(f_updated, diagnostics)`` where *diagnostics* is a dict
@@ -575,9 +584,7 @@ class LBMStepExecutor:
     # Public: run multiple steps
     # ------------------------------------------------------------------
 
-    def run(
-        self, f: torch.Tensor, n_steps: int
-    ) -> tuple[torch.Tensor, list[dict[str, Any]]]:
+    def run(self, f: torch.Tensor, n_steps: int) -> tuple[torch.Tensor, list[dict[str, Any]]]:
         """Execute *n_steps* timesteps, returning final *f* and diagnostics list."""
         diags: list[dict[str, Any]] = []
         for _ in range(n_steps):

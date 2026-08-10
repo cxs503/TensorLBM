@@ -3,6 +3,7 @@
 These verify operator algebra (shape, finiteness, mass/momentum conservation,
 equilibrium fixed-point), NOT turbulence physics correctness.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -20,6 +21,7 @@ from tensorlbm.turbulence import (
 # ---------------------------------------------------------------------------
 # D3Q19 dynamic Smagorinsky MRT
 # ---------------------------------------------------------------------------
+
 
 def _make_d3q19_state(seed: int = 42) -> torch.Tensor:
     torch.manual_seed(seed)
@@ -82,9 +84,7 @@ def test_dyn_smag_mrt3d_relaxes_non_equilibrium() -> None:
 def test_dyn_smag_mrt3d_accepts_mrt_rates() -> None:
     """MRT relaxation rates should be accepted as keyword arguments."""
     f = _make_d3q19_state()
-    fout = collide_dynamic_smagorinsky_mrt3d(
-        f, tau=0.7, s_e=1.19, s_eps=1.4, s_q=1.2
-    )
+    fout = collide_dynamic_smagorinsky_mrt3d(f, tau=0.7, s_e=1.19, s_eps=1.4, s_q=1.2)
     assert fout.shape == f.shape
     assert torch.isfinite(fout).all()
 
@@ -92,6 +92,7 @@ def test_dyn_smag_mrt3d_accepts_mrt_rates() -> None:
 # ---------------------------------------------------------------------------
 # D3Q27 dynamic Smagorinsky BGK
 # ---------------------------------------------------------------------------
+
 
 def _make_d3q27_state(seed: int = 99) -> torch.Tensor:
     torch.manual_seed(seed)

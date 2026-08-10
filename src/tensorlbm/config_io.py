@@ -11,6 +11,7 @@ Also provides :func:`save_config_json` and :func:`load_config_json` for a
 built-in, dependency-free JSON round-trip that the runner Config classes
 expose via their ``save`` / ``load`` class methods.
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -42,9 +43,7 @@ def _load_raw(path: Path) -> dict[str, Any]:
         with path.open("rb") as fb:
             return tomllib.load(fb)
 
-    raise ValueError(
-        f"Unsupported config file format: {suffix!r}. Use .yaml, .yml, or .toml"
-    )
+    raise ValueError(f"Unsupported config file format: {suffix!r}. Use .yaml, .yml, or .toml")
 
 
 def _apply_env_overrides(data: dict[str, Any], prefix: str) -> dict[str, Any]:
@@ -199,15 +198,11 @@ def load_config_yaml(
     """
     path = Path(path)
     if path.suffix.lower() not in {".yaml", ".yml"}:
-        raise ValueError(
-            f"load_config_yaml expects a .yaml or .yml file, got {path.suffix!r}"
-        )
+        raise ValueError(f"load_config_yaml expects a .yaml or .yml file, got {path.suffix!r}")
     try:
         import yaml as _yaml  # noqa: F401 – import check only
     except ImportError as exc:
-        raise ImportError(
-            "pyyaml is required to load YAML configs: pip install pyyaml"
-        ) from exc
+        raise ImportError("pyyaml is required to load YAML configs: pip install pyyaml") from exc
     return load_config(config_class, path, env_prefix=env_prefix)
 
 

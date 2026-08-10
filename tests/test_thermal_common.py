@@ -6,6 +6,7 @@ buoyancy coupling, and conjugate heat transfer.
 Contract tests verify operator algebra (shape, finite, mass/temperature
 conservation, equilibrium identity), NOT thermal physics correctness.
 """
+
 from __future__ import annotations
 
 import math
@@ -33,6 +34,7 @@ TAU_T = 0.8  # > 0.5
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _f3d19(nz=4, ny=6, nx=8, u_mag=0.04) -> torch.Tensor:
     rho = torch.rand((nz, ny, nx)) + 0.5
@@ -62,6 +64,7 @@ def _g_thermal(nz=4, ny=6, nx=8, T_mag=1.0, u_mag=0.04) -> torch.Tensor:
 # D3Q7 lattice constants
 # ---------------------------------------------------------------------------
 
+
 class TestD3Q7Constants:
     def test_weights_sum_to_one(self) -> None:
         assert abs(float(W_D3Q7.sum().item()) - 1.0) < 1e-6
@@ -79,6 +82,7 @@ class TestD3Q7Constants:
 # ---------------------------------------------------------------------------
 # Equilibrium
 # ---------------------------------------------------------------------------
+
 
 class TestThermalEquilibrium:
     def test_shape(self) -> None:
@@ -113,6 +117,7 @@ class TestThermalEquilibrium:
 # ---------------------------------------------------------------------------
 # Collision
 # ---------------------------------------------------------------------------
+
 
 class TestThermalCollision:
     def test_preserves_shape(self) -> None:
@@ -161,6 +166,7 @@ class TestThermalCollision:
 # Streaming
 # ---------------------------------------------------------------------------
 
+
 class TestThermalStreaming:
     def test_preserves_shape(self) -> None:
         g = _g_thermal()
@@ -184,6 +190,7 @@ class TestThermalStreaming:
 # Macroscopic recovery
 # ---------------------------------------------------------------------------
 
+
 class TestThermalMacroscopic:
     def test_recovers_temperature(self) -> None:
         nz, ny, nx = 4, 6, 8
@@ -199,6 +206,7 @@ class TestThermalMacroscopic:
 # ---------------------------------------------------------------------------
 # Buoyancy force
 # ---------------------------------------------------------------------------
+
 
 class TestBuoyancyForce:
     @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
@@ -233,6 +241,7 @@ class TestBuoyancyForce:
 # ---------------------------------------------------------------------------
 # Combined thermal_step
 # ---------------------------------------------------------------------------
+
 
 class TestThermalStep:
     @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
@@ -277,10 +286,10 @@ class TestThermalStep:
         g = _g_thermal()
         # Set T away from T_ref
         T_field = torch.full(f.shape[1:], 2.0)
-        g = thermal_equilibrium_3d(T_field, torch.zeros_like(T_field),
-                                   torch.zeros_like(T_field), torch.zeros_like(T_field))
-        f_out, _, _ = thermal_step(f, g, tau_T=TAU_T, lattice=lattice,
-                                   beta=0.01, T_ref=1.0)
+        g = thermal_equilibrium_3d(
+            T_field, torch.zeros_like(T_field), torch.zeros_like(T_field), torch.zeros_like(T_field)
+        )
+        f_out, _, _ = thermal_step(f, g, tau_T=TAU_T, lattice=lattice, beta=0.01, T_ref=1.0)
         assert not torch.allclose(f_out, f, atol=1e-7)
 
     def test_rejects_unknown_lattice(self) -> None:
@@ -293,6 +302,7 @@ class TestThermalStep:
 # ---------------------------------------------------------------------------
 # Conjugate heat transfer
 # ---------------------------------------------------------------------------
+
 
 class TestConjugateHT:
     def test_shape_2d(self) -> None:
@@ -365,6 +375,7 @@ class TestConjugateHT:
 # ---------------------------------------------------------------------------
 # Composability: thermal_step with different collision outputs
 # ---------------------------------------------------------------------------
+
 
 class TestThermalComposability:
     @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])

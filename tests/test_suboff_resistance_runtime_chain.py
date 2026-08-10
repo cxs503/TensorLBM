@@ -1,4 +1,5 @@
 """Runtime-chain coverage for fail-closed SUBOFF resistance evidence."""
+
 from __future__ import annotations
 
 import json
@@ -30,8 +31,12 @@ def test_d3q19_face_integrated_momentum_flux_has_outward_face_signs():
 
 def test_runtime_budget_reports_measured_face_flux_separately_from_bc_delta():
     config = suboff.SuboffResistanceBenchmarkConfig(
-        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-        lbm_steps=10, lbm_warmup_steps=0, momentum_budget_diagnostic=True,
+        base_length_lu=20.0,
+        max_length_lu=20.0,
+        max_iterations=1,
+        lbm_steps=10,
+        lbm_warmup_steps=0,
+        momentum_budget_diagnostic=True,
         momentum_budget_interval=1,
     )
 
@@ -43,19 +48,26 @@ def test_runtime_budget_reports_measured_face_flux_separately_from_bc_delta():
     assert boundary_flux["kind"] == "face_integrated_population_momentum_flux"
     assert len(boundary_flux["samples"]) == 10
     assert "inlet_boundary" in budget["samples"][0]  # BC population delta
-    assert "face_flux" in budget["samples"][0]       # measured face transport
+    assert "face_flux" in budget["samples"][0]  # measured face transport
     assert boundary_flux["closure"]["status"] == "withheld"
     assert boundary_flux["closure"]["reason"] == "face_flux_is_not_a_bc_population_delta"
 
 
 def test_full_operator_diagnostic_binds_same_time_control_volume_evidence_without_false_closure():
-    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(
-        suboff.SuboffResistanceBenchmarkConfig(
-            base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-            lbm_steps=10, lbm_warmup_steps=0, momentum_budget_diagnostic=True,
-            momentum_budget_interval=1,
-        )
-    ))
+    observation = cast(
+        dict[str, Any],
+        suboff.run_suboff_resistance_runtime(
+            suboff.SuboffResistanceBenchmarkConfig(
+                base_length_lu=20.0,
+                max_length_lu=20.0,
+                max_iterations=1,
+                lbm_steps=10,
+                lbm_warmup_steps=0,
+                momentum_budget_diagnostic=True,
+                momentum_budget_interval=1,
+            )
+        ),
+    )
     budget = observation["conservation"]["source_attribution"]["momentum"]["operator_budget"]
     evidence = budget["same_time_control_volume"]
 
@@ -69,8 +81,14 @@ def test_full_operator_diagnostic_binds_same_time_control_volume_evidence_withou
     assert first["step"] == 1
     assert first["time_interval"] == {"start": "retained_state[0]", "end": "retained_state[1]"}
     assert first["sample_phase"] == budget["boundary_flux"]["sampling_state"]
-    assert first["measured_x_face_transport"]["value"] == budget["boundary_flux"]["samples"][0]["net_outward"]
-    assert first["operator_state_deltas"]["values"]["inlet_boundary"] == budget["samples"][0]["inlet_boundary"]
+    assert (
+        first["measured_x_face_transport"]["value"]
+        == budget["boundary_flux"]["samples"][0]["net_outward"]
+    )
+    assert (
+        first["operator_state_deltas"]["values"]["inlet_boundary"]
+        == budget["samples"][0]["inlet_boundary"]
+    )
     assert first["operator_state_deltas"]["meaning"].endswith("not face-flux terms")
     residual = first["control_volume_residual"]
     assert residual["status"] == "withheld"
@@ -88,13 +106,20 @@ def test_full_operator_diagnostic_binds_same_time_control_volume_evidence_withou
 
 def test_small_runtime_strictly_fail_closes_fluid_only_control_volume_ledger():
     """The actual SUBOFF operator order has no link-owned fluid CV ledger."""
-    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(
-        suboff.SuboffResistanceBenchmarkConfig(
-            base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-            lbm_steps=10, lbm_warmup_steps=0, momentum_budget_diagnostic=True,
-            momentum_budget_interval=1,
-        )
-    ))
+    observation = cast(
+        dict[str, Any],
+        suboff.run_suboff_resistance_runtime(
+            suboff.SuboffResistanceBenchmarkConfig(
+                base_length_lu=20.0,
+                max_length_lu=20.0,
+                max_iterations=1,
+                lbm_steps=10,
+                lbm_warmup_steps=0,
+                momentum_budget_diagnostic=True,
+                momentum_budget_interval=1,
+            )
+        ),
+    )
     budget = observation["conservation"]["source_attribution"]["momentum"]["operator_budget"]
     fluid_cv = budget["fluid_only_same_phase_control_volume"]
 
@@ -115,8 +140,12 @@ def test_small_runtime_strictly_fail_closes_fluid_only_control_volume_ledger():
 
 def test_real_runner_measures_hash_bound_mass_conservation_and_does_not_promote_physics():
     config = suboff.SuboffResistanceBenchmarkConfig(
-        base_length_lu=20.0, max_length_lu=20.0, max_iterations=1,
-        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
+        base_length_lu=20.0,
+        max_length_lu=20.0,
+        max_iterations=1,
+        lbm_steps=10,
+        lbm_warmup_steps=0,
+        lbm_sample_interval=2,
         conservation_max_relative_mass_drift=1.0e-12,
     )
     observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(config))
@@ -136,8 +165,12 @@ def test_real_runner_measures_hash_bound_mass_conservation_and_does_not_promote_
 
 def test_real_runner_records_three_hash_bound_grid_levels_with_order_and_conservation_attribution():
     config = suboff.SuboffResistanceBenchmarkConfig(
-        base_length_lu=20.0, max_length_lu=80.0, max_iterations=3,
-        lbm_steps=10, lbm_warmup_steps=0, lbm_sample_interval=2,
+        base_length_lu=20.0,
+        max_length_lu=80.0,
+        max_iterations=3,
+        lbm_steps=10,
+        lbm_warmup_steps=0,
+        lbm_sample_interval=2,
         target_error_pct=0.01,
     )
 
@@ -165,8 +198,14 @@ def test_real_runner_records_three_hash_bound_grid_levels_with_order_and_conserv
     attribution = observation["conservation"]["source_attribution"]
     assert attribution["status"] == "measured"
     assert attribution["dominant_channel"] in {"mass", "momentum", "balanced"}
-    assert attribution["mass"]["max_relative_drift"] == observation["conservation"]["max_relative_mass_drift"]
-    assert attribution["momentum"]["max_relative_drift"] == observation["conservation"]["max_relative_momentum_drift"]
+    assert (
+        attribution["mass"]["max_relative_drift"]
+        == observation["conservation"]["max_relative_mass_drift"]
+    )
+    assert (
+        attribution["momentum"]["max_relative_drift"]
+        == observation["conservation"]["max_relative_momentum_drift"]
+    )
 
 
 def test_real_runner_observation_binds_to_withheld_canonical_artifact(monkeypatch):
@@ -174,20 +213,33 @@ def test_real_runner_observation_binds_to_withheld_canonical_artifact(monkeypatc
 
     def runner(config):
         calls.append(config)
-        return {"simulated": {"cd": 0.0042}, "iterations": [{
-            "grid": {"nx": 36, "ny": 32, "nz": 32},
-            "runtime_evidence": {"requested_steps": 10, "completed_steps": 10,
-                "finite_population_checks": 10, "finite_density_checks": 10,
-                "all_populations_finite": True, "all_densities_finite": True,
-                "density_min": 0.99, "density_max": 1.01},
-        }]}
+        return {
+            "simulated": {"cd": 0.0042},
+            "iterations": [
+                {
+                    "grid": {"nx": 36, "ny": 32, "nz": 32},
+                    "runtime_evidence": {
+                        "requested_steps": 10,
+                        "completed_steps": 10,
+                        "finite_population_checks": 10,
+                        "finite_density_checks": 10,
+                        "all_populations_finite": True,
+                        "all_densities_finite": True,
+                        "density_min": 0.99,
+                        "density_max": 1.01,
+                    },
+                }
+            ],
+        }
 
     monkeypatch.setattr(suboff, "run_suboff_resistance_benchmark", runner)
     config = suboff.SuboffResistanceBenchmarkConfig(lbm_steps=10, lbm_warmup_steps=0)
     observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(config))
     provenance = build_marine_run_provenance(observation, runner=observation["runner"])
     reference = build_marine_reference_manifest(
-        case="suboff_runtime", coefficient=0.004, source="test reference",
+        case="suboff_runtime",
+        coefficient=0.004,
+        source="test reference",
     )
     artifact = build_marine_resistance_artifact(observation, provenance, reference)
 
@@ -209,37 +261,75 @@ def test_real_runner_observation_binds_to_withheld_canonical_artifact(monkeypatc
 
 
 def test_gate_cli_reports_withheld_evidence_as_failure(tmp_path, monkeypatch):
-    monkeypatch.setattr(suboff, "run_suboff_resistance_benchmark", lambda config: {"simulated": {"cd": 0.0042}, "iterations": [{
-        "grid": {"nx": 36, "ny": 32, "nz": 32},
-        "runtime_evidence": {"requested_steps": 10, "completed_steps": 10,
-            "finite_population_checks": 10, "finite_density_checks": 10,
-            "all_populations_finite": True, "all_densities_finite": True,
-            "density_min": 0.99, "density_max": 1.01},
-    }]})
-    observation = cast(dict[str, Any], suboff.run_suboff_resistance_runtime(
-        suboff.SuboffResistanceBenchmarkConfig(lbm_steps=10, lbm_warmup_steps=0)
-    ))
+    monkeypatch.setattr(
+        suboff,
+        "run_suboff_resistance_benchmark",
+        lambda config: {
+            "simulated": {"cd": 0.0042},
+            "iterations": [
+                {
+                    "grid": {"nx": 36, "ny": 32, "nz": 32},
+                    "runtime_evidence": {
+                        "requested_steps": 10,
+                        "completed_steps": 10,
+                        "finite_population_checks": 10,
+                        "finite_density_checks": 10,
+                        "all_populations_finite": True,
+                        "all_densities_finite": True,
+                        "density_min": 0.99,
+                        "density_max": 1.01,
+                    },
+                }
+            ],
+        },
+    )
+    observation = cast(
+        dict[str, Any],
+        suboff.run_suboff_resistance_runtime(
+            suboff.SuboffResistanceBenchmarkConfig(lbm_steps=10, lbm_warmup_steps=0)
+        ),
+    )
     provenance = build_marine_run_provenance(observation, runner=observation["runner"])
-    reference = build_marine_reference_manifest(case="suboff_runtime", coefficient=0.004, source="test reference")
+    reference = build_marine_reference_manifest(
+        case="suboff_runtime", coefficient=0.004, source="test reference"
+    )
     artifact = build_marine_resistance_artifact(observation, provenance, reference)
     artifact_path = tmp_path / "suboff_runtime" / "marine_resistance_kpi.json"
     artifact_path.parent.mkdir()
     artifact_path.write_text(json.dumps(artifact), encoding="utf-8")
     manifest = {
         "gate": "marine_resistance",
-        "cases": {"suboff_runtime": {"artifact": "suboff_runtime/marine_resistance_kpi.json",
-        "max_relative_error_pct": 10.0, "max_mass_relative_drift": 1.0, "max_momentum_relative_drift": 1.0,
-        "required_preflight_checks": []}},
+        "cases": {
+            "suboff_runtime": {
+                "artifact": "suboff_runtime/marine_resistance_kpi.json",
+                "max_relative_error_pct": 10.0,
+                "max_mass_relative_drift": 1.0,
+                "max_momentum_relative_drift": 1.0,
+                "required_preflight_checks": [],
+            }
+        },
     }
     manifest_path = tmp_path / "gate.json"
     report_path = tmp_path / "gate-report.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
     import subprocess
+
     completed = subprocess.run(
-        ["python", "scripts/evaluate_benchmark_gate.py", "--artifacts", str(tmp_path),
-         "--manifest", str(manifest_path), "--report", str(report_path)],
-        cwd=Path(__file__).parents[1], text=True, capture_output=True, check=False,
+        [
+            "python",
+            "scripts/evaluate_benchmark_gate.py",
+            "--artifacts",
+            str(tmp_path),
+            "--manifest",
+            str(manifest_path),
+            "--report",
+            str(report_path),
+        ],
+        cwd=Path(__file__).parents[1],
+        text=True,
+        capture_output=True,
+        check=False,
     )
 
     report = json.loads(report_path.read_text(encoding="utf-8"))

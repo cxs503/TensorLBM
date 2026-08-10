@@ -1,0 +1,38 @@
+{
+  "schema": "tensorlbm-grid-quality-lattice-unit-correction-v1",
+  "status": "corrected_and_regression_tested",
+  "scope": "pre-run planning only; no CFD trajectory or force correction",
+  "finding": "The planner treated nx, the streamwise domain cell count, as if it were the hull resolution when deriving dx=hull_length/nx. All geometry inputs are already lattice-cell counts, so dx is one lattice unit.",
+  "corrected_definitions": {
+    "dx_lu": 1.0,
+    "first_cell_distance_lu": 0.5,
+    "cells_per_hull_length": "hull_length",
+    "blockage_ratio": "pi*hull_radius_lu^2/(ny*nz)",
+    "streamwise_domain_lengths": "nx/hull_length",
+    "transverse_domain_diameters": "min(ny,nz)/(2*hull_radius_lu)"
+  },
+  "suboff_aff1_l90_root_example": {
+    "domain_nx_ny_nz": [450, 90, 90],
+    "hull_length_cells": 90.0,
+    "physical_reynolds": 13213381.41322709,
+    "old_inconsistent_blockage_ratio": 0.2673426485016142,
+    "corrected_blockage_ratio": 0.010693705940064567,
+    "corrected_blockage_pct": 1.0693705940064567,
+    "blockage_preflight_limit_pct": 2.0,
+    "old_inconsistent_root_first_cell_y_plus": 555.1765772968099,
+    "corrected_root_first_cell_y_plus": 2775.8828864840493,
+    "note": "The root first-cell estimate is not the active finest-level wall exchange y+; the runtime distribution remains the mandatory wall-model applicability gate."
+  },
+  "quality_tier_policy": {
+    "recommended": "log-law regime, domain aspect at least 2, blockage below 2 percent",
+    "formal_domain_convergence_still_required": true,
+    "empirical_blockage_correction_applied": false
+  },
+  "verification": {
+    "focused_grid_quality_tests_passed": 2,
+    "nested_suboff_and_grid_quality_tests_passed": 40,
+    "nested_suite_elapsed_seconds": 114.76
+  },
+  "implementation_commit": "34a5108",
+  "runner_integration_commit": "bc91346"
+}

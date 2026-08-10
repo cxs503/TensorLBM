@@ -6,6 +6,7 @@ Covers:
 - Poiseuille flow accuracy: TRT with Λ=3/16 should match the analytical
   parabolic profile more accurately than BGK at low viscosity.
 """
+
 from __future__ import annotations
 
 import torch

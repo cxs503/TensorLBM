@@ -7,6 +7,7 @@ Covers:
 * run_lid_driven_cavity – smoke test (small domain, few steps)
 * compare_ghia – interpolation and error calculation
 """
+
 from __future__ import annotations
 
 import json

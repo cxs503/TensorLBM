@@ -63,6 +63,7 @@ Erturk, E. (2008). Numerical solutions of 2-D steady incompressible flow
 over a backward-facing step, Part I: High Reynolds number solutions.
 Computers & Fluids, **37**(6), 633-655.
 """
+
 from __future__ import annotations
 
 import csv
@@ -125,8 +126,8 @@ class BackwardFacingStepConfig:
 
     nx: int = 400
     ny: int = 80
-    step_h: int = 40      # step height (ny//2 → 2:1 expansion)
-    x_step: int = 80      # pre-step solid length (upstream channel)
+    step_h: int = 40  # step height (ny//2 → 2:1 expansion)
+    x_step: int = 80  # pre-step solid length (upstream channel)
     u_in: float = 0.05
     re: float = 100.0
     n_steps: int = 30000
@@ -225,8 +226,8 @@ def make_bfs_solid_mask(
         Boolean tensor ``(ny, nx)`` – ``True`` for solid cells.
     """
     solid = torch.zeros((ny, nx), dtype=torch.bool, device=device)
-    solid[-1, :] = True            # top wall
-    solid[0, x_step:] = True       # bottom wall (after step)
+    solid[-1, :] = True  # top wall
+    solid[0, x_step:] = True  # bottom wall (after step)
 
     # Step solid block: x < x_step AND y < step_h
     yy, xx = torch.meshgrid(
@@ -337,8 +338,7 @@ def _save_bfs_snapshot(
     obs_np = solid.detach().cpu().float().numpy()
 
     fig, ax = plt.subplots(figsize=(12, 3), constrained_layout=True)
-    im = ax.imshow(ux_np, origin="lower", cmap="RdBu_r",
-                   vmin=-config.u_in, vmax=config.u_in * 2)
+    im = ax.imshow(ux_np, origin="lower", cmap="RdBu_r", vmin=-config.u_in, vmax=config.u_in * 2)
     ax.contour(obs_np, levels=[0.5], colors="black", linewidths=0.7)
     ax.set_title(f"BFS ux (step {step})")
     plt.colorbar(im, ax=ax, fraction=0.02, label="ux")
@@ -391,7 +391,7 @@ def run_backward_facing_step(config: BackwardFacingStepConfig) -> Path:
     # Initialise: rest state with small inlet velocity above the step
     rho0 = torch.ones((ny, nx), device=device)
     ux0 = torch.zeros((ny, nx), device=device)
-    ux0[config.step_h:ny - 1, :] = config.u_in  # prescribe velocity above step
+    ux0[config.step_h : ny - 1, :] = config.u_in  # prescribe velocity above step
     ux0[solid] = 0.0
     uy0 = torch.zeros((ny, nx), device=device)
     f = equilibrium(rho0, ux0, uy0, device=device)
@@ -402,8 +402,14 @@ def run_backward_facing_step(config: BackwardFacingStepConfig) -> Path:
 
     logger.info(
         "Running BFS device=%s NX=%s NY=%s step_h=%s x_step=%s tau=%.4f Re=%.1f steps=%s",
-        device, nx, ny, config.step_h, config.x_step,
-        config.tau, config.re, config.n_steps,
+        device,
+        nx,
+        ny,
+        config.step_h,
+        config.x_step,
+        config.tau,
+        config.re,
+        config.n_steps,
     )
     logger.info("Run directory: %s", run_dir)
 
@@ -438,8 +444,11 @@ def run_backward_facing_step(config: BackwardFacingStepConfig) -> Path:
 
             logger.info(
                 "step=%5d mass=%.6f drift=%+.6f max|u|=%.6f xr*=%.3f",
-                point.step, point.mass, point.mass_drift,
-                point.max_speed, x_r_star,
+                point.step,
+                point.mass,
+                point.mass_drift,
+                point.max_speed,
+                x_r_star,
             )
             _save_bfs_snapshot(run_dir, step, ux, solid, config)
 
@@ -449,7 +458,9 @@ def run_backward_facing_step(config: BackwardFacingStepConfig) -> Path:
     final_xr = measure_reattachment_length(ux_f, config.x_step, config.step_h)
     logger.info(
         "Final reattachment length xr* = %.3f  (Re=%.1f, step_h=%d)",
-        final_xr, config.re, config.step_h,
+        final_xr,
+        config.re,
+        config.step_h,
     )
 
     # Write reattachment CSV

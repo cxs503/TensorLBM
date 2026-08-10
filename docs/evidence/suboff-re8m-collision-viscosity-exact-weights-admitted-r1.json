@@ -1,0 +1,51 @@
+{
+  "schema": "tensorlbm-suboff-collision-viscosity-evidence-v1",
+  "status": "mixed_precision_re8m_exact_weights_admitted",
+  "physical_validation": false,
+  "case": "SUBOFF L90 four-level Natural-KBC configured Re=8000000",
+  "weight_precision_scheme": "rational_binary64_cast_to_runtime_dtype_v1",
+  "audit_configuration": {
+    "taus_by_level": [0.500002025, 0.50000405, 0.5000081, 0.5000162],
+    "wavelength_cells": 16,
+    "transverse_cells": 3,
+    "amplitude": 0.02,
+    "steps": 48000,
+    "fit_start_step": 4000,
+    "maximum_relative_error_pct": 5.0,
+    "minimum_fitted_log_decay": 0.004,
+    "population_storage_dtype": "float32",
+    "natural_kbc_compute_dtype": "float64"
+  },
+  "result": {
+    "relative_error_pct_by_level": [
+      1.049699906720919,
+      1.336847911978982,
+      1.32395595155489,
+      1.2912282086182165
+    ],
+    "fitted_log_amplitude_decay_by_level": [
+      0.004628190737376294,
+      0.009282684882668063,
+      0.018563007899509546,
+      0.037114024057637196
+    ],
+    "decay_signal_admitted_by_level": [true, true, true, true],
+    "viscosity_admitted_by_level": [true, true, true, true]
+  },
+  "acceptance": {
+    "all_levels_have_resolved_decay_signal": true,
+    "all_levels_recover_configured_viscosity": true,
+    "configured_reynolds_sequence_admitted": true,
+    "flow_solution_validated": false
+  },
+  "artifacts": {
+    "viscosity_schedule": "results/collision-viscosity-natural-kbc-suboff-re8m-mixed-exactweights-r1.json",
+    "viscosity_schedule_sha256": "bf6b697e4b02157dfab8b39175ba47a0dd73b06fc2e8510634f5639e37d1c0fd"
+  },
+  "decision": {
+    "permit_re8m_runtime_candidate_after_re4m_health_gate": true,
+    "permit_unassessed_physical_reynolds": false,
+    "require_weight_precision_scheme_in_checkpoint_and_result": true
+  },
+  "prohibition": "This certificate establishes collision-viscosity recovery only. It does not validate SUBOFF resistance, wall stress, time convergence or grid convergence."
+}

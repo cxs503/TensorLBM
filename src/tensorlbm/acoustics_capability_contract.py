@@ -19,6 +19,7 @@ Key architectural property:
     be composed with any collision / turbulence / boundary configuration as a
     post-processing step without modifying solver internals.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -88,6 +89,7 @@ _AUDITED_LATTICES: tuple[str, ...] = ("D2Q9", "D3Q19", "D3Q27", "N/A")
 # Error type
 # ---------------------------------------------------------------------------
 
+
 class AcousticsWithheldError(NotImplementedError):
     """Raised when an acoustics capability request lacks physics validation."""
 
@@ -95,6 +97,7 @@ class AcousticsWithheldError(NotImplementedError):
 # ---------------------------------------------------------------------------
 # Capability dataclass
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class AcousticsCapability:
@@ -130,6 +133,7 @@ class AcousticsCapability:
 # Post-processing audit entry
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PostProcessingAudit:
     """Observation that a function is post-processing (not in the timestep hot path)."""
@@ -160,7 +164,8 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
     # -----------------------------------------------------------------------
     "fwh_far_field": {
         "N/A": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.acoustics.compute_fwh_far_field",
             "test_acoustics.py: shape, finite, zero-pressure→zero-output, "
             "causality (no signal before propagation delay), multi-observer, "
@@ -172,28 +177,37 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
             "post-processing step.",
         ),
         "D2Q9": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "FWH far-field is lattice-agnostic; use lattice='N/A'.",
         ),
         "D3Q19": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "FWH far-field is lattice-agnostic; use lattice='N/A'.",
         ),
         "D3Q27": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "FWH far-field is lattice-agnostic; use lattice='N/A'.",
         ),
     },
-
     # -----------------------------------------------------------------------
     # SPL spectrum — lattice-agnostic (operates on pressure time series)
     # -----------------------------------------------------------------------
     "spl_spectrum": {
         "N/A": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.acoustics.compute_spl_spectrum",
             "test_acoustics.py: shape, finite, frequency-axis correctness, "
             "zero-pressure eps-floor, n_fft padding",
@@ -204,31 +218,39 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
             "post-processing step.",
         ),
         "D2Q9": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "SPL spectrum is lattice-agnostic; use lattice='N/A'.",
         ),
         "D3Q19": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "SPL spectrum is lattice-agnostic; use lattice='N/A'.",
         ),
         "D3Q27": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "SPL spectrum is lattice-agnostic; use lattice='N/A'.",
         ),
     },
-
     # -----------------------------------------------------------------------
     # Surface pressure extraction — lattice-specific (reads rho_history grid)
     # -----------------------------------------------------------------------
     "surface_pressure_extraction": {
         "D2Q9": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.acoustics.extract_surface_pressure",
-            "test_acoustics.py: 2D shape, mean-removal, pressure ∝ density "
-            "fluctuation (c_s²=1/3)",
+            "test_acoustics.py: 2D shape, mean-removal, pressure ∝ density fluctuation (c_s²=1/3)",
             None,
             "Extracts pressure fluctuations from 2-D density history (ρ-ρ̄)·c_s². "
             "Post-processing: operates on saved density history, not in timestep "
@@ -236,7 +258,8 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
             "post-processing step.",
         ),
         "D3Q19": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.acoustics.extract_surface_pressure",
             "test_acoustics.py: 3D shape, mean-removal",
             None,
@@ -246,7 +269,8 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
             "post-processing step.",
         ),
         "D3Q27": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.acoustics.extract_surface_pressure",
             "test_acoustics.py: 3D shape (same code path as D3Q19)",
             None,
@@ -256,21 +280,23 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
             "post-processing step.",
         ),
         "N/A": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "Surface pressure extraction is lattice-specific; specify D2Q9, D3Q19, or D3Q27.",
         ),
     },
-
     # -----------------------------------------------------------------------
     # OASPL — lattice-agnostic (operates on pressure time series)
     # -----------------------------------------------------------------------
     "oaspl": {
         "N/A": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.acoustics.oaspl",
-            "test_acoustics.py: output length, finite, zero-pressure eps-floor, "
-            "known-tone RMS",
+            "test_acoustics.py: output length, finite, zero-pressure eps-floor, known-tone RMS",
             None,
             "Overall Sound Pressure Level: 20·log10(p_rms / p_ref). "
             "Post-processing: operates on pressure time series, not in timestep "
@@ -278,28 +304,37 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
             "post-processing step.",
         ),
         "D2Q9": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "OASPL is lattice-agnostic; use lattice='N/A'.",
         ),
         "D3Q19": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "OASPL is lattice-agnostic; use lattice='N/A'.",
         ),
         "D3Q27": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "OASPL is lattice-agnostic; use lattice='N/A'.",
         ),
     },
-
     # -----------------------------------------------------------------------
     # FWH result wrapper — lattice-agnostic (convenience wrapper)
     # -----------------------------------------------------------------------
     "fwh_result_wrapper": {
         "N/A": (
-            IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+            IMPLEMENTED,
+            VERIFICATION_CONTRACT_TESTED,
             "tensorlbm.acoustics.compute_fwh_result",
             "test_acoustics.py: result has all fields (time, p_prime, frequencies, "
             "spl, oaspl, observers), finite output",
@@ -309,18 +344,27 @@ _REGISTRY: dict[str, dict[str, _RegistryEntry]] = {
             "with any collision/turbulence/boundary as a post-processing step.",
         ),
         "D2Q9": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "FWH result wrapper is lattice-agnostic; use lattice='N/A'.",
         ),
         "D3Q19": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "FWH result wrapper is lattice-agnostic; use lattice='N/A'.",
         ),
         "D3Q27": (
-            NO_IMPLEMENTATION, VERIFICATION_NO_IMPLEMENTATION,
-            None, None, None,
+            NO_IMPLEMENTATION,
+            VERIFICATION_NO_IMPLEMENTATION,
+            None,
+            None,
+            None,
             "FWH result wrapper is lattice-agnostic; use lattice='N/A'.",
         ),
     },
@@ -373,6 +417,7 @@ _POST_PROCESSING_AUDIT: tuple[PostProcessingAudit, ...] = (
 # Internal: determine fail-closed status from verification level
 # ---------------------------------------------------------------------------
 
+
 def _status_for(verification_level: str) -> str:
     if verification_level == VERIFICATION_NO_IMPLEMENTATION:
         return WITHHELD_NO_IMPLEMENTATION
@@ -384,6 +429,7 @@ def _status_for(verification_level: str) -> str:
 # ---------------------------------------------------------------------------
 # Internal: look up one capability
 # ---------------------------------------------------------------------------
+
 
 def _capability_for(function: str, lattice: str) -> AcousticsCapability:
     func_map = _REGISTRY.get(function, {})
@@ -420,6 +466,7 @@ def _capability_for(function: str, lattice: str) -> AcousticsCapability:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def acoustics_capability_matrix() -> dict[str, dict[str, AcousticsCapability]]:
     """Return the complete audited acoustics function/lattice capability matrix.
 
@@ -432,10 +479,7 @@ def acoustics_capability_matrix() -> dict[str, dict[str, AcousticsCapability]]:
     boundary configuration.
     """
     return {
-        function: {
-            lattice: _capability_for(function, lattice)
-            for lattice in _AUDITED_LATTICES
-        }
+        function: {lattice: _capability_for(function, lattice) for lattice in _AUDITED_LATTICES}
         for function in _AUDITED_FUNCTIONS
     }
 

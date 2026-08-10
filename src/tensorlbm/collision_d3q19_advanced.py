@@ -5,6 +5,7 @@ stress projection.  They are *not* complete cascaded/central-moment, cumulant,
 or entropic KBC implementations: they do not transform or relax all higher
 central/cumulant modes, and they do not solve an entropy/positivity condition.
 """
+
 from __future__ import annotations
 
 import torch
@@ -24,23 +25,29 @@ def _lattice_views(f: torch.Tensor) -> tuple[torch.Tensor, ...]:
     """
     c = C.to(device=f.device, dtype=torch.float32)
     w = W.to(device=f.device, dtype=torch.float32).view(19, 1, 1, 1)
-    return (c[:, 0].view(19, 1, 1, 1), c[:, 1].view(19, 1, 1, 1),
-            c[:, 2].view(19, 1, 1, 1), w)
+    return (c[:, 0].view(19, 1, 1, 1), c[:, 1].view(19, 1, 1, 1), c[:, 2].view(19, 1, 1, 1), w)
 
 
 def second_order_stress_d3q19(f_neq: torch.Tensor) -> tuple[torch.Tensor, ...]:
     """Return ``(xx, yy, zz, xy, xz, yz)`` of ``sum_i c_ia c_ib f_neq,i``."""
     cx, cy, cz, _ = _lattice_views(f_neq)
     return (
-        (cx * cx * f_neq).sum(0), (cy * cy * f_neq).sum(0),
-        (cz * cz * f_neq).sum(0), (cx * cy * f_neq).sum(0),
-        (cx * cz * f_neq).sum(0), (cy * cz * f_neq).sum(0),
+        (cx * cx * f_neq).sum(0),
+        (cy * cy * f_neq).sum(0),
+        (cz * cz * f_neq).sum(0),
+        (cx * cy * f_neq).sum(0),
+        (cx * cz * f_neq).sum(0),
+        (cy * cz * f_neq).sum(0),
     )
 
 
 def reconstruct_second_order_stress_d3q19(
-    pi_xx: torch.Tensor, pi_yy: torch.Tensor, pi_zz: torch.Tensor,
-    pi_xy: torch.Tensor, pi_xz: torch.Tensor, pi_yz: torch.Tensor,
+    pi_xx: torch.Tensor,
+    pi_yy: torch.Tensor,
+    pi_zz: torch.Tensor,
+    pi_xy: torch.Tensor,
+    pi_xz: torch.Tensor,
+    pi_yz: torch.Tensor,
 ) -> torch.Tensor:
     """Reconstruct the D3Q19 second-order Hermite non-equilibrium projection."""
     # Construct a lightweight shape carrier; all six components must be fields.
@@ -50,11 +57,17 @@ def reconstruct_second_order_stress_d3q19(
     carrier = pi_xx.new_empty((19, *shape))
     cx, cy, cz, w = _lattice_views(carrier)
     h_xx, h_yy, h_zz = cx * cx - _CS2, cy * cy - _CS2, cz * cz - _CS2
-    return 4.5 * w * (
-        h_xx * pi_xx.unsqueeze(0) + h_yy * pi_yy.unsqueeze(0) + h_zz * pi_zz.unsqueeze(0)
-        + 2.0 * h_xy(cx, cy) * pi_xy.unsqueeze(0)
-        + 2.0 * h_xy(cx, cz) * pi_xz.unsqueeze(0)
-        + 2.0 * h_xy(cy, cz) * pi_yz.unsqueeze(0)
+    return (
+        4.5
+        * w
+        * (
+            h_xx * pi_xx.unsqueeze(0)
+            + h_yy * pi_yy.unsqueeze(0)
+            + h_zz * pi_zz.unsqueeze(0)
+            + 2.0 * h_xy(cx, cy) * pi_xy.unsqueeze(0)
+            + 2.0 * h_xy(cx, cz) * pi_xz.unsqueeze(0)
+            + 2.0 * h_xy(cy, cz) * pi_yz.unsqueeze(0)
+        )
     )
 
 
@@ -77,11 +90,14 @@ def collide_mrt_d3q19(f: torch.Tensor, tau: float, **rates: float) -> torch.Tens
     implementation; it provides an explicit common-kernel name only.
     """
     from .solver3d import collide_mrt3d
+
     return collide_mrt3d(f, tau, **rates)
 
 
 def collide_regularized_stress_d3q19(
-    f_total: torch.Tensor, feq: torch.Tensor, tau: float | torch.Tensor,
+    f_total: torch.Tensor,
+    feq: torch.Tensor,
+    tau: float | torch.Tensor,
 ) -> torch.Tensor:
     """Relax only the D3Q19 second-order non-equilibrium stress.
 
@@ -95,13 +111,20 @@ def collide_regularized_stress_d3q19(
     pi_xx, pi_yy, pi_zz, pi_xy, pi_xz, pi_yz = second_order_stress_d3q19(f_total - feq)
     omega = 1.0 / tau
     return feq + reconstruct_second_order_stress_d3q19(
-        (1.0 - omega) * pi_xx, (1.0 - omega) * pi_yy, (1.0 - omega) * pi_zz,
-        (1.0 - omega) * pi_xy, (1.0 - omega) * pi_xz, (1.0 - omega) * pi_yz,
+        (1.0 - omega) * pi_xx,
+        (1.0 - omega) * pi_yy,
+        (1.0 - omega) * pi_zz,
+        (1.0 - omega) * pi_xy,
+        (1.0 - omega) * pi_xz,
+        (1.0 - omega) * pi_yz,
     )
 
 
 def collide_central_stress_d3q19(
-    f_total: torch.Tensor, feq: torch.Tensor, tau: float | torch.Tensor, s_bulk: float | None = None,
+    f_total: torch.Tensor,
+    feq: torch.Tensor,
+    tau: float | torch.Tensor,
+    s_bulk: float | None = None,
 ) -> torch.Tensor:
     """Second-order central-stress approximation with independent trace rate.
 
@@ -125,14 +148,20 @@ def collide_central_stress_d3q19(
     pi_yy = dev_yy + trace / 3.0
     pi_zz = dev_zz + trace / 3.0
     return feq + reconstruct_second_order_stress_d3q19(
-        pi_xx, pi_yy, pi_zz,
-        (1.0 - omega_shear) * pi_xy, (1.0 - omega_shear) * pi_xz,
+        pi_xx,
+        pi_yy,
+        pi_zz,
+        (1.0 - omega_shear) * pi_xy,
+        (1.0 - omega_shear) * pi_xz,
         (1.0 - omega_shear) * pi_yz,
     )
 
 
 __all__ = [
-    "second_order_stress_d3q19", "reconstruct_second_order_stress_d3q19",
-    "collide_bgk_d3q19", "collide_mrt_d3q19", "collide_regularized_stress_d3q19",
+    "second_order_stress_d3q19",
+    "reconstruct_second_order_stress_d3q19",
+    "collide_bgk_d3q19",
+    "collide_mrt_d3q19",
+    "collide_regularized_stress_d3q19",
     "collide_central_stress_d3q19",
 ]

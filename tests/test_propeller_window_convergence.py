@@ -1,4 +1,5 @@
 """Contracts for windowed dynamic-geometry propeller campaign evidence."""
+
 from __future__ import annotations
 
 import pytest
@@ -15,7 +16,10 @@ def test_window_summary_discards_warmup_samples_and_compares_final_windows() -> 
     ]
 
     report = _summarize_windows(
-        samples, window_steps=2, transient_discard_steps=4, convergence_rel_tol=0.2,
+        samples,
+        window_steps=2,
+        transient_discard_steps=4,
+        convergence_rel_tol=0.2,
     )
 
     assert report["discarded_transient_samples"] == 0
@@ -36,7 +40,10 @@ def test_window_convergence_requires_both_kt_and_kq_to_be_strictly_below_toleran
     ]
 
     report = _summarize_windows(
-        samples, window_steps=2, transient_discard_steps=0, convergence_rel_tol=0.1,
+        samples,
+        window_steps=2,
+        transient_discard_steps=0,
+        convergence_rel_tol=0.1,
     )
 
     convergence = report["convergence"]

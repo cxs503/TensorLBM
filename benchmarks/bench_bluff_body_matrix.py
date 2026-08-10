@@ -7,6 +7,7 @@ Usage
   PYTHONPATH=src python benchmarks/bench_bluff_body_matrix.py [--device cuda]
   PYTHONPATH=src python benchmarks/bench_bluff_body_matrix.py --fast --device cpu
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,10 +45,12 @@ from tensorlbm.wall_model import apply_wall_model_bounce_back
 # Shared config
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CrossTestConfig:
     """Configuration for a single cross-test run."""
-    case: str           # "sphere", "airfoil", "ellipsoid", "suboff"
+
+    case: str  # "sphere", "airfoil", "ellipsoid", "suboff"
     use_rans: bool = False
     use_wall_model: bool = False
     use_smag: bool = True
@@ -67,6 +70,7 @@ class CrossTestConfig:
 # ---------------------------------------------------------------------------
 # Sphere cross-test
 # ---------------------------------------------------------------------------
+
 
 def _run_sphere_cross(cfg: CrossTestConfig) -> dict:
     """Run sphere with optional RANS/wall-model coupling."""
@@ -110,6 +114,7 @@ def _run_sphere_cross(cfg: CrossTestConfig) -> dict:
             f = collide_smagorinsky_mrt3d(f, tau=tau, C_s=cfg.smag_cs)
         else:
             from tensorlbm.solver3d import collide_bgk3d
+
             f = collide_bgk3d(f, tau=tau)
 
         f = stream3d(f)
@@ -121,14 +126,19 @@ def _run_sphere_cross(cfg: CrossTestConfig) -> dict:
         if cfg.use_wall_model:
             # Don't use Zou/He bounce-back on obstacle — wall model handles it
             f = apply_zou_he_channel_boundaries_3d(
-                f, u_in=cfg.u_in, wall_mask=wall_mask,
+                f,
+                u_in=cfg.u_in,
+                wall_mask=wall_mask,
                 obstacle_mask=torch.zeros_like(mask),
             )
             _, ux_w, uy_w, uz_w = macroscopic3d(f)
             f = apply_wall_model_bounce_back(f, mask, ux_w, uy_w, uz_w, nu)
         else:
             f = apply_zou_he_channel_boundaries_3d(
-                f, u_in=cfg.u_in, wall_mask=wall_mask, obstacle_mask=mask,
+                f,
+                u_in=cfg.u_in,
+                wall_mask=wall_mask,
+                obstacle_mask=mask,
             )
 
         if step % 200 == 0:
@@ -148,9 +158,10 @@ def _run_sphere_cross(cfg: CrossTestConfig) -> dict:
 # Ellipsoid cross-test
 # ---------------------------------------------------------------------------
 
+
 def _run_ellipsoid_cross(cfg: CrossTestConfig) -> dict:
     """Run ellipsoid with optional RANS/wall-model coupling."""
-    a = cfg.ny * 0.4   # semi-major, a/b=3 → 6:1
+    a = cfg.ny * 0.4  # semi-major, a/b=3 → 6:1
     b = a / 3.0
     diam = 2.0 * b
     nu = cfg.u_in * diam / cfg.re
@@ -160,7 +171,13 @@ def _run_ellipsoid_cross(cfg: CrossTestConfig) -> dict:
     torch.manual_seed(cfg.seed)
 
     mask = build_ellipsoid_mask(
-        cfg.nx, cfg.ny, cfg.nz, a, b, alpha_deg=0.0, device=device,
+        cfg.nx,
+        cfg.ny,
+        cfg.nz,
+        a,
+        b,
+        alpha_deg=0.0,
+        device=device,
     )
     wall_mask = make_channel_wall_mask_3d(cfg.nz, cfg.ny, cfg.nx, mask, device=device)
 
@@ -190,6 +207,7 @@ def _run_ellipsoid_cross(cfg: CrossTestConfig) -> dict:
             f = collide_smagorinsky_mrt3d(f, tau=tau, C_s=cfg.smag_cs)
         else:
             from tensorlbm.solver3d import collide_bgk3d
+
             f = collide_bgk3d(f, tau=tau)
 
         f = stream3d(f)
@@ -197,14 +215,19 @@ def _run_ellipsoid_cross(cfg: CrossTestConfig) -> dict:
 
         if cfg.use_wall_model:
             f = apply_zou_he_channel_boundaries_3d(
-                f, u_in=cfg.u_in, wall_mask=wall_mask,
+                f,
+                u_in=cfg.u_in,
+                wall_mask=wall_mask,
                 obstacle_mask=torch.zeros_like(mask),
             )
             _, ux_w, uy_w, uz_w = macroscopic3d(f)
             f = apply_wall_model_bounce_back(f, mask, ux_w, uy_w, uz_w, nu)
         else:
             f = apply_zou_he_channel_boundaries_3d(
-                f, u_in=cfg.u_in, wall_mask=wall_mask, obstacle_mask=mask,
+                f,
+                u_in=cfg.u_in,
+                wall_mask=wall_mask,
+                obstacle_mask=mask,
             )
 
         if step % 200 == 0:
@@ -222,25 +245,38 @@ def _run_ellipsoid_cross(cfg: CrossTestConfig) -> dict:
 # Airfoil cross-test (2D — RANS and wall model not applicable)
 # ---------------------------------------------------------------------------
 
+
 def _run_airfoil_cross(cfg: CrossTestConfig) -> dict:
     """Run airfoil baseline (2D, no 3D RANS/wall)."""
     from tensorlbm.airfoil_benchmark import AirfoilConfig, run_airfoil_benchmark
+
     a_cfg = AirfoilConfig(
-        chord=cfg.nx * 0.25, alpha_deg=4.0, re=cfg.re,
-        nx=cfg.nx, ny=cfg.ny, u_in=cfg.u_in,
-        n_steps=cfg.n_steps, warmup_steps=cfg.warmup_steps,
+        chord=cfg.nx * 0.25,
+        alpha_deg=4.0,
+        re=cfg.re,
+        nx=cfg.nx,
+        ny=cfg.ny,
+        u_in=cfg.u_in,
+        n_steps=cfg.n_steps,
+        warmup_steps=cfg.warmup_steps,
         smagorinsky_cs=cfg.smag_cs,
-        device=cfg.device, seed=cfg.seed,
+        device=cfg.device,
+        seed=cfg.seed,
     )
     result = run_airfoil_benchmark(a_cfg)
-    return {"cd": result["cd_sim"], "cd_ref": result["cd_ref"],
-            "cd_err_pct": result["cd_err_pct"],
-            "cl": result["cl_sim"], "cl_ref": result["cl_ref"]}
+    return {
+        "cd": result["cd_sim"],
+        "cd_ref": result["cd_ref"],
+        "cd_err_pct": result["cd_err_pct"],
+        "cl": result["cl_sim"],
+        "cl_ref": result["cl_ref"],
+    }
 
 
 # ---------------------------------------------------------------------------
 # SUBOFF cross-test (already has RANS/wall/adaptive support)
 # ---------------------------------------------------------------------------
+
 
 def _run_suboff_cross(cfg: CrossTestConfig) -> dict:
     """Run SUBOFF baseline (RANS/wall/adaptive built-in)."""
@@ -248,10 +284,15 @@ def _run_suboff_cross(cfg: CrossTestConfig) -> dict:
         SuboffResistanceBenchmarkConfig,
         run_suboff_resistance_benchmark,
     )
+
     s_cfg = SuboffResistanceBenchmarkConfig(
-        base_length_lu=64, lbm_tau=0.54, smagorinsky_cs=cfg.smag_cs,
-        lbm_steps=cfg.n_steps, lbm_warmup=cfg.warmup_steps,
-        device=cfg.device, seed=cfg.seed,
+        base_length_lu=64,
+        lbm_tau=0.54,
+        smagorinsky_cs=cfg.smag_cs,
+        lbm_steps=cfg.n_steps,
+        lbm_warmup=cfg.warmup_steps,
+        device=cfg.device,
+        seed=cfg.seed,
         use_rans_ke=cfg.use_rans,
         use_wall_model=cfg.use_wall_model,
         use_adaptive_mesh=False,
@@ -274,29 +315,36 @@ _CASES = {
 }
 
 _COMBOS_3D = [
-    ("baseline",  {"use_rans": False, "use_wall_model": False, "use_smag": True}),
-    ("+RANS",     {"use_rans": True,  "use_wall_model": False, "use_smag": False}),
-    ("+Wall",     {"use_rans": False, "use_wall_model": True,  "use_smag": True}),
-    ("+RANS+Wall",{"use_rans": True,  "use_wall_model": True,  "use_smag": False}),
+    ("baseline", {"use_rans": False, "use_wall_model": False, "use_smag": True}),
+    ("+RANS", {"use_rans": True, "use_wall_model": False, "use_smag": False}),
+    ("+Wall", {"use_rans": False, "use_wall_model": True, "use_smag": True}),
+    ("+RANS+Wall", {"use_rans": True, "use_wall_model": True, "use_smag": False}),
 ]
 
 _COMBOS_2D = [
-    ("baseline",  {"use_rans": False, "use_wall_model": False}),
+    ("baseline", {"use_rans": False, "use_wall_model": False}),
 ]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Bluff-body cross-test matrix")
-    parser.add_argument("--device", default="cpu", help="cpu or cuda")
-    parser.add_argument("--fast", action="store_true",
-                        help="Fast mode: minimal grid and steps for smoke test")
-    parser.add_argument("--cases", nargs="+",
-                        default=["sphere", "airfoil", "ellipsoid"],
-                        choices=["sphere", "airfoil", "ellipsoid", "suboff"],
-                        help="Cases to run (default: sphere airfoil ellipsoid)")
-    parser.add_argument("--combos", nargs="+",
-                        default=["baseline", "+RANS", "+Wall", "+RANS+Wall"],
-                        help="Combinations to test")
+    parser.add_argument("--device", default="cpu", help="cpu or sdaa or cuda")
+    parser.add_argument(
+        "--fast", action="store_true", help="Fast mode: minimal grid and steps for smoke test"
+    )
+    parser.add_argument(
+        "--cases",
+        nargs="+",
+        default=["sphere", "airfoil", "ellipsoid"],
+        choices=["sphere", "airfoil", "ellipsoid", "suboff"],
+        help="Cases to run (default: sphere airfoil ellipsoid)",
+    )
+    parser.add_argument(
+        "--combos",
+        nargs="+",
+        default=["baseline", "+RANS", "+Wall", "+RANS+Wall"],
+        help="Combinations to test",
+    )
     args = parser.parse_args()
 
     if args.fast:
@@ -315,38 +363,47 @@ def main() -> None:
                 continue  # RANS/wall are 3D-only
 
             cfg = CrossTestConfig(
-                case=case, nx=nx, ny=ny, nz=nz,
-                n_steps=steps, warmup_steps=warmup,
-                device=args.device, **combo_kwargs,
+                case=case,
+                nx=nx,
+                ny=ny,
+                nz=nz,
+                n_steps=steps,
+                warmup_steps=warmup,
+                device=args.device,
+                **combo_kwargs,
             )
             tag = f"{case}/{combo_name}"
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"  {tag}")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
             try:
                 result = _CASES[case](cfg)
                 result["case"] = case
                 result["combo"] = combo_name
                 results.append(result)
-                print(f"  → Cd={result['cd']:.4f} (ref {result['cd_ref']:.4f}) "
-                      f"err={result['cd_err_pct']:.1f}%")
+                print(
+                    f"  → Cd={result['cd']:.4f} (ref {result['cd_ref']:.4f}) "
+                    f"err={result['cd_err_pct']:.1f}%"
+                )
             except Exception as e:
                 print(f"  ✗ FAILED: {e}")
                 results.append({"case": case, "combo": combo_name, "error": str(e)})
 
     # Summary table
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print("  SUMMARY: Bluff-Body Cross-Test Matrix")
-    print(f"  {'='*80}")
+    print(f"  {'=' * 80}")
     print(f"  {'Case':<16} {'Combo':<14} {'Cd_sim':>8} {'Cd_ref':>8} {'Err%':>8}")
-    print(f"  {'-'*56}")
+    print(f"  {'-' * 56}")
     for r in results:
         if "error" in r:
             print(f"  {r['case']:<16} {r['combo']:<14} {'FAILED':>26}")
         else:
-            print(f"  {r['case']:<16} {r['combo']:<14} "
-                  f"{r['cd']:8.4f} {r['cd_ref']:8.4f} {r['cd_err_pct']:7.1f}%")
-    print(f"  {'-'*56}")
+            print(
+                f"  {r['case']:<16} {r['combo']:<14} "
+                f"{r['cd']:8.4f} {r['cd_ref']:8.4f} {r['cd_err_pct']:7.1f}%"
+            )
+    print(f"  {'-' * 56}")
 
 
 if __name__ == "__main__":

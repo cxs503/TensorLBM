@@ -32,6 +32,7 @@ Options
 --overwrite            Overwrite existing output folder.
 --device               ``cpu`` (default), ``cuda``, or ``mps``.
 """
+
 from __future__ import annotations
 
 import argparse

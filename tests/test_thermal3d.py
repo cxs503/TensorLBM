@@ -1,4 +1,5 @@
 """Tests for the 3D thermal lattice Boltzmann module."""
+
 from __future__ import annotations
 
 import torch

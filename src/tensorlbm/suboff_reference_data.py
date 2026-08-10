@@ -21,15 +21,17 @@ Reference data sources
    used in :mod:`tensorlbm.suboff_resistance`.  It provides a *frictional*
    resistance coefficient only; it does not include pressure or form drag.
 
-2. **DARPA SUBOFF AFF-8 experimental** — tow-tank measurement of the full
-   SUBOFF configuration (bare hull + sail + four stern appendages) at
-   ``Re = 2.0×10^6``, ``Ct ≈ 0.0040`` (based on wetted surface area).
-   This value is cited from the task specification; primary-source
-   verification is pending.
+2. **DARPA SUBOFF dimensional tow-tank resistance** — primary Table 14 of
+   Liu & Huang (1998), CRDKNSWC/HD-1298-11 / ADA359226, provides six force
+   measurements each for configuration 1 (AFF-1 bare hull) and configuration
+   8 (AFF-8 full appendages).  These are stored separately in
+   ``SUBOFF_TOW_TANK_RESISTANCE_TABLE14`` so no uncertain area convention is
+   introduced by converting the published Newton values to Ct.
 
-3. **DARPA SUBOFF AFF-1 bare hull experimental** — WITHHELD.  Specific
-   experimental Ct values for the bare hull (AFF-1) could not be
-   independently confirmed from primary DARPA technical reports.
+3. **Legacy Ct placeholders** — the older ``SuboffReferenceDatum`` registry
+   is retained for API compatibility.  Its task-supplied AFF-8 Ct≈0.0040 and
+   withheld AFF-1 entry must not be treated as primary experimental evidence;
+   new validation should use the dimensional Table 14 registry.
 
 4. **Published CFD reference values** — WITHHELD.  Specific RANS/LES Ct
    values for SUBOFF AFF-1 could not be independently confirmed from
@@ -39,6 +41,7 @@ All non-withheld values are based on the wetted-surface-area normalization,
 consistent with the ITTC-1957 convention and the SUBOFF experimental
 tradition.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -48,15 +51,72 @@ from typing import Sequence
 
 __all__ = [
     "SuboffReferenceDatum",
+    "SuboffTowTankResistancePoint",
     "SUBOFF_REFERENCE_REGISTRY",
+    "SUBOFF_TOW_TANK_RESISTANCE_TABLE14",
     "get_reference_data",
     "get_reference_data_by_case",
     "list_available_case_ids",
     "list_available_reference_ids",
     "compute_ittc1957_cf",
+    "get_tow_tank_resistance_points",
 ]
 
 _WITHHELD_MARKER = "WITHHELD_NO_REFERENCE_DATA_AVAILABLE"
+
+
+@dataclass(frozen=True)
+class SuboffTowTankResistancePoint:
+    """One dimensional resistance measurement from ADA359226 Table 14."""
+
+    hull_type: str
+    configuration: int
+    speed_knots: float
+    resistance_n: float
+    source_citation: str = (
+        "Liu & Huang (1998), Summary of DARPA Suboff Experimental "
+        "Program Data, CRDKNSWC/HD-1298-11, ADA359226, Table 14, p.23"
+    )
+
+    def __post_init__(self) -> None:
+        if self.hull_type not in {"bare_hull", "full"}:
+            raise ValueError("hull_type must be bare_hull or full")
+        if self.configuration not in {1, 8}:
+            raise ValueError("Table 14 resistance points are configurations 1 or 8")
+        if self.speed_knots <= 0.0 or self.resistance_n <= 0.0:
+            raise ValueError("speed and resistance must be positive")
+
+    @property
+    def speed_mps(self) -> float:
+        return self.speed_knots * 0.514444
+
+
+SUBOFF_TOW_TANK_RESISTANCE_TABLE14: tuple[SuboffTowTankResistancePoint, ...] = (
+    SuboffTowTankResistancePoint("bare_hull", 1, 5.92, 87.40),
+    SuboffTowTankResistancePoint("bare_hull", 1, 10.00, 242.2),
+    SuboffTowTankResistancePoint("bare_hull", 1, 11.84, 332.9),
+    SuboffTowTankResistancePoint("bare_hull", 1, 13.92, 451.5),
+    SuboffTowTankResistancePoint("bare_hull", 1, 16.00, 576.9),
+    SuboffTowTankResistancePoint("bare_hull", 1, 17.99, 697.0),
+    SuboffTowTankResistancePoint("full", 8, 5.93, 102.3),
+    SuboffTowTankResistancePoint("full", 8, 10.00, 283.8),
+    SuboffTowTankResistancePoint("full", 8, 11.85, 389.2),
+    SuboffTowTankResistancePoint("full", 8, 13.92, 526.6),
+    SuboffTowTankResistancePoint("full", 8, 16.00, 675.6),
+    SuboffTowTankResistancePoint("full", 8, 17.79, 821.1),
+)
+
+
+def get_tow_tank_resistance_points(
+    hull_type: str,
+) -> tuple[SuboffTowTankResistancePoint, ...]:
+    """Return primary Table 14 force measurements for one configuration."""
+    if hull_type not in {"bare_hull", "full"}:
+        raise ValueError("hull_type must be bare_hull or full")
+    return tuple(
+        point for point in SUBOFF_TOW_TANK_RESISTANCE_TABLE14
+        if point.hull_type == hull_type
+    )
 
 
 def compute_ittc1957_cf(re: float) -> float:
@@ -125,9 +185,16 @@ class SuboffReferenceDatum:
     notes: str = ""
 
     def __post_init__(self) -> None:
-        for name in ("case_id", "reference_id", "reference_source_id",
-                     "source_citation", "hull_type", "reference_area_basis",
-                     "applicable_conditions", "notes"):
+        for name in (
+            "case_id",
+            "reference_id",
+            "reference_source_id",
+            "source_citation",
+            "hull_type",
+            "reference_area_basis",
+            "applicable_conditions",
+            "notes",
+        ):
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{name} must be a non-empty string")
@@ -135,9 +202,7 @@ class SuboffReferenceDatum:
         if self.is_withheld:
             # WITHHELD entries must not carry numeric values.
             if self.Ct_reference is not None:
-                raise ValueError(
-                    "WITHHELD entry must have Ct_reference=None"
-                )
+                raise ValueError("WITHHELD entry must have Ct_reference=None")
             if self.Re is not None:
                 raise ValueError("WITHHELD entry must have Re=None")
             if self.uncertainty is not None:
@@ -149,8 +214,7 @@ class SuboffReferenceDatum:
             self._validate_numeric("uncertainty", self.uncertainty, allow_zero=True)
 
     @staticmethod
-    def _validate_numeric(name: str, value: object,
-                          allow_zero: bool = False) -> None:
+    def _validate_numeric(name: str, value: object, allow_zero: bool = False) -> None:
         if not isinstance(value, Real) or isinstance(value, bool):
             raise TypeError(f"{name} must be a real number (not bool)")
         v = float(value)
@@ -271,7 +335,6 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
             "Uncertainty ±5% (conservative for 3D axisymmetric body)."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 2. ITTC-1957 friction line at Re = 1.0e7
     # ------------------------------------------------------------------
@@ -297,7 +360,6 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
             "pressure/form drag. Uncertainty ±5%."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 3. ITTC-1957 friction line at Re = 2.0e6
     # ------------------------------------------------------------------
@@ -315,15 +377,13 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
         hull_type="bare_hull",
         reference_area_basis="wetted_surface",
         applicable_conditions=(
-            "Re=2.0e6, single-phase incompressible, deep water, "
-            "turbulent boundary layer"
+            "Re=2.0e6, single-phase incompressible, deep water, turbulent boundary layer"
         ),
         notes=(
             "Frictional resistance coefficient only; does not include "
             "pressure/form drag. Uncertainty ±5%."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 4. SUBOFF AFF-8 full configuration experimental at Re = 2.0e6
     # ------------------------------------------------------------------
@@ -352,7 +412,6 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
             "Uncertainty ±10% (accounts for citation uncertainty)."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 5. SUBOFF AFF-1 bare hull experimental — WITHHELD
     # ------------------------------------------------------------------
@@ -368,8 +427,7 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
         hull_type="bare_hull",
         reference_area_basis="wetted_surface",
         applicable_conditions=(
-            "Re=1.2e7, single-phase incompressible, deep water, "
-            "bare hull (AFF-1)"
+            "Re=1.2e7, single-phase incompressible, deep water, bare hull (AFF-1)"
         ),
         notes=(
             "WITHHELD: Specific experimental Ct values for SUBOFF AFF-1 "
@@ -382,7 +440,6 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
             "withheld pending verification."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 6. Published CFD reference for SUBOFF AFF-1 — WITHHELD
     # ------------------------------------------------------------------
@@ -397,8 +454,7 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
         hull_type="bare_hull",
         reference_area_basis="wetted_surface",
         applicable_conditions=(
-            "Re=1.2e7, single-phase incompressible, deep water, "
-            "bare hull (AFF-1)"
+            "Re=1.2e7, single-phase incompressible, deep water, bare hull (AFF-1)"
         ),
         notes=(
             "WITHHELD: Multiple RANS and LES validation studies for "
@@ -414,6 +470,7 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
 # ---------------------------------------------------------------------------
 # Look-up functions
 # ---------------------------------------------------------------------------
+
 
 def get_reference_data(reference_id: str) -> SuboffReferenceDatum | None:
     """Look up a reference datum by its ``reference_id``.

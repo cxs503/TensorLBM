@@ -20,7 +20,7 @@ def coord_ori1():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*10000:(i+1)*10000, :] = coords
+        blocks[i * 10000 : (i + 1) * 10000, :] = coords
     return blocks
 
 
@@ -63,6 +63,7 @@ def coord_ori4():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori7():
     x_coords = np.linspace(-10, 30, 800)[99:799:2]  # 列方向（x）
     y_coords = np.linspace(-5, 5, 200)[49:149:2]  # 行方向（y）
@@ -82,7 +83,7 @@ def coord_ori7():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*17500:(i+1)*17500, :] = coords
+        blocks[i * 17500 : (i + 1) * 17500, :] = coords
     return blocks
 
 
@@ -125,7 +126,7 @@ def coord_ori11():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*17500:(i+1)*17500, :] = coords
+        blocks[i * 17500 : (i + 1) * 17500, :] = coords
     return blocks
 
 
@@ -148,6 +149,7 @@ def coord_ori12():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori13():
     x_coords = np.linspace(-5, 15, 200)  # 列方向（x）
     y_coords = np.linspace(-2.5, 2.5, 50)  # 行方向（y）
@@ -167,7 +169,7 @@ def coord_ori13():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*10000:(i+1)*10000, :] = coords
+        blocks[i * 10000 : (i + 1) * 10000, :] = coords
     return blocks
 
 
@@ -190,6 +192,7 @@ def coord_ori14():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori15():
     x_coords = np.linspace(-1.25, 3.75, 50)  # 列方向（x）
     y_coords = np.linspace(-10, 10, 200)  # 行方向（y）
@@ -209,7 +212,7 @@ def coord_ori15():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*10000:(i+1)*10000, :] = coords
+        blocks[i * 10000 : (i + 1) * 10000, :] = coords
     return blocks
 
 
@@ -252,7 +255,7 @@ def coord_ori17():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*5000:(i+1)*5000, :] = coords
+        blocks[i * 5000 : (i + 1) * 5000, :] = coords
     return blocks
 
 
@@ -275,6 +278,7 @@ def coord_ori18():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori25():
     x_coords = np.linspace(-1.25, 3.75, 50)  # 列方向（x）
     y_coords = np.linspace(-2.5, 2.5, 50)  # 行方向（y）
@@ -294,7 +298,7 @@ def coord_ori25():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*2500:(i+1)*2500, :] = coords
+        blocks[i * 2500 : (i + 1) * 2500, :] = coords
     return blocks
 
 
@@ -317,6 +321,7 @@ def coord_ori26():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori27():
     x_coords = np.linspace(-1.25, 3.75, 50)  # 列方向（x）
     y_coords = np.linspace(-5, 5, 100)  # 行方向（y）
@@ -336,7 +341,7 @@ def coord_ori27():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*5000:(i+1)*5000, :] = coords
+        blocks[i * 5000 : (i + 1) * 5000, :] = coords
     return blocks
 
 
@@ -359,6 +364,7 @@ def coord_ori28():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori28_addition():
     x_coords = np.linspace(-1.25, 3.75, 50)  # 列方向（x）
     y_coords = np.linspace(-5, 5, 100)  # 行方向（y）
@@ -378,8 +384,9 @@ def coord_ori28_addition():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [0, 1, 2]]
-        blocks[i * 10000:(i + 1) * 10000, :] = coords
+        blocks[i * 10000 : (i + 1) * 10000, :] = coords
     return blocks
+
 
 def coord_ori29():
     x_coords = np.linspace(-1.25, 3.75, 50)  # 列方向（x）
@@ -400,7 +407,7 @@ def coord_ori29():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*5000:(i+1)*5000, :] = coords
+        blocks[i * 5000 : (i + 1) * 5000, :] = coords
     return blocks
 
 
@@ -423,6 +430,7 @@ def coord_ori30():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori31():
     x_coords = np.linspace(-5, 15, 200)  # 列方向（x）
     y_coords = np.linspace(2.5, -2.5, 50)  # 行方向（y）
@@ -442,7 +450,7 @@ def coord_ori31():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*10000:(i+1)*10000, :] = coords
+        blocks[i * 10000 : (i + 1) * 10000, :] = coords
     return blocks
 
 
@@ -465,6 +473,7 @@ def coord_ori32():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori49():
     x_coords = np.linspace(-1.25, 3.75, 50)  # 列方向（x）
     y_coords = np.linspace(-5, 5, 100)  # 行方向（y）
@@ -485,6 +494,7 @@ def coord_ori49():
     coords = coords[:, 0:2]
     return coords
 
+
 def coord_ori51():
     x_coords = np.linspace(-5, 15, 200)  # 列方向（x）
     y_coords = np.linspace(2.5, -2.5, 50)  # 行方向（y）
@@ -504,7 +514,7 @@ def coord_ori51():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*10000:(i+1)*10000, :] = coords
+        blocks[i * 10000 : (i + 1) * 10000, :] = coords
     return blocks
 
 
@@ -527,6 +537,7 @@ def coord_ori52():
     coords = coords[:, [1, 0, 2]]
     return coords
 
+
 def coord_ori65():
     x_coords = np.linspace(-5, 15, 200)  # 列方向（x）
     y_coords = np.linspace(-2.5, 2.5, 50)  # 行方向（y）
@@ -546,7 +557,7 @@ def coord_ori65():
         # 合并成(N, 3)数组
         coords = np.stack([x, y, z], axis=1)
         coords = coords[:, [2, 1, 0]]
-        blocks[i*10000:(i+1)*10000, :] = coords
+        blocks[i * 10000 : (i + 1) * 10000, :] = coords
     return blocks
 
 

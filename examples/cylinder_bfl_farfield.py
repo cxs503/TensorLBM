@@ -2,7 +2,7 @@
 
 The smooth Bouzidi-Firdaouss-Lallemand interpolated bounce-back replaces the
 staircased boolean mask; combined with far-field lateral BC (no blockage),
-this should bring Cd close to the Williamson reference (1.33 at Re=100).
+this should bring Cd close to the Henderson reference (1.35 at Re=100).
 
     PYTHONPATH=src python examples/cylinder_bfl_farfield.py
 """
@@ -12,12 +12,13 @@ import math
 
 import torch
 
-from tensorlbm.d2q9 import C as C2D, equilibrium, macroscopic
 from tensorlbm.boundaries import far_field_bc_2d
+from tensorlbm.cylinder_bfl_control_volume import CYLINDER_RE100_CD_REFERENCE
+from tensorlbm.d2q9 import C as C2D, equilibrium, macroscopic
 from tensorlbm.interpolated_bc import bouzidi_bounce_back, compute_q_circle
 from tensorlbm.solver import collide_bgk, stream, correct_mass
 
-REF_CD = 1.33   # Henderson (1995) / Williamson extrapolation, Re=100
+REF_CD = CYLINDER_RE100_CD_REFERENCE
 
 
 def run(nx=320, ny=200, radius=12.0, u_in=0.08, re=100, n_steps=6000, warmup=2000, device="cuda"):

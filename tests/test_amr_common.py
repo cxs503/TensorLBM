@@ -8,6 +8,7 @@ before the implementation is written.  The common module must:
 * Provide halo exchange between patches.
 * Support D3Q19 and D3Q27.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -28,6 +29,7 @@ from tensorlbm.refinement import BoxRegion
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_equilibrium_3d(lattice: str, nz: int = 4, ny: int = 6, nx: int = 8) -> torch.Tensor:
     """Create an equilibrium distribution for the given lattice."""
@@ -50,6 +52,7 @@ def _q_for(lattice: str) -> int:
 # AMRPatch3D dataclass
 # ---------------------------------------------------------------------------
 
+
 class TestAMRPatch3D:
     """AMRPatch3D is a public data container combinable with any solver."""
 
@@ -58,8 +61,9 @@ class TestAMRPatch3D:
         q = _q_for(lattice)
         f = torch.rand(q, 8, 8, 8)
         box = BoxRegion(0, 4, 0, 4, 0, 4)
-        patch = AMRPatch3D(f=f, box=box, ratio=2, level=1, parent_level=0, tau=0.55,
-                           lattice=lattice)
+        patch = AMRPatch3D(
+            f=f, box=box, ratio=2, level=1, parent_level=0, tau=0.55, lattice=lattice
+        )
         assert patch.f is f
         assert patch.box is box
         assert patch.ratio == 2
@@ -95,6 +99,7 @@ class TestAMRPatch3D:
 # ---------------------------------------------------------------------------
 # refine / coarsen operations (solver-agnostic)
 # ---------------------------------------------------------------------------
+
 
 class TestRefineCoarsen:
     """refine/coarsen are not bound to a specific solver."""
@@ -153,6 +158,7 @@ class TestRefineCoarsen:
 # Halo exchange between patches
 # ---------------------------------------------------------------------------
 
+
 class TestHaloExchange:
     """halo_exchange copies parent-level data into patch boundary cells."""
 
@@ -166,8 +172,13 @@ class TestHaloExchange:
         r = 2
         interior_before = patch_f[:, r:-r, r:-r, r:-r].clone()
         halo_exchange(
-            patch_f, parent_f, box=box, ratio=r,
-            lattice=lattice, tau_p=1.0, tau_c=0.75,
+            patch_f,
+            parent_f,
+            box=box,
+            ratio=r,
+            lattice=lattice,
+            tau_p=1.0,
+            tau_c=0.75,
         )
         assert torch.equal(patch_f[:, r:-r, r:-r, r:-r], interior_before)
 
@@ -180,8 +191,13 @@ class TestHaloExchange:
         box = BoxRegion(0, 4, 0, 4, 0, 4)
         r = 2
         halo_exchange(
-            patch_f, parent_f, box=box, ratio=r,
-            lattice=lattice, tau_p=1.0, tau_c=0.75,
+            patch_f,
+            parent_f,
+            box=box,
+            ratio=r,
+            lattice=lattice,
+            tau_p=1.0,
+            tau_c=0.75,
         )
         # Border should now be non-zero (parent was random)
         border = torch.ones(8, 8, 8, dtype=torch.bool)
@@ -196,8 +212,14 @@ class TestHaloExchange:
         patch_f = torch.zeros(q, 8, 8, 8)
         box = BoxRegion(0, 4, 0, 4, 0, 4)
         halo_exchange(
-            patch_f, parent_f, box=box, ratio=2,
-            lattice=lattice, tau_p=1.0, tau_c=0.75, use_fh=False,
+            patch_f,
+            parent_f,
+            box=box,
+            ratio=2,
+            lattice=lattice,
+            tau_p=1.0,
+            tau_c=0.75,
+            use_fh=False,
         )
         # Should not crash and border should be modified
         r = 2
@@ -209,6 +231,7 @@ class TestHaloExchange:
 # ---------------------------------------------------------------------------
 # Solver-agnostic combination test
 # ---------------------------------------------------------------------------
+
 
 class TestSolverAgnosticCombination:
     """AMR operations work with arbitrary collide/stream/boundary callables."""

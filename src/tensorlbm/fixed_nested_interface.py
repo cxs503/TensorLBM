@@ -19,6 +19,7 @@ cells and the two fine substeps corresponding to one coarse step.  With
 ``V_c/V_f = 8`` and ``dt_c/dt_f = 2``, these choices preserve volume-time
 weighted mass and all population momentum components crossing the plane.
 """
+
 from __future__ import annotations
 
 import torch
@@ -33,7 +34,10 @@ def _validate_normal(normal: tuple[int, int, int]) -> torch.Tensor:
     """Return a CPU D3Q27-compatible signed Cartesian unit normal."""
     if not isinstance(normal, tuple) or len(normal) != 3:
         raise ValueError("normal must be a three-component signed Cartesian unit tuple")
-    if any(not isinstance(value, int) for value in normal) or sum(value * value for value in normal) != 1:
+    if (
+        any(not isinstance(value, int) for value in normal)
+        or sum(value * value for value in normal) != 1
+    ):
         raise ValueError("normal must be a three-component signed Cartesian unit tuple")
     return torch.tensor(normal, dtype=C.dtype)
 
@@ -47,7 +51,9 @@ def _validate_face(face: torch.Tensor, *, name: str) -> None:
         raise TypeError(f"{name} must have a floating-point dtype")
 
 
-def _validate_matching_receivers(source: torch.Tensor, receiver: torch.Tensor, *, source_name: str) -> None:
+def _validate_matching_receivers(
+    source: torch.Tensor, receiver: torch.Tensor, *, source_name: str
+) -> None:
     _validate_face(source, name=source_name)
     _validate_face(receiver, name="receiver")
     if source.dtype != receiver.dtype or source.device != receiver.device:
@@ -112,8 +118,13 @@ def reconstruct_coarse_incoming_from_fine_d3q27(
     if not fine_substep_faces.is_floating_point():
         raise TypeError("fine_substep_faces must have a floating-point dtype")
     _validate_face(coarse_receiver, name="coarse_receiver")
-    if fine_substep_faces.dtype != coarse_receiver.dtype or fine_substep_faces.device != coarse_receiver.device:
-        raise ValueError("fine_substep_faces and coarse_receiver must have the same dtype and device")
+    if (
+        fine_substep_faces.dtype != coarse_receiver.dtype
+        or fine_substep_faces.device != coarse_receiver.device
+    ):
+        raise ValueError(
+            "fine_substep_faces and coarse_receiver must have the same dtype and device"
+        )
     normal_tensor = _validate_normal(normal).to(device=coarse_receiver.device)
     nc0, nc1 = coarse_receiver.shape[1:]
     if fine_substep_faces.shape[2:] != (2 * nc0, 2 * nc1):

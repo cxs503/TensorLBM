@@ -17,6 +17,7 @@ Options:
     --output   Output root directory (default: outputs/multiphase_benchmark)
     --overwrite   Overwrite existing output directories
 """
+
 from __future__ import annotations
 
 import argparse
@@ -155,23 +156,26 @@ def _full_config(output: Path, device: str, overwrite: bool) -> MultiphaseBenchm
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="TensorLBM multiphase model benchmark suite"
-    )
+    parser = argparse.ArgumentParser(description="TensorLBM multiphase model benchmark suite")
     parser.add_argument(
-        "--device", default="cpu", choices=["cpu", "cuda", "mps"],
+        "--device",
+        default="cpu",
+        choices=["cpu", "sdaa", "cuda", "mps"],
         help="PyTorch device (default: cpu)",
     )
     parser.add_argument(
-        "--fast", action="store_true",
+        "--fast",
+        action="store_true",
         help="Run a quick sanity-check with reduced domain and step count",
     )
     parser.add_argument(
-        "--output", default="outputs/multiphase_benchmark",
+        "--output",
+        default="outputs/multiphase_benchmark",
         help="Output root directory (default: outputs/multiphase_benchmark)",
     )
     parser.add_argument(
-        "--overwrite", action="store_true",
+        "--overwrite",
+        action="store_true",
         help="Overwrite existing output directories",
     )
     args = parser.parse_args()

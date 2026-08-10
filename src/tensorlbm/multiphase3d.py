@@ -14,6 +14,7 @@ References
 Shan & Chen (1993) Phys. Rev. E 47 1815
 Shan & Chen (1994) Phys. Rev. E 49 2941
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -24,9 +25,22 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 from .d3q19 import C, W, equilibrium3d, macroscopic3d
-from .multiphase import psi_exp, psi_linear, psi_power, psi_carnahan_starling, psi_peng_robinson  # re-export for convenience
+from .multiphase import (
+    psi_exp,
+    psi_linear,
+    psi_power,
+    psi_carnahan_starling,
+    psi_peng_robinson,
+)  # re-export for convenience
+from .phasefield.free_energy import DoubleWellFreeEnergy, force_minus_phi_grad_mu
 from .solver3d import _get_d3q19_mrt_matrices
-from .turbulence import _neq_stress_norm_3d, _smagorinsky_tau
+from .turbulence import (
+    _neq_stress_norm_3d,
+    _nu_t_to_tau_eff,
+    _smagorinsky_tau,
+    _vreman_nu_t_3d,
+    _wale_nu_t_3d,
+)
 
 _CS2 = 1.0 / 3.0
 
@@ -45,6 +59,7 @@ def _w_on_3d(device: torch.device) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Shan-Chen neighborhood sum for D3Q19
 # ---------------------------------------------------------------------------
+
 
 def _sc_neighbor_weighted_sum_3d(
     psi: torch.Tensor,
@@ -70,8 +85,8 @@ def _sc_neighbor_weighted_sum_3d(
 
     device = psi.device
     nz, ny, nx = psi.shape[-3], psi.shape[-2], psi.shape[-1]
-    c = _c_on_3d(device)   # (19, 3)  int64
-    w = _w_on_3d(device)   # (19,)    float32
+    c = _c_on_3d(device)  # (19, 3)  int64
+    w = _w_on_3d(device)  # (19,)    float32
 
     # Build and cache gather index tensors (one-time cost per unique shape/device)
     cache_key = (nz, ny, nx, device.type, device.index)
@@ -91,7 +106,7 @@ def _sc_neighbor_weighted_sum_3d(
 
     z_idx, y_idx, x_idx = _sc3d_cache[cache_key]
     # psi_shifts: (19, nz, ny, nx) – all shifted copies gathered in one operation
-    psi_shifts = psi[z_idx, y_idx, x_idx]   # advanced-index gather, no Python loop
+    psi_shifts = psi[z_idx, y_idx, x_idx]  # advanced-index gather, no Python loop
 
     # w * c components: (19, 1, 1, 1) for broadcasting over (nz, ny, nx)
     cx_float = c[:, 0].float().view(19, 1, 1, 1)
@@ -99,15 +114,16 @@ def _sc_neighbor_weighted_sum_3d(
     cz_float = c[:, 2].float().view(19, 1, 1, 1)
     w_4d = w.view(19, 1, 1, 1)
 
-    Fx = (w_4d * cx_float * psi_shifts).sum(0)   # (nz, ny, nx)
-    Fy = (w_4d * cy_float * psi_shifts).sum(0)   # (nz, ny, nx)
-    Fz = (w_4d * cz_float * psi_shifts).sum(0)   # (nz, ny, nx)
+    Fx = (w_4d * cx_float * psi_shifts).sum(0)  # (nz, ny, nx)
+    Fy = (w_4d * cy_float * psi_shifts).sum(0)  # (nz, ny, nx)
+    Fz = (w_4d * cz_float * psi_shifts).sum(0)  # (nz, ny, nx)
     return Fx, Fy, Fz
 
 
 # ---------------------------------------------------------------------------
 # Shan-Chen two-component (3D)
 # ---------------------------------------------------------------------------
+
 
 def sc_two_component_force_3d(
     rho1: torch.Tensor,
@@ -117,8 +133,7 @@ def sc_two_component_force_3d(
     gy: float = 0.0,
     gz: float = 0.0,
     solid_mask: torch.Tensor | None = None,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor,
-           torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Shan-Chen interaction + body forces for two 3D components.
 
     Args:
@@ -184,7 +199,13 @@ def collide_sc_two_component_3d(
     rho2, ux2, uy2, uz2 = macroscopic3d(f2)
 
     Fx1, Fy1, Fz1, Fx2, Fy2, Fz2 = sc_two_component_force_3d(
-        rho1, rho2, G_12, gx, gy, gz, solid_mask,
+        rho1,
+        rho2,
+        G_12,
+        gx,
+        gy,
+        gz,
+        solid_mask,
     )
 
     rho1_s = torch.clamp(rho1, min=1e-12)
@@ -193,9 +214,25 @@ def collide_sc_two_component_3d(
     if use_guo:
         # --- Guo forcing (second-order, waLBerla pattern) ---
         f1_out, f2_out = _bgk_collision_guo_3d(
-            f1, f2, rho1, rho2, ux1, uy1, uz1, ux2, uy2, uz2,
-            Fx1, Fy1, Fz1, Fx2, Fy2, Fz2,
-            tau1, tau2, device,
+            f1,
+            f2,
+            rho1,
+            rho2,
+            ux1,
+            uy1,
+            uz1,
+            ux2,
+            uy2,
+            uz2,
+            Fx1,
+            Fy1,
+            Fz1,
+            Fx2,
+            Fy2,
+            Fz2,
+            tau1,
+            tau2,
+            device,
         )
     else:
         # --- Velocity-shift (first-order, original TensorLBM) ---
@@ -284,13 +321,21 @@ def _bgk_collision_guo_3d(
 
     # Guo correction term for component 1
     cu1 = cx * ux1.unsqueeze(0) + cy * uy1.unsqueeze(0) + cz * uz1.unsqueeze(0)
-    term_a1 = (cx - ux1.unsqueeze(0)) * Fx1.unsqueeze(0) + (cy - uy1.unsqueeze(0)) * Fy1.unsqueeze(0) + (cz - uz1.unsqueeze(0)) * Fz1.unsqueeze(0)
+    term_a1 = (
+        (cx - ux1.unsqueeze(0)) * Fx1.unsqueeze(0)
+        + (cy - uy1.unsqueeze(0)) * Fy1.unsqueeze(0)
+        + (cz - uz1.unsqueeze(0)) * Fz1.unsqueeze(0)
+    )
     term_b1 = cu1 * (cx * Fx1.unsqueeze(0) + cy * Fy1.unsqueeze(0) + cz * Fz1.unsqueeze(0))
     delta_f1 = (1.0 - 1.0 / (2.0 * tau1)) * w * (term_a1 / cs2 + term_b1 / cs4)
 
     # Guo correction term for component 2
     cu2 = cx * ux2.unsqueeze(0) + cy * uy2.unsqueeze(0) + cz * uz2.unsqueeze(0)
-    term_a2 = (cx - ux2.unsqueeze(0)) * Fx2.unsqueeze(0) + (cy - uy2.unsqueeze(0)) * Fy2.unsqueeze(0) + (cz - uz2.unsqueeze(0)) * Fz2.unsqueeze(0)
+    term_a2 = (
+        (cx - ux2.unsqueeze(0)) * Fx2.unsqueeze(0)
+        + (cy - uy2.unsqueeze(0)) * Fy2.unsqueeze(0)
+        + (cz - uz2.unsqueeze(0)) * Fz2.unsqueeze(0)
+    )
     term_b2 = cu2 * (cx * Fx2.unsqueeze(0) + cy * Fy2.unsqueeze(0) + cz * Fz2.unsqueeze(0))
     delta_f2 = (1.0 - 1.0 / (2.0 * tau2)) * w * (term_a2 / cs2 + term_b2 / cs4)
 
@@ -300,6 +345,7 @@ def _bgk_collision_guo_3d(
 # ---------------------------------------------------------------------------
 # Shan-Chen single-component (3D)
 # ---------------------------------------------------------------------------
+
 
 def collide_sc_single_component_3d(
     f: torch.Tensor,
@@ -412,7 +458,7 @@ def _grad_phase_field_3d(
     dphi_dy = 0.5 * (torch.roll(phi, -1, dims=1) - torch.roll(phi, 1, dims=1))
     dphi_dz = 0.5 * (torch.roll(phi, -1, dims=0) - torch.roll(phi, 1, dims=0))
 
-    mag = torch.sqrt(dphi_dx ** 2 + dphi_dy ** 2 + dphi_dz ** 2)
+    mag = torch.sqrt(dphi_dx**2 + dphi_dy**2 + dphi_dz**2)
     mag_safe = torch.clamp(mag, min=1e-12)
     nhat_x = dphi_dx / mag_safe
     nhat_y = dphi_dy / mag_safe
@@ -489,20 +535,16 @@ def color_gradient_step_3d(
     _phi, mag, nhat_x, nhat_y, nhat_z = _grad_phase_field_3d(rho_r_m, rho_b_m)
 
     ci_dot_n = (
-        cx * nhat_x.unsqueeze(0)
-        + cy * nhat_y.unsqueeze(0)
-        + cz * nhat_z.unsqueeze(0)
+        cx * nhat_x.unsqueeze(0) + cy * nhat_y.unsqueeze(0) + cz * nhat_z.unsqueeze(0)
     )  # (19, nz, ny, nx)
     B_iso = 1.0 / 3.0
-    perturbation = (A / 2.0) * mag.unsqueeze(0) * w_v * (ci_dot_n ** 2 - B_iso)
+    perturbation = (A / 2.0) * mag.unsqueeze(0) * w_v * (ci_dot_n**2 - B_iso)
     f_post = f_post + perturbation
 
     # --- 3. Recoloring step (Latva-Kokko & Rothman 2005) ---
     # feq at zero velocity with unit density equals wᵢ, so reuse w_v directly
     # instead of allocating new tensors via equilibrium3d(ones, zeros, zeros, zeros).
-    recolor_amp = (
-        beta * (rho_r_s * rho_b_s / rho_safe).unsqueeze(0) * ci_dot_n * w_v
-    )
+    recolor_amp = beta * (rho_r_s * rho_b_s / rho_safe).unsqueeze(0) * ci_dot_n * w_v
 
     f_r_out = (rho_r_s / rho_safe).unsqueeze(0) * f_post + recolor_amp
     f_b_out = (rho_b_s / rho_safe).unsqueeze(0) * f_post - recolor_amp
@@ -535,9 +577,12 @@ def _laplacian_3d(field: torch.Tensor) -> torch.Tensor:
         dim 0 ↔ z,  dim 1 ↔ y,  dim 2 ↔ x.
     """
     return (
-        torch.roll(field, 1, dims=2) + torch.roll(field, -1, dims=2)
-        + torch.roll(field, 1, dims=1) + torch.roll(field, -1, dims=1)
-        + torch.roll(field, 1, dims=0) + torch.roll(field, -1, dims=0)
+        torch.roll(field, 1, dims=2)
+        + torch.roll(field, -1, dims=2)
+        + torch.roll(field, 1, dims=1)
+        + torch.roll(field, -1, dims=1)
+        + torch.roll(field, 1, dims=0)
+        + torch.roll(field, -1, dims=0)
         - 6.0 * field
     )
 
@@ -574,8 +619,8 @@ def init_free_energy_g_3d(
     cy = c[:, 1].float().view(19, 1, 1, 1)
     cz = c[:, 2].float().view(19, 1, 1, 1)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
-    u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
-    return w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
+    u_sq = (ux**2 + uy**2 + uz**2).unsqueeze(0)
+    return w * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
 
 
 def free_energy_step_3d(
@@ -592,6 +637,8 @@ def free_energy_step_3d(
     gz: float = 0.0,
     rho_heavy: float | None = None,
     rho_light: float | None = None,
+    C_s: float = 0.0,
+    sgs_model: str = "smagorinsky",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy two-phase step for D3Q19.
 
@@ -618,10 +665,20 @@ def free_energy_step_3d(
         gz:         z body-force acceleration.
         rho_heavy:  Effective density for the φ=+1 phase (Boussinesq buoyancy).
         rho_light:  Effective density for the φ=−1 phase.
+        C_s:        SGS model constant.  When > 0, an LES sub-grid model is
+                    applied to the *f* collision.  Interpreted as the
+                    Smagorinsky constant C_s, WALE constant C_w, or Vreman
+                    constant C_V depending on *sgs_model*.
+        sgs_model:  Sub-grid model selector: ``'smagorinsky'`` (default),
+                    ``'wale'``, or ``'vreman'``.  Only affects the *f*
+                    collision when ``C_s > 0``.
 
     Returns:
         Updated ``(f, g)`` after one collision step.
     """
+    _VALID_SGS_MODELS = ("smagorinsky", "wale", "vreman")
+    if sgs_model not in _VALID_SGS_MODELS:
+        raise ValueError(f"sgs_model must be one of {_VALID_SGS_MODELS}, got {sgs_model!r}")
     device = f.device
     c = _c_on_3d(device)
     w = _w_on_3d(device)
@@ -641,16 +698,12 @@ def free_energy_step_3d(
     else:
         rho_eff = rho
 
-    # Chemical potential: μ = −Aφ + Bφ³ − κ∇²φ
-    mu = -A * phi + B * phi ** 3 - kappa * _laplacian_3d(phi)
-
-    # Korteweg (capillary) body force: F_cap = −φ ∇μ + ρ_eff g_body
-    grad_mu_x = 0.5 * (torch.roll(mu, -1, dims=2) - torch.roll(mu, 1, dims=2))
-    grad_mu_y = 0.5 * (torch.roll(mu, -1, dims=1) - torch.roll(mu, 1, dims=1))
-    grad_mu_z = 0.5 * (torch.roll(mu, -1, dims=0) - torch.roll(mu, 1, dims=0))
-    Fx = -phi * grad_mu_x + rho_eff * gx
-    Fy = -phi * grad_mu_y + rho_eff * gy
-    Fz = -phi * grad_mu_z + rho_eff * gz
+    # Chemical potential and Korteweg force retain the legacy periodic stencil.
+    mu = DoubleWellFreeEnergy(A=A, B=B, kappa=kappa).chemical_potential(phi, boundary="periodic")
+    force_x, force_y, force_z = force_minus_phi_grad_mu(phi, mu, boundary="periodic")
+    Fx = force_x + rho_eff * gx
+    Fy = force_y + rho_eff * gy
+    Fz = force_z + rho_eff * gz
 
     rho_s = torch.clamp(rho, min=1e-12)
     ux_eq = ux + tau_f * Fx / rho_s
@@ -659,13 +712,29 @@ def free_energy_step_3d(
 
     # Collision for f (BGK with Korteweg + buoyancy force)
     feq = equilibrium3d(rho, ux_eq, uy_eq, uz_eq)
-    f_out = f - (f - feq) / tau_f
+    if C_s > 0.0:
+        if sgs_model == "smagorinsky":
+            tau_eff = _smagorinsky_tau(
+                tau_f,
+                _neq_stress_norm_3d(f - feq),
+                rho_s,
+                C_s,
+            )
+        elif sgs_model == "wale":
+            nu_t = _wale_nu_t_3d(ux, uy, uz, C_s)
+            tau_eff = _nu_t_to_tau_eff(tau_f, nu_t)
+        else:  # vreman
+            nu_t = _vreman_nu_t_3d(ux, uy, uz, C_s)
+            tau_eff = _nu_t_to_tau_eff(tau_f, nu_t)
+        f_out = f - (f - feq) / tau_eff.unsqueeze(0)
+    else:
+        f_out = f - (f - feq) / tau_f
 
     # Equilibrium for g  (D=3, cs²=1/3 → diff_factor = 3|c|² − 3)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
-    u_sq = (ux ** 2 + uy ** 2 + uz ** 2).unsqueeze(0)
-    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu ** 2 - 1.5 * u_sq)
-    c_sq = cx ** 2 + cy ** 2 + cz ** 2
+    u_sq = (ux**2 + uy**2 + uz**2).unsqueeze(0)
+    geq_adv = w_v * phi.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu**2 - 1.5 * u_sq)
+    c_sq = cx**2 + cy**2 + cz**2
     diff_factor = c_sq / _CS2 - 3.0  # = 3|c|² − 3;  Σ_i wᵢ diff_factor = 0
     geq_diff = w_v * Gamma * diff_factor * mu.unsqueeze(0)
     geq = geq_adv + geq_diff
@@ -673,24 +742,55 @@ def free_energy_step_3d(
 
     return f_out, g_out
 
+
 # ---------------------------------------------------------------------------
 # MRT + Smagorinsky multiphase collision operators
 # ---------------------------------------------------------------------------
 
 
 def _mrt_collision_field(
-    f, feq, matrix, matrix_inv,
-    s_e, s_eps, s_q, s_pi, s_nu_field,
-    nz, ny, nx, device,
+    f,
+    feq,
+    matrix,
+    matrix_inv,
+    s_e,
+    s_eps,
+    s_q,
+    s_pi,
+    s_nu_field,
+    nz,
+    ny,
+    nx,
+    device,
 ):
     """MRT collision with spatially-varying stress relaxation (Smagorinsky)."""
     f_flat = f.reshape(19, -1)
     feq_flat = feq.reshape(19, -1)
     s_nu_flat = s_nu_field.reshape(-1)
     s_fixed = torch.tensor(
-        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q,
-         1.0, 1.0, 1.0, 1.0, 1.0, s_pi, s_pi, 1.0, 1.0, 1.0],
-        dtype=f.dtype, device=device,
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
     )
     m = matrix @ f_flat
     m_eq = matrix @ feq_flat
@@ -702,17 +802,47 @@ def _mrt_collision_field(
 
 
 def _mrt_collision_uniform(
-    f, feq, matrix, matrix_inv,
-    s_e, s_eps, s_q, s_pi, s_nu,
-    nz, ny, nx, device,
+    f,
+    feq,
+    matrix,
+    matrix_inv,
+    s_e,
+    s_eps,
+    s_q,
+    s_pi,
+    s_nu,
+    nz,
+    ny,
+    nx,
+    device,
 ):
     """MRT collision with uniform relaxation rates (no Smagorinsky)."""
     f_flat = f.reshape(19, -1)
     feq_flat = feq.reshape(19, -1)
     s_vec = torch.tensor(
-        [0.0, s_e, s_eps, 0.0, s_q, 0.0, s_q, 0.0, s_q,
-         s_nu, s_nu, s_nu, s_nu, s_nu, s_pi, s_pi, 1.0, 1.0, 1.0],
-        dtype=f.dtype, device=device,
+        [
+            0.0,
+            s_e,
+            s_eps,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            0.0,
+            s_q,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_nu,
+            s_pi,
+            s_pi,
+            1.0,
+            1.0,
+            1.0,
+        ],
+        dtype=f.dtype,
+        device=device,
     )
     m = matrix @ f_flat
     m_eq = matrix @ feq_flat
@@ -730,20 +860,31 @@ def _guo_correction_3d(ux, uy, uz, Fx, Fy, Fz, s_nu_field, device):
     cy = c[:, 1].float().view(19, 1, 1, 1)
     cz = c[:, 2].float().view(19, 1, 1, 1)
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
-    term_a = ((cx - ux.unsqueeze(0)) * Fx.unsqueeze(0)
-              + (cy - uy.unsqueeze(0)) * Fy.unsqueeze(0)
-              + (cz - uz.unsqueeze(0)) * Fz.unsqueeze(0))
+    term_a = (
+        (cx - ux.unsqueeze(0)) * Fx.unsqueeze(0)
+        + (cy - uy.unsqueeze(0)) * Fy.unsqueeze(0)
+        + (cz - uz.unsqueeze(0)) * Fz.unsqueeze(0)
+    )
     term_b = cu * (cx * Fx.unsqueeze(0) + cy * Fy.unsqueeze(0) + cz * Fz.unsqueeze(0))
     return (1.0 - 0.5 * s_nu_field.unsqueeze(0)) * w_v * (term_a / cs2 + term_b / cs4)
 
 
 def collide_cg_mrt_3d(
-    f_r, f_b,
-    tau=1.0, A=0.04, beta=0.7,
-    gx=0.0, gy=0.0, gz=0.0,
+    f_r,
+    f_b,
+    tau=1.0,
+    A=0.04,
+    beta=0.7,
+    gx=0.0,
+    gy=0.0,
+    gz=0.0,
     solid_mask=None,
-    s_e=1.19, s_eps=1.4, s_q=1.2,
-    s_pi=None, C_s=0.0, use_guo=False,
+    s_e=1.19,
+    s_eps=1.4,
+    s_q=1.2,
+    s_pi=None,
+    C_s=0.0,
+    use_guo=False,
 ):
     """Color-Gradient step with MRT collision + optional Smagorinsky LES.
 
@@ -783,18 +924,47 @@ def collide_cg_mrt_3d(
         tau_eff = _smagorinsky_tau(tau, _neq_stress_norm_3d(f_total - feq), rho, C_s)
         s_nu_f = 1.0 / tau_eff
         f_post = _mrt_collision_field(
-            f_total, feq, matrix, matrix_inv,
-            s_e, s_eps, s_q, s_pi, s_nu_f, nz, ny, nx, device,
+            f_total,
+            feq,
+            matrix,
+            matrix_inv,
+            s_e,
+            s_eps,
+            s_q,
+            s_pi,
+            s_nu_f,
+            nz,
+            ny,
+            nx,
+            device,
         )
         if use_guo:
             f_post += _guo_correction_3d(
-                ux, uy, uz, rho * gx, rho * gy, rho * gz, s_nu_f, device,
+                ux,
+                uy,
+                uz,
+                rho * gx,
+                rho * gy,
+                rho * gz,
+                s_nu_f,
+                device,
             )
     else:
         feq = equilibrium3d(rho, ux + tau * gx, uy + tau * gy, uz + tau * gz)
         f_post = _mrt_collision_uniform(
-            f_total, feq, matrix, matrix_inv,
-            s_e, s_eps, s_q, s_pi, 1.0 / tau, nz, ny, nx, device,
+            f_total,
+            feq,
+            matrix,
+            matrix_inv,
+            s_e,
+            s_eps,
+            s_q,
+            s_pi,
+            1.0 / tau,
+            nz,
+            ny,
+            nx,
+            device,
         )
 
     if solid_mask is not None:
@@ -803,7 +973,7 @@ def collide_cg_mrt_3d(
     # Surface-tension perturbation
     _phi, mag, nhat_x, nhat_y, nhat_z = _grad_phase_field_3d(rho_r_s, rho_b_s)
     ci_dot_n = cx * nhat_x.unsqueeze(0) + cy * nhat_y.unsqueeze(0) + cz * nhat_z.unsqueeze(0)
-    f_post += (A / 2.0) * mag.unsqueeze(0) * w_v * (ci_dot_n ** 2 - 1.0 / 3.0)
+    f_post += (A / 2.0) * mag.unsqueeze(0) * w_v * (ci_dot_n**2 - 1.0 / 3.0)
 
     # Recoloring
     amp = beta * (rho_r_s * rho_b_s / rho_safe).unsqueeze(0) * ci_dot_n * w_v
@@ -817,12 +987,20 @@ def collide_cg_mrt_3d(
 
 
 def collide_sc_mrt_3d(
-    f1, f2,
-    G_12=0.9, tau=1.0,
-    gx=0.0, gy=0.0, gz=0.0,
+    f1,
+    f2,
+    G_12=0.9,
+    tau=1.0,
+    gx=0.0,
+    gy=0.0,
+    gz=0.0,
     solid_mask=None,
-    s_e=1.19, s_eps=1.4, s_q=1.2,
-    s_pi=None, C_s=0.0, use_guo=False,
+    s_e=1.19,
+    s_eps=1.4,
+    s_q=1.2,
+    s_pi=None,
+    C_s=0.0,
+    use_guo=False,
 ):
     """Shan-Chen two-component MRT collision + optional Smagorinsky LES.
 
@@ -834,7 +1012,13 @@ def collide_sc_mrt_3d(
     rho2, ux2, uy2, uz2 = macroscopic3d(f2)
 
     Fx1, Fy1, Fz1, Fx2, Fy2, Fz2 = sc_two_component_force_3d(
-        rho1, rho2, G_12, gx, gy, gz, solid_mask,
+        rho1,
+        rho2,
+        G_12,
+        gx,
+        gy,
+        gz,
+        solid_mask,
     )
 
     rho1_s = rho1.clamp(min=1e-12)
@@ -853,12 +1037,34 @@ def collide_sc_mrt_3d(
         s_nu1 = 1.0 / tau_eff1
         s_nu2 = 1.0 / tau_eff2
         f1_out = _mrt_collision_field(
-            f1, feq1, matrix, matrix_inv,
-            s_e, s_eps, s_q, s_pi, s_nu1, nz, ny, nx, device,
+            f1,
+            feq1,
+            matrix,
+            matrix_inv,
+            s_e,
+            s_eps,
+            s_q,
+            s_pi,
+            s_nu1,
+            nz,
+            ny,
+            nx,
+            device,
         )
         f2_out = _mrt_collision_field(
-            f2, feq2, matrix, matrix_inv,
-            s_e, s_eps, s_q, s_pi, s_nu2, nz, ny, nx, device,
+            f2,
+            feq2,
+            matrix,
+            matrix_inv,
+            s_e,
+            s_eps,
+            s_q,
+            s_pi,
+            s_nu2,
+            nz,
+            ny,
+            nx,
+            device,
         )
         if use_guo:
             f1_out += _guo_correction_3d(ux1, uy1, uz1, Fx1, Fy1, Fz1, s_nu1, device)
@@ -866,22 +1072,46 @@ def collide_sc_mrt_3d(
     else:
         s_nu = 1.0 / tau
         feq1 = equilibrium3d(
-            rho1, ux1 + tau * Fx1 / rho1_s,
+            rho1,
+            ux1 + tau * Fx1 / rho1_s,
             uy1 + tau * Fy1 / rho1_s,
             uz1 + tau * Fz1 / rho1_s,
         )
         feq2 = equilibrium3d(
-            rho2, ux2 + tau * Fx2 / rho2_s,
+            rho2,
+            ux2 + tau * Fx2 / rho2_s,
             uy2 + tau * Fy2 / rho2_s,
             uz2 + tau * Fz2 / rho2_s,
         )
         f1_out = _mrt_collision_uniform(
-            f1, feq1, matrix, matrix_inv,
-            s_e, s_eps, s_q, s_pi, s_nu, nz, ny, nx, device,
+            f1,
+            feq1,
+            matrix,
+            matrix_inv,
+            s_e,
+            s_eps,
+            s_q,
+            s_pi,
+            s_nu,
+            nz,
+            ny,
+            nx,
+            device,
         )
         f2_out = _mrt_collision_uniform(
-            f2, feq2, matrix, matrix_inv,
-            s_e, s_eps, s_q, s_pi, s_nu, nz, ny, nx, device,
+            f2,
+            feq2,
+            matrix,
+            matrix_inv,
+            s_e,
+            s_eps,
+            s_q,
+            s_pi,
+            s_nu,
+            nz,
+            ny,
+            nx,
+            device,
         )
 
     if solid_mask is not None:

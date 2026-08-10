@@ -1,0 +1,64 @@
+{
+  "schema": "tensorlbm-suboff-open-boundary-ab-v1",
+  "status": "rejected_population_health_floor",
+  "physical_validation": false,
+  "candidate": "suboff-nested-v13-mass-conservative-l90-no-inlet-sponge",
+  "configuration": {
+    "levels": 3,
+    "finest_hull_length_cells": 360.0,
+    "collision_model": "natural_kbc",
+    "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
+    "sponge_inlet": false,
+    "stress_exchange_distance_cells": 4.21875,
+    "target_collision_reynolds": 100000.0,
+    "target_reynolds_first_reached_step": 600
+  },
+  "last_healthy_trend": {
+    "step_6480_root_minimum_population": 0.014690127223730087,
+    "step_6480_root_maximum_speed": 0.09920462220907211,
+    "step_6540_root_minimum_population": 0.010525201447308064,
+    "step_6540_root_maximum_speed": 0.13217267394065857,
+    "step_6600_root_minimum_population": 0.0009581048507243395,
+    "step_6600_root_maximum_speed": 0.21199508011341095
+  },
+  "failure": {
+    "root_step": 6660,
+    "population_health_floor": 1e-8,
+    "root_minimum_population": 9.999999717180685e-10,
+    "root_maximum_speed": 0.287723571062088,
+    "root_maximum_speed_index_zyx": [46, 34, 21],
+    "root_minimum_density": 0.5720170736312866,
+    "root_maximum_density": 1.1478078365325928,
+    "maximum_collision_limited_fraction": 0.00005075445816186557,
+    "maximum_interface_applied_correction_fraction": 9.106847187467793e-7,
+    "exception": "FloatingPointError: hierarchy crossed the population-health floor at root_step=6660: 1e-09 < 1e-08"
+  },
+  "matched_inlet_sponge_control": {
+    "candidate": "suboff-nested-v14-equivalent-l90-12k",
+    "sponge_inlet": true,
+    "completed_steps": 12000,
+    "finite": true,
+    "maximum_collision_limited_fraction_at_step_6720": 0.0,
+    "root_minimum_population_at_step_6720": 0.015514214523136616,
+    "root_maximum_speed_at_step_6720": 0.06632738560438156,
+    "evidence": "docs/evidence/suboff-nested-v14-crosses-v32-failure-window-r1.json"
+  },
+  "decision": {
+    "admit_to_accuracy_convergence": false,
+    "admit_as_open_boundary_stability_evidence": true,
+    "production_default": "retain the inlet sponge with non-equilibrium-extrapolation far field",
+    "reason": "With the corrected wall source held fixed, removing only inlet sponge produces a root-grid instability at step 6660; the matched inlet-sponge control remains finite through step 12000."
+  },
+  "interpretation": [
+    "The failure begins on the root grid while both refined levels remain finite and near their preceding speed range.",
+    "The interface correction remains below the configured 0.001 limit, so reflux limiting is not the initiating mechanism in this trajectory.",
+    "This A/B pair isolates inlet damping from the corrected wall-traction source and makes inlet sponge a required long-time open-boundary module for this configuration.",
+    "The failed trajectory is excluded from resistance accuracy and grid-convergence claims."
+  ],
+  "provenance": {
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v13-mass-conservative-l90-12k.log",
+    "remote_log_sha256": "7252a9c72ee76873e8987de2f96a629f1ba127fd37e56e3fac53b342a170cd29",
+    "last_checkpoint": "results/amr_campaign_20260801/suboff-nested-v13-equivalent-l90-12k.ckpt",
+    "last_checkpoint_sha256": "54cb6e76a94c2bd185669ace3d20434a2591451fa44ca979372af1b638558e22"
+  }
+}

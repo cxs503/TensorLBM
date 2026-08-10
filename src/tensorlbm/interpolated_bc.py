@@ -13,9 +13,8 @@ Bouzidi, M., Firdaouss, M., & Lallemand, P. (2001).
 "Momentum transfer of a Boltzmann-lattice fluid with boundaries."
 Physics of Fluids, 13(11), 3452–3459.
 """
-from __future__ import annotations
 
-import math
+from __future__ import annotations
 
 import torch
 
@@ -62,21 +61,28 @@ def bouzidi_bounce_back(
     mask_lin = q_cell < 0.5
     mask_quad = ~mask_lin
 
-    f[direction][fluid_nodes]
-    f_opp = f[opp][fluid_nodes]
     fp_opp = f_prev[opp][fluid_nodes]
-
     fp_d = f_prev[direction][fluid_nodes]
-    f_bc_lin = 2.0 * q_cell * f_opp + (1.0 - 2.0 * q_cell) * fp_d
+    dcx, dcy = (int(value) for value in C[direction].tolist())
+    fp_d_upstream = torch.roll(
+        f_prev[direction], shifts=(dcy, dcx), dims=(0, 1),
+    )[fluid_nodes]
+    f_bc_lin = (
+        2.0 * q_cell * fp_d
+        + (1.0 - 2.0 * q_cell) * fp_d_upstream
+    )
 
     safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
-    f_bc_quad = f_opp / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    f_bc_quad = (
+        fp_d / (2.0 * safe_q)
+        + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    )
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
-    target = f_out[direction].clone()
+    target = f_out[opp].clone()
     target[fluid_nodes] = f_bc
-    f_out[direction] = target
+    f_out[opp] = target
 
     return f_out
 
@@ -104,9 +110,10 @@ def compute_q_circle(
 
         |\\mathbf{x} + t \\mathbf{c} - \\mathbf{x}_{centre}|^2 = r^2
 
-    and taking the smallest positive root t*.  The fractional distance is
-    ``q = t* / |c|`` (lattice links have unit length, so *q = t** for the
-    face-centred and diagonal directions).  Nodes for which no intersection
+    and taking the smallest positive root t*.  Since the neighbouring lattice
+    node is reached at ``t = 1`` for every discrete velocity, the fractional
+    link distance is ``q = t*`` for axial and diagonal directions alike.
+    Nodes for which no intersection
     exists (pure fluid or pure solid) get ``q = 0.5`` (standard halfway BC).
 
     Args:
@@ -147,11 +154,11 @@ def compute_q_circle(
         # Neighbour in direction d
         # Is the neighbour a solid cell?
         dist_nb = (xx + dcx - cx) ** 2 + (yy + dcy - cy) ** 2
-        nb_is_solid = dist_nb <= radius ** 2
+        nb_is_solid = dist_nb <= radius**2
 
         # Is the current node a fluid cell?
         dist_self = (xx - cx) ** 2 + (yy - cy) ** 2
-        self_is_fluid = dist_self > radius ** 2
+        self_is_fluid = dist_self > radius**2
 
         boundary = self_is_fluid & nb_is_solid  # (ny, nx)
 
@@ -164,11 +171,11 @@ def compute_q_circle(
         #   |c|^2 t^2 + 2(c . d_vec) t + (|d_vec|^2 - r^2) = 0
         dx = xx - cx
         dy = yy - cy
-        a_coef = dcx ** 2 + dcy ** 2  # |c|^2 (1.0 or 2.0)
+        a_coef = dcx**2 + dcy**2  # |c|^2 (1.0 or 2.0)
         b_coef = 2.0 * (dcx * dx + dcy * dy)
-        c_coef = dx ** 2 + dy ** 2 - radius ** 2
+        c_coef = dx**2 + dy**2 - radius**2
 
-        discriminant = b_coef ** 2 - 4.0 * a_coef * c_coef
+        discriminant = b_coef**2 - 4.0 * a_coef * c_coef
         # Only evaluate where boundary is True and discriminant >= 0
         safe_disc = torch.where(
             boundary & (discriminant >= 0.0),
@@ -180,20 +187,24 @@ def compute_q_circle(
         t1 = (-b_coef - sqrt_disc) / (2.0 * a_coef)
         t2 = (-b_coef + sqrt_disc) / (2.0 * a_coef)
 
-        # Take smallest positive root; q = t / sqrt(a) to normalise to link length
-        link_len = math.sqrt(a_coef)
-        q1 = t1 / link_len
-        q2 = t2 / link_len
+        # x+t*c reaches the neighbouring lattice node at t=1, including for
+        # diagonal c.  Thus the dimensionless BFL link fraction is q=t.
+        q1 = t1
+        q2 = t2
 
         # Choose smallest q in (0, 1]
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
 
-        q_val = torch.where(
-            valid1 & valid2,
-            torch.min(q1, q2),
-            torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
-        ).clamp(1e-6, 1.0).float()
+        q_val = (
+            torch.where(
+                valid1 & valid2,
+                torch.min(q1, q2),
+                torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
+            )
+            .clamp(1e-6, 1.0)
+            .float()
+        )
 
         fluid_boundary_mask[d] = boundary
         q_field[d] = torch.where(boundary, q_val, q_field[d])
@@ -224,11 +235,10 @@ def bouzidi_bounce_back_3d(
     For each fluid node marked in *fluid_nodes* the incoming population in
     direction *direction* is reconstructed by interpolation:
 
-    - If *q* < 0.5: linear interpolation uses the post-stream population at
-      the fluid node and the opposite-direction population from the previous
-      step.
-    - If *q* ≥ 0.5: quadratic interpolation uses the fluid-node population
-      and the opposite-direction population from the previous step.
+    - If *q* < 0.5: interpolation uses outgoing post-collision populations at
+      the boundary node and its upstream fluid neighbour.
+    - If *q* ≥ 0.5: interpolation uses outgoing and opposite post-collision
+      populations at the boundary node.
 
     Args:
         f: Post-stream distribution tensor, shape ``(19, nz, ny, nx)``.
@@ -250,22 +260,33 @@ def bouzidi_bounce_back_3d(
     mask_lin = q_cell < 0.5
     mask_quad = ~mask_lin
 
-    f_opp = f[opp][fluid_nodes]
     fp_opp = f_prev[opp][fluid_nodes]
     fp_d = f_prev[direction][fluid_nodes]
+    dcx, dcy, dcz = (int(value) for value in C3D[direction].tolist())
+    fp_d_upstream = torch.roll(
+        f_prev[direction], shifts=(dcz, dcy, dcx), dims=(0, 1, 2),
+    )[fluid_nodes]
 
     # Linear interpolation (q < 0.5)
-    f_bc_lin = 2.0 * q_cell * f_opp + (1.0 - 2.0 * q_cell) * fp_d
+    f_bc_lin = (
+        2.0 * q_cell * fp_d
+        + (1.0 - 2.0 * q_cell) * fp_d_upstream
+    )
 
     # Quadratic interpolation (q >= 0.5)
     safe_q = torch.where(mask_quad, q_cell, torch.ones_like(q_cell))
-    f_bc_quad = f_opp / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    f_bc_quad = (
+        fp_d / (2.0 * safe_q)
+        + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+    )
 
     f_bc = torch.where(mask_lin, f_bc_lin, f_bc_quad)
 
-    target = f_out[direction].clone()
+    # Set f[opp] (the UNKNOWN population, from solid toward fluid),
+    # NOT f[direction] (the known population, from fluid toward solid).
+    target = f_out[opp].clone()
     target[fluid_nodes] = f_bc
-    f_out[direction] = target
+    f_out[opp] = target
 
     return f_out
 
@@ -328,10 +349,10 @@ def compute_q_sphere(
             continue  # rest direction
 
         dist_nb = (xx + dcx - cx) ** 2 + (yy + dcy - cy) ** 2 + (zz + dcz - cz) ** 2
-        nb_is_solid = dist_nb <= radius ** 2
+        nb_is_solid = dist_nb <= radius**2
 
         dist_self = (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2
-        self_is_fluid = dist_self > radius ** 2
+        self_is_fluid = dist_self > radius**2
 
         boundary = self_is_fluid & nb_is_solid  # (nz, ny, nx)
 
@@ -342,11 +363,11 @@ def compute_q_sphere(
         dx = xx - cx
         dy = yy - cy
         dz = zz - cz
-        a_coef = dcx ** 2 + dcy ** 2 + dcz ** 2
+        a_coef = dcx**2 + dcy**2 + dcz**2
         b_coef = 2.0 * (dcx * dx + dcy * dy + dcz * dz)
-        c_coef = dx ** 2 + dy ** 2 + dz ** 2 - radius ** 2
+        c_coef = dx**2 + dy**2 + dz**2 - radius**2
 
-        discriminant = b_coef ** 2 - 4.0 * a_coef * c_coef
+        discriminant = b_coef**2 - 4.0 * a_coef * c_coef
         safe_disc = torch.where(
             boundary & (discriminant >= 0.0),
             discriminant,
@@ -357,18 +378,21 @@ def compute_q_sphere(
         t1 = (-b_coef - sqrt_disc) / (2.0 * a_coef)
         t2 = (-b_coef + sqrt_disc) / (2.0 * a_coef)
 
-        link_len = math.sqrt(a_coef)
-        q1 = t1 / link_len
-        q2 = t2 / link_len
+        q1 = t1
+        q2 = t2
 
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
 
-        q_val = torch.where(
-            valid1 & valid2,
-            torch.min(q1, q2),
-            torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
-        ).clamp(1e-6, 1.0).float()
+        q_val = (
+            torch.where(
+                valid1 & valid2,
+                torch.min(q1, q2),
+                torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
+            )
+            .clamp(1e-6, 1.0)
+            .float()
+        )
 
         fluid_boundary_mask[d] = boundary
         q_field[d] = torch.where(boundary, q_val, q_field[d])

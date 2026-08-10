@@ -6,6 +6,7 @@ second-order equilibrium must be a collision fixed point.  Raw moments are
 formed independently of ``macroscopic27`` so a shared recovery helper cannot
 mask a conservation regression.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -20,11 +21,33 @@ from tensorlbm.d3q27 import equilibrium27
 # recovery path.
 _D3Q27_C = torch.tensor(
     [
-        [0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1],
-        [1, 1, 0], [-1, 1, 0], [1, -1, 0], [-1, -1, 0], [1, 0, 1], [-1, 0, 1],
-        [1, 0, -1], [-1, 0, -1], [0, 1, 1], [0, -1, 1], [0, 1, -1], [0, -1, -1],
-        [1, 1, 1], [-1, 1, 1], [1, -1, 1], [-1, -1, 1], [1, 1, -1], [-1, 1, -1],
-        [1, -1, -1], [-1, -1, -1],
+        [0, 0, 0],
+        [1, 0, 0],
+        [-1, 0, 0],
+        [0, 1, 0],
+        [0, -1, 0],
+        [0, 0, 1],
+        [0, 0, -1],
+        [1, 1, 0],
+        [-1, 1, 0],
+        [1, -1, 0],
+        [-1, -1, 0],
+        [1, 0, 1],
+        [-1, 0, 1],
+        [1, 0, -1],
+        [-1, 0, -1],
+        [0, 1, 1],
+        [0, -1, 1],
+        [0, 1, -1],
+        [0, -1, -1],
+        [1, 1, 1],
+        [-1, 1, 1],
+        [1, -1, 1],
+        [-1, -1, 1],
+        [1, 1, -1],
+        [-1, 1, -1],
+        [1, -1, -1],
+        [-1, -1, -1],
     ],
     dtype=torch.float64,
 )

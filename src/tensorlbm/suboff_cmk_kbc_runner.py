@@ -16,6 +16,7 @@ it to the collision kernel:
 This runner does **not** modify any solver hot path.  Only existing
 operators are composed.
 """
+
 from __future__ import annotations
 
 import json
@@ -64,6 +65,7 @@ COMBINATIONS: list[tuple[str, str]] = [
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class SuboffCmkKbcConfig:
     """Configuration for a single SUBOFF CM/CUMULANT/KBC × SGS run.
@@ -85,8 +87,8 @@ class SuboffCmkKbcConfig:
     lattice: str = "D3Q19"
     boundary_type: str = "farfield"
     # SGS model constants
-    C_s: float = 0.1   # Smagorinsky
-    C_w: float = 0.5   # WALE
+    C_s: float = 0.1  # Smagorinsky
+    C_w: float = 0.5  # WALE
     C_V: float = 0.025  # Vreman
     # ITTC reference
     reference_Ct: float = 0.00405
@@ -94,9 +96,7 @@ class SuboffCmkKbcConfig:
 
     def __post_init__(self) -> None:
         if self.collision.upper() not in {"CM", "CUMULANT", "KBC"}:
-            raise ValueError(
-                f"collision must be CM, CUMULANT, or KBC; got {self.collision!r}"
-            )
+            raise ValueError(f"collision must be CM, CUMULANT, or KBC; got {self.collision!r}")
         if self.turbulence_model.lower() not in {"smagorinsky", "wale", "vreman"}:
             raise ValueError(
                 f"turbulence_model must be smagorinsky, wale, or vreman; "
@@ -104,8 +104,7 @@ class SuboffCmkKbcConfig:
             )
         if self.lattice.upper() != "D3Q19":
             raise ValueError(
-                f"lattice must be D3Q19 (far_field_bc_3d is D3Q19-only); "
-                f"got {self.lattice!r}"
+                f"lattice must be D3Q19 (far_field_bc_3d is D3Q19-only); got {self.lattice!r}"
             )
         if self.nx < 16 or self.ny < 8 or self.nz < 8:
             raise ValueError("nx, ny, nz must be at least 16, 8, 8")
@@ -132,6 +131,7 @@ class SuboffCmkKbcConfig:
 # ---------------------------------------------------------------------------
 # SGS-coupled collision
 # ---------------------------------------------------------------------------
+
 
 def _compute_sgs_tau_eff(
     f: torch.Tensor,
@@ -181,17 +181,24 @@ def _collide_with_sgs(
     if config.collision.upper() == "KBC":
         tau_scalar = float(tau_eff.mean().item())
         return collide_advanced_3d(
-            config.lattice, config.collision, f, tau=tau_scalar,
+            config.lattice,
+            config.collision,
+            f,
+            tau=tau_scalar,
         )
     # CM and CUMULANT accept tensor tau
     return collide_advanced_3d(
-        config.lattice, config.collision, f, tau=tau_eff,
+        config.lattice,
+        config.collision,
+        f,
+        tau=tau_eff,
     )
 
 
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
+
 
 def run_suboff_cmk_kbc(
     config: SuboffCmkKbcConfig | None = None,
@@ -228,7 +235,7 @@ def run_suboff_cmk_kbc(
     # Wetted area and dynamic pressure for Ct normalization
     wetted_area = _voxel_wetted_area(solid, 1.0)
     rho_lu = 1.0
-    dynamic_pressure = 0.5 * rho_lu * config.u_in ** 2 * wetted_area
+    dynamic_pressure = 0.5 * rho_lu * config.u_in**2 * wetted_area
 
     # --- 2. Initialize populations ---
     rho0 = torch.ones((config.nz, config.ny, config.nx), device=device)

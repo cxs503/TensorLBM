@@ -1,0 +1,32 @@
+{
+  "schema": "tensorlbm-cylinder-planar-viscosity-evidence-v1",
+  "status": "registered_float32_viscosity_admitted",
+  "physical_validation": false,
+  "case": "periodic transverse shear wave at the exact cylinder-v7 relaxation time",
+  "configuration": {
+    "collision_model": "planar_cumulant_d2q9",
+    "tau": 0.5162,
+    "wavelength_cells": 64,
+    "transverse_cells": 4,
+    "amplitude": 0.01,
+    "steps": 4000,
+    "fit_start_step": 500,
+    "dtype": "float32"
+  },
+  "result": {
+    "target_kinematic_viscosity": 0.005399999999999998,
+    "recovered_kinematic_viscosity": 0.0053874979690053965,
+    "relative_error_pct": 0.2315190924926141,
+    "decay_slope_per_step": -0.000051926243814214495,
+    "initial_fitted_amplitude": 0.009736042469739914,
+    "final_amplitude": 0.00811760313808918,
+    "minimum_population": 0.027106940746307373,
+    "finite": true
+  },
+  "acceptance": {
+    "maximum_relative_error_pct": 2.0,
+    "admitted": true,
+    "drag_or_strouhal_validation_claimed": false
+  },
+  "interpretation": "The embedded planar collision recovers the registered molecular viscosity to 0.232 percent in float32 at tau=0.5162. A viscosity-mapping defect large enough to explain the remaining approximately 6 percent cylinder drag error is not observed."
+}

@@ -17,6 +17,7 @@ Additional: collide_smagorinsky_mrt, collide_mrt27, compute_vorticity_3d,
 extract_wake_profile, compute_recirculation_length, save_vtk_binary,
 boundaries_d3q27 smoke tests.
 """
+
 from __future__ import annotations
 
 import math
@@ -135,7 +136,7 @@ class TestD3Q27TaylorGreenDecay:
 
         def _kinetic_energy(f_dist: torch.Tensor) -> float:
             rho, ux, uy, uz = macroscopic27(f_dist)
-            return float((0.5 * rho * (ux ** 2 + uy ** 2 + uz ** 2)).sum().item())
+            return float((0.5 * rho * (ux**2 + uy**2 + uz**2)).sum().item())
 
         n_steps = 100
         e0 = _kinetic_energy(f)
@@ -145,7 +146,7 @@ class TestD3Q27TaylorGreenDecay:
         e_final = _kinetic_energy(f)
 
         # Theoretical decay rate for the dominant 3-D mode
-        decay_rate_theory = 4.0 * nu * k ** 2
+        decay_rate_theory = 4.0 * nu * k**2
         if e0 > 0.0 and e_final > 0.0:
             measured_rate = -math.log(e_final / e0) / n_steps
             assert abs(measured_rate - decay_rate_theory) / decay_rate_theory < 0.75, (
@@ -441,9 +442,7 @@ class TestBoundariesD3Q27:
 
         nz, ny, nx = 10, 12, 20
         device = torch.device("cpu")
-        obstacle = sphere_mask(
-            nx, ny, nz, nx * 0.25, ny * 0.5, nz * 0.5, 3.0, device=device
-        )
+        obstacle = sphere_mask(nx, ny, nz, nx * 0.25, ny * 0.5, nz * 0.5, 3.0, device=device)
         wall = make_channel_wall_mask_27(nz, ny, nx, obstacle, device=device)
         rho = torch.ones((nz, ny, nx))
         f = equilibrium27(

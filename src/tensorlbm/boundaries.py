@@ -68,6 +68,7 @@ def zou_he_inlet_velocity(
     Returns:
         Updated distribution tensor (same shape).
     """
+
     # Populations pointing into the domain (cx > 0): directions 1, 5, 8
     # Populations pointing out of the domain (cx < 0): directions 3, 6, 7
     # Tangential populations (cx = 0): 0, 2, 4
@@ -80,8 +81,7 @@ def zou_he_inlet_velocity(
                 profile = profile[:, 0]
             if profile.shape != ref.shape:
                 msg = (
-                    f"Inlet profile must have shape {tuple(ref.shape)}, "
-                    f"got {tuple(profile.shape)}"
+                    f"Inlet profile must have shape {tuple(ref.shape)}, got {tuple(profile.shape)}"
                 )
                 raise ValueError(msg)
             return profile
@@ -184,8 +184,8 @@ def compute_obstacle_forces(
     """
     device = f.device
     c = C.to(device)
-    cx = c[:, 0].view(9, 1, 1).float()  # (9, 1, 1)
-    cy = c[:, 1].view(9, 1, 1).float()
+    cx = c[:, 0].view(9, 1, 1).to(f.dtype)  # (9, 1, 1)
+    cy = c[:, 1].view(9, 1, 1).to(f.dtype)
 
     # Broadcast obstacle mask over velocity directions
     mask_3d = obstacle_mask.unsqueeze(0)  # (1, ny, nx)
@@ -211,10 +211,10 @@ def far_field_bc_2d(
     rho1 = torch.ones((f.shape[1], f.shape[2]), dtype=f.dtype, device=f.device)
     feq = equilibrium(rho1, torch.full_like(rho1, u_in), torch.zeros_like(rho1))
     f = f.clone()
-    f[:, :, 0] = feq[:, :, 0]       # inlet (free stream)
-    f[:, :, -1] = f[:, :, -2]       # outlet (zero gradient)
-    f[:, 0, :] = feq[:, 0, :]       # bottom lateral
-    f[:, -1, :] = feq[:, -1, :]     # top lateral
+    f[:, :, 0] = feq[:, :, 0]  # inlet (free stream)
+    f[:, :, -1] = f[:, :, -2]  # outlet (zero gradient)
+    f[:, 0, :] = feq[:, 0, :]  # bottom lateral
+    f[:, -1, :] = feq[:, -1, :]  # top lateral
     if obstacle_mask is not None:
         f = bounce_back_cells(f, obstacle_mask)
     return f
@@ -229,7 +229,8 @@ def apply_simple_channel_boundaries(
     """Minimal boundary treatment.
 
     Applies equilibrium inlet, zero-gradient outlet, and bounce-back on walls
-    and obstacle cells.
+    and obstacle cells.  Merges wall + obstacle masks into a single bounce-back
+    call to reduce kernel launches.
     """
     rho, ux, uy = macroscopic(f)
 
@@ -241,8 +242,9 @@ def apply_simple_channel_boundaries(
 
     f[:, :, -1] = f[:, :, -2]
 
-    f = bounce_back_cells(f, wall_mask)
-    f = bounce_back_cells(f, obstacle_mask)
+    # Merge wall + obstacle into single bounce-back (one kernel launch instead of two)
+    combined_mask = wall_mask | obstacle_mask
+    f = bounce_back_cells(f, combined_mask)
     return f
 
 
@@ -277,6 +279,7 @@ def apply_zou_he_channel_boundaries(
 # ---------------------------------------------------------------------------
 # P1.3 New boundary conditions — 2-D (D2Q9)
 # ---------------------------------------------------------------------------
+
 
 def porous_jump_2d(
     f: torch.Tensor,
@@ -326,10 +329,10 @@ def porous_jump_2d(
 
     # Apply density correction on the downstream side
     f_new = f.clone()
-    rho_up   = rho[:, jump_col]
+    rho_up = rho[:, jump_col]
     rho_down = (rho_up + delta_rho).clamp(min=1e-6)
-    ux_face  = u_face
-    uy_face  = uy[:, jump_col]
+    ux_face = u_face
+    uy_face = uy[:, jump_col]
 
     f_eq_down = equilibrium(rho_down, ux_face, uy_face)
     f_new[:, :, jump_col + 1] = f_eq_down[:, :, 0]
@@ -386,7 +389,7 @@ def nscbc_outlet_2d(
     f: torch.Tensor,
     rho_target: float = 1.0,
     sigma: float = 0.25,
-    c_s: float = 1.0 / 3.0 ** 0.5,
+    c_s: float = 1.0 / 3.0**0.5,
 ) -> torch.Tensor:
     """Non-Reflecting (Characteristic Wave) outlet boundary condition (D2Q9).
 
@@ -416,8 +419,8 @@ def nscbc_outlet_2d(
 
     # Characteristic wave amplitude correction at right boundary
     rho_out = rho[:, -1]
-    ux_out  = ux[:, -1]
-    uy_out  = uy[:, -1]
+    ux_out = ux[:, -1]
+    uy_out = uy[:, -1]
 
     # Incoming wave amplitude L1 (pressure-relaxation)
     L1 = sigma * c_s * (rho_out - rho_target)

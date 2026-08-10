@@ -1,0 +1,31 @@
+{
+  "schema": "tensorlbm-suboff-nested-instability-evidence-v1",
+  "status": "rejected",
+  "configuration": {
+    "coarse_hull_length_cells": 150,
+    "target_resolved_reynolds": 100000,
+    "resolved_reynolds_start": 2000,
+    "wall_ramp_steps": 5000,
+    "regularize_restriction": true,
+    "regularize_prolongation": false,
+    "interface_filter_width": 0
+  },
+  "failure": {
+    "first_recorded_population_floor_step": 2400,
+    "wall_activation_at_floor": 0.46860474023534326,
+    "maximum_speed_at_floor": 0.21155919134616852,
+    "finest_peak_cells_from_allocated_boundary": 3,
+    "last_health_step": 2600
+  },
+  "provenance": {
+    "log": "suboff-nested-v4-l150-rejected-interface-step2600.log",
+    "log_sha256": "697d3fd2308c73b03665f84ebfc846841be5d3bdcaa41553887b8d03888fbaec",
+    "checkpoint": "suboff-nested-v4-l150-rejected-interface-step2500.ckpt",
+    "checkpoint_sha256": "204227e2a7ac7a04a440f9287af3dfd11a301f88e488a748030f0c2ec4661716"
+  },
+  "force_evidence_eligible": false,
+  "notes": [
+    "The failure occurs at approximately the same wall-activation phase as L90 and L120.",
+    "The exact-PID job was stopped after the positivity floor was observed."
+  ]
+}

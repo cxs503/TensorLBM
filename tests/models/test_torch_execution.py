@@ -57,7 +57,9 @@ def test_compile_accepts_only_torch_d3q19_mrt_incompressible_single_phase():
         (_composition(), 0.5),
     ],
 )
-def test_compile_rejects_incompatible_composition_or_tau(composition: ModelComposition, tau: object):
+def test_compile_rejects_incompatible_composition_or_tau(
+    composition: ModelComposition, tau: object
+):
     with pytest.raises(ValueError):
         compile_torch_d3q19_mrt_plan(composition, tau=tau)  # type: ignore[arg-type]
 
@@ -79,14 +81,19 @@ def test_step_ast_contains_only_the_two_prebound_kernel_calls():
     assert isinstance(function.body[0], ast.Return)
     calls = [node for node in ast.walk(function) if isinstance(node, ast.Call)]
     assert len(calls) == 2
-    assert [call.func.attr for call in calls if isinstance(call.func, ast.Attribute)] == ["stream_kernel", "collision_kernel"]
+    assert [call.func.attr for call in calls if isinstance(call.func, ast.Attribute)] == [
+        "stream_kernel",
+        "collision_kernel",
+    ]
     names = {node.id for node in ast.walk(function) if isinstance(node, ast.Name)}
     assert "composition" not in names
     assert not {"registry", "backend", "json", "logging", "Agent"} & names
 
 
 def test_execution_module_has_no_framework_generic_backend_imports():
-    module = ast.parse(inspect.getsource(__import__("tensorlbm.models.torch_execution", fromlist=["*"])))
+    module = ast.parse(
+        inspect.getsource(__import__("tensorlbm.models.torch_execution", fromlist=["*"]))
+    )
     imports = {
         alias.name.split(".")[0]
         for node in ast.walk(module)

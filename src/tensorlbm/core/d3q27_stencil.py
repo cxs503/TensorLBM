@@ -7,6 +7,7 @@ domain-neutral bridge between those two conventions for moving D3Q27 links.
 It mirrors :mod:`tensorlbm.core.d3q19_stencil` but covers all 26 moving
 directions of the D3Q27 stencil (6 face + 12 edge + 8 corner).
 """
+
 from __future__ import annotations
 
 import torch
@@ -27,16 +28,16 @@ def _validate_production_d3q27() -> None:
 
 
 _validate_production_d3q27()
-_MOVING_TENSOR_SHIFTS = tuple(
-    (int(C[q, 2]), int(C[q, 1]), int(C[q, 0])) for q in D3Q27_MOVING_Q
-)
+_MOVING_TENSOR_SHIFTS = tuple((int(C[q, 2]), int(C[q, 1]), int(C[q, 0])) for q in D3Q27_MOVING_Q)
 
 
 def _require_field_3d(field: torch.Tensor) -> None:
     if not isinstance(field, torch.Tensor):
         raise TypeError(f"D3Q27 tensor field must be a torch.Tensor, got {type(field).__name__}")
     if field.ndim != 3:
-        raise ValueError(f"D3Q27 tensor field must have exactly three dimensions (z, y, x), got {field.ndim}")
+        raise ValueError(
+            f"D3Q27 tensor field must have exactly three dimensions (z, y, x), got {field.ndim}"
+        )
 
 
 def _require_moving_q(q: int) -> None:
@@ -66,7 +67,9 @@ def roll_from_pull_source_27(field: torch.Tensor, q: int) -> torch.Tensor:
 def roll_to_neighbor_27(field: torch.Tensor, q: int) -> torch.Tensor:
     """Roll a donor field to its periodic neighbour along moving direction ``q``."""
     _require_field_3d(field)
-    return torch.roll(field, shifts=tuple(-delta for delta in tensor_shift_for_q_27(q)), dims=(0, 1, 2))
+    return torch.roll(
+        field, shifts=tuple(-delta for delta in tensor_shift_for_q_27(q)), dims=(0, 1, 2)
+    )
 
 
 def all_moving_neighbor_masks_27(mask: torch.Tensor) -> tuple[torch.Tensor, ...]:
