@@ -176,18 +176,17 @@ def collide_cumulant_d2q9(
     # ------------------------------------------------------------------
     # Equilibrium central moments (Maxwell-Boltzmann):
     #   κ20^eq = ρ c_s² ,  κ02^eq = ρ c_s²
-    #   κ11^eq = 0,  κ21^eq = 0,  κ12^eq = 0
+    #   κ11^eq = 0
+    #   κ21^eq = -ρ ux² uy ,  κ12^eq = -ρ ux uy²   (NOT zero at finite Ma)
     #   κ22^eq = ρ c_s^4 + O(u²) velocity terms.
-    # The full velocity-dependent κ22^eq is computed from the equilibrium
-    # distribution below to ensure the fixed-point property holds exactly
-    # (the naive ρ c_s^4 = ρ/9 omits the O(u²) corrections and would
-    # perturb the equilibrium at finite Ma).
+    # All velocity-dependent equilibria (κ21, κ12, κ22) are computed from
+    # the equilibrium distribution below to ensure the fixed-point property
+    # holds exactly.  Naively setting κ21^eq = κ12^eq = 0 (or κ22^eq = ρ/9)
+    # perturbs f_eq at finite Mach number and breaks Galilean invariance
+    # of the 3rd-order modes.
     # ------------------------------------------------------------------
     k20_eq = rho * cs2
     k02_eq = rho * cs2
-    # higher equilibria are zero tensors
-    # k22_eq depends on velocity: compute from the equilibrium distribution
-    # to ensure the fixed-point property holds exactly.
     feq = equilibrium(rho, ux, uy)
     f5e, f6e, f7e, f8e = feq[5], feq[6], feq[7], feq[8]
     f1e, f3e, f2e, f4e = feq[1], feq[3], feq[2], feq[4]
@@ -197,6 +196,12 @@ def collide_cumulant_d2q9(
     m11_eq_v = f5e - f6e + f7e - f8e
     m20_eq_v = f1e + f3e + m22_eq_v
     m02_eq_v = f2e + f4e + m22_eq_v
+    # Central-moment equilibria via the same forward-shift used for the
+    # non-equilibrium part (guarantees f_eq is an exact fixed point).
+    k21_eq = (m21_eq_v - uy * m20_eq_v - 2.0 * ux * m11_eq_v
+              + 2.0 * ux2 * uy * rho)
+    k12_eq = (m12_eq_v - ux * m02_eq_v - 2.0 * uy * m11_eq_v
+              + 2.0 * ux * uy2 * rho)
     k22_eq = (m22_eq_v - 2.0 * ux * m12_eq_v - 2.0 * uy * m21_eq_v
               + ux2 * m02_eq_v + 4.0 * ux * uy * m11_eq_v + uy2 * m20_eq_v
               - 3.0 * ux2 * uy2 * rho)
@@ -218,8 +223,8 @@ def collide_cumulant_d2q9(
     k02_s = k02_s + delta
 
     # Ghost (non-hydrodynamic) modes
-    k21_s = k21 - omega_3 * k21         # k21_eq = 0
-    k12_s = k12 - omega_3 * k12         # k12_eq = 0
+    k21_s = k21 - omega_3 * (k21 - k21_eq)
+    k12_s = k12 - omega_3 * (k12 - k12_eq)
     k22_s = k22 - omega_4 * (k22 - k22_eq)
 
     # ------------------------------------------------------------------
