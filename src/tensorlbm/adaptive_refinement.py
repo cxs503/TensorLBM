@@ -141,8 +141,12 @@ def _fh_coarse_to_fine_2d(
     f_eq = equilibrium(rho, ux, uy, device=f_coarse.device)
     f_neq = f_coarse - f_eq
 
-    # Rescale non-equilibrium part by relaxation-time ratio
-    scale = tau_f / tau_c
+    # Rescale non-equilibrium part by relaxation-time AND time-step ratios
+    # (Filippova–Hänel / Lagrava 2012): fine grid has Δt_f = Δt_c / ratio,
+    # so f_neq scales as (τ_f·Δt_f)/(τ_c·Δt_c) = τ_f / (ratio·τ_c).
+    # Using only τ_f/τ_c (missing the 1/ratio time-step factor) breaks
+    # interface stress continuity and the physical-viscosity match.
+    scale = tau_f / (ratio * tau_c)
     f_rescaled = f_eq + scale * f_neq
 
     # Cell-block upsampling (correct ratio-2 coordinate mapping; see
@@ -177,7 +181,9 @@ def _fh_coarse_to_fine_3d(
     f_eq = equilibrium3d(rho, ux, uy, uz, device=f_coarse.device)
     f_neq = f_coarse - f_eq
 
-    scale = tau_f / tau_c
+    # f_neq scales as (τ_f·Δt_f)/(τ_c·Δt_c) = τ_f/(ratio·τ_c); the 1/ratio
+    # time-step factor is required for interface stress continuity.
+    scale = tau_f / (ratio * tau_c)
     f_rescaled = f_eq + scale * f_neq
 
     # Cell-block upsampling (correct ratio-2 coordinate mapping).
@@ -214,7 +220,8 @@ def _fh_fine_to_coarse_2d(
     rho, ux, uy = macroscopic(f_avg)
     f_eq = equilibrium(rho, ux, uy, device=f_avg.device)
     f_neq = f_avg - f_eq
-    scale = tau_c / tau_f
+    # Inverse of the coarse→fine scaling: (τ_c·Δt_c)/(τ_f·Δt_f) = ratio·τ_c/τ_f.
+    scale = ratio * tau_c / tau_f
     return f_eq + scale * f_neq
 
 
@@ -231,7 +238,8 @@ def _fh_fine_to_coarse_3d(
     rho, ux, uy, uz = macroscopic3d(f_avg)
     f_eq = equilibrium3d(rho, ux, uy, uz, device=f_avg.device)
     f_neq = f_avg - f_eq
-    scale = tau_c / tau_f
+    # Inverse of the coarse→fine scaling: (τ_c·Δt_c)/(τ_f·Δt_f) = ratio·τ_c/τ_f.
+    scale = ratio * tau_c / tau_f
     return f_eq + scale * f_neq
 
 
@@ -799,12 +807,14 @@ class AdaptiveSolver2D:
     def _tau_for_level(self, level: int) -> float:
         """Compute relaxation time for a given VR level.
 
-        Fine levels use τ_f = (τ_c - 0.5) / ratio + 0.5 to maintain the
-        same kinematic viscosity across levels (Lagrava et al. 2012).
+        Fine levels use τ_f = (τ_c - 0.5)·ratio + 0.5 to maintain the same
+        *physical* kinematic viscosity across levels (Lagrava et al. 2012):
+        ν = c_s²(τ−½)·Δx²/Δt is invariant when Δx_f=Δx_c/ratio and
+        Δt_f=Δt_c/ratio, i.e. (τ_f−½) = ratio·(τ_c−½).
         """
         tau = self.schedule.tau
         for _ in range(level):
-            tau = (tau - 0.5) / 2.0 + 0.5
+            tau = (tau - 0.5) * 2.0 + 0.5
         return max(tau, 0.501)
 
     def _parent_f(self, patch: AMRPatch2D) -> torch.Tensor:
@@ -1150,10 +1160,14 @@ class AdaptiveSolver3D:
     # ------------------------------------------------------------------
 
     def _tau_for_level(self, level: int) -> float:
-        """Relaxation time for a given VR level (same viscosity across levels)."""
+        """Relaxation time for a given VR level (same viscosity across levels).
+
+        τ_f = (τ_c − ½)·ratio + ½ keeps ν = c_s²(τ−½)Δx²/Δt invariant when
+        Δx_f = Δx_c/ratio and Δt_f = Δt_c/ratio.
+        """
         tau = self.schedule.tau
         for _ in range(level):
-            tau = (tau - 0.5) / 2.0 + 0.5
+            tau = (tau - 0.5) * 2.0 + 0.5
         return max(tau, 0.501)
 
     def _parent_f_3d(self, patch: AMRPatch3D) -> torch.Tensor:

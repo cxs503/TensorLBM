@@ -104,7 +104,9 @@ def _fh_coarse_to_fine_3d(
     f_eq = _equilibrium(lattice, rho, ux, uy, uz, device=f_coarse.device)
     f_neq = f_coarse - f_eq
 
-    scale = tau_f / tau_c
+    # f_neq scales as (τ_f·Δt_f)/(τ_c·Δt_c) = τ_f/(ratio·τ_c); the 1/ratio
+    # time-step factor is required for interface stress continuity.
+    scale = tau_f / (ratio * tau_c)
     f_rescaled = f_eq + scale * f_neq
 
     # Cell-block upsampling (correct ratio-2 coordinate mapping; see
@@ -129,7 +131,8 @@ def _fh_fine_to_coarse_3d(
     rho, ux, uy, uz = _macroscopic(lattice, f_avg)
     f_eq = _equilibrium(lattice, rho, ux, uy, uz, device=f_avg.device)
     f_neq = f_avg - f_eq
-    scale = tau_c / tau_f
+    # Inverse of the coarse→fine scaling: (τ_c·Δt_c)/(τ_f·Δt_f) = ratio·τ_c/τ_f.
+    scale = ratio * tau_c / tau_f
     return f_eq + scale * f_neq
 
 
