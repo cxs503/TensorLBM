@@ -36,6 +36,7 @@ References
 ----------
 Martin & Moyce (1952) Phil. Trans. R. Soc. A 244 312
 """
+
 from __future__ import annotations
 
 import csv
@@ -158,12 +159,13 @@ class DamBreakConfig:
 # Utility functions
 # ---------------------------------------------------------------------------
 
+
 def _wall_mask(ny: int, nx: int, device: torch.device) -> torch.Tensor:
     """All-wall mask (bounce-back on four sides of a closed box)."""
     mask = torch.zeros((ny, nx), dtype=torch.bool, device=device)
-    mask[0, :] = True   # bottom
+    mask[0, :] = True  # bottom
     mask[-1, :] = True  # top
-    mask[:, 0] = True   # left
+    mask[:, 0] = True  # left
     mask[:, -1] = True  # right
     return mask
 
@@ -175,7 +177,12 @@ def _smooth_profile(nx: int, dam_width: int, width: float, device: torch.device)
 
 
 def _init_cg(
-    ny: int, nx: int, dam_width: int, rho_heavy: float, rho_light: float, device: torch.device,
+    ny: int,
+    nx: int,
+    dam_width: int,
+    rho_heavy: float,
+    rho_light: float,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Colour-gradient initialisation: sharp red/blue split."""
     prof = _smooth_profile(nx, dam_width, 3.0, device).expand(ny, nx)
@@ -187,7 +194,12 @@ def _init_cg(
 
 
 def _init_sc(
-    ny: int, nx: int, dam_width: int, rho_heavy: float, rho_light: float, device: torch.device,
+    ny: int,
+    nx: int,
+    dam_width: int,
+    rho_heavy: float,
+    rho_light: float,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """SC two-component initialisation with smooth interface."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
@@ -199,7 +211,12 @@ def _init_sc(
 
 
 def _init_scmp(
-    ny: int, nx: int, dam_width: int, rho_heavy: float, rho_light: float, device: torch.device,
+    ny: int,
+    nx: int,
+    dam_width: int,
+    rho_heavy: float,
+    rho_light: float,
+    device: torch.device,
 ) -> torch.Tensor:
     """SCMP single-component: liquid (rho_heavy) in dam, gas (rho_light) outside."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
@@ -209,7 +226,10 @@ def _init_scmp(
 
 
 def _init_fe(
-    ny: int, nx: int, dam_width: int, device: torch.device,
+    ny: int,
+    nx: int,
+    dam_width: int,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-Energy initialisation: phi=+1 in dam, phi=-1 outside."""
     prof = _smooth_profile(nx, dam_width, 4.0, device).expand(ny, nx)
@@ -221,8 +241,9 @@ def _init_fe(
     return f, g
 
 
-def _find_front_x(rho_heavy: torch.Tensor, rho_light: torch.Tensor,
-                  wall: torch.Tensor, threshold: float = 0.45) -> float:
+def _find_front_x(
+    rho_heavy: torch.Tensor, rho_light: torch.Tensor, wall: torch.Tensor, threshold: float = 0.45
+) -> float:
     """Return the x-position of the rightmost column where heavy phase dominates."""
     phi = rho_heavy / (rho_heavy + rho_light + 1e-12)
     # Average over interior y rows only
@@ -234,8 +255,10 @@ def _find_front_x(rho_heavy: torch.Tensor, rho_light: torch.Tensor,
 
 
 def _save_snapshot(
-    run_dir: Path, step: int,
-    rho_heavy: torch.Tensor, rho_light: torch.Tensor,
+    run_dir: Path,
+    step: int,
+    rho_heavy: torch.Tensor,
+    rho_light: torch.Tensor,
     model: str,
 ) -> None:
     phi = (rho_heavy / (rho_heavy + rho_light + 1e-12)).detach().cpu().numpy()
@@ -254,6 +277,7 @@ def _save_snapshot(
 # ---------------------------------------------------------------------------
 # Main runner
 # ---------------------------------------------------------------------------
+
 
 def run_dam_break(config: DamBreakConfig) -> Path:
     """Run the dam-break benchmark and write diagnostics to *output_root*.
@@ -306,7 +330,12 @@ def run_dam_break(config: DamBreakConfig) -> Path:
             A_surface = config.G * 0.04
             # f1=red=heavy(water), f2=blue=light(air)
             f1, f2 = color_gradient_step(
-                f1, f2, tau=config.tau, A=A_surface, gy=gy, solid_mask=wall,
+                f1,
+                f2,
+                tau=config.tau,
+                A=A_surface,
+                gy=gy,
+                solid_mask=wall,
             )
             f1, f2 = stream(f1), stream(f2)
             f1 = bounce_back_cells(f1, wall)
@@ -316,8 +345,13 @@ def run_dam_break(config: DamBreakConfig) -> Path:
 
         elif config.model == "sc":
             f1, f2 = collide_sc_two_component(
-                f1, f2, G_12=config.G, tau1=config.tau, tau2=config.tau,
-                gy=gy, solid_mask=wall,
+                f1,
+                f2,
+                G_12=config.G,
+                tau1=config.tau,
+                tau2=config.tau,
+                gy=gy,
+                solid_mask=wall,
             )
             f1, f2 = stream(f1), stream(f2)
             f1 = bounce_back_cells(f1, wall)
@@ -328,8 +362,12 @@ def run_dam_break(config: DamBreakConfig) -> Path:
         elif config.model == "scmp":
             G_eff = -abs(config.G) * 1.5
             f_single = collide_sc_single_component(
-                f_single, G=G_eff, tau=config.tau, psi_fn=psi_exp,
-                gy=gy, solid_mask=wall,
+                f_single,
+                G=G_eff,
+                tau=config.tau,
+                psi_fn=psi_exp,
+                gy=gy,
+                solid_mask=wall,
             )
             f_single = stream(f_single)
             f_single = bounce_back_cells(f_single, wall)
@@ -339,9 +377,16 @@ def run_dam_break(config: DamBreakConfig) -> Path:
 
         elif config.model == "fe":
             f_fe, g_fe = free_energy_step(
-                f_fe, g_fe, tau_f=config.tau, gy=gy,
-                A=0.1, B=0.1, kappa=0.02, Gamma=0.5,
-                rho_heavy=config.rho_heavy, rho_light=config.rho_light,
+                f_fe,
+                g_fe,
+                tau_f=config.tau,
+                gy=gy,
+                A=0.1,
+                B=0.1,
+                kappa=0.02,
+                Gamma=0.5,
+                rho_heavy=config.rho_heavy,
+                rho_light=config.rho_light,
             )
             f_fe, g_fe = stream(f_fe), stream(g_fe)
             f_fe = bounce_back_cells(f_fe, wall)
@@ -367,10 +412,7 @@ def run_dam_break(config: DamBreakConfig) -> Path:
                 "mean_rho_heavy": round(mean_rho, 6),
             }
             diagnostics.append(diag)
-            print(
-                f"step={step:5d}  t*={t_star:.3f}  X*={X_star:.3f}  "
-                f"mean_ρ={mean_rho:.4f}"
-            )
+            print(f"step={step:5d}  t*={t_star:.3f}  X*={X_star:.3f}  mean_ρ={mean_rho:.4f}")
             _save_snapshot(run_dir, step, rho_h, rho_l, config.model)
 
     # ----- write outputs -----

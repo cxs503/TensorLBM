@@ -1,0 +1,63 @@
+{
+  "schema": "tensorlbm-flat-plate-convergence-evidence-v1",
+  "status": "admitted",
+  "physical_validation": true,
+  "case": {
+    "reynolds": 1000000.0,
+    "wall_law": "musker",
+    "wall_source": "mass_conservative_post_collision_guo_v2",
+    "plate_lengths_cells": [256, 384, 512],
+    "exchange_distance_over_length": 0.01171875,
+    "steps_over_length": 125.0,
+    "statistics_steps_over_length": 62.5
+  },
+  "grid_sequence": {
+    "friction_coefficients": [
+      0.004594268517937289,
+      0.004655830722548673,
+      0.004667251161433821
+    ],
+    "monotonic": true,
+    "observed_order": 3.737335939437888,
+    "extrapolated_friction_coefficient": 0.0046731670310999765,
+    "finest_discretisation_error_pct": 0.1265923008269407,
+    "fit_rms_pct": 0.0,
+    "ittc_1957_reference": 0.0046875,
+    "extrapolated_reference_error_pct": 0.30577000320049696,
+    "spatial_convergence_admitted": true
+  },
+  "l512": {
+    "friction_coefficient": 0.004667251161433821,
+    "ittc_reference_error_pct": 0.43197522274514755,
+    "control_volume_force_lu": 0.021814786215370988,
+    "bfl_link_plus_wall_stress_force_lu": 0.02182518541481113,
+    "force_observer_difference_pct": 0.04767041646649411,
+    "statistics_samples": 32000,
+    "block_range_pct": 0.0003072281727251817,
+    "half_window_drift_pct": 0.00017480816222976628,
+    "maximum_limiter_fraction": 0.0,
+    "wall_samples": 3072,
+    "wall_sample_rejected_fraction": 0.0,
+    "y_plus_minimum": 552.0276489257812,
+    "y_plus_mean": 566.0377197265625,
+    "y_plus_maximum": 588.0906372070312,
+    "y_plus_in_range_fraction": 1.0,
+    "single_grid_admitted": true
+  },
+  "pressure_gradient_candidate_guard": {
+    "production_force_changed": false,
+    "duprat_central_10_90_attached_fraction": 1.0,
+    "duprat_central_10_90_shear_vs_musker_ratio": 0.9205619770722664,
+    "duprat_force_replacement_admitted": false
+  },
+  "artifacts": {
+    "convergence_sha256": "da70fceb7965c8106d53fabc6d5e325de5fcde871784aabce441c622d5d44211",
+    "l256_result_sha256": "788a88c2b3b86c88ae572a75aaca6834a1d886fddc9f1e0e9ab7efa056497056",
+    "l384_result_sha256": "f918bd80f5b0588912ac79e53937feea0eb1ea9fb2ca5eaac87d6dbe503d17f7",
+    "l512_result_sha256": "85ee5bbfeb3a0df451a2de6548958be760cc24ad6449b79f4cd04bdab0b7d650",
+    "l512_checkpoint_sha256": "bc867afcb7a26d6430744b3e34c619fd1e86e1a470343d9fe03bf8e3cd90382a",
+    "l512_wall_audit_sha256": "2828cef469f3a42a8d4802fd5a055c1a572bbe66f68dba7f075d3aad719d5817",
+    "l512_log_sha256": "6120b9bde176527f0b6f9a55c144163a5063ba10fb5c2479553c8172a9ed7a39"
+  },
+  "conclusion": "All three corrected-source runs are individually admitted and configuration-equivalent. Friction converges monotonically at observed order 3.737; the extrapolated coefficient is 0.306% from ITTC-1957. L512 has stable statistics, conservative force agreement and complete y+ coverage. The flat-plate validation tier is closed, while the pressure-gradient ODE remains diagnostic because it is not zero-gradient force-equivalent to the admitted Musker baseline."
+}

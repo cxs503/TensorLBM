@@ -35,19 +35,32 @@ def test_build_parser_defaults() -> None:
 def test_build_parser_custom_values() -> None:
     mod = _load_cylinder_flow_module()
     parser = mod.build_parser()  # type: ignore[attr-defined]
-    args = parser.parse_args([
-        "--nx", "128",
-        "--ny", "64",
-        "--n-steps", "25",
-        "--output-interval", "10",
-        "--radius", "8",
-        "--re", "120",
-        "--run-name", "my-run",
-        "--output-root", "outputs_test",
-        "--backend", "mindspore",
-        "--num-threads", "2",
-        "--resume-checkpoint", "/tmp/ckpt",
-    ])
+    args = parser.parse_args(
+        [
+            "--nx",
+            "128",
+            "--ny",
+            "64",
+            "--n-steps",
+            "25",
+            "--output-interval",
+            "10",
+            "--radius",
+            "8",
+            "--re",
+            "120",
+            "--run-name",
+            "my-run",
+            "--output-root",
+            "outputs_test",
+            "--backend",
+            "mindspore",
+            "--num-threads",
+            "2",
+            "--resume-checkpoint",
+            "/tmp/ckpt",
+        ]
+    )
     assert args.nx == 128
     assert args.ny == 64
     assert args.n_steps == 25

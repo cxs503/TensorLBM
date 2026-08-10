@@ -10,6 +10,7 @@ Models available (--model flag):
     cg   – Color-Gradient (Latva-Kokko & Rothman)
     fe   – Free-Energy (simplified Swift et al.)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,27 +19,25 @@ from tensorlbm import DamBreakConfig, run_dam_break
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Run the 2D dam-break multiphase LBM benchmark."
-    )
+    parser = argparse.ArgumentParser(description="Run the 2D dam-break multiphase LBM benchmark.")
     parser.add_argument("--nx", type=int, default=400)
     parser.add_argument("--ny", type=int, default=200)
-    parser.add_argument("--dam-width", type=int, default=100,
-                        help="Initial water column width (cells)")
-    parser.add_argument("--model", choices=["sc", "scmp", "cg", "fe"], default="sc",
-                        help="Multiphase model")
+    parser.add_argument(
+        "--dam-width", type=int, default=100, help="Initial water column width (cells)"
+    )
+    parser.add_argument(
+        "--model", choices=["sc", "scmp", "cg", "fe"], default="sc", help="Multiphase model"
+    )
     parser.add_argument("--rho-heavy", type=float, default=2.0)
     parser.add_argument("--rho-light", type=float, default=0.1)
-    parser.add_argument("--G", type=float, default=0.9,
-                        help="Shan-Chen coupling constant")
+    parser.add_argument("--G", type=float, default=0.9, help="Shan-Chen coupling constant")
     parser.add_argument("--tau", type=float, default=1.0)
-    parser.add_argument("--g", type=float, default=5e-5,
-                        help="Gravity (lattice units)")
+    parser.add_argument("--g", type=float, default=5e-5, help="Gravity (lattice units)")
     parser.add_argument("--n-steps", type=int, default=4000)
     parser.add_argument("--output-interval", type=int, default=400)
     parser.add_argument("--output-root", default="outputs")
     parser.add_argument("--run-name", default=None)
-    parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
+    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu")
     parser.add_argument("--overwrite", action="store_true")
     return parser
 

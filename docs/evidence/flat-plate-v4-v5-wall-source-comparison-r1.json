@@ -1,0 +1,38 @@
+{
+  "schema": "tensorlbm-flat-plate-wall-source-comparison-v1",
+  "plate_length_cells": 256,
+  "common_configuration": {
+    "reynolds": 1000000.0,
+    "resolved_reynolds": 20000.0,
+    "wall_law": "musker",
+    "stress_exchange_distance_cells": 3.0,
+    "statistics_window_steps": 16000
+  },
+  "legacy": {
+    "wall_traction_source_scheme": null,
+    "friction_coefficient": 0.0045966215811353945,
+    "reference_error_pct": 1.938739602444913,
+    "force_observer_difference_pct": 0.02876257001537559,
+    "drag_block_range_pct": 0.3248604882180888,
+    "mean_y_plus": 563.5812346191407,
+    "sha256": "1f583e729b945b22250b030d425c2be15d6533d8ebcb608ee07af67d08b553d2",
+    "eligible_for_convergence": false
+  },
+  "corrected": {
+    "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
+    "friction_coefficient": 0.004594268520611013,
+    "reference_error_pct": 1.9889382269650535,
+    "force_observer_difference_pct": 0.028109329600119262,
+    "drag_block_range_pct": 0.17096897252694376,
+    "mean_y_plus": 563.1519536132812,
+    "sha256": "87327b71d584f29aa789d0b63926f7d9b5a0cdcafb0eb1eec2e831ddf4d43193",
+    "eligible_for_convergence": true
+  },
+  "difference": {
+    "friction_coefficient_relative_change_pct": -0.0511910863848046,
+    "drag_block_range_relative_change_pct": -47.37157065030111
+  },
+  "interpretation": "The corrected source preserves the mean friction result to 0.052% while materially reducing block-to-block variation. Agreement is not created by tuning the force magnitude.",
+  "physical_validation": false,
+  "scope_limit": "This is a single-resolution source-form comparison. Physical validation still requires the complete v5 L256/L384/L512 convergence sequence."
+}

@@ -2,6 +2,7 @@
 """Extract ice shape metrics from aircraft icing simulation.
 Computes: ice area, horn height, horn spacing (vs NASA glaze).
 """
+
 import sys, os
 import numpy as np
 import torch
@@ -16,7 +17,7 @@ from benchmark_aircraft_icing import run_aircraft_icing
 
 def extract_ice_shape(r):
     """Extract ice shape metrics from result."""
-    ice = r["ice_mask"]      # (nz, ny, nx)
+    ice = r["ice_mask"]  # (nz, ny, nx)
     solid = r["original_solid"]  # airfoil only (no ice)
     nx, ny, nz = r["nx"], r["ny"], r["nz"]
     chord = r["chord"]
@@ -41,8 +42,12 @@ def extract_ice_shape(r):
     horn_y = np.where(ice_height > 0)[0]
     mid_y = ny // 2
 
-    metrics = {"ice_area": ice_area, "ice_area_pct": ice_area / chord**2 * 100,
-               "chord": chord, "cx0": cx0}
+    metrics = {
+        "ice_area": ice_area,
+        "ice_area_pct": ice_area / chord**2 * 100,
+        "chord": chord,
+        "cx0": cx0,
+    }
 
     uy = ly = None
     if len(horn_y) > 0:
@@ -69,26 +74,31 @@ def extract_ice_shape(r):
 
 
 def main():
-    r = run_aircraft_icing(nx=200, ny=100, nz=32, tau=0.52, steps=5000,
-                           device="sdaa:0", log_every=9999)
+    r = run_aircraft_icing(
+        nx=200, ny=100, nz=32, tau=0.52, steps=5000, device="sdaa:0", log_every=9999
+    )
     m = extract_ice_shape(r)
     chord = m["chord"]
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  ICE SHAPE METRICS (NACA 0012, 5000 steps)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Chord: {chord} cells")
     print(f"  Ice area: {m['ice_area']} cells ({m['ice_area_pct']:.1f}% chord²)")
     if "upper_horn_h" in m:
-        print(f"  Upper horn: h={m['upper_horn_h']} ({m['upper_horn_pct']:.1f}% chord), y={m['upper_horn_y']}")
+        print(
+            f"  Upper horn: h={m['upper_horn_h']} ({m['upper_horn_pct']:.1f}% chord), y={m['upper_horn_y']}"
+        )
     if "lower_horn_h" in m:
-        print(f"  Lower horn: h={m['lower_horn_h']} ({m['lower_horn_pct']:.1f}% chord), y={m['lower_horn_y']}")
+        print(
+            f"  Lower horn: h={m['lower_horn_h']} ({m['lower_horn_pct']:.1f}% chord), y={m['lower_horn_y']}"
+        )
     if "horn_spacing" in m:
         print(f"  Horn spacing: {m['horn_spacing']} ({m['horn_spacing_pct']:.1f}% chord)")
     print(f"\n  NASA glaze reference (NACA 0012, c=0.5334m):")
     print(f"    Horn height: ~5-10% chord")
     print(f"    Horn spacing: ~10-20% chord")
     print(f"    Ice area: limited (front region)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
 
 if __name__ == "__main__":

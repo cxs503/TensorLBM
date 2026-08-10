@@ -1,4 +1,5 @@
 """Tests for 2D cylinder drag coefficient vs literature correlations."""
+
 from __future__ import annotations
 
 import torch
@@ -14,7 +15,10 @@ from tensorlbm.solver import collide_bgk, stream
 
 
 def _run_cylinder_drag(
-    re: float, nx: int = 100, ny: int = 50, steps: int = 400,
+    re: float,
+    nx: int = 100,
+    ny: int = 50,
+    steps: int = 400,
     device: str = "cpu",
 ) -> tuple[float, float]:
     """Run 2D cylinder flow and return Cd_mean, Strouhal."""
@@ -39,7 +43,9 @@ def _run_cylinder_drag(
         f = stream(f)
         fx, fy = compute_obstacle_forces(f, mask)
         f = apply_simple_channel_boundaries(
-            f, u_in=u_in, wall_mask=wall_mask,
+            f,
+            u_in=u_in,
+            wall_mask=wall_mask,
             obstacle_mask=torch.zeros_like(mask),
         )
         f = bounce_back_cells(f, mask)

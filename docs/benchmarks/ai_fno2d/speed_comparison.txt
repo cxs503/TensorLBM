@@ -1,0 +1,5 @@
+| Method | Total time (s) | Avg / case (s) | Cases |
+|---|---:|---:|---:|
+| LBM simulation  | 4.1000 | 0.4100 | 10 |
+| FNO2d inference | 0.0210 | 0.002100 | 10 |
+| Speedup (LBM/FNO) | 195.2x | - | - |

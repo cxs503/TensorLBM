@@ -1,0 +1,114 @@
+{
+  "schema": "tensorlbm-suboff-memory-preflight-evidence-v1",
+  "status": "single_gpu_rejected_multigpu_candidate",
+  "physical_validation": false,
+  "case": "DARPA SUBOFF AFF-1 four-level equivalent L120",
+  "source_commit": "f7a87e1",
+  "conservative_memory_bytes_per_cell": 1100.0,
+  "baseline": {
+    "source": "/tmp/suboff-aff1-v12-four-level-l120-preflight.json",
+    "sha256": "3d9fdefc9dd725bc7657fdf45388afbcc1851c1cee9e004b735fd11b1893cab4",
+    "allocated_cells_by_level": [8640000, 1949696, 4570560, 21150720],
+    "total_allocated_cells": 36310976,
+    "estimated_peak_gib": 37.198954820632935,
+    "single_24_gib_gpu_admitted": false
+  },
+  "tight_observer_safe_candidate": {
+    "source": "/tmp/suboff-aff1-v12-four-level-l120-tight-preflight.json",
+    "sha256": "38b4203d6b53dc83dd2dfbdc6a7f66e08842df18040ced1d5b1ec8b8b27d1abf",
+    "inner_wall_margin_parent_cells": 6,
+    "inner_wake_cells": 8,
+    "deep_wall_margin_parent_cells": 4,
+    "deep_wake_cells": 8,
+    "primary_cv_margin_cells": 4,
+    "auxiliary_cv_margin_cells": [2, 6],
+    "minimum_cv_to_physical_interface_clearance_cells": [4, 6, 2],
+    "required_streaming_source_guard_cells": 1,
+    "all_flux_stencils_outside_interface": true,
+    "allocated_cells_by_level": [8640000, 1949696, 3697344, 17354304],
+    "total_allocated_cells": 31641344,
+    "estimated_peak_gib": 32.415127754211426,
+    "single_24_gib_gpu_admitted": false,
+    "finest_hull_length_cells": 960.0,
+    "finest_diameter_cells": 112.01866977829638,
+    "absolute_reference_geometry_resolved": true
+  },
+  "geometrically_similar_l90_to_l120_candidate": {
+    "source": "/tmp/suboff-aff1-v12-four-level-l120-similar-preflight.json",
+    "sha256": "fb9f5830b8ac1e75ad490b782c36b5d41cd0d035c72ea451a7e159e80eb824c6",
+    "scale_ratio_from_l90": 1.3333333333333333,
+    "inner_wall_margin_parent_cells": 11,
+    "inner_wake_cells": 16,
+    "deep_wall_margin_parent_cells": 9,
+    "deep_wake_cells": 19,
+    "primary_cv_margin_cells": 11,
+    "auxiliary_cv_margin_cells": [5, 16],
+    "allocated_cells_by_level": [8640000, 1949696, 6056960, 23981952],
+    "total_allocated_cells": 40628608,
+    "estimated_peak_gib": 41.62217378616333,
+    "deepest_device_estimated_peak_gib": 24.568426609039307,
+    "three_24_gib_gpu_level_partition_admitted": false,
+    "reason": "The deepest level alone exceeds one 24 GiB device before the mandatory 1 GiB runtime reserve."
+  },
+  "proposed_level_device_partition": [
+    {
+      "logical_device": "cuda:0",
+      "level_indices": [0, 1],
+      "allocated_cells": 10589696,
+      "estimated_peak_gib": 10.848665237426758
+    },
+    {
+      "logical_device": "cuda:1",
+      "level_indices": [2],
+      "allocated_cells": 3697344,
+      "estimated_peak_gib": 3.787761926651001
+    },
+    {
+      "logical_device": "cuda:2",
+      "level_indices": [3],
+      "allocated_cells": 17354304,
+      "estimated_peak_gib": 17.778700590133667
+    }
+  ],
+  "runtime_gate": {
+    "required_free_reserve_gib_per_device": 1.0,
+    "superseded_two_gpu_queue_pids": [1640017, 1640018],
+    "two_gpu_equivalence_queue_wrapper_pid": 1644563,
+    "two_gpu_equivalence_probe_pid": 1644564,
+    "waits_for_exact_solver_pids": [1598778, 1644306],
+    "two_gpu_equivalence_probe_status": "passed",
+    "two_gpu_equivalence_result": {
+      "path": "results/amr_campaign_20260801/nested-amr-two-gpu-equivalence-r1.json",
+      "sha256": "5dedd212c4a1fc0429cd9f086e8f997e6f5a8232328abff150d53111c3585e08",
+      "steps": 12,
+      "maximum_absolute_difference": 0.0,
+      "maximum_reflux_residual": 3.410605131648481e-13,
+      "root_relative_mass_drift": 5.995124045711142e-08,
+      "admitted": true
+    },
+    "chunked_allocation_queue_wrapper_pid": 1642900,
+    "chunked_allocation_probe_pid": 1642901,
+    "chunked_allocation_probe_status": "queued_after_aff8_probe",
+    "geometrically_similar_l120_multigpu_probe": {
+      "pid": 1657511,
+      "waits_for_re200k_pilot_pid": 1654405,
+      "physical_gpu_count": 3,
+      "logical_level_devices": ["cuda:0", "cuda:0", "cuda:1", "cuda:2"],
+      "memory_model_bytes_per_cell": 900.0,
+      "calibrated_l90_peak_bytes_per_cell": 777.7103300061777,
+      "memory_model_safety_margin_pct": 15.724323225423383,
+      "collision_chunk_cells": 262144,
+      "wall_force_direction_chunk": 4,
+      "low_memory_wall_macroscopic": true,
+      "status": "queued_fail_closed"
+    },
+    "production_l120_launch_allowed": false,
+    "reason": "Cross-device numerics now pass exactly, but the geometrically similar deepest L120 level still needs a measured per-device runtime-memory admission before physical launch."
+  },
+  "limitations": [
+    "This artifact assesses geometry, observer clearance and memory only.",
+    "The tighter block is not yet a member of an admitted grid-convergence family.",
+    "A tight-block L120 result requires either an L90 interface-extent sensitivity study or spatial decomposition of the deepest level.",
+    "No resistance accuracy claim is made."
+  ]
+}

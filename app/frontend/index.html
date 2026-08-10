@@ -6,8 +6,8 @@
   <title>TensorLBM Platform</title>
   <!-- i18n engine must be loaded before any inline scripts use t() -->
   <script src="/static/js/i18n.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="/static/js/three.min.js"></script>
+  <script src="/static/js/OrbitControls.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <style>
@@ -169,6 +169,9 @@
     .result-img { max-width: 100%; border-radius: .4rem; border: 1px solid #dee2e6; }
     .img-thumb { max-height: 220px; object-fit: contain; cursor: zoom-in; }
     .cad3d-canvas { width: 100%; height: 420px; background: #111827; border-radius: .4rem; border: 1px solid #334155; }
+
+    /* Drag-drop zone hover */
+    #generic-drop-zone.drag-over { border-color: #0d6efd !important; background: #e7f1ff; }
 
     /* Benchmark cards */
     .bench-card { border-left: 4px solid #0d6efd; }
@@ -491,6 +494,8 @@
       <ul class="dropdown-menu dropdown-menu-dark shadow">
         <li><a class="dropdown-item" href="#" data-tab="preprocess"><i class="bi bi-grid-3x3 me-2"></i><span data-i18n="nav.preprocess">Pre-processing</span></a></li>
         <li><a class="dropdown-item" href="#" data-tab="solve"><i class="bi bi-play-circle me-2"></i><span data-i18n="nav.solve">Solver</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="generic"><i class="bi bi-box-seam me-2"></i><span data-i18n="nav.generic">Generic CFD</span></a></li>
+        <li><a class="dropdown-item" href="#" data-tab="cylinder"><i class="bi bi-wind me-2"></i><span data-i18n="nav.cylinder">Cylinder Flow</span></a></li>
         <li><a class="dropdown-item" href="#" data-tab="benchmarks"><i class="bi bi-trophy me-2"></i><span data-i18n="nav.benchmarks">Benchmarks</span></a></li>
       </ul>
     </div>
@@ -597,6 +602,10 @@
       <a class="wf-tree-step" href="#" data-tab="benchmarks" onclick="showTab('benchmarks');return false;">
         <span class="phase-dot" style="background:#6c757d"></span>
         <span class="sidebar-hide-when-collapsed"><span data-i18n="nav.benchmarks">Benchmarks</span></span>
+      </a>
+      <a class="wf-tree-step" href="#" data-tab="generic" onclick="showTab('generic');return false;">
+        <span class="phase-dot" style="background:#0d6efd"></span>
+        <span class="sidebar-hide-when-collapsed"><span data-i18n="nav.generic">Generic CFD (STL)</span></span>
       </a>
       <a class="wf-tree-step" href="#" data-tab="compare" onclick="showTab('compare');return false;">
         <span class="phase-dot" style="background:#6c757d"></span>
@@ -3017,6 +3026,482 @@
       </div><!-- /row -->
     </div><!-- /panel-geo3d -->
 
+    <!-- ================================================================ -->
+    <!-- GENERIC CFD (STL upload + params + run + real-time + field viz)  -->
+    <!-- ================================================================ -->
+    <div class="tab-panel" id="panel-generic">
+      <h4 class="mb-3"><i class="bi bi-box-seam"></i> <span data-i18n="generic.title">Generic CFD</span> <small class="text-muted">– parametric or STL geometry, configure, run, visualise</small></h4>
+
+      <!-- Workflow stepper -->
+      <div class="wf-stepper mb-3">
+        <div class="wf-step wf-active" onclick="showTab('generic')"><span class="wf-num">1</span><i class="bi bi-upload"></i><span class="d-none d-md-inline">Upload</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('generic')"><span class="wf-num">2</span><i class="bi bi-sliders"></i><span class="d-none d-md-inline">Configure</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('generic')"><span class="wf-num">3</span><i class="bi bi-play-circle"></i><span class="d-none d-md-inline">Run</span></div>
+        <span class="wf-sep">›</span>
+        <div class="wf-step" onclick="showTab('generic')"><span class="wf-num">4</span><i class="bi bi-bar-chart-line"></i><span class="d-none d-md-inline">Results</span></div>
+      </div>
+
+      <div class="row g-3">
+        <!-- ── LEFT: Geometry Source + 3D Preview + Evolution ── -->
+        <div class="col-lg-7">
+          <!-- Geometry Source -->
+          <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-shapes me-2"></i> <strong>Geometry Source</strong></div>
+            <div class="card-body">
+              <div class="btn-group w-100 mb-2" role="group">
+                <input type="radio" class="btn-check" name="generic-geo-source" id="generic-geo-stl" value="stl" checked>
+                <label class="btn btn-outline-primary btn-sm" for="generic-geo-stl"><i class="bi bi-upload"></i> STL Upload</label>
+                <input type="radio" class="btn-check" name="generic-geo-source" id="generic-geo-param" value="parametric">
+                <label class="btn btn-outline-primary btn-sm" for="generic-geo-param"><i class="bi bi-shapes"></i> Parametric</label>
+              </div>
+              <!-- Parametric options -->
+              <div id="generic-param-opts" style="display:none">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="small">Shape</label>
+                    <select class="form-select form-select-sm" id="generic-param-shape">
+                      <option value="sphere">Sphere</option>
+                      <option value="cylinder">Cylinder</option>
+                      <option value="ellipsoid">Ellipsoid</option>
+                      <option value="suboff">SUBOFF (submarine)</option>
+                    </select>
+                  </div>
+                  <div class="col-6" id="generic-hull-type-wrap" style="display:none">
+                    <label class="small">Hull type</label>
+                    <select class="form-select form-select-sm" id="generic-hull-type">
+                      <option value="bare_hull" selected>Bare hull</option>
+                      <option value="with_sail">With sail</option>
+                      <option value="full">Full (sail+stern)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row g-2 mt-1">
+                  <div class="col-4">
+                    <label class="small">Radius R</label>
+                    <input type="number" class="form-control form-control-sm" id="generic-param-radius" value="20" min="1" step="1" />
+                  </div>
+                  <div class="col-4" id="generic-param-length-wrap">
+                    <label class="small">Length L</label>
+                    <input type="number" class="form-control form-control-sm" id="generic-param-length" value="80" min="1" step="1" />
+                  </div>
+                  <div class="col-4">
+                    <label class="small">Axis</label>
+                    <select class="form-select form-select-sm" id="generic-param-axis">
+                      <option value="x" selected>X</option>
+                      <option value="y">Y</option>
+                      <option value="z">Z</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="small text-muted mt-2" id="generic-param-info">Select a shape to preview.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STL Upload (hidden when parametric) -->
+          <div class="card mb-3" id="generic-stl-section">
+            <div class="card-header d-flex align-items-center">
+              <i class="bi bi-upload me-2"></i> <strong>STL Upload</strong>
+              <button class="btn btn-sm btn-outline-secondary ms-auto" id="generic-reset-btn" title="Reset all">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </div>
+            <div class="card-body">
+              <div id="generic-drop-zone" style="border:2px dashed #adb5bd;border-radius:.5rem;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;">
+                <i class="bi bi-cloud-arrow-up" style="font-size:2.5rem;color:#6c757d;"></i>
+                <p class="mb-1 mt-2"><strong>Drag &amp; drop STL file here</strong></p>
+                <p class="text-muted small mb-0">or click to browse · binary or ASCII STL</p>
+                <input type="file" id="generic-file-input" accept=".stl" style="display:none" />
+              </div>
+              <div class="d-flex gap-3 mt-2 small">
+                <span><i class="bi bi-file-earmark"></i> <span id="generic-stl-name">—</span></span>
+                <span class="text-muted"><i class="bi bi-hdd"></i> <span id="generic-stl-size">—</span></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3D Preview -->
+          <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-box me-2"></i> 3D Preview</div>
+            <div class="card-body p-0">
+              <div id="generic-canvas-wrap" style="position:relative;background:#111827;border-radius:0 0 .3125rem .3125rem;overflow:hidden;height:420px;">
+                <div id="generic-placeholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#888;text-align:center;pointer-events:none;">
+                  <i class="bi bi-box" style="font-size:3rem;"></i><br>
+                  <span>Upload an STL file to preview</span>
+                </div>
+                <canvas id="generic-canvas" style="width:100%;height:100%;display:block;"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mesh Info -->
+          <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i> Mesh Info</div>
+            <div class="card-body" id="generic-mesh-info">
+              <span class="text-muted small">No geometry loaded</span>
+            </div>
+          </div>
+
+          <!-- Flow Field Evolution -->
+          <div class="card mb-3">
+            <div class="card-header d-flex align-items-center">
+              <i class="bi bi-water me-2"></i> <strong>Flow Field Evolution</strong>
+              <span class="ms-2 small text-muted" id="generic-evo-status">Idle</span>
+            </div>
+            <div class="card-body p-2">
+              <div class="text-center">
+                <canvas id="generic-evo-canvas" width="600" height="200" style="max-width:100%;border:1px solid #dee2e6;border-radius:.3rem;background:#000;"></canvas>
+              </div>
+              <div class="d-flex justify-content-between small mt-1">
+                <span id="generic-evo-info" class="text-muted">Waiting for simulation…</span>
+                <span id="generic-evo-step" class="text-muted"></span>
+              </div>
+              <!-- Colorbar legend -->
+              <div class="mt-1" style="height:10px;border-radius:3px;background:linear-gradient(to right, rgb(0,153,178), rgb(0,190,127), rgb(148,209,0), rgb(249,221,0), rgb(249,80,0), rgb(180,0,0));"></div>
+              <div class="d-flex justify-content-between small text-muted"><span>0</span><span>|u|</span></div>
+            </div>
+          </div>
+        </div><!-- /left -->
+
+        <!-- ── RIGHT: Parameter Panel ── -->
+        <div class="col-lg-5">
+          <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-sliders me-2"></i> Parameters</div>
+            <div class="card-body config-form">
+
+              <!-- Physics -->
+              <h6 class="fw-semibold text-primary mb-2"><i class="bi bi-thermometer-half me-1"></i> Physics</h6>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label>Reynolds number (Re)</label>
+                  <input type="number" class="form-control form-control-sm" id="generic-re" value="100" min="1" step="1" />
+                </div>
+                <div class="col-6">
+                  <label>Inlet velocity u<sub>in</sub></label>
+                  <input type="number" class="form-control form-control-sm" id="generic-u-in" value="0.05" step="0.01" min="0.001" />
+                </div>
+                <div class="col-6">
+                  <label>Density ρ</label>
+                  <input type="number" class="form-control form-control-sm" id="generic-density" value="1.0" step="0.1" />
+                </div>
+                <div class="col-6">
+                  <label>Viscosity ν</label>
+                  <input type="number" class="form-control form-control-sm" id="generic-viscosity" value="0.001" step="0.0001" />
+                </div>
+              </div>
+
+              <!-- Solver -->
+              <h6 class="fw-semibold text-success mb-2"><i class="bi bi-cpu me-1"></i> Solver</h6>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label>Collision operator</label>
+                  <select class="form-select form-select-sm" id="generic-collision">
+                    <option value="mrt" selected>MRT</option>
+                    <option value="mrt_smag">MRT + Smagorinsky</option>
+                    <option value="bgk">BGK</option>
+                    <option value="cumulant">Cumulant</option>
+                  </select>
+                </div>
+                <div class="col-6">
+                  <label>Smagorinsky C<sub>s</sub></label>
+                  <input type="number" class="form-control form-control-sm" id="generic-cs" value="0.1" step="0.01" min="0" />
+                </div>
+                <div class="col-6">
+                  <label>Time steps</label>
+                  <input type="number" class="form-control form-control-sm" id="generic-steps" value="10000" min="1" step="100" />
+                </div>
+                <div class="col-6">
+                  <label>Warmup steps</label>
+                  <input type="number" class="form-control form-control-sm" id="generic-warmup" value="2000" min="0" step="100" />
+                </div>
+                <div class="col-6">
+                  <label>Output interval</label>
+                  <input type="number" class="form-control form-control-sm" id="generic-output-interval" value="500" min="1" step="50" />
+                </div>
+                <div class="col-6">
+                  <label>Device</label>
+                  <select class="form-select form-select-sm" id="generic-device">
+                    <option value="cpu" selected>CPU</option>
+                    <option value="cuda">CUDA</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Geometry / Domain -->
+              <h6 class="fw-semibold mb-2" style="color:var(--phase-geo)"><i class="bi bi-bounding-box me-1"></i> Geometry / Domain</h6>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="generic-auto-domain" checked>
+                <label class="form-check-label small" for="generic-auto-domain">Auto-domain (blockage &lt; 10%)</label>
+              </div>
+              <div id="generic-domain-manual" style="display:none">
+                <div class="row g-2 mb-2">
+                  <div class="col-4">
+                    <label>NX</label>
+                    <input type="number" class="form-control form-control-sm" id="generic-nx" value="200" min="10" />
+                  </div>
+                  <div class="col-4">
+                    <label>NY</label>
+                    <input type="number" class="form-control form-control-sm" id="generic-ny" value="100" min="10" />
+                  </div>
+                  <div class="col-4">
+                    <label>NZ</label>
+                    <input type="number" class="form-control form-control-sm" id="generic-nz" value="100" min="10" />
+                  </div>
+                </div>
+              </div>
+              <div id="generic-domain-suggest" class="mb-2"></div>
+              <div class="small text-muted mb-2">Blockage: <span id="generic-blockage-pct">—</span></div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label>Blockage target</label>
+                  <input type="number" class="form-control form-control-sm" id="generic-blockage-target" value="0.10" step="0.01" min="0.01" max="0.5" />
+                </div>
+              </div>
+
+              <!-- Output -->
+              <h6 class="fw-semibold text-warning mb-2"><i class="bi bi-download me-1"></i> Output</h6>
+              <div class="row g-2 mb-2">
+                <div class="col-12">
+                  <label class="small">Fields to export</label>
+                  <div class="d-flex gap-3 flex-wrap">
+                    <div class="form-check"><input class="form-check-input generic-field-cb" type="checkbox" value="velocity" id="gf-velocity" checked><label class="form-check-label small" for="gf-velocity">Velocity</label></div>
+                    <div class="form-check"><input class="form-check-input generic-field-cb" type="checkbox" value="pressure" id="gf-pressure"><label class="form-check-label small" for="gf-pressure">Pressure</label></div>
+                    <div class="form-check"><input class="form-check-input generic-field-cb" type="checkbox" value="vorticity" id="gf-vorticity"><label class="form-check-label small" for="gf-vorticity">Vorticity</label></div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check"><input class="form-check-input" type="checkbox" id="generic-out-forces" checked><label class="form-check-label small" for="generic-out-forces">Forces (Cd/Cl)</label></div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check"><input class="form-check-input" type="checkbox" id="generic-out-st" checked><label class="form-check-label small" for="generic-out-st">Strouhal (St)</label></div>
+                </div>
+              </div>
+
+              <!-- Job name -->
+              <div class="mb-2">
+                <label>Job name (optional)</label>
+                <input type="text" class="form-control form-control-sm" id="generic-job-name" placeholder="generic-cfd-run" />
+              </div>
+
+            </div>
+          </div>
+        </div><!-- /right -->
+      </div><!-- /row -->
+
+      <!-- ── Run Controls + Status ── -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center">
+          <i class="bi bi-play-circle me-2"></i> <strong>Run &amp; Monitor</strong>
+          <span class="ms-2 small" id="generic-ws-status"><span class="dot dot-queued"></span> Not connected</span>
+          <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="generic-cancel-btn" disabled>
+              <i class="bi bi-x-circle"></i> Cancel
+            </button>
+            <button class="btn btn-primary" id="generic-run-btn">
+              <i class="bi bi-play-fill"></i> Run Simulation
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3 mb-2">
+            <span id="generic-run-status" class="small"><span class="text-muted">Idle</span></span>
+            <span id="generic-job-id" class="small font-monospace text-muted"></span>
+          </div>
+          <!-- Progress bar -->
+          <div class="progress mb-1" style="height:20px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="generic-progress-bar" role="progressbar" style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="small text-muted" id="generic-progress-text">0%</div>
+        </div>
+      </div>
+
+      <!-- ── Real-time Results: Charts ── -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <div class="card h-100">
+            <div class="card-header py-2"><i class="bi bi-graph-up me-1"></i> Drag Coefficient (Cd)</div>
+            <div class="card-body p-2">
+              <div style="height:200px;position:relative;"><canvas id="generic-chart-cd"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100">
+            <div class="card-header py-2"><i class="bi bi-graph-up me-1"></i> Lift Coefficient (Cl)</div>
+            <div class="card-body p-2">
+              <div style="height:200px;position:relative;"><canvas id="generic-chart-cl"></canvas></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100">
+            <div class="card-header py-2"><i class="bi bi-graph-up me-1"></i> Strouhal Number (St)</div>
+            <div class="card-body p-2">
+              <div style="height:200px;position:relative;"><canvas id="generic-chart-st"></canvas></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Force decomposition -->
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-pie-chart me-2"></i> Force Decomposition</div>
+        <div class="card-body" id="generic-force-decomp">
+          <span class="text-muted">—</span>
+        </div>
+      </div>
+
+      <!-- ── Field Visualization ── -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center">
+          <i class="bi bi-image me-2"></i> <strong>Field Visualization</strong>
+          <div class="ms-auto d-flex gap-2 align-items-center">
+            <select class="form-select form-select-sm" id="generic-field-type" style="width:auto;">
+              <option value="velocity" selected>Velocity magnitude</option>
+              <option value="pressure">Pressure</option>
+              <option value="vorticity">Vorticity</option>
+            </select>
+            <select class="form-select form-select-sm" id="generic-field-axis" style="width:auto;">
+              <option value="x">Slice: X</option>
+              <option value="y">Slice: Y</option>
+              <option value="z" selected>Slice: Z</option>
+            </select>
+            <input type="number" class="form-control form-control-sm" id="generic-field-slice" value="0" min="0" style="width:80px;" placeholder="slice" />
+            <button class="btn btn-sm btn-outline-primary" id="generic-load-field-btn">
+              <i class="bi bi-eye"></i> Load
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="text-center mb-2"><canvas id="generic-field-canvas" style="max-width:100%;border:1px solid #dee2e6;border-radius:.3rem;background:#000;"></canvas></div>
+          <div class="d-flex justify-content-between small">
+            <span id="generic-field-info" class="text-muted"></span>
+            <span id="generic-field-status" class="text-muted"></span>
+          </div>
+          <!-- Colorbar legend -->
+          <div class="mt-2" style="height:12px;border-radius:3px;background:linear-gradient(to right, rgb(0,153,178), rgb(0,190,127), rgb(148,209,0), rgb(249,221,0), rgb(249,80,0), rgb(180,0,0));"></div>
+          <div class="d-flex justify-content-between small text-muted"><span>min</span><span>max</span></div>
+        </div>
+      </div>
+
+      <!-- ── Results Summary ── -->
+      <div class="card mb-3">
+        <div class="card-header d-flex align-items-center">
+          <i class="bi bi-clipboard-data me-2"></i> <strong>Results Summary</strong>
+          <button class="btn btn-sm btn-outline-primary ms-auto" id="generic-load-results-btn">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+        </div>
+        <div class="card-body" id="generic-results">
+          <span class="text-muted">Run a simulation to see results.</span>
+        </div>
+      </div>
+
+    </div><!-- /panel-generic -->
+
+    <!-- ── Cylinder Flow: Interactive + Speed Comparison ── -->
+    <div class="tab-panel" id="panel-cylinder">
+      <h4 class="mb-2"><i class="bi bi-wind"></i> Cylinder Flow — Interactive Simulation</h4>
+      <div class="card mb-2">
+        <div class="card-body py-2">
+          <div class="row g-2 align-items-center">
+            <div class="col-auto"><label class="form-label small mb-0">NX</label>
+              <input class="form-control form-control-sm" id="cyl-nx" value="200" type="number" min="50" max="800" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">NY</label>
+              <input class="form-control form-control-sm" id="cyl-ny" value="80" type="number" min="20" max="400" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">u_in</label>
+              <input class="form-control form-control-sm" id="cyl-uin" value="0.08" type="number" min="0.01" max="0.2" step="0.01" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">Re</label>
+              <input class="form-control form-control-sm" id="cyl-re" value="100" type="number" min="10" max="500" step="10" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">Radius</label>
+              <input class="form-control form-control-sm" id="cyl-radius" value="10" type="number" min="3" max="50" style="width:80px"></div>
+            <div class="col-auto"><label class="form-label small mb-0">Steps/frame</label>
+              <input class="form-control form-control-sm" id="cyl-steps-per-frame" value="10" type="number" min="1" max="50" style="width:80px"></div>
+            <div class="col-auto d-flex gap-1">
+              <button class="btn btn-primary btn-sm" onclick="cylInteractiveInit()" id="cyl-init-btn"><i class="bi bi-play-fill"></i> Init</button>
+              <button class="btn btn-warning btn-sm" onclick="cylInteractivePause()" id="cyl-pause-btn" disabled><i class="bi bi-pause-fill"></i> Pause</button>
+              <button class="btn btn-success btn-sm" onclick="cylInteractiveResume()" id="cyl-resume-btn" disabled><i class="bi bi-play-fill"></i> Resume</button>
+              <button class="btn btn-outline-danger btn-sm" onclick="cylInteractiveReset()" id="cyl-reset-btn" disabled><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+            </div>
+            <div class="col-auto ms-auto">
+              <span class="badge bg-primary" id="cyl-interactive-step">Step 0</span>
+              <span class="badge bg-info" id="cyl-interactive-info">Not connected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mb-2" style="background:#111827;border-color:#334155">
+        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-speedometer2"></i> Speed Field <small class="text-muted">(drag cylinder to move)</small></div>
+        <div class="card-body p-1">
+          <canvas id="cyl-interactive-speed" width="600" height="240" style="width:100%;background:#0a0a1a;cursor:grab;border-radius:4px"></canvas>
+        </div>
+      </div>
+      <div class="card mb-2" style="background:#111827;border-color:#334155">
+        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-tornado"></i> Vorticity Field</div>
+        <div class="card-body p-1">
+          <canvas id="cyl-interactive-vort" width="600" height="240" style="width:100%;background:#0a0a1a;border-radius:4px"></canvas>
+        </div>
+      </div>
+      <div class="card mb-2" style="background:#111827;border-color:#334155">
+        <div class="card-header fw-semibold" style="background:#1e3a5c;color:#fff"><i class="bi bi-droplet"></i> Pressure (rho) Field</div>
+        <div class="card-body p-1">
+          <canvas id="cyl-interactive-rho" width="600" height="240" style="width:100%;background:#0a0a1a;border-radius:4px"></canvas>
+        </div>
+      </div>
+      <hr class="my-3" style="border-color:#334155">
+      <h5 class="mb-2"><i class="bi bi-bar-chart"></i> Speed Comparison — CPU vs SDAA</h5>
+      <div class="card mb-2">
+        <div class="card-body d-flex align-items-center gap-2 flex-wrap py-2">
+          <div><label class="form-label small mb-0">NX</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-nx" value="400" type="number" min="100" max="800" style="width:65px"></div>
+          <div><label class="form-label small mb-0">NY</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-ny" value="160" type="number" min="40" max="400" style="width:65px"></div>
+          <div><label class="form-label small mb-0">u_in</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-uin" value="0.08" type="number" min="0.01" max="0.2" step="0.01" style="width:65px"></div>
+          <div><label class="form-label small mb-0">Re</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-re" value="100" type="number" min="10" max="500" step="10" style="width:65px"></div>
+          <div><label class="form-label small mb-0">Radius</label>
+            <input class="form-control form-control-sm" id="cyl-cmp-radius" value="13" type="number" min="3" max="50" style="width:65px"></div>
+          <button class="btn btn-warning btn-sm" onclick="cylCompareStart()"><i class="bi bi-play-fill"></i> Start All</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="cylCompareStop()"><i class="bi bi-stop-fill"></i> Stop</button>
+          <span class="small text-muted ms-auto" id="cyl-compare-info">Click Start to begin comparison</span>
+        </div>
+      </div>
+      <div class="row g-2">
+        <div class="col-6">
+          <div class="card h-100" style="background:#1a1a2e;border-color:#4488ff">
+            <div class="card-header fw-semibold" style="background:#2233aa;color:#fff"><i class="bi bi-cpu"></i> CPU</div>
+            <div class="card-body p-1">
+              <canvas id="cyl-canvas-cpu" width="400" height="160" style="width:100%;background:#111"></canvas>
+              <div class="text-center mt-1">
+                <span class="badge bg-primary" id="cyl-cpu-step">Step 0</span>
+                <span class="badge bg-info" id="cyl-cpu-speed">— ms/step</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="card h-100" style="background:#1a1a2e;border-color:#44ff88">
+            <div class="card-header fw-semibold" style="background:#22aa44;color:#fff"><i class="bi bi-lightning"></i> SDAA</div>
+            <div class="card-body p-1">
+              <canvas id="cyl-canvas-sdaa" width="400" height="160" style="width:100%;background:#111"></canvas>
+              <div class="text-center mt-1">
+                <span class="badge bg-success" id="cyl-sdaa-step">Step 0</span>
+                <span class="badge bg-info" id="cyl-sdaa-speed">— ms/step</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt-2" style="background:#1a1a2e">
+        <div class="card-body p-2">
+          <canvas id="cyl-compare-chart" width="800" height="120" style="width:100%;background:#111;border-radius:4px"></canvas>
+        </div>
+      </div>
+    </div><!-- /panel-cylinder -->
+
   </div><!-- /content-area -->
 </div><!-- /main-layout -->
 
@@ -3152,6 +3637,7 @@
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="/static/js/app_utils.js"></script>
 <script src="/static/js/app_core.js"></script>
 <script src="/static/js/app_cad.js"></script>
@@ -3166,5 +3652,7 @@
 <script src="/static/js/app_templates.js"></script>
 <script src="/static/js/app_convergence.js"></script>
 <script src="/static/js/app_geo3d.js"></script>
+<script src="/static/js/app_generic.js"></script>
+<script src="/static/js/app_cylinder.js"></script>
 </body>
 </html>

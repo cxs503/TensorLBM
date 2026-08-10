@@ -1,4 +1,5 @@
 """Tests for the AI turbulence sub-package."""
+
 from __future__ import annotations
 
 import json
@@ -8,7 +9,8 @@ from pathlib import Path
 import pytest
 import torch
 
-from tensorlbm import (
+from tensorlbm import equilibrium, macroscopic
+from tensorlbm.ai import (
     AIPipelineResult,
     EddyViscosityDataset,
     EddyViscosityMLP,
@@ -18,12 +20,10 @@ from tensorlbm import (
     TrainConfig,
     build_flow_token_batch,
     collide_ai_les_bgk,
-    equilibrium,
     extract_les_samples_2d,
     load_dataset_pt,
     load_flow_transformer_model,
     load_model,
-    macroscopic,
     predict_nu_t_2d,
     reconstruct_flow_field,
     run_ai_dns_pipeline,
@@ -38,6 +38,7 @@ from tensorlbm import (
 # ---------------------------------------------------------------------------
 # Dataset
 # ---------------------------------------------------------------------------
+
 
 def _make_synthetic_velocity(nx: int = 16, ny: int = 16) -> tuple[torch.Tensor, torch.Tensor]:
     ys = torch.arange(ny).float()
@@ -74,7 +75,9 @@ def test_strain_rate_linear_shear() -> None:
     assert torch.allclose(s_xx[sl, sl], torch.zeros_like(s_xx[sl, sl]), atol=1e-12)
     assert torch.allclose(s_yy[sl, sl], torch.zeros_like(s_yy[sl, sl]), atol=1e-12)
     assert torch.allclose(
-        s_xy[sl, sl], torch.full_like(s_xy[sl, sl], 0.5 * a), atol=1e-12,
+        s_xy[sl, sl],
+        torch.full_like(s_xy[sl, sl], 0.5 * a),
+        atol=1e-12,
     )
 
 
@@ -99,8 +102,7 @@ def test_extract_les_samples_with_mask() -> None:
 def test_dataset_save_load_roundtrip(tmp_path: Path) -> None:
     ux, uy = _make_synthetic_velocity()
     feats, target = extract_les_samples_2d(ux, uy)
-    ds = EddyViscosityDataset(features=feats, targets=target, c_s=0.12,
-                              description="unit-test")
+    ds = EddyViscosityDataset(features=feats, targets=target, c_s=0.12, description="unit-test")
     p = save_dataset_pt(ds, tmp_path / "ds.pt")
     loaded = load_dataset_pt(p)
     assert torch.allclose(loaded.features, ds.features)
@@ -122,14 +124,15 @@ def test_dataset_split() -> None:
 # Database
 # ---------------------------------------------------------------------------
 
+
 def test_database_round_trip(tmp_path: Path) -> None:
     db = LBMDatabase.open(tmp_path / "db.sqlite")
     try:
         rid = db.insert_run("smoke", "test_run", {"nx": 8}, output_dir=tmp_path)
-        did = db.insert_dataset("ds1", tmp_path / "f.pt", 42, run_id=rid,
-                                metadata={"c_s": 0.1})
-        mid = db.insert_model("m1", tmp_path / "m.pt", {"in": 3},
-                              dataset_id=did, metrics={"loss": 0.01})
+        did = db.insert_dataset("ds1", tmp_path / "f.pt", 42, run_id=rid, metadata={"c_s": 0.1})
+        mid = db.insert_model(
+            "m1", tmp_path / "m.pt", {"in": 3}, dataset_id=did, metrics={"loss": 0.01}
+        )
         runs = db.list_runs()
         datasets = db.list_datasets()
         models = db.list_models()
@@ -147,6 +150,7 @@ def test_database_round_trip(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Model + train + inference
 # ---------------------------------------------------------------------------
+
 
 def test_model_forward_nonnegative() -> None:
     model = EddyViscosityMLP()
@@ -201,9 +205,7 @@ def test_train_eddy_viscosity_model_converges(tmp_path: Path) -> None:
     # Generate a dataset from a smooth synthetic field; the algebraic
     # Smagorinsky label is a smooth function of the inputs, so even a
     # tiny MLP should be able to bring MSE below the initial value.
-    snapshots = [
-        _make_synthetic_velocity(24, 24) for _ in range(3)
-    ]
+    snapshots = [_make_synthetic_velocity(24, 24) for _ in range(3)]
     feats_all, target_all = [], []
     for ux, uy in snapshots:
         f, t = extract_les_samples_2d(ux, uy)
@@ -211,7 +213,8 @@ def test_train_eddy_viscosity_model_converges(tmp_path: Path) -> None:
         feats_all.append(f + 0.001 * torch.randn_like(f))
         target_all.append(t)
     ds = EddyViscosityDataset(
-        features=torch.cat(feats_all), targets=torch.cat(target_all),
+        features=torch.cat(feats_all),
+        targets=torch.cat(target_all),
     )
     cfg = TrainConfig(epochs=20, batch_size=256, learning_rate=5e-3, seed=0)
     meta = train_eddy_viscosity_model(ds, tmp_path / "m.pt", cfg)
@@ -280,11 +283,15 @@ def test_collide_ai_les_bgk_stability_over_steps() -> None:
 # End-to-end pipeline
 # ---------------------------------------------------------------------------
 
+
 def test_run_ai_les_pipeline_smoke(tmp_path: Path) -> None:
     res = run_ai_les_pipeline(
         tmp_path,
-        nx=20, ny=20,
-        data_steps=8, sample_every=4, val_steps=4,
+        nx=20,
+        ny=20,
+        data_steps=8,
+        sample_every=4,
+        val_steps=4,
         train_config=TrainConfig(epochs=3, batch_size=256, learning_rate=5e-3),
         seed=0,
     )

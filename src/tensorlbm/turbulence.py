@@ -8,6 +8,13 @@ velocity sets:
     norm of the non-equilibrium stress tensor.  BGK and MRT variants are
     available.
 
+**Dynamic Smagorinsky** (Germano *et al.* 1991, Lilly 1992)
+    The Smagorinsky constant :math:`C_s` is computed dynamically from the
+    Germano identity using a test-filter (box average).  This avoids the need
+    for a prescribed constant and naturally yields zero eddy viscosity in
+    laminar regions.  BGK and MRT variants are available for D3Q19, and BGK
+    and MRT variants for D3Q27.
+
 **WALE** – Wall-Adapting Local Eddy-viscosity (Nicoud & Ducros, 1999)
     The eddy viscosity is derived from the traceless symmetric part of the
     squared velocity-gradient tensor.  The WALE model reproduces the correct
@@ -33,6 +40,12 @@ Smagorinsky
     - :func:`collide_smagorinsky_mrt3d`  – D3Q19 MRT + Smagorinsky
     - :func:`collide_smagorinsky_bgk27`  – D3Q27 BGK + Smagorinsky
     - :func:`collide_smagorinsky_mrt27`  – D3Q27 MRT + Smagorinsky
+Dynamic Smagorinsky
+    - :func:`collide_dynamic_smagorinsky_bgk`     – D2Q9  BGK + dynamic Smagorinsky
+    - :func:`collide_dynamic_smagorinsky_bgk3d`   – D3Q19 BGK + dynamic Smagorinsky
+    - :func:`collide_dynamic_smagorinsky_mrt3d`   – D3Q19 MRT + dynamic Smagorinsky
+    - :func:`collide_dynamic_smagorinsky_bgk27`   – D3Q27 BGK + dynamic Smagorinsky
+    - :func:`collide_dynamic_smagorinsky_mrt27`   – D3Q27 MRT + dynamic Smagorinsky
 WALE
     - :func:`collide_wale_bgk`    – D2Q9  BGK + WALE
     - :func:`collide_wale_bgk3d`  – D3Q19 BGK + WALE
@@ -510,6 +523,59 @@ def collide_smagorinsky_mrt27(
 # Velocity-gradient helpers (shared by WALE and Vreman)
 # ---------------------------------------------------------------------------
 
+def _nonperiodic_derivative(
+    field: torch.Tensor,
+    dim: int,
+) -> torch.Tensor:
+    """Differentiate with centred interiors and physical one-sided edges.
+
+    ``torch.roll`` silently imposes periodicity.  That is invalid at open
+    far-field boundaries and, more importantly, couples opposite faces of an
+    independently allocated AMR block.  A second-order one-sided stencil at
+    each real tensor edge avoids that artificial shear while retaining the
+    centred second-order stencil in the interior.
+    """
+    size = field.shape[dim]
+    if size == 1:
+        return torch.zeros_like(field)
+    if size == 2:
+        difference = field.select(dim, 1) - field.select(dim, 0)
+        return torch.stack((difference, difference), dim=dim)
+
+    derivative = torch.empty_like(field)
+    interior = [slice(None)] * field.ndim
+    lower = [slice(None)] * field.ndim
+    upper = [slice(None)] * field.ndim
+    forward = [slice(None)] * field.ndim
+    backward = [slice(None)] * field.ndim
+    interior[dim] = slice(1, -1)
+    forward[dim] = slice(2, None)
+    backward[dim] = slice(None, -2)
+    derivative[tuple(interior)] = 0.5 * (
+        field[tuple(forward)] - field[tuple(backward)]
+    )
+    lower[dim] = 0
+    upper[dim] = -1
+    first = [slice(None)] * field.ndim
+    second = [slice(None)] * field.ndim
+    penultimate = [slice(None)] * field.ndim
+    antepenultimate = [slice(None)] * field.ndim
+    first[dim] = 1
+    second[dim] = 2
+    penultimate[dim] = -2
+    antepenultimate[dim] = -3
+    derivative[tuple(lower)] = 0.5 * (
+        -3.0 * field[tuple(lower)]
+        + 4.0 * field[tuple(first)]
+        - field[tuple(second)]
+    )
+    derivative[tuple(upper)] = 0.5 * (
+        3.0 * field[tuple(upper)]
+        - 4.0 * field[tuple(penultimate)]
+        + field[tuple(antepenultimate)]
+    )
+    return derivative
+
 def _velocity_gradients_2d(
     ux: torch.Tensor,
     uy: torch.Tensor,
@@ -522,10 +588,10 @@ def _velocity_gradients_2d(
     Returns:
         ``(g11, g12, g21, g22)`` where ``g_ij = ∂u_i/∂x_j``.
     """
-    g11 = 0.5 * (torch.roll(ux, -1, dims=-1) - torch.roll(ux, 1, dims=-1))
-    g12 = 0.5 * (torch.roll(ux, -1, dims=-2) - torch.roll(ux, 1, dims=-2))
-    g21 = 0.5 * (torch.roll(uy, -1, dims=-1) - torch.roll(uy, 1, dims=-1))
-    g22 = 0.5 * (torch.roll(uy, -1, dims=-2) - torch.roll(uy, 1, dims=-2))
+    g11 = _nonperiodic_derivative(ux, -1)
+    g12 = _nonperiodic_derivative(ux, -2)
+    g21 = _nonperiodic_derivative(uy, -1)
+    g22 = _nonperiodic_derivative(uy, -2)
     return g11, g12, g21, g22
 
 
@@ -547,18 +613,15 @@ def _velocity_gradients_3d(
         ``(g11, g12, g13, g21, g22, g23, g31, g32, g33)``
         where ``g_ij = ∂u_i/∂x_j``.
     """
-    def _cd(u: torch.Tensor, dim: int) -> torch.Tensor:
-        return 0.5 * (torch.roll(u, -1, dims=dim) - torch.roll(u, 1, dims=dim))
-
-    g11 = _cd(ux, 2)  # ∂ux/∂x
-    g12 = _cd(ux, 1)  # ∂ux/∂y
-    g13 = _cd(ux, 0)  # ∂ux/∂z
-    g21 = _cd(uy, 2)  # ∂uy/∂x
-    g22 = _cd(uy, 1)  # ∂uy/∂y
-    g23 = _cd(uy, 0)  # ∂uy/∂z
-    g31 = _cd(uz, 2)  # ∂uz/∂x
-    g32 = _cd(uz, 1)  # ∂uz/∂y
-    g33 = _cd(uz, 0)  # ∂uz/∂z
+    g11 = _nonperiodic_derivative(ux, 2)  # ∂ux/∂x
+    g12 = _nonperiodic_derivative(ux, 1)  # ∂ux/∂y
+    g13 = _nonperiodic_derivative(ux, 0)  # ∂ux/∂z
+    g21 = _nonperiodic_derivative(uy, 2)  # ∂uy/∂x
+    g22 = _nonperiodic_derivative(uy, 1)  # ∂uy/∂y
+    g23 = _nonperiodic_derivative(uy, 0)  # ∂uy/∂z
+    g31 = _nonperiodic_derivative(uz, 2)  # ∂uz/∂x
+    g32 = _nonperiodic_derivative(uz, 1)  # ∂uz/∂y
+    g33 = _nonperiodic_derivative(uz, 0)  # ∂uz/∂z
     return g11, g12, g13, g21, g22, g23, g31, g32, g33
 
 
@@ -935,6 +998,253 @@ def collide_vreman_bgk27(
     return f - f_neq / tau_eff.unsqueeze(0)
 
 
+# -----------------------------------------------------------------------
+# WALE MRT collision operators (D3Q19, D3Q27)
+# -----------------------------------------------------------------------
+
+def collide_wale_mrt3d(
+    f: torch.Tensor,
+    tau: float,
+    C_w: float = 0.5,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q19 MRT collision with WALE LES sub-grid turbulence model.
+
+    Combines the D3Q19 MRT collision operator with a spatially varying stress
+    relaxation rate derived from the local WALE effective viscosity.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_w: WALE constant (default 0.5).
+        s_e: Relaxation rate for the energy moment.
+        s_eps: Relaxation rate for the energy-square moment.
+        s_q: Relaxation rate for heat-flux moments.
+        s_pi: Relaxation rate for higher-order stress moments
+              (defaults to *s_e* when *None*).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+    M, M_inv = _get_d3q19_mrt_matrices(device)
+
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    nu_t = _wale_nu_t_3d(ux, uy, uz, C_w)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)
+    feq_flat = feq.reshape(19, -1)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps,
+         0.0, s_q, 0.0, s_q, 0.0, s_q,
+         0.0, 0.0, 0.0, 0.0, 0.0,
+         s_pi, s_pi,
+         1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in (9, 10, 11, 12, 13):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(19, nz, ny, nx)
+
+
+def collide_wale_mrt27(
+    f: torch.Tensor,
+    tau: float,
+    C_w: float = 0.5,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q27 MRT collision with WALE LES sub-grid turbulence model.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_w: WALE constant (default 0.5).
+        s_e: Relaxation rate for the energy moment (row 4).
+        s_eps: Relaxation rate for the energy-square moment (row 19).
+        s_q: Relaxation rate for 3rd-order heat-flux moments (rows 10–18).
+        s_pi: Relaxation rate for 4th-order+ moments (rows 20–26);
+              defaults to *s_e* when *None*.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+    M, M_inv = _get_d3q27_mrt_matrices(device)
+
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    nu_t = _wale_nu_t_3d(ux, uy, uz, C_w)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(27, -1)
+    feq_flat = feq.reshape(27, -1)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    s_fixed = torch.tensor(
+        [
+            0.0, 0.0, 0.0, 0.0, s_e,
+            0.0, 0.0, 0.0, 0.0, 0.0,
+            s_q, s_q, s_q, s_q, s_q, s_q, s_q, s_q, s_q,
+            s_eps,
+            s_pi, s_pi, s_pi, s_pi, s_pi, s_pi, s_pi,
+        ],
+        dtype=f.dtype, device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in (5, 6, 7, 8, 9):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(27, nz, ny, nx)
+
+
+# -----------------------------------------------------------------------
+# Vreman MRT collision operators (D3Q19, D3Q27)
+# -----------------------------------------------------------------------
+
+def collide_vreman_mrt3d(
+    f: torch.Tensor,
+    tau: float,
+    C_V: float = 0.025,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q19 MRT collision with Vreman LES sub-grid turbulence model.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_V: Vreman constant (default 0.025).
+        s_e: Relaxation rate for the energy moment.
+        s_eps: Relaxation rate for the energy-square moment.
+        s_q: Relaxation rate for heat-flux moments.
+        s_pi: Relaxation rate for higher-order stress moments
+              (defaults to *s_e* when *None*).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+    M, M_inv = _get_d3q19_mrt_matrices(device)
+
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    nu_t = _vreman_nu_t_3d(ux, uy, uz, C_V)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)
+    feq_flat = feq.reshape(19, -1)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps,
+         0.0, s_q, 0.0, s_q, 0.0, s_q,
+         0.0, 0.0, 0.0, 0.0, 0.0,
+         s_pi, s_pi,
+         1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in (9, 10, 11, 12, 13):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(19, nz, ny, nx)
+
+
+def collide_vreman_mrt27(
+    f: torch.Tensor,
+    tau: float,
+    C_V: float = 0.025,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q27 MRT collision with Vreman LES sub-grid turbulence model.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Molecular relaxation time :math:`\\tau_0 > 0.5`.
+        C_V: Vreman constant (default 0.025).
+        s_e: Relaxation rate for the energy moment (row 4).
+        s_eps: Relaxation rate for the energy-square moment (row 19).
+        s_q: Relaxation rate for 3rd-order heat-flux moments (rows 10–18).
+        s_pi: Relaxation rate for 4th-order+ moments (rows 20–26);
+              defaults to *s_e* when *None*.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+    M, M_inv = _get_d3q27_mrt_matrices(device)
+
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    nu_t = _vreman_nu_t_3d(ux, uy, uz, C_V)
+    tau_eff = _nu_t_to_tau_eff(tau, nu_t)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(27, -1)
+    feq_flat = feq.reshape(27, -1)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    s_fixed = torch.tensor(
+        [
+            0.0, 0.0, 0.0, 0.0, s_e,
+            0.0, 0.0, 0.0, 0.0, 0.0,
+            s_q, s_q, s_q, s_q, s_q, s_q, s_q, s_q, s_q,
+            s_eps,
+            s_pi, s_pi, s_pi, s_pi, s_pi, s_pi, s_pi,
+        ],
+        dtype=f.dtype, device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in (5, 6, 7, 8, 9):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(27, nz, ny, nx)
+
+
 def _box_filter_2d(field: torch.Tensor, width: int = 2) -> torch.Tensor:
     """Apply a size-preserving 2D box filter using average pooling.
 
@@ -1008,6 +1318,44 @@ def _strain_from_fneq_3d(
     cx = c[:, 0].view(19, 1, 1, 1)
     cy = c[:, 1].view(19, 1, 1, 1)
     cz = c[:, 2].view(19, 1, 1, 1)
+    pi_xx = (cx * cx * f_neq).sum(dim=0)
+    pi_yy = (cy * cy * f_neq).sum(dim=0)
+    pi_zz = (cz * cz * f_neq).sum(dim=0)
+    pi_xy = (cx * cy * f_neq).sum(dim=0)
+    pi_xz = (cx * cz * f_neq).sum(dim=0)
+    pi_yz = (cy * cz * f_neq).sum(dim=0)
+    denom = torch.clamp(2.0 * rho * tau * (1.0 / 3.0), min=1e-12)
+    return (
+        -pi_xx / denom,
+        -pi_xy / denom,
+        -pi_xz / denom,
+        -pi_yy / denom,
+        -pi_yz / denom,
+        -pi_zz / denom,
+    )
+
+
+def _strain_from_fneq_27(
+    f_neq: torch.Tensor,
+    rho: torch.Tensor,
+    tau: float,
+) -> tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+]:
+    """Estimate the 3D strain-rate tensor from D3Q27 non-equilibrium stresses.
+
+    Identical formula to :func:`_strain_from_fneq_3d` but operates on the
+    27-velocity distribution.
+    """
+    c = C27.to(f_neq.device).float()
+    cx = c[:, 0].view(27, 1, 1, 1)
+    cy = c[:, 1].view(27, 1, 1, 1)
+    cz = c[:, 2].view(27, 1, 1, 1)
     pi_xx = (cx * cx * f_neq).sum(dim=0)
     pi_yy = (cy * cy * f_neq).sum(dim=0)
     pi_zz = (cz * cz * f_neq).sum(dim=0)
@@ -1165,6 +1513,322 @@ def collide_dynamic_smagorinsky_bgk3d(
     return f - f_neq / tau_eff.unsqueeze(0)
 
 
+def collide_dynamic_smagorinsky_mrt3d(
+    f: torch.Tensor,
+    tau: float,
+    filter_width: int = 2,
+    lambda_clip: float = 0.0,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q19 MRT collision with a dynamic Smagorinsky closure.
+
+    Combines the dynamic Smagorinsky procedure (Germano identity with
+    test-filtering to compute a global :math:`C_s`) with the D3Q19 MRT
+    collision operator.  The per-cell effective relaxation time
+    :math:`\\tau_{eff}(x)` replaces the stress-mode relaxation rate
+    (modes 9–13), exactly as in :func:`collide_smagorinsky_mrt3d`, while
+    the non-stress modes use the fixed MRT rates.
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+        tau: Molecular relaxation time.
+        filter_width: Test-filter width.
+        lambda_clip: Minimum allowed value for ``C_s^2``.
+        s_e: Relaxation rate for the energy moment.
+        s_eps: Relaxation rate for the energy-square moment.
+        s_q: Relaxation rate for heat-flux moments.
+        s_pi: Relaxation rate for higher-order stress moments
+              (defaults to *s_e* when *None*).
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+
+    # ---- Dynamic Smagorinsky: compute global Cs via Germano identity ----
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    f_neq = f - feq
+    s_xx, s_xy, s_xz, s_yy, s_yz, s_zz = _strain_from_fneq_3d(f_neq, rho, tau)
+    s_mag = _strain_magnitude_3d(s_xx, s_xy, s_xz, s_yy, s_yz, s_zz)
+
+    uxf = _box_filter_3d(ux, width=filter_width)
+    uyf = _box_filter_3d(uy, width=filter_width)
+    uzf = _box_filter_3d(uz, width=filter_width)
+    g11, g12, g13, g21, g22, g23, g31, g32, g33 = _velocity_gradients_3d(uxf, uyf, uzf)
+    s_tilde_xx = g11
+    s_tilde_yy = g22
+    s_tilde_zz = g33
+    s_tilde_xy = 0.5 * (g12 + g21)
+    s_tilde_xz = 0.5 * (g13 + g31)
+    s_tilde_yz = 0.5 * (g23 + g32)
+    s_tilde_mag = _strain_magnitude_3d(
+        s_tilde_xx, s_tilde_xy, s_tilde_xz, s_tilde_yy, s_tilde_yz, s_tilde_zz
+    )
+
+    l_xx = _box_filter_3d(ux * ux, width=filter_width) - uxf * uxf
+    l_xy = _box_filter_3d(ux * uy, width=filter_width) - uxf * uyf
+    l_xz = _box_filter_3d(ux * uz, width=filter_width) - uxf * uzf
+    l_yy = _box_filter_3d(uy * uy, width=filter_width) - uyf * uyf
+    l_yz = _box_filter_3d(uy * uz, width=filter_width) - uyf * uzf
+    l_zz = _box_filter_3d(uz * uz, width=filter_width) - uzf * uzf
+
+    m_xx = 2.0 * (4.0 * s_tilde_mag * s_tilde_xx - s_mag * s_xx)
+    m_xy = 2.0 * (4.0 * s_tilde_mag * s_tilde_xy - s_mag * s_xy)
+    m_xz = 2.0 * (4.0 * s_tilde_mag * s_tilde_xz - s_mag * s_xz)
+    m_yy = 2.0 * (4.0 * s_tilde_mag * s_tilde_yy - s_mag * s_yy)
+    m_yz = 2.0 * (4.0 * s_tilde_mag * s_tilde_yz - s_mag * s_yz)
+    m_zz = 2.0 * (4.0 * s_tilde_mag * s_tilde_zz - s_mag * s_zz)
+
+    num = (l_xx * m_xx + l_yy * m_yy + l_zz * m_zz).mean()
+    num = num + 2.0 * (l_xy * m_xy + l_xz * m_xz + l_yz * m_yz).mean()
+    den = (m_xx**2 + m_yy**2 + m_zz**2).mean()
+    den = den + 2.0 * (m_xy**2 + m_xz**2 + m_yz**2).mean()
+    cs2 = torch.clamp(num / torch.clamp(den, min=1e-12), min=lambda_clip, max=0.1)
+    cs = float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())
+
+    nu = (tau - 0.5) / 3.0
+    nu_t = (cs**2) * s_mag
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001)
+
+    # ---- MRT collision with per-cell stress relaxation rate ----
+    M, M_inv = _get_d3q19_mrt_matrices(device)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(19, -1)
+    feq_flat = feq.reshape(19, -1)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    s_fixed = torch.tensor(
+        [0.0, s_e, s_eps,
+         0.0, s_q, 0.0, s_q, 0.0, s_q,
+         0.0, 0.0, 0.0, 0.0, 0.0,
+         s_pi, s_pi,
+         1.0, 1.0, 1.0],
+        dtype=f.dtype, device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    for k in (9, 10, 11, 12, 13):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(19, nz, ny, nx)
+
+
+def collide_dynamic_smagorinsky_bgk27(
+    f: torch.Tensor,
+    tau: float,
+    filter_width: int = 2,
+    lambda_clip: float = 0.0,
+) -> torch.Tensor:
+    """D3Q27 BGK collision with a dynamic Smagorinsky closure.
+
+    Identical dynamic procedure to :func:`collide_dynamic_smagorinsky_bgk3d`
+    but operates on the 27-velocity distribution, using the D3Q27 lattice
+    constants, equilibrium, and macroscopic recovery.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Molecular relaxation time.
+        filter_width: Test-filter width.
+        lambda_clip: Minimum allowed value for ``C_s^2``.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    f_neq = f - feq
+    s_xx, s_xy, s_xz, s_yy, s_yz, s_zz = _strain_from_fneq_27(f_neq, rho, tau)
+    s_mag = _strain_magnitude_3d(s_xx, s_xy, s_xz, s_yy, s_yz, s_zz)
+
+    uxf = _box_filter_3d(ux, width=filter_width)
+    uyf = _box_filter_3d(uy, width=filter_width)
+    uzf = _box_filter_3d(uz, width=filter_width)
+    g11, g12, g13, g21, g22, g23, g31, g32, g33 = _velocity_gradients_3d(uxf, uyf, uzf)
+    s_tilde_xx = g11
+    s_tilde_yy = g22
+    s_tilde_zz = g33
+    s_tilde_xy = 0.5 * (g12 + g21)
+    s_tilde_xz = 0.5 * (g13 + g31)
+    s_tilde_yz = 0.5 * (g23 + g32)
+    s_tilde_mag = _strain_magnitude_3d(
+        s_tilde_xx, s_tilde_xy, s_tilde_xz, s_tilde_yy, s_tilde_yz, s_tilde_zz
+    )
+
+    l_xx = _box_filter_3d(ux * ux, width=filter_width) - uxf * uxf
+    l_xy = _box_filter_3d(ux * uy, width=filter_width) - uxf * uyf
+    l_xz = _box_filter_3d(ux * uz, width=filter_width) - uxf * uzf
+    l_yy = _box_filter_3d(uy * uy, width=filter_width) - uyf * uyf
+    l_yz = _box_filter_3d(uy * uz, width=filter_width) - uyf * uzf
+    l_zz = _box_filter_3d(uz * uz, width=filter_width) - uzf * uzf
+
+    m_xx = 2.0 * (4.0 * s_tilde_mag * s_tilde_xx - s_mag * s_xx)
+    m_xy = 2.0 * (4.0 * s_tilde_mag * s_tilde_xy - s_mag * s_xy)
+    m_xz = 2.0 * (4.0 * s_tilde_mag * s_tilde_xz - s_mag * s_xz)
+    m_yy = 2.0 * (4.0 * s_tilde_mag * s_tilde_yy - s_mag * s_yy)
+    m_yz = 2.0 * (4.0 * s_tilde_mag * s_tilde_yz - s_mag * s_yz)
+    m_zz = 2.0 * (4.0 * s_tilde_mag * s_tilde_zz - s_mag * s_zz)
+
+    num = (l_xx * m_xx + l_yy * m_yy + l_zz * m_zz).mean()
+    num = num + 2.0 * (l_xy * m_xy + l_xz * m_xz + l_yz * m_yz).mean()
+    den = (m_xx**2 + m_yy**2 + m_zz**2).mean()
+    den = den + 2.0 * (m_xy**2 + m_xz**2 + m_yz**2).mean()
+    cs2 = torch.clamp(num / torch.clamp(den, min=1e-12), min=lambda_clip, max=0.1)
+    cs = float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())
+
+    nu = (tau - 0.5) / 3.0
+    nu_t = (cs**2) * s_mag
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001)
+    return f - f_neq / tau_eff.unsqueeze(0)
+
+
+def collide_dynamic_smagorinsky_mrt27(
+    f: torch.Tensor,
+    tau: float,
+    filter_width: int = 2,
+    lambda_clip: float = 0.0,
+    s_e: float = 1.19,
+    s_eps: float = 1.4,
+    s_q: float = 1.2,
+    s_pi: float | None = None,
+) -> torch.Tensor:
+    """D3Q27 MRT collision with a dynamic Smagorinsky closure.
+
+    Combines the dynamic Smagorinsky procedure (Germano identity with
+    test-filtering to compute a global :math:`C_s`) — identical to
+    :func:`collide_dynamic_smagorinsky_bgk27` — with the D3Q27 MRT
+    collision operator.  The per-cell effective relaxation time
+    :math:`\\tau_{eff}(x)` replaces the stress-mode relaxation rate
+    (modes 5–9), exactly as in :func:`collide_smagorinsky_mrt27`, while
+    the non-stress modes use the fixed MRT rates.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        tau: Molecular relaxation time.
+        filter_width: Test-filter width.
+        lambda_clip: Minimum allowed value for ``C_s^2``.
+        s_e: Relaxation rate for the energy moment (row 4).
+        s_eps: Relaxation rate for the energy-square moment (row 19).
+        s_q: Relaxation rate for 3rd-order heat-flux moments (rows 10–18).
+        s_pi: Relaxation rate for 4th-order+ moments (rows 20–26);
+              defaults to *s_e* when *None*.
+
+    Returns:
+        Updated distribution tensor of the same shape.
+    """
+    if s_pi is None:
+        s_pi = s_e
+
+    device = f.device
+
+    # ---- Dynamic Smagorinsky: compute global Cs via Germano identity ----
+    rho, ux, uy, uz = macroscopic27(f)
+    feq = equilibrium27(rho, ux, uy, uz)
+    f_neq = f - feq
+    s_xx, s_xy, s_xz, s_yy, s_yz, s_zz = _strain_from_fneq_27(f_neq, rho, tau)
+    s_mag = _strain_magnitude_3d(s_xx, s_xy, s_xz, s_yy, s_yz, s_zz)
+
+    uxf = _box_filter_3d(ux, width=filter_width)
+    uyf = _box_filter_3d(uy, width=filter_width)
+    uzf = _box_filter_3d(uz, width=filter_width)
+    g11, g12, g13, g21, g22, g23, g31, g32, g33 = _velocity_gradients_3d(uxf, uyf, uzf)
+    s_tilde_xx = g11
+    s_tilde_yy = g22
+    s_tilde_zz = g33
+    s_tilde_xy = 0.5 * (g12 + g21)
+    s_tilde_xz = 0.5 * (g13 + g31)
+    s_tilde_yz = 0.5 * (g23 + g32)
+    s_tilde_mag = _strain_magnitude_3d(
+        s_tilde_xx, s_tilde_xy, s_tilde_xz, s_tilde_yy, s_tilde_yz, s_tilde_zz
+    )
+
+    l_xx = _box_filter_3d(ux * ux, width=filter_width) - uxf * uxf
+    l_xy = _box_filter_3d(ux * uy, width=filter_width) - uxf * uyf
+    l_xz = _box_filter_3d(ux * uz, width=filter_width) - uxf * uzf
+    l_yy = _box_filter_3d(uy * uy, width=filter_width) - uyf * uyf
+    l_yz = _box_filter_3d(uy * uz, width=filter_width) - uyf * uzf
+    l_zz = _box_filter_3d(uz * uz, width=filter_width) - uzf * uzf
+
+    m_xx = 2.0 * (4.0 * s_tilde_mag * s_tilde_xx - s_mag * s_xx)
+    m_xy = 2.0 * (4.0 * s_tilde_mag * s_tilde_xy - s_mag * s_xy)
+    m_xz = 2.0 * (4.0 * s_tilde_mag * s_tilde_xz - s_mag * s_xz)
+    m_yy = 2.0 * (4.0 * s_tilde_mag * s_tilde_yy - s_mag * s_yy)
+    m_yz = 2.0 * (4.0 * s_tilde_mag * s_tilde_yz - s_mag * s_yz)
+    m_zz = 2.0 * (4.0 * s_tilde_mag * s_tilde_zz - s_mag * s_zz)
+
+    num = (l_xx * m_xx + l_yy * m_yy + l_zz * m_zz).mean()
+    num = num + 2.0 * (l_xy * m_xy + l_xz * m_xz + l_yz * m_yz).mean()
+    den = (m_xx**2 + m_yy**2 + m_zz**2).mean()
+    den = den + 2.0 * (m_xy**2 + m_xz**2 + m_yz**2).mean()
+    cs2 = torch.clamp(num / torch.clamp(den, min=1e-12), min=lambda_clip, max=0.1)
+    cs = float(torch.sqrt(torch.clamp(cs2, min=0.0)).item())
+
+    nu = (tau - 0.5) / 3.0
+    nu_t = (cs**2) * s_mag
+    tau_eff = torch.clamp(0.5 + 3.0 * (nu + nu_t), min=0.5001)
+
+    # ---- MRT collision with per-cell stress relaxation rate ----
+    M, M_inv = _get_d3q27_mrt_matrices(device)
+    s_nu_flat = (1.0 / tau_eff).reshape(-1)  # (N,)
+
+    nz, ny, nx = f.shape[1], f.shape[2], f.shape[3]
+    f_flat = f.reshape(27, -1)
+    feq_flat = feq.reshape(27, -1)
+
+    m = M @ f_flat
+    m_eq = M @ feq_flat
+    dm = m - m_eq
+
+    # Fixed relaxation rates for non-stress modes
+    s_fixed = torch.tensor(
+        [
+            0.0,   # 0  mass
+            0.0,   # 1  jx
+            0.0,   # 2  jy
+            0.0,   # 3  jz
+            s_e,   # 4  energy
+            0.0,   # 5  Nxx  – overridden below
+            0.0,   # 6  Nyy  – overridden below
+            0.0,   # 7  Pxy  – overridden below
+            0.0,   # 8  Pxz  – overridden below
+            0.0,   # 9  Pyz  – overridden below
+            s_q,   # 10
+            s_q,   # 11
+            s_q,   # 12
+            s_q,   # 13
+            s_q,   # 14
+            s_q,   # 15
+            s_q,   # 16
+            s_q,   # 17
+            s_q,   # 18
+            s_eps, # 19
+            s_pi,  # 20
+            s_pi,  # 21
+            s_pi,  # 22
+            s_pi,  # 23
+            s_pi,  # 24
+            s_pi,  # 25
+            s_pi,  # 26
+        ],
+        dtype=f.dtype,
+        device=device,
+    )
+    m_star = m - s_fixed.unsqueeze(1) * dm
+    # Override stress modes 5–9 with spatially varying dynamic rate
+    for k in (5, 6, 7, 8, 9):
+        m_star[k] = m[k] - s_nu_flat * dm[k]
+    return (M_inv @ m_star).reshape(27, nz, ny, nx)
+
+
 __all__ = [
     # Smagorinsky
     "collide_smagorinsky_bgk",
@@ -1175,6 +1839,9 @@ __all__ = [
     "collide_smagorinsky_mrt27",
     "collide_dynamic_smagorinsky_bgk",
     "collide_dynamic_smagorinsky_bgk3d",
+    "collide_dynamic_smagorinsky_mrt3d",
+    "collide_dynamic_smagorinsky_bgk27",
+    "collide_dynamic_smagorinsky_mrt27",
     # WALE
     "collide_wale_bgk",
     "collide_wale_bgk3d",

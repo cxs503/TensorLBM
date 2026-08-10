@@ -48,6 +48,7 @@ Brentner, K.S. & Farassat, F. (1998).
     "Modeling aerodynamically generated sound of helicopter rotors."
     *Prog. Aerospace Sci.* 34, 67–120.
 """
+
 from __future__ import annotations
 
 import math
@@ -72,6 +73,7 @@ _REF_PRESSURE = 20.0e-6  # 20 µPa – acoustic reference pressure in Pa
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AcousticObserver:
     """Far-field observer position.
@@ -82,6 +84,7 @@ class AcousticObserver:
         z: Observer z-coordinate (use 0 for 2-D problems).
         label: Optional human-readable label.
     """
+
     x: float
     y: float
     z: float = 0.0
@@ -103,6 +106,7 @@ class FWHSurface:
         dt: Physical time step (seconds).
         c0: Speed of sound (m/s; default 343 for air at 20 °C).
     """
+
     positions: torch.Tensor
     normals: torch.Tensor
     areas: torch.Tensor
@@ -125,6 +129,7 @@ class FWHResult:
         oaspl: Overall A-weighted SPL for each observer (dB).
         observers: List of :class:`AcousticObserver` objects.
     """
+
     time: list[float]
 
     p_prime: torch.Tensor
@@ -137,6 +142,7 @@ class FWHResult:
 # ---------------------------------------------------------------------------
 # Core computation
 # ---------------------------------------------------------------------------
+
 
 def _retarded_time_index(
     distance: float,
@@ -189,9 +195,19 @@ def compute_fwh_far_field(
         ``(n_observers, T)`` and *time* is a list of physical times.
     """
     n_src = surface.positions.shape[0]
+    if surface.pressure.ndim != 2 or surface.pressure.shape[0] != n_src:
+        raise ValueError("pressure must have shape (N, T) matching positions")
+    if surface.positions.shape != (n_src, 3) or surface.normals.shape != (n_src, 3):
+        raise ValueError("positions and normals must each have shape (N, 3)")
+    if surface.areas.shape != (n_src,):
+        raise ValueError("areas must have shape (N,)")
     _, T = surface.pressure.shape
+    if T < 2:
+        raise ValueError("at least two pressure samples are required")
     dt = surface.dt
     c0 = surface.c0
+    if dt <= 0.0 or c0 <= 0.0:
+        raise ValueError("dt and c0 must both be positive")
 
     # Time derivative of surface pressure via central differences
     p = surface.pressure  # (N, T)
@@ -201,39 +217,46 @@ def compute_fwh_far_field(
     dp_dt[:, -1] = (p[:, -1] - p[:, -2]) / dt
 
     pos = surface.positions  # (N, 3)
-    nrm = surface.normals    # (N, 3)
-    area = surface.areas     # (N,)
+    nrm = surface.normals  # (N, 3)
+    area = surface.areas  # (N,)
 
-    p_prime_all = torch.zeros(len(observers), T)
+    p_prime_all = p.new_zeros((len(observers), T))
+    src_idx = torch.arange(n_src, device=p.device)
 
     for obs_idx, obs in enumerate(observers):
-        obs_pos = torch.tensor([obs.x, obs.y, obs.z], dtype=torch.float32)
+        obs_pos = torch.tensor([obs.x, obs.y, obs.z], dtype=pos.dtype, device=pos.device)
 
         # Vector from source points to observer
-        r_vec = obs_pos.unsqueeze(0) - pos          # (N, 3)
+        r_vec = obs_pos.unsqueeze(0) - pos  # (N, 3)
         r_dist = torch.norm(r_vec, dim=-1).clamp(min=1e-10)  # (N,)
-        r_hat = r_vec / r_dist.unsqueeze(-1)         # (N, 3)
+        r_hat = r_vec / r_dist.unsqueeze(-1)  # (N, 3)
 
         # Directivity: r̂ · n̂
-        cos_theta = (r_hat * nrm).sum(dim=-1)        # (N,)
+        cos_theta = (r_hat * nrm).sum(dim=-1)  # (N,)
 
-        p_obs = torch.zeros(T)
+        p_obs = p.new_zeros(T)
+        delay_samples = (r_dist / (c0 * dt)).round().long()
 
         for t_idx in range(T):
-            # Retarded time index for each source point
-            delay_samples = (r_dist / (c0 * dt)).round().long()
-            tau_indices = (t_idx - delay_samples).clamp(0, T - 1)
+            # No contribution exists before the propagation delay.  Clamping
+            # a negative retarded index to zero copied p(t=0) into the
+            # pre-arrival signal and violated causality for a nonzero source.
+            valid = t_idx >= delay_samples
+            if not bool(valid.any()):
+                continue
+            tau_indices = t_idx - delay_samples[valid]
 
             # Far-field (1/r) term
-            dp_tau = dp_dt[torch.arange(n_src), tau_indices]   # (N,)
-            far_field = (dp_tau / r_dist) * cos_theta * area    # (N,)
+            dp_tau = dp_dt[src_idx[valid], tau_indices]
+            far_field = (dp_tau / r_dist[valid]) * cos_theta[valid] * area[valid]
 
             # Near-field (1/r²) term
-            p_tau = p[torch.arange(n_src), tau_indices]         # (N,)
-            near_field = (p_tau / (r_dist * r_dist)) * cos_theta * area  # (N,)
+            p_tau = p[src_idx[valid], tau_indices]
+            near_field = (p_tau / (r_dist[valid] * r_dist[valid])) * cos_theta[valid] * area[valid]
 
-            p_obs[t_idx] = (far_field.sum() / (_TWO_PI * 2.0 * c0)
-                            + near_field.sum() / (_TWO_PI * 2.0))
+            p_obs[t_idx] = far_field.sum() / (_TWO_PI * 2.0 * c0) + near_field.sum() / (
+                _TWO_PI * 2.0
+            )
 
         p_prime_all[obs_idx] = p_obs
 
@@ -265,13 +288,13 @@ def compute_spl_spectrum(
     if n_fft is None:
         n_fft = T
 
-    # Apply Hann window to reduce spectral leakage
-    window = torch.hann_window(min(n_fft, T), periodic=False)
     # Pad or truncate to n_fft
     sig = p_prime[:, :n_fft]
     if sig.shape[1] < n_fft:
         pad = torch.zeros(n_obs, n_fft - sig.shape[1])
         sig = torch.cat([sig, pad], dim=1)
+    # Apply Hann window to reduce spectral leakage (window length must match sig)
+    window = torch.hann_window(n_fft, periodic=False)
     sig = sig * window.unsqueeze(0)
 
     # Real FFT → one-sided PSD
@@ -333,9 +356,11 @@ def extract_surface_pressure(
             iy, ix = int(surface_indices[n_idx, 0]), int(surface_indices[n_idx, 1])
             p_history[n_idx] = rho_history[:, iy, ix] * cs2
         else:
-            iz, iy, ix = (int(surface_indices[n_idx, 0]),
-                          int(surface_indices[n_idx, 1]),
-                          int(surface_indices[n_idx, 2]))
+            iz, iy, ix = (
+                int(surface_indices[n_idx, 0]),
+                int(surface_indices[n_idx, 1]),
+                int(surface_indices[n_idx, 2]),
+            )
             p_history[n_idx] = rho_history[:, iz, iy, ix] * cs2
 
     # Remove mean (fluctuation only)
@@ -367,6 +392,7 @@ def extract_surface_pressure(
 # Overall A-weighted SPL
 # ---------------------------------------------------------------------------
 
+
 def oaspl(
     p_prime: torch.Tensor,
     dt: float,
@@ -383,7 +409,7 @@ def oaspl(
     Returns:
         List of OASPL values in dB re 20 µPa, one per observer.
     """
-    p_rms = torch.sqrt((p_prime ** 2).mean(dim=-1))  # (n_observers,)
+    p_rms = torch.sqrt((p_prime**2).mean(dim=-1))  # (n_observers,)
     eps = torch.finfo(torch.float32).eps
     oaspl_vals = 20.0 * torch.log10(p_rms.clamp(min=eps) / _REF_PRESSURE)
     return oaspl_vals.tolist()

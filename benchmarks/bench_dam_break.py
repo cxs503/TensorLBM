@@ -11,6 +11,7 @@ Usage::
     PYTHONPATH=src python benchmarks/bench_dam_break.py --fast
     PYTHONPATH=src python benchmarks/bench_dam_break.py --models cg fe
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,9 +28,7 @@ _ALL_MODELS = ("sc", "scmp", "cg", "fe")
 
 def _row(label: str, value: float, ref: float) -> None:
     err = abs(value - ref)
-    print(
-        f"  {label:<30} simulated={value:8.4f}  ref={ref:8.4f}  abs_err={err:8.4f}"
-    )
+    print(f"  {label:<30} simulated={value:8.4f}  ref={ref:8.4f}  abs_err={err:8.4f}")
 
 
 def _read_front_series(front_csv: Path) -> list[tuple[float, float]]:
@@ -55,8 +54,7 @@ def _compute_front_metrics(front_series: list[tuple[float, float]]) -> dict[str,
     mae = sum(abs(e) for e in errs) / len(errs)
     final_abs_error = abs(errs[-1])
     monotonic_front = all(
-        x_values[idx] <= x_values[idx + 1] + 1e-9
-        for idx in range(len(x_values) - 1)
+        x_values[idx] <= x_values[idx + 1] + 1e-9 for idx in range(len(x_values) - 1)
     )
     return {
         "rmse_vs_martin_moyce": rmse,
@@ -73,13 +71,13 @@ def _build_case_config(model: str, fast: bool, output_root: Path, device: str) -
         nx, ny, dam_width, n_steps, output_interval = 240, 120, 60, 3000, 300
 
     g_by_model = {
-        "sc": 0.5,   # lower G for SC stability (0.9→NaN at tau<1.5)
+        "sc": 0.5,  # lower G for SC stability (0.9→NaN at tau<1.5)
         "scmp": 4.0,
         "cg": 0.9,
         "fe": 0.9,
     }
     tau_by_model = {
-        "sc": 1.5,   # SC needs higher tau for stability
+        "sc": 1.5,  # SC needs higher tau for stability
         "scmp": 1.0,
         "cg": 1.0,
         "fe": 1.0,
@@ -201,7 +199,7 @@ def main() -> None:
     parser.add_argument(
         "--device",
         default="cpu",
-        choices=["cpu", "cuda", "mps"],
+        choices=["cpu", "sdaa", "cuda", "mps"],
         help="PyTorch device (default: cpu)",
     )
     args = parser.parse_args()

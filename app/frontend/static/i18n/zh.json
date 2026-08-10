@@ -25,7 +25,8 @@
     "cad_propeller": "Propeller",
     "sim_group": "Simulation",
     "results_group": "Results",
-    "ai_group": "AI / Advanced"
+    "ai_group": "AI / Advanced",
+    "generic": "通用 CFD (STL)"
   },
   "ws": {
     "connecting": "Connecting…",
@@ -926,6 +927,9 @@
     "ctrl_zoom": "Scroll: zoom",
     "ctrl_probe": "Shift+click: place probe",
     "drop_hint": "Upload an STL file to begin"
+  },
+  "generic": {
+    "title": "通用 CFD (STL)"
   },
   "shortcuts": {
     "show_shortcuts": "Show this shortcuts reference",

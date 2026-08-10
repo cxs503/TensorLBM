@@ -1,0 +1,32 @@
+{
+  "schema": "tensorlbm-suboff-nested-candidate-evidence-v1",
+  "status": "rejected",
+  "candidate": {
+    "scaled_inner_geometry": true,
+    "stress_exchange_distance": 2.109375,
+    "regularize_restriction": true,
+    "regularize_prolongation": true,
+    "interface_filter_width": 2,
+    "interface_filter_strength": 1.0
+  },
+  "aligned_health_comparison": {
+    "common_step_count": 34,
+    "latest_common_step": 2040,
+    "baseline_maximum_speed": 0.19061227142810822,
+    "candidate_maximum_speed": 0.20036061108112335,
+    "baseline_minimum_population": 1.862645149230957e-9,
+    "candidate_minimum_population": -0.00001570116546645295,
+    "speed_0.1_step": {"baseline": 1500, "candidate": 1500},
+    "speed_0.15_step": {"baseline": 1560, "candidate": 1560},
+    "population_at_or_below_1e-8_step": {"baseline": 1560, "candidate": 1500},
+    "collision_limiter_step": {"baseline": null, "candidate": 1500}
+  },
+  "provenance": {
+    "log": "suboff-nested-v10-l90-rejected-population-health-step2040.log",
+    "log_sha256": "fb658fbb0623831b16ffd5ee13d0891c9c7fe3bd8ed615bc6fb25fed6061f1b3",
+    "checkpoint": "suboff-nested-v10-l90-rejected-population-health-step1500.ckpt",
+    "checkpoint_sha256": "81183c00ca937b8ec2b7d96a8122eaaaa3a34788ff89999cca2352db1c8b1c41"
+  },
+  "force_evidence_eligible": false,
+  "conclusion": "Combining the audited kinetic filter, regularized prolongation and scaled geometry does not remove the half-wall-activation interface mode."
+}

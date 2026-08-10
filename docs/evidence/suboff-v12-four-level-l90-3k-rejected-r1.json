@@ -1,0 +1,98 @@
+{
+  "schema": "tensorlbm-suboff-four-level-physical-assessment-v1",
+  "status": "integration_pass_physical_accuracy_rejected",
+  "physical_validation": false,
+  "configuration": {
+    "hull_type": "bare_hull",
+    "root_hull_length_cells": 90.0,
+    "finest_hull_length_cells": 720.0,
+    "levels": 4,
+    "total_allocated_cells": 17391432,
+    "collision_model": "natural_kbc",
+    "collision_resolved_reynolds": 100000.0,
+    "stress_exchange_distance_cells": 1.0,
+    "stress_exchange_distance_over_finest_length": 0.001388888888888889,
+    "required_exchange_distance_over_finest_length": 0.01171875,
+    "force_samples_per_root_step": 8,
+    "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2"
+  },
+  "numerical_integration": {
+    "completed_steps": 3000,
+    "finite": true,
+    "minimum_observed_population": 0.005573516711592674,
+    "maximum_observed_speed": 0.07536307722330093,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_wall_sample_rejected_fraction": 0.0,
+    "maximum_reflux_applied_correction_fraction_by_interface": [
+      6.662702958237787e-7,
+      6.801922154409112e-7,
+      4.228520253946044e-7
+    ],
+    "maximum_source_corrected_observer_difference_pct": 0.04354470493285865,
+    "auxiliary_cv_difference_pct": {
+      "4": 0.038330863207117316,
+      "12": 0.035542345859511985
+    },
+    "measured_peak_allocated_gib": 15.172758102416992,
+    "integration_smoke_admitted": true
+  },
+  "resistance": {
+    "statistics_samples": 1500,
+    "sampling_convective_times": 1.0,
+    "mean_control_volume_resistance_n": 125.98004594962867,
+    "mean_bfl_plus_wall_stress_n": 126.1576680340107,
+    "mean_bfl_pressure_n": 30.791966959816904,
+    "mean_wall_shear_n": 95.36570107419372,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 44.14192900415179,
+    "surface_observer_difference_pct": 16.95369627641009,
+    "stationarity": {
+      "relative_range_pct": 1.4360625212103553,
+      "half_mean_drift_pct": 0.07834088487174072,
+      "linear_trend_pct": 0.3435206211025593,
+      "confidence95_half_width_pct": 0.35395869477166914,
+      "effective_sample_count": 10.234792195431599
+    }
+  },
+  "wall_exchange": {
+    "samples": 25,
+    "mean_distance_cells": 1.0775457620620728,
+    "minimum_y_plus": 0.42888888716697693,
+    "mean_y_plus": 813.9135992431641,
+    "maximum_y_plus": 1278.0477294921875,
+    "scaling_gate_met": false
+  },
+  "component_scale_audit": {
+    "scope": "diagnostic_only_not_a_cfd_correction",
+    "ittc_1957_friction_resistance_n": 79.32187377597819,
+    "mean_cfd_wall_shear_n": 95.36570107419372,
+    "wall_shear_vs_ittc_pct": 20.226233363481438,
+    "experimental_total_minus_ittc_friction_n": 8.078126224021815,
+    "mean_cfd_pressure_n": 30.791966959816904,
+    "cfd_pressure_over_inferred_residual": 3.81177096097499,
+    "interpretation": "Both components are high in the underscaled one-cell exchange pilot. The comparison diagnoses scale; neither ITTC friction nor the inferred residual replaces a CFD component."
+  },
+  "decision": {
+    "admit_as_four_level_integration": true,
+    "admit_to_time_convergence": false,
+    "admit_to_grid_convergence": false,
+    "admit_physical_accuracy": false,
+    "reasons": [
+      "The mean resistance is 44.14 percent above experiment.",
+      "Only one sampling convective time is available.",
+      "The one-cell exchange distance violates the fixed physical exchange-height ratio used by the admitted flat-plate wall-model family.",
+      "The independent control-volume and link-force observers close, but the separate surface-pressure integration differs by 16.95 percent and is not an admitted force observer."
+    ],
+    "next": [
+      "Use 8.4375 finest cells at L720 to restore the 0.01171875 exchange-height ratio in the v24 long trajectory.",
+      "Use corrected-boundary Re=200000 and Re=500000 pilots to test whether the excess pressure component decreases with collision Reynolds number.",
+      "Do not subtract the ITTC line or any empirical pressure correction from the CFD result."
+    ]
+  },
+  "provenance": {
+    "remote_result": "results/amr_campaign_20260801/suboff-nested-v12-equivalent-l90-3k.json",
+    "remote_result_sha256": "00fdbfeffc14658c2c87e16d3fba00004dc689dfae8c67810226ff08d24a64f0",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v12-equivalent-l90-3k.ckpt",
+    "remote_checkpoint_sha256": "3a1dbf96cfa17c341dbd7ef1f9824d1cbefe37687f2dc0061f6e8cc3b0583e3a"
+  }
+}

@@ -1,4 +1,5 @@
 """Lifecycle contracts for the Körner free-surface hull caller."""
+
 from __future__ import annotations
 
 import pytest

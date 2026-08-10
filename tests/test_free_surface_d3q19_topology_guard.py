@@ -4,6 +4,7 @@ This test owns an oracle independent from the production neighbour traversal.
 It validates every moving D3Q19 link, including edge diagonals and periodic
 seams, across a real conversion plus its following real timestep.
 """
+
 from __future__ import annotations
 
 import ast
@@ -30,8 +31,12 @@ def _field_delta(q: int) -> tuple[int, int, int]:
     return int(C[q, 2]), int(C[q, 1]), int(C[q, 0])
 
 
-def _source_of(site: tuple[int, int, int], q: int, shape: tuple[int, int, int]) -> tuple[int, int, int]:
-    return tuple((index - delta) % extent for index, delta, extent in zip(site, _field_delta(q), shape))  # type: ignore[return-value]
+def _source_of(
+    site: tuple[int, int, int], q: int, shape: tuple[int, int, int]
+) -> tuple[int, int, int]:
+    return tuple(
+        (index - delta) % extent for index, delta, extent in zip(site, _field_delta(q), shape)
+    )  # type: ignore[return-value]
 
 
 def _assert_full18_separation(flags: torch.Tensor) -> None:
@@ -43,7 +48,9 @@ def _assert_full18_separation(flags: torch.Tensor) -> None:
     assert not violations, f"direct D3Q19 LIQUID→GAS links: {violations}"
 
 
-def _fixture(selected_q: int, at_seam: bool) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+def _fixture(
+    selected_q: int, at_seam: bool
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     shape = (5, 6, 7)
     if at_seam:
         dz, dy, dx = _field_delta(selected_q)

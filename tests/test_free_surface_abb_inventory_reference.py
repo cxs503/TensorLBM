@@ -1,4 +1,5 @@
 """TDD specification for isolated ABB population-to-inventory accounting."""
+
 from __future__ import annotations
 
 import pytest
@@ -37,8 +38,15 @@ def test_reference_maps_the_current_solver_abb_reconstruction_link_by_link() -> 
     f, fill, flags, solid, ux = _state()
     ledger: dict[str, float] = {}
     out, _, out_flags, _, _ = free_surface_step(
-        f, fill, flags, solid, mass=fill.clone(), tau=1.0, rho_gas=0.001,
-        mass_ledger=ledger, freeze_topology=True,
+        f,
+        fill,
+        flags,
+        solid,
+        mass=fill.clone(),
+        tau=1.0,
+        rho_gas=0.001,
+        mass_ledger=ledger,
+        freeze_topology=True,
     )
     rho, solver_ux, solver_uy, solver_uz = macroscopic3d(f)
     # With tau=1, the solver's BGK collision replaces f with its local feq.
@@ -48,10 +56,17 @@ def test_reference_maps_the_current_solver_abb_reconstruction_link_by_link() -> 
         torch.zeros_like(f),
     )
     # Solver zeroes pre-existing GAS cells after pull streaming, before ABB.
-    streamed = torch.where((flags != GAS).unsqueeze(0), _stream19_roll(f_post), torch.zeros_like(f_post))
+    streamed = torch.where(
+        (flags != GAS).unsqueeze(0), _stream19_roll(f_post), torch.zeros_like(f_post)
+    )
     change = abb_reconstruction_density_change(
-        f_post, streamed, flags, rho_gas=0.001, ux=solver_ux,
-        uy=solver_uy, uz=solver_uz,
+        f_post,
+        streamed,
+        flags,
+        rho_gas=0.001,
+        ux=solver_ux,
+        uy=solver_uy,
+        uz=solver_uz,
     )
 
     assert torch.equal(out_flags, flags)
@@ -65,12 +80,20 @@ def test_abb_inventory_change_requires_an_explicit_liquid_bulk_owner_per_link() 
     rho, solver_ux, solver_uy, solver_uz = macroscopic3d(f)
     f_post = torch.where((flags != GAS).unsqueeze(0), f, torch.zeros_like(f))
     change = abb_reconstruction_density_change(
-        f_post, _stream19_roll(f_post), flags, rho_gas=0.001, ux=solver_ux,
-        uy=solver_uy, uz=solver_uz,
+        f_post,
+        _stream19_roll(f_post),
+        flags,
+        rho_gas=0.001,
+        ux=solver_ux,
+        uy=solver_uy,
+        uz=solver_uz,
     )
     inventory = ABBInventoryState.from_flags_and_values(
-        flags, bulk_liquid=torch.where(flags == LIQUID, torch.full_like(ux, 10.0), torch.zeros_like(ux)),
-        interface_inventory=torch.where(flags == INTERFACE, torch.full_like(ux, 10.0), torch.zeros_like(ux)),
+        flags,
+        bulk_liquid=torch.where(flags == LIQUID, torch.full_like(ux, 10.0), torch.zeros_like(ux)),
+        interface_inventory=torch.where(
+            flags == INTERFACE, torch.full_like(ux, 10.0), torch.zeros_like(ux)
+        ),
     )
 
     with pytest.raises(ABBInventoryOwnershipError, match="explicit LIQUID bulk owner"):
@@ -82,12 +105,20 @@ def test_closed_frozen_abb_transaction_conserves_when_every_link_has_an_owner() 
     rho, solver_ux, solver_uy, solver_uz = macroscopic3d(f)
     f_post = torch.where((flags != GAS).unsqueeze(0), f, torch.zeros_like(f))
     change = abb_reconstruction_density_change(
-        f_post, _stream19_roll(f_post), flags, rho_gas=0.001, ux=solver_ux,
-        uy=solver_uy, uz=solver_uz,
+        f_post,
+        _stream19_roll(f_post),
+        flags,
+        rho_gas=0.001,
+        ux=solver_ux,
+        uy=solver_uy,
+        uz=solver_uz,
     )
     inventory = ABBInventoryState.from_flags_and_values(
-        flags, bulk_liquid=torch.where(flags == LIQUID, torch.full_like(ux, 10.0), torch.zeros_like(ux)),
-        interface_inventory=torch.where(flags == INTERFACE, torch.full_like(ux, 10.0), torch.zeros_like(ux)),
+        flags,
+        bulk_liquid=torch.where(flags == LIQUID, torch.full_like(ux, 10.0), torch.zeros_like(ux)),
+        interface_inventory=torch.where(
+            flags == INTERFACE, torch.full_like(ux, 10.0), torch.zeros_like(ux)
+        ),
     )
     # This is an accounting reference, not a solver correction: choosing this
     # nearby liquid strip as owner is explicit policy supplied by the caller.
@@ -108,15 +139,28 @@ def test_multistep_closed_runtime_attributes_unexplained_one_sided_exchange_drif
     runtime: dict[str, object] = {}
     for _ in range(3):
         f, fill, flags, mass, _ = free_surface_step(
-            f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=0.001,
-            freeze_topology=True, runtime_ledger=runtime,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            rho_gas=0.001,
+            freeze_topology=True,
+            runtime_ledger=runtime,
         )
 
     steps = runtime["steps"]
     assert isinstance(steps, list) and len(steps) == 3
     assert all(step["direct_liquid_gas_links"] == 0 for step in steps)
-    assert all(step["mass_unit"] == "lattice liquid mass (sum of independent mass field)" for step in steps)
+    assert all(
+        step["mass_unit"] == "lattice liquid mass (sum of independent mass field)" for step in steps
+    )
     assert all(not step["closed_domain_conserved"] for step in steps)
     assert all(abs(step["unexplained_residual"]) > 1.0e-6 for step in steps)
-    assert all(step["unexplained_residual"] == pytest.approx(step["liquid_interface_interface_credit"], abs=5.0e-6) for step in steps)
+    assert all(
+        step["unexplained_residual"]
+        == pytest.approx(step["liquid_interface_interface_credit"], abs=5.0e-6)
+        for step in steps
+    )
     assert all("one-sided liquid/interface" in step["diagnostic"] for step in steps)

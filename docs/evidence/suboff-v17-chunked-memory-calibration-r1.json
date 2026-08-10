@@ -1,0 +1,83 @@
+{
+  "schema": "tensorlbm-chunked-collision-memory-evidence-v1",
+  "status": "allocation_and_numerical_path_pass",
+  "physical_validation": false,
+  "source_commit": "00269ff",
+  "device": {
+    "name": "NVIDIA GeForce RTX 3090",
+    "total_gib": 23.56072998046875,
+    "torch": "2.12.1+cu130",
+    "cuda": "13.0"
+  },
+  "cell_local_collision_calibration": {
+    "shape_zyx": [96, 96, 512],
+    "cells": 4718592,
+    "tau": 0.500648,
+    "chunk_cells": 262144,
+    "base_allocated_gib": 0.3339853286743164,
+    "whole_level_peak_gib": 4.214362144470215,
+    "chunked_peak_gib": 0.8896703720092773,
+    "whole_level_incremental_gib": 3.8803768157958984,
+    "chunked_incremental_gib": 0.5556850433349609,
+    "peak_reduction_pct": 78.88956047176346,
+    "sample_maximum_absolute_difference": 0.0,
+    "whole_level_population_sum": 4718589.0,
+    "chunked_population_sum": 4718589.0
+  },
+  "four_level_aff1_l90_allocation": {
+    "allocated_cells_by_level": [3645000, 824832, 2425920, 10495680],
+    "total_allocated_cells": 17391432,
+    "finest_hull_length_cells": 720.0,
+    "collision_chunk_cells": 262144,
+    "estimated_peak_gib_at_1100_bytes_per_cell": 17.816736549139023,
+    "measured_peak_allocated_gib": 14.629855632781982,
+    "pre_allocation_free_gib": 22.87628173828125,
+    "post_persistent_allocation_free_gib": 16.58721923828125,
+    "runtime_reserve_target_gib": 1.0,
+    "runtime_reserve_admitted": true,
+    "finite": true,
+    "minimum_population": 0.023070435971021652,
+    "maximum_speed": 0.060010261833667755,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_reflux_applied_correction_fraction": 2.186580516649883e-08,
+    "force_samples_observed": 8,
+    "force_samples_expected": 8,
+    "allocation_path_admitted": true,
+    "short_physics_status": "not_assessed_one_root_step"
+  },
+  "diagnostic_low_memory_wall_path": {
+    "paired_direction_macroscopic_fields": true,
+    "guo_force_direction_chunk_size": 4,
+    "persistent_allocated_gib": 3.3859481811523438,
+    "measured_peak_allocated_gib": 12.59660005569458,
+    "additional_peak_reduction_pct": 13.8979879783049,
+    "effective_peak_bytes_per_total_allocated_cell": 777.7103300061777,
+    "finite": true,
+    "maximum_positivity_limited_fraction": 0.0,
+    "production_default": false,
+    "reason": "The paired-direction moment algebra passes unit equivalence but changes large-grid wall samples at floating-point roundoff level; a long-time statistical A/B is required before promotion."
+  },
+  "sources": [
+    {
+      "path": "/tmp/tensorlbm-v17-local/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1.json",
+      "sha256": "2b00d069af41864dc0c796618a043d7290931f85b253e1df53a2237374816b5f"
+    },
+    {
+      "path": "/tmp/tensorlbm-v17-local/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1.ckpt",
+      "sha256": "03076601c5ddb20f29590a4c403c4cb22d63dbd7d93fc1cc76f0fadc2d499506"
+    },
+    {
+      "path": "/tmp/tensorlbm-v17-local-r3/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1.json",
+      "sha256": "a957dc183e51b8471c0266610ae0304240413a9f357d0b7885a7810312e0f723"
+    },
+    {
+      "path": "/tmp/tensorlbm-v17-local-r3/suboff-nested-v17-aff1-four-level-l90-chunked-allocation-r1.ckpt",
+      "sha256": "6f450e711767e922467f00c28948356f5d2f927c1edcc00dbea535685679ceca"
+    }
+  ],
+  "decision": [
+    "Bounded-memory natural-KBC changes the collision result by no measured amount in the sampled calibration while reducing collision peak memory by 78.89 percent.",
+    "The complete four-level AFF-1 L90 one-step path, including geometry, wall treatment, recursive subcycling, restriction and reflux, fits one 24 GiB RTX 3090 with measured peak allocation 14.63 GiB.",
+    "A geometrically similar L120 hierarchy still requires the queued multi-device equivalence gate; this evidence does not authorize a single-GPU L120 launch or any resistance claim."
+  ]
+}

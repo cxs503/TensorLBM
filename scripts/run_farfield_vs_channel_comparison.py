@@ -15,6 +15,7 @@ import json
 import time
 from pathlib import Path
 
+from tensorlbm.cylinder_bfl_control_volume import CYLINDER_RE100_CD_REFERENCE
 from tensorlbm.cylinder_cross_validation import run_single_combination as run_cylinder
 from tensorlbm.sphere_cross_validation import (
     SphereCrossValidationConfig,
@@ -24,8 +25,8 @@ from tensorlbm.sphere_cross_validation import (
 
 # Schiller-Naumann reference Cd for Re=100 sphere
 SPHERE_REF_CD = _schiller_naumann(100.0)
-# Literature reference Cd for Re=100 cylinder (2-D)
-CYLINDER_REF_CD = 1.33  # Henderson (1995), Re=100 2-D cylinder
+# Henderson (1995) Table I fit evaluated at Re=100 for a 2-D cylinder.
+CYLINDER_REF_CD = CYLINDER_RE100_CD_REFERENCE
 
 
 def run_sphere_comparison() -> list[dict]:

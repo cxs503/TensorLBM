@@ -37,6 +37,7 @@ Run
 ---
     PYTHONPATH=src python examples/benchmark_magnus_cylinder.py --device cpu --steps 3000
 """
+
 from __future__ import annotations
 
 import argparse
@@ -60,6 +61,7 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
+
 
 def build_sponge_mask(
     nx: int,
@@ -180,17 +182,13 @@ def compute_force_momentum_exchange(
         cyq = int(c_dev[q, 1].item())
         czq = int(c_dev[q, 2].item())
         # A population q at x_s arrived from the fluid node x_s-c_q.
-        neighbour_is_solid = torch.roll(
-            solid, shifts=(czq, cyq, cxq), dims=(0, 1, 2)
-        )
+        neighbour_is_solid = torch.roll(solid, shifts=(czq, cyq, cxq), dims=(0, 1, 2))
         boundary = solid & ~neighbour_is_solid
         if boundary.any():
             fsum = f[q][boundary].sum()
             impulse = 2.0 * fsum
             if moving:
-                rho_source = torch.roll(
-                    rho, shifts=(czq, cyq, cxq), dims=(0, 1, 2)
-                )
+                rho_source = torch.roll(rho, shifts=(czq, cyq, cxq), dims=(0, 1, 2))
                 cu_wall = cxq * uw_x + cyq * uw_y
                 # Wall momentum exchange for the same moving-link rule used
                 # in apply_moving_bounceback.
@@ -225,7 +223,7 @@ def apply_moving_bounceback(
     The density ρ is approximated as 1 (lattice units, far-field).
     """
     # Wall velocity field on the full grid (only used inside solid)
-    uw_x = -omega_eff * (yy - cy)   # (nz, ny, nx)
+    uw_x = -omega_eff * (yy - cy)  # (nz, ny, nx)
     uw_y = omega_eff * (xx - cx)
     uw_z = torch.zeros_like(uw_x)
 
@@ -244,9 +242,7 @@ def apply_moving_bounceback(
         # At a solid node x_s, f_q arrived from x_s-c_q.  Only such incoming
         # fluid links are reflected into qbar.  torch.roll(...,+c_q) indexes
         # x_s-c_q at x_s.
-        source_is_solid = torch.roll(
-            solid, shifts=(czq, cyq, cxq), dims=(0, 1, 2)
-        )
+        source_is_solid = torch.roll(solid, shifts=(czq, cyq, cxq), dims=(0, 1, 2))
         link = solid & ~source_is_solid
         rho_source = torch.roll(rho, shifts=(czq, cyq, cxq), dims=(0, 1, 2))
         cu_wall = cxq * uw_x + cyq * uw_y + czq * uw_z
@@ -260,10 +256,19 @@ def apply_moving_bounceback(
 
 
 def apply_bouzidi_moving_bounceback(
-    f_post: torch.Tensor, f_stream: torch.Tensor, solid: torch.Tensor,
-    phi: torch.Tensor, opp: torch.Tensor, c_dev: torch.Tensor,
-    w_dev: torch.Tensor, omega_eff: float, cx: float, cy: float,
-    yy: torch.Tensor, xx: torch.Tensor, R: float | None = None,
+    f_post: torch.Tensor,
+    f_stream: torch.Tensor,
+    solid: torch.Tensor,
+    phi: torch.Tensor,
+    opp: torch.Tensor,
+    c_dev: torch.Tensor,
+    w_dev: torch.Tensor,
+    omega_eff: float,
+    cx: float,
+    cy: float,
+    yy: torch.Tensor,
+    xx: torch.Tensor,
+    R: float | None = None,
 ) -> torch.Tensor:
     """Bouzidi--Firdaouss--Lallemand moving BB on actual fluid--solid links.
 
@@ -276,9 +281,7 @@ def apply_bouzidi_moving_bounceback(
     fluid = ~solid
     for q in range(1, 19):
         cxq, cyq, czq = (int(c_dev[q, d].item()) for d in range(3))
-        destination_solid = torch.roll(
-            solid, shifts=(-czq, -cyq, -cxq), dims=(0, 1, 2)
-        )
+        destination_solid = torch.roll(solid, shifts=(-czq, -cyq, -cxq), dims=(0, 1, 2))
         link = fluid & destination_solid
         if not link.any():
             continue
@@ -298,21 +301,41 @@ def apply_bouzidi_moving_bounceback(
         upstream = torch.roll(f_post[q], shifts=(czq, cyq, cxq), dims=(0, 1, 2))
         near = 2.0 * delta * f_post[q] + (1.0 - 2.0 * delta) * upstream + correction
         qbar = int(opp[q].item())
-        far = ((f_post[q] + (2.0 * delta - 1.0) * f_post[qbar]) / (2.0 * delta)
-               + correction / (2.0 * delta))
+        far = (f_post[q] + (2.0 * delta - 1.0) * f_post[qbar]) / (2.0 * delta) + correction / (
+            2.0 * delta
+        )
         f_out[qbar] = torch.where(link, torch.where(delta <= 0.5, near, far), f_out[qbar])
     return f_out
 
 
 def compute_bouzidi_momentum_exchange(
-    f_post: torch.Tensor, solid: torch.Tensor, phi: torch.Tensor,
-    c_dev: torch.Tensor, w_dev: torch.Tensor, omega_eff: float,
-    cx: float, cy: float, yy: torch.Tensor, xx: torch.Tensor, R: float | None = None,
+    f_post: torch.Tensor,
+    solid: torch.Tensor,
+    phi: torch.Tensor,
+    c_dev: torch.Tensor,
+    w_dev: torch.Tensor,
+    omega_eff: float,
+    cx: float,
+    cy: float,
+    yy: torch.Tensor,
+    xx: torch.Tensor,
+    R: float | None = None,
 ) -> torch.Tensor:
     """Momentum exchange from the same BFL populations used at the wall."""
     reflected = apply_bouzidi_moving_bounceback(
-        f_post, torch.zeros_like(f_post), solid, phi, OPPOSITE.to(f_post.device),
-        c_dev, w_dev, omega_eff, cx, cy, yy, xx, R,
+        f_post,
+        torch.zeros_like(f_post),
+        solid,
+        phi,
+        OPPOSITE.to(f_post.device),
+        c_dev,
+        w_dev,
+        omega_eff,
+        cx,
+        cy,
+        yy,
+        xx,
+        R,
     )
     force = torch.zeros(3, dtype=f_post.dtype, device=f_post.device)
     fluid = ~solid
@@ -328,6 +351,7 @@ def compute_bouzidi_momentum_exchange(
 # --------------------------------------------------------------------------- #
 # Single-rotation-rate simulation
 # --------------------------------------------------------------------------- #
+
 
 def run_single_rotation(
     alpha: float,
@@ -425,7 +449,17 @@ def run_single_rotation(
 
         # --- 4. Force measurement (BFL momentum exchange) --------------
         F = compute_bouzidi_momentum_exchange(
-            f_post, solid, phi, c_dev, w_dev, omega_eff, cx, cy, yy_f, xx_f, R,
+            f_post,
+            solid,
+            phi,
+            c_dev,
+            w_dev,
+            omega_eff,
+            cx,
+            cy,
+            yy_f,
+            xx_f,
+            R,
         )
         F_drag = float(F[0].item())
         F_lift = float(F[1].item())
@@ -437,17 +471,31 @@ def run_single_rotation(
 
         # --- 5. Moving-wall BFL on cylinder links ----------------------
         f = apply_bouzidi_moving_bounceback(
-            f_post, f, solid, phi, opp, c_dev, w_dev,
-            omega_eff, cx, cy, yy_f, xx_f, R,
+            f_post,
+            f,
+            solid,
+            phi,
+            opp,
+            c_dev,
+            w_dev,
+            omega_eff,
+            cx,
+            cy,
+            yy_f,
+            xx_f,
+            R,
         )
         if not torch.isfinite(f).all().item() or not torch.isfinite(F).all().item():
-            print(f"    [数值失败] step {step}: non-finite force or post-bounce-back distribution", flush=True)
+            print(
+                f"    [数值失败] step {step}: non-finite force or post-bounce-back distribution",
+                flush=True,
+            )
             return float("nan"), float("nan"), False
 
         # --- 6. Logging -----------------------------------------------
         if step % log_every == 0 or step == n_steps:
-            cd_inst = 2.0 * F_drag / (u_in ** 2 * D)
-            cl_inst = 2.0 * F_lift / (u_in ** 2 * D)
+            cd_inst = 2.0 * F_drag / (u_in**2 * D)
+            cl_inst = 2.0 * F_lift / (u_in**2 * D)
             rho, ux, uy, uz = macroscopic3d(f)
             print(
                 f"    步数 {step:5d}:  Cd={cd_inst:+.4f}  Cl={cl_inst:+.4f}  "
@@ -459,8 +507,8 @@ def run_single_rotation(
     # --- Time-averaged coefficients ------------------------------------
     F_drag_mean = fx_accum / max(n_meas, 1)
     F_lift_mean = fy_accum / max(n_meas, 1)
-    cd_mean = 2.0 * F_drag_mean / (u_in ** 2 * D)
-    cl_mean = 2.0 * F_lift_mean / (u_in ** 2 * D)
+    cd_mean = 2.0 * F_drag_mean / (u_in**2 * D)
+    cl_mean = 2.0 * F_lift_mean / (u_in**2 * D)
 
     stable = math.isfinite(cl_mean) and math.isfinite(cd_mean) and n_meas > 0
     if not stable:
@@ -471,6 +519,7 @@ def run_single_rotation(
 # --------------------------------------------------------------------------- #
 # Full benchmark
 # --------------------------------------------------------------------------- #
+
 
 def run_magnus_benchmark(
     device: str = "cpu",
@@ -524,9 +573,14 @@ def run_magnus_benchmark(
         cl_mean, cd_mean, stable = run_single_rotation(
             alpha=alpha,
             omega=omega,
-            nx=nx, ny=ny, nz=nz,
-            R=R, cx=cx, cy=cy,
-            u_in=u_in, tau=tau,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            R=R,
+            cx=cx,
+            cy=cy,
+            u_in=u_in,
+            tau=tau,
             n_steps=steps,
             ramp_steps=ramp_steps,
             sponge_width=sponge_width,
@@ -545,16 +599,18 @@ def run_magnus_benchmark(
         else:
             error = 0.0 if cl_abs < 0.15 else 999.0
 
-        results.append({
-            "alpha": alpha,
-            "omega": omega,
-            "cl": cl_mean,
-            "cd": cd_mean,
-            "cl_abs": cl_abs,
-            "cl_glauert": cl_glauert,
-            "error": error,
-            "stable": stable,
-        })
+        results.append(
+            {
+                "alpha": alpha,
+                "omega": omega,
+                "cl": cl_mean,
+                "cd": cd_mean,
+                "cl_abs": cl_abs,
+                "cl_glauert": cl_glauert,
+                "error": error,
+                "stable": stable,
+            }
+        )
 
         print(
             f"  → 结果:  Cl = {cl_mean:+.4f}  Cd = {cd_mean:+.4f}  "
@@ -574,7 +630,10 @@ def run_magnus_benchmark(
         f"{'|Cl|':>8s}  {'Cl(Glauert)':>12s}  {'误差%':>8s}  {'Cd':>8s}"
     )
     print(header, flush=True)
-    print(f"  {'─'*5}  {'─'*10}  {'─'*10}  {'─'*8}  {'─'*12}  {'─'*8}  {'─'*8}", flush=True)
+    print(
+        f"  {'─' * 5}  {'─' * 10}  {'─' * 10}  {'─' * 8}  {'─' * 12}  {'─' * 8}  {'─' * 8}",
+        flush=True,
+    )
 
     for r in results:
         print(
@@ -593,8 +652,7 @@ def run_magnus_benchmark(
     print("=" * 70, flush=True)
 
     finite_results = all(
-        r["stable"] and all(math.isfinite(r[k]) for k in ("cl", "cd", "error"))
-        for r in results
+        r["stable"] and all(math.isfinite(r[k]) for k in ("cl", "cd", "error")) for r in results
     )
 
     # 1. Cl ≈ 0 at α = 0
@@ -665,47 +723,71 @@ if __name__ == "__main__":
         description="马格努斯效应基准测试: 旋转圆柱体升力 (Magnus effect benchmark)"
     )
     parser.add_argument(
-        "--device", default="cpu",
+        "--device",
+        default="cpu",
         help="设备: cpu / cuda / sdaa:N",
     )
     parser.add_argument(
-        "--steps", type=int, default=3000,
+        "--steps",
+        type=int,
+        default=3000,
         help="每个旋转率的LBM时间步数 (默认 3000)",
     )
     parser.add_argument(
-        "--nx", type=int, default=300,
+        "--nx",
+        type=int,
+        default=300,
         help="网格x方向 (默认 300)",
     )
     parser.add_argument(
-        "--ny", type=int, default=200,
+        "--ny",
+        type=int,
+        default=200,
         help="网格y方向 (默认 200)",
     )
     parser.add_argument(
-        "--R", type=float, default=10.0,
+        "--R",
+        type=float,
+        default=10.0,
         help="圆柱半径 (格子单位, 默认 10)",
     )
     parser.add_argument(
-        "--cx", type=float, default=100.0,
+        "--cx",
+        type=float,
+        default=100.0,
         help="圆柱中心x坐标 (默认 100)",
     )
     parser.add_argument(
-        "--cy", type=float, default=100.0,
+        "--cy",
+        type=float,
+        default=100.0,
         help="圆柱中心y坐标 (默认 100)",
     )
     parser.add_argument(
-        "--u-in", dest="u_in", type=float, default=0.1,
+        "--u-in",
+        dest="u_in",
+        type=float,
+        default=0.1,
         help="入口速度 (格子单位, 默认 0.1)",
     )
     parser.add_argument(
-        "--tau", type=float, default=0.55,
+        "--tau",
+        type=float,
+        default=0.55,
         help="BGK松弛时间τ (默认 0.55)",
     )
     parser.add_argument(
-        "--sponge-width", dest="sponge_width", type=int, default=40,
+        "--sponge-width",
+        dest="sponge_width",
+        type=int,
+        default=40,
         help="海绵层宽度 (默认 40)",
     )
     parser.add_argument(
-        "--ramp-steps", dest="ramp_steps", type=int, default=200,
+        "--ramp-steps",
+        dest="ramp_steps",
+        type=int,
+        default=200,
         help="旋转速率渐进步数 (默认 200)",
     )
     args = parser.parse_args()

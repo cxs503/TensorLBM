@@ -1,0 +1,32 @@
+{
+  "schema": "tensorlbm-rejected-candidate-evidence-v1",
+  "candidate": "suboff-nested-v12-l90-no-wall-stress",
+  "status": "rejected",
+  "purpose": "Causal diagnostic that disables physical wall shear stress while retaining normal BFL impermeability and the baseline nested hierarchy.",
+  "configuration_delta": {
+    "wall_stress_enabled": false,
+    "normal_bfl_enabled": true,
+    "interface_filter_width": 0,
+    "regularize_prolongation": false
+  },
+  "comparison_to_unfiltered_l90_baseline": {
+    "candidate_first_speed_above_0_1_step": 1500,
+    "baseline_first_speed_above_0_1_step": 1500,
+    "candidate_first_speed_above_0_15_step": 1560,
+    "baseline_first_speed_above_0_15_step": 1560,
+    "candidate_population_at_or_below_1e_8_step": 1560,
+    "baseline_population_at_or_below_1e_8_step": 1560,
+    "candidate_maximum_collision_limited_fraction": 0.000012366442421844084,
+    "candidate_maximum_speed_through_step_1560": 0.1849227100610733,
+    "baseline_maximum_speed_through_step_1560": 0.19061227142810822,
+    "candidate_maximum_raw_mass_mismatch": 3.2432327270507812,
+    "candidate_maximum_raw_momentum_mismatch_norm": 0.7824319005012512
+  },
+  "artifacts": {
+    "remote_log": "results/amr_campaign_20260801/suboff-nested-v12-l90-rejected-no-wall-stress-step1560.log",
+    "remote_log_sha256": "97d1465e34fa773a817cd5b452cc7553fb8a5ba235ed7af45de75dd10e79c76a",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v12-l90-no-wall-stress-2400.ckpt",
+    "remote_checkpoint_sha256": "7cec790945927dea66606b7a071580c223108959458d7436d5c18843cd440ea0"
+  },
+  "conclusion": "Removing wall shear does not shift any onset threshold. Wall-function shear is not the sole trigger; normal geometry treatment and coarse/fine coupling remain implicated. This deliberately nonphysical diagnostic is excluded from resistance acceptance."
+}

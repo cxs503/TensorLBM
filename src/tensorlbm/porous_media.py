@@ -57,6 +57,7 @@ Shan & Chen (1993) Phys. Rev. E 47 1815
 Pan et al. (2004) Phys. Rev. E 70 026702
 Huang et al. (2007) J. Fluid Mech. 569 229
 """
+
 from __future__ import annotations
 
 import csv
@@ -104,6 +105,7 @@ def _w_on(device: torch.device) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Geometry helpers
 # ---------------------------------------------------------------------------
+
 
 def make_random_cylinder_medium(
     ny: int,
@@ -176,7 +178,7 @@ def make_random_cylinder_medium(
             # Periodic wrap in x for cylinder membership
             dx_field = torch.abs(xx - cx_c)
             dx_field = torch.minimum(dx_field, torch.tensor(nx, dtype=torch.float32) - dx_field)
-            inside = (dx_field ** 2 + (yy - cy_c) ** 2) <= r ** 2
+            inside = (dx_field**2 + (yy - cy_c) ** 2) <= r**2
             solid = solid | inside
 
             cx_list.append(cx_c)
@@ -234,6 +236,7 @@ def make_tube_array_medium(
 # Wall wettability (adsorption BC)
 # ---------------------------------------------------------------------------
 
+
 def apply_wall_wettability_sc(
     rho1: torch.Tensor,
     rho2: torch.Tensor,
@@ -284,6 +287,7 @@ def apply_wall_wettability_sc(
 # ---------------------------------------------------------------------------
 # 1. Laplace pressure test
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class LaplaceTestConfig:
@@ -346,10 +350,7 @@ class LaplaceTestConfig:
     def resolved_run_name(self) -> str:
         if self.run_name:
             return self.run_name
-        return (
-            f"laplace_R{self.bubble_radius:.0f}_G{self.G_12:.2f}"
-            f"_nx{self.nx}_steps{self.n_steps}"
-        )
+        return f"laplace_R{self.bubble_radius:.0f}_G{self.G_12:.2f}_nx{self.nx}_steps{self.n_steps}"
 
 
 def _measure_laplace_pressure(
@@ -431,8 +432,7 @@ def run_laplace_test(config: LaplaceTestConfig) -> dict[str, object]:
     f_gas = equilibrium(rho_gas_field, zero, zero)
 
     print(
-        f"Laplace pressure test  NX={nx}  NY={ny}  R={R}  G={config.G_12}  "
-        f"steps={config.n_steps}"
+        f"Laplace pressure test  NX={nx}  NY={ny}  R={R}  G={config.G_12}  steps={config.n_steps}"
     )
 
     diagnostics: list[dict[str, object]] = []
@@ -440,7 +440,8 @@ def run_laplace_test(config: LaplaceTestConfig) -> dict[str, object]:
     for step in range(1, config.n_steps + 1):
         # Periodic SC collision (no walls)
         f_water, f_gas = collide_sc_two_component(
-            f_water, f_gas,
+            f_water,
+            f_gas,
             G_12=config.G_12,
             tau1=config.tau1,
             tau2=config.tau2,
@@ -459,9 +460,7 @@ def run_laplace_test(config: LaplaceTestConfig) -> dict[str, object]:
                 "sigma_eff": round(sigma_eff, 8),
             }
             diagnostics.append(diag)
-            print(
-                f"step={step:5d}  ΔP={dp:.6f}  σ_eff={sigma_eff:.4f}"
-            )
+            print(f"step={step:5d}  ΔP={dp:.6f}  σ_eff={sigma_eff:.4f}")
 
     final = diagnostics[-1]
     # Save metadata
@@ -483,6 +482,7 @@ def run_laplace_test(config: LaplaceTestConfig) -> dict[str, object]:
 # ---------------------------------------------------------------------------
 # 2. Capillary invasion benchmark (Washburn)
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class CapillaryInvasionConfig:
@@ -580,9 +580,7 @@ def _measure_invasion_front(
     fluid_mask = ~solid_mask
     phi = rho_g / (rho_w + rho_g + 1e-12)
     # Average over interior y (fluid nodes)
-    phi_col = (phi * fluid_mask.float()).sum(dim=0) / (
-        fluid_mask.float().sum(dim=0).clamp(min=1)
-    )
+    phi_col = (phi * fluid_mask.float()).sum(dim=0) / (fluid_mask.float().sum(dim=0).clamp(min=1))
     gas_cols = (phi_col > 0.4).nonzero(as_tuple=True)[0]
     if gas_cols.numel() == 0:
         return 0.0
@@ -638,8 +636,11 @@ def run_capillary_invasion(config: CapillaryInvasionConfig) -> dict[str, object]
         rho_w, _, _ = macroscopic(f_water)
         rho_g, _, _ = macroscopic(f_gas)
         rho_w, rho_g = apply_wall_wettability_sc(
-            rho_w, rho_g, solid,
-            G_ads1=config.G_ads_water, G_ads2=config.G_ads_gas,
+            rho_w,
+            rho_g,
+            solid,
+            G_ads1=config.G_ads_water,
+            G_ads2=config.G_ads_gas,
         )
         # Write modified densities back into equilibrium at solid nodes so
         # SC force computation uses the adsorbed pseudo-density
@@ -650,7 +651,8 @@ def run_capillary_invasion(config: CapillaryInvasionConfig) -> dict[str, object]
         f_gas = torch.where(solid_4d, feq_g_wall, f_gas)
 
         f_water, f_gas = collide_sc_two_component(
-            f_water, f_gas,
+            f_water,
+            f_gas,
             G_12=config.G_12,
             tau1=config.tau_water,
             tau2=config.tau_gas,
@@ -729,6 +731,7 @@ def _estimate_washburn_exponent(series: list[tuple[int, float, float]]) -> float
 # 3. Two-phase Poiseuille benchmark
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class TwoPhasePoiseuilleConfig:
     """Configuration for the two-phase Poiseuille flow benchmark.
@@ -787,10 +790,7 @@ class TwoPhasePoiseuilleConfig:
     def resolved_run_name(self) -> str:
         if self.run_name:
             return self.run_name
-        return (
-            f"two_phase_poiseuille_ny{self.ny}"
-            f"_tau_w{self.tau_water:.2f}_tau_g{self.tau_gas:.2f}"
-        )
+        return f"two_phase_poiseuille_ny{self.ny}_tau_w{self.tau_water:.2f}_tau_g{self.tau_gas:.2f}"
 
     def nu_water(self) -> float:
         """Kinematic viscosity of water in lattice units."""
@@ -829,8 +829,10 @@ def run_two_phase_poiseuille(config: TwoPhasePoiseuilleConfig) -> dict[str, obje
     config.validate()
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
-        config.output_root, "two_phase_poiseuille",
-        config.resolved_run_name(), config.overwrite,
+        config.output_root,
+        "two_phase_poiseuille",
+        config.resolved_run_name(),
+        config.overwrite,
     )
 
     ny, nx = config.ny, config.nx
@@ -865,7 +867,8 @@ def run_two_phase_poiseuille(config: TwoPhasePoiseuilleConfig) -> dict[str, obje
 
     for step in range(1, config.n_steps + 1):
         f_water, f_gas = collide_sc_two_component(
-            f_water, f_gas,
+            f_water,
+            f_gas,
             G_12=config.G_12,
             tau1=config.tau_water,
             tau2=config.tau_gas,
@@ -1100,9 +1103,13 @@ class PorousDrainageConfig:
 def _make_solid_mask(config: PorousDrainageConfig, device: torch.device) -> torch.Tensor:
     if config.geometry == "random_cylinders":
         return make_random_cylinder_medium(
-            config.ny, config.nx,
-            config.n_cylinders, config.r_min, config.r_max,
-            config.seed, device,
+            config.ny,
+            config.nx,
+            config.n_cylinders,
+            config.r_min,
+            config.r_max,
+            config.seed,
+            device,
         )
     # tube_array
     return make_tube_array_medium(config.ny, config.nx, config.n_tubes, config.tube_width, device)
@@ -1222,7 +1229,9 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
             rho_w, _, _ = macroscopic(f_water)
             rho_g, _, _ = macroscopic(f_gas)
             rho_w, rho_g = apply_wall_wettability_sc(
-                rho_w, rho_g, solid,
+                rho_w,
+                rho_g,
+                solid,
                 G_ads1=config.G_ads_water,
                 G_ads2=config.G_ads_gas,
             )
@@ -1233,7 +1242,8 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
         # --- collision ---
         if config.model == "sc":
             f_water, f_gas = collide_sc_two_component(
-                f_water, f_gas,
+                f_water,
+                f_gas,
                 G_12=config.G_12,
                 tau1=config.tau_water,
                 tau2=config.tau_gas,
@@ -1242,7 +1252,8 @@ def run_porous_drainage(config: PorousDrainageConfig) -> dict[str, object]:
         else:  # cg
             A_surf = config.G_12 * 0.04
             f_water, f_gas = color_gradient_step(
-                f_water, f_gas,
+                f_water,
+                f_gas,
                 tau=config.tau_water,
                 A=A_surf,
                 solid_mask=solid,

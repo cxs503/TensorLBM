@@ -36,8 +36,9 @@ def _get_c27_constants(device: torch.device, dtype: torch.dtype):
 
     # D3Q27 weights
     w = torch.tensor(
-        [8/27] + [2/27]*6 + [1/54]*12 + [1/216]*8,
-        dtype=torch.float32, device=device,
+        [8 / 27] + [2 / 27] * 6 + [1 / 54] * 12 + [1 / 216] * 8,
+        dtype=torch.float32,
+        device=device,
     ).view(27, 1, 1, 1)
 
     cs2 = 1.0 / 3.0
@@ -52,22 +53,30 @@ def _get_c27_constants(device: torch.device, dtype: torch.dtype):
     H_yz = cy * cz
 
     # 3rd order Hermite basis (for cascaded)
-    H_xxx = cx**3 - 3*cs2*cx
-    H_yyy = cy**3 - 3*cs2*cy
-    H_zzz = cz**3 - 3*cs2*cz
-    H_xxy = (cx*cx - cs2)*cy + cx*cx*cy - cs2*cy  # simplified
-    H_xxz = (cx*cx - cs2)*cz
-    H_xyy = cx*(cy*cy - cs2)
-    H_yyz = (cy*cy - cs2)*cz
-    H_xzz = cx*(cz*cz - cs2)
-    H_yzz = cy*(cz*cz - cs2)
-    H_xyz = cx*cy*cz
+    H_xxx = cx**3 - 3 * cs2 * cx
+    H_yyy = cy**3 - 3 * cs2 * cy
+    H_zzz = cz**3 - 3 * cs2 * cz
+    H_xxy = (cx * cx - cs2) * cy + cx * cx * cy - cs2 * cy  # simplified
+    H_xxz = (cx * cx - cs2) * cz
+    H_xyy = cx * (cy * cy - cs2)
+    H_yyz = (cy * cy - cs2) * cz
+    H_xzz = cx * (cz * cz - cs2)
+    H_yzz = cy * (cz * cz - cs2)
+    H_xyz = cx * cy * cz
 
     result = {
-        "cx": cx, "cy": cy, "cz": cz, "w": w,
-        "cs2": cs2, "cs4": cs4,
-        "H_xx": H_xx, "H_yy": H_yy, "H_zz": H_zz,
-        "H_xy": H_xy, "H_xz": H_xz, "H_yz": H_yz,
+        "cx": cx,
+        "cy": cy,
+        "cz": cz,
+        "w": w,
+        "cs2": cs2,
+        "cs4": cs4,
+        "H_xx": H_xx,
+        "H_yy": H_yy,
+        "H_zz": H_zz,
+        "H_xy": H_xy,
+        "H_xz": H_xz,
+        "H_yz": H_yz,
     }
     _C27_CACHE[key] = result
     return result
@@ -75,17 +84,20 @@ def _get_c27_constants(device: torch.device, dtype: torch.dtype):
 
 # ── Smagorinsky helper ────────────────────────────────────────────────────────
 
-def _smagorinsky_tau_27(tau: float, pi_norm: torch.Tensor,
-                        rho: torch.Tensor, C_s: float) -> torch.Tensor:
+
+def _smagorinsky_tau_27(
+    tau: float, pi_norm: torch.Tensor, rho: torch.Tensor, C_s: float
+) -> torch.Tensor:
     """Smagorinsky effective relaxation time for D3Q27."""
     nu0 = (tau - 0.5) / 3.0
     S = pi_norm / (2.0 * rho.clamp(min=1e-10))
-    nu_t = (C_s ** 2) * torch.sqrt(2.0 * S * S)
+    nu_t = (C_s**2) * torch.sqrt(2.0 * S * S)
     nu_eff = nu0 + nu_t
     return torch.clamp(3.0 * nu_eff + 0.5, min=0.501, max=2.0)
 
 
 # ── KBC Entropy Model ─────────────────────────────────────────────────────────
+
 
 def collide_kbc_d3q27(
     f: torch.Tensor,
@@ -133,10 +145,7 @@ def collide_kbc_d3q27(
     pi_yz = (cy * cz * f_neq).sum(0)
 
     # Smagorinsky
-    pi_norm = torch.sqrt(
-        pi_xx**2 + pi_yy**2 + pi_zz**2
-        + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2)
-    )
+    pi_norm = torch.sqrt(pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2))
     tau_eff = _smagorinsky_tau_27(tau, pi_norm, rho, C_s)
     omega = 1.0 / tau_eff
 
@@ -149,11 +158,18 @@ def collide_kbc_d3q27(
     H_xx, H_yy, H_zz = p["H_xx"], p["H_yy"], p["H_zz"]
     H_xy, H_xz, H_yz = p["H_xy"], p["H_xz"], p["H_yz"]
 
-    factor = (1.0 - omega)
-    f_neq_stress = 4.5 * w * (
-        H_xx * factor * pi_xx + H_yy * factor * pi_yy + H_zz * factor * pi_zz
-        + 2.0 * H_xy * factor * pi_xy + 2.0 * H_xz * factor * pi_xz
-        + 2.0 * H_yz * factor * pi_yz
+    factor = 1.0 - omega
+    f_neq_stress = (
+        4.5
+        * w
+        * (
+            H_xx * factor * pi_xx
+            + H_yy * factor * pi_yy
+            + H_zz * factor * pi_zz
+            + 2.0 * H_xy * factor * pi_xy
+            + 2.0 * H_xz * factor * pi_xz
+            + 2.0 * H_yz * factor * pi_yz
+        )
     )
 
     # BGK relaxation (all modes at omega)
@@ -166,6 +182,7 @@ def collide_kbc_d3q27(
 
 
 # ── Cascaded (Central Moment) LBM ─────────────────────────────────────────────
+
 
 def collide_cascaded_d3q27(
     f: torch.Tensor,
@@ -221,10 +238,7 @@ def collide_cascaded_d3q27(
     pi_yz = (cy * cz * f_neq).sum(0)
 
     # Smagorinsky
-    pi_norm = torch.sqrt(
-        pi_xx**2 + pi_yy**2 + pi_zz**2
-        + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2)
-    )
+    pi_norm = torch.sqrt(pi_xx**2 + pi_yy**2 + pi_zz**2 + 2.0 * (pi_xy**2 + pi_xz**2 + pi_yz**2))
     tau_eff = _smagorinsky_tau_27(tau, pi_norm, rho, C_s)
     omega = 1.0 / tau_eff
 
@@ -254,9 +268,17 @@ def collide_cascaded_d3q27(
     H_xx, H_yy, H_zz = p["H_xx"], p["H_yy"], p["H_zz"]
     H_xy, H_xz, H_yz = p["H_xy"], p["H_xz"], p["H_yz"]
 
-    f_neq_reg = 4.5 * w * (
-        H_xx * pi_xx_s + H_yy * pi_yy_s + H_zz * pi_zz_s
-        + 2.0 * H_xy * pi_xy_s + 2.0 * H_xz * pi_xz_s + 2.0 * H_yz * pi_yz_s
+    f_neq_reg = (
+        4.5
+        * w
+        * (
+            H_xx * pi_xx_s
+            + H_yy * pi_yy_s
+            + H_zz * pi_zz_s
+            + 2.0 * H_xy * pi_xy_s
+            + 2.0 * H_xz * pi_xz_s
+            + 2.0 * H_yz * pi_yz_s
+        )
     )
 
     # Ghost modes (3rd order+) relaxed at s_odd / s_even

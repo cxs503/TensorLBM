@@ -31,6 +31,7 @@ functions covering tensor creation, math, NN model factories, optimizers,
 and training helpers.  New functions added to one backend must be added
 to all three.
 """
+
 from __future__ import annotations
 
 import os
@@ -67,9 +68,7 @@ def set_backend(name: str) -> None:
     """
     global _current_backend
     if name not in _VALID:
-        raise ValueError(
-            f"Unknown backend {name!r}. Valid choices: {sorted(_VALID)}."
-        )
+        raise ValueError(f"Unknown backend {name!r}. Valid choices: {sorted(_VALID)}.")
     _current_backend = name  # type: ignore[assignment]
 
 

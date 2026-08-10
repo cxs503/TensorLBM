@@ -18,6 +18,7 @@ References
 Koshizuka & Oka (1996) Nucl. Sci. Eng. 123, 421-434
 Kleefsman et al. (2005) J. Comput. Phys. 206, 363-393
 """
+
 from __future__ import annotations
 
 import csv
@@ -36,7 +37,10 @@ from .free_surface_lbm import (
     free_surface_step,
     init_fill_rectangular,
     init_flags_from_fill,
-    LIQUID, INTERFACE, GAS,
+    init_mass_from_fill,
+    LIQUID,
+    INTERFACE,
+    GAS,
 )
 from .multiphase3d import (
     collide_cg_mrt_3d,
@@ -62,6 +66,36 @@ import matplotlib.pyplot as plt
 # ---------------------------------------------------------------------------
 
 Model3D = Literal["sc", "cg", "fe", "fs"]
+
+
+def _topology_event(
+    previous: tuple[int, int],
+    current: tuple[int, int],
+    conversion: float,
+    redistribution: float,
+) -> bool:
+    """Whether topology work occurred, including count-neutral exchanges."""
+    return current != previous or abs(conversion) + abs(redistribution) > 0.0
+
+
+def _linear_drift_slope(history: list[tuple[int, float]], window: int) -> tuple[float, int]:
+    """Terminal/rolling least-squares slope of cumulative drift versus step."""
+    points = history[-window:]
+    count = len(points)
+    if count < 2:
+        return 0.0, count
+    mean_step = sum(point[0] for point in points) / count
+    mean_drift = sum(point[1] for point in points) / count
+    denominator = sum((point[0] - mean_step) ** 2 for point in points)
+    return (
+        sum((point[0] - mean_step) * (point[1] - mean_drift) for point in points) / denominator,
+        count,
+    )
+
+
+def _topology_drift_violates(event: bool, normalized_drift: float, tolerance: float) -> bool:
+    """Apply the topology gate for both count-changing and neutral work."""
+    return event and abs(normalized_drift) > tolerance
 
 
 @dataclass(frozen=True)
@@ -98,17 +132,17 @@ class DamBreak3DConfig:
     # Physics
     model: Model3D = "cg"
     rho_heavy: float = 1.0
-    rho_light: float = 0.1     # density ratio 10:1 — achievable with MRT+SGS+Guo
+    rho_light: float = 0.1  # density ratio 10:1 — achievable with MRT+SGS+Guo
     A: float = 0.005  # CG surface tension
-    G_sc: float = 0.9   # SC coupling (>0 for two-component separation)
-    tau: float = 0.8    # τ=0.8 for CG with 10:1; τ=0.6 possible with MRT+SGS
+    G_sc: float = 0.9  # SC coupling (>0 for two-component separation)
+    tau: float = 0.8  # τ=0.8 for CG with 10:1; τ=0.6 possible with MRT+SGS
     gravity: float = 8e-5
     # Free-slip on y-walls (waLBerla pattern — reduces spurious currents)
     free_slip_y: bool = True
     # MRT + Smagorinsky (waLBerla/OpenLB production stack)
     collision: str = "mrt_smag"  # "bgk" | "mrt" | "mrt_smag"
-    C_s: float = 0.1      # Smagorinsky constant (0.1 = waLBerla default)
-    use_guo: bool = True   # Guo second-order forcing (waLBerla GuoField)
+    C_s: float = 0.1  # Smagorinsky constant (0.1 = waLBerla default)
+    use_guo: bool = True  # Guo second-order forcing (waLBerla GuoField)
     # Hydrostatic IC (waLBerla initHydrostaticPressure)
     hydrostatic_init: bool = True
     # Time-stepping
@@ -119,6 +153,18 @@ class DamBreak3DConfig:
     run_name: str | None = None
     device: str = "cpu"
     overwrite: bool = False
+    # Tracked-mass accounting tolerance, not a physical/PV conservation claim.
+    free_surface_unexplained_tolerance: float = 1.0e-3
+    free_surface_paired_tolerance: float = 1.0e-5
+    # Long-run campaign limits observe the independent ledger only; they never
+    # apply a global mass correction.  Limits are relative to the initial
+    # tracked mass, so they retain their meaning when the domain is resized.
+    free_surface_relative_cumulative_drift_tolerance: float = 1.0e-3
+    free_surface_relative_drift_slope_tolerance: float = 1.0e-5
+    # A topology update may move O(1) lattice mass locally.  Five percent of
+    # that explicit work is the default accounting alarm, not a PV claim.
+    free_surface_topology_normalized_drift_tolerance: float = 5.0e-2
+    free_surface_drift_slope_window: int = 100
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "output_root", Path(self.output_root))
@@ -135,14 +181,21 @@ class DamBreak3DConfig:
             raise ValueError("rho_heavy > rho_light")
         if self.tau <= 0.5:
             raise ValueError(f"tau={self.tau} <= 0.5")
+        if (
+            self.free_surface_unexplained_tolerance < 0
+            or self.free_surface_paired_tolerance < 0
+            or self.free_surface_relative_cumulative_drift_tolerance < 0
+            or self.free_surface_relative_drift_slope_tolerance < 0
+            or self.free_surface_topology_normalized_drift_tolerance < 0
+        ):
+            raise ValueError("free-surface accounting tolerances must be non-negative")
+        if self.free_surface_drift_slope_window < 2:
+            raise ValueError("free_surface_drift_slope_window must be at least two")
 
     def resolved_run_name(self) -> str:
         if self.run_name:
             return self.run_name
-        return (
-            f"dam3d_{self.model}_nx{self.nx}_dw{self.dam_width}"
-            f"_steps{self.n_steps}"
-        )
+        return f"dam3d_{self.model}_nx{self.nx}_dw{self.dam_width}_steps{self.n_steps}"
 
 
 # ---------------------------------------------------------------------------
@@ -151,9 +204,19 @@ class DamBreak3DConfig:
 # Dimensionless time T = t * sqrt(2g / L), position X = x_front / L
 # where L = initial column width
 _KOSHIZUKA_FRONT: list[tuple[float, float]] = [
-    (0.0, 1.0), (0.5, 1.2), (1.0, 2.0), (1.5, 2.8), (2.0, 3.2),
-    (2.5, 3.8), (3.0, 4.2), (3.5, 4.6), (4.0, 5.0), (4.5, 5.2),
-    (5.0, 5.4), (5.5, 5.6), (6.0, 5.8),
+    (0.0, 1.0),
+    (0.5, 1.2),
+    (1.0, 2.0),
+    (1.5, 2.8),
+    (2.0, 3.2),
+    (2.5, 3.8),
+    (3.0, 4.2),
+    (3.5, 4.6),
+    (4.0, 5.0),
+    (4.5, 5.2),
+    (5.0, 5.4),
+    (5.5, 5.6),
+    (6.0, 5.8),
 ]
 
 # ---------------------------------------------------------------------------
@@ -162,21 +225,42 @@ _KOSHIZUKA_FRONT: list[tuple[float, float]] = [
 # T = t * sqrt(g / a), Z = x_front / a  where a = column half-width
 # (waLBerla DamBreakRectangular validation target)
 _MARTIN_MOYCE_FRONT: list[tuple[float, float]] = [
-    (0.0, 1.0), (0.5, 1.1), (1.0, 1.4), (1.5, 1.8), (2.0, 2.2),
-    (2.5, 2.7), (3.0, 3.1), (3.5, 3.5), (4.0, 3.8), (4.5, 4.1),
-    (5.0, 4.3), (5.5, 4.5), (6.0, 4.7),
+    (0.0, 1.0),
+    (0.5, 1.1),
+    (1.0, 1.4),
+    (1.5, 1.8),
+    (2.0, 2.2),
+    (2.5, 2.7),
+    (3.0, 3.1),
+    (3.5, 3.5),
+    (4.0, 3.8),
+    (4.5, 4.1),
+    (5.0, 4.3),
+    (5.5, 4.5),
+    (6.0, 4.7),
 ]
 
 _MARTIN_MOYCE_HEIGHT: list[tuple[float, float]] = [
-    (0.0, 1.0), (0.5, 0.92), (1.0, 0.78), (1.5, 0.65), (2.0, 0.55),
-    (2.5, 0.45), (3.0, 0.37), (3.5, 0.30), (4.0, 0.25), (4.5, 0.20),
-    (5.0, 0.16), (5.5, 0.13), (6.0, 0.11),
+    (0.0, 1.0),
+    (0.5, 0.92),
+    (1.0, 0.78),
+    (1.5, 0.65),
+    (2.0, 0.55),
+    (2.5, 0.45),
+    (3.0, 0.37),
+    (3.5, 0.30),
+    (4.0, 0.25),
+    (4.5, 0.20),
+    (5.0, 0.16),
+    (5.5, 0.13),
+    (6.0, 0.11),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Initialisation helpers
 # ---------------------------------------------------------------------------
+
 
 def _free_slip_bottom_3d(f: torch.Tensor, bottom_mask: torch.Tensor) -> torch.Tensor:
     """Specular (free-slip) reflection at y=0 and y=ny-1 for D3Q19.
@@ -188,7 +272,8 @@ def _free_slip_bottom_3d(f: torch.Tensor, bottom_mask: torch.Tensor) -> torch.Te
 
 
 def _build_solid_mask(
-    config: DamBreak3DConfig, device: torch.device,
+    config: DamBreak3DConfig,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Build separate masks for solid cells and for y-walls.
 
@@ -202,26 +287,27 @@ def _build_solid_mask(
     y_wall = torch.zeros((nz, ny, nx), dtype=torch.bool, device=device)
 
     # x-face and z-face walls: bounce-back (NoSlip)
-    solid[0, :, :] = True   # z=0
+    solid[0, :, :] = True  # z=0
     solid[-1, :, :] = True  # z=nz-1
-    solid[:, :, 0] = True   # x=0
+    solid[:, :, 0] = True  # x=0
     solid[:, :, -1] = True  # x=nx-1
 
     # y-face walls: separate mask for FreeSlip option
-    y_wall[:, 0, :] = True   # y=0  (bottom)
+    y_wall[:, 0, :] = True  # y=0  (bottom)
     y_wall[:, -1, :] = True  # y=ny-1 (top)
     solid[:, 0, :] = True
     solid[:, -1, :] = True
 
     # Obstacle (if enabled) — always bounce-back
     if config.obs_x1 > config.obs_x0:
-        solid[:, config.obs_y0:config.obs_y1, config.obs_x0:config.obs_x1] = True
+        solid[:, config.obs_y0 : config.obs_y1, config.obs_x0 : config.obs_x1] = True
 
     return solid, y_wall
 
 
 def _init_cg_3d(
-    config: DamBreak3DConfig, device: torch.device,
+    config: DamBreak3DConfig,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Colour-gradient initialisation: sharp water/air split in 3D.
 
@@ -245,16 +331,18 @@ def _init_cg_3d(
     # Pad with air above fill_height
     rho_water = config.rho_heavy * frac * torch.ones((nz, ny, nx), device=device)
     rho_air = config.rho_light * torch.ones((nz, ny, nx), device=device)
-    rho_water[:, :config.fill_height, :] = rho_water_full
-    rho_air[:, :config.fill_height, :] = rho_air_full
+    rho_water[:, : config.fill_height, :] = rho_water_full
+    rho_air[:, : config.fill_height, :] = rho_air_full
 
     zero = torch.zeros((nz, ny, nx), device=device)
-    return equilibrium3d(rho_water, zero, zero, zero, device=device), \
-           equilibrium3d(rho_air, zero, zero, zero, device=device)
+    return equilibrium3d(rho_water, zero, zero, zero, device=device), equilibrium3d(
+        rho_air, zero, zero, zero, device=device
+    )
 
 
 def _init_sc_3d(
-    config: DamBreak3DConfig, device: torch.device,
+    config: DamBreak3DConfig,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """SC two-component initialisation: smooth split at dam edge."""
     nx, ny, nz = config.nx, config.ny, config.nz
@@ -269,16 +357,18 @@ def _init_sc_3d(
 
     rho2 = config.rho_heavy * frac * torch.ones((nz, ny, nx), device=device)
     rho1 = config.rho_light * torch.ones((nz, ny, nx), device=device)
-    rho2[:, :config.fill_height, :] = rho2_full
-    rho1[:, :config.fill_height, :] = rho1_full
+    rho2[:, : config.fill_height, :] = rho2_full
+    rho1[:, : config.fill_height, :] = rho1_full
 
     zero = torch.zeros((nz, ny, nx), device=device)
-    return equilibrium3d(rho1, zero, zero, zero, device=device), \
-           equilibrium3d(rho2, zero, zero, zero, device=device)
+    return equilibrium3d(rho1, zero, zero, zero, device=device), equilibrium3d(
+        rho2, zero, zero, zero, device=device
+    )
 
 
 def _init_fe_3d(
-    config: DamBreak3DConfig, device: torch.device,
+    config: DamBreak3DConfig,
+    device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Free-energy initialisation: phi=+1 in water, phi=-1 in air."""
     nx, ny, nz = config.nx, config.ny, config.nz
@@ -303,9 +393,12 @@ def _init_fe_3d(
 # Diagnostics
 # ---------------------------------------------------------------------------
 
+
 def _find_front_x_3d(
-    rho_water: torch.Tensor, rho_air: torch.Tensor,
-    solid: torch.Tensor, threshold: float = 0.45,
+    rho_water: torch.Tensor,
+    rho_air: torch.Tensor,
+    solid: torch.Tensor,
+    threshold: float = 0.45,
     flags: torch.Tensor | None = None,
 ) -> float:
     """Find the rightmost x-column where water fraction exceeds threshold.
@@ -327,8 +420,11 @@ def _find_front_x_3d(
 
 
 def _probe_pressure(
-    f1: torch.Tensor, f2: torch.Tensor,
-    obs_x0: int, obs_y0: int, obs_y1: int,
+    f1: torch.Tensor,
+    f2: torch.Tensor,
+    obs_x0: int,
+    obs_y0: int,
+    obs_y1: int,
 ) -> float:
     """Pressure at obstacle face (P1 probe, center of obstacle face)."""
     # Use CG rho sum as pressure proxy (ideal gas EOS: p = cs² * rho)
@@ -345,6 +441,7 @@ def _probe_pressure(
 # Main simulation
 # ---------------------------------------------------------------------------
 
+
 def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
     """Run a 3D dam-break simulation and return the output directory."""
     device = resolve_device(config.device)
@@ -352,7 +449,10 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
 
     nx, ny, nz = config.nx, config.ny, config.nz
     run_dir = prepare_run_dir(
-        config.output_root, "dam_break_3d", config.resolved_run_name(), config.overwrite,
+        config.output_root,
+        "dam_break_3d",
+        config.resolved_run_name(),
+        config.overwrite,
     )
 
     # Build geometry
@@ -372,17 +472,24 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
     elif config.model == "fs":
         # Free-surface LBM: single-phase with fill level tracking
         fill, y_wall_mask = init_fill_rectangular(
-            nz, ny, nx,
+            nz,
+            ny,
+            nx,
             column_width=float(config.dam_width),
             column_height=float(config.fill_height),
             device=device,
         )
         flags = init_flags_from_fill(fill, y_wall_mask)
+        # Independent Körner mass ledger: initialize once and preserve the
+        # returned state rather than reconstructing it from fill each step.
+        mass = init_mass_from_fill(fill, flags, config.rho_heavy)
         active = (flags == LIQUID) | (flags == INTERFACE)
         zero_f = torch.zeros((nz, ny, nx), device=device)
         f_water = equilibrium3d(
             torch.where(active, torch.ones((nz, ny, nx), device=device), zero_f),
-            zero_f, zero_f, zero_f,
+            zero_f,
+            zero_f,
+            zero_f,
         )
         # For compatibility with the multi-model loop
         f_air = torch.zeros_like(f_water)
@@ -398,12 +505,16 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
     # Hydrostatic initialisation (waLBerla pattern)
     if config.hydrostatic_init and config.model in ("cg", "sc"):
         f_water = init_hydrostatic_pressure_3d(
-            f_water, solid, gy=-config.gravity,
+            f_water,
+            solid,
+            gy=-config.gravity,
             water_height=float(config.fill_height),
         )
         if config.model == "cg":
             f_air = init_hydrostatic_pressure_3d(
-                f_air, solid, gy=-config.gravity,
+                f_air,
+                solid,
+                gy=-config.gravity,
                 water_height=float(config.fill_height),
             )
 
@@ -422,7 +533,19 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
 
     diagnostics: list[dict[str, object]] = []
     front_series: list[tuple[int, float, float]] = []
+    fs_handoff: list[dict[str, object]] = []
+    fs_runtime: dict[str, object] = {}
+    fs_initial_topology: tuple[int, int] | None = None
+    fs_initial_mass: float | None = None
+    fs_previous_topology: tuple[int, int] | None = None
+    fs_topology_events: list[dict[str, object]] = []
+    fs_cumulative_drift_history: list[tuple[int, float]] = []
+    fs_topology_changed = False
     gy = -config.gravity
+    if config.model == "fs":
+        fs_initial_topology = (int((flags == LIQUID).sum()), int((flags == INTERFACE).sum()))
+        fs_previous_topology = fs_initial_topology
+        fs_initial_mass = float(mass.sum().item())
 
     for step in range(1, config.n_steps + 1):
         # Collision + streaming
@@ -430,16 +553,24 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             if config.collision == "mrt" or config.collision == "mrt_smag":
                 C_s_val = config.C_s if config.collision == "mrt_smag" else 0.0
                 f_water, f_air = collide_sc_mrt_3d(
-                    f_water, f_air,
-                    G_12=config.G_sc, tau=config.tau,
-                    gy=gy, solid_mask=solid,
-                    C_s=C_s_val, use_guo=config.use_guo,
+                    f_water,
+                    f_air,
+                    G_12=config.G_sc,
+                    tau=config.tau,
+                    gy=gy,
+                    solid_mask=solid,
+                    C_s=C_s_val,
+                    use_guo=config.use_guo,
                 )
             else:
                 f_water, f_air = collide_sc_two_component_3d(
-                    f_water, f_air,
-                    G_12=config.G_sc, tau1=config.tau, tau2=config.tau,
-                    gy=gy, solid_mask=solid,
+                    f_water,
+                    f_air,
+                    G_12=config.G_sc,
+                    tau1=config.tau,
+                    tau2=config.tau,
+                    gy=gy,
+                    solid_mask=solid,
                     use_guo=config.use_guo,
                 )
             f_water, f_air = stream3d(f_water), stream3d(f_air)
@@ -449,23 +580,30 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             if config.free_slip_y:
                 f_water = free_slip_cells_3d(f_water, y_wall, axis=1)
                 f_air = free_slip_cells_3d(f_air, y_wall, axis=1)
-            rho_heavy = f_air.sum(dim=0)   # component 2 = heavy
+            rho_heavy = f_air.sum(dim=0)  # component 2 = heavy
             rho_light = f_water.sum(dim=0)  # component 1 = light
 
         elif config.model == "cg":
             if config.collision == "mrt" or config.collision == "mrt_smag":
                 C_s_val = config.C_s if config.collision == "mrt_smag" else 0.0
                 f_water, f_air = collide_cg_mrt_3d(
-                    f_water, f_air,
-                    tau=config.tau, A=config.A,
-                    gy=gy, solid_mask=solid,
-                    C_s=C_s_val, use_guo=config.use_guo,
+                    f_water,
+                    f_air,
+                    tau=config.tau,
+                    A=config.A,
+                    gy=gy,
+                    solid_mask=solid,
+                    C_s=C_s_val,
+                    use_guo=config.use_guo,
                 )
             else:
                 f_water, f_air = color_gradient_step_3d(
-                    f_water, f_air,
-                    tau=config.tau, A=config.A,
-                    gy=gy, solid_mask=solid,
+                    f_water,
+                    f_air,
+                    tau=config.tau,
+                    A=config.A,
+                    gy=gy,
+                    solid_mask=solid,
                 )
             f_water, f_air = stream3d(f_water), stream3d(f_air)
             f_water = bounce_back_cells_3d(f_water, solid)
@@ -477,26 +615,162 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             rho_light = f_air.sum(dim=0)
 
         elif config.model == "fs":
-            # Free-surface LBM step
-            f_water, fill, flags = free_surface_step(
-                f_water, fill, flags, solid,
+            # Free-surface LBM step.  All five solver states are passed on.
+            f_water, fill, flags, mass, df = free_surface_step(
+                f_water,
+                fill,
+                flags,
+                solid,
+                mass=mass,
                 tau=config.tau,
                 gy=gy,
-                rho_liquid=config.rho_heavy, rho_gas=config.rho_light,
+                rho_liquid=config.rho_heavy,
+                rho_gas=config.rho_light,
                 surface_tension=config.A if config.A > 0 else 0.0,
                 C_s=config.C_s if config.collision == "mrt_smag" else 0.0,
-                free_slip_y=config.free_slip_y, y_wall_mask=y_wall,
+                free_slip_y=config.free_slip_y,
+                y_wall_mask=y_wall,
+                runtime_ledger=fs_runtime,
+                paired_liquid_interface_debit=True,
+            )
+            steps = fs_runtime["steps"]
+            assert isinstance(steps, list) and steps
+            quality = steps[-1]
+            assert isinstance(quality, dict)
+            finite = bool(
+                torch.isfinite(f_water).all()
+                and torch.isfinite(fill).all()
+                and torch.isfinite(mass).all()
+            )
+            quality["finite"] = finite
+            quality["flags_finite"] = True  # Integral flags have no NaN representation.
+            topology = (int((flags == LIQUID).sum()), int((flags == INTERFACE).sum()))
+            quality["liquid_cells"], quality["interface_cells"] = topology
+            fs_topology_changed = fs_topology_changed or topology != fs_initial_topology
+            assert fs_initial_mass is not None and fs_previous_topology is not None
+            cumulative_drift = float(quality["mass_end"]) - fs_initial_mass
+            conversion = float(quality["conversion"])
+            redistribution = float(quality["redistribution"])
+            conversion_redistribution_scale = abs(conversion) + abs(redistribution)
+            # Attribute drift relative to the local topology work, rather than
+            # subtracting physical conversion/redistribution from a mass delta.
+            normalized_drift = (
+                float(quality["mass_drift"]) / conversion_redistribution_scale
+                if conversion_redistribution_scale > 0.0
+                else float(quality["mass_drift"])
+            )
+            # A count-neutral exchange can still convert or redistribute mass.
+            # Therefore topology work, not just net flag counts, defines an
+            # event and activates its normalized-drift gate.
+            topology_count_changed = topology != fs_previous_topology
+            topology_event = _topology_event(
+                fs_previous_topology, topology, conversion, redistribution
+            )
+            relative_cumulative_drift = cumulative_drift / fs_initial_mass
+            fs_cumulative_drift_history.append((step, cumulative_drift))
+            cumulative_drift_slope, regression_count = _linear_drift_slope(
+                fs_cumulative_drift_history,
+                config.free_surface_drift_slope_window,
+            )
+            relative_cumulative_drift_slope = cumulative_drift_slope / fs_initial_mass
+            quality.update(
+                {
+                    "time": float(step),
+                    "initial_mass": fs_initial_mass,
+                    "instantaneous_mass_drift": float(quality["mass_drift"]),
+                    "cumulative_drift": cumulative_drift,
+                    "relative_cumulative_drift": relative_cumulative_drift,
+                    "cumulative_drift_average_rate": cumulative_drift / step,
+                    "relative_cumulative_drift_average_rate": relative_cumulative_drift / step,
+                    "cumulative_drift_slope": cumulative_drift_slope,
+                    "relative_cumulative_drift_slope": relative_cumulative_drift_slope,
+                    "drift_slope_window_steps": regression_count,
+                    "conversion_redistribution_normalized_drift": normalized_drift,
+                    "topology_event": topology_event,
+                    "topology_count_changed": topology_count_changed,
+                    "liquid_cell_delta": topology[0] - fs_previous_topology[0],
+                    "interface_cell_delta": topology[1] - fs_previous_topology[1],
+                }
+            )
+            if topology_event:
+                fs_topology_events.append(
+                    {
+                        "step": step,
+                        "time": float(step),
+                        "liquid_cells_before": fs_previous_topology[0],
+                        "interface_cells_before": fs_previous_topology[1],
+                        "liquid_cells_after": topology[0],
+                        "interface_cells_after": topology[1],
+                        "conversion": float(quality["conversion"]),
+                        "redistribution": float(quality["redistribution"]),
+                        "topology_count_changed": topology_count_changed,
+                        "conversion_redistribution_normalized_drift": normalized_drift,
+                    }
+                )
+            fs_previous_topology = topology
+            violations: list[str] = []
+            if not finite:
+                violations.append("non-finite free-surface state")
+            if int(quality["directLG"]) != 0:
+                violations.append("direct liquid/gas link")
+            if (
+                abs(float(quality["unexplained_residual"]))
+                > config.free_surface_unexplained_tolerance
+            ):
+                violations.append("unexplained tracked-mass residual exceeds tolerance")
+            if abs(float(quality["paired_residual"])) > config.free_surface_paired_tolerance:
+                violations.append("paired liquid/interface residual exceeds tolerance")
+            if (
+                abs(relative_cumulative_drift)
+                > config.free_surface_relative_cumulative_drift_tolerance
+            ):
+                violations.append("relative cumulative tracked-mass drift exceeds tolerance")
+            if (
+                abs(relative_cumulative_drift_slope)
+                > config.free_surface_relative_drift_slope_tolerance
+            ):
+                violations.append("relative cumulative tracked-mass drift slope exceeds tolerance")
+            if _topology_drift_violates(
+                topology_event,
+                normalized_drift,
+                config.free_surface_topology_normalized_drift_tolerance,
+            ):
+                violations.append(
+                    "topology-event conversion/redistribution-normalized drift exceeds tolerance"
+                )
+            if violations:
+                quality["quality_gate"] = "failed: " + "; ".join(violations)
+                raise RuntimeError(
+                    f"free-surface quality gate fail-closed at step {step}: {'; '.join(violations)}; "
+                    f"record={quality}"
+                )
+            quality["quality_gate"] = "passed"
+            fs_handoff.append(
+                {
+                    "step": step,
+                    "f_shape": list(f_water.shape),
+                    "fill_shape": list(fill.shape),
+                    "flags_shape": list(flags.shape),
+                    "mass_shape": list(mass.shape),
+                    "df": float(df.item()),
+                    "mass_is_independent": True,
+                }
             )
             rho_heavy = f_water.sum(dim=0)
             rho_light = torch.zeros_like(rho_heavy)  # gas has no density field
 
         elif config.model == "fe":
             f_fe, g_fe = free_energy_step_3d(
-                f_fe, g_fe,
+                f_fe,
+                g_fe,
                 tau_f=config.tau,
                 gy=gy,
-                A=0.1, B=0.1, kappa=0.02, Gamma=0.5,
-                rho_heavy=config.rho_heavy, rho_light=config.rho_light,
+                A=0.1,
+                B=0.1,
+                kappa=0.02,
+                Gamma=0.5,
+                rho_heavy=config.rho_heavy,
+                rho_light=config.rho_light,
             )
             f_fe, g_fe = stream3d(f_fe), stream3d(g_fe)
             f_fe = bounce_back_cells_3d(f_fe, solid)
@@ -523,33 +797,54 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
             mean_rho = float((rho_heavy + rho_light).mean().item())
 
             front_series.append((step, t_star, x_star, mean_rho))
-            print(
-                f"step={step:5d}  t*={t_star:.3f}  X*={x_star:.3f}  "
-                f"mean_ρ={mean_rho:.4f}"
-            )
+            print(f"step={step:5d}  t*={t_star:.3f}  X*={x_star:.3f}  mean_ρ={mean_rho:.4f}")
 
             # Pressure probe at obstacle
-            p_p1 = _probe_pressure(f_water, f_air, config.obs_x0, config.obs_y0, config.obs_y1) \
-                if config.model == "cg" else float("nan")
+            p_p1 = (
+                _probe_pressure(f_water, f_air, config.obs_x0, config.obs_y0, config.obs_y1)
+                if config.model == "cg"
+                else float("nan")
+            )
 
-            diagnostics.append({
-                "step": step,
-                "t_star": t_star,
-                "x_star": x_star,
-                "mean_rho": mean_rho,
-                "total_mass": total_mass,
-                "p_p1": p_p1 if math.isfinite(p_p1) else None,
-            })
+            diagnostics.append(
+                {
+                    "step": step,
+                    "t_star": t_star,
+                    "x_star": x_star,
+                    "mean_rho": mean_rho,
+                    "total_mass": total_mass,
+                    "p_p1": p_p1 if math.isfinite(p_p1) else None,
+                }
+            )
 
     # Save metadata
     metadata: dict[str, object] = {
-        "config": {k: str(v) if isinstance(v, Path) else v
-                   for k, v in asdict(config).items()},
+        "config": {k: str(v) if isinstance(v, Path) else v for k, v in asdict(config).items()},
         "diagnostics": diagnostics,
         "front_series": [
             {"step": s, "t_star": ts, "x_star": xs, "mean_rho": mr}
             for s, ts, xs, mr in front_series
         ],
+        **({"fs_handoff": fs_handoff} if config.model == "fs" else {}),
+        **(
+            {
+                "free_surface_quality_curve": fs_runtime.get("steps", []),
+                "free_surface_quality_gate": {
+                    "passed": True,
+                    "unexplained_tolerance": config.free_surface_unexplained_tolerance,
+                    "paired_tolerance": config.free_surface_paired_tolerance,
+                    "relative_cumulative_drift_tolerance": config.free_surface_relative_cumulative_drift_tolerance,
+                    "relative_drift_slope_tolerance": config.free_surface_relative_drift_slope_tolerance,
+                    "topology_normalized_drift_tolerance": config.free_surface_topology_normalized_drift_tolerance,
+                    "drift_slope_window": config.free_surface_drift_slope_window,
+                    "topology_changed": fs_topology_changed,
+                    "diagnostic": "tracked-mass accounting only; not a physical/PV closure claim",
+                },
+                "free_surface_topology_events": fs_topology_events,
+            }
+            if config.model == "fs"
+            else {}
+        ),
     }
 
     meta_path = run_dir / "run_metadata.json"
@@ -572,17 +867,18 @@ def run_dam_break_3d(config: DamBreak3DConfig) -> Path:
 def _save_validation_plot(front_series, config, run_dir):
     """Save validation plot comparing front position with experimental data."""
     import matplotlib.pyplot as plt
+
     ts = [fs[1] for fs in front_series]
     xs = [fs[2] for fs in front_series]
     plt.figure(figsize=(8, 5))
-    plt.plot(ts, xs, 'b.-', label=f'TensorLBM ({config.model.upper()})', linewidth=1.5)
+    plt.plot(ts, xs, "b.-", label=f"TensorLBM ({config.model.upper()})", linewidth=1.5)
     ref_t, ref_x = zip(*_KOSHIZUKA_FRONT)
-    plt.plot(ref_t, ref_x, 'k^--', label='Koshizuka and Oka (1996)', markersize=4, alpha=0.6)
+    plt.plot(ref_t, ref_x, "k^--", label="Koshizuka and Oka (1996)", markersize=4, alpha=0.6)
     mm_t, mm_x = zip(*_MARTIN_MOYCE_FRONT)
-    plt.plot(mm_t, mm_x, 'rs--', label='Martin and Moyce (1952)', markersize=4, alpha=0.6)
-    plt.xlabel('Dimensionless time  t*')
-    plt.ylabel('Dimensionless front position  X*')
-    plt.title(f'3D Dam-Break ({config.model.upper()}, tau={config.tau})')
+    plt.plot(mm_t, mm_x, "rs--", label="Martin and Moyce (1952)", markersize=4, alpha=0.6)
+    plt.xlabel("Dimensionless time  t*")
+    plt.ylabel("Dimensionless front position  X*")
+    plt.title(f"3D Dam-Break ({config.model.upper()}, tau={config.tau})")
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()

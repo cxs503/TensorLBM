@@ -1,0 +1,114 @@
+{
+  "schema": "tensorlbm-cylinder-bfl-control-volume-v4",
+  "configuration": {
+    "schema_version": 4,
+    "shape_zyx": [
+      3,
+      600,
+      600
+    ],
+    "radius": 15.0,
+    "center_x_fraction": 0.3,
+    "reynolds": 100.0,
+    "lattice_speed": 0.06,
+    "collision_model": "cumulant_d3q19_cs0",
+    "warmup_steps": 52500,
+    "ramp_steps": 750,
+    "sponge_width": 30,
+    "sponge_strength": 0.2,
+    "sponge_inlet": false,
+    "cv_margin": 10,
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "periodic_axes": [
+      "z"
+    ],
+    "link_force_frame": "laboratory_after_wall_activation",
+    "tau": 0.554,
+    "steps": 90000,
+    "device": "cuda:0",
+    "resumed_from_step": 0,
+    "checkpoint_path": "/tmp/cylinder-v4-equivalent-r15-90000.ckpt",
+    "report_interval": 750,
+    "checkpoint_interval": 7500,
+    "statistics_window_steps_resolved": 37500,
+    "statistics_window_steps_requested": 37500,
+    "minimum_shedding_cycles": 8.0,
+    "domain_clearance_diameters": {
+      "upstream_center_distance": 6.0,
+      "downstream_center_distance": 14.0,
+      "lateral_center_distance": 10.0
+    }
+  },
+  "result": {
+    "cd_control_volume": 1.435706587575468,
+    "cd_bfl_link": 1.435716150307361,
+    "observer_difference_pct": 0.0006660644992343529,
+    "cd_reference": 1.33,
+    "reference_error_pct": 7.947863727478791,
+    "mean_lift_coefficient": 0.0002691602716108087,
+    "strouhal": 0.17379441447831273,
+    "strouhal_reference": 0.164,
+    "strouhal_reference_error_pct": 5.972203950190686,
+    "shedding_cycles_observed": 13.034581085873455,
+    "drag_stationarity": {
+      "sample_count": 37500,
+      "block_size": 4687,
+      "block_count": 8,
+      "mean": 1.4357074838873307,
+      "block_means": [
+        1.4262495297849644,
+        1.4349629466429041,
+        1.4374520772004302,
+        1.436872246947319,
+        1.4369920083672323,
+        1.4382351770227448,
+        1.4380178610920524,
+        1.4368780240409962
+      ],
+      "relative_range_pct": 0.8348251557014928,
+      "half_mean_drift_pct": 0.2539909785089579,
+      "linear_trend_pct": 0.5348297730034671,
+      "standard_error_pct": 0.0972436716316296,
+      "confidence95_half_width_pct": 0.22998128340880403,
+      "autocorrelation_zero_crossing_lag": 406,
+      "integrated_autocorrelation_time_steps": 501.3031163796191,
+      "effective_sample_count": 74.80504065249532,
+      "autocorrelation_standard_error_pct": 0.06950614528232921,
+      "dominant_period_steps": 1442.3076923076924,
+      "dominant_period_power_fraction": 0.8144538117596823,
+      "finite": true,
+      "sufficiently_sampled": true
+    },
+    "density_mean": 0.9998553395271301,
+    "density_min_max": [
+      0.9891142845153809,
+      1.0064343214035034
+    ],
+    "relative_mass_drift": -0.00014466047286987305,
+    "maximum_speed": 0.08130013942718506,
+    "finite": true
+  },
+  "acceptance": {
+    "drag_error_target_pct": 5.0,
+    "strouhal_error_target_pct": 5.0,
+    "stationarity_target_pct": 1.0,
+    "force_observer_target_pct": 1.0,
+    "minimum_shedding_cycles": 8.0,
+    "drag_target_met": false,
+    "strouhal_target_met": false,
+    "stationarity_target_met": true,
+    "force_observer_target_met": true,
+    "cycle_target_met": true,
+    "domain_reference_target_met": true,
+    "numerical_quality_admitted": true,
+    "admitted": false
+  },
+  "cuda_memory_preflight": {
+    "free_gib": 23.28839111328125,
+    "total_gib": 23.56072998046875,
+    "estimated_peak_gib": 1.0058283805847168,
+    "reserve_gib": 1.0,
+    "headroom_gib": 21.282562732696533,
+    "admitted": true
+  }
+}

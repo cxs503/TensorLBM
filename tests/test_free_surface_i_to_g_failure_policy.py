@@ -1,4 +1,5 @@
 """Cold I→G strict-failure campaign policy contracts."""
+
 from __future__ import annotations
 
 import inspect
@@ -21,7 +22,9 @@ class _State:
     mass: torch.Tensor
 
 
-def _failure_inputs() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+def _failure_inputs() -> tuple[
+    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+]:
     shape = (3, 3, 5)
     flags = torch.full(shape, GAS, dtype=torch.int8)
     flags[1, 1, 2] = INTERFACE
@@ -29,7 +32,10 @@ def _failure_inputs() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.T
     fill[1, 1, 2] = 0.01
     zero = torch.zeros(shape)
     return (
-        equilibrium3d(torch.ones(shape), zero, zero, zero), fill, flags, fill.clone(),
+        equilibrium3d(torch.ones(shape), zero, zero, zero),
+        fill,
+        flags,
+        fill.clone(),
         torch.zeros(shape, dtype=torch.bool),
     )
 
@@ -38,7 +44,11 @@ def _legacy_step(state: _State) -> _State:
     f, fill, flags, mass, solid = _failure_inputs()
     del f, fill, flags, mass
     result = free_surface_step(
-        state.f, state.fill, state.flags, solid, mass=state.mass,
+        state.f,
+        state.fill,
+        state.flags,
+        solid,
+        mass=state.mass,
         enable_i_to_g_ownership_closure=False,
     )
     return _State(*result[:4])
@@ -48,8 +58,13 @@ def _strict_step(state: _State, capture: dict[str, object]) -> _State:
     f, fill, flags, mass, solid = _failure_inputs()
     del f, fill, flags, mass
     result = free_surface_step(
-        state.f, state.fill, state.flags, solid, mass=state.mass,
-        enable_i_to_g_ownership_closure=True, capture_replay_stages=True,
+        state.f,
+        state.fill,
+        state.flags,
+        solid,
+        mass=state.mass,
+        enable_i_to_g_ownership_closure=True,
+        capture_replay_stages=True,
         replay_capture=capture,
     )
     return _State(*result[:4])
@@ -81,7 +96,9 @@ def test_policy_module_is_cold_and_not_package_default_import() -> None:
     assert "free_surface_i_to_g_failure_policy" not in inspect.getsource(tensorlbm)
 
 
-def test_raise_propagates_original_error_without_evidence_and_preserves_mutating_callback_prestate() -> None:
+def test_raise_propagates_original_error_without_evidence_and_preserves_mutating_callback_prestate() -> (
+    None
+):
     from tensorlbm.free_surface_i_to_g_failure_policy import run_i_to_g_policy_campaign
 
     f, fill, flags, mass, _ = _failure_inputs()
@@ -95,14 +112,20 @@ def test_raise_propagates_original_error_without_evidence_and_preserves_mutating
 
     with pytest.raises(TopologyTransactionError) as caught:
         run_i_to_g_policy_campaign(
-            initial, 1, mutating_without_evidence,
-            snapshot_state=_snapshot, states_equal=_equal, fingerprint_state=_fingerprint,
+            initial,
+            1,
+            mutating_without_evidence,
+            snapshot_state=_snapshot,
+            states_equal=_equal,
+            fingerprint_state=_fingerprint,
         )
     assert caught.value is expected
     assert _equal(initial, before)
 
 
-def test_non_raising_policy_rejects_missing_exact_failure_evidence_after_preserving_prestate() -> None:
+def test_non_raising_policy_rejects_missing_exact_failure_evidence_after_preserving_prestate() -> (
+    None
+):
     from tensorlbm.free_surface_i_to_g_failure_policy import (
         IToGStrictFailurePolicy,
         run_i_to_g_policy_campaign,
@@ -118,9 +141,13 @@ def test_non_raising_policy_rejects_missing_exact_failure_evidence_after_preserv
 
     with pytest.raises(RuntimeError, match="strict failure evidence is unavailable"):
         run_i_to_g_policy_campaign(
-            initial, 1, mutating_without_capture,
+            initial,
+            1,
+            mutating_without_capture,
             policy=IToGStrictFailurePolicy.STOP_AND_REPORT,
-            snapshot_state=_snapshot, states_equal=_equal, fingerprint_state=_fingerprint,
+            snapshot_state=_snapshot,
+            states_equal=_equal,
+            fingerprint_state=_fingerprint,
         )
     assert _equal(initial, before)
 
@@ -141,8 +168,12 @@ def test_shallow_snapshot_tensor_sharing_is_deepcopied_before_strict_callback() 
 
     with pytest.raises(TopologyTransactionError, match="shallow snapshot mutation"):
         run_i_to_g_policy_campaign(
-            initial, 1, mutating_failure,
-            snapshot_state=shallow_snapshot, states_equal=_equal, fingerprint_state=_fingerprint,
+            initial,
+            1,
+            mutating_failure,
+            snapshot_state=shallow_snapshot,
+            states_equal=_equal,
+            fingerprint_state=_fingerprint,
         )
     assert _equal(initial, before)
 
@@ -151,12 +182,23 @@ def test_shallow_snapshot_tensor_sharing_is_deepcopied_before_strict_callback() 
     ("kwargs", "message"),
     (
         ({}, "all policies require snapshot_state, states_equal, and fingerprint_state"),
-        ({"snapshot_state": _snapshot, "states_equal": _equal}, "all policies require snapshot_state, states_equal, and fingerprint_state"),
-        ({"snapshot_state": _snapshot, "fingerprint_state": _fingerprint}, "all policies require snapshot_state, states_equal, and fingerprint_state"),
-        ({"states_equal": _equal, "fingerprint_state": _fingerprint}, "all policies require snapshot_state, states_equal, and fingerprint_state"),
+        (
+            {"snapshot_state": _snapshot, "states_equal": _equal},
+            "all policies require snapshot_state, states_equal, and fingerprint_state",
+        ),
+        (
+            {"snapshot_state": _snapshot, "fingerprint_state": _fingerprint},
+            "all policies require snapshot_state, states_equal, and fingerprint_state",
+        ),
+        (
+            {"states_equal": _equal, "fingerprint_state": _fingerprint},
+            "all policies require snapshot_state, states_equal, and fingerprint_state",
+        ),
     ),
 )
-def test_all_policies_reject_missing_state_isolation_callbacks(kwargs: dict[str, object], message: str) -> None:
+def test_all_policies_reject_missing_state_isolation_callbacks(
+    kwargs: dict[str, object], message: str
+) -> None:
     from tensorlbm.free_surface_i_to_g_failure_policy import run_i_to_g_policy_campaign
 
     f, fill, flags, mass, _ = _failure_inputs()
@@ -173,7 +215,9 @@ def test_fallback_deepcopies_adapter_identity_snapshot() -> None:
     f, fill, flags, mass, _ = _failure_inputs()
     initial = _State(f, fill, flags, mass)
     report = run_i_to_g_policy_campaign(
-        initial, 1, _strict_step,
+        initial,
+        1,
+        _strict_step,
         policy=IToGStrictFailurePolicy.SKIP_EXPERIMENTAL_PROPOSAL,
         allow_experimental_fallback=True,
         legacy_step=_legacy_step,
@@ -204,8 +248,13 @@ def test_stop_and_report_returns_last_committed_state_and_exact_failure_evidence
         return _strict_step(state, capture)
 
     report = run_i_to_g_policy_campaign(
-        initial, 3, step, policy=IToGStrictFailurePolicy.STOP_AND_REPORT,
-        snapshot_state=_snapshot, states_equal=_equal, fingerprint_state=_fingerprint,
+        initial,
+        3,
+        step,
+        policy=IToGStrictFailurePolicy.STOP_AND_REPORT,
+        snapshot_state=_snapshot,
+        states_equal=_equal,
+        fingerprint_state=_fingerprint,
     )
     assert report.status == STOPPED_AND_REPORTED
     assert report.physical_closure_claim is False
@@ -244,7 +293,9 @@ def test_explicit_fallback_restarts_same_prestate_with_legacy_path_and_is_withhe
         return _legacy_step(state)
 
     report = run_i_to_g_policy_campaign(
-        initial, 1, strict,
+        initial,
+        1,
+        strict,
         policy=IToGStrictFailurePolicy.SKIP_EXPERIMENTAL_PROPOSAL,
         allow_experimental_fallback=True,
         legacy_step=legacy,
@@ -284,7 +335,9 @@ def test_fallback_deepcopies_a_shallow_wrapper_before_legacy_mutation() -> None:
         state.mass.fill_(99.0)
         return state
 
-    with pytest.raises(RuntimeError, match="legacy callback caused fallback input fingerprint mutation"):
+    with pytest.raises(
+        RuntimeError, match="legacy callback caused fallback input fingerprint mutation"
+    ):
         run_i_to_g_policy_campaign(
             initial,
             1,
@@ -319,7 +372,9 @@ def test_fallback_revalidates_isolation_after_legacy_exception() -> None:
         state.mass.fill_(99.0)
         raise ValueError("legacy callback failure")
 
-    with pytest.raises(RuntimeError, match="legacy callback caused fallback input fingerprint mutation"):
+    with pytest.raises(
+        RuntimeError, match="legacy callback caused fallback input fingerprint mutation"
+    ):
         run_i_to_g_policy_campaign(
             initial,
             1,
@@ -335,7 +390,9 @@ def test_fallback_revalidates_isolation_after_legacy_exception() -> None:
     assert _equal(initial, original)
 
 
-@pytest.mark.parametrize("case_id", ("B_forced_conversion_deterministic", "C_dam_break_style_tiny_dynamic_topology"))
+@pytest.mark.parametrize(
+    "case_id", ("B_forced_conversion_deterministic", "C_dam_break_style_tiny_dynamic_topology")
+)
 def test_real_b_c_stop_reports_two_commits_then_step_three_strict_failure(case_id: str) -> None:
     from tensorlbm.free_surface_closure_experiment import _conversion_state
     from tensorlbm.free_surface_i_to_g_failure_policy import (
@@ -349,17 +406,28 @@ def test_real_b_c_stop_reports_two_commits_then_step_three_strict_failure(case_i
 
     def strict(state: _State, capture: dict[str, object]) -> _State:
         result = free_surface_step(
-            state.f, state.fill, state.flags, solid, mass=state.mass,
-            tau=1.0, rho_gas=1.0e-3, paired_liquid_interface_debit=True,
-            enable_i_to_g_ownership_closure=True, capture_replay_stages=True,
+            state.f,
+            state.fill,
+            state.flags,
+            solid,
+            mass=state.mass,
+            tau=1.0,
+            rho_gas=1.0e-3,
+            paired_liquid_interface_debit=True,
+            enable_i_to_g_ownership_closure=True,
+            capture_replay_stages=True,
             replay_capture=capture,
         )
         return _State(*result[:4])
 
     report = run_i_to_g_policy_campaign(
-        initial, 3 if case_id.startswith("B_") else 10, strict,
+        initial,
+        3 if case_id.startswith("B_") else 10,
+        strict,
         policy=IToGStrictFailurePolicy.STOP_AND_REPORT,
-        snapshot_state=_snapshot, states_equal=_equal, fingerprint_state=_fingerprint,
+        snapshot_state=_snapshot,
+        states_equal=_equal,
+        fingerprint_state=_fingerprint,
     )
     assert report.status == STOPPED_AND_REPORTED
     assert report.committed_steps == 2
@@ -368,7 +436,9 @@ def test_real_b_c_stop_reports_two_commits_then_step_three_strict_failure(case_i
     assert report.failure.strict_replay.status == "STRICT_FAILURE_REPLAYED_EXACT"
 
 
-@pytest.mark.parametrize("case_id", ("B_forced_conversion_deterministic", "C_dam_break_style_tiny_dynamic_topology"))
+@pytest.mark.parametrize(
+    "case_id", ("B_forced_conversion_deterministic", "C_dam_break_style_tiny_dynamic_topology")
+)
 def test_real_b_c_explicit_fallback_continues_legacy_but_remains_not_physical(case_id: str) -> None:
     from tensorlbm.free_surface_closure_experiment import _conversion_state
     from tensorlbm.free_surface_i_to_g_failure_policy import (
@@ -383,23 +453,38 @@ def test_real_b_c_explicit_fallback_continues_legacy_but_remains_not_physical(ca
 
     def strict(state: _State, capture: dict[str, object]) -> _State:
         result = free_surface_step(
-            state.f, state.fill, state.flags, solid, mass=state.mass,
-            tau=1.0, rho_gas=1.0e-3, paired_liquid_interface_debit=True,
-            enable_i_to_g_ownership_closure=True, capture_replay_stages=True,
+            state.f,
+            state.fill,
+            state.flags,
+            solid,
+            mass=state.mass,
+            tau=1.0,
+            rho_gas=1.0e-3,
+            paired_liquid_interface_debit=True,
+            enable_i_to_g_ownership_closure=True,
+            capture_replay_stages=True,
             replay_capture=capture,
         )
         return _State(*result[:4])
 
     def legacy(state: _State) -> _State:
         result = free_surface_step(
-            state.f, state.fill, state.flags, solid, mass=state.mass,
-            tau=1.0, rho_gas=1.0e-3, paired_liquid_interface_debit=True,
+            state.f,
+            state.fill,
+            state.flags,
+            solid,
+            mass=state.mass,
+            tau=1.0,
+            rho_gas=1.0e-3,
+            paired_liquid_interface_debit=True,
             enable_i_to_g_ownership_closure=False,
         )
         return _State(*result[:4])
 
     report = run_i_to_g_policy_campaign(
-        initial, 3 if case_id.startswith("B_") else 10, strict,
+        initial,
+        3 if case_id.startswith("B_") else 10,
+        strict,
         policy=IToGStrictFailurePolicy.SKIP_EXPERIMENTAL_PROPOSAL,
         allow_experimental_fallback=True,
         legacy_step=legacy,
