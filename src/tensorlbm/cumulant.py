@@ -97,12 +97,21 @@ def collide_cumulant_d2q9(
     omega_3: float = 1.0,
     omega_4: float = 1.0,
 ) -> torch.Tensor:
-    """Cumulant LBM collision step for the D2Q9 lattice.
+    """Cumulant-family LBM collision step for the D2Q9 lattice.
 
-    Implements the 2-D cumulant operator by working in raw-moment space
-    (the 9 moments are uniquely indexed as (p, q) with p+q ≤ 2 plus higher
-    ghost modes).  The transformation to/from cumulant space is analytic and
-    exact for the D2Q9 model.
+    Implements the 2-D operator by working in raw-moment space (the 9
+    moments are uniquely indexed as (p, q) with p+q ≤ 2 plus higher
+    ghost modes), then shifting to **central moments** for relaxation.
+
+    Note on the "cumulant" naming: for D2Q9 the relaxation is performed
+    in central-moment space (κ_{pq}), not the full nonlinear cumulant
+    space C_{pq} used by the D3Q27 implementation in this module.  For
+    orders ≤ 3 central moments and cumulants coincide, so the Galilean
+    invariance of the 2nd-order stress modes is preserved; the 4th-order
+    cumulant corrections used by Geier 2015 (C_{220} etc.) apply only to
+    D3Q27.  This D2Q9 variant is therefore equivalent to a cascaded
+    (central-moment) collision (Lycett-Brown & Luo 2016) with
+    independently tunable ghost-mode rates.
 
     Args:
         f:        Distribution tensor, shape ``(9, ny, nx)``.
@@ -110,8 +119,8 @@ def collide_cumulant_d2q9(
                   ν = (τ − ½) / 3.
         omega_b:  Relaxation rate for the bulk-viscosity (trace) mode.
                   ``1.0`` corresponds to inviscid bulk behaviour.
-        omega_3:  Relaxation rate for 3rd-order ghost modes.
-        omega_4:  Relaxation rate for 4th-order ghost modes.
+        omega_3:  Relaxation rate for 3rd-order ghost modes (κ21, κ12).
+        omega_4:  Relaxation rate for 4th-order ghost mode (κ22).
 
     Returns:
         Post-collision distribution tensor of shape ``(9, ny, nx)``.
@@ -168,7 +177,11 @@ def collide_cumulant_d2q9(
     # Equilibrium central moments (Maxwell-Boltzmann):
     #   κ20^eq = ρ c_s² ,  κ02^eq = ρ c_s²
     #   κ11^eq = 0,  κ21^eq = 0,  κ12^eq = 0
-    #   κ22^eq = ρ c_s^4 = ρ/9
+    #   κ22^eq = ρ c_s^4 + O(u²) velocity terms.
+    # The full velocity-dependent κ22^eq is computed from the equilibrium
+    # distribution below to ensure the fixed-point property holds exactly
+    # (the naive ρ c_s^4 = ρ/9 omits the O(u²) corrections and would
+    # perturb the equilibrium at finite Ma).
     # ------------------------------------------------------------------
     k20_eq = rho * cs2
     k02_eq = rho * cs2
