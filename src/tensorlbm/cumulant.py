@@ -79,9 +79,11 @@ Lycett-Brown, D., & Luo, K. H. (2016).
 """
 from __future__ import annotations
 
+import math
 import torch
 
 from .d2q9 import equilibrium, macroscopic
+from .d3q19 import equilibrium3d, macroscopic3d
 from .d3q27 import equilibrium27, macroscopic27
 
 # ---------------------------------------------------------------------------
