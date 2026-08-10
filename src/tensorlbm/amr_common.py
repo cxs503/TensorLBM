@@ -107,14 +107,14 @@ def _fh_coarse_to_fine_3d(
     scale = tau_f / tau_c
     f_rescaled = f_eq + scale * f_neq
 
+    # Cell-block upsampling (correct ratio-2 coordinate mapping; see
+    # adaptive_refinement._coarse_to_fine_2d for why align_corners
+    # interpolation is wrong for LBM grid refinement).
     q, nz_c, ny_c, nx_c = f_rescaled.shape
-    out = F.interpolate(
-        f_rescaled.unsqueeze(0),
-        size=(nz_c * ratio, ny_c * ratio, nx_c * ratio),
-        mode="trilinear",
-        align_corners=True,
-    )
-    return out.squeeze(0)
+    out = (f_rescaled.repeat_interleave(ratio, dim=1)
+           .repeat_interleave(ratio, dim=2)
+           .repeat_interleave(ratio, dim=3))
+    return out.contiguous()
 
 
 def _fh_fine_to_coarse_3d(
