@@ -109,15 +109,18 @@ class WakeRegion:
 def _coarse_to_fine_3d(f_coarse: torch.Tensor, ratio: int = 2) -> torch.Tensor:
     """Upsample distributions from coarse to fine grid.
 
-    Uses trilinear interpolation.  Input shape: (19, nz, ny, nx).
+    Cell-block upsampling: fine cell ``(r*i+di, r*j+dj, r*k+dk)`` inherits
+    coarse cell ``(i, j, k)``.  Input shape: (19, nz, ny, nx) → (19, nz*r, ny*r, nx*r).
+
+    ``F.interpolate(align_corners=True)`` is deliberately NOT used: it samples
+    at ``j*(n-1)/(m-1)`` instead of ``j/ratio``, shifting fine cells by half a
+    coarse cell and breaking the coarse→fine→coarse round trip at interfaces.
     """
-    # Use torch.nn.functional.interpolate for efficient upsampling
     b19, nz, ny, nx = f_coarse.shape
-    f_4d = f_coarse.unsqueeze(0)  # (1, 19, nz, ny, nx) → treat 19 as channels
-    f_up = F.interpolate(
-        f_4d, size=(nz * ratio, ny * ratio, nx * ratio), mode="trilinear", align_corners=True
-    )
-    return f_up.squeeze(0)
+    f_up = (f_coarse.repeat_interleave(ratio, dim=1)
+            .repeat_interleave(ratio, dim=2)
+            .repeat_interleave(ratio, dim=3))
+    return f_up.contiguous()
 
 
 def _fine_to_coarse_3d(f_fine: torch.Tensor, ratio: int = 2) -> torch.Tensor:
