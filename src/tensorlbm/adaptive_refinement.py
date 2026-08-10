@@ -83,15 +83,19 @@ MAX_VR_LEVELS: int = 5
 
 
 def _coarse_to_fine_2d(f_coarse: torch.Tensor, ratio: int = 2) -> torch.Tensor:
-    """Bilinear upsample D2Q9 distributions.  Shape: (9, ny, nx) → (9, ny*r, nx*r)."""
+    """Bilinear upsample D2Q9 distributions.  Shape: (9, ny, nx) → (9, ny*r, nx*r).
+
+    Each coarse cell is replicated into a ``ratio x ratio`` block of fine
+    cells (nearest-cell mapping).  This is the correct coordinate mapping
+    for LBM grid refinement: fine cell ``(ri+di, rj+dj)`` inherits coarse
+    cell ``(i, j)``.  ``F.interpolate(align_corners=True)`` must NOT be used
+    here — it samples at ``j*(n-1)/(m-1)`` instead of ``j/ratio``, shifting
+    every fine cell by half a coarse cell and breaking the coarse→fine→coarse
+    round trip (linear fields gain O(h) errors at the interface).
+    """
     q, ny, nx = f_coarse.shape
-    out = F.interpolate(
-        f_coarse.unsqueeze(0),  # (1, 9, ny, nx)
-        size=(ny * ratio, nx * ratio),
-        mode="bilinear",
-        align_corners=True,
-    )
-    return out.squeeze(0)  # (9, ny*r, nx*r)
+    out = f_coarse.repeat_interleave(ratio, dim=1).repeat_interleave(ratio, dim=2)
+    return out.contiguous()  # (9, ny*r, nx*r)
 
 
 def _fine_to_coarse_2d(f_fine: torch.Tensor, ratio: int = 2) -> torch.Tensor:
@@ -141,15 +145,11 @@ def _fh_coarse_to_fine_2d(
     scale = tau_f / tau_c
     f_rescaled = f_eq + scale * f_neq
 
-    # Bilinear spatial interpolation
+    # Cell-block upsampling (correct ratio-2 coordinate mapping; see
+    # _coarse_to_fine_2d for why align_corners interpolation is wrong).
     q, ny_c, nx_c = f_rescaled.shape
-    out = F.interpolate(
-        f_rescaled.unsqueeze(0),
-        size=(ny_c * ratio, nx_c * ratio),
-        mode="bilinear",
-        align_corners=True,
-    )
-    return out.squeeze(0)
+    out = f_rescaled.repeat_interleave(ratio, dim=1).repeat_interleave(ratio, dim=2)
+    return out.contiguous()
 
 
 def _fh_coarse_to_fine_3d(
@@ -180,14 +180,12 @@ def _fh_coarse_to_fine_3d(
     scale = tau_f / tau_c
     f_rescaled = f_eq + scale * f_neq
 
+    # Cell-block upsampling (correct ratio-2 coordinate mapping).
     b19, nz_c, ny_c, nx_c = f_rescaled.shape
-    out = F.interpolate(
-        f_rescaled.unsqueeze(0),
-        size=(nz_c * ratio, ny_c * ratio, nx_c * ratio),
-        mode="trilinear",
-        align_corners=True,
-    )
-    return out.squeeze(0)
+    out = (f_rescaled.repeat_interleave(ratio, dim=1)
+           .repeat_interleave(ratio, dim=2)
+           .repeat_interleave(ratio, dim=3))
+    return out.contiguous()
 
 
 def _fh_fine_to_coarse_2d(
@@ -850,7 +848,14 @@ class AdaptiveSolver2D:
         return self.coarse_f
 
     def _inject_to_patch(self, patch: AMRPatch2D) -> None:
-        """Overwrite fine-level boundary cells with upsampled parent values."""
+        """Overwrite fine-level boundary cells with upsampled parent values.
+
+        Only the outermost 1-cell halo is injected (LBM streaming has a
+        stencil radius of 1: a fine cell's unknown populations at the
+        interface come from its immediate coarse neighbours).  The interior
+        of the fine patch is left untouched so that fine-level physics
+        evolves independently of the parent grid.
+        """
         b = patch.box
         r = patch.ratio
         parent_f = self._parent_f(patch)
@@ -865,8 +870,15 @@ class AdaptiveSolver2D:
             f_up = _coarse_to_fine_2d(f_parent_patch, r)
 
         ny_f, nx_f = patch.f.shape[1], patch.f.shape[2]
-        border = torch.ones((ny_f, nx_f), dtype=torch.bool, device=self.device)
-        border[r:-r, r:-r] = False
+        # 1-cell halo: only the outermost ring of fine cells is replaced.
+        # (LBM velocity set has |c| = 1, so information propagates one cell
+        # per step; a wider border would overwrite genuinely evolved fine
+        # cells with parent-grid interpolation and smear fine detail.)
+        border = torch.zeros((ny_f, nx_f), dtype=torch.bool, device=self.device)
+        border[0, :] = True
+        border[-1, :] = True
+        border[:, 0] = True
+        border[:, -1] = True
 
         fy = min(f_up.shape[1], ny_f)
         fx = min(f_up.shape[2], nx_f)
