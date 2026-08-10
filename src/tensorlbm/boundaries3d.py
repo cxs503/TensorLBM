@@ -345,15 +345,33 @@ def far_field_bc_3d(
     obstacle_mask: torch.Tensor | None = None,
     uy: float = 0.0,
     uz: float = 0.0,
+    bc_config: dict | None = None,
 ) -> torch.Tensor:
     """Free-stream (Dirichlet) far-field boundary condition for external aero.
 
-    Imposes the free-stream equilibrium on the inlet and **all four lateral
-    faces** (y±, z±), zero-gradient outlet at x=nx-1.  Unlike channel walls
-    (bounce-back on top/bottom) the lateral faces do not accelerate the flow
-    around the body, so there is **no blockage** — the body sees effectively
-    unbounded flow.  Validated: sphere Re=100 Cd error ~65% (channel) → ~9%
-    (far-field) at the same grid.
+    Imposes the free-stream equilibrium on the inlet and selected lateral
+    faces, zero-gradient outlet at x=nx-1.  When ``bc_config`` is provided,
+    only the faces listed in ``far_field_faces`` receive the free-stream
+    equilibrium; faces in ``periodic_faces`` are left untouched (periodic
+    streaming handles them).  When ``bc_config`` is ``None`` (legacy), all
+    four lateral faces (y±, z±) receive the far-field condition.
+
+    Args:
+        f:              Distribution tensor, shape ``(Q, nz, ny, nx)``.
+        u_in:           Free-stream x-velocity in lattice units.
+        obstacle_mask:  Optional solid mask for bounce-back inside the body.
+        uy:             Free-stream y-velocity (default 0).
+        uz:             Free-stream z-velocity (default 0).
+        bc_config:      Optional dict with keys:
+            - ``far_field_faces``: list of faces to impose free-stream on.
+              Each face is a string like ``"y-"``, ``"y+"``, ``"z-"``,
+              ``"z+"``, ``"x-"`` (inlet), ``"x+"`` (outlet).
+            - ``periodic_faces``: list of faces to leave untouched.
+              If a face is in neither list it defaults to far-field
+              (backward-compatible).
+
+    Validated: sphere Re=100 Cd error ~65% (channel) → ~9% (far-field)
+    at the same grid.
     """
     rho1 = torch.ones((f.shape[1], f.shape[2], f.shape[3]), dtype=f.dtype, device=f.device)
     feq = equilibrium3d(
@@ -361,12 +379,32 @@ def far_field_bc_3d(
         torch.full_like(rho1, uz), device=f.device,
     )
     f = f.clone()
-    f[:, :, :, 0] = feq[:, :, :, 0]          # inlet (free stream)
-    f[:, :, :, -1] = f[:, :, :, -2]          # outlet (zero gradient)
-    f[:, 0, :, :] = feq[:, 0, :, :]          # y- lateral
-    f[:, -1, :, :] = feq[:, -1, :, :]        # y+ lateral
-    f[:, :, 0, :] = feq[:, :, 0, :]          # z- lateral
-    f[:, :, -1, :] = feq[:, :, -1, :]        # z+ lateral
+
+    # Determine which faces get far-field vs periodic treatment
+    if bc_config is not None:
+        ff = set(bc_config.get("far_field_faces", []))
+        periodic = set(bc_config.get("periodic_faces", []))
+    else:
+        # Legacy: all lateral faces are far-field
+        ff = {"y-", "y+", "z-", "z+"}
+        periodic = set()
+
+    # Inlet (x-): always far-field unless explicitly periodic
+    if "x-" not in periodic:
+        f[:, :, :, 0] = feq[:, :, :, 0]
+    # Outlet (x+): always zero-gradient unless explicitly periodic
+    if "x+" not in periodic:
+        f[:, :, :, -1] = f[:, :, :, -2]
+    # Lateral faces
+    if "y-" in ff and "y-" not in periodic:
+        f[:, 0, :, :] = feq[:, 0, :, :]
+    if "y+" in ff and "y+" not in periodic:
+        f[:, -1, :, :] = feq[:, -1, :, :]
+    if "z-" in ff and "z-" not in periodic:
+        f[:, :, 0, :] = feq[:, :, 0, :]
+    if "z+" in ff and "z+" not in periodic:
+        f[:, :, -1, :] = feq[:, :, -1, :]
+
     if obstacle_mask is not None:
         f = bounce_back_cells_3d(f, obstacle_mask)
     return f

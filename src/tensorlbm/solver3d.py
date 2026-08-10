@@ -180,6 +180,51 @@ def stream3d(f: torch.Tensor) -> torch.Tensor:
     return f[q_idx, z_idx, y_idx, x_idx]
 
 
+# D3Q19 velocity shifts for roll-based streaming (matches C matrix order)
+_D3Q19_SHIFTS: list[tuple[int, int, int]] = [
+    (0, 0, 0),       #  0: rest
+    (1, 0, 0),       #  1: +x
+    (-1, 0, 0),      #  2: -x
+    (0, 1, 0),       #  3: +y
+    (0, -1, 0),      #  4: -y
+    (0, 0, 1),       #  5: +z
+    (0, 0, -1),      #  6: -z
+    (1, 1, 0),       #  7: +x+y
+    (-1, -1, 0),     #  8: -x-y
+    (1, -1, 0),      #  9: +x-y
+    (-1, 1, 0),      # 10: -x+y
+    (1, 0, 1),       # 11: +x+z
+    (-1, 0, -1),     # 12: -x-z
+    (1, 0, -1),      # 13: +x-z
+    (-1, 0, 1),      # 14: -x+z
+    (0, 1, 1),       # 15: +y+z
+    (0, -1, -1),     # 16: -y-z
+    (0, 1, -1),      # 17: +y-z
+    (0, -1, 1),      # 18: -y+z
+]
+
+
+def stream3d_roll(f: torch.Tensor) -> torch.Tensor:
+    """Memory-efficient D3Q19 streaming using ``torch.roll`` per direction.
+
+    Unlike :func:`stream3d` which caches 4×[19,N] int64 index tensors
+    (~12 GB for 520×208×208), this function uses ``torch.roll`` per
+    direction — trading a small speed cost for massive memory savings
+    (only 1 extra copy of f vs 12 GB of index tensors).
+
+    Args:
+        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
+
+    Returns:
+        Streamed tensor of the same shape.
+    """
+    out = torch.empty_like(f)
+    for q in range(19):
+        sx, sy, sz = _D3Q19_SHIFTS[q]
+        out[q] = torch.roll(f[q], shifts=(sz, sy, sx), dims=(0, 1, 2))
+    return out
+
+
 def correct_mass3d(f: torch.Tensor, target_mass: float) -> torch.Tensor:
     """Redistribute mass uniformly to correct global mass drift (3-D).
 
