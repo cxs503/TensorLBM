@@ -380,26 +380,54 @@ def build_control_volume(
 # Advance pieces shared by the static-block runners
 # ---------------------------------------------------------------------------
 
-def _collide(f: torch.Tensor, tau: float, collision: str, lattice: str) -> torch.Tensor:
-    """Dispatch collision operator by name and lattice."""
-    if lattice == "D3Q27":
-        if collision == "cascaded":
+def _collide(
+    f: torch.Tensor, tau: float, collision: str | None, lattice: str,
+    *,
+    les_model: str | None = None,
+    cs_smag: float = 0.05,
+    cw_wale: float = 0.5,
+) -> torch.Tensor:
+    """Dispatch collision operator by name and lattice.
+
+    ``collision``: "cumulant" | "cascaded" (explicit, no LES) or None to
+    fall through to the LES dispatch (``les_model`` wale/smagorinsky) —
+    required for high-Reynolds runs.
+    """
+    if collision is not None and collision == "cascaded":
+        if lattice == "D3Q27":
             from tensorlbm.cascaded_collision import collide_cascaded_d3q27
             return collide_cascaded_d3q27(f, tau)
-        from tensorlbm.cumulant import collide_cumulant_d3q27
-        return collide_cumulant_d3q27(f, tau, C_s=0.0)
-    if collision == "cascaded":
         from tensorlbm.cascaded_collision import collide_cascaded_d3q19
         return collide_cascaded_d3q19(f, tau)
-    return collide_cumulant_d3q19(f, tau, C_s=0.0)
+    if collision is not None and collision == "cumulant":
+        if lattice == "D3Q27":
+            from tensorlbm.cumulant import collide_cumulant_d3q27
+            return collide_cumulant_d3q27(f, tau, C_s=0.0)
+        from tensorlbm.cumulant import collide_cumulant_d3q19
+        return collide_cumulant_d3q19(f, tau, C_s=0.0)
+    # LES dispatch (collision is None)
+    if lattice == "D3Q27":
+        if les_model == "wale":
+            from tensorlbm.turbulence import collide_wale_bgk27
+            return collide_wale_bgk27(f, tau, C_w=cw_wale)
+        from tensorlbm.turbulence import collide_smagorinsky_bgk27
+        return collide_smagorinsky_bgk27(f, tau, C_s=cs_smag)
+    if les_model == "wale":
+        from tensorlbm.turbulence import collide_wale_mrt3d
+        return collide_wale_mrt3d(f, tau, C_w=cw_wale)
+    from tensorlbm.turbulence import collide_smagorinsky_mrt3d
+    return collide_smagorinsky_mrt3d(f, tau, C_s=cs_smag)
 
 
 def root_advance(
     f: torch.Tensor, tau: float,
     solid_q: torch.Tensor, sigma: torch.Tensor, lattice_speed: float,
     *,
-    collision: str = "cumulant",
+    collision: str | None = "cumulant",
     lattice: str = "D3Q19",
+    les_model: str | None = None,
+    cs_smag: float = 0.05,
+    cw_wale: float = 0.5,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Root-level advance: collide, freeze coarse solid, stream, far-field + sponge.
 
@@ -409,7 +437,10 @@ def root_advance(
     returned.
     """
     before = f
-    collided = _collide(f, tau, collision, lattice)
+    collided = _collide(
+        f, tau, collision, lattice,
+        les_model=les_model, cs_smag=cs_smag, cw_wale=cw_wale,
+    )
     post_collision = torch.where(solid_q, before, collided)
     out = _stream(post_collision, lattice)
     out = non_equilibrium_far_field_bc_3d(out, u_in=lattice_speed)
@@ -578,8 +609,11 @@ def fine_sphere_advance(
     sample_cv: bool = False,
     cv: torch.Tensor | None = None,
     solid_g: torch.Tensor | None = None,
-    collision: str = "cumulant",
+    collision: str | None = "cumulant",
     lattice: str = "D3Q19",
+    les_model: str | None = None,
+    cs_smag: float = 0.05,
+    cw_wale: float = 0.5,
 ) -> tuple[torch.Tensor, torch.Tensor, float | None]:
     """Fine-level advance: collide (freeze solid), stream, BFL, optional CV force.
 
@@ -587,7 +621,10 @@ def fine_sphere_advance(
     when ``sample_cv`` is true and ``None`` otherwise.
     """
     before = f
-    collided = _collide(f, tau, collision, lattice)
+    collided = _collide(
+        f, tau, collision, lattice,
+        les_model=les_model, cs_smag=cs_smag, cw_wale=cw_wale,
+    )
     post_collision = torch.where(solid_q, before, collided)
     out = _stream(post_collision, lattice)
     out = bfl_sphere_advance(
