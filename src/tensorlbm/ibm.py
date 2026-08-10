@@ -235,9 +235,9 @@ def ibm_force_spread(
                 iy = (iy0 + dj) % ny
                 ry = torch.tensor(iy0 + dj - yk, dtype=marker_fy.dtype, device=device)
                 wy = delta_fn(ry)
-                w = wx * wy
-                fx_grid[iy, ix] += w * fxk
-                fy_grid[iy, ix] += w * fyk
+                w = (wx * wy).item()
+                fx_grid[iy, ix] += w * fxk.item()
+                fy_grid[iy, ix] += w * fyk.item()
 
     return fx_grid, fy_grid
 
@@ -282,22 +282,29 @@ def ibm_apply_body_force_2d(
     f: torch.Tensor,
     fx_grid: torch.Tensor,
     fy_grid: torch.Tensor,
+    tau: float | None = None,
 ) -> torch.Tensor:
     """Apply a 2D Eulerian body force to the D2Q9 distribution function.
 
-    Uses the Guo (2002) first-order forcing scheme:
+    Uses the Guo (2002) forcing scheme::
 
-        f_i ← f_i + w_i · 3 · (c_ix F_x + c_iy F_y)
+        f_i ← f_i + (1 − 1/(2τ)) · w_i · 3 · (c_ix F_x + c_iy F_y)
 
-    This is a first-order correction; the Guo second-order scheme (which
-    also subtracts the force contribution from f before collision) gives
-    better accuracy but requires the force to be known before the collision
-    step.
+    where ``(1 − 1/(2τ))`` is the Guo forcing factor that accounts for
+    discrete lattice effects.
+
+    **Critical for stability**: without the ``(1 − 1/(2τ))`` factor the
+    force is applied at full strength, which overshoots for typical τ≈0.57
+    and causes divergence for moving bodies.
 
     Args:
         f:        Distribution tensor, shape ``(9, ny, nx)``.
         fx_grid:  x-body force per lattice node, shape ``(ny, nx)``.
         fy_grid:  y-body force per lattice node, shape ``(ny, nx)``.
+        tau:      Relaxation time τ.  When provided, the Guo factor
+                  ``(1 − 1/(2τ))`` is applied.  When ``None`` (legacy),
+                  the factor defaults to 1.0 (NOT recommended — causes
+                  instability for moving bodies).
 
     Returns:
         Updated distribution tensor of the same shape.
@@ -312,7 +319,11 @@ def ibm_apply_body_force_2d(
     cy = c[:, 1].view(9, 1, 1)
     w_view = w.view(9, 1, 1)
 
-    forcing = w_view * 3.0 * (cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0))
+    # Guo forcing factor: (1 − 1/(2τ)).  Essential for stability.
+    guo_factor = 1.0
+    if tau is not None:
+        guo_factor = 1.0 - 1.0 / (2.0 * tau)
+    forcing = w_view * 3.0 * guo_factor * (cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0))
     return f + forcing
 
 
@@ -444,10 +455,10 @@ def ibm_force_spread_3d(
                     iz = (iz0 + dk) % nz
                     rz = torch.tensor(iz0 + dk - zk, dtype=marker_fz.dtype, device=device)
                     wz = delta_fn(rz)
-                    weight = wx * wy * wz
-                    fx_grid[iz, iy, ix] += weight * fxk
-                    fy_grid[iz, iy, ix] += weight * fyk
-                    fz_grid[iz, iy, ix] += weight * fzk
+                    weight = (wx * wy * wz).item()
+                    fx_grid[iz, iy, ix] += weight * fxk.item()
+                    fy_grid[iz, iy, ix] += weight * fyk.item()
+                    fz_grid[iz, iy, ix] += weight * fzk.item()
 
     return fx_grid, fy_grid, fz_grid
 
@@ -507,14 +518,30 @@ def ibm_apply_body_force_3d(
     fx_grid: torch.Tensor,
     fy_grid: torch.Tensor,
     fz_grid: torch.Tensor,
+    tau: float | None = None,
 ) -> torch.Tensor:
     """Apply a 3D Guo body-force correction to a D3Q19 distribution.
+
+    Uses the Guo (2002) forcing scheme::
+
+        f_i ← f_i + (1 − 1/(2τ)) · w_i · 3 · (c_ix F_x + c_iy F_y + c_iz F_z)
+
+    where the factor ``3 = 1/c_s²`` and ``(1 − 1/(2τ))`` is the Guo
+    forcing factor that accounts for discrete lattice effects.
+
+    **Critical for stability**: without the ``(1 − 1/(2τ))`` factor the
+    force is applied at full strength, which overshoots by ~8× for typical
+    τ≈0.57 and causes immediate divergence for moving bodies.
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)``.
         fx_grid: Eulerian x-force field of shape ``(nz, ny, nx)``.
         fy_grid: Eulerian y-force field of shape ``(nz, ny, nx)``.
         fz_grid: Eulerian z-force field of shape ``(nz, ny, nx)``.
+        tau: Relaxation time τ.  When provided, the Guo factor
+            ``(1 − 1/(2τ))`` is applied.  When ``None`` (legacy),
+            the factor defaults to 1.0 (NOT recommended — causes
+            instability for moving bodies).
 
     Returns:
         Updated D3Q19 distribution tensor of the same shape.
@@ -530,7 +557,11 @@ def ibm_apply_body_force_3d(
     cy = c[:, 1].view(19, 1, 1, 1)
     cz = c[:, 2].view(19, 1, 1, 1)
     w_view = w.view(19, 1, 1, 1)
-    forcing = w_view * 3.0 * (
+    # Guo forcing factor: (1 − 1/(2τ)).  Essential for stability.
+    guo_factor = 1.0
+    if tau is not None:
+        guo_factor = 1.0 - 1.0 / (2.0 * tau)
+    forcing = w_view * 3.0 * guo_factor * (
         cx * fx_grid.unsqueeze(0) + cy * fy_grid.unsqueeze(0) + cz * fz_grid.unsqueeze(0)
     )
     return f + forcing

@@ -39,21 +39,28 @@ from .cascaded_collision import (
     collide_cascaded_d3q19,
     collide_cascaded_d3q27,
 )
-from .cumulant import (
-    collide_cumulant_d3q19,
-    collide_cumulant_d3q27,
-)
+from .cumulant import collide_cumulant_d3q27
+try:
+    from .cumulant import collide_cumulant_d3q19
+except ImportError:
+    collide_cumulant_d3q19 = None  # type: ignore[assignment]
 from .d3q19 import equilibrium3d, macroscopic3d
 from .d3q27 import (
     collide_bgk27,
     collide_mrt27,
-    collide_rlbm27,
-    collide_trt27,
     correct_mass27,
     equilibrium27,
     macroscopic27,
     stream27,
 )
+try:
+    from .d3q27 import collide_rlbm27
+except ImportError:
+    collide_rlbm27 = None  # type: ignore[assignment]
+try:
+    from .d3q27 import collide_trt27
+except ImportError:
+    collide_trt27 = None  # type: ignore[assignment]
 from .entropic_kbc import (
     collide_kbc_d3q19,
     collide_kbc_d3q27,
@@ -65,6 +72,7 @@ from .solver3d import (
     collide_trt3d,
     correct_mass3d,
     stream3d,
+    stream3d_roll,
 )
 from .suboff_cad import SuboffHullType, build_suboff_mask
 from .suboff_resistance import _voxel_wetted_area
@@ -74,6 +82,7 @@ from .wall_function_common import (
     compute_y_plus,
     wall_function,
 )
+from .drag_pressure import SurfaceMesh, drag_pressure_integration, drag_friction_integration, get_near_wall_3d
 
 __all__ = [
     "SuboffWallFnFullGridConfig",
@@ -140,7 +149,7 @@ class SuboffWallFnFullGridConfig:
     n_steps: int = 1000
     u_in: float = 0.06
     hull_length: float = 240.0
-    device: str = "sdaa:0"
+    device: str = "cuda:0"
     # Wall-function parameters
     y_val: float = 0.5
     wall_law: str = "log"
@@ -263,12 +272,11 @@ def _equilibrium(lattice: str, rho, ux, uy, uz, device=None):
 def _stream(lattice: str, f: torch.Tensor) -> torch.Tensor:
     """Dispatch to the correct streaming function.
 
-    For D3Q27, uses the memory-efficient ``stream27_roll`` (torch.roll)
-    instead of the index-tensor-based ``stream27`` to avoid OOM on
-    large grids (480×240×240).
+    For both lattices, uses the memory-efficient ``torch.roll``-based
+    streaming to avoid OOM on large grids (480×240×240).
     """
     if lattice == "D3Q19":
-        return stream3d(f)
+        return stream3d_roll(f)
     return stream27_roll(f)
 
 
@@ -313,6 +321,8 @@ def _collide(
 
     if lat == "D3Q19":
         if col == "CUMULANT":
+            if collide_cumulant_d3q19 is None:
+                raise NotImplementedError("collide_cumulant_d3q19 not implemented")
             return collide_cumulant_d3q19(f, tau)
         if col == "BGK":
             return collide_bgk3d(f, tau)
@@ -334,12 +344,16 @@ def _collide(
         if col == "MRT":
             return collide_mrt27(f, tau)
         if col == "TRT":
+            if collide_trt27 is None:
+                raise NotImplementedError("collide_trt27 not implemented")
             return collide_trt27(f, tau)
         if col == "CM":
             return collide_cascaded_d3q27(f, tau)
         if col == "KBC":
             return collide_kbc_d3q27(f, tau)
         if col == "RLBM":
+            if collide_rlbm27 is None:
+                raise NotImplementedError("collide_rlbm27 not implemented")
             return collide_rlbm27(f, tau)
 
     # Unreachable — validated in __post_init__
@@ -355,8 +369,9 @@ def _compute_drags(
     solid: torch.Tensor,
     u_tau: torch.Tensor,
     lattice: str,
+    mesh: SurfaceMesh,
 ) -> tuple[float, float]:
-    """Compute friction and pressure drag from the wall-function state.
+    """Compute friction and pressure drag using common SurfaceMesh module.
 
     * **Friction drag** = Σ (τ_w · u_x/|u|) over near-wall fluid cells.
       This is the integrated wall shear stress projected onto the
@@ -371,25 +386,18 @@ def _compute_drags(
     rho, ux, uy, uz = _macroscopic(lattice, f)
     u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
 
-    # Near-wall mask: fluid cells adjacent to solid (6-connected)
-    near = _near_wall_mask(solid)
-
     # Friction drag: Σ τ_w · (u_x / |u|) · near
     tau_w = u_tau * u_tau
     inv_umag = 1.0 / u_mag
     drag_fric = float(
-        (tau_w * (ux * inv_umag) * near.to(f.dtype)).sum().item()
+        (tau_w * (ux * inv_umag) * mesh.near.to(f.dtype)).sum().item()
     )
 
-    # Pressure drag: Σ p · (solid[+x] − solid[−x]) · fluid
+    # Pressure drag using SurfaceMesh normals
     p = (rho - 1.0) / 3.0
-    fluid = ~solid
-    # solid[+x neighbour] = roll(solid, -1, dims=2)  → sm
-    # solid[−x neighbour] = roll(solid, +1, dims=2)  → sp
-    sm = torch.roll(solid, -1, dims=2)   # solid at +x of current cell
-    sp = torch.roll(solid, 1, dims=2)    # solid at -x of current cell
+    # Use mesh.nx_n (x-component of outward normal)
     drag_pres = float(
-        (p * (sm.to(f.dtype) - sp.to(f.dtype)) * fluid.to(f.dtype)).sum().item()
+        (p * mesh.nx_n * mesh.dA).sum().item()
     )
 
     return drag_fric, drag_pres
@@ -437,6 +445,20 @@ def run_suboff_wallfn_fullgrid(
     )
     solid = solid.to(device)
 
+    # Build SurfaceMesh with analytical normals for SUBOFF hull
+    near = get_near_wall_3d(solid)
+    # Compute max radius from SUBOFF geometry ratio (R/L ≈ 1/(2×8.57))
+    from .suboff_cad import SuboffConfig
+    suboff_config = SuboffConfig()
+    max_radius = suboff_config.r_over_l * config.hull_length
+    mesh = SurfaceMesh.from_suboff(solid, near, cx, cy, cz, config.hull_length, max_radius)
+    # Move mesh tensors to device
+    mesh.near = mesh.near.to(device)
+    mesh.nx_n = mesh.nx_n.to(device)
+    mesh.ny_n = mesh.ny_n.to(device)
+    mesh.nz_n = mesh.nz_n.to(device)
+    mesh.dA = mesh.dA.to(device)
+
     # Wetted area and dynamic pressure for Ct normalization
     wetted_area = _voxel_wetted_area(solid, 1.0)
     rho_lu = 1.0
@@ -480,7 +502,7 @@ def run_suboff_wallfn_fullgrid(
         y_plus = compute_y_plus(u_tau, nu, y_val=config.y_val)
 
         # Compute drag from wall shear stress (before wall_function modifies f)
-        drag_fric, drag_pres = _compute_drags(f, solid, u_tau, lattice)
+        drag_fric, drag_pres = _compute_drags(f, solid, u_tau, lattice, mesh)
 
         # Apply wall function (Guo body force on near-wall cells)
         f = wall_function(
@@ -558,7 +580,7 @@ def run_suboff_wallfn_fullgrid(
         "dynamic_pressure": dynamic_pressure,
         "reference_Ct": config.reference_Ct,
         "reference_source": config.reference_source,
-        "device": "sdaa" if "sdaa" in config.device else config.device,
+        "device": "cuda" if "cuda" in config.device else config.device,
         "force_time_series": force_series,
         "ct_time_series": ct_series,
     }
