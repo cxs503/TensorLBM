@@ -610,15 +610,26 @@ class TestEdgeCases:
             )
 
     def test_fh_rescaling_correctness(self):
-        """FH rescaling: when tau_f == tau_c, FH should equal plain interpolation
-        of the rescaled field (which equals the original field)."""
+        """FH rescaling includes the time-step ratio (τ_f·Δt_f)/(τ_c·Δt_c).
+
+        When τ_f == τ_c the FH scale is Δt_f/Δt_c = 1/ratio (fine grid takes
+        ratio sub-steps), NOT 1.  Plain interpolation has no rescaling, so
+        the two differ.  FH equals plain only when τ_f = ratio·τ_c (which
+        makes τ_f·Δt_f == τ_c·Δt_c, i.e. the same physical viscosity).
+        """
         f = _make_d3q19_field(nz=4, ny=4, nx=4, seed=123)
-        # When tau_f == tau_c, scale=1, so f_rescaled == f
+        # FH with τ_f == τ_c: scale = τ_f/(ratio·τ_c) = 1/ratio ≠ 1
         f_fh = amr_common.refine(f, lattice="D3Q19", tau_c=1.0, tau_f=1.0, use_fh=True)
         f_plain = amr_common.refine(f, lattice="D3Q19", ratio=2, use_fh=False)
-        # They should be identical because scale=1 means no rescaling
-        assert torch.allclose(f_fh, f_plain, atol=1e-7), (
-            "FH with tau_f==tau_c should equal plain interpolation"
+        # They MUST differ because FH applies the time-step-ratio rescaling
+        assert not torch.allclose(f_fh, f_plain, atol=1e-7), (
+            "FH with tau_f==tau_c applies 1/ratio time-step rescaling, "
+            "so it must NOT equal plain interpolation"
+        )
+        # FH with τ_f = ratio·τ_c: scale = 1, equals plain upsampling
+        f_fh2 = amr_common.refine(f, lattice="D3Q19", tau_c=1.0, tau_f=2.0, use_fh=True)
+        assert torch.allclose(f_fh2, f_plain, atol=1e-7), (
+            "FH with tau_f = ratio·tau_c gives scale=1 and should match plain"
         )
 
 
