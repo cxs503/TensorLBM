@@ -1,0 +1,150 @@
+{
+  "checkpoint_schema": "tensorlbm-suboff-static-amr-checkpoint-v8",
+  "checkpoint_step": 12000,
+  "case": {
+    "hull_type": "bare_hull",
+    "speed_knots": 5.92,
+    "hull_length_lu": 90.0,
+    "coarse_shape_zyx": [
+      90,
+      90,
+      450
+    ],
+    "collision_model": "cumulant_smagorinsky",
+    "wall_law": "musker",
+    "link_force_frame": "laboratory_after_wall_activation"
+  },
+  "force_scale_n_per_lattice_unit": 1506.1402783997262,
+  "warmup_steps": 4500,
+  "post_warmup_history_steps": 7500,
+  "sampled_coarse_steps": 250,
+  "force_decomposition": {
+    "mean_bfl_link_pressure_n": 38.94154463112253,
+    "mean_modeled_wall_shear_n": 76.2842166392485,
+    "mean_bfl_link_plus_wall_shear_n": 115.22576127037105,
+    "mean_cv_minus_modeled_wall_shear_n": 38.836583580595274
+  },
+  "wall_model_applicability": {
+    "minimum_observed_y_plus": 11.686087608337402,
+    "mean_observed_y_plus": 5750.441984375,
+    "maximum_observed_y_plus": 9344.6318359375,
+    "maximum_rejected_sample_fraction": 0.0,
+    "ittc_exchange_y_plus_prior": 5855.3779636772915,
+    "minimum_sample_refinement_plan": {
+      "physical_reynolds": 13213381.41322709,
+      "current_characteristic_length_cells": 180.0,
+      "minimum_exchange_distance_cells": 1.0,
+      "target_maximum_y_plus": 1000.0,
+      "current_minimum_exchange_y_plus_estimate": 2775.8828864840493,
+      "required_characteristic_length_cells": 499.65891956712886,
+      "refinement_ratio": 2,
+      "additional_refinement_levels": 2,
+      "planned_characteristic_length_cells": 720.0,
+      "planned_exchange_y_plus_estimate": 693.9707216210123
+    }
+  },
+  "numerical_quality": {
+    "maximum_positivity_limited_fraction": 1.646090534979424e-05,
+    "maximum_reflux_population_residual": 1.7881393432617188e-07,
+    "maximum_reflux_limited_directions": 0,
+    "maximum_raw_kinetic_mismatch": 2.5855560302734375
+  },
+  "observer_closure": {
+    "history_cv_vs_bfl": {
+      "samples": 7500,
+      "reference_mean_n": 115.12080021984377,
+      "comparison_mean_n": 115.22576127037105,
+      "mean_residual_n": 0.10496105052727614,
+      "rms_residual_n": 0.10728525193723563,
+      "maximum_absolute_residual_n": 0.18332339022764188,
+      "mean_difference_pct": 0.0911747054631636
+    },
+    "sampled_cv_vs_bfl": {
+      "samples": 250,
+      "reference_mean_n": 115.11810288962978,
+      "comparison_mean_n": 115.22362099145019,
+      "mean_residual_n": 0.1055181018204259,
+      "rms_residual_n": 0.10782688833875208,
+      "maximum_absolute_residual_n": 0.1509314840901175,
+      "mean_difference_pct": 0.09166073725309239
+    },
+    "source_corrected_cv_vs_bfl": {
+      "samples": 250,
+      "reference_mean_n": 115.22321143459935,
+      "comparison_mean_n": 115.22362099145019,
+      "mean_residual_n": 0.00040955685085273933,
+      "rms_residual_n": 0.020993499381677477,
+      "maximum_absolute_residual_n": 0.06486096090935482,
+      "mean_difference_pct": 0.00035544648143477197
+    },
+    "surface_vs_cv": {
+      "samples": 250,
+      "reference_mean_n": 115.11810288962978,
+      "comparison_mean_n": 128.2111409461568,
+      "mean_residual_n": 13.093038056527034,
+      "rms_residual_n": 23.357238236324875,
+      "maximum_absolute_residual_n": 59.1688035180504,
+      "mean_difference_pct": 11.373570036226235
+    },
+    "numerical_momentum_source": {
+      "samples": 250,
+      "mean_n": 0.10510854496957316,
+      "fraction_of_cv_mean_pct": 0.09130496623137255
+    },
+    "auxiliary_control_volumes": {
+      "3": {
+        "samples": 250,
+        "reference_mean_n": 115.11810288962978,
+        "comparison_mean_n": 115.16742731069367,
+        "mean_residual_n": 0.0493244210638914,
+        "rms_residual_n": 0.049459867356760605,
+        "maximum_absolute_residual_n": 0.05977476185534702,
+        "mean_difference_pct": 0.04284679804980495
+      },
+      "9": {
+        "samples": 250,
+        "reference_mean_n": 115.11810288962978,
+        "comparison_mean_n": 115.05581699303067,
+        "mean_residual_n": -0.06228589659910692,
+        "rms_residual_n": 0.06240274364669925,
+        "maximum_absolute_residual_n": 0.07139474888331188,
+        "mean_difference_pct": 0.05410608326200798
+      }
+    }
+  },
+  "partial_physical_result": {
+    "mean_resistance_n": 115.12080021984377,
+    "experimental_resistance_n": 87.4,
+    "error_pct": 31.717162722933367,
+    "force_stationarity": {
+      "sample_count": 7500,
+      "block_size": 937,
+      "block_count": 8,
+      "mean": 115.13209246252596,
+      "block_means": [
+        114.94842213810094,
+        110.08818229468433,
+        104.08282877761728,
+        134.52043602635575,
+        117.99197096875285,
+        91.43193289547312,
+        117.8157605299122,
+        130.1772060693113
+      ],
+      "relative_range_pct": 37.42527579346079,
+      "half_mean_drift_pct": 1.3512737066197174,
+      "linear_trend_pct": 6.56913753363462,
+      "standard_error_pct": 4.227943269634572,
+      "confidence95_half_width_pct": 9.999085832685765,
+      "autocorrelation_zero_crossing_lag": 667,
+      "integrated_autocorrelation_time_steps": 295.036100155739,
+      "effective_sample_count": 25.42061800586782,
+      "autocorrelation_standard_error_pct": 4.817621309316129,
+      "dominant_period_steps": 3750.0,
+      "dominant_period_power_fraction": 0.17282731317255806,
+      "finite": true,
+      "sufficiently_sampled": true
+    },
+    "admission_warning": "This is an in-progress checkpoint diagnostic, not a grid/time-converged CFD result."
+  }
+}

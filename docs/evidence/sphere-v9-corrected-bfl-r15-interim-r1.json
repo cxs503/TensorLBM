@@ -1,0 +1,58 @@
+{
+  "schema": "tensorlbm-sphere-corrected-bfl-interim-evidence-v1",
+  "status": "fine_member_admitted_convergence_pending",
+  "physical_validation": false,
+  "case": "Re=100 sphere R15 with corrected common BFL mechanics",
+  "configuration": {
+    "shape_zyx": [240, 240, 360],
+    "radius_cells": 15,
+    "lattice_speed": 0.06,
+    "tau": 0.554,
+    "collision_model": "natural_kbc_d3q19",
+    "steps": 12000,
+    "warmup_steps": 8000,
+    "statistics_window_steps": 4000,
+    "statistics_convective_times": 8.0,
+    "bfl_link_fraction_convention": "ray_parameter_q_equals_t_v2",
+    "bfl_population_reconstruction": "post_collision_outgoing_and_upstream_v2",
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "sponge_inlet": false
+  },
+  "result": {
+    "cd_control_volume": 1.1296920913906643,
+    "cd_bfl_link": 1.129714602664868,
+    "force_observer_difference_pct": 0.001992691139042627,
+    "schiller_naumann_reference_cd": 1.0917310910948732,
+    "reference_error_pct": 3.477138336119092,
+    "drag_block_range_pct": 0.01804863171071451,
+    "drag_half_mean_drift_pct": 0.00909861882419126,
+    "drag_linear_trend_pct": 0.016573796520781083,
+    "confidence95_half_width_pct": 0.005351465364927411,
+    "effective_sample_count": 3.520029218569743,
+    "open_boundary_maximum_momentum_delta_fraction": 1.3558573375700753e-6,
+    "finite": true
+  },
+  "acceptance": {
+    "drag_error_below_5pct": true,
+    "stationarity_target_met": true,
+    "force_observer_target_met": true,
+    "duration_target_met": true,
+    "numerical_quality_admitted": true,
+    "grid_convergence_assessed": false,
+    "physical_validation": false
+  },
+  "artifacts": {
+    "result": "results/sphere_bfl_corrected/sphere-v9-natural-kbc-corrected-bfl-no-inlet-r15-12000.json",
+    "result_sha256": "eb4d8e2b11b4efac25912ab29a47db6bbac2b1ace4ea6be12d1729b6a9c8f1e1",
+    "checkpoint_sha256": "4e98d655c164548a99e0b23178ba4c48af5dc50b3f1b3f01dfacc7b8652e3172",
+    "queue_log_sha256": "b02c4e1e95c7d561d907ca522fa6ad19e351b5aae8b64bf29a253c8490aa7c8a"
+  },
+  "decision": {
+    "retain_as_r15_convergence_member": true,
+    "accept_single_grid_reference_agreement": true,
+    "r9_to_r15_reference_error_improves": true,
+    "claim_grid_convergence": false,
+    "await_members": ["R12"]
+  },
+  "prohibition": "The fine member independently passes its reference, duration, stationarity and force-observer gates. Grid convergence and a sphere physical-validation claim remain prohibited until the registered R9/R12/R15 assessor completes."
+}

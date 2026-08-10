@@ -1,0 +1,59 @@
+{
+  "schema": "tensorlbm-suboff-four-level-integration-evidence-v1",
+  "status": "target_reynolds_crossed_partial_wall_activation",
+  "physical_validation": false,
+  "configuration": {
+    "hull_type": "bare_hull",
+    "root_hull_length_cells": 90.0,
+    "finest_hull_length_cells": 720.0,
+    "refinement_depth": 3,
+    "level_count": 4,
+    "force_samples_per_root_step": 8,
+    "collision_model": "natural_kbc",
+    "wall_traction_source_scheme": "mass_conservative_post_collision_guo_v2",
+    "stress_exchange_distance_cells": 1.0
+  },
+  "checkpoint": {
+    "step": 750,
+    "schema": "tensorlbm-suboff-nested-amr-smoke-checkpoint-v3",
+    "sha256_at_audit": "9485498033dc5a56475439eb8b0de31f3ffd82f1af71330b59663ca323ec3276",
+    "note": "The active campaign checkpoint path is overwritten at later checkpoint intervals; this record freezes its audited metadata and hash at step 750."
+  },
+  "target_reynolds_health_step720": {
+    "collision_resolved_reynolds": 100000.0,
+    "minimum_population_by_level": [
+      0.0071016401052474976,
+      0.014726551249623299,
+      0.01961781457066536,
+      0.020787740126252174
+    ],
+    "maximum_speed_by_level": [
+      0.06630741059780121,
+      0.06708939373493195,
+      0.06970807164907455,
+      0.07189013063907623
+    ],
+    "collision_limited_fraction": 0.0,
+    "transfer_limited_fraction": 0.0,
+    "maximum_interface_correction_fraction": 1.173441788182572e-7
+  },
+  "wall_exchange_step720": {
+    "wall_fully_activated": false,
+    "wall_shear_activation": 0.46860474023534326,
+    "mean_distance_cells": 1.0775457620620728,
+    "minimum_y_plus": 0.36275187134742737,
+    "mean_y_plus": 844.2997817993164,
+    "maximum_y_plus": 1364.515625
+  },
+  "force_diagnostic_step720": {
+    "control_volume_resistance_n": 119.27690364742114,
+    "bfl_plus_wall_stress_n": 125.1769078099917,
+    "source_corrected_observer_difference_pct": 4.696644367080144
+  },
+  "decision": [
+    "All four levels remain finite with positive populations after the collision Reynolds reaches 100000.",
+    "All three conservative interfaces remain far below the correction gate without transfer or collision limiting.",
+    "Measured mean exchange y+ is lower than the previous L360 wall-scaled trajectory, while the local range remains broad and must be assessed after full wall activation.",
+    "The force and observer closure are transient diagnostics because wall activation is incomplete and the trajectory is shorter than the duration/statistics gates."
+  ]
+}

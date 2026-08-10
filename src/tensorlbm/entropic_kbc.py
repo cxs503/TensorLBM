@@ -30,14 +30,19 @@ References
 Karlin, Bösch, Chikatamarla (2014).
 *Multi-relaxation time lattice Boltzmann model for high Reynolds number flows.*
 """
+
 from __future__ import annotations
 
 import functools
 
 import torch
 
-from .d3q19 import C as C19, W as W19, equilibrium3d, macroscopic3d
-from .d3q27 import C as C27, W as W27, equilibrium27, macroscopic27
+from .d3q19 import W_EXACT64 as W19
+from .d3q19 import C as C19
+from .d3q19 import equilibrium3d, macroscopic3d
+from .d3q27 import W_EXACT64 as W27
+from .d3q27 import C as C27
+from .d3q27 import equilibrium27, macroscopic27
 
 _CS2 = 1.0 / 3.0  # lattice speed of sound squared
 _FACTOR = 9.0 / 2.0  # Hermite projection factor = 1 / (2 * cs^4)
@@ -46,6 +51,7 @@ _FACTOR = 9.0 / 2.0  # Hermite projection factor = 1 / (2 * cs^4)
 # ---------------------------------------------------------------------------
 # 1. Discrete entropy functional
 # ---------------------------------------------------------------------------
+
 
 def discrete_entropy(f: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
     """Compute the discrete Boltzmann entropy ``H(f) = Σ_i f_i ln(f_i / w_i)``.
@@ -64,6 +70,7 @@ def discrete_entropy(f: torch.Tensor, w: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # 2. KBC decomposition helpers
 # ---------------------------------------------------------------------------
+
 
 @functools.cache
 def _lattice_constants(
@@ -101,11 +108,23 @@ def _lattice_constants(
     Hd_yz = H_yz
 
     return {
-        "cx": cx, "cy": cy, "cz": cz, "w": w_v, "c_sq": c_sq,
-        "H_xx": H_xx, "H_yy": H_yy, "H_zz": H_zz,
-        "H_xy": H_xy, "H_xz": H_xz, "H_yz": H_yz,
-        "Hd_xx": Hd_xx, "Hd_yy": Hd_yy, "Hd_zz": Hd_zz,
-        "Hd_xy": Hd_xy, "Hd_xz": Hd_xz, "Hd_yz": Hd_yz,
+        "cx": cx,
+        "cy": cy,
+        "cz": cz,
+        "w": w_v,
+        "c_sq": c_sq,
+        "H_xx": H_xx,
+        "H_yy": H_yy,
+        "H_zz": H_zz,
+        "H_xy": H_xy,
+        "H_xz": H_xz,
+        "H_yz": H_yz,
+        "Hd_xx": Hd_xx,
+        "Hd_yy": Hd_yy,
+        "Hd_zz": Hd_zz,
+        "Hd_xy": Hd_xy,
+        "Hd_xz": Hd_xz,
+        "Hd_yz": Hd_yz,
     }
 
 
@@ -143,23 +162,31 @@ def _kbc_decompose(
     pi_dev_yz = pi_yz
 
     # Shear (deviatoric) projection: s = (9/2) w [Hd · Π_dev]
-    s = _FACTOR * w * (
-        p["Hd_xx"] * pi_dev_xx.unsqueeze(0)
-        + p["Hd_yy"] * pi_dev_yy.unsqueeze(0)
-        + p["Hd_zz"] * pi_dev_zz.unsqueeze(0)
-        + 2.0 * p["Hd_xy"] * pi_dev_xy.unsqueeze(0)
-        + 2.0 * p["Hd_xz"] * pi_dev_xz.unsqueeze(0)
-        + 2.0 * p["Hd_yz"] * pi_dev_yz.unsqueeze(0)
+    s = (
+        _FACTOR
+        * w
+        * (
+            p["Hd_xx"] * pi_dev_xx.unsqueeze(0)
+            + p["Hd_yy"] * pi_dev_yy.unsqueeze(0)
+            + p["Hd_zz"] * pi_dev_zz.unsqueeze(0)
+            + 2.0 * p["Hd_xy"] * pi_dev_xy.unsqueeze(0)
+            + 2.0 * p["Hd_xz"] * pi_dev_xz.unsqueeze(0)
+            + 2.0 * p["Hd_yz"] * pi_dev_yz.unsqueeze(0)
+        )
     )
 
     # Full second-order projection: f_neq^(2) = (9/2) w [H · Π]
-    f_neq_2 = _FACTOR * w * (
-        p["H_xx"] * pi_xx.unsqueeze(0)
-        + p["H_yy"] * pi_yy.unsqueeze(0)
-        + p["H_zz"] * pi_zz.unsqueeze(0)
-        + 2.0 * p["H_xy"] * pi_xy.unsqueeze(0)
-        + 2.0 * p["H_xz"] * pi_xz.unsqueeze(0)
-        + 2.0 * p["H_yz"] * pi_yz.unsqueeze(0)
+    f_neq_2 = (
+        _FACTOR
+        * w
+        * (
+            p["H_xx"] * pi_xx.unsqueeze(0)
+            + p["H_yy"] * pi_yy.unsqueeze(0)
+            + p["H_zz"] * pi_zz.unsqueeze(0)
+            + 2.0 * p["H_xy"] * pi_xy.unsqueeze(0)
+            + 2.0 * p["H_xz"] * pi_xz.unsqueeze(0)
+            + 2.0 * p["H_yz"] * pi_yz.unsqueeze(0)
+        )
     )
 
     # Kinetic (bulk/trace) part: k = f_neq^(2) - s
@@ -186,6 +213,7 @@ def kbc_decompose_d3q27(f_neq: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor
 # ---------------------------------------------------------------------------
 # 3. Entropy-condition γ-solve (vectorised bisection)
 # ---------------------------------------------------------------------------
+
 
 def solve_gamma_entropy(
     feq: torch.Tensor,
@@ -276,6 +304,7 @@ def solve_gamma_entropy(
 # 4. Full entropic KBC collision operators
 # ---------------------------------------------------------------------------
 
+
 def collide_kbc_d3q19(
     f: torch.Tensor,
     tau: float,
@@ -321,7 +350,10 @@ def collide_kbc_d3q19(
 
     # Initial guess: BGK retention factor γ₀ = 1 - 1/τ
     gamma_init = torch.full(
-        rho.shape, 1.0 - 1.0 / tau, device=device, dtype=dtype,
+        rho.shape,
+        1.0 - 1.0 / tau,
+        device=device,
+        dtype=dtype,
     )
 
     # Relax higher-order modes by the BGK factor (1 − 1/τ)
@@ -368,7 +400,10 @@ def collide_kbc_d3q27(
     s, k, h = _kbc_decompose(f_neq, p)
 
     gamma_init = torch.full(
-        rho.shape, 1.0 - 1.0 / tau, device=device, dtype=dtype,
+        rho.shape,
+        1.0 - 1.0 / tau,
+        device=device,
+        dtype=dtype,
     )
 
     # Relax higher-order modes by the BGK factor (1 − 1/τ)
@@ -380,6 +415,101 @@ def collide_kbc_d3q27(
     return feq + gamma.unsqueeze(0) * s + h_relaxed
 
 
+def _natural_kbc_gamma(
+    f: torch.Tensor,
+    feq: torch.Tensor,
+    shear_delta: torch.Tensor,
+    higher_delta: torch.Tensor,
+    beta: float | torch.Tensor,
+) -> torch.Tensor:
+    """Approximate KBC gamma with an admissible positivity-domain clamp."""
+    inverse_equilibrium = feq.clamp_min(1.0e-30).reciprocal()
+    numerator = (shear_delta * higher_delta * inverse_equilibrium).sum(dim=0)
+    denominator = (higher_delta.square() * inverse_equilibrium).sum(dim=0)
+    gamma = torch.where(
+        denominator > 1.0e-30,
+        1.0 / beta
+        - (2.0 - 1.0 / beta) * numerator / denominator.clamp_min(1.0e-30),
+        torch.full_like(denominator, 2.0),
+    )
+
+    base = f - 2.0 * beta * shear_delta
+    direction = -beta * higher_delta
+    epsilon = torch.finfo(f.dtype).eps
+    ratio = (epsilon - base) / torch.where(
+        direction.abs() > 1.0e-30,
+        direction,
+        torch.ones_like(direction),
+    )
+    negative_infinity = torch.full_like(denominator, -torch.inf)
+    positive_infinity = torch.full_like(denominator, torch.inf)
+    lower = torch.where(
+        direction > 1.0e-30,
+        ratio,
+        negative_infinity.unsqueeze(0),
+    ).amax(dim=0)
+    upper = torch.where(
+        direction < -1.0e-30,
+        ratio,
+        positive_infinity.unsqueeze(0),
+    ).amin(dim=0)
+    return torch.minimum(torch.maximum(gamma, lower), upper)
+
+
+def _collide_natural_kbc_d3q19_unchecked(
+    f: torch.Tensor,
+    tau: float | torch.Tensor,
+) -> torch.Tensor:
+    """Natural-KBC tensor kernel after caller-side contract validation.
+
+    Keeping the relaxation time as a tensor-compatible argument allows a
+    compiled executor to reuse one graph throughout a viscosity ramp instead
+    of specializing and recompiling once per Python float value.
+    """
+    rho, ux, uy, uz = macroscopic3d(f)
+    feq = equilibrium3d(rho, ux, uy, uz)
+    shear_delta, bulk_delta, higher_delta = _kbc_decompose(
+        f - feq,
+        _lattice_constants(C19, W19, f.device, f.dtype),
+    )
+    remaining_delta = bulk_delta + higher_delta
+    beta = 1.0 / (2.0 * tau)
+    gamma = _natural_kbc_gamma(
+        f,
+        feq,
+        shear_delta,
+        remaining_delta,
+        beta,
+    )
+    return (
+        f
+        - 2.0 * beta * shear_delta
+        - beta * gamma.unsqueeze(0) * remaining_delta
+    )
+
+
+def collide_natural_kbc_d3q19(
+    f: torch.Tensor,
+    tau: float,
+) -> torch.Tensor:
+    """Experimental natural-moment KBC collision with fixed shear viscosity.
+
+    This follows ``f' = f - 2*beta*Delta_s - beta*gamma*Delta_h`` with
+    ``beta = 1/(2*tau)``. The deviatoric second-order projection is the shear
+    part; bulk and higher-order residuals form ``Delta_h``. The analytical
+    entropic scalar-product approximation supplies gamma and is clamped to the
+    population positivity interval.
+
+    The kernel remains experimental until independent viscosity, entropy and
+    flow benchmarks pass; it does not replace :func:`collide_kbc_d3q19`.
+    """
+    if not isinstance(f, torch.Tensor) or f.ndim != 4 or f.shape[0] != 19:
+        raise ValueError("f must have shape (19,nz,ny,nx)")
+    if tau <= 0.5:
+        raise ValueError(f"tau must be > 0.5, got {tau}")
+    return _collide_natural_kbc_d3q19_unchecked(f, tau)
+
+
 __all__ = [
     "discrete_entropy",
     "kbc_decompose_d3q19",
@@ -387,4 +517,5 @@ __all__ = [
     "solve_gamma_entropy",
     "collide_kbc_d3q19",
     "collide_kbc_d3q27",
+    "collide_natural_kbc_d3q19",
 ]

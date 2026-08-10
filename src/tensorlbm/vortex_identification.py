@@ -24,6 +24,7 @@ Jeong, J., & Hussain, F. (1995).
 Liu, C., Wang, Y., Yang, Y., & Duan, Z. (2016).
     New omega vortex identification method. *Sci. China Phys.* 59, 684711.
 """
+
 from __future__ import annotations
 
 import torch
@@ -43,6 +44,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # 2-D implementations
 # ---------------------------------------------------------------------------
+
 
 def _velocity_gradients_2d(
     ux: torch.Tensor,
@@ -94,8 +96,8 @@ def q_criterion_2d(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     # Rotation-rate tensor (anti-symmetric part)
     omega_xy = 0.5 * (duy_dx - dux_dy)
 
-    norm_S2 = s_xx ** 2 + s_yy ** 2 + 2.0 * s_xy ** 2
-    norm_O2 = 2.0 * omega_xy ** 2
+    norm_S2 = s_xx**2 + s_yy**2 + 2.0 * s_xy**2
+    norm_O2 = 2.0 * omega_xy**2
 
     return 0.5 * (norm_O2 - norm_S2)
 
@@ -164,8 +166,8 @@ def omega_criterion_2d(
     s_xy = 0.5 * (dux_dy + duy_dx)
     omega_xy = 0.5 * (duy_dx - dux_dy)
 
-    norm_S2 = s_xx ** 2 + s_yy ** 2 + 2.0 * s_xy ** 2
-    norm_O2 = 2.0 * omega_xy ** 2
+    norm_S2 = s_xx**2 + s_yy**2 + 2.0 * s_xy**2
+    norm_O2 = 2.0 * omega_xy**2
 
     eps = eps_factor * float((norm_S2 + norm_O2).max().item()) + 1e-30
     return norm_O2 / (norm_S2 + norm_O2 + eps)
@@ -174,6 +176,7 @@ def omega_criterion_2d(
 # ---------------------------------------------------------------------------
 # 3-D implementations
 # ---------------------------------------------------------------------------
+
 
 def _velocity_gradients_3d(
     ux: torch.Tensor,
@@ -196,7 +199,9 @@ def _velocity_gradients_3d(
 
 
 def q_criterion_3d(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """Q-criterion for a 3-D velocity field.
 
@@ -223,15 +228,16 @@ def q_criterion_3d(
     o_xz = 0.5 * (g["duz_dx"] - g["dux_dz"])
     o_yz = 0.5 * (g["duz_dy"] - g["duy_dz"])
 
-    norm_S2 = (s_xx ** 2 + s_yy ** 2 + s_zz ** 2
-               + 2.0 * (s_xy ** 2 + s_xz ** 2 + s_yz ** 2))
-    norm_O2 = 2.0 * (o_xy ** 2 + o_xz ** 2 + o_yz ** 2)
+    norm_S2 = s_xx**2 + s_yy**2 + s_zz**2 + 2.0 * (s_xy**2 + s_xz**2 + s_yz**2)
+    norm_O2 = 2.0 * (o_xy**2 + o_xz**2 + o_yz**2)
 
     return 0.5 * (norm_O2 - norm_S2)
 
 
 def lambda2_criterion_3d(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """λ₂-criterion for a 3-D velocity field.
 
@@ -263,17 +269,23 @@ def lambda2_criterion_3d(
     # Build (N, 3, 3) tensor A = S² + Ω²
     # S = [[s_xx, s_xy, s_xz],[s_xy, s_yy, s_yz],[s_xz, s_yz, s_zz]]
     # Ω = [[0, o_xy, o_xz],[-o_xy, 0, o_yz],[-o_xz, -o_yz, 0]]
-    S = torch.stack([
-        torch.stack([s_xx, s_xy, s_xz], dim=1),
-        torch.stack([s_xy, s_yy, s_yz], dim=1),
-        torch.stack([s_xz, s_yz, s_zz], dim=1),
-    ], dim=1)  # (N, 3, 3)
+    S = torch.stack(
+        [
+            torch.stack([s_xx, s_xy, s_xz], dim=1),
+            torch.stack([s_xy, s_yy, s_yz], dim=1),
+            torch.stack([s_xz, s_yz, s_zz], dim=1),
+        ],
+        dim=1,
+    )  # (N, 3, 3)
 
-    Om = torch.stack([
-        torch.stack([torch.zeros(N, device=device), o_xy, o_xz], dim=1),
-        torch.stack([-o_xy, torch.zeros(N, device=device), o_yz], dim=1),
-        torch.stack([-o_xz, -o_yz, torch.zeros(N, device=device)], dim=1),
-    ], dim=1)  # (N, 3, 3)
+    Om = torch.stack(
+        [
+            torch.stack([torch.zeros(N, device=device), o_xy, o_xz], dim=1),
+            torch.stack([-o_xy, torch.zeros(N, device=device), o_yz], dim=1),
+            torch.stack([-o_xz, -o_yz, torch.zeros(N, device=device)], dim=1),
+        ],
+        dim=1,
+    )  # (N, 3, 3)
 
     A = torch.bmm(S, S) + torch.bmm(Om, Om)  # (N, 3, 3) – symmetric
     # Symmetrize for numerical stability
@@ -285,7 +297,9 @@ def lambda2_criterion_3d(
 
 
 def omega_criterion_3d(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
     eps_factor: float = 1e-5,
 ) -> torch.Tensor:
     """Ω-vortex criterion for a 3-D velocity field.
@@ -309,16 +323,17 @@ def omega_criterion_3d(
     o_xz = 0.5 * (g["duz_dx"] - g["dux_dz"])
     o_yz = 0.5 * (g["duz_dy"] - g["duy_dz"])
 
-    norm_S2 = s_xx**2+s_yy**2+s_zz**2+2.0*(s_xy**2+s_xz**2+s_yz**2)
-    norm_O2 = 2.0*(o_xy**2+o_xz**2+o_yz**2)
+    norm_S2 = s_xx**2 + s_yy**2 + s_zz**2 + 2.0 * (s_xy**2 + s_xz**2 + s_yz**2)
+    norm_O2 = 2.0 * (o_xy**2 + o_xz**2 + o_yz**2)
 
-    eps = eps_factor * float((norm_S2+norm_O2).max().item()) + 1e-30
-    return norm_O2 / (norm_S2+norm_O2+eps)
+    eps = eps_factor * float((norm_S2 + norm_O2).max().item()) + 1e-30
+    return norm_O2 / (norm_S2 + norm_O2 + eps)
 
 
 # ---------------------------------------------------------------------------
 # Convenience wrapper
 # ---------------------------------------------------------------------------
+
 
 def vortex_fields_2d(
     ux: torch.Tensor,

@@ -21,6 +21,7 @@ References
 Shan & Chen (1993) Phys. Rev. E 47 1815
 Pan et al. (2004) Phys. Rev. E 70 026702
 """
+
 from __future__ import annotations
 
 import csv
@@ -137,9 +138,7 @@ def make_random_sphere_medium(
             ys = torch.arange(ny, dtype=torch.float32, device=device)
             xs = torch.arange(nx, dtype=torch.float32, device=device)
             zz, yy, xx = torch.meshgrid(zs, ys, xs, indexing="ij")
-            inside = (
-                (xx - cx_c) ** 2 + (yy - cy_c) ** 2 + (zz - cz_c) ** 2
-            ) <= r ** 2
+            inside = ((xx - cx_c) ** 2 + (yy - cy_c) ** 2 + (zz - cz_c) ** 2) <= r**2
             solid = solid | inside
 
             cz_list.append(cz_c)
@@ -341,14 +340,23 @@ def run_porous_drainage_3d(config: PorousDrainageConfig3D) -> dict[str, object]:
     # Build solid mask
     if config.medium == "random_spheres":
         solid = make_random_sphere_medium(
-            nz, ny, nx,
-            config.n_spheres, config.r_min, config.r_max,
-            seed=config.seed, device=device,
+            nz,
+            ny,
+            nx,
+            config.n_spheres,
+            config.r_min,
+            config.r_max,
+            seed=config.seed,
+            device=device,
         )
     else:
         solid = make_tube_array_medium_3d(
-            nz, ny, nx,
-            config.n_tubes_y, config.n_tubes_x, config.tube_width,
+            nz,
+            ny,
+            nx,
+            config.n_tubes_y,
+            config.n_tubes_x,
+            config.tube_width,
             device=device,
         )
 
@@ -382,8 +390,11 @@ def run_porous_drainage_3d(config: PorousDrainageConfig3D) -> dict[str, object]:
         # apply_wall_wettability_sc works on (ny, nx) slices; apply per z-slice
         for iz in range(nz):
             rw_s, rg_s = apply_wall_wettability_sc(
-                rho_w[iz], rho_g[iz], solid[iz],
-                G_ads1=config.G_ads, G_ads2=0.0,
+                rho_w[iz],
+                rho_g[iz],
+                solid[iz],
+                G_ads1=config.G_ads,
+                G_ads2=0.0,
             )
             rho_w[iz] = rw_s
             rho_g[iz] = rg_s
@@ -397,7 +408,8 @@ def run_porous_drainage_3d(config: PorousDrainageConfig3D) -> dict[str, object]:
 
         # SC collision
         f_water, f_gas = collide_sc_two_component_3d(
-            f_water, f_gas,
+            f_water,
+            f_gas,
             G_12=config.G_12,
             tau1=config.tau_water,
             tau2=config.tau_gas,

@@ -1,0 +1,26 @@
+{
+  "schema": "tensorlbm-suboff-nested-filter-evidence-v1",
+  "status": "rejected",
+  "candidate": {
+    "interface_filter_width": 2,
+    "interface_filter_strength": 1.0,
+    "force_stencil_clearance_admitted": true,
+    "last_health_step": 1680,
+    "maximum_speed": 0.18869835138320923,
+    "minimum_population": 1.862645149230957e-9,
+    "maximum_collision_limited_fraction": 0.000015251945653607704
+  },
+  "aligned_onset_against_unfiltered_baseline": {
+    "speed_0.1_step": {"baseline": 1500, "candidate": 1500},
+    "speed_0.15_step": {"baseline": 1560, "candidate": 1560},
+    "population_at_or_below_1e-8_step": {"baseline": 1560, "candidate": 1560}
+  },
+  "provenance": {
+    "log": "suboff-nested-v7-l90-rejected-kinetic-w2s10-step1680.log",
+    "log_sha256": "e971f7994549dc4104761a3aa935695a723a2243c9fff735b359301c0d452e88",
+    "checkpoint": "suboff-nested-v7-l90-rejected-kinetic-w2s10-step1500.ckpt",
+    "checkpoint_sha256": "e26a98e6f456febdfd82ad08d65bd633ef4700b258995a1a25d8151770ea6328"
+  },
+  "force_evidence_eligible": false,
+  "conclusion": "Full kinetic-mode damping does not delay the hydrodynamic interface instability."
+}

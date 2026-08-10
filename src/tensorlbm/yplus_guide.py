@@ -27,10 +27,147 @@ Usage — real-time monitoring::
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Sequence
 
 import torch
+
+from .hydrodynamics import ittc57_friction_coefficient
+
+
+def estimate_exchange_yplus(
+    *,
+    physical_reynolds: float,
+    characteristic_length_cells: float,
+    exchange_distance_cells: float,
+) -> float:
+    """Estimate wall-model exchange-location y+ in lattice units.
+
+    The estimate uses ITTC-1957 to obtain ``u_tau/U`` and the exact lattice
+    similarity relation ``nu = U L_cells / Re``.  Unlike a first-cell helper,
+    this API accepts the actual finest-level body resolution and the declared
+    wall-normal exchange distance, so it remains valid under local refinement.
+    """
+    if min(
+        physical_reynolds,
+        characteristic_length_cells,
+        exchange_distance_cells,
+    ) <= 0.0:
+        raise ValueError("Reynolds number, length and exchange distance must be positive")
+    cf = ittc57_friction_coefficient(physical_reynolds)
+    return (
+        exchange_distance_cells
+        / characteristic_length_cells
+        * physical_reynolds
+        * math.sqrt(cf / 2.0)
+    )
+
+
+def estimate_bfl_exchange_yplus_bounds(
+    *,
+    physical_reynolds: float,
+    characteristic_length_cells: float,
+    requested_exchange_distance_cells: float,
+    minimum_bfl_wall_distance_cells: float = 0.0,
+    maximum_bfl_wall_distance_cells: float = 1.0,
+) -> dict[str, float]:
+    """Bound y+ after the BFL sampler enforces clearance from the wall.
+
+    The exchange sampler uses ``y2=max(requested, y1+0.5)`` at each curved
+    boundary node.  A requested one-cell height therefore does not imply that
+    every sample lies exactly one cell from the analytical wall.  This helper
+    exposes the corresponding a-priori range instead of reporting the nominal
+    value as a guaranteed maximum.
+    """
+    if requested_exchange_distance_cells <= 0.0:
+        raise ValueError("requested exchange distance must be positive")
+    if not (
+        0.0 <= minimum_bfl_wall_distance_cells
+        <= maximum_bfl_wall_distance_cells
+    ):
+        raise ValueError("BFL wall-distance bounds must be ordered and non-negative")
+    minimum_effective_distance = max(
+        requested_exchange_distance_cells,
+        minimum_bfl_wall_distance_cells + 0.5,
+    )
+    maximum_effective_distance = max(
+        requested_exchange_distance_cells,
+        maximum_bfl_wall_distance_cells + 0.5,
+    )
+    common = {
+        "physical_reynolds": physical_reynolds,
+        "characteristic_length_cells": characteristic_length_cells,
+    }
+    return {
+        "requested_exchange_distance_cells": requested_exchange_distance_cells,
+        "minimum_effective_exchange_distance_cells": minimum_effective_distance,
+        "maximum_effective_exchange_distance_cells": maximum_effective_distance,
+        "minimum_exchange_y_plus_estimate": estimate_exchange_yplus(
+            **common,
+            exchange_distance_cells=minimum_effective_distance,
+        ),
+        "maximum_exchange_y_plus_estimate": estimate_exchange_yplus(
+            **common,
+            exchange_distance_cells=maximum_effective_distance,
+        ),
+    }
+
+
+def plan_exchange_yplus_refinement(
+    *,
+    physical_reynolds: float,
+    characteristic_length_cells: float,
+    minimum_exchange_distance_cells: float = 1.0,
+    target_maximum_yplus: float = 1000.0,
+    refinement_ratio: int = 2,
+) -> dict:
+    """Plan extra wall-normal refinement needed to meet an exchange y+ target.
+
+    ``characteristic_length_cells`` is the body's current finest-level
+    resolution.  Each additional local level multiplies that resolution by
+    ``refinement_ratio`` while retaining a one-cell (or caller-supplied)
+    minimum interpolation distance.  The result is a planning diagnostic, not
+    an accuracy claim; the final wall model still requires measured y+ and
+    force-convergence evidence.
+    """
+    if target_maximum_yplus <= 0.0:
+        raise ValueError("target maximum y+ must be positive")
+    if refinement_ratio < 2:
+        raise ValueError("refinement ratio must be at least two")
+    current_minimum_yplus = estimate_exchange_yplus(
+        physical_reynolds=physical_reynolds,
+        characteristic_length_cells=characteristic_length_cells,
+        exchange_distance_cells=minimum_exchange_distance_cells,
+    )
+    required_characteristic_cells = (
+        characteristic_length_cells
+        * current_minimum_yplus
+        / target_maximum_yplus
+    )
+    resolution_ratio = required_characteristic_cells / characteristic_length_cells
+    additional_levels = max(
+        0,
+        math.ceil(math.log(max(resolution_ratio, 1.0), refinement_ratio)),
+    )
+    planned_characteristic_cells = (
+        characteristic_length_cells * refinement_ratio**additional_levels
+    )
+    return {
+        "physical_reynolds": physical_reynolds,
+        "current_characteristic_length_cells": characteristic_length_cells,
+        "minimum_exchange_distance_cells": minimum_exchange_distance_cells,
+        "target_maximum_y_plus": target_maximum_yplus,
+        "current_minimum_exchange_y_plus_estimate": current_minimum_yplus,
+        "required_characteristic_length_cells": required_characteristic_cells,
+        "refinement_ratio": refinement_ratio,
+        "additional_refinement_levels": additional_levels,
+        "planned_characteristic_length_cells": planned_characteristic_cells,
+        "planned_exchange_y_plus_estimate": estimate_exchange_yplus(
+            physical_reynolds=physical_reynolds,
+            characteristic_length_cells=planned_characteristic_cells,
+            exchange_distance_cells=minimum_exchange_distance_cells,
+        ),
+    }
 
 
 def estimate_yplus(
@@ -135,9 +272,9 @@ def grid_quality_metrics(
     *y_plus_est*: Estimated first-cell y+ (ITTC-1957 → u_tau)
     *y_plus_regime*: ``log_law`` / ``buffer`` / ``transition`` / ``viscous``
     *blockage_ratio*: hull cross-section / (ny × nz), smaller is better
-    *blockage_ok*: True if blockage < 5%
+    *blockage_ok*: True if blockage < 2%
     *domain_aspect*: nx / max(ny, nz), ≥ 2 recommended for external flow
-    *cells_per_hull_length*: nx / (hull_length / dx) ≡ nx, coarser → smaller y+
+    *cells_per_hull_length*: hull length in lattice cells
     *pressure_settle_time*: estimated steps for pressure to reach steady state
     *quality_tier*: ``recommended`` / ``acceptable`` / ``marginal`` / ``poor``
 
@@ -148,15 +285,32 @@ def grid_quality_metrics(
      'blockage_ratio': 0.009, 'blockage_ok': True,
      'quality_tier': 'recommended'}
     """
+    for name, value in (("nx", nx), ("ny", ny), ("nz", nz)):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"{name} must be a positive integer")
+    for name, value in (
+        ("hull_length", hull_length),
+        ("u_in", u_in),
+        ("re", re),
+    ):
+        if not math.isfinite(value) or value <= 0.0:
+            raise ValueError(f"{name} must be finite and positive")
+    if re <= 100.0:
+        raise ValueError("re must exceed 100 for the ITTC-1957 estimate")
+    if hull_radius is not None and (
+        not math.isfinite(hull_radius) or hull_radius <= 0.0
+    ):
+        raise ValueError("hull_radius must be finite and positive")
     nu = u_in * hull_length / re
-    dx = hull_length / nx
-    y = 0.5 * dx
+    # All geometric inputs are already lattice-cell counts.  The lattice
+    # spacing is one; ``nx`` is the domain length, not the hull resolution.
+    # The previous hull_length/nx factor mixed these two meanings and
+    # underpredicted first-cell y+ while overpredicting blockage.
+    dx = 1.0
+    y = 0.5
 
     # y+
-    if re < 1e5:
-        cf = 0.0
-    else:
-        cf = 0.075 / (math.log10(re) - 2.0) ** 2
+    cf = 0.075 / (math.log10(re) - 2.0) ** 2
     u_tau = u_in * math.sqrt(max(cf, 1e-12) / 2.0)
     y_plus_est = y * u_tau / nu
 
@@ -173,7 +327,7 @@ def grid_quality_metrics(
     # SUBOFF diameter ≈ hull_length / 8.57
     r_hull = hull_radius if hull_radius is not None else hull_length / (2 * 8.57)
     hull_area = math.pi * r_hull ** 2
-    domain_area = (ny * dx) * (nz * dx)
+    domain_area = ny * nz
     blockage = hull_area / max(domain_area, 1e-12)
 
     # Domain aspect ratio
@@ -184,13 +338,18 @@ def grid_quality_metrics(
     domain_crossings = 3  # pressure waves need ~3 domain crossings to settle
     pressure_steps = domain_crossings * nx / sound_speed
 
-    # Quality tier — primary: y+ regime, secondary: domain adequacy
-    # For slender bodies (L/D > 5), blockage up to 10% is acceptable
-    if yp_regime == "log_law" and domain_aspect >= 2.0:
+    # Quality tier combines the wall-model regime and domain adequacy.  The
+    # two-percent blockage target is a preflight gate, not an empirical drag
+    # correction; formal domain convergence still needs multiple CFD boxes.
+    if (
+        yp_regime == "log_law"
+        and domain_aspect >= 2.0
+        and blockage < 0.02
+    ):
         tier = "recommended"
-    elif yp_regime == "log_law":
+    elif yp_regime == "log_law" and blockage < 0.05:
         tier = "acceptable"
-    elif yp_regime == "buffer":
+    elif yp_regime == "buffer" or blockage < 0.10:
         tier = "marginal"
     else:
         tier = "poor"
@@ -200,14 +359,17 @@ def grid_quality_metrics(
         "y_plus_regime": yp_regime,
         "blockage_ratio": blockage,
         "blockage_pct": blockage * 100,
-        "blockage_ok": blockage < 0.05,
+        "blockage_ok": blockage < 0.02,
         "domain_aspect": domain_aspect,
         "domain_aspect_ok": domain_aspect >= 2.0,
-        "cells_per_hull_length": nx,
+        "cells_per_hull_length": hull_length,
+        "streamwise_domain_lengths": nx / hull_length,
+        "transverse_domain_diameters": min(ny, nz) / (2.0 * r_hull),
         "pressure_settle_steps_est": int(pressure_steps),
         "quality_tier": tier,
         "parameters": {"nx": nx, "ny": ny, "nz": nz, "hull_length": hull_length,
                        "u_in": u_in, "re": re, "dx": dx, "y_first": y,
+                       "dx_lu": dx, "y_first_lu": y,
                        "nu": nu, "u_tau_est": u_tau},
     }
 

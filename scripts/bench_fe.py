@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 import torch
+import torch_sdaa
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -272,7 +273,7 @@ def run_fe_poiseuille(
 
 
 if __name__ == "__main__":
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "sdaa" if torch.sdaa.is_available() else "cpu"
     print(f"Device: {device}")
     
     results = {}

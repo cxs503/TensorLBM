@@ -1,0 +1,67 @@
+{
+  "schema": "tensorlbm-sphere-projected-pressure-evidence-v1",
+  "status": "rejected",
+  "physical_validation": false,
+  "case": "Re=100 sphere R9, co-temporal axial-BFL projected density pressure with linear actual-q reconstruction",
+  "registered_gates": {
+    "minimum_samples": 32,
+    "maximum_stationarity_pct": 1.0,
+    "maximum_mean_difference_pct": 5.0,
+    "maximum_rms_difference_pct": 5.0,
+    "minimum_usable_link_fraction": 1.0,
+    "maximum_fallback_cells": 0
+  },
+  "baseline_flow": {
+    "cd_control_volume": 1.1434036287517093,
+    "cd_bfl_link": 1.143427000694463,
+    "reference_error_pct": 4.733082906433932,
+    "identical_to_registered_r9_baseline": true,
+    "numerical_quality_admitted": true
+  },
+  "projected_pressure_observer": {
+    "samples": 80,
+    "statistics_convective_times": 8.0,
+    "sample_interval_steps": 30,
+    "reconstruction": "linear",
+    "mean_pressure_force_lu": 0.31705816835165024,
+    "paired_control_volume_mean_force_lu": 0.5237361955922097,
+    "mean_difference_pct": 39.462238619360704,
+    "rms_pair_difference_pct": 39.46223866616304,
+    "maximum_pair_difference_pct": 39.4670462465412,
+    "relative_block_range_pct": 0.02401795688182922,
+    "half_mean_drift_pct": 0.012168302317391586,
+    "linear_trend_pct": 0.02225395801357706,
+    "confidence95_half_width_pct": 0.006963265882789958,
+    "minimum_usable_link_fraction": 1.0,
+    "maximum_fallback_cells": 0,
+    "finite": true
+  },
+  "interpretation": {
+    "sampling_failure": false,
+    "stationarity_failure": false,
+    "coverage_failure": false,
+    "mean_force_failure": true,
+    "rms_pair_failure": true,
+    "diagnosis": "The stable 39.46% deficit with complete reconstruction coverage is a structural failure of raw isothermal density pressure as a wall load in this non-equilibrium BFL state, not a transient or missing-link artifact."
+  },
+  "decision": {
+    "used_for_production_force": false,
+    "r12_r15_projected_convergence_launched": false,
+    "suboff_default_diagnostic_enabled": false,
+    "explicit_forensic_cli_retained": true,
+    "manufactured_projection_identity_retained": true,
+    "control_volume_primary_force_retained": true,
+    "conservative_link_impulse_observer_retained": true
+  },
+  "artifacts": {
+    "remote_result": "results/sphere_projected_pressure/sphere-v10-natural-kbc-projected-linear-r9-7200.json",
+    "result_sha256": "51191aeb01e4839c4185c710ca48b950a8791cb93e4beaa38bd22c99a79a86b2",
+    "remote_checkpoint": "results/sphere_projected_pressure/sphere-v10-natural-kbc-projected-linear-r9-7200.ckpt",
+    "checkpoint_sha256": "8d6b22535d8b0091dec82195f080ad8ba3f544ed0dd8dd6fa61e37eb5846dd3a",
+    "remote_assessment": "results/sphere_projected_pressure/sphere-v10-projected-linear-r9-assessment.json",
+    "assessment_sha256": "97c23774974bdfc40e96b2b80797f482b5356940a794fe1f81eb82d10cb50534",
+    "run_log_sha256": "44aa4025381c275cde480c301884d63989c7b4b5207dc70dc525021db3aa21c6",
+    "assessment_log_sha256": "97c23774974bdfc40e96b2b80797f482b5356940a794fe1f81eb82d10cb50534"
+  },
+  "prohibition": "Do not use this projected-pressure value, tune its reconstruction order toward a reference, or combine it with wall shear as a replacement force. The optional implementation remains only for manufactured tests and explicit forensic audits."
+}

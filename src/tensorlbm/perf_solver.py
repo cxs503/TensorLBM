@@ -20,6 +20,7 @@ The solver accepts any combination of collision / streaming / boundary /
 wall-function callables, making it a **common module** usable by all
 solvers.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -49,31 +50,32 @@ BoundaryFn = Callable[..., torch.Tensor]
 # ---------------------------------------------------------------------------
 
 _D3Q19_SHIFTS: list[tuple[int, int, int]] = [
-    (0, 0, 0),       # 0: rest
-    (1, 0, 0),       # 1: +x
-    (-1, 0, 0),      # 2: -x
-    (0, 1, 0),       # 3: +y
-    (0, -1, 0),      # 4: -y
-    (0, 0, 1),       # 5: +z
-    (0, 0, -1),      # 6: -z
-    (1, 1, 0),       # 7: +x+y
-    (-1, -1, 0),     # 8: -x-y
-    (1, -1, 0),      # 9: +x-y
-    (-1, 1, 0),      # 10: -x+y
-    (1, 0, 1),       # 11: +x+z
-    (-1, 0, -1),     # 12: -x-z
-    (1, 0, -1),      # 13: +x-z
-    (-1, 0, 1),      # 14: -x+z
-    (0, 1, 1),       # 15: +y+z
-    (0, -1, -1),     # 16: -y-z
-    (0, 1, -1),      # 17: +y-z
-    (0, -1, 1),      # 18: -y+z
+    (0, 0, 0),  # 0: rest
+    (1, 0, 0),  # 1: +x
+    (-1, 0, 0),  # 2: -x
+    (0, 1, 0),  # 3: +y
+    (0, -1, 0),  # 4: -y
+    (0, 0, 1),  # 5: +z
+    (0, 0, -1),  # 6: -z
+    (1, 1, 0),  # 7: +x+y
+    (-1, -1, 0),  # 8: -x-y
+    (1, -1, 0),  # 9: +x-y
+    (-1, 1, 0),  # 10: -x+y
+    (1, 0, 1),  # 11: +x+z
+    (-1, 0, -1),  # 12: -x-z
+    (1, 0, -1),  # 13: +x-z
+    (-1, 0, 1),  # 14: -x+z
+    (0, 1, 1),  # 15: +y+z
+    (0, -1, -1),  # 16: -y-z
+    (0, 1, -1),  # 17: +y-z
+    (0, -1, 1),  # 18: -y+z
 ]
 
 
 # ---------------------------------------------------------------------------
 # In-place BGK collision — D3Q19
 # ---------------------------------------------------------------------------
+
 
 def collide_bgk3d_inplace(
     f: torch.Tensor,
@@ -121,6 +123,7 @@ def collide_bgk3d_inplace(
 # In-place BGK collision — D3Q27
 # ---------------------------------------------------------------------------
 
+
 def collide_bgk27_inplace(
     f: torch.Tensor,
     tau: float,
@@ -155,6 +158,7 @@ def collide_bgk27_inplace(
 # In-place streaming — D3Q19
 # ---------------------------------------------------------------------------
 
+
 def stream3d_inplace(
     f: torch.Tensor,
     buf: LBMStepBuffer,
@@ -186,6 +190,7 @@ def stream3d_inplace(
 # ---------------------------------------------------------------------------
 # In-place streaming — D3Q27
 # ---------------------------------------------------------------------------
+
 
 def stream27_inplace(
     f: torch.Tensor,
@@ -222,6 +227,7 @@ def stream27_inplace(
 # ---------------------------------------------------------------------------
 # OptimizedSolver3D
 # ---------------------------------------------------------------------------
+
 
 class OptimizedSolver3D:
     """Optimised LBM solver with pre-allocated buffers and macroscopic reuse.
@@ -281,7 +287,12 @@ class OptimizedSolver3D:
         self.dtype = dtype
 
         self.buf = LBMStepBuffer.for_lattice(
-            lattice, nz, ny, nx, device=device, dtype=dtype,
+            lattice,
+            nz,
+            ny,
+            nx,
+            device=device,
+            dtype=dtype,
         )
 
         # Select default in-place collide/stream based on lattice
@@ -361,7 +372,11 @@ class OptimizedSolver3D:
         # --- 4. Wall function (with pre-computed macroscopic) ---
         if wall_mask is not None:
             f = self._apply_wall_function(
-                f, wall_mask, nu=nu, y_val=y_val, wall_law=wall_law,
+                f,
+                wall_mask,
+                nu=nu,
+                y_val=y_val,
+                wall_law=wall_law,
             )
 
         return f
@@ -429,7 +444,15 @@ class OptimizedSolver3D:
 
         # wall_function with pre-computed macroscopic
         return wall_function(
-            f, mask, buf.u_tau, buf.y_plus,
-            lattice=self.lattice, nu=nu, y_val=y_val,
-            rho=buf.rho, ux=buf.ux, uy=buf.uy, uz=buf.uz,
+            f,
+            mask,
+            buf.u_tau,
+            buf.y_plus,
+            lattice=self.lattice,
+            nu=nu,
+            y_val=y_val,
+            rho=buf.rho,
+            ux=buf.ux,
+            uy=buf.uy,
+            uz=buf.uz,
         )

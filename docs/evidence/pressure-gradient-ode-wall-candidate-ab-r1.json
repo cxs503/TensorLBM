@@ -1,0 +1,74 @@
+{
+  "schema": "tensorlbm-pressure-gradient-ode-wall-candidate-ab-v1",
+  "status": "diagnostic_only_rejected_for_production_force",
+  "physical_validation": false,
+  "selection_by_experimental_resistance": false,
+  "implementation": {
+    "equation_source": "Duprat et al. 2011, DOI 10.1063/1.3529358",
+    "independent_tensor_implementation": true,
+    "open_source_cross_check": {
+      "repository": "timofeymukha/libWallModelledLES",
+      "upstream_commit": "495d497ffd2665376c9031e4612f406073d5fd48",
+      "reference_values_reproduced": [
+        0.00021063538749341106,
+        0.007392720890351022
+      ]
+    },
+    "signed_ode_source_and_gradient_magnitude_scale_are_separate": true,
+    "reverse_shear_modelled": false,
+    "focused_tests_passed": 10
+  },
+  "sources": {
+    "flat_plate_l512_step32768": {
+      "remote_path": "results/flat_plate_grid_convergence/flat-plate-v5-l512-step32768-pg-ode-ab-audit.json",
+      "sha256": "6c5235775c9ebbcd6ac11ddc06ddad2de7d6ab8ce3d71950a101e81c84a4c31d"
+    },
+    "suboff_l90_step6750": {
+      "remote_path": "results/amr_campaign_20260801/suboff-nested-v30-step6750-pg-ode-ab-audit.json",
+      "sha256": "4ff16d8d7f0f361d152bf89892b06524c80194b44aea7a1e01c69a2cf70614cf"
+    }
+  },
+  "flat_plate_l512_step32768": {
+    "production_musker_shear_force_x_lu": 0.025808008387684822,
+    "production_musker_central_10_90_shear_force_x_lu": 0.020527912732177356,
+    "van_driest": {
+      "attached_area_fraction": 0.8720703125,
+      "central_10_90_attached_area_fraction": 0.9694376587867737,
+      "shear_force_x_lu": 0.031016748398542404,
+      "shear_vs_production_ratio": 1.2018265002325057,
+      "central_10_90_shear_vs_production_ratio": 0.9074172838666591
+    },
+    "duprat": {
+      "attached_area_fraction": 0.99609375,
+      "central_10_90_attached_area_fraction": 1.0,
+      "shear_force_x_lu": 0.028648821637034416,
+      "shear_vs_production_ratio": 1.110074873143066,
+      "central_10_90_shear_vs_production_ratio": 0.9206183656503608
+    }
+  },
+  "suboff_l90_step6750": {
+    "production_musker_shear_force_x_lu": 1.0295894145965576,
+    "production_musker_shear_force_x_n": 96.9191304711169,
+    "van_driest": {
+      "attached_area_fraction": 0.6428371667861938,
+      "separated_area_fraction": 0.3571628928184509,
+      "attached_shear_force_x_n": 103.79529005707127,
+      "shear_vs_production_ratio": 1.0709473924552342
+    },
+    "duprat": {
+      "attached_area_fraction": 0.9978206753730774,
+      "separated_area_fraction": 0.0021793015766888857,
+      "attached_shear_force_x_n": 121.717024410259,
+      "shear_vs_production_ratio": 1.2558617046872103
+    }
+  },
+  "assessment": {
+    "duprat_pressure_velocity_scale_repairs_attachment_structure": true,
+    "zero_pressure_gradient_baseline_equivalence_met": false,
+    "suboff_force_replacement_admitted": false,
+    "van_driest_force_replacement_admitted": false,
+    "duprat_force_replacement_admitted": false,
+    "next_required_validation": "canonical adverse-pressure-gradient boundary layer or periodic-hill case with independent skin-friction and separation reference"
+  },
+  "conclusion": "The Duprat velocity scale removes almost all false separation on both the flat-plate centre and SUBOFF, so the published pressure-gradient scaling is structurally superior to a u_tau-only Van-Driest closure. It is not yet an admissible force model: on the validated flat-plate centre its shear is 7.94% below the production Musker baseline, while on SUBOFF its attached-only shear is 25.59% above the frozen production wall law. No coefficient was selected using the SUBOFF experiment. Both ODE variants remain diagnostic until an independent adverse-gradient canonical benchmark and reverse-shear closure pass."
+}

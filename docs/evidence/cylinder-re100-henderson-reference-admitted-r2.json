@@ -1,0 +1,40 @@
+{
+  "schema": "tensorlbm-cylinder-reference-provenance-audit-v2",
+  "status": "primary_numeric_reference_admitted",
+  "supersedes": "cylinder-re100-reference-provenance-conflict-r1.json",
+  "physical_validation": false,
+  "case": "unconfined infinitely long two-dimensional circular cylinder, Re=100, time-periodic vortex shedding",
+  "primary_source": {
+    "title": "Details of the drag curve near the onset of vortex shedding",
+    "author": "Ronald D. Henderson",
+    "journal": "Physics of Fluids 7, 2102-2104 (1995)",
+    "doi": "10.1063/1.868459",
+    "numeric_location": "Table I, lower (vortex shedding) fits; equations (3) and (4)",
+    "averaging": "mean values averaged over one shedding cycle",
+    "method": "two-dimensional time-dependent Navier-Stokes, 202 spectral elements, eighth-order polynomial basis, 64-bit arithmetic"
+  },
+  "reproduction_at_re100": {
+    "viscous_formula": "2.5818 / Re^0.4369",
+    "pressure_formula": "1.4114 - 0.2668 * Re^0.1648 * exp(-3.375e-3 * Re)",
+    "viscous_cd": 0.3452411832993384,
+    "pressure_cd": 1.0047587444752417,
+    "total_cd": 1.3499999277745802,
+    "canonical_rounded_cd": 1.35
+  },
+  "source_image_audit": {
+    "repository_attribution": "Caltech Authors copy exposed through the Docslib preview",
+    "figure_and_equations_page_url": "https://data.docslib.org/img/8630425f5bd2e1836f64d669871c6de6-3.jpg",
+    "figure_and_equations_page_sha256": "0fb53ea39065fa9dbadf4884b541c4e36de756fe5fb2f864d2a8ac45d22b1f3e",
+    "table_page_url": "https://data.docslib.org/img/8630425f5bd2e1836f64d669871c6de6-4.jpg",
+    "table_page_sha256": "3313ecd94b3c80855f39e9ac2fc247406aebae3c6924a4a94202807e9d307a53",
+    "copyrighted_images_committed_to_repository": false
+  },
+  "decision": {
+    "old_unsubstantiated_constant": 1.33,
+    "new_reproducible_constant": 1.35,
+    "reference_selected_from_current_cfd_proximity": false,
+    "historical_evidence_rewritten": false,
+    "current_cd_approximately_1_44_still_outside_5_percent_target": true,
+    "strouhal_reference_status": "unchanged pending a separate primary numeric audit"
+  }
+}

@@ -8,6 +8,7 @@ evidence artifact with force/Ct time series.  The study collects Ct per level
 and computes relative-change convergence indicators without claiming
 convergence or physical validation.
 """
+
 from __future__ import annotations
 
 import json
@@ -45,6 +46,7 @@ def _small_study_config() -> DomainConvergenceStudyConfig:
 # ---------------------------------------------------------------------------
 # Config validation
 # ---------------------------------------------------------------------------
+
 
 def test_config_rejects_fewer_than_three_domain_levels() -> None:
     with pytest.raises(ValueError, match="at least 3"):
@@ -125,6 +127,7 @@ def test_domain_level_validates_dimensions() -> None:
 # Study execution
 # ---------------------------------------------------------------------------
 
+
 def test_study_runs_three_domain_levels_and_produces_diagnostic_artifact() -> None:
     artifact = run_suboff_domain_convergence_study(_small_study_config())
 
@@ -180,6 +183,7 @@ def test_study_blockage_ratio_decreases_as_domain_grows() -> None:
 # Per-level results: force/Ct + measured_candidate
 # ---------------------------------------------------------------------------
 
+
 def test_study_per_level_has_force_time_series_and_measured_candidate() -> None:
     artifact = run_suboff_domain_convergence_study(_small_study_config())
 
@@ -224,6 +228,7 @@ def test_study_ct_per_level_matches_per_level_results() -> None:
 # Convergence indicator
 # ---------------------------------------------------------------------------
 
+
 def test_study_convergence_indicator_has_required_fields() -> None:
     artifact = run_suboff_domain_convergence_study(_small_study_config())
 
@@ -257,6 +262,7 @@ def test_study_does_not_claim_convergence_or_validation() -> None:
 # Determinism and provenance
 # ---------------------------------------------------------------------------
 
+
 def test_study_is_deterministic() -> None:
     config = _small_study_config()
     first = run_suboff_domain_convergence_study(config)
@@ -271,7 +277,10 @@ def test_study_provenance_records_runner_and_model_identity() -> None:
     artifact = run_suboff_domain_convergence_study(_small_study_config())
 
     provenance = artifact["provenance"]
-    assert provenance["runner_api"] == "tensorlbm.suboff_validation_runner.run_suboff_d3q19_mrt_validation"
+    assert (
+        provenance["runner_api"]
+        == "tensorlbm.suboff_validation_runner.run_suboff_d3q19_mrt_validation"
+    )
     assert provenance["model_identity"]["lattice"] == "D3Q19"
     assert provenance["model_identity"]["collision"] == "MRT"
     assert provenance["model_identity"]["hull_type"] == "bare_hull"
@@ -281,6 +290,7 @@ def test_study_provenance_records_runner_and_model_identity() -> None:
 # ---------------------------------------------------------------------------
 # JSON serializability and file output
 # ---------------------------------------------------------------------------
+
 
 def test_study_artifact_is_json_serializable() -> None:
     artifact = run_suboff_domain_convergence_study(_small_study_config())
@@ -293,7 +303,9 @@ def test_study_artifact_is_json_serializable() -> None:
 
 def test_study_writes_machine_readable_artifact_file(tmp_path: Path) -> None:
     config = _small_study_config()
-    artifact = run_suboff_domain_convergence_study(config, output_path=tmp_path / "domain_convergence.json")
+    artifact = run_suboff_domain_convergence_study(
+        config, output_path=tmp_path / "domain_convergence.json"
+    )
 
     artifact_path = tmp_path / "domain_convergence.json"
     assert artifact_path.exists()

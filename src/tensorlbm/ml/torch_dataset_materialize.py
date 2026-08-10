@@ -11,7 +11,10 @@ from typing import Any, Mapping
 
 from tensorlbm.data import FieldDatasetR2
 from tensorlbm.ml.contracts import TaskKind, TrainingBackend, TrainingSpec, validate_training_spec
-from tensorlbm.ml.torch_materialize import MaterializationProvenance, materialize_torch_velocity_snapshots
+from tensorlbm.ml.torch_materialize import (
+    MaterializationProvenance,
+    materialize_torch_velocity_snapshots,
+)
 
 
 _SPLITS = ("train", "val", "test")
@@ -67,13 +70,17 @@ def _freeze_payloads(
     unknown = supplied - set(expected_samples)
     missing = set(expected_samples) - supplied
     if unknown:
-        raise ValueError(f"payloads contains unknown sample_id values: {', '.join(sorted(unknown))}")
+        raise ValueError(
+            f"payloads contains unknown sample_id values: {', '.join(sorted(unknown))}"
+        )
     if missing:
         raise ValueError(f"payloads is missing sample_id values: {', '.join(sorted(missing))}")
     return MappingProxyType(frozen)
 
 
-def _validate_payload_array_keys(dataset: FieldDatasetR2, payloads: Mapping[str, Mapping[str, bytes]]) -> None:
+def _validate_payload_array_keys(
+    dataset: FieldDatasetR2, payloads: Mapping[str, Mapping[str, bytes]]
+) -> None:
     """Require every frozen inner payload map to match the post-freeze validated product exactly."""
     for sample in dataset.samples:
         expected_arrays = {array.array_id for array in sample.product.arrays}
@@ -154,7 +161,9 @@ def materialize_torch_field_dataset(
     if dataset.training_input_fingerprint() != fingerprint:
         raise ValueError("dataset changed while processing")
     split_counts = MappingProxyType({split: len(split_ids[split]) for split in _SPLITS})
-    split_records = {split: tuple(by_id[sample_id] for sample_id in split_ids[split]) for split in _SPLITS}
+    split_records = {
+        split: tuple(by_id[sample_id] for sample_id in split_ids[split]) for split in _SPLITS
+    }
     return DatasetMaterializationRecord(
         fingerprint,
         tuple(records),

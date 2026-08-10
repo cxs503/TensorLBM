@@ -1,0 +1,53 @@
+{
+  "schema": "tensorlbm-sphere-corrected-bfl-interim-evidence-v1",
+  "status": "coarse_member_admitted_convergence_pending",
+  "physical_validation": false,
+  "case": "Re=100 sphere R9 with corrected common BFL mechanics",
+  "configuration": {
+    "shape_zyx": [144, 144, 216],
+    "radius_cells": 9,
+    "lattice_speed": 0.06,
+    "tau": 0.5324,
+    "collision_model": "natural_kbc_d3q19",
+    "steps": 7200,
+    "warmup_steps": 4800,
+    "statistics_window_steps": 2400,
+    "statistics_convective_times": 8.0,
+    "bfl_link_fraction_convention": "ray_parameter_q_equals_t_v2",
+    "bfl_population_reconstruction": "post_collision_outgoing_and_upstream_v2",
+    "far_field_mode": "non_equilibrium_extrapolation",
+    "sponge_inlet": false
+  },
+  "result": {
+    "cd_control_volume": 1.1434036287517093,
+    "cd_bfl_link": 1.143427000694463,
+    "force_observer_difference_pct": 0.002044067568607209,
+    "schiller_naumann_reference_cd": 1.0917310910948732,
+    "reference_error_pct": 4.733082906433932,
+    "drag_block_range_pct": 0.019898890783625462,
+    "drag_half_mean_drift_pct": 0.00996707171638476,
+    "finite": true
+  },
+  "acceptance": {
+    "drag_error_below_5pct": true,
+    "stationarity_target_met": true,
+    "force_observer_target_met": true,
+    "duration_target_met": true,
+    "numerical_quality_admitted": true,
+    "grid_convergence_assessed": false,
+    "physical_validation": false
+  },
+  "artifacts": {
+    "result": "results/sphere_bfl_corrected/sphere-v9-natural-kbc-corrected-bfl-no-inlet-r9-7200.json",
+    "result_sha256": "55baba0a995408b9eaea25e99d58a929814ddccc34b73456478105ab72e30cc8",
+    "checkpoint_sha256": "0c5df6e965946d186e8eda7c4a75d1c8833eb5c590664869ff156a7e56a26c75",
+    "queue_log_sha256": "90859cb67b9bf7c48a24f804eba8e20d0bd2526e94276e8879980e7c9f22d52e"
+  },
+  "decision": {
+    "retain_as_r9_convergence_member": true,
+    "accept_single_grid_reference_agreement": true,
+    "claim_grid_convergence": false,
+    "await_members": ["R12", "R15"]
+  },
+  "prohibition": "The corrected coarse member passes its direct reference and quality gates, but no sphere physical-validation claim is allowed before the registered R9/R12/R15 convergence assessor completes."
+}

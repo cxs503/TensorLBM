@@ -1,0 +1,42 @@
+{
+  "schema": "tensorlbm-wall-resolved-channel3d-negative-evidence-v1",
+  "status": "relaminarized_reference_rejected",
+  "physical_validation": false,
+  "case": {
+    "shape_zyx": [64, 64, 128],
+    "re_tau": 180.0,
+    "u_tau_target": 0.003,
+    "collision_model": "natural_kbc",
+    "perturbation_fraction_of_u_tau": 0.05,
+    "stopped_step": 30000,
+    "warmup_steps": 20000
+  },
+  "step30000": {
+    "finite": true,
+    "minimum_population": 0.022902265191078186,
+    "mass_drift_fraction": 1.230544930825532e-07,
+    "maximum_speed": 0.06239134818315506,
+    "measured_friction_velocity": 0.0021027148182608106,
+    "friction_velocity_error_pct": -29.909506057972983,
+    "crossflow_rms_over_u_tau": 0.0032676210442635543,
+    "turbulent_kinetic_energy": 2.8582033961832565e-10,
+    "reynolds_shear_xy": -2.0246322251105814e-13
+  },
+  "acceptance": {
+    "population_health": true,
+    "sustained_three_dimensional_fluctuations": false,
+    "friction_velocity_error_below_2pct": false,
+    "reference_admitted": false
+  },
+  "artifacts": {
+    "checkpoint_step30000_sha256": "1319ff54631a936db720fed7ba69292c9dbd22c5f517095a725977a83a11eaa0",
+    "initial_log_sha256": "9f97386eece5090b959b526f86607364387d8bd116abad0b51d0fc71b6823ac7",
+    "resume_log_sha256": "159b2885a13ca6c0bdf7bb1452d30b9f0c8dd68b1245afd8eb1073b7c7618466"
+  },
+  "followup": {
+    "case": "configuration-matched cumulant channel with O(u_tau) solenoidal cross-plane perturbations",
+    "status": "running",
+    "selection_by_suboff_reference": false
+  },
+  "conclusion": "The run remains positive and conservative but loses nearly all three-dimensional fluctuation energy and misses the exact momentum-balance friction velocity by 29.9%. It is rejected as a relaminarized reference, not extended to 50000 steps, and cannot validate any wall model."
+}

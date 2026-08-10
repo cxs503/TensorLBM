@@ -13,6 +13,7 @@ Functions
 - :func:`compute_q_generic_3d`   – Bouzidi *q*-field for any voxelised 3-D
   solid on the D3Q19 lattice (q = 0.5 halfway convention).
 """
+
 from __future__ import annotations
 
 import math
@@ -53,9 +54,7 @@ def _parse_stl_binary(data: bytes, n_tri: int) -> np.ndarray:
         ]
     )
     records = np.frombuffer(data, dtype=dt, count=n_tri, offset=84)
-    return np.stack([records["v0"], records["v1"], records["v2"]], axis=1).astype(
-        np.float32
-    )
+    return np.stack([records["v0"], records["v1"], records["v2"]], axis=1).astype(np.float32)
 
 
 def _parse_stl_ascii(data: bytes) -> np.ndarray:
@@ -165,9 +164,9 @@ def _voxelize_triangles(  # noqa: PLR0912
             continue
 
         # z-intersection: plane equation n·(P - v0) = 0 with P = (ox, oy, t)
-        z_isect = v0[2] - (
-            normal[0] * (OX - float(v0[0])) + normal[1] * (OY - float(v0[1]))
-        ) / nz_comp  # (iy_count, ix_count)
+        z_isect = (
+            v0[2] - (normal[0] * (OX - float(v0[0])) + normal[1] * (OY - float(v0[1]))) / nz_comp
+        )  # (iy_count, ix_count)
 
         # Accumulate per-column
         valid_iy = IY[inside].astype(int)
@@ -319,6 +318,7 @@ def voxelize_stl_3d(
     nz: int,
     device: torch.device,
     padding: float = 0.05,
+    bbox_override: tuple[float, float, float, float, float, float] | None = None,
 ) -> torch.Tensor:
     """Import an STL file and voxelise it into a 3-D boolean solid mask.
 
@@ -341,6 +341,10 @@ def voxelize_stl_3d(
         padding: Fractional padding applied to each side of the mesh AABB.
             E.g. ``0.05`` extends the grid by 5 % of the AABB extent on
             every side, ensuring the mesh is fully contained.
+        bbox_override: Optional custom bounding box (x_min, x_max, y_min,
+            y_max, z_min, z_max) in the same units as the STL file.
+            When provided, *padding* is ignored and the grid spans exactly
+            this box.
 
     Returns:
         Boolean tensor of shape ``(nz, ny, nx)`` — True where solid.
@@ -366,19 +370,22 @@ def voxelize_stl_3d(
     if triangles.shape[0] == 0:
         raise ValueError(f"No triangles found in STL file: {path}")
 
-    # Compute AABB with padding
+    # Compute AABB with padding (or use override)
     all_verts = triangles.reshape(-1, 3).astype(np.float64)
-    lo = all_verts.min(axis=0)
-    hi = all_verts.max(axis=0)
-    span = hi - lo
-    span = np.where(span < 1e-12, 1.0, span)  # avoid degenerate dimensions
+    if bbox_override is not None:
+        x_min, x_max, y_min, y_max, z_min, z_max = bbox_override
+    else:
+        lo = all_verts.min(axis=0)
+        hi = all_verts.max(axis=0)
+        span = hi - lo
+        span = np.where(span < 1e-12, 1.0, span)  # avoid degenerate dimensions
 
-    x_min = lo[0] - padding * span[0]
-    y_min = lo[1] - padding * span[1]
-    z_min = lo[2] - padding * span[2]
-    x_max = hi[0] + padding * span[0]
-    y_max = hi[1] + padding * span[1]
-    z_max = hi[2] + padding * span[2]
+        x_min = lo[0] - padding * span[0]
+        y_min = lo[1] - padding * span[1]
+        z_min = lo[2] - padding * span[2]
+        x_max = hi[0] + padding * span[0]
+        y_max = hi[1] + padding * span[1]
+        z_max = hi[2] + padding * span[2]
 
     solid_np = _voxelize_triangles(
         triangles.astype(np.float64), nx, ny, nz, x_min, y_min, z_min, x_max, y_max, z_max
@@ -590,6 +597,7 @@ def _check_boundary_warning(obstacle_mask: torch.Tensor) -> None:
 # P2.1 STL geometry repair
 # ---------------------------------------------------------------------------
 
+
 def repair_stl(
     path: str | Path,
     *,
@@ -644,6 +652,7 @@ def repair_stl(
     # --- Try trimesh for best results ------------------------------------
     try:
         import trimesh  # type: ignore[import]
+
         mesh = trimesh.load_mesh(str(path))
         if not isinstance(mesh, trimesh.Trimesh):
             mesh = trimesh.util.concatenate(mesh.geometry.values())
@@ -711,8 +720,7 @@ def repair_stl(
         while stack:
             fi = stack.pop()
             for k in range(3):
-                e = tuple(sorted([int(face_indices[fi, k]),
-                                  int(face_indices[fi, (k + 1) % 3])]))
+                e = tuple(sorted([int(face_indices[fi, k]), int(face_indices[fi, (k + 1) % 3])]))
                 for fj in edge_map.get(e, []):
                     if fj == fi or visited[fj]:
                         continue
@@ -757,9 +765,7 @@ def repair_stl(
                 visited_v.add(start)
                 cur = start
                 while True:
-                    nxt = next(
-                        (v for v in adj.get(cur, []) if v not in visited_v), None
-                    )
+                    nxt = next((v for v in adj.get(cur, []) if v not in visited_v), None)
                     if nxt is None:
                         break
                     loop.append(nxt)
@@ -798,13 +804,15 @@ def repair_stl(
 
 def _write_stl_binary(path: Path, verts: np.ndarray, faces: np.ndarray) -> None:
     """Write a binary STL from vertex + face-index arrays."""
-    dt = np.dtype([
-        ("normal", np.float32, (3,)),
-        ("v0", np.float32, (3,)),
-        ("v1", np.float32, (3,)),
-        ("v2", np.float32, (3,)),
-        ("attr", np.uint16),
-    ])
+    dt = np.dtype(
+        [
+            ("normal", np.float32, (3,)),
+            ("v0", np.float32, (3,)),
+            ("v1", np.float32, (3,)),
+            ("v2", np.float32, (3,)),
+            ("attr", np.uint16),
+        ]
+    )
     n_tri = len(faces)
     records = np.zeros(n_tri, dtype=dt)
     v0 = verts[faces[:, 0]].astype(np.float32)
@@ -828,6 +836,7 @@ def _write_stl_binary(path: Path, verts: np.ndarray, faces: np.ndarray) -> None:
 # ---------------------------------------------------------------------------
 # P2.2 Boundary-layer mesh auto-generation
 # ---------------------------------------------------------------------------
+
 
 def build_near_wall_refinement_mask(
     mask: np.ndarray | torch.Tensor,

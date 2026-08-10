@@ -86,6 +86,9 @@ class CompatibilityGate:
 def _phase_formulations(composition: ModelComposition) -> tuple[tuple[str, str], ...]:
     return tuple(
         (capability, formulation)
-        for capability in (PhysicsCapability.FREE_SURFACE.value, PhysicsCapability.PHASE_FIELD.value)
+        for capability in (
+            PhysicsCapability.FREE_SURFACE.value,
+            PhysicsCapability.PHASE_FIELD.value,
+        )
         if (formulation := composition.physics_modules.get(capability)) is not None
     )

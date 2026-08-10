@@ -6,6 +6,7 @@ configuration/run entry points must use this module before entering a solver
 loop; it deliberately has no tensor arguments and must never be called per
 cell or per time step.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -46,9 +47,7 @@ def require_wall_function_run(request: WallFunctionRunRequest) -> WallFunctionCa
     single-phase D3Q19 implementation-only evidence by enabling either mode.
     """
     physics = "free_surface" if request.free_surface else request.physics
-    geometry = (
-        f"amr_{request.geometry}" if request.adaptive_mesh else request.geometry
-    )
+    geometry = f"amr_{request.geometry}" if request.adaptive_mesh else request.geometry
     return require_wall_function(
         WallFunctionRequest(
             capability=request.capability,

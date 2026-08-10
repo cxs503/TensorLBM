@@ -1,4 +1,5 @@
 """Tests for checkpoint.py: save_checkpoint and load_checkpoint."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

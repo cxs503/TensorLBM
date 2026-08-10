@@ -3,6 +3,7 @@
 Original: 168 sequential SDAA ops per call → 300ms
 Vectorized: ~5 batch ops per call → ~5ms
 """
+
 import math, torch
 from tensorlbm.ibm import ibm_delta_hat, ibm_delta_4pt
 
@@ -13,8 +14,12 @@ __all__ = [
 
 
 def ibm_velocity_interpolate_3d_vec(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
-    marker_x: torch.Tensor, marker_y: torch.Tensor, marker_z: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    marker_x: torch.Tensor,
+    marker_y: torch.Tensor,
+    marker_z: torch.Tensor,
     kernel: str = "hat",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Vectorized 3D velocity interpolation onto Lagrangian markers."""
@@ -67,9 +72,15 @@ def ibm_velocity_interpolate_3d_vec(
 
 
 def ibm_direct_forcing_3d_vec(
-    ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
-    marker_x: torch.Tensor, marker_y: torch.Tensor, marker_z: torch.Tensor,
-    u_target_x: torch.Tensor, u_target_y: torch.Tensor, u_target_z: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
+    marker_x: torch.Tensor,
+    marker_y: torch.Tensor,
+    marker_z: torch.Tensor,
+    u_target_x: torch.Tensor,
+    u_target_y: torch.Tensor,
+    u_target_z: torch.Tensor,
     kernel: str = "hat",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Vectorized 3D direct-forcing IBM."""

@@ -1,0 +1,72 @@
+{
+  "schema": "tensorlbm-suboff-collision-viscosity-evidence-v1",
+  "status": "superseded_legacy_float32_weight_precision_rejected",
+  "physical_validation": false,
+  "case": "SUBOFF L90 four-level Natural-KBC configured Re=4000000",
+  "audit_configuration": {
+    "taus_by_level": [0.50000405, 0.5000081, 0.5000162, 0.5000324],
+    "wavelength_cells": 16,
+    "transverse_cells": 3,
+    "amplitude": 0.02,
+    "steps": 24000,
+    "fit_start_step": 2000,
+    "maximum_relative_error_pct": 5.0,
+    "minimum_fitted_log_decay": 0.004,
+    "population_storage_dtype": "float32",
+    "natural_kbc_compute_dtype": "float64"
+  },
+  "result": {
+    "target_kinematic_viscosity_by_level": [
+      1.3500000000110646e-06,
+      2.699999999985122e-06,
+      5.4000000000072506e-06,
+      1.0800000000014501e-05
+    ],
+    "recovered_kinematic_viscosity_by_level": [
+      1.4503104291100109e-06,
+      2.8146864143247477e-06,
+      5.555049435737874e-06,
+      1.1021015420215738e-05
+    ],
+    "relative_error_pct_by_level": [
+      7.430402155416605,
+      4.247644975565106,
+      2.8712858468595446,
+      2.0464390759346314
+    ],
+    "fitted_log_amplitude_decay_by_level": [
+      0.004920434129218423,
+      0.009549320488986423,
+      0.018846485748484444,
+      0.037390740164193255
+    ],
+    "decay_signal_admitted_by_level": [true, true, true, true],
+    "viscosity_admitted_by_level": [false, true, true, true]
+  },
+  "acceptance": {
+    "all_levels_have_resolved_decay_signal": true,
+    "all_levels_recover_configured_viscosity": false,
+    "configured_reynolds_sequence_admitted": false,
+    "flow_solution_validated": false
+  },
+  "artifacts": {
+    "short_under_resolved_schedule": "results/collision-viscosity-natural-kbc-suboff-re4m-mixed-r1.json",
+    "short_under_resolved_schedule_sha256": "cbfc82a0b4796de038733ff5bbb009228b8d0a679cd70fde62c9e731dc36b688",
+    "resolved_signal_schedule": "results/collision-viscosity-natural-kbc-suboff-re4m-mixed-r2.json",
+    "resolved_signal_schedule_sha256": "c08fa1411d475d23b4219fb18eb46b00a525566b4f2988eb82b1d3b9414e355f",
+    "float64_storage_control": "results/collision-viscosity-natural-kbc-suboff-re4m-fp64storage-r1.json",
+    "float64_storage_control_sha256": "4fbf48ecc356264b0c0ccee83095f4ccf4dcf1ffb742783ba2375616f77fcb70"
+  },
+  "float64_storage_control": {
+    "root_relative_error_pct": 7.4666014308383115,
+    "root_fitted_log_amplitude_decay": 0.004922092097043772,
+    "all_levels_recover_configured_viscosity": false,
+    "materially_repairs_float32_storage_result": false
+  },
+  "decision": {
+    "launch_re4m_with_legacy_weight_precision": false,
+    "superseded_by_exact_weight_precision": true,
+    "superseding_evidence": "docs/evidence/suboff-re4m-collision-viscosity-exact-weights-admitted-r1.json"
+  },
+  "prohibition": "These rejected schedules used D3Q19 weights rounded to float32 before double collision. They remain valid negative evidence for that legacy precision scheme, but cannot reject the corrected exact-weight scheme."
+}

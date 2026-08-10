@@ -1,4 +1,5 @@
 """Tests for the physics capability contract (thermal / porous / non-Newtonian / scalar)."""
+
 from __future__ import annotations
 
 import pytest

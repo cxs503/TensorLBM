@@ -44,6 +44,7 @@ from .utils import get_reproducibility_metadata, prepare_run_dir, resolve_device
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class IBMPropellerConfig:
     """Configuration for IBM propeller simulation."""
@@ -83,6 +84,7 @@ class IBMPropellerConfig:
 # Marker generation on propeller surface
 # ============================================================================
 
+
 def _generate_propeller_markers(
     config: PropellerGeometryConfig,
     cx: float,
@@ -110,8 +112,15 @@ def _generate_propeller_markers(
     cz2 = nz // 2
 
     mask = build_propeller_mask(
-        nx=nx, ny=ny, nz=nz, cx=cx2, cy=cy2, cz=cz2,
-        angle_deg=angle_deg, config=config, device="cpu",
+        nx=nx,
+        ny=ny,
+        nz=nz,
+        cx=cx2,
+        cy=cy2,
+        cz=cz2,
+        angle_deg=angle_deg,
+        config=config,
+        device="cpu",
     )
 
     # Extract surface cells (solid cells with at least one fluid neighbor)
@@ -121,7 +130,7 @@ def _generate_propeller_markers(
     m_pad = torch.nn.functional.pad(mask.float(), (1, 1, 1, 1, 1, 1), value=0.0) > 0.5
     # Surface = solid AND (NOT all neighbors solid)
     for di, dj, dk in [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]:
-        ni = m_pad[1 + di:1 + di + nz2, 1 + dj:1 + dj + ny2, 1 + dk:1 + dk + nx2]
+        ni = m_pad[1 + di : 1 + di + nz2, 1 + dj : 1 + dj + ny2, 1 + dk : 1 + dk + nx2]
         surface = surface | (mask & ~ni)
 
     # Sample markers at regular spacing
@@ -146,11 +155,14 @@ def _generate_propeller_markers(
     angle_rad = math.radians(angle_deg)
     cos_a = math.cos(angle_rad)
     sin_a = math.sin(angle_rad)
-    rot = torch.tensor([
-        [1, 0, 0],
-        [0, cos_a, -sin_a],
-        [0, sin_a, cos_a],
-    ], dtype=torch.float32)
+    rot = torch.tensor(
+        [
+            [1, 0, 0],
+            [0, cos_a, -sin_a],
+            [0, sin_a, cos_a],
+        ],
+        dtype=torch.float32,
+    )
     markers_rel = markers - torch.tensor([cx, cy, cz], dtype=torch.float32)
     markers = markers_rel @ rot.T + torch.tensor([cx, cy, cz], dtype=torch.float32)
 
@@ -160,6 +172,7 @@ def _generate_propeller_markers(
 # ============================================================================
 # Simulation runner
 # ============================================================================
+
 
 def _compute_propeller_forces(
     markers: torch.Tensor,
@@ -206,7 +219,11 @@ def run_ibm_propeller_benchmark(
     # Generate markers once
     t0 = time.perf_counter()
     markers_base = _generate_propeller_markers(
-        config.geometry, cx, cy, cz, angle_deg=0.0,
+        config.geometry,
+        cx,
+        cy,
+        cz,
+        angle_deg=0.0,
         spacing=config.marker_spacing,
     )
     n_markers = markers_base.shape[0]
@@ -219,11 +236,16 @@ def run_ibm_propeller_benchmark(
 
     # Wall mask
     wall_mask = make_channel_wall_mask_3d(
-        nz, ny, nx, torch.zeros(nz, ny, nx, dtype=torch.bool, device=device), device=device,
+        nz,
+        ny,
+        nx,
+        torch.zeros(nz, ny, nx, dtype=torch.bool, device=device),
+        device=device,
     )
 
     run_dir = prepare_run_dir(
-        config.output_root, "ibm_propeller",
+        config.output_root,
+        "ibm_propeller",
         f"ibm_n{D}_nx{nx}_rpm{config.rpm:.1e}_{n_markers}markers",
         config.overwrite,
     )
@@ -232,9 +254,9 @@ def run_ibm_propeller_benchmark(
 
     for u_in in config.inflow_velocities:
         J = u_in / (config.rpm * D)
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"  u_in={u_in:.3f}  J={J:.1f}  markers={n_markers}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         steps_per_rev = max(1, int(1.0 / max(config.rpm, 1e-10)))
         n_sampling = config.n_revolutions * steps_per_rev
@@ -275,16 +297,24 @@ def run_ibm_propeller_benchmark(
             # IBM direct forcing (interpolation + spread in one call)
             rho, ux, uy, uz = macroscopic3d(f)
             fx_body, fy_body, fz_body = ibm_direct_forcing_3d(
-                ux, uy, uz,
-                mx.to(device), my.to(device), mz.to(device),
-                u_tgt_x_dev, u_tgt_y_dev, u_tgt_z_dev,
+                ux,
+                uy,
+                uz,
+                mx.to(device),
+                my.to(device),
+                mz.to(device),
+                u_tgt_x_dev,
+                u_tgt_y_dev,
+                u_tgt_z_dev,
                 kernel="hat",
             )
             f = ibm_apply_body_force_3d(f, fx_body, fy_body, fz_body)
 
             # Boundary conditions
             f = apply_zou_he_channel_boundaries_3d(
-                f, u_in=u_in, wall_mask=wall_mask,
+                f,
+                u_in=u_in,
+                wall_mask=wall_mask,
                 obstacle_mask=torch.zeros_like(wall_mask),
             )
 
@@ -301,9 +331,11 @@ def run_ibm_propeller_benchmark(
                 pct = 100 * step / n_total
                 T_mean = sum(fx_list[-500:]) / max(min(len(fx_list), 500), 1) if fx_list else 0
                 Q_mean = sum(mx_list[-500:]) / max(min(len(mx_list), 500), 1) if mx_list else 0
-                print(f"  step {step}/{n_total} ({pct:.0f}%)  "
-                      f"T={T_mean:.2e}  Q={Q_mean:.2e}  "
-                      f"markers={n_markers}  elapsed={elapsed:.1f}s")
+                print(
+                    f"  step {step}/{n_total} ({pct:.0f}%)  "
+                    f"T={T_mean:.2e}  Q={Q_mean:.2e}  "
+                    f"markers={n_markers}  elapsed={elapsed:.1f}s"
+                )
 
         # Compute KT/KQ
         fx_mean = sum(fx_list) / max(len(fx_list), 1)
@@ -314,15 +346,19 @@ def run_ibm_propeller_benchmark(
         kq = mx_mean / n2d5 if n2d5 > 0 else 0
         eta = (J / (2.0 * math.pi)) * (kt / kq) if kq > 0 else 0
 
-        print(f"  -> J={J:.1f}  KT={kt:.2f}  KQ={kq:.2f}  "
-              f"10KQ={10*kq:.2f}  eta={eta:.4f}\n")
+        print(f"  -> J={J:.1f}  KT={kt:.2f}  KQ={kq:.2f}  10KQ={10 * kq:.2f}  eta={eta:.4f}\n")
 
-        results.append({
-            "j": J, "u_in": u_in,
-            "kt": kt, "kq": kq, "eta_o": eta,
-            "n_markers": n_markers,
-            "runtime_s": time.perf_counter() - t_start,
-        })
+        results.append(
+            {
+                "j": J,
+                "u_in": u_in,
+                "kt": kt,
+                "kq": kq,
+                "eta_o": eta,
+                "n_markers": n_markers,
+                "runtime_s": time.perf_counter() - t_start,
+            }
+        )
 
     # Write CSV
     csv_path = run_dir / "ibm_results.csv"
@@ -330,21 +366,27 @@ def run_ibm_propeller_benchmark(
         writer = csv.writer(fh)
         writer.writerow(["J", "KT", "10KQ", "eta", "n_markers"])
         for r in results:
-            writer.writerow([
-                f"{r['j']:.4f}", f"{r['kt']:.2f}",
-                f"{10*r['kq']:.2f}", f"{r['eta_o']:.4f}",
-                f"{r['n_markers']}",
-            ])
+            writer.writerow(
+                [
+                    f"{r['j']:.4f}",
+                    f"{r['kt']:.2f}",
+                    f"{10 * r['kq']:.2f}",
+                    f"{r['eta_o']:.4f}",
+                    f"{r['n_markers']}",
+                ]
+            )
 
     # Summary table
-    print(f"\n{'='*55}")
+    print(f"\n{'=' * 55}")
     print("  IBM Propeller Results")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"  {'J':>6s}  {'KT':>10s}  {'10KQ':>10s}  {'eta':>8s}  {'markers':>8s}")
-    print(f"  {'-'*48}")
+    print(f"  {'-' * 48}")
     for r in results:
-        print(f"  {r['j']:6.2f}  {r['kt']:10.0f}  {10*r['kq']:10.0f}  "
-              f"{r['eta_o']:8.4f}  {r['n_markers']:8d}")
+        print(
+            f"  {r['j']:6.2f}  {r['kt']:10.0f}  {10 * r['kq']:10.0f}  "
+            f"{r['eta_o']:8.4f}  {r['n_markers']:8d}"
+        )
 
     metadata = {
         "name": "ibm_propeller",

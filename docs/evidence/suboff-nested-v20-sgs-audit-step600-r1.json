@@ -1,0 +1,44 @@
+{
+  "schema": "tensorlbm-nested-smagorinsky-checkpoint-audit-v1",
+  "checkpoint": "results/amr_campaign_20260801/suboff-nested-v20-l90-cs010-2400.ckpt",
+  "step": 600,
+  "cs_smag": 0.1,
+  "levels": [
+    {
+      "cell_count": 3645000.0,
+      "molecular_tau": 0.500162,
+      "effective_tau_minimum": 0.5001620054244995,
+      "effective_tau_mean": 0.5001646899980119,
+      "effective_tau_maximum": 0.506987452507019,
+      "molecular_kinematic_viscosity": 5.3999999999998494e-05,
+      "mean_eddy_kinematic_viscosity": 8.966660039651705e-07,
+      "maximum_eddy_kinematic_viscosity": 0.0022751508356730157,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.016604925999355473,
+      "maximum_eddy_to_molecular_viscosity_ratio": 42.1324228828348
+    },
+    {
+      "cell_count": 824832.0,
+      "molecular_tau": 0.500324,
+      "effective_tau_minimum": 0.500324010848999,
+      "effective_tau_mean": 0.5003656391094137,
+      "effective_tau_maximum": 0.5040213465690613,
+      "molecular_kinematic_viscosity": 0.00010799999999999699,
+      "mean_eddy_kinematic_viscosity": 1.387970313789418e-05,
+      "maximum_eddy_kinematic_viscosity": 0.0012324488563537628,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.12851576979532006,
+      "maximum_eddy_to_molecular_viscosity_ratio": 11.411563484757382
+    },
+    {
+      "cell_count": 2425920.0,
+      "molecular_tau": 0.500648,
+      "effective_tau_minimum": 0.500648021697998,
+      "effective_tau_mean": 0.5007077530774835,
+      "effective_tau_maximum": 0.5028599500656128,
+      "molecular_kinematic_viscosity": 0.00021599999999999397,
+      "mean_eddy_kinematic_viscosity": 1.9917692494505108e-05,
+      "maximum_eddy_kinematic_viscosity": 0.0007373166885376037,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.09221153932641511,
+      "maximum_eddy_to_molecular_viscosity_ratio": 3.4135031876741864
+    }
+  ]
+}

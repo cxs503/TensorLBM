@@ -29,6 +29,7 @@ Kirchhoff 积分 (使用正确的二维 Green 函数), 作为主要验证标准�
 
 运行: PYTHONPATH=src python examples/benchmark_fwh_farfield.py --device cpu --steps 1200
 """
+
 from __future__ import annotations
 import argparse, math, os, sys
 
@@ -52,6 +53,7 @@ from tensorlbm.acoustics import (
 # ---------------------------------------------------------------------------
 # 2D 频域 Kirchhoff 积分 (正确的 2D Green 函数)
 # ---------------------------------------------------------------------------
+
 
 def kirchhoff_2d_farfield(
     p_surf: np.ndarray,
@@ -95,17 +97,17 @@ def kirchhoff_2d_farfield(
     p = p_surf - p_surf.mean(axis=1, keepdims=True)
 
     # FFT: 时域 → 频域
-    P = np.fft.rfft(p, axis=1)       # (N, n_freq)
+    P = np.fft.rfft(p, axis=1)  # (N, n_freq)
 
     # 频率轴
-    freqs = np.fft.rfftfreq(T, d=dt)          # (n_freq,) Hz
-    omegas = 2.0 * np.pi * freqs              # (n_freq,) rad/step
-    ks = omegas / cs                          # (n_freq,) 波数
+    freqs = np.fft.rfftfreq(T, d=dt)  # (n_freq,) Hz
+    omegas = 2.0 * np.pi * freqs  # (n_freq,) rad/step
+    ks = omegas / cs  # (n_freq,) 波数
 
     # 径向梯度: 有限差分或 Sommerfeld 条件
     if dpdn is not None:
         d = dpdn - dpdn.mean(axis=1, keepdims=True)
-        DPDN = np.fft.rfft(d, axis=1)        # (N, n_freq)
+        DPDN = np.fft.rfft(d, axis=1)  # (N, n_freq)
     else:
         DPDN = None  # 使用 Sommerfeld 条件
 
@@ -115,7 +117,7 @@ def kirchhoff_2d_farfield(
         # 源点到观察点的距离和方向
         dx = ox - surf_pos[:, 0]
         dy = oy - surf_pos[:, 1]
-        r_dist = np.sqrt(dx ** 2 + dy ** 2)
+        r_dist = np.sqrt(dx**2 + dy**2)
         r_dist = np.maximum(r_dist, 1e-10)
         rhat_dot_n = (dx * surf_norm[:, 0] + dy * surf_norm[:, 1]) / r_dist
 
@@ -126,8 +128,8 @@ def kirchhoff_2d_farfield(
                 continue
 
             kr = km * r_dist
-            H0 = hankel1(0, kr)       # (N,)
-            H1 = hankel1(1, kr)       # (N,)
+            H0 = hankel1(0, kr)  # (N,)
+            H1 = hankel1(1, kr)  # (N,)
 
             # Sommerfeld 条件: ∂p/∂n = ik·p (远场近似)
             if DPDN is None:
@@ -150,13 +152,26 @@ def kirchhoff_2d_farfield(
 # 主基准测试函数
 # ---------------------------------------------------------------------------
 
+
 def run_fwh_benchmark(
-    nx=300, ny=300, nz=1, tau=0.55,
-    R0=10.0, R_ctrl=25.0, delta_rho=0.01, omega=0.1,
-    steps=1200, device="cpu", log_every=300,
-    sponge_width=50, pulse_t0=80.0, pulse_sigma=40.0,
-    n_surface=32, dr_grad=2.0,
-    dt_phys=1e-4, c0=343.0,
+    nx=300,
+    ny=300,
+    nz=1,
+    tau=0.55,
+    R0=10.0,
+    R_ctrl=25.0,
+    delta_rho=0.01,
+    omega=0.1,
+    steps=1200,
+    device="cpu",
+    log_every=300,
+    sponge_width=50,
+    pulse_t0=80.0,
+    pulse_sigma=40.0,
+    n_surface=32,
+    dr_grad=2.0,
+    dt_phys=1e-4,
+    c0=343.0,
 ):
     """运行 FW-H 远场外推基准测试。
 
@@ -168,8 +183,8 @@ def run_fwh_benchmark(
     cs = math.sqrt(cs2)
 
     # ---- 单位转换 ----
-    dx = c0 * dt_phys / cs       # 物理网格间距 [m]
-    p_scale = c0 ** 2 / cs2      # 压力转换: p_phys = p_lbm * p_scale  [Pa]
+    dx = c0 * dt_phys / cs  # 物理网格间距 [m]
+    p_scale = c0**2 / cs2  # 压力转换: p_phys = p_lbm * p_scale  [Pa]
 
     cx, cy = nx // 2, ny // 2
 
@@ -204,8 +219,7 @@ def run_fwh_benchmark(
     observer_r = [60, 80, 100]
     # 3D FW-H 观察点 (物理单位, 相对于中心)
     observers_fwh = [
-        AcousticObserver(x=float(r * dx), y=0.0, z=0.0, label=f"r={r}")
-        for r in observer_r
+        AcousticObserver(x=float(r * dx), y=0.0, z=0.0, label=f"r={r}") for r in observer_r
     ]
     # 2D Kirchhoff 观察点 (LBM 单位, 相对于中心)
     observers_2d = [(float(r), 0.0) for r in observer_r]
@@ -216,8 +230,10 @@ def run_fwh_benchmark(
     f = equilibrium3d(rho0, u0, u0.clone(), u0.clone(), device=dev)
 
     zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=dev), torch.arange(ny, device=dev),
-        torch.arange(nx, device=dev), indexing="ij",
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
     )
     dist = torch.sqrt((xx.float() - cx) ** 2 + (yy.float() - cy) ** 2)
 
@@ -238,9 +254,9 @@ def run_fwh_benchmark(
     margin = 3  # 固定平衡态边界行
 
     # --- 压力记录数组 ---
-    surf_pressure = np.zeros((n_surface, steps))    # 控制面压力
-    inner_pressure = np.zeros((n_surface, steps))   # 内侧压力 (R_ctrl - dr)
-    outer_pressure = np.zeros((n_surface, steps))   # 外侧压力 (R_ctrl + dr)
+    surf_pressure = np.zeros((n_surface, steps))  # 控制面压力
+    inner_pressure = np.zeros((n_surface, steps))  # 内侧压力 (R_ctrl - dr)
+    outer_pressure = np.zeros((n_surface, steps))  # 外侧压力 (R_ctrl + dr)
 
     # 张量索引 (加速记录)
     surf_ix_t = torch.tensor(surf_ix, device=dev, dtype=torch.long)
@@ -259,7 +275,7 @@ def run_fwh_benchmark(
     print(f"  控制面: R_ctrl={R_ctrl}, n_surface={n_surface}, arc_length={arc_length:.4f}")
     print(f"  径向梯度: dr_grad={dr_grad}")
     print(f"  观察点: r={observer_r} (θ=0°)")
-    print(f"  cs={cs:.4f}, λ={lam:.1f}, k={k:.4f}, k*R0={k*R0:.4f}, k*R_ctrl={k*R_ctrl:.4f}")
+    print(f"  cs={cs:.4f}, λ={lam:.1f}, k={k:.4f}, k*R0={k * R0:.4f}, k*R_ctrl={k * R_ctrl:.4f}")
     print(f"  物理参数: dt_phys={dt_phys}s, c0={c0}m/s, dx={dx:.6f}m")
     print(f"  脉冲: t0={pulse_t0}, sigma={pulse_sigma}")
     print(f"  Sponge: width={sponge_width}")
@@ -271,7 +287,7 @@ def run_fwh_benchmark(
         f = stream3d(f)
 
         # --- 密度缩放源 (保持速度) ---
-        env = math.exp(-((step - pulse_t0) / pulse_sigma) ** 2)
+        env = math.exp(-(((step - pulse_t0) / pulse_sigma) ** 2))
         rho_src_val = 1.0 + delta_rho * math.sin(omega * step) * env
 
         rho_cur, _, _, _ = macroscopic3d(f)
@@ -284,8 +300,11 @@ def run_fwh_benchmark(
 
         # --- 固定平衡态边界 ---
         feq_b = equilibrium3d(
-            rho0[:, :, 0:1], u0[:, :, 0:1],
-            u0[:, :, 0:1], u0[:, :, 0:1], device=dev,
+            rho0[:, :, 0:1],
+            u0[:, :, 0:1],
+            u0[:, :, 0:1],
+            u0[:, :, 0:1],
+            device=dev,
         )
         f[:, :, 0:margin, :] = feq_b[:, :, 0:margin, :]
         f[:, :, -margin:, :] = feq_b[:, :, 0:margin, :]
@@ -295,15 +314,13 @@ def run_fwh_benchmark(
 
         # --- 记录压力 (张量索引, 向量化) ---
         rho_sp, _, _, _ = macroscopic3d(f)
-        surf_pressure[:, step - 1] = (
-            (rho_sp[0, surf_iy_t, surf_ix_t] - 1.0) * cs2
-        ).cpu().numpy()
+        surf_pressure[:, step - 1] = ((rho_sp[0, surf_iy_t, surf_ix_t] - 1.0) * cs2).cpu().numpy()
         inner_pressure[:, step - 1] = (
-            (rho_sp[0, inner_iy_t, inner_ix_t] - 1.0) * cs2
-        ).cpu().numpy()
+            ((rho_sp[0, inner_iy_t, inner_ix_t] - 1.0) * cs2).cpu().numpy()
+        )
         outer_pressure[:, step - 1] = (
-            (rho_sp[0, outer_iy_t, outer_ix_t] - 1.0) * cs2
-        ).cpu().numpy()
+            ((rho_sp[0, outer_iy_t, outer_ix_t] - 1.0) * cs2).cpu().numpy()
+        )
 
         if step % log_every == 0 or step == steps:
             p_max = float(np.max(np.abs(surf_pressure[:, step - 1])))
@@ -316,9 +333,9 @@ def run_fwh_benchmark(
     # =====================================================================
     # 方法 A: 3D FW-H 库 (compute_fwh_far_field, 物理单位)
     # =====================================================================
-    print(f"\n  {'='*50}")
+    print(f"\n  {'=' * 50}")
     print(f"  方法 A: 3D FW-H 库 (compute_fwh_far_field, 物理单位)")
-    print(f"  {'='*50}")
+    print(f"  {'=' * 50}")
 
     # 控制面位置 (物理单位, 相对于中心)
     positions = torch.zeros(n_surface, 3, dtype=torch.float32)
@@ -349,14 +366,16 @@ def run_fwh_benchmark(
     # =====================================================================
     # 方法 B: 2D 频域 Kirchhoff 积分 (正确的 2D Green 函数, LBM 单位)
     # =====================================================================
-    print(f"\n  {'='*50}")
+    print(f"\n  {'=' * 50}")
     print(f"  方法 B: 2D 频域 Kirchhoff 积分 (Hankel Green 函数)")
-    print(f"  {'='*50}")
+    print(f"  {'=' * 50}")
 
-    surf_pos_2d = np.column_stack([
-        surf_x - cx,  # 相对于中心 (LBM 单位)
-        surf_y - cy,
-    ])
+    surf_pos_2d = np.column_stack(
+        [
+            surf_x - cx,  # 相对于中心 (LBM 单位)
+            surf_y - cy,
+        ]
+    )
 
     # B1: 有限差分径向梯度
     print(f"  B1: 有限差分 ∂p/∂n (dr={dr_grad})...")
@@ -395,17 +414,17 @@ def run_fwh_benchmark(
     delta_rho_eff = p_surf_peak / cs2
 
     print(f"\n  解析参考 (Hankel 函数):")
-    print(f"    k={k:.4f}, k*R0={k*R0:.4f}, |H0(kR0)|={h0_R0:.6f}")
-    print(f"    k*R_ctrl={k*R_ctrl:.4f}, |H0(kR_ctrl)|={h0_Rs:.6f}")
+    print(f"    k={k:.4f}, k*R0={k * R0:.4f}, |H0(kR0)|={h0_R0:.6f}")
+    print(f"    k*R_ctrl={k * R_ctrl:.4f}, |H0(kR_ctrl)|={h0_Rs:.6f}")
     print(f"    控制面峰值压力 |p_surf|={p_surf_peak:.6f} (LBM 单位)")
     print(f"    有效密度扰动 delta_rho_eff={delta_rho_eff:.6f}")
 
     # =====================================================================
     # 对比: FW-H / Kirchhoff vs 解析
     # =====================================================================
-    print(f"\n  {'='*50}")
+    print(f"\n  {'=' * 50}")
     print(f"  FW-H / Kirchhoff vs 解析对比 (峰值振幅)")
-    print(f"  {'='*50}")
+    print(f"  {'=' * 50}")
 
     # 解析解有两种形式:
     #   (1) 任务公式: p'(r) = cs²·delta_rho·|H0(kr)|/|H0(kR0)|  (含 LBM 仿真误差)
@@ -413,10 +432,12 @@ def run_fwh_benchmark(
     # 有效公式用实际控制面压力作为参考, 隔离了 FW-H/Kirchhoff 外推误差。
 
     print(f"\n  --- 有效公式 (以控制面压力为参考, 隔离外推误差) ---")
-    hdr = (f"  {'r':>4s}  {'p_3DFWH':>10s} {'p_KirFD':>10s} {'p_KirSm':>10s} "
-           f"{'p_Hankel':>10s} {'e3D%':>6s} {'eFD%':>6s} {'eSm%':>6s}")
+    hdr = (
+        f"  {'r':>4s}  {'p_3DFWH':>10s} {'p_KirFD':>10s} {'p_KirSm':>10s} "
+        f"{'p_Hankel':>10s} {'e3D%':>6s} {'eFD%':>6s} {'eSm%':>6s}"
+    )
     print(hdr)
-    print(f"  {'-'*len(hdr)}")
+    print(f"  {'-' * len(hdr)}")
 
     errors_3d = []
     errors_fd = []
@@ -437,8 +458,10 @@ def run_fwh_benchmark(
         errors_3d.append(err_3d)
         errors_fd.append(err_fd)
         errors_sm.append(err_sm)
-        print(f"  {r:4d}  {p_3d_peak:10.6f} {p_fd_peak:10.6f} {p_sm_peak:10.6f} "
-              f"{p_hankel:10.6f} {err_3d:6.1f} {err_fd:6.1f} {err_sm:6.1f}")
+        print(
+            f"  {r:4d}  {p_3d_peak:10.6f} {p_fd_peak:10.6f} {p_sm_peak:10.6f} "
+            f"{p_hankel:10.6f} {err_3d:6.1f} {err_fd:6.1f} {err_sm:6.1f}"
+        )
 
     avg_err_fd = sum(errors_fd) / len(errors_fd)
     max_err_fd = max(errors_fd)
@@ -461,9 +484,9 @@ def run_fwh_benchmark(
 
     # --- 任务公式对比 (含 LBM 仿真误差) ---
     print(f"\n  --- 任务公式: p'(r) = cs²·δρ·|H0(kr)|/|H0(kR0)| ---")
-    hdr2 = (f"  {'r':>4s}  {'p_KirSm':>10s} {'p_Hankel':>10s} {'err%':>6s}")
+    hdr2 = f"  {'r':>4s}  {'p_KirSm':>10s} {'p_Hankel':>10s} {'err%':>6s}"
     print(hdr2)
-    print(f"  {'-'*len(hdr2)}")
+    print(f"  {'-' * len(hdr2)}")
     for i, r in enumerate(observer_r):
         p_sm_peak = float(np.max(np.abs(p_kirch_sommer[i, :])))
         p_hankel_task = cs2 * delta_rho * abs(hankel1(0, k * r)) / h0_R0
@@ -486,9 +509,9 @@ def run_fwh_benchmark(
     # =====================================================================
     # 验证结果
     # =====================================================================
-    print(f"\n  {'='*50}")
+    print(f"\n  {'=' * 50}")
     print(f"  验证结果")
-    print(f"  {'='*50}")
+    print(f"  {'=' * 50}")
 
     checks = []
 
@@ -499,17 +522,13 @@ def run_fwh_benchmark(
 
     # FW-H 输出检查
     fwh_ok = all(
-        float(torch.max(torch.abs(p_fwh_3d[i, :]))) > 1e-10
-        for i in range(len(observer_r))
+        float(torch.max(torch.abs(p_fwh_3d[i, :]))) > 1e-10 for i in range(len(observer_r))
     )
     checks.append(("3D FW-H 输出非零", fwh_ok, ""))
     print(f"    [{'PASS' if fwh_ok else 'FAIL'}] 3D FW-H 输出非零")
 
     # Kirchhoff 输出检查
-    kirch_ok = all(
-        float(np.max(np.abs(p_kirch_2d[i, :]))) > 1e-10
-        for i in range(len(observer_r))
-    )
+    kirch_ok = all(float(np.max(np.abs(p_kirch_2d[i, :]))) > 1e-10 for i in range(len(observer_r)))
     checks.append(("2D Kirchhoff 输出非零", kirch_ok, ""))
     print(f"    [{'PASS' if kirch_ok else 'FAIL'}] 2D Kirchhoff 输出非零")
 
@@ -519,11 +538,14 @@ def run_fwh_benchmark(
 
     # 2D Kirchhoff 振幅误差 (主要验证标准)
     kirch_pass = max_err_2d < 20.0
-    checks.append(("2D Kirchhoff 振幅误差 <20%", kirch_pass,
-                   f"avg={avg_err_2d:.1f}%, max={max_err_2d:.1f}%"))
-    print(f"    [{'PASS' if kirch_pass else 'FAIL'}] "
-          f"2D Kirchhoff ({best_method}) 振幅误差 <20%: "
-          f"avg={avg_err_2d:.1f}%, max={max_err_2d:.1f}%")
+    checks.append(
+        ("2D Kirchhoff 振幅误差 <20%", kirch_pass, f"avg={avg_err_2d:.1f}%, max={max_err_2d:.1f}%")
+    )
+    print(
+        f"    [{'PASS' if kirch_pass else 'FAIL'}] "
+        f"2D Kirchhoff ({best_method}) 振幅误差 <20%: "
+        f"avg={avg_err_2d:.1f}%, max={max_err_2d:.1f}%"
+    )
 
     all_pass = all(c[1] for c in checks)
     print(f"\n  {'PASS' if all_pass else 'FAIL'} — FW-H 远场外推基准测试")
@@ -547,17 +569,13 @@ def run_fwh_benchmark(
 
 
 def main():
-    p = argparse.ArgumentParser(
-        description="FW-H 远场外推基准测试 (脉动球单极子声源)"
-    )
+    p = argparse.ArgumentParser(description="FW-H 远场外推基准测试 (脉动球单极子声源)")
     p.add_argument("--nx", type=int, default=300)
     p.add_argument("--ny", type=int, default=300)
     p.add_argument("--nz", type=int, default=1)
     p.add_argument("--tau", type=float, default=0.55)
-    p.add_argument("--R0", type=float, default=10.0,
-                   help="声源区域半径 (LBM 单位)")
-    p.add_argument("--R-ctrl", type=float, default=25.0,
-                   help="控制面半径 (LBM 单位)")
+    p.add_argument("--R0", type=float, default=10.0, help="声源区域半径 (LBM 单位)")
+    p.add_argument("--R-ctrl", type=float, default=25.0, help="控制面半径 (LBM 单位)")
     p.add_argument("--delta-rho", type=float, default=0.01)
     p.add_argument("--omega", type=float, default=0.1)
     p.add_argument("--steps", type=int, default=1200)
@@ -567,12 +585,9 @@ def main():
     p.add_argument("--pulse-t0", type=float, default=80.0)
     p.add_argument("--pulse-sigma", type=float, default=40.0)
     p.add_argument("--n-surface", type=int, default=32)
-    p.add_argument("--dr-grad", type=float, default=2.0,
-                   help="径向梯度有限差分间距")
-    p.add_argument("--dt-phys", type=float, default=1e-4,
-                   help="物理时间步长 [s]")
-    p.add_argument("--c0", type=float, default=343.0,
-                   help="物理声速 [m/s]")
+    p.add_argument("--dr-grad", type=float, default=2.0, help="径向梯度有限差分间距")
+    p.add_argument("--dt-phys", type=float, default=1e-4, help="物理时间步长 [s]")
+    p.add_argument("--c0", type=float, default=343.0, help="物理声速 [m/s]")
     args = p.parse_args()
 
     print("=" * 60)
@@ -580,13 +595,24 @@ def main():
     print("  (脉动球单极子声源 + FW-H/Kirchhoff 外推 + Hankel 解析解)")
     print("=" * 60)
     run_fwh_benchmark(
-        nx=args.nx, ny=args.ny, nz=args.nz, tau=args.tau,
-        R0=args.R0, R_ctrl=args.R_ctrl, delta_rho=args.delta_rho,
-        omega=args.omega, steps=args.steps, device=args.device,
-        log_every=args.log_every, sponge_width=args.sponge_width,
-        pulse_t0=args.pulse_t0, pulse_sigma=args.pulse_sigma,
-        n_surface=args.n_surface, dr_grad=args.dr_grad,
-        dt_phys=args.dt_phys, c0=args.c0,
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau=args.tau,
+        R0=args.R0,
+        R_ctrl=args.R_ctrl,
+        delta_rho=args.delta_rho,
+        omega=args.omega,
+        steps=args.steps,
+        device=args.device,
+        log_every=args.log_every,
+        sponge_width=args.sponge_width,
+        pulse_t0=args.pulse_t0,
+        pulse_sigma=args.pulse_sigma,
+        n_surface=args.n_surface,
+        dr_grad=args.dr_grad,
+        dt_phys=args.dt_phys,
+        c0=args.c0,
     )
 
 

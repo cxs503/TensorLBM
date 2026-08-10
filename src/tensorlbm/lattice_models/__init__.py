@@ -1,4 +1,5 @@
 """Lattice model namespace for new grouped imports."""
+
 from __future__ import annotations
 
 from ..d2q9 import OPPOSITE, C, W, equilibrium, macroscopic

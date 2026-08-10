@@ -94,7 +94,7 @@ def airy_wave_velocity_3d(
     uz_profile = -wave_amp * math.sin(phase) * sinh_z / sinh_kH  # (nz,)
 
     # Expand to (nz, ny)
-    ux = (ux_profile.unsqueeze(1).expand(nz, ny) + u_mean)
+    ux = ux_profile.unsqueeze(1).expand(nz, ny) + u_mean
     uy = torch.zeros(nz, ny, device=device, dtype=torch.float32)
     uz = uz_profile.unsqueeze(1).expand(nz, ny)
 
@@ -133,10 +133,15 @@ def zou_he_inlet_velocity_profile_3d(
 
     # Sum of cx=0 directions and cx<0 directions at x=0
     sum_cx0 = (
-        f[0, :, :, 0] + f[3, :, :, 0] + f[4, :, :, 0]
-        + f[5, :, :, 0] + f[6, :, :, 0]
-        + f[15, :, :, 0] + f[16, :, :, 0]
-        + f[17, :, :, 0] + f[18, :, :, 0]
+        f[0, :, :, 0]
+        + f[3, :, :, 0]
+        + f[4, :, :, 0]
+        + f[5, :, :, 0]
+        + f[6, :, :, 0]
+        + f[15, :, :, 0]
+        + f[16, :, :, 0]
+        + f[17, :, :, 0]
+        + f[18, :, :, 0]
     )
     sum_cx_neg = f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0] + f[12, :, :, 0] + f[14, :, :, 0]
 
@@ -228,11 +233,7 @@ def jonswap_spectrum(
     sigma = torch.where(omega <= omega_p, 0.07, 0.09)
     r = torch.exp(-0.5 * ((omega_safe - omega_p) / (sigma * omega_p)) ** 2)
     spectrum = (
-        alpha_pm
-        * g**2
-        / omega_safe**5
-        * torch.exp(-1.25 * (omega_p / omega_safe) ** 4)
-        * gamma**r
+        alpha_pm * g**2 / omega_safe**5 * torch.exp(-1.25 * (omega_p / omega_safe) ** 4) * gamma**r
     )
     return torch.where(omega > 0.0, spectrum, torch.zeros_like(spectrum))
 

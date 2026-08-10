@@ -12,6 +12,7 @@ Covers:
 - ship_lbm_parameters output keys and stability check.
 - Full workflow: CAD mask → block-coefficient consistency.
 """
+
 from __future__ import annotations
 
 import math
@@ -58,6 +59,7 @@ DRAFT = NZ * 0.3
 # Mask shape and dtype
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize("hull_type", list(ShipHullType))
 def test_mask_shape(hull_type: ShipHullType) -> None:
     """All hull masks must have shape (nz, ny, nx) and bool dtype."""
@@ -79,9 +81,15 @@ def test_mask_has_solid_cells(hull_type: ShipHullType) -> None:
     """Every hull must produce at least some solid cells."""
     mask, stats = build_hull_mask(
         hull_type=hull_type,
-        nx=NX, ny=NY, nz=NZ,
-        cx=CX, cy=CY, cz_keel=CZ_KEEL,
-        length=LENGTH, beam=BEAM, draft=DRAFT,
+        nx=NX,
+        ny=NY,
+        nz=NZ,
+        cx=CX,
+        cy=CY,
+        cz_keel=CZ_KEEL,
+        length=LENGTH,
+        beam=BEAM,
+        draft=DRAFT,
     )
     assert stats["solid_cells"] > 0
 
@@ -89,6 +97,7 @@ def test_mask_has_solid_cells(hull_type: ShipHullType) -> None:
 # ---------------------------------------------------------------------------
 # Block coefficient
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("hull_type", list(ShipHullType))
 def test_block_coefficient_range(hull_type: ShipHullType) -> None:
@@ -100,9 +109,15 @@ def test_block_coefficient_range(hull_type: ShipHullType) -> None:
     """
     mask, stats = build_hull_mask(
         hull_type=hull_type,
-        nx=NX, ny=NY, nz=NZ,
-        cx=CX, cy=CY, cz_keel=CZ_KEEL,
-        length=LENGTH, beam=BEAM, draft=DRAFT,
+        nx=NX,
+        ny=NY,
+        nz=NZ,
+        cx=CX,
+        cy=CY,
+        cz_keel=CZ_KEEL,
+        length=LENGTH,
+        beam=BEAM,
+        draft=DRAFT,
     )
     cb = stats["Cb_numerical"]
     assert 0.20 < cb < 1.01, f"Cb={cb} out of expected range for {hull_type}"
@@ -120,8 +135,16 @@ def test_wigley_cb_close_to_theoretical() -> None:
     cz = nz / 4.0
     L, B, T = nx * 0.5, ny * 0.25, nz * 0.3
     mask, stats = build_hull_mask(
-        "wigley", nx, ny, nz, cx=cx, cy=cy, cz_keel=cz,
-        length=L, beam=B, draft=T,
+        "wigley",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz_keel=cz,
+        length=L,
+        beam=B,
+        draft=T,
     )
     cb = stats["Cb_numerical"]
     assert abs(cb - 4.0 / 9.0) < 0.15, f"Wigley Cb={cb:.4f}, expected ≈0.444"
@@ -134,8 +157,16 @@ def test_series60_cb_close_to_theoretical() -> None:
     cz = nz / 4.0
     L, B, T = nx * 0.5, ny * 0.25, nz * 0.3
     mask, stats = build_hull_mask(
-        "series60", nx, ny, nz, cx=cx, cy=cy, cz_keel=cz,
-        length=L, beam=B, draft=T,
+        "series60",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz_keel=cz,
+        length=L,
+        beam=B,
+        draft=T,
     )
     cb = stats["Cb_numerical"]
     assert abs(cb - 0.60) < 0.20, f"Series 60 Cb={cb:.4f}, expected ≈0.60"
@@ -148,8 +179,16 @@ def test_kcs_cb_close_to_theoretical() -> None:
     cz = nz / 4.0
     L, B, T = nx * 0.5, ny * 0.25, nz * 0.3
     mask, stats = build_hull_mask(
-        "kcs", nx, ny, nz, cx=cx, cy=cy, cz_keel=cz,
-        length=L, beam=B, draft=T,
+        "kcs",
+        nx,
+        ny,
+        nz,
+        cx=cx,
+        cy=cy,
+        cz_keel=cz,
+        length=L,
+        beam=B,
+        draft=T,
     )
     cb = stats["Cb_numerical"]
     assert abs(cb - 0.651) < 0.20, f"KCS Cb={cb:.4f}, expected ≈0.651"
@@ -158,6 +197,7 @@ def test_kcs_cb_close_to_theoretical() -> None:
 # ---------------------------------------------------------------------------
 # Ordering: KCS > Series60 > Wigley  (fuller → finer)
 # ---------------------------------------------------------------------------
+
 
 def test_cb_ordering() -> None:
     """Block coefficients must satisfy Cb(KCS) > Cb(Series60) > Cb(Wigley)."""
@@ -168,13 +208,19 @@ def test_cb_ordering() -> None:
     cbs = {}
     for ht in ShipHullType:
         _, stats = build_hull_mask(
-            ht, nx, ny, nz, cx=cx, cy=cy, cz_keel=cz,
-            length=L, beam=B, draft=T,
+            ht,
+            nx,
+            ny,
+            nz,
+            cx=cx,
+            cy=cy,
+            cz_keel=cz,
+            length=L,
+            beam=B,
+            draft=T,
         )
         cbs[ht] = stats["Cb_numerical"]
-    assert cbs[ShipHullType.KCS] > cbs[ShipHullType.SERIES60], (
-        "KCS should be fuller than Series60"
-    )
+    assert cbs[ShipHullType.KCS] > cbs[ShipHullType.SERIES60], "KCS should be fuller than Series60"
     assert cbs[ShipHullType.SERIES60] > cbs[ShipHullType.WIGLEY], (
         "Series60 should be fuller than Wigley"
     )
@@ -184,12 +230,12 @@ def test_cb_ordering() -> None:
 # hull_statistics
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize("hull_type", list(ShipHullType))
 def test_hull_statistics_keys(hull_type: ShipHullType) -> None:
     """hull_statistics must return all required keys."""
     stats = hull_statistics(hull_type, length=100.0, beam=16.0, draft=8.0)
-    for key in ("hull_type", "label", "Cb", "Cwp", "Cm", "Cp", "L/B", "B/T",
-                "displacement_lu3"):
+    for key in ("hull_type", "label", "Cb", "Cwp", "Cm", "Cp", "L/B", "B/T", "displacement_lu3"):
         assert key in stats, f"Missing key: {key}"
 
 
@@ -211,6 +257,20 @@ def test_hull_statistics_wigley_analytical() -> None:
     assert abs(stats["Cp"] - 2.0 / 3.0) < 1e-3, f"Cp={stats['Cp']}"
 
 
+@pytest.mark.parametrize("hull_type", list(ShipHullType))
+def test_hull_statistics_runs_without_legacy_numpy_trapz(
+    monkeypatch: pytest.MonkeyPatch, hull_type: ShipHullType
+) -> None:
+    """Form-coefficient integration must work when NumPy's retired trapz is absent."""
+    monkeypatch.delattr(np, "trapz", raising=False)
+
+    stats = hull_statistics(hull_type, length=100.0, beam=16.0, draft=8.0)
+
+    for key in ("Cwp", "Cm", "Cp"):
+        assert math.isfinite(stats[key])
+        assert 0.0 < stats[key] <= 1.0
+
+
 def test_hull_statistics_lb_bt() -> None:
     """L/B and B/T ratios must match the input dimensions."""
     s = hull_statistics(ShipHullType.SERIES60, length=120.0, beam=20.0, draft=8.0)
@@ -222,6 +282,7 @@ def test_hull_statistics_lb_bt() -> None:
 # theoretical_block_coefficient
 # ---------------------------------------------------------------------------
 
+
 def test_theoretical_cb_values() -> None:
     assert abs(theoretical_block_coefficient("wigley") - 4.0 / 9.0) < 1e-9
     assert abs(theoretical_block_coefficient("series60") - 0.600) < 1e-9
@@ -231,6 +292,7 @@ def test_theoretical_cb_values() -> None:
 # ---------------------------------------------------------------------------
 # Section / profile extraction
 # ---------------------------------------------------------------------------
+
 
 def test_body_plan_shape() -> None:
     stations, y_sects, z_sects = generate_hull_body_plan(ShipHullType.SERIES60, n_stations=7)
@@ -262,8 +324,10 @@ def test_sideprofile_symmetry() -> None:
 # Preview figure
 # ---------------------------------------------------------------------------
 
+
 def test_generate_hull_previews_returns_figure() -> None:
     import matplotlib.figure
+
     fig = generate_hull_previews(ShipHullType.SERIES60, length=100, beam=16, draft=8)
     assert isinstance(fig, matplotlib.figure.Figure)
     assert len(fig.axes) == 3
@@ -273,6 +337,7 @@ def test_generate_hull_previews_returns_figure() -> None:
 def test_generate_hull_previews_all_types(hull_type_str: str) -> None:
     """generate_hull_previews must not raise for any hull type."""
     import matplotlib.pyplot as plt
+
     fig = generate_hull_previews(hull_type_str, length=100, beam=16, draft=8)
     plt.close(fig)
 
@@ -281,10 +346,15 @@ def test_generate_hull_previews_all_types(hull_type_str: str) -> None:
 # STL export
 # ---------------------------------------------------------------------------
 
+
 def test_export_hull_stl_creates_file(tmp_path: Path) -> None:
     out = export_hull_stl(
-        "series60", length=100.0, beam=16.0, draft=8.0,
-        n_long=10, n_vert=6,
+        "series60",
+        length=100.0,
+        beam=16.0,
+        draft=8.0,
+        n_long=10,
+        n_vert=6,
         output_path=tmp_path / "test_hull.stl",
     )
     assert out.exists(), "STL file was not created"
@@ -297,8 +367,12 @@ def test_export_hull_stl_creates_file(tmp_path: Path) -> None:
 @pytest.mark.parametrize("hull_type_str", ["wigley", "series60", "kcs"])
 def test_export_hull_stl_all_types(hull_type_str: str, tmp_path: Path) -> None:
     out = export_hull_stl(
-        hull_type_str, length=50.0, beam=10.0, draft=5.0,
-        n_long=8, n_vert=4,
+        hull_type_str,
+        length=50.0,
+        beam=10.0,
+        draft=5.0,
+        n_long=8,
+        n_vert=4,
         output_path=tmp_path / f"{hull_type_str}.stl",
     )
     assert out.exists()
@@ -309,10 +383,19 @@ def test_export_hull_stl_all_types(hull_type_str: str, tmp_path: Path) -> None:
 # ship_lbm_parameters
 # ---------------------------------------------------------------------------
 
+
 def test_ship_lbm_parameters_keys() -> None:
     params = ship_lbm_parameters(100.0, 5.0)
-    for key in ("re_physical", "froude_number", "dx_m", "dt_s",
-                "lbm_nu", "lbm_tau", "mach_number", "stable"):
+    for key in (
+        "re_physical",
+        "froude_number",
+        "dx_m",
+        "dt_s",
+        "lbm_nu",
+        "lbm_tau",
+        "mach_number",
+        "stable",
+    ):
         assert key in params, f"Missing key: {key}"
 
 
@@ -368,12 +451,18 @@ def test_ship_resistance_estimate_rejects_invalid_residual_ratio() -> None:
 # Full workflow: CAD mask → hull_block_coefficient
 # ---------------------------------------------------------------------------
 
+
 def test_full_workflow_cad_to_mask_to_cb() -> None:
     """End-to-end: build Series 60 mask, compute Cb, check within 25% of 0.60."""
     nx, ny, nz = 60, 30, 24
     mask, stats = build_hull_mask(
-        "series60", nx, ny, nz,
-        length=nx * 0.5, beam=ny * 0.25, draft=nz * 0.3,
+        "series60",
+        nx,
+        ny,
+        nz,
+        length=nx * 0.5,
+        beam=ny * 0.25,
+        draft=nz * 0.3,
     )
     assert mask.shape == (nz, ny, nx)
     # Cb from stats and from direct computation must agree (within rounding)
@@ -389,12 +478,22 @@ def test_full_workflow_cad_to_mask_to_cb_kcs() -> None:
     """End-to-end: build KCS mask, verify Cb ordering and fluid cells > 0."""
     nx, ny, nz = 60, 30, 24
     mask_s60, stats_s60 = build_hull_mask(
-        "series60", nx, ny, nz,
-        length=nx * 0.5, beam=ny * 0.25, draft=nz * 0.3,
+        "series60",
+        nx,
+        ny,
+        nz,
+        length=nx * 0.5,
+        beam=ny * 0.25,
+        draft=nz * 0.3,
     )
     mask_kcs, stats_kcs = build_hull_mask(
-        "kcs", nx, ny, nz,
-        length=nx * 0.5, beam=ny * 0.25, draft=nz * 0.3,
+        "kcs",
+        nx,
+        ny,
+        nz,
+        length=nx * 0.5,
+        beam=ny * 0.25,
+        draft=nz * 0.3,
     )
     assert stats_kcs["Cb_numerical"] > stats_s60["Cb_numerical"]
     assert stats_kcs["fluid_cells"] > 0

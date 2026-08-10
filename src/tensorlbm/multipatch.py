@@ -13,6 +13,7 @@ Architecture:
 Each patch is a Level3 instance that can be solved independently within
 a sub-step, communicating via L0 (restrict-update-inject cycle).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -22,18 +23,25 @@ import torch
 import torch.nn.functional as F
 
 from .refinement import BoxRegion, _coarse_to_fine_3d, _fine_to_coarse_3d
-from .surface_refinement import (
-    surface_shell_mask, refined_bounding_box, _make_wall_3d
-)
+from .surface_refinement import surface_shell_mask, refined_bounding_box, _make_wall_3d
 
 
 # ---------------------------------------------------------------------------
 # Proper 3D injection (faces + edges + corners)
 # ---------------------------------------------------------------------------
 
-def inject_full_3d(coarse: torch.Tensor, fine: torch.Tensor,
-                   cz0: int, cz1: int, cy0: int, cy1: int,
-                   cx0: int, cx1: int, ratio: int = 2) -> None:
+
+def inject_full_3d(
+    coarse: torch.Tensor,
+    fine: torch.Tensor,
+    cz0: int,
+    cz1: int,
+    cy0: int,
+    cy1: int,
+    cx0: int,
+    cx1: int,
+    ratio: int = 2,
+) -> None:
     """Inject coarse border into fine boundary with full corner/edge support.
 
     The coarse inner region [cz0+1:cz1-1, ...] is upsampled and its
@@ -41,16 +49,16 @@ def inject_full_3d(coarse: torch.Tensor, fine: torch.Tensor,
     validated and adapted if needed.
     """
     # Extract inner region from coarse (excluding 1-cell border)
-    inner = coarse[:, cz0 + 1:cz1 - 1, cy0 + 1:cy1 - 1, cx0 + 1:cx1 - 1]
+    inner = coarse[:, cz0 + 1 : cz1 - 1, cy0 + 1 : cy1 - 1, cx0 + 1 : cx1 - 1]
     up = _coarse_to_fine_3d(inner, ratio)
 
     R = ratio
     fine_nz, fine_ny, fine_nx = fine.shape[1:]
-    
+
     # Validate: up should be R cells smaller than fine on each side
     expected = (fine_nz - 2 * R, fine_ny - 2 * R, fine_nx - 2 * R)
     actual = (up.shape[1], up.shape[2], up.shape[3])
-    
+
     # If dimensions don't match, pad/trim up to fit
     if expected != actual:
         # Trim up to fit fine grid
@@ -62,7 +70,9 @@ def inject_full_3d(coarse: torch.Tensor, fine: torch.Tensor,
         R_eff_z = (fine_nz - up.shape[1]) // 2
         R_eff_y = (fine_ny - up.shape[2]) // 2
         R_eff_x = (fine_nx - up.shape[3]) // 2
-        Rz = max(1, R_eff_z); Ry = max(1, R_eff_y); Rx = max(1, R_eff_x)
+        Rz = max(1, R_eff_z)
+        Ry = max(1, R_eff_y)
+        Rx = max(1, R_eff_x)
     else:
         Rz = Ry = Rx = R
 
@@ -99,18 +109,26 @@ def inject_full_3d(coarse: torch.Tensor, fine: torch.Tensor,
     fine[:, -Rz:, -Ry:, -Rx:] = up[:, -Rz:, -Ry:, -Rx:]
 
 
-def restrict_full_3d(child: torch.Tensor, parent: torch.Tensor,
-                     cz0: int, cz1: int, cy0: int, cy1: int,
-                     cx0: int, cx1: int, ratio: int = 2) -> None:
+def restrict_full_3d(
+    child: torch.Tensor,
+    parent: torch.Tensor,
+    cz0: int,
+    cz1: int,
+    cy0: int,
+    cy1: int,
+    cx0: int,
+    cx1: int,
+    ratio: int = 2,
+) -> None:
     """Restrict child core back to parent, excluding border cells."""
     avg = _fine_to_coarse_3d(child, ratio)
-    parent[:, cz0 + 1:cz1 - 1, cy0 + 1:cy1 - 1, cx0 + 1:cx1 - 1] = \
-        avg[:, 1:-1, 1:-1, 1:-1]
+    parent[:, cz0 + 1 : cz1 - 1, cy0 + 1 : cy1 - 1, cx0 + 1 : cx1 - 1] = avg[:, 1:-1, 1:-1, 1:-1]
 
 
 # ---------------------------------------------------------------------------
 # Multi-patch partitioning
 # ---------------------------------------------------------------------------
+
 
 def partition_hull_boxes(
     mask_L0: torch.Tensor,
@@ -168,9 +186,11 @@ def partition_hull_boxes(
 # Multi-patch 2-level solver
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PatchLevel:
     """One patch at a refinement level."""
+
     f: torch.Tensor
     mask: torch.Tensor
     wall_mask: torch.Tensor
@@ -185,6 +205,7 @@ class MultiPatchSolver:
     back to the coarse grid.  Patches communicate through the coarse grid
     (overlap ensures smooth transitions).
     """
+
     coarse_f: torch.Tensor
     coarse_mask: torch.Tensor
     coarse_wall: torch.Tensor
@@ -219,20 +240,25 @@ class MultiPatchSolver:
         patches = []
         for box in boxes:
             # Extract coarse patch
-            mask_c = mask_L0[box.z0:box.z1, box.y0:box.y1, box.x0:box.x1]
+            mask_c = mask_L0[box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1]
             # Upsample mask for fine grid
-            mask_f = mask_c.repeat_interleave(ratio, 0).repeat_interleave(ratio, 1).repeat_interleave(ratio, 2)
+            mask_f = (
+                mask_c.repeat_interleave(ratio, 0)
+                .repeat_interleave(ratio, 1)
+                .repeat_interleave(ratio, 2)
+            )
             nz_f, ny_f, nx_f = mask_f.shape
             # Fine wall mask
             wall_f = _make_wall_3d(nz_f, ny_f, nx_f, mask_f, device=device)
             # Initialize fine distributions
             f_fine = _coarse_to_fine_3d(
-                f_L0[:, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1], ratio
+                f_L0[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1], ratio
             )
             patches.append(PatchLevel(f=f_fine, mask=mask_f, wall_mask=wall_f, box=box))
 
-        solver = cls(coarse_f=f_L0, coarse_mask=mask_L0, coarse_wall=wall_L0,
-                     patches=patches, ratio=ratio)
+        solver = cls(
+            coarse_f=f_L0, coarse_mask=mask_L0, coarse_wall=wall_L0, patches=patches, ratio=ratio
+        )
         solver._compute_cells()
         return solver
 
@@ -254,9 +280,7 @@ class MultiPatchSolver:
         # 2. Inject coarse → all patches
         for p in self.patches:
             inject_full_3d(
-                self.coarse_f, p.f,
-                p.box.z0, p.box.z1, p.box.y0, p.box.y1, p.box.x0, p.box.x1,
-                R
+                self.coarse_f, p.f, p.box.z0, p.box.z1, p.box.y0, p.box.y1, p.box.x0, p.box.x1, R
             )
 
         # 3. Fine sub-steps
@@ -268,17 +292,21 @@ class MultiPatchSolver:
             # Re-inject after each sub-step
             for p in self.patches:
                 inject_full_3d(
-                    self.coarse_f, p.f,
-                    p.box.z0, p.box.z1, p.box.y0, p.box.y1, p.box.x0, p.box.x1,
-                    R
+                    self.coarse_f,
+                    p.f,
+                    p.box.z0,
+                    p.box.z1,
+                    p.box.y0,
+                    p.box.y1,
+                    p.box.x0,
+                    p.box.x1,
+                    R,
                 )
 
         # 4. Restrict patches → coarse
         for p in self.patches:
             restrict_full_3d(
-                p.f, self.coarse_f,
-                p.box.z0, p.box.z1, p.box.y0, p.box.y1, p.box.x0, p.box.x1,
-                R
+                p.f, self.coarse_f, p.box.z0, p.box.z1, p.box.y0, p.box.y1, p.box.x0, p.box.x1, R
             )
 
 

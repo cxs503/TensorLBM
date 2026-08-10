@@ -1,0 +1,62 @@
+{
+  "schema": "tensorlbm-cylinder-domain-convergence-v1",
+  "lateral_width_diameters": [20.0, 30.0, 40.0],
+  "cd_control_volume": [
+    1.4486987792895736,
+    1.446143864982331,
+    1.4458775773940835
+  ],
+  "strouhal": [
+    0.17346195169983963,
+    0.1733289318307476,
+    0.17334279379520412
+  ],
+  "configuration_identity": {
+    "v4_schema": true,
+    "required_fields_present": true,
+    "identity_fields_equal": true,
+    "spanwise_and_streamwise_cells_invariant": true,
+    "recorded_lateral_clearance_diameters": [10.0, 15.0, 20.0],
+    "clearance_consistent_with_shape": true,
+    "admitted": true
+  },
+  "domain_convergence": {
+    "drag_monotonic": true,
+    "strouhal_monotonic": false,
+    "finest_drag_change_pct": 0.01841702177354947,
+    "finest_strouhal_change_pct": 0.007996850721637597,
+    "maximum_change_pct": 1.0,
+    "admitted": false
+  },
+  "reference": {
+    "cd": 1.33,
+    "strouhal": 0.164,
+    "finest_cd_error_pct": 8.712599804066423,
+    "finest_strouhal_error_pct": 5.696825484880557,
+    "maximum_error_pct": 5.0,
+    "invariant": true
+  },
+  "source_numerical_quality_admitted": true,
+  "physical_validation": false,
+  "admitted": false,
+  "interpretation": [
+    "All three 63k source trajectories pass their numerical-quality and stationarity gates.",
+    "The W30-to-W40 changes are far below one percent, so lateral blockage is not the dominant remaining cylinder error.",
+    "The fail-closed formal gate remains false because Strouhal is not strictly monotonic and both finest-grid reference errors exceed five percent.",
+    "No reference correction or empirical extrapolation is applied."
+  ],
+  "sources": [
+    {
+      "path": "results/cylinder_domain_convergence/cylinder-v4-domain-w20d-r9-63k.json",
+      "sha256": "8b24b2cf8128de95e4e267689cd6b30cf118c7d5b6fdb54150f7318e89314e14"
+    },
+    {
+      "path": "results/cylinder_domain_convergence/cylinder-v4-domain-w30d-r9-63k.json",
+      "sha256": "e7e892ee6554a9472cbaff72b15b09c6c0acebdb5b1f006cd65dd60373f2dfdd"
+    },
+    {
+      "path": "results/cylinder_domain_convergence/cylinder-v4-domain-w40d-r9-63k.json",
+      "sha256": "ef2119879625e913a26ff003f193a34f07713dbb364a8a26e3038d3bd3242537"
+    }
+  ]
+}

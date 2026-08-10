@@ -25,6 +25,7 @@ Krause et al. (2017) "Fluid flow simulation and optimisation with lattice
 Latt et al. (2021) "Palabos: parallel lattice Boltzmann solver".
     *Computers & Mathematics with Applications* 81, 334–350.
 """
+
 from __future__ import annotations
 
 import csv
@@ -55,6 +56,7 @@ __all__ = [
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class SlidingMeshConfig:
     """Configuration for a 2-D sliding-mesh rotor-stator simulation."""
@@ -64,15 +66,15 @@ class SlidingMeshConfig:
     ny: int = 256
 
     # Rotor geometry (inner rotating zone)
-    rotor_cx: float = 0.5       # centre x as fraction of nx
-    rotor_cy: float = 0.5       # centre y as fraction of ny
+    rotor_cx: float = 0.5  # centre x as fraction of nx
+    rotor_cy: float = 0.5  # centre y as fraction of ny
     rotor_radius: float = 0.35  # inner rotor radius as fraction of min(nx, ny)
     blade_radius: float = 0.20  # rotor blade tip radius (fraction of min(nx,ny))
-    n_blades: int = 4           # number of rotor blades
+    n_blades: int = 4  # number of rotor blades
 
     # Flow parameters
-    u_tip: float = 0.05         # blade-tip velocity (lattice units)
-    re: float = 200.0           # Reynolds number based on u_tip and rotor_radius
+    u_tip: float = 0.05  # blade-tip velocity (lattice units)
+    re: float = 200.0  # Reynolds number based on u_tip and rotor_radius
 
     # Simulation control
     n_steps: int = 2000
@@ -106,6 +108,7 @@ class SlidingMeshConfig:
 # ---------------------------------------------------------------------------
 # Core sliding-mesh utilities
 # ---------------------------------------------------------------------------
+
 
 def rotate_velocity_field_2d(
     ux: torch.Tensor,
@@ -182,7 +185,11 @@ def interpolate_interface_2d(
     # Sample inner zone DFs at rotated positions
     f_inner_b = f_inner.unsqueeze(0)  # (1, 9, ny, nx)
     f_sampled = torch.nn.functional.grid_sample(
-        f_inner_b.float(), grid, mode="bilinear", padding_mode="border", align_corners=True,
+        f_inner_b.float(),
+        grid,
+        mode="bilinear",
+        padding_mode="border",
+        align_corners=True,
     ).squeeze(0)  # (9, ny, nx)
 
     # Blend: interface cells get rotated inner DF, others keep outer DF
@@ -247,8 +254,14 @@ def apply_sliding_mesh_bc_2d(
 
 
 def _make_rotor_blade_mask(
-    ny: int, nx: int, cx: float, cy: float,
-    rotor_r: float, blade_r: float, n_blades: int, theta: float,
+    ny: int,
+    nx: int,
+    cx: float,
+    cy: float,
+    rotor_r: float,
+    blade_r: float,
+    n_blades: int,
+    theta: float,
     device: torch.device,
 ) -> torch.Tensor:
     """Create a solid mask for rotor blades at rotation angle *theta*."""
@@ -279,6 +292,7 @@ def _make_rotor_blade_mask(
 # Benchmark runner
 # ---------------------------------------------------------------------------
 
+
 def run_sliding_mesh_rotor(
     cfg: SlidingMeshConfig | None = None,
     **kwargs: object,
@@ -305,8 +319,14 @@ def run_sliding_mesh_rotor(
     configure_logging(run_dir)
     save_config_json(asdict(cfg), run_dir / "config.json")
 
-    logger.info("Sliding-mesh rotor: nx=%d ny=%d Re=%.1f n_steps=%d device=%s",
-                cfg.nx, cfg.ny, cfg.re, cfg.n_steps, cfg.device)
+    logger.info(
+        "Sliding-mesh rotor: nx=%d ny=%d Re=%.1f n_steps=%d device=%s",
+        cfg.nx,
+        cfg.ny,
+        cfg.re,
+        cfg.n_steps,
+        cfg.device,
+    )
 
     nx, ny = cfg.nx, cfg.ny
     tau = cfg.tau
@@ -314,8 +334,8 @@ def run_sliding_mesh_rotor(
 
     # Derived geometry (in pixels)
     min_dim = min(nx, ny)
-    R_rotor = cfg.rotor_radius * min_dim   # interface radius (pixels)
-    R_blade = cfg.blade_radius * min_dim   # blade tip radius (pixels)
+    R_rotor = cfg.rotor_radius * min_dim  # interface radius (pixels)
+    R_blade = cfg.blade_radius * min_dim  # blade tip radius (pixels)
     cx_abs = nx / 2.0
     cy_abs = ny / 2.0
 
@@ -349,6 +369,7 @@ def run_sliding_mesh_rotor(
     theta = 0.0
 
     import matplotlib  # noqa: PLC0415
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt  # noqa: PLC0415
 
@@ -357,7 +378,15 @@ def run_sliding_mesh_rotor(
 
         # Update blade solid mask
         blade_mask = _make_rotor_blade_mask(
-            ny, nx, cx_abs, cy_abs, R_rotor, R_blade, cfg.n_blades, theta, device,
+            ny,
+            nx,
+            cx_abs,
+            cy_abs,
+            R_rotor,
+            R_blade,
+            cfg.n_blades,
+            theta,
+            device,
         )
         solid_mask = wall_mask | blade_mask
 
@@ -377,7 +406,7 @@ def run_sliding_mesh_rotor(
         # Snapshot & diagnostics
         if (step + 1) % cfg.output_interval == 0 or step == cfg.n_steps - 1:
             rho_pp, ux_pp, uy_pp = macroscopic(f)
-            speed = torch.sqrt(ux_pp ** 2 + uy_pp ** 2)
+            speed = torch.sqrt(ux_pp**2 + uy_pp**2)
 
             fig, ax = plt.subplots(figsize=(5, 5))
             im = ax.imshow(speed.cpu().numpy(), origin="lower", cmap="RdBu_r")

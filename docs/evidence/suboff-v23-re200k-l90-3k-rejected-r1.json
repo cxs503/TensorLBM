@@ -1,0 +1,104 @@
+{
+  "schema": "tensorlbm-suboff-reynolds-pilot-assessment-v1",
+  "status": "integration_pass_physical_and_time_convergence_rejected",
+  "physical_validation": false,
+  "configuration": {
+    "hull_type": "bare_hull",
+    "root_hull_length_cells": 90.0,
+    "finest_hull_length_cells": 720.0,
+    "levels": 4,
+    "collision_model": "natural_kbc",
+    "target_collision_reynolds": 200000.0,
+    "stress_exchange_distance_cells": 1.0,
+    "suboff_exchange_family_ratio": 0.0013888888888888889,
+    "wall_law": "musker",
+    "sponge_inlet": true,
+    "compiled_collision": true,
+    "collision_chunk_cells": 262144
+  },
+  "numerical_integration": {
+    "completed_steps": 3000,
+    "finite": true,
+    "minimum_observed_population": 0.005144039168953896,
+    "maximum_observed_speed": 0.07037517428398132,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_wall_sample_rejected_fraction": 0.0,
+    "maximum_source_corrected_observer_difference_pct": 0.04317781124799606,
+    "maximum_reflux_residual_by_interface": [
+      5.820766091346741e-11,
+      2.3283064365386963e-10,
+      6.984919309616089e-10
+    ],
+    "maximum_reflux_applied_correction_fraction_by_interface": [
+      6.577559474862937e-7,
+      6.786067388020456e-7,
+      4.311607995077793e-7
+    ],
+    "integration_smoke_admitted": true
+  },
+  "statistics": {
+    "samples": 1500,
+    "total_convective_times": 2.0,
+    "target_reynolds_convective_times": 1.0006666666666666,
+    "sampling_convective_times": 1.0,
+    "mean_control_volume_resistance_n": 115.9034471100953,
+    "mean_bfl_pressure_n": 22.88774303923646,
+    "mean_wall_shear_n": 93.74175608009118,
+    "mean_bfl_pressure_plus_wall_shear_n": 116.62949911932742,
+    "mean_numerical_source_n": 0.7264112452873419,
+    "experimental_resistance_n": 87.4,
+    "reference_error_pct": 32.61263971406784,
+    "stationarity": {
+      "relative_range_pct": 7.057980920004324,
+      "half_mean_drift_pct": 3.622411387287938,
+      "linear_trend_pct": 6.555586880446578,
+      "confidence95_half_width_pct": 2.080266108766987,
+      "effective_sample_count": 3.4233469973209534,
+      "admitted": false
+    },
+    "auxiliary_cv_difference_pct": {
+      "4": 0.22990738600944635,
+      "12": 0.2502823961495133
+    },
+    "surface_pressure_observer_difference_pct": 26.670939383980492,
+    "wall_exchange": {
+      "diagnostic_samples": 25,
+      "mean_distance_cells": 1.0775457620620728,
+      "minimum_y_plus": 1.0516619682312012,
+      "mean_y_plus": 807.8160894775391,
+      "maximum_y_plus": 1301.3016357421875
+    }
+  },
+  "component_audit": {
+    "scope": "diagnostic_only_not_a_cfd_correction",
+    "component_sum_vs_control_volume_pct": 0.6264283136830917,
+    "ittc_1957_friction_resistance_n": 79.32187377597819,
+    "wall_shear_vs_ittc_pct": 18.178948148448693,
+    "experimental_total_minus_ittc_friction_n": 8.078126224021815,
+    "pressure_over_inferred_residual": 2.83329851558589
+  },
+  "decision": {
+    "admit_numerical_integration": true,
+    "admit_time_convergence": false,
+    "admit_physical_accuracy": false,
+    "reasons": [
+      "The mean direct control-volume resistance is 32.61 percent above experiment.",
+      "Only one sampling convective time is available and the force trend is not stationary.",
+      "Both pressure and wall-shear components remain above their independent diagnostic scales.",
+      "The separate surface-pressure integration differs from the control volume by 26.67 percent and is not admitted as a force observer."
+    ],
+    "next": [
+      "Continue the same checkpoint through eight total convective times in v30.",
+      "Use v25 Re=500000 to isolate collision-Reynolds sensitivity without changing wall viscosity.",
+      "Use v29 only as an exchange-location A/B; reject it if measured y+ violates the declared policy.",
+      "Do not apply empirical pressure, friction or total-force corrections."
+    ]
+  },
+  "provenance": {
+    "remote_result": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-3k.json",
+    "remote_result_sha256": "9bf5838c1e346b21942ef37019aaaf5284cd783c59cf9c750faf219facf12f63",
+    "remote_checkpoint": "results/amr_campaign_20260801/suboff-nested-v23-equivalent-l90-3k.ckpt",
+    "remote_checkpoint_sha256": "72a1e03953b7b09a6f41c64e71e20c7bcd6ea1dcb76f9878e3079a1cb16c4445",
+    "long_continuation": "suboff-nested-v30-equivalent-l90-12k"
+  }
+}

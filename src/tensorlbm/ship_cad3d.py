@@ -6,6 +6,7 @@ MVP scope:
 - glTF export for web visualization
 - Optional STEP import/export when CadQuery is available
 """
+
 from __future__ import annotations
 
 import base64

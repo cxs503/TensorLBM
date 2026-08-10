@@ -1,4 +1,5 @@
 """Tests for utils.py: device helpers, run dirs, and reproducibility metadata."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -52,7 +53,7 @@ class TestConfigureCpuThreads:
 
     def test_non_cpu_device_is_noop(self) -> None:
         current = torch.get_num_threads()
-        assert configure_cpu_threads("cuda:0", 2) == current
+        assert configure_cpu_threads("sdaa:0", 2) == current
 
     def test_invalid_thread_count_raises(self) -> None:
         with pytest.raises(ValueError, match="num_threads"):

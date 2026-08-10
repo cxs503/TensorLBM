@@ -12,6 +12,7 @@ Usage:
 
 Validated: SUBOFF bare_hull 200³ → Ct=0.00393 (2.9% vs ref 0.00405)
 """
+
 from __future__ import annotations
 
 import torch

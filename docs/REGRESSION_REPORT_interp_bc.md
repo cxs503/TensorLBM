@@ -7,7 +7,15 @@
 
 ---
 
-## 1. 辨识原始 Bug（带病上岗）
+> **2026-08-02 状态更新：已修复。** 本报告以下内容保留为历史缺陷记录。
+> 当前标量与向量 D2Q9/D3Q19/D3Q27 实现统一使用后碰撞出射分布：
+> `q<0.5` 使用 `f_i*(x_f)` 与 `f_i*(x_f-c_i)`，`q>=0.5` 使用
+> `f_i*(x_f)` 与 `f_opp*(x_f)`；未知量写入 `f_opp(x_f)`。解析曲面
+> 射线 `x+t c_i` 的链路分数统一为 `q=t`。验证见
+> `tests/test_bfl_fractional_distance.py` 与
+> `tests/test_planar_d3q19.py::test_planar_collision_stream_and_curved_wall_match_d2q9`。
+
+## 1. 辨识原始 Bug（历史记录）
 
 ### 1.1 插值边界 `interpolated_bc.py`
 

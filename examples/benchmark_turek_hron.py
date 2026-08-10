@@ -70,6 +70,9 @@ from tensorlbm.d3q19 import C, W, OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.solver3d import correct_mass3d, stream3d
 from tensorlbm.ibm_vec import ibm_direct_forcing_3d_vec
 from tensorlbm.ibm import ibm_delta_hat, ibm_delta_4pt
+from tensorlbm.benchmark_observability import (
+    BenchmarkReporter, assert_benchmark_tensor_device, resolve_benchmark_device,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -349,6 +352,47 @@ def compute_beam_forces(
     return fx, fy
 
 
+def compute_beam_forces_batched(
+    pos_x: torch.Tensor,
+    pos_y: torch.Tensor,
+    vel_x: torch.Tensor,
+    vel_y: torch.Tensor,
+    k_b: float,
+    c_b: float,
+    N: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute beam forces with direct, allocation-free interior stencils.
+
+    This is algebraically identical to :func:`compute_beam_forces`, including
+    its small-beam fallback and clamped/free-end boundary conditions. Unlike
+    the reference routine, it does not construct padded temporary vectors for
+    every structural substep.
+    """
+    if N < 4:
+        return compute_beam_forces(pos_x, pos_y, vel_x, vel_y, k_b, c_b, N)
+
+    fx = torch.zeros(N, dtype=pos_x.dtype, device=pos_x.device)
+    fy = torch.zeros(N, dtype=pos_y.dtype, device=pos_y.device)
+
+    def _biharmonic(values: torch.Tensor) -> torch.Tensor:
+        result = torch.empty(N - 2, dtype=values.dtype, device=values.device)
+        # i=1: clamped ghost x[-1] = x[1].
+        result[0] = (values[1] - 4.0 * values[0] + 6.0 * values[1]
+                     - 4.0 * values[2] + values[3])
+        if N > 4:
+            result[1:-1] = (values[0:N - 4] - 4.0 * values[1:N - 3]
+                            + 6.0 * values[2:N - 2] - 4.0 * values[3:N - 1]
+                            + values[4:N])
+        # i=N-2: free ghost x[N] = 2*x[N-1] - x[N-2].
+        result[-1] = (values[N - 4] - 4.0 * values[N - 3]
+                      + 5.0 * values[N - 2] - 2.0 * values[N - 1])
+        return result
+
+    fx[1:N - 1] = -k_b * _biharmonic(pos_x) - c_b * _biharmonic(vel_x)
+    fy[1:N - 1] = -k_b * _biharmonic(pos_y) - c_b * _biharmonic(vel_y)
+    return fx, fy
+
+
 # ---------------------------------------------------------------------------
 # Main simulation
 # ---------------------------------------------------------------------------
@@ -373,10 +417,18 @@ def run_turek_hron_benchmark(
     ramp_steps: int = 500,
     ibm_relax: float = 0.5,
     kernel: str = "4pt",
-    output_interval: int = 500,
+    output_interval: int = 25,
+    max_wall_seconds: float | None = 900.0,
     output_dir: str = "outputs",
 ):
-    dev = torch.device(device)
+    device_metadata = resolve_benchmark_device(device)
+    dev = torch.device(device_metadata["resolved"])
+    if output_interval < 1:
+        raise ValueError("output_interval must be at least one step")
+    if max_wall_seconds is not None and max_wall_seconds <= 0:
+        raise ValueError("max_wall_seconds must be positive or None")
+    reporter = BenchmarkReporter(output_dir, "turek_hron", n_steps, device_metadata)
+    reporter.start()
     nz = 1
     D = 2.0 * R
     cx0 = 60.0           # cylinder centre x
@@ -433,6 +485,10 @@ def run_turek_hron_benchmark(
     uy0 = uy0.expand(nz, ny, nx).contiguous()
     uz0 = torch.zeros_like(ux0)
     f = equilibrium3d(rho0, ux0, uy0, uz0, device=dev)
+    # Validate actual state placement before entering the expensive loop.
+    assert_benchmark_tensor_device(f, dev, "distribution f")
+    assert_benchmark_tensor_device(beam_pos_x, dev, "beam_pos_x")
+    assert_benchmark_tensor_device(mx_cyl, dev, "cylinder markers")
 
     # --- Wake probe (downstream of beam, ~5D from cylinder) -----------
     probe_x = min(int(cx0 + 5.0 * D), nx - 2)
@@ -466,7 +522,10 @@ def run_turek_hron_benchmark(
     print(f"  IBM:        圆柱标记={n_cyl_markers}(ds={ds_cyl:.3f})  "
           f"梁标记={beam_N}(ds={L_node:.3f})  总标记={n_total}", flush=True)
     print(f"  内核:       '{kernel}'", flush=True)
-    print(f"  运行:       步数={n_steps}  设备={device}", flush=True)
+    print(f"  运行:       步数={n_steps}  请求设备={device}  实际设备={dev}", flush=True)
+    print(f"  设备断言:   allocation={device_metadata['allocation_device']}  "
+          f"max_wall_seconds={max_wall_seconds}", flush=True)
+    print(f"  状态文件:   {reporter.status_path}  进度CSV: {reporter.progress_path}", flush=True)
     print("=" * 70, flush=True)
 
     t0 = time.time()
@@ -521,6 +580,7 @@ def run_turek_hron_benchmark(
             u_t_x, u_t_y, u_t_z,
             kernel=kernel,
         )
+        assert_benchmark_tensor_device(fx_grid, dev, "IBM force grid")
 
         # --- 3. 碰撞 (BGK + Guo体力) ----------------------------------
         f = collide_bgk3d_guo(f, tau, fx_grid, fy_grid, fz_grid)
@@ -604,14 +664,24 @@ def run_turek_hron_benchmark(
         uy_probe_hist.append(uy_probe)
 
         # --- 10. 打印 ------------------------------------------------
-        if step % output_interval == 0 or step == n_steps:
+        elapsed = time.time() - t0
+        watchdog_expired = max_wall_seconds is not None and elapsed >= max_wall_seconds
+        if step % output_interval == 0 or step == n_steps or watchdog_expired:
             print(
                 f"  步 {step:5d}:  梁尖y={tip_y:+.4f}  vy={tip_vy:+.5f}  "
                 f"Fy={fy_total:+.5f}  探针uy={uy_probe:+.5f}  "
                 f"ρ∈[{float(rho.min()):.4f},{float(rho.max()):.4f}]  "
-                f"{time.time()-t0:.0f}秒",
+                f"{elapsed:.0f}秒",
                 flush=True,
             )
+            reporter.progress(step, elapsed, tip_y, tip_x)
+        if watchdog_expired:
+            numerical_failure = (
+                f"watchdog: elapsed {elapsed:.1f}s reached "
+                f"max_wall_seconds={max_wall_seconds}"
+            )
+            print(f"  [看门狗] {numerical_failure}", flush=True)
+            break
 
     dt_total = time.time() - t0
     print("=" * 70, flush=True)
@@ -820,7 +890,7 @@ def run_turek_hron_benchmark(
     except ImportError:
         print("  (matplotlib不可用 — 跳过图表)", flush=True)
 
-    return {
+    result = {
         "St_measured": St_meas,
         "St_expected": St_ref,
         "f_tip": f_tip,
@@ -833,6 +903,13 @@ def run_turek_hron_benchmark(
         "steps_completed": n_completed,
         "pass": all_pass,
     }
+    reporter.finish(
+        n_completed,
+        "PASSED" if all_pass else "FAILED",
+        numerical_failure,
+        result,
+    )
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -880,7 +957,10 @@ if __name__ == "__main__":
     parser.add_argument("--kernel", default="4pt", choices=["hat", "4pt"],
                         help="IBM delta内核")
     parser.add_argument("--output-interval", dest="output_interval",
-                        type=int, default=500, help="打印间隔 (步)")
+                        type=int, default=25, help="进度CSV/日志间隔 (步)")
+    parser.add_argument("--max-wall-seconds", dest="max_wall_seconds", type=float,
+                        default=900.0,
+                        help="看门狗时间上限; <=0 禁用 (默认900秒)")
     parser.add_argument("--output-dir", dest="output_dir",
                         default="outputs", help="输出目录")
     args = parser.parse_args()
@@ -906,5 +986,6 @@ if __name__ == "__main__":
         ibm_relax=args.ibm_relax,
         kernel=args.kernel,
         output_interval=args.output_interval,
+        max_wall_seconds=None if args.max_wall_seconds <= 0 else args.max_wall_seconds,
         output_dir=args.output_dir,
     )

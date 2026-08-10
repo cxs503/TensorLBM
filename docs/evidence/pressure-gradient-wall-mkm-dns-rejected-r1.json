@@ -1,0 +1,53 @@
+{
+  "schema": "tensorlbm-pressure-gradient-wall-mkm-dns-evidence-v1",
+  "status": "candidate_models_rejected",
+  "physical_validation": false,
+  "reference": {
+    "citation": "Moser, Kim & Mansour, Physics of Fluids 11, 943-945 (1999)",
+    "re_tau": 178.12,
+    "normalization": "u_tau=1, channel half-height h=1",
+    "exact_pressure_gradient_acceleration": -1.0,
+    "pressure_gradient_definition": "dp_dx/rho=-u_tau^2/h",
+    "path": "results/reference/mkm-chan180.means",
+    "sha256": "f54c86e30a869798f140aa004c1e167cd13a6280e988d2794d72ca2be8b5fc82"
+  },
+  "assessment": {
+    "y_plus_interval": [30.0, 150.0],
+    "sample_count": 34,
+    "maximum_mean_error_pct": 5.0,
+    "maximum_rms_error_pct": 7.5,
+    "quadrature_points": 256
+  },
+  "models": {
+    "van_driest": {
+      "attached_samples": 34,
+      "minimum_predicted_u_tau": 1.0481552018668634,
+      "mean_predicted_u_tau": 1.0780246573548518,
+      "maximum_predicted_u_tau": 1.1112100169024528,
+      "mean_error_pct": 7.802465735485184,
+      "rms_error_pct": 8.058305331882922,
+      "maximum_absolute_error_pct": 11.12100169024528,
+      "accepted": false
+    },
+    "duprat": {
+      "attached_samples": 34,
+      "minimum_predicted_u_tau": 1.0722180850323972,
+      "mean_predicted_u_tau": 1.1119876776239446,
+      "maximum_predicted_u_tau": 1.1509245327761353,
+      "mean_error_pct": 11.198767762394445,
+      "rms_error_pct": 11.463967236074977,
+      "maximum_absolute_error_pct": 15.092453277613526,
+      "accepted": false
+    }
+  },
+  "decision": {
+    "production_force_changed": false,
+    "interpretation": "Both attached ODE candidates overpredict friction velocity against an independent pressure-driven turbulent DNS. Duprat is worse in this range and previously increased frozen SUBOFF shear, so neither model may replace the admitted Musker production path.",
+    "required_before_reconsideration": "A model must pass both this pressure-driven channel inversion and an independent attached/adverse-pressure-gradient boundary-layer reference without experiment-selected tuning."
+  },
+  "artifact": {
+    "path": "results/canonical_wall/mkm-chan180-pressure-gradient-wall-assessment-r1.json",
+    "sha256": "4b25a0cab340b7670f726dc78e8171eca792cfd965c6cb7340597bbd08da0811"
+  },
+  "implementation_commit": "264ceef"
+}

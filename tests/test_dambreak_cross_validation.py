@@ -4,6 +4,7 @@ Tests the cross-validation runner that compares front-position evolution
 across lattice (D3Q19/D3Q27), collision (BGK/MRT), and SGS model
 (none/Smagorinsky/WALE/Vreman) combinations on a small grid.
 """
+
 from __future__ import annotations
 
 import json
@@ -39,6 +40,7 @@ def _small_config(tmp_path, **overrides):
 # ---------------------------------------------------------------------------
 # Single-run smoke tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("lattice", ["d3q19", "d3q27"])
 def test_single_dambreak_runs_for_both_lattices(tmp_path, lattice):
@@ -103,6 +105,7 @@ def test_d3q27_mrt_all_sgs_models(tmp_path, sgs_model):
 # Full matrix tests
 # ---------------------------------------------------------------------------
 
+
 def test_cross_validation_produces_full_matrix(tmp_path):
     """Full matrix: 2 lattices × 2 collisions × 4 SGS = 16 entries."""
     config = _small_config(tmp_path)
@@ -135,8 +138,7 @@ def test_cross_validation_writes_json_artifact(tmp_path):
     assert len(data["matrix"]) == 16
     # Verify each entry has the required fields
     for entry in data["matrix"]:
-        for key in ("lattice", "collision", "sgs_model",
-                    "front_position", "mass_drift", "finite"):
+        for key in ("lattice", "collision", "sgs_model", "front_position", "mass_drift", "finite"):
             assert key in entry, f"missing key {key} in entry {entry}"
 
 
@@ -144,10 +146,7 @@ def test_matrix_contains_all_combinations(tmp_path):
     """Matrix must contain every lattice × collision × sgs combination."""
     config = _small_config(tmp_path)
     result = run_dambreak_cross_validation(config)
-    combos = {
-        (e["lattice"], e["collision"], e["sgs_model"])
-        for e in result["matrix"]
-    }
+    combos = {(e["lattice"], e["collision"], e["sgs_model"]) for e in result["matrix"]}
     expected = {
         (lat, col, sgs)
         for lat in ("d3q19", "d3q27")
@@ -160,6 +159,7 @@ def test_matrix_contains_all_combinations(tmp_path):
 # ---------------------------------------------------------------------------
 # Physical sanity tests (diagnostic, not validation)
 # ---------------------------------------------------------------------------
+
 
 def test_front_position_is_within_domain(tmp_path):
     """Front position must be a valid x-index within [0, nx-1]."""

@@ -1,4 +1,5 @@
 """TDD R1 decision gate for Körner I→G f-ownership policy evidence."""
+
 from __future__ import annotations
 
 import pytest
@@ -60,7 +61,8 @@ def _production(policy: IToGPopulationPolicy, payload: object) -> dict[str, obje
     ],
 )
 def test_each_policy_has_explicit_minimum_production_evidence(
-    policy: IToGPopulationPolicy, payload: dict[str, object],
+    policy: IToGPopulationPolicy,
+    payload: dict[str, object],
 ) -> None:
     report = evaluate_i_to_g_policy_evidence(policy, _production(policy, payload))
     assert report.status == WITHHELD_MISSING_POLICY_EVIDENCE
@@ -71,7 +73,9 @@ def test_each_policy_has_explicit_minimum_production_evidence(
 
 @pytest.mark.parametrize("policy", tuple(IToGPopulationPolicy))
 def test_each_policy_withholds_its_missing_minimum_evidence(policy: IToGPopulationPolicy) -> None:
-    report = evaluate_i_to_g_policy_evidence(policy, _production(policy, {"operator_id": "only-id"}))
+    report = evaluate_i_to_g_policy_evidence(
+        policy, _production(policy, {"operator_id": "only-id"})
+    )
     assert report.status == WITHHELD_MISSING_POLICY_EVIDENCE
     assert report.feasible is False
     assert "operator_id" not in report.missing_evidence
@@ -81,7 +85,9 @@ def test_each_policy_withholds_its_missing_minimum_evidence(policy: IToGPopulati
 def test_malformed_or_nonproduction_mappings_cannot_be_policy_proof() -> None:
     malformed = evaluate_i_to_g_policy_evidence(
         IToGPopulationPolicy.CONSERVATIVE_PARTITION_TRANSFER,
-        _production(IToGPopulationPolicy.CONSERVATIVE_PARTITION_TRANSFER, {"source_cells": [(1, 1, True)]}),
+        _production(
+            IToGPopulationPolicy.CONSERVATIVE_PARTITION_TRANSFER, {"source_cells": [(1, 1, True)]}
+        ),
     )
     shaped = evaluate_i_to_g_policy_evidence(
         IToGPopulationPolicy.CONSERVATIVE_PARTITION_TRANSFER,
@@ -112,15 +118,22 @@ def test_current_real_production_report_explicitly_marks_all_three_options_missi
     flags[centre], fill[centre] = INTERFACE, 1.0
     for q in range(1, 19):
         dz, dy, dx = int(C[q, 2]), int(C[q, 1]), int(C[q, 0])
-        source = tuple((index - delta) % extent for index, delta, extent in zip(centre, (dz, dy, dx), shape))
+        source = tuple(
+            (index - delta) % extent for index, delta, extent in zip(centre, (dz, dy, dx), shape)
+        )
         flags[source], fill[source] = INTERFACE, 0.5
     zero = torch.zeros(shape)
     f = equilibrium3d(torch.ones(shape), zero, zero, zero)
     runtime_ledger: dict[str, object] = {}
     replay_capture: dict[str, object] = {}
     free_surface_step(
-        f, fill, flags, torch.zeros(shape, dtype=torch.bool), mass=fill.clone(),
-        runtime_ledger=runtime_ledger, replay_capture=replay_capture,
+        f,
+        fill,
+        flags,
+        torch.zeros(shape, dtype=torch.bool),
+        mass=fill.clone(),
+        runtime_ledger=runtime_ledger,
+        replay_capture=replay_capture,
         capture_replay_stages=True,
     )
     runtime = extract_runtime_korner_evidence(

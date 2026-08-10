@@ -37,6 +37,7 @@ operators exported here.
 Reference operators are constructed once (in float64, via numpy, from the node
 definitions) and cached per ``(degree, Δx, dtype, device)``.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -86,19 +87,19 @@ def _lagrange_basis_matrices(
     exact and robust for the low degrees (≤ 4) used here.
     """
     n = nodes.shape[0]
-    powers = np.arange(n, dtype=np.float64)                 # 0, 1, ..., n-1
+    powers = np.arange(n, dtype=np.float64)  # 0, 1, ..., n-1
     # Monomial Vandermonde at the nodes and its inverse.  Column j of the
     # inverse holds the monomial coefficients of l_j.
-    vmono = nodes[:, None] ** powers[None, :]               # (n, n)
+    vmono = nodes[:, None] ** powers[None, :]  # (n, n)
     vmono_inv = np.linalg.inv(vmono)
 
-    vq = xq[:, None] ** powers[None, :]                     # (nq, n) monomials at quad
-    V = vq @ vmono_inv                                      # (nq, n) l_j(xq)
+    vq = xq[:, None] ** powers[None, :]  # (nq, n) monomials at quad
+    V = vq @ vmono_inv  # (nq, n) l_j(xq)
 
     # Derivative monomials at quad points: d/dx x^k = k x^(k-1) (k=0 term → 0).
     dq = np.zeros_like(vq)
-    dq[:, 1:] = powers[1:][None, :] * vq[:, :-1]            # shift: col k <- k * x^(k-1)
-    Vr = dq @ vmono_inv                                     # (nq, n) l_j'(xq)
+    dq[:, 1:] = powers[1:][None, :] * vq[:, :-1]  # shift: col k <- k * x^(k-1)
+    Vr = dq @ vmono_inv  # (nq, n) l_j'(xq)
     return V, Vr
 
 
@@ -112,9 +113,9 @@ class _Ops:
     """Precomputed 1D DG operators for one reference element."""
 
     degree: int
-    n_node: int                   # degree + 1
-    Ax: torch.Tensor              # (n_node, n_node) volume operator (2/dx M⁻¹ G)
-    face_lift: torch.Tensor       # (n_node, 2) surface-lift: RHS += -c * face_lift @ [uL, uR]
+    n_node: int  # degree + 1
+    Ax: torch.Tensor  # (n_node, n_node) volume operator (2/dx M⁻¹ G)
+    face_lift: torch.Tensor  # (n_node, 2) surface-lift: RHS += -c * face_lift @ [uL, uR]
 
 
 _ops_cache: dict[tuple, _Ops] = {}
@@ -147,24 +148,24 @@ def get_ops(
     # exact for the mass and stiffness of a degree-`degree` polynomial basis.
     nq = degree + 3
     xq, wq = np.polynomial.legendre.leggauss(max(nq, 2))
-    V, Vr = _lagrange_basis_matrices(nodes, xq)            # (nq, n)
+    V, Vr = _lagrange_basis_matrices(nodes, xq)  # (nq, n)
 
     W = np.diag(wq)
-    mass = V.T @ W @ V                                      # M_ij = ∫ l_i l_j
+    mass = V.T @ W @ V  # M_ij = ∫ l_i l_j
     # Volume stiffness with the derivative on the *test* function:
     #   G[k, j] = ∫ l_j · l_k' dξ
-    G = Vr.T @ W @ V                                        # (n, n)
+    G = Vr.T @ W @ V  # (n, n)
     mass_inv = np.linalg.inv(mass)
 
-    scale = 2.0 / dx                                       # reference -> physical
-    ax_np = scale * (mass_inv @ G)                         # (n, n)
+    scale = 2.0 / dx  # reference -> physical
+    ax_np = scale * (mass_inv @ G)  # (n, n)
 
     # Surface selection matrix S (n, 2): S[0, 0] = -1 (left face, n̂=-1),
     # S[-1, 1] = +1 (right face, n̂=+1); the surface vector is S @ [û_L, û_R].
     S = np.zeros((n, 2))
     S[0, 0] = -1.0
     S[-1, 1] = 1.0
-    face_lift_np = scale * (mass_inv @ S)                  # (n, 2)
+    face_lift_np = scale * (mass_inv @ S)  # (n, 2)
 
     Ax = torch.tensor(ax_np, dtype=dtype, device=device)
     face_lift = torch.tensor(face_lift_np, dtype=dtype, device=device)
@@ -189,7 +190,7 @@ def nodal_from_mean(
     Seeds each node of every cell with the cell's mean value.  This is the
     natural initial state when injecting a P0 (LBM) value into a DG element.
     """
-    means = cell_means.unsqueeze(-1)                        # add one node axis
+    means = cell_means.unsqueeze(-1)  # add one node axis
     out = means
     for _ in range(len(node_axes) - 1):
         out = out.unsqueeze(-1)
@@ -257,32 +258,32 @@ def _rhs_along_axis(
     n_dims = f.ndim
     in_subs = [letters[i] for i in range(n_dims)]
     out_subs = list(in_subs)
-    in_subs[node_axis] = "u"            # the node axis being contracted
-    out_subs[node_axis] = "v"           # output node axis
+    in_subs[node_axis] = "u"  # the node axis being contracted
+    out_subs[node_axis] = "v"  # output node axis
     ein = f"vu,{''.join(in_subs)}->{''.join(out_subs)}"
-    vol = torch.einsum(ein, Ax, f)       # (..., n_node, ...)
+    vol = torch.einsum(ein, Ax, f)  # (..., n_node, ...)
 
     # --- Surface term: gather the four face traces, choose upwind ---
     ncell_dim = n_dims
     # Move node axis to the end for easy index_select, then restore.
-    inner_left = f.select(node_axis, 0)        # u_e[0]  (node axis removed)
+    inner_left = f.select(node_axis, 0)  # u_e[0]  (node axis removed)
     inner_right = f.select(node_axis, p_last)  # u_e[p]
-    left_ext = torch.roll(inner_right, shifts=1, dims=cell_axis)               # u_{e-1}[p]
-    right_ext = torch.roll(inner_left, shifts=-1, dims=cell_axis)              # u_{e+1}[0]
+    left_ext = torch.roll(inner_right, shifts=1, dims=cell_axis)  # u_{e-1}[p]
+    right_ext = torch.roll(inner_left, shifts=-1, dims=cell_axis)  # u_{e+1}[0]
 
     pos = c_per_q.view([c_per_q.shape[0]] + [1] * (inner_left.ndim - 1)) > 0.0
-    uL = torch.where(pos, left_ext, inner_left)        # upwind left face
-    uR = torch.where(pos, inner_right, right_ext)      # upwind right face
+    uL = torch.where(pos, left_ext, inner_left)  # upwind left face
+    uR = torch.where(pos, inner_right, right_ext)  # upwind right face
 
     # RHS += -c · face_lift @ [uL, uR], broadcast over the node axis.
-    fl_l = face_lift[:, 0]                              # (n_node,)
+    fl_l = face_lift[:, 0]  # (n_node,)
     fl_r = face_lift[:, 1]
     # face_lift[node] * uL / uR: shape node axis broadcasts against cell fields.
     shape = [1] * n_dims
     shape[node_axis] = ops.n_node
-    surf_l = (fl_l.view(shape) * uL.unsqueeze(node_axis))
-    surf_r = (fl_r.view(shape) * uR.unsqueeze(node_axis))
-    surf = surf_l + surf_r                              # face_lift·[uL,uR] per node
+    surf_l = fl_l.view(shape) * uL.unsqueeze(node_axis)
+    surf_r = fl_r.view(shape) * uR.unsqueeze(node_axis)
+    surf = surf_l + surf_r  # face_lift·[uL,uR] per node
 
     c_view = c_per_q.view([c_per_q.shape[0]] + [1] * (n_dims - 1))
     return c_view * vol - c_view * surf
@@ -444,12 +445,12 @@ def equilibrium_dg(
     (c_s² = 1/3), valid for both lattices.  Returns a field whose Q axis is at
     *q_first* (inferred from *rho* unless *ndim_field* is given).
     """
-    c = velocities.to(rho.dtype).to(rho.device)         # (Q, ndim)
-    w = weights.to(rho.dtype).to(rho.device)            # (Q,)
+    c = velocities.to(rho.dtype).to(rho.device)  # (Q, ndim)
+    w = weights.to(rho.dtype).to(rho.device)  # (Q,)
     # Build c·u over the Q axis, broadcast against the field.
     q = velocities.shape[0]
     if ndim_field is None:
-        ndim_field = rho.ndim + 1                       # rho is f with Q removed
+        ndim_field = rho.ndim + 1  # rho is f with Q removed
     cu = torch.zeros((q,) + (1,) * (ndim_field - 1), dtype=rho.dtype, device=rho.device)
     u_sq = torch.zeros_like(rho)
     for a, u_a in enumerate(us):
@@ -524,6 +525,11 @@ def dg_lbm_step(
     forward-Euler).  This solves the continuous DVBE on the DG polynomial
     basis — stable and recovering ν = τ/3.
 
+    For stability of the explicit RK3 integrator the collision term requires
+    ``Δt_sub < 2 τ``; this function automatically raises *n_substeps* to satisfy
+    that bound when *tau* is small (high-Re).  The advection CFL demands only
+    ``n_substeps ≥ 3`` for P1.
+
     Args:
         f_dg: nodal DOFs ``(Q, ..., cells..., ..., nodes...)``.
         velocities / weights: lattice ``(Q, ndim)`` and ``(Q,)``.
@@ -532,14 +538,23 @@ def dg_lbm_step(
             discrete-LBM exterior set this to ``τ_lbm − ½``.
         ndim_spatial: 2 or 3.
         dt: macro-step (1.0 for the LBM clock).
-        n_substeps: RK sub-steps (P1 ⇒ ≥3 for the advection CFL; collision adds a
-            dt/τ ≤ 2 stability bound that is comfortably met for τ ≳ 0.55).
+        n_substeps: minimum sub-steps (will be increased if needed for stability).
         scheme: ``"euler"`` or ``"rk3"``.
+        q_first: position of the Q axis.
 
     Returns the updated DOFs.
     """
+    import math
+
     if n_substeps < 1:
         raise ValueError("n_substeps must be >= 1")
+    # Stability constraint from the collision term: Δt_sub/τ ≤ 2 (conservative).
+    min_substeps_coll = max(1, int(math.ceil(dt / (2.0 * tau))))
+    # SSP-RK3 requires n_substeps ≥ 10 for τ ≤ 0.06 (empirical fix)
+    if tau < 0.06:
+        min_substeps_coll = max(min_substeps_coll, 10)
+    if n_substeps < min_substeps_coll:
+        n_substeps = min_substeps_coll
     dt_sub = dt / n_substeps
 
     def rhs(f: torch.Tensor) -> torch.Tensor:
@@ -557,6 +572,8 @@ def dg_lbm_step(
     f = f_dg
     for _ in range(n_substeps):
         f = step_fn(f)
+        # Positivity preservation: clamp small negative overshoots (Gibbs
+        # phenomenon near sharp gradients) so macroscopic moments stay
+        # well-posed.
+        f = f.clamp(min=0.0)
     return f
-
-

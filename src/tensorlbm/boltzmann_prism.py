@@ -8,6 +8,7 @@ Interface: f values are exchanged directly — no velocity/temperature coupling 
 For each population i:
   ∂_t f_i = -c_i·∇f_i - (f_i - f_i^eq)/τ
 """
+
 import torch
 import torch.nn.functional as F
 import math, time
@@ -34,18 +35,26 @@ class BoltzmannPrismSolver:
     LBM at the wall-adjacent Cartesian cells.
     """
 
-    def __init__(self, solid: torch.Tensor, n_layers: int = 5,
-                 nu: float = 2.4e-6, device: str = 'sdaa:0',
-                 first_height: float = 0.02, growth: float = 1.2):
+    def __init__(
+        self,
+        solid: torch.Tensor,
+        n_layers: int = 5,
+        nu: float = 2.4e-6,
+        device: str = "sdaa:0",
+        first_height: float = 0.02,
+        growth: float = 1.2,
+    ):
         self.device = torch.device(device)
         self.nu = nu
         self.tau = 3.0 * nu + 0.5
 
         # Build prism mesh
         from .prism_layer import generate_prism_layers
-        cpu_solid = solid.cpu() if solid.device != torch.device('cpu') else solid
-        prism = generate_prism_layers(cpu_solid, n_layers=n_layers,
-                                       first_height=first_height, growth=growth)
+
+        cpu_solid = solid.cpu() if solid.device != torch.device("cpu") else solid
+        prism = generate_prism_layers(
+            cpu_solid, n_layers=n_layers, first_height=first_height, growth=growth
+        )
         self.n_layers = prism.n_layers
         self.n_surface = prism.n_surface
         self.layer_heights = prism.layer_heights.to(self.device)
@@ -53,14 +62,16 @@ class BoltzmannPrismSolver:
         self.surface_normals = prism.surface_normals.to(self.device)
 
         # Initialize distribution (19 populations per prism cell)
-        self.f_prism = torch.zeros(19, n_layers, prism.n_surface,
-                                   device=self.device, dtype=torch.float32)
+        self.f_prism = torch.zeros(
+            19, n_layers, prism.n_surface, device=self.device, dtype=torch.float32
+        )
 
         # FD stencils for wall-normal direction
         self._h = self.layer_heights
 
         # Velocity set (D3Q19)
         from .d3q19 import C as _C
+
         self.c = _C.to(self.device).float()  # (19, 3)
 
         # Precompute wall-normal stencil weights for each layer
@@ -70,13 +81,13 @@ class BoltzmannPrismSolver:
         self.grad_w = torch.zeros(n_layers, 3, device=self.device)
         self.lap_w = torch.zeros(n_layers, 3, device=self.device)
         for k in range(n_layers):
-            hp = h[k+1] if k+1 < n_layers else h[k]
-            hm = h[k-1] if k > 0 else h[0]
-            self.grad_w[k, 1] = 1.0 / (hp + hm)   # +1 direction
+            hp = h[k + 1] if k + 1 < n_layers else h[k]
+            hm = h[k - 1] if k > 0 else h[0]
+            self.grad_w[k, 1] = 1.0 / (hp + hm)  # +1 direction
             self.grad_w[k, 2] = -1.0 / (hp + hm)  # -1 direction
-            self.lap_w[k, 1] = 1.0 / (h[k] * h[k])   # +1
+            self.lap_w[k, 1] = 1.0 / (h[k] * h[k])  # +1
             self.lap_w[k, 0] = -2.0 / (h[k] * h[k])  # center
-            self.lap_w[k, 2] = 1.0 / (h[k] * h[k])   # -1
+            self.lap_w[k, 2] = 1.0 / (h[k] * h[k])  # -1
 
         print(f"BoltzmannPrism: {n_layers} layers × {prism.n_surface} surfaces")
 
@@ -148,8 +159,9 @@ class BoltzmannPrismSolver:
 class LBMPrismHybrid:
     """Combined LBM bulk + Boltzmann-Prism boundary layer."""
 
-    def __init__(self, solid: torch.Tensor, n_prism: int = 5,
-                 nu: float = 2.4e-6, device: str = 'sdaa:0'):
+    def __init__(
+        self, solid: torch.Tensor, n_prism: int = 5, nu: float = 2.4e-6, device: str = "sdaa:0"
+    ):
         self.device = torch.device(device)
         self.nu = nu
         self.prism = BoltzmannPrismSolver(solid, n_prism, nu, device)
@@ -158,6 +170,7 @@ class LBMPrismHybrid:
     def init(self) -> torch.Tensor:
         """Initialize LBM distribution."""
         from .d3q19 import equilibrium3d
+
         nx, ny, nz = self.solid.shape[2], self.solid.shape[1], self.solid.shape[0]
         r0 = torch.ones(nz, ny, nx, device=self.device)
         u0 = torch.full((nz, ny, nx), 0.06, device=self.device)

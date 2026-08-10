@@ -53,7 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-name", default=None, help="Override run directory name")
     parser.add_argument(
         "--device",
-        choices=["cpu", "cuda", "mps"],
+        choices=["cpu", "sdaa", "cuda", "mps"],
         default="cpu",
         help="Execution device",
     )

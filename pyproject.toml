@@ -8,22 +8,55 @@ dynamic = ["version"]
 description = "PyTorch-based Lattice Boltzmann Method solvers and utilities."
 readme = "README.md"
 requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [
+    { name = "TensorLBM Contributors", email = "tensorlbm@example.com" },
+]
+keywords = [
+    "lattice boltzmann",
+    "computational fluid dynamics",
+    "CFD",
+    "LBM",
+    "pytorch",
+    "machine learning",
+    "neural operator",
+    "turbulence",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
-    "torch",
     "matplotlib",
     "einops",
 ]
+
+[project.urls]
+Homepage = "https://github.com/cxs503/TensorLBM"
+Repository = "https://github.com/cxs503/TensorLBM"
+Documentation = "https://github.com/cxs503/TensorLBM/tree/main/docs"
+"Bug Tracker" = "https://github.com/cxs503/TensorLBM/issues"
+Changelog = "https://github.com/cxs503/TensorLBM/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
     "pytest",
     "pytest-cov",
-    "ruff",
     "mypy",
     "hypothesis",
     "tqdm",
     "h5py",
     "pyyaml",
+    "build",
+    "ruff",
 ]
 
 [tool.setuptools]
@@ -34,6 +67,12 @@ where = ["src"]
 
 [tool.setuptools.dynamic]
 version = {attr = "tensorlbm._version.__version__"}
+
+[tool.pytest.ini_options]
+# This checkout is deliberately tested from source.  Without this declaration,
+# an editable install of the sibling /root/TensorLBM checkout wins import
+# resolution and pytest can validate different code from the working tree.
+pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100

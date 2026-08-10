@@ -1,4 +1,5 @@
 """TDD specification for the fail-closed wall/refinement combination gate."""
+
 from typing import Any
 from tensorlbm.wall_refinement_combination_gate import (
     CollisionFamily,
@@ -34,12 +35,17 @@ def baseline(**changes: Any) -> WallRefinementCombination:
 
 def test_only_audited_unrefined_single_level_baselines_are_allowed():
     assert assess_wall_refinement_combination(baseline()).status is GateStatus.ALLOWED
-    assert assess_wall_refinement_combination(baseline(wall_treatment=WallTreatment.NONE)).status is GateStatus.ALLOWED
+    assert (
+        assess_wall_refinement_combination(baseline(wall_treatment=WallTreatment.NONE)).status
+        is GateStatus.ALLOWED
+    )
 
 
 def test_static_local_refinement_is_not_mistaken_for_a_validated_wall_combination():
     decision = assess_wall_refinement_combination(
-        baseline(refinement=RefinementType.STATIC_LOCAL, geometry_ownership=GeometryOwnership.FINE_LEVEL)
+        baseline(
+            refinement=RefinementType.STATIC_LOCAL, geometry_ownership=GeometryOwnership.FINE_LEVEL
+        )
     )
     assert decision.status is GateStatus.WITHHELD
 
@@ -55,7 +61,11 @@ def test_wall_function_amr_is_withheld_with_cross_level_evidence_requirements():
     assert decision.status is GateStatus.WITHHELD
     assert WITHHELD_WALL_FUNCTION_WITH_REFINEMENT in decision.reasons
     assert set(decision.missing_required_evidence) == {
-        "wall_distance_dy", "y_plus", "level_link_owner", "wall_geometry_owner", "interface_transfer_proof"
+        "wall_distance_dy",
+        "y_plus",
+        "level_link_owner",
+        "wall_geometry_owner",
+        "interface_transfer_proof",
     }
 
 
@@ -102,6 +112,7 @@ def test_unavailable_collision_contract_cannot_be_promoted_by_baseline_shape():
 # Common wall-function × refinement combination path
 # ---------------------------------------------------------------------------
 
+
 def test_common_wall_function_without_refinement_is_allowed():
     """Common wall function on a single-level planar grid is a baseline."""
     decision = assess_wall_refinement_combination(
@@ -122,8 +133,11 @@ def test_common_wall_function_with_amr_is_withheld_without_evidence():
     assert decision.status is GateStatus.WITHHELD
     assert WITHHELD_WALL_FUNCTION_WITH_REFINEMENT in decision.reasons
     assert set(decision.missing_required_evidence) == {
-        "wall_distance_dy", "y_plus", "level_link_owner",
-        "wall_geometry_owner", "interface_transfer_proof",
+        "wall_distance_dy",
+        "y_plus",
+        "level_link_owner",
+        "wall_geometry_owner",
+        "interface_transfer_proof",
     }
 
 

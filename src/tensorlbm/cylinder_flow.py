@@ -260,7 +260,11 @@ def _backend_equilibrium(ops: object, rho, ux, uy, *, device: str):
     cy = ops.reshape(c[:, 1], (9, 1, 1))
     u_sq = ux * ux + uy * uy
     cu = cx * ux + cy * uy
-    return weights * ops.unsqueeze(rho, 0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * ops.unsqueeze(u_sq, 0))
+    return (
+        weights
+        * ops.unsqueeze(rho, 0)
+        * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * ops.unsqueeze(u_sq, 0))
+    )
 
 
 def _backend_macroscopic(ops: object, f, *, device: str):
@@ -349,14 +353,18 @@ def _run_cylinder_flow_backend(
     if config.use_compile:
         raise ValueError("use_compile is only supported on the torch backend")
     if config.collision != "bgk":
-        raise ValueError("Only bgk collision is currently supported on non-torch cylinder-flow backends")
+        raise ValueError(
+            "Only bgk collision is currently supported on non-torch cylinder-flow backends"
+        )
     unsupported = {
         "synthetic_inflow": synthetic_inflow,
         "sponge_layer": sponge_layer,
         "outlet_control": outlet_control,
         "turbulence_statistics": turbulence_statistics,
     }
-    enabled = [name for name, settings in unsupported.items() if _non_torch_feature_enabled(settings)]
+    enabled = [
+        name for name, settings in unsupported.items() if _non_torch_feature_enabled(settings)
+    ]
     if enabled:
         names = ", ".join(sorted(enabled))
         raise ValueError(f"{names} are currently only supported on the torch backend")
@@ -460,9 +468,7 @@ def _run_cylinder_flow_backend(
 
     step_range = range(start_step, config.n_steps + 1)
     step_iter = (
-        _tqdm(step_range, desc="Cylinder flow", unit="step")
-        if _TQDM_AVAILABLE
-        else step_range
+        _tqdm(step_range, desc="Cylinder flow", unit="step") if _TQDM_AVAILABLE else step_range
     )
     for step in step_iter:
         f = _backend_collide_bgk(ops, f, config.tau, device=device)
@@ -558,23 +564,27 @@ def _strouhal_number(
     """Estimate Strouhal number from the dominant frequency of the lift-coefficient series.
 
     Returns *None* when the series is too short or has no clear spectral peak.
-    Uses numpy FFT (O(N log N)) rather than a manual DFT loop.
+    Delegates to :func:`tensorlbm.postprocess.detect_strouhal` which applies a
+    Hanning window, band-pass filters to the physically expected St range
+    [0.05, 0.35], requires a minimum of 5 shedding cycles, and falls back to
+    autocorrelation when the FFT peak is ambiguous.
     """
-    import numpy as np
+    from .postprocess import detect_strouhal
 
     n = len(cl_series)
     if n < 16:
         return None
-    n2 = 1
-    while n2 * 2 <= n:
-        n2 *= 2
-    data = np.array(cl_series[:n2], dtype=np.float64)
-    spectrum = np.abs(np.fft.rfft(data))
-    best_k = int(np.argmax(spectrum[1:])) + 1
-    if best_k <= 0:
-        return None
-    freq_lbm = best_k / (n2 * output_interval)
-    return freq_lbm * diameter / u_in
+    st = detect_strouhal(
+        cl_series,
+        sample_rate=1.0 / output_interval,
+        u_ref=u_in,
+        length_ref=diameter,
+        st_min=0.05,
+        st_max=0.35,
+        min_cycles=5,
+        method="auto",
+    )
+    return st
 
 
 def _save_flow_snapshot(
@@ -840,9 +850,7 @@ def run_cylinder_flow(
 
     step_range = range(start_step, config.n_steps + 1)
     step_iter = (
-        _tqdm(step_range, desc="Cylinder flow", unit="step")
-        if _TQDM_AVAILABLE
-        else step_range
+        _tqdm(step_range, desc="Cylinder flow", unit="step") if _TQDM_AVAILABLE else step_range
     )
     for step in step_iter:
         f = _collide(f)

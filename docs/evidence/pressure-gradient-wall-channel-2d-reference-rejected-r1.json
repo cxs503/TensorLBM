@@ -1,0 +1,37 @@
+{
+  "schema": "tensorlbm-pressure-gradient-wall-channel-reference-assessment-v1",
+  "status": "reference_flow_rejected",
+  "physical_validation": false,
+  "selection_by_experimental_resistance": false,
+  "case": "existing 2-D Smagorinsky channel, nx=256, ny=128, Re_tau=100, 50000 steps, averaging after 25000",
+  "remote_sources": {
+    "assessment": {
+      "path": "results/canonical_wall/channel-retau100-wr-r1-pressure-gradient-wall-assessment.json",
+      "sha256": "5092b451b55526954bc8f1433a90bd20daa25cd69292cc0ce5078c5fd34a006c"
+    },
+    "runtime_log": {
+      "path": "results/canonical_wall-channel-retau100-wr-r1.wait.log",
+      "sha256": "476ad1c2cdfe8708d99ad547a3e9c8a45ae891d9257ea59707f453e0f9543b05"
+    }
+  },
+  "reference_quality": {
+    "averaging_samples": 25001,
+    "maximum_speed_step5000": 0.002282,
+    "maximum_speed_step50000": 0.020347,
+    "recent_maximum_speed_range_fraction": 0.21899888337335408,
+    "maximum_allowed_recent_speed_range_fraction": 0.01,
+    "log_law_rms_error": 11.88315486907959,
+    "stationarity_target_met": false
+  },
+  "diagnostic_model_results_not_admissible": {
+    "van_driest_mean_u_tau_error_pct": -46.14473513385883,
+    "duprat_mean_u_tau_error_pct": -45.30645996530162,
+    "reason": "the wall-resolved reference is underdeveloped, so model error cannot be separated from reference-flow error"
+  },
+  "assessment": {
+    "two_dimensional_channel_accepted_as_turbulent_wall_reference": false,
+    "pressure_gradient_wall_model_decision_from_this_case": "withheld",
+    "next_required_reference": "statistically stationary three-dimensional periodic channel with exact momentum-balance wall shear, followed by an adverse-gradient periodic-hill or equivalent case"
+  },
+  "conclusion": "The existing two-dimensional channel accelerates throughout the run and misses its own wall-law profile, so it cannot validate or reject a pressure-gradient wall model. The run is retained as negative evidence against using an underdeveloped 2-D channel as a world-class reference."
+}

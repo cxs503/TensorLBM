@@ -1,0 +1,30 @@
+{
+  "schema": "tensorlbm-spatial-convergence-evidence-v1",
+  "quantity": "flat_plate_Cf_v2_development_only",
+  "assessment": {
+    "resolutions": [
+      256.0,
+      384.0,
+      512.0
+    ],
+    "values": [
+      0.004597289308156069,
+      0.004657755483262882,
+      0.004668966645854023
+    ],
+    "monotonic": true,
+    "observed_order": 3.738767805628102,
+    "extrapolated_value": 0.00467477047900156,
+    "finest_relative_error_pct": 0.1241522588885732,
+    "relative_fit_rms_pct": 0.0,
+    "finite": true
+  },
+  "acceptance": {
+    "maximum_finest_error_pct": 2.0,
+    "maximum_fit_rms_pct": 1.0,
+    "minimum_order": 0.5,
+    "mathematical_fit_admitted": true,
+    "physical_validation": false,
+    "claim_boundary": "Numerical sequence fit only; case-specific configuration identity and physical-reference gates are required."
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "schema": "tensorlbm-flat-plate-convergence-v1",
+  "resolutions": [256.0, 384.0, 512.0],
+  "friction_coefficients": [
+    0.004594268520611013,
+    0.004655830718656158,
+    0.004667251161097011
+  ],
+  "configuration_identity": {
+    "v4_schema": true,
+    "required_fields_present": true,
+    "identity_fields_equal": true,
+    "exchange_distance_over_length": [0.01171875, 0.01171875, 0.01171875],
+    "exchange_ratio_invariant": true,
+    "domain_ratio_invariant": true,
+    "sponge_width_over_length": [0.09375, 0.09375, 0.09375],
+    "cv_margin_over_length": [0.0234375, 0.0234375, 0.0234375],
+    "numerical_length_ratio_invariant": true,
+    "time_steps_over_plate_length": {
+      "steps": [125.0, 125.0, 125.0],
+      "warmup_steps": [62.5, 62.5, 62.5],
+      "ramp_steps": [8.0, 8.0, 8.0],
+      "statistics_window_steps_resolved": [62.5, 62.5, 62.5],
+      "report_interval": [4.0, 4.0, 4.0],
+      "wall_diagnostic_interval": [0.25, 0.25, 0.25]
+    },
+    "time_ratio_invariant": true,
+    "reference_invariant": true,
+    "admitted": true
+  },
+  "spatial_convergence": {
+    "monotonic": true,
+    "observed_order": 3.737334811598056,
+    "extrapolated_friction_coefficient": 0.004673167035518801,
+    "finest_relative_error_pct": 0.12659240247195347,
+    "relative_fit_rms_pct": 0.0,
+    "admitted": true
+  },
+  "reference": {
+    "ittc_1957": 0.0046875,
+    "extrapolated_reference_error_pct": 0.3057699089322371,
+    "maximum_reference_error_pct": 5.0
+  },
+  "single_grid_runs_admitted": true,
+  "admitted": true,
+  "sources": [
+    {
+      "path": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l256-32000.json",
+      "sha256": "87327b71d584f29aa789d0b63926f7d9b5a0cdcafb0eb1eec2e831ddf4d43193"
+    },
+    {
+      "path": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l384-48000.json",
+      "sha256": "dceaa09ddb26436ce1d6996030229165ec2641a5c9571a2227ebecdf4a18c2a9"
+    },
+    {
+      "path": "results/flat_plate_grid_convergence/flat-plate-v5-equivalent-l512-64000.json",
+      "sha256": "c684eb525abf9d92fc544b9303fdffdf31cf9cba114f23e2cd21b6f51c4fee3e"
+    },
+    {
+      "path": "/tmp/flat-plate-v5-equivalent-l512-64000.ckpt",
+      "sha256": "e4e31bde2539953c4c7ee73e860dbdb4e48fb469ca68ec308f5165079b1c1ef0"
+    }
+  ]
+}

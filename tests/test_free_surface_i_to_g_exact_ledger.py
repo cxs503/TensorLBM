@@ -1,4 +1,5 @@
 """Cold float32 D3Q19 I→G exact-ledger feasibility contracts."""
+
 from __future__ import annotations
 
 from typing import cast
@@ -15,7 +16,9 @@ from tensorlbm.free_surface_i_to_g_exact_ledger import (
 from tensorlbm.free_surface_lbm import GAS, INTERFACE, LIQUID
 
 
-def _single_link_state() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+def _single_link_state() -> tuple[
+    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+]:
     shape = (3, 3, 5)
     flags = torch.full(shape, GAS, dtype=torch.int8)
     flags[1, 1, 2] = INTERFACE
@@ -27,14 +30,18 @@ def _single_link_state() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torc
     return flags, mass, donor, torch.zeros_like(donor), torch.zeros_like(donor)
 
 
-def _multi_link_state() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+def _multi_link_state() -> tuple[
+    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+]:
     shape = (5, 5, 5)
     flags = torch.full(shape, GAS, dtype=torch.int8)
     donor_cell = (2, 2, 2)
     flags[donor_cell] = INTERFACE
     for q in (1, 2, 3):
         dz, dy, dx = (int(C[q, 2]), int(C[q, 1]), int(C[q, 0]))
-        flags[(donor_cell[0] - dz) % 5, (donor_cell[1] - dy) % 5, (donor_cell[2] - dx) % 5] = INTERFACE
+        flags[(donor_cell[0] - dz) % 5, (donor_cell[1] - dy) % 5, (donor_cell[2] - dx) % 5] = (
+            INTERFACE
+        )
     mass = torch.zeros(shape, dtype=torch.float32)
     mass[donor_cell] = 0.1
     donor = torch.zeros(shape, dtype=torch.bool)
@@ -45,8 +52,15 @@ def _multi_link_state() -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch
 def _diagnose(state: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]):
     flags, mass, to_gas, to_liq, solid = state
     return diagnose_i_to_g_exact_ledger(
-        flags, mass, to_gas=to_gas, to_liq=to_liq, solid_mask=solid,
-        gas_flag=GAS, liquid_flag=LIQUID, interface_flag=INTERFACE, rho_liquid=1.0,
+        flags,
+        mass,
+        to_gas=to_gas,
+        to_liq=to_liq,
+        solid_mask=solid,
+        gas_flag=GAS,
+        liquid_flag=LIQUID,
+        interface_flag=INTERFACE,
+        rho_liquid=1.0,
     )
 
 
@@ -62,7 +76,10 @@ def test_single_link_is_withheld_without_complete_topology_replay() -> None:
     assert report.method_a.status == DIAGNOSTIC_ONLY_NOT_STATE_CONSERVATION
     assert report.method_b.status == DIAGNOSTIC_ONLY_NOT_STATE_CONSERVATION
     assert report.method_c.status == WITHHELD_NOT_REPRESENTABLE
-    assert report.method_c.reason == "complete same-order topology mutation is unavailable to this cold observer"
+    assert (
+        report.method_c.reason
+        == "complete same-order topology mutation is unavailable to this cold observer"
+    )
     assert report.actual_float32_operation_residual == 0.0
     assert report.donor_vs_rounded_link_residual_quanta == 0
     assert report.receiver_aggregation_nonzero_count == 0
@@ -71,7 +88,9 @@ def test_single_link_is_withheld_without_complete_topology_replay() -> None:
         assert torch.equal(actual, expected)
 
 
-def test_three_link_float32_division_is_withheld_when_actual_receiver_state_addition_rounds_away_residual() -> None:
+def test_three_link_float32_division_is_withheld_when_actual_receiver_state_addition_rounds_away_residual() -> (
+    None
+):
     flags, mass, to_gas, to_liq, solid = _multi_link_state()
     # This nonzero receiver state is part of the actual solver mutation:
     # it demonstrates why an increment-only C check would be a false positive.
@@ -89,7 +108,10 @@ def test_three_link_float32_division_is_withheld_when_actual_receiver_state_addi
     assert report.method_b.residual_quanta == 0
     assert report.donor_vs_rounded_link_residual_quanta != 0
     assert report.method_c.status == WITHHELD_NOT_REPRESENTABLE
-    assert report.method_c.reason == "per-donor residual is rounded away or altered by actual receiver float32 state addition"
+    assert (
+        report.method_c.reason
+        == "per-donor residual is rounded away or altered by actual receiver float32 state addition"
+    )
 
 
 @pytest.mark.parametrize(
@@ -100,7 +122,9 @@ def test_three_link_float32_division_is_withheld_when_actual_receiver_state_addi
     ),
 )
 def test_real_b_and_c_candidates_are_withheld_by_receiver_float32_aggregation(
-    monkeypatch, case_id: str, requested_steps: int,
+    monkeypatch,
+    case_id: str,
+    requested_steps: int,
 ) -> None:
     import tensorlbm.free_surface_lbm as solver
     from tensorlbm.free_surface_closure_experiment import _conversion_state, _run_case
@@ -115,7 +139,14 @@ def test_real_b_and_c_candidates_are_withheld_by_receiver_float32_aggregation(
     monkeypatch.setattr(solver, "build_i_to_g_ownership_transaction", capture)
     f, fill, flags, solid = _conversion_state()
     case = _run_case(
-        case_id, f, fill, flags, solid, requested_steps, False, True,
+        case_id,
+        f,
+        fill,
+        flags,
+        solid,
+        requested_steps,
+        False,
+        True,
         enable_i_to_g_ownership_closure=True,
     )
 
@@ -125,7 +156,8 @@ def test_real_b_and_c_candidates_are_withheld_by_receiver_float32_aggregation(
     assert len(captured) == 1
     candidate = captured[0]
     exact = diagnose_i_to_g_exact_ledger(
-        cast(torch.Tensor, candidate["flags"]), cast(torch.Tensor, candidate["mass"]),
+        cast(torch.Tensor, candidate["flags"]),
+        cast(torch.Tensor, candidate["mass"]),
         to_gas=cast(torch.Tensor, candidate["to_gas"]),
         to_liq=cast(torch.Tensor, candidate["to_liq"]),
         solid_mask=cast(torch.Tensor, candidate["solid_mask"]),
@@ -146,7 +178,10 @@ def test_real_b_and_c_candidates_are_withheld_by_receiver_float32_aggregation(
     assert exact.receiver_aggregation_nonzero_count == 77
     assert exact.receiver_aggregation_max_abs_quanta > 0
     assert exact.method_c.status == WITHHELD_NOT_REPRESENTABLE
-    assert exact.method_c.reason == "per-donor residual is rounded away or altered by receiver float32 increment aggregation"
+    assert (
+        exact.method_c.reason
+        == "per-donor residual is rounded away or altered by receiver float32 increment aggregation"
+    )
 
 
 def test_no_legal_receiver_and_liquid_donor_are_withheld() -> None:

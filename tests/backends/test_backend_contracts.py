@@ -1,4 +1,5 @@
 """Contracts for the R1 cold-path backend boundary."""
+
 from __future__ import annotations
 
 import ast
@@ -15,7 +16,9 @@ from tensorlbm.backends.contracts import (
 
 
 def test_contract_module_is_framework_free_by_ast() -> None:
-    module = ast.parse(inspect.getsource(__import__("tensorlbm.backends.contracts", fromlist=["*"])))
+    module = ast.parse(
+        inspect.getsource(__import__("tensorlbm.backends.contracts", fromlist=["*"]))
+    )
     imported_roots = {
         alias.name.split(".")[0]
         for node in ast.walk(module)

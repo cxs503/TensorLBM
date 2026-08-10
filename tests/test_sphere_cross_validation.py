@@ -5,6 +5,7 @@ matrix on a small grid to verify structural correctness, finiteness, and
 machine-readable artifact emission.  It does NOT claim physical accuracy
 (status=diagnostic_only, physical_validation=False).
 """
+
 from __future__ import annotations
 
 import json
@@ -29,6 +30,7 @@ from tensorlbm.sphere_cross_validation import (
 # Shared fixture — run the full matrix once and reuse across all tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def small_matrix():
     """Run the cross-validation matrix once on a tiny grid (12³, 3 steps)."""
@@ -45,6 +47,7 @@ def small_config():
 # Structure tests
 # ---------------------------------------------------------------------------
 
+
 class TestMatrixStructure:
     """Verify the cross-validation matrix has the correct shape and fields."""
 
@@ -56,9 +59,15 @@ class TestMatrixStructure:
 
     def test_each_result_has_required_fields(self, small_matrix) -> None:
         required = {
-            "lattice", "collision_family", "turbulence_model",
-            "Cd", "finite", "steps_completed", "reference_Cd",
-            "status", "physical_validation",
+            "lattice",
+            "collision_family",
+            "turbulence_model",
+            "Cd",
+            "finite",
+            "steps_completed",
+            "reference_Cd",
+            "status",
+            "physical_validation",
         }
         for r in small_matrix.results:
             missing = required - set(r.keys())
@@ -87,6 +96,7 @@ class TestMatrixStructure:
 # Reference Cd tests
 # ---------------------------------------------------------------------------
 
+
 class TestReferenceCd:
     """Verify the Schiller-Naumann reference is correct."""
 
@@ -98,13 +108,14 @@ class TestReferenceCd:
 
     def test_schiller_naumann_formula(self) -> None:
         # Re=100: 24/100 * (1 + 0.15 * 100^0.687)
-        expected = 24.0 / 100.0 * (1.0 + 0.15 * 100.0 ** 0.687)
+        expected = 24.0 / 100.0 * (1.0 + 0.15 * 100.0**0.687)
         assert abs(_schiller_naumann(100.0) - expected) < 1e-10
 
 
 # ---------------------------------------------------------------------------
 # Finiteness tests
 # ---------------------------------------------------------------------------
+
 
 class TestFiniteness:
     """Verify all combinations produce finite results on the small grid."""
@@ -134,6 +145,7 @@ class TestFiniteness:
 # Reproducibility tests
 # ---------------------------------------------------------------------------
 
+
 class TestReproducibility:
     """Verify the runner is deterministic."""
 
@@ -147,6 +159,7 @@ class TestReproducibility:
 # ---------------------------------------------------------------------------
 # Artifact emission tests
 # ---------------------------------------------------------------------------
+
 
 class TestArtifactEmission:
     """Verify machine-readable JSON artifact emission."""
@@ -176,7 +189,6 @@ class TestArtifactEmission:
         write_sphere_cross_validation_evidence(small_matrix, out)
         payload = json.loads(out.read_text(encoding="utf-8"))
         keys = {
-            (r["lattice"], r["collision_family"], r["turbulence_model"])
-            for r in payload["results"]
+            (r["lattice"], r["collision_family"], r["turbulence_model"]) for r in payload["results"]
         }
         assert len(keys) == 42

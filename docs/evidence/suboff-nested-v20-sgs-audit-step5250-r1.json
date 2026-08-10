@@ -1,0 +1,45 @@
+{
+  "schema": "tensorlbm-nested-smagorinsky-checkpoint-audit-v1",
+  "checkpoint": "results/amr_campaign_20260801/suboff-nested-v20-equivalent-l90-12k.ckpt",
+  "step": 5250,
+  "cs_smag": 0.1,
+  "levels": [
+    {
+      "cell_count": 3645000.0,
+      "molecular_tau": 0.500162,
+      "effective_tau_minimum": 0.5001621246337891,
+      "effective_tau_mean": 0.5005242602963343,
+      "effective_tau_maximum": 0.508018970489502,
+      "molecular_kinematic_viscosity": 5.3999999999998494e-05,
+      "mean_eddy_kinematic_viscosity": 0.00012075343211144969,
+      "maximum_eddy_kinematic_viscosity": 0.0026189901631673194,
+      "mean_eddy_to_molecular_viscosity_ratio": 2.2361746687306123,
+      "maximum_eddy_to_molecular_viscosity_ratio": 48.499817836433195
+    },
+    {
+      "cell_count": 824832.0,
+      "molecular_tau": 0.500324,
+      "effective_tau_minimum": 0.500332236289978,
+      "effective_tau_mean": 0.5008646811689305,
+      "effective_tau_maximum": 0.504454493522644,
+      "molecular_kinematic_viscosity": 0.00010799999999999699,
+      "mean_eddy_kinematic_viscosity": 0.000180227056310156,
+      "maximum_eddy_kinematic_viscosity": 0.001376831174214684,
+      "mean_eddy_to_molecular_viscosity_ratio": 1.6687690399088986,
+      "maximum_eddy_to_molecular_viscosity_ratio": 12.748436798284466
+    },
+    {
+      "cell_count": 2425920.0,
+      "molecular_tau": 0.500648,
+      "effective_tau_minimum": 0.5006518363952637,
+      "effective_tau_mean": 0.5011733541592401,
+      "effective_tau_maximum": 0.503707766532898,
+      "molecular_kinematic_viscosity": 0.00021599999999999397,
+      "mean_eddy_kinematic_viscosity": 0.0001751180530800515,
+      "maximum_eddy_kinematic_viscosity": 0.0010199221776326557,
+      "mean_eddy_to_molecular_viscosity_ratio": 0.8107317272224832,
+      "maximum_eddy_to_molecular_viscosity_ratio": 4.721861933484649
+    }
+  ],
+  "interpretation": "The trajectory remains numerically healthy, but mean SGS viscosity now exceeds molecular viscosity by 2.24x on the root level and 1.67x on the first refined level. A resistance value from this run cannot be accepted through agreement alone; collision-model sensitivity and grid convergence must show that the result is not tuned by excessive modeled viscosity."
+}

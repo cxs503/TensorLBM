@@ -343,7 +343,12 @@ def cummins_time_integration(
             V_hist = None
 
         state = cummins_step(
-            state, dt, F_exc, M, A_inf, C,
+            state,
+            dt,
+            F_exc,
+            M,
+            A_inf,
+            C,
             K_history=K_hist,
             vel_history=V_hist,
             F_ext=F_ext,
@@ -417,7 +422,9 @@ def generate_jonswap_excitation(
         k = w**2 / g  # deep water initial guess
         for _ in range(20):
             f = w**2 - g * k * math.tanh(k * water_depth)
-            df = -g * (math.tanh(k * water_depth) + k * water_depth / math.cosh(k * water_depth) ** 2)
+            df = -g * (
+                math.tanh(k * water_depth) + k * water_depth / math.cosh(k * water_depth) ** 2
+            )
             k = k - f / df
         k_comp[i] = k
 
@@ -437,12 +444,9 @@ def generate_jonswap_excitation(
         idx = torch.argmin(torch.abs(omega - omega_comp[i]))
         rao_i = rao_complex[idx]  # (6,) complex
         for dof in range(6):
-            excitation[:, dof] += (
-                amplitudes[i]
-                * (
-                    rao_i[dof].real * torch.cos(omega_comp[i] * t + phases[i])
-                    - rao_i[dof].imag * torch.sin(omega_comp[i] * t + phases[i])
-                )
+            excitation[:, dof] += amplitudes[i] * (
+                rao_i[dof].real * torch.cos(omega_comp[i] * t + phases[i])
+                - rao_i[dof].imag * torch.sin(omega_comp[i] * t + phases[i])
             )
 
     return t, eta, excitation

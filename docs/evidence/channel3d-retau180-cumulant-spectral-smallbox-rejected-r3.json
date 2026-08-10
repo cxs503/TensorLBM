@@ -1,0 +1,68 @@
+{
+  "schema": "tensorlbm-wall-resolved-channel3d-negative-evidence-v1",
+  "status": "rejected_population_health_after_transition",
+  "physical_validation": false,
+  "case": {
+    "name": "channel3d-retau180-cumulant-spectral-smallbox-r3-30k",
+    "re_tau": 180.0,
+    "grid_nx_ny_nz": [128, 64, 64],
+    "fluid_height_cells": 62,
+    "collision_model": "cumulant",
+    "initialization": "32-mode band-limited discrete-solenoidal vector-potential curl",
+    "initial_perturbation_rms_over_u_tau": 1.0,
+    "seed": 20260802
+  },
+  "transition_sequence": [
+    {
+      "step": 14000,
+      "minimum_population": 0.020655697211623192,
+      "maximum_speed": 0.060133691877126694,
+      "crossflow_rms_over_u_tau": 0.750817513714234,
+      "turbulent_kinetic_energy": 0.000007711042599112261
+    },
+    {
+      "step": 14500,
+      "minimum_population": 0.01748746447265148,
+      "maximum_speed": 0.0668211504817009,
+      "crossflow_rms_over_u_tau": 1.2756178621202707,
+      "turbulent_kinetic_energy": 0.000012721732673526276
+    },
+    {
+      "step": 15000,
+      "minimum_population": 0.009702338837087154,
+      "maximum_speed": 0.09607642889022827,
+      "crossflow_rms_over_u_tau": 2.699692423144976,
+      "turbulent_kinetic_energy": 0.000038453748857136816
+    },
+    {
+      "step": 15500,
+      "finite": false,
+      "minimum_population": null,
+      "maximum_speed": null
+    }
+  ],
+  "periodic_domain_audit": {
+    "streamwise_length_over_half_height": 4.129032258064516,
+    "spanwise_length_over_half_height": 2.064516129032258,
+    "mkm_streamwise_length_over_half_height": 12.566370614359172,
+    "mkm_spanwise_length_over_half_height": 4.1887902047863905,
+    "full_dns_statistics_domain_supported": false
+  },
+  "decision": {
+    "accepted": false,
+    "interpretation": "The broadband perturbation does not simply decay: crossflow and kinetic energy grow rapidly between steps 14000 and 15000, followed by non-finite populations. The undersized periodic box is rejected for the post-transition state; this is not repaired with clipping or a tuned collision limiter.",
+    "next_case": "same initialization and collision model in the 400x64x132 MKM-size periodic box"
+  },
+  "artifacts": {
+    "last_finite_checkpoint": {
+      "path": "results/canonical_wall/channel3d-retau180-cumulant-spectral-smallbox-r3-30k.ckpt",
+      "step": 15000,
+      "sha256": "a3e8cc9994c51b1a2997f05ecbba4203a65b4ce804c178d373c7e7e36aae533a"
+    },
+    "log": {
+      "path": "results/canonical_wall-channel3d-retau180-cumulant-spectral-smallbox-r3-30k.wait.log",
+      "sha256": "434b183c8c1b13f0963008d0ad730bba22e576f91af158b532c35391eebc465f"
+    }
+  },
+  "implementation_commit": "1c2bdb2"
+}

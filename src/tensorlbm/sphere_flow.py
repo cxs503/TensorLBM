@@ -251,9 +251,7 @@ def run_sphere_flow(config: SphereFlowConfig) -> Path:
 
     step_range = range(start_step, config.n_steps + 1)
     step_iter = (
-        _tqdm(step_range, desc="Sphere flow", unit="step")
-        if _TQDM_AVAILABLE
-        else step_range
+        _tqdm(step_range, desc="Sphere flow", unit="step") if _TQDM_AVAILABLE else step_range
     )
     for step in step_iter:
         f = _collide(f, tau=config.tau)

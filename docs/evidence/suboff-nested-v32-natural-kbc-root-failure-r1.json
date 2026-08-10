@@ -1,0 +1,54 @@
+{
+  "schema": "tensorlbm-suboff-nested-failure-evidence-v1",
+  "status": "rejected_root_level_population_failure",
+  "campaign": "suboff-nested-v32-equivalent-wallscaled-l90-12k",
+  "configuration": {
+    "levels": 3,
+    "effective_hull_length_cells": 360.0,
+    "collision_model": "natural_kbc",
+    "stress_exchange_distance_cells": 4.21875,
+    "sponge_inlet": false,
+    "wall_traction_source_scheme": null
+  },
+  "last_checkpoint": {
+    "root_step": 6000,
+    "sha256": "d0eaebe90081cc9092e3ecb9acbb01779c5368cba2b9072430ad07a1759d6bdb",
+    "size_mib_approx": 503
+  },
+  "failure": {
+    "root_step": 6720,
+    "minimum_population_by_level": [
+      9.999999717180685e-10,
+      0.01997576467692852,
+      0.02091909572482109
+    ],
+    "maximum_speed_by_level": [
+      0.27896830439567566,
+      0.06768274307250977,
+      0.07122903317213058
+    ],
+    "root_maximum_speed_index_zyx": [
+      47,
+      46,
+      24
+    ],
+    "maximum_collision_limited_fraction": 3.978052126200274e-5,
+    "maximum_interface_applied_correction_fraction": 1.3476641242959886e-6,
+    "health_floor": 1e-8
+  },
+  "localization": {
+    "unstable_level": 0,
+    "intermediate_level_remained_healthy": true,
+    "finest_level_remained_healthy": true,
+    "interpretation": "The failure originates on the root grid while both refined levels remain well conditioned. It is not a finest-wall or inner-interface population failure."
+  },
+  "provenance": {
+    "remote_log_sha256": "1ff4e7f370106dd0599509c4616c0028f87891063a74116457ff30bd6cb65c01"
+  },
+  "admissibility": {
+    "numerical_quality": false,
+    "physical_validation": false,
+    "resistance_value_eligible": false,
+    "reason": "Population health failed, the run did not complete, and it predates the mass-conservative wall-traction source."
+  }
+}

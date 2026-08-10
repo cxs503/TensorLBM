@@ -2,27 +2,58 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/notebooks/quickstart.ipynb)
 
-## Documentation / 文档
+> **A CPU-first PyTorch Lattice Boltzmann platform for reproducible CFD research.**
+> D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
-- **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
-  Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
-- **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
-- **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
-- **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
-- **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
+```bash
+# 30-second quick-start: lid-driven cavity at Re=400
+pip install -e .
+PYTHONPATH=src python examples/cylinder_flow.py --nx 128 --ny 48 --re 200 --n-steps 500
+```
+
+```python
+# Minimal Python API — copy-paste and run
+import torch
+from tensorlbm import equilibrium, macroscopic, collide_bgk, stream
+
+ny, nx = 64, 128
+f = equilibrium(torch.ones(ny, nx), torch.zeros(ny, nx), torch.zeros(ny, nx))
+for _ in range(200):
+    f = collide_bgk(f.unsqueeze(0).expand(9,-1,-1), tau=0.6)
+    f = stream(f)
+```
+
+---
 
 ## What TensorLBM provides
 
 - A small, explicit public API in `src/tensorlbm/__init__.py`
-- **D2Q9** and **D3Q19** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
-- **BGK** and **MRT** collision operators for both 2D and 3D
+- **D2Q9**, **D3Q19**, and **D3Q27** lattice primitives (`equilibrium`, `macroscopic`, lattice constants)
+- **BGK**, **MRT**, **TRT**, **RLBM** (Regularized), and **Cumulant** collision operators for 2D and 3D
+- **Adaptive Mesh Refinement (AMR)**: dynamic patch management for D2Q9 and D3Q19, up to 5 refinement levels with Filippova–Hänel interface exchange, and multiple refinement indicators (non-equilibrium, vorticity, gradient, boundary-layer)
+- **DG-LBM hybrid solver**: nodal Discontinuous-Galerkin LBM with P1-Lobatto DG advection, SSP-RK3 time stepping, DG↔LBM P0 interface coupling, and support for 2D cylinder / 3D sphere / SUBOFF hull flows
+- **LES turbulence models**: Smagorinsky, Dynamic Smagorinsky (Germano identity), WALE, Vreman — for D2Q9, D3Q19, and D3Q27
+- **RANS turbulence models**: k-ε (`KESolver`) and k-ω SST (`KOmegaSSTSolver`)
 - Non-Newtonian **power-law BGK** rheology utilities (shear-rate, apparent viscosity, variable-τ collision)
-- Boundary conditions: bounce-back, **Zou/He** inlet-velocity and outlet-pressure BCs
-- Momentum-exchange force diagnostics (drag/lift) for the 2D cylinder
-- A 2D cylinder-flow runner with CLI, Strouhal-number extraction, structured outputs, and diagnostics
-- A 3D sphere-flow runner with CLI and structured outputs
+- **Multiphase flow** (D2Q9 & D3Q19): Shan-Chen single/two-component, Color-Gradient, Free-Energy phase-field
+- **Immersed Boundary Method (IBM)**: direct-forcing IBM in 2D and 3D with 2-point hat and 4-point cosine delta kernels
+- **Thermal LBM**: double-distribution-function model (D2Q9+D2Q5 / D3Q19+D3Q7) with Boussinesq buoyancy
+- **Conjugate heat transfer (CHT)**: coupled fluid–solid heat conduction with interface boundary conditions
+- **Aeroacoustics**: Ffowcs Williams–Hawkings (FWH) far-field solver, SPL spectrum, and OASPL computation
+- **AI turbulence models**: MLP eddy-viscosity, FNO2d neural operator, Transformer-based self-supervised flow model, DNS-to-LES data pipeline, AI-embedded LBM collision
+- Boundary conditions: bounce-back, **Zou/He** inlet-velocity and outlet-pressure BCs, Bouzidi interpolated bounce-back, **moving-wall** (Ladd 1994), **far-field**, **sponge/absorbing-layer** outlet BC, **rough-wall** (equivalent sand-grain), JONSWAP irregular-wave inlet
+- **Turbulent inlet profiles**: log-law, power-law, parabolic, Blasius, Womersley, synthetic turbulence 2D, DFSEM, Digital Filter Method
+- **Turbulence statistics**: `TurbulenceStatsAccumulator`, Reynolds stresses, turbulence intensity, turbulence length scale
+- **Streamline / pathline tracing**: 2D and 3D integration, uniform/line seed points, residence-time computation
+- **Surface & volume integrals**: mass flow rate, area average, surface force/moment, force/moment coefficients, pressure drop
+- Momentum-exchange force diagnostics (drag/lift) for 2D and 3D obstacles
+- **Multi-GPU domain decomposition**: `MultiGPUSolver2D/3D`, halo exchange, auto-decompose
+- **Multi-backend dispatch**: `torch` (default), `paddle`, `mindspore` via `get_backend` / `set_backend`
+- **Marine engineering**: Wigley / Series60 / KCS hull CAD, SUBOFF submarine CAD, propeller (KP-505), Airy and JONSWAP wave BCs
+- **Benchmark runners**: cylinder flow, sphere flow (D3Q19/D3Q27), ship hull flow, SUBOFF resistance, ellipsoid, airfoil (NACA 4-digit), propeller, IBM propeller, actuator disk, backward-facing step, lid-driven cavity, rotating cylinder, turbulent channel, sloshing tank, pipeline flow, dam break, porous media (2D/3D), multiphase water entry
+- **Post-processing**: Strouhal FFT, Q-criterion, λ₂-criterion, vorticity, VTK/HDF5/XDMF export, streamlines, force coefficients, wake profiles
 - Batch Reynolds-number parameter scan (`examples/param_scan.py`)
 - Automated tests and CI
 
@@ -33,6 +64,17 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 3. **Reproducible runs**: parameterized CLI + deterministic run folder layout + metadata snapshot.
 4. **Fast feedback loops**: smoke tests and CI on push/PR.
 5. **CPU-first defaults, GPU-ready shape**: default to CPU, but keep interfaces ready for device scaling.
+6. **Multi-backend**: PyTorch is the default; Paddle and MindSpore backends are selectable at runtime.
+
+## Documentation / 文档
+
+- **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
+  Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
+- **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
+- **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
+- **[Accuracy-recommendation evidence gate](docs/accuracy_recommendation_evidence_gate.md)** – fail-closed physical-evidence admission before an accuracy recommendation.
+- **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
+- **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
 
 ## Installation
 
@@ -40,7 +82,12 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-pip install -r platform/requirements.txt
+```
+
+Optional extras for the deployable web platform:
+
+```bash
+cd app && pip install -r requirements.txt
 ```
 
 ## Run the cylinder-flow example
@@ -78,6 +125,22 @@ PYTHONPATH=src python examples/sphere_flow_3d.py \
   --run-name smoke --overwrite
 ```
 
+## Generate a lid-driven cavity demo GIF
+
+```bash
+PYTHONPATH=src python scripts/make_demo_gif.py --overwrite
+```
+
+This runs a 2000-step cavity simulation, saves one frame every 50 steps, and
+writes a GIF to:
+
+```text
+outputs/lid_driven_cavity/demo_gif/lid_driven_cavity_demo.gif
+```
+
+![Lid-driven cavity demo](outputs/lid_driven_cavity/demo_gif/lid_driven_cavity_demo.gif)
+
+
 ## Run the ship CAD-to-flow workflow
 
 ```bash
@@ -89,9 +152,55 @@ PYTHONPATH=src python examples/ship_hull_flow.py \
   --export-stl --run-name ship_workflow --overwrite
 ```
 
-This workflow now writes CAD artefacts (`cad_preview.png`, optional `hull.stl`),
+This workflow writes CAD artefacts (`cad_preview.png`, optional `hull.stl`),
 solver outputs (`run_metadata.json`, `forces.csv`, `flow_step_*.png`), and
 post-processing files (`postprocess_summary.json`, `wake_profile.csv`).
+
+## Run the DG-LBM hybrid solver
+
+```bash
+# 2D cylinder with DG advection bands
+PYTHONPATH=src python examples/dg_lbm_cylinder_hybrid.py
+
+# 3D sphere with DG-LBM hybrid
+PYTHONPATH=src python examples/dg_lbm_sphere_hybrid.py
+
+# SUBOFF with real DG solver (use_real_dg=True)
+PYTHONPATH=src python examples/dg_suboff_highre_mrt.py
+```
+
+## Run the AI turbulence pipeline
+
+```bash
+# DNS data generation → SQLite → AI model training → AI-embedded LBM
+PYTHONPATH=src python examples/ai_dns_case.py
+PYTHONPATH=src python examples/ai_turbulence_pipeline.py
+```
+
+## FNO2d surrogate benchmark
+
+Train a Fourier Neural Operator to replace per-query LBM simulation and
+benchmark inference speed against direct simulation (default: 64 × 64 grid,
+100 training cases, 25 epochs — runs in ~5 minutes on CPU):
+
+```bash
+PYTHONPATH=src python examples/ai_fno2d_demo.py
+```
+
+Pre-generated benchmark artifacts are in
+[`docs/benchmarks/ai_fno2d/`](docs/benchmarks/ai_fno2d/):
+
+| Metric | Value |
+|---|---|
+| FNO2d final val MSE | ~2 × 10⁻⁴ |
+| LBM avg / case (64² grid, 60 steps) | 0.41 s |
+| FNO2d inference avg / case | 0.0021 s |
+| **Speedup** | **~195×** |
+
+![FNO2d loss curve](docs/benchmarks/ai_fno2d/loss_curve.png)
+
+> The surrogate trades a small accuracy loss for roughly 200× faster evaluation
+> — useful for parameter sweeps and real-time design-space exploration.
 
 ## Batch parameter scan
 
@@ -143,6 +252,8 @@ GitHub Actions runs the same test command on every push and pull request.
 - Stable compatibility-oriented API: `tensorlbm.api`
 - Fast-evolving API surface: `tensorlbm.experimental`
 - Grouped domain namespaces for new code: `tensorlbm.lattice_models`, `tensorlbm.physics`, `tensorlbm.cad`
+- AI turbulence sub-package: `tensorlbm.ai`
+- Backend dispatch: `tensorlbm.backends` — `torch` (default), `paddle`, `mindspore`
 
 ## Quantitative validation summary
 
@@ -155,6 +266,8 @@ GitHub Actions runs the same test command on every push and pull request.
 | Wigley ship workflow | Cb error + symmetry checks (Re=200) | Cb error < 25%, \|Cd\| > 0, \|Cs\|/\|Cd\| < 0.1, \|Cl\|/\|Cd\| < 0.25 | analytical Cb + symmetry | pass |
 | Marine geometry library | Multi-hull CAD consistency (Wigley/Series60/KCS + SUBOFF variants) | ship Cb checks + SUBOFF volume monotonicity | analytical coefficients + topology expectation | pass |
 | Lid-driven cavity | u-centreline (Re=100,400,1000) | matched | Ghia et al. (1982) | < 1% |
+| DG-LBM convergence | MMS spatial order (P1 elements) | O(Δx²)–O(Δx³) | manufactured solution | pass |
+| Airfoil (NACA 4-digit) | C_L and C_D | within reference band | XFOIL / panel method | — |
 
 Run the full benchmark suite:
 
@@ -162,9 +275,12 @@ Run the full benchmark suite:
 PYTHONPATH=src python benchmarks/bench_marine.py
 PYTHONPATH=src python benchmarks/bench_multiphase.py
 PYTHONPATH=src python benchmarks/bench_dam_break.py --fast
+PYTHONPATH=src python benchmarks/bench_mlups.py --collisions all --device cpu
 ```
 
-`bench_multiphase.py` 现已包含 2D + 3D 多相基准，覆盖静液滴、SCMP 自旋分相、Free-Energy 相场液滴松弛，以及 D3Q19 三维静液滴 / 三维自旋分相。
+`bench_multiphase.py` includes 2D + 3D multiphase benchmarks: static droplet, SCMP spinodal decomposition, Free-Energy phase-field droplet relaxation, and D3Q19 3D static droplet / 3D spinodal decomposition.
+
+`bench_mlups.py` compares throughput of BGK / MRT / TRT / RLBM collision operators on D2Q9 and D3Q19 grids.
 
 ## Contributing
 

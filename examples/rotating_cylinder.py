@@ -1,4 +1,5 @@
 """CLI to run a rotating-cylinder (Magnus effect) LBM simulation."""
+
 from __future__ import annotations
 
 import argparse
@@ -27,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-root", default="outputs")
     parser.add_argument("--run-name", default=None)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--device", choices=["cpu", "cuda", "mps"], default="cpu")
+    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda", "mps"], default="cpu")
     parser.add_argument("--overwrite", action="store_true")
     return parser
 

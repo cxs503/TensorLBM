@@ -5,6 +5,7 @@ Collision contracts, capability matrices, solver self-consistency checks, and
 untyped campaign artifacts are not physical-accuracy evidence and cannot enter
 the comparison path.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,9 +28,15 @@ class KPIDefinition:
     sampling_window: str
 
     def __post_init__(self) -> None:
-        if not all(isinstance(value, str) and value.strip() for value in (
-            self.name, self.units, self.aggregation, self.sampling_window,
-        )):
+        if not all(
+            isinstance(value, str) and value.strip()
+            for value in (
+                self.name,
+                self.units,
+                self.aggregation,
+                self.sampling_window,
+            )
+        ):
             raise ValueError("KPI definition fields must be non-empty strings")
 
 
@@ -121,8 +128,11 @@ class AccuracyRecommendation:
 
 
 def _is_sha256(value: str) -> bool:
-    return (isinstance(value, str) and len(value) == _SHA256_LENGTH
-            and all(character in "0123456789abcdef" for character in value.lower()))
+    return (
+        isinstance(value, str)
+        and len(value) == _SHA256_LENGTH
+        and all(character in "0123456789abcdef" for character in value.lower())
+    )
 
 
 def _validate(evidence: PhysicalAccuracyEvidence) -> set[str]:
@@ -176,13 +186,19 @@ def recommend_by_physical_accuracy(
     error upper bound (``error.value + error.uncertainty``), never a
     D3Q19/D3Q27 fixed-point difference or a collision capability claim.
     """
-    if (not isinstance(evidence_data, Sequence)
-            or isinstance(evidence_data, (str, bytes))
-            or not evidence_data
-            or any(not isinstance(item, PhysicalAccuracyEvidence) for item in evidence_data)):
+    if (
+        not isinstance(evidence_data, Sequence)
+        or isinstance(evidence_data, (str, bytes))
+        or not evidence_data
+        or any(not isinstance(item, PhysicalAccuracyEvidence) for item in evidence_data)
+    ):
         requirements = {"typed physical accuracy evidence"}
         return AccuracyRecommendation(
-            _WITHHELD, None, tuple(sorted(requirements)), _reason_codes(requirements), (),
+            _WITHHELD,
+            None,
+            tuple(sorted(requirements)),
+            _reason_codes(requirements),
+            (),
         )
 
     evidence = tuple(evidence_data)
@@ -190,21 +206,36 @@ def recommend_by_physical_accuracy(
     for item in evidence:
         requirements.update(_validate(item))
     baseline = evidence[0]
-    if any((item.case_id, item.reference_id, item.reference_source_id) != (
-        baseline.case_id, baseline.reference_id, baseline.reference_source_id,
-    ) for item in evidence[1:]):
+    if any(
+        (item.case_id, item.reference_id, item.reference_source_id)
+        != (
+            baseline.case_id,
+            baseline.reference_id,
+            baseline.reference_source_id,
+        )
+        for item in evidence[1:]
+    ):
         requirements.add("same-case reference/source")
     if any(item.kpi != baseline.kpi for item in evidence[1:]):
         requirements.add("matching KPI definition")
-    if any((item.error.name, item.error.normalization) != (
-        baseline.error.name, baseline.error.normalization,
-    ) for item in evidence[1:]):
+    if any(
+        (item.error.name, item.error.normalization)
+        != (
+            baseline.error.name,
+            baseline.error.normalization,
+        )
+        for item in evidence[1:]
+    ):
         requirements.add("matching error metric definition")
 
     candidate_ids = tuple(item.candidate_id for item in evidence)
     if requirements:
         return AccuracyRecommendation(
-            _WITHHELD, None, tuple(sorted(requirements)), _reason_codes(requirements), candidate_ids,
+            _WITHHELD,
+            None,
+            tuple(sorted(requirements)),
+            _reason_codes(requirements),
+            candidate_ids,
         )
 
     best = min(evidence, key=lambda item: (_error_upper_bound(item), item.candidate_id))
@@ -212,6 +243,10 @@ def recommend_by_physical_accuracy(
 
 
 __all__ = [
-    "AccuracyRecommendation", "ConvergenceEvidence", "ErrorMetric", "KPIDefinition",
-    "PhysicalAccuracyEvidence", "recommend_by_physical_accuracy",
+    "AccuracyRecommendation",
+    "ConvergenceEvidence",
+    "ErrorMetric",
+    "KPIDefinition",
+    "PhysicalAccuracyEvidence",
+    "recommend_by_physical_accuracy",
 ]

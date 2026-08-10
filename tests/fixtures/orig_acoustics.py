@@ -48,6 +48,7 @@ Brentner, K.S. & Farassat, F. (1998).
     "Modeling aerodynamically generated sound of helicopter rotors."
     *Prog. Aerospace Sci.* 34, 67–120.
 """
+
 from __future__ import annotations
 
 import math
@@ -72,6 +73,7 @@ _REF_PRESSURE = 20.0e-6  # 20 µPa – acoustic reference pressure in Pa
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AcousticObserver:
     """Far-field observer position.
@@ -82,6 +84,7 @@ class AcousticObserver:
         z: Observer z-coordinate (use 0 for 2-D problems).
         label: Optional human-readable label.
     """
+
     x: float
     y: float
     z: float = 0.0
@@ -103,6 +106,7 @@ class FWHSurface:
         dt: Physical time step (seconds).
         c0: Speed of sound (m/s; default 343 for air at 20 °C).
     """
+
     positions: torch.Tensor
     normals: torch.Tensor
     areas: torch.Tensor
@@ -125,6 +129,7 @@ class FWHResult:
         oaspl: Overall A-weighted SPL for each observer (dB).
         observers: List of :class:`AcousticObserver` objects.
     """
+
     time: list[float]
 
     p_prime: torch.Tensor
@@ -137,6 +142,7 @@ class FWHResult:
 # ---------------------------------------------------------------------------
 # Core computation
 # ---------------------------------------------------------------------------
+
 
 def _retarded_time_index(
     distance: float,
@@ -211,8 +217,8 @@ def compute_fwh_far_field(
     dp_dt[:, -1] = (p[:, -1] - p[:, -2]) / dt
 
     pos = surface.positions  # (N, 3)
-    nrm = surface.normals    # (N, 3)
-    area = surface.areas     # (N,)
+    nrm = surface.normals  # (N, 3)
+    area = surface.areas  # (N,)
 
     p_prime_all = p.new_zeros((len(observers), T))
     src_idx = torch.arange(n_src, device=p.device)
@@ -221,12 +227,12 @@ def compute_fwh_far_field(
         obs_pos = torch.tensor([obs.x, obs.y, obs.z], dtype=pos.dtype, device=pos.device)
 
         # Vector from source points to observer
-        r_vec = obs_pos.unsqueeze(0) - pos          # (N, 3)
+        r_vec = obs_pos.unsqueeze(0) - pos  # (N, 3)
         r_dist = torch.norm(r_vec, dim=-1).clamp(min=1e-10)  # (N,)
-        r_hat = r_vec / r_dist.unsqueeze(-1)         # (N, 3)
+        r_hat = r_vec / r_dist.unsqueeze(-1)  # (N, 3)
 
         # Directivity: r̂ · n̂
-        cos_theta = (r_hat * nrm).sum(dim=-1)        # (N,)
+        cos_theta = (r_hat * nrm).sum(dim=-1)  # (N,)
 
         p_obs = p.new_zeros(T)
         delay_samples = (r_dist / (c0 * dt)).round().long()
@@ -248,8 +254,9 @@ def compute_fwh_far_field(
             p_tau = p[src_idx[valid], tau_indices]
             near_field = (p_tau / (r_dist[valid] * r_dist[valid])) * cos_theta[valid] * area[valid]
 
-            p_obs[t_idx] = (far_field.sum() / (_TWO_PI * 2.0 * c0)
-                            + near_field.sum() / (_TWO_PI * 2.0))
+            p_obs[t_idx] = far_field.sum() / (_TWO_PI * 2.0 * c0) + near_field.sum() / (
+                _TWO_PI * 2.0
+            )
 
         p_prime_all[obs_idx] = p_obs
 
@@ -349,9 +356,11 @@ def extract_surface_pressure(
             iy, ix = int(surface_indices[n_idx, 0]), int(surface_indices[n_idx, 1])
             p_history[n_idx] = rho_history[:, iy, ix] * cs2
         else:
-            iz, iy, ix = (int(surface_indices[n_idx, 0]),
-                          int(surface_indices[n_idx, 1]),
-                          int(surface_indices[n_idx, 2]))
+            iz, iy, ix = (
+                int(surface_indices[n_idx, 0]),
+                int(surface_indices[n_idx, 1]),
+                int(surface_indices[n_idx, 2]),
+            )
             p_history[n_idx] = rho_history[:, iz, iy, ix] * cs2
 
     # Remove mean (fluctuation only)
@@ -383,6 +392,7 @@ def extract_surface_pressure(
 # Overall A-weighted SPL
 # ---------------------------------------------------------------------------
 
+
 def oaspl(
     p_prime: torch.Tensor,
     dt: float,
@@ -399,7 +409,7 @@ def oaspl(
     Returns:
         List of OASPL values in dB re 20 µPa, one per observer.
     """
-    p_rms = torch.sqrt((p_prime ** 2).mean(dim=-1))  # (n_observers,)
+    p_rms = torch.sqrt((p_prime**2).mean(dim=-1))  # (n_observers,)
     eps = torch.finfo(torch.float32).eps
     oaspl_vals = 20.0 * torch.log10(p_rms.clamp(min=eps) / _REF_PRESSURE)
     return oaspl_vals.tolist()

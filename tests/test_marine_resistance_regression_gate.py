@@ -1,4 +1,5 @@
 """Fail-closed tests for canonical marine resistance KPI artifacts."""
+
 from __future__ import annotations
 
 import copy
@@ -25,8 +26,17 @@ def _artifact() -> dict:
             },
         },
         "numerics": {"pass": True, "rho_min": 0.98, "rho_max": 1.02, "nan_count": 0},
-        "conservation": {"pass": True, "mass_relative_drift": 2.0e-5, "momentum_relative_drift": 4.0e-5},
-        "resistance": {"pass": True, "coefficient": 0.0041, "reference_coefficient": 0.004, "relative_error_pct": 2.5},
+        "conservation": {
+            "pass": True,
+            "mass_relative_drift": 2.0e-5,
+            "momentum_relative_drift": 4.0e-5,
+        },
+        "resistance": {
+            "pass": True,
+            "coefficient": 0.0041,
+            "reference_coefficient": 0.004,
+            "relative_error_pct": 2.5,
+        },
         "physics": {"pass": True},
     }
 
@@ -124,7 +134,11 @@ def test_marine_resistance_gate_fail_closes_for_zero_or_nonfinite_reference(tmp_
 
 def test_marine_resistance_gate_accepts_exact_relative_error_at_limit(tmp_path):
     artifact = _artifact()
-    artifact["resistance"]["relative_error_pct"] = abs(artifact["resistance"]["coefficient"] - artifact["resistance"]["reference_coefficient"]) / artifact["resistance"]["reference_coefficient"] * 100.0
+    artifact["resistance"]["relative_error_pct"] = (
+        abs(artifact["resistance"]["coefficient"] - artifact["resistance"]["reference_coefficient"])
+        / artifact["resistance"]["reference_coefficient"]
+        * 100.0
+    )
     spec = _spec()
     spec["suboff_full"]["max_relative_error_pct"] = artifact["resistance"]["relative_error_pct"]
     _write(tmp_path, artifact)
@@ -159,7 +173,9 @@ def test_marine_resistance_gate_rejects_recomputed_error_just_above_limit(tmp_pa
         (("resistance", "relative_error_pct"), 3.1, "resistance"),
     ],
 )
-def test_marine_resistance_gate_rejects_each_required_evidence_failure(tmp_path, path, value, section):
+def test_marine_resistance_gate_rejects_each_required_evidence_failure(
+    tmp_path, path, value, section
+):
     artifact = _artifact()
     target = artifact
     for key in path[:-1]:

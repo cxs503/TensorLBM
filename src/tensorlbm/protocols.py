@@ -18,6 +18,7 @@ Usage example
 
     # MyCustomCollide satisfies CollisionOperator; no subclassing needed.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol, runtime_checkable

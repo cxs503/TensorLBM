@@ -39,6 +39,7 @@ References
 * Colonius T. & Lele S.K. (2004) Prog. Aerosp. Sci. 40 345.
 * Xu H. & Sagaut P. (2013) J. Comput. Phys. 232 435.
 """
+
 from __future__ import annotations
 
 import torch
@@ -47,6 +48,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Sponge profile
 # ---------------------------------------------------------------------------
+
 
 def sponge_profile(
     nx: int,
@@ -84,6 +86,7 @@ def sponge_profile(
 # Viscous sponge (2-D / 3-D agnostic)
 # ---------------------------------------------------------------------------
 
+
 def apply_viscous_sponge_2d(
     f: torch.Tensor,
     rho: torch.Tensor,
@@ -111,7 +114,7 @@ def apply_viscous_sponge_2d(
     from .d2q9 import equilibrium
 
     alpha = sponge.view(1, -1)  # (1, nx)
-    tau_eff = tau0 / (1.0 + alpha)   # (1, nx), reduced τ in sponge
+    tau_eff = tau0 / (1.0 + alpha)  # (1, nx), reduced τ in sponge
 
     f_eq = equilibrium(rho, ux, uy)
     f_neq = f - f_eq
@@ -151,7 +154,7 @@ def apply_viscous_sponge_3d(
     else:
         from .d3q19 import equilibrium3d as equil
 
-    alpha = sponge.view(1, 1, -1)   # (1, 1, nx)
+    alpha = sponge.view(1, 1, -1)  # (1, 1, nx)
     tau_eff = tau0 / (1.0 + alpha)  # (1, 1, nx)
 
     f_eq = equil(rho, ux, uy, uz)
@@ -164,6 +167,7 @@ def apply_viscous_sponge_3d(
 # ---------------------------------------------------------------------------
 # Target-field sponge (2-D / 3-D)
 # ---------------------------------------------------------------------------
+
 
 def apply_target_sponge_2d(
     f: torch.Tensor,
@@ -207,6 +211,7 @@ def apply_target_sponge_3d(
 # Helper: build equilibrium target from mean flow
 # ---------------------------------------------------------------------------
 
+
 def build_mean_equilibrium_2d(
     rho_mean: torch.Tensor,
     ux_mean: torch.Tensor,
@@ -225,6 +230,7 @@ def build_mean_equilibrium_2d(
         Equilibrium distribution ``f_eq``, shape ``(9, ny, nx)``.
     """
     from .d2q9 import equilibrium
+
     return equilibrium(rho_mean, ux_mean, uy_mean)
 
 
@@ -247,8 +253,10 @@ def build_mean_equilibrium_3d(
     """
     if lattice == "D3Q27":
         from .d3q27 import equilibrium27
+
         return equilibrium27(rho_mean, ux_mean, uy_mean, uz_mean)
     from .d3q19 import equilibrium3d
+
     return equilibrium3d(rho_mean, ux_mean, uy_mean, uz_mean)
 
 

@@ -5,5 +5,10 @@ from .field_dataset_r2 import FieldDatasetR2, FieldSampleRefR2
 from .field_r2 import FieldDataProductR2
 
 __all__ = [
-    "DatasetManifest", "DatasetSampleRef", "FieldDataProductR2", "FieldDatasetR2", "FieldProduct", "FieldSampleRefR2",
+    "DatasetManifest",
+    "DatasetSampleRef",
+    "FieldDataProductR2",
+    "FieldDatasetR2",
+    "FieldProduct",
+    "FieldSampleRefR2",
 ]

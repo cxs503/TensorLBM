@@ -3,6 +3,7 @@
 This module deliberately delegates the numerical run unchanged to
 :func:`run_dam_break_3d`; it neither implements nor compiles a timestep path.
 """
+
 from __future__ import annotations
 
 import copy
@@ -56,13 +57,15 @@ class FreeSurfaceScenario:
     @property
     def metadata(self) -> Mapping[str, object]:
         """Declared formulation scope, not a physical-accuracy validation result."""
-        return _mapping_snapshot({
-            "lattice": "D3Q19",
-            "physics": "single-phase free-surface fill-level tracking",
-            "formulation": "Körner",
-            "runner": "run_dam_break_3d",
-            "validation_scope": "application integration and existing runner accounting only",
-        })
+        return _mapping_snapshot(
+            {
+                "lattice": "D3Q19",
+                "physics": "single-phase free-surface fill-level tracking",
+                "formulation": "Körner",
+                "runner": "run_dam_break_3d",
+                "validation_scope": "application integration and existing runner accounting only",
+            }
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,7 +142,9 @@ def run_free_surface_scenario(scenario: FreeSurfaceScenario) -> FreeSurfaceAppli
     )
 
 
-def write_metadata_wrapping_observation(path: Path = Path("/tmp/tensorlbm-free-surface-app-overhead-r1.json")) -> Path:
+def write_metadata_wrapping_observation(
+    path: Path = Path("/tmp/tensorlbm-free-surface-app-overhead-r1.json"),
+) -> Path:
     """Write an honesty-scoped CPU observation; it is not a solver benchmark."""
     observation = {
         "scope": "CPU metadata wrapping observation",

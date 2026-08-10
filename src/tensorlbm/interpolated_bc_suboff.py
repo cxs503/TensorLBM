@@ -15,13 +15,31 @@ Groves, N.C., Huang, T.T., Chang, M.S. (1989).
 """
 from __future__ import annotations
 
-import math
+from dataclasses import asdict, dataclass
 
 import torch
 
 from .d3q19 import C as C3D
-from .suboff_cad import SuboffConfig, SuboffHullType, build_suboff_mask
+from .suboff_cad import (
+    SuboffConfig,
+    SuboffHullType,
+    build_suboff_mask,
+    suboff_appendages_contain_points,
+)
 
+SUBOFF_APPENDAGE_LINK_SCHEME = "continuous_parametric_bisection_v1"
+
+
+@dataclass(frozen=True, slots=True)
+class SuboffAppendageLinkDiagnostics:
+    scheme: str
+    target_links: int
+    n_bisect: int
+    minimum_q: float | None
+    maximum_q: float | None
+
+    def to_dict(self) -> dict[str, str | int | float | None]:
+        return asdict(self)
 
 # ---------------------------------------------------------------------------
 # PyTorch implementation of the normalised SUBOFF radius profile
@@ -44,28 +62,61 @@ def _suboff_radius_norm_torch(
     torch.Tensor
         Normalised radius, same shape as *xi*.
     """
-    alpha = config.bow_fraction
-    beta = config.stern_fraction
-    n = config.stern_exponent
+    # Keep this device-native implementation algebraically identical to
+    # suboff_cad.suboff_radius_profile.  The previous ellipsoid surrogate
+    # produced q-values for a different body than build_suboff_mask(), which
+    # invalidated BFL resistance runs even though their voxel mask was real.
+    length_ft = 14.291667
+    bow_end = 3.333333 / length_ft
+    mid_end = 10.645833 / length_ft
+    stern_end = 13.979167 / length_ft
 
-    bow_mask = (xi >= 0.0) & (xi < alpha)
-    mid_mask = (xi >= alpha) & (xi <= 1.0 - beta)
-    stern_mask = (xi > 1.0 - beta) & (xi <= 1.0)
+    bow_mask = (xi >= 0.0) & (xi < bow_end)
+    mid_mask = (xi >= bow_end) & (xi <= mid_end)
+    stern_mask = (xi > mid_end) & (xi <= stern_end)
+    tail_mask = (xi > stern_end) & (xi <= 1.0)
 
-    xi_bow = xi / alpha
-    bow_r = torch.sqrt(torch.clamp(2.0 * xi_bow - xi_bow**2, 0.0, 1.0))
+    x_ft = xi * length_ft
 
-    eta = (xi - (1.0 - beta)) / beta
-    if n == 2.0:
-        stern_r = torch.sqrt(torch.clamp(1.0 - eta**2, 0.0, 1.0))
-    else:
-        stern_r = torch.clamp(1.0 - eta**n, 0.0, 1.0) ** (1.0 / n)
+    tmp = 0.3 * x_ft - 1.0
+    tmp2 = tmp * tmp
+    tmp4 = tmp2 * tmp2
+    bow_poly = (
+        1.126395101 * x_ft * tmp4
+        + 0.442874707 * x_ft * x_ft * (tmp2 * tmp)
+        + 1.0
+        - tmp4 * (1.2 * x_ft + 1.0)
+    )
+    bow_r = torch.clamp(bow_poly, min=0.0).pow(1.0 / 2.1)
+
+    r1, k0, k1 = 0.1175, 10.0, 44.6244
+    ksi = (13.979167 - x_ft) / 3.333333
+    ksi2 = ksi * ksi
+    ksi3 = ksi2 * ksi
+    ksi4 = ksi3 * ksi
+    ksi5 = ksi4 * ksi
+    ksi6 = ksi5 * ksi
+    stern_poly = (
+        r1 * r1
+        + r1 * k0 * ksi2
+        + (20.0 - 20.0 * r1 * r1 - 4.0 * r1 * k0 - k1 / 3.0) * ksi3
+        + (-45.0 + 45.0 * r1 * r1 + 6.0 * r1 * k0 + k1) * ksi4
+        + (36.0 - 36.0 * r1 * r1 - 4.0 * r1 * k0 - k1) * ksi5
+        + (-10.0 + 10.0 * r1 * r1 + r1 * k0 + k1 / 3.0) * ksi6
+    )
+    stern_r = torch.sqrt(torch.clamp(stern_poly, min=0.0))
+
+    tail_poly = 1.0 - (3.2 * x_ft - 44.733333) ** 2
+    tail_r = 0.1175 * torch.sqrt(torch.clamp(tail_poly, min=0.0))
 
     r = torch.where(
         bow_mask, bow_r,
         torch.where(
             mid_mask, torch.ones_like(xi),
-            torch.where(stern_mask, stern_r, torch.zeros_like(xi)),
+            torch.where(
+                stern_mask, stern_r,
+                torch.where(tail_mask, tail_r, torch.zeros_like(xi)),
+            ),
         ),
     )
     return torch.clamp(r, 0.0, 1.0)
@@ -111,6 +162,7 @@ def compute_q_suboff(
     config: SuboffConfig | None = None,
     device: torch.device | str = "cpu",
     n_bisect: int = 10,
+    solid_mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Compute the BFL fractional-distance field *q* for a SUBOFF hull (D3Q19).
 
@@ -136,6 +188,9 @@ def compute_q_suboff(
         PyTorch device.
     n_bisect : int
         Number of bisection iterations (10 → ~1/1024 lu precision).
+    solid_mask : torch.Tensor, optional
+        Existing boolean SUBOFF mask with shape ``(nz, ny, nx)``.  Reusing the
+        solver's CAD mask avoids a second full-domain geometry construction.
 
     Returns
     -------
@@ -156,16 +211,23 @@ def compute_q_suboff(
     c = C3D.to(device)  # (19, 3)
 
     # ---- Build solid mask once (on device) ----
-    hull_type_enum = SuboffHullType(hull_type)
-    solid, _stats = build_suboff_mask(
-        hull_type_enum,
-        nx=nx, ny=ny, nz=nz,
-        cx=cx, cy=cy, cz=cz,
-        length=hull_length,
-        config=config,
-        device=str(device),
-    )
-    solid = solid.to(device)
+    if solid_mask is None:
+        hull_type_enum = SuboffHullType(hull_type)
+        solid, _stats = build_suboff_mask(
+            hull_type_enum,
+            nx=nx, ny=ny, nz=nz,
+            cx=cx, cy=cy, cz=cz,
+            length=hull_length,
+            config=config,
+            device=str(device),
+        )
+        solid = solid.to(device)
+    else:
+        if solid_mask.shape != (nz, ny, nx) or solid_mask.dtype != torch.bool:
+            raise ValueError(
+                "solid_mask must be boolean with shape (nz, ny, nx)",
+            )
+        solid = solid_mask.to(device=device)
 
     fluid_boundary_mask = torch.zeros(
         (19, nz, ny, nx), dtype=torch.bool, device=device,
@@ -182,8 +244,15 @@ def compute_q_suboff(
             continue  # rest direction
 
         # ---- Identify boundary links ----
-        sx, sy, sz = int(dcz), int(dcy), int(dcx)
-        nb_solid = torch.roll(solid, shifts=(-sz, -sy, -sx), dims=(0, 1, 2))
+        # Tensor storage is (z, y, x), while D3Q19 vectors are (x, y, z).
+        # Keep the components in their physical axes and only reorder them
+        # when forming the torch-roll tuple.  The former double permutation
+        # made x-directed BFL masks inspect z-neighbours (and vice versa).
+        nb_solid = torch.roll(
+            solid,
+            shifts=(-int(dcz), -int(dcy), -int(dcx)),
+            dims=(0, 1, 2),
+        )
         boundary = ~solid & nb_solid  # (nz, ny, nx)
 
         if not boundary.any():
@@ -195,13 +264,21 @@ def compute_q_suboff(
         n_cells = idx.shape[0]
 
         # Fluid cell coordinates (float)
-        k_f = idx[:, 0].to(dtype=torch.float64, device=device)
-        j_f = idx[:, 1].to(dtype=torch.float64, device=device)
-        i_f = idx[:, 2].to(dtype=torch.float64, device=device)
+        # Ten bisections only resolve q to about 1e-3 lattice units, so FP32
+        # coordinates retain ample margin while avoiding very slow consumer-
+        # GPU FP64 execution during geometry preprocessing.
+        k_f = idx[:, 0].to(dtype=torch.float32, device=device)
+        j_f = idx[:, 1].to(dtype=torch.float32, device=device)
+        i_f = idx[:, 2].to(dtype=torch.float32, device=device)
+
+        endpoint_in_main_body = _inside_hull(
+            i_f + dcx, j_f + dcy, k_f + dcz,
+            x_bow, cy, cz, hull_length, radius, config,
+        )
 
         # ---- Bisection on boundary cells only ----
-        t_lo = torch.zeros(n_cells, dtype=torch.float64, device=device)
-        t_hi = torch.ones(n_cells, dtype=torch.float64, device=device)
+        t_lo = torch.zeros(n_cells, dtype=torch.float32, device=device)
+        t_hi = torch.ones(n_cells, dtype=torch.float32, device=device)
 
         for _ in range(n_bisect):
             t_mid = (t_lo + t_hi) * 0.5
@@ -222,6 +299,11 @@ def compute_q_suboff(
 
         # Final q
         q = ((t_lo + t_hi) * 0.5).clamp(1e-6, 1.0).float()
+        # Sail and control surfaces are voxelised rather than described by
+        # the axisymmetric profile.  Their solid endpoint is therefore not
+        # inside the main-body implicit function; use standard half-way BB
+        # on those links instead of a spurious q≈1 result.
+        q = torch.where(endpoint_in_main_body, q, torch.full_like(q, 0.5))
 
         # ---- Scatter back to full-size tensor ----
         fluid_boundary_mask[d, k_f.long(), j_f.long(), i_f.long()] = True
@@ -230,4 +312,107 @@ def compute_q_suboff(
     return fluid_boundary_mask, q_field
 
 
-__all__ = ["compute_q_suboff"]
+def refine_q_suboff_appendages(
+    fluid_boundary_mask: torch.Tensor,
+    q_field: torch.Tensor,
+    solid: torch.Tensor,
+    bare_hull: torch.Tensor,
+    *,
+    center: tuple[float, float, float],
+    length: float,
+    n_bisect: int = 12,
+    inplace: bool = False,
+) -> tuple[torch.Tensor, SuboffAppendageLinkDiagnostics]:
+    """Replace AFF-8 halfway links by continuous parametric intersections.
+
+    The endpoint mask and the bisection predicate share the DARPA sail and
+    swept-NACA fin equations.  Every selected link starts at a fluid lattice
+    node and ends in an appendage-only solid node, so bisection yields the
+    first fluid-to-solid fraction without an empirical q correction.  The
+    default preserves ``q_field``; production preprocessors that own a fresh
+    field may set ``inplace=True`` to avoid cloning a full Q-by-volume tensor.
+    """
+    if (
+        fluid_boundary_mask.ndim != 4
+        or fluid_boundary_mask.shape[0] != 19
+        or fluid_boundary_mask.dtype is not torch.bool
+        or q_field.shape != fluid_boundary_mask.shape
+        or not q_field.is_floating_point()
+        or solid.shape != fluid_boundary_mask.shape[1:]
+        or bare_hull.shape != solid.shape
+        or solid.dtype is not torch.bool
+        or bare_hull.dtype is not torch.bool
+        or not (
+            fluid_boundary_mask.device
+            == q_field.device == solid.device == bare_hull.device
+        )
+    ):
+        raise ValueError("SUBOFF link fields must be matching device tensors")
+    if bool((bare_hull & ~solid).any()):
+        raise ValueError("bare_hull must be a subset of full solid")
+    if n_bisect < 1:
+        raise ValueError("n_bisect must be positive")
+    if length <= 0.0:
+        raise ValueError("length must be positive")
+
+    if not isinstance(inplace, bool):
+        raise ValueError("inplace must be a bool")
+    appendage_only = solid & ~bare_hull
+    refined = q_field if inplace else q_field.clone()
+    all_values: list[torch.Tensor] = []
+    target_links = 0
+    for direction in range(1, 19):
+        cx, cy, cz = (int(value) for value in C3D[direction].tolist())
+        target_neighbor = torch.roll(
+            appendage_only,
+            shifts=(-cz, -cy, -cx),
+            dims=(0, 1, 2),
+        )
+        selected = fluid_boundary_mask[direction] & target_neighbor
+        indices = selected.nonzero(as_tuple=False)
+        if not indices.numel():
+            continue
+        target_links += int(indices.shape[0])
+        z0 = indices[:, 0].to(q_field.dtype)
+        y0 = indices[:, 1].to(q_field.dtype)
+        x0 = indices[:, 2].to(q_field.dtype)
+        lower = torch.zeros_like(x0)
+        upper = torch.ones_like(x0)
+        for _ in range(n_bisect):
+            midpoint = 0.5 * (lower + upper)
+            inside = suboff_appendages_contain_points(
+                x0 + midpoint * cx,
+                y0 + midpoint * cy,
+                z0 + midpoint * cz,
+                center=center,
+                length=length,
+            )
+            upper = torch.where(inside, midpoint, upper)
+            lower = torch.where(inside, lower, midpoint)
+        values = (0.5 * (lower + upper)).clamp(1.0e-6, 1.0)
+        refined[
+            direction, indices[:, 0], indices[:, 1], indices[:, 2]
+        ] = values
+        all_values.append(values)
+
+    if all_values:
+        values = torch.cat(all_values)
+        minimum_q = float(values.min())
+        maximum_q = float(values.max())
+    else:
+        minimum_q = maximum_q = None
+    return refined, SuboffAppendageLinkDiagnostics(
+        scheme=SUBOFF_APPENDAGE_LINK_SCHEME,
+        target_links=target_links,
+        n_bisect=n_bisect,
+        minimum_q=minimum_q,
+        maximum_q=maximum_q,
+    )
+
+
+__all__ = [
+    "SUBOFF_APPENDAGE_LINK_SCHEME",
+    "SuboffAppendageLinkDiagnostics",
+    "compute_q_suboff",
+    "refine_q_suboff_appendages",
+]

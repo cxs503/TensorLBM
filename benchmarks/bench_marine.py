@@ -49,7 +49,7 @@ from pathlib import Path
 # Cylinder flow Re = 100 (isolated, free-stream)
 # Williamson & Roshko (1988) / Zdravkovich (1997)
 REF_CYLINDER_ST = 0.166  # Strouhal number
-REF_CYLINDER_CD = 1.38   # mean drag coefficient
+REF_CYLINDER_CD = 1.38  # mean drag coefficient
 
 # Sloshing tank: Faltinsen (1978) – analytical, computed per-run
 
@@ -70,6 +70,7 @@ LOG_LAW_B = 5.2
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _header(title: str) -> None:
     bar = "=" * 70
@@ -96,23 +97,38 @@ def _section(title: str) -> None:
 # Benchmark 1 – 2D cylinder flow
 # ---------------------------------------------------------------------------
 
+
 def bench_cylinder(output_root: Path, full: bool) -> dict[str, object]:
     """Run 2D cylinder flow and compare St and Cd with Williamson (1988)."""
     from tensorlbm import CylinderFlowConfig, run_cylinder_flow
 
     if full:
         cfg = CylinderFlowConfig(
-            nx=400, ny=120, radius=15.0, u_in=0.08, re=100.0,
-            n_steps=60000, output_interval=500,
-            output_root=output_root, run_name="bench_cylinder_re100", overwrite=True,
+            nx=400,
+            ny=120,
+            radius=15.0,
+            u_in=0.08,
+            re=100.0,
+            n_steps=60000,
+            output_interval=500,
+            output_root=output_root,
+            run_name="bench_cylinder_re100",
+            overwrite=True,
         )
     else:
         # r=5 (D=10) → 12.5% blockage and period ~753 steps; 20 000 steps
         # covers 26 shedding cycles – sufficient for a clean FFT peak.
         cfg = CylinderFlowConfig(
-            nx=200, ny=80, radius=5.0, u_in=0.08, re=100.0,
-            n_steps=20000, output_interval=500,
-            output_root=output_root, run_name="bench_cylinder_re100_quick", overwrite=True,
+            nx=200,
+            ny=80,
+            radius=5.0,
+            u_in=0.08,
+            re=100.0,
+            n_steps=20000,
+            output_interval=500,
+            output_root=output_root,
+            run_name="bench_cylinder_re100_quick",
+            overwrite=True,
         )
 
     t0 = time.perf_counter()
@@ -123,8 +139,10 @@ def bench_cylinder(output_root: Path, full: bool) -> dict[str, object]:
     st = meta.get("strouhal") or 0.0
     diag = meta.get("diagnostics", [])
     cd_values = [d["cd"] for d in diag if isinstance(d.get("cd"), float) and math.isfinite(d["cd"])]
-    cd_mean = sum(cd_values[-10:]) / len(cd_values[-10:]) if len(cd_values) >= 10 else (
-        sum(cd_values) / len(cd_values) if cd_values else float("nan")
+    cd_mean = (
+        sum(cd_values[-10:]) / len(cd_values[-10:])
+        if len(cd_values) >= 10
+        else (sum(cd_values) / len(cd_values) if cd_values else float("nan"))
     )
 
     _header("Benchmark 1 – 2D Cylinder Flow (Re = 100)")
@@ -150,6 +168,7 @@ def bench_cylinder(output_root: Path, full: bool) -> dict[str, object]:
 # Benchmark 2 – Sloshing tank
 # ---------------------------------------------------------------------------
 
+
 def bench_sloshing(output_root: Path, full: bool) -> dict[str, object]:
     """Run sloshing-tank and compare measured frequency with Faltinsen (1978).
 
@@ -162,20 +181,32 @@ def bench_sloshing(output_root: Path, full: bool) -> dict[str, object]:
 
     if full:
         cfg = SloshingTankConfig(
-            nx=200, ny=160, water_level=80,
-            g=2e-5, forcing_amp=3e-5,
-            n_steps=60000, output_interval=200,
-            output_root=output_root, run_name="bench_sloshing_full", overwrite=True,
+            nx=200,
+            ny=160,
+            water_level=80,
+            g=2e-5,
+            forcing_amp=3e-5,
+            n_steps=60000,
+            output_interval=200,
+            output_root=output_root,
+            run_name="bench_sloshing_full",
+            overwrite=True,
         )
     else:
         # g=5e-4 gives a natural period of ~1960 steps; 10 000 steps covers
         # 5 full oscillation cycles.  forcing_amp is kept small (10% of g) to
         # stay in the linear sloshing regime and avoid large-amplitude overturning.
         cfg = SloshingTankConfig(
-            nx=120, ny=80, water_level=40,
-            g=5e-4, forcing_amp=5e-5,
-            n_steps=10000, output_interval=50,
-            output_root=output_root, run_name="bench_sloshing_quick", overwrite=True,
+            nx=120,
+            ny=80,
+            water_level=40,
+            g=5e-4,
+            forcing_amp=5e-5,
+            n_steps=10000,
+            output_interval=50,
+            output_root=output_root,
+            run_name="bench_sloshing_quick",
+            overwrite=True,
         )
 
     t0 = time.perf_counter()
@@ -188,7 +219,9 @@ def bench_sloshing(output_root: Path, full: bool) -> dict[str, object]:
     rel_err = meta.get("relative_frequency_error") or float("nan")
 
     _header("Benchmark 2 – Sloshing Tank (Faltinsen 1978)")
-    print(f"  Grid: {cfg.nx}×{cfg.ny},  h/L = {cfg.water_level/cfg.nx:.2f},  steps: {cfg.n_steps}")
+    print(
+        f"  Grid: {cfg.nx}×{cfg.ny},  h/L = {cfg.water_level / cfg.nx:.2f},  steps: {cfg.n_steps}"
+    )
     print(f"  Elapsed: {elapsed:.1f} s")
     _section("Natural sloshing frequency")
     print(f"  {'Faltinsen theory ω₀':<35} {omega_theory:.6e} rad/step")
@@ -215,22 +248,39 @@ def bench_sloshing(output_root: Path, full: bool) -> dict[str, object]:
 # Benchmark 3 – Near-bed pipeline flow
 # ---------------------------------------------------------------------------
 
+
 def bench_pipeline(output_root: Path, full: bool) -> dict[str, object]:
     """Run near-bed pipeline flow and compare Strouhal with Bearman & Zdravkovich (1978)."""
     from tensorlbm import PipelineFlowConfig, run_pipeline_flow
 
     if full:
         cfg = PipelineFlowConfig(
-            nx=400, ny=160, diameter=20.0, gap_ratio=0.5, u_in=0.05, re=200.0,
-            n_steps=30000, output_interval=1000,
-            output_root=output_root, run_name="bench_pipeline_eD05", overwrite=True,
+            nx=400,
+            ny=160,
+            diameter=20.0,
+            gap_ratio=0.5,
+            u_in=0.05,
+            re=200.0,
+            n_steps=30000,
+            output_interval=1000,
+            output_root=output_root,
+            run_name="bench_pipeline_eD05",
+            overwrite=True,
         )
     else:
         # 20 000 steps needed for shedding to develop and resolve St accurately
         cfg = PipelineFlowConfig(
-            nx=240, ny=100, diameter=14.0, gap_ratio=0.5, u_in=0.05, re=200.0,
-            n_steps=20000, output_interval=1000,
-            output_root=output_root, run_name="bench_pipeline_eD05_quick", overwrite=True,
+            nx=240,
+            ny=100,
+            diameter=14.0,
+            gap_ratio=0.5,
+            u_in=0.05,
+            re=200.0,
+            n_steps=20000,
+            output_interval=1000,
+            output_root=output_root,
+            run_name="bench_pipeline_eD05_quick",
+            overwrite=True,
         )
 
     t0 = time.perf_counter()
@@ -241,8 +291,10 @@ def bench_pipeline(output_root: Path, full: bool) -> dict[str, object]:
     st = float(meta.get("strouhal") or 0.0)
     diag = meta.get("diagnostics", [])
     cd_values = [d["cd"] for d in diag if isinstance(d.get("cd"), float) and math.isfinite(d["cd"])]
-    cd_mean = sum(cd_values[-5:]) / len(cd_values[-5:]) if len(cd_values) >= 5 else (
-        sum(cd_values) / len(cd_values) if cd_values else float("nan")
+    cd_mean = (
+        sum(cd_values[-5:]) / len(cd_values[-5:])
+        if len(cd_values) >= 5
+        else (sum(cd_values) / len(cd_values) if cd_values else float("nan"))
     )
 
     _header("Benchmark 3 – Near-Bed Pipeline Flow (Re = 200, e/D = 0.5)")
@@ -268,6 +320,7 @@ def bench_pipeline(output_root: Path, full: bool) -> dict[str, object]:
 # Benchmark 4 – Turbulent channel flow
 # ---------------------------------------------------------------------------
 
+
 def bench_turbulent_channel(output_root: Path, full: bool) -> dict[str, object]:
     """Run body-force turbulent channel and compare velocity profile with log-law."""
     import csv
@@ -276,17 +329,33 @@ def bench_turbulent_channel(output_root: Path, full: bool) -> dict[str, object]:
 
     if full:
         cfg = TurbulentChannelConfig(
-            nx=256, ny=64, re_tau=100.0, u_tau=0.005, smagorinsky_cs=0.1,
-            n_steps=50000, averaging_start=20000, output_interval=5000,
-            output_root=output_root, run_name="bench_channel_retau100", overwrite=True,
+            nx=256,
+            ny=64,
+            re_tau=100.0,
+            u_tau=0.005,
+            smagorinsky_cs=0.1,
+            n_steps=50000,
+            averaging_start=20000,
+            output_interval=5000,
+            output_root=output_root,
+            run_name="bench_channel_retau100",
+            overwrite=True,
         )
     else:
         # 40 000 steps allows the driven channel to develop past the initial
         # transient; averaging begins at step 15 000 for a 25 000-step window.
         cfg = TurbulentChannelConfig(
-            nx=128, ny=40, re_tau=100.0, u_tau=0.005, smagorinsky_cs=0.1,
-            n_steps=40000, averaging_start=15000, output_interval=5000,
-            output_root=output_root, run_name="bench_channel_retau100_quick", overwrite=True,
+            nx=128,
+            ny=40,
+            re_tau=100.0,
+            u_tau=0.005,
+            smagorinsky_cs=0.1,
+            n_steps=40000,
+            averaging_start=15000,
+            output_interval=5000,
+            output_root=output_root,
+            run_name="bench_channel_retau100_quick",
+            overwrite=True,
         )
 
     t0 = time.perf_counter()
@@ -355,27 +424,44 @@ def bench_turbulent_channel(output_root: Path, full: bool) -> dict[str, object]:
 # Benchmark 5 – 3D Wigley hull flow
 # ---------------------------------------------------------------------------
 
+
 def bench_ship_hull(output_root: Path, full: bool) -> dict[str, object]:
     """Run the ship CAD→simulation→postprocess workflow and report quantitative checks."""
     from tensorlbm import ShipHullFlowConfig, run_ship_hull_flow
 
     if full:
         cfg = ShipHullFlowConfig(
-            nx=160, ny=60, nz=40,
-            u_in=0.05, re=200.0,
-            hull_length=80.0, hull_beam=8.0, hull_draft=12.0,
+            nx=160,
+            ny=60,
+            nz=40,
+            u_in=0.05,
+            re=200.0,
+            hull_length=80.0,
+            hull_beam=8.0,
+            hull_draft=12.0,
             smagorinsky_cs=0.1,
-            n_steps=4000, output_interval=200,
-            output_root=output_root, run_name="bench_wigley_re200", overwrite=True,
+            n_steps=4000,
+            output_interval=200,
+            output_root=output_root,
+            run_name="bench_wigley_re200",
+            overwrite=True,
         )
     else:
         cfg = ShipHullFlowConfig(
-            nx=80, ny=40, nz=30,
-            u_in=0.05, re=200.0,
-            hull_length=40.0, hull_beam=6.0, hull_draft=8.0,
+            nx=80,
+            ny=40,
+            nz=30,
+            u_in=0.05,
+            re=200.0,
+            hull_length=40.0,
+            hull_beam=6.0,
+            hull_draft=8.0,
             smagorinsky_cs=0.1,
-            n_steps=2000, output_interval=200,
-            output_root=output_root, run_name="bench_wigley_re200_quick", overwrite=True,
+            n_steps=2000,
+            output_interval=200,
+            output_root=output_root,
+            run_name="bench_wigley_re200_quick",
+            overwrite=True,
         )
 
     t0 = time.perf_counter()
@@ -399,8 +485,7 @@ def bench_ship_hull(output_root: Path, full: bool) -> dict[str, object]:
     _header("Benchmark 5 – 3D Ship Workflow (CAD → Flow → Postprocess)")
     print(f"  Grid: {cfg.nx}×{cfg.ny}×{cfg.nz},  L = {cfg.hull_length},  B = {cfg.hull_beam}")
     print(
-        f"  T = {cfg.hull_draft},  Re = {cfg.re},"
-        f"  hull = {cfg.hull_type},  steps = {cfg.n_steps}"
+        f"  T = {cfg.hull_draft},  Re = {cfg.re},  hull = {cfg.hull_type},  steps = {cfg.n_steps}"
     )
     print(f"  Elapsed: {elapsed:.1f} s")
     _section("CAD fidelity")
@@ -441,6 +526,7 @@ def bench_ship_hull(output_root: Path, full: bool) -> dict[str, object]:
 # ---------------------------------------------------------------------------
 # Summary table
 # ---------------------------------------------------------------------------
+
 
 def bench_suboff_resistance(output_root: Path, full: bool) -> dict[str, object]:
     """Run SUBOFF drag benchmark and iteratively refine until error target is met."""
@@ -501,13 +587,15 @@ def bench_marine_geometry_library(output_root: Path, full: bool) -> dict[str, ob
         cb_sim = float(stats["Cb_numerical"])
         cb_ref = float(stats["Cb"])
         cb_err = abs(cb_sim - cb_ref) / (abs(cb_ref) + 1e-12) * 100.0
-        ship_results.append({
-            "hull_type": hull_type.value,
-            "cb_sim": cb_sim,
-            "cb_ref": cb_ref,
-            "cb_error_pct": cb_err,
-            "pass": cb_err < 35.0,
-        })
+        ship_results.append(
+            {
+                "hull_type": hull_type.value,
+                "cb_sim": cb_sim,
+                "cb_ref": cb_ref,
+                "cb_error_pct": cb_err,
+                "pass": cb_err < 35.0,
+            }
+        )
 
     suboff_results: list[dict[str, object]] = []
     solid_cells: list[int] = []
@@ -526,11 +614,13 @@ def bench_marine_geometry_library(output_root: Path, full: bool) -> dict[str, ob
         )
         solid = int(stats["solid_cells"])
         solid_cells.append(solid)
-        suboff_results.append({
-            "hull_type": hull_type.value,
-            "solid_cells": solid,
-            "l_d_ratio": float(stats["L_D_ratio"]),
-        })
+        suboff_results.append(
+            {
+                "hull_type": hull_type.value,
+                "solid_cells": solid,
+                "l_d_ratio": float(stats["L_D_ratio"]),
+            }
+        )
 
     cb_sim_values = [float(item["cb_sim"]) for item in ship_results]
     cb_order_ok = cb_sim_values[0] < cb_sim_values[1] < cb_sim_values[2]
@@ -548,14 +638,8 @@ def bench_marine_geometry_library(output_root: Path, full: bool) -> dict[str, ob
             float(item["cb_ref"]),
         )
     _section("SUBOFF variant volume ordering")
-    print(
-        f"  {'Solid-cell monotonicity (bare < sail < full)':<45}"
-        f" {'✓' if suboff_ok else '✗'}"
-    )
-    print(
-        f"  {'Cb ordering (wigley < series60 < kcs)':<45}"
-        f" {'✓' if cb_order_ok else '✗'}"
-    )
+    print(f"  {'Solid-cell monotonicity (bare < sail < full)':<45} {'✓' if suboff_ok else '✗'}")
+    print(f"  {'Cb ordering (wigley < series60 < kcs)':<45} {'✓' if cb_order_ok else '✗'}")
     print(
         f"  {'Solid cells [bare, sail, full]':<45}"
         f" {solid_cells[0]}, {solid_cells[1]}, {solid_cells[2]}"
@@ -648,20 +732,24 @@ def _print_summary(results: list[dict[str, object]]) -> None:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="TensorLBM marine / ship & ocean engineering benchmark suite"
     )
     parser.add_argument(
-        "--full", action="store_true",
+        "--full",
+        action="store_true",
         help="Use production-quality grid sizes and step counts (slower)",
     )
     parser.add_argument(
-        "--output-root", default="outputs/benchmarks/marine",
+        "--output-root",
+        default="outputs/benchmarks/marine",
         help="Root directory for benchmark outputs",
     )
     parser.add_argument(
-        "--cases", nargs="+",
+        "--cases",
+        nargs="+",
         choices=[
             "cylinder",
             "sloshing",
@@ -676,7 +764,8 @@ def _parse_args() -> argparse.Namespace:
         help="Which benchmarks to run (default: all)",
     )
     parser.add_argument(
-        "--report", default=None,
+        "--report",
+        default=None,
         help="Write a JSON summary to this file",
     )
     return parser.parse_args()

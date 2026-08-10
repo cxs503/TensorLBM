@@ -4,6 +4,7 @@ This observer does not advance, synthesize, reset, or otherwise alter a fluid
 state.  It only samples caller-provided post-stream/pre-bounce-back population
 windows at wall links compiled from a :class:`GeometryAsset`.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -23,7 +24,12 @@ _SAMPLE_PHASE = "post_stream_pre_bounce_back"
 
 
 def _positive(value: object, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(float(value)) or value <= 0.0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not isfinite(float(value))
+        or value <= 0.0
+    ):
         raise ValueError(f"{name} must be finite and > 0")
     return float(value)
 
@@ -31,7 +37,12 @@ def _positive(value: object, name: str) -> float:
 def _direction(value: object) -> tuple[float, float, float]:
     if not isinstance(value, tuple) or len(value) != 3:
         raise ValueError("direction must be a finite non-zero (x, y, z) tuple")
-    if any(isinstance(component, bool) or not isinstance(component, (int, float)) or not isfinite(float(component)) for component in value):
+    if any(
+        isinstance(component, bool)
+        or not isinstance(component, (int, float))
+        or not isfinite(float(component))
+        for component in value
+    ):
         raise ValueError("direction must be a finite non-zero (x, y, z) tuple")
     result = tuple(float(component) for component in value)
     if not any(result):
@@ -85,11 +96,15 @@ def _validate_state(state: object, asset: GeometryAsset, index: int) -> torch.Te
         raise TypeError(f"states[{index}] must be a torch.Tensor")
     expected_shape = (19, *tuple(asset.solid_mask.shape))
     if tuple(state.shape) != expected_shape:
-        raise ValueError(f"states[{index}] must have shape {expected_shape}, got {tuple(state.shape)}")
+        raise ValueError(
+            f"states[{index}] must have shape {expected_shape}, got {tuple(state.shape)}"
+        )
     if not state.dtype.is_floating_point:
         raise TypeError(f"states[{index}] must have a floating-point dtype, got {state.dtype}")
     if state.device != asset.solid_mask.device:
-        raise ValueError(f"states[{index}] device {state.device} must equal geometry device {asset.solid_mask.device}")
+        raise ValueError(
+            f"states[{index}] device {state.device} must equal geometry device {asset.solid_mask.device}"
+        )
     if not bool(torch.isfinite(state).all().item()):
         raise ValueError(f"states[{index}] must contain only finite populations")
     return state
@@ -119,7 +134,9 @@ def observe_suboff_real_state_force_window(
     links = compile_d3q19_wall_links(asset)
     if links.count <= 0:
         raise ValueError("observer requires at least one compiled wall link")
-    validated_states = tuple(_validate_state(state, asset, index) for index, state in enumerate(states))
+    validated_states = tuple(
+        _validate_state(state, asset, index) for index, state in enumerate(states)
+    )
 
     device = validated_states[0].device
     directions = links.direction.to(device=device)
@@ -132,7 +149,9 @@ def observe_suboff_real_state_force_window(
     for state in validated_states:
         incident = state[opposite, z, y, x]
         force = (-2.0 * incident.unsqueeze(1) * c.to(dtype=state.dtype)).sum(dim=0)
-        window_forces.append((float(force[0].item()), float(force[1].item()), float(force[2].item())))
+        window_forces.append(
+            (float(force[0].item()), float(force[1].item()), float(force[2].item()))
+        )
     mean_force = (
         sum(force[0] for force in window_forces) / len(window_forces),
         sum(force[1] for force in window_forces) / len(window_forces),

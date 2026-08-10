@@ -46,6 +46,7 @@ Inamuro, T. et al. (2001). "A lattice Boltzmann method for viscous fluid
 Bouzidi, M., Firdaouss, M., & Lallemand, P. (2001). "Momentum transfer of
     a Boltzmann-lattice fluid with boundaries." *Phys. Fluids* 13, 3452.
 """
+
 from __future__ import annotations
 
 import math
@@ -71,6 +72,7 @@ __all__ = [
 # Helper: lattice selection
 # ---------------------------------------------------------------------------
 
+
 def _get_lattice(dim: int, lattice: str = "auto"):
     """Return (C, OPPOSITE, W, nq) for the requested lattice."""
     if dim == 2:
@@ -92,6 +94,7 @@ def _detect_dim(f: torch.Tensor, solid: torch.Tensor) -> int:
 # ---------------------------------------------------------------------------
 # 1. Momentum Exchange Method (MEM)
 # ---------------------------------------------------------------------------
+
 
 def force_momentum_exchange(
     f: torch.Tensor,
@@ -196,8 +199,8 @@ def force_momentum_exchange(
             yn_ = y_n[is_solid_nbr]
             xn_ = x_n[is_solid_nbr]
 
-            f_fluid = f[q, yf_, xf_]       # f_i at fluid cell
-            f_solid = f[q_opp, yn_, xn_]   # f_ī at solid cell
+            f_fluid = f[q, yf_, xf_]  # f_i at fluid cell
+            f_solid = f[q_opp, yn_, xn_]  # f_ī at solid cell
 
             if method == "bfl" and q_field is not None:
                 qq = q_field[q, yf_, xf_].clamp(1e-6, 1.0 - 1e-6)
@@ -294,6 +297,7 @@ def force_momentum_exchange(
 # 2. Stress Tensor Integration
 # ---------------------------------------------------------------------------
 
+
 def force_stress_integration(
     f: torch.Tensor,
     solid: torch.Tensor,
@@ -348,6 +352,7 @@ def force_stress_integration(
         uy = (f * c[:, 1].view(nq, 1, 1)).sum(dim=0) / rho.clamp(min=1e-12)
         # Equilibrium
         from .d2q9 import equilibrium
+
         feq = equilibrium(rho, ux, uy, device=device)
         fneq = f - feq  # (9, ny, nx)
 
@@ -363,7 +368,7 @@ def force_stress_integration(
         s = solid.to(f.dtype)
         dn_x = -(torch.roll(s, -1, dims=1) - torch.roll(s, 1, dims=1)) / 2.0
         dn_y = -(torch.roll(s, -1, dims=0) - torch.roll(s, 1, dims=0)) / 2.0
-        n_mag = torch.sqrt(dn_x ** 2 + dn_y ** 2).clamp(min=1e-12)
+        n_mag = torch.sqrt(dn_x**2 + dn_y**2).clamp(min=1e-12)
         nx = dn_x / n_mag
         ny = dn_y / n_mag
 
@@ -385,14 +390,18 @@ def force_stress_integration(
 
     else:  # 3D
         from .d3q19 import macroscopic3d
+
         if lattice == "d3q27":
             from .d3q27 import macroscopic27 as macro3d
+
             rho, ux, uy, uz = macro3d(f)
             from .d3q27 import equilibrium27 as eq3d
+
             feq = eq3d(rho, ux, uy, uz, device=device)
         else:
             rho, ux, uy, uz = macroscopic3d(f)
             from .d3q19 import equilibrium3d as eq3d
+
             feq = eq3d(rho, ux, uy, uz, device=device)
 
         fneq = f - feq  # (Q, nz, ny, nx)
@@ -414,7 +423,7 @@ def force_stress_integration(
         dn_x = -(torch.roll(s, -1, dims=2) - torch.roll(s, 1, dims=2)) / 2.0
         dn_y = -(torch.roll(s, -1, dims=1) - torch.roll(s, 1, dims=1)) / 2.0
         dn_z = -(torch.roll(s, -1, dims=0) - torch.roll(s, 1, dims=0)) / 2.0
-        n_mag = torch.sqrt(dn_x ** 2 + dn_y ** 2 + dn_z ** 2).clamp(min=1e-12)
+        n_mag = torch.sqrt(dn_x**2 + dn_y**2 + dn_z**2).clamp(min=1e-12)
         nx = dn_x / n_mag
         ny = dn_y / n_mag
         nz = dn_z / n_mag
@@ -437,6 +446,7 @@ def force_stress_integration(
 # ---------------------------------------------------------------------------
 # 3. Pressure Integration
 # ---------------------------------------------------------------------------
+
 
 def force_pressure_integration(
     f: torch.Tensor,
@@ -492,7 +502,7 @@ def force_pressure_integration(
         s = solid.to(f.dtype)
         dn_x = -(torch.roll(s, -1, dims=1) - torch.roll(s, 1, dims=1)) / 2.0
         dn_y = -(torch.roll(s, -1, dims=0) - torch.roll(s, 1, dims=0)) / 2.0
-        n_mag = torch.sqrt(dn_x ** 2 + dn_y ** 2).clamp(min=1e-12)
+        n_mag = torch.sqrt(dn_x**2 + dn_y**2).clamp(min=1e-12)
         nx = dn_x / n_mag
         ny = dn_y / n_mag
 
@@ -517,7 +527,7 @@ def force_pressure_integration(
         dn_x = -(torch.roll(s, -1, dims=2) - torch.roll(s, 1, dims=2)) / 2.0
         dn_y = -(torch.roll(s, -1, dims=1) - torch.roll(s, 1, dims=1)) / 2.0
         dn_z = -(torch.roll(s, -1, dims=0) - torch.roll(s, 1, dims=0)) / 2.0
-        n_mag = torch.sqrt(dn_x ** 2 + dn_y ** 2 + dn_z ** 2).clamp(min=1e-12)
+        n_mag = torch.sqrt(dn_x**2 + dn_y**2 + dn_z**2).clamp(min=1e-12)
         nx = dn_x / n_mag
         ny = dn_y / n_mag
         nz = dn_z / n_mag
@@ -535,6 +545,7 @@ def force_pressure_integration(
 # ---------------------------------------------------------------------------
 # 4. Virtual Work Method
 # ---------------------------------------------------------------------------
+
 
 def force_virtual_work(
     f: torch.Tensor,
@@ -615,7 +626,7 @@ def force_virtual_work(
         s = solid.to(f.dtype)
         dn_x = -(torch.roll(s, -1, dims=1) - torch.roll(s, 1, dims=1)) / 2.0
         dn_y = -(torch.roll(s, -1, dims=0) - torch.roll(s, 1, dims=0)) / 2.0
-        n_mag = torch.sqrt(dn_x ** 2 + dn_y ** 2).clamp(min=1e-12)
+        n_mag = torch.sqrt(dn_x**2 + dn_y**2).clamp(min=1e-12)
         nx = dn_x / n_mag
         ny = dn_y / n_mag
 
@@ -650,7 +661,7 @@ def force_virtual_work(
         dn_x = -(torch.roll(s, -1, dims=2) - torch.roll(s, 1, dims=2)) / 2.0
         dn_y = -(torch.roll(s, -1, dims=1) - torch.roll(s, 1, dims=1)) / 2.0
         dn_z = -(torch.roll(s, -1, dims=0) - torch.roll(s, 1, dims=0)) / 2.0
-        n_mag = torch.sqrt(dn_x ** 2 + dn_y ** 2 + dn_z ** 2).clamp(min=1e-12)
+        n_mag = torch.sqrt(dn_x**2 + dn_y**2 + dn_z**2).clamp(min=1e-12)
         nx = dn_x / n_mag
         ny = dn_y / n_mag
         nz = dn_z / n_mag
@@ -671,6 +682,7 @@ def force_virtual_work(
 # ---------------------------------------------------------------------------
 # 5. Immersed Boundary Direct Forcing
 # ---------------------------------------------------------------------------
+
 
 def force_immersed_boundary(
     f: torch.Tensor,
@@ -757,6 +769,7 @@ def force_immersed_boundary(
 # Comparison utility
 # ---------------------------------------------------------------------------
 
+
 class ForceResult:
     """Container for force computation results from multiple methods."""
 
@@ -770,8 +783,7 @@ class ForceResult:
         lines.append("  " + "-" * 63)
         for method, forces in self.results.items():
             lines.append(
-                f"  {method:<25s} {forces['fx']:>12.6f} "
-                f"{forces['fy']:>12.6f} {forces['fz']:>12.6f}"
+                f"  {method:<25s} {forces['fx']:>12.6f} {forces['fy']:>12.6f} {forces['fz']:>12.6f}"
             )
         return "\n".join(lines)
 
@@ -816,9 +828,7 @@ def compare_force_methods(
             f, solid, near, method="galilean", lattice=lattice
         )
     if "mem_bfl" in methods:
-        results["mem_bfl"] = force_momentum_exchange(
-            f, solid, near, method="bfl", lattice=lattice
-        )
+        results["mem_bfl"] = force_momentum_exchange(f, solid, near, method="bfl", lattice=lattice)
     if "stress" in methods:
         results["stress"] = force_stress_integration(
             f, solid, near, nu=nu, tau=tau, lattice=lattice
@@ -828,13 +838,9 @@ def compare_force_methods(
             f, solid, near, extrap="quadratic", lattice=lattice
         )
     if "virtual_work" in methods:
-        results["virtual_work"] = force_virtual_work(
-            f, solid, near, lattice=lattice
-        )
+        results["virtual_work"] = force_virtual_work(f, solid, near, lattice=lattice)
     if "ib" in methods:
-        results["ib"] = force_immersed_boundary(
-            f, solid, near, lattice=lattice
-        )
+        results["ib"] = force_immersed_boundary(f, solid, near, lattice=lattice)
 
     return ForceResult(results)
 
@@ -843,15 +849,16 @@ def compare_force_methods(
 # Helper functions
 # ---------------------------------------------------------------------------
 
+
 def _near_wall_mask_2d(solid: torch.Tensor) -> torch.Tensor:
     """Near-wall fluid mask for 2-D: fluid cells adjacent to solid."""
     fluid = ~solid
     near = torch.zeros_like(fluid)
     # A fluid cell is near-wall if any of its 4 face-neighbours is solid
-    near[1:, :] |= solid[:-1, :]   # solid below
-    near[:-1, :] |= solid[1:, :]   # solid above
-    near[:, 1:] |= solid[:, :-1]   # solid to the left
-    near[:, :-1] |= solid[:, 1:]   # solid to the right
+    near[1:, :] |= solid[:-1, :]  # solid below
+    near[:-1, :] |= solid[1:, :]  # solid above
+    near[:, 1:] |= solid[:, :-1]  # solid to the left
+    near[:, :-1] |= solid[:, 1:]  # solid to the right
     return near & fluid
 
 

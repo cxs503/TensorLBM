@@ -3,6 +3,7 @@
 Encapsulates the pretraining (main14) and fine-tuning (main38) workflows
 as callable library functions with dataclass-based configuration.
 """
+
 from __future__ import annotations
 
 import csv
@@ -38,9 +39,11 @@ from .suboff_utils import (
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class SuboffTrainConfig:
     """Hyper-parameters for SUBOFF pretraining (main14-style)."""
+
     lr: float = 6e-4
     iters: int = 125_000
     batch_size: int = 4
@@ -54,7 +57,7 @@ class SuboffTrainConfig:
     mask_ratio_mu: float = 0.55
     mask_ratio_std: float = 0.25
     # Data
-    data_dir: str = ""          # NPY snapshot directory
+    data_dir: str = ""  # NPY snapshot directory
     n_train: int = 1250
     n_test: int = 250
     # Device
@@ -64,27 +67,29 @@ class SuboffTrainConfig:
 @dataclass(frozen=True)
 class SuboffFinetuneConfig:
     """Hyper-parameters for SUBOFF fine-tuning (main38-style)."""
+
     lr: float = 6e-4
     iters: int = 31_250
     batch_size: int = 1
     ckpt_every: int = 3125
     log_dir: str = "./"
     resume: bool = True
-    path_to_resume: str = ""    # Pretrained checkpoint path
+    path_to_resume: str = ""  # Pretrained checkpoint path
     # Mask ratio sampling
     mask_ratio_min: float = 0.49
     mask_ratio_max: float = 0.99
     mask_ratio_mu: float = 0.55
     mask_ratio_std: float = 0.25
     # Data
-    data_dir: str = ""          # Fine-tuning NPY snapshot directory
-    n_train: int = 3            # Fine-tuning uses fewer snapshots
+    data_dir: str = ""  # Fine-tuning NPY snapshot directory
+    n_train: int = 3  # Fine-tuning uses fewer snapshots
     n_test: int = 2
     # Device
     device: str = field(default_factory=default_suboff_device)
 
 
 # ── Data loading ─────────────────────────────────────────────────────────────
+
 
 def _load_npy_channel(data_dir: str, channel: str, indices: list[int]) -> torch.Tensor:
     """Load NPY snapshots for one channel at given time indices.
@@ -115,11 +120,13 @@ def _load_npy_channel_ori27(data_dir: str, channel: str, indices: list[int]) -> 
         arr = np.load(os.path.join(ch_dir, f"{idx}.npy")).astype(np.float32)
         arr = arr[49:149, :, 49:149]
         for j in range(100):
-            result[i, j * 5000:(j + 1) * 5000] = arr[:, :, j].flatten()
+            result[i, j * 5000 : (j + 1) * 5000] = arr[:, :, j].flatten()
     return torch.as_tensor(result, dtype=torch.float32).unsqueeze(dim=-1)
 
 
-def _load_npy_channel_ori28_addition(data_dir: str, channel: str, indices: list[int]) -> torch.Tensor:
+def _load_npy_channel_ori28_addition(
+    data_dir: str, channel: str, indices: list[int]
+) -> torch.Tensor:
     """Load NPY snapshots for ori28_addition (50 XZ slices of 10000 points each)."""
     ch_dir = os.path.join(data_dir, channel)
     result = np.empty((len(indices), 500_000), dtype=np.float32)
@@ -127,12 +134,13 @@ def _load_npy_channel_ori28_addition(data_dir: str, channel: str, indices: list[
         arr = np.load(os.path.join(ch_dir, f"{idx}.npy")).astype(np.float32)
         arr = arr[49:149, :, 49:149]
         for j in range(50):
-            result[i, j * 10000:(j + 1) * 10000] = arr[:, j, :].flatten()
+            result[i, j * 10000 : (j + 1) * 10000] = arr[:, j, :].flatten()
     return torch.as_tensor(result, dtype=torch.float32).unsqueeze(dim=-1)
 
 
-def _load_multi_re_data(data_dir: str, n_train: int, n_test: int,
-                        load_funcs: list) -> tuple[torch.Tensor, torch.Tensor]:
+def _load_multi_re_data(
+    data_dir: str, n_train: int, n_test: int, load_funcs: list
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Load 3 Re-group data and merge into [3, n, 500000, 4] tensors.
 
     Args:
@@ -148,7 +156,9 @@ def _load_multi_re_data(data_dir: str, n_train: int, n_test: int,
     train_indices = list(range(n_train))
     # Determine total available snapshots from the p directory
     p_dir = os.path.join(data_dir, "p")
-    total_snaps = len([f for f in os.listdir(p_dir) if f.endswith(".npy")]) if os.path.isdir(p_dir) else 1500
+    total_snaps = (
+        len([f for f in os.listdir(p_dir) if f.endswith(".npy")]) if os.path.isdir(p_dir) else 1500
+    )
     # Test indices start after training data, capped by total available
     test_start = min(n_train, total_snaps - n_test)
     test_indices = list(range(test_start, test_start + n_test))
@@ -161,12 +171,12 @@ def _load_multi_re_data(data_dir: str, n_train: int, n_test: int,
         train_parts = [func(data_dir, ch, train_indices) for ch in channels]
         train_cat = torch.cat(train_parts, dim=-1)  # [n_train, 500000, 4]
         test_parts = [func(data_dir, ch, test_indices) for ch in channels]
-        test_cat = torch.cat(test_parts, dim=-1)    # [n_test, 500000, 4]
+        test_cat = torch.cat(test_parts, dim=-1)  # [n_test, 500000, 4]
         all_train.append(train_cat)
         all_test.append(test_cat)
 
     train_data = torch.stack(all_train)  # [3, n_train, 500000, 4]
-    test_data = torch.stack(all_test)    # [3, n_test, 500000, 4]
+    test_data = torch.stack(all_test)  # [3, n_test, 500000, 4]
     return train_data, test_data
 
 
@@ -175,13 +185,17 @@ def _load_train_data_pretrain(cfg: SuboffTrainConfig):
     from .suboff_dataset import CylinderDatasetMultiRe14
 
     train_data, test_data = _load_multi_re_data(
-        cfg.data_dir, cfg.n_train, cfg.n_test,
+        cfg.data_dir,
+        cfg.n_train,
+        cfg.n_test,
         [_load_npy_channel_ori27, _load_npy_channel, _load_npy_channel_ori28_addition],
     )
     tw = 1
     train_dataset = CylinderDatasetMultiRe14(train_data, tw, push_forward=0)
     test_dataset = CylinderDatasetMultiRe14(test_data, tw, push_forward=0)
-    train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True, drop_last=True)
+    train_loader = DataLoader(
+        train_dataset, batch_size=cfg.batch_size, shuffle=True, drop_last=True
+    )
     test_loader = DataLoader(test_dataset, batch_size=cfg.batch_size, shuffle=False, drop_last=True)
     return train_loader, test_loader
 
@@ -192,18 +206,23 @@ def _load_train_data_finetune(cfg: SuboffFinetuneConfig):
 
     # Fine-tuning uses same data layout but different n_train/n_test
     train_data, test_data = _load_multi_re_data(
-        cfg.data_dir, cfg.n_train, cfg.n_test,
+        cfg.data_dir,
+        cfg.n_train,
+        cfg.n_test,
         [_load_npy_channel_ori27, _load_npy_channel, _load_npy_channel_ori28_addition],
     )
     tw = 1
     train_dataset = CylinderDatasetMultiRe14(train_data, tw, push_forward=0)
     test_dataset = CylinderDatasetMultiRe14(test_data, tw, push_forward=0)
-    train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True, drop_last=True)
+    train_loader = DataLoader(
+        train_dataset, batch_size=cfg.batch_size, shuffle=True, drop_last=True
+    )
     test_loader = DataLoader(test_dataset, batch_size=cfg.batch_size, shuffle=False, drop_last=True)
     return train_loader, test_loader
 
 
 # ── Position coordinates ────────────────────────────────────────────────────
+
 
 def _prepare_positions(batch_size: int, device: torch.device):
     """Prepare 3 sets of position coordinates for the 3 data groups."""
@@ -225,9 +244,11 @@ def _prepare_positions(batch_size: int, device: torch.device):
 
 # ── Mask ratio generator ────────────────────────────────────────────────────
 
+
 def _make_mask_ratio_generator(cfg):
     """Create truncated normal mask ratio sampler."""
     import scipy.stats as stats
+
     return stats.truncnorm(
         (cfg.mask_ratio_min - cfg.mask_ratio_mu) / cfg.mask_ratio_std,
         (cfg.mask_ratio_max - cfg.mask_ratio_mu) / cfg.mask_ratio_std,
@@ -238,12 +259,22 @@ def _make_mask_ratio_generator(cfg):
 
 # ── Shared training loop ────────────────────────────────────────────────────
 
+
 def _run_training_loop(
-    encoder, decoder, enc_optim, enc_scheduler,
-    train_loader, test_loader,
-    pos_all1, pos_all2, pos_all3,
+    encoder,
+    decoder,
+    enc_optim,
+    enc_scheduler,
+    train_loader,
+    test_loader,
+    pos_all1,
+    pos_all2,
+    pos_all3,
     mask_ratio_generator,
-    cfg, checkpoint_dir, log_prefix, logger,
+    cfg,
+    checkpoint_dir,
+    log_prefix,
+    logger,
     progress_callback=None,
 ) -> dict[str, Any]:
     """Core training loop shared by pretraining and fine-tuning.
@@ -312,9 +343,9 @@ def _run_training_loop(
         num1 = random.randint(0, 99)
         num2 = random.randint(0, 99)
         num3 = random.randint(0, 49)
-        x1 = x1[:, :, num1 * 5000:(num1 + 1) * 5000, :]
-        x2 = x2[:, :, num2 * 5000:(num2 + 1) * 5000, :]
-        x3 = x3[:, :, num3 * 10000:(num3 + 1) * 10000, :]
+        x1 = x1[:, :, num1 * 5000 : (num1 + 1) * 5000, :]
+        x2 = x2[:, :, num2 * 5000 : (num2 + 1) * 5000, :]
+        x3 = x3[:, :, num3 * 10000 : (num3 + 1) * 10000, :]
         temp = torch.cat((x1, x2, x3), dim=2)
 
         # Random mask sampling
@@ -324,9 +355,9 @@ def _run_training_loop(
         x = temp[:, :, index, :]
         y = temp.squeeze(dim=1)
 
-        pos1 = pos_all1[:, num1 * 5000:(num1 + 1) * 5000, :]
-        pos2 = pos_all2[:, num2 * 5000:(num2 + 1) * 5000, :]
-        pos3 = pos_all3[:, num3 * 10000:(num3 + 1) * 10000, :]
+        pos1 = pos_all1[:, num1 * 5000 : (num1 + 1) * 5000, :]
+        pos2 = pos_all2[:, num2 * 5000 : (num2 + 1) * 5000, :]
+        pos3 = pos_all3[:, num3 * 10000 : (num3 + 1) * 10000, :]
         pos = torch.cat((pos1, pos2, pos3), dim=1)
         prop_pos = pos
         input_pos = pos[:, index, :]
@@ -355,19 +386,22 @@ def _run_training_loop(
             csv.writer(f).writerow([n_iter, loss_val * 1e4])
 
         pbar.set_description(
-            f"loss(1e-4):{loss_val*1e4:.3f}|mse(1e-4):{mse_val*1e4:.3f}|lr:{enc_optim.param_groups[0]['lr']:.3e}|n:{num}")
+            f"loss(1e-4):{loss_val * 1e4:.3f}|mse(1e-4):{mse_val * 1e4:.3f}|lr:{enc_optim.param_groups[0]['lr']:.3e}|n:{num}"
+        )
         pbar.update(1)
 
         # Live progress callback
         if progress_callback:
-            progress_callback({
-                "phase": "training",
-                "epoch": n_iter,
-                "total": cfg.iters,
-                "loss": loss_val * 1e4,
-                "mse": mse_val * 1e4,
-                "lr": enc_optim.param_groups[0]['lr'],
-            })
+            progress_callback(
+                {
+                    "phase": "training",
+                    "epoch": n_iter,
+                    "total": cfg.iters,
+                    "loss": loss_val * 1e4,
+                    "mse": mse_val * 1e4,
+                    "lr": enc_optim.param_groups[0]["lr"],
+                }
+            )
 
         n_iter += 1
 
@@ -375,15 +409,17 @@ def _run_training_loop(
         if (n_iter - 1) % cfg.ckpt_every == 0 or n_iter >= cfg.iters:
             # Set phase to testing BEFORE the test loop so frontend catches it
             if progress_callback:
-                progress_callback({
-                    "phase": "testing",
-                    "epoch": n_iter - 1,
-                    "total": cfg.iters,
-                    "loss": None,
-                    "mse": None,
-                    "lr": enc_optim.param_groups[0]['lr'],
-                    "best_loss": best_loss,
-                })
+                progress_callback(
+                    {
+                        "phase": "testing",
+                        "epoch": n_iter - 1,
+                        "total": cfg.iters,
+                        "loss": None,
+                        "mse": None,
+                        "lr": enc_optim.param_groups[0]["lr"],
+                        "best_loss": best_loss,
+                    }
+                )
             encoder.eval()
             decoder.eval()
             all_avg_loss = []
@@ -393,9 +429,9 @@ def _run_training_loop(
                 num1 = random.randint(0, 99)
                 num2 = random.randint(0, 99)
                 num3 = random.randint(0, 49)
-                x1 = x1[:, :, num1 * 5000:(num1 + 1) * 5000, :]
-                x2 = x2[:, :, num2 * 5000:(num2 + 1) * 5000, :]
-                x3 = x3[:, :, num3 * 10000:(num3 + 1) * 10000, :]
+                x1 = x1[:, :, num1 * 5000 : (num1 + 1) * 5000, :]
+                x2 = x2[:, :, num2 * 5000 : (num2 + 1) * 5000, :]
+                x3 = x3[:, :, num3 * 10000 : (num3 + 1) * 10000, :]
                 temp = torch.cat((x1, x2, x3), dim=2)
                 mask_rate = float(mask_ratio_generator.rvs(1)[0])
                 num = math.ceil(int(temp.shape[-2]) * (1 - mask_rate))
@@ -403,9 +439,9 @@ def _run_training_loop(
                 x = temp[:, :, index, :]
                 y = temp.squeeze(dim=1)
 
-                pos1 = pos_all1[:, num1 * 5000:(num1 + 1) * 5000, :]
-                pos2 = pos_all2[:, num2 * 5000:(num2 + 1) * 5000, :]
-                pos3 = pos_all3[:, num3 * 10000:(num3 + 1) * 10000, :]
+                pos1 = pos_all1[:, num1 * 5000 : (num1 + 1) * 5000, :]
+                pos2 = pos_all2[:, num2 * 5000 : (num2 + 1) * 5000, :]
+                pos3 = pos_all3[:, num3 * 10000 : (num3 + 1) * 10000, :]
                 pos = torch.cat((pos1, pos2, pos3), dim=1)
                 prop_pos = pos
                 input_pos = pos[:, index, :]
@@ -424,15 +460,17 @@ def _run_training_loop(
 
             # Testing phase callback
             if progress_callback:
-                progress_callback({
-                    "phase": "testing",
-                    "epoch": n_iter - 1,
-                    "total": cfg.iters,
-                    "loss": test_avg,
-                    "mse": None,
-                    "lr": enc_optim.param_groups[0]['lr'],
-                    "best_loss": best_loss,
-                })
+                progress_callback(
+                    {
+                        "phase": "testing",
+                        "epoch": n_iter - 1,
+                        "total": cfg.iters,
+                        "loss": test_avg,
+                        "mse": None,
+                        "lr": enc_optim.param_groups[0]["lr"],
+                        "best_loss": best_loss,
+                    }
+                )
 
             if logger:
                 logger.info("Testing")
@@ -447,7 +485,9 @@ def _run_training_loop(
                 "enc_optim": enc_optim.state_dict(),
                 "enc_sched": enc_scheduler.state_dict(),
             }
-            save_checkpoint(ckpt, os.path.join(checkpoint_dir, f"model_checkpoint{n_iter - 1}.ckpt"))
+            save_checkpoint(
+                ckpt, os.path.join(checkpoint_dir, f"model_checkpoint{n_iter - 1}.ckpt")
+            )
             del ckpt
 
             if test_avg < best_loss:
@@ -467,6 +507,7 @@ def _run_training_loop(
 
 
 # ── Public API ───────────────────────────────────────────────────────────────
+
 
 def train_suboff(cfg: SuboffTrainConfig | None = None, progress_callback=None) -> dict[str, Any]:
     """Run SUBOFF pretraining (main14-style).
@@ -501,11 +542,16 @@ def train_suboff(cfg: SuboffTrainConfig | None = None, progress_callback=None) -
     # Optimizer + scheduler
     enc_optim = torch.optim.AdamW(
         list(encoder.parameters()) + list(decoder.parameters()),
-        lr=cfg.lr, weight_decay=1e-4,
+        lr=cfg.lr,
+        weight_decay=1e-4,
     )
     enc_scheduler = OneCycleLR(
-        enc_optim, max_lr=cfg.lr, total_steps=cfg.iters,
-        div_factor=1e4, pct_start=0.3, final_div_factor=1e4,
+        enc_optim,
+        max_lr=cfg.lr,
+        total_steps=cfg.iters,
+        div_factor=1e4,
+        pct_start=0.3,
+        final_div_factor=1e4,
     )
 
     mask_ratio_generator = _make_mask_ratio_generator(cfg)
@@ -513,16 +559,27 @@ def train_suboff(cfg: SuboffTrainConfig | None = None, progress_callback=None) -
     pos_all1, pos_all2, pos_all3 = _prepare_positions(cfg.batch_size, device)
 
     return _run_training_loop(
-        encoder, decoder, enc_optim, enc_scheduler,
-        train_loader, test_loader,
-        pos_all1, pos_all2, pos_all3,
-        mask_ratio_generator, cfg,
-        checkpoint_dir, "main14", logger,
+        encoder,
+        decoder,
+        enc_optim,
+        enc_scheduler,
+        train_loader,
+        test_loader,
+        pos_all1,
+        pos_all2,
+        pos_all3,
+        mask_ratio_generator,
+        cfg,
+        checkpoint_dir,
+        "main14",
+        logger,
         progress_callback=progress_callback,
     )
 
 
-def finetune_suboff(cfg: SuboffFinetuneConfig | None = None, progress_callback=None) -> dict[str, Any]:
+def finetune_suboff(
+    cfg: SuboffFinetuneConfig | None = None, progress_callback=None
+) -> dict[str, Any]:
     """Run SUBOFF fine-tuning (main38-style).
 
     Loads a pretrained checkpoint and fine-tunes on new Re工况 data.
@@ -546,7 +603,9 @@ def finetune_suboff(cfg: SuboffFinetuneConfig | None = None, progress_callback=N
         ckpt = load_checkpoint(pretrain_ckpt_path, map_location=device)
         encoder.load_state_dict(ckpt["encoder"], strict=False)
         decoder.load_state_dict(ckpt["decoder"], strict=False)
-        print(f"[Finetune] Load pretrain weight only: {pretrain_ckpt_path}, skip optimizer & scheduler")
+        print(
+            f"[Finetune] Load pretrain weight only: {pretrain_ckpt_path}, skip optimizer & scheduler"
+        )
 
     # 2. 重建冻结dataclass，强制关闭resume，让底层不再恢复优化器
     cfg = SuboffFinetuneConfig(
@@ -555,7 +614,7 @@ def finetune_suboff(cfg: SuboffFinetuneConfig | None = None, progress_callback=N
         batch_size=cfg.batch_size,
         ckpt_every=cfg.ckpt_every,
         log_dir=cfg.log_dir,
-        resume=False,       # 关键：关闭续训加载分支
+        resume=False,  # 关键：关闭续训加载分支
         path_to_resume="",  # 关键：清空路径，不触发resume逻辑
         mask_ratio_min=cfg.mask_ratio_min,
         mask_ratio_max=cfg.mask_ratio_max,
@@ -564,10 +623,9 @@ def finetune_suboff(cfg: SuboffFinetuneConfig | None = None, progress_callback=N
         data_dir=cfg.data_dir,
         n_train=cfg.n_train,
         n_test=cfg.n_test,
-        device=cfg.device
+        device=cfg.device,
     )
     # ===================== 新增代码块结束 =====================
-
 
     checkpoint_dir = os.path.join(cfg.log_dir, "model_ckpt38")
     ensure_dir(checkpoint_dir)
@@ -586,11 +644,16 @@ def finetune_suboff(cfg: SuboffFinetuneConfig | None = None, progress_callback=N
     # Optimizer + scheduler
     enc_optim = torch.optim.AdamW(
         list(encoder.parameters()) + list(decoder.parameters()),
-        lr=cfg.lr, weight_decay=1e-4,
+        lr=cfg.lr,
+        weight_decay=1e-4,
     )
     enc_scheduler = OneCycleLR(
-        enc_optim, max_lr=cfg.lr, total_steps=cfg.iters,
-        div_factor=1e4, pct_start=0.3, final_div_factor=1e4,
+        enc_optim,
+        max_lr=cfg.lr,
+        total_steps=cfg.iters,
+        div_factor=1e4,
+        pct_start=0.3,
+        final_div_factor=1e4,
     )
 
     mask_ratio_generator = _make_mask_ratio_generator(cfg)
@@ -598,10 +661,19 @@ def finetune_suboff(cfg: SuboffFinetuneConfig | None = None, progress_callback=N
     pos_all1, pos_all2, pos_all3 = _prepare_positions(cfg.batch_size, device)
 
     return _run_training_loop(
-        encoder, decoder, enc_optim, enc_scheduler,
-        train_loader, test_loader,
-        pos_all1, pos_all2, pos_all3,
-        mask_ratio_generator, cfg,
-        checkpoint_dir, "main38", logger,
+        encoder,
+        decoder,
+        enc_optim,
+        enc_scheduler,
+        train_loader,
+        test_loader,
+        pos_all1,
+        pos_all2,
+        pos_all3,
+        mask_ratio_generator,
+        cfg,
+        checkpoint_dir,
+        "main38",
+        logger,
         progress_callback=progress_callback,
     )

@@ -3,6 +3,7 @@
 Saves one macroscopic3d call (~9ms) by reusing (rho, ux, uy, uz)
 from the collision inside the wall function.
 """
+
 import torch
 from .turbulence import collide_smagorinsky_mrt3d, _neq_stress_norm_3d
 from .d3q19 import macroscopic3d, equilibrium3d
@@ -75,9 +76,12 @@ def fused_step(
     fluid = ~solid
     if near is None:
         near = fluid & (
-            torch.roll(solid, 1, 2) | torch.roll(solid, -1, 2)
-            | torch.roll(solid, 1, 1) | torch.roll(solid, -1, 1)
-            | torch.roll(solid, 1, 0) | torch.roll(solid, -1, 0)
+            torch.roll(solid, 1, 2)
+            | torch.roll(solid, -1, 2)
+            | torch.roll(solid, 1, 1)
+            | torch.roll(solid, -1, 1)
+            | torch.roll(solid, 1, 0)
+            | torch.roll(solid, -1, 0)
         )
 
     u_mag = torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)

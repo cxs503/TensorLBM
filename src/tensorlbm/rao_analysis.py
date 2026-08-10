@@ -338,11 +338,13 @@ def rao_peak_detection(
     peaks = []
     for i in range(1, len(rao_amplitude) - 1):
         if rao_amplitude[i] > rao_amplitude[i - 1] and rao_amplitude[i] > rao_amplitude[i + 1]:
-            peaks.append({
-                "omega": omega[i].item(),
-                "period": 2.0 * math.pi / omega[i].item() if omega[i] > 0 else float("inf"),
-                "amplitude": rao_amplitude[i].item(),
-            })
+            peaks.append(
+                {
+                    "omega": omega[i].item(),
+                    "period": 2.0 * math.pi / omega[i].item() if omega[i] > 0 else float("inf"),
+                    "amplitude": rao_amplitude[i].item(),
+                }
+            )
 
     # Sort by amplitude (descending)
     peaks.sort(key=lambda p: p["amplitude"], reverse=True)

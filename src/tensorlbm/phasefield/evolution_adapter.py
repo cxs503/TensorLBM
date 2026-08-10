@@ -18,7 +18,9 @@ from ..d3q19 import equilibrium3d
 D3Q19_POPULATIONS = 19
 COLLISION_ONLY_STAGE = "collision_only"
 NO_STREAMING_BOUNDARY_WITHHELD = "no_streaming_boundary_withheld"
-_PERIODIC_DIFFERENTIAL_OPERATOR = "periodic finite-difference operator internal to production free_energy_step_3d"
+_PERIODIC_DIFFERENTIAL_OPERATOR = (
+    "periodic finite-difference operator internal to production free_energy_step_3d"
+)
 
 
 def init_free_energy_g_3d(phi: torch.Tensor) -> torch.Tensor:
@@ -136,7 +138,9 @@ def initialize_free_energy_collision_only_state(phi: torch.Tensor) -> FreeEnergy
     )
 
 
-def _diagnostic(step: int, state: FreeEnergyCollisionOnlyState) -> FreeEnergyCollisionOnlyDiagnostic:
+def _diagnostic(
+    step: int, state: FreeEnergyCollisionOnlyState
+) -> FreeEnergyCollisionOnlyDiagnostic:
     phi = state.g.sum(dim=0)
     return FreeEnergyCollisionOnlyDiagnostic(
         step=step,

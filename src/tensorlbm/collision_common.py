@@ -33,6 +33,7 @@ For BFL and wall-function treatments, use the ``wall_treatment`` parameter
 of :func:`lbm_step_correct` (``'bfl'`` or ``'wf'``) rather than a different
 collision function.
 """
+
 from __future__ import annotations
 
 # ------------------------------------------------------------------ #

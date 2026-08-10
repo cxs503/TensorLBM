@@ -13,6 +13,7 @@ Usage
         --nx 60 --ny 30 --nz 30 --radius 4 --n-steps 100 --output-interval 50 \\
         --run-name smoke --overwrite
 """
+
 from __future__ import annotations
 
 import argparse
@@ -95,9 +96,7 @@ class SphereFlowD3Q27Config:
         if self.u_in <= 0.0 or self.re <= 0.0 or self.radius <= 0.0:
             raise ValueError("u_in, re, and radius must be > 0")
         if self.tau <= 0.5:
-            raise ValueError(
-                f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/radius"
-            )
+            raise ValueError(f"Invalid tau={self.tau:.4f}; increase re or reduce u_in/radius")
 
     def resolved_run_name(self) -> str:
         if self.run_name:
@@ -189,9 +188,7 @@ def run_sphere_flow_d3q27(config: SphereFlowD3Q27Config) -> Path:
 
     step_range = range(1, config.n_steps + 1)
     step_iter = (
-        _tqdm(step_range, desc="D3Q27 sphere flow", unit="step")
-        if _TQDM_AVAILABLE
-        else step_range
+        _tqdm(step_range, desc="D3Q27 sphere flow", unit="step") if _TQDM_AVAILABLE else step_range
     )
     for step in step_iter:
         f = collide_mrt27(f, tau=config.tau) if config.use_mrt else collide_bgk27(f, tau=config.tau)
@@ -238,20 +235,14 @@ def run_sphere_flow_d3q27(config: SphereFlowD3Q27Config) -> Path:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Run a D3Q27 sphere-flow LBM demonstration."
-    )
+    parser = argparse.ArgumentParser(description="Run a D3Q27 sphere-flow LBM demonstration.")
     parser.add_argument("--nx", type=int, default=120, help="Grid length (x)")
     parser.add_argument("--ny", type=int, default=60, help="Grid height (y)")
     parser.add_argument("--nz", type=int, default=60, help="Grid depth  (z)")
-    parser.add_argument(
-        "--u-in", dest="u_in", type=float, default=0.06, help="Inlet velocity"
-    )
+    parser.add_argument("--u-in", dest="u_in", type=float, default=0.06, help="Inlet velocity")
     parser.add_argument("--re", type=float, default=50.0, help="Target Reynolds number")
     parser.add_argument("--radius", type=float, default=8.0, help="Sphere radius")
-    parser.add_argument(
-        "--n-steps", dest="n_steps", type=int, default=500, help="Simulation steps"
-    )
+    parser.add_argument("--n-steps", dest="n_steps", type=int, default=500, help="Simulation steps")
     parser.add_argument(
         "--output-interval",
         type=int,
@@ -259,12 +250,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Diagnostic and image cadence",
     )
     parser.add_argument("--output-root", default="outputs", help="Output root directory")
-    parser.add_argument(
-        "--run-name", default=None, help="Override deterministic run folder name"
-    )
+    parser.add_argument("--run-name", default=None, help="Override deterministic run folder name")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument(
-        "--device", choices=["cpu", "cuda"], default="cpu", help="Execution device"
+        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
     )
     parser.add_argument(
         "--overwrite",

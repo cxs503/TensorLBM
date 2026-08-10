@@ -1,4 +1,5 @@
 """Smoke tests for the rotating-cylinder (Magnus) runner."""
+
 from __future__ import annotations
 
 import json

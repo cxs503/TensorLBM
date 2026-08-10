@@ -5,6 +5,7 @@ Verifies the composable D3Q7 passive-scalar LBM step (D3Q7 + D3Q19/D3Q27).
 Contract tests verify operator algebra (shape, finite, scalar conservation,
 equilibrium identity, source term), NOT scalar transport physics correctness.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -26,6 +27,7 @@ TAU_D = 0.8  # > 0.5
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _f3d19(nz=4, ny=6, nx=8, u_mag=0.04) -> torch.Tensor:
     rho = torch.rand((nz, ny, nx)) + 0.5
@@ -54,6 +56,7 @@ def _g_scalar(nz=4, ny=6, nx=8, phi_mag=1.0, u_mag=0.04) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Equilibrium
 # ---------------------------------------------------------------------------
+
 
 class TestScalarEquilibrium:
     def test_shape(self) -> None:
@@ -88,6 +91,7 @@ class TestScalarEquilibrium:
 # ---------------------------------------------------------------------------
 # Collision
 # ---------------------------------------------------------------------------
+
 
 class TestScalarCollision:
     def test_preserves_shape(self) -> None:
@@ -151,6 +155,7 @@ class TestScalarCollision:
 # Streaming
 # ---------------------------------------------------------------------------
 
+
 class TestScalarStreaming:
     def test_preserves_shape(self) -> None:
         g = _g_scalar()
@@ -174,6 +179,7 @@ class TestScalarStreaming:
 # Macroscopic recovery
 # ---------------------------------------------------------------------------
 
+
 class TestScalarMacroscopic:
     def test_recovers_scalar(self) -> None:
         nz, ny, nx = 4, 6, 8
@@ -189,6 +195,7 @@ class TestScalarMacroscopic:
 # ---------------------------------------------------------------------------
 # Combined passive_scalar_step
 # ---------------------------------------------------------------------------
+
 
 class TestPassiveScalarStep:
     @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])
@@ -223,8 +230,7 @@ class TestPassiveScalarStep:
         g = _g_scalar()
         phi_before = scalar_macroscopic_3d(g)
         source = torch.ones_like(phi_before) * 0.01
-        _, phi_after = passive_scalar_step(f, g, tau_d=TAU_D, lattice=lattice,
-                                            source=source)
+        _, phi_after = passive_scalar_step(f, g, tau_d=TAU_D, lattice=lattice, source=source)
         assert phi_after.sum() > phi_before.sum()
 
     def test_rejects_unknown_lattice(self) -> None:
@@ -237,6 +243,7 @@ class TestPassiveScalarStep:
 # ---------------------------------------------------------------------------
 # Composability
 # ---------------------------------------------------------------------------
+
 
 class TestComposability:
     @pytest.mark.parametrize("lattice", ["D3Q19", "D3Q27"])

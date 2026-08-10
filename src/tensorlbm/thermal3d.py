@@ -4,6 +4,7 @@ Implements a double-distribution-function (DDF) thermal LBM in which the
 hydrodynamics are solved on D3Q19 and the temperature field is solved on a
 passive-scalar D3Q7 lattice following He et al. (1998) and Peng et al. (2003).
 """
+
 from __future__ import annotations
 
 import functools
@@ -92,7 +93,7 @@ def equilibrium_thermal_3d(
     cy = c[:, 1].view(7, 1, 1, 1).float()
     cz = c[:, 2].view(7, 1, 1, 1).float()
     cu = cx * ux.unsqueeze(0) + cy * uy.unsqueeze(0) + cz * uz.unsqueeze(0)
-    return w * T.unsqueeze(0) * (1.0 + 3.0 * cu)
+    return w * T.unsqueeze(0) * (1.0 + 4.0 * cu)
 
 
 def collide_thermal_bgk_3d(
@@ -181,7 +182,7 @@ def apply_buoyancy_force_3d(
     """
     c, w = _d3q19_constants(f.device)
     rho, _, _, _ = macroscopic3d(f)
-    F_y = rho * beta * (T - T_ref) * g_y
+    F_y = -rho * beta * (T - T_ref) * g_y
     cy = c[:, 1].view(19, 1, 1, 1)
     w_view = w.view(19, 1, 1, 1)
     return f + w_view * 3.0 * cy * F_y.unsqueeze(0)
@@ -236,9 +237,9 @@ def _apply_temperature_boundaries_3d(
     g_new[:, -1, :, :] = g_new[:, -2, :, :]
 
     zeros = torch.zeros_like(g_new[0, :, :, 0]).unsqueeze(-1)
-    g_new[:, :, :, 0] = equilibrium_thermal_3d(
-        torch.full_like(zeros, T_hot), zeros, zeros, zeros
-    )[:, :, :, 0]
+    g_new[:, :, :, 0] = equilibrium_thermal_3d(torch.full_like(zeros, T_hot), zeros, zeros, zeros)[
+        :, :, :, 0
+    ]
     g_new[:, :, :, -1] = equilibrium_thermal_3d(
         torch.full_like(zeros, T_cold), zeros, zeros, zeros
     )[:, :, :, 0]

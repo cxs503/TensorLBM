@@ -1,0 +1,83 @@
+{
+  "schema": "tensorlbm-natural-kbc-compile-assessment-v1",
+  "status": "kernel_and_full_step_gates_passed_longtime_pending",
+  "physical_validation": false,
+  "platform": {
+    "device": "NVIDIA GeForce RTX 3090",
+    "torch_version": "2.7.1+cu126",
+    "cells": 524288,
+    "shape_qzyx": [19, 16, 128, 256],
+    "tau_sequence": [0.50324, 0.50162, 0.500324, 0.500162]
+  },
+  "python_scalar_tau_control": {
+    "unique_graphs": 4,
+    "first_compile_seconds": 9.63629983109422,
+    "additional_tau_compile_seconds": [
+      8.03303228598088,
+      4.997735678916797,
+      4.109847254818305
+    ],
+    "additional_compile_total_seconds": 17.140615219715983,
+    "decision": "rejected_for_viscosity_ramps",
+    "reason": "Every distinct Python float tau generated a separate graph."
+  },
+  "tensor_tau_candidate": {
+    "unique_graphs": 1,
+    "initial_compile_seconds": 10.998793181031942,
+    "subsequent_mean_seconds": 0.0017988062463700771,
+    "eager_seconds": 0.2470162499230355,
+    "steady_state_speedup_over_eager": 137.32232163497594,
+    "eager_peak_allocated_bytes": 506995712,
+    "compiled_steady_peak_allocated_bytes": 335555072,
+    "peak_allocation_reduction_pct": 33.8150078870884,
+    "maximum_absolute_difference": 1.4901161193847656e-7,
+    "admissible_equivalence_tolerance": 2.0e-7,
+    "one_step_equivalence_pass": true,
+    "tau_graph_reuse_pass": true
+  },
+  "implementation": {
+    "common_executor": "tensorlbm.chunked_collision.NaturalKBCCollisionExecutor",
+    "validated_wrapper": "tensorlbm.entropic_kbc.collide_natural_kbc_d3q19",
+    "tensor_tau_kernel": "tensorlbm.entropic_kbc._collide_natural_kbc_d3q19_unchecked",
+    "suboff_switch": "--compile-natural-kbc",
+    "checkpoint_signature_records_switch": true
+  },
+  "full_four_level_step_gate": {
+    "configuration": "AFF-1 L90-L180-L360-L720, 17,391,432 allocated cells, bounded collision chunks and low-memory wall path",
+    "completed_root_steps": 1,
+    "finite": true,
+    "force_samples_observed": 8,
+    "force_samples_expected": 8,
+    "minimum_population": 0.023070435971021652,
+    "maximum_speed": 0.060010235756635666,
+    "maximum_positivity_limited_fraction": 0.0,
+    "maximum_reflux_applied_correction_fraction": 2.186580516649883e-8,
+    "measured_peak_allocated_gib": 12.596677303314209,
+    "eager_low_memory_reference_peak_allocated_gib": 12.59660005569458,
+    "additional_peak_vs_eager_low_memory_gib": 0.000077247619629,
+    "integration_path_pass": true,
+    "physical_accuracy_assessed": false
+  },
+  "admission": {
+    "kernel_equivalence": true,
+    "full_four_level_step": true,
+    "production_trajectory": false,
+    "requirements_before_production_default": [
+      "Demonstrate dynamic-shape reuse across all AMR level slab shapes.",
+      "Compare eager and compiled multi-step conservation, population health and force trajectories.",
+      "Measure end-to-end steady-state speed after compile warm-up in a complete SUBOFF trajectory."
+    ]
+  },
+  "provenance": {
+    "scalar_tau_result": "results/amr_campaign_20260801/natural-kbc-compile-benchmark-r4.json",
+    "scalar_tau_result_sha256": "f8bd98185e8435c42a7ed0f8c1ce19bb10466b1751dbee3af4460cd213161227",
+    "scalar_tau_log_sha256": "ec2be477b90d963cb5751962092daba1d7ea4c56c877651b4946d1c4ad38ac58",
+    "tensor_tau_result": "results/amr_campaign_20260801/natural-kbc-compile-benchmark-r5-tensor-tau.json",
+    "tensor_tau_result_sha256": "306635d71126b9f93ff4c2aad0ba24d02b2a8833181d3c5b497976cc71839754",
+    "tensor_tau_log_sha256": "6172dcde6bd8ad3ab2d09cb01f4304bde063f0f338741eaf29b81263d89c916e",
+    "compiled_four_level_result": "results/amr_campaign_20260801/suboff-nested-v22-aff1-four-level-l90-chunked-allocation-r1.json",
+    "compiled_four_level_result_sha256": "90f216335f5471d57ee63aa0565cc3fe4ffb21a243595c8e481c7da7ff85300a",
+    "compiled_four_level_checkpoint_sha256": "ef035b7c4df5bd1ee8ea6cb3ff5d039ba521d65838cac0b17b45ccc811acd1a4",
+    "compiled_four_level_log_sha256": "61300eb88df920ce7795842e71681c08037fd2132ff30ff487975e4cedb37b22"
+  }
+}

@@ -4,6 +4,7 @@ This module is deliberately a narrow application facade over the existing
 D3Q19 MRT kernels.  Setup owns metadata validation and plan binding; the step
 loop owns only prebound numerical work and same-phase observations.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -32,7 +33,12 @@ _POPULATION_SAMPLE_PHASE = "post_stream_pre_bounce_back"
 
 
 def _finite_positive(value: object, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or value <= 0.0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not isfinite(value)
+        or value <= 0.0
+    ):
         raise ValueError(f"{name} must be a finite positive scalar")
     return float(value)
 
@@ -65,7 +71,11 @@ class VoxelBodyGeometry:
     resolved_origin: tuple[float, float, float] = field(init=False)
 
     def __post_init__(self) -> None:
-        if not isinstance(self.mask, torch.Tensor) or self.mask.ndim != 3 or self.mask.dtype is not torch.bool:
+        if (
+            not isinstance(self.mask, torch.Tensor)
+            or self.mask.ndim != 3
+            or self.mask.dtype is not torch.bool
+        ):
             raise ValueError("mask must be a 3D bool torch.Tensor")
         if not bool(self.mask.any().item()):
             raise ValueError("mask must contain at least one solid voxel")
@@ -75,9 +85,15 @@ class VoxelBodyGeometry:
         # geometry at setup so caller-side in-place mutation cannot alter it.
         object.__setattr__(self, "mask", self.mask.clone())
         if self.reference_area is not None:
-            object.__setattr__(self, "reference_area", _finite_positive(self.reference_area, "reference_area"))
+            object.__setattr__(
+                self, "reference_area", _finite_positive(self.reference_area, "reference_area")
+            )
         if self.reference_length is not None:
-            object.__setattr__(self, "reference_length", _finite_positive(self.reference_length, "reference_length"))
+            object.__setattr__(
+                self,
+                "reference_length",
+                _finite_positive(self.reference_length, "reference_length"),
+            )
         if self.origin is None:
             zyx = self.mask.nonzero(as_tuple=False).to(dtype=torch.float64).mean(dim=0)
             resolved = (float(zyx[2].item()), float(zyx[1].item()), float(zyx[0].item()))
@@ -110,21 +126,34 @@ class FullyWettedFlowConfig:
             raise ValueError("Fully wetted flow R1 supports only TorchBackend CPU float32")
         if self.shape != tuple(self.geometry.mask.shape):
             raise ValueError("shape must equal geometry.mask.shape")
-        if (not isinstance(self.tau, (int, float)) or isinstance(self.tau, bool)
-                or not isfinite(self.tau) or self.tau <= 0.5):
+        if (
+            not isinstance(self.tau, (int, float))
+            or isinstance(self.tau, bool)
+            or not isfinite(self.tau)
+            or self.tau <= 0.5
+        ):
             raise ValueError("tau must be finite and > 0.5")
-        if (not isinstance(self.inlet_velocity, (int, float)) or isinstance(self.inlet_velocity, bool)
-                or not isfinite(self.inlet_velocity) or not 0.0 < self.inlet_velocity < 0.15):
+        if (
+            not isinstance(self.inlet_velocity, (int, float))
+            or isinstance(self.inlet_velocity, bool)
+            or not isfinite(self.inlet_velocity)
+            or not 0.0 < self.inlet_velocity < 0.15
+        ):
             raise ValueError("inlet_velocity must be finite and in (0, 0.15)")
         if not isinstance(self.steps, int) or isinstance(self.steps, bool) or self.steps < 1:
             raise ValueError("steps must be an integer >= 1")
         if not isinstance(self.capture_population_steps, tuple):
-            raise ValueError("capture_population_steps must be a tuple of unique ascending step indices")
-        if any(not isinstance(step, int) or isinstance(step, bool) or not 1 <= step <= self.steps
-               for step in self.capture_population_steps):
+            raise ValueError(
+                "capture_population_steps must be a tuple of unique ascending step indices"
+            )
+        if any(
+            not isinstance(step, int) or isinstance(step, bool) or not 1 <= step <= self.steps
+            for step in self.capture_population_steps
+        ):
             raise ValueError("capture_population_steps must contain step indices in [1, steps]")
         if tuple(sorted(self.capture_population_steps)) != self.capture_population_steps or (
-                len(set(self.capture_population_steps)) != len(self.capture_population_steps)):
+            len(set(self.capture_population_steps)) != len(self.capture_population_steps)
+        ):
             raise ValueError("capture_population_steps must be unique and ascending")
         if self.composition.lattice != "D3Q19":
             raise ValueError("Fully wetted flow R1 requires composition.lattice='D3Q19'")
@@ -154,7 +183,9 @@ class D3Q19PopulationSnapshot:
     _f: torch.Tensor = field(repr=False)
     ownership_hash: str
 
-    def __init__(self, step_index: int, sample_phase: str, f: torch.Tensor, ownership_hash: str) -> None:
+    def __init__(
+        self, step_index: int, sample_phase: str, f: torch.Tensor, ownership_hash: str
+    ) -> None:
         object.__setattr__(self, "step_index", step_index)
         object.__setattr__(self, "sample_phase", sample_phase)
         object.__setattr__(self, "_f", f.detach().clone())
@@ -192,7 +223,9 @@ def run_fully_wetted_flow(config: FullyWettedFlowConfig) -> FullyWettedFlowResul
     mask = geometry.mask.to(device=device)
     nz, ny, nx = config.shape
     wall_mask = make_channel_wall_mask_3d(nz, ny, nx, mask, device=device)
-    plan = TorchBackend().compile_d3q19_mrt(config.composition, float(config.tau), config.device_spec)
+    plan = TorchBackend().compile_d3q19_mrt(
+        config.composition, float(config.tau), config.device_spec
+    )
     u_in = float(config.inlet_velocity)
     steps = config.steps
     capture_steps = config.capture_population_steps
@@ -216,19 +249,31 @@ def run_fully_wetted_flow(config: FullyWettedFlowConfig) -> FullyWettedFlowResul
         # Actual production f after collision+stream and before retained
         # channel/bounce-back updates; no population is reconstructed.
         if step_index in capture_steps:
-            population_snapshots.append(D3Q19PopulationSnapshot(
-                step_index=step_index,
-                sample_phase=_POPULATION_SAMPLE_PHASE,
-                f=f.detach().clone(),
-                ownership_hash=population_ownership_hash,
-            ))
+            population_snapshots.append(
+                D3Q19PopulationSnapshot(
+                    step_index=step_index,
+                    sample_phase=_POPULATION_SAMPLE_PHASE,
+                    f=f.detach().clone(),
+                    ownership_hash=population_ownership_hash,
+                )
+            )
         f = apply_zou_he_channel_boundaries_3d(f, u_in, wall_mask, mask)
         density, ux, uy, uz = macroscopic3d(f)
-        finite = bool(torch.isfinite(f).all().item() and torch.isfinite(density).all().item()
-                      and torch.isfinite(ux).all().item() and torch.isfinite(uy).all().item()
-                      and torch.isfinite(uz).all().item())
-        force = cast(tuple[float, float, float], tuple(float(component.item()) for component in force_tensors))
-        moment = cast(tuple[float, float, float], tuple(float(component.item()) for component in moment_tensors))
+        finite = bool(
+            torch.isfinite(f).all().item()
+            and torch.isfinite(density).all().item()
+            and torch.isfinite(ux).all().item()
+            and torch.isfinite(uy).all().item()
+            and torch.isfinite(uz).all().item()
+        )
+        force = cast(
+            tuple[float, float, float],
+            tuple(float(component.item()) for component in force_tensors),
+        )
+        moment = cast(
+            tuple[float, float, float],
+            tuple(float(component.item()) for component in moment_tensors),
+        )
         if not finite:
             status = "FAILED_NONFINITE"
             break
