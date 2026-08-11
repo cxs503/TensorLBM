@@ -109,12 +109,24 @@ _D3Q19_MIRROR_Z = torch.tensor(
 )
 
 
-def bounce_back_cells_3d(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+def bounce_back_cells_3d(
+    f: torch.Tensor,
+    mask: torch.Tensor,
+    f_pre: torch.Tensor | None = None,
+) -> torch.Tensor:
     """Bounce-back reflection on selected cells (obstacle/walls) for D3Q19.
 
     Uses ``torch.where`` instead of clone + scatter to reduce the number of
     GPU kernel launches and avoid an intermediate boolean-indexed allocation.
+
+    ``f_pre`` (pre-collision state) is accepted for interface compatibility
+    with :func:`tensorlbm.lbm_step_correct.lbm_step_correct`, which passes it
+    as a keyword argument.  The plain half-way swap does not need it (the
+    caller is expected to have applied the NoDynamics restore already), so it
+    is ignored; callers that need f_pre-aware link handling should pass a
+    custom ``bounce_back_fn``.
     """
+    del f_pre  # accepted for API compatibility; not needed for the plain swap
     opp = OPPOSITE.to(f.device)  # (19,)
     # mask.unsqueeze(0) broadcasts (1, nz, ny, nx) → (19, nz, ny, nx)
     return torch.where(mask.unsqueeze(0), f[opp], f)
