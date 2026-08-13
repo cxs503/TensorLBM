@@ -3,6 +3,7 @@ import pytest
 import torch
 
 from tensorlbm.octree_boundary.geometry import (
+    SHELL_OUTSIDE,
     build_octree_shell,
     morton_encode,
     morton_decode,
@@ -53,6 +54,54 @@ def test_shell_builds_and_saves():
     assert shell.n_leaf > 0
     assert shell.stats["saving_fraction"] > 0.20
     assert shell.stats["saving_fraction"] > 0.5  # typical ~94%
+
+
+def test_parent_solid_contains_only_fully_embedded_cells():
+    """Cut cells are owned by the octree, never frozen on the parent L1."""
+    shape = (40, 42, 44)
+    center = (21.0, 20.0, 19.0)
+    radius = 9.0
+    shell = build_octree_shell(
+        shape=shape, center=center, radius=radius,
+        bl_thickness_cells=3, d_max=1, device="cpu",
+    )
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(shape[0], dtype=torch.float64) + 0.5,
+        torch.arange(shape[1], dtype=torch.float64) + 0.5,
+        torch.arange(shape[2], dtype=torch.float64) + 0.5,
+        indexing="ij",
+    )
+    offset = torch.stack((xx - center[0], yy - center[1], zz - center[2]), dim=-1).abs()
+    max_dist = ((offset + 0.5).square().sum(dim=-1)).sqrt()
+    expected = max_dist <= radius
+    assert shell._solid is not None
+    assert torch.equal(shell._solid, expected)
+    assert shell._shell_mask is not None
+    assert not bool((shell._solid & shell._shell_mask).any())
+
+
+def test_bfl_upstream_donors_are_real_shell_leaves():
+    """Cut parent cells must retain the BFL q<0.5 upstream fluid donor."""
+    shell = _sphere_shell(d_max=1)
+    opp = shell._opp
+    linear = shell.bfl_mask & (shell.q_field < 0.5)
+    # For the Bouzidi linear branch the donor is x-c_d, i.e. the opposite
+    # neighbour.  It must not be replaced by a shell-interface ghost value.
+    for direction in range(1, shell.Q):
+        active = linear[direction]
+        if bool(active.any()):
+            upstream = shell.neighbor_table[int(opp[direction]), active]
+            assert not bool((upstream == SHELL_OUTSIDE).any())
+
+
+@pytest.mark.parametrize("d_max", (1, 2))
+def test_terminal_leaves_are_all_fluid_centres(d_max: int):
+    """No centre-inside leaf may be advanced as a fluid LBM node."""
+    shell = _sphere_shell(d_max=d_max)
+    centre = torch.tensor(shell.meta["center"], dtype=torch.float32)
+    r2 = shell.meta["radius"] ** 2
+    dist2 = ((shell.leaf_center - centre) ** 2).sum(dim=1)
+    assert bool((dist2 > r2).all())
 
 
 def test_topology_checks_pass():
