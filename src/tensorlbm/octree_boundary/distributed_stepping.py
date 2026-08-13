@@ -364,15 +364,20 @@ def step_octree_shell_distributed(
         octree.f_leaf = populations
 
         # 2. all_gather full post-collision (Q, n_leaf).
+        #    TCCL 3.1.0 deadlocks on all_gather messages > ~4MB/rank (the
+        #    (27, n_leaf) tensor exceeds it for n_leaf > ~40k).  Chunk the
+        #    gather along the column axis so every message stays < 3MB.
         global_pc = torch.zeros(q, n_leaf, dtype=dtype, device=device)
         global_pc[:, local_indices] = post_collision
-        gathered = [torch.empty_like(global_pc) for _ in range(world_size)]
-        dist.all_gather(gathered, global_pc)
+        chunk_cols = max(1, int(3 * 1024 * 1024 // (q * torch.finfo(dtype).bits // 8)))
         full_pc = torch.zeros(q, n_leaf, dtype=dtype, device=device)
-        for r in range(world_size):
-            # Ranks own disjoint leaf columns -> summing the gathered copies
-            # reconstructs the full populations exactly.
-            full_pc = full_pc + gathered[r]
+        for c0 in range(0, n_leaf, chunk_cols):
+            c1 = min(c0 + chunk_cols, n_leaf)
+            piece = global_pc[:, c0:c1].contiguous()
+            gathered = [torch.empty_like(piece) for _ in range(world_size)]
+            dist.all_gather(gathered, piece)
+            for r in range(world_size):
+                full_pc[:, c0:c1] = full_pc[:, c0:c1] + gathered[r]
 
         # 3. ghost fill (this rank's rows) + stream + BFL.
         # _slice_ghost_plan stores *local* leaf enums in plan.leaf; the fill
@@ -417,11 +422,16 @@ def step_octree_shell_distributed(
     # Reconstruct the full f_leaf on every rank (disjoint local_indices).
     full_f = torch.zeros(q, n_leaf, dtype=dtype, device=device)
     full_f[:, local_indices] = octree.f_leaf
-    gathered_f = [torch.empty_like(full_f) for _ in range(world_size)]
-    dist.all_gather(gathered_f, full_f)
+    # TCCL deadlock guard: chunk the leaf gather (<3MB/msg).
+    chunk_cols2 = max(1, int(3 * 1024 * 1024 // (q * torch.finfo(dtype).bits // 8)))
     full_f = torch.zeros(q, n_leaf, dtype=dtype, device=device)
-    for r in range(world_size):
-        full_f = full_f + gathered_f[r]
+    for c0 in range(0, n_leaf, chunk_cols2):
+        c1 = min(c0 + chunk_cols2, n_leaf)
+        piece = full_f[:, c0:c1].contiguous()
+        gathered_f = [torch.empty_like(piece) for _ in range(world_size)]
+        dist.all_gather(gathered_f, piece)
+        for r in range(world_size):
+            full_f[:, c0:c1] = full_f[:, c0:c1] + gathered_f[r]
 
     ledger = None
     # Placeholders so ``restricted``/``cells`` are bound on every rank and
