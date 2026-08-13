@@ -1,4 +1,5 @@
 """Separate CPU/Gloo jobs prove exact bidirectional D3Q19 restart chaining."""
+
 from __future__ import annotations
 
 import os
@@ -8,7 +9,7 @@ from pathlib import Path
 import torch
 
 
-_WORKER = r'''
+_WORKER = r"""
 import hashlib
 import json
 import sys
@@ -84,9 +85,9 @@ if rank == 0:
     torch.save({"full": actual, "trace": trace}, result)
     print("D3Q19_BIDIRECTIONAL_CHAIN=" + json.dumps({"mode": mode, "last": trace[-1]}, sort_keys=True), flush=True)
 dist.destroy_process_group()
-'''
+"""
 
-_LOAD_WORKER = r'''
+_LOAD_WORKER = r"""
 import sys
 import torch.distributed as dist
 from tensorlbm.multi_gpu import D3Q19GlooTransport
@@ -99,28 +100,44 @@ except RuntimeError as exc:
     dist.destroy_process_group()
     raise SystemExit(0)
 raise AssertionError("invalid source checkpoint set was accepted")
-'''
+"""
 
 
-def _torchrun(root: Path, ranks: int, worker: Path, *args: Path | str) -> subprocess.CompletedProcess[str]:
+def _torchrun(
+    root: Path, ranks: int, worker: Path, *args: Path | str
+) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(root / "src") + os.pathsep + env.get("PYTHONPATH", "")
     return subprocess.run(
         ["torchrun", "--standalone", f"--nproc_per_node={ranks}", str(worker), *map(str, args)],
-        cwd=root, env=env, text=True, capture_output=True, timeout=180, check=False,
+        cwd=root,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=180,
+        check=False,
     )
 
 
-def test_three_to_two_to_new_three_rank_d3q19_restart_chain_is_exact_and_fail_closed(tmp_path: Path) -> None:
+def test_three_to_two_to_new_three_rank_d3q19_restart_chain_is_exact_and_fail_closed(
+    tmp_path: Path,
+) -> None:
     """Each generation is a new torchrun PG; both repartitions own all 19 populations."""
     root = Path(__file__).resolve().parents[1]
     worker, loader = tmp_path / "chain.py", tmp_path / "load.py"
     worker.write_text(_WORKER)
     loader.write_text(_LOAD_WORKER)
     checkpoint_a, checkpoint_b = tmp_path / "checkpoint-3", tmp_path / "checkpoint-2"
-    oracle, saved, middle, finished = (tmp_path / name for name in ("oracle.pt", "saved.pt", "middle.pt", "finished.pt"))
+    oracle, saved, middle, finished = (
+        tmp_path / name for name in ("oracle.pt", "saved.pt", "middle.pt", "finished.pt")
+    )
 
-    jobs = (("oracle3", 3, oracle), ("save3", 3, saved), ("middle2", 2, middle), ("finish3", 3, finished))
+    jobs = (
+        ("oracle3", 3, oracle),
+        ("save3", 3, saved),
+        ("middle2", 2, middle),
+        ("finish3", 3, finished),
+    )
     runs = {}
     for mode, ranks, output in jobs:
         run = _torchrun(root, ranks, worker, mode, checkpoint_a, checkpoint_b, output)
@@ -146,7 +163,11 @@ def test_three_to_two_to_new_three_rank_d3q19_restart_chain_is_exact_and_fail_cl
         victim = checkpoint / "rank-1.pt"
         pristine = torch.load(victim, weights_only=True)
         os.unlink(victim)
-        for mutation, expected in (("missing", "missing"), ("generation", "generation"), ("digest", "digest")):
+        for mutation, expected in (
+            ("missing", "missing"),
+            ("generation", "generation"),
+            ("digest", "digest"),
+        ):
             if mutation != "missing":
                 payload = dict(pristine)
                 if mutation == "generation":

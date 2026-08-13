@@ -1,4 +1,5 @@
 """Tests for the R1 PyTorch-only cold-path backend facade."""
+
 from __future__ import annotations
 
 import ast
@@ -44,7 +45,10 @@ def test_torch_backend_capabilities_are_cpu_float32_r1_only() -> None:
     assert "D3Q19 MRT" in capabilities.notes
 
 
-@pytest.mark.parametrize("spec", [DeviceSpec("cuda", "float32"), DeviceSpec("sdaa", "float32"), DeviceSpec("cpu", "float64")])
+@pytest.mark.parametrize(
+    "spec",
+    [DeviceSpec("cuda", "float32"), DeviceSpec("sdaa", "float32"), DeviceSpec("cpu", "float64")],
+)
 def test_validate_device_rejects_unverified_device_or_dtype(spec: DeviceSpec) -> None:
     with pytest.raises(ValueError, match="R1 supports only"):
         TorchBackend().validate_device(spec)
@@ -62,7 +66,10 @@ def test_compile_rejects_unsupported_device_dtype_and_composition() -> None:
 
 def test_compile_calls_existing_compiler_once_and_is_direct_path_equal() -> None:
     backend = TorchBackend()
-    with patch("tensorlbm.backends.torch_backend.compile_torch_d3q19_mrt_plan", wraps=compile_torch_d3q19_mrt_plan) as compiler:
+    with patch(
+        "tensorlbm.backends.torch_backend.compile_torch_d3q19_mrt_plan",
+        wraps=compile_torch_d3q19_mrt_plan,
+    ) as compiler:
         plan = backend.compile_d3q19_mrt(_composition(), 0.6, DeviceSpec("cpu", "float32"))
     assert compiler.call_count == 1
     initial = _state()
@@ -71,8 +78,14 @@ def test_compile_calls_existing_compiler_once_and_is_direct_path_equal() -> None
 
 def test_backend_has_no_step_or_hot_path_dispatch() -> None:
     assert "step" not in TorchBackend.__dict__
-    module = ast.parse(inspect.getsource(__import__("tensorlbm.backends.torch_backend", fromlist=["*"])))
-    class_node = next(node for node in module.body if isinstance(node, ast.ClassDef) and node.name == "TorchBackend")
+    module = ast.parse(
+        inspect.getsource(__import__("tensorlbm.backends.torch_backend", fromlist=["*"]))
+    )
+    class_node = next(
+        node
+        for node in module.body
+        if isinstance(node, ast.ClassDef) and node.name == "TorchBackend"
+    )
     method_names = {node.name for node in class_node.body if isinstance(node, ast.FunctionDef)}
     assert method_names == {"capabilities", "validate_device", "compile_d3q19_mrt"}
     names = {node.id for node in ast.walk(class_node) if isinstance(node, ast.Name)}
@@ -90,7 +103,16 @@ def test_lattice_adapter_is_cold_path_and_matches_existing_d3q19_constants() -> 
     assert torch.equal(constants["opposite"], OPPOSITE)
 
 
-@pytest.mark.parametrize("descriptor, spec", [(D3Q27, DeviceSpec("cpu", "float32")), (D3Q19, DeviceSpec("cuda", "float32")), (D3Q19, DeviceSpec("cpu", "float64"))])
-def test_lattice_adapter_rejects_everything_outside_r1(descriptor: object, spec: DeviceSpec) -> None:
+@pytest.mark.parametrize(
+    "descriptor, spec",
+    [
+        (D3Q27, DeviceSpec("cpu", "float32")),
+        (D3Q19, DeviceSpec("cuda", "float32")),
+        (D3Q19, DeviceSpec("cpu", "float64")),
+    ],
+)
+def test_lattice_adapter_rejects_everything_outside_r1(
+    descriptor: object, spec: DeviceSpec
+) -> None:
     with pytest.raises(ValueError):
         build_torch_lattice_constants(descriptor, spec)  # type: ignore[arg-type]

@@ -12,6 +12,7 @@ Reference:
   Spalart et al. (1997) "Comments on the feasibility of LES for wings,
   and on a hybrid RANS/LES approach"
 """
+
 import torch
 from typing import Optional, Tuple
 
@@ -86,6 +87,7 @@ def des_eddy_viscosity(
         nu_t: (nz, ny, nx) total eddy viscosity.
         separated: (nz, ny, nx) bool mask of separated cells.
     """
+
     # Strain rate tensor magnitude |S| = sqrt(2·S_ij·S_ij)
     # Central difference gradients
     def dx(f):
@@ -105,8 +107,7 @@ def des_eddy_viscosity(
     S23 = 0.5 * (dz(uy) + dy(uz))
 
     S_mag = torch.sqrt(
-        2.0 * (S11 * S11 + S22 * S22 + S33 * S33)
-        + 4.0 * (S12 * S12 + S13 * S13 + S23 * S23)
+        2.0 * (S11 * S11 + S22 * S22 + S33 * S33) + 4.0 * (S12 * S12 + S13 * S13 + S23 * S23)
     ).clamp(min=1e-12)
 
     # Smagorinsky: ν_t = (C_s·Δ)²·|S|, Δ = 1.0 (lattice unit)
@@ -144,6 +145,7 @@ def collide_des_mrt3d(
     tau_eff = tau_eff.clamp(max=2.0)
 
     from .turbulence import collide_smagorinsky_mrt3d
+
     # Use a workaround: call the standard MRT with modified tau
     # The standard function doesn't accept per-cell tau, so we
     # average or use a proxy.  Full implementation would require
@@ -180,8 +182,9 @@ def des_lbm_step(
     from .d3q19 import macroscopic3d
 
     rho, ux, uy, uz = macroscopic3d(f)
-    nu_t, separated = des_eddy_viscosity(ux, uy, uz, solid, nu, C_s=C_s,
-                                          separation_multiplier=sep_mult)
+    nu_t, separated = des_eddy_viscosity(
+        ux, uy, uz, solid, nu, C_s=C_s, separation_multiplier=sep_mult
+    )
 
     # Collision with enhanced viscosity (approximate: use mean τ_eff)
     tau = 3.0 * nu + 0.5
@@ -198,7 +201,7 @@ def des_lbm_step(
 
 
 # ── Test ──
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("DES model sketch compiled OK.")
     print("Key concept: detect separated cells → boost ν_t 5×")
     print("→ mimics turbulent mixing in recirculation zone")

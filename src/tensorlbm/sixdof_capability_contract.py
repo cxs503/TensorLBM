@@ -14,6 +14,7 @@ Audit scope (source files read, not docstring assertions):
     - ``tensorlbm/sixdof_common.py``    – solver-agnostic common 6-DOF interface
     - tests: ``test_sixdof_common.py``
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -92,13 +93,15 @@ _RegistryEntry = tuple[str, str, str | None, str | None, str]
 
 _REGISTRY: dict[str, _RegistryEntry] = {
     "symplectic_euler": (
-        IMPLEMENTED, VERIFICATION_CONTRACT_TESTED,
+        IMPLEMENTED,
+        VERIFICATION_CONTRACT_TESTED,
         "tensorlbm.sixdof_common.rigid_body_step",
         "test_sixdof_common.py: shape, zero-force identity, constant-force momentum, DOF constraints, quaternion normalisation",
         "Symplectic (semi-implicit) Euler Newton-Euler integrator with quaternion exponential-map update; DOF constraints supported.",
     ),
     "cummins": (
-        IMPLEMENTED, VERIFICATION_IMPLEMENTED_ONLY,
+        IMPLEMENTED,
+        VERIFICATION_IMPLEMENTED_ONLY,
         "tensorlbm.rigid_body_6dof.cummins_step",
         None,
         "Cummins time-domain equation with retardation-function convolution; requires radiation data and is not exposed through the common rigid_body_step interface.",
@@ -122,7 +125,8 @@ def _capability_for(integrator: str) -> SixDOFCapability:
             implementation_status=NO_IMPLEMENTATION,
             verification_level=VERIFICATION_NO_IMPLEMENTATION,
             status=WITHHELD_NO_IMPLEMENTATION,
-            entrypoint=None, test_evidence=None,
+            entrypoint=None,
+            test_evidence=None,
             note=f"No implementation found for 6-DOF integrator {integrator!r}.",
         )
     impl_status, verif_level, entrypoint, test_ev, note = entry
@@ -131,7 +135,9 @@ def _capability_for(integrator: str) -> SixDOFCapability:
         implementation_status=impl_status,
         verification_level=verif_level,
         status=_status_for(verif_level),
-        entrypoint=entrypoint, test_evidence=test_ev, note=note,
+        entrypoint=entrypoint,
+        test_evidence=test_ev,
+        note=note,
     )
 
 

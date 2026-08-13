@@ -8,6 +8,7 @@ interface before the implementation is written.  The common module must:
 * Not be bound to a specific solver.
 * Support D3Q19 and D3Q27.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -26,6 +27,7 @@ from tensorlbm.d3q27 import equilibrium27, macroscopic27
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_equilibrium(lattice: str, nz: int = 6, ny: int = 8, nx: int = 10) -> torch.Tensor:
     rho = torch.ones(nz, ny, nx)
@@ -54,6 +56,7 @@ def _q_for(lattice: str) -> int:
 # ---------------------------------------------------------------------------
 # compute_u_tau / compute_y_plus
 # ---------------------------------------------------------------------------
+
 
 class TestComputeUTauYPlus:
     """Wall-quantity computation helpers are lattice-agnostic."""
@@ -85,6 +88,7 @@ class TestComputeUTauYPlus:
 # ---------------------------------------------------------------------------
 # wall_function — shape and type contract
 # ---------------------------------------------------------------------------
+
 
 class TestWallFunctionShape:
     """wall_function returns f_corrected with the same shape as f."""
@@ -120,6 +124,7 @@ class TestWallFunctionShape:
 # ---------------------------------------------------------------------------
 # wall_function — physics contract
 # ---------------------------------------------------------------------------
+
 
 class TestWallFunctionPhysics:
     """wall_function applies a body force on near-wall cells only."""
@@ -167,6 +172,7 @@ class TestWallFunctionPhysics:
 # ---------------------------------------------------------------------------
 # Solver-agnostic combination test
 # ---------------------------------------------------------------------------
+
 
 class TestSolverAgnosticCombination:
     """wall_function can be combined with any collision/turbulence operator."""

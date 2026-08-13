@@ -65,8 +65,11 @@ def non_equilibrium_far_field_bc_3d(
 ) -> torch.Tensor | tuple[torch.Tensor, OpenBoundaryDiagnostics]:
     """Apply incoming-only non-equilibrium extrapolation on selected faces.
 
-    At ``x+`` the density is prescribed and velocity is extrapolated from the
-    adjacent interior plane.  Other faces use the complete far-field state.
+    At ``x+`` (outlet) both the density and the velocity are extrapolated from
+    the adjacent interior plane — i.e. a zero-gradient condition equivalent to
+    ``∂ρ/∂x ≈ 0`` / ``∂u/∂x ≈ 0`` — so pressure fluctuations in the wake are
+    not reflected back into the domain (NSCBC-like).  Other (inlet) faces use
+    the complete prescribed far-field state.
     """
     if f.ndim != 4:
         raise ValueError("f must have shape (Q,nz,ny,nx)")
@@ -92,14 +95,19 @@ def non_equilibrium_far_field_bc_3d(
         uz_i = (interior_values * c[:, 2].to(f.dtype).view(vector_shape)).sum(dim=0) / rho_i
         local_eq = equilibrium(rho_i, ux_i, uy_i, uz_i, device=f.device)
         if outlet:
+            # Outflow: extrapolate density AND velocity from the adjacent
+            # interior plane (zero-gradient / NSCBC dp/dx≈0).  This avoids
+            # forcing rho_far at the outlet, which would reflect wake pressure
+            # waves back upstream and bias high-Re drag statistics.
             target_ux = ux_i
             target_uy = uy_i
             target_uz = uz_i
+            target_rho = rho_i
         else:
             target_ux = torch.full_like(rho_i, u_in)
             target_uy = torch.full_like(rho_i, uy_far)
             target_uz = torch.full_like(rho_i, uz_far)
-        target_rho = torch.full_like(rho_i, rho_far)
+            target_rho = torch.full_like(rho_i, rho_far)
         target_eq = equilibrium(
             target_rho,
             target_ux,

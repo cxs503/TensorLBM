@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use TensorLBM in your research, please cite it as below."
+type: software
+title: "TensorLBM"
+version: "0.3.0"
+date-released: "2026-08-02"
+abstract: >
+  TensorLBM is a PyTorch-based Lattice Boltzmann Method (LBM) platform for
+  reproducible CFD research.  It covers D2Q9, D3Q19, and D3Q27 lattices with
+  BGK, MRT, TRT, RLBM, and Cumulant collision operators, adaptive mesh
+  refinement, DG-LBM hybrid solver, LES/RANS turbulence models, multiphase
+  flow, IBM, thermal LBM, and AI turbulence closure (MLP, FNO2d, Transformer).
+repository-code: "https://github.com/cxs503/TensorLBM"
+url: "https://github.com/cxs503/TensorLBM"
+license: GPL-3.0
+authors:
+  - family-names: "chuxuesen"
+    email: "cxs503@163.com"
+    alias: "cxs503"
+keywords:
+  - lattice boltzmann method
+  - computational fluid dynamics
+  - pytorch
+  - machine learning
+  - turbulence
+  - neural operator
+  - LBM

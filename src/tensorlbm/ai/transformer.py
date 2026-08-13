@@ -8,6 +8,7 @@ Pass ``backend="paddle"`` or ``backend="mindspore"`` to
 :func:`train_flow_transformer_self_supervised` to use a non-PyTorch framework.
 Set ``TENSORLBM_BACKEND`` in the environment for a process-wide default.
 """
+
 from __future__ import annotations
 
 import copy
@@ -353,7 +354,8 @@ def train_flow_transformer_self_supervised(
                 idx = perm[i : i + bs]
                 xb = train_x.index_select(0, idx)
                 mask = torch.rand(
-                    xb.shape[0], xb.shape[1],
+                    xb.shape[0],
+                    xb.shape[1],
                     device=device,
                 ) < float(mask_ratio)
                 x_masked = model.apply_mask_token(xb, mask)
@@ -376,7 +378,8 @@ def train_flow_transformer_self_supervised(
             with torch.no_grad():
                 if has_val_split:
                     val_mask = torch.rand(
-                        val_x.shape[0], val_x.shape[1],
+                        val_x.shape[0],
+                        val_x.shape[1],
                         device=device,
                     ) < float(mask_ratio)
                     val_in = model.apply_mask_token(val_x, val_mask)
@@ -441,6 +444,7 @@ def train_flow_transformer_self_supervised(
 # Backend-agnostic transformer training (PaddlePaddle / MindSpore)
 # ---------------------------------------------------------------------------
 
+
 def _train_flow_transformer_backend(
     snapshots_np: list[tuple[np.ndarray, np.ndarray]],
     arch: FlowTransformerArch,
@@ -474,27 +478,32 @@ def _train_flow_transformer_backend(
         n_val = max(1, int(round(n_snap * cfg.val_fraction)))
         rng = np.random.RandomState(int(cfg.seed))
         perm = rng.permutation(n_snap)
-        idx_val   = perm[:n_val]
+        idx_val = perm[:n_val]
         idx_train = perm[n_val:] if n_val < n_snap else perm[:1]
-        train_np  = batch_np[idx_train]
-        val_np    = batch_np[idx_val]
+        train_np = batch_np[idx_train]
+        val_np = batch_np[idx_val]
     else:
         train_np = val_np = batch_np
 
     # Convert to backend tensors
-    val_x   = ops.to_device(ops.tensor(val_np), cfg.device)
+    val_x = ops.to_device(ops.tensor(val_np), cfg.device)
 
     # Build model
     ops.manual_seed(cfg.seed)
     model = ops.build_flow_transformer(
-        int(arch.in_features), int(arch.d_model), int(arch.n_heads),
-        int(arch.n_layers), int(arch.ffn_dim), float(arch.dropout),
-        int(arch.max_tokens), device=cfg.device,
+        int(arch.in_features),
+        int(arch.d_model),
+        int(arch.n_heads),
+        int(arch.n_layers),
+        int(arch.ffn_dim),
+        float(arch.dropout),
+        int(arch.max_tokens),
+        device=cfg.device,
     )
-    loss_fn   = ops.mse_loss_fn()
+    loss_fn = ops.mse_loss_fn()
     optimizer = ops.adam_optimizer(model, cfg.learning_rate)
     scheduler = None
-    sch_name  = str(cfg.lr_scheduler).strip().lower()
+    sch_name = str(cfg.lr_scheduler).strip().lower()
     if sch_name == "cosine":
         scheduler = ops.cosine_lr_scheduler(optimizer, int(cfg.epochs))
     elif sch_name == "plateau":
@@ -518,7 +527,7 @@ def _train_flow_transformer_backend(
         running_loss = 0.0
         n_batches = 0
         for i in range(0, n_train_snap, bs):
-            idx = perm_ep[i: i + bs]
+            idx = perm_ep[i : i + bs]
             xb_np = train_np[idx]  # (B, T, 2)
             xb = ops.to_device(ops.tensor(xb_np), cfg.device)
             # Build boolean mask
@@ -571,11 +580,21 @@ def _train_flow_transformer_backend(
             val_pred = model(val_in)
             if ops.any_true(val_mask_bool):
                 vp = ops.reshape(val_pred, [-1, int(arch.in_features)])
-                vt = ops.reshape(val_x,    [-1, int(arch.in_features)])
-                vp2 = ops.index_select(vp, 0, ops.tensor(
-                    np.where(mask_val_np.ravel())[0].astype(np.int32), device=cfg.device))
-                vt2 = ops.index_select(vt, 0, ops.tensor(
-                    np.where(mask_val_np.ravel())[0].astype(np.int32), device=cfg.device))
+                vt = ops.reshape(val_x, [-1, int(arch.in_features)])
+                vp2 = ops.index_select(
+                    vp,
+                    0,
+                    ops.tensor(
+                        np.where(mask_val_np.ravel())[0].astype(np.int32), device=cfg.device
+                    ),
+                )
+                vt2 = ops.index_select(
+                    vt,
+                    0,
+                    ops.tensor(
+                        np.where(mask_val_np.ravel())[0].astype(np.int32), device=cfg.device
+                    ),
+                )
                 val_loss = float(ops.float_scalar(loss_fn(vp2, vt2)))
             else:
                 val_loss = float(ops.float_scalar(loss_fn(val_pred, val_x)))
@@ -616,9 +635,7 @@ def _train_flow_transformer_backend(
 
     elapsed = time.perf_counter() - t0
     final = (
-        history[best_epoch]
-        if history
-        else {"train_loss": float("nan"), "val_loss": float("nan")}
+        history[best_epoch] if history else {"train_loss": float("nan"), "val_loss": float("nan")}
     )
     return {
         "path": str(out_path),

@@ -26,6 +26,7 @@ Welch, P.D. (1967). "The use of fast Fourier transform for the estimation of
 Williamson, C.H.K. (1996). "Vortex dynamics in the cylinder wake."
     *Annu. Rev. Fluid Mech.* 28, 477–539.
 """
+
 from __future__ import annotations
 
 import math
@@ -46,6 +47,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ProbeSpectrum:
@@ -87,6 +89,7 @@ class ProbeSpectrum:
 # ---------------------------------------------------------------------------
 # Core DSP helpers
 # ---------------------------------------------------------------------------
+
 
 def _hanning_window(n: int, device: torch.device) -> torch.Tensor:
     """Return a Hanning window of length n."""
@@ -133,7 +136,7 @@ def welch_psd(
 
     step = max(1, int(seg * (1.0 - overlap)))
     window = _hanning_window(seg, signal.device)
-    win_power = float((window ** 2).mean())
+    win_power = float((window**2).mean())
 
     f_s = 1.0 / dt
     freqs = torch.fft.rfftfreq(seg, d=dt).to(signal.device)
@@ -191,6 +194,7 @@ def _find_peaks(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def compute_probe_spectrum(
     signal: Sequence[float] | torch.Tensor,
@@ -273,8 +277,7 @@ def dominant_peaks(
     """Return the top-n dominant frequency peaks as a list of dicts."""
     top = min(n, len(spectrum.peak_frequencies))
     return [
-        {"frequency": spectrum.peak_frequencies[i], "psd": spectrum.peak_psd[i]}
-        for i in range(top)
+        {"frequency": spectrum.peak_frequencies[i], "psd": spectrum.peak_psd[i]} for i in range(top)
     ]
 
 

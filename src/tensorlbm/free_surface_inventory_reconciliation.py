@@ -5,6 +5,7 @@ represented liquid inventory combines population density in LIQUID cells with
 fill/rho content in INTERFACE cells.  These measurements deliberately expose
 that distinction; they do not feed any value back into the solver.
 """
+
 from __future__ import annotations
 
 from typing import Final
@@ -72,8 +73,6 @@ def inventory_stage_deltas(
     result: dict[str, dict[str, float]] = {}
     for name, measurement in stages.items():
         if previous is not None:
-            result[name] = {
-                key: float(measurement[key] - previous[key]) for key in measurement
-            }
+            result[name] = {key: float(measurement[key] - previous[key]) for key in measurement}
         previous = measurement
     return result

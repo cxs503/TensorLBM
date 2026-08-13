@@ -64,7 +64,11 @@ def test_voxel_body_geometry_validates_mask_identity_and_resolves_xyz_origin() -
     geometry = VoxelBodyGeometry(mask=mask, body_id="cube")
 
     assert geometry.resolved_origin == (5.0, 4.0, 3.0)
-    assert VoxelBodyGeometry(mask=mask, body_id="cube", origin=(1.0, 2.0, 3.0)).resolved_origin == (1.0, 2.0, 3.0)
+    assert VoxelBodyGeometry(mask=mask, body_id="cube", origin=(1.0, 2.0, 3.0)).resolved_origin == (
+        1.0,
+        2.0,
+        3.0,
+    )
     with pytest.raises(ValueError):
         VoxelBodyGeometry(mask=mask.to(torch.float32), body_id="cube")
     with pytest.raises(ValueError):
@@ -95,7 +99,12 @@ def test_config_rejects_non_r1_backend_device_or_composition() -> None:
     with pytest.raises(ValueError):
         _config(mask, composition=_composition(physics_modules={"single_phase": "compressible"}))
     with pytest.raises(ValueError):
-        _config(mask, composition=_composition(physics_modules={"single_phase": "incompressible", "free_surface": "korner"}))
+        _config(
+            mask,
+            composition=_composition(
+                physics_modules={"single_phase": "incompressible", "free_surface": "korner"}
+            ),
+        )
     with pytest.raises(ValueError):
         _config(mask, composition=_composition(turbulence="smagorinsky"))
     with pytest.raises(ValueError):
@@ -180,7 +189,9 @@ def test_population_export_captures_detached_actual_post_stream_states_determini
         D3Q19PopulationSnapshot,
     )
     assert tuple(snapshot.step_index for snapshot in first.population_snapshots) == (1, 3)
-    assert {snapshot.sample_phase for snapshot in first.population_snapshots} == {"post_stream_pre_bounce_back"}
+    assert {snapshot.sample_phase for snapshot in first.population_snapshots} == {
+        "post_stream_pre_bounce_back"
+    }
     assert len({snapshot.ownership_hash for snapshot in first.population_snapshots}) == 1
     for left, right in zip(first.population_snapshots, second.population_snapshots):
         assert left.f.shape == (19, 7, 9, 11)
@@ -211,7 +222,10 @@ def test_population_export_captures_detached_actual_post_stream_states_determini
         if step in config.capture_population_steps:
             expected[step] = f.clone()
         f = apply_zou_he_channel_boundaries_3d(f, config.inlet_velocity, wall_mask, mask)
-    assert all(torch.equal(snapshot.f, expected[snapshot.step_index]) for snapshot in first.population_snapshots)
+    assert all(
+        torch.equal(snapshot.f, expected[snapshot.step_index])
+        for snapshot in first.population_snapshots
+    )
 
 
 @pytest.mark.parametrize("capture_steps", [(-1,), (0,), (4,), (1, 1), (2, 1), [1]])
@@ -250,18 +264,24 @@ def test_overhead_observation_writes_non_candidate_cpu_artifact() -> None:
         measured_steps=3,
     )
     artifact_path = Path("/tmp/tensorlbm-full-wet-overhead-r1.json")
-    artifact_path.write_text(json.dumps({
-        "kind": "observation_only",
-        "candidate": False,
-        "backend": "torch",
-        "device": "cpu",
-        "dtype": "float32",
-        "grid": list(config.shape),
-        "ratio": sample.ratio,
-        "direct_median_seconds": sample.direct_median_seconds,
-        "plan_median_seconds": sample.plan_median_seconds,
-        "limitations": "CPU small-grid observation; not representative of GPU, SDAA, or physical accuracy.",
-    }, indent=2) + "\n")
+    artifact_path.write_text(
+        json.dumps(
+            {
+                "kind": "observation_only",
+                "candidate": False,
+                "backend": "torch",
+                "device": "cpu",
+                "dtype": "float32",
+                "grid": list(config.shape),
+                "ratio": sample.ratio,
+                "direct_median_seconds": sample.direct_median_seconds,
+                "plan_median_seconds": sample.plan_median_seconds,
+                "limitations": "CPU small-grid observation; not representative of GPU, SDAA, or physical accuracy.",
+            },
+            indent=2,
+        )
+        + "\n"
+    )
 
     artifact = json.loads(artifact_path.read_text())
     assert artifact["candidate"] is False

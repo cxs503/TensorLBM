@@ -49,6 +49,7 @@ Shan & Chen (1993) Phys. Rev. E 47 1815
 Latva-Kokko & Rothman (2005) Phys. Rev. E 71 056702
 Pan, Hilpert & Miller (2004) Phys. Rev. E 70 026702
 """
+
 from __future__ import annotations
 
 import json
@@ -98,11 +99,15 @@ def _circular_mask(ny: int, nx: int, r: float, device: torch.device) -> torch.Te
     xs = torch.arange(nx, dtype=torch.float32, device=device)
     yy, xx = torch.meshgrid(ys, xs, indexing="ij")
     cy, cx = ny / 2.0, nx / 2.0
-    return ((xx - cx) ** 2 + (yy - cy) ** 2) <= r ** 2
+    return ((xx - cx) ** 2 + (yy - cy) ** 2) <= r**2
 
 
 def _spherical_mask(
-    nz: int, ny: int, nx: int, r: float, device: torch.device,
+    nz: int,
+    ny: int,
+    nx: int,
+    r: float,
+    device: torch.device,
 ) -> torch.Tensor:
     """Boolean mask: *True* inside a centred sphere of radius *r*."""
     zs = torch.arange(nz, dtype=torch.float32, device=device)
@@ -110,7 +115,7 @@ def _spherical_mask(
     xs = torch.arange(nx, dtype=torch.float32, device=device)
     zz, yy, xx = torch.meshgrid(zs, ys, xs, indexing="ij")
     cz, cy, cx = nz / 2.0, ny / 2.0, nx / 2.0
-    return ((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2) <= r ** 2
+    return ((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2) <= r**2
 
 
 def _measure_pressure_jump(
@@ -164,18 +169,20 @@ def _max_velocity(f_total: torch.Tensor) -> float:
     rho = f_total.sum(dim=0).clamp(min=1e-12)  # (ny, nx)
     c_dev = f_total.new_zeros((9, 2))
     from .d2q9 import C  # noqa: PLC0415
+
     c_dev = C.to(f_total.device).float()
     cx = c_dev[:, 0].view(9, 1, 1)
     cy = c_dev[:, 1].view(9, 1, 1)
     ux = (f_total * cx).sum(0) / rho
     uy = (f_total * cy).sum(0) / rho
-    return float(torch.sqrt(ux ** 2 + uy ** 2).max().item())
+    return float(torch.sqrt(ux**2 + uy**2).max().item())
 
 
 def _max_velocity_3d(f_total: torch.Tensor) -> float:
     """Return the maximum fluid velocity ``|u|`` for any 3-D lattice node."""
     rho = f_total.sum(dim=0).clamp(min=1e-12)  # (nz, ny, nx)
     from .d3q19 import C as C3  # noqa: PLC0415
+
     c_dev = C3.to(f_total.device).float()
     cx = c_dev[:, 0].view(19, 1, 1, 1)
     cy = c_dev[:, 1].view(19, 1, 1, 1)
@@ -183,7 +190,7 @@ def _max_velocity_3d(f_total: torch.Tensor) -> float:
     ux = (f_total * cx).sum(0) / rho
     uy = (f_total * cy).sum(0) / rho
     uz = (f_total * cz).sum(0) / rho
-    return float(torch.sqrt(ux ** 2 + uy ** 2 + uz ** 2).max().item())
+    return float(torch.sqrt(ux**2 + uy**2 + uz**2).max().item())
 
 
 # ---------------------------------------------------------------------------
@@ -305,8 +312,11 @@ def _run_scmc_droplet(
 
     for _ in range(config.n_steps):
         f1, f2 = collide_sc_two_component(
-            f1, f2, G_12=config.scmc_G12,
-            tau1=config.scmc_tau, tau2=config.scmc_tau,
+            f1,
+            f2,
+            G_12=config.scmc_G12,
+            tau1=config.scmc_tau,
+            tau2=config.scmc_tau,
         )
         f1 = stream(f1)
         f2 = stream(f2)
@@ -347,7 +357,11 @@ def _run_cg_droplet(
 
     for _ in range(config.n_steps):
         f_r, f_b = color_gradient_step(
-            f_r, f_b, tau=config.cg_tau, A=config.cg_A, beta=config.cg_beta,
+            f_r,
+            f_b,
+            tau=config.cg_tau,
+            A=config.cg_A,
+            beta=config.cg_beta,
         )
         f_r = stream(f_r)
         f_b = stream(f_b)
@@ -469,8 +483,7 @@ def _plot_laplace(results: dict[str, object], run_dir: Path) -> None:
         sigma = float(results[model]["sigma_eff_fit"])  # type: ignore[index]
         inv_r_line = [min(inv_r) * 0.8, max(inv_r) * 1.2]
         ax.scatter(inv_r, dp, color=colours[model], label=model.upper(), zorder=3)
-        ax.plot(inv_r_line, [sigma * x for x in inv_r_line], "--",
-                color=colours[model], alpha=0.7)
+        ax.plot(inv_r_line, [sigma * x for x in inv_r_line], "--", color=colours[model], alpha=0.7)
 
     ax.set_xlabel("1/R (lattice units⁻¹)")
     ax.set_ylabel("ΔP (lattice units)")
@@ -787,12 +800,14 @@ def run_free_energy_droplet(config: FreeEnergyDropletConfig) -> dict[str, object
             phase_mass = float(phi.sum().item())
             equiv_radius = _equivalent_radius_from_phi(phi)
             rel_mass_drift = abs(phase_mass - initial_phase_mass) / max(
-                abs(initial_phase_mass), 1e-12,
+                abs(initial_phase_mass),
+                1e-12,
             )
             rel_radius_drift = abs(equiv_radius - initial_equiv_radius) / max(
-                initial_equiv_radius, 1e-12,
+                initial_equiv_radius,
+                1e-12,
             )
-            max_velocity = float(torch.sqrt(ux ** 2 + uy ** 2).max().item())
+            max_velocity = float(torch.sqrt(ux**2 + uy**2).max().item())
             phi_min = float(phi.min().item())
             phi_max = float(phi.max().item())
             max_overshoot = max(phi_max - 1.0, -1.0 - phi_min, 0.0)
@@ -819,12 +834,14 @@ def run_free_energy_droplet(config: FreeEnergyDropletConfig) -> dict[str, object
     final_phase_mass = float(final_phi.sum().item())
     final_equiv_radius = _equivalent_radius_from_phi(final_phi)
     relative_phase_mass_drift = abs(final_phase_mass - initial_phase_mass) / max(
-        abs(initial_phase_mass), 1e-12,
+        abs(initial_phase_mass),
+        1e-12,
     )
     relative_radius_drift = abs(final_equiv_radius - initial_equiv_radius) / max(
-        initial_equiv_radius, 1e-12,
+        initial_equiv_radius,
+        1e-12,
     )
-    max_spurious_u = float(torch.sqrt(ux ** 2 + uy ** 2).max().item())
+    max_spurious_u = float(torch.sqrt(ux**2 + uy**2).max().item())
     final_phi_min = float(final_phi.min().item())
     final_phi_max = float(final_phi.max().item())
     max_phase_overshoot = max(final_phi_max - 1.0, -1.0 - final_phi_min, 0.0)
@@ -955,10 +972,7 @@ class StaticDroplet3DConfig:
     def resolved_run_name(self) -> str:
         if self.run_name:
             return self.run_name
-        return (
-            f"static_droplet_3d_n{self.nx}x{self.ny}x{self.nz}"
-            f"_steps{self.n_steps}"
-        )
+        return f"static_droplet_3d_n{self.nx}x{self.ny}x{self.nz}_steps{self.n_steps}"
 
 
 def _run_scmc_droplet_3d(
@@ -980,7 +994,11 @@ def _run_scmc_droplet_3d(
 
     for _ in range(config.n_steps):
         f1, f2 = collide_sc_two_component_3d(
-            f1, f2, G_12=config.scmc_G12, tau1=config.scmc_tau, tau2=config.scmc_tau,
+            f1,
+            f2,
+            G_12=config.scmc_G12,
+            tau1=config.scmc_tau,
+            tau2=config.scmc_tau,
         )
         f1 = stream3d(f1)
         f2 = stream3d(f2)
@@ -1018,7 +1036,11 @@ def _run_cg_droplet_3d(
 
     for _ in range(config.n_steps):
         f_r, f_b = color_gradient_step_3d(
-            f_r, f_b, tau=config.cg_tau, A=config.cg_A, beta=config.cg_beta,
+            f_r,
+            f_b,
+            tau=config.cg_tau,
+            A=config.cg_A,
+            beta=config.cg_beta,
         )
         f_r = stream3d(f_r)
         f_b = stream3d(f_b)
@@ -1042,7 +1064,10 @@ def run_static_droplet_3d(config: StaticDroplet3DConfig) -> dict[str, object]:
     config.validate()
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
-        config.output_root, "static_droplet_3d", config.resolved_run_name(), config.overwrite,
+        config.output_root,
+        "static_droplet_3d",
+        config.resolved_run_name(),
+        config.overwrite,
     )
     results: dict[str, object] = {}
 
@@ -1136,14 +1161,19 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
     config.validate()
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
-        config.output_root, "spinodal_3d", config.resolved_run_name(), config.overwrite,
+        config.output_root,
+        "spinodal_3d",
+        config.resolved_run_name(),
+        config.overwrite,
     )
 
     torch.manual_seed(config.seed)
     rho0 = torch.full((config.nz, config.ny, config.nx), config.rho0, device=device)
     noise = (
-        torch.rand((config.nz, config.ny, config.nx), device=device) - 0.5
-    ) * 2.0 * config.noise_amp
+        (torch.rand((config.nz, config.ny, config.nx), device=device) - 0.5)
+        * 2.0
+        * config.noise_amp
+    )
     rho = (rho0 + noise).clamp(min=0.01)
     zero = torch.zeros((config.nz, config.ny, config.nx), device=device)
     f = equilibrium3d(rho, zero, zero, zero)
@@ -1151,7 +1181,10 @@ def run_spinodal_decomposition_3d(config: Spinodal3DConfig) -> dict[str, object]
 
     for step in range(1, config.n_steps + 1):
         f = collide_sc_single_component_3d(
-            f, G=config.G, tau=config.tau, psi_fn=psi_exp,
+            f,
+            G=config.G,
+            tau=config.tau,
+            psi_fn=psi_exp,
         )
         f = stream3d(f)
         if step % config.output_interval == 0 or step == config.n_steps:
@@ -1373,7 +1406,8 @@ def _run_scmc_poiseuille(
 
     for _ in range(config.n_steps):
         f1, f2 = collide_sc_two_component(
-            f1, f2,
+            f1,
+            f2,
             G_12=config.scmc_G12,
             tau1=config.scmc_tau_heavy,
             tau2=config.scmc_tau_light,
@@ -1433,7 +1467,8 @@ def _run_cg_poiseuille(
 
     for _ in range(config.n_steps):
         f_r, f_b = color_gradient_step(
-            f_r, f_b,
+            f_r,
+            f_b,
             tau=config.cg_tau,
             A=config.cg_A,
             beta=config.cg_beta,
@@ -1487,8 +1522,10 @@ def run_two_phase_channel_compare(
     config.validate()
     device = resolve_device(config.device)
     run_dir = prepare_run_dir(
-        config.output_root, "two_phase_poiseuille",
-        config.resolved_run_name(), config.overwrite,
+        config.output_root,
+        "two_phase_poiseuille",
+        config.resolved_run_name(),
+        config.overwrite,
     )
 
     visc_ratio = config.scmc_nu_heavy() / max(config.scmc_nu_light(), 1e-12)
@@ -1590,16 +1627,20 @@ def _generate_analysis(
 
     analysis["free_energy"] = {
         "relative_phase_mass_drift": round(
-            float(free_energy.get("relative_phase_mass_drift", float("nan"))), 8,  # type: ignore[arg-type]
+            float(free_energy.get("relative_phase_mass_drift", float("nan"))),
+            8,  # type: ignore[arg-type]
         ),
         "relative_radius_drift": round(
-            float(free_energy.get("relative_radius_drift", float("nan"))), 8,  # type: ignore[arg-type]
+            float(free_energy.get("relative_radius_drift", float("nan"))),
+            8,  # type: ignore[arg-type]
         ),
         "max_spurious_u": round(
-            float(free_energy.get("max_spurious_u", float("nan"))), 8,  # type: ignore[arg-type]
+            float(free_energy.get("max_spurious_u", float("nan"))),
+            8,  # type: ignore[arg-type]
         ),
         "max_phase_overshoot": round(
-            float(free_energy.get("max_phase_overshoot", float("nan"))), 8,  # type: ignore[arg-type]
+            float(free_energy.get("max_phase_overshoot", float("nan"))),
+            8,  # type: ignore[arg-type]
         ),
         "bounded_phase_field": bool(free_energy.get("bounded_phase_field", False)),
     }
@@ -1743,6 +1784,7 @@ def run_multiphase_benchmark_suite(
     def _patch(cfg: object, **kwargs: object) -> object:
         """Return a new dataclass instance with updated fields."""
         import dataclasses  # noqa: PLC0415
+
         return dataclasses.replace(cfg, **kwargs)  # type: ignore[type-var]
 
     droplet_cfg: StaticDropletConfig = _patch(  # type: ignore[assignment]
@@ -1837,9 +1879,7 @@ def run_multiphase_benchmark_suite(
         report["benchmarks"]["spinodal_decomposition_3d"] = spinodal_3d_result  # type: ignore[index]
 
     report_path = output_root / "multiphase_suite_report.json"
-    report_path.write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"\n[Done] Full report saved → {report_path}")
     return report
 

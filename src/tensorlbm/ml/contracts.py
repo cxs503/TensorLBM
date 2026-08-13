@@ -24,7 +24,9 @@ def _freeze(value: Any) -> Any:
     if value is None or isinstance(value, (str, int, float, bool, bytes)):
         return value
     if isinstance(value, Mapping):
-        return MappingProxyType({_require_text(key, "mapping key"): _freeze(item) for key, item in value.items()})
+        return MappingProxyType(
+            {_require_text(key, "mapping key"): _freeze(item) for key, item in value.items()}
+        )
     if isinstance(value, (list, tuple)):
         return tuple(_freeze(item) for item in value)
     if isinstance(value, (set, frozenset)):
@@ -120,7 +122,9 @@ class TrainingSpec:
             raise TypeError("signature must be a ModelSignature")
         if not isinstance(self.backend, TrainingBackend):
             raise TypeError("backend must be a TrainingBackend")
-        object.__setattr__(self, "hyperparameters", _immutable_mapping(self.hyperparameters, "hyperparameters"))
+        object.__setattr__(
+            self, "hyperparameters", _immutable_mapping(self.hyperparameters, "hyperparameters")
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,7 +198,6 @@ class ModelArtifact:
         )
 
 
-
 def validate_model_artifact(artifact: ModelArtifact) -> ModelArtifact:
     """Fail closed before any future artifact consumer may inspect a model record."""
     if not isinstance(artifact, ModelArtifact):
@@ -205,7 +208,9 @@ def validate_model_artifact(artifact: ModelArtifact) -> ModelArtifact:
         raise ValueError("artifact status must be a ModelArtifactStatus")
     if artifact.status is not ModelArtifactStatus.NOT_TRAINED:
         raise ValueError("R1 artifact is not an executable or trained model")
-    if not isinstance(artifact.dataset, DatasetManifest) or not isinstance(artifact.signature, ModelSignature):
+    if not isinstance(artifact.dataset, DatasetManifest) or not isinstance(
+        artifact.signature, ModelSignature
+    ):
         raise ValueError("artifact dataset or signature is invalid")
     try:
         artifact.dataset.require_training_ready()

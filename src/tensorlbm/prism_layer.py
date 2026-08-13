@@ -18,6 +18,7 @@ References:
 - Hesthaven & Warburton (2008), "Nodal Discontinuous Galerkin Methods",
   Chapter 6 (curvilinear elements).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -68,17 +69,17 @@ class PrismLayerMesh:
     n_surface: int
     n_layers: int
     ndim: int
-    surface_centers: torch.Tensor       # (n_surface, ndim)
-    surface_normals: torch.Tensor       # (n_surface, ndim)
-    layer_centers: torch.Tensor         # (n_layers, n_surface, ndim)
-    layer_heights: torch.Tensor         # (n_layers,)
-    jacobian: Optional[torch.Tensor]    # (n_layers, n_surface, ndim, ndim)
+    surface_centers: torch.Tensor  # (n_surface, ndim)
+    surface_normals: torch.Tensor  # (n_surface, ndim)
+    layer_centers: torch.Tensor  # (n_layers, n_surface, ndim)
+    layer_heights: torch.Tensor  # (n_layers,)
+    jacobian: Optional[torch.Tensor]  # (n_layers, n_surface, ndim, ndim)
     inverse_jacobian: Optional[torch.Tensor]
     determinant: Optional[torch.Tensor]
-    dg_ops_wall_normal: _Ops            # 1D DG ops for wall-normal direction
-    cartesian_cells: torch.Tensor       # (n_cart, ndim) kept in LBM
-    band_indices: torch.Tensor          # (n_total_prism,) flat grid indices
-    band_mask: torch.Tensor             # boolean, same shape as grid
+    dg_ops_wall_normal: _Ops  # 1D DG ops for wall-normal direction
+    cartesian_cells: torch.Tensor  # (n_cart, ndim) kept in LBM
+    band_indices: torch.Tensor  # (n_total_prism,) flat grid indices
+    band_mask: torch.Tensor  # boolean, same shape as grid
 
     def to(self, device: torch.device) -> "PrismLayerMesh":
         """Move all tensors to *device*."""
@@ -92,9 +93,9 @@ class PrismLayerMesh:
             layer_heights=self.layer_heights.to(device),
             jacobian=self.jacobian.to(device) if self.jacobian is not None else None,
             inverse_jacobian=self.inverse_jacobian.to(device)
-            if self.inverse_jacobian is not None else None,
-            determinant=self.determinant.to(device)
-            if self.determinant is not None else None,
+            if self.inverse_jacobian is not None
+            else None,
+            determinant=self.determinant.to(device) if self.determinant is not None else None,
             dg_ops_wall_normal=self.dg_ops_wall_normal,
             cartesian_cells=self.cartesian_cells.to(device),
             band_indices=self.band_indices.to(device),
@@ -174,12 +175,11 @@ def extract_surface_normals(
         # Simple Laplacian smooth on normals using k-nearest neighbours
         # in coordinate space (one iteration).
         diff = coords.unsqueeze(0) - coords.unsqueeze(1)  # (n, n, ndim)
-        dist = diff.norm(dim=2)                           # (n, n)
-        neighbours = (dist < 2.0) & (dist > 0.0)          # 6-connected neighbours
+        dist = diff.norm(dim=2)  # (n, n)
+        neighbours = (dist < 2.0) & (dist > 0.0)  # 6-connected neighbours
         n_neigh = neighbours.sum(dim=1, keepdim=True).clamp(min=1).float()  # (n, 1)
-        avg_n = (normals.unsqueeze(0) * neighbours.unsqueeze(-1).float()
-                 ).sum(dim=1) / n_neigh
-        normals = (normals + 0.5 * avg_n)
+        avg_n = (normals.unsqueeze(0) * neighbours.unsqueeze(-1).float()).sum(dim=1) / n_neigh
+        normals = normals + 0.5 * avg_n
         mag = normals.norm(dim=1, keepdim=True).clamp(min=1e-12)
         normals = normals / mag
 
@@ -239,7 +239,8 @@ def generate_prism_layers(
 
     # 1. Extract surface cells and normals
     surf_coords, surf_normals, surf_flat = extract_surface_normals(
-        solid, smooth=True, device=device)
+        solid, smooth=True, device=device
+    )
     n_surface = surf_coords.shape[0]
 
     if n_surface == 0:
@@ -247,17 +248,19 @@ def generate_prism_layers(
 
     # 2. Compute layer heights (geometric progression)
     heights = torch.tensor(
-        [first_height * (growth ** k) for k in range(n_layers)],
-        dtype=torch.float32, device=device)                     # (n_layers,)
+        [first_height * (growth**k) for k in range(n_layers)], dtype=torch.float32, device=device
+    )  # (n_layers,)
 
     # 3. March outward from surface to generate layer centres
     # layer_centers[k, i, :] = surf_coords[i] + normal[i] * cumulative_offset[k]
-    cum_offsets = torch.cumsum(heights, dim=0)                  # (n_layers,)
+    cum_offsets = torch.cumsum(heights, dim=0)  # (n_layers,)
     # Mid-cell positions: offset from surface
-    mid_offsets = cum_offsets - heights / 2.0                   # (n_layers,)
+    mid_offsets = cum_offsets - heights / 2.0  # (n_layers,)
 
-    layer_centers = (surf_coords.unsqueeze(0)                    # (1, n_surf, ndim)
-                     + surf_normals.unsqueeze(0) * mid_offsets.unsqueeze(-1).unsqueeze(-1))
+    layer_centers = (
+        surf_coords.unsqueeze(0)  # (1, n_surf, ndim)
+        + surf_normals.unsqueeze(0) * mid_offsets.unsqueeze(-1).unsqueeze(-1)
+    )
     # shape: (n_layers, n_surface, ndim)
 
     # 4. Build the Cartesian-lattice mask: cells covered by prism layers
@@ -268,7 +271,7 @@ def generate_prism_layers(
     band_mask = torch.zeros(shape, dtype=torch.bool, device=device)
 
     # Snap each layer centre to nearest integer grid cell and mark it
-    layer_centers_int = layer_centers.round().long()             # (n_layers, n_surf, ndim)
+    layer_centers_int = layer_centers.round().long()  # (n_layers, n_surf, ndim)
     # Clamp to domain bounds
     for d in range(ndim):
         layer_centers_int[..., d] = layer_centers_int[..., d].clamp(0, shape[d] - 1)
@@ -291,7 +294,7 @@ def generate_prism_layers(
 
     # 5. Flat indices for band (prism layer cells)
     flat_grid = torch.arange(band_mask.numel(), device=device).reshape(shape)
-    band_indices = flat_grid[band_mask]                         # (n_band,)
+    band_indices = flat_grid[band_mask]  # (n_band,)
 
     # Cartesian cells that stay in LBM
     cart_mask = ~band_mask & ~solid
@@ -305,8 +308,7 @@ def generate_prism_layers(
     # Jacobian dx_i/dξ_j: diagonal for flat prisms
     #   dx/dξ_wall = h_k/2 (wall-normal)
     #   dx/dξ_trans = 1/2  (transverse = cell width / reference width of 2)
-    jac = torch.zeros((n_layers, n_surface, ndim, ndim),
-                       dtype=torch.float32, device=device)
+    jac = torch.zeros((n_layers, n_surface, ndim, ndim), dtype=torch.float32, device=device)
     for k in range(n_layers):
         # Wall-normal direction: last axis maps [-1,1] → [0, h_k]
         jac[k, :, -1, -1] = heights[k] / 2.0
@@ -330,6 +332,7 @@ def generate_prism_layers(
     # We use the minimum layer height to be conservative on CFL.
     min_dx = first_height
     from .dg_advection import get_ops as _get_dg_ops
+
     dg_ops_wn = _get_dg_ops(degree, float(min_dx), dtype=torch.float32, device=str(device))
 
     return PrismLayerMesh(
@@ -358,8 +361,8 @@ def generate_prism_layers(
 def dg_rhs_body_fitted(
     f_dg: torch.Tensor,
     velocities: torch.Tensor,
-    ops_cart: _Ops,                     # Cartesian DG ops (for transverse dirs)
-    ops_wall: _Ops,                     # DG ops for wall-normal direction
+    ops_cart: _Ops,  # Cartesian DG ops (for transverse dirs)
+    ops_wall: _Ops,  # DG ops for wall-normal direction
     prism: PrismLayerMesh,
     ext_field: torch.Tensor | None = None,
     opposite: torch.Tensor | None = None,
@@ -393,18 +396,18 @@ def dg_rhs_body_fitted(
 
     rhs = torch.zeros_like(f_dg)
 
-    for v in range(ndim):                                  # v=0:x, 1:y, 2:z
+    for v in range(ndim):  # v=0:x, 1:y, 2:z
         c_axis = velocities[:, v].to(f_dg.dtype)
         if c_axis.abs().max().item() == 0.0:
             continue
-        node_axis = n_dims - 1 - v                          # px (last), py, pz
+        node_axis = n_dims - 1 - v  # px (last), py, pz
 
         nonzero = c_axis.abs() > 0.0
         sub = f_dg[nonzero]
         c_sub = c_axis[nonzero]
 
         # Choose Cartesian or body-fitted ops
-        is_wall_normal = (node_axis == n_dims - 1)         # last node axis = wall-normal
+        is_wall_normal = node_axis == n_dims - 1  # last node axis = wall-normal
         ax = ops_wall.Ax if is_wall_normal else ops_cart.Ax
         fl = ops_wall.face_lift if is_wall_normal else ops_cart.face_lift
         n_node = ops_wall.n_node if is_wall_normal else ops_cart.n_node
@@ -424,15 +427,15 @@ def dg_rhs_body_fitted(
         if is_wall_normal:
             # Average layer height for metric scaling
             h_avg = prism.layer_heights.mean().item()
-            vol = vol * (2.0 / max(h_avg, 1e-6))           # 2/dx from reference [-1,1]
+            vol = vol * (2.0 / max(h_avg, 1e-6))  # 2/dx from reference [-1,1]
         else:
-            vol = vol * 2.0                                 # 1/dx = 2.0 for dx=0.5
+            vol = vol * 2.0  # 1/dx = 2.0 for dx=0.5
 
         # --- Surface term ---
         inner_left = sub.select(node_axis, 0)
         inner_right = sub.select(node_axis, p_last)
-        left_ext = torch.roll(inner_right, shifts=1, dims=1)   # neighbour's far node
-        right_ext = torch.roll(inner_left, shifts=-1, dims=1)   # neighbour's near node
+        left_ext = torch.roll(inner_right, shifts=1, dims=1)  # neighbour's far node
+        right_ext = torch.roll(inner_left, shifts=-1, dims=1)  # neighbour's near node
 
         pos = c_sub.view([c_sub.shape[0]] + [1] * (inner_left.ndim - 1)) > 0.0
         uL = torch.where(pos, left_ext, inner_left)
@@ -442,8 +445,9 @@ def dg_rhs_body_fitted(
         fl_r = fl[:, 1]
         shape_fl = [1] * sub.ndim
         shape_fl[node_axis] = n_node
-        surf = (fl_l.view(shape_fl) * uL.unsqueeze(node_axis)
-                + fl_r.view(shape_fl) * uR.unsqueeze(node_axis))
+        surf = fl_l.view(shape_fl) * uL.unsqueeze(node_axis) + fl_r.view(shape_fl) * uR.unsqueeze(
+            node_axis
+        )
 
         c_view = c_sub.view([c_sub.shape[0]] + [1] * (sub.ndim - 1))
         rhs_sub = c_view * vol - c_view * surf
@@ -478,7 +482,7 @@ def project_prism_to_cartesian(
         Updated *f_lbm* with prism locations filled.
     """
     node_axes = tuple(range(2, f_prism.ndim))
-    mean = f_prism.mean(dim=node_axes)                       # (Q, n_prism)
+    mean = f_prism.mean(dim=node_axes)  # (Q, n_prism)
     f_lbm = f_lbm.clone()
     idx = torch.nonzero(prism.band_mask, as_tuple=True)
     f_lbm[(slice(None),) + idx] = mean

@@ -9,6 +9,7 @@ which is then used by a BGK collision step.  The interface mirrors
 :func:`tensorlbm.turbulence.collide_smagorinsky_bgk` so a user can switch
 between classical and AI-based LES closures with a one-line change.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

@@ -4,6 +4,7 @@ R1 intentionally records no external SUBOFF, CH, or Körner dimensions.  A
 consumer must explicitly provide sourced dimensions before using a reference
 for validation; the default is therefore ``withheld``.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -21,7 +22,12 @@ _APPLICATIONS = frozenset(("suboff", "ch_hull", "korner_hull"))
 def _finite_positive_or_none(value: float | None, name: str) -> float | None:
     if value is None:
         return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(float(value)) or value <= 0.0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not isfinite(float(value))
+        or value <= 0.0
+    ):
         raise ValueError(f"{name} must be finite and > 0 when supplied")
     return float(value)
 
@@ -38,10 +44,17 @@ class MarineReferenceDefinition:
     D: float | None = None
     Sref: float | None = None
     coordinates: tuple[str, str, str] = ("x", "y", "z")
-    units: Mapping[str, str] = field(default_factory=lambda: {
-        "length": "m", "diameter": "m", "reference_area": "m^2",
-        "coordinates": "m", "density": "kg/m^3", "speed": "m/s", "force": "N",
-    })
+    units: Mapping[str, str] = field(
+        default_factory=lambda: {
+            "length": "m",
+            "diameter": "m",
+            "reference_area": "m^2",
+            "coordinates": "m",
+            "density": "kg/m^3",
+            "speed": "m/s",
+            "force": "N",
+        }
+    )
     source_status: str = "withheld"
     source: str | None = None
     sha256: str = field(init=False)
@@ -53,9 +66,18 @@ class MarineReferenceDefinition:
         if self.coordinates != ("x", "y", "z"):
             raise ValueError("coordinates must declare the canonical ('x', 'y', 'z') axes")
         normalized_units = dict(self.units)
-        required_units = {"length", "diameter", "reference_area", "coordinates", "density", "speed", "force"}
+        required_units = {
+            "length",
+            "diameter",
+            "reference_area",
+            "coordinates",
+            "density",
+            "speed",
+            "force",
+        }
         if not required_units.issubset(normalized_units) or not all(
-            isinstance(normalized_units[key], str) and normalized_units[key] for key in required_units
+            isinstance(normalized_units[key], str) and normalized_units[key]
+            for key in required_units
         ):
             raise ValueError("units must define non-empty canonical marine units")
         frozen_units = tuple(sorted(normalized_units.items()))
@@ -67,18 +89,30 @@ class MarineReferenceDefinition:
         if self.source_status == "withheld" and self.source is not None:
             raise ValueError("withheld reference data must not name an external source")
         unsigned = {
-            "L": self.L, "D": self.D, "Sref": self.Sref,
-            "coordinates": self.coordinates, "units": dict(self.units),
-            "source_status": self.source_status, "source": self.source,
+            "L": self.L,
+            "D": self.D,
+            "Sref": self.Sref,
+            "coordinates": self.coordinates,
+            "units": dict(self.units),
+            "source_status": self.source_status,
+            "source": self.source,
         }
         encoded = json.dumps(unsigned, sort_keys=True, separators=(",", ":"), allow_nan=False)
         object.__setattr__(self, "sha256", sha256(encoded.encode("utf-8")).hexdigest())
 
     def __hash__(self) -> int:
-        return hash((
-            self.L, self.D, self.Sref, self.coordinates, tuple(sorted(self.units.items())),
-            self.source_status, self.source, self.sha256,
-        ))
+        return hash(
+            (
+                self.L,
+                self.D,
+                self.Sref,
+                self.coordinates,
+                tuple(sorted(self.units.items())),
+                self.source_status,
+                self.source,
+                self.sha256,
+            )
+        )
 
 
 @dataclass(frozen=True)

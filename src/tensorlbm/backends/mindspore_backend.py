@@ -9,6 +9,7 @@ PyNative mode is set automatically when this module is first imported.
 
 All public functions mirror :mod:`tensorlbm.backends.torch_backend` exactly.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -22,9 +23,11 @@ import numpy as np
 # Lazy import guard
 # ---------------------------------------------------------------------------
 
+
 def _ms():
     try:
         import mindspore as ms  # noqa: PLC0415
+
         ms.set_context(mode=ms.PYNATIVE_MODE)  # ensure eager execution
         return ms
     except ImportError as exc:
@@ -47,6 +50,7 @@ def _ms_ops():
 # Constants
 # ---------------------------------------------------------------------------
 
+
 def pi() -> float:
     return math.pi
 
@@ -58,6 +62,7 @@ def float32_dtype():
 # ---------------------------------------------------------------------------
 # Tensor creation
 # ---------------------------------------------------------------------------
+
 
 def zeros(shape, dtype=None, device: str = "cpu"):
     ms = _ms()
@@ -96,6 +101,7 @@ def meshgrid(*tensors, indexing: str = "ij"):
 # ---------------------------------------------------------------------------
 # Tensor operations
 # ---------------------------------------------------------------------------
+
 
 def stack(tensors, dim: int = 0):
     return _ms().ops.stack(list(tensors), axis=dim)
@@ -259,6 +265,7 @@ def no_grad():
 # NN helpers – activation
 # ---------------------------------------------------------------------------
 
+
 def _activation_layer(name: str):
     nn = _ms_nn()
     n = name.lower()
@@ -274,6 +281,7 @@ def _activation_layer(name: str):
 # ---------------------------------------------------------------------------
 # EddyViscosityMLP (MindSpore)
 # ---------------------------------------------------------------------------
+
 
 def build_eddy_viscosity_mlp(
     in_features: int,
@@ -310,9 +318,7 @@ def build_eddy_viscosity_mlp(
 
         def construct(self, x):  # noqa: D401 – MindSpore uses 'construct' not 'forward'
             if x.shape[-1] != self.in_features:
-                raise ValueError(
-                    f"Expected {self.in_features} features, got {tuple(x.shape)}"
-                )
+                raise ValueError(f"Expected {self.in_features} features, got {tuple(x.shape)}")
             m = ms.ops.cast(self.feature_mean, x.dtype)
             s = ms.ops.cast(self.feature_std, x.dtype)
             return self.net((x - m) / s)
@@ -323,6 +329,7 @@ def build_eddy_viscosity_mlp(
 # ---------------------------------------------------------------------------
 # FlowFieldTransformer (MindSpore)
 # ---------------------------------------------------------------------------
+
 
 def build_flow_transformer(
     in_features: int,
@@ -384,6 +391,7 @@ def build_flow_transformer(
 # Loss, optimizer, scheduler
 # ---------------------------------------------------------------------------
 
+
 def mse_loss_fn():
     return _ms_nn().MSELoss()
 
@@ -443,6 +451,7 @@ def backward(loss) -> None:
 # MindSpore training step helper
 # ---------------------------------------------------------------------------
 
+
 def ms_train_step(model, loss_fn, optimizer, x_batch, y_batch, max_norm: float | None):
     """Run one gradient step; returns scalar loss value."""
     ms = _ms()
@@ -463,12 +472,10 @@ def ms_train_step(model, loss_fn, optimizer, x_batch, y_batch, max_norm: float |
 # Model persistence
 # ---------------------------------------------------------------------------
 
+
 def get_state_dict_numpy(model) -> dict[str, np.ndarray]:
     """Return model state dict as dict of numpy arrays."""
-    return {
-        name: param.asnumpy()
-        for name, param in model.parameters_and_names()
-    }
+    return {name: param.asnumpy() for name, param in model.parameters_and_names()}
 
 
 def load_state_dict_numpy(model, arrays: dict[str, np.ndarray]) -> None:
@@ -493,6 +500,7 @@ def compute_feature_stats(x_train) -> tuple[np.ndarray, np.ndarray]:
 # Model state helpers
 # ---------------------------------------------------------------------------
 
+
 def eval_mode(model) -> None:
     model.set_train(False)
 
@@ -508,6 +516,7 @@ def is_training(model) -> bool:
 # ---------------------------------------------------------------------------
 # Unified training step (one minibatch)
 # ---------------------------------------------------------------------------
+
 
 def train_step(model, loss_fn, optimizer, x_batch, y_batch, max_norm: float | None) -> float:
     """Run one gradient step via MindSpore's functional value_and_grad."""

@@ -9,6 +9,7 @@ Usage
     PYTHONPATH=src python examples/porous_drainage.py
 
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -69,10 +70,7 @@ def demo_capillary_invasion() -> None:
         overwrite=True,
     )
     result = run_capillary_invasion(cfg)
-    print(
-        f"\n[Capillary] Washburn exponent ≈ {result['washburn_exponent']:.3f}  "
-        f"(theory ≈ 0.5)\n"
-    )
+    print(f"\n[Capillary] Washburn exponent ≈ {result['washburn_exponent']:.3f}  (theory ≈ 0.5)\n")
 
 
 def demo_two_phase_poiseuille() -> None:
@@ -92,9 +90,7 @@ def demo_two_phase_poiseuille() -> None:
         overwrite=True,
     )
     result = run_two_phase_poiseuille(cfg)
-    print(
-        f"\n[Two-phase Poiseuille] Relative L2 error = {result['l2_error_rel']:.4f}\n"
-    )
+    print(f"\n[Two-phase Poiseuille] Relative L2 error = {result['l2_error_rel']:.4f}\n")
 
 
 def demo_porous_drainage() -> None:
@@ -124,10 +120,7 @@ def demo_porous_drainage() -> None:
     result_sc = run_porous_drainage(cfg_sc)
     bt_sc = result_sc["breakthrough_step"]
     bt_sc_str = f"step {bt_sc}" if bt_sc else "not reached"
-    print(
-        f"\n[SC drainage] Porosity={result_sc['porosity']:.3f}  "
-        f"Breakthrough={bt_sc_str}\n"
-    )
+    print(f"\n[SC drainage] Porosity={result_sc['porosity']:.3f}  Breakthrough={bt_sc_str}\n")
 
     # CG model with tube array
     cfg_cg = PorousDrainageConfig(
@@ -150,10 +143,7 @@ def demo_porous_drainage() -> None:
     result_cg = run_porous_drainage(cfg_cg)
     bt_cg = result_cg["breakthrough_step"]
     bt_cg_str = f"step {bt_cg}" if bt_cg else "not reached"
-    print(
-        f"\n[CG drainage] Porosity={result_cg['porosity']:.3f}  "
-        f"Breakthrough={bt_cg_str}\n"
-    )
+    print(f"\n[CG drainage] Porosity={result_cg['porosity']:.3f}  Breakthrough={bt_cg_str}\n")
 
 
 if __name__ == "__main__":

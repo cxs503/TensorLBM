@@ -28,6 +28,7 @@ Critical:
 
 Verified on Couette flow: Cd=0.606 vs Cf_exact=0.6349, err=4.55%.
 """
+
 from __future__ import annotations
 
 import torch

@@ -43,16 +43,20 @@ def test_public_admission_accepts_only_a_named_d3q19_tuple_at_implementation_lev
         {"adaptive_mesh": True},
     ],
 )
-def test_public_admission_withholds_d3q27_free_surface_and_amr(overrides: dict[str, object]) -> None:
+def test_public_admission_withholds_d3q27_free_surface_and_amr(
+    overrides: dict[str, object],
+) -> None:
     with pytest.raises(WallFunctionCompatibilityError, match=WITHHELD_UNVERIFIED_COMBINATION):
         require_wall_function_run(_log_law_request(**overrides))
 
 
 def test_public_admission_withholds_a_higher_evidence_floor() -> None:
     with pytest.raises(WallFunctionCompatibilityError, match="WITHHELD_VALIDATION_LEVEL"):
-        require_wall_function_run(_log_law_request(
-            minimum_validation=ValidationLevel.NUMERICAL_REGRESSION,
-        ))
+        require_wall_function_run(
+            _log_law_request(
+                minimum_validation=ValidationLevel.NUMERICAL_REGRESSION,
+            )
+        )
 
 
 def test_dg_public_configs_withhold_incomplete_legacy_wall_requests() -> None:
@@ -79,6 +83,7 @@ def test_suboff_config_with_amr_wall_model_is_withheld_before_runner_execution()
 # is in the audited D3Q19/MRT-Smagorinsky/single-phase matrix, so the public
 # config entry must fail closed at construction time.
 # ---------------------------------------------------------------------------
+
 
 def test_hull_free_surface_v2_default_wall_function_is_withheld_before_run() -> None:
     from tensorlbm.hull_free_surface_v2 import HullFreeSurfaceV2Config

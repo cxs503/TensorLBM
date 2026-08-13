@@ -219,7 +219,11 @@ def momentum_exchange_bfl(
         f:      Distribution tensor ``(19, nz, ny, nx)`` — post-streaming.
         solid:  Boolean solid mask ``(nz, ny, nx)``.
         near:   Near-wall fluid mask ``(nz, ny, nx)``.
-        q_wall: Fractional wall distance ``(nz, ny, nx)`` in [0, 1].
+        q_wall: Fractional wall distance.  Either a scalar field
+                ``(nz, ny, nx)`` in [0, 1] used for all directions, or a
+                per-direction field ``(19, nz, ny, nx)`` matching the
+                lattice stencil (the physically correct BFL form — each
+                link has its own fractional intersection distance).
                 Typically 0.5 for flat walls; varies for curved surfaces.
 
     Returns:
@@ -229,8 +233,13 @@ def momentum_exchange_bfl(
     c = C.to(device).float()
     opp = OPPOSITE.to(device)
 
-    # Inverse q (clamped to avoid division by zero)
-    inv_q = 1.0 / q_wall.clamp(min=1e-6)
+    # Support both scalar (nz,ny,nx) and per-direction (19,nz,ny,nx) q fields.
+    per_direction = q_wall.dim() == 4 and q_wall.shape[0] == 19
+    if per_direction:
+        # Per-direction inverse q, clamped to avoid division by zero.
+        inv_q = 1.0 / q_wall.clamp(min=1e-6)  # (19, nz, ny, nx)
+    else:
+        inv_q = 1.0 / q_wall.clamp(min=1e-6)  # (nz, ny, nx)
 
     fx = torch.tensor(0.0, device=device, dtype=f.dtype)
     fy = torch.tensor(0.0, device=device, dtype=f.dtype)
@@ -249,8 +258,11 @@ def momentum_exchange_bfl(
 
         f_opp_solid = torch.roll(f[opp_i], (-dk, -dj, -di), dims=(0, 1, 2))
 
-        # Weight by 1/q at each crossing cell
-        weight = (crossing.float() * inv_q)
+        # Weight by 1/q at each crossing cell.
+        if per_direction:
+            weight = crossing.float() * inv_q[i]
+        else:
+            weight = (crossing.float() * inv_q)
         contrib = ((f[i] + f_opp_solid) * weight).sum()
         fx = fx + float(ci[0].item()) * contrib
         fy = fy + float(ci[1].item()) * contrib

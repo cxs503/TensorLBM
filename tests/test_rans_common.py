@@ -11,6 +11,7 @@ Hot-path invariants verified:
     - nu_t is a per-cell field (ndim == spatial dims), never a scalar
     - No .item() / .mean().item() / float(tensor) host syncs in collision
 """
+
 from __future__ import annotations
 
 import inspect
@@ -37,6 +38,7 @@ TAU = 0.7  # > 0.5
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _f3d19(nz: int = 4, ny: int = 6, nx: int = 8, u_mag: float = 0.04) -> torch.Tensor:
     rho = torch.rand((nz, ny, nx)) + 0.5
     ux = torch.rand_like(rho) * u_mag
@@ -61,6 +63,7 @@ def _nu_t_field_3d(nz: int = 4, ny: int = 6, nx: int = 8) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Per-cell nu_t invariant
 # ---------------------------------------------------------------------------
+
 
 class TestNuTIsPerCell:
     """nu_t must be a per-cell field, never a scalar."""
@@ -91,6 +94,7 @@ class TestNuTIsPerCell:
 # ---------------------------------------------------------------------------
 # D3Q19 BGK
 # ---------------------------------------------------------------------------
+
 
 class TestRansBgk3d19:
     def test_shape(self) -> None:
@@ -144,6 +148,7 @@ class TestRansBgk3d19:
 # D3Q19 MRT
 # ---------------------------------------------------------------------------
 
+
 class TestRansMrt3d19:
     def test_shape(self) -> None:
         f = _f3d19()
@@ -185,6 +190,7 @@ class TestRansMrt3d19:
 # ---------------------------------------------------------------------------
 # D3Q27 BGK
 # ---------------------------------------------------------------------------
+
 
 class TestRansBgk3d27:
     def test_shape(self) -> None:
@@ -237,6 +243,7 @@ class TestRansBgk3d27:
 # D3Q27 MRT
 # ---------------------------------------------------------------------------
 
+
 class TestRansMrt3d27:
     def test_shape(self) -> None:
         f = _f3d27()
@@ -279,12 +286,15 @@ class TestRansMrt3d27:
 # Unified dispatch: collide_rans_3d
 # ---------------------------------------------------------------------------
 
+
 class TestRansDispatch:
     @pytest.mark.parametrize(
         ("lattice", "collision"),
         [
-            ("D3Q19", "BGK"), ("D3Q19", "MRT"),
-            ("D3Q27", "BGK"), ("D3Q27", "MRT"),
+            ("D3Q19", "BGK"),
+            ("D3Q19", "MRT"),
+            ("D3Q27", "BGK"),
+            ("D3Q27", "MRT"),
         ],
     )
     def test_dispatch_shape_and_finite(self, lattice: str, collision: str) -> None:
@@ -297,8 +307,10 @@ class TestRansDispatch:
     @pytest.mark.parametrize(
         ("lattice", "collision"),
         [
-            ("D3Q19", "BGK"), ("D3Q19", "MRT"),
-            ("D3Q27", "BGK"), ("D3Q27", "MRT"),
+            ("D3Q19", "BGK"),
+            ("D3Q19", "MRT"),
+            ("D3Q27", "BGK"),
+            ("D3Q27", "MRT"),
         ],
     )
     def test_dispatch_conserves_mass(self, lattice: str, collision: str) -> None:
@@ -340,6 +352,7 @@ class TestRansDispatch:
 # Hot-path: no host sync in collision source
 # ---------------------------------------------------------------------------
 
+
 class TestNoHostSync:
     """Source-level check that collision functions contain no GPU→CPU syncs."""
 
@@ -379,14 +392,17 @@ class TestNoHostSync:
 # RANS solver integration: k-epsilon, SA, k-omega SST
 # ---------------------------------------------------------------------------
 
+
 class TestRansKeIntegration:
     """k-epsilon solver → collide_rans_3d → common collision."""
 
     @pytest.mark.parametrize(
         ("lattice", "collision"),
         [
-            ("D3Q19", "BGK"), ("D3Q19", "MRT"),
-            ("D3Q27", "BGK"), ("D3Q27", "MRT"),
+            ("D3Q19", "BGK"),
+            ("D3Q19", "MRT"),
+            ("D3Q27", "BGK"),
+            ("D3Q27", "MRT"),
         ],
     )
     def test_ke_collision_shape_finite_mass(self, lattice: str, collision: str) -> None:
@@ -422,8 +438,10 @@ class TestRansSaIntegration:
     @pytest.mark.parametrize(
         ("lattice", "collision"),
         [
-            ("D3Q19", "BGK"), ("D3Q19", "MRT"),
-            ("D3Q27", "BGK"), ("D3Q27", "MRT"),
+            ("D3Q19", "BGK"),
+            ("D3Q19", "MRT"),
+            ("D3Q27", "BGK"),
+            ("D3Q27", "MRT"),
         ],
     )
     def test_sa_collision_shape_finite_mass(self, lattice: str, collision: str) -> None:
@@ -469,8 +487,10 @@ class TestKOmegaSstIntegration:
     @pytest.mark.parametrize(
         ("lattice", "collision"),
         [
-            ("D3Q19", "BGK"), ("D3Q19", "MRT"),
-            ("D3Q27", "BGK"), ("D3Q27", "MRT"),
+            ("D3Q19", "BGK"),
+            ("D3Q19", "MRT"),
+            ("D3Q27", "BGK"),
+            ("D3Q27", "MRT"),
         ],
     )
     def test_sst_collision_shape_finite_mass(self, lattice: str, collision: str) -> None:
@@ -484,8 +504,15 @@ class TestKOmegaSstIntegration:
         wall_dist = torch.full((nz, ny, nx), 5.0)
         solver = KOmegaSSTSolver(mask=mask, nu_lbm=0.01)
         out = collide_rans_komega_sst(
-            f, solver, ux, uy, uz, tau=TAU, wall_dist=wall_dist,
-            lattice=lattice, collision=collision,
+            f,
+            solver,
+            ux,
+            uy,
+            uz,
+            tau=TAU,
+            wall_dist=wall_dist,
+            lattice=lattice,
+            collision=collision,
         )
         assert out.shape == f.shape
         assert torch.isfinite(out).all()

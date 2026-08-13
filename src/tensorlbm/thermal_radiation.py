@@ -46,6 +46,7 @@ Modest, M. F. (2013). *Radiative Heat Transfer* (3rd ed.). Elsevier.
 Incropera, F. P. et al. (2007). *Fundamentals of Heat and Mass Transfer* (6th
 ed.). Wiley.
 """
+
 from __future__ import annotations
 
 import math
@@ -75,20 +76,23 @@ STEFAN_BOLTZMANN: float = 5.670374419e-8
 # Data containers
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SurfaceRadiationProps:
     """Radiative properties of a bounding surface."""
-    emissivity: float = 0.9            # grey-body emissivity (0–1)
-    solar_absorptance: float = 0.5     # fraction of solar irradiance absorbed
-    temperature: float = 300.0         # surface temperature [K]
-    area: float = 1.0                  # representative surface area [m²]
+
+    emissivity: float = 0.9  # grey-body emissivity (0–1)
+    solar_absorptance: float = 0.5  # fraction of solar irradiance absorbed
+    temperature: float = 300.0  # surface temperature [K]
+    area: float = 1.0  # representative surface area [m²]
 
 
 @dataclass
 class SolarSettings:
     """Direct solar irradiance specification."""
+
     enabled: bool = False
-    irradiance: float = 1000.0         # W/m²  (air-mass-1 ≈ 1353 W/m²)
+    irradiance: float = 1000.0  # W/m²  (air-mass-1 ≈ 1353 W/m²)
     # Unit direction vector pointing FROM the sun TOWARD the scene
     direction: tuple[float, float, float] = (0.0, -1.0, 0.0)
 
@@ -101,6 +105,7 @@ class SolarSettings:
 @dataclass
 class RadiationEnclosureConfig:
     """Configuration for a radiating enclosure."""
+
     surfaces: list[SurfaceRadiationProps] = field(default_factory=list)
     solar: SolarSettings = field(default_factory=SolarSettings)
     # View-factor matrix F[i, j]; if None, equal view factors are assumed
@@ -115,17 +120,19 @@ class RadiationEnclosureConfig:
 @dataclass
 class RadiationResult:
     """Output of a radiation step."""
-    net_flux: list[float]              # W/m² net radiation flux per surface
-    radiosity: list[float]             # W/m² total radiosity per surface
-    irradiation: list[float]           # W/m² total irradiation per surface
-    solar_flux: list[float]            # W/m² solar contribution per surface
-    total_emitted_power: float         # W  total power emitted by all surfaces
-    total_absorbed_power: float        # W  total power absorbed
+
+    net_flux: list[float]  # W/m² net radiation flux per surface
+    radiosity: list[float]  # W/m² total radiosity per surface
+    irradiation: list[float]  # W/m² total irradiation per surface
+    solar_flux: list[float]  # W/m² solar contribution per surface
+    total_emitted_power: float  # W  total power emitted by all surfaces
+    total_absorbed_power: float  # W  total power absorbed
 
 
 # ---------------------------------------------------------------------------
 # Solar flux model
 # ---------------------------------------------------------------------------
+
 
 def solar_flux_on_surface(
     surface_normals: torch.Tensor,
@@ -165,9 +172,8 @@ def solar_flux_on_surface(
 # View-factor utilities
 # ---------------------------------------------------------------------------
 
-def _build_view_factor_matrix(
-    n: int, vf_list: list[list[float]] | None
-) -> torch.Tensor:
+
+def _build_view_factor_matrix(n: int, vf_list: list[list[float]] | None) -> torch.Tensor:
     """Return the (n, n) view-factor matrix F.
 
     If *vf_list* is None, equal view factors (F_ij = 1/(n-1) for i≠j, 0 for
@@ -176,9 +182,7 @@ def _build_view_factor_matrix(
     if vf_list is not None:
         F = torch.tensor(vf_list, dtype=torch.float64)
         if F.shape != (n, n):
-            raise ValueError(
-                f"view_factors must be ({n}×{n}), got {F.shape}"
-            )
+            raise ValueError(f"view_factors must be ({n}×{n}), got {F.shape}")
         return F
 
     # Default: equal view factors for a diffuse enclosure
@@ -195,6 +199,7 @@ def _build_view_factor_matrix(
 # ---------------------------------------------------------------------------
 # Radiosity matrix solve
 # ---------------------------------------------------------------------------
+
 
 def radiosity_matrix_solve(
     surfaces: Sequence[SurfaceRadiationProps],
@@ -235,7 +240,7 @@ def radiosity_matrix_solve(
         J = J_new
 
     G = F @ J + q_solar
-    q_net = J - G   # positive = net outgoing flux [W/m²]
+    q_net = J - G  # positive = net outgoing flux [W/m²]
 
     return J.tolist(), G.tolist(), q_net.tolist()
 
@@ -243,6 +248,7 @@ def radiosity_matrix_solve(
 # ---------------------------------------------------------------------------
 # Main API
 # ---------------------------------------------------------------------------
+
 
 def compute_net_radiation_flux(
     cfg: RadiationEnclosureConfig,
@@ -282,8 +288,7 @@ def compute_net_radiation_flux(
             # Fallback: mean normal facing sun at 45°, all surfaces equal
             cos45 = math.cos(math.radians(45))
             solar_per_surface = [
-                s.solar_absorptance * cfg.solar.irradiance * cos45
-                for s in cfg.surfaces
+                s.solar_absorptance * cfg.solar.irradiance * cos45 for s in cfg.surfaces
             ]
 
     J, G, q_net = radiosity_matrix_solve(
@@ -297,12 +302,8 @@ def compute_net_radiation_flux(
     T_list = [s.temperature for s in cfg.surfaces]
     A_list = [s.area for s in cfg.surfaces]
 
-    total_emitted = sum(
-        sigma * (T_list[i] ** 4) * A_list[i] for i in range(n)
-    )
-    total_absorbed = sum(
-        max(0.0, -q_net[i]) * A_list[i] for i in range(n)
-    )
+    total_emitted = sum(sigma * (T_list[i] ** 4) * A_list[i] for i in range(n))
+    total_absorbed = sum(max(0.0, -q_net[i]) * A_list[i] for i in range(n))
 
     return RadiationResult(
         net_flux=q_net,

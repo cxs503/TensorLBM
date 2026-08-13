@@ -4,6 +4,7 @@ Run directly with ``torchrun --standalone --nproc_per_node=3``; pytest starts
 that command so the tested transport cannot be substituted with in-process
 list copies.
 """
+
 from __future__ import annotations
 
 import os
@@ -14,7 +15,7 @@ from pathlib import Path
 import pytest
 
 
-_WORKER = r'''
+_WORKER = r"""
 import json
 import os
 import torch
@@ -62,7 +63,7 @@ if rank == 0:
 dist.destroy_process_group()
 if any(item["mismatch_all19_owned"] for item in metrics):
     raise SystemExit(3)
-'''
+"""
 
 
 @pytest.mark.parametrize("run_under_torchrun", [True])

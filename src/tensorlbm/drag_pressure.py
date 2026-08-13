@@ -25,6 +25,14 @@ from dataclasses import dataclass
 import torch
 
 from .d3q19 import macroscopic3d
+from .d3q27 import macroscopic27
+
+
+def _macroscopic(f):
+    """Auto-detect D3Q19 vs D3Q27 and return (rho, ux, uy, uz)."""
+    if f.shape[0] == 27:
+        return macroscopic27(f)
+    return macroscopic3d(f)
 
 
 class SurfaceMesh:
@@ -789,7 +797,7 @@ def drag_pressure_integration(f, mesh, dpS, extrap='none', p0_method='near_wall'
 
     Returns: (Cd_x, Cd_y, Cd_z) = (fx, fy, fz) / dpS
     """
-    rho, _, _, _ = macroscopic3d(f)
+    rho, _, _, _ = _macroscopic(f)
     p = (rho - 1.0) / 3.0
     # Subtract background pressure p_0 to prevent spurious force from
     # discrete surface non-closure (Σ n·dA ≠ 0 on staircase surface).
@@ -897,7 +905,7 @@ def drag_friction_integration(f, mesh, dpS, nu, q_wall=None, formula='standard')
 
     Verified on Couette flow: Cf error = 0.00% (standard, q_wall=None).
     """
-    rho, ux, uy, uz = macroscopic3d(f)
+    rho, ux, uy, uz = _macroscopic(f)
     nx, ny, nz = mesh.nx_n, mesh.ny_n, mesh.nz_n
     u_dot_n = ux * nx + uy * ny + uz * nz
     ut_x = ux - u_dot_n * nx   # u_1 tangential (near-wall cell)
@@ -979,6 +987,6 @@ def drag_total(f, mesh, dpS, nu):
 
 def compute_cp_field(f, u_in):
     """Cp = p / (0.5 * u^2)."""
-    rho, _, _, _ = macroscopic3d(f)
+    rho, _, _, _ = _macroscopic(f)
     p = (rho - 1.0) / 3.0
     return p / (0.5 * u_in**2)

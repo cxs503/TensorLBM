@@ -31,6 +31,7 @@ Filippova O., Hänel D. (1998)
     Grid refinement for lattice-BGK models.
     J. Comput. Phys. 147, 219–228.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -46,9 +47,7 @@ SUPPORTED_LATTICES: tuple[str, ...] = ("D3Q19", "D3Q27")
 def _validate_lattice(lattice: str) -> str:
     """Return *lattice* if supported, else raise ValueError."""
     if lattice not in SUPPORTED_LATTICES:
-        raise ValueError(
-            f"Unsupported lattice {lattice!r}; supported: {SUPPORTED_LATTICES}"
-        )
+        raise ValueError(f"Unsupported lattice {lattice!r}; supported: {SUPPORTED_LATTICES}")
     return lattice
 
 
@@ -56,13 +55,16 @@ def _validate_lattice(lattice: str) -> str:
 # Lattice dispatch helpers
 # ---------------------------------------------------------------------------
 
+
 def _macroscopic(lattice: str, f: torch.Tensor):
     """Dispatch to the correct macroscopic function for *lattice*."""
     if lattice == "D3Q19":
         from .d3q19 import macroscopic3d
+
         return macroscopic3d(f)
     elif lattice == "D3Q27":
         from .d3q27 import macroscopic27
+
         return macroscopic27(f)
     raise ValueError(f"Unsupported lattice: {lattice!r}")
 
@@ -71,9 +73,11 @@ def _equilibrium(lattice: str, rho, ux, uy, uz, *, device=None) -> torch.Tensor:
     """Dispatch to the correct equilibrium function for *lattice*."""
     if lattice == "D3Q19":
         from .d3q19 import equilibrium3d
+
         return equilibrium3d(rho, ux, uy, uz, device=device)
     elif lattice == "D3Q27":
         from .d3q27 import equilibrium27
+
         return equilibrium27(rho, ux, uy, uz, device=device)
     raise ValueError(f"Unsupported lattice: {lattice!r}")
 
@@ -81,6 +85,7 @@ def _equilibrium(lattice: str, rho, ux, uy, uz, *, device=None) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # FH (Filippova–Hänel) coarse-to-fine / fine-to-coarse — lattice-dispatched
 # ---------------------------------------------------------------------------
+
 
 def _fh_coarse_to_fine_3d(
     f_coarse: torch.Tensor,
@@ -99,17 +104,19 @@ def _fh_coarse_to_fine_3d(
     f_eq = _equilibrium(lattice, rho, ux, uy, uz, device=f_coarse.device)
     f_neq = f_coarse - f_eq
 
-    scale = tau_f / tau_c
+    # f_neq scales as (τ_f·Δt_f)/(τ_c·Δt_c) = τ_f/(ratio·τ_c); the 1/ratio
+    # time-step factor is required for interface stress continuity.
+    scale = tau_f / (ratio * tau_c)
     f_rescaled = f_eq + scale * f_neq
 
+    # Cell-block upsampling (correct ratio-2 coordinate mapping; see
+    # adaptive_refinement._coarse_to_fine_2d for why align_corners
+    # interpolation is wrong for LBM grid refinement).
     q, nz_c, ny_c, nx_c = f_rescaled.shape
-    out = F.interpolate(
-        f_rescaled.unsqueeze(0),
-        size=(nz_c * ratio, ny_c * ratio, nx_c * ratio),
-        mode="trilinear",
-        align_corners=True,
-    )
-    return out.squeeze(0)
+    out = (f_rescaled.repeat_interleave(ratio, dim=1)
+           .repeat_interleave(ratio, dim=2)
+           .repeat_interleave(ratio, dim=3))
+    return out.contiguous()
 
 
 def _fh_fine_to_coarse_3d(
@@ -124,13 +131,15 @@ def _fh_fine_to_coarse_3d(
     rho, ux, uy, uz = _macroscopic(lattice, f_avg)
     f_eq = _equilibrium(lattice, rho, ux, uy, uz, device=f_avg.device)
     f_neq = f_avg - f_eq
-    scale = tau_c / tau_f
+    # Inverse of the coarse→fine scaling: (τ_c·Δt_c)/(τ_f·Δt_f) = ratio·τ_c/τ_f.
+    scale = ratio * tau_c / tau_f
     return f_eq + scale * f_neq
 
 
 # ---------------------------------------------------------------------------
 # Public refine / coarsen operations
 # ---------------------------------------------------------------------------
+
 
 def refine(
     f_coarse: torch.Tensor,
@@ -203,6 +212,7 @@ def coarsen(
 # Halo exchange between patches
 # ---------------------------------------------------------------------------
 
+
 def halo_exchange(
     patch_f: torch.Tensor,
     parent_f: torch.Tensor,
@@ -234,7 +244,7 @@ def halo_exchange(
     _validate_lattice(lattice)
     b = box
     r = ratio
-    f_parent_patch = parent_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1]
+    f_parent_patch = parent_f[:, b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1]
     if use_fh:
         f_up = _fh_coarse_to_fine_3d(f_parent_patch, lattice, tau_p, tau_c, r)
     else:
@@ -253,6 +263,7 @@ def halo_exchange(
 # ---------------------------------------------------------------------------
 # AMRPatch3D — public data container
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class AMRPatch3D:
