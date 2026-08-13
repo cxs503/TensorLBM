@@ -19,14 +19,14 @@ Per-root-step data flow (:func:`tensorlbm.octree_boundary.stepping.step_octree_s
   link contributions (small), plus the full ``f_leaf`` once per root step for
   the restriction.
 
-Bit-identity contract: every state-affecting reduction (restriction, reflux
-interface transfers, the observed MEM force) is assembled on the root device
-in the *global* order of the unsharded run (Morton enum order for leaves,
-interface-link row order for transfers, boundary-link enum order for the
-force), so on a fixed device type a sharded run reproduces the unsharded run
-bit for bit.  Cross-device transfers are exact copies; element-wise kernels
-(ghost fill, collision, streaming, BFL reconstruction) act per element and are
-device-deterministic.
+Numerical-equivalence contract: every state-affecting reduction (restriction,
+reflux interface transfers, the observed MEM force) is assembled on the root
+device in the *global* order of the unsharded run (Morton enum order for
+leaves, interface-link row order for transfers, boundary-link enum order for
+the force).  Cross-device transfers are exact copies.  The collision callback
+may itself reduce over its spatial extent; CPU/GPU kernels can therefore differ
+by a few ulps when shard sizes differ.  Regression tests require explicit
+roundoff-level agreement, not a false bitwise-identity promise.
 
 All torch constants (Morton indices, weights, the D3Q19 ``C``/``OPPOSITE``
 arrays) are explicitly moved to the shard device at build time — never
@@ -211,6 +211,22 @@ class OctreeLeafShard:
     ghost_vals: torch.Tensor | None = None
     out: torch.Tensor | None = None
     remote_values: torch.Tensor | None = None   # facade alias of remote_buf
+    # LES context: remote leaf macroscopic velocities are exchanged before
+    # collision so WALE/Smagorinsky gradients remain continuous across a
+    # Morton shard cut.  ``les_fan_members`` stores local member indices as
+    # non-negative values and remote macro slots as ``-(slot+1)``.
+    les_remote_pos: torch.Tensor = field(
+        default_factory=lambda: torch.empty(0, dtype=torch.int64),
+    )
+    les_remote_global: list[int] = field(default_factory=list)
+    les_remote_centers: torch.Tensor = field(
+        default_factory=lambda: torch.empty((0, 3)),
+    )
+    les_fan_members: dict = field(default_factory=dict)
+    les_fan_distance: dict = field(default_factory=dict)
+    les_requests: list = field(default_factory=list)
+    les_neighbor_velocity: torch.Tensor | None = None
+    les_neighbor_distance: torch.Tensor | None = None
     _octree: OctreeGrid | None = field(default=None, repr=False)
 
     # -- facade attributes used by bfl callbacks ---------------------------------
@@ -358,7 +374,7 @@ def shard_octree_shell(
     # needs ``populations_t[opp[q], src_local]`` once per substep.  Fan-out
     # groups are fetched member by member into a contiguous per-group region
     # of the receiving shard's remote_buf (member order = group order, so the
-    # group mean is bit-identical to the unsharded gather).
+    # group mean uses the same member order as the unsharded gather).
     n_remote = torch.zeros(len(shards), dtype=torch.int64)
     n_fan = torch.zeros(len(shards), dtype=torch.int64)
     fan_bases: list[dict[tuple[int, int], int]] = [{} for _ in shards]
@@ -450,6 +466,92 @@ def shard_octree_shell(
         shard.fan_len = fan_len.to(shard.device)
         shard.remote_buf = remote_buf
         shard.requests = requests
+
+    # Build the independent, direction-free macro exchange used by the
+    # sparse-leaf LES closure.  The streaming request plan above contains one
+    # population per direction; a velocity gradient needs all Q populations
+    # of every remote leaf, so it must use a deduplicated leaf plan.
+    for s, shard in enumerate(shards):
+        lo, hi = bounds[s]
+        nt_global = octree.neighbor_table[:, lo:hi]
+        remote_global: set[int] = set()
+        for q in range(Q):
+            for j in torch.nonzero(
+                (nt_global[q] >= 0)
+                & ((nt_global[q] < lo) | (nt_global[q] >= hi)),
+                as_tuple=False,
+            ).squeeze(1).tolist():
+                remote_global.add(int(nt_global[q, j].item()))
+        fan_specs: dict[tuple[int, int], list[int]] = {}
+        for (i, d), members in fan_groups.items():
+            if not (lo <= i < hi):
+                continue
+            key = (int(d), int(i - lo))
+            fan_specs[key] = [int(m) for m in members]
+            remote_global.update(
+                m for m in members
+                if not (lo <= int(m) < hi)
+            )
+        remote_list = sorted(remote_global)
+        remote_slot = {g: k for k, g in enumerate(remote_list)}
+        shard.les_remote_pos = torch.full(
+            (Q, hi - lo), -1, dtype=torch.int64, device=shard.device,
+        )
+        for q in range(Q):
+            src = nt_global[q]
+            for j in torch.nonzero(
+                (src >= 0) & ((src < lo) | (src >= hi)),
+                as_tuple=False,
+            ).squeeze(1).tolist():
+                shard.les_remote_pos[q, j] = remote_slot[int(src[j].item())]
+        fan_encoded: dict[tuple[int, int], list[int]] = {}
+        for key, members in fan_specs.items():
+            encoded: list[int] = []
+            for m in members:
+                if lo <= m < hi:
+                    encoded.append(m - lo)
+                else:
+                    encoded.append(-remote_slot[m] - 1)
+            fan_encoded[key] = encoded
+        shard.les_fan_members = fan_encoded
+        shard.les_remote_global = remote_list
+        shard.les_remote_centers = octree.leaf_center[remote_list].to(
+            device=shard.device,
+        ) if remote_list else torch.empty(
+            (0, 3), dtype=octree.leaf_center.dtype, device=shard.device,
+        )
+        fan_distance: dict[tuple[int, int], float] = {}
+        for (d, i_local), members in fan_specs.items():
+            if members:
+                mean_center = octree.leaf_center[members].mean(dim=0)
+                fan_distance[(d, i_local)] = float(
+                    (octree.leaf_center[lo + i_local] - mean_center)
+                    .abs().amax().item()
+                )
+        shard.les_fan_distance = fan_distance
+        shard.les_remote_velocity = torch.empty(
+            (3, len(remote_list)), dtype=shard.f_leaf.dtype,
+            device=shard.device,
+        )
+        # Group remote leaves by owner shard.  The owner indices are local to
+        # the source shard; receiver slots are local to this shard.
+        for t, (t_lo, t_hi) in enumerate(bounds):
+            pairs = [
+                (g - t_lo, remote_slot[g])
+                for g in remote_list if t_lo <= g < t_hi
+            ]
+            if pairs:
+                shard.les_requests.append((
+                    t,
+                    torch.tensor(
+                        [p[0] for p in pairs], dtype=torch.int64,
+                        device=shards[t].device,
+                    ),
+                    torch.tensor(
+                        [p[1] for p in pairs], dtype=torch.int64,
+                        device=shard.device,
+                    ),
+                ))
 
     return shards
 

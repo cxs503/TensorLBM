@@ -174,12 +174,11 @@ def sphere_distance_field(
 ) -> torch.Tensor:
     """Signed distance ``|p - center| - radius`` of every cell centre.
 
-    The sample points are the cell *centres* ``(i + 0.5)`` in each axis
-    (the L1 block convention used everywhere else, e.g. the leaf centres
-    ``(coords + 0.5) / 2^level`` and the ghost-plan sampling).  Evaluating
-    at the integer cell corners instead would shift the shell band by half
-    a cell relative to the sphere centre and break the reflection symmetry
-    of the shell/leaf/BFL geometry about the body.
+    The sample points are the cell *centres* ``(i + 0.5)`` in each axis.
+    The octree shell is a finite-volume sub-cell representation: its leaf
+    centres are ``(coords + 0.5) / 2^level`` and its restriction maps their
+    volume averages into the L1 cells.  Parent-mask and leaf coordinates must
+    therefore use this same cell-centred convention.
     """
     nz, ny, nx = shape
     zz, yy, xx = torch.meshgrid(
@@ -205,10 +204,12 @@ def build_shell_cell_mask(
 ) -> tuple[torch.Tensor, torch.Tensor, float]:
     """Near-wall fluid cell mask of the L1 block.
 
-    A cell belongs to the shell when its centre is fluid (outside the sphere)
-    and its distance to the sphere surface is ``<= bl_thickness_cells +
-    transition`` (the transition band guarantees a buffer zone around the
-    wall-adjacent leaves, mirroring the 3D-LBM-AMR ``Remap`` buffer).
+    A cell belongs to the shell when its *volume* contains fluid and
+    intersects the ``radius + bl_thickness_cells + transition`` band.  The
+    AABB test is essential for cut parent cells: a parent cell whose centre
+    lies inside the body can still contain fluid sub-leaves.  Excluding it
+    leaves the upstream donor of a ``q < 0.5`` BFL link outside the shell and
+    silently substitutes a ghost fallback for a real fluid population.
 
     Returns:
         ``(solid, shell_mask, delta_mask)`` — the solid cell mask, the bool
@@ -216,20 +217,28 @@ def build_shell_cell_mask(
         ``delta_mask`` used for the analytic shell volume.
     """
     nz, ny, nx = shape
-    # Solid = cells whose *centre* lies inside the analytic sphere.  This is
-    # the same convention as the shell band (``sphere_distance_field``), the
-    # leaf split (``_level1_leaves`` centre test) and the neighbour-table
-    # SOLID sentinel (``topology._classify_targets`` samples leaf centres).
-    # The corner-based voxel mask from ``boundaries3d.sphere_mask`` instead
-    # marks cells whose nearest *corner* is inside — for an integer-centred
-    # sphere that cell (e.g. index ``c + R``, corner exactly on the surface)
-    # has its centre *outside* the wall, so marking it solid silently deletes
-    # the surface leaf ring on that side and breaks the reflection symmetry
-    # of the shell/BFL geometry about the body (spurious net link force).
-    solid = sphere_distance_field(shape, center, radius, device) <= 0.0
-    dist = sphere_distance_field(shape, center, radius, device)
     delta_mask = float(bl_thickness_cells) + float(transition)
-    shell_mask = (~solid) & (dist <= delta_mask)
+    # For a unit L1 AABB centred at ``p``, its closest/farthest distances to
+    # the sphere centre are obtained component-wise.  A cell has any fluid
+    # volume iff its farthest corner lies outside the sphere; it reaches the
+    # shell band iff its closest point is no farther than the band radius.
+    nz, ny, nx = shape
+    zz, yy, xx = torch.meshgrid(
+        torch.arange(nz, device=device, dtype=torch.float64) + 0.5,
+        torch.arange(ny, device=device, dtype=torch.float64) + 0.5,
+        torch.arange(nx, device=device, dtype=torch.float64) + 0.5,
+        indexing="ij",
+    )
+    offset = torch.stack((xx - center[0], yy - center[1], zz - center[2]), dim=-1).abs()
+    min_dist = ((offset - 0.5).clamp_min(0.0).square().sum(dim=-1)).sqrt()
+    max_dist = ((offset + 0.5).square().sum(dim=-1)).sqrt()
+    # The L1 freeze mask may contain only cells wholly inside the body.  Cut
+    # cells are owned by the octree and must stay writable so restriction can
+    # return their volume-averaged fluid state.  Treating centre-inside cut
+    # cells as solid makes the same volume both a frozen L1 solid and an
+    # active shell cell, breaking the momentum/control-volume balance.
+    solid = max_dist <= radius
+    shell_mask = (max_dist > radius) & (min_dist <= radius + delta_mask)
     return solid, shell_mask, delta_mask
 
 
@@ -494,18 +503,13 @@ def build_octree_shell(
     l1_coords, l1_centers, l1_inside = _level1_leaves(
         shell_cells, center, radius, device,
     )
-    # drop only leaves *fully* inside the sphere (max corner distance <= R);
-    # leaves whose box crosses the surface are kept and refined below, so the
-    # solid drop happens at depth-2 granularity and no depth-1-scale volume is
-    # lost to the wall discretisation.
-    c = torch.tensor(center, dtype=torch.float64, device=device)
-    d_abs = (l1_centers - c).abs()
-    fully_inside = (((d_abs + 0.25) ** 2).sum(dim=1) <= radius ** 2)
-    keep1 = ~fully_inside
-    l1_coords, l1_centers = l1_coords[keep1], l1_centers[keep1]
-
-    # depth-2 refinement criterion: the depth-1 leaf box crosses the sphere
-    # surface (body-fitted wall at depth-2 resolution)
+    # Refine every depth-1 box crossed by the analytic surface *before*
+    # discarding centre-inside leaves.  A crossed parent can have its centre
+    # inside the body while still owning fluid depth-2 children on its outer
+    # side.  At the terminal resolution the LBM node itself must be fluid:
+    # retaining a centre-inside leaf makes it collide as fluid but it cannot
+    # carry a BFL link (the q-field correctly regards its centre as solid).
+    # That creates a thin, unphysical permeable layer inside the wall.
     from tensorlbm.octree_boundary.qfield import compute_q_sphere_at_points
 
     l1_dx = torch.full((l1_coords.shape[0],), 0.5, dtype=torch.float64)
@@ -516,7 +520,7 @@ def build_octree_shell(
         l1_centers, 0.25, center, radius,
     )
 
-    # ---- depth-2 leaves (wall-adjacent depth-1 leaves only) ---------------
+    # ---- terminal fluid leaves ---------------------------------------------
     l2_coords = l2_centers = None
     if d_max >= 2 and bool(refine.any()):
         l2_coords, l2_centers, l2_inside = _level2_leaves(
@@ -524,7 +528,11 @@ def build_octree_shell(
         )
         keep2 = ~l2_inside
         l2_coords, l2_centers = l2_coords[keep2], l2_centers[keep2]
-        l1_coords, l1_centers = l1_coords[~refine], l1_centers[~refine]
+        keep1 = (~refine) & (~l1_inside)
+        l1_coords, l1_centers = l1_coords[keep1], l1_centers[keep1]
+    else:
+        keep1 = ~l1_inside
+        l1_coords, l1_centers = l1_coords[keep1], l1_centers[keep1]
 
     # ---- assemble, sort by (level, morton) --------------------------------
     parts_morton: list[torch.Tensor] = []
@@ -602,8 +610,11 @@ def build_octree_shell(
         },
     )
     # stash working sets for the topology builder (leaf-enum order = the
-    # sorted order above, so coords must be re-sorted to match the enums)
-    coords_sorted = coords[order]
+    # sorted order above, so coords are already re-sorted to match the enums;
+    # NOTE: coords was permuted by ``order`` in the sort block above, applying
+    # ``order`` again here would double-permute and scramble the neighbour
+    # table relative to the leaf centres)
+    coords_sorted = coords
     grid._l1_coords = coords_sorted[:n1].contiguous()
     grid._l2_coords = coords_sorted[n1:].contiguous()
     grid._k = k

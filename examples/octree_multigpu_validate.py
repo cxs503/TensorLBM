@@ -13,16 +13,15 @@ The shell is advanced with ``step_octree_shell_sharded`` (per-substep
 collision runs on each shard's own device; ghost fill, restriction, reflux
 interface transfers and the MEM force are reassembled on the root device in
 the global order).  See ``src/tensorlbm/octree_boundary/sharding.py`` for the
-bit-identity contract: on a fixed device type a sharded run reproduces the
-unsharded run bit for bit, and cross-device exchanges are exact copies.
+numerical-equivalence contract: state-affecting reductions are assembled in
+global order and cross-device exchanges are exact copies; collision kernels
+may differ by a few floating-point ulps when shard sizes differ.
 
-One shard (``--fine-devices cuda:0``) is therefore bit-identical to the
-unsharded ``step_octree_shell`` run on the same device; two shards must stay
-bitwise equal.  Leaf LES (``--lattice D3Q27 --les-model wale``) runs the MRT
-``leaf_les_collide`` on each shard's local neighbour table — cross-shard
-neighbours resolve through the REMOTE sentinel as missing (zero gradient on
-the Morton cut surface, a localised approximation that does not affect
-stability).
+One shard (``--fine-devices cuda:0``) agrees with the unsharded
+``step_octree_shell`` run to roundoff on the same device; multiple shards are
+checked with the same tolerance.  Leaf LES (D3Q19 or D3Q27) runs the sparse-leaf MRT closure;
+the sharded stepper exchanges remote macroscopic velocities before collision,
+so cross-shard and coarse/fine gradients are retained across Morton cuts.
 
 Example (dual GPU on the supercomputer, ``CUDA_VISIBLE_DEVICES=1,2``):
 
@@ -31,7 +30,7 @@ Example (dual GPU on the supercomputer, ``CUDA_VISIBLE_DEVICES=1,2``):
       --nx 96 --ny 64 --nz 64 --radius 6 --reynolds 100 \\
       --steps 1000 --warmup-steps 300 --ramp-steps 100 --output out_2gpu.json
 
-Equivalence check (single vs dual GPU, 50 steps, bitwise Cd):
+Equivalence check (single vs dual GPU, 50 steps, roundoff-level Cd):
 
   ... --fine-devices cuda:0    --steps 50 --warmup-steps 10 --output s1.json
   ... --fine-devices cuda:0,cuda:1 --steps 50 --warmup-steps 10 --output s2.json
@@ -47,6 +46,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import time
 from pathlib import Path
 
@@ -101,7 +101,7 @@ def parser() -> argparse.ArgumentParser:
         help="comma-separated device list for the octree shell leaves "
              "(e.g. 'cuda:0,cuda:1'); one shard per device, leaves split in "
              "Morton order.  Default = the root --device (single shard, "
-             "bit-identical to the unsharded shell stepper).",
+             "roundoff-equivalent to the unsharded shell stepper).",
     )
     p.add_argument("--nx", type=int, default=96)
     p.add_argument("--ny", type=int, default=64)
@@ -144,6 +144,13 @@ def parser() -> argparse.ArgumentParser:
              "Stable at very high Re where the (3/q)*moving_base term "
              "diverges as tau->0.5; correct for a stationary body.",
     )
+    p.add_argument(
+        "--no-bfl", action="store_true",
+        help="Disable the BFL wall reconstruction entirely: the shell wall "
+             "falls back to the stream_gather SOLID bounce-back (staircase "
+             "no-slip at the leaf centers) and no MEM force is produced. "
+             "Diagnostic isolation of the BFL contribution to the drag.",
+    )
     p.add_argument("--ghost-interpolation", choices=("injection", "trilinear"),
                    default="injection")
     p.add_argument("--ghost-fallback", choices=("on", "off"), default="on",
@@ -151,6 +158,11 @@ def parser() -> argparse.ArgumentParser:
                         "diagnostic: trilinear sample over frozen-solid cells)")
     p.add_argument("--report-interval", type=int, default=100)
     p.add_argument("--statistics-window-steps", type=int, default=0)
+    p.add_argument(
+        "--minimum-statistics-convective-times", type=float, default=5.0,
+        help="Minimum trailing statistics duration in body-diameter convective "
+        "times required for physical acceptance (default: 5).",
+    )
     p.add_argument("--interface-shift", type=float, default=0.0,
                    help="sphere-centre shift in COARSE cells (0.25 = one "
                         "leaf cell / half an L1 cell)")
@@ -159,9 +171,9 @@ def parser() -> argparse.ArgumentParser:
                         "Cd change (acceptance: < 1%)")
     p.add_argument(
         "--force-trace", action="store_true",
-        help="record the per-root-step streamwise MEM/CV force into the JSON "
-             "(full-precision float64 trace for bitwise single-vs-dual-GPU "
-             "equivalence checks).",
+         help="record the per-root-step streamwise MEM/CV force into the JSON "
+              "(full-precision float64 trace for single-vs-dual-GPU "
+              "roundoff-equivalence checks).",
     )
     p.add_argument("--output", required=True)
     return p
@@ -331,6 +343,8 @@ def run_case(
     mem_trace: list[float] = []
     cv_trace: list[float] = []
     max_reflux_residual = 0.0
+    min_density_seen = float("inf")
+    min_population_seen = float("inf")
     joint_mass0: float | None = None
     joint_mass_end: float | None = None
     current_step = 0
@@ -366,19 +380,40 @@ def run_case(
         raise ValueError(f"unexpected hierarchy level {level}")
 
     def shell_advance(
-        f: torch.Tensor, tau: float, level: int, substep: int,
+        f: torch.Tensor, tau: float, level: int, substep: int, *, shard=None,
     ) -> AMRAdvanceResult:
         # The sharded stepper calls this once per shard with the shard's own
         # f_leaf tensor; resolve the shard by device so the LES neighbour
         # gather uses the shard-local (REMOTE-rewritten) table.
-        shard = shard_by_device.get(f.device)
+        if os.environ.get("OCTREE_DEBUG_NAN"):
+            bad = ~torch.isfinite(f)
+            if bool(bad.any()):
+                lev = shard_by_device.get(f.device)
+                lev_a = lev.leaf_level if lev is not None else octree.leaf_level
+                cen_a = octree.leaf_center  # single-shard: local == global
+                print(
+                    f"[dbg] step={current_step} substep={substep} "
+                    f"shell_advance ENTRY f non-finite: "
+                    f"{int(bad.sum().item())}/{f.numel()} "
+                    f"levels={lev_a[bad.any(dim=0)][:5].tolist()} "
+                    f"centers={cen_a[bad.any(dim=0)][:3].tolist()} "
+                    f"min={float(f.min().item()):.4e} max={float(f.max().item()):.4e}",
+                    flush=True,
+                )
+        # The sharded stepper passes the active shard explicitly when the
+        # callback accepts ``shard``.  Fall back to the device map only for
+        # legacy callers; a device map cannot distinguish two same-device
+        # shards.
+        shard = shard or shard_by_device.get(f.device)
         if shard is not None:
             nt = shard.neighbor_table
             n_leaf = shard.n_leaf
+            leaf_level = shard.leaf_level
         else:
             nt = octree.neighbor_table
             n_leaf = octree.n_leaf
-        if args.collision is None and args.lattice == "D3Q27":
+            leaf_level = octree.leaf_level
+        if args.collision is None:
             # LES on octree leaves via neighbour-table gathers (spatially
             # correct; the regular-grid WALE roll semantics are wrong on SoA).
             from tensorlbm.octree_boundary.les import leaf_les_collide
@@ -394,6 +429,15 @@ def run_case(
                 model="wale" if args.les_model == "wale" else "smagorinsky",
                 C_w=args.cw_wale, C_s=args.cs_smag,
                 dx=2.0 ** (-octree.d_max) * 0.5,
+                leaf_level=leaf_level,
+                leaf_center=(octree.leaf_center[shard.lo:shard.hi]
+                             if shard is not None else octree.leaf_center),
+                neighbor_velocity=(
+                    shard.les_neighbor_velocity if shard is not None else None
+                ),
+                neighbor_distance=(
+                    shard.les_neighbor_distance if shard is not None else None
+                ),
             ).view(f.shape)
             if not bool(torch.isfinite(collided).all()):
                 raise FloatingPointError(
@@ -433,6 +477,10 @@ def run_case(
             q_min=args.q_min,
         )
 
+    # Tell the generic sharded stepper whether it must exchange LES neighbour
+    # velocities.  Explicit cumulant/cascaded runs avoid this extra exchange.
+    shell_advance.uses_sparse_les = args.collision is None
+
     def joint_mass() -> float:
         assert octree._shell_mask is not None
         covered = octree._shell_mask
@@ -466,21 +514,27 @@ def run_case(
             tau_coarse=config1.tau_fine,
             l1_post=l1_posts if config1.reflux else None,
             shell_level=1, ghost_plan=ghost_plan,
-            bfl_fn=bfl_callback, force_ledger=ledger,
+            bfl_fn=(None if args.no_bfl else bfl_callback),
+            force_ledger=ledger,
         )
         max_reflux_residual = max(
             max_reflux_residual, abs(shell_ledger.mass_residual),
         )
         ledger.observe_cv_force(
             l1_old_phys, l1_pre_shell, l1_posts, cv, solid=l1_solid_phys,
-            wall_mom_l1=ledger.wall_momentum_l1(dx_leaf, dt_leaf),
+            wall_mom_l1=(None if args.no_bfl
+                         else ledger.wall_momentum_l1(dx_leaf, dt_leaf)),
         )
         if args.force_trace:
-            mem_trace.append(float(ledger.mem_force[0].item()))
+            mem_trace.append(
+                float(ledger.mem_force[0].item())
+                if not args.no_bfl else 0.0,
+            )
             assert ledger.cv_force is not None
             cv_trace.append(float(ledger.cv_force[0].item()))
         if current_step > args.warmup_steps:
-            mem_samples.append(float(ledger.mem_force[0].item()))
+            if not args.no_bfl:
+                mem_samples.append(float(ledger.mem_force[0].item()))
             assert ledger.cv_force is not None
             cv_samples.append(float(ledger.cv_force[0].item()))
         ledger.reset()
@@ -496,12 +550,26 @@ def run_case(
             raise FloatingPointError(
                 f"non-finite shard populations at step {current_step}",
             )
+        if current_step % args.report_interval == 0 or current_step == args.steps:
+            min_density_seen = min(
+                min_density_seen,
+                float(l1_fine.sum(dim=0).min().item()),
+            )
+            min_population_seen = min(
+                min_population_seen,
+                float(l1_fine.min().item()),
+                *(float(s.f_leaf.min().item()) for s in shards),
+            )
         if current_step % args.report_interval == 0 and mem_samples:
             recent_mem = mem_samples[-args.report_interval:]
             recent_cv = cv_samples[-args.report_interval:]
+            cd_mem_s = (
+                f"Cd_mem={sum(recent_mem)/len(recent_mem)/dynamic_area_mem:.6f} "
+                if recent_mem else "Cd_mem=      n/a "
+            )
             print(
                 f"[{label}] step={current_step}/{args.steps} "
-                f"Cd_mem={sum(recent_mem)/len(recent_mem)/dynamic_area_mem:.6f} "
+                f"{cd_mem_s}"
                 f"Cd_cv={sum(recent_cv)/len(recent_cv)/dynamic_area_cv:.6f} "
                 f"max_ref_res={max_reflux_residual:.2e} "
                 f"steps/s={current_step/(time.time()-started):.2f}",
@@ -510,24 +578,42 @@ def run_case(
 
     wall_seconds = time.time() - started
     joint_mass_end = joint_mass()
-    stats_window = args.statistics_window_steps or len(mem_samples)
-    mem_mean = sum(mem_samples[-stats_window:]) / stats_window
-    cv_mean = sum(cv_samples[-stats_window:]) / stats_window
-    cd_mem = mem_mean / dynamic_area_mem
-    cd_cv = cv_mean / dynamic_area_cv
+    stats_window = args.statistics_window_steps or (
+        len(mem_samples) or len(cv_samples) or 1
+    )
+    mem_mean = (
+        sum(mem_samples[-stats_window:]) / stats_window
+        if mem_samples else float("nan")
+    )
+    cv_mean = (
+        sum(cv_samples[-stats_window:]) / stats_window
+        if cv_samples else float("nan")
+    )
+    cd_mem = mem_mean / dynamic_area_mem if mem_samples else float("nan")
+    cd_cv = cv_mean / dynamic_area_cv if cv_samples else float("nan")
     reference = _schiller_naumann(args.reynolds)
     cd_cv_error_pct = abs(cd_cv - reference) / reference * 100.0
     mem_cv_deviation_pct = (
         abs(cd_mem - cd_cv) / max(abs(cd_cv), 1e-30) * 100.0
+        if mem_samples else float("nan")
     )
     mass_drift = (
         abs(joint_mass_end - joint_mass0) / joint_mass0 if joint_mass0 else 0.0
+    )
+    cv_summary = (
+        summarize_force_history(
+            cv_samples, dynamic_area_cv, args.reynolds, stats_window,
+        ) if cv_samples else None
+    )
+    statistics_convective_times = (
+        stats_window * args.lattice_speed / max(2.0 * radius_leaf, 1.0e-30)
     )
     print(
         f"[{label}] final: Cd_mem={cd_mem:.6f} Cd_cv={cd_cv:.6f} "
         f"ref={reference:.6f} ref_err={cd_cv_error_pct:.3f}% "
         f"mem/cv={mem_cv_deviation_pct:.3f}% mass_drift={mass_drift:.2e} "
         f"max_ref_res={max_reflux_residual:.2e} "
+        f"min_rho={min_density_seen:.3e} min_f={min_population_seen:.3e} "
         f"steps/s={args.steps/wall_seconds:.2f}",
         flush=True,
     )
@@ -553,8 +639,12 @@ def run_case(
         "dynamic_area_cv": dynamic_area_cv,
         "dynamic_area_mem": dynamic_area_mem,
         "max_reflux_residual": max_reflux_residual,
+        "min_density_seen": min_density_seen,
+        "min_population_seen": min_population_seen,
         "joint_mass_drift": mass_drift,
         "samples": stats_window,
+        "statistics_convective_times": statistics_convective_times,
+        "stationarity": (cv_summary or {}).get("stationarity"),
         "n_leaf": int(octree.n_leaf),
         "n_bfl_links": int(octree.bfl_mask.sum().item()),
         "shell_cell_saving": octree.stats.get("saving_fraction", 0.0),
@@ -646,15 +736,37 @@ def main() -> None:
             "no_moving_wall": args.no_moving_wall,
             "ghost_interpolation": args.ghost_interpolation,
             "statistics_window_steps": args.statistics_window_steps,
+            "minimum_statistics_convective_times": (
+                args.minimum_statistics_convective_times
+            ),
             "tau_coarse": 0.5 + 3.0 * args.lattice_speed * 2.0 * args.radius / args.reynolds,
+            "acceptance_requires_samples": 200,
         },
         "runs": runs,
         "invariance": invariance,
         "acceptance": {
             "cd_within_2pct": runs[0]["reference_error_pct_cv"] <= 2.0,
             "mem_cv_within_5pct": runs[0]["mem_cv_deviation_pct"] <= 5.0,
+            "finite_positive_state": (
+                runs[0]["min_density_seen"] > 0.0
+                and runs[0]["min_population_seen"] >= -1.0e-10
+            ),
             "invariance_within_1pct": (
                 invariance is not None and invariance["accepts_1pct"]
+            ),
+            "physical_accuracy_admitted": (
+                runs[0]["reference_error_pct_cv"] <= 2.0
+                and runs[0]["mem_cv_deviation_pct"] <= 5.0
+                and runs[0]["joint_mass_drift"] <= 1.0e-4
+                and runs[0]["samples"] >= 200
+                and runs[0]["statistics_convective_times"] >= (
+                    args.minimum_statistics_convective_times
+                )
+                and runs[0]["stationarity"] is not None
+                and runs[0]["stationarity"]["relative_range_pct"] <= 1.0
+                and runs[0]["stationarity"]["half_mean_drift_pct"] <= 0.5
+                and runs[0]["min_density_seen"] > 0.0
+                and runs[0]["min_population_seen"] >= -1.0e-10
             ),
         },
     }
@@ -665,6 +777,8 @@ def main() -> None:
     print(
         f"ACCEPTANCE: Cd<=2%: {result['acceptance']['cd_within_2pct']} "
         f"| MEM/CV<=5%: {result['acceptance']['mem_cv_within_5pct']} "
+        f"| state-positive: {result['acceptance']['finite_positive_state']} "
+        f"| physical-admitted: {result['acceptance']['physical_accuracy_admitted']} "
         f"| invariance<1%: {result['acceptance']['invariance_within_1pct']}",
         flush=True,
     )

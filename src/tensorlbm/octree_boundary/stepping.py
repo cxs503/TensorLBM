@@ -222,6 +222,12 @@ def build_ghost_plan(
     # bfl_apply_gather donor conventions).
     p_xyz = centers64[leaf] + c_vec[d_link].to(torch.float64) * dx[:, None]
     p = p_xyz[:, [2, 1, 0]]                             # (z, y, x) world
+    # The restricted shell stores volume averages in the L1 covered cells.
+    # Those parent values are sampled as cell-centred quantities at the
+    # shell/L1 interface, hence the local world-to-index map retains the
+    # half-cell offset even though the L1 wall mask itself is node-centred.
+    # Keeping this interface convention avoids changing the established
+    # subcycling transfer stencil while the parent wall geometry is aligned.
     continuous = p - 0.5                                # coarse-index coords
     lo = torch.floor(continuous).to(torch.int64)
     hi = lo + 1
@@ -455,6 +461,54 @@ def observe_shell_interface_transfer(
 # ---------------------------------------------------------------------------
 
 
+def _segmented_sum(segments: torch.Tensor, values: torch.Tensor, n_segments: int) -> torch.Tensor:
+    """Deterministic segmented reduction: sum ``values[..., i]`` grouped by ``segments[i]``.
+
+    ``segments``: ``(n,)`` int64 with values in ``[0, n_segments)``.
+    ``values``: ``(..., n)`` tensor.
+    Returns ``(..., n_segments)``.
+
+    Unlike ``scatter_add_`` (whose CUDA kernel uses a run-dependent atomic
+    accumulation order and therefore drifts by ~1 ulp between otherwise
+    identical runs), this sums each group in a fixed, device-independent
+    order (stable-sorted by segment id, i.e. ascending leaf enum within each
+    group) via a prefix sum.  This makes the shell restriction reproducible
+    bit for bit, which is what the sharded-vs-unsharded equivalence contract
+    requires (the restriction is the only state-affecting reduction that was
+    still order-unspecified).
+    """
+    n = segments.numel()
+    device = segments.device
+    out_shape = (*values.shape[:-1], n_segments)
+    if n == 0:
+        return torch.zeros(out_shape, dtype=values.dtype, device=values.device)
+    order = torch.argsort(segments, stable=True)
+    seg_sorted = segments[order]
+    vals_sorted = values[..., order]
+    csum = torch.cumsum(vals_sorted, dim=-1)
+    # start position of every present group (first occurrence in sorted order)
+    start_mask = torch.zeros(n, dtype=torch.bool, device=device)
+    start_mask[0] = True
+    if n > 1:
+        start_mask[1:] = seg_sorted[1:] != seg_sorted[:-1]
+    start_pos = torch.nonzero(start_mask, as_tuple=False).squeeze(1)  # (k,)
+    seg_ids = seg_sorted[start_pos]                                   # (k,)
+    # end position of group starting at start_pos[k] is start_pos[k+1]-1
+    end_pos = torch.cat(
+        (
+            start_pos[1:] - 1,
+            torch.tensor([n - 1], dtype=torch.int64, device=device),
+        ),
+    )
+    csum_end = csum[..., end_pos]
+    prefix = torch.zeros_like(csum_end)
+    prefix[..., 1:] = csum_end[..., :-1]
+    sums = csum_end - prefix
+    out = torch.zeros(out_shape, dtype=values.dtype, device=values.device)
+    out[..., seg_ids] = sums
+    return out
+
+
 def restrict_shell_to_block(
     octree: OctreeGrid,
     f_leaf: torch.Tensor,
@@ -473,13 +527,10 @@ def restrict_shell_to_block(
     vol = octree.leaf_volume().to(device)
     cells, cell_id = torch.unique(host, dim=0, return_inverse=True)
     n_cells = cells.shape[0]
-    volume_sum = torch.zeros(
-        n_cells, dtype=torch.float64, device=device,
-    ).scatter_add_(0, cell_id, vol)
+    volume_sum = _segmented_sum(cell_id, vol, n_cells)
     weight = (vol / volume_sum[cell_id]).to(f_leaf.dtype)
-    f_mean = torch.zeros(q, n_cells, dtype=f_leaf.dtype, device=device)
-    f_mean.scatter_add_(
-        1, cell_id.unsqueeze(0).expand(q, n), weight.unsqueeze(0) * f_leaf,
+    f_mean = _segmented_sum(
+        cell_id, weight.unsqueeze(0) * f_leaf, n_cells,
     )
     level_max = torch.zeros(
         n_cells, dtype=torch.float64, device=device,
@@ -774,6 +825,36 @@ def step_octree_shell(
 # ---------------------------------------------------------------------------
 
 
+_DEBUG_STEP = {"n": 0}
+
+
+def _debug_nan(tag: str, tensors: dict, *, substep: int) -> None:
+    """Env-gated (OCTREE_DEBUG_NAN=1) finiteness report per pipeline stage."""
+    import os
+
+    if not os.environ.get("OCTREE_DEBUG_NAN"):
+        return
+    step = _DEBUG_STEP["n"]
+    for name, t in tensors.items():
+        if t is None or t.numel() == 0:
+            continue
+        if not bool(torch.isfinite(t).all()):
+            bad = ~torch.isfinite(t)
+            nbad = int(bad.sum().item())
+            print(
+                f"[dbg] step={step} substep={substep} stage={tag} {name} "
+                f"non-finite: {nbad}/{t.numel()} "
+                f"min={float(t.min().item()):.4e} max={float(t.max().item()):.4e}",
+                flush=True,
+            )
+        else:
+            print(
+                f"[dbg] step={step} substep={substep} stage={tag} {name} finite "
+                f"min={float(t.min().item()):.4e} max={float(t.max().item()):.4e}",
+                flush=True,
+            )
+
+
 def _stream_gather_shard(shard, populations, f_old, ghost_vals) -> torch.Tensor:
     """Pull-stream one leaf shard through its REMOTE-rewritten neighbour table.
 
@@ -781,8 +862,9 @@ def _stream_gather_shard(shard, populations, f_old, ghost_vals) -> torch.Tensor:
     sources gather from ``populations``, cross-shard sources resolve through
     the pre-filled ``shard.remote_buf``, ghost cells take ``ghost_vals``,
     solid neighbours bounce back, fan-out groups average their (globally
-    ordered) group buffer — every per-element value matches the unsharded
-    gather, so the sharded state is bit-identical.
+    ordered) group buffer — the gather itself is element-wise equivalent to the
+    unsharded path; the collision callback may still introduce roundoff-level
+    differences when it reduces over different shard sizes.
     """
     q, n = populations.shape
     out = torch.empty_like(populations)
@@ -926,11 +1008,10 @@ def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
     plain per-shard concatenation would NOT recover it), letting the sharded
     stepper run one ``_fill_ghost_impl`` over the full ghost batch.
 
-    This matters for bit-identity: the D3Q19 moment reductions inside
-    ``_rescale_nonequilibrium_per_cell`` are batch-order sensitive at the
-    1-ulp level, so a per-shard fill (smaller, differently ordered batches)
-    drifts one mantissa bit from the unsharded fill.  A single global-order
-    call reduces exactly the unsharded batch and is bit-identical.
+    The global-order call keeps the ghost interpolation itself reproducible;
+    it avoids an additional drift from reducing smaller, differently ordered
+    batches.  The user collision callback is still allowed to differ by a few
+    ulps across shard sizes.
     """
     if not shards:
         raise ValueError("_merge_shard_ghost_plans requires at least one shard")
@@ -975,6 +1056,84 @@ def _merge_shard_ghost_plans(shards) -> ShellGhostPlan:
     )
 
 
+def _prepare_shard_les_context(octree: OctreeGrid, shards: list) -> None:
+    """Exchange remote leaf velocities and assemble sparse LES neighbours.
+
+    Streaming exchanges one population per direction, which is insufficient
+    for a velocity-gradient closure.  This routine exchanges the three local
+    velocity components of each deduplicated remote leaf, then materialises a
+    ``(3,Q,n_local)`` neighbour field.  Direct cross-shard links and coarse to
+    fine fan-out links therefore use the same gradients as the unsharded
+    octree; physical sentinels remain invalid and contribute one-sided/zero
+    gradients as appropriate.
+    """
+    if not shards:
+        return
+    Q = int(octree.Q)
+    vel_local: list[torch.Tensor] = []
+    if Q == 27:
+        from tensorlbm.d3q27 import macroscopic27
+        macro = macroscopic27
+    elif Q == 19:
+        macro = macroscopic3d
+    else:
+        raise ValueError(f"unsupported octree lattice Q={Q}")
+    for shard in shards:
+        rho, ux, uy, uz = macro(shard.f_leaf.view(Q, 1, 1, -1))
+        del rho
+        vel_local.append(torch.stack((ux.reshape(-1), uy.reshape(-1), uz.reshape(-1))))
+    for s, shard in enumerate(shards):
+        if shard.les_remote_velocity is not None and shard.les_remote_velocity.numel():
+            for t, src_idx, dst_idx in shard.les_requests:
+                shard.les_remote_velocity[:, dst_idx] = vel_local[t][:, src_idx].to(
+                    device=shard.device,
+                )
+        n = int(shard.n_leaf)
+        nv = torch.zeros((3, Q, n), dtype=shard.f_leaf.dtype, device=shard.device)
+        nd = torch.zeros((Q, n), dtype=shard.f_leaf.dtype, device=shard.device)
+        nt = shard.neighbor_table
+        centers = octree.leaf_center[shard.lo:shard.hi].to(shard.device)
+        local_vel = vel_local[s]
+        for d in range(Q):
+            src = nt[d]
+            local = src >= 0
+            if bool(local.any()):
+                idx = src[local]
+                nv[:, d, local] = local_vel[:, idx]
+                delta = centers[local] - centers[idx]
+                nd[d, local] = delta.abs().amax(dim=1).to(nd.dtype)
+            remote = src == REMOTE
+            if bool(remote.any()) and shard.les_remote_pos.numel():
+                slots = shard.les_remote_pos[d, remote]
+                nv[:, d, remote] = shard.les_remote_velocity[:, slots]
+                global_i = torch.nonzero(remote, as_tuple=False).squeeze(1)
+                src_cent = shard.les_remote_centers[slots]
+                nd[d, global_i] = (
+                    centers[global_i] - src_cent
+                ).abs().amax(dim=1).to(nd.dtype)
+            fan = src == FANOUT
+            if bool(fan.any()):
+                for i in torch.nonzero(fan, as_tuple=False).squeeze(1).tolist():
+                    encoded = shard.les_fan_members.get((d, int(i)), [])
+                    if not encoded:
+                        continue
+                    vals = []
+                    for code in encoded:
+                        if code >= 0:
+                            vals.append(local_vel[:, code])
+                        else:
+                            slot = -code - 1
+                            vals.append(shard.les_remote_velocity[:, slot])
+                    if vals:
+                        nv[:, d, i] = torch.stack(vals, dim=1).mean(dim=1)
+                        nd[d, i] = torch.as_tensor(
+                            shard.les_fan_distance.get((d, int(i)), 0.0),
+                            dtype=nd.dtype, device=nd.device,
+                        )
+        shard.les_neighbor_velocity = nv
+        shard.les_neighbor_distance = nd
+
+
 def step_octree_shell_sharded(
     octree: OctreeGrid,
     shards: list,
@@ -1006,12 +1165,12 @@ def step_octree_shell_sharded(
     parallelised workload), cross-shard neighbour/fan-out values are exchanged
     through the precomputed request plans, and the ghost fill is computed as a
     single full-batch call on the root device — the per-shard ghost plans are
-    reassembled into the global (unsharded) row order first, so the fill's
-    moment reductions see exactly the unsharded batch and stay bit-identical
-    — then the per-shard values are moved to the fine devices.  Every
-    state-affecting reduction (restriction, reflux interface transfers, the
-    MEM force) is assembled on the root device in global order, so on a fixed
-    device type a sharded run is bit-identical to the unsharded one.
+    reassembled into the global (unsharded) row order first — then the
+    per-shard values are moved to the fine devices.  Every state-affecting
+    reduction (restriction, reflux interface transfers, the MEM force) is
+    assembled on the root device in global order; the final state is expected
+    to agree with the unsharded path to roundoff, not bit-for-bit for arbitrary
+    collision callbacks.
 
     ``ghost_plan`` is accepted for API symmetry with :func:`step_octree_shell`
     but ignored: the per-shard ghost plans are baked into the shards at build
@@ -1035,6 +1194,23 @@ def step_octree_shell_sharded(
         raise ValueError(
             "correction_stencil must be exterior_cells or crossing_links",
         )
+    # New callbacks may request the active shard explicitly.  Keep the
+    # historical four-argument callback ABI intact for existing applications,
+    # while avoiding device-key collisions when multiple shards share a device
+    # (CPU regression mode or MIG partitions).
+    import inspect
+    try:
+        _advance_params = inspect.signature(advance).parameters
+        advance_accepts_shard = (
+            "shard" in _advance_params
+            or any(p.kind is inspect.Parameter.VAR_KEYWORD
+                   for p in _advance_params.values())
+        )
+    except (TypeError, ValueError):
+        advance_accepts_shard = False
+    advance_uses_sparse_les = bool(
+        getattr(advance, "uses_sparse_les", advance_accepts_shard)
+    )
     n_substeps = 1 << octree.d_max
     taus = _tau_chain(tau_coarse, octree.d_max)
     if tau_fine is not None and abs(tau_fine - taus[1]) > 1.0e-12:
@@ -1073,25 +1249,41 @@ def step_octree_shell_sharded(
     dtype = octree.f_leaf.dtype
     # One global ghost plan reassembled from the per-shard slices in the
     # unsharded row order, so the per-substep ghost fill runs as a single
-    # full-batch call whose moment reductions are bit-identical to the
-    # unsharded fill (a per-shard fill reduces smaller batches and drifts
-    # 1 ulp on the AMR-interface links).
+    # full-batch call.  This avoids an additional 1-ulp drift from reducing
+    # smaller, differently ordered AMR-interface batches.
     merged_plan = _merge_shard_ghost_plans(shards)
+    _DEBUG_STEP["n"] += 1
     fine_transfer: KineticInterfaceTransfer | None = None
     for s in range(n_substeps):
         alpha = s / n_substeps
         parent_t = torch.lerp(l1_old, l1_f, alpha)
+        _debug_nan("ghost-source", {"parent_t": parent_t}, substep=s)
+        # LES needs all neighbour velocities, including leaves that live on a
+        # different shard.  Exchange this context before invoking the user
+        # collision callback; the callback can consume the assembled fields
+        # through ``shard.les_neighbor_velocity`` and
+        # ``shard.les_neighbor_distance``.
+        if advance_uses_sparse_les and len(shards) > 1:
+            _prepare_shard_les_context(octree, shards)
         # 1. collision on the fine devices (the parallelised workload)
         for shard in shards:
+            if advance_accepts_shard:
+                result = advance(
+                    shard.f_leaf, tau_shell, shell_level, s, shard=shard,
+                )
+            else:
+                result = advance(shard.f_leaf, tau_shell, shell_level, s)
             shard.populations, shard.post_collision = _unpack_shell_advance(
-                advance(shard.f_leaf, tau_shell, shell_level, s),
+                result,
                 shard.f_leaf.shape,
             )
+            _debug_nan("after-collision", {"populations": shard.populations}, substep=s)
         # 2. ghost fill on the root device: ONE global-order call over the
         # merged plan (batch order == unsharded), then scatter per shard
         gv_global = _fill_ghost_impl(
             octree.leaf_level, merged_plan, parent_t, taus,
         )
+        _debug_nan("after-ghostfill", {"ghost_vals": gv_global}, substep=s)
         for shard in shards:
             shard.ghost_vals = gv_global[:, shard.ghost_rows].to(
                 device=shard.device,
@@ -1106,6 +1298,7 @@ def step_octree_shell_sharded(
             shard.out = _stream_gather_shard(
                 shard, shard.populations, shard.f_leaf, shard.ghost_vals,
             )
+            _debug_nan("after-stream", {"out": shard.out}, substep=s)
         # 5. BFL per shard (force contributions captured for global assembly)
         force_records: list[list] = [[] for _ in shards]
         if bfl_fn is not None:
@@ -1121,6 +1314,7 @@ def step_octree_shell_sharded(
                     shard.ghost_plan, shard.ghost_vals, substep=s,
                 )
                 shard.out, _substep_force = result
+                _debug_nan("after-bfl", {"out": shard.out}, substep=s)
                 shard._link_sink = None
         # 6. reflux observation (assembled in global order on the root)
         if reflux:

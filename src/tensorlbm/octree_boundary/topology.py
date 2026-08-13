@@ -125,11 +125,25 @@ def build_neighbor_table(grid) -> None:
             dtype=torch.int64, device=device,
         )
         od = int(opp[d].item())
+        # Morton lattice bounds per level (columns (x, y, z)):
+        #   level 1 -> [0, 2*nx) x [0, 2*ny) x [0, 2*nz)
+        #   level 2 -> [0, 4*nx) x [0, 4*ny) x [0, 4*nz)
+        # Out-of-range targets must never be resolved through the Morton
+        # lookups: a negative coordinate encodes as two's-complement garbage
+        # (all lower bits set) and a coordinate >= 2^(k+level) has its high
+        # bits silently truncated by the interleave, so either can collide
+        # with the code of a legitimate leaf far away.  Zero the hits and let
+        # ``_classify_targets`` (geometric, bounds-aware) decide instead.
+        bound1 = torch.tensor(
+            [shape[2], shape[1], shape[0]], dtype=torch.int64, device=device,
+        ) << 1
+        bound2 = bound1 << 1
 
         # ---- depth-2 leaves (first: donor links define the fanout groups) --
         if n2:
             i2 = torch.arange(n2, dtype=torch.int64, device=device) + n1
             target2 = l2_coords + cd                       # (n2, 3)
+            inb2 = ((target2 >= 0) & (target2 < bound2)).all(dim=1)
             parent = target2 >> 1                          # depth-1 coord
             q_parent = morton_encode_batch(
                 torch.full((n2,), 1, dtype=torch.int64), parent, k,
@@ -139,6 +153,8 @@ def build_neighbor_table(grid) -> None:
                 torch.full((n2,), 2, dtype=torch.int64), target2, k,
             )
             hit2, p2 = _hit(l2_sorted, q2)
+            hit_p = hit_p & inb2
+            hit2 = hit2 & inb2
             nbr2 = torch.full((n2,), SHELL_OUTSIDE, dtype=torch.int64, device=device)
             nbr2 = torch.where(
                 hit_p,
@@ -175,11 +191,14 @@ def build_neighbor_table(grid) -> None:
         # ---- depth-1 leaves ------------------------------------------------
         if n1:
             target1 = l1_coords + cd                       # (n1, 3)
+            inb1 = ((target1 >= 0) & (target1 < bound1)).all(dim=1)
             q1 = morton_encode_batch(
                 torch.full((n1,), 1, dtype=torch.int64), target1, k,
             )
             hit1, p1 = _hit(l1_sorted, q1)
             hit_ref, p_ref = _hit(ref_sorted, q1)
+            hit1 = hit1 & inb1
+            hit_ref = hit_ref & inb1
             # FANOUT only when the reverse donor registry is non-empty; an
             # empty (all-solid wall-facing) refined neighbour is solid.
             has_fo = torch.zeros(n1, dtype=torch.bool, device=device)
