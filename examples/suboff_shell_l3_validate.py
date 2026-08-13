@@ -203,6 +203,13 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--hull-type", choices=("bare_hull", "full"), default="bare_hull")
     p.add_argument("--speed-knots", type=float, default=5.92)
     p.add_argument("--device", default="cuda:0")
+    p.add_argument(
+        "--devices",
+        default=None,
+        help="comma-separated per-interface devices for L1,L2,L3 "
+        "(e.g. 'cuda:0,cuda:1,cuda:1'). Root runs on --device. "
+        "Omit to keep everything on --device.",
+    )
     p.add_argument("--nx", type=int, default=200)
     p.add_argument("--ny", type=int, default=80)
     p.add_argument("--nz", type=int, default=80)
@@ -259,8 +266,10 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--collision",
         choices=("cumulant", "cascaded"),
-        default="cumulant",
-        help="D3Q19 collision operator applied on every level (default cumulant)",
+        default=None,
+        help="Explicit D3Q19 collision operator applied on every level. "
+        "When omitted, falls through to --collision-model (LES dispatch); "
+        "this is required for high-Re runs (WALE/Smagorinsky).",
     )
     p.add_argument(
         "--collision-model",
@@ -384,6 +393,17 @@ def run(args: argparse.Namespace) -> dict:
     zero = torch.zeros_like(rho)
     coarse_f = equilibrium3d(rho, ux, zero, zero, device=device)
 
+    # ---- device plan: root on --device; L1/L2/L3 on --devices when given
+    fine_devices = None
+    if args.devices:
+        device_list = [value.strip() for value in args.devices.split(",")]
+        if len(device_list) != 3:
+            raise ValueError("--devices must name exactly 3 devices (L1,L2,L3)")
+        fine_devices = [torch.device(value) for value in device_list]
+    device1 = fine_devices[0] if fine_devices else device
+    device2 = fine_devices[1] if fine_devices else device
+    device3 = fine_devices[2] if fine_devices else device
+
     # ---- L1 (level 1) hull geometry: CAD re-voxelised in block-local fine
     # ---- coordinates, hull length x2 (never a coarse voxel repeat).
     s1 = (
@@ -399,7 +419,7 @@ def run(args: argparse.Namespace) -> dict:
     l1_solid, l1_geometry = build_suboff_mask(
         args.hull_type, s1[2], s1[1], s1[0],
         cx=fc1[0], cy=fc1[1], cz=fc1[2],
-        length=args.hull_length * 2.0, config=config, device=device,
+        length=args.hull_length * 2.0, config=config, device=device1,
     )
     if not bool(l1_solid.any()):
         raise RuntimeError("L1 block contains no SUBOFF cells")
@@ -425,7 +445,7 @@ def run(args: argparse.Namespace) -> dict:
     l2_solid, l2_geometry = build_suboff_mask(
         args.hull_type, s2[2], s2[1], s2[0],
         cx=fc2[0], cy=fc2[1], cz=fc2[2],
-        length=args.hull_length * 4.0, config=config, device=device,
+        length=args.hull_length * 4.0, config=config, device=device2,
     )
     if not bool(l2_solid.any()):
         raise RuntimeError("L2 block contains no SUBOFF cells")
@@ -451,7 +471,7 @@ def run(args: argparse.Namespace) -> dict:
     l3_solid, l3_geometry = build_suboff_mask(
         args.hull_type, s3[2], s3[1], s3[0],
         cx=fc3[0], cy=fc3[1], cz=fc3[2],
-        length=args.hull_length * 8.0, config=config, device=device,
+        length=args.hull_length * 8.0, config=config, device=device3,
     )
     if not bool(l3_solid.any()):
         raise RuntimeError("L3 block contains no SUBOFF cells")
@@ -486,6 +506,7 @@ def run(args: argparse.Namespace) -> dict:
         coarse_f,
         (config1, config2, config3),
         fine_solids=(l1_solid, l2_solid, l3_solid),
+        fine_devices=fine_devices,
     )
     level_shapes = _level_shapes(amr.level_populations)
 
@@ -495,7 +516,7 @@ def run(args: argparse.Namespace) -> dict:
     bfl_mask3, bfl_q3 = compute_q_suboff(
         l3_solid_g.shape[2], l3_solid_g.shape[1], l3_solid_g.shape[0],
         *fc3, args.hull_length * 8.0,
-        hull_type=args.hull_type, config=config, device=device,
+        hull_type=args.hull_type, config=config, device=device3,
         solid_mask=l3_solid_g,
     )
     l3_near = get_near_wall_3d(l3_solid_g)
@@ -553,7 +574,7 @@ def run(args: argparse.Namespace) -> dict:
         x0=x_min_f - resolved_margin, x1=x_max_f + resolved_margin,
         y0=y_min_f - resolved_margin, y1=y_max_f + resolved_margin,
         z0=z_min_f - resolved_margin, z1=z_max_f + resolved_margin,
-        device=device,
+        device=device3,
     )
 
     sponge_faces = ("x+", "y-", "y+", "z-", "z+")
@@ -595,9 +616,9 @@ def run(args: argparse.Namespace) -> dict:
 
     def collide(state: torch.Tensor, tau: float) -> torch.Tensor:
         nonlocal maximum_positivity_limited_fraction
-        if args.collision == "cascaded":
+        if args.collision is not None and args.collision == "cascaded":
             result = collide_cascaded_d3q19(state, tau)
-        elif args.collision == "cumulant":
+        elif args.collision is not None and args.collision == "cumulant":
             result = collide_cumulant_d3q19(state, tau, C_s=0.0)
         elif args.collision_model == "cumulant_smagorinsky":
             result = collide_cumulant_d3q19(state, tau, C_s=args.cs_smag)

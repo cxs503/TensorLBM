@@ -2,32 +2,41 @@
 """Cell-wise adaptive AMR sphere drag validation: body-fitted patches + patch-local BFL.
 
 Route-3 adaptive refinement: only cells flagged by the error indicator are
-refined (no whole-box concept). This runner fixes the two root causes of the
-poor Cd (~64% error) of examples/amr_sphere_adaptive_validate.py:
+refined (no whole-box concept).  This runner fixes the root causes of the
+poor Cd (~64% error) of examples/amr_sphere_adaptive_validate.py and of the
+first cellwise revision (Cd ~ 14, ~1200% error at Re=100):
 
-a. **Body-fitted guarantee** — ``boundary_layer_indicator_3d(mask, re,
-   char_length=2R)`` flags every fluid cell within δ = 5·(2R)/√Re of the
-   sphere surface with indicator value 1.0, which sits far above
-   refine_threshold, so the grouped patches are guaranteed to cover the
-   sphere (the old runner's indicator only tracked wake/shear layers and
-   left the sphere surface on the coarse plain bounce-back grid).
+a. **Body-fitted guarantee** — the indicator forces indicator = 1.0 on every
+   coarse fluid cell adjacent to the sphere surface (the cells whose plain
+   bounce-back links the fine BFL must replace), on top of
+   ``boundary_layer_indicator_3d(mask, re, char_length=2R)`` which flags the
+   fluid cells within δ = 5·(2R)/√Re of the surface.  With refine_threshold
+   at 1e-6 the grouped patches are guaranteed to cover 100% of the sphere
+   surface regardless of δ (a too-small δ on the coarse grid leaves surface
+   cells on the coarse plain bounce-back grid, which is the dominant error
+   source).
 
-b. **Patch-local Bouzidi BFL** — inside each patch the fine-resolution
-   analytical sphere replaces the coarse plain bounce-back surface.  The
-   sphere centre is converted to patch-local fine coordinates following the
-   single-layer fine_center convention ((global_center − box_origin)·ratio,
-   no ghost cells in AdaptiveSolver3D patches).  Solid cells are frozen at
-   their pre-collision state during collision and the curved-wall BFL
-   (compute_q_sphere + bouzidi_bounce_back_d3q19) reconstructs the incoming
-   populations after streaming, exactly like the canonical uniform-grid
-   runner (src/tensorlbm/sphere_bfl_control_volume.py).
+b. **Convective fine-grid relaxation time** — ``AdaptiveSolver3D._tau_for_level``
+   computes τ_f = 0.5 + (τ_c−0.5)/2, which *halves* the lattice viscosity on
+   the fine level.  With dt_f = dt_c/2 that runs the fine patch at Re_f =
+   4·Re_c (here 400 instead of 100), depressing the fine BFL drag to ~0.47
+   instead of ~1.1.  The repo's canonical convective scaling (used by the
+   L3 reference, ``static_block_amr.convective_refined_tau``) requires
+   τ_f = 0.5 + ratio·(τ_c−0.5) so the physical viscosity is preserved across
+   the 2:1 interface.  The runner overrides every patch's τ after each
+   adaptation (collision, FH interface rescale and restriction all read
+   ``patch.tau``).
 
-The control-volume force is still observed on the coarse grid (patches are
-correction layers), but the per-patch BFL momentum-exchange forces — the
-dominant surface contribution — are accumulated over every patch substep and
-added to the CV force, converted to coarse lattice units by /ratio² (fine
-lattice force scales as (dx_f^4/dt_f^2) = (dx_c^4/dt_c^2)/ratio²).  The old
-runner dropped the patch force contribution entirely.
+c. **Body-fitted drag measurement** — the coarse-grid control-volume force
+   (``cd_cv_only``) already contains the coarse plain bounce-back sphere's
+   surface momentum sink, which at R=7 coarse resolution is resolution
+   garbage (Cd ≈ 14 instead of 1.09).  Adding the fine BFL force on top
+   double-counts the surface.  The reported drag is therefore the
+   patch-local BFL momentum-exchange force (fine lattice units, converted to
+   coarse units by /ratio² — equivalently normalised by the fine dynamic
+   area 0.5·u²·π·(R·ratio)²); the coarse CV force is kept as a diagnostic
+   (``cd_cv_only``) and as the plain-BB baseline when ``--bfl-on-patches
+   False``.
 
 This is a validation runner: status=measured_candidate, physical_validation
 is only set when the run passes all gates.
@@ -40,8 +49,10 @@ import math
 import time
 
 import torch
+from torch.nn.functional import conv3d
 
 from tensorlbm.adaptive_refinement import (
+    AMRPatch3D,
     AdaptationSchedule,
     AdaptiveSolver3D,
     boundary_layer_indicator_3d,
@@ -89,7 +100,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--adapt-warmup", type=int, default=200)
     p.add_argument("--max-patches", type=int, default=8)
     p.add_argument("--max-levels", type=int, default=2)
-    p.add_argument("--refine-threshold", type=float, default=1e-3)
+    p.add_argument("--refine-threshold", type=float, default=1e-6)
     p.add_argument("--coarsen-threshold", type=float, default=1e-5)
     p.add_argument("--sponge-width", type=int, default=16)
     p.add_argument("--sponge-strength", type=float, default=0.2)
@@ -159,7 +170,13 @@ def main() -> None:
         max_patches=args.max_patches,
         max_levels=args.max_levels,
         refine_threshold=args.refine_threshold,
-        coarsen_threshold=args.coarsen_threshold,
+        # mark_cells_for_refinement requires coarsen < refine; the boundary
+        # layer indicator is binary (1.0 on the body-fitted surface, 0
+        # elsewhere) so the exact coarsen level is immaterial — patches that
+        # carry the sphere surface always keep local max = 1.0.
+        coarsen_threshold=min(
+            args.coarsen_threshold, args.refine_threshold * 0.5,
+        ),
         tau=tau,
     )
     solver = AdaptiveSolver3D(f, schedule=schedule, mask=solid)
@@ -189,9 +206,21 @@ def main() -> None:
     # with ghost width g = 0).
     # ------------------------------------------------------------------
     patch_data: dict[int, dict[str, object]] = {}
-    patch_by_id: dict[int, object] = {}
+    patch_by_id: dict[int, AMRPatch3D] = {}
     patch_post: dict[int, torch.Tensor] = {}
     bfl_accum: dict[int, tuple[float, float, float]] = {}
+    bfl_count: dict[int, int] = {}
+
+    # Coarse sphere-surface cells: fluid cells with a solid neighbour
+    # (Chebyshev distance 1) — exactly the cells whose plain bounce-back
+    # links the fine BFL must replace.  Used for the body-fitted indicator
+    # and the surface-coverage diagnostic.
+    _spread = conv3d(
+        solid.unsqueeze(0).unsqueeze(0).float(),
+        torch.ones((1, 1, 3, 3, 3), dtype=torch.float32, device=device),
+        padding=1,
+    ).clamp(0, 1)
+    surface_cells = (_spread.squeeze() > 0) & ~solid
 
     def _patch_global_origin(p) -> tuple[float, float, float]:
         """Global coarse-coordinate origin of patch p's fine grid."""
@@ -249,6 +278,40 @@ def main() -> None:
         if total == 0:
             return 1.0
         return float((cover & solid).sum().item()) / total
+
+    def _surface_coverage() -> float:
+        """Fraction of coarse sphere-surface cells inside a BFL-capable patch.
+
+        Only patches whose fine sphere actually touches the surface
+        (``bfl_mask`` present) count — a strip box that merely overlaps the
+        δ-shell but contains no sphere still does plain bounce-back there.
+        """
+        cover = torch.zeros(shape, dtype=torch.bool, device=device)
+        for p in solver.patches:
+            entry = patch_data.get(id(p), {})
+            if entry.get("bfl_mask") is None:
+                continue
+            b = p.box
+            cover[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1] = True
+        total = int(surface_cells.sum().item())
+        if total == 0:
+            return 1.0
+        return float((cover & surface_cells).sum().item()) / total
+
+    def _body_fitted_indicator(
+        bl: torch.Tensor,
+    ) -> torch.Tensor:
+        """Boundary-layer indicator with the sphere surface forced to 1.0.
+
+        Guarantees the grouped patches cover 100% of the sphere surface even
+        when δ = 5·(2R)/√Re is smaller than one coarse cell: every coarse
+        fluid cell adjacent to the sphere (the cell whose plain bounce-back
+        link the fine BFL must replace) is set to the maximum indicator
+        value, far above refine_threshold.
+        """
+        return torch.where(
+            surface_cells, torch.ones_like(bl), bl,
+        )
 
     def collide_fn(state: torch.Tensor) -> torch.Tensor:
         # Coarse background grid: freeze solid cells at their pre-collision
@@ -317,7 +380,16 @@ def main() -> None:
                             wall_density=rho_post,
                             return_force=True,
                         )
-                        bfl_accum[id(p)] = bfl_force
+                        # Accumulate the per-fine-step momentum exchange over
+                        # all patch substeps of this coarse step; the mean is
+                        # converted to coarse lattice units below (/ratio²).
+                        sx, sy, sz = bfl_accum.get(id(p), (0.0, 0.0, 0.0))
+                        bfl_accum[id(p)] = (
+                            sx + float(bfl_force[0]),
+                            sy + float(bfl_force[1]),
+                            sz + float(bfl_force[2]),
+                        )
+                        bfl_count[id(p)] = bfl_count.get(id(p), 0) + 1
                 else:
                     state = bounce_back_cells_3d(state, entry["solid"])
                 return state
@@ -328,21 +400,30 @@ def main() -> None:
     bfl_forces: list[float] = []
     patch_counts: list[int] = []
     coverages: list[float] = []
+    surface_coverages: list[float] = []
     started = time.time()
 
     current_step = 0
     for current_step in range(1, args.steps + 1):
         before = solver.coarse_f.clone()
         bfl_accum.clear()
+        bfl_count.clear()
         solver.step(collide_fn, stream3d, boundary_fn)
-        # Sum the per-patch BFL momentum-exchange forces of this coarse step
-        # (accumulated over every patch substep) and convert to coarse
-        # lattice units: fine-lattice force scales as dx_f^4/dt_f^2, which is
-        # (dx_c^4/dt_c^2)/ratio^2 with dt_f = dt_c/ratio.
-        total_bfl_coarse = 0.0
-        for pid, force in bfl_accum.items():
+        # Per-patch BFL momentum-exchange force of this coarse step: mean of
+        # the per-fine-step exchanges over the patch substeps, converted to
+        # coarse lattice units.  With dx_f = dx_c/ratio and dt_f = dt_c/ratio
+        # a fine-lattice force scales as (dx_f^4/dt_f^2) =
+        # (dx_c^4/dt_c^2)/ratio², hence /ratio² (equivalently: normalise the
+        # fine-unit force by the fine dynamic area 0.5·u²·π·(R·ratio)² —
+        # both give the same Cd).
+        total_bfl_fine = 0.0
+        fine_ratio = 1
+        for pid, force_sum in bfl_accum.items():
             p = patch_by_id[pid]
-            total_bfl_coarse += force[0] / float(p.ratio ** 2)
+            n = max(1, bfl_count.get(pid, 1))
+            total_bfl_fine += force_sum[0] / n
+            fine_ratio = max(fine_ratio, int(p.ratio))
+        total_bfl_coarse = total_bfl_fine / float(fine_ratio ** 2)
         if current_step > args.warmup_steps:
             # observe_control_volume_force's third argument must be the
             # post-collision, pre-stream state (streaming_momentum_import
@@ -353,7 +434,15 @@ def main() -> None:
             cv_force = float(observe_control_volume_force(
                 before, solver.coarse_f, post_collide, cv, solid=solid,
             ).force_on_body[0].item())
-            total_force = cv_force + total_bfl_coarse
+            # Body-fitted drag: the fine BFL surface force.  The coarse CV
+            # force already contains the coarse plain-BB sphere's surface
+            # momentum sink (resolution garbage at R=7, Cd≈14); adding it
+            # would double-count the surface.  It is kept as cd_cv_only and
+            # used as the total when BFL is disabled (plain-BB baseline).
+            if args.bfl_on_patches:
+                total_force = total_bfl_coarse
+            else:
+                total_force = cv_force
             forces.append(total_force)
             cv_forces.append(cv_force)
             bfl_forces.append(total_bfl_coarse)
@@ -367,22 +456,37 @@ def main() -> None:
             elif args.indicator == "vorticity":
                 indicator = vorticity_indicator_3d(ux, uy, uz)
             elif args.indicator == "boundary_layer":
-                indicator = boundary_layer_indicator_3d(
-                    solid, args.reynolds, char_length=2.0 * args.radius,
+                indicator = _body_fitted_indicator(
+                    boundary_layer_indicator_3d(
+                        solid, args.reynolds, char_length=2.0 * args.radius,
+                    )
                 )
             else:  # bl+neq: element-wise max — body-fitted sphere + wake
-                bl = boundary_layer_indicator_3d(
-                    solid, args.reynolds, char_length=2.0 * args.radius,
+                bl = _body_fitted_indicator(
+                    boundary_layer_indicator_3d(
+                        solid, args.reynolds, char_length=2.0 * args.radius,
+                    )
                 )
                 neq = nonequilibrium_indicator_3d(
                     solver.coarse_f, rho, ux, uy, uz,
                 )
                 indicator = torch.maximum(bl, neq)
             solver.adapt(indicator)
+            # Convective fine-grid relaxation time: preserve the physical
+            # viscosity across the 2:1 interface (τ_f = 0.5 + ratio·(τ_c−0.5),
+            # see static_block_amr.convective_refined_tau).  The solver's
+            # internal _tau_for_level halves (τ_c−0.5) instead, which with
+            # dt_f = dt_c/2 would run the fine grid at Re_f = 4·Re_c.
+            # Collision, FH interface rescale and restriction all read
+            # patch.tau, so overriding it here fixes all three.
+            for p in solver.patches:
+                p.tau = 0.5 + (2.0 ** p.level) * (tau - 0.5)
             _build_patch_data()
             patch_by_id = {id(p): p for p in solver.patches}
             coverage = _solid_coverage()
             coverages.append(coverage)
+            surface_coverage = _surface_coverage()
+            surface_coverages.append(surface_coverage)
             bfl_active = sum(
                 1 for p in solver.patches
                 if patch_data.get(id(p), {}).get("bfl_mask") is not None
@@ -393,6 +497,7 @@ def main() -> None:
                 f"refine_cells={int((indicator > args.refine_threshold).sum())} "
                 f"patches={len(solver.patches)} "
                 f"sphere_covered={coverage * 100.0:.1f}% "
+                f"surface_covered={surface_coverage * 100.0:.1f}% "
                 f"bfl_patches={bfl_active}",
                 flush=True,
             )
@@ -436,6 +541,19 @@ def main() -> None:
     mean_bfl_force = sum(selected_bfl) / len(selected_bfl)
     cd_cv_only = mean_cv_force / dynamic_area
     cd_bfl_only = mean_bfl_force / dynamic_area
+    # Fine-lattice diagnostics: per-fine-step BFL momentum exchange in fine
+    # lattice units and the fine dynamic area 0.5·u²·π·(R·ratio)².  The two
+    # normalisations are exactly equivalent (force/ratio² / dynamic_area ==
+    # force_fine / dynamic_area_fine).
+    mean_bfl_force_fine = 0.0
+    dynamic_area_fine = dynamic_area
+    for pid, force_sum in bfl_accum.items():
+        p = patch_by_id[pid]
+        mean_bfl_force_fine += force_sum[0] / max(1, bfl_count.get(pid, 1))
+        dynamic_area_fine = max(
+            dynamic_area_fine,
+            0.5 * args.lattice_speed ** 2 * math.pi * (args.radius * p.ratio) ** 2,
+        )
     result = {
         **common_schema_fields("sphere-cellwise-amr-cv-v1"),
         "case": (
@@ -475,7 +593,9 @@ def main() -> None:
             "mean_force_lu": mean_force,
             "mean_cv_force_lu": mean_cv_force,
             "mean_bfl_force_lu_coarse": mean_bfl_force,
+            "mean_bfl_force_lu_fine": mean_bfl_force_fine,
             "dynamic_area_lu2": dynamic_area,
+            "dynamic_area_fine_lu2": dynamic_area_fine,
             "stationarity": stationarity_dict,
             "mean_patch_count": (
                 sum(patch_counts) / len(patch_counts) if patch_counts else 0.0
@@ -485,6 +605,13 @@ def main() -> None:
                 sum(coverages) / len(coverages) if coverages else 0.0
             ),
             "max_sphere_solid_covered_fraction": max(coverages, default=0.0),
+            "sphere_surface_covered_fraction": (
+                sum(surface_coverages) / len(surface_coverages)
+                if surface_coverages else 0.0
+            ),
+            "max_sphere_surface_covered_fraction": max(
+                surface_coverages, default=0.0,
+            ),
             "wall_time_s": time.time() - started,
         },
         "artifacts": {"output": args.output},
