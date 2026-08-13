@@ -11,6 +11,7 @@ These tests verify that the compiled reference data:
   7. Reference data can be used to compute an error metric for the
      accuracy_recommendation gate.
 """
+
 from __future__ import annotations
 
 from math import isfinite
@@ -30,6 +31,7 @@ from tensorlbm.suboff_reference_data import (
 # ---------------------------------------------------------------------------
 # 1. Typed data structure
 # ---------------------------------------------------------------------------
+
 
 class TestSuboffReferenceDatumStructure:
     """Verify the typed data structure has all required fields and validation."""
@@ -61,11 +63,17 @@ class TestSuboffReferenceDatumStructure:
 
     def test_datum_is_frozen(self) -> None:
         d = SuboffReferenceDatum(
-            case_id="c", reference_id="r", reference_source_id="s",
-            Ct_reference=0.004, Re=2.0e6, uncertainty=0.0004,
-            source_citation="cite", hull_type="bare_hull",
+            case_id="c",
+            reference_id="r",
+            reference_source_id="s",
+            Ct_reference=0.004,
+            Re=2.0e6,
+            uncertainty=0.0004,
+            source_citation="cite",
+            hull_type="bare_hull",
             reference_area_basis="wetted_surface",
-            applicable_conditions="cond", notes="n",
+            applicable_conditions="cond",
+            notes="n",
         )
         with pytest.raises(AttributeError, match="cannot assign"):
             d.Ct_reference = 0.999  # type: ignore[misc]
@@ -73,88 +81,136 @@ class TestSuboffReferenceDatumStructure:
     def test_datum_rejects_empty_case_id(self) -> None:
         with pytest.raises(ValueError, match="case_id"):
             SuboffReferenceDatum(
-                case_id="", reference_id="r", reference_source_id="s",
-                Ct_reference=0.004, Re=2.0e6, uncertainty=0.0004,
-                source_citation="cite", hull_type="bare_hull",
+                case_id="",
+                reference_id="r",
+                reference_source_id="s",
+                Ct_reference=0.004,
+                Re=2.0e6,
+                uncertainty=0.0004,
+                source_citation="cite",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
     def test_datum_rejects_empty_reference_id(self) -> None:
         with pytest.raises(ValueError, match="reference_id"):
             SuboffReferenceDatum(
-                case_id="c", reference_id="", reference_source_id="s",
-                Ct_reference=0.004, Re=2.0e6, uncertainty=0.0004,
-                source_citation="cite", hull_type="bare_hull",
+                case_id="c",
+                reference_id="",
+                reference_source_id="s",
+                Ct_reference=0.004,
+                Re=2.0e6,
+                uncertainty=0.0004,
+                source_citation="cite",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
     def test_datum_rejects_empty_source_citation(self) -> None:
         with pytest.raises(ValueError, match="source_citation"):
             SuboffReferenceDatum(
-                case_id="c", reference_id="r", reference_source_id="s",
-                Ct_reference=0.004, Re=2.0e6, uncertainty=0.0004,
-                source_citation="", hull_type="bare_hull",
+                case_id="c",
+                reference_id="r",
+                reference_source_id="s",
+                Ct_reference=0.004,
+                Re=2.0e6,
+                uncertainty=0.0004,
+                source_citation="",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
     def test_datum_rejects_non_positive_Ct_reference(self) -> None:
         with pytest.raises(ValueError, match="Ct_reference"):
             SuboffReferenceDatum(
-                case_id="c", reference_id="r", reference_source_id="s",
-                Ct_reference=0.0, Re=2.0e6, uncertainty=0.0004,
-                source_citation="cite", hull_type="bare_hull",
+                case_id="c",
+                reference_id="r",
+                reference_source_id="s",
+                Ct_reference=0.0,
+                Re=2.0e6,
+                uncertainty=0.0004,
+                source_citation="cite",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
     def test_datum_rejects_non_positive_Re(self) -> None:
         with pytest.raises(ValueError, match="Re"):
             SuboffReferenceDatum(
-                case_id="c", reference_id="r", reference_source_id="s",
-                Ct_reference=0.004, Re=0.0, uncertainty=0.0004,
-                source_citation="cite", hull_type="bare_hull",
+                case_id="c",
+                reference_id="r",
+                reference_source_id="s",
+                Ct_reference=0.004,
+                Re=0.0,
+                uncertainty=0.0004,
+                source_citation="cite",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
     def test_datum_rejects_negative_uncertainty(self) -> None:
         with pytest.raises(ValueError, match="uncertainty"):
             SuboffReferenceDatum(
-                case_id="c", reference_id="r", reference_source_id="s",
-                Ct_reference=0.004, Re=2.0e6, uncertainty=-0.001,
-                source_citation="cite", hull_type="bare_hull",
+                case_id="c",
+                reference_id="r",
+                reference_source_id="s",
+                Ct_reference=0.004,
+                Re=2.0e6,
+                uncertainty=-0.001,
+                source_citation="cite",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
     def test_datum_rejects_non_finite_Ct_reference(self) -> None:
         with pytest.raises(ValueError, match="Ct_reference"):
             SuboffReferenceDatum(
-                case_id="c", reference_id="r", reference_source_id="s",
-                Ct_reference=float("nan"), Re=2.0e6, uncertainty=0.0004,
-                source_citation="cite", hull_type="bare_hull",
+                case_id="c",
+                reference_id="r",
+                reference_source_id="s",
+                Ct_reference=float("nan"),
+                Re=2.0e6,
+                uncertainty=0.0004,
+                source_citation="cite",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
     def test_datum_rejects_bool_Ct_reference(self) -> None:
         with pytest.raises(TypeError, match="Ct_reference"):
             SuboffReferenceDatum(
-                case_id="c", reference_id="r", reference_source_id="s",
+                case_id="c",
+                reference_id="r",
+                reference_source_id="s",
                 Ct_reference=True,  # type: ignore[arg-type]
-                Re=2.0e6, uncertainty=0.0004,
-                source_citation="cite", hull_type="bare_hull",
+                Re=2.0e6,
+                uncertainty=0.0004,
+                source_citation="cite",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
 
 # ---------------------------------------------------------------------------
 # 2. WITHHELD entries
 # ---------------------------------------------------------------------------
+
 
 class TestWithheldEntries:
     """Verify WITHHELD entries are correctly marked and carry no numeric value."""
@@ -181,25 +237,34 @@ class TestWithheldEntries:
     def test_withheld_datum_rejects_non_empty_case_id(self) -> None:
         with pytest.raises(ValueError, match="case_id"):
             SuboffReferenceDatum.withheld(
-                case_id="", reference_id="r", reference_source_id="s",
-                source_citation="cite", hull_type="bare_hull",
+                case_id="",
+                reference_id="r",
+                reference_source_id="s",
+                source_citation="cite",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
     def test_withheld_datum_rejects_empty_source_citation(self) -> None:
         with pytest.raises(ValueError, match="source_citation"):
             SuboffReferenceDatum.withheld(
-                case_id="c", reference_id="r", reference_source_id="s",
-                source_citation="", hull_type="bare_hull",
+                case_id="c",
+                reference_id="r",
+                reference_source_id="s",
+                source_citation="",
+                hull_type="bare_hull",
                 reference_area_basis="wetted_surface",
-                applicable_conditions="cond", notes="n",
+                applicable_conditions="cond",
+                notes="n",
             )
 
 
 # ---------------------------------------------------------------------------
 # 3. Registry
 # ---------------------------------------------------------------------------
+
 
 class TestRegistry:
     """Verify the compiled reference-data registry."""
@@ -251,6 +316,7 @@ class TestRegistry:
 # 4. Look-up functions
 # ---------------------------------------------------------------------------
 
+
 class TestLookUp:
     """Verify look-up by case_id and reference_id."""
 
@@ -288,6 +354,7 @@ class TestLookUp:
 # 5. Integration with accuracy_recommendation gate
 # ---------------------------------------------------------------------------
 
+
 class TestAccuracyGateIntegration:
     """Verify reference data can feed the accuracy_recommendation gate."""
 
@@ -319,6 +386,7 @@ class TestAccuracyGateIntegration:
 # 6. End-to-end integration with accuracy_recommendation gate
 # ---------------------------------------------------------------------------
 
+
 class TestEndToEndGateIntegration:
     """Demonstrate that compiled reference data can construct
     PhysicalAccuracyEvidence and drive recommend_by_physical_accuracy()."""
@@ -335,22 +403,22 @@ class TestEndToEndGateIntegration:
         )
 
         # Pick a non-withheld reference datum.
-        ref = next(
-            d for d in SUBOFF_REFERENCE_REGISTRY if not d.is_withheld
-        )
+        ref = next(d for d in SUBOFF_REFERENCE_REGISTRY if not d.is_withheld)
         assert ref.Ct_reference is not None
         assert ref.uncertainty is not None
 
         # Simulated measured Ct for two candidates.
-        ct_candidate_a = ref.Ct_reference * 1.03   # 3% error
-        ct_candidate_b = ref.Ct_reference * 1.08   # 8% error
+        ct_candidate_a = ref.Ct_reference * 1.03  # 3% error
+        ct_candidate_b = ref.Ct_reference * 1.08  # 8% error
 
         # Compute absolute relative error against the reference.
         err_a = abs(ct_candidate_a - ref.Ct_reference) / ref.Ct_reference
         err_b = abs(ct_candidate_b - ref.Ct_reference) / ref.Ct_reference
 
         kpi = KPIDefinition(
-            "Ct_total", "1", "time_mean",
+            "Ct_total",
+            "1",
+            "time_mean",
             "post-transient steady-state window",
         )
 
@@ -398,9 +466,7 @@ class TestEndToEndGateIntegration:
     def test_withheld_reference_cannot_produce_admitted_evidence(self) -> None:
         """A WITHHELD reference datum must not be usable to construct
         a valid PhysicalAccuracyEvidence (no Ct_reference to compute error)."""
-        withheld = next(
-            d for d in SUBOFF_REFERENCE_REGISTRY if d.is_withheld
-        )
+        withheld = next(d for d in SUBOFF_REFERENCE_REGISTRY if d.is_withheld)
         assert withheld.Ct_reference is None
         assert withheld.uncertainty is None
         # Without a numeric Ct_reference, no error metric can be computed.

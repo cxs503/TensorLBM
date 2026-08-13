@@ -20,6 +20,7 @@ This test suite performs three layers of verification:
 TDD: tests written first, then run against the real implementation.
 No commit / push.
 """
+
 from __future__ import annotations
 
 import math
@@ -57,22 +58,30 @@ def _make_body(
 ) -> SixDOFBody:
     return SixDOFBody(
         mass=mass,
-        ixx=1.0, iyy=1.0, izz=1.0,
+        ixx=1.0,
+        iyy=1.0,
+        izz=1.0,
         gravity=gravity,
         **dof_flags,
     )
 
 
 def _solid_mask(
-    nz: int, ny: int, nx: int, cx: int, cy: int, cz: int, r: int,
+    nz: int,
+    ny: int,
+    nx: int,
+    cx: int,
+    cy: int,
+    cz: int,
+    r: int,
 ) -> torch.Tensor:
     iz, iy, ix = torch.meshgrid(
-        torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij",
+        torch.arange(nz),
+        torch.arange(ny),
+        torch.arange(nx),
+        indexing="ij",
     )
-    return (
-        ((ix - cx).float() ** 2 + (iy - cy).float() ** 2 + (iz - cz).float() ** 2)
-        <= r ** 2
-    )
+    return ((ix - cx).float() ** 2 + (iy - cy).float() ** 2 + (iz - cz).float() ** 2) <= r**2
 
 
 def _bgk_collision(f: torch.Tensor, tau: float = 1.0) -> torch.Tensor:
@@ -216,7 +225,12 @@ class TestOriginalBugCumminsDocstringVsImplementation:
             n_steps = int(round(math.pi / (2 * math.sqrt(k)) / dt))
             for _ in range(n_steps):
                 state = cummins_step(
-                    state, dt, torch.zeros(6), M, A_inf, C_mat,
+                    state,
+                    dt,
+                    torch.zeros(6),
+                    M,
+                    A_inf,
+                    C_mat,
                 )
             # Exact: x(t) = cos(omega*t), omega = sqrt(k) = 2
             t_final = n_steps * dt
@@ -267,8 +281,10 @@ class TestOriginalBugCumminsConvolutionIndexing:
         A_inf = torch.zeros(6, 6)
 
         radiation = RadiationData(
-            omega=omega, added_mass=torch.zeros(n_freq, 6, 6),
-            damping=B, added_mass_inf=A_inf,
+            omega=omega,
+            added_mass=torch.zeros(n_freq, 6, 6),
+            damping=B,
+            added_mass_inf=A_inf,
         )
 
         body = BodyProperties6DOF(mass=1.0)
@@ -281,7 +297,12 @@ class TestOriginalBugCumminsConvolutionIndexing:
         F_exc[0, 0] = 1.0  # impulse at step 0
 
         state = cummins_time_integration(
-            body, hydro, radiation, F_exc, dt, n_steps,
+            body,
+            hydro,
+            radiation,
+            F_exc,
+            dt,
+            n_steps,
         )
 
         # At step 1, the convolution should use K(dt) * v(t_0).
@@ -372,12 +393,19 @@ class TestEquivalenceRigidBodyStepVsStepSixdof:
 
         # Original step_sixdof.
         pos_o, vel_o, quat_o, omega_o = step_sixdof(
-            pos, vel, quat, omega, fluid, body, dt,
+            pos,
+            vel,
+            quat,
+            omega,
+            fluid,
+            body,
+            dt,
         )
 
         # Common rigid_body_step.
-        state = RigidBodyState(pos=pos.clone(), vel=vel.clone(),
-                               quat=quat.clone(), omega_body=omega.clone())
+        state = RigidBodyState(
+            pos=pos.clone(), vel=vel.clone(), quat=quat.clone(), omega_body=omega.clone()
+        )
         force = torch.tensor([5.0, -3.0, 1.0, 0.1, -0.2, 0.3], dtype=torch.float64)
         new_state = rigid_body_step(state, force, dt, body=body)
 
@@ -389,9 +417,15 @@ class TestEquivalenceRigidBodyStepVsStepSixdof:
     def test_equivalence_with_nontrivial_quaternion(self):
         """Equivalence with a non-identity quaternion and angular velocity."""
         angle = math.radians(30.0)
-        quat = torch.tensor([
-            math.cos(angle / 2), 0.0, math.sin(angle / 2), 0.0,
-        ], dtype=torch.float64)
+        quat = torch.tensor(
+            [
+                math.cos(angle / 2),
+                0.0,
+                math.sin(angle / 2),
+                0.0,
+            ],
+            dtype=torch.float64,
+        )
         pos = torch.tensor([0.5, -0.3, 0.2], dtype=torch.float64)
         vel = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float64)
         omega = torch.tensor([0.0, 0.5, 0.0], dtype=torch.float64)
@@ -400,10 +434,17 @@ class TestEquivalenceRigidBodyStepVsStepSixdof:
         dt = 0.005
 
         pos_o, vel_o, quat_o, omega_o = step_sixdof(
-            pos, vel, quat, omega, fluid, body, dt,
+            pos,
+            vel,
+            quat,
+            omega,
+            fluid,
+            body,
+            dt,
         )
-        state = RigidBodyState(pos=pos.clone(), vel=vel.clone(),
-                               quat=quat.clone(), omega_body=omega.clone())
+        state = RigidBodyState(
+            pos=pos.clone(), vel=vel.clone(), quat=quat.clone(), omega_body=omega.clone()
+        )
         force = torch.tensor([1.0, 2.0, 3.0, 0.5, 0.0, -0.5], dtype=torch.float64)
         new_state = rigid_body_step(state, force, dt, body=body)
 
@@ -419,15 +460,21 @@ class TestEquivalenceRigidBodyStepVsStepSixdof:
         quat = torch.tensor([1.0, 0.0, 0.0, 0.0], dtype=torch.float64)
         omega = torch.tensor([0.01, 0.02, 0.03], dtype=torch.float64)
         fluid = FluidForcesMoments(fx=10.0, fy=5.0, fz=2.0, mx=1.0, my=0.5, mz=0.3)
-        body = _make_body(mass=1.0, gravity=(0.0, -9.81, 0.0),
-                         fix_surge=True, fix_pitch=True)
+        body = _make_body(mass=1.0, gravity=(0.0, -9.81, 0.0), fix_surge=True, fix_pitch=True)
         dt = 0.01
 
         pos_o, vel_o, quat_o, omega_o = step_sixdof(
-            pos, vel, quat, omega, fluid, body, dt,
+            pos,
+            vel,
+            quat,
+            omega,
+            fluid,
+            body,
+            dt,
         )
-        state = RigidBodyState(pos=pos.clone(), vel=vel.clone(),
-                               quat=quat.clone(), omega_body=omega.clone())
+        state = RigidBodyState(
+            pos=pos.clone(), vel=vel.clone(), quat=quat.clone(), omega_body=omega.clone()
+        )
         force = torch.tensor([10.0, 5.0, 2.0, 1.0, 0.5, 0.3], dtype=torch.float64)
         new_state = rigid_body_step(state, force, dt, body=body)
 
@@ -450,12 +497,19 @@ class TestEquivalenceRigidBodyStepVsStepSixdof:
         pos_o, vel_o, quat_o, omega_o = pos, vel, quat, omega
         for _ in range(50):
             pos_o, vel_o, quat_o, omega_o = step_sixdof(
-                pos_o, vel_o, quat_o, omega_o, fluid, body, dt,
+                pos_o,
+                vel_o,
+                quat_o,
+                omega_o,
+                fluid,
+                body,
+                dt,
             )
 
         # Run common.
-        state = RigidBodyState(pos=pos.clone(), vel=vel.clone(),
-                               quat=quat.clone(), omega_body=omega.clone())
+        state = RigidBodyState(
+            pos=pos.clone(), vel=vel.clone(), quat=quat.clone(), omega_body=omega.clone()
+        )
         force = torch.tensor([3.0, 0.0, 0.0, 0.0, 0.5, 0.0], dtype=torch.float64)
         for _ in range(50):
             state = rigid_body_step(state, force, dt, body=body)
@@ -482,10 +536,8 @@ class TestEquivalenceForceCoercion:
         body = _make_body(mass=1.5, gravity=(0.0, 0.0, 0.0))
         dt = 0.01
 
-        force_tensor = torch.tensor([5.0, -3.0, 1.0, 0.2, -0.1, 0.4],
-                                     dtype=torch.float64)
-        fluid = FluidForcesMoments(fx=5.0, fy=-3.0, fz=1.0,
-                                   mx=0.2, my=-0.1, mz=0.4)
+        force_tensor = torch.tensor([5.0, -3.0, 1.0, 0.2, -0.1, 0.4], dtype=torch.float64)
+        fluid = FluidForcesMoments(fx=5.0, fy=-3.0, fz=1.0, mx=0.2, my=-0.1, mz=0.4)
 
         s1 = rigid_body_step(state.clone(), force_tensor, dt, body=body)
         s2 = rigid_body_step(state.clone(), fluid, dt, body=body)
@@ -547,14 +599,22 @@ class TestEquivalenceRunSimulationVsCommon:
         t = 0.0
         history_common = []
         for step in range(cfg.n_steps + 1):
-            history_common.append((t, state.pos.clone(), state.vel.clone(),
-                                   state.quat.clone(), state.omega_body.clone()))
+            history_common.append(
+                (
+                    t,
+                    state.pos.clone(),
+                    state.vel.clone(),
+                    state.quat.clone(),
+                    state.omega_body.clone(),
+                )
+            )
             if step == cfg.n_steps:
                 break
             # Use the same sinusoidal force function.
             fluid = FluidForcesMoments(
                 fx=10.0 * math.sin(2 * math.pi * 0.5 * t),
-                fy=0.0, fz=0.0,
+                fy=0.0,
+                fz=0.0,
                 mx=0.0,
                 my=1.0 * math.cos(2 * math.pi * 0.5 * t),
                 mz=0.0,
@@ -571,11 +631,13 @@ class TestEquivalenceRunSimulationVsCommon:
             assert pos_c[i].item() == pytest.approx(final_orig.pos[i], abs=1e-10)
             assert vel_c[i].item() == pytest.approx(final_orig.vel[i], abs=1e-10)
             assert omega_c[i].item() == pytest.approx(
-                final_orig.omega_body[i], abs=1e-10,
+                final_orig.omega_body[i],
+                abs=1e-10,
             )
         for i in range(4):
             assert quat_c[i].item() == pytest.approx(
-                final_orig.quat[i], abs=1e-10,
+                final_orig.quat[i],
+                abs=1e-10,
             )
 
 
@@ -610,7 +672,10 @@ class TestFSICompositionIBMTo6DOF:
 
         # Manual composition.
         force_fluid, _ = ibm_direct_forcing_3d_common(
-            f, mask, state.vel.to(f.dtype), lattice="D3Q19",
+            f,
+            mask,
+            state.vel.to(f.dtype),
+            lattice="D3Q19",
         )
         fx_manual = float(force_fluid[0].sum().item())
         fy_manual = float(force_fluid[1].sum().item())
@@ -626,16 +691,20 @@ class TestFSICompositionIBMTo6DOF:
 
         # Body state should match (translational components).
         assert result.structure_updated.vel[0].item() == pytest.approx(
-            state_manual.vel[0].item(), abs=1e-6,
+            state_manual.vel[0].item(),
+            abs=1e-6,
         )
         assert result.structure_updated.vel[1].item() == pytest.approx(
-            state_manual.vel[1].item(), abs=1e-6,
+            state_manual.vel[1].item(),
+            abs=1e-6,
         )
         assert result.structure_updated.vel[2].item() == pytest.approx(
-            state_manual.vel[2].item(), abs=1e-6,
+            state_manual.vel[2].item(),
+            abs=1e-6,
         )
         assert result.structure_updated.pos[0].item() == pytest.approx(
-            state_manual.pos[0].item(), abs=1e-6,
+            state_manual.pos[0].item(),
+            abs=1e-6,
         )
 
     def test_fsi_force_on_body_is_negative_of_fluid_force(self):
@@ -682,12 +751,16 @@ class TestFSICompositionIBMTo6DOF:
 
         # Manual IBM.
         _, f_ibm = ibm_direct_forcing_3d_common(
-            f, mask, state.vel.to(f.dtype), lattice="D3Q19",
+            f,
+            mask,
+            state.vel.to(f.dtype),
+            lattice="D3Q19",
         )
 
         # FSI step (one-way).
-        result = fsi_step(f, state, mask, body=body, lattice="D3Q19", dt=1.0,
-                          coupling="one_way_explicit")
+        result = fsi_step(
+            f, state, mask, body=body, lattice="D3Q19", dt=1.0, coupling="one_way_explicit"
+        )
 
         assert torch.allclose(result.f_updated, f_ibm, atol=1e-10)
 
@@ -710,7 +783,10 @@ class TestFSICompositionIBMTo6DOF:
 
         # Manually compute moments about centroid.
         force_fluid, _ = ibm_direct_forcing_3d_common(
-            f, mask, state.vel.to(f.dtype), lattice="D3Q19",
+            f,
+            mask,
+            state.vel.to(f.dtype),
+            lattice="D3Q19",
         )
         # Centroid.
         iz, iy, ix = torch.where(mask)
@@ -762,19 +838,25 @@ class TestFSICompositionTwoWay:
         )
         body = _make_body(gravity=(0.0, 0.0, 0.0))
 
-        r1 = fsi_step(f, state, mask, body=body, lattice="D3Q19", dt=1.0,
-                      coupling="one_way_explicit")
-        r2 = fsi_step(f, state, mask, body=body, lattice="D3Q19", dt=1.0,
-                      coupling="two_way_explicit")
+        r1 = fsi_step(
+            f, state, mask, body=body, lattice="D3Q19", dt=1.0, coupling="one_way_explicit"
+        )
+        r2 = fsi_step(
+            f, state, mask, body=body, lattice="D3Q19", dt=1.0, coupling="two_way_explicit"
+        )
 
         # Two-way should produce a different f_updated (second IBM pass).
         assert not torch.allclose(r1.f_updated, r2.f_updated, atol=1e-10)
         # But the body state should be the same (advanced once in both cases).
         assert torch.allclose(
-            r1.structure_updated.pos, r2.structure_updated.pos, atol=1e-10,
+            r1.structure_updated.pos,
+            r2.structure_updated.pos,
+            atol=1e-10,
         )
         assert torch.allclose(
-            r1.structure_updated.vel, r2.structure_updated.vel, atol=1e-10,
+            r1.structure_updated.vel,
+            r2.structure_updated.vel,
+            atol=1e-10,
         )
 
     def test_two_way_force_recomputed_from_second_pass(self):
@@ -793,15 +875,20 @@ class TestFSICompositionTwoWay:
         )
         body = _make_body(gravity=(0.0, 0.0, 0.0))
 
-        r2 = fsi_step(f, state, mask, body=body, lattice="D3Q19", dt=1.0,
-                      coupling="two_way_explicit")
+        r2 = fsi_step(
+            f, state, mask, body=body, lattice="D3Q19", dt=1.0, coupling="two_way_explicit"
+        )
 
         # Manual second pass with advanced velocity.
-        r1 = fsi_step(f, state, mask, body=body, lattice="D3Q19", dt=1.0,
-                      coupling="one_way_explicit")
+        r1 = fsi_step(
+            f, state, mask, body=body, lattice="D3Q19", dt=1.0, coupling="one_way_explicit"
+        )
         u2 = r1.structure_updated.vel.detach().to(f.dtype).clone()
         force_fluid_2, f_corr_2 = ibm_direct_forcing_3d_common(
-            f, mask, u2, lattice="D3Q19",
+            f,
+            mask,
+            u2,
+            lattice="D3Q19",
         )
         fx2 = float(force_fluid_2[0].sum().item())
 
@@ -852,8 +939,7 @@ class TestFSICollisionCombination:
             assert torch.isfinite(f).all(), f"NaN/Inf in f at step {step}"
             assert torch.isfinite(state.pos).all(), f"NaN/Inf in pos at step {step}"
             assert torch.isfinite(state.vel).all(), f"NaN/Inf in vel at step {step}"
-            assert torch.isfinite(result.force_on_body).all(), \
-                f"NaN/Inf in force at step {step}"
+            assert torch.isfinite(result.force_on_body).all(), f"NaN/Inf in force at step {step}"
 
             positions.append(state.pos.clone())
             velocities.append(state.vel.clone())
@@ -934,7 +1020,12 @@ class TestFSICollisionCombination:
         for step in range(5):
             f = _bgk_collision(f, tau=1.0)
             result = fsi_step(
-                f, state, mask, body=body, lattice="D3Q19", dt=dt,
+                f,
+                state,
+                mask,
+                body=body,
+                lattice="D3Q19",
+                dt=dt,
                 coupling="two_way_explicit",
             )
             f = result.f_updated
@@ -1011,6 +1102,7 @@ class TestEdgeCases:
         mask = _solid_mask(nz, ny, nx, cx=5, cy=5, cz=5, r=2)
         # Derive markers explicitly.
         from tensorlbm.ibm_common import derive_surface_markers_3d
+
         mx, my, mz = derive_surface_markers_3d(mask)
         state = RigidBodyState(
             pos=torch.zeros(3, dtype=torch.float64),
@@ -1021,7 +1113,12 @@ class TestEdgeCases:
         body = _make_body(gravity=(0.0, 0.0, 0.0))
 
         result = fsi_step(
-            f, state, mask, body=body, lattice="D3Q19", dt=1.0,
+            f,
+            state,
+            mask,
+            body=body,
+            lattice="D3Q19",
+            dt=1.0,
             markers=(mx, my, mz),
         )
         assert torch.isfinite(result.f_updated).all()
@@ -1034,9 +1131,15 @@ class TestEdgeCases:
         state = RigidBodyState(
             pos=torch.zeros(3, dtype=torch.float64),
             vel=torch.zeros(3, dtype=torch.float64),
-            quat=torch.tensor([
-                math.cos(angle / 2), 0.0, 0.0, math.sin(angle / 2),
-            ], dtype=torch.float64),
+            quat=torch.tensor(
+                [
+                    math.cos(angle / 2),
+                    0.0,
+                    0.0,
+                    math.sin(angle / 2),
+                ],
+                dtype=torch.float64,
+            ),
             omega_body=torch.zeros(3, dtype=torch.float64),
         )
         roll, pitch, yaw = rigid_body_state_to_euler(state)

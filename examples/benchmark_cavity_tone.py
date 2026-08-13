@@ -25,6 +25,7 @@ Validation:
   2. Compare with Rossiter f_1 = 0.75 * U / L
   3. Target: <25% error (Rossiter formula is semi-empirical)
 """
+
 from __future__ import annotations
 import argparse, math, os, sys
 import numpy as np
@@ -59,14 +60,14 @@ def build_cavity_solid(nx, ny, cx_start, L, D, dev):
     # Upstream plate (y=D, x < cx_start)
     solid[D, :cx_start] = True
     # Downstream plate (y=D, x > cx_start+L)
-    solid[D, cx_start + L + 1:] = True
+    solid[D, cx_start + L + 1 :] = True
     # Cavity left wall (x=cx_start, y=1..D)
     solid[1:D, cx_start] = True
     # Cavity right wall (x=cx_start+L, y=1..D)
     solid[1:D, cx_start + L] = True
     # Also fill below upstream/downstream plate (y=1..D-1, outside cavity)
     solid[1:D, :cx_start] = True
-    solid[1:D, cx_start + L + 1:] = True
+    solid[1:D, cx_start + L + 1 :] = True
     return solid
 
 
@@ -81,9 +82,19 @@ def bounce_back_solid(f, solid_mask, dev):
     return f_bounced
 
 
-def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
-                    u_in=0.05, cx_start=150, L=80, D=30,
-                    steps=5000, device="cpu", log_every=500):
+def run_cavity_tone(
+    nx=400,
+    ny=100,
+    nz=1,
+    tau=0.55,
+    u_in=0.05,
+    cx_start=150,
+    L=80,
+    D=30,
+    steps=5000,
+    device="cpu",
+    log_every=500,
+):
     dev = torch.device(device)
     cs = CS
     nu = (tau - 0.5) / 3.0
@@ -106,8 +117,9 @@ def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
     dist_right = (nx - 1 - xx_grid).float()
     sponge_damping_x = torch.where(
         dist_right < sponge_width,
-        torch.sin(math.pi * dist_right / (2 * sponge_width))**2,
-        torch.ones_like(dist_right))
+        torch.sin(math.pi * dist_right / (2 * sponge_width)) ** 2,
+        torch.ones_like(dist_right),
+    )
     # Apply sponge in x-direction (broadcast to [ny, nx])
     damping = sponge_damping_x.unsqueeze(0).expand(ny, -1)
 
@@ -116,8 +128,9 @@ def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
     dist_top = (ny - 1 - yy_grid).float()
     sponge_damping_y = torch.where(
         dist_top < sponge_width,
-        torch.sin(math.pi * dist_top / (2 * sponge_width))**2,
-        torch.ones_like(dist_top))
+        torch.sin(math.pi * dist_top / (2 * sponge_width)) ** 2,
+        torch.ones_like(dist_top),
+    )
     damping = torch.minimum(damping, sponge_damping_y.unsqueeze(1).expand(-1, nx))
 
     # Initialize
@@ -127,9 +140,9 @@ def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
     # Zero velocity inside solid
     ux0[0][solid] = 0.0
     f = equilibrium3d(rho0, ux0, uy0, uy0.clone(), device=dev)
-    feq_target = equilibrium3d(rho0, torch.zeros_like(rho0),
-                                torch.zeros_like(rho0), torch.zeros_like(rho0),
-                                device=dev)
+    feq_target = equilibrium3d(
+        rho0, torch.zeros_like(rho0), torch.zeros_like(rho0), torch.zeros_like(rho0), device=dev
+    )
 
     # Inlet BC: equilibrium with u_in at x=0
     rho_inlet = torch.ones((nz, ny, 1), device=dev)
@@ -143,11 +156,11 @@ def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
     print(f"  网格: {nx}×{ny}×{nz}  设备: {device}", flush=True)
     print(f"  流速 U={u_in}  腔长 L={L}  腔深 D={D}", flush=True)
     print(f"  τ={tau}  ν={nu:.4f}  Re={Re:.0f}  cs={cs:.4f}", flush=True)
-    print(f"  腔体起始: x={cx_start}  尾缘: x={cx_start+L}", flush=True)
+    print(f"  腔体起始: x={cx_start}  尾缘: x={cx_start + L}", flush=True)
     print(f"  监测点: ({mon_x}, {mon_y})", flush=True)
     print(f"  Rossiter 频率 (LBM):", flush=True)
     for n, freq in enumerate(rossiter_freqs, 1):
-        print(f"    f_{n} = {freq:.6f}  (周期 = {1/freq:.0f} 步)", flush=True)
+        print(f"    f_{n} = {freq:.6f}  (周期 = {1 / freq:.0f} 步)", flush=True)
     print(f"  步数: {steps}", flush=True)
     print("-" * 64, flush=True)
 
@@ -170,8 +183,9 @@ def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
 
         if step % log_every == 0 or step == steps:
             drho_max = float((rho - rho0).abs().max())
-            print(f"  step {step:5d}/{steps}  |Δρ|_max={drho_max:.6e}  "
-                  f"p_mon={p_val:+.6e}", flush=True)
+            print(
+                f"  step {step:5d}/{steps}  |Δρ|_max={drho_max:.6e}  p_mon={p_val:+.6e}", flush=True
+            )
 
     # === FFT analysis ===
     print("\n" + "=" * 64, flush=True)
@@ -195,8 +209,11 @@ def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
     peak_indices = sorted(peak_indices)  # sort by frequency
 
     print(f"  FFT 样本数: {N} (跳过前 {half} 步瞬态)", flush=True)
-    print(f"  频率分辨率: {1.0/N:.6f}", flush=True)
-    print(f"\n  {'rank':>4s}  {'f_lbm':>10s}  {'amp':>10s}  {'f_rossiter':>10s}  {'err%':>6s}", flush=True)
+    print(f"  频率分辨率: {1.0 / N:.6f}", flush=True)
+    print(
+        f"\n  {'rank':>4s}  {'f_lbm':>10s}  {'amp':>10s}  {'f_rossiter':>10s}  {'err%':>6s}",
+        flush=True,
+    )
 
     found_modes = []
     for rank, idx in enumerate(peak_indices):
@@ -215,8 +232,10 @@ def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
                 best_n = n
                 best_f = f_r
         found_modes.append((f_lbm, amp, best_n, best_f, best_err))
-        print(f"  {rank:4d}  {f_lbm:10.6f}  {amp:10.2f}  {best_f:10.6f}(n={best_n})  {best_err:6.1f}",
-              flush=True)
+        print(
+            f"  {rank:4d}  {f_lbm:10.6f}  {amp:10.2f}  {best_f:10.6f}(n={best_n})  {best_err:6.1f}",
+            flush=True,
+        )
 
     # === Verification ===
     print(f"\n  验证:", flush=True)
@@ -225,17 +244,27 @@ def run_cavity_tone(nx=400, ny=100, nz=1, tau=0.55,
     # 1. Oscillation detected
     osc_ok = fft_vals.max() > 1e-10
     checks.append(("压力振荡检测", osc_ok, f"amp_max={fft_vals.max():.2e}"))
-    print(f"    [{'PASS' if osc_ok else 'FAIL'}] 压力振荡: amp_max={fft_vals.max():.2e}", flush=True)
+    print(
+        f"    [{'PASS' if osc_ok else 'FAIL'}] 压力振荡: amp_max={fft_vals.max():.2e}", flush=True
+    )
 
     # 2. First Rossiter mode within 25%
     if found_modes:
         # Find the mode closest to f_1
         best = min(found_modes, key=lambda m: m[4])
         mode_ok = best[4] < 25.0
-        checks.append((f"Rossiter 模式 n={best[2]} (err<25%)", mode_ok,
-                       f"f_lbm={best[0]:.6f} vs f_ana={best[3]:.6f}, err={best[4]:.1f}%"))
-        print(f"    [{'PASS' if mode_ok else 'FAIL'}] Rossiter 模式 n={best[2]}: "
-              f"f_lbm={best[0]:.6f} vs f_ana={best[3]:.6f}, err={best[4]:.1f}%", flush=True)
+        checks.append(
+            (
+                f"Rossiter 模式 n={best[2]} (err<25%)",
+                mode_ok,
+                f"f_lbm={best[0]:.6f} vs f_ana={best[3]:.6f}, err={best[4]:.1f}%",
+            )
+        )
+        print(
+            f"    [{'PASS' if mode_ok else 'FAIL'}] Rossiter 模式 n={best[2]}: "
+            f"f_lbm={best[0]:.6f} vs f_ana={best[3]:.6f}, err={best[4]:.1f}%",
+            flush=True,
+        )
     else:
         checks.append(("Rossiter 模式检测", False, "无峰值"))
         print(f"    [FAIL] 未检测到振荡峰值", flush=True)
@@ -262,9 +291,19 @@ def main():
     p.add_argument("--device", default="cpu")
     p.add_argument("--log-every", type=int, default=500)
     args = p.parse_args()
-    run_cavity_tone(nx=args.nx, ny=args.ny, nz=args.nz, tau=args.tau,
-                    u_in=args.u_in, cx_start=args.cx_start, L=args.L, D=args.D,
-                    steps=args.steps, device=args.device, log_every=args.log_every)
+    run_cavity_tone(
+        nx=args.nx,
+        ny=args.ny,
+        nz=args.nz,
+        tau=args.tau,
+        u_in=args.u_in,
+        cx_start=args.cx_start,
+        L=args.L,
+        D=args.D,
+        steps=args.steps,
+        device=args.device,
+        log_every=args.log_every,
+    )
 
 
 if __name__ == "__main__":

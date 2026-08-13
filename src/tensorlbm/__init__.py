@@ -102,6 +102,8 @@ from .d3q27 import W as W27
 from .d3q27 import (
     collide_bgk27,
     collide_mrt27,
+    collide_rlbm27,
+    collide_trt27,
     correct_mass27,
     equilibrium27,
     macroscopic27,
@@ -551,6 +553,7 @@ from .cumulant import (
     collide_cumulant_d2q9,
     collide_cumulant_d3q19,
     collide_cumulant_d3q27,
+    collide_cumulant_geier_d3q27,
 )
 from .cumulant_smag import collide_cumulant_smag_d3q27
 from .planar_d3q19 import (
@@ -1267,6 +1270,7 @@ __all__ = [
     "collide_cumulant_d2q9",
     "collide_cumulant_d3q19",
     "collide_cumulant_d3q27",
+    "collide_cumulant_geier_d3q27",
     "collide_planar_cumulant_d3q19",
     "lift_d2q9_to_d3q19",
     "marginalize_d3q19_to_d2q9",

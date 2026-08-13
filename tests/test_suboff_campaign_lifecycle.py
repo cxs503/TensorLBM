@@ -1,4 +1,5 @@
 """TDD for durable, non-launching SUBOFF campaign lifecycle artifacts."""
+
 from __future__ import annotations
 
 import csv
@@ -18,13 +19,17 @@ def _load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_completed_checkpoint_set_writes_restartable_status_progress_manifest_and_block_telemetry(tmp_path):
+def test_completed_checkpoint_set_writes_restartable_status_progress_manifest_and_block_telemetry(
+    tmp_path,
+):
     checkpoint_root = tmp_path / "checkpoints"
     manifest = _short_completed_campaign(checkpoint_root)
     output = tmp_path / "campaign-artifacts"
 
     result = materialize_suboff_campaign_lifecycle(
-        manifest, checkpoint_root=checkpoint_root, artifact_root=output,
+        manifest,
+        checkpoint_root=checkpoint_root,
+        artifact_root=output,
     )
 
     assert result["status"] == "completed"
@@ -39,8 +44,9 @@ def test_completed_checkpoint_set_writes_restartable_status_progress_manifest_an
     assert telemetry["ct"]["status"] == "computed"
     with (output / "progress.csv").open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
-    assert [(row["end_step"], row["checkpoint"], row["checkpoint_set_complete"])
-            for row in rows] == [("2", "step-2", "true"), ("4", "step-4", "true")]
+    assert [
+        (row["end_step"], row["checkpoint"], row["checkpoint_set_complete"]) for row in rows
+    ] == [("2", "step-2", "true"), ("4", "step-4", "true")]
 
 
 def test_invalid_checkpoint_set_writes_blocked_status_without_completion_claim(tmp_path):
@@ -51,7 +57,9 @@ def test_invalid_checkpoint_set_writes_blocked_status_without_completion_claim(t
 
     with pytest.raises(ValueError, match="missing checkpoint rank file"):
         materialize_suboff_campaign_lifecycle(
-            manifest, checkpoint_root=checkpoint_root, artifact_root=output,
+            manifest,
+            checkpoint_root=checkpoint_root,
+            artifact_root=output,
         )
 
     status = _load_json(output / "run_status.json")
@@ -67,11 +75,15 @@ def test_restartable_lifecycle_is_idempotent_and_rewrites_same_evidence(tmp_path
     output = tmp_path / "campaign-artifacts"
 
     first = materialize_suboff_campaign_lifecycle(
-        manifest, checkpoint_root=checkpoint_root, artifact_root=output,
+        manifest,
+        checkpoint_root=checkpoint_root,
+        artifact_root=output,
     )
     first_progress = (output / "progress.csv").read_text(encoding="utf-8")
     second = materialize_suboff_campaign_lifecycle(
-        manifest, checkpoint_root=checkpoint_root, artifact_root=output,
+        manifest,
+        checkpoint_root=checkpoint_root,
+        artifact_root=output,
     )
 
     assert first == second
@@ -99,7 +111,9 @@ def test_two_callers_never_share_a_temporary_artifact_name(tmp_path, monkeypatch
     def materialize() -> None:
         try:
             materialize_suboff_campaign_lifecycle(
-                manifest, checkpoint_root=checkpoint_root, artifact_root=output,
+                manifest,
+                checkpoint_root=checkpoint_root,
+                artifact_root=output,
             )
         except Exception as exc:  # pragma: no cover - asserted below
             errors.append(exc)

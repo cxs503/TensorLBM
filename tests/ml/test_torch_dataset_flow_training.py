@@ -69,7 +69,9 @@ def _product(index: int, values: np.ndarray) -> tuple[FieldDataProductR2, bytes]
         ),
         component_labels=("u_x", "u_y"),
     )
-    return FieldDataProductR2(f"product-{index}", run, "metrics", (array,), {"fixture": index}), payload
+    return FieldDataProductR2(
+        f"product-{index}", run, "metrics", (array,), {"fixture": index}
+    ), payload
 
 
 def _inputs() -> tuple[TrainingSpec, FieldDatasetR2, dict[str, dict[str, bytes]]]:
@@ -78,28 +80,61 @@ def _inputs() -> tuple[TrainingSpec, FieldDatasetR2, dict[str, dict[str, bytes]]
     for index, split in enumerate(("train-a", "train-b", "val", "test"), start=1):
         product, payload = _product(index, np.full((2, 2, 2), index / 10, dtype=np.float32))
         sample_id = f"sample-{split}"
-        samples.append(FieldSampleRefR2(sample_id, product, f"group-{split}", f"case-{split}", f"trajectory-{split}"))
+        samples.append(
+            FieldSampleRefR2(
+                sample_id, product, f"group-{split}", f"case-{split}", f"trajectory-{split}"
+            )
+        )
         payloads[sample_id] = {"velocity": payload}
     dataset = FieldDatasetR2(
         "dataset-flow-r1",
         "r1",
         "field reconstruction",
         tuple(samples),
-        {"train": ("sample-train-a", "sample-train-b"), "val": ("sample-val",), "test": ("sample-test",)},
+        {
+            "train": ("sample-train-a", "sample-train-b"),
+            "val": ("sample-val",),
+            "test": ("sample-test",),
+        },
         {"curator": "test"},
     )
     fields = tuple(
-        FieldProduct(sample.product.product_id, sample.product.run_manifest, "metrics", "velocity", (2, 2, 2), "float32", "m/s", ValidationStatus.PASS, {})
+        FieldProduct(
+            sample.product.product_id,
+            sample.product.run_manifest,
+            "metrics",
+            "velocity",
+            (2, 2, 2),
+            "float32",
+            "m/s",
+            ValidationStatus.PASS,
+            {},
+        )
         for sample in samples
     )
     manifest = DatasetManifest(
-        dataset.dataset_id, dataset.version, fields, dataset.task_name,
-        {"train": tuple(field.product_id for field in fields), "val": (), "test": ()}, {},
+        dataset.dataset_id,
+        dataset.version,
+        fields,
+        dataset.task_name,
+        {"train": tuple(field.product_id for field in fields), "val": (), "test": ()},
+        {},
     )
     signature = ModelSignature(("velocity",), ("target",), {"velocity": "m/s", "target": "m/s"})
     object.__setattr__(signature, "outputs", ("velocity",))
     object.__setattr__(signature, "units", MappingProxyType({"velocity": "m/s"}))
-    return TrainingSpec("dataset-flow-smoke-r1", manifest, TaskKind.FIELD_RECONSTRUCTION, signature, TrainingBackend.TORCH, {}), dataset, payloads
+    return (
+        TrainingSpec(
+            "dataset-flow-smoke-r1",
+            manifest,
+            TaskKind.FIELD_RECONSTRUCTION,
+            signature,
+            TrainingBackend.TORCH,
+            {},
+        ),
+        dataset,
+        payloads,
+    )
 
 
 def _mini_arch_and_config():
@@ -111,7 +146,9 @@ def _mini_arch_and_config():
     )
 
 
-def test_runs_real_cpu_training_on_train_split_only_and_writes_complete_provenance(tmp_path: Path, monkeypatch) -> None:
+def test_runs_real_cpu_training_on_train_split_only_and_writes_complete_provenance(
+    tmp_path: Path, monkeypatch
+) -> None:
     import tensorlbm.ml.torch_dataset_flow_training as execution
 
     spec, dataset, payloads = _inputs()
@@ -125,7 +162,9 @@ def test_runs_real_cpu_training_on_train_split_only_and_writes_complete_provenan
         return real_trainer(snapshots, *args, **kwargs)
 
     monkeypatch.setattr(execution, "train_flow_transformer_self_supervised", tracked)
-    record = execution.run_evidence_gated_field_dataset_flow_reconstruction(spec, dataset, payloads, out, arch, config)
+    record = execution.run_evidence_gated_field_dataset_flow_reconstruction(
+        spec, dataset, payloads, out, arch, config
+    )
 
     metadata_path = Path(f"{out}.json")
     provenance_path = Path(f"{out}.provenance.json")
@@ -141,17 +180,30 @@ def test_runs_real_cpu_training_on_train_split_only_and_writes_complete_provenan
     assert provenance["splits"]["val"]["sample_ids"] == ["sample-val"]
     assert provenance["splits"]["test"]["sample_ids"] == ["sample-test"]
     for split in ("train", "val", "test"):
-        assert provenance["splits"][split]["count"] == len(provenance["splits"][split]["sample_ids"])
+        assert provenance["splits"][split]["count"] == len(
+            provenance["splits"][split]["sample_ids"]
+        )
         sample = provenance["splits"][split]["samples"][0]
-        assert {"group_id", "source_case_id", "source_trajectory_id", "field_provenance"} <= set(sample)
+        assert {"group_id", "source_case_id", "source_trajectory_id", "field_provenance"} <= set(
+            sample
+        )
         assert len(sample["field_provenance"]["blob_sha256"]) == 64
     assert provenance["files"]["weights"]["sha256"] == sha256(out.read_bytes()).hexdigest()
-    assert provenance["files"]["metadata"]["sha256"] == sha256(metadata_path.read_bytes()).hexdigest()
+    assert (
+        provenance["files"]["metadata"]["sha256"] == sha256(metadata_path.read_bytes()).hexdigest()
+    )
     claimed = provenance.pop("provenance_sha256")
-    assert claimed == sha256(json.dumps(provenance, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    assert (
+        claimed
+        == sha256(
+            json.dumps(provenance, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+    )
 
 
-def test_val_or_test_bytes_are_evidence_validated_but_never_trainer_inputs(tmp_path: Path, monkeypatch) -> None:
+def test_val_or_test_bytes_are_evidence_validated_but_never_trainer_inputs(
+    tmp_path: Path, monkeypatch
+) -> None:
     import tensorlbm.ml.torch_dataset_flow_training as execution
 
     spec, dataset, payloads = _inputs()
@@ -161,45 +213,73 @@ def test_val_or_test_bytes_are_evidence_validated_but_never_trainer_inputs(tmp_p
     def fake_trainer(snapshots, out, *args, **kwargs):
         received.extend(snapshots)
         Path(out).write_bytes(b"weights")
-        Path(f"{out}.json").write_text('{"family":"flow_transformer_ssl","backend":"torch"}', encoding="utf-8")
+        Path(f"{out}.json").write_text(
+            '{"family":"flow_transformer_ssl","backend":"torch"}', encoding="utf-8"
+        )
         return {"family": "flow_transformer_ssl", "backend": "torch"}
 
     monkeypatch.setattr(execution, "train_flow_transformer_self_supervised", fake_trainer)
-    execution.run_evidence_gated_field_dataset_flow_reconstruction(spec, dataset, payloads, tmp_path / "one.npz", arch, config)
+    execution.run_evidence_gated_field_dataset_flow_reconstruction(
+        spec, dataset, payloads, tmp_path / "one.npz", arch, config
+    )
     baseline = [float(pair[0][0, 0]) for pair in received]
     received.clear()
     changed = {sample: dict(inner) for sample, inner in payloads.items()}
     changed["sample-val"]["velocity"] = _npy_bytes(np.full((2, 2, 2), 9.0, dtype=np.float32))
     with pytest.raises(ValueError, match="payload"):
-        execution.run_evidence_gated_field_dataset_flow_reconstruction(spec, dataset, changed, tmp_path / "changed.npz", arch, config)
+        execution.run_evidence_gated_field_dataset_flow_reconstruction(
+            spec, dataset, changed, tmp_path / "changed.npz", arch, config
+        )
     assert received == []
     assert baseline == pytest.approx([0.1, 0.2])
 
 
 @pytest.mark.parametrize("device", ("cuda", "sdaa", " cpu ", "cpu:0"))
-def test_non_exact_cpu_rejects_before_adapter_or_trainer_and_creates_no_files(tmp_path: Path, monkeypatch, device: str) -> None:
+def test_non_exact_cpu_rejects_before_adapter_or_trainer_and_creates_no_files(
+    tmp_path: Path, monkeypatch, device: str
+) -> None:
     import tensorlbm.ml.torch_dataset_flow_training as execution
 
     spec, dataset, payloads = _inputs()
     arch, config = _mini_arch_and_config()
     called: list[str] = []
-    monkeypatch.setattr(execution, "materialize_torch_field_dataset", lambda *args: called.append("adapter"))
-    monkeypatch.setattr(execution, "train_flow_transformer_self_supervised", lambda *args, **kwargs: called.append("trainer"))
+    monkeypatch.setattr(
+        execution, "materialize_torch_field_dataset", lambda *args: called.append("adapter")
+    )
+    monkeypatch.setattr(
+        execution,
+        "train_flow_transformer_self_supervised",
+        lambda *args, **kwargs: called.append("trainer"),
+    )
     out = tmp_path / f"{device}.npz"
     with pytest.raises(ValueError, match="device='cpu'"):
-        execution.run_evidence_gated_field_dataset_flow_reconstruction(spec, dataset, payloads, out, arch, replace(config, device=device))
+        execution.run_evidence_gated_field_dataset_flow_reconstruction(
+            spec, dataset, payloads, out, arch, replace(config, device=device)
+        )
     assert called == []
     assert not any(Path(f"{out}{suffix}").exists() for suffix in ("", ".json", ".provenance.json"))
 
 
-def test_requires_at_least_two_train_snapshots_and_cleans_every_partial_on_failure(tmp_path: Path, monkeypatch) -> None:
+def test_requires_at_least_two_train_snapshots_and_cleans_every_partial_on_failure(
+    tmp_path: Path, monkeypatch
+) -> None:
     import tensorlbm.ml.torch_dataset_flow_training as execution
 
     spec, dataset, payloads = _inputs()
     arch, config = _mini_arch_and_config()
-    object.__setattr__(dataset, "splits", {"train": ("sample-train-a",), "val": ("sample-train-b", "sample-val"), "test": ("sample-test",)})
+    object.__setattr__(
+        dataset,
+        "splits",
+        {
+            "train": ("sample-train-a",),
+            "val": ("sample-train-b", "sample-val"),
+            "test": ("sample-test",),
+        },
+    )
     with pytest.raises(ValueError, match="at least 2 train"):
-        execution.run_evidence_gated_field_dataset_flow_reconstruction(spec, dataset, payloads, tmp_path / "single.npz", arch, config)
+        execution.run_evidence_gated_field_dataset_flow_reconstruction(
+            spec, dataset, payloads, tmp_path / "single.npz", arch, config
+        )
     spec, dataset, payloads = _inputs()
     out = tmp_path / "failed.npz"
 
@@ -210,11 +290,15 @@ def test_requires_at_least_two_train_snapshots_and_cleans_every_partial_on_failu
 
     monkeypatch.setattr(execution, "train_flow_transformer_self_supervised", explode)
     with pytest.raises(RuntimeError, match="injected trainer failure"):
-        execution.run_evidence_gated_field_dataset_flow_reconstruction(spec, dataset, payloads, out, arch, config)
+        execution.run_evidence_gated_field_dataset_flow_reconstruction(
+            spec, dataset, payloads, out, arch, config
+        )
     assert not any(Path(f"{out}{suffix}").exists() for suffix in ("", ".json", ".provenance.json"))
 
 
-def test_detects_dataset_toctou_before_training_and_writer_is_a_delegating_boundary(tmp_path: Path, monkeypatch) -> None:
+def test_detects_dataset_toctou_before_training_and_writer_is_a_delegating_boundary(
+    tmp_path: Path, monkeypatch
+) -> None:
     import tensorlbm.ml.torch_dataset_flow_training as execution
 
     spec, dataset, payloads = _inputs()
@@ -228,14 +312,28 @@ def test_detects_dataset_toctou_before_training_and_writer_is_a_delegating_bound
 
     monkeypatch.setattr(execution, "materialize_torch_field_dataset", mutate)
     with pytest.raises(ValueError, match="dataset changed"):
-        execution.run_evidence_gated_field_dataset_flow_reconstruction(spec, dataset, payloads, tmp_path / "toctou.npz", arch, config)
+        execution.run_evidence_gated_field_dataset_flow_reconstruction(
+            spec, dataset, payloads, tmp_path / "toctou.npz", arch, config
+        )
     source = Path("src/tensorlbm/ml/torch_dataset_flow_training.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
-    calls = {node.func.id if isinstance(node.func, ast.Name) else node.func.attr for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, (ast.Name, ast.Attribute))}
+    calls = {
+        node.func.id if isinstance(node.func, ast.Name) else node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, (ast.Name, ast.Attribute))
+    }
     assert {"materialize_torch_field_dataset", "train_flow_transformer_self_supervised"} <= calls
     assert not any(isinstance(node, (ast.For, ast.While)) for node in ast.walk(tree))
-    assert "torch" not in {alias.name.split(".")[0] for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
+    assert "torch" not in {
+        alias.name.split(".")[0]
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    }
     lowered = source.lower()
     for forbidden in ("optimizer", "cuda", "sdaa", "model("):
         assert forbidden not in lowered
-    assert not any(isinstance(node, ast.ClassDef) and node.name != "DatasetTrainingExecutionRecord" for node in ast.walk(tree))
+    assert not any(
+        isinstance(node, ast.ClassDef) and node.name != "DatasetTrainingExecutionRecord"
+        for node in ast.walk(tree)
+    )

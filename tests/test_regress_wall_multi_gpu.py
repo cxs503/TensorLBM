@@ -17,6 +17,7 @@ This test suite performs three categories of verification:
 
 TDD: tests are written to fail first (red), then pass after verification (green).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -35,6 +36,7 @@ from tensorlbm.multi_gpu import (
 # ---------------------------------------------------------------------------
 # Test fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def small_domain():
@@ -60,6 +62,7 @@ def domain_params():
 # ===========================================================================
 # 1. BUG IDENTIFICATION
 # ===========================================================================
+
 
 class TestBugIdentification:
     """Identify known bugs in the original implementation."""
@@ -123,9 +126,7 @@ class TestBugIdentification:
         nu = domain_params["nu"]
         y_val = domain_params["y_val"]
 
-        f_out, drag_fric, drag_pres = wall_function_3d(
-            f, solid, nu, y_val=y_val, wall_law="log"
-        )
+        f_out, drag_fric, drag_pres = wall_function_3d(f, solid, nu, y_val=y_val, wall_law="log")
 
         assert f_out.shape == f.shape
         assert not torch.equal(f, f_out), "wall_function_3d should modify f"
@@ -139,8 +140,7 @@ class TestBugIdentification:
 
         source = inspect.getsource(halo_exchange_3d)
         assert ".contiguous()" in source, (
-            "halo_exchange_3d should contain .contiguous() calls for "
-            "non-contiguous slice safety"
+            "halo_exchange_3d should contain .contiguous() calls for non-contiguous slice safety"
         )
 
 
@@ -148,12 +148,11 @@ class TestBugIdentification:
 # 2. EQUIVALENCE VERIFICATION
 # ===========================================================================
 
+
 class TestWallFunctionEquivalence:
     """Verify wall_function_common ≡ wall_model.wall_function_3d (D3Q19)."""
 
-    def test_wall_function_common_equals_wall_model_3d(
-        self, small_domain, domain_params
-    ):
+    def test_wall_function_common_equals_wall_model_3d(self, small_domain, domain_params):
         """wall_function_common.wall_function with pre-computed u_tau/y_plus
         must produce identical results to wall_model.wall_function_3d."""
         from tensorlbm.wall_model import wall_function_3d
@@ -181,13 +180,17 @@ class TestWallFunctionEquivalence:
         u_tau_near = u_tau * near.to(u_tau.dtype)
         y_plus_near = y_plus * near.to(y_plus.dtype)
         f_common = wall_function(
-            f, solid, u_tau_near, y_plus_near,
-            lattice="D3Q19", nu=nu, y_val=y_val,
+            f,
+            solid,
+            u_tau_near,
+            y_plus_near,
+            lattice="D3Q19",
+            nu=nu,
+            y_val=y_val,
         )
 
         assert torch.equal(f_orig, f_common), (
-            "wall_function_common.wall_function must be identical to "
-            "wall_model.wall_function_3d"
+            "wall_function_common.wall_function must be identical to wall_model.wall_function_3d"
         )
 
     def test_wall_function_common_reichardt_equals_wall_model_reichardt(
@@ -216,8 +219,13 @@ class TestWallFunctionEquivalence:
         u_tau_near = u_tau * near.to(u_tau.dtype)
         y_plus_near = y_plus * near.to(y_plus.dtype)
         f_common = wall_function(
-            f, solid, u_tau_near, y_plus_near,
-            lattice="D3Q19", nu=nu, y_val=y_val,
+            f,
+            solid,
+            u_tau_near,
+            y_plus_near,
+            lattice="D3Q19",
+            nu=nu,
+            y_val=y_val,
         )
 
         assert torch.equal(f_orig, f_common)
@@ -251,9 +259,7 @@ class TestMultiGPUEquivalence:
         f_ref = collide_bgk3d(f, tau)
         f_ref = stream3d(f_ref)
 
-        dd = DomainDecomposition.from_devices(
-            [0, 1, 2, 3], nx_global=nx, device_type="cpu"
-        )
+        dd = DomainDecomposition.from_devices([0, 1, 2, 3], nx_global=nx, device_type="cpu")
         solver = MultiGPUSolver3D(f, dd)
         solver.step(lambda f: collide_bgk3d(f, tau), stream3d)
         f_multi = solver.gather()
@@ -290,7 +296,8 @@ class TestMultiGPUEquivalence:
         f_gpu = solver_gpu.gather()
 
         solver_dev = MultiDeviceSolver3D(
-            f, ["cpu", "cpu"],
+            f,
+            ["cpu", "cpu"],
             collide_fn=lambda f: collide_bgk3d(f, tau),
             stream_fn=stream3d,
         )
@@ -313,8 +320,8 @@ class TestHaloExchangeContiguousEquivalence:
             right = slabs[(i + 1) % n_slabs]
             left_ghost = slab[:, :, :, :ov]
             right_ghost = slab[:, :, :, -ov:]
-            left_ghost.copy_(left[:, :, :, -2 * ov:-ov].to(left_ghost.device))
-            right_ghost.copy_(right[:, :, :, ov:2 * ov].to(right_ghost.device))
+            left_ghost.copy_(left[:, :, :, -2 * ov : -ov].to(left_ghost.device))
+            right_ghost.copy_(right[:, :, :, ov : 2 * ov].to(right_ghost.device))
         return slabs
 
     def test_contiguous_vs_no_contiguous_cpu(self):
@@ -368,12 +375,11 @@ class TestHaloExchangeContiguousEquivalence:
 # 3. COMBINATION TESTS
 # ===========================================================================
 
+
 class TestCombination:
     """Verify wall_function + collision + multi_gpu compose correctly."""
 
-    def test_wall_function_plus_collision_plus_multi_gpu(
-        self, small_domain, domain_params
-    ):
+    def test_wall_function_plus_collision_plus_multi_gpu(self, small_domain, domain_params):
         """wall_function + collision + multi_gpu: multi-card result must
         equal single-card reference."""
         from tensorlbm.wall_model import wall_function_3d
@@ -415,9 +421,7 @@ class TestCombination:
 
         assert torch.equal(f_ref, f_multi)
 
-    def test_wall_function_common_plus_collision_plus_multi_gpu(
-        self, small_domain, domain_params
-    ):
+    def test_wall_function_common_plus_collision_plus_multi_gpu(self, small_domain, domain_params):
         """Same combination but using wall_function_common instead of
         wall_model.wall_function_3d."""
         from tensorlbm.wall_function_common import (
@@ -443,8 +447,13 @@ class TestCombination:
             u_tau_near = u_tau * near.to(u_tau.dtype)
             y_plus_near = y_plus * near.to(y_plus.dtype)
             return wall_function(
-                f_slab, solid_slab, u_tau_near, y_plus_near,
-                lattice="D3Q19", nu=nu, y_val=y_val,
+                f_slab,
+                solid_slab,
+                u_tau_near,
+                y_plus_near,
+                lattice="D3Q19",
+                nu=nu,
+                y_val=y_val,
             )
 
         # Single-card reference
@@ -499,9 +508,7 @@ class TestCombination:
 
         assert torch.equal(f_ref, f_multi)
 
-    def test_multi_step_multi_gpu_with_wall_function(
-        self, small_domain, domain_params
-    ):
+    def test_multi_step_multi_gpu_with_wall_function(self, small_domain, domain_params):
         """Multi-step: collide -> wall_function -> stream, repeated 3 steps."""
         from tensorlbm.wall_model import wall_function_3d
 
@@ -547,6 +554,7 @@ class TestCombination:
 # 4. ROUGHNESS MODULE SANITY
 # ===========================================================================
 
+
 class TestRoughnessSanity:
     """Sanity checks for the roughness module (not equivalence, but
     confirms the module is functional and not 带病上岗)."""
@@ -585,9 +593,7 @@ class TestRoughnessSanity:
         nu = domain_params["nu"]
         rho, ux, uy, uz = macroscopic3d(f)
 
-        ux_s, uy_s, uz_s = compute_rough_wall_slip_velocity(
-            ux, uy, uz, solid, nu, ks=1.0
-        )
+        ux_s, uy_s, uz_s = compute_rough_wall_slip_velocity(ux, uy, uz, solid, nu, ks=1.0)
         assert ux_s.shape == ux.shape
         assert torch.isfinite(ux_s).all()
         assert torch.isfinite(uy_s).all()
@@ -597,6 +603,7 @@ class TestRoughnessSanity:
 # ===========================================================================
 # 5. WALL SHEAR MODULE BUG DETAIL
 # ===========================================================================
+
 
 class TestWallShearBugs:
     """Detailed bug verification for wall_shear.py."""

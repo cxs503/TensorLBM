@@ -86,3 +86,25 @@ def test_equilibrium_boundary_diagnostic_has_zero_population_delta() -> None:
     assert torch.allclose(out, f, atol=1e-7, rtol=0.0)
     assert diagnostics.mass_delta == pytest.approx(0.0, abs=2e-5)
     assert diagnostics.momentum_delta == pytest.approx((0.0, 0.0, 0.0), abs=2e-5)
+
+
+def test_outlet_density_is_extrapolated_from_interior() -> None:
+    # Regression guard for the high-Re pressure-wave-reflection fix: at x+
+    # (outlet) the incoming populations must be reconstructed with the
+    # interior-extrapolated density (zero-gradient), NOT rho_far.  The outgoing
+    # populations are left untouched, so we assert on the incoming direction
+    # populations specifically.
+    shape = (5, 7, 9)
+    rho = torch.ones(shape)
+    rho[:, :, -2] = 1.05  # perturb the interior plane adjacent to x+
+    zero = torch.zeros(shape)
+    f = equilibrium3d(rho, zero, zero, zero)
+    out = non_equilibrium_far_field_bc_3d(f, u_in=0.0, rho_far=1.0, faces=("x+",))
+    incoming = (C[:, 0] < 0).nonzero().flatten().tolist()
+    feq_interior = equilibrium3d(rho[:, :, -2], zero[:, :, -2], zero[:, :, -2], zero[:, :, -2])
+    feq_far = equilibrium3d(torch.ones_like(rho[:, :, -2]), zero[:, :, -2], zero[:, :, -2], zero[:, :, -2])
+    for d in incoming:
+        # incoming population at the outlet == feq(rho=1.05) (interior extrapolation)
+        assert torch.allclose(out[d, :, :, -1], feq_interior[d], atol=1e-7)
+        # and crucially NOT feq(rho_far=1.0) (the old reflecting behaviour)
+        assert not torch.allclose(out[d, :, :, -1], feq_far[d], atol=1e-7)

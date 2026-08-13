@@ -1,4 +1,5 @@
 """TDD coverage for strict, reproducible acoustic campaign artifact gates."""
+
 from __future__ import annotations
 
 import csv
@@ -12,8 +13,7 @@ from tensorlbm.regression_gate import evaluate_acoustic_campaign_gate
 def _write_campaign(root: Path, *, exit_code: str = "0", log: str | None = None) -> None:
     (root / "logs").mkdir(parents=True)
     (root / "logs" / "case.log").write_text(
-        log
-        or "step 10/10\nmetric St=0.1000\nPASS — acoustic physics\n",
+        log or "step 10/10\nmetric St=0.1000\nPASS — acoustic physics\n",
         encoding="utf-8",
     )
     with (root / "status.csv").open("w", newline="", encoding="utf-8") as handle:
@@ -77,7 +77,9 @@ def test_campaign_gate_rejects_missing_metric_and_escaped_status_log(tmp_path):
 
 def test_checked_in_campaign_spec_reports_rossiter_eight_of_eight_and_tail_edge_three_of_eight():
     root = Path(__file__).parents[1] / "validation_logs" / "acoustic_sdaa_campaign_20260710T141500Z"
-    spec = Path(__file__).parents[1] / "configs" / "acoustic_sdaa_campaign_20260710T141500Z_gate.json"
+    spec = (
+        Path(__file__).parents[1] / "configs" / "acoustic_sdaa_campaign_20260710T141500Z_gate.json"
+    )
 
     report = evaluate_acoustic_campaign_gate(root, json.loads(spec.read_text(encoding="utf-8")))
 
@@ -99,6 +101,17 @@ def test_cli_dispatches_acoustic_status_manifest(tmp_path, monkeypatch):
     report = tmp_path / "report.json"
     manifest.write_text(json.dumps(_spec()), encoding="utf-8")
     _write_campaign(tmp_path)
-    monkeypatch.setattr("sys.argv", [str(script), "--artifacts", str(tmp_path), "--manifest", str(manifest), "--report", str(report)])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            str(script),
+            "--artifacts",
+            str(tmp_path),
+            "--manifest",
+            str(manifest),
+            "--report",
+            str(report),
+        ],
+    )
     assert module.main() == 0
     assert json.loads(report.read_text(encoding="utf-8"))["pass"] is True

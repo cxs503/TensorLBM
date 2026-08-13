@@ -20,6 +20,7 @@ energy decays exponentially as E(t) = E0 * exp(-4*nu*k^2*t) for wavenumber k.
 We run a periodic LBM simulation and verify the measured decay rate matches
 the theoretical value to within 20 % (allowing for higher-order LBM effects).
 """
+
 from __future__ import annotations
 
 import math
@@ -154,6 +155,7 @@ def test_taylor_green_energy_decay() -> None:
 # 3-D Poiseuille convergence (D3Q19)
 # ---------------------------------------------------------------------------
 
+
 def _run_poiseuille_3d(ny: int, nu: float, fx: float, n_steps: int) -> torch.Tensor:
     """Run 3D Poiseuille flow with body force; return final ux profile at mid-z, mid-x."""
     from tensorlbm import OPPOSITE3D
@@ -225,11 +227,7 @@ def test_poiseuille_3d_spatial_convergence_order() -> None:
         ux_ref = _poiseuille_3d_analytic(ny, nu, fx)
         diff = ux_num[1:-1] - ux_ref[1:-1]
         denom = ux_ref[1:-1].norm()
-        err = (
-            float((diff.norm() / denom).item())
-            if float(denom) > 1e-14
-            else float(diff.norm())
-        )
+        err = float((diff.norm() / denom).item()) if float(denom) > 1e-14 else float(diff.norm())
         errors.append(err)
 
     ratio = errors[0] / errors[1] if errors[1] > 0 else float("inf")
@@ -239,6 +237,7 @@ def test_poiseuille_3d_spatial_convergence_order() -> None:
 # ---------------------------------------------------------------------------
 # 3-D Taylor–Green vortex decay (D3Q19)
 # ---------------------------------------------------------------------------
+
 
 def test_taylor_green_3d_energy_decay() -> None:
     """3-D Taylor–Green vortex (D3Q19) kinetic energy should decay at predicted rate."""
@@ -267,7 +266,7 @@ def test_taylor_green_3d_energy_decay() -> None:
         rho, ux, uy, uz = macroscopic3d(f_dist)
         return float((0.5 * rho * (ux * ux + uy * uy + uz * uz)).sum().item())
 
-    decay_rate = 4.0 * nu * k ** 2
+    decay_rate = 4.0 * nu * k**2
     n_steps = 100
 
     e0 = _kinetic_energy(f)

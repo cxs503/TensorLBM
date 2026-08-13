@@ -5,6 +5,7 @@ not infer support from similarly named wall, AMR, IBM, or collision functions.
 A caller must supply a typed description and may run a configuration only when
 this module returns :data:`GateStatus.ALLOWED`.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -145,7 +146,9 @@ def assess_wall_refinement_combination(
 
     reasons: list[str] = []
     missing: list[str] = []
-    capability = collision_capability_matrix()[combination.lattice.value][combination.collision.value]
+    capability = collision_capability_matrix()[combination.lattice.value][
+        combination.collision.value
+    ]
     if not capability.available:
         reasons.append(WITHHELD_UNSUPPORTED_COLLISION)
 
@@ -164,13 +167,26 @@ def assess_wall_refinement_combination(
             reasons.append(WITHHELD_D3Q27_WALL_FUNCTION)
         if has_refinement:
             reasons.append(WITHHELD_WALL_FUNCTION_WITH_REFINEMENT)
-            missing.extend(_missing(combination.evidence, "wall_distance_dy", "y_plus", "level_link_owner", "wall_geometry_owner", "interface_transfer_proof"))
+            missing.extend(
+                _missing(
+                    combination.evidence,
+                    "wall_distance_dy",
+                    "y_plus",
+                    "level_link_owner",
+                    "wall_geometry_owner",
+                    "interface_transfer_proof",
+                )
+            )
         if combination.geometry_kind is GeometryKind.CURVED_STATIC:
             reasons.append(WITHHELD_WALL_FUNCTION_CURVED_WALL)
-            missing.extend(_missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner"))
+            missing.extend(
+                _missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner")
+            )
         if combination.geometry_kind is GeometryKind.IBM:
             reasons.append(WITHHELD_WALL_FUNCTION_IBM)
-            missing.extend(_missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner"))
+            missing.extend(
+                _missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner")
+            )
         if not reasons:
             # D3Q19 function exists, but it is not an admitted combination row.
             reasons.append(WITHHELD_UNKNOWN_COMBINATION)
@@ -180,8 +196,13 @@ def assess_wall_refinement_combination(
         if has_refinement:
             # Clear path: common_wall_function + AMR is admissible WITH
             # complete cross-level evidence.  Without evidence, fail-closed.
-            required = ("wall_distance_dy", "y_plus", "level_link_owner",
-                        "wall_geometry_owner", "interface_transfer_proof")
+            required = (
+                "wall_distance_dy",
+                "y_plus",
+                "level_link_owner",
+                "wall_geometry_owner",
+                "interface_transfer_proof",
+            )
             missing_evidence = _missing(combination.evidence, *required)
             if missing_evidence:
                 reasons.append(WITHHELD_WALL_FUNCTION_WITH_REFINEMENT)
@@ -190,10 +211,14 @@ def assess_wall_refinement_combination(
             # is ALLOWED (see baseline check below).
         if combination.geometry_kind is GeometryKind.CURVED_STATIC:
             reasons.append(WITHHELD_WALL_FUNCTION_CURVED_WALL)
-            missing.extend(_missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner"))
+            missing.extend(
+                _missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner")
+            )
         if combination.geometry_kind is GeometryKind.IBM:
             reasons.append(WITHHELD_WALL_FUNCTION_IBM)
-            missing.extend(_missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner"))
+            missing.extend(
+                _missing(combination.evidence, "wall_distance_dy", "y_plus", "wall_geometry_owner")
+            )
         if not has_refinement and not reasons:
             # Common wall function without refinement on a single-level
             # planar static grid is an admitted baseline (implementation-only).
@@ -207,20 +232,24 @@ def assess_wall_refinement_combination(
         and combination.physics is PhysicsModel.SINGLE_PHASE
     )
     # Common wall function without refinement is also a baseline.
-    if (is_common_wf
-            and not has_refinement
-            and combination.geometry_ownership is GeometryOwnership.SINGLE_LEVEL
-            and combination.geometry_kind is GeometryKind.PLANAR_STATIC
-            and combination.physics is PhysicsModel.SINGLE_PHASE
-            and not reasons):
+    if (
+        is_common_wf
+        and not has_refinement
+        and combination.geometry_ownership is GeometryOwnership.SINGLE_LEVEL
+        and combination.geometry_kind is GeometryKind.PLANAR_STATIC
+        and combination.physics is PhysicsModel.SINGLE_PHASE
+        and not reasons
+    ):
         baseline = True
 
     # Common wall function + AMR with complete evidence is an admitted path.
-    if (is_common_wf
-            and has_refinement
-            and combination.physics is PhysicsModel.SINGLE_PHASE
-            and combination.geometry_kind is GeometryKind.PLANAR_STATIC
-            and not reasons):
+    if (
+        is_common_wf
+        and has_refinement
+        and combination.physics is PhysicsModel.SINGLE_PHASE
+        and combination.geometry_kind is GeometryKind.PLANAR_STATIC
+        and not reasons
+    ):
         baseline = True
 
     if not baseline and not reasons:
@@ -234,12 +263,25 @@ def assess_wall_refinement_combination(
 
 
 __all__ = [
-    "CollisionFamily", "CombinationEvidence", "CombinationGateDecision", "GateStatus",
-    "GeometryKind", "GeometryOwnership", "Lattice", "PhysicsModel", "RefinementType",
-    "WallRefinementCombination", "WallTreatment", "WITHHELD_D3Q27_WALL_FUNCTION",
-    "WITHHELD_NON_BASELINE_REFINEMENT", "WITHHELD_REFINEMENT_IBM",
-    "WITHHELD_REFINEMENT_MULTIPHASE", "WITHHELD_UNSUPPORTED_COLLISION",
-    "WITHHELD_UNKNOWN_COMBINATION", "WITHHELD_WALL_FUNCTION_CURVED_WALL",
-    "WITHHELD_WALL_FUNCTION_IBM", "WITHHELD_WALL_FUNCTION_WITH_REFINEMENT",
+    "CollisionFamily",
+    "CombinationEvidence",
+    "CombinationGateDecision",
+    "GateStatus",
+    "GeometryKind",
+    "GeometryOwnership",
+    "Lattice",
+    "PhysicsModel",
+    "RefinementType",
+    "WallRefinementCombination",
+    "WallTreatment",
+    "WITHHELD_D3Q27_WALL_FUNCTION",
+    "WITHHELD_NON_BASELINE_REFINEMENT",
+    "WITHHELD_REFINEMENT_IBM",
+    "WITHHELD_REFINEMENT_MULTIPHASE",
+    "WITHHELD_UNSUPPORTED_COLLISION",
+    "WITHHELD_UNKNOWN_COMBINATION",
+    "WITHHELD_WALL_FUNCTION_CURVED_WALL",
+    "WITHHELD_WALL_FUNCTION_IBM",
+    "WITHHELD_WALL_FUNCTION_WITH_REFINEMENT",
     "assess_wall_refinement_combination",
 ]

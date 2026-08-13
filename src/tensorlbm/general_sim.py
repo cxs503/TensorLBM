@@ -21,6 +21,7 @@ Auto parameter selection:
   - Auto wall treat.:  Re < 10000 → bounce-back,  Re ≥ 10000 → wall function
   - Auto warmup:       domain_size² × 0.5
 """
+
 from __future__ import annotations
 
 import functools
@@ -39,6 +40,7 @@ from .io import save_vtk_binary, save_hdf5
 # ── Common interface module imports (the 9 modules) ──────────────────────
 # 1. Geometry (stl_geometry.py)
 from .stl_geometry import read_stl, voxelize_stl, make_sphere_stl, make_cylinder_stl, make_naca_stl
+
 # 2 + 3 + 5. Near-wall, SurfaceMesh, force integration (drag_pressure.py)
 from .drag_pressure import (
     get_near_wall_3d,
@@ -47,19 +49,25 @@ from .drag_pressure import (
     drag_friction_integration,
     drag_total,
 )
+
 # 4. Main loop (lbm_step_correct.py)
 from .lbm_step_correct import lbm_step_correct
+
 # 6. Strouhal (postprocess.py)
 from .postprocess import detect_strouhal
+
 # 7. Boundary conditions (boundaries3d.py)
 from .boundaries3d import far_field_bc_3d, bounce_back_cells_3d
+
 # 8. Wall function (wall_model.py)
 from .wall_model import wall_function_3d
+
 # 9. Momentum exchange (momentum_exchange.py)
 from .momentum_exchange import momentum_exchange_standard
 
 
 # ── Enums ──────────────────────────────────────────────────────────────────
+
 
 class LatticeModel(str, Enum):
     D2Q9 = "d2q9"
@@ -104,23 +112,27 @@ class OutputFormat(str, Enum):
 
 class WallTreatment(str, Enum):
     """Wall treatment strategy for solid boundaries."""
-    BOUNCE_BACK = "bounce_back"      # half-way bounce-back (Re < 10000)
+
+    BOUNCE_BACK = "bounce_back"  # half-way bounce-back (Re < 10000)
     WALL_FUNCTION = "wall_function"  # log-law wall function (Re ≥ 10000)
-    AUTO = "auto"                    # auto-select based on Re
+    AUTO = "auto"  # auto-select based on Re
 
 
 class ForceMethod(str, Enum):
     """Force computation method."""
+
     PRESSURE_FRICTION = "pressure_friction"  # drag_pressure + drag_friction
     MOMENTUM_EXCHANGE = "momentum_exchange"  # MEM (Ladd 1994)
-    BOTH = "both"                              # compute both for comparison
+    BOTH = "both"  # compute both for comparison
 
 
 # ── Configuration ──────────────────────────────────────────────────────────
 
+
 @dataclass
 class BoundaryCondition:
     """Boundary condition for one face of the domain."""
+
     face: Literal["x_min", "x_max", "y_min", "y_max", "z_min", "z_max"]
     type: BoundaryType = BoundaryType.FAR_FIELD
     velocity: tuple[float, ...] = (0.0, 0.0, 0.0)  # physical units m/s
@@ -130,6 +142,7 @@ class BoundaryCondition:
 @dataclass
 class GeometryConfig:
     """Geometry definition for the simulation."""
+
     source: GeometrySource = GeometrySource.NONE
     stl_path: str | None = None
     # Parametric shapes
@@ -157,6 +170,7 @@ class GeometryConfig:
 @dataclass
 class PhysicsConfig:
     """Physical conditions for the simulation."""
+
     density: float = 1000.0  # kg/m³ (water)
     viscosity: float = 1.0e-6  # m²/s (water at 20°C)
     inlet_velocity: float = 1.0  # m/s
@@ -167,6 +181,7 @@ class PhysicsConfig:
 @dataclass
 class SolverConfig:
     """LBM solver settings."""
+
     lattice: LatticeModel = LatticeModel.D3Q19
     collision: CollisionModel = CollisionModel.AUTO
     # Resolution: number of lattice cells along reference_length
@@ -204,6 +219,7 @@ class SolverConfig:
 @dataclass
 class OutputConfig:
     """Output settings."""
+
     directory: str = "/tmp/tensorlbm_sim"
     formats: list[OutputFormat] = field(default_factory=lambda: [OutputFormat.NPY])
     save_macroscopic: bool = True  # rho, ux, uy, uz
@@ -213,6 +229,7 @@ class OutputConfig:
 @dataclass
 class GeneralSimConfig:
     """Complete configuration for a general LBM simulation."""
+
     name: str = "unnamed"
     geometry: GeometryConfig = field(default_factory=GeometryConfig)
     physics: PhysicsConfig = field(default_factory=PhysicsConfig)
@@ -245,6 +262,7 @@ class GeneralSimConfig:
 
 # ── Simulation Engine ──────────────────────────────────────────────────────
 
+
 class GeneralSimEngine:
     """XFlow-style general LBM simulation engine — Phase 1 platform fusion.
 
@@ -262,17 +280,17 @@ class GeneralSimEngine:
     """
 
     # Thresholds for auto parameter selection
-    RE_MRT_SMAG_THRESHOLD = 1000    # Re ≥ 1000 → MRT + Smagorinsky
-    RE_WALL_FN_THRESHOLD = 10000    # Re ≥ 10000 → wall function
-    AUTO_DOMAIN_FACTOR = 3          # domain = geometry bbox × 3
+    RE_MRT_SMAG_THRESHOLD = 1000  # Re ≥ 1000 → MRT + Smagorinsky
+    RE_WALL_FN_THRESHOLD = 10000  # Re ≥ 10000 → wall function
+    AUTO_DOMAIN_FACTOR = 3  # domain = geometry bbox × 3
 
     def __init__(self, config: GeneralSimConfig) -> None:
         self.config = config
         self.uc: LBMUnitConverter | None = None
-        self.solid: torch.Tensor | None = None       # solid mask (nz, ny, nx)
-        self.near: torch.Tensor | None = None        # near-wall mask
-        self.mesh: SurfaceMesh | None = None         # surface mesh with normals
-        self.f: torch.Tensor | None = None           # distribution function
+        self.solid: torch.Tensor | None = None  # solid mask (nz, ny, nx)
+        self.near: torch.Tensor | None = None  # near-wall mask
+        self.mesh: SurfaceMesh | None = None  # surface mesh with normals
+        self.f: torch.Tensor | None = None  # distribution function
         self.step_count: int = 0
         self.forces_log: list[dict] = []
         self.snapshots: list[dict] = []
@@ -310,7 +328,7 @@ class GeneralSimEngine:
 
     def _auto_warmup_steps(self, domain_size: int) -> int:
         """Auto-compute warmup steps: domain_size² × 0.5."""
-        return max(100, int(domain_size ** 2 * 0.5))
+        return max(100, int(domain_size**2 * 0.5))
 
     def _auto_domain_size(self, geo_bbox: tuple[float, ...]) -> tuple[int, int, int]:
         """Auto-compute domain size: geometry bbox × 3 (blockage < 10%).
@@ -395,7 +413,11 @@ class GeneralSimEngine:
             )
             nx = int(round((domain_phys[1] - domain_phys[0]) / dx))
             ny = int(round((domain_phys[3] - domain_phys[2]) / dx))
-            nz = int(round((domain_phys[5] - domain_phys[4]) / dx)) if sol.lattice != LatticeModel.D2Q9 else 4
+            nz = (
+                int(round((domain_phys[5] - domain_phys[4]) / dx))
+                if sol.lattice != LatticeModel.D2Q9
+                else 4
+            )
             self.domain_phys = domain_phys
         else:
             # Auto domain size
@@ -446,6 +468,7 @@ class GeneralSimEngine:
         uy0 = torch.zeros_like(ux0)
         uz0 = torch.zeros_like(ux0)
         from .d3q19 import equilibrium3d
+
         self.f = equilibrium3d(rho0, ux0, uy0, uz0, device=device)
         self._initial_mass = float(rho0.sum().item())
 
@@ -463,7 +486,9 @@ class GeneralSimEngine:
             "total_cells": nx * ny * nz,
             "device": str(device),
             "auto_collision": self._auto_collision.value if self._auto_collision else None,
-            "auto_wall_treatment": self._auto_wall_treatment.value if self._auto_wall_treatment else None,
+            "auto_wall_treatment": self._auto_wall_treatment.value
+            if self._auto_wall_treatment
+            else None,
             "auto_warmup": self._auto_warmup,
             "modules_used": [
                 "stl_geometry.read_stl",
@@ -518,6 +543,7 @@ class GeneralSimEngine:
         if sol.mass_correction:
             try:
                 from .solver3d import correct_mass3d
+
                 correct_mass_fn = correct_mass3d
                 target_mass = self._initial_mass
             except ImportError:
@@ -539,7 +565,9 @@ class GeneralSimEngine:
                 # High-Re: wall function replaces bounce-back
                 # wall_model.wall_function_3d applies Guo body force + returns drag
                 f, _, _ = wall_function_3d(
-                    self.f, self.solid, nu_lb,
+                    self.f,
+                    self.solid,
+                    nu_lb,
                     near_mask=self.near,
                 )
                 # Then standard step without BB (far-field BC handles boundaries)
@@ -547,7 +575,9 @@ class GeneralSimEngine:
                     self.f,
                     collide_fn,
                     tau,
-                    self.solid if self.solid is not None else torch.zeros_like(self.f[0], dtype=torch.bool),
+                    self.solid
+                    if self.solid is not None
+                    else torch.zeros_like(self.f[0], dtype=torch.bool),
                     u_in,
                     far_field_fn,
                     correct_mass_fn=correct_mass_fn,
@@ -562,7 +592,9 @@ class GeneralSimEngine:
                     self.f,
                     collide_fn,
                     tau,
-                    self.solid if self.solid is not None else torch.zeros_like(self.f[0], dtype=torch.bool),
+                    self.solid
+                    if self.solid is not None
+                    else torch.zeros_like(self.f[0], dtype=torch.bool),
                     u_in,
                     far_field_fn,
                     correct_mass_fn=correct_mass_fn,
@@ -653,7 +685,7 @@ class GeneralSimEngine:
         # Compute Cd/Cl from force history
         cd_cl = {}
         if self.forces_log and len(self.forces_log) > 10:
-            recent = self.forces_log[-min(100, len(self.forces_log)):]
+            recent = self.forces_log[-min(100, len(self.forces_log)) :]
             cd_p_mean = np.mean([e.get("cd_pressure", 0) for e in recent])
             cd_f_mean = np.mean([e.get("cd_friction", 0) for e in recent])
             cd_tot_mean = np.mean([e.get("cd_total", 0) for e in recent])
@@ -745,9 +777,12 @@ class GeneralSimEngine:
             if geo.stl_units == "mm":
                 verts = verts / 1000.0
             return (
-                float(verts[:, 0].min()), float(verts[:, 0].max()),
-                float(verts[:, 1].min()), float(verts[:, 1].max()),
-                float(verts[:, 2].min()), float(verts[:, 2].max()),
+                float(verts[:, 0].min()),
+                float(verts[:, 0].max()),
+                float(verts[:, 1].min()),
+                float(verts[:, 1].max()),
+                float(verts[:, 2].min()),
+                float(verts[:, 2].max()),
             )
         elif geo.source == GeometrySource.PARAMETRIC_HULL:
             L = geo.hull_length
@@ -787,7 +822,8 @@ class GeneralSimEngine:
             spacing = (dx, dx, dx)
 
             solid = voxelize_stl(
-                verts, self._stl_faces,
+                verts,
+                self._stl_faces,
                 grid_shape=(nx, ny, nz),
                 origin=origin,
                 spacing=spacing,
@@ -823,7 +859,7 @@ class GeneralSimEngine:
             torch.arange(nx, device=device, dtype=torch.float32),
             indexing="ij",
         )
-        return ((xx - cx_lb) ** 2 + (yy - cy_lb) ** 2 + (zz - cz_lb) ** 2) < R_lb ** 2
+        return ((xx - cx_lb) ** 2 + (yy - cy_lb) ** 2 + (zz - cz_lb) ** 2) < R_lb**2
 
     def _build_cylinder_solid(self, nx, ny, nz, device):
         """Boolean solid mask for a cylinder extruded along an axis."""
@@ -840,23 +876,24 @@ class GeneralSimEngine:
         if geo.cylinder_axis == "x":
             cx = nx * 0.25
             cy = ny * 0.5
-            mask = ((yy - cy) ** 2 + (zz - nz / 2) ** 2 <= R_lb ** 2)
+            mask = (yy - cy) ** 2 + (zz - nz / 2) ** 2 <= R_lb**2
             mask = mask & (xx >= cx - L_lb / 2) & (xx <= cx + L_lb / 2)
         elif geo.cylinder_axis == "y":
             cx = nx * 0.25
             cz = nz * 0.5
-            mask = ((xx - cx) ** 2 + (zz - cz) ** 2 <= R_lb ** 2)
+            mask = (xx - cx) ** 2 + (zz - cz) ** 2 <= R_lb**2
             mask = mask & (yy >= ny / 2 - L_lb / 2) & (yy <= ny / 2 + L_lb / 2)
         else:  # z
             cx = nx * 0.25
             cy = ny * 0.5
-            mask = ((xx - cx) ** 2 + (yy - cy) ** 2 <= R_lb ** 2)
+            mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= R_lb**2
             mask = mask & (zz >= nz / 2 - L_lb / 2) & (zz <= nz / 2 + L_lb / 2)
         return mask
 
     def _build_suboff_solid(self, nx, ny, nz, device):
         """Boolean solid mask for SUBOFF hull (via suboff_cad.build_suboff_mask)."""
         from .suboff_cad import build_suboff_mask, SuboffConfig
+
         geo = self.config.geometry
         length_lb = geo.suboff_length / (
             self.config.physics.reference_length / self.config.solver.resolution
@@ -868,8 +905,12 @@ class GeneralSimEngine:
             )
         solid, _stats = build_suboff_mask(
             hull_type="bare_hull",
-            nx=nx, ny=ny, nz=nz,
-            cx=nx * 0.25, cy=ny * 0.5, cz=nz * 0.5,
+            nx=nx,
+            ny=ny,
+            nz=nz,
+            cx=nx * 0.25,
+            cy=ny * 0.5,
+            cz=nz * 0.5,
             length=length_lb,
             radius=radius_lb,
             config=SuboffConfig(),
@@ -898,7 +939,8 @@ class GeneralSimEngine:
         )
         # Voxelize (common module: stl_geometry.voxelize_stl)
         solid = voxelize_stl(
-            vertices, faces,
+            vertices,
+            faces,
             grid_shape=(nx, ny, nz),
             origin=(0.0, 0.0, 0.0),
             spacing=(1.0, 1.0, 1.0),
@@ -922,9 +964,13 @@ class GeneralSimEngine:
             origin = (dp[0], dp[2], dp[4])
             spacing = (dx, dx, dx)
             return SurfaceMesh.from_stl(
-                self.solid, self.near,
-                self._stl_vertices, self._stl_faces, self._stl_normals,
-                origin, spacing,
+                self.solid,
+                self.near,
+                self._stl_vertices,
+                self._stl_faces,
+                self._stl_normals,
+                origin,
+                spacing,
             )
 
         elif geo.source == GeometrySource.PARAMETRIC_SPHERE:
@@ -940,8 +986,13 @@ class GeneralSimEngine:
             R_lb = geo.cylinder_radius / dx
             cz_lb = self.nz / 2.0
             return SurfaceMesh.from_cylinder(
-                self.solid, self.near, cx_lb, cy_lb, R_lb,
-                axis=geo.cylinder_axis, cz=cz_lb,
+                self.solid,
+                self.near,
+                cx_lb,
+                cy_lb,
+                R_lb,
+                axis=geo.cylinder_axis,
+                cz=cz_lb,
             )
 
         elif geo.source == GeometrySource.PARAMETRIC_SUBOFF:
@@ -951,7 +1002,13 @@ class GeneralSimEngine:
             cy_lb = self.ny * 0.5
             cz_lb = self.nz * 0.5
             return SurfaceMesh.from_suboff(
-                self.solid, self.near, cx_lb, cy_lb, cz_lb, length_lb, radius_lb,
+                self.solid,
+                self.near,
+                cx_lb,
+                cy_lb,
+                cz_lb,
+                length_lb,
+                radius_lb,
             )
 
         elif geo.source == GeometrySource.PARAMETRIC_NACA:
@@ -959,8 +1016,14 @@ class GeneralSimEngine:
             y_c = self.ny * 0.5
             chord_lb = geo.naca_chord / dx
             return SurfaceMesh.from_naca(
-                self.solid, self.near, x_le, y_c, chord_lb,
-                m=geo.naca_camber, p=geo.naca_camber_pos, t=geo.naca_thickness,
+                self.solid,
+                self.near,
+                x_le,
+                y_c,
+                chord_lb,
+                m=geo.naca_camber,
+                p=geo.naca_camber_pos,
+                t=geo.naca_thickness,
             )
 
         else:
@@ -989,6 +1052,7 @@ class GeneralSimEngine:
             return collide_smagorinsky_mrt3d, {"C_s": cs}
         elif collision == CollisionModel.SMAGORINSKY_BGK:
             from .turbulence import collide_smagorinsky_bgk3d
+
             return collide_smagorinsky_bgk3d, {"C_s": cs}
         else:
             # Default to MRT
@@ -1031,20 +1095,20 @@ class GeneralSimEngine:
             A_frontal = D * span
         elif geo.source == GeometrySource.PARAMETRIC_SPHERE:
             R = geo.sphere_radius / (cfg.physics.reference_length / cfg.solver.resolution)
-            A_frontal = math.pi * R ** 2
+            A_frontal = math.pi * R**2
         elif geo.source == GeometrySource.PARAMETRIC_SUBOFF:
-            R = (geo.suboff_radius or geo.suboff_length * (1.0 / (2.0 * 8.57)))
+            R = geo.suboff_radius or geo.suboff_length * (1.0 / (2.0 * 8.57))
             R = R / (cfg.physics.reference_length / cfg.solver.resolution)
-            A_frontal = math.pi * R ** 2
+            A_frontal = math.pi * R**2
         elif geo.source == GeometrySource.PARAMETRIC_NACA:
             t = geo.naca_thickness
             c = geo.naca_chord / (cfg.physics.reference_length / cfg.solver.resolution)
             A_frontal = c * t * self.nz
         else:
             # Generic: reference_length²
-            A_frontal = cfg.solver.resolution ** 2
+            A_frontal = cfg.solver.resolution**2
 
-        return 0.5 * u_in ** 2 * A_frontal
+        return 0.5 * u_in**2 * A_frontal
 
     def _sample_forces(self, dpS: float, nu_lb: float):
         """Sample hydrodynamic forces via common modules.
@@ -1061,14 +1125,19 @@ class GeneralSimEngine:
 
         # Common module: drag_pressure.drag_pressure_integration
         fx_p, fy_p, fz_p = drag_pressure_integration(
-            self.f, self.mesh, dpS,
+            self.f,
+            self.mesh,
+            dpS,
             extrap=sol.pressure_extrap,
             p0_method=sol.p0_method,
             solid=self.solid,
         )
         # Common module: drag_pressure.drag_friction_integration
         fx_f, fy_f, fz_f = drag_friction_integration(
-            self.f, self.mesh, dpS, nu_lb,
+            self.f,
+            self.mesh,
+            dpS,
+            nu_lb,
             formula=sol.friction_formula,
         )
 
@@ -1088,7 +1157,9 @@ class GeneralSimEngine:
         # Optional: MEM comparison (common module: momentum_exchange.momentum_exchange_standard)
         if sol.force_method == ForceMethod.BOTH and self.near is not None:
             fx_mem, fy_mem, fz_mem = momentum_exchange_standard(
-                self.f, self.solid, self.near,
+                self.f,
+                self.solid,
+                self.near,
             )
             entry["cd_mem"] = (fx_p + fx_f) / dpS if dpS > 0 else 0.0
             entry["fx_mem"] = fx_mem
@@ -1100,8 +1171,13 @@ class GeneralSimEngine:
     def _save_snapshot(self):
         """Save macroscopic fields snapshot."""
         from .d3q19 import macroscopic3d
+
         rho, ux, uy, uz = macroscopic3d(self.f)
-        self.snapshots.append({
-            "rho": rho.clone(), "ux": ux.clone(),
-            "uy": uy.clone(), "uz": uz.clone(),
-        })
+        self.snapshots.append(
+            {
+                "rho": rho.clone(),
+                "ux": ux.clone(),
+                "uy": uy.clone(),
+                "uz": uz.clone(),
+            }
+        )

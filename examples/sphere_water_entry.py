@@ -57,46 +57,77 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Grid
-    parser.add_argument("--nx", type=int, default=48,
-                        help="Tank width (x direction)")
-    parser.add_argument("--ny", type=int, default=48,
-                        help="Tank depth (y direction)")
-    parser.add_argument("--nz", type=int, default=96,
-                        help="Tank height (z direction, flow direction)")
+    parser.add_argument("--nx", type=int, default=48, help="Tank width (x direction)")
+    parser.add_argument("--ny", type=int, default=48, help="Tank depth (y direction)")
+    parser.add_argument(
+        "--nz", type=int, default=96, help="Tank height (z direction, flow direction)"
+    )
 
     # Geometry
-    parser.add_argument("--radius", type=float, default=6.0,
-                        help="Sphere radius in lattice units")
-    parser.add_argument("--sphere-z-frac", dest="sphere_z_frac", type=float,
-                        default=0.5,
-                        help="Fractional z position of sphere centre (0=bottom, 1=top)")
+    parser.add_argument("--radius", type=float, default=6.0, help="Sphere radius in lattice units")
+    parser.add_argument(
+        "--sphere-z-frac",
+        dest="sphere_z_frac",
+        type=float,
+        default=0.5,
+        help="Fractional z position of sphere centre (0=bottom, 1=top)",
+    )
 
     # Flow
-    parser.add_argument("--v-entry", dest="v_entry", type=float, default=0.05,
-                        help="Entry velocity in lattice units (≤ 0.1)")
-    parser.add_argument("--re", type=float, default=100.0,
-                        help="Target Reynolds number Re = v_entry · 2r / ν")
-    parser.add_argument("--n-ramp", dest="n_ramp", type=int, default=50,
-                        help="Steps to ramp from 0 to v_entry (0 = impulsive)")
+    parser.add_argument(
+        "--v-entry",
+        dest="v_entry",
+        type=float,
+        default=0.05,
+        help="Entry velocity in lattice units (≤ 0.1)",
+    )
+    parser.add_argument(
+        "--re", type=float, default=100.0, help="Target Reynolds number Re = v_entry · 2r / ν"
+    )
+    parser.add_argument(
+        "--n-ramp",
+        dest="n_ramp",
+        type=int,
+        default=50,
+        help="Steps to ramp from 0 to v_entry (0 = impulsive)",
+    )
 
     # Turbulence
-    parser.add_argument("--cs", dest="smagorinsky_cs", type=float, default=0.0,
-                        help="Smagorinsky constant (0 = BGK only, 0.1 typical for LES)")
+    parser.add_argument(
+        "--cs",
+        dest="smagorinsky_cs",
+        type=float,
+        default=0.0,
+        help="Smagorinsky constant (0 = BGK only, 0.1 typical for LES)",
+    )
 
     # Simulation control
-    parser.add_argument("--n-steps", dest="n_steps", type=int, default=1000,
-                        help="Total simulation steps")
-    parser.add_argument("--output-interval", dest="output_interval", type=int,
-                        default=100, help="Steps between diagnostics and PNG output")
-    parser.add_argument("--output-root", dest="output_root", default="outputs",
-                        help="Root directory for all outputs")
-    parser.add_argument("--run-name", dest="run_name", default=None,
-                        help="Override auto-generated run folder name")
+    parser.add_argument(
+        "--n-steps", dest="n_steps", type=int, default=1000, help="Total simulation steps"
+    )
+    parser.add_argument(
+        "--output-interval",
+        dest="output_interval",
+        type=int,
+        default=100,
+        help="Steps between diagnostics and PNG output",
+    )
+    parser.add_argument(
+        "--output-root",
+        dest="output_root",
+        default="outputs",
+        help="Root directory for all outputs",
+    )
+    parser.add_argument(
+        "--run-name", dest="run_name", default=None, help="Override auto-generated run folder name"
+    )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
-    parser.add_argument("--device", choices=["cpu", "sdaa", "cuda"], default="cpu",
-                        help="Execution device")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Replace output directory if it already exists")
+    parser.add_argument(
+        "--device", choices=["cpu", "sdaa", "cuda"], default="cpu", help="Execution device"
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Replace output directory if it already exists"
+    )
 
     return parser
 

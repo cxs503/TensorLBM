@@ -48,6 +48,7 @@ from .utils import (
 # Ellipsoid geometry: prolate spheroid (x/a)² + (y/b)² + (z/b)² ≤ 1
 # ---------------------------------------------------------------------------
 
+
 def build_ellipsoid_mask(
     nx: int,
     ny: int,
@@ -173,6 +174,7 @@ def ellipsoid_statistics(
 # Reference data — 6:1 prolate spheroid drag
 # ---------------------------------------------------------------------------
 
+
 def reference_ellipsoid_cd(
     re: float,
     alpha_deg: float = 0.0,
@@ -235,6 +237,7 @@ def reference_ellipsoid_cd(
 # Benchmark runner
 # ============================================================================
 
+
 @dataclass
 class EllipsoidConfig:
     """Configuration for ellipsoid benchmark simulation."""
@@ -280,6 +283,7 @@ class EllipsoidConfig:
         if self.run_name:
             return self.run_name
         from datetime import datetime
+
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         return f"ellipsoid_a{self.a_b_ratio:.0f}_re{self.re}_a{self.alpha_deg}_{ts}"
 
@@ -295,12 +299,20 @@ def run_ellipsoid_benchmark(config: EllipsoidConfig) -> dict:
 
     # Build obstacle mask
     mask = build_ellipsoid_mask(
-        config.nx, config.ny, config.nz,
-        config.semi_major_a, config.semi_minor_b,
-        config.alpha_deg, device=device,
+        config.nx,
+        config.ny,
+        config.nz,
+        config.semi_major_a,
+        config.semi_minor_b,
+        config.alpha_deg,
+        device=device,
     )
     wall_mask = make_channel_wall_mask_3d(
-        config.nz, config.ny, config.nx, mask, device=device,
+        config.nz,
+        config.ny,
+        config.nx,
+        mask,
+        device=device,
     )
 
     # Initialise uniform flow
@@ -319,10 +331,14 @@ def run_ellipsoid_benchmark(config: EllipsoidConfig) -> dict:
     fy_list: list[float] = []
     fz_list: list[float] = []
 
-    print(f"Ellipsoid benchmark: a/b={config.a_b_ratio:.1f} "
-          f"α={config.alpha_deg}° Re={config.re} tau={config.tau:.4f}")
-    print(f"  Grid: {config.nx}×{config.ny}×{config.nz}  "
-          f"steps={config.n_steps}  Cs={config.smagorinsky_cs}")
+    print(
+        f"Ellipsoid benchmark: a/b={config.a_b_ratio:.1f} "
+        f"α={config.alpha_deg}° Re={config.re} tau={config.tau:.4f}"
+    )
+    print(
+        f"  Grid: {config.nx}×{config.ny}×{config.nz}  "
+        f"steps={config.n_steps}  Cs={config.smagorinsky_cs}"
+    )
     print(f"  D={diam:.0f} lu  u_in={config.u_in}  device={device}")
 
     for step in range(1, config.n_steps + 1):
@@ -331,9 +347,11 @@ def run_ellipsoid_benchmark(config: EllipsoidConfig) -> dict:
             f = collide_smagorinsky_mrt3d(f, tau=config.tau, C_s=config.smagorinsky_cs)
         elif config.tau < 0.575:
             from .solver3d import collide_mrt3d
+
             f = collide_mrt3d(f, tau=config.tau)
         else:
             from .solver3d import collide_bgk3d
+
             f = collide_bgk3d(f, tau=config.tau)
 
         # Stream
@@ -344,7 +362,10 @@ def run_ellipsoid_benchmark(config: EllipsoidConfig) -> dict:
 
         # Apply boundary conditions (includes bounce-back on obstacle)
         f = apply_zou_he_channel_boundaries_3d(
-            f, u_in=config.u_in, wall_mask=wall_mask, obstacle_mask=mask,
+            f,
+            u_in=config.u_in,
+            wall_mask=wall_mask,
+            obstacle_mask=mask,
         )
 
         # Mass correction
@@ -362,8 +383,7 @@ def run_ellipsoid_benchmark(config: EllipsoidConfig) -> dict:
             cd_mean = sum(fx_list[-500:]) / n_samples / dyn_pressure
             cl_mean = sum(fy_list[-500:]) / n_samples / dyn_pressure
             cz_mean = sum(fz_list[-500:]) / n_samples / dyn_pressure
-            print(f"  step {step:5d}: Cd={cd_mean:.4f}  Cl={cl_mean:.4f}  "
-                  f"Cz={cz_mean:.4f}")
+            print(f"  step {step:5d}: Cd={cd_mean:.4f}  Cl={cl_mean:.4f}  Cz={cz_mean:.4f}")
 
     n_total = max(len(fx_list), 1)
     cd_mean = sum(fx_list) / n_total / dyn_pressure
@@ -373,18 +393,29 @@ def run_ellipsoid_benchmark(config: EllipsoidConfig) -> dict:
     # Reference comparison
     ref = reference_ellipsoid_cd(config.re, config.alpha_deg)
     cd_err = abs(cd_mean - ref["cd"]) / max(abs(ref["cd"]), 1e-10) * 100
-    cl_err = abs(cl_mean - ref["cl"]) / max(abs(ref["cl"]), 1e-10) * 100 if abs(ref["cl"]) > 1e-10 else float("nan")
+    cl_err = (
+        abs(cl_mean - ref["cl"]) / max(abs(ref["cl"]), 1e-10) * 100
+        if abs(ref["cl"]) > 1e-10
+        else float("nan")
+    )
 
     stats = ellipsoid_statistics(
-        config.nx, config.ny, config.nz,
-        config.semi_major_a, config.semi_minor_b,
-        config.alpha_deg, device=device,
+        config.nx,
+        config.ny,
+        config.nz,
+        config.semi_major_a,
+        config.semi_minor_b,
+        config.alpha_deg,
+        device=device,
     )
 
     print(f"\n  Results:  6:1 prolate spheroid  α={config.alpha_deg}°")
     print(f"  Cd_sim={cd_mean:.4f}  (ref {ref['cd']:.4f}, err {cd_err:.1f}%)")
-    print(f"  Cl_sim={cl_mean:.4f}  (ref {ref['cl']:.4f}, err {cl_err:.1f}%)"
-          if not math.isnan(cl_err) else f"  Cl_sim={cl_mean:.4f}")
+    print(
+        f"  Cl_sim={cl_mean:.4f}  (ref {ref['cl']:.4f}, err {cl_err:.1f}%)"
+        if not math.isnan(cl_err)
+        else f"  Cl_sim={cl_mean:.4f}"
+    )
     print(f"  D={diam:.0f} lu  Re={config.re}  a/b={config.a_b_ratio:.1f}")
 
     return {

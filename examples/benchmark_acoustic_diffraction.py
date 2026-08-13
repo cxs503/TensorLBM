@@ -40,6 +40,7 @@
     PYTHONPATH=src python examples/benchmark_acoustic_diffraction.py \\
         --device cpu --steps 1200
 """
+
 from __future__ import annotations
 
 import argparse
@@ -54,9 +55,7 @@ from scipy.special import hankel1
 # --------------------------------------------------------------------------- #
 # Make tensorlbm importable when running from the repo root.
 # --------------------------------------------------------------------------- #
-_SRC = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-)
+_SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
@@ -67,13 +66,14 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 # Constants
 # =========================================================================== #
 
-CS2 = 1.0 / 3.0          # lattice speed of sound squared
-CS = math.sqrt(CS2)      # c_s = 1/√3 ≈ 0.5774
+CS2 = 1.0 / 3.0  # lattice speed of sound squared
+CS = math.sqrt(CS2)  # c_s = 1/√3 ≈ 0.5774
 
 
 # =========================================================================== #
 # Helper functions
 # =========================================================================== #
+
 
 def _sinc(x: float) -> float:
     """sinc(x) = sin(x)/x, with sinc(0)=1."""
@@ -82,9 +82,7 @@ def _sinc(x: float) -> float:
     return math.sin(x) / x
 
 
-def _exact_diffraction_2d(
-    k: float, r: float, theta: float, a: float, n_points: int = 500
-) -> float:
+def _exact_diffraction_2d(k: float, r: float, theta: float, a: float, n_points: int = 500) -> float:
     """Exact 2D diffraction amplitude (Rayleigh-Sommerfeld integral).
 
     Uses the 2D Green's function (Hankel function H₀⁽¹⁾) for the Helmholtz
@@ -105,7 +103,7 @@ def _exact_diffraction_2d(
     y_prime = np.linspace(-a / 2.0, a / 2.0, n_points)
     sin_t = math.sin(theta)
     # Distance from each source point on the slit to the observer
-    R = np.sqrt(r ** 2 - 2.0 * r * y_prime * sin_t + y_prime ** 2)
+    R = np.sqrt(r**2 - 2.0 * r * y_prime * sin_t + y_prime**2)
     R = np.maximum(R, 0.5)  # avoid singularity at R = 0
     integrand = hankel1(0, k * R)
     integral = np.trapezoid(integrand, y_prime)
@@ -127,8 +125,7 @@ def _ascii_plot_angular(
     """
     n = len(angles_deg)
     ymin = 0.0
-    ymax = max(float(lbm_norm.max()), float(exact_norm.max()),
-               float(sinc_norm.max()), 1.0)
+    ymax = max(float(lbm_norm.max()), float(exact_norm.max()), float(sinc_norm.max()), 1.0)
     span = max(ymax - ymin, 1e-12)
 
     def _resample(y: np.ndarray) -> list[float]:
@@ -173,6 +170,7 @@ def _ascii_plot_angular(
 # Main simulation
 # =========================================================================== #
 
+
 def run_diffraction_benchmark(
     nx: int = 400,
     ny: int = 300,
@@ -196,8 +194,8 @@ def run_diffraction_benchmark(
     cs = CS
     cs2 = CS2
 
-    wall_x = nx // 3          # vertical wall position
-    slit_cy = ny // 2         # slit centre in y
+    wall_x = nx // 3  # vertical wall position
+    slit_cy = ny // 2  # slit centre in y
     slit_half = slit_width // 2
     slit_lo = slit_cy - slit_half
     slit_hi = slit_cy + slit_half
@@ -239,8 +237,11 @@ def run_diffraction_benchmark(
 
     # Grid coordinates
     _zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=dev), torch.arange(ny, device=dev),
-        torch.arange(nx, device=dev), indexing="ij")
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
+    )
 
     # --- Wall mask: vertical wall at x=wall_x with slit opening ---
     wall_mask = torch.zeros((nz, ny, nx), dtype=torch.bool, device=dev)
@@ -364,8 +365,10 @@ def run_diffraction_benchmark(
             pvals = []
             for i, (mx, my) in enumerate(monitor_pts):
                 pvals.append(float((rho_m[0, my, mx] - 1.0) * cs2))
-            print(f"  {step:6d}  {rho_max:10.6f}  "
-                  + "  ".join(f"{v:+.6f}" for v in pvals), flush=True)
+            print(
+                f"  {step:6d}  {rho_max:10.6f}  " + "  ".join(f"{v:+.6f}" for v in pvals),
+                flush=True,
+            )
 
     # --- Early exit on divergence ---
     if has_nan:
@@ -393,7 +396,7 @@ def run_diffraction_benchmark(
         p_series = np.array(p_ts[i], dtype=np.float64)
         c_sin = (2.0 / N) * np.sum(p_series * sin_wt)
         c_cos = (2.0 / N) * np.sum(p_series * cos_wt)
-        amplitudes[i] = math.sqrt(c_sin ** 2 + c_cos ** 2)
+        amplitudes[i] = math.sqrt(c_sin**2 + c_cos**2)
 
     # Normalize by on-axis amplitude (θ=0)
     idx_0 = angles_deg.index(0)
@@ -406,9 +409,7 @@ def run_diffraction_benchmark(
     sinc_norm = sinc_vals / max(sinc_vals.max(), 1e-15)
 
     # 2. Exact 2D Rayleigh-Sommerfeld diffraction integral
-    exact_vals = np.array([
-        _exact_diffraction_2d(k, monitor_r, t, slit_width) for t in angles_rad
-    ])
+    exact_vals = np.array([_exact_diffraction_2d(k, monitor_r, t, slit_width) for t in angles_rad])
     exact_norm = exact_vals / max(exact_vals.max(), 1e-15)
 
     # =================================================================== #
@@ -418,8 +419,10 @@ def run_diffraction_benchmark(
     print("=" * 72, flush=True)
     print("  衍射图案对比 (归一化压力幅值)", flush=True)
     print("=" * 72, flush=True)
-    print(f"  {'θ(°)':>6s}  {'LBM':>7s}  {'精确解':>7s}  {'sinc':>7s}  "
-          f"{'误差%':>7s}  {'区域':>6s}", flush=True)
+    print(
+        f"  {'θ(°)':>6s}  {'LBM':>7s}  {'精确解':>7s}  {'sinc':>7s}  {'误差%':>7s}  {'区域':>6s}",
+        flush=True,
+    )
     print("-" * 72, flush=True)
 
     main_lobe_errs: list[float] = []
@@ -446,8 +449,11 @@ def run_diffraction_benchmark(
                 side_lobe_errs.append(err)
 
         err_str = f"{err:7.1f}" if not math.isnan(err) else "   N/A"
-        print(f"  {a_deg:+6d}  {lbm_val:7.4f}  {exact_val:7.4f}  "
-              f"{sinc_val:7.4f}  {err_str}  {region:>6s}", flush=True)
+        print(
+            f"  {a_deg:+6d}  {lbm_val:7.4f}  {exact_val:7.4f}  "
+            f"{sinc_val:7.4f}  {err_str}  {region:>6s}",
+            flush=True,
+        )
 
     # --- Summary ---
     main_avg = sum(main_lobe_errs) / len(main_lobe_errs) if main_lobe_errs else 0.0
@@ -458,22 +464,23 @@ def run_diffraction_benchmark(
     print(flush=True)
     print(f"  主瓣: 平均误差={main_avg:.1f}%, 最大误差={main_max:.1f}%", flush=True)
     if side_lobe_errs:
-        print(f"  旁瓣: 平均误差={side_avg:.1f}%, 最大误差={side_max:.1f}%",
-              flush=True)
+        print(f"  旁瓣: 平均误差={side_avg:.1f}%, 最大误差={side_max:.1f}%", flush=True)
     else:
-        print(f"  旁瓣: 无旁瓣监测点 (ka={ka:.2f} ≤ 2π={2 * math.pi:.2f})",
-              flush=True)
+        print(f"  旁瓣: 无旁瓣监测点 (ka={ka:.2f} ≤ 2π={2 * math.pi:.2f})", flush=True)
 
     # --- PASS / FAIL ---
     main_ok = main_max < 15.0
     side_ok = (side_max < 15.0) if side_lobe_errs else True
 
     print(flush=True)
-    print(f"  [{'PASS' if main_ok else 'FAIL'}] "
-          f"主瓣误差 < 15%: 最大误差={main_max:.1f}%", flush=True)
+    print(
+        f"  [{'PASS' if main_ok else 'FAIL'}] 主瓣误差 < 15%: 最大误差={main_max:.1f}%", flush=True
+    )
     if side_lobe_errs:
-        print(f"  [{'PASS' if side_ok else 'FAIL'}] "
-              f"旁瓣误差 < 15%: 最大误差={side_max:.1f}%", flush=True)
+        print(
+            f"  [{'PASS' if side_ok else 'FAIL'}] 旁瓣误差 < 15%: 最大误差={side_max:.1f}%",
+            flush=True,
+        )
     else:
         print(f"  [N/A] 旁瓣验证: 无旁瓣 (ka≤2π)", flush=True)
 
@@ -504,34 +511,23 @@ def run_diffraction_benchmark(
 # CLI
 # =========================================================================== #
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="声学衍射基准测试 (D3Q19 BGK LBM)"
+    parser = argparse.ArgumentParser(description="声学衍射基准测试 (D3Q19 BGK LBM)")
+    parser.add_argument("--nx", type=int, default=400, help="x方向网格数 (默认400)")
+    parser.add_argument("--ny", type=int, default=300, help="y方向网格数 (默认300)")
+    parser.add_argument("--nz", type=int, default=1, help="z方向网格数 (默认1, 2D)")
+    parser.add_argument("--tau", type=float, default=0.55, help="BGK松弛时间τ (默认0.55)")
+    parser.add_argument(
+        "--slit-width", type=int, default=60, help="狭缝宽度a (默认60, 需a>36才有旁瓣)"
     )
-    parser.add_argument("--nx", type=int, default=400,
-                        help="x方向网格数 (默认400)")
-    parser.add_argument("--ny", type=int, default=300,
-                        help="y方向网格数 (默认300)")
-    parser.add_argument("--nz", type=int, default=1,
-                        help="z方向网格数 (默认1, 2D)")
-    parser.add_argument("--tau", type=float, default=0.55,
-                        help="BGK松弛时间τ (默认0.55)")
-    parser.add_argument("--slit-width", type=int, default=60,
-                        help="狭缝宽度a (默认60, 需a>36才有旁瓣)")
-    parser.add_argument("--delta-rho", type=float, default=0.001,
-                        help="密度扰动幅值δρ (默认0.001)")
-    parser.add_argument("--omega", type=float, default=0.1,
-                        help="角频率ω (默认0.1)")
-    parser.add_argument("--steps", type=int, default=1200,
-                        help="时间步数 (默认1200)")
-    parser.add_argument("--device", default="cpu",
-                        help="设备: 'cpu'或'cuda' (默认cpu)")
-    parser.add_argument("--log-every", type=int, default=200,
-                        help="日志间隔 (默认200)")
-    parser.add_argument("--sponge-width", type=int, default=50,
-                        help="海绵层宽度 (默认50)")
-    parser.add_argument("--monitor-r", type=int, default=110,
-                        help="监测距离r (默认110)")
+    parser.add_argument("--delta-rho", type=float, default=0.001, help="密度扰动幅值δρ (默认0.001)")
+    parser.add_argument("--omega", type=float, default=0.1, help="角频率ω (默认0.1)")
+    parser.add_argument("--steps", type=int, default=1200, help="时间步数 (默认1200)")
+    parser.add_argument("--device", default="cpu", help="设备: 'cpu'或'cuda' (默认cpu)")
+    parser.add_argument("--log-every", type=int, default=200, help="日志间隔 (默认200)")
+    parser.add_argument("--sponge-width", type=int, default=50, help="海绵层宽度 (默认50)")
+    parser.add_argument("--monitor-r", type=int, default=110, help="监测距离r (默认110)")
     args = parser.parse_args()
 
     run_diffraction_benchmark(

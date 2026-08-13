@@ -46,11 +46,9 @@ def _velocity_array(product: FieldDataProductR2) -> ArrayManifestR2:
     array = arrays[0]
     if len(array.shape) != 3 or array.shape[2] != 2:
         raise ValueError("velocity array shape must be (ny, nx, 2)")
-    if (
-        tuple(axis.name for axis in array.axes) != ("y", "x", "component")
-        or tuple(axis.semantic for axis in array.axes)
-        != (AxisSemantic.SPATIAL, AxisSemantic.SPATIAL, AxisSemantic.COMPONENT)
-    ):
+    if tuple(axis.name for axis in array.axes) != ("y", "x", "component") or tuple(
+        axis.semantic for axis in array.axes
+    ) != (AxisSemantic.SPATIAL, AxisSemantic.SPATIAL, AxisSemantic.COMPONENT):
         raise ValueError("velocity axes must be Y, X, COMPONENT without a sample axis")
     if array.component_labels != ("u_x", "u_y"):
         raise ValueError("velocity component_labels must be ('u_x', 'u_y')")
@@ -109,7 +107,9 @@ def materialize_torch_velocity_snapshots(
         or decoded.shape != array.shape
         or not decoded.flags.c_contiguous
     ):
-        raise ValueError("decoded velocity payload must be C-order little-endian float32 with manifest shape")
+        raise ValueError(
+            "decoded velocity payload must be C-order little-endian float32 with manifest shape"
+        )
 
     velocity = torch.from_numpy(decoded)
     snapshot = (velocity[..., 0].clone(), velocity[..., 1].clone())

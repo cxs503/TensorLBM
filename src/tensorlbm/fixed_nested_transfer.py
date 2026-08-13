@@ -12,6 +12,7 @@ it preserves the cell-integrated zeroth and first kinetic moments exactly:
 ``sum_i c_i f_i``.  Prolongation is piecewise-constant injection, the exact
 right inverse of this restriction and therefore preserves uniform equilibria.
 """
+
 from __future__ import annotations
 
 import torch

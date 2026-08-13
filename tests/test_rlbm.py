@@ -9,6 +9,7 @@ Covers:
   non-equilibrium state.
 - Finite, stable output at near-marginal τ.
 """
+
 from __future__ import annotations
 
 import torch
@@ -229,4 +230,3 @@ class TestCollideRLBM3D:
 
         expected = (1.0 - 1.0 / tau) * pi_xy_in
         assert torch.allclose(pi_xy_out, expected, atol=1e-6)
-

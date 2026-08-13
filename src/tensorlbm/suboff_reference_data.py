@@ -41,6 +41,7 @@ All non-withheld values are based on the wetted-surface-area normalization,
 consistent with the ITTC-1957 convention and the SUBOFF experimental
 tradition.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -184,9 +185,16 @@ class SuboffReferenceDatum:
     notes: str = ""
 
     def __post_init__(self) -> None:
-        for name in ("case_id", "reference_id", "reference_source_id",
-                     "source_citation", "hull_type", "reference_area_basis",
-                     "applicable_conditions", "notes"):
+        for name in (
+            "case_id",
+            "reference_id",
+            "reference_source_id",
+            "source_citation",
+            "hull_type",
+            "reference_area_basis",
+            "applicable_conditions",
+            "notes",
+        ):
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{name} must be a non-empty string")
@@ -194,9 +202,7 @@ class SuboffReferenceDatum:
         if self.is_withheld:
             # WITHHELD entries must not carry numeric values.
             if self.Ct_reference is not None:
-                raise ValueError(
-                    "WITHHELD entry must have Ct_reference=None"
-                )
+                raise ValueError("WITHHELD entry must have Ct_reference=None")
             if self.Re is not None:
                 raise ValueError("WITHHELD entry must have Re=None")
             if self.uncertainty is not None:
@@ -208,8 +214,7 @@ class SuboffReferenceDatum:
             self._validate_numeric("uncertainty", self.uncertainty, allow_zero=True)
 
     @staticmethod
-    def _validate_numeric(name: str, value: object,
-                          allow_zero: bool = False) -> None:
+    def _validate_numeric(name: str, value: object, allow_zero: bool = False) -> None:
         if not isinstance(value, Real) or isinstance(value, bool):
             raise TypeError(f"{name} must be a real number (not bool)")
         v = float(value)
@@ -330,7 +335,6 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
             "Uncertainty ±5% (conservative for 3D axisymmetric body)."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 2. ITTC-1957 friction line at Re = 1.0e7
     # ------------------------------------------------------------------
@@ -356,7 +360,6 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
             "pressure/form drag. Uncertainty ±5%."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 3. ITTC-1957 friction line at Re = 2.0e6
     # ------------------------------------------------------------------
@@ -374,15 +377,13 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
         hull_type="bare_hull",
         reference_area_basis="wetted_surface",
         applicable_conditions=(
-            "Re=2.0e6, single-phase incompressible, deep water, "
-            "turbulent boundary layer"
+            "Re=2.0e6, single-phase incompressible, deep water, turbulent boundary layer"
         ),
         notes=(
             "Frictional resistance coefficient only; does not include "
             "pressure/form drag. Uncertainty ±5%."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 4. SUBOFF AFF-8 full configuration experimental at Re = 2.0e6
     # ------------------------------------------------------------------
@@ -411,7 +412,6 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
             "Uncertainty ±10% (accounts for citation uncertainty)."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 5. SUBOFF AFF-1 bare hull experimental — WITHHELD
     # ------------------------------------------------------------------
@@ -427,8 +427,7 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
         hull_type="bare_hull",
         reference_area_basis="wetted_surface",
         applicable_conditions=(
-            "Re=1.2e7, single-phase incompressible, deep water, "
-            "bare hull (AFF-1)"
+            "Re=1.2e7, single-phase incompressible, deep water, bare hull (AFF-1)"
         ),
         notes=(
             "WITHHELD: Specific experimental Ct values for SUBOFF AFF-1 "
@@ -441,7 +440,6 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
             "withheld pending verification."
         ),
     ),
-
     # ------------------------------------------------------------------
     # 6. Published CFD reference for SUBOFF AFF-1 — WITHHELD
     # ------------------------------------------------------------------
@@ -456,8 +454,7 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
         hull_type="bare_hull",
         reference_area_basis="wetted_surface",
         applicable_conditions=(
-            "Re=1.2e7, single-phase incompressible, deep water, "
-            "bare hull (AFF-1)"
+            "Re=1.2e7, single-phase incompressible, deep water, bare hull (AFF-1)"
         ),
         notes=(
             "WITHHELD: Multiple RANS and LES validation studies for "
@@ -473,6 +470,7 @@ SUBOFF_REFERENCE_REGISTRY: tuple[SuboffReferenceDatum, ...] = (
 # ---------------------------------------------------------------------------
 # Look-up functions
 # ---------------------------------------------------------------------------
+
 
 def get_reference_data(reference_id: str) -> SuboffReferenceDatum | None:
     """Look up a reference datum by its ``reference_id``.

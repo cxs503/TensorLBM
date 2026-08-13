@@ -61,6 +61,7 @@ Spalart, P. R. et al. (2006). A new version of detached-eddy simulation,
 Menter, F. R. & Egorov, Y. (2010). The scale-adaptive simulation method for
     unsteady turbulent flow predictions. *Flow Turbul. Combust.* 85, 113.
 """
+
 from __future__ import annotations
 
 import math
@@ -81,42 +82,46 @@ __all__ = [
 ]
 
 # Model constants
-_C_DES: float = 0.65      # DES calibration constant
-_C_S: float = 0.1         # Smagorinsky constant
-_KAPPA: float = 0.41      # von Kármán constant
-_C_SAS: float = 2.0       # SAS model constant (Menter & Egorov 2010)
+_C_DES: float = 0.65  # DES calibration constant
+_C_S: float = 0.1  # Smagorinsky constant
+_KAPPA: float = 0.41  # von Kármán constant
+_C_SAS: float = 2.0  # SAS model constant (Menter & Egorov 2010)
 
 
 # ---------------------------------------------------------------------------
 # Data containers
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DDESConfig:
     """DDES / SAS model configuration."""
-    mode: str = "ddes"           # "ddes" | "sas" | "les"
-    nu_molecular: float = 1e-5   # kinematic viscosity [lattice or SI units]
-    dx: float = 1.0              # grid spacing (isotropic)
-    c_des: float = _C_DES        # DES calibration constant
-    c_s: float = _C_S            # Smagorinsky constant
-    kappa: float = _KAPPA        # von Kármán constant
-    c_sas: float = _C_SAS        # SAS model constant
-    nu_t_max: float = 0.3        # Clamp maximum ν_t (prevents τ<0.5)
+
+    mode: str = "ddes"  # "ddes" | "sas" | "les"
+    nu_molecular: float = 1e-5  # kinematic viscosity [lattice or SI units]
+    dx: float = 1.0  # grid spacing (isotropic)
+    c_des: float = _C_DES  # DES calibration constant
+    c_s: float = _C_S  # Smagorinsky constant
+    kappa: float = _KAPPA  # von Kármán constant
+    c_sas: float = _C_SAS  # SAS model constant
+    nu_t_max: float = 0.3  # Clamp maximum ν_t (prevents τ<0.5)
 
 
 @dataclass
 class DDESResult:
     """Diagnostics from a DDES/SAS step."""
+
     nu_t_mean: float
     nu_t_max: float
-    shield_fraction: float       # fraction of cells in RANS-shielded region
-    rans_fraction: float         # fraction of cells using RANS length scale
-    les_fraction: float          # fraction of cells using LES length scale
+    shield_fraction: float  # fraction of cells in RANS-shielded region
+    rans_fraction: float  # fraction of cells using RANS length scale
+    les_fraction: float  # fraction of cells using LES length scale
 
 
 # ---------------------------------------------------------------------------
 # Strain-rate tensor
 # ---------------------------------------------------------------------------
+
 
 def _strain_rate_magnitude(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     """Compute |S| = sqrt(2 S_ij S_ij) from 2-D velocity fields.
@@ -133,7 +138,7 @@ def _strain_rate_magnitude(ux: torch.Tensor, uy: torch.Tensor) -> torch.Tensor:
     S22 = dvdy
     S12 = 0.5 * (dudy + dvdx)
 
-    return torch.sqrt(2.0 * (S11**2 + 2.0*S12**2 + S22**2) + 1e-20)
+    return torch.sqrt(2.0 * (S11**2 + 2.0 * S12**2 + S22**2) + 1e-20)
 
 
 def _gradient_magnitude(field: torch.Tensor) -> torch.Tensor:
@@ -157,6 +162,7 @@ def _laplacian(field: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # DDES shielding function
 # ---------------------------------------------------------------------------
+
 
 def ddes_shielding_function(
     nu: float,
@@ -184,6 +190,7 @@ def ddes_shielding_function(
 # DDES length scale
 # ---------------------------------------------------------------------------
 
+
 def ddes_length_scale(
     d_wall: torch.Tensor,
     f_d: torch.Tensor,
@@ -206,6 +213,7 @@ def ddes_length_scale(
 # ---------------------------------------------------------------------------
 # DDES eddy viscosity
 # ---------------------------------------------------------------------------
+
 
 def ddes_eddy_viscosity(
     ux: torch.Tensor,
@@ -235,7 +243,7 @@ def ddes_eddy_viscosity(
         return nu_t, ones, float(nu_t.mean()), float(nu_t.max()), 0.0
 
     # RANS length scale: Smagorinsky with van Driest damping at wall
-    l_rans = cfg.c_s * delta * d_wall / (d_wall + 1.0)   # simplified near-wall
+    l_rans = cfg.c_s * delta * d_wall / (d_wall + 1.0)  # simplified near-wall
 
     f_d = ddes_shielding_function(nu, nu_t_prev, S_mag, d_wall, cfg.kappa)
     l_ddes = ddes_length_scale(d_wall, f_d, delta, l_rans, cfg.c_des)
@@ -253,6 +261,7 @@ def ddes_eddy_viscosity(
 # ---------------------------------------------------------------------------
 # SAS source term
 # ---------------------------------------------------------------------------
+
 
 def sas_source_term(
     ux: torch.Tensor,
@@ -304,6 +313,7 @@ def sas_source_term(
 # LBM collision with DDES
 # ---------------------------------------------------------------------------
 
+
 def apply_ddes_collision(
     f: torch.Tensor,
     ux: torch.Tensor,
@@ -325,7 +335,7 @@ def apply_ddes_collision(
 
     nu_eff = cfg.nu_molecular + nu_t
     tau = 0.5 + 3.0 * nu_eff
-    tau = torch.clamp(tau, min=0.5005)   # prevent τ ≤ 0.5 instability
+    tau = torch.clamp(tau, min=0.5005)  # prevent τ ≤ 0.5 instability
     omega_lbm = 1.0 / tau
 
     f_eq = equilibrium(rho, ux, uy)
@@ -336,6 +346,7 @@ def apply_ddes_collision(
 # ---------------------------------------------------------------------------
 # Diagnostic runner
 # ---------------------------------------------------------------------------
+
 
 def run_ddes_diagnostics(
     ux: torch.Tensor,

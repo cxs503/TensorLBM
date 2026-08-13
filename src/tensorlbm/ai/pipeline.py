@@ -9,6 +9,7 @@ model, and finally executes a short LBM run that uses the trained model
 as its LES closure.  The function returns paths to every artefact plus
 training metrics so an agent can summarise the result.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -30,8 +31,13 @@ from .train import TrainConfig, train_eddy_viscosity_model
 # Reference data-generation simulation
 # ---------------------------------------------------------------------------
 
+
 def _init_random_velocity_field(
-    nx: int, ny: int, seed: int, device: torch.device, mean_u: float = 0.05,
+    nx: int,
+    ny: int,
+    seed: int,
+    device: torch.device,
+    mean_u: float = 0.05,
 ) -> torch.Tensor:
     """Initialise an LBM distribution from a turbulent-looking random field.
 
@@ -185,6 +191,7 @@ def _run_ai_validation(
 # Pipeline driver
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AIPipelineResult:
     """Artefacts and diagnostics produced by :func:`run_ai_les_pipeline`."""
@@ -273,10 +280,15 @@ def run_ai_les_pipeline(
             name=run_name,
             run_type="dns_data_generation" if source == "dns" else "les_data_generation",
             config={
-                "nx": int(nx), "ny": int(ny), "tau": float(tau),
-                "c_s": float(c_s), "data_steps": int(data_steps),
-                "sample_every": int(sample_every), "seed": int(seed),
-                "device": str(device), "data_source": source,
+                "nx": int(nx),
+                "ny": int(ny),
+                "tau": float(tau),
+                "c_s": float(c_s),
+                "data_steps": int(data_steps),
+                "sample_every": int(sample_every),
+                "seed": int(seed),
+                "device": str(device),
+                "data_source": source,
                 "dns_scale": int(dns_scale),
                 "dns_warmup_steps": int(dns_warmup_steps),
             },
@@ -285,16 +297,26 @@ def run_ai_les_pipeline(
 
         if source == "dns":
             snapshots = _run_dns_reference(
-                nx=int(nx), ny=int(ny), tau=float(tau),
-                n_steps=int(data_steps), sample_every=int(sample_every),
-                seed=int(seed), device=torch_device, dns_scale=int(dns_scale),
+                nx=int(nx),
+                ny=int(ny),
+                tau=float(tau),
+                n_steps=int(data_steps),
+                sample_every=int(sample_every),
+                seed=int(seed),
+                device=torch_device,
+                dns_scale=int(dns_scale),
                 warmup_steps=int(dns_warmup_steps),
             )
         else:
             snapshots = _run_les_smoke(
-                nx=int(nx), ny=int(ny), tau=float(tau), c_s=float(c_s),
-                n_steps=int(data_steps), sample_every=int(sample_every),
-                seed=int(seed), device=torch_device,
+                nx=int(nx),
+                ny=int(ny),
+                tau=float(tau),
+                c_s=float(c_s),
+                n_steps=int(data_steps),
+                sample_every=int(sample_every),
+                seed=int(seed),
+                device=torch_device,
             )
 
         feats_list: list[torch.Tensor] = []
@@ -306,10 +328,11 @@ def run_ai_les_pipeline(
         features = torch.cat(feats_list, dim=0)
         targets = torch.cat(targs_list, dim=0)
         dataset = EddyViscosityDataset(
-            features=features, targets=targets, c_s=float(c_s),
+            features=features,
+            targets=targets,
+            c_s=float(c_s),
             description=(
-                f"{source.upper()} snapshots from run #{run_id} "
-                f"({len(snapshots)} frames)"
+                f"{source.upper()} snapshots from run #{run_id} ({len(snapshots)} frames)"
             ),
         )
         save_dataset_pt(dataset, dataset_path)
@@ -345,9 +368,13 @@ def run_ai_les_pipeline(
         )
 
         validation = _run_ai_validation(
-            nx=int(nx), ny=int(ny), tau=float(tau),
-            n_steps=int(val_steps), seed=int(seed) + 1,
-            device=torch_device, model_path=model_path,
+            nx=int(nx),
+            ny=int(ny),
+            tau=float(tau),
+            n_steps=int(val_steps),
+            seed=int(seed) + 1,
+            device=torch_device,
+            model_path=model_path,
         )
     finally:
         db.close()
