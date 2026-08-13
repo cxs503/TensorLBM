@@ -40,3 +40,6 @@ outputs/
 
 # artifacts/ directory — all benchmark run outputs land here
 artifacts/runs/
+
+# One-off octree debug diagnostics (methods captured in tensorlbm-development skill)
+scripts/diag_*.py
