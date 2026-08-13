@@ -87,6 +87,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--nz", type=int, default=112)
     p.add_argument("--radius", type=float, default=8.0)      # coarse-grid sphere radius
     p.add_argument("--reynolds", type=float, default=100.0)
+    p.add_argument(
+        "--resolved-reynolds",
+        type=float,
+        default=None,
+        help="Reynolds used for the lattice collision (stability). When "
+        "omitted, equals --reynolds. Set lower than --reynolds to keep the "
+        "collision in the stable regime while the wall function still uses "
+        "the physical --reynolds (standard high-Re LBM practice, same as "
+        "SUBOFF runner).",
+    )
     p.add_argument("--lattice-speed", type=float, default=0.06)
     p.add_argument("--steps", type=int, default=3000)
     p.add_argument("--warmup-steps", type=int, default=1500)
@@ -108,8 +118,18 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--collision",
         choices=("cumulant", "cascaded"),
-        default="cumulant",
+        default=None,
+        help="Explicit collision operator (no LES). When omitted, falls "
+        "through to --les-model (WALE/Smagorinsky) for high-Re runs.",
     )
+    p.add_argument(
+        "--les-model",
+        choices=("wale", "smagorinsky"),
+        default="wale",
+        help="LES subgrid model used when --collision is omitted",
+    )
+    p.add_argument("--cs-smag", type=float, default=0.05)
+    p.add_argument("--cw-wale", type=float, default=0.5)
     p.add_argument(
         "--lattice",
         choices=("D3Q19", "D3Q27"),
@@ -154,7 +174,8 @@ def main() -> None:
     box1 = plan.box
     x0, x1, y0, y1, z0, z1 = box1.x0, box1.x1, box1.y0, box1.y1, box1.z0, box1.z1
 
-    nu_coarse = args.lattice_speed * (2.0 * args.radius) / args.reynolds
+    collision_re = args.resolved_reynolds or args.reynolds
+    nu_coarse = args.lattice_speed * (2.0 * args.radius) / collision_re
     tau_coarse = 0.5 + 3.0 * nu_coarse
 
     rho = torch.ones(shape, device=device)
@@ -298,6 +319,8 @@ def main() -> None:
             out, post_collision, _collided = root_advance(
                 f, tau, solid_coarse_q, sigma, args.lattice_speed,
                 collision=args.collision, lattice=args.lattice,
+                les_model=args.les_model, cs_smag=args.cs_smag,
+                cw_wale=args.cw_wale,
             )
             return AMRAdvanceResult(out, post_collision)
 
@@ -320,6 +343,8 @@ def main() -> None:
             sample_cv=(level_index == 3 and substep == 0),
             cv=cv, solid_g=solid_g,
             collision=args.collision, lattice=args.lattice,
+                les_model=args.les_model, cs_smag=args.cs_smag,
+                cw_wale=args.cw_wale,
         )
         if level_index == 3 and substep == 0:
             # one control-volume sample per root step, on the finest level
@@ -337,6 +362,8 @@ def main() -> None:
         l2_margin=args.l2_margin,
         ghost_interpolation=args.ghost_interpolation,
         collision=args.collision, lattice=args.lattice,
+        les_model=args.les_model, cs_smag=args.cs_smag,
+        cw_wale=args.cw_wale,
         tau_chain=[tau_coarse, config1.tau_fine, config2.tau_fine, tau_fine3],
         ratio=RATIO, ghost=GHOST,
     )

@@ -1,0 +1,35 @@
+{
+  "schema": "tensorlbm-octree-r10-current-geometry-4k-r1",
+  "status": "rejected",
+  "date": "2026-08-08",
+  "configuration": {
+    "coarse_shape_zyx": [96, 96, 144],
+    "radius_coarse": 10.0,
+    "reynolds": 100.0,
+    "lattice": "D3Q19",
+    "collision": "cumulant",
+    "d_max": 1,
+    "bl_thickness": 5.0,
+    "steps": 4000,
+    "warmup_steps": 1500,
+    "statistics_window_steps": 800
+  },
+  "observed": {
+    "cd_mem": 1.563443,
+    "cd_cv": 1.563311,
+    "reference_cd": 1.0917310910948732,
+    "reference_error_pct_cv": 43.196,
+    "mem_cv_deviation_pct": 0.008,
+    "joint_mass_drift": 0.000311,
+    "max_reflux_residual": 2.53e-6,
+    "min_density_seen": 0.9841,
+    "min_population_seen": 0.0208
+  },
+  "acceptance": {
+    "finite_positive_state": true,
+    "mem_cv_within_5pct": true,
+    "cd_within_2pct": false,
+    "physical_accuracy_admitted": false
+  },
+  "interpretation": "The matched long baseline is statistically converged and conservative, but the corrected current geometry/AMR wall path still overpredicts sphere drag. The historical 1.59% file belongs to an earlier implementation and is not evidence for the current worktree."
+}

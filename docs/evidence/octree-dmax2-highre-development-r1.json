@@ -1,0 +1,38 @@
+{
+  "schema": "tensorlbm-octree-dmax2-highre-development-r1",
+  "status": "development_stable_not_physically_accepted",
+  "date": "2026-08-08",
+  "case": {
+    "root": "cpu",
+    "fine_devices": ["cpu", "cpu"],
+    "shape_zyx": [32, 32, 40],
+    "radius": 4.0,
+    "reynolds": 1000.0,
+    "lattice": "D3Q19",
+    "collision": "sparse_leaf_wale_mrt",
+    "d_max": 2,
+    "steps": 64,
+    "warmup_steps": 16,
+    "statistics_window_steps": 16,
+    "moving_wall": false
+  },
+  "observed": {
+    "cd_mem": 0.9421635000827042,
+    "cd_cv": 0.8051175470933506,
+    "reference_cd": 0.438288140019997,
+    "reference_error_pct_cv": 83.69594647407455,
+    "mem_cv_deviation_pct": 17.021856433774087,
+    "joint_mass_drift": 4.3352114529793236e-05,
+    "max_reflux_residual": 3.8370490074157715e-07,
+    "finite_through_final_step": true
+  },
+  "acceptance": {
+    "finite_stability": true,
+    "mass_drift_within_1e-4": true,
+    "mem_cv_within_5pct": false,
+    "cd_within_2pct": false,
+    "grid_time_convergence": false,
+    "physical_accuracy_admitted": false
+  },
+  "interpretation": "The corrected two-level sparse LES path remains finite for the development window, but the window is not a converged high-Re physical validation. A longer steady window and grid/time convergence are required before claiming accurate drag."
+}
