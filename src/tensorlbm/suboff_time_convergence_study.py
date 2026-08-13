@@ -14,6 +14,7 @@ This runner composes the existing cold-path validation runner
 (:mod:`tensorlbm.suboff_validation_runner`) with existing solver operators.
 It does **not** modify any solver hot path.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -33,19 +34,27 @@ _MIN_TIME_LEVELS = 4
 
 
 def _finite_positive(value: object, name: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or value <= 0.0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not isfinite(value)
+        or value <= 0.0
+    ):
         raise ValueError(f"{name} must be a finite positive scalar")
     return float(value)
 
 
 def _canonical_hash(payload: object) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False).encode(
+        "utf-8"
+    )
     return sha256(encoded).hexdigest()
 
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True, slots=True)
 class TimeLevel:
@@ -65,7 +74,11 @@ class TimeLevel:
             raise ValueError("level_id must be a non-empty string")
         if isinstance(self.n_steps, bool) or not isinstance(self.n_steps, int) or self.n_steps < 1:
             raise ValueError("n_steps must be a positive integer")
-        if isinstance(self.capture_window, bool) or not isinstance(self.capture_window, int) or self.capture_window < 1:
+        if (
+            isinstance(self.capture_window, bool)
+            or not isinstance(self.capture_window, int)
+            or self.capture_window < 1
+        ):
             raise ValueError("capture_window must be a positive integer")
         if self.capture_window > self.n_steps:
             raise ValueError("capture_window must be <= n_steps")
@@ -132,6 +145,7 @@ class TimeConvergenceStudyConfig:
 # Per-level execution
 # ---------------------------------------------------------------------------
 
+
 def _run_one_level(
     level: TimeLevel,
     config: TimeConvergenceStudyConfig,
@@ -185,6 +199,7 @@ def _run_one_level(
 # Convergence indicator
 # ---------------------------------------------------------------------------
 
+
 def _compute_convergence_indicator(ct_values: list[float]) -> dict[str, Any]:
     """Compute relative-change indicators without claiming convergence."""
     relative_changes: list[float] = []
@@ -226,6 +241,7 @@ def _compute_convergence_indicator(ct_values: list[float]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Study runner
 # ---------------------------------------------------------------------------
+
 
 def run_suboff_time_convergence_study(
     config: TimeConvergenceStudyConfig,
@@ -270,9 +286,7 @@ def run_suboff_time_convergence_study(
     ]
 
     provenance = {
-        "runner_api": (
-            "tensorlbm.suboff_validation_runner.run_suboff_d3q19_mrt_validation"
-        ),
+        "runner_api": ("tensorlbm.suboff_validation_runner.run_suboff_d3q19_mrt_validation"),
         "model_identity": {
             "lattice": config.lattice,
             "collision": config.collision,

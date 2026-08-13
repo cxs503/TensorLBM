@@ -13,7 +13,7 @@ Setup:
                            (opposite force, opposite position)
      This creates a longitudinal quadrupole oriented in x.
      F0=0.01, omega=0.1
- 
+
    NOTE: A longitudinal-only force quadrupole (two opposing forces in x)
    produces a cos²(θ) directivity, not cos(2θ), because its pressure field
    contains a monopole component:  p' ∝ -k²/2·H₀(kr) + k²/2·cos(2θ)·H₂(kr).
@@ -43,6 +43,7 @@ Validation:
 Run:
     PYTHONPATH=src python examples/benchmark_quadrupole_source.py --device cpu --steps 1000
 """
+
 from __future__ import annotations
 
 import argparse
@@ -67,6 +68,7 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 # Helpers
 # --------------------------------------------------------------------------- #
 
+
 def _extract_amplitude(steps_arr, values, omega):
     """Extract the oscillation amplitude at frequency *omega* via a
     single-frequency DFT (projection onto sin/cos at the known frequency).
@@ -85,12 +87,13 @@ def _extract_amplitude(steps_arr, values, omega):
     N = len(t2)
     sin_proj = (2.0 / N) * np.sum(u2 * np.sin(omega * t2))
     cos_proj = (2.0 / N) * np.sum(u2 * np.cos(omega * t2))
-    return float(np.sqrt(sin_proj ** 2 + cos_proj ** 2))
+    return float(np.sqrt(sin_proj**2 + cos_proj**2))
 
 
 # --------------------------------------------------------------------------- #
 # Quadrupole source benchmark
 # --------------------------------------------------------------------------- #
+
 
 def run_quadrupole_source(
     nx: int = 300,
@@ -143,10 +146,10 @@ def run_quadrupole_source(
     f = equilibrium3d(rho0, u0, u0.clone(), u0.clone(), device=dev)
 
     # --- Lattice weights & velocities (for Guo forcing) --------------------
-    w_dev = W.to(dev)                # shape (19,)
-    c_dev = C.to(dev).float()        # shape (19, 3)
-    cx_dev = c_dev[:, 0]             # shape (19,)  — x-component of c_i
-    cy_dev = c_dev[:, 1]             # shape (19,)  — y-component of c_i
+    w_dev = W.to(dev)  # shape (19,)
+    c_dev = C.to(dev).float()  # shape (19, 3)
+    cx_dev = c_dev[:, 0]  # shape (19,)  — x-component of c_i
+    cy_dev = c_dev[:, 1]  # shape (19,)  — y-component of c_i
 
     # --- Guo forcing coefficient -------------------------------------------
     # delta_f_i = w_i · (1 - 1/(2τ)) · (1/cs²) · (c_i · F)
@@ -207,12 +210,12 @@ def run_quadrupole_source(
         force_val = force_amp * math.sin(omega * step)
         # x-dipole (Q_xx): +F at +d, −F at −d
         delta_fx = w_dev * guo_coeff * cx_dev * force_val  # shape (19,)
-        f[:, 0, src_a[1], src_a[0]] += delta_fx   # +F0·sin(ωt) in +x
-        f[:, 0, src_b[1], src_b[0]] -= delta_fx   # −F0·sin(ωt) in +x
+        f[:, 0, src_a[1], src_a[0]] += delta_fx  # +F0·sin(ωt) in +x
+        f[:, 0, src_b[1], src_b[0]] -= delta_fx  # −F0·sin(ωt) in +x
         # y-dipole (−Q_yy, opposite phase): −F at +d, +F at −d
         delta_fy = w_dev * guo_coeff * cy_dev * force_val  # shape (19,)
-        f[:, 0, src_c[1], src_c[0]] -= delta_fy   # −F0·sin(ωt) in +y
-        f[:, 0, src_d[1], src_d[0]] += delta_fy   # +F0·sin(ωt) in +y
+        f[:, 0, src_c[1], src_c[0]] -= delta_fy  # −F0·sin(ωt) in +y
+        f[:, 0, src_d[1], src_d[0]] += delta_fy  # +F0·sin(ωt) in +y
 
         # 3) Streaming
         f = stream3d(f)
@@ -230,9 +233,7 @@ def run_quadrupole_source(
         #    (interior points are unaffected by the sponge below)
         if step % record_every == 0 or step == steps:
             for key, (mx, my, _ang) in monitor_pts.items():
-                history[key].append(
-                    (step, float(rho[0, my, mx].item()))
-                )
+                history[key].append((step, float(rho[0, my, mx].item())))
 
         # 7) Sponge layer: blend toward TARGET equilibrium (absorbs acoustic wave)
         f = feq_bnd + (f - feq_bnd) * damping
@@ -284,11 +285,7 @@ def run_quadrupole_source(
     dir_errors: list[float] = []
     for ang_deg in monitor_angles:
         expected = abs(math.cos(2.0 * math.radians(ang_deg)))
-        measured = (
-            amplitudes[(directivity_r, ang_deg)] / ref_amp
-            if ref_amp > 1e-15
-            else 0.0
-        )
+        measured = amplitudes[(directivity_r, ang_deg)] / ref_amp if ref_amp > 1e-15 else 0.0
         err = abs(measured - expected)
         dir_errors.append(err)
         print(f"  {ang_deg:5d}°  {expected:8.4f}  {measured:10.4f}  {err * 100:7.2f}%")
@@ -314,10 +311,7 @@ def run_quadrupole_source(
     # ----------------------------------------------------------------------- #
     print("\n  --- 验证2: 径向衰减 (|H₂⁽¹⁾(kr)| 衰减) ---")
     print(f"  固定 θ=0°, 比较 |p'(r,0°)| 衰减与 |H₂⁽¹⁾(kr)| 衰减")
-    print(
-        f"  {'r':>5s}  {'|H2(kr)|':>12s}  {'归一化H2':>10s}"
-        f"  {'归一化测量':>12s}  {'误差':>8s}"
-    )
+    print(f"  {'r':>5s}  {'|H2(kr)|':>12s}  {'归一化H2':>10s}  {'归一化测量':>12s}  {'误差':>8s}")
 
     h2_ref = abs(hankel1(2, k * monitor_r[0]))
     amp_ref = amplitudes[(monitor_r[0], 0)]
@@ -326,15 +320,10 @@ def run_quadrupole_source(
         h2_val = abs(hankel1(2, k * r))
         h2_norm = h2_val / h2_ref if h2_ref > 0 else 0.0
         measured_norm = amplitudes[(r, 0)] / amp_ref if amp_ref > 1e-15 else 0.0
-        err = (
-            abs(measured_norm - h2_norm) / h2_norm
-            if h2_norm > 1e-15
-            else 0.0
-        )
+        err = abs(measured_norm - h2_norm) / h2_norm if h2_norm > 1e-15 else 0.0
         decay_errors.append(err * 100)
         print(
-            f"  {r:4d}  {h2_val:12.6f}  {h2_norm:10.4f}  "
-            f"{measured_norm:12.4f}  {err * 100:7.2f}%"
+            f"  {r:4d}  {h2_val:12.6f}  {h2_norm:10.4f}  {measured_norm:12.4f}  {err * 100:7.2f}%"
         )
 
     decay_avg_err = float(np.mean(decay_errors))
@@ -348,13 +337,9 @@ def run_quadrupole_source(
     print("\n" + "=" * 64)
     all_pass = dir_pass and decay_pass
     print(f"  总体结果: {'PASS' if all_pass else 'FAIL'}")
+    print(f"    指向性:   {'PASS' if dir_pass else 'FAIL'}  (误差 {dir_avg_err:.2f}%, 目标 < 15%)")
     print(
-        f"    指向性:   {'PASS' if dir_pass else 'FAIL'}"
-        f"  (误差 {dir_avg_err:.2f}%, 目标 < 15%)"
-    )
-    print(
-        f"    径向衰减: {'PASS' if decay_pass else 'FAIL'}"
-        f"  (误差 {decay_avg_err:.2f}%, 目标 < 15%)"
+        f"    径向衰减: {'PASS' if decay_pass else 'FAIL'}  (误差 {decay_avg_err:.2f}%, 目标 < 15%)"
     )
     print("=" * 64)
 
@@ -379,8 +364,12 @@ def main() -> None:
     p.add_argument("--steps", type=int, default=1000)
     p.add_argument("--device", default="cpu")
     p.add_argument("--log-every", type=int, default=200)
-    p.add_argument("--source-sep", type=int, default=3,
-                   help="Separation of each force source from the centre (lattice units)")
+    p.add_argument(
+        "--source-sep",
+        type=int,
+        default=3,
+        help="Separation of each force source from the centre (lattice units)",
+    )
     args = p.parse_args()
 
     run_quadrupole_source(

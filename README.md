@@ -2,17 +2,30 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **reproducible research experiments** with clear extension points.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cxs503/TensorLBM/blob/main/notebooks/quickstart.ipynb)
 
-## Documentation / 文档
+> **A CPU-first PyTorch Lattice Boltzmann platform for reproducible CFD research.**
+> D2Q9 · D3Q19 · D3Q27 · BGK · MRT · TRT · RLBM · Cumulant · LES · RANS · AMR · DG-LBM · AI turbulence closure · Multi-GPU
 
-- **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
-  Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
-- **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
-- **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
-- **[Accuracy-recommendation evidence gate](docs/accuracy_recommendation_evidence_gate.md)** – fail-closed physical-evidence admission before an accuracy recommendation.
-- **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
-- **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
+```bash
+# 30-second quick-start: lid-driven cavity at Re=400
+pip install -e .
+PYTHONPATH=src python examples/cylinder_flow.py --nx 128 --ny 48 --re 200 --n-steps 500
+```
+
+```python
+# Minimal Python API — copy-paste and run
+import torch
+from tensorlbm import equilibrium, macroscopic, collide_bgk, stream
+
+ny, nx = 64, 128
+f = equilibrium(torch.ones(ny, nx), torch.zeros(ny, nx), torch.zeros(ny, nx))
+for _ in range(200):
+    f = collide_bgk(f.unsqueeze(0).expand(9,-1,-1), tau=0.6)
+    f = stream(f)
+```
+
+---
 
 ## What TensorLBM provides
 
@@ -29,7 +42,7 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 - **Thermal LBM**: double-distribution-function model (D2Q9+D2Q5 / D3Q19+D3Q7) with Boussinesq buoyancy
 - **Conjugate heat transfer (CHT)**: coupled fluid–solid heat conduction with interface boundary conditions
 - **Aeroacoustics**: Ffowcs Williams–Hawkings (FWH) far-field solver, SPL spectrum, and OASPL computation
-- **AI turbulence models**: MLP eddy-viscosity model, Transformer-based self-supervised flow model, DNS-to-LES data pipeline, AI-embedded LBM collision
+- **AI turbulence models**: MLP eddy-viscosity, FNO2d neural operator, Transformer-based self-supervised flow model, DNS-to-LES data pipeline, AI-embedded LBM collision
 - Boundary conditions: bounce-back, **Zou/He** inlet-velocity and outlet-pressure BCs, Bouzidi interpolated bounce-back, **moving-wall** (Ladd 1994), **far-field**, **sponge/absorbing-layer** outlet BC, **rough-wall** (equivalent sand-grain), JONSWAP irregular-wave inlet
 - **Turbulent inlet profiles**: log-law, power-law, parabolic, Blasius, Womersley, synthetic turbulence 2D, DFSEM, Digital Filter Method
 - **Turbulence statistics**: `TurbulenceStatsAccumulator`, Reynolds stresses, turbulence intensity, turbulence length scale
@@ -52,6 +65,16 @@ TensorLBM is a CPU-first PyTorch Lattice Boltzmann Method platform focused on **
 4. **Fast feedback loops**: smoke tests and CI on push/PR.
 5. **CPU-first defaults, GPU-ready shape**: default to CPU, but keep interfaces ready for device scaling.
 6. **Multi-backend**: PyTorch is the default; Paddle and MindSpore backends are selectable at runtime.
+
+## Documentation / 文档
+
+- **[软件说明书 / Software Manual](docs/software_manual.md)** – 完整的船舶与海洋工程算例说明、定量 benchmark 对比和 API 参考。
+  Full ship & ocean engineering benchmark documentation, quantitative comparisons, and API reference.
+- **[SUBOFF Platform Manual](docs/suboff_platform_manual.md)** – 完整 SUBOFF 全附件案例的 CLI / Platform 运行步骤、精度判据与结果解读。
+- **[HPC + AI: AI Turbulence Models](docs/ai_turbulence.md)** – Agent-driven 数据生成 → SQLite 入库 → AI 湍流模型训练 → AI 模型嵌入 LBM 的端到端示范 (`tensorlbm.ai`).
+- **[Accuracy-recommendation evidence gate](docs/accuracy_recommendation_evidence_gate.md)** – fail-closed physical-evidence admission before an accuracy recommendation.
+- **[Development Workflow](docs/development_workflow.md)** – single entrypoint for setup, checks, platform startup, and output naming conventions.
+- **[Observability Notes](docs/observability.md)** – job lifecycle, output schema, and failure-triage checklist.
 
 ## Installation
 
@@ -102,6 +125,22 @@ PYTHONPATH=src python examples/sphere_flow_3d.py \
   --run-name smoke --overwrite
 ```
 
+## Generate a lid-driven cavity demo GIF
+
+```bash
+PYTHONPATH=src python scripts/make_demo_gif.py --overwrite
+```
+
+This runs a 2000-step cavity simulation, saves one frame every 50 steps, and
+writes a GIF to:
+
+```text
+outputs/lid_driven_cavity/demo_gif/lid_driven_cavity_demo.gif
+```
+
+![Lid-driven cavity demo](outputs/lid_driven_cavity/demo_gif/lid_driven_cavity_demo.gif)
+
+
 ## Run the ship CAD-to-flow workflow
 
 ```bash
@@ -137,6 +176,31 @@ PYTHONPATH=src python examples/dg_suboff_highre_mrt.py
 PYTHONPATH=src python examples/ai_dns_case.py
 PYTHONPATH=src python examples/ai_turbulence_pipeline.py
 ```
+
+## FNO2d surrogate benchmark
+
+Train a Fourier Neural Operator to replace per-query LBM simulation and
+benchmark inference speed against direct simulation (default: 64 × 64 grid,
+100 training cases, 25 epochs — runs in ~5 minutes on CPU):
+
+```bash
+PYTHONPATH=src python examples/ai_fno2d_demo.py
+```
+
+Pre-generated benchmark artifacts are in
+[`docs/benchmarks/ai_fno2d/`](docs/benchmarks/ai_fno2d/):
+
+| Metric | Value |
+|---|---|
+| FNO2d final val MSE | ~2 × 10⁻⁴ |
+| LBM avg / case (64² grid, 60 steps) | 0.41 s |
+| FNO2d inference avg / case | 0.0021 s |
+| **Speedup** | **~195×** |
+
+![FNO2d loss curve](docs/benchmarks/ai_fno2d/loss_curve.png)
+
+> The surrogate trades a small accuracy loss for roughly 200× faster evaluation
+> — useful for parameter sweeps and real-time design-space exploration.
 
 ## Batch parameter scan
 

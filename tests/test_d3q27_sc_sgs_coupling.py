@@ -15,6 +15,7 @@ Test matrix
 - Invalid model:    raises ValueError.
 - Conservation:     mass preserved (single-component); shape/finite checks.
 """
+
 from __future__ import annotations
 
 import copy
@@ -38,6 +39,7 @@ DEVICE = torch.device("cpu")
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _f27_uniform(nz: int = 4, ny: int = 6, nx: int = 8, u_mag: float = 0.04) -> torch.Tensor:
     """Equilibrium D3Q27 distribution with random but *uniform* velocity."""
@@ -77,6 +79,7 @@ def _f27_random(nz: int = 4, ny: int = 6, nx: int = 8, u_mag: float = 0.04) -> t
 # Single-component: collide_sc_single_component_27
 # ===========================================================================
 
+
 class TestSingleComponentDefault:
     """Default behaviour (C_s=0) must be identical to the original collision."""
 
@@ -84,7 +87,11 @@ class TestSingleComponentDefault:
         f = _f27_random()
         out_default = collide_sc_single_component_27(f, G=-4.0, tau=1.0)
         out_explicit = collide_sc_single_component_27(
-            f, G=-4.0, tau=1.0, C_s=0.0, sgs_model="smagorinsky",
+            f,
+            G=-4.0,
+            tau=1.0,
+            C_s=0.0,
+            sgs_model="smagorinsky",
         )
         assert torch.allclose(out_default, out_explicit, atol=0, rtol=0)
 
@@ -108,6 +115,7 @@ class TestSingleComponentDefault:
 # Single-component: Smagorinsky SGS
 # ===========================================================================
 
+
 class TestSingleComponentSmagorinsky:
     """Smagorinsky SGS coupling for D3Q27 single-component SC."""
 
@@ -117,7 +125,11 @@ class TestSingleComponentSmagorinsky:
         tau = 1.0
         out_no_sgs = collide_sc_single_component_27(f, G=-4.0, tau=tau, C_s=0.0)
         out_sgs = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.1, sgs_model="smagorinsky",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.1,
+            sgs_model="smagorinsky",
         )
         assert not torch.allclose(out_no_sgs, out_sgs, atol=1e-8)
 
@@ -129,6 +141,7 @@ class TestSingleComponentSmagorinsky:
         psi = torch.exp(rho)  # psi_exp default
         # Recompute feq the same way the collision does
         from tensorlbm.multiphase3d_d3q27 import _sc_neighbor_weighted_sum_27
+
         sx, sy, sz = _sc_neighbor_weighted_sum_27(psi, None)
         rho_s = torch.clamp(rho, min=1e-12)
         Fx = -(-4.0) * psi * sx
@@ -147,7 +160,11 @@ class TestSingleComponentSmagorinsky:
     def test_shape_and_finite(self) -> None:
         f = _f27_random()
         out = collide_sc_single_component_27(
-            f, G=-4.0, tau=1.0, C_s=0.1, sgs_model="smagorinsky",
+            f,
+            G=-4.0,
+            tau=1.0,
+            C_s=0.1,
+            sgs_model="smagorinsky",
         )
         assert out.shape == f.shape
         assert torch.isfinite(out).all()
@@ -155,7 +172,11 @@ class TestSingleComponentSmagorinsky:
     def test_mass_conserved(self) -> None:
         f = _f27_random()
         out = collide_sc_single_component_27(
-            f, G=-4.0, tau=1.0, C_s=0.1, sgs_model="smagorinsky",
+            f,
+            G=-4.0,
+            tau=1.0,
+            C_s=0.1,
+            sgs_model="smagorinsky",
         )
         assert torch.allclose(f.sum(), out.sum(), rtol=1e-4, atol=1e-4)
 
@@ -163,6 +184,7 @@ class TestSingleComponentSmagorinsky:
 # ===========================================================================
 # Single-component: WALE SGS
 # ===========================================================================
+
 
 class TestSingleComponentWALE:
     """WALE SGS coupling for D3Q27 single-component SC."""
@@ -173,7 +195,11 @@ class TestSingleComponentWALE:
         tau = 1.0
         out_no_sgs = collide_sc_single_component_27(f, G=-4.0, tau=tau, C_s=0.0)
         out_wale = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.5, sgs_model="wale",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.5,
+            sgs_model="wale",
         )
         assert torch.allclose(out_no_sgs, out_wale, atol=1e-6, rtol=1e-6)
 
@@ -183,14 +209,22 @@ class TestSingleComponentWALE:
         tau = 1.0
         out_no_sgs = collide_sc_single_component_27(f, G=-4.0, tau=tau, C_s=0.0)
         out_wale = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.5, sgs_model="wale",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.5,
+            sgs_model="wale",
         )
         assert not torch.allclose(out_no_sgs, out_wale, atol=1e-8)
 
     def test_shape_and_finite(self) -> None:
         f = _f27_sheared()
         out = collide_sc_single_component_27(
-            f, G=-4.0, tau=1.0, C_s=0.5, sgs_model="wale",
+            f,
+            G=-4.0,
+            tau=1.0,
+            C_s=0.5,
+            sgs_model="wale",
         )
         assert out.shape == f.shape
         assert torch.isfinite(out).all()
@@ -198,7 +232,11 @@ class TestSingleComponentWALE:
     def test_mass_conserved(self) -> None:
         f = _f27_sheared()
         out = collide_sc_single_component_27(
-            f, G=-4.0, tau=1.0, C_s=0.5, sgs_model="wale",
+            f,
+            G=-4.0,
+            tau=1.0,
+            C_s=0.5,
+            sgs_model="wale",
         )
         assert torch.allclose(f.sum(), out.sum(), rtol=1e-4, atol=1e-4)
 
@@ -206,6 +244,7 @@ class TestSingleComponentWALE:
 # ===========================================================================
 # Single-component: Vreman SGS
 # ===========================================================================
+
 
 class TestSingleComponentVreman:
     """Vreman SGS coupling for D3Q27 single-component SC."""
@@ -216,7 +255,11 @@ class TestSingleComponentVreman:
         tau = 1.0
         out_no_sgs = collide_sc_single_component_27(f, G=-4.0, tau=tau, C_s=0.0)
         out_vreman = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.025, sgs_model="vreman",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.025,
+            sgs_model="vreman",
         )
         assert torch.allclose(out_no_sgs, out_vreman, atol=1e-6, rtol=1e-6)
 
@@ -226,14 +269,22 @@ class TestSingleComponentVreman:
         tau = 1.0
         out_no_sgs = collide_sc_single_component_27(f, G=-4.0, tau=tau, C_s=0.0)
         out_vreman = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.025, sgs_model="vreman",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.025,
+            sgs_model="vreman",
         )
         assert not torch.allclose(out_no_sgs, out_vreman, atol=1e-8)
 
     def test_shape_and_finite(self) -> None:
         f = _f27_sheared()
         out = collide_sc_single_component_27(
-            f, G=-4.0, tau=1.0, C_s=0.025, sgs_model="vreman",
+            f,
+            G=-4.0,
+            tau=1.0,
+            C_s=0.025,
+            sgs_model="vreman",
         )
         assert out.shape == f.shape
         assert torch.isfinite(out).all()
@@ -241,7 +292,11 @@ class TestSingleComponentVreman:
     def test_mass_conserved(self) -> None:
         f = _f27_sheared()
         out = collide_sc_single_component_27(
-            f, G=-4.0, tau=1.0, C_s=0.025, sgs_model="vreman",
+            f,
+            G=-4.0,
+            tau=1.0,
+            C_s=0.025,
+            sgs_model="vreman",
         )
         assert torch.allclose(f.sum(), out.sum(), rtol=1e-4, atol=1e-4)
 
@@ -250,12 +305,17 @@ class TestSingleComponentVreman:
 # Single-component: invalid sgs_model
 # ===========================================================================
 
+
 class TestSingleComponentInvalidModel:
     def test_invalid_model_raises_value_error(self) -> None:
         f = _f27_random()
         with pytest.raises(ValueError, match="sgs_model"):
             collide_sc_single_component_27(
-                f, G=-4.0, tau=1.0, C_s=0.1, sgs_model="k_epsilon",
+                f,
+                G=-4.0,
+                tau=1.0,
+                C_s=0.1,
+                sgs_model="k_epsilon",
             )
 
     def test_invalid_model_raises_even_with_zero_cs(self) -> None:
@@ -263,13 +323,18 @@ class TestSingleComponentInvalidModel:
         f = _f27_random()
         with pytest.raises(ValueError, match="sgs_model"):
             collide_sc_single_component_27(
-                f, G=-4.0, tau=1.0, C_s=0.0, sgs_model="invalid",
+                f,
+                G=-4.0,
+                tau=1.0,
+                C_s=0.0,
+                sgs_model="invalid",
             )
 
 
 # ===========================================================================
 # Two-component: collide_sc_two_component_27
 # ===========================================================================
+
 
 class TestTwoComponentDefault:
     """Default behaviour (C_s=0) must be identical to the original collision."""
@@ -279,7 +344,13 @@ class TestTwoComponentDefault:
         f2 = _f27_random()
         o1_def, o2_def = collide_sc_two_component_27(f1, f2, G_12=0.9, tau1=1.0, tau2=1.0)
         o1_exp, o2_exp = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=1.0, tau2=1.0, C_s=0.0, sgs_model="smagorinsky",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=1.0,
+            tau2=1.0,
+            C_s=0.0,
+            sgs_model="smagorinsky",
         )
         assert torch.allclose(o1_def, o1_exp, atol=0, rtol=0)
         assert torch.allclose(o2_def, o2_exp, atol=0, rtol=0)
@@ -305,7 +376,13 @@ class TestTwoComponentSmagorinsky:
         f2 = _f27_random()
         o1_n, o2_n = collide_sc_two_component_27(f1, f2, G_12=0.9, tau1=1.0, tau2=1.0, C_s=0.0)
         o1_s, o2_s = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=1.0, tau2=1.0, C_s=0.1, sgs_model="smagorinsky",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=1.0,
+            tau2=1.0,
+            C_s=0.1,
+            sgs_model="smagorinsky",
         )
         assert not torch.allclose(o1_n, o1_s, atol=1e-8)
         assert not torch.allclose(o2_n, o2_s, atol=1e-8)
@@ -314,7 +391,13 @@ class TestTwoComponentSmagorinsky:
         f1 = _f27_random()
         f2 = _f27_random()
         o1, o2 = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=1.0, tau2=1.0, C_s=0.1, sgs_model="smagorinsky",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=1.0,
+            tau2=1.0,
+            C_s=0.1,
+            sgs_model="smagorinsky",
         )
         assert o1.shape == f1.shape
         assert o2.shape == f2.shape
@@ -329,7 +412,13 @@ class TestTwoComponentWALE:
         tau = 1.0
         o1_n, o2_n = collide_sc_two_component_27(f1, f2, G_12=0.9, tau1=tau, tau2=tau, C_s=0.0)
         o1_w, o2_w = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=tau, tau2=tau, C_s=0.5, sgs_model="wale",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=tau,
+            tau2=tau,
+            C_s=0.5,
+            sgs_model="wale",
         )
         assert torch.allclose(o1_n, o1_w, atol=1e-6, rtol=1e-6)
         assert torch.allclose(o2_n, o2_w, atol=1e-6, rtol=1e-6)
@@ -340,7 +429,13 @@ class TestTwoComponentWALE:
         tau = 1.0
         o1_n, o2_n = collide_sc_two_component_27(f1, f2, G_12=0.9, tau1=tau, tau2=tau, C_s=0.0)
         o1_w, o2_w = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=tau, tau2=tau, C_s=0.5, sgs_model="wale",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=tau,
+            tau2=tau,
+            C_s=0.5,
+            sgs_model="wale",
         )
         assert not torch.allclose(o1_n, o1_w, atol=1e-8)
         assert not torch.allclose(o2_n, o2_w, atol=1e-8)
@@ -349,7 +444,13 @@ class TestTwoComponentWALE:
         f1 = _f27_sheared()
         f2 = _f27_sheared()
         o1, o2 = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=1.0, tau2=1.0, C_s=0.5, sgs_model="wale",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=1.0,
+            tau2=1.0,
+            C_s=0.5,
+            sgs_model="wale",
         )
         assert o1.shape == f1.shape
         assert o2.shape == f2.shape
@@ -364,7 +465,13 @@ class TestTwoComponentVreman:
         tau = 1.0
         o1_n, o2_n = collide_sc_two_component_27(f1, f2, G_12=0.9, tau1=tau, tau2=tau, C_s=0.0)
         o1_v, o2_v = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=tau, tau2=tau, C_s=0.025, sgs_model="vreman",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=tau,
+            tau2=tau,
+            C_s=0.025,
+            sgs_model="vreman",
         )
         assert torch.allclose(o1_n, o1_v, atol=1e-6, rtol=1e-6)
         assert torch.allclose(o2_n, o2_v, atol=1e-6, rtol=1e-6)
@@ -375,7 +482,13 @@ class TestTwoComponentVreman:
         tau = 1.0
         o1_n, o2_n = collide_sc_two_component_27(f1, f2, G_12=0.9, tau1=tau, tau2=tau, C_s=0.0)
         o1_v, o2_v = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=tau, tau2=tau, C_s=0.025, sgs_model="vreman",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=tau,
+            tau2=tau,
+            C_s=0.025,
+            sgs_model="vreman",
         )
         assert not torch.allclose(o1_n, o1_v, atol=1e-8)
         assert not torch.allclose(o2_n, o2_v, atol=1e-8)
@@ -384,7 +497,13 @@ class TestTwoComponentVreman:
         f1 = _f27_sheared()
         f2 = _f27_sheared()
         o1, o2 = collide_sc_two_component_27(
-            f1, f2, G_12=0.9, tau1=1.0, tau2=1.0, C_s=0.025, sgs_model="vreman",
+            f1,
+            f2,
+            G_12=0.9,
+            tau1=1.0,
+            tau2=1.0,
+            C_s=0.025,
+            sgs_model="vreman",
         )
         assert o1.shape == f1.shape
         assert o2.shape == f2.shape
@@ -398,7 +517,13 @@ class TestTwoComponentInvalidModel:
         f2 = _f27_random()
         with pytest.raises(ValueError, match="sgs_model"):
             collide_sc_two_component_27(
-                f1, f2, G_12=0.9, tau1=1.0, tau2=1.0, C_s=0.1, sgs_model="k_omega",
+                f1,
+                f2,
+                G_12=0.9,
+                tau1=1.0,
+                tau2=1.0,
+                C_s=0.1,
+                sgs_model="k_omega",
             )
 
     def test_invalid_model_raises_even_with_zero_cs(self) -> None:
@@ -406,7 +531,13 @@ class TestTwoComponentInvalidModel:
         f2 = _f27_random()
         with pytest.raises(ValueError, match="sgs_model"):
             collide_sc_two_component_27(
-                f1, f2, G_12=0.9, tau1=1.0, tau2=1.0, C_s=0.0, sgs_model="bad",
+                f1,
+                f2,
+                G_12=0.9,
+                tau1=1.0,
+                tau2=1.0,
+                C_s=0.0,
+                sgs_model="bad",
             )
 
 
@@ -414,16 +545,25 @@ class TestTwoComponentInvalidModel:
 # Cross-model consistency: WALE and Vreman give different results
 # ===========================================================================
 
+
 class TestCrossModelConsistency:
     def test_wale_and_vreman_differ_for_sheared_flow(self) -> None:
         """WALE and Vreman use different formulas → different outputs."""
         f = _f27_sheared()
         tau = 1.0
         out_wale = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.5, sgs_model="wale",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.5,
+            sgs_model="wale",
         )
         out_vreman = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.025, sgs_model="vreman",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.025,
+            sgs_model="vreman",
         )
         assert not torch.allclose(out_wale, out_vreman, atol=1e-8)
 
@@ -431,10 +571,18 @@ class TestCrossModelConsistency:
         f = _f27_sheared()
         tau = 1.0
         out_smag = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.1, sgs_model="smagorinsky",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.1,
+            sgs_model="smagorinsky",
         )
         out_wale = collide_sc_single_component_27(
-            f, G=-4.0, tau=tau, C_s=0.5, sgs_model="wale",
+            f,
+            G=-4.0,
+            tau=tau,
+            C_s=0.5,
+            sgs_model="wale",
         )
         assert not torch.allclose(out_smag, out_wale, atol=1e-8)
 
@@ -442,6 +590,7 @@ class TestCrossModelConsistency:
 # ===========================================================================
 # Solid mask interaction
 # ===========================================================================
+
 
 class TestSolidMaskInteraction:
     def test_sgs_with_solid_mask_preserves_solid_cells(self) -> None:
@@ -453,7 +602,11 @@ class TestSolidMaskInteraction:
         solid_mask[1, 2, 3] = True
 
         out = collide_sc_single_component_27(
-            f, G=-4.0, tau=1.0, C_s=0.1, sgs_model="smagorinsky",
+            f,
+            G=-4.0,
+            tau=1.0,
+            C_s=0.1,
+            sgs_model="smagorinsky",
             solid_mask=solid_mask,
         )
         # Solid cells should be unchanged
@@ -469,7 +622,11 @@ class TestSolidMaskInteraction:
         for model in ("smagorinsky", "wale", "vreman"):
             cs = 0.1 if model == "smagorinsky" else (0.5 if model == "wale" else 0.025)
             out = collide_sc_single_component_27(
-                f, G=-4.0, tau=1.0, C_s=cs, sgs_model=model,
+                f,
+                G=-4.0,
+                tau=1.0,
+                C_s=cs,
+                sgs_model=model,
                 solid_mask=solid_mask,
             )
             assert torch.isfinite(out).all(), f"NaN/Inf for {model}"

@@ -15,8 +15,10 @@ Physics:
   - Penetrates water → decelerates (drag + buoyancy)
   - Compare penetration depth with analytical (drag coefficient)
 """
+
 import sys, math, torch, numpy as np
-sys.path.insert(0, '/root/TensorLBM_test/src')
+
+sys.path.insert(0, "/root/TensorLBM_test/src")
 from tensorlbm.d3q27 import equilibrium27, macroscopic27, stream27, OPPOSITE as OPP27
 from tensorlbm.d3q27 import _c_on as _c27_on, _w_on as _w27_on
 from tensorlbm.d3q27 import collide_mrt27
@@ -25,16 +27,16 @@ from tensorlbm.cumulant import collide_cumulant_d3q27
 from tensorlbm.turbulence import collide_smagorinsky_mrt27, _smagorinsky_tau
 
 
-def run_sphere_entry(nx=48, ny=128, nz=48, n_steps=4000,
-                     device='sdaa:0', R_sphere=6.0, gz=0.001,
-                     collision='mrt27'):
+def run_sphere_entry(
+    nx=48, ny=128, nz=48, n_steps=4000, device="sdaa:0", R_sphere=6.0, gz=0.001, collision="mrt27"
+):
     """Sphere water entry with phase-field + MRT."""
     dev = torch.device(device)
     cs2 = 1.0 / 3.0
     rho_liq = 1.0
-    rho_gas = 0.001       # air (light)
-    rho_solid = 2.0       # sphere (heavier than water → sinks)
-    tau_f = 0.8           # MRT relaxation
+    rho_gas = 0.001  # air (light)
+    rho_solid = 2.0  # sphere (heavier than water → sinks)
+    tau_f = 0.8  # MRT relaxation
     tau_g = 0.55
     A_coef, B_coef, kappa_ch = 0.2, 0.2, 0.1
     W_ac = 4.0
@@ -52,20 +54,26 @@ def run_sphere_entry(nx=48, ny=128, nz=48, n_steps=4000,
     opp = OPP27.to(dev)
 
     zz, yy, xx = torch.meshgrid(
-        torch.arange(nz, device=dev), torch.arange(ny, device=dev),
-        torch.arange(nx, device=dev), indexing='ij')
+        torch.arange(nz, device=dev),
+        torch.arange(ny, device=dev),
+        torch.arange(nx, device=dev),
+        indexing="ij",
+    )
 
     # Solid walls (all sides)
     solid_wall = torch.zeros(nz, ny, nx, dtype=torch.bool, device=dev)
-    solid_wall[:, 0, :] = True; solid_wall[:, -1, :] = True
-    solid_wall[:, :, 0] = True; solid_wall[:, :, -1] = True
-    solid_wall[0, :, :] = True; solid_wall[-1, :, :] = True
+    solid_wall[:, 0, :] = True
+    solid_wall[:, -1, :] = True
+    solid_wall[:, :, 0] = True
+    solid_wall[:, :, -1] = True
+    solid_wall[0, :, :] = True
+    solid_wall[-1, :, :] = True
 
     # Sphere initial position (above waterline)
-    cx_s, cy_s, cz_s = nx//2, y_water - int(R_sphere) - 4, nz//2
+    cx_s, cy_s, cz_s = nx // 2, y_water - int(R_sphere) - 4, nz // 2
 
     # Sphere mask
-    dist = torch.sqrt((xx - cx_s)**2 + (yy - cy_s)**2 + (zz - cz_s)**2)
+    dist = torch.sqrt((xx - cx_s) ** 2 + (yy - cy_s) ** 2 + (zz - cz_s) ** 2)
     sphere_mask = dist <= R_sphere
     solid = solid_wall | sphere_mask
     fluid_mask = ~solid
@@ -76,19 +84,28 @@ def run_sphere_entry(nx=48, ny=128, nz=48, n_steps=4000,
 
     # Initialize f: uniform density, zero velocity
     rho_init = torch.ones(nz, ny, nx, device=dev)
-    f = equilibrium27(rho_init, torch.zeros_like(rho_init),
-                      torch.zeros_like(rho_init), torch.zeros_like(rho_init), device=dev)
-    g = _init_g_equilibrium(phi, torch.zeros_like(phi), torch.zeros_like(phi),
-                             torch.zeros_like(phi), c, w)
+    f = equilibrium27(
+        rho_init,
+        torch.zeros_like(rho_init),
+        torch.zeros_like(rho_init),
+        torch.zeros_like(rho_init),
+        device=dev,
+    )
+    g = _init_g_equilibrium(
+        phi, torch.zeros_like(phi), torch.zeros_like(phi), torch.zeros_like(phi), c, w
+    )
 
     # Sphere velocity and position accumulator
     vy_sphere = 0.0
     dy_accum = 0.0  # accumulated fractional displacement
 
-    print(f'=== Sphere Water Entry (Phase-Field + MRT) ===', flush=True)
-    print(f'Grid: {nx}x{ny}x{nz}  R={R_sphere}  waterline y={y_water}', flush=True)
-    print(f'Sphere start: cy={cy_s} (above water by {y_water - cy_s - R_sphere:.0f} cells)', flush=True)
-    print(f'gz={gz}  ρ_solid={rho_solid}  ρ_liq={rho_liq}  ρ_gas={rho_gas}', flush=True)
+    print(f"=== Sphere Water Entry (Phase-Field + MRT) ===", flush=True)
+    print(f"Grid: {nx}x{ny}x{nz}  R={R_sphere}  waterline y={y_water}", flush=True)
+    print(
+        f"Sphere start: cy={cy_s} (above water by {y_water - cy_s - R_sphere:.0f} cells)",
+        flush=True,
+    )
+    print(f"gz={gz}  ρ_solid={rho_solid}  ρ_liq={rho_liq}  ρ_gas={rho_gas}", flush=True)
     print(flush=True)
 
     ts, cy_track, vy_track, splash_track = [], [], [], []
@@ -114,25 +131,31 @@ def run_sphere_entry(nx=48, ny=128, nz=48, n_steps=4000,
         uz_post = (f * cz3d).sum(0) / rho_post.clamp(min=1e-6)
 
         # Density replacement
-        feq_new = equilibrium27(rho_field.clamp(min=1e-6, max=5.0),
-                                ux_post.clamp(-0.5, 0.5),
-                                uy_post.clamp(-0.5, 0.5),
-                                uz_post.clamp(-0.5, 0.5), device=dev)
-        feq_old = equilibrium27(rho_post.clamp(min=1e-6, max=5.0),
-                                ux_post.clamp(-0.5, 0.5),
-                                uy_post.clamp(-0.5, 0.5),
-                                uz_post.clamp(-0.5, 0.5), device=dev)
+        feq_new = equilibrium27(
+            rho_field.clamp(min=1e-6, max=5.0),
+            ux_post.clamp(-0.5, 0.5),
+            uy_post.clamp(-0.5, 0.5),
+            uz_post.clamp(-0.5, 0.5),
+            device=dev,
+        )
+        feq_old = equilibrium27(
+            rho_post.clamp(min=1e-6, max=5.0),
+            ux_post.clamp(-0.5, 0.5),
+            uy_post.clamp(-0.5, 0.5),
+            uz_post.clamp(-0.5, 0.5),
+            device=dev,
+        )
         f = f - feq_old + feq_new
 
         # D3Q27 collision — all with Smagorinsky LES (C_s=0.1)
         Cs = 0.1  # Smagorinsky constant
-        if collision == 'kbc':
+        if collision == "kbc":
             f = collide_kbc_d3q27(f, tau_f, C_s=Cs)
-        elif collision == 'cascaded':
+        elif collision == "cascaded":
             f = collide_cascaded_d3q27(f, tau_f, C_s=Cs)
-        elif collision == 'cumulant':
+        elif collision == "cumulant":
             f = collide_cumulant_d3q27(f, tau_f, C_s=Cs)
-        elif collision == 'smagorinsky':
+        elif collision == "smagorinsky":
             f = collide_smagorinsky_mrt27(f, tau_f, C_s=Cs)
         else:  # mrt27
             f = collide_mrt27(f, tau_f)
@@ -153,19 +176,31 @@ def run_sphere_entry(nx=48, ny=128, nz=48, n_steps=4000,
         Fy = Fy_grav + Fy_st
         Fz = Fz_st
         cu_force = cx3d * Fx.unsqueeze(0) + cy3d * Fy.unsqueeze(0) + cz3d * Fz.unsqueeze(0)
-        f = f + (1.0 - 0.5/tau_f) * w * cu_force / cs2
+        f = f + (1.0 - 0.5 / tau_f) * w * cu_force / cs2
         f = f.clamp(min=0.0, max=5.0)
 
         # === 5. Phase field update (FD Cahn-Hilliard + anti-diffusion) ===
         ux_s = ux.clamp(-0.5, 0.5)
         uy_s = uy.clamp(-0.5, 0.5)
         uz_s = uz.clamp(-0.5, 0.5)
-        dphi_dx = torch.where(ux_s > 0, phi - torch.roll(phi, 1, dims=2),
-                              torch.roll(phi, -1, dims=2) - phi) * ux_s
-        dphi_dy = torch.where(uy_s > 0, phi - torch.roll(phi, 1, dims=1),
-                              torch.roll(phi, -1, dims=1) - phi) * uy_s
-        dphi_dz = torch.where(uz_s > 0, phi - torch.roll(phi, 1, dims=0),
-                              torch.roll(phi, -1, dims=0) - phi) * uz_s
+        dphi_dx = (
+            torch.where(
+                ux_s > 0, phi - torch.roll(phi, 1, dims=2), torch.roll(phi, -1, dims=2) - phi
+            )
+            * ux_s
+        )
+        dphi_dy = (
+            torch.where(
+                uy_s > 0, phi - torch.roll(phi, 1, dims=1), torch.roll(phi, -1, dims=1) - phi
+            )
+            * uy_s
+        )
+        dphi_dz = (
+            torch.where(
+                uz_s > 0, phi - torch.roll(phi, 1, dims=0), torch.roll(phi, -1, dims=0) - phi
+            )
+            * uz_s
+        )
         phi_adv = phi - (dphi_dx + dphi_dy + dphi_dz)
 
         lap_phi_adv = _laplacian_3d(phi_adv)
@@ -186,8 +221,8 @@ def run_sphere_entry(nx=48, ny=128, nz=48, n_steps=4000,
         else:
             cy_s_now = cy_s
         # Blending: 1 near sphere (evolved → splash), 0 far (prescribed → stable)
-        sphere_dist = torch.sqrt((xx - cx_s)**2 + (yy - cy_s_now)**2 + (zz - cz_s)**2)
-        blend = torch.exp(-((sphere_dist - R_sphere)**2) / (2.0 * (R_sphere * 0.5)**2))
+        sphere_dist = torch.sqrt((xx - cx_s) ** 2 + (yy - cy_s_now) ** 2 + (zz - cz_s) ** 2)
+        blend = torch.exp(-((sphere_dist - R_sphere) ** 2) / (2.0 * (R_sphere * 0.5) ** 2))
         blend = blend.clamp(0, 1)
         phi_blend = phi_presc * (1.0 - blend) + phi_new * blend
         phi_blend = phi_blend.clamp(-1.0, 1.0)
@@ -266,10 +301,10 @@ def run_sphere_entry(nx=48, ny=128, nz=48, n_steps=4000,
             if 0 <= x_edge < nx:
                 col = phi_blend[z_center, :, x_edge]  # phi vs y at sphere edge
             else:
-                col = phi_blend[z_center, :, nx//2]
+                col = phi_blend[z_center, :, nx // 2]
             # Find interface (where phi crosses 0)
-            for iy in range(ny-1, 0, -1):
-                if col[iy] < 0 and col[iy-1] >= 0:
+            for iy in range(ny - 1, 0, -1):
+                if col[iy] < 0 and col[iy - 1] >= 0:
                     splash = iy - y_water
                     break
             else:
@@ -284,12 +319,15 @@ def run_sphere_entry(nx=48, ny=128, nz=48, n_steps=4000,
             splash_track.append(splash)
 
             status = "ABOVE" if cy_now < y_water else "SUBMERGED"
-            print(f'step {step:4d}: cy={cy_now:.1f} vy={vy_sphere:+.4f} '
-                  f'sub={sub_frac:.2f} Re={Re:.0f} '
-                  f'Cd_meas={Cd_measured:.3f}/{Cd_benchmark:.2f} '
-                  f'splash={splash:+.1f} '
-                  f'F_g={F_grav_s:.3f} F_b={F_buoy_s:.3f} F_d={F_drag:.3f} '
-                  f'φ=[{phi_min:.2f},{phi_max:.2f}] {status}', flush=True)
+            print(
+                f"step {step:4d}: cy={cy_now:.1f} vy={vy_sphere:+.4f} "
+                f"sub={sub_frac:.2f} Re={Re:.0f} "
+                f"Cd_meas={Cd_measured:.3f}/{Cd_benchmark:.2f} "
+                f"splash={splash:+.1f} "
+                f"F_g={F_grav_s:.3f} F_b={F_buoy_s:.3f} F_d={F_drag:.3f} "
+                f"φ=[{phi_min:.2f},{phi_max:.2f}] {status}",
+                flush=True,
+            )
 
     return np.array(ts), np.array(cy_track), np.array(vy_track), np.array(splash_track)
 
@@ -305,39 +343,51 @@ def _init_g_equilibrium(phi, ux, uy, uz, c, w):
 
 
 def _laplacian_3d(field):
-    return (torch.roll(field, 1, dims=0) + torch.roll(field, -1, dims=0)
-            + torch.roll(field, 1, dims=1) + torch.roll(field, -1, dims=1)
-            + torch.roll(field, 1, dims=2) + torch.roll(field, -1, dims=2)
-            - 6.0 * field)
+    return (
+        torch.roll(field, 1, dims=0)
+        + torch.roll(field, -1, dims=0)
+        + torch.roll(field, 1, dims=1)
+        + torch.roll(field, -1, dims=1)
+        + torch.roll(field, 1, dims=2)
+        + torch.roll(field, -1, dims=2)
+        - 6.0 * field
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
-    p = argparse.ArgumentParser(description='Sphere water entry: Phase-Field + MRT')
-    p.add_argument('--nx', type=int, default=48)
-    p.add_argument('--ny', type=int, default=128)
-    p.add_argument('--nz', type=int, default=48)
-    p.add_argument('--steps', type=int, default=4000)
-    p.add_argument('--device', default='sdaa:0')
-    p.add_argument('--R', type=float, default=6.0, help='Sphere radius')
-    p.add_argument('--gz', type=float, default=0.001, help='Gravity')
-    p.add_argument('--collision', default='mrt27',
-                   choices=['mrt27', 'kbc', 'cascaded', 'cumulant', 'smagorinsky'],
-                   help='D3Q27 collision: mrt27, kbc, cascaded, cumulant, smagorinsky')
+
+    p = argparse.ArgumentParser(description="Sphere water entry: Phase-Field + MRT")
+    p.add_argument("--nx", type=int, default=48)
+    p.add_argument("--ny", type=int, default=128)
+    p.add_argument("--nz", type=int, default=48)
+    p.add_argument("--steps", type=int, default=4000)
+    p.add_argument("--device", default="sdaa:0")
+    p.add_argument("--R", type=float, default=6.0, help="Sphere radius")
+    p.add_argument("--gz", type=float, default=0.001, help="Gravity")
+    p.add_argument(
+        "--collision",
+        default="mrt27",
+        choices=["mrt27", "kbc", "cascaded", "cumulant", "smagorinsky"],
+        help="D3Q27 collision: mrt27, kbc, cascaded, cumulant, smagorinsky",
+    )
     g = p.parse_args()
 
-    print('='*60)
-    ts, cy, vy, splash = run_sphere_entry(g.nx, g.ny, g.nz, g.steps, g.device,
-                                           g.R, g.gz, g.collision)
+    print("=" * 60)
+    ts, cy, vy, splash = run_sphere_entry(
+        g.nx, g.ny, g.nz, g.steps, g.device, g.R, g.gz, g.collision
+    )
     print()
-    print('='*60)
-    print('=== SPHERE WATER ENTRY SUMMARY ===')
-    print(f'Sphere: cy {cy[0]:.1f} → {cy[-1]:.1f} (penetration {cy[-1]-cy[0]:.1f} cells)')
-    print(f'Velocity: {vy[0]:.4f} → {vy[-1]:.4f}')
-    print(f'Splash: {splash[0]:.1f} → {splash[-1]:.1f}')
+    print("=" * 60)
+    print("=== SPHERE WATER ENTRY SUMMARY ===")
+    print(f"Sphere: cy {cy[0]:.1f} → {cy[-1]:.1f} (penetration {cy[-1] - cy[0]:.1f} cells)")
+    print(f"Velocity: {vy[0]:.4f} → {vy[-1]:.4f}")
+    print(f"Splash: {splash[0]:.1f} → {splash[-1]:.1f}")
     # Analytical terminal velocity: v = sqrt(8*(ρ_s-ρ_l)*R*g / (3*Cd*ρ_l))
     rho_s, rho_l, R_s, gz_val = 2.0, 1.0, g.R, g.gz
-    v_term_ana = math.sqrt(8*(rho_s-rho_l)*R_s*gz_val / (3*0.47*rho_l))
-    print(f'Terminal velocity: v_sim={abs(vy[-1]):.4f} v_ana={v_term_ana:.4f} '
-          f'(error={abs(abs(vy[-1])-v_term_ana)/v_term_ana*100:.1f}%)')
-    print(f'Cd benchmark: 0.47 (Re~1000)')
+    v_term_ana = math.sqrt(8 * (rho_s - rho_l) * R_s * gz_val / (3 * 0.47 * rho_l))
+    print(
+        f"Terminal velocity: v_sim={abs(vy[-1]):.4f} v_ana={v_term_ana:.4f} "
+        f"(error={abs(abs(vy[-1]) - v_term_ana) / v_term_ana * 100:.1f}%)"
+    )
+    print(f"Cd benchmark: 0.47 (Re~1000)")

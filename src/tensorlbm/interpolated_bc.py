@@ -13,6 +13,7 @@ Bouzidi, M., Firdaouss, M., & Lallemand, P. (2001).
 "Momentum transfer of a Boltzmann-lattice fluid with boundaries."
 Physics of Fluids, 13(11), 3452–3459.
 """
+
 from __future__ import annotations
 
 import torch
@@ -153,11 +154,11 @@ def compute_q_circle(
         # Neighbour in direction d
         # Is the neighbour a solid cell?
         dist_nb = (xx + dcx - cx) ** 2 + (yy + dcy - cy) ** 2
-        nb_is_solid = dist_nb <= radius ** 2
+        nb_is_solid = dist_nb <= radius**2
 
         # Is the current node a fluid cell?
         dist_self = (xx - cx) ** 2 + (yy - cy) ** 2
-        self_is_fluid = dist_self > radius ** 2
+        self_is_fluid = dist_self > radius**2
 
         boundary = self_is_fluid & nb_is_solid  # (ny, nx)
 
@@ -170,11 +171,11 @@ def compute_q_circle(
         #   |c|^2 t^2 + 2(c . d_vec) t + (|d_vec|^2 - r^2) = 0
         dx = xx - cx
         dy = yy - cy
-        a_coef = dcx ** 2 + dcy ** 2  # |c|^2 (1.0 or 2.0)
+        a_coef = dcx**2 + dcy**2  # |c|^2 (1.0 or 2.0)
         b_coef = 2.0 * (dcx * dx + dcy * dy)
-        c_coef = dx ** 2 + dy ** 2 - radius ** 2
+        c_coef = dx**2 + dy**2 - radius**2
 
-        discriminant = b_coef ** 2 - 4.0 * a_coef * c_coef
+        discriminant = b_coef**2 - 4.0 * a_coef * c_coef
         # Only evaluate where boundary is True and discriminant >= 0
         safe_disc = torch.where(
             boundary & (discriminant >= 0.0),
@@ -195,11 +196,15 @@ def compute_q_circle(
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
 
-        q_val = torch.where(
-            valid1 & valid2,
-            torch.min(q1, q2),
-            torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
-        ).clamp(1e-6, 1.0).float()
+        q_val = (
+            torch.where(
+                valid1 & valid2,
+                torch.min(q1, q2),
+                torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
+            )
+            .clamp(1e-6, 1.0)
+            .float()
+        )
 
         fluid_boundary_mask[d] = boundary
         q_field[d] = torch.where(boundary, q_val, q_field[d])
@@ -344,10 +349,10 @@ def compute_q_sphere(
             continue  # rest direction
 
         dist_nb = (xx + dcx - cx) ** 2 + (yy + dcy - cy) ** 2 + (zz + dcz - cz) ** 2
-        nb_is_solid = dist_nb <= radius ** 2
+        nb_is_solid = dist_nb <= radius**2
 
         dist_self = (xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2
-        self_is_fluid = dist_self > radius ** 2
+        self_is_fluid = dist_self > radius**2
 
         boundary = self_is_fluid & nb_is_solid  # (nz, ny, nx)
 
@@ -358,11 +363,11 @@ def compute_q_sphere(
         dx = xx - cx
         dy = yy - cy
         dz = zz - cz
-        a_coef = dcx ** 2 + dcy ** 2 + dcz ** 2
+        a_coef = dcx**2 + dcy**2 + dcz**2
         b_coef = 2.0 * (dcx * dx + dcy * dy + dcz * dz)
-        c_coef = dx ** 2 + dy ** 2 + dz ** 2 - radius ** 2
+        c_coef = dx**2 + dy**2 + dz**2 - radius**2
 
-        discriminant = b_coef ** 2 - 4.0 * a_coef * c_coef
+        discriminant = b_coef**2 - 4.0 * a_coef * c_coef
         safe_disc = torch.where(
             boundary & (discriminant >= 0.0),
             discriminant,
@@ -379,11 +384,15 @@ def compute_q_sphere(
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
 
-        q_val = torch.where(
-            valid1 & valid2,
-            torch.min(q1, q2),
-            torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
-        ).clamp(1e-6, 1.0).float()
+        q_val = (
+            torch.where(
+                valid1 & valid2,
+                torch.min(q1, q2),
+                torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
+            )
+            .clamp(1e-6, 1.0)
+            .float()
+        )
 
         fluid_boundary_mask[d] = boundary
         q_field[d] = torch.where(boundary, q_val, q_field[d])

@@ -32,6 +32,7 @@ from tensorlbm.d3q27_sphere_flow import SphereFlowD3Q27Config
 # D3Q27 lattice constants
 # ---------------------------------------------------------------------------
 
+
 class TestD3Q27Lattice:
     def test_weights_sum_to_one(self) -> None:
         assert abs(float(W27.sum().item()) - 1.0) < 1e-6
@@ -47,14 +48,13 @@ class TestD3Q27Lattice:
     def test_velocity_opposite_negation(self) -> None:
         for i in range(27):
             j = int(OPPOSITE27[i].item())
-        assert torch.equal(C27[i], -C27[j]), (
-                f"Direction {i}: C[{i}]={C27[i]} != -C[{j}]={C27[j]}"
-            )
+        assert torch.equal(C27[i], -C27[j]), f"Direction {i}: C[{i}]={C27[i]} != -C[{j}]={C27[j]}"
 
 
 # ---------------------------------------------------------------------------
 # D3Q27 equilibrium
 # ---------------------------------------------------------------------------
+
 
 class TestEquilibrium27:
     def test_float64_equilibrium_uses_unrounded_weights(self) -> None:
@@ -101,6 +101,7 @@ class TestEquilibrium27:
 # D3Q27 streaming
 # ---------------------------------------------------------------------------
 
+
 class TestStream27:
     def test_preserves_shape(self) -> None:
         nz, ny, nx = 4, 5, 6
@@ -129,6 +130,7 @@ class TestStream27:
 # ---------------------------------------------------------------------------
 # D3Q27 collision operators
 # ---------------------------------------------------------------------------
+
 
 class TestCollide27BGK:
     def test_preserves_shape(self) -> None:
@@ -233,6 +235,7 @@ class TestSmagorinsky27:
 # D3Q27 boundaries
 # ---------------------------------------------------------------------------
 
+
 class TestD3Q27Boundaries:
     def test_bounce_back_preserves_shape(self) -> None:
         nz, ny, nx = 6, 8, 10
@@ -308,6 +311,7 @@ class TestD3Q27Boundaries:
 # correct_mass27
 # ---------------------------------------------------------------------------
 
+
 class TestCorrectMass27:
     def test_restores_target_mass(self) -> None:
         nz, ny, nx = 4, 5, 6
@@ -321,6 +325,7 @@ class TestCorrectMass27:
 # ---------------------------------------------------------------------------
 # SphereFlowD3Q27Config
 # ---------------------------------------------------------------------------
+
 
 class TestSphereFlowD3Q27Config:
     def test_valid_config_does_not_raise(self) -> None:

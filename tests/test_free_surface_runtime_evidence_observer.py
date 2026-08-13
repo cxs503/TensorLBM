@@ -1,4 +1,5 @@
 """Runtime-shaped evidence observer tests: detached, explicit, and fail closed."""
+
 from __future__ import annotations
 
 from tensorlbm.free_surface_runtime_evidence_observer import (
@@ -15,10 +16,20 @@ def _explicit_runtime_evidence() -> dict[str, object]:
         "lattice": "D3Q19",
         "conversions": ({"cell": (3, 4, 5), "before": "I", "after": "G"},),
         "donor_ownership": (
-            {"cell": (3, 4, 5), "state": "I", "independent_mass_owner": "independent_mass", "population_owner": "f"},
+            {
+                "cell": (3, 4, 5),
+                "state": "I",
+                "independent_mass_owner": "independent_mass",
+                "population_owner": "f",
+            },
         ),
         "receiver_ownership": (
-            {"cell": (3, 4, 6), "state": "I", "independent_mass_owner": "independent_mass", "population_owner": "f"},
+            {
+                "cell": (3, 4, 6),
+                "state": "I",
+                "independent_mass_owner": "independent_mass",
+                "population_owner": "f",
+            },
         ),
         "population_transfer": {
             "actual_f_population_transfer": True,

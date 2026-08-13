@@ -59,6 +59,47 @@ def bounce_back_cells_27(f: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     return torch.where(mask.unsqueeze(0), f[opp], f)
 
 
+def far_field_bc_27(
+    f: torch.Tensor,
+    u_in: float,
+    obstacle_mask: torch.Tensor | None = None,
+    uy: float = 0.0,
+    uz: float = 0.0,
+) -> torch.Tensor:
+    """Free-stream (Dirichlet) far-field boundary condition for D3Q27.
+
+    Mirrors :func:`tensorlbm.boundaries3d.far_field_bc_3d` for the D3Q27
+    lattice.  Imposes the free-stream equilibrium on the inlet and all
+    four lateral faces (y±, z±), zero-gradient outlet at x=nx-1.
+
+    Args:
+        f: Distribution tensor of shape ``(27, nz, ny, nx)``.
+        u_in: Free-stream x-velocity.
+        obstacle_mask: Optional solid mask; if provided, bounce-back is
+            applied to solid cells after the far-field update.
+        uy: Free-stream y-velocity (default 0).
+        uz: Free-stream z-velocity (default 0).
+
+    Returns:
+        Updated distribution tensor (same shape).
+    """
+    rho1 = torch.ones((f.shape[1], f.shape[2], f.shape[3]), dtype=f.dtype, device=f.device)
+    feq = equilibrium27(
+        rho1, torch.full_like(rho1, u_in), torch.full_like(rho1, uy),
+        torch.full_like(rho1, uz), device=f.device,
+    )
+    f = f.clone()
+    f[:, :, :, 0] = feq[:, :, :, 0]          # inlet (free stream)
+    f[:, :, :, -1] = f[:, :, :, -2]          # outlet (zero gradient)
+    f[:, 0, :, :] = feq[:, 0, :, :]          # y- lateral
+    f[:, -1, :, :] = feq[:, -1, :, :]        # y+ lateral
+    f[:, :, 0, :] = feq[:, :, 0, :]          # z- lateral
+    f[:, :, -1, :] = feq[:, :, -1, :]        # z+ lateral
+    if obstacle_mask is not None:
+        f = bounce_back_cells_27(f, obstacle_mask)
+    return f
+
+
 def zou_he_inlet_velocity_27(
     f: torch.Tensor,
     u_in: float,
@@ -204,37 +245,6 @@ def make_channel_wall_mask_27(
     return wall_mask
 
 
-def far_field_bc_27(
-    f: torch.Tensor,
-    u_in: float,
-    obstacle_mask: torch.Tensor | None = None,
-    uy: float = 0.0,
-    uz: float = 0.0,
-) -> torch.Tensor:
-    """Free-stream (Dirichlet) far-field boundary condition for D3Q27.
-
-    D3Q27 analogue of :func:`tensorlbm.boundaries3d.far_field_bc_3d`.
-    Imposes the free-stream equilibrium on the inlet and **all four lateral
-    faces** (y±, z±), zero-gradient outlet at x=nx-1.  Removes blockage so
-    the body sees effectively unbounded flow.
-    """
-    rho1 = torch.ones((f.shape[1], f.shape[2], f.shape[3]), dtype=f.dtype, device=f.device)
-    feq = equilibrium27(
-        rho1, torch.full_like(rho1, u_in), torch.full_like(rho1, uy),
-        torch.full_like(rho1, uz), device=f.device,
-    )
-    f = f.clone()
-    f[:, :, :, 0] = feq[:, :, :, 0]          # inlet (free stream)
-    f[:, :, :, -1] = f[:, :, :, -2]          # outlet (zero gradient)
-    f[:, 0, :, :] = feq[:, 0, :, :]          # y- lateral
-    f[:, -1, :, :] = feq[:, -1, :, :]        # y+ lateral
-    f[:, :, 0, :] = feq[:, :, 0, :]          # z- lateral
-    f[:, :, -1, :] = feq[:, :, -1, :]        # z+ lateral
-    if obstacle_mask is not None:
-        f = bounce_back_cells_27(f, obstacle_mask)
-    return f
-
-
 def apply_zou_he_channel_boundaries_27(
     f: torch.Tensor,
     u_in: float,
@@ -265,5 +275,4 @@ __all__ = [
     "zou_he_outlet_pressure_27",
     "make_channel_wall_mask_27",
     "apply_zou_he_channel_boundaries_27",
-    "far_field_bc_27",
 ]

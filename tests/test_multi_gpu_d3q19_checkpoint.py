@@ -1,4 +1,5 @@
 """Independent long-run torchrun-job checkpoint/restart coverage for D3Q19 Gloo."""
+
 from __future__ import annotations
 
 import os
@@ -8,7 +9,7 @@ from pathlib import Path
 import torch
 
 
-_WORKER = r'''
+_WORKER = r"""
 import hashlib
 import json
 import sys
@@ -90,10 +91,10 @@ if rank == 0:
         "owned_widths": [3, 3, 4], "all19_owned_elements": actual.numel(),
     }, sort_keys=True), flush=True)
 dist.destroy_process_group()
-'''
+"""
 
 
-_LOAD_WORKER = r'''
+_LOAD_WORKER = r"""
 import sys
 import torch.distributed as dist
 from tensorlbm.multi_gpu import D3Q19GlooTransport
@@ -107,7 +108,7 @@ except RuntimeError as exc:
     dist.destroy_process_group()
     raise SystemExit(0)
 raise AssertionError("invalid checkpoint set was accepted")
-'''
+"""
 
 
 def _torchrun(root: Path, worker: Path, *args: Path | str) -> subprocess.CompletedProcess[str]:
@@ -115,11 +116,18 @@ def _torchrun(root: Path, worker: Path, *args: Path | str) -> subprocess.Complet
     env["PYTHONPATH"] = str(root / "src") + os.pathsep + env.get("PYTHONPATH", "")
     return subprocess.run(
         ["torchrun", "--standalone", "--nproc_per_node=3", str(worker), *map(str, args)],
-        cwd=root, env=env, text=True, capture_output=True, timeout=180, check=False,
+        cwd=root,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=180,
+        check=False,
     )
 
 
-def test_three_rank_20_step_restart_across_independent_torchrun_jobs_is_exact_and_fail_closed(tmp_path: Path) -> None:
+def test_three_rank_20_step_restart_across_independent_torchrun_jobs_is_exact_and_fail_closed(
+    tmp_path: Path,
+) -> None:
     root = Path(__file__).resolve().parents[1]
     worker, loader = tmp_path / "worker.py", tmp_path / "loader.py"
     worker.write_text(_WORKER)
@@ -152,7 +160,11 @@ def test_three_rank_20_step_restart_across_independent_torchrun_jobs_is_exact_an
     rank1 = checkpoint / "rank-1.pt"
     pristine = torch.load(rank1, weights_only=True)
     os.unlink(rank1)
-    for mutation, expected in (("missing", "missing"), ("generation", "generation"), ("digest", "digest")):
+    for mutation, expected in (
+        ("missing", "missing"),
+        ("generation", "generation"),
+        ("digest", "digest"),
+    ):
         if mutation != "missing":
             payload = dict(pristine)
             if mutation == "generation":

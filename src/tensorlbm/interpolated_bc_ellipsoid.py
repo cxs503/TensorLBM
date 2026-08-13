@@ -2,6 +2,7 @@
 
 Adds :func:`compute_q_ellipsoid` to the interpolated BC module.
 """
+
 from __future__ import annotations
 
 import math
@@ -100,8 +101,8 @@ def compute_q_ellipsoid(
         zb_n = dz_n
 
         # Ellipsoid inequality: (x/a)² + (y/b)² + (z/b)² ≤ 1
-        r2_s = (xb_s / a)**2 + (yb_s / b)**2 + (zb_s / b)**2
-        r2_n = (xb_n / a)**2 + (yb_n / b)**2 + (zb_n / b)**2
+        r2_s = (xb_s / a) ** 2 + (yb_s / b) ** 2 + (zb_s / b) ** 2
+        r2_n = (xb_n / a) ** 2 + (yb_n / b) ** 2 + (zb_n / b) ** 2
 
         self_is_fluid = r2_s > 1.0
         nb_is_solid = r2_n <= 1.0
@@ -144,11 +145,15 @@ def compute_q_ellipsoid(
         valid1 = (t1 > 1e-10) & (q1 <= 1.0 + 1e-10)
         valid2 = (t2 > 1e-10) & (q2 <= 1.0 + 1e-10)
 
-        q_val = torch.where(
-            valid1 & valid2,
-            torch.min(q1, q2),
-            torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
-        ).clamp(1e-6, 1.0).float()
+        q_val = (
+            torch.where(
+                valid1 & valid2,
+                torch.min(q1, q2),
+                torch.where(valid1, q1, torch.where(valid2, q2, torch.full_like(q1, 0.5))),
+            )
+            .clamp(1e-6, 1.0)
+            .float()
+        )
 
         fluid_boundary_mask[d] = boundary
         q_field[d] = torch.where(boundary, q_val, q_field[d])

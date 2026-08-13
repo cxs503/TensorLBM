@@ -20,7 +20,6 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from . import job_manager  # noqa: E402
 from .middleware import install_production_middleware  # noqa: E402
-
 # Import routers; skip any that are incomplete (under active development)
 _router_imports: dict[str, object] = {}
 for _name, _mod in [
@@ -36,6 +35,7 @@ for _name, _mod in [
     ("cylinder_interactive", "cylinder_interactive"),
     ("data_catalog", "data_catalog"),
     ("jobs", "jobs"),
+    ("marine", "marine"),
     ("notifications", "notifications"),
     ("orchestration", "orchestration"),
     ("postprocess", "postprocess"),
@@ -67,6 +67,7 @@ cylinder_device_sim = _router_imports.get("cylinder_device_sim")
 cylinder_interactive = _router_imports.get("cylinder_interactive")
 data_catalog = _router_imports.get("data_catalog")
 jobs = _router_imports.get("jobs")
+marine = _router_imports.get("marine")
 notifications = _router_imports.get("notifications")
 orchestration = _router_imports.get("orchestration")
 postprocess = _router_imports.get("postprocess")
@@ -181,6 +182,7 @@ _router_registry = [
     (notifications, "/api/notifications", "Notifications"),
     (xflow_streaming, "/api/stream", "XFlow Streaming"),
     (xflow_projects, "/api/xflow-projects", "XFlow Projects"),
+    (marine, "/api/marine", "Marine Engineering"),
 ]
 for _mod, _prefix, _tag in _router_registry:
     if _mod is not None:

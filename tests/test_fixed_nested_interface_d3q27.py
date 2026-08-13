@@ -1,4 +1,5 @@
 """Tests for the isolated fixed-nested D3Q27 planar interface primitive."""
+
 from __future__ import annotations
 
 import torch
@@ -10,7 +11,9 @@ from tensorlbm.fixed_nested_interface import (
 )
 
 
-def _face_equilibrium(rho: float, velocity: tuple[float, float, float], shape: tuple[int, int]) -> torch.Tensor:
+def _face_equilibrium(
+    rho: float, velocity: tuple[float, float, float], shape: tuple[int, int]
+) -> torch.Tensor:
     """Return one uniform D3Q27 face in the helper's ``(Q, t0, t1)`` layout."""
     rho_field = torch.full(shape, rho, dtype=torch.float64)
     # equilibrium27 expects a volumetric ``(nz, ny, nx)`` field; take nz=1.
@@ -52,11 +55,11 @@ def test_planar_packet_conserves_volume_weighted_mass_and_momentum() -> None:
     coarse_outgoing[8, 0, 0] = 9.0  # Travels fine -> coarse; must not be transferred here.
     fine_incoming = torch.zeros(27, 2, 2, dtype=torch.float64)
 
-    fine_step = reconstruct_fine_incoming_from_coarse_d3q27(
-        coarse_outgoing, fine_incoming, normal
-    )
+    fine_step = reconstruct_fine_incoming_from_coarse_d3q27(coarse_outgoing, fine_incoming, normal)
     crossing = (C @ torch.tensor(normal)) > 0
-    coarse_packet = torch.where(crossing[:, None, None], coarse_outgoing, torch.zeros_like(coarse_outgoing))
+    coarse_packet = torch.where(
+        crossing[:, None, None], coarse_outgoing, torch.zeros_like(coarse_outgoing)
+    )
     coarse_mass, coarse_momentum = _moments(coarse_packet)
     fine_mass, fine_momentum = _moments(fine_step)
 

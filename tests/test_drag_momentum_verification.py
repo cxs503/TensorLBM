@@ -27,26 +27,29 @@ Main loop (verified-correct):
 Usage:
   PYTHONPATH=src python tests/test_drag_momentum_verification.py
 """
+
 import sys
 import math
 import torch
 import numpy as np
 
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 
 from tensorlbm.d3q19 import equilibrium3d, macroscopic3d, C, W
 from tensorlbm.solver3d import collide_bgk3d, stream3d
 from tensorlbm.boundaries3d import bounce_back_cells_3d
 from tensorlbm.drag_momentum import drag_momentum_exchange_vec
 from tensorlbm.drag_pressure import (
-    SurfaceMesh, drag_friction_integration, get_near_wall_2d,
+    SurfaceMesh,
+    drag_friction_integration,
+    get_near_wall_2d,
 )
 
 
 # ---------------------------------------------------------------------------
 # Step 1: Couette flow
 # ---------------------------------------------------------------------------
-def run_couette(device='sdaa:4'):
+def run_couette(device="sdaa:4"):
     """Couette flow: bottom wall solid (BB), top wall moving (equilibrium).
 
     Analytical: u(y) = U·(y-0.5)/(ny-1-0.5),  linear profile.
@@ -85,7 +88,7 @@ def run_couette(device='sdaa:4'):
     mesh = SurfaceMesh(near, nx_n, ny_n, nz_n)
 
     A_wall = nx * nz
-    dpS = 0.5 * 1.0 * u_top ** 2 * A_wall
+    dpS = 0.5 * 1.0 * u_top**2 * A_wall
 
     f = equilibrium3d(
         torch.ones(nz, ny, nx, device=d),
@@ -112,8 +115,10 @@ def run_couette(device='sdaa:4'):
         # 5. Top wall: moving equilibrium
         rho1 = torch.ones(nz, ny, nx, device=d)
         feq_top = equilibrium3d(
-            rho1, torch.full_like(rho1, u_top),
-            torch.zeros_like(rho1), torch.zeros_like(rho1),
+            rho1,
+            torch.full_like(rho1, u_top),
+            torch.zeros_like(rho1),
+            torch.zeros_like(rho1),
         )
         f[:, :, -1, :] = feq_top[:, :, -1, :]
         # 6. Streaming
@@ -146,18 +151,20 @@ def run_couette(device='sdaa:4'):
     print(f"  MEM result: {'PASS ✓' if me_pass else 'FAIL ✗'} (threshold <1%)")
 
     return {
-        'flow': 'Couette',
-        'exact': cf_exact,
-        'me': me_cf, 'me_err': me_err,
-        'pf': pf_cf, 'pf_err': pf_err,
-        'me_pass': me_pass,
+        "flow": "Couette",
+        "exact": cf_exact,
+        "me": me_cf,
+        "me_err": me_err,
+        "pf": pf_cf,
+        "pf_err": pf_err,
+        "me_pass": me_pass,
     }
 
 
 # ---------------------------------------------------------------------------
 # Step 2: Poiseuille flow
 # ---------------------------------------------------------------------------
-def run_poiseuille(device='sdaa:4'):
+def run_poiseuille(device="sdaa:4"):
     """Poiseuille flow: both walls solid (BB), body force drives flow.
 
     Analytical: u(y) = G/(2ν)·(y-0.5)·(H+0.5-y),  parabolic profile.
@@ -177,7 +184,7 @@ def run_poiseuille(device='sdaa:4'):
     nu = (tau - 0.5) / 3.0
     H = ny - 2  # 10
     u_max = 0.05
-    G = 2.0 * nu * u_max / H ** 2
+    G = 2.0 * nu * u_max / H**2
     n_steps = 3000
 
     V_fluid = nx * nz * H
@@ -251,11 +258,13 @@ def run_poiseuille(device='sdaa:4'):
     print(f"  MEM result: {'PASS ✓' if me_pass else 'FAIL ✗'} (threshold <1%)")
 
     return {
-        'flow': 'Poiseuille',
-        'exact': f_exact,
-        'me': me_fx, 'me_err': me_err,
-        'pf': pf_fx, 'pf_err': pf_err,
-        'me_pass': me_pass,
+        "flow": "Poiseuille",
+        "exact": f_exact,
+        "me": me_fx,
+        "me_err": me_err,
+        "pf": pf_fx,
+        "pf_err": pf_err,
+        "me_pass": me_pass,
     }
 
 
@@ -269,11 +278,15 @@ def print_cross_validation_table(results):
     print(f"  {'Flow':<12} {'Method':<22} {'Value':>12} {'Exact':>12} {'Err%':>8} {'Pass':>6}")
     print("  " + "-" * 66)
     for r in results:
-        me_ok = "✓" if r['me_err'] < 1.0 else "✗"
-        pf_ok = "✓" if r['pf_err'] < 1.0 else "✗"
-        print(f"  {r['flow']:<12} {'Momentum Exchange':<22} {r['me']:12.6f} {r['exact']:12.6f} {r['me_err']:7.4f}% {me_ok:>5}")
-        print(f"  {r['flow']:<12} {'Pressure Integration':<22} {r['pf']:12.6f} {r['exact']:12.6f} {r['pf_err']:7.4f}% {pf_ok:>5}")
-        agree = abs(r['me'] - r['pf']) / abs(r['exact']) * 100
+        me_ok = "✓" if r["me_err"] < 1.0 else "✗"
+        pf_ok = "✓" if r["pf_err"] < 1.0 else "✗"
+        print(
+            f"  {r['flow']:<12} {'Momentum Exchange':<22} {r['me']:12.6f} {r['exact']:12.6f} {r['me_err']:7.4f}% {me_ok:>5}"
+        )
+        print(
+            f"  {r['flow']:<12} {'Pressure Integration':<22} {r['pf']:12.6f} {r['exact']:12.6f} {r['pf_err']:7.4f}% {pf_ok:>5}"
+        )
+        agree = abs(r["me"] - r["pf"]) / abs(r["exact"]) * 100
         print(f"  {r['flow']:<12} {'→ agreement':<22} {'':>12} {'':>12} {agree:7.4f}%")
         print()
     print("  Notes:")
@@ -291,7 +304,7 @@ def main():
     print("║" + " 100% analytical: Couette + Poiseuille ".center(66) + "║")
     print("╚" + "═" * 66 + "╝")
 
-    device = 'sdaa:4' if torch.sdaa.is_available() else 'cpu'
+    device = "sdaa:4" if torch.sdaa.is_available() else "cpu"
     print(f"\n  Device: {device}")
 
     results = []
@@ -299,7 +312,7 @@ def main():
     results.append(run_poiseuille(device))
     print_cross_validation_table(results)
 
-    n_pass = sum(1 for r in results if r['me_pass'])
+    n_pass = sum(1 for r in results if r["me_pass"])
     print(f"\n  MEM verification: {n_pass}/{len(results)} passed")
     if n_pass == len(results):
         print("  ★ Momentum exchange drag method verified on 100% analytical flows!")
@@ -309,6 +322,6 @@ def main():
     return n_pass == len(results)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)

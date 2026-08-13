@@ -7,6 +7,7 @@ through the buffer layer (y+ ≈ 30) at the outermost layer.
 This is the Star-CCM+/OpenFOAM approach: prism layers follow the boundary
 layer growth, not a fixed geometric sequence.
 """
+
 import torch
 import math
 from typing import Optional
@@ -67,7 +68,7 @@ def generate_adaptive_prism(
             if 0 <= kk < nz and 0 <= jj < ny and 0 <= ii2 < nx and solid[kk, jj, ii2]:
                 n[ax] += float(-sgn)
         norm = n.norm()
-        normals[i] = n / norm if norm > 0.5 else torch.tensor([1., 0., 0.])
+        normals[i] = n / norm if norm > 0.5 else torch.tensor([1.0, 0.0, 0.0])
 
     # Gather u_tau at surface cells
     ut_surf = torch.zeros(N)
@@ -86,7 +87,7 @@ def generate_adaptive_prism(
 
         for k in range(n_layers):
             # Target y+ at this cell centre
-            yp_target = y_plus_first * (growth ** k)
+            yp_target = y_plus_first * (growth**k)
             # Height such that cell centre is at yp_target
             # y+ = y * u_tau / nu → y = y+ * nu / u_tau
             y_centre = yp_target * nu / ut
@@ -94,7 +95,7 @@ def generate_adaptive_prism(
             if k == 0:
                 h_k = 2.0 * y_centre  # wall to mid of first cell
             else:
-                y_prev = layer_centres[k-1, i].norm() if k > 0 else 0
+                y_prev = layer_centres[k - 1, i].norm() if k > 0 else 0
                 y_prev_actual = max(y_prev, 0.001)
                 h_k = 2.0 * (y_centre - y_prev_actual)
                 h_k = max(h_k, 0.001)  # prevent negative/zero
@@ -106,14 +107,14 @@ def generate_adaptive_prism(
             layer_yp[k, i] = cum_y * ut / nu  # y+ at cell centre
 
     return {
-        'layer_centres': layer_centres,
-        'layer_heights': layer_heights,
-        'layer_y_plus': layer_yp,
-        'n_surface': N,
-        'surface_centres': centres_0,
-        'surface_normals': normals,
-        'surface_indices': idx,
-        'adaptive': True,
+        "layer_centres": layer_centres,
+        "layer_heights": layer_heights,
+        "layer_y_plus": layer_yp,
+        "n_surface": N,
+        "surface_centres": centres_0,
+        "surface_normals": normals,
+        "surface_indices": idx,
+        "adaptive": True,
     }
 
 
@@ -137,24 +138,23 @@ def prism_velocity_from_yplus(
         u_prism: (n_layers, N_surface, 2) — tangential velocity at each cell
     """
     u = torch.zeros(n_layers, N_surface, 2)  # (u_tangent, u_normal)
-    layer_yp = prism['layer_y_plus']
+    layer_yp = prism["layer_y_plus"]
 
     for k in range(n_layers):
         yp_k = layer_yp[k]  # (N,)
         # u+ = y+ for y+ < 5, log-law beyond
-        u_plus = torch.where(yp_k < 5.0, yp_k,
-                             torch.log(yp_k.clamp(min=1.1)) / 0.41 + 5.0)
+        u_plus = torch.where(yp_k < 5.0, yp_k, torch.log(yp_k.clamp(min=1.1)) / 0.41 + 5.0)
         # u = u_tau * u_plus (tangential velocity magnitude)
         # Simplified: use u_tau as scalar average
         ut_avg = u_tau.mean().item() if isinstance(u_tau, torch.Tensor) else u_tau
         u[k, :, 0] = ut_avg * u_plus  # tangential
-        u[k, :, 1] = 0.0               # wall-normal ≈ 0
+        u[k, :, 1] = 0.0  # wall-normal ≈ 0
 
     return u
 
 
 # ── Integration test ──
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Testing adaptive prism generator...")
 
     # Mock cylinder
@@ -172,8 +172,7 @@ if __name__ == '__main__':
     nu = u_in * Df / re
     u_tau = torch.full((nz, ny, nx), u_in * 0.05)  # ~5% of u_in
 
-    prism = generate_adaptive_prism(solid, u_tau, nu, n_layers=5,
-                                     y_plus_first=1.0, growth=1.3)
+    prism = generate_adaptive_prism(solid, u_tau, nu, n_layers=5, y_plus_first=1.0, growth=1.3)
     print(f"Surfaces: {prism['n_surface']}")
     print(f"Layer y+ range: {prism['layer_y_plus'][:, 0].tolist()}")
     print(f"Layer heights (cell 0): {prism['layer_heights'][:, 0].tolist()}")

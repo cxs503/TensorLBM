@@ -16,6 +16,7 @@ The momentum exchange at the wall:
 
 For q=0.5 (flat wall): f_wall = f_opp → same as standard BB+ME (verified 0.005%).
 """
+
 from __future__ import annotations
 
 import torch
@@ -63,7 +64,7 @@ def drag_momentum_exchange_wall(
         # f_opp at fluid cell (post-stream, the known value from fluid side)
         f_opp_fluid = f[opp_d][mask]
         # f_prev values (pre-stream = post-collision)
-        fp_d = f_prev[d][mask]       # pre-stream f_d at fluid cell
+        fp_d = f_prev[d][mask]  # pre-stream f_d at fluid cell
         fp_opp = f_prev[opp_d][mask]  # pre-stream f_opp at fluid cell
 
         # BFL formula for f_d at wall:
@@ -74,7 +75,9 @@ def drag_momentum_exchange_wall(
 
         f_d_wall_lin = 2.0 * q * f_opp_fluid + (1.0 - 2.0 * q) * fp_d
         safe_q = torch.where(mask_quad, q, torch.ones_like(q))
-        f_d_wall_quad = f_opp_fluid / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+        f_d_wall_quad = (
+            f_opp_fluid / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+        )
         f_d_wall = torch.where(mask_lin, f_d_wall_lin, f_d_wall_quad)
 
         # BFL formula for f_opp at wall:
@@ -149,7 +152,9 @@ def drag_momentum_exchange_wall_full(
 
         f_d_wall_lin = 2.0 * q * f_opp_fluid + (1.0 - 2.0 * q) * fp_d
         safe_q = torch.where(mask_quad, q, torch.ones_like(q))
-        f_d_wall_quad = f_opp_fluid / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+        f_d_wall_quad = (
+            f_opp_fluid / (2.0 * safe_q) + (2.0 * safe_q - 1.0) / (2.0 * safe_q) * fp_opp
+        )
         f_d_wall = torch.where(mask_lin, f_d_wall_lin, f_d_wall_quad)
 
         # Ladd with BFL: F = (f_d[fluid] + f_opp_bfl) * c_d

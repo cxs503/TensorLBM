@@ -78,6 +78,7 @@ def _interp_kq(j_val: float) -> float:
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ActuatorDiskConfig:
     """Configuration for actuator disk propeller simulation.
@@ -161,6 +162,7 @@ class ActuatorDiskConfig:
 # Actuator disk force application
 # ============================================================================
 
+
 def apply_actuator_disk(
     ux: torch.Tensor,
     uy: torch.Tensor,
@@ -207,7 +209,7 @@ def apply_actuator_disk(
         torch.arange(nx, device=device, dtype=torch.float32),
         indexing="ij",
     )
-    r_sq = (yy - cy)**2 + (zz - cz)**2
+    r_sq = (yy - cy) ** 2 + (zz - cz) ** 2
     disk_mask = (r_sq >= R_hub**2) & (r_sq <= R**2) & (torch.abs(xx - cx) <= 1.0)
     r = torch.sqrt(r_sq.clamp(min=1e-10))
 
@@ -254,6 +256,7 @@ def apply_actuator_disk(
 # Simulation runner
 # ============================================================================
 
+
 def _compute_thrust_torque(
     fx_disk: torch.Tensor,
     fy_disk: torch.Tensor,
@@ -293,16 +296,15 @@ def run_actuator_disk_benchmark(
 
     print(f"Actuator Disk Propeller Benchmark")
     print(f"  Device:     {device}")
-    print(f"  Diameter:   {config.diameter} lu   "
-          f"Hub ratio: {config.hub_diameter_ratio}")
-    print(f"  RPM:        {config.rpm_lu} rps   "
-          f"Domain: {nx}x{ny}x{nz}")
+    print(f"  Diameter:   {config.diameter} lu   Hub ratio: {config.hub_diameter_ratio}")
+    print(f"  RPM:        {config.rpm_lu} rps   Domain: {nx}x{ny}x{nz}")
     print(f"  tau:        {config.tau:.3f}  Cs: {config.smagorinsky_cs:.2f}")
     print(f"  Steps:      {config.n_steps}  warmup: {config.warmup_steps}")
     print()
 
     run_dir = prepare_run_dir(
-        config.output_root, "actuator_disk",
+        config.output_root,
+        "actuator_disk",
         f"ad_D{int(config.diameter)}_rpm{int(config.rpm_lu)}_nx{nx}",
         config.overwrite,
     )
@@ -314,10 +316,9 @@ def run_actuator_disk_benchmark(
         J = u_in / (config.rpm_lu * config.diameter)
         kt_target = _interp_kt(max(0.1, min(1.1, J)))
         kq_target = _interp_kq(max(0.1, min(1.1, J)))
-        print(f"{'='*60}")
-        print(f"  u_in={u_in:.3f}  J={J:.3f}  "
-              f"KT_target={kt_target:.4f}  KQ_target={kq_target:.4f}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
+        print(f"  u_in={u_in:.3f}  J={J:.3f}  KT_target={kt_target:.4f}  KQ_target={kq_target:.4f}")
+        print(f"{'=' * 60}")
 
         # Initialize
         rho0 = torch.ones((nz, ny, nx), dtype=torch.float32, device=device)
@@ -331,9 +332,9 @@ def run_actuator_disk_benchmark(
             torch.arange(nx, device=device, dtype=torch.float32),
             indexing="ij",
         )
-        r_sq = (xx.permute(1, 0, 2) - cx)**2
-        hub_r_sq = (yy.permute(1, 0, 2) - cy)**2 + (zz.permute(1, 0, 2) - cz)**2
-        hub_mask = hub_r_sq <= (config.hub_radius * 1.5)**2
+        r_sq = (xx.permute(1, 0, 2) - cx) ** 2
+        hub_r_sq = (yy.permute(1, 0, 2) - cy) ** 2 + (zz.permute(1, 0, 2) - cz) ** 2
+        hub_mask = hub_r_sq <= (config.hub_radius * 1.5) ** 2
         wall_mask = make_channel_wall_mask_3d(nz, ny, nx, hub_mask, device=device)
 
         thrust_list: list[float] = []
@@ -350,8 +351,15 @@ def run_actuator_disk_benchmark(
 
             # Apply actuator disk body forces
             fx_ad, fy_ad, fz_ad = apply_actuator_disk(
-                ux, uy, uz, cx, cy, cz, config.diameter,
-                config.hub_diameter_ratio, config.rpm_lu,
+                ux,
+                uy,
+                uz,
+                cx,
+                cy,
+                cz,
+                config.diameter,
+                config.hub_diameter_ratio,
+                config.rpm_lu,
             )
             # Add forces to velocity (direct forcing)
             ux = ux + fx_ad
@@ -363,7 +371,9 @@ def run_actuator_disk_benchmark(
 
             # Boundary conditions
             f = apply_zou_he_channel_boundaries_3d(
-                f, u_in=u_in, wall_mask=wall_mask,
+                f,
+                u_in=u_in,
+                wall_mask=wall_mask,
                 obstacle_mask=hub_mask,
             )
 
@@ -378,8 +388,10 @@ def run_actuator_disk_benchmark(
                 n_samples = len(thrust_list)
                 T_avg = sum(thrust_list[-100:]) / max(min(n_samples, 100), 1) if thrust_list else 0
                 Q_avg = sum(torque_list[-100:]) / max(min(n_samples, 100), 1) if torque_list else 0
-                print(f"  step {step}/{config.n_steps} ({pct:.0f}%)  "
-                      f"T={T_avg:.2e}  Q={Q_avg:.2e}  elapsed={elapsed:.1f}s")
+                print(
+                    f"  step {step}/{config.n_steps} ({pct:.0f}%)  "
+                    f"T={T_avg:.2e}  Q={Q_avg:.2e}  elapsed={elapsed:.1f}s"
+                )
 
         # Compute KT, KQ from measured thrust/torque
         n2d4 = config.rpm_lu**2 * config.diameter**4
@@ -390,17 +402,25 @@ def run_actuator_disk_benchmark(
         kq_measured = Q_mean / n2d5 if n2d5 > 0 else 0
         eta = (J / (2.0 * math.pi)) * (kt_measured / kq_measured) if kq_measured > 0 else 0
 
-        print(f"  -> KT_prev={kt_target:.4f}  KT_meas={kt_measured:.6f}  "
-              f"KQ_meas={kq_measured:.6f}  eta={eta:.4f}\n")
+        print(
+            f"  -> KT_prev={kt_target:.4f}  KT_meas={kt_measured:.6f}  "
+            f"KQ_meas={kq_measured:.6f}  eta={eta:.4f}\n"
+        )
 
-        results.append({
-            "j": J, "u_in": u_in,
-            "kt_target": kt_target, "kq_target": kq_target,
-            "kt_measured": kt_measured, "kq_measured": kq_measured,
-            "eta_o": eta,
-            "thrust_mean": T_mean, "torque_mean": Q_mean,
-            "runtime_s": time.perf_counter() - t_start,
-        })
+        results.append(
+            {
+                "j": J,
+                "u_in": u_in,
+                "kt_target": kt_target,
+                "kq_target": kq_target,
+                "kt_measured": kt_measured,
+                "kq_measured": kq_measured,
+                "eta_o": eta,
+                "thrust_mean": T_mean,
+                "torque_mean": Q_mean,
+                "runtime_s": time.perf_counter() - t_start,
+            }
+        )
 
     # Write CSV
     csv_path = run_dir / "actuator_disk.csv"
@@ -408,23 +428,32 @@ def run_actuator_disk_benchmark(
         writer = csv.writer(fh)
         writer.writerow(["J", "KT_target", "KT_meas", "KQ_target", "KQ_meas", "eta"])
         for r in results:
-            writer.writerow([
-                f"{r['j']:.4f}", f"{r['kt_target']:.4f}",
-                f"{r['kt_measured']:.6f}", f"{r['kq_target']:.6f}",
-                f"{r['kq_measured']:.6f}", f"{r['eta_o']:.4f}",
-            ])
+            writer.writerow(
+                [
+                    f"{r['j']:.4f}",
+                    f"{r['kt_target']:.4f}",
+                    f"{r['kt_measured']:.6f}",
+                    f"{r['kq_target']:.6f}",
+                    f"{r['kq_measured']:.6f}",
+                    f"{r['eta_o']:.4f}",
+                ]
+            )
 
     # Summary table
-    print(f"\n{'='*65}")
+    print(f"\n{'=' * 65}")
     print("  Actuator Disk Results")
-    print(f"{'='*65}")
-    print(f"  {'J':>6s}  {'KT_target':>10s}  {'KT_meas':>10s}  "
-          f"{'KQ_target':>10s}  {'KQ_meas':>10s}  {'eta':>8s}")
-    print(f"  {'-'*55}")
+    print(f"{'=' * 65}")
+    print(
+        f"  {'J':>6s}  {'KT_target':>10s}  {'KT_meas':>10s}  "
+        f"{'KQ_target':>10s}  {'KQ_meas':>10s}  {'eta':>8s}"
+    )
+    print(f"  {'-' * 55}")
     for r in results:
-        print(f"  {r['j']:6.3f}  {r['kt_target']:10.4f}  "
-              f"{r['kt_measured']:10.6f}  {r['kq_target']:10.4f}  "
-              f"{r['kq_measured']:10.6f}  {r['eta_o']:8.4f}")
+        print(
+            f"  {r['j']:6.3f}  {r['kt_target']:10.4f}  "
+            f"{r['kt_measured']:10.6f}  {r['kq_target']:10.4f}  "
+            f"{r['kq_measured']:10.6f}  {r['eta_o']:8.4f}"
+        )
 
     metadata = {
         "name": "actuator_disk",

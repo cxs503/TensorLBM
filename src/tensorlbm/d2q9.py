@@ -1,3 +1,4 @@
+from __future__ import annotations
 import functools
 
 import torch
@@ -17,13 +18,10 @@ C = torch.tensor(
     ],
     dtype=torch.int64,
 )
-_W_VALUES = (
-    4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9,
-    1 / 36, 1 / 36, 1 / 36, 1 / 36,
+W = torch.tensor(
+    [4 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 9, 1 / 36, 1 / 36, 1 / 36, 1 / 36],
+    dtype=torch.float32,
 )
-W = torch.tensor(_W_VALUES, dtype=torch.float32)
-W_EXACT64 = torch.tensor(_W_VALUES, dtype=torch.float64)
-WEIGHT_PRECISION_SCHEME = "rational_binary64_cast_to_runtime_dtype_v1"
 OPPOSITE = torch.tensor([0, 3, 4, 1, 2, 7, 8, 5, 6], dtype=torch.int64)
 
 
@@ -33,11 +31,8 @@ def _c_on(device: torch.device) -> torch.Tensor:
 
 
 @functools.cache
-def _w_on(
-    device: torch.device,
-    dtype: torch.dtype = torch.float32,
-) -> torch.Tensor:
-    return W_EXACT64.to(device=device, dtype=dtype)
+def _w_on(device: torch.device) -> torch.Tensor:
+    return W.to(device)
 
 
 def equilibrium(
@@ -55,10 +50,10 @@ def equilibrium(
     if device is None:
         device = rho.device
     c = _c_on(device)
-    w = _w_on(device, rho.dtype).view(9, 1, 1)
+    w = _w_on(device).view(9, 1, 1)
 
     u_sq = ux * ux + uy * uy
-    cu = c[:, 0].view(9, 1, 1).to(rho.dtype) * ux + c[:, 1].view(9, 1, 1).to(rho.dtype) * uy
+    cu = c[:, 0].view(9, 1, 1) * ux + c[:, 1].view(9, 1, 1) * uy
     return w * rho.unsqueeze(0) * (1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * u_sq.unsqueeze(0))
 
 

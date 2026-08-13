@@ -18,6 +18,7 @@ Typical usage::
         buf.compute_macroscopic_into(f, lattice="D3Q19")
         # ... use buf.rho, buf.ux, buf.uy, buf.uz, buf.feq, etc.
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -116,9 +117,7 @@ class LBMStepBuffer:
             dtype: Tensor dtype (default ``torch.float32``).
         """
         if lattice not in _Q_FOR_LATTICE:
-            raise ValueError(
-                f"Unsupported lattice {lattice!r}; supported: {list(_Q_FOR_LATTICE)}"
-            )
+            raise ValueError(f"Unsupported lattice {lattice!r}; supported: {list(_Q_FOR_LATTICE)}")
         return cls(
             q=_Q_FOR_LATTICE[lattice],
             nz=nz,
@@ -190,8 +189,16 @@ class LBMStepBuffer:
     def reset(self) -> None:
         """Zero all buffers (useful for debugging)."""
         for t in (
-            self.f_post, self.feq, self.f_stream, self.fneq,
-            self.rho, self.ux, self.uy, self.uz, self.u_mag,
-            self.u_tau, self.y_plus,
+            self.f_post,
+            self.feq,
+            self.f_stream,
+            self.fneq,
+            self.rho,
+            self.ux,
+            self.uy,
+            self.uz,
+            self.u_mag,
+            self.u_tau,
+            self.y_plus,
         ):
             t.zero_()

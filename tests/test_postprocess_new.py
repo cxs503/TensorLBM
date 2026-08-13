@@ -1,4 +1,5 @@
 """Tests for added-mass and FFT post-processing helpers."""
+
 from __future__ import annotations
 
 import math

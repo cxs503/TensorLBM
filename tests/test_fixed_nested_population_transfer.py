@@ -1,4 +1,5 @@
 """Conservation tests for the isolated fixed 2:1 LBM population transfer."""
+
 from __future__ import annotations
 
 import pytest
@@ -47,10 +48,13 @@ def test_restriction_preserves_volume_weighted_mass_and_momentum(
     assert torch.allclose(8.0 * coarse_momentum, fine_momentum, rtol=0.0, atol=1e-12)
 
 
-@pytest.mark.parametrize(("equilibrium_fn", "q", "directions"), [
-    (equilibrium3d, 19, C19),
-    (equilibrium27, 27, C27),
-])
+@pytest.mark.parametrize(
+    ("equilibrium_fn", "q", "directions"),
+    [
+        (equilibrium3d, 19, C19),
+        (equilibrium27, 27, C27),
+    ],
+)
 def test_prolongation_preserves_uniform_moving_equilibrium_and_integrated_momentum(
     equilibrium_fn, q: int, directions: torch.Tensor
 ) -> None:

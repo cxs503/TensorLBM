@@ -10,6 +10,7 @@ Reference quantities follow the same non-dimensionalisation as the rest of
 TensorLBM (lattice units converted to SI via UnitConverter when metadata is
 supplied).
 """
+
 from __future__ import annotations
 
 import math
@@ -23,21 +24,24 @@ import torch
 # Data containers
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class StructuralProperties:
     """Material / geometry properties of the elastic body."""
-    youngs_modulus: float = 2.1e11   # Pa  (steel default)
+
+    youngs_modulus: float = 2.1e11  # Pa  (steel default)
     poisson_ratio: float = 0.3
-    density: float = 7850.0          # kg/m³
-    thickness: float = 0.01          # m  (plate/shell thickness or beam height)
-    length: float = 1.0              # m  (beam/plate span)
-    width: float = 0.1               # m  (cross-section width for beams)
-    damping_ratio: float = 0.02      # ζ
+    density: float = 7850.0  # kg/m³
+    thickness: float = 0.01  # m  (plate/shell thickness or beam height)
+    length: float = 1.0  # m  (beam/plate span)
+    width: float = 0.1  # m  (cross-section width for beams)
+    damping_ratio: float = 0.02  # ζ
 
 
 @dataclass
 class FSILoads:
     """Integrated fluid loads acting on a structural surface."""
+
     # Total force components [N] in lattice→SI converted units
     fx: float = 0.0
     fy: float = 0.0
@@ -56,6 +60,7 @@ class FSILoads:
 @dataclass
 class FSIResponse:
     """Structural response under the computed FSI loads."""
+
     # Tip/max deflection [m]
     max_deflection: float = 0.0
     # Max von-Mises stress [Pa]
@@ -79,16 +84,17 @@ class FSIResponse:
 # Load extraction
 # ---------------------------------------------------------------------------
 
+
 def extract_fsi_loads(
-    rho: torch.Tensor,          # (ny, nx) density field
-    ux: torch.Tensor,            # (ny, nx) x-velocity
-    uy: torch.Tensor,            # (ny, nx) y-velocity
-    obstacle_mask: torch.Tensor, # (ny, nx) bool – True inside solid
+    rho: torch.Tensor,  # (ny, nx) density field
+    ux: torch.Tensor,  # (ny, nx) x-velocity
+    uy: torch.Tensor,  # (ny, nx) y-velocity
+    obstacle_mask: torch.Tensor,  # (ny, nx) bool – True inside solid
     cs2: float = 1.0 / 3.0,
     rho_ref: float = 1.0,
     u_ref: float = 0.1,
     L_ref: float = 1.0,
-    dx_phys: float = 1.0,        # physical grid spacing [m]
+    dx_phys: float = 1.0,  # physical grid spacing [m]
 ) -> FSILoads:
     """Extract integrated pressure and viscous loads from 2-D LBM fields.
 
@@ -102,11 +108,17 @@ def extract_fsi_loads(
     # Surface cells: solid nodes that have at least one fluid neighbour
     pad_mask = torch.nn.functional.pad(
         obstacle_mask.float().unsqueeze(0).unsqueeze(0),
-        (1, 1, 1, 1), mode="constant", value=0,
+        (1, 1, 1, 1),
+        mode="constant",
+        value=0,
     ).squeeze()
     # 4-neighbour fluid fraction around each cell
-    fluid_n = (1 - pad_mask[:-2, 1:-1]) + (1 - pad_mask[2:, 1:-1]) + \
-              (1 - pad_mask[1:-1, :-2]) + (1 - pad_mask[1:-1, 2:])
+    fluid_n = (
+        (1 - pad_mask[:-2, 1:-1])
+        + (1 - pad_mask[2:, 1:-1])
+        + (1 - pad_mask[1:-1, :-2])
+        + (1 - pad_mask[1:-1, 2:])
+    )
     surface = obstacle_mask & (fluid_n > 0)
 
     if not surface.any():
@@ -119,7 +131,7 @@ def extract_fsi_loads(
 
     # Convert to physical pressure: p_phys = p_lbm * rho_phys * u_ref²
     # (here we keep rho_phys = 1 kg/m³ and scale by u_ref²)
-    scale_p = u_ref ** 2  # simplified non-dimensionalisation
+    scale_p = u_ref**2  # simplified non-dimensionalisation
 
     p_surf = p_lbm[surf_y, surf_x] * scale_p
 
@@ -127,14 +139,14 @@ def extract_fsi_loads(
     # τ ≈ μ * |∂u/∂n|  → use centred difference if neighbours available
     ux_surf = ux[surf_y, surf_x]
     uy_surf = uy[surf_y, surf_x]
-    shear_surf = torch.sqrt(ux_surf ** 2 + uy_surf ** 2) * scale_p * 0.1  # proxy
+    shear_surf = torch.sqrt(ux_surf**2 + uy_surf**2) * scale_p * 0.1  # proxy
 
     # Centroid of surface
     cx = surf_x.float().mean() * dx_phys
     cy = surf_y.float().mean() * dx_phys
 
     # Integrate (dA = dx_phys² per cell)
-    dA = dx_phys ** 2
+    dA = dx_phys**2
     fx = -p_surf.sum().item() * dA  # pressure acts inward (−n)
     fy = float(0.0)
     mz = (-(p_surf * (surf_x.float() * dx_phys - cx))).sum().item() * dA
@@ -158,13 +170,14 @@ def extract_fsi_loads(
 # Structural response (Euler–Bernoulli beam / Kirchhoff plate analogy)
 # ---------------------------------------------------------------------------
 
+
 def compute_structural_response(
     loads: FSILoads,
     props: StructuralProperties,
-    flow_speed: float = 1.0,          # m/s – representative inflow velocity
+    flow_speed: float = 1.0,  # m/s – representative inflow velocity
     characteristic_length: float = 0.1,  # m – diameter / chord
     strouhal: float = 0.2,
-    yield_stress: float = 2.5e8,      # Pa (mild steel)
+    yield_stress: float = 2.5e8,  # Pa (mild steel)
     coupling: Literal["one_way", "two_way"] = "one_way",
     two_way_tol: float = 1e-4,
     two_way_max_iter: int = 10,
@@ -199,13 +212,13 @@ def compute_structural_response(
     zeta = props.damping_ratio
 
     # Beam second moment of area  I = b*h³/12
-    I = b * h ** 3 / 12.0
+    I = b * h**3 / 12.0
 
     # Cantilever natural frequency: fn = (β_n L)² / (2π L²) * sqrt(EI / (ρA))
     # First mode: (βL)² ≈ 3.5160
     beta_L_sq = 3.5160
     A_cross = b * h
-    fn = (beta_L_sq / (2 * math.pi * L ** 2)) * math.sqrt(E * I / (rho_s * A_cross))
+    fn = (beta_L_sq / (2 * math.pi * L**2)) * math.sqrt(E * I / (rho_s * A_cross))
 
     # Reduced velocity
     Vr = flow_speed / (fn * characteristic_length) if fn > 0 else 0.0
@@ -214,11 +227,11 @@ def compute_structural_response(
     viv_lock_in = abs(Vr - 1.0 / strouhal) < 0.5 if strouhal > 0 else False
 
     # Total transverse load (use |fy| or |fx| – take the dominant one)
-    F_total = math.sqrt(loads.fx ** 2 + loads.fy ** 2 + loads.fz ** 2)
+    F_total = math.sqrt(loads.fx**2 + loads.fy**2 + loads.fz**2)
 
     def _deflection(F: float) -> float:
         """Cantilever tip deflection δ = F L³ / (3 E I)."""
-        return F * L ** 3 / (3.0 * E * I) if (E * I) > 0 else 0.0
+        return F * L**3 / (3.0 * E * I) if (E * I) > 0 else 0.0
 
     def _bending_stress(F: float) -> float:
         """Max bending stress at root: σ = M c / I, M = F L, c = h/2."""
@@ -260,6 +273,7 @@ def compute_structural_response(
 # High-level convenience function
 # ---------------------------------------------------------------------------
 
+
 def run_fsi_analysis(
     rho: torch.Tensor,
     ux: torch.Tensor,
@@ -277,7 +291,10 @@ def run_fsi_analysis(
         props = StructuralProperties()
 
     loads = extract_fsi_loads(
-        rho, ux, uy, obstacle_mask,
+        rho,
+        ux,
+        uy,
+        obstacle_mask,
         dx_phys=dx_phys,
         u_ref=flow_speed,
     )

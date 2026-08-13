@@ -1,4 +1,5 @@
 """Logging configuration helpers for TensorLBM."""
+
 from __future__ import annotations
 
 import logging

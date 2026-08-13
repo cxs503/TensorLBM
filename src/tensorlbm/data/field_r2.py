@@ -38,7 +38,9 @@ def _freeze(value: Any) -> Any:
     if isinstance(value, bytes):
         raise TypeError("metadata must not contain payload bytes")
     if isinstance(value, Mapping):
-        return MappingProxyType({_text(key, "lineage key"): _freeze(item) for key, item in value.items()})
+        return MappingProxyType(
+            {_text(key, "lineage key"): _freeze(item) for key, item in value.items()}
+        )
     if isinstance(value, (tuple, list)):
         return tuple(_freeze(item) for item in value)
     if isinstance(value, (set, frozenset)):
@@ -98,7 +100,9 @@ class ArrayEncoding:
             raise TypeError("order and byte_order must be enum values")
 
 
-ArrayEncoding.NPY_FLOAT32_C_LITTLE = ArrayEncoding("NPY", "float32", MemoryOrder.C, ByteOrder.LITTLE)
+ArrayEncoding.NPY_FLOAT32_C_LITTLE = ArrayEncoding(
+    "NPY", "float32", MemoryOrder.C, ByteOrder.LITTLE
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,7 +174,9 @@ def _npy_header(payload: object) -> tuple[str, tuple[int, ...], MemoryOrder, Byt
     descr, fortran, shape = header["descr"], header["fortran_order"], header["shape"]
     if not isinstance(descr, str) or not isinstance(fortran, bool) or not isinstance(shape, tuple):
         raise ValueError("invalid NPY metadata types")
-    if not shape or any(isinstance(item, bool) or not isinstance(item, int) or item <= 0 for item in shape):
+    if not shape or any(
+        isinstance(item, bool) or not isinstance(item, int) or item <= 0 for item in shape
+    ):
         raise ValueError("NPY shape must be a non-empty positive integer tuple")
     dtype_map = {
         "f4": ("float32", 4),
@@ -189,7 +195,13 @@ def _npy_header(payload: object) -> tuple[str, tuple[int, ...], MemoryOrder, Byt
         raise ValueError("ambiguous or byte-order-not-applicable NPY dtype is forbidden")
     byte_order = ByteOrder.BIG if prefix == ">" else ByteOrder.LITTLE
     dtype, item_size = dtype_map[descr[1:]]
-    return dtype, shape, MemoryOrder.F if fortran else MemoryOrder.C, byte_order, end + item_size * _shape_size(shape)
+    return (
+        dtype,
+        shape,
+        MemoryOrder.F if fortran else MemoryOrder.C,
+        byte_order,
+        end + item_size * _shape_size(shape),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,7 +220,9 @@ class ArrayManifestR2:
         if not isinstance(self.role, ArrayRole):
             raise TypeError("role must be an ArrayRole")
         shape = tuple(self.shape)
-        if not shape or any(isinstance(size, bool) or not isinstance(size, int) or size <= 0 for size in shape):
+        if not shape or any(
+            isinstance(size, bool) or not isinstance(size, int) or size <= 0 for size in shape
+        ):
             raise ValueError("shape must be a non-empty tuple of positive non-boolean integers")
         axes = tuple(self.axes)
         if len(axes) != len(shape) or not all(isinstance(axis, AxisSpec) for axis in axes):
@@ -241,7 +255,12 @@ class ArrayManifestR2:
         dtype, shape, order, byte_order, expected_size = _npy_header(payload)
         if len(payload) != expected_size:
             raise ValueError("NPY payload body is truncated or has trailing bytes")
-        if (dtype, shape, order, byte_order) != (self.encoding.dtype, self.shape, self.encoding.order, self.encoding.byte_order):
+        if (dtype, shape, order, byte_order) != (
+            self.encoding.dtype,
+            self.shape,
+            self.encoding.order,
+            self.encoding.byte_order,
+        ):
             raise ValueError("NPY dtype, shape, order, or byte_order does not match manifest")
 
     def validate_current(self) -> None:
@@ -272,7 +291,9 @@ class FieldDataProductR2:
         _text(self.product_id, "product_id")
         self._validate_run()
         _text(self.source_artifact_id, "source_artifact_id")
-        if self.source_artifact_id not in {artifact.artifact_id for artifact in self.run_manifest.artifacts}:
+        if self.source_artifact_id not in {
+            artifact.artifact_id for artifact in self.run_manifest.artifacts
+        }:
             raise ValueError("source_artifact_id must exist in run_manifest")
         arrays = tuple(self.arrays)
         if not arrays or not all(isinstance(array, ArrayManifestR2) for array in arrays):
@@ -305,19 +326,34 @@ class FieldDataProductR2:
         )
         self._validate_run()
         arrays = self.arrays
-        if not isinstance(arrays, tuple) or not arrays or not all(isinstance(array, ArrayManifestR2) for array in arrays):
+        if (
+            not isinstance(arrays, tuple)
+            or not arrays
+            or not all(isinstance(array, ArrayManifestR2) for array in arrays)
+        ):
             raise ValueError("arrays are no longer valid contract values")
         if len({array.array_id for array in arrays}) != len(arrays):
             raise ValueError("arrays no longer have unique array_id values")
-        if not isinstance(payloads, Mapping) or set(payloads) != {array.array_id for array in arrays}:
+        if not isinstance(payloads, Mapping) or set(payloads) != {
+            array.array_id for array in arrays
+        }:
             raise ValueError("payloads must contain exactly the declared array IDs")
-        if self.source_artifact_id not in {artifact.artifact_id for artifact in self.run_manifest.artifacts}:
+        if self.source_artifact_id not in {
+            artifact.artifact_id for artifact in self.run_manifest.artifacts
+        }:
             raise ValueError("source_artifact_id no longer exists in run_manifest")
         for array in arrays:
             array.verify_payload(payloads[array.array_id])
 
 
 __all__ = [
-    "ArrayEncoding", "ArrayManifestR2", "ArrayRole", "AxisSemantic", "AxisSpec", "BlobRef", "ByteOrder",
-    "FieldDataProductR2", "MemoryOrder",
+    "ArrayEncoding",
+    "ArrayManifestR2",
+    "ArrayRole",
+    "AxisSemantic",
+    "AxisSpec",
+    "BlobRef",
+    "ByteOrder",
+    "FieldDataProductR2",
+    "MemoryOrder",
 ]

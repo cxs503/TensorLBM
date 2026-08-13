@@ -4,6 +4,7 @@ Runs key physics benchmarks at small scale and checks that the results
 match stored baselines within a fixed tolerance. The baselines are stored
 in tests/baselines.json and updated by running with UPDATE_BASELINES=1.
 """
+
 from __future__ import annotations
 
 import json

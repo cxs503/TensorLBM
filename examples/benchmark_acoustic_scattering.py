@@ -33,6 +33,7 @@ Run
 ---
     PYTHONPATH=src python examples/benchmark_acoustic_scattering.py --device cpu --steps 1500
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,9 +48,7 @@ from scipy.special import hankel1, jvp
 # --------------------------------------------------------------------------- #
 # Make tensorlbm importable when running from the repo root.
 # --------------------------------------------------------------------------- #
-_SRC = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-)
+_SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
@@ -61,14 +60,15 @@ from tensorlbm.solver3d import collide_bgk3d, stream3d  # noqa: E402
 # =========================================================================== #
 # Constants
 # =========================================================================== #
-CS2 = 1.0 / 3.0          # lattice sound speed squared
-CS = math.sqrt(CS2)      # c_s = 1/√3 ≈ 0.5774
-INV_CS = 1.0 / CS        # 1/c_s = √3 ≈ 1.7321
+CS2 = 1.0 / 3.0  # lattice sound speed squared
+CS = math.sqrt(CS2)  # c_s = 1/√3 ≈ 0.5774
+INV_CS = 1.0 / CS  # 1/c_s = √3 ≈ 1.7321
 
 
 # =========================================================================== #
 # Analytical solution
 # =========================================================================== #
+
 
 def hankel1_prime(n: int, z: float) -> complex:
     """First derivative of H_n^(1)(z) via the recurrence relation.
@@ -103,11 +103,11 @@ def analytical_scattered_pressure(
     kr = k * r
     total = 0.0 + 0.0j
     for n in range(n_max + 1):
-        eps_n = 1.0 if n == 0 else 2.0          # Neumann factor
-        jn_prime = jvp(n, ka)                    # J_n'(ka)
-        hn_prime = hankel1_prime(n, ka)          # H_n^(1)'(ka)
-        hn_kr = hankel1(n, kr)                   # H_n^(1)(kr)
-        coeff = eps_n * (1j ** n) * jn_prime / hn_prime * hn_kr * math.cos(n * theta)
+        eps_n = 1.0 if n == 0 else 2.0  # Neumann factor
+        jn_prime = jvp(n, ka)  # J_n'(ka)
+        hn_prime = hankel1_prime(n, ka)  # H_n^(1)'(ka)
+        hn_kr = hankel1(n, kr)  # H_n^(1)(kr)
+        coeff = eps_n * (1j**n) * jn_prime / hn_prime * hn_kr * math.cos(n * theta)
         total += coeff
     return delta_rho * cs2 * abs(total)
 
@@ -115,6 +115,7 @@ def analytical_scattered_pressure(
 # =========================================================================== #
 # LBM simulation
 # =========================================================================== #
+
 
 def run_simulation(
     nx: int,
@@ -152,7 +153,7 @@ def run_simulation(
 
     # --- Cylinder mask (expand 2-D mask to 3-D for D3Q19) ---
     if with_cylinder:
-        cyl_2d = cylinder_mask(nx, ny, cx, cy, R, dev)          # (ny, nx)
+        cyl_2d = cylinder_mask(nx, ny, cx, cy, R, dev)  # (ny, nx)
         cyl_mask = cyl_2d.unsqueeze(0).expand(nz, ny, nx).contiguous()
     else:
         cyl_mask = None
@@ -177,9 +178,9 @@ def run_simulation(
             torch.ones_like(d),
         )
 
-    damping_left = _sponge_profile(dist_left)     # 0 at x=0 → 1 interior
-    damping_right = _sponge_profile(dist_right)   # 0 at x=nx-1 → 1 interior
-    damping_y = _sponge_profile(dist_y)           # 0 at y=0/ny-1 → 1 interior
+    damping_left = _sponge_profile(dist_left)  # 0 at x=0 → 1 interior
+    damping_right = _sponge_profile(dist_right)  # 0 at x=nx-1 → 1 interior
+    damping_y = _sponge_profile(dist_y)  # 0 at y=0/ny-1 → 1 interior
     # Overall damping: exclude left boundary (plane-wave source at x=0)
     # to avoid absorbing the source signal. Only sponge right/top/bottom.
     damping_neq = torch.minimum(damping_right, damping_y)
@@ -218,8 +219,7 @@ def run_simulation(
             ux_src = CS * delta_rho * math.sin(omega * step)
             rho_col = torch.full((nz, ny, 1), rho_src, device=dev, dtype=f.dtype)
             ux_col = torch.full((nz, ny, 1), ux_src, device=dev, dtype=f.dtype)
-            feq_src = equilibrium3d(rho_col, ux_col, zero_col, zero_col.clone(),
-                                    device=dev)
+            feq_src = equilibrium3d(rho_col, ux_col, zero_col, zero_col.clone(), device=dev)
             f[:, :, :, 0:1] = feq_src
 
             # === Record rho at monitors ===
@@ -230,8 +230,7 @@ def run_simulation(
             # === Logging ===
             if step % log_every == 0 or step == steps:
                 drho_max = float((rho - rho0).abs().max())
-                print(f"    step {step:5d}/{steps}  |Δρ|_max = {drho_max:.6e}",
-                      flush=True)
+                print(f"    step {step:5d}/{steps}  |Δρ|_max = {drho_max:.6e}", flush=True)
 
     return rho_history
 
@@ -240,6 +239,7 @@ def run_simulation(
 # Main
 # =========================================================================== #
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Acoustic scattering benchmark: plane wave off rigid cylinder"
@@ -247,17 +247,25 @@ def main() -> None:
     parser.add_argument("--nx", type=int, default=400, help="Grid size in x (default 400)")
     parser.add_argument("--ny", type=int, default=200, help="Grid size in y (default 200)")
     parser.add_argument("--nz", type=int, default=1, help="Grid size in z (default 1)")
-    parser.add_argument("--tau", type=float, default=0.55, help="BGK relaxation time (default 0.55)")
+    parser.add_argument(
+        "--tau", type=float, default=0.55, help="BGK relaxation time (default 0.55)"
+    )
     parser.add_argument("--R", type=float, default=20.0, help="Cylinder radius (default 20)")
-    parser.add_argument("--delta-rho", type=float, default=0.001,
-                        help="Density perturbation amplitude (default 0.001)")
-    parser.add_argument("--omega", type=float, default=0.1,
-                        help="Angular frequency (default 0.1)")
-    parser.add_argument("--steps", type=int, default=1500, help="Number of time steps (default 1500)")
+    parser.add_argument(
+        "--delta-rho",
+        type=float,
+        default=0.001,
+        help="Density perturbation amplitude (default 0.001)",
+    )
+    parser.add_argument("--omega", type=float, default=0.1, help="Angular frequency (default 0.1)")
+    parser.add_argument(
+        "--steps", type=int, default=1500, help="Number of time steps (default 1500)"
+    )
     parser.add_argument("--device", default="cpu", help="Device: 'cpu' or 'cuda' (default cpu)")
     parser.add_argument("--log-every", type=int, default=500, help="Print interval (default 500)")
-    parser.add_argument("--sponge-width", type=int, default=40,
-                        help="Sponge layer width (default 40)")
+    parser.add_argument(
+        "--sponge-width", type=int, default=40, help="Sponge layer width (default 40)"
+    )
     args = parser.parse_args()
 
     nx, ny, nz = args.nx, args.ny, args.nz
@@ -269,22 +277,21 @@ def main() -> None:
     device = args.device
     sponge_width = args.sponge_width
 
-    cx, cy = nx // 4, ny // 2   # cylinder centre
+    cx, cy = nx // 4, ny // 2  # cylinder centre
     k = omega / CS
     lam = 2.0 * math.pi / k
 
     # --- Monitor points: angles 0°, 45°, 90°, 135°, 180° at r = 30, 40, 50 ---
     angles_deg = [0, 45, 90, 135, 180]
     distances = [50, 60]
-    monitor_info: list[tuple[int, int, float, float]] = []   # (mx, my, r, θ_deg)
+    monitor_info: list[tuple[int, int, float, float]] = []  # (mx, my, r, θ_deg)
     monitor_coords: list[tuple[int, int]] = []
     for r in distances:
         for ang_deg in angles_deg:
             ang = math.radians(ang_deg)
             mx = int(round(cx + r * math.cos(ang)))
             my = int(round(cy + r * math.sin(ang)))
-            assert 0 <= mx < nx and 0 <= my < ny, \
-                f"Monitor point ({mx}, {my}) out of bounds"
+            assert 0 <= mx < nx and 0 <= my < ny, f"Monitor point ({mx}, {my}) out of bounds"
             monitor_info.append((mx, my, float(r), float(ang_deg)))
             monitor_coords.append((mx, my))
 
@@ -310,18 +317,42 @@ def main() -> None:
     print(flush=True)
     print("  [1/2] 运行带圆柱仿真 (总场) …", flush=True)
     rho_total = run_simulation(
-        nx, ny, nz, tau, cx, cy, R, delta_rho, omega, steps, device,
-        with_cylinder=True, monitor_coords=monitor_coords,
-        sponge_width=sponge_width, log_every=args.log_every,
+        nx,
+        ny,
+        nz,
+        tau,
+        cx,
+        cy,
+        R,
+        delta_rho,
+        omega,
+        steps,
+        device,
+        with_cylinder=True,
+        monitor_coords=monitor_coords,
+        sponge_width=sponge_width,
+        log_every=args.log_every,
     )
 
     # --- Run 2: WITHOUT cylinder (incident field) ---
     print(flush=True)
     print("  [2/2] 运行无圆柱仿真 (入射场) …", flush=True)
     rho_incident = run_simulation(
-        nx, ny, nz, tau, cx, cy, R, delta_rho, omega, steps, device,
-        with_cylinder=False, monitor_coords=monitor_coords,
-        sponge_width=sponge_width, log_every=args.log_every,
+        nx,
+        ny,
+        nz,
+        tau,
+        cx,
+        cy,
+        R,
+        delta_rho,
+        omega,
+        steps,
+        device,
+        with_cylinder=False,
+        monitor_coords=monitor_coords,
+        sponge_width=sponge_width,
+        log_every=args.log_every,
     )
 
     # --- Analysis: scattered field vs analytical ---
@@ -346,9 +377,7 @@ def main() -> None:
 
         # Amplitude from the second half (steady state, peak-to-peak / 2)
         half = len(p_scattered) // 2
-        p_amp_lbm = float(
-            np.max(p_scattered[half:]) - np.min(p_scattered[half:])
-        ) / 2.0
+        p_amp_lbm = float(np.max(p_scattered[half:]) - np.min(p_scattered[half:])) / 2.0
 
         # Analytical scattered pressure amplitude
         theta = math.radians(ang_deg)

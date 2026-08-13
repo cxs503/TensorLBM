@@ -4,6 +4,7 @@ Implements a double-distribution-function (DDF) thermal LBM in which the
 hydrodynamics are solved on D3Q19 and the temperature field is solved on a
 passive-scalar D3Q7 lattice following He et al. (1998) and Peng et al. (2003).
 """
+
 from __future__ import annotations
 
 import functools
@@ -236,9 +237,9 @@ def _apply_temperature_boundaries_3d(
     g_new[:, -1, :, :] = g_new[:, -2, :, :]
 
     zeros = torch.zeros_like(g_new[0, :, :, 0]).unsqueeze(-1)
-    g_new[:, :, :, 0] = equilibrium_thermal_3d(
-        torch.full_like(zeros, T_hot), zeros, zeros, zeros
-    )[:, :, :, 0]
+    g_new[:, :, :, 0] = equilibrium_thermal_3d(torch.full_like(zeros, T_hot), zeros, zeros, zeros)[
+        :, :, :, 0
+    ]
     g_new[:, :, :, -1] = equilibrium_thermal_3d(
         torch.full_like(zeros, T_cold), zeros, zeros, zeros
     )[:, :, :, 0]

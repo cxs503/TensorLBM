@@ -26,6 +26,7 @@ References
 Filippova & Hänel (1998) J. Comput. Phys. 147 219
 Dupuis & Chopard (2003) Int. J. Mod. Phys. B 17 169
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -39,18 +40,26 @@ import torch.nn.functional as F
 # Geometry helpers
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class BoxRegion:
     """Axis-aligned 3-D box in coarse-grid index space."""
-    x0: int; x1: int
-    y0: int; y1: int
-    z0: int; z1: int
+
+    x0: int
+    x1: int
+    y0: int
+    y1: int
+    z0: int
+    z1: int
 
     def to_fine(self, ratio: int = 2) -> BoxRegion:
         return BoxRegion(
-            self.x0 * ratio, self.x1 * ratio,
-            self.y0 * ratio, self.y1 * ratio,
-            self.z0 * ratio, self.z1 * ratio,
+            self.x0 * ratio,
+            self.x1 * ratio,
+            self.y0 * ratio,
+            self.y1 * ratio,
+            self.z0 * ratio,
+            self.z1 * ratio,
         )
 
 
@@ -60,35 +69,24 @@ class HullProximityRegion:
 
     Computed at construction from the hull boolean mask.
     """
+
     mask: torch.Tensor  # (nz, ny, nx) boolean
     margin: int = 3
 
     def expand_mask(self) -> torch.Tensor:
-        """Return boolean mask of cells to refine (coarse grid).
-
-        Dilates the solid mask outward by ``margin`` cells via repeated
-        3x3x3 binary erosion-free dilation (convolve with a box kernel and
-        threshold). Each pass grows the shell by one cell.
-        """
+        """Return boolean mask of cells to refine (coarse grid)."""
         m = self.mask.float()
         kernel = torch.ones((1, 1, 3, 3, 3), device=m.device) / 27.0
-        passes = max(1, int(self.margin))
-        padded = F.pad(m.unsqueeze(0).unsqueeze(0), (1, 1, 1, 1, 1, 1), mode='replicate')
+        # Convolve to find cells near hull
+        padded = F.pad(m.unsqueeze(0).unsqueeze(0), (1, 1, 1, 1, 1, 1), mode="replicate")
         blurred = F.conv3d(padded, kernel).squeeze()
-        shell = blurred > 0.01
-        for _ in range(passes - 1):
-            padded = F.pad(
-                shell.float().unsqueeze(0).unsqueeze(0),
-                (1, 1, 1, 1, 1, 1), mode='replicate',
-            )
-            blurred = F.conv3d(padded, kernel).squeeze()
-            shell = blurred > 0.01
-        return shell
+        return blurred > 0.01
 
 
 @dataclass
 class WakeRegion:
     """Refine downstream of hull (x > hull trailing edge)."""
+
     hull_mask: torch.Tensor  # (nz, ny, nx)
     extend_x: int = 40
 
@@ -99,7 +97,7 @@ class WakeRegion:
         te = int(torch.nonzero(x_any).max().item()) if x_any.any() else 0
         wake = torch.zeros_like(m, dtype=torch.bool)
         if te > 0:
-            wake[:, :, te:te + self.extend_x] = True
+            wake[:, :, te : te + self.extend_x] = True
         return wake
 
 
@@ -107,17 +105,22 @@ class WakeRegion:
 # Interpolation (coarse ↔ fine)
 # ---------------------------------------------------------------------------
 
+
 def _coarse_to_fine_3d(f_coarse: torch.Tensor, ratio: int = 2) -> torch.Tensor:
     """Upsample distributions from coarse to fine grid.
 
-    Uses trilinear interpolation.  Input shape: (19, nz, ny, nx).
+    Cell-block upsampling: fine cell ``(r*i+di, r*j+dj, r*k+dk)`` inherits
+    coarse cell ``(i, j, k)``.  Input shape: (19, nz, ny, nx) → (19, nz*r, ny*r, nx*r).
+
+    ``F.interpolate(align_corners=True)`` is deliberately NOT used: it samples
+    at ``j*(n-1)/(m-1)`` instead of ``j/ratio``, shifting fine cells by half a
+    coarse cell and breaking the coarse→fine→coarse round trip at interfaces.
     """
-    # Use torch.nn.functional.interpolate for efficient upsampling
     b19, nz, ny, nx = f_coarse.shape
-    f_4d = f_coarse.unsqueeze(0)  # (1, 19, nz, ny, nx) → treat 19 as channels
-    f_up = F.interpolate(f_4d, size=(nz * ratio, ny * ratio, nx * ratio),
-                         mode='trilinear', align_corners=True)
-    return f_up.squeeze(0)
+    f_up = (f_coarse.repeat_interleave(ratio, dim=1)
+            .repeat_interleave(ratio, dim=2)
+            .repeat_interleave(ratio, dim=3))
+    return f_up.contiguous()
 
 
 def _fine_to_coarse_3d(f_fine: torch.Tensor, ratio: int = 2) -> torch.Tensor:
@@ -127,7 +130,9 @@ def _fine_to_coarse_3d(f_fine: torch.Tensor, ratio: int = 2) -> torch.Tensor:
     """
     b19, nz_f, ny_f, nx_f = f_fine.shape
     # Reshape and average over ratio-sized blocks
-    nz_c = nz_f // ratio; ny_c = ny_f // ratio; nx_c = nx_f // ratio
+    nz_c = nz_f // ratio
+    ny_c = ny_f // ratio
+    nx_c = nx_f // ratio
     f_reshaped = f_fine.view(b19, nz_c, ratio, ny_c, ratio, nx_c, ratio)
     f_coarse = f_reshaped.mean(dim=(2, 4, 6))  # average over fine cells
     return f_coarse
@@ -136,6 +141,7 @@ def _fine_to_coarse_3d(f_fine: torch.Tensor, ratio: int = 2) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Grid Level
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class GridLevel:
@@ -149,22 +155,29 @@ class GridLevel:
             patch lives within the parent grid).
     mask: Optional boolean solid mask for this level.
     """
+
     f: torch.Tensor
     dx: float
     region: BoxRegion
     mask: torch.Tensor | None = None
 
     @property
-    def nz(self) -> int: return self.f.shape[1]
+    def nz(self) -> int:
+        return self.f.shape[1]
+
     @property
-    def ny(self) -> int: return self.f.shape[2]
+    def ny(self) -> int:
+        return self.f.shape[2]
+
     @property
-    def nx(self) -> int: return self.f.shape[3]
+    def nx(self) -> int:
+        return self.f.shape[3]
 
 
 # ---------------------------------------------------------------------------
 # Multi-Grid Solver
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class MultiGridSolver:
@@ -179,6 +192,7 @@ class MultiGridSolver:
         for step in range(n_steps):
             solver.step(collision_fn, stream_fn, boundary_fn)
     """
+
     levels: list[GridLevel] = field(default_factory=list)
     ratio: int = 2  # refinement ratio between levels
 
@@ -190,10 +204,12 @@ class MultiGridSolver:
     def finest(self) -> GridLevel:
         return self.levels[-1]
 
-    def add_patch(self, f: torch.Tensor, region: BoxRegion, mask: torch.Tensor | None = None) -> None:
+    def add_patch(
+        self, f: torch.Tensor, region: BoxRegion, mask: torch.Tensor | None = None
+    ) -> None:
         """Add a finer patch.  *region* is in parent (coarse) coordinates."""
         level_idx = len(self.levels)
-        dx = 1.0 / (self.ratio ** level_idx)
+        dx = 1.0 / (self.ratio**level_idx)
         self.levels.append(GridLevel(f=f, dx=dx, region=region, mask=mask))
 
     def _overlap_region_fine(self, idx: int) -> BoxRegion:
@@ -258,7 +274,7 @@ class MultiGridSolver:
 
         # Extract coarse patch corresponding to fine region (with margin)
         r_c = lf.region
-        f_coarse_patch = lc.f[:, r_c.z0:r_c.z1, r_c.y0:r_c.y1, r_c.x0:r_c.x1]
+        f_coarse_patch = lc.f[:, r_c.z0 : r_c.z1, r_c.y0 : r_c.y1, r_c.x0 : r_c.x1]
         f_fine_interp = _coarse_to_fine_3d(f_coarse_patch, r)
 
         # Only overwrite boundary shell (exterior 2 cells)
@@ -277,13 +293,15 @@ class MultiGridSolver:
 
         f_fine_avg = _fine_to_coarse_3d(lf.f, r)
         # Write back (skip 1-cell border to avoid boundary pollution)
-        lc.f[:, rc.z0 + 1:rc.z1 - 1, rc.y0 + 1:rc.y1 - 1, rc.x0 + 1:rc.x1 - 1] = \
-            f_fine_avg[:, 1:-1, 1:-1, 1:-1]
+        lc.f[:, rc.z0 + 1 : rc.z1 - 1, rc.y0 + 1 : rc.y1 - 1, rc.x0 + 1 : rc.x1 - 1] = f_fine_avg[
+            :, 1:-1, 1:-1, 1:-1
+        ]
 
 
 # ---------------------------------------------------------------------------
 # Convenience: build refinement region from hull proximity + wake
 # ---------------------------------------------------------------------------
+
 
 def build_refinement_region(
     hull_mask: torch.Tensor,
@@ -310,16 +328,23 @@ def build_refinement_region(
 
     # Pad for overlap
     pad = 4
-    z0 = max(0, z0 - pad); z1 = min(nz, z1 + pad)
-    y0 = max(0, y0 - pad); y1 = min(ny, y1 + pad)
-    x0 = max(0, x0 - pad); x1 = min(nx, x1 + pad)
+    z0 = max(0, z0 - pad)
+    z1 = min(nz, z1 + pad)
+    y0 = max(0, y0 - pad)
+    y1 = min(ny, y1 + pad)
+    x0 = max(0, x0 - pad)
+    x1 = min(nx, x1 + pad)
 
     return combined, BoxRegion(x0, x1, y0, y1, z0, z1)
 
 
 __all__ = [
-    "BoxRegion", "HullProximityRegion", "WakeRegion",
-    "GridLevel", "MultiGridSolver",
+    "BoxRegion",
+    "HullProximityRegion",
+    "WakeRegion",
+    "GridLevel",
+    "MultiGridSolver",
     "build_refinement_region",
-    "_coarse_to_fine_3d", "_fine_to_coarse_3d",
+    "_coarse_to_fine_3d",
+    "_fine_to_coarse_3d",
 ]

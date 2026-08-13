@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "description": "Gate directly from self-contained completed observable FSI runs. A passing run_status metrics.pass is required; failed legacy checkpoint artifacts remain failed.",
+  "cases": {
+    "flag_flapping": {
+      "run_dir": "flag_flapping",
+      "required_artifacts": [
+        "run_status.json",
+        "progress.csv",
+        "flag_flapping_data.csv"
+      ],
+      "physics": {
+        "status_metrics": true
+      }
+    },
+    "turek_hron": {
+      "run_dir": "turek_hron",
+      "required_artifacts": [
+        "run_status.json",
+        "progress.csv",
+        "turek_hron_fsi2_data.csv"
+      ],
+      "physics": {
+        "status_metrics": true
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@ This module provides the canonical reference implementation.  Every
 function and class here is mirrored in :mod:`paddle_backend` and
 :mod:`mindspore_backend` with identical signatures.
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -28,6 +29,7 @@ from .contracts import BackendCapabilities, BackendId, BackendSupport, DeviceSpe
 # Constants & dtypes
 # ---------------------------------------------------------------------------
 
+
 def pi() -> float:
     return math.pi
 
@@ -39,6 +41,7 @@ def float32_dtype() -> torch.dtype:
 # ---------------------------------------------------------------------------
 # Tensor creation
 # ---------------------------------------------------------------------------
+
 
 def zeros(shape, dtype=None, device: str = "cpu") -> torch.Tensor:
     dt = dtype if dtype is not None else torch.float32
@@ -72,6 +75,7 @@ def meshgrid(*tensors: torch.Tensor, indexing: str = "ij"):
 # ---------------------------------------------------------------------------
 # Tensor operations
 # ---------------------------------------------------------------------------
+
 
 def stack(tensors, dim: int = 0) -> torch.Tensor:
     return torch.stack(list(tensors), dim=dim)
@@ -126,7 +130,9 @@ def var(x: torch.Tensor, unbiased: bool = False) -> torch.Tensor:
 
 
 def std(x: torch.Tensor, dim=None, unbiased: bool = False) -> torch.Tensor:
-    return torch.std(x, unbiased=unbiased) if dim is None else torch.std(x, dim=dim, unbiased=unbiased)
+    return (
+        torch.std(x, unbiased=unbiased) if dim is None else torch.std(x, dim=dim, unbiased=unbiased)
+    )
 
 
 def rand(shape, device: str = "cpu") -> torch.Tensor:
@@ -217,6 +223,7 @@ def all_true(t: torch.Tensor) -> bool:
 # No-grad context
 # ---------------------------------------------------------------------------
 
+
 @contextlib.contextmanager
 def no_grad():
     with torch.no_grad():
@@ -226,6 +233,7 @@ def no_grad():
 # ---------------------------------------------------------------------------
 # NN helpers – activation
 # ---------------------------------------------------------------------------
+
 
 def _activation_layer(name: str) -> nn.Module:
     n = name.lower()
@@ -242,6 +250,7 @@ def _activation_layer(name: str) -> nn.Module:
 # EddyViscosityMLP (PyTorch)
 # ---------------------------------------------------------------------------
 
+
 class _EddyViscosityMLP(nn.Module):
     """PyTorch implementation of the eddy-viscosity MLP."""
 
@@ -257,7 +266,9 @@ class _EddyViscosityMLP(nn.Module):
         super().__init__()
         self.in_features = in_features
         self.register_buffer("feature_mean", feature_mean.clone().to(dtype=torch.float32))
-        self.register_buffer("feature_std", feature_std.clone().clamp_min(1e-6).to(dtype=torch.float32))
+        self.register_buffer(
+            "feature_std", feature_std.clone().clamp_min(1e-6).to(dtype=torch.float32)
+        )
         layers: list[nn.Module] = []
         in_dim = in_features
         for _ in range(n_hidden_layers):
@@ -270,9 +281,7 @@ class _EddyViscosityMLP(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # noqa: D401
         if x.shape[-1] != self.in_features:
-            raise ValueError(
-                f"Expected {self.in_features} features, got shape {tuple(x.shape)}"
-            )
+            raise ValueError(f"Expected {self.in_features} features, got shape {tuple(x.shape)}")
         mean = self.feature_mean.to(device=x.device, dtype=x.dtype)
         std = self.feature_std.to(device=x.device, dtype=x.dtype)
         return self.net((x - mean) / std)
@@ -298,6 +307,7 @@ def build_eddy_viscosity_mlp(
 # FlowFieldTransformer (PyTorch)
 # ---------------------------------------------------------------------------
 
+
 class _FlowTransformer(nn.Module):
     """PyTorch masked-token reconstruction transformer."""
 
@@ -318,8 +328,12 @@ class _FlowTransformer(nn.Module):
         self.input_proj = nn.Linear(in_features, d_model)
         self.pos_embedding = nn.Parameter(torch.zeros(1, max_tokens, d_model))
         layer = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=n_heads, dim_feedforward=ffn_dim,
-            dropout=dropout, activation="gelu", batch_first=True,
+            d_model=d_model,
+            nhead=n_heads,
+            dim_feedforward=ffn_dim,
+            dropout=dropout,
+            activation="gelu",
+            batch_first=True,
         )
         self.encoder = nn.TransformerEncoder(layer, num_layers=n_layers)
         self.head = nn.Linear(d_model, in_features)
@@ -354,6 +368,7 @@ def build_flow_transformer(
 # ---------------------------------------------------------------------------
 # Loss, optimizer, scheduler
 # ---------------------------------------------------------------------------
+
 
 def mse_loss_fn():
     """Return an MSE loss callable ``(pred, target) -> scalar``."""
@@ -408,6 +423,7 @@ def backward(loss: torch.Tensor) -> None:
 # Model persistence (backend-portable: numpy arrays)
 # ---------------------------------------------------------------------------
 
+
 def get_state_dict_numpy(model: nn.Module) -> dict[str, np.ndarray]:
     """Return model state dict as a dict of numpy arrays (portable format)."""
     return {k: v.detach().cpu().numpy() for k, v in model.state_dict().items()}
@@ -417,8 +433,7 @@ def load_state_dict_numpy(model: nn.Module, arrays: dict[str, np.ndarray]) -> No
     """Restore model weights from numpy-array state dict."""
     current = model.state_dict()
     loaded = {
-        name: torch.from_numpy(arr).to(dtype=current[name].dtype)
-        for name, arr in arrays.items()
+        name: torch.from_numpy(arr).to(dtype=current[name].dtype) for name, arr in arrays.items()
     }
     model.load_state_dict(loaded)
 
@@ -442,6 +457,7 @@ def compute_feature_stats(x_train: torch.Tensor) -> tuple[np.ndarray, np.ndarray
 # Model state helpers
 # ---------------------------------------------------------------------------
 
+
 def eval_mode(model: nn.Module) -> None:
     model.eval()
 
@@ -457,6 +473,7 @@ def is_training(model: nn.Module) -> bool:
 # ---------------------------------------------------------------------------
 # Unified training step (one minibatch)
 # ---------------------------------------------------------------------------
+
 
 def train_step(
     model: nn.Module,
@@ -524,9 +541,13 @@ def build_torch_lattice_constants(
     """Adapt the core D3Q19 tuple descriptor to CPU tensors during setup only."""
     TorchBackend().validate_device(device_spec)
     if descriptor != D3Q19:
-        raise ValueError("Torch backend R1 lattice constants support only the core D3Q19 descriptor")
+        raise ValueError(
+            "Torch backend R1 lattice constants support only the core D3Q19 descriptor"
+        )
     return {
-        "directions": torch.tensor(descriptor.directions, dtype=torch.int64, device=device_spec.device),
+        "directions": torch.tensor(
+            descriptor.directions, dtype=torch.int64, device=device_spec.device
+        ),
         "weights": torch.tensor(descriptor.weights, dtype=torch.float32, device=device_spec.device),
         "opposite": torch.tensor(descriptor.opposite, dtype=torch.int64, device=device_spec.device),
     }

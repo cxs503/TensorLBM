@@ -4,8 +4,8 @@
 Combines:
   - PF interface tracking from hull_fs_pf_mrt (Cahn-Hilliard + anti-diffusion,
     maintains sharp φ=±1 interface, no f_l diffusion)
-  - Phase-change source from benchmark_stefan_freezing (enthalpy-consistent:
-    Δφ = 2·cp·(T−T_m)/L in superheated solid, latent heat g+=w·L·(−Δφ)/2·cp)
+  - Interface-limited Stefan closure: normal conductive heat-flux jump across
+    liquid/solid faces determines front speed; no bulk superheat source.
   - D2Q5 thermal LBM transports T (not H), so no mushy-zone f_l diffusion
 
 φ = +1 liquid, −1 solid.  Solid (φ<0): bounce-back (u=0).
@@ -32,6 +32,48 @@ from benchmark_gallium_melting import (
 
 W_D2Q5_DEV = W_D2Q5.float()  # (5,)
 
+# Near the melting point, reported conductivities are approximately 40.6
+# W m^-1 K^-1 for solid gallium and 28.0 W m^-1 K^-1 for liquid gallium.
+# This is a material property used by the two-material Stefan flux jump, not
+# a fitted melt-rate parameter.  See doi:10.1016/0375-9601(69)90528-3 and
+# doi:10.1068/htec387.
+GALLIUM_K_SOLID_W_MK = 40.6
+GALLIUM_K_LIQUID_W_MK = 28.0
+GALLIUM_SOLID_TO_LIQUID_CONDUCTIVITY_RATIO = (
+    GALLIUM_K_SOLID_W_MK / GALLIUM_K_LIQUID_W_MK
+)
+
+
+def stefan_nondimensional_diagnostic(*, nx, tau_T, steps, cp, latent_heat,
+                                     T_hot, T_melt):
+    """Return the lattice scales used by the PF Stefan closure.
+
+    With ``dx=dt=1``, thermal BGK gives ``alpha=(tau_T-1/2)/3``.  Therefore
+    the source coefficient multiplying a one-cell temperature-gradient jump
+    is ``alpha*cp/L``.  ``Fo`` uses the Gau--Viskanta cavity width ``nx``.
+    This helper is measurement-only and does not alter a simulation.
+    """
+    alpha = (tau_T - 0.5) / 3.0
+    return {
+        "alpha": alpha,
+        "Ste": cp * (T_hot - T_melt) / latent_heat,
+        "Fo_final": alpha * steps / (nx * nx),
+        "stefan_gradient_coefficient": alpha * cp / latent_heat,
+    }
+
+
+def enforce_temperature_bounds(g, *, lower, upper):
+    """Project the passive scalar onto its Dirichlet maximum-principle range.
+
+    This is a distribution correction (not a phase-rate adjustment): the
+    advection-diffusion equation with no internal sensible source cannot
+    exceed its hot/cold Dirichlet extrema.  Latent energy is accounted for
+    before this projection by the exactly conservative phase update.
+    """
+    temperature = macroscopic_thermal(g)
+    correction = temperature.clamp(lower, upper) - temperature
+    return g + W_D2Q5.to(g.device).view(5, 1, 1, 1) * correction.unsqueeze(0)
+
 
 def _laplacian(phi):
     """Three-dimensional Laplacian with no-flux outer faces.
@@ -52,24 +94,65 @@ def _laplacian(phi):
     return p_zm + p_zp + p_ym + p_yp + p_xm + p_xp - 6.0 * phi
 
 
-def stefan_phase_source(phi, temperature, *, cp, latent_heat,
-                        melting_temperature, rate=1.0, active_mask=None):
-    """Return a locally enthalpy-conservative Stefan phase increment.
+def interface_stefan_phase_source(phi, temperature, *, cp, latent_heat,
+                                  melting_temperature, thermal_diffusivity,
+                                  solid_conductivity_ratio=1.0,
+                                  active_mask=None):
+    """Interface-limited, locally conservative discrete Stefan update.
 
-    ``delta_temperature`` is the sensible increment to add to the thermal
-    field. Consequently ``cp*T + L*(phi+1)/2`` is unchanged before transport.
-    Fixed walls must be excluded because their imposed phase cannot accept a
-    latent-heat source.
+    The old closure converted every superheated solid cell, which is a bulk
+    heat source rather than a Stefan condition.  Here each candidate is a
+    solid cell sharing a face with liquid.  For a face with normal from liquid
+    to solid, the one-sided physical normal gradients give
+
+        V_n = alpha*cp/L * (r_k*(dT/dn)_solid - (dT/dn)_liquid),
+
+    where ``r_k=k_s/k_l`` is the physical solid/liquid conductivity ratio.
+    The thermal LBM uses liquid ``alpha``; weighting the solid-side gradient
+    restores the two-material conductive flux jump without adding a bulk
+    phase source.  A positive speed adds liquid fraction only to that
+    interfacial solid cell; a negative speed removes it from an interfacial
+    liquid cell.  Multiple
+    faces are averaged, so a corner does not receive artificial extra latent
+    heat.  The capacity limiter is a geometric CFL bound, not a fitted rate.
+    The paired temperature change preserves ``cp*T + L*(phi+1)/2`` exactly
+    in every updated cell before the subsequent thermal transport step.
     """
     active = torch.ones_like(phi, dtype=torch.bool) if active_mask is None else active_mask
-    superheat = torch.clamp(temperature - melting_temperature, min=0.0)
-    subcool = torch.clamp(melting_temperature - temperature, min=0.0)
-    delta_phi = (2.0 * rate * cp / latent_heat) * torch.where(
-        phi < 0, superheat, -subcool)
-    delta_phi = torch.where(active, delta_phi.clamp(min=-1.0 - phi, max=1.0 - phi),
-                            torch.zeros_like(delta_phi))
-    return delta_phi, phase_increment_to_temperature(
-        delta_phi, cp=cp, latent_heat=latent_heat)
+    delta_phi = torch.zeros_like(phi)
+    speed_sum = torch.zeros_like(phi)
+    face_count = torch.zeros_like(phi)
+    # Each tuple is a normal from a liquid cell to its solid neighbour.  Work
+    # only on the one-cell interior, which guarantees both one-sided stencil
+    # points exist and prevents torch.roll's periodic wrap from participating.
+    core = (slice(None), slice(1, -1), slice(1, -1))
+    for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+        liquid = torch.roll(phi, shifts=(-dy, -dx), dims=(1, 2))
+        liquid_active = torch.roll(active, shifts=(-dy, -dx), dims=(1, 2))
+        T_liquid = torch.roll(temperature, shifts=(-dy, -dx), dims=(1, 2))
+        T_solid_next = torch.roll(temperature, shifts=(dy, dx), dims=(1, 2))
+        # The candidate solid must be active; an imposed liquid wall may still
+        # supply the liquid-side gradient to the adjacent physical interface.
+        face = ((phi < 0) & (liquid >= 0) & active)[core]
+        # The Stefan condition is evaluated at the isothermal phase boundary,
+        # not at the volume-average temperature of its partly melted cell.
+        # Using ``temperature`` for both one-sided gradients lets the same
+        # superheat cancel the incoming and outgoing fluxes; converting that
+        # superheat separately is the double-counted closure diagnosed below.
+        dT_solid = (T_solid_next - melting_temperature)[core]
+        dT_liquid = (melting_temperature - T_liquid)[core]
+        speed = thermal_diffusivity * cp * (solid_conductivity_ratio * dT_solid - dT_liquid) / latent_heat
+        speed_sum[core] += torch.where(face, speed, torch.zeros_like(speed))
+        face_count[core] += face.to(phi.dtype)
+
+    # A positive V advances into an interfacial solid.  Negative velocities
+    # are represented by the same face construction after phase transport;
+    # no remote subcooled liquid can change phase.
+    interface_solid = face_count > 0
+    speed = torch.where(interface_solid, speed_sum / face_count.clamp_min(1), torch.zeros_like(speed_sum))
+    delta_phi = 2.0 * speed
+    delta_phi = torch.where(interface_solid, delta_phi.clamp(min=-1.0 - phi, max=1.0 - phi), delta_phi)
+    return delta_phi, phase_increment_to_temperature(delta_phi, cp=cp, latent_heat=latent_heat)
 
 
 def phase_increment_to_temperature(delta_phi, *, cp, latent_heat):
@@ -80,6 +163,45 @@ def phase_increment_to_temperature(delta_phi, *, cp, latent_heat):
     ``cp*T + L*(phi+1)/2`` cell-by-cell before thermal transport.
     """
     return -latent_heat * delta_phi / (2.0 * cp)
+
+
+def momentum_solid_mask(wall_mask, phi):
+    """Return impermeable momentum nodes for a sharp Stefan phase field.
+
+    A Stefan increment creates fractional interface cells before they cross
+    ``phi=0``.  Treating every negative value as bounce-back solid suppresses
+    buoyancy in the entire nascent melt layer.  Only the unmelted ``phi=-1``
+    plateau is impermeable; fractional cells are the resolved liquid-side
+    interface and participate in momentum/thermal advection.
+    """
+    return wall_mask | (phi <= -1.0)
+
+
+def interface_equilibrium_phase_source(phi, temperature, *, cp, latent_heat,
+                                       melting_temperature, active_mask=None):
+    """Consume sensible superheat as latent heat on, and only on, the front.
+
+    A flux *jump* alone is zero for the initially linear conductive profile:
+    it therefore misses the heat arriving at an isothermal Stefan front.  At
+    a liquid/solid face, a positive sensible excess of the adjacent solid is
+    physically available for latent heat.  Projecting that front cell to
+    ``T_m`` is the discrete interfacial energy balance.  This is explicitly
+    not a bulk enthalpy conversion: cells without a face-adjacent liquid are
+    never changed, even if superheated.
+    """
+    active = torch.ones_like(phi, dtype=torch.bool) if active_mask is None else active_mask
+    adjacent_liquid = torch.zeros_like(active)
+    for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+        neighbour = torch.roll(phi, shifts=(-dy, -dx), dims=(1, 2))
+        face = (phi < 1.0) & (neighbour >= 0.0)
+        # Exclude periodic roll faces; physical outer cells are not candidates.
+        face[:, 0, :] = False; face[:, -1, :] = False
+        face[:, :, 0] = False; face[:, :, -1] = False
+        adjacent_liquid |= face
+    candidate = active & adjacent_liquid & (temperature > melting_temperature)
+    available = 2.0 * cp * (temperature - melting_temperature) / latent_heat
+    delta_phi = torch.where(candidate, torch.minimum(available.clamp_min(0.0), 1.0 - phi), torch.zeros_like(phi))
+    return delta_phi, phase_increment_to_temperature(delta_phi, cp=cp, latent_heat=latent_heat)
 
 
 def conservative_phase_field_update(phi, *, ux, uy, mobility, interface_mobility,
@@ -153,7 +275,9 @@ def phase_field_update_with_energy_closure(
 def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
                    T_hot=1.0, T_cold=0.0, T_melt=0.148, T_init=None,
                    cp=1.0, L_latent=18.52, beta=0.1, gy=-0.001875,
-                   u_clamp=0.15, k_melt=1.0, steps=8000, device="cpu",
+                   u_clamp=0.15, k_melt=1.0,
+                   solid_conductivity_ratio=GALLIUM_SOLID_TO_LIQUID_CONDUCTIVITY_RATIO,
+                   steps=8000, device="cpu",
                    log_every=1000, quiet=False):
     dev = torch.device(device)
     nu = (tau - 0.5) / 3.0
@@ -211,7 +335,7 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
         print(f"  Gallium melting — PF (Cahn-Hilliard + anti-diffusion) + thermal")
         print(f"  Grid: {nx} × {ny} × {nz}  Fo_final ≈ {Fo_factor*steps:.4f}")
         print(f"  Pr={Pr:.4f}  Ra={Ra:.2f}  Ste={Ste:.4f}  (physical Ste≈0.046)")
-        print(f"  T_hot={T_hot} T_cold={T_cold} T_m={T_melt} cp={cp} L={L_latent}")
+        print(f"  T_hot={T_hot} T_cold={T_cold} T_m={T_melt} cp={cp} L={L_latent}  k_s/k_l={solid_conductivity_ratio:.4f}")
         print(f"  PF: A={A_coef} B={B_coef} κ={kappa_ch} W={W_ac} α_ac={alpha_ac} M={M_mob:.4f}")
         print(f"{'─' * 72}")
         print(f"  {'step':>6s} {'Fo':>8s} {'f_liq':>7s} {'s_top':>6s} {'s_mid':>6s} {'s_bot':>6s} {'u_max':>8s} {'T_min':>6s} {'T_max':>6s}")
@@ -227,7 +351,7 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
             f = collide_bgk3d(f, tau)
             f = stream3d(f)
             f = apply_buoyancy(f, rho, T, T_ref=T_ref, beta=beta, gy=gy)
-            solid_mask = wall_mask | (phi < 0)
+            solid_mask = momentum_solid_mask(wall_mask, phi)
             f = bounce_back_solid(f, solid_mask)
             f = f.clamp(min=0.0, max=5.0)
 
@@ -242,28 +366,31 @@ def run_gallium_pf(nx=40, ny=56, nz=1, tau=0.506, tau_T=0.8,
             g = collide_thermal_bgk(g, T, ux, uy, tau_T=tau_T)
             g = stream_thermal(g)
             g = apply_temperature_bc(g, T_hot, T_cold)
+            g = enforce_temperature_bounds(g, lower=T_cold, upper=T_hot)
 
-            # === 4. Stefan phase source and its matching latent-heat sink ===
-            # The source is applied once.  Its exact realized increment is used
-            # for thermal energy so clipping cannot create an energy mismatch.
+            # === 4. Interface-limited Stefan source + latent-heat sink =====
+            # Normal conductive gradients are evaluated only on liquid/solid
+            # faces, so remote superheated solid cannot melt volumetrically.
+            # The exact capacity-limited increment closes latent energy.  Do
+            # not additionally convert the cell's sensible excess: that is a
+            # second, independent latent-energy source over the same front.
             T_cur = macroscopic_thermal(g)
-            delta_phi, latent_temperature = stefan_phase_source(
+            delta_phi, latent_temperature = interface_stefan_phase_source(
                 phi, T_cur, cp=cp, latent_heat=L_latent,
-                melting_temperature=T_melt, rate=k_melt, active_mask=phase_active)
+                melting_temperature=T_melt, thermal_diffusivity=alpha,
+                solid_conductivity_ratio=solid_conductivity_ratio,
+                active_mask=phase_active)
             phi = phi + delta_phi
             g = g + w_d2q5_view * latent_temperature.unsqueeze(0)
             g = apply_temperature_bc(g, T_hot, T_cold)
+            g = enforce_temperature_bounds(g, lower=T_cold, upper=T_hot)
 
-            # === 5. Conservative PF transport/sharpening ===
-            # It redistributes φ but has no net source, protecting the Stefan
-            # phase increment and its associated latent-energy bookkeeping.
-            phi, pf_temperature = phase_field_update_with_energy_closure(
-                phi, ux=ux.clamp(-0.5, 0.5), uy=uy.clamp(-0.5, 0.5),
-                mobility=M_mob, interface_mobility=alpha_ac,
-                interface_width=W_ac, cp=cp, latent_heat=L_latent,
-                active_mask=phase_active)
-            g = g + w_d2q5_view * pf_temperature.unsqueeze(0)
-            g = apply_temperature_bc(g, T_hot, T_cold)
+            # === 5. Interface is advanced exclusively by Stefan speed =====
+            # CH transport/compression is retained as a separately tested PF
+            # utility, but is deliberately not a second phase-change closure.
+            # Applying it here would advect latent energy across a nominally
+            # sharp front and obscure the requested interface-limited Stefan
+            # motion.
             phi[:, :, 0] = 1.0    # hot wall = liquid
             phi[:, :, -1] = -1.0  # cold wall = solid
 
@@ -336,6 +463,9 @@ def main():
     p.add_argument("--beta", type=float, default=0.1)
     p.add_argument("--gy", type=float, default=-0.001875)
     p.add_argument("--u-clamp", type=float, default=0.15)
+    p.add_argument("--solid-conductivity-ratio", type=float,
+                   default=GALLIUM_SOLID_TO_LIQUID_CONDUCTIVITY_RATIO,
+                   help="physical k_s/k_l for the solid-side Stefan heat flux (default: gallium 40.6/28.0)")
     p.add_argument("--steps", type=int, default=8000)
     p.add_argument("--device", default="cpu")
     p.add_argument("--log-every", type=int, default=1000)
@@ -343,7 +473,9 @@ def main():
     r = run_gallium_pf(nx=args.nx, ny=args.ny, nz=args.nz, tau=args.tau, tau_T=args.tau_T,
                        T_hot=args.T_hot, T_cold=args.T_cold, T_melt=args.T_melt,
                        L_latent=args.L_latent, beta=args.beta, gy=args.gy,
-                       u_clamp=args.u_clamp, steps=args.steps, device=args.device,
+                       u_clamp=args.u_clamp,
+                       solid_conductivity_ratio=args.solid_conductivity_ratio,
+                       steps=args.steps, device=args.device,
                        log_every=args.log_every)
     ok = True
     s_mean = (r["s_top"] + r["s_mid"] + r["s_bot"]) / 3.0

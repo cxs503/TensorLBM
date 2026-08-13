@@ -4,6 +4,7 @@ These tests verify the audit boundary, not turbulence physics.  Contract tests
 (shape/mass/momentum/identity) that exist for some operators are recorded as
 evidence but never promoted to physics validation.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -32,12 +33,20 @@ from tensorlbm.turbulence_capability_contract import (
 # Matrix structure
 # ---------------------------------------------------------------------------
 
+
 def test_matrix_covers_all_audited_families_lattices_collisions() -> None:
     matrix = turbulence_capability_matrix()
     expected_families = {
-        "smagorinsky", "dynamic_smagorinsky", "wale", "vreman",
-        "rans_ke", "rans_sa", "komega_sst", "ddes",
-        "wall_function", "wall_distance",
+        "smagorinsky",
+        "dynamic_smagorinsky",
+        "wale",
+        "vreman",
+        "rans_ke",
+        "rans_sa",
+        "komega_sst",
+        "ddes",
+        "wall_function",
+        "wall_distance",
     }
     assert set(matrix) == expected_families
     for family in expected_families:
@@ -50,17 +59,23 @@ def test_matrix_covers_all_audited_families_lattices_collisions() -> None:
 # Smagorinsky: all 6 lattice/collision combinations implemented + contract-tested
 # ---------------------------------------------------------------------------
 
+
 class TestSmagorinsky:
     @pytest.mark.parametrize(
         ("lattice", "collision"),
         [
-            ("D2Q9", "BGK"), ("D2Q9", "MRT"),
-            ("D3Q19", "BGK"), ("D3Q19", "MRT"),
-            ("D3Q27", "BGK"), ("D3Q27", "MRT"),
+            ("D2Q9", "BGK"),
+            ("D2Q9", "MRT"),
+            ("D3Q19", "BGK"),
+            ("D3Q19", "MRT"),
+            ("D3Q27", "BGK"),
+            ("D3Q27", "MRT"),
         ],
     )
     def test_all_six_combinations_implemented_and_contract_tested(
-        self, lattice: str, collision: str,
+        self,
+        lattice: str,
+        collision: str,
     ) -> None:
         cap = turbulence_capability_matrix()["smagorinsky"][lattice][collision]
         assert cap.implementation_status == "IMPLEMENTED"
@@ -82,6 +97,7 @@ class TestSmagorinsky:
 # ---------------------------------------------------------------------------
 # Dynamic Smagorinsky: D2Q9 BGK, D3Q19 BGK/MRT, D3Q27 BGK/MRT
 # ---------------------------------------------------------------------------
+
 
 class TestDynamicSmagorinsky:
     @pytest.mark.parametrize(
@@ -146,6 +162,7 @@ class TestDynamicSmagorinsky:
 # WALE: BGK only (D2Q9, D3Q19, D3Q27); no MRT
 # ---------------------------------------------------------------------------
 
+
 class TestWALE:
     @pytest.mark.parametrize("lattice", ["D2Q9", "D3Q19", "D3Q27"])
     def test_bgk_implemented_and_contract_tested(self, lattice: str) -> None:
@@ -167,6 +184,7 @@ class TestWALE:
 # ---------------------------------------------------------------------------
 # Vreman: BGK only (D2Q9, D3Q19, D3Q27); no MRT
 # ---------------------------------------------------------------------------
+
 
 class TestVreman:
     @pytest.mark.parametrize("lattice", ["D2Q9", "D3Q19", "D3Q27"])
@@ -190,6 +208,7 @@ class TestVreman:
 # RANS-KE: only D3Q19 MRT, implemented but no tests
 # ---------------------------------------------------------------------------
 
+
 class TestRansKE:
     def test_d3q19_mrt_implemented_no_tests(self) -> None:
         cap = turbulence_capability_matrix()["rans_ke"]["D3Q19"]["MRT"]
@@ -208,13 +227,17 @@ class TestRansKE:
     @pytest.mark.parametrize(
         ("lattice", "collision"),
         [
-            ("D2Q9", "BGK"), ("D2Q9", "MRT"),
+            ("D2Q9", "BGK"),
+            ("D2Q9", "MRT"),
             ("D3Q19", "BGK"),
-            ("D3Q27", "BGK"), ("D3Q27", "MRT"),
+            ("D3Q27", "BGK"),
+            ("D3Q27", "MRT"),
         ],
     )
     def test_other_combinations_not_implemented(
-        self, lattice: str, collision: str,
+        self,
+        lattice: str,
+        collision: str,
     ) -> None:
         cap = turbulence_capability_matrix()["rans_ke"][lattice][collision]
         assert cap.implementation_status == NO_IMPLEMENTATION
@@ -223,6 +246,7 @@ class TestRansKE:
 # ---------------------------------------------------------------------------
 # RANS-SA: only D3Q19 MRT, implemented but no tests
 # ---------------------------------------------------------------------------
+
 
 class TestRansSA:
     def test_d3q19_mrt_implemented_no_tests(self) -> None:
@@ -244,6 +268,7 @@ class TestRansSA:
 # k-omega SST: only D2Q9 BGK, implemented but no tests
 # ---------------------------------------------------------------------------
 
+
 class TestKOmegaSST:
     def test_d2q9_bgk_implemented_no_tests(self) -> None:
         cap = turbulence_capability_matrix()["komega_sst"]["D2Q9"]["BGK"]
@@ -257,6 +282,7 @@ class TestKOmegaSST:
 # ---------------------------------------------------------------------------
 # DDES: only D2Q9 BGK, implemented but no tests, 2D only
 # ---------------------------------------------------------------------------
+
 
 class TestDDES:
     def test_d2q9_bgk_implemented_no_tests(self) -> None:
@@ -275,6 +301,7 @@ class TestDDES:
 # ---------------------------------------------------------------------------
 # Wall function: D3Q19 only, benchmark-only (examples, no unit tests)
 # ---------------------------------------------------------------------------
+
 
 class TestWallFunction:
     def test_d3q19_benchmark_only(self) -> None:
@@ -296,6 +323,7 @@ class TestWallFunction:
 # Wall distance: D2Q9 and D3Q19, implemented but no tests
 # ---------------------------------------------------------------------------
 
+
 class TestWallDistance:
     @pytest.mark.parametrize("lattice", ["D2Q9", "D3Q19"])
     def test_implemented_no_tests(self, lattice: str) -> None:
@@ -310,6 +338,7 @@ class TestWallDistance:
 # ---------------------------------------------------------------------------
 # Fail-closed: no combination is physics-validated
 # ---------------------------------------------------------------------------
+
 
 def test_all_capabilities_fail_closed() -> None:
     matrix = turbulence_capability_matrix()
@@ -346,6 +375,7 @@ def test_implemented_only_does_not_imply_physics_validation() -> None:
 # require_turbulence_capability always raises (fail-closed)
 # ---------------------------------------------------------------------------
 
+
 def test_require_always_raises_for_contract_tested_combination() -> None:
     with pytest.raises(TurbulenceWithheldError, match="WITHHELD_NO_PHYSICS_VALIDATION"):
         require_turbulence_capability("smagorinsky", "D2Q9", "BGK")
@@ -365,6 +395,7 @@ def test_require_always_raises_for_no_implementation() -> None:
 # Unknown inputs rejected with stable machine-readable codes
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     ("family", "lattice", "collision", "withheld_code"),
     [
@@ -374,7 +405,10 @@ def test_require_always_raises_for_no_implementation() -> None:
     ],
 )
 def test_unknown_inputs_rejected_before_matrix_lookup(
-    family: str, lattice: str, collision: str, withheld_code: str,
+    family: str,
+    lattice: str,
+    collision: str,
+    withheld_code: str,
 ) -> None:
     with pytest.raises(TurbulenceWithheldError, match=withheld_code):
         require_turbulence_capability(family, lattice, collision)  # type: ignore[arg-type]
@@ -383,6 +417,7 @@ def test_unknown_inputs_rejected_before_matrix_lookup(
 # ---------------------------------------------------------------------------
 # Hot-path allocation audit
 # ---------------------------------------------------------------------------
+
 
 def test_hot_path_audit_returns_nonempty_list() -> None:
     audit = turbulence_hot_path_audit()

@@ -220,17 +220,11 @@ def main() -> None:
         post_collision = torch.where(solid_q, before, collided)
         out = stream3d(post_collision)
         rho_post, ux_post, uy_post, uz_post = macroscopic3d(post_collision)
-        activation = _ramp(current_step, args.ramp_steps)
-        wall_velocity = (
-            (1.0 - activation) * ux_post,
-            (1.0 - activation) * uy_post,
-            (1.0 - activation) * uz_post,
-        )
-        out, bfl_force = bouzidi_bounce_back_d3q19(
-            out, post_collision, bfl_mask, bfl_q,
-            wall_velocity=wall_velocity, wall_density=rho_post,
-            return_force=True,
-        )
+        # NOTE: bouzidi_bounce_back_d3q19 was refactored to the q-field API and
+        # now assumes a stationary wall (no wall_velocity kwarg, single return
+        # value).  Static obstacle => wall velocity is zero, so the new call is
+        # correct here.
+        out = bouzidi_bounce_back_d3q19(out, post_collision, bfl_mask, bfl_q)
         if substep == 1:  # one sample per coarse step
             cv_force = float(observe_control_volume_force(
                 before, out, post_collision, cv, solid=fine_solid_g,

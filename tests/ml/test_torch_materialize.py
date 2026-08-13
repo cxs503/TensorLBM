@@ -62,7 +62,13 @@ def _product(
 ) -> tuple[FieldDataProductR2, dict[str, bytes]]:
     values = values if values is not None else np.arange(12, dtype=np.float32).reshape(2, 3, 2)
     payload = _npy_bytes(values)
-    blob = BlobRef("velocity-npy", "file:///fixtures/velocity.npy", len(payload), sha256(payload).hexdigest(), "application/x-npy")
+    blob = BlobRef(
+        "velocity-npy",
+        "file:///fixtures/velocity.npy",
+        len(payload),
+        sha256(payload).hexdigest(),
+        "application/x-npy",
+    )
     array = ArrayManifestR2(
         array_id="velocity",
         role=ArrayRole.FEATURE,
@@ -101,9 +107,28 @@ def _spec(
     signature_ok: bool = True,
 ) -> TrainingSpec:
     run = _run()
-    field = FieldProduct("dataset-velocity", run, "metrics", "velocity", (2, 3, 2), "float32", "m/s", ValidationStatus.PASS, {})
-    dataset = DatasetManifest("dataset", "r1", (field,), "field-reconstruction", {"train": ("dataset-velocity",), "val": (), "test": ()}, {})
-    signature = ModelSignature(inputs=("velocity",), outputs=("target",), units={"velocity": "m/s", "target": "m/s"})
+    field = FieldProduct(
+        "dataset-velocity",
+        run,
+        "metrics",
+        "velocity",
+        (2, 3, 2),
+        "float32",
+        "m/s",
+        ValidationStatus.PASS,
+        {},
+    )
+    dataset = DatasetManifest(
+        "dataset",
+        "r1",
+        (field,),
+        "field-reconstruction",
+        {"train": ("dataset-velocity",), "val": (), "test": ()},
+        {},
+    )
+    signature = ModelSignature(
+        inputs=("velocity",), outputs=("target",), units={"velocity": "m/s", "target": "m/s"}
+    )
     spec = TrainingSpec("torch-materialize-r1", dataset, task, signature, backend, {})
     if signature_ok:
         # The existing framework-neutral constructor reserves distinct input/output names.
@@ -111,7 +136,6 @@ def _spec(
         object.__setattr__(signature, "outputs", ("velocity",))
         object.__setattr__(signature, "units", MappingProxyType({"velocity": "m/s"}))
     return spec
-
 
 
 class _SwitchingPayloads(dict[str, bytes]):
@@ -171,9 +195,13 @@ def test_use_time_gates_tampering_and_rejects_wrong_backend_task_or_signature() 
 
     product, payloads = _product()
     with pytest.raises(ValueError, match="sha256"):
-        materialize_torch_velocity_snapshots(_spec(), product, {"velocity": payloads["velocity"][:-1] + b"x"})
+        materialize_torch_velocity_snapshots(
+            _spec(), product, {"velocity": payloads["velocity"][:-1] + b"x"}
+        )
     with pytest.raises(ValueError, match="not supported"):
-        materialize_torch_velocity_snapshots(_spec(backend=TrainingBackend.PADDLE), product, payloads)
+        materialize_torch_velocity_snapshots(
+            _spec(backend=TrainingBackend.PADDLE), product, payloads
+        )
     with pytest.raises(ValueError, match="FIELD_RECONSTRUCTION"):
         materialize_torch_velocity_snapshots(_spec(task=TaskKind.SURROGATE), product, payloads)
     with pytest.raises(ValueError, match="signature"):
@@ -188,9 +216,28 @@ def test_use_time_gates_tampering_and_rejects_wrong_backend_task_or_signature() 
     ("shape", "axes", "labels", "encoding"),
     [
         ((1, 2, 3, 2), None, ("u_x", "u_y"), ArrayEncoding.NPY_FLOAT32_C_LITTLE),
-        ((2, 3, 2), (AxisSpec("sample", AxisSemantic.SAMPLE, 2), AxisSpec("x", AxisSemantic.SPATIAL, 3), AxisSpec("component", AxisSemantic.COMPONENT, 2)), ("u_x", "u_y"), ArrayEncoding.NPY_FLOAT32_C_LITTLE),
+        (
+            (2, 3, 2),
+            (
+                AxisSpec("sample", AxisSemantic.SAMPLE, 2),
+                AxisSpec("x", AxisSemantic.SPATIAL, 3),
+                AxisSpec("component", AxisSemantic.COMPONENT, 2),
+            ),
+            ("u_x", "u_y"),
+            ArrayEncoding.NPY_FLOAT32_C_LITTLE,
+        ),
         ((2, 3, 2), None, ("u", "v"), ArrayEncoding.NPY_FLOAT32_C_LITTLE),
-        ((2, 3, 2), None, ("u_x", "u_y"), ArrayEncoding("NPY", "float64", ArrayEncoding.NPY_FLOAT32_C_LITTLE.order, ArrayEncoding.NPY_FLOAT32_C_LITTLE.byte_order)),
+        (
+            (2, 3, 2),
+            None,
+            ("u_x", "u_y"),
+            ArrayEncoding(
+                "NPY",
+                "float64",
+                ArrayEncoding.NPY_FLOAT32_C_LITTLE.order,
+                ArrayEncoding.NPY_FLOAT32_C_LITTLE.byte_order,
+            ),
+        ),
     ],
 )
 def test_rejects_non_velocity_layout_components_or_dtype(shape, axes, labels, encoding) -> None:
@@ -219,7 +266,11 @@ def test_adapter_loads_without_pickle_and_has_no_training_or_gpu_execution_api(m
 
     source = Path("src/tensorlbm/ml/torch_materialize.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
-    names = {node.name.lower() for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    names = {
+        node.name.lower()
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
     call_names = {
         (node.func.attr if isinstance(node.func, ast.Attribute) else node.func.id).lower()
         for node in ast.walk(tree)
@@ -238,7 +289,9 @@ def test_adapter_loads_without_pickle_and_has_no_training_or_gpu_execution_api(m
     )
     assert not {"train", "fit", "train_flow_transformer"} & names
     assert not {"train", "fit", "train_flow_transformer"} & call_names
-    assert not any("trainer" in module or "train_flow_transformer" in module for module in imported_modules)
+    assert not any(
+        "trainer" in module or "train_flow_transformer" in module for module in imported_modules
+    )
     assert "cuda" not in source.lower()
     assert "sdaa" not in source.lower()
     assert "uri" not in source.lower()

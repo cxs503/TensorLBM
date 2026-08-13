@@ -46,6 +46,7 @@ direct-forcing IBM.
 
 This module does **not** modify the solver hot path.
 """
+
 from __future__ import annotations
 
 import math
@@ -187,9 +188,9 @@ class SpringMassDamper:
         c = 2·ζ·√(k·m)
         """
         n = 2 if n_dof <= 2 else 3
-        mass = mass_ratio * rho_f * D ** n
+        mass = mass_ratio * rho_f * D**n
         omega_n = 2.0 * math.pi * f_n
-        k = mass * omega_n ** 2
+        k = mass * omega_n**2
         c = 2.0 * zeta * math.sqrt(k * mass)
         return cls(mass=mass, stiffness=k, damping=c, n_dof=n_dof)
 
@@ -300,12 +301,18 @@ def shift_solid_mask(
     nz, ny, nx = solid.shape
     shifted = torch.zeros_like(solid)
     # Source and destination ranges (clipped to domain)
-    z0s = max(0, -dz); z1s = min(nz, nz - dz)
-    y0s = max(0, -dy); y1s = min(ny, ny - dy)
-    x0s = max(0, -dx); x1s = min(nx, nx - dx)
-    z0d = max(0, dz); z1d = z0d + (z1s - z0s)
-    y0d = max(0, dy); y1d = y0d + (y1s - y0s)
-    x0d = max(0, dx); x1d = x0d + (x1s - x0s)
+    z0s = max(0, -dz)
+    z1s = min(nz, nz - dz)
+    y0s = max(0, -dy)
+    y1s = min(ny, ny - dy)
+    x0s = max(0, -dx)
+    x1s = min(nx, nx - dx)
+    z0d = max(0, dz)
+    z1d = z0d + (z1s - z0s)
+    y0d = max(0, dy)
+    y1d = y0d + (y1s - y0s)
+    x0d = max(0, dx)
+    x1d = x0d + (x1s - x0s)
     if z1s > z0s and y1s > y0s and x1s > x0s:
         shifted[z0d:z1d, y0d:y1d, x0d:x1d] = solid[z0s:z1s, y0s:y1s, x0s:x1s]
     return shifted
@@ -365,10 +372,19 @@ def fsi_step_drag(
 
     # 1. Compute fluid force via drag integration.
     fx_p, fy_p, fz_p = drag_pressure_integration(
-        f, mesh, dpS, extrap=extrap, p0_method=p0_method, solid=solid,
+        f,
+        mesh,
+        dpS,
+        extrap=extrap,
+        p0_method=p0_method,
+        solid=solid,
     )
     fx_f, fy_f, fz_f = drag_friction_integration(
-        f, mesh, dpS, nu, formula=friction_formula,
+        f,
+        mesh,
+        dpS,
+        nu,
+        formula=friction_formula,
     )
     cd_p = (fx_p, fy_p, fz_p)
     cd_f = (fx_f, fy_f, fz_f)
@@ -401,8 +417,7 @@ def fsi_step_drag(
         struct_new = rigid_body_step(structure, force_6, dt, body=body)
     else:
         raise TypeError(
-            f"structure must be SpringMassState or RigidBodyState; "
-            f"got {type(structure).__name__}."
+            f"structure must be SpringMassState or RigidBodyState; got {type(structure).__name__}."
         )
 
     return FSIDragResult(
@@ -509,8 +524,12 @@ def fsi_step(
 
     # 2. IBM direct forcing on the fluid.
     force_on_fluid, f_corrected = ibm_direct_forcing_3d_common(
-        f, mask, u_target_resolved,
-        lattice=lattice_name, kernel=kernel, markers=markers,
+        f,
+        mask,
+        u_target_resolved,
+        lattice=lattice_name,
+        kernel=kernel,
+        markers=markers,
     )
 
     # 3. Reaction force on the body = −Σ IBM fluid force.
@@ -536,32 +555,51 @@ def fsi_step(
     dy = iy_grid - cy
     dz = iz_grid - cz
     # M = r × F; for each grid cell: M = r × F_cell, summed.
-    mx_total = float((dy * force_on_fluid[2].double() - dz * force_on_fluid[1].double()).sum().item())
-    my_total = float((dz * force_on_fluid[0].double() - dx * force_on_fluid[2].double()).sum().item())
-    mz_total = float((dx * force_on_fluid[1].double() - dy * force_on_fluid[0].double()).sum().item())
+    mx_total = float(
+        (dy * force_on_fluid[2].double() - dz * force_on_fluid[1].double()).sum().item()
+    )
+    my_total = float(
+        (dz * force_on_fluid[0].double() - dx * force_on_fluid[2].double()).sum().item()
+    )
+    mz_total = float(
+        (dx * force_on_fluid[1].double() - dy * force_on_fluid[0].double()).sum().item()
+    )
     force_on_body[3] = -mx_total
     force_on_body[4] = -my_total
     force_on_body[5] = -mz_total
 
     # 4. Advance the rigid body.
     structure_updated = rigid_body_step(
-        structure_state, force_on_body, dt, body=body,
+        structure_state,
+        force_on_body,
+        dt,
+        body=body,
     )
 
     # 5. Two-way explicit: re-apply IBM with the advanced body velocity.
     if coupling_name == "two_way_explicit":
         u_target_2 = structure_updated.vel.detach().to(f.dtype).clone()
         force_on_fluid_2, f_corrected = ibm_direct_forcing_3d_common(
-            f, mask, u_target_2,
-            lattice=lattice_name, kernel=kernel, markers=markers,
+            f,
+            mask,
+            u_target_2,
+            lattice=lattice_name,
+            kernel=kernel,
+            markers=markers,
         )
         # Recompute reaction force with the second pass.
         fx2 = float(force_on_fluid_2[0].sum().item())
         fy2 = float(force_on_fluid_2[1].sum().item())
         fz2 = float(force_on_fluid_2[2].sum().item())
-        mx2 = float((dy * force_on_fluid_2[2].double() - dz * force_on_fluid_2[1].double()).sum().item())
-        my2 = float((dz * force_on_fluid_2[0].double() - dx * force_on_fluid_2[2].double()).sum().item())
-        mz2 = float((dx * force_on_fluid_2[1].double() - dy * force_on_fluid_2[0].double()).sum().item())
+        mx2 = float(
+            (dy * force_on_fluid_2[2].double() - dz * force_on_fluid_2[1].double()).sum().item()
+        )
+        my2 = float(
+            (dz * force_on_fluid_2[0].double() - dx * force_on_fluid_2[2].double()).sum().item()
+        )
+        mz2 = float(
+            (dx * force_on_fluid_2[1].double() - dy * force_on_fluid_2[0].double()).sum().item()
+        )
         force_on_body = torch.tensor(
             [-fx2, -fy2, -fz2, -mx2, -my2, -mz2],
             dtype=torch.float64,

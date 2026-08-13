@@ -119,23 +119,17 @@ def bounce_back_cells_3d(
     Uses ``torch.where`` instead of clone + scatter to reduce the number of
     GPU kernel launches and avoid an intermediate boolean-indexed allocation.
 
-    Args:
-        f:     Distribution tensor, shape ``(19, nz, ny, nx)``.
-        mask:  Boolean mask ``(nz, ny, nx)`` of wall cells.
-        f_pre: Pre-collision distribution (for correct half-way BB).
-               If provided, uses ``f_pre[opp]`` at solid cells instead of
-               ``f[opp]``. This is critical: collision modifies f at solid
-               cells, so using post-collision f breaks the no-slip condition
-               (gives ~16% velocity error). Default: None (backward-compatible).
-
-    Bug fix (BB bug): Using post-collision f for BB gives 16.66% u_max error.
-    With f_pre (pre-collision): 0.00% error. This is the root cause of many
-    issues including friction grid divergence and wall function inaccuracy.
+    ``f_pre`` (pre-collision state) is accepted for interface compatibility
+    with :func:`tensorlbm.lbm_step_correct.lbm_step_correct`, which passes it
+    as a keyword argument.  The plain half-way swap does not need it (the
+    caller is expected to have applied the NoDynamics restore already), so it
+    is ignored; callers that need f_pre-aware link handling should pass a
+    custom ``bounce_back_fn``.
     """
+    del f_pre  # accepted for API compatibility; not needed for the plain swap
     opp = OPPOSITE.to(f.device)  # (19,)
-    src = f_pre if f_pre is not None else f
     # mask.unsqueeze(0) broadcasts (1, nz, ny, nx) → (19, nz, ny, nx)
-    return torch.where(mask.unsqueeze(0), src[opp], f)
+    return torch.where(mask.unsqueeze(0), f[opp], f)
 
 
 def free_slip_cells_3d(
@@ -208,41 +202,11 @@ def free_slip_z_walls_3d(
     return free_slip_cells_3d(f, wall_mask, axis=2)
 
 
-def _as_inlet_profile_3d(
-    value: float | torch.Tensor, ref: torch.Tensor,
-) -> torch.Tensor:
-    """Convert a scalar or tensor to a (nz, ny) inlet profile.
-
-    Args:
-        value: Scalar float or tensor of shape (nz, ny) or broadcastable.
-        ref:   Reference tensor of shape (nz, ny) for shape/device/dtype.
-
-    Returns:
-        Profile tensor of shape (nz, ny) on the correct device/dtype.
-    """
-    if isinstance(value, torch.Tensor):
-        profile = value.to(device=ref.device, dtype=ref.dtype)
-        if profile.ndim == 0:
-            return torch.full_like(ref, float(profile.item()))
-        if profile.shape != ref.shape:
-            # Try broadcasting (e.g. (1, ny) → (nz, ny))
-            try:
-                return profile.expand_as(ref).contiguous()
-            except RuntimeError as exc:
-                msg = (
-                    f"Inlet profile must have shape {tuple(ref.shape)}, "
-                    f"got {tuple(profile.shape)}"
-                )
-                raise ValueError(msg) from exc
-        return profile
-    return torch.full_like(ref, float(value))
-
-
 def zou_he_inlet_velocity_3d(
     f: torch.Tensor,
-    u_in: float | torch.Tensor,
-    uy_in: float | torch.Tensor = 0.0,
-    uz_in: float | torch.Tensor = 0.0,
+    u_in: float,
+    uy_in: float = 0.0,
+    uz_in: float = 0.0,
 ) -> torch.Tensor:
     """Zou/He inlet velocity boundary condition at the left face (x=0) for D3Q19.
 
@@ -253,13 +217,9 @@ def zou_he_inlet_velocity_3d(
 
     Args:
         f: Distribution tensor of shape ``(19, nz, ny, nx)``.
-        u_in: Prescribed x-velocity at the inlet.  May be a scalar (uniform)
-            or a tensor of shape ``(nz, ny)`` for a spatially-varying profile
-            (e.g. parabolic Poiseuille inlet).
-        uy_in: Prescribed y-velocity at the inlet (default 0).  Scalar or
-            ``(nz, ny)`` tensor.
-        uz_in: Prescribed z-velocity at the inlet (default 0).  Scalar or
-            ``(nz, ny)`` tensor.
+        u_in: Prescribed x-velocity at the inlet.
+        uy_in: Prescribed y-velocity at the inlet (default 0).
+        uz_in: Prescribed z-velocity at the inlet (default 0).
 
     Returns:
         Updated distribution tensor (same shape).
@@ -280,21 +240,14 @@ def zou_he_inlet_velocity_3d(
         f[2, :, :, 0] + f[8, :, :, 0] + f[10, :, :, 0]
         + f[12, :, :, 0] + f[14, :, :, 0]
     )  # cx<0 directions at x=0 → shape (nz, ny)
-
-    # Support scalar or tensor (nz, ny) velocity profiles
-    ref = f[0, :, :, 0]  # (nz, ny)
-    u_col = _as_inlet_profile_3d(u_in, ref)
-    uy_col = _as_inlet_profile_3d(uy_in, ref)
-    uz_col = _as_inlet_profile_3d(uz_in, ref)
-
-    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_col)  # (nz, ny)
+    rho = (sum_cx0 + 2.0 * sum_cx_neg) / (1.0 - u_in)  # (nz, ny)
 
     # Step 2: Compute equilibrium at (rho, u_in, uy_in, uz_in) for the inlet plane only.
     # Unsqueeze to (nz, ny, 1) so equilibrium3d produces (19, nz, ny, 1).
     rho3 = rho.unsqueeze(-1)               # (nz, ny, 1)
-    ux_field = u_col.unsqueeze(-1)         # (nz, ny, 1)
-    uy_field = uy_col.unsqueeze(-1)         # (nz, ny, 1)
-    uz_field = uz_col.unsqueeze(-1)         # (nz, ny, 1)
+    ux_field = torch.full_like(rho3, u_in)
+    uy_field = torch.full_like(rho3, uy_in)
+    uz_field = torch.full_like(rho3, uz_in)
     feq = equilibrium3d(rho3, ux_field, uy_field, uz_field, device=device)  # (19, nz, ny, 1)
 
     # Step 3: Non-equilibrium bounce-back (vectorised, no Python loop, no .item())
@@ -408,72 +361,62 @@ def far_field_bc_3d(
 ) -> torch.Tensor:
     """Free-stream (Dirichlet) far-field boundary condition for external aero.
 
-    Imposes the free-stream equilibrium on the inlet (x-) and selected lateral
-    faces, zero-gradient outlet at x=nx-1.  Unlike channel walls (bounce-back
-    on top/bottom) the lateral faces do not accelerate the flow around the
-    body, so there is **no blockage** — the body sees effectively unbounded
-    flow.  Validated: sphere Re=100 Cd error ~65% (channel) → ~9%
-    (far-field) at the same grid.
+    Imposes the free-stream equilibrium on the inlet and selected lateral
+    faces, zero-gradient outlet at x=nx-1.  When ``bc_config`` is provided,
+    only the faces listed in ``far_field_faces`` receive the free-stream
+    equilibrium; faces in ``periodic_faces`` are left untouched (periodic
+    streaming handles them).  When ``bc_config`` is ``None`` (legacy), all
+    four lateral faces (y±, z±) receive the far-field condition.
 
     Args:
-        f: Distribution tensor of shape ``(19, nz, ny, nx)``.
-        u_in: Free-stream x-velocity.
-        obstacle_mask: Optional solid mask for bounce-back.
-        uy, uz: Free-stream y/z velocity components (default 0).
-        bc_config: Optional dict specifying lateral face treatment::
+        f:              Distribution tensor, shape ``(Q, nz, ny, nx)``.
+        u_in:           Free-stream x-velocity in lattice units.
+        obstacle_mask:  Optional solid mask for bounce-back inside the body.
+        uy:             Free-stream y-velocity (default 0).
+        uz:             Free-stream z-velocity (default 0).
+        bc_config:      Optional dict with keys:
+            - ``far_field_faces``: list of faces to impose free-stream on.
+              Each face is a string like ``"y-"``, ``"y+"``, ``"z-"``,
+              ``"z+"``, ``"x-"`` (inlet), ``"x+"`` (outlet).
+            - ``periodic_faces``: list of faces to leave untouched.
+              If a face is in neither list it defaults to far-field
+              (backward-compatible).
 
-            bc_config = {
-                'far_field_faces': ['y-', 'y+', 'z-', 'z+'],  # Dirichlet free-stream
-                'periodic_faces': [],                         # left to torch.roll
-            }
-
-            Face names: ``'y-'`` (y=0), ``'y+'`` (y=ny-1),
-            ``'z-'`` (z=0), ``'z+'`` (z=nz-1).
-            Periodic faces are NOT overwritten — ``stream3d`` (torch.roll)
-            handles periodicity automatically.
-
-            If ``None`` (default), uses legacy behavior: y± always far-field,
-            z± far-field only when ``nz > 4`` (3D mode).  For 2D (nz ≤ 4)
-            the z-direction is left periodic (torch.roll).
-
-    Direction-agnostic usage (2D extruded cylinder):
-
-        ===========================  ============================  ===========================
-        axis                         far_field_faces               periodic_faces
-        ===========================  ============================  ===========================
-        ``'z'`` (cylinder in x-y)    ``['y-', 'y+']``              ``['z-', 'z+']``
-        ``'y'`` (cylinder in x-z)    ``['z-', 'z+']``              ``['y-', 'y+']``
-        ``'x'`` (cylinder in y-z)    ``['y-', 'y+', 'z-', 'z+']``  ``[]``
-        ===========================  ============================  ===========================
+    Validated: sphere Re=100 Cd error ~65% (channel) → ~9% (far-field)
+    at the same grid.
     """
-    if bc_config is None:
-        # Legacy behavior: y± far-field; z± far-field only in 3D (nz > 4)
-        ff = ['y-', 'y+']
-        if f.shape[1] > 4:
-            ff.extend(['z-', 'z+'])
-        bc_config = {'far_field_faces': ff, 'periodic_faces': []}
-
     rho1 = torch.ones((f.shape[1], f.shape[2], f.shape[3]), dtype=f.dtype, device=f.device)
     feq = equilibrium3d(
         rho1, torch.full_like(rho1, u_in), torch.full_like(rho1, uy),
         torch.full_like(rho1, uz), device=f.device,
     )
-    f[:, :, :, 0] = feq[:, :, :, 0]          # inlet (free stream)
-    f[:, :, :, -1] = f[:, :, :, -2]          # outlet (zero gradient)
+    f = f.clone()
 
-    # Far-field (Dirichlet free-stream) on selected lateral faces
-    for face in bc_config.get('far_field_faces', []):
-        if face == 'y-':
-            f[:, :, 0, :] = feq[:, :, 0, :]
-        elif face == 'y+':
-            f[:, :, -1, :] = feq[:, :, -1, :]
-        elif face == 'z-':
-            f[:, 0, :, :] = feq[:, 0, :, :]
-        elif face == 'z+':
-            f[:, -1, :, :] = feq[:, -1, :, :]
+    # Determine which faces get far-field vs periodic treatment
+    if bc_config is not None:
+        ff = set(bc_config.get("far_field_faces", []))
+        periodic = set(bc_config.get("periodic_faces", []))
+    else:
+        # Legacy: all lateral faces are far-field
+        ff = {"y-", "y+", "z-", "z+"}
+        periodic = set()
 
-    # Periodic faces: left untouched — torch.roll in stream3d handles wrap-around.
-    # (Listed in bc_config for documentation / future explicit enforcement.)
+    # Inlet (x-): always far-field unless explicitly periodic
+    if "x-" not in periodic:
+        f[:, :, :, 0] = feq[:, :, :, 0]
+    # Outlet (x+): always zero-gradient unless explicitly periodic
+    if "x+" not in periodic:
+        f[:, :, :, -1] = f[:, :, :, -2]
+    # Lateral faces
+    if "y-" in ff and "y-" not in periodic:
+        f[:, 0, :, :] = feq[:, 0, :, :]
+    if "y+" in ff and "y+" not in periodic:
+        f[:, -1, :, :] = feq[:, -1, :, :]
+    if "z-" in ff and "z-" not in periodic:
+        f[:, :, 0, :] = feq[:, :, 0, :]
+    if "z+" in ff and "z+" not in periodic:
+        f[:, :, -1, :] = feq[:, :, -1, :]
+
     if obstacle_mask is not None:
         f = bounce_back_cells_3d(f, obstacle_mask)
     return f
@@ -822,16 +765,14 @@ def nscbc_outlet_3d(
 
     rho, ux, uy, uz = macroscopic3d(f)
 
-    rho_out = rho[:, :, -1].unsqueeze(-1)      # (nz, ny, 1)
-    ux_out  = ux[:, :, -1].unsqueeze(-1)
-    uy_out  = uy[:, :, -1].unsqueeze(-1)
-    uz_out  = uz[:, :, -1].unsqueeze(-1)
+    rho_out = rho[:, :, -1]
+    ux_out  = ux[:, :, -1]
+    uy_out  = uy[:, :, -1]
+    uz_out  = uz[:, :, -1]
 
     L1 = sigma * c_s * (rho_out - rho_target)
     rho_corrected = (rho_out - L1).clamp(min=1e-6)
 
     f_new = f.clone()
-    f_new[:, :, :, -1] = equilibrium3d(
-        rho_corrected.squeeze(-1), ux_out.squeeze(-1), uy_out.squeeze(-1), uz_out.squeeze(-1)
-    )
+    f_new[:, :, :, -1] = equilibrium3d(rho_corrected, ux_out, uy_out, uz_out)
     return f_new

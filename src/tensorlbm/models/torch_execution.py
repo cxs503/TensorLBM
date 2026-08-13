@@ -36,7 +36,12 @@ class PlanPerformanceSample:
 
 
 def _valid_tau(tau: object) -> float:
-    if isinstance(tau, bool) or not isinstance(tau, (int, float)) or not isfinite(tau) or tau <= 0.5:
+    if (
+        isinstance(tau, bool)
+        or not isinstance(tau, (int, float))
+        or not isfinite(tau)
+        or tau <= 0.5
+    ):
         raise ValueError("tau must be a finite scalar > 0.5")
     return float(tau)
 

@@ -60,6 +60,7 @@ Dupuis A., Chopard B. (2003)
     Theory and applications of an alternative lattice Boltzmann grid refinement
     algorithm.  Int. J. Mod. Phys. B 17, 169.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -80,16 +81,21 @@ MAX_VR_LEVELS: int = 5
 # Utility: 2-D coarse/fine exchange
 # ---------------------------------------------------------------------------
 
+
 def _coarse_to_fine_2d(f_coarse: torch.Tensor, ratio: int = 2) -> torch.Tensor:
-    """Bilinear upsample D2Q9 distributions.  Shape: (9, ny, nx) → (9, ny*r, nx*r)."""
+    """Bilinear upsample D2Q9 distributions.  Shape: (9, ny, nx) → (9, ny*r, nx*r).
+
+    Each coarse cell is replicated into a ``ratio x ratio`` block of fine
+    cells (nearest-cell mapping).  This is the correct coordinate mapping
+    for LBM grid refinement: fine cell ``(ri+di, rj+dj)`` inherits coarse
+    cell ``(i, j)``.  ``F.interpolate(align_corners=True)`` must NOT be used
+    here — it samples at ``j*(n-1)/(m-1)`` instead of ``j/ratio``, shifting
+    every fine cell by half a coarse cell and breaking the coarse→fine→coarse
+    round trip (linear fields gain O(h) errors at the interface).
+    """
     q, ny, nx = f_coarse.shape
-    out = F.interpolate(
-        f_coarse.unsqueeze(0),          # (1, 9, ny, nx)
-        size=(ny * ratio, nx * ratio),
-        mode="bilinear",
-        align_corners=True,
-    )
-    return out.squeeze(0)               # (9, ny*r, nx*r)
+    out = f_coarse.repeat_interleave(ratio, dim=1).repeat_interleave(ratio, dim=2)
+    return out.contiguous()  # (9, ny*r, nx*r)
 
 
 def _fine_to_coarse_2d(f_fine: torch.Tensor, ratio: int = 2) -> torch.Tensor:
@@ -104,6 +110,7 @@ def _fine_to_coarse_2d(f_fine: torch.Tensor, ratio: int = 2) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Filippova–Hänel second-order interface interpolation
 # ---------------------------------------------------------------------------
+
 
 def _fh_coarse_to_fine_2d(
     f_coarse: torch.Tensor,
@@ -134,19 +141,19 @@ def _fh_coarse_to_fine_2d(
     f_eq = equilibrium(rho, ux, uy, device=f_coarse.device)
     f_neq = f_coarse - f_eq
 
-    # Rescale non-equilibrium part by relaxation-time ratio
-    scale = tau_f / tau_c
+    # Rescale non-equilibrium part by relaxation-time AND time-step ratios
+    # (Filippova–Hänel / Lagrava 2012): fine grid has Δt_f = Δt_c / ratio,
+    # so f_neq scales as (τ_f·Δt_f)/(τ_c·Δt_c) = τ_f / (ratio·τ_c).
+    # Using only τ_f/τ_c (missing the 1/ratio time-step factor) breaks
+    # interface stress continuity and the physical-viscosity match.
+    scale = tau_f / (ratio * tau_c)
     f_rescaled = f_eq + scale * f_neq
 
-    # Bilinear spatial interpolation
+    # Cell-block upsampling (correct ratio-2 coordinate mapping; see
+    # _coarse_to_fine_2d for why align_corners interpolation is wrong).
     q, ny_c, nx_c = f_rescaled.shape
-    out = F.interpolate(
-        f_rescaled.unsqueeze(0),
-        size=(ny_c * ratio, nx_c * ratio),
-        mode="bilinear",
-        align_corners=True,
-    )
-    return out.squeeze(0)
+    out = f_rescaled.repeat_interleave(ratio, dim=1).repeat_interleave(ratio, dim=2)
+    return out.contiguous()
 
 
 def _fh_coarse_to_fine_3d(
@@ -174,17 +181,17 @@ def _fh_coarse_to_fine_3d(
     f_eq = equilibrium3d(rho, ux, uy, uz, device=f_coarse.device)
     f_neq = f_coarse - f_eq
 
-    scale = tau_f / tau_c
+    # f_neq scales as (τ_f·Δt_f)/(τ_c·Δt_c) = τ_f/(ratio·τ_c); the 1/ratio
+    # time-step factor is required for interface stress continuity.
+    scale = tau_f / (ratio * tau_c)
     f_rescaled = f_eq + scale * f_neq
 
+    # Cell-block upsampling (correct ratio-2 coordinate mapping).
     b19, nz_c, ny_c, nx_c = f_rescaled.shape
-    out = F.interpolate(
-        f_rescaled.unsqueeze(0),
-        size=(nz_c * ratio, ny_c * ratio, nx_c * ratio),
-        mode="trilinear",
-        align_corners=True,
-    )
-    return out.squeeze(0)
+    out = (f_rescaled.repeat_interleave(ratio, dim=1)
+           .repeat_interleave(ratio, dim=2)
+           .repeat_interleave(ratio, dim=3))
+    return out.contiguous()
 
 
 def _fh_fine_to_coarse_2d(
@@ -213,7 +220,8 @@ def _fh_fine_to_coarse_2d(
     rho, ux, uy = macroscopic(f_avg)
     f_eq = equilibrium(rho, ux, uy, device=f_avg.device)
     f_neq = f_avg - f_eq
-    scale = tau_c / tau_f
+    # Inverse of the coarse→fine scaling: (τ_c·Δt_c)/(τ_f·Δt_f) = ratio·τ_c/τ_f.
+    scale = ratio * tau_c / tau_f
     return f_eq + scale * f_neq
 
 
@@ -230,13 +238,15 @@ def _fh_fine_to_coarse_3d(
     rho, ux, uy, uz = macroscopic3d(f_avg)
     f_eq = equilibrium3d(rho, ux, uy, uz, device=f_avg.device)
     f_neq = f_avg - f_eq
-    scale = tau_c / tau_f
+    # Inverse of the coarse→fine scaling: (τ_c·Δt_c)/(τ_f·Δt_f) = ratio·τ_c/τ_f.
+    scale = ratio * tau_c / tau_f
     return f_eq + scale * f_neq
 
 
 # ---------------------------------------------------------------------------
 # Boundary-layer automatic refinement indicators
 # ---------------------------------------------------------------------------
+
 
 def boundary_layer_indicator_2d(
     mask: torch.Tensor,
@@ -265,7 +275,7 @@ def boundary_layer_indicator_2d(
     ny, nx = mask.shape
     if bl_thickness_cells is None:
         L = char_length if char_length is not None else float(nx)
-        delta = 5.0 * L / (re ** 0.5)
+        delta = 5.0 * L / (re**0.5)
     else:
         delta = float(bl_thickness_cells)
 
@@ -306,7 +316,7 @@ def boundary_layer_indicator_3d(
     nz, ny, nx = mask.shape
     if bl_thickness_cells is None:
         L = char_length if char_length is not None else float(nx)
-        delta = 5.0 * L / (re ** 0.5)
+        delta = 5.0 * L / (re**0.5)
     else:
         delta = float(bl_thickness_cells)
 
@@ -326,6 +336,7 @@ def boundary_layer_indicator_3d(
 # Error indicators — 2-D
 # ---------------------------------------------------------------------------
 
+
 def nonequilibrium_indicator_2d(
     f: torch.Tensor,
     rho: torch.Tensor,
@@ -344,6 +355,7 @@ def nonequilibrium_indicator_2d(
         Indicator field (ny, nx), values ≥ 0.
     """
     from .d2q9 import equilibrium
+
     f_eq = equilibrium(rho, ux, uy, device=f.device)
     return (f - f_eq).norm(dim=0)
 
@@ -381,6 +393,7 @@ def gradient_indicator_2d(phi: torch.Tensor) -> torch.Tensor:
 # Error indicators — 3-D
 # ---------------------------------------------------------------------------
 
+
 def nonequilibrium_indicator_3d(
     f: torch.Tensor,
     rho: torch.Tensor,
@@ -401,6 +414,7 @@ def nonequilibrium_indicator_3d(
         Indicator field (nz, ny, nx).
     """
     from .d3q19 import equilibrium3d
+
     f_eq = equilibrium3d(rho, ux, uy, uz, device=f.device)
     return (f - f_eq).norm(dim=0)
 
@@ -448,6 +462,7 @@ def gradient_indicator_3d(phi: torch.Tensor) -> torch.Tensor:
 # ---------------------------------------------------------------------------
 # Cell marking
 # ---------------------------------------------------------------------------
+
 
 def mark_cells_for_refinement(
     indicator: torch.Tensor,
@@ -544,6 +559,7 @@ def _group_refine_boxes_2d(
 # Adaptation schedule
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AdaptationSchedule:
     """Controls when the AMR solver adapts its patch structure.
@@ -561,6 +577,7 @@ class AdaptationSchedule:
             exchange instead of plain bilinear interpolation.
         tau:         Coarsest-level relaxation time (used for FH rescaling).
     """
+
     interval: int = 20
     warmup: int = 0
     max_patches: int = 8
@@ -579,6 +596,7 @@ class AdaptationSchedule:
 # 2-D adaptive patch
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AMRPatch2D:
     """A dynamically managed fine-resolution D2Q9 patch.
@@ -592,6 +610,7 @@ class AMRPatch2D:
         parent_level: Index of the parent level (``level - 1``).
         tau:         Relaxation time for this level's collisions.
     """
+
     f: torch.Tensor
     box: BoxRegion
     ratio: int = 2
@@ -611,6 +630,7 @@ class AMRPatch2D:
 # ---------------------------------------------------------------------------
 # 2-D adaptive solver (D2Q9)
 # ---------------------------------------------------------------------------
+
 
 class AdaptiveSolver2D:
     """Adaptive-mesh LBM solver for 2-D flows (D2Q9).
@@ -703,7 +723,7 @@ class AdaptiveSolver2D:
         surviving: list[AMRPatch2D] = []
         for patch in self.patches:
             b = patch.box
-            local_indicator = indicator[b.y0:b.y1, b.x0:b.x1]
+            local_indicator = indicator[b.y0 : b.y1, b.x0 : b.x1]
             if local_indicator.max().item() < self.schedule.coarsen_threshold:
                 self._restrict_patch_to_level(patch)
             else:
@@ -747,7 +767,7 @@ class AdaptiveSolver2D:
             boundary_fn:  Boundary-condition operator ``f → f'``.
         """
         max_level = max((p.level for p in self.patches), default=0)
-        total_substeps = 2 ** max_level if max_level > 0 else 1
+        total_substeps = 2**max_level if max_level > 0 else 1
 
         # Advance coarse grid once
         self.coarse_f = collide_fn(self.coarse_f)
@@ -763,7 +783,7 @@ class AdaptiveSolver2D:
         # level-2 every sub-step, etc. (reversed: finest runs most often)
         for sub in range(1, total_substeps + 1):
             for lvl in sorted(patches_by_level.keys()):
-                step_freq = total_substeps // (2 ** lvl)
+                step_freq = total_substeps // (2**lvl)
                 if sub % step_freq == 0:
                     for patch in patches_by_level[lvl]:
                         # Inject parent data into patch boundary
@@ -787,12 +807,14 @@ class AdaptiveSolver2D:
     def _tau_for_level(self, level: int) -> float:
         """Compute relaxation time for a given VR level.
 
-        Fine levels use τ_f = (τ_c - 0.5) / ratio + 0.5 to maintain the
-        same kinematic viscosity across levels (Lagrava et al. 2012).
+        Fine levels use τ_f = (τ_c - 0.5)·ratio + 0.5 to maintain the same
+        *physical* kinematic viscosity across levels (Lagrava et al. 2012):
+        ν = c_s²(τ−½)·Δx²/Δt is invariant when Δx_f=Δx_c/ratio and
+        Δt_f=Δt_c/ratio, i.e. (τ_f−½) = ratio·(τ_c−½).
         """
         tau = self.schedule.tau
         for _ in range(level):
-            tau = (tau - 0.5) / 2.0 + 0.5
+            tau = (tau - 0.5) * 2.0 + 0.5
         return max(tau, 0.501)
 
     def _parent_f(self, patch: AMRPatch2D) -> torch.Tensor:
@@ -805,13 +827,17 @@ class AdaptiveSolver2D:
         return self.coarse_f  # fallback
 
     def _box_contains(self, outer: BoxRegion, inner: BoxRegion) -> bool:
-        return (outer.x0 <= inner.x0 and outer.x1 >= inner.x1
-                and outer.y0 <= inner.y0 and outer.y1 >= inner.y1)
+        return (
+            outer.x0 <= inner.x0
+            and outer.x1 >= inner.x1
+            and outer.y0 <= inner.y0
+            and outer.y1 >= inner.y1
+        )
 
     def _add_patch(self, box: BoxRegion, ratio: int = 2, level: int = 1) -> None:
         """Initialise a new fine patch from the parent level's field."""
         parent_f = self.coarse_f if level == 1 else self._find_parent_f(box, level)
-        f_coarse_patch = parent_f[:, box.y0:box.y1, box.x0:box.x1]
+        f_coarse_patch = parent_f[:, box.y0 : box.y1, box.x0 : box.x1]
         tau_parent = self._tau_for_level(level - 1)
         tau_child = self._tau_for_level(level)
         if self.schedule.use_fh_interpolation:
@@ -819,8 +845,9 @@ class AdaptiveSolver2D:
         else:
             f_fine = _coarse_to_fine_2d(f_coarse_patch, ratio)
         self.patches.append(
-            AMRPatch2D(f=f_fine, box=box, ratio=ratio, level=level,
-                       parent_level=level - 1, tau=tau_child)
+            AMRPatch2D(
+                f=f_fine, box=box, ratio=ratio, level=level, parent_level=level - 1, tau=tau_child
+            )
         )
 
     def _find_parent_f(self, box: BoxRegion, level: int) -> torch.Tensor:
@@ -831,13 +858,20 @@ class AdaptiveSolver2D:
         return self.coarse_f
 
     def _inject_to_patch(self, patch: AMRPatch2D) -> None:
-        """Overwrite fine-level boundary cells with upsampled parent values."""
+        """Overwrite fine-level boundary cells with upsampled parent values.
+
+        Only the outermost 1-cell halo is injected (LBM streaming has a
+        stencil radius of 1: a fine cell's unknown populations at the
+        interface come from its immediate coarse neighbours).  The interior
+        of the fine patch is left untouched so that fine-level physics
+        evolves independently of the parent grid.
+        """
         b = patch.box
         r = patch.ratio
         parent_f = self._parent_f(patch)
         # Convert box to parent coordinates for level > 1
         # (box is always stored in *parent* coordinates)
-        f_parent_patch = parent_f[:, b.y0:b.y1, b.x0:b.x1]
+        f_parent_patch = parent_f[:, b.y0 : b.y1, b.x0 : b.x1]
         tau_p = self._tau_for_level(patch.parent_level)
         tau_c = patch.tau
         if self.schedule.use_fh_interpolation:
@@ -846,8 +880,15 @@ class AdaptiveSolver2D:
             f_up = _coarse_to_fine_2d(f_parent_patch, r)
 
         ny_f, nx_f = patch.f.shape[1], patch.f.shape[2]
-        border = torch.ones((ny_f, nx_f), dtype=torch.bool, device=self.device)
-        border[r:-r, r:-r] = False
+        # 1-cell halo: only the outermost ring of fine cells is replaced.
+        # (LBM velocity set has |c| = 1, so information propagates one cell
+        # per step; a wider border would overwrite genuinely evolved fine
+        # cells with parent-grid interpolation and smear fine detail.)
+        border = torch.zeros((ny_f, nx_f), dtype=torch.bool, device=self.device)
+        border[0, :] = True
+        border[-1, :] = True
+        border[:, 0] = True
+        border[:, -1] = True
 
         fy = min(f_up.shape[1], ny_f)
         fx = min(f_up.shape[2], nx_f)
@@ -869,7 +910,7 @@ class AdaptiveSolver2D:
         nx_c = b.x1 - b.x0
         avg_y = min(f_avg.shape[1], ny_c)
         avg_x = min(f_avg.shape[2], nx_c)
-        parent_f[:, b.y0:b.y0 + avg_y, b.x0:b.x0 + avg_x] = f_avg[:, :avg_y, :avg_x]
+        parent_f[:, b.y0 : b.y0 + avg_y, b.x0 : b.x0 + avg_x] = f_avg[:, :avg_y, :avg_x]
 
     def _patch_exists(self, box: BoxRegion) -> bool:
         """Return True if any patch overlapping *box* exists (any level)."""
@@ -900,15 +941,19 @@ class AdaptiveSolver2D:
                 # Compute indicator on the fine patch
                 # Use vorticity-like proxy: non-equilibrium norm on parent f
                 from .d2q9 import equilibrium, macroscopic
+
                 pf = parent_patch.f
                 rho, ux, uy = macroscopic(pf)
                 fine_ind = (pf - equilibrium(rho, ux, uy, device=pf.device)).norm(dim=0)
                 if fine_ind.max().item() > self.schedule.refine_threshold:
                     # Use the whole parent patch area in parent coords
                     child_box = BoxRegion(
-                        0, b.x1 - b.x0,
-                        0, b.y1 - b.y0,
-                        0, 0,
+                        0,
+                        b.x1 - b.x0,
+                        0,
+                        b.y1 - b.y0,
+                        0,
+                        0,
                     )
                     if not self._patch_exists_at_level(child_box, lvl + 1):
                         self._add_patch(child_box, ratio=2, level=lvl + 1)
@@ -951,6 +996,7 @@ class AdaptiveSolver2D:
 # 3-D adaptive patch
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AMRPatch3D:
     """A dynamically managed fine-resolution D3Q19 patch.
@@ -963,6 +1009,7 @@ class AMRPatch3D:
         parent_level: Index of the parent level (``level - 1``).
         tau:          Relaxation time for this level's collisions.
     """
+
     f: torch.Tensor
     box: BoxRegion
     ratio: int = 2
@@ -986,6 +1033,7 @@ class AMRPatch3D:
 # ---------------------------------------------------------------------------
 # 3-D adaptive solver (D3Q19)
 # ---------------------------------------------------------------------------
+
 
 class AdaptiveSolver3D:
     """Adaptive-mesh LBM solver for 3-D flows (D3Q19).
@@ -1052,7 +1100,7 @@ class AdaptiveSolver3D:
         surviving: list[AMRPatch3D] = []
         for patch in self.patches:
             b = patch.box
-            local = indicator[b.z0:b.z1, b.y0:b.y1, b.x0:b.x1]
+            local = indicator[b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1]
             if local.max().item() < self.schedule.coarsen_threshold:
                 self._restrict_patch_to_level(patch)
             else:
@@ -1080,7 +1128,7 @@ class AdaptiveSolver3D:
     ) -> None:
         """Advance one coarse time step with multi-level sub-stepping."""
         max_level = max((p.level for p in self.patches), default=0)
-        total_substeps = 2 ** max_level if max_level > 0 else 1
+        total_substeps = 2**max_level if max_level > 0 else 1
 
         self.coarse_f = collide_fn(self.coarse_f)
         self.coarse_f = stream_fn(self.coarse_f)
@@ -1092,7 +1140,7 @@ class AdaptiveSolver3D:
 
         for sub in range(1, total_substeps + 1):
             for lvl in sorted(patches_by_level.keys()):
-                step_freq = total_substeps // (2 ** lvl)
+                step_freq = total_substeps // (2**lvl)
                 if sub % step_freq == 0:
                     for patch in patches_by_level[lvl]:
                         self._inject_to_patch(patch)
@@ -1112,10 +1160,14 @@ class AdaptiveSolver3D:
     # ------------------------------------------------------------------
 
     def _tau_for_level(self, level: int) -> float:
-        """Relaxation time for a given VR level (same viscosity across levels)."""
+        """Relaxation time for a given VR level (same viscosity across levels).
+
+        τ_f = (τ_c − ½)·ratio + ½ keeps ν = c_s²(τ−½)Δx²/Δt invariant when
+        Δx_f = Δx_c/ratio and Δt_f = Δt_c/ratio.
+        """
         tau = self.schedule.tau
         for _ in range(level):
-            tau = (tau - 0.5) / 2.0 + 0.5
+            tau = (tau - 0.5) * 2.0 + 0.5
         return max(tau, 0.501)
 
     def _parent_f_3d(self, patch: AMRPatch3D) -> torch.Tensor:
@@ -1125,17 +1177,26 @@ class AdaptiveSolver3D:
             if p.level == patch.parent_level:
                 b = p.box
                 pb = patch.box
-                if (b.x0 <= pb.x0 and b.x1 >= pb.x1
-                        and b.y0 <= pb.y0 and b.y1 >= pb.y1
-                        and b.z0 <= pb.z0 and b.z1 >= pb.z1):
+                if (
+                    b.x0 <= pb.x0
+                    and b.x1 >= pb.x1
+                    and b.y0 <= pb.y0
+                    and b.y1 >= pb.y1
+                    and b.z0 <= pb.z0
+                    and b.z1 >= pb.z1
+                ):
                     return p.f
         return self.coarse_f
 
     def _add_patch(self, box: BoxRegion, ratio: int = 2, level: int = 1) -> None:
-        parent_f = self.coarse_f if level == 1 else self._parent_f_3d(
-            AMRPatch3D(f=self.coarse_f, box=box, level=level, parent_level=level - 1)
+        parent_f = (
+            self.coarse_f
+            if level == 1
+            else self._parent_f_3d(
+                AMRPatch3D(f=self.coarse_f, box=box, level=level, parent_level=level - 1)
+            )
         )
-        f_c = parent_f[:, box.z0:box.z1, box.y0:box.y1, box.x0:box.x1]
+        f_c = parent_f[:, box.z0 : box.z1, box.y0 : box.y1, box.x0 : box.x1]
         tau_p = self._tau_for_level(level - 1)
         tau_c = self._tau_for_level(level)
         if self.schedule.use_fh_interpolation:
@@ -1143,15 +1204,14 @@ class AdaptiveSolver3D:
         else:
             f_f = _coarse_to_fine_3d(f_c, ratio)
         self.patches.append(
-            AMRPatch3D(f=f_f, box=box, ratio=ratio, level=level,
-                       parent_level=level - 1, tau=tau_c)
+            AMRPatch3D(f=f_f, box=box, ratio=ratio, level=level, parent_level=level - 1, tau=tau_c)
         )
 
     def _inject_to_patch(self, patch: AMRPatch3D) -> None:
         b = patch.box
         r = patch.ratio
         parent_f = self._parent_f_3d(patch)
-        f_c = parent_f[:, b.z0:b.z1, b.y0:b.y1, b.x0:b.x1]
+        f_c = parent_f[:, b.z0 : b.z1, b.y0 : b.y1, b.x0 : b.x1]
         tau_p = self._tau_for_level(patch.parent_level)
         tau_c = patch.tau
         if self.schedule.use_fh_interpolation:
@@ -1184,9 +1244,7 @@ class AdaptiveSolver3D:
         az = min(f_avg.shape[1], nz_c)
         ay = min(f_avg.shape[2], ny_c)
         ax = min(f_avg.shape[3], nx_c)
-        parent_f[:, b.z0:b.z0 + az, b.y0:b.y0 + ay, b.x0:b.x0 + ax] = (
-            f_avg[:, :az, :ay, :ax]
-        )
+        parent_f[:, b.z0 : b.z0 + az, b.y0 : b.y0 + ay, b.x0 : b.x0 + ax] = f_avg[:, :az, :ay, :ax]
 
     def _patch_exists(self, box: BoxRegion) -> bool:
         return self._patch_exists_at_level(box, level=None)
@@ -1196,9 +1254,14 @@ class AdaptiveSolver3D:
             if level is not None and p.level != level:
                 continue
             b = p.box
-            if (b.x0 < box.x1 and b.x1 > box.x0
-                    and b.y0 < box.y1 and b.y1 > box.y0
-                    and b.z0 < box.z1 and b.z1 > box.z0):
+            if (
+                b.x0 < box.x1
+                and b.x1 > box.x0
+                and b.y0 < box.y1
+                and b.y1 > box.y0
+                and b.z0 < box.z1
+                and b.z1 > box.z0
+            ):
                 return True
         return False
 
@@ -1236,6 +1299,7 @@ class AdaptiveSolver3D:
 # ---------------------------------------------------------------------------
 # 3-D box grouping helper
 # ---------------------------------------------------------------------------
+
 
 def _group_refine_boxes_3d(
     refine_mask: torch.Tensor,

@@ -42,6 +42,7 @@ Peng, Y., Shu, C., & Chew, Y. T. (2003).
     Simplified thermal lattice Boltzmann model for incompressible thermal
     flows. *Phys. Rev. E* 68, 026701.
 """
+
 from __future__ import annotations
 
 import functools

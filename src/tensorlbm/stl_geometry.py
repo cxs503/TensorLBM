@@ -22,6 +22,7 @@ computed by finding the nearest STL triangle for each near-wall cell and
 aligning the face normal with the outward direction inferred from the
 solid-mask gradient.
 """
+
 from __future__ import annotations
 
 import struct
@@ -66,9 +67,7 @@ def _parse_stl_binary_full(data: bytes, n_tri: int):
         ]
     )
     records = np.frombuffer(data, dtype=dt, count=n_tri, offset=84)
-    triangles = np.stack(
-        [records["v0"], records["v1"], records["v2"]], axis=1
-    ).astype(np.float32)
+    triangles = np.stack([records["v0"], records["v1"], records["v2"]], axis=1).astype(np.float32)
     normals = records["normal"].astype(np.float32).copy()
     return triangles, normals
 
@@ -96,8 +95,14 @@ def _parse_stl_ascii_full(data: bytes):
                 triangles.append(current_verts)
                 normals.append(current_normal)
             current_verts = []
-    triangles_arr = np.array(triangles, dtype=np.float32) if triangles else np.zeros((0, 3, 3), dtype=np.float32)
-    normals_arr = np.array(normals, dtype=np.float32) if normals else np.zeros((0, 3), dtype=np.float32)
+    triangles_arr = (
+        np.array(triangles, dtype=np.float32)
+        if triangles
+        else np.zeros((0, 3, 3), dtype=np.float32)
+    )
+    normals_arr = (
+        np.array(normals, dtype=np.float32) if normals else np.zeros((0, 3), dtype=np.float32)
+    )
     return triangles_arr, normals_arr
 
 
@@ -117,7 +122,7 @@ def _parse_stl_full(path: Path):
         remainder = (len(data) - 84) % 50
         if n_tri_computed > 0 and remainder < 4:
             # Allow small remainder (padding/footer)
-            return _parse_stl_binary_full(data[:84 + n_tri_computed * 50], n_tri_computed)
+            return _parse_stl_binary_full(data[: 84 + n_tri_computed * 50], n_tri_computed)
     return _parse_stl_ascii_full(data)
 
 
@@ -175,17 +180,15 @@ def read_stl(path):
     # Use stored normals when they are valid (|n| > 0.5), else computed
     stored_norm = np.linalg.norm(stored_normals, axis=1, keepdims=True)
     has_stored = (stored_norm > 0.5).squeeze()
-    face_normals = np.where(
-        has_stored[:, None], stored_normals, computed_normals
-    ).astype(np.float32)
+    face_normals = np.where(has_stored[:, None], stored_normals, computed_normals).astype(
+        np.float32
+    )
 
     # Bug 48: Auto-detect and mirror half hull FIRST.
     # Some STL files (e.g. KVLCC2) are half hulls (y >= 0 only).
     # Mirror to get full hull before orienting normals.
     if vertices[:, 1].min() >= 0 and vertices[:, 1].max() > 0:
-        vertices, faces, face_normals = mirror_stl(
-            vertices, faces, face_normals, axis=1
-        )
+        vertices, faces, face_normals = mirror_stl(vertices, faces, face_normals, axis=1)
         # Recompute normals from cross products after mirroring.
         # mirror_stl reverses winding for mirrored faces, so cross products
         # give correct outward direction for mirrored half.
@@ -264,8 +267,16 @@ def voxelize_stl(
     y_max = y_min + ny * dy
     z_max = z_min + nz * dz
     solid_np = _voxelize_triangles(
-        triangles, nx, ny, nz,
-        x_min, y_min, z_min, x_max, y_max, z_max,
+        triangles,
+        nx,
+        ny,
+        nz,
+        x_min,
+        y_min,
+        z_min,
+        x_max,
+        y_max,
+        z_max,
     )
     return torch.from_numpy(solid_np)
 
@@ -295,7 +306,7 @@ def _compute_gradient_normals(solid, near):
     gx = -gx * near_f
     gy = -gy * near_f
     gz = -gz * near_f
-    norm = torch.sqrt(gx ** 2 + gy ** 2 + gz ** 2).clamp(min=1e-10)
+    norm = torch.sqrt(gx**2 + gy**2 + gz**2).clamp(min=1e-10)
     return gx / norm, gy / norm, gz / norm
 
 
@@ -313,7 +324,7 @@ def _nearest_triangle_normals(cell_pos, centroids, face_normals):
     except ImportError:
         # Brute-force: (n_cell, 1) = (n_cell, n_tri).min
         diffs = cell_pos[:, None, :] - centroids[None, :, :]
-        dists = np.sum(diffs ** 2, axis=2)
+        dists = np.sum(diffs**2, axis=2)
         idx = np.argmin(dists, axis=1)
     return face_normals[idx].astype(np.float64).copy(), idx
 
@@ -406,11 +417,12 @@ def _ray_triangle_intersections_count(
             dom = np.argmax(np.abs(rd))
             perp_axes = [i for i in range(3) if i != dom]
 
-            ahead = (tri_max[ti, dom] > batch_origins[:, dom])
+            ahead = tri_max[ti, dom] > batch_origins[:, dom]
             in_perp = np.ones(B, dtype=bool)
             for pa in perp_axes:
-                in_perp &= (batch_origins[:, pa] >= tri_min[ti, pa] - 1e-10) & \
-                           (batch_origins[:, pa] <= tri_max[ti, pa] + 1e-10)
+                in_perp &= (batch_origins[:, pa] >= tri_min[ti, pa] - 1e-10) & (
+                    batch_origins[:, pa] <= tri_max[ti, pa] + 1e-10
+                )
             mask = ahead & in_perp
             if not mask.any():
                 continue
@@ -418,10 +430,10 @@ def _ray_triangle_intersections_count(
             # Möller–Trumbore for the masked rays
             f_val = 1.0 / a
             s_vec = batch_origins[mask] - v0  # (M, 3)
-            u = f_val * np.dot(s_vec, h)     # (M,)
-            q = np.cross(s_vec, edge1)       # (M, 3)
-            v = f_val * np.dot(q, rd)        # (M,)
-            t = f_val * np.dot(q, edge2)     # (M,)
+            u = f_val * np.dot(s_vec, h)  # (M,)
+            q = np.cross(s_vec, edge1)  # (M, 3)
+            v = f_val * np.dot(q, rd)  # (M,)
+            t = f_val * np.dot(q, edge2)  # (M,)
 
             hit = (u >= -1e-10) & (v >= -1e-10) & (u + v <= 1 + 1e-10) & (t > 1e-10)
             batch_counts[mask] += hit
@@ -508,9 +520,7 @@ def _orient_normals_raycast(
     # does NOT override the triangle→cell orientation.
     triangles = vertices[faces].astype(np.float64)
     ray_dir = np.array([1.0, 0.0, 0.0])
-    _intersection_counts = _ray_triangle_intersections_count(
-        cell_pos, ray_dir, triangles
-    )
+    _intersection_counts = _ray_triangle_intersections_count(cell_pos, ray_dir, triangles)
 
     return normals
 
@@ -564,21 +574,25 @@ def mirror_stl(vertices, faces, face_normals, axis=1):
     # Original faces stay the same
     faces_orig = faces.copy()
     # Mirrored faces: offset indices by n_v, reverse winding (swap v1,v2)
-    faces_mir = np.column_stack([
-        faces[:, 0] + n_v,
-        faces[:, 2] + n_v,  # reversed winding
-        faces[:, 1] + n_v,
-    ])
+    faces_mir = np.column_stack(
+        [
+            faces[:, 0] + n_v,
+            faces[:, 2] + n_v,  # reversed winding
+            faces[:, 1] + n_v,
+        ]
+    )
 
     faces_full = np.vstack([faces_orig, faces_mir]).astype(np.int32)
 
     # Mirrored normals: negate the mirror axis component
     normals_mir = face_normals.copy().astype(np.float64)
     normals_mir[:, axis] = -normals_mir[:, axis]
-    normals_full = np.vstack([
-        face_normals.astype(np.float64),
-        normals_mir,
-    ]).astype(np.float32)
+    normals_full = np.vstack(
+        [
+            face_normals.astype(np.float64),
+            normals_mir,
+        ]
+    ).astype(np.float32)
 
     return vertices_full, faces_full, normals_full
 
@@ -653,7 +667,7 @@ def SurfaceMesh_from_stl(
     # Bug 46 fix: only use FLUID near-wall cells (solid=False) for normal orientation.
     # The normal must point toward fluid, not solid. This is why from_gradient
     # is more reliable — the gradient naturally points from solid to fluid.
-    solid_np = solid_cpu.numpy() if hasattr(solid_cpu, 'numpy') else solid_cpu
+    solid_np = solid_cpu.numpy() if hasattr(solid_cpu, "numpy") else solid_cpu
     is_fluid = ~solid_np[near_idx[:, 0], near_idx[:, 1], near_idx[:, 2]]
     near_idx = near_idx[is_fluid]
     n_near = near_idx.shape[0]
@@ -700,15 +714,19 @@ def SurfaceMesh_from_stl(
     # This is robust for elongated geometries because it does not rely on
     # the voxelised solid-mask gradient.
     normals = _orient_normals_raycast(
-        normals, cell_pos, centroids, tri_idx,
-        vertices.astype(np.float64), faces.astype(np.int64),
+        normals,
+        cell_pos,
+        centroids,
+        tri_idx,
+        vertices.astype(np.float64),
+        faces.astype(np.int64),
     )
 
     # Bug 46b: STL face normals have |nx|≈0 at bow/stern of slender hulls
     # (surface nearly parallel to x-axis). Use gradient of solid mask to
     # fix the x-component — gradient naturally captures axial direction.
     # Hybrid: STL y/z + gradient x.
-    solid_np = solid_cpu.numpy() if hasattr(solid_cpu, 'numpy') else np.asarray(solid_cpu)
+    solid_np = solid_cpu.numpy() if hasattr(solid_cpu, "numpy") else np.asarray(solid_cpu)
     for i in range(n_near):
         iz, iy, ix = int(near_idx[i, 0]), int(near_idx[i, 1]), int(near_idx[i, 2])
         # Gradient of solid mask (points from fluid=0 to solid=1)
@@ -716,20 +734,20 @@ def SurfaceMesh_from_stl(
         gy = 0.0
         gz = 0.0
         if ix > 0 and ix < nx - 1:
-            gx = float(solid_np[iz, iy, ix+1]) - float(solid_np[iz, iy, ix-1])
+            gx = float(solid_np[iz, iy, ix + 1]) - float(solid_np[iz, iy, ix - 1])
         if iy > 0 and iy < ny - 1:
-            gy = float(solid_np[iz, iy+1, ix]) - float(solid_np[iz, iy-1, ix])
+            gy = float(solid_np[iz, iy + 1, ix]) - float(solid_np[iz, iy - 1, ix])
         if iz > 0 and iz < nz - 1:
-            gz = float(solid_np[iz+1, iy, ix]) - float(solid_np[iz-1, iy, ix])
+            gz = float(solid_np[iz + 1, iy, ix]) - float(solid_np[iz - 1, iy, ix])
         # Outward = -gradient (from solid to fluid)
-        gnorm = (gx*gx + gy*gy + gz*gz)**0.5
+        gnorm = (gx * gx + gy * gy + gz * gz) ** 0.5
         if gnorm > 1e-10:
             gx_out = -gx / gnorm
             # Replace x-component with gradient x (STL |nx| too small)
             # Keep y/z from STL (accurate transverse direction)
             normals[i, 0] = gx_out
             # Re-normalize
-            nrm_i = (normals[i, 0]**2 + normals[i, 1]**2 + normals[i, 2]**2)**0.5
+            nrm_i = (normals[i, 0] ** 2 + normals[i, 1] ** 2 + normals[i, 2] ** 2) ** 0.5
             if nrm_i > 1e-10:
                 normals[i] = normals[i] / nrm_i
 
@@ -757,9 +775,7 @@ def SurfaceMesh_from_stl(
         # the raw dA, then scale so that sum(dA) = true STL surface area
         # in lattice units.  This corrects the staircase area
         # underestimation (dA=1.0 gives ~88-93% of true area).
-        tri_areas = _compute_triangle_areas(
-            vertices.astype(np.float64), faces.astype(np.int64)
-        )
+        tri_areas = _compute_triangle_areas(vertices.astype(np.float64), faces.astype(np.int64))
         # Raw dA per cell = area of nearest triangle (in STL units)
         dA_raw = tri_areas[tri_idx].astype(np.float64)
         # Convert to lattice units: divide by cell-face area (spacing²)
@@ -789,10 +805,7 @@ def SurfaceMesh_from_stl(
         dA = torch.ones(nz, ny, nx, dtype=torch.float32)
         dA[iz_t, iy_t, ix_t] = torch.tensor(dA_per_cell, dtype=torch.float32)
     else:
-        raise ValueError(
-            f"dA_method must be 'none', 'stl_area', or 'cos_theta', "
-            f"got '{dA_method}'"
-        )
+        raise ValueError(f"dA_method must be 'none', 'stl_area', or 'cos_theta', got '{dA_method}'")
 
     # Move back to original device
     if device.type != "cpu":
@@ -838,14 +851,10 @@ def write_stl(path, vertices, faces, binary=True):
         lines = ["solid mesh"]
         for i in range(len(fcs)):
             n = normals[i]
-            lines.append(
-                f"  facet normal {n[0]:.6f} {n[1]:.6f} {n[2]:.6f}"
-            )
+            lines.append(f"  facet normal {n[0]:.6f} {n[1]:.6f} {n[2]:.6f}")
             lines.append("    outer loop")
             for v in [v0[i], v1[i], v2[i]]:
-                lines.append(
-                    f"      vertex {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}"
-                )
+                lines.append(f"      vertex {v[0]:.6f} {v[1]:.6f} {v[2]:.6f}")
             lines.append("    endloop")
             lines.append("  endfacet")
         lines.append("endsolid mesh")
@@ -934,9 +943,7 @@ def make_sphere_stl(center, radius, n_lat=30, n_lon=60):
     )
 
 
-def make_cylinder_stl(
-    center, radius, length, n_circ=40, axis="z", n_axial=1
-):
+def make_cylinder_stl(center, radius, length, n_circ=40, axis="z", n_axial=1):
     """Generate a cylinder STL mesh with outward-facing normals.
 
     The cylinder is extruded along *axis*; the circular cross-section lies
@@ -1071,14 +1078,9 @@ def make_naca_stl(
     xn[0] = 1e-4  # avoid division by zero in sqrt
     # NACA 4-digit thickness equation
     yt = (
-        5.0 * t
-        * (
-            0.2969 * np.sqrt(xn)
-            - 0.1260 * xn
-            - 0.3516 * xn ** 2
-            + 0.2843 * xn ** 3
-            - 0.1015 * xn ** 4
-        )
+        5.0
+        * t
+        * (0.2969 * np.sqrt(xn) - 0.1260 * xn - 0.3516 * xn**2 + 0.2843 * xn**3 - 0.1015 * xn**4)
     )
     xc = x_le + xn * chord
     yu = y_mid + yt * chord
@@ -1099,10 +1101,17 @@ def make_naca_stl(
     for j in range(n_x):
         vertices.append([xc[j], yl[j], z1])
 
-    def u0(j): return j
-    def u1(j): return n_x + j
-    def l0(j): return 2 * n_x + j
-    def l1(j): return 3 * n_x + j
+    def u0(j):
+        return j
+
+    def u1(j):
+        return n_x + j
+
+    def l0(j):
+        return 2 * n_x + j
+
+    def l1(j):
+        return 3 * n_x + j
 
     faces = []
     for j in range(n_x - 1):

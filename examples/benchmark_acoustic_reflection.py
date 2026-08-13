@@ -67,6 +67,7 @@
 （cx > 0 方向，从内部流来）。壁面物理位置在边界节点与幽灵域之间，
 即 x = nx - 0.5。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -80,9 +81,7 @@ import torch
 # --------------------------------------------------------------------------- #
 # 使 tensorlbm 可导入（从仓库根目录运行时）。
 # --------------------------------------------------------------------------- #
-_SRC = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-)
+_SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
@@ -98,8 +97,8 @@ torch.set_num_threads(_DEFAULT_THREADS)
 # 常量
 # =========================================================================== #
 
-CS2 = 1.0 / 3.0          # 格子声速平方
-CS = math.sqrt(CS2)      # c_s = 1/√3 ≈ 0.5774
+CS2 = 1.0 / 3.0  # 格子声速平方
+CS = math.sqrt(CS2)  # c_s = 1/√3 ≈ 0.5774
 
 # =========================================================================== #
 # D3Q19 反弹回方向表
@@ -114,7 +113,7 @@ CS = math.sqrt(CS2)      # c_s = 1/√3 ≈ 0.5774
 
 # 右壁面 (x=nx-1): 未知方向为 cx < 0
 _RIGHT_UNKNOWN = [2, 8, 10, 12, 14]
-_RIGHT_KNOWN = [1, 7, 9, 11, 13]   # OPPOSITE[_RIGHT_UNKNOWN]
+_RIGHT_KNOWN = [1, 7, 9, 11, 13]  # OPPOSITE[_RIGHT_UNKNOWN]
 
 
 def apply_right_wall_bounceback(f: torch.Tensor) -> torch.Tensor:
@@ -156,6 +155,7 @@ def apply_source(
 # =========================================================================== #
 # ASCII 可视化
 # =========================================================================== #
+
 
 def ascii_plot_1d(
     y_num: np.ndarray,
@@ -218,6 +218,7 @@ def ascii_plot_1d(
 # 含衰减的解析驻波振幅
 # =========================================================================== #
 
+
 def damped_standing_wave_amplitude(
     x_arr: np.ndarray,
     A: float,
@@ -237,12 +238,13 @@ def damped_standing_wave_amplitude(
     a_i = A * np.exp(-gamma * x_arr / cs)
     a_r = A * np.exp(-gamma * (2.0 * L - x_arr) / cs)
     phase = 2.0 * k * (x_arr - L)
-    return np.sqrt(a_i ** 2 + a_r ** 2 + 2.0 * a_i * a_r * np.cos(phase))
+    return np.sqrt(a_i**2 + a_r**2 + 2.0 * a_i * a_r * np.cos(phase))
 
 
 # =========================================================================== #
 # 主模拟
 # =========================================================================== #
+
 
 def run_reflection_benchmark(
     nx: int = 400,
@@ -280,11 +282,11 @@ def run_reflection_benchmark(
     dev = torch.device(device)
     cs = CS
     cs2 = CS2
-    nu = (tau - 0.5) / 3.0               # LBM 运动粘度
-    L = nx - 0.5                         # 半程反弹回壁面位置
-    k = omega / cs                       # 波数
-    lam = 2.0 * math.pi / k              # 波长
-    period = 2.0 * math.pi / omega       # 振荡周期
+    nu = (tau - 0.5) / 3.0  # LBM 运动粘度
+    L = nx - 0.5  # 半程反弹回壁面位置
+    k = omega / cs  # 波数
+    lam = 2.0 * math.pi / k  # 波长
+    period = 2.0 * math.pi / omega  # 振荡周期
     n_oscillations = n_steps / period
 
     # 粘性衰减率 Γ = ν·k² (参见 benchmark_acoustic_wave_1d.py)
@@ -320,9 +322,7 @@ def run_reflection_benchmark(
     rho_max = torch.full((nx,), -1e30, device=dev, dtype=torch.float64)
     rho_min = torch.full((nx,), 1e30, device=dev, dtype=torch.float64)
     # 监测点时间序列
-    monitor_series = torch.zeros(
-        n_steps + 1, len(monitor_x), device=dev, dtype=torch.float64
-    )
+    monitor_series = torch.zeros(n_steps + 1, len(monitor_x), device=dev, dtype=torch.float64)
 
     # ---- 初始监测 ----
     for i, mx in enumerate(monitor_x):
@@ -342,31 +342,24 @@ def run_reflection_benchmark(
     print(f"  周期 T          : {period:.2f} 步", flush=True)
     print(f"  波数 k = ω/c_s  : {k:.6f} rad/格子", flush=True)
     print(f"  壁面位置 L      : {L} (半程反弹回)", flush=True)
-    print(f"  k·L             : {k * L:.4f} (= {k * L / math.pi:.4f}·π)",
-          flush=True)
+    print(f"  k·L             : {k * L:.4f} (= {k * L / math.pi:.4f}·π)", flush=True)
     print(f"  衰减率 Γ = νk²  : {gamma_damp:.6e} /步", flush=True)
     print(f"  衰减长度 c_s/Γ  : {cs / gamma_damp:.1f} 格子", flush=True)
     print(f"  衰减因子 e^(-ΓL/c_s): {damp_factor:.4f}", flush=True)
-    print(f"  边界条件        : 左=硬源(无反射), 右=反弹回, 上下=周期",
-          flush=True)
+    print(f"  边界条件        : 左=硬源(无反射), 右=反弹回, 上下=周期", flush=True)
     print(f"  监测点          : {monitor_x}", flush=True)
     print(f"  步数            : {n_steps}", flush=True)
-    print(f"  测量窗口        : {measure_start}–{n_steps} ({measure_window} 步)",
-          flush=True)
+    print(f"  测量窗口        : {measure_start}–{n_steps} ({measure_window} 步)", flush=True)
     print(f"  振荡次数        : {n_oscillations:.1f}", flush=True)
     print(f"  设备            : {dev}", flush=True)
     print("=" * 72, flush=True)
     print(flush=True)
     print("  解析解 (含粘性衰减):", flush=True)
     print("    入射波: p_i = A·e^{-Γx/c_s}·sin(ωt - kx)", flush=True)
-    print("    反射波: p_r = A·e^{Γ(2L-x)/c_s}·sin(ωt + k(x-L))",
-          flush=True)
-    print("    驻波振幅: |p(x)| = √[a_i² + a_r² + 2·a_i·a_r·cos(2k(x-L))]",
-          flush=True)
-    print(f"    壁面入射振幅: A·e^(-ΓL/c_s) = {p_incident_wall:.6e}",
-          flush=True)
-    print(f"    壁面驻波振幅: 2×入射 = {p_wall_expected:.6e} (压力加倍)",
-          flush=True)
+    print("    反射波: p_r = A·e^{Γ(2L-x)/c_s}·sin(ωt + k(x-L))", flush=True)
+    print("    驻波振幅: |p(x)| = √[a_i² + a_r² + 2·a_i·a_r·cos(2k(x-L))]", flush=True)
+    print(f"    壁面入射振幅: A·e^(-ΓL/c_s) = {p_incident_wall:.6e}", flush=True)
+    print(f"    壁面驻波振幅: 2×入射 = {p_wall_expected:.6e} (压力加倍)", flush=True)
     print(flush=True)
 
     # ---- 日志表头 ----
@@ -407,8 +400,7 @@ def run_reflection_benchmark(
 
             # === 定期日志 + NaN 检查 ===
             if step % log_every == 0 or step == n_steps:
-                vals = [monitor_series[step, i].item()
-                        for i in range(len(monitor_x))]
+                vals = [monitor_series[step, i].item() for i in range(len(monitor_x))]
                 line = f"  {step:>6}"
                 for v in vals:
                     line += f"  {v - 1.0:14.8f}"
@@ -436,16 +428,14 @@ def run_reflection_benchmark(
 
     # ---- 含衰减的解析振幅 ----
     x_arr = np.arange(nx, dtype=np.float64)
-    amp_ana = damped_standing_wave_amplitude(
-        x_arr, delta_rho, gamma_damp, k, cs, L
-    )
+    amp_ana = damped_standing_wave_amplitude(x_arr, delta_rho, gamma_damp, k, cs, L)
 
     # ---- 1. 驻波形态误差 ----
     # 排除源附近区域 (x < 10)，源边界会扭曲振幅剖面
     exclude_src = 10
     mask = x_arr >= exclude_src
     amp_diff = amp_profile[mask] - amp_ana[mask]
-    l2_num = np.sqrt(np.sum(amp_diff ** 2))
+    l2_num = np.sqrt(np.sum(amp_diff**2))
     l2_den = np.sqrt(np.sum(amp_ana[mask] ** 2))
     pattern_error = (l2_num / max(l2_den, 1e-15)) * 100.0
 
@@ -479,86 +469,67 @@ def run_reflection_benchmark(
     print(flush=True)
 
     # ---- 1. 驻波形态 ----
-    print("  ┌─── 1. 驻波形态 ──────────────────────────────────────────┐",
-          flush=True)
-    print(f"  │  解析: |p(x)| = √[a_i²+a_r²+2·a_i·a_r·cos(2k(x-L))]  │",
-          flush=True)
-    print(f"  │  (含粘性衰减 Γ = νk² = {gamma_damp:.2e})              │",
-          flush=True)
-    print(f"  │  L2 相对误差: {pattern_error:.2f}%                              │",
-          flush=True)
-    print(f"  │  阈值:        10%                                        │",
-          flush=True)
+    print("  ┌─── 1. 驻波形态 ──────────────────────────────────────────┐", flush=True)
+    print(f"  │  解析: |p(x)| = √[a_i²+a_r²+2·a_i·a_r·cos(2k(x-L))]  │", flush=True)
+    print(f"  │  (含粘性衰减 Γ = νk² = {gamma_damp:.2e})              │", flush=True)
+    print(f"  │  L2 相对误差: {pattern_error:.2f}%                              │", flush=True)
+    print(f"  │  阈值:        10%                                        │", flush=True)
     status1 = "✓ PASS" if pattern_error < 10.0 else "✗ FAIL"
-    print(f"  │  状态:        {status1}                                        │",
-          flush=True)
-    print("  └──────────────────────────────────────────────────────────┘",
-          flush=True)
+    print(f"  │  状态:        {status1}                                        │", flush=True)
+    print("  └──────────────────────────────────────────────────────────┘", flush=True)
     print(flush=True)
 
     # ---- 2. 压力加倍 ----
-    print("  ┌─── 2. 压力加倍 ──────────────────────────────────────────┐",
-          flush=True)
-    print(f"  │  壁面入射振幅 |p_i(L)| = {p_incident_wall:.6e}          │",
-          flush=True)
-    print(f"  │  壁面总振幅   |p_wall|  = {p_wall:.6e}          │",
-          flush=True)
-    print(f"  │  比值 |p_wall|/|p_i(L)| = {doubling_ratio:.4f}              │",
-          flush=True)
-    print(f"  │  误差: {doubling_error:.2f}%                              │",
-          flush=True)
-    print(f"  │  阈值: 10%                                        │",
-          flush=True)
+    print("  ┌─── 2. 压力加倍 ──────────────────────────────────────────┐", flush=True)
+    print(f"  │  壁面入射振幅 |p_i(L)| = {p_incident_wall:.6e}          │", flush=True)
+    print(f"  │  壁面总振幅   |p_wall|  = {p_wall:.6e}          │", flush=True)
+    print(f"  │  比值 |p_wall|/|p_i(L)| = {doubling_ratio:.4f}              │", flush=True)
+    print(f"  │  误差: {doubling_error:.2f}%                              │", flush=True)
+    print(f"  │  阈值: 10%                                        │", flush=True)
     status2 = "✓ PASS" if doubling_error < 10.0 else "✗ FAIL"
-    print(f"  │  状态: {status2}                                        │",
-          flush=True)
-    print("  └──────────────────────────────────────────────────────────┘",
-          flush=True)
+    print(f"  │  状态: {status2}                                        │", flush=True)
+    print("  └──────────────────────────────────────────────────────────┘", flush=True)
     print(flush=True)
 
     # ---- 3. 反射系数 ----
-    print("  ┌─── 3. 反射系数 ──────────────────────────────────────────┐",
-          flush=True)
-    print(f"  │  S_max (波腹) = {s_max:.6e}                        │",
-          flush=True)
-    print(f"  │  S_min (波节) = {s_min:.6e}                        │",
-          flush=True)
-    print(f"  │  |R| = (S_max - S_min)/(S_max + S_min) = {R_coeff:.4f}  │",
-          flush=True)
-    print(f"  │  误差: {R_error:.2f}%                                        │",
-          flush=True)
-    print(f"  │  阈值: 5%                                          │",
-          flush=True)
+    print("  ┌─── 3. 反射系数 ──────────────────────────────────────────┐", flush=True)
+    print(f"  │  S_max (波腹) = {s_max:.6e}                        │", flush=True)
+    print(f"  │  S_min (波节) = {s_min:.6e}                        │", flush=True)
+    print(f"  │  |R| = (S_max - S_min)/(S_max + S_min) = {R_coeff:.4f}  │", flush=True)
+    print(f"  │  误差: {R_error:.2f}%                                        │", flush=True)
+    print(f"  │  阈值: 5%                                          │", flush=True)
     status3 = "✓ PASS" if R_error < 5.0 else "✗ FAIL"
-    print(f"  │  状态: {status3}                                        │",
-          flush=True)
-    print("  └──────────────────────────────────────────────────────────┘",
-          flush=True)
+    print(f"  │  状态: {status3}                                        │", flush=True)
+    print("  └──────────────────────────────────────────────────────────┘", flush=True)
     print(flush=True)
 
     # ---- 总结 ----
-    all_pass = (
-        pattern_error < 10.0
-        and doubling_error < 10.0
-        and R_error < 5.0
-    )
+    all_pass = pattern_error < 10.0 and doubling_error < 10.0 and R_error < 5.0
     print("=" * 72, flush=True)
     if all_pass:
         print("  ✓✓ 全部通过 — 声波反射基准测试 PASS", flush=True)
         print(f"     驻波形态误差 = {pattern_error:.2f}% < 10%", flush=True)
-        print(f"     压力加倍误差 = {doubling_error:.2f}% < 10% "
-              f"(比值 {doubling_ratio:.4f})", flush=True)
-        print(f"     反射系数误差 = {R_error:.2f}% < 5% "
-              f"(|R| = {R_coeff:.4f})", flush=True)
+        print(
+            f"     压力加倍误差 = {doubling_error:.2f}% < 10% (比值 {doubling_ratio:.4f})",
+            flush=True,
+        )
+        print(f"     反射系数误差 = {R_error:.2f}% < 5% (|R| = {R_coeff:.4f})", flush=True)
     else:
         print("  ✗ 未通过 — 声波反射基准测试 FAIL", flush=True)
-        print(f"     驻波形态误差 = {pattern_error:.2f}% "
-              f"({'✓' if pattern_error < 10.0 else '✗'} 阈值 10%)", flush=True)
-        print(f"     压力加倍误差 = {doubling_error:.2f}% "
-              f"({'✓' if doubling_error < 10.0 else '✗'} 阈值 10%)",
-              flush=True)
-        print(f"     反射系数误差 = {R_error:.2f}% "
-              f"({'✓' if R_error < 5.0 else '✗'} 阈值 5%)", flush=True)
+        print(
+            f"     驻波形态误差 = {pattern_error:.2f}% "
+            f"({'✓' if pattern_error < 10.0 else '✗'} 阈值 10%)",
+            flush=True,
+        )
+        print(
+            f"     压力加倍误差 = {doubling_error:.2f}% "
+            f"({'✓' if doubling_error < 10.0 else '✗'} 阈值 10%)",
+            flush=True,
+        )
+        print(
+            f"     反射系数误差 = {R_error:.2f}% ({'✓' if R_error < 5.0 else '✗'} 阈值 5%)",
+            flush=True,
+        )
     print("=" * 72, flush=True)
 
     # ======================================================================= #
@@ -569,8 +540,10 @@ def run_reflection_benchmark(
     print(flush=True)
     print("  压力振幅剖面 (█ = 数值, · = 解析含衰减):", flush=True)
     ascii_plot_1d(
-        amp_profile, amp_ana,
-        width=72, height=14,
+        amp_profile,
+        amp_ana,
+        width=72,
+        height=14,
         title="|p(x)| 振幅 vs x",
         x_max=nx,
     )
@@ -582,7 +555,8 @@ def run_reflection_benchmark(
         print(flush=True)
         ascii_plot_1d(
             monitor_np[:, i] - 1.0,
-            width=72, height=8,
+            width=72,
+            height=8,
             title=f"ρ'(t) at {lbl} (x={mx})",
             x_max=n_steps,
         )
@@ -607,48 +581,66 @@ def run_reflection_benchmark(
 # CLI
 # =========================================================================== #
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="声波反射基准测试 (D3Q19 BGK LBM)"
-    )
+    parser = argparse.ArgumentParser(description="声波反射基准测试 (D3Q19 BGK LBM)")
     parser.add_argument(
-        "--nx", type=int, default=400,
+        "--nx",
+        type=int,
+        default=400,
         help="x 方向网格数 (默认 400)",
     )
     parser.add_argument(
-        "--ny", type=int, default=4,
+        "--ny",
+        type=int,
+        default=4,
         help="y 方向网格数 (默认 4)",
     )
     parser.add_argument(
-        "--nz", type=int, default=1,
+        "--nz",
+        type=int,
+        default=1,
         help="z 方向网格数 (默认 1, 二维)",
     )
     parser.add_argument(
-        "--tau", type=float, default=0.8,
+        "--tau",
+        type=float,
+        default=0.8,
         help="弛豫时间 τ (默认 0.8)",
     )
     parser.add_argument(
-        "--delta", type=float, default=0.001,
+        "--delta",
+        type=float,
+        default=0.001,
         help="密度扰动振幅 δρ (默认 0.001)",
     )
     parser.add_argument(
-        "--omega", type=float, default=0.1,
+        "--omega",
+        type=float,
+        default=0.1,
         help="角频率 ω (默认 0.1)",
     )
     parser.add_argument(
-        "--steps", type=int, default=2000,
+        "--steps",
+        type=int,
+        default=2000,
         help="时间步数 (默认 2000)",
     )
     parser.add_argument(
-        "--device", default="cpu",
+        "--device",
+        default="cpu",
         help="设备: 'cpu' 或 'cuda' (默认 cpu)",
     )
     parser.add_argument(
-        "--log-every", type=int, default=200,
+        "--log-every",
+        type=int,
+        default=200,
         help="打印间隔 (默认 200)",
     )
     parser.add_argument(
-        "--measure-window", type=int, default=500,
+        "--measure-window",
+        type=int,
+        default=500,
         help="末尾测量窗口步数 (默认 500)",
     )
     args = parser.parse_args()

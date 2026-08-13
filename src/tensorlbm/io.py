@@ -9,6 +9,7 @@ ASCII VTK export does not require any additional package beyond the standard
 library; binary VTK uses the :mod:`struct` module (also stdlib).
 HDF5 export requires ``h5py`` (``pip install h5py``).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -151,9 +152,7 @@ def save_hdf5(
     try:
         import h5py
     except ImportError as exc:
-        raise ImportError(
-            "h5py is required for HDF5 output: pip install h5py"
-        ) from exc
+        raise ImportError("h5py is required for HDF5 output: pip install h5py") from exc
 
     path = Path(path)
     _validate_field_shapes(ux, uy, uz, rho)
@@ -238,15 +237,11 @@ def save_vtk_binary(
 
         if uz is not None:
             fh.write(b"VECTORS velocity float\n")
-            vel_data = np.column_stack(
-                [_to_np(ux), _to_np(uy), _to_np(uz)]
-            ).flatten().astype(">f4")
+            vel_data = np.column_stack([_to_np(ux), _to_np(uy), _to_np(uz)]).flatten().astype(">f4")
         else:
             fh.write(b"VECTORS velocity float\n")
             zeros = np.zeros(n_points, dtype=np.float32)
-            vel_data = np.column_stack(
-                [_to_np(ux), _to_np(uy), zeros]
-            ).flatten().astype(">f4")
+            vel_data = np.column_stack([_to_np(ux), _to_np(uy), zeros]).flatten().astype(">f4")
         fh.write(vel_data.tobytes())
         fh.write(b"\n")
 
@@ -301,26 +296,24 @@ def save_xdmf(
         join_args = "$0, $1, $2" if has_uz else "$0, $1"
         velocity_items = [
             (
-                f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
-                f"Precision=\"4\" Format=\"HDF\">\n"
+                f'          <DataItem Dimensions="{dimensions}" NumberType="Float" '
+                f'Precision="4" Format="HDF">\n'
                 f"            {h5_name}:/{group}/ux\n"
                 f"          </DataItem>"
             ),
             (
-                f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
-                f"Precision=\"4\" Format=\"HDF\">\n"
+                f'          <DataItem Dimensions="{dimensions}" NumberType="Float" '
+                f'Precision="4" Format="HDF">\n'
                 f"            {h5_name}:/{group}/uy\n"
                 f"          </DataItem>"
             ),
         ]
         if has_uz:
             velocity_items.append(
-
-                    f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
-                    f"Precision=\"4\" Format=\"HDF\">\n"
-                    f"            {h5_name}:/{group}/uz\n"
-                    f"          </DataItem>"
-
+                f'          <DataItem Dimensions="{dimensions}" NumberType="Float" '
+                f'Precision="4" Format="HDF">\n'
+                f"            {h5_name}:/{group}/uz\n"
+                f"          </DataItem>"
             )
     elif len(ux_shape) == 2:
         ny, nx = ux_shape
@@ -332,14 +325,14 @@ def save_xdmf(
         join_args = "$0, $1"
         velocity_items = [
             (
-                f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
-                f"Precision=\"4\" Format=\"HDF\">\n"
+                f'          <DataItem Dimensions="{dimensions}" NumberType="Float" '
+                f'Precision="4" Format="HDF">\n'
                 f"            {h5_name}:/{group}/ux\n"
                 f"          </DataItem>"
             ),
             (
-                f"          <DataItem Dimensions=\"{dimensions}\" NumberType=\"Float\" "
-                f"Precision=\"4\" Format=\"HDF\">\n"
+                f'          <DataItem Dimensions="{dimensions}" NumberType="Float" '
+                f'Precision="4" Format="HDF">\n'
                 f"            {h5_name}:/{group}/uy\n"
                 f"          </DataItem>"
             ),

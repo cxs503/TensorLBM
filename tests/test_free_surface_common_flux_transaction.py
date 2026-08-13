@@ -1,4 +1,5 @@
 """Contract tests for a pure paired common-flux transaction."""
+
 from __future__ import annotations
 
 import pytest
@@ -10,7 +11,9 @@ from tensorlbm.free_surface_common_flux_transaction import (
 )
 
 
-def _transaction(*, active: bool = True, atol: float = 1.0e-6, rtol: float = 1.0e-6) -> CommonFluxTransaction:
+def _transaction(
+    *, active: bool = True, atol: float = 1.0e-6, rtol: float = 1.0e-6
+) -> CommonFluxTransaction:
     return CommonFluxTransaction(active=active, atol=atol, rtol=rtol)
 
 
@@ -45,8 +48,10 @@ def test_plan_stage_validate_commit_preserves_inputs_and_returns_independent_buf
 def test_inactive_transaction_fails_closed_before_staging() -> None:
     with pytest.raises(FluxTransactionError, match="active"):
         _transaction(active=False).plan(
-            torch.tensor([1.0]), torch.tensor([2.0]),
-            interface_delta=torch.tensor([0.1]), counterpart_delta=torch.tensor([-0.1]),
+            torch.tensor([1.0]),
+            torch.tensor([2.0]),
+            interface_delta=torch.tensor([0.1]),
+            counterpart_delta=torch.tensor([-0.1]),
         )
 
 
@@ -73,16 +78,22 @@ def test_non_finite_non_floating_or_shape_mismatch_inputs_fail_closed() -> None:
     transaction = _transaction()
     cases = [
         (
-            torch.tensor([1.0]), torch.tensor([2.0]),
-            torch.tensor([float("nan")]), torch.tensor([0.0]),
+            torch.tensor([1.0]),
+            torch.tensor([2.0]),
+            torch.tensor([float("nan")]),
+            torch.tensor([0.0]),
         ),
         (
-            torch.tensor([1], dtype=torch.int64), torch.tensor([2.0]),
-            torch.tensor([0.0]), torch.tensor([0.0]),
+            torch.tensor([1], dtype=torch.int64),
+            torch.tensor([2.0]),
+            torch.tensor([0.0]),
+            torch.tensor([0.0]),
         ),
         (
-            torch.tensor([1.0, 2.0]), torch.tensor([3.0]),
-            torch.tensor([0.0, 0.0]), torch.tensor([0.0]),
+            torch.tensor([1.0, 2.0]),
+            torch.tensor([3.0]),
+            torch.tensor([0.0, 0.0]),
+            torch.tensor([0.0]),
         ),
     ]
     for interface, counterpart, interface_delta, counterpart_delta in cases:
@@ -93,7 +104,8 @@ def test_non_finite_non_floating_or_shape_mismatch_inputs_fail_closed() -> None:
 @pytest.mark.parametrize("bad_inventory", [[1.0], None, "not-a-tensor"])
 @pytest.mark.parametrize("inventory_name", ["interface", "counterpart"])
 def test_non_tensor_inventories_fail_closed_with_domain_error(
-    inventory_name: str, bad_inventory: object,
+    inventory_name: str,
+    bad_inventory: object,
 ) -> None:
     inputs: dict[str, object] = {
         "interface": torch.tensor([1.0]),
@@ -109,14 +121,26 @@ def test_non_tensor_inventories_fail_closed_with_domain_error(
 
 def test_tolerance_uses_atol_plus_rtol_times_staged_scale_and_rejects_invalid_policy() -> None:
     transaction = _transaction(atol=0.01, rtol=0.01)
-    valid = transaction.plan(
-        torch.tensor([100.0]), torch.tensor([100.0]),
-        torch.tensor([1.02]), torch.tensor([-1.00]),
-    ).stage().validate()
-    invalid = transaction.plan(
-        torch.tensor([100.0]), torch.tensor([100.0]),
-        torch.tensor([1.03]), torch.tensor([-1.00]),
-    ).stage().validate()
+    valid = (
+        transaction.plan(
+            torch.tensor([100.0]),
+            torch.tensor([100.0]),
+            torch.tensor([1.02]),
+            torch.tensor([-1.00]),
+        )
+        .stage()
+        .validate()
+    )
+    invalid = (
+        transaction.plan(
+            torch.tensor([100.0]),
+            torch.tensor([100.0]),
+            torch.tensor([1.03]),
+            torch.tensor([-1.00]),
+        )
+        .stage()
+        .validate()
+    )
 
     # Scale is the largest absolute aggregate endpoint flux (1.02 here),
     # rather than either inventory total or a global correction magnitude.

@@ -39,6 +39,7 @@ Womersley, J. R. (1955). Method for the calculation of velocity, rate of flow
     and viscous drag in arteries when the pressure gradient is known. *J. Physiol.*
     127, 553–563.
 """
+
 from __future__ import annotations
 
 import math
@@ -52,6 +53,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # 1-D profiles (return tensors of shape (n,) over y ∈ [0, 1])
 # ---------------------------------------------------------------------------
+
 
 def log_law_profile(
     n: int,
@@ -85,8 +87,8 @@ def log_law_profile(
     h = n / 2.0
     u_tau_init = re_tau * nu / h
 
-    y_grid = torch.linspace(0.5, n - 0.5, n)          # cell centres
-    y_dist = torch.minimum(y_grid, n - y_grid)         # distance from nearest wall
+    y_grid = torch.linspace(0.5, n - 0.5, n)  # cell centres
+    y_dist = torch.minimum(y_grid, n - y_grid)  # distance from nearest wall
     y_plus = y_dist * u_tau_init / nu
 
     # Composite profile: linear sub-layer + log outer region
@@ -126,7 +128,7 @@ def power_law_profile(
         Velocity profile tensor of shape ``(n,)``.
     """
     y = torch.linspace(0.5, n - 0.5, n)
-    eta = 1.0 - (2.0 * y / n - 1.0).abs()   # 0 at walls, 1 at centre
+    eta = 1.0 - (2.0 * y / n - 1.0).abs()  # 0 at walls, 1 at centre
     return u_centerline * eta.pow(1.0 / exponent)
 
 
@@ -146,7 +148,7 @@ def parabolic_profile(
         Velocity profile tensor of shape ``(n,)``.
     """
     y = torch.linspace(0.5, n - 0.5, n)
-    eta = 2.0 * y / n - 1.0            # −1 to +1
+    eta = 2.0 * y / n - 1.0  # −1 to +1
     return u_centerline * (1.0 - eta * eta)
 
 
@@ -171,9 +173,24 @@ def blasius_profile(
     """
     # Blasius f'(η) table (η, f')  – 14-point tabulation
     _eta = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 5.0]
-    _fp  = [0.0, 0.066, 0.133, 0.199, 0.265, 0.330, 0.394, 0.516, 0.630, 0.729, 0.812, 0.876, 0.923, 0.992]
+    _fp = [
+        0.0,
+        0.066,
+        0.133,
+        0.199,
+        0.265,
+        0.330,
+        0.394,
+        0.516,
+        0.630,
+        0.729,
+        0.812,
+        0.876,
+        0.923,
+        0.992,
+    ]
     eta_t = torch.tensor(_eta, dtype=torch.float32)
-    fp_t  = torch.tensor(_fp,  dtype=torch.float32)
+    fp_t = torch.tensor(_fp, dtype=torch.float32)
 
     # η at which f'(η) ≈ 0.99 is approximately 4.91
     eta_99 = 4.91
@@ -226,10 +243,10 @@ def womersley_profile(
     """
     # Normalised radial coordinate r ∈ [0, 1]  (0 = centre, 1 = wall)
     y = torch.linspace(0.5, n - 0.5, n)
-    r = (2.0 * y / n - 1.0).abs()    # 0 at centre, 1 at wall
+    r = (2.0 * y / n - 1.0).abs()  # 0 at centre, 1 at wall
 
     # Mean parabolic component
-    u = u_mean * (1.0 - r * r) * 2.0   # factor 2 so mean = u_mean
+    u = u_mean * (1.0 - r * r) * 2.0  # factor 2 so mean = u_mean
 
     # Oscillatory component: amplitude decays as 1/k²
     for k in range(1, n_harmonics + 1):
@@ -249,6 +266,7 @@ def womersley_profile(
 # ---------------------------------------------------------------------------
 # Synthetic turbulence
 # ---------------------------------------------------------------------------
+
 
 def synthetic_turbulence_2d(
     u_mean: torch.Tensor,
@@ -301,6 +319,7 @@ def synthetic_turbulence_2d(
 # Apply profile to a domain
 # ---------------------------------------------------------------------------
 
+
 def apply_inlet_profile_2d(
     f: torch.Tensor,
     u_profile: torch.Tensor,
@@ -327,9 +346,9 @@ def apply_inlet_profile_2d(
     device = f.device
     # equilibrium expects 2-D inputs (ny, nx); use shape (1, ny) then squeeze
     rho = torch.full((1, ny), rho_in, dtype=f.dtype, device=device)
-    ux  = u_profile.to(device=device, dtype=f.dtype).unsqueeze(0)  # (1, ny)
-    uy  = torch.zeros(1, ny, dtype=f.dtype, device=device)
-    feq = equilibrium(rho, ux, uy)   # (9, 1, ny)
+    ux = u_profile.to(device=device, dtype=f.dtype).unsqueeze(0)  # (1, ny)
+    uy = torch.zeros(1, ny, dtype=f.dtype, device=device)
+    feq = equilibrium(rho, ux, uy)  # (9, 1, ny)
     f_out = f.clone()
     f_out[:, :, x_inlet] = feq[:, 0, :]  # (9, ny)
     return f_out
@@ -358,10 +377,10 @@ def apply_inlet_profile_3d(
     device = f.device
     # equilibrium3d expects (nz, ny, nx); use shape (nz, ny, 1) then squeeze
     rho = torch.full((nz, ny, 1), rho_in, dtype=f.dtype, device=device)
-    ux  = u_profile.to(device=device, dtype=f.dtype).unsqueeze(-1)  # (nz, ny, 1)
-    uy  = torch.zeros(nz, ny, 1, dtype=f.dtype, device=device)
-    uz  = torch.zeros(nz, ny, 1, dtype=f.dtype, device=device)
-    feq = equilibrium3d(rho, ux, uy, uz)   # (19, nz, ny, 1)
+    ux = u_profile.to(device=device, dtype=f.dtype).unsqueeze(-1)  # (nz, ny, 1)
+    uy = torch.zeros(nz, ny, 1, dtype=f.dtype, device=device)
+    uz = torch.zeros(nz, ny, 1, dtype=f.dtype, device=device)
+    feq = equilibrium3d(rho, ux, uy, uz)  # (19, nz, ny, 1)
     f_out = f.clone()
     f_out[:, :, :, x_inlet] = feq[:, :, :, 0]  # (19, nz, ny)
     return f_out

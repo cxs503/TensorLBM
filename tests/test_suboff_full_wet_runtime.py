@@ -1,4 +1,5 @@
 """R1 software-artifact chain from compiled wall links to a force candidate."""
+
 from __future__ import annotations
 
 import pytest
@@ -68,8 +69,11 @@ def test_runtime_force_is_the_sum_of_linkwise_exchange_not_a_proxy_or_reset() ->
 
 def test_runtime_rejects_empty_wall_link_geometry() -> None:
     empty = GeometryAsset(
-        solid_mask=torch.zeros((3, 3, 3), dtype=torch.bool), body_id="empty",
-        origin=(0.0, 0.0, 0.0), units="lattice", source_id="test",
+        solid_mask=torch.zeros((3, 3, 3), dtype=torch.bool),
+        body_id="empty",
+        origin=(0.0, 0.0, 0.0),
+        units="lattice",
+        source_id="test",
     )
     with pytest.raises(ValueError, match="at least one compiled wall link"):
         run_suboff_full_wet_runtime(empty)

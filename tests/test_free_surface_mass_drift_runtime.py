@@ -1,4 +1,5 @@
 """Runtime regression for the L/I paired bulk-debit mass budget."""
+
 from __future__ import annotations
 
 import pytest
@@ -33,8 +34,15 @@ def _run(*, paired: bool) -> list[dict[str, object]]:
     runtime: dict[str, object] = {}
     for _ in range(3):
         f, fill, flags, mass, _ = free_surface_step(
-            f, fill, flags, solid, mass=mass, tau=1.0, rho_gas=0.001,
-            freeze_topology=True, runtime_ledger=runtime,
+            f,
+            fill,
+            flags,
+            solid,
+            mass=mass,
+            tau=1.0,
+            rho_gas=0.001,
+            freeze_topology=True,
+            runtime_ledger=runtime,
             paired_liquid_interface_debit=paired,
         )
     steps = runtime["steps"]
@@ -42,7 +50,9 @@ def _run(*, paired: bool) -> list[dict[str, object]]:
     return steps  # type: ignore[return-value]
 
 
-def test_three_step_closed_runtime_pairs_each_liquid_interface_credit_without_global_correction() -> None:
+def test_three_step_closed_runtime_pairs_each_liquid_interface_credit_without_global_correction() -> (
+    None
+):
     legacy = _run(paired=False)
     paired = _run(paired=True)
     assert len(legacy) == len(paired) == 3

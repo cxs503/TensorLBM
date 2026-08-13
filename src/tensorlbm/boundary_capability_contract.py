@@ -9,6 +9,7 @@ physical accuracy, conservation, or coupled-physics correctness.
 Docstring claims of physical validation (e.g. far-field Cd error) are not
 trusted as evidence; only executable test evidence is admitted.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -44,15 +45,31 @@ WITHHELD_UNKNOWN_PHYSICS = "WITHHELD_UNKNOWN_PHYSICS"
 WITHHELD_UNKNOWN_BACKEND = "WITHHELD_UNKNOWN_BACKEND"
 
 _AUDITED_BOUNDARIES: tuple[BoundaryKind, ...] = (
-    "periodic", "zou_he_inlet", "zou_he_outlet", "wall_bounce_back",
-    "wall_free_slip", "farfield", "sponge", "nscbc", "bouzidi_interpolated",
+    "periodic",
+    "zou_he_inlet",
+    "zou_he_outlet",
+    "wall_bounce_back",
+    "wall_free_slip",
+    "farfield",
+    "sponge",
+    "nscbc",
+    "bouzidi_interpolated",
 )
 _AUDITED_LATTICES: tuple[LatticeName, ...] = ("D2Q9", "D3Q19", "D3Q27")
 _AUDITED_COLLISIONS: tuple[CollisionFamily, ...] = (
-    "bgk", "mrt", "trt", "smagorinsky", "kbc", "cascaded",
+    "bgk",
+    "mrt",
+    "trt",
+    "smagorinsky",
+    "kbc",
+    "cascaded",
 )
 _AUDITED_PHYSICS: tuple[PhysicsName, ...] = (
-    "single_phase", "turbulence", "multiphase", "free_surface", "ibm",
+    "single_phase",
+    "turbulence",
+    "multiphase",
+    "free_surface",
+    "ibm",
 )
 _AUDITED_BACKENDS: tuple[BackendName, ...] = ("torch_cpu", "torch_cuda")
 
@@ -104,7 +121,6 @@ class BoundaryConditionCapability:
 # ---------------------------------------------------------------------------
 
 _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
-
     # ---- periodic ----------------------------------------------------------
     ("periodic", "D2Q9"): (
         "MECHANICS_TESTED",
@@ -124,7 +140,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "test_d3q27.py: mass conservation under periodic streaming; "
         "no periodic-flow physical validation",
     ),
-
     # ---- zou_he_inlet ------------------------------------------------------
     ("zou_he_inlet", "D2Q9"): (
         "IMPLEMENTATION_ONLY",
@@ -145,7 +160,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "test_d3q27.py: velocity prescription (ux matches prescribed), finite output; "
         "no physical validation",
     ),
-
     # ---- zou_he_outlet -----------------------------------------------------
     ("zou_he_outlet", "D2Q9"): (
         "IMPLEMENTATION_ONLY",
@@ -164,7 +178,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "Used in test_d3q27.py via apply_zou_he_channel_boundaries_27; "
         "no dedicated outlet-pressure test",
     ),
-
     # ---- wall_bounce_back --------------------------------------------------
     ("wall_bounce_back", "D2Q9"): (
         "PHYSICS_VALIDATED",
@@ -175,8 +188,7 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
     ("wall_bounce_back", "D3Q19"): (
         "PHYSICS_VALIDATED",
         "tensorlbm.boundaries3d.bounce_back_cells_3d",
-        "test_sphere_cd.py: Cd validation (err < 120–150%); "
-        "very loose tolerance, BGK only",
+        "test_sphere_cd.py: Cd validation (err < 120–150%); very loose tolerance, BGK only",
     ),
     ("wall_bounce_back", "D3Q27"): (
         "MECHANICS_TESTED",
@@ -186,7 +198,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "test_d3q27_moving_wall_momentum_exchange.py: ME force unit test; "
         "no physical validation",
     ),
-
     # ---- wall_free_slip ----------------------------------------------------
     ("wall_free_slip", "D2Q9"): (
         "NO_IMPLEMENTATION",
@@ -204,7 +215,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         None,
         "No free-slip implementation for D3Q27",
     ),
-
     # ---- farfield ----------------------------------------------------------
     ("farfield", "D2Q9"): (
         "IMPLEMENTATION_ONLY",
@@ -223,7 +233,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         None,
         "No far-field BC implementation for D3Q27",
     ),
-
     # ---- sponge ------------------------------------------------------------
     ("sponge", "D2Q9"): (
         "MECHANICS_TESTED",
@@ -243,7 +252,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         "test_gap_improvements.py: 3D target sponge no-damping test (lattice-agnostic); "
         "no physical validation of wave absorption",
     ),
-
     # ---- nscbc -------------------------------------------------------------
     ("nscbc", "D2Q9"): (
         "IMPLEMENTATION_ONLY",
@@ -260,7 +268,6 @@ _IMPLEMENTATION_EVIDENCE: dict[tuple[str, str], tuple[str, str | None, str]] = {
         None,
         "No NSCBC implementation for D3Q27",
     ),
-
     # ---- bouzidi_interpolated ----------------------------------------------
     ("bouzidi_interpolated", "D2Q9"): (
         "MECHANICS_TESTED",
@@ -292,7 +299,9 @@ def _capability_for(kind: str, lattice: str) -> BoundaryConditionCapability:
     detail = _IMPLEMENTATION_EVIDENCE.get((kind, lattice))
     if detail is None:
         return BoundaryConditionCapability(
-            "NO_IMPLEMENTATION", WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE, None,
+            "NO_IMPLEMENTATION",
+            WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE,
+            None,
             "No implementation evidence registered for this combination.",
             f"{kind}/{lattice} is not in the audited implementation registry.",
         )
@@ -300,14 +309,20 @@ def _capability_for(kind: str, lattice: str) -> BoundaryConditionCapability:
 
     if impl_status == "NO_IMPLEMENTATION":
         return BoundaryConditionCapability(
-            impl_status, WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE, entrypoint, evidence,
+            impl_status,
+            WITHHELD_NO_IMPLEMENTATION_FOR_LATTICE,
+            entrypoint,
+            evidence,
             f"{kind} has no audited {lattice} implementation.",
         )
 
     # Implementation exists (at any evidence level) but no complete composition
     # contract has been verified for any collision × physics × backend.
     return BoundaryConditionCapability(
-        impl_status, WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE, entrypoint, evidence,
+        impl_status,
+        WITHHELD_NO_COMPLETE_COMPOSITION_EVIDENCE,
+        entrypoint,
+        evidence,
         "Implementation exists, but no complete collision × physics × backend composition "
         "has been verified as a production-ready contract. Mechanics or physics tests "
         "do not establish composition correctness.",
@@ -317,10 +332,7 @@ def _capability_for(kind: str, lattice: str) -> BoundaryConditionCapability:
 def boundary_capability_matrix() -> dict[str, dict[str, BoundaryConditionCapability]]:
     """Return the complete audited boundary-kind × lattice capability matrix."""
     return {
-        kind: {
-            lattice: _capability_for(kind, lattice)
-            for lattice in _AUDITED_LATTICES
-        }
+        kind: {lattice: _capability_for(kind, lattice) for lattice in _AUDITED_LATTICES}
         for kind in _AUDITED_BOUNDARIES
     }
 
@@ -366,9 +378,7 @@ def require_boundary_condition_capability(
 
     # A missing implementation is reported before the physics-coupling check.
     if capability.implementation_status == "NO_IMPLEMENTATION":
-        raise BoundaryConditionWithheldError(
-            f"{capability.status}: {capability.note}"
-        )
+        raise BoundaryConditionWithheldError(f"{capability.status}: {capability.note}")
 
     # Non-single-phase physics has no audited BC coupling contract.
     if physics != "single_phase":
@@ -378,9 +388,7 @@ def require_boundary_condition_capability(
         )
 
     if not capability.available:
-        raise BoundaryConditionWithheldError(
-            f"{capability.status}: {capability.note}"
-        )
+        raise BoundaryConditionWithheldError(f"{capability.status}: {capability.note}")
     return capability
 
 

@@ -5,9 +5,12 @@ self-supervised flow transformer.  SUBOFF reconstruction is optional and is
 queried explicitly with :func:`get_suboff_availability`; it never blocks this
 package's core imports.
 """
+
 from __future__ import annotations
 
 import importlib
+
+from ..backends import get_backend, set_backend  # re-export for convenience
 
 from .database import (
     LBMDatabase,
@@ -27,6 +30,7 @@ from .dataset import (
     save_dataset_pt,
     strain_rate_tensor_2d,
 )
+from .fno import FNO2d, FNO2dArch, load_fno2d, save_fno2d
 from .inference import collide_ai_les_bgk, predict_nu_t_2d, predict_tau_eff_2d
 from .model import EddyViscosityMLP, load_model, save_model
 from .pipeline import AIPipelineResult, run_ai_dns_pipeline, run_ai_les_pipeline
@@ -43,6 +47,9 @@ from .transformer import (
 )
 
 __all__ = [
+    # backends
+    "get_backend",
+    "set_backend",
     # dataset
     "EddyViscosityDataset",
     "extract_les_samples_2d",
@@ -63,6 +70,11 @@ __all__ = [
     "EddyViscosityMLP",
     "save_model",
     "load_model",
+    # FNO2d neural operator
+    "FNO2dArch",
+    "FNO2d",
+    "save_fno2d",
+    "load_fno2d",
     # train
     "TrainConfig",
     "train_eddy_viscosity_model",
@@ -84,6 +96,16 @@ __all__ = [
     "load_flow_transformer_model",
     "reconstruct_flow_field",
 ]
+
+# SUBOFF 3D surrogate modules
+from tensorlbm.ai.nn import encoder_module, decoder_module, attention_module
+from tensorlbm.ai.suboff_coord import coord_ori27, coord_ori28, coord_ori28_addition
+from tensorlbm.ai.suboff_dataset import (
+    CylinderDatasetMultiRe14,
+    read_multi_re_cylinder_data27,
+    read_multi_re_cylinder_data28,
+    read_multi_re_cylinder_data28_addition,
+)
 
 _OPTIONAL_SUBOFF_MODULES = (
     "tensorlbm.ai.suboff_utils",
@@ -150,4 +172,18 @@ def get_suboff_availability() -> dict[str, str | bool]:
     }
 
 
-__all__ += ["get_suboff_availability", *_OPTIONAL_SUBOFF_EXPORTS]
+__all__ += [
+    "get_suboff_availability",
+    *_OPTIONAL_SUBOFF_EXPORTS,
+    # SUBOFF 3D surrogate modules
+    "encoder_module",
+    "decoder_module",
+    "attention_module",
+    "coord_ori27",
+    "coord_ori28",
+    "coord_ori28_addition",
+    "CylinderDatasetMultiRe14",
+    "read_multi_re_cylinder_data27",
+    "read_multi_re_cylinder_data28",
+    "read_multi_re_cylinder_data28_addition",
+]

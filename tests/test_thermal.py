@@ -1,4 +1,5 @@
 """Tests for the thermal LBM module (D2Q9 + D2Q5 double-distribution model)."""
+
 from __future__ import annotations
 
 import math
@@ -251,7 +252,7 @@ class TestThermalDiffusionConvergence:
         amp0 = float((T0 - T_mean).abs().max().item())
         amp_final = float((T_final - T_mean).abs().max().item())
 
-        decay_rate_theory = alpha * k ** 2
+        decay_rate_theory = alpha * k**2
         if amp0 > 0 and amp_final > 0:
             measured_rate = -math.log(amp_final / amp0) / n_steps
             assert abs(measured_rate - decay_rate_theory) / decay_rate_theory < 0.15, (

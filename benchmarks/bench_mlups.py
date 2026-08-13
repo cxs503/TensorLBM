@@ -8,6 +8,7 @@ Run with::
 
 Results are printed to stdout in a structured table.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -193,24 +194,41 @@ def main() -> None:
     for collision in collisions:
         for ny, nx in [(256, 256), (512, 512), (1024, 1024)]:
             mlups = _mlups_2d(
-                ny, nx, args.warmup, args.steps,
-                tau=0.6, device=device, use_compile=args.use_compile,
+                ny,
+                nx,
+                args.warmup,
+                args.steps,
+                tau=0.6,
+                device=device,
+                use_compile=args.use_compile,
                 collision=collision,
             )
             print(f"D2Q9  {ny}×{nx:<22}  {collision:<8} {mlups:>10.2f}")
 
         for nz, ny, nx in [(32, 32, 32), (64, 64, 64), (128, 64, 64)]:
             mlups = _mlups_3d(
-                nz, ny, nx, args.warmup, args.steps,
-                tau=0.6, device=device, use_compile=args.use_compile,
+                nz,
+                ny,
+                nx,
+                args.warmup,
+                args.steps,
+                tau=0.6,
+                device=device,
+                use_compile=args.use_compile,
                 collision=collision,
             )
             print(f"D3Q19 {nz}×{ny}×{nx:<19}  {collision:<8} {mlups:>10.2f}")
 
     for nz, ny, nx in [(32, 32, 32), (64, 64, 64)]:
         mlups = _mlups_d3q27(
-            nz, ny, nx, args.warmup, args.steps,
-            tau=0.6, device=device, use_compile=args.use_compile,
+            nz,
+            ny,
+            nx,
+            args.warmup,
+            args.steps,
+            tau=0.6,
+            device=device,
+            use_compile=args.use_compile,
         )
         print(f"D3Q27 {nz}×{ny}×{nx:<19}  {'bgk':<8} {mlups:>10.2f}")
 

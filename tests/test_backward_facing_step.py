@@ -6,6 +6,7 @@ Covers:
 * BackwardFacingStepConfig – validation, properties, round-trip
 * run_backward_facing_step – smoke test
 """
+
 from __future__ import annotations
 
 import json
@@ -91,8 +92,8 @@ class TestMeasureReattachmentLength:
         step_h = 20
         ux = torch.ones((ny, nx)) * 0.05
         # Simulate recirculation zone at row 1, columns x_step to 99
-        ux[1, x_step:x_step + 60] = -0.01  # negative (recirculation)
-        ux[1, x_step + 60:] = 0.05          # positive (reattached)
+        ux[1, x_step : x_step + 60] = -0.01  # negative (recirculation)
+        ux[1, x_step + 60 :] = 0.05  # positive (reattached)
         xr = measure_reattachment_length(ux, x_step=x_step, step_h=step_h)
         expected = 60.0 / step_h
         assert abs(xr - expected) < 1.0 / step_h + 0.01

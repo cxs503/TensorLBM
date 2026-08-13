@@ -18,6 +18,7 @@ The module does **not** modify any solver hot path.  It only provides
 reusable wall-function mechanics that a solver may call from its own
 boundary-condition step.
 """
+
 from __future__ import annotations
 
 import torch
@@ -32,9 +33,7 @@ _B_LOG = 5.0
 def _validate_lattice(lattice: str) -> str:
     """Return *lattice* if supported, else raise ValueError."""
     if lattice not in SUPPORTED_LATTICES:
-        raise ValueError(
-            f"Unsupported lattice {lattice!r}; supported: {SUPPORTED_LATTICES}"
-        )
+        raise ValueError(f"Unsupported lattice {lattice!r}; supported: {SUPPORTED_LATTICES}")
     return lattice
 
 
@@ -42,9 +41,11 @@ def _macroscopic(lattice: str, f: torch.Tensor):
     """Dispatch to the correct macroscopic function for *lattice*."""
     if lattice == "D3Q19":
         from .d3q19 import macroscopic3d
+
         return macroscopic3d(f)
     elif lattice == "D3Q27":
         from .d3q27 import macroscopic27
+
         return macroscopic27(f)
     raise ValueError(f"Unsupported lattice: {lattice!r}")
 
@@ -52,6 +53,7 @@ def _macroscopic(lattice: str, f: torch.Tensor):
 # ---------------------------------------------------------------------------
 # Wall-quantity computation helpers (lattice-agnostic)
 # ---------------------------------------------------------------------------
+
 
 def compute_u_tau(
     u_mag: torch.Tensor,
@@ -125,6 +127,7 @@ def compute_u_tau(
         turb = (y_plus > yp_thresh) & (u_mag > 1e-10)
         if bool(turb.any()):
             from math import log as _log, exp as _exp
+
             u_tau_g = u_tau_vis[turb].clone()
             um = u_mag[turb]
             for _ in range(8):
@@ -135,7 +138,9 @@ def compute_u_tau(
             u_tau[turb] = u_tau_g
         return u_tau
 
-    raise ValueError(f"Unknown wall_law {wall_law!r}; supported: 'log', 'reichardt', 'gradient', 'hybrid'")
+    raise ValueError(
+        f"Unknown wall_law {wall_law!r}; supported: 'log', 'reichardt', 'gradient', 'hybrid'"
+    )
 
 
 def compute_y_plus(
@@ -160,6 +165,7 @@ def compute_y_plus(
 # Near-wall mask computation
 # ---------------------------------------------------------------------------
 
+
 def _near_wall_mask(solid: torch.Tensor) -> torch.Tensor:
     """Identify fluid cells adjacent to solid cells (6-connected).
 
@@ -178,8 +184,8 @@ def _near_wall_mask(solid: torch.Tensor) -> torch.Tensor:
     # z-direction (no periodic wrap for 2-D simulations)
     if nz > 1:
         near[1:-1] |= (solid[2:] | solid[:-2]) & fluid[1:-1]
-        near[0]    |= solid[1] & fluid[0]
-        near[-1]   |= solid[-2] & fluid[-1]
+        near[0] |= solid[1] & fluid[0]
+        near[-1] |= solid[-2] & fluid[-1]
     return near
 
 
@@ -199,17 +205,17 @@ def _compute_wall_normal(
     gz = torch.zeros_like(sf)
 
     gx[:, :, 1:-1] = (sf[:, :, 2:] - sf[:, :, :-2]) * 0.5
-    gx[:, :, 0]    = sf[:, :, 1] - sf[:, :, 0]
-    gx[:, :, -1]   = sf[:, :, -1] - sf[:, :, -2]
+    gx[:, :, 0] = sf[:, :, 1] - sf[:, :, 0]
+    gx[:, :, -1] = sf[:, :, -1] - sf[:, :, -2]
 
     gy[:, 1:-1, :] = (sf[:, 2:, :] - sf[:, :-2, :]) * 0.5
-    gy[:, 0, :]    = sf[:, 1, :] - sf[:, 0, :]
-    gy[:, -1, :]   = sf[:, -1, :] - sf[:, -2, :]
+    gy[:, 0, :] = sf[:, 1, :] - sf[:, 0, :]
+    gy[:, -1, :] = sf[:, -1, :] - sf[:, -2, :]
 
     if nz > 1:
         gz[1:-1] = (sf[2:] - sf[:-2]) * 0.5
-        gz[0]    = sf[1] - sf[0]
-        gz[-1]   = sf[-1] - sf[-2]
+        gz[0] = sf[1] - sf[0]
+        gz[-1] = sf[-1] - sf[-2]
 
     nx_n = -gx
     ny_n = -gy
@@ -240,37 +246,34 @@ def _apply_body_force(
 
     This is a **lattice-agnostic** helper: it dispatches to the correct
     velocity vectors (``C``, ``W``) for D3Q19 or D3Q27.  The Guo forcing
-    term has zero zeroth moment and first moment exactly equal to ``F``.
+    term is ``w_i * 3 * (c_i · F)`` added to the distribution.
 
     If *ux*, *uy*, *uz* are provided, they are used directly instead of
     recomputing macroscopic fields from *f*.
     """
     if lattice == "D3Q19":
-        from .d3q19 import C as C_LAT
+        from .d3q19 import C as C_LAT, W as W_LAT
+
         q = 19
-        weights_by_squared_speed = (1.0 / 3.0, 1.0 / 18.0, 1.0 / 36.0)
     elif lattice == "D3Q27":
-        from .d3q27 import C as C_LAT
+        from .d3q27 import C as C_LAT, W as W_LAT
+
         q = 27
-        weights_by_squared_speed = (
-            8.0 / 27.0, 2.0 / 27.0, 1.0 / 54.0, 1.0 / 216.0,
-        )
     else:
         raise ValueError(f"Unsupported lattice: {lattice!r}")
 
     device = f.device
-    c = C_LAT.to(device=device, dtype=f.dtype)
-    speed_weights = torch.tensor(
-        weights_by_squared_speed, device=device, dtype=f.dtype,
-    )
-    w = speed_weights[c.square().sum(dim=1).to(torch.long)]
+    c = C_LAT.to(device).float()
+    w = W_LAT.to(device).float()
     cx = c[:, 0].view(q, 1, 1, 1)
     cy = c[:, 1].view(q, 1, 1, 1)
     cz = c[:, 2].view(q, 1, 1, 1)
     w_view = w.view(q, 1, 1, 1)
 
-    # Mass-conservative post-collision source.  The -u·F term is required
-    # for a zero zeroth moment at non-trivial velocities.
+    # Full Guo forcing: w_i * (1 + c_i·u/c_s²) * (c_i·F) / c_s²
+    # c_s² = 1/3 for both D3Q19 and D3Q27, so 1/c_s² = 3.
+    # The (1 + c·u/cs²) velocity-correction term is essential for
+    # correct force application at non-trivial velocities.
     cs2 = 1.0 / 3.0
     cu = cx * fx.unsqueeze(0) + cy * fy.unsqueeze(0) + cz * fz.unsqueeze(0)
     # Need velocity field for the correction term; use pre-computed if available.
@@ -283,16 +286,14 @@ def _apply_body_force(
             from .d3q27 import macroscopic27 as _macro
         _rho, _ux, _uy, _uz = _macro(f)
     cu_u = cx * _ux.unsqueeze(0) + cy * _uy.unsqueeze(0) + cz * _uz.unsqueeze(0)
-    u_dot_force = (_ux * fx + _uy * fy + _uz * fz).unsqueeze(0)
-    forcing = w_view * (
-        (cu - u_dot_force) / cs2 + cu_u * cu / cs2**2
-    )
+    forcing = w_view * (1.0 + cu_u / cs2) * cu / cs2
     return f + forcing
 
 
 # ---------------------------------------------------------------------------
 # Public wall_function interface
 # ---------------------------------------------------------------------------
+
 
 def wall_function(
     f: torch.Tensor,
@@ -318,11 +319,9 @@ def wall_function(
     decoupling the wall shear stress from the bulk relaxation time.  The
     body force decelerates the tangential velocity component:
 
-        F = -τ_w A/V · û
+        F = -(τ_w / dy) · û
 
-    where ``τ_w = u_tau²``, ``û`` is the unit tangential velocity vector,
-    and a unit lattice boundary control volume has ``A/V=1``.  Wall distance
-    already enters the wall-law solve and must not divide the traction again.
+    where ``τ_w = u_tau²`` and ``û`` is the unit tangential velocity vector.
 
     Because ``u_tau`` and ``y_plus`` are pre-computed by the caller, this
     function can be combined with any turbulence model (RANS, LES, etc.)
@@ -366,9 +365,9 @@ def wall_function(
     # Wall shear stress from pre-computed u_tau
     tau_w = u_tau * u_tau
 
-    # Body force on unit near-wall control volumes: F = -τ_w A/V · û.
+    # Body force on near-wall cells: F = -(τ_w / dy) · û
     inv_umag = 1.0 / u_mag
-    coef = -tau_w * near.to(f.dtype)
+    coef = -(tau_w / y_val) * near.to(f.dtype)
     fx = coef * (ux * inv_umag)
     fy = coef * (uy * inv_umag)
     fz = coef * (uz * inv_umag)
@@ -485,7 +484,9 @@ def apply_wall_function(
     ut_z = uz - u_dot_n * nz_n
     u_tan_mag = torch.sqrt(ut_x * ut_x + ut_y * ut_y + ut_z * ut_z).clamp(min=1e-12)
     has_tan = u_tan_mag > 1e-10
-    u_tan_mag = torch.where(has_tan, u_tan_mag, torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12))
+    u_tan_mag = torch.where(
+        has_tan, u_tan_mag, torch.sqrt(ux * ux + uy * uy + uz * uz).clamp(min=1e-12)
+    )
     ut_x = torch.where(has_tan, ut_x, ux)
     ut_y = torch.where(has_tan, ut_y, uy)
     ut_z = torch.where(has_tan, ut_z, uz)
@@ -510,9 +511,11 @@ def apply_wall_function(
     if n_bb > 0:
         if lattice == "D3Q19":
             from .d3q19 import OPPOSITE as OPP
+
             opp = OPP.to(f.device)
         else:
             from .d3q27 import OPPOSITE as OPP
+
             opp = OPP.to(f.device)
         bb_mask = use_bb.unsqueeze(0).expand_as(f)
         f = torch.where(bb_mask, f[opp], f)

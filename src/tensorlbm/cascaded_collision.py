@@ -31,6 +31,7 @@ Premnath, K. N. & Banerjee, S. (2009). Cascaded lattice Boltzmann automata for
 Geier, M., Schönherr, M., Pasquali, A. & Krafczyk, M. (2015). The cumulant
     lattice Boltzmann equation in three dimensions. *Comput. Math. Appl.* 70.
 """
+
 from __future__ import annotations
 
 import functools
@@ -55,78 +56,79 @@ from .d3q27 import C as _C27, equilibrium27, macroscopic27
 # D3Q27 includes the 8 corners, so all 27 monomials are present.
 
 _D3Q19_DEGREES: list[tuple[int, int, int]] = [
-    (0, 0, 0),   #  0  mass
-    (1, 0, 0),   #  1  jx
-    (0, 1, 0),   #  2  jy
-    (0, 0, 1),   #  3  jz
-    (2, 0, 0),   #  4  Pxx
-    (0, 2, 0),   #  5  Pyy
-    (0, 0, 2),   #  6  Pzz
-    (1, 1, 0),   #  7  Pxy
-    (1, 0, 1),   #  8  Pxz
-    (0, 1, 1),   #  9  Pyz
-    (2, 1, 0),   # 10  qx (3rd order)
-    (2, 0, 1),   # 11
-    (1, 2, 0),   # 12
-    (0, 2, 1),   # 13
-    (1, 0, 2),   # 14
-    (0, 1, 2),   # 15
-    (2, 2, 0),   # 16  (4th order)
-    (2, 0, 2),   # 17
-    (0, 2, 2),   # 18
+    (0, 0, 0),  #  0  mass
+    (1, 0, 0),  #  1  jx
+    (0, 1, 0),  #  2  jy
+    (0, 0, 1),  #  3  jz
+    (2, 0, 0),  #  4  Pxx
+    (0, 2, 0),  #  5  Pyy
+    (0, 0, 2),  #  6  Pzz
+    (1, 1, 0),  #  7  Pxy
+    (1, 0, 1),  #  8  Pxz
+    (0, 1, 1),  #  9  Pyz
+    (2, 1, 0),  # 10  qx (3rd order)
+    (2, 0, 1),  # 11
+    (1, 2, 0),  # 12
+    (0, 2, 1),  # 13
+    (1, 0, 2),  # 14
+    (0, 1, 2),  # 15
+    (2, 2, 0),  # 16  (4th order)
+    (2, 0, 2),  # 17
+    (0, 2, 2),  # 18
 ]
 
 _D3Q27_DEGREES: list[tuple[int, int, int]] = [
-    (0, 0, 0),   #  0  mass
-    (1, 0, 0),   #  1  jx
-    (0, 1, 0),   #  2  jy
-    (0, 0, 1),   #  3  jz
-    (2, 0, 0),   #  4  Pxx
-    (0, 2, 0),   #  5  Pyy
-    (0, 0, 2),   #  6  Pzz
-    (1, 1, 0),   #  7  Pxy
-    (1, 0, 1),   #  8  Pxz
-    (0, 1, 1),   #  9  Pyz
-    (2, 1, 0),   # 10  (3rd order)
-    (2, 0, 1),   # 11
-    (1, 2, 0),   # 12
-    (0, 2, 1),   # 13
-    (1, 0, 2),   # 14
-    (0, 1, 2),   # 15
-    (1, 1, 1),   # 16
-    (2, 2, 0),   # 17  (4th order)
-    (2, 0, 2),   # 18
-    (0, 2, 2),   # 19
-    (2, 1, 1),   # 20  (4th order, mixed)
-    (1, 2, 1),   # 21
-    (1, 1, 2),   # 22
-    (2, 2, 1),   # 23  (5th order)
-    (2, 1, 2),   # 24
-    (1, 2, 2),   # 25
-    (2, 2, 2),   # 26  (6th order)
+    (0, 0, 0),  #  0  mass
+    (1, 0, 0),  #  1  jx
+    (0, 1, 0),  #  2  jy
+    (0, 0, 1),  #  3  jz
+    (2, 0, 0),  #  4  Pxx
+    (0, 2, 0),  #  5  Pyy
+    (0, 0, 2),  #  6  Pzz
+    (1, 1, 0),  #  7  Pxy
+    (1, 0, 1),  #  8  Pxz
+    (0, 1, 1),  #  9  Pyz
+    (2, 1, 0),  # 10  (3rd order)
+    (2, 0, 1),  # 11
+    (1, 2, 0),  # 12
+    (0, 2, 1),  # 13
+    (1, 0, 2),  # 14
+    (0, 1, 2),  # 15
+    (1, 1, 1),  # 16
+    (2, 2, 0),  # 17  (4th order)
+    (2, 0, 2),  # 18
+    (0, 2, 2),  # 19
+    (2, 1, 1),  # 20  (4th order, mixed)
+    (1, 2, 1),  # 21
+    (1, 1, 2),  # 22
+    (2, 2, 1),  # 23  (5th order)
+    (2, 1, 2),  # 24
+    (1, 2, 2),  # 25
+    (2, 2, 2),  # 26  (6th order)
 ]
 
 # Order boundaries for relaxation grouping
 _D3Q19_ORDER_BOUNDS = {
-    "conserved": (0, 4),    # indices 0-3
-    "second": (4, 10),      # indices 4-9
-    "third": (10, 16),      # indices 10-15
-    "fourth": (16, 19),     # indices 16-18
+    "conserved": (0, 4),  # indices 0-3
+    "second": (4, 10),  # indices 4-9
+    "third": (10, 16),  # indices 10-15
+    "fourth": (16, 19),  # indices 16-18
 }
 
 _D3Q27_ORDER_BOUNDS = {
-    "conserved": (0, 4),    # indices 0-3
-    "second": (4, 10),      # indices 4-9
-    "third": (10, 17),      # indices 10-16
-    "fourth": (17, 23),     # indices 17-22
-    "fifth": (23, 26),      # indices 23-25
-    "sixth": (26, 27),      # index 26
+    "conserved": (0, 4),  # indices 0-3
+    "second": (4, 10),  # indices 4-9
+    "third": (10, 17),  # indices 10-16
+    "fourth": (17, 23),  # indices 17-22
+    "fifth": (23, 26),  # indices 23-25
+    "sixth": (26, 27),  # index 26
 }
 
 
 # ---------------------------------------------------------------------------
 # Shift-group construction
 # ---------------------------------------------------------------------------
+
 
 def _build_shift_groups(
     degrees: list[tuple[int, int, int]],
@@ -162,6 +164,7 @@ _D3Q27_SHIFT_GROUPS = _build_shift_groups(_D3Q27_DEGREES)
 # Moment matrix construction (cached per device/dtype)
 # ---------------------------------------------------------------------------
 
+
 def _build_moment_matrix(
     c: torch.Tensor,
     degrees: list[tuple[int, int, int]],
@@ -184,7 +187,8 @@ _M27_INV_DATA = np.linalg.inv(_M27_DATA)
 
 @functools.cache
 def _get_d3q19_matrices(
-    device: torch.device, dtype: torch.dtype,
+    device: torch.device,
+    dtype: torch.dtype,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     return (
         torch.tensor(_M19_DATA, dtype=dtype, device=device),
@@ -194,7 +198,8 @@ def _get_d3q19_matrices(
 
 @functools.cache
 def _get_d3q27_matrices(
-    device: torch.device, dtype: torch.dtype,
+    device: torch.device,
+    dtype: torch.dtype,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     return (
         torch.tensor(_M27_DATA, dtype=dtype, device=device),
@@ -205,6 +210,7 @@ def _get_d3q27_matrices(
 # ---------------------------------------------------------------------------
 # 1-D shift / unshift (binomial velocity shift)
 # ---------------------------------------------------------------------------
+
 
 def _shift_1d(
     m: torch.Tensor,
@@ -257,8 +263,12 @@ def _unshift_1d(
 # Full 3-D shift / unshift
 # ---------------------------------------------------------------------------
 
+
 def _to_central_d3q19(
-    m: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    m: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """Shift D3Q19 raw moments → central moments (x, then y, then z)."""
     x_g, y_g, z_g = _D3Q19_SHIFT_GROUPS
@@ -269,7 +279,10 @@ def _to_central_d3q19(
 
 
 def _to_raw_d3q19(
-    k: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    k: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """Unshift D3Q19 central moments → raw moments (z, then y, then x)."""
     x_g, y_g, z_g = _D3Q19_SHIFT_GROUPS
@@ -280,7 +293,10 @@ def _to_raw_d3q19(
 
 
 def _to_central_d3q27(
-    m: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    m: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """Shift D3Q27 raw moments → central moments."""
     x_g, y_g, z_g = _D3Q27_SHIFT_GROUPS
@@ -291,7 +307,10 @@ def _to_central_d3q27(
 
 
 def _to_raw_d3q27(
-    k: torch.Tensor, ux: torch.Tensor, uy: torch.Tensor, uz: torch.Tensor,
+    k: torch.Tensor,
+    ux: torch.Tensor,
+    uy: torch.Tensor,
+    uz: torch.Tensor,
 ) -> torch.Tensor:
     """Unshift D3Q27 central moments → raw moments."""
     x_g, y_g, z_g = _D3Q27_SHIFT_GROUPS
@@ -304,6 +323,7 @@ def _to_raw_d3q27(
 # ---------------------------------------------------------------------------
 # Cascaded relaxation
 # ---------------------------------------------------------------------------
+
 
 def _relax_d3q19(
     k: torch.Tensor,
@@ -419,6 +439,7 @@ def _relax_d3q27(
 # Collision operators
 # ---------------------------------------------------------------------------
 
+
 def collide_cascaded_d3q19(
     f: torch.Tensor,
     tau: float,
@@ -450,7 +471,9 @@ def collide_cascaded_d3q19(
     Post-collision distribution of the same shape.
     """
     if f.ndim != 4 or f.shape[0] != 19:
-        raise ValueError(f"D3Q19 populations must have shape (19, nz, ny, nx), got {tuple(f.shape)}")
+        raise ValueError(
+            f"D3Q19 populations must have shape (19, nz, ny, nx), got {tuple(f.shape)}"
+        )
     if isinstance(tau, torch.Tensor):
         if (tau <= 0.5).any():
             raise ValueError("all tau values must be > 0.5")
@@ -521,7 +544,9 @@ def collide_cascaded_d3q27(
     Post-collision distribution of the same shape.
     """
     if f.ndim != 4 or f.shape[0] != 27:
-        raise ValueError(f"D3Q27 populations must have shape (27, nz, ny, nx), got {tuple(f.shape)}")
+        raise ValueError(
+            f"D3Q27 populations must have shape (27, nz, ny, nx), got {tuple(f.shape)}"
+        )
     if isinstance(tau, torch.Tensor):
         if (tau <= 0.5).any():
             raise ValueError("all tau values must be > 0.5")

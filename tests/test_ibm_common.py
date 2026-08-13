@@ -4,6 +4,7 @@ These tests verify operator algebra (shape, force conservation, equilibrium
 fixed-point, zero-force identity, D3Q19/D3Q27 parity), NOT immersed-boundary
 physics correctness or moving-body validation.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -27,10 +28,8 @@ from tensorlbm.ibm_common import (
 
 def _solid_mask(nz: int, ny: int, nx: int, cx: int, cy: int, cz: int, r: int) -> torch.Tensor:
     """Return a boolean solid mask for a small sphere of radius ``r``."""
-    iz, iy, ix = torch.meshgrid(
-        torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij"
-    )
-    return (((ix - cx).float() ** 2 + (iy - cy).float() ** 2 + (iz - cz).float() ** 2) <= r ** 2)
+    iz, iy, ix = torch.meshgrid(torch.arange(nz), torch.arange(ny), torch.arange(nx), indexing="ij")
+    return ((ix - cx).float() ** 2 + (iy - cy).float() ** 2 + (iz - cz).float() ** 2) <= r**2
 
 
 # --------------------------------------------------------------------------- #
@@ -39,10 +38,13 @@ def _solid_mask(nz: int, ny: int, nx: int, cx: int, cy: int, cz: int, r: int) ->
 
 
 class TestIBMCommonShape:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_force_and_f_shapes(self, lattice, q, equilibrium) -> None:
         nz, ny, nx = 8, 10, 12
         rho = torch.ones((nz, ny, nx))
@@ -77,10 +79,13 @@ class TestIBMCommonShape:
 
 
 class TestIBMCommonZeroForceIdentity:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_zero_target_zero_flow_produces_zero_force(self, lattice, q, equilibrium) -> None:
         nz, ny, nx = 10, 10, 10
         rho = torch.ones((nz, ny, nx))
@@ -100,10 +105,13 @@ class TestIBMCommonZeroForceIdentity:
 
 
 class TestIBMCommonEquilibriumFixedPoint:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_equilibrium_with_matching_velocity_small_force(self, lattice, q, equilibrium) -> None:
         """When the target velocity matches the fluid velocity, the IBM force
         should be near zero (the interpolated marker velocity ≈ field velocity
@@ -129,10 +137,13 @@ class TestIBMCommonEquilibriumFixedPoint:
 
 
 class TestIBMCommonForceConservation:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_force_conservation_uniform_target(self, lattice, q, equilibrium) -> None:
         """For a uniform target velocity in zero flow, the total Eulerian IBM
         force should equal N_markers × u_target (force = u_target - u_interp,
@@ -229,10 +240,13 @@ class TestIBMCommonFailClosed:
 
 
 class TestMacroscopicVelocity3D:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_equilibrium_velocity_recovery(self, lattice, q, equilibrium) -> None:
         """macroscopic_velocity_3d should recover the velocity used to build
         the equilibrium distribution."""
@@ -286,10 +300,13 @@ class TestDeriveSurfaceMarkers:
 
 
 class TestApplyBodyForce3DCommon:
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_zero_force_is_identity(self, lattice, q, equilibrium) -> None:
         nz, ny, nx = 6, 6, 6
         rho = torch.ones((nz, ny, nx))
@@ -299,10 +316,13 @@ class TestApplyBodyForce3DCommon:
         out = ibm_apply_body_force_3d_common(f, fz, fz, fz, lattice=lattice)
         assert torch.allclose(out, f, atol=1e-7)
 
-    @pytest.mark.parametrize("lattice,q,equilibrium", [
-        ("D3Q19", 19, equilibrium3d),
-        ("D3Q27", 27, equilibrium27),
-    ])
+    @pytest.mark.parametrize(
+        "lattice,q,equilibrium",
+        [
+            ("D3Q19", 19, equilibrium3d),
+            ("D3Q27", 27, equilibrium27),
+        ],
+    )
     def test_preserves_shape(self, lattice, q, equilibrium) -> None:
         nz, ny, nx = 6, 6, 6
         rho = torch.ones((nz, ny, nx))

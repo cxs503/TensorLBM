@@ -35,6 +35,7 @@ Main classes / functions
     High-level function that loads all checkpoints from a run directory,
     accumulates statistics, and returns a summary dict.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -47,6 +48,7 @@ import torch
 # ---------------------------------------------------------------------------
 # Incremental accumulator
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class TurbulenceStatsAccumulator:
@@ -205,7 +207,7 @@ class TurbulenceStatsAccumulator:
         mu = self.mean_u
         uu_r = self.uu.clamp(min=1e-20)
         m3 = self._sum_u3 / self._n - 3.0 * mu * uu_r - mu**3  # type: ignore[operator]
-        return m3 / uu_r**(1.5)
+        return m3 / uu_r ** (1.5)
 
     @property
     def flatness_u(self) -> torch.Tensor:
@@ -213,8 +215,12 @@ class TurbulenceStatsAccumulator:
         self._check_ready()
         mu = self.mean_u
         uu_r = self.uu.clamp(min=1e-20)
-        m4 = self._sum_u4 / self._n - 4.0 * mu * (self._sum_u3 / self._n) + \
-             6.0 * mu**2 * uu_r + 3.0 * mu**4  # type: ignore[operator]
+        m4 = (
+            self._sum_u4 / self._n
+            - 4.0 * mu * (self._sum_u3 / self._n)
+            + 6.0 * mu**2 * uu_r
+            + 3.0 * mu**4
+        )  # type: ignore[operator]
         return m4 / uu_r**2
 
     def to_dict(self) -> dict[str, Any]:
@@ -256,6 +262,7 @@ class TurbulenceStatsAccumulator:
 # Standalone utility functions
 # ---------------------------------------------------------------------------
 
+
 def compute_reynolds_stresses(
     ux_mean: torch.Tensor,
     uy_mean: torch.Tensor,
@@ -286,8 +293,11 @@ def compute_reynolds_stresses(
     ww = uz_rms**2 if uz_rms is not None else None
 
     k = 0.5 * (uu + vv + (ww if ww is not None else torch.zeros_like(uu)))
-    u_ref = torch.sqrt(ux_mean**2 + uy_mean**2 +
-                       ((uz_mean**2) if uz_mean is not None else torch.zeros_like(ux_mean)))
+    u_ref = torch.sqrt(
+        ux_mean**2
+        + uy_mean**2
+        + ((uz_mean**2) if uz_mean is not None else torch.zeros_like(ux_mean))
+    )
     u_ref = u_ref.clamp(min=1e-12)
     tu = torch.sqrt(2.0 * k / 3.0) / u_ref * 100.0  # percent
 
@@ -369,6 +379,7 @@ def compute_turbulence_length_scale(
 # High-level: compute statistics from a job run directory
 # ---------------------------------------------------------------------------
 
+
 def turbulence_stats_from_checkpoints(
     run_dir: str | Path,
     is_3d: bool = False,
@@ -426,6 +437,7 @@ def turbulence_stats_from_checkpoints(
             acc.update(ux, uy, uz)
         else:
             from tensorlbm.d2q9 import macroscopic
+
             _rho, ux, uy = macroscopic(f)
             acc.update(ux, uy)
 
@@ -440,8 +452,9 @@ def turbulence_stats_from_checkpoints(
     mean_v_t = acc.mean_v
     mean_w_t = acc.mean_w
     u_mag = torch.sqrt(
-        mean_u_t**2 + mean_v_t**2 +
-        (mean_w_t**2 if mean_w_t is not None else torch.zeros_like(mean_u_t))
+        mean_u_t**2
+        + mean_v_t**2
+        + (mean_w_t**2 if mean_w_t is not None else torch.zeros_like(mean_u_t))
     )
     tu = compute_turbulence_intensity(tke_t, float(u_mag.mean().item()))
     result["tu_mean_percent"] = float(tu.mean().item())

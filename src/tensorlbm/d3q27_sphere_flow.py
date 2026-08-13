@@ -13,6 +13,7 @@ Key differences from the D3Q19 runner:
 * Forces: :func:`~tensorlbm.obstacles.compute_obstacle_forces_27`
 * Mass correction: :func:`~tensorlbm.d3q27.correct_mass27`
 """
+
 from __future__ import annotations
 
 import json

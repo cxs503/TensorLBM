@@ -18,7 +18,11 @@ from typing import Any, Mapping
 import numpy as np
 import torch
 
-from tensorlbm.ai.transformer import FlowFieldTransformer, FlowTransformerArch, flow_snapshot_to_tokens
+from tensorlbm.ai.transformer import (
+    FlowFieldTransformer,
+    FlowTransformerArch,
+    flow_snapshot_to_tokens,
+)
 from tensorlbm.data import FieldDatasetR2
 from tensorlbm.ml.contracts import TaskKind, TrainingBackend, TrainingSpec
 from tensorlbm.ml.torch_dataset_materialize import (
@@ -65,7 +69,9 @@ class FlowTransformerHoldoutEvaluationRecord:
 
 
 def _canonical_sha256(document: object) -> str:
-    return sha256(json.dumps(document, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    return sha256(
+        json.dumps(document, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def _file_sha256(path: Path) -> str:
@@ -87,7 +93,9 @@ def _require_nonempty_file(path: Path, label: str) -> None:
         raise ValueError(f"{label} must exist and be non-empty")
 
 
-def _require_evaluator_inputs(spec: TrainingSpec, split: object, mask_ratio: object, mask_seed: object) -> tuple[str, float, int]:
+def _require_evaluator_inputs(
+    spec: TrainingSpec, split: object, mask_ratio: object, mask_seed: object
+) -> tuple[str, float, int]:
     if not isinstance(spec, TrainingSpec):
         raise TypeError("spec must be a TrainingSpec")
     if spec.backend is not TrainingBackend.TORCH:
@@ -119,7 +127,11 @@ def _validate_arch(metadata: Mapping[str, Any]) -> dict[str, int | float]:
         if isinstance(arch[name], bool) or not isinstance(arch[name], int) or arch[name] <= 0:
             raise ValueError(f"metadata arch {name} must be a positive int")
     dropout = arch["dropout"]
-    if isinstance(dropout, bool) or not isinstance(dropout, (int, float)) or not 0.0 <= float(dropout) < 1.0:
+    if (
+        isinstance(dropout, bool)
+        or not isinstance(dropout, (int, float))
+        or not 0.0 <= float(dropout) < 1.0
+    ):
         raise ValueError("metadata arch dropout must be in [0, 1)")
     if arch["in_features"] != 2 or arch["d_model"] % arch["n_heads"] != 0:
         raise ValueError("metadata arch in_features/d_model/n_heads is invalid")
@@ -148,8 +160,13 @@ def _sample_provenance(reference: FieldSnapshotReference) -> dict[str, object]:
 
 
 def _validate_provenance(
-    provenance: Mapping[str, Any], metadata: Mapping[str, Any], materialized: DatasetMaterializationRecord,
-    weights_path: Path, metadata_path: Path, weights_sha: str, metadata_sha: str,
+    provenance: Mapping[str, Any],
+    metadata: Mapping[str, Any],
+    materialized: DatasetMaterializationRecord,
+    weights_path: Path,
+    metadata_path: Path,
+    weights_sha: str,
+    metadata_sha: str,
 ) -> str:
     if provenance.get("schema") != "tensorlbm.dataset-training-provenance.r1":
         raise ValueError("provenance schema mismatch")
@@ -162,7 +179,11 @@ def _validate_provenance(
     if provenance.get("smoke_only") is not True:
         raise ValueError("provenance smoke_only must be true")
     trainer = provenance.get("trainer")
-    if not isinstance(trainer, dict) or trainer.get("family") != metadata["family"] or trainer.get("backend") != metadata["backend"]:
+    if (
+        not isinstance(trainer, dict)
+        or trainer.get("family") != metadata["family"]
+        or trainer.get("backend") != metadata["backend"]
+    ):
         raise ValueError("provenance trainer mismatch")
     if trainer.get("metadata_canonical_sha256") != _canonical_sha256(metadata):
         raise ValueError("provenance metadata canonical digest mismatch")
@@ -179,7 +200,11 @@ def _validate_provenance(
     for split in ("train", "val", "test"):
         evidence = splits[split]
         records = getattr(materialized, split)
-        expected = {"sample_ids": list(materialized.split_ids[split]), "count": materialized.split_counts[split], "samples": [_sample_provenance(item) for item in records]}
+        expected = {
+            "sample_ids": list(materialized.split_ids[split]),
+            "count": materialized.split_counts[split],
+            "samples": [_sample_provenance(item) for item in records],
+        }
         if evidence != expected:
             raise ValueError(f"provenance {split} split evidence mismatch")
     return claimed_digest
@@ -206,7 +231,9 @@ def _require_cpu_model(model: Any) -> torch.device:
     return device
 
 
-def _load_verified_cpu_model(weights_bytes: bytes, arch: Mapping[str, int | float]) -> FlowFieldTransformer:
+def _load_verified_cpu_model(
+    weights_bytes: bytes, arch: Mapping[str, int | float]
+) -> FlowFieldTransformer:
     """Build Torch model from the exact verified NPZ bytes, never a mutable path."""
     normalized_arch = {
         "in_features": int(arch["in_features"]),
@@ -274,7 +301,11 @@ def evaluate_evidence_gated_flow_transformer_holdout(
     weights = Path(weights_path)
     metadata_path = Path(f"{weights}.json")
     provenance_path = Path(f"{weights}.provenance.json")
-    for path, label in ((weights, "weights"), (metadata_path, "metadata"), (provenance_path, "provenance")):
+    for path, label in (
+        (weights, "weights"),
+        (metadata_path, "metadata"),
+        (provenance_path, "provenance"),
+    ):
         _require_nonempty_file(path, label)
     weights_bytes = weights.read_bytes()
     metadata_bytes = metadata_path.read_bytes()
@@ -285,7 +316,9 @@ def evaluate_evidence_gated_flow_transformer_holdout(
     metadata = _read_json_object(metadata_bytes, "metadata")
     arch = _validate_arch(metadata)
     provenance = _read_json_object(provenance_bytes, "provenance")
-    provenance_digest = _validate_provenance(provenance, metadata, materialized, weights, metadata_path, weights_sha, metadata_sha)
+    provenance_digest = _validate_provenance(
+        provenance, metadata, materialized, weights, metadata_path, weights_sha, metadata_sha
+    )
 
     model = _load_verified_cpu_model(weights_bytes, arch)
     device = _require_cpu_model(model)
@@ -300,11 +333,15 @@ def evaluate_evidence_gated_flow_transformer_holdout(
     total_tokens = 0
     with torch.no_grad():
         for reference in selected:
-            tokens = flow_snapshot_to_tokens(*reference.snapshot).to(device=device, dtype=torch.float32)
+            tokens = flow_snapshot_to_tokens(*reference.snapshot).to(
+                device=device, dtype=torch.float32
+            )
             if int(tokens.shape[0]) > int(arch["max_tokens"]):
                 raise ValueError("selected token count exceeds metadata max_tokens")
             indices = _masked_indices(int(tokens.shape[0]), ratio, seed, reference.sample_id)
-            masked_index_evidence[reference.sample_id] = tuple(int(index) for index in indices.tolist())
+            masked_index_evidence[reference.sample_id] = tuple(
+                int(index) for index in indices.tolist()
+            )
             mask = torch.zeros((1, int(tokens.shape[0])), dtype=torch.bool, device=device)
             mask[0, indices.to(device=device)] = True
             target = tokens.unsqueeze(0)
@@ -358,11 +395,17 @@ def evaluate_evidence_gated_flow_transformer_holdout(
         weights_sha256=weights_sha,
         metadata_sha256=metadata_sha,
         provenance_sha256=provenance_file_sha,
-        selected_blob_hashes=MappingProxyType({item.sample_id: item.field_provenance.blob_sha256 for item in selected}),
+        selected_blob_hashes=MappingProxyType(
+            {item.sample_id: item.field_provenance.blob_sha256 for item in selected}
+        ),
         sample_ids=tuple(item.sample_id for item in selected),
         selected_group_ids=MappingProxyType({item.sample_id: item.group_id for item in selected}),
-        selected_case_ids=MappingProxyType({item.sample_id: item.source_case_id for item in selected}),
-        selected_trajectory_ids=MappingProxyType({item.sample_id: item.source_trajectory_id for item in selected}),
+        selected_case_ids=MappingProxyType(
+            {item.sample_id: item.source_case_id for item in selected}
+        ),
+        selected_trajectory_ids=MappingProxyType(
+            {item.sample_id: item.source_trajectory_id for item in selected}
+        ),
         mask_ratio=ratio,
         mask_seed=seed,
         masked_token_indices=MappingProxyType(masked_index_evidence),
@@ -374,4 +417,7 @@ def evaluate_evidence_gated_flow_transformer_holdout(
     )
 
 
-__all__ = ["FlowTransformerHoldoutEvaluationRecord", "evaluate_evidence_gated_flow_transformer_holdout"]
+__all__ = [
+    "FlowTransformerHoldoutEvaluationRecord",
+    "evaluate_evidence_gated_flow_transformer_holdout",
+]
