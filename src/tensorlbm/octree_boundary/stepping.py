@@ -40,6 +40,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import torch
+import time as _time
 
 from tensorlbm.d3q19 import C, OPPOSITE, equilibrium3d, macroscopic3d
 from tensorlbm.kinetic_flux_register import (
@@ -385,34 +386,69 @@ def stream_gather(
     out = torch.empty_like(populations)
     opp = octree._opp.to(populations.device)
     nt = octree.neighbor_table
-    for d in range(q):
-        src = nt[opp[d]]
-        valid = src >= 0
-        if bool(valid.any()):
-            out[d, valid] = populations[d, src[valid]]
-        ghost_mask = src == SHELL_OUTSIDE
-        if bool(ghost_mask.any()):
-            slots = plan.slot[d, ghost_mask]
-            out[d, ghost_mask] = ghost_vals[d, slots]
-        solid_mask = src == SOLID
-        if bool(solid_mask.any()):
-            out[d, solid_mask] = populations[opp[d], solid_mask]
-        fanout_mask = src == FANOUT
-        if bool(fanout_mask.any()):
-            for i in torch.nonzero(fanout_mask, as_tuple=False).squeeze(1).tolist():
-                group = octree.interface_fanout.get((int(i), int(opp[d])), [])
-                if not group:
-                    out[d, i] = f_old[d, i]
-                else:
-                    out[d, i] = populations[
-                        d, torch.tensor(group, device=populations.device)
-                    ].mean()
-        domain_mask = src == DOMAIN_OUT
-        if bool(domain_mask.any()):
-            raise RuntimeError(
-                "DOMAIN_OUT neighbour in shell streaming — the shell must be "
-                "fully embedded in the L1 block",
-            )
+    # 批量版: 所有方向一次 torch.gather (SDAA 上 27 方向循环 = 135 次小 kernel 极慢)
+    src_all = nt[opp]  # (q, n)
+    valid_all = src_all >= 0
+    idx_safe = src_all.clamp(min=0)
+    gathered_all = torch.gather(populations, 1, idx_safe)  # (q, n)
+    out = torch.where(valid_all, gathered_all, out)
+    # ghost 分支 (SHELL_OUTSIDE): 批量 (nonzero 一次收集所有 ghost 位置)
+    ghost_all = src_all == SHELL_OUTSIDE
+    if bool(ghost_all.any()):
+        rows = torch.nonzero(ghost_all, as_tuple=False)  # (n_ghost, 2): (d, i)
+        d_idx = rows[:, 0]
+        i_idx = rows[:, 1]
+        slots = plan.slot[d_idx, i_idx]  # 高级索引批量取 slot
+        vals = ghost_vals[d_idx, slots]
+        out[d_idx, i_idx] = vals
+    # solid 分支 (SOLID): 批量
+    solid_all = src_all == SOLID
+    if bool(solid_all.any()):
+        rows_s = torch.nonzero(solid_all, as_tuple=False)  # (n_solid, 2)
+        d_s = rows_s[:, 0]
+        i_s = rows_s[:, 1]
+        out[d_s, i_s] = populations[opp[d_s], i_s]
+    # fanout 分支: 纯张量批量 (预缓存 fanout_pos/fanout_pad, 零 Python 循环)
+    fanout_all = src_all == FANOUT
+    if bool(fanout_all.any()):
+        # 有 fanout 组的 (d, i) 位置: 用预缓存
+        if octree.fanout_pos.shape[0] > 0:
+            d_fo = octree.fanout_pos[:, 0].to(populations.device)   # (n_fo,)
+            i_fo = octree.fanout_pos[:, 1].to(populations.device)   # (n_fo,)
+            pad_fo = octree.fanout_pad.to(populations.device)       # (n_fo, max_len)
+            # 检查这些位置确实在 fanout_all 中 (预缓存包含全部)
+            fo_mask = fanout_all[d_fo, i_fo]
+            if bool(fo_mask.any()):
+                d_use = d_fo[fo_mask]
+                i_use = i_fo[fo_mask]
+                pad_use = pad_fo[fo_mask]
+                valid_pad = pad_use >= 0
+                # gather: populations[d_use[:,None], pad_use] → (n, max_len)
+                vals = populations[d_use.unsqueeze(1), pad_use.clamp(min=0)]
+                means = (vals * valid_pad).sum(dim=1) / valid_pad.sum(dim=1).clamp_min(1)
+                out[d_use, i_use] = means
+        # 未缓存的 fanout (防御): 回退旧循环
+        remaining = fanout_all.clone()
+        if octree.fanout_pos.shape[0] > 0:
+            remaining[d_fo, i_fo] = False
+        for d in range(q):
+            fmask = remaining[d]
+            if bool(fmask.any()):
+                for i in torch.nonzero(fmask, as_tuple=False).squeeze(1).tolist():
+                    group = octree.interface_fanout.get((int(i), int(opp[d])), [])
+                    if not group:
+                        out[d, i] = f_old[d, i]
+                    else:
+                        out[d, i] = populations[
+                            d, torch.tensor(group, device=populations.device)
+                        ].mean()
+    # domain 分支: 检查
+    domain_all = src_all == DOMAIN_OUT
+    if bool(domain_all.any()):
+        raise RuntimeError(
+            "DOMAIN_OUT neighbour in shell streaming — the shell must be "
+            "fully embedded in the L1 block",
+        )
     return out
 
 

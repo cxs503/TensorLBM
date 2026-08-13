@@ -233,6 +233,8 @@ def run_case(
     config1 = StaticBlockAMRConfig(
         box1, tau_coarse=tau_coarse, reflux=True,
         ghost_interpolation=args.ghost_interpolation,
+        # SDAA 上 limit_nonequilibrium_for_positivity 间歇性卡死 GPU → 关闭
+        enforce_transfer_positivity=False,
     )
     amr = NestedStaticBlockAMR3D(coarse_f, (config1,), fine_solids=(None,))
     l1_fine = amr.interfaces[0].fine_f                 # with-ghost tensor
@@ -605,4 +607,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import faulthandler
+    faulthandler.dump_traceback_later(600, exit=True)  # 600s 后 dump 卡点
     main()

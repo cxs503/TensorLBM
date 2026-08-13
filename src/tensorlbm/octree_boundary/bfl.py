@@ -246,6 +246,10 @@ def bfl_apply_gather(
                 )
             slots = ghost_plan.slot[d, idx[ghost]]
             if bool((slots < 0).any()):
+                bad = torch.nonzero(slots < 0, as_tuple=False).squeeze(1)
+                print(f"[bfl] ghost slot missing: d={d} n_bad={len(bad)} "
+                      f"ghost_plan.slot shape={tuple(ghost_plan.slot.shape)} "
+                      f"idx max={int(idx.max().item())}", flush=True)
                 raise RuntimeError(
                     "BFL upstream ghost cell has no ghost slot "
                     "(shell band too thin)",

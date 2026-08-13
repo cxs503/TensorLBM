@@ -201,6 +201,7 @@ def build_shell_cell_mask(
     bl_thickness_cells: float,
     transition: int = 1,
     device: torch.device = torch.device("cpu"),
+    inside_fn=None,
 ) -> tuple[torch.Tensor, torch.Tensor, float]:
     """Near-wall fluid cell mask of the L1 block.
 
@@ -211,12 +212,49 @@ def build_shell_cell_mask(
     leaves the upstream donor of a ``q < 0.5`` BFL link outside the shell and
     silently substitutes a ghost fallback for a real fluid population.
 
+    With ``inside_fn`` the body is arbitrary (e.g. SUBOFF solid mask); the
+    shell band is computed by a fixed number of dilation passes.
+
     Returns:
         ``(solid, shell_mask, delta_mask)`` — the solid cell mask, the bool
         shell mask ``(nz, ny, nx)`` and the effective shell half-thickness
         ``delta_mask`` used for the analytic shell volume.
     """
     nz, ny, nx = shape
+    if inside_fn is not None:
+        # inside_fn contract: (x, y, z) world coordinates, matching
+        # leaf_center / _level*_leaves conventions.
+        zz = torch.arange(nz, dtype=torch.float64, device=device)
+        yy = torch.arange(ny, dtype=torch.float64, device=device)
+        xx = torch.arange(nx, dtype=torch.float64, device=device)
+        gz, gy, gx = torch.meshgrid(zz, yy, xx, indexing="ij")
+        centers = torch.stack(
+            [gx.reshape(-1), gy.reshape(-1), gz.reshape(-1)], dim=1,
+        )
+        solid_flat = inside_fn(centers)
+        solid = solid_flat.reshape(nz, ny, nx)
+        delta_mask = float(bl_thickness_cells) + float(transition)
+        # Dilate solid by the band -> shell = dilated & ~solid.
+        import torch.nn.functional as F
+        dilated = solid.float().unsqueeze(0).unsqueeze(0)
+        n_passes = max(1, int(round(delta_mask)))
+        for _ in range(n_passes):
+            dilated = F.max_pool3d(dilated, kernel_size=3, stride=1, padding=1)
+        dilated = dilated.squeeze(0).squeeze(0) > 0.5
+        shell_mask = dilated & ~solid
+        return solid, shell_mask, delta_mask
+    # Solid = cells whose *centre* lies inside the analytic sphere.  This is
+    # the same convention as the shell band (``sphere_distance_field``), the
+    # leaf split (``_level1_leaves`` centre test) and the neighbour-table
+    # SOLID sentinel (``topology._classify_targets`` samples leaf centres).
+    # The corner-based voxel mask from ``boundaries3d.sphere_mask`` instead
+    # marks cells whose nearest *corner* is inside — for an integer-centred
+    # sphere that cell (e.g. index ``c + R``, corner exactly on the surface)
+    # has its centre *outside* the wall, so marking it solid silently deletes
+    # the surface leaf ring on that side and breaks the reflection symmetry
+    # of the shell/BFL geometry about the body (spurious net link force).
+    solid = sphere_distance_field(shape, center, radius, device) <= 0.0
+    dist = sphere_distance_field(shape, center, radius, device)
     delta_mask = float(bl_thickness_cells) + float(transition)
     # For a unit L1 AABB centred at ``p``, its closest/farthest distances to
     # the sphere centre are obtained component-wise.  A cell has any fluid
@@ -287,6 +325,10 @@ class OctreeGrid:
     _delta_mask: float = 0.0
     _shell_mask: torch.Tensor | None = None
     _fanout_groups: dict = field(default_factory=dict)  # {(i, d): [leaf enums]}
+    # 预缓存 fanout 张量 (避免 stream_gather 运行时 Python 循环):
+    # fanout_pos: (n_fanout, 2) int64 (d, i); fanout_pad: (n_fanout, max_len) int64 叶子枚举
+    fanout_pos: torch.Tensor = field(default_factory=lambda: torch.empty((0, 2), dtype=torch.int64))
+    fanout_pad: torch.Tensor = field(default_factory=lambda: torch.empty((0, 0), dtype=torch.int64))
 
     # -- level helpers ------------------------------------------------------
     def n_leaf_level(self, level: int) -> int:
@@ -322,6 +364,7 @@ def _level1_leaves(
     center: tuple[float, float, float],
     radius: float,
     device: torch.device,
+    inside_fn=None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Split every masked cell into 8 depth-1 leaves, dropping solid ones.
 
@@ -332,7 +375,7 @@ def _level1_leaves(
         ``(coords (M,3) int64, centers (M,3) float64, inside (M,) bool)``
         with ``coords`` in Morton lattice order ``(x, y, z)`` and ``centers``
         in world units; ``inside`` flags leaves whose centre is still inside
-        the sphere.
+        the body (sphere by default, or ``inside_fn(centers)`` if given).
     """
     n = shell_cells.shape[0]
     child = torch.arange(8, dtype=torch.int64, device=device)
@@ -341,12 +384,15 @@ def _level1_leaves(
     offs = torch.stack([bx, by, bz], dim=1).repeat(n, 1)           # (8N, 3)
     coords = 2 * cells + offs                                      # level-1 coords
     centers = (coords.to(torch.float64) + 0.5) / 2.0               # world units
-    dist2 = (
-        (centers[:, 0] - center[0]) ** 2
-        + (centers[:, 1] - center[1]) ** 2
-        + (centers[:, 2] - center[2]) ** 2
-    )
-    inside = dist2 <= radius ** 2
+    if inside_fn is not None:
+        inside = inside_fn(centers)
+    else:
+        dist2 = (
+            (centers[:, 0] - center[0]) ** 2
+            + (centers[:, 1] - center[1]) ** 2
+            + (centers[:, 2] - center[2]) ** 2
+        )
+        inside = dist2 <= radius ** 2
     return coords, centers, inside
 
 
@@ -355,6 +401,7 @@ def _level2_leaves(
     center: tuple[float, float, float],
     radius: float,
     device: torch.device,
+    inside_fn=None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Split depth-1 leaves into 8 depth-2 leaves, dropping solid ones."""
     n = parent_coords.shape[0]
@@ -364,12 +411,15 @@ def _level2_leaves(
     offs = torch.stack([bx, by, bz], dim=1).repeat(n, 1)
     coords = 2 * parents + offs
     centers = (coords.to(torch.float64) + 0.5) / 4.0
-    dist2 = (
-        (centers[:, 0] - center[0]) ** 2
-        + (centers[:, 1] - center[1]) ** 2
-        + (centers[:, 2] - center[2]) ** 2
-    )
-    inside = dist2 <= radius ** 2
+    if inside_fn is not None:
+        inside = inside_fn(centers)
+    else:
+        dist2 = (
+            (centers[:, 0] - center[0]) ** 2
+            + (centers[:, 1] - center[1]) ** 2
+            + (centers[:, 2] - center[2]) ** 2
+        )
+        inside = dist2 <= radius ** 2
     return coords, centers, inside
 
 
@@ -449,13 +499,15 @@ def build_octree_shell(
     transition: int = 1,
     lattice: str = "D3Q19",
     device: torch.device = torch.device("cpu"),
+    inside_fn=None,
 ) -> OctreeGrid:
-    """Build the body-fitted octree boundary shell around a sphere.
+    """Build the body-fitted octree boundary shell around a body.
 
     Args:
         shape: L1 block physical shape ``(nz, ny, nx)``.
-        center: sphere centre in L1 *physical* cell coordinates.
-        radius: sphere radius in L1 cell units.
+        center: body centre in L1 *physical* cell coordinates (sphere only;
+            ignored when ``inside_fn`` is given).
+        radius: body radius in L1 cell units (sphere only).
         bl_thickness_cells: shell thickness in cells (near-wall band).
         d_max: maximum leaf depth, 1 or 2 (P1 supports both; depth-2 leaves
             are only created where a depth-1 leaf is wall-adjacent).
@@ -463,6 +515,9 @@ def build_octree_shell(
         lattice: "D3Q19" or "D3Q27" (Q = 19 / 27 velocity stencil;
             the neighbour table, q-field and bfl mask are built on the
             lattice's velocity set).
+        inside_fn: optional ``inside_fn(centers) -> bool tensor`` marking
+            leaf centres inside the body (e.g. from a solid mask for
+            arbitrary geometry like SUBOFF).  Defaults to sphere test.
 
     Returns:
         :class:`OctreeGrid` with topology, q-field and statistics filled in.
@@ -492,6 +547,7 @@ def build_octree_shell(
 
     solid, shell_mask, delta_mask = build_shell_cell_mask(
         shape, center, radius, bl_thickness_cells, transition, device,
+        inside_fn=inside_fn,
     )
     if not bool(shell_mask.any()):
         raise ValueError(
@@ -501,7 +557,7 @@ def build_octree_shell(
 
     # ---- depth-1 leaves ---------------------------------------------------
     l1_coords, l1_centers, l1_inside = _level1_leaves(
-        shell_cells, center, radius, device,
+        shell_cells, center, radius, device, inside_fn=inside_fn,
     )
     # Refine every depth-1 box crossed by the analytic surface *before*
     # discarding centre-inside leaves.  A crossed parent can have its centre
@@ -524,7 +580,7 @@ def build_octree_shell(
     l2_coords = l2_centers = None
     if d_max >= 2 and bool(refine.any()):
         l2_coords, l2_centers, l2_inside = _level2_leaves(
-            l1_coords[refine], center, radius, device,
+            l1_coords[refine], center, radius, device, inside_fn=inside_fn,
         )
         keep2 = ~l2_inside
         l2_coords, l2_centers = l2_coords[keep2], l2_centers[keep2]
@@ -595,7 +651,7 @@ def build_octree_shell(
         interface_fanout={},
         cross_level_donor=torch.full((Q, n_leaf), -1, dtype=torch.int64),
         leaf_host_cell=host_cell,
-        f_leaf=torch.zeros((Q, n_leaf), dtype=torch.float32),
+        f_leaf=torch.zeros((Q, n_leaf), dtype=torch.float32, device=device),
         morton_to_index={int(m): i for i, m in enumerate(morton.tolist())},
         meta={
             "shape": tuple(shape),
@@ -623,6 +679,10 @@ def build_octree_shell(
     grid._solid = solid
     grid._delta_mask = delta_mask
     grid._shell_mask = shell_mask
+    if inside_fn is not None:
+        grid.meta["inside_fn"] = inside_fn  # topology classification hook
+        if getattr(inside_fn, "analytic_q", False):
+            grid.meta["analytic_q"] = True
 
     from tensorlbm.octree_boundary.topology import (
         build_interface_registry,
@@ -633,7 +693,23 @@ def build_octree_shell(
 
     build_neighbor_table(grid)
     build_interface_registry(grid)
-    compute_leaf_q_field(grid, center, radius)
+    compute_leaf_q_field(grid, center, radius, inside_fn=inside_fn)
+    # BFL wall links (mask[d, i] = neighbour d is SOLID) also need ghost
+    # slots: their upstream (x_i - c_d) lies in the shell-outside band.
+    # interface_links currently only carries SHELL_OUTSIDE links, so extend it
+    # with the BFL mask links to make build_ghost_plan cover them.
+    bfl_links = torch.nonzero(grid.bfl_mask, as_tuple=False)  # (d, i)
+    if bfl_links.shape[0]:
+        # Store the UPSTREAM direction (opp[d]) for BFL links: build_ghost_plan
+        # places the ghost at centers + c_vec[d_link], and the BFL ghost
+        # upstream for a wall link d sits at x_i - c_d = x_i + c_vec[opp[d]].
+        bfl_links = bfl_links[:, [1, 0]].contiguous()  # (i, d)
+        d_bfl = bfl_links[:, 1]
+        bfl_links[:, 1] = grid._opp.to(d_bfl.device)[d_bfl]
+        grid.interface_links = torch.cat(
+            (grid.interface_links, bfl_links.to(grid.interface_links.dtype)),
+            dim=0,
+        )
 
     # ---- statistics ---------------------------------------------------------
     vol_leaf = grid.total_volume()

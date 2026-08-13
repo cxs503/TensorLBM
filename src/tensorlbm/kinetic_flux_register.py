@@ -159,11 +159,12 @@ def _apply_population_total(
     maximum_correction_fraction: float,
 ) -> tuple[torch.Tensor, torch.Tensor, int, int, float]:
     """Apply a bounded requested total per direction on interface links."""
+    q = populations.shape[0]
     applied = torch.zeros_like(requested)
     limited = 0
     corrected_links = 0
     maximum_applied_fraction = 0.0
-    for direction in range(populations.shape[0]):
+    for direction in range(q):
         selected = mask[direction]
         count = int(selected.sum().item())
         if count == 0:

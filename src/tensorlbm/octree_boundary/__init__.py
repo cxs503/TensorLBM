@@ -14,6 +14,11 @@ P1 geometry + P2 stepping + P3 body-fitted physics:
 
 See ``docs/octree-boundary-design.md`` for the contract.
 """
+from tensorlbm.octree_boundary.distributed_stepping import (
+    split_leaf_bounds,
+    step_octree_shell_distributed,
+    stream_gather_distributed,
+)
 from tensorlbm.octree_boundary.geometry import (
     DOMAIN_OUT,
     FANOUT,
@@ -31,6 +36,11 @@ from tensorlbm.octree_boundary.geometry import (
     morton_encode_batch,
     morton_parent,
     sphere_distance_field,
+)
+from tensorlbm.octree_boundary.geometry_adapters import (
+    solid_mask_inside_fn,
+    solid_mask_shell_fn,
+    sphere_inside_fn,
 )
 from tensorlbm.octree_boundary.qfield import (
     compute_leaf_q_field,
@@ -84,6 +94,9 @@ __all__ = [
     "build_octree_shell",
     "build_shell_cell_mask",
     "sphere_distance_field",
+    "split_leaf_bounds",
+    "stream_gather_distributed",
+    "step_octree_shell_distributed",
     "analytic_shell_volume",
     "cell_saving_report",
     "morton_encode",
@@ -94,6 +107,9 @@ __all__ = [
     "morton_child",
     "compute_q_sphere_at_points",
     "compute_leaf_q_field",
+    "sphere_inside_fn",
+    "solid_mask_inside_fn",
+    "solid_mask_shell_fn",
     "build_neighbor_table",
     "build_interface_registry",
     "check_neighbor_symmetry",

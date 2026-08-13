@@ -37,6 +37,7 @@ def _classify_targets(
     shape: tuple[int, int, int],
     center: tuple[float, float, float],
     radius: float,
+    inside_fn=None,
 ) -> torch.Tensor:
     """Classify out-of-tree neighbour coordinates.
 
@@ -50,6 +51,20 @@ def _classify_targets(
     ) << lvl
     out_of_bounds = ((target < 0) | (target >= bound)).any(dim=1)
     world = (target.to(torch.float64) + 0.5) / (2 ** lvl)
+    if inside_fn is not None:
+        # Arbitrary body: sample the inside test at each target centre.
+        # world is (n, 3) (x, y, z) — pass it straight through (inside_fn
+        # contract is (x, y, z), matching leaf_center / shell builder).
+        inside = inside_fn(world.to(device=target.device))
+        return torch.where(
+            out_of_bounds,
+            torch.full_like(out_of_bounds, DOMAIN_OUT, dtype=torch.int64),
+            torch.where(
+                inside,
+                torch.full_like(inside, SOLID, dtype=torch.int64),
+                torch.full_like(inside, SHELL_OUTSIDE, dtype=torch.int64),
+            ),
+        )
     dist2 = (
         (world[:, 0] - center[0]) ** 2
         + (world[:, 1] - center[1]) ** 2
@@ -78,6 +93,7 @@ def build_neighbor_table(grid) -> None:
     n2 = grid.n_leaf_level(2)
     n_leaf = grid.n_leaf
     l1_coords = grid._l1_coords
+    inside_fn = grid.meta.get("inside_fn")
     l2_coords = grid._l2_coords
     opp = grid._opp
     c_vec = grid._c_vec
@@ -168,7 +184,7 @@ def build_neighbor_table(grid) -> None:
                 torch.where(
                     hit_p,
                     nbr2,
-                    _classify_targets(target2, 2, shape, center, radius),
+                    _classify_targets(target2, 2, shape, center, radius, inside_fn),
                 ),
             )
             nt[d, i2] = nbr2
@@ -215,7 +231,7 @@ def build_neighbor_table(grid) -> None:
                     torch.where(
                         hit_ref & ~has_fo,
                         torch.full_like(hit1, SOLID, dtype=torch.int64),
-                        _classify_targets(target1, 1, shape, center, radius),
+                        _classify_targets(target1, 1, shape, center, radius, inside_fn),
                     ),
                 ),
             )
@@ -239,6 +255,19 @@ def build_interface_registry(grid) -> None:
         links = links[:, [1, 0]].contiguous()                  # (i, d)
     grid.interface_links = links.to(torch.int64)
     grid.interface_fanout = dict(grid._fanout_groups)
+    # 预缓存 fanout 张量: fanout_pos (d, i) + fanout_pad (等长 pad)
+    if grid._fanout_groups:
+        groups = list(grid._fanout_groups.items())  # [(key, leaf_list)]
+        max_len = max(len(g) for _, g in groups)
+        n_fo = len(groups)
+        pos = torch.zeros((n_fo, 2), dtype=torch.int64)
+        pad = torch.full((n_fo, max_len), -1, dtype=torch.int64)
+        for r, ((i, d), leafs) in enumerate(groups):
+            pos[r, 0] = d
+            pos[r, 1] = i
+            pad[r, :len(leafs)] = torch.tensor(leafs, dtype=torch.int64)
+        grid.fanout_pos = pos
+        grid.fanout_pad = pad
 
 
 # ---------------------------------------------------------------------------
