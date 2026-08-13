@@ -340,7 +340,7 @@ def run_case(
     def shell_advance(
         f: torch.Tensor, tau: float, level: int, substep: int,
     ) -> AMRAdvanceResult:
-        if args.collision is None and args.lattice == "D3Q27":
+        if args.collision is None:
             # LES on octree leaves via neighbour-table gathers (spatially
             # correct; the regular-grid WALE roll semantics are wrong on SoA).
             from tensorlbm.octree_boundary.les import leaf_les_collide
@@ -357,6 +357,8 @@ def run_case(
                 model="wale" if args.les_model == "wale" else "smagorinsky",
                 C_w=args.cw_wale, C_s=args.cs_smag,
                 dx=2.0 ** (-octree.d_max) * 0.5,
+                leaf_level=octree.leaf_level,
+                leaf_center=octree.leaf_center,
             ).view(f.shape)
             if not bool(torch.isfinite(collided).all()):
                 raise FloatingPointError(
@@ -465,15 +467,24 @@ def run_case(
             )
 
     joint_mass_end = joint_mass()
-    stats_window = args.statistics_window_steps or len(mem_samples)
-    mem_mean = sum(mem_samples[-stats_window:]) / stats_window
-    cv_mean = sum(cv_samples[-stats_window:]) / stats_window
-    cd_mem = mem_mean / dynamic_area_mem
-    cd_cv = cv_mean / dynamic_area_cv
+    stats_window = args.statistics_window_steps or (
+        len(mem_samples) or len(cv_samples) or 1
+    )
+    mem_mean = (
+        sum(mem_samples[-stats_window:]) / stats_window
+        if mem_samples else float("nan")
+    )
+    cv_mean = (
+        sum(cv_samples[-stats_window:]) / stats_window
+        if cv_samples else float("nan")
+    )
+    cd_mem = mem_mean / dynamic_area_mem if mem_samples else float("nan")
+    cd_cv = cv_mean / dynamic_area_cv if cv_samples else float("nan")
     reference = _schiller_naumann(args.reynolds)
     cd_cv_error_pct = abs(cd_cv - reference) / reference * 100.0
     mem_cv_deviation_pct = (
         abs(cd_mem - cd_cv) / max(abs(cd_cv), 1e-30) * 100.0
+        if mem_samples else float("nan")
     )
     mass_drift = (
         abs(joint_mass_end - joint_mass0) / joint_mass0 if joint_mass0 else 0.0
