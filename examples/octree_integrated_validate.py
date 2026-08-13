@@ -315,7 +315,7 @@ def main():
     # sparse coarse field fed to ghost fill).  Dilate the shell band by
     # GHOST_PAD cells so ghost donors just outside the band see the real
     # wake/defect from the coarse field instead of the uniform-inflow fill.
-    GHOST_PAD = 6
+    GHOST_PAD = 2
     shell_mask_full = octree._shell_mask
     import torch.nn.functional as Fnn
     dilated = shell_mask_full.float().unsqueeze(0).unsqueeze(0)
@@ -360,10 +360,16 @@ def main():
         if bool(sc_in.any()):
             sc_local[:, sc_in] = coarse_f[:, sc_z, sc_y, sc_xx]
         gathered_sc = [torch.empty_like(sc_local) for _ in range(world_size)]
-        dist.all_gather(gathered_sc, sc_local)
+        # TCCL deadlock guard: chunk the shell gather (<3MB/msg) for big R10.
+        sc_chunk = max(1, int(3 * 1024 * 1024 // (q_oct * 4)))
         full_sc = torch.zeros(q_oct, n_shell, device=dev)
-        for r in range(world_size):
-            full_sc = full_sc + gathered_sc[r]
+        for c0 in range(0, n_shell, sc_chunk):
+            c1 = min(c0 + sc_chunk, n_shell)
+            piece = sc_local[:, c0:c1].contiguous()
+            g_piece = [torch.empty_like(piece) for _ in range(world_size)]
+            dist.all_gather(g_piece, piece)
+            for r in range(world_size):
+                full_sc[:, c0:c1] = full_sc[:, c0:c1] + g_piece[r]
         # Sparse coarse field (4D) with shell-region values; fill the rest
         # with uniform inflow equilibrium (ghost donors must never see 0).
         coarse_sparse = eq27b(
