@@ -34,6 +34,7 @@ for _name, _mod in [
     ("cylinder_compare", "cylinder_compare"),
     ("cylinder_device_sim", "cylinder_device_sim"),
     ("cylinder_interactive", "cylinder_interactive"),
+    ("data_catalog", "data_catalog"),
     ("jobs", "jobs"),
     ("notifications", "notifications"),
     ("orchestration", "orchestration"),
@@ -64,6 +65,7 @@ cylinder_bench = _router_imports.get("cylinder_bench")
 cylinder_compare = _router_imports.get("cylinder_compare")
 cylinder_device_sim = _router_imports.get("cylinder_device_sim")
 cylinder_interactive = _router_imports.get("cylinder_interactive")
+data_catalog = _router_imports.get("data_catalog")
 jobs = _router_imports.get("jobs")
 notifications = _router_imports.get("notifications")
 orchestration = _router_imports.get("orchestration")
@@ -170,6 +172,7 @@ _router_registry = [
     (cylinder_interactive, "/api/cylinder-interactive", "Cylinder Interactive"),
     (cylinder_bench, "/api/cylinder-bench", "Cylinder Benchmark"),
     (cylinder_compare, "/api/cylinder-compare", "Cylinder Compare"),
+    (data_catalog, "/api/data", "Data Catalog"),
     (simulations, "", "Simulations"),
     (orchestration, "/api/orchestration", "Orchestration"),
     (projects, "/api/projects", "Projects"),
