@@ -53,6 +53,8 @@ _BUILTIN_APPS: tuple[tuple[str, str], ...] = (
     ("tensorlbm.apps.physics_informed_lbm", "PhysicsInformedLBM"),
     ("tensorlbm.apps.inverse_problem", "InverseProblem"),
     ("tensorlbm.apps.mesh_gnn_flow", "MeshGNNFlow"),
+    ("tensorlbm.apps.generative_flow", "GenerativeFlow"),
+    ("tensorlbm.apps.uncertainty_quantification", "UncertaintyQuantification"),
 )
 
 
