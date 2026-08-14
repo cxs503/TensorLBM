@@ -568,7 +568,19 @@ def step_octree_shell_distributed(
                 report.limited_directions, report.raw_kinetic_mismatch, 0.0,
             )
     # Broadcast the L1 patch so every rank's L1 copy stays in sync.
-    dist.broadcast(l1_f, src=0)
+    # TCCL 3.1.0 deadlocks on broadcast messages > ~4MB (same limit as
+    # all_gather).  l1_f is the full (Q, nz, ny, nx) global coarse field;
+    # for large grids (e.g. R12 192x128x128 -> 340MB) a single broadcast
+    # hangs.  Flatten and chunk along the element axis so every message
+    # stays < 3MB, matching the all_gather chunking strategy above.
+    _l1_flat = l1_f.contiguous().view(-1)
+    _l1_n = _l1_flat.shape[0]
+    _l1_chunk = max(1, int(3 * 1024 * 1024 // l1_f.element_size()))
+    for _c0 in range(0, _l1_n, _l1_chunk):
+        _c1 = min(_c0 + _l1_chunk, _l1_n)
+        _piece = _l1_flat[_c0:_c1].clone()
+        dist.broadcast(_piece, src=0)
+        _l1_flat[_c0:_c1] = _piece
     # Expose the restriction result on every rank: ``restricted`` (Q, n_cells)
     # and ``cells`` (n_cells, 3) GLOBAL (z, y, x) coordinates of the covered
     # L1 cells.  The L1 patch broadcast above only updated the caller's
@@ -586,7 +598,15 @@ def step_octree_shell_distributed(
     if rank != 0 and nc > 0:
         restricted = torch.empty(q, nc, dtype=dtype, device=device)
         cells = torch.empty(nc, 3, dtype=torch.int64, device=device)
-    dist.broadcast(restricted, src=0)
+    # Chunk the restricted broadcast (<3MB/msg) for TCCL safety —
+    # restricted is (Q, nc); for large shells nc can approach the 4MB
+    # limit (R12: 2.84MB).  Chunk along the cell axis.
+    _r_chunk = max(1, int(3 * 1024 * 1024 // (q * restricted.element_size())))
+    for _rc0 in range(0, nc, _r_chunk):
+        _rc1 = min(_rc0 + _r_chunk, nc)
+        _r_piece = restricted[:, _rc0:_rc1].contiguous()
+        dist.broadcast(_r_piece, src=0)
+        restricted[:, _rc0:_rc1] = _r_piece
     dist.broadcast(cells, src=0)
     # Restore the per-rank leaf shard for the next root step.
     octree.f_leaf = full_f[:, local_indices].contiguous()
