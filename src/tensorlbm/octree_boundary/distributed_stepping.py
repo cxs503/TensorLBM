@@ -56,6 +56,7 @@ from tensorlbm.octree_boundary.stepping import (
     apply_face_local_reflux,
     PopulationRefluxLedger,
 )
+from tensorlbm.kinetic_flux_register import KineticInterfaceTransfer
 from tensorlbm.octree_boundary.sharding import _slice_ghost_plan
 
 __all__ = [
@@ -352,8 +353,19 @@ def step_octree_shell_distributed(
     covered = octree._shell_mask
     solid_mask = octree._solid if solid is None else solid
     coarse_links = None
+    observation_links = None
     if reflux:
         coarse_links = build_shell_coarse_links(covered, solid_mask, q=q)
+        # Mass-conservation observation must count the FULL covered boundary
+        # (including covered<->solid links whose fine-side counterparts are
+        # the ghost-filled inner-wall interface links).  The solid-excluded
+        # ``coarse_links`` remain the correction stencil so the reflux never
+        # writes into solid cells.  This pairing closes the joint mass
+        # identity ``dM = -residual.sum()`` exactly (same as the unsharded
+        # ``step_octree_shell``).
+        observation_links = build_shell_coarse_links(
+            coarse_links.inside, None, q=q,
+        )
 
     fine_transfer = None
     mem_accum = torch.zeros(3, dtype=torch.float64, device=device)
@@ -509,6 +521,39 @@ def step_octree_shell_distributed(
                     print(f"[force] rank{rank} substep{s} force="
                           f"{sf.tolist()}", flush=True)
                 mem_accum = mem_accum + sf
+        # 4. reflux observation (distributed): observe the fine-side
+        #    interface transfer from the all-gathered full_pc (outgoing)
+        #    and the local ghost_vals (incoming, all-reduced).  This is
+        #    the distributed counterpart of ``observe_shell_interface_transfer``
+        #    in the unsharded stepper — each staircase link is counted once,
+        #    per-leaf volume scaling, accumulated over substeps.
+        if reflux:
+            _obs_out = torch.zeros(q, dtype=dtype, device=device)
+            _obs_in = torch.zeros(q, dtype=dtype, device=device)
+            _if_links = octree.interface_links
+            _leaf_vol = octree.leaf_volume()
+            for _d in range(1, q):
+                _sel = _if_links[:, 1] == _d
+                if bool(_sel.any()):
+                    _li = _if_links[_sel, 0]
+                    _obs_out[_d] = (
+                        full_pc[_d, _li] * _leaf_vol[_li].to(dtype)
+                    ).sum()
+                _gsel = ghost_plan_local.direction == _d
+                if bool(_gsel.any()):
+                    _obs_in[_d] = (
+                        ghost_vals[_d, _gsel]
+                        * ghost_plan_local.volume[_gsel].to(dtype)
+                    ).sum()
+            # outgoing is identical on every rank (full_pc is global);
+            # incoming is a per-rank partial — all-reduce to assemble the
+            # global incoming sum.
+            dist.all_reduce(_obs_in, op=dist.ReduceOp.SUM)
+            _observed = KineticInterfaceTransfer(_obs_out, _obs_in)
+            fine_transfer = (
+                _observed if fine_transfer is None
+                else fine_transfer + _observed
+            )
         octree.f_leaf = out
 
     # ---- restriction on rank 0, broadcast the L1 patch ----
@@ -553,9 +598,32 @@ def step_octree_shell_distributed(
                 replacement_mismatch, 0, replacement_mismatch,
             )
         else:
-            coarse_transfer = observe_kinetic_interface_transfer(
-                l1_post, coarse_links,
-            )
+            if fine_transfer is None:
+                raise RuntimeError(
+                    "distributed shell stepping omitted the fine "
+                    "interface transfer (reflux=True but no substep "
+                    "observation ran)",
+                )
+            if observation_links is None or l1_post is None:
+                raise RuntimeError(
+                    "reflux bookkeeping lost l1_post or observation links",
+                )
+            if isinstance(l1_post, (tuple, list)):
+                if len(l1_post) == 0:
+                    raise ValueError("l1_post sequence must not be empty")
+                coarse_transfer = observe_kinetic_interface_transfer(
+                    l1_post[0], observation_links,
+                )
+                for _post in l1_post[1:]:
+                    coarse_transfer = coarse_transfer + (
+                        observe_kinetic_interface_transfer(
+                            _post, observation_links,
+                        )
+                    )
+            else:
+                coarse_transfer = observe_kinetic_interface_transfer(
+                    l1_post, observation_links,
+                )
             l1_f, report = apply_face_local_reflux(
                 l1_f, coarse_links, coarse_transfer, fine_transfer,
                 maximum_correction_fraction=maximum_reflux_correction_fraction,
@@ -566,6 +634,8 @@ def step_octree_shell_distributed(
                 report.applied_inventory_correction,
                 report.corrected_links, report.residual,
                 report.limited_directions, report.raw_kinetic_mismatch, 0.0,
+                1.0, 0.0, 1.0,
+                report.maximum_applied_correction_fraction,
             )
     # Broadcast the L1 patch so every rank's L1 copy stays in sync.
     # TCCL 3.1.0 deadlocks on broadcast messages > ~4MB (same limit as

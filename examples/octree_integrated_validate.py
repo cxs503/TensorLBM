@@ -392,6 +392,34 @@ def main():
             dist.all_gather(g_piece, piece)
             for r in range(world_size):
                 full_sc[:, c0:c1] = full_sc[:, c0:c1] + g_piece[r]
+        # Build the coarse post-collision sparse field for the reflux
+        # observation.  ``l1_post`` is the post-collision (pre-stream)
+        # coarse state, observed on the shell boundary links to pair with
+        # the fine-side transfer accumulated over the shell substeps.
+        # Same sparse-field pattern as ``coarse_sparse`` below: real
+        # post-collision values at the dilated shell cells, uniform inflow
+        # equilibrium elsewhere (the observation_links masks are nonzero
+        # only at the shell boundary + 1-cell border, which lies inside
+        # the 6-cell dilation, so every observed cell has a real value).
+        sc_local_post = torch.zeros(q_oct, n_shell, device=dev)
+        if bool(sc_in.any()):
+            sc_local_post[:, sc_in] = post[:, sc_z, sc_y, sc_xx]
+        full_sc_post = torch.zeros(q_oct, n_shell, device=dev)
+        for c0 in range(0, n_shell, sc_chunk):
+            c1 = min(c0 + sc_chunk, n_shell)
+            piece = sc_local_post[:, c0:c1].contiguous()
+            g_piece = [torch.empty_like(piece) for _ in range(world_size)]
+            dist.all_gather(g_piece, piece)
+            for r in range(world_size):
+                full_sc_post[:, c0:c1] = full_sc_post[:, c0:c1] + g_piece[r]
+        l1_post = eq27b(
+            torch.ones(nz, ny, nx, device=dev),
+            torch.full((nz, ny, nx), u_in, device=dev),
+            torch.zeros(nz, ny, nx, device=dev),
+            torch.zeros(nz, ny, nx, device=dev),
+        )
+        l1_post[:, shell_cells[:, 0], shell_cells[:, 1], shell_cells[:, 2]] = \
+            full_sc_post
         # Sparse coarse field (4D) with shell-region values; fill the rest
         # with uniform inflow equilibrium (ghost donors must never see 0).
         coarse_sparse = eq27b(
@@ -405,29 +433,26 @@ def main():
         l1_f = coarse_sparse
         _ledger, local_mem, restricted, cells = step_octree_shell_distributed(
             octree, advance_shell, l1_old, l1_f,
-            tau_coarse=tau_coarse, l1_post=None,
+            tau_coarse=tau_coarse, l1_post=l1_post,
             ghost_plan=None, bfl_fn=bfl_fn, rank=rank, world_size=world_size,
-            reflux=False, interleave=args.interleave,
+            reflux=True, interleave=args.interleave,
         )
-        # ---- bidirectional coupling: shell restriction -> coarse field ----
-        # ``cells`` are the GLOBAL (z, y, x) coordinates of the shell-covered
-        # L1 cells and ``restricted`` the (Q, n_cells) fine->coarse mean that
-        # rank 0 computed and broadcast (both identical on every rank).
+        # ---- bidirectional coupling: shell restriction + reflux -> coarse ----
+        # ``l1_f`` (= ``coarse_sparse``) now carries the fine restriction at
+        # covered cells AND the face-local reflux correction at the exterior
+        # interface cells.  Writing the dilated shell region back to the
+        # per-rank ``coarse_f`` propagates BOTH to the real coarse field:
+        # covered cells get the fine-restricted values, exterior cells get
+        # the reflux correction, and the remaining dilated cells are a no-op
+        # (``l1_f`` still holds the original ``coarse_f`` values there).
         # ``coarse_f`` is THIS rank's x-slab (Q, nz, ny, nx_local+2) with one
         # halo column on each x side, so the local x index of a global column
         # is ``global_x - lo + 1``.  Each rank writes only the cells inside
         # its own slab [lo, hi); neighbour halo columns are refreshed by
-        # halo_exchange at the start of the next root step, and the y/z
-        # edges of the shell region are handled by the far-field planes
-        # (overwritten by the restriction only if a shell cell actually lies
-        # on a boundary plane, which the finer shell solution is entitled to).
-        cell_z = cells[:, 0]
-        cell_y = cells[:, 1]
-        cell_x = cells[:, 2]
-        mine = (cell_x >= lo) & (cell_x < hi)
-        if bool(mine.any()):
-            coarse_f[:, cell_z[mine], cell_y[mine], cell_x[mine] - lo + 1] = \
-                restricted[:, mine]
+        # halo_exchange at the start of the next root step.
+        if bool(sc_in.any()):
+            coarse_f[:, sc_z, sc_y, sc_xx] = \
+                l1_f[:, sc_z, sc_y, sc_x[sc_in]]
         if step > args.warmup_steps:
             # Only accumulate force after the startup transient (warmup);
             # the initial impact force is unphysical and must not pollute Cd.
